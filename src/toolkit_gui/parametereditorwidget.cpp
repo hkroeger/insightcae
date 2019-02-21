@@ -145,3 +145,5 @@ void ParameterEditorWidget::insertParameter(const QString& name, insight::Parame
   QObject::connect(this, &ParameterEditorWidget::apply, dp, &DirectoryParameterWrapper::onApply);
   QObject::connect(this, &ParameterEditorWidget::update, dp, &DirectoryParameterWrapper::onUpdate);
 }
+
+

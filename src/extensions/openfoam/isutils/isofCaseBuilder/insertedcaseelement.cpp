@@ -13,3 +13,14 @@ void InsertedCaseElement::insertElement(insight::OpenFOAMCase& c) const
     c.insert(insight::OpenFOAMCaseElement::lookup(type_name_, c, curp_));
 }
 
+bool InsertedCaseElement::hasVisualization() const
+{
+  try {
+      insight::OpenFOAMCaseElement::visualizer(type_name());
+      return true;
+  }
+  catch (insight::Exception e)
+  {
+    return false;
+  }
+}

@@ -57,7 +57,11 @@ void addWrapperToWidget
 )
 {
 //   QVBoxLayout *vlayout=new QVBoxLayout(widget);
-    for ( insight::ParameterSet::iterator i=pset.begin(); i!=pset.end(); i++ ) {
+    for ( insight::ParameterSet::iterator i=pset.begin(); i!=pset.end(); i++ )
+    {
+
+      if (! i->second->isHidden())
+      {
         ParameterWrapper *wrapper =
             ParameterWrapper::lookup
             (
@@ -67,8 +71,9 @@ void addWrapperToWidget
 
         QObject::connect ( parentnode->treeWidget(), &QTreeWidget::itemSelectionChanged,
                            wrapper, &ParameterWrapper::onSelectionChanged );
-// 	vlayout->addWidget(wrapper);
-        if ( superform ) {
+
+        if ( superform )
+        {
             QObject::connect ( superform, SIGNAL ( apply() ), wrapper, SLOT ( onApply() ) );
             QObject::connect ( superform, SIGNAL ( update() ), wrapper, SLOT ( onUpdate() ) );
             QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onUpdateVisualization() ) );
@@ -76,6 +81,7 @@ void addWrapperToWidget
             QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ),
                                superform,  SIGNAL ( parameterSetChanged() ) );
         }
+      }
     }
 }
 

@@ -80,7 +80,7 @@ void isofCaseBuilderWindow::fillCaseElementList()
   { QFont f=topitem->font(0); f.setBold(true); f.setPointSize(f.pointSize()+1); topitem->setFont(0, f); }
   HierarchyLevel toplevel ( topitem );
   
-  HierarchyLevel::iterator i=toplevel.addHierarchyLevel("Uncategorized");
+  /*HierarchyLevel::iterator i=*/toplevel.addHierarchyLevel("Uncategorized");
 
   for ( 
       insight::OpenFOAMCaseElement::FactoryTable::const_iterator i =
@@ -99,7 +99,7 @@ void isofCaseBuilderWindow::fillCaseElementList()
         {
           parent = & ( parent->sublevel ( pit->toStdString() ) );
         }
-      QTreeWidgetItem* item = new QTreeWidgetItem ( parent->parent_, QStringList() << elemName.c_str() );
+      /*QTreeWidgetItem* item =*/ new QTreeWidgetItem ( parent->parent_, QStringList() << elemName.c_str() );
 //       QFont f=item->font(0); f.setBold(true); item->setFont(0, f);
     }
     
@@ -203,6 +203,8 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     ui->splitter_5->setStretchFactor(1, 0);
     ui->splitter_5->setStretchFactor(2, 1);
 
+    collapseCAD();
+
 //    // case element splitter
 //    ui->splitter_2->setStretchFactor(0, 1);
 //    ui->splitter_2->setStretchFactor(1, 1);
@@ -250,12 +252,14 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
       }
     }
     
+    bool needsCAD=false;
     for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement"); e; e = e->next_sibling("OpenFOAMCaseElement"))
     {
         std::string type_name = e->first_attribute("type")->value();
     
         InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name);
         ice->parameters().readFromNode(doc, *e, file.parent_path());
+        needsCAD = needsCAD || ice->hasVisualization();
     }
 
     if (!skipBCs)
@@ -273,6 +277,9 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
       }
     }
 
+    if (needsCAD && CADisCollapsed()) expandCAD();
+    if (!needsCAD) collapseCAD();
+
     current_config_file_=file;
     config_is_modified_=false;
     updateTitle();
@@ -285,6 +292,10 @@ void isofCaseBuilderWindow::closeEvent(QCloseEvent *event)
     QSettings settings("silentdynamics", "isofCaseBuilder");
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
+    settings.setValue("windowState_PE", ui->splitter_2->saveState());
+    settings.setValue("windowState_BC_PE", ui->splitter_4->saveState());
+    settings.setValue("PE_state", last_pe_state_);
+    settings.setValue("BC_PE_state", last_bc_pe_state_);
     QMainWindow::closeEvent(event);
 }
 
@@ -293,6 +304,10 @@ void isofCaseBuilderWindow::readSettings()
     QSettings settings("silentdynamics", "isofCaseBuilder");
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
+    ui->splitter_2->restoreState(settings.value("windowState_PE").toByteArray());
+    ui->splitter_4->restoreState(settings.value("windowState_BC_PE").toByteArray());
+    last_pe_state_=settings.value("PE_state").toByteArray();
+    last_bc_pe_state_=settings.value("BC_PE_state").toByteArray();
 }
 
 
@@ -361,12 +376,36 @@ void isofCaseBuilderWindow::onConfigModification()
   updateTitle();
 }
 
+
+void isofCaseBuilderWindow::expandCAD()
+{
+  QList<int> sz = ui->splitter_5->sizes();
+  sz[2]=300;
+  sz[0]=3*sz[2];
+  sz[1]=sz[2];
+  ui->splitter_5->setSizes(sz);
+}
+
+
+void isofCaseBuilderWindow::collapseCAD()
+{
+  QList<int> sz = ui->splitter_5->sizes();
+  sz[0]=0;
+  sz[1]=0;
+  sz[2]=600;
+  ui->splitter_5->setSizes(sz);
+}
+
 void isofCaseBuilderWindow::onItemSelectionChanged()
 {
     InsertedCaseElement* cur = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->currentItem());
     if (cur)
     {
-        if (ped_) ped_->deleteLater();
+        if (ped_)
+        {
+          last_pe_state_=ped_->saveState();
+          ped_->deleteLater();
+        }
 
         insight::ParameterSet_VisualizerPtr viz;
         insight::ParameterSet_ValidatorPtr vali;
@@ -387,12 +426,18 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
         connect(ped_, &ParameterEditorWidget::parameterSetChanged,
                 this, &isofCaseBuilderWindow::onConfigModification);
         pe_layout_->addWidget(ped_);
+
+        if (!last_pe_state_.isEmpty())
+        {
+          ped_->restoreState(last_pe_state_);
+        }
     //     ui->parameter_editor->setCentralWidget(ped_);
         
     //     ParameterSet emptyps;
     //     numerics_.reset(insight::FVNumerics::lookup(num_name, FVNumericsParameters(*ofc_, emptyps)));
     }
 }
+
 
 
 void isofCaseBuilderWindow::onAddElement()
@@ -402,6 +447,8 @@ void isofCaseBuilderWindow::onAddElement()
     {
         std::string type_name = cur->text(0).toStdString();
         InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name);
+        if (ice->hasVisualization())
+          expandCAD();
     }
 }
 
@@ -413,6 +460,21 @@ void isofCaseBuilderWindow::onRemoveElement()
     {
         delete cur;
     }
+
+    // check whether CAD view is still needed
+    bool needsCAD=false;
+    for ( int i=0; i < ui->selected_elements->count(); i++ )
+      {
+        InsertedCaseElement* cur
+          = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
+        if ( cur )
+          {
+            needsCAD = needsCAD || cur->hasVisualization();
+          }
+      }
+    if (needsCAD && CADisCollapsed()) expandCAD();
+    if (!needsCAD) collapseCAD();
+
 }
 
 void isofCaseBuilderWindow::onMoveElementUp()
@@ -459,6 +521,13 @@ void isofCaseBuilderWindow::updateTitle()
   }
   this->setWindowTitle(title);
 }
+
+bool isofCaseBuilderWindow::CADisCollapsed() const
+{
+  QList<int> sz = ui->splitter_5->sizes();
+  return sz[0]==0 && sz[1]==0;
+}
+
 
 void isofCaseBuilderWindow::onSaveAs()
 {
@@ -644,9 +713,18 @@ void isofCaseBuilderWindow::onPatchSelectionChanged()
     Patch* cur = dynamic_cast<Patch*>(ui->patch_list->currentItem());
     if (cur)
     {
-        if (bc_ped_) bc_ped_->deleteLater();
+        if (bc_ped_)
+        {
+          last_bc_pe_state_ = bc_ped_->saveState();
+          bc_ped_->deleteLater();
+        }
         bc_ped_ = new ParameterEditorWidget(cur->parameters(), ui->bc_parameter_editor);
         bc_pe_layout_->addWidget(bc_ped_);
+
+        if (!last_bc_pe_state_.isEmpty())
+        {
+          bc_ped_->restoreState(last_bc_pe_state_);
+        }
     //     ui->parameter_editor->setCentralWidget(ped_);
         
     //     ParameterSet emptyps;

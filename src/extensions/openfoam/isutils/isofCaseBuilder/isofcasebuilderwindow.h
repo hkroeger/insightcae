@@ -48,7 +48,6 @@ class isofCaseBuilderWindow;
 
 
 
-
 #include "ui_isofcasebuilderwindow.h"
 
 
@@ -77,9 +76,13 @@ protected:
     insight::ParameterSet parameters_;
     std::shared_ptr<insight::FVNumerics> numerics_;
     ParameterEditorWidget *ped_, *bc_ped_;
+
+    QByteArray last_pe_state_, last_bc_pe_state_;
   
     void fillCaseElementList();
     void updateTitle();
+
+    bool CADisCollapsed() const;
     
 public:
     isofCaseBuilderWindow();
@@ -95,6 +98,9 @@ public:
     void closeEvent(QCloseEvent *event);
     void readSettings();
     
+    void expandCAD();
+    void collapseCAD();
+
 public slots:
     void onItemSelectionChanged();
     

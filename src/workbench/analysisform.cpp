@@ -129,6 +129,9 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     ui->resultTree->setColumnCount(3);
     ui->resultTree->setHeaderLabels( QStringList() << "Result Element" << "Description" << "Current Value" );
     ui->resultTree->addTopLevelItem(rtroot_);
+
+    QSettings settings("silentdynamics", "workbench");
+    peditor_->restoreState(settings.value("parameterEditor").toByteArray());
 }
 
 AnalysisForm::~AnalysisForm()
@@ -256,6 +259,9 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
     if (event->isAccepted())
     {
+      QSettings settings("silentdynamics", "workbench");
+      settings.setValue("parameterEditor", peditor_->saveState());
+
       QMdiSubWindow::closeEvent(event);
     }
 
@@ -263,6 +269,7 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
     {
       removeMenu();
     }
+
 }
 
 

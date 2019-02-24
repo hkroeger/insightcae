@@ -19,6 +19,7 @@ set(toolkit_gui_SRCS
     blockmesh_curvedcylinder.cpp
     blockmesh_tubemesh.cpp
     blockmesh_gui.cpp
+    parametersetvisualizer.cpp
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")

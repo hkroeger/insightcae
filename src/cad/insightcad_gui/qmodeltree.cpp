@@ -466,6 +466,30 @@ void QModelTree::focusOutEvent(QFocusEvent *event)
   emit unfocus();
 }
 
+void QModelTree::getFeatureNames(std::set<std::string>& featnames) const
+{
+  featnames.clear();
+  for (int i=0; i<features_->childCount(); i++)
+  {
+      if ( QFeatureItem *qmsi=dynamic_cast<QFeatureItem*>(features_->child(i)) )
+      {
+          featnames.insert( qmsi->text( QModelTreeItem::COL_NAME ).toStdString() );
+      }
+  }
+}
+
+void QModelTree::getDatumNames(std::set<std::string>& datumnames) const
+{
+  datumnames.clear();
+  for (int i=0; i<datums_->childCount(); i++)
+  {
+      if ( QDatumItem *qmsi=dynamic_cast<QDatumItem*>(datums_->child(i)) )
+      {
+          datumnames.insert( qmsi->text( QModelTreeItem::COL_NAME ).toStdString() );
+      }
+  }
+}
+
 void QModelTree::onClear()
 {
     componentfeatures_->takeChildren();

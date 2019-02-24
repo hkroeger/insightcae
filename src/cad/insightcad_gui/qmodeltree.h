@@ -215,6 +215,9 @@ public:
     
     void focusOutEvent(QFocusEvent *event);
 
+    void getFeatureNames(std::set<std::string>& featnames) const;
+    void getDatumNames(std::set<std::string>& datumnames) const;
+
 public Q_SLOTS:
     void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
     void onAddVector     (const QString& name, insight::cad::VectorPtr vv);

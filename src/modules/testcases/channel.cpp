@@ -235,7 +235,7 @@ void ChannelBase::createMesh
   PSDBL(parameters(), "geometry", H);
   PSDBL(parameters(), "geometry", B);
   PSDBL(parameters(), "geometry", L);
-  PSDBL(parameters(), "operation", Re_tau);
+//  PSDBL(parameters(), "operation", Re_tau);
   
   cm.insert(new MeshingNumerics(cm));
   
@@ -245,7 +245,7 @@ void ChannelBase::createMesh
 //   bmd->setDefaultPatch("walls", "wall");
   
   
-  double al = M_PI/2.;
+//  double al = M_PI/2.;
   
   std::map<int, Point> pts;
   pts = boost::assign::map_list_of   
@@ -400,7 +400,13 @@ void ChannelBase::createCase
   {
     cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
       .set_LESfilteredConvection(p.run.filteredconvection)
-      .set_maxDeltaT(0.25*T_)
+//      .set_maxDeltaT(0.25*T_)
+      .set_time_integration(PIMPLESettings::Parameters()
+        .set_timestep_control(PIMPLESettings::Parameters::timestep_control_adjust_type(
+          1,
+          0.25*T_
+        ))
+       )
       .set_Uinternal(vec3(Ubulk_,0,0))
       .set_writeControl(FVNumerics::Parameters::writeControl_type::adjustableRunTime)
       .set_writeInterval(0.25*T_)
@@ -512,7 +518,7 @@ void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>&
 
 void ChannelBase::evaluateAtSection(
   OpenFOAMCase& cm, 
-  ResultSetPtr results, double x, int i,
+  ResultSetPtr results, double x, int /*i*/,
   Ordering& o,
   bool includeRefDataInCharts,
   bool includeAllComponentsInCharts,
@@ -552,11 +558,11 @@ void ChannelBase::evaluateAtSection(
         
         arma::mat yp=arma::zeros(probe_locations_.size(),1);
         for(size_t i=0; i<probe_locations_.size(); i++) yp(i)=Re_tau*(1.+probe_locations_[i](1));
-        int npts=yp.n_elem;
-        int ictr=npts-1;
+        arma::uword npts=yp.n_elem;
+        arma::uword ictr=npts-1;
         
         arma::mat t, U[3], U_mean[3], U_var[3], Uprime[3];
-        for(int i=0; i<3; i++)
+        for(arma::uword i=0; i<3; i++)
         {
             arma::mat t_full=U_vs_t.slice(i).col(0);
             arma::uvec valid_rows=arma::find(t_full>avgStart_);
@@ -690,7 +696,7 @@ void ChannelBase::evaluateAtSection(
 
   // Mean velocity profiles
   {
-    int c=cd[UMeanName_].col;
+    arma::uword c( cd[UMeanName_].col );
     
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
     arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
@@ -742,7 +748,7 @@ void ChannelBase::evaluateAtSection(
     arma::mat Lt2=ydelta*0.5*H*0.41;
     //arma::mat Lt=arma::min(Lt1, Lt2);
     arma::mat Lt=Lt1;
-    for (int i=0; i<Lt2.n_rows; i++) Lt(i)=min(Lt(i), Lt2(i));
+    for (arma::uword i=0; i<Lt2.n_rows; i++) Lt(i)=min(Lt(i), Lt2(i));
     arma::mat Ltp(join_rows(ydelta, Lt));
     Ltp.save( (executionPath()/("LdeltaRANS_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     
@@ -946,7 +952,7 @@ void ChannelBase::evaluateAtSection(
 
     chart_name="chartMeanTKE_"+title;
     
-    int ck=cd["k"].col;
+    arma::uword ck=cd["k"].col;
     
     PlotCurveList kplots = list_of
      (PlotCurve( refdata_K, 	"TKEMKM180", "u 1:2 w l lt 1 dt 2 lc 1 t 'DNS ($Re_{\\tau}=180$, MKM)'" ))
@@ -1061,7 +1067,7 @@ void ChannelBase::evaluateAtSection(
 ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 {
   const ParameterSet& p=parameters_;
-  PSDBL(p, "geometry", B);
+//  PSDBL(p, "geometry", B);
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
@@ -1274,7 +1280,7 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 
 void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
-  const ParameterSet& p=parameters_;
+//  const ParameterSet& p=parameters_;
 
   ChannelBase::applyCustomOptions(cm, dicts);
   

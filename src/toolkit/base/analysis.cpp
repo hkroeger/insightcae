@@ -64,7 +64,7 @@ void CombinedProgressDisplayer::add ( ProgressDisplayer* d )
 
 void CombinedProgressDisplayer::update ( const ProgressState& pi )
 {
-    int j=0;
+//    int j=0;
     for ( ProgressDisplayer* d: displayers_ ) {
 //     std::cout<<"exec #"<<(j++)<<std::endl;
         d->update ( pi );
@@ -95,7 +95,7 @@ bool CombinedProgressDisplayer::stopRun() const
 
 void TextProgressDisplayer::update ( const ProgressState& pi )
 {
-    double iter=pi.first;
+//    double iter=pi.first;
     const ProgressVariableList& pvl=pi.second;
 
     for ( const ProgressVariableList::value_type& i: pvl ) {
@@ -176,12 +176,12 @@ defineFactoryTable
       const boost::filesystem::path& exePath
   ),
   LIST(ps, exePath)
-)
+);
 
-defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet)
-defineStaticFunctionTable(Analysis, category, std::string)
-defineStaticFunctionTable(Analysis, validator, ParameterSet_ValidatorPtr)
-defineStaticFunctionTable(Analysis, visualizer, ParameterSet_VisualizerPtr)
+defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet);
+defineStaticFunctionTable(Analysis, category, std::string);
+defineStaticFunctionTable(Analysis, validator, ParameterSet_ValidatorPtr);
+defineStaticFunctionTable(Analysis, visualizer, ParameterSet_VisualizerPtr);
 
 
 std::string Analysis::category()

@@ -100,7 +100,7 @@ addToFactoryTable(BoundaryCondition, SymmetryBC);
 addToStaticFunctionTable(BoundaryCondition, SymmetryBC, defaultParameters);
 
 
-SymmetryBC::SymmetryBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p )
+SymmetryBC::SymmetryBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& )
     : SimpleBC ( c, patchName, boundaryDict, "symmetryPlane" )
 {}
 
@@ -112,7 +112,7 @@ addToFactoryTable(BoundaryCondition, EmptyBC);
 addToStaticFunctionTable(BoundaryCondition, EmptyBC, defaultParameters);
 
 
-EmptyBC::EmptyBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p )
+EmptyBC::EmptyBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& )
     : SimpleBC ( c, patchName, boundaryDict, "empty" )
 {}
 
@@ -123,7 +123,7 @@ defineType(CyclicPairBC);
 // addToFactoryTable(BoundaryCondition, CyclicPairBC);
 // addToStaticFunctionTable(BoundaryCondition, CyclicPairBC, defaultParameters);
 
-CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p)
+CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet&)
 : OpenFOAMCaseElement(c, patchName+"CyclicBC"),
   patchName_(patchName)
 {
@@ -540,8 +540,13 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
-            BC["type"]=OFDictData::data ( "inletOutlet" );
+            BC["type"]=OFDictData::data ( "inletOutletTotalTemperature" );
             BC["inletValue"]="uniform "+lexical_cast<string> ( p.T );
+            BC["T0"]="uniform "+lexical_cast<string> ( p.T );
+            BC["U"]=OFDictData::data ( p.UName );
+            BC["phi"]=OFDictData::data ( p.phiName );
+            BC["psi"]=OFDictData::data ( p.psiName );
+            BC["gamma"]=OFDictData::data ( p.gamma );
             BC["value"]="uniform "+lexical_cast<string> ( p.T );
         } else if (
             ( ( field.first=="p" ) || ( field.first=="pd" ) || ( field.first=="p_rgh" ) )
@@ -671,6 +676,14 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]="uniform "+lexical_cast<string> ( p.T );
+//            BC["type"]=OFDictData::data ( "inletOutletTotalTemperature" );
+//            BC["inletValue"]="uniform "+lexical_cast<string> ( p.T );
+//            BC["T0"]="uniform "+lexical_cast<string> ( p.T );
+//            BC["U"]=OFDictData::data ( p.UName );
+//            BC["phi"]=OFDictData::data ( p.phiName );
+//            BC["psi"]=OFDictData::data ( p.psiName );
+//            BC["gamma"]=OFDictData::data ( p.gamma );
+//            BC["value"]="uniform "+lexical_cast<string> ( p.T );
         } else if (
             ( ( field.first=="pd" ) || ( field.first=="p_rgh" ) )
             &&
@@ -975,7 +988,7 @@ void ExptDataInletBC::addDataDict(OFdicts& dictionaries, const std::string& pref
     throw insight::Exception("Unhandled number of components: "+lexical_cast<std::string>(data.n_cols));
   
   OFDictData::list vals;
-  for (int r=0; r<data.n_rows; r++)
+  for (size_t r=0; r<data.n_rows; r++)
   {
     if (data.n_cols==1)
       vals.push_back(data(r));
@@ -996,12 +1009,12 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 
     std::string prefix="constant/boundaryData/"+patchName_;
 
-    int np=p.data.size();
+    size_t np=p.data.size();
     arma::mat ptdat = arma::zeros ( np, 3 );
     arma::mat velocity = arma::zeros ( np, 3 );
     arma::mat TKE = arma::zeros ( np );
     arma::mat epsilon = arma::zeros ( np );
-    int j=0;
+    size_t j=0;
     for ( const Parameters::data_default_type& pt: p.data ) {
         ptdat.row ( j ) =pt.point;
         velocity.row ( j ) =pt.velocity;
@@ -1013,7 +1026,7 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     OFDictData::dictFile& ptsdict=dictionaries.addDictionaryIfNonexistent ( prefix+"/points" );
     ptsdict.isSequential=true;
     OFDictData::list pts;
-    for ( int r=0; r<ptdat.n_rows; r++ ) {
+    for ( size_t r=0; r<ptdat.n_rows; r++ ) {
         pts.push_back ( OFDictData::vector3 ( ptdat.row ( r ).t() ) );
     }
     ptsdict["a"]=pts;
@@ -1486,10 +1499,12 @@ PressureOutletBC::PressureOutletBC
   OpenFOAMCase& c, 
   const std::string& patchName, 
   const OFDictData::dict& boundaryDict, 
-  const ParameterSet& ps
+  const ParameterSet& ps,
+  const boost::filesystem::path& casedir
 )
 : BoundaryCondition(c, patchName, boundaryDict),
-  ps_(ps)
+  ps_(ps),
+  casedir_(casedir)
 {
  BCtype_="patch";
 }
@@ -1535,36 +1550,35 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             if ( (field.first=="p") && (OFcase().hasField("pd")||OFcase().hasField("p_rgh")))
               {
                 BC["type"]=OFDictData::data ( "calculated" );
-                BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+                BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( /*p.pressure*/ 1e5 ) );
               }
             else
               {
-                if ( boost::get<Parameters::behaviour_uniform_type>(&p.behaviour) )
+                if ( const auto* unif = boost::get<Parameters::behaviour_uniform_type>(&p.behaviour) )
                 {
-                    BC["type"]=OFDictData::data ( "fixedValue" );
-                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+                    FieldData(unif->pressure, casedir_).setDirichletBC(BC);
+//                    BC["type"]=OFDictData::data ( "fixedValue" );
+//                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( unif->pressure ) );
                 }
-                else if ( boost::get<Parameters::behaviour_fixMeanValue_type>(&p.behaviour) )
+                else if ( const auto* fixmean = boost::get<Parameters::behaviour_fixMeanValue_type>(&p.behaviour) )
                 {
                     BC["type"]=OFDictData::data ( "fixedMeanValue" );
-                    BC["meanValue"]=OFDictData::data ( p.pressure );
-                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+                    BC["meanValue"]=OFDictData::data ( fixmean->pressure );
+                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( fixmean->pressure ) );
                 }
-                else if ( const Parameters::behaviour_waveTransmissive_type* wt =
-                     boost::get<Parameters::behaviour_waveTransmissive_type>(&p.behaviour) )
+                else if ( const auto* wt = boost::get<Parameters::behaviour_waveTransmissive_type>(&p.behaviour) )
                 {
                     BC["type"]="waveTransmissive";
                     BC["psi"]="thermo:psi";
                     BC["gamma"]=wt->kappa;
                     BC["lInf"]=wt->L;
-                    BC["fieldInf"]=OFDictData::data ( p.pressure );
-                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+                    BC["fieldInf"]=OFDictData::data ( wt->pressure );
+                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( wt->pressure ) );
                 }
-                else if ( const Parameters::behaviour_removePRGHHydrostaticPressure_type* wt =
-                         boost::get<Parameters::behaviour_removePRGHHydrostaticPressure_type>(&p.behaviour) )
+                else if ( const auto* wt = boost::get<Parameters::behaviour_removePRGHHydrostaticPressure_type>(&p.behaviour) )
                 {
                     BC["type"]=OFDictData::data ( "prghTotalPressure" );
-                    BC["p0"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+                    BC["p0"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( wt->pressure ) );
                 }
               }
 

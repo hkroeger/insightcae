@@ -85,12 +85,10 @@ public:
     declareType ( "gravity" );
     gravity ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    virtual bool isUnique() const;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
-    static std::string category() { return "Body Force"; }
+    static ParameterSet defaultParameters();
+    static std::string category();
 };
 
 
@@ -130,6 +128,7 @@ public:
     declareType ( "mirrorMesh" );
     mirrorMesh ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    virtual bool isUnique() const;
 
     static ParameterSet defaultParameters()
     {
@@ -204,6 +203,7 @@ public:
     declareType ( "setFieldsConfiguration" );
     setFieldsConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    virtual bool isUnique() const;
 
     static ParameterSet defaultParameters()
     {
@@ -494,6 +494,7 @@ class transportModel
 {
 public:
   transportModel(OpenFOAMCase& c);
+  virtual bool isUnique() const;
 };
 
 
@@ -687,6 +688,7 @@ class dynamicMesh
 public:
   dynamicMesh(OpenFOAMCase& c);
   static std::string category() { return "Dynamic Mesh"; }
+  virtual bool isUnique() const;
 };
 
 
@@ -904,7 +906,7 @@ limitVelocity = selectablesubset {{
 
 limitFields = array [ set {
  fieldName = string "p_rgh" "Name of field to limit"
- type = selection (scalar vector symmTensor tensor) Scalar "Type of field"
+ type = selection (scalar vector symmTensor tensor) scalar "Type of field"
  min = double -1e10 "Minimum value (magnitude for non-scalar fields)"
  max = double 1e10 "Maximum value (magnitude for non-scalar fields)"
 } ] *0 "Fields to limit"

@@ -39,7 +39,12 @@ namespace insight {
 namespace bmd
 {
 
+
+
+
 class blockMesh;
+
+
 
 
 typedef arma::mat Point;
@@ -49,15 +54,27 @@ typedef arma::mat Point;
 typedef bool (*Comp)(const Point& v1, const Point& v2);
 bool compare(const Point& v1, const Point& v2);
 
+
+
+
 typedef std::vector<Point> PointList;
 typedef std::map<Point, int, Comp> PointMap;
+
+
+
 
 PointList P_4(const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 PointList P_4(const PointList& pts, int p1, int p2, int p3, int p4);
 PointList P_8(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
 	      const Point& p5, const Point& p6, const Point& p7, const Point& p8);
 
+
+
+
 OFDictData::list bmdEntry(const PointList& pts, const PointMap& allPoints);
+
+
+
 
 class Patch
 {
@@ -70,6 +87,7 @@ protected:
   
 public:
   Patch(std::string typ="patch");
+  virtual ~Patch();
   
   void addFace(Point c1, Point c2, Point c3, Point c4);
   void addFace(const PointList& corners);
@@ -90,6 +108,9 @@ public:
   bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;
 
 };
+
+
+
 
 class GradingAnalyzer
 {
@@ -113,6 +134,9 @@ public:
   double calc_L(double delta0, int n) const;
   double calc_delta1(double delta0) const;
 };
+
+
+
 
 class Block
 {
@@ -158,6 +182,8 @@ public:
 };
 
 
+
+
 class transform2D
 {
 protected:
@@ -182,6 +208,9 @@ public:
     void addFwdRvsPatches(blockMesh *bmd);
 };
 
+
+
+
 class plane2D
 : public transform2D
 {
@@ -197,6 +226,8 @@ public:
 };
 
 
+
+
 class wedge2D
 : public transform2D
 {
@@ -209,6 +240,8 @@ public:
     virtual arma::mat fwd(const arma::mat& p) const;
     virtual arma::mat rvs(const arma::mat& p) const;
 };
+
+
 
 
 class Block2D
@@ -228,6 +261,9 @@ public:
       bool inv=false
     );
 };
+
+
+
 
 class Edge
 {
@@ -252,6 +288,9 @@ public:
 
 };
 
+
+
+
 class ArcEdge
 : public Edge
 {
@@ -266,6 +305,8 @@ public:
   virtual Edge* transformed(const arma::mat& tm) const;
   virtual Edge* clone() const;
 };
+
+
 
 
 class EllipseEdge
@@ -290,6 +331,8 @@ public:
 };
 
 
+
+
 class CircularEdge
 : public ArcEdge
 {
@@ -312,6 +355,9 @@ public:
       const Point& center
     );
 };
+
+
+
 
 /*
 class GenArcEdge
@@ -346,6 +392,9 @@ class GenArcEdge
 };
 */
 
+
+
+
 class SplineEdge
 : public Edge
 {
@@ -379,6 +428,7 @@ def splineEdgeAlongCurve(curve, p0, p1,
     allEdges.append(bmdSplineEdge([p0, p1], pointsInRange(curve, t0, t1)))
     return t0, t1
 */
+
 
 
 
@@ -454,6 +504,9 @@ class SplineEdge2D
         return s
 };
 */
+
+
+
 
 class blockMesh 
 : public OpenFOAMCaseElement
@@ -547,7 +600,13 @@ public:
   static std::string category() { return "Meshing"; }
 };
 
+
+
+
 typedef std::shared_ptr<blockMesh> blockMeshPtr;
+
+
+
 
 }
 

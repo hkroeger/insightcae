@@ -138,8 +138,9 @@ public:
 
 #define addToOpenFOAMCaseElementFactoryTable(DerivedClass) \
  addToFactoryTable(OpenFOAMCaseElement, DerivedClass); \
+ addToCaseElementFactoryTable(DerivedClass); \
  addToStaticFunctionTable(OpenFOAMCaseElement, DerivedClass, defaultParameters); \
- addToStaticFunctionTable(OpenFOAMCaseElement, DerivedClass, category)
+ addToStaticFunctionTable(OpenFOAMCaseElement, DerivedClass, category);
  
 
 class OpenFOAMCaseElement
@@ -150,8 +151,8 @@ public:
     declareFactoryTable ( OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterSet& ps ), LIST ( c, ps ) );
     declareStaticFunctionTable ( defaultParameters, ParameterSet );
     declareStaticFunctionTable ( category, std::string );
-    declareStaticFunctionTable (validator, ParameterSet_ValidatorPtr)
-    declareStaticFunctionTable (visualizer, ParameterSet_VisualizerPtr)
+    declareStaticFunctionTable (validator, ParameterSet_ValidatorPtr);
+    declareStaticFunctionTable (visualizer, ParameterSet_VisualizerPtr);
     declareType ( "OpenFOAMCaseElement" );
 
     OpenFOAMCaseElement ( OpenFOAMCase& c, const std::string& name );
@@ -172,6 +173,7 @@ public:
     static std::string category();
     static ParameterSet_ValidatorPtr validator();
     static ParameterSet_VisualizerPtr visualizer();
+    static bool isInConflict(const CaseElement& other);
 };
 
 
@@ -266,6 +268,8 @@ public:
   virtual AccuracyRequirement minAccuracyRequirement() const =0;
 
   static std::string category() { return "Turbulence Model"; }
+
+  static bool isInConflict(const CaseElement& e) { return (dynamic_cast<const turbulenceModel*>(&e)); }
 };
 
 
@@ -446,39 +450,6 @@ public:
         return fields_.find ( fname )->second;
     }
 
-    template<class T>
-    std::set<T *> findElements()
-    {
-        std::set<T *> es;
-        for (auto& i: elements_)
-        {
-            if (T *e = dynamic_cast<T*>( &i ))
-            {
-                es.insert(e);
-            }
-        }
-        return es;
-    }
-
-    template<class T>
-    T& getUniqueElement()
-    {
-        std::set<T*> es = const_cast<OpenFOAMCase*>(this)->findElements<T>();
-        if (es.size()>1)
-        {
-            throw insight::Exception ( "OpenFOAMCase::getUniqueElement(): Multiple elements of requested type "+T::typeName+" in queried OpenFOAM case!" );
-        }
-        if (es.size()==0) {
-            throw insight::Exception ( "OpenFOAMCase::getUniqueElement(): No element of requested type "+T::typeName+" in queried OpenFOAM case found !" );
-        }
-        return **(es.begin());
-    }
-
-    template<class T>
-    const T& findUniqueElement() const
-    {
-        return const_cast<const T&> ( const_cast<OpenFOAMCase*>(this)->getUniqueElement<T>() );
-    }
 
     void setFromXML(const std::string& xml, const boost::filesystem::path& file, bool skipOFE=true, bool skipBCs=false, const boost::filesystem::path& casepath="");
     void loadFromFile(const boost::filesystem::path& file, bool skipOFE=true, bool skipBCs=false, const boost::filesystem::path& casepath="");

@@ -82,10 +82,23 @@ void gravity::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& g=dictionaries.addDictionaryIfNonexistent("constant/g");
   g["dimensions"]="[0 1 -2 0 0 0 0]";
   OFDictData::list gv;
-  for (int i=0; i<3; i++) gv.push_back(p_.g(i));
+  for (size_t i=0; i<3; i++) gv.push_back(p_.g(i));
   g["value"]=gv;
 }
 
+ParameterSet gravity::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+std::string gravity::category()
+{
+  return "Body Force";
+}
+
+bool gravity::isUnique() const
+{
+  return true;
+}
 
 
 defineType(mirrorMesh);
@@ -126,6 +139,10 @@ void mirrorMesh::addIntoDictionaries(OFdicts& dictionaries) const
     throw insight::Exception("Internal error: Unhandled selection!");
 }
 
+bool mirrorMesh::isUnique() const
+{
+  return true;
+}
 
 
 
@@ -207,6 +224,11 @@ void setFieldsConfiguration::addIntoDictionaries(OFdicts& dictionaries) const
     sFD["regions"]=rs;
 }
 
+
+bool setFieldsConfiguration::isUnique() const
+{
+  return true;
+}
 
 
 
@@ -597,6 +619,11 @@ void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) 
 
 
 
+bool transportModel::isUnique() const
+{
+  return true;
+}
+
 
 defineType(singlePhaseTransportProperties);
 addToOpenFOAMCaseElementFactoryTable(singlePhaseTransportProperties);
@@ -613,7 +640,6 @@ void singlePhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) 
   transportProperties["transportModel"]="Newtonian";
   transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu);
 }
-
 
 
 
@@ -738,6 +764,12 @@ dynamicMesh::dynamicMesh(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "dynamicMesh")
 {
 }
+
+bool dynamicMesh::isUnique() const
+{
+  return true;
+}
+
 
 velocityTetFEMMotionSolver::velocityTetFEMMotionSolver(OpenFOAMCase& c)
 : dynamicMesh(c),

@@ -113,7 +113,14 @@ void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm)
   ));
   
   cm.insert(new PressureOutletBC(cm, outlet_, boundaryDict, PressureOutletBC::Parameters()
-    .set_pressure(0.0) 
+//    .set_pressure(0.0)
+    .set_behaviour(PressureOutletBC::Parameters::behaviour_uniform_type(
+                   FieldData::Parameters().set_fielddata(
+                      FieldData::Parameters::fielddata_uniformSteady_type(vec1(
+                                                                            0.0
+                                                                            ))
+                     )
+                   ))
   ));
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
@@ -126,7 +133,7 @@ int DecayingTurbulence::calcnh() const
 {
   Parameters p(parameters_);
   double Delta=p.geometry.L/double(p.mesh.nax);
-  return p.geometry.H/(Delta/p.mesh.s);
+  return std::max(1, int(p.geometry.H/(Delta/p.mesh.s)) );
 }
 
 void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm)

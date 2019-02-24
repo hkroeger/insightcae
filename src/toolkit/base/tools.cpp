@@ -103,8 +103,11 @@ path SharedPathList::getSharedFilePath(const path& file)
   }
   
   // nothing found
-  throw insight::Exception(std::string("Requested shared file ")+file.c_str()+" not found either in global nor user shared directories");
-  return path();
+  throw insight::Exception(
+        std::string("Requested shared file ")
+         +file.c_str()
+         +" not found either in global nor user shared directories"
+        );
 }
 
 void SharedPathList::insertIfNotPresent(const path& spr)
@@ -162,13 +165,13 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
 
     lines->InitTraversal();
     vtkIdType npts=-1;
-    vtkIdType *pt=NULL;
-    for (int i=0; lines->GetNextCell(npts, pt); i++)
+    vtkIdType *pt=nullptr;
+    for (vtkIdType i=0; lines->GetNextCell(npts, pt); i++)
       {
 
         idList idl;
 
-        for (int j=0; j<npts; j++)
+        for (vtkIdType j=0; j<npts; j++)
           {
             idl.push_back(pt[j]);
             pointCells_[pt[j]].push_back(i);
@@ -178,7 +181,7 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
       }
 
 
-    for (int i=0; i<pointCells_.size(); i++)
+    for (vtkIdType i=0; i<vtkIdType(pointCells_.size()); i++)
     {
         const idList& pc=pointCells_[i];
         if (pc.size()==1) endPoints_.insert(i);
@@ -198,7 +201,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     {
         lines->InitTraversal();
         vtkIdType npts=-1;
-        vtkIdType *pt=NULL;
+        vtkIdType *pt=nullptr;
         for (int i=0; lines->GetNextCell(npts, pt); i++)
           {
             if (npts==2)
@@ -228,17 +231,17 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     calcConnectionInfo(lines);
     printSummary(std::cout, pd);
 
-    typedef std::map<int,int> AddLinesList;
+    typedef std::map<vtkIdType,vtkIdType> AddLinesList;
     AddLinesList addLines;
-    for (int i: endPoints_)
+    for (vtkIdType i: endPoints_)
     {
         double p1[3];
         pd->GetPoint(i, p1);
 
         double ldist=1e100;
-        int lj=-1;
+        vtkIdType lj=-1;
 
-        for (int j: endPoints_)
+        for (vtkIdType j: endPoints_)
         {
             if (i!=j)
             {
@@ -260,7 +263,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
 
         if (lj>=0)
         {
-            int li=i;
+            vtkIdType li=i;
             if (li>lj) std::swap(li,lj);
             addLines[li]=lj;
             std::cout<<"add line "<<li<<" => "<<lj<<std::endl;
@@ -278,14 +281,14 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     lines = pd->GetLines();
     calcConnectionInfo(lines);
 
-    int id_p0=0;
+    vtkIdType id_p0=0;
     if (endPoints_.size()>0)
         id_p0=*endPoints_.begin();
 
-    std::set<int> visitedCells;
+    std::set<vtkIdType> visitedCells;
 
     // ordered list of points (polyline)
-    int cid=id_p0;
+    vtkIdType cid=id_p0;
     double xyz[3];
 
     pd->GetPoint(cid, xyz);
@@ -326,7 +329,7 @@ void LineMesh_to_OrderedPointTable::printSummary(std::ostream& os, vtkPolyData* 
 {
     os<<"# points : "<<size()<<std::endl;
     os<<"# endpoints : "<<endPoints_.size()<<std::endl;
-    for (int i: endPoints_)
+    for (vtkIdType i: endPoints_)
     {
         os<<"   "<<i;
         if (pd)
@@ -357,7 +360,7 @@ arma::mat LineMesh_to_OrderedPointTable::txyz() const
 {
     arma::mat res = arma::zeros(size(), 4);
     double t=0;
-    for (int i=0; i<size(); i++)
+    for (size_t i=0; i<size(); i++)
     {
         const arma::mat& p=(*this)[i];
 
@@ -376,7 +379,8 @@ arma::mat LineMesh_to_OrderedPointTable::txyz() const
 }
 
 
-
+vtk_Transformer::~vtk_Transformer()
+{}
 
 vtkSmartPointer<vtkPolyDataAlgorithm>
 readSTL

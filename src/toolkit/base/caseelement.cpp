@@ -25,6 +25,10 @@
 namespace insight
 {
 
+
+defineType(CaseElement);
+defineStaticFunctionTableWithArgs( CaseElement, isInConflict, bool, LIST(const insight::CaseElement& e), LIST(e) );
+
 CaseElement::CaseElement(Case& c, const std::string& name)
 : name_(name),
   case_(c)
@@ -47,6 +51,12 @@ CaseElement::~CaseElement()
 const ParameterSet& CaseElement::params() const
 { 
   return case_.params(); 
+}
+
+
+bool CaseElement::isInConflict(const CaseElement&)
+{
+  return false;
 }
 
 }

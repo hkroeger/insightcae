@@ -13,6 +13,7 @@ namespace insight
  * Interface which wraps different types of prescribing field data on boundaries.
  * Works together with OpenFOAM class "FieldDataProvider".
  */
+
 class FieldData
 {
 public:
@@ -22,7 +23,14 @@ public:
 /*
 PARAMETERSET>>> FieldData Parameters
 
+n_cmpt = int 3 "Number of components" *hidden
+
 fielddata=selectablesubset {{
+
+ uniformSteady
+ set {
+     value=vector (1 0 0) "Constant steady field value"
+ }
 
  uniform
  set {
@@ -81,7 +89,7 @@ fielddata=selectablesubset {{
    ep=vector (1 0 0) "Direction of sampling axis"
  }
 
-}} uniform "Specification of field value"
+}} uniformSteady "Specification of field value"
 <<<PARAMETERSET
 */
 

@@ -141,12 +141,12 @@ public:
             const boost::filesystem::path& exePath
         ),
         LIST(ps, exePath)
-    )
+    );
     
-    declareStaticFunctionTable(defaultParameters, ParameterSet)
-    declareStaticFunctionTable(category, std::string)
-    declareStaticFunctionTable(validator, ParameterSet_ValidatorPtr)
-    declareStaticFunctionTable(visualizer, ParameterSet_VisualizerPtr)
+    declareStaticFunctionTable(defaultParameters, ParameterSet);
+    declareStaticFunctionTable(category, std::string);
+    declareStaticFunctionTable(validator, ParameterSet_ValidatorPtr);
+    declareStaticFunctionTable(visualizer, ParameterSet_VisualizerPtr);
 
 protected:
     std::string name_;
@@ -232,7 +232,7 @@ public:
         return parameters_;
     }
 
-    virtual ResultSetPtr operator() ( ProgressDisplayer* displayer=NULL ) =0;
+    virtual ResultSetPtr operator() ( ProgressDisplayer* displayer=nullptr ) =0;
     virtual void cancel();
 
     virtual boost::filesystem::path getSharedFilePath ( const boost::filesystem::path& file );
@@ -265,7 +265,7 @@ public:
     void enqueue ( const AnalysisInstance& data );
     // Get data from the queue. Wait for data if not available
     AnalysisInstance dequeue();
-    inline int n_instances() const
+    inline size_t n_instances() const
     {
         return m_queue.size();
     }
@@ -317,7 +317,7 @@ protected:
     SynchronisedAnalysisQueue* queue_;
 
 public:
-    AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer=NULL );
+    AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer=nullptr );
 
     void operator() ();
 //   void cancel(); // { analysis_.cancel(); }

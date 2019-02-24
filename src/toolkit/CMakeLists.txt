@@ -57,6 +57,7 @@ set(toolkit_SOURCES
 
     openfoam/caseelements/turbulencemodelcaseelements.cpp
     openfoam/caseelements/analysiscaseelements.cpp
+    openfoam/caseelements/pimplesettings.cpp
     openfoam/caseelements/numericscaseelements.cpp
     openfoam/caseelements/basiccaseelements.cpp
     openfoam/caseelements/thermophysicalcaseelements.cpp

@@ -201,7 +201,8 @@ addToOpenFOAMCaseElementFactoryTable (blockMeshDict_Box );
 
 blockMeshDict_Box::blockMeshDict_Box ( OpenFOAMCase& c, const ParameterSet& ps )
     : BlockMeshTemplate ( c ), p_ ( ps )
-{}
+{
+}
 
 
 void blockMeshDict_Box::create_bmd()

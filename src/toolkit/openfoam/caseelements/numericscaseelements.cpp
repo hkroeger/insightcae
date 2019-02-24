@@ -23,6 +23,7 @@
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 
+
 #include <utility>
 #include "boost/assign.hpp"
 #include "boost/lexical_cast.hpp"
@@ -192,7 +193,6 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // setup structure of dictionaries
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
   controlDict["deltaT"]=p_.deltaT;
-  controlDict["adjustTimeStep"]=p_.adjustTimeStep;
   controlDict["maxCo"]=0.5;
   controlDict["startFrom"]="latestTime";
   controlDict["startTime"]=0.0;
@@ -350,6 +350,13 @@ void FVNumerics::insertStandardGradientConfig(OFdicts& dictionaries) const
   grad["grad(nuTilda)"]="cellLimited "+bgrads+" 1";
 }
 
+bool FVNumerics::isUnique() const
+{
+  return true;
+}
+
+
+
 defineType(potentialFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(potentialFoamNumerics);
 
@@ -449,6 +456,11 @@ void FaNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 
+bool FaNumerics::isUnique() const
+{
+  return true;
+}
+
 
 
 tetFemNumerics::tetFemNumerics(OpenFOAMCase& c)
@@ -462,6 +474,13 @@ void tetFemNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& tetFemSolution=dictionaries.addDictionaryIfNonexistent("system/tetFemSolution");
   tetFemSolution.addSubDictIfNonexistent("solvers");
 }
+
+bool tetFemNumerics::isUnique() const
+{
+  return true;
+}
+
+
 
 OFDictData::dict diagonalSolverSetup()
 {
@@ -763,8 +782,8 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   else
    controlDict["application"]="pimpleFoam";
   
-  controlDict["maxCo"]=p_.maxCo;
-  controlDict["maxDeltaT"]=p_.maxDeltaT;
+  PIMPLESettings ps(p_.time_integration);
+  ps.addIntoDictionaries(dictionaries);
   
   // ============ setup fvSolution ================================
   
@@ -785,26 +804,8 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=smoothSolverSetup(1e-8, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-8, 0);
 
-  // create both: PISO and PIMPLE
-//   if (LES)
-  {
-    OFDictData::dict& PISO=fvSolution.addSubDictIfNonexistent("PISO");
-    PISO["nCorrectors"]=p_.nCorrectors;
-    PISO["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-    PISO["pRefCell"]=0;
-    PISO["pRefValue"]=0.0;
-  }
-//   else
-  {
-    OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-    PIMPLE["nCorrectors"]=p_.nCorrectors;
-    PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
-    PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-    PIMPLE["pRefCell"]=0;
-    PIMPLE["pRefValue"]=0.0;
-  }  
+
   // ============ setup fvSchemes ================================
-  
 
   
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
@@ -831,36 +832,6 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string suf;
   div["default"]="Gauss linear";
   
-  if (!LES && (p_.nOuterCorrectors>1) )
-  {
-    // SIMPLE mode: add underrelaxation
-    double prelax=0.3, Urelax=0.7;
-
-    OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-    if (OFversion()<210)
-    {
-      relax["p"]=prelax;
-      relax["U"]=Urelax;
-      relax["pFinal"]=prelax;
-      relax["UFinal"]=Urelax;
-      relax["k"]=Urelax;
-      relax["omega"]=Urelax;
-      relax["epsilon"]=Urelax;
-      relax["nuTilda"]=Urelax;
-    }
-    else
-    {
-      OFDictData::dict fieldRelax, eqnRelax;
-      fieldRelax["\"p.*\""]=prelax;
-      eqnRelax["\"U.*\""]=Urelax;
-      eqnRelax["\"k.*\""]=Urelax;
-      eqnRelax["\"omega.*\""]=Urelax;
-      eqnRelax["\"epsilon.*\""]=Urelax;
-      eqnRelax["\"nuTilda.*\""]=Urelax;
-      relax["fields"]=fieldRelax;
-      relax["equations"]=eqnRelax;
-    }
-  }
   
   if (LES)
   {
@@ -962,9 +933,8 @@ void rhoPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="rhoPimpleFoam";
-  
-  controlDict["maxCo"]=p_.maxCo;
-  controlDict["maxDeltaT"]=p_.maxDeltaT;
+
+  CompressiblePIMPLESettings(p_.time_integration).addIntoDictionaries(dictionaries);
   
   // ============ setup fvSolution ================================
   
@@ -989,24 +959,7 @@ void rhoPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=smoothSolverSetup(1e-8, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-8, 0);
 
-  // create both: PISO and PIMPLE
-//   if (LES)
-  {
-    OFDictData::dict& PISO=fvSolution.addSubDictIfNonexistent("PISO");
-    PISO["nCorrectors"]=p_.nCorrectors;
-    PISO["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-    PISO["pRefCell"]=0;
-    PISO["pRefValue"]=0.0;
-  }
-//   else
-  {
-    OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-    PIMPLE["nCorrectors"]=p_.nCorrectors;
-    PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
-    PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-    PIMPLE["pRefCell"]=0;
-    PIMPLE["pRefValue"]=0.0;
-  }  
+
   // ============ setup fvSchemes ================================
   
 
@@ -1036,36 +989,6 @@ void rhoPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string suf;
   div["default"]="Gauss linear";
   
-  if (!LES && (p_.nOuterCorrectors>1) )
-  {
-    // SIMPLE mode: add underrelaxation
-    double prelax=0.3, Urelax=0.7;
-
-    OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-    if (OFversion()<210)
-    {
-      relax["p"]=prelax;
-      relax["U"]=Urelax;
-      relax["pFinal"]=prelax;
-      relax["UFinal"]=Urelax;
-      relax["k"]=Urelax;
-      relax["omega"]=Urelax;
-      relax["epsilon"]=Urelax;
-      relax["nuTilda"]=Urelax;
-    }
-    else
-    {
-      OFDictData::dict fieldRelax, eqnRelax;
-      fieldRelax["\"p.*\""]=prelax;
-      eqnRelax["\"U.*\""]=Urelax;
-      eqnRelax["\"k.*\""]=Urelax;
-      eqnRelax["\"omega.*\""]=Urelax;
-      eqnRelax["\"epsilon.*\""]=Urelax;
-      eqnRelax["\"nuTilda.*\""]=Urelax;
-      relax["fields"]=fieldRelax;
-      relax["equations"]=eqnRelax;
-    }
-  }
   
   if (LES)
   {
@@ -1194,7 +1117,7 @@ void rhoSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
   SIMPLE["rhoMin"]=p_.rhoMin;
   SIMPLE["rhoMax"]=p_.rhoMax;
-  SIMPLE["consistent"]=false;
+  SIMPLE["consistent"]=p_.consistent;
   SIMPLE["transonic"]=p_.transonic;
 
   // ============ setup fvSchemes ================================
@@ -1324,8 +1247,8 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="potentialFreeSurfaceFoam";
-  controlDict["maxCo"]=p_.maxCo;
-  controlDict["maxDeltaT"]=p_.maxDeltaT;
+
+  PIMPLESettings(p_.time_integration).addIntoDictionaries(dictionaries);
     
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
@@ -1355,12 +1278,6 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
-  OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-  PIMPLE["nCorrectors"]=p_.nCorrectors;
-  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
-  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-  PIMPLE["pRefCell"]=0;
-  PIMPLE["pRefValue"]=0.0;
   
   // ============ setup fvSchemes ================================
   
@@ -1377,35 +1294,7 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
-  div["default"]="Gauss linear";
-  
-  if (p_.nOuterCorrectors>1)
-  {
-    // SIMPLE mode: add underrelaxation
-    OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-    if (OFversion()<210)
-    {
-      relax["p_gh"]=0.3;
-      relax["U"]=0.7;
-      relax["k"]=0.7;
-      relax["omega"]=0.7;
-      relax["epsilon"]=0.7;
-      relax["nuTilda"]=0.7;
-    }
-    else
-    {
-      OFDictData::dict fieldRelax, eqnRelax;
-      fieldRelax["p_gh"]=0.3;
-      eqnRelax["U"]=0.7;
-      eqnRelax["k"]=0.7;
-      eqnRelax["omega"]=0.7;
-      eqnRelax["epsilon"]=0.7;
-      eqnRelax["nuTilda"]=0.7;
-      relax["fields"]=fieldRelax;
-      relax["equations"]=eqnRelax;
-    }
-  }
-  
+  div["default"]="Gauss linear";  
 
 //  div["div(phi,U)"]="Gauss localBlendedBy UBlendingFactor linearUpwind limitedGrad limitedLinearV 1";
   div["div(phi,U)"]="Gauss linearUpwind limitedGrad";
@@ -1633,9 +1522,9 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="interFoam";
 
-  controlDict["maxDeltaT"]=1.0;
-  controlDict["maxCo"]=p_.maxCo;
-  controlDict["maxAlphaCo"]=p_.maxAlphaCo;
+//  controlDict["maxDeltaT"]=1.0;
+//  controlDict["maxCo"]=p_.maxCo;
+//  controlDict["maxAlphaCo"]=p_.maxAlphaCo;
 
   OFDictData::list fol;
   fol.push_back("\"libnumericsFunctionObjects.so\"");
@@ -1683,63 +1572,65 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
    solvers["\"alpha.*\""]=asd;
   }
 
-  double Urelax=1.0 /*0.7*/, prelax=1.0, turbrelax=1.0 /*0.95*/;
-  if (p_.implicitPressureCorrection)
-  {
-    prelax=0.3;
-    turbrelax=0.9;
-    Urelax=0.7;
-  }
+//  double Urelax=1.0 /*0.7*/, prelax=1.0, turbrelax=1.0 /*0.95*/;
+//  if (p_.implicitPressureCorrection)
+//  {
+//    prelax=0.3;
+//    turbrelax=0.9;
+//    Urelax=0.7;
+//  }
   
-  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-  if (OFversion()<210)
-  {
-    relax["U"]=Urelax;
-    if (turbrelax<1.) relax["\"(k|omega|epsilon|nuTilda).*\""]=turbrelax;
-    if (prelax<1.) relax["\"(p|pd|p_rgh)\""]=prelax;
-  }
-  else
-  {
-    OFDictData::dict fieldRelax, eqnRelax;
-    eqnRelax["\"U.*\""]=Urelax;
-    if (turbrelax<1.) eqnRelax["\"(k|omega|epsilon|nuTilda).*\""]=turbrelax;
-    if (prelax<1.) fieldRelax["\"(p|pd|p_rgh).*\""]=prelax;
+//  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+//  if (OFversion()<210)
+//  {
+//    relax["U"]=Urelax;
+//    if (turbrelax<1.) relax["\"(k|omega|epsilon|nuTilda).*\""]=turbrelax;
+//    if (prelax<1.) relax["\"(p|pd|p_rgh)\""]=prelax;
+//  }
+//  else
+//  {
+//    OFDictData::dict fieldRelax, eqnRelax;
+//    eqnRelax["\"U.*\""]=Urelax;
+//    if (turbrelax<1.) eqnRelax["\"(k|omega|epsilon|nuTilda).*\""]=turbrelax;
+//    if (prelax<1.) fieldRelax["\"(p|pd|p_rgh).*\""]=prelax;
     
-    relax["fields"]=fieldRelax;
-    relax["equations"]=eqnRelax;
-  }
+//    relax["fields"]=fieldRelax;
+//    relax["equations"]=eqnRelax;
+//  }
   
-  std::string solutionScheme("PISO");
-  if (OFversion()>=210) solutionScheme="PIMPLE";
-  OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
-  SOL["nAlphaCorr"]=1;
-  SOL["nAlphaSubCycles"]=p_.alphaSubCycles;
-  SOL["cAlpha"]=p_.cAlpha;
+//  std::string solutionScheme("PISO");
+//  if (OFversion()>=210) solutionScheme="PIMPLE";
+//  OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
+//  SOL["nAlphaCorr"]=1;
+//  SOL["nAlphaSubCycles"]=p_.alphaSubCycles;
+//  SOL["cAlpha"]=p_.cAlpha;
   
-  SOL["momentumPredictor"]=false; //true;
-  SOL["nCorrectors"]=1; //2;  
-  SOL["nOuterCorrectors"]=3; //1;
-  SOL["nNonOrthogonalCorrectors"]=0;
+//  SOL["momentumPredictor"]=false; //true;
+//  SOL["nCorrectors"]=1; //2;
+//  SOL["nOuterCorrectors"]=3; //1;
+//  SOL["nNonOrthogonalCorrectors"]=0;
 
-  SOL["pRefCell"]=0;
-  SOL["pRefValue"]=0.0;
+//  SOL["pRefCell"]=0;
+//  SOL["pRefValue"]=0.0;
 
-  if (p_.implicitPressureCorrection)
-  {
-    SOL["nCorrectors"]=1;
-    SOL["nOuterCorrectors"]=p_.nOuterCorrectors;
+//  if (p_.implicitPressureCorrection)
+//  {
+//    SOL["nCorrectors"]=1;
+//    SOL["nOuterCorrectors"]=p_.nOuterCorrectors;
     
-    OFDictData::dict tol;
-    tol["tolerance"]=1e-4;
-    tol["relTol"]=0.0;
+//    OFDictData::dict tol;
+//    tol["tolerance"]=1e-4;
+//    tol["relTol"]=0.0;
     
-    OFDictData::dict residualControl;
-    residualControl["\"(p|p_rgh|pd).*\""]=tol;
-    residualControl["\"U.*\""]=tol;
-    residualControl["\"(k|epsilon|omega|nuTilda)\""]=tol;
+//    OFDictData::dict residualControl;
+//    residualControl["\"(p|p_rgh|pd).*\""]=tol;
+//    residualControl["\"U.*\""]=tol;
+//    residualControl["\"(k|epsilon|omega|nuTilda)\""]=tol;
     
-    SOL["residualControl"]=residualControl;
-  }
+//    SOL["residualControl"]=residualControl;
+//  }
+
+  MultiphasePIMPLESettings(p_.time_integration).addIntoDictionaries(dictionaries);
   
   // ============ setup fvSchemes ================================
   
@@ -1876,7 +1767,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   controlDict["maxAlphaCo"]=maxAlphaCo;
   controlDict["maxCo"]=maxCo;
- 
+
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
@@ -1950,15 +1841,15 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
   // ============ setup controlDict ================================
 
-  controlDict["maxDeltaT"]=1.0;
+//  controlDict["maxDeltaT"]=1.0;
 
-  controlDict["maxCo"]=0.4;
-  controlDict["maxAlphaCo"]=0.2;
-  if (p_.implicitPressureCorrection)
-  {
-    controlDict["maxCo"]=5;
-    controlDict["maxAlphaCo"]=2.5;
-  }
+//  controlDict["maxCo"]=0.4;
+//  controlDict["maxAlphaCo"]=0.2;
+//  if (p_.implicitPressureCorrection)
+//  {
+//    controlDict["maxCo"]=5;
+//    controlDict["maxAlphaCo"]=2.5;
+//  }
 
   // ============ setup fvSolution ================================
   
@@ -2012,8 +1903,9 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="reactingFoam";
-  controlDict["maxCo"]=p_.maxCo;
-  controlDict["maxDeltaT"]=p_.maxDeltaT;
+
+  CompressiblePIMPLESettings ps(p_.time_integration);
+  ps.addIntoDictionaries(dictionaries);
   
   // ============ setup fvSolution ================================
   
@@ -2038,13 +1930,6 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
   solvers["Yi"]=stdAsymmSolverSetup(1e-8, 0);
-
-  OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-  PIMPLE["nCorrectors"]=p_.nCorrectors;
-  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
-  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-  PIMPLE["pRefCell"]=0;
-  PIMPLE["pRefValue"]=1e5;
   
   // ============ setup fvSchemes ================================
   
@@ -2079,34 +1964,18 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string suf;
   div["default"]="Gauss linear";
   
-  if (p_.nOuterCorrectors>1)
+  if (ps.isSIMPLE())
   {
     // SIMPLE mode: add underrelaxation
-    OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+    OFDictData::dict& relax=fvSolution.addSubDictIfNonexistent("relaxationFactors");
     if (OFversion()<210)
     {
-      relax["p"]=0.3;
-      relax["U"]=0.7;
-      relax["k"]=0.7;
-      relax["h"]=0.7;
       relax["Yi"]=0.7;
-      relax["omega"]=0.7;
-      relax["nuTilda"]=0.7;
-      relax["epsilon"]=0.7;
     }
     else
     {
-      OFDictData::dict fieldRelax, eqnRelax;
-      fieldRelax["p"]=0.3;
-      eqnRelax["U"]=0.7;
-      eqnRelax["k"]=0.7;
-      eqnRelax["h"]=0.7;
+      OFDictData::dict& eqnRelax = relax.addSubDictIfNonexistent("equations");
       eqnRelax["Yi"]=0.7;
-      eqnRelax["omega"]=0.7;
-      eqnRelax["nuTilda"]=0.7;
-      eqnRelax["epsilon"]=0.7;
-      relax["fields"]=fieldRelax;
-      relax["equations"]=eqnRelax;
     }
   }
   
@@ -2388,8 +2257,8 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="buoyantPimpleFoam";
-  controlDict["maxCo"]=p_.maxCo;
-  controlDict["maxDeltaT"]=p_.maxDeltaT;
+//  controlDict["maxCo"]=p_.maxCo;
+//  controlDict["maxDeltaT"]=p_.maxDeltaT;
 
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );
@@ -2425,55 +2294,57 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
 
 
-  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-  if (p_.nOuterCorrectors>1)
-    {
-      if (OFversion()<210)
-      {
-        relax["p_rgh"]=0.3;
-        relax["U"]=0.7;
-        relax["k"]=0.7;
-        relax["R"]=0.7;
-        relax["omega"]=0.7;
-        relax["epsilon"]=0.7;
-        relax["nuTilda"]=0.7;
-      }
-      else
-      {
-        OFDictData::dict fieldRelax, eqnRelax;
-        fieldRelax["p_rgh"]=0.3;
-        eqnRelax["U"]=0.7;
-        eqnRelax["k"]=0.7;
-        eqnRelax["R"]=0.7;
-        eqnRelax["omega"]=0.7;
-        eqnRelax["epsilon"]=0.7;
-        eqnRelax["nuTilda"]=0.7;
-        relax["fields"]=fieldRelax;
-        relax["equations"]=eqnRelax;
-      }
-    }
+//  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+//  if (p_.nOuterCorrectors>1)
+//    {
+//      if (OFversion()<210)
+//      {
+//        relax["p_rgh"]=0.3;
+//        relax["U"]=0.7;
+//        relax["k"]=0.7;
+//        relax["R"]=0.7;
+//        relax["omega"]=0.7;
+//        relax["epsilon"]=0.7;
+//        relax["nuTilda"]=0.7;
+//      }
+//      else
+//      {
+//        OFDictData::dict fieldRelax, eqnRelax;
+//        fieldRelax["p_rgh"]=0.3;
+//        eqnRelax["U"]=0.7;
+//        eqnRelax["k"]=0.7;
+//        eqnRelax["R"]=0.7;
+//        eqnRelax["omega"]=0.7;
+//        eqnRelax["epsilon"]=0.7;
+//        eqnRelax["nuTilda"]=0.7;
+//        relax["fields"]=fieldRelax;
+//        relax["equations"]=eqnRelax;
+//      }
+//    }
 
-  // create both: PISO and PIMPLE
-//   if (LES)
-  {
-    OFDictData::dict& PISO=fvSolution.addSubDictIfNonexistent("PISO");
-    PISO["nCorrectors"]=p_.nCorrectors;
-    PISO["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-    PISO["pRefCell"]=0;
-    PISO["pRefValue"]=0.0;
-  }
-//   else
-  {
-    OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-    PIMPLE["nCorrectors"]=p_.nCorrectors;
-    PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
-    PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-    PIMPLE["pRefCell"]=0;
-    PIMPLE["pRefValue"]=0.0;
-    PIMPLE["momentumPredictor"]=false;
-    PIMPLE["rhoMin"]=0.01;
-    PIMPLE["rhoMax"]=100.;
-  }
+//  // create both: PISO and PIMPLE
+////   if (LES)
+//  {
+//    OFDictData::dict& PISO=fvSolution.addSubDictIfNonexistent("PISO");
+//    PISO["nCorrectors"]=p_.nCorrectors;
+//    PISO["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+//    PISO["pRefCell"]=0;
+//    PISO["pRefValue"]=0.0;
+//  }
+////   else
+//  {
+//    OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+//    PIMPLE["nCorrectors"]=p_.nCorrectors;
+//    PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
+//    PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+//    PIMPLE["pRefCell"]=0;
+//    PIMPLE["pRefValue"]=0.0;
+//    PIMPLE["momentumPredictor"]=false;
+//    PIMPLE["rhoMin"]=0.01;
+//    PIMPLE["rhoMax"]=100.;
+//  }
+
+  CompressiblePIMPLESettings(p_.time_integration).addIntoDictionaries(dictionaries);
 
 
   // ============ setup fvSchemes ================================

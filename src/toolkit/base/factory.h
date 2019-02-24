@@ -32,9 +32,9 @@ namespace insight {
 
 
 #define declareType(typenameStr) \
- static const char *typeName_() { return typenameStr; }; \
- static const std::string typeName; \
- virtual const std::string& type() const { return typeName; } 
+ static const char *typeName_() { return typenameStr; } \
+ virtual const std::string& type() const { return typeName; } \
+ static const std::string typeName
  
  
  
@@ -52,16 +52,15 @@ namespace insight {
  class Factory\
  {\
  public:\
-   virtual ~Factory() {};\
+   virtual ~Factory();\
    virtual baseT* operator()(argList) const =0;\
  };\
  template<class SPEC> \
- \
  class SpecFactory\
  : public Factory \
  {\
  public:\
-  virtual ~SpecFactory() {};\
+  virtual ~SpecFactory() {}\
   virtual baseT* operator()(argList) const\
   {\
     return new SPEC(parList);\
@@ -70,7 +69,7 @@ namespace insight {
  typedef std::map<std::string, Factory* > FactoryTable; \
  static FactoryTable* factories_; \
  static baseT* lookup(const std::string& key, argList); \
- static std::vector<std::string> factoryToC();
+ static std::vector<std::string> factoryToC()
 
 
 
@@ -79,7 +78,7 @@ namespace insight {
  class Factory\
  {\
  public:\
-   virtual ~Factory() {};\
+   virtual ~Factory();\
    virtual baseT* operator()() const =0;\
  };\
  template<class SPEC> \
@@ -87,7 +86,7 @@ class SpecFactory\
 : public Factory \
 {\
 public:\
-  virtual ~SpecFactory() {};\
+  virtual ~SpecFactory() {}\
   virtual baseT* operator()() const\
   {\
     return new SPEC();\
@@ -96,12 +95,12 @@ public:\
 typedef std::map<std::string, Factory* > FactoryTable; \
 static FactoryTable* factories_; \
 static baseT* lookup(const std::string& key); \
-static std::vector<std::string> factoryToC();
+static std::vector<std::string> factoryToC()
 
 
 
 #define defineFactoryTable(baseT, argList, parList) \
- baseT::FactoryTable* baseT::factories_=nullptr; \
+ baseT::Factory::~Factory() {} \
  baseT* baseT::lookup(const std::string& key , argList) \
  { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
@@ -115,13 +114,14 @@ static std::vector<std::string> factoryToC();
    for (const FactoryTable::value_type& e: *factories_) \
    { toc.push_back(e.first); } \
    return toc; \
- }
+ } \
+ baseT::FactoryTable* baseT::factories_=nullptr
 
  
  
  
 #define defineFactoryTableNoArgs(baseT) \
- baseT::FactoryTable* baseT::factories_=nullptr; \
+ baseT::Factory::~Factory() {} \
  baseT* baseT::lookup(const std::string& key) \
  { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
@@ -135,7 +135,8 @@ static std::vector<std::string> factoryToC();
    for (const FactoryTable::value_type& e: *factories_) \
    { toc.push_back(e.first); } \
    return toc; \
- }
+ } \
+ baseT::FactoryTable* baseT::factories_=nullptr
  
  
  
@@ -163,7 +164,7 @@ static struct add##specT##To##baseT##FactoryTable \
      delete baseT::factories_;\
     }\
   }\
-} v_add##specT##To##baseT##FactoryTable;
+} v_add##specT##To##baseT##FactoryTable
 
 
 
@@ -172,13 +173,17 @@ static struct add##specT##To##baseT##FactoryTable \
  typedef boost::function0<ReturnT> Name##Ptr; \
  typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
  static Name##FunctionTable* Name##Functions_; \
- static ReturnT Name(const std::string& key);
+ static ReturnT Name(const std::string& key)
  
- 
+#define declareStaticFunctionTableWithArgs(Name, ReturnT, argTypeList, argList) \
+ typedef boost::function<ReturnT(argTypeList)> Name##Ptr; \
+ typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
+ static Name##FunctionTable* Name##Functions_; \
+ static ReturnT Name(const std::string& key, argList)
+
  
 
 #define defineStaticFunctionTable(baseT, Name, ReturnT) \
- baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr; \
  ReturnT baseT::Name(const std::string& key) \
  { \
    if (baseT::Name##Functions_) { \
@@ -189,10 +194,25 @@ static struct add##specT##To##baseT##FactoryTable \
   } else  {\
     throw insight::Exception("Static function table of type " #baseT "is empty!"); \
   }\
- }
+ } \
+ baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr
  
  
- 
+#define defineStaticFunctionTableWithArgs(baseT, Name, ReturnT, argList, parList) \
+ ReturnT baseT::Name(const std::string& key, argList) \
+ { \
+   if (baseT::Name##Functions_) { \
+   baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
+  if (i==baseT::Name##Functions_->end()) \
+    throw insight::Exception("Could not lookup static function #Name for class "+key+" in table of type " #baseT); \
+  return i->second(parList); \
+  } else  {\
+    throw insight::Exception("Static function table of type " #baseT "is empty!"); \
+  }\
+ } \
+ baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr
+
+
  
 #define addToStaticFunctionTable(baseT, specT, Name) \
 static struct add##specT##To##baseT##Name##FunctionTable \
@@ -206,7 +226,7 @@ static struct add##specT##To##baseT##Name##FunctionTable \
     std::string key(specT::typeName_()); \
     (*baseT::Name##Functions_)[key]=&(specT::Name);\
   }\
-} v_add##specT##To##baseT##Name##FunctionTable;
+} v_add##specT##To##baseT##Name##FunctionTable
 
 
 #define addStandaloneFunctionToStaticFunctionTable(baseT, specT, Name, FuncName) \
@@ -221,7 +241,7 @@ static struct add##specT##To##baseT##Name##FunctionTable \
     std::string key(specT::typeName_()); \
     (*baseT::Name##Functions_)[key]=&(FuncName);\
   }\
-} v_add##specT##To##baseT##Name##FunctionTable;
+} v_add##specT##To##baseT##Name##FunctionTable
 
 
 
@@ -238,13 +258,13 @@ static struct add##specT##To##baseT##Name##FunctionTable \
     declareFactoryTable ( baseT, LIST ( const ParameterSet& p ), LIST ( p ) ); \
     declareStaticFunctionTable ( defaultParameters, ParameterSet ); \
     static std::shared_ptr<baseT> create ( const SelectableSubsetParameter& ssp ); \
-    virtual ParameterSet getParameters() const =0; 
+    virtual ParameterSet getParameters() const =0
     
 #define defineDynamicClass(baseT) \
     defineFactoryTable(baseT, LIST(const ParameterSet& ps), LIST(ps));\
-    defineStaticFunctionTable(baseT, defaultParameters, ParameterSet);\
     std::shared_ptr<baseT> baseT::create(const SelectableSubsetParameter& ssp) \
-    { return std::shared_ptr<baseT>( lookup(ssp.selection(), ssp()) ); }
+    { return std::shared_ptr<baseT>( lookup(ssp.selection(), ssp()) ); } \
+    defineStaticFunctionTable(baseT, defaultParameters, ParameterSet)
 
 }
 

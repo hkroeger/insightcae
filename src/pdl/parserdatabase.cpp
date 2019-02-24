@@ -25,8 +25,9 @@ std::string extendtype(const std::string& pref, const std::string& app)
 
 
 
-ParserDataBase::ParserDataBase(const std::string& d)
-: description(d)
+ParserDataBase::ParserDataBase(const std::string& d, bool h, bool e, bool n, int o)
+: description(d),
+  isHidden(h), isExpert(e), isNecessary(n), order(o)
 {
     boost::replace_all(description,
                  "\n", "\\n");
@@ -71,7 +72,12 @@ void ParserDataBase::cppWriteCreateStatement
 ) const
 {
     os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"("
-      "new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description<<"\")"
+      "new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description<<"\", "
+      << (isHidden?"true":"false")<<","
+      << (isExpert?"true":"false")<<","
+      << (isNecessary?"true":"false")<<","
+      <<order
+      <<")"
       "); ";
 }
 

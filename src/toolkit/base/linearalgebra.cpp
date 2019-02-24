@@ -56,7 +56,22 @@ GSLExceptionHandling::~GSLExceptionHandling()
 {
   gsl_set_error_handler(oldHandler_);
 }
-  
+
+
+mat vec1(double x)
+{
+  mat v;
+  v << x << endr;
+  return v;
+}
+
+mat vec2(double x, double y)
+{
+  mat v;
+  v << x <<endr << y << endr;
+  return v;
+}
+
 mat vec3(double x, double y, double z)
 {
   mat v;
@@ -79,12 +94,6 @@ arma::mat tensor3(
   return v;
 }
 
-mat vec2(double x, double y)
-{
-  mat v;
-  v << x <<endr << y << endr;
-  return v;
-}
 
 
 mat rotMatrix( double theta, mat u )

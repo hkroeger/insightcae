@@ -25,6 +25,7 @@
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
 #include "base/boost_include.h"
+#include "openfoam/caseelements/pimplesettings.h"
 
 #include <map>
 #include "boost/utility.hpp"
@@ -74,9 +75,7 @@ writeFormat = selection ( ascii binary ) ascii "Write format"
 
 purgeWrite = int 10 "Purge write interval, set to 0 to disable"
 
-deltaT = double 1.0 "Time step size"
-
-adjustTimeStep = bool true "Whether to allow time step adjustment during execution"
+deltaT = double 1.0 "Time step size. If the time step is selected to be adjustable, this is the initial time step size."
 
 endTime = double 1000.0 "Maximum end time of simulation"
 
@@ -117,7 +116,12 @@ public:
     void insertStandardGradientConfig(OFdicts& dictionaries) const;
     
     static std::string category() { return "Numerics"; }
+
+    virtual bool isUnique() const;
 };
+
+
+
 
 
 
@@ -187,6 +191,7 @@ public:
     FaNumerics ( OpenFOAMCase& c, const ParameterSet& p = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static std::string category() { return "Numerics"; }
+    virtual bool isUnique() const;
 };
 
 
@@ -203,6 +208,7 @@ public:
     tetFemNumerics ( OpenFOAMCase& c );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static std::string category() { return "Numerics"; }
+    virtual bool isUnique() const;
 };
 
 
@@ -274,11 +280,12 @@ public:
 PARAMETERSET>>> pimpleFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
-nCorrectors = int 2 "Number of correctors"
-nOuterCorrectors = int 1 "Number of outer correctors"
-nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
-maxCo = double 0.45 "Maximum courant number"
-maxDeltaT = double 1.0 "Maximum time step size"
+time_integration = includedset "insight::PIMPLESettings::Parameters" "Settings for time integration"
+  modifyDefaults {
+     selectablesubset timestep_control = adjust;
+     double timestep_control/maxCo = 5.0;
+  }
+
 forceLES = bool false "Whether to enforce LES numerics"
 LESfilteredConvection = bool false "Whether to use filtered linear convection schemes instead of linear when using LES"
 pinternal = double 0.0 "Internal pressure field value"
@@ -306,15 +313,18 @@ class rhoPimpleFoamNumerics
 public:
 #include "numericscaseelements__rhoPimpleFoamNumerics__Parameters.h"
 
+//  nCorrectors = int 2 "Number of correctors"
+//  nOuterCorrectors = int 1 "Number of outer correctors"
+//  nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+//  maxCo = double 0.45 "Maximum courant number"
+//  maxDeltaT = double 1.0 "Maximum time step size"
+
 /*
 PARAMETERSET>>> rhoPimpleFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
-nCorrectors = int 2 "Number of correctors"
-nOuterCorrectors = int 1 "Number of outer correctors"
-nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
-maxCo = double 0.45 "Maximum courant number"
-maxDeltaT = double 1.0 "Maximum time step size"
+time_integration = includedset "insight::CompressiblePIMPLESettings::Parameters" "Settings for time integration"
+
 forceLES = bool false "Whether to enforce LES numerics"
 LESfilteredConvection = bool false "Whether to use filtered linear convection schemes instead of linear when using LES"
 pinternal = double 1e5 "Internal pressure field value"
@@ -349,6 +359,7 @@ PARAMETERSET>>> rhoSimpleFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
 nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+
 pinternal = double 1e5 "Internal pressure field value"
 Tinternal = double 300 "Internal temperature field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
@@ -356,6 +367,7 @@ Uinternal = vector (0 0 0) "Internal velocity field value"
 rhoMin = double 0.01 "Lower clipping for density"
 rhoMax = double 100. "Upper clipping for density"
 transonic = bool true "Check for transsonic flow"
+consistent = bool true "Check for SIMPLEC instead of plain SIMPLE"
 
 setup = selection ( accurate stable ) accurate "Select accuratefor second order schemes. In case of stability problems revert to stable."
 
@@ -382,15 +394,16 @@ class potentialFreeSurfaceFoamNumerics
 public:
 #include "numericscaseelements__potentialFreeSurfaceFoamNumerics__Parameters.h"
 
+//  nCorrectors = int 2 "Number of correctors"
+//  nOuterCorrectors = int 1 "Number of outer correctors"
+//  nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+//  maxCo = double 0.45 "Maximum courant number"
+//  maxDeltaT = double 1.0 "Maximum time step size"
 /*
 PARAMETERSET>>> potentialFreeSurfaceFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
-nCorrectors = int 2 "Number of correctors"
-nOuterCorrectors = int 1 "Number of outer correctors"
-nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
-maxCo = double 0.45 "Maximum courant number"
-maxDeltaT = double 1.0 "Maximum time step size"
+time_integration = includedset "insight::PIMPLESettings::Parameters" "Settings for time integration"
 
 <<<PARAMETERSET
 */
@@ -504,6 +517,10 @@ class interFoamNumerics
 public:
 #include "numericscaseelements__interFoamNumerics__Parameters.h"
 
+//  implicitPressureCorrection = bool false "Whether to switch to implicit pressure correction"
+//  nOuterCorrectors = int 50 "Number of outer correctors"
+//  maxCo = double 5 "Maximum courant number"
+//  maxAlphaCo = double 3 "Maximum courant number at interface"
 /*
 PARAMETERSET>>> interFoamNumerics Parameters
 inherits FVNumerics::Parameters
@@ -512,15 +529,13 @@ alphainternal = double 0.0 "Internal phase fraction field value"
 pinternal = double 0.0 "Internal pressure field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
 
-implicitPressureCorrection = bool false "Whether to switch to implicit pressure correction"
-nOuterCorrectors = int 50 "Number of outer correctors"
+time_integration = includedset "insight::MultiphasePIMPLESettings::Parameters" "Settings for time integration"
+
+
 alphaSubCycles = int 4 "Number of alpha integration subcycles"
 
 cAlpha = double 0.25 "[-] Interface compression coefficient"
 icAlpha = double 0.1 "[-] Isotropic interface compression coefficient"
-
-maxCo = double 5 "Maximum courant number"
-maxAlphaCo = double 3 "Maximum courant number at interface"
 
 snGradLowQualityLimiterReduction = double 0.66 "Reduction of limiter coefficient on low quality faces"
 
@@ -607,16 +622,18 @@ class reactingFoamNumerics
 public:
 #include "numericscaseelements__reactingFoamNumerics__Parameters.h"
 
+//  nCorrectors = int 2 "Number of correctors"
+//  nOuterCorrectors = int 1 "Number of outer correctors"
+//  nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+//  maxCo = double 0.45 "Maximum courant number"
+//  maxDeltaT = double 1.0 "Maximum time step size"
 /*
 PARAMETERSET>>> reactingFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
 
-nCorrectors = int 2 "Number of correctors"
-nOuterCorrectors = int 1 "Number of outer correctors"
-nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
-maxCo = double 0.45 "Maximum courant number"
-maxDeltaT = double 1.0 "Maximum time step size"
+time_integration = includedset "insight::CompressiblePIMPLESettings::Parameters" "Settings for time integration"
+
 forceLES = bool false "Whether to enforce LES numerics"
 
 <<<PARAMETERSET
@@ -655,12 +672,14 @@ class buoyantSimpleFoamNumerics
 public:
 #include "numericscaseelements__buoyantSimpleFoamNumerics__Parameters.h"
 
+//  time_integration = includedset "insight::PIMPLESettings::Parameters" "Settings for time integration"
 /*
 PARAMETERSET>>> buoyantSimpleFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
 checkResiduals = bool false "Enable solver stop on residual goal"
 nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+
 Tinternal = double 300 "initial temperature in internal field"
 pinternal = double 1e5 "initial pressure in internal field"
 
@@ -689,16 +708,16 @@ class buoyantPimpleFoamNumerics
 public:
 #include "numericscaseelements__buoyantPimpleFoamNumerics__Parameters.h"
 
+//  nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+//  nCorrectors = int 1 "Number of correctors"
+//  nOuterCorrectors = int 5 "Number of outer correctors"
+//  maxCo = double 5. "Maximum courant number"
+//  maxDeltaT = double 1.0 "Maximum time step size"
 /*
 PARAMETERSET>>> buoyantPimpleFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
-nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
-nCorrectors = int 1 "Number of correctors"
-nOuterCorrectors = int 5 "Number of outer correctors"
-maxCo = double 5. "Maximum courant number"
-maxDeltaT = double 1.0 "Maximum time step size"
-
+time_integration = includedset "insight::CompressiblePIMPLESettings::Parameters" "Settings for time integration"
 
 <<<PARAMETERSET
 */

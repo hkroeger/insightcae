@@ -294,8 +294,8 @@ public:
   declareType ( "subset" );
 
   SubsetParameter();
-  SubsetParameter ( const std::string& description );
-  SubsetParameter ( const ParameterSet& defaultValue, const std::string& description );
+  SubsetParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+  SubsetParameter ( const ParameterSet& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
   inline void setParameterSet ( const ParameterSet& paramset )
   {
@@ -344,14 +344,14 @@ protected:
 public:
   declareType ( "selectableSubset" );
 
-  SelectableSubsetParameter ( const std::string& description );
+  SelectableSubsetParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
   /**
    * Construct from components:
    * \param defaultSelection The key of the subset which is selected per default
    * \param defaultValue A map of key-subset pairs. Between these can be selected
    * \param description The description of the selection parameter
    */
-  SelectableSubsetParameter ( const key_type& defaultSelection, const SubsetList& defaultValue, const std::string& description );
+  SelectableSubsetParameter ( const key_type& defaultSelection, const SubsetList& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
   inline key_type& selection()
   {
@@ -546,7 +546,7 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
        */
       virtual void update(const ParameterSet& ps);
 
-      virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*) const;
+      virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
   };
 
   typedef std::shared_ptr<ParameterSet_Visualizer> ParameterSet_VisualizerPtr;

@@ -36,7 +36,7 @@ namespace insight
 
 class Case
 {
-  
+
 protected:
   ParameterSet parameters_;
   boost::ptr_vector<CaseElement> elements_;
@@ -50,6 +50,29 @@ public:
     template<class T>
     T insert(T elem)
     {
+//      if (elem.isUnique())
+//      {
+//        bool conflict=false;
+//        std::string conflict_ce_name;
+
+//        for (const CaseElement& e: elements_)
+//        {
+//          if (elem.inConflict(e))
+//          {
+//            conflict=true;
+//            conflict_ce_name=e.name();
+//          }
+//        }
+
+//        if (conflict)
+//        {
+//          throw insight::Exception(
+//                "Could not insert CE "+elem.name()+":"
+//                " conflict with "+conflict_ce_name+"!"
+//                );
+//        }
+
+//      }
       elements_.push_back(elem);
       return static_cast<T>(&elements_.back());
     }
@@ -103,6 +126,41 @@ public:
             }
         }
       }
+    }
+
+
+    template<class T>
+    std::set<T *> findElements()
+    {
+        std::set<T *> es;
+        for (auto& i: elements_)
+        {
+            if (T *e = dynamic_cast<T*>( &i ))
+            {
+                es.insert(e);
+            }
+        }
+        return es;
+    }
+
+    template<class T>
+    T& getUniqueElement()
+    {
+        std::set<T*> es = const_cast<Case*>(this)->findElements<T>();
+        if (es.size()>1)
+        {
+            throw insight::Exception ( "Case::getUniqueElement(): Multiple elements of requested type "+T::typeName+" in queried case!" );
+        }
+        if (es.size()==0) {
+            throw insight::Exception ( "Case::getUniqueElement(): No element of requested type "+T::typeName+" in queried case found !" );
+        }
+        return **(es.begin());
+    }
+
+    template<class T>
+    const T& findUniqueElement() const
+    {
+        return const_cast<const T&> ( const_cast<Case*>(this)->getUniqueElement<T>() );
     }
 
     inline const ParameterSet& params() const

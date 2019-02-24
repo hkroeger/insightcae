@@ -34,8 +34,16 @@ namespace insight
   
 class Case;
 
+
+#define addToCaseElementFactoryTable(DerivedClass) \
+ addToStaticFunctionTable(CaseElement, DerivedClass, isInConflict ); \
+
+
 class CaseElement
 {
+public:
+  declareStaticFunctionTableWithArgs( isInConflict, bool, LIST(const insight::CaseElement&), LIST(const insight::CaseElement& e) );
+  declareType ( "CaseElement" );
   
 protected:
   std::string name_;
@@ -48,6 +56,8 @@ public:
 
     inline const std::string& name() const { return name_; };
     const ParameterSet& params() const;
+
+    static bool isInConflict(const CaseElement& other);
 
 };
 

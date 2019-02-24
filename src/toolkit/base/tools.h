@@ -75,17 +75,17 @@ class LineMesh_to_OrderedPointTable
     void calcConnectionInfo(vtkCellArray* lines);
 
 public:
-    typedef std::vector<int> idList;
-    typedef std::map<int,idList> idListMap;
+    typedef std::vector<vtkIdType> idList;
+    typedef std::map<vtkIdType,idList> idListMap;
 
     idListMap pointCells_, cellPoints_;
-    std::set<int> endPoints_;
+    std::set<vtkIdType> endPoints_;
 
     LineMesh_to_OrderedPointTable(vtkPolyData* pd);
 
-    inline int nEndpoints() const { return endPoints_.size(); }
+    inline vtkIdType nEndpoints() const { return vtkIdType(endPoints_.size()); }
 
-    void printSummary(std::ostream&, vtkPolyData* pd=NULL) const;
+    void printSummary(std::ostream&, vtkPolyData* pd=nullptr) const;
 
     /**
      * @brief txyz
@@ -105,6 +105,7 @@ public:
 class vtk_Transformer
 {
 public:
+  virtual ~vtk_Transformer();
   virtual vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) =0;
 };
 

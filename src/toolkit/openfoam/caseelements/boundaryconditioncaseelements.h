@@ -139,12 +139,7 @@ public:
 class GGIBCBase
     : public BoundaryCondition
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (shadowPatch, std::string, "")
-//     (bridgeOverlap, bool, true)
-//     (zone, std::string, "")
-//   )
+
 public:
 #include "boundaryconditioncaseelements__GGIBCBase__Parameters.h"
 /*
@@ -172,10 +167,7 @@ public:
 class GGIBC
     : public GGIBCBase
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
-//     (separationOffset, arma::mat, vec3(0,0,0))
-//   )
+
 public:
 #include "boundaryconditioncaseelements__GGIBC__Parameters.h"
 /*
@@ -205,13 +197,7 @@ public:
 class CyclicGGIBC
     : public GGIBCBase
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
-//     (separationOffset, arma::mat, vec3(0,0,0))
-//     (rotationCentre, arma::mat, vec3(0,0,0))
-//     (rotationAxis, arma::mat, vec3(0,0,1))
-//     (rotationAngle, double, 0.0)
-//   )
+
 public:
 #include "boundaryconditioncaseelements__CyclicGGIBC__Parameters.h"
 /*
@@ -244,12 +230,7 @@ public:
 class OverlapGGIBC
     : public GGIBCBase
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
-//     (separationOffset, arma::mat, vec3(0,0,0))
-//     (rotationAxis, arma::mat, vec3(0,0,1))
-//     (nCopies, int, 1)
-//   )
+
 public:
 #include "boundaryconditioncaseelements__OverlapGGIBC__Parameters.h"
 /*
@@ -281,10 +262,7 @@ public:
 class MixingPlaneGGIBC
     : public GGIBCBase
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
-//     (separationOffset, arma::mat, vec3(0,0,0))
-//   )
+
 public:
 #include "boundaryconditioncaseelements__MixingPlaneGGIBC__Parameters.h"
 /*
@@ -330,7 +308,7 @@ PARAMETERSET>>> SuctionInletBC Parameters
 
 pressure = double 0.0 "Total pressure at boundary"
 rho = double 1025.0 "Density at boundary"
-T = double 300.0 "Temperature at boundary"
+T = double 300.0 "Total temperature at boundary"
 gamma = double 1.0 "Ratio of specific heats at boundary"
 phiName = string "phi" "Name of flux field"
 psiName = string "none" "Name of compressibility field"
@@ -642,7 +620,7 @@ set {
     anisotropicVorton2
     combinedVorton
     modalTurbulence
-    ) anisotropicVorton "Type of inflow generator"
+    ) anisotropicVorton_PseudoInv "Type of inflow generator"
 
     R=includedset "FieldData::Parameters" "Reynolds stresses specification"
 
@@ -699,25 +677,31 @@ public:
 /*
 PARAMETERSET>>> PressureOutletBC Parameters
 
-pressure = double 0.0 "Uniform static pressure at selected boundary patch"
 prohibitInflow = bool true "Whether to clip velocities to zero in case of flow reversal"
 
 behaviour = selectablesubset {{
 
  uniform
- set { }
+ set {
+  pressure = includedset "FieldData::Parameters" "Pressure values at the boundary"
+ }
  
  fixMeanValue
- set { }
+ set {
+  pressure = double 0.0 "Uniform static pressure at selected boundary patch"
+ }
 
  waveTransmissive 
  set {
+  pressure = double 0.0 "Uniform static pressure at selected boundary patch"
   kappa = double 1.4 "Specific heat ratio"
   L = double 1 "Reference length"
  }
 
  removePRGHHydrostaticPressure
- set { }
+ set {
+  pressure = double 0.0 "Uniform static pressure at selected boundary patch"
+ }
  
 }} uniform "Behaviour of the pressure BC"
 
@@ -729,6 +713,7 @@ phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "unifor
 
 protected:
     ParameterSet ps_;
+    boost::filesystem::path casedir_;
 
 public:
     declareType ( "PressureOutletBC" );
@@ -737,7 +722,8 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& ps = Parameters::makeDefault()
+        const ParameterSet& ps = Parameters::makeDefault(),
+        const boost::filesystem::path& casedir = "."
     );
     virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
     

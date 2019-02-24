@@ -288,7 +288,7 @@ inline set* new_clone(const set& op)
  */
 struct ColumnInfo
 {
-  int col, ncmpt;
+  size_t col, ncmpt;
 };
 
 //typedef std::map<std::string, ColumnInfo > ColumnDescription;
@@ -297,7 +297,7 @@ class ColumnDescription
 {
 public:
     inline bool contains(const std::string& name) const { return this->find(name) != this->end(); }
-    inline int colIndex(const std::string& name) const 
+    inline long int colIndex(const std::string& name) const
     { 
         auto it = this->find(name);
         if (it != this->end() ) 

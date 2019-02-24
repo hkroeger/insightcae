@@ -768,8 +768,10 @@ def splineEdgeAlongCurve(curve, p0, p1,
 
 Patch::Patch(std::string typ)
 : typ_(typ)
-{
-}
+{}
+
+Patch::~Patch()
+{}
 
 void Patch::addFace(Point c1, Point c2, Point c3, Point c4)
 {

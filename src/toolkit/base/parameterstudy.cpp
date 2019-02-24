@@ -96,7 +96,7 @@ template<
   class BaseAnalysis,
   const RangeParameterList& var_params
 >
-void ParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
+void ParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(const std::string& , ParameterSetPtr& ) const
 {
   // reserved for derived classes
 }
@@ -242,7 +242,7 @@ template<
 >
 void ParameterStudy<BaseAnalysis,var_params>::processQueue(insight::ProgressDisplayer* displayer)
 {
-  int nt = std::min( parameters().getInt("run/numthread"), queue_.n_instances() );
+  int nt = std::min( parameters().getInt("run/numthread"), int(queue_.n_instances()) );
   
   boost::ptr_vector<AnalysisWorkerThread> threads;
   for (int i=0; i<nt; i++)
@@ -287,7 +287,7 @@ insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::evaluateRuns()
   BOOST_FOREACH( const AnalysisInstance& ai,  processed_analyses)
   {
     const std::string& n = get<0>(ai);
-    const AnalysisPtr& a = get<1>(ai);
+//    const AnalysisPtr& a = get<1>(ai);
     const ResultSetPtr& r = get<2>(ai);
 
     std::string key=n;

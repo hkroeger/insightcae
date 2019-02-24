@@ -308,14 +308,14 @@ void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm)
 
   // clip k smaller threshold
   double thr=1e-10;
-  for (int j=0; j<tke.n_rows; j++)
+  for (arma::uword j=0; j<tke.n_rows; j++)
   {
     if (tke(j)<thr) tke(j)=thr;
     if (epsilon(j)<thr) epsilon(j)=thr;
   }
   
   ExptDataInletBC::Parameters::data_type data;
-  for (int j=0; j<tke.n_rows; j++)
+  for (arma::uword j=0; j<tke.n_rows; j++)
   {
       ExptDataInletBC::Parameters::data_default_type ptd;
       ptd.point=xyz.row(j);
@@ -330,7 +330,14 @@ void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm)
   ));
   
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
-    .set_pressure(0)
+//    .set_pressure(0)
+     .set_behaviour(PressureOutletBC::Parameters::behaviour_uniform_type(
+                    FieldData::Parameters().set_fielddata(
+                       FieldData::Parameters::fielddata_uniformSteady_type(vec1(
+                                                                             0.0
+                                                                             ))
+                      )
+                    ))
   ));
   
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu_) ));

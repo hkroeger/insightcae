@@ -299,13 +299,13 @@ SubsetParameter::SubsetParameter()
 {
 }
 
-SubsetParameter::SubsetParameter(const std::string& description)
-: Parameter(description)
+SubsetParameter::SubsetParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order)
 {
 }
 
-SubsetParameter::SubsetParameter(const ParameterSet& defaultValue, const std::string& description)
-: Parameter(description),
+SubsetParameter::SubsetParameter(const ParameterSet& defaultValue, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order),
   ParameterSet(defaultValue.entries())
 {
 }
@@ -327,7 +327,7 @@ std::string SubsetParameter::plainTextRepresentation(int indent) const
 
 Parameter* SubsetParameter::clone() const
 {
-  return new SubsetParameter(*this, description_.simpleLatex());
+  return new SubsetParameter(*this, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
 }
 
 rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -354,13 +354,14 @@ void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_docume
 defineType(SelectableSubsetParameter);
 addToFactoryTable(Parameter, SelectableSubsetParameter);
 
-SelectableSubsetParameter::SelectableSubsetParameter(const std::string& description)
-: Parameter(description)
+SelectableSubsetParameter::SelectableSubsetParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order)
 {
 }
 
-SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSelection, const SubsetList& defaultValue, const std::string& description)
-: Parameter(description),
+SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSelection, const SubsetList& defaultValue, const std::string& description,
+                                                     bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order),
   selection_(defaultSelection)
 {
   for ( const SelectableSubsetParameter::SingleSubset& i: defaultValue )
@@ -405,7 +406,7 @@ std::string SelectableSubsetParameter::plainTextRepresentation(int indent) const
 
 Parameter* SelectableSubsetParameter::clone () const
 {
-  SelectableSubsetParameter *np=new SelectableSubsetParameter(description_.simpleLatex());
+  SelectableSubsetParameter *np=new SelectableSubsetParameter(description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
   np->selection_=selection_;
   for (ItemList::const_iterator i=value_.begin(); i!=value_.end(); i++)
   {
@@ -486,7 +487,9 @@ void ParameterSet_Visualizer::update(const ParameterSet& ps)
     ps_=ps;
 }
 
-void ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget*, QModelTree*) const
+
+
+void ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget*, QModelTree*)
 {
 }
 

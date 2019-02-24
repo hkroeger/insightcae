@@ -45,13 +45,15 @@ public:
   ~GSLExceptionHandling();
 };
 
+arma::mat vec1(double x);
+arma::mat vec2(double x, double y);
 arma::mat vec3(double x, double y, double z);
+
 arma::mat tensor3(
   double xx, double xy, double xz,
   double yx, double yy, double yz,
   double zx, double zy, double zz
 );
-arma::mat vec2(double x, double y);
 
 template<class T>
 arma::mat Tensor(const T& t)

@@ -119,7 +119,7 @@ OFEs OFEs::list;
 std::vector<std::string> OFEs::all()
 {
     std::vector<std::string> entries;
-    for (const value_type& vr: OFEs::list)
+    for (value_type vr: OFEs::list)
     {
 //         std::cout<<vr.first<<std::endl;
         entries.push_back(vr.first);
@@ -147,7 +147,7 @@ std::string OFEs::detectCurrentOFE()
   {
     return std::string();
   }
-  for (const OFEs::value_type& ofe: list)
+  for (OFEs::value_type ofe: list)
   {
     std::vector<std::string> output;
     OpenFOAMCase(*ofe.second).executeCommand(".", "echo $WM_PROJECT_DIR", std::vector<std::string>(), &output);
@@ -283,6 +283,11 @@ ParameterSet_VisualizerPtr OpenFOAMCaseElement::visualizer()
   return ParameterSet_VisualizerPtr();
 }
 
+bool OpenFOAMCaseElement::isInConflict(const CaseElement&)
+{
+  return false;
+}
+
 defineType(BoundaryCondition);
 defineFactoryTable
 (
@@ -327,7 +332,7 @@ void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
   {
     OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second);
     OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent("boundaryField");
-    OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent(patchName_);
+    /*OFDictData::dict& BC=*/ boundaryField.addSubDictIfNonexistent(patchName_);
   }
 }
 
@@ -432,8 +437,8 @@ turbulenceModel::turbulenceModel(OpenFOAMCase& c, const ParameterSet&)
 SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
 : pdisp_(pdisp),
   curTime_(nan("NAN")),
-  curforcesection_(1),
-  curforcename_("")
+  curforcename_(""),
+  curforcesection_(1)
 {
 }
 
@@ -564,7 +569,6 @@ void SolverOutputAnalyzer::update(const string& line)
             
             if (curTime_ == curTime_)
             {
-            
                 pdisp_.update( ProgressState(curTime_, curProgVars_));
                 curProgVars_.clear();
             }
@@ -775,7 +779,7 @@ bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& loca
   {
     readOpenFOAMDict(location/"system"/"controlDict", controlDict);
   }
-  catch (const insight::Exception& e)
+  catch (const insight::Exception&)
   {
     return false;
   }
@@ -944,7 +948,7 @@ void OpenFOAMCase::createFieldListIfRequired() const
 {
   if ( !fieldListCompleted_ )
     {
-      FieldList& fields = const_cast<FieldList&> ( fields_ );
+//      FieldList& fields = const_cast<FieldList&> ( fields_ );
 
       for ( boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
             i!=elements_.end(); i++ )

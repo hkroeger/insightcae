@@ -172,14 +172,22 @@ Parameter::Parameter()
 {
 }
 
-Parameter::Parameter(const std::string& description)
-: description_(description)
+Parameter::Parameter(const std::string& description, bool isHidden, bool isExpert, bool isNecessary, int order)
+: description_(description),
+  isHidden_(isHidden), isExpert_(isExpert), isNecessary_(isNecessary), order_(order)
 {
 }
 
 Parameter::~Parameter()
 {
 }
+
+
+bool Parameter::isHidden() const { return isHidden_; }
+bool Parameter::isExpert() const {return isExpert_; }
+bool Parameter::isNecessary() const { return isNecessary_; }
+int Parameter::order() const { return order_; }
+
 
 rapidxml::xml_node<>* Parameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const
@@ -290,13 +298,13 @@ rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const st
 defineType(PathParameter);
 addToFactoryTable(Parameter, PathParameter);
 
-PathParameter::PathParameter(const string& description)
-: SimpleParameter<boost::filesystem::path, PathName>(description)
+PathParameter::PathParameter(const string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: SimpleParameter<boost::filesystem::path, PathName>(description, isHidden, isExpert, isNecessary, order)
 {
 }
 
-PathParameter::PathParameter(const path& value, const string& description)
-: SimpleParameter<boost::filesystem::path, PathName>(value, description)
+PathParameter::PathParameter(const path& value, const string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: SimpleParameter<boost::filesystem::path, PathName>(value, description, isHidden, isExpert, isNecessary, order)
 {
 }
 
@@ -315,7 +323,7 @@ void PathParameter::unpack()
 
 Parameter* PathParameter::clone() const
 {
-    return new PathParameter(value_, description_.simpleLatex());
+    return new PathParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
 }
 
 rapidxml::xml_node<>* PathParameter::appendToNode
@@ -396,12 +404,12 @@ void PathParameter::readFromNode
 defineType(DirectoryParameter);
 addToFactoryTable(Parameter, DirectoryParameter);
 
-DirectoryParameter::DirectoryParameter(const std::string& description)
-: PathParameter(".", description)
+DirectoryParameter::DirectoryParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: PathParameter(".", description, isHidden, isExpert, isNecessary, order)
 {}
 
-DirectoryParameter::DirectoryParameter(const boost::filesystem::path& value, const std::string& description)
-: PathParameter(value, description)
+DirectoryParameter::DirectoryParameter(const boost::filesystem::path& value, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: PathParameter(value, description, isHidden, isExpert, isNecessary, order)
 {}
 
 std::string DirectoryParameter::latexRepresentation() const
@@ -422,7 +430,7 @@ std::string DirectoryParameter::latexRepresentation() const
 
 Parameter* DirectoryParameter::clone() const
 {
-  return new DirectoryParameter(value_, description_.simpleLatex());
+  return new DirectoryParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
 }
 
 rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -453,19 +461,19 @@ void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_doc
 defineType(SelectionParameter);
 addToFactoryTable(Parameter, SelectionParameter);
 
-SelectionParameter::SelectionParameter( const std::string& description)
-: SimpleParameter< int , IntName>(-1, description)
+SelectionParameter::SelectionParameter( const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: SimpleParameter< int , IntName>(-1, description, isHidden, isExpert, isNecessary, order)
 {
 }
 
-SelectionParameter::SelectionParameter(const int& value, const SelectionParameter::ItemList& items, const std::string& description)
-: SimpleParameter< int , IntName>(value, description),
+SelectionParameter::SelectionParameter(const int& value, const SelectionParameter::ItemList& items, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: SimpleParameter< int , IntName>(value, description, isHidden, isExpert, isNecessary, order),
   items_(items)
 {
 }
 
-SelectionParameter::SelectionParameter(const std::string& key, const SelectionParameter::ItemList& items, const std::string& description)
-: SimpleParameter< int , IntName>(0, description),
+SelectionParameter::SelectionParameter(const std::string& key, const SelectionParameter::ItemList& items, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: SimpleParameter< int , IntName>(0, description, isHidden, isExpert, isNecessary, order),
   items_(items)
 {
   ItemList::const_iterator i=std::find(items_.begin(), items_.end(), key);
@@ -498,7 +506,7 @@ std::string SelectionParameter::plainTextRepresentation(int indent) const
 
 Parameter* SelectionParameter::clone() const
 {
-  return new SelectionParameter(value_, items_, description_.simpleLatex());
+  return new SelectionParameter(value_, items_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
 }
 
 rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -550,20 +558,20 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
 defineType(DoubleRangeParameter);
 addToFactoryTable(Parameter, DoubleRangeParameter);
 
-DoubleRangeParameter::DoubleRangeParameter(const std::string& description)
-: Parameter(description)
+DoubleRangeParameter::DoubleRangeParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order)
 {
 }
 
-DoubleRangeParameter::DoubleRangeParameter(const RangeList& value, const std::string& description)
-: Parameter(description),
+DoubleRangeParameter::DoubleRangeParameter(const RangeList& value, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order),
   values_(value)
 {
 }
 
 
-DoubleRangeParameter::DoubleRangeParameter(double defaultFrom, double defaultTo, int defaultNum, const std::string& description)
-: Parameter(description)
+DoubleRangeParameter::DoubleRangeParameter(double defaultFrom, double defaultTo, int defaultNum, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order)
 {
   if (defaultNum==1)
     insertValue(defaultFrom);
@@ -608,7 +616,7 @@ DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterat
 
 Parameter* DoubleRangeParameter::clone() const
 {
-  return new DoubleRangeParameter(values_, description_.simpleLatex());
+  return new DoubleRangeParameter(values_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
 }
 
 rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -657,13 +665,13 @@ void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_d
 defineType(ArrayParameter);
 addToFactoryTable(Parameter, ArrayParameter);
 
-ArrayParameter::ArrayParameter(const std::string& description)
-: Parameter(description)
+ArrayParameter::ArrayParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order)
 {
 }
 
-ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const std::string& description)
-: Parameter(description),
+ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order),
   defaultValue_(defaultValue.clone())
 {
   for (int i=0; i<size; i++) appendEmpty();
@@ -682,7 +690,7 @@ std::string ArrayParameter::plainTextRepresentation(int indent) const
 
 Parameter* ArrayParameter::clone () const
 {
-  ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_.simpleLatex());
+  ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
   for (int i=0; i<size(); i++)
   {
     np->appendValue( *(value_[i]) );
@@ -752,17 +760,17 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
 defineType(MatrixParameter);
 addToFactoryTable(Parameter, MatrixParameter);
 
-MatrixParameter::MatrixParameter(const std::string& description)
-: Parameter(description)
+MatrixParameter::MatrixParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: Parameter(description, isHidden, isExpert, isNecessary, order)
 {
 }
 
 MatrixParameter::MatrixParameter
 (
   const arma::mat& defaultValue, 
-  const string& description
+  const string& description,  bool isHidden, bool isExpert, bool isNecessary, int order
 )
-: Parameter(description),
+: Parameter(description, isHidden, isExpert, isNecessary, order),
   value_(defaultValue)
 {}
 

@@ -39,7 +39,7 @@ public:
     BlockMeshTemplate(OpenFOAMCase& c);
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     virtual void create_bmd () =0;
-    
+
     static arma::mat correct_trihedron(arma::mat& ex, arma::mat &ez);
 };
 

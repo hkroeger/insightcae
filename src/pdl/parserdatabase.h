@@ -121,8 +121,12 @@ public:
     typedef std::shared_ptr<ParserDataBase> Ptr;
 
     std::string description;
+    bool isHidden, isExpert, isNecessary;
+    int order;
 
-    ParserDataBase(const std::string& d);
+    inline void setHidden() { isHidden=true; }
+
+    ParserDataBase(const std::string& d, bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0);
 
     virtual ~ParserDataBase();
 

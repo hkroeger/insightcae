@@ -82,12 +82,20 @@ public:
 protected:
     SimpleLatex description_;
 
+    bool isHidden_, isExpert_, isNecessary_;
+    int order_;
+
 public:
     declareType ( "Parameter" );
 
     Parameter();
-    Parameter ( const std::string& description );
+    Parameter ( const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order);
     virtual ~Parameter();
+
+    bool isHidden() const;
+    bool isExpert() const;
+    bool isNecessary() const;
+    int order() const;
 
     inline const SimpleLatex& description() const
     {
@@ -179,12 +187,12 @@ protected:
 public:
     declareType ( N );
 
-    SimpleParameter ( const std::string& description )
-        : Parameter ( description )
+    SimpleParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
+        : Parameter ( description, isHidden, isExpert, isNecessary, order )
     {}
 
-    SimpleParameter ( const T& value, const std::string& description )
-        : Parameter ( description ),
+    SimpleParameter ( const T& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
+        : Parameter ( description, isHidden, isExpert, isNecessary, order ),
           value_ ( value )
     {}
 
@@ -213,7 +221,7 @@ public:
 
     virtual Parameter* clone() const
     {
-        return new SimpleParameter<T, N> ( value_, description_.simpleLatex() );
+        return new SimpleParameter<T, N> ( value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_ );
     }
 
     virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
@@ -274,8 +282,8 @@ class PathParameter
 public:
     declareType ( "path" );
 
-    PathParameter ( const std::string& description );
-    PathParameter ( const boost::filesystem::path& value, const std::string& description );
+    PathParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    PathParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
     bool isPacked() const;
     void pack();
@@ -320,8 +328,8 @@ class DirectoryParameter
 public:
     declareType ( "directory" );
 
-    DirectoryParameter ( const std::string& description );
-    DirectoryParameter ( const boost::filesystem::path& value, const std::string& description );
+    DirectoryParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    DirectoryParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     virtual std::string latexRepresentation() const;
     virtual Parameter* clone() const;
     virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
@@ -345,9 +353,9 @@ protected:
 public:
     declareType ( "selection" );
 
-    SelectionParameter ( const std::string& description );
-    SelectionParameter ( const int& value, const ItemList& items, const std::string& description );
-    SelectionParameter ( const std::string& key, const ItemList& items, const std::string& description );
+    SelectionParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    SelectionParameter ( const int& value, const ItemList& items, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    SelectionParameter ( const std::string& key, const ItemList& items, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     virtual ~SelectionParameter();
 
     inline ItemList& items()
@@ -396,9 +404,9 @@ public:
 
     declareType ( "doubleRange" );
 
-    DoubleRangeParameter ( const std::string& description );
-    DoubleRangeParameter ( const RangeList& value, const std::string& description );
-    DoubleRangeParameter ( double defaultFrom, double defaultTo, int defaultNum, const std::string& description );
+    DoubleRangeParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    DoubleRangeParameter ( const RangeList& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    DoubleRangeParameter ( double defaultFrom, double defaultTo, int defaultNum, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     virtual ~DoubleRangeParameter();
 
     inline void insertValue ( double v )
@@ -452,8 +460,8 @@ protected:
 public:
     declareType ( "array" );
 
-    ArrayParameter ( const std::string& description );
-    ArrayParameter ( const Parameter& defaultValue, int size, const std::string& description );
+    ArrayParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    ArrayParameter ( const Parameter& defaultValue, int size, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
     //inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
     inline void setDefaultValue ( const Parameter& defP )
@@ -515,8 +523,8 @@ protected:
 public:
     declareType ( "matrix" );
 
-    MatrixParameter ( const std::string& description );
-    MatrixParameter ( const arma::mat& defaultValue, const std::string& description );
+    MatrixParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    MatrixParameter ( const arma::mat& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
     arma::mat& operator() ();
     const arma::mat& operator() () const;

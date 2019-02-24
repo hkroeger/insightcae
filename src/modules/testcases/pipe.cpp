@@ -761,8 +761,8 @@ void PipeInflow::createCase
   // create local variables from ParameterSet
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  PSINT(p, "fluid", turbulenceModel);
+//  PSDBL(p, "operation", Re_tau);
+//  PSINT(p, "fluid", turbulenceModel);
   
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
@@ -778,9 +778,12 @@ void PipeInflow::createCase
   cm.insert(new TurbulentVelocityInletBC( cm, cycl_in_, boundaryDict, p.getSubset("inflow") ));
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
-    .set_pressure(0.0)
-    .set_behaviour(PressureOutletBC::Parameters::behaviour_fixMeanValue_type())
-  ));
+//    .set_pressure(0.0)
+//    .set_behaviour(PressureOutletBC::Parameters::behaviour_fixMeanValue_type())
+     .set_behaviour(PressureOutletBC::Parameters::behaviour_fixMeanValue_type(
+                    0.0
+                    ))
+     ));
   
   PipeBase::createCase(cm);
   

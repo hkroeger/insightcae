@@ -35,6 +35,7 @@ timestep_control = selectablesubset {{
 pressure_velocity_coupling = selectablesubset {{
 
  PISO set {
+  correctors = int 2 "Number of correctors (2=2nd order, 3=third order, ...)"
  }
 
  SIMPLE set {

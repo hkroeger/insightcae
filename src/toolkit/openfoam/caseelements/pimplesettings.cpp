@@ -43,7 +43,7 @@ void PIMPLESettings::addIntoDictionaries ( OFdicts& dictionaries ) const
 
   if (const auto* piso = boost::get<Parameters::pressure_velocity_coupling_PISO_type>(&p_.pressure_velocity_coupling))
   {
-    PIMPLE["nCorrectors"]=2;
+    PIMPLE["nCorrectors"]=piso->correctors;
     PIMPLE["nOuterCorrectors"]=1;
   }
   else if (const auto* simple = boost::get<Parameters::pressure_velocity_coupling_SIMPLE_type>(&p_.pressure_velocity_coupling))

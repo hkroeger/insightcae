@@ -35,6 +35,22 @@ SRFoption::SRFoption(const word & 	name,
 
 void SRFoption::addSup
 (
+    fvMatrix<vector>& eqn,
+    const label
+)
+{
+  if (!srf_.valid())
+  {
+    Info<<"creating SRF model"<<endl;
+    srf_ = SRF::SRFModel::New(eqn.psi());
+  }
+
+  Info<<"apply source"<<endl;
+  eqn -= srf_->Su();
+}
+
+void SRFoption::addSup
+(
     const volScalarField& rho,
     fvMatrix<vector>& eqn,
     const label
@@ -47,7 +63,7 @@ void SRFoption::addSup
   }
 
   Info<<"apply source"<<endl;
-  eqn += rho*srf_->Su();
+  eqn -= rho*srf_->Su();
 }
 
 }

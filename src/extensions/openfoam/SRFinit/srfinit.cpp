@@ -33,10 +33,17 @@ using namespace Foam;
 int main(int argc, char *argv[])
 {
     argList::validArgs.append("inletPatches");
+    argList::validOptions.insert("Uname", "U");
 
 #   include "setRootCase.H"
 #   include "createTime.H"
 #   include "createMesh.H"
+
+    word Uname("U");
+    if (args.options().found("Uname"))
+    {
+      Uname=UNIOF_OPTION(args, "Uname");
+    }
 
 //     scalar D=readScalar(IStringStream(args.additionalArgs()[0])());
     labelHashSet inletPatches(
@@ -44,12 +51,12 @@ int main(int argc, char *argv[])
             wordReList(IStringStream( UNIOF_ADDARG(args, 0) )())
            ));
 
-    Info << "Reading field U\n" << endl;
+    Info << "Reading field "<<Uname<<"\n" << endl;
     volVectorField U
     (
         IOobject
         (
-            "U",
+            Uname,
             runTime.timeName(),
             mesh,
             IOobject::MUST_READ,
@@ -61,7 +68,7 @@ int main(int argc, char *argv[])
     auto srf = SRF::SRFModel::New(U);
 
     // set internal field
-    UNIOF_INTERNALFIELD_NONCONST( U ) = srf->velocity(mesh.C());
+    UNIOF_INTERNALFIELD_NONCONST( U ) = -srf->velocity(mesh.C());
 
     forAllConstIter(labelHashSet, inletPatches, i)
     {
@@ -69,7 +76,7 @@ int main(int argc, char *argv[])
         //if (U.boundaryField()[patchI].fixesValue())
         {
           Info << "set values on "<<mesh.boundaryMesh()[patchI].name()<<endl;
-          UNIOF_BOUNDARY_NONCONST(U)[patchI] == srf->velocity(mesh.boundary()[patchI].Cf());
+          UNIOF_BOUNDARY_NONCONST(U)[patchI] == -srf->velocity(mesh.boundary()[patchI].Cf());
         }
     }
 

@@ -1175,6 +1175,30 @@ void customDictEntries::addIntoDictionaries(OFdicts& dictionaries) const
       OFDictData::dict& parent = getOrCreateSubDict(dict, path);
       parent[key]=e.value;
     }
+
+  for (const auto& e: p_.appendList)
+    {
+      OFDictData::dict& dict
+        = dictionaries.addDictionaryIfNonexistent(e.dict);
+
+      string path, key;
+      auto i = e.path.rfind('/');
+      if (i==string::npos)
+        {
+          path="";
+          key=e.path;
+        }
+      else
+        {
+          path = e.path.substr(0, i);
+          key = e.path.substr(i+1);
+        }
+
+      OFDictData::dict& parent = getOrCreateSubDict(dict, path);
+      parent.getList(key).push_back(e.value);
+    }
+
+
 }
 
 

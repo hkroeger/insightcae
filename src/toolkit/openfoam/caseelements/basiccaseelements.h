@@ -945,8 +945,14 @@ PARAMETERSET>>> customDictEntries Parameters
 entries = array [ set {
  dict = string "system/controlDict" "Path to dictionary"
  path = string "endTime" "Key or path to key. Use slashes to access subdicts. Non-existing subdicts will be created."
- value = string "1000" "Value to set"
+ value = string "1000" "Value to set (verbatim string copy will be copied)"
 } ] *0 "Array of entries to set"
+
+appendList = array [ set {
+ dict = string "system/controlDict" "Path to dictionary"
+ path = string "libs" "Key or path to list. Use slashes to access subdicts. Non-existing subdicts will be created."
+ value = string "libSRFoption.so" "Value to append (verbatim string copy will be copied)"
+} ] *0 "Array of entries to append to lists"
 
 <<<PARAMETERSET
 */

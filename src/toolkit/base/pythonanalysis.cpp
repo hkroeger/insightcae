@@ -168,16 +168,16 @@ ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer* )
         );
         
         object o =  extract<object>(main_namespace["result"]);
-        ResultSet *res;
-        descr=0;
+        ResultSetPtr *res;
+        descr=nullptr;
         if (!descr) {
-            descr = SWIG_TypeQuery("insight::ResultSet *");    /* Get the type descriptor structure for Foo */
+            descr = SWIG_TypeQuery("insight::ResultSetPtr *");    /* Get the type descriptor structure for Foo */
             assert(descr);
         }
         if ((SWIG_ConvertPtr(o.ptr(), (void **) &res, descr, 0) == -1)) {
             throw insight::Exception("Could not convert return value!");
         }
-        return ResultSetPtr(new ResultSet(*res));
+        return ResultSetPtr(*res);
     }
     catch (const error_already_set &)
     {

@@ -34,7 +34,7 @@ void blockMeshDict_Box_ParameterSet_Visualizer::update(const ParameterSet& ps)
     ParameterSet_Visualizer::update(ps);
 }
 
-void blockMeshDict_Box_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt) const
+void blockMeshDict_Box_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt)
 {
 
     Parameters p(ps_);
@@ -72,7 +72,7 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::update(const ParameterSet& 
     ParameterSet_Visualizer::update(ps);
 }
 
-void blockMeshDict_Cylinder_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt) const
+void blockMeshDict_Cylinder_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt)
 {
 
     Parameters p(ps_);
@@ -125,7 +125,7 @@ void blockMeshDict_Sphere_ParameterSet_Visualizer::update(const ParameterSet& ps
     ParameterSet_Visualizer::update(ps);
 }
 
-void blockMeshDict_Sphere_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt) const
+void blockMeshDict_Sphere_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt)
 {
 
     Parameters p(ps_);

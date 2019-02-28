@@ -25,7 +25,7 @@ protected:
 
 public:
     virtual void update(const ParameterSet& ps);
-    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*) const;
+    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
 };
 
 
@@ -43,7 +43,7 @@ protected:
 
 public:
     virtual void update(const ParameterSet& ps);
-    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*) const;
+    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
 };
 
 
@@ -61,7 +61,7 @@ protected:
 
 public:
     virtual void update(const ParameterSet& ps);
-    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*) const;
+    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
 };
 
 

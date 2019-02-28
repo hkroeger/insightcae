@@ -31,7 +31,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::update(const ParameterS
     ParameterSet_Visualizer::update(ps);
 }
 
-void snappyHexMeshConfiguration_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt) const
+void snappyHexMeshConfiguration_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt)
 {
 
     Parameters p(ps_);

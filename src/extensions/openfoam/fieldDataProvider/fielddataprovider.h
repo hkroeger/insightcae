@@ -108,7 +108,8 @@ public:
   
   uniformField(Istream& is);
   uniformField(const uniformField<T>& o);
-  
+  uniformField(const T& uv);
+
   virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
   virtual autoPtr<FieldDataProvider<T> > clone() const;
 };

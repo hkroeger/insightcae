@@ -268,6 +268,16 @@ uniformField<T>::uniformField(const uniformField<T>& o)
 {
 }
 
+template<class T>
+uniformField<T>::uniformField(const T& uv)
+    : FieldDataProvider<T> ()
+{
+    FieldDataProvider<T>::timeInstants_.resize(1);
+    FieldDataProvider<T>::timeInstants_[0]=0;
+
+    values_.clear();
+    values_.push_back(new T(uv));
+}
 
 template<class T>
 autoPtr<FieldDataProvider<T> > uniformField<T>::clone() const

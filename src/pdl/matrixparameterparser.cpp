@@ -6,6 +6,30 @@ MatrixParameterParser::Data::Data(arma::uword r, arma::uword c, const std::strin
 : ParserDataBase(d), value(arma::zeros(r,c))
 {}
 
+MatrixParameterParser::Data::Data(const std::vector<std::vector<double> >& mat, const std::string& d)
+: ParserDataBase(d)
+{
+  size_t r=mat.size();
+  if (r<1)
+    throw PDLException("Empty matrix is not allowed!");
+  size_t c=mat[0].size();
+  if (c<1)
+    throw PDLException("Matrix with zero columns is not allowed!");
+
+  for (size_t i=0; i<r; i++)
+  {
+    if (mat[i].size()!=c)
+      throw PDLException("Invalid row in matrix definition!");
+
+    for (size_t j=0; j<c; j++)
+    {
+      value(i,j)=mat[i][j];
+    }
+  }
+
+  value=arma::zeros(r,c);
+}
+
 void MatrixParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
 {
   headers.insert("<armadillo>");

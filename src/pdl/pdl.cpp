@@ -87,7 +87,7 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
   r_path = lexeme[ alpha >> *(alnum | char_('_') | char_('/') ) >> !(alnum | '_' | '/' ) ];
   r_up_to_semicolon = qi::as_string[ qi::lexeme [ *~(qi::char_(";")) >> ";" ] ];
 
-  r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] >> qi::lazy(*qi::_a);
+  r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a);
   
   //   parameterDataRules.add
   //   (
@@ -98,7 +98,7 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
   //     ))
   //   );
 
-  r_parametersetentry = r_identifier >> '=' >> r_parameterdata;
+  r_parametersetentry = r_identifier >> '=' > r_parameterdata;
   r_parameterset = *( r_parametersetentry );
   
   //   BOOST_SPIRIT_DEBUG_NODE(r_identifier);
@@ -128,7 +128,7 @@ struct PDLParser
   PDLParserRuleset<Iterator,Skipper> rules;
 
   PDLParser()
-    : PDLParser::base_type(rules.r_parameterset)
+  : PDLParser::base_type(rules.r_parameterset)
   {
     BoolParameterParser::insertrule<Iterator, Skipper>(rules);
     DoubleParameterParser::insertrule<Iterator, Skipper>(rules);
@@ -359,6 +359,11 @@ int main ( int argc, char *argv[] )
                                                         "Error Message:\n"
                 << e.msg() << std::endl;
       return -1;
+    }
+    catch (...)
+    {
+      std::cerr << "Error in processing PDL " << inf << "\n" << std::endl;
+      return -2;
     }
   }
   return 0;

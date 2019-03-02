@@ -148,7 +148,37 @@ void extendedFixedValueFvPatchField<Type>::updateCoeffs()
     fixedValueFvPatchField<Type>::updateCoeffs();
 }
 
+template<class Type>
+void extendedFixedValueFvPatchField<Type>::operator==
+(
+    const fvPatchField<Type>& ptf
+)
+{
+    vp_.reset(new nonuniformField<Type>(ptf));
+    Field<Type>::operator=(ptf);
+}
 
+
+template<class Type>
+void extendedFixedValueFvPatchField<Type>::operator==
+(
+    const Field<Type>& tf
+)
+{
+    vp_.reset(new nonuniformField<Type>(tf));
+    Field<Type>::operator=(tf);
+}
+
+
+template<class Type>
+void extendedFixedValueFvPatchField<Type>::operator==
+(
+    const Type& t
+)
+{
+    vp_.reset(new uniformField<Type>(t));
+    Field<Type>::operator=(t);
+}
 
 template<class Type>
 void extendedFixedValueFvPatchField<Type>::write(Ostream& os) const

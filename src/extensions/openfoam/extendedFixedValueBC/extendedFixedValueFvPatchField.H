@@ -136,6 +136,10 @@ public:
             //- Update the coefficients associated with the patch field
             virtual void updateCoeffs();
 
+        virtual void operator==(const fvPatchField<Type>&);
+        virtual void operator==(const Field<Type>&);
+        virtual void operator==(const Type&);
+
         //- Write
         virtual void write(Ostream&) const;
 };

@@ -16,6 +16,8 @@ MatrixParameterParser::Data::Data(const std::vector<std::vector<double> >& mat, 
   if (c<1)
     throw PDLException("Matrix with zero columns is not allowed!");
 
+  value=arma::zeros(r,c);
+
   for (size_t i=0; i<r; i++)
   {
     if (mat[i].size()!=c)
@@ -26,8 +28,6 @@ MatrixParameterParser::Data::Data(const std::vector<std::vector<double> >& mat, 
       value(i,j)=mat[i][j];
     }
   }
-
-  value=arma::zeros(r,c);
 }
 
 void MatrixParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const

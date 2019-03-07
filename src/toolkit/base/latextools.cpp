@@ -121,7 +121,7 @@ struct Replacements
   {
     specialchars_="$\\";
   }
-  virtual ~Replacements() {};
+  virtual ~Replacements();
   virtual void appendText(const std::string& text)
   {
     reformatted_ += text;
@@ -133,25 +133,15 @@ struct Replacements
   
 };
 
+Replacements::~Replacements()
+{}
+
+
 struct LaTeXReplacements
 : Replacements
 {
-  LaTeXReplacements()
-  {
-    specialchars_+="\n_#[]^%&~<>";
-    simple_replacements_.add("\n", "\\\\\n");
-    simple_replacements_.add("_", "\\_");
-    simple_replacements_.add("#", "\\#");
-    simple_replacements_.add("&", "\\&");
-    simple_replacements_.add("\\%", "\\%");
-    simple_replacements_.add("%", "\\%");
-    simple_replacements_.add("[", "{[}");
-    simple_replacements_.add("]", "{]}");
-    simple_replacements_.add("~", "\\textasciitilde ");
-    simple_replacements_.add("^", "\\textasciicircum ");
-    simple_replacements_.add("<", "\\textless ");
-    simple_replacements_.add(">", "\\textgreater ");
-  }
+
+  LaTeXReplacements();
 
   virtual void appendImage(double width, const std::string& imagename)
   {
@@ -171,19 +161,27 @@ struct LaTeXReplacements
 
 };
 
+LaTeXReplacements::LaTeXReplacements()
+{
+  specialchars_+="\n_#[]^%&~<>";
+  simple_replacements_.add("\n", "\\\\\n");
+  simple_replacements_.add("_", "\\_");
+  simple_replacements_.add("#", "\\#");
+  simple_replacements_.add("&", "\\&");
+  simple_replacements_.add("\\%", "\\%");
+  simple_replacements_.add("%", "\\%");
+  simple_replacements_.add("[", "{[}");
+  simple_replacements_.add("]", "{]}");
+  simple_replacements_.add("~", "\\textasciitilde ");
+  simple_replacements_.add("^", "\\textasciicircum ");
+  simple_replacements_.add("<", "\\textless ");
+  simple_replacements_.add(">", "\\textgreater ");
+}
+
 struct HTMLReplacements
 : Replacements
 {
-  HTMLReplacements()
-  {
-    specialchars_+="\n&<>^~";
-    simple_replacements_.add("\n", "<br>\n");
-    simple_replacements_.add("&", "&amp;");
-    simple_replacements_.add("<", "&lt;");
-    simple_replacements_.add(">", "&gt;");
-    simple_replacements_.add("~", "&circ;");
-    simple_replacements_.add("^", "&tilde;");
-  }
+  HTMLReplacements();
   
   virtual void appendImage(double width, const std::string& imagename)
   {
@@ -204,6 +202,17 @@ struct HTMLReplacements
 
 };
 
+HTMLReplacements::HTMLReplacements()
+{
+  specialchars_+="\n&<>^~";
+  simple_replacements_.add("\n", "<br>\n");
+  simple_replacements_.add("&", "&amp;");
+  simple_replacements_.add("<", "&lt;");
+  simple_replacements_.add(">", "&gt;");
+  simple_replacements_.add("~", "&circ;");
+  simple_replacements_.add("^", "&tilde;");
+}
+
 struct StringParser
   : qi::grammar<std::string::iterator >
 {
@@ -212,7 +221,7 @@ struct StringParser
   qi::rule< std::string::iterator, std::string() > inlineformula, displayformula, image; 
     
 
-    StringParser(const Replacements& rep)
+    StringParser(Replacements& rep)
     : qi::grammar<std::string::iterator>::base_type(start)
     {
       inlineformula =  qi::as_string[ '$' >> +(~qi::char_("$")) - qi::char_('$')  >> '$' ];
@@ -261,7 +270,7 @@ struct StringParser
 
 
 
-std::string reformat(const std::string& simplelatex, const Replacements& rep)
+std::string reformat(const std::string& simplelatex, Replacements& rep)
 {
   std::string original(simplelatex);
   

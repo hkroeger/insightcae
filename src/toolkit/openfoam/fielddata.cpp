@@ -62,10 +62,8 @@ FieldData::Parameters FieldData::uniformSteady(double uniformSteadyX, double uni
 
 FieldData::Parameters FieldData::uniformSteady(const arma::mat& uniformSteadyValue)
 {
-  Parameters::fielddata_uniform_type data;
-  data.values.resize(1);
-  data.values[0].time=0;
-  data.values[0].value=uniformSteadyValue;
+  Parameters::fielddata_uniformSteady_type data;
+  data.value=uniformSteadyValue;
   Parameters p;
   p.fielddata=data;
   return p;
@@ -193,8 +191,16 @@ OFDictData::data FieldData::sourceEntry() const
 
 void FieldData::setDirichletBC(OFDictData::dict& BC) const
 {
-  BC["type"]=OFDictData::data("extendedFixedValue");
-  BC["source"]=sourceEntry();
+  if (const Parameters::fielddata_uniformSteady_type *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) )
+  {
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform " + OFDictData::to_OF(fd->value);
+  }
+  else
+  {
+    BC["type"]=OFDictData::data("extendedFixedValue");
+    BC["source"]=sourceEntry();
+  }
 }
 
 

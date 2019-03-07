@@ -89,6 +89,21 @@ public:
   virtual void writeSup(Ostream& os) const;
   
   void writeEntry(const word& key, Ostream& os) const;
+
+  //- Map (and resize as needed) from self given a mapping object
+  virtual void autoMap
+  (
+      const fvPatchFieldMapper&
+  );
+
+
+  //- Reverse map the given fvPatchField onto this fvPatchField
+  virtual void rmap
+  (
+      const FieldDataProvider<T>&,
+      const labelList&
+  );
+
 };
 
 
@@ -136,6 +151,20 @@ public:
   
   virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
   virtual autoPtr<FieldDataProvider<T> > clone() const;
+
+  //- Map (and resize as needed) from self given a mapping object
+  void autoMap
+  (
+      const fvPatchFieldMapper&
+  );
+
+
+  //- Reverse map the given fvPatchField onto this fvPatchField
+  void rmap
+  (
+      const FieldDataProvider<T>&,
+      const labelList&
+  );
 };
 
 

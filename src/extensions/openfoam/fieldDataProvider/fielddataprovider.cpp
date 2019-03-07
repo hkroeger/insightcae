@@ -230,7 +230,24 @@ void FieldDataProvider<T>::writeEntry(const word& key, Ostream& os) const
   os<<token::END_STATEMENT<<nl;
 }
 
+template<class T>
+void FieldDataProvider<T>::autoMap
+(
+    const fvPatchFieldMapper&
+)
+{
+}
 
+
+//- Reverse map the given fvPatchField onto this fvPatchField
+template<class T>
+void FieldDataProvider<T>::rmap
+(
+    const FieldDataProvider<T>&,
+    const labelList&
+)
+{
+}
 
 
 template<class T>  
@@ -344,6 +361,41 @@ autoPtr<FieldDataProvider<T> > nonuniformField<T>::clone() const
   return autoPtr<FieldDataProvider<T> >(new nonuniformField<T>(*this));
 }
 
+template<class T>
+void nonuniformField<T>::autoMap
+(
+    const fvPatchFieldMapper& m
+)
+{
+    for (size_t i=0; i<values_.size(); i++)
+    {
+        values_[i].autoMap(m);
+    }
+}
+
+
+//- Reverse map the given fvPatchField onto this fvPatchField
+template<class T>
+void nonuniformField<T>::rmap
+(
+    const FieldDataProvider<T>& o,
+    const labelList& m
+)
+{
+    const nonuniformField<T>* oo = dynamic_cast<const nonuniformField<T>* >(&o);
+    if (oo->values_.size() != values_.size())
+        FatalErrorIn("nonuniformField<T>::rmap")
+                << "Incompatible number of time instants!"
+                   <<" other: "<<oo->values_.size()
+                   <<" current: "<<values_.size()
+                  <<endl
+                <<abort(FatalError);
+
+    for (size_t i=0; i<values_.size(); i++)
+    {
+        values_[i].rmap( oo->values_[i], m );
+    }
+}
 
 
 template<class T>  

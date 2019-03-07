@@ -50,7 +50,9 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 :
     fixedValueFvPatchField<Type>(ptf, p, iF, mapper),
     vp_(ptf.vp_().clone())
-{}
+{
+    vp_->autoMap(mapper);
+}
 
 
 template<class Type>
@@ -119,6 +121,7 @@ void extendedFixedValueFvPatchField<Type>::autoMap
 )
 {
     fixedValueFvPatchField<Type>::autoMap(m);
+    vp_->autoMap(m);
 }
 
 template<class Type>
@@ -129,10 +132,11 @@ void extendedFixedValueFvPatchField<Type>::rmap
 )
 {
     fixedValueFvPatchField<Type>::rmap(ptf, addr);
-/*
+
     const extendedFixedValueFvPatchField<Type>& tiptf =
         refCast<const extendedFixedValueFvPatchField<Type> >(ptf);
-*/
+
+    vp_->rmap(tiptf.vp_(), addr);
 }
 
 

@@ -1011,6 +1011,42 @@ public:
 };
 
 
+
+
+class SRFoption
+: public OpenFOAMCaseElement
+{
+
+public:
+#include "basiccaseelements__SRFoption__Parameters.h"
+
+/*
+PARAMETERSET>>> SRFoption Parameters
+
+origin = vector (0 0 0) "Center of the rotating motion"
+axis = vector (0 0 1) "Axis of rotation"
+rpm = double 1000.0 "Number of revolutions per minute"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType("SRFoption");
+  SRFoption(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+
+  static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+
+  static std::string category() { return "Body Force"; }
+};
+
+
 }
 
 

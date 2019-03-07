@@ -387,8 +387,8 @@ void nonuniformField<T>::rmap
     if (oo->values_.size() != values_.size())
         FatalErrorIn("nonuniformField<T>::rmap")
                 << "Incompatible number of time instants!"
-                   <<" other: "<<oo->values_.size()
-                   <<" current: "<<values_.size()
+                   <<" other: "<<label(oo->values_.size())
+                   <<" current: "<<label(values_.size())
                   <<endl
                 <<abort(FatalError);
 

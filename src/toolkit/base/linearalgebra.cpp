@@ -711,11 +711,34 @@ arma::mat sortedByCol(const arma::mat&m, int c)
   return xy;
 }
 
+arma::mat filterDuplicates(const arma::mat&m)
+{
+
+  arma::mat xy = arma::zeros(m.n_rows, m.n_cols);
+
+  xy.row(0)=m.row(0);
+
+  arma::uword j=1;
+  for (arma::uword r=1; r<m.n_rows; r++)
+  {
+    if (arma::norm(m.row(r)-m.row(j-1),2) > 1e-8)
+    {
+      xy.row(j++)=m.row(r);
+    }
+  }
+  xy.resize(j, m.n_cols);
+
+  std::cout<<xy.row(0)<<std::endl<<xy.row(xy.n_rows-1)<<std::endl;
+
+  return xy;
+}
+
+
 void Interpolator::initialize(const arma::mat& xy_us, bool force_linear)
 {
     try
     {
-        arma::mat xy = sortedByCol(xy_us, 0);
+        arma::mat xy = filterDuplicates(sortedByCol(xy_us, 0));
         xy_=xy;
 
         if (xy.n_cols<2)

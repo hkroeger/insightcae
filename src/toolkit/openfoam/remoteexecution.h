@@ -41,10 +41,12 @@ public:
     const boost::filesystem::path& localDir() const;
     const boost::filesystem::path& remoteDir() const;
 
+    const boost::filesystem::path& metaFile() const;
+
     std::vector<bfs_path> remoteLS() const;
 
-    void syncToRemote();
-    void syncToLocal(bool skipTimeSteps=false);
+    void syncToRemote(const std::vector<std::string>& exclude_pattern = {} );
+    void syncToLocal(bool skipTimeSteps=false, const std::vector<std::string>& exclude_pattern = {});
 
     void queueRemoteCommand(const std::string& command, bool waitForPreviousFinished=true);
     void waitRemoteQueueFinished();

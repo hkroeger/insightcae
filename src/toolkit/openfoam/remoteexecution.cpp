@@ -145,6 +145,11 @@ const boost::filesystem::path& RemoteExecutionConfig::remoteDir() const
   return remoteDir_;
 }
 
+const boost::filesystem::path& RemoteExecutionConfig::metaFile() const
+{
+  return meta_file_;
+}
+
 
 std::vector<bfs_path> RemoteExecutionConfig::remoteLS() const
 {
@@ -180,20 +185,30 @@ std::vector<bfs_path> RemoteExecutionConfig::remoteLS() const
 }
 
 
-void RemoteExecutionConfig::syncToRemote()
+void RemoteExecutionConfig::syncToRemote(const std::vector<std::string>& exclude_pattern)
 {
     std::ostringstream cmd;
 
-    cmd << "rsync -avz --delete --exclude 'processor*' --exclude '*.foam' --exclude 'postProcessing' --exclude '*.socket' . \""<<server_<<":"<<remoteDir_.string()<<"\"";
+    std::string excludes;
+    excludes+="--exclude 'processor*' --exclude '*.foam' --exclude 'postProcessing' --exclude '*.socket'";
+
+    for (const auto& ex: exclude_pattern)
+    {
+      excludes+=" --exclude '"+ex+"'";
+    }
+
+    cmd << "rsync -avz --delete "+excludes+" . \""<<server_<<":"<<remoteDir_.string()<<"\"";
 
     std::system(cmd.str().c_str());
 }
 
-void RemoteExecutionConfig::syncToLocal(bool skipTimeSteps)
+void RemoteExecutionConfig::syncToLocal(bool skipTimeSteps, const std::vector<std::string>& exclude_pattern)
 {
     std::ostringstream cmd;
 
-    cmd << "rsync -avz";
+    cmd << "rsync -avz ";
+
+    std::string excludes = "--exclude 'processor*' --exclude '*.foam' --exclude '*.socket'";
 
     if (skipTimeSteps)
       {
@@ -213,7 +228,12 @@ void RemoteExecutionConfig::syncToLocal(bool skipTimeSteps)
           }
       }
 
-    cmd<<" --exclude 'processor*' --exclude '*.foam' --exclude '*.socket' \""<<server_<<":"<<remoteDir_.string()<<"/*\" .";
+    for (const auto& ex: exclude_pattern)
+    {
+      excludes+=" --exclude '"+ex+"'";
+    }
+
+    cmd<<excludes<<" \""<<server_<<":"<<remoteDir_.string()<<"/*\" .";
 
     std::system(cmd.str().c_str());
 }

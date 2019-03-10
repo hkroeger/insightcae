@@ -44,6 +44,8 @@ namespace bf = boost::filesystem;
 
 int main(int argc, char *argv[])
 {
+    bool anything_done=false;
+
     insight::UnhandledExceptionHandling ueh;
     insight::GSLExceptionHandling gsl_errtreatment;
 
@@ -51,7 +53,7 @@ int main(int argc, char *argv[])
 
     typedef std::vector<string> StringList;
 
-    StringList cmds, icmds;
+    StringList cmds, icmds, skip_dirs;
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
@@ -61,11 +63,12 @@ int main(int argc, char *argv[])
     //("ofe,o", po::value<std::string>(), "use specified OpenFOAM environment instead of detected")
      ("meta-file,m", po::value<std::string>(), "use the specified remote execution config file instead of \"meta.foam\"")
      ("case-dir,d", po::value<std::string>(), "case location")
-     ("create-remote-temp", po::value<std::string>(), "create a unique remote directory name on the specified server and store in meta file. This will be skipped, if config exists already, except if -f is given.")
+     ("create-remote-temp,T", po::value<std::string>(), "create a unique remote directory name on the specified server and store in meta file. This will be skipped, if config exists already, except if -f is given.")
      ("force-create-remote-temp,f", "force creation, if config exists already.")
      ("sync-remote,r", "sync current case to remote location")
      ("sync-local,l", "sync from remote location to current case")
      ("skip-timesteps,t", "exclude time steps while syncing to local directory\nBeware: during a subsequent sync-to-remote, the skipped time steps will be deleted!")
+     ("skip-dir,s", po::value<StringList>(&skip_dirs), "exclude local directory during sync to remote")
      ("include-processor-dirs,p", "if this flag is set, processor directories will be tranferred as well")
      ("command,q", po::value<StringList>(&cmds), "add this command to remote execution queue (will be executed after the previous command has finished successfully)")
      ("immediate-command,i", po::value<StringList>(&icmds), "add this command to remote execution queue (execute in parallel without waiting for the previous command)")
@@ -147,12 +150,13 @@ int main(int argc, char *argv[])
 
             std::ofstream cfg(meta.c_str());
             cfg << i->second.serverName_ << ":" << remote_dir.string();
+
+            anything_done=true;
           }
       }
 
     try
     {
-      bool anything_done=false;
 
         {
             insight::RemoteExecutionConfig re(location, false, mf);
@@ -178,7 +182,7 @@ int main(int argc, char *argv[])
 
                 if (vm.count("sync-remote"))
                   {
-                    re.syncToRemote();
+                    re.syncToRemote(skip_dirs);
                     anything_done=true;
                   }
 
@@ -214,14 +218,16 @@ int main(int argc, char *argv[])
 
                 if(vm.count("sync-local"))
                   {
-                    re.syncToLocal( (vm.count("skip-timesteps")>0) );
+                    re.syncToLocal( (vm.count("skip-timesteps")>0), skip_dirs );
                     anything_done=true;
                   }
 
                 if(vm.count("clean"))
                   {
                     re.removeRemoteDir();
-                    anything_done=true;
+                    boost::filesystem::remove(re.metaFile());
+                    return 0; // configuration is invalidated, exit here
+//                    anything_done=true;
                   }
               }
         }

@@ -122,8 +122,8 @@ FeatureSet::FeatureSet
   const FeatureSetParserArgList& refs
 )
 : model_(q->model()),
-  shape_(q->shape()),
   base_set_(q),
+  shape_(q->shape()),
   filterexpr_(filterexpr),
   refs_(refs)
 {}

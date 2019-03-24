@@ -465,7 +465,7 @@ size_t Feature::calcShapeHash() const
 size_t Feature::calcHash() const
 {
   ParameterListHash h;
-  h+=*creashapes_;
+  if (creashapes_) h+=*creashapes_;
   return h.getHash();
 }
 

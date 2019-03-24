@@ -363,10 +363,16 @@ public:
     return selection_;
   }
   
-  inline const ItemList& items()
+  inline const ItemList& items() const
   {
     return value_;
   }
+
+  inline ItemList& items()
+  {
+    return value_;
+  }
+
   void addItem ( key_type key, const ParameterSet& ps );
   
   inline ParameterSet& operator() ()

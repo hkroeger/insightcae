@@ -63,6 +63,17 @@ RemoteServerList::RemoteServerList()
 }
 
 
+const RemoteServerList::value_type RemoteServerList::findServer(const std::string& server) const
+{
+  auto i = find(server);
+  if (i==end())
+    {
+      throw insight::Exception("Remote server \""+server+"\" not found in configuration!");
+    }
+  return *i;
+}
+
+
 RemoteServerList remoteServers;
 
 
@@ -190,7 +201,7 @@ void RemoteExecutionConfig::syncToRemote(const std::vector<std::string>& exclude
     std::ostringstream cmd;
 
     std::string excludes;
-    excludes+="--exclude 'processor*' --exclude '*.foam' --exclude 'postProcessing' --exclude '*.socket'";
+    excludes+="--exclude 'processor*' --exclude '*.foam' --exclude 'postProcessing' --exclude '*.socket' --exclude 'backup' --exclude 'archive' --exclude 'mnt_remote'";
 
     for (const auto& ex: exclude_pattern)
     {
@@ -208,7 +219,7 @@ void RemoteExecutionConfig::syncToLocal(bool skipTimeSteps, const std::vector<st
 
     cmd << "rsync -avz ";
 
-    std::string excludes = "--exclude 'processor*' --exclude '*.foam' --exclude '*.socket'";
+    std::string excludes = "--exclude 'processor*' --exclude '*.foam' --exclude '*.socket' --exclude 'backup' --exclude 'archive' --exclude 'mnt_remote'";
 
     if (skipTimeSteps)
       {

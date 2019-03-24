@@ -19,6 +19,10 @@ class RemoteServerList
 {
 public:
   RemoteServerList();
+
+#ifndef SWIG
+  const RemoteServerList::value_type findServer(const std::string& server) const;
+#endif
 };
 
 

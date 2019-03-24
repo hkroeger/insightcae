@@ -77,6 +77,8 @@ int main(int argc, char *argv[])
      ("cancel,c", "cancel remote commands (remove all from queue)")
      ("clean,x", "remove the remote case directory from server")
      ("list-remote,D", "list remote directory contents")
+     ("mount-remote,M", "mount the remote directory locally using sshfs (needs to be installed)")
+     ("unmount-remote,U", "unmount the remote directory")
     ;
 
     po::positional_options_description p;
@@ -121,11 +123,13 @@ int main(int argc, char *argv[])
 
             string server=vm["create-remote-temp"].as<std::string>();
 
-            auto i = insight::remoteServers.find(server);
-            if (i==insight::remoteServers.end())
-              {
-                throw insight::Exception("Remote server \""+server+"\" not found in configuration!");
-              }
+//            auto i = insight::remoteServers.find(server);
+//            if (i==insight::remoteServers.end())
+//              {
+//                throw insight::Exception("Remote server \""+server+"\" not found in configuration!");
+//              }
+
+            auto i = insight::remoteServers.findServer(server);
 
             bf::path absloc=bf::canonical(bf::absolute(location));
             string casedirname = absloc.filename().string();
@@ -135,12 +139,12 @@ int main(int argc, char *argv[])
 
             bf::path remote_dir;
             {
-             MountRemote m(mountpoint, i->second.serverName_, i->second.defaultDir_);
+             MountRemote m(mountpoint, i.second.serverName_, i.second.defaultDir_);
 
              bf::path target_dir = boost::filesystem::unique_path( mountpoint/("isofexecution-"+casedirname+"-%%%%%%%%") );
 
              remote_dir =
-                 i->second.defaultDir_ / boost::filesystem::make_relative(mountpoint, target_dir);
+                 i.second.defaultDir_ / boost::filesystem::make_relative(mountpoint, target_dir);
 
              boost::filesystem::create_directories(target_dir);
             }
@@ -149,7 +153,7 @@ int main(int argc, char *argv[])
             std::cout << remote_dir << std::endl;
 
             std::ofstream cfg(meta.c_str());
-            cfg << i->second.serverName_ << ":" << remote_dir.string();
+            cfg << i.second.serverName_ << ":" << remote_dir.string();
 
             anything_done=true;
           }
@@ -160,6 +164,7 @@ int main(int argc, char *argv[])
 
         {
             insight::RemoteExecutionConfig re(location, false, mf);
+            boost::filesystem::path local_mp = location / "mnt_remote" / "default";
 
             if (re.isValid())
               {
@@ -171,6 +176,16 @@ int main(int argc, char *argv[])
                       {
                         std::cout<<f<<std::endl;
                       }
+                    anything_done=true;
+                  }
+
+                if(vm.count("mount-remote"))
+                  {
+                    if (!boost::filesystem::exists(local_mp))
+                      boost::filesystem::create_directories(local_mp);
+
+                    MountRemote m(local_mp, re.server(), re.remoteDir(), true);
+
                     anything_done=true;
                   }
 
@@ -221,6 +236,17 @@ int main(int argc, char *argv[])
                     re.syncToLocal( (vm.count("skip-timesteps")>0), skip_dirs );
                     anything_done=true;
                   }
+
+                if(vm.count("unmount-remote"))
+                  {
+                    if (!boost::filesystem::exists(local_mp))
+                      throw insight::Exception("mount point "+local_mp.string()+" does not exist!");
+                    else {
+                      MountRemote m(local_mp, re.server(), re.remoteDir(), false, true);
+                    }
+                    anything_done=true;
+                  }
+
 
                 if(vm.count("clean"))
                   {

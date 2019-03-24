@@ -16,9 +16,14 @@ namespace Ui {
 class MountRemote
 {
     bfs_path mountpoint_;
+    bool keep_;
+
+    bool isAlreadyMounted() const;
+    void mount(const std::string& server, const bfs_path& remotedir);
+    void unmount();
 
 public:
-    MountRemote(const bfs_path& mountpoint, const std::string& server, const bfs_path& remotedir);
+    MountRemote(const bfs_path& mountpoint, const std::string& server, const bfs_path& remotedir, bool keep=false, bool expect_mounted=false);
     ~MountRemote();
 };
 

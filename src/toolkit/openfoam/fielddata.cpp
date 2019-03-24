@@ -339,9 +339,17 @@ double FieldData::calcMaxValueMag(const boost::filesystem::path& casedir) const
 
 
 
-Parameter* FieldData::defaultParameter(const arma::mat& , const std::string& )
+Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::string& )
 {
-  return Parameters::makeDefault().get<SubsetParameter>("fielddata").clone();
+  std::auto_ptr<Parameter> p(Parameters::makeDefault().get<SubsetParameter>("fielddata").clone());
+  auto opts = dynamic_cast<SelectableSubsetParameter*>(p.get());
+
+  {
+    ParameterSet& us = opts->items().at("uniformSteady");
+    us.get<VectorParameter>("value")() = def_val;
+  }
+
+  return p.release();
 }
 
 

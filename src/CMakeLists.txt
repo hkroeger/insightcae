@@ -1,7 +1,5 @@
 project(insight)
 
-
-
 add_subdirectory(pdl)
 add_subdirectory(test)
 add_subdirectory(refdata)

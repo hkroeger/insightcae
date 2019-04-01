@@ -44,6 +44,7 @@ endif (INSIGHT_BUILD_FREECAD)
 
 IF (INSIGHT_BUILD_ADDONS)
   add_subdirectory(addons)
+  SET(git-rev ${git-rev} PARENT_SCOPE)
 ENDIF()
 
 #-- Add an Option to toggle the generation of the API documentation

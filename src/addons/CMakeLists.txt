@@ -7,3 +7,5 @@ FOREACH(child ${children})
       ADD_SUBDIRECTORY(${child})
   ENDIF()
 ENDFOREACH()
+
+SET(git-rev ${git-rev} PARENT_SCOPE)

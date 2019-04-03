@@ -17,8 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FOAM_DATAINTERPOLATOR_H
-#define FOAM_DATAINTERPOLATOR_H
+#ifndef FOAM_FIELDDATAPROVIDER_H
+#define FOAM_FIELDDATAPROVIDER_H
 
 #include "fvCFD.H"
 

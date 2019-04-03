@@ -64,7 +64,7 @@ public:
 
 public:
     PythonAnalysis(const boost::filesystem::path& scriptfile, const ParameterSet& ps, const boost::filesystem::path& exePath );
-    virtual ResultSetPtr operator() ( ProgressDisplayer* displayer=NULL );
+    virtual ResultSetPtr operator() ( ProgressDisplayer* displayer = nullptr );
 };
 
 

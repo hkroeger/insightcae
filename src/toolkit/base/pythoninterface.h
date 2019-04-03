@@ -32,22 +32,14 @@
 namespace insight
 {
     
-struct aquire_py_GIL 
+struct acquire_py_GIL
 {
     PyGILState_STATE state;
     
-    aquire_py_GIL();
-    ~aquire_py_GIL();
+    acquire_py_GIL();
+    ~acquire_py_GIL();
 };
 
-
-struct release_py_GIL 
-{
-    PyThreadState *state;
-    
-    release_py_GIL();
-    ~release_py_GIL();
-};
 
 
 class PythonInterpreter

@@ -45,7 +45,7 @@ void ReferenceDataLibrary::findDataSets()
 {
     if (!datasetsloaded_)
     {
-        aquire_py_GIL locker;
+        acquire_py_GIL locker;
 
         try
         {
@@ -103,7 +103,7 @@ arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const
 {
     const_cast<ReferenceDataLibrary*>(this)->findDataSets();
 
-    aquire_py_GIL locker;
+    acquire_py_GIL locker;
 
     arma::mat profile;
     try
@@ -129,14 +129,14 @@ arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const
                                       main_namespace.ptr(),
                                       main_namespace.ptr() ));
         boost::python::list l = extract<boost::python::list>(main_namespace["result"]);
-        int nrows=boost::python::len(l), ncols;
-        for (int j=0; j<nrows; j++)
+        ssize_t nrows=boost::python::len(l), ncols;
+        for (ssize_t j=0; j<nrows; j++)
         {
             boost::python::list row = extract<boost::python::list>(l[j]);
             ncols=boost::python::len(row);
             if (profile.n_rows==0) profile=arma::zeros(nrows, ncols);
 
-            for (int i=0; i<ncols; i++)
+            for (ssize_t i=0; i<ncols; i++)
             {
                 profile(j,i)=extract<double>(row[i]);
             }

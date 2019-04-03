@@ -296,7 +296,7 @@ arma::cube probes::readProbes
 
 arma::mat probes::readProbesLocations
 (
-    const OpenFOAMCase& c, 
+    const OpenFOAMCase&,
     const boost::filesystem::path& location, 
     const std::string& foName
 )
@@ -313,10 +313,10 @@ arma::mat probes::readProbesLocations
   OFDictData::list& plo=fod.getList("probeLocations");
   
   arma::mat data = arma::zeros(plo.size(), 3);
-  for (int i=0; i<plo.size(); i++)
+  for (arma::uword i=0; i<plo.size(); i++)
   {
       OFDictData::list& row = boost::get<OFDictData::list>(plo[i]);
-      for (int k=0; k<3; k++) data(i,k)=as_scalar(row[k]);
+      for (arma::uword k=0; k<3; k++) data(i,k)=as_scalar(row[k]);
   }
   return data;
 }
@@ -872,6 +872,9 @@ arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::p
   return fl;
 }
 
+
+
+
 defineType(extendedForces);
 addToOpenFOAMCaseElementFactoryTable(extendedForces);
 
@@ -913,7 +916,146 @@ void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
 }
+
   
+
+
+defineType(catalyst);
+addToOpenFOAMCaseElementFactoryTable(catalyst);
+
+catalyst::catalyst(OpenFOAMCase& c, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, "catalyst"),
+  p_(ps)
+{
+}
+
+void catalyst::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict fod;
+  fod["type"]="catalyst";
+  OFDictData::list libl; libl.push_back("\"libcatalystFoam.so\"");
+  fod["functionObjectLibs"]=libl;
+
+  fod["executeControl"]="timeStep";
+  fod["writeControl"]="none";
+
+  OFDictData::list scripts;
+
+  for (const auto& ss: p_.scripts)
+  {
+    if (const auto* sc = boost::get<Parameters::scripts_default_copy_type>(&ss))
+    {
+      scripts.push_back("\"<system>/"+sc->filename.filename().string()+"\"");
+    }
+    else if (const auto* sg = boost::get<Parameters::scripts_default_generate_type>(&ss))
+    {
+      scripts.push_back("\"<system>/"+sg->name+".py\"");
+    }
+    else
+    {
+      throw insight::Exception("Internal error: unhandled selection");
+    }
+  }
+
+  fod["scripts"]=scripts;
+
+  OFDictData::dict& inputs = fod.addSubDictIfNonexistent("inputs");
+  OFDictData::dict& inputregion = inputs.addSubDictIfNonexistent(p_.inputname);
+  inputregion["boundary"]=true;
+
+  OFDictData::list fieldlist;
+  std::transform(p_.fields.begin(), p_.fields.end(), std::back_inserter(fieldlist),
+                 [](const Parameters::fields_default_type& f) { return f; }
+  );
+  inputregion["fields"]=fieldlist;
+
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.addSubDictIfNonexistent("functions")["catalyst"]=fod;
+}
+
+
+void catalyst::modifyCaseOnDisk ( const OpenFOAMCase&, const boost::filesystem::path& location ) const
+{
+
+  for (const auto& ss: p_.scripts)
+  {
+
+    if (const auto* sc = boost::get<Parameters::scripts_default_copy_type>(&ss))
+    {
+      boost::filesystem::copy_file(sc->filename, location/"system");
+    }
+
+    else if (const auto* sg = boost::get<Parameters::scripts_default_generate_type>(&ss))
+    {
+      std::ofstream f( (location/"system"/(sg->name+".py")).c_str() );
+
+      f<<
+      "from paraview.simple import *\n"
+      "from paraview import coprocessing\n"
+
+      "def CreateCoProcessor():\n"
+      "  def _CreatePipeline(coprocessor, datadescription):\n"
+      "    class Pipeline:\n"
+      "      paraview.simple._DisableFirstRenderCameraReset()\n"
+      "      dataset = coprocessor.CreateProducer(datadescription, '"<<p_.inputname<<"')\n";
+
+      if (sg->contour)
+        f<<
+      "      contour = Contour(Input=dataset)\n"
+            ;
+
+      if (sg->slice)
+        f<<
+      "      slice = Slice(Input=dataset)\n"
+      "      slice.SliceType = 'Plane'\n"
+            ;
+
+      if (sg->extractBlock)
+        f<<
+      "      extractBlock = ExtractBlock(Input=dataset)\n"
+            ;
+
+      f<<
+      "    return Pipeline()\n"
+
+      "  class CoProcessor(coprocessing.CoProcessor):\n"
+      "    def CreatePipeline(self, datadescription):\n"
+      "      self.Pipeline = _CreatePipeline(self, datadescription)\n"
+
+      "  coprocessor = CoProcessor()\n"
+      "  freqs = {'"<<p_.inputname<<"': []}\n"
+      "  coprocessor.SetUpdateFrequencies(freqs)\n"
+      "  return coprocessor\n"
+
+      "coprocessor = CreateCoProcessor()\n"
+      "coprocessor.EnableLiveVisualization(True, 1)\n"
+
+      "def RequestDataDescription(datadescription):\n"
+      "    global coprocessor\n"
+      "    if datadescription.GetForceOutput() == True:\n"
+      "        for i in range(datadescription.GetNumberOfInputDescriptions()):\n"
+      "            datadescription.GetInputDescription(i).AllFieldsOn()\n"
+      "            datadescription.GetInputDescription(i).GenerateMeshOn()\n"
+      "        return\n"
+      "    coprocessor.LoadRequestedData(datadescription)\n"
+
+      "def DoCoProcessing(datadescription):\n"
+      "    global coprocessor\n"
+      "    coprocessor.UpdateProducers(datadescription)\n"
+      "    coprocessor.WriteData(datadescription);\n"
+      "    coprocessor.WriteImages(datadescription, rescale_lookuptable=False)\n"
+      "    coprocessor.DoLiveVisualization(datadescription, \""<<p_.paraview_host<<"\", "<<p_.paraview_port<<")\n"
+      ;
+
+    }
+
+    else
+    {
+      throw insight::Exception("Internal error: unhandled selection");
+    }
+
+  }
+}
 
 
 

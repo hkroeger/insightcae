@@ -511,6 +511,58 @@ public:
 
 
 
+
+class catalyst
+: public OpenFOAMCaseElement
+{
+public:
+#include "analysiscaseelements__catalyst__Parameters.h"
+
+/*
+PARAMETERSET>>> catalyst Parameters
+
+inputname = string "input" "Name of the input data set"
+
+fields = array [ string "U" "Name of a field" ]*1 "Names of fields to export for insitu visualization"
+
+scripts = array [ selectablesubset {{
+
+   copy set {
+    filename = path "" "The path to a catalyst pipeline script, which will be copied into the current case. This script can be exported from Paraview using the CatalystScriptGeneratorPlugin."
+   }
+
+   generate set {
+    name = string "catalyst_pipeline" "Name of the generated script file (will be placed in FOAM_SRC/system)"
+    extractBlock = bool true "Include an extractBlock filter"
+    slice = bool false "Include a slice filter"
+    contour = bool false "Include a contour filter"
+   }
+
+  }} generate "Select the source of the visualization pipeline script"
+
+] *1 "Specifies the source of the one or more pipeline scripts"
+
+paraview_host = string "localhost" "Name or IP of the host, where the Paraview client is running"
+paraview_port = int 22222 "The port, where paraview is listening"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType("catalyst");
+  catalyst(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  static std::string category() { return "Postprocessing"; }
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
+};
+
+
+
+
 class CorrelationFunctionModel
 : public RegressionModel
 {

@@ -32,7 +32,7 @@ General dependencies :
 * [LaTeX](http://www.latex-project.org/) (2e, texlive-base, texlive-latex-extra)
 * [SWIG](http://www.swig.org/) (3.0.8, swig)
 * [ParaView](http://www.paraview.org/) (4.4, paraview-insightcae, available through http://downloads.silentdynamics.de)
-* [Qt](https://www.qt.io/) (4.8, libqt4-dev, libqtcore4, libqtgui4, libqtwebkit4)
+* [Qt](https://www.qt.io/) (5.11, libqt5widgets5)
 * [Qwt](http://qwt.sourceforge.net/) (6.1, libqwt-dev, libqwt6abi1)
 * [Numpy](http://www.numpy.org/) (1.11, python-numpy)
 * [Scipy](https://scipy.org/) (0.17, python-scipy)

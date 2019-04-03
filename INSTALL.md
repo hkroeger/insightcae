@@ -23,7 +23,7 @@ In brackets, the tested version and the Ubuntu package name is given.
 
 General dependencies :
 
-* [CMake](https://cmake.org/) (3.5, cmake, cmake-curses-gui)
+* [CMake](https://cmake.org/) (3.10, cmake, cmake-curses-gui)
 * [Armadillo](http://arma.sourceforge.net/) (6.5, libarmadillo6, libarmadillo-dev)
 * [GNU Scientific Library](https://www.gnu.org/software/gsl/) (2.1, libgsl-dev, gsl-bin)
 * [Boost](http://www.boost.org/) (1.58.0, libboost-all-dev)

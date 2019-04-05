@@ -117,6 +117,12 @@ protected:
   boost::filesystem::path ist_file_;
 
   /**
+   * @brief pack_parameterset_
+   * store preference for pack/not packing the parameter set during saving
+   */
+  bool pack_parameterset_;
+
+  /**
    * @brief is_modified_
    * whether PS was modified since last save
    */

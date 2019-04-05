@@ -216,21 +216,30 @@ void ParameterSet::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_nod
 }
 
 
+void ParameterSet::packExternalFiles()
+{
+  for (auto p: *this)
+  {
+    p->second->pack();
+  }
+}
+
+
 void ParameterSet::saveToStream(std::ostream& os, const boost::filesystem::path& parent_path, std::string analysisName ) const
 {
 //   std::cout<<"Writing parameterset to file "<<file<<std::endl;
 
-  xml_document<> doc;
 
-  // xml declaration
+  // prepare XML document
+  xml_document<> doc;
   xml_node<>* decl = doc.allocate_node(node_declaration);
   decl->append_attribute(doc.allocate_attribute("version", "1.0"));
   decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
   doc.append_node(decl);
-
   xml_node<> *rootnode = doc.allocate_node(node_element, "root");
   doc.append_node(rootnode);
 
+  // insert analysis name
   if (analysisName != "")
   {
     xml_node<> *analysisnamenode = doc.allocate_node(node_element, "analysis");
@@ -242,6 +251,7 @@ void ParameterSet::saveToStream(std::ostream& os, const boost::filesystem::path&
     ));
   }
 
+  // store parameters
   appendToNode(doc, *rootnode, parent_path);
 
   os << doc;
@@ -250,7 +260,7 @@ void ParameterSet::saveToStream(std::ostream& os, const boost::filesystem::path&
 void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string analysisName ) const
 {
     std::ofstream f(file.c_str());
-    saveToStream(f, file.parent_path(), analysisName);
+    saveToStream( f, file.parent_path(), analysisName );
     f << std::endl;
     f << std::flush;
     f.close();
@@ -324,6 +334,33 @@ std::string SubsetParameter::plainTextRepresentation(int indent) const
 {
   return "\n" + ParameterSet::plainTextRepresentation(indent+1);
 }
+
+bool SubsetParameter::isPacked() const
+{
+  bool is_packed=false;
+  for(auto p: *this)
+  {
+    is_packed |= p->second->isPacked();
+  }
+  return is_packed;
+}
+
+void SubsetParameter::pack()
+{
+  for(auto p: *this)
+  {
+    p->second->pack();
+  }
+}
+
+void SubsetParameter::unpack()
+{
+  for(auto p: *this)
+  {
+    p->second->unpack();
+  }
+}
+
 
 Parameter* SubsetParameter::clone() const
 {
@@ -402,6 +439,35 @@ std::string SelectableSubsetParameter::plainTextRepresentation(int indent) const
       os<<operator()().plainTextRepresentation(indent+1);
   }
   return os.str();
+}
+
+bool SelectableSubsetParameter::isPacked() const
+{
+  bool is_packed=false;
+  auto v = this->operator()(); // get active subset
+  for (auto p: v)
+  {
+    is_packed |= p->second->isPacked();
+  }
+  return is_packed;
+}
+
+void SelectableSubsetParameter::pack()
+{
+  auto v = this->operator()(); // get active subset
+  for (auto p: v)
+  {
+    p->second->pack();
+  }
+}
+
+void SelectableSubsetParameter::unpack()
+{
+  auto v = this->operator()(); // get active subset
+  for (auto p: v)
+  {
+    p->second->unpack();
+  }
 }
 
 Parameter* SelectableSubsetParameter::clone () const

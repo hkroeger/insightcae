@@ -132,8 +132,23 @@ public:
     rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
     virtual Parameter* clone() const =0;
 
+    /**
+     * @brief isPacked
+     * check, if contains file contents
+     * @return
+     */
     virtual bool isPacked() const;
+
+    /**
+     * @brief pack
+     * pack the external file. Replace stored content, if present.
+     */
     virtual void pack();
+
+    /**
+     * @brief unpack
+     * restore file contents on disk, if file is not there
+     */
     virtual void unpack();
 };
 
@@ -199,11 +214,11 @@ public:
     virtual ~SimpleParameter()
     {}
 
-    inline T& operator() ()
+    virtual T& operator() ()
     {
         return value_;
     }
-    inline const T& operator() () const
+    virtual const T& operator() () const
     {
         return value_;
     }
@@ -283,10 +298,29 @@ public:
     declareType ( "path" );
 
     PathParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    PathParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    PathParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0, const char* base64_content = "" );
+
+    virtual boost::filesystem::path& operator() ();
+    virtual const boost::filesystem::path& operator() () const;
+
+    /**
+     * @brief isPacked
+     * check, if contains file contents
+     * @return
+     */
 
     bool isPacked() const;
+
+    /**
+     * @brief pack
+     * pack the external file. Replace stored content, if present.
+     */
     void pack();
+
+    /**
+     * @brief unpack
+     * restore file contents on disk, if file is not there
+     */
     void unpack();
 
     virtual Parameter* clone() const;
@@ -499,6 +533,10 @@ public:
 
     virtual std::string latexRepresentation() const;
     virtual std::string plainTextRepresentation(int indent=0) const;
+
+    virtual bool isPacked() const;
+    virtual void pack();
+    virtual void unpack();
 
     virtual Parameter* clone () const;
 

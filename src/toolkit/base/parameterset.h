@@ -256,6 +256,9 @@ public:
   virtual void readFromNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
                               boost::filesystem::path inputfilepath );
 
+
+  void packExternalFiles();
+
   virtual void saveToStream(std::ostream& os, const boost::filesystem::path& parentPath, std::string analysisName = std::string() ) const;
   void saveToFile ( const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
   virtual std::string readFromFile ( const boost::filesystem::path& file );
@@ -314,6 +317,10 @@ public:
 
   virtual std::string latexRepresentation() const;
   virtual std::string plainTextRepresentation(int indent=0) const;
+
+  virtual bool isPacked() const;
+  virtual void pack();
+  virtual void unpack();
 
   virtual Parameter* clone () const;
 
@@ -389,6 +396,10 @@ public:
 
   virtual std::string latexRepresentation() const;
   virtual std::string plainTextRepresentation(int indent=0) const;
+
+  virtual bool isPacked() const;
+  virtual void pack();
+  virtual void unpack();
 
   virtual Parameter* clone () const;
 

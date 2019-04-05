@@ -27,6 +27,12 @@
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <boost/archive/iterators/base64_from_binary.hpp>
+#include <boost/archive/iterators/insert_linebreaks.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
+#include <boost/archive/iterators/ostream_iterator.hpp>
+#include <boost/archive/iterators/remove_whitespace.hpp>
+
 #include <iostream>
 
 
@@ -303,9 +309,28 @@ PathParameter::PathParameter(const string& description,  bool isHidden, bool isE
 {
 }
 
-PathParameter::PathParameter(const path& value, const string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
-: SimpleParameter<boost::filesystem::path, PathName>(value, description, isHidden, isExpert, isNecessary, order)
+PathParameter::PathParameter(const path& value, const string& description,  bool isHidden, bool isExpert, bool isNecessary, int order, const char* base64_content)
+: SimpleParameter<boost::filesystem::path, PathName>(value, description, isHidden, isExpert, isNecessary, order),
+  file_content_(base64_content)
 {
+}
+
+boost::filesystem::path& PathParameter::operator() ()
+{
+  std::cout<<"access path "<<isPacked()<<" "<<file_content_.size()<<std::endl;
+  if (isPacked())
+    unpack(); // does nothing, if already unpacked
+
+  return value_;
+}
+
+const boost::filesystem::path& PathParameter::operator() () const
+{
+  std::cout<<"access path (const) "<<isPacked()<<" "<<file_content_.size()<<std::endl;
+  if (isPacked())
+    const_cast<PathParameter*>(this)->unpack(); // does nothing, if already unpacked
+
+  return value_;
 }
 
 bool PathParameter::isPacked() const
@@ -315,15 +340,88 @@ bool PathParameter::isPacked() const
 
 void PathParameter::pack()
 {
+  // read and store file
+
+  if (exists(value_))
+  {
+    // typedefs
+    using namespace boost::archive::iterators;
+    typedef
+        insert_linebreaks<         // insert line breaks every 72 characters
+            base64_from_binary<    // convert binary values to base64 characters
+                transform_width<   // retrieve 6 bit integers from a sequence of 8 bit bytes
+                    std::string::const_iterator,
+                    6, 8
+                >
+            >
+            ,72
+        >
+        base64_text; // compose all the above operations in to a new iterator
+
+
+    // read raw file into buffer
+    std::ifstream in(value_.c_str());
+    std::string raw_data ( static_cast<std::stringstream const&>(std::stringstream() << in.rdbuf()).str() );
+
+    // base64-encode
+    unsigned int writePaddChars = (3-raw_data.length()%3)%3;
+    file_content_ = std::string(
+        base64_text(raw_data.begin()),
+        base64_text(raw_data.end())
+    );
+    file_content_.append(writePaddChars, '=');
+  }
 }
 
 void PathParameter::unpack()
 {
+
+  if (!exists(value_)) // unpack only, if it is not yet there (e.g. already unpacked)
+  {
+    std::cout<<"Unpacking file "<<value_<<endl;
+
+    // extract file, create parent path.
+    if (!exists(value_.parent_path()) )
+    {
+      boost::filesystem::create_directories( value_.parent_path() );
+    }
+
+    // typedefs
+    using namespace boost::archive::iterators;
+    typedef
+      transform_width<
+          binary_from_base64<
+          remove_whitespace
+           <std::string::const_iterator> >, 8, 6>
+        base64_text; // compose all the above operations in to a new iterator
+
+    unsigned int paddChars = count(file_content_.begin(), file_content_.end(), '=');
+    std::replace(file_content_.begin(), file_content_.end(), '=', 'A');
+
+    std::string output(
+          base64_text(file_content_.begin()),
+          base64_text(file_content_.end())
+          );
+    output.erase(output.end() - paddChars, output.end());
+
+    std::ofstream file( value_.c_str(), ios::out | ios::binary);
+    if (file.good())
+    {
+        file.write(output.c_str(), output.size());
+        file.close();
+    }
+
+  }
+  else
+  {
+    std::cout<<"File "<<value_<<" exists, skipping unpack."<<endl;
+  }
+
 }
 
 Parameter* PathParameter::clone() const
 {
-    return new PathParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+    return new PathParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_, file_content_.c_str());
 }
 
 rapidxml::xml_node<>* PathParameter::appendToNode
@@ -386,7 +484,6 @@ void PathParameter::readFromNode
 	  abspath=boost::filesystem::canonical(abspath);
   #endif
     }
-//    cout<<"path="<<abspath<<endl;
     value_=abspath;
 
     if (auto* a = child->first_attribute("content"))
@@ -395,7 +492,6 @@ void PathParameter::readFromNode
     }
 
   }
-//  std::cout<<"done."<<std::endl;
 }
 
 
@@ -686,6 +782,32 @@ std::string ArrayParameter::latexRepresentation() const
 std::string ArrayParameter::plainTextRepresentation(int indent) const
 {
   return std::string();
+}
+
+bool ArrayParameter::isPacked() const
+{
+  bool is_packed=false;
+  for (const auto& p: value_)
+  {
+    is_packed |= p->isPacked();
+  }
+  return is_packed;
+}
+
+void ArrayParameter::pack()
+{
+  for (auto& p: value_)
+  {
+    p->pack();
+  }
+}
+
+void ArrayParameter::unpack()
+{
+  for (auto& p: value_)
+  {
+    p->unpack();
+  }
 }
 
 Parameter* ArrayParameter::clone () const

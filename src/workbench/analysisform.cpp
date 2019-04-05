@@ -58,7 +58,9 @@ void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
 AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 : QMdiSubWindow(parent),
   analysisName_(analysisName),
-  executionPathParameter_(".", "Directory to store data files during analysis.\nLeave empty for temporary storage.")
+  executionPathParameter_( boost::filesystem::path("."),
+                           "Directory to store data files during analysis.\nLeave empty for temporary storage."),
+  pack_parameterset_(true)
 {
 
     // load default parameters
@@ -287,6 +289,7 @@ void AnalysisForm::saveParameters(bool *cancelled)
   }
   else
   {
+    if (pack_parameterset_) parameters_.packExternalFiles();
     parameters_.saveToFile(ist_file_, analysisName_);
     is_modified_=false;
   }
@@ -297,23 +300,36 @@ void AnalysisForm::onSaveParametersAs()
   saveParametersAs();
 }
 
+
+
 void AnalysisForm::saveParametersAs(bool *cancelled)
 {
 //   emit apply();
 
-  QString fn = QFileDialog::getSaveFileName
-      (
-        this,
-        "Save Parameters",
-        QString(),
-        "Insight parameter sets (*.ist)"
-      );
+  QFileDialog fd(this);
+  fd.setOption(QFileDialog::DontUseNativeDialog, true);
+  fd.setWindowTitle("Save Parameters");
+  QStringList filters;
+  filters << "Insight parameter sets (*.ist)";
+  fd.setNameFilters(filters);
 
-  if (!fn.isEmpty())
+  QCheckBox* cb = new QCheckBox;
+  cb->setText("Pack: embed externally referenced files into parameterset");
+  QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
+  fdl->addWidget(cb);
+
+  cb->setChecked(pack_parameterset_);
+
+  if (fd.exec() == QDialog::Accepted)
   {
+    QString fn = fd.selectedFiles()[0];
+    pack_parameterset_ = cb->isChecked();
+
 //     parameters_.saveToFile(fn.toStdString(), analysis_->type());
     ist_file_=fn.toStdString();
+
     saveParameters(cancelled);
+
     if (cancelled) *cancelled=false;
   }
   else

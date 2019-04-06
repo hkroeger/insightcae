@@ -71,6 +71,7 @@ protected:
 
     boost::filesystem::path current_config_file_;
     bool config_is_modified_=false;
+    bool pack_config_file_=true;
 
     std::shared_ptr<insight::OpenFOAMCase> ofc_;
     insight::ParameterSet parameters_;

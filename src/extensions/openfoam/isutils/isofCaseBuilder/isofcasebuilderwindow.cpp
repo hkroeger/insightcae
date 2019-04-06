@@ -532,22 +532,40 @@ bool isofCaseBuilderWindow::CADisCollapsed() const
 void isofCaseBuilderWindow::onSaveAs()
 {
     
-    QString fn = QFileDialog::getSaveFileName
-                 (
-                     this,
-                     "Save Parameters",
-                     "",
-                     "Insight Case Builder Parameter File (*.iscb)"
-                 );
+//    QString fn = QFileDialog::getSaveFileName
+//                 (
+//                     this,
+//                     "Save Parameters",
+//                     "",
+//                     "Insight Case Builder Parameter File (*.iscb)"
+//                 );
 
-    if ( !fn.isEmpty() ) {
+    QFileDialog fd(this);
+    fd.setOption(QFileDialog::DontUseNativeDialog, true);
+    fd.setWindowTitle("Save Parameters");
+    QStringList filters;
+    filters << "Insight Case Builder Parameter File (*.iscb)";
+    fd.setNameFilters(filters);
 
+    QCheckBox* cb = new QCheckBox;
+    cb->setText("Pack: embed externally referenced files into configuration file");
+    QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
+    int last_row=fdl->rowCount(); // id of new row below
+    fdl->addWidget(cb, last_row, 0, 1, -1);
+
+    cb->setChecked(pack_config_file_);
+
+    if ( fd.exec() == QDialog::Accepted )
+    {
+
+      QString fn=fd.selectedFiles()[0];
       if (! (fn.endsWith(".iscb")||fn.endsWith(".ISCB")) )
         {
           fn+=".iscb";
         }
 
       current_config_file_=fn.toStdString();
+      pack_config_file_=cb->isChecked();
       onSave();
     }
 }
@@ -564,6 +582,7 @@ void isofCaseBuilderWindow::onSave()
         
       boost::filesystem::path file = current_config_file_;
 
+      // == prepare XML document
       xml_document<> doc;
 
       // xml declaration
@@ -582,7 +601,7 @@ void isofCaseBuilderWindow::onSave()
         rootnode->append_node ( OFEnode );
       }
 
-      // insert selected case elements
+      // == insert selected case elements
       for (int i=0; i < ui->selected_elements->count(); i++)
       {
           InsertedCaseElement* elem = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i));
@@ -592,6 +611,7 @@ void isofCaseBuilderWindow::onSave()
               elemnode->append_attribute(doc.allocate_attribute("type", elem->type_name().c_str()));
               rootnode->append_node ( elemnode );
 
+              if (pack_config_file_) elem->parameters().packExternalFiles();
               elem->parameters().appendToNode(doc, *elemnode, file.parent_path());
           }
       }
@@ -608,6 +628,7 @@ void isofCaseBuilderWindow::onSave()
           {
               throw insight::Exception("Internal error: expected default patch config node!");
           }
+          if (pack_config_file_) dp->parameters().packExternalFiles();
           dp->appendToNode(doc, *unassignedBCnode, file.parent_path());
           BCnode->append_node ( unassignedBCnode );
 
@@ -615,6 +636,7 @@ void isofCaseBuilderWindow::onSave()
           {
               xml_node<> *patchnode = doc.allocate_node ( node_element, "Patch" );
               Patch *p = dynamic_cast<Patch*>(ui->patch_list->item(i));
+              if (pack_config_file_) p->parameters().packExternalFiles();
               p->appendToNode(doc, *patchnode, file.parent_path());
               BCnode->append_node ( patchnode );
           }

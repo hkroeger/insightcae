@@ -316,7 +316,8 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
   QCheckBox* cb = new QCheckBox;
   cb->setText("Pack: embed externally referenced files into parameterset");
   QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
-  fdl->addWidget(cb);
+  int last_row=fdl->rowCount(); // id of new row below
+  fdl->addWidget(cb, last_row, 0, 1, -1);
 
   cb->setChecked(pack_parameterset_);
 

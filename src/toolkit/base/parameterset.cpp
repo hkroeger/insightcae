@@ -444,7 +444,7 @@ std::string SelectableSubsetParameter::plainTextRepresentation(int indent) const
 bool SelectableSubsetParameter::isPacked() const
 {
   bool is_packed=false;
-  auto v = this->operator()(); // get active subset
+  auto& v = this->operator()(); // get active subset
   for (auto p: v)
   {
     is_packed |= p->second->isPacked();
@@ -454,7 +454,7 @@ bool SelectableSubsetParameter::isPacked() const
 
 void SelectableSubsetParameter::pack()
 {
-  auto v = this->operator()(); // get active subset
+  auto& v = this->operator()(); // get active subset
   for (auto p: v)
   {
     p->second->pack();
@@ -463,7 +463,7 @@ void SelectableSubsetParameter::pack()
 
 void SelectableSubsetParameter::unpack()
 {
-  auto v = this->operator()(); // get active subset
+  auto& v = this->operator()(); // get active subset
   for (auto p: v)
   {
     p->second->unpack();

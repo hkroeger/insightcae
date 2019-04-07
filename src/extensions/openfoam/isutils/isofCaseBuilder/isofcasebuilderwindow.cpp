@@ -31,6 +31,8 @@
 #ifndef Q_MOC_RUN
 #include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamtools.h"
+#include "openfoam/blockmesh_templates.h"
+#include "openfoam/snappyhexmesh.h"
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 #endif
@@ -152,7 +154,31 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
       ui->OFversion, QOverload<const QString&>::of(&QComboBox::currentIndexChanged),
       this, &isofCaseBuilderWindow::onOFVersionChanged
     );
-    
+
+    connect
+    (
+      ui->BCTab, &QTabWidget::currentChanged,
+      this, &isofCaseBuilderWindow::onCurrentTabChanged
+     );
+
+    connect
+    (
+      ui->script_pre, &QPlainTextEdit::textChanged,
+      this, &isofCaseBuilderWindow::onChange_script_pre
+    );
+
+    connect
+    (
+      ui->script_mesh, &QPlainTextEdit::textChanged,
+      this, &isofCaseBuilderWindow::onChange_script_mesh
+    );
+
+    connect
+    (
+      ui->script_case, &QPlainTextEdit::textChanged,
+      this, &isofCaseBuilderWindow::onChange_script_case
+    );
+
     fillCaseElementList();
 //     // populate list of available case elements
 //     for (insight::OpenFOAMCaseElement::FactoryTable::const_iterator i = insight::OpenFOAMCaseElement::factories_->begin();
@@ -376,6 +402,58 @@ void isofCaseBuilderWindow::onConfigModification()
   updateTitle();
 }
 
+void isofCaseBuilderWindow::onCurrentTabChanged(int idx)
+{
+  if (idx==2)
+    onEnterRecipeTab();
+}
+
+void isofCaseBuilderWindow::onEnterRecipeTab()
+{
+  QPalette active_pal = ui->script_pre->palette();
+  QPalette default_pal( active_pal );
+  default_pal.setColor(QPalette::Text, Qt::lightGray);
+
+  if (script_pre_.isEmpty())
+  {
+    ui->script_pre->setPlainText( generateDefault_script_pre() );
+    ui->script_pre->setPalette(default_pal);
+  }
+  if (script_mesh_.isEmpty())
+  {
+    ui->script_mesh->setPlainText( generateDefault_script_mesh() );
+    ui->script_mesh->setPalette(default_pal);
+  }
+  if (script_case_.isEmpty())
+  {
+    ui->script_case->setPlainText( generateDefault_script_case() );
+    ui->script_case->setPalette(default_pal);
+  }
+}
+
+void isofCaseBuilderWindow::onChange_script_pre()
+{
+  QPalette active_pal = ui->script_pre->palette();
+  active_pal.setColor(QPalette::Text, Qt::black);
+  ui->script_pre->setPalette(active_pal);
+  script_pre_ = ui->script_pre->toPlainText();
+}
+
+void isofCaseBuilderWindow::onChange_script_mesh()
+{
+  QPalette active_pal = ui->script_mesh->palette();
+  active_pal.setColor(QPalette::Text, Qt::black);
+  ui->script_mesh->setPalette(active_pal);
+  script_mesh_ = ui->script_mesh->toPlainText();
+}
+
+void isofCaseBuilderWindow::onChange_script_case()
+{
+  QPalette active_pal = ui->script_case->palette();
+  active_pal.setColor(QPalette::Text, Qt::black);
+  ui->script_case->setPalette(active_pal);
+  script_case_ = ui->script_case->toPlainText();
+}
 
 void isofCaseBuilderWindow::expandCAD()
 {
@@ -394,6 +472,69 @@ void isofCaseBuilderWindow::collapseCAD()
   sz[1]=0;
   sz[2]=600;
   ui->splitter_5->setSizes(sz);
+}
+
+
+QString isofCaseBuilderWindow::applicationName() const
+{
+  insight::OpenFOAMCase ofc(insight::OFEs::get(ui->OFversion->currentText().toStdString()));
+  for ( int i=0; i < ui->selected_elements->count(); i++ )
+    {
+      InsertedCaseElement* cur
+        = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
+      if ( cur )
+        {
+          std::auto_ptr<insight::OpenFOAMCaseElement> ce( cur->createElement(ofc) );
+          if ( const auto* fvn = dynamic_cast<const insight::FVNumerics*>(ce.get()) )
+          {
+            insight::OFdicts dicts;
+            fvn->addIntoDictionaries(dicts);
+            try
+            {
+              OFDictData::dict cd = dicts.lookupDict("system/controlDict");
+              std::string appname = cd.getString("application");
+              return QString(appname.c_str());
+            }
+            catch (insight::Exception e)
+            {
+              // continue
+            }
+          }
+        }
+    }
+  return QString();
+}
+
+QString isofCaseBuilderWindow::generateDefault_script_pre()
+{
+  return QString();
+}
+
+QString isofCaseBuilderWindow::generateDefault_script_mesh()
+{
+  QString cmds;
+
+  if (containsCE<insight::bmd::blockMesh>())
+    cmds += "blockMesh\n";
+
+  if (containsCE<insight::snappyHexMeshConfiguration>())
+    cmds += "snappyHexMesh\n";
+
+  return cmds;
+}
+
+QString isofCaseBuilderWindow::generateDefault_script_case()
+{
+  QString cmds;
+
+  if (containsCE<insight::setFieldsConfiguration>())
+    cmds += "setFields\n";
+
+  QString app = applicationName();
+  if ( ! (app.isEmpty() || app=="none") )
+    cmds += app+"\n";
+
+  return cmds;
 }
 
 void isofCaseBuilderWindow::onItemSelectionChanged()

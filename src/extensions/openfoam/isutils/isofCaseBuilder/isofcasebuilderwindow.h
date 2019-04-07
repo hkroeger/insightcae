@@ -29,6 +29,7 @@
 #ifndef Q_MOC_RUN
 #include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamcase.h"
+#include "openfoam/openfoamtools.h"
 #endif
 
 #include "parametereditorwidget.h"
@@ -75,10 +76,11 @@ protected:
 
     std::shared_ptr<insight::OpenFOAMCase> ofc_;
     insight::ParameterSet parameters_;
-    std::shared_ptr<insight::FVNumerics> numerics_;
     ParameterEditorWidget *ped_, *bc_ped_;
 
     QByteArray last_pe_state_, last_bc_pe_state_;
+
+    QString script_pre_, script_mesh_, script_case_;
   
     void fillCaseElementList();
     void updateTitle();
@@ -102,6 +104,29 @@ public:
     void expandCAD();
     void collapseCAD();
 
+    template<class T>
+    bool containsCE() const
+    {
+      insight::OpenFOAMCase ofc(insight::OFEs::get(ui->OFversion->currentText().toStdString()));
+      for ( int i=0; i < ui->selected_elements->count(); i++ )
+        {
+          InsertedCaseElement* cur
+            = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
+          if ( cur )
+            {
+              std::auto_ptr<insight::OpenFOAMCaseElement> ce( cur->createElement(ofc) );
+              if ( dynamic_cast<T*>(ce.get()) ) return true;
+            }
+        }
+      return false;
+    }
+
+    QString applicationName() const;
+
+    QString generateDefault_script_pre();
+    QString generateDefault_script_mesh();
+    QString generateDefault_script_case();
+
 public slots:
     void onItemSelectionChanged();
     
@@ -122,7 +147,13 @@ public slots:
     void onCreate();
 
     void onConfigModification();
-    
+
+    void onCurrentTabChanged(int idx);
+    void onEnterRecipeTab();
+    void onChange_script_pre();
+    void onChange_script_mesh();
+    void onChange_script_case();
+
     void onOFVersionChanged(const QString & ofename);
     void recreateOFCase(const QString & ofename);
     

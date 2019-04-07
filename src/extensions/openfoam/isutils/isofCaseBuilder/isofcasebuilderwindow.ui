@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>919</width>
-    <height>794</height>
+    <width>1214</width>
+    <height>912</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -323,6 +323,43 @@
             </layout>
            </widget>
           </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="recipe_tab">
+        <attribute name="title">
+         <string>Execution Recipe</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Commands before CaseBuilder created anything:&lt;br&gt;&lt;br&gt;#!/bin/bash</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPlainTextEdit" name="script_pre"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Commands after CaseBuilder created case dictionaries (without mesh):&lt;br&gt;&lt;br&gt;#!/bin/bash</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPlainTextEdit" name="script_mesh"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Commands after CaseBuilder set up boundaries:&lt;br&gt;&lt;br&gt;#!/bin/bash</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPlainTextEdit" name="script_case"/>
          </item>
         </layout>
        </widget>

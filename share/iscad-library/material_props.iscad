@@ -10,3 +10,5 @@ rho_PP=0.9e-6; # kg/mm^3
 rho_PS=1.04e-6; # kg/mm^3
 rho_EPDM=1.5e-6; # kg/mm^3
 
+rho_vikures=1.43e-6; # kg/mm^3
+

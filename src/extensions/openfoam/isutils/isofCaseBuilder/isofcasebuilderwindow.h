@@ -68,7 +68,6 @@ private:
     QModelTree* modeltree_;
 
 protected:
-    boost::filesystem::path casepath_;
 
     boost::filesystem::path current_config_file_;
     bool config_is_modified_=false;
@@ -127,6 +126,8 @@ public:
     QString generateDefault_script_mesh();
     QString generateDefault_script_case();
 
+    boost::filesystem::path casepath() const;
+
 public slots:
     void onItemSelectionChanged();
     
@@ -153,12 +154,19 @@ public slots:
     void onChange_script_pre();
     void onChange_script_mesh();
     void onChange_script_case();
+    void onReset_script_pre();
+    void onReset_script_mesh();
+    void onReset_script_case();
 
     void onOFVersionChanged(const QString & ofename);
     void recreateOFCase(const QString & ofename);
     
     insight::ParameterSet& caseElementParameters(int id);
     insight::ParameterSet& BCParameters(const std::string& patchName);
+
+    void selectCaseDir();
+
+    void runAll();
 };
 
 

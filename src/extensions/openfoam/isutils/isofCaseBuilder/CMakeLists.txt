@@ -19,6 +19,7 @@ SET(isofCaseBuilder_RCCS isofCaseBuilder.qrc)
 add_executable(isofCaseBuilder ${isofCaseBuilder_SRCS} ${isofCaseBuilder_FORMS} ${isofCaseBuilder_RCCS})
 target_link_libraries(isofCaseBuilder
  toolkit toolkit_gui
+ taskspoolermonitor
  Qt5::Widgets
 )
 target_include_directories(isofCaseBuilder

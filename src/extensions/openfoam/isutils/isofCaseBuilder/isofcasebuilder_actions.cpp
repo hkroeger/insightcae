@@ -39,6 +39,8 @@
 
 #include "base/qt5_helper.h"
 
+#include "taskspoolermonitor.h"
+
 using namespace insight;
 using namespace boost;
 using namespace rapidxml;
@@ -204,6 +206,8 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with)
 
   boost::filesystem::path fn = boost::filesystem::unique_path( cp/"isofcasebuilder-run-%%%%%.sh" );
 
+  boost::filesystem::path ts_socket = cp/"tsp.socket";
+
   {
     std::ofstream f( fn.c_str() );
     f<<"#!/bin/bash\n";
@@ -244,7 +248,10 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with)
 
   }
 
-  ofc_->executeCommand(cp, "TS_SOCKET=\""+(cp/"tsp.socket").string()+"\" tsp "+fn.string());
+  //ofc_->executeCommand(cp, "TS_SOCKET=\""+ts_socket.string()+"\" tsp "+fn.string());
+
+  TaskSpoolerMonitorDialog *mon = new TaskSpoolerMonitorDialog(ts_socket, this);
+  mon->show();
 }
 
 

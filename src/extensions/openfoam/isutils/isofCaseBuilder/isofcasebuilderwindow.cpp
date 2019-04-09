@@ -18,7 +18,6 @@
  *
  */
 
-
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QInputDialog>
@@ -236,6 +235,12 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     connect(ui->up_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onMoveElementUp);
     connect(ui->down_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onMoveElementDown);
 
+    QMenu* createmenu=new QMenu(ui->create_btn);
+    connect( createmenu->addAction("Create case and set up boundaries"), &QAction::triggered,
+             this, &isofCaseBuilderWindow::onCreate);
+    connect( createmenu->addAction("Skip boundary set up during case creation"), &QAction::triggered,
+             this, &isofCaseBuilderWindow::onCreateNoBCs);
+    ui->create_btn->setMenu(createmenu);
     connect(ui->create_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onCreate);
 
     connect(ui->clean_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onCleanCase);
@@ -374,65 +379,6 @@ void isofCaseBuilderWindow::readSettings()
     last_bc_pe_state_=settings.value("BC_PE_state").toByteArray();
 }
 
-
-
-void isofCaseBuilderWindow::createCase 
-(
-    bool skipBCs,
-    const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
-)
-{
-  recreateOFCase ( ui->OFversion->currentText() );
-
-  // insert case elements
-  for ( int i=0; i < ui->selected_elements->count(); i++ )
-    {
-      InsertedCaseElement* cur 
-        = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
-      if ( cur )
-        {
-          cur->insertElement ( *ofc_ );
-        }
-    }
-
-  if (!restrictToFiles)
-    ofc_->modifyFilesOnDiskBeforeDictCreation( casepath() );
-    
-  // insert BCs
-  
-  if (!boost::filesystem::exists(ofc_->boundaryDictPath(casepath())))
-  {
-      if (!skipBCs)
-        QMessageBox::warning(this, "Warning", "No boundary dictionary present: skipping BC creation!");
-
-      skipBCs=true;
-  }
-  
-  insight::OFDictData::dict boundaryDict;
-  if ( !skipBCs )
-    {
-      ofc_->parseBoundaryDict ( casepath(), boundaryDict );
-      
-      for ( int i=0; i < ui->patch_list->count(); i++ )
-        {
-          Patch* cur = dynamic_cast<Patch*> ( ui->patch_list->item ( i ) );
-          if ( cur )
-          {
- //           if ( boundaryDict.find(cur->patch_name()) != boundaryDict.end() )
-            {
-              cur->insertElement ( *ofc_, boundaryDict );
-            }
-          }
-        }
-    }
-  if ( ofc_->getUnhandledPatches ( boundaryDict ).size() > 0 )
-    {
-      throw insight::Exception ( "Incorrect case setup: There are unhandled patches. Continuing would result in an invalid boundary definition." );
-    }
-
-  ofc_->createOnDisk ( casepath(), restrictToFiles );
-  if ( !restrictToFiles ) ofc_->modifyCaseOnDisk ( casepath() );
-}
 
 void isofCaseBuilderWindow::onConfigModification()
 {
@@ -810,103 +756,108 @@ void isofCaseBuilderWindow::onSave()
   }
   else
   {
-        
-      boost::filesystem::path file = current_config_file_;
+    saveToFile(current_config_file_);
 
-      // == prepare XML document
-      xml_document<> doc;
+    config_is_modified_=false;
+    updateTitle();
 
-      // xml declaration
-      xml_node<>* decl = doc.allocate_node ( node_declaration );
-      decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
-      decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
-      doc.append_node ( decl );
-
-      xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
-      doc.append_node ( rootnode );
-
-      if (ui->saveOFversion->checkState()==Qt::Checked)
-      {
-        xml_node<> *OFEnode = doc.allocate_node ( node_element, "OFE" );
-        OFEnode->append_attribute(doc.allocate_attribute("name", ui->OFversion->currentText().toStdString().c_str()));
-        rootnode->append_node ( OFEnode );
-      }
-
-      std::string code_pre, code_mesh, code_case; // store until XML file is written
-      if (!script_pre_.isEmpty())
-      {
-        xml_node<> *script_node = doc.allocate_node ( node_element, "script_pre" );
-        code_pre=script_pre_.toStdString();
-        script_node->append_attribute(doc.allocate_attribute("code", code_pre.c_str()));
-        rootnode->append_node ( script_node );
-      }
-      if (!script_mesh_.isEmpty())
-      {
-        xml_node<> *script_node = doc.allocate_node ( node_element, "script_mesh" );
-        code_mesh=script_mesh_.toStdString();
-        script_node->append_attribute(doc.allocate_attribute("code", code_mesh.c_str()));
-        rootnode->append_node ( script_node );
-      }
-      if (!script_case_.isEmpty())
-      {
-        xml_node<> *script_node = doc.allocate_node ( node_element, "script_case" );
-        code_case=script_case_.toStdString();
-        script_node->append_attribute(doc.allocate_attribute("code", code_case.c_str()));
-        rootnode->append_node ( script_node );
-      }
-
-
-      // == insert selected case elements
-      for (int i=0; i < ui->selected_elements->count(); i++)
-      {
-          InsertedCaseElement* elem = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i));
-          if (elem)
-          {
-              xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
-              elemnode->append_attribute(doc.allocate_attribute("type", elem->type_name().c_str()));
-              rootnode->append_node ( elemnode );
-
-              if (pack_config_file_) elem->parameters().packExternalFiles();
-              elem->parameters().appendToNode(doc, *elemnode, file.parent_path());
-          }
-      }
-
-      if (ui->patch_list->count())
-      {
-          // insert configured patches
-          xml_node<> *BCnode = doc.allocate_node ( node_element, "BoundaryConditions" );
-          rootnode->append_node ( BCnode );
-
-          xml_node<> *unassignedBCnode = doc.allocate_node ( node_element, "UnassignedPatches" );
-          DefaultPatch *dp = dynamic_cast<DefaultPatch*>(ui->patch_list->item(0));
-          if (!dp)
-          {
-              throw insight::Exception("Internal error: expected default patch config node!");
-          }
-          if (pack_config_file_) dp->parameters().packExternalFiles();
-          dp->appendToNode(doc, *unassignedBCnode, file.parent_path());
-          BCnode->append_node ( unassignedBCnode );
-
-          for (int i=1; i < ui->patch_list->count(); i++)
-          {
-              xml_node<> *patchnode = doc.allocate_node ( node_element, "Patch" );
-              Patch *p = dynamic_cast<Patch*>(ui->patch_list->item(i));
-              if (pack_config_file_) p->parameters().packExternalFiles();
-              p->appendToNode(doc, *patchnode, file.parent_path());
-              BCnode->append_node ( patchnode );
-          }
-      }
-
-      {
-          std::ofstream f ( file.c_str() );
-          f << doc << std::endl;
-          f << std::flush;
-          f.close();
-      }
-
-      config_is_modified_=false;
-      updateTitle();
   }
+}
+
+void isofCaseBuilderWindow::saveToFile(const boost::filesystem::path& file)
+{
+
+    // == prepare XML document
+    xml_document<> doc;
+
+    // xml declaration
+    xml_node<>* decl = doc.allocate_node ( node_declaration );
+    decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
+    decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
+    doc.append_node ( decl );
+
+    xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
+    doc.append_node ( rootnode );
+
+    if (ui->saveOFversion->checkState()==Qt::Checked)
+    {
+      xml_node<> *OFEnode = doc.allocate_node ( node_element, "OFE" );
+      OFEnode->append_attribute(doc.allocate_attribute("name", ui->OFversion->currentText().toStdString().c_str()));
+      rootnode->append_node ( OFEnode );
+    }
+
+    std::string code_pre, code_mesh, code_case; // store until XML file is written
+    if (!script_pre_.isEmpty())
+    {
+      xml_node<> *script_node = doc.allocate_node ( node_element, "script_pre" );
+      code_pre=script_pre_.toStdString();
+      script_node->append_attribute(doc.allocate_attribute("code", code_pre.c_str()));
+      rootnode->append_node ( script_node );
+    }
+    if (!script_mesh_.isEmpty())
+    {
+      xml_node<> *script_node = doc.allocate_node ( node_element, "script_mesh" );
+      code_mesh=script_mesh_.toStdString();
+      script_node->append_attribute(doc.allocate_attribute("code", code_mesh.c_str()));
+      rootnode->append_node ( script_node );
+    }
+    if (!script_case_.isEmpty())
+    {
+      xml_node<> *script_node = doc.allocate_node ( node_element, "script_case" );
+      code_case=script_case_.toStdString();
+      script_node->append_attribute(doc.allocate_attribute("code", code_case.c_str()));
+      rootnode->append_node ( script_node );
+    }
+
+
+    // == insert selected case elements
+    for (int i=0; i < ui->selected_elements->count(); i++)
+    {
+        InsertedCaseElement* elem = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i));
+        if (elem)
+        {
+            xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
+            elemnode->append_attribute(doc.allocate_attribute("type", elem->type_name().c_str()));
+            rootnode->append_node ( elemnode );
+
+            if (pack_config_file_) elem->parameters().packExternalFiles();
+            elem->parameters().appendToNode(doc, *elemnode, file.parent_path());
+        }
+    }
+
+    if (ui->patch_list->count())
+    {
+        // insert configured patches
+        xml_node<> *BCnode = doc.allocate_node ( node_element, "BoundaryConditions" );
+        rootnode->append_node ( BCnode );
+
+        xml_node<> *unassignedBCnode = doc.allocate_node ( node_element, "UnassignedPatches" );
+        DefaultPatch *dp = dynamic_cast<DefaultPatch*>(ui->patch_list->item(0));
+        if (!dp)
+        {
+            throw insight::Exception("Internal error: expected default patch config node!");
+        }
+        if (pack_config_file_) dp->parameters().packExternalFiles();
+        dp->appendToNode(doc, *unassignedBCnode, file.parent_path());
+        BCnode->append_node ( unassignedBCnode );
+
+        for (int i=1; i < ui->patch_list->count(); i++)
+        {
+            xml_node<> *patchnode = doc.allocate_node ( node_element, "Patch" );
+            Patch *p = dynamic_cast<Patch*>(ui->patch_list->item(i));
+            if (pack_config_file_) p->parameters().packExternalFiles();
+            p->appendToNode(doc, *patchnode, file.parent_path());
+            BCnode->append_node ( patchnode );
+        }
+    }
+
+    {
+        std::ofstream f ( file.c_str() );
+        f << doc << std::endl;
+        f << std::flush;
+        f.close();
+    }
+
 }
 
 
@@ -1031,7 +982,8 @@ void isofCaseBuilderWindow::onCleanCase()
   }
 }
 
-void isofCaseBuilderWindow::onCreate()
+
+bool isofCaseBuilderWindow::checkIfSaveNeeded()
 {
   if (config_is_modified_)
   {
@@ -1047,32 +999,13 @@ void isofCaseBuilderWindow::onCreate()
     }
     else if (res==QMessageBox::Cancel)
     {
-      return;
+      return false;
     }
   }
 
-  if (ui->selected_elements->count() > 0)
-  {
-
-        if
-        (
-            QMessageBox::question
-            (
-                this,
-                "Confirm",
-                str(format("Press OK to write the selected configuration into current directory %d!")
-                    % casepath()).c_str(),
-                QMessageBox::Ok|QMessageBox::Cancel
-            )
-            ==
-            QMessageBox::Ok
-        )
-        {
-            bool skipBCs = ui->skipBCswitch->isChecked();
-            createCase(skipBCs);
-        }
-    }
+  return true;
 }
+
 
 void isofCaseBuilderWindow::onOFVersionChanged(const QString& ofename)
 {
@@ -1132,6 +1065,4 @@ void isofCaseBuilderWindow::selectCaseDir()
     ui->case_dir->setText(dir);
 }
 
-void isofCaseBuilderWindow::runAll()
-{
-}
+

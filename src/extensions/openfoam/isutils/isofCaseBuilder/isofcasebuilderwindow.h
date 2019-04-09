@@ -80,22 +80,36 @@ protected:
     QByteArray last_pe_state_, last_bc_pe_state_;
 
     QString script_pre_, script_mesh_, script_case_;
+
+    enum ExecutionStep
+    {
+      ExecutionStep_Clean,
+      ExecutionStep_Pre,
+      ExecutionStep_Mesh,
+      ExecutionStep_Case
+    };
   
     void fillCaseElementList();
     void updateTitle();
 
     bool CADisCollapsed() const;
-    
+
+    bool checkIfSaveNeeded();
+    void saveToFile(const boost::filesystem::path& file);
+
 public:
     isofCaseBuilderWindow();
     virtual ~isofCaseBuilderWindow();
     
     void loadFile(const boost::filesystem::path& file, bool skipBCs=false);
+
     void createCase
     (
         bool skipBCs=false, 
         const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
     );
+
+    void run(ExecutionStep begin_with);
 
     void closeEvent(QCloseEvent *event);
     void readSettings();
@@ -146,6 +160,7 @@ public slots:
 
     void onCleanCase();
     void onCreate();
+    void onCreateNoBCs();
 
     void onConfigModification();
 

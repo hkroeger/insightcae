@@ -535,16 +535,21 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="create_btn">
-           <property name="text">
-            <string>Create case...</string>
+          <widget class="QToolButton" name="create_btn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="skipBCswitch">
            <property name="text">
-            <string>Skip BCs</string>
+            <string>Create case</string>
+           </property>
+           <property name="popupMode">
+            <enum>QToolButton::MenuButtonPopup</enum>
+           </property>
+           <property name="toolButtonStyle">
+            <enum>Qt::ToolButtonTextBesideIcon</enum>
            </property>
           </widget>
          </item>

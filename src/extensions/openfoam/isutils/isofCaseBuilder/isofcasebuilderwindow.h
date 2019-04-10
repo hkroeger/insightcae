@@ -182,6 +182,9 @@ public slots:
     void selectCaseDir();
 
     void runAll();
+    void cleanAndRunAll();
+    void runMeshAndSolver();
+    void runSolver();
 };
 
 

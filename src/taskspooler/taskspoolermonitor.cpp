@@ -36,7 +36,6 @@ void TaskSpoolerMonitor::onRefresh()
   QStringList lines = QString( process.readAllStandardOutput() ).split('\n');
 
   ui->joblist->clear();
-  int pos;
   int num=0;
   for (int i=1; i<lines.size(); i++)
   {

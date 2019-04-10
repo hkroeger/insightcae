@@ -14,6 +14,96 @@ using namespace boost;
 namespace insight
 {
 
+bool TaskSpoolerInterface::JobList::hasRunningJobs() const
+{
+  for (const auto& j: *this)
+  {
+    if (j.state==Running) return true;
+  }
+  return false;
+}
+
+
+bool TaskSpoolerInterface::JobList::hasQueuedJobs() const
+{
+  for (const auto& j: *this)
+  {
+    if (j.state==Queued) return true;
+  }
+  return false;
+}
+
+
+TaskSpoolerInterface::TaskSpoolerInterface(const boost::filesystem::path& socket)
+  : socket_(socket),
+    env_(boost::this_process::environment())
+{
+  env_["TS_SOCKET"]=socket.string();
+}
+
+TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
+{
+  JobList jl;
+  boost::process::ipstream is;
+  boost::process::child c("tsp", env_, boost::process::std_out > is);
+
+  if (!c.running())
+    throw insight::Exception("Could not execute task spooler executable!");
+
+  std::vector<std::string> data;
+  std::string line;
+  int i=0;
+  boost::regex re("^([^ ]*) +([^ ]*) +([^ ]*) +(.*)$");
+  while (std::getline(is, line))
+  {
+    std::cout<<line<<std::endl;
+    if (i>0)
+    {
+      boost::smatch m;
+      if (boost::regex_match(line, m, re))
+      {
+        Job j;
+
+        j.id=boost::lexical_cast<int>(m[1]);
+
+        if (m[2]=="running")
+          j.state=Running;
+        else if (m[2]=="queued")
+          j.state=Queued;
+        else if (m[2]=="finished")
+          j.state=Finished;
+        else
+          j.state=Unknown;
+
+        j.output=boost::filesystem::path(m[3]);
+
+        j.remainder=m[4];
+
+        jl.push_back(j);
+      }
+    }
+    i++;
+  }
+
+  c.wait();
+
+  return jl;
+}
+
+
+void TaskSpoolerInterface::cancelAllJobs()
+{
+  while ( boost::process::system(boost::process::search_path("tsp"),
+                                 boost::process::args("-k"),
+                                 env_/*, boost::process::std_out > boost::process::null*/) == 0 )
+  {
+    boost::process::system(boost::process::search_path("tsp"),
+                           boost::process::args("-C"),
+                           env_);
+  }
+}
+
+
 
 RemoteServerList::RemoteServerList()
 {

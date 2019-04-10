@@ -139,12 +139,26 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     ui->case_dir->setText( boost::filesystem::current_path().c_str() );
 
     QMenu* startmenu=new QMenu(ui->btn_start);
-    connect( startmenu->addAction("Execute everything"),
+
+    connect( ui->btn_start,
+             &QPushButton::clicked,
+             this, &isofCaseBuilderWindow::runAll);
+    connect( startmenu->addAction("Execute everything (without cleaning)"),
              &QAction::triggered,
              this, &isofCaseBuilderWindow::runAll);
-    startmenu->addAction("Clean and execute everything");
-    startmenu->addAction("Begin with mesh step");
-    startmenu->addAction("Begin with mesh case step");
+
+    connect( startmenu->addAction("Clean and execute everything"),
+             &QAction::triggered,
+             this, &isofCaseBuilderWindow::cleanAndRunAll);
+
+    connect( startmenu->addAction("Begin with mesh step"),
+             &QAction::triggered,
+             this, &isofCaseBuilderWindow::runMeshAndSolver);
+
+    connect( startmenu->addAction("Begin with mesh case step"),
+             &QAction::triggered,
+             this, &isofCaseBuilderWindow::runSolver);
+
     ui->btn_start->setMenu(startmenu);
 
 

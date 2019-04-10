@@ -29,6 +29,7 @@
 #include "insertedcaseelement.h"
 
 #ifndef Q_MOC_RUN
+#include "openfoam/remoteexecution.h"
 #include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh_templates.h"
@@ -201,13 +202,32 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with)
 
   boost::filesystem::path cp=casepath();
 
-  boost::filesystem::path cfgfn = boost::filesystem::unique_path( cp/"isofcasebuilder-run-%%%%%.iscb" );
-  saveToFile(cfgfn);
-
-  boost::filesystem::path fn = boost::filesystem::unique_path( cp/"isofcasebuilder-run-%%%%%.sh" );
-
+  boost::filesystem::path cfgfn = cp/"isofcasebuilder-run.iscb";
+  boost::filesystem::path fn = cp/"isofcasebuilder-run.sh";
   boost::filesystem::path ts_socket = cp/"tsp.socket";
 
+  if (boost::filesystem::exists(ts_socket))
+  {
+    insight::TaskSpoolerInterface ti(ts_socket);
+    auto jobs=ti.jobs();
+    if (jobs.hasRunningJobs() || jobs.hasQueuedJobs())
+    {
+      auto answer=QMessageBox::question
+                  (
+                    this,
+                    QString::fromStdString("Execution server exists in "+cp.string()),
+                    "There is a run server socket existing in the execution directory.\n"
+                    "Please select yes to kill and restart the execution server. This will terminate any solver running on this case!\n",
+                    QMessageBox::StandardButtons(QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel)
+                  );
+
+      if (answer!=QMessageBox::Yes) return;
+
+      ti.cancelAllJobs();
+    }
+  }
+
+  saveToFile(cfgfn);
   {
     std::ofstream f( fn.c_str() );
     f<<"#!/bin/bash\n";
@@ -255,6 +275,9 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with)
 }
 
 
+
+
+
 void isofCaseBuilderWindow::runAll()
 {
   if (checkIfSaveNeeded())
@@ -284,5 +307,87 @@ void isofCaseBuilderWindow::runAll()
 }
 
 
+void isofCaseBuilderWindow::cleanAndRunAll()
+{
+  if (checkIfSaveNeeded())
+  {
 
+    if (ui->selected_elements->count() > 0)
+    {
+
+          if
+          (
+              QMessageBox::question
+              (
+                  this,
+                  "Confirm",
+                  str(format("Press OK to run the selected configuration in the directory:\n%d!\nNote: all existing previous case information will be deleted!")
+                      % casepath()).c_str(),
+                  QMessageBox::Ok|QMessageBox::Cancel
+              )
+              ==
+              QMessageBox::Ok
+          )
+          {
+              run(ExecutionStep_Clean);
+          }
+     }
+  }
+}
+
+void isofCaseBuilderWindow::runMeshAndSolver()
+{
+  if (checkIfSaveNeeded())
+  {
+
+    if (ui->selected_elements->count() > 0)
+    {
+
+          if
+          (
+              QMessageBox::question
+              (
+                  this,
+                  "Confirm",
+                  str(format("Press OK to create and run the selected configuration in the directory:\n%d!")
+                      % casepath()).c_str(),
+                  QMessageBox::Ok|QMessageBox::Cancel
+              )
+              ==
+              QMessageBox::Ok
+          )
+          {
+              run(ExecutionStep_Mesh);
+          }
+     }
+  }
+}
+
+void isofCaseBuilderWindow::runSolver()
+{
+  if (checkIfSaveNeeded())
+  {
+
+    if (ui->selected_elements->count() > 0)
+    {
+
+          if
+          (
+              QMessageBox::question
+              (
+                  this,
+                  "Confirm",
+                  str(format("Press OK to create and run the selected configuration in the directory:\n%d!")
+                      % casepath()).c_str(),
+                  QMessageBox::Ok|QMessageBox::Cancel
+              )
+              ==
+              QMessageBox::Ok
+          )
+          {
+              run(ExecutionStep_Case);
+          }
+     }
+  }
+}
 

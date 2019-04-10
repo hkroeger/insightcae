@@ -49,8 +49,8 @@ public:
 
     std::vector<bfs_path> remoteLS() const;
 
-    void syncToRemote(const std::vector<std::string>& exclude_pattern = {} );
-    void syncToLocal(bool skipTimeSteps=false, const std::vector<std::string>& exclude_pattern = {});
+    void syncToRemote(const std::vector<std::string>& exclude_pattern = std::vector<std::string>() );
+    void syncToLocal(bool skipTimeSteps=false, const std::vector<std::string>& exclude_pattern = std::vector<std::string>() );
 
     void queueRemoteCommand(const std::string& command, bool waitForPreviousFinished=true);
     void waitRemoteQueueFinished();

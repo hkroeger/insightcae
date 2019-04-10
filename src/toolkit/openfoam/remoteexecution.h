@@ -2,9 +2,42 @@
 #define REMOTEEXECUTION_H
 
 #include "base/boost_include.h"
+#include "boost/process.hpp"
 
 namespace insight
 {
+
+
+class TaskSpoolerInterface
+{
+  boost::filesystem::path socket_;
+  boost::process::environment env_;
+
+public:
+  enum JobState { Running, Queued, Finished, Unknown };
+
+  struct Job
+  {
+    int id;
+    JobState state;
+    boost::filesystem::path output;
+    std::string remainder;
+  };
+
+  struct JobList
+  : public std::vector<Job>
+  {
+    bool hasRunningJobs() const;
+    bool hasQueuedJobs() const;
+  };
+
+public:
+  TaskSpoolerInterface(const boost::filesystem::path& socket);
+
+  JobList jobs() const;
+
+  void cancelAllJobs();
+};
 
 
 struct RemoteServerInfo

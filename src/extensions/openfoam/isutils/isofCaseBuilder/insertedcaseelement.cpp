@@ -8,9 +8,14 @@ InsertedCaseElement::InsertedCaseElement(QListWidget* parent, const std::string&
 }
 
 
+insight::OpenFOAMCaseElement* InsertedCaseElement::createElement(insight::OpenFOAMCase& c) const
+{
+    return insight::OpenFOAMCaseElement::lookup(type_name_, c, curp_);
+}
+
 void InsertedCaseElement::insertElement(insight::OpenFOAMCase& c) const
 {
-    c.insert(insight::OpenFOAMCaseElement::lookup(type_name_, c, curp_));
+    c.insert(createElement(c));
 }
 
 bool InsertedCaseElement::hasVisualization() const

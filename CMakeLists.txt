@@ -154,8 +154,8 @@ ENDIF()
 
 
 ADD_DEFINITIONS(
-    #-std=c++11 # Or -std=c++0x
-    -std=c++0x
+    -std=c++11 # Or -std=c++0x
+    #-std=c++0x
     -Wno-old-style-cast
     -ftemplate-depth=900
     -fpermissive 

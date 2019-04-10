@@ -49,7 +49,7 @@ RemoteServerList::RemoteServerList()
                       RemoteServerInfo s;
                       std::string key= m[1];
                       s.serverName_ = m[2];
-                      s.defaultDir_ = m[3];
+                      s.defaultDir_ = bfs_path(m[3]);
                       (*this)[key]=s;
                       anything_read=true;
                     }

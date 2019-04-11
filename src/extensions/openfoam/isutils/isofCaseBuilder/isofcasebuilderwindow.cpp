@@ -562,7 +562,7 @@ QString isofCaseBuilderWindow::generateDefault_script_mesh()
     cmds += "blockMesh\n";
 
   if (containsCE<insight::snappyHexMeshConfiguration>())
-    cmds += "snappyHexMesh\n";
+    cmds += "isofRun.py --mesh-reconst --reconst-only-latesttime  snappyHexMesh\n";
 
   return cmds;
 }
@@ -572,11 +572,11 @@ QString isofCaseBuilderWindow::generateDefault_script_case()
   QString cmds;
 
   if (containsCE<insight::setFieldsConfiguration>())
-    cmds += "setFields\n";
+    cmds += "isofRun.py --no-reconst setFields\n";
 
   QString app = applicationName();
   if ( ! (app.isEmpty() || app=="none") )
-    cmds += app+"\n";
+    cmds += "isofRun.py --reconst-only-latesttime " + app + "\n";
 
   return cmds;
 }

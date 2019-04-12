@@ -5,6 +5,8 @@
 #include "taskspoolermonitor.h"
 #include "ui_taskspoolermonitor.h"
 
+#include "base/qt5_helper.h"
+
 TaskSpoolerMonitor::TaskSpoolerMonitor(const boost::filesystem::path& tsp_socket, QWidget *parent) :
   QWidget(parent),
   tsp_socket_(tsp_socket),

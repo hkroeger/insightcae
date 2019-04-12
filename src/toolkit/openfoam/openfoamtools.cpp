@@ -3292,5 +3292,189 @@ void VTKFieldToOpenFOAMField(const boost::filesystem::path& vtkfile, const std::
   }
 }
 
+decompositionState::decompositionState(const boost::filesystem::path& casedir)
+{
+  CurrentExceptionContext ce("Checking decomposition state of case in "+casedir.string());
+
+  if (!boost::filesystem::exists(casedir))
+    throw insight::Exception("Case directory "+casedir.string()+" does not exist!");
+
+  int np=1;
+  try
+  {
+    np=readDecomposeParDict(casedir);
+  }
+  catch (...) {} // cannot read decomposeParDict (not existent) => serial case
+
+  std::vector<boost::filesystem::path> procDirs;
+  directory_iterator end_itr; // default construction yields past-the-end
+  for ( directory_iterator itr( casedir );
+          itr != end_itr; itr++ )
+  {
+      if ( is_directory(itr->status()) )
+      {
+          if (starts_with(itr->path().filename().string(), "processor"))
+          {
+            procDirs.push_back(itr->path());
+          }
+      }
+  }
+
+  if (procDirs.size()>0)
+    hasProcessorDirectories=true;
+  else
+    hasProcessorDirectories=false;
+
+  if (procDirs.size()==size_t(np))
+    nProcDirsMatchesDecomposeParDict=true;
+  else
+    nProcDirsMatchesDecomposeParDict=false;
+
+  //
+  // check, if the same latest time step is existing in all processor directories and
+  // has everywhere the same fields
+  //
+  decomposedLatestTimeIsConsistent=true;
+  std::string latestTime;
+  std::set<std::string> fields0;
+  for (auto pd=procDirs.begin(); pd!=procDirs.end(); pd++)
+  {
+    auto tdl = listTimeDirectories(*pd);
+
+    if (pd==procDirs.begin())
+    {
+        if (tdl.size()>0)
+        {
+          latestTime=tdl.rbegin()->second.filename().string();
+          for (const auto& f:
+               boost::filesystem::directory_iterator(tdl.rbegin()->second))
+          {
+            // get list of fields
+            fields0.insert( f.path().filename().string() );
+          }
+        }
+    }
+    else
+    {
+      if (tdl.size()>0)
+      {
+        std::string cur_latestTime=tdl.rbegin()->second.filename().string();
+
+        if (cur_latestTime!=latestTime)
+        {
+          decomposedLatestTimeIsConsistent = false;
+        }
+        else
+        {
+          size_t nfound=0;
+          // check, if the same fields are present
+          for (const auto& f: boost::filesystem::directory_iterator(tdl.rbegin()->second))
+          {
+            if (fields0.find(f.path().filename().string()) != fields0.end())
+            {
+              nfound++;
+            }
+          }
+          decomposedLatestTimeIsConsistent = decomposedLatestTimeIsConsistent
+                                             && (nfound==fields0.size());
+        }
+      }
+    }
+  }
+
+  if (!hasProcessorDirectories)
+  {
+    laterLatestTime=Location::Reconstructed;
+    newerFiles=Location::Reconstructed;
+  }
+  else
+  {
+    if (decomposedLatestTimeIsConsistent)
+    {
+      // check, where the latest time step lies
+      auto tdl = listTimeDirectories(casedir);
+      if (tdl.size()==0)
+      {
+        if (latestTime==std::string())
+        {
+          // neither in decomposed nor reconst case are time steps
+          laterLatestTime=Location::Both;
+          newerFiles=Location::Undefined;
+        }
+        else
+        {
+          // no reconst time steps but time steps in proc dirs
+          laterLatestTime=Location::Decomposed;
+          newerFiles=Location::Decomposed;
+        }
+      }
+      else
+      {
+        if (latestTime==std::string())
+        {
+          // in reconst case are time steps but not in proc dirs
+          laterLatestTime=Location::Reconstructed;
+          newerFiles=Location::Reconstructed;
+        }
+        else
+        {
+          double lt_decomp=boost::lexical_cast<double>(latestTime);
+          if ( fabs(tdl.rbegin()->first - lt_decomp) < 1e-15 )
+          {
+            // same time step in recon and decomp
+            laterLatestTime=Location::Both;
+
+            boost::filesystem::path
+                p_dec = casedir/"processor0"/latestTime,
+                p_rec = tdl.rbegin()->second;
+            bool rec_newer=false, dec_newer=false;
+            for (const auto& f: fields0)
+            {
+              if (
+                  boost::filesystem::last_write_time(p_dec/f)
+                  <
+                  boost::filesystem::last_write_time(p_rec/f)
+                 )
+              {
+                rec_newer=true;
+              }
+              else
+              {
+                dec_newer=true;
+              }
+            }
+            if (rec_newer && dec_newer)
+            {
+              newerFiles=Location::Both;
+            }
+            else if (rec_newer)
+            {
+              newerFiles=Location::Reconstructed;
+            }
+            else if (dec_newer)
+            {
+              newerFiles=Location::Decomposed;
+            }
+            else
+            {
+              newerFiles=Location::Undefined;
+            }
+          }
+          else if ( tdl.rbegin()->first > lt_decomp )
+          {
+            laterLatestTime=Location::Reconstructed;
+            newerFiles=Location::Reconstructed;
+          }
+          else if ( tdl.rbegin()->first < lt_decomp )
+          {
+            laterLatestTime=Location::Decomposed;
+            newerFiles=Location::Decomposed;
+          }
+        }
+      }
+    }
+  }
+
+}
 
 }

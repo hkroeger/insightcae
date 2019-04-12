@@ -899,6 +899,19 @@ public:
 
 void VTKFieldToOpenFOAMField(const boost::filesystem::path& vtkfile, const std::string& fieldname, std::ostream& out);
 
+struct decompositionState
+{
+  bool hasProcessorDirectories;
+  bool nProcDirsMatchesDecomposeParDict;
+  bool decomposedLatestTimeIsConsistent;
+  enum Location { Reconstructed, Decomposed, Both, Undefined };
+  Location laterLatestTime;
+  Location newerFiles;
+
+  decompositionState(const boost::filesystem::path& casedir);
+};
+
+
 }
 
 #endif // OPENFOAMTOOLS_H

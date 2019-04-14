@@ -316,6 +316,9 @@
                </item>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_4">
+                 <property name="sizeConstraint">
+                  <enum>QLayout::SetDefaultConstraint</enum>
+                 </property>
                  <item>
                   <widget class="QPushButton" name="parse_bf_btn">
                    <property name="text">
@@ -326,7 +329,28 @@
                  <item>
                   <widget class="QPushButton" name="add_patch_btn">
                    <property name="text">
-                    <string>Add patch manually...</string>
+                    <string>Add patch...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="btn_remove_patch">
+                   <property name="text">
+                    <string>Remove</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="btn_rename_patch">
+                   <property name="text">
+                    <string>Rename</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="btn_clear_patches">
+                   <property name="text">
+                    <string>Clear</string>
                    </property>
                   </widget>
                  </item>
@@ -556,7 +580,7 @@
          <item>
           <widget class="QPushButton" name="clean_btn">
            <property name="text">
-            <string>Clean case...</string>
+            <string>Clean case dir...</string>
            </property>
           </widget>
          </item>

@@ -95,6 +95,7 @@ protected:
     bool CADisCollapsed() const;
 
     bool checkIfSaveNeeded();
+    bool checkIfCaseIsEmpty();
     void saveToFile(const boost::filesystem::path& file);
 
 public:
@@ -155,6 +156,9 @@ public slots:
     void onLoad();
     void onParseBF();
     void onAddPatchManually();
+    void onRemovePatch();
+    void onRenamePatch();
+    void onResetPatchDef();
     void onAssignBC();
     void onPatchSelectionChanged();
 

@@ -24,6 +24,7 @@ public:
 
     virtual void set_bc_type(const std::string& type_name);
 
+    void set_patch_name(const QString& newname);
     inline const std::string& patch_name() const { return patch_name_; }
     inline const std::string& bc_type() const { return bc_type_; }
     inline insight::ParameterSet& parameters() { return curp_; }

@@ -33,6 +33,12 @@ void Patch::set_bc_type(const std::string& type_name)
     curp_ = BoundaryCondition::defaultParameters(bc_type_);
 }
 
+void Patch::set_patch_name(const QString& newname)
+{
+  patch_name_=newname.toStdString();
+  setText(newname);
+}
+
 bool Patch::insertElement(insight::OpenFOAMCase& c, insight::OFDictData::dict& boundaryDict) const
 {
     if (bc_type_!="")

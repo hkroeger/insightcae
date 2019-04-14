@@ -108,15 +108,26 @@ void isofCaseBuilderWindow::createCase
 }
 
 
+bool isofCaseBuilderWindow::checkIfCaseIsEmpty()
+{
+  if (ui->selected_elements->count() > 0)
+  {
+    return true;
+  }
+  else
+  {
+    QMessageBox::information(this, "Nothing to create", "The current OpenFOAM case is empty. Please add some case elements to include the required functions!");
+    return false;
+  }
+}
+
 
 void isofCaseBuilderWindow::onCreate()
 {
   if (checkIfSaveNeeded())
   {
-
-    if (ui->selected_elements->count() > 0)
+    if (checkIfCaseIsEmpty())
     {
-
           if
           (
               QMessageBox::question
@@ -143,10 +154,8 @@ void isofCaseBuilderWindow::onCreateNoBCs()
 {
   if (checkIfSaveNeeded())
   {
-
-    if (ui->selected_elements->count() > 0)
+    if (checkIfCaseIsEmpty())
     {
-
           if
           (
               QMessageBox::question
@@ -283,9 +292,8 @@ void isofCaseBuilderWindow::runAll()
   if (checkIfSaveNeeded())
   {
 
-    if (ui->selected_elements->count() > 0)
+    if (checkIfCaseIsEmpty())
     {
-
           if
           (
               QMessageBox::question
@@ -312,9 +320,8 @@ void isofCaseBuilderWindow::cleanAndRunAll()
   if (checkIfSaveNeeded())
   {
 
-    if (ui->selected_elements->count() > 0)
+    if (checkIfCaseIsEmpty())
     {
-
           if
           (
               QMessageBox::question
@@ -340,9 +347,8 @@ void isofCaseBuilderWindow::runMeshAndSolver()
   if (checkIfSaveNeeded())
   {
 
-    if (ui->selected_elements->count() > 0)
+    if (checkIfCaseIsEmpty())
     {
-
           if
           (
               QMessageBox::question
@@ -368,9 +374,8 @@ void isofCaseBuilderWindow::runSolver()
   if (checkIfSaveNeeded())
   {
 
-    if (ui->selected_elements->count() > 0)
+    if (checkIfCaseIsEmpty())
     {
-
           if
           (
               QMessageBox::question

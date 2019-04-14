@@ -12,6 +12,7 @@ set(isofCaseBuilder_SRCS
     patch.cpp
     isofcasebuilderwindow.cpp
     isofcasebuilder_actions.cpp
+    isofcasebuilder_patches.cpp
 )
 SET(isofCaseBuilder_FORMS isofcasebuilderwindow.ui)
 SET(isofCaseBuilder_RCCS isofCaseBuilder.qrc)

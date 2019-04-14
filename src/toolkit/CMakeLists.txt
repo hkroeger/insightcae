@@ -79,11 +79,10 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
 ENDIF()
 
 find_package(VTK COMPONENTS
-    #vtkFiltersCore
-    #vtkCommonCore
-    #vtkIOImage
-    #vtkIOXML
-    #vtkImagingCore
+    vtkFiltersCore
+    vtkCommonCore
+    vtkIOLegacy
+    vtkIOGeometry
     REQUIRED
 )
 

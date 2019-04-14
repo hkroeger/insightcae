@@ -43,8 +43,14 @@ except:
     pass
 
 if is_parallel and not opts.nodecomp:
+
+    # check, if decomp is really needed
+    #d=decompositionState(case)
+    onlyfielddecomp=opts.fielddecomp
+    #if d.hasProcessorDirectories and d.nProcDirsMatchesDecomposeParDict and d.decomposedLatestTimeIsConsistent
+
     subprocess.call(
-      ["decomposePar"] + (["-fields"] if opts.fielddecomp  else []),
+      ["decomposePar"] + (["-fields"] if onlyfielddecomp  else []),
       cwd=case
       )
 

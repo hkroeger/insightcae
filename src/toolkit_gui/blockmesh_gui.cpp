@@ -110,6 +110,12 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::updateVisualizationElements
 
 
 
+void blockMeshDict_Cylinder_ParameterSet_Visualizer::setIcon(QIcon* i)
+{
+  *i=QIcon(":symbole/bmd_cyl.svg");
+}
+
+
 
 
 ParameterSet_VisualizerPtr blockMeshDict_Sphere_visualizer()

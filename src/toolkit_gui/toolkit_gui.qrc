@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>../../symbole/sHM-cfg.svg</file>
+        <file>../../symbole/bmd_cyl.svg</file>
     </qresource>
 </RCC>

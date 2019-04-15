@@ -44,6 +44,7 @@ protected:
 public:
     virtual void update(const ParameterSet& ps);
     virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
+    virtual void setIcon(QIcon* i);
 };
 
 

@@ -1,14 +1,112 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" version="1">
- <path style="opacity:0.2" d="m 4.0000004,56.200069 0,1.999971 c 0,1.549978 1.2495821,2.79996 2.80076,2.79996 L 57.20004,61 C 58.750017,61 60,59.750018 60,58.20004 l 0,-1.999971 c 0,1.549977 -1.249983,2.79996 -2.79996,2.79996 l -50.3992796,0 c -1.5503779,0 -2.79996,-1.249983 -2.79996,-2.79996 z"/>
- <rect style="fill:#4f4f4f" width="55.999" height="55.999" x="-60" y="-60" rx="2.8" ry="2.8" transform="matrix(0,-1,-1,0,0,0)"/>
- <path style="fill:#848484" d="m 15.999829,18.000629 0,31.999543 31.999542,0 0,-31.999543 -31.999542,0 z m 5.999914,5.999914 19.999714,0 0,19.999714 -19.999714,0 0,-19.999714 z"/>
- <rect style="opacity:0.2" width="20" height="20" x="12" y="35"/>
- <rect style="fill:#64b5ff" width="20" height="20" x="12" y="34"/>
- <rect style="opacity:0.2" width="20" height="14" x="12" y="15"/>
- <rect style="fill:#e47cff" width="20" height="14" x="12" y="14"/>
- <circle style="opacity:0.2" cx="44.999" cy="22" r="7"/>
- <circle style="fill:#ff6363" cx="44.999" cy="21.001" r="7"/>
- <rect style="opacity:0.2" width="16" height="14" x="36" y="39"/>
- <rect style="fill:#3bff80" width="16" height="14" x="36" y="38"/>
- <path style="opacity:0.1;fill:#ffffff" d="M 6.8007812 4 C 5.2496034 4 4 5.2496034 4 6.8007812 L 4 7.8027344 C 4 6.2515566 5.2496034 5.0019531 6.8007812 5.0019531 L 57.199219 5.0019531 C 58.749196 5.0019531 60 6.2515566 60 7.8027344 L 60 6.8007812 C 60 5.2496035 58.749196 4 57.199219 4 L 6.8007812 4 z"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="64"
+   height="64"
+   version="1"
+   id="svg26"
+   sodipodi:docname="flow-chart.svg"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)">
+  <metadata
+     id="metadata32">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs30" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1990"
+     inkscape:window-height="1340"
+     id="namedview28"
+     showgrid="false"
+     inkscape:zoom="3.6875"
+     inkscape:cx="32"
+     inkscape:cy="32"
+     inkscape:window-x="3088"
+     inkscape:window-y="224"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg26" />
+  <g
+     id="g848"
+     transform="matrix(1.3241009,0,0,1.3241009,10.963712,53.206579)">
+    <path
+       inkscape:connector-curvature="0"
+       id="path6"
+       d="M -0.54254342,-32.982417 V -0.98287895 H 31.456998 V -32.982417 Z m 5.99991402,5.999909 H 25.457085 V -6.9827939 H 5.4573706 Z"
+       style="fill:#848484" />
+    <rect
+       id="rect8"
+       y="-15.983054"
+       x="-4.5423717"
+       height="20"
+       width="20"
+       style="opacity:0.2" />
+    <rect
+       id="rect10"
+       y="-16.983053"
+       x="-4.5423717"
+       height="20"
+       width="20"
+       style="fill:#64b5ff" />
+    <rect
+       id="rect12"
+       y="-35.983055"
+       x="-4.5423717"
+       height="14"
+       width="20"
+       style="opacity:0.2" />
+    <rect
+       id="rect14"
+       y="-36.983055"
+       x="-4.5423717"
+       height="14"
+       width="20"
+       style="fill:#e47cff" />
+    <circle
+       id="circle16"
+       r="7"
+       cy="-28.983053"
+       cx="28.456627"
+       style="opacity:0.2" />
+    <circle
+       id="circle18"
+       r="7"
+       cy="-29.982054"
+       cx="28.456627"
+       style="fill:#ff6363" />
+    <rect
+       id="rect20"
+       y="-11.983054"
+       x="19.457626"
+       height="14"
+       width="16"
+       style="opacity:0.2" />
+    <rect
+       id="rect22"
+       y="-12.983054"
+       x="19.457626"
+       height="14"
+       width="16"
+       style="fill:#3bff80" />
+  </g>
 </svg>

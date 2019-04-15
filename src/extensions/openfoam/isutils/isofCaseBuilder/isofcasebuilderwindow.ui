@@ -27,6 +27,37 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
+       <widget class="QLabel" name="label_10">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>32</width>
+          <height>32</height>
+         </size>
+        </property>
+        <property name="baseSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="pixmap">
+         <pixmap resource="isofCaseBuilder.qrc">:/symbole/running-folder.svg</pixmap>
+        </property>
+        <property name="scaledContents">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="label_9">
         <property name="text">
          <string>Case directory:</string>
@@ -78,7 +109,17 @@
          <property name="currentIndex">
           <number>0</number>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
          <widget class="QWidget" name="generalTab">
+          <attribute name="icon">
+           <iconset resource="isofCaseBuilder.qrc">
+            <normaloff>:/symbole/feature-store.svg</normaloff>:/symbole/feature-store.svg</iconset>
+          </attribute>
           <attribute name="title">
            <string>General</string>
           </attribute>
@@ -257,6 +298,10 @@
           </layout>
          </widget>
          <widget class="QWidget" name="tab_2">
+          <attribute name="icon">
+           <iconset resource="isofCaseBuilder.qrc">
+            <normaloff>:/symbole/boundary-condition.svg</normaloff>:/symbole/boundary-condition.svg</iconset>
+          </attribute>
           <attribute name="title">
            <string>Boundary Conditions</string>
           </attribute>
@@ -387,6 +432,10 @@
           </layout>
          </widget>
          <widget class="QWidget" name="recipe_tab">
+          <attribute name="icon">
+           <iconset resource="isofCaseBuilder.qrc">
+            <normaloff>:/symbole/flow-chart.svg</normaloff>:/symbole/flow-chart.svg</iconset>
+          </attribute>
           <attribute name="title">
            <string>Execution Recipe</string>
           </attribute>
@@ -550,6 +599,10 @@
            <property name="text">
             <string>Start</string>
            </property>
+           <property name="icon">
+            <iconset resource="isofCaseBuilder.qrc">
+             <normaloff>:/symbole/run.svg</normaloff>:/symbole/run.svg</iconset>
+           </property>
            <property name="popupMode">
             <enum>QToolButton::MenuButtonPopup</enum>
            </property>
@@ -569,6 +622,10 @@
            <property name="text">
             <string>Create case</string>
            </property>
+           <property name="icon">
+            <iconset resource="isofCaseBuilder.qrc">
+             <normaloff>:/symbole/create_case.svg</normaloff>:/symbole/create_case.svg</iconset>
+           </property>
            <property name="popupMode">
             <enum>QToolButton::MenuButtonPopup</enum>
            </property>
@@ -581,6 +638,10 @@
           <widget class="QPushButton" name="clean_btn">
            <property name="text">
             <string>Clean case dir...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="isofCaseBuilder.qrc">
+             <normaloff>:/symbole/clean.svg</normaloff>:/symbole/clean.svg</iconset>
            </property>
           </widget>
          </item>
@@ -661,6 +722,8 @@
   <tabstop>selected_elements</tabstop>
   <tabstop>BCTab</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="isofCaseBuilder.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -225,4 +225,10 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::updateVisualizationElem
     insight::cad::cache.finishRebuild();
 }
 
+
+void snappyHexMeshConfiguration_ParameterSet_Visualizer::setIcon(QIcon *i)
+{
+  *i=QIcon(":symbole/sHM-cfg.svg");
+}
+
 }

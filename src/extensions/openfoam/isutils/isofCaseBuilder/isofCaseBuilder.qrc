@@ -2,5 +2,15 @@
     <qresource prefix="/">
         <file>../../../../../stylesheet.css</file>
         <file>../../../../../logo_insight_cae.png</file>
+        <file>../../../../../symbole/flow-chart.svg</file>
+        <file>../../../../../symbole/boundary-condition.svg</file>
+        <file>../../../../../symbole/feature-store.svg</file>
+        <file>../../../../../symbole/running-folder.svg</file>
+        <file>../../../../../symbole/run.svg</file>
+        <file>../../../../../symbole/clean.svg</file>
+        <file>../../../../../symbole/create_case.svg</file>
+        <file>../../../../../symbole/clean_and_run.svg</file>
+        <file>../../../../../symbole/run_skip1.svg</file>
+        <file>../../../../../symbole/run_skip2.svg</file>
     </qresource>
 </RCC>

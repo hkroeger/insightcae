@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../../symbole/sHM-cfg.svg</file>
+    </qresource>
+</RCC>

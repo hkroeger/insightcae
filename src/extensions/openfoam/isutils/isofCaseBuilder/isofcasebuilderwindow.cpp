@@ -51,11 +51,13 @@ public:
     
     HierarchyLevel(QTreeWidgetItem* parent)
     : parent_(parent)
-    {}
+    {
+    }
     
     iterator addHierarchyLevel(const std::string& entry)
     {
         QTreeWidgetItem* newnode = new QTreeWidgetItem(parent_, QStringList() << entry.c_str());
+        newnode->setIcon(0, QIcon::fromTheme("folder"));
         { QFont f=newnode->font(0); f.setBold(true); newnode->setFont(0, f); }
         std::pair<iterator,bool> ret = insert(std::make_pair(entry, HierarchyLevel(newnode)));
         return ret.first;
@@ -83,27 +85,39 @@ void isofCaseBuilderWindow::fillCaseElementList()
   
   /*HierarchyLevel::iterator i=*/toplevel.addHierarchyLevel("Uncategorized");
 
-  for ( 
-      insight::OpenFOAMCaseElement::FactoryTable::const_iterator i =
-         insight::OpenFOAMCaseElement::factories_->begin();
-      i != insight::OpenFOAMCaseElement::factories_->end(); 
-      i++ 
-    )
+  for (
+       insight::OpenFOAMCaseElement::FactoryTable::const_iterator i =
+       insight::OpenFOAMCaseElement::factories_->begin();
+       i != insight::OpenFOAMCaseElement::factories_->end();
+       i++
+       )
+  {
+    std::string elemName = i->first;
+
+    QStringList path = QString::fromStdString
+                       (
+                         insight::OpenFOAMCaseElement::category ( elemName )
+                         ).split ( "/", QString::SkipEmptyParts );
+
+    HierarchyLevel* parent = &toplevel;
+    for ( QStringList::const_iterator pit = path.constBegin(); pit != path.constEnd(); ++pit )
     {
-      std::string elemName = i->first;
-      QStringList path = QString::fromStdString 
-        ( 
-            insight::OpenFOAMCaseElement::category ( elemName ) 
-        ).split ( "/", QString::SkipEmptyParts );
-      HierarchyLevel* parent = &toplevel;
-      for ( QStringList::const_iterator pit = path.constBegin(); pit != path.constEnd(); ++pit )
-        {
-          parent = & ( parent->sublevel ( pit->toStdString() ) );
-        }
-      /*QTreeWidgetItem* item =*/ new QTreeWidgetItem ( parent->parent_, QStringList() << elemName.c_str() );
-//       QFont f=item->font(0); f.setBold(true); item->setFont(0, f);
+      parent = & ( parent->sublevel ( pit->toStdString() ) );
     }
-    
+    QTreeWidgetItem* item = new QTreeWidgetItem ( parent->parent_, QStringList() << elemName.c_str() );
+    {
+      try {
+          insight::ParameterSet_VisualizerPtr viz
+              = insight::OpenFOAMCaseElement::visualizer(elemName);
+          QIcon icon;
+          viz->setIcon(&icon);
+          item->setIcon(0, icon);
+      } catch (insight::Exception e)
+      { /* ignore, if non-existent */ }
+    }
+    //       QFont f=item->font(0); f.setBold(true); item->setFont(0, f);
+  }
+
   ui->available_elements->expandItem(topitem);
 }
 
@@ -143,19 +157,19 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     connect( ui->btn_start,
              &QPushButton::clicked,
              this, &isofCaseBuilderWindow::runAll);
-    connect( startmenu->addAction("Execute everything (without cleaning)"),
+    connect( startmenu->addAction(QIcon(":/symbole/run.svg"), "Execute everything (without cleaning)"),
              &QAction::triggered,
              this, &isofCaseBuilderWindow::runAll);
 
-    connect( startmenu->addAction("Clean and execute everything"),
+    connect( startmenu->addAction(QIcon(":/symbole/clean_and_run.svg"), "Clean and execute everything"),
              &QAction::triggered,
              this, &isofCaseBuilderWindow::cleanAndRunAll);
 
-    connect( startmenu->addAction("Begin with mesh step"),
+    connect( startmenu->addAction(QIcon(":/symbole/run_skip1.svg"), "Begin with mesh step"),
              &QAction::triggered,
              this, &isofCaseBuilderWindow::runMeshAndSolver);
 
-    connect( startmenu->addAction("Begin with mesh case step"),
+    connect( startmenu->addAction(QIcon(":/symbole/run_skip2.svg"), "Begin with case step"),
              &QAction::triggered,
              this, &isofCaseBuilderWindow::runSolver);
 
@@ -223,6 +237,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
       this, &isofCaseBuilderWindow::onReset_script_case
     );
 
+    ui->available_elements->setIconSize(QSize(32, 32));
     fillCaseElementList();
     onResetPatchDef();
 //     // populate list of available case elements

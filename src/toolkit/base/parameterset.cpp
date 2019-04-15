@@ -559,5 +559,9 @@ void ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget*, QMode
 {
 }
 
+void ParameterSet_Visualizer::setIcon(QIcon*)
+{
+}
+
 }
 

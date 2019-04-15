@@ -39,6 +39,7 @@
 
 class QoccViewWidget;
 class QModelTree;
+class QIcon;
 
 
 namespace insight {
@@ -547,7 +548,6 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
 
 
 
-
   class ParameterSet_Visualizer
   {
   protected:
@@ -564,6 +564,8 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
       virtual void update(const ParameterSet& ps);
 
       virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
+
+      virtual void setIcon(QIcon* icon);
   };
 
   typedef std::shared_ptr<ParameterSet_Visualizer> ParameterSet_VisualizerPtr;

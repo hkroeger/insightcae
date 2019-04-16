@@ -152,6 +152,9 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
             this, &isofCaseBuilderWindow::selectCaseDir);
     ui->case_dir->setText( boost::filesystem::current_path().c_str() );
 
+    connect(ui->btn_paraview, &QPushButton::clicked,
+            this, &isofCaseBuilderWindow::onStartPV);
+
     QMenu* startmenu=new QMenu(ui->btn_start);
 
     connect( ui->btn_start,
@@ -582,7 +585,7 @@ QString isofCaseBuilderWindow::generateDefault_script_mesh()
     cmds += "blockMesh\n";
 
   if (containsCE<insight::snappyHexMeshConfiguration>())
-    cmds += "isofRun.py --mesh-reconst --reconst-only-latesttime  snappyHexMesh\n";
+    cmds += "isofRun.py --mesh-reconst --reconst-only-latesttime  snappyHexMesh -overwrite\n";
 
   return cmds;
 }
@@ -1030,3 +1033,9 @@ void isofCaseBuilderWindow::selectCaseDir()
 }
 
 
+void isofCaseBuilderWindow::onStartPV()
+{
+  ::system( boost::str( boost::format
+        ("cd %s; isPV.py &" ) % casepath().string()
+   ).c_str() );
+}

@@ -189,6 +189,8 @@ public slots:
     void cleanAndRunAll();
     void runMeshAndSolver();
     void runSolver();
+
+    void onStartPV();
 };
 
 

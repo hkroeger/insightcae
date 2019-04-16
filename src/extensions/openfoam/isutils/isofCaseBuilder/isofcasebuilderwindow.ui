@@ -635,6 +635,17 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="btn_paraview">
+           <property name="text">
+            <string>Start Paraview</string>
+           </property>
+           <property name="icon">
+            <iconset resource="isofCaseBuilder.qrc">
+             <normaloff>:/symbole/paraview.png</normaloff>:/symbole/paraview.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="clean_btn">
            <property name="text">
             <string>Clean case dir...</string>

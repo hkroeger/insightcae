@@ -12,5 +12,6 @@
         <file>../../../../../symbole/clean_and_run.svg</file>
         <file>../../../../../symbole/run_skip1.svg</file>
         <file>../../../../../symbole/run_skip2.svg</file>
+        <file>../../../../../symbole/paraview.png</file>
     </qresource>
 </RCC>

@@ -6,6 +6,7 @@ from optparse import OptionParser
 from Insight.toolkit import *
 
 parser = OptionParser()
+parser.disable_interspersed_args()
 parser.add_option("-d", "--no-decomp", dest="nodecomp",
                   action='store_true',
                   help="skip the decomposition prior to parallel execution")

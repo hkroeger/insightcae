@@ -95,9 +95,8 @@ arma::mat insight::cad::CircleEdgeCenterCoords::value() const
   
   FeatureID i=*(pfs_->data().begin());
   
-  TopLoc_Location tl;
   double c0, c1;
-  Handle_Geom_Curve curve(BRep_Tool::Curve(pfs_->model()->edge(i), tl, c0, c1));
+  Handle_Geom_Curve curve(BRep_Tool::Curve(pfs_->model()->edge(i), c0, c1));
   GeomAdaptor_Curve adapt(curve);
 
   gp_Pnt p0;

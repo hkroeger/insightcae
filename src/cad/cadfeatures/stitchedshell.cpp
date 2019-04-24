@@ -74,7 +74,7 @@ void StitchedShell::build()
   sew.Dump();
   
   TopoDS_Shell sshell = TopoDS::Shell(sew.SewedShape());
-//   BRepCheck_Shell acheck(sshell);
+  //BRepCheck_Shell acheck(sshell);
   
   
   setShape(sshell);
@@ -92,6 +92,21 @@ void StitchedShell::insertrule(parser::ISCADParser& ruleset) const
       
     ))
   );
+}
+
+FeatureCmdInfoList StitchedShell::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "StitchedShell",
+
+            "( <faceSelection> [ <scalar:tol> | 0.001 ] )",
+
+            "Create stitched shell from selected faces."
+        )
+    );
 }
 
 }

@@ -39,7 +39,7 @@ public:
   StitchedSolid();
   StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol=scalarconst(1e-3));
   
-  
+  virtual FeatureCmdInfoList ruleDocumentation() const;
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

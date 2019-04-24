@@ -110,6 +110,20 @@ void StitchedSolid::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+FeatureCmdInfoList StitchedSolid::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "StitchedSolid",
+
+            "( <feature:f1> [, <feature:f2> [, ...] ] [, <scalar:tol> | 0.001 ] )",
+
+            "Create stitched solid from all faces of the provided features."
+        )
+    );
+}
 
 }
 }

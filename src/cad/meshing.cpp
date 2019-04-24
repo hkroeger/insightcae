@@ -263,7 +263,9 @@ void GmshCase::doMeshing
   "Mesh.Explode = 1;\n";
   if (otype==27)
   {
-      f<<"Mesh.CharacteristicLengthFromCurvature=1;\n";
+      f<<"Mesh.CharacteristicLengthFromCurvature=1;\n"
+       <<"Mesh.MinimumCirclePoints=20;\n"
+         ;
   }
   
   if (otype>=0)

@@ -29,7 +29,6 @@ struct IntParameterParser
                      new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
                         ( qi::int_ >> ruleset.r_description_string )
                         [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2)) ]
-                      >> -( qi::lit("*hidden") [ phx::bind(&ParserDataBase::setHidden, *qi::_val) ] )
                     ))
         );
     }

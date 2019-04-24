@@ -41,8 +41,8 @@ PARAMETERSET>>> OpenFOAMAnalysis Parameters
 run = set 
 {	
  machine 	= 	string 	"" 	"Machine or queue, where the external commands are executed on. Defaults to 'localhost', if left empty."
- OFEname 	= 	string 	"OFplus" "Identifier of the OpenFOAM installation, that shall be used"
- np 		= 	int 	1 	"Number of processors for parallel run (less or equal 1 means serial execution)"
+ OFEname 	= 	string 	"OFesi1806" "Identifier of the OpenFOAM installation, that shall be used"
+ np 		= 	int 	1 	"Number of processors for parallel run (less or equal 1 means serial execution)" *necessary
  mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
  potentialinit 	= 	bool 	false 	"Whether to initialize the flow field by potentialFoam when no mapping is done"
  evaluateonly	= 	bool 	false 	"Whether to skip solver run and do only the evaluation"

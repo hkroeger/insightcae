@@ -87,7 +87,11 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
   r_path = lexeme[ alpha >> *(alnum | char_('_') | char_('/') ) >> !(alnum | '_' | '/' ) ];
   r_up_to_semicolon = qi::as_string[ qi::lexeme [ *~(qi::char_(";")) >> ";" ] ];
 
-  r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a);
+  r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a)
+                  > -( qi::lit("*necessary") [ phx::bind(&ParserDataBase::setNecessary, *qi::_val) ] )
+                  > -( qi::lit("*expert") [ phx::bind(&ParserDataBase::setExpert, *qi::_val) ] )
+                  > -( qi::lit("*hidden") [ phx::bind(&ParserDataBase::setHidden, *qi::_val) ] )
+      ;
   
   //   parameterDataRules.add
   //   (

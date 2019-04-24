@@ -125,6 +125,8 @@ public:
     int order;
 
     inline void setHidden() { isHidden=true; }
+    inline void setExpert() { isExpert=true; }
+    inline void setNecessary() { isNecessary=true; }
 
     ParserDataBase(const std::string& d, bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0);
 

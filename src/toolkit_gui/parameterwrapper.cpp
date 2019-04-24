@@ -96,7 +96,7 @@ defineFactoryTable
 );
 
 
-void ParameterWrapper::focusInEvent(QFocusEvent* e)
+void ParameterWrapper::focusInEvent(QFocusEvent*)
 {
 //     QWidget::focusInEvent(e);
 //     std::cout<<p_.description()<<std::endl;
@@ -104,8 +104,8 @@ void ParameterWrapper::focusInEvent(QFocusEvent* e)
 
 
 ParameterWrapper::ParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
-: QTreeWidgetItem(parent),
-  QObject(),
+: QObject(),
+  QTreeWidgetItem(parent),
   name_(name),
   p_(p),
   detaileditwidget_(detailw),
@@ -115,6 +115,25 @@ ParameterWrapper::ParameterWrapper(QTreeWidgetItem* parent, const QString& name,
   setText(0, name_);
   QFont f=font(1);
   f.setItalic(true);
+
+  if (p.isNecessary())
+  {
+    f.setBold(true);
+    setBackground(0, Qt::green);
+    setBackground(1, Qt::green);
+  }
+  else if (p.isExpert())
+  {
+    QBrush c(QColor(255,145,145));
+    setBackground(0, c);
+    setBackground(1, c);
+  }
+  else if (p.isHidden())
+  {
+    setForeground(0, Qt::lightGray);
+    setForeground(1, Qt::lightGray);
+  }
+
   setFont(1, f);
 }
 

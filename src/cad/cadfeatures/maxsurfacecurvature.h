@@ -11,9 +11,9 @@ namespace cad {
 class MaxSurfaceCurvature
     : public Feature
 {
-    FeaturePtr face_;
+    FeatureSetPtr faces_;
 
-    MaxSurfaceCurvature(FeaturePtr face);
+    MaxSurfaceCurvature(FeatureSetPtr faces);
 
 protected:
     virtual size_t calcHash() const;
@@ -23,7 +23,7 @@ public:
     declareType("MaxSurfaceCurvature");
     MaxSurfaceCurvature();
 
-    static FeaturePtr create(FeaturePtr face);
+    static FeaturePtr create(FeatureSetPtr faces);
 
     operator const TopoDS_Edge& () const;
 

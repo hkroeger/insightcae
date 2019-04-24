@@ -46,6 +46,7 @@ add_sources(insightcad_SOURCES
  sinewave.cpp
  helix.cpp
  spiral.cpp
+ stitchedcompound.cpp
  stitchedshell.cpp
  stitchedsolid.cpp
 

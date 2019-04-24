@@ -59,6 +59,7 @@
 #include "minimal.h"
 #include "relationfilters.h"
 
+#include "connected.h"
 #include "coincident.h"
 #include "identical.h"
 #include "ispartofsolid.h"

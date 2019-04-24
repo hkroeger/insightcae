@@ -28,8 +28,9 @@ namespace cad
 {
   
 maximal::maximal(const scalarQuantityComputer& qtc, int rank, int lrank)
-: qtc_(qtc.clone()),
-  rank_(rank), lrank_(std::max(rank,lrank))
+: rank_(rank),
+  lrank_(std::max(rank,lrank)),
+  qtc_(qtc.clone())
 {
 }
 
@@ -52,7 +53,7 @@ void maximal::firstPass(FeatureID feature)
 
 bool maximal::checkMatch(FeatureID feature) const
 {
-  int il=ranking_.size()-1;
+  int il=int(ranking_.size()-1);
   if (il>0)
     {
       for (int j=std::max(0, std::min(il, rank_)); j<=std::max(0, std::min(il, lrank_)); j++)

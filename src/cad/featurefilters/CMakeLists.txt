@@ -6,6 +6,7 @@ add_sources(insightcad_SOURCES
   minimal.cpp
   maximal.cpp
   
+  connected.cpp
   coincident.cpp
   identical.cpp
   ispartofsolid.cpp

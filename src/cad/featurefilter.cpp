@@ -544,6 +544,9 @@ struct FaceFeatureFilterExprParser
 	|
 	( lit("adjacentToFaces") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceAdjacentToFaces>(*qi::_1)) ]
+        |
+        ( lit("isConnectedTo") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' )
+          [ qi::_val = phx::construct<FilterPtr>(new_<connectedFace>(*qi::_1)) ]
       ;
 
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =

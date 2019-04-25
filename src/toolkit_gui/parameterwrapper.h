@@ -44,6 +44,8 @@
 #endif
 
 
+
+
 class ParameterWrapper 
 : public QObject,
   public QTreeWidgetItem
@@ -89,6 +91,9 @@ signals:
   void parameterSetChanged();
 };
 
+
+
+
 class IntParameterWrapper
 : public ParameterWrapper
 {
@@ -107,6 +112,9 @@ public slots:
   virtual void onUpdate();
 };
 
+
+
+
 class DoubleParameterWrapper
 : public ParameterWrapper
 {
@@ -122,6 +130,9 @@ public slots:
   virtual void onApply();
   virtual void onUpdate();
 };
+
+
+
 
 class VectorParameterWrapper
 : public ParameterWrapper
@@ -139,6 +150,9 @@ public slots:
   virtual void onUpdate();
 };
 
+
+
+
 class StringParameterWrapper
 : public ParameterWrapper
 {
@@ -154,6 +168,9 @@ public slots:
   virtual void onApply();
   virtual void onUpdate();
 };
+
+
+
 
 class BoolParameterWrapper
 : public ParameterWrapper
@@ -173,6 +190,9 @@ public slots:
   virtual void onUpdate();
 };
 
+
+
+
 class PathParameterWrapper
 : public ParameterWrapper
 {
@@ -180,7 +200,7 @@ class PathParameterWrapper
   
 protected:
   QLineEdit *le_;
-  QPushButton *dlgBtn_;
+  QPushButton *dlgBtn_, *openBtn_;
   
   virtual void updateTooltip();
   
@@ -196,8 +216,12 @@ public slots:
   
 protected slots:
   virtual void openSelectionDialog();
+  virtual void openFile();
   virtual void onDataEntered();
 };
+
+
+
 
 class MatrixParameterWrapper
 : public ParameterWrapper
@@ -222,6 +246,9 @@ protected slots:
   virtual void openSelectionDialog();
 };
 
+
+
+
 class DirectoryParameterWrapper
 : public PathParameterWrapper
 {
@@ -235,6 +262,8 @@ protected slots:
   virtual void openSelectionDialog();
 
 };
+
+
 
 
 class SelectionParameterWrapper
@@ -256,6 +285,9 @@ public slots:
   virtual void onUpdate();
 };
 
+
+
+
 class SubsetParameterWrapper
 : public ParameterWrapper
 {
@@ -276,33 +308,9 @@ signals:
   void update();
 };
 
-// class ArrayParameterElementWrapper
-// : public QTreeWidgetItem
-// {
-//   Q_OBJECT
-//   
-//   ParameterWrapper* pw_;
-//   
-// public:
-//   declareType("ArrayParameterElementWrapper");
-//   
-//   ArrayParameterElementWrapper(const ConstrP& p)
-//   : PW(p)
-//   {}
-//   
-//   virtual void createWidgets()
-//   {
-//   }
-//   
-//   void showContextMenu(const QPoint& gpos)
-//   {
-//     QMenu myMenu;
-//     QAction *tit=new QAction("Delete", &myMenu);
-//     myMenu.addAction(tit);
-// 
-//     QAction* selectedItem = myMenu.exec(gpos);
-//   }
-// };
+
+
+
 
 class ArrayParameterWrapper
 : public ParameterWrapper
@@ -310,11 +318,6 @@ class ArrayParameterWrapper
   Q_OBJECT
   
 protected:
-//   boost::ptr_vector<QWidget> entrywrappers_;
-//   QVBoxLayout *vlayout_;
-//   QGroupBox *group_;
-//   QSignalMapper *map_;
-  
   void addWrapper(int i);
   void rebuildWrappers();
   
@@ -337,6 +340,9 @@ signals:
   void apply();
   void update();
 };
+
+
+
 
 class DoubleRangeParameterWrapper
 : public ParameterWrapper
@@ -365,15 +371,15 @@ signals:
   void apply();
 };
 
+
+
+
 class SelectableSubsetParameterWrapper
 : public ParameterWrapper
 {
   Q_OBJECT
   
   QComboBox* selBox_;
-//   QVBoxLayout *layout0_;
-//   QGroupBox *name2Label_;
-//   QPushButton* apply_;
   
   void insertSubset();
   
@@ -386,14 +392,15 @@ public:
 public slots:
   virtual void onApply();
   virtual void onUpdate();
-//   virtual void onCurrentIndexChanged(const QString& qs);
   
 signals:
   void apply();
   void update();
 };
 
-// void addWrapperToWidget(insight::ParameterSet& pset, QWidget *widget, QWidget *superform=NULL);
+
+
+
 void addWrapperToWidget
 (
   insight::ParameterSet& pset, 
@@ -401,5 +408,8 @@ void addWrapperToWidget
   QWidget *detaileditwidget,
   QWidget *superform
 );
+
+
+
 
 #endif // PARAMETERWRAPPER_H

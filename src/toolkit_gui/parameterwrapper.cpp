@@ -33,6 +33,7 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QTextEdit>
+#include <QMessageBox>
 
 #include "helpwidget.h"
 
@@ -259,7 +260,7 @@ addToFactoryTable(ParameterWrapper, DoubleParameterWrapper);
 
 DoubleParameterWrapper::DoubleParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
 : ParameterWrapper(parent, name, p, detailw, superform),
-  le_(NULL)
+  le_(nullptr)
 {
   onUpdate();
 }
@@ -335,7 +336,7 @@ addToFactoryTable(ParameterWrapper, StringParameterWrapper);
 
 VectorParameterWrapper::VectorParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
 : ParameterWrapper(parent, name, p, detailw, superform),
-  le_(NULL)
+  le_(nullptr)
 {
   onUpdate();
 }
@@ -413,7 +414,7 @@ addToFactoryTable(ParameterWrapper, VectorParameterWrapper);
 
 StringParameterWrapper::StringParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
 : ParameterWrapper(parent, name, p, detailw, superform),
-  le_(NULL)
+  le_(nullptr)
 {
   onUpdate();
 }
@@ -484,7 +485,7 @@ addToFactoryTable(ParameterWrapper, BoolParameterWrapper);
 
 BoolParameterWrapper::BoolParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
 : ParameterWrapper(parent, name, p, detailw, superform),
-  cb_(NULL)
+  cb_(nullptr)
 {
   onUpdate();
 }
@@ -567,7 +568,7 @@ addToFactoryTable(ParameterWrapper, PathParameterWrapper);
 
 PathParameterWrapper::PathParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
 : ParameterWrapper(parent, name, p, detailw, superform),
-  le_(NULL)
+  le_(nullptr)
 {
   onUpdate();
 }
@@ -597,6 +598,8 @@ void PathParameterWrapper::createWidgets()
   layout2->addWidget(le_);
   dlgBtn_=new QPushButton("...", detaileditwidget_);
   layout2->addWidget(dlgBtn_);
+  openBtn_=new QPushButton("Open", detaileditwidget_);
+  layout2->addWidget(openBtn_);
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
@@ -606,20 +609,10 @@ void PathParameterWrapper::createWidgets()
   layout->addStretch();
   detaileditwidget_->setLayout(layout);
 
-//   QHBoxLayout *layout=new QHBoxLayout(detaileditwidget_);
-//   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
-//   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-//   layout->addWidget(nameLabel);
-//   le_=new QLineEdit(detaileditwidget_);
-//   le_->setText(param()().c_str());
-//   layout->addWidget(le_);
-//   dlgBtn_=new QPushButton("...", detaileditwidget_);
-//   layout->addWidget(dlgBtn_);
-//   updateTooltip();
-//   detaileditwidget_->setLayout(layout);
   
   connect(le_, &QLineEdit::textChanged, this, &PathParameterWrapper::onDataEntered);
   connect(dlgBtn_, &QPushButton::clicked, this, &PathParameterWrapper::openSelectionDialog);
+  connect(openBtn_, &QPushButton::clicked, this, &PathParameterWrapper::openFile);
 }
 
 void PathParameterWrapper::updateTooltip()
@@ -660,6 +653,42 @@ void PathParameterWrapper::openSelectionDialog()
   }
 }
 
+void PathParameterWrapper::openFile()
+{
+  //if ( !QDesktopServices::openUrl(QUrl("file://"+le_->text())) )
+  boost::filesystem::path fp( le_->text().toStdString() );
+  std::string ext=fp.extension().string();
+  boost::algorithm::to_lower(ext);
+
+  QString program;
+  if ( (ext==".stl")||(ext==".stlb") )
+  {
+    program="paraview";
+  }
+  else if ( (ext==".stp")||(ext==".step")||(ext==".igs")||(ext==".iges")||(ext==".iscad")||(ext==".brep") )
+  {
+    program="iscad";
+  }
+
+  if (!program.isEmpty())
+  {
+    QProcess *sp = new QProcess(treeWidget());
+    sp->start(program, QStringList() << le_->text() );
+
+    if (!sp->waitForStarted())
+    {
+      QMessageBox::critical(treeWidget(), "Could not open file", "Could not launch program: "+program);
+    }
+  }
+  else
+  {
+    if (!QDesktopServices::openUrl(QUrl("file://"+le_->text())))
+    {
+      QMessageBox::critical(treeWidget(), "Could not open file", "Could not open the file using QDesktopServices!");
+    }
+  }
+}
+
 void PathParameterWrapper::onDataEntered()
 {
   updateTooltip();
@@ -674,9 +703,9 @@ addToFactoryTable(ParameterWrapper, MatrixParameterWrapper);
 QString mat2Str(const arma::mat& m)
 {
   std::ostringstream oss;
-  for (int i=0; i<m.n_rows; i++)
+  for (arma::uword i=0; i<m.n_rows; i++)
   {
-    for (int j=0; j<m.n_cols; j++)
+    for (arma::uword j=0; j<m.n_cols; j++)
     {
       oss<<m(i,j);
       if (j!=m.n_cols-1) oss<<" ";
@@ -688,7 +717,7 @@ QString mat2Str(const arma::mat& m)
 
 MatrixParameterWrapper::MatrixParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
 : ParameterWrapper(parent, name, p, detailw, superform),
-  le_(NULL)
+  le_(nullptr)
 {
   onUpdate();
 }
@@ -799,7 +828,7 @@ addToFactoryTable(ParameterWrapper, SelectionParameterWrapper);
 
 SelectionParameterWrapper::SelectionParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
 : ParameterWrapper(parent, name, p, detailw, superform),
-  selBox_(NULL)
+  selBox_(nullptr)
 {
   onUpdate();
 }
@@ -1184,7 +1213,7 @@ void DoubleRangeParameterWrapper::onUpdate()
 
 SelectableSubsetParameterWrapper::SelectableSubsetParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
 : ParameterWrapper(parent, name, p, detailw, superform),
-  selBox_(NULL)
+  selBox_(nullptr)
 {
 //   setText(1, "selectableSubset");
   onUpdate();

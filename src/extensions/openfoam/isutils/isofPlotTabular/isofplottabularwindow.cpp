@@ -53,12 +53,23 @@ IsofPlotTabularWindow::IsofPlotTabularWindow(const boost::filesystem::path& file
 
 void IsofPlotTabularWindow::onUpdate(bool)
 {
-  ifstream f(file_.c_str());
+  std::istream* f;
+  std::shared_ptr<std::ifstream> fs;
+
+  if (file_.string()=="-")
+  {
+    f=&std::cin;
+  }
+  else
+  {
+    fs.reset(new ifstream(file_.c_str()));
+    f=fs.get();
+  }
 
   vector< vector<double> > fd;
 
   string line;
-  while (getline(f, line))
+  while (getline(*f, line))
   {
     algorithm::trim_left(line);
     char fc; istringstream(line) >> fc; // get first char
@@ -110,7 +121,7 @@ void IsofPlotTabularWindow::onUpdate(bool)
       ir++;
     }
 
-    int n_cols=fd[0].size()-1; // first col is time
+    int n_cols=int(fd[0].size())-1; // first col is time
 
     // remove unnecessary tabs
     for (int j=ui->graphs->count()-1; j>=n_cols; j--)
@@ -129,7 +140,7 @@ void IsofPlotTabularWindow::onUpdate(bool)
 
     }
 
-    for (int j=1; j<fd[0].size(); j++)
+    for (size_t j=1; j<fd[0].size(); j++)
     {
       PlotWidget *p = dynamic_cast<PlotWidget*>(ui->graphs->widget(j-1));
       p->setData(data_.col(0), data_.col(j));

@@ -103,10 +103,13 @@ void IsofPlotTabularWindow::onUpdate(bool)
 
   if (fd.size()==0)
   {
+
     data_=arma::mat();
+
   }
   else
   {
+
     data_.reshape(fd.size(), fd[0].size());
     size_t ir=0;
     for (const auto& r: fd)
@@ -128,6 +131,7 @@ void IsofPlotTabularWindow::onUpdate(bool)
     {
       ui->graphs->removeTab(j);
     }
+
     // add new tabs, if required
     for (int j=ui->graphs->count(); j<n_cols; j++)
     {
@@ -153,6 +157,7 @@ void IsofPlotTabularWindow::onUpdate(bool)
         pw->onShow();
       }
     }
+
   }
 
   connect(ui->graphs, &QTabWidget::currentChanged, this, &IsofPlotTabularWindow::onTabChanged);

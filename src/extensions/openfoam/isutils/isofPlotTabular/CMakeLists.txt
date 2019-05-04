@@ -31,3 +31,5 @@ target_include_directories(isofPlotTabular
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 install(TARGETS isofPlotTabular RUNTIME DESTINATION bin)
+
+install_script(insight_isofplottabular_aliases insight_isofplottabular_aliases.sh)

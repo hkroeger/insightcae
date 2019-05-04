@@ -20,4 +20,6 @@ for cfgd in $INSIGHT_USERSHAREDDIR ${INSIGHT_GLOBALSHAREDDIRS/:/ }; do # in that
  fi
 done
 
+source $INSIGHT_BINDIR/insight_isofplottabular_aliases.sh
+
 source $INSIGHT_BINDIR/insight.bashrc.OpenFOAM

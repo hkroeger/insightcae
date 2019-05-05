@@ -9,7 +9,7 @@ function _functionObjects() {
 }
 
 
-alias isplrb='cat postProcessing/rigidBodyMotion/*/rigidBodyMotion.dat | isofPlotTabular -'
+alias isplrb='for t in $(cd postProcessing/rigidBodyMotion; ls -1|sort -g); do cat postProcessing/rigidBodyMotion/$t/rigidBodyMotion.dat; done|isofPlotTabular -'
 
-function isplf { ( cat postProcessing/$1/*/force.dat | isofPlotTabular - ) }
+function isplf { for t in $(cd postProcessing/$1; ls -1|sort -g); do cat postProcessing/$1/$t/force.dat; done | isofPlotTabular -; }
 complete -F _functionObjects isplf

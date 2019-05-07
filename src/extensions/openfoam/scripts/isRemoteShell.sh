@@ -20,4 +20,11 @@ while getopts "h?s" opt; do
     esac
 done
 
-exec mate-terminal -e "ssh $SERVER -t \"cd $DIR; bash -l\""
+if tty -s; then
+ ssh $SERVER -t "cd $DIR; bash -l"
+else
+ exec mate-terminal -e "ssh $SERVER -t \"cd $DIR; bash -l\""
+fi
+
+#exec mate-terminal -e "ssh $SERVER -t \"cd $DIR; bash -l\""
+

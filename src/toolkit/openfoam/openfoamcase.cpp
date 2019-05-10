@@ -438,7 +438,8 @@ SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
 : pdisp_(pdisp),
   curTime_(nan("NAN")),
   curforcename_(""),
-  curforcesection_(1)
+  curforcesection_(1),
+  currbname_("")
 {
 }
 
@@ -454,11 +455,41 @@ void SolverOutputAnalyzer::update(const string& line)
     boost::regex cont_pattern("^time step continuity errors : sum local = (.+), global = (.+), cumulative = (.+)$");
     boost::regex force_pattern("^(extendedForces|forces) (.+) (output|write):$");
     boost::regex sw_pattern("^ *[Ss]um of moments");
-    
+
+    boost::regex rb_pattern("Rigid-body motion of the (.+)");
+    boost::regex rb_cor_pattern(" *Centre of rotation: \\((.+) (.+) (.+)\\)");
+    boost::regex rb_ori_pattern(" *Orientation: \\((.+) (.+) (.+) (.+) (.+) (.+) (.+) (.+) (.+)\\)");
+
         if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) && !curforcename_.empty() )
         {
 //             std::cout<<"moments:"<<std::endl;
             curforcesection_=2;
+        }
+        else if ( boost::regex_search( line, match, rb_pattern, boost::match_default )  )
+        {
+            currbname_=match[1];
+        }
+        else if ( boost::regex_search( line, match, rb_cor_pattern, boost::match_default ) && !currbname_.empty() )
+        {
+          double
+              cx=lexical_cast<double>(match[1]),
+              cy=lexical_cast<double>(match[2]),
+              cz=lexical_cast<double>(match[3]);
+          curProgVars_[currbname_+"_cx"]=cx;
+          curProgVars_[currbname_+"_cy"]=cy;
+          curProgVars_[currbname_+"_cz"]=cz;
+          std::cout<<currbname_<<": cx="<<cx<<", cy="<<cy<<", cz="<<cz<<std::endl;
+        }
+        else if ( boost::regex_search( line, match, rb_ori_pattern, boost::match_default ) && !currbname_.empty() )
+        {
+          double
+              ox=lexical_cast<double>(match[1]),
+              oy=lexical_cast<double>(match[5]),
+              oz=lexical_cast<double>(match[9]);
+          curProgVars_[currbname_+"_ox"]=ox;
+          curProgVars_[currbname_+"_oy"]=oy;
+          curProgVars_[currbname_+"_oz"]=oz;
+          std::cout<<currbname_<<": ox="<<ox<<", oy="<<oy<<", oz="<<oz<<std::endl;
         }
         else if ( boost::regex_search( line, match, p_pattern, boost::match_default ) && !curforcename_.empty()  )
         {

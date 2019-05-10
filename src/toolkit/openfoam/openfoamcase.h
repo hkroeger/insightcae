@@ -291,6 +291,7 @@ protected:
     std::string curforcename_;
     int curforcesection_;
     arma::mat curforcevalue_;
+    std::string currbname_;
 
 //   std::map<std::string, std::vector<arma::mat> > trackedForces_;
 

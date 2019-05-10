@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
       if (!anything_done)
         {
           QApplication app(argc, argv);
-          MainWindow w;
+          MainWindow w(location);
           w.show();
           return app.exec();
         }

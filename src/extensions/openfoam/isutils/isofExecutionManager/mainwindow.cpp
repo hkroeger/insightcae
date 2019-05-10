@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "terminal.h"
 
 #include <cstdlib>
 
@@ -8,19 +9,28 @@
 #include "remotedirselector.h"
 
 #include <QDebug>
+#include <QProcess>
+#include <QMessageBox>
+#include <QInputDialog>
 
 void MainWindow::updateGUI()
 {
     if (isValid())
     {
-        ui->server->setText(server_.c_str());
-        ui->remoteDir->setText(remoteDir_.c_str());
+      bfs_path loc_dir=boost::filesystem::absolute(localDir());
+      setWindowTitle(loc_dir.c_str());
+        ui->server->setText(server().c_str());
+        ui->localDir->setText(loc_dir.c_str());
+        ui->remoteDir->setText(remoteDir().c_str());
+#ifdef HAVE_KF5
+        terminal_->setDirectory(".");
+#endif
     }
 }
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent) :
   QMainWindow(parent),
-  insight::RemoteExecutionConfig(".", false),
+  insight::RemoteExecutionConfig(location, false),
   ui(new Ui::MainWindow)
 {
   ui->setupUi(this);
@@ -28,6 +38,16 @@ MainWindow::MainWindow(QWidget *parent) :
   connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this, &MainWindow::onSelectRemoteDir);
   connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
   connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
+  connect(ui->actionStart_Paraview, &QAction::triggered, this, &MainWindow::onStartParaview);
+  connect(ui->actionStart_Remote_Paraview, &QAction::triggered, this, &MainWindow::onStartRemoteParaview);
+  connect(ui->actionStart_Remote_Paraview_in_Subdirectory, &QAction::triggered, this, &MainWindow::onStartRemoteParaviewSubdir);
+
+#ifdef HAVE_KF5
+  terminal_ = new TerminalWidget(this);
+  ui->v_splitter->addWidget(terminal_);
+  terminal_->initialise();
+  terminal_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+#endif
 
   updateGUI();
 }
@@ -60,4 +80,35 @@ void MainWindow::syncLocalToRemote()
 void MainWindow::syncRemoteToLocal()
 {
     syncToLocal();
+}
+
+void MainWindow::onStartParaview()
+{
+  if (!QProcess::startDetached("isPV.py", QStringList(), localDir().c_str() ))
+  {
+    QMessageBox::critical(this, "Failed to start", QString("Failed to start Paraview in directoy ")+localDir().c_str());
+  }
+}
+
+
+void MainWindow::onStartRemoteParaview()
+{
+  if (!QProcess::startDetached("isPVRemote.sh", QStringList(), localDir().c_str() ))
+  {
+    QMessageBox::critical(this, "Failed to start", QString("Failed to start Paraview in directoy ")+localDir().c_str());
+  }
+}
+
+
+
+void MainWindow::onStartRemoteParaviewSubdir()
+{
+  QString sd = QInputDialog::getText(this, "Enter subdirectory name", "Please enter the name of the remote subdirectory");
+  if (!sd.isEmpty())
+  {
+    if (!QProcess::startDetached("isPVRemote.sh", QStringList() << "-s" << sd, localDir().c_str() ))
+    {
+      QMessageBox::critical(this, "Failed to start", QString("Failed to start Paraview in directoy ")+localDir().c_str());
+    }
+  }
 }

@@ -3,15 +3,19 @@
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 SERVER=localhost
 META=meta.foam
+SUBDIR=""
 
-while getopts "h?m:" opt; do
+while getopts "h?ms:" opt; do
     case "$opt" in
     h|\?)
         echo "Usage $0 [-m] [<meta file name>]"
         echo "-m <file name>: meta file name"
+        echo "-s <sub dir>: case directory is subdirectory in remote dir"
         exit 0
         ;;
     m)  META=$OPTARG
+        ;;
+    s)  SUBDIR=$OPTARG
         ;;
     esac
 done
@@ -29,6 +33,10 @@ if [ -e $META ]; then
  read SERVER DIR << EOF
 $(cat $META|tr ':' ' ')
 EOF
+
+ if [ "$SUBDIR" ]; then
+  DIR=$DIR/$SUBDIR
+ fi
 
  echo "connecting to $DIR on $SERVER (read from $META)"
 

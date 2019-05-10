@@ -16,7 +16,7 @@ class blockMeshDict_CylWedge
     : public BlockMeshTemplate
 {
 public:
-#include "blockmesh_templates__blockMeshDict_CylWedge__Parameters.h"
+#include "blockmesh_templates__blockMesh_CylWedge__Parameters.h"
 /*
 PARAMETERSET>>> blockMeshDict_CylWedge Parameters
 

@@ -17,6 +17,7 @@ set(toolkit_gui_SRCS
     of_clean_case.cpp
     snappyhexmesh_gui.cpp
     blockmesh_curvedcylinder.cpp
+    blockmesh_cylwedge.cpp
     blockmesh_tubemesh.cpp
     blockmesh_gui.cpp
     parametersetvisualizer.cpp

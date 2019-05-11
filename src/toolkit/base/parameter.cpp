@@ -376,47 +376,49 @@ void PathParameter::pack()
 void PathParameter::unpack()
 {
 
-  if (!exists(value_)) // unpack only, if it is not yet there (e.g. already unpacked)
+  if (!value_.empty())
   {
-    std::cout<<"Unpacking file "<<value_<<endl;
-
-    // extract file, create parent path.
-    if (!exists(value_.parent_path()) )
+    if (!exists(value_)) // unpack only, if it is not yet there (e.g. already unpacked)
     {
-      boost::filesystem::create_directories( value_.parent_path() );
+      std::cout<<"Unpacking file "<<value_<<endl;
+
+      // extract file, create parent path.
+      if (!exists(value_.parent_path()) )
+      {
+        boost::filesystem::create_directories( value_.parent_path() );
+      }
+
+      // typedefs
+      using namespace boost::archive::iterators;
+      typedef
+        transform_width<
+            binary_from_base64<
+            remove_whitespace
+             <std::string::const_iterator> >, 8, 6>
+          base64_text; // compose all the above operations in to a new iterator
+
+      unsigned int paddChars = count(file_content_.begin(), file_content_.end(), '=');
+      std::replace(file_content_.begin(), file_content_.end(), '=', 'A');
+
+      std::string output(
+            base64_text(file_content_.begin()),
+            base64_text(file_content_.end())
+            );
+      output.erase(output.end() - paddChars, output.end());
+
+      std::ofstream file( value_.c_str(), ios::out | ios::binary);
+      if (file.good())
+      {
+          file.write(output.c_str(), output.size());
+          file.close();
+      }
+
     }
-
-    // typedefs
-    using namespace boost::archive::iterators;
-    typedef
-      transform_width<
-          binary_from_base64<
-          remove_whitespace
-           <std::string::const_iterator> >, 8, 6>
-        base64_text; // compose all the above operations in to a new iterator
-
-    unsigned int paddChars = count(file_content_.begin(), file_content_.end(), '=');
-    std::replace(file_content_.begin(), file_content_.end(), '=', 'A');
-
-    std::string output(
-          base64_text(file_content_.begin()),
-          base64_text(file_content_.end())
-          );
-    output.erase(output.end() - paddChars, output.end());
-
-    std::ofstream file( value_.c_str(), ios::out | ios::binary);
-    if (file.good())
+    else
     {
-        file.write(output.c_str(), output.size());
-        file.close();
+      std::cout<<"File "<<value_<<" exists, skipping unpack."<<endl;
     }
-
   }
-  else
-  {
-    std::cout<<"File "<<value_<<" exists, skipping unpack."<<endl;
-  }
-
 }
 
 Parameter* PathParameter::clone() const

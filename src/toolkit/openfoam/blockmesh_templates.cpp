@@ -105,9 +105,9 @@ void blockMeshDict_Cylinder::create_bmd()
     arma::mat vL=p_.geometry.L*ex;
 
 //     std::cout<<pts[0]<<pts[1]<<std::endl;
-    Patch* base=NULL;
-    Patch* top=NULL;
-    Patch* outer=NULL;
+    Patch* base=nullptr;
+    Patch* top=nullptr;
+    Patch* outer=nullptr;
 
     if ( p_.mesh.basePatchName!="" ) {
         base=&this->addOrDestroyPatch ( p_.mesh.basePatchName, new bmd::Patch() );
@@ -209,8 +209,6 @@ void blockMeshDict_Box::create_bmd()
 {
     this->setDefaultPatch(p_.mesh.defaultPatchName);
     
-    double al = M_PI/2.;
-
     arma::mat ex=p_.geometry.ex;
     arma::mat ez=p_.geometry.ez;
     arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, ez);
@@ -238,7 +236,7 @@ void blockMeshDict_Box::create_bmd()
           .convert_to_container<std::map<int, Point> >()
           ;
 
-    Patch *Xp=NULL, *Xm=NULL, *Yp=NULL, *Ym=NULL, *Zp=NULL, *Zm=NULL;
+    Patch *Xp=nullptr, *Xm=nullptr, *Yp=nullptr, *Ym=nullptr, *Zp=nullptr, *Zm=nullptr;
 
     if ( p_.mesh.XpPatchName!="" ) {
         Xp=&this->addOrDestroyPatch ( p_.mesh.XpPatchName, new bmd::Patch() );
@@ -263,15 +261,15 @@ void blockMeshDict_Box::create_bmd()
     if (const auto* cu = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
       {
         double dx=std::max(std::max(p_.geometry.L, p_.geometry.W), p_.geometry.H)/double(cu->n_max);
-        nx=std::ceil(p_.geometry.L/dx);
-        ny=std::ceil(p_.geometry.W/dx);
-        nz=std::ceil(p_.geometry.H/dx);
+        nx=int(std::ceil(p_.geometry.L/dx));
+        ny=int(std::ceil(p_.geometry.W/dx));
+        nz=int(std::ceil(p_.geometry.H/dx));
       }
     else if (const auto* cus = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
       {
-        nx=std::ceil(p_.geometry.L/cus->delta);
-        ny=std::ceil(p_.geometry.W/cus->delta);
-        nz=std::ceil(p_.geometry.H/cus->delta);
+        nx=int(std::ceil(p_.geometry.L/cus->delta));
+        ny=int(std::ceil(p_.geometry.W/cus->delta));
+        nz=int(std::ceil(p_.geometry.H/cus->delta));
       }
     else if (const auto* ind = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
       {
@@ -520,6 +518,7 @@ void blockMeshDict_Sphere::addIntoDictionaries ( OFdicts& dictionaries ) const
       }
     bmd["faces"]=pfaces;
 }
+
 
 
 }

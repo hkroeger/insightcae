@@ -41,7 +41,7 @@ public:
 /*
 PARAMETERSET>>> ExternalGeometryFile Parameters
 
-fileName = path "" "Path to geometry file (STL format)"
+fileName = path "" "Path to geometry file (STL format)" *necessary
 scale = vector (1 1 1) "Geometry scaling factor for each spatial direction"
 translate = vector (0 0 0) "Translation vector"
 rollPitchYaw = vector (0 0 0) "Euler angles around X, Y and Z axis respectively"
@@ -101,13 +101,13 @@ public:
 PARAMETERSET>>> Geometry Parameters
 inherits insight::ExternalGeometryFile::Parameters
 
-name = string "" "Name of the geometry feature"
+name = string "" "Name of the geometry feature"  *necessary
 minLevel = int 0 "Minimum refinement level"
 maxLevel = int 4 "Maximum refinement level"
 nLayers = int 2 "Number of prism layers"
 zoneName = string "" "Zone name"
 regionRefinements = array [ set {
- regionname = string "" "Name of geometry region"
+ regionname = string "" "Name of geometry region" *necessary
  minLevel = int 0 "Minimum refinement level"
  maxLevel = int 0 "Maximum refinement level"
 } ]*0 "Refinement regions"
@@ -141,7 +141,7 @@ public:
 /*
 PARAMETERSET>>> PatchLayers Parameters
 
-name = string "" "Name of the patch"
+name = string "" "Name of the patch"  *necessary
 nLayers = int 2 "Number of layers"
 
 <<<PARAMETERSET
@@ -171,7 +171,7 @@ public:
 /*
 PARAMETERSET>>> ExplicitFeatureCurve Parameters
 
-fileName = path "" "Filename of the feature curve"
+fileName = path "" "Filename of the feature curve"  *necessary
 scale = vector (1 1 1) "Geometry scaling factor for each spatial direction"
 translate = vector (0 0 0) "Translation vector"
 rollPitchYaw = vector (0 0 0) "Euler angles around X, Y and Z axis respectively"
@@ -206,7 +206,7 @@ public:
 /*
 PARAMETERSET>>> RefinementRegion Parameters
 
-name = string "" "Region name"
+name = string "" "Region name"  *necessary
 dist = double 1e15 "Maximum distance for refinement"
 mode = selection ( inside outside distance ) inside "Refinement mode"
 level = int 1 "Refinement level"
@@ -243,8 +243,8 @@ public:
 PARAMETERSET>>> RefinementBox Parameters
 inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
 
-min = vector (0 0 0) "Minimum corner of refinement box"
-max = vector (1 1 1) "Maximum corner of refinement box"
+min = vector (0 0 0) "Minimum corner of refinement box" *necessary
+max = vector (1 1 1) "Maximum corner of refinement box" *necessary
 
 <<<PARAMETERSET
 */
@@ -280,9 +280,9 @@ public:
 PARAMETERSET>>> RefinementCylinder Parameters
 inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
 
-point1 = vector (0 0 0) "Base point of the refinement cylinder"
-point2 = vector (1 0 0) "Tip point of the refinement cylinder"
-radius = double 1 "Radius of the refinement region"
+point1 = vector (0 0 0) "Base point of the refinement cylinder" *necessary
+point2 = vector (1 0 0) "Tip point of the refinement cylinder" *necessary
+radius = double 1 "Radius of the refinement region" *necessary
 
 <<<PARAMETERSET
 */
@@ -317,8 +317,8 @@ public:
 PARAMETERSET>>> RefinementSphere Parameters
 inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
 
-center = vector (0 0 0) "Center of the refinement sphere"
-radius = double 1 "Radius of the refinement region"
+center = vector (0 0 0) "Center of the refinement sphere" *necessary
+radius = double 1 "Radius of the refinement region" *necessary
 
 <<<PARAMETERSET
 */
@@ -406,7 +406,7 @@ public:
 PARAMETERSET>>> NearTemplatePatchRefinement Parameters
 inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
 
-fileName = path "" "Path to geometry file (STL format)"
+fileName = path "" "Path to geometry file (STL format)" *necessary
 
 <<<PARAMETERSET
 */
@@ -454,7 +454,7 @@ PiM = array [ vector (0 0 0) "point inside mesh" ]*0 "One or more points inside 
 
 features = array [
  dynamicclassconfig "insight::snappyHexMeshFeats::Feature" default "Geometry" "SnappyHexMesh feature"
-]*0 "Mesh generation features"
+]*0 "Mesh generation features" *necessary
 
 doExplicitFeatureSnap = bool false "Disable/Enable snapping of explicit features (eMesh)"
 doImplicitFeatureSnap = bool true "Disable/Enable snapping to implicit features"

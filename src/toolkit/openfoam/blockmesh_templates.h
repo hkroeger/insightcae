@@ -61,8 +61,8 @@ PARAMETERSET>>> blockMeshDict_Cylinder Parameters
 
 geometry = set
 {
-    D = double 1.0 "[m] Diameter"
-    L = double 1.0 "[m] Length"
+    D = double 1.0 "[m] Diameter" *necessary
+    L = double 1.0 "[m] Length" *necessary
     p0 = vector (0 0 0) "[m] Center point of base surface"
     ex = vector (0 0 1) "[m] Axial direction"
     er = vector (1 0 0) "[m] Radial direction"
@@ -124,10 +124,10 @@ PARAMETERSET>>> blockMeshDict_Box Parameters
 
 geometry = set
 {
-    L = double 1.0 "[m] Length (X)"
-    W = double 1.0 "[m] Width (Y)"
-    H = double 1.0 "[m] Height (Z)"
-    p0 = vector(0 0 0) "[m] Lower left corner"
+    L = double 1.0 "[m] Length (X)" *necessary
+    W = double 1.0 "[m] Width (Y)" *necessary
+    H = double 1.0 "[m] Height (Z)" *necessary
+    p0 = vector(0 0 0) "[m] Lower left corner" *necessary
     ex = vector(1 0 0) "[m] X direction"
     ez = vector(0 0 1) "[m] Upward (Z) direction"
 }
@@ -199,7 +199,7 @@ PARAMETERSET>>> blockMeshDict_Sphere Parameters
 
 geometry = set
 {
-    D = double 1.0 "[m] Sphere diameter"
+    D = double 1.0 "[m] Sphere diameter" *necessary
     center = vector(0 0 0) "[m] Sphere center"
 
     core_fraction = double 0.2 "Edge length of the core block"
@@ -238,6 +238,7 @@ public:
         return Parameters::makeDefault();
     }
 };
+
 
 }
 

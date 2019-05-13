@@ -23,7 +23,8 @@ void MainWindow::updateGUI()
         ui->localDir->setText(loc_dir.c_str());
         ui->remoteDir->setText(remoteDir().c_str());
 #ifdef HAVE_KF5
-        terminal_->setDirectory(".");
+        terminal_->setDirectory(localDir().c_str());
+        terminal_->sendInput(QString("ssh ")+server().c_str()+" -t \"cd '"+remoteDir().c_str()+"'; bash -l\"\n");
 #endif
     }
 }
@@ -43,10 +44,10 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(ui->actionStart_Remote_Paraview_in_Subdirectory, &QAction::triggered, this, &MainWindow::onStartRemoteParaviewSubdir);
 
 #ifdef HAVE_KF5
-  terminal_ = new TerminalWidget(this);
+  terminal_ = new TerminalWidget(ui->v_splitter);
+  terminal_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
   ui->v_splitter->addWidget(terminal_);
   terminal_->initialise();
-  terminal_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 #endif
 
   updateGUI();

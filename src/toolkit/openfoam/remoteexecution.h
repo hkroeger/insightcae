@@ -10,6 +10,7 @@ namespace insight
 
 class TaskSpoolerInterface
 {
+  std::string remote_machine_;
   boost::filesystem::path socket_;
   boost::process::environment env_;
 
@@ -32,7 +33,7 @@ public:
   };
 
 public:
-  TaskSpoolerInterface(const boost::filesystem::path& socket);
+  TaskSpoolerInterface(const boost::filesystem::path& socket, const std::string& remote_machine="");
 
   JobList jobs() const;
 

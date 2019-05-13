@@ -34,20 +34,39 @@ bool TaskSpoolerInterface::JobList::hasQueuedJobs() const
 }
 
 
-TaskSpoolerInterface::TaskSpoolerInterface(const boost::filesystem::path& socket)
-  : socket_(socket),
+TaskSpoolerInterface::TaskSpoolerInterface(const boost::filesystem::path& socket, const std::string& remote_machine)
+  : remote_machine_(remote_machine),
+    socket_(socket),
     env_(boost::this_process::environment())
 {
   env_["TS_SOCKET"]=socket.string();
 }
 
+
 TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
 {
   JobList jl;
   boost::process::ipstream is;
-  boost::process::child c("tsp", env_, boost::process::std_out > is);
+  std::shared_ptr<boost::process::child> c;
 
-  if (!c.running())
+  if (!remote_machine_.empty())
+  {
+    c.reset(new boost::process::child(
+              "ssh",
+              boost::process::args({"TS_SOCKET=\""+socket_.string()+"\"", "tsp"}),
+              boost::process::std_out > is
+              ));
+  }
+  else
+  {
+    c.reset(new boost::process::child(
+              "tsp",
+              env_,
+              boost::process::std_out > is
+              ));
+  }
+
+  if (!c->running())
     throw insight::Exception("Could not execute task spooler executable!");
 
   std::vector<std::string> data;
@@ -85,7 +104,7 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
     i++;
   }
 
-  c.wait();
+  c->wait();
 
   return jl;
 }
@@ -93,13 +112,26 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
 
 void TaskSpoolerInterface::cancelAllJobs()
 {
-  while ( boost::process::system(boost::process::search_path("tsp"),
-                                 boost::process::args("-k"),
-                                 env_/*, boost::process::std_out > boost::process::null*/) == 0 )
+  if (!remote_machine_.empty())
   {
-    boost::process::system(boost::process::search_path("tsp"),
-                           boost::process::args("-C"),
-                           env_);
+    while ( boost::process::system(boost::process::search_path("ssh"),
+                                   boost::process::args({"TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-k"})
+                                   ) == 0 )
+    {
+      boost::process::system(boost::process::search_path("ssh"),
+                             boost::process::args({"TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-C"}));
+    }
+  }
+  else
+  {
+    while ( boost::process::system(boost::process::search_path("tsp"),
+                                   boost::process::args("-k"),
+                                   env_/*, boost::process::std_out > boost::process::null*/) == 0 )
+    {
+      boost::process::system(boost::process::search_path("tsp"),
+                             boost::process::args("-C"),
+                             env_);
+    }
   }
 }
 

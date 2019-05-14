@@ -39,7 +39,7 @@
 #include "graphprogressdisplayer.h"
 
 #include "qdebugstream.h"
-
+#include "logviewerwidget.h"
 
 
 namespace Ui
@@ -100,7 +100,7 @@ protected:
   ParameterEditorWidget* peditor_;
   
   Q_DebugStream *cout_log_, *cerr_log_;
-  QPlainTextEdit *log_;
+  LogViewerWidget *log_;
   
   QPushButton *save_log_btn_, *send_log_btn_, *clear_log_btn_, *auto_scroll_down_btn_;
 
@@ -160,10 +160,6 @@ private Q_SLOTS:
   void onStartPV();
   void onCleanOFC();
 
-  void saveLog();
-  void sendLog();
-  void clearLog();
-  void autoScrollLog();
   void onShowParameterXML();
 
   void onConfigModification();

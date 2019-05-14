@@ -75,20 +75,20 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     QWidget* lower = new QWidget;
     QHBoxLayout* hbl = new QHBoxLayout(lower);
     progdisp_=new GraphProgressDisplayer;
-    log_=new QPlainTextEdit;
+    log_=new LogViewerWidget;
     spl->addWidget(progdisp_);
     spl->addWidget(lower); //log_);
     hbl->addWidget(log_);
     QVBoxLayout* vbl=new QVBoxLayout;
     hbl->addLayout(vbl);
     save_log_btn_=new QPushButton("Save...");
-    connect(save_log_btn_, &QPushButton::clicked, this, &AnalysisForm::saveLog);
+    connect(save_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::saveLog);
     send_log_btn_=new QPushButton("Email...");
-    connect(send_log_btn_, &QPushButton::clicked, this, &AnalysisForm::sendLog);
+    connect(send_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::sendLog);
     clear_log_btn_=new QPushButton("Clear");
-    connect(clear_log_btn_, &QPushButton::clicked, this, &AnalysisForm::clearLog);
+    connect(clear_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::clearLog);
     auto_scroll_down_btn_=new QPushButton("Auto Scroll");
-    connect(auto_scroll_down_btn_, &QPushButton::clicked, this, &AnalysisForm::autoScrollLog);
+    connect(auto_scroll_down_btn_, &QPushButton::clicked, log_, &LogViewerWidget::autoScrollLog);
     vbl->addWidget(save_log_btn_);
     vbl->addWidget(send_log_btn_);
     vbl->addWidget(clear_log_btn_);
@@ -97,9 +97,9 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     ui->runTabLayout->addWidget(spl);
     
     cout_log_ = new Q_DebugStream(std::cout);
-    connect(cout_log_, &Q_DebugStream::appendText, log_, &QPlainTextEdit::appendPlainText);
+    connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendLine);
     cerr_log_ = new Q_DebugStream(std::cerr);
-    connect(cerr_log_, &Q_DebugStream::appendText, log_, &QPlainTextEdit::appendPlainText);
+    connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendLine);
 
     this->setWindowTitle(analysisName_.c_str());
     connect(ui->runBtn, &QPushButton::clicked, this, &AnalysisForm::onRunAnalysis);
@@ -542,56 +542,3 @@ void AnalysisForm::onCleanOFC()
   dlg.exec();
 }
 
-
-void AnalysisForm::saveLog()
-{
-    QString fn=QFileDialog::getSaveFileName(
-        this, 
-        "Save Log to file",
-        "",
-        "Log file (*.txt)"
-    );
-    
-    if (!fn.isEmpty())
-    {
-        QFile f(fn);
-        if (!f.open(QIODevice::WriteOnly | QIODevice::Text))
-        {
-            QMessageBox::critical(this, "Create file failed", "Could not create file "+fn);
-            return;
-        }
-        QTextStream out(&f);
-        out << log_->toPlainText();
-    }
-}
-
-void AnalysisForm::sendLog()
-{
-    QTemporaryFile f;
-    if (!f.open())
-    {
-        QMessageBox::critical(this, "Creation of temporary file failed", 
-                              "Could not create temporary file "+f.fileName());
-        return;
-    }
-    QTextStream out(&f);
-    out<< log_->toPlainText();
-    out.flush();
-    
-    Email e;
-    e.setReceiverAddress("info@silentdynamics.de");
-    e.setSubject("Analysis Log");
-    e.addAttachment(QFileInfo(f).canonicalFilePath());
-    e.openInDefaultProgram();
-}
-
-
-void AnalysisForm::clearLog()
-{
-  log_->clear();
-}
-
-void AnalysisForm::autoScrollLog()
-{
-  log_->verticalScrollBar()->setValue( log_->verticalScrollBar()->maximum() );
-}

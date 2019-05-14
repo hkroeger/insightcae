@@ -72,9 +72,6 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   setWindowIcon(QIcon(":/resources/logo_insight_cae.svg"));
   this->setWindowTitle("InsightCAE Execution Manager");
 
-  ui->log->setMaximumBlockCount(10000);
-  ui->log->setCenterOnScroll(true);
-
   connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this, &MainWindow::onSelectRemoteDir);
   connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
   connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
@@ -82,7 +79,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(ui->actionStart_Remote_Paraview, &QAction::triggered, this, &MainWindow::onStartRemoteParaview);
   connect(ui->actionStart_Remote_Paraview_in_Subdirectory, &QAction::triggered, this, &MainWindow::onStartRemoteParaviewSubdir);
 
-  connect(this, &MainWindow::logReady, ui->log, &QPlainTextEdit::appendPlainText);
+  connect(this, &MainWindow::logReady, ui->log, &LogViewerWidget::appendLine);
 
 #ifdef HAVE_KF5
   terminal_ = new TerminalWidget(ui->v_splitter);

@@ -21,6 +21,7 @@ set(toolkit_gui_SRCS
     blockmesh_tubemesh.cpp
     blockmesh_gui.cpp
     parametersetvisualizer.cpp
+    logviewerwidget.cpp
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")

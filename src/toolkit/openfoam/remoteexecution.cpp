@@ -6,6 +6,7 @@
 #include "openfoam/openfoamcase.h"
 #include "pstreams/pstream.h"
 #include <boost/asio.hpp>
+#include <boost/process/async.hpp>
 
 #include <regex>
 
@@ -218,17 +219,18 @@ void TaskSpoolerInterface::startTail(std::function<void(std::string)> receiver)
     {
       tail_c_.reset(new boost::process::child(
                 boost::process::search_path("ssh"),
-//                boost::process::args({"eremit", "ls"}),
                 boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-t"}),
 
-                boost::process::std_in < boost::process::null,
-                (boost::process::std_out & boost::process::std_err) > tail_cout_, ios_,
+//                boost::process::std_in < boost::process::null,
+                (boost::process::std_out & boost::process::std_err) > tail_cout_,
 
                 boost::process::on_exit(
                             [&](int, const std::error_code&) {
                                       cout<<"close"<<endl;
                                       tail_cout_.close();
                                     })
+                      /*,
+                      ios_*/  // if ios_ is supplied along with on_exit, comm hangs!!
                 ));
       cout<<"ssh "<<remote_machine_<<" TS_SOCKET=\""<<socket_.string()<<"\" "<< "tsp"<<" -t"<<endl;
     }
@@ -241,7 +243,7 @@ void TaskSpoolerInterface::startTail(std::function<void(std::string)> receiver)
 
                       env_,
 
-                      (boost::process::std_out & boost::process::std_err) > tail_cout_, ios_,
+                      (boost::process::std_out & boost::process::std_err) > tail_cout_,
 
                       boost::process::on_exit
                       (

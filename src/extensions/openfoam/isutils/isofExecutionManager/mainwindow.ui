@@ -274,7 +274,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPlainTextEdit" name="log">
+         <widget class="LogViewerWidget" name="log">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
             <horstretch>0</horstretch>
@@ -380,6 +380,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>LogViewerWidget</class>
+   <extends>QPlainTextEdit</extends>
+   <header>logviewerwidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

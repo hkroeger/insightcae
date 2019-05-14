@@ -483,9 +483,9 @@ void SolverOutputAnalyzer::update(const string& line)
         else if ( boost::regex_search( line, match, rb_ori_pattern, boost::match_default ) && !currbname_.empty() )
         {
           double
-              ox=std::asin(lexical_cast<double>(match[7]))/SI::deg, // sin alpha in case of rot around x
-              oy=std::asin(lexical_cast<double>(match[2]))/SI::deg, // sin alpha in case of rot around y
-              oz=std::asin(lexical_cast<double>(match[3]))/SI::deg; // sin alpha in case of rot around z
+              ox=std::asin(lexical_cast<double>(match[8]))/SI::deg, // sin alpha in case of pure rot around x
+              oy=std::asin(lexical_cast<double>(match[3]))/SI::deg, // sin alpha in case of pure rot around y
+              oz=std::asin(lexical_cast<double>(match[4]))/SI::deg; // sin alpha in case of pure rot around z
           curProgVars_[currbname_+"_ox"]=ox;
           curProgVars_[currbname_+"_oy"]=oy;
           curProgVars_[currbname_+"_oz"]=oz;

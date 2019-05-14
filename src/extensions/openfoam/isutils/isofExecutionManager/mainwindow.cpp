@@ -15,18 +15,52 @@
 
 void MainWindow::updateGUI()
 {
-    if (isValid())
-    {
-      bfs_path loc_dir=boost::filesystem::absolute(localDir());
-      setWindowTitle(loc_dir.c_str());
-        ui->server->setText(server().c_str());
-        ui->localDir->setText(loc_dir.c_str());
-        ui->remoteDir->setText(remoteDir().c_str());
+  if (isValid())
+  {
+    bfs_path loc_dir=boost::filesystem::absolute(localDir());
+    setWindowTitle(QString(loc_dir.c_str())+" - InsightCAE Execution Manager");
+    ui->server->setText(server().c_str());
+    ui->localDir->setText(loc_dir.c_str());
+    ui->remoteDir->setText(remoteDir().c_str());
 #ifdef HAVE_KF5
-        terminal_->setDirectory(localDir().c_str());
-        terminal_->sendInput(QString("ssh ")+server().c_str()+" -t \"cd '"+remoteDir().c_str()+"'; bash -l\"\n");
+    terminal_->setDirectory(localDir().c_str());
+    terminal_->sendInput(QString("ssh ")+server().c_str()+" -t \"cd '"+remoteDir().c_str()+"'; bash -l\"\n");
 #endif
+    tsi_.reset(new insight::TaskSpoolerInterface(socket(), server()));
+    onRefreshJobList();
+  }
+}
+
+void MainWindow::onRefreshJobList()
+{
+  ui->commands->clear();
+
+  if (tsi_)
+  {
+    auto jl = tsi_->jobs();
+
+
+    int num=0;
+    for (auto j: jl)
+    {
+      if (j.state!=insight::TaskSpoolerInterface::Finished)
+      {
+        ui->commands->addItem( QString::number(j.id) +" "+ QString::fromStdString(j.remainder) );
+        num++;
+      }
     }
+
+    if (num>0) onStartTail();
+  }
+}
+
+
+void MainWindow::onStartTail()
+{
+  if (tsi_)
+  {
+    tsi_->startTail( [&](std::string line) { std::cout<<line<<std::endl; emit logReady(QString::fromStdString(line)); } );
+  }
 }
 
 MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent) :
@@ -35,6 +69,11 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   ui(new Ui::MainWindow)
 {
   ui->setupUi(this);
+  setWindowIcon(QIcon(":/resources/logo_insight_cae.svg"));
+  this->setWindowTitle("InsightCAE Execution Manager");
+
+  ui->log->setMaximumBlockCount(10000);
+  ui->log->setCenterOnScroll(true);
 
   connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this, &MainWindow::onSelectRemoteDir);
   connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
@@ -42,6 +81,8 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(ui->actionStart_Paraview, &QAction::triggered, this, &MainWindow::onStartParaview);
   connect(ui->actionStart_Remote_Paraview, &QAction::triggered, this, &MainWindow::onStartRemoteParaview);
   connect(ui->actionStart_Remote_Paraview_in_Subdirectory, &QAction::triggered, this, &MainWindow::onStartRemoteParaviewSubdir);
+
+  connect(this, &MainWindow::logReady, ui->log, &QPlainTextEdit::appendPlainText);
 
 #ifdef HAVE_KF5
   terminal_ = new TerminalWidget(ui->v_splitter);
@@ -55,6 +96,10 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+  if (tsi_)
+  {
+    tsi_->stopTail();
+  }
   delete ui;
 }
 

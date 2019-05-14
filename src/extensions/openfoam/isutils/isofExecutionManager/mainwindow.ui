@@ -247,7 +247,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QTableView" name="commands">
+         <widget class="QListWidget" name="commands">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
             <horstretch>0</horstretch>

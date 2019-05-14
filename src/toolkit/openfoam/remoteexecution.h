@@ -13,6 +13,20 @@ class TaskSpoolerInterface
   std::string remote_machine_;
   boost::filesystem::path socket_;
   boost::process::environment env_;
+  boost::asio::io_service ios_;
+  boost::process::async_pipe tail_cout_;
+
+  std::thread ios_run_thread_;
+
+  std::shared_ptr<boost::process::child> tail_c_;
+  std::vector< std::function<void(std::string)> > receivers_;
+
+//  static const int max_read_length = 256; // maximum amount of data to read in one operation
+//  char read_msg_[max_read_length]; // data read from the socket
+  boost::asio::streambuf buf_cout_;
+
+  void read_start(void);
+  void read_complete(const boost::system::error_code& error, size_t bytes_transferred);
 
 public:
   enum JobState { Running, Queued, Finished, Unknown };
@@ -34,8 +48,15 @@ public:
 
 public:
   TaskSpoolerInterface(const boost::filesystem::path& socket, const std::string& remote_machine="");
+  ~TaskSpoolerInterface();
 
   JobList jobs() const;
+
+  int clean();
+  int kill();
+
+  void startTail(std::function<void(std::string)> receiver);
+  void stopTail();
 
   void cancelAllJobs();
 };
@@ -69,6 +90,8 @@ protected:
     bfs_path meta_file_;
     std::string server_;
     boost::filesystem::path localDir_, remoteDir_;
+
+    boost::filesystem::path socket() const;
 
     void execRemoteCmd(const std::string& cmd);
 

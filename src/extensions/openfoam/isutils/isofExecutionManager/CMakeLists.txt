@@ -17,6 +17,10 @@ set(isofExecutionManager_LIBS
     ${Boost_LIBRARIES} toolkit Qt5::Widgets toolkit_gui
 )
 
+set(isofExecutionManager_RCCS
+    isofexecutionmanager.qrc
+)
+
 if (KF5Parts_DIR)
     message(STATUS "Found KF5Parts: ${KF5Parts_DIR}")
 
@@ -32,7 +36,7 @@ else()
 endif()
 
 
-add_executable(isofExecutionManager ${isofExecutionManager_SOURCES})
+add_executable(isofExecutionManager ${isofExecutionManager_SOURCES} ${isofExecutionManager_RCCS})
 target_link_libraries(isofExecutionManager ${isofExecutionManager_LIBS})
 target_include_directories(isofExecutionManager
   PUBLIC ${QT_INCLUDES}

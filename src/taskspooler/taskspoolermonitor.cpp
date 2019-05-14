@@ -7,19 +7,23 @@
 
 #include "base/qt5_helper.h"
 
-TaskSpoolerMonitor::TaskSpoolerMonitor(const boost::filesystem::path& tsp_socket, QWidget *parent) :
+TaskSpoolerMonitor::TaskSpoolerMonitor(const boost::filesystem::path& tsp_socket, const QString& remote_machine, QWidget *parent) :
   QWidget(parent),
-  tsp_socket_(tsp_socket),
-  env_( QProcessEnvironment::systemEnvironment() ),
+  insight::TaskSpoolerInterface (tsp_socket, remote_machine.toStdString()),
   ui(new Ui::TaskSpoolerMonitor)
 {
   ui->setupUi(this);
 
-  env_.insert("TS_SOCKET", tsp_socket_.c_str());
+  ui->log->setMaximumBlockCount(10000);
+  ui->log->setCenterOnScroll(true);
+
+//  env_.insert("TS_SOCKET", tsp_socket_.c_str());
 
   connect(ui->btn_refresh, &QPushButton::clicked, this, &TaskSpoolerMonitor::onRefresh);
   connect(ui->btn_kill, &QPushButton::clicked, this, &TaskSpoolerMonitor::onKill);
   connect(ui->btn_clean, &QPushButton::clicked, this, &TaskSpoolerMonitor::onClean);
+
+  connect(this, &TaskSpoolerMonitor::outputReady, ui->log, &QPlainTextEdit::appendPlainText);
 
   onRefresh();
 }
@@ -31,27 +35,17 @@ TaskSpoolerMonitor::~TaskSpoolerMonitor()
 
 void TaskSpoolerMonitor::onRefresh()
 {
-  QProcess process;
-  process.setProcessEnvironment(env_);
-  process.start( "tsp" );
-  process.waitForFinished();
-  QStringList lines = QString( process.readAllStandardOutput() ).split('\n');
+  auto jl = jobs();
 
   ui->joblist->clear();
-  int num=0;
-  for (int i=1; i<lines.size(); i++)
-  {
-    //QRegExp re("^([^ ]+) *([^ ]+) *(.*)$");
-    //if ( (pos = re.indexIn(lines[i], pos)) != -1 )
 
-    QStringList tks = lines[i].split(' ', QString::SkipEmptyParts);
-    if (tks.size()>2)
+  int num=0;
+  for (auto j: jl)
+  {
+    if (j.state!=Finished)
     {
-      if (tks[1]!="finished")
-      {
-        ui->joblist->addItem(lines[i]);
-        num++;
-      }
+      ui->joblist->addItem( QString::number(j.id) +" "+ QString::fromStdString(j.remainder) );
+      num++;
     }
   }
 
@@ -61,10 +55,7 @@ void TaskSpoolerMonitor::onRefresh()
 
 void TaskSpoolerMonitor::onClean()
 {
-  QProcess process;
-  process.setProcessEnvironment(env_);
-  process.start( "tsp -C" );
-  process.waitForFinished();
+  clean();
 
   onRefresh();
 }
@@ -72,10 +63,7 @@ void TaskSpoolerMonitor::onClean()
 
 void TaskSpoolerMonitor::onKill()
 {
-  QProcess process;
-  process.setProcessEnvironment(env_);
-  process.start( "tsp -k" );
-  process.waitForFinished();
+  kill();
 
   onRefresh();
 }
@@ -83,13 +71,14 @@ void TaskSpoolerMonitor::onKill()
 
 void TaskSpoolerMonitor::onStartTail()
 {
-  QProcess *p=new QProcess(this);
-  p->setProcessEnvironment(env_);
-  connect(p, &QProcess::readyReadStandardOutput, this, &TaskSpoolerMonitor::onOutputReady);
-  connect(p, &QProcess::readyReadStandardError, this, &TaskSpoolerMonitor::onErrorReady);
-  connect(p, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-          this, &TaskSpoolerMonitor::onFinishedTail);
-  p->start( "tsp", { "-t" } );
+//  QProcess *p=new QProcess(this);
+//  p->setProcessEnvironment(env_);
+//  connect(p, &QProcess::readyReadStandardOutput, this, &TaskSpoolerMonitor::onOutputReady);
+//  connect(p, &QProcess::readyReadStandardError, this, &TaskSpoolerMonitor::onErrorReady);
+//  connect(p, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+//          this, &TaskSpoolerMonitor::onFinishedTail);
+//  p->start( "tsp", { "-t" } );
+  startTail( [&](std::string line) { emit outputReady(QString::fromStdString(line)); } );
 }
 
 void TaskSpoolerMonitor::onFinishedTail(int , QProcess::ExitStatus )
@@ -97,30 +86,31 @@ void TaskSpoolerMonitor::onFinishedTail(int , QProcess::ExitStatus )
   onClean();
 }
 
-void TaskSpoolerMonitor::onOutputReady()
-{
-  QProcess *p = dynamic_cast<QProcess *>( sender() );
-  if (p)
-  {
-    ui->log->appendPlainText( p->readAllStandardOutput() );
-  }
-}
+//void TaskSpoolerMonitor::onOutputReady(const std::string& line)
+//{
+////  QProcess *p = dynamic_cast<QProcess *>( sender() );
+////  if (p)
+////  {
+////    ui->log->appendPlainText( p->readAllStandardOutput() );
+////  }
+//  ui->log->appendPlainText( QString::fromStdString(line) );
+//}
 
-void TaskSpoolerMonitor::onErrorReady()
-{
-  QProcess *p = dynamic_cast<QProcess *>( sender() );
-  if (p)
-  {
-    ui->log->appendPlainText( p->readAllStandardError() );
-  }
-}
+//void TaskSpoolerMonitor::onErrorReady()
+//{
+////  QProcess *p = dynamic_cast<QProcess *>( sender() );
+////  if (p)
+////  {
+////    ui->log->appendPlainText( p->readAllStandardError() );
+////  }
+//}
 
-TaskSpoolerMonitorDialog::TaskSpoolerMonitorDialog(const boost::filesystem::path& tsp_socket, QWidget *parent)
+TaskSpoolerMonitorDialog::TaskSpoolerMonitorDialog(const boost::filesystem::path& tsp_socket, const QString& remote_machine, QWidget *parent)
   : QDialog(parent)
 {
   QVBoxLayout *l=new QVBoxLayout;
   setLayout(l);
-  auto* w = new TaskSpoolerMonitor(tsp_socket, this);
+  auto* w = new TaskSpoolerMonitor(tsp_socket, remote_machine, this);
   l->addWidget(w);
 //  QLabel *status=new QLabel(this);
 //  l->addWidget(status);

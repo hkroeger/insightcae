@@ -7,6 +7,7 @@
 #include "base/boost_include.h"
 #include "openfoam/remoteexecution.h"
 
+
 namespace Ui {
   class MainWindow;
 }
@@ -20,9 +21,15 @@ class MainWindow
 #ifdef HAVE_KF5
   TerminalWidget *terminal_;
 #endif
+  std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
 
 protected:
     void updateGUI();
+    void onRefreshJobList();
+    void onStartTail();
+
+Q_SIGNALS:
+    void logReady(const QString& line);
 
 public:
   explicit MainWindow(const boost::filesystem::path& location, QWidget *parent = nullptr);

@@ -5,6 +5,7 @@
 #include "base/tools.h"
 #include "openfoam/openfoamcase.h"
 #include "pstreams/pstream.h"
+#include <boost/asio.hpp>
 
 #include <regex>
 
@@ -13,6 +14,8 @@ using namespace boost;
 
 namespace insight
 {
+
+
 
 bool TaskSpoolerInterface::JobList::hasRunningJobs() const
 {
@@ -37,9 +40,17 @@ bool TaskSpoolerInterface::JobList::hasQueuedJobs() const
 TaskSpoolerInterface::TaskSpoolerInterface(const boost::filesystem::path& socket, const std::string& remote_machine)
   : remote_machine_(remote_machine),
     socket_(socket),
-    env_(boost::this_process::environment())
+    env_(boost::this_process::environment()),
+    ios_(),
+    tail_cout_(ios_)
 {
   env_["TS_SOCKET"]=socket.string();
+}
+
+TaskSpoolerInterface::~TaskSpoolerInterface()
+{
+  stopTail();
+  //ios_run_thread_.join();
 }
 
 
@@ -52,15 +63,15 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
   if (!remote_machine_.empty())
   {
     c.reset(new boost::process::child(
-              "ssh",
-              boost::process::args({"TS_SOCKET=\""+socket_.string()+"\"", "tsp"}),
+              boost::process::search_path("ssh"),
+              boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp"}),
               boost::process::std_out > is
               ));
   }
   else
   {
     c.reset(new boost::process::child(
-              "tsp",
+              boost::process::search_path("tsp"),
               env_,
               boost::process::std_out > is
               ));
@@ -109,29 +120,179 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
   return jl;
 }
 
-
-void TaskSpoolerInterface::cancelAllJobs()
+int TaskSpoolerInterface::clean()
 {
   if (!remote_machine_.empty())
   {
-    while ( boost::process::system(boost::process::search_path("ssh"),
-                                   boost::process::args({"TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-k"})
-                                   ) == 0 )
-    {
-      boost::process::system(boost::process::search_path("ssh"),
-                             boost::process::args({"TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-C"}));
-    }
+      return boost::process::system(
+            boost::process::search_path("ssh"),
+            boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-C"})
+            );
   }
   else
   {
-    while ( boost::process::system(boost::process::search_path("tsp"),
-                                   boost::process::args("-k"),
-                                   env_/*, boost::process::std_out > boost::process::null*/) == 0 )
+      return boost::process::system(
+            boost::process::search_path("tsp"),
+            boost::process::args("-C"),
+            env_
+            );
+  }
+}
+
+
+int TaskSpoolerInterface::kill()
+{
+  if (!remote_machine_.empty())
+  {
+      return boost::process::system(
+            boost::process::search_path("ssh"),
+            boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-k"})
+            );
+  }
+  else
+  {
+      return boost::process::system(
+            boost::process::search_path("tsp"),
+            boost::process::args("-k"),
+            env_
+            );
+  }
+}
+
+
+
+void TaskSpoolerInterface::read_start(void)
+{
+  cout<<"read start"<<endl;
+  async_read_until
+      (
+        tail_cout_, buf_cout_, "\n",
+        std::bind
+        (
+          &TaskSpoolerInterface::read_complete,
+          this,
+          std::placeholders::_1, std::placeholders::_2
+         )
+       );
+}
+
+void TaskSpoolerInterface::read_complete(const boost::system::error_code& error, size_t bytes_transferred)
+{
+  cout<<"read compl "<<error<<" "<<bytes_transferred<<endl;
+    if (!error)
     {
-      boost::process::system(boost::process::search_path("tsp"),
-                             boost::process::args("-C"),
-                             env_);
+      std::string line
+          (
+            (std::istreambuf_iterator<char>(&buf_cout_)),
+            std::istreambuf_iterator<char>()
+          );
+
+      cout<<line<<endl;
+
+      // read completed, so process the data
+      for (auto& receiver: receivers_)
+        receiver(line);
+
+      read_start(); // start waiting for another asynchronous read again
     }
+    else
+    {
+//        do_close(error);
+        cout<<"fail read!"<<endl;
+    }
+}
+
+
+void TaskSpoolerInterface::startTail(std::function<void(std::string)> receiver)
+{
+  stopTail();
+
+  receivers_.clear();
+  receivers_.push_back(receiver);
+
+  cout<<"start tail"<<endl;
+
+  try
+  {
+    if (!remote_machine_.empty())
+    {
+      tail_c_.reset(new boost::process::child(
+                boost::process::search_path("ssh"),
+//                boost::process::args({"eremit", "ls"}),
+                boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-t"}),
+
+                boost::process::std_in < boost::process::null,
+                (boost::process::std_out & boost::process::std_err) > tail_cout_, ios_,
+
+                boost::process::on_exit(
+                            [&](int, const std::error_code&) {
+                                      cout<<"close"<<endl;
+                                      tail_cout_.close();
+                                    })
+                ));
+      cout<<"ssh "<<remote_machine_<<" TS_SOCKET=\""<<socket_.string()<<"\" "<< "tsp"<<" -t"<<endl;
+    }
+    else
+    {
+      tail_c_.reset(new boost::process::child(
+
+                      boost::process::search_path("tsp"),
+                      boost::process::args("-t"),
+
+                      env_,
+
+                      (boost::process::std_out & boost::process::std_err) > tail_cout_, ios_,
+
+                      boost::process::on_exit
+                      (
+                        [&](int, const std::error_code&) {
+                            tail_cout_.close();
+                          }
+                      )
+                      ));
+    }
+  }
+  catch (boost::process::process_error e)
+  {
+    throw insight::Exception(std::string("Could not set up task spooler subprocess! Message: ")+e.what());
+  }
+
+  read_start();
+
+  ios_run_thread_ = std::thread
+  (
+     [&]() {
+      ios_.run();
+     }
+  );
+
+  if (!tail_c_->running())
+    throw insight::Exception("Could not execute task spooler executable!");
+
+}
+
+
+void TaskSpoolerInterface::stopTail()
+{
+  if (tail_c_)
+  {
+    if (tail_c_->valid())
+    {
+      if (tail_c_->running())
+      {
+        tail_c_->terminate();
+        ios_run_thread_.join();
+      }
+    }
+  }
+}
+
+
+void TaskSpoolerInterface::cancelAllJobs()
+{
+  while ( kill() == 0 )
+  {
+    clean();
   }
 }
 
@@ -198,13 +359,17 @@ const RemoteServerList::value_type RemoteServerList::findServer(const std::strin
 
 RemoteServerList remoteServers;
 
+boost::filesystem::path RemoteExecutionConfig::socket() const
+{
+  return remoteDir()/"tsp.socket";
+}
 
 void RemoteExecutionConfig::execRemoteCmd(const std::string& command)
 {
     std::ostringstream cmd;
 
     cmd << "ssh " << server_ << " \"";
-     cmd << "export TS_SOCKET="<<(remoteDir_/"tsp.socket")<<";";
+     cmd << "export TS_SOCKET="<<socket()<<";";
 
      try {
          const OFEnvironment& cofe = OFEs::getCurrent();

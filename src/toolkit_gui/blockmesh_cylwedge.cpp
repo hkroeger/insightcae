@@ -41,7 +41,6 @@ void blockMeshDict_CylWedge::create_bmd()
 
 
 
-
     // Read or create spine curve
     Handle_Geom_Curve spine;
     if (!p_.geometry.wedge_spine_curve.empty())
@@ -57,8 +56,24 @@ void blockMeshDict_CylWedge::create_bmd()
             );
 
       TopoDS_Edge e= TopoDS::Edge(wsc->edge(*el.begin()));
+
       double t0, t1;
       spine = BRep_Tool::Curve(e, t0, t1);
+
+      // align er with beginning (inner) of spine
+      arma::mat per=vec3(spine->Value(t0));
+      arma::mat p2=vec3(spine->Value(t1));
+      auto rdist = [&](const arma::mat& p, const arma::mat& ex) -> double
+      {
+        arma::mat r=p-p0;
+        return arma::norm(r - arma::dot(r,ex)*ex, 2);
+      };
+
+      if ( rdist(p2,p0) < rdist(per,p0) ) per=p2;
+
+      er = per-p0;
+      er -= arma::dot(er,ex)*ex;
+      ey = BlockMeshTemplate::correct_trihedron(ex, er);
     }
     else
     {
@@ -67,26 +82,6 @@ void blockMeshDict_CylWedge::create_bmd()
                 to_Pnt(p0 + er*p_.geometry.D*0.5)
                 ).Value();
     }
-
-
-    double rc=rCore();
-    arma::mat vL=p_.geometry.L*ex;
-
-//     std::cout<<pts[0]<<pts[1]<<std::endl;
-    Patch* base=nullptr;
-    Patch* top=nullptr;
-    Patch* outer=nullptr;
-
-    if ( p_.mesh.basePatchName!="" ) {
-        base=&this->addOrDestroyPatch ( p_.mesh.basePatchName, new bmd::Patch() );
-    }
-    if ( p_.mesh.topPatchName!="" ) {
-        top=&this->addOrDestroyPatch ( p_.mesh.topPatchName, new bmd::Patch() );
-    }
-    if ( p_.mesh.circumPatchName!="" ) {
-        outer=&this->addOrDestroyPatch ( p_.mesh.circumPatchName, new bmd::Patch() );
-    }
-
 
 
 
@@ -106,7 +101,7 @@ void blockMeshDict_CylWedge::create_bmd()
         arma::mat p=vec3(isec.Point(i+1));
         arma::mat r=p-p0;
         double odist = arma::norm(r-std::max<double>(0.,dot(r, er))*er, 2);
-        cout<<odist<<" => "<<p<<endl;
+//        cout<<odist<<" => "<<p<<endl;
         res[odist]=p;
       }
       auto p_sel = res.begin()->second;
@@ -114,6 +109,43 @@ void blockMeshDict_CylWedge::create_bmd()
       p_sel -= dot(p_sel-p0, ex)*ex;
       return p_sel;
     };
+
+
+
+    double rc=rCore();
+    arma::mat vL=p_.geometry.L*ex;
+
+//     std::cout<<pts[0]<<pts[1]<<std::endl;
+    Patch* base=nullptr;
+    Patch* top=nullptr;
+    Patch* outer=nullptr;
+    Patch* inner=nullptr;
+    Patch* pcyclm=nullptr;
+    Patch* pcyclp=nullptr;
+
+    if ( p_.mesh.basePatchName!="" ) {
+        base=&this->addOrDestroyPatch ( p_.mesh.basePatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.topPatchName!="" ) {
+        top=&this->addOrDestroyPatch ( p_.mesh.topPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.outerPatchName!="" ) {
+        outer=&this->addOrDestroyPatch ( p_.mesh.outerPatchName, new bmd::Patch() );
+    }
+    if ( !p_.mesh.innerPatchName.empty() ) {
+        inner=&this->addOrDestroyPatch ( p_.mesh.innerPatchName, new bmd::Patch() );
+    }
+    if ( !p_.mesh.cyclmPatchName.empty() ) {
+        pcyclm=&this->addOrDestroyPatch ( p_.mesh.cyclmPatchName, new bmd::Patch() );
+    }
+    if ( !p_.mesh.cyclpPatchName.empty() ) {
+        pcyclp=&this->addOrDestroyPatch ( p_.mesh.cyclpPatchName, new bmd::Patch() );
+    }
+
+
+
+
+
 
     const int np=10;
     TopoDS_Edge c0;
@@ -152,6 +184,7 @@ void blockMeshDict_CylWedge::create_bmd()
     }
 
     std::vector<double> phi;
+//    double phim, phip;
     {
       auto calc_angle = [&](const arma::mat& p) -> double
       {
@@ -160,19 +193,74 @@ void blockMeshDict_CylWedge::create_bmd()
         return std::atan2(y, x);
       };
 
-      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::FirstVertex(c0m)))));
-      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::LastVertex(c0m)))));
-      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::FirstVertex(c0p)))));
-      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::LastVertex(c0p)))));
+//      struct Obj : public Objective1D {
+
+//        double sign=1.;
+//        std::function<arma::mat(double)> point;
+//        std::function<double(const arma::mat& p)> calc_angle;
+
+//        virtual double operator()(double d) const
+//        {
+//          double phi=calc_angle(point(0.5*d));
+//          cout<<">> " << d<<" => "<<phi<<endl;
+//          return sign*phi;
+//        }
+//      } objExtrAngle;
+
+//      objExtrAngle.point=point_on_spine;
+//      objExtrAngle.calc_angle=calc_angle;
+
+//      objExtrAngle.sign=1.0;
+//      phim=nonlinearMinimize1D(objExtrAngle, p_.geometry.d, p_.geometry.D) -0.5*p_.geometry.wedge_angle*SI::deg;
+//      objExtrAngle.sign=-1.0;
+//      phip=nonlinearMinimize1D(objExtrAngle, p_.geometry.d, p_.geometry.D) +0.5*p_.geometry.wedge_angle*SI::deg;
+      const int np=20;
+      for (int i=0; i<np; i++)
+      {
+        double d=p_.geometry.d + double(i)/double(np-1)*(p_.geometry.D-p_.geometry.d);
+        phi.push_back(calc_angle(point_on_spine(0.5*d)));
+      }
+
+//      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::FirstVertex(c0m)))));
+//      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::LastVertex(c0m)))));
+//      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::FirstVertex(c0p)))));
+//      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::LastVertex(c0p)))));
     }
-    double phim=*std::min_element(phi.begin(), phi.end());
-    double phip=*std::max_element(phi.begin(), phi.end());
+    double phim=*std::min_element(phi.begin(), phi.end()) -0.5*p_.geometry.wedge_angle*SI::deg;
+    double phip=*std::max_element(phi.begin(), phi.end()) +0.5*p_.geometry.wedge_angle*SI::deg;
 
     cout<<"phim="<<phim<<", phip="<<phip<<endl;
 
-    int nu1, nu2;
-    nu1=int(std::ceil( fabs(phim)/fabs(phip-phim)*double(p_.mesh.nu) ));
-    nu2=std::max(1, p_.mesh.nu - nu1);
+
+    int nu1, nu2, nx, nr;
+    double
+        L_r = 0.5*(p_.geometry.D-p_.geometry.d),
+        L_u1 = fabs(phim)*0.25*(p_.geometry.d+p_.geometry.D),
+        L_u2 = fabs(phip)*0.25*(p_.geometry.d+p_.geometry.D);
+    if (const auto* ic = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
+    {
+      nu1=int(std::ceil( fabs(phim)/fabs(phip-phim)*double(ic->nu) ));
+      nu2=std::max(1, ic->nu - nu1);
+      nx=ic->nx;
+      nr=ic->nr;
+    }
+    else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
+    {
+      nx=std::max(1, int(std::ceil(p_.geometry.L/ic->delta)));
+      nr=std::max(1, int(std::ceil(L_r/ic->delta)));
+      nu1=std::max(1, int(std::ceil(L_u1/ic->delta)));
+      nu2=std::max(1, int(std::ceil(L_u2/ic->delta)));
+    }
+    else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
+    {
+      auto Ls={p_.geometry.L, L_r, L_u1, L_u2};
+      double delta = *std::max_element(Ls.begin(), Ls.end()) / double(ic->n_max);
+
+      nx=std::max(1, int(std::ceil(p_.geometry.L/delta)));
+      nr=std::max(1, int(std::ceil(L_r/delta)));
+      nu1=std::max(1, int(std::ceil(L_u1/delta)));
+      nu2=std::max(1, int(std::ceil(L_u2/delta)));
+    }
 
     arma::mat rp=rotMatrix ( phip /*0.5*p_.geometry.wedge_angle*SI::deg*/, ex );
     arma::mat rm=rotMatrix ( phim /*-0.5*p_.geometry.wedge_angle*SI::deg*/, ex );
@@ -193,7 +281,7 @@ void blockMeshDict_CylWedge::create_bmd()
                                           p0, rm*p_i, p_rc, rp*p_i,
                                           p0+vL, rm*p_i+vL, p_rc+vL, rp*p_i+vL
                                       ),
-                                      nu1, nu2, p_.mesh.nx
+                                      nu1, nu2, nx
                                     )
                       );
           if ( base ) {
@@ -202,6 +290,8 @@ void blockMeshDict_CylWedge::create_bmd()
           if ( top ) {
               top->addFace ( bl.face ( "4567" ) );
           }
+          if (pcyclm) pcyclm->addFace(bl.face("0154"));
+          if (pcyclm) pcyclm->addFace(bl.face("0473"));
       }
     }
     else
@@ -219,7 +309,7 @@ void blockMeshDict_CylWedge::create_bmd()
                                         rm*p_i, rm*p_o, p_o, p_rc,
                                         rm*p_i+vL, rm*p_o+vL, p_o+vL, p_rc+vL
                                     ),
-                                    p_.mesh.nr, nu1, p_.mesh.nx,
+                                    nr, nu1, nx,
                                     list_of<double> ( 1./p_.mesh.gradr ) ( 1 ) ( 1 )
                                   )
                     );
@@ -230,8 +320,12 @@ void blockMeshDict_CylWedge::create_bmd()
             top->addFace ( bl.face ( "4567" ) );
         }
         if ( outer ) {
-            outer->addFace ( bl.face ( "2376" ) );
+            outer->addFace ( bl.face ( "1265" ) );
         }
+        if ( inner ) {
+            inner->addFace ( bl.face ( "0473" ) );
+        }
+        if (pcyclm) pcyclm->addFace(bl.face("0154"));
     }
     {
         Block& bl = this->addBlock
@@ -240,7 +334,7 @@ void blockMeshDict_CylWedge::create_bmd()
                                         p_rc, p_o, rp*p_o, rp*p_i,
                                         p_rc+vL, p_o+vL, rp*p_o+vL, rp*p_i+vL
                                     ),
-                                    p_.mesh.nr, nu2, p_.mesh.nx,
+                                    nr, nu2, nx,
                                     list_of<double> ( 1./p_.mesh.gradr ) ( 1 ) ( 1 )
                                   )
                     );
@@ -251,8 +345,12 @@ void blockMeshDict_CylWedge::create_bmd()
             top->addFace ( bl.face ( "4567" ) );
         }
         if ( outer ) {
-            outer->addFace ( bl.face ( "2376" ) );
+            outer->addFace ( bl.face ( "1265" ) );
         }
+        if ( inner ) {
+            inner->addFace ( bl.face ( "0473" ) );
+        }
+        if (pcyclp) pcyclp->addFace(bl.face("2376"));
     }
 
 
@@ -269,27 +367,7 @@ void blockMeshDict_CylWedge::create_bmd()
       }
     }
 
-//    this->addEdge( new SplineEdge(spts0) );
 
-//    spts.clear(); std::transform(spts0.begin(), spts0.end(), std::back_inserter(spts),
-//                                 [&](const arma::mat& p0) -> arma::mat { return p0+vL; } );
-//    this->addEdge( new SplineEdge(spts) );
-
-//    spts.clear(); std::transform(spts0.begin(), spts0.end(), std::back_inserter(spts),
-//                                 [&](const arma::mat& p0) -> arma::mat { return rm*p0; } );
-//    this->addEdge( new SplineEdge(spts) );
-
-//    spts.clear(); std::transform(spts0.begin(), spts0.end(), std::back_inserter(spts),
-//                                 [&](const arma::mat& p0) -> arma::mat { return rm*p0+vL; } );
-//    this->addEdge( new SplineEdge(spts) );
-
-//    spts.clear(); std::transform(spts0.begin(), spts0.end(), std::back_inserter(spts),
-//                                 [&](const arma::mat& p0) -> arma::mat { return rp*p0; } );
-//    this->addEdge( new SplineEdge(spts) );
-
-//    spts.clear(); std::transform(spts0.begin(), spts0.end(), std::back_inserter(spts),
-//                                 [&](const arma::mat& p0) -> arma::mat { return rp*p0+vL; } );
-//    this->addEdge( new SplineEdge(spts) );
 
 
 }

@@ -38,16 +38,34 @@ If the parameter is left blank, a straight radial segment is generated."
 
 mesh = set
 {
-    nx = int 50 "# cells in axial direction"
-    nr = int 10 "# cells in radial direction (from edge of core block to outer radius)"
-    nu = int 10 "# cells in circumferential direction"
+    resolution = selectablesubset {{
+
+     cubical set {
+        n_max = int 10 "Number of cells along longest direction. The other directions are discretized with the same cell size but with adjusted number of cells."
+     }
+
+     cubical_size set {
+        delta = double 0.1 "Uniform cell length."
+     }
+
+     individual set {
+        nx = int 50 "# cells in axial direction"
+        nr = int 10 "# cells in radial direction (from edge of core block to outer radius)"
+        nu = int 10 "# cells in circumferential direction"
+     }
+
+    }} cubical "Mesh resolution"
+
     gradr = double 1 "grading towards outer boundary"
     core_fraction = double 0.33 "radial extent of core block given as fraction of radius"
 
     defaultPatchName = string "walls" "name of patch where all patches with empty names are assigned to."
-    circumPatchName = string "" "name of patch on circumferential surface"
+    outerPatchName = string "" "name of patch on outer circumferential surface"
+    innerPatchName = string "" "name of patch on inner circumferential surface"
     basePatchName = string "" "name of patch on base end"
     topPatchName = string "" "name of patch on top end"
+    cyclmPatchName = string "" "name of patch on cyclic boundary at -0.5*wedge_angle"
+    cyclpPatchName = string "" "name of patch on cyclic boundary at +0.5*wedge_angle"
 }
 
 <<<PARAMETERSET

@@ -12,6 +12,7 @@
 #include <QProcess>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QSettings>
 
 void MainWindow::updateGUI()
 {
@@ -50,7 +51,10 @@ void MainWindow::onRefreshJobList()
       }
     }
 
-    if (num>0) onStartTail();
+    if (num>0)
+    {
+      if (!tsi_->isTailRunning()) onStartTail();
+    }
   }
 }
 
@@ -59,7 +63,7 @@ void MainWindow::onStartTail()
 {
   if (tsi_)
   {
-    tsi_->startTail( [&](std::string line) { std::cout<<line<<std::endl; emit logReady(QString::fromStdString(line)); } );
+    tsi_->startTail( [&](std::string line) { emit logReady(QString::fromStdString(line)); } );
   }
 }
 
@@ -88,7 +92,20 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   terminal_->initialise();
 #endif
 
+  connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWindow::onRefreshJobList);
+  connect(ui->btn_kill, &QPushButton::clicked,
+          [&]() { if (tsi_) tsi_->kill(); });
+  connect(ui->btn_clean, &QPushButton::clicked,
+          [&]() { if (tsi_) { tsi_->clean(); onRefreshJobList(); } });
+
+  connect(ui->btn_scroll, &QPushButton::clicked, ui->log, &LogViewerWidget::autoScrollLog);
+  connect(ui->btn_clear, &QPushButton::clicked, ui->log, &LogViewerWidget::clearLog);
+  connect(ui->btn_save, &QPushButton::clicked, ui->log, &LogViewerWidget::saveLog);
+  connect(ui->btn_email, &QPushButton::clicked, ui->log, &LogViewerWidget::sendLog);
+
   updateGUI();
+
+  readSettings();
 }
 
 MainWindow::~MainWindow()
@@ -154,4 +171,27 @@ void MainWindow::onStartRemoteParaviewSubdir()
       QMessageBox::critical(this, "Failed to start", QString("Failed to start Paraview in directoy ")+localDir().c_str());
     }
   }
+}
+
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    saveSettings();
+    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::saveSettings()
+{
+    QSettings settings("silentdynamics", "isofExecutionManager");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    settings.setValue("vsplitter", ui->v_splitter->saveState());
+}
+
+void MainWindow::readSettings()
+{
+    QSettings settings("silentdynamics", "isofExecutionManager");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    restoreState(settings.value("windowState").toByteArray());
+    ui->v_splitter->restoreState(settings.value("vsplitter").toByteArray());
 }

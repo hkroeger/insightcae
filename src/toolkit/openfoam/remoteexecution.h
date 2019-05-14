@@ -56,6 +56,7 @@ public:
   int kill();
 
   void startTail(std::function<void(std::string)> receiver);
+  bool isTailRunning() const;
   void stopTail();
 
   void cancelAllJobs();

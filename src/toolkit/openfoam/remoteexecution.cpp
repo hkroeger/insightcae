@@ -51,7 +51,6 @@ TaskSpoolerInterface::TaskSpoolerInterface(const boost::filesystem::path& socket
 TaskSpoolerInterface::~TaskSpoolerInterface()
 {
   stopTail();
-  //ios_run_thread_.join();
 }
 
 
@@ -87,7 +86,6 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
   boost::regex re("^([^ ]*) +([^ ]*) +([^ ]*) +(.*)$");
   while (std::getline(is, line))
   {
-    std::cout<<line<<std::endl;
     if (i>0)
     {
       boost::smatch m;
@@ -164,7 +162,7 @@ int TaskSpoolerInterface::kill()
 
 void TaskSpoolerInterface::read_start(void)
 {
-  cout<<"read start"<<endl;
+  // read until EOL, then pass to receivers
   async_read_until
       (
         tail_cout_, buf_cout_, "\n",
@@ -179,28 +177,20 @@ void TaskSpoolerInterface::read_start(void)
 
 void TaskSpoolerInterface::read_complete(const boost::system::error_code& error, size_t bytes_transferred)
 {
-  cout<<"read compl "<<error<<" "<<bytes_transferred<<endl;
-    if (!error)
-    {
-      std::string line
-          (
-            (std::istreambuf_iterator<char>(&buf_cout_)),
-            std::istreambuf_iterator<char>()
+  if (!error)
+  {
+    std::string line
+        (
+          (std::istreambuf_iterator<char>(&buf_cout_)),
+          std::istreambuf_iterator<char>()
           );
 
-      cout<<line<<endl;
+    // read completed, so process the data
+    for (auto& receiver: receivers_)
+      receiver(line);
 
-      // read completed, so process the data
-      for (auto& receiver: receivers_)
-        receiver(line);
-
-      read_start(); // start waiting for another asynchronous read again
-    }
-    else
-    {
-//        do_close(error);
-        cout<<"fail read!"<<endl;
-    }
+    read_start(); // start waiting for another asynchronous read again
+  }
 }
 
 
@@ -211,28 +201,23 @@ void TaskSpoolerInterface::startTail(std::function<void(std::string)> receiver)
   receivers_.clear();
   receivers_.push_back(receiver);
 
-  cout<<"start tail"<<endl;
-
   try
   {
     if (!remote_machine_.empty())
     {
       tail_c_.reset(new boost::process::child(
-                boost::process::search_path("ssh"),
-                boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-t"}),
+                      boost::process::search_path("ssh"),
+                      boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-t"}),
 
-//                boost::process::std_in < boost::process::null,
-                (boost::process::std_out & boost::process::std_err) > tail_cout_,
+                      (boost::process::std_out & boost::process::std_err) > tail_cout_,
 
-                boost::process::on_exit(
-                            [&](int, const std::error_code&) {
-                                      cout<<"close"<<endl;
-                                      tail_cout_.close();
-                                    })
+                      boost::process::on_exit(
+                        [&](int, const std::error_code&) {
+                          tail_cout_.close();
+                        })
                       /*,
-                      ios_*/  // if ios_ is supplied along with on_exit, comm hangs!!
-                ));
-      cout<<"ssh "<<remote_machine_<<" TS_SOCKET=\""<<socket_.string()<<"\" "<< "tsp"<<" -t"<<endl;
+                                      ios_*/  // if ios_ is supplied along with on_exit, comm hangs!!
+                      ));
     }
     else
     {
@@ -248,9 +233,8 @@ void TaskSpoolerInterface::startTail(std::function<void(std::string)> receiver)
                       boost::process::on_exit
                       (
                         [&](int, const std::error_code&) {
-                            tail_cout_.close();
-                          }
-                      )
+                          tail_cout_.close();
+                        })
                       ));
     }
   }
@@ -274,7 +258,7 @@ void TaskSpoolerInterface::startTail(std::function<void(std::string)> receiver)
 }
 
 
-void TaskSpoolerInterface::stopTail()
+bool TaskSpoolerInterface::isTailRunning() const
 {
   if (tail_c_)
   {
@@ -282,10 +266,19 @@ void TaskSpoolerInterface::stopTail()
     {
       if (tail_c_->running())
       {
-        tail_c_->terminate();
-        ios_run_thread_.join();
+        return true;
       }
     }
+  }
+  return false;
+}
+
+void TaskSpoolerInterface::stopTail()
+{
+  if (isTailRunning())
+  {
+    tail_c_->terminate();
+    ios_run_thread_.join();
   }
 }
 

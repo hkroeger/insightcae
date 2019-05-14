@@ -35,6 +35,10 @@ public:
   explicit MainWindow(const boost::filesystem::path& location, QWidget *parent = nullptr);
   ~MainWindow();
 
+    virtual void closeEvent(QCloseEvent *event);
+    void saveSettings();
+    void readSettings();
+
 public Q_SLOTS:
     void onSelectRemoteDir();
     void syncLocalToRemote();

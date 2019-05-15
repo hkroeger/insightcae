@@ -280,7 +280,7 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with)
   ofc_->executeCommand(cp, "TS_SOCKET=\""+ts_socket.string()+"\" tsp "+fn.string());
 
   TaskSpoolerMonitorDialog *mon = new TaskSpoolerMonitorDialog(ts_socket, "", this);
-  mon->setWindowTitle("Run in "+);
+  mon->setWindowTitle(QString("Run in ")+cp.c_str());
   mon->show();
 }
 

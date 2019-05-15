@@ -177,13 +177,13 @@ void TaskSpoolerInterface::read_start(void)
 
 void TaskSpoolerInterface::read_complete(const boost::system::error_code& error, size_t bytes_transferred)
 {
+//  std::cout<<error<<" "<<bytes_transferred;
   if (!error)
   {
-    std::string line
-        (
-          (std::istreambuf_iterator<char>(&buf_cout_)),
-          std::istreambuf_iterator<char>()
-          );
+    std::string line;
+    std::istream is(&buf_cout_);
+    getline(is, line);
+//    cout<<"["<<line<<"]"<<endl;
 
     // read completed, so process the data
     for (auto& receiver: receivers_)

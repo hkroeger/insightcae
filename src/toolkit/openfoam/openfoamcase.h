@@ -277,6 +277,15 @@ public:
 
 class SolverOutputAnalyzer
 {
+public:
+
+#ifndef SWIG
+  const static std::string
+      pre_resi,
+      pre_force,
+      pre_orient,
+      pre_motion;
+#endif
 
 protected:
     ProgressDisplayer& pdisp_;

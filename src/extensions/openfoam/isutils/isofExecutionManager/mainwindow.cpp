@@ -76,6 +76,8 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   setWindowIcon(QIcon(":/resources/logo_insight_cae.svg"));
   this->setWindowTitle("InsightCAE Execution Manager");
 
+  soa_.reset(new insight::SolverOutputAnalyzer(*ui->graph));
+
   connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this, &MainWindow::onSelectRemoteDir);
   connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
   connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
@@ -84,6 +86,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(ui->actionStart_Remote_Paraview_in_Subdirectory, &QAction::triggered, this, &MainWindow::onStartRemoteParaviewSubdir);
 
   connect(this, &MainWindow::logReady, ui->log, &LogViewerWidget::appendLine);
+  connect(this, &MainWindow::logReady, [&](const QString& line) { soa_->update(line.toStdString()); } );
 
 #ifdef HAVE_KF5
   terminal_ = new TerminalWidget(ui->v_splitter);

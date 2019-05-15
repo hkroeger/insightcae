@@ -267,12 +267,12 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
     .set_CofR(vec3(0,0,0))
     ));  
 
-  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_fpx", p.run.residual)));
-  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_fvx", p.run.residual)));
-  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_fpy", p.run.residual)));
-  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_fvy", p.run.residual)));
-  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_mpz", p.run.residual)));
-  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_mvz", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(SolverOutputAnalyzer::pre_force+force_fo_name+"/fpx", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(SolverOutputAnalyzer::pre_force+force_fo_name+"/fvx", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(SolverOutputAnalyzer::pre_force+force_fo_name+"/fpy", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(SolverOutputAnalyzer::pre_force+force_fo_name+"/fvy", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(SolverOutputAnalyzer::pre_force+force_fo_name+"/mpz", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(SolverOutputAnalyzer::pre_force+force_fo_name+"/mvz", p.run.residual)));
 
 //   cm.insert(new minMaxSurfacePressure(cm, minMaxSurfacePressure::Parameters()
 //       .set_name("minPressure")

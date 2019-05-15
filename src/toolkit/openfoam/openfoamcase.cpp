@@ -434,6 +434,11 @@ turbulenceModel::turbulenceModel(OpenFOAMCase& c, const ParameterSet&)
 
 
 
+const std::string SolverOutputAnalyzer::pre_resi="residual/";
+const std::string SolverOutputAnalyzer::pre_force="force/";
+const std::string SolverOutputAnalyzer::pre_orient="rb_orientation/";
+const std::string SolverOutputAnalyzer::pre_motion="rb_motion/";
+
 SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
 : pdisp_(pdisp),
   curTime_(nan("NAN")),
@@ -446,7 +451,7 @@ SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
 void SolverOutputAnalyzer::update(const string& line)
 {
     boost::smatch match;
-    
+
     boost::regex p_pattern("^ *[Pp]ressure *: *\\((.*) (.*) (.*)\\)$");
     boost::regex v_pattern("^ *[Vv]iscous *: *\\((.*) (.*) (.*)\\)$");
     boost::regex por_pattern("^ *[Pp]orous *: *\\((.*) (.*) (.*)\\)$");
@@ -475,10 +480,10 @@ void SolverOutputAnalyzer::update(const string& line)
               cx=lexical_cast<double>(match[1]),
               cy=lexical_cast<double>(match[2]),
               cz=lexical_cast<double>(match[3]);
-          curProgVars_[currbname_+"_cx"]=cx;
-          curProgVars_[currbname_+"_cy"]=cy;
-          curProgVars_[currbname_+"_cz"]=cz;
-          std::cout<<currbname_<<": cx="<<cx<<", cy="<<cy<<", cz="<<cz<<std::endl;
+          curProgVars_[pre_motion+currbname_+"/cx"]=cx;
+          curProgVars_[pre_motion+currbname_+"/cy"]=cy;
+          curProgVars_[pre_motion+currbname_+"/cz"]=cz;
+//          std::cout<<currbname_<<": cx="<<cx<<", cy="<<cy<<", cz="<<cz<<std::endl;
         }
         else if ( boost::regex_search( line, match, rb_ori_pattern, boost::match_default ) && !currbname_.empty() )
         {
@@ -486,17 +491,17 @@ void SolverOutputAnalyzer::update(const string& line)
               ox=std::asin(lexical_cast<double>(match[8]))/SI::deg, // sin alpha in case of pure rot around x
               oy=std::asin(lexical_cast<double>(match[3]))/SI::deg, // sin alpha in case of pure rot around y
               oz=std::asin(lexical_cast<double>(match[4]))/SI::deg; // sin alpha in case of pure rot around z
-          curProgVars_[currbname_+"_ox"]=ox;
-          curProgVars_[currbname_+"_oy"]=oy;
-          curProgVars_[currbname_+"_oz"]=oz;
-          std::cout<<currbname_<<": ox="<<ox<<", oy="<<oy<<", oz="<<oz<<std::endl;
+          curProgVars_[pre_orient+currbname_+"/ox"]=ox;
+          curProgVars_[pre_orient+currbname_+"/oy"]=oy;
+          curProgVars_[pre_orient+currbname_+"/oz"]=oz;
+//          std::cout<<currbname_<<": ox="<<ox<<", oy="<<oy<<", oz="<<oz<<std::endl;
         }
         else if ( boost::regex_search( line, match, p_pattern, boost::match_default ) && !curforcename_.empty()  )
         {
             double px=lexical_cast<double>(match[1]);
             double py=lexical_cast<double>(match[2]);
             double pz=lexical_cast<double>(match[3]);
-            std::cout<<"pres ("<<curforcesection_<<") : "<<px<<" "<<py<<" "<<pz<<std::endl;
+//            std::cout<<"pres ("<<curforcesection_<<") : "<<px<<" "<<py<<" "<<pz<<std::endl;
             if (curforcesection_==1)
             {
                 // force
@@ -517,7 +522,7 @@ void SolverOutputAnalyzer::update(const string& line)
             double vx=lexical_cast<double>(match[1]);
             double vy=lexical_cast<double>(match[2]);
             double vz=lexical_cast<double>(match[3]);
-            std::cout<<"visc ("<<curforcesection_<<") : "<<vx<<" "<<vy<<" "<<vz<<std::endl;
+//            std::cout<<"visc ("<<curforcesection_<<") : "<<vx<<" "<<vy<<" "<<vz<<std::endl;
             if (curforcesection_==1)
             {
                 // force
@@ -542,26 +547,26 @@ void SolverOutputAnalyzer::update(const string& line)
         }
         else if ( boost::regex_search( line, match, force_pattern, boost::match_default ) )
         {
-            std::cout<<"force output recog"<<std::endl;
+//            std::cout<<"force output recog"<<std::endl;
             
             if (!curforcename_.empty()) //(curforcesection_==2)
             {
                 // end active 
-                std::cout<<"force="<<curforcevalue_<<std::endl;
+//                std::cout<<"force="<<curforcevalue_<<std::endl;
 
                 // store
-                curProgVars_[curforcename_+"_fpx"]=curforcevalue_(0);
-                curProgVars_[curforcename_+"_fpy"]=curforcevalue_(1);
-                curProgVars_[curforcename_+"_fpz"]=curforcevalue_(2);
-                curProgVars_[curforcename_+"_fvx"]=curforcevalue_(3);
-                curProgVars_[curforcename_+"_fvy"]=curforcevalue_(4);
-                curProgVars_[curforcename_+"_fvz"]=curforcevalue_(5);
-                curProgVars_[curforcename_+"_mpx"]=curforcevalue_(6);
-                curProgVars_[curforcename_+"_mpy"]=curforcevalue_(7);
-                curProgVars_[curforcename_+"_mpz"]=curforcevalue_(8);
-                curProgVars_[curforcename_+"_mvx"]=curforcevalue_(9);
-                curProgVars_[curforcename_+"_mvy"]=curforcevalue_(10);
-                curProgVars_[curforcename_+"_mvz"]=curforcevalue_(11);
+                curProgVars_[pre_force+curforcename_+"/fpx"]=curforcevalue_(0);
+                curProgVars_[pre_force+curforcename_+"/fpy"]=curforcevalue_(1);
+                curProgVars_[pre_force+curforcename_+"/fpz"]=curforcevalue_(2);
+                curProgVars_[pre_force+curforcename_+"/fvx"]=curforcevalue_(3);
+                curProgVars_[pre_force+curforcename_+"/fvy"]=curforcevalue_(4);
+                curProgVars_[pre_force+curforcename_+"/fvz"]=curforcevalue_(5);
+                curProgVars_[pre_force+curforcename_+"/mpx"]=curforcevalue_(6);
+                curProgVars_[pre_force+curforcename_+"/mpy"]=curforcevalue_(7);
+                curProgVars_[pre_force+curforcename_+"/mpz"]=curforcevalue_(8);
+                curProgVars_[pre_force+curforcename_+"/mvx"]=curforcevalue_(9);
+                curProgVars_[pre_force+curforcename_+"/mvy"]=curforcevalue_(10);
+                curProgVars_[pre_force+curforcename_+"/mvz"]=curforcevalue_(11);
 
                 // reset tracker
                 curforcename_="";
@@ -576,21 +581,21 @@ void SolverOutputAnalyzer::update(const string& line)
             if (!curforcename_.empty()) //(curforcesection_==2)
             {
                 // end active 
-                std::cout<<"force="<<curforcevalue_<<std::endl;
+//                std::cout<<"force="<<curforcevalue_<<std::endl;
 
                 // store
-                curProgVars_[curforcename_+"_fpx"]=curforcevalue_(0);
-                curProgVars_[curforcename_+"_fpy"]=curforcevalue_(1);
-                curProgVars_[curforcename_+"_fpz"]=curforcevalue_(2);
-                curProgVars_[curforcename_+"_fvx"]=curforcevalue_(3);
-                curProgVars_[curforcename_+"_fvy"]=curforcevalue_(4);
-                curProgVars_[curforcename_+"_fvz"]=curforcevalue_(5);
-                curProgVars_[curforcename_+"_mpx"]=curforcevalue_(6);
-                curProgVars_[curforcename_+"_mpy"]=curforcevalue_(7);
-                curProgVars_[curforcename_+"_mpz"]=curforcevalue_(8);
-                curProgVars_[curforcename_+"_mvx"]=curforcevalue_(9);
-                curProgVars_[curforcename_+"_mvy"]=curforcevalue_(10);
-                curProgVars_[curforcename_+"_mvz"]=curforcevalue_(11);
+                curProgVars_[pre_force+curforcename_+"/fpx"]=curforcevalue_(0);
+                curProgVars_[pre_force+curforcename_+"/fpy"]=curforcevalue_(1);
+                curProgVars_[pre_force+curforcename_+"/fpz"]=curforcevalue_(2);
+                curProgVars_[pre_force+curforcename_+"/fvx"]=curforcevalue_(3);
+                curProgVars_[pre_force+curforcename_+"/fvy"]=curforcevalue_(4);
+                curProgVars_[pre_force+curforcename_+"/fvz"]=curforcevalue_(5);
+                curProgVars_[pre_force+curforcename_+"/mpx"]=curforcevalue_(6);
+                curProgVars_[pre_force+curforcename_+"/mpy"]=curforcevalue_(7);
+                curProgVars_[pre_force+curforcename_+"/mpz"]=curforcevalue_(8);
+                curProgVars_[pre_force+curforcename_+"/mvx"]=curforcevalue_(9);
+                curProgVars_[pre_force+curforcename_+"/mvy"]=curforcevalue_(10);
+                curProgVars_[pre_force+curforcename_+"/mvz"]=curforcevalue_(11);
 
                 // reset tracker
                 curforcename_="";
@@ -607,7 +612,7 @@ void SolverOutputAnalyzer::update(const string& line)
         }
         else if ( boost::regex_search( line, match, solver_pattern, boost::match_default ) )
         {
-            curProgVars_[match[2]] = lexical_cast<double>(match[3]);
+            curProgVars_[pre_resi+match[2]] = lexical_cast<double>(match[3]);
         }
         else if ( boost::regex_search( line, match, cont_pattern, boost::match_default ) )
         {

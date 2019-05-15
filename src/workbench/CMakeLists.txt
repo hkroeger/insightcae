@@ -9,7 +9,7 @@ find_package(Qwt REQUIRED)
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${QWT_INCLUDE_DIR})
 
-set(workbench_SRCS resultelementwrapper.cpp graphprogressdisplayer.cpp analysisform.cpp newanalysisdlg.cpp workbench.cpp main.cpp)
+set(workbench_SRCS resultelementwrapper.cpp analysisform.cpp newanalysisdlg.cpp workbench.cpp main.cpp)
 SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui)
 SET(workbench_RCCS workbench.qrc)
 

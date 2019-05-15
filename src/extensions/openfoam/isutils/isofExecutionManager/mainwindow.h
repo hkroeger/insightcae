@@ -6,6 +6,7 @@
 
 #include "base/boost_include.h"
 #include "openfoam/remoteexecution.h"
+#include "openfoam/openfoamcase.h"
 
 
 namespace Ui {
@@ -22,6 +23,7 @@ class MainWindow
   TerminalWidget *terminal_;
 #endif
   std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
+  std::shared_ptr<insight::SolverOutputAnalyzer> soa_;
 
 protected:
     void updateGUI();

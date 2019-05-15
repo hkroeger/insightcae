@@ -7,6 +7,9 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt5Widgets CONFIG REQUIRED)
 #find_package(Qt5WebEngineWidgets CONFIG REQUIRED)
 
+find_package(Qt5Widgets CONFIG REQUIRED)
+find_package(Qwt REQUIRED)
+
 set(toolkit_gui_SRCS 
     parameterwrapper.cpp 
     parametereditorwidget.cpp
@@ -22,6 +25,7 @@ set(toolkit_gui_SRCS
     blockmesh_gui.cpp
     parametersetvisualizer.cpp
     logviewerwidget.cpp
+    graphprogressdisplayer.cpp
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
@@ -37,11 +41,13 @@ add_PDL(toolkit_gui "${toolkit_gui_HEADERS}")
 target_link_libraries(toolkit_gui
  toolkit insightcad_gui
  Qt5::Widgets #Qt5::WebEngineWidgets
+ ${QWT_LIBRARY} ${QWT_LIBRARIES}
  ${Boost_LIBRARIES}
  )
 
 target_include_directories(toolkit_gui
   PUBLIC ${QT_INCLUDES} 
+  PUBLIC ${QWT_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

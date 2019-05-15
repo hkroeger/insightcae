@@ -1,6 +1,7 @@
 
 #include <QProcess>
 #include <QDebug>
+#include <QSettings>
 
 #include "taskspoolermonitor.h"
 #include "ui_taskspoolermonitor.h"
@@ -14,16 +15,17 @@ TaskSpoolerMonitor::TaskSpoolerMonitor(const boost::filesystem::path& tsp_socket
 {
   ui->setupUi(this);
 
-  ui->log->setMaximumBlockCount(10000);
-  ui->log->setCenterOnScroll(true);
-
-//  env_.insert("TS_SOCKET", tsp_socket_.c_str());
 
   connect(ui->btn_refresh, &QPushButton::clicked, this, &TaskSpoolerMonitor::onRefresh);
   connect(ui->btn_kill, &QPushButton::clicked, this, &TaskSpoolerMonitor::onKill);
   connect(ui->btn_clean, &QPushButton::clicked, this, &TaskSpoolerMonitor::onClean);
 
-  connect(this, &TaskSpoolerMonitor::outputReady, ui->log, &QPlainTextEdit::appendPlainText);
+  connect(ui->btn_scroll, &QPushButton::clicked, ui->log, &LogViewerWidget::autoScrollLog);
+  connect(ui->btn_clear, &QPushButton::clicked, ui->log, &LogViewerWidget::clearLog);
+  connect(ui->btn_save, &QPushButton::clicked, ui->log, &LogViewerWidget::saveLog);
+  connect(ui->btn_email, &QPushButton::clicked, ui->log, &LogViewerWidget::sendLog);
+
+  connect(this, &TaskSpoolerMonitor::outputReady, ui->log, &LogViewerWidget::appendLine);
 
   onRefresh();
 }
@@ -110,10 +112,33 @@ TaskSpoolerMonitorDialog::TaskSpoolerMonitorDialog(const boost::filesystem::path
 {
   QVBoxLayout *l=new QVBoxLayout;
   setLayout(l);
-  auto* w = new TaskSpoolerMonitor(tsp_socket, remote_machine, this);
-  l->addWidget(w);
-//  QLabel *status=new QLabel(this);
-//  l->addWidget(status);
-//  connect(ofcc, &OFCleanCaseForm::statusMessage,
-//          status, &QLabel::setText);
+  tsm_ = new TaskSpoolerMonitor(tsp_socket, remote_machine, this);
+  l->addWidget(tsm_);
+
+}
+
+void TaskSpoolerMonitorDialog::closeEvent(QCloseEvent *event)
+{
+    saveSettings();
+    QDialog::closeEvent(event);
+}
+
+void TaskSpoolerMonitorDialog::showEvent(QShowEvent* ev)
+{
+    QDialog::showEvent(ev);
+    readSettings();
+}
+
+void TaskSpoolerMonitorDialog::saveSettings()
+{
+    QSettings settings("silentdynamics", "TaskSpoolerMonitorDialog");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("splitter", tsm_->ui->splitter->saveState());
+}
+
+void TaskSpoolerMonitorDialog::readSettings()
+{
+    QSettings settings("silentdynamics", "TaskSpoolerMonitorDialog");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    tsm_->ui->splitter->restoreState(settings.value("splitter").toByteArray());
 }

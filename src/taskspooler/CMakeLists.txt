@@ -38,7 +38,7 @@ SET(tspmon_FORMS
 
 add_library(taskspoolermonitor SHARED ${tspmon_SRC} ${tspmon_FORMS})
 target_link_libraries(taskspoolermonitor
- toolkit
+ toolkit toolkit_gui
  Qt5::Widgets #Qt5::WebEngineWidgets
  ${Boost_LIBRARIES}
  )

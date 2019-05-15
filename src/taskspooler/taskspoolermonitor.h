@@ -13,6 +13,7 @@ class TaskSpoolerMonitor;
 }
 
 
+class TaskSpoolerMonitorDialog;
 
 
 class TaskSpoolerMonitor
@@ -20,6 +21,7 @@ class TaskSpoolerMonitor
   public insight::TaskSpoolerInterface
 {
   Q_OBJECT
+  friend class TaskSpoolerMonitorDialog;
 
 public:
   explicit TaskSpoolerMonitor(const boost::filesystem::path& tsp_socket, const QString& remote_machine="", QWidget *parent = nullptr);
@@ -48,8 +50,14 @@ private:
 class TaskSpoolerMonitorDialog
 : public QDialog
 {
+    TaskSpoolerMonitor *tsm_;
 public:
     TaskSpoolerMonitorDialog(const boost::filesystem::path& tsp_socket, const QString& remote_machine="", QWidget *parent = nullptr);
+
+    void closeEvent(QCloseEvent *event);
+    void showEvent(QShowEvent* ev);
+    void saveSettings();
+    void readSettings();
 };
 
 #endif // TASKSPOOLERMONITOR_H

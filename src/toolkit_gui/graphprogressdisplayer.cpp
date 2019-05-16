@@ -34,7 +34,7 @@
 
 using namespace insight;
 
-void GraphProgressDisplayer::reset()
+void GraphProgressChart::reset()
 {
   typedef std::map<std::string, QwtPlotCurve*> CurveList;
   for ( CurveList::value_type& i: curve_)
@@ -49,30 +49,23 @@ void GraphProgressDisplayer::reset()
 }
 
 
-void GraphProgressDisplayer::update(const insight::ProgressState& pi)
+void GraphProgressChart::update(double iter, const std::string& name, double y_value)
 {
   mutex_.lock();
   
-  double iter=pi.first;
-  const ProgressVariableList& pvl=pi.second;
-  
-  for ( const ProgressVariableList::value_type& i: pvl)
-  {
-    const std::string& name = i.first;
-    
-    std::vector<double>& x = progressX_[name];
-    std::vector<double>& y = progressY_[name];
 
-    if (i.second > 0.0) // only add, if y>0. Plot gets unreadable otherwise
-    {
-        x.push_back(iter);
-        y.push_back(i.second);
-    }
-    if (x.size() > maxCnt_) 
-    {
-        x.erase(x.begin());
-        y.erase(y.begin());    
-    }
+  std::vector<double>& x = progressX_[name];
+  std::vector<double>& y = progressY_[name];
+
+  if ( !logscale_ || (logscale_&&(y_value > 0.0)) ) // only add, if y>0. Plot gets unreadable otherwise
+  {
+      x.push_back(iter);
+      y.push_back(y_value);
+  }
+  if (x.size() > maxCnt_)
+  {
+      x.erase(x.begin());
+      y.erase(y.begin());
   }
   
   setAxisAutoScale(QwtPlot::yLeft);
@@ -81,35 +74,38 @@ void GraphProgressDisplayer::update(const insight::ProgressState& pi)
   mutex_.unlock();
 }
 
-GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
+GraphProgressChart::GraphProgressChart(bool logscale, QWidget* parent)
 : QwtPlot(parent),
   maxCnt_(500),
-  needsRedraw_(true)
+  needsRedraw_(true),
+  logscale_(logscale)
 {
-  setTitle("Progress Plot");
   insertLegend( new QwtLegend() );
   setCanvasBackground( Qt::white );
   
+  if (logscale_)
+  {
 #if (QWT_VERSION < 0x060100)
-  setAxisScaleEngine(QwtPlot::yLeft, new QwtLog10ScaleEngine() );
+    setAxisScaleEngine(QwtPlot::yLeft, new QwtLog10ScaleEngine() );
 #else
-  setAxisScaleEngine(QwtPlot::yLeft, new QwtLogScaleEngine() );
+    setAxisScaleEngine(QwtPlot::yLeft, new QwtLogScaleEngine() );
 #endif
+  }
   
   QwtPlotGrid *grid = new QwtPlotGrid();
   grid->attach(this);
   
   QTimer *timer=new QTimer;
-  connect(timer, &QTimer::timeout, this, &GraphProgressDisplayer::checkForUpdate);
+  connect(timer, &QTimer::timeout, this, &GraphProgressChart::checkForUpdate);
   timer->setInterval(500);
   timer->start();
 }
 
-GraphProgressDisplayer::~GraphProgressDisplayer()
+GraphProgressChart::~GraphProgressChart()
 {
 }
 
-void GraphProgressDisplayer::checkForUpdate()
+void GraphProgressChart::checkForUpdate()
 {
     mutex_.lock();
 
@@ -143,3 +139,84 @@ void GraphProgressDisplayer::checkForUpdate()
 }
 
 
+
+
+
+GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
+: QTabWidget(parent)
+{
+}
+
+GraphProgressDisplayer::~GraphProgressDisplayer()
+{
+}
+
+GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& name)
+{
+  bool log;
+  if (name=="residual")
+  {
+    log=true;
+  }
+  else
+  {
+    log=false;
+  }
+
+  decltype(charts_)::iterator c;
+  if ( (c=charts_.find(name))==charts_.end())
+  {
+    GraphProgressChart* c=new GraphProgressChart(log, this);
+    addTab(c, QString::fromStdString(name));
+    charts_[name]=c;
+    return c;
+  }
+  else
+  {
+    return c->second;
+  }
+}
+
+
+void GraphProgressDisplayer::update(const insight::ProgressState& pi)
+{
+  double t=pi.first;
+  const ProgressVariableList& pvl=pi.second;
+
+  for ( const ProgressVariableList::value_type& i: pvl)
+  {
+    const std::string& name = i.first;
+    double y_value = i.second;
+
+    std::vector<std::string> np;
+    boost::split(np, name, boost::is_any_of("/"));
+
+    if (np.size()==1)
+    {
+      GraphProgressChart* c = addChartIfNeeded("Progress");
+      c->update(t, np[0], y_value);
+    }
+    else if (np.size()==2)
+    {
+      GraphProgressChart* c = addChartIfNeeded(np[0]);
+      c->update(t, np[1], y_value);
+    }
+    else if (np.size()>2)
+    {
+      std::string ln=*np.rbegin();
+      np.erase(np.end()-1);
+      std::string pn = boost::algorithm::join(np, "/");
+
+      GraphProgressChart* c = addChartIfNeeded(pn);
+      c->update(t, ln, y_value);
+    }
+  }
+}
+
+void GraphProgressDisplayer::reset()
+{
+  for (auto& c: charts_)
+  {
+    c.second->reset();
+  }
+}

@@ -67,6 +67,11 @@ void MainWindow::onStartTail()
   }
 }
 
+void MainWindow::updateOutputAnalzer(const QString& line)
+{
+  soa_->update(line.toStdString());
+}
+
 MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent) :
   QMainWindow(parent),
   insight::RemoteExecutionConfig(location, false),
@@ -86,7 +91,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(ui->actionStart_Remote_Paraview_in_Subdirectory, &QAction::triggered, this, &MainWindow::onStartRemoteParaviewSubdir);
 
   connect(this, &MainWindow::logReady, ui->log, &LogViewerWidget::appendLine);
-  connect(this, &MainWindow::logReady, [&](const QString& line) { soa_->update(line.toStdString()); } );
+  connect(this, &MainWindow::logReady, this, &MainWindow::updateOutputAnalzer ); // through signal/slot to execute analysis in GUI thread
 
 #ifdef HAVE_KF5
   terminal_ = new TerminalWidget(ui->v_splitter);

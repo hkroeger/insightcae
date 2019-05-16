@@ -50,6 +50,8 @@ public Q_SLOTS:
     void onStartRemoteParaview();
     void onStartRemoteParaviewSubdir();
 
+    void updateOutputAnalzer(const QString& line);
+
 private:
   Ui::MainWindow *ui;
 };

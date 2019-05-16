@@ -32,35 +32,58 @@
 #include <QWidget>
 #include <QLabel>
 #include <QMutex>
+#include <QTabWidget>
 
 #include <qwt.h>
 #include <qwt_plot.h>
 #include <qwt_plot_curve.h>
 
-class GraphProgressDisplayer 
-: public QwtPlot,
-  public insight::ProgressDisplayer
+class GraphProgressChart
+    : public QwtPlot
 {
   Q_OBJECT
-  
+
 protected:
-  int maxCnt_;
+  size_t maxCnt_;
   typedef std::map<std::string, std::vector<double> > ArrayList;
   ArrayList progressX_;
   ArrayList progressY_;
   std::map<std::string, QwtPlotCurve*> curve_;
   bool needsRedraw_;
   QMutex mutex_;
-  
-public:
-    GraphProgressDisplayer(QWidget* parent=NULL);
-    virtual ~GraphProgressDisplayer();
+  bool logscale_;
 
-    virtual void reset();
-    virtual void update(const insight::ProgressState& pi);
-    
+public:
+  GraphProgressChart(bool logscale, QWidget* parent=nullptr);
+  ~GraphProgressChart();
+
+  virtual void update(double t, const std::string& name, double y_value);
+  virtual void reset();
+
 public slots:
   void checkForUpdate();
+};
+
+
+
+
+class GraphProgressDisplayer 
+: public QTabWidget,
+  public insight::ProgressDisplayer
+{
+  Q_OBJECT
+  
+protected:
+  std::map<std::string, GraphProgressChart*> charts_;
+
+public:
+    GraphProgressDisplayer(QWidget* parent=nullptr);
+    virtual ~GraphProgressDisplayer();
+
+    GraphProgressChart* addChartIfNeeded(const std::string& name);
+
+    virtual void update(const insight::ProgressState& pi);
+    virtual void reset();
 };
 
 #endif // GRAPHPROGRESSDISPLAYER_H

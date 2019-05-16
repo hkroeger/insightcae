@@ -152,6 +152,8 @@ double nonlinearRegression(const arma::mat& y, const arma::mat& x, RegressionMod
 class Objective1D
 {
 public:
+  size_t maxiter=100;
+
   virtual ~Objective1D();
   
   virtual double operator()(double x) const =0;
@@ -160,6 +162,8 @@ public:
 class ObjectiveND
 {
 public:
+  size_t maxiter=10000;
+
   virtual ~ObjectiveND();
   
   virtual double operator()(const arma::mat& x) const =0;

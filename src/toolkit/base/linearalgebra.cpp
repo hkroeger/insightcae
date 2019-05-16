@@ -317,7 +317,7 @@ double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
   {
     const gsl_multimin_fminimizer_type *T = 
       gsl_multimin_fminimizer_nmsimplex;
-    gsl_multimin_fminimizer *s = NULL;
+    gsl_multimin_fminimizer *s = nullptr;
     gsl_vector *ss, *p;
     gsl_multimin_function minex_func;
 
@@ -362,7 +362,7 @@ double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
 // 		gsl_vector_get (s->x, 0), 
 // 		s->fval, size);
       }
-    while (status == GSL_CONTINUE && iter < 100);
+    while (status == GSL_CONTINUE && iter < model.maxiter);
     
     double solution=s->x->data[0];
 //     model.setParameters(s->x->data);
@@ -512,7 +512,7 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
         const gsl_multimin_fminimizer_type *T =
             gsl_multimin_fminimizer_nmsimplex;
             
-        gsl_multimin_fminimizer *s = NULL;
+        gsl_multimin_fminimizer *s = nullptr;
         gsl_vector *ss, *p/*, *olditer_p*/;
         gsl_multimin_function minex_func;
 
@@ -520,32 +520,34 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
         int status;
         double size;
 
+        size_t numP = size_t(model.numP());
+
         /* Starting point */
-        p = gsl_vector_alloc (model.numP());
+        p = gsl_vector_alloc (numP);
 //         olditer_p = gsl_vector_alloc (model.numP());
         //gsl_vector_set_all (p, 1.0);
-        for (int i=0; i<model.numP(); i++)
+        for (size_t i=0; i<numP; i++)
         {
             gsl_vector_set (p, i, x0(i));
         }
 
         /* Set initial step sizes to 0.1 */
-        ss = gsl_vector_alloc (model.numP());
+        ss = gsl_vector_alloc (numP);
         gsl_vector_set_all (ss, 0.1);
 
         if (steps.n_elem!=0)
           {
-            for (int i=0; i<model.numP(); i++)
+            for (size_t i=0; i<numP; i++)
               gsl_vector_set(ss, i, steps(i));
           }
 
         /* Initialize method and iterate */
         nonlinearMinimizeNDData param(model);
-        minex_func.n = model.numP();
+        minex_func.n = numP;
         minex_func.f = f_nonlinearMinimizeND;
         minex_func.params = (void*) (&param);
 
-        s = gsl_multimin_fminimizer_alloc (T, model.numP());
+        s = gsl_multimin_fminimizer_alloc (T, numP);
         gsl_multimin_fminimizer_set (s, &minex_func, p, ss);
 
 // 	double relax=0.01;
@@ -560,7 +562,7 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 
             size = gsl_multimin_fminimizer_size (s);
             status = gsl_multimin_test_size (size, tol);
-// 	    std::cerr<<"i="<<iter<<": F="<<s->fval<<std::endl;
+//            std::cerr<<"i="<<iter<<": F="<<s->fval<<std::endl;
 // 	    // relax
 // 	    for (int i=0; i<model.numP(); i++)
 // 	    {
@@ -569,10 +571,10 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 // 	      );
 // 	    }
         }
-        while (status == GSL_CONTINUE && iter < 10000);
+        while ( status == GSL_CONTINUE && (iter < model.maxiter) );
         
-        arma::mat res=arma::zeros(model.numP());
-        for (int i=0; i<model.numP(); i++)
+        arma::mat res=arma::zeros(numP);
+        for (size_t i=0; i<numP; i++)
         {
             res(i)=gsl_vector_get (s->x, i);
         };

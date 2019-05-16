@@ -283,6 +283,7 @@ public:
   const static std::string
       pre_resi,
       pre_force,
+      pre_moment,
       pre_orient,
       pre_motion;
 #endif

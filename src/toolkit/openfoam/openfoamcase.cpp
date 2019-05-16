@@ -436,6 +436,7 @@ turbulenceModel::turbulenceModel(OpenFOAMCase& c, const ParameterSet&)
 
 const std::string SolverOutputAnalyzer::pre_resi="residual/";
 const std::string SolverOutputAnalyzer::pre_force="force/";
+const std::string SolverOutputAnalyzer::pre_moment="moment/";
 const std::string SolverOutputAnalyzer::pre_orient="rb_orientation/";
 const std::string SolverOutputAnalyzer::pre_motion="rb_motion/";
 
@@ -561,12 +562,12 @@ void SolverOutputAnalyzer::update(const string& line)
                 curProgVars_[pre_force+curforcename_+"/fvx"]=curforcevalue_(3);
                 curProgVars_[pre_force+curforcename_+"/fvy"]=curforcevalue_(4);
                 curProgVars_[pre_force+curforcename_+"/fvz"]=curforcevalue_(5);
-                curProgVars_[pre_force+curforcename_+"/mpx"]=curforcevalue_(6);
-                curProgVars_[pre_force+curforcename_+"/mpy"]=curforcevalue_(7);
-                curProgVars_[pre_force+curforcename_+"/mpz"]=curforcevalue_(8);
-                curProgVars_[pre_force+curforcename_+"/mvx"]=curforcevalue_(9);
-                curProgVars_[pre_force+curforcename_+"/mvy"]=curforcevalue_(10);
-                curProgVars_[pre_force+curforcename_+"/mvz"]=curforcevalue_(11);
+                curProgVars_[pre_moment+curforcename_+"/mpx"]=curforcevalue_(6);
+                curProgVars_[pre_moment+curforcename_+"/mpy"]=curforcevalue_(7);
+                curProgVars_[pre_moment+curforcename_+"/mpz"]=curforcevalue_(8);
+                curProgVars_[pre_moment+curforcename_+"/mvx"]=curforcevalue_(9);
+                curProgVars_[pre_moment+curforcename_+"/mvy"]=curforcevalue_(10);
+                curProgVars_[pre_moment+curforcename_+"/mvz"]=curforcevalue_(11);
 
                 // reset tracker
                 curforcename_="";
@@ -590,12 +591,12 @@ void SolverOutputAnalyzer::update(const string& line)
                 curProgVars_[pre_force+curforcename_+"/fvx"]=curforcevalue_(3);
                 curProgVars_[pre_force+curforcename_+"/fvy"]=curforcevalue_(4);
                 curProgVars_[pre_force+curforcename_+"/fvz"]=curforcevalue_(5);
-                curProgVars_[pre_force+curforcename_+"/mpx"]=curforcevalue_(6);
-                curProgVars_[pre_force+curforcename_+"/mpy"]=curforcevalue_(7);
-                curProgVars_[pre_force+curforcename_+"/mpz"]=curforcevalue_(8);
-                curProgVars_[pre_force+curforcename_+"/mvx"]=curforcevalue_(9);
-                curProgVars_[pre_force+curforcename_+"/mvy"]=curforcevalue_(10);
-                curProgVars_[pre_force+curforcename_+"/mvz"]=curforcevalue_(11);
+                curProgVars_[pre_moment+curforcename_+"/mpx"]=curforcevalue_(6);
+                curProgVars_[pre_moment+curforcename_+"/mpy"]=curforcevalue_(7);
+                curProgVars_[pre_moment+curforcename_+"/mpz"]=curforcevalue_(8);
+                curProgVars_[pre_moment+curforcename_+"/mvx"]=curforcevalue_(9);
+                curProgVars_[pre_moment+curforcename_+"/mvy"]=curforcevalue_(10);
+                curProgVars_[pre_moment+curforcename_+"/mvz"]=curforcevalue_(11);
 
                 // reset tracker
                 curforcename_="";
@@ -1113,7 +1114,7 @@ void OpenFOAMCase::runSolver
   std::string line;
   while (std::getline(p_in, line))
   {
-    cout<<">> "<<line<<endl;
+    cout<<line<<endl; // mirror to console
     analyzer.update(line);
     
     if (analyzer.stopRun())

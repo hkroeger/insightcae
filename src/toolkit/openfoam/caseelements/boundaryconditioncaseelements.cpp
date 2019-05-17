@@ -372,13 +372,25 @@ void OverlapGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   bndDict["nFaces"]=nFaces_;
   bndDict["startFace"]=startFace_;
   
-  bndDict["type"]="overlapGgi";
-  bndDict["shadowPatch"]= p_.shadowPatch;
-  bndDict["bridgeOverlap"]=p_.bridgeOverlap;
-  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset);
-  bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis);
-  bndDict["nCopies"]=p_.nCopies;
-  bndDict["zone"]=p_.zone;
+  if (OFversion()>=210)
+  {
+    bndDict["type"]="cyclicPeriodicAMI";
+    bndDict["neighbourPatch"]= p_.shadowPatch;
+    bndDict["matchTolerance"]= 0.001;
+    bndDict["lowWeightCorrection"]=0.1;
+    bndDict["maxIter"]=360;
+    bndDict["periodicPatch"]= p_.periodicPatch;
+  }
+  else
+  {
+    bndDict["type"]="overlapGgi";
+    bndDict["shadowPatch"]= p_.shadowPatch;
+    bndDict["bridgeOverlap"]=p_.bridgeOverlap;
+    bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset);
+    bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis);
+    bndDict["nCopies"]=p_.nCopies;
+    bndDict["zone"]=p_.zone;
+  }
 }
 
 void OverlapGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -394,7 +406,10 @@ void OverlapGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
     else
     {
-      BC["type"]=OFDictData::data("overlapGgi");
+      if (OFversion()>=210)
+        BC["type"]=OFDictData::data("cyclicAMI");
+      else
+        BC["type"]=OFDictData::data("overlapGgi");
     }
   }
 }

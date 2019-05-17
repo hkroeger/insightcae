@@ -238,8 +238,9 @@ PARAMETERSET>>> OverlapGGIBC Parameters
 inherits GGIBCBase::Parameters
 
 separationOffset = vector (0 0 0) "Translational transformation from this patch to the opposite one."
-rotationAxis = vector (0 0 1) "Direction of rotation axis"
-nCopies = int 1 "number of copies"
+rotationAxis = vector (0 0 1) "Direction of rotation axis (only required, if foam-extend is used)"
+nCopies = int 1 "number of copies (only required, if foam-extend is used)"
+periodicPatch = string "" "lateral periodic patch, which determines the transform (only required, if openfoam.org versions are used)"
 
 <<<PARAMETERSET
 */

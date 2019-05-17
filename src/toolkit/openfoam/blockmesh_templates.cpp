@@ -87,6 +87,39 @@ void blockMeshDict_Cylinder::create_bmd()
 {
     this->setDefaultPatch(p_.mesh.defaultPatchName);
 
+    bool hollow = p_.geometry.d > 1e-10;
+
+    int nu, nx, nr;
+    double
+        L_r = 0.5*(p_.geometry.D-p_.geometry.d),
+        L_u = 2.*M_PI * 0.5*(p_.geometry.d+p_.geometry.D) /4.;
+
+    if (const auto* ic = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
+    {
+      nu=ic->nu;
+      nx=ic->nx;
+      nr=ic->nr;
+    }
+    else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
+    {
+      nx=std::max(1, int(std::ceil(p_.geometry.L/ic->delta)));
+      nr=std::max(1, int(std::ceil(L_r/ic->delta)));
+      nu=std::max(1, int(std::ceil(L_u/ic->delta)));
+    }
+    else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
+    {
+      auto Ls={p_.geometry.L, L_r, L_u};
+      double delta = *std::max_element(Ls.begin(), Ls.end()) / double(ic->n_max);
+
+      nx=std::max(1, int(std::ceil(p_.geometry.L/delta)));
+      nr=std::max(1, int(std::ceil(L_r/delta)));
+      nu=std::max(1, int(std::ceil(L_u/delta)));
+    }
+    else
+    {
+      throw insight::Exception("Internal error: unhandled selection!");
+    }
+
     arma::mat p0=p_.geometry.p0;
     arma::mat ex=p_.geometry.ex;
     arma::mat er=p_.geometry.er;
@@ -95,6 +128,7 @@ void blockMeshDict_Cylinder::create_bmd()
     double al = M_PI/2.;
 
     double Lc=rCore();
+    if (hollow) Lc=p_.geometry.d*0.5;
 
     std::map<int, Point> pts;
     pts = boost::assign::map_list_of
@@ -108,6 +142,7 @@ void blockMeshDict_Cylinder::create_bmd()
     Patch* base=nullptr;
     Patch* top=nullptr;
     Patch* outer=nullptr;
+    Patch *inner=nullptr;
 
     if ( p_.mesh.basePatchName!="" ) {
         base=&this->addOrDestroyPatch ( p_.mesh.basePatchName, new bmd::Patch() );
@@ -118,8 +153,12 @@ void blockMeshDict_Cylinder::create_bmd()
     if ( p_.mesh.circumPatchName!="" ) {
         outer=&this->addOrDestroyPatch ( p_.mesh.circumPatchName, new bmd::Patch() );
     }
+    if ( p_.mesh.innerPatchName!="" ) {
+        inner=&this->addOrDestroyPatch ( p_.mesh.innerPatchName, new bmd::Patch() );
+    }
 
     // core block
+    if (!hollow)
     {
         arma::mat r0=rotMatrix ( 0.5*al, ex );
         arma::mat r1=rotMatrix ( 1.5*al, ex );
@@ -132,7 +171,7 @@ void blockMeshDict_Cylinder::create_bmd()
                                         p0+r1*pts[0], p0+r2*pts[0], p0+r3*pts[0], p0+r0*pts[0],
                                         p0+( r1*pts[0] )+vL, p0+( r2*pts[0] )+vL, p0+( r3*pts[0] )+vL, p0+( r0*pts[0] )+vL
                                     ),
-                                    p_.mesh.nu, p_.mesh.nu, p_.mesh.nx
+                                    nu, nu, nx
                                   )
                     );
         if ( base ) {
@@ -155,7 +194,7 @@ void blockMeshDict_Cylinder::create_bmd()
                                             p0+r1*pts[0], p0+r0*pts[0], p0+r0*pts[1], p0+r1*pts[1],
                                             p0+( r1*pts[0] )+vL, p0+( r0*pts[0] )+vL, p0+( r0*pts[1] )+vL, p0+( r1*pts[1] )+vL
                                         ),
-                                        p_.mesh.nu, p_.mesh.nr, p_.mesh.nx,
+                                        nu, nr, nx,
                                         list_of<double> ( 1 ) ( 1./p_.mesh.gradr ) ( 1 )
                                       )
                         );
@@ -168,6 +207,10 @@ void blockMeshDict_Cylinder::create_bmd()
             if ( outer ) {
                 outer->addFace ( bl.face ( "2376" ) );
             }
+            if (hollow && inner)
+            {
+              inner->addFace ( bl.face ( "0154" ) );
+            }
         }
 
 
@@ -176,8 +219,11 @@ void blockMeshDict_Cylinder::create_bmd()
         this->addEdge ( new ArcEdge ( p0+( r1*pts[1] )+vL, p0+( r0*pts[1] )+vL, p0+( rmid*pts[1] )+vL ) );
 
         //inner core
-//     bmd->addEdge(new ArcEdge(r1*pts[0], r0*pts[0], rmid*pts[]));
-//     bmd->addEdge(new ArcEdge((r1*pts[0])+vL, (r0*pts[0])+vL, (rmid*pts[])+vL));
+        if (hollow)
+        {
+           this->addEdge(new ArcEdge(p0+r1*pts[0], p0+r0*pts[0], p0+rmid*pts[0]));
+           this->addEdge(new ArcEdge(p0+(r1*pts[0])+vL, p0+(r0*pts[0])+vL, p0+(rmid*pts[0])+vL));
+        }
 
     }
 

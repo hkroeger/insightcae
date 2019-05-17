@@ -87,9 +87,12 @@ void blockMeshDict_TubeMesh::create_bmd()
             cp.geometry.L = l;
             cp.geometry.p0 = vec3(ps);
 
-            cp.mesh.nr = p_.mesh.nr;
-            cp.mesh.nu = p_.mesh.nu;
-            cp.mesh.nx = std::max(1, int(l/dx));
+            blockMeshDict_Cylinder::Parameters::mesh_type::resolution_individual_type pmr;
+            pmr.nr = p_.mesh.nr;
+            pmr.nu = p_.mesh.nu;
+            pmr.nx = std::max(1, int(l/dx));
+            cp.mesh.resolution=pmr;
+
             cp.mesh.gradr = p_.mesh.gradr;
             cp.mesh.core_fraction = p_.mesh.core_fraction;
 

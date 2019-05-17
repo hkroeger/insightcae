@@ -23,6 +23,7 @@ public:
     Patch(QListWidget*, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath);
 
     virtual void set_bc_type(const std::string& type_name);
+    void updateText();
 
     void set_patch_name(const QString& newname);
     inline const std::string& patch_name() const { return patch_name_; }
@@ -41,6 +42,8 @@ public:
     DefaultPatch(QListWidget*);
     DefaultPatch(QListWidget*, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath);
     virtual bool insertElement(insight::OpenFOAMCase& ofc, insight::OFDictData::dict& boundaryDict) const;
+
+    const static QString defaultPatchName;
 };
 
 

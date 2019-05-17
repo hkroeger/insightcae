@@ -80,12 +80,18 @@ void isofCaseBuilderWindow::onParseBF()
     insight::OFDictData::dict boundaryDict;
 
     ofc_->parseBoundaryDict(casepath(), boundaryDict);
-    ui->patch_list->clear();
-    new DefaultPatch(ui->patch_list);
+//    ui->patch_list->clear();
+
+    if (ui->patch_list->findItems(DefaultPatch::defaultPatchName, Qt::MatchStartsWith).size()==0)
+      new DefaultPatch(ui->patch_list);
+
     for (const OFDictData::dict::value_type& bde: boundaryDict)
     {
-//         unhandledPatches.insert(bde.first);
+      QString pn(bde.first.c_str());
+      if (ui->patch_list->findItems(pn, Qt::MatchStartsWith).size()==0)
+      {
         new Patch(ui->patch_list, bde.first);
+      }
     }
 }
 
@@ -179,7 +185,15 @@ void isofCaseBuilderWindow::onRenamePatch()
     }
     else
     {
-      QString pname = QInputDialog::getText(this, "Rename Patch", "Enter new patch name:", QLineEdit::Normal, curpatch->text());
+      QString pname = QInputDialog::getText
+                      (
+                        this,
+                        "Rename Patch",
+                        "Enter new patch name:",
+                        QLineEdit::Normal,
+                        QString::fromStdString(curpatch->patch_name())
+                        );
+
       if (!pname.isEmpty())
       {
           curpatch->set_patch_name(pname);

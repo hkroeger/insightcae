@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
 
         if (vm.count("savecfg"))
         {
-            parameters.saveToFile( exedir/ vm["savecfg"].as<std::string>() );
+            parameters.saveToFile( exedir/ vm["savecfg"].as<std::string>(), analysisName );
         }
 //         analysis->setParameters(parameters);
 

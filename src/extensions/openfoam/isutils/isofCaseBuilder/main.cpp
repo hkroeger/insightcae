@@ -39,51 +39,12 @@
 
 
 #include "isofcasebuilderwindow.h"
+#include "insightcaeapplication.h"
 
 
 using namespace std;
 using namespace insight;
 
-
-class ISOFApp: public QApplication
-{
-public:
-  ISOFApp ( int &argc, char **argv )
-    : QApplication ( argc, argv )
-  {
-//    QFile file(":/stylesheet.css");
-//    if(file.open(QIODevice::ReadOnly | QIODevice::Text))
-//    {
-//  //      qDebug()<<"loading stylesheet";
-//        setStyleSheet(file.readAll());
-//        file.close();
-//    }
-  }
-
-  ~ISOFApp( )
-  {}
-
-  bool notify ( QObject *rec, QEvent *ev )
-  {
-    try
-      {
-        return QApplication::notify ( rec, ev );
-      }
-
-    catch ( insight::Exception e )
-      {
-        std::cout << e << std::endl;
-
-        QMessageBox msgBox;
-        msgBox.setIcon ( QMessageBox::Critical );
-        msgBox.setText ( QString ( e.as_string().c_str() ) );
-
-        msgBox.exec();
-      }
-
-    return true;
-  }
-};
 
 
 insight::ParameterSet& split_and_check
@@ -158,7 +119,7 @@ int main ( int argc, char** argv )
             exit ( -1 );
         }
 
-        ISOFApp app ( argc, argv );
+        InsightCAEApplication app ( argc, argv );
 
         // After creation of application object!
         std::locale::global ( std::locale::classic() );

@@ -32,7 +32,6 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
-//#include <QApplication>
 
 using namespace std;
 using namespace insight;

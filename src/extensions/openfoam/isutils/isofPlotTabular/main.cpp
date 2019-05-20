@@ -18,7 +18,7 @@
  *
  */
 
-#include <QApplication>
+#include "insightcaeapplication.h"
 #include "plotwidget.h"
 #include "isofplottabularwindow.h"
 
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   qRegisterMetaType<arma::mat>();
   qputenv("QT_STYLE_OVERRIDE", 0);
 
-  QApplication app(argc, argv);
+  InsightCAEApplication app(argc, argv);
 
   typedef std::vector<std::string> StringList;
 

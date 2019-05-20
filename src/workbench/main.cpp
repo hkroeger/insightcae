@@ -22,7 +22,8 @@
 #include <QLocale>
 #include <QDir>
 #include <QSplashScreen>
-#include <QApplication>
+
+#include "insightcaeapplication.h"
 #include "base/boost_include.h"
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -106,7 +107,7 @@ int main(int argc, char** argv)
         }
     }
     
-    WorkbenchApplication app(argc, argv);
+    InsightCAEApplication app(argc, argv);
 
     // After creation of application object!
     std::locale::global(std::locale::classic());

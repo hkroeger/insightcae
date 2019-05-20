@@ -32,7 +32,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
-#include <QApplication>
+#include "insightcaeapplication.h"
 #include "of_clean_case.h"
 
 using namespace std;
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
         }
         else if (!pack)
         {
-          QApplication app(argc, argv);
+          InsightCAEApplication app(argc, argv);
           OFCleanCaseDialog dlg(cm, ".");
           dlg.exec();
         }

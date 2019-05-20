@@ -26,6 +26,7 @@ set(toolkit_gui_SRCS
     parametersetvisualizer.cpp
     logviewerwidget.cpp
     graphprogressdisplayer.cpp
+    insightcaeapplication.cpp
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")

@@ -27,25 +27,7 @@
 #include <QApplication>
 #include <QMenuBar>
 
-class WorkbenchApplication
-: public QApplication
-{
-  Q_OBJECT
-
-public:
-
-  WorkbenchApplication( int &argc, char **argv);
-  ~WorkbenchApplication( );
-
-  bool notify(QObject *rec, QEvent *ev);
-  
-signals:
-  void exceptionOcurred(QString msg, QString addinfo);
-  
-public slots:
-  void displayExceptionNotification(QString msg, QString addinfo);
-
-};
+#include "insightcaeapplication.h"
 
 
 class workbench

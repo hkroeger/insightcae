@@ -32,7 +32,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
-#include <QApplication>
+#include "insightcaeapplication.h"
 #include "mainwindow.h"
 #include "remotedirselector.h"
 
@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
     //("ofe,o", po::value<std::string>(), "use specified OpenFOAM environment instead of detected")
      ("meta-file,m", po::value<std::string>(), "use the specified remote execution config file instead of \"meta.foam\"")
      ("case-dir,d", po::value<std::string>(), "case location")
+     ("remote-dir-for-mapping", po::value<std::string>(), "return remote directory name of another case to be used as result mapping source. An error will occur, if the remote dir does not exists or is on another computer than the remote of the current case.")
      ("create-remote-temp,T", po::value<std::string>(), "create a unique remote directory name on the specified server and store in meta file. This will be skipped, if config exists already, except if -f is given.")
      ("force-create-remote-temp,f", "force creation, if config exists already.")
      ("sync-remote,r", "sync current case to remote location")
@@ -98,21 +99,28 @@ int main(int argc, char *argv[])
     boost::filesystem::path location=".";
     if (vm.count("case-dir"))
     {
-        location = vm["case-dir"].as<std::string>();
+      location = vm["case-dir"].as<std::string>();
     }
 
     bool include_processor=false;
     if (vm.count("include-processor-dirs")>0)
-        include_processor=true;
+    {
+      include_processor=true;
+    }
 
     bfs_path mf="";
     if (vm.count("meta-file"))
-        mf=vm["meta-file"].as<std::string>();
+    {
+      mf=vm["meta-file"].as<std::string>();
+    }
 
     if (vm.count("create-remote-temp"))
       {
         bf::path meta=mf;
-        if (meta.empty()) meta="meta.foam";
+        if (meta.empty())
+        {
+          meta="meta.foam";
+        }
 
         if (bf::exists(meta)&&(!vm.count("force-create-remote-temp")))
           {
@@ -150,7 +158,7 @@ int main(int argc, char *argv[])
             }
             boost::filesystem::remove(mountpoint);
 
-            std::cout << remote_dir << std::endl;
+//            std::cout << remote_dir << std::endl;
 
             std::ofstream cfg(meta.c_str());
             cfg << i.second.serverName_ << ":" << remote_dir.string();
@@ -255,12 +263,27 @@ int main(int argc, char *argv[])
                     return 0; // configuration is invalidated, exit here
 //                    anything_done=true;
                   }
+
+                if (vm.count("remote-dir-for-mapping"))
+                {
+                  boost::filesystem::path other_case_path( vm["remote-dir-for-mapping"].as<std::string>() );
+                  RemoteExecutionConfig orc(other_case_path);
+
+                  if (orc.server() != re.server())
+                    throw insight::Exception("Remote directory of case in "+other_case_path.string()+" is on server "+orc.server()+" which is different than the server of the current case "+re.server());
+
+                  if (!orc.remoteDirExists())
+                    throw insight::Exception("Remote directory of case in "+other_case_path.string()+" does not exists!");
+
+                  std::cout<<orc.remoteDir().string()<<std::endl;
+                  anything_done=true;
+                }
               }
         }
 
       if (!anything_done)
         {
-          QApplication app(argc, argv);
+          InsightCAEApplication app(argc, argv);
           MainWindow w(location);
           w.show();
           return app.exec();

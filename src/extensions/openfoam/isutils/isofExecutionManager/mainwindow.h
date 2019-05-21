@@ -31,7 +31,7 @@ protected:
     void onStartTail();
 
 Q_SIGNALS:
-    void logReady(const QString& line);
+    void logReady(QString line);
 
 public:
   explicit MainWindow(const boost::filesystem::path& location, QWidget *parent = nullptr);
@@ -49,8 +49,9 @@ public Q_SLOTS:
     void onStartParaview();
     void onStartRemoteParaview();
     void onStartRemoteParaviewSubdir();
+    void onClearProgressCharts();
 
-    void updateOutputAnalzer(const QString& line);
+    void updateOutputAnalzer(QString line);
 
 private:
   Ui::MainWindow *ui;

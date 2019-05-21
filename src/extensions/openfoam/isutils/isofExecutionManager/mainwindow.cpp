@@ -51,9 +51,9 @@ void MainWindow::onRefreshJobList()
       }
     }
 
-    if (num>0)
+    if ( (num>0) && !tsi_->isTailRunning() )
     {
-      if (!tsi_->isTailRunning()) onStartTail();
+      onStartTail();
     }
   }
 }
@@ -63,11 +63,17 @@ void MainWindow::onStartTail()
 {
   if (tsi_)
   {
-    tsi_->startTail( [&](std::string line) { emit logReady(QString::fromStdString(line)); } );
+    soa_.reset(new insight::SolverOutputAnalyzer(*ui->graph)); // reset
+
+    tsi_->startTail(
+          [&](std::string line) {
+            emit logReady(QString::fromStdString(line));
+          }
+    );
   }
 }
 
-void MainWindow::updateOutputAnalzer(const QString& line)
+void MainWindow::updateOutputAnalzer(QString line)
 {
   soa_->update(line.toStdString());
 }
@@ -102,14 +108,30 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
   connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWindow::onRefreshJobList);
   connect(ui->btn_kill, &QPushButton::clicked,
-          [&]() { if (tsi_) tsi_->kill(); });
+          [&]() {
+            if (tsi_) {
+              tsi_->kill();
+              tsi_->stopTail();
+              onRefreshJobList();
+            }
+          }
+  );
+
   connect(ui->btn_clean, &QPushButton::clicked,
-          [&]() { if (tsi_) { tsi_->clean(); onRefreshJobList(); } });
+          [&]() {
+            if (tsi_) {
+              tsi_->clean();
+              onRefreshJobList();
+            }
+          }
+  );
 
   connect(ui->btn_scroll, &QPushButton::clicked, ui->log, &LogViewerWidget::autoScrollLog);
   connect(ui->btn_clear, &QPushButton::clicked, ui->log, &LogViewerWidget::clearLog);
   connect(ui->btn_save, &QPushButton::clicked, ui->log, &LogViewerWidget::saveLog);
   connect(ui->btn_email, &QPushButton::clicked, ui->log, &LogViewerWidget::sendLog);
+
+  connect(ui->btn_clear_charts, &QPushButton::clicked, this, &MainWindow::onClearProgressCharts);
 
   updateGUI();
 
@@ -179,6 +201,11 @@ void MainWindow::onStartRemoteParaviewSubdir()
       QMessageBox::critical(this, "Failed to start", QString("Failed to start Paraview in directoy ")+localDir().c_str());
     }
   }
+}
+
+void MainWindow::onClearProgressCharts()
+{
+  ui->graph->reset();
 }
 
 

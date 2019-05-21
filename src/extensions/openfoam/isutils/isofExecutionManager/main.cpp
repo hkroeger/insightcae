@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 {
     bool anything_done=false;
 
-    insight::UnhandledExceptionHandling ueh;
+//    insight::UnhandledExceptionHandling ueh;
     insight::GSLExceptionHandling gsl_errtreatment;
 
     namespace po = boost::program_options;

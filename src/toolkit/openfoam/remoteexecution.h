@@ -13,17 +13,17 @@ class TaskSpoolerInterface
   std::string remote_machine_;
   boost::filesystem::path socket_;
   boost::process::environment env_;
-  boost::asio::io_service ios_;
-  boost::process::async_pipe tail_cout_;
 
-  std::thread ios_run_thread_;
-
+  std::shared_ptr<boost::asio::io_service> ios_;
+  std::shared_ptr<boost::process::async_pipe> tail_cout_;
+  std::shared_ptr<std::thread> ios_run_thread_;
   std::shared_ptr<boost::process::child> tail_c_;
-  std::vector< std::function<void(std::string)> > receivers_;
+  std::shared_ptr<boost::asio::streambuf> buf_cout_;
+
+  std::vector< std::function<void(const std::string&)> > receivers_;
 
 //  static const int max_read_length = 256; // maximum amount of data to read in one operation
 //  char read_msg_[max_read_length]; // data read from the socket
-  boost::asio::streambuf buf_cout_;
 
   void read_start(void);
   void read_complete(const boost::system::error_code& error, size_t bytes_transferred);
@@ -55,7 +55,7 @@ public:
   int clean();
   int kill();
 
-  void startTail(std::function<void(std::string)> receiver);
+  void startTail(std::function<void(const std::string&)> receiver);
   bool isTailRunning() const;
   void stopTail();
 
@@ -117,7 +117,19 @@ public:
     void cancelRemoteCommands();
     void removeRemoteDir();
 
+    /**
+     * @brief isValid
+     * checks, if configuration data is valid (not if remote dir really exists)
+     * @return
+     */
     bool isValid() const;
+
+    /**
+     * @brief remoteDirExists
+     * checks, if remote dir is existing
+     * @return
+     */
+    bool remoteDirExists() const;
 };
 
 }

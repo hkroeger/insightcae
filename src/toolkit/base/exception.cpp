@@ -137,6 +137,12 @@ Exception::operator std::string() const
     return message_+context;
 }
 
+void assertion(bool condition, const std::string& context_message)
+{
+  if (!condition)
+    throw insight::Exception("Internal error: condition violated: "+context_message);
+}
+
 
 CurrentExceptionContext::CurrentExceptionContext(const std::string& desc)
 : desc_(desc)

@@ -618,21 +618,52 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
     throw insight::Exception("movingAverage: only dataset with "
       +lexical_cast<std::string>(timeProfs.n_cols)+" columns given. There is no data to average.");
 
+  const arma::uword n_raw_max=10000;
+  const arma::uword n_avg_max=1000;
+
+  arma::mat data;
   if (timeProfs.n_rows>1)
   {
     arma::uword n_raw=timeProfs.n_rows;
 
-    double x0=arma::min(timeProfs.col(0));
-    double dx_raw=arma::max(timeProfs.col(0))-x0;
+    if (n_raw>n_raw_max)
+    {
+      // remove some rows to limit execution time
+      arma::uword n_il=std::max<arma::uword>(1, n_raw/n_raw_max);
+      arma::uword n_red=n_raw/n_il + (n_raw%n_il>0? 1 : 0);
 
-//    std::cout<<"mvg avg: range ["<<x0<<":"<<timeProfs.col(0).max()<<"]"<<std::endl;
+      data=arma::zeros( n_red, timeProfs.n_cols);
+
+      arma::uword j=0;
+      for (arma::uword i=0; i<n_raw; i++)
+      {
+        if (i%n_il==0)
+        {
+//          if (j>data.n_rows-1) cout<<"j="<<j<<", i="<<i<<", n_raw="<<n_raw<<", n_il="<<n_il<<", n_red="<<n_red<<endl;
+          data.row(j++)=timeProfs.row(i);
+        }
+      }
+
+      insight::assertion( j == data.n_rows, str(format("wrong number of elements after reduction (%d <=> %d)")%j%data.n_rows) );
+//      assert( j == data.n_rows );
+
+      n_raw=data.n_rows;
+    }
+    else
+    {
+      data=timeProfs;
+    }
+
+    double x0=arma::min(data.col(0));
+    double dx_raw=arma::max(data.col(0))-x0;
+
+//    std::cout<<"mvg avg: range ["<<x0<<":"<<data.col(0).max()<<"]"<<std::endl;
 
     double window=fraction*dx_raw;
-    double avgdx=dx_raw/double(n_raw);
+    double avgdx=dx_raw/double( std::min<size_t>(n_raw, n_avg_max) );
 
     // number of averages to compute
     arma::uword n_avg=std::min(n_raw, std::max(arma::uword(2), arma::uword((dx_raw-window)/avgdx) ));
-//    window=n_avg*avgdx;
 
     double window_ofs=window;
     if (centerwindow)
@@ -640,7 +671,9 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
         window_ofs=window/2.0;
     }
 
-    arma::mat result=zeros(n_avg, timeProfs.n_cols);
+    arma::mat result=zeros(n_avg, data.n_cols);
+
+//    cout<<"computing "<<n_avg<<" averages on "<<n_raw<<" raw samples."<<endl;
     
     for (arma::uword i=0; i<n_avg; i++)
     {
@@ -648,26 +681,23 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
 
         double from = x - window_ofs, to = from + window;
 
-//        std::cout<<"avg from "<<from<<" to "<<to<<std::endl;
-
         arma::uword j0=0;
         if (first_col_is_time)
         {
             j0=1;
             result(i,0)=x;
         }
-        arma::uvec indices = arma::find( (timeProfs.col(0)>=from) && (timeProfs.col(0)<=to) );
-        arma::mat selrows=timeProfs.rows( indices );
+        arma::uvec indices = arma::find( (data.col(0)>=from) && (data.col(0)<=to) );
+        arma::mat selrows=data.rows( indices );
         if (selrows.n_rows==0) // nothing selected: take the closest row
         {
-            indices = arma::sort_index(arma::mat(pow(timeProfs.col(0) - 0.5*(from+to), 2)));
-            selrows=timeProfs.row( indices(0) );
+            indices = arma::sort_index(arma::mat(pow(data.col(0) - 0.5*(from+to), 2)));
+            selrows=data.row( indices(0) );
         }
-//        if (i==n_avg-1) std::cout<<"sel rows="<<selrows<<std::endl;
 
         if (selrows.n_rows==1)
         {
-            for (arma::uword j=j0; j<timeProfs.n_cols; j++)
+            for (arma::uword j=j0; j<data.n_cols; j++)
             {
                result(i, j) = arma::as_scalar(selrows.col(j));
             }
@@ -676,7 +706,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
         {
 
             arma::mat xcol=selrows.col(0);
-            for (arma::uword j=j0; j<timeProfs.n_cols; j++)
+            for (arma::uword j=j0; j<data.n_cols; j++)
             {
               arma::mat ccol=selrows.col(j);
               double I=0;
@@ -685,11 +715,6 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
                 I+=0.5*(ccol(k)+ccol(k-1))*(xcol(k)-xcol(k-1));
               }
               result(i, j) = I/(xcol.max()-xcol.min());
-
-//              if (i==n_avg-1)
-//              {
-//                  std::cout<<j<<" >> "<<result(i, j)<<" "<<ccol.min()<<" "<<ccol.max()<<std::endl;
-//              }
             }
         }
     }
@@ -708,7 +733,7 @@ arma::mat sortedByCol(const arma::mat&m, int c)
 
   arma::uvec indices = arma::sort_index(m.col(c));
   arma::mat xy = arma::zeros(m.n_rows, m.n_cols);
-  for (int r=0; r<m.n_rows; r++)
+  for (arma::uword r=0; r<m.n_rows; r++)
     xy.row(r)=m.row(indices(r));
   return xy;
 }

@@ -76,7 +76,7 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
 
 GraphProgressChart::GraphProgressChart(bool logscale, QWidget* parent)
 : QwtPlot(parent),
-  maxCnt_(500),
+  maxCnt_(8000),
   needsRedraw_(true),
   logscale_(logscale)
 {
@@ -217,6 +217,8 @@ void GraphProgressDisplayer::reset()
 {
   for (auto& c: charts_)
   {
-    c.second->reset();
+//    c.second->reset();
+    c.second->deleteLater();
   }
+  charts_.clear();
 }

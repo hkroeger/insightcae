@@ -28,44 +28,31 @@ InsightCAEApplication::~InsightCAEApplication()
 
 bool InsightCAEApplication::notify(QObject *rec, QEvent *ev)
 {
+
   try
   {
     return QApplication::notify(rec, ev);
   }
+
   catch (insight::Exception e)
   {
-    std::cout << e << std::endl;
+    std::cout << "InsightCAE exception occurred:\n" << e << std::endl;
 
     emit exceptionOcurred
     (
       QString(e.message().c_str()),
       QString(e.strace().c_str())
     );
-
-//     QMessageBox msgBox;
-//     msgBox.setIcon(QMessageBox::Critical);
-//     msgBox.setText(QString(e.as_string().c_str()));
-// /*    if (e.addInfo()!="")
-//     {
-//       msgBox.setInformativeText("Please check additional info.");
-//       msgBox.setDetailedText(QString(e.addInfo().c_str()));
-//     }*/
-//     msgBox.exec();
-//    QMessageBox::critical
-//    (
-//        activeWindow(), "Error",
-//        QString(("An error occured in PropGeo:\n"+e.message()).c_str())
-//    );
   }
-  /*
-  catch (Standard_Failure e)
+  catch (std::exception e)
   {
-    QMessageBox::critical
+    std::cout << "Unhandled STL exception occurred:\n" << e.what() << std::endl;
+
+    emit exceptionOcurred
     (
-        activeWindow(), "Error",
-        QString("An error occured in OpenCASCADE:\n")+e.GetMessageString()
+      QString(e.what())
     );
-  }*/
+  }
 
   return true;
 }

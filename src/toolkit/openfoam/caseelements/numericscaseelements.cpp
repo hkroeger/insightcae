@@ -1717,13 +1717,13 @@ OFDictData::dict stdMULESSolverSetup(double cAlpha, double icAlpha, double tol, 
 {
   OFDictData::dict d;
   
-  d["nAlphaCorr"]=1;
+  d["nAlphaCorr"]=3;
   d["nAlphaSubCycles"]=1;
   d["cAlpha"]=cAlpha;
   d["icAlpha"]=icAlpha;
 
   d["MULESCorr"]=true;
-  d["nLimiterIter"]=10;
+  d["nLimiterIter"]=15;
   d["alphaApplyPrevCorr"]=LTS;
 
   d["solver"]="smoothSolver";

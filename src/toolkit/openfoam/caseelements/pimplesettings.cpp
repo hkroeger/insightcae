@@ -139,8 +139,12 @@ void MultiphasePIMPLESettings::addIntoDictionaries ( OFdicts& dictionaries ) con
 {
   PIMPLESettings::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& controlDict = dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
+  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+  OFDictData::dict& eqnRelax = relax.addSubDictIfNonexistent("equations");
+  eqnRelax["\".*\""] = 1.0;
 
+  OFDictData::dict& controlDict = dictionaries.addDictionaryIfNonexistent("system/controlDict");
   controlDict["maxAlphaCo"]=p_.maxAlphaCo;
 }
 

@@ -532,10 +532,10 @@ Uinternal = vector (0 0 0) "Internal velocity field value"
 time_integration = includedset "insight::MultiphasePIMPLESettings::Parameters" "Settings for time integration"
 
 
-alphaSubCycles = int 4 "Number of alpha integration subcycles"
+alphaSubCycles = int 1 "Number of alpha integration subcycles"
 
 cAlpha = double 0.25 "[-] Interface compression coefficient"
-icAlpha = double 0.1 "[-] Isotropic interface compression coefficient"
+icAlpha = double 0 "[-] Isotropic interface compression coefficient"
 
 snGradLowQualityLimiterReduction = double 0.66 "Reduction of limiter coefficient on low quality faces"
 

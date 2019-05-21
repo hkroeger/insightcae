@@ -297,7 +297,7 @@ rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const st
  
   cout<<"Warning: No xml node found with type="+type()+" and name="+name<<", default value is used."<<endl;
   //throw insight::Exception("No xml node found with type="+type()+" and name="+name);
-  return NULL;
+  return nullptr;
 }
 
 
@@ -317,7 +317,6 @@ PathParameter::PathParameter(const path& value, const string& description,  bool
 
 boost::filesystem::path& PathParameter::operator() ()
 {
-  std::cout<<"access path "<<isPacked()<<" "<<file_content_.size()<<std::endl;
   if (isPacked())
     unpack(); // does nothing, if already unpacked
 
@@ -326,7 +325,6 @@ boost::filesystem::path& PathParameter::operator() ()
 
 const boost::filesystem::path& PathParameter::operator() () const
 {
-  std::cout<<"access path (const) "<<isPacked()<<" "<<file_content_.size()<<std::endl;
   if (isPacked())
     const_cast<PathParameter*>(this)->unpack(); // does nothing, if already unpacked
 
@@ -380,8 +378,6 @@ void PathParameter::unpack()
   {
     if (!exists(value_)) // unpack only, if it is not yet there (e.g. already unpacked)
     {
-      std::cout<<"Unpacking file "<<value_<<endl;
-
       // extract file, create parent path.
       if (!exists(value_.parent_path()) )
       {
@@ -414,10 +410,6 @@ void PathParameter::unpack()
       }
 
     }
-    else
-    {
-      std::cout<<"File "<<value_<<" exists, skipping unpack."<<endl;
-    }
   }
 }
 
@@ -440,7 +432,6 @@ rapidxml::xml_node<>* PathParameter::appendToNode
     if (!value_.empty())
     {
       relpath=make_relative(inputfilepath, value_).string();
-      cout<<relpath<<endl;
     }
     child->append_attribute(doc.allocate_attribute
     (
@@ -750,7 +741,6 @@ void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_d
     {
       double v;
       iss >> v;
-      //std::cout<<"read value="<<v<<std::endl;
       if (iss.fail()) break;
       values_.insert(v);
     }
@@ -825,7 +815,6 @@ Parameter* ArrayParameter::clone () const
 rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const
 {
-  cout<<"appending array "<<name<<endl;
   using namespace rapidxml;
   xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
   defaultValue_->appendToNode("default", doc, *child, inputfilepath);

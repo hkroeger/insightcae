@@ -283,10 +283,17 @@ public:
   const static std::string
       pre_resi,
       pre_force,
+      pre_conterr,
       pre_moment,
       pre_orient,
-      pre_motion;
+      pre_motion,
+      pre_courant,
+      pre_exectime,
+      pre_deltat;
 #endif
+
+  struct CourantInfo { double mean, max; };
+  struct ExecTimeInfo { double exec, wallclock; };
 
 protected:
     ProgressDisplayer& pdisp_;
@@ -302,6 +309,10 @@ protected:
     int curforcesection_;
     arma::mat curforcevalue_;
     std::string currbname_;
+
+    std::shared_ptr<CourantInfo> last_courant_, last_if_courant_;
+    std::shared_ptr<double> last_dt_;
+    std::shared_ptr<ExecTimeInfo> last_exec_time_info_, last_last_exec_time_info_;
 
 //   std::map<std::string, std::vector<arma::mat> > trackedForces_;
 

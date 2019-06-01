@@ -5,12 +5,14 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/gsl-1.15.tar.gz && cd gsl-1.15 && (
+DIR=gsl-2.4
+[ -d $DIR ] || ( wget -q -O- ftp://ftp.gnu.org/gnu/gsl/${DIR}.tar.gz | tar xz )
+cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
  
  ./configure --prefix=$INSTALLDIR --with-libraries=all
- make
+ make -j48
  make install
 
 )

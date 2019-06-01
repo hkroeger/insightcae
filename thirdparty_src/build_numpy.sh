@@ -5,9 +5,12 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/numpy-1.10.4.tar.gz && cd numpy-1.10.4 && (
+DIR=numpy-1.11.2
+
+[ -d $DIR ] || ( wget -q -O- https://sourceforge.net/projects/numpy/files/NumPy/1.11.2/${DIR}.tar.gz | tar xz )
+cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
- python setup.py build -j 12 install --prefix $INSTALLDIR
+ python setup.py build -j 48 install --prefix $INSTALLDIR
 )

@@ -5,7 +5,10 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/boost_1_55_0.tar.gz && cd boost_1_55_0 && (
+DIR=boost_1_65_1
+#tar xzf TARBALLS/boost_1_65_1.tar.gz && cd boost_1_65_1 && (
+[ -d $DIR ] || ( wget -q -O- https://dl.bintray.com/boostorg/release/1.65.1/source/${DIR}.tar.gz | tar xz )
+cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
@@ -15,6 +18,6 @@ tar xzf TARBALLS/boost_1_55_0.tar.gz && cd boost_1_55_0 && (
  fi
  ./bootstrap.sh --prefix=$INSTALLDIR --with-libraries=all $ADDOPT
  #./b2 install include=$HOME/Programme/bzlib/include linkflags=-L$HOME/Programme/bzlib/lib
- ./b2 install
+ ./b2 install -j48
 
 )

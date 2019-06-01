@@ -5,13 +5,16 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/oce-0.13.1.tgz && cd oce-0.13.1 && (
+#tar xzf TARBALLS/oce-0.13.1.tgz && cd oce-0.13.1 && (
+DIR=opencascade-7.2
+[ -d $DIR ] || ( git clone git clone ssh://gogs@rostock.silentdynamics.de:222/silentdynamics/caetool-opencascade.git $DIR )
+cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
  mkdir build
  cd build
  cmake ..  -DOCE_INSTALL_PREFIX=$INSTALLDIR 
- make -j12
+ make -j48
  make install
 )

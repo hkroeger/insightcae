@@ -5,12 +5,14 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/gnuplot-5.2.5.tar.gz && cd gnuplot-5.2.5 && (
+DIR=gnuplot-5.2.5
+[ -d $DIR ] || ( wget -q -O- https://sourceforge.net/projects/gnuplot/files/gnuplot/5.2.5/${DIR}.tar.gz | tar xz )
+cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
  ./configure --prefix=$INSTALLDIR --with-texdir=$HOME/texmf
- make -j12
+ make -j48
  make install
 
 )

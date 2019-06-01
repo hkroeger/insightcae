@@ -5,7 +5,9 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/ParaView-v4.3.1-source.tar.gz &&  cd ParaView-v4.3.1-source && (
+DIR=paraview-4.4.0
+[ -d $DIR ] || ( git clone ssh://gogs@rostock.silentdynamics.de:222/silentdynamics/caetool-paraview.git $DIR )
+cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
@@ -23,6 +25,6 @@ tar xzf TARBALLS/ParaView-v4.3.1-source.tar.gz &&  cd ParaView-v4.3.1-source && 
  -DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON\
  -DPARAVIEW_DATA_EXCLUDE_FROM_ALL=ON
 
- make -j12
+ make -j48
  make install
 )

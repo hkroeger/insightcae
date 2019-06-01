@@ -5,7 +5,10 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/VTK-6.3.0.tar.gz && cd VTK-6.3.0 && (
+DIR=VTK-6.3.0
+
+[ -d $DIR ] || ( wget -q -O- https://www.vtk.org/files/release/6.3/${DIR}.tar.gz | tar xz )
+cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
@@ -20,6 +23,6 @@ tar xzf TARBALLS/VTK-6.3.0.tar.gz && cd VTK-6.3.0 && (
  -DVTK_OPENGL_HAS_OSMESA=ON\
  -DBUILD_TESTING=OFF\
 
- make -j12
+ make -j48
  make install
 )

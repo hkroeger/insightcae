@@ -1501,36 +1501,36 @@ void Feature::exportEMesh
       if (!qud.IsDone())
 	throw insight::Exception("Discretization of curves into eMesh failed!");
 
-      double clen=0.;
-      arma::mat lp;
-      std::set<int> splits;
-      int iofs=points.size();
-      for (int j=1; j<=qud.NbPoints(); j++)
+      size_t iofs=points.size();
+
+      if (qud.NbPoints()<2)
+        throw insight::Exception("Edge discretizer returned less then 2 points !");
+
+      for (int j=2; j<=qud.NbPoints(); j++)
       {
-	gp_Pnt pp=ac.Value(qud.Parameter(j));
+        arma::mat lp=insight::Vector(ac.Value(qud.Parameter(j-1)));
+        if (j==2) points.push_back(lp);
 
-	arma::mat p=insight::Vector(pp);
-	if (j>1) clen+=norm(p-lp, 2);
+        arma::mat p=insight::Vector(ac.Value(qud.Parameter(j)));
 
-	lp=p;
-	if ((clen>maxlen) && (j>1)) 
-	{
-	  points.push_back(lp+0.5*(p-lp)); // insert a second point at same loc
-	  points.push_back(p); // insert a second point at same loc
-	  splits.insert(points.size()-1); 
-	  clen=0.0; 
-	}
-	else
-	{
-	  points.push_back(p);
-	}
+        double clen=norm(p-lp, 2);
+        double rlen=clen;
+        while (rlen>maxlen)
+        {
+          arma::mat pi = lp + maxlen*(p-lp)/arma::norm(p-lp,2);
+          lp=pi;
+          points.push_back(pi); // insert intermediate point
+          rlen -= maxlen;
+        }
+        points.push_back(p);
+
       }
       
       for (int i=1; i<points.size()-iofs; i++)
       {
 	int from=iofs+i-1;
 	int to=iofs+i;
-	if (splits.find(to)==splits.end())
+//	if (splits.find(to)==splits.end())
 	  edges.push_back(Edge(from,to));
       }
     }

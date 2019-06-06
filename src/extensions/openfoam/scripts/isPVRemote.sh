@@ -5,17 +5,20 @@ SERVER=localhost
 META=meta.foam
 SUBDIR=""
 
-while getopts "h?ms:" opt; do
+while getopts "h?msr:" opt; do
     case "$opt" in
     h|\?)
         echo "Usage $0 [-m] [<meta file name>]"
         echo "-m <file name>: meta file name"
         echo "-s <sub dir>: case directory is subdirectory in remote dir"
+        echo "-r <remote host>: continue to <remote host> behind target host (e.g. a cluster node)"
         exit 0
         ;;
     m)  META=$OPTARG
         ;;
     s)  SUBDIR=$OPTARG
+        ;;
+    r)  REMHOST=$OPTARG
         ;;
     esac
 done
@@ -54,7 +57,6 @@ fi
 read LABEL PORT << EOF
 $(ssh $SERVER isPVFindPort.sh|tail -n 1)
 EOF
-
 if [ "$LABEL" != "PORT" ]; then
  echo While determining remote port: expected "PORT", got "$LABEL"
 fi
@@ -62,12 +64,24 @@ fi
 read LABEL LOCALPORT << EOF
 $(isPVFindPort.sh|tail -n 1)
 EOF
-
 if [ "$LABEL" != "PORT" ]; then
  echo While determining local port: expected "PORT", got "$LABEL"
 fi
 
-ssh -L$LOCALPORT:127.0.0.1:$PORT $SERVER "cd $DIR ; pvserver --use-offscreen-rendering --server-port=$PORT" &
+if [ "$REMHOST" ]; then
+ read LABEL2 PORT2 << EOF
+ $(ssh $SERVER ssh $REMHOST isPVFindPort.sh|tail -n 1)
+EOF
+ if [ "$LABEL2" != "PORT" ]; then
+  echo While determining remote-remote port: expected "PORT", got "$LABEL2"
+ fi
+fi
+
+if [ "$REMHOST" ]; then
+ ssh -L$LOCALPORT:127.0.0.1:$PORT $SERVER "ssh -L$PORT:127.0.0.1:$PORT2 $REMHOST \"cd $DIR ; pvserver --use-offscreen-rendering --server-port=$PORT2\"" &
+else
+ ssh -L$LOCALPORT:127.0.0.1:$PORT $SERVER "cd $DIR ; pvserver --use-offscreen-rendering --server-port=$PORT" &
+fi
 sleep 1
 
 paraview --server-url=cs://127.0.0.1:$LOCALPORT --data=$DIR/system/controlDict

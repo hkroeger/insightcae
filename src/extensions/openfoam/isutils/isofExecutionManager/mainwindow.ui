@@ -483,7 +483,6 @@
     <addaction name="separator"/>
     <addaction name="actionStart_Paraview"/>
     <addaction name="actionStart_Remote_Paraview"/>
-    <addaction name="actionStart_Remote_Paraview_in_Subdirectory"/>
    </widget>
    <addaction name="menuRemote"/>
    <addaction name="menuSync"/>

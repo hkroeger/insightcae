@@ -48,13 +48,14 @@ public Q_SLOTS:
 
     void onStartParaview();
     void onStartRemoteParaview();
-    void onStartRemoteParaviewSubdir();
     void onClearProgressCharts();
 
     void updateOutputAnalzer(QString line);
 
 private:
   Ui::MainWindow *ui;
+
+  QString rem_subdir_, rem_host_;
 };
 
 #endif // MAINWINDOW_H

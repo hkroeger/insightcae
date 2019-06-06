@@ -14,6 +14,9 @@
 #include <QInputDialog>
 #include <QSettings>
 
+#include "ui_remoteparaview.h"
+#include "remoteparaview.h"
+
 void MainWindow::updateGUI()
 {
   if (isValid())
@@ -94,7 +97,6 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
   connect(ui->actionStart_Paraview, &QAction::triggered, this, &MainWindow::onStartParaview);
   connect(ui->actionStart_Remote_Paraview, &QAction::triggered, this, &MainWindow::onStartRemoteParaview);
-  connect(ui->actionStart_Remote_Paraview_in_Subdirectory, &QAction::triggered, this, &MainWindow::onStartRemoteParaviewSubdir);
 
   connect(this, &MainWindow::logReady, ui->log, &LogViewerWidget::appendLine);
   connect(this, &MainWindow::logReady, this, &MainWindow::updateOutputAnalzer ); // through signal/slot to execute analysis in GUI thread
@@ -183,25 +185,32 @@ void MainWindow::onStartParaview()
 
 void MainWindow::onStartRemoteParaview()
 {
-  if (!QProcess::startDetached("isPVRemote.sh", QStringList(), localDir().c_str() ))
+  RemoteParaview dlg(this);
+  dlg.ui->subdir->setText(rem_subdir_);
+  dlg.ui->remhost->setText(rem_host_);
+  if (dlg.exec())
   {
-    QMessageBox::critical(this, "Failed to start", QString("Failed to start Paraview in directoy ")+localDir().c_str());
-  }
-}
+    QStringList args;
 
+    rem_subdir_ = dlg.ui->subdir->text();
+    rem_host_ = dlg.ui->remhost->text();
 
+    if (!dlg.ui->subdir->text().isEmpty())
+      args << "-s" << dlg.ui->subdir->text();
 
-void MainWindow::onStartRemoteParaviewSubdir()
-{
-  QString sd = QInputDialog::getText(this, "Enter subdirectory name", "Please enter the name of the remote subdirectory");
-  if (!sd.isEmpty())
-  {
-    if (!QProcess::startDetached("isPVRemote.sh", QStringList() << "-s" << sd, localDir().c_str() ))
+    if (!dlg.ui->remhost->text().isEmpty())
+      args << "-r" << dlg.ui->remhost->text();
+
+    if (!QProcess::startDetached("isPVRemote.sh", args, localDir().c_str() ))
     {
       QMessageBox::critical(this, "Failed to start", QString("Failed to start Paraview in directoy ")+localDir().c_str());
     }
   }
+
 }
+
+
+
 
 void MainWindow::onClearProgressCharts()
 {
@@ -220,6 +229,8 @@ void MainWindow::saveSettings()
     QSettings settings("silentdynamics", "isofExecutionManager");
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
+    settings.setValue("remhost", rem_host_);
+    settings.setValue("remsubdir", rem_subdir_);
     settings.setValue("vsplitter", ui->v_splitter->saveState());
 }
 
@@ -228,5 +239,7 @@ void MainWindow::readSettings()
     QSettings settings("silentdynamics", "isofExecutionManager");
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
+    rem_host_=settings.value("remhost").toString();
+    rem_subdir_=settings.value("remsubdir").toString();
     ui->v_splitter->restoreState(settings.value("vsplitter").toByteArray());
 }

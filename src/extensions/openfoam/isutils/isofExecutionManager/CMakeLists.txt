@@ -11,6 +11,7 @@ set(isofExecutionManager_SOURCES
     main.cpp
     mainwindow.cpp
     remotedirselector.cpp
+    remoteparaview.cpp
 )
 
 set(isofExecutionManager_LIBS

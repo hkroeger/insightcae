@@ -112,14 +112,17 @@ for curtime in ftimes:
   AnimationScene1.AnimationTime = curtime
   
   #RescaleTransferFunctionToDataRange(False)
-  
-  RenderAllViews()
+
 """ + ("""
   # bug in PV4.4: parallel projection is not restored from state file
   for view in GetRenderViews():
-   view.CameraParallelProjection = 1
+     view.CameraParallelProjection = 0
+  RenderAllViews()
+  for view in GetRenderViews():
+     view.CameraParallelProjection = 1
 """ if opts.parallel else "") +
 """
+  RenderAllViews()
   %s
   
   layouts=GetLayouts()
@@ -185,7 +188,7 @@ if not statefile is None:
   else:
     scrp=writeloadscript(statefile, os.getcwd(), opts.batch, loadcmd=False, appendFile=opts.loadscript);
     subprocess.call(["paraview", "--state="+statefile, "--script="+scrp])
-  os.remove(scrp)
+  #os.remove(scrp)
 else:
   cn=casename+".foam"
   touch(cn)
@@ -194,3 +197,4 @@ else:
   
 if remove_statefile:
   os.remove(statefile)
+

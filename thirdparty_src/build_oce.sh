@@ -7,14 +7,14 @@ fi
 
 #tar xzf TARBALLS/oce-0.13.1.tgz && cd oce-0.13.1 && (
 DIR=opencascade-7.2
-[ -d $DIR ] || ( git clone git clone ssh://gogs@rostock.silentdynamics.de:222/silentdynamics/caetool-opencascade.git $DIR )
+[ -d $DIR ] || ( git clone https://${GIT_CREDENTIALS}rostock.silentdynamics.de/git/silentdynamics/caetool-opencascade.git $DIR )
 cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
  mkdir build
  cd build
- cmake ..  -DOCE_INSTALL_PREFIX=$INSTALLDIR 
+ cmake ..  -DINSTALL_DIR=$INSTALLDIR 
  make -j48
  make install
 )

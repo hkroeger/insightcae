@@ -225,7 +225,7 @@ extendedForces::execute()
         }
 
         const vectorField& Sfb = mesh.Sf().boundaryField()[patchI];
-        const vectorField nfb = Sfb / mesh.magSf().boundaryField()[patchI];
+        const vectorField nfb ( Sfb / mesh.magSf().boundaryField()[patchI] );
 
         const symmTensorField& devRhoReffb
             = tdevRhoReff().boundaryField()[patchI];
@@ -254,7 +254,12 @@ extendedForces::execute()
         {
             vectorField Md
             (
-                mesh.C().boundaryField()[patchI] - coordSys_.origin()
+                mesh.C().boundaryField()[patchI] -
+      #ifdef OF16ext
+                  CofR_
+      #else
+                  coordSys_.origin()
+      #endif
             );
 
             vectorField fN

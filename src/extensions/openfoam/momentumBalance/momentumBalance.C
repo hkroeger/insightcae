@@ -81,7 +81,11 @@ void findBndFaces(const fvMesh& mesh, const cellSet& cells, labelList& res, scal
           }
       }
   }
-  syncTools::swapBoundaryFaceList(mesh, neiInSet);
+  syncTools::swapBoundaryFaceList(mesh, neiInSet
+                                #ifdef OF16ext
+                                  , false
+                                #endif
+                                  );
 
   // Check all boundary faces
   forAll(patches, patchi)
@@ -311,11 +315,12 @@ int main(int argc, char *argv[])
 	      );
 	    }
 
-	  vectorField Sf=pick_gf(mesh.Sf(), bndfaces, &norm_dir);
-	  scalarField phif=pick_gf(phi, bndfaces, &norm_dir);
-	  vectorField Uf=pick_gf(fvc::interpolate(U)(), bndfaces);
-	  scalarField rhof=pick_gf(fvc::interpolate(rho())(), bndfaces);
-	  scalarField pf=pick_gf(fvc::interpolate(p)(), bndfaces);
+          vectorField Sf (pick_gf(mesh.Sf(), bndfaces, &norm_dir) );
+          scalarField phif (pick_gf(phi, bndfaces, &norm_dir) );
+          vectorField Uf (pick_gf(fvc::interpolate(U)(), bndfaces) );
+          scalarField rhof (pick_gf(fvc::interpolate(rho())(), bndfaces) );
+          scalarField pf (pick_gf(fvc::interpolate(p)(), bndfaces) );
+
 	  if (p.dimensions()==dimPressure/dimDensity)
 	    {
 	      Info<<"Converting pressure."<<endl;
@@ -323,7 +328,7 @@ int main(int argc, char *argv[])
 	    }
 
 	  {
-	    vectorField Cf=pick_gf(mesh.Cf(), bndfaces);
+            vectorField Cf( pick_gf(mesh.Cf(), bndfaces) );
 
 	    insight::vtk::vtkModel2d vtk;
 	    createVTKGeometry(mesh, bndfaces, vtk);

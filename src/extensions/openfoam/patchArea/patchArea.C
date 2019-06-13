@@ -17,7 +17,13 @@ int main(int argc, char *argv[])
 
     wordRe patchRegex(IStringStream( UNIOF_ADDARG(args,0) )());
 
-    wordReList patchSelector(1);
+#ifdef OF16ext
+            wordList
+#else
+            wordReList
+#endif
+            patchSelector(1);
+
     patchSelector[0]=patchRegex;
     labelHashSet ids=mesh.boundaryMesh().patchSet(patchSelector);
 

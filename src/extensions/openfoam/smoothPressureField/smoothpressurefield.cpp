@@ -52,7 +52,12 @@ int main(int argc, char *argv[])
 
     labelHashSet patches(
           mesh.boundaryMesh().patchSet(
-            wordReList(IStringStream( UNIOF_ADDARG(args, 0) )())
+#ifdef OF16ext
+            wordList
+#else
+            wordReList
+#endif
+            (IStringStream( UNIOF_ADDARG(args, 0) )())
            ));
 
     Info << "Reading field "<<pName<<"\n" << endl;

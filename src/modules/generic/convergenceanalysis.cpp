@@ -159,7 +159,11 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer* displayer)
           "A negative value $R<0$ indicates oscillatory convergence. "
           "In this case, more than 3 refinement steps are required for error estimation. "
           "This is currently not supported in the scope of this analysis. "
-          "{\\bf Thus, no error estimate could be included in this result report.}",
+
+
+              "Thus, no error estimate could be included in this result report."
+              //"{\\bf Thus, no error estimate could be included in this result report.}"
+              ,
 
           ""
         )
@@ -182,7 +186,10 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer* displayer)
           "Computed as:\n"
           "$$ R = \\frac{\\epsilon_{32}}{\\epsilon_{21}} $$\n"
           "A value of $R>1$ indicates divergence. "
-          "{\\bf There is no convergence this case and thus it is not possible to perform an error estimation.}",
+
+          "There is no convergence this case and thus it is not possible to perform an error estimation."
+              //"{\\bf There is no convergence this case and thus it is not possible to perform an error estimation.}"
+              ,
 
           ""
         )

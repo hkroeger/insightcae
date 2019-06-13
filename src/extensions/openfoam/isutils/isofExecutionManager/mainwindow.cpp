@@ -102,9 +102,10 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(this, &MainWindow::logReady, this, &MainWindow::updateOutputAnalzer ); // through signal/slot to execute analysis in GUI thread
 
 #ifdef HAVE_KF5
-  terminal_ = new TerminalWidget(ui->v_splitter);
+  terminal_ = new TerminalWidget(/*ui->v_splitter*/ ui->tabWidget );
   terminal_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
-  ui->v_splitter->addWidget(terminal_);
+  ui->tabWidget->addTab(terminal_, "Terminal");
+  //ui->v_splitter->addWidget(terminal_);
   terminal_->initialise();
 #endif
 

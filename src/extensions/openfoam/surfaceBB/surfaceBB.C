@@ -4,7 +4,7 @@
 #include "triSurfaceTools.H"
 #include "argList.H"
 #include "OFstream.H"
-#include "OBJstream.H"
+//#include "OBJstream.H"
 #include "SortableList.H"
 #include "PatchTools.H"
 #include "vtkSurfaceWriter.H"

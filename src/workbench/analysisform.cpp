@@ -74,8 +74,8 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     QSplitter* spl=new QSplitter(Qt::Vertical);
     QWidget* lower = new QWidget;
     QHBoxLayout* hbl = new QHBoxLayout(lower);
-    progdisp_=new GraphProgressDisplayer;
-    log_=new LogViewerWidget;
+    progdisp_=new GraphProgressDisplayer(spl);
+    log_=new LogViewerWidget(spl);
     spl->addWidget(progdisp_);
     spl->addWidget(lower); //log_);
     hbl->addWidget(log_);
@@ -134,6 +134,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
     QSettings settings("silentdynamics", "workbench");
     peditor_->restoreState(settings.value("parameterEditor").toByteArray());
+    pack_parameterset_ = settings.value("pack_parameterset", QVariant(true)).toBool();
 }
 
 AnalysisForm::~AnalysisForm()
@@ -143,13 +144,34 @@ AnalysisForm::~AnalysisForm()
     delete ui;
 }
 
+void AnalysisForm::updateSaveMenuLabel()
+{
+  if (act_save_)
+  {
+    QString packed = pack_parameterset_ ? " (packed)" : "";
+    act_save_->setText("&Save parameter set"+packed);
+  }
+  if (act_pack_)
+  {
+    act_pack_->setChecked(pack_parameterset_);
+  }
+}
+
+void AnalysisForm::onTogglePacking()
+{
+  pack_parameterset_ = act_pack_->isChecked();
+  updateSaveMenuLabel();
+}
+
 void AnalysisForm::insertMenu(QMenuBar* mainMenu)
 {
     workbench::WidgetWithDynamicMenuEntries::insertMenu(mainMenu);
 
     menu_parameters_=mainMenu_->addMenu("&Parameters");
 
-    if (!act_save_) act_save_=new QAction("&Save parameter set", this);
+    if (!act_save_) act_save_=new QAction("&S", this);
+    //updateSaveMenuLabel();  // moved to below..
+    act_save_->setShortcut(Qt::CTRL + Qt::Key_S);
     menu_parameters_->addAction( act_save_ );
     connect( act_save_, &QAction::triggered,
              this, &AnalysisForm::onSaveParameters );
@@ -158,6 +180,15 @@ void AnalysisForm::insertMenu(QMenuBar* mainMenu)
     menu_parameters_->addAction( act_save_as_ );
     connect( act_save_as_, &QAction::triggered,
              this, &AnalysisForm::onSaveParametersAs );
+
+    if (!act_pack_) act_pack_=new QAction("&Pack external files into parameter file", this);
+    act_pack_->setCheckable(true);
+
+    menu_parameters_->addAction( act_pack_ );
+    connect( act_pack_, &QAction::triggered,
+             this, &AnalysisForm::onTogglePacking );
+
+    updateSaveMenuLabel();
 
     if (!act_merge_) act_merge_=new QAction("&Merge other parameter set into current...", this);
     menu_parameters_->addAction( act_merge_ );
@@ -263,6 +294,7 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
     {
       QSettings settings("silentdynamics", "workbench");
       settings.setValue("parameterEditor", peditor_->saveState());
+      settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
 
       QMdiSubWindow::closeEvent(event);
     }
@@ -289,7 +321,15 @@ void AnalysisForm::saveParameters(bool *cancelled)
   }
   else
   {
-    if (pack_parameterset_) parameters_.packExternalFiles();
+    if (pack_parameterset_)
+    {
+      parameters_.packExternalFiles();
+    }
+    else
+    {
+      parameters_.removePackedData();
+    }
+
     parameters_.saveToFile(ist_file_, analysisName_);
     is_modified_=false;
   }
@@ -325,6 +365,7 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
   {
     QString fn = fd.selectedFiles()[0];
     pack_parameterset_ = cb->isChecked();
+    updateSaveMenuLabel();
 
 //     parameters_.saveToFile(fn.toStdString(), analysis_->type());
     ist_file_=fn.toStdString();

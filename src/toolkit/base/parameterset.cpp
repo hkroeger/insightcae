@@ -224,6 +224,14 @@ void ParameterSet::packExternalFiles()
   }
 }
 
+void ParameterSet::removePackedData()
+{
+  for (auto p: *this)
+  {
+    p->second->clearPackedData();
+  }
+}
+
 
 void ParameterSet::saveToStream(std::ostream& os, const boost::filesystem::path& parent_path, std::string analysisName ) const
 {
@@ -361,6 +369,13 @@ void SubsetParameter::unpack()
   }
 }
 
+void SubsetParameter::clearPackedData()
+{
+  for(auto p: *this)
+  {
+    p->second->clearPackedData();
+  }
+}
 
 Parameter* SubsetParameter::clone() const
 {
@@ -467,6 +482,15 @@ void SelectableSubsetParameter::unpack()
   for (auto p: v)
   {
     p->second->unpack();
+  }
+}
+
+void SelectableSubsetParameter::clearPackedData()
+{
+  auto& v = this->operator()(); // get active subset
+  for (auto p: v)
+  {
+    p->second->clearPackedData();
   }
 }
 

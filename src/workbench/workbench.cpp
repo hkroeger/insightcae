@@ -117,15 +117,29 @@ void workbench::openAnalysis(const QString& fn)
 
 void workbench::closeEvent(QCloseEvent *event)
 {
-    QSettings settings("silentdynamics", "workbench");
+  QList<QMdiSubWindow*>	list = mdiArea_->subWindowList();
+
+  for (int i = 0; i < list.size (); i++)
+  {
+    if (!list[i]->close ())
+    {
+      event->ignore();
+      return;
+    }
+  }
+
+  if (event->isAccepted())
+  {
+    QSettings settings("silentdynamics", "workbench_main");
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
     QMainWindow::closeEvent(event);
+  }
 }
 
 void workbench::readSettings()
 {
-    QSettings settings("silentdynamics", "workbench");
+    QSettings settings("silentdynamics", "workbench_main");
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
 }
@@ -148,7 +162,7 @@ void workbench::onSubWindowActivated( QMdiSubWindow * window )
     else
     {
 //        qDebug()<<"removed last menu";
-        lastActive_=NULL;
+        lastActive_=nullptr;
     }
 }
 

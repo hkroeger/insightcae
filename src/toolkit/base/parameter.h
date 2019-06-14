@@ -150,6 +150,12 @@ public:
      * restore file contents on disk, if file is not there
      */
     virtual void unpack();
+
+    /**
+     * @brief clearPackedData
+     * remove the file content information
+     */
+    virtual void clearPackedData();
 };
 
 
@@ -322,6 +328,8 @@ public:
      * restore file contents on disk, if file is not there
      */
     void unpack();
+
+    void clearPackedData();
 
     virtual Parameter* clone() const;
 
@@ -537,6 +545,7 @@ public:
     virtual bool isPacked() const;
     virtual void pack();
     virtual void unpack();
+    virtual void clearPackedData();
 
     virtual Parameter* clone () const;
 

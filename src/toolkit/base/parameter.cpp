@@ -225,6 +225,10 @@ void Parameter::unpack()
     // do nothing by default
 }
 
+void Parameter::clearPackedData()
+{
+  // do nothing by default
+}
 
 std::string valueToString(const arma::mat& value)
 {
@@ -411,6 +415,12 @@ void PathParameter::unpack()
 
     }
   }
+}
+
+
+void PathParameter::clearPackedData()
+{
+  file_content_.clear();
 }
 
 Parameter* PathParameter::clone() const
@@ -799,6 +809,14 @@ void ArrayParameter::unpack()
   for (auto& p: value_)
   {
     p->unpack();
+  }
+}
+
+void ArrayParameter::clearPackedData()
+{
+  for (auto& p: value_)
+  {
+    p->clearPackedData();
   }
 }
 

@@ -105,7 +105,7 @@ protected:
   QPushButton *save_log_btn_, *send_log_btn_, *clear_log_btn_, *auto_scroll_down_btn_;
 
   QMenu *menu_parameters_=nullptr, *menu_actions_=nullptr, *menu_results_=nullptr, *menu_tools_=nullptr, *menu_tools_of_=nullptr;
-  QAction *act_param_show_=nullptr, *act_save_=nullptr, *act_save_as_=nullptr, *act_merge_=nullptr;
+  QAction *act_param_show_=nullptr, *act_save_=nullptr, *act_save_as_=nullptr, *act_pack_=nullptr, *act_merge_=nullptr;
   QAction *act_run_=nullptr, *act_kill_=nullptr;
   QAction *act_save_rpt_=nullptr;
   QAction *act_tool_of_paraview_=nullptr, *act_tool_of_clean_=nullptr;
@@ -127,6 +127,8 @@ protected:
    * whether PS was modified since last save
    */
   bool is_modified_;
+
+  void updateSaveMenuLabel();
   
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
@@ -163,6 +165,8 @@ private Q_SLOTS:
   void onShowParameterXML();
 
   void onConfigModification();
+
+  void onTogglePacking();
 
 signals:
   void apply();

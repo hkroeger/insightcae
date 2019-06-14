@@ -303,15 +303,22 @@ CollectingProgressDisplayer::CollectingProgressDisplayer ( const std::string& id
 
 void CollectingProgressDisplayer::update ( const ProgressState& pi )
 {
-    double maxv=-1e10;
-    for ( const ProgressVariableList::value_type v: pi.second ) {
-        if ( v.second > maxv ) {
-            maxv=v.second;
-        }
-    }
-    ProgressVariableList pvl;
-    pvl[id_]=maxv;
-    receiver_->update ( ProgressState ( pi.first, pvl ) );
+//    double maxv=-1e10;
+//    for ( const ProgressVariableList::value_type v: pi.second ) {
+//        if ( v.second > maxv ) {
+//            maxv=v.second;
+//        }
+//    }
+//    ProgressVariableList pvl;
+//    pvl[id_]=maxv;
+//    receiver_->update ( ProgressState ( pi.first, pvl ) );
+
+  ProgressVariableList pvl;
+  for (const ProgressVariableList::value_type& v: pi.second )
+  {
+    pvl[id_ + "/" + v.first]=v.second;
+  }
+  receiver_->update ( ProgressState(pi.first, pvl) );
 }
 
 

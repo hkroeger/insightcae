@@ -161,8 +161,11 @@ void GraphProgressDisplayer::onCreateChart(bool log, const std::string name)
 
 GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& name)
 {
+  std::vector<std::string> names;
+  boost::split(names, name, boost::is_any_of("/"));
+
   bool log;
-  if (name=="residual")
+  if (names.back()=="residual")
   {
     log=true;
   }

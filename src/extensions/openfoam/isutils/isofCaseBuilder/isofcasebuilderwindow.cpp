@@ -148,6 +148,13 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
             this, &isofCaseBuilderWindow::onSaveAs);
     m->addAction(a);
 
+    act_pack_=new QAction("Pack external files into config file", m);
+    act_pack_->setCheckable(true);
+    act_pack_->setChecked(pack_config_file_);
+    connect(act_pack_, &QAction::triggered,
+            this, &isofCaseBuilderWindow::onTogglePacked);
+    m->addAction(act_pack_);
+
     connect(ui->btn_select_case_dir, &QPushButton::clicked,
             this, &isofCaseBuilderWindow::selectCaseDir);
     ui->case_dir->setText( boost::filesystem::current_path().c_str() );
@@ -402,6 +409,7 @@ void isofCaseBuilderWindow::closeEvent(QCloseEvent *event)
     settings.setValue("windowState_BC_PE", ui->splitter_4->saveState());
     settings.setValue("PE_state", last_pe_state_);
     settings.setValue("BC_PE_state", last_bc_pe_state_);
+    settings.setValue("pack_config_file", pack_config_file_);
     QMainWindow::closeEvent(event);
 }
 
@@ -414,6 +422,9 @@ void isofCaseBuilderWindow::readSettings()
     ui->splitter_4->restoreState(settings.value("windowState_BC_PE").toByteArray());
     last_pe_state_=settings.value("PE_state").toByteArray();
     last_bc_pe_state_=settings.value("BC_PE_state").toByteArray();
+
+    pack_config_file_=settings.value("pack_config_file").toBool();
+    act_pack_->setChecked(pack_config_file_);
 }
 
 
@@ -780,8 +791,14 @@ void isofCaseBuilderWindow::onSaveAs()
 
       current_config_file_=fn.toStdString();
       pack_config_file_=cb->isChecked();
+      act_pack_->setChecked(pack_config_file_);
       onSave();
     }
+}
+
+void isofCaseBuilderWindow::onTogglePacked()
+{
+  pack_config_file_=act_pack_->isChecked();
 }
 
 void isofCaseBuilderWindow::onSave()
@@ -857,7 +874,14 @@ void isofCaseBuilderWindow::saveToFile(const boost::filesystem::path& file)
             elemnode->append_attribute(doc.allocate_attribute("type", elem->type_name().c_str()));
             rootnode->append_node ( elemnode );
 
-            if (pack_config_file_) elem->parameters().packExternalFiles();
+            if (pack_config_file_)
+            {
+              elem->parameters().packExternalFiles();
+            }
+            else
+            {
+              elem->parameters().removePackedData();
+            }
             elem->parameters().appendToNode(doc, *elemnode, file.parent_path());
         }
     }
@@ -874,7 +898,14 @@ void isofCaseBuilderWindow::saveToFile(const boost::filesystem::path& file)
         {
             throw insight::Exception("Internal error: expected default patch config node!");
         }
-        if (pack_config_file_) dp->parameters().packExternalFiles();
+        if (pack_config_file_)
+        {
+          dp->parameters().packExternalFiles();
+        }
+        else
+        {
+          dp->parameters().removePackedData();
+        }
         dp->appendToNode(doc, *unassignedBCnode, file.parent_path());
         BCnode->append_node ( unassignedBCnode );
 
@@ -882,7 +913,14 @@ void isofCaseBuilderWindow::saveToFile(const boost::filesystem::path& file)
         {
             xml_node<> *patchnode = doc.allocate_node ( node_element, "Patch" );
             Patch *p = dynamic_cast<Patch*>(ui->patch_list->item(i));
-            if (pack_config_file_) p->parameters().packExternalFiles();
+            if (pack_config_file_)
+            {
+              p->parameters().packExternalFiles();
+            }
+            else
+            {
+              p->parameters().removePackedData();
+            }
             p->appendToNode(doc, *patchnode, file.parent_path());
             BCnode->append_node ( patchnode );
         }

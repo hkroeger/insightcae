@@ -81,6 +81,8 @@ protected:
 
     QString script_pre_, script_mesh_, script_case_;
 
+    QAction *act_pack_;
+
     enum ExecutionStep
     {
       ExecutionStep_Clean,
@@ -176,6 +178,8 @@ public slots:
     void onReset_script_pre();
     void onReset_script_mesh();
     void onReset_script_case();
+
+    void onTogglePacked();
 
     void onOFVersionChanged(const QString & ofename);
     void recreateOFCase(const QString & ofename);

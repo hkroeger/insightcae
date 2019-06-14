@@ -84,6 +84,12 @@ public:
 
     virtual void update(const insight::ProgressState& pi);
     virtual void reset();
+
+Q_SIGNALS:
+    void createChart(bool log, const std::string name);
+
+private slots:
+    void onCreateChart(bool log, const std::string name);
 };
 
 #endif // GRAPHPROGRESSDISPLAYER_H

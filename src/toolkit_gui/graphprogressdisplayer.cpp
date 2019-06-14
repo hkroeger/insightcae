@@ -145,10 +145,18 @@ void GraphProgressChart::checkForUpdate()
 GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
 : QTabWidget(parent)
 {
+  connect(this, &GraphProgressDisplayer::createChart, this, &GraphProgressDisplayer::onCreateChart, Qt::BlockingQueuedConnection);
 }
 
 GraphProgressDisplayer::~GraphProgressDisplayer()
 {
+}
+
+void GraphProgressDisplayer::onCreateChart(bool log, const std::string name)
+{
+  GraphProgressChart* c=new GraphProgressChart(log, this);
+  addTab(c, QString::fromStdString(name));
+  charts_[name]=c;
 }
 
 GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& name)
@@ -166,10 +174,14 @@ GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& 
   decltype(charts_)::iterator c;
   if ( (c=charts_.find(name))==charts_.end())
   {
-    GraphProgressChart* c=new GraphProgressChart(log, this);
-    addTab(c, QString::fromStdString(name));
-    charts_[name]=c;
-    return c;
+    emit createChart(log, name); // create in GUI thread
+//    GraphProgressChart* c=new GraphProgressChart(log, this);
+//    addTab(c, QString::fromStdString(name));
+//    charts_[name]=c;
+    if ( (c=charts_.find(name))!=charts_.end() )
+      return c->second;
+    else
+      throw insight::Exception("Failed to create chart "+name+"!");
   }
   else
   {

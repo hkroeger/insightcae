@@ -71,7 +71,7 @@ insight::cad::SinglePointCoords::SinglePointCoords(insight::cad::ConstFeatureSet
 
 arma::mat insight::cad::SinglePointCoords::value() const
 {
-  if (!pfs_->size()==1)
+  if (!(pfs_->size()==1))
     throw insight::Exception("vertex feature set must not contain more than one point for coordinate extraction!");
   
   FeatureID i=*(pfs_->data().begin());
@@ -90,7 +90,7 @@ insight::cad::CircleEdgeCenterCoords::CircleEdgeCenterCoords(insight::cad::Const
 
 arma::mat insight::cad::CircleEdgeCenterCoords::value() const
 {
-  if (!pfs_->size()==1)
+  if (!(pfs_->size()==1))
     throw insight::Exception("edge feature set must not contain more than one edge for coordinate extraction!");
   
   FeatureID i=*(pfs_->data().begin());

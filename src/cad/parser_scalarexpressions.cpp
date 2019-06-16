@@ -93,9 +93,11 @@ void ISCADParser::createScalarExpressions()
 // 	[ _val = phx::bind(&Model::lookupScalar, model_, qi::_1) ]
         model_->scalarSymbols()[ qi::_val = qi::_1 ]
         | ( lit("volume") >> '(' >> r_solidmodel_expression >> ')' )
-        [ _val = phx::construct<ScalarPtr>(phx::new_<FeatureVolume>(qi::_1)) ]
+         [ _val = phx::construct<ScalarPtr>(phx::new_<FeatureVolume>(qi::_1)) ]
         | ( lit("cumedgelen") >> '(' >> r_solidmodel_expression >> ')' )
-        [ _val = phx::construct<ScalarPtr>(phx::new_<CumulativeEdgeLength>(qi::_1)) ]
+         [ _val = phx::construct<ScalarPtr>(phx::new_<CumulativeEdgeLength>(qi::_1)) ]
+        | ( lit("circdiameter") >> '(' >> r_edgeFeaturesExpression >> ')' )
+         [ _val = phx::construct<ScalarPtr>(phx::new_<CircleDiameter>(qi::_1)) ]
         | ( lit("mag") >> '(' >> r_vectorExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<VectorMag>(qi::_1)) ]
         | ( lit("sqrt") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sqrt>(qi::_1)) ]
         | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sin>(qi::_1)) ]

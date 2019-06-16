@@ -57,6 +57,16 @@ public:
   virtual double value() const;
 };
 
+class CircleDiameter
+: public Scalar
+{
+  ConstFeatureSetPtr pfs_;
+
+public:
+  CircleDiameter(ConstFeatureSetPtr pfs);
+  virtual double value() const;
+};
+
 }
 }
 

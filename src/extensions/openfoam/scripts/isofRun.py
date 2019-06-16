@@ -69,7 +69,7 @@ subprocess.call(cmd, cwd=case)
 
 if is_parallel and not opts.noreconst:
     subprocess.call(
-      (["reconstructPar"] if not opts.meshreconst else ["reconstructParMesh"])
+      (["reconstructPar"] if not opts.meshreconst else ["reconstructParMesh", "-constant"])
       +
       (["-latestTime"] if opts.reconstonlylatesttime else []),
       cwd=case

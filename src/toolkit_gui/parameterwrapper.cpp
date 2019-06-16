@@ -79,8 +79,7 @@ void addWrapperToWidget
             QObject::connect ( superform, SIGNAL ( update() ), wrapper, SLOT ( onUpdate() ) );
             QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onUpdateVisualization() ) );
             QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onCheckValidity() ) );
-            QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ),
-                               superform,  SIGNAL ( parameterSetChanged() ) );
+            QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform,  SIGNAL ( parameterSetChanged() ) );
         }
       }
     }
@@ -960,6 +959,7 @@ void ArrayParameterWrapper::addWrapper(int i)
   QObject::connect(treeWidget(), &QTreeWidget::itemSelectionChanged, wrapper, &ParameterWrapper::onSelectionChanged);
   QObject::connect(this, &ArrayParameterWrapper::apply, wrapper, &ParameterWrapper::onApply);
   QObject::connect(this, &ArrayParameterWrapper::update, wrapper, &ParameterWrapper::onUpdate);
+  QObject::connect ( wrapper, &ParameterWrapper::parameterSetChanged, this, &ArrayParameterWrapper::parameterSetChanged );
 }
 
 void ArrayParameterWrapper::rebuildWrappers()

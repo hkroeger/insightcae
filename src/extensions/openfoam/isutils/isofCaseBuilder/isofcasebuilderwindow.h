@@ -145,6 +145,8 @@ public:
 
     boost::filesystem::path casepath() const;
 
+    void updateCAD();
+
 public slots:
     void onItemSelectionChanged();
     

@@ -252,6 +252,7 @@ int main ( int argc, char** argv )
         if ( !vm.count ( "batch" ) )
         {
             window.show();
+            window.updateCAD();
             return app.exec();
         }
         else

@@ -123,7 +123,8 @@ void isofCaseBuilderWindow::fillCaseElementList()
 
 
 isofCaseBuilderWindow::isofCaseBuilderWindow()
-: QMainWindow(), ped_(nullptr), bc_ped_(nullptr),
+: QMainWindow(),
+  ped_(nullptr), bc_ped_(nullptr),
   script_pre_(""), script_mesh_(""), script_case_("")
 {
     // setup layout
@@ -398,6 +399,26 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
     updateTitle();
 }
 
+
+void isofCaseBuilderWindow::updateCAD()
+{
+  // initial display of visualizations
+  // == insert selected case elements
+  for (int i=0; i < ui->selected_elements->count(); i++)
+  {
+      if ( InsertedCaseElement* elem = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i)) )
+      {
+        try
+        {
+            insight::ParameterSet_VisualizerPtr viz = insight::OpenFOAMCaseElement::visualizer(elem->type_name());
+            viz->update(elem->parameters());
+            viz->updateVisualizationElements(ui->occview, ui->modeltree);
+        }
+        catch (insight::Exception e)
+        { /* ignore, if non-existent */ }
+      }
+  }
+}
 
 
 void isofCaseBuilderWindow::closeEvent(QCloseEvent *event)

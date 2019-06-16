@@ -74,6 +74,7 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
     act_sel_pts_->disconnect();
     act_sel_edgs_->disconnect();
     act_sel_faces_->disconnect();
+    act_sel_solids_->disconnect();
 
     if (lme!=NULL)
       {
@@ -148,6 +149,9 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
 
         connect(act_sel_faces_, &QAction::triggered,
                 me->viewer(), &QoccViewWidget::onSelectFaces);
+
+        connect(act_sel_solids_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::onSelectSolids);
 
         me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
 
@@ -418,6 +422,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
 
     act_sel_faces_=new QAction("Select faces", this);
     msmenu->addAction(act_sel_faces_);
+
+    act_sel_solids_=new QAction("Select solids", this);
+    msmenu->addAction(act_sel_solids_);
 
     QSettings settings("silentdynamics", "iscad");
     restoreGeometry(settings.value("geometry").toByteArray());

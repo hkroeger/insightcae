@@ -98,7 +98,8 @@ protected:
         *act_measure_distance_,
         *act_sel_pts_,
         *act_sel_edgs_,
-        *act_sel_faces_
+        *act_sel_faces_,
+        *act_sel_solids_
     ;
 
     QMenu* clipplanemenu_;

@@ -60,7 +60,8 @@ public:
     CIM_MeasurePoints,
     CIM_InsertPointIDs,
     CIM_InsertEdgeIDs,
-    CIM_InsertFaceIDs
+    CIM_InsertFaceIDs,
+    CIM_InsertSolidIDs
   };
 
   struct FocusObject
@@ -171,6 +172,7 @@ public Q_SLOTS:
   void onSelectPoints();
   void onSelectEdges();
   void onSelectFaces();
+  void onSelectSolids();
 
   void onUnfocus();
   void doUnfocus(bool newFocusIntended = false);

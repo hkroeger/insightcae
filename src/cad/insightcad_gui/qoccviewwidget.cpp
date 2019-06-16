@@ -1263,6 +1263,13 @@ void QoccViewWidget::onSelectFaces()
   emit sendStatus("Please select faces and finish with right click!");
 }
 
+void QoccViewWidget::onSelectSolids()
+{
+  selpts_.reset();
+  cimode_=CIM_InsertSolidIDs;
+  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_SOLID) );
+  emit sendStatus("Please select solids and finish with right click!");
+}
 
 void QoccViewWidget::onUnfocus()
 {
@@ -1589,7 +1596,36 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
                     }
                 }
             }
+          else if (cimode_==CIM_InsertSolidIDs)
+            {
+              myContext_->InitSelected();
+              if (myContext_->MoreSelected())
+                {
+                  TopoDS_Shape f = myContext_->SelectedShape();
+                  TopoDS_Solid ff = TopoDS::Solid(f);
+                  if (!selpts_)
+                    {
+                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
+                        {
+                          // restrict further selection to current shape
+                          getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_SOLID) );
+                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_SOLID) );
 
+                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Solid));
+
+                          insight::cad::FeatureID id = parent->solidmodel().solidID(f);
+                          selpts_->add(id);
+                          emit sendStatus(boost::str(boost::format("Selected solid %d. Select next solid, end with right click.")%id).c_str());
+                        }
+                    }
+                  else
+                    {
+                      insight::cad::FeatureID id = selpts_->model()->solidID(f);
+                      selpts_->add(id);
+                      emit sendStatus(boost::str(boost::format("Selected solid %d. Select next solid, end with right click.")%id).c_str());
+                    }
+                }
+            }
 	  break;
 
 	case CurAction3d_Picking:
@@ -1712,7 +1748,21 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
 	      getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_FACE) );
 	      cimode_=CIM_Normal;
 	    }
-	  //	  emit popupMenu ( this, point );
+          else if (cimode_==CIM_InsertSolidIDs)
+            {
+              QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?sid=(";
+              int j=0;
+              for (insight::cad::FeatureID i: selpts_->data())
+                {
+                  text+=QString::number( i );
+                  if (j++ < selpts_->size()-1) text+=",";
+                }
+              text+=")\n";
+              emit insertNotebookText(text);
+
+              getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_SOLID) );
+              cimode_=CIM_Normal;
+            }	  //	  emit popupMenu ( this, point );
         }
       else
 	{

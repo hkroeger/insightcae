@@ -52,7 +52,8 @@ void MaxSurfaceCurvature::build()
     : surf(BRep_Tool::Surface(f)),
       props(surf, 2, 1e-2)
     {
-      surf->Bounds(u1, u2, v1, v2);
+      BRepTools::UVBounds ( f, u1, u2, v1, v2 );
+      //surf->Bounds(u1, u2, v1, v2);
       cout<<"u1,...="<<u1<<", "<<u2<<", "<<v1<<", "<<v2<<endl;
     }
 
@@ -63,11 +64,32 @@ void MaxSurfaceCurvature::build()
       return gp_XY(u, v);
     }
 
+    double maxCurvMag() const
+    {
+      return std::max(fabs(props.MaxCurvature()), fabs(props.MinCurvature()));
+    }
+
+    gp_Dir maxCurvDir() const
+    {
+      gp_Dir maxc, minc;
+      props.CurvatureDirections(maxc, minc);
+      if ( fabs(props.MaxCurvature()) > fabs(props.MinCurvature()) )
+      {
+        return maxc;
+      }
+      else
+      {
+        return minc;
+      }
+    }
+
     virtual double operator()(const arma::mat& x) const
     {
       auto p = uv(x);
       props.SetParameters(p.X(), p.Y());
-      return -fabs(props.MaxCurvature());
+      double C=maxCurvMag();
+      cout<<"uv="<<p.X()<<" "<<p.Y()<<", C="<<C<<endl;
+      return -C;
     }
 
     virtual int numP() const { return 2; }
@@ -82,7 +104,9 @@ void MaxSurfaceCurvature::build()
 
     Obj2(const TopoDS_Face& f, gp_XY uv_start, gp_XY uv_dir)
       : Obj(f), a(uv_dir), b(uv_start)
-    {}
+    {
+      maxiter=100;
+    }
 
     gp_XY curuv(const arma::mat& t) const
     {
@@ -96,9 +120,9 @@ void MaxSurfaceCurvature::build()
     {
       gp_XY uv = curuv(x);
       props.SetParameters(uv.X(), uv.Y());
-      double C=-std::max(fabs(props.MaxCurvature()), fabs(props.MinCurvature()));
-      cout<<"t="<<x(0)<<", uv="<<uv.X()<<" "<<uv.Y()<<", C="<<C<<" "<<props.MinCurvature()<<" "<<props.MaxCurvature()<<endl;
-      return C;
+      double C=maxCurvMag();
+      cout<<"t="<<x(0)<<", uv="<<uv.X()<<" "<<uv.Y()<<", C="<<C<<endl;
+      return -C;
     }
 
     virtual int numP() const { return 1; }
@@ -119,9 +143,10 @@ void MaxSurfaceCurvature::build()
     // search for global max. curvature first => uv0
     Obj obj(f);
     double delta_uv_max=std::max(obj.u2-obj.u1, obj.v2-obj.v1);
-    arma::mat x0;
+    arma::mat x0, steps;
     x0 << 0.5 << 0.5;
-    arma::mat x = nonlinearMinimizeND(obj, x0);
+    steps << 0.25 << 0.25;
+    arma::mat x = nonlinearMinimizeND(obj, x0, 1e-3, steps);
     gp_XY uv0=obj.uv(x);
     double global_max_curv=obj(x);
 
@@ -138,51 +163,78 @@ void MaxSurfaceCurvature::build()
       while ( (uv.X()-obj.u1>pdist)&&(obj.u2-uv.X()>pdist) && (uv.Y()-obj.v1>pdist)&&(obj.v2-uv.Y()>pdist) && (iter<itermax) )
       {
         iter++;
+
+        gp_XY uv_last=uv;
+
         if (dir>0)
           pts.push_back(uv);
         else if (iter>1)
           pts.insert(pts.begin(), uv);
 
         obj.props.SetParameters(uv.X(), uv.Y());
-        gp_Dir maxc, minc, minc_uv;
+//        gp_Dir maxc, minc, minc_uv;
         gp_Vec d1u=obj.props.D1U();
         gp_Vec d1v=obj.props.D1V();
         d1u.Normalize();
         d1v.Normalize();
 
+        gp_Dir maxc, minc;
         obj.props.CurvatureDirections(maxc, minc);
+//        cout<<"maxc=["<<maxc.X()<<","<<maxc.Y()<<","<<maxc.Z()<<"]"<<endl;
+//        cout<<"minc=["<<minc.X()<<","<<minc.Y()<<","<<minc.Z()<<"]"<<endl;
 
-        cout<<"maxc=["<<maxc.X()<<","<<maxc.Y()<<","<<maxc.Z()<<"]"<<endl;
-        cout<<"minc=["<<minc.X()<<","<<minc.Y()<<","<<minc.Z()<<"]"<<endl;
+        gp_Dir cd=maxc; //obj.maxCurvDir();
+        bool retry=false, stop=false;
 
-        gp_XY duv(
-              minc.XYZ().Dot(d1u.XYZ()),
-              minc.XYZ().Dot(d1v.XYZ())
-              );
-        duv.Normalize();
+        int pass=0;
+        double cur_curv;
+        do {
+          cout<<"try "<<pass<<endl;
+          gp_XY duv(
+                cd.XYZ().Dot(d1u.XYZ()),
+                cd.XYZ().Dot(d1v.XYZ())
+                );
+          duv.Normalize();
 
-        uv += duv*dir * 1e-2*delta_uv_max;
+          uv += duv*dir * 1e-2*delta_uv_max;
+
+          Obj2 obj2( f, uv, duv );
+
+          cout<<"uv="<<uv.X()<<", "<<uv.Y()<<" => "<<flush;
+
+          arma::mat t0, steps;
+          t0 << 0.;
+          steps<<1e-3*delta_uv_max;
+          arma::mat t = nonlinearMinimizeND(obj2, t0, 1e-6, steps);
+          uv=obj2.curuv(t);
+
+          cout<<"uv="<<uv.X()<<", "<<uv.Y()<<endl;
+
+          cur_curv = obj2(t);
 
 
-        Obj2 obj2(f, uv,
-               gp_XY(
-                 maxc.XYZ().Dot(d1u.XYZ()),
-                 maxc.XYZ().Dot(d1v.XYZ())
-                 )
-               );
+          // no progress
+          if (uv.Subtracted(uv_last).Modulus()<1e-8)
+          {
+            if (pass==0)
+            {
+              cd=minc;
+              retry=true;
+            }
+            else
+            {
+              retry=false;
+              stop=true;
+            }
+          }
 
-        cout<<"uv="<<uv.X()<<", "<<uv.Y()<<" => "<<flush;
+          pass++;
 
-        arma::mat t0, steps;
-        t0 << 0.;
-        steps<<1e-2*delta_uv_max;
-        arma::mat t = nonlinearMinimizeND(obj2, t0, 1e-6, steps);
-        uv=obj2.curuv(t);
+        } while (retry && (pass<2));
 
-        cout<<"uv="<<uv.X()<<", "<<uv.Y()<<endl;
+        if (stop) break;
 
-        double cur_curv = obj2(t);
-
+        // hit region with no curvature
         if ( fabs(cur_curv)/fabs(global_max_curv) < 0.05 )
           break;
 
@@ -200,26 +252,44 @@ void MaxSurfaceCurvature::build()
   //  }
   //  setShape(res);
 
+//    int erased=0;
+//    for (size_t i=0; i<pts.size()-1; i++)
+//    {
+//      if ( pts[i].Subtracted(pts[i+1]).Modulus() < 1e-8 )
+//      {
+//        pts.erase( pts.begin()+ int(i+1) );
+//        erased++;
+//      }
+//    }
+//    cout << "erased "<<erased<<" duplicates"<<endl;
 
-    cout<<"ipol"<<endl;
-    Handle_TColgp_HArray1OfPnt2d pts2(new TColgp_HArray1OfPnt2d(1, pts.size()));
-    for (size_t i=0; i<pts.size(); i++) pts2->SetValue(i+1, pts[i]);
-    Geom2dAPI_Interpolate ip(pts2, false, 1e-3);
-    ip.Perform();
-    if (!ip.IsDone())
+    if (pts.size()>1)
     {
-      throw insight::Exception("Building 2D spline failed!");
+      cout<<"Performing interpolation over "<<pts.size()<<" points"<<endl;
+
+      Handle_TColgp_HArray1OfPnt2d pts2(new TColgp_HArray1OfPnt2d(1, pts.size()));
+      for (size_t i=0; i<pts.size(); i++) pts2->SetValue(i+1, pts[i]);
+      Geom2dAPI_Interpolate ip(pts2, false, 1e-3);
+      ip.Perform();
+      if (!ip.IsDone())
+      {
+        throw insight::Exception("Building 2D spline failed!");
+      }
+
+      cout<<"edge"<<endl;
+      TopoDS_Edge ec = BRepBuilderAPI_MakeEdge(ip.Curve(), obj.surf).Edge();
+      BRepLib::BuildCurve3d(ec);
+    //  Handle_Geom_Curve crv;
+    //  setShape(BRepBuilderAPI_MakeEdge(crv));
+
+      cout<<"done"<<endl;
+
+      bb.Add(res, ec);
     }
-
-    cout<<"edge"<<endl;
-    TopoDS_Edge ec = BRepBuilderAPI_MakeEdge(ip.Curve(), obj.surf).Edge();
-    BRepLib::BuildCurve3d(ec);
-  //  Handle_Geom_Curve crv;
-  //  setShape(BRepBuilderAPI_MakeEdge(crv));
-
-    cout<<"done"<<endl;
-
-    bb.Add(res, ec);
+    else
+    {
+      cout<<"not a sufficient number of points for interpolation (only "<<pts.size()<<")"<<endl;
+    }
   }
 
   setShape(res);

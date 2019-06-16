@@ -90,6 +90,11 @@ void Import::build()
     }
     loadShapeFromFile(fp);
 
+    for (FeatureID i: allSolidsSet())
+    {
+      providedSubshapes_[boost::str(boost::format("solid%d")%i)]=FeaturePtr(new Feature(subsolid(i)));
+    }
+
     cache.insert(shared_from_this());
   }
   else

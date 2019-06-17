@@ -95,11 +95,11 @@ int main(int argc, char *argv[])
         indexedOctree<treeDataTriSurface> tree
 	(
 	    treeDataTriSurface(
-#if !(defined(OF22eng)||defined(Fx40))
+#if !(defined(OF22eng)||defined(Fx40)||defined(Fx32))
             true, 
 #endif
             surf1
-#if !defined(Fx40)
+#if !(defined(Fx40)||defined(Fx32))
             , 
             1e-6
 #endif

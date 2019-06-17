@@ -22,7 +22,7 @@
 #include "OFstream.H"
 #include "dictionary.H"
 #include "dlLibraryTable.H"
-#ifdef Fx40
+#if (defined(Fx40)||defined(Fx32))
 #include "foamTime.H"
 #else
 #include "Time.H"

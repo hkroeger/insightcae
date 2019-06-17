@@ -55,14 +55,14 @@ tmp
     >
 >
 leastSquares2Grad<Type>::
-#if !(defined(OF16ext) && !defined(Fx40))
+#if !(defined(OF16ext) && !defined(Fx32) && !defined(Fx40))
 	calcGrad
 #else
 	grad
 #endif
 (
     const GeometricField<Type, fvPatchField, volMesh>& vsf
-#if !(defined(OF16ext) && !defined(Fx40))
+#if !(defined(OF16ext) && !defined(Fx32) && !defined(Fx40))
 	    , const word& name
 #endif
 ) const

@@ -29,7 +29,7 @@ License
 #include "polyMesh.H"
 
 #ifdef OF16ext
-#ifdef Fx40
+#if (defined(Fx40)||defined(Fx32))
 #include "CloudTemplate.H"
 #else
 #include "Cloud.H"

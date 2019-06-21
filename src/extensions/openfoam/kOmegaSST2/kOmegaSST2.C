@@ -149,7 +149,7 @@ kOmegaSST2::kOmegaSST2
     const volVectorField& U,
     const surfaceScalarField& phi,
     transportModel& lamTransportModel
-#ifndef OF16ext
+#if !defined(OF16ext) || defined(Fx41)
     ,
     const word& turbulenceModelName,
     const word& modelName
@@ -157,7 +157,7 @@ kOmegaSST2::kOmegaSST2
 #endif
 )
 :
-#if defined(OF16ext)
+#if defined(OF16ext) && !defined(Fx41)
     RASModel(typeName, U, phi, lamTransportModel),
 #elif defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
     RAStransportModelIncompressibleTurbulenceModel
@@ -483,12 +483,12 @@ tmp<volSymmTensorField> kOmegaSST2::devReff() const
 
 
 tmp<fvVectorMatrix> kOmegaSST2::divDevReff(
-#ifndef Fx40
+#if !(defined(Fx40)||defined(Fx41))
 	  volVectorField& U
 #endif
 ) const
 {
-#ifdef Fx40
+#if defined(Fx40)||defined(Fx41)
     const volVectorField& U=U_;
 #endif
     return
@@ -689,7 +689,7 @@ void kOmegaSST2::correct()
 
     omegaEqn.relax();
 
-#if !(defined(Fx31)||defined(Fx32)||defined(Fx40))
+#if !(defined(Fx31)||defined(Fx32)||defined(Fx40)||defined(Fx41))
     omegaEqn.boundaryManipulate(UNIOF_BOUNDARY_NONCONST(omega_));
 #endif
     

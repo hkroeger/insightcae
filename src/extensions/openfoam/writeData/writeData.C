@@ -26,7 +26,7 @@ License
 #include "writeData.H"
 #include "dictionary.H"
 #include "error.H"
-#if (defined(Fx40)||defined(Fx32))
+#if (defined(Fx40)||defined(Fx41)||defined(Fx32))
 #include "foamTime.H"
 #else
 #include "Time.H"

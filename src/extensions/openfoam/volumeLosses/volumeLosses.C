@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 	    point outpnt = i().second();
 	    pointField outpnts(1, outpnt);
 	    surfaceToCell stc(mesh, sfn, outpnts, false, true, false, 
-  #if !(defined(Fx40)||defined(Fx32))
+  #if !(defined(Fx40)||defined(Fx41)||defined(Fx32))
 			      false, 
   #endif
 			  1e-4, 0);

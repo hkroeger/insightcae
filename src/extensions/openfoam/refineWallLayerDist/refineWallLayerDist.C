@@ -33,7 +33,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "argList.H"
-#if (defined(Fx32)||defined(Fx40))
+#if (defined(Fx32)||defined(Fx40)||defined(Fx41))
 #include "foamTime.H"
 #else
 #include "Time.H"

@@ -246,7 +246,7 @@ public:
             const volVectorField& U,
             const surfaceScalarField& phi,
             transportModel& transport
-#ifndef OF16ext
+#if !defined(OF16ext) || defined(Fx41)
 			,
             const word& turbulenceModelName = turbulenceModel::typeName,
             const word& modelName = typeName
@@ -346,7 +346,7 @@ public:
 
         //- Return the source term for the momentum equation
         virtual tmp<fvVectorMatrix> divDevReff(
-#ifndef Fx40
+#if !(defined(Fx40)||defined(Fx41))
 	  volVectorField& U
 #endif
 	) const;

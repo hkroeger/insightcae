@@ -410,7 +410,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
     const label procI = Pstream::myProcNo();
 
     const volVectorField& U = mesh_.lookupObject<volVectorField>("U");
-    volScalarField magField=mag(U);
+    volScalarField magField(mag(U));
 
     labelList maxIs(Pstream::nProcs());
     scalarList maxVs(Pstream::nProcs());
@@ -589,7 +589,7 @@ bool Foam::faceQualityMarkerFunctionObject::start()
 
 bool Foam::faceQualityMarkerFunctionObject::execute
 (
-#if !(defined(OF16ext) || defined(OFdev)||defined(OFplus)||defined(OFesi1806))
+#if !(defined(OF16ext) || defined(OFdev)||defined(OFplus)||defined(OFesi1806)) || defined(Fx41)
   bool
 #endif
 )
@@ -610,14 +610,20 @@ bool Foam::faceQualityMarkerFunctionObject::read(const dictionary& dict)
 }
 
 
-#if !defined(OF16ext) && !defined(OF21x)
+#if (!defined(OF16ext)||defined(Fx41)) && !defined(OF21x)
 //- Update for changes of mesh
 void Foam::faceQualityMarkerFunctionObject::updateMesh(const mapPolyMesh& mpm)
 {
 }
 
 //- Update for changes of mesh
-void Foam::faceQualityMarkerFunctionObject::movePoints(const polyMesh& mesh)
+void Foam::faceQualityMarkerFunctionObject::movePoints(
+    #if defined(Fx41)
+            const pointField&
+    #else
+            const polyMesh& mesh
+    #endif
+)
 {
 }
 #endif

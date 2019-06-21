@@ -127,6 +127,7 @@ if (INSIGHT_BUILD_OPENFOAM)
     find_package(FOAM-extend-31)
     find_package(FOAM-extend-32)
     find_package(FOAM-extend-40)
+    find_package(FOAM-extend-41)
     find_package(OpenFOAM-21x)
     find_package(OpenFOAM-22x)
     find_package(OpenFOAM-22eng)
@@ -179,6 +180,9 @@ macro(version_list_OF)
     endif()
     if (Fx40_FOUND)
       list (APPEND OF_VERSIONS Fx40)
+    endif()
+    if (Fx41_FOUND)
+      list (APPEND OF_VERSIONS Fx41)
     endif()
     if (OF21x_FOUND)
       list (APPEND OF_VERSIONS OF21x)
@@ -280,6 +284,15 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
       ) 
+    endif()
+    if (${_ofvers} STREQUAL "Fx41")
+      setup_exe_target_Fx41(
+        ${PRJ_NAME}${_ofvers}
+        "${sources}"
+        "${PRJ_NAME}"
+        "${${PRJ_NAME}_INCLUDE_DIRS}"
+        "${${PRJ_NAME}_LIBRARIES}"
+      )
     endif()
     if (${_ofvers} STREQUAL "OF21x")
       setup_exe_target_OF21x(
@@ -438,6 +451,15 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
       ) 
+    endif()
+    if (${_ofvers} STREQUAL "Fx41")
+      setup_lib_target_Fx41(
+        ${PRJ_NAME}${_ofvers}
+        "${sources}"
+        "${PRJ_NAME}"
+        "${${PRJ_NAME}_INCLUDE_DIRS}"
+        "${${PRJ_NAME}_LIBRARIES}"
+      )
     endif()
     if (${_ofvers} STREQUAL "OF21x")
       setup_lib_target_OF21x(

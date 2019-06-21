@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 
     wordRe patchRegex(IStringStream( UNIOF_ADDARG(args,0) )());
 
-#ifdef OF16ext
+#if defined(OF16ext)&& !defined(Fx41)
             wordList
 #else
             wordReList

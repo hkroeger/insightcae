@@ -22,7 +22,7 @@
 #include "OFstream.H"
 #include "dictionary.H"
 #include "dlLibraryTable.H"
-#if (defined(Fx40)||defined(Fx32))
+#if (defined(Fx41)||defined(Fx40)||defined(Fx32))
 #include "foamTime.H"
 #else
 #include "Time.H"
@@ -334,7 +334,7 @@ void Foam::twoPointCorrelation::combineSampledSets
                 samplePts.name(),
                 samplePts.axis(),
                 List<point>(UIndirectList<point>(allPts, indexSets[setI]))
-#ifndef OF16ext
+#if (!defined(OF16ext) || defined(Fx41))
 		,
                 allCurveDist
 #endif
@@ -364,7 +364,7 @@ RTYPE Foam::twoPointCorrelation::execute()
 	  
 	  const volVectorField& U = obr_.lookupObject<volVectorField>("U");
 	  const volVectorField& Umean = obr_.lookupObject<volVectorField>("UMean");
-	  volVectorField uPrime = U-Umean;
+          volVectorField uPrime ( U-Umean );
 
 	  autoPtr<OFstream> dbgFile;
 	  if (debug && Pstream::master())

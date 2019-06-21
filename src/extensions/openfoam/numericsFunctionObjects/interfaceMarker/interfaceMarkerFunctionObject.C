@@ -152,7 +152,7 @@ bool Foam::interfaceMarkerFunctionObject::start()
 
 bool Foam::interfaceMarkerFunctionObject::execute
 (
-#if not (defined(OF16ext)||defined(OFdev)||defined(OFplus)||defined(OFesi1806))
+#if not (defined(OF16ext)||defined(OFdev)||defined(OFplus)||defined(OFesi1806))||defined(Fx41)
   bool
 #endif
 )
@@ -172,7 +172,7 @@ bool Foam::interfaceMarkerFunctionObject::read(const dictionary& dict)
     return false;
 }
 
-#if !defined(OF16ext) && !defined(OF21x)
+#if !defined(OF16ext) && !defined(OF21x) || defined(Fx41)
 
           //- Update for changes of mesh
 void Foam::interfaceMarkerFunctionObject::updateMesh(const mapPolyMesh& mpm)
@@ -180,7 +180,13 @@ void Foam::interfaceMarkerFunctionObject::updateMesh(const mapPolyMesh& mpm)
 }
 
         //- Update for changes of mesh
-void Foam::interfaceMarkerFunctionObject::movePoints(const polyMesh& mesh)
+void Foam::interfaceMarkerFunctionObject::movePoints(
+    #if defined(Fx41)
+            const pointField&
+    #else
+            const polyMesh& mesh
+    #endif
+)
 {
 }
 #endif

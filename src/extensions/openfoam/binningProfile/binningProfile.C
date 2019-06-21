@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
       samplePatches =
 	mesh.boundaryMesh().patchSet
 	(
-#ifdef OF16ext
+#if defined(OF16ext)&&!defined(Fx41)
 	  wordList
 #else
 	  wordReList

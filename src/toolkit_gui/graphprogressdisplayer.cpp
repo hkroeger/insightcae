@@ -27,6 +27,7 @@
 
 #include <QCoreApplication>
 #include <QTimer>
+#include <QThread>
 
 #include "qwt_scale_engine.h"
 #include "qwt_plot_grid.h"
@@ -145,7 +146,12 @@ void GraphProgressChart::checkForUpdate()
 GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
 : QTabWidget(parent)
 {
-  connect(this, &GraphProgressDisplayer::createChart, this, &GraphProgressDisplayer::onCreateChart, Qt::BlockingQueuedConnection);
+  connect
+      (
+        this, &GraphProgressDisplayer::createChart,
+        this, &GraphProgressDisplayer::onCreateChart,
+        Qt::BlockingQueuedConnection
+      );
 }
 
 GraphProgressDisplayer::~GraphProgressDisplayer()
@@ -177,7 +183,14 @@ GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& 
   decltype(charts_)::iterator c;
   if ( (c=charts_.find(name))==charts_.end())
   {
-    emit createChart(log, name); // create in GUI thread
+    if (QThread::currentThread() != this->thread())
+    {
+      emit createChart(log, name); // create in GUI thread
+    }
+    else
+    {
+      onCreateChart(log, name); // we are in GUI thread, simply call
+    }
 //    GraphProgressChart* c=new GraphProgressChart(log, this);
 //    addTab(c, QString::fromStdString(name));
 //    charts_[name]=c;

@@ -681,6 +681,9 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             }
             else if (const auto *vf = boost::get<Parameters::flowrate_volumetric_type>(&p.flowrate))
             {
+              if (OFversion()<170)
+                BC["flowRate"]=vf->value;
+              else
                 BC["volumetricFlowRate"]=vf->value;
             }
             BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );

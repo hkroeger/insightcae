@@ -462,7 +462,7 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
   }
   else if (fieldname == "nut")
   {
-    if (OFversion()>=170)
+    if (OFversion()>=164)
     {
       if (roughness_z0>0.)
       {

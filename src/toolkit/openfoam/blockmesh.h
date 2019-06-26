@@ -99,7 +99,7 @@ public:
    */
   void clear();
   
-  Patch* transformed(const arma::mat& tm, bool inv=false) const;
+  Patch* transformed(const arma::mat& tm, bool inv=false, const arma::mat trans=vec3(0,0,0) ) const;
   virtual Patch* clone() const;
 
   inline const FaceList& faces() const { return faces_; }
@@ -171,7 +171,7 @@ public:
   std::vector<OFDictData::data>
   bmdEntry(const PointMap& allPoints, int OFversion) const;
 
-  Block* transformed(const arma::mat& tm, bool inv=false) const;
+  Block* transformed(const arma::mat& tm, bool inv=false, const arma::mat trans=vec3(0,0,0)) const;
   virtual Block* clone() const;
   
   inline int nCells() const
@@ -283,7 +283,7 @@ public:
 
   virtual void registerPoints(blockMesh& bmd) const;
   
-  virtual Edge* transformed(const arma::mat& tm) const =0;
+  virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const =0;
   virtual Edge* clone() const =0;
 
 };
@@ -302,7 +302,7 @@ public:
 
   virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
 
-  virtual Edge* transformed(const arma::mat& tm) const;
+  virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const;
   virtual Edge* clone() const;
 };
 
@@ -326,7 +326,7 @@ public:
     
     virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
 
-    virtual Edge* transformed(const arma::mat& tm) const;
+    virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const;
     virtual Edge* clone() const;
 };
 
@@ -408,8 +408,10 @@ public:
 
   virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
 
-  virtual Edge* transformed(const arma::mat& tm) const;
+  virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const;
   virtual Edge* clone() const;
+
+  PointList allPoints() const;
 };
 
 /*
@@ -596,6 +598,8 @@ public:
   
   OFDictData::dict& getBlockMeshDict(insight::OFdicts& dictionaries) const;
   virtual void addIntoDictionaries(insight::OFdicts& dictionaries) const;
+
+  void writeVTK(const boost::filesystem::path& fn) const;
   
   static std::string category() { return "Meshing"; }
 };

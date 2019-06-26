@@ -21,6 +21,8 @@
 
 #include "blockmesh.h"
 
+#include "base/vtktools.h"
+
 using namespace std;
 using namespace boost::assign;
 using namespace arma;
@@ -127,13 +129,13 @@ inv_(inv)
 Block::~Block()
 {}
 
-Block* Block::transformed(const arma::mat& tm, bool inv) const
+Block* Block::transformed(const arma::mat& tm, bool inv, const arma::mat trans) const
 {
   PointList p2;
   std::cout<<"#corners="<<corners_.size()<<std::endl;
   for ( const Point& p: corners_ )
   {
-    p2 += tm*p;
+    p2 += tm*p+trans;
   }
   return new Block
   (
@@ -581,9 +583,9 @@ ArcEdge::bmdEntry(const PointMap& allPoints, int OFversion) const
 }
 
 
-Edge* ArcEdge::transformed(const arma::mat& tm) const
+Edge* ArcEdge::transformed(const arma::mat& tm, const arma::mat trans) const
 {
-  return new ArcEdge(tm*c0_, tm*c1_, tm*midpoint_);
+  return new ArcEdge(tm*c0_+trans, tm*c1_+trans, tm*midpoint_+trans);
 }
 
 Edge* ArcEdge::clone() const
@@ -618,7 +620,7 @@ EllipseEdge::bmdEntry(const PointMap& allPoints, int OFversion) const
   return l;
 }
 
-Edge* EllipseEdge::transformed(const arma::mat& tm) const
+Edge* EllipseEdge::transformed(const arma::mat& tm, const arma::mat trans) const
 {
   throw insight::Exception("Not implemented!");
 }
@@ -703,6 +705,17 @@ SplineEdge::SplineEdge(const PointList& points, string splinekeyword)
   splinekeyword_(splinekeyword)
 {}
 
+
+PointList SplineEdge::allPoints() const
+{
+  PointList ap;
+  ap.push_back(c0_);
+  copy(intermediatepoints_.begin(), intermediatepoints_.end(), std::back_inserter(ap));
+  ap.push_back(c1_);
+  return ap;
+}
+
+
 std::vector<OFDictData::data> SplineEdge::bmdEntry(const PointMap& allPoints, int OFversion) const
 {
   std::vector<OFDictData::data> l;
@@ -726,15 +739,15 @@ std::vector<OFDictData::data> SplineEdge::bmdEntry(const PointMap& allPoints, in
   return l;
 };
 
-Edge* SplineEdge::transformed(const arma::mat& tm) const
+Edge* SplineEdge::transformed(const arma::mat& tm, const arma::mat trans) const
 {
   PointList pl;
-  pl+=tm*c0_;
+  pl+=tm*c0_+trans;
   for (const Point& p: intermediatepoints_)
   {
-    pl+=tm*p;
+    pl+=tm*p+trans;
   }
-  pl+=tm*c1_;
+  pl+=tm*c1_+trans;
   return new SplineEdge(pl, splinekeyword_);
 }
 
@@ -796,7 +809,7 @@ void Patch::clear()
 }
 
 
-Patch* Patch::transformed(const arma::mat& tm, bool inv) const
+Patch* Patch::transformed(const arma::mat& tm, bool inv, const arma::mat trans) const
 {
   std::auto_ptr<Patch> np(new Patch(typ_));
   for ( const PointList& pl: faces_)
@@ -806,14 +819,14 @@ Patch* Patch::transformed(const arma::mat& tm, bool inv) const
     {
       for (PointList::const_reverse_iterator it=pl.rbegin(); it!=pl.rend(); it++)
       {
-	npl.push_back( tm * (*it) );
+        npl.push_back( tm * (*it) +trans );
       }
     }
     else
     {
       for (PointList::const_iterator it=pl.begin(); it!=pl.end(); it++)
       {
-	npl.push_back( tm * (*it) );
+        npl.push_back( tm * (*it) +trans);
       }
     }
     np->addFace(npl);
@@ -1270,6 +1283,38 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
   OFDictData::list mppl;
   blockMeshDict["mergePatchPairs"]=mppl;
 
+}
+
+
+void blockMesh::writeVTK(const boost::filesystem::path& fn) const
+{
+  PointMap pts(allPoints_);
+  numberVertices(pts);
+
+  vtk::vtkUnstructuredGridModel m;
+  double x[allPoints_.size()], y[allPoints_.size()], z[allPoints_.size()];
+  int j=0;
+  for (PointMap::const_iterator i=allPoints_.begin(); i!=allPoints_.end(); i++)
+   {
+     x[j]=i->first[0];
+     y[j]=i->first[1];
+     z[j]=i->first[2];
+     j++;
+   }
+  m.setPoints(allPoints_.size(), x, y, z);
+
+  for (boost::ptr_vector<Block>::const_iterator i=allBlocks_.begin(); i!=allBlocks_.end(); i++)
+   {
+     std::vector<OFDictData::data> l = i->bmdEntry(pts, OFversion());
+     auto idx = boost::get<OFDictData::list&>(l[1]);
+     std::vector<int> pi;
+     std::transform(idx.begin(), idx.end(), std::back_inserter(pi),
+                    [](const OFDictData::list::value_type& i) { return boost::get<int>(i); });
+     m.appendCell( 8, pi.data(), 12 ); // 12 = HEXAHEDRON
+   }
+
+  std::ofstream os(fn.c_str());
+  m.writeLegacyFile(os);
 }
 
 }

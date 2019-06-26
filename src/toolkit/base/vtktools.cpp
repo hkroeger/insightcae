@@ -103,6 +103,54 @@ void vtkModel::createLegacyFile(const boost::filesystem::path& fn, bool create_d
     f.close();
 }
 
+
+
+
+vtkUnstructuredGridModel::vtkUnstructuredGridModel()
+{
+}
+
+void vtkUnstructuredGridModel::appendCell(int nc, const int ci[], int type)
+{
+  cells_.push_back( Cell(Polygon(ci, ci+nc), type) );
+}
+
+int vtkUnstructuredGridModel::nCellPts() const
+{
+  int n=0;
+  for (const Cell& c: cells_)
+  {
+    n+=std::get<0>(c).size()+1;
+  }
+  return n;
+}
+
+void vtkUnstructuredGridModel::writeLegacyFile(std::ostream& os) const
+{
+  os << "# vtk DataFile Version 2.0" << endl;
+  os << "vtkUnstructuredGridModel" << endl;
+  os << "ASCII" <<endl;
+  os << "DATASET UNSTRUCTURED_GRID"<<endl;
+  writeGeometryToLegacyFile(os);
+  os<<"CELLS "<<cells_.size()<<" "<<nCellPts()<<endl;
+  for (const Cell& c: cells_)
+  {
+    const Polygon& p = std::get<0>(c);
+    os<<p.size();
+    for (const int& i: p)
+    {
+      os<<" "<<i;
+    }
+    os<<endl;
+  }
+  os<<"CELL_TYPES "<<cells_.size()<<endl;
+  for (const Cell& c: cells_)
+  {
+    os<<std::get<1>(c)<<endl;
+  }
+  writeDataToLegacyFile(os);
+}
+
 void vtkModel2d::appendCellScalarField(const std::string& name, const double s[])
 {
   cellScalarFields_[name]=ScalarField();

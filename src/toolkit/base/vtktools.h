@@ -36,6 +36,8 @@ namespace vtk {
 typedef std::vector<arma::mat> PointList;
 typedef std::vector<int> Polygon;
 typedef std::vector<Polygon> PolygonList;
+typedef std::tuple<Polygon,int> Cell;
+typedef std::vector<Cell> CellList;
 
 typedef std::vector<double> ScalarField;
 typedef std::map<std::string, ScalarField> ScalarFieldList;
@@ -58,7 +60,7 @@ public:
 
     void setPoints(int npts, const double* x, const double* y, const double* z);
     
-    void appendPolygon(int nc, const int ci[]);
+
     int nPolyPts() const;
     
     void appendPointScalarField(const std::string& name, const double v[]);
@@ -73,6 +75,22 @@ public:
     virtual void writeDataToLegacyFile(std::ostream& os) const;
     virtual void writeLegacyFile(std::ostream& os) const;
     virtual void createLegacyFile(const boost::filesystem::path& fn, bool create_dir=false) const;
+};
+
+
+
+class vtkUnstructuredGridModel
+    : public vtkModel
+{
+  CellList cells_;
+
+public:
+    vtkUnstructuredGridModel();
+
+    void appendCell(int nc, const int ci[], int type);
+    int nCellPts() const;
+
+    virtual void writeLegacyFile(std::ostream& os) const;
 };
 
 

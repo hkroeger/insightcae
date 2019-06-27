@@ -271,6 +271,9 @@ PARAMETERSET>>> MixingPlaneGGIBC Parameters
 inherits GGIBCBase::Parameters
 
 separationOffset = vector (0 0 0) "Translational transformation from this patch to the opposite one."
+stackAxisOrientation = selection ( axial radial ) axial "In which direction are the ribbons on the intermediate patch stacked."
+rotationCentre = vector (0 0 0) "Origin of rotation axis"
+rotationAxis = vector (0 0 1) "Direction of rotation axis"
 
 <<<PARAMETERSET
 */

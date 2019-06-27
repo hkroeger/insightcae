@@ -449,15 +449,26 @@ void MixingPlaneGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   OFDictData::dict csDict;
   csDict["type"]="cylindrical";
   csDict["name"]="mixingCS";
-  csDict["origin"]=OFDictData::vector3(vec3(0,0,0));
-  csDict["e1"]=OFDictData::vector3(vec3(1,0,0)); //radial
-  csDict["e3"]=OFDictData::vector3(vec3(0,0,1)); // rot axis
-  csDict["inDegrees"]=true;
+  csDict["origin"]=OFDictData::vector3(p_.rotationCentre);
+  arma::mat orthodir = arma::cross(p_.rotationAxis, vec3(1,0,0));
+  if (arma::norm(orthodir,2)<1e-6)
+    orthodir=arma::cross(p_.rotationAxis, vec3(0,1,0));
+  csDict["e1"]=OFDictData::vector3(orthodir); //radial
+  csDict["e3"]=OFDictData::vector3(p_.rotationAxis); // rot axis
+
+  if (OFversion()>=164)
+    csDict["degrees"]=false;
+  else
+    csDict["inDegrees"]=false;
+
   bndDict["coordinateSystem"]=csDict;
 
   OFDictData::dict rpDict;
   rpDict["sweepAxis"]="Theta";
-  rpDict["stackAxis"]="R"; // axial interface
+  if (p_.stackAxisOrientation==Parameters::stackAxisOrientation_type::radial)
+    rpDict["stackAxis"]="R"; // axial interface
+  else if (p_.stackAxisOrientation==Parameters::stackAxisOrientation_type::axial)
+    rpDict["stackAxis"]="Z"; // axial interface
   rpDict["discretisation"]="bothPatches";
   bndDict["ribbonPatch"]=rpDict;
 

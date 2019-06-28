@@ -52,7 +52,6 @@ void BlockMeshTemplate::addIntoDictionaries ( OFdicts& dictionaries ) const
 
 arma::mat BlockMeshTemplate::correct_trihedron(arma::mat& ex, arma::mat &ez)
 {
-  std::cout<<ex<<ez<<std::endl;
     ex /= arma::norm(ex, 2);    
     ez /= arma::norm(ez, 2);
     
@@ -67,7 +66,6 @@ arma::mat BlockMeshTemplate::correct_trihedron(arma::mat& ex, arma::mat &ez)
         );
     }
     ey /= mey;
-    std::cout<<"Corrected CS :\n EX = "<<ex<<"\n EY = "<<ey<<"\n EZ = "<<ez<<std::endl;
     return ey;
 }
 

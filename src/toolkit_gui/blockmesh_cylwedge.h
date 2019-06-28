@@ -2,6 +2,7 @@
 #define BLOCKMESHDICT_CYLWEDGE_H
 
 #include "openfoam/blockmesh_templates.h"
+#include "cadtypes.h"
 
 #include "Geom_BoundedCurve.hxx"
 #include "gp_Pnt.hxx"
@@ -14,10 +15,13 @@ namespace bmd
 {
 
 
+class blockMeshDict_CylWedge_ParameterSet_Visualizer;
 
 class blockMeshDict_CylWedge
     : public BlockMeshTemplate
 {
+  friend class blockMeshDict_CylWedge_ParameterSet_Visualizer;
+
 public:
 #include "blockmesh_cylwedge__blockMeshDict_CylWedge__Parameters.h"
 /*
@@ -77,6 +81,13 @@ mesh = set
 protected:
     Parameters p_;
 
+    arma::mat p0_, ex_, er_, ey_;
+    Handle_Geom_Curve spine_;
+
+    std::pair<double,double> limit_angles();
+    Handle_Geom_Curve spine();
+    arma::mat point_on_spine(double r);
+
 public:
     declareType ( "blockMeshDict_CylWedge" );
 
@@ -93,7 +104,20 @@ public:
 };
 
 
+class blockMeshDict_CylWedge_ParameterSet_Visualizer
+ : public ParameterSet_Visualizer
+{
+public:
+    typedef blockMeshDict_CylWedge::Parameters Parameters;
+    typedef std::map<std::string, cad::FeaturePtr> ItemList;
 
+protected:
+    ItemList items_;
+
+public:
+    virtual void update(const ParameterSet& ps);
+    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
+};
 
 
 

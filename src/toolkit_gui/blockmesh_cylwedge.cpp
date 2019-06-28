@@ -10,9 +10,15 @@
 #include "cadfeatures/importsolidmodel.h"
 #include "cadfeatures/splinecurve.h"
 #include "cadfeatures/wire.h"
+#include "cadfeatures/cylinder.h"
+#include "cadfeatures/cutaway.h"
+#include "cadfeatures/compound.h"
+#include "cadfeatures/booleansubtract.h"
 
 #include "GeomAPI_ExtremaCurveSurface.hxx"
 #include "BRepBuilderAPI_NurbsConvert.hxx"
+
+#include "qmodeltree.h"
 
 using namespace boost;
 using namespace boost::assign;
@@ -31,22 +37,44 @@ addToOpenFOAMCaseElementFactoryTable(blockMeshDict_CylWedge );
 
 blockMeshDict_CylWedge::blockMeshDict_CylWedge ( OpenFOAMCase& c, const ParameterSet& ps )
     : BlockMeshTemplate ( c ), p_ ( ps )
-{}
-
-
-void blockMeshDict_CylWedge::create_bmd()
 {
-    this->setDefaultPatch(p_.mesh.defaultPatchName);
-
-    arma::mat p0=p_.geometry.p0;
-    arma::mat ex=p_.geometry.ex;
-    arma::mat er=p_.geometry.er;
-    arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, er);
-
+  p0_=p_.geometry.p0;
+  ex_=p_.geometry.ex;
+  er_=p_.geometry.er;
+  ey_=BlockMeshTemplate::correct_trihedron(ex_, er_);
+}
 
 
+std::pair<double,double> blockMeshDict_CylWedge::limit_angles()
+{
+  std::vector<double> phi;
+  {
+    auto calc_angle = [&](const arma::mat& p) -> double
+    {
+      double y=arma::dot(p-p0_, -ey_);
+      double x=arma::dot(p-p0_, er_);
+      return std::atan2(y, x);
+    };
+
+    const int np=20;
+    for (int i=0; i<np; i++)
+    {
+      double d=p_.geometry.d + double(i)/double(np-1)*(p_.geometry.D-p_.geometry.d);
+      phi.push_back(calc_angle(point_on_spine(0.5*d)));
+    }
+  }
+  return std::pair<double,double>(
+        *std::min_element(phi.begin(), phi.end()) -0.5*p_.geometry.wedge_angle*SI::deg,
+        *std::max_element(phi.begin(), phi.end()) +0.5*p_.geometry.wedge_angle*SI::deg
+        );
+}
+
+
+Handle_Geom_Curve blockMeshDict_CylWedge::spine()
+{
+  if (spine_.IsNull())
+  {
     // Read or create spine curve
-    Handle_Geom_Curve spine;
     if (!p_.geometry.wedge_spine_curve.empty())
     {
       insight::cad::FeaturePtr wsc = insight::cad::Import::create(p_.geometry.wedge_spine_curve);
@@ -62,62 +90,75 @@ void blockMeshDict_CylWedge::create_bmd()
       TopoDS_Edge e= TopoDS::Edge(wsc->edge(*el.begin()));
 
       double t0, t1;
-      spine = BRep_Tool::Curve(e, t0, t1);
+      spine_ = BRep_Tool::Curve(e, t0, t1);
 
       // align er with beginning (inner) of spine
-      arma::mat per=vec3(spine->Value(t0));
-      arma::mat p2=vec3(spine->Value(t1));
+      arma::mat per=vec3(spine_->Value(t0));
+      arma::mat p2=vec3(spine_->Value(t1));
       auto rdist = [&](const arma::mat& p, const arma::mat& ex) -> double
       {
-        arma::mat r=p-p0;
+        arma::mat r=p-p0_;
         return arma::norm(r - arma::dot(r,ex)*ex, 2);
       };
 
-      if ( rdist(p2,p0) < rdist(per,p0) ) per=p2;
+      if ( rdist(p2,p0_) < rdist(per,p0_) ) per=p2;
 
-      er = per-p0;
-      er -= arma::dot(er,ex)*ex;
-      ey = BlockMeshTemplate::correct_trihedron(ex, er);
+      er_ = per-p0_;
+      er_ -= arma::dot(er_,ex_)*ex_;
+      ey_ = BlockMeshTemplate::correct_trihedron(ex_, er_);
     }
     else
     {
-      spine = GC_MakeSegment(
-                to_Pnt(p0 + er*p_.geometry.d*0.5),
-                to_Pnt(p0 + er*p_.geometry.D*0.5)
+      spine_ = GC_MakeSegment(
+                to_Pnt(p0_ + er_*p_.geometry.d*0.5),
+                to_Pnt(p0_ + er_*p_.geometry.D*0.5)
                 ).Value();
     }
+  }
 
+  return spine_;
+}
+
+
+arma::mat blockMeshDict_CylWedge::point_on_spine(double r)
+{
+  cout<<"r="<<r<<endl;
+  Handle_Geom_Curve sp=spine();
+
+  Handle_Geom_Surface cyl(new  Geom_CylindricalSurface(gp_Ax3(to_Pnt(p0_), to_Vec(ex_), to_Vec(er_)), r));
+  GeomAPI_IntCS isec(sp, cyl);
+  cout<<isec.NbPoints()<<endl;
+  if (isec.NbPoints()<1)
+    throw insight::Exception(boost::str(boost::format(
+                                          "No intersection point with spine found for r=%g!"
+                                          ) % r));
+  std::map<double,arma::mat> res;
+  for (int i=0;i<isec.NbPoints();i++)
+  {
+    arma::mat p=vec3(isec.Point(i+1));
+    arma::mat r=p-p0_;
+    double odist = arma::norm(r-std::max<double>(0.,dot(r, er_))*er_, 2);
+//        cout<<odist<<" => "<<p<<endl;
+    res[odist]=p;
+  }
+  auto p_sel = res.begin()->second;
+
+  p_sel -= dot(p_sel-p0_, ex_)*ex_;
+  return p_sel;
+};
+
+void blockMeshDict_CylWedge::create_bmd()
+{
+    this->setDefaultPatch(p_.mesh.defaultPatchName);
 
 
     // helper function
-    auto point_on_spine = [&](double r) {
-      cout<<"r="<<r<<endl;
-      Handle_Geom_Surface cyl(new  Geom_CylindricalSurface(gp_Ax3(to_Pnt(p0), to_Vec(ex), to_Vec(er)), r));
-      GeomAPI_IntCS isec(spine, cyl);
-      cout<<isec.NbPoints()<<endl;
-      if (isec.NbPoints()<1)
-        throw insight::Exception(boost::str(boost::format(
-                                              "No intersection point with spine found for r=%g!"
-                                              ) % r));
-      std::map<double,arma::mat> res;
-      for (int i=0;i<isec.NbPoints();i++)
-      {
-        arma::mat p=vec3(isec.Point(i+1));
-        arma::mat r=p-p0;
-        double odist = arma::norm(r-std::max<double>(0.,dot(r, er))*er, 2);
-//        cout<<odist<<" => "<<p<<endl;
-        res[odist]=p;
-      }
-      auto p_sel = res.begin()->second;
 
-      p_sel -= dot(p_sel-p0, ex)*ex;
-      return p_sel;
-    };
 
 
 
     double rc=rCore();
-    arma::mat vL=p_.geometry.L*ex;
+    arma::mat vL=p_.geometry.L*ex_;
 
 //     std::cout<<pts[0]<<pts[1]<<std::endl;
     Patch* base=nullptr;
@@ -164,7 +205,7 @@ void blockMeshDict_CylWedge::create_bmd()
       c0=TopoDS::Edge(spc->shape());
     }
 
-    gp_Ax1 ax(to_Pnt(p0), to_Vec(ex));
+    gp_Ax1 ax(to_Pnt(p0_), to_Vec(ex_));
     gp_Trsf trm; trm.SetRotation(ax, -0.5*p_.geometry.wedge_angle*SI::deg);
     gp_Trsf trp; trp.SetRotation(ax, 0.5*p_.geometry.wedge_angle*SI::deg);
     gp_Trsf tru; tru.SetTranslation(to_Vec(vL));
@@ -187,52 +228,10 @@ void blockMeshDict_CylWedge::create_bmd()
       stlwriter.Write(cyclp, "cyclp.stl");
     }
 
-    std::vector<double> phi;
-//    double phim, phip;
-    {
-      auto calc_angle = [&](const arma::mat& p) -> double
-      {
-        double y=arma::dot(p-p0, -ey);
-        double x=arma::dot(p-p0, er);
-        return std::atan2(y, x);
-      };
 
-//      struct Obj : public Objective1D {
-
-//        double sign=1.;
-//        std::function<arma::mat(double)> point;
-//        std::function<double(const arma::mat& p)> calc_angle;
-
-//        virtual double operator()(double d) const
-//        {
-//          double phi=calc_angle(point(0.5*d));
-//          cout<<">> " << d<<" => "<<phi<<endl;
-//          return sign*phi;
-//        }
-//      } objExtrAngle;
-
-//      objExtrAngle.point=point_on_spine;
-//      objExtrAngle.calc_angle=calc_angle;
-
-//      objExtrAngle.sign=1.0;
-//      phim=nonlinearMinimize1D(objExtrAngle, p_.geometry.d, p_.geometry.D) -0.5*p_.geometry.wedge_angle*SI::deg;
-//      objExtrAngle.sign=-1.0;
-//      phip=nonlinearMinimize1D(objExtrAngle, p_.geometry.d, p_.geometry.D) +0.5*p_.geometry.wedge_angle*SI::deg;
-      const int np=20;
-      for (int i=0; i<np; i++)
-      {
-        double d=p_.geometry.d + double(i)/double(np-1)*(p_.geometry.D-p_.geometry.d);
-        phi.push_back(calc_angle(point_on_spine(0.5*d)));
-      }
-
-//      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::FirstVertex(c0m)))));
-//      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::LastVertex(c0m)))));
-//      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::FirstVertex(c0p)))));
-//      phi.push_back(calc_angle(vec3(BRep_Tool::Pnt(TopExp::LastVertex(c0p)))));
-    }
-    double phim=*std::min_element(phi.begin(), phi.end()) -0.5*p_.geometry.wedge_angle*SI::deg;
-    double phip=*std::max_element(phi.begin(), phi.end()) +0.5*p_.geometry.wedge_angle*SI::deg;
-
+    auto phi_lim = limit_angles();
+    double phim=phi_lim.first;
+    double phip=phi_lim.second;
     cout<<"phim="<<phim<<", phip="<<phip<<endl;
 
 
@@ -266,24 +265,24 @@ void blockMeshDict_CylWedge::create_bmd()
       nu2=std::max(1, int(std::ceil(L_u2/delta)));
     }
 
-    arma::mat rp=rotMatrix ( phip /*0.5*p_.geometry.wedge_angle*SI::deg*/, ex );
-    arma::mat rm=rotMatrix ( phim /*-0.5*p_.geometry.wedge_angle*SI::deg*/, ex );
+    arma::mat rp=rotMatrix ( phip /*0.5*p_.geometry.wedge_angle*SI::deg*/, ex_ );
+    arma::mat rm=rotMatrix ( phim /*-0.5*p_.geometry.wedge_angle*SI::deg*/, ex_ );
 
     arma::mat p_rc, p_i, p_o;
     if (p_.geometry.d < 1e-10)
     {
       // build mesh with core block
 
-      p_i=p0+0.9*rc*er; //point_on_spine(0.9*rc);
-      p_rc=p0+rc*er; //point_on_spine(rc);
+      p_i=p0_+0.9*rc*er_; //point_on_spine(0.9*rc);
+      p_rc=p0_+rc*er_; //point_on_spine(rc);
       // core block
       {
 
           Block& bl = this->addBlock
                       (
                           new Block ( P_8 (
-                                          p0, rm*p_i, p_rc, rp*p_i,
-                                          p0+vL, rm*p_i+vL, p_rc+vL, rp*p_i+vL
+                                          p0_, rm*p_i, p_rc, rp*p_i,
+                                          p0_+vL, rm*p_i+vL, p_rc+vL, rp*p_i+vL
                                       ),
                                       nu1, nu2, nx
                                     )
@@ -295,16 +294,16 @@ void blockMeshDict_CylWedge::create_bmd()
               top->addFace ( bl.face ( "4567" ) );
           }
           if (pcyclm) pcyclm->addFace(bl.face("0154"));
-          if (pcyclm) pcyclm->addFace(bl.face("0473"));
+          if (pcyclp) pcyclp->addFace(bl.face("0473"));
       }
     }
     else
     {
-      p_i=p0+0.5*p_.geometry.d*er; //point_on_spine(0.5*p_.geometry.d);
+      p_i=p0_+0.5*p_.geometry.d*er_; //point_on_spine(0.5*p_.geometry.d);
       p_rc=p_i;
     }
 
-    p_o=p0+0.5*p_.geometry.D*er; //point_on_spine(0.5*p_.geometry.D);
+    p_o=p0_+0.5*p_.geometry.D*er_; //point_on_spine(0.5*p_.geometry.D);
 
     {
         Block& bl = this->addBlock
@@ -361,13 +360,13 @@ void blockMeshDict_CylWedge::create_bmd()
 
     for (auto vl: {vec3(0,0,0), vL})
     {
-      this->addEdge ( new ArcEdge ( rm*p_o +vl, p_o +vl, rotMatrix(-0.25*p_.geometry.wedge_angle*SI::deg, ex)*p_o +vl ) );
-      this->addEdge ( new ArcEdge ( p_o +vl, rp*p_o +vl, rotMatrix(0.25*p_.geometry.wedge_angle*SI::deg, ex)*p_o +vl ) );
+      this->addEdge ( new ArcEdge ( rm*p_o +vl, p_o +vl, rotMatrix(-0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_o +vl ) );
+      this->addEdge ( new ArcEdge ( p_o +vl, rp*p_o +vl, rotMatrix(0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_o +vl ) );
 
       if (! (p_.geometry.d < 1e-10))
       {
-        this->addEdge ( new ArcEdge ( rm*p_i +vl, p_i +vl, rotMatrix(-0.25*p_.geometry.wedge_angle*SI::deg, ex)*p_i +vl ) );
-        this->addEdge ( new ArcEdge ( p_i +vl, rp*p_i +vl, rotMatrix(0.25*p_.geometry.wedge_angle*SI::deg, ex)*p_i +vl ) );
+        this->addEdge ( new ArcEdge ( rm*p_i +vl, p_i +vl, rotMatrix(-0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_i +vl ) );
+        this->addEdge ( new ArcEdge ( p_i +vl, rp*p_i +vl, rotMatrix(0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_i +vl ) );
       }
     }
 
@@ -386,7 +385,60 @@ double blockMeshDict_CylWedge::rCore() const
 
 
 
+ParameterSet_VisualizerPtr blockMeshDict_CylWedge_visualizer()
+{
+    return ParameterSet_VisualizerPtr( new blockMeshDict_CylWedge_ParameterSet_Visualizer );
+}
 
+addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_CylWedge, visualizer, blockMeshDict_CylWedge_visualizer);
+
+
+void blockMeshDict_CylWedge_ParameterSet_Visualizer::update(const ParameterSet& ps)
+{
+    ParameterSet_Visualizer::update(ps);
+}
+
+void blockMeshDict_CylWedge_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt)
+{
+
+    Parameters p(ps_);
+
+    insight::cad::cache.initRebuild();
+
+    OpenFOAMCase oc(OFEs::getCurrentOrPreferred());
+    blockMeshDict_CylWedge bcw( oc, ps_ );
+
+
+    auto dom =
+      cad::Cutaway::create(
+       cad::Cutaway::create(
+        cad::BooleanSubtract::create(
+          cad::Cylinder::create(
+                   cad::matconst(p.geometry.p0),
+                   cad::matconst(p.geometry.L*bcw.ex_),
+                   cad::scalarconst(p.geometry.D),
+                   true,
+                   false
+                   ),
+          cad::Cylinder::create(
+                   cad::matconst(p.geometry.p0),
+                   cad::matconst(p.geometry.L*bcw.ex_),
+                   cad::scalarconst(p.geometry.d),
+                   true,
+                   false
+                   )
+            ),
+          cad::matconst(p.geometry.p0), cad::matconst( rotMatrix(0.5*p.geometry.wedge_angle*SI::deg, bcw.ex_)*-bcw.ey_ )
+         ),
+        cad::matconst(p.geometry.p0), cad::matconst( rotMatrix(-0.5*p.geometry.wedge_angle*SI::deg, bcw.ex_)*bcw.ey_ )
+       );
+
+    mt->onAddFeature( "blockMeshDict_CylWedge",
+                        cad::Compound::create(cad::CompoundFeatureList({dom})),
+                        true );
+
+    insight::cad::cache.finishRebuild();
+}
 
 
 

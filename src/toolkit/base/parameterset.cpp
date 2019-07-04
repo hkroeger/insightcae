@@ -36,6 +36,8 @@ using namespace rapidxml;
 namespace insight
 {
 
+
+
 ParameterSet::ParameterSet()
 {
 }
@@ -396,7 +398,7 @@ void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_docume
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name);
+  xml_node<>* child = findNode(node, name, type());
   if (child)
   {
     ParameterSet::readFromNode(doc, *child, inputfilepath);
@@ -527,7 +529,7 @@ void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name);
+  xml_node<>* child = findNode(node, name, type());
   if (child)
   {
     selection_=child->first_attribute("value")->value();

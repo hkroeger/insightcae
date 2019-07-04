@@ -65,6 +65,7 @@ std::string base64_encode(const boost::filesystem::path& f);
 std::string base64_decode(const std::string& s);
 
 
+rapidxml::xml_node<> *findNode(rapidxml::xml_node<>& father, const std::string& name, const std::string& typeName);
 
 
 void writeMatToXMLNode(const arma::mat& matrix, rapidxml::xml_document< char >& doc, rapidxml::xml_node< char >& node);
@@ -129,7 +130,7 @@ public:
         boost::filesystem::path inputfilepath
     ) =0;
 
-    rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
+//    rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
     virtual Parameter* clone() const =0;
 
     /**
@@ -266,7 +267,7 @@ public:
     {
 //        std::cout<<"Reading simple "<<name<< std::endl;
         using namespace rapidxml;
-        xml_node<>* child = findNode ( node, name );
+        xml_node<>* child = findNode ( node, name, type() );
         if ( child ) {
             stringToValue ( child->first_attribute ( "value" )->value(), value_ );
         }

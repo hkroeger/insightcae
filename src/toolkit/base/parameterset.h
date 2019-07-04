@@ -44,7 +44,8 @@ class QIcon;
 
 namespace insight {
   
-  
+
+
 class SubsetParameter;
 class SelectableSubsetParameter;
 

@@ -188,6 +188,13 @@ public:
         rapidxml::xml_node<>& node
     ) const;
 
+//    virtual void readFromNode
+//    (
+//        const std::string& name,
+//        rapidxml::xml_document<>& doc,
+//        rapidxml::xml_node<>& node
+//    );
+
     virtual ResultElementPtr clone() const;
 };
 
@@ -249,6 +256,20 @@ public:
                                   ) );
 
         return child;
+    }
+
+    virtual void readFromNode
+    (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node
+    )
+    {
+      using namespace rapidxml;
+//      xml_node<>* child = findNode ( node, name, type() );
+//      if ( child ) {
+          stringToValue ( node.first_attribute ( "value" )->value(), value_ );
+//      }
     }
 
     inline operator const T& () const
@@ -647,6 +668,21 @@ public:
         const std::string *date = NULL
     );
 
+
+    /* =======================================================================================================*/
+    /* =======================================================================================================*/
+    /* =======================================================================================================*/
+    //   Required, because ResultSet is inserted as subsection into some results,
+    // consider removing but will break backwards compat..
+    ResultSet ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit="" );
+    /**
+     * restore the result elements from the given node
+     */
+    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node );
+    /* =======================================================================================================*/
+    /* =======================================================================================================*/
+    /* =======================================================================================================*/
+
     ResultSet ( const ResultSet& other );
     virtual ~ResultSet();
 
@@ -686,6 +722,7 @@ public:
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node
     ) const;
+
 
 
 

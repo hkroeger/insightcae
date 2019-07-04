@@ -97,7 +97,21 @@ namespace insight
 {
   
     
-    
+rapidxml::xml_node<> *findNode(rapidxml::xml_node<>& father, const std::string& name, const std::string& typeName)
+{
+  for (xml_node<> *child = father.first_node(typeName.c_str()); child; child = child->next_sibling(typeName.c_str()))
+  {
+    if (child->first_attribute("name")->value() == name)
+    {
+      return child;
+    }
+  }
+
+  throw insight::Exception("No xml node found with type="+typeName+" and name="+name);
+
+  return nullptr;
+}
+
     
 const std::string base64_padding[] = {"", "==","="};
 
@@ -289,21 +303,6 @@ addToFactoryTable(Parameter, StringParameter);
 
 
 
-rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const std::string& name)
-{
-  for (xml_node<> *child = father.first_node(type().c_str()); child; child = child->next_sibling(type().c_str()))
-  {
-    if (child->first_attribute("name")->value() == name)
-    {
-      return child;
-    }
-  }
- 
-  cout<<"Warning: No xml node found with type="+type()+" and name="+name<<", default value is used."<<endl;
-  //throw insight::Exception("No xml node found with type="+type()+" and name="+name);
-  return nullptr;
-}
-
 
 defineType(PathParameter);
 addToFactoryTable(Parameter, PathParameter);
@@ -470,7 +469,7 @@ void PathParameter::readFromNode
 )
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name);
+  xml_node<>* child = findNode(node, name, type());
   if (child)
   {
     boost::filesystem::path abspath(child->first_attribute("value")->value());
@@ -549,7 +548,7 @@ void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_doc
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name);
+  xml_node<>* child = findNode(node, name, type());
   if (child)
     value_=boost::filesystem::path(child->first_attribute("value")->value());
 }
@@ -626,7 +625,7 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name);
+  xml_node<>* child = findNode(node, name, type());
   if (child)
   {
     //value_=boost::lexical_cast<int>(child->first_attribute("value")->value());
@@ -742,7 +741,7 @@ void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_d
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name);
+  xml_node<>* child = findNode(node, name, type());
   if (child)
   {
     values_.clear();
@@ -847,7 +846,7 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name);
+  xml_node<>* child = findNode(node, name, type());
 
   std::vector<std::pair<double, ParameterPtr> > readvalues;
 
@@ -976,7 +975,7 @@ xml_node< char >* MatrixParameter::appendToNode(const string& name, xml_document
 void MatrixParameter::readFromNode(const string& name, xml_document< char >& doc, xml_node< char >& node, path inputfilepath)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name);
+  xml_node<>* child = findNode(node, name, type());
   if (child)
   {
     string value_str=child->value();

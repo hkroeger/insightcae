@@ -165,9 +165,9 @@ rapidxml::xml_node< char >* ResultElement::appendToNode
 }
 
 
-void ResultElement::readFromNode ( const string& name, rapidxml::xml_document< char >& doc, rapidxml::xml_node< char >& node )
+void ResultElement::readFromNode ( const string& name, rapidxml::xml_document< char >&, rapidxml::xml_node< char >& )
 {
-
+  insight::Warning("Not implemented: restoring result from XML file is not implemented for result element of type "+type()+" (appeared in node "+name+")");
 }
 
 
@@ -944,7 +944,7 @@ ResultElementPtr polynomialFitResult
   
 
 defineType ( ResultSet );
-
+addToFactoryTable ( ResultElement, ResultSet );
 
 ResultSet::ResultSet
 (
@@ -982,6 +982,15 @@ ResultSet::ResultSet
             }
         }
     }
+}
+
+ResultSet::ResultSet ( const std::string& shortdesc, const std::string& longdesc, const std::string& )
+  : ResultSet( ParameterSet(), shortdesc, longdesc )
+{}
+
+void ResultSet::readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node )
+{
+  ResultElementCollection::readFromNode(doc, node);
 }
 
 

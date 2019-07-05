@@ -34,7 +34,7 @@
 
 Handle_AIS_InteractiveObject QFeatureItem::createAIS(AIS_InteractiveContext&)
 {
-  Handle_AIS_InteractiveObject ais( /*new AIS_Shape(*smp_)*/ smp_->buildVisualization() );
+  Handle_AIS_InteractiveObject ais( smp_->buildVisualization() );
 
   Handle_Standard_Transient owner_container(new PointerTransient(this));
   ais->SetOwner(owner_container);

@@ -2063,7 +2063,7 @@ arma::mat Feature::getDatumVector(const std::string& name) const
   }
 }
 
-#undef GMSH_NUMBERING_V1
+#define GMSH_NUMBERING_V1
 #undef GMSH_DEBUG
 
 void Feature::nameFeatures()

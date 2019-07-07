@@ -5,7 +5,10 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-unzip TARBALLS/qwt-6.1.3.zip && cd qwt-6.1.3 && (
+#unzip TARBALLS/qwt-6.1.3.zip && cd qwt-6.1.3 && (
+DIR=qwt-6.1.3
+[ -d $DIR ] || ( wget -q -O- https://sourceforge.net/projects/qwt/files/qwt/6.1.3/qwt-6.1.3.tar.bz2 | tar xj )
+cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
@@ -17,7 +20,8 @@ unzip TARBALLS/qwt-6.1.3.zip && cd qwt-6.1.3 && (
   cp qwtfunctions.pri qwtfunctions.pri.bak
   sed -e "s% *LIBRARY_NAME *= *\$\$1%LIBRARY_NAME = \$\$1-qt5%g" qwtfunctions.pri.bak > qwtfunctions.pri
  fi
- QMAKEQT5=qmake
+ #QMAKEQT5=qmake
+ QMAKEQT5=qmake-qt5
  #QMAKEQT4=qmake-qt4
  #if [ ! $(which $QMAKEQT4) ]; then QMAKEQT4=qmake; fi
  $QMAKEQT5 qwt.pro

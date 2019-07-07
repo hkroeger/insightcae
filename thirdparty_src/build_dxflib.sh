@@ -7,7 +7,7 @@ fi
 
 #tar xzf TARBALLS/dxflib-2.7.5.tar.gz && cd dxflib-2.7.5 && (
 DIR=dxflib-2.7.5
-[ -d $DIR ] || ( git clone ssh://gogs@rostock.silentdynamics.de:222/silentdynamics/caetool-dxflib.git $DIR )
+[ -d $DIR ] || ( git clone https://${GIT_CREDENTIALS}rostock.silentdynamics.de/git/silentdynamics/caetool-dxflib.git $DIR )
 cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty

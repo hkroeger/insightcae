@@ -22,36 +22,25 @@ License
     along with OpenFOAM; if not, write to the Free Software Foundation,
     Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
-Class
-    fixedMeanValueFvPatchField
-
 Description
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef fixedMeanValueFvPatchFieldsFwd_H
-#define fixedMeanValueFvPatchFieldsFwd_H
-
-#include "fvPatchField.H"
-#include "fieldTypes.H"
+#include "timeVaryingFixedMeanValueFvPatchFields.H"
+#include "addToRunTimeSelectionTable.H"
+#include "volFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-template<class Type> class fixedMeanValueFvPatchField;
-
-makePatchTypeFieldTypedefs(fixedMeanValue)
+makePatchFields(timeVaryingFixedMeanValue);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#endif
 
 // ************************************************************************* //

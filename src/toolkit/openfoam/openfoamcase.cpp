@@ -475,6 +475,8 @@ void SolverOutputAnalyzer::update(const string& line)
     boost::regex dt_pattern(" *deltaT = (.+)");
     boost::regex exec_time_pattern(" *ExecutionTime = (.+) s  ClockTime = (.+) s");
 
+    try
+    {
         if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) && !curforcename_.empty() )
         {
             curforcesection_=2;
@@ -657,6 +659,11 @@ void SolverOutputAnalyzer::update(const string& line)
             curProgVars_[pre_conterr+"global"] = lexical_cast<double>(match[2]);
             curProgVars_[pre_conterr+"cumulative"] = lexical_cast<double>(match[3]);
         }
+    }
+    catch (...)
+    {
+      // ignore errors
+    }
 }
 
 bool SolverOutputAnalyzer::stopRun() const 

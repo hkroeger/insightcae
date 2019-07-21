@@ -74,6 +74,15 @@ TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir)
 }
 
 
+boost::filesystem::path getLatestTimeDirectory(const boost::filesystem::path& dir)
+{
+  auto tds = listTimeDirectories(dir);
+  if (tds.size()<1)
+    throw insight::Exception("No time directories present in case "+dir.string());
+  return tds.rbegin()->second;
+}
+
+
 std::string getOpenFOAMComponentLabel(int i, int ncmpt)
 {
     std::string cmptname;

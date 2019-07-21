@@ -45,7 +45,8 @@ typedef std::map<double, boost::filesystem::path> TimeDirectoryList;
 
 TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir);
 
-boost::filesystem::path getLatestTimeDirectory(const boost::filesystem::path& dir);
+// std::string for compat with SWIG wrapper
+std::string getLatestTimeDirectory(const boost::filesystem::path& dir);
 
 std::string getOpenFOAMComponentLabel(int i, int ncmpt);
   

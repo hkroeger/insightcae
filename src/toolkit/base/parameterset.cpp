@@ -403,6 +403,16 @@ void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_docume
   {
     ParameterSet::readFromNode(doc, *child, inputfilepath);
   }
+  else
+  {
+    insight::Warning(
+          boost::str(
+            boost::format(
+             "No xml node found with type '%s' and name '%s', default value '%s' is used."
+             ) % type() % name % plainTextRepresentation()
+           )
+        );
+  }
 }
 
 defineType(SelectableSubsetParameter);
@@ -538,6 +548,16 @@ void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::
       throw insight::Exception("Invalid selection key during read of selectableSubset "+name);
     
     operator()().readFromNode(doc, *child, inputfilepath);
+  }
+  else
+  {
+    insight::Warning(
+          boost::str(
+            boost::format(
+             "No xml node found with type '%s' and name '%s', default value '%s' is used."
+             ) % type() % name % plainTextRepresentation()
+           )
+        );
   }
 }
 

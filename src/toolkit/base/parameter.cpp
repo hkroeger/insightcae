@@ -20,7 +20,6 @@
 
 #include "parameter.h"
 #include "base/latextools.h"
-#include "base/exception.h"
 
 #include "boost/archive/iterators/base64_from_binary.hpp"
 #include "boost/archive/iterators/binary_from_base64.hpp"
@@ -106,9 +105,6 @@ rapidxml::xml_node<> *findNode(rapidxml::xml_node<>& father, const std::string& 
       return child;
     }
   }
-
-  throw insight::Exception("No xml node found with type="+typeName+" and name="+name);
-
   return nullptr;
 }
 
@@ -492,7 +488,16 @@ void PathParameter::readFromNode
     {
         file_content_ = a->value();
     }
-
+  }
+  else
+  {
+    insight::Warning(
+          boost::str(
+            boost::format(
+             "No xml node found with type '%s' and name '%s', default value '%s' is used."
+             ) % type() % name % value_.string()
+           )
+        );
   }
 }
 
@@ -550,8 +555,19 @@ void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_doc
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name, type());
   if (child)
+  {
     value_=boost::filesystem::path(child->first_attribute("value")->value());
-}
+  }
+  else
+  {
+    insight::Warning(
+          boost::str(
+            boost::format(
+             "No xml node found with type '%s' and name '%s', default value '%s' is used."
+             ) % type() % name % value_.string()
+           )
+        );
+  }}
 
 
 
@@ -647,6 +663,16 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
 	throw insight::Exception("Invalid selection value: "+key);
       }
     }
+  }
+  else
+  {
+    insight::Warning(
+          boost::str(
+            boost::format(
+             "No xml node found with type '%s' and name '%s', default value '%s' is used."
+             ) % type() % name % plainTextRepresentation(0)
+           )
+        );
   }
 }
 
@@ -753,6 +779,16 @@ void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_d
       if (iss.fail()) break;
       values_.insert(v);
     }
+  }
+  else
+  {
+    insight::Warning(
+          boost::str(
+            boost::format(
+             "No xml node found with type '%s' and name '%s', default value '%s' is used."
+             ) % type() % name % plainTextRepresentation()
+           )
+        );
   }
 }
 
@@ -882,6 +918,16 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
         value_.push_back(v.second);
     }
   }
+  else
+  {
+    insight::Warning(
+          boost::str(
+            boost::format(
+             "No xml node found with type '%s' and name '%s', default value '%s' is used."
+             ) % type() % name % plainTextRepresentation()
+           )
+        );
+  }
 }
   
   
@@ -943,10 +989,10 @@ string MatrixParameter::plainTextRepresentation(int indent) const
 {
   std::ostringstream oss;
 
-  for (int i=0;i<value_.n_rows; i++)
+  for (arma::uword i=0;i<value_.n_rows; i++)
   {
-    oss<<string(indent, ' ')<<i<<": ";
-    for (int j=0;j<value_.n_cols; j++)
+    oss<<string(size_t(indent), ' ')<<i<<": ";
+    for (arma::uword j=0;j<value_.n_cols; j++)
     {
       oss<<value_(i,j);
       if (j<value_.n_cols-1) oss<<", ";
@@ -981,6 +1027,16 @@ void MatrixParameter::readFromNode(const string& name, xml_document< char >& doc
     string value_str=child->value();
     std::istringstream iss(value_str);
     value_.load(iss, arma::raw_ascii);
+  }
+  else
+  {
+    insight::Warning(
+          boost::str(
+            boost::format(
+             "No xml node found with type '%s' and name '%s', default value '%s' is used."
+             ) % type() % name % plainTextRepresentation()
+           )
+        );
   }
 }
 

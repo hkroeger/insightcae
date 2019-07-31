@@ -25,6 +25,7 @@
 #include "factory.h"
 #include "base/latextools.h"
 #include "base/linearalgebra.h"
+#include "base/exception.h"
 
 #include <string>
 #include <vector>
@@ -265,11 +266,21 @@ public:
     virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
                                 boost::filesystem::path inputfilepath )
     {
-//        std::cout<<"Reading simple "<<name<< std::endl;
         using namespace rapidxml;
         xml_node<>* child = findNode ( node, name, type() );
-        if ( child ) {
+        if ( child )
+        {
             stringToValue ( child->first_attribute ( "value" )->value(), value_ );
+        }
+        else
+        {
+          insight::Warning(
+                boost::str(
+                  boost::format(
+                   "No xml node found with type '%s' and name '%s', default value '%s' is used."
+                   ) % type() % name % plainTextRepresentation()
+                 )
+              );
         }
     }
 

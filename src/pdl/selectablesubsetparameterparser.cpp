@@ -93,9 +93,12 @@ void SelectableSubsetParameterParser::Data::cppWriteSetStatement
     os<<"{"<<endl;
 
     for ( const SubsetData& sd: value ) {
+
         const std::string& sel_name=boost::fusion::get<0> ( sd );
+
         SubsetParameterParser::Data* pd
             = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
+
         if (!pd) throw PDLException("selectablesubset should contain only sets!");
         bool emptyset = pd->value.size()==0;
 
@@ -131,8 +134,10 @@ void SelectableSubsetParameterParser::Data::cppWriteGetStatement
 
     for ( const SubsetData& sd: value ) {
         const std::string& sel_name=boost::fusion::get<0> ( sd );
+
         SubsetParameterParser::Data* pd
             = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
+
         if (!pd) throw PDLException("selectablesubset should contain only sets!");
         bool emptyset = pd->value.size()==0;
         std::string seliname=name+"_"+sel_name;

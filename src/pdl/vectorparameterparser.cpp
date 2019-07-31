@@ -27,7 +27,7 @@ std::string VectorParameterParser::Data::cppValueRep(const std::string& ) const
   os<<"arma::mat(boost::assign::list_of";
   for (size_t i=0; i<value.n_elem; i++)
   {
-    os<<"("<<value(i)<<")";
+    os<<"(double("<<value(i)<<"))";
   }
   os<<".convert_to_container<std::vector<double> >().data(), "<<value.n_elem<<", 1)";
   return os.str();

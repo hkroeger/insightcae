@@ -12,7 +12,7 @@ PIMPLESettings::PIMPLESettings(const ParameterSet& ps)
 
 
 
-void PIMPLESettings::addIntoDictionaries ( OFdicts& dictionaries ) const
+void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const
 {
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
 
@@ -52,16 +52,32 @@ void PIMPLESettings::addIntoDictionaries ( OFdicts& dictionaries ) const
     PIMPLE["nOuterCorrectors"]=simple->max_nOuterCorrectors;
 
     // SIMPLE mode: add underrelaxation
-    OFDictData::dict& fieldRelax = relax.addSubDictIfNonexistent("fields");
-    OFDictData::dict& eqnRelax = relax.addSubDictIfNonexistent("equations");
+    OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("fields");
+    OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("equations");
 
-    fieldRelax["\".*Final\""] = 1.0;
-    fieldRelax["\"(p|p_rgh|pd)\""] = simple->relaxation_p;
+    if (simple->relax_final)
+    {
+      fieldRelax["\"(p|p_rgh|pd).*\""] = simple->relaxation_p;
+    }
+    else
+    {
+      fieldRelax["\".*Final\""] = 1.0;
+      fieldRelax["\"(p|p_rgh|pd)\""] = simple->relaxation_p;
+    }
 
-    eqnRelax["\".*Final\""] = 1.0;
-    eqnRelax["U"] = simple->relaxation_U;
-    eqnRelax["\"(k|epsilon|omega|nuTilda)\""] = simple->relaxation_turb;
-    eqnRelax["\"(T|h|e)\""] = simple->relaxation_e;
+    if (simple->relax_final)
+    {
+      eqnRelax["\"U.*\""] = simple->relaxation_U;
+      eqnRelax["\"(k|epsilon|omega|nuTilda).*\""] = simple->relaxation_turb;
+      eqnRelax["\"(T|h|e).*\""] = simple->relaxation_e;
+    }
+    else
+    {
+      eqnRelax["\".*Final\""] = 1.0;
+      eqnRelax["U"] = simple->relaxation_U;
+      eqnRelax["\"(k|epsilon|omega|nuTilda)\""] = simple->relaxation_turb;
+      eqnRelax["\"(T|h|e)\""] = simple->relaxation_e;
+    }
 
     // residual control
     OFDictData::dict& residualControl = PIMPLE.addSubDictIfNonexistent("residualControl");
@@ -106,9 +122,9 @@ CompressiblePIMPLESettings::CompressiblePIMPLESettings(const ParameterSet& ps)
 
 
 
-void CompressiblePIMPLESettings::addIntoDictionaries ( OFdicts& dictionaries ) const
+void CompressiblePIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const
 {
-  PIMPLESettings::addIntoDictionaries(dictionaries);
+  PIMPLESettings::addIntoDictionaries(oc, dictionaries);
 
   OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
   OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
@@ -117,9 +133,12 @@ void CompressiblePIMPLESettings::addIntoDictionaries ( OFdicts& dictionaries ) c
   PIMPLE["transonic"]=p_.transonic;
   PIMPLE["rhoMin"]=p_.rhoMin;
   PIMPLE["rhoMax"]=p_.rhoMax;
+  PIMPLE["pMin"]=OFDictData::dimensionedData("pMin", OFDictData::dimension(1, -1, -2), p_.pMin);
+
+
 
   // SIMPLE mode: add underrelaxation
-  OFDictData::dict& fieldRelax = relax.addSubDictIfNonexistent("fields");
+  OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("fields");
   fieldRelax["rho"] = p_.relaxation_rho;
 
 }
@@ -135,14 +154,17 @@ MultiphasePIMPLESettings::MultiphasePIMPLESettings(const ParameterSet& ps)
 
 
 
-void MultiphasePIMPLESettings::addIntoDictionaries ( OFdicts& dictionaries ) const
+void MultiphasePIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const
 {
-  PIMPLESettings::addIntoDictionaries(dictionaries);
+  PIMPLESettings::addIntoDictionaries(oc, dictionaries);
 
   OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-  OFDictData::dict& eqnRelax = relax.addSubDictIfNonexistent("equations");
-  eqnRelax["\".*\""] = 1.0;
+  OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("equations");
+  if (const auto* piso = boost::get<Parameters::pressure_velocity_coupling_PISO_type>(&p_.pressure_velocity_coupling))
+  {
+    eqnRelax["\".*\""] = 1.0;
+  }
 
   OFDictData::dict& controlDict = dictionaries.addDictionaryIfNonexistent("system/controlDict");
   controlDict["maxAlphaCo"]=p_.maxAlphaCo;

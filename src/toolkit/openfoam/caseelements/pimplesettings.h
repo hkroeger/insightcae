@@ -48,6 +48,8 @@ pressure_velocity_coupling = selectablesubset {{
   relaxation_U = double 0.5 "velocity relaxation factor"
   relaxation_e = double 0.5 "energy relaxation factor"
   relaxation_turb = double 0.7 "turbulence quantity relaxation factor"
+
+  relax_final = bool false "whether to relax in the final outer iteration"
  }
 
 }} SIMPLE "Pressure-velocity coupling scheme"
@@ -60,7 +62,7 @@ protected:
 public:
   PIMPLESettings(const ParameterSet& ps);
 
-  void addIntoDictionaries ( OFdicts& dictionaries ) const;
+  void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const;
 
   bool isPISO() const;
   bool isSIMPLE() const;
@@ -83,6 +85,7 @@ transonic = bool false "Set to true, if flow is transonic; false for subsonic fl
 
 relaxation_rho = double 1.0 "relaxation factor for density"
 
+pMin = double 1000 "Minimum pressure"
 rhoMin = double 0 "Minimum density"
 rhoMax = double 1e10 "Maximum density"
 
@@ -94,7 +97,7 @@ protected:
 public:
   CompressiblePIMPLESettings(const ParameterSet& ps);
 
-  void addIntoDictionaries ( OFdicts& dictionaries ) const;
+  void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const;
 
 };
 
@@ -120,7 +123,7 @@ protected:
 public:
   MultiphasePIMPLESettings(const ParameterSet& ps);
 
-  void addIntoDictionaries ( OFdicts& dictionaries ) const;
+  void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const;
 };
 
 

@@ -100,6 +100,94 @@ public:
 
 
 
+class compressibleSinglePhaseThermophysicalProperties
+    : public thermodynamicModel
+{
+
+public:
+#include "thermophysicalcaseelements__compressibleSinglePhaseThermophysicalProperties__Parameters.h"
+/*
+PARAMETERSET>>> compressibleSinglePhaseThermophysicalProperties Parameters
+
+M = double 28.9 "[kg/kmol] molar weight"
+
+thermo = selectablesubset {{
+
+ constant
+ set {
+   Cp = double 1007 "[J/kg/K] Heat capacity"
+   Hf = double 0. "[J/kg] Enthalpy of formation"
+ }
+
+ janaf
+ set {
+  Tlow = double 100 "[T] Lower temperature bound of approximation"
+  Thi = double 6000 "[T] Upper temperature bound of approximation"
+  Tmid = double 1000 "[T] Switching temperature between hi and low polynomial"
+
+  coeffs_lo = vector (3.5309628 -0.0001236595 -5.0299339e-07 2.4352768e-09 -1.4087954e-12 -1046.9637 2.9674391) "Lower temperature polynomial coefficients"
+  coeffs_hi = vector (2.9525407 0.0013968838 -4.9262577e-07 7.8600091e-11 -4.6074978e-15 -923.93753 5.8718221) "Higher temperature polynomial coefficients"
+ }
+
+}} constant "Thermodynamics properties"
+
+
+
+
+transport = selectablesubset {{
+
+ constant
+ set {
+   nu = double 1.8e-5 "Kinematic viscosity"
+   Pr = double 0.7 "Prandtl number"
+ }
+
+ sutherland
+ set {
+   nu = double 9.41e-6 "Kinematic viscosity at $T_{ref}$"
+   Tref = double 440 "Reference temperature $T_{ref}$"
+ }
+
+}} constant "Transport properties"
+
+
+
+
+equationOfState = selectablesubset {{
+
+ idealGas
+ set { }
+
+ PengRobinson
+ set {
+  Tc = double 617. "[K] Critical temperature"
+  Pc = double 3622400.0 "[Pa] Critical pressure"
+  omega = double 0.304 "Acentric factor"
+ }
+
+}} idealGas "Equation of state"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "compressibleSinglePhaseThermophysicalProperties" );
+    compressibleSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+    static std::string category() { return "Material Properties"; }
+};
+
+
+
+
 class multispeciesThermodynamics
 {
 public:

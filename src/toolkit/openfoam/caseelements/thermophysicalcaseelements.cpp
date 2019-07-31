@@ -85,7 +85,6 @@ perfectGasSinglePhaseThermophysicalProperties::perfectGasSinglePhaseThermophysic
 
 void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts& dictionaries) const
 {
-
   OFDictData::dict& thermophysicalProperties=dictionaries.addDictionaryIfNonexistent("constant/thermophysicalProperties");
 
   enum thermoType { hePsiThermo, heRhoThermo } tht = hePsiThermo;
@@ -96,7 +95,7 @@ void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts&
     if (
         dynamic_cast<const buoyantSimpleFoamNumerics*>(nce) ||
         dynamic_cast<const buoyantPimpleFoamNumerics*>(nce) ||
-        dynamic_cast<const rhoSimpleFoamNumerics*>(nce)
+        dynamic_cast<const steadyCompressibleNumerics*>(nce)
         )
       {
         tht=heRhoThermo;
@@ -157,6 +156,98 @@ void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts&
   mixture["transport"]=mix_tr;
 
   thermophysicalProperties["mixture"]=mixture;
+}
+
+
+
+
+defineType(compressibleSinglePhaseThermophysicalProperties);
+addToOpenFOAMCaseElementFactoryTable(compressibleSinglePhaseThermophysicalProperties);
+
+compressibleSinglePhaseThermophysicalProperties::compressibleSinglePhaseThermophysicalProperties( OpenFOAMCase& c, const ParameterSet& ps )
+: thermodynamicModel(c),
+  p_(ps)
+{
+}
+
+void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts& dictionaries) const
+{
+
+  OFDictData::dict& thermophysicalProperties =
+      dictionaries.addDictionaryIfNonexistent("constant/thermophysicalProperties");
+
+  if (OFversion()<170)
+  {
+//    thermophysicalProperties["mixture"]=mixture;
+    std::string tt = "hPsiThermo<pureMixture<";
+
+    std::string mixp_eqn, mixp_thermo, mixp_transp, mixp =
+        boost::str(boost::format("specie 1 %g") % p_.M);
+
+    if (const auto *ct = boost::get<Parameters::transport_constant_type>(&p_.transport))
+    {
+      tt+="constTransport";
+      mixp_transp =
+          boost::str(boost::format("%g %g") % ct->nu % ct->Pr );
+    }
+    else if (const auto *st = boost::get<Parameters::transport_sutherland_type>(&p_.transport))
+    {
+      tt+="sutherlandTransport";
+      mixp_transp =
+          boost::str(boost::format("%g %g") % st->nu % st->Tref );
+    }
+
+    tt+="<specieThermo<";
+
+    if (const auto *ct = boost::get<Parameters::thermo_constant_type>(&p_.thermo))
+    {
+      tt+="hConstThermo";
+      mixp_thermo =
+          boost::str(boost::format("%g %g") % ct->Cp % ct->Hf );
+    }
+    else if (const auto *jt = boost::get<Parameters::thermo_janaf_type>(&p_.thermo))
+    {
+      tt+="janafThermo";
+      mixp_thermo =
+          boost::str(boost::format("%g %g %g\n") % jt->Tlow % jt->Thi % jt->Tmid );
+
+      for (arma::uword i=0; i<jt->coeffs_hi.size(); i++)
+      {
+        mixp_thermo += " "+boost::lexical_cast<std::string>(jt->coeffs_hi(i));
+      }
+      mixp_thermo+="\n";
+
+      for (arma::uword i=0; i<jt->coeffs_lo.size(); i++)
+      {
+        mixp_thermo += " "+boost::lexical_cast<std::string>(jt->coeffs_lo(i));
+      }
+      mixp_thermo+="\n";
+    }
+
+    tt+="<";
+
+    if (const auto *pe = boost::get<Parameters::equationOfState_idealGas_type>(&p_.equationOfState))
+    {
+      tt+="perfectGas";
+    }
+    else if (const auto *pre = boost::get<Parameters::equationOfState_PengRobinson_type>(&p_.equationOfState))
+    {
+      tt+="PengRobinsonGas";
+      mixp_eqn =
+           boost::str(boost::format("%g %g %g %g")
+            % pre->Tc % 0.0 % pre->Pc % pre->omega );
+    }
+
+    tt+=">>>>>";
+
+    thermophysicalProperties["thermoType"]=tt;
+    thermophysicalProperties["mixture"]=mixp +"\n "+ mixp_eqn +"\n "+ mixp_thermo +"\n "+ mixp_transp;
+  }
+  else
+  {
+    throw insight::Exception("OF version currently unsupported.");
+  }
+
 }
 
 

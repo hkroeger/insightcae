@@ -1563,7 +1563,10 @@ void Chart::generatePlotImage ( const path& imagepath ) const
 //   std::string chart_file_name=(workdir/(resultelementname+".png")).string();
     std::string bn ( imagepath.filename().stem().string() );
 
-    TemporaryCaseDir tmp ( false, bn+"-generate" );
+    bool keep=false;
+    if (getenv("INSIGHT_KEEP_TEMP_DIRS"))
+      keep=true;
+    TemporaryCaseDir tmp ( keep, bn+"-generate" );
 
     {
         Gnuplot gp;

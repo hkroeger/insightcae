@@ -700,6 +700,8 @@ behaviour = selectablesubset {{
   pressure = double 0.0 "Uniform static pressure at selected boundary patch"
   kappa = double 1.4 "Specific heat ratio"
   L = double 1 "Reference length"
+  rhoName = string "none" "rho field name"
+  psiName = string "thermo:psi" "psi field name"
  }
 
  removePRGHHydrostaticPressure

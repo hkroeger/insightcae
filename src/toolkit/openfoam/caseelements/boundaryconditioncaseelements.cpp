@@ -552,6 +552,8 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
 
+    bool compressible_case = this->OFcase().isCompressible();
+
         
     phasefractions->addIntoDictionaries ( dictionaries );
 
@@ -601,13 +603,17 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
           }
         else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
-            BC["type"]=OFDictData::data ( "turbulentMixingLengthFrequencyInlet" );
+            BC["type"]=
+                (compressible_case ? "compressible::" : "")
+                + std::string("turbulentMixingLengthFrequencyInlet");
             BC["mixingLength"]=p.turb_L;
             BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( 1.0 ) );
           }
         else if ( ( field.first=="epsilon" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
-            BC["type"]=OFDictData::data ( "turbulentMixingLengthDissipationRateInlet" );
+            BC["type"]=
+                (compressible_case ? "compressible::" : "")
+                + std::string("turbulentMixingLengthDissipationRateInlet");
             BC["mixingLength"]=p.turb_L;
             BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( 1.0 ) );
           }
@@ -1598,7 +1604,10 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 else if ( const auto* wt = boost::get<Parameters::behaviour_waveTransmissive_type>(&p.behaviour) )
                 {
                     BC["type"]="waveTransmissive";
-                    BC["psi"]="thermo:psi";
+                    BC["psi"]=wt->psiName;
+                    BC["rho"]=wt->rhoName;
+                    BC["inletOutlet"]=false;
+                    BC["correctSupercritical"]=false;
                     BC["gamma"]=wt->kappa;
                     BC["lInf"]=wt->L;
                     BC["fieldInf"]=OFDictData::data ( wt->pressure );

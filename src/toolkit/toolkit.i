@@ -24,6 +24,8 @@
 %module(directors="1") toolkit
 
 %{
+#include "base/boost_include.h"
+#include "boost/filesystem/path.hpp"
 #include "base/factory.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
@@ -74,6 +76,7 @@ using namespace insight::bmd;
 
 
 // %feature("director") Analysis;
+%include "base/boost_include.h"
 %include "base/factory.h"
 %include "base/parameter.h"
 %include "base/parameterset.h"

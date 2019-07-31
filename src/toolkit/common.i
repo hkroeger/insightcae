@@ -1,6 +1,5 @@
-%include <std_string.i>
-%include <std_vector.i>
-%include <std_map.i>
+%include <stl.i>
+%include <std_auto_ptr.i>
 %include <std_shared_ptr.i>
 %include <boost_shared_ptr.i>
 
@@ -275,6 +274,9 @@
 %typemap(out) const boost::filesystem::path& {
     $result = PyString_FromString($1->c_str());
 }
+
+
+
 %typemap(in) boost::filesystem::path& (boost::filesystem::path vIn) {
     vIn=PyString_AsString($input);
     $1 = &vIn;

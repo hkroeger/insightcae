@@ -117,8 +117,6 @@ rhoMin = double 0.01 "Lower clipping for density"
 rhoMax = double 100. "Upper clipping for density"
 UMax = double 1000. "Upper clipping for velocity"
 
-transonic = bool true "Check for transsonic flow"
-
 setup = selection ( accurate medium stable ) accurate "Select accuratefor second order schemes. In case of stability problems revert to stable."
 
 <<<PARAMETERSET

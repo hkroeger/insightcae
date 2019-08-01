@@ -435,10 +435,17 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   solvers["rho"]=stdSymmSolverSetup(1e-7, 0.01);
-  solvers["p"]=
-      GAMG_ok ?
-      GAMGSolverSetup(1e-8, 0.01) :
-      stdSymmSolverSetup(1e-8, 0.01);
+  if (p_.time_integration.transonic)
+  {
+    solvers["p"]=stdAsymmSolverSetup(1e-8, 0.01);
+  }
+  else
+  {
+    solvers["p"]=
+        GAMG_ok ?
+        GAMGSolverSetup(1e-8, 0.01) :
+        stdSymmSolverSetup(1e-8, 0.01);
+  }
   solvers["U"]=smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
   solvers["e"]=smoothSolverSetup(1e-8, 0.1);
@@ -455,10 +462,17 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   }
 
   solvers["rhoFinal"]=stdSymmSolverSetup(1e-7, final_reltol);
-  solvers["pFinal"]= //GAMGPCGSolverSetup(1e-8, 0.0); //GAMGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
+  if (p_.time_integration.transonic)
+  {
+    solvers["pFinal"]=stdAsymmSolverSetup(1e-8, final_reltol*0.1);
+  }
+  else
+  {
+    solvers["pFinal"]= //GAMGPCGSolverSetup(1e-8, 0.0); //GAMGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
       GAMG_ok ?
       GAMGSolverSetup(1e-8, final_reltol*0.1) :
       stdSymmSolverSetup(1e-8, final_reltol*0.1);
+  }
   solvers["UFinal"]=smoothSolverSetup(1e-8, final_reltol);
   solvers["kFinal"]=smoothSolverSetup(1e-8, final_reltol);
   solvers["eFinal"]=smoothSolverSetup(1e-8, final_reltol);
@@ -495,6 +509,7 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
   div["div(phiU,p)"]="Gauss linear";
   div["div(phiv,p)"]="Gauss linear";
+  div["div(phid,p)"]="Gauss linear";
   div["div(phi,K)"]="Gauss linear";
 
   if (LES)

@@ -131,7 +131,7 @@
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
-         <string>Status</string>
+         <string>&amp;1 - Status</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_8">
          <item>
@@ -334,7 +334,7 @@
        </widget>
        <widget class="QWidget" name="tab_3">
         <attribute name="title">
-         <string>Log</string>
+         <string>&amp;2 - Log</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_11">
          <item>
@@ -409,7 +409,7 @@
        </widget>
        <widget class="QWidget" name="tab_2">
         <attribute name="title">
-         <string>Progress</string>
+         <string>&amp;3 - Progress</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_9">
          <item>

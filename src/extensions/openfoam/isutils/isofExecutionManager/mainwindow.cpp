@@ -104,7 +104,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 #ifdef HAVE_KF5
   terminal_ = new TerminalWidget(/*ui->v_splitter*/ ui->tabWidget );
   terminal_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
-  ui->tabWidget->addTab(terminal_, "Terminal");
+  ui->tabWidget->addTab(terminal_, "&4 - Terminal");
   //ui->v_splitter->addWidget(terminal_);
   terminal_->initialise();
 #endif

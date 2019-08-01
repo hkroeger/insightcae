@@ -426,7 +426,8 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
     controlDict["application"]="rhoPimpleFoam";
   }
 
-  CompressiblePIMPLESettings(p_.time_integration).addIntoDictionaries(OFcase(), dictionaries);
+  CompressiblePIMPLESettings pimple(p_.time_integration);
+  pimple.addIntoDictionaries(OFcase(), dictionaries);
 
   // ============ setup fvSolution ================================
 
@@ -446,18 +447,25 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
   solvers["nuTilda"]=smoothSolverSetup(1e-8, 0.1);
 
-  solvers["rhoFinal"]=stdSymmSolverSetup(1e-7, 0.0);
+  double final_reltol=0.;
+  if (const auto* simple = boost::get<Parameters::time_integration_type::pressure_velocity_coupling_SIMPLE_type>(&p_.time_integration.pressure_velocity_coupling))
+  {
+      if (simple->relax_final)
+        final_reltol=0.1;
+  }
+
+  solvers["rhoFinal"]=stdSymmSolverSetup(1e-7, final_reltol);
   solvers["pFinal"]= //GAMGPCGSolverSetup(1e-8, 0.0); //GAMGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
       GAMG_ok ?
-      GAMGSolverSetup(1e-8, 0.0) :
-      stdSymmSolverSetup(1e-8, 0.0);
-  solvers["UFinal"]=smoothSolverSetup(1e-8, 0.0);
-  solvers["kFinal"]=smoothSolverSetup(1e-8, 0);
-  solvers["eFinal"]=smoothSolverSetup(1e-8, 0);
-  solvers["hFinal"]=smoothSolverSetup(1e-8, 0);
-  solvers["omegaFinal"]=smoothSolverSetup(1e-14, 0, 1);
-  solvers["epsilonFinal"]=smoothSolverSetup(1e-8, 0);
-  solvers["nuTildaFinal"]=smoothSolverSetup(1e-8, 0);
+      GAMGSolverSetup(1e-8, final_reltol*0.1) :
+      stdSymmSolverSetup(1e-8, final_reltol*0.1);
+  solvers["UFinal"]=smoothSolverSetup(1e-8, final_reltol);
+  solvers["kFinal"]=smoothSolverSetup(1e-8, final_reltol);
+  solvers["eFinal"]=smoothSolverSetup(1e-8, final_reltol);
+  solvers["hFinal"]=smoothSolverSetup(1e-8, final_reltol);
+  solvers["omegaFinal"]=smoothSolverSetup(1e-14, final_reltol, 1);
+  solvers["epsilonFinal"]=smoothSolverSetup(1e-8, final_reltol);
+  solvers["nuTildaFinal"]=smoothSolverSetup(1e-8, final_reltol);
 
 
   // ============ setup fvSchemes ================================

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 enable_language (C)
 enable_language (CXX)
@@ -154,10 +154,8 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
   FIND_PACKAGE(SWIG REQUIRED)
 ENDIF()
 
-
+set (CMAKE_CXX_STANDARD 11)
 ADD_DEFINITIONS(
-    -std=c++11 # Or -std=c++0x
-    #-std=c++0x
     -Wno-old-style-cast
     -ftemplate-depth=900
     -fpermissive 
@@ -581,6 +579,7 @@ macro(install_script NAME SCRIPTFILE)
   install(PROGRAMS ${SCRIPTFILE} ${SRC} DESTINATION bin COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(install_script)
 
+
 macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -690,23 +689,62 @@ macro (add_pybindings TARGETNAME IFFILES LIBS)
   ENDIF()
 endmacro()
 
-macro (add_PDL TARGETNAME HEADERS)
-  foreach (_hdr ${HEADERS})
-    get_filename_component(BN ${_hdr} NAME_WE)
-    #message(STATUS ${_hdr} ${BN})
-    list (APPEND ${TARGETNAME}_TIMESTAMPS ${BN}_pdl.timestamp)
-    ADD_CUSTOM_COMMAND( OUTPUT ${BN}_pdl.timestamp
-			COMMAND ${CMAKE_SOURCE_DIR}/gen-sets.py "${_hdr}" "${CMAKE_BINARY_DIR}/bin/pdl"
-			#COMMAND ${CMAKE_BINARY_DIR}/bin/pdl ${BN}__*.pdl
-			COMMAND touch ${BN}_pdl.timestamp
-			DEPENDS pdl ${CMAKE_SOURCE_DIR}/gen-sets.py ${_hdr}
-			COMMENT "Generating source code from PDL in header ${_hdr}" )
-			
-  endforeach()
-  ADD_CUSTOM_TARGET( ${TARGETNAME}_PDLGenerator DEPENDS ${${TARGETNAME}_TIMESTAMPS}
-		    COMMENT "Checking if PDL re-generation is required" )
-  ADD_DEPENDENCIES( ${TARGETNAME} ${TARGETNAME}_PDLGenerator )
-endmacro(add_PDL)
+set(IS_INSIGHTCAE_PROJECT 1) # activate depency of pdl-generated headers on pdl target
+include(InsightCAE_CMakeFunctions)
+
+#macro(install_headers NAME HEADERS)
+#  foreach (_hdr ${HEADERS})
+#      file (RELATIVE_PATH _relName "${CMAKE_CURRENT_LIST_DIR}" ${_hdr})
+#      get_filename_component(_pd ${_relName} DIRECTORY)
+#      add_custom_command(
+#          TARGET ${NAME}
+#          COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include/insightcae/${_pd}
+#          COMMAND ${CMAKE_COMMAND} -E copy ${_hdr} ${CMAKE_BINARY_DIR}/include/insightcae/${_relName}
+#      )      install(
+#        FILES ${_hdr}
+#        DESTINATION include/insightcae
+#        COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+#      )
+# endforeach()
+#endmacro(install_headers)
+
+
+### installs headers and PDL-generated headers
+#macro (add_PDL TARGETNAME HEADERS)
+#  #file(GLOB_RECURSE HEADERS "*.h")
+
+#  install_headers(${TARGETNAME} "${HEADERS}")
+#  foreach (_hdr ${HEADERS})
+#    get_filename_component(BN ${_hdr} NAME_WE)
+#    #message(STATUS ${_hdr} ${BN})
+#    list (APPEND ${TARGETNAME}_TIMESTAMPS ${BN}_pdl.timestamp)
+#    ADD_CUSTOM_COMMAND( OUTPUT ${BN}_pdl.timestamp
+#			COMMAND ${CMAKE_SOURCE_DIR}/gen-sets.py "${_hdr}" "${CMAKE_BINARY_DIR}/bin/pdl"
+#			#COMMAND ${CMAKE_BINARY_DIR}/bin/pdl ${BN}__*.pdl
+#			COMMAND touch ${BN}_pdl.timestamp
+#                        COMMAND ${CMAKE_COMMAND} -E copy ${_hdr} ${CMAKE_BINARY_DIR}/include/insightcae/${_relName}
+#                        DEPENDS pdl ${CMAKE_SOURCE_DIR}/gen-sets.py ${_hdr}
+#			COMMENT "Generating source code from PDL in header ${_hdr}" )
+#    install(
+#      FILES
+#        ${CMAKE_CURRENT_BINARY_DIR}/${BN}.h
+#        ${CMAKE_CURRENT_BINARY_DIR}/${BN}_headers.h
+#      DESTINATION include/insightcae
+#      COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+#     )
+
+#  endforeach()
+#  ADD_CUSTOM_TARGET( ${TARGETNAME}_PDLGenerator DEPENDS ${${TARGETNAME}_TIMESTAMPS}
+#		    COMMENT "Checking if PDL re-generation is required" )
+#  ADD_DEPENDENCIES( ${TARGETNAME} ${TARGETNAME}_PDLGenerator )
+#endmacro(add_PDL)
+
+
+include(CMakePackageConfigHelpers)
+
+add_custom_target(cmake_dev_config ALL COMMENT "CMake development configuration")
+set(INSIGHT_ConfigPackageLocation lib/cmake/insightcae)
+SET(INSIGHT_CMAKE_CONFIG_DIR_BIN "${CMAKE_BINARY_DIR}/${INSIGHT_ConfigPackageLocation}")
 
 
 add_subdirectory(src)
@@ -781,5 +819,34 @@ else(DPKG_PROGRAM)
  endif()
 
 endif(DPKG_PROGRAM)
+
+
+write_basic_package_version_file(
+  "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEConfigVersion.cmake"
+  VERSION ${PACKAGE_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+add_custom_command(
+ TARGET cmake_dev_config
+ COMMAND ${CMAKE_COMMAND} -E
+     copy ${CMAKE_SOURCE_DIR}/CMake/InsightCAE_CMakeFunctions.cmake ${INSIGHT_CMAKE_CONFIG_DIR_BIN}
+ COMMAND ${CMAKE_COMMAND} -E
+     copy ${CMAKE_SOURCE_DIR}/gen-sets.py ${CMAKE_BINARY_DIR}/bin
+)
+install(
+  FILES ${CMAKE_SOURCE_DIR}/CMake/InsightCAE_CMakeFunctions.cmake
+  DESTINATION ${INSIGHT_ConfigPackageLocation}
+  COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+)
+install(
+    FILES ${CMAKE_SOURCE_DIR}/gen-sets.py
+    RUNTIME DESTINATION bin
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+)
+configure_file(CMake/InsightCAEConfig.cmake.in
+  "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEConfig.cmake"
+  COPYONLY
+)
+
 
 INCLUDE(CPack)

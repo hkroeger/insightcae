@@ -129,6 +129,8 @@ randomProcesses
 
   set(OFdev_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OFdev_WM_PROJECT_VERSION}")
   set(OFdev_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OFdev_WM_PROJECT_VERSION}")
+  set(OFdev_INSIGHT_INSTALL_BIN "bin/OpenFOAM-${OFdev_WM_PROJECT_VERSION}")
+  set(OFdev_INSIGHT_INSTALL_LIB "lib/OpenFOAM-${OFdev_WM_PROJECT_VERSION}")
 
   addOFConfig(OFdev ofdev 400)
 
@@ -150,7 +152,7 @@ randomProcesses
       ${OFdev_LIBRARIES}
       ${ARGN}
       ) 
-    install(TARGETS ${targetname} RUNTIME DESTINATION ${OFdev_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    install(TARGETS ${targetname} RUNTIME DESTINATION ${OFdev_INSIGHT_INSTALL_BIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
@@ -178,7 +180,7 @@ randomProcesses
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
       )
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${OFdev_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OFdev_INSIGHT_INSTALL_LIB} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

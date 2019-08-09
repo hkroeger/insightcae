@@ -131,8 +131,10 @@ randomProcesses
   set(Fx40_LIB_DIR "${Fx40_DIR}/lib/${Fx40_WM_OPTIONS}")
   
   set(Fx40_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/foam-extend-4.0")
-  set(Fx40_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/foam-extend-4.0")
-  
+  set(Fx40_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/foam-extend-4.0")  
+  set(Fx40_INSIGHT_INSTALL_BIN "bin/foam-extend-4.0")
+  set(Fx40_INSIGHT_INSTALL_LIB "lib/foam-extend-4.0")
+
   addOFConfig(Fx40 fx40 163)
 
   macro (setup_exe_target_Fx40 targetname sources exename includes)
@@ -155,7 +157,7 @@ randomProcesses
 #      ${Fx40_SCOTCH_LIB_DIR}/libscotcherr.so
 #      ${Fx40_MESQUITE_LIB_DIR}/libmesquite.so
      )
-     install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx40_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+     install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx40_INSIGHT_INSTALL_BIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
      
      set_directory_properties(LINK_DIRECTORIES ${temp})
      get_directory_property(temp LINK_DIRECTORIES)
@@ -180,7 +182,7 @@ randomProcesses
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     )
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx40_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx40_INSIGHT_INSTALL_LIB} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

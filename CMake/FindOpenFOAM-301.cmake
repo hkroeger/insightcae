@@ -223,6 +223,8 @@ genericPatchFields
 
   set(OF301_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF301_WM_PROJECT_VERSION}")
   set(OF301_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF301_WM_PROJECT_VERSION}")
+  set(OF301_INSIGHT_INSTALL_BIN "bin/OpenFOAM-${OF301_WM_PROJECT_VERSION}")
+  set(OF301_INSIGHT_INSTALL_LIB "lib/OpenFOAM-${OF301_WM_PROJECT_VERSION}")
 
   addOFConfig(OF301 of301 301)
 #   list(APPEND INSIGHT_OFES_VARCONTENT "OF23x@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of23x -print -quit`#230")
@@ -260,7 +262,7 @@ genericPatchFields
       ${OF301_LIBRARIES}
       ${ARGN}
       ) 
-    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF301_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF301_INSIGHT_INSTALL_BIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
@@ -288,7 +290,7 @@ genericPatchFields
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
       )
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF301_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF301_INSIGHT_INSTALL_LIB} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

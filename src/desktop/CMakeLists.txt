@@ -1,4 +1,4 @@
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if ( (${CMAKE_SYSTEM_NAME} MATCHES "Linux") AND  INSIGHT_INSTALL_DESKTOP )
 
     SET(INSIGHT_DESKTOP_DIR      "/usr/share/applications")
     SET(INSIGHT_PIXMAPS_DIR      "/usr/share/icons")

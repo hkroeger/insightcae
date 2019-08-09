@@ -46,10 +46,10 @@ alias ${shortcut}=\"source insight.bashrc.${shortcut}\"
 export CURRENT_OFE=$BASH_SOURCE
 export CURRENT_OFE_FILE=$(basename $CURRENT_OFE)
 foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${${prefix}_INSIGHT_LIB}
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_INSTDIR/${${prefix}_INSIGHT_INSTALL_LIB}
 #- Clean LD_LIBRARY_PATH
 cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
-export PATH=$PATH:${${prefix}_INSIGHT_BIN}
+export PATH=$PATH:$INSIGHT_INSTDIR/${${prefix}_INSIGHT_INSTALL_BIN}
 #- Clean PATH
 cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
 ")

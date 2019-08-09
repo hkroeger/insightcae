@@ -138,8 +138,10 @@ conjugateHeatTransfer
   set(Fx41_LIBSRC_DIR "${Fx41_DIR}/src")
   set(Fx41_LIB_DIR "${Fx41_DIR}/lib/${Fx41_WM_OPTIONS}")
   
-  set(Fx41_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/foam-extend-4.0")
-  set(Fx41_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/foam-extend-4.0")
+  set(Fx41_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/foam-extend-4.1")
+  set(Fx41_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/foam-extend-4.1")
+  set(Fx41_INSIGHT_INSTALL_BIN "bin/foam-extend-${Fx41_WM_PROJECT_VERSION}")
+  set(Fx41_INSIGHT_INSTALL_LIB "lib/foam-extend-${Fx41_WM_PROJECT_VERSION}")
   
   addOFConfig(Fx41 fx41 164)
 
@@ -163,7 +165,7 @@ conjugateHeatTransfer
 #      ${Fx41_SCOTCH_LIB_DIR}/libscotcherr.so
 #      ${Fx41_MESQUITE_LIB_DIR}/libmesquite.so
      )
-     install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx41_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+     install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx41_INSIGHT_INSTALL_BIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
      
      set_directory_properties(LINK_DIRECTORIES ${temp})
      get_directory_property(temp LINK_DIRECTORIES)
@@ -188,7 +190,7 @@ conjugateHeatTransfer
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     )
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx41_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx41_INSIGHT_INSTALL_LIB} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

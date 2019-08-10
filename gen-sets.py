@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 #awk 'sub(/^PARAMETERSET>>> /,""){f=1} /<<<PARAMETERSET/{f=0} f' $*
-import sys, re, os
+import sys, re, os, shutil, glob
 re_start=re.compile("^PARAMETERSET>>> *([^ ]+) *([^ ]+)$")
 re_end=re.compile("^<<<PARAMETERSET")
 re_include=re.compile("^ *#include *\\\"(.*)\\\" *$")
 
 filename=sys.argv[1]
 pdlexe=sys.argv[2]
+addlocs=sys.argv[3:] if len(sys.argv)>3 else []
 basename=os.path.splitext(os.path.basename(sys.argv[1]))[0]
 f=open(filename, "r")
 inside=False
@@ -47,12 +48,15 @@ for l in f.readlines():
     if not m is None:
       prefix=m.group(1)
       classname=m.group(2).rstrip()
-      outfname=basename+"__"+prefix+"__"+classname+".pdl"
+      outfname=basename+"__"+prefix+"__"+classname
       print "Generating", outfname
       generated.append(outfname)
-      out=open(outfname, "w")
+      out=open(outfname+".pdl", "w")
       inside=True
       
       
 for f in generated:
-  os.system("\"%s\" \"%s\""%(pdlexe, f))
+  os.system("\"%s\" \"%s\""%(pdlexe, f+".pdl"))
+  for file in glob.glob(f+"__*.h"):
+      for al in addlocs:
+          shutil.copy(file, al)

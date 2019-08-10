@@ -10,7 +10,7 @@ macro(install_headers NAME HEADERS)
       )
       install(
         FILES ${_hdr}
-        DESTINATION include/insightcae
+        DESTINATION include/insightcae/${_pd}/
         COMPONENT ${INSIGHT_INSTALL_COMPONENT}
       )
  endforeach()
@@ -37,16 +37,15 @@ macro (add_PDL TARGETNAME HEADERS)
     endif()
 
     ADD_CUSTOM_COMMAND( OUTPUT ${BN}_pdl.timestamp
-                        COMMAND "${GENSETSPY}" "${_hdr}" "${PDL}"
+                        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include/insightcae
+                        COMMAND "${GENSETSPY}" "${_hdr}" "${PDL}" "${CMAKE_BINARY_DIR}/include/insightcae/"
                         COMMAND touch ${BN}_pdl.timestamp
-                        COMMAND ${CMAKE_COMMAND} -E copy ${_hdr} ${CMAKE_BINARY_DIR}/include/insightcae/${_relName}
+                        #COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/*__*.h ${CMAKE_BINARY_DIR}/include/insightcae/ # *__* probably too weak criterion
                         DEPENDS ${DEPS}
                         COMMENT "Generating source code from PDL in header ${_hdr}" )
     install(
-      FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/${BN}.h
-        ${CMAKE_CURRENT_BINARY_DIR}/${BN}_headers.h
-      DESTINATION include/insightcae
+      CODE "file( GLOB _GeneratedHeaders \"${CMAKE_CURRENT_BINARY_DIR}/${BN}__*.h\" )"
+      CODE "file( INSTALL \${_GeneratedHeaders} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/insightcae )"
       COMPONENT ${INSIGHT_INSTALL_COMPONENT}
      )
 

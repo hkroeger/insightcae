@@ -840,7 +840,7 @@ install(
 )
 install(
     FILES ${CMAKE_SOURCE_DIR}/gen-sets.py
-    RUNTIME DESTINATION bin
+    DESTINATION bin
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
 )
 configure_file(CMake/InsightCAEConfig.cmake.in

@@ -18,7 +18,7 @@ target_link_libraries(refdata toolkit) # ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY}
 install(TARGETS refdata LIBRARY DESTINATION lib)
 install(
   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
-  DESTINATION include
+  DESTINATION include/insightcae
   FILES_MATCHING PATTERN "*.h"
   )
 

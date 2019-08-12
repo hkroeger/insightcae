@@ -848,5 +848,14 @@ configure_file(CMake/InsightCAEConfig.cmake.in
   COPYONLY
 )
 
+install(
+  FILES
+    "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEConfig.cmake"
+    "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEConfigVersion.cmake"
+  DESTINATION
+    ${INSIGHT_ConfigPackageLocation}
+  COMPONENT
+    ${INSIGHT_INSTALL_COMPONENT}
+)
 
 INCLUDE(CPack)

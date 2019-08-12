@@ -102,8 +102,8 @@ target_include_directories(toolkit
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
   PUBLIC ${GSL_INCLUDE_DIR}
-  PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
 
 add_PDL(toolkit "${toolkit_HEADERS}")
@@ -117,7 +117,11 @@ export(EXPORT toolkit_targets
   FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAETargets.cmake"
   NAMESPACE insight::
 )
-
+install(EXPORT toolkit_targets
+  FILE InsightCAETargets.cmake
+  NAMESPACE insight::
+  DESTINATION ${INSIGHT_ConfigPackageLocation}
+)
 #install(
 #  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 #  DESTINATION include/toolkit

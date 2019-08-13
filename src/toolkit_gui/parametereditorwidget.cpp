@@ -87,7 +87,8 @@ ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidge
       l << 3300 << 6600;
       if (viz_ && !viewwidget && !modeltree)
       {
-        l << 6600 << 0;
+        l.append(6600);
+        l.append(0);
       }
       setSizes(l);
     }

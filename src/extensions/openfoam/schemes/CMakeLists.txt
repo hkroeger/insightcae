@@ -1,0 +1,8 @@
+add_subdirectory(CICSAM)
+add_subdirectory(harmonic2)
+add_subdirectory(leastSquares2)
+add_subdirectory(localBlendedBy)
+add_subdirectory(localCellLimitedGrad)
+add_subdirectory(localFaceLimitedGrad)
+add_subdirectory(localLimitedSnGrad)
+add_subdirectory(reconCentral)

@@ -1,0 +1,6 @@
+
+add_subdirectory(extendedFixedValueBC)
+add_subdirectory(fixedMeanValueBC)
+add_subdirectory(flatPlateBLMappedFixedValue)
+add_subdirectory(mappedWithSwirl)
+add_subdirectory(totalPressureLoss)

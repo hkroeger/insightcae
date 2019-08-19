@@ -152,6 +152,39 @@ public:
 };
 
 
+
+
+
+
+class laplacianFoamNumerics
+    : public FVNumerics
+{
+
+public:
+#include "basicnumericscaseelements__laplacianFoamNumerics__Parameters.h"
+
+/*
+PARAMETERSET>>> laplacianFoamNumerics Parameters
+inherits FVNumerics::Parameters
+
+Tinternal = double 300.0 "[K] Initial temperature value in internal field"
+DT = double 1e-6 "[m^2/s] Constant diffivity"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "laplacianFoamNumerics" );
+    laplacianFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters();
+};
+
+
+
 /**
  * create a setDecomposeParDict
  * @poX,@poY,@poZ: define the preference of coordinate directions for decomposition

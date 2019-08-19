@@ -420,6 +420,88 @@ ParameterSet potentialFoamNumerics::defaultParameters()
 }
 
 
+
+
+
+
+defineType(laplacianFoamNumerics);
+addToOpenFOAMCaseElementFactoryTable(laplacianFoamNumerics);
+
+laplacianFoamNumerics::laplacianFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps, "p"),
+  p_(ps)
+{
+  OFcase().addField("T", FieldInfo(vectorField, 	dimTemperature, 		FieldValue({p_.Tinternal}), volField ) );
+}
+
+
+void laplacianFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  FVNumerics::addIntoDictionaries(dictionaries);
+
+  // ============ setup controlDict ================================
+
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="laplacianFoam";
+
+
+  // ============ setup fvSolution ================================
+
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+//  solvers["Phi"]=GAMGPCGSolverSetup(1e-7, 0.01);
+  solvers["T"]=GAMGPCGSolverSetup(1e-7, 0.0);
+
+
+//  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("potentialFlow");
+//  SIMPLE["nNonOrthogonalCorrectors"]=10;
+//  SIMPLE["pRefCell"]=0;
+//  SIMPLE["pRefValue"]=0.0;
+//  SIMPLE["PhiRefCell"]=0;
+//  SIMPLE["PhiRefValue"]=0.0;
+
+
+  // ============ setup fvSchemes ================================
+
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="Euler";
+
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["default"]="cellLimited pointCellsLeastSquares";
+
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  div["default"]="none";
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear limited 0.75";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="limited 0.75";
+
+//  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+//  fluxRequired["default"]="no";
+//  fluxRequired["p"]="";
+
+  // ============ setup controlDict ================================
+
+  OFDictData::dict& tp=dictionaries.lookupDict("constant/transportProperties");
+  tp["DT"]=p_.DT;
+
+}
+
+ParameterSet laplacianFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
+
 FaNumerics::FaNumerics(OpenFOAMCase& c, const ParameterSet& p)
 : OpenFOAMCaseElement(c, "FaNumerics"), p_(p)
 {

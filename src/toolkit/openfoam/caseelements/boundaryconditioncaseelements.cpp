@@ -1601,6 +1601,28 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                     BC["meanValue"]=OFDictData::data ( fixmean->pressure );
                     BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( fixmean->pressure ) );
                 }
+                else if ( const auto* tvu = boost::get<Parameters::behaviour_timeVaryingUniform_type>(&p.behaviour) )
+                {
+                    BC["type"]=OFDictData::data ( "timeVaryingUniformFixedValue" );
+                    boost::filesystem::path filename = patchName_ + "_pressureOutlet.txt";
+                    BC["fileName"]= "\"" + ( boost::filesystem::path("$FOAM_CASE")/filename ).string() + "\"";
+                    BC["outOfBounds"]="clamp";
+                    //BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( fixmean->pressure ) );
+
+                    auto& sd = dictionaries.addDictionaryIfNonexistent(filename.string());
+                    sd.no_header=true;
+                    sd.isSequential=true;
+
+                    OFDictData::list p_list;
+                    BOOST_FOREACH(const auto& p, tvu->sequel)
+                    {
+                      OFDictData::list inst;
+                      inst.push_back(p.time); inst.push_back(p.pressure);
+                      p_list.push_back(inst);
+                    }
+
+                    sd[""]=p_list;
+                }
                 else if ( const auto* wt = boost::get<Parameters::behaviour_waveTransmissive_type>(&p.behaviour) )
                 {
                     BC["type"]="waveTransmissive";

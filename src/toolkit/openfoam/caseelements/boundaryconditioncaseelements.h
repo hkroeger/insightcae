@@ -695,6 +695,15 @@ behaviour = selectablesubset {{
   pressure = double 0.0 "Uniform static pressure at selected boundary patch"
  }
 
+ timeVaryingUniform
+ set {
+  sequel = array [ set {
+   time = double 0.0 "Simulation time"
+   pressure = double 0.0 "Pressure value"
+  } ] *1 "Sequel of pressure values. Values in between will be interpolated. Values at minimum and maximum time will be used beyond interval."
+ }
+
+
  waveTransmissive 
  set {
   pressure = double 0.0 "Uniform static pressure at selected boundary patch"

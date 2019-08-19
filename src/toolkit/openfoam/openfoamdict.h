@@ -206,6 +206,7 @@ struct dictFile
   int dictVersion;
   int OFversion;
   bool isSequential;
+  bool no_header;
   
   dictFile();
   
@@ -256,7 +257,7 @@ void writeOpenFOAMDict(const boost::filesystem::path& dictpath, const OFDictData
 bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d);
 
-void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname);
+void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname, bool skip_header=false);
 
 bool patchExists(const OFDictData::dict& bd, const std::string& patchName);
 

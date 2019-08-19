@@ -58,7 +58,10 @@ geometry = set
  \\includegraphics[width=\\linewidth]{testcases/airfoilsection_sketches_H}"
  
  foilfile  = path "foil.csv" "File with tabulated coordinates on the foil surface.
- The file is simple text file with the 2D points on the foil contour. X-coordinate is in the first column and Y-coordinate in the seconed column. The X axis is aligned with the chord.
+
+ If the extension is .dat, an XFLR compatible file is expected.
+
+ Otherwise, the file is expected to be a simple text file with the 2D points on the foil contour. X-coordinate is in the first column and Y-coordinate in the seconed column. The X axis is aligned with the chord.
  The points need to be ordered but neither the direction along the contour nor the location of the starting point is important. The contour will be automatically closed so the first and last point must no coincide.
  \\includegraphics[width=\\linewidth]{testcases/airfoilsection_sketches_csv}"
  

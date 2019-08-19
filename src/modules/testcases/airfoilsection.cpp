@@ -175,8 +175,8 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
     out.addFace(bl.face("1265"));
     up.addFace(bl.face("2376"));
     down.addFace(bl.face("0154"));
-    fb.addFace(bl.face("0321"));
-    dummy.addFace(bl.face("4567"));
+    dummy.addFace(bl.face("0321"));
+    fb.addFace(bl.face("4567"));
   }
   
   cm.insert(bmd.release());

@@ -1153,10 +1153,22 @@ void OpenFOAMCase::runSolver
   env_.forkCommand( p_in, cmdString(location, cmd, argv) );
 
   std::string line;
-  while (std::getline(p_in, line))
+  while (!p_in.eof())
   {
-    cout<<line<<endl; // mirror to console
-    analyzer.update(line);
+    if (p_in.out().rdbuf()->in_avail())
+    {
+      if (!std::getline(p_in, line)) break;
+      cout<<line<<endl; // mirror to console
+      analyzer.update(line);
+    }
+
+
+    if (p_in.err().rdbuf()->in_avail())
+    {
+      if (!std::getline(p_in.err(), line)) break;
+      cout<<"[E] "<<line<<endl; // mirror to console
+      analyzer.update("[E] "+line);
+    }
     
     if (analyzer.stopRun())
     {

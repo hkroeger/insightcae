@@ -67,7 +67,8 @@ void SoftwareEnvironment::executeCommand
   }
   while (std::getline(p_in.err(), line))
   {
-    cout<<line<<endl;
+    cout<<"[E]: "<<line<<endl;
+    if (output) output->push_back(line);
   }
   p_in.close();
 

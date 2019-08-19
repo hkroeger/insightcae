@@ -563,8 +563,6 @@ public:
 
 
 
-
-
 class twoPhaseTransportProperties
     : public transportModel
 {

@@ -52,6 +52,7 @@ namespace RASModels
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 defineTypeNameAndDebug(kOmegaSST2, 0);
+
 #if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 addToRunTimeSelectionTable
 (

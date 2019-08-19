@@ -45,7 +45,7 @@
 #if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 #define UNIOF_HEADEROK(ioo,typ) (ioo).typeHeaderOk<typ>()
 #else
-#define UNIOF_HEADEROK(ioo,typ) ( ((ioo).headerOk()) && ((ioo).headerClassName() == typ::typeName) )
+#define UNIOF_HEADEROK(ioo,typ) ( ((ioo).headerOk()) && ((ioo).headerClassName() == pTraits<typ>::typeName) )
 #endif
 
 #if (defined(OF301) || defined(OFplus)||defined(OFdev))

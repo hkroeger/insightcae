@@ -106,7 +106,14 @@ void SoftwareEnvironment::Job::runAndTransferOutput
   read_start_out();
   read_start_err();
 
-  ios.run();
+  while ( !ios.stopped() )
+  {
+    ios.poll_one();
+
+//    boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+    boost::this_thread::interruption_point();
+  }
+
   process->wait(); // exit code is not set correctly, if this is skipped
 }
 

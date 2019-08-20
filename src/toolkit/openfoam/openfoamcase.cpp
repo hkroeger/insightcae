@@ -1133,13 +1133,10 @@ void OpenFOAMCase::runSolver
   const boost::filesystem::path& location, 
   SolverOutputAnalyzer& analyzer,
   std::string solverName,
-  bool *stopFlag,
   int np,
   const std::vector<std::string>& addopts
 ) const
 {
-  if (stopFlag) *stopFlag=false;
-  
   string cmd=solverName;
   std::vector<std::string> argv;
   if (np>1)
@@ -1209,19 +1206,12 @@ void OpenFOAMCase::runSolver
   read_start_out();
   read_start_err();
 
-  while ( job->ios.run_one() )
+  while ( !job->ios.stopped() )
   {
-    boost::this_thread::interruption_point();
-    if (stopFlag) { if (*stopFlag) break; }
-  }
+    job->ios.poll_one();
 
-  if (stopFlag)
-  {
-    if (*stopFlag)
-    {
-      job->process->terminate();
-      throw insight::Exception("OpenFOAMCase::runSolver(): cancelled upon user request!");
-    }
+//    boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+    boost::this_thread::interruption_point();
   }
 
   job->process->wait();

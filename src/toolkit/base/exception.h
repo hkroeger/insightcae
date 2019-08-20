@@ -56,17 +56,18 @@ class Exception
   std::string strace_;
   
 public:
-    Exception(const std::string& msg, bool strace=true);
-    virtual ~Exception();
-    
-    inline std::string as_string() const { return static_cast<std::string>(*this); }
-    
-    operator std::string() const;
-    
-    inline const std::string& message() const { return message_; }
-    inline const std::string& strace() const { return strace_; }
-    
-    friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
+  Exception();
+  Exception(const std::string& msg, bool strace=true);
+  virtual ~Exception();
+
+  inline std::string as_string() const { return static_cast<std::string>(*this); }
+
+  operator std::string() const;
+
+  inline const std::string& message() const { return message_; }
+  inline const std::string& strace() const { return strace_; }
+
+  friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
 };
 
 

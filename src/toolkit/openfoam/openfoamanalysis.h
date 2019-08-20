@@ -68,7 +68,6 @@ eval = set
 */
 
 protected:
-    bool stopFlag_;
     ResultSetPtr derivedInputData_;
     
     std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
@@ -81,8 +80,6 @@ public:
         const ParameterSet& ps,
         const boost::filesystem::path& exepath
     );
-    
-    virtual void cancel();
     
     static ParameterSet defaultParameters();
     virtual boost::filesystem::path setupExecutionEnvironment();

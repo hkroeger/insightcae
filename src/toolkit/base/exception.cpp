@@ -42,6 +42,9 @@ std::ostream& operator<<(std::ostream& os, const Exception& ex)
   return os;
 }
 
+Exception::Exception()
+{
+}
 
 Exception::Exception(const std::string& msg, bool strace)
 {

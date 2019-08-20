@@ -433,7 +433,6 @@ public:
         const boost::filesystem::path& location,
         SolverOutputAnalyzer& analyzer,
         std::string solverName,
-        bool *stopFlag = NULL,
         int np=0,
         const std::vector<std::string>& addopts = std::vector<std::string>()
     ) const;

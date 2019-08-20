@@ -42,6 +42,7 @@
 
 int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
 int metaid2=qRegisterMetaType<insight::ResultSetPtr>("insight::ResultSetPtr");
+int metaid3=qRegisterMetaType<insight::Exception>("insight::Exception");
 
 
 AnalysisWorker::AnalysisWorker(const std::shared_ptr<insight::Analysis>& analysis)
@@ -50,10 +51,24 @@ AnalysisWorker::AnalysisWorker(const std::shared_ptr<insight::Analysis>& analysi
 
 void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
 {
+  try
+  {
     insight::ResultSetPtr results = (*analysis_)(pd);
     emit resultReady( results );
-    emit finished();
+  }
+  catch (insight::Exception e)
+  {
+    emit error(e);
+  }
+  catch (boost::thread_interrupted i)
+  {
+    emit killed();
+  }
+
 }
+
+
+
 
 AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 : QMdiSubWindow(parent),
@@ -139,8 +154,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
 AnalysisForm::~AnalysisForm()
 {
-    workerThread_.quit();
-    workerThread_.wait();
+    workerThread_->join();
     delete ui;
 }
 
@@ -434,7 +448,7 @@ void AnalysisForm::onConfigModification()
 
 void AnalysisForm::onRunAnalysis()
 {
-    if (!workerThread_.isRunning())
+    if (!workerThread_)
     {
 
         if (analysis_ || results_)
@@ -467,38 +481,59 @@ void AnalysisForm::onRunAnalysis()
 
         progdisp_->reset();
 
-        AnalysisWorker *worker = new AnalysisWorker(analysis_);
-        worker->moveToThread(&workerThread_);
-        
-        connect(this, &AnalysisForm::runAnalysis,
-                worker, &AnalysisWorker::doWork);
-        connect(worker, &AnalysisWorker::resultReady,
-                this, &AnalysisForm::onResultReady);
-        connect(worker, &AnalysisWorker::finished,
-                &workerThread_, &QThread::quit);
-        connect(&workerThread_, &QThread::finished,
-                worker, &AnalysisWorker::deleteLater);
-
-        workerThread_.start();
-
         ui->tabWidget->setCurrentWidget(ui->runTab);
 
-        emit runAnalysis(progdisp_);
+        workerThread_.reset(new boost::thread( [&]() {
+          AnalysisWorker worker(analysis_);
+
+          connect(&worker, &AnalysisWorker::resultReady,
+                  this, &AnalysisForm::onResultReady,
+                  Qt::QueuedConnection);
+          connect(&worker, &AnalysisWorker::error,
+                  this, &AnalysisForm::onAnalysisErrorOccurred,
+                  Qt::QueuedConnection);
+          connect(&worker, &AnalysisWorker::killed,
+                  this, &AnalysisForm::onAnalysisKilled,
+                  Qt::QueuedConnection);
+
+          worker.doWork(progdisp_);
+        }
+        ));
+
+
+
     }
 }
 
+
 void AnalysisForm::onKillAnalysis()
 {
-  if (workerThread_.isRunning())
+  if (workerThread_)
   {
-    analysis_->cancel();
-    workerThread_.quit();
-    workerThread_.wait();
+    workerThread_->interrupt();
   }
+}
+
+void AnalysisForm::onAnalysisKilled()
+{
+  workerThread_->join();
+  workerThread_.reset();
+
+  QMessageBox::information(this, "Stopped!", "The analysis has been interrupted upon user request!");
+}
+
+void AnalysisForm::onAnalysisErrorOccurred(insight::Exception e)
+{
+  workerThread_->join();
+  workerThread_.reset();
+  throw e;
 }
 
 void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
+  workerThread_->join();
+  workerThread_.reset();
+
   results_=results;
   
 //   qDeleteAll(ui->outputContents->findChildren<ResultElementWrapper*>());
@@ -513,9 +548,6 @@ void AnalysisForm::onResultReady(insight::ResultSetPtr results)
   ui->tabWidget->setCurrentWidget(ui->outputTab);
 
   QMessageBox::information(this, "Finished!", "The analysis has finished");
-
-  workerThread_.quit();
-  workerThread_.wait();
 }
 
 void AnalysisForm::onCreateReport()

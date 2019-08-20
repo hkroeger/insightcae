@@ -159,15 +159,15 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstances
 
 
 
-template<
-  class BaseAnalysis,
-  const RangeParameterList& var_params
->
-void ParameterStudy<BaseAnalysis,var_params>::cancel()
-{
-  workers_.interrupt_all();
-  queue_.cancelAll();
-}
+//template<
+//  class BaseAnalysis,
+//  const RangeParameterList& var_params
+//>
+//void ParameterStudy<BaseAnalysis,var_params>::cancel()
+//{
+//  workers_.interrupt_all();
+////  queue_.cancelAll();
+//}
 
 
 

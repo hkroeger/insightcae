@@ -559,7 +559,7 @@ void resetMeshToLatestTimestep
     bool is_parallel=false
 );
 
-void runPotentialFoam(const OpenFOAMCase& cm, const boost::filesystem::path& location, bool* stopFlagPtr=NULL, int np=1);
+void runPotentialFoam(const OpenFOAMCase& cm, const boost::filesystem::path& location, int np=1);
 
 void runPvPython
 (

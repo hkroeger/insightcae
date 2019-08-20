@@ -80,7 +80,6 @@ public:
   virtual ResultSetPtr evaluateRuns();
   
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
-  virtual void cancel();
 };
 
 }

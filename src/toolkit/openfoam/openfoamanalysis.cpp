@@ -57,10 +57,6 @@ turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetP
 }
 
 
-void OpenFOAMAnalysis::cancel()
-{
-  stopFlag_=true;
-}
 
 OpenFOAMAnalysis::OpenFOAMAnalysis
 (        
@@ -230,7 +226,7 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
     else
     {
       if (p.run.potentialinit)
-        runPotentialFoam(cm, executionPath(), &stopFlag_, np);
+        runPotentialFoam(cm, executionPath(), np);
     }
   }
   else
@@ -270,7 +266,7 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm)
   
   std::cout<<"Executing application "<<solverName<<std::endl;
   
-  cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
+  cm.runSolver(executionPath(), analyzer, solverName, np);
   
 }
 

@@ -28,6 +28,7 @@
 
 #include "base/boost_include.h"
 #include "boost/function.hpp"
+#include "boost/thread.hpp"
 
 using namespace std;
 using namespace boost;
@@ -247,8 +248,8 @@ Analysis::Analysis ( const std::string& name, const std::string& description, co
 : name_ ( name ),
   description_ ( description ),
   executionPath_ ( exePath ),
-  enforceExecutionPathRemovalBehaviour_(false),
-  removeExecutionPath_(false)
+  removeExecutionPath_(false),
+  enforceExecutionPathRemovalBehaviour_(false)
 {
   setParameters(ps);
   setExecutionPath(exePath);
@@ -278,9 +279,6 @@ bool Analysis::checkParameters() const
     return true;
 }
 
-void Analysis::cancel()
-{
-}
 
 boost::filesystem::path Analysis::getSharedFilePath ( const boost::filesystem::path& file )
 {
@@ -291,7 +289,6 @@ Analysis* Analysis::clone() const
 {
     return this->lookup ( this->type(), parameters_, executionPath_ );
 }
-
 
 
 
@@ -325,7 +322,9 @@ void CollectingProgressDisplayer::update ( const ProgressState& pi )
 
 
 AnalysisWorkerThread::AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer )
-    : queue_ ( queue ), displayer_ ( displayer )
+    :
+      displayer_ ( displayer ),
+      queue_ ( queue )
 {}
 
 void AnalysisWorkerThread::operator() ()
@@ -384,9 +383,10 @@ AnalysisInstance SynchronisedAnalysisQueue::dequeue()
 
 void SynchronisedAnalysisQueue::cancelAll()
 {
-    while ( !isEmpty() ) {
-        boost::get<1> ( dequeue() )->cancel();
-    }
+#warning MISSING!
+//    while ( !isEmpty() ) {
+//        boost::get<1> ( dequeue() )->cancel();
+//    }
 }
 
     

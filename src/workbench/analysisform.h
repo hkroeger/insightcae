@@ -25,7 +25,6 @@
 #include "base/analysis.h"
 #include "base/resultset.h"
 #include "parametereditorwidget.h"
-#include "boost/shared_ptr.hpp"
 #endif
 
 #include <QMdiSubWindow>
@@ -59,19 +58,19 @@ class AnalysisWorker
 : public QObject
 {
   Q_OBJECT
-  QThread workerThread_;
-  
+
   std::shared_ptr<insight::Analysis> analysis_;
   
 public:
   AnalysisWorker(const std::shared_ptr<insight::Analysis>& analysis);
   
-public slots:
-  void doWork(insight::ProgressDisplayer* pd=NULL);
+public Q_SLOTS:
+  void doWork(insight::ProgressDisplayer* pd = nullptr);
   
-signals:
+Q_SIGNALS:
   void resultReady(insight::ResultSetPtr);
-  void finished();
+  void error(insight::Exception);
+  void killed();
 };
 
 
@@ -91,7 +90,7 @@ protected:
   insight::ResultSetPtr results_;
   
   GraphProgressDisplayer *progdisp_;
-  QThread workerThread_;
+  std::shared_ptr<boost::thread> workerThread_;
   
   QTreeWidget *rt_;
   QTreeWidgetItem* rtroot_;
@@ -154,9 +153,14 @@ private Q_SLOTS:
   void onSaveParameters();
   void onSaveParametersAs();
   void onLoadParameters();
+
   void onRunAnalysis();
   void onKillAnalysis();
+  void onAnalysisKilled();
+  void onAnalysisErrorOccurred(insight::Exception e);
+
   void onResultReady(insight::ResultSetPtr);
+
   void onCreateReport();
 
   void onStartPV();
@@ -168,7 +172,7 @@ private Q_SLOTS:
 
   void onTogglePacking();
 
-signals:
+Q_SIGNALS:
   void apply();
   void update();
   void runAnalysis(insight::ProgressDisplayer*);

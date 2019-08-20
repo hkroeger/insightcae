@@ -158,6 +158,7 @@ protected:
 
 
     SharedPathList sharedSearchPath_;
+
     void extendSharedSearchPath ( const std::string& name );
 
     virtual boost::filesystem::path setupExecutionEnvironment();
@@ -233,7 +234,6 @@ public:
     }
 
     virtual ResultSetPtr operator() ( ProgressDisplayer* displayer=nullptr ) =0;
-    virtual void cancel();
 
     virtual boost::filesystem::path getSharedFilePath ( const boost::filesystem::path& file );
 
@@ -307,8 +307,6 @@ public:
 };
 
 
-
-
 class AnalysisWorkerThread
     : boost::noncopyable
 {
@@ -320,7 +318,6 @@ public:
     AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer=nullptr );
 
     void operator() ();
-//   void cancel(); // { analysis_.cancel(); }
 };
 
 

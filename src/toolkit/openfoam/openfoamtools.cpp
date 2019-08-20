@@ -1354,7 +1354,6 @@ void runPotentialFoam
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
-  bool* stopFlagPtr,
   int np
 )
 {
@@ -1469,7 +1468,7 @@ void runPotentialFoam
   
   TextProgressDisplayer displayer;
   SolverOutputAnalyzer analyzer(displayer);
-  cm.runSolver(location, analyzer, "potentialFoam", stopFlagPtr, np, 
+  cm.runSolver(location, analyzer, "potentialFoam", np,
 			 list_of<std::string>("-noFunctionObjects"));
 
   if (exists(controlBackup)) copy_file(controlBackup, control, copy_option::overwrite_if_exists);

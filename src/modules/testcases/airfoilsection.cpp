@@ -147,8 +147,8 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
   
   arma::mat PiM=vec3(-(p.geometry.LinByc+0.4)*c_, 0.01*c_, z0+0.0001*h);
   
-  int nx=(pts[1][0]-pts[0][0])/delta;
-  int ny=(pts[2][1]-pts[1][1])/delta;
+  int nx = int( (pts[1][0]-pts[0][0])/delta );
+  int ny = int( (pts[2][1]-pts[1][1])/delta );
   
   Patch& in= 	bmd->addPatch(in_, new Patch());
   Patch& out= 	bmd->addPatch(out_, new Patch());
@@ -235,7 +235,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
     cm, dir,
     fb_,
     "", false, 1.0,
-    vec3(0,0,0.5), vec3(0,0,1)
+    vec3(0,0,-delta-0.5), vec3(0,0,1)
   );
 }
 

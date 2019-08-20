@@ -391,8 +391,8 @@ public:
 
     void modifyFilesOnDiskBeforeDictCreation ( const boost::filesystem::path& location ) const;
     std::shared_ptr<OFdicts> createDictionaries() const;
-    void modifyMeshOnDisk ( const boost::filesystem::path& location ) const;
-    void modifyCaseOnDisk ( const boost::filesystem::path& location ) const;
+    virtual void modifyMeshOnDisk ( const boost::filesystem::path& location ) const;
+    virtual void modifyCaseOnDisk ( const boost::filesystem::path& location ) const;
 
     virtual void createOnDisk 
     ( 
@@ -438,24 +438,20 @@ public:
         const std::vector<std::string>& addopts = std::vector<std::string>()
     ) const;
 
-    template<class stream>
-    void forkCommand
+    SoftwareEnvironment::JobPtr forkCommand
     (
-        stream& p_in,
         const boost::filesystem::path& location,
         const std::string& cmd,
         std::vector<std::string> argv = std::vector<std::string>(),
-        std::string *ovr_machine=NULL
-    ) const
-    {
-        env_.forkCommand ( p_in, cmdString ( location, cmd, argv ), std::vector<std::string>(), ovr_machine );
-    }
+        std::string *ovr_machine = nullptr
+    ) const;
 
     inline const FieldList& fields() const
     {
         createFieldListIfRequired();
         return fields_;
     }
+
     inline FieldList& fields()
     {
         createFieldListIfRequired();

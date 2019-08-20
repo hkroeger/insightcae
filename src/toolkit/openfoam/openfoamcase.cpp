@@ -25,6 +25,8 @@
 #include <base/analysis.h>
 #include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamdict.h"
+#include <boost/asio.hpp>
+#include <boost/process/async.hpp>
 
 
 using namespace std;
@@ -1102,7 +1104,7 @@ const
   {
     shellcmd+=" \""+arg+"\"";
   }
-  cout<<shellcmd<<endl;
+
   return shellcmd;
 }
 
@@ -1123,7 +1125,7 @@ void OpenFOAMCase::executeCommand
     argv.push_back("-parallel");
   }
   
-  env_.executeCommand( cmdString(location, execmd, argv), std::vector<std::string>(), output, ovr_machine );
+  env_.executeCommand( cmdString(location, execmd, argv), { }, output, ovr_machine );
 }
 
 void OpenFOAMCase::runSolver
@@ -1138,8 +1140,6 @@ void OpenFOAMCase::runSolver
 {
   if (stopFlag) *stopFlag=false;
   
-  redi::ipstream p_in;
-  
   string cmd=solverName;
   std::vector<std::string> argv;
   if (np>1)
@@ -1149,40 +1149,85 @@ void OpenFOAMCase::runSolver
   }
   std::copy(addopts.begin(), addopts.end(), back_inserter(argv));
 
-  //env_.forkCommand( p_in, "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
-  env_.forkCommand( p_in, cmdString(location, cmd, argv) );
 
-  std::string line;
-  while (!p_in.eof())
+
+  SoftwareEnvironment::JobPtr job = env_.forkCommand( cmdString(location, cmd, argv) );
+
+
+  std::function<void()> read_start_out = [&]() {
+    boost::asio::async_read_until(
+     job->out, job->buf_out, "\n",
+     [&](const boost::system::error_code &error, std::size_t /*size*/)
+     {
+      if (!error)
+      {
+        // read a line
+       std::string line;
+       std::istream is(&(job->buf_out));
+       getline(is, line);
+
+       // mirror to console
+       cout<<line<<endl; // mirror to console
+       analyzer.update(line);
+
+       if (analyzer.stopRun())
+       {
+         std::ofstream f( (location/"wnowandstop").c_str() );
+         f<<"STOP"<<std::endl;
+       }
+
+       // restart read
+       read_start_out();
+      }
+     }
+    );
+  };
+
+
+  std::function<void()> read_start_err = [&]() {
+    boost::asio::async_read_until(
+     job->err, job->buf_err, "\n",
+     [&](const boost::system::error_code &error, std::size_t /*size*/)
+     {
+      if (!error)
+      {
+        // read a line
+       std::string line;
+       std::istream is(&job->buf_err);
+       getline(is, line);
+
+       // mirror to console
+       cout<<"[E] "<<line<<endl; // mirror to console
+       analyzer.update("[E] "+line);
+
+       read_start_err();
+      }
+     }
+    );
+  };
+
+  read_start_out();
+  read_start_err();
+
+  while ( job->ios.run_one() )
   {
-    if (p_in.out().rdbuf()->in_avail())
-    {
-      if (!std::getline(p_in, line)) break;
-      cout<<line<<endl; // mirror to console
-      analyzer.update(line);
-    }
-
-
-    if (p_in.err().rdbuf()->in_avail())
-    {
-      if (!std::getline(p_in.err(), line)) break;
-      cout<<"[E] "<<line<<endl; // mirror to console
-      analyzer.update("[E] "+line);
-    }
-    
-    if (analyzer.stopRun())
-    {
-      std::ofstream f( (location/"wnowandstop").c_str() );
-      f<<"STOP"<<std::endl;
-    }
-    
     boost::this_thread::interruption_point();
     if (stopFlag) { if (*stopFlag) break; }
   }
-  p_in.close();
 
-  if (p_in.rdbuf()->status()!=0)
-    throw insight::Exception("OpenFOAMCase::runSolver(): solver execution failed with nonzero exit code!");
+  if (stopFlag)
+  {
+    if (*stopFlag)
+    {
+      job->process->terminate();
+      throw insight::Exception("OpenFOAMCase::runSolver(): cancelled upon user request!");
+    }
+  }
+
+  job->process->wait();
+
+  if (job->process->exit_code()!=0)
+      throw insight::Exception("OpenFOAMCase::runSolver(): solver execution failed with nonzero exit code!");
 }
 
 std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& boundaryDict) const
@@ -1213,6 +1258,20 @@ std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& bounda
       
    return unhandledPatches;
 }
+
+
+SoftwareEnvironment::JobPtr OpenFOAMCase::forkCommand
+(
+    const boost::filesystem::path& location,
+    const std::string& cmd,
+    std::vector<std::string> argv,
+    std::string *ovr_machine
+) const
+{
+    return env_.forkCommand ( cmdString ( location, cmd, argv ), { }, ovr_machine );
+}
+
+
 
 void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dict& boundaryDict, const ParameterSet& ps )
 {

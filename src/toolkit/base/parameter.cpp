@@ -900,7 +900,7 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
       {
         int i=boost::lexical_cast<int>(name);
         ParameterPtr p(defaultValue_->clone());
-        p->readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
+        p->readFromNode( name, doc, *child, inputfilepath );
 
         readvalues.push_back( decltype(readvalues)::value_type(i, p) );
       }

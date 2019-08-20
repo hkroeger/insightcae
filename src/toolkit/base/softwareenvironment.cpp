@@ -20,11 +20,98 @@
 
 
 #include "base/softwareenvironment.h"
+#include <boost/asio.hpp>
+#include <boost/process/async.hpp>
+
 
 using namespace std;
 
 namespace insight
 {
+
+
+
+
+
+SoftwareEnvironment::Job::Job()
+  : out(ios), err(ios)
+{
+}
+
+
+
+
+void SoftwareEnvironment::Job::runAndTransferOutput
+(
+    std::vector<std::string>* stdout,
+    std::vector<std::string>* stderr
+)
+{
+
+
+  std::function<void()> read_start_out = [&]() {
+    boost::asio::async_read_until(
+     out, buf_out, "\n",
+     [&](const boost::system::error_code &error, std::size_t /*size*/)
+     {
+      if (!error)
+      {
+        // read a line
+       std::string line;
+       std::istream is(&buf_out);
+       getline(is, line);
+
+       // mirror to console
+       std::cout<<line<<std::endl;
+       if (stdout) stdout->push_back(line);
+
+       // restart read
+       read_start_out();
+      }
+     }
+    );
+  };
+
+
+  std::function<void()> read_start_err = [&]() {
+    boost::asio::async_read_until(
+     err, buf_err, "\n",
+     [&](const boost::system::error_code &error, std::size_t /*size*/)
+     {
+      if (!error)
+      {
+        // read a line
+       std::string line;
+       std::istream is(&buf_err);
+       getline(is, line);
+
+       // mirror to console
+       std::cout<<"[E] "<<line<<std::endl;
+       if (stderr)
+       {
+         stderr->push_back(line);
+       }
+       else
+       {
+         if (stdout)
+           stdout->push_back("[E] "+line);
+       }
+
+       read_start_err();
+      }
+     }
+    );
+  };
+
+  read_start_out();
+  read_start_err();
+
+  ios.run();
+  process->wait(); // exit code is not set correctly, if this is skipped
+}
+
+
+
 
 SoftwareEnvironment::SoftwareEnvironment()
 : executionMachine_("")
@@ -32,20 +119,32 @@ SoftwareEnvironment::SoftwareEnvironment()
 
 }
 
+
+
+
 SoftwareEnvironment::SoftwareEnvironment(const SoftwareEnvironment& other)
 : executionMachine_(other.executionMachine_)
 {
 }
+
+
+
 
 SoftwareEnvironment::~SoftwareEnvironment()
 {
 
 }
 
+
+
+
 int SoftwareEnvironment::version() const
 {
   return -1;
 }
+
+
+
 
 void SoftwareEnvironment::executeCommand
 (
@@ -55,24 +154,12 @@ void SoftwareEnvironment::executeCommand
   std::string *ovr_machine
 ) const
 {
-  redi::ipstream p_in;
   
-  forkCommand(p_in, cmd, argv, ovr_machine);
-    
-  std::string line;
-  while (std::getline(p_in.out(), line))
-  {
-    cout<<line<<endl;
-    if (output) output->push_back(line);
-  }
-  while (std::getline(p_in.err(), line))
-  {
-    cout<<"[E]: "<<line<<endl;
-    if (output) output->push_back(line);
-  }
-  p_in.close();
+  JobPtr job = forkCommand(cmd, argv, ovr_machine);
 
-  if (p_in.rdbuf()->status()!=0)
+  job->runAndTransferOutput(output);
+
+  if (job->process->exit_code()!=0)
   {
     std::ostringstream os;
     os << cmd;
@@ -86,47 +173,83 @@ void SoftwareEnvironment::executeCommand
   //return p_in.rdbuf()->status();
 }
 
-/*
-void SoftwareEnvironment::forkCommand
+
+
+
+SoftwareEnvironment::JobPtr SoftwareEnvironment::forkCommand
 (
-  redi::ipstream& p_in,
-  const std::string& cmd, 
-  std::vector<std::string> argv
+  const std::string& cmd,
+  std::vector<std::string> argv,
+  std::string *ovr_machine
 ) const
 {
-  
+
+  std::string machine=executionMachine_;
+  if (ovr_machine) machine=*ovr_machine;
+
   argv.insert(argv.begin(), cmd);
-  
-  if (executionMachine_=="")
+
+  if (machine=="")
+    {
+        argv.insert(argv.begin(), "-lc");
+        argv.insert(argv.begin(), "bash");
+        // keep only a selected set of environment variables
+        std::vector<std::string> keepvars = boost::assign::list_of("DISPLAY")("HOME")("USER")("SHELL")("INSIGHT_BINDIR")("INSIGHT_LIBDIR")("INSIGHT_OFES");
+        for (const std::string& varname: keepvars)
+        {
+            if (char* varvalue=getenv(varname.c_str()))
+            {
+                // shellcmd+="export "+varname+"=\""+std::string(varvalue)+"\";";
+                argv.insert(argv.begin(), varname+"="+std::string(varvalue));
+            }
+        }
+        argv.insert(argv.begin(), "-i");
+        argv.insert(argv.begin(), "env");
+    }
+  else if (boost::starts_with(machine, "qrsh-wrap"))
   {
-    argv.insert(argv.begin(), "-c");
-    argv.insert(argv.begin(), "bash");
-  }
-  else if (boost::starts_with(executionMachine_, "qrsh:"))
-  {
-    argv.insert(argv.begin(), "qrsh");
+    //argv.insert(argv.begin(), "n");
+    //argv.insert(argv.begin(), "-now");
+    argv.insert(argv.begin(), "qrsh-wrap");
   }
   else
   {
-    argv.insert(argv.begin(), executionMachine_);
+    argv.insert(argv.begin(), machine);
     argv.insert(argv.begin(), "ssh");
   }
-  
-  cout<<"argv=( ";
-  int k=0;
-  for (const std::string& a: argv) cout<<(++k)<<":"<<a<<" ";
-  cout<<")"<<endl;
-  
-  if (argv.size()>1)
+
+  std::ostringstream dbgs;
+  for (const std::string& a: argv)
+    dbgs<<a<<" ";
+  std::cout<<dbgs.str()<<std::endl;
+
+  JobPtr job(new Job);
+
+  namespace bp = boost::process;
+  std::vector<std::string> args(argv.begin()+1, argv.end());
+
+//std::cout<<argv[0]<<std::endl;
+//for(const auto& arg: args)
+//  std::cout<<arg<<std::endl;
+
+  job->process.reset(
+        new bp::child(
+           bp::search_path(argv[0]),
+           bp::args( args ),
+           bp::std_in < job->in,
+           bp::std_out > job->out,
+           bp::std_err > job->err
+          )
+        );
+
+  if (!job->process->running())
   {
-    p_in.open(argv[0], argv);
+    throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess!\n(Command was \""+dbgs.str()+"\")");
   }
-  else
-  {
-    p_in.open(argv[0]);
-  }
-  
-  cout<<"Executing "<<p_in.command()<<endl;
+
+  std::cout<<"Executing "<<dbgs.str()<<std::endl;
+
+  return job;
 }
-*/
+
 }

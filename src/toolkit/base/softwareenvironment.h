@@ -32,14 +32,38 @@
 // #include "boost/foreach.hpp"
 // #include "boost/algorithm/string.hpp"
 #include "base/boost_include.h"
+#include "boost/process.hpp"
 
 #include "base/exception.h"
 
 namespace insight
 {
 
+
 class SoftwareEnvironment
 {
+public:
+
+  struct Job
+  {
+    boost::asio::io_service ios;
+    boost::process::opstream in;
+    boost::process::async_pipe out, err;
+    boost::asio::streambuf buf_out, buf_err;
+
+    std::shared_ptr<boost::process::child> process;
+
+    Job();
+
+    void runAndTransferOutput
+    (
+        std::vector<std::string>* stdout = nullptr,
+        std::vector<std::string>* stderr = nullptr
+    );
+  };
+ typedef std::shared_ptr<Job> JobPtr;
+
+private:
   
   std::string executionMachine_;
 
@@ -57,76 +81,16 @@ public:
     (  
       const std::string& cmd, 
       std::vector<std::string> argv = std::vector<std::string>(),
-      std::vector<std::string>* output = NULL,
-      std::string *ovr_machine=NULL
+      std::vector<std::string>* output = nullptr,
+      std::string *ovr_machine = nullptr
     ) const;
     
-    template<class stream>
-    void forkCommand
+    JobPtr forkCommand
     (
-      /*redi::ip*/ stream& p_in,      
-      const std::string& cmd, 
-      std::vector<std::string> argv = std::vector<std::string>(),
-      std::string *ovr_machine=NULL
-    ) const
-    {
-      
-      std::string machine=executionMachine_;
-      if (ovr_machine) machine=*ovr_machine;
-      
-      argv.insert(argv.begin(), cmd);
-      
-      if (machine=="")
-        {
-            argv.insert(argv.begin(), "-lc");
-            argv.insert(argv.begin(), "bash");
-            // keep only a selected set of environment variables
-            std::vector<std::string> keepvars = boost::assign::list_of("DISPLAY")("HOME")("USER")("SHELL")("INSIGHT_BINDIR")("INSIGHT_LIBDIR")("INSIGHT_OFES");
-            for (const std::string& varname: keepvars)
-            {
-                if (char* varvalue=getenv(varname.c_str()))
-                {
-                    // shellcmd+="export "+varname+"=\""+std::string(varvalue)+"\";";
-                    argv.insert(argv.begin(), varname+"="+std::string(varvalue));
-                }
-            }
-            argv.insert(argv.begin(), "-i");
-            argv.insert(argv.begin(), "env");
-        }
-      else if (boost::starts_with(machine, "qrsh-wrap"))
-      {
-	//argv.insert(argv.begin(), "n");
-	//argv.insert(argv.begin(), "-now");
-	argv.insert(argv.begin(), "qrsh-wrap");
-      }
-      else
-      {
-	argv.insert(argv.begin(), machine);
-	argv.insert(argv.begin(), "ssh");
-      }
-      
-      std::ostringstream dbgs;
-      for (const std::string& a: argv)
-	dbgs<<a<<" ";
-	
-      std::cout<<dbgs.str()<<std::endl;
-      
-      if (argv.size()>1)
-      {
-        p_in.open(argv[0], argv, redi::pstreams::pstdout|redi::pstreams::pstderr|redi::pstreams::pstdin);
-      }
-      else
-      {
-        p_in.open(argv[0], redi::pstreams::pstdout|redi::pstreams::pstderr|redi::pstreams::pstdin);
-      }
-      
-      if (!p_in.is_open())
-      {
-	throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess!\n(Command was \""+dbgs.str()+"\")");
-      }
-      
-      std::cout<<"Executing "<<p_in.command()<<std::endl;
-    }
+        const std::string& cmd,
+        std::vector<std::string> argv = std::vector<std::string>(),
+        std::string *ovr_machine = nullptr
+    ) const;
     
 };
 

@@ -135,17 +135,25 @@ std::string getOpenFOAMComponentLabel(int i, int ncmpt)
 
 void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, const std::vector<std::string>& cmds)
 {
-  redi::opstream proc;
-  
   std::vector<std::string> opts;
   if ((ofc.OFversion()>=220) && (listTimeDirectories(location).size()==0)) opts.push_back("-constant");
   std::string machine=""; // problems, if job is put into queue system
-  ofc.forkCommand(proc, location, "setSet", opts, &machine);
+
+  SoftwareEnvironment::JobPtr job = ofc.forkCommand(location, "setSet", opts, &machine);
+
   for (const std::string& line: cmds)
   {
-    proc << line << endl;
+    job->in << line << endl;
   }
-  proc << "quit" << endl;
+  job->in << "quit" << endl;
+  job->in.pipe().close();
+
+  job->runAndTransferOutput();
+
+  if (job->process->exit_code()!=0)
+  {
+    throw insight::Exception("setSet: command failed with nonzero return code.");
+  }
 }
 
 void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& location, bool noFlipMap)

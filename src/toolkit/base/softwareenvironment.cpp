@@ -118,9 +118,18 @@ void SoftwareEnvironment::Job::ios_run_with_interruption()
 
   std::function<void(boost::system::error_code)> interruption_handler =
    [&] (boost::system::error_code) {
-     boost::this_thread::interruption_point();
-     t.expires_from_now(std::chrono::seconds( 1 ));
-     if (process->running())
+    try
+    {
+      boost::this_thread::interruption_point();
+    }
+    catch (boost::thread_interrupted i)
+    {
+      process->terminate();
+      throw i;
+    }
+
+    t.expires_from_now(std::chrono::seconds( 1 ));
+    if (process->running())
       t.async_wait(interruption_handler);
    };
   interruption_handler({});
@@ -210,7 +219,7 @@ SoftwareEnvironment::JobPtr SoftwareEnvironment::forkCommand
         argv.insert(argv.begin(), "-lc");
         argv.insert(argv.begin(), "bash");
         // keep only a selected set of environment variables
-        std::vector<std::string> keepvars = boost::assign::list_of("DISPLAY")("HOME")("USER")("SHELL")("INSIGHT_BINDIR")("INSIGHT_LIBDIR")("INSIGHT_OFES");
+        std::vector<std::string> keepvars = { "DISPLAY", "HOME", "USER", "SHELL", "INSIGHT_BINDIR", "INSIGHT_LIBDIR", "INSIGHT_OFES", "PYTHONPATH" };
         for (const std::string& varname: keepvars)
         {
             if (char* varvalue=getenv(varname.c_str()))

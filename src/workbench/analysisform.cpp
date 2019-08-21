@@ -64,6 +64,10 @@ void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
   {
     emit killed();
   }
+  catch (...)
+  {
+    emit error(insight::Exception("An unhandled exceptio occurred!"));
+  }
 
 }
 

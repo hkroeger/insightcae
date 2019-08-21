@@ -115,10 +115,8 @@ void ParameterEditorWidget::onUpdate()
 
 void ParameterEditorWidget::onUpdateVisualization()
 {
-    qDebug()<<"onUpdateVisualization";
     if (viz_)
     {
-        qDebug()<<"exec update viz";
         viz_->update(parameters_);
         viz_->updateVisualizationElements(viewer_, modeltree_);
     }
@@ -127,6 +125,12 @@ void ParameterEditorWidget::onUpdateVisualization()
 
 void ParameterEditorWidget::onCheckValidity()
 {
+}
+
+
+void ParameterEditorWidget::onParameterSetChanged()
+{
+  emit parameterSetChanged();
 }
 
 void ParameterEditorWidget::insertParameter(const QString& name, insight::Parameter& parameter)

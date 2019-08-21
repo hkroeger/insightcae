@@ -147,7 +147,7 @@ public:
 
     void updateCAD();
 
-public slots:
+public Q_SLOTS:
     void onItemSelectionChanged();
     
     void onAddElement();

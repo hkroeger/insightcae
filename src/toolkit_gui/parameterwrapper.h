@@ -58,7 +58,7 @@ public:
   declareFactoryTable
   (
       ParameterWrapper, 
-        LIST(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform),
+        LIST(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform),
         LIST(parent, name, p, detailw, superform)
   );  
 
@@ -66,7 +66,7 @@ protected:
   QString name_;
   insight::Parameter& p_;
   QWidget* detaileditwidget_;
-  QWidget* superform_;
+  QObject* superform_;
   
   bool widgetsDisplayed_;
   
@@ -74,20 +74,20 @@ protected:
   
 public:
   declareType("ParameterWrapper");
-  ParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  ParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual ~ParameterWrapper();
     
   virtual void createWidgets();
   virtual void removedWidgets();
   
-public slots:
+public Q_SLOTS:
     virtual void onApply() =0;
     virtual void onUpdate() =0;
     virtual void onSelectionChanged();
     virtual void onSelection();
     virtual void onDestruction();
 
-signals:
+Q_SIGNALS:
   void parameterSetChanged();
 };
 
@@ -103,11 +103,11 @@ protected:
 public:
   declareType(insight::IntParameter::typeName_());
   
-  IntParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  IntParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::IntParameter& param() { return dynamic_cast<insight::IntParameter&>(p_); }
   
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
 };
@@ -123,10 +123,10 @@ protected:
   QLineEdit *le_;
 public:
   declareType(insight::DoubleParameter::typeName_());
-  DoubleParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  DoubleParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::DoubleParameter& param() { return dynamic_cast<insight::DoubleParameter&>(p_); }
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
 };
@@ -142,10 +142,10 @@ protected:
   QLineEdit *le_;
 public:
   declareType(insight::VectorParameter::typeName_());
-  VectorParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  VectorParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::VectorParameter& param() { return dynamic_cast<insight::VectorParameter&>(p_); }
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
 };
@@ -161,10 +161,10 @@ protected:
   QLineEdit *le_;
 public:
   declareType(insight::StringParameter::typeName_());
-  StringParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  StringParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::StringParameter& param() { return dynamic_cast<insight::StringParameter&>(p_); }
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
 };
@@ -181,11 +181,11 @@ protected:
 
 public:
   declareType(insight::BoolParameter::typeName_());
-  BoolParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  BoolParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::BoolParameter& param() { return dynamic_cast<insight::BoolParameter&>(p_); }
 
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
 };
@@ -206,15 +206,15 @@ protected:
   
 public:
   declareType(insight::PathParameter::typeName_());
-  PathParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  PathParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::PathParameter& param() { return dynamic_cast<insight::PathParameter&>(p_); }
 
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
   
-protected slots:
+protected Q_SLOTS:
   virtual void openSelectionDialog();
   virtual void openFile();
   virtual void onDataEntered();
@@ -234,15 +234,15 @@ protected:
   
 public:
   declareType(insight::MatrixParameter::typeName_());
-  MatrixParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  MatrixParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::MatrixParameter& param() { return dynamic_cast<insight::MatrixParameter&>(p_); }
 
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
   
-protected slots:
+protected Q_SLOTS:
   virtual void openSelectionDialog();
 };
 
@@ -255,10 +255,10 @@ class DirectoryParameterWrapper
   Q_OBJECT
 public:
   declareType(insight::DirectoryParameter::typeName_());
-  DirectoryParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  DirectoryParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   inline insight::DirectoryParameter& param() { return dynamic_cast<insight::DirectoryParameter&>(p_); }
 
-protected slots:
+protected Q_SLOTS:
   virtual void openSelectionDialog();
 
 };
@@ -277,10 +277,11 @@ protected:
 
 public:
   declareType(insight::SelectionParameter::typeName_());
-  SelectionParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  SelectionParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::SelectionParameter& param() { return dynamic_cast<insight::SelectionParameter&>(p_); }
-public slots:
+
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
 };
@@ -295,17 +296,23 @@ class SubsetParameterWrapper
   
 public:
   declareType(insight::SubsetParameter::typeName_());
-  SubsetParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  SubsetParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::SubsetParameter& param() { return dynamic_cast<insight::SubsetParameter&>(p_); }
   
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
-  
-signals:
+  void onUpdateVisualization();
+  void onCheckValidity();
+  void onParameterSetChanged();
+
+Q_SIGNALS:
   void apply();
   void update();
+  void updateVisualization();
+  void checkValidity();
+  void parameterSetChanged();
 };
 
 
@@ -323,22 +330,28 @@ protected:
   
 public:
   declareType(insight::ArrayParameter::typeName_());
-  ArrayParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  ArrayParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::ArrayParameter& param() { return dynamic_cast<insight::ArrayParameter&>(p_); }
   
-protected slots:
+protected Q_SLOTS:
   void showContextMenuForWidget(const QPoint &p);
   void onRemove(int i);
   void onAppendEmpty();
   
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
-  
-signals:
+  void onUpdateVisualization();
+  void onCheckValidity();
+  void onParameterSetChanged();
+
+Q_SIGNALS:
   void apply();
   void update();
+  void updateVisualization();
+  void checkValidity();
+  void parameterSetChanged();
 };
 
 
@@ -356,18 +369,18 @@ protected:
 
 public:
   declareType(insight::DoubleRangeParameter::typeName_());
-  DoubleRangeParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  DoubleRangeParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::DoubleRangeParameter& param() { return dynamic_cast<insight::DoubleRangeParameter&>(p_); }
   
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
   void onAddSingle();
   void onAddRange();
   void onClear();
   
-signals:
+Q_SIGNALS:
   void apply();
 };
 
@@ -385,17 +398,23 @@ class SelectableSubsetParameterWrapper
   
 public:
   declareType(insight::SelectableSubsetParameter::typeName_());
-  SelectableSubsetParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
+  SelectableSubsetParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QObject* superform);
   virtual void createWidgets();
   inline insight::SelectableSubsetParameter& param() { return dynamic_cast<insight::SelectableSubsetParameter&>(p_); }
   
-public slots:
+public Q_SLOTS:
   virtual void onApply();
   virtual void onUpdate();
-  
-signals:
+  void onUpdateVisualization();
+  void onCheckValidity();
+  void onParameterSetChanged();
+
+Q_SIGNALS:
   void apply();
   void update();
+  void updateVisualization();
+  void checkValidity();
+  void parameterSetChanged();
 };
 
 
@@ -406,7 +425,7 @@ void addWrapperToWidget
   insight::ParameterSet& pset, 
   QTreeWidgetItem *parentnode, 
   QWidget *detaileditwidget,
-  QWidget *superform
+  QObject *superform
 );
 
 

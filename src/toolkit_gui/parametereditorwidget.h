@@ -65,14 +65,15 @@ public:
     
     void insertParameter(const QString& name, insight::Parameter& parameter);
     
-public slots:
+public Q_SLOTS:
     void onApply();
     void onUpdate();
 
     void onUpdateVisualization();
     void onCheckValidity();
+    void onParameterSetChanged();
 
-signals:
+Q_SIGNALS:
     void apply();
     void update();
     void parameterSetChanged();

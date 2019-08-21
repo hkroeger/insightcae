@@ -392,40 +392,73 @@ surfaceIntegrate::surfaceIntegrate(OpenFOAMCase& c,  const ParameterSet& ps )
 OFDictData::dict surfaceIntegrate::functionObjectDict() const
 {
 //  insight::Warning("incomplete implementation");
-
   OFDictData::dict fod;
-  fod["type"]="surfaceFieldValue";
 
   OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
-
-  if ( const Parameters::domain_patch_type* dp =
-       boost::get<Parameters::domain_patch_type>(&p_.domain) )
-    {
-      fod["regionType"]="patch";
-      fod["name"]=dp->patchName;
-    }
-  else if ( const Parameters::domain_faceZone_type* dcz =
-       boost::get<Parameters::domain_faceZone_type>(&p_.domain) )
-    {
-      fod["regionType"]="faceZone";
-      fod["name"]=dcz->faceZoneName;
-    }
-
-  fod["writeFields"]=false;
-
-  if (p_.operation == Parameters::operation_type::areaIntegrate)
-    {
-      fod["operation"]="areaIntegrate";
-    }
-  else if (p_.operation == Parameters::operation_type::sum)
-    {
-      fod["operation"]="sum";
-    }
-
   OFDictData::list fl; fl.resize(p_.fields.size());
   copy(p_.fields.begin(), p_.fields.end(), fl.begin());
   fod["fields"]=fl;
+
+  if (OFversion()<170)
+  {
+    // foam-extend
+    fod["type"]="faceSource";
+
+    if ( const Parameters::domain_patch_type* dp =
+         boost::get<Parameters::domain_patch_type>(&p_.domain) )
+      {
+        fod["source"]="patch";
+        fod["sourceName"]=dp->patchName;
+      }
+    else if ( const Parameters::domain_faceZone_type* dcz =
+         boost::get<Parameters::domain_faceZone_type>(&p_.domain) )
+      {
+        fod["source"]="faceZone";
+        fod["sourceName"]=dcz->faceZoneName;
+      }
+
+    if (p_.operation == Parameters::operation_type::areaIntegrate)
+      {
+        fod["operation"]="areaIntegrate";
+      }
+    else if (p_.operation == Parameters::operation_type::sum)
+      {
+        fod["operation"]="sum";
+      }
+
+    fod["valueOutput"]=false;
+    fod["log"]=true;
+  }
+  else
+  {
+    fod["type"]="surfaceFieldValue";
+
+    if ( const Parameters::domain_patch_type* dp =
+         boost::get<Parameters::domain_patch_type>(&p_.domain) )
+      {
+        fod["regionType"]="patch";
+        fod["name"]=dp->patchName;
+      }
+    else if ( const Parameters::domain_faceZone_type* dcz =
+         boost::get<Parameters::domain_faceZone_type>(&p_.domain) )
+      {
+        fod["regionType"]="faceZone";
+        fod["name"]=dcz->faceZoneName;
+      }
+
+    fod["writeFields"]=false;
+
+    if (p_.operation == Parameters::operation_type::areaIntegrate)
+      {
+        fod["operation"]="areaIntegrate";
+      }
+    else if (p_.operation == Parameters::operation_type::sum)
+      {
+        fod["operation"]="sum";
+      }
+
+  }
 
   return fod;
 }

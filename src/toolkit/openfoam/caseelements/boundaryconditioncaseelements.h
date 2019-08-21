@@ -158,6 +158,8 @@ protected:
 public:
     GGIBCBase ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
                 const ParameterSet&ps = Parameters::makeDefault() );
+
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     virtual void modifyMeshOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
 };
 

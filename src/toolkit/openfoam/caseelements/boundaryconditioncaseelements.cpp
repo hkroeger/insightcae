@@ -215,6 +215,19 @@ GGIBCBase::GGIBCBase(OpenFOAMCase& c, const std::string& patchName, const OFDict
 {
 }
 
+void GGIBCBase::addIntoDictionaries ( OFdicts& dictionaries ) const
+{
+  BoundaryCondition::addIntoDictionaries(dictionaries);
+
+  if (OFversion()<170)
+  {
+    auto& decomposeParDict = dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
+    auto& gfz = decomposeParDict.addListIfNonexistent("globalFaceZones");
+    gfz.push_back( p_.zone );
+  }
+}
+
+
 void GGIBCBase::modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const
 {
   if (OFversion()<170)

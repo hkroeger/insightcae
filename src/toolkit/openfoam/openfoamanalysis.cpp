@@ -369,7 +369,7 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
     bool is_parallel = np>1;
     if (!runCase.outputTimesPresentOnDisk(dir, is_parallel) && !evaluateonly)
     {
-//        if (meshcreated)
+        if (meshcreated)
             runCase.modifyMeshOnDisk(executionPath());
         writeDictsToDisk(runCase, dicts);
         applyCustomPreprocessing(runCase);

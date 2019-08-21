@@ -1206,13 +1206,7 @@ void OpenFOAMCase::runSolver
   read_start_out();
   read_start_err();
 
-  while ( !job->ios.stopped() )
-  {
-    job->ios.poll_one();
-
-//    boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-    boost::this_thread::interruption_point();
-  }
+  job->ios_run_with_interruption();
 
   job->process->wait();
 

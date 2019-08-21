@@ -22,7 +22,7 @@
 #include "base/softwareenvironment.h"
 #include <boost/asio.hpp>
 #include <boost/process/async.hpp>
-
+#include <boost/asio/steady_timer.hpp>
 
 using namespace std;
 
@@ -106,17 +106,26 @@ void SoftwareEnvironment::Job::runAndTransferOutput
   read_start_out();
   read_start_err();
 
-  while ( !ios.stopped() )
-  {
-    ios.poll_one();
-
-//    boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-    boost::this_thread::interruption_point();
-  }
+  ios_run_with_interruption();
 
   process->wait(); // exit code is not set correctly, if this is skipped
 }
 
+
+void SoftwareEnvironment::Job::ios_run_with_interruption()
+{
+  boost::asio::steady_timer t(ios);
+
+  std::function<void(boost::system::error_code)> interruption_handler =
+   [&] (boost::system::error_code) {
+     boost::this_thread::interruption_point();
+     t.expires_from_now(std::chrono::seconds( 1 ));
+     if (process->running())
+      t.async_wait(interruption_handler);
+   };
+  interruption_handler({});
+  ios.run();
+}
 
 
 

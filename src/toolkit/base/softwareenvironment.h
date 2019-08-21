@@ -60,7 +60,10 @@ public:
         std::vector<std::string>* stdout = nullptr,
         std::vector<std::string>* stderr = nullptr
     );
+
+    void ios_run_with_interruption();
   };
+
  typedef std::shared_ptr<Job> JobPtr;
 
 private:

@@ -5,7 +5,7 @@ SERVER=localhost
 META=meta.foam
 SUBDIR=""
 
-while getopts "h?msr:" opt; do
+while getopts "h?m:s:r:" opt; do
     case "$opt" in
     h|\?)
         echo "Usage $0 [-m] [<meta file name>]"

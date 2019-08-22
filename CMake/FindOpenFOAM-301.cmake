@@ -21,7 +21,7 @@ IF(OF301_BASHRC)
   GET_FILENAME_COMPONENT(OF301_ETC_DIR ${OF301_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OF301_DIR ${OF301_ETC_DIR} PATH)
 
-  detectEnvVars(OF301 WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
+  detectEnvVars(OF301 WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
   detectEnvVar(OF301 LINKLIBSO LINKLIBSO_full)
   detectEnvVar(OF301 LINKEXE LINKEXE_full)
   detectEnvVar(OF301 FOAM_MPI MPI)
@@ -122,126 +122,17 @@ OpenFOAM
 renumberMethods
 fileFormats
 genericPatchFields
-# FVFunctionObjects
-# IOFunctionObjects
-# SloanRenumber
-# autoMesh
-# barotropicCompressibilityModel
-# blockMesh
-# cloudFunctionObjects
-# coalCombustion
-# combustionModels
-# compressibleLESModels
-# compressibleTransportModels
-# #compressibleTurbulenceModels
-# decompose
-# distributed
-# DSMC
-# engine
-# foamCalcFunctions
-# genericPatchFields
-# immiscibleIncompressibleTwoPhaseMixture
-# #incompressibleTurbulenceModels
-# jobControl
-# lagrangianSpray
-# lagrangianTurbulence
-# #lagrangianTurbulentSubModels
-# laminarFlameSpeedModels
-# molecularMeasurements
-# molecule
-# pairPatchAgglomeration
-# pyrolysisModels
-# randomProcesses
-# reconstruct
-# regionCoupled
-# regionCoupling
-# scotchDecomp
-# sixDoFRigidBodyMotion
-# solidParticle
-# solidSpecie
-# surfaceFilmDerivedFvPatchFields
-# surfaceFilmModels
-# systemCall
-# thermalBaffleModels
-# topoChangerFvMesh
-# #turbulenceDerivedFvPatchFields
-# twoPhaseProperties
-# utilityFunctionObjects
-# renumberMethods
-# edgeMesh
-# fvMotionSolvers
-# interfaceProperties
-# incompressibleTransportModels
-# lagrangianIntermediate
-# potential
-# solidChemistryModel
-# forces
-# compressibleRASModels
-# regionModels
-# dynamicFvMesh
-# fvOptions
-# decompositionMethods
-# twoPhaseMixture
-# SLGThermo
-# radiationModels
-# distributionModels
-# solidThermo
-# chemistryModel
-# #compressibleTurbulenceModel
-# liquidMixtureProperties
-# solidMixtureProperties
-# ODE
-# reactionThermophysicalModels
-# liquidProperties
-# solidProperties
-# fluidThermophysicalModels
-# thermophysicalFunctions
-# specie
-# #LEMOS-2.3.x
-# fieldFunctionObjects
-# incompressibleLESModels
-# #incompressibleRASModels
-# dynamicMesh
-# sampling
-# #LESdeltas
-# turbulenceModels
-# #LESfilters
-# #incompressibleTurbulenceModel
-# extrudeModel
-# lagrangian
-# conversion
-# finiteVolume
-# meshTools
-# triSurface
-# surfMesh
-# fileFormats
-# OpenFOAM
 )
 
   detectDepLib(OF301 "${OF301_FOAM_LIBBIN}/libfiniteVolume.so" "Pstream")
   detectDepLib(OF301 "${OF301_FOAM_LIBBIN}/libscotchDecomp.so" "scotch")
 
-  set(OF301_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF301_WM_PROJECT_VERSION}")
-  set(OF301_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF301_WM_PROJECT_VERSION}")
-  set(OF301_INSIGHT_INSTALL_BIN "bin/OpenFOAM-${OF301_WM_PROJECT_VERSION}")
-  set(OF301_INSIGHT_INSTALL_LIB "lib/OpenFOAM-${OF301_WM_PROJECT_VERSION}")
+  set(OF301_INSIGHT_INSTALL_BIN "bin/${OF301_WM_PROJECT}-${OF301_WM_PROJECT_VERSION}")
+  set(OF301_INSIGHT_INSTALL_LIB "lib/${OF301_WM_PROJECT}-${OF301_WM_PROJECT_VERSION}")
+  set(OF301_INSIGHT_BIN "${CMAKE_BINARY_DIR}/${OF301_INSIGHT_INSTALL_BIN}")
+  set(OF301_INSIGHT_LIB "${CMAKE_BINARY_DIR}/${OF301_INSIGHT_INSTALL_LIB}")
 
   addOFConfig(OF301 of301 301)
-#   list(APPEND INSIGHT_OFES_VARCONTENT "OF23x@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of23x -print -quit`#230")
-#   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
-# alias of23x=\"source insight.bashrc.of23x\"
-# ")
-#   create_script("insight.bashrc.of23x"
-# "source ${OF301_BASHRC}
-# 
-# foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OF301_INSIGHT_LIB}
-# #- Clean LD_LIBRARY_PATH
-# cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
-# export PATH=$PATH:${OF301_INSIGHT_BIN}
-# #- Clean PATH
-# cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
-# ")
 
 
 

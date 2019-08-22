@@ -20,7 +20,7 @@ IF(Fx31_BASHRC)
   GET_FILENAME_COMPONENT(Fx31_ETC_DIR ${Fx31_BASHRC} PATH)
   GET_FILENAME_COMPONENT(Fx31_DIR ${Fx31_ETC_DIR} PATH)
 
-  detectEnvVars(Fx31 WM_OPTIONS METIS_LIB_DIR MESQUITE_LIB_DIR PARMETIS_LIB_DIR SCOTCH_LIB_DIR PARMGRIDGEN_LIB_DIR FOAM_APPBIN FOAM_LIBBIN FOAM_MPI_LIBBIN)
+  detectEnvVars(Fx31 WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS METIS_LIB_DIR MESQUITE_LIB_DIR PARMETIS_LIB_DIR SCOTCH_LIB_DIR PARMGRIDGEN_LIB_DIR FOAM_APPBIN FOAM_LIBBIN FOAM_MPI_LIBBIN)
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-c++FLAGS OUTPUT_VARIABLE Fx31_CXX_FLAGS)
   set(Fx31_CXX_FLAGS "${Fx31_CXX_FLAGS} -DFx31 -DOF16ext")
@@ -136,7 +136,7 @@ detectDepLib(Fx31 "${Fx31_FOAM_LIBBIN}/libmesquiteMotionSolver.so" "mesquite")
 
   set(Fx31_LIBSRC_DIR "${Fx31_DIR}/src")
   set(Fx31_LIB_DIR "${Fx31_DIR}/lib/${Fx31_WM_OPTIONS}")
-  
+
   #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-LINKLIBSO OUTPUT_VARIABLE Fx31_LINKLIBSO_full)
   #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-LINKEXE OUTPUT_VARIABLE Fx31_LINKEXE_full)
   detectEnvVar(Fx31 LINKLIBSO LINKLIBSO_full)
@@ -147,8 +147,10 @@ detectDepLib(Fx31 "${Fx31_FOAM_LIBBIN}/libmesquiteMotionSolver.so" "mesquite")
   message(STATUS "exe link flags = "  ${Fx31_LINKEXE})
   #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_MPI_LIBBIN OUTPUT_VARIABLE Fx31_FOAM_MPI_LIBBIN)
 
-  set(Fx31_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/foam-extend-3.1")
-  set(Fx31_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/foam-extend-3.1")
+  set(Fx31_INSIGHT_INSTALL_BIN "bin/${Fx31_WM_PROJECT}-${Fx31_WM_PROJECT_VERSION}")
+  set(Fx31_INSIGHT_INSTALL_LIB "lib/${Fx31_WM_PROJECT}-${Fx31_WM_PROJECT_VERSION}")
+  set(Fx31_INSIGHT_BIN "${CMAKE_BINARY_DIR}/${Fx31_INSIGHT_INSTALL_BIN}")
+  set(Fx31_INSIGHT_LIB "${CMAKE_BINARY_DIR}/${Fx31_INSIGHT_INSTALL_LIB}")
 
   list(APPEND INSIGHT_OFES_VARCONTENT "FX31@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.fx31 -print -quit`#161")
   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
@@ -188,7 +190,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
 #      ${Fx31_MESQUITE_LIB_DIR}/libmesquite.so 
 #       ${Fx31_PARMGRIDGEN_LIB_DIR}/libMGridGen.so
       ${ARGN})
-     install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx31_FOAM_APPBIN})
+     install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx31_INSIGHT_INSTALL_BIN}  COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   endmacro()
   
   macro (setup_lib_target_Fx31 targetname sources exename includes)
@@ -206,7 +208,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${Fx31_INSIGHT_LIB})
     target_link_libraries(${targetname} ${Fx31_LIBRARIES} ${ARGN}) 
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx31_FOAM_LIBBIN})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx31_INSIGHT_INSTALL_LIB}  COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

@@ -20,13 +20,7 @@ IF(OF16ext_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF16ext_CXX_FLAGS)
   set(OF16ext_CXX_FLAGS "${OF16ext_CXX_FLAGS} -DOF16ext")
 
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-WM_OPTIONS OUTPUT_VARIABLE OF16ext_WM_OPTIONS)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-METIS_LIB_DIR OUTPUT_VARIABLE OF16ext_METIS_LIB_DIR)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-MESQUITE_LIB_DIR OUTPUT_VARIABLE OF16ext_MESQUITE_LIB_DIR)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-PARMETIS_LIB_DIR OUTPUT_VARIABLE OF16ext_PARMETIS_LIB_DIR)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-SCOTCH_LIB_DIR OUTPUT_VARIABLE OF16ext_SCOTCH_LIB_DIR)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF16ext_FOAM_APPBIN)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF16ext_FOAM_LIBBIN)
+  detectEnvVars(OF16ext WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS METIS_LIB_DIR PARMETIS_LIB_DIR SCOTCH_LIB_DIR MESQUITE_LIB_DIR FOAM_MPI_LIBBIN FOAM_APPBIN FOAM_LIBBIN)
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF16ext_BASHRC} OUTPUT_VARIABLE OF16ext_LIBRARIES)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${OF16ext_BASHRC} OUTPUT_VARIABLE OF16ext_INCLUDE_PATHS)
@@ -40,10 +34,11 @@ IF(OF16ext_BASHRC)
   string(REGEX REPLACE "^[^ ]+" "" OF16ext_LINKEXE ${OF16ext_LINKEXE_full})
   message(STATUS "libso link flags = "  ${OF16ext_LINKLIBSO})
   message(STATUS "exe link flags = "  ${OF16ext_LINKEXE})
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-FOAM_MPI_LIBBIN OUTPUT_VARIABLE OF16ext_FOAM_MPI_LIBBIN)
 
-  set(OF16ext_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF16ext_WM_PROJECT_VERSION}")
-  set(OF16ext_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF16ext_WM_PROJECT_VERSION}")
+  set(OF16ext_INSIGHT_INSTALL_BIN "bin/${OF16ext_WM_PROJECT}-${OF16ext_WM_PROJECT_VERSION}")
+  set(OF16ext_INSIGHT_INSTALL_LIB "lib/${OF16ext_WM_PROJECT}-${OF16ext_WM_PROJECT_VERSION}")
+  set(OF16ext_INSIGHT_BIN "${CMAKE_BINARY_DIR}/${OF16ext_INSIGHT_INSTALL_BIN}")
+  set(OF16ext_INSIGHT_LIB "${CMAKE_BINARY_DIR}/${OF16ext_INSIGHT_INSTALL_LIB}")
 
   list(APPEND INSIGHT_OFES_VARCONTENT "OF16ext@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of16ext -print -quit`#160")
   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
@@ -79,7 +74,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
       ${OF16ext_SCOTCH_LIB_DIR}/libscotch.so
       ${OF16ext_MESQUITE_LIB_DIR}/libmesquite.so
       ${ARGN})
-     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF16ext_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF16ext_INSIGHT_INSTALL_BIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   endmacro()
   
   macro (setup_lib_target_OF16ext targetname sources exename includes)
@@ -96,7 +91,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF16ext_INSIGHT_LIB})
     target_link_libraries(${targetname} ${OF16ext_LIBRARIES} ${ARGN}) 
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF16ext_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF16ext_INSIGHT_INSTALL_LIB} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

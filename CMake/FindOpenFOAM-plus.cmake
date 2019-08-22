@@ -23,7 +23,7 @@ IF(OFplus_BASHRC)
   GET_FILENAME_COMPONENT(OFplus_ETC_DIR ${OFplus_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OFplus_DIR ${OFplus_ETC_DIR} PATH)
 
-  detectEnvVars(OFplus WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
+  detectEnvVars(OFplus WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
   detectEnvVar(OFplus LINKLIBSO LINKLIBSO_full)
   detectEnvVar(OFplus LINKEXE LINKEXE_full)
   detectEnvVar(OFplus FOAM_MPI MPI)
@@ -39,91 +39,6 @@ IF(OFplus_BASHRC)
   detectIncPaths(OFplus)
 
   setOFlibvar(OFplus 
-# incompressibleTurbulenceModels
-# turbulenceModels
-# turbulenceModelSchemes
-# compressibleTurbulenceModels
-# sixDoFRigidBodyMotion
-# engine
-# SLGThermo
-# fluidThermophysicalModels
-# laminarFlameSpeedModels
-# solidThermo
-# radiationModels
-# liquidProperties
-# solidMixtureProperties
-# liquidMixtureProperties
-# liquidPropertiesFvPatchFields
-# solidProperties
-# barotropicCompressibilityModel
-# solidSpecie
-# specie
-# reactionThermophysicalModels
-# thermophysicalFunctions
-# chemistryModel
-# solidChemistryModel
-# pairPatchAgglomeration
-# reconstruct
-# decompositionMethods
-# decompose
-# scotchDecomp
-# distributed
-# topoChangerFvMesh
-# edgeMesh
-# blockMesh
-# extrudeModel
-# snappyHexMesh
-# regionCoupled
-# pyrolysisModels
-# regionModels
-# regionCoupling
-# surfaceFilmDerivedFvPatchFields
-# surfaceFilmModels
-# thermalBaffleModels
-# meshTools
-# triSurface
-# finiteVolume
-# dynamicMesh
-# fvMotionSolvers
-# dynamicFvMesh
-# coalCombustion
-# molecule
-# potential
-# molecularMeasurements
-# lagrangian
-# solidParticle
-# lagrangianTurbulence
-# lagrangianSpray
-# DSMC
-# lagrangianIntermediate
-# distributionModels
-# rigidBodyMeshMotion
-# conversion
-# sampling
-# FVFunctionObjects
-# jobControl
-# systemCall
-# utilityFunctionObjects
-# forces
-# fieldFunctionObjects
-# IOFunctionObjects
-# cloudFunctionObjects
-# foamCalcFunctions
-# surfMesh
-# rigidBodyDynamics
-# ODE
-# incompressibleTransportModels
-# twoPhaseMixture
-# interfaceProperties
-# twoPhaseProperties
-# immiscibleIncompressibleTwoPhaseMixture
-# compressibleTransportModels
-# combustionModels
-# fvOptions
-# OpenFOAM
-# renumberMethods
-# fileFormats
-# genericPatchFields
 incompressibleTurbulenceModels
 turbulenceModels
 compressibleTurbulenceModels
@@ -210,27 +125,12 @@ randomProcesses
   detectDepLib(OFplus "${OFplus_FOAM_LIBBIN}/libfiniteVolume.so" "Pstream")
   detectDepLib(OFplus "${OFplus_FOAM_LIBBIN}/libscotchDecomp.so" "scotch")
 
-  set(OFplus_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OFplus_WM_PROJECT_VERSION}")
-  set(OFplus_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OFplus_WM_PROJECT_VERSION}")
-  set(OFplus_INSIGHT_INSTALL_BIN "bin/OpenFOAM-${OFplus_WM_PROJECT_VERSION}")
-  set(OFplus_INSIGHT_INSTALL_LIB "lib/OpenFOAM-${OFplus_WM_PROJECT_VERSION}")
+  set(OFplus_INSIGHT_INSTALL_BIN "bin/${OFplus_WM_PROJECT}-${OFplus_WM_PROJECT_VERSION}")
+  set(OFplus_INSIGHT_INSTALL_LIB "lib/${OFplus_WM_PROJECT}-${OFplus_WM_PROJECT_VERSION}")
+  set(OFplus_INSIGHT_BIN "${CMAKE_BINARY_DIR}/${OFplus_INSIGHT_INSTALL_BIN}")
+  set(OFplus_INSIGHT_LIB "${CMAKE_BINARY_DIR}/${OFplus_INSIGHT_INSTALL_LIB}")
 
   addOFConfig(OFplus ofplus 400)
-#   list(APPEND INSIGHT_OFES_VARCONTENT "OF23x@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of23x -print -quit`#230")
-#   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
-# alias of23x=\"source insight.bashrc.of23x\"
-# ")
-#   create_script("insight.bashrc.of23x"
-# "source ${OFplus_BASHRC}
-# 
-# foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OFplus_INSIGHT_LIB}
-# #- Clean LD_LIBRARY_PATH
-# cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
-# export PATH=$PATH:${OFplus_INSIGHT_BIN}
-# #- Clean PATH
-# cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
-# ")
 
 
 

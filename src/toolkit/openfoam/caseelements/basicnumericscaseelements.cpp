@@ -569,13 +569,14 @@ OFDictData::dict stdAsymmSolverSetup(double tol, double reltol, int minIter)
   return d;
 }
 
-OFDictData::dict stdSymmSolverSetup(double tol, double reltol)
+OFDictData::dict stdSymmSolverSetup(double tol, double reltol, int maxIter)
 {
   OFDictData::dict d;
   d["solver"]="PCG";
   d["preconditioner"]="DIC";
   d["tolerance"]=tol;
   d["relTol"]=reltol;
+  d["maxIter"]=maxIter;
   return d;
 }
 

@@ -249,7 +249,7 @@ public:
 
 OFDictData::dict diagonalSolverSetup();
 OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
-OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0);
+OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0, int maxIter=1000);
 OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
 OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0);

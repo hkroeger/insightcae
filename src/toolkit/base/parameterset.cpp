@@ -74,14 +74,12 @@ void ParameterSet::extend(const EntryList& entries)
     SubsetParameter *p = dynamic_cast<SubsetParameter*>( boost::get<1>(i) );
     if (p && this->contains(key))
     {
-// 	cout<<"merging subdict "<<key<<endl;
 	SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
 	myp->extend(p->entries());
 	delete p;
     }
     else 
     {
-//       cout<<"inserting "<<key<<endl;
     // insert does not replace!
       insert(key, boost::get<1>(i)); // take ownership of objects in given list!
     }
@@ -99,20 +97,20 @@ ParameterSet& ParameterSet::merge(const ParameterSet& p)
     {
       if (p)
       {
-// 	cout<<"merging subdict "<<key<<endl;
+        // merging subdict
 	SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
 	myp->merge(*p);
 	delete p;
       }
       else
       {
-// 	cout<<"replacing"<<key<<endl;
+        // replacing
 	replace(key, boost::get<1>(i)); // take ownership of objects in given list!
       }
     }
     else 
     {
-//       cout<<"inserting "<<key<<endl;
+      // inserting
       insert(key, boost::get<1>(i)); // take ownership of objects in given list!
     }
   }

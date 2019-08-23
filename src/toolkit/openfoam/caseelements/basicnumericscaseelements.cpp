@@ -326,7 +326,7 @@ void FVNumerics::insertStandardGradientConfig(OFdicts& dictionaries) const
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
 
   std::string bgrads=lqGradSchemeIfPossible();
-  grad["default"]=bgrads;
+  grad["default"]="cellMDLimited "+bgrads+" 1";
   grad["grad("+pName_+")"]="Gauss linear";
 
   grad["limitedGrad"]="cellMDLimited "+bgrads+" 1";

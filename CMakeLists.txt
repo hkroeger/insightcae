@@ -642,6 +642,12 @@ list (APPEND ${VARNAME}
 set (${VARNAME} ${${VARNAME}} PARENT_SCOPE)
 endmacro()
 
+
+
+########################################################################################
+##
+##   Python integration
+
 macro (get_python_install_path PATHVARNAME INSTALL_PREFIX)
  execute_process(
     COMMAND python -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${INSTALL_PREFIX}' ) )"
@@ -654,8 +660,10 @@ macro (get_python_install_path PATHVARNAME INSTALL_PREFIX)
  set ( ${PATHVARNAME}_REL ${_REL_PYTHON_MODULE_PATH} )
 endmacro()
 
+
 get_python_install_path(INSIGHT_INSTALL_PYTHON_PATH ${CMAKE_INSTALL_PREFIX})
 get_python_install_path(INSIGHT_PYTHON_PATH ${CMAKE_BINARY_DIR})
+
 
 macro (add_pybindings TARGETNAME IFFILES LIBS)
   IF(INSIGHT_BUILD_PYTHONBINDINGS)
@@ -707,6 +715,10 @@ macro(install_package_script PACKAGENAME)
       )
   endforeach()
 endmacro(install_package_script)
+
+
+
+
 
 
 

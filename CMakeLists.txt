@@ -84,7 +84,6 @@ add_subdirectory(src/desktop)
 SET(CPACK_SET_DESTDIR ON)
 
 
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
@@ -617,39 +616,7 @@ macro(install_shared_directory NAME SHAREDDIR DSTLOCATION)
   endforeach()
 endmacro(install_shared_directory)
 
-macro(install_package_script PACKAGENAME)
-  foreach (_src ${ARGN})
-  
-    STRING(REPLACE "/" "_" TARGNAME ${PACKAGENAME}_${_src})
-    STRING(REPLACE "." "_" TARGNAME ${TARGNAME})
-    
-    file(GLOB COPY_FILES
-      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-      ${_src})
-      
-    add_custom_target(${TARGNAME} ALL
-      COMMENT "Copying file: ${_src}")
 
-    set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
-    set(DST "${CMAKE_BINARY_DIR}/share/insight/python/Insight/${PACKAGENAME}/${_src}")
-
-#     message(STATUS "target name: ${TARGNAME}")
-    add_custom_command(
-      TARGET ${TARGNAME}
-      COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
-      )
-      
-    get_filename_component(
-        DST_DIR 
-        share/insight/python/Insight/${PACKAGENAME}/${_src}
-        DIRECTORY)
-    install(
-      FILES ${_src} 
-      DESTINATION ${DST_DIR} #share/insight/python/Insight/${PACKAGENAME}
-      COMPONENT ${INSIGHT_INSTALL_COMPONENT}
-      )
-  endforeach()
-endmacro(install_package_script)
 
 macro (add_sources SRCS)
     #message("ARGC='${ARGC}' ARGV='${ARGV}' ARGN='${ARGN}'")
@@ -675,19 +642,73 @@ list (APPEND ${VARNAME}
 set (${VARNAME} ${${VARNAME}} PARENT_SCOPE)
 endmacro()
 
+macro (get_python_install_path PATHVARNAME INSTALL_PREFIX)
+ execute_process(
+    COMMAND python -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${INSTALL_PREFIX}' ) )"
+    OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+ )
+ get_filename_component ( _ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE )
+ set ( ${PATHVARNAME} ${_ABS_PYTHON_MODULE_PATH} )
+ file ( RELATIVE_PATH _REL_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH} )
+ set ( ${PATHVARNAME}_REL ${_REL_PYTHON_MODULE_PATH} )
+endmacro()
+
+get_python_install_path(INSIGHT_INSTALL_PYTHON_PATH ${CMAKE_INSTALL_PREFIX})
+get_python_install_path(INSIGHT_PYTHON_PATH ${CMAKE_BINARY_DIR})
+
 macro (add_pybindings TARGETNAME IFFILES LIBS)
   IF(INSIGHT_BUILD_PYTHONBINDINGS)
     INCLUDE(${SWIG_USE_FILE})
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
+    set(CMAKE_SWIG_OUTDIR ${INSIGHT_PYTHON_PATH}/Insight)
     SET(${TARGETNAME}_INTERFACES ${IFFILES})
     SET(CMAKE_SWIG_FLAGS "")
     SET_SOURCE_FILES_PROPERTIES(${${TARGETNAME}_INTERFACES} PROPERTIES CPLUSPLUS ON)
     SWIG_ADD_LIBRARY(${TARGETNAME} LANGUAGE python SOURCES ${${TARGETNAME}_INTERFACES})
     SWIG_LINK_LIBRARIES(${TARGETNAME} ${LIBS})
-    set_target_properties(${SWIG_MODULE_${TARGETNAME}_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
+    set_target_properties(
+        ${SWIG_MODULE_${TARGETNAME}_REAL_NAME}
+        PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${INSIGHT_PYTHON_PATH}/Insight
+        )
+    INSTALL ( FILES ${INSIGHT_PYTHON_PATH}/Insight/_${TARGETNAME}.so DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    INSTALL ( FILES ${INSIGHT_PYTHON_PATH}/Insight/${TARGETNAME}.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   ENDIF()
 endmacro()
+
+
+macro(install_package_script PACKAGENAME)
+  foreach (_src ${ARGN})
+
+    STRING(REPLACE "/" "_" TARGNAME ${PACKAGENAME}_${_src})
+    STRING(REPLACE "." "_" TARGNAME ${TARGNAME})
+
+    file(GLOB COPY_FILES
+      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+      ${_src})
+
+    add_custom_target(${TARGNAME} ALL
+      COMMENT "Copying file: ${_src}")
+
+    set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
+    set(DST "${INSIGHT_PYTHON_PATH}/Insight/${PACKAGENAME}/${_src}")
+
+#     message(STATUS "target name: ${TARGNAME}")
+    add_custom_command(
+      TARGET ${TARGNAME}
+      COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+      )
+
+    get_filename_component(DST_DIR ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight/${PACKAGENAME}/${_src} DIRECTORY)
+    install(
+      FILES ${_src}
+      DESTINATION ${DST_DIR} #share/insight/python/Insight/${PACKAGENAME}
+      COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+      )
+  endforeach()
+endmacro(install_package_script)
+
+
 
 set(IS_INSIGHTCAE_PROJECT 1) # activate depency of pdl-generated headers on pdl target
 include(InsightCAE_CMakeFunctions)

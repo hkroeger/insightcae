@@ -7,11 +7,11 @@ file(GLOB COPY_FILES
 add_custom_target(insight_python ALL)
 
 set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/__init__.py")
-set(DST "${CMAKE_BINARY_DIR}/share/insight/python/Insight/__init__.py")
+set(DST "${INSIGHT_PYTHON_PATH}/Insight/__init__.py")
 
 add_custom_command(
   TARGET insight_python
   COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
   )
 
-install(FILES __init__.py DESTINATION share/insight/python/Insight)
+install(FILES __init__.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight)

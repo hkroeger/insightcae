@@ -12,13 +12,14 @@ export PATH=$INSIGHT_BINDIR:$PATH
 export LD_LIBRARY_PATH=$INSIGHT_LIBDIR:$LD_LIBRARY_PATH
 
 for cfgd in $INSIGHT_USERSHAREDDIR ${INSIGHT_GLOBALSHAREDDIRS/:/ }; do # in that order!
- if [ -d $cfgd/python ]; then
-  export PYTHONPATH=$cfgd/python:$PYTHONPATH
- fi
  if [ -d $cfgd/tex ]; then
   export TEXINPUTS=$TEXINPUTS:$cfgd/tex
  fi
 done
+
+if which python >/dev/null 2>&1; then
+ export PYTHONPATH=$PYTHONPATH:$(python -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${INSIGHT_INSTDIR}' ) )")
+fi
 
 source $INSIGHT_BINDIR/insight_isofplottabular_aliases.sh
 

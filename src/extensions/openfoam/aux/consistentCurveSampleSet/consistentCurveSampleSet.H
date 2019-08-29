@@ -37,7 +37,7 @@ SourceFiles
 #include "sampledSet.H"
 #include "DynamicList.H"
 
-#ifndef OF16ext
+#if defined(OF_FORK_extend) //ndef OF16ext
 #include "passiveParticleCloud.H"
 #endif
 
@@ -73,9 +73,9 @@ class consistentCurveSet
         //  Returns false if end of samples reached.
         bool trackToBoundary
         (
-#ifdef OF16ext
+#if defined(OF_FORK_extend)//def OF16ext
             Particle<passiveParticle>& singleParticle,
-#elif defined (OF21x)||defined (OF22x)||defined (OF22eng)
+#elif (OF_VERSION>=020100 && OF_VERSION<=020200) //defined (OF21x)||defined (OF22x)||defined (OF22eng)
             passiveParticle& singleParticle,
 #else
             passiveParticleCloud& particleCloud,
@@ -109,7 +109,7 @@ public:
     //- Runtime type information
     TypeName("consistentCurve");
 
-#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if (OF_VERSION>=040000) //defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     // Static data
 
         //- Tolerance when comparing points relative to difference between
@@ -124,7 +124,7 @@ public:
         (
             const word& name,
             const polyMesh& mesh,
-#if defined(OF16ext)||defined(OF21x)
+#if OF_VERSION<=020100 //defined(OF16ext)||defined(OF21x)
             meshSearch& searchEngine,
 #else
             const meshSearch& searchEngine,
@@ -138,7 +138,7 @@ public:
         (
             const word& name,
             const polyMesh& mesh,
-#if defined(OF16ext)||defined(OF21x)
+#if OF_VERSION<=020100 //defined(OF16ext)||defined(OF21x)
             meshSearch& searchEngine,
 #else
             const meshSearch& searchEngine,

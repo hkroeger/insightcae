@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
     axis/=mag(axis);
         
     label n=2;
-    if (args.optionFound("n"))
+    if (UNIOF_OPTIONFOUND(args, "n"))
     {
       n=readLabel(IStringStream(args.options()["n"])())+1;
       if (n<2)

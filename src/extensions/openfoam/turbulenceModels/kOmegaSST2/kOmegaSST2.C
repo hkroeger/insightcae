@@ -30,7 +30,7 @@ License
 #include "fixedInternalValueFvPatchFields.H"
 #include "gaussConvectionScheme.H"
 
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<030000 //not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 #include "backwardsCompatibilityWallFunctions.H"
 #else
 #include "bound.H"
@@ -42,7 +42,7 @@ License
 
 namespace Foam
 {
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<030000 //not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 namespace incompressible
 {
 #endif
@@ -53,7 +53,7 @@ namespace RASModels
 
 defineTypeNameAndDebug(kOmegaSST2, 0);
 
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 addToRunTimeSelectionTable
 (
     RAStransportModelIncompressibleTurbulenceModel,
@@ -100,7 +100,7 @@ tmp<volScalarField> kOmegaSST2::F2() const
     return tanh(sqr(arg2));
 }
 
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
 scalar kOmegaSST2::yPlusLam(const scalar kappa, const scalar E) const
 {
     scalar ypl = 11.0;
@@ -137,7 +137,7 @@ void kOmegaSST2::correctNut()
 
 kOmegaSST2::kOmegaSST2
 (
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
      const alphaField& alpha,
     const rhoField& rho,
     const volVectorField& U,
@@ -150,7 +150,7 @@ kOmegaSST2::kOmegaSST2
     const volVectorField& U,
     const surfaceScalarField& phi,
     transportModel& lamTransportModel
-#if !defined(OF16ext) || defined(Fx41)
+#if OF_VERSION>=010700 || (defined(OF_FORK_extend)&&OF_VERSION>=010604) //!defined(OF16ext) || defined(Fx41)
     ,
     const word& turbulenceModelName,
     const word& modelName
@@ -158,9 +158,9 @@ kOmegaSST2::kOmegaSST2
 #endif
 )
 :
-#if defined(OF16ext) && !defined(Fx41)
+#if OF_VERSION<010700 && !(defined(OF_FORK_extend)&&OF_VERSION>=010604) //defined(OF16ext) && !defined(Fx41)
     RASModel(typeName, U, phi, lamTransportModel),
-#elif defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#elif OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
     RAStransportModelIncompressibleTurbulenceModel
     (
       type,
@@ -323,11 +323,11 @@ kOmegaSST2::kOmegaSST2
 
     nutSmall_("nutSmall", dimLength*dimLength/dimTime, SMALL),
     ySmall_("ySmall", dimLength, SMALL),
-#ifndef OF16ext
+#if !defined(OF_FORK_extend) //ndef OF16ext
     omegaSmall_("omegaSmall", omegaMin_.dimensions(), SMALL),
 #endif
 
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
     y_(wallDist::New(this->mesh_).y()),
 #else
     y_(mesh_),
@@ -340,14 +340,14 @@ kOmegaSST2::kOmegaSST2
             "k",
             runTime_.timeName(),
             mesh_,
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
             IOobject::MUST_READ,
 #else
             IOobject::NO_READ,
 #endif
             IOobject::AUTO_WRITE
         ),
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 	mesh_
 #else
         autoCreateK("k", mesh_)
@@ -360,14 +360,14 @@ kOmegaSST2::kOmegaSST2
             "omega",
             runTime_.timeName(),
             mesh_,
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
             IOobject::MUST_READ,
 #else
             IOobject::NO_READ,
 #endif
             IOobject::AUTO_WRITE
         ),
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 	mesh_
 #else
         autoCreateOmega("omega", mesh_)
@@ -380,14 +380,14 @@ kOmegaSST2::kOmegaSST2
             "nut",
             runTime_.timeName(),
             mesh_,
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
             IOobject::MUST_READ,
 #else
             IOobject::NO_READ,
 #endif
             IOobject::AUTO_WRITE
         ),
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 	mesh_
 #else
         autoCreateNut("nut", mesh_)
@@ -432,7 +432,7 @@ kOmegaSST2::kOmegaSST2
 //     nut_.correctBoundaryConditions();
 
     //correct();
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
     printCoeffs("kOmegaSST2");
 #else
     printCoeffs();
@@ -484,12 +484,12 @@ tmp<volSymmTensorField> kOmegaSST2::devReff() const
 
 
 tmp<fvVectorMatrix> kOmegaSST2::divDevReff(
-#if !(defined(Fx40)||defined(Fx41))
+#if !(defined(OF_FORK_extend)&&OF_VERSION>010603) //!(defined(Fx40)||defined(Fx41))
 	  volVectorField& U
 #endif
 ) const
 {
-#if defined(Fx40)||defined(Fx41)
+#if (defined(OF_FORK_extend)&&OF_VERSION>010603) //defined(Fx40)||defined(Fx41)
     const volVectorField& U=U_;
 #endif
     return
@@ -499,7 +499,7 @@ tmp<fvVectorMatrix> kOmegaSST2::divDevReff(
     );
 }
 
-#ifndef OF16ext
+#if !defined(OF_FORK_extend) //ndef OF16ext
 tmp<fvVectorMatrix> kOmegaSST2::divDevRhoReff
 (
     const volScalarField& rho,
@@ -555,7 +555,7 @@ void kOmegaSST2::correct()
         return;
     }
 
-#if not (defined(OF301) || defined (OFplus) || defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<030000 //not (defined(OF301) || defined (OFplus) || defined(OFdev)||defined(OFesi1806))
     if (mesh_.changing())
     {
         y_.correct();
@@ -690,12 +690,12 @@ void kOmegaSST2::correct()
 
     omegaEqn.relax();
 
-#if !(defined(Fx31)||defined(Fx32)||defined(Fx40)||defined(Fx41))
+#if !(defined(OF_FORK_extend)&&OF_VERSION>010600) //!(defined(Fx31)||defined(Fx32)||defined(Fx40)||defined(Fx41))
     omegaEqn.boundaryManipulate(UNIOF_BOUNDARY_NONCONST(omega_));
 #endif
     
     solve(tomegaEqn);
-#ifdef OF16ext
+#if defined(OF_FORK_extend) //def OF16ext
     bound(omega_, omega0_);
 #else
     bound(omega_, omegaMin_);
@@ -715,7 +715,7 @@ void kOmegaSST2::correct()
 
     kEqn.relax();
     solve(tkEqn);
-#ifdef OF16ext
+#if defined(OF_FORK_extend) //def OF16ext
     bound(k_, k0_);
 #else
     bound(k_, kMin_);
@@ -730,7 +730,7 @@ void kOmegaSST2::correct()
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<030000 //not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 } // End namespace incompressible
 #endif
 } // End namespace Foam

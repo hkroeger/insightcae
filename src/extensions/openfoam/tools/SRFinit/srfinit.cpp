@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
 
     word Uname("U");
-    if (args.options().found("Uname"))
+    if (UNIOF_OPTIONFOUND(args, "Uname"))
     {
       Uname=UNIOF_OPTION(args, "Uname");
     }

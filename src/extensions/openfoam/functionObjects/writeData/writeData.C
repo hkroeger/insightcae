@@ -26,7 +26,7 @@ License
 #include "writeData.H"
 #include "dictionary.H"
 #include "error.H"
-#if (defined(Fx40)||defined(Fx41)||defined(Fx32))
+#if defined(OF_FORK_extend) && OF_VERSION>010601 //(defined(Fx40)||defined(Fx41)||defined(Fx32))
 #include "foamTime.H"
 #else
 #include "Time.H"
@@ -36,7 +36,7 @@ License
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-#if not (defined(OFdev)||defined(OFplus)||defined(OFesi1806))
+#if OF_VERSION<040000 //not (defined(OFdev)||defined(OFplus)||defined(OFesi1806))
 namespace Foam
 {
 defineTypeNameAndDebug(writeData, 0);
@@ -77,7 +77,7 @@ Foam::writeData::writeData
     const bool loadFromFiles
 )
 :
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     functionObject(name),
 #endif
     name_(name),
@@ -102,7 +102,7 @@ Foam::writeData::~writeData()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 bool
 #else
 void 
@@ -118,13 +118,13 @@ Foam::writeData::read(const dictionary& dict)
     {
         abortFile_.expand();
     }
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     return true;
 #endif
 }
 
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 bool
 #else
 void 
@@ -143,7 +143,7 @@ Foam::writeData::execute()
 
     if (write)
     {
-#if defined(OF16ext) || defined(OF21x)
+#if OF_VERSION<=020100 //defined(OF16ext) || defined(OF21x)
         const_cast<Time&>(obr_.time()).writeNow();
 #else
         const_cast<Time&>(obr_.time()).writeOnce();
@@ -156,7 +156,7 @@ Foam::writeData::execute()
     
     if (abort)
     {
-#if defined(OF16ext) //defined(OF21x)
+#if OF_VERSION<010700 //defined(OF16ext) //defined(OF21x)
 //        const_cast<Time&>(obr_.time()).setStopAt(Time::saWriteNow);
 #else
         const_cast<Time&>(obr_.time()).stopAt(Time::saWriteNow);
@@ -166,7 +166,7 @@ Foam::writeData::execute()
 	    << endl;
 #endif
     }
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     return true;
 #endif    
 }
@@ -175,7 +175,7 @@ void Foam::writeData::updateMesh(const mapPolyMesh& mpm)
 {
 }
 
-#if defined(OF16ext) || defined(OF21x)
+#if OF_VERSION<=020100 //defined(OF16ext) || defined(OF21x)
 void Foam::writeData::movePoints(const pointField& pf)
 #else
 void Foam::writeData::movePoints(const polyMesh& mesh)
@@ -185,14 +185,14 @@ void Foam::writeData::movePoints(const polyMesh& mesh)
 
 
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 bool
 #else
 void 
 #endif
 Foam::writeData::end()
 {
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     return false;
 #endif    //removeFile();
 }
@@ -204,7 +204,7 @@ void Foam::writeData::timeSet()
 }
 
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 bool
 #else
 void 
@@ -212,7 +212,7 @@ void
 Foam::writeData::write()
 {
     // Do nothing - only valid on execute
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     return false;
 #endif
 }

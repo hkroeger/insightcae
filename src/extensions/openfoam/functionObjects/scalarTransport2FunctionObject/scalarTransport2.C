@@ -303,7 +303,19 @@ bool Foam::functionObjects::scalarTransport2::execute()
 
         if (bounded01_)
         {
+#if OF_VERSION>=060500
+          MULES::explicitSolve
+          (
+              geometricOneField(),
+              s,
+              phi,
+              tTPhiUD.ref(),
+              oneField(),
+              zeroField()
+          );
+#else
             MULES::explicitSolve(s, phi, tTPhiUD.ref(), 1, 0);
+#endif
         }
     }
     else if (phi.dimensions() == dimMass/dimTime)

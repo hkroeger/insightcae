@@ -136,7 +136,7 @@ public:
             const GeometricField<Type, fvPatchField, volMesh>&
         ) const
         {
-#ifdef OF16ext
+#if (OF_VERSION<010700) //def OF16ext
             return this->mesh().deltaCoeffs();
 #else
             return this->mesh().nonOrthDeltaCoeffs();
@@ -146,7 +146,7 @@ public:
         //- Return true if this scheme uses an explicit correction
         virtual bool corrected() const
         {
-#ifdef OF16ext
+#if (OF_VERSION<010700) //def OF16ext
 	    return !this->mesh().orthogonal();
 #else
             return true;

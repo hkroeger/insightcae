@@ -52,11 +52,7 @@ int main(int argc, char *argv[])
 
     labelHashSet patches(
           mesh.boundaryMesh().patchSet(
-#if defined(OF16ext)&&!defined(Fx41)
-            wordList
-#else
-            wordReList
-#endif
+            UNIOF_WORDRELIST
             (IStringStream( UNIOF_ADDARG(args, 0) )())
            ));
 

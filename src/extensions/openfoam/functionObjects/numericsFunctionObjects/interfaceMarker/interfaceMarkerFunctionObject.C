@@ -21,7 +21,7 @@
 #include "interfaceMarkerFunctionObject.H"
 #include <boost/graph/graph_concepts.hpp>
 #include "fvCFD.H"
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
 #include "fvcSmooth.H"
 #endif
 #include "addToRunTimeSelectionTable.H"
@@ -30,11 +30,11 @@
 #include "faceSet.H"
 #include "cellSet.H"
 
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
 #include "polyMeshTetDecomposition.H"
 #endif
 
-#if (!( defined(OF16ext) || defined(OF21x) ))
+#if OF_VERSION>020100 //(!( defined(OF16ext) || defined(OF21x) ))
 #include "unitConversion.H"
 #include "primitiveMeshTools.H"
 #endif
@@ -59,7 +59,7 @@ namespace Foam
 void Foam::interfaceMarkerFunctionObject::updateBlendingFactor()
 {
   const volScalarField& pf = mesh_.lookupObject<volScalarField>(phaseFieldName_);
-  surfaceScalarField spf = fvc::interpolate(pf);
+  surfaceScalarField spf( fvc::interpolate(pf) );
   
   forAll(blendingFactors_, i)
   {
@@ -74,7 +74,7 @@ void Foam::interfaceMarkerFunctionObject::updateBlendingFactor()
     {
       if (mesh_.time().outputTime())
       {
-	volScalarField blendavg=fvc::average(blendingFactors_[i]);
+        volScalarField blendavg( fvc::average(blendingFactors_[i]) );
 	blendavg.rename(blendingFactors_[i].name());
 	Info<<"Writing volScalarField "<<blendavg.name()<<endl;
 	blendavg.write();  
@@ -152,7 +152,7 @@ bool Foam::interfaceMarkerFunctionObject::start()
 
 bool Foam::interfaceMarkerFunctionObject::execute
 (
-#if not (defined(OF16ext)||defined(OFdev)||defined(OFplus)||defined(OFesi1806))||defined(Fx41)
+#if (defined(OF_FORK_extend) && OF_VERSION>=010604) || (!defined(OF_FORK_extend) && OF_VERSION<040000) //not (defined(OF16ext)||defined(OFdev)||defined(OFplus)||defined(OFesi1806))||defined(Fx41)
   bool
 #endif
 )
@@ -172,7 +172,7 @@ bool Foam::interfaceMarkerFunctionObject::read(const dictionary& dict)
     return false;
 }
 
-#if !defined(OF16ext) && !defined(OF21x) || defined(Fx41)
+#if OF_VERSION>=020100 || (defined(OF_FORK_extend) && OF_VERSION>=010604) //!defined(OF16ext) && !defined(OF21x) || defined(Fx41)
 
           //- Update for changes of mesh
 void Foam::interfaceMarkerFunctionObject::updateMesh(const mapPolyMesh& mpm)
@@ -181,7 +181,7 @@ void Foam::interfaceMarkerFunctionObject::updateMesh(const mapPolyMesh& mpm)
 
         //- Update for changes of mesh
 void Foam::interfaceMarkerFunctionObject::movePoints(
-    #if defined(Fx41)
+    #if (defined(OF_FORK_extend) && OF_VERSION>=010604) //defined(Fx41)
             const pointField&
     #else
             const polyMesh& mesh

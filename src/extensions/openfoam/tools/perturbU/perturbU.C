@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 //     yf.write();
     
     // direction towards wall
-    volVectorField nh=-fvc::grad(yf);
+    volVectorField nh( -fvc::grad(yf) );
     nh/=(mag(nh)+dimensionedScalar("", nh.dimensions(), SMALL));
 //     nh.rename("grad(y)");
 //     nh.write();
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     
     vector nflow=Ubar/mag(Ubar);
     
-    volVectorField ntan = nh ^ nflow;
+    volVectorField ntan( nh ^ nflow );
 
     scalar h=max(yf).value();
     
@@ -101,13 +101,13 @@ int main(int argc, char *argv[])
     );
     
     point center=boundBox(mesh.C()).midpoint();
-#ifdef OF16ext
+#if (OF_VERSION<010700) //def OF16ext
     cuttingPlane cpl(plane(center, nflow), mesh);
 #else
     cuttingPlane cpl(plane(center, nflow), mesh, false);
 #endif
     vector Ub=gAverage(
-            #if defined(OFesi1806)
+            #if (OF_VERSION>=060000) //defined(OFesi1806)
                 vectorField(U, cpl.meshCells())
             #else
                 cpl.sample(U)
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     {
         // add a small (+/-20%) random component to enhance symetry breaking
         scalar deviation=1.0 + 0.2*
-        #if defined(OFesi1806)
+        #if (OF_VERSION>=060000) //defined(OFesi1806)
                 perturbation.GaussNormal<scalar>()
         #else
                 perturbation.GaussNormal()

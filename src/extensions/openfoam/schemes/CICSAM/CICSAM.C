@@ -239,7 +239,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
         );
     }
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if (OF_VERSION>=040000) //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 
@@ -354,7 +354,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
         );
     }
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if (OF_VERSION>=040000) //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 

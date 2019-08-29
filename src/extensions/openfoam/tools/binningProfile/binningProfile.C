@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
 #   include "createTime.H"
     
     point p0(pTraits<point>::zero);
-    if (args.optionFound("p0"))
+    if (UNIOF_OPTIONFOUND(args, "p0"))
       p0=point(IStringStream(args.options()["p0"])());
     
     vector axis(IStringStream( UNIOF_ADDARG(args, 0) )());
@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
     wordList fieldNames(IStringStream( UNIOF_ADDARG(args, 1) )());
         
     label n=2;
-    if (args.optionFound("n"))
+    if (UNIOF_OPTIONFOUND(args, "n"))
     {
       n=readLabel(IStringStream(args.options()["n"])())+1;
       if (n<2)
@@ -281,25 +281,21 @@ int main(int argc, char *argv[])
       }
     }
     
-    bool sampleWalls = args.optionFound("walls");
+    bool sampleWalls = UNIOF_OPTIONFOUND(args, "walls");
     
-    bool sampleInterior = args.optionFound("interior");
+    bool sampleInterior = UNIOF_OPTIONFOUND(args, "interior");
 
     instantList timeDirs = timeSelector::select0(runTime, args);
     
 #   include "createMesh.H"
     
     labelHashSet samplePatches;
-    if (args.optionFound("patches"))
+    if (UNIOF_OPTIONFOUND(args, "patches"))
     {
       samplePatches =
 	mesh.boundaryMesh().patchSet
 	(
-#if defined(OF16ext)&&!defined(Fx41)
-	  wordList
-#else
-	  wordReList
-#endif
+          UNIOF_WORDRELIST
 	  (
 	    IStringStream(args.options()["patches"])()
 	  )
@@ -324,32 +320,20 @@ int main(int argc, char *argv[])
 	      IOobject::NO_WRITE
 	  );
 	  
-#if not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if (OF_VERSION<040000) //not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 	  if (fieldHeader.headerOk())
 #endif
 	  {
 	    
-#if defined(OFplus)||defined(OFesi1806)
-	    if (fieldHeader.typeHeaderOk<volScalarField>())
-#else
-	    if (fieldHeader.headerClassName()=="volScalarField")
-#endif
+            if (UNIOF_HEADEROK(fieldHeader, volScalarField))
 	      extractProfiles<scalar>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
 	    else 
-	      
-#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
-	    if (fieldHeader.typeHeaderOk<volVectorField>())
-#else
-	    if (fieldHeader.headerClassName()=="volVectorField")
-#endif
+
+            if (UNIOF_HEADEROK(fieldHeader, volVectorField))
 	      extractProfiles<vector>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
 	    else 
 	      
-#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
-	    if (fieldHeader.typeHeaderOk<volSymmTensorField>())
-#else	      
-	    if (fieldHeader.headerClassName()=="volSymmTensorField")
-#endif
+            if (UNIOF_HEADEROK(fieldHeader, volSymmTensorField))
 	      extractProfiles<symmTensor>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
 	    else
 	      
@@ -357,7 +341,7 @@ int main(int argc, char *argv[])
 	       << "Unhandled field "<<fieldHeader.name()<<" of type "<<fieldHeader.headerClassName()<<endl<<abort(FatalError);
 	       
 	  }
-#if not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if (OF_VERSION<040000) //not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 	  else
 	  {
 	    FatalErrorIn("main")

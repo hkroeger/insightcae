@@ -30,7 +30,7 @@ IF(Fx32_BASHRC)
   detectEnvVar(Fx32 FOAM_MPI MPI)
   detectEnvVar(Fx32 c++FLAGS CXX_FLAGS)
 
-  set(Fx32_CXX_FLAGS "${Fx32_CXX_FLAGS} -DFx32 -DOF16ext")
+  set(Fx32_CXX_FLAGS "${Fx32_CXX_FLAGS} -DFx32 -DOF16ext -DOF_VERSION=010602 -DOF_FORK_extend")
   set(Fx32_LIBSRC_DIR "${Fx32_DIR}/src")
   set(Fx32_LIB_DIR "${Fx32_DIR}/platforms/${Fx32_WM_OPTIONS}/lib")
   

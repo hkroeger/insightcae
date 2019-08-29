@@ -36,11 +36,6 @@ int main(int argc, char *argv[])
 
     argList::validArgs.append("patches");
     argList::validArgs.append("minAFrac");
-    /*
-    argList::validOptions.insert("p0", "reference pressure");
-    argList::validOptions.insert("noShiftY", "");
-    argList::validOptions.insert("writeVTK", "");
-    */
 
 #   include "setRootCase.H"
 #   include "createTime.H"
@@ -48,19 +43,6 @@ int main(int argc, char *argv[])
     instantList timeDirs = timeSelector::select0(runTime, args);
     
 #   include "createMesh.H"
-
-/*    labelHashSet patches =
-      mesh.boundaryMesh().patchSet
-      (
-#if defined(OF16ext)&&!defined(Fx41)
-	wordList
-#else
-	wordReList
-#endif
-	(
-	  IStringStream(args.additionalArgs()[0])()
-	)
-      );*/
 
     word patch
 	(

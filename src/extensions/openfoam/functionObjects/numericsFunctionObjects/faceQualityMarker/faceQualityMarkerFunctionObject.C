@@ -22,7 +22,7 @@
 #include <boost/graph/graph_concepts.hpp>
 #include "fvCFD.H"
 
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
 #include "fvcSmooth.H"
 #endif
 
@@ -33,11 +33,11 @@
 #include "cellSet.H"
 #include "emptyFvPatch.H"
 
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
 #include "polyMeshTetDecomposition.H"
 #endif
 
-#if (!( defined(OF16ext) || defined(OF21x) ))
+#if OF_VERSION>020100 //(!( defined(OF16ext) || defined(OF21x) ))
 #include "unitConversion.H"
 #include "primitiveMeshTools.H"
 #endif
@@ -227,7 +227,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
     {
       faceSet faces(mesh_, "nonOrthoFaces", mesh_.nFaces()/100 + 1);
       
-#if (defined(OF16ext)||defined(OF21x))
+#if OF_VERSION<=020100 //(defined(OF16ext)||defined(OF21x))
       WarningIn("faceQualityMarkerFunctionObject::updateBlendingFactor()")
 	<<"Consideration of non-orthogonality threshold unavailable in OF16ext and OF21x! Using built-in threshold."
 	<<endl;
@@ -292,7 +292,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
     mesh_.checkFaceFlatness
     (
       true, 
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
       0.8, 
 #endif
       &faces
@@ -312,7 +312,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
     mesh_.checkFaceAngles
     (
       true, 
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
       10, 
 #endif
       &faces
@@ -327,7 +327,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
   if (markLowQualityTetFaces_)
   {
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
     faceSet faces(mesh_, "lowTetQualityFaces", mesh_.nFaces()/100 + 1);
     
     polyMeshTetDecomposition::checkFaceTets
@@ -357,7 +357,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
     cellSet acells(mesh_, "aspectCells", mesh_.nCells()/100 + 1);
 
-#if ( defined(OF16ext) || defined(OF21x)  )
+#if OF_VERSION<=020100 //( defined(OF16ext) || defined(OF21x)  )
 #warning aspect ratio threshold will be ignored in OF16ext and OF21x!
     cellSet cells(mesh_, "nonClosedCells", mesh_.nCells()/100 + 1);
     mesh_.checkClosedCells
@@ -463,7 +463,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
   {
     if (smoothMarkerField_)
     {
-#if (!( defined(OF16ext) || defined(OF21x) ))
+#if OF_VERSION>020100 //(!( defined(OF16ext) || defined(OF21x) ))
       // smoothing the field
       volScalarField avgBlendingFactor( static_cast<const volScalarField&>(surfaceMax2(*blendingFactors_[i])) );
       avgBlendingFactor.rename("avg_"+blendingFactors_[i]->name());
@@ -536,7 +536,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
         sets_=wordList(dict.lookup("sets"));
     }
     
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     start();
 #endif
 }
@@ -589,7 +589,7 @@ bool Foam::faceQualityMarkerFunctionObject::start()
 
 bool Foam::faceQualityMarkerFunctionObject::execute
 (
-#if !(defined(OF16ext) || defined(OFdev)||defined(OFplus)||defined(OFesi1806)) || defined(Fx41)
+#if (defined(OF_FORK_extend) && OF_VERSION>=010604) || (!defined(OF_FORK_extend) && OF_VERSION<040000) //!(defined(OF16ext) || defined(OFdev)||defined(OFplus)||defined(OFesi1806)) || defined(Fx41)
   bool
 #endif
 )
@@ -610,7 +610,7 @@ bool Foam::faceQualityMarkerFunctionObject::read(const dictionary& dict)
 }
 
 
-#if (!defined(OF16ext)||defined(Fx41)) && !defined(OF21x)
+#if OF_VERSION>=020100 || (defined(OF_FORK_extend) && OF_VERSION>=010604) //||(!defined(OF16ext)||defined(Fx41)) && !defined(OF21x)
 //- Update for changes of mesh
 void Foam::faceQualityMarkerFunctionObject::updateMesh(const mapPolyMesh& mpm)
 {
@@ -618,7 +618,7 @@ void Foam::faceQualityMarkerFunctionObject::updateMesh(const mapPolyMesh& mpm)
 
 //- Update for changes of mesh
 void Foam::faceQualityMarkerFunctionObject::movePoints(
-    #if defined(Fx41)
+    #if (defined(OF_FORK_extend) && OF_VERSION>=010604) //defined(Fx41)
             const pointField&
     #else
             const polyMesh& mesh

@@ -28,7 +28,7 @@
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#if not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if (OF_VERSION<030000) //not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 namespace Foam
 {
 namespace fv
@@ -37,7 +37,7 @@ namespace fv
   
     makeFvGradScheme(localFaceLimitedGrad)
 
-#if not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if (OF_VERSION<030000) //not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 }
 }
 #endif
@@ -48,14 +48,14 @@ namespace fv
 template<>
 Foam::tmp<Foam::volVectorField>
 Foam::fv::localFaceLimitedGrad<Foam::scalar>::
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 grad
 #else
 calcGrad
 #endif
 (
     const volScalarField& vsf
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 #else
     ,
     const word& name
@@ -65,7 +65,7 @@ calcGrad
     const fvMesh& mesh = vsf.mesh();
 
     tmp<volVectorField> tGrad = basicGradScheme_().
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
     grad(vsf);
 #else
     calcGrad(vsf, name);
@@ -120,7 +120,7 @@ calcGrad
         );
     }
 
-#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if (OF_VERSION>=040000) //defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     const volScalarField::Boundary& 
 #else
     const volScalarField::GeometricBoundaryField& 
@@ -204,14 +204,14 @@ calcGrad
 template<>
 Foam::tmp<Foam::volTensorField>
 Foam::fv::localFaceLimitedGrad<Foam::vector>::
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 grad
 #else
 calcGrad
 #endif
 (
     const volVectorField& vvf
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 #else
     ,
     const word& name
@@ -221,7 +221,7 @@ calcGrad
     const fvMesh& mesh = vvf.mesh();
 
     tmp<volTensorField> tGrad = basicGradScheme_().
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
     grad(vvf);
 #else
     calcGrad(vvf, name);
@@ -290,7 +290,7 @@ calcGrad
         );
     }
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if (OF_VERSION>=040000) //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     const volVectorField::Boundary&
 #else
     const volVectorField::GeometricBoundaryField&

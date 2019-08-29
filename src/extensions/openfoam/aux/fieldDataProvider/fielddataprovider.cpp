@@ -316,7 +316,7 @@ template<class T>
 void nonuniformField<T>::writeInstant(int i, Ostream& os) const
 {
   values_[i].UList<T>::
-        #if defined(OFesi1806)
+        #if OF_VERSION>=060000 //defined(OFesi1806)
           writeList
         #else
           writeEntry

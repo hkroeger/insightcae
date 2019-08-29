@@ -48,7 +48,7 @@ SourceFiles
 #include "NamedEnum.H"
 #include "pointField.H"
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 #include "functionObject.H"
 #endif
 
@@ -68,7 +68,7 @@ class mapPolyMesh;
 \*---------------------------------------------------------------------------*/
 
 class writeData
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 : public functionObject
 #endif
 {
@@ -128,7 +128,7 @@ public:
 
         //- Read the dictionary settings
         virtual 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 	bool
 #else
         void 
@@ -137,7 +137,7 @@ public:
 
         //- Execute, check existence of abort file and take action
         virtual 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 	bool
 #else
         void 
@@ -146,7 +146,7 @@ public:
 
         //- Execute at the final time-loop, used for cleanup
         virtual 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 	bool
 #else
         void 
@@ -158,7 +158,7 @@ public:
 
         //- Execute, check existence of abort file and take action
         virtual 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 	bool
 #else
         void 
@@ -169,7 +169,7 @@ public:
         virtual void updateMesh(const mapPolyMesh& mpm);
 
         //- Update for changes of mesh
-#if defined(OF16ext) || defined(OF21x)
+#if OF_VERSION<=020100 //defined(OF16ext) || defined(OF21x)
         virtual void movePoints(const pointField& pf);
 #else
         virtual void movePoints(const polyMesh& mesh);

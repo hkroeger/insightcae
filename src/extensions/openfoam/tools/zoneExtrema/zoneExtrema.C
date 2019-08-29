@@ -79,19 +79,7 @@ int main(int argc, char *argv[])
 	    IOobject::NO_WRITE
 	);
 	
-// 	if (!fieldheader.headerOk())
-// 	  FatalErrorIn("main") << "Could not read field "<<fieldName<<abort(FatalError);	
-// 	Info<<fieldheader.headerClassName()<<endl;
-
-#if not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
-	if (!fieldheader.headerOk())
-#endif
-	  
-#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
-	  if (fieldheader.typeHeaderOk<volVectorField>())
-#else
-	  if (fieldheader.headerClassName()=="volVectorField")
-#endif
+        if (UNIOF_HEADEROK(fieldheader, volVectorField))
 	  {
 	    Info << "Reading vector field "<<fieldName<<"\n" << endl;
 	    volVectorField field
@@ -113,5 +101,7 @@ int main(int argc, char *argv[])
 	      <<" / "
 	      <<ma.x()<<" "<<ma.y()<<" "<<ma.z()<<endl;
 	  }
+        else
+          FatalErrorIn("main") << "Could not read field "<<fieldName<<abort(FatalError);
     }
 }

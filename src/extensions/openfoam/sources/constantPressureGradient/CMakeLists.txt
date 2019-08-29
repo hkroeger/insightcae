@@ -31,6 +31,6 @@ set(LIBS
 
 # set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
 # add_subdirectory(faceQualityMarker)
-set(OF_VERSIONS OF22x OF23x OFplus)
+set(OF_VERSIONS OF22x OF23x OFplus OFesi1806 OFesi1906)
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
  

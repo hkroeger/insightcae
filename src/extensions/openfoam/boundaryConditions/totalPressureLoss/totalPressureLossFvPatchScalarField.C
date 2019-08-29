@@ -30,7 +30,7 @@ License
 #include "surfaceFields.H"
 
 #include "IOField.H"
-#ifndef OF16ext
+#if !defined(OF_FORK_extend) //ndef OF16ext
 #include "pointToPointPlanarInterpolation.H"
 #else
 #include "triSurface.H"
@@ -59,7 +59,7 @@ void Foam::totalPressureLossFvPatchScalarField::readCd()
 
     const fileName samplePointsFile = samplePoints.filePath();
 
-#ifdef OF16ext
+#if defined(OF_FORK_extend) //def OF16ext
     // do it the hard way...
     
     // Determine coordinate system from samplePoints
@@ -222,7 +222,7 @@ void Foam::totalPressureLossFvPatchScalarField::readCd()
 //                 perturb_,
 //                 nearestOnly
             1e-5
-#ifndef OF22eng
+#if !defined(OF_FORK_engys) //ndef OF22eng
             , false
 #endif
     );
@@ -248,7 +248,7 @@ void Foam::totalPressureLossFvPatchScalarField::readCd()
     );
 
 
-#ifdef OF16ext
+#if defined(OF_FORK_extend) //def OF16ext
 
     Cd_.reset(new Field<scalar>(nearestVertex.size()));
     Field<scalar>& fld = Cd_();
@@ -496,7 +496,7 @@ void Foam::totalPressureLossFvPatchScalarField::updateCoeffs
                "definition of total pressure." << nl
             << "    Set the unused variable(s) to 'none'.\n"
             << "    on patch " << this->patch().name()
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
             << " of field " << this->internalField().name()
             << " in file " << this->internalField().objectPath()
 #else

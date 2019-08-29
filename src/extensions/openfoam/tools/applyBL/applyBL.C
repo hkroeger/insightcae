@@ -38,7 +38,7 @@ Description
 #include "fvCFD.H"
 #include "singlePhaseTransportModel.H"
 
-#if defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if (OF_VERSION>=030000) //defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "turbulentTransportModel.H"
 #else
 #include "RASModel.H"
@@ -56,36 +56,13 @@ static const scalar kappa(0.41);
 
 int main(int argc, char *argv[])
 {
-//     argList::addNote
-//     (
-//         "apply a simplified boundary-layer model to the velocity and\n"
-//         "turbulence fields based on the 1/7th power-law."
-//     );
-
     argList::validOptions.insert("ybl", "specify the boundary-layer thickness");
-//     argList::addOption
-//     (
-//         "ybl",
-//         "scalar",
-//         "specify the boundary-layer thickness"
-//     );
     argList::validOptions.insert("Cbl", "boundary-layer thickness as Cbl * mean distance to wall");
-//     argList::addOption
-//     (
-//         "Cbl",
-//         "scalar",
-//         "boundary-layer thickness as Cbl * mean distance to wall"
-//     );
     argList::validOptions.insert("writenut", "");
-//     argList::addBoolOption
-//     (
-//         "writenut",
-//         "write nut field"
-//     );
 
     #include "setRootCase.H"
 
-    if (!args.optionFound("ybl") && !args.optionFound("Cbl"))
+    if (!UNIOF_OPTIONFOUND(args, "ybl") && !UNIOF_OPTIONFOUND(args, "Cbl"))
     {
         FatalErrorIn(args.executable())
             << "Neither option 'ybl' or 'Cbl' have been provided to calculate "
@@ -93,7 +70,7 @@ int main(int argc, char *argv[])
             << "Please choose either 'ybl' OR 'Cbl'."
             << exit(FatalError);
     }
-    else if (args.optionFound("ybl") && args.optionFound("Cbl"))
+    else if (UNIOF_OPTIONFOUND(args, "ybl") && UNIOF_OPTIONFOUND(args, "Cbl"))
     {
         FatalErrorIn(args.executable())
             << "Both 'ybl' and 'Cbl' have been provided to calculate "
@@ -179,7 +156,7 @@ int main(int argc, char *argv[])
     {
         // Calculate nut - reference nut is calculated by the turbulence model
         // on its construction
-        volScalarField nut = turbulence->nut();
+        volScalarField nut( turbulence->nut() );
         //volScalarField& nut = UNIOF_TMP_NONCONST(tnut);
         volScalarField S(mag(dev(symm(fvc::grad(U)))));
         nut = (1 - mask)*nut + mask*sqr(kappa*min(y, ybl))*::sqrt(2)*S;
@@ -187,7 +164,7 @@ int main(int argc, char *argv[])
         // do not correct BC - wall functions will 'undo' manipulation above
         // by using nut from turbulence model
 
-        if (args.optionFound("writenut"))
+        if (UNIOF_OPTIONFOUND(args, "writenut"))
         {
             Info<< "Writing nut" << endl;
             nut.write();
@@ -197,7 +174,7 @@ int main(int argc, char *argv[])
         //--- Read and modify turbulence fields
 
         // Turbulence k
-        volScalarField k = turbulence->k();
+        volScalarField k( turbulence->k() );
         //volScalarField& k = UNIOF_TMP_NONCONST(tk);
         
         scalar ck0 = ::pow(Cmu, 0.25)*kappa;
@@ -212,7 +189,7 @@ int main(int argc, char *argv[])
 
 
         // Turbulence epsilon
-        volScalarField epsilon = turbulence->epsilon();
+        volScalarField epsilon( turbulence->epsilon() );
         //volScalarField& epsilon = UNIOF_TMP_NONCONST(tepsilon);
         scalar ce0 = ::pow(Cmu, 0.75)/kappa;
         epsilon = (1 - mask)*epsilon + mask*ce0*k*sqrt(k)/min(y, ybl);

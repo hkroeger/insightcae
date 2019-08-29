@@ -40,11 +40,11 @@ Description
 #include "incompressible/singlePhaseTransportModel/singlePhaseTransportModel.H"
 
 
-#if defined(OF16ext) || defined(OF21x)
+#if (OF_VERSION<=020100) //defined(OF16ext) || defined(OF21x)
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
 #define TWOPHASEMIXTURE twoPhaseMixture
 
-#elif defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#elif (OF_VERSION>=030000) //defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "immiscibleIncompressibleTwoPhaseMixture.H"
 #define TWOPHASEMIXTURE immiscibleIncompressibleTwoPhaseMixture
 
@@ -53,7 +53,7 @@ Description
 #define TWOPHASEMIXTURE incompressibleTwoPhaseMixture
 #endif
 
-#if defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if (OF_VERSION>=030000) //defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "turbulentTransportModel.H"
 #include "turbulentFluidThermoModel.H"
 #define INCOMPRESSIBLERASMODEL incompressible::turbulenceModel
@@ -105,10 +105,11 @@ void calcIncompressibleTwoPhase
     );
 
 
-    volScalarField rho = 
+    volScalarField rho(
       alpha1*laminarTransport.rho1() 
       +
-      (scalar(1) - alpha1)*laminarTransport.rho2();
+      (scalar(1) - alpha1)*laminarTransport.rho2()
+    );
 
     const volSymmTensorField Reff(rho*model->devReff());
 
@@ -229,7 +230,7 @@ int main(int argc, char *argv[])
     #include "createNamedMesh.H"
 
     //const bool compressible = args.optionFound("compressible");
-    const bool twoPhase = args.optionFound("twoPhase");
+    const bool twoPhase = UNIOF_OPTIONFOUND(args, "twoPhase");
 
     forAll(timeDirs, timeI)
     {

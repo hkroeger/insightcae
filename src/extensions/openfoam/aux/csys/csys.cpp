@@ -42,7 +42,7 @@ autoPtr<csys> csys::New
     const dictionary& dict
 )
 {
-    word coordType = dict.lookup("type");
+    word coordType( dict.lookup("type") );
 
     dictionaryConstructorTable::iterator cstrIter =
         dictionaryConstructorTablePtr_->find(coordType);

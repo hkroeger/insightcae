@@ -54,14 +54,7 @@ int main(int argc, char *argv[])
     (
       mesh.boundaryMesh().patchSet
       (
-#if  defined(OF16ext)&&!defined(Fx41)
-	wordList
-#else
-	wordReList
-#endif
-	(
-      IStringStream( UNIOF_ADDARG(args, 0) )()
-	)
+        UNIOF_WORDRELIST(IStringStream( UNIOF_ADDARG(args, 0) )())
       )
     );
     vector dir(IStringStream( UNIOF_ADDARG(args, 1) )());
@@ -77,7 +70,7 @@ int main(int argc, char *argv[])
 	{
 	    label pI = iter.key();
 	    
-	    scalarField ctrb = mesh.boundary()[pI].Sf()&dir;
+            scalarField ctrb( mesh.boundary()[pI].Sf()&dir );
 	    scalar Ap = gSum(pos(ctrb)*ctrb);
 	    Info << " Projected area of patch "<<iter()<<" = "<<Ap<<endl;
 	    A += Ap;

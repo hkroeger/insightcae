@@ -29,7 +29,7 @@ IF(OFplus_BASHRC)
   detectEnvVar(OFplus FOAM_MPI MPI)
   detectEnvVar(OFplus c++FLAGS CXX_FLAGS)
 
-  set(OFplus_CXX_FLAGS "${OFplus_CXX_FLAGS} -DOFplus")
+  set(OFplus_CXX_FLAGS "${OFplus_CXX_FLAGS} -DOFplus -DOF_VERSION=040000 -DOF_FORK_esi")
   set(OFplus_LIBSRC_DIR "${OFplus_DIR}/src")
   set(OFplus_LIB_DIR "${OFplus_DIR}/platforms/${OFplus_WM_OPTIONS}/lib")
  

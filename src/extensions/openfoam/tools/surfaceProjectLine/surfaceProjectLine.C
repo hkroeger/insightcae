@@ -95,11 +95,11 @@ int main(int argc, char *argv[])
         indexedOctree<treeDataTriSurface> tree
 	(
 	    treeDataTriSurface(
-#if !(defined(OF22eng)||defined(Fx40)||defined(Fx41)||defined(Fx32))
+#if !(OF_VERSION>=010602 && OF_VERSION<=020200) //!(defined(OF22eng)||defined(Fx40)||defined(Fx41)||defined(Fx32))
             true, 
 #endif
             surf1
-#if !(defined(Fx40)||defined(Fx41)||defined(Fx32))
+#if !(OF_VERSION>=010602 && OF_VERSION<=010604) //!(defined(Fx40)||defined(Fx41)||defined(Fx32))
             , 
             1e-6
 #endif
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 
     scalar maxR=0.0;
     {
-      vectorField r=surf1.points()-start;
+      vectorField r( surf1.points() - start );
       r-=axis*(r&axis);
       maxR=max(mag(r));
     }

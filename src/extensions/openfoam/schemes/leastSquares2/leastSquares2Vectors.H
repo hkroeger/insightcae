@@ -54,7 +54,7 @@ class mapPolyMesh;
 class leastSquares2Vectors
 :
     public MeshObject<fvMesh, 
-#if !defined(OF16ext) && !defined(OF21x)
+#if (OF_VERSION>=020100) //!defined(OF16ext) && !defined(OF21x)
       MoveableMeshObject, 
 #endif
       leastSquares2Vectors>
@@ -101,7 +101,7 @@ public:
         //- Update after mesh motion:
         //  Delete the least square vectors when the mesh moves
         virtual bool movePoints() 
-#if defined(OF16ext) || defined(OF21x)
+#if (OF_VERSION<=020100) //defined(OF16ext) || defined(OF21x)
 	const
 #endif
 	;

@@ -207,14 +207,14 @@ public:
             GeometricField
             <typename outerProduct<vector, Type>::type, fvPatchField, volMesh>
         > 
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 	grad
 #else
         calcGrad
 #endif
         (
             const GeometricField<Type, fvPatchField, volMesh>& vsf
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 #else
             ,
             const word& name
@@ -271,14 +271,14 @@ inline void localCellLimitedGrad<Type>::limitFace
 
 template<>
 tmp<volVectorField> localCellLimitedGrad<scalar>::
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 grad
 #else
 calcGrad
 #endif
 (
     const volScalarField& vsf
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 #else
     ,
     const word& name
@@ -288,14 +288,14 @@ calcGrad
 
 template<>
 tmp<volTensorField> localCellLimitedGrad<vector>::
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 grad
 #else
 calcGrad
 #endif
 (
     const volVectorField& vsf
-#if (defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
+#if (defined(OF_FORK_extend) && OF_VERSION<010602) //(defined(OF16ext) && !defined(Fx32) && !defined(Fx40) && !defined(Fx41))
 #else
     ,
     const word& name

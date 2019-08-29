@@ -31,7 +31,7 @@ IF(OFdev_BASHRC)
   detectEnvVar(OFdev FOAM_MPI MPI)
   detectEnvVar(OFdev c++FLAGS CXX_FLAGS)
 
-  set(OFdev_CXX_FLAGS "${OFdev_CXX_FLAGS} -DOFdev")
+  set(OFdev_CXX_FLAGS "${OFdev_CXX_FLAGS} -DOFdev -DOF_VERSION=070000 -DOF_FORK_vanilla")
   set(OFdev_LIBSRC_DIR "${OFdev_DIR}/src")
   set(OFdev_LIB_DIR "${OFdev_DIR}/platforms/${OFdev_WM_OPTIONS}/lib")
   

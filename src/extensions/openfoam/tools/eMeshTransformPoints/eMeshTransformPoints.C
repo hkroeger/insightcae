@@ -57,11 +57,7 @@ using namespace Foam;
 
 int main(int argc, char *argv[])
 {
-//     argList::addNote
-//     (
-//         "Transform (scale/rotate) a surface. "
-//         "Like transformPoints but for surfaces."
-//     );
+
     argList::noParallel();
     argList::validArgs.append("surfaceFile");
     argList::validArgs.append("output surfaceFile");
@@ -107,8 +103,7 @@ int main(int argc, char *argv[])
             << exit(FatalError);
     }
 
-//     const fileName surfFileName = args[1];
-//     const fileName outFileName  = args[2];
+
     fileName inFileName(UNIOF_ADDARG(args,0));
     fileName outFileName(UNIOF_ADDARG(args,1));
 
@@ -130,18 +125,18 @@ int main(int argc, char *argv[])
     pointField points(edge1.points());
 
     vector v;
-    if (args.optionReadIfPresent("translate", v))
+    if (UNIOF_OPTIONREADIFPRESENT(args, "translate", v))
     {
         Info<< "Translating points by " << v << endl;
 
         points += v;
     }
 
-    if (args.optionFound("rotate"))
+    if (UNIOF_OPTIONFOUND(args, "rotate"))
     {
         Pair<vector> n1n2
         (
-            args.optionLookup("rotate")()
+            UNIOF_OPTIONLOOKUP(args, "rotate")()
         );
         n1n2[0] /= mag(n1n2[0]);
         n1n2[1] /= mag(n1n2[1]);
@@ -152,7 +147,7 @@ int main(int argc, char *argv[])
 
         points = transform(T, points);
     }
-    else if (args.optionReadIfPresent("rollPitchYaw", v))
+    else if (UNIOF_OPTIONREADIFPRESENT(args, "rollPitchYaw", v))
     {
         Info<< "Rotating points by" << nl
             << "    roll  " << v.x() << nl
@@ -162,8 +157,10 @@ int main(int argc, char *argv[])
         // Convert to radians
         v *= M_PI/180.0;
 
-#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if (OF_VERSION>=040000 && OF_VERSION<060500) //defined(OFplus)||defined(OFdev)||defined(OFesi1806)
         quaternion R(quaternion::rotationSequence::XYZ, v);
+#elif (OF_VERSION>=060500)
+        quaternion R(quaternion::eulerOrder::XYZ, v);
 #else
         quaternion R(v.x(), v.y(), v.z());
 #endif
@@ -171,7 +168,7 @@ int main(int argc, char *argv[])
         Info<< "Rotating points by quaternion " << R << endl;
         points = transform(R, points);
     }
-    else if (args.optionReadIfPresent("yawPitchRoll", v))
+    else if (UNIOF_OPTIONREADIFPRESENT(args, "yawPitchRoll", v))
     {
         Info<< "Rotating points by" << nl
             << "    yaw   " << v.x() << nl
@@ -194,7 +191,7 @@ int main(int argc, char *argv[])
         points = transform(R, points);
     }
 
-    if (args.optionReadIfPresent("scale", v))
+    if (UNIOF_OPTIONREADIFPRESENT(args, "scale", v))
     {
         Info<< "Scaling points by " << v << endl;
 
@@ -207,7 +204,7 @@ int main(int argc, char *argv[])
     edgeMesh edge2( points, edge1.edges());
     
     { 
-#if defined(OF16ext)
+#if (OF_VERSION<010700) //defined(OF16ext)
         OFstream f(outFileName);
         f<<headerKeyWord<<header;
         f<<edge2;

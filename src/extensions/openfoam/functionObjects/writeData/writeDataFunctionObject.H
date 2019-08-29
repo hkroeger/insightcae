@@ -37,7 +37,7 @@ SourceFiles
 #define writeDataFunctionObject_H
 
 #include "writeData.H"
-#if not (defined(OFdev)||defined(OFplus)||defined(OFesi1806))
+#if OF_VERSION<040000 //not (defined(OFdev)||defined(OFplus)||defined(OFesi1806))
 #include "OutputFilterFunctionObject.H"
 #endif
 
@@ -46,7 +46,7 @@ SourceFiles
 namespace Foam
 {
     typedef 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 	writeData
 #else
         OutputFilterFunctionObject<writeData>

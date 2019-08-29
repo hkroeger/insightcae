@@ -114,8 +114,8 @@ int main(int argc, char *argv[])
 	  volScalarField p(pheader, mesh);
 	  surfaceScalarField phi(phiheader, mesh);
 	  
-	  surfaceVectorField Uf=fvc::interpolate(U);
-	  surfaceScalarField pf=fvc::interpolate(p);
+          surfaceVectorField Uf( fvc::interpolate(U) );
+          surfaceScalarField pf( fvc::interpolate(p) );
 	
 	  forAllConstIter(setInfoMap, setInfos, i)
 	  {
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 	    point outpnt = i().second();
 	    pointField outpnts(1, outpnt);
 	    surfaceToCell stc(mesh, sfn, outpnts, false, true, false, 
-  #if !(defined(Fx40)||defined(Fx41)||defined(Fx32))
+  #if !(OF_VERSION>=010602 && OF_VERSION<=010604) //!(defined(Fx40)||defined(Fx41)||defined(Fx32))
 			      false, 
   #endif
 			  1e-4, 0);
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
 		  <<endl;
 	      }
 	    }
-	    scalarField integrand = rho*(0.5*magSqr(velocity)+pressure) * flux;
+            scalarField integrand( rho*(0.5*magSqr(velocity)+pressure) * flux );
 // 	    Info<<integrand<<endl;
 	    scalar Wt = gSum( integrand );
 	    Info<<"volume integrated energy loss at "<<id<<": Wt = "<<Wt<<endl;

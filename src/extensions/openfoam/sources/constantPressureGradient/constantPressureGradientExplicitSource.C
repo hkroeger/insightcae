@@ -61,7 +61,7 @@ Foam::fv::constantPressureGradientExplicitSource::constantPressureGradientExplic
     const fvMesh& mesh
 )
 :
-#if defined(OFplus)
+#if (OF_VERSION>=040000) //defined(OFplus)
     cellSetOption(sourceName, modelType, dict, mesh),
 #else
     option(sourceName, modelType, dict, mesh),

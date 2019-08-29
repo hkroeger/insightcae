@@ -28,8 +28,8 @@ License
 #include "DynamicList.H"
 #include "polyMesh.H"
 
-#ifdef OF16ext
-#if (defined(Fx41)||defined(Fx40)||defined(Fx32))
+#if defined(OF_FORK_extend) //def OF16ext
+#if (OF_VERSION>=010602) //(defined(Fx41)||defined(Fx40)||defined(Fx32))
 #include "CloudTemplate.H"
 #else
 #include "Cloud.H"
@@ -47,7 +47,7 @@ namespace Foam
     defineTypeNameAndDebug(consistentCurveSet, 0);
     addToRunTimeSelectionTable(sampledSet, consistentCurveSet, word);
     
-#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if (OF_VERSION>=040000) //defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     const scalar consistentCurveSet::tol = 1e-3;
 #endif
 }
@@ -59,7 +59,7 @@ namespace Foam
 // Sample till hits boundary.
 bool Foam::consistentCurveSet::trackToBoundary
 (
-#ifdef OF16ext
+#if defined(OF_FORK_extend) //def OF16ext
             Particle<passiveParticle>& singleParticle,
 #elif defined (OF21x)||defined (OF22x)||defined (OF22eng)
             passiveParticle& singleParticle,
@@ -74,7 +74,7 @@ bool Foam::consistentCurveSet::trackToBoundary
     DynamicList<scalar>& samplingCurveDist
 ) const
 {
-#ifdef OF16ext
+#if defined(OF_FORK_extend) //def OF16ext
 #elif defined(OF21x)||defined(OF22x)||defined (OF22eng)
 
     passiveParticleCloud particleCloud(mesh());
@@ -525,7 +525,7 @@ void Foam::consistentCurveSet::genSamples()
         samplingCells,
         samplingFaces,
         samplingSegments,
-#ifdef OF16ext
+#if defined(OF_FORK_extend) //def OF16ext
         samplingCurveDist
 #else
 // 	mag(samplingPts-basept_)
@@ -542,7 +542,7 @@ Foam::consistentCurveSet::consistentCurveSet
 (
     const word& name,
     const polyMesh& mesh,
-#if defined(OF16ext)||defined(OF21x)
+#if (OF_VERSION<=020100) //defined(OF16ext)||defined(OF21x)
     meshSearch& searchEngine,
 #else
     const meshSearch& searchEngine,
@@ -568,7 +568,7 @@ Foam::consistentCurveSet::consistentCurveSet
 (
     const word& name,
     const polyMesh& mesh,
-#if defined(OF16ext)||defined(OF21x)
+#if (OF_VERSION<=020100) //defined(OF16ext)||defined(OF21x)
     meshSearch& searchEngine,
 #else
     const meshSearch& searchEngine,

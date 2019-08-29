@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     word patchName( UNIOF_ADDARG(args, 0) );
 
     scalarList dists(IStringStream( UNIOF_ADDARG(args, 1) )());
-    bool overwrite = args.optionFound("overwrite");
+    bool overwrite = UNIOF_OPTIONFOUND(args, "overwrite");
 
     label patchID = mesh.boundaryMesh().findPatchID(patchName);
 
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
     //
 
     word setName;
-    if (args.optionReadIfPresent("useSet", setName))
+    if (UNIOF_OPTIONREADIFPRESENT(args, "useSet", setName))
     {
         Info<< "Subsetting cells to cut based on cellSet"
             << setName << nl << endl;
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
         cutEdgeWeights      // weight on cut edges
     );
 
-#if defined(OF16ext)
+#if (OF_VERSION<010700) //defined(OF16ext)
     directTopoChange meshMod(mesh);
 #else
     polyTopoChange meshMod(mesh);

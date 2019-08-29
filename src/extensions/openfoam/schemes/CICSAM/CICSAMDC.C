@@ -203,7 +203,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
         corrIn[faceI] = w*vf[own] + (1 - w)*vf[nei];
     }
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if (OF_VERSION>=040000) //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 

@@ -30,7 +30,7 @@ IF(Fx41_BASHRC)
   detectEnvVar(Fx41 FOAM_MPI MPI)
   detectEnvVar(Fx41 c++FLAGS CXX_FLAGS)
 
-  set(Fx41_CXX_FLAGS "${Fx41_CXX_FLAGS} -DFx41 -DOF16ext")
+  set(Fx41_CXX_FLAGS "${Fx41_CXX_FLAGS} -DFx41 -DOF16ext -DOF_VERSION=010604 -DOF_FORK_extend")
   set(Fx41_LIBSRC_DIR "${Fx41_DIR}/src")
   set(Fx41_LIB_DIR "${Fx41_DIR}/platforms/${Fx41_WM_OPTIONS}/lib")
   

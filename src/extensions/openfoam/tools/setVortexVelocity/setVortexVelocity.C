@@ -130,11 +130,11 @@ int main(int argc, char *argv[])
       fvPatchScalarField& pp = UNIOF_BOUNDARY_NONCONST(UNIOF_TMP_NONCONST(pNew))[patchI];
       if (Up.fixesValue())
       {
-        vectorField r=(patch.Cf() - center);
+        vectorField r(patch.Cf() - center);
         r-=axis*(r&axis);
-        vectorField er = r/(mag(r)+SMALL);
+        vectorField er( r/(mag(r)+SMALL) );
 
-        vectorField etan=axis ^ er;
+        vectorField etan( axis ^ er );
         Up == etan * Gamma / (2.0*M_PI*mag(r));
 
         fixedGradientFvPatchScalarField& ppfg = static_cast<fixedGradientFvPatchScalarField&>(pp);

@@ -45,7 +45,7 @@ void setProfileLinear
 {
     List<Tuple2<scalar, T> > data(ascii_data);
     interpolationTable<T> ip(data,
-                         #if defined(OFesi1806)
+                         #if (OF_VERSION>=060000) //defined(OFesi1806)
                              bounds::repeatableBounding::CLAMP
                          #else
                              interpolationTable<T>::CLAMP

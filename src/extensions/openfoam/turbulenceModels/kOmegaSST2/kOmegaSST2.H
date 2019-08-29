@@ -82,7 +82,7 @@ SourceFiles
 #include "RASModel.H"
 #include "wallDist.H"
 
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 #include "IncompressibleTurbulenceModel.H"
 #include "incompressible/transportModel/transportModel.H"
 #include "eddyViscosity.H"
@@ -94,12 +94,12 @@ SourceFiles
 namespace Foam
 {
   
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 typedef IncompressibleTurbulenceModel<transportModel> transportModelIncompressibleTurbulenceModel;                                                                  
 typedef eddyViscosity<RASModel<transportModelIncompressibleTurbulenceModel> > RAStransportModelIncompressibleTurbulenceModel;
 #endif
 
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<030000 //not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 namespace incompressible
 {
 #endif
@@ -113,7 +113,7 @@ namespace RASModels
 
 class kOmegaSST2
 :
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
     public RAStransportModelIncompressibleTurbulenceModel
 #else
     public RASModel
@@ -149,13 +149,13 @@ class kOmegaSST2
 
             //- Small y value used to avoid divide by zero
             dimensionedScalar ySmall_;
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
         //- Small omega value used to avoid divide by zero
         dimensionedScalar omegaSmall_;
 #endif
         //- Wall distance field
         //  Note: different to wall distance in parent RASModel
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 	const volScalarField& y_;
 #else
         wallDist y_;
@@ -233,7 +233,7 @@ public:
         //- Construct from components
         kOmegaSST2
         (
-#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=030000 //defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
             const alphaField& alpha,
             const rhoField& rho,
             const volVectorField& U,
@@ -246,7 +246,7 @@ public:
             const volVectorField& U,
             const surfaceScalarField& phi,
             transportModel& transport
-#if !defined(OF16ext) || defined(Fx41)
+#if OF_VERSION>=010700 || (defined(OF_FORK_extend)&&OF_VERSION>=010604) //!defined(OF16ext) || defined(Fx41)
 			,
             const word& turbulenceModelName = turbulenceModel::typeName,
             const word& modelName = typeName
@@ -279,7 +279,7 @@ public:
             {
                 return ySmall_;
             }
-#ifndef OF16ext
+#if OF_VERSION>=010700 //ndef OF16ext
         //- Calculate y+ at the edge of the laminar sublayer
         scalar yPlusLam(const scalar kappa, const scalar E) const;
 #endif
@@ -346,12 +346,12 @@ public:
 
         //- Return the source term for the momentum equation
         virtual tmp<fvVectorMatrix> divDevReff(
-#if !(defined(Fx40)||defined(Fx41))
+#if !(defined(OF_FORK_extend)&&OF_VERSION>010603) //!(defined(Fx40)||defined(Fx41))
 	  volVectorField& U
 #endif
 	) const;
 
-#ifndef OF16ext
+#if !defined(OF_FORK_extend) //ndef OF16ext
         //- Return the source term for the momentum equation
         virtual tmp<fvVectorMatrix> divDevRhoReff
         (
@@ -371,7 +371,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<030000 //not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 } // namespace incompressible
 #endif
 } // End namespace Foam

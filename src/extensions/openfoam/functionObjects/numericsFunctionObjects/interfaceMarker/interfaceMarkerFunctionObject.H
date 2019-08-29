@@ -89,7 +89,7 @@ public:
         //- execute is called at each ++ or += of the time-loop
         virtual bool execute
         (
-#if not (defined(OF16ext)||defined(OFdev)||defined(OFplus)||defined(OFesi1806))||defined(Fx41)
+#if (defined(OF_FORK_extend) && OF_VERSION>=010604) || (!defined(OF_FORK_extend) && OF_VERSION<040000) //not (defined(OF16ext)||defined(OFdev)||defined(OFplus)||defined(OFesi1806))||defined(Fx41)
 	  bool
 #endif
 	);
@@ -99,13 +99,13 @@ public:
         //- Read and set the function object if its data has changed
         virtual bool read(const dictionary& dict);
 
-#if !defined(OF16ext) && !defined(OF21x) || defined(Fx41)
+#if OF_VERSION>=020100 || (defined(OF_FORK_extend) && OF_VERSION>=010604) //!defined(OF16ext) && !defined(OF21x) || defined(Fx41)
           //- Update for changes of mesh
         virtual void updateMesh(const mapPolyMesh& mpm);
 
         //- Update for changes of mesh
         virtual void movePoints(
-    #if defined(Fx41)
+    #if (defined(OF_FORK_extend) && OF_VERSION>=010604) //defined(Fx41)
             const pointField&
     #else
             const polyMesh& mesh

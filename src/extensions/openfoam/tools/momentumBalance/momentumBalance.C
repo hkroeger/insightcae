@@ -82,7 +82,7 @@ void findBndFaces(const fvMesh& mesh, const cellSet& cells, labelList& res, scal
       }
   }
   syncTools::swapBoundaryFaceList(mesh, neiInSet
-                                #ifdef OF16ext
+                                #if (OF_VERSION>=010600 && OF_VERSION<010700)
                                   , false
                                 #endif
                                   );
@@ -167,7 +167,7 @@ tmp<Field<T> > pick_gf(const GeometricField<T, fvsPatchField, surfaceMesh>& data
         res[i] = data.boundaryField()[pi][fi-data.mesh().boundaryMesh()[pi].start()];
       }
 
-      if (mult!=NULL) res[i] *= (*mult)[i];
+      if (mult!=nullptr) res[i] *= (*mult)[i];
   }
   return tres;
 }

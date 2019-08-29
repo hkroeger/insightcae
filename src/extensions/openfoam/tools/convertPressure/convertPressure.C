@@ -60,11 +60,11 @@ int main(int argc, char *argv[])
     rho.value()=readScalar(IStringStream( UNIOF_ADDARG(args,3) )());
     
     dimensionedScalar pclip("pclip", dimPressure, 0.0);
-    if (args.optionFound("pclip"))
+    if (UNIOF_OPTIONFOUND(args, "pclip"))
       pclip.value()=readScalar(IStringStream(args.options()["pclip"])());
 
     dimensionedScalar pclip_upper("pclip_upper", dimPressure, GREAT);
-    if (args.optionFound("pclip_upper"))
+    if (UNIOF_OPTIONFOUND(args, "pclip_upper"))
       pclip_upper.value()=readScalar(IStringStream(args.options()["pclip_upper"])());
 
     Info<< "Time = " << runTime.timeName() << endl;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     );
 
 
-    if (args.optionFound("from_dim"))
+    if (UNIOF_OPTIONFOUND(args, "from_dim"))
     {
       dimensionSet from_dim(IStringStream(args.options()["from_dim"])());
       from_p->dimensions().reset(from_dim);

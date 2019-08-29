@@ -43,7 +43,7 @@ namespace Foam
 Foam::leastSquares2Vectors::leastSquares2Vectors(const fvMesh& mesh)
 :
     MeshObject<fvMesh, 
-#if !defined(OF16ext) && !defined(OF21x)
+#if (OF_VERSION>=020100) //!defined(OF16ext) && !defined(OF21x)
     MoveableMeshObject, 
 #endif
     leastSquares2Vectors>(mesh),
@@ -459,12 +459,12 @@ void Foam::leastSquares2Vectors::makeLeastSquaresVectors() const
                mesh().magSf().boundaryField()[patchi]
               *mesh().deltaCoeffs().boundaryField()[patchi]
            );
-#ifdef OF16ext
+#if (OF_VERSION<010700) //def OF16ext
         if (!mesh().orthogonal())
 #endif
         {
             pd -= 
-#if defined(OF16ext)
+#if (OF_VERSION<010700) //defined(OF16ext)
 	      mesh().correctionVectors().boundaryField()[patchi]
 #else
 	      mesh().nonOrthCorrectionVectors().boundaryField()[patchi]
@@ -588,7 +588,7 @@ const Foam::surfaceVectorField& Foam::leastSquares2Vectors::nVectors() const
 
 
 bool Foam::leastSquares2Vectors::movePoints()
-#if defined(OF16ext) || defined(OF21x)
+#if (OF_VERSION<=020100) //defined(OF16ext) || defined(OF21x)
 	const
 #endif
 {

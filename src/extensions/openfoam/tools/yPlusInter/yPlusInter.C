@@ -22,15 +22,15 @@
 
 #include "incompressible/singlePhaseTransportModel/singlePhaseTransportModel.H"
 
-#if defined(OF16ext) or defined(OF21x)
+#if (OF_VERSION<020100) //defined(OF16ext) or defined(OF21x)
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
-#elif defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#elif (OF_VERSION>=030000) //defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "immiscibleIncompressibleTwoPhaseMixture.H"
 #else
 #include "incompressible/incompressibleTwoPhaseMixture/incompressibleTwoPhaseMixture.H"
 #endif
 
-#if defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if (OF_VERSION>=030000) //defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "turbulentTransportModel.H"
 #include "nutWallFunctionFvPatchScalarField.H"
 #else
@@ -58,9 +58,9 @@ void calcIncompressibleYPlus
 )
 {
     typedef 
-#if defined(OF16ext) or defined(OF21x)
+#if (OF_VERSION<=020100) //defined(OF16ext) or defined(OF21x)
     incompressible::RASModels::nutWallFunctionFvPatchScalarField
-#elif defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#elif (OF_VERSION>=030000) //defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     nutWallFunctionFvPatchScalarField
 #else
     incompressible::nutWallFunctionFvPatchScalarField
@@ -69,23 +69,23 @@ void calcIncompressibleYPlus
 
     #include "createPhi.H"
 
-#if defined(OF16ext) or defined(OF21x)
+#if (OF_VERSION<=020100) //defined(OF16ext) or defined(OF21x)
     twoPhaseMixture 
-#elif defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#elif (OF_VERSION>=030000) //defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     immiscibleIncompressibleTwoPhaseMixture
 #else
     incompressibleTwoPhaseMixture
 #endif
     laminarTransport(U, phi);
 
-#if defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if (OF_VERSION>=030000) //defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     autoPtr<incompressible::turbulenceModel>
 #else
     autoPtr<incompressible::RASModel>
 #endif
     RASModel
     (
-#if defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if (OF_VERSION>=030000) //defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
       incompressible::turbulenceModel::New
 #else
         incompressible::RASModel::New
@@ -93,7 +93,7 @@ void calcIncompressibleYPlus
         (U, phi, laminarTransport)
     );
 
-#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+#if (OF_VERSION>=040000) //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     const volScalarField::Boundary
 #else
     const volScalarField::GeometricBoundaryField 
@@ -130,85 +130,6 @@ void calcIncompressibleYPlus
     }
 }
 
-/*
-void calcCompressibleYPlus
-(
-    const fvMesh& mesh,
-    const Time& runTime,
-    const volVectorField& U,
-    volScalarField& yPlus
-)
-{
-    typedef compressible::mutWallFunctionFvPatchScalarField
-        wallFunctionPatchField;
-
-    IOobject rhoHeader
-    (
-        "rho",
-        runTime.timeName(),
-        mesh,
-        IOobject::MUST_READ,
-        IOobject::NO_WRITE
-    );
-
-    if (!rhoHeader.headerOk())
-    {
-        Info<< "    no rho field" << endl;
-        return;
-    }
-
-    Info<< "Reading field rho\n" << endl;
-    volScalarField rho(rhoHeader, mesh);
-
-    #include "compressibleCreatePhi.H"
-
-    autoPtr<fluidThermo> pThermo
-    (
-        fluidThermo::New(mesh)
-    );
-    fluidThermo& thermo = pThermo();
-
-    autoPtr<compressible::RASModel> RASModel
-    (
-        compressible::RASModel::New
-        (
-            rho,
-            U,
-            phi,
-            thermo
-        )
-    );
-
-    const volScalarField::GeometricBoundaryField mutPatches =
-        RASModel->mut()().boundaryField();
-
-    bool foundMutPatch = false;
-    forAll(mutPatches, patchi)
-    {
-        if (isA<wallFunctionPatchField>(mutPatches[patchi]))
-        {
-            foundMutPatch = true;
-
-            const wallFunctionPatchField& mutPw =
-                dynamic_cast<const wallFunctionPatchField&>
-                    (mutPatches[patchi]);
-
-            yPlus.boundaryField()[patchi] = mutPw.yPlus();
-            const scalarField& Yp = yPlus.boundaryField()[patchi];
-
-            Info<< "Patch " << patchi
-                << " named " << mutPw.patch().name()
-                << " y+ : min: " << gMin(Yp) << " max: " << gMax(Yp)
-                << " average: " << gAverage(Yp) << nl << endl;
-        }
-    }
-
-    if (!foundMutPatch)
-    {
-        Info<< "    no " << wallFunctionPatchField::typeName << " patches"
-            << endl;
-    }
-}*/
 
 
 int main(int argc, char *argv[])
@@ -217,18 +138,11 @@ int main(int argc, char *argv[])
 
     #include "addRegionOption.H"
 
-//     argList::addBoolOption
-//     (
-//         "compressible",
-//         "calculate compressible y+"
-//     );
-
     #include "setRootCase.H"
     #include "createTime.H"
     instantList timeDirs = timeSelector::select0(runTime, args);
     #include "createNamedMesh.H"
 
-//     const bool compressible = args.optionFound("compressible");
 
     forAll(timeDirs, timeI)
     {
@@ -241,7 +155,7 @@ int main(int argc, char *argv[])
         {
             Info<< "Calculating wall distance\n" << endl;
             wallDist y(mesh
-           #if not (defined(OFesi1806))
+           #if (OF_VERSION<060000) //not (defined(OFesi1806))
                        , true
            #endif
                        );

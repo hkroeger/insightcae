@@ -59,7 +59,7 @@ using namespace Foam;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-int main(int argc, char *argv[])
+int main(int, char *[])
 {
     Foam::argList::validOptions.insert("overwrite", "");
     argList::noParallel();

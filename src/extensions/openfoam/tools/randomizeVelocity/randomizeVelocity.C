@@ -59,10 +59,10 @@ int main(int argc, char *argv[])
   );
 
   Random rg(1);
-  volVectorField fluctuations=0.0*U;
+  volVectorField fluctuations(0.0*U);
   forAll(fluctuations, ci)
     fluctuations[ci]=(
-            #if defined(OFesi1806)
+            #if (OF_VERSION>=060000) //defined(OFesi1806)
               rg.sample01<vector>()
             #else
               rg.vector01()

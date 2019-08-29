@@ -509,10 +509,10 @@ void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
 
 void setRelaxedQualityCtrls(OFDictData::dict& qualityCtrls)
 {
-  qualityCtrls["maxNonOrtho"]=85.0;
+  qualityCtrls["maxNonOrtho"]=75.0;
   qualityCtrls["maxBoundarySkewness"]=20.0;
   qualityCtrls["maxInternalSkewness"]=4.0;
-  qualityCtrls["maxConcave"]=180.0; //85.0;  
+  qualityCtrls["maxConcave"]=85.0;
   qualityCtrls["minFlatness"]=0.002;  
   qualityCtrls["minVol"]=1e-18;  
   qualityCtrls["minArea"]=-1.0;  

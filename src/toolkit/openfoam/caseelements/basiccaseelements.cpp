@@ -944,15 +944,26 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     OFDictData::dict& dynamicMeshDict
       = dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
 
+    std::string name="rigidBodyMotion";
+
     dynamicMeshDict["dynamicFvMesh"]="dynamicMotionSolverFvMesh";
-    dynamicMeshDict["solver"]="rigidBodyMotion";
+    OFDictData::dict rbmc;
+
+    if (const auto* impl = boost::get<Parameters::implementation_extended_type>(&p.implementation))
+    {
+      name="extendedRigidBodyMotion";
+      rbmc["rampDuration"]=impl->rampDuration;
+    }
+
+    dynamicMeshDict["solver"]=name;
+
 
     OFDictData::list libl;
-    libl.push_back("\"librigidBodyMeshMotion.so\"");
+    libl.push_back("\"lib"+name+".so\"");
     dynamicMeshDict["motionSolverLibs"]=libl;
 
-    OFDictData::dict rbmc;
     rbmc["report"]=true;
+
 
     OFDictData::dict sc;
      sc["type"]="Newmark";
@@ -1030,7 +1041,7 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
      // empty
     rbmc["restraints"]=rc;
 
-    dynamicMeshDict["rigidBodyMotionCoeffs"]=rbmc;
+    dynamicMeshDict[name+"Coeffs"]=rbmc;
 }
 
 

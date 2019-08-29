@@ -54,6 +54,7 @@ set(toolkit_SOURCES
     openfoam/fielddata.cpp
     openfoam/paraview.cpp
     openfoam/remoteexecution.cpp
+    openfoam/stretchtransformation.cpp
 
     openfoam/caseelements/turbulencemodelcaseelements.cpp
     openfoam/caseelements/analysiscaseelements.cpp

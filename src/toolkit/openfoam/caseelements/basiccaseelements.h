@@ -827,7 +827,7 @@ bodies = array [
    ] *1 "body surface patches"
 
    innerDistance = double 1.0 "radius around body within which a solid body motion is performed."
-   outerDistance = double 1.0 "radius around body outside which the grid remains fixed."
+   outerDistance = double 2.0 "radius around body outside which the grid remains fixed."
 
    translationConstraint = array [ selection (
     Px Py Pz Pxyz ) Pxyz "Kind of translation constraint"
@@ -839,6 +839,13 @@ bodies = array [
 
  } ] *1 "moving bodies"
 
+
+implementation = selectablesubset {{
+ vanilla set { }
+ extended set {
+   rampDuration = double 1.0 "Duration of the initial force ramp"
+ }
+}} vanilla "Type of implementation to use."
 
 <<<PARAMETERSET
 */

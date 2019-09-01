@@ -105,7 +105,7 @@ public:
     virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
     
     virtual void mapFromOther(OpenFOAMCase& cm, const boost::filesystem::path& mapFromPath, bool is_parallel);
-    virtual void initializeSolverRun(OpenFOAMCase& cm);
+    virtual void initializeSolverRun(ProgressDisplayer* displayer, OpenFOAMCase& cm);
     
     virtual void installConvergenceAnalysis(std::shared_ptr<ConvergenceAnalysisDisplayer> cc);
     virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm);

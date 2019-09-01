@@ -180,7 +180,7 @@ void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::p
 }
 
 
-void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
+void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer*, OpenFOAMCase& cm)
 {
   Parameters p(parameters_);
     
@@ -396,7 +396,8 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
   
   if (!p.run.evaluateonly)
   {
-    initializeSolverRun(runCase);
+    PrefixedProgressDisplayer iniprogdisp(displayer, "initrun_");
+    initializeSolverRun(&iniprogdisp, runCase);
     runSolver(displayer, runCase);
   }
   

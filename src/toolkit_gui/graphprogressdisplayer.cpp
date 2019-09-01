@@ -171,7 +171,7 @@ GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& 
   boost::split(names, name, boost::is_any_of("/"));
 
   bool log;
-  if (names.back()=="residual")
+  if ( boost::algorithm::ends_with(names.back(), "residual") )
   {
     log=true;
   }

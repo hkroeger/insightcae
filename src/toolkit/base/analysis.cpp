@@ -65,9 +65,7 @@ void CombinedProgressDisplayer::add ( ProgressDisplayer* d )
 
 void CombinedProgressDisplayer::update ( const ProgressState& pi )
 {
-//    int j=0;
     for ( ProgressDisplayer* d: displayers_ ) {
-//     std::cout<<"exec #"<<(j++)<<std::endl;
         d->update ( pi );
     }
 }
@@ -96,19 +94,46 @@ bool CombinedProgressDisplayer::stopRun() const
 
 void TextProgressDisplayer::update ( const ProgressState& pi )
 {
-//    double iter=pi.first;
     const ProgressVariableList& pvl=pi.second;
 
-    for ( const ProgressVariableList::value_type& i: pvl ) {
+    for ( const ProgressVariableList::value_type& i: pvl )
+    {
         const std::string& name = i.first;
+
+        cout << name << "\t";
+    }
+    cout << endl;
+    for ( const ProgressVariableList::value_type& i: pvl )
+    {
         double value = i.second;
 
-        cout << name << "=" << value << "\t";
+        cout << value << "\t";
     }
     cout << endl;
 }
 
 
+
+
+PrefixedProgressDisplayer::PrefixedProgressDisplayer(ProgressDisplayer* parent, const std::string& prefix)
+  : parent_(parent), prefix_(prefix)
+{
+}
+
+void PrefixedProgressDisplayer::update ( const ProgressState& pi )
+{
+  ProgressVariableList pvl;
+  for (const auto& pv: pi.second)
+  {
+    pvl[prefix_+pv.first]=pv.second;
+  }
+  parent_->update( ProgressState(pi.first, pvl) );
+}
+
+bool PrefixedProgressDisplayer::stopRun() const
+{
+  return parent_->stopRun();
+}
 
 
 ConvergenceAnalysisDisplayer::ConvergenceAnalysisDisplayer ( const std::string& progvar, double threshold )
@@ -124,7 +149,6 @@ void ConvergenceAnalysisDisplayer::update ( const ProgressState& pi )
     decltype ( pi.second ) ::const_iterator pv=pi.second.find ( progvar_ );
 
     if ( pv != pi.second.end() ) {
-//     std::cout << progvar_ << "=" << pv->second <<std::endl;
         trackedValues_.push_back ( pv->second );
     }
 

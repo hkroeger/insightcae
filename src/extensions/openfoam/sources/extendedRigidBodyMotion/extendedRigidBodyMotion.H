@@ -191,9 +191,9 @@ public:
             IOstream::streamFormat fmt,
             IOstream::versionNumber ver,
             IOstream::compressionType cmp
-        #if defined(OFesi1806)
+#if OF_VERSION>=060000 //defined(OFesi1806)
             , const bool valid
-        #endif
+#endif
         ) const;
 
         //- Read dynamicMeshDict dictionary

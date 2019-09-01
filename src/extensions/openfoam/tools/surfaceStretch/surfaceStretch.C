@@ -19,7 +19,7 @@
  */
 
 #include "triSurface.H"
-#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "MeshedSurfaces.H"
 #endif
 #include "argList.H"
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
     Info<< "Reading surf from " << surfFileName << " ..." << endl;
 
-#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     meshedSurface surf1(surfFileName);
 #else
     triSurface surf1(surfFileName);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 
     Info<< "Writing surf to " << outFileName << " ..." << endl;
 
-#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#if OF_VERSION>=040000 //defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     surf1.movePoints(pnew);
     surf1.write(outFileName); 
 #else

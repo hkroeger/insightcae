@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     IFstream fi(edgeFileName);
     token headerKeyWord(fi);
     dictionary header(fi);
-#ifdef OF16ext
+#if OF_VERSION<010700 //def OF16ext
     edgeMesh edge1(fi); 
 #else
     edgeMesh edge1; fi >> edge1; //(edgeFileName);

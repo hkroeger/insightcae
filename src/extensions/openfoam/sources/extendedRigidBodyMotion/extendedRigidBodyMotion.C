@@ -124,7 +124,7 @@ Foam::extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
     displacementMotionSolver(mesh, dict, typeName),
     model_
     (
-#if defined(OFesi1806)
+#if OF_VERSION>=060000 //defined(OFesi1806)
         mesh.time(),
 #endif
         coeffDict(),
@@ -462,7 +462,7 @@ void Foam::extendedRigidBodyMeshMotion::solve()
         {
             model_.solve
             (
-#if defined(OFesi1806)
+#if OF_VERSION>=060000 //defined(OFesi1806)
                 t.value(),
 #endif
                 t.deltaTValue(),
@@ -577,7 +577,7 @@ void Foam::extendedRigidBodyMeshMotion::solve()
 
         model_.solve
         (
-#if defined(OFesi1806)
+#if OF_VERSION>=060000 //defined(OFesi1806)
             t.value(),
 #endif
             t.deltaTValue(),
@@ -631,7 +631,7 @@ bool Foam::extendedRigidBodyMeshMotion::writeObject
     IOstream::streamFormat fmt,
     IOstream::versionNumber ver,
     IOstream::compressionType cmp
-#if defined(OFesi1806)
+#if OF_VERSION>=060000 //defined(OFesi1806)
     , const bool valid
 #endif
 ) const
@@ -651,7 +651,7 @@ bool Foam::extendedRigidBodyMeshMotion::writeObject
     );
 
     model_.state().write(dict);
-#if defined(OFesi1806)
+#if OF_VERSION>=060000 //defined(OFesi1806)
     // Force ascii writing
     return dict.regIOobject::writeObject(IOstream::ASCII, ver, cmp, valid);
 #else

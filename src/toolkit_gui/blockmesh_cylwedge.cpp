@@ -110,8 +110,8 @@ Handle_Geom_Curve blockMeshDict_CylWedge::spine()
     else
     {
       spine_ = GC_MakeSegment(
-                to_Pnt(p0_ + er_*p_.geometry.d*0.5),
-                to_Pnt(p0_ + er_*p_.geometry.D*0.5)
+                to_Pnt(p0_ + er_*p_.geometry.d*0.49),
+                to_Pnt(p0_ + er_*p_.geometry.D*0.51)
                 ).Value();
     }
   }
@@ -125,7 +125,7 @@ arma::mat blockMeshDict_CylWedge::point_on_spine(double r)
   cout<<"r="<<r<<endl;
   Handle_Geom_Curve sp=spine();
 
-  Handle_Geom_Surface cyl(new  Geom_CylindricalSurface(gp_Ax3(to_Pnt(p0_), to_Vec(ex_), to_Vec(er_)), r));
+  Handle_Geom_Surface cyl(new  Geom_CylindricalSurface(gp_Ax3(to_Pnt(p0_), to_Vec(ex_), to_Vec(-er_)), r));
   GeomAPI_IntCS isec(sp, cyl);
   cout<<isec.NbPoints()<<endl;
   if (isec.NbPoints()<1)

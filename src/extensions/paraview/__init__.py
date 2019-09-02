@@ -141,7 +141,8 @@ try:
                               TitleColor=[0,0,0], LabelColor=[0,0,0]
                               )
 	else:
-	  bar = CreateScalarBar(
+          try:
+    	      bar = CreateScalarBar(
                               LookupTable=disp.LookupTable, 
                               Title=t, #(arrayName if title is None else title),
                               Position=barpos, 
@@ -150,6 +151,22 @@ try:
                               TitleFontSize=14, LabelFontSize=12,
                               TitleColor=[0,0,0], LabelColor=[0,0,0]
                               )
+          except:
+              bar = CreateScalarBar(
+                              LookupTable=disp.LookupTable,
+                              Title=t, #(arrayName if title is None else title),
+                              #TitleFontSize=14, LabelFontSize=12,
+                              TitleFontSize=48, LabelFontSize=42,
+                              TitleColor=[0,0,0], LabelColor=[0,0,0],
+                              WindowLocation='AnyLocation',
+                              Orientation=barorient,
+                              Position=barpos,
+                              ScalarBarLength=max(barsize),
+                              ScalarBarThickness=50
+                              )
+              if (min(barsize)>0.):
+                bar.ScalarBarThickness=int(min(barsize)*2160.0)
+
 	bar.ComponentTitle=""
         GetRenderView().Representations.append(bar)
         return (bar,obj)
@@ -260,7 +277,7 @@ try:
 	RenderView1.OrientationAxesVisibility = 1
 	RenderView1.CenterAxesVisibility=0
 	# Turn off "Head Light"
-	RenderView1.LightSwitch = 0
+	#RenderView1.LightSwitch = 0
 	# Turn off "Light Kit"
 	RenderView1.UseLight = 1 
 

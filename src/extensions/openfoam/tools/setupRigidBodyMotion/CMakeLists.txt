@@ -10,12 +10,10 @@ set(OF_LIBS
 # finiteVolume LESfilters sampling
 )
 
-# set(INCLUDE_DIRS 
-#   ${ARMADILLO_INCLUDE_DIRS}
-#   ${toolkit_SOURCE_DIR}
-#   ${shipcommon_SOURCE_DIR}
-# )
-# 
+set(LIBS
+    uniof
+)
+
 set(IS_OF_TARGS 
  extendedRigidBodyMotion
 )

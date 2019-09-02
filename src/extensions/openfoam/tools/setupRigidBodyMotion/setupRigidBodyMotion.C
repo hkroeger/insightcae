@@ -42,6 +42,8 @@ Description
 #include "dynamicFvMesh.H"
 #include "extendedRigidBodyMotion.H"
 
+#include "uniof.h"
+
 using namespace Foam;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -94,7 +96,7 @@ int main(int argc, char *argv[])
 
     Foam::word regionName;
 
-    if (args.optionReadIfPresent("region", regionName))
+    if (UNIOF_OPTIONREADIFPRESENT(args, "region", regionName))
     {
         Foam::Info
             << "Create mesh " << regionName << " for time = "

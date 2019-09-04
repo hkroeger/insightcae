@@ -49,7 +49,7 @@ include_directories(${toolkit_SOURCE_DIR})
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad 
  toolkit 
- ${OCC_LIBRARIES} 
+ ${OCC_LIBRARIES} # TKXSDRAW # don't include: leads to segfault on program exit!
  ${OCC_OCAF_LIBRARIES} 
  ${DXFLIB_LIBRARY} 
  #${GEOM_LIBRARIES}

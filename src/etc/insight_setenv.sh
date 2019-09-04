@@ -21,6 +21,11 @@ if which python >/dev/null 2>&1; then
  export PYTHONPATH=$PYTHONPATH:$(python -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${INSIGHT_INSTDIR}' ) )")
 fi
 
-source $INSIGHT_BINDIR/insight_isofplottabular_aliases.sh
 
-source $INSIGHT_BINDIR/insight.bashrc.OpenFOAM
+source insight.profile.OpenFOAM
+
+case "$-" in
+ # interactive shell
+ *i*) source insight_aliases.sh ;;
+esac
+

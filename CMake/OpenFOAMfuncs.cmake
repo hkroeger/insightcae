@@ -33,7 +33,11 @@ endmacro()
 
 
 macro(addOFConfig prefix shortcut versionnumber)
-  list(APPEND INSIGHT_OFES_VARCONTENT "${prefix}@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.${shortcut} -print -quit`#${versionnumber}")
+  #list(APPEND INSIGHT_OFES_VARCONTENT "${prefix}@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.${shortcut} -print -quit`#${versionnumber}")
+  list(APPEND INSIGHT_OFES_VARCONTENT
+"FILE=`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.${shortcut} -print -quit`
+if [ -e \$FILE ]; then INSIGHT_OFES=\"${prefix}@\$FILE#${versionnumber}:$INSIGHT_OFES\"; fi
+")
   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
 alias ${shortcut}=\"source insight.bashrc.${shortcut}\"
 ")

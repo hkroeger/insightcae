@@ -139,12 +139,24 @@ if (INSIGHT_BUILD_OPENFOAM)
     find_package(OpenFOAM-esi1806)
     find_package(OpenFOAM-esi1906)
 
-    join("${INSIGHT_OFES_VARCONTENT}" ":" INSIGHT_OFES)
-    message(STATUS "\"${INSIGHT_OFES}\"")
+    join("${INSIGHT_OFES_VARCONTENT}" "\n" INSIGHT_OFES)
+    #message(STATUS "\"${INSIGHT_OFES}\"")
     
-    create_script("insight.bashrc.OpenFOAM"
-"export INSIGHT_OFES=\"${INSIGHT_OFES}\"
+    create_script("insight.profile.OpenFOAM"
+"INSIGHT_OFES=\"\"
+${INSIGHT_OFES}
+export INSIGHT_OFES
+"
+#"export INSIGHT_OFES=\"${INSIGHT_OFES}\"
+#"
+)
+    create_script("insight.aliases.OpenFOAM"
 ${INSIGHT_OF_ALIASES}
+"
+)
+    create_script("insight.bashrc.OpenFOAM"
+"source insight.profile.OpenFOAM
+"source insight.aliases.OpenFOAM
 "
 )
 endif()
@@ -836,7 +848,7 @@ if(DPKG_PROGRAM)
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot,python-numpy,python-scipy,python-matplotlib,texlive-base,texlive-latex-extra,imagemagick,texlive-fonts-recommended,texlive-font-utils,xdg-utils")
   if (INSIGHT_BUILD_OPENFOAM)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},openfoamesi1806-insightcae,paraview-insightcae|paraview-offscreen-insightcae,openmpi-bin")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},openfoamesi1806-insightcae,paraview5-insightcae|paraview5-offscreen-insightcae|paraview-insightcae|paraview-offscreen-insightcae,openmpi-bin")
   endif()
 #   if (INSIGHT_BUILD_CODEASTER)
 #     set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},codeaster-insightcae")

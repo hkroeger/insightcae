@@ -16,7 +16,7 @@ cd $DIR && (
   cp qwtconfig.pri qwtconfig.pri.bak
   sed -i -e "s%QWT_INSTALL_PREFIX *= */usr/local/qwt-\$\$QWT_VERSION%QWT_INSTALL_PREFIX = ${INSTALLDIR}%g" qwtconfig.pri
   sed -i -e "s% *LIBRARY_NAME *= *\$\$1%LIBRARY_NAME = \$\$1-qt5%g" qwtfunctions.pri
-  sed -i -e "s/QWT_CONFIG     += QwtDesigner//g" qwtfunctions.pri
+  sed -i -e "s/QWT_CONFIG     += QwtDesigner//g" qwtconfig.pri
  fi
  #QMAKEQT5=qmake
  QMAKEQT5=qmake-qt5

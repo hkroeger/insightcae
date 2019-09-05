@@ -231,7 +231,7 @@ protected:
         const Parameters::geometry_type::outer_interface_type& pro_outer,
         bool no_top_edg,
         bool is_lowest,
-        int nuBy2, int nx, int nr
+        int nuBy2, int nx, int nr, double deltax
     );
 
 public:

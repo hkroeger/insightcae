@@ -518,7 +518,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     const Parameters::geometry_type::outer_interface_type& pro_outer,
     bool no_top_edg,
     bool is_lowest,
-    int nuBy2, int nx, int nr
+    int nuBy2, int nx, int nr, double deltax
 )
 {
   bool is_highest = !no_top_edg;
@@ -584,11 +584,11 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   gp_XYZ R0=spine_rvs->Value(t0).XYZ()-center.XYZ();
   gp_XYZ R1=spine_rvs->Value(t1).XYZ()-center.XYZ();
 
-  double dz = R0.Dot(ez.XYZ());
-  gp_Pnt center0 = center.Translated(dz*ez);
+  double z_spl = R0.Dot(ez.XYZ()); // delta_z center=>spline
+  gp_Pnt center0 = center.Translated(z_spl*ez); // center at height of spline
   arma::mat
-      vL0 = vec3(ez) * (z0-dz),
-      vL1 = vec3(ez) * (z1-dz)
+      vL0 = vec3(ez) * (z0-z_spl), // distance spline => z0
+      vL1 = vec3(ez) * (z1-z_spl) // distance spline => z1
     ;
 
   R0 = R0 - ez.XYZ()*R0.Dot(ez.XYZ());
@@ -821,8 +821,12 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                     [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL0)); } ));
     this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_begin.fwd_u0+g_begin.fwd_u1)*0.5, g_begin.fwd_u1,
                     [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL0)); } ));
-    this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL0, vec3(pa.Transformed(rot_fwd_ctr))+vL0, vec3(center0)/*+vL0*/ ) );
-    this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL0, vec3(pa)+vL0, vec3(center0)/*+vL0*/ ) );
+    this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL0,
+                                             vec3(pa.Transformed(rot_fwd_ctr))+vL0,
+                                             vec3(center0)+vL0 ) );
+    this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL0,
+                                             vec3(pa)+vL0,
+                                             vec3(center0)+vL0 ) );
 
     if (!no_top_edg)
     {
@@ -830,8 +834,12 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                       [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ));
       this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_begin.fwd_u0+g_begin.fwd_u1)*0.5, g_begin.fwd_u1,
                       [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ));
-      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL1, vec3(pa.Transformed(rot_fwd_ctr))+vL1, vec3(center0)+(vL1-vL0) ) );
-      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL1, vec3(pa)+vL1, vec3(center0)+(vL1-vL0) ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL1,
+                                               vec3(pa.Transformed(rot_fwd_ctr))+vL1,
+                                               vec3(center0)+vL1 ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL1,
+                                               vec3(pa)+vL1,
+                                               vec3(center0)+vL1) );
     }
 
 
@@ -922,8 +930,12 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                     [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } ));
     this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_begin.rvs_u0+g_begin.rvs_u1)*0.5, g_begin.rvs_u1,
                     [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } ));
-    this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL0, vec3(pa.Transformed(rot_fwd_ctr))+vL0, vec3(center0)/*+vL0*/ ) );
-    this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL0, vec3(pa)+vL0, vec3(center0)/*+vL0*/ ) );
+    this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL0,
+                                             vec3(pa.Transformed(rot_fwd_ctr))+vL0,
+                                             vec3(center0)+vL0 ) );
+    this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL0,
+                                             vec3(pa)+vL0,
+                                             vec3(center0)+vL0 ) );
 
     if (!no_top_edg)
     {
@@ -931,8 +943,12 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                       [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ));
       this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_begin.rvs_u0+g_begin.rvs_u1)*0.5, g_begin.rvs_u1,
                       [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ));
-      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL1, vec3(pa.Transformed(rot_fwd_ctr))+vL1, vec3(center0)+(vL1-vL0) ) );
-      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL1, vec3(pa)+vL1, vec3(center0)+(vL1-vL0) ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL1,
+                                               vec3(pa.Transformed(rot_fwd_ctr))+vL1,
+                                               vec3(center0)+vL1 ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL1,
+                                               vec3(pa)+vL1,
+                                               vec3(center0)+vL1 ) );
     }
 
     {
@@ -1013,16 +1029,27 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
         pb = spine_rvs->Value(t0)
       ;
 
+    int nproi = std::max(1, int(pa.Distance(pb) / deltax));
+    std::cout<<"nproi="<<nproi<<" "<<pa.Distance(pb)<<" "<<deltax<<std::endl;
+
 
     if (pro_inner_lo_edgs)
     {
-      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL0, vec3(pa.Transformed(rot_fwd_ctr))+vL0, vec3(center0) ) );
-      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL0, vec3(pa)+vL0, vec3(center0) ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL0,
+                                               vec3(pa.Transformed(rot_fwd_ctr))+vL0,
+                                               vec3(center0)+vL0 ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL0,
+                                               vec3(pa)+vL0,
+                                               vec3(center0)+vL0 ) );
     }
     if (pro_inner_hi_edgs)
     {
-      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL1, vec3(pa.Transformed(rot_fwd_ctr))+vL1, vec3(center0)+(vL1-vL0) ) );
-      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL1, vec3(pa)+vL1, vec3(center0)+(vL1-vL0) ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL1,
+                                               vec3(pa.Transformed(rot_fwd_ctr))+vL1,
+                                               vec3(center0)+vL1 ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd_ctr))+vL1,
+                                               vec3(pa)+vL1,
+                                               vec3(center0)+vL1 ) );
     }
     {
       Block& bl = this->addBlock
@@ -1038,7 +1065,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                                     vec3( pb.Transformed(rot_fwd_ctr) )+vL1,
                                     vec3( pb.Transformed(rot_fwd) )+vL1
                                   ),
-                                  nuBy2, 1, nx
+                                  nuBy2, nproi, nx
                                 )
                   );
       if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
@@ -1060,7 +1087,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                                     vec3( pb )+vL1,
                                     vec3( pb.Transformed(rot_fwd_ctr) )+vL1
                                   ),
-                                  nuBy2, 1, nx
+                                  nuBy2, nproi, nx
                                 )
                   );
       if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
@@ -1085,8 +1112,12 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                     [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } ));
     this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_end.rvs_u0+g_end.rvs_u1)*0.5, g_end.rvs_u1,
                     [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } ));
-    this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd))+vL0, vec3(pb.Transformed(rot_fwd_ctr))+vL0, vec3(center0)/*+vL0*/ ) );
-    this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd_ctr))+vL0, vec3(pb)+vL0, vec3(center0)/*+vL0*/ ) );
+    this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd))+vL0,
+                                             vec3(pb.Transformed(rot_fwd_ctr))+vL0,
+                                             vec3(center0)+vL0 ) );
+    this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd_ctr))+vL0,
+                                             vec3(pb)+vL0,
+                                             vec3(center0)+vL0 ) );
 
     if (!no_top_edg)
     {
@@ -1094,8 +1125,13 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                       [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ));
       this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_end.rvs_u0+g_end.rvs_u1)*0.5, g_end.rvs_u1,
                       [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ));
-      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd))+vL1, vec3(pb.Transformed(rot_fwd_ctr))+vL1, vec3(center0)+(vL1-vL0) ) );
-      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd_ctr))+vL1, vec3(pb)+vL1, vec3(center0)+(vL1-vL0) ) );
+      this->addEdge ( new CircularEdge_Center(
+                        vec3(pb.Transformed(rot_fwd))+vL1,
+                        vec3(pb.Transformed(rot_fwd_ctr))+vL1,
+                        vec3(center0)+vL1 ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd_ctr))+vL1,
+                                               vec3(pb)+vL1,
+                                               vec3(center0)+vL1 ) );
     }
 
     {
@@ -1171,16 +1207,26 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
         pb = spine_rvs->Value(t10)
       ;
 
+    int nproo = std::max(1, int(pa.Distance(pb) / deltax));
+    std::cout<<"nproo="<<nproo<<" "<<pa.Distance(pb)<<" "<<deltax<<std::endl;
 
     if (pro_outer_lo_edgs)
     {
-      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd))+vL0, vec3(pb.Transformed(rot_fwd_ctr))+vL0, vec3(center0) ) );
-      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd_ctr))+vL0, vec3(pb)+vL0, vec3(center0) ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd))+vL0,
+                                               vec3(pb.Transformed(rot_fwd_ctr))+vL0,
+                                               vec3(center0)+vL0 ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd_ctr))+vL0,
+                                               vec3(pb)+vL0,
+                                               vec3(center0)+vL0 ) );
     }
     if (pro_outer_hi_edgs)
     {
-      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd))+vL1, vec3(pb.Transformed(rot_fwd_ctr))+vL1, vec3(center0)+(vL1-vL0) ) );
-      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd_ctr))+vL1, vec3(pb)+vL1, vec3(center0)+(vL1-vL0) ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd))+vL1,
+                                               vec3(pb.Transformed(rot_fwd_ctr))+vL1,
+                                               vec3(center0)+vL1 ) );
+      this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd_ctr))+vL1,
+                                               vec3(pb)+vL1,
+                                               vec3(center0)+vL1 ) );
     }
     {
       Block& bl = this->addBlock
@@ -1196,7 +1242,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                                     vec3( pb.Transformed(rot_fwd_ctr) )+vL1,
                                     vec3( pb.Transformed(rot_fwd) )+vL1
                                   ),
-                                  nuBy2, 1, nx
+                                  nuBy2, nproo, nx
                                 )
                   );
       if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
@@ -1218,7 +1264,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                                     vec3( pb )+vL1,
                                     vec3( pb.Transformed(rot_fwd_ctr) )+vL1
                                   ),
-                                  nuBy2, 1, nx
+                                  nuBy2, nproo, nx
                                 )
                   );
       if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
@@ -1374,6 +1420,7 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
       throw insight::Exception("Internal error: unhandled selection for mesh resolution");
     }
 
+
     spine = BRep_Tool::Curve(e, t0, t1);
 
     Patches pc;
@@ -1460,11 +1507,11 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
             p_.geometry.outer_interface,
             i1!=zs.end(),
             i0==zs.begin(),
-            nuBy2, nx, nr
+            nuBy2, nx, nr, deltax
        );
     }
 
-    writeVTK("debug_bmd.vtk");
+//    writeVTK("debug_bmd.vtk");
 }
 
 

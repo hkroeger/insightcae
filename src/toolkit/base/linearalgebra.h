@@ -139,6 +139,7 @@ public:
   virtual void getParameters(double* params) const;
   virtual arma::mat evaluateObjective(const arma::mat& x) const =0;
   virtual void setInitialValues(double* x) const =0;
+  virtual void setStepHints(double* x) const;
   virtual arma::mat weights(const arma::mat& x) const;
   double computeQuality(const arma::mat& y, const arma::mat& x) const;
 };

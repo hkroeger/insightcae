@@ -171,6 +171,13 @@ void RegressionModel::getParameters(double*) const
   throw insight::Exception("not implemented!");
 }
 
+void RegressionModel::setStepHints(double* x) const
+{
+  setInitialValues(x);
+  for (int i=0; i<numP(); i++)
+    x[i] = std::copysign( std::max(1e-4, 0.1*std::fabs(x[i])), x[i] );
+}
+
 arma::mat RegressionModel::weights(const arma::mat& x) const
 {
   return ones(x.n_rows);
@@ -178,13 +185,7 @@ arma::mat RegressionModel::weights(const arma::mat& x) const
 
 double RegressionModel::computeQuality(const arma::mat& y, const arma::mat& x) const
 {
-  double q=0.0;
-  arma::mat w=weights(x);
-  for (arma::uword r=0; r<y.n_rows; r++)
-  {
-    q +=  w(r) * pow(norm( y.row(r) - evaluateObjective(x.row(r)), 2 ), 2);
-  }
-  return q;
+  return arma::as_scalar( weights(x).t() * pow( y - evaluateObjective(x), 2) );
 }
 
 
@@ -209,7 +210,8 @@ double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionMode
 
         /* Set initial step sizes to 0.1 */
         ss = gsl_vector_alloc (model.numP());
-        gsl_vector_set_all (ss, 0.1);
+//        gsl_vector_set_all (ss, 0.1);
+        model.setStepHints(ss->data);
 
         /* Initialize method and iterate */
         RegressionData param(model, y, x);

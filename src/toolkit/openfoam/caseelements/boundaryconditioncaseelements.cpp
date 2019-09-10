@@ -508,7 +508,7 @@ void MixingPlaneGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 void MixingPlaneGGIBC::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  BoundaryCondition::addIntoDictionaries(dictionaries);
+  GGIBCBase::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
   

@@ -5,6 +5,7 @@
 #include "base/units.h"
 
 #include "occinclude.h"
+#include "geotest.h"
 #include "GeomAPI_IntCS.hxx"
 #include "Geom_CylindricalSurface.hxx"
 #include "cadfeatures/importsolidmodel.h"
@@ -521,6 +522,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     int nuBy2, int nx, int nr, double deltax
 )
 {
+
   bool is_highest = !no_top_edg;
 
   auto cyl_isec = [&](double r, Handle_Geom_Curve spine, gp_Pnt nearp)
@@ -603,13 +605,12 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   }
   double t00=t0, t10=t1;
 
+
   bool has_pro_inner=false, do_pro_inner_blocks=false, pro_inner_lo_edgs=false, pro_inner_hi_edgs=false;
   if (const auto* ii = boost::get<Parameters::geometry_type::inner_interface_extend_type>(&pro_inner))
   {
     has_pro_inner=true;
-    std::cout<<"Move t0 from "<<t0;
     t0 = cyl_isec( radius(spine_rvs->Value(t0))+ii->distance, spine_rvs, spine_rvs->Value(t0) );
-    std::cout<<" to "<<t0<<" (new r="<<radius(spine_rvs->Value(t0))<<", t1="<<t1<<")"<<std::endl;
 
     // recompute
     R0=spine_rvs->Value(t0).XYZ()-center.XYZ();
@@ -617,7 +618,6 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
     if ( (z0 >= ii->z0) && (z1 <= ii->z1) )
     {
-      std::cout<<"do inner!"<<std::endl;
       do_pro_inner_blocks=true;
     }
 
@@ -638,9 +638,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   if (const auto* ii = boost::get<Parameters::geometry_type::outer_interface_extend_type>(&pro_outer))
   {
     has_pro_outer=true;
-    std::cout<<"Move t1 from "<<t1;
     t1 = cyl_isec( radius(spine_rvs->Value(t1))-ii->distance, spine_rvs, spine_rvs->Value(t1) );
-    std::cout<<" to "<<t1<<" (new r="<<radius(spine_rvs->Value(t1))<<", t0="<<t0<<")"<<std::endl;
 
     // recompute
     R1=spine_rvs->Value(t1).XYZ()-center.XYZ();
@@ -648,7 +646,6 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
     if ( (z0 >= ii->z0) && (z1 <= ii->z1) )
     {
-      std::cout<<"do outer!"<<std::endl;
       do_pro_outer_blocks=true;
     }
 
@@ -664,8 +661,6 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     }
   }
 
-  std::cout<<"t00, t0, t1, t10 = "<<t00<<", "<<t0<<", "<<t1<<", "<<t10<<std::endl;
-
 
   //  Normale am Anfang Spine fwd => Skalarprod mit Kreisnormale
   spine_rvs->D1(t0, p, t); t*=sense;
@@ -680,7 +675,6 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   {
     //rückwärts gekrümmt
 
-//    double delta= en_circ1.Angle(en1); //::acos( en_circ1.Dot(en1) /en_circ1.Magnitude()/en1.Magnitude() );
     double l=1000; //r0*sin(angle)/sin(delta-angle);
     Handle_Geom_TrimmedCurve oc(
           GC_MakeSegment(
@@ -703,8 +697,6 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     g_begin.fwd_u1 = u_sp1;
     g_begin.rvs_u0 = g_begin.rvs_u1 = t0;
 
-//    spine_rvs->D0( 0.5*(g_begin.fwd_u0+g_begin.fwd_u1), g_begin.ctr );
-//    g_begin.ctr.Transform(rot_fwd_ctr);
     g_begin.interf=gp_Pnt( 0.5*(spine_rvs->Value(t0).XYZ() + spine_rvs->Value(u_sp1).Transformed(rot_fwd).XYZ() ) );
     g_begin.ctr=gp_Pnt(
                   0.8 * ( 0.5*(g_begin.interf.XYZ() + spine_rvs->Value(t0).Transformed(rot_fwd_ctr).XYZ() ) )
@@ -745,6 +737,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                 );
   }
 
+
+
+
   // ===========================================================
   // ========== Geometrie Zwickel aussen
   // ===========================================================
@@ -760,7 +755,6 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   if ( en_circ2.Dot(en2) > 0 )
   {
     //rückwärts gekrümmt
-//    double delta= en_circ1.Angle(en1); //::acos( en_circ1.Dot(en1) /en_circ1.Magnitude()/en1.Magnitude() );
     double l=1000; //r0*sin(angle)/sin(delta-angle);
     Handle_Geom_TrimmedCurve oc(
           GC_MakeSegment(
@@ -793,7 +787,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   else
   {
     // vorwärts gekrümmt
-    throw insight::Exception("rvs: not implemented");
+    throw insight::Exception("fwd: not implemented");
   }
 
   // Blockgeometrien
@@ -804,6 +798,88 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
 
   // Blöcke erzeugen
+
+
+  // ============= Blöcke
+
+  double dr;
+  {
+    arma::mat
+        pr0 = vec3(spine_rvs->Value(block.rvs_u0)),
+        pr1 = vec3(spine_rvs->Value(block.rvs_u1)),
+        pf0 = vec3(spine_rvs->Value(block.fwd_u0).Transformed(rot_fwd)),
+        pf1 = vec3(spine_rvs->Value(block.fwd_u1).Transformed(rot_fwd))
+      ;
+
+    dr = 0.5*
+                (
+                  ::insight::cad::edgeLength(BRepBuilderAPI_MakeEdge(spine_rvs, block.rvs_u0, block.rvs_u1).Edge())
+                  +
+                  ::insight::cad::edgeLength(BRepBuilderAPI_MakeEdge(spine_rvs, block.fwd_u0, block.fwd_u1).Edge())
+                  ) / double(nr);
+
+    {
+    Block& bl = this->addBlock
+                (
+                    new Block ( P_8 (
+                                  pr0+vL0, pr1+vL0, 0.5*(pr1+pf1)+vL0, 0.5*(pr0+pf0)+vL0,
+                                  pr0+vL1, pr1+vL1, 0.5*(pr1+pf1)+vL1, 0.5*(pr0+pf0)+vL1
+                                ),
+                                nr, nuBy2, nx
+                              )
+                );
+    if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
+    if ( is_highest && pc.top ) pc.top->addFace ( bl.face ( "4567" ) );
+    if (pc.pcyclm) pc.pcyclm->addFace(bl.face("0154"));
+    }
+    {
+    Block& bl = this->addBlock
+                (
+                    new Block ( P_8 (
+                                  0.5*(pr0+pf0)+vL0, 0.5*(pr1+pf1)+vL0, pf1+vL0, pf0+vL0,
+                                  0.5*(pr0+pf0)+vL1, 0.5*(pr1+pf1)+vL1, pf1+vL1, pf0+vL1
+                                ),
+                                nr, nuBy2, nx
+                              )
+                );
+    if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
+    if ( is_highest && pc.top ) pc.top->addFace ( bl.face ( "4567" ) );
+    if ( Patch* cp = pc.pcyclp) cp->addFace(bl.face("2376"));
+    }
+
+    auto middleCurve = [&](const PointList& c1, const PointList& c2)
+    {
+      PointList mc;
+      for (size_t i=0; i< c1.size(); i++)
+      {
+        mc.push_back(0.5*(c1[i]+c2[i]));
+      }
+      return mc;
+    };
+    {
+      auto sp1=createEdgeAlongCurve(spine_rvs, block.rvs_u0, block.rvs_u1,
+                                    [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } );
+      this->addEdge ( sp1 );
+
+      if (!no_top_edg)
+        this->addEdge ( createEdgeAlongCurve(spine_rvs, block.rvs_u0, block.rvs_u1,
+                                      [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ) );
+
+      auto sp2=createEdgeAlongCurve(spine_rvs, block.fwd_u0, block.fwd_u1,
+                                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL0)); } );
+      this->addEdge ( sp2 );
+
+      if (!no_top_edg)
+        this->addEdge ( createEdgeAlongCurve(spine_rvs, block.fwd_u0, block.fwd_u1,
+                                             [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ) );
+
+      auto sp3=new SplineEdge(middleCurve(sp1->allPoints(), sp2->allPoints()));
+      this->addEdge ( sp3 );
+
+      if (!no_top_edg)
+        this->addEdge ( sp3->transformed( rotMatrix(0), vL1-vL0 ) );
+    }
+  }
 
 
 
@@ -1029,8 +1105,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
         pb = spine_rvs->Value(t0)
       ;
 
-    int nproi = std::max(1, int(pa.Distance(pb) / deltax));
-    std::cout<<"nproi="<<nproi<<" "<<pa.Distance(pb)<<" "<<deltax<<std::endl;
+    int nproi = std::max(1, int( pa.Distance(pb) / dr ));
+    std::cout<<"nproi="<<nproi<<" "<<pa.Distance(pb)<<" "<<dr<<std::endl;
 
 
     if (pro_inner_lo_edgs)
@@ -1207,8 +1283,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
         pb = spine_rvs->Value(t10)
       ;
 
-    int nproo = std::max(1, int(pa.Distance(pb) / deltax));
-    std::cout<<"nproo="<<nproo<<" "<<pa.Distance(pb)<<" "<<deltax<<std::endl;
+    int nproo = std::max(1, int( pa.Distance(pb) / dr ));
+    std::cout<<"nproo="<<nproo<<" "<<pa.Distance(pb)<<" "<<dr<<std::endl;
 
     if (pro_outer_lo_edgs)
     {
@@ -1275,79 +1351,6 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   }
 
 
-
-  // ============= Blöcke
-
-  {
-    arma::mat
-        pr0 = vec3(spine_rvs->Value(block.rvs_u0)),
-        pr1 = vec3(spine_rvs->Value(block.rvs_u1)),
-        pf0 = vec3(spine_rvs->Value(block.fwd_u0).Transformed(rot_fwd)),
-        pf1 = vec3(spine_rvs->Value(block.fwd_u1).Transformed(rot_fwd))
-      ;
-    {
-    Block& bl = this->addBlock
-                (
-                    new Block ( P_8 (
-                                  pr0+vL0, pr1+vL0, 0.5*(pr1+pf1)+vL0, 0.5*(pr0+pf0)+vL0,
-                                  pr0+vL1, pr1+vL1, 0.5*(pr1+pf1)+vL1, 0.5*(pr0+pf0)+vL1
-                                ),
-                                nr, nuBy2, nx
-                              )
-                );
-    if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
-    if ( is_highest && pc.top ) pc.top->addFace ( bl.face ( "4567" ) );
-    if (pc.pcyclm) pc.pcyclm->addFace(bl.face("0154"));
-    }
-    {
-    Block& bl = this->addBlock
-                (
-                    new Block ( P_8 (
-                                  0.5*(pr0+pf0)+vL0, 0.5*(pr1+pf1)+vL0, pf1+vL0, pf0+vL0,
-                                  0.5*(pr0+pf0)+vL1, 0.5*(pr1+pf1)+vL1, pf1+vL1, pf0+vL1
-                                ),
-                                nr, nuBy2, nx
-                              )
-                );
-    if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
-    if ( is_highest && pc.top ) pc.top->addFace ( bl.face ( "4567" ) );
-    if ( Patch* cp = pc.pcyclp) cp->addFace(bl.face("2376"));
-    }
-
-    auto middleCurve = [&](const PointList& c1, const PointList& c2)
-    {
-      PointList mc;
-      for (size_t i=0; i< c1.size(); i++)
-      {
-        mc.push_back(0.5*(c1[i]+c2[i]));
-      }
-      return mc;
-    };
-    {
-      auto sp1=createEdgeAlongCurve(spine_rvs, block.rvs_u0, block.rvs_u1,
-                                    [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } );
-      this->addEdge ( sp1 );
-
-      if (!no_top_edg)
-        this->addEdge ( createEdgeAlongCurve(spine_rvs, block.rvs_u0, block.rvs_u1,
-                                      [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ) );
-
-      auto sp2=createEdgeAlongCurve(spine_rvs, block.fwd_u0, block.fwd_u1,
-                                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL0)); } );
-      this->addEdge ( sp2 );
-
-      if (!no_top_edg)
-        this->addEdge ( createEdgeAlongCurve(spine_rvs, block.fwd_u0, block.fwd_u1,
-                                             [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ) );
-
-      auto sp3=new SplineEdge(middleCurve(sp1->allPoints(), sp2->allPoints()));
-      this->addEdge ( sp3 );
-
-      if (!no_top_edg)
-        this->addEdge ( sp3->transformed( rotMatrix(0), vL1-vL0 ) );
-    }
-  }
-
 }
 
 void blockMeshDict_CylWedgeOrtho::create_bmd()
@@ -1389,7 +1392,8 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
          );
     gp_XYZ R_midp = midp.XYZ() - to_Pnt(p_.geometry.p0).XYZ();
     gp_XYZ ez = to_Vec(p_.geometry.ex).XYZ();
-    double Lu = ( R_midp - ez.Dot(R_midp)*ez ).Modulus() * p_.geometry.wedge_angle*SI::deg;
+    double rmid = ( R_midp - ez.Dot(R_midp)*ez ).Modulus();
+    double Lu = rmid * p_.geometry.wedge_angle*SI::deg;
 
     double Lx = p_.geometry.L;
 

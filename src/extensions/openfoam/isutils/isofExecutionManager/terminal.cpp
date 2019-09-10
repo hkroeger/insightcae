@@ -35,51 +35,60 @@ TerminalWidget::TerminalWidget(QWidget *parent)
 
 bool TerminalWidget::initialise()
 {
-  if (! initialised) { // konsole part is not yet loaded or it has already failed
-      KService::Ptr service = KService::serviceByDesktopName("konsolepart");
+  if (! initialised)
+  {
+    // konsole part is not yet loaded or it has already failed
 
-      if (service) {
-          QWidget *focusW = qApp->focusWidget();
-          // Create the part
-          QString error;
-          konsole_part = service->createInstance<KParts::ReadOnlyPart>(this, this, QVariantList(), &error);
+    KService::Ptr service = KService::serviceByDesktopName("konsolepart");
 
-          if (konsole_part) { //loaded successfully
-              terminal_hbox->addWidget(konsole_part->widget());
-              setFocusProxy(konsole_part->widget());
-//              connect(konsole_part, &KParts::ReadOnlyPart::destroyed, this,&TerminalDock::killTerminalEmulator);
+    if (service)
+    {
+      QWidget *focusW = qApp->focusWidget();
 
-              // must filter app events, because some of them are processed
-              // by child widgets of konsole_part->widget()
-              // and would not be received on konsole_part->widget()
-              qApp->installEventFilter(this);
-              t = qobject_cast<TerminalInterface*>(konsole_part);
+      // Create the part
+      QString error;
+      konsole_part = service->createInstance<KParts::ReadOnlyPart>(this, this, QVariantList(), &error);
+
+      if (konsole_part)
+      {
+        //loaded successfully
+        terminal_hbox->addWidget(konsole_part->widget());
+        setFocusProxy(konsole_part->widget());
+//       connect(konsole_part, &KParts::ReadOnlyPart::destroyed, this,&TerminalDock::killTerminalEmulator);
+
+        // must filter app events, because some of them are processed
+        // by child widgets of konsole_part->widget()
+        // and would not be received on konsole_part->widget()
+        qApp->installEventFilter(this);
+        t = qobject_cast<TerminalInterface*>(konsole_part);
 //              if (t) {
 //                  lastPath = QDir::currentPath();
 //                  t->showShellInDir(lastPath);
 //              }
-              initialised = true;
-              firstInput = true;
-          } else
-              KMessageBox::error(nullptr, i18n("<b>Cannot create embedded terminal.</b><br/>"
+        initialised = true;
+        firstInput = true;
+      }
+      else
+        KMessageBox::error(nullptr, i18n("<b>Cannot create embedded terminal.</b><br/>"
                                          "The reported error was: %1", error));
-          // the Terminal Emulator may be hidden (if we are creating it only
-          // to send command there and see the results later)
-          if (focusW) {
-              focusW->setFocus();
-          }/* else {
-              ACTIVE_PANEL->gui->slotFocusOnMe();
-          }*/
-      } else
-          KMessageBox::sorry(nullptr, i18nc("missing program - arg1 is a URL",
+
+      // the Terminal Emulator may be hidden (if we are creating it only
+      // to send command there and see the results later)
+      if (focusW)
+      {
+        focusW->setFocus();
+      }
+    }
+    else
+      KMessageBox::sorry(nullptr, i18nc("missing program - arg1 is a URL",
                                       "<b>Cannot create embedded terminal.</b><br>"
                                       "You can fix this by installing Konsole:<br/>%1",
                                       QString("<a href='%1'>%1</a>").arg(
                                           "https://www.kde.org/applications/system/konsole")),
                              nullptr, KMessageBox::AllowLink);
   }
-  return isInitialised();
 
+  return isInitialised();
 }
 
 bool TerminalWidget::isInitialised() const

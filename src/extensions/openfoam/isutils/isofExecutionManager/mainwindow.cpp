@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QSettings>
+#include <QTimer>
 
 #include "ui_remoteparaview.h"
 #include "remoteparaview.h"
@@ -135,6 +136,10 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(ui->btn_email, &QPushButton::clicked, ui->log, &LogViewerWidget::sendLog);
 
   connect(ui->btn_clear_charts, &QPushButton::clicked, this, &MainWindow::onClearProgressCharts);
+
+  refreshTimer_ = new QTimer(this);
+  connect(refreshTimer_, &QTimer::timeout, this, &MainWindow::onRefreshJobList);
+  refreshTimer_->start(5000);
 
   updateGUI();
 

@@ -25,6 +25,8 @@ class MainWindow
   std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
   std::shared_ptr<insight::SolverOutputAnalyzer> soa_;
 
+  QTimer *refreshTimer_;
+
 protected:
     void updateGUI();
     void onRefreshJobList();

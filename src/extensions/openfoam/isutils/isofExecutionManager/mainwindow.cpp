@@ -6,8 +6,6 @@
 
 #include "base/boost_include.h"
 
-#include "remotedirselector.h"
-
 #include <QDebug>
 #include <QProcess>
 #include <QMessageBox>
@@ -36,29 +34,60 @@ void MainWindow::updateGUI()
   }
 }
 
+
+
+JobListBuilder::JobListBuilder(std::shared_ptr<insight::TaskSpoolerInterface> tsi)
+  : tsi_(tsi)
+{}
+
+
+void JobListBuilder::run()
+{
+  auto result = tsi_->jobs();
+  emit jobListReady(result);
+}
+
+
 void MainWindow::onRefreshJobList()
+{
+  if (tsi_)
+  {
+    //auto jl = tsi_->jobs();
+
+    if (!jbl_thread_)
+    {
+      jbl_thread_ = new JobListBuilder(tsi_);
+      connect(jbl_thread_, &JobListBuilder::jobListReady, this, &MainWindow::onJobListReady);
+      connect(jbl_thread_, &JobListBuilder::finished,
+              jbl_thread_,
+              [&]() {
+                  jbl_thread_->deleteLater();
+                  jbl_thread_=nullptr;
+              }
+      );
+      jbl_thread_->start();
+    }
+  }
+}
+
+
+void MainWindow::onJobListReady(insight::TaskSpoolerInterface::JobList jl)
 {
   ui->commands->clear();
 
-  if (tsi_)
+  int num=0;
+  for (auto j: jl)
   {
-    auto jl = tsi_->jobs();
-
-
-    int num=0;
-    for (auto j: jl)
+    if (j.state!=insight::TaskSpoolerInterface::Finished)
     {
-      if (j.state!=insight::TaskSpoolerInterface::Finished)
-      {
-        ui->commands->addItem( QString::number(j.id) +" "+ QString::fromStdString(j.remainder) );
-        num++;
-      }
+      ui->commands->addItem( QString::number(j.id) +" "+ QString::fromStdString(j.remainder) );
+      num++;
     }
+  }
 
-    if ( (num>0) && !tsi_->isTailRunning() )
-    {
-      onStartTail();
-    }
+  if ( (num>0) && !tsi_->isTailRunning() )
+  {
+    onStartTail();
   }
 }
 

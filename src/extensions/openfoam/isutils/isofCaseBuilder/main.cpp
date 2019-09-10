@@ -76,6 +76,7 @@ insight::ParameterSet& split_and_check
 
 int main ( int argc, char** argv )
 {
+
     try
     {
         insight::UnhandledExceptionHandling ueh;

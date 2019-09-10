@@ -2,16 +2,38 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "terminal.h"
+#include <QThread>
 
+#include "terminal.h"
 #include "base/boost_include.h"
 #include "openfoam/remoteexecution.h"
 #include "openfoam/openfoamcase.h"
-
+#include "remotedirselector.h"
 
 namespace Ui {
   class MainWindow;
 }
+
+
+Q_DECLARE_METATYPE(insight::TaskSpoolerInterface::JobList)
+
+class JobListBuilder
+    : public QThread
+{
+  Q_OBJECT
+
+  std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
+
+public:
+  JobListBuilder(std::shared_ptr<insight::TaskSpoolerInterface> tsi);
+
+  void run() override;
+
+Q_SIGNALS:
+  void jobListReady(insight::TaskSpoolerInterface::JobList jl);
+
+};
+
 
 class MainWindow
 : public QMainWindow,
@@ -26,10 +48,10 @@ class MainWindow
   std::shared_ptr<insight::SolverOutputAnalyzer> soa_;
 
   QTimer *refreshTimer_;
+  JobListBuilder* jbl_thread_ = nullptr;
 
 protected:
     void updateGUI();
-    void onRefreshJobList();
     void onStartTail();
 
 Q_SIGNALS:
@@ -53,6 +75,9 @@ public Q_SLOTS:
     void onClearProgressCharts();
 
     void updateOutputAnalzer(QString line);
+
+    void onRefreshJobList();
+    void onJobListReady(insight::TaskSpoolerInterface::JobList jl);
 
 private:
   Ui::MainWindow *ui;

@@ -19,13 +19,15 @@
  */
 
 /**
-  * This tool fixes missing values after mapping by inserting appropriate values from neighbouring cells
+  * This tool fixes missing cell values after mapping by inserting appropriate values from neighbouring cells
   * Required e.g. for pressure fields in compressible cases.
   */
 
 #include "fvCFD.H"
 
 #include "uniof.h"
+#include <memory>
+#include <vector>
 
 using namespace Foam;
 
@@ -38,27 +40,61 @@ int main(int argc, char *argv[])
     argList::noParallel();
     argList::validArgs.clear();
 
-    argList::validArgs.append("field name");
+    argList::validArgs.append("indicator field name (will be corrected as well)");
+    argList::validArgs.append("list of fields to correct");
+    argList::validOptions.insert("threshold", "indicator field value below which mapping is considered to have failed");
 
 #   include "setRootCase.H"
 #   include "createTime.H"
 #   include "createMesh.H"
 
-    word fieldName(IStringStream(UNIOF_ADDARG(args,0))());
-    scalar threshold=SMALL;
+    word indicatorFieldName(IStringStream(UNIOF_ADDARG(args,0))());
+    wordList fieldNames(IStringStream(UNIOF_ADDARG(args,1))());
 
-    volScalarField p
-    (
-          IOobject
+    scalar threshold = SMALL;
+    UNIOF_OPTIONREADIFPRESENT(args, "threshold", threshold);
+
+    std::shared_ptr<volScalarField> indicator(
+          new volScalarField
           (
-              fieldName,
-              runTime.timeName(),
-              mesh,
-              IOobject::MUST_READ,
-              IOobject::AUTO_WRITE
-          ),
-          mesh
+                IOobject
+                (
+                    indicatorFieldName,
+                    runTime.timeName(),
+                    mesh,
+                    IOobject::MUST_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh
+           )
     );
+
+    std::vector<std::shared_ptr<volScalarField> > scalarFields;
+    scalarFields.push_back(indicator);
+
+    std::vector<std::shared_ptr<volVectorField> > vectorFields;
+
+    for(const auto& fn: fieldNames)
+    {
+      IOobject ioo
+      (
+          fn,
+          runTime.timeName(),
+          mesh,
+          IOobject::MUST_READ,
+          IOobject::AUTO_WRITE
+      );
+
+      if (UNIOF_HEADEROK(ioo, volScalarField))
+      {
+        scalarFields.push_back(std::shared_ptr<volScalarField>(new volScalarField(ioo, mesh)));
+      }
+      else if (UNIOF_HEADEROK(ioo, volVectorField))
+      {
+        vectorFields.push_back(std::shared_ptr<volVectorField>(new volVectorField(ioo, mesh)));
+      }
+
+    }
 
     bool needMoreFix=false;
 
@@ -67,26 +103,29 @@ int main(int argc, char *argv[])
     {
       label n_fixed=0, n_skipped=0;
 
-      forAll(p, i)
+      forAll(*indicator, i)
       {
-        if (p[i]<threshold)
+        if ((*indicator)[i]<threshold)
         {
           // go through neighbours; set average of valid neighbours; if no valid neighbours skip cell and retry in next loop
           auto nei_i = mesh.cellCells()[i];
-          scalar mean_val=0.0;
+          std::vector<scalar> mean_scalars(scalarFields.size(), 0.0);
+          std::vector<vector> mean_vectors(vectorFields.size(), vector::zero);
           label n_valid=0;
           forAll(nei_i, j)
           {
             label i_n = nei_i[j];
-            if (p[i_n]>threshold)
+            if ((*indicator)[i_n]>threshold)
             {
               n_valid++;
-              mean_val+=p[i_n];
+              for (size_t k=0; k<scalarFields.size(); k++) mean_scalars[k]+=(*scalarFields[k])[i_n];
+              for (size_t k=0; k<vectorFields.size(); k++) mean_vectors[k]+=(*vectorFields[k])[i_n];
             }
           }
           if (n_valid>0)
           {
-            p[i]=mean_val/scalar(n_valid);
+            for (size_t k=0; k<scalarFields.size(); k++) (*scalarFields[k])[i]=mean_scalars[k]/scalar(n_valid);
+            for (size_t k=0; k<vectorFields.size(); k++) (*vectorFields[k])[i]=mean_vectors[k]/scalar(n_valid);
             n_fixed++;
           }
           else
@@ -106,7 +145,8 @@ int main(int argc, char *argv[])
     }
     while (needMoreFix);
 
-    p.write();
+    for (auto sf: scalarFields) sf->write();
+    for (auto vf: vectorFields) vf->write();
 
     Info << "End\n" << endl;
 

@@ -13,7 +13,6 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 list(APPEND CMAKE_LIBRARY_PATH $ENV{INSIGHT_THIRDPARTYDIR}/lib)
 list(APPEND CMAKE_INCLUDE_PATH $ENV{INSIGHT_THIRDPARTYDIR}/include)
-
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) # Relink needs to be avoided since it does not work for OF targets (multiple targets on a single file)
 #set(SKIP_BUILD_RPATH 1)
 
@@ -147,16 +146,14 @@ if (INSIGHT_BUILD_OPENFOAM)
 ${INSIGHT_OFES}
 export INSIGHT_OFES
 "
-#"export INSIGHT_OFES=\"${INSIGHT_OFES}\"
-#"
 )
     create_script("insight.aliases.OpenFOAM"
-${INSIGHT_OF_ALIASES}
+"${INSIGHT_OF_ALIASES}
 "
 )
     create_script("insight.bashrc.OpenFOAM"
 "source insight.profile.OpenFOAM
-"source insight.aliases.OpenFOAM
+source insight.aliases.OpenFOAM
 "
 )
 endif()

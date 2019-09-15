@@ -199,7 +199,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     std::string cofe = OFEs::currentOrPreferredOFE();
     if ( cofe != std::string() )
     {
-      ui->OFversion->setCurrentIndex(ui->OFversion->findText(cofe.c_str()));
+      setOFVersion(cofe.c_str());
     }
 
     connect
@@ -1097,4 +1097,9 @@ void isofCaseBuilderWindow::onStartPV()
   ::system( boost::str( boost::format
         ("cd %s; isPV.py &" ) % casepath().string()
    ).c_str() );
+}
+
+void isofCaseBuilderWindow::setOFVersion(const QString & ofename)
+{
+  ui->OFversion->setCurrentIndex(ui->OFversion->findText(ofename));
 }

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<OpenFOAMCaseElement type="steadyIncompressibleNumerics">
+		<vector name="Uinternal" value="1 0 0"/>
+		<bool name="checkResiduals" value="1"/>
+		<vector name="decompWeights" value="1 1 1"/>
+		<selection name="decompositionMethod" value="scotch"/>
+		<double name="deltaT" value="1"/>
+		<double name="endTime" value="10"/>
+		<selectableSubset name="mapFieldsConfig" value="map">
+			<array name="cuttingPatches">
+				<string name="default" value="fixedWalls"/>
+			</array>
+			<array name="patchMap">
+				<subset name="default">
+					<string name="sourcePatch" value="movingWall"/>
+					<string name="targetPatch" value="lid"/>
+				</subset>
+			</array>
+		</selectableSubset>
+		<int name="np" value="1"/>
+		<double name="pinternal" value="0"/>
+		<int name="purgeWrite" value="10"/>
+		<selection name="writeControl" value="timeStep"/>
+		<selection name="writeFormat" value="ascii"/>
+		<double name="writeInterval" value="10"/>
+	</OpenFOAMCaseElement>
+	<OpenFOAMCaseElement type="kOmegaSST"/>
+	<OpenFOAMCaseElement type="blockMeshDict_Box">
+		<subset name="geometry">
+			<double name="H" value="1"/>
+			<double name="L" value="10"/>
+			<double name="W" value="1"/>
+			<vector name="ex" value="1 0 0"/>
+			<vector name="ez" value="0 0 1"/>
+			<vector name="p0" value="0 0 0"/>
+		</subset>
+		<subset name="mesh">
+			<string name="XmPatchName" value="inlet"/>
+			<string name="XpPatchName" value="outlet"/>
+			<string name="YmPatchName" value=""/>
+			<string name="YpPatchName" value=""/>
+			<string name="ZmPatchName" value="lowerWall"/>
+			<string name="ZpPatchName" value=""/>
+			<string name="defaultPatchName" value="sides"/>
+			<selectableSubset name="resolution" value="cubical">
+				<int name="n_max" value="30"/>
+			</selectableSubset>
+		</subset>
+	</OpenFOAMCaseElement>
+	<OpenFOAMCaseElement type="singlePhaseTransportProperties">
+		<double name="nu" value="9.9999999999999995e-07"/>
+	</OpenFOAMCaseElement>
+	<BoundaryConditions>
+		<UnassignedPatches patchName="[Unassigned Patches]" BCtype=""/>
+		<Patch patchName="inlet" BCtype="VelocityInletBC">
+			<subset name="T">
+				<selectableSubset name="fielddata" value="uniformSteady">
+					<vector name="value" value="1 0 0"/>
+				</selectableSubset>
+				<int name="n_cmpt" value="3"/>
+			</subset>
+			<selectableSubset name="phasefractions" value="uniformPhases">
+				<array name="phaseFractions">
+					<subset name="default">
+						<double name="fraction" value="0.5"/>
+						<bool name="handleflowreversal" value="1"/>
+						<string name="name" value="CO2"/>
+					</subset>
+				</array>
+			</selectableSubset>
+			<subset name="rho">
+				<selectableSubset name="fielddata" value="uniformSteady">
+					<vector name="value" value="1 0 0"/>
+				</selectableSubset>
+				<int name="n_cmpt" value="3"/>
+			</subset>
+			<selectableSubset name="turbulence" value="uniformIntensityAndLengthScale">
+				<double name="I" value="0.050000000000000003"/>
+				<double name="l" value="0.10000000000000001"/>
+			</selectableSubset>
+			<subset name="velocity">
+				<selectableSubset name="fielddata" value="uniformSteady">
+					<vector name="value" value="1 0 0"/>
+				</selectableSubset>
+				<int name="n_cmpt" value="3"/>
+			</subset>
+		</Patch>
+		<Patch patchName="lowerWall" BCtype="WallBC">
+			<vector name="CofR" value="0 0 0"/>
+			<selectableSubset name="heattransfer" value="Adiabatic"/>
+			<selectableSubset name="meshmotion" value="NoMeshMotion"/>
+			<selectableSubset name="phasefractions" value="uniformPhases">
+				<array name="phaseFractions">
+					<subset name="default">
+						<double name="fraction" value="0.5"/>
+						<bool name="handleflowreversal" value="1"/>
+						<string name="name" value="CO2"/>
+					</subset>
+				</array>
+			</selectableSubset>
+			<bool name="rotating" value="0"/>
+			<double name="roughness_z0" value="0"/>
+			<vector name="wallVelocity" value="0 0 0"/>
+		</Patch>
+		<Patch patchName="outlet" BCtype="PressureOutletBC">
+			<selectableSubset name="behaviour" value="uniform">
+				<subset name="pressure">
+					<selectableSubset name="fielddata" value="uniformSteady">
+						<vector name="value" value="0"/>
+					</selectableSubset>
+					<int name="n_cmpt" value="3"/>
+				</subset>
+			</selectableSubset>
+			<selectableSubset name="phasefractions" value="uniformPhases">
+				<array name="phaseFractions">
+					<subset name="default">
+						<double name="fraction" value="0.5"/>
+						<bool name="handleflowreversal" value="1"/>
+						<string name="name" value="CO2"/>
+					</subset>
+				</array>
+			</selectableSubset>
+			<bool name="prohibitInflow" value="1"/>
+			<double name="rho" value="1025"/>
+		</Patch>
+		<Patch patchName="sides" BCtype="SymmetryBC"/>
+	</BoundaryConditions>
+</root>
+
+

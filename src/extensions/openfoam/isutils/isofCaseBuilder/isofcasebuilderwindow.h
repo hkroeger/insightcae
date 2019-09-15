@@ -186,7 +186,6 @@ public Q_SLOTS:
 
     void onTogglePacked();
 
-    void onOFVersionChanged(const QString & ofename);
     void recreateOFCase(const QString & ofename);
     
     insight::ParameterSet& caseElementParameters(int id);
@@ -200,6 +199,12 @@ public Q_SLOTS:
     void runSolver();
 
     void onStartPV();
+
+    void setOFVersion(const QString & ofename);
+
+
+protected Q_SLOTS:
+    void onOFVersionChanged(const QString & ofename);
 };
 
 

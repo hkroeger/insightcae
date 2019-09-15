@@ -93,6 +93,7 @@ int main ( int argc, char** argv )
         ( "batch,b", "case creation from specified input file" )
         ( "batch-run,r", "create and run case from specified input file" )
         ( "skipbcs,s", "skip BC configuration during input file read and batch case creation" )
+        ( "ofe", po::value<std::string>(),"set the specified OFE for creation and execution" )
         ( "input-file,f", po::value< StringList >(),"Specifies input file. Multiple input files will append to the active configuration." )
         ( "write-only,o", po::value< StringList >(),"restrict output in batch mode to specified files" )
         ("bool", po::value<StringList>(), "boolean variable assignment")
@@ -233,7 +234,12 @@ int main ( int argc, char** argv )
                     parameters.getInt(pair[1])=v;
                 }
             }
-        
+
+            if (vm.count("ofe"))
+            {
+              window.setOFVersion( vm["ofe"].as<std::string>().c_str() );
+            }
+
             if ( batch )
             {
               std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles;

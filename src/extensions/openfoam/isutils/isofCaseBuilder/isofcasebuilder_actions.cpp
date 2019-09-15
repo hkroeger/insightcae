@@ -213,7 +213,8 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with, bool skipMonitor)
 
   boost::filesystem::path cfgfn = cp/"isofcasebuilder-run.iscb";
   boost::filesystem::path fn = cp/"isofcasebuilder-run.sh";
-  boost::filesystem::path ts_socket = cp/"tsp.socket";
+  //boost::filesystem::path ts_socket = cp/"tsp.socket"; // nasty limit to 108 chars....
+  boost::filesystem::path ts_socket = boost::filesystem::unique_path( boost::filesystem::temp_directory_path()/"ts-%%%%%.socket" );
 
   if (boost::filesystem::exists(ts_socket))
   {

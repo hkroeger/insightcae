@@ -28,5 +28,6 @@
 #include "openfoam/caseelements/analysiscaseelements.h"
 #include "openfoam/caseelements/thermophysicalcaseelements.h"
 #include "openfoam/caseelements/electromagneticscaseelements.h"
+#include "openfoam/caseelements/dynamicmeshcaseelements.h"
 
 #endif

@@ -196,7 +196,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
       ui->OFversion->addItem(ofe.first.c_str());
     }
     
-    std::string cofe=OFEs::detectCurrentOFE();
+    std::string cofe = OFEs::currentOrPreferredOFE();
     if ( cofe != std::string() )
     {
       ui->OFversion->setCurrentIndex(ui->OFversion->findText(cofe.c_str()));

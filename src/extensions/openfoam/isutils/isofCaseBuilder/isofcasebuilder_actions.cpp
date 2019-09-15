@@ -205,7 +205,7 @@ void createAndRunScript(const insight::OpenFOAMCase& ofc, const boost::filesyste
 }
 
 
-void isofCaseBuilderWindow::run(ExecutionStep begin_with)
+void isofCaseBuilderWindow::run(ExecutionStep begin_with, bool skipMonitor)
 {
   recreateOFCase( ui->OFversion->currentText() );
 
@@ -279,9 +279,23 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with)
 
   ofc_->executeCommand(cp, "TS_SOCKET=\""+ts_socket.string()+"\" tsp "+fn.string());
 
-  TaskSpoolerMonitorDialog *mon = new TaskSpoolerMonitorDialog(ts_socket, "", this);
-  mon->setWindowTitle(QString("Run in ")+cp.c_str());
-  mon->show();
+  if (!skipMonitor)
+  {
+    TaskSpoolerMonitorDialog *mon = new TaskSpoolerMonitorDialog(ts_socket, "", this);
+    mon->setWindowTitle(QString("Run in ")+cp.c_str());
+    mon->show();
+  }
+  else
+  {
+    insight::TaskSpoolerInterface tsi(ts_socket, "");
+    tsi.startTail(
+          [&](const std::string& line)
+          {
+            std::cout<<line<<std::endl;
+          },
+      true // blocking
+    );
+  }
 }
 
 

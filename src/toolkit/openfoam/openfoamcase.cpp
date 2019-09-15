@@ -144,31 +144,33 @@ const OFEnvironment& OFEs::get(const std::string& name)
 
 std::string OFEs::detectCurrentOFE()
 {
-  const char *envvar=getenv("WM_PROJECT_DIR");
+  const char *envvar=getenv("CURRENT_OFE");
   if (!envvar)
   {
-    return std::string();
+    throw insight::Exception("Environment variable CURRENT_OFE not set. Check, if OpenFOAM environment is loaded.");
   }
   for (OFEs::value_type ofe: list)
   {
-    std::vector<std::string> output;
-    OpenFOAMCase(*ofe.second).executeCommand(".", "echo $WM_PROJECT_DIR", std::vector<std::string>(), &output);
-    if (output.size()!=1) return std::string();
-    boost::filesystem::path ofedir = boost::filesystem::absolute(boost::filesystem::path(*output.begin()));
-    
-    std::cout<<
-      ofedir
-      <<" =?= "<<
-      boost::filesystem::absolute( boost::filesystem::path(envvar))<<std::endl;
-    if (
-     ofedir
-      ==
-      boost::filesystem::absolute( boost::filesystem::path(envvar))
-    )
+    if (ofe.first==envvar)
+    {
       return ofe.first;
+    }
   }
-  return std::string();
+
+  throw insight::Exception("Environment \""+std::string(envvar)+"\" is unknown, i.e. not contained in INSIGHT_OFES. Please check validity of installation.");
 }
+
+std::string OFEs::currentOrPreferredOFE()
+{
+  try {
+    return detectCurrentOFE();
+  }
+  catch (insight::Exception e)
+  {
+    return "OFesi1806";
+  }
+}
+
 
 const OFEnvironment& OFEs::getCurrent()
 {
@@ -177,13 +179,7 @@ const OFEnvironment& OFEs::getCurrent()
 
 const OFEnvironment& OFEs::getCurrentOrPreferred()
 {
-  try {
-    return get( detectCurrentOFE() );
-  }
-  catch (insight::Exception e)
-  {
-    return get("OFesi1806");
-  }
+  return get( currentOrPreferredOFE() );
 }
 
 
@@ -289,6 +285,89 @@ bool OpenFOAMCaseElement::isInConflict(const CaseElement&)
 {
   return false;
 }
+
+
+
+
+OFDictData::dict diagonalSolverSetup()
+{
+  OFDictData::dict d;
+  d["solver"]="diagonal";
+  return d;
+}
+
+OFDictData::dict stdAsymmSolverSetup(double tol, double reltol, int minIter)
+{
+  OFDictData::dict d;
+  d["solver"]="PBiCG";
+  d["preconditioner"]="DILU";
+  d["tolerance"]=tol;
+  d["relTol"]=reltol;
+  if (minIter) d["minIter"]=minIter;
+  return d;
+}
+
+OFDictData::dict stdSymmSolverSetup(double tol, double reltol, int maxIter)
+{
+  OFDictData::dict d;
+  d["solver"]="PCG";
+  d["preconditioner"]="DIC";
+  d["tolerance"]=tol;
+  d["relTol"]=reltol;
+  d["maxIter"]=maxIter;
+  return d;
+}
+
+OFDictData::dict GAMGSolverSetup(double tol, double reltol)
+{
+  OFDictData::dict d;
+  d["solver"]="GAMG";
+  d["minIter"]=1;
+  d["tolerance"]=tol;
+  d["relTol"]=reltol;
+  d["smoother"]="DICGaussSeidel";
+  d["nPreSweeps"]=2;
+  d["nPostSweeps"]=2;
+  d["cacheAgglomeration"]="on";
+  d["agglomerator"]="faceAreaPair";
+  d["nCellsInCoarsestLevel"]=500;
+  d["mergeLevels"]=1;
+  return d;
+}
+
+OFDictData::dict GAMGPCGSolverSetup(double tol, double reltol)
+{
+  OFDictData::dict d;
+  d["solver"]="PCG";
+  d["tolerance"]=tol;
+  d["relTol"]=reltol;
+  d["minIter"]=1;
+  OFDictData::dict pd;
+  pd["preconditioner"]="GAMG";
+  pd["smoother"]="DICGaussSeidel";
+  pd["nPreSweeps"]=2;
+  pd["nPostSweeps"]=2;
+  pd["cacheAgglomeration"]="on";
+  pd["agglomerator"]="faceAreaPair";
+  pd["nCellsInCoarsestLevel"]=10;
+  pd["mergeLevels"]=1;
+  d["preconditioner"]=pd;
+  return d;
+}
+
+OFDictData::dict smoothSolverSetup(double tol, double reltol, int minIter)
+{
+  OFDictData::dict d;
+  d["solver"]="smoothSolver";
+  d["smoother"]="symGaussSeidel";
+  d["tolerance"]=tol;
+  d["relTol"]=reltol;
+  d["nSweeps"]=1;
+  if (minIter) d["minIter"]=minIter;
+  return d;
+}
+
+
 
 defineType(BoundaryCondition);
 defineFactoryTable

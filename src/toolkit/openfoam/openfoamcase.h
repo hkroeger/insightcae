@@ -127,6 +127,7 @@ public:
      * inspects WM_PROJECT_DIR env variable and returns name of currently loaded OFE. Empty string, if none is set
      */
     static std::string detectCurrentOFE();
+    static std::string currentOrPreferredOFE();
     static const OFEnvironment& getCurrent ( );
     static const OFEnvironment& getCurrentOrPreferred();
 
@@ -182,6 +183,15 @@ typedef std::shared_ptr<OpenFOAMCaseElement> OpenFOAMCaseElementPtr;
 
 
 
+OFDictData::dict diagonalSolverSetup();
+OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
+OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0, int maxIter=1000);
+OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
+OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
+OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0);
+
+
+
 /*
  * Manages the configuration of a single patch, i.e. one BoundaryCondition-object
  * needs to know proper BC's for all fields on the given patch
@@ -214,7 +224,7 @@ public:
     BoundaryCondition ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict );
     virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const =0;
     virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static void insertIntoBoundaryDict
     (
@@ -232,7 +242,7 @@ public:
         return BCtype_;
     }
 
-    virtual bool providesBCsForPatch ( const std::string& patchName ) const;
+    bool providesBCsForPatch ( const std::string& patchName ) const override;
 
 };
 

@@ -58,7 +58,16 @@ class isofCaseBuilderWindow
 : public QMainWindow
 {
      Q_OBJECT
-     
+
+public:
+    enum ExecutionStep
+    {
+      ExecutionStep_Clean,
+      ExecutionStep_Pre,
+      ExecutionStep_Mesh,
+      ExecutionStep_Case
+    };
+
 private:
     Ui::isofCaseBuilderWindow* ui;
     QHBoxLayout *pe_layout_, *bc_pe_layout_;
@@ -83,13 +92,7 @@ protected:
 
     QAction *act_pack_;
 
-    enum ExecutionStep
-    {
-      ExecutionStep_Clean,
-      ExecutionStep_Pre,
-      ExecutionStep_Mesh,
-      ExecutionStep_Case
-    };
+
   
     void fillCaseElementList();
     void updateTitle();
@@ -112,7 +115,7 @@ public:
         const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
     );
 
-    void run(ExecutionStep begin_with);
+    void run(ExecutionStep begin_with, bool skipMonitor=false);
 
     void closeEvent(QCloseEvent *event);
     void readSettings();

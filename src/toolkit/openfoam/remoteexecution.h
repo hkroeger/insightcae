@@ -55,11 +55,13 @@ public:
   int clean();
   int kill();
 
-  void startTail(std::function<void(const std::string&)> receiver);
+  void startTail(std::function<void(const std::string&)> receiver, bool blocking=false);
   bool isTailRunning() const;
   void stopTail();
 
   void cancelAllJobs();
+
+  int stopTaskspoolerServer();
 };
 
 

@@ -51,6 +51,12 @@ TaskSpoolerInterface::TaskSpoolerInterface(const boost::filesystem::path& socket
 TaskSpoolerInterface::~TaskSpoolerInterface()
 {
   stopTail();
+
+  auto jl=jobs();
+  if (! (jl.hasRunningJobs() || jl.hasQueuedJobs()) )
+  {
+    stopTaskspoolerServer();
+  }
 }
 
 
@@ -192,7 +198,7 @@ void TaskSpoolerInterface::read_complete(const boost::system::error_code& error,
 }
 
 
-void TaskSpoolerInterface::startTail(std::function<void(const std::string&)> receiver)
+void TaskSpoolerInterface::startTail(std::function<void(const std::string&)> receiver, bool blocking)
 {
   receivers_.clear();
 
@@ -257,6 +263,8 @@ void TaskSpoolerInterface::startTail(std::function<void(const std::string&)> rec
   if (!tail_c_->running())
     throw insight::Exception("Could not execute task spooler executable!");
 
+  if (blocking)
+    ios_run_thread_->join();
 }
 
 
@@ -320,6 +328,25 @@ void TaskSpoolerInterface::cancelAllJobs()
   while ( kill() == 0 )
   {
     clean();
+  }
+}
+
+int TaskSpoolerInterface::stopTaskspoolerServer()
+{
+  if (!remote_machine_.empty())
+  {
+      return boost::process::system(
+            boost::process::search_path("ssh"),
+            boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-K"})
+            );
+  }
+  else
+  {
+      return boost::process::system(
+            boost::process::search_path("tsp"),
+            boost::process::args("-K"),
+            env_
+            );
   }
 }
 

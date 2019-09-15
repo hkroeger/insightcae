@@ -91,6 +91,7 @@ int main ( int argc, char** argv )
         desc.add_options()
         ( "help,h", "produce help message" )
         ( "batch,b", "case creation from specified input file" )
+        ( "batch-run,r", "create and run case from specified input file" )
         ( "skipbcs,s", "skip BC configuration during input file read and batch case creation" )
         ( "input-file,f", po::value< StringList >(),"Specifies input file. Multiple input files will append to the active configuration." )
         ( "write-only,o", po::value< StringList >(),"restrict output in batch mode to specified files" )
@@ -119,6 +120,8 @@ int main ( int argc, char** argv )
             std::cout << desc << std::endl;
             exit ( -1 );
         }
+
+        bool batch = vm.count("batch") || vm.count("batch-run");
 
         InsightCAEApplication app ( argc, argv );
 
@@ -231,26 +234,33 @@ int main ( int argc, char** argv )
                 }
             }
         
-            if ( vm.count ( "batch" ) )
+            if ( batch )
             {
-                std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles;
-                
-                if ( vm.count ( "write-only" ) )
-                {
-                    restrictToFiles.reset(new std::vector<boost::filesystem::path>);
-                    //(vm["write-only"].as<std::vector<boost::filesystem::path> >()) );
-                    StringList paths = vm["write-only"].as<StringList>();
-                    copy(paths.begin(), paths.end(), std::back_inserter(*restrictToFiles));
-                    for (const boost::filesystem::path& f: *restrictToFiles)
-                     std::cout<<f<<std::endl;
-                }
-                
+              std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles;
+
+              if ( vm.count ( "write-only" ) )
+              {
+                  restrictToFiles.reset(new std::vector<boost::filesystem::path>);
+                  //(vm["write-only"].as<std::vector<boost::filesystem::path> >()) );
+                  StringList paths = vm["write-only"].as<StringList>();
+                  copy(paths.begin(), paths.end(), std::back_inserter(*restrictToFiles));
+                  for (const boost::filesystem::path& f: *restrictToFiles)
+                   std::cout<<f<<std::endl;
+              }
+
+              if ( vm.count("batch-run") )
+              {
+                window.run(isofCaseBuilderWindow::ExecutionStep_Pre, true);
+              }
+              else
+              {
                 window.createCase( vm.count ( "skipbcs" ), restrictToFiles );
+              }
             }
 
         }
 
-        if ( !vm.count ( "batch" ) )
+        if ( !batch )
         {
             window.show();
             window.updateCAD();

@@ -49,10 +49,7 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
     
     xml_node<> *rootnode = doc.first_node("root");
     
-    std::string cofe=OFEs::detectCurrentOFE();
-    if ( cofe == std::string() )
-      throw insight::Exception("OpenFOAM environment is not set!");
-    OpenFOAMCase cm(OFEs::get(cofe));
+    OpenFOAMCase cm(OFEs::getCurrentOrPreferred());
     
     ResultSetPtr results(new ResultSet(ParameterSet(), "Evaluation of function objects defined in "+SimpleLatex(cfgfile.string()).toLaTeX(), "Result Report"));
     Ordering o;

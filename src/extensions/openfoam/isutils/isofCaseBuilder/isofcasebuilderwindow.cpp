@@ -617,7 +617,7 @@ QString isofCaseBuilderWindow::generateDefault_script_mesh()
     cmds += "blockMesh\n";
 
   if (containsCE<insight::snappyHexMeshConfiguration>())
-    cmds += "isofRun.py --mesh-reconst --reconst-only-latesttime  snappyHexMesh -overwrite\n";
+    cmds += "isofRun.py --mesh-reconst --reconst-only-latesttime --remove-processordirs  snappyHexMesh -overwrite\n";
 
   return cmds;
 }

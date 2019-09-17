@@ -77,208 +77,210 @@ insight::ParameterSet& split_and_check
 int main ( int argc, char** argv )
 {
 
-    try
+  bool batch = false;
+  auto emitError = [&](const std::string& message)
+  {
+    if (batch)
     {
-        insight::UnhandledExceptionHandling ueh;
-        insight::GSLExceptionHandling gsl_errtreatment;
-
-        namespace po = boost::program_options;
-
-        typedef std::vector<std::string> StringList;
-
-        // Declare the supported options.
-        po::options_description desc ( "Allowed options" );
-        desc.add_options()
-        ( "help,h", "produce help message" )
-        ( "batch,b", "case creation from specified input file" )
-        ( "batch-run,r", "create and run case from specified input file" )
-        ( "skipbcs,s", "skip BC configuration during input file read and batch case creation" )
-        ( "ofe", po::value<std::string>(),"set the specified OFE for creation and execution" )
-        ( "input-file,f", po::value< StringList >(),"Specifies input file. Multiple input files will append to the active configuration." )
-        ( "write-only,o", po::value< StringList >(),"restrict output in batch mode to specified files" )
-        ("bool", po::value<StringList>(), "boolean variable assignment")
-        ("selection,l", po::value<StringList>(), "selection variable assignment")
-        ("string", po::value<StringList>(), "string variable assignment")
-        ("path,p", po::value<StringList>(), "path variable assignment")
-        ("double,d", po::value<StringList>(), "double variable assignment")
-        ("vector,v", po::value<StringList>(), "vector variable assignment")
-        ("int,i", po::value<StringList>(), "int variable assignment")
-        ;
-
-        po::positional_options_description p;
-        p.add ( "input-file", -1 );
-
-        po::variables_map vm;
-        po::store
-        (
-            po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
-            vm
-        );
-        po::notify ( vm );
-
-        if ( vm.count ( "help" ) )
-        {
-            std::cout << desc << std::endl;
-            exit ( -1 );
-        }
-
-        bool batch = vm.count("batch") || vm.count("batch-run");
-
-        InsightCAEApplication app ( argc, argv );
-
-        // After creation of application object!
-        std::locale::global ( std::locale::classic() );
-        QLocale::setDefault ( QLocale::C );
-
-        isofCaseBuilderWindow window;
-        if ( vm.count ( "input-file" ) )
-        {
-            for ( const std::string& fn: vm["input-file"].as<StringList>())
-            {
-                if (!boost::filesystem::exists(fn))
-                {
-                    std::cerr << std::endl 
-                        << "Error: input file does not exist: "<<fn
-                        <<std::endl<<std::endl;
-                    exit(-1);
-                }
-                window.loadFile ( fn, vm.count ( "skipbcs" ) );
-
-            }
-            
-            if (vm.count("bool"))
-            {
-                StringList sets=vm["bool"].as<StringList>();
-                for (const string& s: sets)
-                {
-                    std::vector<std::string> pair;
-                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                    bool v=boost::lexical_cast<bool>(pair[2]);
-                    cout << "Setting boolean '"<<pair[1]<<"' = "<<v<<endl;
-                    parameters.getBool(pair[1])=v;
-                }
-            }
-
-            if (vm.count("string"))
-            {
-                StringList sets=vm["string"].as<StringList>();
-                for (const string& s: sets)
-                {
-                    std::vector<std::string> pair;
-                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                    cout << "Setting string '"<<pair[1]<<"' = \""<<pair[2]<<"\""<<endl;
-                    parameters.getString(pair[1])=pair[2];
-                }
-            }
-
-            if (vm.count("selection"))
-            {
-                StringList sets=vm["selection"].as<StringList>();
-                for (const string& s: sets)
-                {
-                    std::vector<std::string> pair;
-                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                    cout << "Setting selection '"<<pair[1]<<"' = \""<<pair[2]<<"\""<<endl;
-                    parameters.get<SelectionParameter>(pair[1]).setSelection(pair[2]);
-                }
-            }
-
-            if (vm.count("path"))
-            {
-                StringList sets=vm["path"].as<StringList>();
-                for (const string& s: sets)
-                {
-                    std::vector<std::string> pair;
-                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                    cout << "Setting path '"<<pair[1]<<"' = \""<<pair[2]<<"\""<<endl;
-                    parameters.getPath(pair[1])=pair[2];
-                }
-            }
-
-            if (vm.count("double"))
-            {
-                StringList sets=vm["double"].as<StringList>();
-                for (const string& s: sets)
-                {
-                    std::vector<std::string> pair;
-                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                    double v=boost::lexical_cast<double>(pair[2]);
-                    cout << "Setting double '"<<pair[1]<<"' = "<<v<<endl;
-                    parameters.getDouble(pair[1])=v;
-                }
-            }
-
-            if (vm.count("vector"))
-            {
-                StringList sets=vm["vector"].as<StringList>();
-                for (const string& s: sets)
-                {
-                    std::vector<std::string> pair;
-                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                    arma::mat v;
-                    stringToValue(pair[2], v);
-                    cout << "Setting vector '"<<pair[1]<<"' = "<<v<<endl;
-                    parameters.getVector(pair[1])=v;
-                }
-            }
-
-            if (vm.count("int"))
-            {
-                StringList sets=vm["int"].as<StringList>();
-                for (const string& s: sets)
-                {
-                    std::vector<std::string> pair;
-                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                    int v=boost::lexical_cast<int>(pair[2]);
-                    cout << "Setting int '"<<pair[1]<<"' = "<<v<<endl;
-                    parameters.getInt(pair[1])=v;
-                }
-            }
-
-            if (vm.count("ofe"))
-            {
-              window.setOFVersion( vm["ofe"].as<std::string>().c_str() );
-            }
-
-            if ( batch )
-            {
-              std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles;
-
-              if ( vm.count ( "write-only" ) )
-              {
-                  restrictToFiles.reset(new std::vector<boost::filesystem::path>);
-                  //(vm["write-only"].as<std::vector<boost::filesystem::path> >()) );
-                  StringList paths = vm["write-only"].as<StringList>();
-                  copy(paths.begin(), paths.end(), std::back_inserter(*restrictToFiles));
-                  for (const boost::filesystem::path& f: *restrictToFiles)
-                   std::cout<<f<<std::endl;
-              }
-
-              if ( vm.count("batch-run") )
-              {
-                window.run(isofCaseBuilderWindow::ExecutionStep_Pre, true);
-              }
-              else
-              {
-                window.createCase( vm.count ( "skipbcs" ), restrictToFiles );
-              }
-            }
-
-        }
-
-        if ( !batch )
-        {
-            window.show();
-            window.updateCAD();
-            return app.exec();
-        }
-        else
-            return 0;
+      std::cerr<<message<<std::endl;
     }
-    catch ( insight::Exception e )
+    else
     {
-        std::cerr<<e<<std::endl;
-        return -1;
+      QMessageBox::critical(nullptr, "Error in isofCaseBuilder", QString(message.c_str()));
     }
+  };
+
+  InsightCAEApplication app ( argc, argv );
+
+  try
+  {
+      insight::UnhandledExceptionHandling ueh;
+      insight::GSLExceptionHandling gsl_errtreatment;
+
+      namespace po = boost::program_options;
+
+      typedef std::vector<std::string> StringList;
+
+      // Declare the supported options.
+      po::options_description desc ( "Allowed options" );
+      desc.add_options()
+      ( "help,h", "produce help message" )
+      ( "batch,b", "case creation from specified input file" )
+      ( "batch-run,r", "create and run case from specified input file" )
+      ( "skipbcs,s", "skip BC configuration during input file read and batch case creation" )
+      ( "ofe", po::value<std::string>(),"set the specified OFE for creation and execution" )
+      ( "input-file,f", po::value< StringList >(),"Specifies input file. Multiple input files will append to the active configuration." )
+      ( "write-only,o", po::value< StringList >(),"restrict output in batch mode to specified files" )
+      ("bool", po::value<StringList>(), "boolean variable assignment")
+      ("selection,l", po::value<StringList>(), "selection variable assignment")
+      ("string", po::value<StringList>(), "string variable assignment")
+      ("path,p", po::value<StringList>(), "path variable assignment")
+      ("double,d", po::value<StringList>(), "double variable assignment")
+      ("vector,v", po::value<StringList>(), "vector variable assignment")
+      ("int,i", po::value<StringList>(), "int variable assignment")
+      ;
+
+      po::positional_options_description p;
+      p.add ( "input-file", -1 );
+
+      po::variables_map vm;
+      po::store
+      (
+          po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
+          vm
+      );
+      po::notify ( vm );
+
+      if ( vm.count ( "help" ) )
+      {
+          std::cout << desc << std::endl;
+          return 0;
+      }
+
+      batch = vm.count("batch") || vm.count("batch-run");
+
+
+      // After creation of application object!
+      std::locale::global ( std::locale::classic() );
+      QLocale::setDefault ( QLocale::C );
+
+      isofCaseBuilderWindow window;
+      if ( vm.count ( "input-file" ) )
+      {
+          for ( const std::string& fn: vm["input-file"].as<StringList>())
+          {
+              if (!boost::filesystem::exists(fn))
+              {
+                emitError("Error: input file does not exist: "+fn);
+                exit(-1);
+              }
+              window.loadFile ( fn, vm.count ( "skipbcs" ) );
+
+          }
+
+          if (vm.count("bool"))
+          {
+              StringList sets=vm["bool"].as<StringList>();
+              for (const string& s: sets)
+              {
+                  std::vector<std::string> pair;
+                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                  bool v=boost::lexical_cast<bool>(pair[2]);
+                  parameters.getBool(pair[1])=v;
+              }
+          }
+
+          if (vm.count("string"))
+          {
+              StringList sets=vm["string"].as<StringList>();
+              for (const string& s: sets)
+              {
+                  std::vector<std::string> pair;
+                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                  parameters.getString(pair[1])=pair[2];
+              }
+          }
+
+          if (vm.count("selection"))
+          {
+              StringList sets=vm["selection"].as<StringList>();
+              for (const string& s: sets)
+              {
+                  std::vector<std::string> pair;
+                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                  parameters.get<SelectionParameter>(pair[1]).setSelection(pair[2]);
+              }
+          }
+
+          if (vm.count("path"))
+          {
+              StringList sets=vm["path"].as<StringList>();
+              for (const string& s: sets)
+              {
+                  std::vector<std::string> pair;
+                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                  parameters.getPath(pair[1])=pair[2];
+              }
+          }
+
+          if (vm.count("double"))
+          {
+              StringList sets=vm["double"].as<StringList>();
+              for (const string& s: sets)
+              {
+                  std::vector<std::string> pair;
+                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                  double v=boost::lexical_cast<double>(pair[2]);
+                  parameters.getDouble(pair[1])=v;
+              }
+          }
+
+          if (vm.count("vector"))
+          {
+              StringList sets=vm["vector"].as<StringList>();
+              for (const string& s: sets)
+              {
+                  std::vector<std::string> pair;
+                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                  arma::mat v;
+                  stringToValue(pair[2], v);
+                  parameters.getVector(pair[1])=v;
+              }
+          }
+
+        if (vm.count("int"))
+        {
+            StringList sets=vm["int"].as<StringList>();
+            for (const string& s: sets)
+            {
+                std::vector<std::string> pair;
+                insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                int v=boost::lexical_cast<int>(pair[2]);
+                parameters.getInt(pair[1])=v;
+            }
+        }
+
+        if (vm.count("ofe"))
+        {
+          window.setOFVersion( vm["ofe"].as<std::string>().c_str() );
+        }
+
+        if ( batch )
+        {
+          std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles;
+
+          if ( vm.count ( "write-only" ) )
+          {
+              restrictToFiles.reset(new std::vector<boost::filesystem::path>);
+              StringList paths = vm["write-only"].as<StringList>();
+              copy(paths.begin(), paths.end(), std::back_inserter(*restrictToFiles));
+          }
+
+          if ( vm.count("batch-run") )
+          {
+            window.run(isofCaseBuilderWindow::ExecutionStep_Pre, true);
+          }
+          else
+          {
+            window.createCase( vm.count ( "skipbcs" ), restrictToFiles );
+          }
+        }
+
+    }
+
+    if ( !batch )
+    {
+        window.show();
+        window.updateCAD();
+        return app.exec();
+    }
+    else
+        return 0;
+  }
+  catch ( insight::Exception e )
+  {
+      emitError(e);
+      return -1;
+  }
 }
 

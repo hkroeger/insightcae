@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, sys, subprocess, pprint, re, tempfile
+import os, sys, subprocess, pprint, re, tempfile, glob, shutil
 from optparse import OptionParser
 from Insight.toolkit import *
 
@@ -22,6 +22,9 @@ parser.add_option("-l", "--reconst-only-latesttime", dest="reconstonlylatesttime
 parser.add_option("-m", "--mesh-reconst", dest="meshreconst",
                   action='store_true',
                   help="execute reconstructParMesh instead of reconstructPar for reconstruction")
+parser.add_option("--remove-processordirs", dest="removeproc",
+                action='store_true',
+                help="remove processor directories (after reconstruct, if applicable)")
 parser.add_option("-q", "--queue", dest="queue",
                   action='store_true',
                   help="schedule the executed commands through task spooler")
@@ -75,4 +78,7 @@ if is_parallel and not opts.noreconst:
       cwd=case
       )
 
+if is_parallel and opts.removeproc:
+    for pd in glob.glob(os.path.join(case, "processor*")):
+        shutil.rmtree(pd)
 

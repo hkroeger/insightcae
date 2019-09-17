@@ -37,7 +37,7 @@ public:
     JobState state;
     boost::filesystem::path output;
     int elevel;
-    std::string remainder;
+    std::string commandLine;
   };
 
   struct JobList

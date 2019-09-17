@@ -98,32 +98,53 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
   std::vector<std::string> data;
   std::string line;
   int i=0;
-  boost::regex re("^([^ ]*) +([^ ]*) +([^ ]*) +([^ ]*) +(.*)$");
+  boost::regex re_q("^([^ ]*) +([^ ]*) +([^ ]*) +(.*)$");
+  boost::regex re_f("^([^ ]*) +([^ ]*) +([^ ]*) +([^ ]*) +([^ ]*) +(.*)$");
   while (std::getline(is, line))
   {
     if (i>0)
     {
-      boost::smatch m;
-      if (boost::regex_match(line, m, re))
+      boost::smatch m1;
+      if (boost::regex_match(line, m1, re_q))
       {
         Job j;
 
-        j.id=boost::lexical_cast<int>(m[1]);
+        j.id=boost::lexical_cast<int>(m1[1]);
 
-        if (m[2]=="running")
+        if (m1[2]=="running")
           j.state=Running;
-        else if (m[2]=="queued")
+        else if (m1[2]=="queued")
           j.state=Queued;
-        else if (m[2]=="finished")
+        else if (m1[2]=="finished")
           j.state=Finished;
         else
           j.state=Unknown;
 
-        j.output=boost::filesystem::path(m[3]);
+        if (j.state==Queued)
+        {
+          j.output="";
+          j.commandLine=m1[4];
+        }
+        else if (j.state==Running)
+        {
+          j.output=m1[3];
+          j.commandLine=m1[4];
+        }
+        else if (j.state==Finished)
+        {
+          try {
+            boost::smatch m2;
+            boost::regex_match(line, m2, re_f);
 
-        j.elevel=boost::lexical_cast<int>(m[4]);
+            j.output=boost::filesystem::path(m2[3]);
 
-        j.remainder=m[5];
+            j.elevel=boost::lexical_cast<int>(m2[4]);
+
+            j.commandLine=m2[6];
+          }
+          catch (...)
+          {}
+        }
 
         jl.push_back(j);
       }

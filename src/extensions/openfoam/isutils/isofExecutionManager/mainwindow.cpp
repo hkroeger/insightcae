@@ -80,7 +80,7 @@ void MainWindow::onJobListReady(insight::TaskSpoolerInterface::JobList jl)
   {
     if (j.state!=insight::TaskSpoolerInterface::Finished)
     {
-      ui->commands->addItem( QString::number(j.id) +" "+ QString::fromStdString(j.remainder) );
+      ui->commands->addItem( QString::number(j.id) +" "+ QString::fromStdString(j.commandLine) );
       num++;
     }
   }

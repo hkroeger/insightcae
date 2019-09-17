@@ -46,7 +46,7 @@ void TaskSpoolerMonitor::onRefresh()
   {
     if (j.state!=Finished)
     {
-      ui->joblist->addItem( QString::number(j.id) +" "+ QString::fromStdString(j.remainder) );
+      ui->joblist->addItem( QString::number(j.id) +" "+ QString::fromStdString(j.commandLine) );
       num++;
     }
   }

@@ -64,7 +64,7 @@ SET(CPACK_PACKAGE_VENDOR "Hannes Kroeger")
 SET(CPACK_PACKAGE_CONTACT "hannes.kroeger@silentdynamics.de")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "a workbench for Computer-Aided Engineering")
 SET(CPACK_PACKAGE_VERSION_MAJOR "1")
-SET(CPACK_PACKAGE_VERSION_MINOR "0")
+SET(CPACK_PACKAGE_VERSION_MINOR "1")
 
 execute_process(
   COMMAND git rev-list --count HEAD
@@ -97,10 +97,7 @@ endmacro(create_script)
 find_package(Armadillo REQUIRED)
 find_package(GSL REQUIRED)
 find_package(PythonLibs 2.7 REQUIRED)
-SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.49.0" "1.41.0" "1.39.0"
-	"1.38.0" "1.37.0"
-        "1.36.1" "1.36.0" "1.35.1" "1.35.0" "1.35" "1.34.1" "1.34.0" "1.34"
-        "1.33.1" "1.33.0" "1.33" )
+
 find_package(Boost COMPONENTS system filesystem regex date_time timer thread iostreams python program_options REQUIRED)
 
 
@@ -109,14 +106,23 @@ include_directories(${GSL_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
+
+
+
 if (INSIGHT_BUILD_WEBWORKBENCH)
     find_package(Wt)
 endif()
+
+
+
 
 function(JOIN VALUES GLUE OUTPUT)
   string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
   set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
 endfunction()
+
+
+
 
 if (INSIGHT_BUILD_OPENFOAM)
     SET(INSIGHT_OFES_VARCONTENT "")
@@ -157,6 +163,8 @@ source insight.aliases.OpenFOAM
 "
 )
 endif()
+
+
 
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
@@ -224,6 +232,8 @@ macro(version_list_OF)
     endif()
   endif()
 endmacro(version_list_OF)
+
+
 
 
 macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs is_of_targets)
@@ -576,15 +586,28 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 endmacro(setup_lib_target_OF)
 
 
+
+
 macro(setup_test_OF PRJ_NAME cmd)
   version_list_OF()
   foreach (_ofvers ${OF_VERSIONS})
    if (${_ofvers}_FOUND)
-#     message(STATUS "Adding OpenFOAM test ${PRJ_NAME}${_ofvers} ${_ofvers}_ISCFG_BASHRC ${${_ofvers}_ISCFG_BASHRC}")
-        
     add_test(NAME ${PRJ_NAME}${_ofvers} 
 	COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/${cmd} ${_ofvers} ${${_ofvers}_ISCFG_BASHRC} ${CMAKE_CURRENT_SOURCE_DIR}
     ) 
+   endif()
+  endforeach()
+endmacro()
+
+
+macro(casebuilder_test_OF TEST_NAME INPUT_FILE)
+  version_list_OF()
+  foreach (_ofvers ${OF_VERSIONS})
+   if (${_ofvers}_FOUND)
+    set(TESTDIR ${CMAKE_CURRENT_BINARY_DIR}/${TEST_NAME}${_ofvers})
+    add_test(NAME ${TEST_NAME}${_ofvers}
+        COMMAND bash -c "mkdir -p ${TESTDIR} && cd ${TESTDIR} && rm -rf * && isofCaseBuilder -r ${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_FILE} --ofe ${_ofvers}"
+    )
    endif()
   endforeach()
 endmacro()
@@ -610,6 +633,8 @@ macro(install_script NAME SCRIPTFILE)
 endmacro(install_script)
 
 
+
+
 macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -627,6 +652,9 @@ macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
     )
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(install_shared_file)
+
+
+
 
 macro(install_shared_directory NAME SHAREDDIR DSTLOCATION)
   file(GLOB COPY_FILES
@@ -649,6 +677,7 @@ endmacro(install_shared_directory)
 
 
 
+
 macro (add_sources SRCS)
     #message("ARGC='${ARGC}' ARGV='${ARGV}' ARGN='${ARGN}'")
     file (RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_LIST_DIR}")
@@ -666,12 +695,16 @@ macro (add_sources SRCS)
     endif()
 endmacro()
 
+
+
+
 macro (add_include_dir VARNAME)
 list (APPEND ${VARNAME}
  ${CMAKE_CURRENT_LIST_DIR}
 )
 set (${VARNAME} ${${VARNAME}} PARENT_SCOPE)
 endmacro()
+
 
 
 
@@ -755,53 +788,6 @@ endmacro(install_package_script)
 
 set(IS_INSIGHTCAE_PROJECT 1) # activate depency of pdl-generated headers on pdl target
 include(InsightCAE_CMakeFunctions)
-
-#macro(install_headers NAME HEADERS)
-#  foreach (_hdr ${HEADERS})
-#      file (RELATIVE_PATH _relName "${CMAKE_CURRENT_LIST_DIR}" ${_hdr})
-#      get_filename_component(_pd ${_relName} DIRECTORY)
-#      add_custom_command(
-#          TARGET ${NAME}
-#          COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include/insightcae/${_pd}
-#          COMMAND ${CMAKE_COMMAND} -E copy ${_hdr} ${CMAKE_BINARY_DIR}/include/insightcae/${_relName}
-#      )      install(
-#        FILES ${_hdr}
-#        DESTINATION include/insightcae
-#        COMPONENT ${INSIGHT_INSTALL_COMPONENT}
-#      )
-# endforeach()
-#endmacro(install_headers)
-
-
-### installs headers and PDL-generated headers
-#macro (add_PDL TARGETNAME HEADERS)
-#  #file(GLOB_RECURSE HEADERS "*.h")
-
-#  install_headers(${TARGETNAME} "${HEADERS}")
-#  foreach (_hdr ${HEADERS})
-#    get_filename_component(BN ${_hdr} NAME_WE)
-#    #message(STATUS ${_hdr} ${BN})
-#    list (APPEND ${TARGETNAME}_TIMESTAMPS ${BN}_pdl.timestamp)
-#    ADD_CUSTOM_COMMAND( OUTPUT ${BN}_pdl.timestamp
-#			COMMAND ${CMAKE_SOURCE_DIR}/gen-sets.py "${_hdr}" "${CMAKE_BINARY_DIR}/bin/pdl"
-#			#COMMAND ${CMAKE_BINARY_DIR}/bin/pdl ${BN}__*.pdl
-#			COMMAND touch ${BN}_pdl.timestamp
-#                        COMMAND ${CMAKE_COMMAND} -E copy ${_hdr} ${CMAKE_BINARY_DIR}/include/insightcae/${_relName}
-#                        DEPENDS pdl ${CMAKE_SOURCE_DIR}/gen-sets.py ${_hdr}
-#			COMMENT "Generating source code from PDL in header ${_hdr}" )
-#    install(
-#      FILES
-#        ${CMAKE_CURRENT_BINARY_DIR}/${BN}.h
-#        ${CMAKE_CURRENT_BINARY_DIR}/${BN}_headers.h
-#      DESTINATION include/insightcae
-#      COMPONENT ${INSIGHT_INSTALL_COMPONENT}
-#     )
-
-#  endforeach()
-#  ADD_CUSTOM_TARGET( ${TARGETNAME}_PDLGenerator DEPENDS ${${TARGETNAME}_TIMESTAMPS}
-#		    COMMENT "Checking if PDL re-generation is required" )
-#  ADD_DEPENDENCIES( ${TARGETNAME} ${TARGETNAME}_PDLGenerator )
-#endmacro(add_PDL)
 
 
 include(CMakePackageConfigHelpers)

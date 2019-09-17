@@ -581,6 +581,34 @@ std::vector<bfs_path> RemoteExecutionConfig::remoteLS() const
   return res;
 }
 
+std::vector<bfs_path> RemoteExecutionConfig::remoteSubdirs() const
+{
+  std::vector<bfs_path> res;
+  boost::process::ipstream is;
+  std::shared_ptr<boost::process::child> c;
+
+  c.reset(new boost::process::child(
+            boost::process::search_path("ssh"),
+            boost::process::args({server(),
+                                  "find", remoteDir().string()+"/", // add slash for symbolic links
+                                  "-maxdepth", "1", "-type", "d", "-printf", "%P\\\\n"}),
+            boost::process::std_out > is
+            ));
+
+  if (!c->running())
+    throw insight::Exception("Could not execute remote dir list process!");
+
+  std::string line;
+  while (std::getline(is, line))
+  {
+    res.push_back(line);
+  }
+
+  c->wait();
+
+  return res;
+}
+
 
 void RemoteExecutionConfig::syncToRemote(const std::vector<std::string>& exclude_pattern)
 {

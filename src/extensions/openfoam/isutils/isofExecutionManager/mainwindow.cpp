@@ -221,17 +221,24 @@ void MainWindow::onStartParaview()
 void MainWindow::onStartRemoteParaview()
 {
   RemoteParaview dlg(this);
-  dlg.ui->subdir->setText(rem_subdir_);
+//  dlg.ui->subdir->setText(rem_subdir_);
+
+  auto rds=remoteSubdirs();
+  for (auto d: rds) dlg.ui->subdir->addItem( QString::fromStdString(d.string()) );
+
   dlg.ui->remhost->setText(rem_host_);
   if (dlg.exec())
   {
     QStringList args;
 
-    rem_subdir_ = dlg.ui->subdir->text();
+//    rem_subdir_ = dlg.ui->subdir->text();
+    rem_subdir_ = dlg.ui->subdir->currentText();
+
     rem_host_ = dlg.ui->remhost->text();
 
-    if (!dlg.ui->subdir->text().isEmpty())
-      args << "-s" << dlg.ui->subdir->text();
+//    if (!dlg.ui->subdir->text().isEmpty())
+    if (!rem_subdir_.isEmpty())
+      args << "-s" << rem_subdir_ /*dlg.ui->subdir->text()*/;
 
     if (!dlg.ui->remhost->text().isEmpty())
       args << "-r" << dlg.ui->remhost->text();

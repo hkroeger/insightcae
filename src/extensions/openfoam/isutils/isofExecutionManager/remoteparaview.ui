@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>436</width>
+    <width>535</width>
     <height>143</height>
    </rect>
   </property>
@@ -24,7 +24,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="subdir"/>
+      <widget class="QComboBox" name="subdir">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

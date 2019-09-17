@@ -110,6 +110,7 @@ public:
     const boost::filesystem::path& metaFile() const;
 
     std::vector<bfs_path> remoteLS() const;
+    std::vector<bfs_path> remoteSubdirs() const;
 
     void syncToRemote(const std::vector<std::string>& exclude_pattern = std::vector<std::string>() );
     void syncToLocal(bool skipTimeSteps=false, const std::vector<std::string>& exclude_pattern = std::vector<std::string>() );

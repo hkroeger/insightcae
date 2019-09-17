@@ -36,6 +36,7 @@ public:
     int id;
     JobState state;
     boost::filesystem::path output;
+    int elevel;
     std::string remainder;
   };
 
@@ -44,6 +45,7 @@ public:
   {
     bool hasRunningJobs() const;
     bool hasQueuedJobs() const;
+    bool hasFailedJobs() const;
   };
 
 public:

@@ -278,6 +278,7 @@ int main ( int argc, char** argv )
     catch ( insight::Exception e )
     {
         std::cerr<<e<<std::endl;
+        return -1;
     }
 }
 

@@ -38,6 +38,15 @@ bool TaskSpoolerInterface::JobList::hasQueuedJobs() const
 }
 
 
+bool TaskSpoolerInterface::JobList::hasFailedJobs() const
+{
+  for (const auto& j: *this)
+  {
+    if ((j.state==Finished) && (j.elevel!=0)) return true;
+  }
+  return false;
+}
+
 TaskSpoolerInterface::TaskSpoolerInterface(const boost::filesystem::path& socket, const std::string& remote_machine)
   : remote_machine_(remote_machine),
     socket_(socket),
@@ -89,7 +98,7 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
   std::vector<std::string> data;
   std::string line;
   int i=0;
-  boost::regex re("^([^ ]*) +([^ ]*) +([^ ]*) +(.*)$");
+  boost::regex re("^([^ ]*) +([^ ]*) +([^ ]*) +([^ ]*) +(.*)$");
   while (std::getline(is, line))
   {
     if (i>0)
@@ -112,7 +121,9 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
 
         j.output=boost::filesystem::path(m[3]);
 
-        j.remainder=m[4];
+        j.elevel=boost::lexical_cast<int>(m[4]);
+
+        j.remainder=m[5];
 
         jl.push_back(j);
       }

@@ -240,7 +240,7 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with, bool skipMonitor)
   saveToFile(cfgfn);
   {
     std::ofstream f( fn.c_str() );
-    f<<"#!/bin/bash\n";
+    f<<"#!/bin/bash\nset -e\n";
 
     switch (begin_with)
     {
@@ -296,6 +296,10 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with, bool skipMonitor)
           },
       true // blocking
     );
+
+    auto jl=tsi.jobs();
+    if (jl.hasFailedJobs())
+      throw insight::Exception("Execution of job failed!");
   }
 }
 

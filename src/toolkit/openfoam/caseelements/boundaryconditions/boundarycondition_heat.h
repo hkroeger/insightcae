@@ -39,9 +39,9 @@ public:
   AdiabaticBC ( const ParameterSet& ps = ParameterSet() );
 
   static ParameterSet defaultParameters() { return ParameterSet(); }
-  virtual ParameterSet getParameters() const { return ParameterSet(); }
+  ParameterSet getParameters() const override { return ParameterSet(); }
 
-  virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 
 };
 
@@ -68,9 +68,9 @@ public:
   FixedTemperatureBC ( const ParameterSet& ps = ParameterSet() );
 
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  virtual ParameterSet getParameters() const { return p_; }
+  ParameterSet getParameters() const override { return p_; }
 
-  virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 
 };
 
@@ -119,9 +119,9 @@ public:
   ExternalWallBC ( const ParameterSet& ps = ParameterSet() );
 
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  virtual ParameterSet getParameters() const { return p_; }
+  ParameterSet getParameters() const override { return p_; }
 
-  virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 
 };
 

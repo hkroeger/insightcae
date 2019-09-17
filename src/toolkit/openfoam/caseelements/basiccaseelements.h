@@ -22,7 +22,6 @@
 #ifndef INSIGHT_BASICCASEELEMENTS_H
 #define INSIGHT_BASICCASEELEMENTS_H
 
-#include "openfoam/caseelements/numericscaseelements.h"
 #include "base/linearalgebra.h"
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
@@ -64,6 +63,47 @@ public:
 };
 
 
+
+
+
+/**
+ * create a setDecomposeParDict
+ * @poX,@poY,@poZ: define the preference of coordinate directions for decomposition
+ * (relevant for methods simple and hierarchical).
+ * If <0, direction will not be decomposed.
+ * Number of decompositions along direction will be ordered according to value of po?
+ */
+class decomposeParDict
+: public OpenFOAMCaseElement
+{
+public:
+#include "basiccaseelements__decomposeParDict__Parameters.h"
+/*
+PARAMETERSET>>> decomposeParDict Parameters
+
+np = int 1 "Number of processors"
+
+decompositionMethod = selection ( simple hierarchical metis scotch ) scotch "Parallel decomposition method"
+
+decompWeights = vector (1 1 1) "Decomposition weights"
+
+<<<PARAMETERSET
+*/
+protected:
+  Parameters p_;
+
+public:
+  declareType ( "decomposeParDict" );
+  decomposeParDict(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
+  void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+
+  static ParameterSet defaultParameters();
+  static std::string category();
+};
+
+
+
+
 class gravity
     : public OpenFOAMCaseElement
 {
@@ -84,7 +124,7 @@ protected:
 public:
     declareType ( "gravity" );
     gravity ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 
     static ParameterSet defaultParameters();
@@ -113,7 +153,7 @@ protected:
 public:
     declareType ( "minimumTimestepLimit" );
     minimumTimestepLimit ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters();
     static std::string category();
@@ -154,7 +194,7 @@ protected:
 public:
     declareType ( "mirrorMesh" );
     mirrorMesh ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 
     static ParameterSet defaultParameters()
@@ -229,7 +269,7 @@ protected:
 public:
     declareType ( "setFieldsConfiguration" );
     setFieldsConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 
     static ParameterSet defaultParameters()
@@ -263,7 +303,7 @@ protected:
 public:
     declareType ( "volumeDrag" );
     volumeDrag ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -309,7 +349,7 @@ protected:
 public:
     declareType ( "fixedValueConstraint" );
     fixedValueConstraint ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -358,7 +398,7 @@ protected:
 public:
     declareType ( "source" );
     source ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -392,7 +432,7 @@ protected:
 public:
     declareType ( "MRFZone" );
     MRFZone ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -433,8 +473,8 @@ protected:
 public:
     declareType ( "PassiveScalar" );
     PassiveScalar ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addFields( OpenFOAMCase& c ) const;
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addFields( OpenFOAMCase& c ) const override;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -469,7 +509,7 @@ protected:
 public:
     declareType ( "PressureGradientSource" );
     PressureGradientSource ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -504,7 +544,7 @@ protected:
 public:
     declareType ( "ConstantPressureGradientSource" );
     ConstantPressureGradientSource ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -520,7 +560,7 @@ class transportModel
 : public OpenFOAMCaseElement
 {
 public:
-  transportModel(OpenFOAMCase& c);
+  transportModel(OpenFOAMCase& c, const ParameterSet& ps);
   virtual bool isUnique() const;
 };
 
@@ -550,7 +590,7 @@ protected:
 public:
     declareType ( "singlePhaseTransportProperties" );
     singlePhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -594,7 +634,7 @@ protected:
 public:
     declareType ( "twoPhaseTransportProperties" );
     twoPhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -655,7 +695,7 @@ protected:
 public:
     declareType ( "SchnerrSauer" );
     SchnerrSauer ( const ParameterSet& p );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -699,7 +739,7 @@ protected:
 public:
     declareType ( "cavitationTwoPhaseTransportProperties" );
     cavitationTwoPhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters();
 };
@@ -707,165 +747,10 @@ public:
 
 
 
-class dynamicMesh
-: public OpenFOAMCaseElement
-{
-public:
-  dynamicMesh(OpenFOAMCase& c);
-  static std::string category() { return "Dynamic Mesh"; }
-  virtual bool isUnique() const;
-};
 
 
 
 
-class velocityTetFEMMotionSolver
-: public dynamicMesh
-{
-  tetFemNumerics tetFemNumerics_;
-public:
-  velocityTetFEMMotionSolver(OpenFOAMCase& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-};
-
-
-
-
-class displacementFvMotionSolver
-: public dynamicMesh
-{
-public:
-  displacementFvMotionSolver(OpenFOAMCase& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-};
-
-
-
-
-class solidBodyMotionDynamicMesh
-: public dynamicMesh
-{
-public:
-#include "basiccaseelements__solidBodyMotionDynamicMesh__Parameters.h"
-/*
-PARAMETERSET>>> solidBodyMotionDynamicMesh Parameters
-
-zonename = string "none" "Name of the cell zone which moves.
-Enter 'none', if the entire mesh shall be moved."
-
-motion = selectablesubset
-{{
- 
- rotation
- set {
-  origin = vector (0 0 0) "origin point"
-  axis = vector (0 0 1) "rotation axis"
-  rpm = double 1000 "rotation rate"
- }
-
- oscillatingRotating
- set {
-  origin = vector (0 0 0) "origin point"
-  amplitude = vector (0 0 1) "[deg] amplitude"
-  omega = double 1 "[rad/sec] rotation frequency"
- }
-
-}} rotation "type of motion"
-
-<<<PARAMETERSET
-*/
-
-protected:
-    ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
-
-public:
-  declareType ( "solidBodyMotionDynamicMesh" );
-  
-  solidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet&ps = Parameters::makeDefault() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  
-  static ParameterSet defaultParameters()
-  {
-      return Parameters::makeDefault();
-  }
-  static std::string category() { return "Dynamic Mesh"; }
-};
-
-
-
-
-
-class rigidBodyMotionDynamicMesh
-: public dynamicMesh
-{
-public:
-#include "basiccaseelements__rigidBodyMotionDynamicMesh__Parameters.h"
-/*
-PARAMETERSET>>> rigidBodyMotionDynamicMesh Parameters
-
-rho = selectablesubset {{
- field set {
-  fieldname = string "rho" "Density field name"
- }
- constant set {
-  rhoInf = double 1025.0 "Constant density value"
- }
-}} constant "Density source"
-
-
-bodies = array [
- set {
-   name = string "movingbody" "Name of the body"
-   centreOfMass = vector (0 0 0) "Location of CoG in global CS"
-   mass = double 1.0 "Mass of body"
-   Ixx = double 1.0 "Inertia Ixx"
-   Iyy = double 1.0 "Inertia Iyy"
-   Izz = double 1.0 "Inertia Izz"
-
-   patches = array [
-    string "bodysurface" "Names of patches comprising the surface of the body"
-   ] *1 "body surface patches"
-
-   innerDistance = double 1.0 "radius around body within which a solid body motion is performed."
-   outerDistance = double 2.0 "radius around body outside which the grid remains fixed."
-
-   translationConstraint = array [ selection (
-    Px Py Pz Pxyz ) Pxyz "Kind of translation constraint"
-   ] *1 "translation constraints"
-
-   rotationConstraint = array [ selection (
-    Rx Ry Rz Rxyz ) Rxyz "Kind of rotation constraint"
-   ] *1 "rotation constraints"
-
- } ] *1 "moving bodies"
-
-
-implementation = selectablesubset {{
- vanilla set { }
- extended set {
-   rampDuration = double 1.0 "Duration of the initial force ramp"
- }
-}} vanilla "Type of implementation to use."
-
-<<<PARAMETERSET
-*/
-
-protected:
-    ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
-
-public:
-  declareType ( "rigidBodyMotionDynamicMesh" );
-
-  rigidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet&ps = Parameters::makeDefault() );
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-
-  static ParameterSet defaultParameters()
-  {
-      return Parameters::makeDefault();
-  }
-  static std::string category() { return "Dynamic Mesh"; }
-};
 
 
 
@@ -895,7 +780,7 @@ protected:
 public:
     declareType ( "porousZone" );
     porousZone ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -952,7 +837,7 @@ protected:
 public:
     declareType ( "limitQuantities" );
     limitQuantities ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -995,7 +880,7 @@ protected:
 public:
   declareType("customDictEntries");
   customDictEntries(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
 
   static ParameterSet defaultParameters()
     {
@@ -1031,8 +916,8 @@ protected:
 public:
   declareType("copyFiles");
   copyFiles(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  virtual void modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  void modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
 
   static ParameterSet defaultParameters()
     {
@@ -1068,7 +953,7 @@ protected:
 public:
   declareType("SRFoption");
   SRFoption(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
 
   static ParameterSet defaultParameters()
     {

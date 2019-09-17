@@ -314,7 +314,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm)
 
     OFDictData::dict boundaryDict;
     cm.parseBoundaryDict(executionPath(), boundaryDict);
-    cm.insert(new simpleFoamNumerics(cm));
+    cm.insert(new steadyIncompressibleNumerics(cm));
     cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters() ));
     
     cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict));

@@ -36,8 +36,8 @@ class BlockMeshTemplate
     : public insight::bmd::blockMesh
 {
 public:
-    BlockMeshTemplate(OpenFOAMCase& c);
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    BlockMeshTemplate(OpenFOAMCase& c, const ParameterSet& ps);
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual void create_bmd () =0;
 
     static arma::mat correct_trihedron(arma::mat& ex, arma::mat &ez);
@@ -247,8 +247,8 @@ public:
 
     blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
 
-    virtual void create_bmd();
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void create_bmd() override;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     inline static ParameterSet defaultParameters()
     {

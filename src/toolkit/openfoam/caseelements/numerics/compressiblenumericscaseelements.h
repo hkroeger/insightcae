@@ -1,49 +1,10 @@
 #ifndef COMPRESSIBLENUMERICSCASEELEMENTS_H
 #define COMPRESSIBLENUMERICSCASEELEMENTS_H
 
-#include "openfoam/caseelements/basicnumericscaseelements.h"
+#include "openfoam/caseelements/numerics/basicnumericscaseelements.h"
 
 namespace insight
 {
-
-
-class rhoPimpleFoamNumerics
-    : public FVNumerics
-{
-
-public:
-#include "compressiblenumericscaseelements__rhoPimpleFoamNumerics__Parameters.h"
-
-//  nCorrectors = int 2 "Number of correctors"
-//  nOuterCorrectors = int 1 "Number of outer correctors"
-//  nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
-//  maxCo = double 0.45 "Maximum courant number"
-//  maxDeltaT = double 1.0 "Maximum time step size"
-
-/*
-PARAMETERSET>>> rhoPimpleFoamNumerics Parameters
-inherits FVNumerics::Parameters
-
-time_integration = includedset "insight::CompressiblePIMPLESettings::Parameters" "Settings for time integration"
-
-forceLES = bool false "Whether to enforce LES numerics"
-LESfilteredConvection = bool false "Whether to use filtered linear convection schemes instead of linear when using LES"
-pinternal = double 1e5 "Internal pressure field value"
-Tinternal = double 300 "Internal temperature field value"
-Uinternal = vector (0 0 0) "Internal velocity field value"
-
-<<<PARAMETERSET
-*/
-
-protected:
-    Parameters p_;
-
-public:
-    declareType ( "rhoPimpleFoamNumerics" );
-    rhoPimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    static ParameterSet defaultParameters();
-};
 
 
 
@@ -81,7 +42,8 @@ protected:
 public:
     declareType ( "steadyCompressibleNumerics" );
     steadyCompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
     static ParameterSet defaultParameters();
 };
 
@@ -107,6 +69,8 @@ time_integration = includedset "insight::CompressiblePIMPLESettings::Parameters"
      double timestep_control/maxCo = 5.0;
   }
 
+formulation = selection ( sonicFoam rhoPimpleFoam ) sonicFoam "Solver to use"
+
 pinternal = double 1e5 "Internal pressure field value"
 Tinternal = double 300 "Internal temperature field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
@@ -128,7 +92,8 @@ protected:
 public:
     declareType ( "unsteadyCompressibleNumerics" );
     unsteadyCompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
     static ParameterSet defaultParameters();
 };
 

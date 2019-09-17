@@ -35,8 +35,8 @@ namespace bmd
 
 
 
-BlockMeshTemplate::BlockMeshTemplate ( OpenFOAMCase& c )
-    : blockMesh ( c )
+BlockMeshTemplate::BlockMeshTemplate ( OpenFOAMCase& c, const ParameterSet& ps )
+    : blockMesh ( c, ps )
 {
 }
 
@@ -77,7 +77,7 @@ addToOpenFOAMCaseElementFactoryTable(blockMeshDict_Cylinder );
 
 
 blockMeshDict_Cylinder::blockMeshDict_Cylinder ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c ), p_ ( ps )
+    : BlockMeshTemplate ( c, ps ), p_ ( ps )
 {}
 
 
@@ -244,7 +244,7 @@ addToOpenFOAMCaseElementFactoryTable (blockMeshDict_Box );
 
 
 blockMeshDict_Box::blockMeshDict_Box ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c ), p_ ( ps )
+    : BlockMeshTemplate ( c, ps ), p_ ( ps )
 {
 }
 
@@ -367,7 +367,7 @@ addToOpenFOAMCaseElementFactoryTable (blockMeshDict_Sphere );
 
 
 blockMeshDict_Sphere::blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c ), p_ ( ps )
+    : BlockMeshTemplate ( c, ps ), p_ ( ps )
 {}
 
 

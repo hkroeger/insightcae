@@ -645,7 +645,7 @@ void PipeCyclic::createCase
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters() ));
+  cm.insert(new unsteadyIncompressibleNumerics(cm, unsteadyIncompressibleNumerics::Parameters() ));
       
   cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
   
@@ -772,7 +772,7 @@ void PipeInflow::createCase
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+  cm.insert(new unsteadyIncompressibleNumerics(cm, unsteadyIncompressibleNumerics::Parameters()
   ));
 
   cm.insert(new TurbulentVelocityInletBC( cm, cycl_in_, boundaryDict, p.getSubset("inflow") ));

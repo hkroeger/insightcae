@@ -526,7 +526,7 @@ protected:
   PatchMap allPatches_;
   
 public:
-  blockMesh(OpenFOAMCase& c);
+  blockMesh(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
 
   void copy(const blockMesh& other);
   
@@ -597,7 +597,7 @@ public:
   void removePatch(const std::string& name);
   
   OFDictData::dict& getBlockMeshDict(insight::OFdicts& dictionaries) const;
-  virtual void addIntoDictionaries(insight::OFdicts& dictionaries) const;
+  void addIntoDictionaries(insight::OFdicts& dictionaries) const override;
 
   void writeVTK(const boost::filesystem::path& fn) const;
   

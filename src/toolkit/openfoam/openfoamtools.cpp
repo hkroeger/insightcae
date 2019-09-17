@@ -1400,7 +1400,7 @@ void runPotentialFoam
   
   std::string fieldName="p";
   if (cm.OFversion()>=300) fieldName="Phi";
-  solvers[fieldName]=stdSymmSolverSetup(1e-7, 0.01);
+  solvers[fieldName]=cm.stdSymmSolverSetup(1e-7, 0.01);
   
   fvSolution.addSubDictIfNonexistent("relaxationFactors");
   std::string solkey="potentialFlow";

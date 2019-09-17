@@ -22,7 +22,7 @@
 #ifndef INSIGHT_BOUNDARYCONDITIONCASEELEMENTS_H
 #define INSIGHT_BOUNDARYCONDITIONCASEELEMENTS_H
 
-#include "openfoam/caseelements/numericscaseelements.h"
+#include "openfoam/caseelements/numerics/numericscaseelements.h"
 #include "base/linearalgebra.h"
 #include "base/parameterset.h"
 #include "base/resultset.h"
@@ -75,7 +75,7 @@ public:
     declareType("SimpleBC");
   SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className);
   SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p);
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+  void addIntoFieldDictionaries(OFdicts& dictionaries) const override;
   
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
@@ -121,10 +121,10 @@ protected:
 public:
     declareType ( "CyclicPairBC" );
     CyclicPairBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p = ParameterSet() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
 
-    virtual bool providesBCsForPatch ( const std::string& patchName ) const;
+    bool providesBCsForPatch ( const std::string& patchName ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -159,8 +159,8 @@ public:
     GGIBCBase ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
                 const ParameterSet&ps = Parameters::makeDefault() );
 
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    virtual void modifyMeshOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    void modifyMeshOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
 };
 
 
@@ -188,8 +188,8 @@ public:
     declareType ( "GGIBC" );
     GGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
             const ParameterSet&ps = Parameters::makeDefault() );
-    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
@@ -221,8 +221,8 @@ public:
     declareType ( "CyclicGGIBC" );
     CyclicGGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
                   const ParameterSet&ps = Parameters::makeDefault() );
-    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
@@ -254,8 +254,8 @@ public:
     declareType ( "OverlapGGIBC" );
     OverlapGGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
                    const ParameterSet&ps = Parameters::makeDefault() );
-    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
@@ -287,9 +287,9 @@ public:
     declareType ( "MixingPlaneGGIBC" );
     MixingPlaneGGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
                        const ParameterSet&ps = Parameters::makeDefault() );
-    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
@@ -342,7 +342,7 @@ public:
         const ParameterSet&ps = Parameters::makeDefault()
     );
     
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     
     static ParameterSet defaultParameters()
     {
@@ -393,7 +393,7 @@ public:
         const OFDictData::dict& boundaryDict,
         const ParameterSet& ps = Parameters::makeDefault()
     );
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -438,8 +438,8 @@ public:
         const ParameterSet&ps = Parameters::makeDefault()
     );
     
-    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;    
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     
     static ParameterSet defaultParameters()
     {
@@ -488,7 +488,7 @@ public:
 
     virtual void setField_p ( OFDictData::dict& BC ) const;
     virtual void setField_U ( OFDictData::dict& BC ) const;
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -535,7 +535,7 @@ public:
     );
     
     virtual void addDataDict ( OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data ) const;
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -663,7 +663,7 @@ public:
     virtual void setField_omega ( OFDictData::dict& BC ) const;
     virtual void setField_nuTilda ( OFDictData::dict& BC ) const;
     virtual void setField_R ( OFDictData::dict& BC ) const;
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 
     inline static ParameterSet defaultParameters()
     {
@@ -742,7 +742,7 @@ public:
         const ParameterSet& ps = Parameters::makeDefault(),
         const boost::filesystem::path& casedir = "."
     );
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     
     static ParameterSet defaultParameters()
     {
@@ -762,7 +762,8 @@ public:
   (
     OpenFOAMCase& c, 
     const std::string& patchName, 
-    const OFDictData::dict& boundaryDict
+    const OFDictData::dict& boundaryDict,
+    const ParameterSet& ps = ParameterSet()
   );
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
@@ -804,9 +805,9 @@ public:
         const ParameterSet &ps = Parameters::makeDefault()
     );
 
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
-    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
+    void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
 
     static ParameterSet defaultParameters()
     {

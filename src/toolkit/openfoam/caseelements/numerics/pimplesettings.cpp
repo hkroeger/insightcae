@@ -11,6 +11,9 @@ PIMPLESettings::PIMPLESettings(const ParameterSet& ps)
 {}
 
 
+PIMPLESettings::~PIMPLESettings()
+{}
+
 
 void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const
 {
@@ -55,28 +58,22 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
     OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("fields");
     OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("equations");
 
-    if (simple->relax_final)
+    eqnRelax["U"] = simple->relaxation_U;
+    eqnRelax["UFinal"] = simple->relax_final ? simple->relaxation_U : 1.0;
+    for (const auto& fn: std::vector<std::string>({"p", "p_rgh", "p_gh", "pd"}))
     {
-      fieldRelax["\"(p|p_rgh|pd).*\""] = simple->relaxation_p;
+      fieldRelax[fn] = simple->relaxation_p;
+      fieldRelax[fn+"Final"] = simple->relax_final ? simple->relaxation_p : 1.0;
     }
-    else
+    for (const auto& fn: std::vector<std::string>({"k", "epsilon", "omega", "nuTilda"}))
     {
-      fieldRelax["\".*Final\""] = 1.0;
-      fieldRelax["\"(p|p_rgh|pd)\""] = simple->relaxation_p;
+      eqnRelax[fn] = simple->relaxation_turb;
+      eqnRelax[fn+"Final"] = simple->relax_final ? simple->relaxation_turb : 1.0;
     }
-
-    if (simple->relax_final)
+    for (const auto& fn: std::vector<std::string>({"T", "h", "e"}))
     {
-      eqnRelax["\"U.*\""] = simple->relaxation_U;
-      eqnRelax["\"(k|epsilon|omega|nuTilda).*\""] = simple->relaxation_turb;
-      eqnRelax["\"(T|h|e).*\""] = simple->relaxation_e;
-    }
-    else
-    {
-      eqnRelax["\".*Final\""] = 1.0;
-      eqnRelax["U"] = simple->relaxation_U;
-      eqnRelax["\"(k|epsilon|omega|nuTilda)\""] = simple->relaxation_turb;
-      eqnRelax["\"(T|h|e)\""] = simple->relaxation_e;
+      eqnRelax[fn] = simple->relaxation_e;
+      eqnRelax[fn+"Final"] = simple->relax_final ? simple->relaxation_e : 1.0;
     }
 
     // residual control
@@ -89,6 +86,47 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
 
     OFDictData::dict tol_U;
     tol_U["tolerance"]=simple->residual_U;
+    tol_U["relTol"]=0.0;
+    residualControl["\"(U|k|epsilon|omega|nuTilda)\""] = tol_U;
+
+  }
+  else if (const auto* pimple = boost::get<Parameters::pressure_velocity_coupling_PIMPLE_type>(&p_.pressure_velocity_coupling))
+  {
+    PIMPLE["nCorrectors"]=pimple->nCorrectors;
+    PIMPLE["nOuterCorrectors"]=pimple->max_nOuterCorrectors;
+
+    // SIMPLE mode: add underrelaxation
+    OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("fields");
+    OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("equations");
+
+    eqnRelax["U"] = pimple->relaxation_U;
+    eqnRelax["UFinal"] = pimple->relax_final ? pimple->relaxation_U : 1.0;
+    for (const auto& fn: std::vector<std::string>({"p", "p_rgh", "p_gh", "pd"}))
+    {
+      fieldRelax[fn] = pimple->relaxation_p;
+      fieldRelax[fn+"Final"] = pimple->relax_final ? pimple->relaxation_p : 1.0;
+    }
+    for (const auto& fn: std::vector<std::string>({"k", "epsilon", "omega", "nuTilda"}))
+    {
+      eqnRelax[fn] = pimple->relaxation_turb;
+      eqnRelax[fn+"Final"] = pimple->relax_final ? pimple->relaxation_turb : 1.0;
+    }
+    for (const auto& fn: std::vector<std::string>({"T", "h", "e"}))
+    {
+      eqnRelax[fn] = pimple->relaxation_e;
+      eqnRelax[fn+"Final"] = pimple->relax_final ? pimple->relaxation_e : 1.0;
+    }
+
+    // residual control
+    OFDictData::dict& residualControl = PIMPLE.addSubDictIfNonexistent("residualControl");
+
+    OFDictData::dict tol_p;
+    tol_p["tolerance"]=pimple->residual_p;
+    tol_p["relTol"]=0.0;
+    residualControl["\"(p|p_rgh|pd).*\""] = tol_p;
+
+    OFDictData::dict tol_U;
+    tol_U["tolerance"]=pimple->residual_U;
     tol_U["relTol"]=0.0;
     residualControl["\"(U|k|epsilon|omega|nuTilda)\""] = tol_U;
 

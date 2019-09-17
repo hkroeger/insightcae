@@ -126,10 +126,10 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdi
 {
     Parameters p(parameters_);
   
-  OFDictData::dict& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
-  if (decomposeParDict.find("numberOfSubdomains")!=decomposeParDict.end())
+  OFDictData::dict& dpd=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
+  if (dpd.find("numberOfSubdomains")!=dpd.end())
   {
-    int cnp=boost::get<int>(decomposeParDict["numberOfSubdomains"]);
+    int cnp=boost::get<int>(dpd["numberOfSubdomains"]);
     if (cnp!=p.run.np)
     {
       insight::Warning
@@ -139,7 +139,10 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdi
 	+"\nIt will be recreated but the directional preferences cannot be taken into account.\n"
 	"Correct this by setting the np parameter in FVNumerics during case creation properly."
       );
-      setDecomposeParDict(*dicts, p.run.np, FVNumerics::Parameters::decompositionMethod_type::scotch);
+      decomposeParDict(cm, decomposeParDict::Parameters()
+                        .set_np(p.run.np)
+                        .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::scotch)
+                       ).addIntoDictionaries(*dicts);
     }
   }
 }

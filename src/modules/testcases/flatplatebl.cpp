@@ -334,25 +334,25 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   if (Parameters::run_type::regime_steady_type *steady 
 	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
   {
-    cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+    cm.insert(new steadyIncompressibleNumerics(cm, steadyIncompressibleNumerics::Parameters()
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
       .set_Uinternal(vec3(uinf_,0,0))
-      .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
       .set_endTime(end_)
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
       .set_decompWeights(vec3(2,1,0))
+      .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
     ));
   } 
   else if (Parameters::run_type::regime_unsteady_type *unsteady 
 	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
   {
-    cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+    cm.insert( new unsteadyIncompressibleNumerics(cm, unsteadyIncompressibleNumerics::Parameters()
       .set_LESfilteredConvection(p.run.filteredconvection)
       .set_Uinternal(vec3(p.operation.uinf,0,0))
 //      .set_maxDeltaT(0.25*T_)
 
       .set_time_integration(
-         pimpleFoamNumerics::Parameters::time_integration_type()
+         unsteadyIncompressibleNumerics::Parameters::time_integration_type()
           .set_momentumPredictor(true)
           .set_timestep_control(PIMPLESettings::Parameters::timestep_control_adjust_type(
                                   0.9, // maxCo

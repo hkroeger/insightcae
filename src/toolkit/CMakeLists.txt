@@ -56,21 +56,24 @@ set(toolkit_SOURCES
     openfoam/remoteexecution.cpp
     openfoam/stretchtransformation.cpp
 
-    openfoam/caseelements/turbulencemodelcaseelements.cpp
-    openfoam/caseelements/analysiscaseelements.cpp
-    openfoam/caseelements/pimplesettings.cpp
-    openfoam/caseelements/basicnumericscaseelements.cpp
-    openfoam/caseelements/incompressiblenumericscaseelements.cpp
-    openfoam/caseelements/compressiblenumericscaseelements.cpp
-    openfoam/caseelements/numericscaseelements.cpp
-    openfoam/caseelements/basiccaseelements.cpp
-    openfoam/caseelements/thermophysicalcaseelements.cpp
-    openfoam/caseelements/electromagneticscaseelements.cpp
+    openfoam/caseelements/numerics/pimplesettings.cpp
+    openfoam/caseelements/numerics/basicnumericscaseelements.cpp
+    openfoam/caseelements/numerics/incompressiblenumericscaseelements.cpp
+    openfoam/caseelements/numerics/compressiblenumericscaseelements.cpp
+    openfoam/caseelements/numerics/numericscaseelements.cpp
+
     openfoam/caseelements/boundaryconditioncaseelements.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_heat.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.cpp
+
+    openfoam/caseelements/basiccaseelements.cpp
+    openfoam/caseelements/turbulencemodelcaseelements.cpp
+    openfoam/caseelements/dynamicmeshcaseelements.cpp
+    openfoam/caseelements/analysiscaseelements.cpp
+    openfoam/caseelements/thermophysicalcaseelements.cpp
+    openfoam/caseelements/electromagneticscaseelements.cpp
 
     code_aster/caexportfile.cpp
     code_aster/codeasterrun.cpp
@@ -143,5 +146,7 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
 ENDIF()
 
 add_pybindings(toolkit "toolkit.i" toolkit)
+
+add_subdirectory(openfoam/tests)
 
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SWIG_RUNTIME} DESTINATION include/toolkit)

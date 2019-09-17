@@ -59,14 +59,14 @@ void SimpleBC::init()
 }
 
 SimpleBC::SimpleBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className )
-    : BoundaryCondition ( c, patchName, boundaryDict )
+    : BoundaryCondition ( c, patchName, boundaryDict, Parameters().set_className(className) ),
+    p_(Parameters().set_className(className))
 {
-    p_.className = className;
     init();
 }
 
 SimpleBC::SimpleBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p )
-    : BoundaryCondition ( c, patchName, boundaryDict ),
+    : BoundaryCondition ( c, patchName, boundaryDict, p ),
       p_ ( p )
 {
     init();
@@ -123,8 +123,8 @@ defineType(CyclicPairBC);
 // addToFactoryTable(BoundaryCondition, CyclicPairBC);
 // addToStaticFunctionTable(BoundaryCondition, CyclicPairBC, defaultParameters);
 
-CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet&)
-: OpenFOAMCaseElement(c, patchName+"CyclicBC"),
+CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, patchName+"CyclicBC", ps),
   patchName_(patchName)
 {
   if (c.OFversion()>=210)
@@ -209,8 +209,8 @@ bool CyclicPairBC::providesBCsForPatch(const std::string& patchName) const
 
 
 GGIBCBase::GGIBCBase(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	const ParameterSet&ps )
-: BoundaryCondition(c, patchName, boundaryDict),
+        const ParameterSet& ps )
+: BoundaryCondition(c, patchName, boundaryDict, ps),
   p_(ps)
 {
 }
@@ -523,11 +523,6 @@ void MixingPlaneGGIBC::addIntoDictionaries(OFdicts& dictionaries) const
 
   if (fvSchemes.find("mixingPlane")==fvSchemes.end())
     fvSchemes["mixingPlane"]=mpd;
-  
-#warning There is probably a better location for this setup modification
-  OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
-  fvSolution.subDict("solvers")["p"]=stdSymmSolverSetup(1e-7, 0.01);
-
 }
 
 
@@ -548,7 +543,7 @@ SuctionInletBC::SuctionInletBC
   const OFDictData::dict& boundaryDict, 
   const ParameterSet& ps
 )
-: BoundaryCondition(c, patchName, boundaryDict),
+: BoundaryCondition(c, patchName, boundaryDict, ps),
   ps_(ps)
 {
  BCtype_="patch";
@@ -679,7 +674,7 @@ MassflowBC::MassflowBC
     const OFDictData::dict& boundaryDict,
     const ParameterSet& ps
 )
-    : BoundaryCondition ( c, patchName, boundaryDict ),
+    : BoundaryCondition ( c, patchName, boundaryDict, ps ),
       ps_ ( ps )
 {
     BCtype_="patch";
@@ -793,7 +788,7 @@ MappedVelocityInletBC::MappedVelocityInletBC
   const OFDictData::dict& boundaryDict, 
   const ParameterSet& ps
 )
-: BoundaryCondition(c, patchName, boundaryDict),
+: BoundaryCondition(c, patchName, boundaryDict, ps),
   ps_(ps)
 {
  BCtype_="patch";
@@ -902,7 +897,7 @@ VelocityInletBC::VelocityInletBC
   const ParameterSet& ps,
   const boost::filesystem::path& casedir
 )
-: BoundaryCondition(c, patchName, boundaryDict),
+: BoundaryCondition(c, patchName, boundaryDict, ps),
   ps_(ps),
   casedir_(casedir)
 {
@@ -1017,7 +1012,7 @@ ExptDataInletBC::ExptDataInletBC
   const OFDictData::dict& boundaryDict,
   const ParameterSet& ps
 )
-: BoundaryCondition(c, patchName, boundaryDict),
+: BoundaryCondition(c, patchName, boundaryDict, ps),
   ps_(ps)
 {
  BCtype_="patch";
@@ -1225,7 +1220,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
   const OFDictData::dict& boundaryDict, 
   const ParameterSet& ps
 )
-: BoundaryCondition(c, patchName, boundaryDict),
+: BoundaryCondition(c, patchName, boundaryDict, ps),
   ps_(ps),
   p_(ps)
 {
@@ -1550,7 +1545,7 @@ PressureOutletBC::PressureOutletBC
   const ParameterSet& ps,
   const boost::filesystem::path& casedir
 )
-: BoundaryCondition(c, patchName, boundaryDict),
+: BoundaryCondition(c, patchName, boundaryDict, ps),
   ps_(ps),
   casedir_(casedir)
 {
@@ -1691,9 +1686,10 @@ PotentialFreeSurfaceBC::PotentialFreeSurfaceBC
 (
   OpenFOAMCase& c, 
   const std::string& patchName, 
-  const OFDictData::dict& boundaryDict
+  const OFDictData::dict& boundaryDict,
+  const ParameterSet& ps
 )
-: BoundaryCondition(c, patchName, boundaryDict)
+: BoundaryCondition(c, patchName, boundaryDict, ps)
 {
  BCtype_="patch";
 }
@@ -1783,7 +1779,7 @@ addToStaticFunctionTable(BoundaryCondition, WallBC, defaultParameters);
 
 
 WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& ps)
-: BoundaryCondition(c, patchName, boundaryDict),
+: BoundaryCondition(c, patchName, boundaryDict, ps),
   ps_(ps)
 {
   BCtype_="wall";
@@ -1851,7 +1847,9 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
         // turbulence quantities, should be handled by turbulence model
         else if (
-            ( (field.first=="k") || (field.first=="omega") || (field.first=="epsilon") || (field.first=="nut") || (field.first=="nuSgs") || (field.first=="nuTilda") || (field.first=="alphat") )
+            ( (field.first=="k") || (field.first=="omega") || (field.first=="epsilon") ||
+              (field.first=="nut") || (field.first=="nuSgs") || (field.first=="nuTilda") ||
+              (field.first=="alphat") )
             &&
             (get<0>(field.second)==scalarField)
         )

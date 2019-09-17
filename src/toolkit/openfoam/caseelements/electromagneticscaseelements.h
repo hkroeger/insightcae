@@ -40,20 +40,26 @@ class magnet
 : public OpenFOAMCaseElement
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (name, std::string, "magnet")
-    (permeability, double, 0.2)
-    (remanence, double, 1000.0)
-    (orientation, arma::mat, vec3(1,0,0) )
-  )
+#include "electromagneticscaseelements__magnet__Parameters.h"
+/*
+PARAMETERSET>>> magnet Parameters
+
+name = string "magnet" "name of magnet"
+permeability = double 0.2 "magnet permeability"
+remanence = double 1000.0 "magnet remanence"
+orientation = vector (1 0 0) "magnet orientation"
+
+<<<PARAMETERSET
+*/
+
 
 protected:
   Parameters p_;
   
 public:
-  magnet(OpenFOAMCase& c, Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  virtual void modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const;
+  magnet(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  void modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const override;
   
   static std::string category() { return "Magnetics"; }
 };
@@ -65,9 +71,12 @@ class FarFieldBC
 : public BoundaryCondition
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-   (dummy, std::string, "")
-  )
+#include "electromagneticscaseelements__FarFieldBC__Parameters.h"
+/*
+PARAMETERSET>>> FarFieldBC Parameters
+
+<<<PARAMETERSET
+*/
   
 protected:
   Parameters p_;
@@ -78,9 +87,9 @@ public:
     OpenFOAMCase& c,
     const std::string& patchName, 
     const OFDictData::dict& boundaryDict, 
-    Parameters const& p = Parameters()
+    ParameterSet const& p = Parameters::makeDefault()
   );
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+  void addIntoFieldDictionaries(OFdicts& dictionaries) const override;
 };
 
 }

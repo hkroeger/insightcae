@@ -33,7 +33,7 @@ class thermodynamicModel
 : public OpenFOAMCaseElement
 {
 public:
-  thermodynamicModel(OpenFOAMCase& c);
+  thermodynamicModel(OpenFOAMCase& c, const ParameterSet& ps);
 };
 
 
@@ -43,20 +43,25 @@ class cavitatingFoamThermodynamics
 : public thermodynamicModel
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (psiv, double, 2.5e-6)
-    (psil, double, 5e-7)
-    (pSat, double, 2000.0)
-    (rholSat, double, 1025.0)
-    (rhoMin, double, 0.001)
-  )
+#include "thermophysicalcaseelements__cavitatingFoamThermodynamics__Parameters.h"
+/*
+PARAMETERSET>>> cavitatingFoamThermodynamics Parameters
+
+psiv = double 2.5e-6 ""
+psil = double 5e-7 ""
+pSat = double 2000.0 "Cavitation pressure"
+rholSat = double 1025.0 "Liquid density"
+rhoMin = double 0.001 "Lower threshold for density"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
   
 public:
-  cavitatingFoamThermodynamics(OpenFOAMCase& c, Parameters const& p = Parameters());
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  cavitatingFoamThermodynamics(OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault());
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
 };
 
 
@@ -88,7 +93,7 @@ protected:
 public:
     declareType ( "perfectGasSinglePhaseThermophysicalProperties" );
     perfectGasSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -176,7 +181,9 @@ protected:
 public:
     declareType ( "compressibleSinglePhaseThermophysicalProperties" );
     compressibleSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    std::string requiredThermoType() const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters()
     {
@@ -205,20 +212,25 @@ class detailedGasReactionThermodynamics
   public multispeciesThermodynamics
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    //(combustionModel, detailGasReactionModel::Ptr, "")
-    (inertSpecie, std::string, "N2")
-    (foamChemistryFile, boost::filesystem::path, "")
-    (foamChemistryThermoFile, boost::filesystem::path, "")
-    (Cmix, double, 1.0)
-  )
+#include "thermophysicalcaseelements__detailedGasReactionThermodynamics__Parameters.h"
+/*
+PARAMETERSET>>> detailedGasReactionThermodynamics Parameters
+
+inertSpecie = string "N2" ""
+foamChemistryFile = path "" ""
+foamChemistryThermoFile = path "" ""
+Cmix = double 1.0 ""
+
+<<<PARAMETERSET
+*/
+
 
 protected:
   Parameters p_;
   
 public:
-  detailedGasReactionThermodynamics(OpenFOAMCase& c, Parameters const& p = Parameters());
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  detailedGasReactionThermodynamics(OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault());
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
 };
 
 

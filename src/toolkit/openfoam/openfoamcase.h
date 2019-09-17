@@ -156,7 +156,7 @@ public:
     declareStaticFunctionTable (visualizer, ParameterSet_VisualizerPtr);
     declareType ( "OpenFOAMCaseElement" );
 
-    OpenFOAMCaseElement ( OpenFOAMCase& c, const std::string& name );
+    OpenFOAMCaseElement ( OpenFOAMCase& c, const std::string& name, const ParameterSet& ps );
 
     // defined below declaration of OpenFOAMCase
     inline const OpenFOAMCase& OFcase() const;
@@ -175,20 +175,13 @@ public:
     static ParameterSet_ValidatorPtr validator();
     static ParameterSet_VisualizerPtr visualizer();
     static bool isInConflict(const CaseElement& other);
+
+
 };
 
 
 typedef std::shared_ptr<OpenFOAMCaseElement> OpenFOAMCaseElementPtr;
 
-
-
-
-OFDictData::dict diagonalSolverSetup();
-OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
-OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0, int maxIter=1000);
-OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
-OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
-OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0);
 
 
 
@@ -221,7 +214,7 @@ public:
     declareStaticFunctionTable ( defaultParameters, ParameterSet );
     declareType ( "BoundaryCondition" );
     
-    BoundaryCondition ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict );
+    BoundaryCondition ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& ps );
     virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const =0;
     virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
@@ -483,6 +476,13 @@ public:
     
 
     virtual bool hasCyclicBC() const;
+
+    OFDictData::dict diagonalSolverSetup() const;
+    OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0) const;
+    OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0, int maxIter=1000) const;
+    OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0) const;
+    OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0) const;
+    OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0) const;
 
 };
 

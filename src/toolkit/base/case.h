@@ -143,6 +143,22 @@ public:
         return es;
     }
 
+
+    template<class T>
+    std::set<const T *> findElements() const
+    {
+        std::set<const T *> es;
+        for (const auto& i: elements_)
+        {
+            if (const T *e = dynamic_cast<const T*>( &i ))
+            {
+                es.insert(e);
+            }
+        }
+        return es;
+    }
+
+
     template<class T>
     T& getUniqueElement()
     {

@@ -267,7 +267,7 @@ void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm)
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert( new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+  cm.insert( new steadyIncompressibleNumerics(cm, steadyIncompressibleNumerics::Parameters()
   ) );
   
   arma::mat udata=refdatalib.getProfile("ERCOFTAC_SX180Bend", "in/umean_vs_x_y");

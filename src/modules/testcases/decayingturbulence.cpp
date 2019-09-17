@@ -79,7 +79,7 @@ void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm)
 
   double T=calcT();
   cout << "Flow-through time T="<<T<<endl;
-  cm.insert(new pimpleFoamNumerics(cm) );
+  cm.insert(new unsteadyIncompressibleNumerics(cm) );
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_fields(list_of<std::string>("p")("U"))
     .set_name("averaging")

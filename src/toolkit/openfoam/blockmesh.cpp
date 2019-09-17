@@ -1137,8 +1137,8 @@ class SplineEdge2D
 };
 */
 
-blockMesh::blockMesh(OpenFOAMCase& c)
-: OpenFOAMCaseElement(c, "blockMesh"),
+blockMesh::blockMesh(OpenFOAMCase& c, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, "blockMesh", ps),
   scaleFactor_(1.0),
   defaultPatchName_("defaultFaces"),
   defaultPatchType_("wall"),

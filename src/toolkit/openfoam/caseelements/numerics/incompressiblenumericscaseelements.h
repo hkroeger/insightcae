@@ -1,21 +1,23 @@
 #ifndef INCOMPRESSIBLENUMERICSCASEELEMENTS_H
 #define INCOMPRESSIBLENUMERICSCASEELEMENTS_H
 
-#include "openfoam/caseelements/basicnumericscaseelements.h"
+#include "openfoam/caseelements/numerics/basicnumericscaseelements.h"
 
 namespace insight
 {
 
 
-class simpleFoamNumerics
+
+
+class steadyIncompressibleNumerics
     : public FVNumerics
 {
 
 public:
-#include "incompressiblenumericscaseelements__simpleFoamNumerics__Parameters.h"
+#include "incompressiblenumericscaseelements__steadyIncompressibleNumerics__Parameters.h"
 
 /*
-PARAMETERSET>>> simpleFoamNumerics Parameters
+PARAMETERSET>>> steadyIncompressibleNumerics Parameters
 inherits FVNumerics::Parameters
 
 checkResiduals = bool true "Whether to check residuals during run"
@@ -29,24 +31,27 @@ protected:
     Parameters p_;
 
 public:
-    declareType ( "simpleFoamNumerics" );
-    simpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    declareType ( "steadyIncompressibleNumerics" );
+    steadyIncompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault(), const std::string& pName="p" );
+
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
+
     static ParameterSet defaultParameters();
 };
 
 
 
 
-class pimpleFoamNumerics
+class unsteadyIncompressibleNumerics
     : public FVNumerics
 {
 
 public:
-#include "incompressiblenumericscaseelements__pimpleFoamNumerics__Parameters.h"
+#include "incompressiblenumericscaseelements__unsteadyIncompressibleNumerics__Parameters.h"
 
 /*
-PARAMETERSET>>> pimpleFoamNumerics Parameters
+PARAMETERSET>>> unsteadyIncompressibleNumerics Parameters
 inherits FVNumerics::Parameters
 
 time_integration = includedset "insight::PIMPLESettings::Parameters" "Settings for time integration"
@@ -67,9 +72,12 @@ protected:
     Parameters p_;
 
 public:
-    declareType ( "pimpleFoamNumerics" );
-    pimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    declareType ( "unsteadyIncompressibleNumerics" );
+    unsteadyIncompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault(), const std::string& pName="p" );
+
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
+
     static ParameterSet defaultParameters();
 };
 

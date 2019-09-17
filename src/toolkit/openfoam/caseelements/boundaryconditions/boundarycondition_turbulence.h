@@ -68,13 +68,13 @@ public:
     inline static turbulenceBCPtr create(const ParameterSet& ps) { return turbulenceBCPtr(new uniformIntensityAndLengthScale(ps)); }
 
     static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-    virtual ParameterSet getParameters() const { return p_; }
+    ParameterSet getParameters() const override { return p_; }
 
-    virtual void setDirichletBC_k(OFDictData::dict& BC, double U) const;
-    virtual void setDirichletBC_omega(OFDictData::dict& BC, double U) const;
-    virtual void setDirichletBC_epsilon(OFDictData::dict& BC, double U) const;
-    virtual void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const;
-    virtual void setDirichletBC_R(OFDictData::dict& BC, double U) const;
+    void setDirichletBC_k(OFDictData::dict& BC, double U) const override;
+    void setDirichletBC_omega(OFDictData::dict& BC, double U) const override;
+    void setDirichletBC_epsilon(OFDictData::dict& BC, double U) const override;
+    void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const override;
+    void setDirichletBC_R(OFDictData::dict& BC, double U) const override;
 };
 
 

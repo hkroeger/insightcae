@@ -25,8 +25,9 @@
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
 #include "base/boost_include.h"
-#include "openfoam/caseelements/incompressiblenumericscaseelements.h"
-#include "openfoam/caseelements/compressiblenumericscaseelements.h"
+
+#include "openfoam/caseelements/numerics/incompressiblenumericscaseelements.h"
+#include "openfoam/caseelements/numerics/compressiblenumericscaseelements.h"
 
 #include <map>
 #include "boost/utility.hpp"
@@ -43,22 +44,16 @@ namespace insight
 
 
 class potentialFreeSurfaceFoamNumerics
-    : public FVNumerics
+    : public unsteadyIncompressibleNumerics
 {
 
 public:
 #include "numericscaseelements__potentialFreeSurfaceFoamNumerics__Parameters.h"
 
-//  nCorrectors = int 2 "Number of correctors"
-//  nOuterCorrectors = int 1 "Number of outer correctors"
-//  nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
-//  maxCo = double 0.45 "Maximum courant number"
-//  maxDeltaT = double 1.0 "Maximum time step size"
+
 /*
 PARAMETERSET>>> potentialFreeSurfaceFoamNumerics Parameters
-inherits FVNumerics::Parameters
-
-time_integration = includedset "insight::PIMPLESettings::Parameters" "Settings for time integration"
+inherits unsteadyIncompressibleNumerics::Parameters
 
 <<<PARAMETERSET
 */
@@ -69,15 +64,17 @@ protected:
 public:
     declareType ( "potentialFreeSurfaceFoamNumerics" );
     potentialFreeSurfaceFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
     static ParameterSet defaultParameters();
+
 };
 
 
 
 
 class simpleDyMFoamNumerics
-    : public simpleFoamNumerics
+    : public steadyIncompressibleNumerics
 {
 
 public:
@@ -85,7 +82,7 @@ public:
 
 /*
 PARAMETERSET>>> simpleDyMFoamNumerics Parameters
-inherits simpleFoamNumerics::Parameters
+inherits steadyIncompressibleNumerics::Parameters
 
 FEMinterval = int 10 "Interval between successive FEM updates"
 
@@ -98,38 +95,38 @@ protected:
 public:
     declareType ( "simpleDyMFoamNumerics" );
     simpleDyMFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static ParameterSet defaultParameters();
 };
 
 
 
 
-class pimpleDyMFoamNumerics
-    : public pimpleFoamNumerics
-{
+//class pimpleDyMFoamNumerics
+//    : public pimpleFoamNumerics
+//{
 
-public:
-#include "numericscaseelements__pimpleDyMFoamNumerics__Parameters.h"
+//public:
+//#include "numericscaseelements__pimpleDyMFoamNumerics__Parameters.h"
 
-/*
-PARAMETERSET>>> pimpleDyMFoamNumerics Parameters
-inherits pimpleFoamNumerics::Parameters
+///*
+//PARAMETERSET>>> pimpleDyMFoamNumerics Parameters
+//inherits pimpleFoamNumerics::Parameters
 
-FEMinterval = int 10 "Interval between successive FEM updates"
+//FEMinterval = int 10 "Interval between successive FEM updates"
 
-<<<PARAMETERSET
-*/
+//<<<PARAMETERSET
+//*/
 
-protected:
-    Parameters p_;
+//protected:
+//    Parameters p_;
 
-public:
-    declareType ( "pimpleDyMFoamNumerics" );
-    pimpleDyMFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    static ParameterSet defaultParameters();
-};
+//public:
+//    declareType ( "pimpleDyMFoamNumerics" );
+//    pimpleDyMFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+//    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+//    static ParameterSet defaultParameters();
+//};
 
 
 
@@ -158,7 +155,8 @@ protected:
 public:
     declareType ( "cavitatingFoamNumerics" );
     cavitatingFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
     static ParameterSet defaultParameters();
 };
 
@@ -171,11 +169,6 @@ class interFoamNumerics
 
 public:
 #include "numericscaseelements__interFoamNumerics__Parameters.h"
-
-//  implicitPressureCorrection = bool false "Whether to switch to implicit pressure correction"
-//  nOuterCorrectors = int 50 "Number of outer correctors"
-//  maxCo = double 5 "Maximum courant number"
-//  maxAlphaCo = double 3 "Maximum courant number at interface"
 /*
 PARAMETERSET>>> interFoamNumerics Parameters
 inherits FVNumerics::Parameters
@@ -199,19 +192,18 @@ snGradLowQualityLimiterReduction = double 0.66 "Reduction of limiter coefficient
 
 protected:
     Parameters p_;
-    std::string pname_;
     std::string alphaname_;
-    
-    void init();
+
 
 public:
     declareType ( "interFoamNumerics" );
     interFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
 
     inline const std::string& pressureFieldName() const
     {
-        return pname_;
+        return pName_;
     }
     inline const std::string& alphaFieldName() const
     {
@@ -234,7 +226,7 @@ class LTSInterFoamNumerics
 public:
     declareType ( "LTSInterFoamNumerics" );
     LTSInterFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static ParameterSet defaultParameters();
 };
 
@@ -263,7 +255,7 @@ protected:
 public:
     declareType ( "interPhaseChangeFoamNumerics" );
     interPhaseChangeFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static ParameterSet defaultParameters();
 };
 
@@ -302,7 +294,8 @@ protected:
 public:
     declareType ( "reactingFoamNumerics" );
     reactingFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
     static ParameterSet defaultParameters();
 };
 
@@ -315,7 +308,7 @@ class reactingParcelFoamNumerics
 public:
     declareType ( "reactingParcelFoamNumerics" );
     reactingParcelFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static ParameterSet defaultParameters();
 };
 
@@ -349,7 +342,8 @@ protected:
 public:
     declareType ( "buoyantSimpleFoamNumerics" );
     buoyantSimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
     static ParameterSet defaultParameters();
 };
 
@@ -385,7 +379,8 @@ protected:
 public:
     declareType ( "buoyantPimpleFoamNumerics" );
     buoyantPimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
     static ParameterSet defaultParameters();
 };
 
@@ -411,7 +406,7 @@ protected:
    
 public:
   FSIDisplacementExtrapolationNumerics( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
 };
 
 
@@ -441,7 +436,9 @@ protected:
 public:
     declareType ( "magneticFoamNumerics" );
     magneticFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
+
     static ParameterSet defaultParameters();
 };
 

@@ -52,6 +52,21 @@ pressure_velocity_coupling = selectablesubset {{
   relax_final = bool false "whether to relax in the final outer iteration"
  }
 
+ PIMPLE set {
+  max_nOuterCorrectors = int 2 "Maximum number of SIMPLE correctors. The outer iteration loop is terminated earlier, if prescribed target residuals are met."
+  nCorrectors = int 2 "Number of PISO correctors inside of one outer corrector step."
+
+  residual_p = double 0.001 "target pressure residual"
+  residual_U = double 0.001 "target velocity residual"
+
+  relaxation_p = double 0.8 "pressure relaxation factor"
+  relaxation_U = double 0.8 "velocity relaxation factor"
+  relaxation_e = double 0.8 "energy relaxation factor"
+  relaxation_turb = double 0.8 "turbulence quantity relaxation factor"
+
+  relax_final = bool false "whether to relax in the final outer iteration"
+ }
+
 }} SIMPLE "Pressure-velocity coupling scheme"
 
 <<<PARAMETERSET
@@ -61,8 +76,9 @@ protected:
 
 public:
   PIMPLESettings(const ParameterSet& ps);
+  virtual ~PIMPLESettings();
 
-  void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const;
+  virtual void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const;
 
   bool isPISO() const;
   bool isSIMPLE() const;
@@ -97,7 +113,7 @@ protected:
 public:
   CompressiblePIMPLESettings(const ParameterSet& ps);
 
-  void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const;
+  void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const override;
 
 };
 
@@ -123,7 +139,7 @@ protected:
 public:
   MultiphasePIMPLESettings(const ParameterSet& ps);
 
-  void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const;
+  void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const override;
 };
 
 

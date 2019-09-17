@@ -386,19 +386,19 @@ void ChannelBase::createCase
   if (Parameters::run_type::regime_steady_type *steady 
 	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
   {
-    cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+    cm.insert(new steadyIncompressibleNumerics(cm, steadyIncompressibleNumerics::Parameters()
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
       .set_Uinternal(vec3(Ubulk_,0,0))
-      .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
       .set_endTime(end_)
       .set_decompWeights(vec3(2,1,0))
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+      .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::hierarchical)
     ));
   } 
   else if (Parameters::run_type::regime_unsteady_type *unsteady 
 	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
   {
-    cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+    cm.insert( new unsteadyIncompressibleNumerics(cm, unsteadyIncompressibleNumerics::Parameters()
       .set_LESfilteredConvection(p.run.filteredconvection)
 //      .set_maxDeltaT(0.25*T_)
       .set_time_integration(PIMPLESettings::Parameters()
@@ -412,9 +412,9 @@ void ChannelBase::createCase
       .set_writeInterval(0.25*T_)
       .set_endTime( end_ )
       .set_writeFormat(FVNumerics::Parameters::writeFormat_type::ascii)
-      .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::simple)
       .set_deltaT( double(L/nax_)/Ubulk_ ) // Co=1
       .set_decompWeights(vec3(2,1,0))
+      .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::simple)
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
     ));
   }
@@ -507,7 +507,7 @@ void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>&
   {
     OFDictData::dict& fvSolution=dicts->lookupDict("system/fvSolution");
     OFDictData::dict& solvers=fvSolution.subDict("solvers");
-    solvers["p"]=stdSymmSolverSetup(1e-7, 0.01);
+    solvers["p"]=cm.stdSymmSolverSetup(1e-7, 0.01);
   }
 //   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
 //   controlDict["maxDeltaT"]=0.5*T_;

@@ -35,9 +35,9 @@ using namespace boost::fusion;
 namespace insight
 {
 
-magnet::magnet(OpenFOAMCase& c, Parameters const& p)
-: OpenFOAMCaseElement(c, "magnet_"+p.name()),
-  p_(p)
+magnet::magnet(OpenFOAMCase& c, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, "magnet_"+ps.getString("name"), ps),
+  p_(ps)
 {
 }
 
@@ -47,10 +47,10 @@ void magnet::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::list& maglist = transportProperties.addListIfNonexistent("magnets");
   
   OFDictData::list magpars;
-  magpars.push_back(p_.name());
-  magpars.push_back(p_.permeability());
-  magpars.push_back(p_.remanence());
-  magpars.push_back(OFDictData::vector3(p_.orientation()));
+  magpars.push_back(p_.name);
+  magpars.push_back(p_.permeability);
+  magpars.push_back(p_.remanence);
+  magpars.push_back(OFDictData::vector3(p_.orientation));
   maglist.push_back(magpars);
 }
  
@@ -60,9 +60,9 @@ void magnet::modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::p
   (
     cm, location,
     list_of
-    ("cellSet "+p_.name()+" new zoneToCell "+p_.name())
-    ("faceSet "+p_.name()+" new cellToFace "+p_.name()+" all")
-    ("faceSet "+p_.name()+" delete boundaryToFace")
+    ("cellSet "+p_.name+" new zoneToCell "+p_.name)
+    ("faceSet "+p_.name+" new cellToFace "+p_.name+" all")
+    ("faceSet "+p_.name+" delete boundaryToFace")
   );
   cm.executeCommand(location, "setsToZones", list_of("-noFlipMap"));
 }
@@ -72,10 +72,10 @@ FarFieldBC::FarFieldBC
   OpenFOAMCase& c, 
   const std::string& patchName, 
   const OFDictData::dict& boundaryDict, 
-  const Parameters& p
+  const ParameterSet& ps
 )
-: BoundaryCondition(c, patchName, boundaryDict),
-  p_(p)
+: BoundaryCondition(c, patchName, boundaryDict, ps),
+  p_(ps)
 {
 }
 

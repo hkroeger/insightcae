@@ -65,14 +65,173 @@ void cellSetOption_Selection::insertSelection(OFDictData::dict& d)
     }
 }
 
-    
-    
+
+
+defineType(decomposeParDict);
+addToOpenFOAMCaseElementFactoryTable(decomposeParDict);
+
+decomposeParDict::decomposeParDict(OpenFOAMCase& c, const ParameterSet& ps)
+  : OpenFOAMCaseElement(c, "decomposeParDict", ps),
+    p_(ps)
+{
+}
+
+
+
+std::vector<int> factors(int n)
+{
+  // do a prime factorization of n
+
+  std::vector<int> facs;
+  int z = 2;
+
+  while (z * z <= n)
+  {
+      if (n % z == 0)
+      {
+          facs.push_back(z);
+          n /= z;
+      }
+      else
+      {
+          z++;
+      }
+  }
+
+  if (n > 1)
+  {
+      facs.push_back( n );
+  }
+
+  return facs;
+}
+
+std::vector<int> combinefactors
+(
+  std::vector<int> facs,
+  const std::tuple<int,int,int>& po
+)
+{
+  // count locked directions (without decomposition)
+  int n_lock=0;
+  if (std::get<0>(po)<=0.0) n_lock++;
+  if (std::get<1>(po)<=0.0) n_lock++;
+  if (std::get<2>(po)<=0.0) n_lock++;
+  // if less than 3 factors or directions are locked: extend with ones
+  int n_add=std::max(3-int(facs.size()), n_lock);
+  for (int k=0;k<n_add;k++)
+    facs.push_back(1);
+
+  // bring factors into descending order
+  sort(facs.begin(), facs.end());
+  std::reverse(facs.begin(), facs.end());
+
+  // get initial number which was factored
+  double totprod=1.0;
+  for (int f: facs) totprod*=double(f);
+
+  double potot=std::get<0>(po)+std::get<1>(po)+std::get<2>(po);
+  std::vector<double> pof = list_of
+    (double(std::get<0>(po))/potot)
+    (double(std::get<1>(po))/potot)
+    (double(std::get<2>(po))/potot);
+
+  std::vector<std::size_t> pof_sorti(pof.size());
+  std::iota(pof_sorti.begin(), pof_sorti.end(), 0);
+  std::sort(pof_sorti.begin(), pof_sorti.end(), [&pof](std::size_t left, std::size_t right)
+  {
+      return pof[left] > pof[right];
+  });
+
+  std::vector<int> nf(3);
+  size_t j=0;
+
+  for (size_t i=0; i<3; i++)
+  {
+    size_t dir_idx=pof_sorti[i];
+    double req_frac=pof[dir_idx];
+    int cf=facs[j++];
+    while (j<facs.size()-(2-i) && (cf>=0.0) && ( (log(cf)/log(totprod)) < req_frac) )
+    {
+      {
+        cf*=facs[j++];
+      }
+    }
+    nf[dir_idx]=cf;
+  }
+
+  return nf;
+}
+
+
+void decomposeParDict::addIntoDictionaries ( OFdicts& dictionaries ) const
+{
+  auto pom=p_.decompWeights;
+
+  std::tuple<int,int,int> po(int(pom(0)), int(pom(1)), int(pom(2)));
+
+  OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
+
+// #warning hack for testing
+  std::vector<int> ns=combinefactors(factors(p_.np), po);
+  cout<<"decomp "<<p_.np<<": "<<ns[0]<<" "<<ns[1]<<" "<<ns[2]<<endl;
+  decomposeParDict["numberOfSubdomains"]=p_.np;
+
+  if (p_.decompositionMethod==Parameters::hierarchical)
+  {
+    decomposeParDict["method"]="hierarchical";
+  }
+  else if (p_.decompositionMethod==Parameters::simple)
+  {
+    decomposeParDict["method"]="simple";
+  }
+  else if (p_.decompositionMethod==Parameters::scotch)
+  {
+    decomposeParDict["method"]="scotch";
+  }
+  else if (p_.decompositionMethod==Parameters::metis)
+  {
+    decomposeParDict["method"]="metis";
+  }
+  else
+  {
+      throw insight::Exception("setDecomposeParDict: internal error (unhandled decomposition method)!");
+  }
+
+  {
+    OFDictData::dict coeffs;
+    coeffs["n"]=OFDictData::vector3(ns[0], ns[1], ns[2]);
+    coeffs["delta"]=0.001;
+    coeffs["order"]="xyz";
+    decomposeParDict["hierarchicalCoeffs"]=coeffs;
+  }
+
+  {
+    OFDictData::dict coeffs;
+    coeffs["n"]=OFDictData::vector3(ns[0], ns[1], ns[2]);
+    coeffs["delta"]=0.001;
+    decomposeParDict["simpleCoeffs"]=coeffs;
+  }
+}
+
+ParameterSet decomposeParDict::defaultParameters()
+{
+  return Parameters::makeDefault();
+}
+
+std::string decomposeParDict::category()
+{
+  return "Numerics";
+}
+
+
+
     
 defineType(gravity);
 addToOpenFOAMCaseElementFactoryTable(gravity);
 
 gravity::gravity( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "gravity"),
+: OpenFOAMCaseElement(c, "gravity", ps),
   p_(ps)
 {
 }
@@ -106,7 +265,7 @@ defineType(minimumTimestepLimit);
 addToOpenFOAMCaseElementFactoryTable(minimumTimestepLimit);
 
 minimumTimestepLimit::minimumTimestepLimit( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "minimumTimestepLimit"),
+: OpenFOAMCaseElement(c, "minimumTimestepLimit", ps),
   p_(ps)
 {
 }
@@ -144,7 +303,7 @@ defineType(mirrorMesh);
 addToOpenFOAMCaseElementFactoryTable(mirrorMesh);
 
 mirrorMesh::mirrorMesh( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "mirrorMesh"),
+: OpenFOAMCaseElement(c, "mirrorMesh", ps),
   p_(ps)
 {
 }
@@ -193,7 +352,7 @@ addToOpenFOAMCaseElementFactoryTable(setFieldsConfiguration);
 
 
 setFieldsConfiguration::setFieldsConfiguration( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "setFieldsConfiguration"),
+: OpenFOAMCaseElement(c, "setFieldsConfiguration", ps),
   p_(ps)
 {
 }
@@ -275,7 +434,7 @@ defineType(volumeDrag);
 addToOpenFOAMCaseElementFactoryTable(volumeDrag);
 
 volumeDrag::volumeDrag( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, ""),
+: OpenFOAMCaseElement(c, "", ps),
   p_(ps)
 {
     name_="volumeDrag"+p_.name;
@@ -307,7 +466,7 @@ defineType(fixedValueConstraint);
 addToOpenFOAMCaseElementFactoryTable(fixedValueConstraint);
 
 fixedValueConstraint::fixedValueConstraint( OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, ""),
+: OpenFOAMCaseElement(c, "", ps),
   p_(ps)
 {
   name_="fixedValueConstraint"+p_.name;
@@ -348,7 +507,7 @@ defineType(source);
 addToOpenFOAMCaseElementFactoryTable(source);
 
 source::source( OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, ""),
+: OpenFOAMCaseElement(c, "", ps),
   p_(ps)
 {
   name_="source"+p_.name;
@@ -390,8 +549,8 @@ void source::addIntoDictionaries ( OFdicts& dictionaries ) const
 }
 
   
-transportModel::transportModel(OpenFOAMCase& c)
-: OpenFOAMCaseElement(c, "transportModel")
+transportModel::transportModel(OpenFOAMCase& c, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, "transportModel", ps)
 {
 }
 
@@ -402,7 +561,7 @@ defineType(MRFZone);
 addToOpenFOAMCaseElementFactoryTable(MRFZone);
 
 MRFZone::MRFZone( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, ""),
+: OpenFOAMCaseElement(c, "", ps),
   p_(ps)
 {
     name_="MRFZone"+p_.name;
@@ -482,7 +641,7 @@ defineType(PassiveScalar);
 addToOpenFOAMCaseElementFactoryTable(PassiveScalar);
 
 PassiveScalar::PassiveScalar( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "PassiveScalar"),
+: OpenFOAMCaseElement(c, "PassiveScalar", ps),
   p_(ps)
 {
 }
@@ -539,7 +698,7 @@ void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
 
     OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
     OFDictData::dict& solvers=fvSolution.subDict("solvers");
-    solvers[p_.fieldname]=smoothSolverSetup(1e-6, 0.);
+    solvers[p_.fieldname]=OFcase().smoothSolverSetup(1e-6, 0.);
 
     OFDictData::dict& relax=fvSolution.addSubDictIfNonexistent("relaxationFactors");
     if (OFversion()<210)
@@ -559,7 +718,7 @@ defineType(PressureGradientSource);
 addToOpenFOAMCaseElementFactoryTable(PressureGradientSource);
 
 PressureGradientSource::PressureGradientSource( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "PressureGradientSource"),
+: OpenFOAMCaseElement(c, "PressureGradientSource", ps),
   p_(ps)
 {
 }
@@ -613,7 +772,7 @@ defineType(ConstantPressureGradientSource);
 addToOpenFOAMCaseElementFactoryTable(ConstantPressureGradientSource);
 
 ConstantPressureGradientSource::ConstantPressureGradientSource( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "ConstantPressureGradientSource"),
+: OpenFOAMCaseElement(c, "ConstantPressureGradientSource", ps),
   p_(ps)
 {
 }
@@ -668,7 +827,7 @@ defineType(singlePhaseTransportProperties);
 addToOpenFOAMCaseElementFactoryTable(singlePhaseTransportProperties);
 
 singlePhaseTransportProperties::singlePhaseTransportProperties( OpenFOAMCase& c, const ParameterSet& ps )
-: transportModel(c),
+: transportModel(c, ps),
   p_(ps)
 {
 }
@@ -689,7 +848,7 @@ addToOpenFOAMCaseElementFactoryTable(twoPhaseTransportProperties);
 
 
 twoPhaseTransportProperties::twoPhaseTransportProperties( OpenFOAMCase& c, const ParameterSet& ps )
-: transportModel(c),
+: transportModel(c, ps),
   p_(ps)
 {
 }
@@ -798,253 +957,6 @@ ParameterSet cavitationTwoPhaseTransportProperties::defaultParameters()
 
     return ps;
 }
-  
-dynamicMesh::dynamicMesh(OpenFOAMCase& c)
-: OpenFOAMCaseElement(c, "dynamicMesh")
-{
-}
-
-bool dynamicMesh::isUnique() const
-{
-  return true;
-}
-
-
-velocityTetFEMMotionSolver::velocityTetFEMMotionSolver(OpenFOAMCase& c)
-: dynamicMesh(c),
-  tetFemNumerics_(c)
-{
-  c.addField("motionU", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0, 0.0, 0.0}), tetField ) );
-}
-
-void velocityTetFEMMotionSolver::addIntoDictionaries(OFdicts& dictionaries) const
-{
-  tetFemNumerics_.addIntoDictionaries(dictionaries);
-
-  OFDictData::dict& tetFemSolution=dictionaries.addDictionaryIfNonexistent("system/tetFemSolution");
-  OFDictData::dict& solvers = tetFemSolution.subDict("solvers");
-  solvers["motionU"]=stdSymmSolverSetup();
-  
-  OFDictData::dict& dynamicMeshDict=dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
-  dynamicMeshDict["dynamicFvMesh"]=OFDictData::data("dynamicMotionSolverFvMesh");
-  dynamicMeshDict["solver"]=OFDictData::data("laplaceFaceDecomposition");
-  if (dynamicMesh::OFversion()<=160)
-  {
-    dynamicMeshDict["diffusivity"]=OFDictData::data("uniform");
-    dynamicMeshDict["frozenDiffusion"]=OFDictData::data(false);
-    dynamicMeshDict["twoDMotion"]=OFDictData::data(false);
-  }
-  else
-  {
-    throw insight::Exception("No tetFEMMotionsolver available for OF>1.6 ext");
-  }
-}
-
-displacementFvMotionSolver::displacementFvMotionSolver(OpenFOAMCase& c)
-: dynamicMesh(c)
-{
-}
-
-void displacementFvMotionSolver::addIntoDictionaries(OFdicts& dictionaries) const
-{
-  OFDictData::dict& dynamicMeshDict=dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
-  dynamicMeshDict["dynamicFvMesh"]=OFDictData::data("dynamicMotionSolverFvMesh");
-  dynamicMeshDict["solver"]=OFDictData::data("displacementLaplacian");
-  if (OFversion()<220)
-  {
-    dynamicMeshDict["diffusivity"]=OFDictData::data("uniform");
-  }
-  else
-  {
-    OFDictData::dict sd;
-    sd["diffusivity"]=OFDictData::data("uniform");
-    dynamicMeshDict["displacementLaplacianCoeffs"]=sd;
-  }
-}
-
-
-
-
-defineType(solidBodyMotionDynamicMesh);
-addToOpenFOAMCaseElementFactoryTable(solidBodyMotionDynamicMesh);
-
-
-
-solidBodyMotionDynamicMesh::solidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet& ps )
-: dynamicMesh(c),
-  ps_(ps)
-{
-}
-
-
-void solidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) const
-{
-    Parameters p(ps_);
-    
-    OFDictData::dict& dynamicMeshDict
-      = dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
-      
-    dynamicMeshDict["dynamicFvMesh"]="dynamicMotionSolverFvMesh";    
-    dynamicMeshDict["solver"]="solidBody";
-    OFDictData::dict sbc;
-
-    sbc["cellZone"]=p.zonename;
-
-    if ( Parameters::motion_rotation_type* rp = boost::get<Parameters::motion_rotation_type>(&p.motion) )
-    {
-        sbc["solidBodyMotionFunction"]="rotatingMotion";
-        OFDictData::dict rmc;
-        rmc["origin"]=OFDictData::vector3(rp->origin);
-        rmc["axis"]=OFDictData::vector3(rp->axis);
-        rmc["omega"]=2.*M_PI*rp->rpm/60.;
-        sbc["rotatingMotionCoeffs"]=rmc;
-    }
-    else if ( Parameters::motion_oscillatingRotating_type* ro = boost::get<Parameters::motion_oscillatingRotating_type>(&p.motion) )
-    {
-        sbc["solidBodyMotionFunction"]="oscillatingRotatingMotion";
-        OFDictData::dict rmc;
-        rmc["origin"]=OFDictData::vector3(ro->origin);
-        rmc["omega"]=ro->omega;
-        rmc["amplitude"]=OFDictData::vector3(ro->amplitude);
-        sbc["oscillatingRotatingMotionCoeffs"]=rmc;
-    }
-    else
-      throw insight::Exception("Internal error: Unhandled selection!");
-
-    dynamicMeshDict["solidBodyCoeffs"]=sbc;
-}
-
-
-
-
-defineType(rigidBodyMotionDynamicMesh);
-addToOpenFOAMCaseElementFactoryTable(rigidBodyMotionDynamicMesh);
-
-
-
-rigidBodyMotionDynamicMesh::rigidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet& ps )
-: dynamicMesh(c),
-  ps_(ps)
-{
-}
-
-void rigidBodyMotionDynamicMesh::addFields( OpenFOAMCase& c ) const
-{
-  c.addField
-  (
-      "pointDisplacement",
-       FieldInfo(vectorField, 	dimLength, 	FieldValue({0, 0, 0}), pointField )
-  );
-}
-
-void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) const
-{
-    Parameters p(ps_);
-
-    OFDictData::dict& dynamicMeshDict
-      = dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
-
-    std::string name="rigidBodyMotion";
-
-    dynamicMeshDict["dynamicFvMesh"]="dynamicMotionSolverFvMesh";
-    OFDictData::dict rbmc;
-
-    if (const auto* impl = boost::get<Parameters::implementation_extended_type>(&p.implementation))
-    {
-      name="extendedRigidBodyMotion";
-      rbmc["rampDuration"]=impl->rampDuration;
-    }
-
-    dynamicMeshDict["solver"]=name;
-
-
-    OFDictData::list libl;
-    libl.push_back("\"lib"+name+".so\"");
-    dynamicMeshDict["motionSolverLibs"]=libl;
-
-    rbmc["report"]=true;
-
-
-    OFDictData::dict sc;
-     sc["type"]="Newmark";
-    rbmc["solver"]=sc;
-
-    if (const Parameters::rho_field_type* rhof = boost::get<Parameters::rho_field_type>(&p.rho))
-      {
-        rbmc["rho"]=rhof->fieldname;
-      }
-    else if (const Parameters::rho_constant_type* rhoc = boost::get<Parameters::rho_constant_type>(&p.rho))
-      {
-        rbmc["rho"]="rhoInf";
-        rbmc["rhoInf"]=rhoc->rhoInf;
-      }
-
-    rbmc["accelerationRelaxation"]=0.4;
-
-    OFDictData::dict bl;
-    for (const Parameters::bodies_default_type& body: p.bodies)
-    {
-      OFDictData::dict bc;
-
-      bc["type"]="rigidBody";
-      bc["parent"]="root";
-      bc["centreOfMass"]=OFDictData::vector3(0,0,0);
-      bc["mass"]=body.mass;
-      bc["inertia"]=boost::str(boost::format("(%g 0 0 %g 0 %g)") % body.Ixx % body.Iyy % body.Izz);
-      bc["transform"]=boost::str(boost::format("(1 0 0 0 1 0 0 0 1) (%g %g %g)")
-                                 % body.centreOfMass(0) % body.centreOfMass(1) % body.centreOfMass(2) );
-
-      OFDictData::list jl;
-      for (const Parameters::bodies_default_type::translationConstraint_default_type& tc:
-                    body.translationConstraint)
-      {
-        std::string code;
-        if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Px) code="Px";
-        else if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Py) code="Py";
-        else if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Pz) code="Pz";
-        else if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Pxyz) code="Pxyz";
-        else throw insight::Exception("internal error: unhandled value!");
-        OFDictData::dict d;
-         d["type"]=code;
-        jl.push_back(d);
-      }
-      for (const Parameters::bodies_default_type::rotationConstraint_default_type& rc:
-                    body.rotationConstraint)
-      {
-        std::string code;
-        if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Rx) code="Rx";
-        else if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Ry) code="Ry";
-        else if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Rz) code="Rz";
-        else if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Rxyz) code="Rxyz";
-        else throw insight::Exception("internal error: unhandled value!");
-        OFDictData::dict d;
-         d["type"]=code;
-        jl.push_back(d);
-      }
-      OFDictData::dict jc;
-       jc["type"]="composite";
-       jc["joints"]=jl;
-      bc["joint"]=jc;
-
-      OFDictData::list pl;
-      std::copy(body.patches.begin(), body.patches.end(), std::back_inserter(pl));
-      bc["patches"]=pl;
-
-      bc["innerDistance"]=body.innerDistance;
-      bc["outerDistance"]=body.outerDistance;
-
-      bl[body.name]=bc;
-    }
-    rbmc["bodies"]=bl;
-
-    OFDictData::dict rc;
-     // empty
-    rbmc["restraints"]=rc;
-
-    dynamicMeshDict[name+"Coeffs"]=rbmc;
-}
-
-
 
 
 
@@ -1053,7 +965,7 @@ defineType(porousZone);
 addToOpenFOAMCaseElementFactoryTable(porousZone);
 
 porousZone::porousZone( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, ""),
+: OpenFOAMCaseElement(c, "", ps),
   p_(ps)
 {
     name_="porousZone"+p_.name;
@@ -1096,7 +1008,7 @@ defineType(limitQuantities);
 addToOpenFOAMCaseElementFactoryTable(limitQuantities);
 
 limitQuantities::limitQuantities( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, ""),
+: OpenFOAMCaseElement(c, "", ps),
   p_(ps)
 {
     name_="limitQuantities"+p_.name;
@@ -1174,7 +1086,7 @@ defineType(customDictEntries);
 addToOpenFOAMCaseElementFactoryTable(customDictEntries);
 
 customDictEntries::customDictEntries( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, ""),
+: OpenFOAMCaseElement(c, "", ps),
   p_(ps)
 {
     name_="customDictEntries";
@@ -1261,7 +1173,7 @@ defineType(copyFiles);
 addToOpenFOAMCaseElementFactoryTable(copyFiles);
 
 copyFiles::copyFiles( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, ""),
+: OpenFOAMCaseElement(c, "", ps),
   p_(ps)
 {
     name_="copyFiles";
@@ -1328,7 +1240,7 @@ defineType(SRFoption);
 addToOpenFOAMCaseElementFactoryTable(SRFoption);
 
 SRFoption::SRFoption( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, ""),
+: OpenFOAMCaseElement(c, "", ps),
   p_(ps)
 {
     name_="SRFoption";

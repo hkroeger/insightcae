@@ -251,7 +251,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+  cm.insert(new steadyIncompressibleNumerics(cm, steadyIncompressibleNumerics::Parameters()
     .set_checkResiduals(false)
     .set_purgeWrite(2)
     .set_endTime(5000)

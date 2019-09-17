@@ -41,12 +41,12 @@ public:
     return ParameterSet();
   }
 
-  virtual ParameterSet getParameters() const
+  ParameterSet getParameters() const override
   {
     return ParameterSet();
   }
 
-  virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 
 };
 
@@ -99,13 +99,13 @@ public:
     return Parameters::makeDefault();
   }
 
-  virtual ParameterSet getParameters() const
+  ParameterSet getParameters() const override
   {
     return p_;
   }
 
-  virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-  virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+  void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 
 };
 

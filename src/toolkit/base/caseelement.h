@@ -48,14 +48,16 @@ public:
 protected:
   std::string name_;
   Case& case_;
+  ParameterSet ps_;
 
 public:
-    CaseElement(Case& c, const std::string& name);
+    CaseElement(Case& c, const std::string& name, const ParameterSet& ps);
     CaseElement(const CaseElement& other);
     virtual ~CaseElement();
 
     inline const std::string& name() const { return name_; };
-    const ParameterSet& params() const;
+    virtual void rename(const std::string& name);
+    const ParameterSet& parameters() const;
 
     static bool isInConflict(const CaseElement& other);
 

@@ -122,12 +122,12 @@ public:
     declareType("Geometry");
   Geometry(const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  virtual ParameterSet getParameters() const { return p_; }
+  ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
   
-  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
-  virtual void modifyFiles(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location) const;
+  void addIntoDictionary(OFDictData::dict& sHMDict) const override;
+  void modifyFiles(const OpenFOAMCase& ofc,
+                  const boost::filesystem::path& location) const override;
 };
 
 
@@ -154,10 +154,10 @@ public:
     declareType("PatchLayers");
   PatchLayers(const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  virtual ParameterSet getParameters() const { return p_; }
+  ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
-  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
+  void addIntoDictionary(OFDictData::dict& sHMDict) const override;
 };
 
 
@@ -187,12 +187,12 @@ public:
     declareType("ExplicitFeatureCurve");
   ExplicitFeatureCurve(const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  virtual ParameterSet getParameters() const { return p_; }
+  ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
-  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
-  virtual void modifyFiles(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location) const;
+  void addIntoDictionary(OFDictData::dict& sHMDict) const override;
+  void modifyFiles(const OpenFOAMCase& ofc,
+                  const boost::filesystem::path& location) const override;
 };
 
 
@@ -228,7 +228,7 @@ public:
    * supply handle to title, since it is not always equal to name and there might be need to change it
    */
   virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const =0;
-  virtual void addIntoDictionary ( OFDictData::dict& sHMDict ) const;
+  void addIntoDictionary ( OFDictData::dict& sHMDict ) const override;
 };
 
 
@@ -259,13 +259,13 @@ public:
   {
     return Parameters::makeDefault();
   }
-  virtual ParameterSet getParameters() const
+  ParameterSet getParameters() const override
   {
     return p_;
   }
   inline const Parameters& parameters() const { return p_; }
 
-  virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const;
+  bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
 
 
@@ -297,13 +297,13 @@ public:
   {
     return Parameters::makeDefault();
   }
-  virtual ParameterSet getParameters() const
+  ParameterSet getParameters() const override
   {
     return p_;
   }
   inline const Parameters& parameters() const { return p_; }
 
-  virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const;
+  bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
 
 
@@ -333,13 +333,13 @@ public:
   {
     return Parameters::makeDefault();
   }
-  virtual ParameterSet getParameters() const
+  ParameterSet getParameters() const override
   {
     return p_;
   }
   inline const Parameters& parameters() const { return p_; }
 
-  virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const;
+  bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
 
 
@@ -368,13 +368,13 @@ public:
     declareType("RefinementGeometry");
   RefinementGeometry( const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  virtual ParameterSet getParameters() const { return p_; }
+  ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
-  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
+  bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const override;
 //   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
-  virtual void modifyFiles(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location) const;
+  void modifyFiles(const OpenFOAMCase& ofc,
+                  const boost::filesystem::path& location) const override;
 
 };
 
@@ -388,10 +388,10 @@ public:
     declareType("NearSurfaceRefinement");
     NearSurfaceRefinement( const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  virtual ParameterSet getParameters() const { return p_; }
+  ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
-  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
+  bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const override;
 };
 
 
@@ -418,12 +418,12 @@ public:
   declareType ( "NearTemplatePatchRefinement" );
   NearTemplatePatchRefinement ( const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  virtual ParameterSet getParameters() const { return p_; }
+  ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
-  virtual void modifyFiles ( const OpenFOAMCase& ofc,
-                             const boost::filesystem::path& location ) const;
-  virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const;
+  void modifyFiles ( const OpenFOAMCase& ofc,
+                             const boost::filesystem::path& location ) const override;
+  bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
 
 }
@@ -470,8 +470,8 @@ protected:
 public:
     declareType ( "snappyHexMeshConfiguration" );
     snappyHexMeshConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    virtual void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
 
     static ParameterSet defaultParameters()
     {

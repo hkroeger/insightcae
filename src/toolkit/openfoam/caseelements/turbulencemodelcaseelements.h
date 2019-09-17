@@ -22,7 +22,7 @@
 #ifndef INSIGHT_TURBULENCEMODELCASEELEMENTS_H
 #define INSIGHT_TURBULENCEMODELCASEELEMENTS_H
 
-#include "openfoam/caseelements/numericscaseelements.h"
+#include "openfoam/caseelements/numerics/numericscaseelements.h"
 #include "base/linearalgebra.h"
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
@@ -46,9 +46,9 @@ public:
   declareType("RASModel");
 
   RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const; 
-  virtual AccuracyRequirement minAccuracyRequirement() const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const override;
+  AccuracyRequirement minAccuracyRequirement() const override;
 };
 
 class LESModel
@@ -59,10 +59,10 @@ public:
   declareType("LESModel");
 
   LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const; 
-  virtual AccuracyRequirement minAccuracyRequirement() const;
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const override;
+  AccuracyRequirement minAccuracyRequirement() const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
 };
 
 class laminar_RASModel
@@ -72,8 +72,8 @@ public:
   declareType("laminar");
 
   laminar_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -96,8 +96,8 @@ public:
   declareType("Smagorinsky");
   
   Smagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
   inline static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
@@ -109,8 +109,8 @@ public:
   declareType("oneEqEddy");
   
   oneEqEddy_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -122,8 +122,8 @@ public:
   declareType("dynOneEqEddy");
   
   dynOneEqEddy_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -134,8 +134,8 @@ public:
   declareType("dynSmagorinsky");
   
   dynSmagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -146,9 +146,9 @@ public:
   declareType("kOmegaSST");
   
   kOmegaSST_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -160,9 +160,9 @@ public:
 //   declareType("kEpsilon");
   
   kEpsilonBase_RASModel(OpenFOAMCase& c);
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
 };
 
 
@@ -199,9 +199,9 @@ public:
   declareType("SpalartAllmaras");
   
   SpalartAllmaras_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -213,9 +213,9 @@ public:
   declareType("LEMOSHybrid");
   
   LEMOSHybrid_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -226,8 +226,8 @@ public:
   declareType("kOmegaSST_LowRe");
   
   kOmegaSST_LowRe_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -239,8 +239,8 @@ public:
   
   kOmegaSST2_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
 //   virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -252,8 +252,8 @@ public:
   declareType("kOmegaHe");
   
   kOmegaHe_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -264,9 +264,9 @@ public:
   declareType("LRR");
   
   LRR_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
@@ -278,8 +278,8 @@ public:
   declareType("WALE");
   
   WALE_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addFields( OpenFOAMCase& c ) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  void addFields( OpenFOAMCase& c ) const override;
+  void addIntoDictionaries(OFdicts& dictionaries) const override;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 

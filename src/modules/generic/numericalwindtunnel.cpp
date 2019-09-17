@@ -113,7 +113,7 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm)
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+  cm.insert(new steadyIncompressibleNumerics(cm, steadyIncompressibleNumerics::Parameters()
 //     .set_writeControl("adjustableRunTime")
     .set_writeInterval(100.0)
     .set_purgeWrite(0)

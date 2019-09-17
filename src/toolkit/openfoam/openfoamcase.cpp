@@ -256,8 +256,8 @@ void OpenFOAMCaseElement::addFields( OpenFOAMCase& ) const
 }
 
 
-OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& name)
-: CaseElement(c, name)
+OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& name, const ParameterSet& ps)
+: CaseElement(c, name, ps)
 {
 }
 
@@ -289,17 +289,20 @@ bool OpenFOAMCaseElement::isInConflict(const CaseElement&)
 
 
 
-OFDictData::dict diagonalSolverSetup()
+OFDictData::dict OpenFOAMCase::diagonalSolverSetup() const
 {
   OFDictData::dict d;
   d["solver"]="diagonal";
   return d;
 }
 
-OFDictData::dict stdAsymmSolverSetup(double tol, double reltol, int minIter)
+OFDictData::dict OpenFOAMCase::stdAsymmSolverSetup(double tol, double reltol, int minIter) const
 {
   OFDictData::dict d;
-  d["solver"]="PBiCG";
+  if (OFversion()<010700)
+    d["solver"]="BiCGStab";
+  else
+    d["solver"]="PBiCGStab";
   d["preconditioner"]="DILU";
   d["tolerance"]=tol;
   d["relTol"]=reltol;
@@ -307,7 +310,7 @@ OFDictData::dict stdAsymmSolverSetup(double tol, double reltol, int minIter)
   return d;
 }
 
-OFDictData::dict stdSymmSolverSetup(double tol, double reltol, int maxIter)
+OFDictData::dict OpenFOAMCase::stdSymmSolverSetup(double tol, double reltol, int maxIter) const
 {
   OFDictData::dict d;
   d["solver"]="PCG";
@@ -318,7 +321,7 @@ OFDictData::dict stdSymmSolverSetup(double tol, double reltol, int maxIter)
   return d;
 }
 
-OFDictData::dict GAMGSolverSetup(double tol, double reltol)
+OFDictData::dict OpenFOAMCase::GAMGSolverSetup(double tol, double reltol) const
 {
   OFDictData::dict d;
   d["solver"]="GAMG";
@@ -330,12 +333,12 @@ OFDictData::dict GAMGSolverSetup(double tol, double reltol)
   d["nPostSweeps"]=2;
   d["cacheAgglomeration"]="on";
   d["agglomerator"]="faceAreaPair";
-  d["nCellsInCoarsestLevel"]=500;
+  d["nCellsInCoarsestLevel"]=100;
   d["mergeLevels"]=1;
   return d;
 }
 
-OFDictData::dict GAMGPCGSolverSetup(double tol, double reltol)
+OFDictData::dict OpenFOAMCase::GAMGPCGSolverSetup(double tol, double reltol) const
 {
   OFDictData::dict d;
   d["solver"]="PCG";
@@ -349,13 +352,13 @@ OFDictData::dict GAMGPCGSolverSetup(double tol, double reltol)
   pd["nPostSweeps"]=2;
   pd["cacheAgglomeration"]="on";
   pd["agglomerator"]="faceAreaPair";
-  pd["nCellsInCoarsestLevel"]=10;
+  pd["nCellsInCoarsestLevel"]=100;
   pd["mergeLevels"]=1;
   d["preconditioner"]=pd;
   return d;
 }
 
-OFDictData::dict smoothSolverSetup(double tol, double reltol, int minIter)
+OFDictData::dict OpenFOAMCase::smoothSolverSetup(double tol, double reltol, int minIter) const
 {
   OFDictData::dict d;
   d["solver"]="smoothSolver";
@@ -385,8 +388,8 @@ defineFactoryTable
 defineStaticFunctionTable(BoundaryCondition, defaultParameters, ParameterSet);
 
 
-BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
-: OpenFOAMCaseElement(c, patchName+"BC"),
+BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, patchName+"BC", ps),
   patchName_(patchName),
   BCtype_("UNDEFINED"),
   nFaces_(0),
@@ -508,8 +511,8 @@ bool BoundaryCondition::providesBCsForPatch(const std::string& patchName) const
 defineType(turbulenceModel);
 defineFactoryTable(turbulenceModel, LIST(OpenFOAMCase& ofc, const ParameterSet& ps), LIST(ofc, ps));
 
-turbulenceModel::turbulenceModel(OpenFOAMCase& c, const ParameterSet&)
-: OpenFOAMCaseElement(c, "turbulenceModel")
+turbulenceModel::turbulenceModel(OpenFOAMCase& c, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, "turbulenceModel", ps)
 {
 }
 

@@ -37,7 +37,7 @@ addToOpenFOAMCaseElementFactoryTable(blockMeshDict_CylWedge );
 
 
 blockMeshDict_CylWedge::blockMeshDict_CylWedge ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c ), p_ ( ps )
+    : BlockMeshTemplate ( c, ps ), p_ ( ps )
 {
   p0_=p_.geometry.p0;
   ex_=p_.geometry.ex;
@@ -455,7 +455,7 @@ addToOpenFOAMCaseElementFactoryTable(blockMeshDict_CylWedgeOrtho );
 
 
 blockMeshDict_CylWedgeOrtho::blockMeshDict_CylWedgeOrtho ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c ), p_ ( ps )
+    : BlockMeshTemplate ( c, ps ), p_ ( ps )
 {}
 
 

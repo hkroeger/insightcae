@@ -26,7 +26,8 @@
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
 #include "base/boost_include.h"
-#include "openfoam/caseelements/pimplesettings.h"
+#include "openfoam/caseelements/numerics/pimplesettings.h"
+#include "openfoam/caseelements/basiccaseelements.h"
 
 #include <map>
 #include "boost/utility.hpp"
@@ -47,7 +48,7 @@ class OFdicts;
 
 
 class FVNumerics
-    : public OpenFOAMCaseElement
+    : public decomposeParDict
 {
 public:
     declareType ( "FVNumerics" );
@@ -58,9 +59,7 @@ public:
 /*
 PARAMETERSET>>> FVNumerics Parameters
 
-np = int 1 "Number of processors"
-
-decompWeights = vector (1 1 1) "Decomposition weights"
+inherits decomposeParDict::Parameters
 
 writeControl = selection (
     adjustableRunTime
@@ -80,7 +79,6 @@ deltaT = double 1.0 "Time step size. If the time step is selected to be adjustab
 
 endTime = double 1000.0 "Maximum end time of simulation"
 
-decompositionMethod = selection ( simple hierarchical metis scotch ) scotch "Parallel decomposition method"
 
 mapFieldsConfig = selectablesubset {{
  none set {}
@@ -101,20 +99,28 @@ mapFieldsConfig = selectablesubset {{
 
 protected:
     Parameters p_;
-    bool isCompressible_;
     std::string pName_;
 
 public:
     FVNumerics ( OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    inline bool isCompressible() const
-    {
-        return isCompressible_;
-    }
+    virtual bool isCompressible() const =0;
+    virtual bool isLES() const;
+    virtual bool isGAMGOk() const;
+
+    void setApplicationName(OFdicts& dictionaries, const std::string& appname) const;
+    void setRelaxationFactors
+    (
+        OFdicts& dictionaries,
+        const std::map<std::string, double>& eqnRelax,
+        const std::map<std::string, double>& fieldRelax
+    ) const;
 
     std::string lqGradSchemeIfPossible() const;
     void insertStandardGradientConfig(OFdicts& dictionaries) const;
+
+    std::string gradNameOrScheme(OFdicts& dictionaries, const std::string& key) const;
 
     static std::string category() { return "Numerics"; }
 
@@ -147,7 +153,8 @@ protected:
 public:
     declareType ( "potentialFoamNumerics" );
     potentialFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
     static ParameterSet defaultParameters();
 };
 
@@ -179,26 +186,11 @@ protected:
 public:
     declareType ( "laplacianFoamNumerics" );
     laplacianFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    bool isCompressible() const override;
     static ParameterSet defaultParameters();
 };
 
-
-
-/**
- * create a setDecomposeParDict
- * @poX,@poY,@poZ: define the preference of coordinate directions for decomposition
- * (relevant for methods simple and hierarchical).
- * If <0, direction will not be decomposed.
- * Number of decompositions along direction will be ordered according to value of po?
- */
-void setDecomposeParDict
-(
-  OFdicts& dictionaries,
-  int np,
-  const FVNumerics::Parameters::decompositionMethod_type& method,
-  const arma::mat& po = vec3(1,1,1)
-);
 
 
 
@@ -223,7 +215,7 @@ protected:
 
 public:
     FaNumerics ( OpenFOAMCase& c, const ParameterSet& p = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static std::string category() { return "Numerics"; }
     virtual bool isUnique() const;
 };
@@ -240,31 +232,36 @@ class tetFemNumerics
 
 public:
     tetFemNumerics ( OpenFOAMCase& c );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static std::string category() { return "Numerics"; }
     virtual bool isUnique() const;
 };
 
 
 
-OFDictData::dict diagonalSolverSetup();
-OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
-OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0, int maxIter=1000);
-OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
-OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
-OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0);
-
-
-
 
 class MeshingNumerics
-    : public FVNumerics
+    : public decomposeParDict
 {
+public:
+#include "basicnumericscaseelements__MeshingNumerics__Parameters.h"
+
+/*
+PARAMETERSET>>> MeshingNumerics Parameters
+
+inherits decomposeParDict::Parameters
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
 public:
     declareType ( "MeshingNumerics" );
 
     MeshingNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static ParameterSet defaultParameters();
 };

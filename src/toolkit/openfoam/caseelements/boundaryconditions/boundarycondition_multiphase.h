@@ -65,10 +65,10 @@ public:
     declareType ( "uniformPhases" );
     uniformPhases ( const ParameterSet& p );
     inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformPhases(ps)); }
-    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+    bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
     static Parameters mixture( const std::map<std::string, double>& sp);
     static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-    virtual ParameterSet getParameters() const { return p_; }
+    ParameterSet getParameters() const override { return p_; }
 };
 
 
@@ -81,7 +81,7 @@ public:
     declareType ( "uniformWallTiedPhases" );
     uniformWallTiedPhases ( const ParameterSet& p );
     inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformWallTiedPhases(ps)); }
-    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+    bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
     static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 

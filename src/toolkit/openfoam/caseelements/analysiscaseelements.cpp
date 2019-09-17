@@ -65,7 +65,7 @@ defineFactoryTable
 defineStaticFunctionTable(outputFilterFunctionObject, defaultParameters, ParameterSet);
 
 outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, Parameters(ps).name+"outputFilterFunctionObject"),
+: OpenFOAMCaseElement(c, Parameters(ps).name+"outputFilterFunctionObject", ps),
   p_(ps)
 {
 }
@@ -712,7 +712,7 @@ defineType(forces);
 addToOpenFOAMCaseElementFactoryTable(forces);
 
 forces::forces(OpenFOAMCase& c,  const ParameterSet& ps)
-: OpenFOAMCaseElement(c, Parameters(ps).name+"forces"),
+: OpenFOAMCaseElement(c, Parameters(ps).name+"forces", ps),
   p_(ps)
 {
 }
@@ -957,7 +957,7 @@ defineType(catalyst);
 addToOpenFOAMCaseElementFactoryTable(catalyst);
 
 catalyst::catalyst(OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, "catalyst"),
+: OpenFOAMCaseElement(c, "catalyst", ps),
   p_(ps)
 {
 }

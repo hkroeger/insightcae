@@ -22,7 +22,7 @@ addToOpenFOAMCaseElementFactoryTable( blockMeshDict_TubeMesh );
 
 
 blockMeshDict_TubeMesh::blockMeshDict_TubeMesh ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c ), p_ ( ps )
+    : BlockMeshTemplate ( c, ps ), p_ ( ps )
 {}
 
 

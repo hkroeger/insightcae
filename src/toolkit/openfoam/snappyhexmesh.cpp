@@ -581,7 +581,7 @@ defineType(snappyHexMeshConfiguration);
 addToOpenFOAMCaseElementFactoryTable(snappyHexMeshConfiguration);
 
 snappyHexMeshConfiguration::snappyHexMeshConfiguration( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "snappyHexMeshConfiguration"),
+: OpenFOAMCaseElement(c, "snappyHexMeshConfiguration", ps),
   p_(ps)
 {
 }

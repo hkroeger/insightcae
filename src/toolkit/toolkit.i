@@ -91,7 +91,7 @@ using namespace insight::bmd;
 %include "openfoam/openfoamcase.h"
 %include "openfoam/openfoamdict.h"
 %include "openfoam/openfoamtools.h"
-//%include "openfoam/caseelements/numericscaseelements.h"
+//%include "openfoam/caseelements/numerics/numericscaseelements.h"
 %include "openfoam/caseelements/analysiscaseelements.h"
 %include "openfoam/openfoamanalysis.h"
 //%include "openfoam/blockmesh.h"

@@ -439,8 +439,13 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
   std::string turbpref="", pref="";
   if (OFcase().isCompressible() )
     {
-      pref="compressible::";
-      if (OFcase().OFversion()<300) turbpref="compressible::";
+
+      if ( (OFversion()<164) || (OFversion()>170) )
+        pref="compressible::";
+
+      if (OFcase().OFversion()<300)
+        turbpref="compressible::";
+
     }
   
   if (fieldname == "k")

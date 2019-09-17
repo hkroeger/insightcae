@@ -44,7 +44,7 @@ magnet::magnet(OpenFOAMCase& c, const ParameterSet& ps)
 void magnet::addIntoDictionaries(OFdicts& dictionaries) const
 {
   OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
-  OFDictData::list& maglist = transportProperties.addListIfNonexistent("magnets");
+  OFDictData::list& maglist = transportProperties.getList("magnets");
   
   OFDictData::list magpars;
   magpars.push_back(p_.name);

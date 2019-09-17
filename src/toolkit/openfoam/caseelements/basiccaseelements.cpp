@@ -170,7 +170,7 @@ void decomposeParDict::addIntoDictionaries ( OFdicts& dictionaries ) const
 
   std::tuple<int,int,int> po(int(pom(0)), int(pom(1)), int(pom(2)));
 
-  OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
+  OFDictData::dict& decomposeParDict=dictionaries.lookupDict("system/decomposeParDict");
 
 // #warning hack for testing
   std::vector<int> ns=combinefactors(factors(p_.np), po);
@@ -238,7 +238,7 @@ gravity::gravity( OpenFOAMCase& c, const ParameterSet& ps )
 
 void gravity::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& g=dictionaries.addDictionaryIfNonexistent("constant/g");
+  OFDictData::dict& g=dictionaries.lookupDict("constant/g");
   g["dimensions"]="[0 1 -2 0 0 0 0]";
   OFDictData::list gv;
   for (size_t i=0; i<3; i++) gv.push_back(p_.g(i));
@@ -286,7 +286,7 @@ void minimumTimestepLimit::addIntoDictionaries(OFdicts& dictionaries) const
 
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")["minimumTimestepLimit"]=Fd;
+  controlDict.subDict("functions")["minimumTimestepLimit"]=Fd;
 }
 
 ParameterSet minimumTimestepLimit::defaultParameters()
@@ -310,7 +310,7 @@ mirrorMesh::mirrorMesh( OpenFOAMCase& c, const ParameterSet& ps )
 
 void mirrorMesh::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& mmd=dictionaries.addDictionaryIfNonexistent("system/mirrorMeshDict");
+  OFDictData::dict& mmd=dictionaries.lookupDict("system/mirrorMeshDict");
 
   mmd["planeTolerance"]=p_.planeTolerance;
 
@@ -362,7 +362,7 @@ void setFieldsConfiguration::addIntoDictionaries(OFdicts& dictionaries) const
 {
 
     OFDictData::dict& sFD
-      = dictionaries.addDictionaryIfNonexistent("system/setFieldsDict");
+      = dictionaries.lookupDict("system/setFieldsDict");
 
     OFDictData::list dfvs;
     for (const Parameters::defaultValues_default_type& dfv: p_.defaultValues)
@@ -443,7 +443,7 @@ volumeDrag::volumeDrag( OpenFOAMCase& c, const ParameterSet& ps )
 
 void volumeDrag::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").insertNoDuplicate( "\"libvolumeDragfvOption.so\"" );  
   
   OFDictData::dict cd;
@@ -455,7 +455,7 @@ void volumeDrag::addIntoDictionaries(OFdicts& dictionaries) const
   vdd["CD"]=OFDictData::to_OF(p_.CD);
   cd["volumeDragCoeffs"]=vdd;
   
-  OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+  OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
   fvOptions[p_.name]=cd;     
 }
 
@@ -474,9 +474,6 @@ fixedValueConstraint::fixedValueConstraint( OpenFOAMCase& c, const ParameterSet&
 
 void fixedValueConstraint::addIntoDictionaries ( OFdicts& dictionaries ) const
 {
-//  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-//  controlDict.getList("libs").insertNoDuplicate( "\"libvolumeDragfvOption.so\"" );
-
   OFDictData::dict cd;
   cd["active"]=true;
   cd["selectionMode"]="cellZone";
@@ -496,7 +493,7 @@ void fixedValueConstraint::addIntoDictionaries ( OFdicts& dictionaries ) const
 
   cd["fieldValues"]=fvd;
 
-  OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+  OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
   fvOptions[p_.name]=cd;
 }
 
@@ -515,9 +512,6 @@ source::source( OpenFOAMCase& c, const ParameterSet& ps)
 
 void source::addIntoDictionaries ( OFdicts& dictionaries ) const
 {
-//  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-//  controlDict.getList("libs").insertNoDuplicate( "\"libvolumeDragfvOption.so\"" );
-
   OFDictData::dict cd;
   cd["active"]=true;
   cd["selectionMode"]="cellZone";
@@ -544,7 +538,7 @@ void source::addIntoDictionaries ( OFdicts& dictionaries ) const
 
   cd["injectionRateSuSp"]=ijr;
 
-  OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+  OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
   fvOptions[p_.name]=cd;
 }
 
@@ -587,12 +581,12 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
       2.*M_PI*p_.rpm/60.
     );
 
-    OFDictData::dict& MRFZones=dictionaries.addDictionaryIfNonexistent("constant/MRFZones");
-    OFDictData::list& MRFZoneList = MRFZones.addListIfNonexistent("");     
+    OFDictData::dict& MRFZones=dictionaries.lookupDict("constant/MRFZones");
+    OFDictData::list& MRFZoneList = MRFZones.getList("");     
     MRFZoneList.push_back(p_.name);
     MRFZoneList.push_back(coeffs);
     
-    OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
     if (controlDict.find("application")!=controlDict.end())
       if (controlDict.getString("application")=="simpleFoam")
 	controlDict["application"]="MRFSimpleFoam";
@@ -610,7 +604,7 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
     fod["selectionMode"]="cellZone";
     fod["cellZone"]=p_.name;
 
-    OFDictData::dict& MRFProps=dictionaries.addDictionaryIfNonexistent("constant/MRFProperties");
+    OFDictData::dict& MRFProps=dictionaries.lookupDict("constant/MRFProperties");
     MRFProps[p_.name]=fod;
 
   }
@@ -630,7 +624,7 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
     fod["cellZone"]=p_.name;
     fod["MRFSourceCoeffs"]=coeffs;
     
-    OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+    OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
     fvOptions[p_.name]=fod;     
   }
 }
@@ -667,11 +661,11 @@ void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
     
     
     OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-    controlDict.addSubDictIfNonexistent("functions")[p_.fieldname+"_transport"]=Fd;
+    controlDict.subDict("functions")[p_.fieldname+"_transport"]=Fd;
     
     
-    OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
-    OFDictData::dict& divSchemes = fvSchemes.addSubDictIfNonexistent("divSchemes");
+    OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+    OFDictData::dict& divSchemes = fvSchemes.subDict("divSchemes");
 
     if (const auto* fo = boost::get<Parameters::scheme_firstorder_type>(&p_.scheme))
       {
@@ -681,7 +675,7 @@ void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
       {
         if (p_.underrelax < 1.)
           {
-            OFDictData::dict& gradSchemes = fvSchemes.addSubDictIfNonexistent("gradSchemes");
+            OFDictData::dict& gradSchemes = fvSchemes.subDict("gradSchemes");
 
             divSchemes["div(phi,"+p_.fieldname+")"]="Gauss linearUpwind grad("+p_.fieldname+")";
             gradSchemes["grad(T)"]="cellLimited Gauss linear 1";
@@ -700,14 +694,14 @@ void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
     OFDictData::dict& solvers=fvSolution.subDict("solvers");
     solvers[p_.fieldname]=OFcase().smoothSolverSetup(1e-6, 0.);
 
-    OFDictData::dict& relax=fvSolution.addSubDictIfNonexistent("relaxationFactors");
+    OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
     if (OFversion()<210)
     {
       relax[p_.fieldname]=p_.underrelax;
     }
     else
     {
-      OFDictData::dict& eqnRelax=relax.addSubDictIfNonexistent("equations");
+      OFDictData::dict& eqnRelax=relax.subDict("equations");
       eqnRelax[p_.fieldname]=p_.underrelax;
     }
 }
@@ -755,13 +749,13 @@ void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
     }
     fod["active"]=true;
     
-    OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+    OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
     fvOptions[name()]=fod;  
   }
   else
   {
     // for channelFoam:
-    OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+    OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
     transportProperties["Ubar"]=OFDictData::dimensionedData("Ubar", dimVelocity, OFDictData::vector3(p_.Ubar));
   }
 }
@@ -781,7 +775,7 @@ void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) 
 {
   if (OFversion()>=230)
   {
-    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");  
+    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
     controlDict.getList("libs").insertNoDuplicate( "\"libconstantPressureGradient.so\"" );  
 
     OFDictData::dict coeffs;
@@ -802,14 +796,14 @@ void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) 
     }
     fod["constantPressureGradientExplicitSourceCoeffs"]=coeffs;
 
-    OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+    OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
     fvOptions[name()]=fod;
   }
   else
   {
     throw insight::Exception("constantPressureGradient unavailable!");
     // for channelFoam:
- //   OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+ //   OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
  //   transportProperties["Ubar"]=OFDictData::dimensionedData("Ubar", dimVelocity, OFDictData::vector3(p_.Ubar()));
   }
 }
@@ -834,7 +828,7 @@ singlePhaseTransportProperties::singlePhaseTransportProperties( OpenFOAMCase& c,
  
 void singlePhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+  OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
   transportProperties["transportModel"]="Newtonian";
   transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu);
 }
@@ -855,27 +849,27 @@ twoPhaseTransportProperties::twoPhaseTransportProperties( OpenFOAMCase& c, const
  
 void twoPhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+  OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
   
   if (OFversion()<230)
   {
-    OFDictData::dict& twoPhase=transportProperties.addSubDictIfNonexistent("twoPhase");
+    OFDictData::dict& twoPhase=transportProperties.subDict("twoPhase");
     twoPhase["transportModel"]="twoPhase";
     twoPhase["phase1"]="phase1";
     twoPhase["phase2"]="phase2";
   } else
   {
-    OFDictData::list& pl=transportProperties.addListIfNonexistent("phases");
+    OFDictData::list& pl=transportProperties.getList("phases");
     pl.push_back("phase1");
     pl.push_back("phase2");
   }
   
-  OFDictData::dict& phase1=transportProperties.addSubDictIfNonexistent("phase1");
+  OFDictData::dict& phase1=transportProperties.subDict("phase1");
   phase1["transportModel"]="Newtonian";
   phase1["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu1);
   phase1["rho"]=OFDictData::dimensionedData("rho", OFDictData::dimension(1, -3), p_.rho1);
   
-  OFDictData::dict& phase2=transportProperties.addSubDictIfNonexistent("phase2");
+  OFDictData::dict& phase2=transportProperties.subDict("phase2");
   phase2["transportModel"]="Newtonian";
   phase2["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu2);
   phase2["rho"]=OFDictData::dimensionedData("rho", OFDictData::dimension(1, -3), p_.rho2);
@@ -907,10 +901,10 @@ SchnerrSauer::SchnerrSauer(const ParameterSet& p)
 
 void SchnerrSauer::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+  OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
   transportProperties["phaseChangeTwoPhaseMixture"]="SchnerrSauer";
   
-  OFDictData::dict& coeffs=transportProperties.addSubDictIfNonexistent("SchnerrSauerCoeffs");
+  OFDictData::dict& coeffs=transportProperties.subDict("SchnerrSauerCoeffs");
   coeffs["n"] = OFDictData::dimensionedData("n", OFDictData::dimension(0, -3), p_.n);
   coeffs["dNuc"] = OFDictData::dimensionedData("dNuc", OFDictData::dimension(0, 1), p_.dNuc);
   coeffs["Cc"] = OFDictData::dimensionedData("Cc", OFDictData::dimension(), p_.Cc);
@@ -935,7 +929,7 @@ void cavitationTwoPhaseTransportProperties::addIntoDictionaries(OFdicts& diction
 {
   Parameters p(ps_);   
   twoPhaseTransportProperties::addIntoDictionaries(dictionaries);
-  OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+  OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
   transportProperties["pSat"]=OFDictData::dimensionedData("pSat", OFDictData::dimension(1, -1, -2), p.psat);
   
   const SelectableSubsetParameter& msp = ps_.get<SelectableSubsetParameter>("model"); 
@@ -974,7 +968,7 @@ porousZone::porousZone( OpenFOAMCase& c, const ParameterSet& ps )
 void porousZone::addIntoDictionaries(OFdicts& dictionaries) const
 {
   OFDictData::dict& porosityProperties
-    = dictionaries.addDictionaryIfNonexistent("constant/porosityProperties");
+    = dictionaries.lookupDict("constant/porosityProperties");
 
   OFDictData::dict pc;
 
@@ -1016,9 +1010,7 @@ limitQuantities::limitQuantities( OpenFOAMCase& c, const ParameterSet& ps )
 
 void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
 {
-//  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-//  controlDict.getList("libs").insertNoDuplicate( "\"libvolumeDragfvOption.so\"" );
-  OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+  OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
 
   cellSetOption_Selection sel(p_.cells);
 
@@ -1103,13 +1095,13 @@ OFDictData::dict& getOrCreateSubDict(OFDictData::dict& d, std::string path)
       auto i = path.find('/');
       if (i==string::npos)
         {
-          return d.addSubDictIfNonexistent(path);
+          return d.subDict(path);
         }
       else
         {
           string k = path.substr(0, i);
           string p = path.substr(i+1);
-          return getOrCreateSubDict( d.addSubDictIfNonexistent(k), p );
+          return getOrCreateSubDict( d.subDict(k), p );
         }
     }
 }
@@ -1119,7 +1111,7 @@ void customDictEntries::addIntoDictionaries(OFdicts& dictionaries) const
   for (const auto& e: p_.entries)
     {
       OFDictData::dict& dict
-        = dictionaries.addDictionaryIfNonexistent(e.dict);
+        = dictionaries.lookupDict(e.dict);
 
       string path, key;
       auto i = e.path.rfind('/');
@@ -1141,7 +1133,7 @@ void customDictEntries::addIntoDictionaries(OFdicts& dictionaries) const
   for (const auto& e: p_.appendList)
     {
       OFDictData::dict& dict
-        = dictionaries.addDictionaryIfNonexistent(e.dict);
+        = dictionaries.lookupDict(e.dict);
 
       string path, key;
       auto i = e.path.rfind('/');
@@ -1250,20 +1242,20 @@ SRFoption::SRFoption( OpenFOAMCase& c, const ParameterSet& ps )
 
 void SRFoption::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").insertNoDuplicate( "\"libSRFoption.so\"" );
 
   OFDictData::dict cd;
   cd["type"]="SRFoption";
-  OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+  OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
   fvOptions[name()]=cd;
 
-  OFDictData::dict& SRFProperties=dictionaries.addDictionaryIfNonexistent("constant/SRFProperties");
+  OFDictData::dict& SRFProperties=dictionaries.lookupDict("constant/SRFProperties");
   SRFProperties["SRFModel"]="rpm";
   SRFProperties["origin"]=OFDictData::vector3(p_.origin);
   SRFProperties["axis"]=OFDictData::vector3( p_.axis/arma::norm(p_.axis,2) );
 
-  OFDictData::dict& rpmCoeffs=SRFProperties.addSubDictIfNonexistent("rpmCoeffs");
+  OFDictData::dict& rpmCoeffs=SRFProperties.subDict("rpmCoeffs");
   rpmCoeffs["rpm"]=p_.rpm;
 }
 

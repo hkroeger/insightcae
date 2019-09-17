@@ -420,23 +420,23 @@ void list::insertNoDuplicate(const OFDictData::data& d)
 }
 
 
-dict& dict::addSubDictIfNonexistent(const std::string& key)
+dict& dict::subDict(const std::string& key, bool createIfNonexistent)
 {
   dict::iterator i=find(key);
-  if (i==end())
+  if ( (i==end()) && createIfNonexistent )
   {
     (*this)[key]=dict();
-  } 
+  }
   return this->lookup<dict>(key);
 }
 
-list& dict::addListIfNonexistent(const std::string& key)
+list& dict::getList(const std::string& key, bool createIfNonexistent)
 {
   dict::iterator i=find(key);
-  if (i==end())
+  if ( (i==end()) && createIfNonexistent )
   {
     (*this)[key]=list();
-  } 
+  }
   return this->lookup<list>(key);
 }
 

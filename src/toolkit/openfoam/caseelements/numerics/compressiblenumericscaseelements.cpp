@@ -65,7 +65,7 @@ void steadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) cons
   FVNumerics::addIntoDictionaries(dictionaries);
 
   // ============ setup controlDict ================================
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
 
   setApplicationName(dictionaries, "rhoSimpleFoam");
 
@@ -98,7 +98,7 @@ void steadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) cons
   solvers["epsilon"]=OFcase().smoothSolverSetup(1e-8, 0.1);
   solvers["nuTilda"]=OFcase().smoothSolverSetup(1e-8, 0.1);
 
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
+  OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
   SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
   SIMPLE["rhoMin"]=p_.rhoMin;
   SIMPLE["rhoMax"]=p_.rhoMax;

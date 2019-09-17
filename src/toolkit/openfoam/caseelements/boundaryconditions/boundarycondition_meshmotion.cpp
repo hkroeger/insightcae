@@ -73,7 +73,7 @@ CAFSIBC::CAFSIBC(const ParameterSet& ps)
 
 void CAFSIBC::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").push_back( OFDictData::data("\"libFEMDisplacementBC.so\"") );
 }
 

@@ -54,7 +54,7 @@ cavitatingFoamThermodynamics::cavitatingFoamThermodynamics(OpenFOAMCase& c, cons
 
 void cavitatingFoamThermodynamics::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& thermodynamicProperties=dictionaries.addDictionaryIfNonexistent("constant/thermodynamicProperties");
+  OFDictData::dict& thermodynamicProperties=dictionaries.lookupDict("constant/thermodynamicProperties");
   thermodynamicProperties["barotropicCompressibilityModel"]="linear";
   thermodynamicProperties["psiv"]=OFDictData::dimensionedData("psiv", 
 							      OFDictData::dimension(0, -2, 2), 
@@ -87,7 +87,7 @@ perfectGasSinglePhaseThermophysicalProperties::perfectGasSinglePhaseThermophysic
 
 void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& thermophysicalProperties=dictionaries.addDictionaryIfNonexistent("constant/thermophysicalProperties");
+  OFDictData::dict& thermophysicalProperties=dictionaries.lookupDict("constant/thermophysicalProperties");
 
   enum thermoType { hePsiThermo, heRhoThermo } tht = hePsiThermo;
   try
@@ -229,7 +229,7 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
 {
 
   OFDictData::dict& thermophysicalProperties =
-      dictionaries.addDictionaryIfNonexistent("constant/thermophysicalProperties");
+      dictionaries.lookupDict("constant/thermophysicalProperties");
 
   std::string tt = requiredThermoType();
 
@@ -338,7 +338,7 @@ detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
 
 void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& thermodynamicProperties=dictionaries.addDictionaryIfNonexistent("constant/thermophysicalProperties");
+  OFDictData::dict& thermodynamicProperties=dictionaries.lookupDict("constant/thermophysicalProperties");
   
   OFDictData::dict tt;
   tt["type"]="hePsiThermo";
@@ -356,7 +356,7 @@ void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionarie
   thermodynamicProperties["foamChemistryThermoFile"]="\""+p_.foamChemistryThermoFile.string()+"\"";
 
   
-  OFDictData::dict& combustionProperties=dictionaries.addDictionaryIfNonexistent("constant/combustionProperties");
+  OFDictData::dict& combustionProperties=dictionaries.lookupDict("constant/combustionProperties");
   combustionProperties["combustionModel"]="PaSR<psiChemistryCombustion>";
   combustionProperties["active"]=true;
 
@@ -365,7 +365,7 @@ void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionarie
   pd["turbulentReaction"]=true;
   combustionProperties["PaSRCoeffs"]=pd;
 
-  OFDictData::dict& chemistryProperties=dictionaries.addDictionaryIfNonexistent("constant/chemistryProperties");
+  OFDictData::dict& chemistryProperties=dictionaries.lookupDict("constant/chemistryProperties");
   
   OFDictData::dict ct;
   ct["chemistrySolver"]="EulerImplicit";

@@ -114,7 +114,7 @@ void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
+  OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
   SIMPLE["startTime"]=OFDictData::data( 0.0 );
   SIMPLE["timeInterval"]=OFDictData::data( p_.FEMinterval );
   
@@ -197,7 +197,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilon"]=OFcase().stdAsymmSolverSetup(1e-8, 0);
   solvers["nuTilda"]=OFcase().stdAsymmSolverSetup(1e-8, 0);
 
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("PISO");
+  OFDictData::dict& SIMPLE=fvSolution.subDict("PISO");
   SIMPLE["nCorrectors"]=OFDictData::data( 2 );
   SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 0 );
   
@@ -285,9 +285,9 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   else
    setApplicationName(dictionaries, "interFoam");
 
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
-  controlDict.addListIfNonexistent("libs");
-  controlDict.addSubDictIfNonexistent("functions");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.getList("libs");
+  controlDict.subDict("functions");
 
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalFaceLimitedGrad.so\"" );
 
@@ -465,7 +465,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
 
   std::string solutionScheme("PIMPLE");
-  OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
+  OFDictData::dict& SOL=fvSolution.subDict(solutionScheme);
   SOL["momentumPredictor"]=momentumPredictor;
   SOL["nCorrectors"]=2;
   SOL["nNonOrthogonalCorrectors"]=1;
@@ -652,14 +652,14 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (ps.isSIMPLE())
   {
     // SIMPLE mode: add underrelaxation
-    OFDictData::dict& relax=fvSolution.addSubDictIfNonexistent("relaxationFactors");
+    OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
     if (OFversion()<210)
     {
       relax["Yi"]=0.7;
     }
     else
     {
-      OFDictData::dict& eqnRelax = relax.addSubDictIfNonexistent("equations");
+      OFDictData::dict& eqnRelax = relax.subDict("equations");
       eqnRelax["Yi"]=0.7;
     }
   }
@@ -782,7 +782,7 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict fqmc;
   fqmc["type"]="faceQualityMarker";
-  controlDict.addSubDictIfNonexistent("functions")["faceQualityMarker"]=fqmc;
+  controlDict.subDict("functions")["faceQualityMarker"]=fqmc;
 
   // ============ setup fvSolution ================================
 
@@ -827,7 +827,7 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     relax["equations"]=eqnRelax;
   }
 
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
+  OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
   SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
   SIMPLE["momentumPredictor"]=false;
   SIMPLE["pRefCell"]=0;
@@ -963,7 +963,7 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict fqmc;
   fqmc["type"]="faceQualityMarker";
-  controlDict.addSubDictIfNonexistent("functions")["faceQualityMarker"]=fqmc;
+  controlDict.subDict("functions")["faceQualityMarker"]=fqmc;
 
   // ============ setup fvSolution ================================
 
@@ -1020,7 +1020,7 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //  // create both: PISO and PIMPLE
 ////   if (LES)
 //  {
-//    OFDictData::dict& PISO=fvSolution.addSubDictIfNonexistent("PISO");
+//    OFDictData::dict& PISO=fvSolution.subDict("PISO");
 //    PISO["nCorrectors"]=p_.nCorrectors;
 //    PISO["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
 //    PISO["pRefCell"]=0;
@@ -1028,7 +1028,7 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //  }
 ////   else
 //  {
-//    OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+//    OFDictData::dict& PIMPLE=fvSolution.subDict("PIMPLE");
 //    PIMPLE["nCorrectors"]=p_.nCorrectors;
 //    PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
 //    PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
@@ -1187,7 +1187,7 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict fqmc;
   fqmc["type"]="faceQualityMarker";
-  controlDict.addSubDictIfNonexistent("functions")["faceQualityMarker"]=fqmc;
+  controlDict.subDict("functions")["faceQualityMarker"]=fqmc;
 
   // ============ setup fvSolution ================================
   
@@ -1222,7 +1222,7 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //     relax["equations"]=eqnRelax;
 //   }
 
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
+  OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
   SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 10 );
 //   SIMPLE["pRefCell"]=0;
 //   SIMPLE["pRefValue"]=0.0;
@@ -1265,8 +1265,8 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["default"]="no";
 //   fluxRequired["T"]="";
 
-  OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
-  transportProperties.addListIfNonexistent("magnets");
+  OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
+  transportProperties.getList("magnets");
 
 }
 

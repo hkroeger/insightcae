@@ -1219,7 +1219,7 @@ OFDictData::dict& blockMesh::getBlockMeshDict(insight::OFdicts& dictionaries) co
   {
       bmdLoc="system/blockMeshDict";
   }
-  return dictionaries.addDictionaryIfNonexistent(bmdLoc);
+  return dictionaries.lookupDict(bmdLoc);
 }
 
 void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const

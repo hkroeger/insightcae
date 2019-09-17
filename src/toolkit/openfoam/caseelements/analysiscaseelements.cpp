@@ -87,7 +87,7 @@ void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) cons
   fod["timeStart"]=p_.timeStart;
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
+  controlDict.subDict("functions")[p_.name]=fod;
 }
 
 void outputFilterFunctionObject::evaluate
@@ -750,7 +750,7 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
   fod["CofR"]=OFDictData::vector3(p_.CofR);
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
+  controlDict.subDict("functions")[p_.name]=fod;
 }
 
 
@@ -947,7 +947,7 @@ void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
   fod["CofR"]=OFDictData::vector3(p_.CofR);
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
+  controlDict.subDict("functions")[p_.name]=fod;
 }
 
   
@@ -992,8 +992,8 @@ void catalyst::addIntoDictionaries(OFdicts& dictionaries) const
 
   fod["scripts"]=scripts;
 
-  OFDictData::dict& inputs = fod.addSubDictIfNonexistent("inputs");
-  OFDictData::dict& inputregion = inputs.addSubDictIfNonexistent(p_.inputname);
+  OFDictData::dict& inputs = fod.subDict("inputs");
+  OFDictData::dict& inputregion = inputs.subDict(p_.inputname);
   inputregion["boundary"]=true;
 
   OFDictData::list fieldlist;
@@ -1003,7 +1003,7 @@ void catalyst::addIntoDictionaries(OFdicts& dictionaries) const
   inputregion["fields"]=fieldlist;
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")["catalyst"]=fod;
+  controlDict.subDict("functions")["catalyst"]=fod;
 }
 
 

@@ -126,7 +126,7 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdi
 {
     Parameters p(parameters_);
   
-  OFDictData::dict& dpd=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
+  OFDictData::dict& dpd=dicts->lookupDict("system/decomposeParDict");
   if (dpd.find("numberOfSubdomains")!=dpd.end())
   {
     int cnp=boost::get<int>(dpd["numberOfSubdomains"]);

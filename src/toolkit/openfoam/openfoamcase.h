@@ -83,9 +83,8 @@ typedef std::map<std::string, FieldInfo> FieldList;
 struct OFdicts
 : public boost::ptr_map<std::string, OFDictData::dictFile> 
 {
-  OFDictData::dictFile& addDictionaryIfNonexistent(const std::string& key);
   OFDictData::dictFile& addFieldIfNonexistent(const std::string& key, const FieldInfo& fi);
-  OFDictData::dictFile& lookupDict(const std::string& key);
+  OFDictData::dictFile& lookupDict(const std::string& key, bool createIfNonexistent = true);
 };
 
 

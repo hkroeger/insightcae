@@ -40,11 +40,11 @@ void velocityTetFEMMotionSolver::addIntoDictionaries(OFdicts& dictionaries) cons
 {
   tetFemNumerics_.addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& tetFemSolution=dictionaries.addDictionaryIfNonexistent("system/tetFemSolution");
+  OFDictData::dict& tetFemSolution=dictionaries.lookupDict("system/tetFemSolution");
   OFDictData::dict& solvers = tetFemSolution.subDict("solvers");
   solvers["motionU"]=OFcase().stdSymmSolverSetup();
 
-  OFDictData::dict& dynamicMeshDict=dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
+  OFDictData::dict& dynamicMeshDict=dictionaries.lookupDict("constant/dynamicMeshDict");
   dynamicMeshDict["dynamicFvMesh"]=OFDictData::data("dynamicMotionSolverFvMesh");
   dynamicMeshDict["solver"]=OFDictData::data("laplaceFaceDecomposition");
   if (dynamicMesh::OFversion()<=160)
@@ -70,7 +70,7 @@ displacementFvMotionSolver::displacementFvMotionSolver(OpenFOAMCase& c)
 
 void displacementFvMotionSolver::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& dynamicMeshDict=dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
+  OFDictData::dict& dynamicMeshDict=dictionaries.lookupDict("constant/dynamicMeshDict");
   dynamicMeshDict["dynamicFvMesh"]=OFDictData::data("dynamicMotionSolverFvMesh");
   dynamicMeshDict["solver"]=OFDictData::data("displacementLaplacian");
   if (OFversion()<220)
@@ -105,7 +105,7 @@ void solidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     Parameters p(ps_);
 
     OFDictData::dict& dynamicMeshDict
-      = dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
+      = dictionaries.lookupDict("constant/dynamicMeshDict");
 
     dynamicMeshDict["dynamicFvMesh"]="dynamicMotionSolverFvMesh";
     dynamicMeshDict["solver"]="solidBody";
@@ -165,7 +165,7 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     Parameters p(ps_);
 
     OFDictData::dict& dynamicMeshDict
-      = dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
+      = dictionaries.lookupDict("constant/dynamicMeshDict");
 
     std::string name="rigidBodyMotion";
 

@@ -396,13 +396,13 @@ void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
   
   OFDictData::dictFile setFieldsDict;
   
-  OFDictData::list& dvl = setFieldsDict.addListIfNonexistent("defaultFieldValues");
+  OFDictData::list& dvl = setFieldsDict.getList("defaultFieldValues");
   for ( const FieldValueSpec& dv: defaultValues)
   {
     dvl.push_back( dv );
   }
   
-  setFieldsDict.addListIfNonexistent("regions");  
+  setFieldsDict.getList("regions");  
   for ( const setFieldOperator& op: ops)
   {
     op.addIntoDictionary(setFieldsDict);
@@ -544,9 +544,9 @@ void createPatch(const OpenFOAMCase& ofc,
   createPatchDict["pointSync"] = false;
   
   if (ofc.OFversion()<170)
-    createPatchDict.addListIfNonexistent("patchInfo");  
+    createPatchDict.getList("patchInfo");  
   else
-    createPatchDict.addListIfNonexistent("patches");  
+    createPatchDict.getList("patches");  
   
   for ( const createPatchOperator& op: ops)
   {
@@ -582,7 +582,7 @@ line::line(ParameterSet const& p )
 
 void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
-  OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
+  OFDictData::list& l=sampleDict.getList("sets");
   
   OFDictData::dict sd;
 //   sd["type"]="uniform";
@@ -802,7 +802,7 @@ circumferentialAveragedUniformLine::circumferentialAveragedUniformLine(Parameter
 
 void circumferentialAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
-  OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
+  OFDictData::list& l=sampleDict.getList("sets");
   
   for (const line& l: lines_)
   {
@@ -965,7 +965,7 @@ linearAveragedPolyLine::linearAveragedPolyLine(ParameterSet const& p)
 
 void linearAveragedPolyLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
-//   OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
+//   OFDictData::list& l=sampleDict.getList("sets");
   
   for (const line& l: lines_)
   {
@@ -1392,30 +1392,30 @@ void runPotentialFoam
   controlDict["runTimeModifiable"]=true;
   OFDictData::list l;
   l.push_back("\"libextendedFixedValueBC.so\"");
-  controlDict.addListIfNonexistent("libs")=l;
-  //controlDict.addSubDictIfNonexistent("functions");
+  controlDict.getList("libs")=l;
+  //controlDict.subDict("functions");
   
   OFDictData::dictFile fvSolution;
-  OFDictData::dict& solvers=fvSolution.addSubDictIfNonexistent("solvers");
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
   
   std::string fieldName="p";
   if (cm.OFversion()>=300) fieldName="Phi";
   solvers[fieldName]=cm.stdSymmSolverSetup(1e-7, 0.01);
   
-  fvSolution.addSubDictIfNonexistent("relaxationFactors");
+  fvSolution.subDict("relaxationFactors");
   std::string solkey="potentialFlow";
   if (cm.OFversion()<170) solkey="SIMPLE";
-  OFDictData::dict& potentialFlow=fvSolution.addSubDictIfNonexistent(solkey);
+  OFDictData::dict& potentialFlow=fvSolution.subDict(solkey);
   potentialFlow["nNonOrthogonalCorrectors"]=3;
   
   OFDictData::dictFile fvSchemes;
-  fvSchemes.addSubDictIfNonexistent("ddtSchemes");
-  fvSchemes.addSubDictIfNonexistent("gradSchemes");
-  fvSchemes.addSubDictIfNonexistent("divSchemes");
-  fvSchemes.addSubDictIfNonexistent("laplacianSchemes");
-  fvSchemes.addSubDictIfNonexistent("interpolationSchemes");
-  fvSchemes.addSubDictIfNonexistent("snGradSchemes");
-  fvSchemes.addSubDictIfNonexistent("fluxRequired");
+  fvSchemes.subDict("ddtSchemes");
+  fvSchemes.subDict("gradSchemes");
+  fvSchemes.subDict("divSchemes");
+  fvSchemes.subDict("laplacianSchemes");
+  fvSchemes.subDict("interpolationSchemes");
+  fvSchemes.subDict("snGradSchemes");
+  fvSchemes.subDict("fluxRequired");
   
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="steadyState";

@@ -132,26 +132,19 @@ struct dict
   }
   
   /**
-   * add subdict, if no such key exists, return existing subdict otherwise
+   * lookup subdict
+   * add subdict, if requested and no such key exists
+   * return existing subdict only otherwise
    * raise exception, if key exists and is not a subdict
    */
-  dict& addSubDictIfNonexistent(const std::string& key);
-  list& addListIfNonexistent(const std::string& key);
-  
-  inline dict& subDict(const std::string& key)
-  {
-    return this->lookup<dict>(key);
-  }
+  dict& subDict(const std::string& key, bool createIfNonexistent=true);
 
   inline const dict& subDict(const std::string& key) const
   {
     return this->lookup<dict>(key);
   }
 
-  inline list& getList(const std::string& key)
-  {
-    return this->lookup<list>(key);
-  }
+  list& getList(const std::string& key, bool createIfNonexistent=true);
 
   inline double& getDouble(const std::string& key)
   {

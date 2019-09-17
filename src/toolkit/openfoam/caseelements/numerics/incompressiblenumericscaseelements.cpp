@@ -97,7 +97,7 @@ void steadyIncompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
     }
   );
 
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
+  OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
   SIMPLE["nNonOrthogonalCorrectors"]=0;
   SIMPLE["pRefCell"]=0;
   SIMPLE["pRefValue"]=p_.pinternal;

@@ -171,11 +171,11 @@ void CyclicPairBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
     for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second );
-        OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent ( "boundaryField" );
+        OFDictData::dict& boundaryField=fieldDict.subDict ( "boundaryField" );
 
         if ( OFversion() >=210 ) {
-            OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent ( patchName_+"_half0" );
-            OFDictData::dict& BC1=boundaryField.addSubDictIfNonexistent ( patchName_+"_half1" );
+            OFDictData::dict& BC=boundaryField.subDict ( patchName_+"_half0" );
+            OFDictData::dict& BC1=boundaryField.subDict ( patchName_+"_half1" );
 
             if ( ( ( field.first=="motionU" ) || ( field.first=="pointDisplacement" ) ) ) {
                 MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
@@ -185,7 +185,7 @@ void CyclicPairBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 BC1["type"]="cyclic";
             }
         } else {
-            OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent ( patchName_ );
+            OFDictData::dict& BC=boundaryField.subDict ( patchName_ );
 
             if ( ( ( field.first=="motionU" ) || ( field.first=="pointDisplacement" ) ) ) {
                 MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
@@ -221,8 +221,8 @@ void GGIBCBase::addIntoDictionaries ( OFdicts& dictionaries ) const
 
   if (OFversion()<170)
   {
-    auto& decomposeParDict = dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
-    auto& gfz = decomposeParDict.addListIfNonexistent("globalFaceZones");
+    auto& decomposeParDict = dictionaries.lookupDict("system/decomposeParDict");
+    auto& gfz = decomposeParDict.getList("globalFaceZones");
     gfz.push_back( p_.zone );
   }
 }
@@ -510,7 +510,7 @@ void MixingPlaneGGIBC::addIntoDictionaries(OFdicts& dictionaries) const
 {
   GGIBCBase::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
   
   OFDictData::dict mpd;
   mpd["default"]="areaAveraging";
@@ -1020,7 +1020,7 @@ ExptDataInletBC::ExptDataInletBC
 
 void ExptDataInletBC::addDataDict(OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data) const
 {
-  OFDictData::dictFile& Udict=dictionaries.addDictionaryIfNonexistent(prefix+"/0/"+fieldname);
+  OFDictData::dictFile& Udict=dictionaries.lookupDict(prefix+"/0/"+fieldname);
   Udict.isSequential=true;
   
   if (data.n_cols==1)
@@ -1066,7 +1066,7 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         j++;
     }
 
-    OFDictData::dictFile& ptsdict=dictionaries.addDictionaryIfNonexistent ( prefix+"/points" );
+    OFDictData::dictFile& ptsdict=dictionaries.lookupDict ( prefix+"/points" );
     ptsdict.isSequential=true;
     OFDictData::list pts;
     for ( size_t r=0; r<ptdat.n_rows; r++ ) {
@@ -1085,7 +1085,7 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["setAverage"]=false;
             BC["perturb"]=1e-3;
 
-//       OFDictData::dictFile& Udict=dictionaries.addDictionaryIfNonexistent(prefix+"/0/U");
+//       OFDictData::dictFile& Udict=dictionaries.lookupDict(prefix+"/0/U");
 //       Udict.isSequential=true;
 //       Udict["a"]=OFDictData::vector3(vec3(0,0,0));
 //
@@ -1386,10 +1386,10 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
   multiphaseBC::multiphaseBCPtr phasefractions =
         multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
     
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   
   if (boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))  
-    controlDict.addListIfNonexistent("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
+    controlDict.getList("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
 
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
   phasefractions->addIntoDictionaries ( dictionaries );  
@@ -1519,7 +1519,7 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
 //   {
 //     OFDictData::dictFile inflowProperties;
 //     
-//     OFDictData::list& initializers = inflowProperties.addListIfNonexistent("initializers");
+//     OFDictData::list& initializers = inflowProperties.getList("initializers");
 //     
 //     initializers.push_back( p_.initializer()->type() );
 //     OFDictData::dict d;
@@ -1562,7 +1562,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     phasefractions->addIntoDictionaries(dictionaries);
 
     if ( (boost::get<Parameters::behaviour_fixMeanValue_type>(&p.behaviour)) && ( OFversion() !=160 ) ) {
-        OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent ( "system/controlDict" );
+        OFDictData::dict& controlDict=dictionaries.lookupDict ( "system/controlDict" );
         controlDict.getList ( "libs" ).push_back ( OFDictData::data ( "\"libfixedMeanValueBC.so\"" ) );
     }
 
@@ -1617,7 +1617,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                     BC["outOfBounds"]="clamp";
                     //BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( fixmean->pressure ) );
 
-                    auto& sd = dictionaries.addDictionaryIfNonexistent(filename.string());
+                    auto& sd = dictionaries.lookupDict(filename.string());
                     sd.no_header=true;
                     sd.isSequential=true;
 

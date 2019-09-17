@@ -191,7 +191,7 @@ void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
   OFDictData::dict refdict;
   refdict["file"]=std::string("\"")+p_.fileName.filename().c_str()+"\"";
   refdict["level"]=p_.level;
-  sHMDict.subDict("castellatedMeshControls").addListIfNonexistent("features").push_back(refdict);
+  sHMDict.subDict("castellatedMeshControls").getList("features").push_back(refdict);
 
 }
 
@@ -590,7 +590,7 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
 {
   using namespace snappyHexMeshFeats;
   
-  OFDictData::dict& sHMDict=dictionaries.addDictionaryIfNonexistent("system/snappyHexMeshDict");
+  OFDictData::dict& sHMDict=dictionaries.lookupDict("system/snappyHexMeshDict");
   
   const snappyHexMeshConfiguration::Parameters& p = p_;
   
@@ -600,15 +600,15 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
   sHMDict["addLayers"] = p.doAddLayers;
   sHMDict["debug"] = 0;
   sHMDict["mergeTolerance"] = 1e-6;
-  OFDictData::dict& geomCtrls=sHMDict.addSubDictIfNonexistent("geometry");
-  OFDictData::dict& castellatedCtrls = sHMDict.addSubDictIfNonexistent("castellatedMeshControls");
-  castellatedCtrls.addListIfNonexistent("features");
-  castellatedCtrls.addSubDictIfNonexistent("refinementSurfaces");
-  castellatedCtrls.addSubDictIfNonexistent("refinementRegions");
-  OFDictData::dict& snapCtrls=sHMDict.addSubDictIfNonexistent("snapControls");
-  OFDictData::dict& layerCtrls=sHMDict.addSubDictIfNonexistent("addLayersControls");
-  layerCtrls.addSubDictIfNonexistent("layers");
-  OFDictData::dict& qualityCtrls=sHMDict.addSubDictIfNonexistent("meshQualityControls");
+  OFDictData::dict& geomCtrls=sHMDict.subDict("geometry");
+  OFDictData::dict& castellatedCtrls = sHMDict.subDict("castellatedMeshControls");
+  castellatedCtrls.getList("features");
+  castellatedCtrls.subDict("refinementSurfaces");
+  castellatedCtrls.subDict("refinementRegions");
+  OFDictData::dict& snapCtrls=sHMDict.subDict("snapControls");
+  OFDictData::dict& layerCtrls=sHMDict.subDict("addLayersControls");
+  layerCtrls.subDict("layers");
+  OFDictData::dict& qualityCtrls=sHMDict.subDict("meshQualityControls");
 
   //  populate with defaults
   setStdSnapCtrls(snapCtrls);
@@ -712,15 +712,15 @@ void snappyHexMesh
   sHMDict["addLayers"] = p.doAddLayers;
   sHMDict["debug"] = 0;
   sHMDict["mergeTolerance"] = 1e-6;
-  OFDictData::dict& geomCtrls=sHMDict.addSubDictIfNonexistent("geometry");
-  OFDictData::dict& castellatedCtrls = sHMDict.addSubDictIfNonexistent("castellatedMeshControls");
-  castellatedCtrls.addListIfNonexistent("features");
-  castellatedCtrls.addSubDictIfNonexistent("refinementSurfaces");
-  castellatedCtrls.addSubDictIfNonexistent("refinementRegions");
-  OFDictData::dict& snapCtrls=sHMDict.addSubDictIfNonexistent("snapControls");
-  OFDictData::dict& layerCtrls=sHMDict.addSubDictIfNonexistent("addLayersControls");
-  layerCtrls.addSubDictIfNonexistent("layers");
-  OFDictData::dict& qualityCtrls=sHMDict.addSubDictIfNonexistent("meshQualityControls");
+  OFDictData::dict& geomCtrls=sHMDict.subDict("geometry");
+  OFDictData::dict& castellatedCtrls = sHMDict.subDict("castellatedMeshControls");
+  castellatedCtrls.getList("features");
+  castellatedCtrls.subDict("refinementSurfaces");
+  castellatedCtrls.subDict("refinementRegions");
+  OFDictData::dict& snapCtrls=sHMDict.subDict("snapControls");
+  OFDictData::dict& layerCtrls=sHMDict.subDict("addLayersControls");
+  layerCtrls.subDict("layers");
+  OFDictData::dict& qualityCtrls=sHMDict.subDict("meshQualityControls");
 
   //  populate with defaults
   setStdSnapCtrls(snapCtrls);

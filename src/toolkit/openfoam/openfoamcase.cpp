@@ -41,21 +41,9 @@ namespace insight
     
     
     
-OFDictData::dictFile& OFdicts::addDictionaryIfNonexistent ( const std::string& key )
-{
-    OFdicts::iterator i=find ( key );
-    if ( i==end() ) {
-        ( *this ) [key]=OFDictData::dictFile();
-    }
-    return ( *this ) [key];
-}
-
-
-
-
 OFDictData::dictFile& OFdicts::addFieldIfNonexistent(const std::string& key, const FieldInfo& fi)
 {
-  OFDictData::dictFile& d=addDictionaryIfNonexistent(key);
+  OFDictData::dictFile& d=lookupDict(key);
   std::string className;
   if (boost::fusion::get<3>(fi) == volField )
     className="vol";
@@ -83,14 +71,25 @@ OFDictData::dictFile& OFdicts::addFieldIfNonexistent(const std::string& key, con
 
 
 
-OFDictData::dictFile& OFdicts::lookupDict(const std::string& key)
+OFDictData::dictFile& OFdicts::lookupDict(const std::string& key, bool createIfNonexistent)
 {
   OFdicts::iterator i=find(key);
-  if (i==end())
+
+  if (createIfNonexistent)
   {
-    throw Exception("Dictionary "+key+" not found!");
+    if ( i==end() ) {
+        ( *this ) [key]=OFDictData::dictFile();
+    }
+    return ( *this ) [key];
   }
-  return *(i->second);
+  else
+  {
+    if (i==end())
+    {
+      throw Exception("Dictionary "+key+" not found!");
+    }
+    return *(i->second);
+  }
 }
 
   
@@ -415,8 +414,8 @@ void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
   for (const FieldList::value_type& field: OFcase().fields())
   {
     OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second);
-    OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent("boundaryField");
-    /*OFDictData::dict& BC=*/ boundaryField.addSubDictIfNonexistent(patchName_);
+    OFDictData::dict& boundaryField=fieldDict.subDict("boundaryField");
+    /*OFDictData::dict& BC=*/ boundaryField.subDict(patchName_);
   }
 }
 
@@ -428,8 +427,8 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
       return;
   }
   
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
-  controlDict.addListIfNonexistent("libs").insertNoDuplicate( OFDictData::data("\"libextendedFixedValueBC.so\"") );
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.getList("libs").insertNoDuplicate( OFDictData::data("\"libextendedFixedValueBC.so\"") );
 
   addIntoFieldDictionaries(dictionaries);
   
@@ -447,9 +446,9 @@ void BoundaryCondition::insertIntoBoundaryDict
 {
   // contents is created as list of string / subdict pairs
   // patches have to appear ordered by "startFace"!
-  OFDictData::dict& boundaryDict=dictionaries.addDictionaryIfNonexistent("constant/polyMesh/boundary");
+  OFDictData::dict& boundaryDict=dictionaries.lookupDict("constant/polyMesh/boundary");
   if (boundaryDict.size()==0)
-    boundaryDict.addListIfNonexistent("");
+    boundaryDict.getList("");
   
   OFDictData::list& bl=
     *boost::get<OFDictData::list>( &boundaryDict.begin()->second );

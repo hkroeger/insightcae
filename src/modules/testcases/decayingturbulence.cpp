@@ -213,7 +213,7 @@ void DecayingTurbulence::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OF
 {
   OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
-  OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dictFile& controlDict=dicts->lookupDict("system/controlDict");
   /*
   if (cm.OFversion()<=160)
   {

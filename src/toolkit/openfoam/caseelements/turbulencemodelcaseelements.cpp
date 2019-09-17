@@ -49,7 +49,7 @@ RASModel::RASModel(OpenFOAMCase& c, const ParameterSet& ps)
 
 void RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+  OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
   if (OFversion()>=300)
     turbProperties["simulationType"]="RAS";
   else
@@ -60,12 +60,12 @@ OFDictData::dict& RASModel::modelPropsDict(OFdicts& dictionaries) const
 {
   if (OFversion()>=300)
   {
-      OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
-      return turbProperties.addSubDictIfNonexistent("RAS");
+      OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
+      return turbProperties.subDict("RAS");
   }
   else
   {
-      return dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+      return dictionaries.lookupDict("constant/RASProperties");
   }
 }
 
@@ -84,28 +84,28 @@ LESModel::LESModel(OpenFOAMCase& c, const ParameterSet& ps)
 
 void LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-    OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+    OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
     if (OFversion()>=300)
       turbProperties["simulationType"]="LES";
     else
       turbProperties["simulationType"]="LESModel";
 
-    OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
-    controlDict.addListIfNonexistent("libs").insertNoDuplicate( "\"libnuSgsABLRoughWallFunction.so\"" );
+    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+    controlDict.getList("libs").insertNoDuplicate( "\"libnuSgsABLRoughWallFunction.so\"" );
 }
 
 OFDictData::dict& LESModel::modelPropsDict(OFdicts& dictionaries) const
 {
   if (OFversion()>=300)
   {
-      OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
-      OFDictData::dict& LESProperties = turbProperties.addSubDictIfNonexistent("LES");
+      OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
+      OFDictData::dict& LESProperties = turbProperties.subDict("LES");
       LESProperties["turbulence"]=true;
       return LESProperties;
   }
   else
   {
-      return dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+      return dictionaries.lookupDict("constant/LESProperties");
   }
 }
 
@@ -158,7 +158,7 @@ void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   
   if (OFversion()>=300)
    {
-    OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+    OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
     turbProperties["simulationType"]="laminar";
   }
   else{
@@ -167,7 +167,7 @@ void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
     RASProperties["RASModel"]="laminar";
     RASProperties["turbulence"]="true";
     RASProperties["printCoeffs"]="true";
-    RASProperties.addSubDictIfNonexistent("laminarCoeffs");
+    RASProperties.subDict("laminarCoeffs");
   }
 }
 
@@ -231,7 +231,7 @@ void Smagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   vdc["cubeRootVolCoeffs"]=crvc;
   LESProperties["vanDriestCoeffs"]=vdc;
   
-  LESProperties.addSubDictIfNonexistent("laminarCoeffs");
+  LESProperties.subDict("laminarCoeffs");
 }
 
 
@@ -282,7 +282,7 @@ void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   vdc["cubeRootVolCoeffs"]=crvc;
   LESProperties["vanDriestCoeffs"]=vdc;
   
-  LESProperties.addSubDictIfNonexistent("laminarCoeffs");
+  LESProperties.subDict("laminarCoeffs");
 }
 
 
@@ -338,7 +338,7 @@ void dynOneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   vdc["cubeRootVolCoeffs"]=crvc;
   LESProperties["vanDriestCoeffs"]=vdc;
   
-  LESProperties.addSubDictIfNonexistent("laminarCoeffs");
+  LESProperties.subDict("laminarCoeffs");
 }
 
 
@@ -390,7 +390,7 @@ void dynSmagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   vdc["cubeRootVolCoeffs"]=crvc;
   LESProperties["vanDriestCoeffs"]=vdc;
 
-  OFDictData::dict& cd=LESProperties.addSubDictIfNonexistent(modelName+"Coeffs");
+  OFDictData::dict& cd=LESProperties.subDict(modelName+"Coeffs");
   cd["filter"]="simple";
 }
 
@@ -431,7 +431,7 @@ void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties["RASModel"]="kOmegaSST";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
-  RASProperties.addSubDictIfNonexistent("kOmegaSSTCoeffs");
+  RASProperties.subDict("kOmegaSSTCoeffs");
 }
 
 bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
@@ -539,7 +539,7 @@ void kEpsilonBase_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties["printCoeffs"]="true";
   RASProperties["kMin"]=1e-3;
   RASProperties["epsilonMin"]=1e-3;
-  RASProperties.addSubDictIfNonexistent(type()+"Coeffs");
+  RASProperties.subDict(type()+"Coeffs");
 }
 
 bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
@@ -638,7 +638,7 @@ void SpalartAllmaras_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties["RASModel"]="SpalartAllmaras";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
-  RASProperties.addSubDictIfNonexistent("SpalartAllmarasCoeffs");
+  RASProperties.subDict("SpalartAllmarasCoeffs");
 }
 
 bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
@@ -712,7 +712,7 @@ void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   mec["deltaCoeff"]=1.0;
   RASProperties["maxEdgeCoeffs"]=mec;
   
-  OFDictData::dict& cd=RASProperties.addSubDictIfNonexistent(modelName+"Coeffs");
+  OFDictData::dict& cd=RASProperties.subDict(modelName+"Coeffs");
   cd["filter"]="simple";
   cd["x1"]=1.0;
   cd["x2"]=2.0;
@@ -729,7 +729,7 @@ void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   cd["IDDESDeltaCoeffs"]=mec;
   cd["maxEdgeCoeffs"]=mec;
 
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").push_back( OFDictData::data("\"libLEMOS-2.3.x.so\"") );  
 }
 
@@ -770,7 +770,7 @@ void kOmegaSST_LowRe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties["RASModel"]="kOmegaSST_LowRe";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
-  RASProperties.addSubDictIfNonexistent("kOmegaSST_LowReCoeffs");
+  RASProperties.subDict("kOmegaSST_LowReCoeffs");
 }
 
 bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
@@ -818,9 +818,9 @@ void kOmegaSST2_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties["RASModel"]="kOmegaSST2";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
-  RASProperties.addSubDictIfNonexistent("kOmegaSST2");
+  RASProperties.subDict("kOmegaSST2");
   
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").push_back( OFDictData::data("\"libkOmegaSST2.so\"") );
 }
 
@@ -870,14 +870,14 @@ void kOmegaHe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").push_back( OFDictData::data("\"libkOmegaHe.so\"") );
 
   OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
   RASProperties["RASModel"]="kOmegaHe";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
-  RASProperties.addSubDictIfNonexistent("kOmegaHeCoeffs");
+  RASProperties.subDict("kOmegaHeCoeffs");
 
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
@@ -939,7 +939,7 @@ void LRR_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties["RASModel"]="LRR";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
-  RASProperties.addSubDictIfNonexistent("LRRCoeffs");
+  RASProperties.subDict("LRRCoeffs");
 }
 
 bool LRR_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
@@ -1031,10 +1031,10 @@ void WALE_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   LESModel::addIntoDictionaries(dictionaries);
   
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").insertNoDuplicate("\"libdynamicMixedModelLESModel.so\"");
 
-//   OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+//   OFDictData::dict& LESProperties=dictionaries.lookupDict("constant/LESProperties");
   OFDictData::dict& LESProperties=modelPropsDict(dictionaries);  
   
   string modelName="WALE";
@@ -1048,7 +1048,7 @@ void WALE_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   crvc["deltaCoeff"]=1.0;
   LESProperties["cubeRootVolCoeffs"]=crvc;
 
-//   OFDictData::dict& cd=LESProperties.addSubDictIfNonexistent(modelName+"Coeffs");
+//   OFDictData::dict& cd=LESProperties.subDict(modelName+"Coeffs");
 //   cd["filter"]="simple";
 }
 

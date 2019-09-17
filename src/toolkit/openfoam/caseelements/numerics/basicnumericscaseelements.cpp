@@ -38,7 +38,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
 //  std::cerr<<"Addd FVN "<<p_.decompWeights<<std::endl;
   // setup structure of dictionaries
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["deltaT"]=p_.deltaT;
   controlDict["maxCo"]=0.5;
   controlDict["startFrom"]="latestTime";
@@ -95,8 +95,8 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["timeFormat"]="general";
   controlDict["timePrecision"]=6;
   controlDict["runTimeModifiable"]=true;
-  controlDict.addListIfNonexistent("libs");
-  controlDict.addSubDictIfNonexistent("functions");
+  controlDict.getList("libs");
+  controlDict.subDict("functions");
 
   controlDict.getList("libs").insertNoDuplicate( "\"libwriteData.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"libconsistentCurveSampleSet.so\"" );
@@ -110,65 +110,65 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     wonow["fileNameAbort"]="\"wnowandstop\"";
     wonow["outputControl"]="timeStep";
     wonow["outputInterval"]=1;
-    controlDict.addSubDictIfNonexistent("functions")["writeData"]=wonow;
+    controlDict.subDict("functions")["writeData"]=wonow;
   }
   {
     OFDictData::dict fqmc;
     fqmc["type"]="faceQualityMarker";
     fqmc["lowerNonOrthThreshold"]=35.0;
     fqmc["upperNonOrthThreshold"]=60.0;
-    controlDict.addSubDictIfNonexistent("functions")["faceQualityMarker"]=fqmc;
+    controlDict.subDict("functions")["faceQualityMarker"]=fqmc;
   }
 
-  OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
-  OFDictData::dict& solvers=fvSolution.addSubDictIfNonexistent("solvers");
-  fvSolution.addSubDictIfNonexistent("relaxationFactors");
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  fvSolution.subDict("relaxationFactors");
 
   // potentialFoam config
   solvers["Phi"]=OFcase().stdSymmSolverSetup(1e-7, 0.01);
 
-  OFDictData::dict& PF=fvSolution.addSubDictIfNonexistent("potentialFlow");
+  OFDictData::dict& PF=fvSolution.subDict("potentialFlow");
   PF["nNonOrthogonalCorrectors"]=10;
   PF["pRefCell"]=0;
   PF["pRefValue"]=0.0;
   PF["PhiRefCell"]=0;
   PF["PhiRefValue"]=0.0;
 
-  OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
-  fvSchemes.addSubDictIfNonexistent("ddtSchemes");
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+  fvSchemes.subDict("ddtSchemes");
 
-  fvSchemes.addSubDictIfNonexistent("gradSchemes");
+  fvSchemes.subDict("gradSchemes");
   insertStandardGradientConfig(dictionaries);
 
-  fvSchemes.addSubDictIfNonexistent("divSchemes");
+  fvSchemes.subDict("divSchemes");
 
-  OFDictData::dict& laplacian=fvSchemes.addSubDictIfNonexistent("laplacianSchemes");
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
   laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
 
   // potentialFoam
   laplacian["laplacian(1,Phi)"]="Gauss linear limited 0.66";
 
-  OFDictData::dict& interpolation=fvSchemes.addSubDictIfNonexistent("interpolationSchemes");
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="linear";
 
-  OFDictData::dict& snGrad=fvSchemes.addSubDictIfNonexistent("snGradSchemes");
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
   snGrad["default"]="localLimited UBlendingFactor 1";
 
-  OFDictData::dict& fluxRequired=fvSchemes.addSubDictIfNonexistent("fluxRequired");
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
   fluxRequired[pName_]="";
 
   if (OFversion()>=300)
   {
-    OFDictData::dict& wd = fvSchemes.addSubDictIfNonexistent("wallDist");
+    OFDictData::dict& wd = fvSchemes.subDict("wallDist");
     wd["method"]="meshWave";
-    OFDictData::dict& wd2 = fvSchemes.addSubDictIfNonexistent("patchDist");
+    OFDictData::dict& wd2 = fvSchemes.subDict("patchDist");
     wd2["method"]="meshWave";
   }
 
   if ( const auto* map = boost::get<Parameters::mapFieldsConfig_map_type>(&p_.mapFieldsConfig) )
   {
-    OFDictData::dict& mfd=dictionaries.addDictionaryIfNonexistent("system/mapFieldsDict");
+    OFDictData::dict& mfd=dictionaries.lookupDict("system/mapFieldsDict");
 
     OFDictData::list patchMapPairs;
     for (const auto& i: map->patchMap)
@@ -230,7 +230,7 @@ bool FVNumerics::isGAMGOk() const
 
 void FVNumerics::setApplicationName(OFdicts& dictionaries, const std::string& appname) const
 {
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]=appname;
 }
 
@@ -243,8 +243,8 @@ void FVNumerics::setRelaxationFactors
     const std::map<std::string, double>& fieldRelax
 ) const
 {
-  OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
-  OFDictData::dict& relax=fvSolution.addSubDictIfNonexistent("relaxationFactors");
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
   if (OFversion()<210)
   {
     for (const auto& r: eqnRelax)
@@ -285,7 +285,7 @@ std::string FVNumerics::lqGradSchemeIfPossible() const
 
 void FVNumerics::insertStandardGradientConfig(OFdicts& dictionaries) const
 {
-  OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
 
   std::string bgrads=lqGradSchemeIfPossible();
@@ -455,18 +455,18 @@ FaNumerics::FaNumerics(OpenFOAMCase& c, const ParameterSet& p)
 void FaNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   // setup structure of dictionaries
-  OFDictData::dict& faSolution=dictionaries.addDictionaryIfNonexistent("system/faSolution");
-  faSolution.addSubDictIfNonexistent("solvers");
-  faSolution.addSubDictIfNonexistent("relaxationFactors");
+  OFDictData::dict& faSolution=dictionaries.lookupDict("system/faSolution");
+  faSolution.subDict("solvers");
+  faSolution.subDict("relaxationFactors");
 
-  OFDictData::dict& faSchemes=dictionaries.addDictionaryIfNonexistent("system/faSchemes");
-  faSchemes.addSubDictIfNonexistent("ddtSchemes");
-  faSchemes.addSubDictIfNonexistent("gradSchemes");
-  faSchemes.addSubDictIfNonexistent("divSchemes");
-  faSchemes.addSubDictIfNonexistent("laplacianSchemes");
-  faSchemes.addSubDictIfNonexistent("interpolationSchemes");
-  faSchemes.addSubDictIfNonexistent("snGradSchemes");
-  faSchemes.addSubDictIfNonexistent("fluxRequired");
+  OFDictData::dict& faSchemes=dictionaries.lookupDict("system/faSchemes");
+  faSchemes.subDict("ddtSchemes");
+  faSchemes.subDict("gradSchemes");
+  faSchemes.subDict("divSchemes");
+  faSchemes.subDict("laplacianSchemes");
+  faSchemes.subDict("interpolationSchemes");
+  faSchemes.subDict("snGradSchemes");
+  faSchemes.subDict("fluxRequired");
 }
 
 
@@ -486,8 +486,8 @@ tetFemNumerics::tetFemNumerics(OpenFOAMCase& c)
 void tetFemNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   // setup structure of dictionaries
-  OFDictData::dict& tetFemSolution=dictionaries.addDictionaryIfNonexistent("system/tetFemSolution");
-  tetFemSolution.addSubDictIfNonexistent("solvers");
+  OFDictData::dict& tetFemSolution=dictionaries.lookupDict("system/tetFemSolution");
+  tetFemSolution.subDict("solvers");
 }
 
 bool tetFemNumerics::isUnique() const
@@ -514,7 +514,7 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   //  std::cerr<<"Addd FVN "<<p_.decompWeights<<std::endl;
 
   // setup structure of dictionaries
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="none";
   controlDict["startFrom"]="latestTime";
   controlDict["startTime"]=0.0;
@@ -536,28 +536,28 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["timeFormat"]="general";
   controlDict["timePrecision"]=6;
   controlDict["runTimeModifiable"]=true;
-  controlDict.addListIfNonexistent("libs");
-  controlDict.addSubDictIfNonexistent("functions");
+  controlDict.getList("libs");
+  controlDict.subDict("functions");
 
 
-  OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
-  fvSolution.addSubDictIfNonexistent("solvers");
-  fvSolution.addSubDictIfNonexistent("relaxationFactors");
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  fvSolution.subDict("solvers");
+  fvSolution.subDict("relaxationFactors");
 
-  OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
-  fvSchemes.addSubDictIfNonexistent("ddtSchemes");
-  fvSchemes.addSubDictIfNonexistent("gradSchemes");
-  fvSchemes.addSubDictIfNonexistent("divSchemes");
-  fvSchemes.addSubDictIfNonexistent("laplacianSchemes");
-  fvSchemes.addSubDictIfNonexistent("interpolationSchemes");
-  fvSchemes.addSubDictIfNonexistent("snGradSchemes");
-  fvSchemes.addSubDictIfNonexistent("fluxRequired");
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+  fvSchemes.subDict("ddtSchemes");
+  fvSchemes.subDict("gradSchemes");
+  fvSchemes.subDict("divSchemes");
+  fvSchemes.subDict("laplacianSchemes");
+  fvSchemes.subDict("interpolationSchemes");
+  fvSchemes.subDict("snGradSchemes");
+  fvSchemes.subDict("fluxRequired");
 
   if (OFversion()>=300)
   {
-    OFDictData::dict& wd = fvSchemes.addSubDictIfNonexistent("wallDist");
+    OFDictData::dict& wd = fvSchemes.subDict("wallDist");
     wd["method"]="meshWave";
-    OFDictData::dict& wd2 = fvSchemes.addSubDictIfNonexistent("patchDist");
+    OFDictData::dict& wd2 = fvSchemes.subDict("patchDist");
     wd2["method"]="meshWave";
   }
 

@@ -17,11 +17,11 @@ PIMPLESettings::~PIMPLESettings()
 
 void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const
 {
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
 
 
 
-  OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
 
   if (const auto* adj = boost::get<Parameters::timestep_control_adjust_type>(&p_.timestep_control))
   {
@@ -34,7 +34,7 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
     controlDict["adjustTimeStep"]=false;
   }
 
-  OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+  OFDictData::dict& PIMPLE=fvSolution.subDict("PIMPLE");
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
 
   PIMPLE["nNonOrthogonalCorrectors"]=p_.nonOrthogonalCorrectors;
@@ -55,8 +55,8 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
     PIMPLE["nOuterCorrectors"]=simple->max_nOuterCorrectors;
 
     // SIMPLE mode: add underrelaxation
-    OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("fields");
-    OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("equations");
+    OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.subDict("fields");
+    OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.subDict("equations");
 
     eqnRelax["U"] = simple->relaxation_U;
     eqnRelax["UFinal"] = simple->relax_final ? simple->relaxation_U : 1.0;
@@ -77,7 +77,7 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
     }
 
     // residual control
-    OFDictData::dict& residualControl = PIMPLE.addSubDictIfNonexistent("residualControl");
+    OFDictData::dict& residualControl = PIMPLE.subDict("residualControl");
 
     OFDictData::dict tol_p;
     tol_p["tolerance"]=simple->residual_p;
@@ -96,8 +96,8 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
     PIMPLE["nOuterCorrectors"]=pimple->max_nOuterCorrectors;
 
     // SIMPLE mode: add underrelaxation
-    OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("fields");
-    OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("equations");
+    OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.subDict("fields");
+    OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.subDict("equations");
 
     eqnRelax["U"] = pimple->relaxation_U;
     eqnRelax["UFinal"] = pimple->relax_final ? pimple->relaxation_U : 1.0;
@@ -118,7 +118,7 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
     }
 
     // residual control
-    OFDictData::dict& residualControl = PIMPLE.addSubDictIfNonexistent("residualControl");
+    OFDictData::dict& residualControl = PIMPLE.subDict("residualControl");
 
     OFDictData::dict tol_p;
     tol_p["tolerance"]=pimple->residual_p;
@@ -164,8 +164,8 @@ void CompressiblePIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, O
 {
   PIMPLESettings::addIntoDictionaries(oc, dictionaries);
 
-  OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
-  OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  OFDictData::dict& PIMPLE=fvSolution.subDict("PIMPLE");
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
 
   PIMPLE["transonic"]=p_.transonic;
@@ -176,7 +176,7 @@ void CompressiblePIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, O
 
 
   // SIMPLE mode: add underrelaxation
-  OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("fields");
+  OFDictData::dict& fieldRelax = oc.OFversion()<170 ? relax : relax.subDict("fields");
   fieldRelax["rho"] = p_.relaxation_rho;
 
 }
@@ -196,15 +196,15 @@ void MultiphasePIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFd
 {
   PIMPLESettings::addIntoDictionaries(oc, dictionaries);
 
-  OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-  OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.addSubDictIfNonexistent("equations");
+  OFDictData::dict& eqnRelax = oc.OFversion()<170 ? relax : relax.subDict("equations");
   if (const auto* piso = boost::get<Parameters::pressure_velocity_coupling_PISO_type>(&p_.pressure_velocity_coupling))
   {
     eqnRelax["\".*\""] = 1.0;
   }
 
-  OFDictData::dict& controlDict = dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dict& controlDict = dictionaries.lookupDict("system/controlDict");
   controlDict["maxAlphaCo"]=p_.maxAlphaCo;
 }
 

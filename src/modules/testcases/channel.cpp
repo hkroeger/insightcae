@@ -509,7 +509,7 @@ void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>&
     OFDictData::dict& solvers=fvSolution.subDict("solvers");
     solvers["p"]=cm.stdSymmSolverSetup(1e-7, 0.01);
   }
-//   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+//   OFDictData::dictFile& controlDict=dicts->lookupDict("system/controlDict");
 //   controlDict["maxDeltaT"]=0.5*T_;
 }
 
@@ -1284,7 +1284,7 @@ void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts
 
   ChannelBase::applyCustomOptions(cm, dicts);
   
-  OFDictData::dictFile& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
+  OFDictData::dictFile& decomposeParDict=dicts->lookupDict("system/decomposeParDict");
   int np=decomposeParDict.getInt("numberOfSubdomains");
   OFDictData::dict msd;
   OFDictData::list dl;
@@ -1296,7 +1296,7 @@ void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts
   decomposeParDict["method"]="simple";
   decomposeParDict["simpleCoeffs"]=msd;
 
-  OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dictFile& controlDict=dicts->lookupDict("system/controlDict");
   if (cm.OFversion()<=160)
   {
     controlDict["application"]="channelFoam";

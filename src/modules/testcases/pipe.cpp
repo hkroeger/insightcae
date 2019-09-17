@@ -682,7 +682,7 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& 
 
   OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
-  OFDictData::dictFile& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
+  OFDictData::dictFile& decomposeParDict=dicts->lookupDict("system/decomposeParDict");
   int np=decomposeParDict.getInt("numberOfSubdomains");
   OFDictData::dict msd;
   OFDictData::list dl;
@@ -694,7 +694,7 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& 
   decomposeParDict["method"]="simple";
   decomposeParDict["simpleCoeffs"]=msd;
 
-  OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dictFile& controlDict=dicts->lookupDict("system/controlDict");
   if (cm.OFversion()<=160)
   {
     controlDict["application"]="channelFoam";
@@ -945,7 +945,7 @@ void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& 
 
   OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
-  OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  OFDictData::dictFile& controlDict=dicts->lookupDict("system/controlDict");
   controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
 }
 

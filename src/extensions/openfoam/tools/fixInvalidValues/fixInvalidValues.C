@@ -96,11 +96,12 @@ int main(int argc, char *argv[])
 
     }
 
-    bool needMoreFix=false;
+    bool needMoreFix;
 
     label iter=0;
     do
     {
+      needMoreFix=false;
       label n_fixed=0, n_skipped=0;
 
       forAll(*indicator, i)

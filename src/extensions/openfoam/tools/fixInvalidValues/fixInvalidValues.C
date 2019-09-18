@@ -152,6 +152,7 @@ int main(int argc, char *argv[])
 
       }
 
+      reduce(needMoreFix, orOp<bool>());
       reduce(n_fixed, sumOp<label>());
       reduce(n_skipped, sumOp<label>());
 

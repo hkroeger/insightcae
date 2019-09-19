@@ -56,10 +56,6 @@ AirfoilSection::AirfoilSection(const ParameterSet& ps, const boost::filesystem::
 
 
 
-insight::ParameterSet AirfoilSection::defaultParameters()
-{
-  return Parameters::makeDefault();
-}
 
 
 void AirfoilSection::calcDerivedInputData()

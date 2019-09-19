@@ -42,7 +42,6 @@ x = double 0 "x value"
 public:
     declareType("SimpleAnalysis");
     SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath);
-    static ParameterSet defaultParameters();
     static std::string category() { return "Test"; }
     ResultSetPtr operator()(ProgressDisplayer* p=NULL);
 };
@@ -59,13 +58,6 @@ SimpleAnalysis::SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::
 {
 }
 
-
-
-
-ParameterSet SimpleAnalysis::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 

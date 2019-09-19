@@ -66,8 +66,7 @@ public:
     
     int calcnh() const;
     double calcT() const;    
-    
-    static ParameterSet defaultParameters();
+
     static std::string category() { return "Validation Cases/Inflow Generator"; }
     
     virtual void createCase(insight::OpenFOAMCase& cm);

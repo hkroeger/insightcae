@@ -95,10 +95,6 @@ public:
     perfectGasSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Material Properties"; }
 };
 
@@ -185,10 +181,6 @@ public:
     std::string requiredThermoType() const;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Material Properties"; }
 };
 

@@ -69,14 +69,6 @@ OpenFOAMAnalysis::OpenFOAMAnalysis
 {
 }
 
-ParameterSet OpenFOAMAnalysis::defaultParameters()
-{
-  ParameterSet p(Parameters::makeDefault());
-//  p.getSubset("fluid").get<SelectionParameter>("turbulenceModel").items()=turbulenceModel::factoryToC();
-//  p.getSubset("fluid").get<SelectionParameter>("turbulenceModel").setSelection("kOmegaSST");
-  return p;
-}
-
 boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
 {
   path p=Analysis::setupExecutionEnvironment();

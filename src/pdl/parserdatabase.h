@@ -212,11 +212,15 @@ struct PDLParserRuleset
     typedef std::shared_ptr<ParameterDataRule> ParameterDataRulePtr;
 
     qi::rule<Iterator, std::string(), Skipper> r_identifier, r_string, r_path, r_description_string, r_up_to_semicolon;
-    qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
     qi::rule<Iterator, ParameterSetEntry(), Skipper> r_parametersetentry;
 
     qi::symbols<char, ParameterDataRulePtr> parameterDataRules;
     qi::rule<Iterator, ParserDataBase::Ptr(), Skipper, qi::locals<ParameterDataRulePtr> > r_parameterdata;
+    qi::rule<Iterator, std::string(), Skipper> r_addcode;
+
+    qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
+
+    qi::rule<Iterator, boost::fusion::vector2<std::string, ParameterSetData>(), Skipper> r_pdl_content;
 
     PDLParserRuleset();
 

@@ -51,19 +51,24 @@ protected:
     QTreeWidgetItem* root_;
     
     insight::ParameterSet& parameters_;
+    insight::ParameterSet defaultParameters_;
 
     insight::ParameterSet_ValidatorPtr vali_;
     insight::ParameterSet_VisualizerPtr viz_;
 
 public:
-    ParameterEditorWidget(insight::ParameterSet& pset, QWidget* parent,
-                          insight::ParameterSet_ValidatorPtr vali = insight::ParameterSet_ValidatorPtr(),
-                          insight::ParameterSet_VisualizerPtr viz = insight::ParameterSet_VisualizerPtr(),
-                          QoccViewWidget *viewwidget = nullptr,
-                          QModelTree *modeltree = nullptr
-                          );
+    ParameterEditorWidget
+    (
+        insight::ParameterSet& pset,
+        const insight::ParameterSet& default_pset,
+        QWidget* parent,
+        insight::ParameterSet_ValidatorPtr vali = insight::ParameterSet_ValidatorPtr(),
+        insight::ParameterSet_VisualizerPtr viz = insight::ParameterSet_VisualizerPtr(),
+        QoccViewWidget *viewwidget = nullptr,
+        QModelTree *modeltree = nullptr
+    );
     
-    void insertParameter(const QString& name, insight::Parameter& parameter);
+    void insertParameter(const QString& name, insight::Parameter& parameter, const insight::Parameter& defaultParameter);
     
 public Q_SLOTS:
     void onApply();

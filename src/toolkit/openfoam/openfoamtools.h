@@ -272,9 +272,7 @@ public:
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const =0;
   
   inline const std::string& name() const { return p_.name; }
-  
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  
+
   virtual set* clone() const =0;
 };
 
@@ -330,7 +328,6 @@ protected:
 public:
   line(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
   /**
@@ -368,7 +365,6 @@ protected:
 public:
   uniformLine(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
   /**
@@ -414,7 +410,6 @@ protected:
 public:
   circumferentialAveragedUniformLine(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
   arma::mat rotMatrix(int i, double angularOffset=0) const;
@@ -451,7 +446,6 @@ protected:
 public:
   linearAveragedPolyLine(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
   inline std::string setname(int i, int j) const { return p_.name+"-"+boost::lexical_cast<std::string>(i*p_.nd1+j); }
@@ -490,7 +484,6 @@ protected:
 public:
   linearAveragedUniformLine(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
@@ -801,7 +794,6 @@ public:
 
   HomogeneousAveragedProfile(const ParameterSet& p, const boost::filesystem::path& exepath);
 
-  static ParameterSet defaultParameters();
   static std::string category() { return "General Postprocessing"; }
   
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);

@@ -25,13 +25,19 @@
 #include <QSplitter>
 
 
-ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidget *parent,
-                                             insight::ParameterSet_ValidatorPtr vali,
-                                             insight::ParameterSet_VisualizerPtr viz,
-                                             QoccViewWidget *viewwidget,
-                                             QModelTree *modeltree)
+ParameterEditorWidget::ParameterEditorWidget
+(
+  insight::ParameterSet& pset,
+  const insight::ParameterSet& default_pset,
+  QWidget *parent,
+  insight::ParameterSet_ValidatorPtr vali,
+  insight::ParameterSet_VisualizerPtr viz,
+  QoccViewWidget *viewwidget,
+  QModelTree *modeltree
+)
 : QSplitter(Qt::Horizontal, parent),
   parameters_(pset),
+  defaultParameters_(default_pset),
   vali_(vali),
   viz_(viz)
 {
@@ -80,7 +86,7 @@ ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidge
     ptree_->setHeaderLabels( QStringList() << "Parameter Name" << "Current Value" );
     ptree_->addTopLevelItem(root_);
     
-    addWrapperToWidget(parameters_, root_, inputContents_, this);
+    addWrapperToWidget(parameters_, defaultParameters_, root_, inputContents_, this);
 
     {
       QList<int> l;
@@ -133,7 +139,7 @@ void ParameterEditorWidget::onParameterSetChanged()
   emit parameterSetChanged();
 }
 
-void ParameterEditorWidget::insertParameter(const QString& name, insight::Parameter& parameter)
+void ParameterEditorWidget::insertParameter(const QString& name, insight::Parameter& parameter, const insight::Parameter& defaultParameter)
 {
     DirectoryParameterWrapper *dp =
         new DirectoryParameterWrapper
@@ -141,6 +147,7 @@ void ParameterEditorWidget::insertParameter(const QString& name, insight::Parame
         root_,
         name,
         parameter,
+        defaultParameter,
         inputContents_,
         this
     );

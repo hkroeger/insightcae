@@ -381,11 +381,6 @@ bool potentialFoamNumerics::isCompressible() const
   return false;
 }
 
-ParameterSet potentialFoamNumerics::defaultParameters()
-{
-  return Parameters::makeDefault();
-}
-
 
 
 
@@ -435,11 +430,6 @@ bool laplacianFoamNumerics::isCompressible() const
   return false;
 }
 
-
-ParameterSet laplacianFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -566,9 +556,5 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 
-ParameterSet MeshingNumerics::defaultParameters()
-{
-  return Parameters::makeDefault();
-}
 
 }

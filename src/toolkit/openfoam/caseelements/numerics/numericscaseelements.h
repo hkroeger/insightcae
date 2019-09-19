@@ -66,7 +66,6 @@ public:
     potentialFreeSurfaceFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
-    static ParameterSet defaultParameters();
 
 };
 
@@ -96,7 +95,6 @@ public:
     declareType ( "simpleDyMFoamNumerics" );
     simpleDyMFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -125,7 +123,6 @@ public:
 //    declareType ( "pimpleDyMFoamNumerics" );
 //    pimpleDyMFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
 //    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-//    static ParameterSet defaultParameters();
 //};
 
 
@@ -157,7 +154,6 @@ public:
     cavitatingFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -209,7 +205,6 @@ public:
     {
         return alphaname_;
     }
-    static ParameterSet defaultParameters();
 };
 
 
@@ -227,7 +222,6 @@ public:
     declareType ( "LTSInterFoamNumerics" );
     LTSInterFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -256,7 +250,6 @@ public:
     declareType ( "interPhaseChangeFoamNumerics" );
     interPhaseChangeFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -296,7 +289,6 @@ public:
     reactingFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -309,7 +301,6 @@ public:
     declareType ( "reactingParcelFoamNumerics" );
     reactingParcelFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -344,7 +335,6 @@ public:
     buoyantSimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -381,7 +371,6 @@ public:
     buoyantPimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -439,7 +428,6 @@ public:
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 
-    static ParameterSet defaultParameters();
 };
 
 

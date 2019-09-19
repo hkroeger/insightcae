@@ -155,7 +155,6 @@ public:
     potentialFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -188,7 +187,6 @@ public:
     laplacianFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -263,7 +261,6 @@ public:
     MeshingNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters();
 };
 
 

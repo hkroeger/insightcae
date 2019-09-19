@@ -97,7 +97,6 @@ public:
   decomposeParDict(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
   void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-  static ParameterSet defaultParameters();
   static std::string category();
 };
 
@@ -127,7 +126,6 @@ public:
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 
-    static ParameterSet defaultParameters();
     static std::string category();
 };
 
@@ -155,7 +153,6 @@ public:
     minimumTimestepLimit ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters();
     static std::string category();
 };
 
@@ -197,10 +194,6 @@ public:
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Meshing"; }
 };
 
@@ -272,10 +265,6 @@ public:
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Preprocessing"; }
 };
 
@@ -305,10 +294,6 @@ public:
     volumeDrag ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Body Force"; }
 };
 
@@ -351,10 +336,6 @@ public:
     fixedValueConstraint ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Body Force"; }
 };
 
@@ -400,10 +381,6 @@ public:
     source ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Body Force"; }
 };
 
@@ -434,10 +411,6 @@ public:
     MRFZone ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Rotation"; }
 };
 
@@ -476,10 +449,6 @@ public:
     void addFields( OpenFOAMCase& c ) const override;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Numerics"; }
 };
 
@@ -511,10 +480,6 @@ public:
     PressureGradientSource ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Body Force"; }
 };
 
@@ -546,10 +511,6 @@ public:
     ConstantPressureGradientSource ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Body Force"; }
 };
 
@@ -592,10 +553,6 @@ public:
     singlePhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Material Properties"; }
 };
 
@@ -636,10 +593,6 @@ public:
     twoPhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Material Properties"; }
 };
 
@@ -697,10 +650,6 @@ public:
     SchnerrSauer ( const ParameterSet& p );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 
@@ -714,17 +663,14 @@ public:
 class cavitationTwoPhaseTransportProperties
     : public twoPhaseTransportProperties
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, twoPhaseTransportProperties::Parameters,
-//     (model, phaseChangeModels::Ptr,
-//       phaseChangeModels::Ptr( new phaseChangeModels::SchnerrSauer() ))
-//     (psat, double, 2300.0)
-//   )
+
 public:
+static void modifyDefaults(ParameterSet& ps);
 #include "basiccaseelements__cavitationTwoPhaseTransportProperties__Parameters.h"
 /*
 PARAMETERSET>>> cavitationTwoPhaseTransportProperties Parameters
 inherits twoPhaseTransportProperties::Parameters
+addTo_makeDefault { modifyDefaults(p); }
 
 psat = double 2300.0 "Saturation pressure"
 
@@ -740,8 +686,6 @@ public:
     declareType ( "cavitationTwoPhaseTransportProperties" );
     cavitationTwoPhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-
-    static ParameterSet defaultParameters();
 };
 
 
@@ -782,10 +726,6 @@ public:
     porousZone ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Body Force"; }
 };
 
@@ -839,10 +779,6 @@ public:
     limitQuantities ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
     static std::string category() { return "Tweaks"; }
 };
 
@@ -882,11 +818,6 @@ public:
   customDictEntries(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
-  static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
-
   static std::string category() { return "Custom"; }
 };
 
@@ -919,11 +850,6 @@ public:
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   void modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
 
-  static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
-
   static std::string category() { return "Custom"; }
 };
 
@@ -954,11 +880,6 @@ public:
   declareType("SRFoption");
   SRFoption(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
-
-  static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 
   static std::string category() { return "Body Force"; }
 };

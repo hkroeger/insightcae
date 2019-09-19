@@ -99,8 +99,7 @@ public:
   
   PipeBase(const ParameterSet& ps, const boost::filesystem::path& exepath);
   ~PipeBase();
-  
-  static ParameterSet defaultParameters();
+
   static std::string category() { return "Validation Cases"; }
   
   std::string cyclPrefix() const;

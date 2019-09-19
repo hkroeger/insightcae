@@ -35,10 +35,6 @@ FileTemplate::FileTemplate(const ParameterSet& ps, const boost::filesystem::path
 {
 }
 
-ParameterSet FileTemplate::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 ResultSetPtr FileTemplate::operator()(ProgressDisplayer* displayer)
 {

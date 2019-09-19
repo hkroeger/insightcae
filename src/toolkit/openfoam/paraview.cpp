@@ -137,11 +137,6 @@ ParaviewVisualization::ParaviewVisualization(const ParameterSet& ps, const boost
 {
 }
 
-ParameterSet ParaviewVisualization::defaultParameters()
-{
-  return Parameters::makeDefault();
-}
-
 ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer*)
 {
 //  boost::mutex::scoped_lock lock(runPvPython_mtx);

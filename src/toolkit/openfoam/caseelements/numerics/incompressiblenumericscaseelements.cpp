@@ -153,10 +153,6 @@ bool steadyIncompressibleNumerics::isCompressible() const
   return false;
 }
 
-ParameterSet steadyIncompressibleNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -277,10 +273,6 @@ bool unsteadyIncompressibleNumerics::isCompressible() const
   return false;
 }
 
-ParameterSet unsteadyIncompressibleNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 }

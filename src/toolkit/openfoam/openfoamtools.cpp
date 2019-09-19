@@ -2750,10 +2750,6 @@ HomogeneousAveragedProfile::HomogeneousAveragedProfile(const ParameterSet& ps, c
   setParameters(ps);
 }
 
-ParameterSet HomogeneousAveragedProfile::defaultParameters()
-{
-  return Parameters::makeDefault();
-}
 
 ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer)
 {

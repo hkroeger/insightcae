@@ -666,9 +666,14 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
         } catch (insight::Exception e)
         { /* ignore, if non-existent */ }
 
-        ped_ = new ParameterEditorWidget(cur->parameters(), ui->parameter_editor,
-                                         vali, viz,
-                                         ui->occview, ui->modeltree);
+        ped_ = new ParameterEditorWidget
+               (
+                 cur->parameters(),
+                 cur->defaultParameters(),
+                 ui->parameter_editor,
+                 vali, viz,
+                 ui->occview, ui->modeltree
+               );
         connect(ped_, &ParameterEditorWidget::parameterSetChanged,
                 this, &isofCaseBuilderWindow::onConfigModification);
         pe_layout_->addWidget(ped_);

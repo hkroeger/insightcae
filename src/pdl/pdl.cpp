@@ -103,7 +103,15 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
   //   );
 
   r_parametersetentry = r_identifier >> '=' > r_parameterdata;
-  r_parameterset = *( r_parametersetentry );
+
+  r_parameterset =  *( r_parametersetentry );
+
+  r_addcode =
+     qi::lit("addTo_makeDefault") >> as_string[ lexeme [ "{" >> *~char_("}") >> "}" ] ] [qi::_val = qi::_1]
+    ;
+
+  r_pdl_content =  (r_addcode | qi::attr(std::string())) >> r_parameterset;
+
   
   //   BOOST_SPIRIT_DEBUG_NODE(r_identifier);
   //   BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
@@ -124,7 +132,7 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
 
 template <typename Iterator, typename Skipper>
 struct PDLParser
-    : qi::grammar< Iterator, ParameterSetData(), Skipper >
+    : qi::grammar< Iterator, boost::fusion::vector2<std::string, ParameterSetData>(), Skipper >
 {
 
   public:
@@ -132,7 +140,7 @@ struct PDLParser
   PDLParserRuleset<Iterator,Skipper> rules;
 
   PDLParser()
-  : PDLParser::base_type(rules.r_parameterset)
+  : PDLParser::base_type(rules.r_pdl_content)
   {
     BoolParameterParser::insertrule<Iterator, Skipper>(rules);
     DoubleParameterParser::insertrule<Iterator, Skipper>(rules);
@@ -152,7 +160,7 @@ struct PDLParser
     
     rules.init();
 
-    on_error<fail>(rules.r_parameterset,
+    on_error<fail>( rules.r_pdl_content,
                    phx::ref(std::cout)
                    << "Error! Expecting "
                    << qi::_4
@@ -202,18 +210,21 @@ int main ( int argc, char *argv[] )
       std::string::iterator first=contents_raw.begin();
       std::string::iterator last=contents_raw.end();
 
-      ParameterSetData result;
+      boost::fusion::vector2<std::string, ParameterSetData> result_all;
       if (!qi::phrase_parse
           (
             first,
             last,
             parser,
             skip,
-            result
+            result_all
             ))
       {
         throw PDLException("Parsing PDL "+inf.string()+" failed!");
       }
+
+      std::string& addTo_makeDefault = boost::fusion::get<0>(result_all);
+      ParameterSetData result = boost::fusion::get<1>(result_all);
 
       {
         std::string bname=inf.stem().string();
@@ -347,6 +358,7 @@ int main ( int argc, char *argv[] )
                   pe.first
                   );
           }
+          f<<addTo_makeDefault<<endl;
           f<<"return p;"<<endl<<"}"<<endl;
 
           // convert static data into a ParameterSet
@@ -354,6 +366,9 @@ int main ( int argc, char *argv[] )
           f<<"{ ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
 
           f<<"};"<<endl;
+
+
+          f << "static ParameterSet defaultParameters() { return Parameters::makeDefault(); }" << endl;
         }
       }
     }

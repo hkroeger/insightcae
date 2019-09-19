@@ -66,8 +66,7 @@ protected:
 public:
     declareType("FileTemplate");
     FileTemplate(const ParameterSet& ps, const bfs_path& exedir);
-    
-    static ParameterSet defaultParameters();
+
     
     static std::string category() { return "Generic Analyses"; }
     

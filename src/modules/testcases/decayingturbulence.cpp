@@ -53,12 +53,7 @@ DecayingTurbulence::DecayingTurbulence(const ParameterSet& ps, const boost::file
 DecayingTurbulence::~DecayingTurbulence()
 {}
 
-ParameterSet DecayingTurbulence::defaultParameters()
-{
-  ParameterSet p(Parameters::makeDefault());
-  p.merge(OpenFOAMAnalysis::defaultParameters());
-  return p;
-}
+
 
 double DecayingTurbulence::calcT() const
 {

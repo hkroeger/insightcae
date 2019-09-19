@@ -166,8 +166,7 @@ public:
   declareType("Flat Plate Boundary Layer Test Case");
   
   FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& exepath);
-  
-  static ParameterSet defaultParameters();
+
   static std::string category() { return "Validation Cases"; }
   
   virtual void computeInitialLocation();

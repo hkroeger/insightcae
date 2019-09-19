@@ -80,8 +80,7 @@ public:
         const ParameterSet& ps,
         const boost::filesystem::path& exepath
     );
-    
-    static ParameterSet defaultParameters();
+
     virtual boost::filesystem::path setupExecutionEnvironment();
     
     virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="");

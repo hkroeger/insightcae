@@ -91,10 +91,6 @@ public:
   solidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet&ps = Parameters::makeDefault() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
-  static ParameterSet defaultParameters()
-  {
-      return Parameters::makeDefault();
-  }
   static std::string category() { return "Dynamic Mesh"; }
 };
 
@@ -167,10 +163,6 @@ public:
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
-  static ParameterSet defaultParameters()
-  {
-      return Parameters::makeDefault();
-  }
   static std::string category() { return "Dynamic Mesh"; }
 };
 

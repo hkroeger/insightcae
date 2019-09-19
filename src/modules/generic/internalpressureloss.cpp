@@ -45,12 +45,6 @@ InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::
   // default values for derived parameters
 {}
 
-ParameterSet InternalPressureLoss::defaultParameters()
-{
-    ParameterSet p(OpenFOAMAnalysis::defaultParameters());
-    p.merge(Parameters::makeDefault());
-    return p;
-}
 
 
 #define extendBB(bb, bb2) \

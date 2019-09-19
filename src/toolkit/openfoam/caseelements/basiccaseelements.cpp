@@ -214,10 +214,6 @@ void decomposeParDict::addIntoDictionaries ( OFdicts& dictionaries ) const
   }
 }
 
-ParameterSet decomposeParDict::defaultParameters()
-{
-  return Parameters::makeDefault();
-}
 
 std::string decomposeParDict::category()
 {
@@ -245,10 +241,7 @@ void gravity::addIntoDictionaries(OFdicts& dictionaries) const
   g["value"]=gv;
 }
 
-ParameterSet gravity::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
+
 std::string gravity::category()
 {
   return "Body Force";
@@ -289,10 +282,7 @@ void minimumTimestepLimit::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.subDict("functions")["minimumTimestepLimit"]=Fd;
 }
 
-ParameterSet minimumTimestepLimit::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
+
 std::string minimumTimestepLimit::category()
 {
   return "Body Force";
@@ -936,9 +926,8 @@ void cavitationTwoPhaseTransportProperties::addIntoDictionaries(OFdicts& diction
   phaseChangeModels::phaseChangeModel::lookup(msp.selection(), msp()) ->addIntoDictionaries(dictionaries);
 }
 
-ParameterSet cavitationTwoPhaseTransportProperties::defaultParameters()
+void cavitationTwoPhaseTransportProperties::modifyDefaults(ParameterSet& ps)
 {
-    ParameterSet ps = Parameters::makeDefault();
     
     SelectableSubsetParameter& msp = ps.get<SelectableSubsetParameter>("model");
     for (phaseChangeModels::phaseChangeModel::FactoryTable::const_iterator i = phaseChangeModels::phaseChangeModel::factories_->begin();
@@ -949,7 +938,6 @@ ParameterSet cavitationTwoPhaseTransportProperties::defaultParameters()
     }
     msp.selection() = phaseChangeModels::phaseChangeModel::factories_->begin()->first;
 
-    return ps;
 }
 
 

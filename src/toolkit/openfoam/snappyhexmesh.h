@@ -121,7 +121,6 @@ protected:
 public:
     declareType("Geometry");
   Geometry(const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
   
@@ -153,7 +152,6 @@ protected:
 public:
     declareType("PatchLayers");
   PatchLayers(const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
@@ -186,7 +184,6 @@ protected:
 public:
     declareType("ExplicitFeatureCurve");
   ExplicitFeatureCurve(const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
@@ -255,10 +252,6 @@ protected:
 public:
   declareType ( "RefinementBox" );
   RefinementBox ( const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters()
-  {
-    return Parameters::makeDefault();
-  }
   ParameterSet getParameters() const override
   {
     return p_;
@@ -293,10 +286,6 @@ protected:
 public:
   declareType ( "RefinementCylinder" );
   RefinementCylinder ( const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters()
-  {
-    return Parameters::makeDefault();
-  }
   ParameterSet getParameters() const override
   {
     return p_;
@@ -329,10 +318,6 @@ protected:
 public:
   declareType ( "RefinementSphere" );
   RefinementSphere ( const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters()
-  {
-    return Parameters::makeDefault();
-  }
   ParameterSet getParameters() const override
   {
     return p_;
@@ -367,7 +352,6 @@ protected:
 public:
     declareType("RefinementGeometry");
   RefinementGeometry( const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
@@ -387,7 +371,6 @@ class NearSurfaceRefinement
 public:
     declareType("NearSurfaceRefinement");
     NearSurfaceRefinement( const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
@@ -417,7 +400,6 @@ protected:
 public:
   declareType ( "NearTemplatePatchRefinement" );
   NearTemplatePatchRefinement ( const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
@@ -472,11 +454,6 @@ public:
     snappyHexMeshConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
-
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 
     static std::string category() { return "Meshing"; }
 

@@ -116,6 +116,10 @@ struct Replacements
   std::string reformatted_;
   std::string specialchars_;
   qi::symbols<char, std::string> simple_replacements_;
+
+  enum Format {
+    BOLD
+  };
   
   Replacements()
   {
@@ -130,7 +134,8 @@ struct Replacements
   virtual void appendImage(double width, const std::string& imagename) =0;
   virtual void appendInlineFormula(const std::string& latex_formula) =0;
   virtual void appendDisplayFormula(const std::string& latex_formula) =0;
-  
+  virtual void appendFormattedText(const std::string& text, Format fmt) =0;
+
 };
 
 Replacements::~Replacements()
@@ -157,6 +162,10 @@ struct LaTeXReplacements
   virtual void appendDisplayFormula(const std::string& latex_formula)
   {
     reformatted_ += "$$"+latex_formula+"$$";
+  }
+  virtual void appendFormattedText(const std::string& text, Format fmt)
+  {
+    reformatted_ += "{\bf "+text+"}";
   }
 
 };
@@ -200,6 +209,10 @@ struct HTMLReplacements
     reformatted_ += "<br>\n  "+latex_formula+"<br>\n";
   }
 
+  virtual void appendFormattedText(const std::string& text, Format fmt)
+  {
+    reformatted_ += "<b>"+text+"</b>";
+  }
 };
 
 HTMLReplacements::HTMLReplacements()
@@ -218,7 +231,8 @@ struct StringParser
 {
   
   qi::rule< std::string::iterator > start;   
-  qi::rule< std::string::iterator, std::string() > inlineformula, displayformula, image; 
+  qi::rule< std::string::iterator, std::string() >
+   inlineformula, displayformula, image;
     
 
     StringParser(Replacements& rep)
@@ -226,7 +240,7 @@ struct StringParser
     {
       inlineformula =  qi::as_string[ '$' >> +(~qi::char_("$")) - qi::char_('$')  >> '$' ];
       displayformula =  qi::as_string[ qi::lit("$$") >> +(~qi::char_("$")) - qi::char_('$')  >> qi::lit("$$") ];
-      
+
       image = 
       (
 	qi::lit("\\includegraphics") 
@@ -236,6 +250,14 @@ struct StringParser
 	;
       
       start = *(
+        ( '{' >>
+          ( qi::as_string[ qi::lit("\\bf") >> qi::lexeme[ *(qi::char_ - qi::char_('}')) ] >> '}' ] )
+            [ phx::bind(&Replacements::appendFormattedText, &rep, qi::_1, Replacements::BOLD) ]
+//          |
+//          ( qi::as_string[ qi::lit("\\sl") >> qi::lexeme[ *(qi::char_ - qi::char_('}')) ] >>qi::lit("}") ] )
+//            [ phx::bind(&Replacements::appendFormattedText, &rep, qi::_1, Replacements::BOLD) ]
+        )
+        |
 	qi::as_string[ +(~qi::char_(rep.specialchars_)) - qi::char_(rep.specialchars_) ] //[ std::cout<<"TEXT:{{"<<qi::_1<<"}}"<<std::endl ] 
 	  [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
 	|
@@ -246,7 +268,9 @@ struct StringParser
 	|
 	displayformula 
 	  [ phx::bind(&Replacements::appendDisplayFormula, &rep, qi::_1) ]
-	| rep.simple_replacements_ [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
+        |
+          rep.simple_replacements_ [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
+
       )
       ; 
       

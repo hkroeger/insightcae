@@ -181,10 +181,6 @@ bool steadyCompressibleNumerics::isCompressible() const
   return true;
 }
 
-ParameterSet steadyCompressibleNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -382,10 +378,6 @@ bool unsteadyCompressibleNumerics::isCompressible() const
 }
 
 
-ParameterSet unsteadyCompressibleNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 }

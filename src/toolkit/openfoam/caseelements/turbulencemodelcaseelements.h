@@ -98,7 +98,6 @@ public:
   Smagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
-  inline static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
 class oneEqEddy_LESModel

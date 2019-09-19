@@ -76,8 +76,7 @@ public:
   SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className);
   SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p);
   void addIntoFieldDictionaries(OFdicts& dictionaries) const override;
-  
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+
 };
 
 
@@ -126,10 +125,7 @@ public:
 
     bool providesBCsForPatch ( const std::string& patchName ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return ParameterSet();
-    }
+    static ParameterSet defaultParameters() { return ParameterSet(); }
 
 };
 
@@ -190,7 +186,6 @@ public:
             const ParameterSet&ps = Parameters::makeDefault() );
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
-    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
 
@@ -223,7 +218,6 @@ public:
                   const ParameterSet&ps = Parameters::makeDefault() );
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
-    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
 
@@ -256,7 +250,6 @@ public:
                    const ParameterSet&ps = Parameters::makeDefault() );
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
-    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
 
@@ -290,7 +283,6 @@ public:
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
 
@@ -343,11 +335,6 @@ public:
     );
     
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
-    
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 
@@ -395,11 +382,6 @@ public:
     );
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();;
-    }
-
 };
 
 
@@ -441,10 +423,6 @@ public:
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 
@@ -490,10 +468,6 @@ public:
     virtual void setField_U ( OFDictData::dict& BC ) const;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 
@@ -537,10 +511,6 @@ public:
     virtual void addDataDict ( OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data ) const;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 
@@ -576,10 +546,6 @@ public:
     );
     virtual void setField_p ( OFDictData::dict& BC ) const;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 
 };
 
@@ -665,10 +631,6 @@ public:
     virtual void setField_R ( OFDictData::dict& BC ) const;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 
-    inline static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 
@@ -744,10 +706,6 @@ public:
     );
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 
@@ -809,10 +767,6 @@ public:
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
 
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 
 };
 

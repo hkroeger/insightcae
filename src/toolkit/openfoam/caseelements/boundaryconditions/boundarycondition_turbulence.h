@@ -67,7 +67,6 @@ public:
     uniformIntensityAndLengthScale(const ParameterSet& ps);
     inline static turbulenceBCPtr create(const ParameterSet& ps) { return turbulenceBCPtr(new uniformIntensityAndLengthScale(ps)); }
 
-    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
     ParameterSet getParameters() const override { return p_; }
 
     void setDirichletBC_k(OFDictData::dict& BC, double U) const override;

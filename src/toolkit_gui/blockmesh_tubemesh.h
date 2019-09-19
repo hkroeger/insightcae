@@ -54,11 +54,6 @@ public:
     blockMeshDict_TubeMesh ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
 
     virtual void create_bmd();
-
-    inline static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 

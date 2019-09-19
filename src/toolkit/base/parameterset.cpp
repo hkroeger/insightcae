@@ -377,10 +377,7 @@ void SubsetParameter::clearPackedData()
   }
 }
 
-Parameter* SubsetParameter::clone() const
-{
-  return new SubsetParameter(*this, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
-}
+
 
 rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const
@@ -412,6 +409,15 @@ void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_docume
         );
   }
 }
+
+
+
+Parameter* SubsetParameter::clone() const
+{
+  return new SubsetParameter(*this, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+}
+
+
 
 defineType(SelectableSubsetParameter);
 addToFactoryTable(Parameter, SelectableSubsetParameter);
@@ -504,18 +510,6 @@ void SelectableSubsetParameter::clearPackedData()
   }
 }
 
-Parameter* SelectableSubsetParameter::clone () const
-{
-  SelectableSubsetParameter *np=new SelectableSubsetParameter(description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
-  np->selection_=selection_;
-  for (ItemList::const_iterator i=value_.begin(); i!=value_.end(); i++)
-  {
-    std::string key(i->first);
-    np->value_.insert(key, i->second->cloneParameterSet());
-  }
-  return np; 
-}
-
 rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const
 {
@@ -560,6 +554,35 @@ void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::
 }
 
 
+Parameter* SelectableSubsetParameter::clone () const
+{
+  SelectableSubsetParameter *np=new SelectableSubsetParameter(description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+  np->selection_=selection_;
+  for (ItemList::const_iterator i=value_.begin(); i!=value_.end(); i++)
+  {
+    std::string key(i->first);
+    np->value_.insert(key, i->second->cloneParameterSet());
+  }
+  return np;
+}
+
+
+
+void SelectableSubsetParameter::reset(const Parameter& p)
+{
+  if (const auto* op = dynamic_cast<const SelectableSubsetParameter*>(&p))
+  {
+    Parameter::reset(p);
+    selection_= op->selection_;
+    for (const auto v: op->value_)
+    {
+      std::string key(v.first);
+      value_.insert(key, v.second->cloneParameterSet());
+    }
+  }
+  else
+    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+}
 
 ParameterSet_Validator::~ParameterSet_Validator()
 {}

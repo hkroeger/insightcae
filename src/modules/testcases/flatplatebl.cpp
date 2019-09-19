@@ -45,12 +45,7 @@ addToAnalysisFactoryTable(FlatPlateBL);
 const std::vector<double> FlatPlateBL::sec_locs_ 
  = list_of (0.01)(0.05)(0.1)(0.2)(0.5)(0.7)(0.9);
   
-ParameterSet FlatPlateBL::defaultParameters()
-{
-  ParameterSet p(Parameters::makeDefault());
-  p.merge(OpenFOAMAnalysis::defaultParameters());
-  return p;
-}
+
 
 FlatPlateBL::FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis

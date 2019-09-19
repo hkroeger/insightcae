@@ -240,6 +240,16 @@ void Parameter::clearPackedData()
   // do nothing by default
 }
 
+void Parameter::reset(const Parameter& op)
+{
+  description_ = op.description_;
+  isHidden_ = op.isHidden_;
+  isExpert_ = op.isExpert_;
+  isNecessary_ = op.isNecessary_;
+  order_ = op.order_;
+}
+
+
 std::string valueToString(const arma::mat& value)
 {
   std::string s;
@@ -295,6 +305,8 @@ addToFactoryTable(Parameter, BoolParameter);
 addToFactoryTable(Parameter, VectorParameter);
 addToFactoryTable(Parameter, StringParameter);
 // addToFactoryTable(Parameter, PathParameter, std::string);
+
+
 
 
 
@@ -418,10 +430,6 @@ void PathParameter::clearPackedData()
   file_content_.clear();
 }
 
-Parameter* PathParameter::clone() const
-{
-    return new PathParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_, file_content_.c_str());
-}
 
 rapidxml::xml_node<>* PathParameter::appendToNode
 (
@@ -501,6 +509,22 @@ void PathParameter::readFromNode
   }
 }
 
+Parameter* PathParameter::clone() const
+{
+    return new PathParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_, file_content_.c_str());
+}
+
+void PathParameter::reset(const Parameter& p)
+{
+  if (const auto* op = dynamic_cast<const PathParameter*>(&p))
+  {
+    Parameter::reset(p);
+    file_content_=op->file_content_;
+  }
+  else
+    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+}
+
 
 
 
@@ -531,10 +555,6 @@ std::string DirectoryParameter::latexRepresentation() const
 //      + "\"\n";
 //}
 
-Parameter* DirectoryParameter::clone() const
-{
-  return new DirectoryParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
-}
 
 rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const
@@ -569,6 +589,23 @@ void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_doc
         );
   }}
 
+
+
+Parameter* DirectoryParameter::clone() const
+{
+  return new DirectoryParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+}
+
+
+void DirectoryParameter::reset(const Parameter& p)
+{
+  if (const auto* op = dynamic_cast<const DirectoryParameter*>(&p))
+  {
+    PathParameter::reset(p);
+  }
+  else
+    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+}
 
 
 
@@ -618,10 +655,6 @@ std::string SelectionParameter::plainTextRepresentation(int indent) const
   return SimpleLatex(items_[value_]).toPlainText();
 }
 
-Parameter* SelectionParameter::clone() const
-{
-  return new SelectionParameter(value_, items_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
-}
 
 rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const
@@ -674,6 +707,25 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
            )
         );
   }
+}
+
+
+
+Parameter* SelectionParameter::clone() const
+{
+  return new SelectionParameter(value_, items_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+}
+
+
+void SelectionParameter::reset(const Parameter& p)
+{
+  if (const auto* op = dynamic_cast<const SelectionParameter*>(&p))
+  {
+    IntParameter::reset(p);
+    items_ = op->items_;
+  }
+  else
+    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
 }
 
 
@@ -738,10 +790,6 @@ DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterat
   return new DoubleParameter(*i, "realized from range iterator");
 }
 
-Parameter* DoubleRangeParameter::clone() const
-{
-  return new DoubleRangeParameter(values_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
-}
 
 rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const
@@ -793,19 +841,38 @@ void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_d
 }
 
 
+Parameter* DoubleRangeParameter::clone() const
+{
+  return new DoubleRangeParameter(values_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+}
+
+
+
+void DoubleRangeParameter::reset(const Parameter& p)
+{
+  if (const auto* op = dynamic_cast<const DoubleRangeParameter*>(&p))
+  {
+    Parameter::reset(p);
+    values_ = op->values_;
+  }
+  else
+    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+}
 
 
 defineType(ArrayParameter);
 addToFactoryTable(Parameter, ArrayParameter);
 
 ArrayParameter::ArrayParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
-: Parameter(description, isHidden, isExpert, isNecessary, order)
+: Parameter(description, isHidden, isExpert, isNecessary, order),
+  defaultSize_(0)
 {
 }
 
 ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
 : Parameter(description, isHidden, isExpert, isNecessary, order),
-  defaultValue_(defaultValue.clone())
+  defaultValue_(defaultValue.clone()),
+  defaultSize_(size)
 {
   for (int i=0; i<size; i++) appendEmpty();
 }
@@ -855,15 +922,6 @@ void ArrayParameter::clearPackedData()
   }
 }
 
-Parameter* ArrayParameter::clone () const
-{
-  ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
-  for (int i=0; i<size(); i++)
-  {
-    np->appendValue( *(value_[i]) );
-  }
-  return np;
-}
 
 rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const
@@ -929,7 +987,35 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
         );
   }
 }
-  
+
+
+
+Parameter* ArrayParameter::clone () const
+{
+  ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+  for (int i=0; i<size(); i++)
+  {
+    np->appendValue( *(value_[i]) );
+  }
+  return np;
+}
+
+
+void ArrayParameter::reset(const Parameter& p)
+{
+  if (const auto* op = dynamic_cast<const ArrayParameter*>(&p))
+  {
+    Parameter::reset(p);
+    defaultValue_.reset( op->defaultValue_->clone() );
+    defaultSize_ = op->defaultSize_;
+    value_.clear();
+    for (const auto& v: op->value_)
+      value_.push_back( ParameterPtr(v->clone()) );
+  }
+  else
+    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+}
+
   
   
   
@@ -1043,6 +1129,19 @@ void MatrixParameter::readFromNode(const string& name, xml_document< char >& doc
 Parameter* MatrixParameter::clone() const
 {
   return new MatrixParameter(value_, description_.simpleLatex());
+}
+
+
+
+void MatrixParameter::reset(const Parameter& p)
+{
+  if (const auto* op = dynamic_cast<const MatrixParameter*>(&p))
+  {
+    Parameter::reset(p);
+    value_ = op->value_;
+  }
+  else
+    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
 }
 
 

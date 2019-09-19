@@ -117,8 +117,7 @@ public:
   declareType("Airfoil 2D");
   
   AirfoilSection(const ParameterSet& ps, const boost::filesystem::path& exepath);
-    
-  static insight::ParameterSet defaultParameters();
+
   
   static std::string category() { return "Generic Analyses"; }
 

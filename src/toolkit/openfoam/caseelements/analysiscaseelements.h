@@ -68,10 +68,9 @@ public:
   declareStaticFunctionTable ( defaultParameters, ParameterSet );
   declareType("outputFilterFunctionObject");
 
-  outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet & ps = Parameters::makeDefault() );
+  outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet & ps = defaultParameters() );
   virtual OFDictData::dict functionObjectDict() const =0;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual void evaluate
   (
     OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 
@@ -108,11 +107,8 @@ protected:
   
 public:
   declareType("fieldAveraging");
-  fieldAveraging(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters()
-  {
-      return Parameters::makeDefault();
-  }
+  fieldAveraging(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+
   OFDictData::dict functionObjectDict() const override;
 };
 
@@ -144,7 +140,7 @@ protected:
   
 public:
     declareType("probes");
-    probes(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    probes(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
 
     /**
      * reads and returns probe sample data.
@@ -171,9 +167,7 @@ public:
         return "Postprocessing";
     }
 
-    static ParameterSet defaultParameters() {
-        return Parameters::makeDefault();
-    }
+
     OFDictData::dict functionObjectDict() const override;
 };
 
@@ -215,15 +209,13 @@ protected:
 
 public:
     declareType("volumeIntegrate");
-    volumeIntegrate(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    volumeIntegrate(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
 
     static std::string category() {
         return "Postprocessing";
     }
 
-    static ParameterSet defaultParameters() {
-        return Parameters::makeDefault();
-    }
+
     OFDictData::dict functionObjectDict() const override;
 };
 
@@ -265,15 +257,13 @@ protected:
 
 public:
     declareType("surfaceIntegrate");
-    surfaceIntegrate(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    surfaceIntegrate(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
 
     static std::string category() {
         return "Postprocessing";
     }
 
-    static ParameterSet defaultParameters() {
-        return Parameters::makeDefault();
-    }
+
     OFDictData::dict functionObjectDict() const override;
 };
 
@@ -315,9 +305,6 @@ public:
         return "Postprocessing";
     }
 
-    static ParameterSet defaultParameters() {
-        return Parameters::makeDefault();
-    }
 };
 
 
@@ -349,10 +336,7 @@ protected:
 public:
   declareType("cuttingPlane");
   cuttingPlane(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters()
-  {
-      return Parameters::makeDefault();
-  }
+
   OFDictData::dict functionObjectDict() const override;
 };
 
@@ -388,8 +372,7 @@ public:
   declareType("twoPointCorrelation");
   twoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-  
+
   OFDictData::dict functionObjectDict() const override;
   virtual OFDictData::dict csysConfiguration() const;
 
@@ -427,10 +410,7 @@ protected:
 public:
   declareType("cylindricalTwoPointCorrelation");
   cylindricalTwoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters()
-  {
-      return Parameters::makeDefault();
-  }
+
   OFDictData::dict csysConfiguration() const override;
 };
 
@@ -469,10 +449,7 @@ protected:
 public:
   declareType("forces");
   forces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
+
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   
   static arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName);
@@ -505,7 +482,6 @@ protected:
 public:
   declareType("extendedForces");
   extendedForces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };
 
@@ -554,7 +530,6 @@ protected:
 public:
   declareType("catalyst");
   catalyst(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   static std::string category() { return "Postprocessing"; }
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
@@ -605,7 +580,6 @@ public:
   ResultSetPtr operator()(ProgressDisplayer* displayer=nullptr) override;
 
   static std::string category() { return "General Postprocessing"; }
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
 
@@ -677,7 +651,6 @@ public:
     Ordering& so = Ordering()
   ) const;
 
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 
 };
 

@@ -46,12 +46,6 @@ NumericalWindtunnel::NumericalWindtunnel(const ParameterSet& ps, const boost::fi
 
 }
 
-ParameterSet NumericalWindtunnel::defaultParameters()
-{
-  ParameterSet p(OpenFOAMAnalysis::defaultParameters());
-  p.merge(Parameters::makeDefault());
-  return p;
-}
 
 boost::mutex mtx;
 

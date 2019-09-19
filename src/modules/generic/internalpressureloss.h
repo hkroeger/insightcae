@@ -103,7 +103,6 @@ public:
 
     InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath);
 
-    static ParameterSet defaultParameters();
     static std::string category() { return "Generic Analyses"; }
     
     virtual void calcDerivedInputData();

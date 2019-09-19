@@ -4,6 +4,7 @@ InsertedCaseElement::InsertedCaseElement(QListWidget* parent, const std::string&
 : QListWidgetItem(parent), type_name_(type_name)
 {
     curp_ = insight::OpenFOAMCaseElement::defaultParameters(type_name);
+    defp_ = curp_;
     setText(type_name.c_str());
 }
 

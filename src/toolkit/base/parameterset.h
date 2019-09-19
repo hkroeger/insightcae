@@ -318,20 +318,22 @@ public:
     return /**value_*/static_cast<const ParameterSet&> ( *this );
   }
 
-  virtual std::string latexRepresentation() const;
-  virtual std::string plainTextRepresentation(int indent=0) const;
+  std::string latexRepresentation() const override;
+  std::string plainTextRepresentation(int indent=0) const override;
 
-  virtual bool isPacked() const;
-  virtual void pack();
-  virtual void unpack();
-  virtual void clearPackedData();
+  bool isPacked() const override;
+  void pack() override;
+  void unpack() override;
+  void clearPackedData() override;
 
-  virtual Parameter* clone () const;
 
-  virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath ) const;
-  virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                              boost::filesystem::path inputfilepath );
+  rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+      boost::filesystem::path inputfilepath ) const override;
+  void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                              boost::filesystem::path inputfilepath ) override;
+
+  Parameter* clone () const override;
+
 };
 
 
@@ -398,20 +400,23 @@ public:
   
   void setSelection(const key_type& key, const ParameterSet& ps);
 
-  virtual std::string latexRepresentation() const;
-  virtual std::string plainTextRepresentation(int indent=0) const;
+  std::string latexRepresentation() const override;
+  std::string plainTextRepresentation(int indent=0) const override;
 
-  virtual bool isPacked() const;
-  virtual void pack();
-  virtual void unpack();
-  virtual void clearPackedData();
+  bool isPacked() const override;
+  void pack() override;
+  void unpack() override;
+  void clearPackedData() override;
 
-  virtual Parameter* clone () const;
 
-  virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath ) const;
-  virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                              boost::filesystem::path inputfilepath );
+  rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+      boost::filesystem::path inputfilepath ) const override;
+  void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                              boost::filesystem::path inputfilepath ) override;
+
+  Parameter* clone () const override;
+  void reset(const Parameter& p) override;
+
 };
 
 

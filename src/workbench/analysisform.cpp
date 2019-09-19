@@ -83,7 +83,8 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 {
 
     // load default parameters
-    parameters_ = insight::Analysis::defaultParameters(analysisName_);
+    auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
+    parameters_ = defaultParams;
 
     ui = new Ui::AnalysisForm;
     QWidget* iw=new QWidget(this);
@@ -137,9 +138,9 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     } catch (insight::Exception e)
     { /* ignore, if non-existent */ }
 
-    peditor_=new ParameterEditorWidget(parameters_, ui->inputTab, vali, viz);
+    peditor_=new ParameterEditorWidget(parameters_, defaultParams, ui->inputTab, vali, viz);
     ui->inputTabLayout->addWidget(peditor_);
-    peditor_->insertParameter("execution directory", executionPathParameter_);
+    peditor_->insertParameter("execution directory", executionPathParameter_, executionPathParameter_);
     QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
     QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
     connect(peditor_, &ParameterEditorWidget::parameterSetChanged,

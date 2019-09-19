@@ -245,13 +245,13 @@ class turbulenceModel
 : public OpenFOAMCaseElement
 {
 
-public:
-#include "openfoamcase__turbulenceModel__Parameters.h"
-/*
-PARAMETERSET>>> turbulenceModel Parameters
+//public:
+//#include "openfoamcase__turbulenceModel__Parameters.h"
+///*
+//PARAMETERSET>>> turbulenceModel Parameters
 
-<<<PARAMETERSET
-*/
+//<<<PARAMETERSET
+//*/
 
 public:
 

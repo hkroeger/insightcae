@@ -77,7 +77,6 @@ public:
 
   virtual std::string pythonCommands() const;
 
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
 };
 
@@ -113,7 +112,6 @@ public:
 
   virtual std::string pythonCommands() const;
 
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
 };
 
@@ -152,7 +150,6 @@ public:
   virtual std::string pythonCommands() const;
   virtual std::vector<boost::filesystem::path> createdFiles() const;
 
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
 };
 
@@ -178,7 +175,6 @@ scenes = array [
 
   ParaviewVisualization(const ParameterSet& ps, const boost::filesystem::path& exepath);
 
-  static ParameterSet defaultParameters();
   static std::string category() { return "General Postprocessing"; }
 
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);

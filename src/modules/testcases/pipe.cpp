@@ -85,12 +85,7 @@ PipeBase::~PipeBase()
 
 }
 
-ParameterSet PipeBase::defaultParameters()
-{
-  ParameterSet p(OpenFOAMAnalysis::defaultParameters());
-  p.extend(Parameters::makeDefault().entries());
-  return p;
-}
+
 
 std::string PipeBase::cyclPrefix() const
 {
@@ -723,7 +718,7 @@ ParameterSet PipeInflow::defaultParameters()
 {
   ParameterSet p(PipeBase::defaultParameters());
 
-  std::auto_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::Parameters::makeDefault(), "Inflow BC"));
+  std::auto_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
   
 //   (*inflowparams)().extend
 //   (

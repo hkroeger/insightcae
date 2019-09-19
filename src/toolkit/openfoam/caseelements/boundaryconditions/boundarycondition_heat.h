@@ -67,7 +67,6 @@ public:
   declareType ( "FixedTemperature" );
   FixedTemperatureBC ( const ParameterSet& ps = ParameterSet() );
 
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   ParameterSet getParameters() const override { return p_; }
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
@@ -118,7 +117,6 @@ public:
   declareType ( "ExternalWall" );
   ExternalWallBC ( const ParameterSet& ps = ParameterSet() );
 
-  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   ParameterSet getParameters() const override { return p_; }
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;

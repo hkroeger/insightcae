@@ -60,11 +60,6 @@ public:
 
     virtual void create_bmd();
 
-    inline static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
-
     double rCore() const;
 };
 

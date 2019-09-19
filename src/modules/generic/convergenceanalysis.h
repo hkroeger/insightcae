@@ -59,8 +59,7 @@ public:
     ConvergenceAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath);
     
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
-    
-    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+
     static std::string category() { return "General Postprocessing"; }
 };
 

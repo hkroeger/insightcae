@@ -40,6 +40,7 @@ void Patch::set_bc_type(const std::string& type_name)
     bc_type_=type_name;
     updateText();
     curp_ = BoundaryCondition::defaultParameters(bc_type_);
+    defp_ = curp_;
 }
 
 void Patch::set_patch_name(const QString& newname)

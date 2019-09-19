@@ -158,6 +158,8 @@ public:
      * remove the file content information
      */
     virtual void clearPackedData();
+
+    virtual void reset(const Parameter&);
 };
 
 
@@ -219,7 +221,7 @@ public:
           value_ ( value )
     {}
 
-    virtual ~SimpleParameter()
+    ~SimpleParameter() override
     {}
 
     virtual T& operator() ()
@@ -231,24 +233,24 @@ public:
         return value_;
     }
 
-    virtual std::string latexRepresentation() const
+    std::string latexRepresentation() const override
     {
         return SimpleLatex( valueToString ( value_ ) ).toLaTeX();
     }
 
-    virtual std::string plainTextRepresentation(int indent=0) const
+    std::string plainTextRepresentation(int indent=0) const override
     {
         return SimpleLatex( valueToString ( value_ ) ).toPlainText();
     }
 
 
-    virtual Parameter* clone() const
+    Parameter* clone() const override
     {
         return new SimpleParameter<T, N> ( value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_ );
     }
 
-    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const
+    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const override
     {
         using namespace rapidxml;
         xml_node<>* child = Parameter::appendToNode ( name, doc, node, inputfilepath );
@@ -263,8 +265,8 @@ public:
         return child;
     }
 
-    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath )
+    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath ) override
     {
         using namespace rapidxml;
         xml_node<>* child = findNode ( node, name, type() );
@@ -282,6 +284,17 @@ public:
                  )
               );
         }
+    }
+
+    void reset(const Parameter& p) override
+    {
+      if (const auto* op = dynamic_cast<const SimpleParameter<T,N>*>(&p))
+      {
+        Parameter::reset(p);
+        value_=op->value_;
+      }
+      else
+        throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
     }
 
 };
@@ -318,8 +331,8 @@ public:
     PathParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     PathParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0, const char* base64_content = "" );
 
-    virtual boost::filesystem::path& operator() ();
-    virtual const boost::filesystem::path& operator() () const;
+    boost::filesystem::path& operator() () override;
+    const boost::filesystem::path& operator() () const override;
 
     /**
      * @brief isPacked
@@ -327,32 +340,32 @@ public:
      * @return
      */
 
-    bool isPacked() const;
+    bool isPacked() const override;
 
     /**
      * @brief pack
      * pack the external file. Replace stored content, if present.
      */
-    void pack();
+    void pack() override;
 
     /**
      * @brief unpack
      * restore file contents on disk, if file is not there
      */
-    void unpack();
+    void unpack() override;
 
-    void clearPackedData();
+    void clearPackedData() override;
 
-    virtual Parameter* clone() const;
 
-    virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-     boost::filesystem::path inputfilepath) const;
+    rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+     boost::filesystem::path inputfilepath) const override;
 
-    virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-     boost::filesystem::path inputfilepath);
+    void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+     boost::filesystem::path inputfilepath) override;
+
+    Parameter* clone() const override;
+    void reset(const Parameter& p) override;
 };
-
-
 
 
 #ifdef SWIG
@@ -384,15 +397,16 @@ public:
 
     DirectoryParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     DirectoryParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    virtual std::string latexRepresentation() const;
-    virtual Parameter* clone() const;
-    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const;
-    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath );
+    std::string latexRepresentation() const override;
+
+    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const override;
+    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath ) override;
+
+    Parameter* clone() const override;
+    void reset(const Parameter& p) override;
 };
-
-
 
 
 class SelectionParameter
@@ -410,7 +424,7 @@ public:
     SelectionParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     SelectionParameter ( const int& value, const ItemList& items, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     SelectionParameter ( const std::string& key, const ItemList& items, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    virtual ~SelectionParameter();
+    ~SelectionParameter() override;
 
     inline ItemList& items()
     {
@@ -430,15 +444,17 @@ public:
         return  std::find ( items_.begin(), items_.end(), key ) - items_.begin();
     }
 
-    virtual std::string latexRepresentation() const;
-    virtual std::string plainTextRepresentation(int indent=0) const;
+    std::string latexRepresentation() const override;
+    std::string plainTextRepresentation(int indent=0) const override;
 
-    virtual Parameter* clone() const;
 
-    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const;
-    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath );
+    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const override;
+    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath ) override;
+
+    Parameter* clone() const override;
+    void reset(const Parameter& p) override;
 };
 
 
@@ -461,7 +477,7 @@ public:
     DoubleRangeParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     DoubleRangeParameter ( const RangeList& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     DoubleRangeParameter ( double defaultFrom, double defaultTo, int defaultNum, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    virtual ~DoubleRangeParameter();
+    ~DoubleRangeParameter() override;
 
     inline void insertValue ( double v )
     {
@@ -485,19 +501,20 @@ public:
         return values_;
     }
 
-    virtual std::string latexRepresentation() const;
-    virtual std::string plainTextRepresentation(int indent=0) const;
+    std::string latexRepresentation() const override;
+    std::string plainTextRepresentation(int indent=0) const override;
 
     DoubleParameter* toDoubleParameter ( RangeList::const_iterator i ) const;
 
-    virtual Parameter* clone() const;
 
-    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const;
-    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath );
+    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const override;
+    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath ) override;
+
+    Parameter* clone() const override;
+    void reset(const Parameter& p) override;
 };
-
 
 
 
@@ -509,6 +526,7 @@ public:
 
 protected:
     ParameterPtr defaultValue_;
+    int defaultSize_;
     std::vector<ParameterPtr> value_;
 
 public:
@@ -521,6 +539,14 @@ public:
     inline void setDefaultValue ( const Parameter& defP )
     {
         defaultValue_.reset ( defP.clone() );
+    }
+    inline const Parameter& defaultValue() const
+    {
+      return *defaultValue_;
+    }
+    inline int defaultSize() const
+    {
+      return defaultSize_;
     }
     inline void eraseValue ( int i )
     {
@@ -551,20 +577,22 @@ public:
         value_.clear();
     }
 
-    virtual std::string latexRepresentation() const;
-    virtual std::string plainTextRepresentation(int indent=0) const;
+    std::string latexRepresentation() const override;
+    std::string plainTextRepresentation(int indent=0) const override;
 
-    virtual bool isPacked() const;
-    virtual void pack();
-    virtual void unpack();
-    virtual void clearPackedData();
+    bool isPacked() const override;
+    void pack() override;
+    void unpack() override;
+    void clearPackedData() override;
 
-    virtual Parameter* clone () const;
 
-    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const;
-    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath );
+    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const override;
+    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath ) override;
+
+    Parameter* clone () const override;
+    void reset(const Parameter& p) override;
 };
 
 
@@ -588,17 +616,17 @@ public:
     arma::mat& operator() ();
     const arma::mat& operator() () const;
 
-    virtual std::string latexRepresentation() const;
-    virtual std::string plainTextRepresentation(int indent=0) const;
+    std::string latexRepresentation() const override;
+    std::string plainTextRepresentation(int indent=0) const override;
 
-    virtual Parameter* clone () const;
+    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const override;
+    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath ) override;
 
-    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const;
-    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath );
+    Parameter* clone() const override;
+    void reset(const Parameter& p) override;
 };
-
 
 
 

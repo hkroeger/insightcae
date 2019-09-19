@@ -14,13 +14,14 @@ class InsertedCaseElement
 : public QListWidgetItem
 {
     std::string type_name_;
-    insight::ParameterSet curp_;
+    insight::ParameterSet curp_, defp_;
 
 public:
     InsertedCaseElement(QListWidget*, const std::string& type_name);
 
     inline const std::string& type_name() const { return type_name_; }
     inline insight::ParameterSet& parameters() { return curp_; }
+    inline const insight::ParameterSet& defaultParameters() { return defp_; }
 
     insight::OpenFOAMCaseElement* createElement(insight::OpenFOAMCase& c) const;
     void insertElement(insight::OpenFOAMCase& ofc) const;

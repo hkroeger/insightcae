@@ -108,14 +108,9 @@ protected:
 public:
     declareType ( "blockMeshDict_Cylinder" );
 
-    blockMeshDict_Cylinder ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    blockMeshDict_Cylinder ( OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
 
     virtual void create_bmd();
-
-    inline static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 
     double rCore() const;
 };
@@ -187,14 +182,10 @@ protected:
 public:
     declareType ( "blockMeshDict_Box" );
 
-    blockMeshDict_Box ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    blockMeshDict_Box ( OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
 
     virtual void create_bmd();
 
-    inline static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 
@@ -245,15 +236,11 @@ protected:
 public:
     declareType ( "blockMeshDict_Sphere" );
 
-    blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
 
     void create_bmd() override;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    inline static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
 };
 
 

@@ -36,10 +36,7 @@ public:
   declareType ( "NoMeshMotion" );
   NoMeshMotion ( const ParameterSet& ps = ParameterSet() );
 
-  static ParameterSet defaultParameters()
-  {
-    return ParameterSet();
-  }
+  static ParameterSet defaultParameters() { return ParameterSet(); }
 
   ParameterSet getParameters() const override
   {
@@ -94,10 +91,6 @@ public:
   declareType ( "CAFSIBC" );
   CAFSIBC ( const ParameterSet& ps );
 
-  static ParameterSet defaultParameters()
-  {
-    return Parameters::makeDefault();
-  }
 
   ParameterSet getParameters() const override
   {

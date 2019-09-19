@@ -81,10 +81,6 @@ bool potentialFreeSurfaceFoamNumerics::isCompressible() const
   return false;
 }
 
-ParameterSet potentialFreeSurfaceFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -120,10 +116,6 @@ void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
 }
 
-ParameterSet simpleDyMFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -241,10 +233,7 @@ bool cavitatingFoamNumerics::isCompressible() const
   return false;
 }
 
-ParameterSet cavitatingFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
+
 
 
 
@@ -393,10 +382,6 @@ bool interFoamNumerics::isCompressible() const
 }
 
 
-ParameterSet interFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 OFDictData::dict stdMULESSolverSetup(double cAlpha, double icAlpha, double tol, double reltol, bool LTS)
@@ -497,10 +482,6 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
 }
 
-ParameterSet LTSInterFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -548,10 +529,6 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
 }
 
-ParameterSet interPhaseChangeFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -706,10 +683,6 @@ bool reactingFoamNumerics::isCompressible() const
   return true;
 }
 
-ParameterSet reactingFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -729,10 +702,6 @@ void reactingParcelFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) cons
   reactingFoamNumerics::addIntoDictionaries(dictionaries);
 }
 
-ParameterSet reactingParcelFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -909,10 +878,6 @@ bool buoyantSimpleFoamNumerics::isCompressible() const
   return true;
 }
 
-ParameterSet buoyantSimpleFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 
@@ -1103,10 +1068,7 @@ bool buoyantPimpleFoamNumerics::isCompressible() const
   return true;
 }
 
-ParameterSet buoyantPimpleFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
+
 
 
 
@@ -1276,10 +1238,6 @@ bool magneticFoamNumerics::isCompressible() const
   return false;
 }
 
-ParameterSet magneticFoamNumerics::defaultParameters()
-{
-    return Parameters::makeDefault();
-}
 
 
 }

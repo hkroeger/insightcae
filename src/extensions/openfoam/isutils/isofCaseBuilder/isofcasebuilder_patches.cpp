@@ -110,7 +110,7 @@ void isofCaseBuilderWindow::onPatchSelectionChanged()
           last_bc_pe_state_ = bc_ped_->saveState();
           bc_ped_->deleteLater();
         }
-        bc_ped_ = new ParameterEditorWidget(cur->parameters(), ui->bc_parameter_editor);
+        bc_ped_ = new ParameterEditorWidget(cur->parameters(), cur->defaultParameters(), ui->bc_parameter_editor);
         bc_pe_layout_->addWidget(bc_ped_);
 
         if (!last_bc_pe_state_.isEmpty())

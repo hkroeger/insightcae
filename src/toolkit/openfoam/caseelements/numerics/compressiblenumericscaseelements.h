@@ -44,7 +44,6 @@ public:
     steadyCompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
-    static ParameterSet defaultParameters();
 };
 
 
@@ -94,7 +93,6 @@ public:
     unsteadyCompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
-    static ParameterSet defaultParameters();
 };
 
 

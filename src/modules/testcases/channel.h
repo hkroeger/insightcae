@@ -202,8 +202,7 @@ public:
   
   ChannelBase(const ParameterSet& ps, const boost::filesystem::path& exepath);
   ~ChannelBase();
-  
-  static ParameterSet defaultParameters();
+
   static std::string category() { return "Validation Cases"; }
   
   std::string cyclPrefix() const;
@@ -241,11 +240,23 @@ class ChannelCyclic
 : public ChannelBase
 {
 public:
+#include "channel__ChannelCyclic__Parameters.h"
+/*
+PARAMETERSET>>> ChannelCyclic Parameters
+
+run = set {
+ perturbU = bool true "Whether to impose artifical perturbations on the initial velocity field"
+} "Execution parameters"
+
+<<<PARAMETERSET
+*/
+
+
+public:
   declareType("Channel Flow Test Case (Axial Cyclic)");
   
   ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath);
-  
-  static ParameterSet defaultParameters();
+
 
   virtual void createMesh
   (

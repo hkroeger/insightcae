@@ -90,12 +90,6 @@ ChannelBase::~ChannelBase()
 
 }
 
-ParameterSet ChannelBase::defaultParameters()
-{
-  ParameterSet p(Parameters::makeDefault());
-  p.merge(OpenFOAMAnalysis::defaultParameters());
-  return p;
-}
 
 std::string ChannelBase::cyclPrefix() const
 {
@@ -1200,31 +1194,6 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 ChannelCyclic::ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : ChannelBase(ps, exepath)
 {
-}
-
-ParameterSet ChannelCyclic::defaultParameters()
-{
-  ParameterSet p(ChannelBase::defaultParameters());
-  
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-          
-      ("run", new SubsetParameter	
-	    (
-		  ParameterSet
-		  (
-		    boost::assign::list_of<ParameterSet::SingleEntry>
-		    ("perturbU", 	new BoolParameter(true, "Whether to impose artifical perturbations on the initial velocity field"))
-		    .convert_to_container<ParameterSet::EntryList>()
-		  ), 
-		  "Execution parameters"
-      ))
-      
-      .convert_to_container<ParameterSet::EntryList>()
-  );
-  
-  return p;
 }
 
 

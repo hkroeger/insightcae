@@ -16,7 +16,7 @@ class Patch
 protected:
     std::string patch_name_;
     std::string bc_type_;
-    insight::ParameterSet curp_;
+    insight::ParameterSet curp_, defp_;
 
 public:
     Patch(QListWidget*, const std::string& patch_name);
@@ -29,6 +29,7 @@ public:
     inline const std::string& patch_name() const { return patch_name_; }
     inline const std::string& bc_type() const { return bc_type_; }
     inline insight::ParameterSet& parameters() { return curp_; }
+    inline const insight::ParameterSet& defaultParameters() { return defp_; }
     inline const insight::ParameterSet& parameters() const { return curp_; }
     virtual bool insertElement(insight::OpenFOAMCase& ofc, insight::OFDictData::dict& boundaryDict) const;
     void appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath);

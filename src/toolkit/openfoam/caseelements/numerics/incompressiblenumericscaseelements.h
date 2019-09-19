@@ -37,7 +37,6 @@ public:
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 
-    static ParameterSet defaultParameters();
 };
 
 
@@ -78,7 +77,6 @@ public:
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 
-    static ParameterSet defaultParameters();
 };
 
 }

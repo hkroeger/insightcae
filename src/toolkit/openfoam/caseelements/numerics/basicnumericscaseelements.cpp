@@ -516,6 +516,7 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // setup structure of dictionaries
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="none";
+  controlDict["deltaT"]=1;
   controlDict["startFrom"]="latestTime";
   controlDict["startTime"]=0.0;
   controlDict["stopAt"]="endTime";

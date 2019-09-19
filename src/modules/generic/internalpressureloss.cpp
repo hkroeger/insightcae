@@ -317,7 +317,12 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm)
     cm.insert(new steadyIncompressibleNumerics(cm));
     cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters() ));
     
-    cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict));
+    cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict)
+              .set_behaviour( PressureOutletBC::Parameters::behaviour_uniform_type(
+                 FieldData::Parameters()
+                  .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(0.0)))
+                ))
+              );
 
     {
         MassflowBC::Parameters inp;

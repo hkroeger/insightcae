@@ -28,6 +28,7 @@
 #include "base/exception.h"
 #include "boost/algorithm/string.hpp"
 #include "base/tools.h"
+#include "boost/process.hpp"
 
 
 #ifndef Q_MOC_RUN
@@ -187,9 +188,110 @@ LaTeXReplacements::LaTeXReplacements()
   simple_replacements_.add(">", "\\textgreater ");
 }
 
+struct TemporaryCachedFile
+: public boost::filesystem::path
+{
+  TemporaryCachedFile(const std::string& extension)
+    : boost::filesystem::path
+      (
+        boost::filesystem::unique_path
+        (
+          boost::filesystem::temp_directory_path()
+          / ("html-replacement-%%%%%%%."+extension)
+        )
+       )
+  {
+  }
+
+  ~TemporaryCachedFile()
+  {
+    if (boost::filesystem::exists(*this))
+      boost::filesystem::remove(*this);
+  }
+};
+
+typedef std::shared_ptr<TemporaryCachedFile> TemporaryCachedFilePtr;
+
+// maybe need to add some expiry duration...
+struct FilesCache
+    : std::map<std::string, TemporaryCachedFilePtr>
+{
+};
+
+void runLatex(const std::string& formula_code, const boost::filesystem::path& output)
+{
+  TemporaryCaseDir subdir(false, (boost::filesystem::temp_directory_path()/"runLatex-").string() );
+
+  boost::filesystem::path tex_filename = subdir.dir/"input.tex";
+  std::ofstream tex( tex_filename.c_str() );
+  tex<<
+        "\\documentclass{article}\n"
+        "\\pagestyle{empty}\n"
+        "\\begin{document}\n"
+        "\\[" << formula_code << "\\]\n"
+        "\\newpage\n"
+        "\\end{document}"
+        ;
+  tex.close();
+
+
+  boost::process::system
+  (
+     boost::process::search_path("latex"),
+     boost::process::args
+        ({
+          "-file-line-error-style",
+          "-interaction=nonstopmode",
+          tex_filename.filename().string()
+         }),
+     boost::process::start_dir(boost::filesystem::absolute(subdir.dir))
+  );
+
+  boost::process::system
+  (
+     boost::process::search_path("dvipng"),
+     boost::process::args
+        ({"--freetype0",
+          "-Q", "9",
+          "-z", "3",
+          "--depth",
+          "-q",
+          "-T", "tight",
+          "-D", "150",
+          "-bg", "Transparent",
+          "-o", output.string(),
+          tex_filename.replace_extension(".dvi").string()
+         })
+  );
+}
+
+struct FormulaRenderFilesCache
+: public FilesCache
+{
+  boost::filesystem::path renderLatexFormula(const std::string& formula_code)
+  {
+    auto i=find(formula_code);
+    if (i!=end())
+    {
+      return *i->second;
+    }
+    else
+    {
+      TemporaryCachedFilePtr result(new TemporaryCachedFile("png"));
+
+      runLatex(formula_code, *result);
+
+      insert(value_type(formula_code, result));
+      return *result;
+    }
+  }
+};
+
 struct HTMLReplacements
 : Replacements
 {
+  static FormulaRenderFilesCache formulaCache;
+
   int imageWidth_;
 
   HTMLReplacements(int imageWidth);
@@ -199,17 +301,18 @@ struct HTMLReplacements
     boost::filesystem::path fname = findSharedImageFile(imagename);
     
     reformatted_ += str(format("<img width=\"%d\" src=\"file://%s\">") % int( double(imageWidth_)*width ) % fname.string() );
-//    reformatted_ += str(format("<img style=\"width: %g%%;\" src=\"file://%s\">") % (100.*width) % fname.string() );
   }
   
   virtual void appendInlineFormula(const std::string& latex_formula)
   {
-    reformatted_ += latex_formula;
+    auto rff = formulaCache.renderLatexFormula(latex_formula);
+    reformatted_ += "<img src=\"file://"+rff.string()+"\">";
   }
 
   virtual void appendDisplayFormula(const std::string& latex_formula)
   {
-    reformatted_ += "<br>\n  "+latex_formula+"<br>\n";
+    auto rff = formulaCache.renderLatexFormula(latex_formula);
+    reformatted_ += "<br>\n  <img src=\"file://"+rff.string()+"\"><br>\n";
   }
 
   virtual void appendFormattedText(const std::string& text, Format)
@@ -217,6 +320,8 @@ struct HTMLReplacements
     reformatted_ += "<b>"+text+"</b>";
   }
 };
+
+FormulaRenderFilesCache HTMLReplacements::formulaCache;
 
 HTMLReplacements::HTMLReplacements(int imageWidth)
   : imageWidth_(imageWidth)

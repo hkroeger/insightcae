@@ -159,8 +159,12 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
 AnalysisForm::~AnalysisForm()
 {
+  if (workerThread_)
+  {
     workerThread_->join();
-    delete ui;
+  }
+
+  delete ui;
 }
 
 void AnalysisForm::updateSaveMenuLabel()
@@ -521,38 +525,47 @@ void AnalysisForm::onKillAnalysis()
 
 void AnalysisForm::onAnalysisKilled()
 {
-  workerThread_->join();
-  workerThread_.reset();
+  if (workerThread_)
+  {
+    workerThread_->join();
+    workerThread_.reset();
 
-  QMessageBox::information(this, "Stopped!", "The analysis has been interrupted upon user request!");
+    QMessageBox::information(this, "Stopped!", "The analysis has been interrupted upon user request!");
+  }
 }
 
 void AnalysisForm::onAnalysisErrorOccurred(insight::Exception e)
 {
-  workerThread_->join();
-  workerThread_.reset();
-  throw e;
+  if (workerThread_)
+  {
+    workerThread_->join();
+    workerThread_.reset();
+    throw e;
+  }
 }
 
 void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
-  workerThread_->join();
-  workerThread_.reset();
+  if (workerThread_)
+  {
+    workerThread_->join();
+    workerThread_.reset();
 
-  results_=results;
-  
-//   qDeleteAll(ui->outputContents->findChildren<ResultElementWrapper*>());
-//   addWrapperToWidget(*results_, ui->outputContents, this);
+    results_=results;
 
-  rtroot_->takeChildren();
-  addWrapperToWidget(*results_, rtroot_, this);
-  ui->resultTree->doItemsLayout();
-  ui->resultTree->expandAll();
-  ui->resultTree->resizeColumnToContents(2);
+  //   qDeleteAll(ui->outputContents->findChildren<ResultElementWrapper*>());
+  //   addWrapperToWidget(*results_, ui->outputContents, this);
 
-  ui->tabWidget->setCurrentWidget(ui->outputTab);
+    rtroot_->takeChildren();
+    addWrapperToWidget(*results_, rtroot_, this);
+    ui->resultTree->doItemsLayout();
+    ui->resultTree->expandAll();
+    ui->resultTree->resizeColumnToContents(2);
 
-  QMessageBox::information(this, "Finished!", "The analysis has finished");
+    ui->tabWidget->setCurrentWidget(ui->outputTab);
+
+    QMessageBox::information(this, "Finished!", "The analysis has finished");
+  }
 }
 
 void AnalysisForm::onCreateReport()

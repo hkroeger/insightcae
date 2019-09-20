@@ -240,7 +240,6 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
   version_list_OF()
   foreach (_ofvers ${OF_VERSIONS})
    if (${_ofvers}_FOUND)
-#     message(STATUS "Adding program target ${PRJ_NAME}${_ofvers}")
     project(${PRJ_NAME}${_ofvers})
     
     #assemble list of full include paths
@@ -260,7 +259,6 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
       )
     endforeach()
     
-    #LIST(APPEND ${PRJ_NAME}_LIBRARIES ${${_ofvers}_LIBS})
     foreach (_targ ${is_of_targets})
       list (APPEND ${PRJ_NAME}_LIBRARIES
       ${_targ}${_ofvers}
@@ -416,7 +414,6 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
   version_list_OF()
   foreach (_ofvers ${OF_VERSIONS})
    if (${_ofvers}_FOUND)
-#     message(STATUS "Adding lib target ${PRJ_NAME}${_ofvers}")
     project(${PRJ_NAME}${_ofvers})
     
     #assemble list of full include paths

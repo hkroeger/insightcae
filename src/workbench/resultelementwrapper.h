@@ -54,6 +54,11 @@ public:
   declareType("ResultElementWrapper");
   ResultElementWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   virtual ~ResultElementWrapper();
+
+  virtual void onUpdateGeometry() =0;
+
+public Q_SLOTS:
+  void onSectionResized(int column, int oldsize, int newsize);
 };
 
 class CommentWrapper
@@ -66,6 +71,8 @@ public:
   declareType(insight::Comment::typeName_());
   CommentWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::Comment& res() { return dynamic_cast<insight::Comment&>(p_); }
+
+  void onUpdateGeometry() override;
 };
 
 class ScalarResultWrapper
@@ -78,6 +85,7 @@ public:
   declareType(insight::ScalarResult::typeName_());
   ScalarResultWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::ScalarResult& res() { return dynamic_cast<insight::ScalarResult&>(p_); }
+  void onUpdateGeometry() override;
 };
 
 class ResultSectionWrapper
@@ -91,6 +99,7 @@ public:
   
   ResultSectionWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::ResultSection& res() { return dynamic_cast<insight::ResultSection&>(p_); }
+  void onUpdateGeometry() override;
 };
 
 class ResultSetWrapper
@@ -104,6 +113,7 @@ public:
   
   ResultSetWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::ResultSet& res() { return dynamic_cast<insight::ResultSet&>(p_); }
+  void onUpdateGeometry() override;
 };
 
 class ImageWrapper
@@ -116,6 +126,7 @@ public:
   declareType(insight::Image::typeName_());
   ImageWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::Image& res() { return dynamic_cast<insight::Image&>(p_); }
+  void onUpdateGeometry() override;
 };
 
 class ChartWrapper
@@ -130,6 +141,7 @@ public:
   ChartWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   ~ChartWrapper();
   inline insight::Chart& res() { return dynamic_cast<insight::Chart&>(p_); }
+  void onUpdateGeometry() override;
 };
 
 class TabularResultWrapper
@@ -142,6 +154,7 @@ public:
   declareType(insight::TabularResult::typeName_());
   TabularResultWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::TabularResult& res() { return dynamic_cast<insight::TabularResult&>(p_); }
+  void onUpdateGeometry() override;
 };
 
 class AttributeTableResultWrapper
@@ -154,6 +167,7 @@ public:
   declareType(insight::AttributeTableResult::typeName_());
   AttributeTableResultWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::AttributeTableResult& res() { return dynamic_cast<insight::AttributeTableResult&>(p_); }
+  void onUpdateGeometry() override;
 };
 
 void addWrapperToWidget(insight::ResultElementCollection& rset, QTreeWidgetItem *node, QWidget *superform=NULL);

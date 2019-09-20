@@ -30,6 +30,7 @@
 #include <QGroupBox>
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QHeaderView>
 
 #ifndef Q_MOC_RUN
 #include "boost/foreach.hpp"
@@ -44,11 +45,18 @@ ResultElementWrapper::ResultElementWrapper(QTreeWidgetItem* tree, const QString&
 : QTreeWidgetItem(tree), // QWidget(get<0>(p)),
   name_(name),
   p_(res)
-{}
+{
+  connect(treeWidget()->header(), &QHeaderView::sectionResized,
+          this, &ResultElementWrapper::onSectionResized);
+}
 
 ResultElementWrapper::~ResultElementWrapper()
 {}
 
+void ResultElementWrapper::onSectionResized(int, int, int)
+{
+  onUpdateGeometry();
+}
 
 defineType(CommentWrapper);
 addToFactoryTable(ResultElementWrapper, CommentWrapper);
@@ -67,10 +75,16 @@ CommentWrapper::CommentWrapper(QTreeWidgetItem* tree, const QString& name, insig
 //   this->setLayout(layout);
   
   setText(0, name_);
-  setText(1, res().shortDescription().toHTML().c_str() );
-  setText(2, insight::SimpleLatex(res().value()).toHTML().c_str() );
+  onUpdateGeometry();
 }
 
+void CommentWrapper::onUpdateGeometry()
+{
+  auto s1= treeWidget()->header()->sectionSize(1);
+  auto s2= treeWidget()->header()->sectionSize(2);
+  setText(1, res().shortDescription().toHTML(s1).c_str() );
+  setText(2, insight::SimpleLatex(res().value()).toHTML(s2).c_str() );
+}
 
 defineType(ScalarResultWrapper);
 addToFactoryTable(ResultElementWrapper, ScalarResultWrapper);
@@ -88,10 +102,16 @@ ScalarResultWrapper::ScalarResultWrapper(QTreeWidgetItem* tree, const QString& n
 //   layout->addWidget(le_);
 //   this->setLayout(layout);
     setText(0, name_);
-    setText(1, res().shortDescription().toHTML().c_str());
-    setText(2, QString::number(res().value()) + " " + res().unit().toHTML().c_str() );
+    onUpdateGeometry();
 }
 
+void ScalarResultWrapper::onUpdateGeometry()
+{
+  auto s1= treeWidget()->header()->sectionSize(1);
+  auto s2= treeWidget()->header()->sectionSize(2);
+  setText(1, res().shortDescription().toHTML(s1).c_str());
+  setText(2, QString::number(res().value()) + " " + res().unit().toHTML(s2).c_str() );
+}
 
 defineType(ResultSectionWrapper);
 addToFactoryTable(ResultElementWrapper, ResultSectionWrapper);
@@ -106,6 +126,10 @@ ResultSectionWrapper::ResultSectionWrapper(QTreeWidgetItem* tree, const QString&
     addWrapperToWidget(res(), this/*, this*/);
 
 //   this->setLayout(layout);
+}
+
+void ResultSectionWrapper::onUpdateGeometry()
+{
 }
 
 defineType(ResultSetWrapper);
@@ -125,36 +149,30 @@ ResultSetWrapper::ResultSetWrapper(QTreeWidgetItem* tree, const QString& name, i
 //   this->setLayout(layout);
 }
 
+void ResultSetWrapper::onUpdateGeometry()
+{
+}
+
 defineType(ImageWrapper);
 addToFactoryTable(ResultElementWrapper, ImageWrapper);
 
 ImageWrapper::ImageWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& re)
 : ResultElementWrapper(tree, name, re)
 {
-//   QHBoxLayout *layout=new QHBoxLayout(this);
-//   QLabel *nameLabel = new QLabel(name_, this);
-//   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-//   layout->addWidget(nameLabel);
-//   
-    QPixmap image(res().imagePath().c_str());
-    
-    // scale 300dpi (print) => 70dpi (screen)
-    double w0=image.size().width();
-    image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
-//   
-//   le_=new QLabel(this);
-//   le_->setPixmap(image);
-//   le_->setScaledContents(true);
-//   
-//   le_->setToolTip(QString(res().shortDescription().c_str()));
-//   layout->addWidget(le_);
-//   this->setLayout(layout);
-    
     setText(0, name_);
-    setText(1, res().shortDescription().toHTML().c_str());
-    setData(2, 1, QVariant(image));
+    onUpdateGeometry();
 }
 
+void ImageWrapper::onUpdateGeometry()
+{
+  auto s1= treeWidget()->header()->sectionSize(1);
+  auto s2= treeWidget()->header()->sectionSize(2);
+  setText(1, res().shortDescription().toHTML(s1).c_str());
+
+  QPixmap image(res().imagePath().c_str());
+  image=image.scaledToWidth(s2, Qt::SmoothTransformation);
+  setData(2, 1, QVariant(image));
+}
 
 defineType(ChartWrapper);
 addToFactoryTable(ResultElementWrapper, ChartWrapper);
@@ -165,16 +183,8 @@ ChartWrapper::ChartWrapper(QTreeWidgetItem* tree, const QString& name, insight::
   
     chart_file_=boost::filesystem::unique_path(boost::filesystem::temp_directory_path()/"%%%%-%%%%-%%%%-%%%%.png");
     res().generatePlotImage(chart_file_);
-    QPixmap image(chart_file_.c_str());
-    
-    // scale 300dpi (print) => 70dpi (screen)
-    double w0=image.size().width();
-    image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
 
-    setText(0, name_);
-    setText(1, res().shortDescription().toHTML().c_str());
-    setData(2, 1, QVariant(image));
-
+    onUpdateGeometry();
 }
 
 
@@ -182,6 +192,21 @@ ChartWrapper::~ChartWrapper()
 {
   boost::filesystem::remove(chart_file_);
 }
+
+void ChartWrapper::onUpdateGeometry()
+{
+  auto s1= treeWidget()->header()->sectionSize(1);
+  auto s2= treeWidget()->header()->sectionSize(2);
+
+  QPixmap image(chart_file_.c_str());
+  image=image.scaledToWidth(s2, Qt::SmoothTransformation);
+
+  setText(0, name_);
+  setText(1, res().shortDescription().toHTML(s1).c_str());
+  setData(2, 1, QVariant(image));
+}
+
+
 
 
 defineType(TabularResultWrapper);
@@ -191,7 +216,8 @@ TabularResultWrapper::TabularResultWrapper(QTreeWidgetItem* tree, const QString&
 : ResultElementWrapper(tree, name, re)
 {
     setText(0, name_);
-    setText(1, res().shortDescription().toHTML().c_str());
+    onUpdateGeometry();
+
 
 //   QHBoxLayout *layout=new QHBoxLayout(this);
 //   QLabel *nameLabel = new QLabel(name_, this);
@@ -226,8 +252,18 @@ TabularResultWrapper::TabularResultWrapper(QTreeWidgetItem* tree, const QString&
 //   layout->addWidget(le_);
 //   
 //   this->setLayout(layout);
+
+  onUpdateGeometry();
 }
 
+
+void TabularResultWrapper::onUpdateGeometry()
+{
+  auto s1= treeWidget()->header()->sectionSize(1);
+//  auto s2= treeWidget()->header()->sectionSize(2);
+
+  setText(1, res().shortDescription().toHTML(s1).c_str());
+}
 
 defineType(AttributeTableResultWrapper);
 addToFactoryTable(ResultElementWrapper, AttributeTableResultWrapper);
@@ -236,7 +272,6 @@ AttributeTableResultWrapper::AttributeTableResultWrapper(QTreeWidgetItem* tree, 
 : ResultElementWrapper(tree, name, re)
 {
     setText(0, name_);
-    setText(1, res().shortDescription().toHTML().c_str());
 
 //   QHBoxLayout *layout=new QHBoxLayout(this);
 //   QLabel *nameLabel = new QLabel(name_, this);
@@ -267,8 +302,19 @@ AttributeTableResultWrapper::AttributeTableResultWrapper(QTreeWidgetItem* tree, 
 //   layout->addWidget(le_);
 //   
 //   this->setLayout(layout);
+
+    onUpdateGeometry();
 }
 
+
+void AttributeTableResultWrapper::onUpdateGeometry()
+{
+  auto s1= treeWidget()->header()->sectionSize(1);
+//  auto s2= treeWidget()->header()->sectionSize(2);
+
+  setText(1, res().shortDescription().toHTML(s1).c_str());
+
+}
 
 void addWrapperToWidget ( insight::ResultElementCollection& rset, QTreeWidgetItem *node, QWidget *superform )
 {

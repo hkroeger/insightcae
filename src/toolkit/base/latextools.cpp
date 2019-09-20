@@ -163,7 +163,7 @@ struct LaTeXReplacements
   {
     reformatted_ += "$$"+latex_formula+"$$";
   }
-  virtual void appendFormattedText(const std::string& text, Format fmt)
+  virtual void appendFormattedText(const std::string& text, Format)
   {
     reformatted_ += "{\bf "+text+"}";
   }
@@ -190,13 +190,16 @@ LaTeXReplacements::LaTeXReplacements()
 struct HTMLReplacements
 : Replacements
 {
-  HTMLReplacements();
+  int imageWidth_;
+
+  HTMLReplacements(int imageWidth);
   
   virtual void appendImage(double width, const std::string& imagename)
   {
     boost::filesystem::path fname = findSharedImageFile(imagename);
     
-    reformatted_ += str(format("<img width=\"%g%%\" src=\"file://%s\">") % (100.*width) % fname.string() );
+    reformatted_ += str(format("<img width=\"%d\" src=\"file://%s\">") % int( double(imageWidth_)*width ) % fname.string() );
+//    reformatted_ += str(format("<img style=\"width: %g%%;\" src=\"file://%s\">") % (100.*width) % fname.string() );
   }
   
   virtual void appendInlineFormula(const std::string& latex_formula)
@@ -209,13 +212,14 @@ struct HTMLReplacements
     reformatted_ += "<br>\n  "+latex_formula+"<br>\n";
   }
 
-  virtual void appendFormattedText(const std::string& text, Format fmt)
+  virtual void appendFormattedText(const std::string& text, Format)
   {
     reformatted_ += "<b>"+text+"</b>";
   }
 };
 
-HTMLReplacements::HTMLReplacements()
+HTMLReplacements::HTMLReplacements(int imageWidth)
+  : imageWidth_(imageWidth)
 {
   specialchars_+="\n&<>^~";
   simple_replacements_.add("\n", "<br>\n");
@@ -356,9 +360,9 @@ std::string SimpleLatex::toLaTeX() const
 
 
 
-std::string SimpleLatex::toHTML() const
+std::string SimpleLatex::toHTML(int imageWidth) const
 {
-  HTMLReplacements rep;
+  HTMLReplacements rep(imageWidth);
   return reformat(simpleLatex_code_, rep);
 }
 
@@ -370,10 +374,9 @@ std::string SimpleLatex::toPlainText() const
   return simpleLatex_code_;
 }
 
-std::string SimpleLatex::LaTeXFromPlainText(const std::string& plainText)
+std::string SimpleLatex::LaTeXFromPlainText(const std::string&)
 {
     throw insight::Exception("SimpleLatex::LaTeXFromPlainText: Not Implemented");
-    return "";
 }
 
 }

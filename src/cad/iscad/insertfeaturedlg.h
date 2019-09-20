@@ -25,8 +25,7 @@
 
 #include <QDialog>
 #include <QListWidgetItem>
-
-#include "helpwidget.h"
+#include <QTextEdit>
 
 namespace Ui
 {
@@ -40,7 +39,7 @@ class InsertFeatureDlg
     
 public:
     QString insert_string_;
-    HelpWidget* featureCmdHelp_;
+    QTextEdit* featureCmdHelp_;
 
     InsertFeatureDlg(QWidget* parent);
     

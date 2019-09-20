@@ -233,7 +233,6 @@ void ParameterWrapper::onDestruction()
 void ParameterWrapper::onResetToDefault()
 {
   onApply();
-  qDebug()<<"reset to def";
   p_.reset(pDefault_);
   onUpdate();
   emit parameterSetChanged();
@@ -270,8 +269,7 @@ void IntParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -342,8 +340,7 @@ void DoubleParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -426,8 +423,7 @@ void VectorParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -512,8 +508,7 @@ void StringParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -591,8 +586,7 @@ void BoolParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -682,8 +676,7 @@ void PathParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -717,9 +710,9 @@ void PathParameterWrapper::updateTooltip()
 {
   le_->setToolTip
   (
-    QString(param().description().toHTML().c_str())
-    +"\n"+
-    "(Evaluates to \""+boost::filesystem::absolute(le_->text().toStdString()).c_str()+"\")"
+//    QString(param().description().toHTML().c_str())
+//    +"\n"+
+    QString("(Evaluates to \"")+boost::filesystem::absolute(le_->text().toStdString()).c_str()+"\")"
   );
 }
 
@@ -839,8 +832,7 @@ void MatrixParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -966,8 +958,8 @@ void SelectionParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
+
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -1041,8 +1033,7 @@ void SubsetParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
   layout->addWidget(shortDescLabel);
   
 //   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
@@ -1207,8 +1198,8 @@ void ArrayParameterWrapper::createWidgets()
   layout->addWidget(label);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
+
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -1305,8 +1296,7 @@ void DoubleRangeParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
   layout->addWidget(shortDescLabel);
 
   QLabel *promptLabel = new QLabel("Selection:", detaileditwidget_);
@@ -1429,8 +1419,8 @@ void SelectableSubsetParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
 
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_ );
-  shortDescLabel->setHtml( param().description().toHTML().c_str() );
+    new HelpWidget( detaileditwidget_, param().description() );
+
   layout->addWidget(shortDescLabel);
   
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);

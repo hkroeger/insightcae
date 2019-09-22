@@ -610,6 +610,13 @@ macro(casebuilder_test_OF TEST_NAME INPUT_FILE)
 endmacro()
 
 
+macro(insight_workflow_test TEST_NAME INPUT_FILE)
+    set(TESTDIR ${CMAKE_CURRENT_BINARY_DIR}/${TEST_NAME})
+    add_test(NAME ${TEST_NAME}
+        COMMAND bash -c "mkdir -p ${TESTDIR} && cd ${TESTDIR} && rm -rf * && cp ${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_FILE} . && analyze ${INPUT_FILE}"
+    )
+endmacro()
+
 
 macro(install_script NAME SCRIPTFILE)
   file(GLOB COPY_FILES

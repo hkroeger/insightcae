@@ -22,6 +22,7 @@
 
 #include <openfoam/openfoamanalysis.h>
 #include "cadtypes.h"
+#include "parametersetvisualizer.h"
 
 namespace insight
 {
@@ -110,6 +111,19 @@ public:
     virtual void createMesh(insight::OpenFOAMCase& cm);
     
     virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp);
+};
+
+
+
+
+class InternalPressureLoss_ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
+{
+public:
+    typedef InternalPressureLoss::Parameters Parameters;
+
+public:
+    void recreateVisualizationElements(UsageTracker* ut) override;
 };
 
 }

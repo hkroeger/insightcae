@@ -60,6 +60,34 @@ string Cutplane::pythonCommands() const
   return "";
 }
 
+
+defineType(Streamtracer);
+addToFactoryTable(PVScene, Streamtracer);
+addToStaticFunctionTable(PVScene, Streamtracer, defaultParameters);
+
+Streamtracer::Streamtracer(const ParameterSet& ps)
+: p_(ps)
+{}
+
+
+string Streamtracer::pythonCommands() const
+{
+  std::string cmd;
+  cmd+="st=StreamTracer(Input="+p_.dataset+", Vectors=['"+p_.field+"'], MaximumStreamlineLength="+lexical_cast<string>(p_.maxLen)+")\n";
+  if (const auto* cloud = boost::get<Parameters::seed_cloud_type>(&p_.seed))
+  {
+    cmd+=
+       "st.SeedType = 'Point Source'\n"
+       "st.SeedType.Center="+paraview::PVScene::pvec(cloud->center)+"\n"
+       "st.SeedType.Radius="+lexical_cast<string>(cloud->radius)+"\n"
+       ;
+  }
+
+  cmd+="Show(st)\n";
+
+  return cmd;
+}
+
 defineType(IsoView);
 addToFactoryTable(PVScene, IsoView);
 addToStaticFunctionTable(PVScene, IsoView, defaultParameters);
@@ -72,6 +100,7 @@ IsoView::IsoView(const ParameterSet& ps)
 string IsoView::pythonCommands() const
 {
   arma::mat bbL = p_.bbmax - p_.bbmin;
+  std::cout<<"bbL="<<bbL<<std::endl;
   arma::mat ctr = p_.bbmin + 0.5*bbL;
   arma::mat ex, ey, ez;
   ex=ey=ez=vec3(0,0,0);
@@ -87,7 +116,7 @@ string IsoView::pythonCommands() const
         + pvec(ctr+ex*L[0]*1.5) + ", "
         + pvec(ctr) + ", "
         + pvec(ez) + ", "
-        + str(format("%g") % (0.5*std::max(L[1],L[2]))) + (L[1]>L[2]?", scaleIsHorizontal=True":"")
+        + str(format("(%g,%g)") % L[1] % L[2])
       +")\n"
       "WriteImage('"+p_.filename.filename().stem().string()+"_front"+p_.filename.extension().string()+"')\n"
       +
@@ -95,7 +124,7 @@ string IsoView::pythonCommands() const
         + pvec(ctr+ez*L[2]*1.5) + ", "
         + pvec(ctr) + ", "
         + pvec(-ey) + ", "
-      + str(format("%g") % (0.5*std::max(L[1],L[0]))) + (L[0]>L[2]?", scaleIsHorizontal=True":"")
+        + str(format("(%g,%g)") % L[0] % L[1])
       +")\n"
       "WriteImage('"+p_.filename.filename().stem().string()+"_top"+p_.filename.extension().string()+"')\n"
       +
@@ -103,7 +132,7 @@ string IsoView::pythonCommands() const
         + pvec(ctr+ey*L[1]*1.5) + ", "
         + pvec(ctr) + ", "
         + pvec(ez) + ", "
-      + str(format("%g") % (0.5*std::max(L[0],L[2]))) + (L[0]>L[2]?", scaleIsHorizontal=True":"")
+        + str(format("(%g,%g)") % L[0] % L[2])
       +")\n"
       "WriteImage('"+p_.filename.filename().stem().string()+"_side"+p_.filename.extension().string()+"')\n"
       +
@@ -111,7 +140,7 @@ string IsoView::pythonCommands() const
         + pvec(ctr+ex*L[0]*1.5+ey*L[1]*1.5+ez*L[2]*1.5) + ", "
         + pvec(ctr) + ", "
         + pvec(ez) + ", "
-      + str(format("%g") % (0.5*L[0])) + ", scaleIsHorizontal=True"
+        + str(format("(%g,%g)") % L[0] % L[1])
       +")\n"
       "WriteImage('"+p_.filename.filename().stem().string()+"_diag"+p_.filename.extension().string()+"')\n"
   ;
@@ -173,7 +202,7 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer*)
       throw insight::Exception("no OpenFOAM environment defined!");
 
     OpenFOAMCase ofc( *OFEs::list.begin()->second );
-    ofc.executeCommand(executionPath(), "pvbatch", args, NULL, 0, &machine);
+    ofc.executeCommand(executionPath(), "pvbatch", args, nullptr, 0, &machine);
 
 //    if (!keepScript)
       remove(tempfile);
@@ -190,7 +219,7 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer*)
     for (boost::filesystem::path f: files)
     {
       results->insert(f.filename().stem().string(),
-        std::auto_ptr<Image>(new Image
+        std::unique_ptr<Image>(new Image
         (
         executionPath(), f,
         f.filename().stem().string(), ""

@@ -253,20 +253,22 @@ try:
 	return elev, minZ, maxZ
     
     # @scale: viewport height will be two times the given value!
-    def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=None, scaleIsHorizontal=False):
+    def setCam(pos, focus=[0,0,0], up=[0,0,1], scaleOrSize=None):
         cam = GetActiveCamera()
         cam.ParallelProjectionOn()
         cam.SetViewUp(up)
         cam.SetFocalPoint(focus)
         cam.SetPosition(pos)
-        if not scale is None:
-            if not scaleIsHorizontal:
+        if not scaleOrSize is None:
+            if isinstance(scaleOrSize, tuple):
+                w, h = scaleOrSize
+                W, H = GetRenderView().ViewSize
+                scale=0.5*min(float(w), float(h))
+                print W, H, w, h, scale
                 cam.SetParallelScale(scale)
             else:
-                w, h=GetRenderView().ViewSize
-                fac=float(w)/float(h)
-                print w,h,fac
-                cam.SetParallelScale(scale/fac)
+                scale=float(scaleOrSize)
+                cam.SetParallelScale(scale)
 	else:
 	  ResetCamera() # rescales but keeps view direction intact
 

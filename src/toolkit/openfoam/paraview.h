@@ -119,6 +119,49 @@ public:
 
 
 
+class Streamtracer
+: public PVScene
+{
+
+public:
+#include "paraview__Streamtracer__Parameters.h"
+/*
+PARAMETERSET>>> Streamtracer Parameters
+
+inherits insight::paraview::PVScene::Parameters
+
+dataset = string "" "name of the data set to cut" *necessary
+field = string "U" "name of the vector field from which the stream tracers are to be computed"
+
+maxLen = double 1e10 "Maximum stream line length"
+
+seed = selectablesubset {{
+
+ cloud set {
+  center = vector (0 0 0) "center point for the seed point cloud" *necessary
+  radius = double 1 "radius of the seed point cloud" *necessary
+  number = int 10 "number of points in the seed cloud"
+ }
+
+}} cloud "Type of streamline seeding"
+
+<<<PARAMETERSET
+*/
+protected:
+  Parameters p_;
+
+public:
+  declareType("Streamtracer");
+
+  Streamtracer(const ParameterSet&);
+
+  virtual std::string pythonCommands() const;
+
+  virtual ParameterSet getParameters() const { return p_; }
+};
+
+
+
 
 
 class IsoView

@@ -9,6 +9,7 @@ set(genericmodules_SOURCES
 
 set(genericmodules_LIBS
   toolkit
+  toolkit_gui
   refdata
   ${GSL_LIBRARIES}
 )

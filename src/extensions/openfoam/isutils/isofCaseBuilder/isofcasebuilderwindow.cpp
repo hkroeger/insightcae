@@ -132,6 +132,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     ui->setupUi(this);
 
     ui->occview->connectModelTree(ui->modeltree);
+    display_=new ParameterSetDisplay(this, ui->occview, ui->modeltree);
 
     auto *m = new QMenu("&File", this);
     menuBar()->addMenu(m);
@@ -370,9 +371,10 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
     {
         std::string type_name = e->first_attribute("type")->value();
     
-        InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name);
+        InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name, display_);
         ice->parameters().readFromNode(doc, *e, file.parent_path());
-        needsCAD = needsCAD || ice->hasVisualization();
+        ice->updateVisualization();
+        needsCAD = needsCAD || ice->visualizer();
     }
 
     if (!skipBCs)
@@ -382,11 +384,13 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
       {
               ui->patch_list->clear();
 	      xml_node<> *unassignedBCnode = BCnode->first_node( "UnassignedPatches" );
-	      new DefaultPatch(ui->patch_list, doc, *unassignedBCnode, file.parent_path());
+              auto * dp = new DefaultPatch(ui->patch_list, doc, *unassignedBCnode, file.parent_path(), display_);
+              dp->updateVisualization();
 	      
 	      for (xml_node<> *e = BCnode->first_node("Patch"); e; e = e->next_sibling("Patch"))
 	      {
-		    new Patch(ui->patch_list, doc, *e, file.parent_path());
+                    auto * p = new Patch(ui->patch_list, doc, *e, file.parent_path(), display_);
+                    p->updateVisualization();
 	      }
       }
     }
@@ -400,25 +404,27 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
 }
 
 
-void isofCaseBuilderWindow::updateCAD()
-{
-  // initial display of visualizations
-  // == insert selected case elements
-  for (int i=0; i < ui->selected_elements->count(); i++)
-  {
-      if ( InsertedCaseElement* elem = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i)) )
-      {
-        try
-        {
-            insight::ParameterSet_VisualizerPtr viz = insight::OpenFOAMCaseElement::visualizer(elem->type_name());
-            viz->update(elem->parameters());
-            viz->updateVisualizationElements(ui->occview, ui->modeltree);
-        }
-        catch (insight::Exception e)
-        { /* ignore, if non-existent */ }
-      }
-  }
-}
+//void isofCaseBuilderWindow::updateCAD()
+//{
+//  // initial display of visualizations
+//  // == insert selected case elements
+//  for (int i=0; i < ui->selected_elements->count(); i++)
+//  {
+//      if ( InsertedCaseElement* elem =
+//           dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i)) )
+//      {
+//        try
+//        {
+//            insight::ParameterSet_VisualizerPtr viz =
+//                insight::OpenFOAMCaseElement::visualizer(elem->type_name());
+//            viz->update(elem->parameters());
+//            viz->updateVisualizationElements(ui->occview, ui->modeltree);
+//        }
+//        catch (insight::Exception e)
+//        { /* ignore, if non-existent */ }
+//      }
+//  }
+//}
 
 
 void isofCaseBuilderWindow::closeEvent(QCloseEvent *event)
@@ -653,13 +659,13 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
           ped_->deleteLater();
         }
 
-        insight::ParameterSet_VisualizerPtr viz;
+//        insight::ParameterSet_VisualizerPtr viz;
         insight::ParameterSet_ValidatorPtr vali;
 
-        try {
-            viz = insight::OpenFOAMCaseElement::visualizer(cur->type_name());
-        } catch (insight::Exception e)
-        { /* ignore, if non-existent */ }
+//        try {
+//            viz = insight::OpenFOAMCaseElement::visualizer(cur->type_name());
+//        } catch (insight::Exception e)
+//        { /* ignore, if non-existent */ }
 
         try {
             vali = insight::OpenFOAMCaseElement::validator(cur->type_name());
@@ -671,8 +677,8 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
                  cur->parameters(),
                  cur->defaultParameters(),
                  ui->parameter_editor,
-                 vali, viz,
-                 ui->occview, ui->modeltree
+                 cur->visualizer(), vali,
+                 display_
                );
         connect(ped_, &ParameterEditorWidget::parameterSetChanged,
                 this, &isofCaseBuilderWindow::onConfigModification);
@@ -697,8 +703,8 @@ void isofCaseBuilderWindow::onAddElement()
     if (cur && (cur->childCount()==0))
     {
         std::string type_name = cur->text(0).toStdString();
-        InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name);
-        if (ice->hasVisualization())
+        InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name, display_);
+        if (ice->visualizer())
           expandCAD();
     }
 }
@@ -706,25 +712,36 @@ void isofCaseBuilderWindow::onAddElement()
 
 void isofCaseBuilderWindow::onRemoveElement()
 {
-    QListWidgetItem* cur = ui->selected_elements->currentItem();
+  {
+    InsertedCaseElement* cur
+        = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->currentItem() );
+    bool neededCAD(cur->visualizer());
     if (cur)
     {
-        delete cur;
+      delete cur;
     }
+    if (neededCAD)
+    {
+      display_->onUpdateVisualization();
+    }
+  }
 
-    // check whether CAD view is still needed
-    bool needsCAD=false;
-    for ( int i=0; i < ui->selected_elements->count(); i++ )
-      {
-        InsertedCaseElement* cur
-          = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
-        if ( cur )
-          {
-            needsCAD = needsCAD || cur->hasVisualization();
-          }
-      }
-    if (needsCAD && CADisCollapsed()) expandCAD();
-    if (!needsCAD) collapseCAD();
+  // check whether CAD view is still needed
+  bool needsCAD=false;
+  for ( int i=0; i < ui->selected_elements->count(); i++ )
+  {
+    InsertedCaseElement* cur
+        = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
+    if ( cur )
+    {
+      needsCAD = needsCAD || cur->visualizer();
+    }
+  }
+
+
+
+  if (needsCAD && CADisCollapsed()) expandCAD();
+  if (!needsCAD) collapseCAD();
 
 }
 

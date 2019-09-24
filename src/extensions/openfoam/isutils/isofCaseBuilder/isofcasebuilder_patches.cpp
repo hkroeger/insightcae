@@ -83,14 +83,14 @@ void isofCaseBuilderWindow::onParseBF()
 //    ui->patch_list->clear();
 
     if (ui->patch_list->findItems(DefaultPatch::defaultPatchName, Qt::MatchStartsWith).size()==0)
-      new DefaultPatch(ui->patch_list);
+      new DefaultPatch(ui->patch_list, display_);
 
     for (const OFDictData::dict::value_type& bde: boundaryDict)
     {
       QString pn(bde.first.c_str());
       if (ui->patch_list->findItems(pn, Qt::MatchStartsWith).size()==0)
       {
-        new Patch(ui->patch_list, bde.first);
+        new Patch(ui->patch_list, bde.first, display_);
       }
     }
 }
@@ -145,7 +145,7 @@ void isofCaseBuilderWindow::onAddPatchManually()
     QString pname = QInputDialog::getText(this, "Insert Patch", "Enter patch name:");
     if (!pname.isEmpty())
     {
-        new Patch(ui->patch_list, pname.toStdString());
+        new Patch(ui->patch_list, pname.toStdString(), display_);
     }
 }
 
@@ -208,5 +208,5 @@ void isofCaseBuilderWindow::onRenamePatch()
 void isofCaseBuilderWindow::onResetPatchDef()
 {
   ui->patch_list->clear();
-  new DefaultPatch(ui->patch_list);
+  new DefaultPatch(ui->patch_list, display_);
 }

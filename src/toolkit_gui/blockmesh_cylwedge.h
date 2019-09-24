@@ -1,6 +1,7 @@
 #ifndef BLOCKMESHDICT_CYLWEDGE_H
 #define BLOCKMESHDICT_CYLWEDGE_H
 
+#include "parametersetvisualizer.h"
 #include "openfoam/blockmesh_templates.h"
 #include "cadtypes.h"
 
@@ -100,18 +101,13 @@ public:
 
 
 class blockMeshDict_CylWedge_ParameterSet_Visualizer
- : public ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
 {
 public:
     typedef blockMeshDict_CylWedge::Parameters Parameters;
-    typedef std::map<std::string, cad::FeaturePtr> ItemList;
-
-protected:
-    ItemList items_;
 
 public:
-    virtual void update(const ParameterSet& ps);
-    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
+    void recreateVisualizationElements(UsageTracker* ut) override;
 };
 
 

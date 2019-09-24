@@ -18,28 +18,27 @@
  *
  */
 
+#include "parametersetvisualizer.h"
 #include "parametereditorwidget.h"
 #include "parameterwrapper.h"
 
 
 #include <QSplitter>
 
-
 ParameterEditorWidget::ParameterEditorWidget
 (
   insight::ParameterSet& pset,
   const insight::ParameterSet& default_pset,
   QWidget *parent,
-  insight::ParameterSet_ValidatorPtr vali,
   insight::ParameterSet_VisualizerPtr viz,
-  QoccViewWidget *viewwidget,
-  QModelTree *modeltree
+  insight::ParameterSet_ValidatorPtr vali,
+  ParameterSetDisplay* display
 )
 : QSplitter(Qt::Horizontal, parent),
   parameters_(pset),
   defaultParameters_(default_pset),
   vali_(vali),
-  viz_(viz)
+  viz_(std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz))
 {
     ptree_=new QTreeWidget(this);
     addWidget(ptree_);
@@ -48,36 +47,32 @@ ParameterEditorWidget::ParameterEditorWidget
 
     if (viz_)
     {
-        if (!viewwidget)
-        {
-          QoccViewerContext *context=new QoccViewerContext(this);
-          viewer_=new QoccViewWidget(this, context->getContext());
-          addWidget(viewer_);
-        }
-        else
-        {
-          viewer_=viewwidget;
-        }
+      // there is a visualization generator available
 
-        if (!modeltree)
-        {
-          modeltree_=new QModelTree(this);
-          addWidget(modeltree_);
-        }
-        else
-        {
-          modeltree_=modeltree;
-        }
+      if (!display)
+      {
+        // no existing displayer supplied; create one
+        QoccViewerContext *context=new QoccViewerContext(this);
+        QoccViewWidget *viewer=new QoccViewWidget(this, context->getContext());
+        addWidget(viewer);
 
-        if ( (!viewwidget) || (!modeltree) ) // one of them was created here
-        {
-          viewer_->connectModelTree(modeltree_);
-        }
+        QModelTree* modeltree =new QModelTree(this);
+        addWidget(modeltree);
+
+        viewer->connectModelTree(modeltree);
+
+        display_=new ParameterSetDisplay(this, viewer, modeltree);
+        display_->registerVisualizer(viz_);
+      }
+      else
+      {
+        // use supplied displayer
+        display_=display;
+      }
     }
     else
     {
-        viewer_ = nullptr;
-        modeltree_ = nullptr;
+      display_ = nullptr;
     }
 
     root_=new QTreeWidgetItem(0);
@@ -91,7 +86,7 @@ ParameterEditorWidget::ParameterEditorWidget
     {
       QList<int> l;
       l << 3300 << 6600;
-      if (viz_ && !viewwidget && !modeltree)
+      if (viz_ && !display_)
       {
         l.append(6600);
         l.append(0);
@@ -103,10 +98,6 @@ ParameterEditorWidget::ParameterEditorWidget
     ptree_->resizeColumnToContents(0);
     ptree_->resizeColumnToContents(1);
     ptree_->setContextMenuPolicy(Qt::CustomContextMenu);
-
-    onCheckValidity();
-    onUpdateVisualization();
-
 }
 
 void ParameterEditorWidget::onApply()
@@ -119,25 +110,17 @@ void ParameterEditorWidget::onUpdate()
     emit update();
 }
 
-void ParameterEditorWidget::onUpdateVisualization()
-{
-    if (viz_)
-    {
-        viz_->update(parameters_);
-        viz_->updateVisualizationElements(viewer_, modeltree_);
-    }
-}
-
-
-void ParameterEditorWidget::onCheckValidity()
-{
-}
-
 
 void ParameterEditorWidget::onParameterSetChanged()
 {
   emit parameterSetChanged();
+
+  if (viz_)
+  {
+      viz_->update(parameters_);
+  }
 }
+
 
 void ParameterEditorWidget::insertParameter(const QString& name, insight::Parameter& parameter, const insight::Parameter& defaultParameter)
 {
@@ -159,3 +142,54 @@ void ParameterEditorWidget::insertParameter(const QString& name, insight::Parame
 }
 
 
+
+ParameterSetDisplay::ParameterSetDisplay
+(
+    QObject* parent,
+    QoccViewWidget* viewer,
+    QModelTree* modeltree
+)
+  : QObject(parent),
+    viewer_(viewer),
+    modeltree_(modeltree)
+{
+}
+
+void ParameterSetDisplay::registerVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
+{
+  if (viz)
+  {
+    if (visualizers_.find(viz)==visualizers_.end())
+    {
+      visualizers_.insert(viz);
+      connect(viz.get(), &insight::CAD_ParameterSet_Visualizer::GUINeedsUpdate,
+              this, &ParameterSetDisplay::onUpdateVisualization);
+    }
+  }
+}
+
+void ParameterSetDisplay::deregisterVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
+{
+  if (viz)
+  {
+    disconnect(viz.get(), &insight::CAD_ParameterSet_Visualizer::GUINeedsUpdate,
+               this, &ParameterSetDisplay::onUpdateVisualization);
+    visualizers_.erase(viz);
+  }
+}
+
+void ParameterSetDisplay::onUpdateVisualization()
+{
+  insight::cad::cache.initRebuild();
+
+  insight::CAD_ParameterSet_Visualizer::UsageTracker ut(modeltree_);
+
+  for (auto& vz: visualizers_)
+  {
+    vz->recreateVisualizationElements(&ut);
+  }
+
+  ut.cleanupModelTree();
+
+  insight::cad::cache.finishRebuild();
+}

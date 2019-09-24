@@ -4,7 +4,7 @@
 #include "openfoam/blockmesh_templates.h"
 
 #include "cadtypes.h"
-
+#include "parametersetvisualizer.h"
 
 namespace insight
 {
@@ -14,55 +14,31 @@ namespace bmd
 
 
 class blockMeshDict_Box_ParameterSet_Visualizer
- : public ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
 {
 public:
-    typedef blockMeshDict_Box::Parameters Parameters;
-    typedef std::map<std::string, cad::FeaturePtr> ItemList;
-
-protected:
-    ItemList items_;
-
-public:
-    virtual void update(const ParameterSet& ps);
-    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
+    void recreateVisualizationElements(UsageTracker* ut) override;
 };
 
 
 
 
 class blockMeshDict_Cylinder_ParameterSet_Visualizer
- : public ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
 {
 public:
-    typedef blockMeshDict_Cylinder::Parameters Parameters;
-    typedef std::map<std::string, cad::FeaturePtr> ItemList;
-
-protected:
-    ItemList items_;
-
-public:
-    virtual void update(const ParameterSet& ps);
-    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
-    virtual void setIcon(QIcon* i);
+    void recreateVisualizationElements(UsageTracker* ut) override;
+    void setIcon(QIcon* i) override;
 };
 
 
 
 
 class blockMeshDict_Sphere_ParameterSet_Visualizer
- : public ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
 {
 public:
-    typedef blockMeshDict_Sphere::Parameters Parameters;
-    typedef std::map<std::string, cad::FeaturePtr> ItemList;
-
-protected:
-    ItemList items_;
-
-public:
-    virtual void update(const ParameterSet& ps);
-    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
+    void recreateVisualizationElements(UsageTracker* ut) override;
 };
 
 

@@ -10,23 +10,45 @@
 #include "openfoam/openfoamcase.h"
 #endif
 
-class InsertedCaseElement
+class ParameterSetDisplay;
+
+class CaseElementData
 : public QListWidgetItem
 {
-    std::string type_name_;
-    insight::ParameterSet curp_, defp_;
+
+protected:
+  std::string type_name_;
+  insight::ParameterSet curp_, defp_;
+
+  ParameterSetDisplay* disp_;
+  insight::ParameterSet_VisualizerPtr viz_;
 
 public:
-    InsertedCaseElement(QListWidget*, const std::string& type_name);
+  CaseElementData(QListWidget*, const std::string& type_name, ParameterSetDisplay* d);
+  ~CaseElementData();
+
+  inline insight::ParameterSet& parameters() { return curp_; }
+  inline const insight::ParameterSet& defaultParameters() { return defp_; }
+  inline const insight::ParameterSet& parameters() const { return curp_; }
+
+  insight::ParameterSet_VisualizerPtr visualizer();
+  void updateVisualization();
+};
+
+
+
+class InsertedCaseElement
+: public CaseElementData
+{
+
+public:
+    InsertedCaseElement(QListWidget*, const std::string& type_name, ParameterSetDisplay* d);
 
     inline const std::string& type_name() const { return type_name_; }
-    inline insight::ParameterSet& parameters() { return curp_; }
-    inline const insight::ParameterSet& defaultParameters() { return defp_; }
 
     insight::OpenFOAMCaseElement* createElement(insight::OpenFOAMCase& c) const;
     void insertElement(insight::OpenFOAMCase& ofc) const;
 
-    bool hasVisualization() const;
 };
 
 

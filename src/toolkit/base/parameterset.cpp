@@ -622,9 +622,6 @@ void ParameterSet_Visualizer::update(const ParameterSet& ps)
 
 
 
-void ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget*, QModelTree*)
-{
-}
 
 void ParameterSet_Visualizer::setIcon(QIcon*)
 {

@@ -78,11 +78,13 @@ void addWrapperToWidget
 
         if ( superform )
         {
-            QObject::connect ( superform, SIGNAL ( apply() ), wrapper, SLOT ( onApply() ) );
-            QObject::connect ( superform, SIGNAL ( update() ), wrapper, SLOT ( onUpdate() ) );
-            QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onUpdateVisualization() ) );
-            QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onCheckValidity() ) );
-            QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onParameterSetChanged() ) );
+            QObject::connect ( superform, SIGNAL ( apply() ),
+                               wrapper, SLOT ( onApply() ) );
+            QObject::connect ( superform, SIGNAL ( update() ),
+                               wrapper, SLOT ( onUpdate() ) );
+
+            QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ),
+                               superform, SLOT ( onParameterSetChanged() ) );
         }
       }
     }
@@ -191,6 +193,11 @@ void ParameterWrapper::createWidgets()
 void ParameterWrapper::removedWidgets()
 {
   widgetsDisplayed_=false;
+}
+
+void ParameterWrapper::onParameterSetChanged()
+{
+  emit parameterSetChanged();
 }
 
 void ParameterWrapper::onSelectionChanged()
@@ -1042,7 +1049,8 @@ void SubsetParameterWrapper::createWidgets()
 
   layout->addStretch();
   detaileditwidget_->setLayout(layout);
-  connect(detaileditwidget_, &QWidget::destroyed, this, &SubsetParameterWrapper::onDestruction);
+  connect(detaileditwidget_, &QWidget::destroyed,
+          this, &SubsetParameterWrapper::onDestruction);
   
 //   QHBoxLayout *layout=new QHBoxLayout(detaileditwidget_);
 //   QGroupBox *nameLabel = new QGroupBox(name_, detaileditwidget_);
@@ -1054,33 +1062,20 @@ void SubsetParameterWrapper::createWidgets()
 
 void SubsetParameterWrapper::onApply()
 {
-  emit(apply());
+  emit apply();
 }
 
 void SubsetParameterWrapper::onUpdate()
 {
-  emit(update());
+  emit update();
 }
 
-void SubsetParameterWrapper::onUpdateVisualization()
-{
-  emit updateVisualization();
-}
-
-void SubsetParameterWrapper::onCheckValidity()
-{
-  emit checkValidity();
-}
-
-void SubsetParameterWrapper::onParameterSetChanged()
-{
-  emit parameterSetChanged();
-}
 
 
 
 defineType(ArrayParameterWrapper);
 addToFactoryTable(ParameterWrapper, ArrayParameterWrapper);
+
 
 void ArrayParameterWrapper::addWrapper(int i)
 {
@@ -1097,11 +1092,17 @@ void ArrayParameterWrapper::addWrapper(int i)
         detaileditwidget_, this
     );
 
-  QObject::connect(treeWidget(), &QTreeWidget::itemSelectionChanged, wrapper, &ParameterWrapper::onSelectionChanged);
-  QObject::connect(this, &ArrayParameterWrapper::apply, wrapper, &ParameterWrapper::onApply);
-  QObject::connect(this, &ArrayParameterWrapper::update, wrapper, &ParameterWrapper::onUpdate);
-  QObject::connect ( wrapper, &ParameterWrapper::parameterSetChanged, this, &ArrayParameterWrapper::onParameterSetChanged );
+  QObject::connect(this, &ArrayParameterWrapper::apply,
+                   wrapper, &ParameterWrapper::onApply);
+  QObject::connect(this, &ArrayParameterWrapper::update,
+                   wrapper, &ParameterWrapper::onUpdate);
+
+  QObject::connect(wrapper, &ParameterWrapper::parameterSetChanged,
+                   this, &ArrayParameterWrapper::onParameterSetChanged );
+  QObject::connect(treeWidget(), &QTreeWidget::itemSelectionChanged,
+                   wrapper, &ParameterWrapper::onSelectionChanged);
 }
+
 
 void ArrayParameterWrapper::rebuildWrappers()
 {
@@ -1117,6 +1118,7 @@ void ArrayParameterWrapper::rebuildWrappers()
   }
 }
 
+
 ArrayParameterWrapper::ArrayParameterWrapper
 (
     QTreeWidgetItem* parent,
@@ -1131,6 +1133,7 @@ ArrayParameterWrapper::ArrayParameterWrapper
   setText(1, "array");
   rebuildWrappers();
 }
+
 
 bool ArrayParameterWrapper::showContextMenuForWidget(const QPoint &p)
 {
@@ -1160,7 +1163,6 @@ bool ArrayParameterWrapper::showContextMenuForWidget(const QPoint &p)
           if ( childid>=0 )
           {
             QMenu* myMenu = sel->createContextMenu();
-            myMenu->addAction ( "Delete" );
 
             sel->connect(myMenu->addAction("Remove array element"), &QAction::triggered,
                       this,
@@ -1218,7 +1220,7 @@ void ArrayParameterWrapper::createWidgets()
 
 void ArrayParameterWrapper::onRemove(int i)
 {
-  emit(apply());
+  emit apply();
   param().eraseValue(i);
   rebuildWrappers();
   emit parameterSetChanged();
@@ -1226,7 +1228,7 @@ void ArrayParameterWrapper::onRemove(int i)
 
 void ArrayParameterWrapper::onRemoveAll()
 {
-  emit(apply());
+  emit apply();
   param().clear();
   rebuildWrappers();
   emit parameterSetChanged();
@@ -1234,7 +1236,7 @@ void ArrayParameterWrapper::onRemoveAll()
 
 void ArrayParameterWrapper::onAppendEmpty()
 {
-  emit(apply());
+  emit apply();
   param().appendEmpty();
   rebuildWrappers();
   emit parameterSetChanged();
@@ -1242,30 +1244,15 @@ void ArrayParameterWrapper::onAppendEmpty()
 
 void ArrayParameterWrapper::onApply()
 {
-  emit(apply());
+  emit apply();
 }
 
 void ArrayParameterWrapper::onUpdate()
 {
-//   entrywrappers_.clear();
   rebuildWrappers();
-//  emit(update());
+  emit update();
 }
 
-void ArrayParameterWrapper::onUpdateVisualization()
-{
-  emit updateVisualization();
-}
-
-void ArrayParameterWrapper::onCheckValidity()
-{
-  emit checkValidity();
-}
-
-void ArrayParameterWrapper::onParameterSetChanged()
-{
-  emit parameterSetChanged();
-}
 
 
 defineType(DoubleRangeParameterWrapper);
@@ -1485,20 +1472,7 @@ void SelectableSubsetParameterWrapper::onUpdate()
 }
 
 
-void SelectableSubsetParameterWrapper::onUpdateVisualization()
-{
-  emit updateVisualization();
-}
 
-void SelectableSubsetParameterWrapper::onCheckValidity()
-{
-  emit checkValidity();
-}
-
-void SelectableSubsetParameterWrapper::onParameterSetChanged()
-{
-  emit parameterSetChanged();
-}
 
 // void SelectableSubsetParameterWrapper::onCurrentIndexChanged(const QString& qs)
 // {

@@ -125,24 +125,30 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     connect(ui->runBtn, &QPushButton::clicked, this, &AnalysisForm::onRunAnalysis);
     connect(ui->killBtn, &QPushButton::clicked, this, &AnalysisForm::onKillAnalysis);
 
+
     insight::ParameterSet_VisualizerPtr viz;
     insight::ParameterSet_ValidatorPtr vali;
 
     try {
         viz = insight::Analysis::visualizer(analysisName_);
     } catch (insight::Exception e)
-    { /* ignore, if non-existent */ }
+    {
+      /* ignore, if non-existent */
+      std::cout<<"Info: no visualizer for \""<<analysisName_<<"\" available."<<std::endl;
+    }
 
     try {
         vali = insight::Analysis::validator(analysisName_);
     } catch (insight::Exception e)
     { /* ignore, if non-existent */ }
 
-    peditor_=new ParameterEditorWidget(parameters_, defaultParams, ui->inputTab, vali, viz);
+    peditor_=new ParameterEditorWidget(parameters_, defaultParams, ui->inputTab, viz, vali);
     ui->inputTabLayout->addWidget(peditor_);
     peditor_->insertParameter("execution directory", executionPathParameter_, executionPathParameter_);
+
     QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
     QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
+
     connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
             this, &AnalysisForm::onConfigModification);
 

@@ -93,15 +93,16 @@ public:
   virtual bool showContextMenuForWidget(const QPoint &p);
 
 public Q_SLOTS:
-    virtual void onApply() =0;
-    virtual void onUpdate() =0;
+    virtual void onApply() =0; // Incoming signal from application: ParameterSet => GUI
+    virtual void onUpdate() =0; // Incoming signal from application: GUI => ParameterSet
+    virtual void onParameterSetChanged(); // Incoming signal from child widgets: propagate upwards
     virtual void onSelectionChanged();
     virtual void onSelection();
     virtual void onDestruction();
     virtual void onResetToDefault();
 
 Q_SIGNALS:
-  void parameterSetChanged();
+    void parameterSetChanged();
 };
 
 
@@ -113,6 +114,7 @@ class IntParameterWrapper
   Q_OBJECT
 protected:
   QLineEdit *le_;
+
 public:
   declareType(insight::IntParameter::typeName_());
   
@@ -125,12 +127,12 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::IntParameter& param() { return dynamic_cast<insight::IntParameter&>(p_); }
   
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
+  void onApply() override;
+  void onUpdate() override;
 };
 
 
@@ -153,11 +155,12 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::DoubleParameter& param() { return dynamic_cast<insight::DoubleParameter&>(p_); }
+
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
+  void onApply() override;
+  void onUpdate() override;
 };
 
 
@@ -180,11 +183,12 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::VectorParameter& param() { return dynamic_cast<insight::VectorParameter&>(p_); }
+
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
+  void onApply() override;
+  void onUpdate() override;
 };
 
 
@@ -207,12 +211,13 @@ public:
       QWidget* detailw,
       QObject* superform
       );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::StringParameter& param()
   { return dynamic_cast<insight::StringParameter&>(p_); }
+
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
+  void onApply() override;
+  void onUpdate() override;
 };
 
 
@@ -236,12 +241,12 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::BoolParameter& param() { return dynamic_cast<insight::BoolParameter&>(p_); }
 
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
+  void onApply() override;
+  void onUpdate() override;
 };
 
 
@@ -269,13 +274,13 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::PathParameter& param()
   { return dynamic_cast<insight::PathParameter&>(p_); }
 
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
+  void onApply() override;
+  void onUpdate() override;
   
 protected Q_SLOTS:
   virtual void openSelectionDialog();
@@ -306,13 +311,13 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::MatrixParameter& param()
   { return dynamic_cast<insight::MatrixParameter&>(p_); }
 
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
+  void onApply() override;
+  void onUpdate() override;
   
 protected Q_SLOTS:
   virtual void openSelectionDialog();
@@ -367,13 +372,13 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::SelectionParameter& param()
   { return dynamic_cast<insight::SelectionParameter&>(p_); }
 
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
+  void onApply() override;
+  void onUpdate() override;
 };
 
 
@@ -395,23 +400,17 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::SubsetParameter& param()
   { return dynamic_cast<insight::SubsetParameter&>(p_); }
   
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
-  void onUpdateVisualization();
-  void onCheckValidity();
-  void onParameterSetChanged();
+  void onApply() override;
+  void onUpdate() override;
 
 Q_SIGNALS:
   void apply();
   void update();
-  void updateVisualization();
-  void checkValidity();
-  void parameterSetChanged();
 };
 
 
@@ -445,23 +444,18 @@ public:
 protected Q_SLOTS:
   bool showContextMenuForWidget(const QPoint &p) override;
   QMenu* createContextMenu() override;
+
   void onRemove(int i);
   void onRemoveAll();
   void onAppendEmpty();
   
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
-  void onUpdateVisualization();
-  void onCheckValidity();
-  void onParameterSetChanged();
+  void onApply() override;
+  void onUpdate() override;
 
 Q_SIGNALS:
   void apply();
   void update();
-  void updateVisualization();
-  void checkValidity();
-  void parameterSetChanged();
 };
 
 
@@ -488,12 +482,12 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::DoubleRangeParameter& param() { return dynamic_cast<insight::DoubleRangeParameter&>(p_); }
   
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
+  void onApply() override;
+  void onUpdate() override;
   void onAddSingle();
   void onAddRange();
   void onClear();
@@ -525,23 +519,17 @@ public:
       QWidget* detailw,
       QObject* superform
   );
-  virtual void createWidgets();
+  void createWidgets() override;
   inline insight::SelectableSubsetParameter& param()
   { return dynamic_cast<insight::SelectableSubsetParameter&>(p_); }
   
 public Q_SLOTS:
-  virtual void onApply();
-  virtual void onUpdate();
-  void onUpdateVisualization();
-  void onCheckValidity();
-  void onParameterSetChanged();
+  void onApply() override;
+  void onUpdate() override;
 
 Q_SIGNALS:
   void apply();
   void update();
-  void updateVisualization();
-  void checkValidity();
-  void parameterSetChanged();
 };
 
 

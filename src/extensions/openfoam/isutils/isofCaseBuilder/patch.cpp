@@ -5,42 +5,49 @@ using namespace boost;
 using namespace rapidxml;
 
 
-Patch::Patch(QListWidget*parent, const std::string& patch_name)
-: QListWidgetItem(parent), patch_name_(patch_name)
+Patch::Patch(QListWidget*parent, const std::string& patch_name, ParameterSetDisplay* d)
+: CaseElementData(parent, "", d), patch_name_(patch_name)
 {
     //setText(patch_name_.c_str());
   updateText();
 }
 
 
-Patch::Patch(QListWidget*parent, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath)
-: QListWidgetItem(parent)
+Patch::Patch(QListWidget*parent, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath, ParameterSetDisplay* d)
+: CaseElementData(parent, "", d)
 {
     patch_name_ = node.first_attribute ( "patchName" )->value();
     //setText(patch_name_.c_str());
     updateText();
-    bc_type_ = node.first_attribute ( "BCtype" )->value();
-    if (bc_type_!="")
+    type_name_ = node.first_attribute ( "BCtype" )->value();
+    if (type_name_!="")
     {
-        set_bc_type(bc_type_);
+        set_bc_type(type_name_);
         curp_.readFromNode(doc, node, inputfilepath);
     }
 }
 
 void Patch::updateText()
 {
-  if (bc_type_.empty())
+  if (type_name_.empty())
     setText( (patch_name_).c_str() );
   else
-    setText( (patch_name_+" ("+bc_type_+")").c_str() );
+    setText( (patch_name_+" ("+type_name_+")").c_str() );
 }
 
 void Patch::set_bc_type(const std::string& type_name)
 {
-    bc_type_=type_name;
+    type_name_=type_name;
     updateText();
-    curp_ = BoundaryCondition::defaultParameters(bc_type_);
+    curp_ = BoundaryCondition::defaultParameters(type_name_);
     defp_ = curp_;
+    if (type_name_!="")
+    {
+      try {
+        viz_ = insight::BoundaryCondition::visualizer(type_name_);
+      }
+      catch (...) { /* skip */ }
+    }
 }
 
 void Patch::set_patch_name(const QString& newname)
@@ -51,9 +58,9 @@ void Patch::set_patch_name(const QString& newname)
 
 bool Patch::insertElement(insight::OpenFOAMCase& c, insight::OFDictData::dict& boundaryDict) const
 {
-    if (bc_type_!="")
+    if (type_name_!="")
     {
-        c.insert(insight::BoundaryCondition::lookup(bc_type_, c, patch_name_, boundaryDict, curp_));
+        c.insert(insight::BoundaryCondition::lookup(type_name_, c, patch_name_, boundaryDict, curp_));
         return true;
     }
     else
@@ -67,7 +74,7 @@ void Patch::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& 
 {
 //     xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
     node.append_attribute ( doc.allocate_attribute ( "patchName", patch_name_.c_str() ) );
-    node.append_attribute ( doc.allocate_attribute ( "BCtype", bc_type_.c_str() ) );
+    node.append_attribute ( doc.allocate_attribute ( "BCtype", type_name_.c_str() ) );
 
     curp_.appendToNode ( doc, node, inputfilepath.parent_path() );
 }
@@ -75,21 +82,21 @@ void Patch::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& 
 
 const QString DefaultPatch::defaultPatchName = "[Unassigned Patches]";
 
-DefaultPatch::DefaultPatch(QListWidget* parent)
-  : Patch(parent, defaultPatchName.toStdString())
+DefaultPatch::DefaultPatch(QListWidget* parent, ParameterSetDisplay* d)
+  : Patch(parent, defaultPatchName.toStdString(), d)
 {
 }
 
-DefaultPatch::DefaultPatch(QListWidget*parent, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath)
-: Patch(parent, doc, node, inputfilepath)
+DefaultPatch::DefaultPatch(QListWidget*parent, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath, ParameterSetDisplay* d)
+: Patch(parent, doc, node, inputfilepath, d)
 {
 }
 
 bool DefaultPatch::insertElement ( insight::OpenFOAMCase& ofc, insight::OFDictData::dict& boundaryDict ) const
 {
-  if ( bc_type_!="" )
+  if ( type_name_!="" )
     {
-      ofc.addRemainingBCs ( bc_type_, boundaryDict, curp_ );
+      ofc.addRemainingBCs ( type_name_, boundaryDict, curp_ );
       return true;
     }
   else

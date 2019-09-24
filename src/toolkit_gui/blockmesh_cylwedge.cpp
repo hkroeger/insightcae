@@ -394,51 +394,43 @@ ParameterSet_VisualizerPtr blockMeshDict_CylWedge_visualizer()
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_CylWedge, visualizer, blockMeshDict_CylWedge_visualizer);
 
 
-void blockMeshDict_CylWedge_ParameterSet_Visualizer::update(const ParameterSet& ps)
+void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker *ut)
 {
-    ParameterSet_Visualizer::update(ps);
-}
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
 
-void blockMeshDict_CylWedge_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt)
-{
+  Parameters p(ps_);
 
-    Parameters p(ps_);
-
-    insight::cad::cache.initRebuild();
-
-    OpenFOAMCase oc(OFEs::getCurrentOrPreferred());
-    blockMeshDict_CylWedge bcw( oc, ps_ );
+  OpenFOAMCase oc(OFEs::getCurrentOrPreferred());
+  blockMeshDict_CylWedge bcw( oc, ps_ );
 
 
-    auto dom =
+  auto dom =
       cad::Cutaway::create(
-       cad::Cutaway::create(
-        cad::BooleanSubtract::create(
-          cad::Cylinder::create(
-                   cad::matconst(p.geometry.p0),
-                   cad::matconst(p.geometry.L*bcw.ex_),
-                   cad::scalarconst(p.geometry.D),
-                   true,
-                   false
-                   ),
-          cad::Cylinder::create(
-                   cad::matconst(p.geometry.p0),
-                   cad::matconst(p.geometry.L*bcw.ex_),
-                   cad::scalarconst(p.geometry.d),
-                   true,
-                   false
-                   )
+        cad::Cutaway::create(
+          cad::BooleanSubtract::create(
+            cad::Cylinder::create(
+              cad::matconst(p.geometry.p0),
+              cad::matconst(p.geometry.L*bcw.ex_),
+              cad::scalarconst(p.geometry.D),
+              true,
+              false
+              ),
+            cad::Cylinder::create(
+              cad::matconst(p.geometry.p0),
+              cad::matconst(p.geometry.L*bcw.ex_),
+              cad::scalarconst(p.geometry.d),
+              true,
+              false
+              )
             ),
           cad::matconst(p.geometry.p0), cad::matconst( rotMatrix(0.5*p.geometry.wedge_angle*SI::deg, bcw.ex_)*-bcw.ey_ )
-         ),
+          ),
         cad::matconst(p.geometry.p0), cad::matconst( rotMatrix(-0.5*p.geometry.wedge_angle*SI::deg, bcw.ex_)*bcw.ey_ )
-       );
+        );
 
-    mt->onAddFeature( "blockMeshDict_CylWedge",
-                        cad::Compound::create(cad::CompoundFeatureList({dom})),
-                        true );
-
-    insight::cad::cache.finishRebuild();
+  addFeature( "blockMeshDict_CylWedge",
+              cad::Compound::create(cad::CompoundFeatureList({dom}))
+              );
 }
 
 

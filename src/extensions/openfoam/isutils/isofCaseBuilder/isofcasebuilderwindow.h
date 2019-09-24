@@ -75,6 +75,7 @@ private:
     QoccViewerContext* context_;
     QoccViewWidget* viewer_;
     QModelTree* modeltree_;
+    ParameterSetDisplay* display_;
 
 protected:
 
@@ -148,7 +149,7 @@ public:
 
     boost::filesystem::path casepath() const;
 
-    void updateCAD();
+//    void updateCAD();
 
 public Q_SLOTS:
     void onItemSelectionChanged();

@@ -1,6 +1,7 @@
 #ifndef SNAPPYHEXMESH_GUI_H
 #define SNAPPYHEXMESH_GUI_H
 
+#include "parametersetvisualizer.h"
 #include "openfoam/snappyhexmesh.h"
 #include "cadtypes.h"
 
@@ -9,18 +10,10 @@ namespace insight
 
 
 class snappyHexMeshConfiguration_ParameterSet_Visualizer
- : public ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
 {
 public:
-    typedef snappyHexMeshConfiguration::Parameters Parameters;
-    typedef std::map<std::string, cad::FeaturePtr> ItemList;
-
-protected:
-    ItemList items_;
-
-public:
-    virtual void update(const ParameterSet& ps);
-    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
+    virtual void recreateVisualizationElements(UsageTracker *ut);
     virtual void setIcon(QIcon* icon);
 };
 

@@ -7,46 +7,50 @@
 namespace insight
 {
 
-
-void CAD_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt)
+CAD_ParameterSet_Visualizer::UsageTracker::UsageTracker(QModelTree* mt)
+  : mt_(mt)
 {
-  mt_=mt;
-
-  insight::cad::cache.initRebuild();
-
   mt->getFeatureNames(removedFeatures_);
   mt->getDatumNames(removedDatums_);
+}
 
-  recreateVisualizationElements(vw);
 
+void CAD_ParameterSet_Visualizer::UsageTracker::cleanupModelTree()
+{
   for (const std::string& sn: removedFeatures_)
   {
-    mt->onRemoveFeature( QString::fromStdString(sn) );
+    mt_->onRemoveFeature( QString::fromStdString(sn) );
   }
   for (const std::string& sn: removedDatums_)
   {
-    mt->onRemoveDatum( QString::fromStdString(sn) );
+    mt_->onRemoveDatum( QString::fromStdString(sn) );
   }
-
-  insight::cad::cache.finishRebuild();
 }
+
 
 void CAD_ParameterSet_Visualizer::addDatum(const std::string& name, insight::cad::DatumPtr dat)
 {
-  auto i=removedDatums_.find(name);
-  mt_->onAddDatum(QString::fromStdString(name), dat);
-  if (i!=removedDatums_.end()) removedDatums_.erase(i);
+  auto i=ut_->removedDatums_.find(name);
+  ut_->mt_->onAddDatum(QString::fromStdString(name), dat);
+  if (i!=ut_->removedDatums_.end()) ut_->removedDatums_.erase(i);
 }
 
 void CAD_ParameterSet_Visualizer::addFeature(const std::string& name, insight::cad::FeaturePtr feat)
 {
-  auto i=removedFeatures_.find(name);
-  mt_->onAddFeature(QString::fromStdString(name), feat, true);
-  if (i!=removedFeatures_.end()) removedFeatures_.erase(i);
+  auto i=ut_->removedFeatures_.find(name);
+  ut_->mt_->onAddFeature(QString::fromStdString(name), feat, true);
+  if (i!=ut_->removedFeatures_.end()) ut_->removedFeatures_.erase(i);
 }
 
-void CAD_ParameterSet_Visualizer::recreateVisualizationElements(QoccViewWidget* )
+void CAD_ParameterSet_Visualizer::update(const ParameterSet& ps)
 {
+  ParameterSet_Visualizer::update(ps);
+  emit GUINeedsUpdate();
+}
+
+void CAD_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+{
+  ut_=ut;
 }
 
 

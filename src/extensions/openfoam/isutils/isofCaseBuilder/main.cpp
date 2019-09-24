@@ -145,6 +145,7 @@ int main ( int argc, char** argv )
       QLocale::setDefault ( QLocale::C );
 
       isofCaseBuilderWindow window;
+
       if ( vm.count ( "input-file" ) )
       {
           for ( const std::string& fn: vm["input-file"].as<StringList>())
@@ -271,7 +272,7 @@ int main ( int argc, char** argv )
     if ( !batch )
     {
         window.show();
-        window.updateCAD();
+//        window.updateCAD();
         return app.exec();
     }
     else

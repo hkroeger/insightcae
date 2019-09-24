@@ -559,6 +559,8 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
 
   class ParameterSet_Visualizer
   {
+
+    // not linked to CAD; don't use any non-forward definitions from CAD module
   protected:
       ParameterSet ps_;
 
@@ -568,11 +570,10 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
       /**
        * @brief update
        * @param ps
-       * computes visualization features (from insight::cad) for several parameters.
+       * updates the parameterset which is to visualize.
+       * This triggers recomputation of visualization features (from insight::cad) for several parameters.
        */
       virtual void update(const ParameterSet& ps);
-
-      virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*);
 
       virtual void setIcon(QIcon* icon);
   };

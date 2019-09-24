@@ -476,6 +476,13 @@ void QModelTree::getFeatureNames(std::set<std::string>& featnames) const
           featnames.insert( qmsi->text( QModelTreeItem::COL_NAME ).toStdString() );
       }
   }
+  for (int i=0; i<componentfeatures_->childCount(); i++)
+  {
+      if ( QFeatureItem *qmsi=dynamic_cast<QFeatureItem*>(componentfeatures_->child(i)) )
+      {
+          featnames.insert( qmsi->text( QModelTreeItem::COL_NAME ).toStdString() );
+      }
+  }
 }
 
 void QModelTree::getDatumNames(std::set<std::string>& datumnames) const

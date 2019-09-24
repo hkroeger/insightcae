@@ -221,8 +221,6 @@ public:
           value_ ( value )
     {}
 
-    ~SimpleParameter() override
-    {}
 
     virtual T& operator() ()
     {

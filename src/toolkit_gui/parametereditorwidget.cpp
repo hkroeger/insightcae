@@ -102,23 +102,27 @@ ParameterEditorWidget::ParameterEditorWidget
 
 void ParameterEditorWidget::onApply()
 {
-    emit apply();
+  emit apply();
 }
 
 void ParameterEditorWidget::onUpdate()
 {
-    emit update();
+  emit update();
+  doUpdateVisualization();
 }
 
-
-void ParameterEditorWidget::onParameterSetChanged()
+void ParameterEditorWidget::doUpdateVisualization()
 {
-  emit parameterSetChanged();
-
   if (viz_)
   {
       viz_->update(parameters_);
   }
+}
+
+void ParameterEditorWidget::onParameterSetChanged()
+{
+  emit parameterSetChanged();
+  doUpdateVisualization();
 }
 
 

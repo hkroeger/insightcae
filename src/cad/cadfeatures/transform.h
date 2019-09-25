@@ -64,6 +64,7 @@ public:
     static FeaturePtr create_translate ( FeaturePtr m1, VectorPtr trans );
     static FeaturePtr create_scale ( FeaturePtr m1, ScalarPtr scale );
     static FeaturePtr create_copy ( FeaturePtr m1, FeaturePtr other );
+    static FeaturePtr create_trsf ( FeaturePtr m1, const gp_Trsf& trsf );
 
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;

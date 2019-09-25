@@ -77,8 +77,8 @@ Transform::Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sc
 Transform::Transform(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
 : DerivedFeature(m1),
   m1_(m1),
-  rot_(rot),
-  rotorg_(rotorg)
+  rotorg_(rotorg),
+  rot_(rot)
 {}
 
 
@@ -155,6 +155,10 @@ FeaturePtr Transform::create_copy(FeaturePtr m1, FeaturePtr other)
     return FeaturePtr(new Transform(m1, other));    
 }
 
+FeaturePtr Transform::create_trsf ( FeaturePtr m1, const gp_Trsf& trsf )
+{
+  return FeaturePtr(new Transform(m1, trsf));
+}
 
 gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
 {

@@ -63,9 +63,24 @@ void NumericalWindtunnel::calcDerivedInputData()
   arma::mat cad_up=p.geometry.upwarddir;
   arma::mat cad_long=p.geometry.forwarddir;
   
+  arma::mat bb; // bounding box in SI, rotated to wind tunnel CS
+
+  std::string geom_file_ext = p.geometry.objectfile.filename().extension().string();
+  boost::to_lower(geom_file_ext);
+
+  if (geom_file_ext==".stl" || geom_file_ext==".stlb")
+  {
+    vtk_ChangeCS trsf(
+          cad_long, cad_up,
+          vec3(-1,0,0), vec3(0,0,1)
+          );
+
+    bb = p.geometryscale * STLBndBox(readSTL(p.geometry.objectfile, { &trsf }));
+  }
+  else
   {
     boost::mutex::scoped_lock lock(mtx);
-    
+
     gp_Trsf cad_to_cfd;
     cad_to_cfd.SetTransformation
     (
@@ -73,111 +88,20 @@ void NumericalWindtunnel::calcDerivedInputData()
       gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(-1,0,0))
     );
 
-
-    object_.reset(new cad::Transform(cad::Feature::CreateFromFile(p.geometry.objectfile.c_str()), cad_to_cfd));
-  
-    arma::mat mp= object_->modelBndBox(bbdefl);
-    arma::mat pmin=vec3(0,0,0);
-    for (int j=0; j<3; j++)
-      pmin(j)=/*std::min(*/mp(j,0)/*, std::min(bbf(j,0), bbr(j,0)))*/;
-    arma::mat pmax=vec3(0,0,0);
-    for (int j=0; j<3; j++)
-      pmax(j)=/*std::max(*/mp(j,1)/*, std::max(bbf(j,1), bbr(j,1)))*/;
-    cout<<pmin<<pmax<<endl;
-    translation_=vec3(-pmin(0), -0.5*(pmax(1)+pmin(1)), -pmin(2));
-    L_=1e-3*(pmax(0)-pmin(0));
-    w_=1e-3*(pmax(1)-pmin(1));
-    h_=1e-3*(pmax(2)-pmin(2));
-    
-    cout<<flush;
+    auto obj = new cad::Transform(cad::Feature::CreateFromFile(p.geometry.objectfile.c_str()), cad_to_cfd);
+    bb = p.geometryscale * obj->modelBndBox(bbdefl);
   }
+
+  arma::mat pmin=bb.col(0);
+  arma::mat pmax=bb.col(1);
+  translation_=vec3(-pmin(0), -0.5*(pmax(1)+pmin(1)), -pmin(2));
+
+  L_=(pmax(0)-pmin(0));
+  w_=(pmax(1)-pmin(1));
+  h_=(pmax(2)-pmin(2));
+
 }
 
-void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm)
-{
-  Parameters p(parameters_);
-  
-  //double vside=tan(yaw*M_PI/180.)*p.operation.v;
-  
-  double turbI=0.01; // Free-stream turbulence
-  double turbL=0.001*h_; // Free-stream turbulence length scale => very low 0.1% of car height
-
-  path dir = executionPath();
-    
-  OFDictData::dict boundaryDict;
-  cm.parseBoundaryDict(dir, boundaryDict);
-
-  cm.insert(new steadyIncompressibleNumerics(cm, steadyIncompressibleNumerics::Parameters()
-//     .set_writeControl("adjustableRunTime")
-    .set_writeInterval(100.0)
-    .set_purgeWrite(0)
-    .set_endTime(1000.0)
-    .set_deltaT(1)
-    
-//     .set_maxCo(5)
-//     .set_nCorrectors(1)
-//     .set_nOuterCorrectors(10)
-  ));
-  cm.insert(new forces(cm, forces::Parameters()
-    .set_rhoInf(p.fluid.rho)
-    .set_patches(list_of<std::string>("\"(object.*)\""))
-  ));
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters()
-    .set_nu(p.fluid.nu)
-  ));
-  
-  cm.insert(new SimpleBC(cm, "top", boundaryDict, "symmetryPlane"));
-//   if (vside<=0)
-//   {
-//     cm.insert(new VelocityInletBC(cm, "side1", boundaryDict, VelocityInletBC::Parameters()
-//        .set_velocity( FieldData::uniformSteady(p.operation.v,0,0) )
-//        .set_turbulence(turbulenceBC::turbulenceBCPtr(new turbulenceBC::uniformIntensityAndLengthScale(
-//            turbulenceBC::uniformIntensityAndLengthScale::Parameters()
-//             .set_I(turbI)
-//             .set_l(turbL) 
-//         )))
-//     ));
-//   }
-//   else 
-  {
-    cm.insert(new PressureOutletBC(cm, "side1", boundaryDict));  
-  }
-  
-//   if (vside>=0)
-//   {
-//     cm.insert(new VelocityInletBC(cm, "side2", boundaryDict, VelocityInletBC::Parameters()
-//       .set_velocity(FieldData::uniformSteady(v,vside,0))
-//       .set_turbulence(turbulenceBC::turbulenceBCPtr(new turbulenceBC::uniformIntensityAndLengthScale(
-//            turbulenceBC::uniformIntensityAndLengthScale::Parameters()
-//             .set_I(turbI)
-//             .set_l(turbL) 
-//         )))
-//     ));
-//   }
-//   else 
-  {
-    cm.insert(new PressureOutletBC(cm, "side2", boundaryDict));  
-  }
-
-  cm.insert(new WallBC(cm, "floor", boundaryDict, WallBC::Parameters()
-    .set_wallVelocity(vec3(p.operation.v,0,0)) // velocity of car vs ground! (wind excluded)
-  ));
-  cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict));
-  cm.insert(new VelocityInletBC(cm, "inlet", boundaryDict, VelocityInletBC::Parameters()
-      .set_velocity( FieldData::uniformSteady(p.operation.v,0,0) )
-      .set_turbulence(turbulenceBC::turbulenceBCPtr(new turbulenceBC::uniformIntensityAndLengthScale(
-           turbulenceBC::uniformIntensityAndLengthScale::Parameters()
-            .set_I(turbI)
-            .set_l(turbL) 
-        )))
-  ));
-
-  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters() );
-  
-  insertTurbulenceModel(cm, 
-    parameters_.get<SelectableSubsetParameter>("fluid/turbulenceModel"));
-
-}
 
 void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
 {
@@ -188,10 +112,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
     .set_np(p.run.np)
   ));
   cm.createOnDisk(executionPath());
-
-  //PSDBL(p, "operation", yaw);
   
-  double w=w_; //+L_*sin(M_PI*yaw/180.);
+  double w=w_;
 
   double Lupstream = L_*p.geometry.LupstreamByL;
   double Ldownstream = L_*p.geometry.LdownstreamByL;
@@ -212,7 +134,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
   
 
   using namespace insight::bmd;
-  std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
+  std::unique_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
   bmd->setDefaultPatch("walls", "patch");
 
@@ -350,13 +272,41 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
   cm.executeCommand(executionPath(), "blockMesh");  
     
   create_directory(objectSTLFile_.parent_path());
-  object_->saveAs(objectSTLFile_);
+
+  std::string geom_file_ext = p.geometry.objectfile.filename().extension().string();
+  boost::to_lower(geom_file_ext);
+
+  if (geom_file_ext==".stl" || geom_file_ext==".stlb")
+  {
+    vtk_ChangeCS trsf(
+          p.geometry.forwarddir, p.geometry.upwarddir,
+          vec3(-1,0,0), vec3(0,0,1)
+          );
+
+    writeSTL( readSTL(p.geometry.objectfile, { &trsf }), objectSTLFile_ );
+  }
+  else
+  {
+    boost::mutex::scoped_lock lock(mtx);
+
+    gp_Trsf cad_to_cfd;
+    cad_to_cfd.SetTransformation
+    (
+      gp_Ax3(gp_Pnt(0,0,0), toVec<gp_Dir>(p.geometry.upwarddir), toVec<gp_Dir>(p.geometry.forwarddir)),
+      gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(-1,0,0))
+    );
+
+    auto obj = new cad::Transform(cad::Feature::CreateFromFile(p.geometry.objectfile.c_str()), cad_to_cfd);
+
+    obj->saveAs(objectSTLFile_);
+  }
+
   cm.executeCommand(executionPath(), "surfaceTransformPoints",
     list_of<string>
     (objectSTLFile_.c_str())
     (objectSTLFile_.c_str())
     ("-translate")(OFDictData::to_OF(translation_))
-    ("-scale")(OFDictData::to_OF(vec3(1e-3, 1e-3, 1e-3)))
+    ("-scale")(OFDictData::to_OF(vec3(1, 1, 1)*p.geometryscale))
   );
 
 
@@ -398,18 +348,104 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
   (
     cm, executionPath(),
     shm_cfg
-//     OFDictData::vector3(vec3(-0.999*Lupstream,1e-6,1e-6)),
-//     shm_feats,
-//     snappyHexMeshOpts::Parameters()
-//       .set_tlayer(tlayer)
-//       .set_erlayer(1.3)
-//       //.set_relativeSizes(false)
   );
 
   
   resetMeshToLatestTimestep(cm, executionPath(), true);
   
 }
+
+
+
+
+void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm)
+{
+  Parameters p(parameters_);
+
+  //double vside=tan(yaw*M_PI/180.)*p.operation.v;
+
+  double turbI=0.01; // Free-stream turbulence
+  double turbL=0.001*h_; // Free-stream turbulence length scale => very low 0.1% of car height
+
+  path dir = executionPath();
+
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(dir, boundaryDict);
+
+  cm.insert(new steadyIncompressibleNumerics(cm, steadyIncompressibleNumerics::Parameters()
+//     .set_writeControl("adjustableRunTime")
+    .set_writeInterval(100.0)
+    .set_purgeWrite(0)
+    .set_endTime(1000.0)
+    .set_deltaT(1)
+
+//     .set_maxCo(5)
+//     .set_nCorrectors(1)
+//     .set_nOuterCorrectors(10)
+  ));
+  cm.insert(new forces(cm, forces::Parameters()
+    .set_rhoInf(p.fluid.rho)
+    .set_patches(list_of<std::string>("\"(object.*)\""))
+  ));
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters()
+    .set_nu(p.fluid.nu)
+  ));
+
+  cm.insert(new SimpleBC(cm, "top", boundaryDict, "symmetryPlane"));
+//   if (vside<=0)
+//   {
+//     cm.insert(new VelocityInletBC(cm, "side1", boundaryDict, VelocityInletBC::Parameters()
+//        .set_velocity( FieldData::uniformSteady(p.operation.v,0,0) )
+//        .set_turbulence(turbulenceBC::turbulenceBCPtr(new turbulenceBC::uniformIntensityAndLengthScale(
+//            turbulenceBC::uniformIntensityAndLengthScale::Parameters()
+//             .set_I(turbI)
+//             .set_l(turbL)
+//         )))
+//     ));
+//   }
+//   else
+  {
+    cm.insert(new PressureOutletBC(cm, "side1", boundaryDict));
+  }
+
+//   if (vside>=0)
+//   {
+//     cm.insert(new VelocityInletBC(cm, "side2", boundaryDict, VelocityInletBC::Parameters()
+//       .set_velocity(FieldData::uniformSteady(v,vside,0))
+//       .set_turbulence(turbulenceBC::turbulenceBCPtr(new turbulenceBC::uniformIntensityAndLengthScale(
+//            turbulenceBC::uniformIntensityAndLengthScale::Parameters()
+//             .set_I(turbI)
+//             .set_l(turbL)
+//         )))
+//     ));
+//   }
+//   else
+  {
+    cm.insert(new PressureOutletBC(cm, "side2", boundaryDict));
+  }
+
+  cm.insert(new WallBC(cm, "floor", boundaryDict, WallBC::Parameters()
+    .set_wallVelocity(vec3(p.operation.v,0,0)) // velocity of car vs ground! (wind excluded)
+  ));
+  cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict));
+  cm.insert(new VelocityInletBC(cm, "inlet", boundaryDict, VelocityInletBC::Parameters()
+      .set_velocity( FieldData::uniformSteady(p.operation.v,0,0) )
+      .set_turbulence(turbulenceBC::turbulenceBCPtr(new turbulenceBC::uniformIntensityAndLengthScale(
+           turbulenceBC::uniformIntensityAndLengthScale::Parameters()
+            .set_I(turbI)
+            .set_l(turbL)
+        )))
+  ));
+
+  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters() );
+
+  insertTurbulenceModel(cm,
+    parameters_.get<SelectableSubsetParameter>("fluid/turbulenceModel"));
+
+}
+
+
+
 
 ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
 {
@@ -526,25 +562,25 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
       )
     );
     results->insert("contourPressureLeftFront",
-      std::auto_ptr<Image>(new Image
+      std::unique_ptr<Image>(new Image
       (
        executionPath(), "leftfrontview.png", 
       "Pressure distribution on car, view from left side ahead", ""
     )));
     results->insert("contourPressureRightFront",
-      std::auto_ptr<Image>(new Image
+      std::unique_ptr<Image>(new Image
       (
        executionPath(), "rightfrontview.png", 
       "Pressure distribution on car, view from right side ahead", ""
     )));
     results->insert("contourPressureLeftRear",
-      std::auto_ptr<Image>(new Image
+      std::unique_ptr<Image>(new Image
       (
        executionPath(), "leftrearview.png", 
       "Pressure distribution on car, view from left side rear", ""
     )));
     results->insert("contourPressureRightRear",
-      std::auto_ptr<Image>(new Image
+      std::unique_ptr<Image>(new Image
       (
        executionPath(), "rightrearview.png", 
       "Pressure distribution on car, view from right side rear", ""
@@ -552,6 +588,56 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
   }
 
   return results;
+}
+
+
+
+
+ParameterSet_VisualizerPtr NumericalWindtunnel_visualizer()
+{
+    return ParameterSet_VisualizerPtr( new NumericalWindtunnel_ParameterSet_Visualizer );
+}
+
+addStandaloneFunctionToStaticFunctionTable(Analysis, NumericalWindtunnel, visualizer, NumericalWindtunnel_visualizer);
+
+
+void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+{
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+
+  Parameters p(ps_);
+  NumericalWindtunnel nwt(ps_, "");
+
+
+  std::string geom_file_ext = p.geometry.objectfile.filename().extension().string();
+  boost::to_lower(geom_file_ext);
+
+  cad::FeaturePtr org_geom;
+  if (geom_file_ext==".stl" || geom_file_ext==".stlb")
+  {
+    org_geom = cad::STL::create(p.geometry.objectfile);
+  }
+  else
+  {
+    org_geom = cad::Feature::CreateFromFile(p.geometry.objectfile.string());
+  }
+
+  gp_Trsf cad_to_cfd;
+  cad_to_cfd.SetTransformation
+  (
+    gp_Ax3(gp_Pnt(0,0,0), toVec<gp_Dir>(p.geometry.upwarddir), toVec<gp_Dir>(p.geometry.forwarddir)),
+    gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(-1,0,0))
+  );
+
+  addFeature
+  (
+    "object",
+     cad::Transform::create_translate(
+      cad::Transform::create_trsf(org_geom, cad_to_cfd),
+      cad::matconst(nwt.translation_)
+     )
+  );
+
 }
 
     

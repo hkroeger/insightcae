@@ -23,12 +23,18 @@
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/openfoamcaseelements.h"
 #include "cadfeatures.h"
+#include "parametersetvisualizer.h"
 
 namespace insight {
+
+
+class NumericalWindtunnel_ParameterSet_Visualizer;
 
 class NumericalWindtunnel 
 : public OpenFOAMAnalysis
 {
+  friend class NumericalWindtunnel_ParameterSet_Visualizer;
+
 public:
 #include "numericalwindtunnel__NumericalWindtunnel__Parameters.h"
 /*
@@ -48,7 +54,7 @@ geometry = set {
  
 } "Geometrical properties of the domain"
       
-
+geometryscale = double 1e-3     "scaling factor to scale geometry files to meters"
 
 mesh = set {
 
@@ -87,7 +93,7 @@ fluid = set {
 */
   
 protected:
-  cad::FeaturePtr object_;
+
   arma::mat translation_;
   double L_, w_, h_;
   boost::filesystem::path objectSTLFile_;
@@ -107,6 +113,18 @@ public:
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
 };
 
+
+
+
+class NumericalWindtunnel_ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
+{
+public:
+    typedef NumericalWindtunnel::Parameters Parameters;
+
+public:
+    void recreateVisualizationElements(UsageTracker* ut) override;
+};
 
 }
 

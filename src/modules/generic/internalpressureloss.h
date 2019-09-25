@@ -100,7 +100,7 @@ protected:
     boost::filesystem::path wallstlfile_, inletstlfile_, outletstlfile_;
   
 public:
-    declareType("InternalPressureLoss");
+    declareType("Internal Pressure Loss");
 
     InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath);
 

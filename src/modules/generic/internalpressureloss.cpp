@@ -40,7 +40,7 @@ addToAnalysisFactoryTable(InternalPressureLoss);
 InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis
   (
-    "InternalPressureLoss", 
+    "Internal Pressure Loss",
     "Determination of internal pressure loss by CFD a simulation",
     ps, exepath
   )

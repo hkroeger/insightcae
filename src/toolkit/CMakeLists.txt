@@ -90,6 +90,7 @@ find_package(VTK COMPONENTS
     vtkCommonCore
     vtkIOLegacy
     vtkIOGeometry
+    vtkFiltersGeneral
     REQUIRED
 )
 

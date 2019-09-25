@@ -117,7 +117,7 @@ public:
      */
     virtual void createCaseOnDisk(OpenFOAMCase& cm);
     
-    virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
+    ResultSetPtr operator()(ProgressDisplayer* displayer=nullptr) override;
 };
 
 

@@ -33,6 +33,8 @@
 #include "vtkClipPolyData.h"
 #include "vtkPolyData.h"
 #include "vtkCellArray.h"
+#include "vtkTransform.h"
+#include "vtkTransformPolyDataFilter.h"
 
 using namespace std;
 using namespace boost;
@@ -382,6 +384,51 @@ arma::mat LineMesh_to_OrderedPointTable::txyz() const
 vtk_Transformer::~vtk_Transformer()
 {}
 
+
+vtk_ChangeCS::vtk_ChangeCS
+(
+    const arma::mat& from_ex,
+    const arma::mat& from_ez,
+    const arma::mat& to_ex,
+    const arma::mat& to_ez
+)
+{
+  arma::mat from_ey = -arma::cross(from_ex, from_ez);
+  arma::mat to_ey = -arma::cross(to_ex, to_ez);
+
+  arma::mat matrix(3,3);
+  // matrix from XOY  ToA2 :
+  matrix.col(0) = to_ex;
+  matrix.col(1) = to_ey;
+  matrix.col(2) = to_ez;
+
+  arma::mat MA1(3,3);
+  MA1.col(0)=from_ex;
+  MA1.col(1)=from_ey;
+  MA1.col(2)=from_ez;
+
+  m_ = matrix*MA1;
+}
+
+vtkSmartPointer<vtkPolyDataAlgorithm> vtk_ChangeCS::apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in)
+{
+  vtkSmartPointer<vtkTransformPolyDataFilter> tf = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+  tf->SetInputConnection(in->GetOutputPort());
+
+  vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
+  const double m[] ={
+    m_(0,0), m_(0,1), m_(0,2), 0.,
+    m_(1,0), m_(1,1), m_(1,2), 0.,
+    m_(2,0), m_(2,1), m_(2,2), 0.,
+    0., 0., 0., 1.
+  };
+  t->SetMatrix(m);
+
+  tf->SetTransform(t);
+
+  return tf;
+}
+
 vtkSmartPointer<vtkPolyDataAlgorithm>
 readSTL
 (
@@ -429,5 +476,27 @@ arma::mat STLBndBox
 }
 
 
+void writeSTL
+(
+   vtkSmartPointer<vtkPolyDataAlgorithm> stl,
+   const boost::filesystem::path& outfile
+)
+{
+  std::string file_ext = outfile.filename().extension().string();
+  boost::to_lower(file_ext);
+
+  vtkSmartPointer<vtkSTLWriter> sw = vtkSmartPointer<vtkSTLWriter>::New();
+  sw->SetInputConnection(stl->GetOutputPort());
+  sw->SetFileName(outfile.c_str());
+  if (file_ext==".stlb")
+  {
+    sw->SetFileTypeToBinary();
+  }
+  else
+  {
+    sw->SetFileTypeToASCII();
+  }
+  sw->Update();
+}
 
 }

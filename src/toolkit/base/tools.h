@@ -109,6 +109,21 @@ public:
   virtual vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) =0;
 };
 
+class vtk_ChangeCS
+    : public vtk_Transformer
+{
+  arma::mat m_;
+public:
+  vtk_ChangeCS
+  (
+      const arma::mat& from_ex,
+      const arma::mat& from_ez,
+      const arma::mat& to_ex,
+      const arma::mat& to_ez
+  );
+  vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) override;
+};
+
 typedef vtk_Transformer* vtk_TransformerPtr;
 typedef std::vector<vtk_TransformerPtr> vtk_TransformerList;
 
@@ -119,6 +134,7 @@ readSTL
   const boost::filesystem::path& path,
   const vtk_TransformerList& trsf = vtk_TransformerList()
 );
+
 /**
   * return bounding box of model
   * first col: min point
@@ -128,6 +144,11 @@ arma::mat STLBndBox(
   vtkSmartPointer<vtkPolyDataAlgorithm> stl_data_Set
 );
 
+void writeSTL
+(
+   vtkSmartPointer<vtkPolyDataAlgorithm> stl,
+   const boost::filesystem::path& outfile
+);
 
 }
 

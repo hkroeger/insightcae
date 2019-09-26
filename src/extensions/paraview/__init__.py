@@ -263,7 +263,7 @@ try:
             if isinstance(scaleOrSize, tuple):
                 w, h = scaleOrSize
                 W, H = GetRenderView().ViewSize
-                scale=0.5*min(float(w), float(h))
+                scale=0.5*max(float(w), float(h))
                 print W, H, w, h, scale
                 cam.SetParallelScale(scale)
             else:

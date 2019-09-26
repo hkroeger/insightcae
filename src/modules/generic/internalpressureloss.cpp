@@ -395,12 +395,14 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm)
         .set_dataset("openfoam_case[0]")
         .set_field("U")
         .set_maxLen(10.*Lmax)
+        .set_name("st")
       )));
 
       pvp.scenes.push_back(paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
         .set_bbmin(p.geometryscale*bb_.col(0))
         .set_bbmax(p.geometryscale*bb_.col(1))
         .set_filename("streamlines.png")
+
       )));
 
       pvp.scenes.push_back(paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()

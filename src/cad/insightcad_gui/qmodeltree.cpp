@@ -331,6 +331,17 @@ public:
 
 };
 
+QDisplayableModelTreeItem* QModelTree::findFeature(const QString& name, bool is_component)
+{
+  if (is_component)
+  {
+    return findItem<QDisplayableModelTreeItem>(componentfeatures_, name);
+  }
+  else
+  {
+    return findItem<QDisplayableModelTreeItem>(features_, name);
+  }
+}
 
 void QModelTree::onAddScalar(const QString& name, insight::cad::ScalarPtr sv)
 {

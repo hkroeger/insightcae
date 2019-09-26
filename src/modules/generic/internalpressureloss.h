@@ -41,27 +41,27 @@ inherits OpenFOAMAnalysis::Parameters
 geometry = selectablesubset {{
 
  STEP set {
-      cadmodel          = path 		"cadmodel.stp" 		"CAD model file."
+      cadmodel          = path 		"cadmodel.stp" 		"CAD model file." *necessary
 
       inout = selectablesubset {{
 
        named_surfaces set {
-         inlet_name	= string	"INLET"			"Name of inlet surface in CAD model."
-         outlet_name	= string	"OUTLET"		"Name of outlet surface in CAD model."
+         inlet_name	= string	"INLET"			"Name of inlet surface in CAD model." *necessary
+         outlet_name	= string	"OUTLET"		"Name of outlet surface in CAD model." *necessary
        }
 
        extra_files set {
-         inlet_model	= path          "inlet.stp"		"File with inlet surface."
-         outlet_model	= path          "outlet.stp"		"File with outlet surface."
+         inlet_model	= path          "inlet.stp"		"File with inlet surface." *necessary
+         outlet_model	= path          "outlet.stp"		"File with outlet surface." *necessary
        }
 
       }} named_surfaces "Specification of inlet and outlet surfaces"
  }
 
  STL set {
-      cadmodel          = path 		"cadmodel.stlb" 	"Triangulated geometry, excluding in- and outlet."
-      inlet             = path          "inlet.stlb"		"Triangulated geometry of inlet alone."
-      outlet    	= path          "outlet.stlb"		"Triangulated geometry of outlet alone."
+      cadmodel          = path 		"cadmodel.stlb" 	"Triangulated geometry, excluding in- and outlet." *necessary
+      inlet             = path          "inlet.stlb"		"Triangulated geometry of inlet alone." *necessary
+      outlet    	= path          "outlet.stlb"		"Triangulated geometry of outlet alone." *necessary
  }
 
 }} STL "Specification of geometry"
@@ -79,7 +79,7 @@ mesh=set
 
 operation=set
 {
-  Q		= double 	0.1 		"[m^3/s] volumetric flux into inlet"
+  Q		= double 	0.001 		"[m^3/s] volumetric flux into inlet" *necessary
 } "Definition of the operation point under consideration"
 
 fluid=set

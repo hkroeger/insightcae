@@ -23,6 +23,7 @@
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/snappyhexmesh.h"
+#include "openfoam/paraview.h"
 
 
 // #include "boost/thread/mutex.hpp"
@@ -476,79 +477,143 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
     "Convergence history of resistance force"
   );    
   
-  std::string init=
-    "cbi=loadOFCase('"+executionPath().string()+"')\n"
-    "prepareSnapshots()\n";
+
 
   {
-    format pvec("[%g, %g, %g]");
-    std::string filename="wave_above.png";
-    runPvPython
-    (
-      cm, executionPath(), list_of<std::string>
-      (
-	init+
-	"import numpy as np\n"
-	
-	"eb=extractPatches(cbi, 'car.*|fwheels.*|rwheels.*')\n"
-	"fl=extractPatches(cbi, 'floor')\n"
-	"Show(eb)\n"
-	"Show(fl)\n"
-	"displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5, 0.75], barorient=0)\n"
-	
-        "st=StreamTracer(Input=cbi[0], Vectors=['U'], MaximumStreamlineLength="+lexical_cast<string>(10.*Lref_)+")\n"
-        "st.SeedType.Center="+str( pvec % (0.5*l_) % (0.5*w_) % (0.5*h_))+"\n"
-	"st.SeedType.Radius="+lexical_cast<string>(0.5*h_)+"\n"
-	"Show(st)\n"
-        "st2=StreamTracer(Input=cbi[0], Vectors=['U'], MaximumStreamlineLength="+lexical_cast<string>(10.*Lref_)+")\n"
-        "st2.SeedType.Center="+str( pvec % (0.5*l_) % (-0.5*w_) % (0.5*h_))+"\n"
-	"st2.SeedType.Radius="+lexical_cast<string>(0.5*h_)+"\n"
-	"Show(st2)\n"
+    paraview::Streamtracer::Parameters::seed_cloud_type cloud1, cloud2;
+    cloud1.radius=cloud2.radius=0.1*Lref_;
+    cloud1.center=vec3(0.5*l_, 0.5*w_, 0.5*h_);
+    cloud2.center=vec3(0.5*l_, -0.5*w_, 0.5*h_);
 
-        "setCam("+str( pvec % (-Lref_) % (0.5*Lref_) % (0.33*Lref_))+
-                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
-		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-	"WriteImage('rightfrontview.png')\n"
-        "setCam("+str( pvec % (-Lref_) % (-0.5*Lref_) % (0.33*Lref_))+
-                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
-		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-	"WriteImage('leftfrontview.png')\n"
+    paraview::ParaviewVisualization::Parameters pvp;
+    pvp.scenes = {
 
-        "setCam("+str( pvec % (2.*Lref_) % (0.5*Lref_) % (0.33*Lref_))+
-                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
-		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-	"WriteImage('rightrearview.png')\n"
-        "setCam("+str( pvec % (2.*Lref_) % (-0.5*Lref_) % (0.33*Lref_))+
-                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
-		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-	"WriteImage('leftrearview.png')\n"
-      )
-    );
-    results->insert("contourPressureLeftFront",
-      std::unique_ptr<Image>(new Image
-      (
-       executionPath(), "leftfrontview.png", 
-      "Pressure distribution on car, view from left side ahead", ""
-    )));
-    results->insert("contourPressureRightFront",
-      std::unique_ptr<Image>(new Image
-      (
-       executionPath(), "rightfrontview.png", 
-      "Pressure distribution on car, view from right side ahead", ""
-    )));
-    results->insert("contourPressureLeftRear",
-      std::unique_ptr<Image>(new Image
-      (
-       executionPath(), "leftrearview.png", 
-      "Pressure distribution on car, view from left side rear", ""
-    )));
-    results->insert("contourPressureRightRear",
-      std::unique_ptr<Image>(new Image
-      (
-       executionPath(), "rightrearview.png", 
-      "Pressure distribution on car, view from right side rear", ""
-    )));
+      paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
+        .set_command(
+           "obj=extractPatches(openfoam_case, 'object.*')\n"
+           "floor=extractPatches(openfoam_case, 'floor.*')\n"
+           "displayContour(obj, 'p', arrayType='CELL_DATA')\n"
+           "displaySolid(floor, 0.1)\n"
+        )
+      )),
+
+      paraview::PVScenePtr(new paraview::Streamtracer(paraview::Streamtracer::Parameters()
+        .set_seed(cloud1)
+        .set_dataset("openfoam_case[0]")
+        .set_field("U")
+        .set_maxLen(10.*Lref_)
+        .set_name("st1")
+      )),
+
+      paraview::PVScenePtr(new paraview::Streamtracer(paraview::Streamtracer::Parameters()
+        .set_seed(cloud2)
+        .set_dataset("openfoam_case[0]")
+        .set_field("U")
+        .set_maxLen(10.*Lref_)
+        .set_name("st2")
+      )),
+
+      paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
+        .set_bbmin(vec3(0, -0.5*w_, 0))
+        .set_bbmax(vec3(l_, 0.5*w_, h_))
+        .set_e_ax(vec3(-1,0,0))
+        .set_filename("streamlines.png")
+      )),
+
+      paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
+        .set_command(
+            "Hide(st1)\n"
+            "Hide(st2)\n"
+        )
+      )),
+
+      paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
+        .set_bbmin(vec3(0, -0.5*w_, 0))
+        .set_bbmax(vec3(l_, 0.5*w_, h_))
+        .set_e_ax(vec3(-1,0,0))
+        .set_filename("pressureContour.png")
+      ))
+
+    };
+
+    paraview::ParaviewVisualization pv(pvp, executionPath());
+    ResultSetPtr images = pv();
+    results->insert ( "renderings", images );
   }
+
+
+//  std::string init=
+//    "cbi=loadOFCase('"+executionPath().string()+"')\n"
+//    "prepareSnapshots()\n";
+//  {
+//    format pvec("[%g, %g, %g]");
+//    std::string filename="wave_above.png";
+//    runPvPython
+//    (
+//      cm, executionPath(), list_of<std::string>
+//      (
+//	init+
+//	"import numpy as np\n"
+	
+//	"eb=extractPatches(cbi, 'car.*|fwheels.*|rwheels.*')\n"
+//	"fl=extractPatches(cbi, 'floor')\n"
+//	"Show(eb)\n"
+//	"Show(fl)\n"
+//	"displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5, 0.75], barorient=0)\n"
+	
+//        "st=StreamTracer(Input=cbi[0], Vectors=['U'], MaximumStreamlineLength="+lexical_cast<string>(10.*Lref_)+")\n"
+//        "st.SeedType.Center="+str( pvec % (0.5*l_) % (0.5*w_) % (0.5*h_))+"\n"
+//	"st.SeedType.Radius="+lexical_cast<string>(0.5*h_)+"\n"
+//	"Show(st)\n"
+//        "st2=StreamTracer(Input=cbi[0], Vectors=['U'], MaximumStreamlineLength="+lexical_cast<string>(10.*Lref_)+")\n"
+//        "st2.SeedType.Center="+str( pvec % (0.5*l_) % (-0.5*w_) % (0.5*h_))+"\n"
+//	"st2.SeedType.Radius="+lexical_cast<string>(0.5*h_)+"\n"
+//	"Show(st2)\n"
+
+//        "setCam("+str( pvec % (-Lref_) % (0.5*Lref_) % (0.33*Lref_))+
+//                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
+//		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
+//	"WriteImage('rightfrontview.png')\n"
+//        "setCam("+str( pvec % (-Lref_) % (-0.5*Lref_) % (0.33*Lref_))+
+//                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
+//		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
+//	"WriteImage('leftfrontview.png')\n"
+
+//        "setCam("+str( pvec % (2.*Lref_) % (0.5*Lref_) % (0.33*Lref_))+
+//                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
+//		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
+//	"WriteImage('rightrearview.png')\n"
+//        "setCam("+str( pvec % (2.*Lref_) % (-0.5*Lref_) % (0.33*Lref_))+
+//                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
+//		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
+//	"WriteImage('leftrearview.png')\n"
+//      )
+//    );
+//    results->insert("contourPressureLeftFront",
+//      std::unique_ptr<Image>(new Image
+//      (
+//       executionPath(), "leftfrontview.png",
+//      "Pressure distribution on car, view from left side ahead", ""
+//    )));
+//    results->insert("contourPressureRightFront",
+//      std::unique_ptr<Image>(new Image
+//      (
+//       executionPath(), "rightfrontview.png",
+//      "Pressure distribution on car, view from right side ahead", ""
+//    )));
+//    results->insert("contourPressureLeftRear",
+//      std::unique_ptr<Image>(new Image
+//      (
+//       executionPath(), "leftrearview.png",
+//      "Pressure distribution on car, view from left side rear", ""
+//    )));
+//    results->insert("contourPressureRightRear",
+//      std::unique_ptr<Image>(new Image
+//      (
+//       executionPath(), "rightrearview.png",
+//      "Pressure distribution on car, view from right side rear", ""
+//    )));
+//  }
 
   return results;
 }
@@ -609,7 +674,8 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
         cad::matconst(vec3( Lupstream+nwt.l_+Ldownstream, 0, 0)),
         cad::matconst(vec3( 0, 0, Lup)),
         cad::matconst(vec3( 0, 2.*Laside+nwt.w_, 0))
-       )
+       ),
+       DisplayStyle::Wireframe
     );
   }
   catch (...)

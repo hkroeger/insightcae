@@ -24,6 +24,8 @@ public:
     void cleanupModelTree();
   };
 
+  enum DisplayStyle { Shaded, Wireframe };
+
 private:
   Q_OBJECT
 
@@ -32,7 +34,7 @@ private:
 public:
 
   void addDatum(const std::string& name, insight::cad::DatumPtr dat);
-  void addFeature(const std::string& name, insight::cad::FeaturePtr feat);
+  void addFeature(const std::string& name, insight::cad::FeaturePtr feat, DisplayStyle ds = DisplayStyle::Shaded );
 
   void update(const ParameterSet& ps) override;
 

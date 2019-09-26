@@ -32,6 +32,7 @@ public:
 /*
 PARAMETERSET>>> PVScene Parameters
 
+name = string "out" "Name of output data set"
 resetview = bool false "If true, the view is cleared before rendering. Previous scene will be overlayed otherwise"
 imagename = string "" "Image name. Will be used as filename. If blank, the view created but not rendered. This can be useful to overlay with the next scene."
 
@@ -177,6 +178,9 @@ inherits insight::paraview::PVScene::Parameters
 
 bbmin = vector (-1 -1 -1) "minimum point of bounding box"
 bbmax = vector (1 1 1) "maximum point of bounding box"
+
+e_up = vector (0 0 1) "Upward direction"
+e_ax = vector (1 0 0) "Longitudinal direction"
 
 filename = path "isoview.png" "Output filename. Different views will be stored at <file path>/<filename stem>_<view>.<file extension>."
 

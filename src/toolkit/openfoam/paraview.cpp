@@ -73,17 +73,17 @@ Streamtracer::Streamtracer(const ParameterSet& ps)
 string Streamtracer::pythonCommands() const
 {
   std::string cmd;
-  cmd+="st=StreamTracer(Input="+p_.dataset+", Vectors=['"+p_.field+"'], MaximumStreamlineLength="+lexical_cast<string>(p_.maxLen)+")\n";
+  cmd+=p_.name+"=StreamTracer(Input="+p_.dataset+", Vectors=['"+p_.field+"'], MaximumStreamlineLength="+lexical_cast<string>(p_.maxLen)+")\n";
   if (const auto* cloud = boost::get<Parameters::seed_cloud_type>(&p_.seed))
   {
     cmd+=
-       "st.SeedType = 'Point Source'\n"
-       "st.SeedType.Center="+paraview::PVScene::pvec(cloud->center)+"\n"
-       "st.SeedType.Radius="+lexical_cast<string>(cloud->radius)+"\n"
+       p_.name+".SeedType = 'Point Source'\n"+
+       p_.name+".SeedType.Center="+paraview::PVScene::pvec(cloud->center)+"\n"+
+       p_.name+".SeedType.Radius="+lexical_cast<string>(cloud->radius)+"\n"
        ;
   }
 
-  cmd+="Show(st)\n";
+  cmd+="Show("+p_.name+")\n";
 
   return cmd;
 }
@@ -102,45 +102,49 @@ string IsoView::pythonCommands() const
   arma::mat bbL = p_.bbmax - p_.bbmin;
   std::cout<<"bbL="<<bbL<<std::endl;
   arma::mat ctr = p_.bbmin + 0.5*bbL;
-  arma::mat ex, ey, ez;
-  ex=ey=ez=vec3(0,0,0);
 
-  arma::uvec indices = arma::sort_index(bbL, "descend");
-  ex(indices(0))=1.0;
-  ez(indices(2))=1.0;
-  ey=arma::cross(ez, ex);
-  arma::mat L = bbL(indices);
+  arma::mat ez = p_.e_up / arma::norm(p_.e_up, 2);
+  arma::mat ex = arma::cross(ez, arma::cross(p_.e_ax, ez));
+  ex /= arma::norm(ex, 2);
+  arma::mat ey = arma::cross(ez, ex);
+  ey /= arma::norm(ey, 2);
+
+  double
+      Lx = fabs(arma::dot(bbL, ex)),
+      Ly = fabs(arma::dot(bbL, ey)),
+      Lz = fabs(arma::dot(bbL, ez))
+           ;
 
   return
       "setCam("
-        + pvec(ctr+ex*L[0]*1.5) + ", "
+        + pvec(ctr+ex*Lx*1.5) + ", "
         + pvec(ctr) + ", "
         + pvec(ez) + ", "
-        + str(format("(%g,%g)") % L[1] % L[2])
+        + str(format("(%g,%g)") % Ly % Lz)
       +")\n"
       "WriteImage('"+p_.filename.filename().stem().string()+"_front"+p_.filename.extension().string()+"')\n"
       +
       "setCam("
-        + pvec(ctr+ez*L[2]*1.5) + ", "
+        + pvec(ctr+ez*Lz*1.5) + ", "
         + pvec(ctr) + ", "
         + pvec(-ey) + ", "
-        + str(format("(%g,%g)") % L[0] % L[1])
+        + str(format("(%g,%g)") % Lx % Ly)
       +")\n"
       "WriteImage('"+p_.filename.filename().stem().string()+"_top"+p_.filename.extension().string()+"')\n"
       +
       "setCam("
-        + pvec(ctr+ey*L[1]*1.5) + ", "
+        + pvec(ctr+ey*Ly*1.5) + ", "
         + pvec(ctr) + ", "
         + pvec(ez) + ", "
-        + str(format("(%g,%g)") % L[0] % L[2])
+        + str(format("(%g,%g)") % Lx % Lz)
       +")\n"
       "WriteImage('"+p_.filename.filename().stem().string()+"_side"+p_.filename.extension().string()+"')\n"
       +
       "setCam("
-        + pvec(ctr+ex*L[0]*1.5+ey*L[1]*1.5+ez*L[2]*1.5) + ", "
+        + pvec(ctr+ (ex*Lx +ey*Ly +ez*Lz)*1.5) + ", "
         + pvec(ctr) + ", "
         + pvec(ez) + ", "
-        + str(format("(%g,%g)") % L[0] % L[1])
+        + str(format("%g") % (0.5*sqrt(Lx*Lx+Ly*Ly+Lz*Lz)))
       +")\n"
       "WriteImage('"+p_.filename.filename().stem().string()+"_diag"+p_.filename.extension().string()+"')\n"
   ;

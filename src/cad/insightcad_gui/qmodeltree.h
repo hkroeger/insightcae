@@ -218,6 +218,8 @@ public:
     void getFeatureNames(std::set<std::string>& featnames) const;
     void getDatumNames(std::set<std::string>& datumnames) const;
 
+    QDisplayableModelTreeItem* findFeature(const QString& name, bool is_component);
+
 public Q_SLOTS:
     void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
     void onAddVector     (const QString& name, insight::cad::VectorPtr vv);

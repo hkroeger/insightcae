@@ -35,10 +35,20 @@ void CAD_ParameterSet_Visualizer::addDatum(const std::string& name, insight::cad
   if (i!=ut_->removedDatums_.end()) ut_->removedDatums_.erase(i);
 }
 
-void CAD_ParameterSet_Visualizer::addFeature(const std::string& name, insight::cad::FeaturePtr feat)
+void CAD_ParameterSet_Visualizer::addFeature(const std::string& name, insight::cad::FeaturePtr feat, DisplayStyle ds)
 {
   auto i=ut_->removedFeatures_.find(name);
-  ut_->mt_->onAddFeature(QString::fromStdString(name), feat, true);
+  QString qname = QString::fromStdString(name);
+  ut_->mt_->onAddFeature
+      (
+        qname,
+        feat,
+        true
+      );
+  if (ds == Wireframe)
+  {
+    ut_->mt_->findFeature(qname, true)->wireframe();
+  }
   if (i!=ut_->removedFeatures_.end()) ut_->removedFeatures_.erase(i);
 }
 

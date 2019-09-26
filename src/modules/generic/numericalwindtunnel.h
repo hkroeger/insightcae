@@ -50,7 +50,7 @@ geometry = set {
  forwarddir     = vector (0 -1 0) "direction from rear to forward end in CAD geometry CS"
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
  
- objectfile     = path "object.stp" "path to object geometry"
+ objectfile     = path "object.stp" "Path to object geometry. May be STL, STEP or IGES." *necessary
  
 } "Geometrical properties of the domain"
       
@@ -58,7 +58,7 @@ geometryscale = double 1e-3     "scaling factor to scale geometry files to meter
 
 mesh = set {
 
- nx             = int 30 "# cells across object length"
+ nx             = int 10 "# cells across object length"
  boxlevel       = int 2 "refinement level around object"
  rearlevel      = int 3 "refinement level around rear end of object"
  lmsurf         = int 2 "# cells across object length"
@@ -76,7 +76,7 @@ mesh = set {
 
 operation = set {
 
- v              = double 5.0 "[m/s] incident velocity"
+ v              = double 1.0 "[m/s] incident velocity" *necessary
  
 } "Definition of the operation point under consideration"
       
@@ -94,7 +94,6 @@ fluid = set {
   
 protected:
 
-  arma::mat translation_;
   gp_Trsf cad_to_cfd_;
   double Lref_, l_, w_, h_;
   

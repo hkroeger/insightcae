@@ -62,11 +62,15 @@ void IncludedSubsetParameterParser::Data::cppWriteCreateStatement
       }
       else if (type=="vector")
       {
-        std::istringstream is(value);
-        double x, y, z;
-        is >> x >> y >> z;
-        if (is.fail()) throw PDLException("Could not interpret vector values in string: \""+value+"\"");
-        os << name << "->get<VectorParameter>(\""<<key<<"\")()=vec3("<<x<<","<<y<<","<<z<<");\n";
+        std::vector<std::string> cmpts;
+        boost::algorithm::trim(value);
+        boost::split(
+              cmpts,
+              value,
+              boost::is_any_of(" \t"),
+              boost::token_compress_on
+         );
+        os << name << "->get<VectorParameter>(\""<<key<<"\")()={"+boost::join(cmpts, ",")+"};\n";
       }
       else if (type=="selectablesubset")
       {

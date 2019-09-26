@@ -56,6 +56,10 @@ public:
 PARAMETERSET>>> FixedTemperatureBC Parameters
 
 T = includedset "FieldData::Parameters" "Temperature specification"
+   modifyDefaults {
+    selectablesubset fielddata = uniformSteady;
+    vector fielddata/value = 300.0;
+   }
 
 <<<PARAMETERSET
 */

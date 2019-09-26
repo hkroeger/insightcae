@@ -440,8 +440,19 @@ public:
 PARAMETERSET>>> VelocityInletBC Parameters
 
 velocity = includedset "FieldData::Parameters" "Velocity specification"
+
 T = includedset "FieldData::Parameters" "Temperature at boundary"
+   modifyDefaults {
+    selectablesubset fielddata = uniformSteady;
+    vector fielddata/value = 300.0;
+   }
+
 rho = includedset "FieldData::Parameters" "Density at boundary"
+   modifyDefaults {
+    selectablesubset fielddata = uniformSteady;
+    vector fielddata/value = 1.0;
+   }
+
 turbulence = dynamicclassconfig "turbulenceBC::turbulenceBC" default "uniformIntensityAndLengthScale" "Definition of the turbulence state at the boundary"
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
@@ -595,9 +606,16 @@ set {
     ) anisotropicVorton_PseudoInv "Type of inflow generator"
 
     R=includedset "FieldData::Parameters" "Reynolds stresses specification"
+       modifyDefaults {
+        selectablesubset fielddata = uniformSteady;
+        vector fielddata/value = 1 0 0 1 0 1;
+       }
 
     L=includedset "FieldData::Parameters" "Length scale specification"
-
+       modifyDefaults {
+        selectablesubset fielddata = uniformSteady;
+        vector fielddata/value = 1.0 1.0 1.0;
+       }
 }
 
 }} uniformIntensityAndLengthScale "Properties of turbulence"
@@ -652,6 +670,10 @@ behaviour = selectablesubset {{
  uniform
  set {
   pressure = includedset "FieldData::Parameters" "Pressure values at the boundary"
+   modifyDefaults {
+    selectablesubset fielddata = uniformSteady;
+    vector fielddata/value = 0.0;
+   }
  }
  
  fixMeanValue

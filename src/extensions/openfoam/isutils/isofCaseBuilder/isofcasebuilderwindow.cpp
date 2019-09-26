@@ -352,6 +352,7 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
     {
       std::string name = OFEnode->first_attribute("name")->value();
       ui->OFversion->setCurrentIndex(ui->OFversion->findText(name.c_str()));
+      ui->saveOFversion->setChecked(true);
     }
     if (xml_node<> *script_node = rootnode->first_node("script_pre"))
     {
@@ -879,7 +880,9 @@ void isofCaseBuilderWindow::saveToFile(const boost::filesystem::path& file)
     if (ui->saveOFversion->checkState()==Qt::Checked)
     {
       xml_node<> *OFEnode = doc.allocate_node ( node_element, "OFE" );
-      OFEnode->append_attribute(doc.allocate_attribute("name", ui->OFversion->currentText().toStdString().c_str()));
+      OFEnode->append_attribute(
+            doc.allocate_attribute("name", doc.allocate_string(ui->OFversion->currentText().toStdString().c_str()))
+            );
       rootnode->append_node ( OFEnode );
     }
 

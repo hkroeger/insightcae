@@ -70,15 +70,33 @@ int main(int argc, char *argv[])
     po::positional_options_description p;
     p.add("case-dir", -1);
 
+    auto displayHelp = [&]{
+      std::ostream &os = std::cout;
+
+      os << "Usage:" << std::endl;
+      os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
+      os << std::endl;
+      os << desc << endl;
+    };
+
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
-              options(desc).positional(p).run(), vm);
-    po::notify(vm);
+    try
+    {
+      po::store(po::command_line_parser(argc, argv).
+                options(desc).positional(p).run(), vm);
+      po::notify(vm);
+    }
+    catch (const po::error& e)
+    {
+      std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+      displayHelp();
+      exit(-1);
+    }
 
     if (vm.count("help"))
     {
-        cout << desc << endl;
-        exit(-1);
+        displayHelp();
+        exit(0);
     }
 
     boost::filesystem::path location=".";
@@ -149,14 +167,9 @@ int main(int argc, char *argv[])
         }
 
     }
-    catch (insight::Exception e)
+    catch (const std::exception& e)
     {
-        cout<<"Error: "<<e<<endl;
-        exit(-1);
-    }
-    catch (std::exception e)
-    {
-        cout<<"Error: "<<e.what()<<endl;
+        printException(e);
         exit(-1);
     }
 

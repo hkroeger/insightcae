@@ -14,6 +14,7 @@ set(toolkit_gui_SRCS
     parameterwrapper.cpp 
     parametereditorwidget.cpp
     qdebugstream.cpp
+    qinsighterror.cpp
     email.cpp
     mimetypemanager.cpp
     helpwidget.cpp

@@ -206,7 +206,7 @@ int Parameter::order() const { return order_; }
 
 
 rapidxml::xml_node<>* Parameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath) const
+    boost::filesystem::path) const
 {
     using namespace rapidxml;
     xml_node<>* child = doc.allocate_node(node_element, doc.allocate_string(this->type().c_str()));
@@ -253,10 +253,10 @@ void Parameter::reset(const Parameter& op)
 std::string valueToString(const arma::mat& value)
 {
   std::string s;
-  for (int i=0; i<value.n_elem; i++)
+  for (arma::uword i=0; i<value.n_elem; i++)
   {
     if (i>0) s+=" ";
-    s+=boost::str(boost::format("%g") % value(i)); //boost::lexical_cast<string>(value(i));
+    s += boost::str(boost::format("%g") % value(i)); //boost::lexical_cast<string>(value(i));
   }
   return s;
 }
@@ -404,7 +404,7 @@ void PathParameter::unpack()
              <std::string::const_iterator> >, 8, 6>
           base64_text; // compose all the above operations in to a new iterator
 
-      unsigned int paddChars = count(file_content_.begin(), file_content_.end(), '=');
+      long paddChars = count(file_content_.begin(), file_content_.end(), '=');
       std::replace(file_content_.begin(), file_content_.end(), '=', 'A');
 
       std::string output(
@@ -416,7 +416,7 @@ void PathParameter::unpack()
       std::ofstream file( value_.c_str(), ios::out | ios::binary);
       if (file.good())
       {
-          file.write(output.c_str(), output.size());
+          file.write(output.c_str(), long(output.size()) );
           file.close();
       }
 
@@ -569,8 +569,13 @@ rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, 
     return child;
 }
 
-void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath)
+void DirectoryParameter::readFromNode
+(
+    const std::string& name,
+    rapidxml::xml_document<>&,
+    rapidxml::xml_node<>& node,
+    boost::filesystem::path
+)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name, type());
@@ -630,10 +635,10 @@ SelectionParameter::SelectionParameter(const std::string& key, const SelectionPa
   ItemList::const_iterator i=std::find(items_.begin(), items_.end(), key);
   if (i!=items_.end()) 
   {
-    value_ = i - items_.begin();
+    value_ = int( i - items_.begin() );
   }
   else
-    value_=0;
+    value_ = 0;
 }
 
 SelectionParameter::~SelectionParameter()
@@ -647,12 +652,12 @@ const SelectionParameter::ItemList& SelectionParameter::items() const
 
 std::string SelectionParameter::latexRepresentation() const
 {
-  return SimpleLatex(items_[value_]).toLaTeX();
+  return SimpleLatex(items_[size_t(value_)]).toLaTeX();
 }
 
-std::string SelectionParameter::plainTextRepresentation(int indent) const
+std::string SelectionParameter::plainTextRepresentation(int) const
 {
-  return SimpleLatex(items_[value_]).toPlainText();
+  return SimpleLatex(items_[size_t(value_)]).toPlainText();
 }
 
 
@@ -665,13 +670,18 @@ rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, 
     (
       "value", 
       //doc.allocate_string( boost::lexical_cast<std::string>(value_).c_str() )
-      doc.allocate_string( items_[value_].c_str() )
+      doc.allocate_string( items_[size_t(value_)].c_str() )
     ));
     return child;
 }
 
-void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath)
+void SelectionParameter::readFromNode
+(
+    const std::string& name,
+    rapidxml::xml_document<>&,
+    rapidxml::xml_node<>& node,
+    boost::filesystem::path
+)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name, type());
@@ -680,9 +690,9 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
     //value_=boost::lexical_cast<int>(child->first_attribute("value")->value());
     string key=child->first_attribute("value")->value();
     ItemList::const_iterator i=std::find(items_.begin(), items_.end(), key);
-    if (i!=items_.end()) 
+    if (i != items_.end())
     {
-      value_ = i - items_.begin();
+      value_ = int( i - items_.begin() );
     }
     else
     {
@@ -693,7 +703,7 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
       }
       catch(...)
       {
-	throw insight::Exception("Invalid selection value: "+key);
+        throw insight::Exception("Invalid selection value ("+key+") in parameter "+name);
       }
     }
   }
@@ -811,8 +821,13 @@ rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name
     return child;
 }
 
-void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath)
+void DoubleRangeParameter::readFromNode
+(
+    const std::string& name,
+    rapidxml::xml_document<>&,
+    rapidxml::xml_node<>& node,
+    boost::filesystem::path
+)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name, type());
@@ -883,7 +898,7 @@ std::string ArrayParameter::latexRepresentation() const
   return std::string();
 }
 
-std::string ArrayParameter::plainTextRepresentation(int indent) const
+std::string ArrayParameter::plainTextRepresentation(int) const
 {
   return std::string();
 }
@@ -1052,13 +1067,13 @@ string MatrixParameter::latexRepresentation() const
   std::ostringstream oss;
   
   oss<<"\\begin{tabular}{l";
-  for (int j=0;j<value_.n_cols; j++) oss<<'c'<<endl;
+  for (arma::uword j=0; j<value_.n_cols; j++) oss<<'c'<<endl;
   oss<<"}\n";
   
-  for (int i=0;i<value_.n_rows; i++)
+  for (arma::uword i=0;i<value_.n_rows; i++)
   {
     oss<<i<<"&";
-    for (int j=0;j<value_.n_cols; j++)
+    for (arma::uword j=0;j<value_.n_cols; j++)
     {
       oss<<value_(i,j);
       if (j<value_.n_cols-1) oss<<"&";
@@ -1104,7 +1119,13 @@ xml_node< char >* MatrixParameter::appendToNode(const string& name, xml_document
   return child;
 }
 
-void MatrixParameter::readFromNode(const string& name, xml_document< char >& doc, xml_node< char >& node, path inputfilepath)
+void MatrixParameter::readFromNode
+(
+    const string& name,
+    xml_document< char >&,
+    xml_node< char >& node,
+    path
+)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name, type());

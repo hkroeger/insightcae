@@ -29,6 +29,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include "workbench.h"
+#include "qinsighterror.h"
 
 #include "base/analysis.h"
 #include "base/exception.h"
@@ -73,22 +74,40 @@ int main(int argc, char** argv)
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help", "produce help message")
-    ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
-    ("input-file,f", po::value< StringList >(),"Specifies input file.")
+    ("libs", po::value< StringList >(), "Additional libraries with analysis modules to load")
+    ("input-file,f", po::value< std::string >(), "Specifies input file.")
     ;
     
     po::positional_options_description p;
     p.add("input-file", -1);
     
+    auto displayHelp = [&]{
+      std::ostream &os = std::cout;
+
+      os << "Usage:" << std::endl;
+      os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
+      os << std::endl;
+      os << desc << endl;
+    };
+
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
-              options(desc).positional(p).run(), vm);
-    po::notify(vm);
+    try
+    {
+      po::store(po::command_line_parser(argc, argv).
+                options(desc).positional(p).run(), vm);
+      po::notify(vm);
+    }
+    catch (const po::error& e)
+    {
+      std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+      displayHelp();
+      exit(-1);
+    }
 
     if (vm.count("help"))
     {
-        std::cout << desc << std::endl;
-        exit(-1);
+        displayHelp();
+        exit(0);
     }
     
     if (vm.count("libs"))
@@ -120,26 +139,31 @@ int main(int argc, char** argv)
 
     workbench window;
 
-    if (vm.count("input-file"))
+    try
     {
-        boost::filesystem::path fn( vm["input-file"].as<StringList>()[0] );
-        if (!boost::filesystem::exists(fn))
-        {
-            std::cerr << std::endl 
-                << "Error: input file does not exist: "<<fn
-                <<std::endl<<std::endl;
-            exit(-1);
-        }
-        window.openAnalysis(boost::filesystem::absolute(fn).c_str());
+      if (vm.count("input-file"))
+      {
+          boost::filesystem::path fn( vm["input-file"].as<std::string>() );
+          if (!boost::filesystem::exists(fn))
+          {
+              throw insight::Exception("Input file does not exist: "+fn.string());
+          }
+          window.openAnalysis(boost::filesystem::absolute(fn).c_str());
+      }
+      window.show();
+
+      app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
+
+      I w(&splash, &window);
+      w.start(); // splash is shown for 5 seconds
+
+      window.raise();
+
+      return app.exec();
     }
-    window.show();
+    catch ( const std::exception& e)
+    {
+      displayException(e);
+    }
 
-    app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
-
-    I w(&splash, &window);
-    w.start(); // splash is shown for 5 seconds
-
-    window.raise();
-
-    return app.exec();
 }

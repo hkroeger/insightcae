@@ -236,7 +236,7 @@ public:
         return SimpleLatex( valueToString ( value_ ) ).toLaTeX();
     }
 
-    std::string plainTextRepresentation(int indent=0) const override
+    std::string plainTextRepresentation(int /*indent*/=0) const override
     {
         return SimpleLatex( valueToString ( value_ ) ).toPlainText();
     }
@@ -263,8 +263,13 @@ public:
         return child;
     }
 
-    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath ) override
+    void readFromNode
+    (
+        const std::string& name,
+        rapidxml::xml_document<>&,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path
+    ) override
     {
         using namespace rapidxml;
         xml_node<>* child = findNode ( node, name, type() );
@@ -427,16 +432,20 @@ public:
     inline ItemList& items()
     {
         return items_;
-    };
+    }
+
     virtual const ItemList& items() const;
+
     inline void setSelection ( const std::string& sel )
     {
         value_=selection_id ( sel );
     }
+
     inline const std::string& selection() const
     {
         return items_[value_];
     }
+
     inline int selection_id ( const std::string& key ) const
     {
         return  std::find ( items_.begin(), items_.end(), key ) - items_.begin();

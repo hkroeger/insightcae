@@ -64,21 +64,45 @@ int main(int argc, char *argv[])
     ("int,i", po::value<StringList>(), "int variable assignment")
     ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
     ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
-    ("input-file,f", po::value< StringList >(),"Specifies input file.")
+    ("input-file,f", po::value< std::string >()->required(),"Specifies input file.")
     ;
 
     po::positional_options_description p;
     p.add("input-file", -1);
 
+    auto displayHelp = [&]{
+      std::ostream &os = std::cout;
+
+      os << "Usage:" << std::endl;
+      os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
+      os << std::endl;
+      os << desc << endl;
+    };
+
+
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
-              options(desc).positional(p).run(), vm);
-    po::notify(vm);
+    try
+    {
+      po::store
+          (
+            po::command_line_parser(argc, argv)
+            .options(desc)
+            .positional(p).run(),
+            vm
+           );
+      po::notify(vm);
+    }
+    catch (const po::error& e)
+    {
+      std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+      displayHelp();
+      exit(-1);
+    }
 
     if (vm.count("help"))
     {
-        cout << desc << endl;
-        exit(-1);
+      displayHelp();
+      exit(0);
     }
 
     if (!vm.count("input-file"))
@@ -87,25 +111,26 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    if (vm.count("libs"))
-    {
-        StringList libs=vm["libs"].as<StringList>();
-        for (const string& l: libs)
-        {
-            if (!boost::filesystem::exists(l))
-            {
-                std::cerr << std::endl 
-                    << "Error: library file does not exist: "<<l
-                    <<std::endl<<std::endl;
-                exit(-1);
-            }
-            loader.addLibrary(l);
-        }
-    }
-        
     try
     {
-        std::string fn = vm["input-file"].as<StringList>()[0];
+        if (vm.count("libs"))
+        {
+            StringList libs=vm["libs"].as<StringList>();
+            for (const string& l: libs)
+            {
+                if (!boost::filesystem::exists(l))
+                {
+                    std::cerr << std::endl
+                        << "Error: library file does not exist: "<<l
+                        <<std::endl<<std::endl;
+                    exit(-1);
+                }
+                loader.addLibrary(l);
+            }
+        }
+        
+
+        std::string fn = vm["input-file"].as<std::string>();
 
         if (!boost::filesystem::exists(fn))
         {
@@ -127,7 +152,7 @@ int main(int argc, char *argv[])
         }
         catch (...)
         {
-            throw insight::Exception("Could not open file: "+fn);
+            throw insight::Exception("Failed to read file "+fn);
         }
 
         xml_document<> doc;
@@ -304,9 +329,9 @@ int main(int argc, char *argv[])
                 << "#### ANALYSIS FINISHED SUCCESSFULLY. ####"
                 <<std::endl;
     }
-    catch (insight::Exception e)
+    catch (const std::exception& e)
     {
-        cout<<"Exception occured: "<<e<<endl;
+        printException(e);
         exit(-1);
     }
 

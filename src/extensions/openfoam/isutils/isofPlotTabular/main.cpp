@@ -38,7 +38,6 @@ int main(int argc, char *argv[])
 
     InsightCAEApplication app(argc, argv);
 
-    typedef std::vector<std::string> StringList;
 
     namespace po = boost::program_options;
 
@@ -46,21 +45,39 @@ int main(int argc, char *argv[])
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help", "produce help message")
-    ("input-file,f", po::value< StringList >(),"Specifies input file.")
+    ("input-file,f", po::value< std::string >(),"Specifies input file.")
     ;
 
     po::positional_options_description p;
     p.add("input-file", -1);
 
+    auto displayHelp = [&]{
+      std::ostream &os = std::cout;
+
+      os << "Usage:" << std::endl;
+      os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
+      os << std::endl;
+      os << desc << endl;
+    };
+
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
+    try
+    {
+      po::store(po::command_line_parser(argc, argv).
               options(desc).positional(p).run(), vm);
-    po::notify(vm);
+      po::notify(vm);
+    }
+    catch (const po::error& e)
+    {
+      std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+      displayHelp();
+      exit(-1);
+    }
 
     if (vm.count("help"))
     {
-        cout << desc << endl;
-        exit(-1);
+        displayHelp();
+        exit(0);
     }
 
     if (!vm.count("input-file"))
@@ -69,7 +86,7 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    std::string fn = vm["input-file"].as<StringList>()[0];
+    std::string fn = vm["input-file"].as<std::string>();
 
     if (fn!="-")
     {

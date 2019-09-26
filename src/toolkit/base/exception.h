@@ -29,6 +29,8 @@
 
 namespace insight {
   
+
+
 class CurrentExceptionContext
 {
   std::string desc_;
@@ -44,12 +46,19 @@ public:
 
 };
 
+std::string splitMessage
+(
+    const std::string& message,
+    std::size_t width = 80,
+    std::string whitespace = " \t\r"
+);
 
 class Exception;
   
 std::ostream& operator<<(std::ostream& os, const Exception& ex);
 
 class Exception
+: public std::exception
 {
   std::string message_;
   std::vector<std::string> context_;
@@ -58,7 +67,6 @@ class Exception
 public:
   Exception();
   Exception(const std::string& msg, bool strace=true);
-  virtual ~Exception();
 
   inline std::string as_string() const { return static_cast<std::string>(*this); }
 
@@ -66,6 +74,8 @@ public:
 
   inline const std::string& message() const { return message_; }
   inline const std::string& strace() const { return strace_; }
+
+  const char* what() const noexcept override;
 
   friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
 };
@@ -96,6 +106,10 @@ public:
 
   UnhandledExceptionHandling();
 };
+
+
+
+void printException(const std::exception& e);
 
 
 }

@@ -42,6 +42,29 @@ std::ostream& operator<<(std::ostream& os, const Exception& ex)
   return os;
 }
 
+
+std::string splitMessage(const std::string& message, std::size_t width, std::string whitespace)
+{
+  std::string source(message);
+
+  std::size_t  currIndex = width - 1;
+  std::size_t  sizeToElim;
+  while ( currIndex < message.length() )
+  {
+    currIndex = source.find_last_of(whitespace,currIndex + 1);
+    if (currIndex == std::string::npos)
+        break;
+    currIndex = source.find_last_not_of(whitespace,currIndex);
+    if (currIndex == std::string::npos)
+        break;
+    sizeToElim = source.find_first_not_of(whitespace,currIndex + 1) - currIndex - 1;
+    source.replace( currIndex + 1, sizeToElim , "\n");
+    currIndex += (width + 1); //due to the recently inserted "\n"
+  }
+  return source;
+}
+
+
 Exception::Exception()
 {
 }
@@ -114,10 +137,6 @@ Exception::Exception(const std::string& msg, bool strace)
     strace_="";
 }
 
-Exception::~Exception()
-{
-}
-
 Exception::operator std::string() const
 {
   string context="";
@@ -138,6 +157,12 @@ Exception::operator std::string() const
         "\n\n";
   else
     return message_+context;
+}
+
+
+const char* Exception::what() const noexcept
+{
+  return message_.c_str();
 }
 
 void assertion(bool condition, const std::string& context_message)
@@ -234,7 +259,7 @@ void Warning(const std::string& msg)
 "================================================================\n"
     <<std::endl;
     
-  std::cout<<msg<<std::endl;
+  std::cout<<splitMessage(msg, 60)<<std::endl;
   
   std::cout<<std::endl<<
 "================================================================\n"
@@ -260,5 +285,36 @@ UnhandledExceptionHandling::UnhandledExceptionHandling()
 {
     std::set_terminate( handler );
 }
+
+
+
+
+
+void printException(const std::exception& e)
+{
+  if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
+  {
+    std::cerr << std::endl
+              << "An error has occurred:" << std::endl
+              << ie->message() << std::endl
+                 ;
+
+    if (getenv("INSIGHT_STACKTRACE"))
+    {
+      std::cerr << "Stack trace:" << std::endl
+                << ie->strace() <<std::endl;
+    }
+  }
+  else
+  {
+    std::cerr << std::endl
+              << "An error has occurred:" << std::endl
+              << e.what() << std::endl
+                 ;
+  }
+}
+
+
+
 
 }

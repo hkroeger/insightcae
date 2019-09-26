@@ -40,6 +40,7 @@
 
 #include "isofcasebuilderwindow.h"
 #include "insightcaeapplication.h"
+#include "qinsighterror.h"
 
 
 using namespace std;
@@ -76,26 +77,16 @@ insight::ParameterSet& split_and_check
 
 int main ( int argc, char** argv )
 {
+  insight::UnhandledExceptionHandling ueh;
+  insight::GSLExceptionHandling gsl_errtreatment;
+
 
   bool batch = false;
-  auto emitError = [&](const std::string& message)
-  {
-    if (batch)
-    {
-      std::cerr<<message<<std::endl;
-    }
-    else
-    {
-      QMessageBox::critical(nullptr, "Error in isofCaseBuilder", QString(message.c_str()));
-    }
-  };
 
   InsightCAEApplication app ( argc, argv );
 
   try
   {
-      insight::UnhandledExceptionHandling ueh;
-      insight::GSLExceptionHandling gsl_errtreatment;
 
       namespace po = boost::program_options;
 
@@ -123,17 +114,36 @@ int main ( int argc, char** argv )
       po::positional_options_description p;
       p.add ( "input-file", -1 );
 
+      auto displayHelp = [&]{
+        std::ostream &os = std::cout;
+
+        os << "Usage:" << std::endl;
+        os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
+        os << std::endl;
+        os << desc << endl;
+      };
+
       po::variables_map vm;
-      po::store
-      (
-          po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
-          vm
-      );
-      po::notify ( vm );
+
+      try
+      {
+        po::store
+        (
+            po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
+            vm
+        );
+        po::notify ( vm );
+      }
+      catch (const po::error& e)
+      {
+        std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+        displayHelp();
+        exit(-1);
+      }
 
       if ( vm.count ( "help" ) )
       {
-          std::cout << desc << std::endl;
+          displayHelp();
           return 0;
       }
 
@@ -152,8 +162,7 @@ int main ( int argc, char** argv )
           {
               if (!boost::filesystem::exists(fn))
               {
-                emitError("Error: input file does not exist: "+fn);
-                exit(-1);
+                throw insight::Exception("Input file does not exist: "+fn);
               }
               window.loadFile ( fn, vm.count ( "skipbcs" ) );
 
@@ -272,16 +281,22 @@ int main ( int argc, char** argv )
     if ( !batch )
     {
         window.show();
-//        window.updateCAD();
         return app.exec();
     }
     else
         return 0;
   }
-  catch ( insight::Exception e )
+  catch ( const insight::Exception& e )
   {
-      emitError(e);
-      return -1;
+    if (batch)
+    {
+      insight::printException(e);
+    }
+    else
+    {
+      displayException(e);
+    }
+    return -1;
   }
 }
 

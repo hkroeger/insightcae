@@ -65,33 +65,42 @@ int main ( int argc, char** argv )
   ( "batch,b", "evaluate model from specified input file without starting GUI" )
   ( "nolog,l", "put debug output to console instead of log window" )
   ( "nobgparse,g", "deactivate background parsing" )
-  //       ("workdir,w", po::value<std::string>(), "execution directory")
-  //       ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
-  //       ("bool,b", po::value<StringList>(), "boolean variable assignment")
-  //       ("selection,l", po::value<StringList>(), "selection variable assignment")
-  //       ("string,s", po::value<StringList>(), "string variable assignment")
-  //       ("path,p", po::value<StringList>(), "path variable assignment")
-  //       ("double,d", po::value<StringList>(), "double variable assignment")
-  //       ("int,i", po::value<StringList>(), "int variable assignment")
-  //       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
   ( "input-file,f", po::value< std::string >(),"Specifies input file." )
   ;
 
   po::positional_options_description p;
   p.add ( "input-file", -1 );
 
+  auto displayHelp = [&]{
+    std::ostream &os = std::cout;
+
+    os << "Usage:" << std::endl;
+    os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
+    os << std::endl;
+    os << desc << endl;
+  };
+
   po::variables_map vm;
-  po::store
-  (
-    po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
-    vm
-  );
-  po::notify ( vm );
+  try
+  {
+    po::store
+    (
+      po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
+      vm
+    );
+    po::notify ( vm );
+  }
+  catch (const po::error& e)
+  {
+    std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+    displayHelp();
+    exit(-1);
+  }
 
   if ( vm.count ( "help" ) )
     {
-      std::cout << desc << std::endl;
-      exit ( -1 );
+      displayHelp();
+      exit ( 0 );
     }
 
   try {

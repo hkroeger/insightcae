@@ -116,11 +116,29 @@ class vtk_ChangeCS
 public:
   vtk_ChangeCS
   (
-      const arma::mat& from_ex,
-      const arma::mat& from_ez,
-      const arma::mat& to_ex,
-      const arma::mat& to_ez
+      arma::mat from_ex,
+      arma::mat from_ez,
+      arma::mat to_ex,
+      arma::mat to_ez
   );
+
+  /**
+    * initialize from matrix 4x4 = 16 coefficients
+    */
+  vtk_ChangeCS
+  (
+      const double *coeffs
+  );
+
+  /**
+    * initialize from callback function
+    */
+  vtk_ChangeCS
+  (
+      std::function<double(int, int)> init_func,
+      int nrows=4, int idx_ofs=0
+  );
+
   vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) override;
 };
 

@@ -95,8 +95,8 @@ fluid = set {
 protected:
 
   arma::mat translation_;
-  double L_, w_, h_;
-  boost::filesystem::path objectSTLFile_;
+  gp_Trsf cad_to_cfd_;
+  double Lref_, l_, w_, h_;
   
 public:
   declareType("Numerical Windtunnel");

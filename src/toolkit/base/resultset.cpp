@@ -1268,7 +1268,7 @@ ParameterSetPtr ResultSet::convertIntoParameterSet() const
         ParameterPtr p=rp.second->convertIntoParameter();
         if ( p )
         {
-            ps->insert ( ParameterSet::value_type(rp.first, p->clone()) );
+            ps->insert ( ParameterSet::value_type(rp.first, std::unique_ptr<Parameter>(p->clone())) );
         }
     }
     return ps;

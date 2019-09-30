@@ -64,7 +64,7 @@ void ParameterSet::operator=(const ParameterSet& o)
   std::transform(o.begin(), o.end(), std::inserter(*this, end()),
                  [](const value_type& op)
                   {
-                    return value_type(op.first, op.second->clone());
+                    return value_type(op.first, std::unique_ptr<Parameter>(op.second->clone()));
                   }
   );
 }
@@ -96,7 +96,7 @@ void ParameterSet::extend(const EntryList& entries)
     {
       // otherwise, append, if key is not existing
       // note: insert does not replace! insertion will be omitted, if key exists already
-      insert( value_type(key, boost::get<1>(i)) ); // take ownership of objects in given list!
+      insert( value_type(key, std::unique_ptr<Parameter>(boost::get<1>(i))) ); // take ownership of objects in given list!
     }
   }
 }
@@ -126,7 +126,7 @@ ParameterSet& ParameterSet::merge(const ParameterSet& p)
     else 
     {
       // inserting
-      insert( value_type(key, boost::get<1>(i)) ); // take ownership of objects in given list!
+      insert( value_type(key, std::unique_ptr<Parameter>(boost::get<1>(i))) ); // take ownership of objects in given list!
     }
   }
 
@@ -209,7 +209,7 @@ ParameterSet* ParameterSet::cloneParameterSet() const
   for (ParameterSet::const_iterator i=begin(); i!=end(); i++)
   {
     std::string key(i->first);
-    np->insert( value_type(key, i->second->clone()) );
+    np->insert( value_type(key, std::unique_ptr<Parameter>(i->second->clone())) );
   }
   return np;
 }
@@ -452,13 +452,13 @@ SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSele
   for ( const SelectableSubsetParameter::SingleSubset& i: defaultValue )
   {
     std::string key(boost::get<0>(i));
-    value_.insert( ItemList::value_type(key, boost::get<1>(i)) ); // take ownership of objects in given list!
+    value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(boost::get<1>(i))) ); // take ownership of objects in given list!
   }
 }
 
 void SelectableSubsetParameter::addItem(key_type key, const ParameterSet& ps)
 { 
-    value_.insert( ItemList::value_type(key, ps.cloneParameterSet()) );
+    value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(ps.cloneParameterSet())) );
 }
 
 void SelectableSubsetParameter::setSelection(const key_type& key, const ParameterSet& ps)
@@ -578,7 +578,7 @@ Parameter* SelectableSubsetParameter::clone () const
   for (ItemList::const_iterator i=value_.begin(); i!=value_.end(); i++)
   {
     std::string key(i->first);
-    np->value_.insert( ItemList::value_type(key, i->second->cloneParameterSet()) );
+    np->value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(i->second->cloneParameterSet())) );
   }
   return np;
 }
@@ -594,7 +594,7 @@ void SelectableSubsetParameter::reset(const Parameter& p)
     for (const auto& v: op->value_)
     {
       std::string key(v.first);
-      value_.insert( ItemList::value_type(key, v.second->cloneParameterSet()) );
+      value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(v.second->cloneParameterSet())) );
     }
   }
   else

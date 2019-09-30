@@ -38,6 +38,13 @@
 #include <set>
 #include <memory>
 
+class ParameterTreeWidget
+    : public QTreeWidget
+{
+public:
+  ParameterTreeWidget(QWidget* p);
+  void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+};
 
 class ParameterSetDisplay;
 namespace insight {
@@ -50,7 +57,7 @@ class ParameterEditorWidget
     Q_OBJECT
     
 protected:
-    QTreeWidget *ptree_;
+    ParameterTreeWidget *ptree_;
     QWidget *inputContents_;
 
     ParameterSetDisplay* display_;

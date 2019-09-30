@@ -58,12 +58,8 @@ void addWrapperToWidget
     QObject *superform
 )
 {
-//   QVBoxLayout *vlayout=new QVBoxLayout(widget);
     for ( insight::ParameterSet::iterator i=pset.begin(); i!=pset.end(); i++ )
     {
-
-//      if (! i->second->isHidden())
-//      {
         ParameterWrapper *wrapper =
             ParameterWrapper::lookup
             (
@@ -86,7 +82,6 @@ void addWrapperToWidget
             QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ),
                                superform, SLOT ( onParameterSetChanged() ) );
         }
-//      }
     }
 }
 
@@ -125,8 +120,8 @@ ParameterWrapper::ParameterWrapper(QTreeWidgetItem* parent, const QString& name,
   if (p.isNecessary())
   {
     f.setBold(true);
-    setBackground(0, Qt::green);
-    setBackground(1, Qt::green);
+    setBackground(0, Qt::yellow);
+    setBackground(1, Qt::yellow);
   }
   else if (p.isExpert())
   {

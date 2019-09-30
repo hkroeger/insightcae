@@ -25,6 +25,30 @@
 
 #include <QSplitter>
 
+
+ParameterTreeWidget::ParameterTreeWidget(QWidget* p)
+  : QTreeWidget(p)
+{
+}
+
+void ParameterTreeWidget::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+  QStyleOptionViewItem newOption(option);
+
+  if ( QTreeWidgetItem * it = this->itemFromIndex(index) )
+  {
+    QBrush c = it->background(0);
+    if ( c.color() != Qt::black )
+    {
+      painter->fillRect(option.rect, c);
+      newOption.palette.setBrush( QPalette::Base, c);
+      newOption.palette.setBrush( QPalette::AlternateBase, c);
+    }
+  }
+
+  QTreeWidget::drawRow(painter, newOption, index);
+}
+
 ParameterEditorWidget::ParameterEditorWidget
 (
   insight::ParameterSet& pset,
@@ -40,7 +64,7 @@ ParameterEditorWidget::ParameterEditorWidget
   vali_(vali),
   viz_(std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz))
 {
-    ptree_=new QTreeWidget(this);
+    ptree_=new ParameterTreeWidget(this);
     addWidget(ptree_);
     inputContents_=new QWidget(this);
     addWidget(inputContents_);
@@ -80,6 +104,19 @@ ParameterEditorWidget::ParameterEditorWidget
     ptree_->setColumnCount(2);
     ptree_->setHeaderLabels( QStringList() << "Parameter Name" << "Current Value" );
     ptree_->addTopLevelItem(root_);
+    ptree_->setAlternatingRowColors(true);
+//    ptree_->setStyleSheet(
+//          "QTreeView::branch{background:palette(base)}"
+//          "QTreeWidget::branch::!has-children:selected {background-color: rgb(128, 255, 0);}\n"
+//          "QTreeWidget::item:selected { show-decoration-selected: 0; background-color:rgb(128, 255, 0); color:black; border:1px dashed red;}\n"
+
+////          "QTreeWidget::branch::!has-children:selected:alternate {background-color: rgb(0, 0, 0);}\n"
+
+////          "QTreeWidget { show-decoration-selected: 0; selection-color: red; selection-background-color: transparent; }\n"
+
+////          "QTreeWidget::item:selected:!active { background: transparent; }\n"
+////          "QTreeWidget::item:selected:active { background: transparent; }\n"
+//          );
     
     addWrapperToWidget(parameters_, defaultParameters_, root_, inputContents_, this);
 

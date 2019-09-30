@@ -110,8 +110,8 @@ double ParallelAxis::residual(const gp_Trsf& tr) const
 
 
 
-AlignedPlanes::AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ, bool inv)
-: pl_org_(pl_org), pl_targ_(pl_targ), inv_(inv)
+AlignedPlanes::AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ, Orientation orient)
+: pl_org_(pl_org), pl_targ_(pl_targ), orient_(orient)
 {}
 
 
@@ -121,10 +121,12 @@ double AlignedPlanes::residual(const gp_Trsf& tr) const
     gp_Pln ptarg(pl_targ_->plane());
 //     std::cerr<<"sqdist="<<pl.SquareDistance(ptarg.Location())<<std::endl;
 //     std::cerr<<"angle="<<pl.Axis().Direction().Angle(ptarg.Axis().Direction())*180./M_PI<<std::endl;
-    if (inv_)
-      return pow(1. + pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ()), 2) + pl.SquareDistance(ptarg.Location());
+    if (orient_==Inverted)
+      return pow(1. + pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ()), 2) /*+ pl.SquareDistance(ptarg.Location())*/;
+    else if  (orient_==Same)
+      return pow(1. - pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ()), 2) /*+ pl.SquareDistance(ptarg.Location())*/;
     else
-      return pow(1. - pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ()), 2) + pl.SquareDistance(ptarg.Location());
+      return pow(1. - fabs(pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ())), 2) /*+ pl.SquareDistance(ptarg.Location())*/;
 }
 
 
@@ -386,7 +388,7 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<ParallelAxis>(qi::_1, qi::_2)) ]
         |
         (ruleset.r_datumExpression >> qi::lit("aligned") >> ruleset.r_datumExpression  
-          >> ( ( qi::lit("inverted") >> qi::attr(true) ) | qi::attr(false) ) )
+          >> ( ( qi::lit("inverted") >> qi::attr(AlignedPlanes::Inverted) ) | ( qi::lit("oriented") >> qi::attr(AlignedPlanes::Same) ) | qi::attr(AlignedPlanes::Undefined) ) )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<AlignedPlanes>(qi::_1, qi::_2, qi::_3)) ]
         |
         (ruleset.r_datumExpression >> qi::lit("inclined") >> ruleset.r_datumExpression >> ruleset.r_scalarExpression )
@@ -429,7 +431,15 @@ FeatureCmdInfoList RefPlace::ruleDocumentation() const
         (
             "RefPlace",
             "( <feature:base>, [ <placement condition>, ...] )",
-            "Places the feature base by solving a set of placement conditions numerically (experimental)."
+            "Places the feature base by solving a set of placement conditions numerically (experimental).\n"
+            "Available placement conditions are:\n"
+            " - <vector> == <vector> (same point coordinates or vector components)\n"
+            " - <vector> parallel <vector> (same vector orientation))\n"
+            " - <datum> aligned <datum> [inverted] (direction properties of two datums are parallel or antiparallel. The latter holds, if keyword \"inverted\" is present)\n"
+            " - <datum> inclined <datum> <scalar>\n"
+            " - <datum> coaxial <datum> [inverted]\n"
+            " - <vector> inplane <datum>\n"
+            " - <vector> onaxis <datum>\n"
         )
     );
 }

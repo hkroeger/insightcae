@@ -65,10 +65,14 @@ public:
 class AlignedPlanes
     : public Condition
 {
-    DatumPtr pl_org_,  pl_targ_;
-    bool inv_;
 public:
-    AlignedPlanes ( DatumPtr pl_org, DatumPtr pl_targ, bool inv=false );
+  enum Orientation { Same, Inverted, Undefined };
+
+private:
+    DatumPtr pl_org_,  pl_targ_;
+    Orientation orient_;
+public:
+    AlignedPlanes ( DatumPtr pl_org, DatumPtr pl_targ, Orientation orient=Same );
     virtual double residual ( const gp_Trsf& tr ) const;
 };
 

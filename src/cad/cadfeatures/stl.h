@@ -42,6 +42,7 @@ class STL
 
 
 protected:
+    Handle_Poly_Triangulation aSTLMesh_;
     virtual size_t calcHash() const;
     virtual void build();
 
@@ -64,7 +65,7 @@ public:
         FeaturePtr other_trsf
     );
 
-//    virtual Handle_AIS_InteractiveObject buildVisualization() const;
+    virtual Handle_AIS_InteractiveObject buildVisualization() const;
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

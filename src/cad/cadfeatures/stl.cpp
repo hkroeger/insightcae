@@ -42,12 +42,26 @@
 #include <AIS_ColoredShape.hxx>
 #include <TColStd_HPackedMapOfInteger.hxx>
 #include <Geom_SphericalSurface.hxx>
+#include "Graphic3d_MaterialAspect.hxx"
+#include "AIS_Triangulation.hxx"
+#include "Poly.hxx"
+#include "XSDRAWSTLVRML_DataSource.hxx"
+#include "MeshVS_MeshPrsBuilder.hxx"
+#include "MeshVS_ElementalColorPrsBuilder.hxx"
+#include "MeshVS_Drawer.hxx"
+#include "MeshVS_DrawerAttribute.hxx"
 
 #include "base/tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
 #include "transform.h"
+
+#include "base/units.h"
+
+#include "vtkSTLReader.h"
+#include "vtkPolyDataNormals.h"
+#include "vtkTriangleFilter.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -85,21 +99,21 @@ STL::STL()
 
 
 STL::STL(const boost::filesystem::path& fname)
-    : fname_(fname)
+  : fname_(fname)
 {}
 
 
 
 
 STL::STL(const boost::filesystem::path& fname, const gp_Trsf& trsf)
-    : fname_(fname), trsf_(new gp_Trsf(trsf))
+  : fname_(fname), trsf_(new gp_Trsf(trsf))
 {}
 
 
 
 
 STL::STL(const boost::filesystem::path& fname, FeaturePtr other_trsf)
-    : fname_(fname), other_trsf_(other_trsf)
+  : fname_(fname), other_trsf_(other_trsf)
 {}
 
 
@@ -110,7 +124,7 @@ FeaturePtr STL::create
     const boost::filesystem::path& fname
 )
 {
-    return FeaturePtr(new STL(fname));
+  return FeaturePtr(new STL(fname));
 }
 
 
@@ -120,9 +134,9 @@ FeaturePtr STL::create_trsf
 (
     const boost::filesystem::path& fname,
     gp_Trsf trsf
-)
+    )
 {
-    return FeaturePtr(new STL(fname, trsf));
+  return FeaturePtr(new STL(fname, trsf));
 }
 
 
@@ -132,98 +146,147 @@ FeaturePtr STL::create_other
 (
     const boost::filesystem::path& fname,
     FeaturePtr other_trsf
-)
+    )
 {
-    return FeaturePtr(new STL(fname, other_trsf));
+  return FeaturePtr(new STL(fname, other_trsf));
 }
-
-
 
 
 void STL::build()
 {
-    ExecTimer t("STL::build() ["+featureSymbolName()+"]");
+  ExecTimer t("STL::build() ["+featureSymbolName()+"]");
 
-    if (!cache.contains(hash()))
+  if (!cache.contains(hash()))
+  {
+
+    vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
+    stl->SetFileName(fname_.c_str());
+
+    vtkSmartPointer<vtkPolyDataNormals> split = vtkSmartPointer<vtkPolyDataNormals>::New();
+    split->SetInputConnection(stl->GetOutputPort());
+    split->SplittingOn();
+    split->ComputeCellNormalsOn();
+    split->ConsistencyOn();
+
+    vtkSmartPointer<vtkTriangleFilter> tri = vtkSmartPointer<vtkTriangleFilter>::New();
+    tri->SetInputConnection(split->GetOutputPort());
+
+    tri->Update();
+
+    vtkPolyData *split_mesh = tri->GetOutput();
+    aSTLMesh_ =
+        new Poly_Triangulation
+        (
+          split_mesh->GetNumberOfPoints(),
+          split_mesh->GetNumberOfCells(),
+          Standard_False
+          );
+
+    for (vtkIdType i = 0; i < split_mesh->GetNumberOfPoints(); i++)
     {
-        Handle(Poly_Triangulation) aSTLMesh = RWStl::ReadFile (fname_.c_str());
-
-        if (trsf_ || other_trsf_)
-        {
-            gp_Trsf tr;
-            if (trsf_)
-            {
-                tr = *trsf_;
-            }
-            else if (other_trsf_)
-            {
-                tr = Transform::calcTrsfFromOtherTransformFeature(other_trsf_);
-            }
-
-            for (int i=1; i<=aSTLMesh->NbNodes();i++)
-            {
-                aSTLMesh->ChangeNode(i).Transform(tr);
-            }
-        }
-
-        Bnd_Box bb;
-        for (int i=1; i<=aSTLMesh->NbNodes();i++)
-        {
-            bb.Add(aSTLMesh->Node(i));
-        }
-        double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
-        gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
-
-        TopoDS_Face aFace;
-        BRep_Builder aB;
-        //  aB.MakeFace(aFace, aSTLMesh);
-        aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
-        aB.UpdateFace(aFace, aSTLMesh);
-
-        setShape( aFace );
-
-        cache.insert(shared_from_this());
+      double xyz[3];
+      split_mesh->GetPoint(i, xyz);
+      aSTLMesh_->ChangeNode (i+1) = gp_Pnt(xyz[0], xyz[1], xyz[2]);
     }
-    else
+
+    for (vtkIdType i = 0; i < split_mesh->GetNumberOfCells(); i++)
     {
-        this->operator=(*cache.markAsUsed<STL>(hash()));
+      vtkCell *c = split_mesh->GetCell(i);
+      insight::assertion( c->GetNumberOfPoints()==3, "STL mesh cell needs to have exactly 3 corners");
+      aSTLMesh_->ChangeTriangle (i + 1) =
+          Poly_Triangle
+          (
+            c->GetPointId(0)+1,
+            c->GetPointId(1)+1,
+            c->GetPointId(2)+1
+            );
     }
+
+    // transform points, if required
+    if (trsf_ || other_trsf_)
+    {
+      gp_Trsf tr;
+      if (trsf_)
+      {
+        tr = *trsf_;
+      }
+      else if (other_trsf_)
+      {
+        tr = Transform::calcTrsfFromOtherTransformFeature(other_trsf_);
+      }
+
+      for (int i=1; i<=aSTLMesh_->NbNodes();i++)
+      {
+        aSTLMesh_->ChangeNode(i).Transform(tr);
+      }
+    }
+
+
+    // get bounding box
+    Bnd_Box bb;
+    for (int i=1; i<=aSTLMesh_->NbNodes();i++)
+    {
+      bb.Add(aSTLMesh_->Node(i));
+    }
+    double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
+    gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
+
+    TopoDS_Face aFace;
+    BRep_Builder aB;
+    //  aB.MakeFace(aFace, aSTLMesh);
+    aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
+    aB.UpdateFace(aFace, aSTLMesh_);
+
+    setShape( aFace );
+
+    cache.insert(shared_from_this());
+  }
+  else
+  {
+    this->operator=(*cache.markAsUsed<STL>(hash()));
+  }
 }
 
+
+Handle_AIS_InteractiveObject STL::buildVisualization() const
+{
+  Handle_AIS_InteractiveObject as( new AIS_Shape(shape()) );
+  return as;
+}
 
 
 
 void STL::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
-  (
-    "STL",
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+      (
+        "STL",
+        typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-     ( '(' >> ruleset.r_path >> ')' ) [ qi::_val = phx::bind(&STL::create, qi::_1) ]
-     |
-     ( '(' >> ruleset.r_path >> ',' >> ruleset.r_solidmodel_expression >> ')' ) [ qi::_val = phx::bind(&STL::create_other, qi::_1, qi::_2) ]
+                                                         ( '(' >> ruleset.r_path >> ')' ) [ qi::_val = phx::bind(&STL::create, qi::_1) ]
+                                                                                                       |
+                                                                                                       ( '(' >> ruleset.r_path >> ',' >> ruleset.r_solidmodel_expression >> ')' ) [ qi::_val = phx::bind(&STL::create_other, qi::_1, qi::_2) ]
 
-    ))
-  );
+                                                                                                                                                                                               ))
+      );
 }
 
 
 
 FeatureCmdInfoList STL::ruleDocumentation() const
 {
-    return boost::assign::list_of
-    (
+  return boost::assign::list_of
+      (
         FeatureCmdInfo
         (
-            "STL",
+          "STL",
 
-            "( <path:filename> [, <feature:other transform feature> ] )",
+          "( <path:filename> [, <feature:other transform feature> ] )",
 
-            "Import a triangulated surface for display. The result can only be used for display, no operations can be performed on it."
-            "Transformations can be reused from other transform features. The name of another transformed feature can be provided optionally."
-        )
-    );
+          "Import a triangulated surface for display. The result can only be used for display, no operations can be performed on it."
+          "Transformations can be reused from other transform features. The name of another transformed feature can be provided optionally."
+          )
+        );
 }
 
 

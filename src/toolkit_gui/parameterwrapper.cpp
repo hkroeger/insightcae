@@ -62,8 +62,8 @@ void addWrapperToWidget
     for ( insight::ParameterSet::iterator i=pset.begin(); i!=pset.end(); i++ )
     {
 
-      if (! i->second->isHidden())
-      {
+//      if (! i->second->isHidden())
+//      {
         ParameterWrapper *wrapper =
             ParameterWrapper::lookup
             (
@@ -86,7 +86,7 @@ void addWrapperToWidget
             QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ),
                                superform, SLOT ( onParameterSetChanged() ) );
         }
-      }
+//      }
     }
 }
 

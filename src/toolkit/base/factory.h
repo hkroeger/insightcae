@@ -105,7 +105,7 @@ static std::vector<std::string> factoryToC()
  { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
    if (i==baseT::factories_->end()) \
-    throw insight::Exception("Could not lookup type "+key+" in factory table of type " +#baseT); \
+    throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
    return (*i->second)( parList ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
@@ -126,7 +126,7 @@ static std::vector<std::string> factoryToC()
  { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
    if (i==baseT::factories_->end()) \
-    throw insight::Exception("Could not lookup type "+key+" in factory table of type " +#baseT); \
+    throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
   return (*i->second)(); \
  } \
  std::vector<std::string> baseT::factoryToC() \
@@ -189,10 +189,10 @@ static struct add##specT##To##baseT##FactoryTable \
    if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
   if (i==baseT::Name##Functions_->end()) \
-    throw insight::Exception("Could not lookup static function #Name for class "+key+" in table of type " #baseT); \
+    throw insight::Exception("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
   return i->second(); \
   } else  {\
-    throw insight::Exception("Static function table of type " #baseT "is empty!"); \
+    throw insight::Exception("Static function table of type \"" #baseT "\" is empty!"); \
   }\
  } \
  baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr
@@ -204,10 +204,10 @@ static struct add##specT##To##baseT##FactoryTable \
    if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
   if (i==baseT::Name##Functions_->end()) \
-    throw insight::Exception("Could not lookup static function #Name for class "+key+" in table of type " #baseT); \
+    throw insight::Exception("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
   return i->second(parList); \
   } else  {\
-    throw insight::Exception("Static function table of type " #baseT "is empty!"); \
+    throw insight::Exception("Static function table of type \"" #baseT "\" is empty!"); \
   }\
  } \
  baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr

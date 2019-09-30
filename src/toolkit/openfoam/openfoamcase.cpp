@@ -164,7 +164,7 @@ std::string OFEs::currentOrPreferredOFE()
   try {
     return detectCurrentOFE();
   }
-  catch (insight::Exception e)
+  catch (const std::exception& /*e*/)
   {
     return "OFesi1806";
   }
@@ -940,7 +940,7 @@ bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& loca
   {
     readOpenFOAMDict(location/"system"/"controlDict", controlDict);
   }
-  catch (const insight::Exception&)
+  catch (const std::exception&)
   {
     return false;
   }

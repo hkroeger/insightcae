@@ -22,7 +22,7 @@
 #ifndef INSIGHT_FACTORY_H
 #define INSIGHT_FACTORY_H
 
-#include "boost/ptr_container/ptr_map.hpp"
+//#include "boost/ptr_container/ptr_map.hpp"
 
 #include "boost/foreach.hpp"
 

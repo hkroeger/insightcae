@@ -35,7 +35,7 @@ void DynamicClassSelectableSubsetParameterParser::Data::cppWriteCreateStatement
 {
 
     os <<
-         "std::auto_ptr< "<<cppParamType ( name ) <<" > "<<name<<";"
+         "std::unique_ptr< "<<cppParamType ( name ) <<" > "<<name<<";"
          "{"
          <<name<<".reset(new "<<cppParamType ( name ) <<"(\""<<description<<"\")); "
         "for ("<<base_type<<"::FactoryTable::const_iterator i = "<<base_type<<"::factories_->begin();"

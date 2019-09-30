@@ -40,8 +40,8 @@ protected:
   boost::filesystem::path commFile_;
   FileList mmedFiles_;
   
-  std::auto_ptr<boost::filesystem::path> messFile_;  
-  std::auto_ptr<boost::filesystem::path> rmedFile_;
+  std::unique_ptr<boost::filesystem::path> messFile_;
+  std::unique_ptr<boost::filesystem::path> rmedFile_;
   
 public:
     CAExportFile(const boost::filesystem::path& commFile, std::string version="stable", int t_max=24*60*60, int mem_max=512);

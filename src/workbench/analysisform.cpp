@@ -56,9 +56,16 @@ void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
     insight::ResultSetPtr results = (*analysis_)(pd);
     emit resultReady( results );
   }
-  catch (insight::Exception e)
+  catch (const std::exception& e)
   {
-    emit error(e);
+    if ( const auto* ie = dynamic_cast<const insight::Exception*>(&e) )
+    {
+      emit error( insight::Exception(*ie) );
+    }
+    else
+    {
+      emit error( insight::Exception(e.what()) );
+    }
   }
   catch (boost::thread_interrupted i)
   {
@@ -66,7 +73,7 @@ void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
   }
   catch (...)
   {
-    emit error(insight::Exception("An unhandled exceptio occurred!"));
+    emit error(insight::Exception("An unhandled exception occurred in the analysis thread!"));
   }
 
 }
@@ -131,7 +138,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
     try {
         viz = insight::Analysis::visualizer(analysisName_);
-    } catch (insight::Exception e)
+    } catch (const std::exception& e)
     {
       /* ignore, if non-existent */
       std::cout<<"Info: no visualizer for \""<<analysisName_<<"\" available."<<std::endl;
@@ -139,7 +146,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
     try {
         vali = insight::Analysis::validator(analysisName_);
-    } catch (insight::Exception e)
+    } catch (const std::exception& e)
     { /* ignore, if non-existent */ }
 
     peditor_=new ParameterEditorWidget(parameters_, defaultParams, ui->inputTab, viz, vali);

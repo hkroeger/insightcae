@@ -353,20 +353,23 @@ AnalysisWorkerThread::AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, P
 
 void AnalysisWorkerThread::operator() ()
 {
-    try {
-        while ( !queue_->isEmpty() ) {
-            AnalysisInstance ai=queue_->dequeue();
+  try
+  {
+    while ( !queue_->isEmpty() ) {
+      AnalysisInstance ai=queue_->dequeue();
 
-            // run analysis and transfer results into given ResultSet object
-            CollectingProgressDisplayer pd ( boost::get<0> ( ai ), displayer_ );
-            boost::get<2> ( ai )->transfer ( * ( *boost::get<1> ( ai ) ) ( &pd ) ); // call operator() from analysis object
+      // run analysis and transfer results into given ResultSet object
+      CollectingProgressDisplayer pd ( boost::get<0> ( ai ), displayer_ );
+      boost::get<2> ( ai )->transfer ( * ( *boost::get<1> ( ai ) ) ( &pd ) ); // call operator() from analysis object
 
-            // Make sure we can be interrupted
-            boost::this_thread::interruption_point();
-        }
-    } catch ( insight::Exception e ) {
-        std::cerr<<"Exception occurred:"<<std::endl<<e<<std::endl;
+      // Make sure we can be interrupted
+      boost::this_thread::interruption_point();
     }
+  }
+  catch ( const std::exception& e )
+  {
+    insight::Warning(std::string("Exception occurred:\n")+e.what());
+  }
 }
 
 

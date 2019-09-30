@@ -157,7 +157,7 @@ void PipeBase::calcDerivedInputData()
 void PipeBase::insertBlocksAndPatches
 (
     OpenFOAMCase& cm,
-    std::auto_ptr<insight::bmd::blockMesh>& bmd,
+    std::unique_ptr<insight::bmd::blockMesh>& bmd,
     const std::string& prefix,
     double xshift,
     double angleshift
@@ -276,7 +276,7 @@ void PipeBase::createMesh
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
-  std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
+  std::unique_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
   bmd->setDefaultPatch("walls", "wall");
 
@@ -417,7 +417,7 @@ void PipeBase::evaluateAtSection(
 //     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
 // 
 //     results->insert(chart_name,
-//       std::auto_ptr<Image>(new Image
+//       std::unique_ptr<Image>(new Image
 //       (
 //       chart_file_name, 
 //       "Radial profiles of averaged velocities", ""
@@ -476,7 +476,7 @@ void PipeBase::evaluateAtSection(
 //     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
 // 
 //     results->insert(chart_name,
-//       std::auto_ptr<Image>(new Image
+//       std::unique_ptr<Image>(new Image
 //       (
 //       chart_file_name, 
 //       "Radial profiles of averaged reynolds stresses", ""
@@ -503,7 +503,7 @@ void PipeBase::evaluateAtSection(
     )
   );
   results->insert(pressure_contour_name,
-    std::auto_ptr<Image>(new Image
+    std::unique_ptr<Image>(new Image
     (
     executionPath(), pressure_contour_filename, 
     "Contour of pressure (axial section)", ""
@@ -527,7 +527,7 @@ void PipeBase::evaluateAtSection(
       )
     );
     results->insert(velocity_contour_name,
-      std::auto_ptr<Image>(new Image
+      std::unique_ptr<Image>(new Image
       (
       executionPath(), velocity_contour_filename, 
       "Contour of "+c+"-Velocity (axial section)", ""
@@ -576,7 +576,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm)
     )
   );
   results->insert(pressure_contour_name,
-    std::auto_ptr<Image>(new Image
+    std::unique_ptr<Image>(new Image
     (
     executionPath(), pressure_contour_filename, 
     "Contour of pressure (longitudinal section)", ""
@@ -600,7 +600,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm)
       )
     );
     results->insert(velocity_contour_name,
-      std::auto_ptr<Image>(new Image
+      std::unique_ptr<Image>(new Image
       (
       executionPath(), velocity_contour_filename, 
       "Contour of "+c+"-Velocity (longitudinal section)", ""
@@ -718,7 +718,7 @@ ParameterSet PipeInflow::defaultParameters()
 {
   ParameterSet p(PipeBase::defaultParameters());
 
-  std::auto_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
+  std::unique_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
   
 //   (*inflowparams)().extend
 //   (
@@ -873,7 +873,7 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm)
       gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
 
       results->insert(chart_name,
-	std::auto_ptr<Image>(new Image
+        std::unique_ptr<Image>(new Image
 	(
 	executionPath(), chart_file_name, 
 	"Longitudinal profiles of averaged velocities", ""
@@ -905,7 +905,7 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm)
       gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
 
       results->insert(chart_name,
-	std::auto_ptr<Image>(new Image
+        std::unique_ptr<Image>(new Image
 	(
 	executionPath(), chart_file_name, 
 	"Longitudinal profiles of averaged reynolds stresses", ""

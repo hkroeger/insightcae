@@ -597,7 +597,6 @@ struct SolidFeatureFilterExprParser
 template<class Parser>
 FilterPtr parseFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)
 {
-try {
   Parser parser(refs);
 //   skip_grammar<Iterator> skip;
   
@@ -633,13 +632,6 @@ try {
 //   model = parser.model_;
   
   return result;
-}
-catch (insight::Exception e)
-{
-  std::cerr<<"Exception occurred: "<<e<<std::endl;
-  throw e;
-}
-
 }
 
 FilterPtr parseVertexFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)

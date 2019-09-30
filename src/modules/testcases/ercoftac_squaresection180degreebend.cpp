@@ -124,7 +124,7 @@ void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm)
   
   using namespace insight::bmd;
   
-  std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
+  std::unique_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0e-3);
   bmd->setDefaultPatch("walls", "wall");
   

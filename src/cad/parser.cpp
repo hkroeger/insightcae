@@ -428,7 +428,7 @@ bool parseISCADModelStream ( std::istream& in, Model* m, int* failloc, parser::S
             }
         }
     }
-  catch ( qi::expectation_failure<std::string::iterator> e )
+  catch ( const qi::expectation_failure<std::string::iterator>& e )
     {
         std::ostringstream os;
         os << e.what_;

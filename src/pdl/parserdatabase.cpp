@@ -8,13 +8,14 @@ arma::mat vec2mat(const std::vector<double>& vals)
 }
 
 PDLException::PDLException(const std::string& msg)
-  : msg_(msg)
+  : std::exception(),
+    msg_(msg)
 {
 }
 
-const std::string& PDLException::msg() const
+const char* PDLException::what() const noexcept
 {
-  return msg_;
+  return msg_.c_str();
 }
 
 std::string extendtype(const std::string& pref, const std::string& app)
@@ -71,7 +72,7 @@ void ParserDataBase::cppWriteCreateStatement
     const std::string& name
 ) const
 {
-    os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"("
+    os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<"("
       "new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description<<"\", "
       << (isHidden?"true":"false")<<","
       << (isExpert?"true":"false")<<","
@@ -94,7 +95,7 @@ void ParserDataBase::cppWriteInsertStatement
     os<<"{ ";
     os<<"std::string key(\""<<name<<"\"); ";
     this->cppWriteCreateStatement(os, name);
-    os<<psvarname<<".insert(key, "<<name<<"); ";
+    os<<psvarname<<".emplace(key, std::move("<<name<<")); ";
     os<<"}"<<std::endl;
 }
 

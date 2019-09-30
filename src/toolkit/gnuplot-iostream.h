@@ -261,14 +261,17 @@ private:
 	const GnuplotTmpfile& operator=(const GnuplotTmpfile &);
 
 public:
-	~GnuplotTmpfile() {
-		// it is never good to throw exceptions from a destructor
-		try {
-			remove(file);
-		} catch(const std::exception &) {
-			std::cerr << "Failed to remove temporary file " << file << std::endl;
-		}
-	}
+        ~GnuplotTmpfile() {
+          // it is never good to throw exceptions from a destructor
+          try
+          {
+            remove(file);
+          }
+          catch(const std::exception &)
+          {
+            std::cerr << "Failed to remove temporary file " << file << std::endl;
+          }
+        }
 
 public:
 	boost::filesystem::path file;

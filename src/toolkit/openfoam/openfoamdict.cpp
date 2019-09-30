@@ -161,7 +161,7 @@ bool parseOpenFOAMDict(Iterator first, Iterator last, Result& d)
                      d
                  );
     }
-    catch ( qi::expectation_failure<std::string::iterator> e )
+    catch ( const qi::expectation_failure<std::string::iterator>& e )
     {
         std::ostringstream os;
         os << e.what_;

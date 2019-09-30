@@ -125,7 +125,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
   ));
   
   using namespace insight::bmd;
-  std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
+  std::unique_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
   bmd->setDefaultPatch("walls", "wall");
   
@@ -417,7 +417,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
   );
 
   results->insert(figname,
-    std::auto_ptr<Image>(new Image
+    std::unique_ptr<Image>(new Image
     (
     executionPath(), fname, 
     str(format("Relative velocity (angle of attack %gdeg)")%p.geometry.alpha), ""

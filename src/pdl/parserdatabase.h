@@ -72,12 +72,13 @@ BOOST_PHOENIX_ADAPT_FUNCTION(arma::mat, vec2mat_, vec2mat, 1);
 
 
 class PDLException
+    : public std::exception
 {
   std::string msg_;
 public:
   PDLException(const std::string& msg);
 
-  const std::string& msg() const;
+  const char* what() const noexcept override;
 };
 
 

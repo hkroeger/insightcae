@@ -112,7 +112,7 @@ void isofCaseBuilderWindow::fillCaseElementList()
           QIcon icon;
           viz->setIcon(&icon);
           item->setIcon(0, icon);
-      } catch (insight::Exception e)
+      } catch (const std::exception& e)
       { /* ignore, if non-existent */ }
     }
     //       QFont f=item->font(0); f.setBold(true); item->setFont(0, f);
@@ -421,7 +421,7 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
 //            viz->update(elem->parameters());
 //            viz->updateVisualizationElements(ui->occview, ui->modeltree);
 //        }
-//        catch (insight::Exception e)
+//        catch (const std::exception& e)
 //        { /* ignore, if non-existent */ }
 //      }
 //  }
@@ -590,7 +590,7 @@ QString isofCaseBuilderWindow::applicationName() const
         = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
       if ( cur )
         {
-          std::auto_ptr<insight::OpenFOAMCaseElement> ce( cur->createElement(ofc) );
+          std::unique_ptr<insight::OpenFOAMCaseElement> ce( cur->createElement(ofc) );
           if ( const auto* fvn = dynamic_cast<const insight::FVNumerics*>(ce.get()) )
           {
             insight::OFdicts dicts;
@@ -601,7 +601,7 @@ QString isofCaseBuilderWindow::applicationName() const
               std::string appname = cd.getString("application");
               return QString(appname.c_str());
             }
-            catch (insight::Exception e)
+            catch (const std::exception& e)
             {
               // continue
             }
@@ -665,12 +665,12 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
 
 //        try {
 //            viz = insight::OpenFOAMCaseElement::visualizer(cur->type_name());
-//        } catch (insight::Exception e)
+//        } catch (const std::exception& e)
 //        { /* ignore, if non-existent */ }
 
         try {
             vali = insight::OpenFOAMCaseElement::validator(cur->type_name());
-        } catch (insight::Exception e)
+        } catch (const std::exception& e)
         { /* ignore, if non-existent */ }
 
         ped_ = new ParameterEditorWidget

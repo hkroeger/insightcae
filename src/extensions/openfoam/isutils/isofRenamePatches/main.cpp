@@ -136,15 +136,10 @@ int main(int argc, char *argv[])
         writeOpenFOAMBoundaryDict(bf, boundaryDict);
 
     }
-    catch (insight::Exception e)
-    {
-        cout<<"Error: "<<e<<endl;
-        exit(-1);
-    }
     catch (std::exception e)
     {
-        cout<<"Error: "<<e.what()<<endl;
-        exit(-1);
+        insight::printException(e);
+        return -1;
     }
 
     return 0;

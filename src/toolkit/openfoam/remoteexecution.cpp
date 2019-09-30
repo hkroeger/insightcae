@@ -278,7 +278,7 @@ void TaskSpoolerInterface::startTail(std::function<void(const std::string&)> rec
                       ));
     }
   }
-  catch (boost::process::process_error e)
+  catch (const boost::process::process_error& e)
   {
     throw insight::Exception(std::string("Could not set up task spooler subprocess!\nMessage: ")+e.what());
   }
@@ -457,10 +457,12 @@ void RemoteExecutionConfig::execRemoteCmd(const std::string& command)
     cmd << "ssh " << server_ << " \"";
      cmd << "export TS_SOCKET="<<socket()<<";";
 
-     try {
+     try
+     {
          const OFEnvironment& cofe = OFEs::getCurrent();
          cmd << "source " << cofe.bashrc().filename() << ";";
-     } catch (insight::Exception e) {
+     }
+     catch (const std::exception& /*e*/) {
          // ignore, don't load OF config remotely
      }
 

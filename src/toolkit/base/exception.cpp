@@ -146,12 +146,9 @@ Exception::operator std::string() const
     }
   if (strace_!="")
     return
-        "\n\n"
-        "ERROR MESSAGE:"
-        "\n\n"
-        +message_
+        message_
         +context+
-        "\n\n\n"
+        "\n\n"
         "STACK TRACE:\n"
         +strace_+
         "\n\n";
@@ -248,7 +245,7 @@ std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen)
 
 void Warning(const std::string& msg)
 {
-  std::cout<<"\n\n"
+  std::cerr<<"\n\n"
 "================================================================\n"
 "================================================================\n"
 "    WW      WW   AAA   RRRRRR  NN   NN IIIII NN   NN   GGGG     \n"
@@ -259,9 +256,9 @@ void Warning(const std::string& msg)
 "================================================================\n"
     <<std::endl;
     
-  std::cout<<splitMessage(msg, 60)<<std::endl;
+  std::cerr<<splitMessage(msg, 60)<<std::endl;
   
-  std::cout<<std::endl<<
+  std::cerr<<std::endl<<
 "================================================================\n"
 "================================================================\n\n"
     <<std::endl;

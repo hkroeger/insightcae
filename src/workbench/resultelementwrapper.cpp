@@ -358,10 +358,10 @@ void addWrapperToWidget ( insight::ResultElementCollection& rset, QTreeWidgetIte
                     node, i.first.c_str(), *i.second
                 );
 //       vlayout->addWidget(wrapper);
-        } catch ( insight::Exception e ) {
+        } catch ( const std::exception& e ) {
 //       QLabel *comment=new QLabel( (i.first+": "+e.message()).c_str());
 //       vlayout->addWidget(comment);
-            QString comment ( ( i.first+": "+e.message() ).c_str() );
+            QString comment ( ( i.first+": "+e.what() ).c_str() );
             QTreeWidgetItem *it = new QTreeWidgetItem ( node, QStringList() << "(error)" << " "<< comment );
         }
         /*

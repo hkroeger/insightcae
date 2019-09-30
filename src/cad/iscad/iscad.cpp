@@ -24,8 +24,9 @@
 
 #include "base/boost_include.h"
 #include "base/exception.h"
-#include "iscadapplication.h"
+#include "insightcaeapplication.h"
 #include "iscadmainwindow.h"
+#include "qinsighterror.h"
 
 #ifndef Q_MOC_RUN
 #include <boost/program_options/options_description.hpp>
@@ -103,8 +104,11 @@ int main ( int argc, char** argv )
       exit ( 0 );
     }
 
-  try {
-  if ( vm.count ( "input-file" ) && vm.count ( "batch" ) )
+  bool batch = vm.count("batch");
+
+  if ( vm.count ( "input-file" ) && batch )
+  {
+    try
     {
       boost::filesystem::path filename( vm["input-file"].as<std::string>() );
 
@@ -113,7 +117,7 @@ int main ( int argc, char** argv )
       if (filename=="-")
       {
         success=insight::cad::parseISCADModelStream ( std::cin, model.get() );
-      } 
+      }
       else if ( boost::filesystem::extension(filename) == ".iscad" )
       {
         success=insight::cad::parseISCADModelFile ( filename, model.get() );
@@ -126,27 +130,36 @@ int main ( int argc, char** argv )
       }
       
       if ( success )
+      {
+        auto postprocActions=model->postprocActions();
+        for ( decltype ( postprocActions ) ::value_type const& v: postprocActions )
         {
-          auto postprocActions=model->postprocActions();
-          for ( decltype ( postprocActions ) ::value_type const& v: postprocActions )
-          {
-            cout << "Executing " << v.first << endl;
-            v.second->execute();
-          }
-
-          return 0;
+          cout << "Executing " << v.first << endl;
+          v.second->execute();
         }
+
+        return 0;
+      }
       else
       {
-          std::cerr<<"Failed to parse ISCAD script!"<<std::endl;
-          return -1;
+        std::cerr<<"Failed to parse ISCAD script!"<<std::endl;
+        return -1;
       }
     }
-  else
+    catch (const std::exception& e)
     {
-      //     XInitThreads();
+      insight::printException(e);
+      return -1;
+    }
+  }
+  else
+  {
+    //     XInitThreads();
 
-      ISCADApplication app ( argc, argv );
+    InsightCAEApplication app ( argc, argv );
+
+    try
+    {
       std::locale::global ( std::locale::classic() );
       QLocale::setDefault ( QLocale::C );
 
@@ -161,39 +174,35 @@ int main ( int argc, char** argv )
       bool dobgparsing = (vm.count ( "nobgparse" ) == 0);
       
       if ( vm.count ( "input-file" ) )
+      {
+        boost::filesystem::path filename ( vm["input-file"].as<std::string>() );
+        if ( boost::filesystem::extension(filename) == ".iscad" )
         {
-          boost::filesystem::path filename ( vm["input-file"].as<std::string>() );
-          if ( boost::filesystem::extension(filename) == ".iscad" )
-          {
-            window.insertModel ( filename, dobgparsing );
-          }
-          else
-          {
-            std::string script = "model: import(\""+filename.string()+"\");\n";
-            window.insertModelScript ( script, dobgparsing );
-          }
+          window.insertModel ( filename, dobgparsing );
         }
+        else
+        {
+          std::string script = "model: import(\""+filename.string()+"\");\n";
+          window.insertModelScript ( script, dobgparsing );
+        }
+      }
       else
       {
-          window.insertEmptyModel( dobgparsing );
+        window.insertEmptyModel( dobgparsing );
       }
 
       window.show();
 
-//      while (splashtime.elapsed() < 3e3)
-//        {
-//            app.processEvents(); //This is used to accept a click on the screen so that user can cancel the screen
-//        }
       splash.finish(&window);
 
       window.raise();
 
       return app.exec();
     }
-  }
-  catch (insight::Exception e)
-  {
-      std::cerr<<e<<std::endl;
-      return -1;
+    catch (const std::exception& e)
+    {
+        displayException(e);
+        return -1;
+    }
   }
 }

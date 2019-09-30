@@ -197,7 +197,7 @@ writerLine_HatchLoop::writerLine_HatchLoop(const BRepAdaptor_Curve& c, const std
 
 
 
-void writerLine_HatchLoop::write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const
+void writerLine_HatchLoop::write(DL_Dxf& dxf, std::unique_ptr<DL_WriterA>& dw) const
 {
 //   {
 //     std::ofstream f("debug.txt", fstream::app);
@@ -335,7 +335,7 @@ writerCircle_HatchLoop::writerCircle_HatchLoop(const BRepAdaptor_Curve& c, const
 
 
 
-void writerCircle_HatchLoop::write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const
+void writerCircle_HatchLoop::write(DL_Dxf& dxf, std::unique_ptr<DL_WriterA>& dw) const
 {
   dxf.writeHatchEdge
   (
@@ -455,7 +455,7 @@ writerDiscrete_HatchLoop::writerDiscrete_HatchLoop(const BRepAdaptor_Curve& c, c
 
 
 
-void writerDiscrete_HatchLoop::write(DL_Dxf& dxf, auto_ptr< DL_WriterA >& dw) const
+void writerDiscrete_HatchLoop::write(DL_Dxf& dxf, unique_ptr< DL_WriterA >& dw) const
 {
 //   {
 //     std::ofstream f("debug.txt", fstream::app);

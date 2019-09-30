@@ -61,7 +61,7 @@ std::string DXFReader::curLayerName()
 DXFReader::DXFReader(const boost::filesystem::path& filename, const std::string& layername)
 : layername_(layername)
 {
-  std::auto_ptr<DL_Dxf> dxf(new DL_Dxf());
+  std::unique_ptr<DL_Dxf> dxf(new DL_Dxf());
   if (!dxf->in(filename.c_str(), this))
   {
     std::cerr << filename << " could not be opened." << std::endl;

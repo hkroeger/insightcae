@@ -277,9 +277,11 @@ int main(int argc, char *argv[])
 
 
 
-    catch (insight::Exception e)
+    catch (const std::exception& e)
     {
-        std::cerr<<e<<std::endl;
-        exit(-1);
+        insight::printException(e);
+        return -1;
     }
+
+    return 0;
 }

@@ -142,7 +142,7 @@ void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm)
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
-  std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
+  std::unique_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
   bmd->setDefaultPatch("walls", "wall");
   

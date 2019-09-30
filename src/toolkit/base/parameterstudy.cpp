@@ -74,15 +74,15 @@ ParameterSet ParameterStudy<BaseAnalysis,var_params>::defaultParameters()
   std::string subname("run");
   if (!dfp.contains(subname))
   {
-      dfp.insert(subname, new SubsetParameter("run parameters"));
+      dfp.emplace(subname, make<SubsetParameter>("run parameters"));
   }
   
-  dfp.getSubset(subname).insert
+  dfp.getSubset(subname).emplace
   (
     "numthread", 
-    std::auto_ptr<IntParameter>
+    make<IntParameter>
     (
-      new IntParameter(4, "Maximum number of parallel threads to run at the same time")
+      4, "Maximum number of parallel threads to run at the same time"
     ) 
   );
         

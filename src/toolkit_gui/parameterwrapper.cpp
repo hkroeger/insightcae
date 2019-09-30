@@ -1414,7 +1414,7 @@ void SelectableSubsetParameterWrapper::createWidgets()
   layout2->addWidget(new QLabel("Selection:", detaileditwidget_));
   selBox_=new QComboBox(detaileditwidget_);
   connect(selBox_, &QComboBox::destroyed, this, &SelectableSubsetParameterWrapper::onDestruction);
-  for ( auto pair: param().items() )
+  for ( auto& pair: param().items() )
   {
 //     std::cout<<"inserted text:"<<pair.first<<std::endl;
     selBox_->addItem(pair.first.c_str());

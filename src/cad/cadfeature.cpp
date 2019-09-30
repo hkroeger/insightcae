@@ -622,7 +622,7 @@ void Feature::checkForBuildDuringAccess() const
       }
     ASTBase::checkForBuildDuringAccess();
   }
-  catch (Standard_Failure e)
+  catch (const Standard_Failure& e)
   {
     throw insight::cad::CADException(shared_from_this(), e.GetMessageString());
   }

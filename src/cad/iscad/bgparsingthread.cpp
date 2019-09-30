@@ -97,7 +97,7 @@ void BGParsingThread::run()
       {
           r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
       }
-      catch (insight::cad::parser::iscadParserException e)
+      catch (const insight::cad::parser::iscadParserException& e)
       {
           reason="Expected: "+e.message();
           failloc=e.from_pos();
@@ -249,18 +249,18 @@ void BGParsingThread::run()
             }
       }
     }
-    catch (insight::cad::CADException e)
+    catch (const insight::cad::CADException& e)
     {
       auto loc=syn_elem_dir_->findElement(e.feature());
       auto fn = loc.first;
       auto p = loc.second;
       emit scriptError( p.first, QString::fromStdString(e.as_string()), p.second-p.first);
     }
-    catch (insight::cad::RebuildCancelException e)
+    catch (const insight::cad::RebuildCancelException& e)
     {
       emit statusMessage("Model rebuild cancelled");
     }
-    catch (insight::Exception e)
+    catch (const insight::Exception& e)
     {
       emit scriptError(-1, QString::fromStdString(e.as_string()), 0 );
     }

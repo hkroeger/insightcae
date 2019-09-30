@@ -77,6 +77,7 @@ int main(int argc, char* argv[])
 
   try
   {
+
     std::ostream* os = &std::cout;
     if (vm.count("out")>0)
     {
@@ -88,10 +89,14 @@ int main(int argc, char* argv[])
         *os
      );
     if (os!=&std::cout) delete os;
+
   }
-  catch (insight::Exception e)
+  catch (const std::exception& e)
   {
-    cerr << "Error occurred:\n" << e << endl;
+    insight::printException(e);
+    return -1;
   }
+
+  return 0;
 }
 

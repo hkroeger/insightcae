@@ -588,17 +588,11 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 
         return res; //model.computeQuality(y, x);
     }
-    catch (insight::Exception e)
+    catch (const std::exception& e)
     {
         std::ostringstream os;
         os<<"x0=["<<x0.t()<<"]";
-        throw insight::Exception("nonlinearMinimizeND(): Exception occurred during regression.\nSupplied data: "+os.str()+"\n"+e.as_string());
-    }
-    catch (...)
-    {
-        std::ostringstream os;
-        os<<"x0=["<<x0.t()<<"]";
-        throw insight::Exception("nonlinearMinimizeND(): Failed to do regression.\nSupplied data: "+os.str());
+        throw insight::Exception("nonlinearMinimizeND(): Exception occurred during regression.\nSupplied data: "+os.str()+"\n"+e.what());
     }
 
     return arma::zeros(x0.n_elem)+DBL_MAX;

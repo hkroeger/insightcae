@@ -519,7 +519,7 @@ void Airfoil::generateDiscreteThickness
         }
         while (status == GSL_CONTINUE && iter < max_iter);
       }
-      catch (insight::Exception e)
+      catch (const std::exception&)
       {
         //cout<<"Bisection (LE) was not successful: "<<e.message()<<endl;
       }
@@ -559,7 +559,7 @@ void Airfoil::generateDiscreteThickness
         }
         while (status == GSL_CONTINUE && iter < max_iter);
       }
-      catch (insight::Exception e)
+      catch (const std::exception&)
       {
         //cout<<"Bisection (TE) was not successful: "<<e.message()<<endl;
       }

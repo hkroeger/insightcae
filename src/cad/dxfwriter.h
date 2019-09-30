@@ -36,7 +36,7 @@ std::vector<gp_Pnt> discretizeBSpline(const BRepAdaptor_Curve& c);
 
 struct hatchLoopWriter
 {
-  virtual void write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const =0;
+  virtual void write(DL_Dxf& dxf, std::unique_ptr<DL_WriterA>& dw) const =0;
   virtual int nsegments() const =0;
   virtual void alignStartWith(const gp_Pnt& p) =0;
   virtual gp_Pnt& start() =0;
@@ -51,7 +51,7 @@ struct writerLine_HatchLoop
 {
   gp_Pnt p0, p1;
   writerLine_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse=false);
-  virtual void write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const;
+  virtual void write(DL_Dxf& dxf, std::unique_ptr<DL_WriterA>& dw) const;
 
   virtual int nsegments() const { return 1; }
   virtual void alignStartWith(const gp_Pnt& p) { p0=p; }
@@ -68,7 +68,7 @@ struct writerCircle_HatchLoop
   gp_Pnt p;
   double r, start_angle, end_angle;
   writerCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer);
-  virtual void write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const;
+  virtual void write(DL_Dxf& dxf, std::unique_ptr<DL_WriterA>& dw) const;
   
   virtual int nsegments() const { return 1; }
   virtual void alignStartWith(const gp_Pnt& p) {};
@@ -85,7 +85,7 @@ struct writerDiscrete_HatchLoop
   std::vector<gp_Pnt> pts;
   
   writerDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse=false);
-  virtual void write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const;
+  virtual void write(DL_Dxf& dxf, std::unique_ptr<DL_WriterA>& dw) const;
   
   virtual int nsegments() const { return pts.size()-1; }
   virtual void alignStartWith(const gp_Pnt& p) { pts[0]=p; };
@@ -124,7 +124,7 @@ class DXFWriter
 protected:
   DL_Dxf dxf_;
   DL_Codes::version exportVersion_;
-  std::auto_ptr<DL_WriterA> dw_;
+  std::unique_ptr<DL_WriterA> dw_;
   
 public:
   DXFWriter

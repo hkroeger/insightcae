@@ -196,7 +196,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
-  std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
+  std::unique_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
   bmd->setDefaultPatch("walls", "wall");
 
@@ -718,7 +718,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
       )
     );
     results->insert(name,
-      std::auto_ptr<Image>(new Image
+      std::unique_ptr<Image>(new Image
       (
       executionPath(), fname, 
       str(format("Vortex structures, vizualized as isosurfaces of $\\lambda_2=%g$")%(-lambda2)), ""
@@ -750,7 +750,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   );    
   
   results->insert("tableCoefficients",
-    std::auto_ptr<TabularResult>(new TabularResult
+    std::unique_ptr<TabularResult>(new TabularResult
     (
       list_of("x/L")("$Re_\\theta$")("delta1+")("delta2+")("delta3+")("delta99+"),
       arma::mat(),
@@ -758,7 +758,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   )));
   
   results->insert("tableValues",
-    std::auto_ptr<TabularResult>(new TabularResult
+    std::unique_ptr<TabularResult>(new TabularResult
     (
       list_of("x/L")("delta1")("delta2")("delta3")("delta99")("tauw")("utau"),
       arma::mat(),

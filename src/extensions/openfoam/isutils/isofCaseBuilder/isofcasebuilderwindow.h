@@ -134,7 +134,7 @@ public:
             = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
           if ( cur )
             {
-              std::auto_ptr<insight::OpenFOAMCaseElement> ce( cur->createElement(ofc) );
+              std::unique_ptr<insight::OpenFOAMCaseElement> ce( cur->createElement(ofc) );
               if ( dynamic_cast<T*>(ce.get()) ) return true;
             }
         }

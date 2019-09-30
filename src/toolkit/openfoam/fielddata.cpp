@@ -309,7 +309,8 @@ double FieldData::calcMaxValueMag(const boost::filesystem::path& casedir) const
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
             {
-                mag_inst(i++) += pow(xy(i, 1+c/*cm.column*/),2);
+                mag_inst(i) += pow(xy(i, 1+c/*cm.column*/),2);
+                i++;
             }
             maxv=std::max(maxv, as_scalar(arma::max(sqrt(mag_inst))));
         }
@@ -324,7 +325,8 @@ double FieldData::calcMaxValueMag(const boost::filesystem::path& casedir) const
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
             {
-                mag_inst(i++) += pow(xy(i, 1+c/*cm.column*/),2);
+                mag_inst(i) += pow(xy(i, 1+c/*cm.column*/),2);
+                i++;
             }
             maxv=std::max(maxv, as_scalar(arma::max(sqrt(mag_inst))));
         }
@@ -341,11 +343,11 @@ double FieldData::calcMaxValueMag(const boost::filesystem::path& casedir) const
 
 Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::string& )
 {
-  std::auto_ptr<Parameter> p(Parameters::makeDefault().get<SubsetParameter>("fielddata").clone());
+  std::unique_ptr<Parameter> p(Parameters::makeDefault().get<SubsetParameter>("fielddata").clone());
   auto opts = dynamic_cast<SelectableSubsetParameter*>(p.get());
 
   {
-    ParameterSet& us = opts->items().at("uniformSteady");
+    ParameterSet& us = *(opts->items().at("uniformSteady"));
     us.get<VectorParameter>("value")() = def_val;
   }
 

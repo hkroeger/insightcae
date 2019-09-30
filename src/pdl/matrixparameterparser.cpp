@@ -66,7 +66,7 @@ void MatrixParameterParser::Data::cppWriteCreateStatement
 ) const
 {
 
-  os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
+  os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
 //       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
   os<<"{"<<endl;
   os<<"arma::mat data; data"<<endl;

@@ -286,7 +286,7 @@ int main ( int argc, char** argv )
     else
         return 0;
   }
-  catch ( const insight::Exception& e )
+  catch ( const std::exception& e )
   {
     if (batch)
     {

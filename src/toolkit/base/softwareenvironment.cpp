@@ -122,7 +122,7 @@ void SoftwareEnvironment::Job::ios_run_with_interruption()
     {
       boost::this_thread::interruption_point();
     }
-    catch (boost::thread_interrupted i)
+    catch (const boost::thread_interrupted& i)
     {
       process->terminate();
       throw i;

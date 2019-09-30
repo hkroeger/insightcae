@@ -148,7 +148,7 @@ public:
 
 
 
-//typedef std::auto_ptr<ResultElement> ResultElementPtr;
+//typedef std::unique_ptr<ResultElement> ResultElementPtr;
 typedef std::shared_ptr<ResultElement> ResultElementPtr;
 
 
@@ -519,7 +519,7 @@ public:
     ResultElement& insert ( const std::string& key, ResultElement* elem );
 #endif
 
-//   void insert(const std::string& key, std::auto_ptr<ResultElement> elem);
+//   void insert(const std::string& key, std::unique_ptr<ResultElement> elem);
     ResultElement& insert ( const std::string& key, ResultElementPtr elem );
 
     /**

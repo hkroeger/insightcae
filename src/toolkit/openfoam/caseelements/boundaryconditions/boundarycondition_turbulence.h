@@ -20,18 +20,9 @@ class turbulenceBC
 public:
     declareType ( "turbulenceBC" );
     declareDynamicClass(turbulenceBC);
-//     declareFactoryTable ( turbulenceBC, LIST ( const ParameterSet& p ), LIST ( p ) );
-//     declareStaticFunctionTable ( defaultParameters, ParameterSet );
-//     static std::auto_ptr<SelectableSubsetParameter> createSelectableSubsetParameter(const std::string& desc);
-//     static turbulenceBCPtr getSelectableSubsetParameter(const SelectableSubsetParameter& ssp);
-//     virtual ParameterSet getParameters() const =0;
 
     virtual ~turbulenceBC();
 
-//     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-
-    // return true, if this field was handled, false otherwise
-//     virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const =0;
 
     virtual void setDirichletBC_k(OFDictData::dict& BC, double U) const =0;
     virtual void setDirichletBC_omega(OFDictData::dict& BC, double U) const =0;

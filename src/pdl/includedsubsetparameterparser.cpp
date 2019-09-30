@@ -28,7 +28,7 @@ void IncludedSubsetParameterParser::Data::cppWriteCreateStatement
     const std::string& name
 ) const
 {
-    os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name
+    os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name
     <<"(new "<<cppParamType(name)<<"("<< value <<"::makeDefault(), \""<<description<<"\")); "<<endl;
 
     for (const DefaultModification& dm: default_value_modifications)
@@ -95,7 +95,7 @@ void IncludedSubsetParameterParser::Data::cppWriteInsertStatement
     os<<" if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {\n";
     os<<  psvarname<<".getSubset(key).merge(*"<<name<<"); ";
     os<<" } else {"<<endl;
-    os<<  psvarname<<".insert(key, "<<name<<");\n";
+    os<<  psvarname<<".emplace(key, std::move("<<name<<"));\n";
     os<<" }"<<endl;
     os<<"}"<<endl;
 }

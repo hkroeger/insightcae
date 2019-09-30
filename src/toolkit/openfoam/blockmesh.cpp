@@ -810,7 +810,7 @@ void Patch::clear()
 
 Patch* Patch::transformed(const arma::mat& tm, bool inv, const arma::mat trans) const
 {
-  std::auto_ptr<Patch> np(new Patch(typ_));
+  std::unique_ptr<Patch> np(new Patch(typ_));
   for ( const PointList& pl: faces_)
   {
     PointList npl;
@@ -835,7 +835,7 @@ Patch* Patch::transformed(const arma::mat& tm, bool inv, const arma::mat trans) 
 
 Patch* Patch::clone() const
 {
-  std::auto_ptr<Patch> p(new Patch(typ_));
+  std::unique_ptr<Patch> p(new Patch(typ_));
   for (const auto&f: faces_)
     p->addFace(f);
   return p.release();
@@ -969,7 +969,7 @@ GradingAnalyzer::GradingAnalyzer(double delta0, double L, int n)
   {
    grad_=nonlinearSolve1D(obj, 0.0001, 1000000);
   }
-  catch (insight::Exception e)
+  catch (const std::exception& e)
   {
     std::ostringstream os;
     os<<"Could not determine grading to get minimum cell length "<<delta0<<" on edge of length "<<L<<" discretized with "<<n<<" cells."<<std::endl;

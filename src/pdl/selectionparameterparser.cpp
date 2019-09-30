@@ -38,7 +38,7 @@ std::string SelectionParameterParser::Data::cppParamType(const std::string& ) co
 void SelectionParameterParser::Data::cppWriteCreateStatement(std::ostream& os, const std::string& name) const
 {
 
-  os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
+  os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
 //       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
   os<<"{"<<endl;
   os<<"insight::SelectionParameter::ItemList items;"<<endl;

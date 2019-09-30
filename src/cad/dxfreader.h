@@ -32,11 +32,11 @@ protected:
     ~Polyline();
 
     bool closed;
-    std::auto_ptr<gp_Pnt> lp, p0;
+    std::unique_ptr<gp_Pnt> lp, p0;
     double lbulge;
   };
 
-  mutable std::auto_ptr<Polyline> pl_;
+  mutable std::unique_ptr<Polyline> pl_;
 
   int spl_deg_, spl_nknot_, spl_nctrl_;
   std::vector<gp_Pnt> splp_;

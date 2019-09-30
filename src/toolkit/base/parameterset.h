@@ -25,14 +25,15 @@
 #include "base/exception.h"
 #include "base/parameter.h"
 
-#include "boost/ptr_container/ptr_map.hpp"
-#include "boost/shared_ptr.hpp"
+//#include "boost/ptr_container/ptr_map.hpp"
+//#include "boost/shared_ptr.hpp"
 #include "boost/tuple/tuple.hpp"
 #include "boost/fusion/tuple.hpp"
 #include "boost/algorithm/string.hpp"
 
 #include "rapidxml/rapidxml.hpp"
 
+#include <memory>
 #include <map>
 #include <vector>
 #include <iostream>
@@ -46,11 +47,16 @@ namespace insight {
   
 
 
+
 class SubsetParameter;
 class SelectableSubsetParameter;
 
+
+
+
 class ParameterSet
-  : public boost::ptr_map<std::string, Parameter>
+//  : public boost::ptr_map<std::string, Parameter>
+  : public std::map<std::string, std::unique_ptr<Parameter> >
 {
 
 public:
@@ -63,6 +69,8 @@ public:
   ParameterSet ( const ParameterSet& o );
   ParameterSet ( const EntryList& entries );
   virtual ~ParameterSet();
+
+  void operator=(const ParameterSet& o);
 
   EntryList entries() const;
 
@@ -94,7 +102,7 @@ public:
       {
         return this->get<T> ( name ) ();
       }
-    catch ( insight::Exception e )
+    catch ( const std::exception& /*e*/ )
       {
         return defaultValue;
       }
@@ -237,7 +245,8 @@ public:
       }
     else
       {
-        boost::ptr_map<std::string, Parameter>::replace ( this->find ( key ), newp );
+        this->find(key)->second.reset(newp);
+//        boost::ptr_map<std::string, Parameter>::replace ( this->find ( key ), newp );
       }
   }
 
@@ -344,7 +353,8 @@ class SelectableSubsetParameter
 {
 public:
   typedef std::string key_type;
-  typedef boost::ptr_map<key_type, ParameterSet> ItemList;
+//  typedef boost::ptr_map<key_type, ParameterSet> ItemList;
+  typedef std::map<key_type, std::unique_ptr<ParameterSet> > ItemList;
   typedef ItemList value_type;
 
   typedef boost::tuple<key_type, ParameterSet*> SingleSubset;
@@ -450,7 +460,7 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
         if (path.size()>=2)
         {
             if ( this->find(path[0]) != this->end() ) 
-                ap=dynamic_cast<insight::ArrayParameter*> ( find(path[0])->second );
+                ap=dynamic_cast<insight::ArrayParameter*> ( find(path[0])->second.get() );
         }
         
         if (ap)
@@ -506,7 +516,7 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
           }
         else
           {
-            PT* const pt=dynamic_cast<PT* const> ( i->second );
+            PT* const pt=dynamic_cast<PT* const> ( i->second.get() );
             if ( pt )
               return ( *pt );
             else

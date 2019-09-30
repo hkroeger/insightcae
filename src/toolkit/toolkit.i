@@ -58,8 +58,8 @@ using namespace insight::bmd;
 	try {
 	$action
 	}
-	catch (insight::Exception& e) {
-	 	SWIG_exception(SWIG_RuntimeError, ("Insight exception: "+e.as_string()).c_str());
+        catch (const std::exception& e) {
+                SWIG_exception(SWIG_RuntimeError, (std::string("Insight exception: ")+e.what()).c_str());
 	}
 }
 

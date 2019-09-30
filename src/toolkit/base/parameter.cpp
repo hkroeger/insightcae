@@ -467,7 +467,7 @@ rapidxml::xml_node<>* PathParameter::appendToNode
 void PathParameter::readFromNode
 (
   const std::string& name, 
-  rapidxml::xml_document<>& doc, 
+  rapidxml::xml_document<>&,
   rapidxml::xml_node<>& node, 
   boost::filesystem::path inputfilepath
 )

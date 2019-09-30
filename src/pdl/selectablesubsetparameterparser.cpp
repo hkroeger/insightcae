@@ -59,7 +59,7 @@ void SelectableSubsetParameterParser::Data::cppWriteCreateStatement
 ) const
 {
 
-    os<<"std::auto_ptr< "<<cppParamType ( name ) <<" > "<<name<<";"<<endl;
+    os<<"std::unique_ptr< "<<cppParamType ( name ) <<" > "<<name<<";"<<endl;
     os<<"{"<<endl;
     os<<"insight::SelectableSubsetParameter::SubsetList "<<name<<"_selection;"<<endl;
     for ( const SubsetData& sd: value ) {

@@ -234,7 +234,7 @@ void ChannelBase::createMesh
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
-  std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
+  std::unique_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
 //   bmd->setDefaultPatch("walls", "wall");
   
@@ -640,9 +640,9 @@ void ChannelBase::evaluateAtSection(
             );
         }
       }
-      catch (insight::Exception& e)
+      catch (const std::exception& e)
       {
-          insight::Warning("Could not evaluate probes \""+vertical_probes_array_name+"\", Reason: "+e.message()+"\n=> Skipping.\n");
+          insight::Warning("Could not evaluate probes \""+vertical_probes_array_name+"\", Reason: "+e.what()+"\n=> Skipping.\n");
       }
   }
   
@@ -793,7 +793,7 @@ void ChannelBase::evaluateAtSection(
     section->insert
     (
      "regressionCoefficientsTubulentLengthScale_"+title,
-     std::auto_ptr<AttributeTableResult>
+     std::unique_ptr<AttributeTableResult>
      (
        new AttributeTableResult
        (
@@ -1011,18 +1011,17 @@ void ChannelBase::evaluateAtSection(
 	)
       );
       section->insert(pressure_contour_name,
-	std::auto_ptr<Image>(new Image
+        std::unique_ptr<Image>(new Image
 	(
 	executionPath(), pressure_contour_filename, 
 	"Contour of pressure (axial section at x/H=" + str(format("%g")%xByH)+")", ""
       ))) .setOrder(so.next());
     }
-    catch (insight::Exception& e)
+    catch (const std::exception& e)
     {
-      std::cout
-	<<"Warning: creation of pressure contour plot failed! Error was: "
-	<<e
-	<<std::endl;
+      insight::Warning(
+        std::string("Warning: creation of pressure contour plot failed! Error was: ")
+        +e.what());
     }
     
     for(int i=0; i<3; i++)
@@ -1043,7 +1042,7 @@ void ChannelBase::evaluateAtSection(
 	)
       );
       section->insert(velocity_contour_name,
-	std::auto_ptr<Image>(new Image
+        std::unique_ptr<Image>(new Image
 	(
 	executionPath(), velocity_contour_filename, 
 	"Contour of "+c+"-Velocity (axial section at x/H=" + str(format("%g")%xByH)+")", ""
@@ -1150,7 +1149,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
     );
 //   }
   results->insert("contourPressure",
-    std::auto_ptr<Image>(new Image
+    std::unique_ptr<Image>(new Image
     (
     executionPath(), "pressure_longi.jpg", 
     "Contour of pressure (longitudinal section)", ""
@@ -1175,7 +1174,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
       );
 //     }
     results->insert("contourU"+c,
-      std::auto_ptr<Image>(new Image
+      std::unique_ptr<Image>(new Image
       (
       executionPath(), "U"+c+"_longi.jpg", 
       "Contour of "+c+"-Velocity", ""

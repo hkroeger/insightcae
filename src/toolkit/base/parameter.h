@@ -60,6 +60,13 @@ path& path::append< typename path::iterator >( typename path::iterator begin, ty
 
 
 namespace insight {
+
+template<class T, typename ...Args>
+std::unique_ptr<T> make(Args... args)
+{
+        return std::unique_ptr<T>(new T(args...));
+}
+
   
 std::string base64_encode(const std::string& s);
 std::string base64_encode(const boost::filesystem::path& f);

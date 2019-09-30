@@ -1,6 +1,7 @@
 #include "qinsighterror.h"
 
 #include <QMessageBox>
+#include "Standard_Failure.hxx"
 
 void displayException(const std::exception& e)
 {
@@ -24,6 +25,25 @@ void displayException(const std::exception& e)
 
     msgBox.exec();
   }
+
+  else if (const auto* ie = dynamic_cast<const Standard_Failure*>(&e))
+  {
+    // this is not handled in "printException"
+    std::cerr << std::endl
+              << "An error has occurred during CAD geometry processing:" << std::endl
+              << ie->GetMessageString() << std::endl
+                 ;
+
+    QMessageBox msgBox;
+    msgBox.setIcon(QMessageBox::Critical);
+    msgBox.setText
+        (
+          QString("An error has occurred during CAD geometry processing:\n")+ie->GetMessageString()
+        );
+
+    msgBox.exec();
+  }
+
   else
   {
     QMessageBox msgBox;
@@ -35,4 +55,5 @@ void displayException(const std::exception& e)
 
     msgBox.exec();
   }
+
 }

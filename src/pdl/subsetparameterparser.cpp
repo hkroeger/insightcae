@@ -110,7 +110,7 @@ void SubsetParameterParser::Data::cppWriteInsertStatement
     os<<"if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {"<<endl;
     os<<psvarname<<".getSubset(key).merge(*"<<name<<"); ";
     os<<"} else {"<<endl;
-    os<<psvarname<<".insert(key, "<<name<<"); ";
+    os<<psvarname<<".emplace(key, std::move("<<name<<")); ";
     os<<"}"<<endl;
     os<<"}"<<endl;
 }
@@ -121,7 +121,7 @@ void SubsetParameterParser::Data::cppWriteCreateStatement
     const std::string& name
 ) const
 {
-    os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;
+    os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;
     os<<"{"<<endl;
     for (const ParameterSetEntry& pe: value)
     {

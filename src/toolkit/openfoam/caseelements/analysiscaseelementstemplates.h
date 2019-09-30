@@ -157,7 +157,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
         if (res[0].n_rows<1)
         {
             results->insert(name_prefix,
-                            std::auto_ptr<Comment>(new Comment
+                            std::unique_ptr<Comment>(new Comment
                                                    (
                                                            "(No data was available for evaluation)",
                                                            shortDescription, ""

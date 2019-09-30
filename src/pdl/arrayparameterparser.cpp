@@ -50,7 +50,7 @@ void ArrayParameterParser::Data::cppWriteCreateStatement
 ) const
 {
 
-  os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;
+  os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;
 
   os<<"{"<<endl;
   value->cppWriteCreateStatement

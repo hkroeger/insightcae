@@ -43,8 +43,10 @@ ParameterSet::ParameterSet()
 }
 
 ParameterSet::ParameterSet(const ParameterSet& o)
-: boost::ptr_map<std::string, Parameter>(o.clone())
+//: boost::ptr_map<std::string, Parameter>(o.clone())
+: std::map<std::string, std::unique_ptr<Parameter> >()
 {
+  operator=(o);
 }
 
 ParameterSet::ParameterSet(const EntryList& entries)
@@ -56,12 +58,23 @@ ParameterSet::~ParameterSet()
 {
 }
 
+void ParameterSet::operator=(const ParameterSet& o)
+{
+  clear();
+  std::transform(o.begin(), o.end(), std::inserter(*this, end()),
+                 [](const value_type& op)
+                  {
+                    return value_type(op.first, op.second->clone());
+                  }
+  );
+}
+
 ParameterSet::EntryList ParameterSet::entries() const
 {
   EntryList alle;
-  for ( const_iterator::value_type e: *this)
+  for ( const value_type& e: *this)
   {
-    alle.push_back(SingleEntry(e->first, e->second->clone()));
+    alle.push_back(SingleEntry(e.first, e.second->clone()));
   }
   return alle;
 }
@@ -74,14 +87,16 @@ void ParameterSet::extend(const EntryList& entries)
     SubsetParameter *p = dynamic_cast<SubsetParameter*>( boost::get<1>(i) );
     if (p && this->contains(key))
     {
-	SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
+      // if current parameter to insert is a subset and is already existing in current set...
+        SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second.get() );
 	myp->extend(p->entries());
 	delete p;
     }
     else 
     {
-    // insert does not replace!
-      insert(key, boost::get<1>(i)); // take ownership of objects in given list!
+      // otherwise, append, if key is not existing
+      // note: insert does not replace! insertion will be omitted, if key exists already
+      insert( value_type(key, boost::get<1>(i)) ); // take ownership of objects in given list!
     }
   }
 }
@@ -98,7 +113,7 @@ ParameterSet& ParameterSet::merge(const ParameterSet& p)
       if (p)
       {
         // merging subdict
-	SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
+        SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second.get() );
 	myp->merge(*p);
 	delete p;
       }
@@ -111,9 +126,11 @@ ParameterSet& ParameterSet::merge(const ParameterSet& p)
     else 
     {
       // inserting
-      insert(key, boost::get<1>(i)); // take ownership of objects in given list!
+      insert( value_type(key, boost::get<1>(i)) ); // take ownership of objects in given list!
     }
   }
+
+  return *this;
 }
 
 ParameterSet& ParameterSet::getSubset(const std::string& name) 
@@ -192,7 +209,7 @@ ParameterSet* ParameterSet::cloneParameterSet() const
   for (ParameterSet::const_iterator i=begin(); i!=end(); i++)
   {
     std::string key(i->first);
-    np->insert(key, i->second->clone());
+    np->insert( value_type(key, i->second->clone()) );
   }
   return np;
 }
@@ -218,17 +235,17 @@ void ParameterSet::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_nod
 
 void ParameterSet::packExternalFiles()
 {
-  for (auto p: *this)
+  for (auto& p: *this)
   {
-    p->second->pack();
+    p.second->pack();
   }
 }
 
 void ParameterSet::removePackedData()
 {
-  for (auto p: *this)
+  for (auto& p: *this)
   {
-    p->second->clearPackedData();
+    p.second->clearPackedData();
   }
 }
 
@@ -346,34 +363,34 @@ std::string SubsetParameter::plainTextRepresentation(int indent) const
 bool SubsetParameter::isPacked() const
 {
   bool is_packed=false;
-  for(auto p: *this)
+  for(auto& p: *this)
   {
-    is_packed |= p->second->isPacked();
+    is_packed |= p.second->isPacked();
   }
   return is_packed;
 }
 
 void SubsetParameter::pack()
 {
-  for(auto p: *this)
+  for(auto& p: *this)
   {
-    p->second->pack();
+    p.second->pack();
   }
 }
 
 void SubsetParameter::unpack()
 {
-  for(auto p: *this)
+  for(auto& p: *this)
   {
-    p->second->unpack();
+    p.second->unpack();
   }
 }
 
 void SubsetParameter::clearPackedData()
 {
-  for(auto p: *this)
+  for(auto& p: *this)
   {
-    p->second->clearPackedData();
+    p.second->clearPackedData();
   }
 }
 
@@ -435,13 +452,13 @@ SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSele
   for ( const SelectableSubsetParameter::SingleSubset& i: defaultValue )
   {
     std::string key(boost::get<0>(i));
-    value_.insert(key, boost::get<1>(i)); // take ownership of objects in given list!
+    value_.insert( ItemList::value_type(key, boost::get<1>(i)) ); // take ownership of objects in given list!
   }
 }
 
 void SelectableSubsetParameter::addItem(key_type key, const ParameterSet& ps)
 { 
-    value_.insert(key, ps.cloneParameterSet()); 
+    value_.insert( ItemList::value_type(key, ps.cloneParameterSet()) );
 }
 
 void SelectableSubsetParameter::setSelection(const key_type& key, const ParameterSet& ps)
@@ -476,9 +493,9 @@ bool SelectableSubsetParameter::isPacked() const
 {
   bool is_packed=false;
   auto& v = this->operator()(); // get active subset
-  for (auto p: v)
+  for (auto& p: v)
   {
-    is_packed |= p->second->isPacked();
+    is_packed |= p.second->isPacked();
   }
   return is_packed;
 }
@@ -486,27 +503,27 @@ bool SelectableSubsetParameter::isPacked() const
 void SelectableSubsetParameter::pack()
 {
   auto& v = this->operator()(); // get active subset
-  for (auto p: v)
+  for (auto& p: v)
   {
-    p->second->pack();
+    p.second->pack();
   }
 }
 
 void SelectableSubsetParameter::unpack()
 {
   auto& v = this->operator()(); // get active subset
-  for (auto p: v)
+  for (auto& p: v)
   {
-    p->second->unpack();
+    p.second->unpack();
   }
 }
 
 void SelectableSubsetParameter::clearPackedData()
 {
   auto& v = this->operator()(); // get active subset
-  for (auto p: v)
+  for (auto& p: v)
   {
-    p->second->clearPackedData();
+    p.second->clearPackedData();
   }
 }
 
@@ -561,7 +578,7 @@ Parameter* SelectableSubsetParameter::clone () const
   for (ItemList::const_iterator i=value_.begin(); i!=value_.end(); i++)
   {
     std::string key(i->first);
-    np->value_.insert(key, i->second->cloneParameterSet());
+    np->value_.insert( ItemList::value_type(key, i->second->cloneParameterSet()) );
   }
   return np;
 }
@@ -574,10 +591,10 @@ void SelectableSubsetParameter::reset(const Parameter& p)
   {
     Parameter::reset(p);
     selection_= op->selection_;
-    for (const auto v: op->value_)
+    for (const auto& v: op->value_)
     {
       std::string key(v.first);
-      value_.insert(key, v.second->cloneParameterSet());
+      value_.insert( ItemList::value_type(key, v.second->cloneParameterSet()) );
     }
   }
   else

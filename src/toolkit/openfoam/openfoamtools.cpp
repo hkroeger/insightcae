@@ -1253,11 +1253,11 @@ void mapFields
         target, execname, args
     );
   }
-  catch (insight::Exception e)
+  catch (const std::exception& e)
   {
       if (targetcase.requiredMapMethod()==OpenFOAMCase::directMapMethod)
       {
-          throw insight::Exception("mapFields failed! Error: "+e.message());
+          throw insight::Exception(std::string("mapFields failed! Error: ")+e.what());
       } else
       {
         // retry without interpolation
@@ -1270,9 +1270,11 @@ void mapFields
                 target, execname, args
             );
         }
-        catch (insight::Exception e2)
+        catch (const std::exception& e2)
         {
-            throw insight::Exception("mapFields with interpolation failed. Retried with nearest cell matching and this attempt failed as well! Error: "+e2.message());
+            throw insight::Exception(
+                std::string("mapFields with interpolation failed. Retried with nearest cell matching and this attempt failed as well! Error: ")
+                +e2.what());
         }
       }
   }
@@ -2093,7 +2095,7 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
     results->insert
     (
      "Mesh quality at time "+mq.time,
-     std::auto_ptr<AttributeTableResult>
+     std::unique_ptr<AttributeTableResult>
      (
        new AttributeTableResult
        (
@@ -2169,7 +2171,7 @@ void currentNumericalSettingsReport
       std::string elemname=dictname.string();
       replace_all(elemname, "/", "_");
       results->insert("dictionary_"+elemname,
-	std::auto_ptr<Comment>(new Comment
+        std::unique_ptr<Comment>(new Comment
 	(
 	latexCode.str(), 
 	"Contents of "+dictname.string()

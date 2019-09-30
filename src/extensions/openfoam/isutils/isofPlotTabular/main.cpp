@@ -22,6 +22,7 @@
 #include "plotwidget.h"
 #include "isofplottabularwindow.h"
 #include "base/exception.h"
+#include "qinsighterror.h"
 
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -33,12 +34,11 @@ int main(int argc, char *argv[])
 {
   qRegisterMetaType<arma::mat>();
   qputenv("QT_STYLE_OVERRIDE", 0);
+
+  InsightCAEApplication app(argc, argv);
+
   try
   {
-
-    InsightCAEApplication app(argc, argv);
-
-
     namespace po = boost::program_options;
 
     // Declare the supported options.
@@ -103,9 +103,9 @@ int main(int argc, char *argv[])
     window.show();
     return app.exec();
   }
-  catch (insight::Exception e)
+  catch (const std::exception& e)
   {
-    cout<<e<<endl;
+    displayException(e);;
     return -1;
   }
 }

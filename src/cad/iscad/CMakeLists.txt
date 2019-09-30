@@ -6,7 +6,6 @@ set(iscad_SRCS
  iscad.cpp
  iscadmainwindow.cpp
  iscadsyntaxhighlighter.cpp
- iscadapplication.cpp
  iscadmodel.cpp
 
  modelcomponentselectordlg.cpp

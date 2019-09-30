@@ -1266,9 +1266,9 @@ ParameterSetPtr ResultSet::convertIntoParameterSet() const
     ParameterSetPtr ps ( new ParameterSet() );
     for ( const_iterator::value_type rp: *this ) {
         ParameterPtr p=rp.second->convertIntoParameter();
-        if ( p ) {
-            std::string key=rp.first;
-            ps->insert ( key, p->clone() );
+        if ( p )
+        {
+            ps->insert ( ParameterSet::value_type(rp.first, p->clone()) );
         }
     }
     return ps;
@@ -1297,7 +1297,7 @@ ResultElement& ResultElementCollection::insert ( const string& key, ResultElemen
     return * ( *res.first ).second;
 }
 
-// void ResultSet::insert(const string& key, auto_ptr< ResultElement > elem)
+// void ResultSet::insert(const string& key, unique_ptr< ResultElement > elem)
 // {
 //   this->insert(ResultSet::value_type(key, ResultElementPtr(elem.release())));
 // }
@@ -1322,7 +1322,7 @@ ResultElement& ResultElementCollection::insert ( const string& key, const Result
 
 ResultElementPtr ResultSet::clone() const
 {
-    std::auto_ptr<ResultSet> nr ( new ResultSet ( p_, title_, subtitle_, &author_, &date_ ) );
+    std::unique_ptr<ResultSet> nr ( new ResultSet ( p_, title_, subtitle_, &author_, &date_ ) );
     for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
 //         cout<<i->first<<endl;
         std::string key ( i->first );
@@ -1879,7 +1879,7 @@ void addContourPlot
       remove(chart_file_name_i);
       */
     results->insert ( resultelementname,
-                      std::auto_ptr<Image> ( new Image
+                      std::unique_ptr<Image> ( new Image
                               (
                                   workdir, chart_file_name,
                                   shortDescription, ""

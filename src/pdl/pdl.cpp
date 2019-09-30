@@ -372,17 +372,10 @@ int main ( int argc, char *argv[] )
         }
       }
     }
-    catch( PDLException e )
+    catch( const std::exception& e )
     {
-      std::cerr << "Error in processing PDL " << inf << "\n"
-                                                        "Error Message:\n"
-                << e.msg() << std::endl;
+      std::cerr << "Error in processing PDL " << e.what() << "\n" << std::endl;
       return -1;
-    }
-    catch (...)
-    {
-      std::cerr << "Error in processing PDL " << inf << "\n" << std::endl;
-      return -2;
     }
   }
   return 0;

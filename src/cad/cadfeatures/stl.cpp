@@ -62,6 +62,7 @@
 #include "vtkSTLReader.h"
 #include "vtkPolyDataNormals.h"
 #include "vtkTriangleFilter.h"
+#include "vtkCell.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;

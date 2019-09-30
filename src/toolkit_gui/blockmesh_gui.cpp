@@ -44,7 +44,8 @@ void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements(Us
                 cad::matconst(p.geometry.ex * p.geometry.L),
                 cad::matconst(           ey * p.geometry.W),
                 cad::matconst(p.geometry.ez * p.geometry.H)
-                )
+                ),
+              DisplayStyle::Wireframe
               );
 }
 
@@ -88,7 +89,8 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
               );
 
   addFeature( "blockMeshDict_Cylinder",
-              cad::Compound::create(cad::CompoundFeatureList({cyl, core}))
+              cad::Compound::create(cad::CompoundFeatureList({cyl, core})),
+              DisplayStyle::Wireframe
               );
 }
 
@@ -133,7 +135,8 @@ void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements
               );
 
   addFeature( "blockMeshDict_Sphere",
-              cad::Compound::create(cad::CompoundFeatureList({sph, core}))
+              cad::Compound::create(cad::CompoundFeatureList({sph, core})),
+              DisplayStyle::Wireframe
               );
 }
 

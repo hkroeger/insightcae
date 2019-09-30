@@ -98,7 +98,7 @@ protected:
   double Lref_, l_, w_, h_;
   
 public:
-  declareType("Numerical Windtunnel");
+  declareType("Numerical Wind Tunnel");
   
   NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath);
 

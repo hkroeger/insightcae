@@ -260,6 +260,9 @@ Q_SIGNALS:
      */
     void clearData();
 
+    void focus(Handle_AIS_InteractiveObject ais);
+    void unfocus();
+
 //     // insert new features
 //     void addFeature(const QString& sn, insight::cad::FeaturePtr sm, bool is_component);
 //     void addDatum(const QString& sn, insight::cad::DatumPtr dm);

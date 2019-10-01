@@ -209,6 +209,16 @@ void ISCADModel::onEditorSelectionChanged()
         highlighter_->rehighlight();
     }
 
+    insight::cad::FeaturePtr fp=syn_elem_dir_->findElement( textCursor().position() );
+    if (fp)
+    {
+      emit focus(fp->buildVisualization());
+    }
+    else
+    {
+      emit unfocus();
+    }
+
     connect
     (
       this, &ISCADModel::selectionChanged,
@@ -375,7 +385,7 @@ QSize ISCADModel::sizeHint() const
 }
 
 
-void ISCADModel::onGraphicalSelectionChanged(QoccViewWidget* aView)
+void ISCADModel::onGraphicalSelectionChanged(QoccViewWidget*)
 {
 }
 
@@ -721,10 +731,16 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
             viewer_, &QoccViewWidget::onSetColor);
     connect(modeltree_, &QModelTree::setResolution/*(QDisplayableModelTreeItem*, double)*/,
             viewer_, &QoccViewWidget::onSetResolution);
+
     connect(modeltree_, &QModelTree::focus,
             viewer_, &QoccViewWidget::onFocus);
     connect(modeltree_, &QModelTree::unfocus,
             viewer_, &QoccViewWidget::onUnfocus);
+    connect(model_, &ISCADModel::focus,
+            viewer_, &QoccViewWidget::onFocus);
+    connect(model_, &ISCADModel::unfocus,
+            viewer_, &QoccViewWidget::onUnfocus);
+
     connect(modeltree_, &QModelTree::insertIntoNotebook,
             this, &ISCADModelEditor::onInsertNotebookText);
 

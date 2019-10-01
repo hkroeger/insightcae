@@ -31,7 +31,7 @@
 #include "qmodeltree.h"
 #include "qdatumitem.h"
 #include "datum.h"
-
+#include "pointertransient.h"
 
 
 #include <QColorDialog>
@@ -1083,13 +1083,15 @@ Bnd_Box QoccViewWidget::sceneBoundingBox() const
     for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
       {
           Handle_AIS_InteractiveObject o = *i;
-          Handle_AIS_Shape a = Handle_AIS_Shape::DownCast(o);
-          if (!a.IsNull())
-            {
-              Bnd_Box bb;
-              o->BoundingBox(bb);
-              bbb.Add(bb);
-            }
+          if (QFeatureItem* it
+                = dynamic_cast<QFeatureItem*>(const_cast<QoccViewWidget*>(this)->getOwnerItem(o)))
+          {
+            arma::mat bb =it->solidmodel().modelBndBox();
+//            qDebug()
+//                << bb(0,0) << " " << bb(1,0) << " " << bb(2,0) << " "
+//                << bb(0,1) << " " << bb(1,1) << " " << bb(2,1);
+            bbb.Update(bb(0,0), bb(1,0), bb(2,0), bb(0,1), bb(1,1), bb(2,1));
+          }
       }
 
     return bbb;
@@ -1102,12 +1104,7 @@ bool QoccViewWidget::updatePlaneSize(const Handle_AIS_InteractiveObject& ppl, do
     Handle_AIS_Plane pl = Handle_AIS_Plane::DownCast(ppl);
     if (!pl.IsNull())
     {
-//        double x, y;
-//        pl->Size(x, y);
-//        std::cout<<"PLANE! "<<x<<" "<<y<<std::endl;
-//        std::cout<<"size="<<size<<std::endl;
         pl->SetSize(size, size);
-//        pl->SetToUpdate();
         pl->Redisplay(true);
         changed=true;
     }

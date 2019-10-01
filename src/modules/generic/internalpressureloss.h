@@ -70,11 +70,11 @@ geometryscale = double 1e-3     "scaling factor to scale geometry files to meter
 
 mesh=set
 {
-  size		= double	10 		"[mm] Cell size of template mesh."
+  size		= double	10 		"[mm] Cell size of template mesh." *necessary
   minLevel      = int           0               "Minimum refinement level on geometry."
   maxLevel      = int           2               "Maximum refinement level on geometry."
   nLayers       = int           3               "Number of prism layers"
-  PiM           = vector        (0 0 0)         "Seed point inside flow domain."
+  PiM           = vector        (0 0 0)         "Seed point inside flow domain." *necessary
 } "Properties of the computational mesh"
 
 operation=set

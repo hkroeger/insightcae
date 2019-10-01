@@ -43,10 +43,10 @@ inherits OpenFOAMAnalysis::Parameters
 
 geometry = set {
 
- LupstreamByL   = double 4 "[-] upstream domain extent"
- LdownstreamByL = double 10 "[-] downstream domain extent"
- LasideByW      = double 3 "[-] lateral domain extent"
- LupByH         = double 3 "[-] height of the domain (above floor)"
+ LupstreamByL   = double 4 "[-] upstream domain extent" *hidden
+ LdownstreamByL = double 10 "[-] downstream domain extent" *hidden
+ LasideByW      = double 3 "[-] lateral domain extent" *hidden
+ LupByH         = double 3 "[-] height of the domain (above floor)" *hidden
  forwarddir     = vector (0 -1 0) "direction from rear to forward end in CAD geometry CS"
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
  
@@ -58,17 +58,17 @@ geometryscale = double 1e-3     "scaling factor to scale geometry files to meter
 
 mesh = set {
 
- nx             = int 10 "# cells across object length"
+ nx             = int 10 "# cells across object length" *necessary
  boxlevel       = int 2 "refinement level around object"
  rearlevel      = int 3 "refinement level around rear end of object"
- lmsurf         = int 2 "# cells across object length"
- lxsurf         = int 4 "# cells across object length"
+ lmsurf         = int 2 "# cells across object length" *necessary
+ lxsurf         = int 4 "# cells across object length" *necessary
  nlayer         = int 4 "# prism layers"
- tlayer         = double 0.5 "final layer ratio"
- grad_upstream  = double 10 "grading towards center"
- grad_downstream = double 10 "grading towards center"
- grad_aside     = double 10 "grading towards center"
- grad_up        = double 10 "grading towards center"
+ tlayer         = double 0.5 "final layer ratio" *hidden
+ grad_upstream  = double 10 "grading towards center" *hidden
+ grad_downstream = double 10 "grading towards center" *hidden
+ grad_aside     = double 10 "grading towards center" *hidden
+ grad_up        = double 10 "grading towards center" *hidden
  
 } "Properties of the computational mesh"
 

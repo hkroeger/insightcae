@@ -46,7 +46,12 @@ void SelectionParameterParser::Data::cppWriteCreateStatement(std::ostream& os, c
   {
     os<<"items.push_back(\""<<s<<"\");"<<endl;
   }
-  os<<name<<".reset(new "<<cppParamType(name)<<"(\""<< selection <<"\", items, \""<<description<<"\")); "<<endl;
+  os<<name<<".reset(new "<<cppParamType(name)<<"(\""<< selection <<"\", items, \""<<description<<"\", "
+   << (isHidden?"true":"false")<<","
+   << (isExpert?"true":"false")<<","
+   << (isNecessary?"true":"false")<<","
+   <<order
+  <<")); "<<endl;
   os<<"}"<<endl;
 }
 

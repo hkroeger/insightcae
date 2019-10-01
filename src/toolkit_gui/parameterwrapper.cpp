@@ -1386,7 +1386,6 @@ SelectableSubsetParameterWrapper::SelectableSubsetParameterWrapper
 : ParameterWrapper(parent, name, p, defp, detailw, superform),
   selBox_(nullptr)
 {
-//   setText(1, "selectableSubset");
   onUpdate();
 }
 
@@ -1411,7 +1410,6 @@ void SelectableSubsetParameterWrapper::createWidgets()
   connect(selBox_, &QComboBox::destroyed, this, &SelectableSubsetParameterWrapper::onDestruction);
   for ( auto& pair: param().items() )
   {
-//     std::cout<<"inserted text:"<<pair.first<<std::endl;
     selBox_->addItem(pair.first.c_str());
   }
   selBox_->setCurrentIndex(selBox_->findText(QString(param().selection().c_str())));
@@ -1439,11 +1437,12 @@ void SelectableSubsetParameterWrapper::insertSubset()
   const auto& defss = (*param().items().find( param().selection() )->second);
   addWrapperToWidget(param()(), defss,
                      this, detaileditwidget_, this);
+
+  this->setExpanded( param().isHidden() ? false : true );
 }
 
 void SelectableSubsetParameterWrapper::onApply()
 {
-//   std::cout<<"1selbox="<<selBox_<<std::endl;
   if (widgetsDisplayed_)
   {
     param().selection()=selBox_->currentText().toStdString();
@@ -1456,7 +1455,6 @@ void SelectableSubsetParameterWrapper::onApply()
 
 void SelectableSubsetParameterWrapper::onUpdate()
 {
-  //selBox_->setCurrentIndex(param()());
   setText(1, param().selection().c_str());
   insertSubset();
   emit(update());

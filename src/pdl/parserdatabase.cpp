@@ -73,7 +73,8 @@ void ParserDataBase::cppWriteCreateStatement
 ) const
 {
     os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<"("
-      "new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description<<"\", "
+      "new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description
+      <<"\", "
       << (isHidden?"true":"false")<<","
       << (isExpert?"true":"false")<<","
       << (isNecessary?"true":"false")<<","

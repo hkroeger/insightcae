@@ -76,7 +76,12 @@ void SelectableSubsetParameterParser::Data::cppWriteCreateStatement
         os<<name<<"_selection.push_back(insight::SelectableSubsetParameter::SingleSubset(\""<<sel_name<<"\", "<<sel_name<<".release()));"<<endl;
         os<<"}"<<endl;
     }
-    os<<name<<".reset(new "<<cppParamType ( name ) <<"(\""<<default_sel<<"\", "<<name<<"_selection, \""<<description<<"\")); "<<endl;
+    os<<name<<".reset(new "<<cppParamType ( name ) <<"(\""<<default_sel<<"\", "<<name<<"_selection, \""<<description<<"\", "
+        << (isHidden?"true":"false")<<","
+        << (isExpert?"true":"false")<<","
+        << (isNecessary?"true":"false")<<","
+        <<order
+       <<")); "<<endl;
     os<<"}"<<endl;
 }
 

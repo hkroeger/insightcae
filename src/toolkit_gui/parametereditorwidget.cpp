@@ -24,6 +24,7 @@
 
 
 #include <QSplitter>
+#include <QLabel>
 
 
 ParameterTreeWidget::ParameterTreeWidget(QWidget* p)
@@ -64,8 +65,23 @@ ParameterEditorWidget::ParameterEditorWidget
   vali_(vali),
   viz_(std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz))
 {
-    ptree_=new ParameterTreeWidget(this);
-    addWidget(ptree_);
+  {
+    QWidget *w=new QWidget(this);
+    QVBoxLayout *l=new QVBoxLayout(w);
+    w->setLayout(l);
+    ptree_=new ParameterTreeWidget(w);
+    l->addWidget(ptree_);
+    QLabel *hints=new QLabel(w);
+    hints->setStyleSheet("font: 8pt;");
+    hints->setText(
+          "Please adapt the parameters in the list above.\n"
+          "Yellow background: need to revised for each case.\n"
+          "Light gray: can usually be left on default values."
+          );
+    l->addWidget(hints);
+    addWidget(w);
+  }
+
     inputContents_=new QWidget(this);
     addWidget(inputContents_);
 
@@ -77,8 +93,20 @@ ParameterEditorWidget::ParameterEditorWidget
       {
         // no existing displayer supplied; create one
         QoccViewerContext *context=new QoccViewerContext(this);
-        QoccViewWidget *viewer=new QoccViewWidget(this, context->getContext());
-        addWidget(viewer);
+        QWidget *w=new QWidget(this);
+        QVBoxLayout *l=new QVBoxLayout(w);
+        QoccViewWidget *viewer=new QoccViewWidget(w, context->getContext());
+        viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        QLabel *hints=new QLabel(w);
+        hints->setStyleSheet("font: 8pt;");
+        hints->setText(
+              "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
+              "<b>Context Menu</b>: Right click on object or canvas."
+              );
+        l->addWidget(viewer);
+        l->addWidget(hints);
+        w->setLayout(l);
+        addWidget(w);
 
         QModelTree* modeltree =new QModelTree(this);
         addWidget(modeltree);

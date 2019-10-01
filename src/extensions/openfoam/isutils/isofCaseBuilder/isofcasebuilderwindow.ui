@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1214</width>
-    <height>912</height>
+    <width>1235</width>
+    <height>953</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -23,7 +23,7 @@
    <string notr="true"/>
   </property>
   <widget class="QWidget" name="widget">
-   <layout class="QVBoxLayout" name="verticalLayout_15">
+   <layout class="QVBoxLayout" name="verticalLayout_16">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
@@ -83,13 +83,29 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <widget class="QoccViewWidget" name="occview" native="true">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
+        <widget class="QWidget" name="">
+         <layout class="QVBoxLayout" name="verticalLayout_15">
+          <item>
+           <widget class="QoccViewWidget" name="occview" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="viewer_hints">
+            <property name="styleSheet">
+             <string notr="true">font: 8pt;</string>
+            </property>
+            <property name="text">
+             <string>&lt;b&gt;Rotate&lt;/b&gt;: Alt + Mouse Move, &lt;b&gt;Pan&lt;/b&gt;: Shift + Mouse Move, &lt;b&gt;Zoom&lt;/b&gt;: Ctrl + Mouse Move or Mouse Wheel, &lt;b&gt;Context Menu&lt;/b&gt;: Right click on object or canvas.</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
         <widget class="QModelTree" name="modeltree" native="true">
          <property name="sizePolicy">

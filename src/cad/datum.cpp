@@ -365,7 +365,13 @@ Handle_AIS_InteractiveObject DatumPlaneData::createAISRepr(AIS_InteractiveContex
   Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
   context.Load(ais);
 
-  Handle_AIS_Plane aplane(new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(plane().Transformed(tr)))));
+  auto plt = plane().Transformed(tr);
+
+  Handle_AIS_Plane aplane(new AIS_Plane(
+          Handle_Geom_Plane(new Geom_Plane(plt))
+  ));
+  aplane->SetCenter(plt.Location()); // will be displayed around origin otherwise
+
   context.Load(aplane);
 
   Handle_AIS_InteractiveObject alabel(new InteractiveText
@@ -451,7 +457,7 @@ DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni, VectorPtr up)
 : p0_(p0), n_(ni), up_(up)
 {}
 
-DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool dummy)
+DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool)
 : p0_(p0), p1_(p1), p2_(p2)
 {}
 

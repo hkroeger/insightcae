@@ -20,10 +20,12 @@
 #ifndef INSIGHT_CAD_ISPARTOFSOLID_H
 #define INSIGHT_CAD_ISPARTOFSOLID_H
 
+#include "cadfeature.h"
 #include "feature.h"
 #include "base/exception.h"
 
 namespace insight {
+
 namespace cad {
 
 
@@ -41,16 +43,16 @@ public:
     }
 
     isPartOfSolid(FeaturePtr m)
-    : s_(*m)
+      : s_(TopoDS::Solid(m->shape()))
     {
         throw insight::Exception("isPartOfSolid filter: not implemented!");
     }
 
     isPartOfSolid(FeatureSet f)
-        : s_(TopoDS::Solid(static_cast<TopoDS_Shape>(*f.model())))
+        : s_(TopoDS::Solid(f.model()->shape()))
     {}
 
-    bool checkMatch(FeatureID feature) const
+    bool checkMatch(FeatureID) const
     {
         throw insight::Exception("isPartOfSolid filter: not implemented!");
     }

@@ -33,6 +33,7 @@ using namespace boost;
 using namespace boost::assign;
 
 namespace insight {
+
 namespace cad {
 
     

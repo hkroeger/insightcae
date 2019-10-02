@@ -45,7 +45,7 @@
 #include "astbase.h"
 
 #include "feature.h"
-#include "featurefilter.h"
+//#include "featurefilter.h"
 
 #include "parser.h"
 

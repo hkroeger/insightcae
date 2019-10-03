@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>822</width>
-    <height>454</height>
+    <width>1293</width>
+    <height>694</height>
    </rect>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
@@ -43,8 +43,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>692</width>
-            <height>380</height>
+            <width>668</width>
+            <height>368</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -106,6 +106,29 @@
       <widget class="QPushButton" name="killBtn">
        <property name="text">
         <string>Kill</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="paraviewbtn">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>ParaView</string>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="cleanbtn">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Clean</string>
        </property>
       </widget>
      </item>

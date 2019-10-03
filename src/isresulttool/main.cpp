@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
             else if (ns.size()==2)
             {
               varnames[i]=ns[0];
-              sfs.push_back(boost::lexical_cast<double>(ns[1]));
+              sfs.push_back(to_number<double>(ns[1]));
             }
             else
               throw insight::Exception("Invalid syntax: "+vm["comparescalar"].as<string>());

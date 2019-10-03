@@ -29,6 +29,7 @@
 
 #include "newanalysisdlg.h"
 #include "analysisform.h"
+#include "qinsighterror.h"
 
 #include <fstream>
 #include "rapidxml/rapidxml.hpp"
@@ -68,7 +69,17 @@ void workbench::newAnalysis()
   newAnalysisDlg dlg(this);
   if (dlg.exec() == QDialog::Accepted)
   {
-    AnalysisForm *form= new AnalysisForm(mdiArea_, dlg.getAnalysisName());
+    AnalysisForm *form;
+    std::string analysisName = dlg.getAnalysisName();
+    try
+    {
+      form = new AnalysisForm(mdiArea_, analysisName);
+    }
+    catch (const std::exception& e)
+    {
+      throw insight::Exception("Creation of an analysis of type \""+analysisName+"\" failed.\n"
+                               "Reason: "+e.what());
+    }
     form->showMaximized();
   }
 }
@@ -105,7 +116,17 @@ void workbench::openAnalysis(const QString& fn)
     analysisName = analysisnamenode->first_attribute("name")->value();
   }
   
-  AnalysisForm *form= new AnalysisForm(mdiArea_, analysisName);
+  AnalysisForm *form;
+  try
+  {
+    form = new AnalysisForm(mdiArea_, analysisName);
+  }
+  catch (const std::exception& e)
+  {
+    throw insight::Exception("Creation of an analysis of type \""+analysisName+"\" failed.\n"
+                             "Please check, if the analysis type entry in the parameter file is correct.\n"
+                             "Error information:\n"+e.what());
+  }
   //form->parameters().readFromNode(doc, *rootnode, fp.parent_path());
   form->loadParameters(fp);
   boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();

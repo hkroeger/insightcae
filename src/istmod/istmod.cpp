@@ -22,6 +22,7 @@
 
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
+#include "base/tools.h"
 
 #include <iostream>
 #include <fstream>
@@ -249,7 +250,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                double v=boost::lexical_cast<double>(pair[1]);
+                double v=to_number<double>(pair[1]);
                 cout << "Setting double '"<<pair[0]<<"' = "<<v<<endl;
                 parameters.getDouble(pair[0])=v;
             }
@@ -276,7 +277,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                int v=boost::lexical_cast<int>(pair[1]);
+                int v=to_number<int>(pair[1]);
                 cout << "Setting int '"<<pair[0]<<"' = "<<v<<endl;
                 parameters.getInt(pair[0])=v;
             }

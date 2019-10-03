@@ -52,10 +52,24 @@ boost::mutex mtx;
 
 void NumericalWindtunnel::calcDerivedInputData()
 {
-  
+  CurrentExceptionContext ex("computing further preprocessing informations");
+
   Parameters p(parameters_);
   
   double bbdefl=0.5;
+
+  double L_upw=arma::norm(p.geometry.upwarddir,2);
+  if (L_upw<1e-12)
+    throw insight::Exception("Upward direction vector has zero length!");
+
+  double L_fwd=arma::norm(p.geometry.forwarddir,2);
+  if (L_fwd<1e-12)
+    throw insight::Exception("Forward direction vector has zero length!");
+
+  if ( fabs(arma::dot(p.geometry.upwarddir/L_upw, p.geometry.forwarddir/L_fwd)-1.) < 1e-12 )
+  {
+    throw insight::Exception("Upward and forward direction are colinear!");
+  }
 
   gp_Trsf rot; rot.SetTransformation
   (
@@ -85,9 +99,6 @@ void NumericalWindtunnel::calcDerivedInputData()
     bb = p.geometryscale * obj->modelBndBox(bbdefl);
   }
 
-  std::cout<<"bounding box minp = "<<bb.col(0)<<std::endl;
-  std::cout<<"bounding box maxp = "<<bb.col(1)<<std::endl;
-
   arma::mat pmin=bb.col(0);
   arma::mat pmax=bb.col(1);
 
@@ -97,10 +108,24 @@ void NumericalWindtunnel::calcDerivedInputData()
   cad_to_cfd_ = tr.Multiplied(sc).Multiplied(rot);
 
   l_=(pmax(0)-pmin(0));
+  if (l_<1e-12)
+    throw insight::Exception("Length of the object is zero!");
+
   w_=(pmax(1)-pmin(1));
+  if (l_<1e-12)
+    throw insight::Exception("Width of the object is zero!");
+
   h_=(pmax(2)-pmin(2));
+  if (l_<1e-12)
+    throw insight::Exception("Height of the object is zero!");
 
   Lref_ = arma::norm( bb.col(1)-bb.col(0), 2);
+  reportIntermediateParameter("Lref", Lref_, "reference length of object (bounding box diagonal)", "m");
+
+  if (Lref_ < 1e-12)
+  {
+    throw insight::Exception("Bounding box of object has zero size!");
+  }
 }
 
 
@@ -136,10 +161,10 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
   int ny=std::max(1, int(w_/dx));
   int nz=std::max(1, int(h_/dx));
 
-  int n_upstream=bmd::GradingAnalyzer(p.mesh.grad_upstream).calc_n(dx, Lupstream);
-  int n_downstream=bmd::GradingAnalyzer(p.mesh.grad_downstream).calc_n(dx, Ldownstream);
-  int n_up=bmd::GradingAnalyzer(p.mesh.grad_up).calc_n(dx, Lup-h_);
-  int n_aside=bmd::GradingAnalyzer(p.mesh.grad_aside).calc_n(dx, Laside-0.5*w_);
+  int n_upstream=std::max(1, bmd::GradingAnalyzer(p.mesh.grad_upstream).calc_n(dx, Lupstream));
+  int n_downstream=std::max(1, bmd::GradingAnalyzer(p.mesh.grad_downstream).calc_n(dx, Ldownstream));
+  int n_up=std::max(1, bmd::GradingAnalyzer(p.mesh.grad_up).calc_n(dx, Lup-h_));
+  int n_aside=std::max(1, bmd::GradingAnalyzer(p.mesh.grad_aside).calc_n(dx, Laside-0.5*w_));
   
 
   using namespace insight::bmd;
@@ -541,80 +566,6 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
     results->insert ( "renderings", images );
   }
 
-
-//  std::string init=
-//    "cbi=loadOFCase('"+executionPath().string()+"')\n"
-//    "prepareSnapshots()\n";
-//  {
-//    format pvec("[%g, %g, %g]");
-//    std::string filename="wave_above.png";
-//    runPvPython
-//    (
-//      cm, executionPath(), list_of<std::string>
-//      (
-//	init+
-//	"import numpy as np\n"
-	
-//	"eb=extractPatches(cbi, 'car.*|fwheels.*|rwheels.*')\n"
-//	"fl=extractPatches(cbi, 'floor')\n"
-//	"Show(eb)\n"
-//	"Show(fl)\n"
-//	"displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5, 0.75], barorient=0)\n"
-	
-//        "st=StreamTracer(Input=cbi[0], Vectors=['U'], MaximumStreamlineLength="+lexical_cast<string>(10.*Lref_)+")\n"
-//        "st.SeedType.Center="+str( pvec % (0.5*l_) % (0.5*w_) % (0.5*h_))+"\n"
-//	"st.SeedType.Radius="+lexical_cast<string>(0.5*h_)+"\n"
-//	"Show(st)\n"
-//        "st2=StreamTracer(Input=cbi[0], Vectors=['U'], MaximumStreamlineLength="+lexical_cast<string>(10.*Lref_)+")\n"
-//        "st2.SeedType.Center="+str( pvec % (0.5*l_) % (-0.5*w_) % (0.5*h_))+"\n"
-//	"st2.SeedType.Radius="+lexical_cast<string>(0.5*h_)+"\n"
-//	"Show(st2)\n"
-
-//        "setCam("+str( pvec % (-Lref_) % (0.5*Lref_) % (0.33*Lref_))+
-//                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
-//		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-//	"WriteImage('rightfrontview.png')\n"
-//        "setCam("+str( pvec % (-Lref_) % (-0.5*Lref_) % (0.33*Lref_))+
-//                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
-//		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-//	"WriteImage('leftfrontview.png')\n"
-
-//        "setCam("+str( pvec % (2.*Lref_) % (0.5*Lref_) % (0.33*Lref_))+
-//                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
-//		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-//	"WriteImage('rightrearview.png')\n"
-//        "setCam("+str( pvec % (2.*Lref_) % (-0.5*Lref_) % (0.33*Lref_))+
-//                  ", ["+str(format("%g")%(0.5*l_))+",0,0], [0,0,1], "
-//		  +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-//	"WriteImage('leftrearview.png')\n"
-//      )
-//    );
-//    results->insert("contourPressureLeftFront",
-//      std::unique_ptr<Image>(new Image
-//      (
-//       executionPath(), "leftfrontview.png",
-//      "Pressure distribution on car, view from left side ahead", ""
-//    )));
-//    results->insert("contourPressureRightFront",
-//      std::unique_ptr<Image>(new Image
-//      (
-//       executionPath(), "rightfrontview.png",
-//      "Pressure distribution on car, view from right side ahead", ""
-//    )));
-//    results->insert("contourPressureLeftRear",
-//      std::unique_ptr<Image>(new Image
-//      (
-//       executionPath(), "leftrearview.png",
-//      "Pressure distribution on car, view from left side rear", ""
-//    )));
-//    results->insert("contourPressureRightRear",
-//      std::unique_ptr<Image>(new Image
-//      (
-//       executionPath(), "rightrearview.png",
-//      "Pressure distribution on car, view from right side rear", ""
-//    )));
-//  }
-
   return results;
 }
 
@@ -635,16 +586,17 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
   CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
 
-  Parameters p(ps_);
-  NumericalWindtunnel nwt(ps_, "");
-  nwt.calcDerivedInputData();
-
-
-  std::string geom_file_ext = p.geometry.objectfile.filename().extension().string();
-  boost::to_lower(geom_file_ext);
-
   try
   {
+
+    Parameters p(ps_);
+    NumericalWindtunnel nwt(ps_, "");
+    nwt.calcDerivedInputData();
+
+
+    std::string geom_file_ext = p.geometry.objectfile.filename().extension().string();
+    boost::to_lower(geom_file_ext);
+
     cad::FeaturePtr org_geom;
 
     if (geom_file_ext==".stl" || geom_file_ext==".stlb")

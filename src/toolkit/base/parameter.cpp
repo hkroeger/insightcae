@@ -20,6 +20,7 @@
 
 #include "parameter.h"
 #include "base/latextools.h"
+#include "base/tools.h"
 
 #include "boost/archive/iterators/base64_from_binary.hpp"
 #include "boost/archive/iterators/binary_from_base64.hpp"
@@ -264,15 +265,16 @@ std::string valueToString(const arma::mat& value)
 
 void stringToValue(const std::string& s, arma::mat& v)
 {
+  CurrentExceptionContext ex("converting string \""+s+"\" into vector");
+
+  std::vector<std::string> cmpts;
+  boost::split(cmpts, s, boost::is_any_of(" \t,;"), token_compress_on);
   std::vector<double> vals;
-  std::istringstream iss(s);
-  while (!iss.eof())
+  for (size_t i=0; i<cmpts.size(); i++)
   {
-    double c;
-    iss >> c;
-    if (iss.fail()) break;
-    vals.push_back(c);
+    vals.push_back( to_number<double>(cmpts[i]) );
   }
+
   v=arma::mat(vals.data(), vals.size(), 1);
 }
  

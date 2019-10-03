@@ -257,7 +257,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                double v=boost::lexical_cast<double>(pair[1]);
+                double v=to_number<double>(pair[1]);
                 cout << "Setting double '"<<pair[0]<<"' = "<<v<<endl;
                 parameters.getDouble(pair[0])=v;
             }

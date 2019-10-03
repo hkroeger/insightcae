@@ -19,6 +19,7 @@
 
 #include "parser.h"
 #include "lookuptablescalar.h"
+#include "base/tools.h"
 #include "base/boost_include.h"
 
 using namespace boost;
@@ -93,7 +94,7 @@ double LookupTableScalar::value() const
             double kv;
             try 
             {
-                kv=lexical_cast<double>(cols[ik]);
+                kv=to_number<double>(cols[ik]);
             }
             catch (...)
             {
@@ -114,7 +115,7 @@ double LookupTableScalar::value() const
                 double dv;
                 try 
                 {
-                    dv=lexical_cast<double>(cols[id]);
+                    dv=to_number<double>(cols[id]);
                 }
                 catch (...)
                 {

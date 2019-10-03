@@ -179,20 +179,33 @@ void SoftwareEnvironment::executeCommand
   std::string *ovr_machine
 ) const
 {
-  
+  std::vector<std::string> cmds;
+  boost::split(cmds, cmd, boost::is_any_of(";"), boost::token_compress_on);
+  std::string finalcmd=cmds.back();
+
+  CurrentExceptionContext ex(
+        "executing command \""+finalcmd+"\""
+        + (argv.size()>0 ? " with arguments:\n"+boost::join(argv, "\n"):"")
+        );
+
   JobPtr job = forkCommand(cmd, argv, ovr_machine);
 
-  job->runAndTransferOutput(output);
+  std::vector<std::string> errout;
+  job->runAndTransferOutput(output, &errout);
 
-  if (job->process->exit_code()!=0)
+  auto retcode = job->process->exit_code();
+  if (retcode!=0)
   {
-    std::ostringstream os;
-    os << cmd;
-    for ( const std::string& s: argv )
-    {
-      os<<" "<<s;
-    }
-    throw insight::Exception("SoftwareEnvironment::executeCommand(): command failed with nonzero return code.\n(Command was \""+os.str()+"\"");
+    throw insight::Exception(
+          boost::str(boost::format(
+             "Execution of external application \"%s\" failed with return code %d!\n")
+              % finalcmd % retcode)
+          + ( errout.size()>0 ?
+               ("Error output was:\n\n" + boost::join(errout, "\n")+"\n")
+               :
+               "There was no error output."
+             )
+          );
   }
   
   //return p_in.rdbuf()->status();
@@ -208,6 +221,10 @@ SoftwareEnvironment::JobPtr SoftwareEnvironment::forkCommand
   std::string *ovr_machine
 ) const
 {
+  CurrentExceptionContext ex(
+        "launching command \""+cmd+"\" as subprocess"
+        + (argv.size()>0 ? " with arguments:\n"+boost::join(argv, "\n") : "")
+        );
 
   std::string machine=executionMachine_;
   if (ovr_machine) machine=*ovr_machine;
@@ -269,10 +286,15 @@ SoftwareEnvironment::JobPtr SoftwareEnvironment::forkCommand
 
   if (!job->process->running())
   {
-    throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess!\n(Command was \""+dbgs.str()+"\")");
+    //throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess!\n(Command was \""+dbgs.str()+"\")");
+    throw insight::Exception(
+              boost::str(boost::format(
+                 "Launching of external application \"%s\" as subprocess failed!\n")
+                  % cmd)
+              );
   }
 
-  std::cout<<"Executing "<<dbgs.str()<<std::endl;
+  std::cout<<"Executing "<</*dbgs.str()*/cmd<<std::endl;
 
   return job;
 }

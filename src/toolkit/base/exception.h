@@ -61,7 +61,7 @@ class Exception
 : public std::exception
 {
   std::string message_;
-  std::vector<std::string> context_;
+//  std::vector<std::string> context_;
   std::string strace_;
   
 public:

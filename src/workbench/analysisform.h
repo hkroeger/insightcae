@@ -84,6 +84,7 @@ class AnalysisForm
   
 protected:
   std::string analysisName_;
+  bool isOpenFOAMAnalysis_;
   insight::ParameterSet parameters_;
   
   std::shared_ptr<insight::Analysis> analysis_;  

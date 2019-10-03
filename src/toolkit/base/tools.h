@@ -26,6 +26,7 @@ class vtkCellArray;
 #include "vtkSmartPointer.h"
 #include "vtkPolyDataAlgorithm.h"
 
+#include "base/exception.h"
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 
@@ -67,6 +68,16 @@ public:
     ~ExecTimer();
 };
 
+
+template<class T>
+T to_number(const std::string& s)
+{
+  try {
+    return boost::lexical_cast<T>(s);
+  } catch (const boost::bad_lexical_cast& e) {
+    throw insight::Exception("expected a number, got \""+s+"\"");
+  }
+}
 
 
 class LineMesh_to_OrderedPointTable

@@ -73,7 +73,18 @@ Exception::Exception(const std::string& msg, bool strace)
 {
   message_=msg;
 
-  exceptionContext.snapshot(context_);
+  std::vector<std::string> context_list;
+  exceptionContext.snapshot(context_list);
+
+  if (context_list.size()>0)
+  {
+    string context="\nThe error occurred";
+    for (const std::string& c: context_list)
+      {
+        context+= "\nwhile "+c;
+      }
+    message_ += "\n" + context;
+  }
 
   if (strace)
   {
@@ -139,21 +150,7 @@ Exception::Exception(const std::string& msg, bool strace)
 
 Exception::operator std::string() const
 {
-  string context="";
-  for (const auto& c: context_)
-    {
-      context+= "\nwhile "+string(c);
-    }
-  if (strace_!="")
-    return
-        message_
-        +context+
-        "\n\n"
-        "STACK TRACE:\n"
-        +strace_+
-        "\n\n";
-  else
-    return message_+context;
+  return message_;
 }
 
 

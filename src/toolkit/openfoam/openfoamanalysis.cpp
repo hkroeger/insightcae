@@ -35,6 +35,8 @@ namespace insight
 
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const OpenFOAMAnalysis::Parameters& params)
 {
+  CurrentExceptionContext ex("inserting turbulence model configuration into OpenFOAM case");
+
   const OpenFOAMAnalysis::Parameters::fluid_type::turbulenceModel_type& tmp
       = params.fluid.turbulenceModel;
 
@@ -48,6 +50,8 @@ turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const OpenFOAMAnalysis:
 
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps)
 {
+  CurrentExceptionContext ex("inserting turbulence model configuration into OpenFOAM case");
+
   turbulenceModel* model = turbulenceModel::lookup(ps.selection(), cm, ps());
   
   if (!model) 
@@ -71,6 +75,8 @@ OpenFOAMAnalysis::OpenFOAMAnalysis
 
 boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
 {
+  CurrentExceptionContext ex("creating the execution directory");
+
   path p=Analysis::setupExecutionEnvironment();
   
 //   writestepcache_=true;
@@ -111,12 +117,15 @@ void OpenFOAMAnalysis::calcDerivedInputData()
 
 void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
+  CurrentExceptionContext ex("creating OpenFOAM dictionaries in memory for case \""+executionPath().string()+"\"");
   dicts=cm.createDictionaries();
 }
 
 void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
-    Parameters p(parameters_);
+  CurrentExceptionContext ex("applying further modifications to OpenFOAM case configuration for case \""+executionPath().string()+"\"");
+
+  Parameters p(parameters_);
   
   OFDictData::dict& dpd=dicts->lookupDict("system/decomposeParDict");
   if (dpd.find("numberOfSubdomains")!=dpd.end())
@@ -141,17 +150,20 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdi
 
 void OpenFOAMAnalysis::writeDictsToDisk(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
+  CurrentExceptionContext ex("writing OpenFOAM dictionaries to case \""+executionPath().string()+"\"");
+
   cm.createOnDisk(executionPath(), dicts);
   cm.modifyCaseOnDisk(executionPath());
 }
 
-void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase& cm)
+void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase&)
 {
 }
 
 void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::path& mapFromPath, bool is_parallel)
 {
-  
+  CurrentExceptionContext ex("mapping existing CFD solution from case \""+mapFromPath.string()+"\" to case \""+executionPath().string()+"\"");
+
   if (const RASModel* rm=cm.get<RASModel>(".*"))
   {
     // check, if turbulence model is compatible in source case
@@ -162,7 +174,8 @@ void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::p
         std::string omodel=readTurbulenceModelName(oc, mapFromPath);
         if ( (rm->type()!=omodel) && (omodel!="kOmegaSST2"))
         {
-        oc.executeCommand(mapFromPath, "createTurbulenceFields", list_of("-latestTime") );
+          CurrentExceptionContext ex("converting turbulence quantities in case \""+mapFromPath.string()+"\" since the turbulence model is different.");
+          oc.executeCommand(mapFromPath, "createTurbulenceFields", list_of("-latestTime") );
         }
     }
     catch (...)
@@ -177,6 +190,8 @@ void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::p
 
 void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer*, OpenFOAMCase& cm)
 {
+  CurrentExceptionContext ex("initializing solver run for case \""+executionPath().string()+"\"");
+
   Parameters p(parameters_);
     
   int np=readDecomposeParDict(executionPath());
@@ -238,6 +253,8 @@ void OpenFOAMAnalysis::installConvergenceAnalysis(std::shared_ptr<ConvergenceAna
 
 void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm)
 {
+  CurrentExceptionContext ex("running solver");
+
   CombinedProgressDisplayer cpd(CombinedProgressDisplayer::OR), conv(CombinedProgressDisplayer::AND);
   if (displayer) cpd.add(displayer);
   cpd.add(&conv);
@@ -267,6 +284,8 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm)
 
 void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
 {
+  CurrentExceptionContext ex("finalizing solver run for case \""+executionPath().string()+"\"");
+
   int np=readDecomposeParDict(executionPath());
   bool is_parallel = np>1;
   if (is_parallel)
@@ -286,6 +305,9 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
 
 ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
 {
+  CurrentExceptionContext ex("evaluating the results for case \""+executionPath().string()+"\"");
+
+
   Parameters p(parameters_);
   
   ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
@@ -315,6 +337,8 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
 
 void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
 {
+  CurrentExceptionContext ex("creating OpenFOAM case in directory \""+executionPath().string()+"\"");
+
     Parameters p(parameters_);
 
     OFEnvironment ofe = OFEs::get(p.run.OFEname);
@@ -379,6 +403,8 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
 
 ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
 {  
+  CurrentExceptionContext ex("running OpenFOAM analysis in directory \""+executionPath().string()+"\"");
+
   Parameters p(parameters_);
   
   OFEnvironment ofe = OFEs::get(p.run.OFEname);

@@ -566,15 +566,15 @@ void SolverOutputAnalyzer::update(const string& line)
         }
         else if ( boost::regex_search( line, match, courant_pattern, boost::match_default )  )
         {
-            last_courant_.reset(new CourantInfo({ lexical_cast<double>(match[1]), lexical_cast<double>(match[2]) }));
+            last_courant_.reset(new CourantInfo({ to_number<double>(match[1]), to_number<double>(match[2]) }));
         }
         else if ( boost::regex_search( line, match, if_courant_pattern, boost::match_default )  )
         {
-            last_if_courant_.reset(new CourantInfo({ lexical_cast<double>(match[1]), lexical_cast<double>(match[2]) }));
+            last_if_courant_.reset(new CourantInfo({ to_number<double>(match[1]), to_number<double>(match[2]) }));
         }
         else if ( boost::regex_search( line, match, dt_pattern, boost::match_default )  )
         {
-            last_dt_.reset(new double( lexical_cast<double>(match[1])));
+            last_dt_.reset(new double( to_number<double>(match[1])));
         }
         else if ( boost::regex_search( line, match, exec_time_pattern, boost::match_default )  )
         {
@@ -582,7 +582,7 @@ void SolverOutputAnalyzer::update(const string& line)
           {
             last_last_exec_time_info_ = last_exec_time_info_;
           }
-          last_exec_time_info_.reset(new ExecTimeInfo( { lexical_cast<double>(match[1]), lexical_cast<double>(match[2]) }));
+          last_exec_time_info_.reset(new ExecTimeInfo( { to_number<double>(match[1]), to_number<double>(match[2]) }));
         }
         else if ( boost::regex_search( line, match, rb_pattern, boost::match_default )  )
         {
@@ -591,9 +591,9 @@ void SolverOutputAnalyzer::update(const string& line)
         else if ( boost::regex_search( line, match, rb_cor_pattern, boost::match_default ) && !currbname_.empty() )
         {
           double
-              cx=lexical_cast<double>(match[1]),
-              cy=lexical_cast<double>(match[2]),
-              cz=lexical_cast<double>(match[3]);
+              cx=to_number<double>(match[1]),
+              cy=to_number<double>(match[2]),
+              cz=to_number<double>(match[3]);
           curProgVars_[pre_motion+currbname_+"/cx"]=cx;
           curProgVars_[pre_motion+currbname_+"/cy"]=cy;
           curProgVars_[pre_motion+currbname_+"/cz"]=cz;
@@ -601,18 +601,18 @@ void SolverOutputAnalyzer::update(const string& line)
         else if ( boost::regex_search( line, match, rb_ori_pattern, boost::match_default ) && !currbname_.empty() )
         {
           double
-              ox=std::asin(lexical_cast<double>(match[8]))/SI::deg, // sin alpha in case of pure rot around x
-              oy=std::asin(lexical_cast<double>(match[3]))/SI::deg, // sin alpha in case of pure rot around y
-              oz=std::asin(lexical_cast<double>(match[4]))/SI::deg; // sin alpha in case of pure rot around z
+              ox=std::asin(to_number<double>(match[8]))/SI::deg, // sin alpha in case of pure rot around x
+              oy=std::asin(to_number<double>(match[3]))/SI::deg, // sin alpha in case of pure rot around y
+              oz=std::asin(to_number<double>(match[4]))/SI::deg; // sin alpha in case of pure rot around z
           curProgVars_[pre_orient+currbname_+"/ox"]=ox;
           curProgVars_[pre_orient+currbname_+"/oy"]=oy;
           curProgVars_[pre_orient+currbname_+"/oz"]=oz;
         }
         else if ( boost::regex_search( line, match, p_pattern, boost::match_default ) && !curforcename_.empty()  )
         {
-            double px=lexical_cast<double>(match[1]);
-            double py=lexical_cast<double>(match[2]);
-            double pz=lexical_cast<double>(match[3]);
+            double px=to_number<double>(match[1]);
+            double py=to_number<double>(match[2]);
+            double pz=to_number<double>(match[3]);
             if (curforcesection_==1)
             {
                 // force
@@ -630,9 +630,9 @@ void SolverOutputAnalyzer::update(const string& line)
         }
         else if ( boost::regex_search( line, match, v_pattern, boost::match_default ) && !curforcename_.empty()  )
         {
-            double vx=lexical_cast<double>(match[1]);
-            double vy=lexical_cast<double>(match[2]);
-            double vz=lexical_cast<double>(match[3]);
+            double vx=to_number<double>(match[1]);
+            double vy=to_number<double>(match[2]);
+            double vz=to_number<double>(match[3]);
             if (curforcesection_==1)
             {
                 // force
@@ -710,7 +710,7 @@ void SolverOutputAnalyzer::update(const string& line)
                 pdisp_.update( ProgressState(curTime_, curProgVars_));
                 curProgVars_.clear();
             }
-            curTime_=lexical_cast<double>(match[1]);
+            curTime_=to_number<double>(match[1]);
 
             if (last_courant_)
             {
@@ -734,13 +734,13 @@ void SolverOutputAnalyzer::update(const string& line)
         }
         else if ( boost::regex_search( line, match, solver_pattern, boost::match_default ) )
         {
-            curProgVars_[pre_resi+match[2]] = lexical_cast<double>(match[3]);
+            curProgVars_[pre_resi+match[2]] = to_number<double>(match[3]);
         }
         else if ( boost::regex_search( line, match, cont_pattern, boost::match_default ) )
         {
-            curProgVars_[pre_conterr+"local"] = lexical_cast<double>(match[1]);
-            curProgVars_[pre_conterr+"global"] = lexical_cast<double>(match[2]);
-            curProgVars_[pre_conterr+"cumulative"] = lexical_cast<double>(match[3]);
+            curProgVars_[pre_conterr+"local"] = to_number<double>(match[1]);
+            curProgVars_[pre_conterr+"global"] = to_number<double>(match[2]);
+            curProgVars_[pre_conterr+"cumulative"] = to_number<double>(match[3]);
         }
     }
     catch (...)

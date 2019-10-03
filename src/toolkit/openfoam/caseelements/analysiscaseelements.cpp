@@ -168,6 +168,8 @@ OFDictData::dict probes::functionObjectDict() const
 
 arma::mat readTensor(std::istream& is)
 {
+  CurrentExceptionContext ex("reading tensor from input stream");
+
   std::vector<double> data;
   string s;
   do {
@@ -188,6 +190,8 @@ arma::cube probes::readProbes
     const std::string& fieldName 
 )
 {
+  CurrentExceptionContext ex("reading probes data of field "+fieldName+" from function object "+foName+" in case directory \""+location.string()+"\"");
+
   typedef std::vector<arma::mat> Instant;
   typedef std::map<double, Instant> History;
   
@@ -301,6 +305,8 @@ arma::mat probes::readProbesLocations
     const std::string& foName
 )
 {
+  CurrentExceptionContext ex("reading location of probe points of function object "+foName+" from controlDict in case \""+location.string()+"\"");
+
   OFDictData::dict controlDict;
   readOpenFOAMDict(location/"system"/"controlDict", controlDict);
   
@@ -598,8 +604,14 @@ OFDictData::dict twoPointCorrelation::functionObjectDict() const
   return fod;
 }
 
-boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& tpcName)
+boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations
+(
+    const OpenFOAMCase& c,
+    const boost::filesystem::path& location,
+    const std::string& tpcName
+)
 {
+  CurrentExceptionContext ex("reading correlation data of function object "+tpcName+" in case \""+location.string()+"\"");
   int nk=9;
   
   std::vector<double> t; // time step array
@@ -630,7 +642,7 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
 	std::vector<string> strs;
 	boost::split(strs, line, boost::is_any_of("\t"));
 	
-	t.push_back(lexical_cast<double>(strs[0]));
+        t.push_back(to_number<double>(strs[0]));
 	
 	if (strs.size()!=(nk+2))
 	  throw insight::Exception("Expected "
@@ -648,8 +660,8 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
 	    throw insight::Exception("Expected uniform number of sampling point in twoPointCorrelation results!");
 	  
 	  for (int j=0; j<np; j++)
-	  {
-	    profs[k-1].push_back(lexical_cast<double>(pts[j]));
+          {
+            profs[k-1].push_back(to_number<double>(pts[j]));
 	  }
 	}
       }
@@ -756,6 +768,8 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
 
 arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
 {
+  CurrentExceptionContext ex("reading a line from forces file");
+
   std::string line;
 
   getline ( f, line );
@@ -790,14 +804,21 @@ arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
   int k=0;
   for ( const string& e: strs )
   {
-    row ( 0, k++ ) =lexical_cast<double> ( e );
+    row ( 0, k++ ) =to_number<double> ( e );
   }
   
   return row;
 }
 
-arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName )
+arma::mat forces::readForces
+(
+    const OpenFOAMCase& c,
+    const boost::filesystem::path& location,
+    const std::string& foName
+)
 {
+  CurrentExceptionContext ex("reading output of forces function object "+foName+" in case \""+location.string()+"\"");
+
   arma::mat fl;
 
   path fp;
@@ -814,27 +835,40 @@ arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::p
 
   for ( const TimeDirectoryList::value_type& td: tdl )
   {
+    path f_name, f2_name;
     std::ifstream f, f2;
     if ( c.OFversion() >=300 )
-      {
-        f.open ( ( td.second/"force.dat" ).c_str() );
-        f2.open ( ( td.second/"moment.dat" ).c_str() );
-      }
+    {
+      f_name=( td.second/"force.dat" );
+      f2_name=( td.second/"moment.dat" );
+      f.open ( f_name.c_str() );
+      f2.open ( f2_name.c_str() );
+    }
     else
-      {
-        f.open ( ( td.second/"forces.dat" ).c_str() );
-      }
+    {
+      f_name=( td.second/"forces.dat" );
+      f.open ( f_name.c_str() );
+    }
 
+    int line_num=0;
     while ( !f.eof() )
-      {
+    {
+      line_num++;
 
         bool skip=false;
 
         arma::mat row;
         if ( c.OFversion() >=300 )
           {
-            arma::mat r1=readForcesLine ( f, ncexp, skip );
-            arma::mat r2=readForcesLine ( f2, ncexp, skip );
+            arma::mat r1, r2;
+            {
+              CurrentExceptionContext ex(str(format("reading line %d from files \"%s\"")%line_num%f_name.string()));
+              r1=readForcesLine ( f, ncexp, skip );
+            }
+            {
+              CurrentExceptionContext ex(str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()));
+              r2=readForcesLine ( f2, ncexp, skip );
+            }
 //             std::cout<<r1<<r2<<std::endl;
             if ( (r1.n_cols==0) || (r2.n_cols==0) )
             {
@@ -864,6 +898,7 @@ arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::p
           }
         else
           {
+            CurrentExceptionContext ex(str(format("reading line %d from file \"%s\"")%line_num%f_name.string()));
             row=readForcesLine ( f, ncexp, skip );
             if ( row.n_cols==0 )
             {
@@ -1142,7 +1177,7 @@ ComputeLengthScale::ComputeLengthScale(const ParameterSet& ps, const boost::file
 {
 }
 
-ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer* displayer)
+ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer*)
 {
   setupExecutionEnvironment();
   ResultSetPtr results(new ResultSet(parameters_, name_, description_));

@@ -24,6 +24,7 @@
 #include "isofplottabularwindow.h"
 #include "plotwidget.h"
 
+#include "base/tools.h"
 #include "base/exception.h"
 
 #include "boost/algorithm/string/trim.hpp"
@@ -95,7 +96,7 @@ void IsofPlotTabularWindow::onUpdate(bool)
 
       vector<double> vals;
       transform(strs.begin(), strs.end(), std::back_inserter(vals),
-                [](const std::string& s) { return lexical_cast<double>(s); });
+                [](const std::string& s) { return insight::to_number<double>(s); });
 
       fd.push_back(vals);
     }

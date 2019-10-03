@@ -645,7 +645,7 @@ void RemoteExecutionConfig::syncToLocal(bool skipTimeSteps, const std::vector<st
         files.erase(remove_if(files.begin(), files.end(),
                 [&](const bfs_path& f)
                 {
-                  try { lexical_cast<double>(f.c_str()); return false; }
+                  try { to_number<double>(f.c_str()); return false; }
                   catch (...) { return true; }
                 }), files.end());
 

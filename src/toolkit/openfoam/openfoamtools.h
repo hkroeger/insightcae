@@ -606,6 +606,8 @@ public:
   arma::mat ctr_;
 };
 
+arma::mat readTextFile(std::istream& is);
+
 arma::mat readParaviewCSV(const boost::filesystem::path& file, std::map<std::string, int>* headers);
 std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers);
 

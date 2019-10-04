@@ -1721,6 +1721,79 @@ patchArea::patchArea(const OpenFOAMCase& cm, const boost::filesystem::path& loca
 }
 
 
+
+
+arma::mat readTextFile(std::istream& f)
+{
+  CurrentExceptionContext ex("reading tabular data from input stream");
+
+  arma::mat data;
+  std::vector< std::vector<double> > fd;
+
+  std::string line;
+  int iline=0;
+  while (getline(f, line))
+  {
+    iline++;
+    CurrentExceptionContext ex(str(format("reading line %d (containing \"%s\")")%iline%line));
+
+    algorithm::trim_left(line);
+    char fc; istringstream(line) >> fc; // get first char
+    if ( (line.size()==0) || (fc=='#') )
+    {
+      // comment
+    }
+    else
+    {
+      erase_all ( line, "(" );
+      erase_all ( line, ")" );
+      replace_all ( line, ",", " " );
+      replace_all ( line, "\t", " " );
+      while (line.find("  ")!=std::string::npos)
+      {
+        replace_all ( line, "  ", " " );
+      }
+
+      std::vector<std::string> strs;
+      boost::split(strs, line, is_any_of(" "));
+
+//      for (const auto& s: strs) std::cout<<s<<" >> "; std::cout<<std::endl;
+
+      std::vector<double> vals;
+      transform(strs.begin(), strs.end(), std::back_inserter(vals),
+                [](const std::string& s) { return insight::to_number<double>(s); });
+
+      fd.push_back(vals);
+    }
+  }
+
+  if (fd.size()==0)
+  {
+    data=arma::mat();
+  }
+  else
+  {
+    data.reshape(fd.size(), fd[0].size());
+    size_t ir=0;
+    for (const auto& r: fd)
+    {
+      if (r.size()!=data.n_cols)
+        throw insight::Exception(str(format("Wrong number of cols (%d) in data row %d. Expected %d.")
+                                     %r.size()%ir%data.n_cols));
+      else
+      {
+        for (size_t j=0;j<r.size(); j++)
+          data(ir,j)=r[j];
+      }
+      ir++;
+    }
+  }
+
+  return data;
+}
+
+
+
 arma::mat readParaviewCSV(const boost::filesystem::path& file, std::map<std::string, int>* headers)
 {
 //   boost::filesystem::path file=filetemplate.parent_path() 
@@ -3141,6 +3214,11 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
   {
     if (exists(location/tt)) sysDirs_.insert(location/tt);
   }
+  to_test = { "wnow", "wnowandstop" };
+  for (const auto& tt: to_test)
+  {
+    if (exists(location/tt)) sysDirs_.insert(location/tt);
+  }
 
   to_test = { "postProcessing", "VTK" };
   for (const auto& tt: to_test)
@@ -3153,6 +3231,8 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
   {
     timeDirs_.push_back(td.second);
   }
+
+
 
   directory_iterator end_itr; // default construction yields past-the-end
   const boost::regex filter( "processor[0-9]+" );

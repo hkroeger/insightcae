@@ -428,6 +428,10 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
       {
         fod["operation"]="areaIntegrate";
       }
+    else if (p_.operation == Parameters::operation_type::areaAverage)
+      {
+        fod["operation"]="areaAverage";
+      }
     else if (p_.operation == Parameters::operation_type::sum)
       {
         fod["operation"]="sum";
@@ -459,6 +463,10 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
       {
         fod["operation"]="areaIntegrate";
       }
+    else if (p_.operation == Parameters::operation_type::areaAverage)
+      {
+        fod["operation"]="areaAverage";
+      }
     else if (p_.operation == Parameters::operation_type::sum)
       {
         fod["operation"]="sum";
@@ -469,7 +477,41 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
   return fod;
 }
 
+arma::mat surfaceIntegrate::readSurfaceIntegrate
+(
+    const OpenFOAMCase&,
+    const boost::filesystem::path& location,
+    const std::string& foName
+)
+{
+  arma::mat result(0,2);
 
+  boost::filesystem::path dir = location / "postProcessing" / foName;
+  auto tdl = listTimeDirectories(dir);
+  for(decltype(tdl)::const_reverse_iterator i = tdl.crbegin(); i!=tdl.crend(); i++)
+  {
+    auto f = i->second / "surfaceFieldValue.dat";
+
+    std::ifstream fs(f.c_str());
+    arma::mat cr = readTextFile(fs);
+
+    if (result.n_rows==0)
+    {
+      result=cr;
+    }
+    else
+    {
+      double tmax=result(0,0);
+      result = arma::join_cols
+               (
+                 cr.rows( arma::find( cr.col(0) < tmax ) ),
+                 result
+               );
+    }
+  }
+
+  return result;
+}
 
 defineType(fieldMinMax);
 addToOpenFOAMCaseElementFactoryTable(fieldMinMax);

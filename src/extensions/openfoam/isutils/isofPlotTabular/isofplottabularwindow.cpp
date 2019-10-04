@@ -27,6 +27,8 @@
 #include "base/tools.h"
 #include "base/exception.h"
 
+#include "openfoam/openfoamtools.h"
+
 #include "boost/algorithm/string/trim.hpp"
 #include <boost/algorithm/string.hpp>
 
@@ -67,65 +69,11 @@ void IsofPlotTabularWindow::onUpdate(bool)
     f=fs.get();
   }
 
-  vector< vector<double> > fd;
+  data_ = insight::readTextFile(*f);
 
-  string line;
-  while (getline(*f, line))
+  if (data_.n_rows!=0)
   {
-    algorithm::trim_left(line);
-    char fc; istringstream(line) >> fc; // get first char
-    if ( (line.size()==0) || (fc=='#') )
-    {
-      // comment
-    }
-    else
-    {
-      erase_all ( line, "(" );
-      erase_all ( line, ")" );
-      replace_all ( line, ",", " " );
-      replace_all ( line, "\t", " " );
-      while (line.find("  ")!=std::string::npos)
-      {
-        replace_all ( line, "  ", " " );
-      }
-
-      vector<string> strs;
-      boost::split(strs, line, is_any_of(" "));
-
-//      for (const auto& s: strs) std::cout<<s<<" >> "; std::cout<<std::endl;
-
-      vector<double> vals;
-      transform(strs.begin(), strs.end(), std::back_inserter(vals),
-                [](const std::string& s) { return insight::to_number<double>(s); });
-
-      fd.push_back(vals);
-    }
-  }
-
-  if (fd.size()==0)
-  {
-
-    data_=arma::mat();
-
-  }
-  else
-  {
-
-    data_.reshape(fd.size(), fd[0].size());
-    size_t ir=0;
-    for (const auto& r: fd)
-    {
-      if (r.size()!=data_.n_cols)
-        throw insight::Exception(str(format("Wrong number of cols (%d) in data row %d. Expected %d.")%r.size()%ir%data_.n_cols));
-      else
-      {
-        for (size_t j=0;j<r.size(); j++)
-          data_(ir,j)=r[j];
-      }
-      ir++;
-    }
-
-    int n_cols=int(fd[0].size())-1; // first col is time
+    int n_cols=data_.n_cols-1; // first col is time
 
     // remove unnecessary tabs
     for (int j=ui->graphs->count()-1; j>=n_cols; j--)
@@ -145,7 +93,7 @@ void IsofPlotTabularWindow::onUpdate(bool)
 
     }
 
-    for (size_t j=1; j<fd[0].size(); j++)
+    for (size_t j=1; j<data_.n_cols; j++)
     {
       PlotWidget *p = dynamic_cast<PlotWidget*>(ui->graphs->widget(j-1));
       p->setData(data_.col(0), data_.col(j));
@@ -158,7 +106,6 @@ void IsofPlotTabularWindow::onUpdate(bool)
         pw->onShow();
       }
     }
-
   }
 
   connect(ui->graphs, &QTabWidget::currentChanged, this, &IsofPlotTabularWindow::onTabChanged);

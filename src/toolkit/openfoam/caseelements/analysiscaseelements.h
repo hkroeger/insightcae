@@ -247,7 +247,7 @@ domain = selectablesubset {{
 
 }} patch "select domain of integration"
 
-operation = selection ( sum areaIntegrate ) areaIntegrate "operation to execute on data"
+operation = selection ( sum areaIntegrate areaAverage ) areaIntegrate "operation to execute on data"
 
 <<<PARAMETERSET
 */
@@ -263,8 +263,14 @@ public:
         return "Postprocessing";
     }
 
-
     OFDictData::dict functionObjectDict() const override;
+
+    static arma::mat readSurfaceIntegrate
+    (
+        const OpenFOAMCase& c,
+        const boost::filesystem::path& location,
+        const std::string& foName
+    );
 };
 
 

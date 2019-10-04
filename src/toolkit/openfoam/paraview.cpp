@@ -79,7 +79,8 @@ string Streamtracer::pythonCommands() const
     cmd+=
        p_.name+".SeedType = 'Point Source'\n"+
        p_.name+".SeedType.Center="+paraview::PVScene::pvec(cloud->center)+"\n"+
-       p_.name+".SeedType.Radius="+lexical_cast<string>(cloud->radius)+"\n"
+       p_.name+".SeedType.Radius="+lexical_cast<string>(cloud->radius)+"\n"+
+       p_.name+".SeedType.NumberOfPoints="+lexical_cast<string>(cloud->number)+"\n"
        ;
   }
 

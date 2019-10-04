@@ -108,9 +108,13 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     if (isOpenFOAMAnalysis_)
     {
       ui->paraviewbtn->setEnabled(true);
-      ui->cleanbtn->setEnabled(true);
       connect( ui->paraviewbtn, &QPushButton::clicked, this, &AnalysisForm::onStartPV );
+      ui->cleanbtn->setEnabled(true);
       connect( ui->cleanbtn, &QPushButton::clicked, this, &AnalysisForm::onCleanOFC );
+      ui->wnow->setEnabled(true);
+      connect( ui->wnow, &QPushButton::clicked, this, &AnalysisForm::onWnow );
+      ui->wnowandstop->setEnabled(true);
+      connect( ui->wnowandstop, &QPushButton::clicked, this, &AnalysisForm::onWnowAndStop );
     }
 
     QSplitter* spl=new QSplitter(Qt::Vertical);
@@ -509,26 +513,52 @@ void AnalysisForm::onRunAnalysis()
 
         if (isOpenFOAMAnalysis_)
         {
+          bool evalOnly = insight::OpenFOAMAnalysis::Parameters(parameters_).run.evaluateonly;
+
           if (boost::filesystem::exists(exePath / "constant" / "polyMesh" ))
           {
-            QMessageBox msgBox;
-            msgBox.setText("There is already an OpenFOAM case present in the execution directory \""
-                           +QString(exePath.c_str())+"\"!");
-            msgBox.setInformativeText(
-                  "Depending on the state of the data, the behaviour will be as follows:<br><ul>"
-                  "<li>the mesh exists (\"constant/polyMesh/\") and a time directory exists (e.g. \"0/\"): the solver will be restarted,</li>"
-                  "<li>only the mesh exists (\"constant/polyMesh/\"): mesh creation will be skipped but the dictionaries will be recreated</li>"
-                  "</ul><br>If you are unsure about the validity of the case data, please consider to click on \"Cancel\" and clean the case directory first (click on clean button on the right).<br>"
-                  "<br>"
-                  "Continue?"
-                  );
-            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-            msgBox.setDefaultButton(QMessageBox::Cancel);
-
-
-            if (msgBox.exec()!=QMessageBox::Yes)
+            if (!evalOnly)
             {
-                return;
+              QMessageBox msgBox;
+              msgBox.setText("There is already an OpenFOAM case present in the execution directory \""
+                             +QString(exePath.c_str())+"\"!");
+              msgBox.setInformativeText(
+                    "Depending on the state of the data, the behaviour will be as follows:<br><ul>"
+                    "<li>the mesh exists (\"constant/polyMesh/\") and a time directory exists (e.g. \"0/\"): the solver will be restarted,</li>"
+                    "<li>only the mesh exists (\"constant/polyMesh/\"): mesh creation will be skipped but the dictionaries will be recreated</li>"
+                    "</ul><br>If you are unsure about the validity of the case data, please consider to click on \"Cancel\" and clean the case directory first (click on clean button on the right).<br>"
+                    "<br>"
+                    "Continue?"
+                    );
+              msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+              msgBox.setDefaultButton(QMessageBox::Cancel);
+
+
+              if (msgBox.exec()!=QMessageBox::Yes)
+              {
+                  return;
+              }
+            }
+          }
+          else
+          {
+            if (evalOnly)
+            {
+              QMessageBox msgBox;
+              msgBox.setText("You have selected to run the evaluation only but there is no valid OpenFOAM case present in the execution directory \""
+                             +QString(exePath.c_str())+"\"!");
+              msgBox.setInformativeText(
+                    "The subsequent step is likely to fail.<br>"
+                    "Are you sure, that you want to continue?"
+                    );
+              msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+              msgBox.setDefaultButton(QMessageBox::Cancel);
+
+
+              if (msgBox.exec()!=QMessageBox::Yes)
+              {
+                  return;
+              }
             }
           }
         }
@@ -682,3 +712,24 @@ void AnalysisForm::onCleanOFC()
   dlg.exec();
 }
 
+
+void AnalysisForm::onWnow()
+{
+  boost::filesystem::path exePath = executionPathParameter_();
+  if (boost::filesystem::exists(exePath))
+  {
+    std::ofstream f( (exePath/"wnow").c_str() );
+    f.close();
+  }
+}
+
+
+void AnalysisForm::onWnowAndStop()
+{
+  boost::filesystem::path exePath = executionPathParameter_();
+  if (boost::filesystem::exists(exePath))
+  {
+    std::ofstream f( (exePath/"wnowandstop").c_str() );
+    f.close();
+  }
+}

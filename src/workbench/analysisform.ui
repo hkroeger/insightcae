@@ -43,8 +43,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>668</width>
-            <height>368</height>
+            <width>1121</width>
+            <height>608</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -114,6 +114,9 @@
        <property name="enabled">
         <bool>false</bool>
        </property>
+       <property name="toolTip">
+        <string>Start ParaView in execution directory</string>
+       </property>
        <property name="text">
         <string>ParaView</string>
        </property>
@@ -127,8 +130,37 @@
        <property name="enabled">
         <bool>false</bool>
        </property>
+       <property name="toolTip">
+        <string>Clean OpenFOAM case data in execution directory</string>
+       </property>
        <property name="text">
         <string>Clean</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="wnow">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="toolTip">
+        <string>Trigger immediate time step output in currently running OpenFOAM solver</string>
+       </property>
+       <property name="text">
+        <string>Write now</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="wnowandstop">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="toolTip">
+        <string>Trigger immediate time step output and subsequent stop of currently running OpenFOAM solver</string>
+       </property>
+       <property name="text">
+        <string>Write+Stop</string>
        </property>
       </widget>
      </item>

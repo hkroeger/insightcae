@@ -166,6 +166,8 @@ private Q_SLOTS:
 
   void onStartPV();
   void onCleanOFC();
+  void onWnow();
+  void onWnowAndStop();
 
   void onShowParameterXML();
 

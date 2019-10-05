@@ -353,6 +353,39 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
     .set_name("refinement_rear")
     .set_level(p.mesh.rearlevel)
   )));
+
+
+  int iref=0;
+  for (const Parameters::mesh_type::refinementZones_default_type& rz:
+       p.mesh.refinementZones)
+  {
+    if (const auto* bc =
+        boost::get<Parameters::mesh_type::refinementZones_default_type::geometry_box_centered_type>(&rz.geometry))
+    {
+      arma::mat d = vec3(bc->L, bc->W, bc->H);
+      shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
+        .set_min(bc->pc - 0.5*d)
+        .set_max(bc->pc + 0.5*d)
+
+        .set_name(str(format("refinement_%d")%iref))
+        .set_level(rz.lx)
+      )));
+    }
+    else if (const auto* b =
+        boost::get<Parameters::mesh_type::refinementZones_default_type::geometry_box_type>(&rz.geometry))
+    {
+      shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
+        .set_min(b->pmin)
+        .set_max(b->pmax)
+
+        .set_name(str(format("refinement_%d")%iref))
+        .set_level(rz.lx)
+      )));
+    }
+
+    iref++;
+  }
+
   
   shm_cfg.PiM.push_back(vec3(-0.999*Lupstream,1e-6,1e-6));
 
@@ -629,6 +662,46 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
        ),
        DisplayStyle::Wireframe
     );
+
+    int iref=0;
+    for (const Parameters::mesh_type::refinementZones_default_type& rz:
+         p.mesh.refinementZones)
+    {
+      if (const auto* bc =
+          boost::get<Parameters::mesh_type::refinementZones_default_type::geometry_box_centered_type>(&rz.geometry))
+      {
+        addFeature
+        (
+          str(format("refinement/[%d]")%iref),
+           cad::Box::create(
+            cad::matconst(bc->pc),
+            cad::matconst(bc->L*vec3(1,0,0)),
+            cad::matconst(bc->W*vec3(0,1,0)),
+            cad::matconst(bc->H*vec3(0,0,1)),
+            cad::BoxCentering(true, true, true)
+           ),
+           DisplayStyle::Wireframe
+        );
+      }
+      else if (const auto* b =
+          boost::get<Parameters::mesh_type::refinementZones_default_type::geometry_box_type>(&rz.geometry))
+      {
+        arma::mat d = b->pmax - b->pmin;
+        addFeature
+        (
+          str(format("refinement/[%d]")%iref),
+           cad::Box::create(
+            cad::matconst(b->pmin),
+            cad::matconst(d(0)*vec3(1,0,0)),
+            cad::matconst(d(1)*vec3(0,1,0)),
+            cad::matconst(d(2)*vec3(0,0,1))
+           ),
+           DisplayStyle::Wireframe
+        );
+      }
+
+      iref++;
+    }
   }
   catch (...)
   {

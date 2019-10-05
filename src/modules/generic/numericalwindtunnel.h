@@ -69,6 +69,25 @@ mesh = set {
  grad_downstream = double 10 "grading towards center" *hidden
  grad_aside     = double 10 "grading towards center" *hidden
  grad_up        = double 10 "grading towards center" *hidden
+
+ refinementZones = array [ set {
+  lx = int 5 "Refinement level inside zones"
+  geometry = selectablesubset {{
+
+   box_centered set {
+    pc = vector (0 0 0) " [m] Center point" *necessary
+    L = double 1.0 "[m] Length of the box along x direction, centered around pc" *necessary
+    W = double 1.0 "[m] Width of the box along y direction, centered around pc" *necessary
+    H = double 1.0 "[m] Height of the box along z direction, centered around pc" *necessary
+   }
+
+   box set {
+    pmin = vector (0 0 0) "[m] Minimum corner" *necessary
+    pmax = vector (1 1 1) "[m] Maximum corner" *necessary
+   }
+
+  }} box_centered "Geometry of the refinement zone"
+ } ] *0 "Local refinement zones"
  
 } "Properties of the computational mesh"
 

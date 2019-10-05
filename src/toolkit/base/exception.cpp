@@ -169,6 +169,7 @@ void assertion(bool condition, const std::string& context_message)
 CurrentExceptionContext::CurrentExceptionContext(const std::string& desc)
 : desc_(desc)
 {
+  std::cout << desc << std::endl;
   exceptionContext.push_back(this);
 }
 

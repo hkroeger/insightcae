@@ -88,6 +88,8 @@ mesh = set {
 
   }} box_centered "Geometry of the refinement zone"
  } ] *0 "Local refinement zones"
+
+ longitudinalSymmetry = bool false "Include only half of the object in the CFD model. Apply symmetry BC in the mid plane."
  
 } "Properties of the computational mesh"
 

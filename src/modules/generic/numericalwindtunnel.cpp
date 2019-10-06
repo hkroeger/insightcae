@@ -197,11 +197,24 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
     ;
   arma::mat Lv=vec3(0,1,0);
 
-  int nzs[]={n_aside, ny, n_aside};
-  double grads[]={1./p.mesh.grad_aside, 1, p.mesh.grad_aside};
-  arma::mat y0[]={vec3(0,Laside,0), vec3(0,0.5*w_,0), vec3(0,-0.5*w_,0), vec3(0,-Laside,0)};
+  std::vector<int> nzs;
+  std::vector<double> grads;
+  std::vector<arma::mat> y0;
+
+  if (p.mesh.longitudinalSymmetry)
+  {
+    nzs= {n_aside, std::max(1,ny/2)};
+    grads = {1./p.mesh.grad_aside, 1};
+    y0 = {vec3(0,Laside,0), vec3(0,0.5*w_,0), vec3(0,0,0)};
+  }
+  else
+  {
+    nzs= {n_aside, ny, n_aside};
+    grads = {1./p.mesh.grad_aside, 1, p.mesh.grad_aside};
+    y0 = {vec3(0,Laside,0), vec3(0,0.5*w_,0), vec3(0,-0.5*w_,0), vec3(0,-Laside,0)};
+  }
   
-  for (int i=0; i<3; i++)
+  for (size_t i=0; i<nzs.size(); i++)
   {
     {
       Block& bl = bmd->addBlock
@@ -442,6 +455,11 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm)
     cm.insert(new PressureOutletBC(cm, "side1", boundaryDict));
   }
 
+  if (p.mesh.longitudinalSymmetry)
+  {
+    cm.insert(new SymmetryBC(cm, "side2", boundaryDict));
+  }
+  else
   {
     cm.insert(new PressureOutletBC(cm, "side2", boundaryDict));
   }
@@ -502,9 +520,11 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
   arma::mat f=forces::readForces(cm, executionPath(), "forces");
   arma::mat t = f.col(0);
   
-  arma::mat Rtot = (f.col(1)+f.col(4));  
-  arma::mat Rtlat = (f.col(2)+f.col(5));  
-  arma::mat At = (f.col(3)+f.col(6));  
+  double mult = p.mesh.longitudinalSymmetry ? 2.0 : 1.0;
+
+  arma::mat Rtot = (f.col(1)+f.col(4)) *mult;
+  arma::mat Rtlat = (f.col(2)+f.col(5)) *mult;
+  arma::mat At = (f.col(3)+f.col(6)) *mult;
   
   ptr_map_insert<ScalarResult>(*results) ("Rtot", Rtot(Rtot.n_rows-1), "Total resistance", "", "N");
   ptr_map_insert<ScalarResult>(*results) ("Rtlat", Rtlat(Rtlat.n_rows-1), "Lateral force", "", "N");
@@ -539,7 +559,8 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
 
   {
     paraview::Streamtracer::Parameters::seed_cloud_type cloud1, cloud2;
-    cloud1.radius=cloud2.radius=0.1*Lref_;
+    cloud1.radius=cloud2.radius=0.2*Lref_;
+    cloud1.number=cloud2.number=500;
     cloud1.center=vec3(0.5*l_, 0.5*w_, 0.5*h_);
     cloud2.center=vec3(0.5*l_, -0.5*w_, 0.5*h_);
 
@@ -651,17 +672,35 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
     double Lup = nwt.Lref_*p.geometry.LupByH;
     double Laside = nwt.Lref_*p.geometry.LasideByW;
 
-    addFeature
-    (
-      "domain",
-       cad::Box::create(
-        cad::matconst(vec3( -Lupstream, -0.5*nwt.w_-Laside, 0)),
-        cad::matconst(vec3( Lupstream+nwt.l_+Ldownstream, 0, 0)),
-        cad::matconst(vec3( 0, 0, Lup)),
-        cad::matconst(vec3( 0, 2.*Laside+nwt.w_, 0))
-       ),
-       DisplayStyle::Wireframe
-    );
+    if (p.mesh.longitudinalSymmetry)
+    {
+      addFeature
+      (
+        "domain",
+         cad::Box::create(
+          cad::matconst(vec3( -Lupstream, 0, 0)),
+          cad::matconst(vec3( Lupstream+nwt.l_+Ldownstream, 0, 0)),
+          cad::matconst(vec3( 0, 0, Lup)),
+          cad::matconst(vec3( 0, Laside+0.5*nwt.w_, 0))
+         ),
+         DisplayStyle::Wireframe
+      );
+    }
+    else
+    {
+      addFeature
+      (
+        "domain",
+         cad::Box::create(
+          cad::matconst(vec3( -Lupstream, -0.5*nwt.w_-Laside, 0)),
+          cad::matconst(vec3( Lupstream+nwt.l_+Ldownstream, 0, 0)),
+          cad::matconst(vec3( 0, 0, Lup)),
+          cad::matconst(vec3( 0, 2.*Laside+nwt.w_, 0))
+         ),
+         DisplayStyle::Wireframe
+      );
+    }
+
 
     int iref=0;
     for (const Parameters::mesh_type::refinementZones_default_type& rz:

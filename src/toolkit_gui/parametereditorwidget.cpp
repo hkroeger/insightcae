@@ -99,6 +99,7 @@ ParameterEditorWidget::ParameterEditorWidget
         viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         QLabel *hints=new QLabel(w);
         hints->setStyleSheet("font: 8pt;");
+        hints->setWordWrap(true);
         hints->setText(
               "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
               "<b>Context Menu</b>: Right click on object or canvas."

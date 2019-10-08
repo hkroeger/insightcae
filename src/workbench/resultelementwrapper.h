@@ -49,16 +49,17 @@ public:
 protected:
   QString name_;
   insight::ResultElement& p_;
+  QTimer *resizeTimer_;
   
 public:
   declareType("ResultElementWrapper");
   ResultElementWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   virtual ~ResultElementWrapper();
 
-  virtual void onUpdateGeometry() =0;
 
 public Q_SLOTS:
   void onSectionResized(int column, int oldsize, int newsize);
+  virtual void onUpdateGeometry() =0;
 };
 
 class CommentWrapper

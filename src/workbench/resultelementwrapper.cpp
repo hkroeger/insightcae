@@ -31,6 +31,7 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QHeaderView>
+#include <QTimer>
 
 #ifndef Q_MOC_RUN
 #include "boost/foreach.hpp"
@@ -44,10 +45,15 @@ defineFactoryTable(ResultElementWrapper, LIST(QTreeWidgetItem* tree, const QStri
 ResultElementWrapper::ResultElementWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res)
 : QTreeWidgetItem(tree), // QWidget(get<0>(p)),
   name_(name),
-  p_(res)
+  p_(res),
+  resizeTimer_(new QTimer(this))
 {
   connect(treeWidget()->header(), &QHeaderView::sectionResized,
           this, &ResultElementWrapper::onSectionResized);
+
+  resizeTimer_->setSingleShot(true);
+  connect(resizeTimer_, &QTimer::timeout,
+          this, &ResultElementWrapper::onUpdateGeometry);
 }
 
 ResultElementWrapper::~ResultElementWrapper()
@@ -55,7 +61,8 @@ ResultElementWrapper::~ResultElementWrapper()
 
 void ResultElementWrapper::onSectionResized(int, int, int)
 {
-  onUpdateGeometry();
+  resizeTimer_->stop();
+  resizeTimer_->start(500);
 }
 
 defineType(CommentWrapper);

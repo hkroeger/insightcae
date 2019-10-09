@@ -99,6 +99,11 @@ protected:
     boost::filesystem::path socket() const;
 
     void execRemoteCmd(const std::string& cmd);
+    void runRsync
+    (
+        const std::vector<std::string>& args,
+        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+    );
 
 public:
     RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig=true, const bfs_path& meta_file="");
@@ -112,8 +117,17 @@ public:
     std::vector<bfs_path> remoteLS() const;
     std::vector<bfs_path> remoteSubdirs() const;
 
-    void syncToRemote(const std::vector<std::string>& exclude_pattern = std::vector<std::string>() );
-    void syncToLocal(bool skipTimeSteps=false, const std::vector<std::string>& exclude_pattern = std::vector<std::string>() );
+    void syncToRemote
+    (
+        const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
+        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+    );
+    void syncToLocal
+    (
+        bool skipTimeSteps=false,
+        const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
+        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+    );
 
     void queueRemoteCommand(const std::string& command, bool waitForPreviousFinished=true);
     void waitRemoteQueueFinished();

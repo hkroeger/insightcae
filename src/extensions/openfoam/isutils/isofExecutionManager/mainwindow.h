@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QThread>
+#include <QProgressBar>
 
 #include "terminal.h"
 #include "base/boost_include.h"
@@ -50,6 +51,8 @@ class MainWindow
   QTimer *refreshTimer_;
   JobListBuilder* jbl_thread_ = nullptr;
 
+  QProgressBar* progressbar_;
+
 protected:
     void updateGUI();
     void onStartTail();
@@ -84,5 +87,47 @@ private:
 
   QString rem_subdir_, rem_host_;
 };
+
+
+
+
+class RunSyncToRemote : public QThread
+{
+  Q_OBJECT
+
+  insight::RemoteExecutionConfig& rec_;
+
+  void run() override;
+
+public:
+  RunSyncToRemote(insight::RemoteExecutionConfig& rec);
+
+Q_SIGNALS:
+  void progressValueChanged(int progress);
+  void progressTextChanged(const QString& text);
+  void transferFinished();
+};
+
+
+
+
+class RunSyncToLocal : public QThread
+{
+  Q_OBJECT
+
+  insight::RemoteExecutionConfig& rec_;
+
+  void run() override;
+
+public:
+  RunSyncToLocal(insight::RemoteExecutionConfig& rec);
+
+Q_SIGNALS:
+  void progressValueChanged(int progress);
+  void progressTextChanged(const QString& text);
+  void transferFinished();
+};
+
+
 
 #endif // MAINWINDOW_H

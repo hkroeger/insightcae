@@ -612,30 +612,99 @@ std::vector<bfs_path> RemoteExecutionConfig::remoteSubdirs() const
 }
 
 
-void RemoteExecutionConfig::syncToRemote(const std::vector<std::string>& exclude_pattern)
+void RemoteExecutionConfig::runRsync
+(
+    const std::vector<std::string>& args,
+    std::function<void(int,const std::string&)> pf
+)
 {
-    std::ostringstream cmd;
+  namespace bp=boost::process;
+  bp::ipstream is;
+  bp::child c
+      (
+       bp::search_path("rsync"),
+       bp::args( args ),
+       bp::std_out > is
+      );
 
-    std::string excludes;
-    excludes+="--exclude 'processor*' --exclude '*.foam' --exclude 'postProcessing' --exclude '*.socket' --exclude 'backup' --exclude 'archive' --exclude 'mnt_remote'";
+  std::string line;
+  boost::regex pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*) \\(xfr#([0-9]+), to-chk=([0-9]+)/([0-9]+)\\)");
+  while (c.running() && std::getline(is, line) && !line.empty())
+  {
+    boost::smatch match;
+    if (boost::regex_search( line, match, pattern, boost::match_default ))
+    {
+      std::string percent=match[1];
+      std::string rate=match[2];
+      std::string eta=match[3];
+//        int i_file=to_number<int>(match[4]);
+      int i_to_chk=to_number<int>(match[5]);
+      int total_to_chk=to_number<int>(match[6]);
+
+      double progress = total_to_chk==0? 1.0 : double(total_to_chk-i_to_chk) / double(total_to_chk);
+
+      if (pf) pf(int(100.*progress), rate+", "+eta+" (current file: "+percent+")");
+    }
+  }
+
+  c.wait();
+}
+
+
+void RemoteExecutionConfig::syncToRemote
+(
+    const std::vector<std::string>& exclude_pattern,
+    std::function<void(int,const std::string&)> pf
+)
+{
+    std::vector<std::string> args=
+        {
+         "-az",
+         "--delete",
+         "--info=progress",
+
+         "--exclude", "processor*",
+         "--exclude", "*.foam",
+         "--exclude", "postProcessing",
+         "--exclude", "*.socket",
+         "--exclude", "backup",
+         "--exclude", "archive",
+         "--exclude", "mnt_remote"
+        };
 
     for (const auto& ex: exclude_pattern)
     {
-      excludes+=" --exclude '"+ex+"'";
+      args.push_back("--exclude");
+      args.push_back(ex);
     }
 
-    cmd << "rsync -avz --delete "+excludes+" "+localDir_.string()+"/ \""<<server_<<":"<<remoteDir_.string()<<"\"";
+    args.push_back(localDir_.string());
+    args.push_back(server_+":"+remoteDir_.string());
 
-    std::system(cmd.str().c_str());
+    runRsync(args, pf);
 }
 
-void RemoteExecutionConfig::syncToLocal(bool skipTimeSteps, const std::vector<std::string>& exclude_pattern)
+void RemoteExecutionConfig::syncToLocal
+(
+    bool skipTimeSteps,
+    const std::vector<std::string>& exclude_pattern,
+    std::function<void(int,const std::string&)> pf
+)
 {
-    std::ostringstream cmd;
+    std::vector<std::string> args;
 
-    cmd << "rsync -avz ";
+    args =
+    {
+      "-az",
+      "--info=progress",
+      "--exclude", "processor*",
+      "--exclude", "*.foam",
+      "--exclude", "*.socket",
+      "--exclude", "backup",
+      "--exclude", "archive",
+      "--exclude", "mnt_remote"
+    };
 
-    std::string excludes = "--exclude 'processor*' --exclude '*.foam' --exclude '*.socket' --exclude 'backup' --exclude 'archive' --exclude 'mnt_remote'";
 
     if (skipTimeSteps)
       {
@@ -651,18 +720,21 @@ void RemoteExecutionConfig::syncToLocal(bool skipTimeSteps, const std::vector<st
 
         for (const auto& f: files)
           {
-            cmd<<" --exclude '"<<f.c_str()<<"'";
+            args.push_back("--exclude");
+            args.push_back(f.c_str());
           }
       }
 
     for (const auto& ex: exclude_pattern)
     {
-      excludes+=" --exclude '"+ex+"'";
+      args.push_back("--exclude");
+      args.push_back(ex);
     }
 
-    cmd<<excludes<<" \""<<server_<<":"<<remoteDir_.string()<<"/*\" "+localDir_.string();
+    args.push_back(server_+":"+remoteDir_.string()+"/*");
+    args.push_back(localDir_.string());
 
-    std::system(cmd.str().c_str());
+    runRsync(args, pf);
 }
 
 void RemoteExecutionConfig::queueRemoteCommand(const std::string& command, bool waitForPreviousFinished)

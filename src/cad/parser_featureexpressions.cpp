@@ -71,8 +71,18 @@ void ISCADParser::createFeatureExpressions()
     r_solidmodel_term =
         r_solidmodel_primary [_val=qi::_1 ]
         >>
-        *( '.' >> r_identifier
-           [ _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_val, qi::_1)) ] )
+        *( '.' >> ( current_pos.current_pos >> r_identifier >> current_pos.current_pos )
+           [ (
+              _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_val, qi::_2)),
+              phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
+                         phx::construct<SyntaxElementLocation>(
+                           filenameinfo_,
+                           phx::construct<SyntaxElementPos>(qi::_1, qi::_3)
+                         ),
+                         qi::_val
+                    )
+             )
+           ] )
         >>
         -( lit("<<") >> r_vectorExpression [ _val = phx::bind(&Transform::create_translate, qi::_val, qi::_1) ] )
         >>
@@ -97,13 +107,22 @@ void ISCADParser::createFeatureExpressions()
           >> current_pos.current_pos
           >>qi::lazy(*qi::_a) )
         ;
-
     r_modelstepFunction.name("feature function");
+
+    r_modelstepSymbol =
+         current_pos.current_pos >>
+          model_->modelstepSymbols()
+          >> current_pos.current_pos
+        ;
+    r_modelstepSymbol.name("feature symbol");
+
 
     r_solidmodel_primary =
         ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) ) 
         [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Feature>(qi::_1)) ]
+
         |
+
         r_modelstepFunction
         [ ( _val = phx::at_c<2>(qi::_1),
             phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
@@ -114,8 +133,21 @@ void ISCADParser::createFeatureExpressions()
                        phx::at_c<2>(qi::_1)
                   )
           ) ]
+
         |
-        model_->modelstepSymbols()[_val=qi::_1 ]
+
+        r_modelstepSymbol
+        [ ( _val=phx::at_c<1>(qi::_1 ),
+            phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
+                       phx::construct<SyntaxElementLocation>(
+                         filenameinfo_,
+                         phx::construct<SyntaxElementPos>(phx::at_c<0>(qi::_1), phx::at_c<2>(qi::_1))
+                       ),
+                       phx::at_c<1>(qi::_1)
+                  )
+          )
+        ]
+
         |
         ( '(' >> r_solidmodel_expression >> ')' )
         [ _val = qi::_1]

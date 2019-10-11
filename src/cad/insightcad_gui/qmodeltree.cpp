@@ -246,7 +246,11 @@ void QModelTree::connectDisplayableItem(QDisplayableModelTreeItem* newf)
 QModelTree::QModelTree(QWidget* parent)
   : QTreeWidget(parent)
 {
-  setHeaderLabels( QStringList() << "Symbol Name"<< ""  << "Value" );
+  QStringList heads({"", "", ""});
+  heads[QModelTreeItem::COL_NAME]="Symbol Name";
+  heads[QModelTreeItem::COL_VALUE]="Value";
+  setHeaderLabels( heads );
+
   //     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
   setMinimumHeight(20);
   setContextMenuPolicy(Qt::CustomContextMenu);
@@ -472,7 +476,7 @@ void QModelTree::onItemSelectionChanged()
   }
 }
 
-void QModelTree::focusOutEvent(QFocusEvent *event)
+void QModelTree::focusOutEvent(QFocusEvent */*event*/)
 {
   emit unfocus();
 }

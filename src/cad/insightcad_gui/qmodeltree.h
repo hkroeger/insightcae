@@ -55,8 +55,8 @@ protected:
     QString name_;
     
 public:
-    const static int COL_NAME=0;
-    const static int COL_VIS=1;
+    const static int COL_VIS=0;
+    const static int COL_NAME=1;
     const static int COL_VALUE=2;
     
     QModelTreeItem(const QString& name, QTreeWidgetItem* parent);
@@ -192,7 +192,7 @@ protected:
         {
             if (ItemType *mti =dynamic_cast<ItemType*>(p->child(i)))
             {
-                if (mti->text(0) == name)
+                if (mti->text(QModelTreeItem::COL_NAME) == name)
                   {
                     if (!found) found=mti;
                     else

@@ -48,29 +48,35 @@ addToFactoryTable(Feature, RefPlace);
 
 
 
-gp_Trsf trsf_from_vector(const arma::mat& v)
+gp_Trsf trsf_from_vector(const arma::mat& pp)
 {
     gp_Trsf t; // final transform
     
-
-    double x=v(3), y=v(4), z=v(5), w=v(6);
-    double m=::sqrt(w*w+x*x+y*y+z*z);
-    if (m<Precision::Confusion()) 
-    { 
-        w=1.; x=0.; y=0.; z=0.; 
-        m=1.;
-    } else
-    {
-        x/=m;
-        y/=m;
-        z/=m;
-        w/=m;
-    }
+    double dx=pp(3), dy=pp(4), dz=pp(5);
+    double magd = ::sqrt(dx*dx+dy*dy+dz*dz);
+    double theta = magd;
+    double w = ::cos(0.5*theta);
+    double
+        vx=dx*sin(0.5*theta)/magd,
+        vy=dy*sin(0.5*theta)/magd,
+        vz=dz*sin(0.5*theta)/magd;
     
+    const double w2 = w*w;
+    const double x2 = vx*vx;
+    const double y2 = vy*vy;
+    const double z2 = vz*vz;
+
+    const double txy = 2.*vx*vy;
+    const double twz = 2.*w*vz;
+    const double txz = 2.*vx*vz;
+    const double twy = 2.*w*vy;
+    const double tyz = 2.*vy*vz;
+    const double twx = 2.*w*vx;
+
     t.SetValues(
-        (1.-2.*y*y-2.*z*z), (2.*x*y-2.*z*w), (2.*x*z+2.*y*w), v(0),
-        (2.*x*y+2.*z*w), (1.-2.*x*x-2.*z*z), (2.*y*z-2.*x*w), v(1),
-        (2.*x*z-2.*y*w), (2.*y*z+2.*x*w), (1.-2.*x*x-2.*y*y), v(2)
+        w2 + x2 - y2 - z2,  txy - twz,          txz + twy,          pp(0),
+        txy + twz,          w2 - x2 + y2 - z2,  tyz - twx,          pp(1),
+        txz - twy,          tyz + twx,          w2 - x2 - y2 + z2,  pp(2)
     );
 
     return t;
@@ -91,7 +97,7 @@ CoincidentPoint::CoincidentPoint(VectorPtr p_org, VectorPtr p_targ)
 
 double CoincidentPoint::residual(const gp_Trsf& tr) const
 {
-    return pow( to_Pnt(p_org_->value()).Transformed(tr).Distance( to_Pnt(p_targ_->value()) ), 2);
+    return pow( to_Pnt(p_org_->value()).Transformed(tr).Distance( to_Pnt(p_targ_->value()) )/1e3, 2);
 }
 
 
@@ -122,11 +128,11 @@ double AlignedPlanes::residual(const gp_Trsf& tr) const
 //     std::cerr<<"sqdist="<<pl.SquareDistance(ptarg.Location())<<std::endl;
 //     std::cerr<<"angle="<<pl.Axis().Direction().Angle(ptarg.Axis().Direction())*180./M_PI<<std::endl;
     if (orient_==Inverted)
-      return pow(1. + pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ()), 2) /*+ pl.SquareDistance(ptarg.Location())*/;
+      return pow(1. + pl.Axis().Direction().Dot(ptarg.Axis().Direction()), 2);
     else if  (orient_==Same)
-      return pow(1. - pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ()), 2) /*+ pl.SquareDistance(ptarg.Location())*/;
+      return pow(1. - pl.Axis().Direction().Dot(ptarg.Axis().Direction()), 2);
     else
-      return pow(1. - fabs(pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ())), 2) /*+ pl.SquareDistance(ptarg.Location())*/;
+      return pow(1. - fabs( pl.Axis().Direction().Dot(ptarg.Axis().Direction()) ), 2);
 }
 
 
@@ -306,7 +312,7 @@ void RefPlace::build()
             {
                 iter++;
 
-                for (int i=0; i<7; i++)
+                for (int i=0; i<6; i++)
                   std::cout<<x(i)<<" ";
                 std::cout<<" /";
 
@@ -320,14 +326,14 @@ void RefPlace::build()
                 return Q;
             }
 
-            int numP() const { return 7; }
+            int numP() const { return 6; }
 
         } obj(conditions_);
 
 
-	int n=7;
+        int n=6;
 	
-    arma::mat x0=arma::zeros(n); //=vector_from_trsf(gp_Trsf());
+    arma::mat x0=arma::ones(n); //=vector_from_trsf(gp_Trsf());
         
 //	column_vector starting_point(n);
 //	for (int i=0; i<n; i++) starting_point(i)=x0(i);
@@ -344,8 +350,8 @@ void RefPlace::build()
 //	);
 
     arma::mat steps;
-    steps << 1000.0 << 1000.0 << 1000.0 << 1. << 0.5 << 0.5 << 0.5;
-        arma::mat tp=nonlinearMinimizeND(obj, x0, 1e-6, steps);
+    steps << 1000.0 << 1000.0 << 1000.0 << 0.1 << 0.1 << 0.1;
+        arma::mat tp=nonlinearMinimizeND(obj, x0, 1e-12, steps);
         double r=obj(tp);
 
 	std::cout

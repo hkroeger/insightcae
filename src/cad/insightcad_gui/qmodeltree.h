@@ -154,9 +154,15 @@ protected:
 
     /**
      * @brief vectors_
-     * root node for vectors
+     * root node for points
      */
-    QTreeWidgetItem *vectors_;
+    QTreeWidgetItem *points_;
+
+    /**
+     * @brief vectors_
+     * root node for direction vectors
+     */
+    QTreeWidgetItem *directions_;
 
     /**
      * @brief features_
@@ -222,13 +228,13 @@ public:
 
 public Q_SLOTS:
     void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
-    void onAddVector     (const QString& name, insight::cad::VectorPtr vv);
+    void onAddVector     (const QString& name, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
     void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component);
     void onAddDatum      (const QString& name, insight::cad::DatumPtr smp);
     void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp, bool visible=false);
 
     void onRemoveScalar      (const QString& sn);
-    void onRemoveVector      (const QString& sn);
+    void onRemoveVector      (const QString& sn, insight::cad::VectorVariableType vt);
     void onRemoveFeature     (const QString& sn);
     void onRemoveDatum       (const QString& sn);
     void onRemoveEvaluation  (const QString& sn);
@@ -272,5 +278,21 @@ Q_SIGNALS:
     void unfocus();
 };
 
+
+
+Q_DECLARE_METATYPE(insight::cad::ScalarPtr)
+Q_DECLARE_METATYPE(insight::cad::VectorPtr)
+Q_DECLARE_METATYPE(insight::cad::FeaturePtr)
+Q_DECLARE_METATYPE(insight::cad::DatumPtr)
+Q_DECLARE_METATYPE(insight::cad::PostprocActionPtr)
+Q_DECLARE_METATYPE(insight::cad::VectorVariableType)
+
+class QMetaTypeRegistrator
+{
+public:
+  QMetaTypeRegistrator();
+};
+
+extern QMetaTypeRegistrator qmetatyperegistrator;
 
 #endif

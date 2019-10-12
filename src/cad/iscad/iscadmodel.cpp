@@ -351,7 +351,7 @@ void ISCADModel::connectModelTree(QModelTree* mt) const
 {
   connect(&bgparsethread_, QOverload<const QString&,insight::cad::ScalarPtr>::of(&BGParsingThread::createdVariable),
           mt, &QModelTree::onAddScalar);
-  connect(&bgparsethread_, QOverload<const QString&,insight::cad::VectorPtr>::of(&BGParsingThread::createdVariable),
+  connect(&bgparsethread_, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&BGParsingThread::createdVariable),
           mt, &QModelTree::onAddVector);
   connect(&bgparsethread_, &BGParsingThread::createdFeature,
           mt, &QModelTree::onAddFeature);

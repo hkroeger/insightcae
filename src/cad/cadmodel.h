@@ -64,20 +64,20 @@ public:
 
     typedef boost::spirit::qi::symbols<char, ScalarPtr> 	ScalarTable;
     typedef boost::spirit::qi::symbols<char, VectorPtr> 	VectorTable;
-    typedef boost::spirit::qi::symbols<char, DatumPtr> 	DatumTable;
+    typedef boost::spirit::qi::symbols<char, DatumPtr>          DatumTable;
     typedef boost::spirit::qi::symbols<char, FeaturePtr> 	ModelstepTable;
-    typedef boost::spirit::qi::symbols<char, ModelPtr> 	ModelTable;
-    typedef std::set<std::string> 	ComponentSet;
+    typedef boost::spirit::qi::symbols<char, ModelPtr>          ModelTable;
+    typedef std::set<std::string>                               ComponentSet;
 
     typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	VertexFeatureTable;
     typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	EdgeFeatureTable;
     typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	FaceFeatureTable;
     typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	SolidFeatureTable;
-    typedef boost::spirit::qi::symbols<char, PostprocActionPtr> 	PostprocActionTable;
+    typedef boost::spirit::qi::symbols<char, PostprocActionPtr> PostprocActionTable;
 
 protected:
     ScalarTable 		scalars_;
-    VectorTable 		vectors_;
+    VectorTable 		points_, directions_;
     DatumTable 		datums_;
     ModelstepTable	modelsteps_;
     ComponentSet		components_;
@@ -106,7 +106,8 @@ public:
 
 
     const ScalarTable& 	scalarSymbols() const;
-    const VectorTable&	vectorSymbols() const;
+    const VectorTable&	pointSymbols() const;
+    const VectorTable&	directionSymbols() const;
     const DatumTable&	datumSymbols() const;
     const ModelstepTable&	modelstepSymbols() const;
     const VertexFeatureTable&	vertexFeatureSymbols() const;
@@ -119,8 +120,10 @@ public:
 
     void addScalar(const std::string& name, ScalarPtr value);
     void addScalarIfNotPresent(const std::string& name, ScalarPtr value);
-    void addVector(const std::string& name, VectorPtr value);
-    void addVectorIfNotPresent(const std::string& name, VectorPtr value);
+    void addPoint(const std::string& name, VectorPtr value);
+    void addPointIfNotPresent(const std::string& name, VectorPtr value);
+    void addDirection(const std::string& name, VectorPtr value);
+    void addDirectionIfNotPresent(const std::string& name, VectorPtr value);
     void addDatum(const std::string& name, DatumPtr value);
     void addDatumIfNotPresent(const std::string& name, DatumPtr value);
     void addModelstep(const std::string& name, FeaturePtr value, const std::string& featureDescription = std::string() );
@@ -138,7 +141,8 @@ public:
     std::string addPostprocActionUnnamed(PostprocActionPtr value);
 
     ScalarPtr lookupScalar(const std::string& name) const;
-    VectorPtr lookupVector(const std::string& name) const;
+    VectorPtr lookupPoint(const std::string& name) const;
+    VectorPtr lookupDirection(const std::string& name) const;
     DatumPtr lookupDatum(const std::string& name) const;
     FeaturePtr lookupModelstep(const std::string& name) const;
     FeatureSetPtr lookupVertexFeature(const std::string& name) const;
@@ -154,7 +158,8 @@ public:
     }
     
     ScalarTableContents scalars() const;
-    VectorTableContents	vectors() const;
+    VectorTableContents	points() const;
+    VectorTableContents	directions() const;
     DatumTableContents	datums() const;
     ModelstepTableContents	modelsteps() const;
     VertexFeatureTableContents 	vertexFeatures() const;

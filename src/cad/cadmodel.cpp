@@ -35,15 +35,15 @@ namespace cad
 
 void Model::defaultVariables()
 {
-    addScalar( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));
-    addScalar( "deg", 	ScalarPtr(new ConstantScalar(M_PI/180.)));
-    addVector( "O", 	VectorPtr(new ConstantVector(vec3(0,0,0))) );
-    addVector( "EX", 	VectorPtr(new ConstantVector(vec3(1,0,0))) );
-    addVector( "EY", 	VectorPtr(new ConstantVector(vec3(0,1,0))) );
-    addVector( "EZ", 	VectorPtr(new ConstantVector(vec3(0,0,1))) );
-    addDatum ( "XY", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EZ"), lookupVector("EY"))) );
-    addDatum ( "XZ", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EY"), lookupVector("EX"))) );
-    addDatum ( "YZ", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EX"), lookupVector("EY"))) );
+    addScalar   ( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));
+    addScalar   ( "deg", 	ScalarPtr(new ConstantScalar(M_PI/180.)));
+    addPoint    ( "O",          VectorPtr(new ConstantVector(vec3(0,0,0))) );
+    addDirection( "EX", 	VectorPtr(new ConstantVector(vec3(1,0,0))) );
+    addDirection( "EY", 	VectorPtr(new ConstantVector(vec3(0,1,0))) );
+    addDirection( "EZ", 	VectorPtr(new ConstantVector(vec3(0,0,1))) );
+    addDatum    ( "XY", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EZ"), lookupDirection("EY"))) );
+    addDatum    ( "XZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EY"), lookupDirection("EX"))) );
+    addDatum    ( "YZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EX"), lookupDirection("EY"))) );
 }
 
 void Model::copyVariables(const ModelVariableTable& vars)
@@ -55,9 +55,16 @@ void Model::copyVariables(const ModelVariableTable& vars)
         {
             addScalar(name, *sv);
         }
-        else if ( const VectorPtr* vv = boost::get<VectorPtr>( &boost::fusion::at_c<1>(s) ) )
+        else if ( const VectorPtrAndType* vv = boost::get<VectorPtrAndType>( &boost::fusion::at_c<1>(s) ) )
         {
-            addVector(name, *vv);
+          if (boost::fusion::at_c<1>(*vv) == Point)
+          {
+            addPoint(name, boost::fusion::at_c<0>(*vv) );
+          }
+          else if (boost::fusion::at_c<1>(*vv) == Direction)
+          {
+            addDirection(name, boost::fusion::at_c<0>(*vv) );
+          }
         }
         else if ( const DatumPtr* dd = boost::get<DatumPtr>( &boost::fusion::at_c<1>(s) ) )
         {
@@ -142,15 +149,26 @@ void Model::addScalarIfNotPresent(const std::string& name, ScalarPtr value)
     addScalar(name, value);
 }
 
-void Model::addVector(const std::string& name, VectorPtr value)
+void Model::addPoint(const std::string& name, VectorPtr value)
 {
-  vectors_.add(name, value);
+  points_.add(name, value);
 }
 
-void Model::addVectorIfNotPresent(const std::string& name, VectorPtr value)
+void Model::addPointIfNotPresent(const std::string& name, VectorPtr value)
 {
-  if (!vectors_.find(name))
-    addVector(name, value);
+  if (!points_.find(name))
+    addPoint(name, value);
+}
+
+void Model::addDirection(const std::string& name, VectorPtr value)
+{
+  directions_.add(name, value);
+}
+
+void Model::addDirectionIfNotPresent(const std::string& name, VectorPtr value)
+{
+  if (!directions_.find(name))
+    addDirection(name, value);
 }
 
 void Model::addDatum(const std::string& name, DatumPtr value)
@@ -164,13 +182,13 @@ void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
         addDatum(name, value);
 }
 
-void Model::addModelstep(const std::string& name, FeaturePtr value, const std::string& featureDescription)
+void Model::addModelstep(const std::string& name, FeaturePtr value, const std::string& /*featureDescription*/)
 {
   value->setFeatureSymbolName(name);
   modelsteps_.add(name, value);
 }
 
-void Model::addModelstepIfNotPresent(const std::string& name, FeaturePtr value, const std::string& featureDescription)
+void Model::addModelstepIfNotPresent(const std::string& name, FeaturePtr value, const std::string& /*featureDescription*/)
 {
     if (!modelsteps_.find(name))
     {
@@ -179,7 +197,7 @@ void Model::addModelstepIfNotPresent(const std::string& name, FeaturePtr value, 
     }
 }
 
-void Model::addComponent(const std::string& name, FeaturePtr value, const std::string& featureDescription)
+void Model::addComponent(const std::string& name, FeaturePtr value, const std::string& /*featureDescription*/)
 {
   components_.insert(name);
   addModelstep(name, value);
@@ -247,11 +265,19 @@ ScalarPtr Model::lookupScalar(const std::string& name) const
   return *obj;
 }
 
-VectorPtr Model::lookupVector(const std::string& name) const
+VectorPtr Model::lookupPoint(const std::string& name) const
 {
-  VectorPtr *obj = const_cast<VectorPtr*>(vectors_.find(name));
+  VectorPtr *obj = const_cast<VectorPtr*>(points_.find(name));
   if (!obj)
-    throw insight::Exception("Could not lookup vector "+name);
+    throw insight::Exception("Could not lookup point "+name);
+  return *obj;
+}
+
+VectorPtr Model::lookupDirection(const std::string& name) const
+{
+  VectorPtr *obj = const_cast<VectorPtr*>(directions_.find(name));
+  if (!obj)
+    throw insight::Exception("Could not lookup direction "+name);
   return *obj;
 }
 
@@ -320,7 +346,8 @@ PostprocActionPtr Model::lookupPostprocActionSymbol(const std::string& name) con
 }
 
 const Model::ScalarTable& 	Model::scalarSymbols() const { return scalars_; }
-const Model::VectorTable&	Model::vectorSymbols() const { return vectors_; }
+const Model::VectorTable&	Model::pointSymbols() const { return points_; }
+const Model::VectorTable&	Model::directionSymbols() const { return directions_; }
 const Model::DatumTable&	Model::datumSymbols() const { return datums_; }
 const Model::ModelstepTable&	Model::modelstepSymbols() const { return modelsteps_; }
 const Model::VertexFeatureTable&	Model::vertexFeatureSymbols() const { return vertexFeatures_; }
@@ -355,10 +382,17 @@ Model::ScalarTableContents Model::scalars() const
   return result;
 }
 
-Model::VectorTableContents Model::vectors() const
+Model::VectorTableContents Model::points() const
 {
   VectorTableContents result;
-  vectors_.for_each(SymbolTableContentsInserter<VectorPtr>(result));
+  points_.for_each(SymbolTableContentsInserter<VectorPtr>(result));
+  return result;
+}
+
+Model::VectorTableContents Model::directions() const
+{
+  VectorTableContents result;
+  directions_.for_each(SymbolTableContentsInserter<VectorPtr>(result));
   return result;
 }
 

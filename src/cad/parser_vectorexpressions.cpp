@@ -110,12 +110,9 @@ void ISCADParser::createVectorExpressions()
         |
 //        qi::lexeme[model_->vectorSymbols()]
 //         [ _val =  phx::bind(&Model::lookupVector, model_, qi::_1) ]
-        model_->vectorSymbols()[ qi::_val = qi::_1 ]
-//       qi::lexeme[ model_->modelsteps() ] [ _a =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ]
-// 	  >> lit("->") >
-// 	   (
-// 	     lit("CoG") [ lazy( _val = phx::bind(&getModelCoG, *_a)) ]
-// 	   )
+        model_->pointSymbols()[ qi::_val = qi::_1 ]
+        |
+        model_->directionSymbols()[ qi::_val = qi::_1 ]
         |
         ( lit("Mechanism_CrankDrive") >> '('
           >> r_scalarExpression >> ','

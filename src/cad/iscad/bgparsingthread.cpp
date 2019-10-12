@@ -120,13 +120,14 @@ void BGParsingThread::run()
               insight::cad::cache.initRebuild();
 
               insight::cad::Model::ScalarTableContents scalars=model_->scalars();
-              insight::cad::Model::VectorTableContents vectors=model_->vectors();
+              insight::cad::Model::VectorTableContents points=model_->points();
+              insight::cad::Model::VectorTableContents directions=model_->directions();
               insight::cad::Model::ModelstepTableContents modelsteps=model_->modelsteps();
               insight::cad::Model::DatumTableContents datums=model_->datums();
               insight::cad::Model::PostprocActionTableContents postprocActions=model_->postprocActions();
 
               int is=0;
-              int istepmax=scalars.size()+vectors.size()+modelsteps.size()+datums.size() -1;
+              int istepmax=scalars.size()+points.size()+directions.size()+modelsteps.size()+datums.size() -1;
 
               {
                   // get set with scalar symbols before rebuild (for finding out which have vanished)
@@ -151,21 +152,40 @@ void BGParsingThread::run()
 
 
               {
-                  MapDirectory<insight::cad::Model::VectorTableContents> removedVectors;
-                  if (oldmodel) removedVectors.set(oldmodel->vectors());
+                  MapDirectory<insight::cad::Model::VectorTableContents> removedPoints;
+                  if (oldmodel) removedPoints.set(oldmodel->points());
 
-                  for (insight::cad::Model::VectorTableContents::value_type v: vectors)
+                  for (auto p: points)
                   {
-                      emit statusMessage("Building vector "+QString::fromStdString(v.first));
-                      v.second->value(); // Trigger evaluation
+                      emit statusMessage("Building point "+QString::fromStdString(p.first));
+                      p.second->value(); // Trigger evaluation
                       emit statusProgress(is++, istepmax);
-                      emit createdVariable(QString::fromStdString(v.first), v.second);
-                      removedVectors.removeIfPresent(v.first);
+                      emit createdVariable(QString::fromStdString(p.first), p.second, insight::cad::VectorVariableType::Point);
+                      removedPoints.removeIfPresent(p.first);
                   }
 
-                  for (const std::string& sn: removedVectors)
+                  for (const auto& sn: removedPoints)
                   {
-                    emit removedVector(QString::fromStdString(sn));
+                    emit removedVector(QString::fromStdString(sn), insight::cad::VectorVariableType::Point);
+                  }
+              }
+
+              {
+                  MapDirectory<insight::cad::Model::VectorTableContents> removedDirections;
+                  if (oldmodel) removedDirections.set(oldmodel->directions());
+
+                  for (auto d: directions)
+                  {
+                      emit statusMessage("Building vector "+QString::fromStdString(d.first));
+                      d.second->value(); // Trigger evaluation
+                      emit statusProgress(is++, istepmax);
+                      emit createdVariable(QString::fromStdString(d.first), d.second, insight::cad::VectorVariableType::Direction);
+                      removedDirections.removeIfPresent(d.first);
+                  }
+
+                  for (const auto& sn: removedDirections)
+                  {
+                    emit removedVector(QString::fromStdString(sn), insight::cad::VectorVariableType::Direction);
                   }
               }
 

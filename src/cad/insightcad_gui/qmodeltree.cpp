@@ -290,10 +290,15 @@ QModelTree::QModelTree(QWidget* parent)
     scalars_->setFirstColumnSpanned(true);
     scalars_->setExpanded(true);
 
-    vectors_ = new QTreeWidgetItem( this, QStringList() << "Vector Variables"<< ""  << "" );
-    { QFont f=vectors_->font(COL_NAME); f.setBold(true); vectors_->setFont(COL_NAME, f); }
-    vectors_->setFirstColumnSpanned(true);
-    vectors_->setExpanded(true);
+    points_ = new QTreeWidgetItem( this, QStringList() << "Point Variables"<< ""  << "" );
+    { QFont f=points_->font(COL_NAME); f.setBold(true); points_->setFont(COL_NAME, f); }
+    points_->setFirstColumnSpanned(true);
+    points_->setExpanded(true);
+
+    directions_ = new QTreeWidgetItem( this, QStringList() << "Vector Variables"<< ""  << "" );
+    { QFont f=directions_->font(COL_NAME); f.setBold(true); directions_->setFont(COL_NAME, f); }
+    directions_->setFirstColumnSpanned(true);
+    directions_->setExpanded(true);
 
     datums_ = new QTreeWidgetItem( this, QStringList() << "Datums"<< ""  << "" );
     { QFont f=datums_->font(COL_NAME); f.setBold(true); datums_->setFont(COL_NAME, f); }
@@ -354,17 +359,24 @@ void QModelTree::onAddScalar(const QString& name, insight::cad::ScalarPtr sv)
   replaceOrAdd(scalars_, new QScalarVariableItem(name, sv->value(), scalars_), old);
 }
 
-void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv)
+void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt)
 {
+  QTreeWidgetItem* base;
+  switch (vt)
+  {
+    case insight::cad::VectorVariableType::Point: base=points_; break;
+    case insight::cad::VectorVariableType::Direction: base=directions_; break;
+  }
+
   QVectorVariableItem *newf, *old;
   {
     SignalBlocker b(this);
-    old = findItem<QVectorVariableItem>(vectors_, name);
-    newf = new QVectorVariableItem(name, vv->value(), vectors_);
+    old = findItem<QVectorVariableItem>(base, name);
+    newf = new QVectorVariableItem(name, vv->value(), base);
     if (old) newf->copyDisplayProperties(old);
     connectDisplayableItem(newf);
   }
-  replaceOrAdd(vectors_, newf, old);
+  replaceOrAdd(base, newf, old);
   newf->initDisplay();
 }
 
@@ -428,11 +440,19 @@ void QModelTree::onRemoveScalar      (const QString& sn)
     removeModelItem(item);;
 }
 
-void QModelTree::onRemoveVector      (const QString& sn)
+void QModelTree::onRemoveVector      (const QString& sn, insight::cad::VectorVariableType vt)
 {
   SignalBlocker(this);
-  if (QVectorVariableItem* item = findItem<QVectorVariableItem>(vectors_, sn))
-    vectors_->removeChild(item);
+
+  QTreeWidgetItem* base;
+  switch (vt)
+  {
+    case insight::cad::VectorVariableType::Point: base=points_; break;
+    case insight::cad::VectorVariableType::Direction: base=directions_; break;
+  }
+
+  if (QVectorVariableItem* item = findItem<QVectorVariableItem>(base, sn))
+    base->removeChild(item);
 }
 
 void QModelTree::onRemoveFeature     (const QString& sn)
@@ -516,7 +536,8 @@ void QModelTree::onClear()
 {
     componentfeatures_->takeChildren();
     scalars_->takeChildren();
-    vectors_->takeChildren();
+    points_->takeChildren();
+    directions_->takeChildren();
     features_->takeChildren();
     datums_->takeChildren();
     postprocactions_->takeChildren();
@@ -598,3 +619,18 @@ void QModelTree::showContextMenu(const QPoint &p)
         mi->showContextMenu(this->mapToGlobal(p));
     }
 }
+
+
+
+
+QMetaTypeRegistrator::QMetaTypeRegistrator()
+{
+  qRegisterMetaType<insight::cad::ScalarPtr>("insight::cad::ScalarPtr");
+  qRegisterMetaType<insight::cad::VectorPtr>("insight::cad::VectorPtr");
+  qRegisterMetaType<insight::cad::FeaturePtr>("insight::cad::FeaturePtr");
+  qRegisterMetaType<insight::cad::DatumPtr>("insight::cad::DatumPtr");
+  qRegisterMetaType<insight::cad::PostprocActionPtr>("insight::cad::PostprocActionPtr");
+  qRegisterMetaType<insight::cad::VectorVariableType>("insight::cad::VectorVariableType");
+}
+
+QMetaTypeRegistrator qmetatyperegistrator;

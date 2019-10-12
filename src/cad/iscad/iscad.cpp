@@ -41,20 +41,10 @@
 
 #include <qthread.h>
 
-Q_DECLARE_METATYPE(insight::cad::ScalarPtr)
-Q_DECLARE_METATYPE(insight::cad::VectorPtr)
-Q_DECLARE_METATYPE(insight::cad::FeaturePtr)
-Q_DECLARE_METATYPE(insight::cad::DatumPtr)
-Q_DECLARE_METATYPE(insight::cad::PostprocActionPtr)
+
 
 int main ( int argc, char** argv )
 {
-  qRegisterMetaType<insight::cad::ScalarPtr>("insight::cad::ScalarPtr");
-  qRegisterMetaType<insight::cad::VectorPtr>("insight::cad::VectorPtr");
-  qRegisterMetaType<insight::cad::FeaturePtr>("insight::cad::FeaturePtr");
-  qRegisterMetaType<insight::cad::DatumPtr>("insight::cad::DatumPtr");
-  qRegisterMetaType<insight::cad::PostprocActionPtr>("insight::cad::PostprocActionPtr");
-
   namespace po = boost::program_options;
 
   typedef std::vector<std::string> StringList;

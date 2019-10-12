@@ -72,13 +72,13 @@ public:
 signals:
 
     void createdVariable    (const QString& sn, insight::cad::ScalarPtr sv);
-    void createdVariable    (const QString& sn, insight::cad::VectorPtr vv);
+    void createdVariable    (const QString& sn, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
     void createdFeature     (const QString& sn, insight::cad::FeaturePtr sm, bool is_component);
     void createdDatum       (const QString& sn, insight::cad::DatumPtr dm);
     void createdEvaluation  (const QString& sn, insight::cad::PostprocActionPtr em, bool visible);
 
     void removedScalar      (const QString& sn);
-    void removedVector      (const QString& sn);
+    void removedVector      (const QString& sn, insight::cad::VectorVariableType vt);
     void removedFeature     (const QString& sn);
     void removedDatum       (const QString& sn);
     void removedEvaluation  (const QString& sn);

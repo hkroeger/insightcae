@@ -78,7 +78,9 @@ typedef std::set<FeatureID> FeatureSetData;
 typedef std::map<std::string, FeaturePtr> SubfeatureMap;
 typedef std::map<std::string, FeatureSetPtr> FeatureSetPtrMap;
 typedef std::map<std::string, DatumPtr > DatumPtrMap;
-typedef boost::variant<FeaturePtr, DatumPtr, VectorPtr, ScalarPtr>  ModelVariable;
+typedef enum { Point, Direction } VectorVariableType;
+typedef boost::fusion::vector2<VectorPtr,VectorVariableType> VectorPtrAndType;
+typedef boost::variant<FeaturePtr, DatumPtr, VectorPtrAndType, ScalarPtr>  ModelVariable;
 typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVariableTable;
 
 

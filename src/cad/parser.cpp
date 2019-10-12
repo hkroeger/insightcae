@@ -276,12 +276,21 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
         |
         ( r_identifier >> lit("?=")  >> r_scalarExpression >> ';')
         [ phx::bind(&Model::addScalarIfNotPresent, model_, qi::_1, qi::_2) ]
+
         |
         ( r_identifier >> '='  >> r_vectorExpression >> ';')
-        [ phx::bind(&Model::addVector, model_, qi::_1, qi::_2) ]
+        [ phx::bind(&Model::addPoint, model_, qi::_1, qi::_2) ]
         |
         ( r_identifier >> lit("?=")  >> r_vectorExpression >> ';')
-        [ phx::bind(&Model::addVectorIfNotPresent, model_, qi::_1, qi::_2) ]
+        [ phx::bind(&Model::addPointIfNotPresent, model_, qi::_1, qi::_2) ]
+
+        |
+        ( r_identifier >> lit("!=")  >> r_vectorExpression >> ';')
+        [ phx::bind(&Model::addDirection, model_, qi::_1, qi::_2) ]
+        |
+        ( r_identifier >> lit("?!=")  >> r_vectorExpression >> ';')
+        [ phx::bind(&Model::addDirectionIfNotPresent, model_, qi::_1, qi::_2) ]
+
         |
         ( r_identifier >> '='  >> r_vertexFeaturesExpression >> ';')
         [ phx::bind(&Model::addVertexFeature, model_, qi::_1, qi::_2) ]

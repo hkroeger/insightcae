@@ -55,12 +55,21 @@ void ModelFeature::copyModelDatums()
       throw insight::Exception("datum value "+v.first+" already present!");
     refvalues_[v.first]=v.second->value();
   }
-  auto vectors=model_->vectors();
-  for (decltype(vectors)::value_type const& p: vectors)
+
+  auto points=model_->points();
+  for (decltype(points)::value_type const& p: points)
   {
     if (refpoints_.find(p.first)!=refpoints_.end())
       throw insight::Exception("datum point "+p.first+" already present!");
     refpoints_[p.first]=p.second->value();
+  }
+
+  auto directions=model_->directions();
+  for (decltype(directions)::value_type const& p: directions)
+  {
+    if (refvectors_.find(p.first)!=refvectors_.end())
+      throw insight::Exception("datum direction "+p.first+" already present!");
+    refvectors_[p.first]=p.second->value();
   }
 
   auto datums=model_->datums();
@@ -111,9 +120,10 @@ size_t ModelFeature::calcHash() const
     {
         p+=*(*dp);
     }
-    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
+    else if (VectorPtrAndType* vp = boost::get<VectorPtrAndType>(&v))
     {
-        p+=(*vp)->value();
+        p+=boost::fusion::at_c<0>(*vp)->value();
+        p+=int(boost::fusion::at_c<1>(*vp));
     }
     else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
     {
@@ -294,11 +304,20 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
      '(' >>
       ( 
 	( ruleset.r_identifier >>
-	  *(',' >> (ruleset.r_identifier >> '=' >> (ruleset.r_solidmodel_expression|ruleset.r_datumExpression|ruleset.r_vectorExpression|ruleset.r_scalarExpression) ) ) >> ')' )  
+          *(',' >> ( ruleset.r_identifier >> (
+                      ('=' >> ruleset.r_solidmodel_expression)|
+                      ('=' >> ruleset.r_datumExpression)|
+                      ('=' >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Point) )|
+                      (qi::lit("!=") >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Direction) )|
+                      ('=' >> ruleset.r_scalarExpression) ) ) ) >> ')' )
 	[ qi::_val = phx::bind(&ModelFeature::create, qi::_1, qi::_2) ]
 	|
 	( ruleset.r_path >> 
-	  *(',' >> (ruleset.r_identifier >> '=' >> (ruleset.r_solidmodel_expression|ruleset.r_datumExpression|ruleset.r_vectorExpression|ruleset.r_scalarExpression) ) ) >> ')' )  
+          *(',' >> (ruleset.r_identifier >> (
+                      ('=' >> ruleset.r_solidmodel_expression)|
+                      ('=' >> ruleset.r_datumExpression)|
+                      (qi::lit("!=") >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Direction) )|
+                      ('=' >> ruleset.r_scalarExpression) ) ) ) >> ')' )
 	[ qi::_val = phx::bind(&ModelFeature::create_file, qi::_1, qi::_2) ]
       )
     ))

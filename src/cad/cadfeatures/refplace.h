@@ -62,20 +62,31 @@ public:
 
 
 
-class AlignedPlanes
+class ParallelPlanes
     : public Condition
 {
 public:
   enum Orientation { Same, Inverted, Undefined };
 
-private:
+protected:
     DatumPtr pl_org_,  pl_targ_;
     Orientation orient_;
+public:
+    ParallelPlanes ( DatumPtr pl_org, DatumPtr pl_targ, Orientation orient=Same );
+    virtual double residual ( const gp_Trsf& tr ) const;
+};
+
+
+
+
+class AlignedPlanes
+    : public ParallelPlanes
+{
+
 public:
     AlignedPlanes ( DatumPtr pl_org, DatumPtr pl_targ, Orientation orient=Same );
     virtual double residual ( const gp_Trsf& tr ) const;
 };
-
 
 
 

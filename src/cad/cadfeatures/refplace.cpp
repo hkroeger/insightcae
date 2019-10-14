@@ -47,6 +47,10 @@ addToFactoryTable(Feature, RefPlace);
 
 
 
+const double dist_scale=1e-3;
+
+
+
 
 gp_Trsf trsf_from_vector(const arma::mat& pp)
 {
@@ -97,7 +101,7 @@ CoincidentPoint::CoincidentPoint(VectorPtr p_org, VectorPtr p_targ)
 
 double CoincidentPoint::residual(const gp_Trsf& tr) const
 {
-    return pow( to_Pnt(p_org_->value()).Transformed(tr).Distance( to_Pnt(p_targ_->value()) )/1e3, 2);
+    return pow( to_Pnt(p_org_->value()).Transformed(tr).Distance( to_Pnt(p_targ_->value()) )*dist_scale, 2);
 }
 
 
@@ -116,12 +120,12 @@ double ParallelAxis::residual(const gp_Trsf& tr) const
 
 
 
-AlignedPlanes::AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ, Orientation orient)
+ParallelPlanes::ParallelPlanes(DatumPtr pl_org, DatumPtr pl_targ, Orientation orient)
 : pl_org_(pl_org), pl_targ_(pl_targ), orient_(orient)
 {}
 
 
-double AlignedPlanes::residual(const gp_Trsf& tr) const
+double ParallelPlanes::residual(const gp_Trsf& tr) const
 {
     gp_Pln pl = gp_Pln(pl_org_->plane()).Transformed(tr);
     gp_Pln ptarg(pl_targ_->plane());
@@ -133,6 +137,26 @@ double AlignedPlanes::residual(const gp_Trsf& tr) const
       return pow(1. - pl.Axis().Direction().Dot(ptarg.Axis().Direction()), 2);
     else
       return pow(1. - fabs( pl.Axis().Direction().Dot(ptarg.Axis().Direction()) ), 2);
+}
+
+
+
+
+AlignedPlanes::AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ, Orientation orient)
+: ParallelPlanes(pl_org, pl_targ, orient)
+{}
+
+
+double AlignedPlanes::residual(const gp_Trsf& tr) const
+{
+  double res = ParallelPlanes::residual(tr);
+
+  gp_Pln pl = gp_Pln(pl_org_->plane()).Transformed(tr);
+  gp_Pln ptarg(pl_targ_->plane());
+
+  res += pl.SquareDistance(ptarg.Location())*pow(dist_scale,2);
+
+  return res;
 }
 
 
@@ -167,10 +191,10 @@ double Coaxial::residual(const gp_Trsf& tr) const
     double fac=1.0;
     if (inv_) fac=-1.;
     
-    gp_XYZ r = ao.Location().XYZ()-at.Location().XYZ();
+    gp_XYZ r = (ao.Location().XYZ()-at.Location().XYZ());
     r -= r.Dot(at.Direction().XYZ())*at.Direction().XYZ();
 
-    return pow(ao.Direction().Angle(fac*at.Direction()), 2) + r.SquareModulus();
+    return pow(ao.Direction().Angle(fac*at.Direction()), 2) + r.SquareModulus()*pow(dist_scale,2);
 }
     
     
@@ -187,7 +211,7 @@ double PointInPlane::residual(const gp_Trsf& tr) const
     gp_Pln pltarg(pl_targ_->plane());
 //     std::cerr<<"sqdist="<<pltarg.SquareDistance(pt)<<std::endl;
     
-    return pltarg.SquareDistance(pt);
+    return pltarg.SquareDistance(pt)*pow(dist_scale,2);
 }
 
 
@@ -205,7 +229,7 @@ double PointOnAxis::residual(const gp_Trsf& tr) const
     
     gp_XYZ r = pt.XYZ() - axtarg.Location().XYZ();
     r -= r.Dot(axtarg.Direction().XYZ())*axtarg.Direction().XYZ();
-    return r.SquareModulus();
+    return r.SquareModulus()*pow(dist_scale,2);
 }
 
 
@@ -392,6 +416,10 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
         |
         (ruleset.r_vectorExpression >> qi::lit("parallel") >> ruleset.r_vectorExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<ParallelAxis>(qi::_1, qi::_2)) ]
+        |
+        (ruleset.r_datumExpression >> qi::lit("planeparallel") >> ruleset.r_datumExpression
+          >> ( ( qi::lit("inverted") >> qi::attr(ParallelPlanes::Inverted) ) | ( qi::lit("oriented") >> qi::attr(ParallelPlanes::Same) ) | qi::attr(ParallelPlanes::Undefined) ) )
+          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<ParallelPlanes>(qi::_1, qi::_2, qi::_3)) ]
         |
         (ruleset.r_datumExpression >> qi::lit("aligned") >> ruleset.r_datumExpression  
           >> ( ( qi::lit("inverted") >> qi::attr(AlignedPlanes::Inverted) ) | ( qi::lit("oriented") >> qi::attr(AlignedPlanes::Same) ) | qi::attr(AlignedPlanes::Undefined) ) )

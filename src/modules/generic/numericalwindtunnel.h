@@ -43,10 +43,10 @@ inherits OpenFOAMAnalysis::Parameters
 
 geometry = set {
 
- LupstreamByL   = double 4 "[-] upstream domain extent" *hidden
- LdownstreamByL = double 10 "[-] downstream domain extent" *hidden
- LasideByW      = double 3 "[-] lateral domain extent" *hidden
- LupByH         = double 3 "[-] height of the domain (above floor)" *hidden
+ LupstreamByL   = double 4 "[-] upstream domain extent, divided by object diagonal" *hidden
+ LdownstreamByL = double 10 "[-] downstream domain extent, divided by object diagonal" *hidden
+ LasideByL      = double 3 "[-] lateral domain extent, divided by object diagonal" *hidden
+ LupByL         = double 3 "[-] height of the domain (above floor), divided by object diagonal" *hidden
  forwarddir     = vector (0 -1 0) "direction from rear to forward end in CAD geometry CS"
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
  
@@ -58,17 +58,17 @@ geometryscale = double 1e-3     "scaling factor to scale geometry files to meter
 
 mesh = set {
 
- nx             = int 10 "# cells across object length" *necessary
- boxlevel       = int 2 "refinement level around object"
- rearlevel      = int 3 "refinement level around rear end of object"
- lmsurf         = int 2 "# cells across object length" *necessary
- lxsurf         = int 4 "# cells across object length" *necessary
- nlayer         = int 4 "# prism layers"
+ nx             = int 10 "number of cells across object diagonal" *necessary
+ boxlevel       = int 2 "refinement level in bounding box around object"
+ rearlevel      = int 3 "refinement level in wake of object"
+ lmsurf         = int 2 "minimum refinement level on object surface" *necessary
+ lxsurf         = int 4 "maximum refinement level on object surface" *necessary
+ nlayer         = int 4 "number of prism layers"
  tlayer         = double 0.5 "final layer ratio" *hidden
- grad_upstream  = double 10 "grading towards center" *hidden
- grad_downstream = double 10 "grading towards center" *hidden
- grad_aside     = double 10 "grading towards center" *hidden
- grad_up        = double 10 "grading towards center" *hidden
+ grad_upstream  = double 10 "mesh grading from object towards inlet" *hidden
+ grad_downstream = double 10 "mesh grading from object towards outlet" *hidden
+ grad_aside     = double 10 "mesh grading from object towards lateral boundary" *hidden
+ grad_up        = double 10 "mesh grading from object towards upper boundary" *hidden
 
  refinementZones = array [ set {
   lx = int 5 "Refinement level inside zones"

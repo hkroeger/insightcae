@@ -148,8 +148,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
 
   double Lupstream = Lref_*p.geometry.LupstreamByL;
   double Ldownstream = Lref_*p.geometry.LdownstreamByL;
-  double Lup = Lref_*p.geometry.LupByH;
-  double Laside = Lref_*p.geometry.LasideByW;
+  double Lup = Lref_*p.geometry.LupByL;
+  double Laside = Lref_*p.geometry.LasideByL;
   
   if (Lup<=0) throw insight::Exception("LupByL*L has to be larger than h!");
   if (Laside<=0) throw insight::Exception("LasideByL*L has to be larger than 0.5*w!");
@@ -669,8 +669,8 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
     double Lupstream = nwt.Lref_*p.geometry.LupstreamByL;
     double Ldownstream = nwt.Lref_*p.geometry.LdownstreamByL;
-    double Lup = nwt.Lref_*p.geometry.LupByH;
-    double Laside = nwt.Lref_*p.geometry.LasideByW;
+    double Lup = nwt.Lref_*p.geometry.LupByL;
+    double Laside = nwt.Lref_*p.geometry.LasideByL;
 
     if (p.mesh.longitudinalSymmetry)
     {

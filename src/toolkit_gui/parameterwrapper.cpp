@@ -925,7 +925,10 @@ void DirectoryParameterWrapper::openSelectionDialog()
 						 "Select directory",
 						le_->text());
   if (!fn.isEmpty())
+  {
     le_->setText(fn);
+    onApply();
+  }
 }
 
 

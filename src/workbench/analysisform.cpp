@@ -88,7 +88,8 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 : QMdiSubWindow(parent),
   analysisName_(analysisName),
   executionPathParameter_( boost::filesystem::path("."),
-                           "Directory to store data files during analysis.\nLeave empty for temporary storage."),
+                           "Directory to store data files during analysis.\nLeave empty for temporary storage.",
+                           false, false, true ),
   pack_parameterset_(true)
 {
     // load default parameters

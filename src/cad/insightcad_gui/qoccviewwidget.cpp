@@ -290,25 +290,30 @@ void QoccViewWidget::resizeEvent ( QResizeEvent * /* e */ )
 */
 void QoccViewWidget::mousePressEvent( QMouseEvent* e )
 {
-  myButtonFlags = e->button();
-  
-  // Cache the keyboard flags for the whole gesture
-  myKeyboardFlags = e->modifiers();
-  
-  // The button mappings can be used as a mask. This code prevents conflicts
-  // when more than one button pressed simutaneously.
-  if ( e->button() & Qt::LeftButton )
-    {
-      onLeftButtonDown  ( myKeyboardFlags, e->pos() );
-    }
-  else if ( e->button() & Qt::RightButton )
-    {
-      onRightButtonDown ( myKeyboardFlags, e->pos() );
-    }
-  else if ( e->button() & Qt::MidButton )
-    {
-      onMiddleButtonDown( myKeyboardFlags, e->pos() );
-    }
+  if (myViewInitialized)
+  {
+    myButtonFlags = e->button();
+
+    // Cache the keyboard flags for the whole gesture
+    myKeyboardFlags = e->modifiers();
+
+    // The button mappings can be used as a mask. This code prevents conflicts
+    // when more than one button pressed simutaneously.
+    if ( e->button() & Qt::LeftButton )
+      {
+        onLeftButtonDown  ( myKeyboardFlags, e->pos() );
+      }
+    else if ( e->button() & Qt::RightButton )
+      {
+        onRightButtonDown ( myKeyboardFlags, e->pos() );
+      }
+    else if ( e->button() & Qt::MidButton )
+      {
+        onMiddleButtonDown( myKeyboardFlags, e->pos() );
+      }
+  }
+  else
+    e->ignore();
 }
 
 
@@ -320,21 +325,26 @@ void QoccViewWidget::mousePressEvent( QMouseEvent* e )
 */
 void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
 {
-  myButtonFlags = Qt::NoButton;
-  redraw();							// Clears up screen when menu selected but not used.
-  hideRubberBand();
-  if ( e->button() & Qt::LeftButton )
-    {
-      onLeftButtonUp  ( myKeyboardFlags, e->pos() );
-    }
-  else if ( e->button() & Qt::RightButton )
-    {
-      onRightButtonUp ( myKeyboardFlags, e->pos() );
-    }
-  else if ( e->button() & Qt::MidButton )
-    {
-      onMiddleButtonUp( myKeyboardFlags, e->pos() );
-    }
+  if (myViewInitialized)
+  {
+    myButtonFlags = Qt::NoButton;
+    redraw();							// Clears up screen when menu selected but not used.
+    hideRubberBand();
+    if ( e->button() & Qt::LeftButton )
+      {
+        onLeftButtonUp  ( myKeyboardFlags, e->pos() );
+      }
+    else if ( e->button() & Qt::RightButton )
+      {
+        onRightButtonUp ( myKeyboardFlags, e->pos() );
+      }
+    else if ( e->button() & Qt::MidButton )
+      {
+        onMiddleButtonUp( myKeyboardFlags, e->pos() );
+      }
+  }
+  else
+    e->ignore();
 }
 
 
@@ -346,43 +356,50 @@ void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
 */
 void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
 {
-  Standard_Real X, Y, Z;
+  if (myViewInitialized)
+  {
+
+    Standard_Real X, Y, Z;
   
-  myCurrentPoint = e->pos();
-  //Check if the grid is active and that we're snapping to it
-  if( myContext_->CurrentViewer()->Grid()->IsActive() && myGridSnap )
-    {
-      myView->ConvertToGrid
-	( 
-	 myCurrentPoint.x(),
-	 myCurrentPoint.y(),
-	 myV3dX,
-	 myV3dY,
-	 myV3dZ 
-	);
-      emit mouseMoved( myV3dX, myV3dY, myV3dZ );
-    }
-  else //	this is the standard case
-    {
-      if (convertToPlane
-	  ( 
-	   myCurrentPoint.x(),
-	   myCurrentPoint.y(),
-	   X, Y, Z 
-	  ) )
-	{
-	  myV3dX = precision( X );
-	  myV3dY = precision( Y );
-	  myV3dZ = precision( Z );
-	  emit mouseMoved( myV3dX, myV3dY, myV3dZ );
-	}
-      else
-	{
-	  emit sendStatus ( tr("Indeterminate Point") );
-	}
-    }
-  
-  onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
+    myCurrentPoint = e->pos();
+    //Check if the grid is active and that we're snapping to it
+    if( myContext_->CurrentViewer()->Grid()->IsActive() && myGridSnap )
+      {
+        myView->ConvertToGrid
+          (
+           myCurrentPoint.x(),
+           myCurrentPoint.y(),
+           myV3dX,
+           myV3dY,
+           myV3dZ
+          );
+        emit mouseMoved( myV3dX, myV3dY, myV3dZ );
+      }
+    else //	this is the standard case
+      {
+        if (convertToPlane
+            (
+             myCurrentPoint.x(),
+             myCurrentPoint.y(),
+             X, Y, Z
+            ) )
+          {
+            myV3dX = precision( X );
+            myV3dY = precision( Y );
+            myV3dZ = precision( Z );
+            emit mouseMoved( myV3dX, myV3dY, myV3dZ );
+          }
+        else
+          {
+            emit sendStatus ( tr("Indeterminate Point") );
+          }
+      }
+
+    onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
+  }
+  else
+    e->ignore();
+
 }
 
 
@@ -516,7 +533,7 @@ void QoccViewWidget::displayContextMenu( const QPoint& p)
 */
 void QoccViewWidget::wheelEvent ( QWheelEvent* e )
 {
-  if ( !myView.IsNull() )
+  if (myViewInitialized)
     {
       Standard_Real currentScale = myView->Scale();
       if (e->delta() > 0)

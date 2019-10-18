@@ -41,6 +41,13 @@ namespace insight
 
 addToAnalysisFactoryTable(NumericalWindtunnel);
 
+
+void NumericalWindtunnel::modifyDefaults(ParameterSet& p)
+{
+  p.getBool("run/potentialinit")=true;
+}
+
+
 NumericalWindtunnel::NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis("Numerical Wind Tunnel", "", ps, exepath)
 {

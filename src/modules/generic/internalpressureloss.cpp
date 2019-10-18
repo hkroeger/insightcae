@@ -37,6 +37,13 @@ namespace insight
 
 addToAnalysisFactoryTable(InternalPressureLoss);
 
+
+void InternalPressureLoss::modifyDefaults(ParameterSet& p)
+{
+  p.getBool("run/potentialinit")=true;
+}
+
+
 InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis
   (

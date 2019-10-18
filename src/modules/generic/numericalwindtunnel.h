@@ -36,10 +36,12 @@ class NumericalWindtunnel
   friend class NumericalWindtunnel_ParameterSet_Visualizer;
 
 public:
+  static void modifyDefaults(ParameterSet& p);
 #include "numericalwindtunnel__NumericalWindtunnel__Parameters.h"
 /*
 PARAMETERSET>>> NumericalWindtunnel Parameters
 inherits OpenFOAMAnalysis::Parameters
+addTo_makeDefault { modifyDefaults(p); }
 
 geometry = set {
 
@@ -47,7 +49,7 @@ geometry = set {
  LdownstreamByL = double 10 "[-] downstream domain extent, divided by object diagonal" *hidden
  LasideByL      = double 3 "[-] lateral domain extent, divided by object diagonal" *hidden
  LupByL         = double 3 "[-] height of the domain (above floor), divided by object diagonal" *hidden
- forwarddir     = vector (0 -1 0) "direction from rear to forward end in CAD geometry CS"
+ forwarddir     = vector (1 0 0) "direction from rear to forward end in CAD geometry CS"
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
  
  objectfile     = path "object.stp" "Path to object geometry. May be STL, STEP or IGES." *necessary

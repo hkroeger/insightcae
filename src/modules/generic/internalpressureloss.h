@@ -31,12 +31,15 @@ class InternalPressureLoss
 : public insight::OpenFOAMAnalysis
 {
 public:
-  
+  static void modifyDefaults(ParameterSet& p);
 #include "internalpressureloss__InternalPressureLoss__Parameters.h"
 /*
 PARAMETERSET>>> InternalPressureLoss Parameters
 
 inherits OpenFOAMAnalysis::Parameters
+
+addTo_makeDefault { modifyDefaults(p); }
+
 
 geometry = selectablesubset {{
 

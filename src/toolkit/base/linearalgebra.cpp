@@ -605,7 +605,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
        "t="<<valueList_to_string(timeProfs.col(0))<<" and "
        "y="<<valueList_to_string(timeProfs.cols(1,timeProfs.n_cols-1))<<
        " with fraction="<<fraction<<", first_col_is_time="<<first_col_is_time<<" and centerwindow="<<centerwindow;
-  CurrentExceptionContext ce(msg.str());
+  CurrentExceptionContext ce(msg.str(), false);
 
   if (!first_col_is_time)
     throw insight::Exception("Internal error: moving average without time column is currently unsupported!");

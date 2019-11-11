@@ -1735,7 +1735,7 @@ arma::mat readTextFile(std::istream& f)
   while (getline(f, line))
   {
     iline++;
-    CurrentExceptionContext ex(str(format("reading line %d (containing \"%s\")")%iline%line));
+    CurrentExceptionContext ex(str(format("reading line %d (containing \"%s\")")%iline%line), false);
 
     algorithm::trim_left(line);
     char fc; istringstream(line) >> fc; // get first char

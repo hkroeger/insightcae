@@ -904,11 +904,11 @@ arma::mat forces::readForces
           {
             arma::mat r1, r2;
             {
-              CurrentExceptionContext ex(str(format("reading line %d from files \"%s\"")%line_num%f_name.string()));
+              CurrentExceptionContext ex(str(format("reading line %d from files \"%s\"")%line_num%f_name.string()), false);
               r1=readForcesLine ( f, ncexp, skip );
             }
             {
-              CurrentExceptionContext ex(str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()));
+              CurrentExceptionContext ex(str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()), false);
               r2=readForcesLine ( f2, ncexp, skip );
             }
 //             std::cout<<r1<<r2<<std::endl;
@@ -940,7 +940,7 @@ arma::mat forces::readForces
           }
         else
           {
-            CurrentExceptionContext ex(str(format("reading line %d from file \"%s\"")%line_num%f_name.string()));
+            CurrentExceptionContext ex(str(format("reading line %d from file \"%s\"")%line_num%f_name.string()), false);
             row=readForcesLine ( f, ncexp, skip );
             if ( row.n_cols==0 )
             {

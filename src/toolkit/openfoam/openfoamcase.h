@@ -236,6 +236,8 @@ public:
 
     bool providesBCsForPatch ( const std::string& patchName ) const override;
 
+    static bool isPrghPressureField(const FieldList::value_type& fieldinfo);
+
 };
 
 
@@ -462,6 +464,8 @@ public:
     std::vector<std::string> fieldNames() const;
 
     bool hasField(const std::string& fname ) const;
+
+    bool hasPrghPressureField() const;
 
     inline FieldInfo& field ( const std::string& fname )
     {

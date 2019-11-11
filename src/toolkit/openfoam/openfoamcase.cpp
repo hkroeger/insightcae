@@ -503,6 +503,14 @@ bool BoundaryCondition::providesBCsForPatch(const std::string& patchName) const
   return (patchName == patchName_);
 }
 
+bool BoundaryCondition::isPrghPressureField(const FieldList::value_type &field)
+{
+  return
+      ( ( field.first=="pd" ) || ( field.first=="p_gh" ) || ( field.first=="p_rgh" ) )
+      &&
+      ( get<0> ( field.second ) == scalarField );
+}
+
 
 
 
@@ -1103,6 +1111,17 @@ bool OpenFOAMCase::hasField(const std::string& fname ) const
 {
   createFieldListIfRequired();
   return fields_.find ( fname ) != fields_.end();
+}
+
+bool OpenFOAMCase::hasPrghPressureField() const
+{
+  bool has=false;
+  for (const auto& fn: std::vector<std::string>({"pd", "p_gh", "p_rgh"}) )
+  {
+    has = has || hasField(fn);
+  }
+
+  return has;
 }
 
 void OpenFOAMCase::createFieldListIfRequired() const

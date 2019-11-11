@@ -36,7 +36,7 @@ class CurrentExceptionContext
   std::string desc_;
 
 public:
-  CurrentExceptionContext(const std::string& desc);
+  CurrentExceptionContext(const std::string& desc, bool verbose=true);
   ~CurrentExceptionContext();
 
   inline operator std::string() const

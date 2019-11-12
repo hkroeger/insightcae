@@ -181,9 +181,10 @@ void ParameterEditorWidget::doUpdateVisualization()
 {
   if (viz_)
   {
-      viz_->update(parameters_);
+    viz_->update(parameters_);
   }
 }
+
 
 void ParameterEditorWidget::onParameterSetChanged()
 {
@@ -221,7 +222,8 @@ ParameterSetDisplay::ParameterSetDisplay
 )
   : QObject(parent),
     viewer_(viewer),
-    modeltree_(modeltree)
+    modeltree_(modeltree),
+    vt_(nullptr)
 {
 }
 
@@ -250,11 +252,30 @@ void ParameterSetDisplay::deregisterVisualizer(std::shared_ptr<insight::CAD_Para
 
 void ParameterSetDisplay::onUpdateVisualization()
 {
+  if (!vt_)
+  {
+    vt_=new VisualizerThread(this);
+    connect(vt_, &VisualizerThread::finished, this, &ParameterSetDisplay::visualizationUpdateFinished);
+    vt_->start();
+  }
+
+}
+
+
+void ParameterSetDisplay::visualizationUpdateFinished()
+{
+  vt_->deleteLater();
+  vt_=nullptr;
+}
+
+
+void VisualizerThread::run()
+{
   insight::cad::cache.initRebuild();
 
-  insight::CAD_ParameterSet_Visualizer::UsageTracker ut(modeltree_);
+  insight::CAD_ParameterSet_Visualizer::UsageTracker ut(psd_->modeltree_);
 
-  for (auto& vz: visualizers_)
+  for (auto& vz: psd_->visualizers_)
   {
     vz->recreateVisualizationElements(&ut);
   }
@@ -262,4 +283,9 @@ void ParameterSetDisplay::onUpdateVisualization()
   ut.cleanupModelTree();
 
   insight::cad::cache.finishRebuild();
+}
+
+VisualizerThread::VisualizerThread(ParameterSetDisplay* psd)
+  : QThread(psd), psd_(psd)
+{
 }

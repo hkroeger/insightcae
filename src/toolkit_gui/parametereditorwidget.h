@@ -34,9 +34,13 @@
 #include <QWidget>
 #include <QSplitter>
 #include <QTreeWidget>
+#include <QThread>
 
 #include <set>
 #include <memory>
+
+
+class VisualizerThread;
 
 class ParameterTreeWidget
     : public QTreeWidget
@@ -119,9 +123,13 @@ class ParameterSetDisplay
 {
   Q_OBJECT
 
+  friend class VisualizerThread;
+
   QoccViewWidget* viewer_;
   QModelTree* modeltree_;
   std::set<std::shared_ptr<insight::CAD_ParameterSet_Visualizer> > visualizers_;
+
+  VisualizerThread* vt_;
 
 public:
   ParameterSetDisplay
@@ -140,9 +148,24 @@ public:
 public Q_SLOTS:
   void onUpdateVisualization();
 
+private Q_SLOTS:
+  void visualizationUpdateFinished();
+
 };
 
 
+class VisualizerThread
+    : public QThread
+{
+  Q_OBJECT
+
+  ParameterSetDisplay *psd_;
+
+  void run() override;
+
+public:
+  VisualizerThread(ParameterSetDisplay* psd);
+};
 
 
 #endif

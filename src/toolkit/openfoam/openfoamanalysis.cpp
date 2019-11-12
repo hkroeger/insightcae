@@ -123,7 +123,7 @@ void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, std::shared_ptr<OFd
 
 void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
-  CurrentExceptionContext ex("applying further modifications to OpenFOAM case configuration for case \""+executionPath().string()+"\"");
+  CurrentExceptionContext ex("applying custom options to OpenFOAM case configuration for case \""+executionPath().string()+"\"");
 
   Parameters p(parameters_);
   
@@ -363,11 +363,11 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
                 meshcreated=true;
                 if (!p.mesh.linkmesh.empty())
                 {
-                    linkPolyMesh(p.mesh.linkmesh/"constant", dir/"constant", &ofe);
+                  linkPolyMesh(p.mesh.linkmesh/"constant", dir/"constant", &ofe);
                 }
                 else
                 {
-                    createMesh(*meshCase);
+                  createMesh(*meshCase);
                 }
             }
             else

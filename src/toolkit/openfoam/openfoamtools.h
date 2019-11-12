@@ -66,7 +66,8 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
  * create mesh as symbolic links from other case.
  * If env is given, create a case skeleton in target case
  */
-void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, const OFEnvironment* env=NULL);
+void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to,
+                  const OFEnvironment* env=NULL);
 
 /*
  * Copy field files below "from" into "to"

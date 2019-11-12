@@ -25,6 +25,8 @@
 #include "base/boost_include.h"
 #include "openfoam/snappyhexmesh.h"
 #include "boost/regex.hpp"
+#include "boost/iostreams/filtering_stream.hpp"
+#include "boost/iostreams/filter/gzip.hpp"
 
 #include <map>
 #include <cmath>
@@ -135,6 +137,8 @@ std::string getOpenFOAMComponentLabel(int i, int ncmpt)
 
 void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, const std::vector<std::string>& cmds)
 {
+  CurrentExceptionContext ex("executing setSet command with the instructions:\n"+boost::join(cmds, "\n"));
+
   std::vector<std::string> opts;
   if ((ofc.OFversion()>=220) && (listTimeDirectories(location).size()==0)) opts.push_back("-constant");
   std::string machine=""; // problems, if job is put into queue system
@@ -218,7 +222,8 @@ void create_symlink_force_overwrite(const path& source, const path& targ)
   create_symlink(source, targ);
 }
 
-void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, const OFEnvironment* env)
+void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to,
+                  const OFEnvironment* env)
 {
   if (env)
   {
@@ -239,22 +244,59 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   
   {
     std::string fname="boundary";
-    
+
+    // reset all patch types
+    // (GGI patches require zones, which need to be recreated.
+    // During zone creation, GGI types must not be defined...)
+    // => read boundary file, reset types, write to target dir
+    OFDictData::dict org_bnd;
+
     path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
     if (exists(source/gzname)) 
     {
-      cout<<"Copying file "<<gzname<<endl;
-      if (exists(target/gzname)) remove(target/gzname);
-      copy_file(source/gzname, target/gzname);
+      cout<<"Processing file "<<gzname<<endl;
+//      if (exists(target/gzname)) remove(target/gzname);
+//      copy_file(source/gzname, target/gzname);
+      std::ifstream compressedDict( (source/gzname).string() );
+      boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
+      in.push(boost::iostreams::gzip_decompressor());
+      in.push(compressedDict);
+      std::istream bf(&in);
+      readOpenFOAMBoundaryDict(bf, org_bnd);
     }
     else if (exists(source/fname))
     {
-      cout<<"Copying file "<<fname<<endl;
-      if (exists(target/fname)) remove(target/fname);
-      copy_file(source/fname, target/fname);
+      cout<<"Processing file "<<fname<<endl;
+//      if (exists(target/fname)) remove(target/fname);
+//      copy_file(source/fname, target/fname);
+      std::ifstream bf( (source/fname).c_str() );
+      readOpenFOAMBoundaryDict(bf, org_bnd);
     }
     else 
       throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+
+    OFDictData::dictFile new_bnd;
+    for (const auto& b: org_bnd)
+    {
+      const auto& pn = b.first;
+      const auto& pd = b.second;
+
+      OFDictData::dict nbd;
+      nbd["type"]="patch";
+      for (const auto& copy_key: std::vector<std::string>({"startFace", "nFaces"}))
+      {
+        nbd[copy_key]=boost::get<const int&>(
+              boost::get<const OFDictData::dict&>(pd).at(copy_key)
+              );
+      }
+      new_bnd[pn]=nbd;
+    }
+
+    {
+      std::ofstream bf( (target/fname).c_str() );
+      writeOpenFOAMBoundaryDict(bf, new_bnd);
+    }
+
   }
 
   for (const std::string& fname:

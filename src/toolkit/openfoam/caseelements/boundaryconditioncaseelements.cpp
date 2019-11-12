@@ -1573,7 +1573,12 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             ( get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]="zeroGradient";
-        } else if (isPrghPressureField(field)) {
+        } else if (
+               ( ( field.first=="p" ) || isPrghPressureField(field) )
+               &&
+               ( get<0> ( field.second ) ==scalarField )
+              )
+        {
             if ( (field.first=="p") && OFcase().hasPrghPressureField() )
               {
                 BC["type"]=OFDictData::data ( "calculated" );

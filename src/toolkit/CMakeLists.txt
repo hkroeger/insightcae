@@ -22,7 +22,6 @@ project(toolkit)
 #find_package(Boost COMPONENTS filesystem regex date_time thread REQUIRED)
 
 set(toolkit_SOURCES
-
     base/analysis.cpp
     base/parameter.cpp
     base/exception.cpp
@@ -55,6 +54,9 @@ set(toolkit_SOURCES
     openfoam/paraview.cpp
     openfoam/remoteexecution.cpp
     openfoam/stretchtransformation.cpp
+    openfoam/remoteserverlist.cpp
+    openfoam/taskspoolerinterface.cpp
+    openfoam/mountremote.cpp
 
     openfoam/caseelements/numerics/pimplesettings.cpp
     openfoam/caseelements/numerics/basicnumericscaseelements.cpp
@@ -93,13 +95,14 @@ find_package(VTK COMPONENTS
     vtkFiltersGeneral
     REQUIRED
 )
+find_package(OpenSSL)
 
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
 include(${VTK_USE_FILE})
 link_directories(${Boost_LIBRARY_DIR})
-add_library(toolkit SHARED ${toolkit_SOURCES})
-target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} ${VTK_LIBRARIES})
+add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
+target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} ${VTK_LIBRARIES} OpenSSL::SSL)
 
 target_include_directories(toolkit 
   PUBLIC ${VTK_INCLUDE_DIRS}

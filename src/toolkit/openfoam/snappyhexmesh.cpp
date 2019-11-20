@@ -43,14 +43,14 @@ ExternalGeometryFile::ExternalGeometryFile(const ParameterSet& ps)
 
 std::string ExternalGeometryFile::fileName() const
 {
-    return p_.fileName.filename().string();
+    return p_.fileName->fileName().string();
 }
 
 
 void ExternalGeometryFile::putIntoConstantTrisurface(const OpenFOAMCase& ofc, const path& location) const
 {
-  boost::filesystem::path from(p_.fileName);
-  boost::filesystem::path to(location/"constant"/"triSurface"/p_.fileName.filename());
+  boost::filesystem::path from( p_.fileName->filePath(location) );
+  boost::filesystem::path to( location/"constant"/"triSurface"/from.filename() );
   
   if (!exists(to.parent_path()))
     create_directories(to.parent_path());
@@ -105,7 +105,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name;
     //boost::filesystem::path x; x.f
-  sHMDict.subDict("geometry")[p_.fileName.filename().c_str()]=geodict;
+  sHMDict.subDict("geometry")[p_.fileName->fileName().c_str()]=geodict;
 
   OFDictData::dict castdict;
   OFDictData::list levels;
@@ -189,7 +189,7 @@ ExplicitFeatureCurve::ExplicitFeatureCurve( const ParameterSet& ps )
 void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict refdict;
-  refdict["file"]=std::string("\"")+p_.fileName.filename().c_str()+"\"";
+  refdict["file"]=std::string("\"")+p_.fileName->fileName().c_str()+"\"";
   refdict["level"]=p_.level;
   sHMDict.subDict("castellatedMeshControls").getList("features").push_back(refdict);
 
@@ -197,7 +197,7 @@ void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 
 void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
 {
-  boost::filesystem::path from(p_.fileName);
+  boost::filesystem::path from(p_.fileName->filePath(location));
   if (!exists(from))
   {
     boost::filesystem::path alt_from=from; alt_from.replace_extension(".eMesh.gz");
@@ -413,7 +413,7 @@ NearTemplatePatchRefinement::NearTemplatePatchRefinement
 
 void NearTemplatePatchRefinement::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
 {
-  boost::filesystem::path to( boost::filesystem::path("constant")/"triSurface"/p_.fileName );
+  boost::filesystem::path to( boost::filesystem::path("constant")/"triSurface"/p_.fileName->fileName() );
 
   if (!exists((location/to).parent_path()))
     create_directories((location/to).parent_path());
@@ -429,7 +429,7 @@ void NearTemplatePatchRefinement::modifyFiles(const OpenFOAMCase& ofc, const pat
 
 bool NearTemplatePatchRefinement::setGeometrySubdict(OFDictData::dict& geodict, std::string& entryTitle) const
 {
-  entryTitle=p_.fileName.string();
+  entryTitle=p_.fileName->fileName().string();
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name;
 }

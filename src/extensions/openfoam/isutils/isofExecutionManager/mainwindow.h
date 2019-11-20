@@ -7,9 +7,10 @@
 
 #include "terminal.h"
 #include "base/boost_include.h"
-#include "openfoam/remoteexecution.h"
 #include "openfoam/openfoamcase.h"
+#include "openfoam/remoteexecution.h"
 #include "remotedirselector.h"
+#include "remotesync.h"
 
 namespace Ui {
   class MainWindow;
@@ -91,42 +92,7 @@ private:
 
 
 
-class RunSyncToRemote : public QThread
-{
-  Q_OBJECT
 
-  insight::RemoteExecutionConfig& rec_;
-
-  void run() override;
-
-public:
-  RunSyncToRemote(insight::RemoteExecutionConfig& rec);
-
-Q_SIGNALS:
-  void progressValueChanged(int progress);
-  void progressTextChanged(const QString& text);
-  void transferFinished();
-};
-
-
-
-
-class RunSyncToLocal : public QThread
-{
-  Q_OBJECT
-
-  insight::RemoteExecutionConfig& rec_;
-
-  void run() override;
-
-public:
-  RunSyncToLocal(insight::RemoteExecutionConfig& rec);
-
-Q_SIGNALS:
-  void progressValueChanged(int progress);
-  void progressTextChanged(const QString& text);
-  void transferFinished();
-};
 
 
 

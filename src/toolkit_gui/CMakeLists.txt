@@ -28,12 +28,16 @@ set(toolkit_gui_SRCS
     logviewerwidget.cpp
     graphprogressdisplayer.cpp
     insightcaeapplication.cpp
+    remotedirselector.cpp
+    remotesync.cpp
+    sdmdiarea.cpp
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
 
 SET(toolkit_gui_FORMS
     of_clean_case.ui
+    remotedirselector.ui
 )
 SET(toolkit_gui_RCCS toolkit_gui.qrc)
 

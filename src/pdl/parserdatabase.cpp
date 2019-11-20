@@ -46,6 +46,11 @@ written by writeCppHeader:
 void ParserDataBase::cppAddHeader(std::set<std::string>&) const
 {}
 
+std::string ParserDataBase::cppConstructorParameters(const std::string &name) const
+{
+  return cppValueRep(name);
+}
+
 
 std::string ParserDataBase::cppTypeName(const std::string& name) const
 {

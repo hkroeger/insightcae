@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>../../symbole/sHM-cfg.svg</file>
         <file>../../symbole/bmd_cyl.svg</file>
+        <file>../workbench/resources/logo_insight_cae.png</file>
+        <file>../workbench/resources/workbench_startUp.png</file>
     </qresource>
 </RCC>

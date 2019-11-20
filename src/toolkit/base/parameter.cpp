@@ -21,6 +21,9 @@
 #include "parameter.h"
 #include "base/latextools.h"
 #include "base/tools.h"
+#include <ostream>
+#include <streambuf>
+#include <iterator>
 
 #include "boost/archive/iterators/base64_from_binary.hpp"
 #include "boost/archive/iterators/binary_from_base64.hpp"
@@ -231,7 +234,7 @@ void Parameter::pack()
     // do nothing by default
 }
 
-void Parameter::unpack()
+void Parameter::unpack(const boost::filesystem::path&)
 {
     // do nothing by default
 }
@@ -317,36 +320,88 @@ addToFactoryTable(Parameter, StringParameter);
 defineType(PathParameter);
 addToFactoryTable(Parameter, PathParameter);
 
-PathParameter::PathParameter(const string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
-: SimpleParameter<boost::filesystem::path, PathName>(description, isHidden, isExpert, isNecessary, order)
+PathParameter::PathParameter(
+    const string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order
+    )
+: Parameter(description, isHidden, isExpert, isNecessary, order)
 {
 }
 
-PathParameter::PathParameter(const path& value, const string& description,  bool isHidden, bool isExpert, bool isNecessary, int order, const char* base64_content)
-: SimpleParameter<boost::filesystem::path, PathName>(value, description, isHidden, isExpert, isNecessary, order),
+PathParameter::PathParameter(
+    const path& value, const string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order,
+    std::shared_ptr<std::string> base64_content
+    )
+: Parameter(description, isHidden, isExpert, isNecessary, order),
+  value_(value),
   file_content_(base64_content)
 {
 }
 
-boost::filesystem::path& PathParameter::operator() ()
+
+std::string PathParameter::latexRepresentation() const
+{
+    return SimpleLatex( valueToString ( value_ ) ).toLaTeX();
+}
+
+std::string PathParameter::plainTextRepresentation(int /*indent*/) const
+{
+  return SimpleLatex( valueToString ( value_ ) ).toPlainText();
+}
+
+bool PathParameter::isValid() const
+{
+  return !value_.empty();
+}
+
+
+boost::filesystem::path PathParameter::filePath(const boost::filesystem::path& baseDir) const
 {
   if (isPacked())
-    unpack(); // does nothing, if already unpacked
+    const_cast<PathParameter*>(this)->unpack(baseDir); // does nothing, if already unpacked
 
   return value_;
 }
 
-const boost::filesystem::path& PathParameter::operator() () const
+const boost::filesystem::path &PathParameter::originalFilePath() const
 {
-  if (isPacked())
-    const_cast<PathParameter*>(this)->unpack(); // does nothing, if already unpacked
-
   return value_;
 }
+
+boost::filesystem::path PathParameter::fileName() const
+{
+  return value_.filename();
+}
+
+
+void PathParameter::setOriginalFilePath(const boost::filesystem::path &value)
+{
+  value_=value;
+}
+
+std::istream& PathParameter::stream() const
+{
+  if (isPacked())
+  {
+    file_content_stream_.reset(new std::istringstream(*file_content_));
+  }
+  else
+  {
+    file_content_stream_.reset(new std::ifstream(value_.c_str()));
+    if (! (*file_content_stream_) )
+    {
+      throw insight::Exception("Could not open file "+value_.string()+" for reading!");
+    }
+  }
+
+  return *file_content_stream_;
+}
+
 
 bool PathParameter::isPacked() const
 {
-  return !(file_content_.empty());
+  return !file_content_;
 }
 
 void PathParameter::pack()
@@ -355,70 +410,61 @@ void PathParameter::pack()
 
   if (exists(value_))
   {
-    // typedefs
-    using namespace boost::archive::iterators;
-    typedef
-        insert_linebreaks<         // insert line breaks every 72 characters
-            base64_from_binary<    // convert binary values to base64 characters
-                transform_width<   // retrieve 6 bit integers from a sequence of 8 bit bytes
-                    std::string::const_iterator,
-                    6, 8
-                >
-            >
-            ,72
-        >
-        base64_text; // compose all the above operations in to a new iterator
-
-
     // read raw file into buffer
+    std::cout<<"reading content of file "<<value_<<std::endl;
     std::ifstream in(value_.c_str());
-    std::string raw_data ( static_cast<std::stringstream const&>(std::stringstream() << in.rdbuf()).str() );
+    istreambuf_iterator<char> inputBegin(in), inputEnd;
+    file_content_.reset(new std::string);
+    std::back_insert_iterator<string> stringInsert(*file_content_);
+    copy(inputBegin, inputEnd, stringInsert);
 
-    // base64-encode
-    unsigned int writePaddChars = (3-raw_data.length()%3)%3;
-    file_content_ = std::string(
-        base64_text(raw_data.begin()),
-        base64_text(raw_data.end())
-    );
-    file_content_.append(writePaddChars, '=');
+    // compute hash
+    MD5_CTX ctx;
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, file_content_->data(), file_content_->size());
+    MD5_Final(file_content_hash_, &ctx);
   }
 }
 
-void PathParameter::unpack()
+void PathParameter::unpack(const boost::filesystem::path& basePath)
 {
 
   if (!value_.empty())
   {
+    bool needUnpack = false;
     if (!exists(value_)) // unpack only, if it is not yet there (e.g. already unpacked)
     {
+      auto dirHash = std::hash<std::string>()(value_.parent_path().string());
+      boost::filesystem::path unpackPath =
+          basePath / boost::lexical_cast<std::string>(dirHash);
       // extract file, create parent path.
       if (!exists(value_.parent_path()) )
       {
         boost::filesystem::create_directories( value_.parent_path() );
       }
 
-      // typedefs
-      using namespace boost::archive::iterators;
-      typedef
-        transform_width<
-            binary_from_base64<
-            remove_whitespace
-             <std::string::const_iterator> >, 8, 6>
-          base64_text; // compose all the above operations in to a new iterator
+//      // typedefs
+//      using namespace boost::archive::iterators;
+//      typedef
+//        transform_width<
+//            binary_from_base64<
+//            remove_whitespace
+//             <std::string::const_iterator> >, 8, 6>
+//          base64_text; // compose all the above operations in to a new iterator
 
-      long paddChars = count(file_content_.begin(), file_content_.end(), '=');
-      std::replace(file_content_.begin(), file_content_.end(), '=', 'A');
+//      long paddChars = count(file_content_.begin(), file_content_.end(), '=');
+//      std::replace(file_content_.begin(), file_content_.end(), '=', 'A');
 
-      std::string output(
-            base64_text(file_content_.begin()),
-            base64_text(file_content_.end())
-            );
-      output.erase(output.end() - paddChars, output.end());
+//      std::string output(
+//            base64_text(file_content_.begin()),
+//            base64_text(file_content_.end())
+//            );
+//      output.erase(output.end() - paddChars, output.end());
 
       std::ofstream file( value_.c_str(), ios::out | ios::binary);
       if (file.good())
       {
-          file.write(output.c_str(), long(output.size()) );
+          file.write(file_content_->c_str(), long(file_content_->size()) );
           file.close();
       }
 
@@ -429,9 +475,19 @@ void PathParameter::unpack()
 
 void PathParameter::clearPackedData()
 {
-  file_content_.clear();
+  file_content_.reset();
 }
 
+//template <typename char_type>
+//struct ostreambuf
+//    : public std::basic_streambuf<char_type, std::char_traits<char_type> >
+//{
+//    ostreambuf(char_type* buffer, std::streamsize bufferLength)
+//    {
+//        // set the "put" pointer the start of the buffer and record it's length.
+//        this->setp(buffer, buffer + bufferLength);
+//    }
+//};
 
 rapidxml::xml_node<>* PathParameter::appendToNode
 (
@@ -456,11 +512,73 @@ rapidxml::xml_node<>* PathParameter::appendToNode
 
     if (isPacked())
     {
-        child->append_attribute(doc.allocate_attribute
-        (
-          "content",
-          doc.allocate_string(file_content_.c_str()))
-        );
+
+      // ===========================================================================================
+      // 1.) do base64 encode
+      // typedefs
+      using namespace boost::archive::iterators;
+      typedef
+//          insert_linebreaks<         // insert line breaks every 72 characters
+              base64_from_binary<    // convert binary values to base64 characters
+                  transform_width<   // retrieve 6 bit integers from a sequence of 8 bit bytes
+                      const char*, 6, 8
+                  >
+              >
+//              ,72 >
+          base64_enc; // compose all the above operations in to a new iterator
+
+
+//      // read raw file into buffer
+//      std::ifstream in(value_.c_str());
+//      std::string raw_data ( static_cast<std::stringstream const&>(std::stringstream() << in.rdbuf()).str() );
+
+
+      // base64-encode
+//      unsigned int writePaddChars = (3-raw_data.length()%3)%3;
+
+      char tail[3] = {0,0,0};
+      size_t len=file_content_->size();
+      uint one_third_len = len/3;
+      uint len_rounded_down = one_third_len*3;
+      uint j = len_rounded_down + one_third_len;
+      unsigned int base64length = ((4 * file_content_->size() / 3) + 3) & ~3;
+
+      auto *xml_content = doc.allocate_string(0, base64length+1);
+      std::copy(base64_enc(file_content_->c_str()), base64_enc(file_content_->c_str()+len_rounded_down), xml_content);
+
+      if (len_rounded_down != len)
+      {
+          uint i=0;
+          for(; i < len - len_rounded_down; ++i)
+          {
+              tail[i] = (*file_content_)[len_rounded_down+i];
+          }
+
+          std::copy(base64_enc(tail), base64_enc(tail + 3), xml_content + j);
+
+          for(i=len + one_third_len + 1; i < j+4; ++i)
+          {
+              xml_content[i] = '=';
+          }
+      }
+
+//      ostreambuf<char> ostreamBuffer(xml_content, base64length);
+//      std::ostream os(&ostreamBuffer);
+//      std::copy(
+//            base64_text(file_content_.begin()),
+//            base64_text(file_content_.end()),
+//            std::ostream_iterator<char>(os)
+//         );
+//      os<<std::string(writePaddChars, '=');
+
+      // ===========================================================================================
+      // 2.) append to node
+      child->append_attribute(doc.allocate_attribute
+      (
+        "content",
+        xml_content
+      ));
+
     }
     return child;
   
@@ -496,7 +614,41 @@ void PathParameter::readFromNode
 
     if (auto* a = child->first_attribute("content"))
     {
-        file_content_ = a->value();
+      file_content_.reset(new std::string);
+
+        const char *src = a->value();
+
+        unsigned long size = strlen(src);
+        if (size && src[size - 1] == '=') {
+          --size;
+          if (size && src[size - 1] == '=') --size;
+        }
+        if (size == 0)
+        {
+          file_content_->clear();
+        }
+        else
+        {
+          file_content_->resize(3*size/4);
+          using namespace boost::archive::iterators;
+          typedef
+
+            transform_width<
+                binary_from_base64<
+                  const char*>, 8, 6>
+
+                base64_dec;
+
+            base64_dec src_it(src);
+            for(size_t i=0; i < file_content_->size(); ++i)
+            {
+                (*file_content_)[i] = *src_it;
+//                std::cout<<" "<<i<<":"<<file_content_[i];
+                ++src_it;
+            }
+//            std::copy(base64_dec(src), base64_dec(src + size),
+//                        file_content_.begin());
+        }
     }
   }
   else
@@ -511,9 +663,14 @@ void PathParameter::readFromNode
   }
 }
 
+PathParameter *PathParameter::clonePathParameter() const
+{
+  return new PathParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_, file_content_);
+}
+
 Parameter* PathParameter::clone() const
 {
-    return new PathParameter(value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_, file_content_.c_str());
+  return clonePathParameter();
 }
 
 void PathParameter::reset(const Parameter& p)
@@ -525,6 +682,19 @@ void PathParameter::reset(const Parameter& p)
   }
   else
     throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+}
+
+void PathParameter::operator=(const PathParameter &op)
+{
+  description_ = op.description_;
+  isHidden_ = op.isHidden_;
+  isExpert_ = op.isExpert_;
+  isNecessary_ = op.isNecessary_;
+  order_ = op.order_;
+
+  value_ = op.value_;
+  file_content_ = op.file_content_;
+  memcpy(file_content_hash_, op.file_content_hash_, sizeof(op.file_content_hash_));
 }
 
 
@@ -923,11 +1093,11 @@ void ArrayParameter::pack()
   }
 }
 
-void ArrayParameter::unpack()
+void ArrayParameter::unpack(const boost::filesystem::path& basePath)
 {
   for (auto& p: value_)
   {
-    p->unpack();
+    p->unpack(basePath);
   }
 }
 

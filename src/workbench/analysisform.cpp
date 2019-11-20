@@ -25,6 +25,7 @@
 
 #include "base/analysis.h"
 #include "openfoam/openfoamanalysis.h"
+#include "openfoam/remoteserverlist.h"
 
 #include "analysisform.h"
 #include "ui_analysisform.h"
@@ -35,7 +36,9 @@
 #include <QFileDialog>
 #include <QTemporaryFile>
 #include <QScrollBar>
+#include <QStatusBar>
 #include "email.h"
+#include "remotedirselector.h"
 
 #include "ui_xml_display.h"
 
@@ -43,9 +46,13 @@
 
 #include "of_clean_case.h"
 
+#include "remotesync.h"
+
 int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
 int metaid2=qRegisterMetaType<insight::ResultSetPtr>("insight::ResultSetPtr");
 int metaid3=qRegisterMetaType<insight::Exception>("insight::Exception");
+
+namespace bf = boost::filesystem;
 
 
 AnalysisWorker::AnalysisWorker(const std::shared_ptr<insight::Analysis>& analysis)
@@ -87,9 +94,6 @@ void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
 AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 : QMdiSubWindow(parent),
   analysisName_(analysisName),
-  executionPathParameter_( boost::filesystem::path("."),
-                           "Directory to store data files during analysis.\nLeave empty for temporary storage.",
-                           false, false, true ),
   pack_parameterset_(true)
 {
     // load default parameters
@@ -171,7 +175,6 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
     peditor_=new ParameterEditorWidget(parameters_, defaultParams, ui->inputTab, viz, vali);
     ui->inputTabLayout->addWidget(peditor_);
-    peditor_->insertParameter("execution directory", executionPathParameter_, executionPathParameter_);
 
     QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
     QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
@@ -188,6 +191,52 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     QSettings settings("silentdynamics", "workbench");
     peditor_->restoreState(settings.value("parameterEditor").toByteArray());
     pack_parameterset_ = settings.value("pack_parameterset", QVariant(true)).toBool();
+
+
+    connect(ui->btnSelectExecDir, &QPushButton::clicked,
+            [&]()
+            {
+              QString dir = QFileDialog::getExistingDirectory(this, "Please select execution directory", ui->localDir->text());
+              if (!dir.isEmpty())
+              {
+                ui->localDir->setText(dir);
+              }
+            }
+    );
+
+    for (const auto& i: insight::remoteServers)
+    {
+      ui->hostList->addItem( QString::fromStdString(i.first) );
+    }
+
+    connect(ui->btnSelectRemoteDir, &QPushButton::clicked,
+            [&]()
+    {
+      RemoteDirSelector dlg(this, ui->hostList->currentText().toStdString() );
+      if (dlg.exec() == QDialog::Accepted)
+      {
+          ui->hostList->setCurrentIndex( ui->hostList->findText( QString::fromStdString(dlg.selectedServer()) ) );
+          ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
+
+//          std::ofstream cfg("meta.foam");
+//          cfg << server_ << ":" << remoteDir_.string();
+
+//          updateGUI();
+      }
+    }
+    );
+
+    connect(ui->btnUpload, &QPushButton::clicked,
+            this, &AnalysisForm::onUpload);
+    connect(ui->btnDownload, &QPushButton::clicked,
+            this, &AnalysisForm::onDownload);
+
+    progressbar_=new QProgressBar(this);
+    auto *sb = new QStatusBar(this);
+    this->layout()->addWidget(sb);
+    sb->addPermanentWidget(progressbar_);
+    connect(this, &AnalysisForm::statusMessage,
+            sb, &QStatusBar::showMessage);
 }
 
 AnalysisForm::~AnalysisForm()
@@ -199,6 +248,9 @@ AnalysisForm::~AnalysisForm()
 
   delete ui;
 }
+
+
+
 
 void AnalysisForm::updateSaveMenuLabel()
 {
@@ -213,11 +265,169 @@ void AnalysisForm::updateSaveMenuLabel()
   }
 }
 
+bool AnalysisForm::hasValidExecutionPath() const
+{
+  return analysis_ || boost::filesystem::exists( ui->localDir->text().toStdString() );
+}
+
+path AnalysisForm::currentExecutionPath() const
+{
+  boost::filesystem::path exePath = ui->localDir->text().toStdString();
+  if (analysis_) exePath = analysis_->executionPath();
+  return exePath;
+}
+
 void AnalysisForm::onTogglePacking()
 {
   pack_parameterset_ = act_pack_->isChecked();
   updateSaveMenuLabel();
 }
+
+
+void AnalysisForm::onRemoteServerChanged()
+{
+}
+
+void AnalysisForm::onLockRemoteConfig()
+{
+  ui->hostList->setEnabled(false);
+  ui->remoteDir->setEnabled(false);
+  ui->btnSelectRemoteDir->setEnabled(false);
+}
+
+bool AnalysisForm::isReadyForRemoteRun() const
+{
+  std::string server = ui->hostList->currentText().toStdString();
+  return ( (server != "localhost") && hasValidExecutionPath() );
+}
+
+bool AnalysisForm::isRemoteRunInitialized() const
+{
+  return ( isReadyForRemoteRun() && (!ui->hostList->isEnabled()) );
+}
+
+
+void AnalysisForm::onAutoSelectRemoteDir()
+{
+  if ( isReadyForRemoteRun() )
+  {
+    std::string server = ui->hostList->currentText().toStdString();
+
+
+    auto i = insight::remoteServers.findServer(server);
+
+    bf::path absloc=bf::canonical(bf::absolute(currentExecutionPath()));
+    std::string casedirname = absloc.filename().string();
+
+    bf::path remote_dir;
+    {
+      insight::MountRemote m(i.second.serverName_, i.second.defaultDir_);
+
+      bf::path target_dir = boost::filesystem::unique_path( m.mountpoint()/("isofexecution-"+casedirname+"-%%%%%%%%") );
+
+      remote_dir =
+          i.second.defaultDir_ / boost::filesystem::make_relative(m.mountpoint(), target_dir);
+
+//      boost::filesystem::create_directories(target_dir);
+    }
+
+    remotePaths_[server]=remote_dir;
+    ui->remoteDir->setText( QString::fromStdString(remote_dir.string()) );
+  }
+}
+
+
+void AnalysisForm::initializeRemoteRun()
+{
+  if ( isReadyForRemoteRun() )
+  {
+    if (ui->remoteDir->text().isEmpty())
+      onAutoSelectRemoteDir();
+
+    std::string server = ui->hostList->currentText().toStdString();
+    bf::path remote_dir( ui->remoteDir->text().toStdString() );
+
+    auto i = insight::remoteServers.findServer(server);
+
+    {
+      insight::MountRemote m(i.second.serverName_, i.second.defaultDir_);
+
+      bf::path target_dir =
+          m.mountpoint() / boost::filesystem::make_relative(i.second.defaultDir_, remote_dir);
+
+      if (!bf::exists(target_dir))
+        boost::filesystem::create_directories(target_dir);
+    }
+
+    onLockRemoteConfig();
+
+    bf::path meta=currentExecutionPath()/"meta.foam";
+    std::ofstream cfg(meta.c_str());
+    cfg << i.second.serverName_ << ":" << remote_dir.string();
+  }
+}
+
+void AnalysisForm::onUpload()
+{
+  if (!isRemoteRunInitialized())
+  {
+    initializeRemoteRun();
+
+    insight::RemoteExecutionConfig rec(currentExecutionPath());
+
+    auto *rstr = new insight::RunSyncToRemote(rec);
+
+    connect(rstr, &insight::RunSyncToRemote::progressValueChanged,
+            progressbar_, &QProgressBar::setValue);
+    connect(rstr, &insight::RunSyncToRemote::progressTextChanged,
+            this, [=](const QString& text) { emit statusMessage(text); } );
+    connect(rstr, &insight::RunSyncToRemote::transferFinished,
+            this, [&]()
+    {
+      progressbar_->setHidden(true);
+      emit statusMessage("Transfer to remote location finished");
+    });
+    connect(rstr, &insight::RunSyncToRemote::transferFinished,
+            rstr, &QObject::deleteLater);
+
+    progressbar_->setHidden(false);
+    emit statusMessage("Transfer to remote location started");
+
+    rstr->start();
+  }
+}
+
+void AnalysisForm::onDownload()
+{
+  if (isRemoteRunInitialized())
+  {
+    insight::RemoteExecutionConfig rec(currentExecutionPath());
+
+    auto* rstl = new insight::RunSyncToLocal(rec);
+
+    connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
+            progressbar_, &QProgressBar::setValue);
+    connect(rstl, &insight::RunSyncToLocal::progressTextChanged,
+            this, [=](const QString& text) { emit statusMessage(text); } );
+    connect(rstl, &insight::RunSyncToLocal::transferFinished,
+            rstl, &QObject::deleteLater);
+    connect(rstl, &insight::RunSyncToLocal::transferFinished,
+            this, [&]()
+                  {
+                    progressbar_->setHidden(true);
+                    emit statusMessage("Transfer from remote location to local directory finished");
+                  }
+    );
+
+    progressbar_->setHidden(false);
+    emit statusMessage("Transfer from remote location to local directory started");
+
+    rstl->start();
+  }
+}
+
+
+
 
 void AnalysisForm::insertMenu(QMenuBar* mainMenu)
 {
@@ -436,6 +646,11 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
   }
 }
 
+void AnalysisForm::setExecutionPath(const boost::filesystem::path &p)
+{
+  ui->localDir->setText( p.c_str() );
+}
+
 void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 {
   ist_file_=fp;
@@ -474,9 +689,9 @@ void AnalysisForm::onShowParameterXML()
     ui.setupUi(widget);
 
     emit apply(); // apply all changes into parameter set
-    boost::filesystem::path exePath = executionPathParameter_();
+
     std::ostringstream os;
-    parameters_.saveToStream(os, exePath, analysisName_);
+    parameters_.saveToStream(os, currentExecutionPath(), analysisName_);
     ui.textDisplay->setText(QString::fromStdString(os.str()));
 
     widget->exec();
@@ -490,6 +705,56 @@ void AnalysisForm::onConfigModification()
 
 void AnalysisForm::onRunAnalysis()
 {
+  if (isReadyForRemoteRun())
+  {
+    emit apply(); // apply all changes into parameter set
+
+    // Remote execution
+    std::string server( ui->hostList->currentText().toStdString() );
+    bf::path localDir( currentExecutionPath() );
+
+    // upload
+    onUpload();
+
+    if (isRemoteRunInitialized())
+    {
+
+      bf::path remoteDir(ui->remoteDir->text().toStdString()); // valid after initRemote!!
+
+      bf::path jobfile_filename;
+      if (!ist_file_.empty())
+      {
+        jobfile_filename = ist_file_.filename();
+      }
+      else
+      {
+        jobfile_filename = currentExecutionPath().replace_extension("ist");
+      }
+
+      insight::RemoteExecutionConfig rec(localDir);
+
+      // create jobfile (temporary) and copy to execution dir
+      bf::path tempinfile = bf::unique_path( localDir/"remote-input-%%%%-%%%%-%%%%-%%%%.ist" );
+
+      parameters_.packExternalFiles();
+      parameters_.saveToFile(tempinfile, analysisName_);
+      if (!pack_parameterset_)
+      {
+        parameters_.removePackedData();
+      }
+
+#warning Separate thread required
+      rec.putFile(tempinfile, jobfile_filename);
+
+      // start job
+      insight::TaskSpoolerInterface tsi( remoteDir/"tsp.socket", server );
+
+      tsi.startJob({"analyze", "--workdir", remoteDir.string(), (remoteDir/jobfile_filename).string() });
+    }
+  }
+  else
+  {
+    // local execution
     if (!workerThread_)
     {
 
@@ -510,7 +775,9 @@ void AnalysisForm::onRunAnalysis()
             }
         }
 
-        boost::filesystem::path exePath = executionPathParameter_();
+
+        boost::filesystem::path exePath( ui->localDir->text().toStdString() );
+        // it's ok, if path is empty in the following checks
 
         if (isOpenFOAMAnalysis_)
         {
@@ -592,6 +859,7 @@ void AnalysisForm::onRunAnalysis()
 
 
     }
+  }
 }
 
 
@@ -660,7 +928,7 @@ void AnalysisForm::onCreateReport()
   (
       this, 
     "Save Report",
-    QString(executionPathParameter_().c_str()), 
+    QString(ist_file_.parent_path().c_str()),
     "PDF file (*.pdf);;LaTeX file (*.tex)"
   );
 
@@ -689,48 +957,61 @@ void AnalysisForm::onCreateReport()
 
 void AnalysisForm::onStartPV()
 {
-  emit apply(); // apply all changes into parameter set
-  boost::filesystem::path exePath = executionPathParameter_();
-  ::system( boost::str( boost::format
-        ("cd %s; isPV.py &" ) % exePath.string()
-   ).c_str() );
+  if (hasValidExecutionPath())
+  {
+    emit apply(); // apply all changes into parameter set
+    auto exePath = currentExecutionPath();
+    ::system( boost::str( boost::format
+          ("cd %s; isPV.py &" ) % exePath.string()
+     ).c_str() );
+  }
 }
 
 void AnalysisForm::onCleanOFC()
 {
-  const insight::OFEnvironment* ofc = nullptr;
-  if (parameters_.contains("run/OFEname"))
+  if (hasValidExecutionPath())
   {
-    std::string ofename=parameters_.getString("run/OFEname");
-    ofc=&(insight::OFEs::get(ofename));
-  }
-  else
-  {
-    ofc=&(insight::OFEs::getCurrentOrPreferred());
-  }
+    const insight::OFEnvironment* ofc = nullptr;
+    if (parameters_.contains("run/OFEname"))
+    {
+      std::string ofename=parameters_.getString("run/OFEname");
+      ofc=&(insight::OFEs::get(ofename));
+    }
+    else
+    {
+      ofc=&(insight::OFEs::getCurrentOrPreferred());
+    }
 
-  OFCleanCaseDialog dlg(*ofc, executionPathParameter_(), this);
-  dlg.exec();
+    OFCleanCaseDialog dlg(*ofc, currentExecutionPath(), this);
+    dlg.exec();
+  }
 }
 
 
 void AnalysisForm::onWnow()
 {
-  boost::filesystem::path exePath = executionPathParameter_();
-  if (boost::filesystem::exists(exePath))
+  if (hasValidExecutionPath())
   {
-    std::ofstream f( (exePath/"wnow").c_str() );
-    f.close();
+    boost::filesystem::path exePath = currentExecutionPath();
+
+    if (boost::filesystem::exists(exePath))
+    {
+      std::ofstream f( (exePath/"wnow").c_str() );
+      f.close();
+    }
   }
 }
 
 
 void AnalysisForm::onWnowAndStop()
 {
-  boost::filesystem::path exePath = executionPathParameter_();
-  if (boost::filesystem::exists(exePath))
+  if (hasValidExecutionPath())
   {
-    std::ofstream f( (exePath/"wnowandstop").c_str() );
-    f.close();
+    boost::filesystem::path exePath = currentExecutionPath();
+    if (boost::filesystem::exists(exePath))
+    {
+      std::ofstream f( (exePath/"wnowandstop").c_str() );
+      f.close();
+    }
   }
 }

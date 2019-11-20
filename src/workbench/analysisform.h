@@ -33,6 +33,7 @@
 #include <QTreeWidget>
 #include <QPushButton>
 #include <QPlainTextEdit>
+#include <QProgressBar>
 
 #include "workbench.h"
 #include "graphprogressdisplayer.h"
@@ -86,7 +87,7 @@ protected:
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
   insight::ParameterSet parameters_;
-  
+
   std::shared_ptr<insight::Analysis> analysis_;  
   insight::ResultSetPtr results_;
   
@@ -96,7 +97,6 @@ protected:
   QTreeWidget *rt_;
   QTreeWidgetItem* rtroot_;
 
-  insight::DirectoryParameter executionPathParameter_;
   ParameterEditorWidget* peditor_;
   
   Q_DebugStream *cout_log_, *cerr_log_;
@@ -129,6 +129,17 @@ protected:
   bool is_modified_;
 
   void updateSaveMenuLabel();
+
+  bool hasValidExecutionPath() const;
+  boost::filesystem::path currentExecutionPath() const;
+
+  std::map<std::string, boost::filesystem::path> remotePaths_;
+
+  bool isReadyForRemoteRun() const;
+  void initializeRemoteRun();
+  bool isRemoteRunInitialized() const;
+
+  QProgressBar* progressbar_;
   
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
@@ -136,7 +147,6 @@ public:
   
   inline insight::ParameterSet& parameters() { return parameters_; }
   inline insight::Analysis& analysis() { return *analysis_; }
-  inline insight::DirectoryParameter& executionPathParameter() { return executionPathParameter_; }
   
   inline void forceUpdate() { emit update(); }
 
@@ -146,6 +156,8 @@ public:
   void loadParameters(const boost::filesystem::path& fp);
   void saveParameters(bool *cancelled=nullptr);
   void saveParametersAs(bool *cancelled=nullptr);
+
+  void setExecutionPath(const boost::filesystem::path& path);
 
 protected:
   virtual void	closeEvent ( QCloseEvent * event );
@@ -175,10 +187,20 @@ private Q_SLOTS:
 
   void onTogglePacking();
 
+
+  // =======================
+  // == Remote exec actions
+  void onRemoteServerChanged();
+  void onLockRemoteConfig();
+  void onAutoSelectRemoteDir();
+  void onUpload();
+  void onDownload();
+
 Q_SIGNALS:
   void apply();
   void update();
   void runAnalysis(insight::ProgressDisplayer*);
+  void statusMessage(const QString& message, int timeout=0);
   
 private:
   Ui::AnalysisForm* ui;

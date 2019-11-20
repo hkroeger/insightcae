@@ -9,75 +9,12 @@
 #include <QInputDialog>
 
 
-bool MountRemote::isAlreadyMounted() const
-{
-  std::cout<<"reading /proc/mounts"<<std::endl;
-  std::ifstream f("/proc/mounts");
-  std::string line;
-  boost::regex e ("^([^ ]+) ([^ ]+) .*$");
-  while (getline(f, line))
-  {
-    boost::smatch m;
-    if (boost::regex_search(line, m, e))
-    {
-      std::string src=m[1], mp=m[2];
-      std::cout<<src<<" "<<mp<<std::endl;
-      if ( boost::filesystem::equivalent(mp, mountpoint_) )
-      {
-        std::cout<<mp<< " >> matches "<<mountpoint_<<std::endl;
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-
-void MountRemote::mount(const std::string& server, const bfs_path& remotedir)
-{
-  auto gid = getgid();
-  auto uid = getuid();
-
-  std::string cmd=boost::str(boost::format( "sshfs -o uid=%d,gid=%d,follow_symlinks \"%s:%s\" \"%s\"") % uid % gid % server % remotedir.string() % mountpoint_.string() );
-  std::cout<<cmd<<std::endl;
-  if (std::system( cmd.c_str() )!=0)
-      throw insight::Exception("Could not mount remote filesystem. Failed command was: "+cmd);
-}
-
-
-void MountRemote::unmount()
-{
-  std::string cmd="fusermount -z -u \""+mountpoint_.string()+"\"";
-  std::system(cmd.c_str());
-}
-
-MountRemote::MountRemote(const bfs_path& mountpoint, const std::string& server, const bfs_path& remotedir, bool keep, bool expect_mounted)
-    : mountpoint_(mountpoint), keep_(keep)
-{
-  bool is_mounted=isAlreadyMounted();
-
-  if (is_mounted && !expect_mounted)
-    throw insight::Exception("Trying to mount to directory, which is already mounted!");
-  else if (!is_mounted && expect_mounted)
-    throw insight::Exception("Expected mounted directory, but found it unmounted!");
-
-  if (!expect_mounted)
-    mount(server, remotedir);
-}
-
-
-MountRemote::~MountRemote()
-{
-  if (!keep_)
-  {
-    unmount();
-  }
-}
 
 
 
 
-RemoteDirSelector::RemoteDirSelector(QWidget *parent) :
+
+RemoteDirSelector::RemoteDirSelector(QWidget *parent, const std::string& defaultServer) :
   QDialog(parent),
   ui(new Ui::RemoteDirSelector)
 {
@@ -98,7 +35,12 @@ RemoteDirSelector::RemoteDirSelector(QWidget *parent) :
   connect(ui->newdir, &QPushButton::clicked,
           this, &RemoteDirSelector::createDir);
 
-  ui->server->setCurrentIndex(0);
+  int i=0;
+  if (!defaultServer.empty())
+  {
+    i=ui->server->findText(QString::fromStdString(defaultServer));
+  }
+  ui->server->setCurrentIndex(i);
 
   connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &RemoteDirSelector::accept);
 }
@@ -128,7 +70,7 @@ bfs_path RemoteDirSelector::selectedRemoteDir()
 void RemoteDirSelector::serverChanged(const QString& name)
 {
     mount_.reset();
-    mount_.reset(new MountRemote(mountpoint_, insight::remoteServers[name.toStdString()].serverName_, "/"));
+    mount_.reset(new insight::MountRemote(mountpoint_, insight::remoteServers[name.toStdString()].serverName_, "/"));
 
     QString mp=QString::fromStdString(boost::filesystem::absolute(mountpoint_).string());
     qDebug()<<mp;
@@ -163,13 +105,15 @@ void RemoteDirSelector::serverChanged(const QString& name)
          bfs_path dir = boost::filesystem::make_relative(mountpoint_, base_dir);
 
          bfs_path newdir
-                 (
-                   QInputDialog::getText(this,
-                                          "Create directory",
-                                          "Create directory below "+QString::fromStdString(dir.string()),
-                                          QLineEdit::Normal, "",
-                                          &ok).toStdString()
-                 );
+         (
+           QInputDialog::getText(
+                  this,
+                  "Create directory",
+                  "Create directory below "+QString::fromStdString(dir.string()),
+                  QLineEdit::Normal, "",
+                  &ok
+                 ).toStdString()
+         );
          if (ok)
          {
              boost::filesystem::create_directory(base_dir/newdir);
@@ -178,3 +122,4 @@ void RemoteDirSelector::serverChanged(const QString& name)
          }
      }
  }
+

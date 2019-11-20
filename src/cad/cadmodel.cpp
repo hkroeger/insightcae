@@ -82,12 +82,15 @@ size_t Model::calcHash() const
 {
   ParameterListHash h;
   h+=modelfile_;
+  h+=description_;
+  h+=cost_;
 #warning check, if hash is needed
   return h.getHash();
 }
 
 
 Model::Model(const ModelVariableTable& vars)
+  : cost_(0.0)
 {
     defaultVariables();
     copyVariables(vars);
@@ -99,7 +102,8 @@ Model::Model(const ModelVariableTable& vars)
 
 
 Model::Model(const std::string& modelname, const ModelVariableTable& vars)
-    : modelfile_(sharedModelFilePath(modelname+".iscad"))
+    : modelfile_(sharedModelFilePath(modelname+".iscad")),
+      cost_(0.)
 {
     defaultVariables();
     copyVariables(vars);
@@ -108,13 +112,24 @@ Model::Model(const std::string& modelname, const ModelVariableTable& vars)
 
 
 Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable& vars)
-    : modelfile_(modelfile)
+    : modelfile_(modelfile),
+      cost_(0.0)
 {
     insight::SharedPathList::searchPathList.insertFileDirectoyIfNotPresent(modelfile_);
     defaultVariables();
     copyVariables(vars);
 }
 
+void Model::setDescription(const std::string& description)
+{
+  description_=description;
+}
+
+
+void Model::setCost(double cost)
+{
+  cost_=cost;
+}
 
 
 void Model::build()
@@ -374,6 +389,22 @@ public:
   }
 };
 
+const std::string Model::description() const
+{
+  return description_;
+}
+
+double Model::cost() const
+{
+  return cost_;
+}
+
+double Model::totalCost() const
+{
+  double tc = cost();
+#warning incomplete!
+  return tc;
+}
 
 Model::ScalarTableContents Model::scalars() const
 {

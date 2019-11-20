@@ -212,6 +212,10 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
 {
     r_model =
 //      current_pos.save_start_pos >>
+        ( r_string | qi::attr(std::string()) ) [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
+        >>
+        ( (qi::lit("cost") >> qi::double_ >> ';' ) | qi::attr(0.0) ) [ phx::bind( &Model::setCost, model_, qi::_1 ) ]
+        >>
         *(
             r_assignment
             |

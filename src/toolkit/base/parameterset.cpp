@@ -378,11 +378,11 @@ void SubsetParameter::pack()
   }
 }
 
-void SubsetParameter::unpack()
+void SubsetParameter::unpack(const boost::filesystem::path& basePath)
 {
   for(auto& p: *this)
   {
-    p.second->unpack();
+    p.second->unpack(basePath);
   }
 }
 
@@ -509,12 +509,12 @@ void SelectableSubsetParameter::pack()
   }
 }
 
-void SelectableSubsetParameter::unpack()
+void SelectableSubsetParameter::unpack(const boost::filesystem::path& basePath)
 {
   auto& v = this->operator()(); // get active subset
   for (auto& p: v)
   {
-    p.second->unpack();
+    p.second->unpack(basePath);
   }
 }
 

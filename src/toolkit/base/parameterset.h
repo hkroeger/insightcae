@@ -144,11 +144,11 @@ public:
     return this->get<MatrixParameter> ( name ) ();
   }
 
-  inline boost::filesystem::path& getPath ( const std::string& name )
+  inline std::istream& getFileStream ( const std::string& name )
   {
-    return this->get<PathParameter> ( name ) ();
+    return this->get<PathParameter> ( name ) .stream();
   }
-  
+
   inline ParameterSet& setInt ( const std::string& name, int v )
   {
     this->get<IntParameter> ( name ) () = v;
@@ -185,9 +185,9 @@ public:
     return *this;
   }
 
-  inline ParameterSet& setPath ( const std::string& name, const boost::filesystem::path& fp)
+  inline ParameterSet& setOriginalFileName ( const std::string& name, const boost::filesystem::path& fp)
   {
-    this->get<PathParameter> ( name ) () = fp;
+    this->get<PathParameter> ( name ).setOriginalFilePath(fp);
     return *this;
   }
 
@@ -218,9 +218,9 @@ public:
     return this->get<VectorParameter> ( name ) ();
   }
   
-  inline const boost::filesystem::path& getPath ( const std::string& name ) const
+  inline const boost::filesystem::path getPath ( const std::string& name, const boost::filesystem::path& basePath ) const
   {
-    return this->get<PathParameter> ( name ) ();
+    return this->get<PathParameter> ( name ) .filePath(basePath);
   }
   
   const ParameterSet& getSubset ( const std::string& name ) const;
@@ -332,7 +332,7 @@ public:
 
   bool isPacked() const override;
   void pack() override;
-  void unpack() override;
+  void unpack(const boost::filesystem::path& basePath) override;
   void clearPackedData() override;
 
 
@@ -426,7 +426,7 @@ public:
 
   bool isPacked() const override;
   void pack() override;
-  void unpack() override;
+  void unpack(const boost::filesystem::path& basePath) override;
   void clearPackedData() override;
 
 

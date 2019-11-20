@@ -10,7 +10,6 @@ find_package(KF5Parts)
 set(isofExecutionManager_SOURCES
     main.cpp
     mainwindow.cpp
-    remotedirselector.cpp
     remoteparaview.cpp
 )
 

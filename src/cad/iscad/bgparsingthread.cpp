@@ -261,6 +261,8 @@ void BGParsingThread::run()
 
               insight::cad::cache.finishRebuild();
 
+              std::cout << "total cost of model = " << model_->totalCost();
+
               emit statusMessage("Model rebuild successfully finished.");
           }
           else

@@ -1,6 +1,10 @@
 <RCC>
-    <qresource prefix="">
+    <qresource prefix="/">
         <file>resources/insight_workbench_splash.png</file>
         <file>resources/logo_insight_cae.png</file>
+        <file>resources/download.svg</file>
+        <file>resources/upload.svg</file>
+        <file>resources/upload.png</file>
+        <file>resources/download.png</file>
     </qresource>
 </RCC>

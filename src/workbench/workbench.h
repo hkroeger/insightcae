@@ -28,6 +28,7 @@
 #include <QMenuBar>
 
 #include "insightcaeapplication.h"
+#include "sdmdiarea.h"
 
 
 class workbench
@@ -35,7 +36,7 @@ class workbench
 {
 Q_OBJECT
 private:
-  QMdiArea *mdiArea_;
+  SDMdiArea *mdiArea_;
 
 public:
 

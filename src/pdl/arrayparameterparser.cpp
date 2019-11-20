@@ -19,7 +19,7 @@ std::string ArrayParameterParser::Data::cppValueRep(const std::string& name) con
   for (size_t i=0; i<num; i++)
   {
     if (i>0) rep<<",";
-    rep << value->cppValueRep(name+"_default") ;
+    rep << value->cppConstructorParameters(name+"_default") ;
   }
   rep << "}";
   return rep.str();

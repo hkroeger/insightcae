@@ -204,12 +204,12 @@ void FieldData::setDirichletBC(OFDictData::dict& BC) const
 }
 
 
-boost::filesystem::path completed_path(const boost::filesystem::path& basepath, const boost::filesystem::path& filename)
+boost::filesystem::path completed_path(const boost::filesystem::path& basepath, const insight::PathParameter* filename)
 {
     if (filename.is_absolute())
-        return filename;
+        return filename->filePath(basepath);
     else
-        return basepath/filename;
+        return basepath/filename->filePath(basepath);
 }
 
 double FieldData::calcRepresentativeValueMag(const boost::filesystem::path& casedir) const

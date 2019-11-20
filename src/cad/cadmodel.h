@@ -76,17 +76,20 @@ public:
     typedef boost::spirit::qi::symbols<char, PostprocActionPtr> PostprocActionTable;
 
 protected:
+    std::string                 description_;
+    double                      cost_;
+
     ScalarTable 		scalars_;
     VectorTable 		points_, directions_;
-    DatumTable 		datums_;
-    ModelstepTable	modelsteps_;
+    DatumTable                  datums_;
+    ModelstepTable              modelsteps_;
     ComponentSet		components_;
-    VertexFeatureTable	vertexFeatures_;
-    EdgeFeatureTable	edgeFeatures_;
-    FaceFeatureTable	faceFeatures_;
-    SolidFeatureTable	solidFeatures_;
-    ModelTable		models_;
-    PostprocActionTable	postprocActions_;
+    VertexFeatureTable          vertexFeatures_;
+    EdgeFeatureTable            edgeFeatures_;
+    FaceFeatureTable            faceFeatures_;
+    SolidFeatureTable           solidFeatures_;
+    ModelTable                  models_;
+    PostprocActionTable         postprocActions_;
 
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     boost::filesystem::path modelfile_;
@@ -104,6 +107,8 @@ public:
     Model(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
     Model(const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable());
 
+    void setDescription(const std::string& description);
+    void setCost(double cost);
 
     const ScalarTable& 	scalarSymbols() const;
     const VectorTable&	pointSymbols() const;
@@ -157,6 +162,22 @@ public:
         return components_;
     }
     
+    const std::string description() const;
+
+    /**
+     * @brief cost
+     * @return
+     * cost of this model only
+     */
+    double cost() const;
+
+    /**
+     * @brief totalCost
+     * @return
+     * cost of this model plus all submodel costs
+     */
+    double totalCost() const;
+
     ScalarTableContents scalars() const;
     VectorTableContents	points() const;
     VectorTableContents	directions() const;

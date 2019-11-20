@@ -214,10 +214,10 @@ void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer*, OpenFOAMCase& cm)
   
   if (!cm.outputTimesPresentOnDisk(executionPath(), false))
   {
-    if ((cm.OFversion()>=230) && (p.run.mapFrom!=""))
+    if ((cm.OFversion()>=230) && (p.run.mapFrom->isValid()))
     {
       // parallelTarget option is not present in OF2.3.x
-      mapFromOther(cm, p.run.mapFrom, false);
+      mapFromOther(cm, p.run.mapFrom->filePath(executionPath()), false);
     }
   }
 
@@ -229,9 +229,9 @@ void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer*, OpenFOAMCase& cm)
   
   if (!cm.outputTimesPresentOnDisk(executionPath(), is_parallel))
   {
-    if ( (!(cm.OFversion()>=230)) && (p.run.mapFrom!="") )
+    if ( (!(cm.OFversion()>=230)) && (p.run.mapFrom->isValid()) )
     {
-      mapFromOther(cm, p.run.mapFrom, is_parallel);
+      mapFromOther(cm, p.run.mapFrom->filePath(executionPath()), is_parallel);
     }
     else
     {
@@ -361,9 +361,9 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
             if (!meshCase->meshPresentOnDisk(dir))
             {
                 meshcreated=true;
-                if (!p.mesh.linkmesh.empty())
+                if (p.mesh.linkmesh->isValid())
                 {
-                  linkPolyMesh(p.mesh.linkmesh/"constant", dir/"constant", &ofe);
+                  linkPolyMesh(p.mesh.linkmesh->filePath(executionPath())/"constant", dir/"constant", &ofe);
                 }
                 else
                 {

@@ -1,32 +1,16 @@
 #ifndef REMOTEDIRSELECTOR_H
 #define REMOTEDIRSELECTOR_H
 
+
 #include <QDialog>
 #include <QFileSystemModel>
 
 #include "base/boost_include.h"
+#include "openfoam/mountremote.h"
 
 namespace Ui {
   class RemoteDirSelector;
 }
-
-
-
-
-class MountRemote
-{
-    bfs_path mountpoint_;
-    bool keep_;
-
-    bool isAlreadyMounted() const;
-    void mount(const std::string& server, const bfs_path& remotedir);
-    void unmount();
-
-public:
-    MountRemote(const bfs_path& mountpoint, const std::string& server, const bfs_path& remotedir, bool keep=false, bool expect_mounted=false);
-    ~MountRemote();
-};
-
 
 
 
@@ -36,12 +20,12 @@ class RemoteDirSelector : public QDialog
 
   bfs_path mountpoint_;
 
-  std::shared_ptr<MountRemote> mount_;
+  std::shared_ptr<insight::MountRemote> mount_;
 
   QFileSystemModel *fs_model_;
 
 public:
-  explicit RemoteDirSelector(QWidget *parent = nullptr);
+  explicit RemoteDirSelector(QWidget *parent = nullptr, const std::string& defaultServer = "");
   ~RemoteDirSelector();
 
   std::string selectedServer();
@@ -54,8 +38,6 @@ private Q_SLOTS:
 private:
   Ui::RemoteDirSelector *ui;
 };
-
-
 
 
 #endif // REMOTEDIRSELECTOR_H

@@ -26,6 +26,7 @@
 #include <QAction>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QStatusBar>
 
 #include "newanalysisdlg.h"
 #include "analysisform.h"
@@ -41,7 +42,7 @@ workbench::workbench()
     setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
     this->setWindowTitle("Insight Workbench");
     
-    mdiArea_ = new QMdiArea(this);
+    mdiArea_ = new SDMdiArea(this);
     setCentralWidget( mdiArea_ );
     connect(mdiArea_, &QMdiArea::subWindowActivated,
             this, &workbench::onSubWindowActivated);
@@ -130,7 +131,7 @@ void workbench::openAnalysis(const QString& fn)
   //form->parameters().readFromNode(doc, *rootnode, fp.parent_path());
   form->loadParameters(fp);
   boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();
-  form->executionPathParameter()()=dir;
+  form->setExecutionPath(dir);
   form->forceUpdate();
   form->showMaximized();
 }

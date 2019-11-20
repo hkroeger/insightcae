@@ -41,7 +41,7 @@ std::string SubsetParameterParser::Data::cppTypeDecl(const std::string& name) co
       for (const ParameterSetEntry& pe: value)
       {
           if (!first) os<<",\n"; else first=false;
-          os << pe.first<<"("<<(pe.second->cppValueRep(pe.first))<<")";
+          os << pe.first<<"("<<(pe.second->cppConstructorParameters(pe.first))<<")";
       }
     }
     os <<"{}\n";
@@ -85,7 +85,7 @@ std::string SubsetParameterParser::Data::cppValueRep(const std::string& ) const
     for (const ParameterSetEntry& pe: value)
     {
         if (!first) rep<<",\n"; else first=false;
-        rep <<(pe.second->cppValueRep(pe.first));
+        rep <<(pe.second->cppConstructorParameters(pe.first));
     }
     rep<<"}";
   }

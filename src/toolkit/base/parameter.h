@@ -32,11 +32,13 @@
 #include <string>
 #include <typeinfo>
 #include <set>
+#include <sstream>
 
 #include "base/boost_include.h"
 #include <boost/noncopyable.hpp>
 #include <boost/concept_check.hpp>
 #include "boost/version.hpp"
+#include <openssl/md5.h>
 
 #include "rapidxml/rapidxml.hpp"
 
@@ -158,7 +160,7 @@ public:
      * @brief unpack
      * restore file contents on disk, if file is not there
      */
-    virtual void unpack();
+    virtual void unpack(const boost::filesystem::path& basePath);
 
     /**
      * @brief clearPackedData
@@ -317,7 +319,7 @@ extern char IntName[];
 extern char BoolName[];
 extern char VectorName[];
 extern char StringName[];
-extern char PathName[];
+//extern char PathName[];
 
 typedef SimpleParameter<double, DoubleName> DoubleParameter;
 typedef SimpleParameter<int, IntName> IntParameter;
@@ -330,26 +332,82 @@ typedef SimpleParameter<std::string, StringName> StringParameter;
 
 
 class PathParameter
-    : public SimpleParameter<boost::filesystem::path, PathName>
+    : public Parameter
 {
-    // store content of file, if packed
-    std::string file_content_;
+
+protected:
+  /**
+     * @brief value_
+     * original file name
+     */
+  boost::filesystem::path value_;
+
+  /**
+   * @brief file_content_
+   * Store content of file, if packed.
+   * Contains plain file content, not encoded.
+   */
+  std::shared_ptr<std::string> file_content_;
+  unsigned char file_content_hash_[MD5_DIGEST_LENGTH];
+
+  mutable std::unique_ptr<std::istream> file_content_stream_;
 
 public:
     declareType ( "path" );
 
-    PathParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    PathParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0, const char* base64_content = "" );
+    PathParameter ( const std::string& description,
+                    bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0
+        );
 
-    boost::filesystem::path& operator() () override;
-    const boost::filesystem::path& operator() () const override;
+    PathParameter ( const boost::filesystem::path& value, const std::string& description,
+                    bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0,
+                    std::shared_ptr<std::string> base64_content = std::shared_ptr<std::string>()
+        );
+
+
+    std::string latexRepresentation() const override;
+    std::string plainTextRepresentation(int /*indent*/=0) const override;
+
+    bool isValid() const;
+
+    /**
+     * @brief filePath
+     * Get the path of the file.
+     * It will be created, if it does not exist on the filesystem yet.
+     * @param baseDirectory
+     * The working directory. If the file is only in memory,
+     * it will be created in a temporary directory under this path.
+     * @return
+     */
+    boost::filesystem::path filePath(const boost::filesystem::path& baseDirectory) const;
+
+    /**
+     * @brief originalFilePath
+     * The path of the originally referenced file.
+     * Since the file might have been packed into the parameter set,
+     * this file must not necessarily be present under the specified path.
+     * @return
+     */
+    const boost::filesystem::path& originalFilePath() const;
+
+    /**
+     * @brief fileName
+     * @return
+     * returns the file name component only
+     */
+    boost::filesystem::path fileName() const;
+
+    void setOriginalFilePath(const boost::filesystem::path& value);
+
+
+    std::istream& stream() const;
+
 
     /**
      * @brief isPacked
      * check, if contains file contents
      * @return
      */
-
     bool isPacked() const override;
 
     /**
@@ -362,7 +420,7 @@ public:
      * @brief unpack
      * restore file contents on disk, if file is not there
      */
-    void unpack() override;
+    void unpack(const boost::filesystem::path& basePath) override;
 
     void clearPackedData() override;
 
@@ -373,9 +431,14 @@ public:
     void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
      boost::filesystem::path inputfilepath) override;
 
+    PathParameter* clonePathParameter() const;
     Parameter* clone() const override;
     void reset(const Parameter& p) override;
+
+    void operator=(const PathParameter& op);
 };
+
+
 
 
 #ifdef SWIG
@@ -417,6 +480,8 @@ public:
     Parameter* clone() const override;
     void reset(const Parameter& p) override;
 };
+
+
 
 
 class SelectionParameter
@@ -532,6 +597,7 @@ public:
 
 
 
+
 class ArrayParameter
     : public Parameter
 {
@@ -596,7 +662,7 @@ public:
 
     bool isPacked() const override;
     void pack() override;
-    void unpack() override;
+    void unpack(const boost::filesystem::path& basePath) override;
     void clearPackedData() override;
 
 
@@ -641,6 +707,7 @@ public:
     Parameter* clone() const override;
     void reset(const Parameter& p) override;
 };
+
 
 
 

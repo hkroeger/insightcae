@@ -2915,12 +2915,14 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
     .set_nd2(p.n_homavg2)
     .set_name(p.profile_name)
   ));
+
+  auto casepath = p.casepath->filePath(executionPath());
   
-  sample(cm, p.casepath, p.fields, sets);    
+  sample(cm, casepath, p.fields, sets);
       
   sampleOps::ColumnDescription cd;
   arma::mat data = dynamic_cast<sampleOps::linearAveragedPolyLine*>(&sets[0])
-    -> readSamples(cm, p.casepath, &cd);
+    -> readSamples(cm, casepath, &cd);
 
   ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
   results->introduction() = description_;
@@ -2945,7 +2947,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
     
     addPlot
     (
-      results, p.casepath, "profiles_"+fieldname,
+      results, casepath, "profiles_"+fieldname,
       "$x / m$", fieldname,
       crvs,
       "Profiles of field "+fieldname

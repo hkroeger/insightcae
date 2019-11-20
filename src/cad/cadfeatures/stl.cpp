@@ -159,6 +159,7 @@ void STL::build()
 
   if (!cache.contains(hash()))
   {
+//    std::cout<<"STL was not in cache"<<std::endl;
 
     vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
     stl->SetFileName(fname_.c_str());
@@ -244,6 +245,7 @@ void STL::build()
   }
   else
   {
+//    std::cout<<"Retrieving STL from cache"<<std::endl;
     this->operator=(*cache.markAsUsed<STL>(hash()));
   }
 }
@@ -263,12 +265,10 @@ void STL::insertrule(parser::ISCADParser& ruleset) const
       (
         "STL",
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
-
-                                                         ( '(' >> ruleset.r_path >> ')' ) [ qi::_val = phx::bind(&STL::create, qi::_1) ]
-                                                                                                       |
-                                                                                                       ( '(' >> ruleset.r_path >> ',' >> ruleset.r_solidmodel_expression >> ')' ) [ qi::_val = phx::bind(&STL::create_other, qi::_1, qi::_2) ]
-
-                                                                                                                                                                                               ))
+           ( '(' >> ruleset.r_path >> ')' ) [ qi::_val = phx::bind(&STL::create, qi::_1) ]
+            |
+           ( '(' >> ruleset.r_path >> ',' >> ruleset.r_solidmodel_expression >> ')' ) [ qi::_val = phx::bind(&STL::create_other, qi::_1, qi::_2) ]
+          ))
       );
 }
 

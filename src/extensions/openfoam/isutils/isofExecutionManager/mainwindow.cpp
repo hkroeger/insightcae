@@ -19,6 +19,7 @@
 
 #include "ui_remoteparaview.h"
 #include "remoteparaview.h"
+#include "remotesync.h"
 
 void MainWindow::updateGUI()
 {
@@ -209,37 +210,21 @@ void MainWindow::onSelectRemoteDir()
   }
 }
 
-RunSyncToRemote::RunSyncToRemote(insight::RemoteExecutionConfig& rec)
-  : rec_(rec)
-{}
 
-void RunSyncToRemote::run()
-{
-  rec_.syncToRemote
-      (
-        {},
-        [&](int progress, const std::string& progress_text)
-        {
-          emit progressValueChanged(progress);
-          emit progressTextChanged(QString(progress_text.c_str()));
-        }
-      );
-  emit transferFinished();
-}
 
 void MainWindow::syncLocalToRemote()
 {
-  RunSyncToRemote *rstr = new RunSyncToRemote(*this);
-  connect(rstr, &RunSyncToRemote::progressValueChanged, progressbar_, &QProgressBar::setValue);
-  connect(rstr, &RunSyncToRemote::progressTextChanged,
+  auto *rstr = new insight::RunSyncToRemote(*this);
+  connect(rstr, &insight::RunSyncToRemote::progressValueChanged, progressbar_, &QProgressBar::setValue);
+  connect(rstr, &insight::RunSyncToRemote::progressTextChanged,
           this, [=](const QString& text) { statusBar()->showMessage(text); } );
-  connect(rstr, &RunSyncToRemote::transferFinished,
+  connect(rstr, &insight::RunSyncToRemote::transferFinished,
           this, [&]()
   {
     progressbar_->setHidden(true);
     statusBar()->showMessage("Transfer to remote location finished");
   });
-  connect(rstr, &RunSyncToRemote::transferFinished, rstr, &QObject::deleteLater);
+  connect(rstr, &insight::RunSyncToRemote::transferFinished, rstr, &QObject::deleteLater);
 
   progressbar_->setHidden(false);
   statusBar()->showMessage("Transfer to remote location started");
@@ -249,34 +234,17 @@ void MainWindow::syncLocalToRemote()
 
 
 
-RunSyncToLocal::RunSyncToLocal(insight::RemoteExecutionConfig& rec)
-  : rec_(rec)
-{}
 
-void RunSyncToLocal::run()
-{
-  rec_.syncToLocal
-      (
-        false,
-        {},
-        [&](int progress, const std::string& progress_text)
-        {
-          emit progressValueChanged(progress);
-          emit progressTextChanged(QString(progress_text.c_str()));
-        }
-      );
-  emit transferFinished();
-}
 
 void MainWindow::syncRemoteToLocal()
 {
-    RunSyncToLocal* rstl = new RunSyncToLocal(*this);
-    connect(rstl, &RunSyncToLocal::progressValueChanged,
+    auto* rstl = new insight::RunSyncToLocal(*this);
+    connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
             progressbar_, &QProgressBar::setValue);
-    connect(rstl, &RunSyncToLocal::progressTextChanged,
+    connect(rstl, &insight::RunSyncToLocal::progressTextChanged,
             this, [=](const QString& text) { statusBar()->showMessage(text); } );
-    connect(rstl, &RunSyncToLocal::transferFinished, rstl, &QObject::deleteLater);
-    connect(rstl, &RunSyncToLocal::transferFinished,
+    connect(rstl, &insight::RunSyncToLocal::transferFinished, rstl, &QObject::deleteLater);
+    connect(rstl, &insight::RunSyncToLocal::transferFinished,
             this, [&]()
     {
       progressbar_->setHidden(true);

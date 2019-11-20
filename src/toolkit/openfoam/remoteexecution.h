@@ -3,90 +3,12 @@
 
 #include "base/boost_include.h"
 #include "boost/process.hpp"
+#include "openfoam/taskspoolerinterface.h"
+#include "openfoam/remoteserverlist.h"
 
 namespace insight
 {
 
-
-class TaskSpoolerInterface
-{
-  std::string remote_machine_;
-  boost::filesystem::path socket_;
-  boost::process::environment env_;
-
-  std::shared_ptr<boost::asio::io_service> ios_;
-  std::shared_ptr<boost::process::async_pipe> tail_cout_;
-  std::shared_ptr<std::thread> ios_run_thread_;
-  std::shared_ptr<boost::process::child> tail_c_;
-  std::shared_ptr<boost::asio::streambuf> buf_cout_;
-
-  std::vector< std::function<void(const std::string&)> > receivers_;
-
-//  static const int max_read_length = 256; // maximum amount of data to read in one operation
-//  char read_msg_[max_read_length]; // data read from the socket
-
-  void read_start(void);
-  void read_complete(const boost::system::error_code& error, size_t bytes_transferred);
-
-public:
-  enum JobState { Running, Queued, Finished, Unknown };
-
-  struct Job
-  {
-    int id;
-    JobState state;
-    boost::filesystem::path output;
-    int elevel;
-    std::string commandLine;
-  };
-
-  struct JobList
-  : public std::vector<Job>
-  {
-    bool hasRunningJobs() const;
-    bool hasQueuedJobs() const;
-    bool hasFailedJobs() const;
-  };
-
-public:
-  TaskSpoolerInterface(const boost::filesystem::path& socket, const std::string& remote_machine="");
-  ~TaskSpoolerInterface();
-
-  JobList jobs() const;
-
-  int clean();
-  int kill();
-
-  void startTail(std::function<void(const std::string&)> receiver, bool blocking=false);
-  bool isTailRunning() const;
-  void stopTail();
-
-  void cancelAllJobs();
-
-  int stopTaskspoolerServer();
-};
-
-
-struct RemoteServerInfo
-{
-    std::string serverName_;
-    bfs_path defaultDir_;
-};
-
-
-class RemoteServerList
-    : public std::map<std::string, RemoteServerInfo>
-{
-public:
-  RemoteServerList();
-
-#ifndef SWIG
-  const RemoteServerList::value_type findServer(const std::string& server) const;
-#endif
-};
-
-
-extern RemoteServerList remoteServers;
 
 
 class RemoteExecutionConfig
@@ -116,6 +38,21 @@ public:
 
     std::vector<bfs_path> remoteLS() const;
     std::vector<bfs_path> remoteSubdirs() const;
+
+    /**
+     * @brief putFile
+     * copy single file to remote
+     * @param localFile
+     * path to local file
+     * @param remmoteFileName
+     * path to remote file, relative to remote dir
+     */
+    void putFile
+    (
+        const boost::filesystem::path& localFile,
+        const boost::filesystem::path& remoteFileName,
+        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+    );
 
     void syncToRemote
     (

@@ -145,6 +145,7 @@ public:
     virtual std::string cppParamType(const std::string& name) const =0;
     virtual std::string cppType(const std::string& name) const =0;
     virtual std::string cppValueRep(const std::string& name) const =0;
+    virtual std::string cppConstructorParameters(const std::string& name) const;
     virtual std::string cppTypeName(const std::string& name) const;
     virtual std::string cppTypeDecl(const std::string& name) const;
 

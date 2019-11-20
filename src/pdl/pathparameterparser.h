@@ -22,6 +22,27 @@ struct PathParameterParser
 
     virtual std::string cppValueRep(const std::string& ) const;
 
+    virtual std::string cppConstructorParameters(const std::string &name) const;
+
+    void cppWriteSetStatement
+    (
+        std::ostream& os,
+        const std::string&,
+        const std::string& varname,
+        const std::string& staticname,
+        const std::string&
+    ) const;
+
+
+    void cppWriteGetStatement
+    (
+        std::ostream& os,
+        const std::string&,
+        const std::string& varname,
+        const std::string& staticname,
+        const std::string&
+    ) const;
+
   };
 
   template <typename Iterator, typename Skipper = skip_grammar<Iterator> >

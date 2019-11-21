@@ -386,54 +386,6 @@ double blockMeshDict_CylWedge::rCore() const
 
 
 
-ParameterSet_VisualizerPtr blockMeshDict_CylWedge_visualizer()
-{
-    return ParameterSet_VisualizerPtr( new blockMeshDict_CylWedge_ParameterSet_Visualizer );
-}
-
-addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_CylWedge, visualizer, blockMeshDict_CylWedge_visualizer);
-
-
-void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker *ut)
-{
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
-
-  Parameters p(ps_);
-
-  OpenFOAMCase oc(OFEs::getCurrentOrPreferred());
-  blockMeshDict_CylWedge bcw( oc, ps_ );
-
-
-  auto dom =
-      cad::Cutaway::create(
-        cad::Cutaway::create(
-          cad::BooleanSubtract::create(
-            cad::Cylinder::create(
-              cad::matconst(p.geometry.p0),
-              cad::matconst(p.geometry.L*bcw.ex_),
-              cad::scalarconst(p.geometry.D),
-              true,
-              false
-              ),
-            cad::Cylinder::create(
-              cad::matconst(p.geometry.p0),
-              cad::matconst(p.geometry.L*bcw.ex_),
-              cad::scalarconst(p.geometry.d),
-              true,
-              false
-              )
-            ),
-          cad::matconst(p.geometry.p0), cad::matconst( rotMatrix(0.5*p.geometry.wedge_angle*SI::deg, bcw.ex_)*-bcw.ey_ )
-          ),
-        cad::matconst(p.geometry.p0), cad::matconst( rotMatrix(-0.5*p.geometry.wedge_angle*SI::deg, bcw.ex_)*bcw.ey_ )
-        );
-
-  addFeature( "blockMeshDict_CylWedge",
-              cad::Compound::create(cad::CompoundFeatureList({dom}))
-              );
-}
-
-
 
 
 

@@ -28,6 +28,8 @@ set(toolkit_gui_SRCS
     logviewerwidget.cpp
     graphprogressdisplayer.cpp
     insightcaeapplication.cpp
+    blockmesh_cylwedge_gui.cpp
+    blockmesh_cylwedgeortho_gui.cpp
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
@@ -37,7 +39,7 @@ SET(toolkit_gui_FORMS
 )
 SET(toolkit_gui_RCCS toolkit_gui.qrc)
 
-add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_FORMS} ${toolkit_gui_RCCS})
+add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_HEADERS} ${toolkit_gui_FORMS} ${toolkit_gui_RCCS})
 add_PDL(toolkit_gui "${toolkit_gui_HEADERS}")
 
 target_link_libraries(toolkit_gui

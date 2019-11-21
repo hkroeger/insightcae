@@ -100,6 +100,8 @@ public:
 };
 
 
+
+
 class blockMeshDict_CylWedge_ParameterSet_Visualizer
  : public CAD_ParameterSet_Visualizer
 {
@@ -107,14 +109,23 @@ public:
     typedef blockMeshDict_CylWedge::Parameters Parameters;
 
 public:
+    void recreateVisualizationElements(UsageTracker* ut, const std::string& blockMeshName );
     void recreateVisualizationElements(UsageTracker* ut) override;
 };
+
+
+
+class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer;
+
+
 
 
 
 class blockMeshDict_CylWedgeOrtho
     : public BlockMeshTemplate
 {
+  friend class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer;
+
 public:
 #include "blockmesh_cylwedge__blockMeshDict_CylWedgeOrtho__Parameters.h"
 /*
@@ -235,6 +246,18 @@ public:
     double rCore() const;
 };
 
+
+
+class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
+{
+public:
+    typedef blockMeshDict_CylWedgeOrtho::Parameters Parameters;
+
+public:
+    void recreateVisualizationElements(UsageTracker* ut, const std::string& blockMeshName );
+    void recreateVisualizationElements(UsageTracker* ut ) override;
+};
 
 
 }

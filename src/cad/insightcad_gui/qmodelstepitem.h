@@ -70,7 +70,14 @@ public:
   {
     return *smp_;
   }
-  
+
+  inline void replaceFeature(insight::cad::FeaturePtr newModel)
+  {
+    smp_=newModel;
+    hide();
+    ais_.Nullify();
+  }
+
 public Q_SLOTS:
   void showProperties();
   void exportShape();

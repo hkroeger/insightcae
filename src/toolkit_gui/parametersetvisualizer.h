@@ -40,6 +40,9 @@ public:
 
   virtual void recreateVisualizationElements(UsageTracker* ut);
 
+  cad::FeaturePtr feature(const std::string& name);
+  void replaceFeature(const std::string& name, insight::cad::FeaturePtr newModel);
+
 Q_SIGNALS:
   void GUINeedsUpdate();
 };

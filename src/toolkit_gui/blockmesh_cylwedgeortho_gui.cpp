@@ -75,7 +75,7 @@ void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationE
         cad::matconst(p.geometry.p0),
         cad::matconst(p.geometry.ex),
         cad::scalarconst(p.geometry.wedge_angle*SI::deg),
-        true
+        false
         );
 
 

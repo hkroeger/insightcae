@@ -1,5 +1,9 @@
 #include "pimplesettings.h"
 
+#include "openfoam/ofdicts.h"
+#include "openfoam/openfoamdict.h"
+#include "openfoam/openfoamcase.h"
+
 namespace insight
 {
 

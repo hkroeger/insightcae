@@ -33,7 +33,9 @@ void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationE
 
   Parameters p(ps_);
 
-  auto wsc = insight::cad::Import::create(p.geometry.wedge_spine_curve);
+  auto wsc =
+      insight::cad::Import::create( p.geometry.wedge_spine_curve->filePath() );
+
   wsc->checkForBuildDuringAccess(); // force rebuild
   auto el = wsc->allEdgesSet();
 
@@ -75,7 +77,7 @@ void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationE
         cad::matconst(p.geometry.p0),
         cad::matconst(p.geometry.ex),
         cad::scalarconst(p.geometry.wedge_angle*SI::deg),
-        true
+        false
         );
 
 

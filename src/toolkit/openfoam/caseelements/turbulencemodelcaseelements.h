@@ -22,12 +22,15 @@
 #ifndef INSIGHT_TURBULENCEMODELCASEELEMENTS_H
 #define INSIGHT_TURBULENCEMODELCASEELEMENTS_H
 
-#include "openfoam/caseelements/numerics/numericscaseelements.h"
+#include <map>
+
 #include "base/linearalgebra.h"
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
 
-#include <map>
+#include "openfoam/caseelements/basic/rasmodel.h"
+#include "openfoam/caseelements/basic/lesmodel.h"
+
 #include "boost/utility.hpp"
 #include "boost/variant.hpp"
 #include "progrock/cppx/collections/options_boosted.h"
@@ -37,33 +40,6 @@ namespace insight
 
 
 
-
-class RASModel
-: public turbulenceModel
-{
-
-public:
-  declareType("RASModel");
-
-  RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
-  void addIntoDictionaries(OFdicts& dictionaries) const override;
-  OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const override;
-  AccuracyRequirement minAccuracyRequirement() const override;
-};
-
-class LESModel
-: public turbulenceModel
-{
-
-public:
-  declareType("LESModel");
-
-  LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
-  void addIntoDictionaries(OFdicts& dictionaries) const override;
-  OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const override;
-  AccuracyRequirement minAccuracyRequirement() const override;
-  bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
-};
 
 class laminar_RASModel
 : public RASModel

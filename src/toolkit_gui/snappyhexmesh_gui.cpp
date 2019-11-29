@@ -38,7 +38,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
     {
       const auto& gp = geo->parameters();
 
-      if (boost::filesystem::exists(gp.fileName))
+      if (gp.fileName->isValid())
       {
         gp_Trsf trans;
         trans.SetTranslation(to_Vec(gp.translate));
@@ -55,7 +55,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
 
         addFeature(
               "geometry:"+gp.name,
-              cad::STL::create_trsf(gp.fileName,
+              cad::STL::create_trsf(gp.fileName->filePath(),
                                     scale*t2c*t2b*t2a*trans)
               );
       }
@@ -95,7 +95,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
       const auto& rgp = refgeo->parameters();
       const auto& gp = rgp.geometry;
 
-      if (boost::filesystem::exists(gp.fileName))
+      if (gp.fileName->isValid())
       {
         gp_Trsf trans;
         trans.SetTranslation(to_Vec(gp.translate));
@@ -104,7 +104,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
         scale.SetScale(gp::Origin(), gp.scale[0]);
 
         addFeature( "refinement:"+rgp.name,
-                    cad::STL::create_trsf(gp.fileName, trans*scale)
+                    cad::STL::create_trsf(gp.fileName->filePath(), trans*scale)
                     );
       }
     }

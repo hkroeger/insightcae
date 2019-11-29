@@ -792,34 +792,20 @@ struct PlotCurve {
     void sort();
 
     std::string title() const;
-
-    const arma::mat& xy() const
-    {
-        return xy_;
-    }
-    const std::string& plaintextlabel() const
-    {
-        return plaintextlabel_;
-    }
+    const arma::mat& xy() const;
+    const std::string& plaintextlabel() const;
 };
 
 
 
 
-struct PlotCurveList : public std::vector<PlotCurve>
+struct PlotCurveList
+    : public std::vector<PlotCurve>
 {
- PlotCurveList()
-  : std::vector<PlotCurve>()
- {}
-
- PlotCurveList(size_t n)
-  : std::vector<PlotCurve>(n)
- {}
-
- template<class It>
- PlotCurveList(It begin, It end)
-  : std::vector<PlotCurve>(begin, end)
- {}
+ PlotCurveList();
+ PlotCurveList(size_t n);
+ PlotCurveList(std::initializer_list<PlotCurve> il);
+ PlotCurveList(std::vector<PlotCurve>::const_iterator begin, std::vector<PlotCurve>::const_iterator end);
 
  bool include_zero=true;
 };

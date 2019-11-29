@@ -18,12 +18,17 @@
  *
  */
 
-#include "openfoamtools.h"
-#include "openfoam/openfoamcaseelements.h"
 #include "base/analysis.h"
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
+
+#include "openfoam/openfoamcase.h"
+#include "openfoam/ofes.h"
+#include "openfoam/openfoamtools.h"
 #include "openfoam/snappyhexmesh.h"
+#include "openfoam/solveroutputanalyzer.h"
+#include "openfoam/caseelements/numerics/meshingnumerics.h"
+
 #include "boost/regex.hpp"
 #include "boost/iostreams/filtering_stream.hpp"
 #include "boost/iostreams/filter/gzip.hpp"
@@ -481,15 +486,15 @@ createPatchOperator::~createPatchOperator()
 void createPatchOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const
 {
   OFDictData::dict opdict;
-  opdict["name"]=p_.name();
-  opdict["constructFrom"]=p_.constructFrom();
+  opdict["name"]=p_.name;
+  opdict["constructFrom"]=p_.constructFrom;
   OFDictData::list pl;
-  std::copy(p_.patches().begin(), p_.patches().end(), pl.begin());
+  std::copy(p_.patches.begin(), p_.patches.end(), pl.begin());
   opdict["patches"]=pl;
-  opdict["set"]=p_.set();
+  opdict["set"]=p_.setname;
 
   OFDictData::dict opsubdict;
-  opsubdict["type"]=p_.type();
+  opsubdict["type"]=p_.patchtype;
   
   if (ofc.OFversion()<170)
   {
@@ -528,28 +533,28 @@ void createCyclicOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData
   for (const std::string& suf: suffixes)
   {
     OFDictData::dict opdict;
-    opdict["name"]=p_.name()+suf;
-    opdict["constructFrom"]=p_.constructFrom();
+    opdict["name"]=p_.name+suf;
+    opdict["constructFrom"]=p_.constructFrom;
     OFDictData::list pl;
     if (suf=="_half0" || suf=="")
     {
-      pl.resize(pl.size()+p_.patches().size());
-      std::copy(p_.patches().begin(), p_.patches().end(), pl.begin());
-      opdict["set"]=p_.set();
+      pl.resize(pl.size()+p_.patches.size());
+      std::copy(p_.patches.begin(), p_.patches.end(), pl.begin());
+      opdict["set"]=p_.setname;
     }
     if (suf=="_half1" || suf=="")
     {
       size_t osize=pl.size();
-      pl.resize(osize+p_.patches_half1().size());
-      std::copy(p_.patches_half1().begin(), p_.patches_half1().end(), pl.begin()+osize);
-      if (suf!="") opdict["set"]=p_.set_half1();
+      pl.resize(osize+p_.patches_half1.size());
+      std::copy(p_.patches_half1.begin(), p_.patches_half1.end(), pl.begin()+osize);
+      if (suf!="") opdict["set"]=p_.set_half1;
     }
     opdict["patches"]=pl;
 
     OFDictData::dict opsubdict;
     opsubdict["type"]="cyclic";
-    if (suf=="_half0") opsubdict["neighbourPatch"]=p_.name()+"_half1";
-    if (suf=="_half1") opsubdict["neighbourPatch"]=p_.name()+"_half0";
+    if (suf=="_half0") opsubdict["neighbourPatch"]=p_.name+"_half1";
+    if (suf=="_half1") opsubdict["neighbourPatch"]=p_.name+"_half0";
     
     if (ofc.OFversion()>=210)
     {
@@ -574,7 +579,7 @@ createPatchOperator* createCyclicOperator::clone() const
 
 void createPatch(const OpenFOAMCase& ofc, 
 		  const boost::filesystem::path& location, 
-		  const boost::ptr_vector<createPatchOps::createPatchOperator>& ops,
+                  const std::vector<createPatchOps::createPatchOperatorPtr>& ops,
 		  bool overwrite
 		)
 {
@@ -590,9 +595,9 @@ void createPatch(const OpenFOAMCase& ofc,
   else
     createPatchDict.getList("patches");  
   
-  for ( const createPatchOperator& op: ops)
+  for ( const auto op: ops)
   {
-    op.addIntoDictionary(ofc, createPatchDict);
+    op->addIntoDictionary(ofc, createPatchDict);
   }
   
   // then write to file
@@ -1187,13 +1192,15 @@ void convertPatchPairToCyclic
 )
 {
   using namespace createPatchOps;
-  boost::ptr_vector<createPatchOperator> ops;
+  std::vector<createPatchOperatorPtr> ops;
   
-  ops.push_back(new createCyclicOperator( createCyclicOperator::Parameters()
-   .set_name(namePrefix)
-   .set_patches( list_of<string>(namePrefix+"_half0") )
-   .set_patches_half1( list_of<string>(namePrefix+"_half1") )
-  ) );
+  createCyclicOperator::Parameters p;
+  p
+     .set_patches_half1( { namePrefix+"_half1" } )
+     .set_name(namePrefix)
+     .set_patches( { namePrefix+"_half0" } )
+      ;
+  ops.push_back(createPatchOperatorPtr(new createCyclicOperator(p) ) );
   
   createPatch(ofc, location, ops, true);
 }

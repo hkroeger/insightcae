@@ -1,5 +1,7 @@
 
-#include "paraview.h"
+#include "openfoam/paraview.h"
+
+#include "openfoam/ofes.h"
 
 #include "boost/assign.hpp"
 
@@ -123,7 +125,7 @@ string IsoView::pythonCommands() const
         + pvec(ez) + ", "
         + str(format("(%g,%g)") % Ly % Lz)
       +")\n"
-      "WriteImage('"+p_.filename.filename().stem().string()+"_front"+p_.filename.extension().string()+"')\n"
+      "WriteImage('"+p_.imagename+"_front.png')\n"
       +
       "setCam("
         + pvec(ctr+ez*Lz*1.5) + ", "
@@ -131,7 +133,7 @@ string IsoView::pythonCommands() const
         + pvec(-ey) + ", "
         + str(format("(%g,%g)") % Lx % Ly)
       +")\n"
-      "WriteImage('"+p_.filename.filename().stem().string()+"_top"+p_.filename.extension().string()+"')\n"
+      "WriteImage('"+p_.imagename+"_top.png')\n"
       +
       "setCam("
         + pvec(ctr+ey*Ly*1.5) + ", "
@@ -139,7 +141,7 @@ string IsoView::pythonCommands() const
         + pvec(ez) + ", "
         + str(format("(%g,%g)") % Lx % Lz)
       +")\n"
-      "WriteImage('"+p_.filename.filename().stem().string()+"_side"+p_.filename.extension().string()+"')\n"
+      "WriteImage('"+p_.imagename+"_side.png')\n"
       +
       "setCam("
         + pvec(ctr+ (ex*Lx +ey*Ly +ez*Lz)*1.5) + ", "
@@ -147,17 +149,17 @@ string IsoView::pythonCommands() const
         + pvec(ez) + ", "
         + str(format("%g") % (0.5*sqrt(Lx*Lx+Ly*Ly+Lz*Lz)))
       +")\n"
-      "WriteImage('"+p_.filename.filename().stem().string()+"_diag"+p_.filename.extension().string()+"')\n"
+      "WriteImage('"+p_.imagename+"_diag.png')\n"
   ;
 }
 
 std::vector<boost::filesystem::path> IsoView::createdFiles() const
 {
   return list_of<boost::filesystem::path>
-      ( p_.filename.filename().stem().string()+"_front"+p_.filename.extension().string() )
-      ( p_.filename.filename().stem().string()+"_top"+p_.filename.extension().string() )
-      ( p_.filename.filename().stem().string()+"_side"+p_.filename.extension().string() )
-      ( p_.filename.filename().stem().string()+"_diag"+p_.filename.extension().string() )
+      ( p_.imagename+"_front.png" )
+      ( p_.imagename+"_top.png" )
+      ( p_.imagename+"_side.png" )
+      ( p_.imagename+"_diag.png" )
       ;
 }
 

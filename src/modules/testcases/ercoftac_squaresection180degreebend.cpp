@@ -19,14 +19,24 @@
 
 #include "ercoftac_squaresection180degreebend.h"
 
-#include "openfoam/openfoamcaseelements.h"
+#include "base/boost_include.h"
+
 #include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh.h"
+
+#include "openfoam/caseelements/numerics/meshingnumerics.h"
+#include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
+#include "openfoam/caseelements/boundaryconditions/velocityinletbc.h"
+#include "openfoam/caseelements/boundaryconditions/pressureoutletbc.h"
+#include "openfoam/caseelements/boundaryconditions/simplebc.h"
+#include "openfoam/caseelements/boundaryconditions/wallbc.h"
+#include "openfoam/caseelements/boundaryconditions/exptdatainletbc.h"
+#include "openfoam/caseelements/basic/singlephasetransportmodel.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
 
 #include "channel.h"
 #include "refdata.h"
 
-#include "base/boost_include.h"
 
 using namespace boost;
 using namespace boost::assign;

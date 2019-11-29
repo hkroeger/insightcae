@@ -23,12 +23,13 @@
 
 #include "base/boost_include.h"
 
+#include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamdict.h"
 #include "openfoam/snappyhexmesh.h"
+#include "openfoam/caseelements/numerics/meshingnumerics.h"
 
 #include "openfoam/blockmesh_templates.h"
-#include "openfoam/caseelements/numerics/numericscaseelements.h"
 
 namespace insight
 {
@@ -227,7 +228,7 @@ void SnappyHexMesh::build()
             .set_nLayers(nlayers)
             //.set_regionRefinements(rl)
             
-            .set_fileName(filepath)
+            .set_fileName(make_filepath(filepath))
         )));
     }
     
@@ -243,7 +244,7 @@ void SnappyHexMesh::build()
         shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
             new snappyHexMeshFeats::ExplicitFeatureCurve(snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
             .set_level(level)
-            .set_fileName(filepath)
+            .set_fileName(make_filepath(filepath))
         )));
     }
     

@@ -24,6 +24,9 @@
 %import "toolkit.i"
 
 %{
+#include "openfoam/openfoamtools.h"
+#include "openfoam/paraview.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
 #include "channel.h"
 #include "pipe.h"
 #include "flatplatebl.h"

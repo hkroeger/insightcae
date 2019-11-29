@@ -21,9 +21,9 @@
 #define INSIGHT_NUMERICALWINDTUNNEL_H
 
 #include "openfoam/openfoamanalysis.h"
-#include "openfoam/openfoamcaseelements.h"
-#include "cadfeatures.h"
 #include "parametersetvisualizer.h"
+
+#include "gp_Trsf.hxx"
 
 namespace insight {
 

@@ -33,7 +33,7 @@ addToStaticFunctionTable(HeatBC, AdiabaticBC, defaultParameters);
 AdiabaticBC::AdiabaticBC(const ParameterSet& ps)
 {}
 
-bool AdiabaticBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool AdiabaticBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts&) const
 {
     if
     (
@@ -61,7 +61,7 @@ FixedTemperatureBC::FixedTemperatureBC(const ParameterSet& ps)
 : p_(ps)
 {}
 
-bool FixedTemperatureBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool FixedTemperatureBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries) const
 {
     if
     (
@@ -70,7 +70,7 @@ bool FixedTemperatureBC::addIntoFieldDictionary(const string& fieldname, const F
       (get<0>(fieldinfo)==scalarField)
     )
     {
-      FieldData(p_.T, ".").setDirichletBC(BC);
+      FieldData(p_.T).setDirichletBC(BC, dictionaries);
       return true;
     }
     else
@@ -89,7 +89,7 @@ ExternalWallBC::ExternalWallBC(const ParameterSet& ps)
 : p_(ps)
 {}
 
-bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts&) const
 {
     if
     (

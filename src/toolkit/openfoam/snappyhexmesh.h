@@ -26,8 +26,7 @@
 
 #include "base/boost_include.h"
 
-#include "openfoam/openfoamcase.h"
-#include "progrock/cppx/collections/options_boosted.h"
+#include "openfoam/caseelements/openfoamcaseelement.h"
 
 namespace insight {
   

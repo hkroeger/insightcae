@@ -5,9 +5,10 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamdict.h"
 
-
 namespace insight
 {
+
+class OFdicts;
 
 /**
  * Interface which wraps different types of prescribing field data on boundaries.
@@ -98,18 +99,18 @@ protected:
 
   double representativeValueMag_, maxValueMag_;
 
-  void calcValues(const boost::filesystem::path& casedir);
+  void calcValues();
 
   /**
    * return some representative (average) value of the prescribed data.
    * Required e.g. for deriving turbulence qtys when velocity distributions are prescribed.
    */
-  double calcRepresentativeValueMag(const boost::filesystem::path& casedir) const;
+  double calcRepresentativeValueMag() const;
 
   /**
    * return the maximum magnitude of the value throughout all precribed times
    */
-  double calcMaxValueMag(const boost::filesystem::path& casedir) const;
+  double calcMaxValueMag() const;
 
 public:
 
@@ -132,14 +133,14 @@ public:
   /**
    * takes config from a parameterset
    */
-  FieldData(const ParameterSet& p, const boost::filesystem::path& casedir);
+  FieldData(const ParameterSet& p);
 
   /**
    * returns according dictionary entry for OF
    */
-  OFDictData::data sourceEntry() const;
+  OFDictData::data sourceEntry(OFdicts& dictionaries) const;
 
-  void setDirichletBC(OFDictData::dict& BC) const;
+  void setDirichletBC(OFDictData::dict& BC, OFdicts& dictionaries) const;
 
   /**
    * return some representative (average) value of the prescribed data.

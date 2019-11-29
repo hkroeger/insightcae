@@ -30,7 +30,7 @@
 
 #ifndef Q_MOC_RUN
 #include "openfoam/remoteexecution.h"
-#include "openfoam/openfoamcaseelements.h"
+#include "openfoam/caseelements/openfoamcaseelement.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh_templates.h"
 #include "openfoam/snappyhexmesh.h"

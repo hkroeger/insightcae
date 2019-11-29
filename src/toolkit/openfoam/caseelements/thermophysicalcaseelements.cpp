@@ -19,16 +19,19 @@
  */
 
 #include "thermophysicalcaseelements.h"
-#include "openfoam/caseelements/numerics/numericscaseelements.h"
-#include "openfoam/caseelements/numerics/compressiblenumericscaseelements.h"
+
+#include "base/boost_include.h"
+
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 
-#include <utility>
-#include "boost/assign.hpp"
-#include "boost/lexical_cast.hpp"
+#include "openfoam/caseelements/numerics/buoyantsimplefoamnumerics.h"
+#include "openfoam/caseelements/numerics/buoyantpimplefoamnumerics.h"
+#include "openfoam/caseelements/numerics/steadycompressiblenumerics.h"
+#include "openfoam/caseelements/numerics/unsteadycompressiblenumerics.h"
 
-#include "gnuplot-iostream.h"
+#include <utility>
+
 
 using namespace std;
 using namespace boost;
@@ -40,17 +43,12 @@ using namespace boost::fusion;
 namespace insight
 {
 
-  
-thermodynamicModel::thermodynamicModel(OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, "thermodynamicModel", ps)
-{
-}
-
 cavitatingFoamThermodynamics::cavitatingFoamThermodynamics(OpenFOAMCase& c, const ParameterSet& ps)
 : thermodynamicModel(c, ps),
   p_(ps)
 {
 }
+
 
 void cavitatingFoamThermodynamics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -319,7 +317,7 @@ detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
 : thermodynamicModel(c, ps),
   p_(ps)
 {
-  std::ifstream tf(p_.foamChemistryThermoFile.c_str());
+  std::istream& tf = (p_.foamChemistryThermoFile)->stream();
   OFDictData::dict td;
   readOpenFOAMDict(tf, td);
   
@@ -352,8 +350,8 @@ void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionarie
   
   thermodynamicProperties["inertSpecie"]=p_.inertSpecie;
   thermodynamicProperties["chemistryReader"]="foamChemistryReader";
-  thermodynamicProperties["foamChemistryFile"]="\""+p_.foamChemistryFile.string()+"\"";
-  thermodynamicProperties["foamChemistryThermoFile"]="\""+p_.foamChemistryThermoFile.string()+"\"";
+  thermodynamicProperties["foamChemistryFile"]="\""+dictionaries.insertAdditionalInputFile(p_.foamChemistryFile).string()+"\"";
+  thermodynamicProperties["foamChemistryThermoFile"]="\""+dictionaries.insertAdditionalInputFile(p_.foamChemistryThermoFile).string()+"\"";
 
   
   OFDictData::dict& combustionProperties=dictionaries.lookupDict("constant/combustionProperties");

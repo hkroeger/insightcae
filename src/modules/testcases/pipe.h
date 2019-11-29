@@ -20,15 +20,12 @@
 #ifndef INSIGHT_PIPE_H
 #define INSIGHT_PIPE_H
 
-#include "base/linearalgebra.h"
 #include "openfoam/openfoamanalysis.h"
-#include "openfoam/openfoamcaseelements.h"
-#include "openfoam/blockmesh.h"
 
 namespace insight 
 {
 
-
+namespace bmd { class blockMesh; }
   
 
 class PipeBase 

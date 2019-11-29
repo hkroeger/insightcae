@@ -45,6 +45,36 @@ namespace insight
 {
 
 
+std::unique_ptr<GlobalTemporaryDirectory> GlobalTemporaryDirectory::td_;
+
+
+
+GlobalTemporaryDirectory::GlobalTemporaryDirectory()
+  : boost::filesystem::path
+    (
+      unique_path
+      (
+        temp_directory_path() / "insightcae-%%%%%%"
+      )
+    )
+{
+  create_directories(*this);
+  permissions(*this, owner_all);
+}
+
+const GlobalTemporaryDirectory &GlobalTemporaryDirectory::path()
+{
+  if (!td_)
+    td_.reset( new GlobalTemporaryDirectory );
+  return *td_;
+}
+
+GlobalTemporaryDirectory::~GlobalTemporaryDirectory()
+{
+  remove_all(*this);
+}
+
+
 TemporaryCaseDir::TemporaryCaseDir(bool keep, const std::string& prefix)
 : keep_(keep)
 {
@@ -554,5 +584,9 @@ void writeSTL
   }
   sw->Update();
 }
+
+
+
+
 
 }

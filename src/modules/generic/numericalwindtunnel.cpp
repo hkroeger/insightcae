@@ -25,8 +25,18 @@
 #include "openfoam/snappyhexmesh.h"
 #include "openfoam/paraview.h"
 
+#include "openfoam/caseelements/numerics/meshingnumerics.h"
+#include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
+#include "openfoam/caseelements/basic/singlephasetransportmodel.h"
+#include "openfoam/caseelements/boundaryconditions/simplebc.h"
+#include "openfoam/caseelements/boundaryconditions/pressureoutletbc.h"
+#include "openfoam/caseelements/boundaryconditions/symmetrybc.h"
+#include "openfoam/caseelements/boundaryconditions/wallbc.h"
+#include "openfoam/caseelements/boundaryconditions/velocityinletbc.h"
 
-// #include "boost/thread/mutex.hpp"
+#include "openfoam/caseelements/analysiscaseelements.h"
+
+#include "cadfeatures.h"
 
 using namespace arma;
 using namespace std;
@@ -86,7 +96,7 @@ void NumericalWindtunnel::calcDerivedInputData()
 
   arma::mat bb; // bounding box in SI, rotated to wind tunnel CS
 
-  std::string geom_file_ext = p.geometry.objectfile.filename().extension().string();
+  std::string geom_file_ext = p.geometry.objectfile->fileName().extension().string();
   boost::to_lower(geom_file_ext);
 
   if (geom_file_ext==".stl" || geom_file_ext==".stlb")
@@ -96,13 +106,13 @@ void NumericalWindtunnel::calcDerivedInputData()
           3, 1
          );
 
-    bb = p.geometryscale * STLBndBox(readSTL(p.geometry.objectfile, { &trsf }));
+    bb = p.geometryscale * STLBndBox(readSTL(p.geometry.objectfile->filePath(), { &trsf }));
   }
   else
   {
     boost::mutex::scoped_lock lock(mtx);
 
-    auto obj = new cad::Transform(cad::Feature::CreateFromFile(p.geometry.objectfile.c_str()), rot);
+    auto obj = new cad::Transform(cad::Feature::CreateFromFile(p.geometry.objectfile->filePath()), rot);
     bb = p.geometryscale * obj->modelBndBox(bbdefl);
   }
 
@@ -145,7 +155,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
   
   boost::filesystem::path objectSTLFile = executionPath()/
    "constant"/"triSurface"/
-   (p.geometry.objectfile.filename().stem().string()+".stlb");
+   (p.geometry.objectfile->fileName().stem().string()+".stlb");
 
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
     .set_np(p.run.np)
@@ -327,7 +337,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
     
   create_directory(objectSTLFile.parent_path());
 
-  std::string geom_file_ext = p.geometry.objectfile.filename().extension().string();
+  std::string geom_file_ext = p.geometry.objectfile->fileName().extension().string();
   boost::to_lower(geom_file_ext);
 
   if (geom_file_ext==".stl" || geom_file_ext==".stlb")
@@ -336,13 +346,13 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
           std::bind(&gp_Trsf::Value, &cad_to_cfd_, std::placeholders::_1, std::placeholders::_2),
           3, 1
          );
-    writeSTL( readSTL(p.geometry.objectfile, { &trsf }), objectSTLFile );
+    writeSTL( readSTL(p.geometry.objectfile->filePath(), { &trsf }), objectSTLFile );
   }
   else
   {
     boost::mutex::scoped_lock lock(mtx);
 
-    auto obj = new cad::Transform(cad::Feature::CreateFromFile(p.geometry.objectfile.c_str()),
+    auto obj = new cad::Transform(cad::Feature::CreateFromFile(p.geometry.objectfile->filePath()),
                                   cad_to_cfd_);
     obj->saveAs(objectSTLFile);
   }
@@ -356,7 +366,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
     .set_minLevel(p.mesh.lmsurf)
     .set_maxLevel(p.mesh.lxsurf)
     .set_nLayers(p.mesh.nlayer)
-    .set_fileName(objectSTLFile)
+    .set_fileName(make_filepath(objectSTLFile))
   )));
   
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
@@ -554,11 +564,11 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
   (
     results, executionPath(), "chartResistance",
     "Iteration", "F [N]",
-    list_of
-      (PlotCurve( arma::mat(join_rows(t, Rtot)),  "Fdtot", "w l lw 2 t 'Total resistance'"))
-      (PlotCurve( arma::mat(join_rows(t, Rtlat)), "Flat", "w l lw 2 t 'Lateral force'"))
-      (PlotCurve( arma::mat(join_rows(t, At)),    "FLift", "w l lw 2 t 'Lifting force'"))
-      ,
+    {
+      PlotCurve( arma::mat(join_rows(t, Rtot)),  "Fdtot", "w l lw 2 t 'Total resistance'"),
+      PlotCurve( arma::mat(join_rows(t, Rtlat)), "Flat", "w l lw 2 t 'Lateral force'"),
+      PlotCurve( arma::mat(join_rows(t, At)),    "FLift", "w l lw 2 t 'Lifting force'")
+    },
     "Convergence history of resistance force"
   );    
   
@@ -603,7 +613,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
         .set_bbmin(vec3(0, -0.5*w_, 0))
         .set_bbmax(vec3(l_, 0.5*w_, h_))
         .set_e_ax(vec3(-1,0,0))
-        .set_filename("streamlines.png")
+        .set_imagename("streamlines")
       )),
 
       paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
@@ -617,7 +627,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
         .set_bbmin(vec3(0, -0.5*w_, 0))
         .set_bbmax(vec3(l_, 0.5*w_, h_))
         .set_e_ax(vec3(-1,0,0))
-        .set_filename("pressureContour.png")
+        .set_imagename("pressureContour")
       ))
 
     };
@@ -655,19 +665,19 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
     nwt.calcDerivedInputData();
 
 
-    std::string geom_file_ext = p.geometry.objectfile.filename().extension().string();
+    std::string geom_file_ext = p.geometry.objectfile->fileName().extension().string();
     boost::to_lower(geom_file_ext);
 
     cad::FeaturePtr org_geom;
 
     if (geom_file_ext==".stl" || geom_file_ext==".stlb")
     {
-      org_geom = cad::STL::create_trsf(p.geometry.objectfile, nwt.cad_to_cfd_);
+      org_geom = cad::STL::create_trsf(p.geometry.objectfile->filePath(), nwt.cad_to_cfd_);
     }
     else
     {
       org_geom = cad::Transform::create_trsf(
-                   cad::Feature::CreateFromFile(p.geometry.objectfile.string()),
+                   cad::Feature::CreateFromFile(p.geometry.objectfile->filePath()),
                    nwt.cad_to_cfd_
                    );
     }

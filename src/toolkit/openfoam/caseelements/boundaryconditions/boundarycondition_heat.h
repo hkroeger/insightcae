@@ -26,7 +26,7 @@ public:
     virtual ~HeatBC();
 
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const =0;
+    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const =0;
 };
 
 
@@ -41,7 +41,7 @@ public:
   static ParameterSet defaultParameters() { return ParameterSet(); }
   ParameterSet getParameters() const override { return ParameterSet(); }
 
-  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
 };
 
@@ -73,7 +73,7 @@ public:
 
   ParameterSet getParameters() const override { return p_; }
 
-  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
 };
 
@@ -123,7 +123,7 @@ public:
 
   ParameterSet getParameters() const override { return p_; }
 
-  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
 };
 

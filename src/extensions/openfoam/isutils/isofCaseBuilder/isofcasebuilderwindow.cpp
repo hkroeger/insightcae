@@ -28,7 +28,10 @@
 #include "insertedcaseelement.h"
 
 #ifndef Q_MOC_RUN
-#include "openfoam/openfoamcaseelements.h"
+#include "openfoam/ofes.h"
+#include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/caseelements/numerics/fvnumerics.h"
+#include "openfoam/caseelements/basic/setfieldsconfiguration.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh_templates.h"
 #include "openfoam/snappyhexmesh.h"

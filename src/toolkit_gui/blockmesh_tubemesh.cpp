@@ -3,6 +3,8 @@
 
 #include "base/units.h"
 
+#include "openfoam/openfoamcase.h"
+
 #include "occinclude.h"
 #include "BRepTools.hxx"
 
@@ -32,7 +34,7 @@ void blockMeshDict_TubeMesh::create_bmd()
 
   TopoDS_Shape s;
   BRep_Builder sb;
-  BRepTools::Read(s, p_.geometry.wire.c_str(), sb);
+  BRepTools::Read(s, p_.geometry.wire->stream(), sb);
   TopoDS_Wire w = TopoDS::Wire(s);
 
   GProp_GProps p;

@@ -18,13 +18,24 @@
  *
  */
 #include "internalpressureloss.h"
+
 #include "base/factory.h"
-#include "openfoam/openfoamcaseelements.h"
+#include "openfoam/ofes.h"
+#include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh.h"
 #include "openfoam/snappyhexmesh.h"
 #include "openfoam/paraview.h"
 
-#include "cadfeature.h"
+#include "openfoam/caseelements/numerics/meshingnumerics.h"
+#include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
+#include "openfoam/caseelements/basic/singlephasetransportmodel.h"
+#include "openfoam/caseelements/boundaryconditions/massflowbc.h"
+#include "openfoam/caseelements/boundaryconditions/pressureoutletbc.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.h"
+#include "openfoam/caseelements/boundaryconditions/wallbc.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
+
+#include "cadfeatures.h"
 #include "stl.h"
 #include "datum.h"
 
@@ -85,27 +96,27 @@ void InternalPressureLoss::calcDerivedInputData()
       {
         using namespace insight::cad;
 
-        if (!boost::filesystem::exists(geom_cad->cadmodel))
-          throw insight::Exception("Geometry file does not exist: "+geom_cad->cadmodel.string());
+        if (!geom_cad->cadmodel->isValid())
+          throw insight::Exception("Geometry file does not exist: "+geom_cad->cadmodel->fileName().string());
 
-        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel);
+        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
         bb_=cadmodel->modelBndBox();
 
         if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
              boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
           {
-            if (!boost::filesystem::exists(io_extra->inlet_model))
-              throw insight::Exception("Geometry file does not exist: "+io_extra->inlet_model.string());
+            if (!io_extra->inlet_model->isValid())
+              throw insight::Exception("Geometry file does not exist: "+io_extra->inlet_model->fileName().string());
             {
-              FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model);
+              FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
               arma::mat bb = inletmodel->modelBndBox();
               extendBB(bb_, bb);
             }
 
-            if (!boost::filesystem::exists(io_extra->outlet_model))
-              throw insight::Exception("Geometry file does not exist: "+io_extra->outlet_model.string());
+            if (!io_extra->outlet_model->isValid())
+              throw insight::Exception("Geometry file does not exist: "+io_extra->outlet_model->fileName().string());
             {
-              FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model);
+              FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
               arma::mat bb = outletmodel->modelBndBox();
               extendBB(bb_, bb);
             }
@@ -114,23 +125,23 @@ void InternalPressureLoss::calcDerivedInputData()
     else if ( const Parameters::geometry_STL_type* geom_stl =
               boost::get<Parameters::geometry_STL_type>(&p.geometry) )
       {
-        if (!boost::filesystem::exists(geom_stl->cadmodel))
-          throw insight::Exception("Geometry file does not exist: "+geom_stl->cadmodel.string());
+        if (!geom_stl->cadmodel->isValid())
+          throw insight::Exception("Geometry file does not exist: "+geom_stl->cadmodel->fileName().string());
 
-        bb_ = STLBndBox(readSTL(geom_stl->cadmodel));
+        bb_ = STLBndBox(readSTL(geom_stl->cadmodel->filePath()));
 
         {
-          if (!boost::filesystem::exists(geom_stl->inlet))
-            throw insight::Exception("Geometry file does not exist: "+geom_stl->inlet.string());
+          if (!geom_stl->inlet->isValid())
+            throw insight::Exception("Geometry file does not exist: "+geom_stl->inlet->fileName().string());
 
-          arma::mat bb = STLBndBox(readSTL(geom_stl->inlet));
+          arma::mat bb = STLBndBox(readSTL(geom_stl->inlet->filePath()));
           extendBB(bb_, bb);
         }
         {
-          if (!boost::filesystem::exists(geom_stl->outlet))
-            throw insight::Exception("Geometry file does not exist: "+geom_stl->outlet.string());
+          if (!geom_stl->outlet->isValid())
+            throw insight::Exception("Geometry file does not exist: "+geom_stl->outlet->fileName().string());
 
-          arma::mat bb = STLBndBox(readSTL(geom_stl->outlet));
+          arma::mat bb = STLBndBox(readSTL(geom_stl->outlet->filePath()));
           extendBB(bb_, bb);
         }
       }
@@ -208,7 +219,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
       {
         using namespace insight::cad;
 
-        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel);
+        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
 
         if ( const Parameters::geometry_STEP_type::inout_named_surfaces_type* io_name =
              boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
@@ -242,17 +253,17 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
           {
 
             cadmodel->saveAs(wallstlfile_);
-            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model);
+            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
             inletmodel->saveAs(inletstlfile_);
-            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model);
+            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
             outletmodel->saveAs(outletstlfile_);
           }
       }
     else if ( const Parameters::geometry_STL_type* geom_stl = boost::get<Parameters::geometry_STL_type>(&p.geometry) )
       {
-        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->cadmodel.string(), wallstlfile_.string()});
-        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->inlet.string(), inletstlfile_.string()});
-        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->outlet.string(), outletstlfile_.string()});
+        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->cadmodel->filePath().string(), wallstlfile_.string()});
+        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->inlet->filePath().string(), inletstlfile_.string()});
+        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->outlet->filePath().string(), outletstlfile_.string()});
       }
     
     surfaceFeatureExtract(cm, executionPath(), wallstlfile_.filename().c_str());
@@ -263,7 +274,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::ExplicitFeatureCurve(snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
       .set_level(p.mesh.maxLevel)
       .set_scale(s)
-      .set_fileName(executionPath()/"constant"/"triSurface"/(wallstlfile_.filename().stem().string()+".eMesh"))
+      .set_fileName(make_filepath(executionPath()/"constant"/"triSurface"/(wallstlfile_.filename().stem().string()+".eMesh")))
     )));
 
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
@@ -273,7 +284,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
       .set_nLayers(p.mesh.nLayers)
       .set_scale(s)
 
-      .set_fileName(wallstlfile_)
+      .set_fileName(make_filepath(wallstlfile_))
     )));
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
       .set_name("inlet")
@@ -282,7 +293,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
       .set_nLayers(0)
       .set_scale(s)
 
-      .set_fileName(inletstlfile_)
+      .set_fileName(make_filepath(inletstlfile_))
     )));
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
       .set_name("outlet")
@@ -291,7 +302,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
       .set_nLayers(0)
       .set_scale(s)
 
-      .set_fileName(outletstlfile_)
+      .set_fileName(make_filepath(outletstlfile_))
     )));
 
 
@@ -370,9 +381,9 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm)
     (
       results, executionPath(), "chartPressureDifference",
       "Iteration", "$p/\\rho$",
-      list_of<PlotCurve>
-          (PlotCurve(p_vs_t.col(0), p_vs_t.col(1), "pmean_vs_iter", "w l not"))
-       ,
+      {
+         PlotCurve(p_vs_t.col(0), p_vs_t.col(1), "pmean_vs_iter", "w l not")
+      },
       "Plot of pressure difference between inlet and outlet vs. iterations"
     );
 
@@ -410,7 +421,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm)
       pvp.scenes.push_back(paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
         .set_bbmin(p.geometryscale*bb_.col(0))
         .set_bbmax(p.geometryscale*bb_.col(1))
-        .set_filename("streamlines.png")
+        .set_imagename("streamlines")
 
       )));
 
@@ -424,7 +435,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm)
       pvp.scenes.push_back(paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
         .set_bbmin(p.geometryscale*bb_.col(0))
         .set_bbmax(p.geometryscale*bb_.col(1))
-        .set_filename("pressureContour.png")
+        .set_imagename("pressureContour")
       )));
 
       paraview::ParaviewVisualization pv(pvp, executionPath());
@@ -457,7 +468,7 @@ void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements
       {
         using namespace insight::cad;
 
-        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel);
+        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
 
         if ( const Parameters::geometry_STEP_type::inout_named_surfaces_type* io_name =
              boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
@@ -490,18 +501,18 @@ void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements
              boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
           {
             addFeature("walls", cadmodel);
-            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model);
+            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
             addFeature("inlet", inletmodel);
-            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model);
+            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
             addFeature("outlet", outletmodel);
           }
       }
     else if ( const Parameters::geometry_STL_type* geom_stl =
               boost::get<Parameters::geometry_STL_type>(&p.geometry) )
       {
-        addFeature("walls", insight::cad::STL::create(geom_stl->cadmodel) );
-        addFeature("inlet", insight::cad::STL::create(geom_stl->inlet) );
-        addFeature("outlet", insight::cad::STL::create(geom_stl->outlet) );
+        addFeature("walls", insight::cad::STL::create(geom_stl->cadmodel->filePath()) );
+        addFeature("inlet", insight::cad::STL::create(geom_stl->inlet->filePath()) );
+        addFeature("outlet", insight::cad::STL::create(geom_stl->outlet->filePath()) );
       }
 
     addDatum( "PiM",

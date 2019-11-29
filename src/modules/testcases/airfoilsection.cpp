@@ -17,16 +17,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "base/factory.h"
 #include "airfoilsection.h"
+
+#include "base/factory.h"
+#include "base/stltools.h"
+
 #include "openfoam/blockmesh.h"
-#include "openfoam/openfoamcaseelements.h"
+#include "openfoam/snappyhexmesh.h"
+#include "openfoam/openfoamtools.h"
+#include "openfoam/solveroutputanalyzer.h"
+
+#include "openfoam/caseelements/numerics/meshingnumerics.h"
+#include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
+#include "openfoam/caseelements/boundaryconditions/velocityinletbc.h"
+#include "openfoam/caseelements/boundaryconditions/pressureoutletbc.h"
+#include "openfoam/caseelements/boundaryconditions/simplebc.h"
+#include "openfoam/caseelements/boundaryconditions/wallbc.h"
+#include "openfoam/caseelements/basic/singlephasetransportmodel.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
+
 #include "openfoam/snappyhexmesh.h"
 
-#include "boost/foreach.hpp"
-#include "boost/assign.hpp"
-#include <boost/assign/ptr_map_inserter.hpp>
-#include <boost/assign/ptr_list_of.hpp>
+#include "base/boost_include.h"
 
 using namespace std;
 using namespace boost;
@@ -62,18 +74,18 @@ void AirfoilSection::calcDerivedInputData()
 {
   Parameters p(parameters_);
 
-  if (!boost::filesystem::exists(p.geometry.foilfile))
-    throw insight::Exception("Foil data file does not exist: "+p.geometry.foilfile.string());
+  if (!p.geometry.foilfile->isValid())
+    throw insight::Exception("Foil data file does not exist: "+p.geometry.foilfile->fileName().string());
 
-  std::cout<<"Reading foil from "<<p.geometry.foilfile.string()<<std::endl;
+  std::cout<<"Reading foil from "<<p.geometry.foilfile->fileName().string()<<std::endl;
   {
     std::string data;
-    std::string ext = p.geometry.foilfile.extension().string();
+    std::string ext = p.geometry.foilfile->fileName().extension().string();
 
     int lnr=0;
 
     {
-      std::ifstream f(p.geometry.foilfile.c_str());
+      auto& f = p.geometry.foilfile->stream();
       if (ext==".dat") // xflr 5
         {
           std::string foil_name;
@@ -90,7 +102,7 @@ void AirfoilSection::calcDerivedInputData()
           double x, y;
           l >> x >> y;
           if (l.fail()) throw insight::Exception(boost::str(boost::format("Error in foil file %s:%d: could not read x and y from \"%s\"!")
-                                                            % p.geometry.foilfile.c_str() % lnr % line));
+                                                            % p.geometry.foilfile->fileName().string() % lnr % line));
           data += boost::str(boost::format("%g %g\n") % x % y);
         }
 
@@ -200,7 +212,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
     .set_maxLevel(p.mesh.lxfoil)
     .set_nLayers(p.mesh.nlayer)
     
-    .set_fileName(targ_path)
+    .set_fileName(make_filepath(targ_path))
     .set_scale(vec3(c_, c_, 1))
     .set_rollPitchYaw(vec3(0,0,-p.geometry.alpha))
   )));
@@ -363,11 +375,11 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
   (
     results, executionPath(), "chartCoefficientConvergence",
     "Iteration", "$C_L$, $C_D$",
-    list_of
-     (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cl)), "CL", "w l t '$C_L$'" ))
-     (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cd)), "CD", "w l t '$C_D$'" ))
-     (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), eps)), "CLbyCD", "axes x1y2 w l t '$C_L/C_D$'" ))
-    ,
+    {
+     PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cl)), "CL", "w l t '$C_L$'" ),
+     PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cd)), "CD", "w l t '$C_D$'" ),
+     PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), eps)), "CLbyCD", "axes x1y2 w l t '$C_L/C_D$'" )
+    },
     "Convergence history of coefficients",
     "set y2tics;set y2label 'C_L/C_D'"
   );
@@ -485,13 +497,13 @@ void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
   (
     results, executionPath(), "chartAirfoilCharacteristics",
     "$\\alpha$ / deg", "$C_L$, $C_D$",
-    list_of<PlotCurve>
-     (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(1))), 	"CL", "w p lt 1 lc 1 lw 2 t '$C_L$'"))
-     (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(2))), 	"CD", "w p lt 1 lc 2 lw 2 t '$C_D$'"))
-     (PlotCurve(arma::mat(join_rows(ralpha, rcl)), 	"CLfit", "w l lt 1 lc 1 lw 2 t '$C_L$ (regr.)'"))
-     (PlotCurve(arma::mat(join_rows(ralpha, rcd)), 	"CDfit", "w l lt 1 lc 2 lw 2 t '$C_D$ (regr.)'"))
-     (PlotCurve(arma::mat(join_rows(ralpha, rcpmin)), 	"Cpfit", "w l lt 2 lc 1 lw 1 axes x1y2 t '$C_{p,min}$ (regr.)'"))
-    ,
+    {
+     PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(1))), 	"CL", "w p lt 1 lc 1 lw 2 t '$C_L$'"),
+     PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(2))), 	"CD", "w p lt 1 lc 2 lw 2 t '$C_D$'"),
+     PlotCurve(arma::mat(join_rows(ralpha, rcl)), 	"CLfit", "w l lt 1 lc 1 lw 2 t '$C_L$ (regr.)'"),
+     PlotCurve(arma::mat(join_rows(ralpha, rcd)), 	"CDfit", "w l lt 1 lc 2 lw 2 t '$C_D$ (regr.)'"),
+     PlotCurve(arma::mat(join_rows(ralpha, rcpmin)), 	"Cpfit", "w l lt 2 lc 1 lw 1 axes x1y2 t '$C_{p,min}$ (regr.)'")
+    },
     "Characteristic chart of propeller coefficients",
     "set y2tics; set y2label '$C_P$';"
   );
@@ -501,9 +513,9 @@ void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
   (
     results, executionPath(), "chartPolar",
     "$C_D$", "$C_L$",
-    list_of
-     (PlotCurve( arma::mat(join_rows(tabdat.col(2), tabdat.col(1))), "polar", "w l not" ))
-    ,
+    {
+     PlotCurve( arma::mat(join_rows(tabdat.col(2), tabdat.col(1))), "polar", "w l not" )
+    },
     "Profile polar"
   );
 
@@ -511,9 +523,9 @@ void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
   (
     results, executionPath(), "chartSigma",
     "$C_L$", "$\\sigma$",
-    list_of
-     (PlotCurve( arma::mat(join_rows(tabdat.col(1), tabdat.col(4))), "sigma", "w l not" ))
-    ,
+    {
+     PlotCurve( arma::mat(join_rows(tabdat.col(1), tabdat.col(4))), "sigma", "w l not" )
+    },
     "Minimum pressure vs. lift coefficient"
   );
 

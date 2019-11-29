@@ -1,6 +1,7 @@
 
 #include "openfoam/fielddata.h"
 #include "openfoam/openfoamtools.h"
+#include "openfoam/openfoamcase.h"
 
 #include "base/boost_include.h"
 
@@ -16,10 +17,10 @@ namespace insight
 
 
 
-void FieldData::calcValues(const boost::filesystem::path& casedir)
+void FieldData::calcValues()
 {
-    representativeValueMag_ = calcRepresentativeValueMag(casedir);
-    maxValueMag_ = calcMaxValueMag(casedir);
+    representativeValueMag_ = calcRepresentativeValueMag();
+    maxValueMag_ = calcMaxValueMag();
 }
 
 
@@ -46,7 +47,7 @@ FieldData::FieldData(double uniformSteadyValue)
 //   data.values[0].value=arma::ones(1)*uniformSteadyValue;
 //   p_.fielddata=data;
     p_=uniformSteady(uniformSteadyValue);
-    calcValues(".");
+    calcValues();
 }
 
 
@@ -81,22 +82,22 @@ FieldData::FieldData(const arma::mat& uniformSteadyValue)
 //   data.values[0].value=uniformSteadyValue;
 //   p_.fielddata=data;
     p_=uniformSteady(uniformSteadyValue);
-    calcValues(".");
+    calcValues();
 }
 
 
 
 
-FieldData::FieldData(const ParameterSet& p, const boost::filesystem::path& casedir)
+FieldData::FieldData(const ParameterSet& p)
 : p_(p)
 {
-    calcValues(casedir);
+    calcValues();
 }
 
 
 
 
-OFDictData::data FieldData::sourceEntry() const
+OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 {
     std::ostringstream os;
 
@@ -129,7 +130,7 @@ OFDictData::data FieldData::sourceEntry() const
 
         for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
         {
-            os << " " << inst.time << " " << inst.profile;
+            os << " " << inst.time << " " << dictionaries.insertAdditionalInputFile(inst.profile);
         }
     }
 
@@ -147,7 +148,7 @@ OFDictData::data FieldData::sourceEntry() const
 
         for (const Parameters::fielddata_radialProfile_type::values_default_type& inst: fd->values)
         {
-            os << " " << inst.time << " " << inst.profile;
+            os << " " << inst.time << " " << dictionaries.insertAdditionalInputFile(inst.profile);
         }
     }
 
@@ -189,7 +190,7 @@ OFDictData::data FieldData::sourceEntry() const
 
 
 
-void FieldData::setDirichletBC(OFDictData::dict& BC) const
+void FieldData::setDirichletBC(OFDictData::dict& BC, OFdicts& dictionaries) const
 {
   if (const Parameters::fielddata_uniformSteady_type *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) )
   {
@@ -199,20 +200,20 @@ void FieldData::setDirichletBC(OFDictData::dict& BC) const
   else
   {
     BC["type"]=OFDictData::data("extendedFixedValue");
-    BC["source"]=sourceEntry();
+    BC["source"]=sourceEntry(dictionaries);
   }
 }
 
 
-boost::filesystem::path completed_path(const boost::filesystem::path& basepath, const insight::PathParameter* filename)
-{
-    if (filename.is_absolute())
-        return filename->filePath(basepath);
-    else
-        return basepath/filename->filePath(basepath);
-}
+//boost::filesystem::path completed_path(const boost::filesystem::path& basepath, const insight::PathParameter* filename)
+//{
+//    if (filename.is_absolute())
+//        return filename->filePath(basepath);
+//    else
+//        return basepath/filename->filePath(basepath);
+//}
 
-double FieldData::calcRepresentativeValueMag(const boost::filesystem::path& casedir) const
+double FieldData::calcRepresentativeValueMag() const
 {
   if (const auto *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) )
   {
@@ -239,7 +240,7 @@ double FieldData::calcRepresentativeValueMag(const boost::filesystem::path& case
     for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
     {
       arma::mat xy;
-      xy.load( completed_path(casedir, inst.profile).c_str(), arma::raw_ascii);
+      xy.load( inst.profile->stream(), arma::raw_ascii);
       arma::mat I=integrate(xy);
       double avg_inst=0.0;
       for (arma::uword c=0; c<I.n_cols-1; c++)
@@ -261,7 +262,7 @@ double FieldData::calcRepresentativeValueMag(const boost::filesystem::path& case
     for (const auto& inst: fd->values)
     {
       arma::mat xy;
-      xy.load( completed_path(casedir, inst.profile).c_str(), arma::raw_ascii);
+      xy.load( inst.profile->stream(), arma::raw_ascii);
       arma::mat I=integrate(xy);
       double avg_inst=0.0;
       for (arma::uword c=0; c<I.n_cols-1; c++)
@@ -285,7 +286,7 @@ double FieldData::calcRepresentativeValueMag(const boost::filesystem::path& case
 
 
 
-double FieldData::calcMaxValueMag(const boost::filesystem::path& casedir) const
+double FieldData::calcMaxValueMag() const
 {
     double maxv=-DBL_MAX;
     if (const auto *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) )
@@ -304,7 +305,7 @@ double FieldData::calcMaxValueMag(const boost::filesystem::path& casedir) const
         for (const auto& inst: fd->values)
         {
             arma::mat xy;
-            xy.load( completed_path(casedir, inst.profile).c_str(), arma::raw_ascii);
+            xy.load( inst.profile->stream(), arma::raw_ascii);
             arma::mat mag_inst(arma::zeros(xy.n_rows));
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
@@ -320,7 +321,7 @@ double FieldData::calcMaxValueMag(const boost::filesystem::path& casedir) const
         for (const auto& inst: fd->values)
         {
             arma::mat xy;
-            xy.load( completed_path(casedir, inst.profile).c_str(), arma::raw_ascii);
+            xy.load( inst.profile->stream(), arma::raw_ascii);
             arma::mat mag_inst(arma::zeros(xy.n_rows));
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
@@ -364,7 +365,7 @@ void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::files
         for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
         {
             arma::mat xy;
-            xy.load( completed_path(exepath, inst.profile).c_str(), arma::raw_ascii);
+            xy.load( inst.profile->stream(), arma::raw_ascii);
 
             arma::uword ncmpt=xy.n_cols-1;
             PlotCurveList crvs(ncmpt);

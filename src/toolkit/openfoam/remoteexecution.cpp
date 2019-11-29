@@ -1,12 +1,17 @@
 #include "remoteexecution.h"
 
 #include <cstdlib>
+
 #include "base/exception.h"
 #include "base/tools.h"
+
 #include "openfoam/openfoamcase.h"
-#include "pstreams/pstream.h"
+#include "openfoam/ofes.h"
+
 #include <boost/asio.hpp>
 #include <boost/process/async.hpp>
+
+#include "pstreams/pstream.h"
 
 #include <regex>
 

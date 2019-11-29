@@ -22,6 +22,7 @@
 #ifndef INSIGHT_ANALYSIS_H
 #define INSIGHT_ANALYSIS_H
 
+#include "base/progressdisplayer.h"
 #include "base/parameterset.h"
 #include "base/factory.h"
 #include "base/resultset.h"
@@ -38,29 +39,6 @@ namespace insight
   
     
     
-    
-class ProgressDisplayer;
-
-
-
-
-typedef std::shared_ptr<ProgressDisplayer> ProgressDisplayerPtr;
-typedef std::map<std::string, double> ProgressVariableList;
-typedef std::pair<double, ProgressVariableList> ProgressState;  
-
-
-
-
-class ProgressDisplayer
-{
-public:
-    virtual ~ProgressDisplayer();
-
-    virtual void update ( const ProgressState& pi ) =0;
-
-    virtual bool stopRun() const;
-};
-
 
 
 

@@ -74,6 +74,14 @@ mesh = set
     topPatchName = string "" "name of patch on top end"
     cyclmPatchName = string "" "name of patch on cyclic boundary at -0.5*wedge_angle"
     cyclpPatchName = string "" "name of patch on cyclic boundary at +0.5*wedge_angle"
+
+    outerPatchSections = array [ set {
+     x0 = double 0 "Beginning of the section. Measured along ex from p0." *necessary
+     x1 = double 1 "Beginning of the section. Measured along ex from p0." *necessary
+     name = string "" "name of the patch between x0 and x1. If left blank, no different patch will be added
+and the section will remain part of outerPatch."
+    } ]*0 "Optional axial parts in the outer patch. The outer patch will be split at the specified axial
+ coordinates and the surface in between will be given the specified name."
 }
 
 <<<PARAMETERSET

@@ -182,8 +182,6 @@ bbmax = vector (1 1 1) "maximum point of bounding box"
 e_up = vector (0 0 1) "Upward direction"
 e_ax = vector (1 0 0) "Longitudinal direction"
 
-filename = path "isoview.png" "Output filename. Different views will be stored at <file path>/<filename stem>_<view>.<file extension>."
-
 <<<PARAMETERSET
 */
 protected:

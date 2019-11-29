@@ -18,10 +18,12 @@
  *
  */
 
-
-#include "blockmesh.h"
+#include "openfoam/blockmesh.h"
 
 #include "base/vtktools.h"
+
+#include "openfoam/ofdicts.h"
+
 
 using namespace std;
 using namespace boost::assign;

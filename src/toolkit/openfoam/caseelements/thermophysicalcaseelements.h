@@ -21,21 +21,9 @@
 #ifndef INSIGHT_THERMOPHYSICALCASEELEMENTS_H
 #define INSIGHT_THERMOPHYSICALCASEELEMENTS_H
 
-#include "basiccaseelements.h"
-#include "base/resultset.h"
+#include "openfoam/caseelements/basic/thermodynamicmodel.h"
 
 namespace insight {
-
-
-
-
-class thermodynamicModel
-: public OpenFOAMCaseElement
-{
-public:
-  thermodynamicModel(OpenFOAMCase& c, const ParameterSet& ps);
-};
-
 
 
 

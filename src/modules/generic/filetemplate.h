@@ -55,10 +55,11 @@ protected:
   };
   std::vector<std::string> ReservedFileNames 
 #ifndef SWIG
-  = boost::assign::list_of<std::string>
-   ("INSIGHT_RUN")
-   ("INSIGHT_EVAL")
-   ("INSIGHT_RESULTS.isr")
+  = {
+      "INSIGHT_RUN",
+      "INSIGHT_EVAL",
+      "INSIGHT_RESULTS.isr"
+    }
 #endif
    ;
     // derived data

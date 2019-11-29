@@ -1412,6 +1412,36 @@ std::string PlotCurve::title() const
   else return "";
 }
 
+const arma::mat& PlotCurve::xy() const
+{
+    return xy_;
+}
+const std::string& PlotCurve::plaintextlabel() const
+{
+    return plaintextlabel_;
+}
+
+
+
+PlotCurveList::PlotCurveList()
+ : std::vector<PlotCurve>()
+{}
+
+
+PlotCurveList::PlotCurveList(size_t n)
+ : std::vector<PlotCurve>(n)
+{}
+
+
+PlotCurveList::PlotCurveList(std::initializer_list<PlotCurve> il)
+ : std::vector<PlotCurve>(il)
+{}
+
+
+PlotCurveList::PlotCurveList(const_iterator begin, const_iterator end)
+ : std::vector<PlotCurve>(begin, end)
+{}
+
 
 
 

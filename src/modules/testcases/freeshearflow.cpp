@@ -18,24 +18,23 @@
  */
 
 #include "freeshearflow.h"
+
 #include "base/factory.h"
 #include "base/plottools.h"
+#include "base/boost_include.h"
+
 #include "openfoam/openfoamcase.h"
-#include "openfoam/openfoamcaseelements.h"
 #include "openfoam/blockmesh.h"
+
 #include "openfoam/openfoamtools.h"
 #include "openfoam/snappyhexmesh.h"
+
+#include "openfoam/caseelements/numerics/meshingnumerics.h"
+
 #include "channel.h"
 
 #include <sstream>
 
-#include <boost/assign.hpp>
-#include <boost/assign/ptr_map_inserter.hpp>
-#include <boost/assign/ptr_list_of.hpp>
-#include "boost/lexical_cast.hpp"
-#include "boost/regex.hpp"
-
-#include "base/factory.h"
 
 using namespace std;
 using namespace arma;

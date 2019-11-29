@@ -23,6 +23,7 @@
 #define INSIGHT_OPENFOAMPARAMETERSTUDY_H
 
 #include "openfoamanalysis.h"
+#include "base/parameterstudy.h"
 
 namespace insight {
 

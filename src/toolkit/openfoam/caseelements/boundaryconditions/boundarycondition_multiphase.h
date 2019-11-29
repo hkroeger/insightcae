@@ -66,7 +66,7 @@ public:
     uniformPhases ( const ParameterSet& p );
     inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformPhases(ps)); }
     bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
-    static Parameters mixture( const std::map<std::string, double>& sp);
+    static uniformPhases::Parameters mixture( const std::map<std::string, double>& sp);
     ParameterSet getParameters() const override { return p_; }
 };
 

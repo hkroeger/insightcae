@@ -8,6 +8,7 @@
 
 #ifndef Q_MOC_RUN
 #include "openfoam/openfoamcase.h"
+#include "openfoam/caseelements/boundarycondition.h"
 #endif
 
 class ParameterSetDisplay;

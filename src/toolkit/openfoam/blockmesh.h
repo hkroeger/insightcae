@@ -22,7 +22,8 @@
 #ifndef INSIGHT_BLOCKMESH_H
 #define INSIGHT_BLOCKMESH_H
 
-#include "openfoam/openfoamcase.h"
+#include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/openfoamdict.h"
 #include "base/linearalgebra.h"
 
 #include "boost/variant.hpp"

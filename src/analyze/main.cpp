@@ -246,7 +246,8 @@ int main(int argc, char *argv[])
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
                 cout << "Setting path '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
-                parameters.getPath(pair[0])=pair[1];
+                //parameters.getPath(pair[0])=pair[1];
+                parameters.setOriginalFileName(pair[0], pair[1]);
             }
         }
 

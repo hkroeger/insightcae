@@ -10,7 +10,11 @@ find_package(KF5Parts)
 set(isofExecutionManager_SOURCES
     main.cpp
     mainwindow.cpp
+    mainwindow.h
+    mainwindow.ui
     remoteparaview.cpp
+    remoteparaview.h
+    remoteparaview.ui
 )
 
 set(isofExecutionManager_LIBS
@@ -26,6 +30,7 @@ if (KF5Parts_DIR)
 
     LIST(APPEND isofExecutionManager_SOURCES
         terminal.cpp
+        terminal.h
     )
     LIST(APPEND isofExecutionManager_LIBS
         KF5::Parts

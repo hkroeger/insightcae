@@ -23,12 +23,19 @@
 #define INSIGHT_OPENFOAMANALYSIS_H
 
 #include "base/analysis.h"
-#include "openfoam/openfoamcase.h"
-#include "base/parameterstudy.h"
+
+#include "openfoam/caseelements/turbulencemodel.h"
+
 
 
 namespace insight {
-  
+
+
+
+class OpenFOAMCase;
+class ConvergenceAnalysisDisplayer;
+
+
 class OpenFOAMAnalysis
 : public Analysis
 {
@@ -81,7 +88,7 @@ public:
         const boost::filesystem::path& exepath
     );
 
-    virtual boost::filesystem::path setupExecutionEnvironment();
+    boost::filesystem::path setupExecutionEnvironment() override;
     
     virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="");
     

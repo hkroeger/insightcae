@@ -76,16 +76,18 @@ Handle_Geom_Curve blockMeshDict_CylWedge::spine()
   if (spine_.IsNull())
   {
     // Read or create spine curve
-    if (!p_.geometry.wedge_spine_curve.empty())
+    if (p_.geometry.wedge_spine_curve->isValid())
     {
-      insight::cad::FeaturePtr wsc = insight::cad::Import::create(p_.geometry.wedge_spine_curve);
+      insight::cad::FeaturePtr wsc =
+          insight::cad::Import::create( p_.geometry.wedge_spine_curve->filePath() );
+
       wsc->checkForBuildDuringAccess(); // force rebuild
       auto el = wsc->allEdgesSet();
 
       if (el.size()!=1)
         throw insight::Exception(
             boost::str(boost::format("CAD file %s should contain only one single edge! (It actually contains %d edges)")
-                       % p_.geometry.wedge_spine_curve.string() % el.size() )
+                       % p_.geometry.wedge_spine_curve->originalFilePath().string() % el.size() )
             );
 
       TopoDS_Edge e= TopoDS::Edge(wsc->edge(*el.begin()));
@@ -159,7 +161,6 @@ void blockMeshDict_CylWedge::create_bmd()
 
 
     double rc=rCore();
-    arma::mat vL=p_.geometry.L*ex_;
 
 //     std::cout<<pts[0]<<pts[1]<<std::endl;
     Patch* base=nullptr;
@@ -193,41 +194,41 @@ void blockMeshDict_CylWedge::create_bmd()
 
 
 
-    const int np=10;
-    TopoDS_Edge c0;
-    {
-      std::vector<insight::cad::VectorPtr> pts;
-      for (int i=0; i<np; i++)
-      {
-        double r=0.5*(p_.geometry.d + (p_.geometry.D-p_.geometry.d)*double(i)/double(np-1));
-        pts.push_back(insight::cad::matconst(point_on_spine(r)));
-      }
-      cad::FeaturePtr spc=insight::cad::SplineCurve::create(pts);
-      c0=TopoDS::Edge(spc->shape());
-    }
+//    const int np=10;
+//    TopoDS_Edge c0;
+//    {
+//      std::vector<insight::cad::VectorPtr> pts;
+//      for (int i=0; i<np; i++)
+//      {
+//        double r=0.5*(p_.geometry.d + (p_.geometry.D-p_.geometry.d)*double(i)/double(np-1));
+//        pts.push_back(insight::cad::matconst(point_on_spine(r)));
+//      }
+//      cad::FeaturePtr spc=insight::cad::SplineCurve::create(pts);
+//      c0=TopoDS::Edge(spc->shape());
+//    }
 
-    gp_Ax1 ax(to_Pnt(p0_), to_Vec(ex_));
-    gp_Trsf trm; trm.SetRotation(ax, -0.5*p_.geometry.wedge_angle*SI::deg);
-    gp_Trsf trp; trp.SetRotation(ax, 0.5*p_.geometry.wedge_angle*SI::deg);
-    gp_Trsf tru; tru.SetTranslation(to_Vec(vL));
+//    gp_Ax1 ax(to_Pnt(p0_), to_Vec(ex_));
+//    gp_Trsf trm; trm.SetRotation(ax, -0.5*p_.geometry.wedge_angle*SI::deg);
+//    gp_Trsf trp; trp.SetRotation(ax, 0.5*p_.geometry.wedge_angle*SI::deg);
+//    gp_Trsf tru; tru.SetTranslation(to_Vec(vL));
 
-    TopoDS_Edge c0m=TopoDS::Edge(BRepBuilderAPI_Transform(c0, trm).Shape());
-    TopoDS_Edge c0p=TopoDS::Edge(BRepBuilderAPI_Transform(c0, trp).Shape());
-    TopoDS_Face cyclm = BRepFill::Face ( c0m,  TopoDS::Edge(BRepBuilderAPI_Transform(c0m, tru).Shape()));
-    TopoDS_Face cyclp = BRepFill::Face ( c0p,  TopoDS::Edge(BRepBuilderAPI_Transform(c0p, tru).Shape()));
+//    TopoDS_Edge c0m=TopoDS::Edge(BRepBuilderAPI_Transform(c0, trm).Shape());
+//    TopoDS_Edge c0p=TopoDS::Edge(BRepBuilderAPI_Transform(c0, trp).Shape());
+//    TopoDS_Face cyclm = BRepFill::Face ( c0m,  TopoDS::Edge(BRepBuilderAPI_Transform(c0m, tru).Shape()));
+//    TopoDS_Face cyclp = BRepFill::Face ( c0p,  TopoDS::Edge(BRepBuilderAPI_Transform(c0p, tru).Shape()));
 
-    {
-      StlAPI_Writer stlwriter;
-      stlwriter.ASCIIMode() = true;
-      BRepMesh_IncrementalMesh Incm(cyclm, 1e-2);
-      stlwriter.Write(cyclm, "cyclm.stl");
-    }
-    {
-      StlAPI_Writer stlwriter;
-      stlwriter.ASCIIMode() = true;
-      BRepMesh_IncrementalMesh Incp(cyclp, 1e-2);
-      stlwriter.Write(cyclp, "cyclp.stl");
-    }
+//    {
+//      StlAPI_Writer stlwriter;
+//      stlwriter.ASCIIMode() = true;
+//      BRepMesh_IncrementalMesh Incm(cyclm, 1e-2);
+//      stlwriter.Write(cyclm, "cyclm.stl");
+//    }
+//    {
+//      StlAPI_Writer stlwriter;
+//      stlwriter.ASCIIMode() = true;
+//      BRepMesh_IncrementalMesh Incp(cyclp, 1e-2);
+//      stlwriter.Write(cyclp, "cyclp.stl");
+//    }
 
 
     auto phi_lim = limit_angles();
@@ -235,8 +236,10 @@ void blockMeshDict_CylWedge::create_bmd()
     double phip=phi_lim.second;
     cout<<"phim="<<phim<<", phip="<<phip<<endl;
 
+    arma::mat rp=rotMatrix ( phip /*0.5*p_.geometry.wedge_angle*SI::deg*/, ex_ );
+    arma::mat rm=rotMatrix ( phim /*-0.5*p_.geometry.wedge_angle*SI::deg*/, ex_ );
 
-    int nu1, nu2, nx, nr;
+    int nu1, nu2, nx_tot, nr;
     double
         L_r = 0.5*(p_.geometry.D-p_.geometry.d),
         L_u1 = fabs(phim)*0.25*(p_.geometry.d+p_.geometry.D),
@@ -245,12 +248,12 @@ void blockMeshDict_CylWedge::create_bmd()
     {
       nu1=int(std::ceil( fabs(phim)/fabs(phip-phim)*double(ic->nu) ));
       nu2=std::max(1, ic->nu - nu1);
-      nx=ic->nx;
+      nx_tot=ic->nx;
       nr=ic->nr;
     }
     else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
     {
-      nx=std::max(1, int(std::ceil(p_.geometry.L/ic->delta)));
+      nx_tot=std::max(1, int(std::ceil(p_.geometry.L/ic->delta)));
       nr=std::max(1, int(std::ceil(L_r/ic->delta)));
       nu1=std::max(1, int(std::ceil(L_u1/ic->delta)));
       nu2=std::max(1, int(std::ceil(L_u2/ic->delta)));
@@ -260,114 +263,253 @@ void blockMeshDict_CylWedge::create_bmd()
       auto Ls={p_.geometry.L, L_r, L_u1, L_u2};
       double delta = *std::max_element(Ls.begin(), Ls.end()) / double(ic->n_max);
 
-      nx=std::max(1, int(std::ceil(p_.geometry.L/delta)));
+      nx_tot=std::max(1, int(std::ceil(p_.geometry.L/delta)));
       nr=std::max(1, int(std::ceil(L_r/delta)));
       nu1=std::max(1, int(std::ceil(L_u1/delta)));
       nu2=std::max(1, int(std::ceil(L_u2/delta)));
     }
 
-    arma::mat rp=rotMatrix ( phip /*0.5*p_.geometry.wedge_angle*SI::deg*/, ex_ );
-    arma::mat rm=rotMatrix ( phim /*-0.5*p_.geometry.wedge_angle*SI::deg*/, ex_ );
-
-    arma::mat p_rc, p_i, p_o;
-    if (p_.geometry.d < 1e-10)
+    struct zSection
     {
-      // build mesh with core block
+      double z0, z1;
+      Patch* outerPatch;
+      bool lowerEnd, upperEnd;
 
-      p_i=p0_+0.9*rc*er_; //point_on_spine(0.9*rc);
-      p_rc=p0_+rc*er_; //point_on_spine(rc);
-      // core block
+      bool operator<(const zSection& o) const
       {
-
-          Block& bl = this->addBlock
-                      (
-                          new Block ( P_8 (
-                                          p0_, rm*p_i, p_rc, rp*p_i,
-                                          p0_+vL, rm*p_i+vL, p_rc+vL, rp*p_i+vL
-                                      ),
-                                      nu1, nu2, nx
-                                    )
-                      );
-          if ( base ) {
-              base->addFace ( bl.face ( "0321" ) );
-          }
-          if ( top ) {
-              top->addFace ( bl.face ( "4567" ) );
-          }
-          if (pcyclm) pcyclm->addFace(bl.face("0154"));
-          if (pcyclp) pcyclp->addFace(bl.face("0473"));
+        return z0<o.z0;
       }
+
+      zSection()
+        : z0(0.), z1(0.),
+          outerPatch(nullptr),
+          lowerEnd(false), upperEnd(false)
+      {}
+
+    } defaultSection;
+
+    defaultSection.z0=0.;
+    defaultSection.z1=p_.geometry.L;
+    defaultSection.outerPatch=outer;
+    defaultSection.lowerEnd=false;
+    defaultSection.upperEnd=false;
+
+    auto defaultSectionBetween = [&](double z0, double z1)
+    {
+      zSection result = defaultSection;
+      result.z0=z0;
+      result.z1=z1;
+      return result;
+    };
+
+    std::set<zSection> sections ; //({defaultSection});
+
+    // no overlap with other section is allowed! => check needed
+    for (auto& sec: p_.mesh.outerPatchSections)
+    {
+      if (sec.x0 > sec.x1)
+      {
+        std::swap(sec.x0, sec.x1);
+        insight::Warning("Corrected section specification: x0 shall be smaller than x1!");
+      }
+      sec.x0=std::max(0., sec.x0);
+      sec.x1=std::min(p_.geometry.L, sec.x1);
+    }
+//    for (auto i1 = p_.mesh.outerPatchSections.begin(); i1!=p_.mesh.outerPatchSections.end(); i1++)
+//    {
+//      for (auto i2 = p_.mesh.outerPatchSections.begin(); i2!=p_.mesh.outerPatchSections.end(); i2++)
+//      {
+//        if (i1!=i2)
+//        {
+//          if ( (i1->x0 < i2->x0) && (i1->x1
+//        }
+//      }
+//    }
+
+    // insert all sections
+    for (const auto& sec: p_.mesh.outerPatchSections)
+    {
+      zSection zs;
+      zs.z0=sec.x0;
+      zs.z1=sec.x1;
+      if (!sec.name.empty())
+      {
+        if (sec.name == p_.mesh.outerPatchName)
+        {
+          zs.outerPatch = outer;
+        }
+        else
+        {
+          zs.outerPatch = &this->addOrDestroyPatch ( sec.name, new bmd::Patch() );
+        }
+      }
+      sections.insert(zs);
+    }
+
+    if (sections.size()==0)
+    {
+      sections.insert(defaultSection);
     }
     else
     {
-      p_i=p0_+0.5*p_.geometry.d*er_; //point_on_spine(0.5*p_.geometry.d);
-      p_rc=p_i;
-    }
-
-    p_o=p0_+0.5*p_.geometry.D*er_; //point_on_spine(0.5*p_.geometry.D);
-
-    {
-        Block& bl = this->addBlock
-                    (
-                        new Block ( P_8 (
-                                        rm*p_i, rm*p_o, p_o, p_rc,
-                                        rm*p_i+vL, rm*p_o+vL, p_o+vL, p_rc+vL
-                                    ),
-                                    nr, nu1, nx,
-                                    list_of<double> ( 1./p_.mesh.gradr ) ( 1 ) ( 1 )
-                                  )
-                    );
-        if ( base ) {
-            base->addFace ( bl.face ( "0321" ) );
-        }
-        if ( top ) {
-            top->addFace ( bl.face ( "4567" ) );
-        }
-        if ( outer ) {
-            outer->addFace ( bl.face ( "1265" ) );
-        }
-        if ( inner ) {
-            inner->addFace ( bl.face ( "0473" ) );
-        }
-        if (pcyclm) pcyclm->addFace(bl.face("0154"));
-    }
-    {
-        Block& bl = this->addBlock
-                    (
-                        new Block ( P_8 (
-                                        p_rc, p_o, rp*p_o, rp*p_i,
-                                        p_rc+vL, p_o+vL, rp*p_o+vL, rp*p_i+vL
-                                    ),
-                                    nr, nu2, nx,
-                                    list_of<double> ( 1./p_.mesh.gradr ) ( 1 ) ( 1 )
-                                  )
-                    );
-        if ( base ) {
-            base->addFace ( bl.face ( "0321" ) );
-        }
-        if ( top ) {
-            top->addFace ( bl.face ( "4567" ) );
-        }
-        if ( outer ) {
-            outer->addFace ( bl.face ( "1265" ) );
-        }
-        if ( inner ) {
-            inner->addFace ( bl.face ( "0473" ) );
-        }
-        if (pcyclp) pcyclp->addFace(bl.face("2376"));
-    }
-
-
-
-    for (auto vl: {vec3(0,0,0), vL})
-    {
-      this->addEdge ( new ArcEdge ( rm*p_o +vl, p_o +vl, rotMatrix(-0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_o +vl ) );
-      this->addEdge ( new ArcEdge ( p_o +vl, rp*p_o +vl, rotMatrix(0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_o +vl ) );
-
-      if (! (p_.geometry.d < 1e-10))
+      // check for needed sections between
+      std::set<zSection> sectionsToAdd;
+      for (auto i=sections.begin(); i!=sections.end(); i++)
       {
-        this->addEdge ( new ArcEdge ( rm*p_i +vl, p_i +vl, rotMatrix(-0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_i +vl ) );
-        this->addEdge ( new ArcEdge ( p_i +vl, rp*p_i +vl, rotMatrix(0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_i +vl ) );
+        auto j=std::next(i,1);
+
+        if (i==sections.begin())
+        {
+          if (i->z0 > 0.)
+            sectionsToAdd.insert( defaultSectionBetween(0., i->z1) );
+        }
+
+        if (j==sections.end())
+        {
+          if (i->z1 < p_.geometry.L)
+            sectionsToAdd.insert( defaultSectionBetween(i->z1, p_.geometry.L) );
+        }
+        else
+        {
+          if (fabs(i->z1 - j->z0)>1e-10)
+            sectionsToAdd.insert( defaultSectionBetween(i->z1, j->z0) );
+        }
+      }
+      std::copy( sectionsToAdd.begin(), sectionsToAdd.end(),
+                 std::inserter(sections, sections.begin()) );
+    }
+
+    for (auto & s: sections)
+    {
+      std::cerr<<"section: "<<s.z0<<" => "<<s.z1<<std::endl;
+    }
+
+
+    {
+      auto j=sections.begin();
+      zSection first = *j;
+      first.lowerEnd = true;
+      sections.erase(j);
+      sections.insert(first);
+
+      auto i = sections.begin();
+      while ( std::next(i,1) != sections.end() ) i++;
+      zSection last = *i;
+      last.upperEnd = true;
+      sections.erase(i);
+      sections.insert(last);
+    }
+
+
+    for (auto i=sections.begin(); i!=sections.end(); i++)
+    {
+      arma::mat vL0 = i->z0 * ex_;
+      arma::mat vL1 = i->z1 * ex_;
+
+      int nx = std::max(1, int(double(nx_tot)*( (i->z1 - i->z0)/p_.geometry.L )) );
+
+      arma::mat p_rc, p_i, p_o;
+      if (p_.geometry.d < 1e-10)
+      {
+        // build mesh with core block
+
+        p_i=p0_+0.9*rc*er_; //point_on_spine(0.9*rc);
+        p_rc=p0_+rc*er_; //point_on_spine(rc);
+        // core block
+        {
+
+            Block& bl = this->addBlock
+                        (
+                            new Block ( P_8 (
+                                            p0_+vL0, rm*p_i+vL0, p_rc+vL0, rp*p_i+vL0,
+                                            p0_+vL1, rm*p_i+vL1, p_rc+vL1, rp*p_i+vL1
+                                        ),
+                                        nu1, nu2, nx
+                                      )
+                        );
+            if ( i->lowerEnd && base ) {
+                base->addFace ( bl.face ( "0321" ) );
+            }
+            if ( i->upperEnd && top ) {
+                top->addFace ( bl.face ( "4567" ) );
+            }
+            if (pcyclm) pcyclm->addFace(bl.face("0154"));
+            if (pcyclp) pcyclp->addFace(bl.face("0473"));
+        }
+      }
+      else
+      {
+        p_i=p0_+0.5*p_.geometry.d*er_; //point_on_spine(0.5*p_.geometry.d);
+        p_rc=p_i;
+      }
+
+      p_o=p0_+0.5*p_.geometry.D*er_; //point_on_spine(0.5*p_.geometry.D);
+
+      {
+          Block& bl = this->addBlock
+                      (
+                          new Block ( P_8 (
+                                          rm*p_i+vL0, rm*p_o+vL0, p_o+vL0, p_rc+vL0,
+                                          rm*p_i+vL1, rm*p_o+vL1, p_o+vL1, p_rc+vL1
+                                      ),
+                                      nr, nu1, nx,
+                                      list_of<double> ( 1./p_.mesh.gradr ) ( 1 ) ( 1 )
+                                    )
+                      );
+          if ( i->lowerEnd && base ) {
+              base->addFace ( bl.face ( "0321" ) );
+          }
+          if ( i->upperEnd && top ) {
+              top->addFace ( bl.face ( "4567" ) );
+          }
+          if ( i->outerPatch ) {
+              i->outerPatch->addFace ( bl.face ( "1265" ) );
+          }
+          if ( inner ) {
+              inner->addFace ( bl.face ( "0473" ) );
+          }
+          if (pcyclm) pcyclm->addFace(bl.face("0154"));
+      }
+      {
+          Block& bl = this->addBlock
+                      (
+                          new Block ( P_8 (
+                                          p_rc+vL0, p_o+vL0, rp*p_o+vL0, rp*p_i+vL0,
+                                          p_rc+vL1, p_o+vL1, rp*p_o+vL1, rp*p_i+vL1
+                                      ),
+                                      nr, nu2, nx,
+                                      list_of<double> ( 1./p_.mesh.gradr ) ( 1 ) ( 1 )
+                                    )
+                      );
+          if ( i->lowerEnd && base ) {
+              base->addFace ( bl.face ( "0321" ) );
+          }
+          if ( i->upperEnd && top ) {
+              top->addFace ( bl.face ( "4567" ) );
+          }
+          if ( i->outerPatch ) {
+              i->outerPatch->addFace ( bl.face ( "1265" ) );
+          }
+          if ( inner ) {
+              inner->addFace ( bl.face ( "0473" ) );
+          }
+          if (pcyclp) pcyclp->addFace(bl.face("2376"));
+      }
+
+
+      std::vector<arma::mat> vls;
+      if (i->lowerEnd) vls.push_back(vL0);
+      if (i->upperEnd) vls.push_back(vL1);
+      for (auto vl: vls)
+      {
+        this->addEdge ( new ArcEdge ( rm*p_o +vl, p_o +vl, rotMatrix(-0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_o +vl ) );
+        this->addEdge ( new ArcEdge ( p_o +vl, rp*p_o +vl, rotMatrix(0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_o +vl ) );
+
+        if (! (p_.geometry.d < 1e-10))
+        {
+          this->addEdge ( new ArcEdge ( rm*p_i +vl, p_i +vl, rotMatrix(-0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_i +vl ) );
+          this->addEdge ( new ArcEdge ( p_i +vl, rp*p_i +vl, rotMatrix(0.25*p_.geometry.wedge_angle*SI::deg, ex_)*p_i +vl ) );
+        }
       }
     }
 
@@ -1309,14 +1451,16 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
 
 
     // load geometry
-    insight::cad::FeaturePtr wsc = insight::cad::Import::create(p_.geometry.wedge_spine_curve);
+    insight::cad::FeaturePtr wsc =
+        insight::cad::Import::create( p_.geometry.wedge_spine_curve->filePath() );
+
     wsc->checkForBuildDuringAccess(); // force rebuild
     auto el = wsc->allEdgesSet();
 
     if (el.size()!=1)
       throw insight::Exception(
           boost::str(boost::format("CAD file %s should contain only one single edge! (It actually contains %d edges)")
-                     % p_.geometry.wedge_spine_curve.string() % el.size() )
+                     % p_.geometry.wedge_spine_curve->fileName().string() % el.size() )
           );
 
     TopoDS_Edge e= TopoDS::Edge(BRepBuilderAPI_NurbsConvert(wsc->edge(*el.begin())).Shape());

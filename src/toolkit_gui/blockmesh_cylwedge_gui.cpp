@@ -3,6 +3,9 @@
 #include "base/tools.h"
 #include "base/units.h"
 
+#include "openfoam/ofes.h"
+#include "openfoam/openfoamcase.h"
+
 #include "cadfeatures.h"
 #include "datum.h"
 

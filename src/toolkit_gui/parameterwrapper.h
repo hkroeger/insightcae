@@ -37,12 +37,14 @@
 #ifndef Q_MOC_RUN
 #include "base/factory.h"
 #include "base/parameter.h"
+#include "base/parameters/simpleparameter.h"
+#include "base/parameters/selectionparameter.h"
+#include "base/parameters/pathparameter.h"
+#include "base/parameters/matrixparameter.h"
+#include "base/parameters/doublerangeparameter.h"
+#include "base/parameters/arrayparameter.h"
 #include "base/parameterset.h"
-
-#include "boost/tuple/tuple.hpp"
-#include "boost/fusion/tuple.hpp"
 #endif
-
 
 
 
@@ -286,6 +288,7 @@ protected Q_SLOTS:
   virtual void openSelectionDialog();
   virtual void openFile();
   virtual void onDataEntered();
+  virtual void onExportFile();
 };
 
 

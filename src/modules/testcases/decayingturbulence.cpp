@@ -18,15 +18,20 @@
  */
 
 #include "decayingturbulence.h"
+
 #include "base/factory.h"
+#include "base/boost_include.h"
+
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
-#include "openfoam/openfoamcaseelements.h"
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/ptr_map_inserter.hpp>
-#include "boost/lexical_cast.hpp"
-#include "boost/regex.hpp"
+#include "openfoam/caseelements/numerics/meshingnumerics.h"
+#include "openfoam/caseelements/numerics/unsteadyincompressiblenumerics.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
+#include "openfoam/caseelements/basic/singlephasetransportmodel.h"
+#include "openfoam/caseelements/boundaryconditions/turbulentvelocityinletbc.h"
+#include "openfoam/caseelements/boundaryconditions/pressureoutletbc.h"
+#include "openfoam/caseelements/boundaryconditions/wallbc.h"
 
 using namespace arma;
 using namespace std;

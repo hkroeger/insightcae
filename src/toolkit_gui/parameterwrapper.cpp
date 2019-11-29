@@ -37,12 +37,7 @@
 
 #include "helpwidget.h"
 
-#ifndef Q_MOC_RUN
-#include "boost/foreach.hpp"
-#endif
-
 #include "base/tools.h"
-#include "boost/spirit/include/classic.hpp"
 
 #include "parametereditorwidget.h"
 
@@ -682,19 +677,23 @@ void PathParameterWrapper::createWidgets()
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
+  QHBoxLayout *layout3=new QHBoxLayout(detaileditwidget_);
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
   connect(le_, &QLineEdit::destroyed, this, &PathParameterWrapper::onDestruction);
   connect(le_, &QLineEdit::returnPressed, this, &PathParameterWrapper::onApply);
-  le_->setText(param()().c_str());
+  le_->setText(QString::fromStdString(param().originalFilePath().string()));
   layout2->addWidget(le_);
   dlgBtn_=new QPushButton("...", detaileditwidget_);
-  layout2->addWidget(dlgBtn_);
+  layout3->addWidget(dlgBtn_);
   openBtn_=new QPushButton("Open", detaileditwidget_);
-  layout2->addWidget(openBtn_);
+  layout3->addWidget(openBtn_);
+  auto *saveBtn=new QPushButton("Save...", detaileditwidget_);
+  layout3->addWidget(saveBtn);
   layout->addLayout(layout2);
-  
+  layout->addLayout(layout3);
+
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
   connect(apply, &QPushButton::pressed, this, &PathParameterWrapper::onApply);
   layout->addWidget(apply);
@@ -706,6 +705,7 @@ void PathParameterWrapper::createWidgets()
   connect(le_, &QLineEdit::textChanged, this, &PathParameterWrapper::onDataEntered);
   connect(dlgBtn_, &QPushButton::clicked, this, &PathParameterWrapper::openSelectionDialog);
   connect(openBtn_, &QPushButton::clicked, this, &PathParameterWrapper::openFile);
+  connect(saveBtn, &QPushButton::clicked, this, &PathParameterWrapper::onExportFile);
 }
 
 void PathParameterWrapper::updateTooltip()
@@ -722,16 +722,17 @@ void PathParameterWrapper::onApply()
 {
   if (widgetsDisplayed_)
   {
-    param()()=le_->text().toStdString();
-    setText(1, param()().c_str());
+    param().setOriginalFilePath( le_->text().toStdString() );
+    setText(1, QString::fromStdString(param().originalFilePath().string()) );
     emit parameterSetChanged();
   }
 }
 
 void PathParameterWrapper::onUpdate()
 {
-  setText(1, param()().c_str());
-  if (widgetsDisplayed_) le_->setText(param()().c_str());
+  auto fn = QString::fromStdString(param().originalFilePath().string());
+  setText(1, fn);
+  if (widgetsDisplayed_) le_->setText(fn);
 }
 
 void PathParameterWrapper::openSelectionDialog()
@@ -785,6 +786,21 @@ void PathParameterWrapper::openFile()
 void PathParameterWrapper::onDataEntered()
 {
   updateTooltip();
+}
+
+void PathParameterWrapper::onExportFile()
+{
+  boost::filesystem::path orgfn( param().originalFilePath() );
+  QString fn = QFileDialog::getSaveFileName(
+        treeWidget(),
+        "Please select export path",
+        QString(),
+        QString::fromStdString("(*."+orgfn.extension().string()+")")
+        );
+  if (!fn.isEmpty())
+  {
+    param().copyTo( fn.toStdString() );
+  }
 }
 
 

@@ -24,6 +24,8 @@
 #endif
 
 #include "base/analysis.h"
+#include "openfoam/ofes.h"
+#include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/remoteserverlist.h"
 
@@ -43,6 +45,7 @@
 #include "ui_xml_display.h"
 
 #include <cstdlib>
+#include <memory>
 
 #include "of_clean_case.h"
 
@@ -102,7 +105,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
     {
       insight::AnalysisPtr a( insight::Analysis::lookup(analysisName_, defaultParams, "") );
-      isOpenFOAMAnalysis_ = bool( dynamic_pointer_cast<insight::OpenFOAMAnalysis>( a ) );
+      isOpenFOAMAnalysis_ = bool( std::dynamic_pointer_cast<insight::OpenFOAMAnalysis>( a ) );
     }
 
     ui = new Ui::AnalysisForm;
@@ -270,7 +273,7 @@ bool AnalysisForm::hasValidExecutionPath() const
   return analysis_ || boost::filesystem::exists( ui->localDir->text().toStdString() );
 }
 
-path AnalysisForm::currentExecutionPath() const
+boost::filesystem::path AnalysisForm::currentExecutionPath() const
 {
   boost::filesystem::path exePath = ui->localDir->text().toStdString();
   if (analysis_) exePath = analysis_->executionPath();

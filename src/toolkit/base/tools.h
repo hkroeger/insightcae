@@ -34,6 +34,26 @@ class vtkCellArray;
 namespace insight
 {
   
+
+
+class GlobalTemporaryDirectory
+    : public boost::filesystem::path
+{
+
+  GlobalTemporaryDirectory();
+
+  static std::unique_ptr<GlobalTemporaryDirectory> td_;
+
+public:
+
+  static const GlobalTemporaryDirectory& path();
+
+  ~GlobalTemporaryDirectory();
+};
+
+
+
+
 struct TemporaryCaseDir
 {
   bool keep_;
@@ -42,6 +62,7 @@ struct TemporaryCaseDir
   TemporaryCaseDir(bool keep=false, const std::string& prefix="");
   ~TemporaryCaseDir();
 };
+
 
 
 class SharedPathList 

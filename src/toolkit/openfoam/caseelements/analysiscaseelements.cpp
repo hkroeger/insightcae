@@ -19,14 +19,11 @@
  */
 
 #include "openfoam/caseelements/analysiscaseelements.h"
+
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 
-#include <utility>
-#include "boost/assign.hpp"
-#include "boost/lexical_cast.hpp"
-
-#include "gnuplot-iostream.h"
+#include "base/boost_include.h"
 
 using namespace std;
 using namespace boost;
@@ -1055,7 +1052,7 @@ void catalyst::addIntoDictionaries(OFdicts& dictionaries) const
   {
     if (const auto* sc = boost::get<Parameters::scripts_default_copy_type>(&ss))
     {
-      scripts.push_back("\"<system>/"+sc->filename.filename().string()+"\"");
+      scripts.push_back("\"<system>/"+sc->filename->fileName().string()+"\"");
     }
     else if (const auto* sg = boost::get<Parameters::scripts_default_generate_type>(&ss))
     {
@@ -1092,7 +1089,8 @@ void catalyst::modifyCaseOnDisk ( const OpenFOAMCase&, const boost::filesystem::
 
     if (const auto* sc = boost::get<Parameters::scripts_default_copy_type>(&ss))
     {
-      boost::filesystem::copy_file(sc->filename, location/"system");
+//      boost::filesystem::copy_file(sc->filename, location/"system");
+      sc->filename->copyTo( location/"system"/sc->filename->fileName() );
     }
 
     else if (const auto* sg = boost::get<Parameters::scripts_default_generate_type>(&ss))
@@ -1238,10 +1236,10 @@ ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer*)
   (
       results, executionPath(), "chartACF",
       "x", "$\\langle R \\rangle$",
-      list_of<PlotCurve>
-        (PlotCurve(p_.R_vs_x, "raw", "w p lt 1 t 'ACF'"))
-        (PlotCurve(regressiondata, "fit", "w l lt 2 t 'fit'"))
-        ,
+      {
+        PlotCurve(p_.R_vs_x, "raw", "w p lt 1 t 'ACF'"),
+        PlotCurve(regressiondata, "fit", "w l lt 2 t 'fit'")
+      },
       "two-point correlation function"
   );
 

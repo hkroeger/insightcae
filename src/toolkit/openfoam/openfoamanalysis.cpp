@@ -19,7 +19,12 @@
  */
 
 
-#include "openfoamcaseelements.h"
+#include "openfoam/caseelements/basic/decomposepardict.h"
+#include "openfoam/caseelements/turbulencemodel.h"
+#include "openfoam/caseelements/turbulencemodelcaseelements.h"
+#include "openfoam/solveroutputanalyzer.h"
+#include "openfoam/ofes.h"
+
 #include "openfoamtools.h"
 #include "openfoamanalysis.h"
 

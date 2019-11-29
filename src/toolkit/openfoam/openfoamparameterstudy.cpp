@@ -20,6 +20,8 @@
  */
 
 #include "openfoamparameterstudy.h"
+#include "openfoam/ofes.h"
+#include "openfoam/openfoamcase.h"
 
 namespace insight {
     
@@ -60,7 +62,7 @@ template<
 >
 void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
 {
-  boost::filesystem::path oldmf = newp->get<PathParameter>("run/mapFrom")();
+  boost::filesystem::path oldmf = newp->get<PathParameter>("run/mapFrom").filePath();
   boost::filesystem::path newmf = "";
   if (oldmf!="")
   {
@@ -72,7 +74,7 @@ void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(c
       newmf="";
     }
   }
-  newp->get<PathParameter>("run/mapFrom")() = newmf;
+  newp->get<PathParameter>("run/mapFrom").setOriginalFilePath(newmf);
 }
 
 
@@ -133,11 +135,11 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
         }
     }
 
-    path old_lp=p.get<PathParameter>("mesh/linkmesh")();
+    path old_lp=p.get<PathParameter>("mesh/linkmesh").originalFilePath();
     if (!subcasesRemesh_)
-        p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(this->executionPath());
+        p.get<PathParameter>("mesh/linkmesh").setOriginalFilePath( boost::filesystem::absolute(this->executionPath()) );
     this->setupQueue();
-    p.get<PathParameter>("mesh/linkmesh")() = old_lp;
+    p.get<PathParameter>("mesh/linkmesh").setOriginalFilePath( old_lp );
 
     this->processQueue(displayer);
     ResultSetPtr results = this->evaluateRuns();

@@ -22,9 +22,8 @@
 
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/openfoamparameterstudy.h"
-#include "base/stltools.h"
+//#include "base/stltools.h"
 
-#include "base/boost_include.h"
 
 namespace insight 
 {

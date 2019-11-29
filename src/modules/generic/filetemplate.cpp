@@ -46,7 +46,7 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer* displayer)
     // unpack files
     std::vector<std::string> filelist;
     g.executeCommand(
-      str(format("cd %s; tar vxzf %s") % absolute(dir).string() % absolute(p.template_archive).string() ),
+      str(format("cd %s; tar vxzf %s") % absolute(dir).string() % absolute(p.template_archive->filePath(dir)).string() ),
       std::vector<std::string>(),
       &filelist
     );

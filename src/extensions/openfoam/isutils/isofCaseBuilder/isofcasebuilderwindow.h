@@ -27,7 +27,8 @@
 #include <QListWidgetItem>
 
 #ifndef Q_MOC_RUN
-#include "openfoam/openfoamcaseelements.h"
+#include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 #endif

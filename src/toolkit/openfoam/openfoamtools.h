@@ -179,7 +179,6 @@ void setFields(const OpenFOAMCase& ofc,
 #endif
 
 
-#ifndef SWIG
 namespace createPatchOps
 {
   
@@ -187,24 +186,31 @@ namespace createPatchOps
 class createPatchOperator
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-      ( name, std::string, std::string("newpatch") )
-      ( constructFrom, std::string, std::string("patches") )
-      ( type, std::string, std::string("patch") )
-      ( patches, std::vector<std::string>, std::vector<std::string>() )
-      ( set, std::string, std::string("set") )
-  )
+#include "openfoamtools__createPatchOperator__Parameters.h"
+/*
+PARAMETERSET>>> createPatchOperator Parameters
+
+name = string "newpatch" ""
+constructFrom = string "patches" ""
+patchtype = string "patch" ""
+patches = array [ string "" "Patch name" ] *0 "Name of patches"
+setname = string "set" ""
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  createPatchOperator(Parameters const& p = Parameters() );
+  createPatchOperator(createPatchOperator::Parameters const& p = createPatchOperator::Parameters() );
   virtual ~createPatchOperator();
   
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
   virtual createPatchOperator* clone() const;
 };
+
+typedef std::shared_ptr<createPatchOperator> createPatchOperatorPtr;
 
 /**
  * Creates a cyclic patch or cyclic patch pair (depending on OF version)
@@ -214,35 +220,45 @@ class createCyclicOperator
 : public createPatchOperator
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, createPatchOperator::Parameters,
-      ( name, std::string, std::string("newpatch") )
-      ( constructFrom, std::string, std::string("patches") )
-      ( patches_half1, std::vector<std::string>, std::vector<std::string>() )
-      ( set_half1, std::string, std::string("set_half1") )
-  )
+#include "openfoamtools__createCyclicOperator__Parameters.h"
+/*
+PARAMETERSET>>> createCyclicOperator Parameters
+inherits createPatchOperator::Parameters
+
+patches_half1 = array [ string "" "" ]*0 ""
+set_half1 = string "set_half1" ""
+
+<<<PARAMETERSET
+*/
+
 
 protected:
   Parameters p_;
 
 public:
-  createCyclicOperator(Parameters const& p = Parameters() );
+  createCyclicOperator(createCyclicOperator::Parameters const& p = createCyclicOperator::Parameters() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
   virtual createPatchOperator* clone() const;
 };
 
+#ifndef SWIG
 inline createPatchOperator* new_clone(const createPatchOperator& op)
 {
   return op.clone();
 }
+#endif
 
 }
 
 void createPatch(const OpenFOAMCase& ofc, 
 		  const boost::filesystem::path& location, 
-		  const boost::ptr_vector<createPatchOps::createPatchOperator>& ops,
+                  const std::vector<
+#ifndef SWIG
+                 createPatchOps::
+#endif
+                 createPatchOperatorPtr>& ops,
 		  bool overwrite=true
 		);
-#endif
 
 
 

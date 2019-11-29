@@ -112,9 +112,9 @@ public:
         (
             results, executionPath(), "chartFunction",
             "$x$", "$y$",
-            list_of<PlotCurve>
-            (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(1))), 	"y_vs_x", "w lp t '$y=f(x)$"))
-            ,
+            {
+             PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(1))), 	"y_vs_x", "w lp t '$y=f(x)$")
+            },
             "Function plot"
         );
 

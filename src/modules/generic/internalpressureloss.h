@@ -20,8 +20,7 @@
 #ifndef INSIGHT_INTERNALPRESSURELOSS_H
 #define INSIGHT_INTERNALPRESSURELOSS_H
 
-#include <openfoam/openfoamanalysis.h>
-#include "cadtypes.h"
+#include "openfoam/openfoamanalysis.h"
 #include "parametersetvisualizer.h"
 
 namespace insight

@@ -41,16 +41,6 @@ namespace insight
     
     
     
-ProgressDisplayer::~ProgressDisplayer()
-{
-}
-
-bool ProgressDisplayer::stopRun() const
-{
-  return false;
-}
-
-
 
 
 CombinedProgressDisplayer::CombinedProgressDisplayer ( CombinedProgressDisplayer::Ops op )

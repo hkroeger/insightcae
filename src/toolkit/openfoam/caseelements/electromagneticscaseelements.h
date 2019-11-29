@@ -21,15 +21,8 @@
 #ifndef INSIGHT_ELECTROMAGNETICSCASEELEMENTS_H
 #define INSIGHT_ELECTROMAGNETICSCASEELEMENTS_H
 
-#include "base/linearalgebra.h"
-#include "base/parameterset.h"
-#include "openfoam/openfoamcase.h"
-#include "openfoam/caseelements/boundaryconditioncaseelements.h"
-
-#include <map>
-#include "boost/utility.hpp"
-#include "boost/variant.hpp"
-#include "progrock/cppx/collections/options_boosted.h"
+#include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/caseelements/boundarycondition.h"
 
 namespace insight 
 {

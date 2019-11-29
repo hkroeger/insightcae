@@ -18,13 +18,13 @@
  *
  */
 
-#include "openfoam/openfoamcaseelements.h"
+#include "openfoam/caseelements/electromagneticscaseelements.h"
+
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.h"
 
-#include <utility>
-#include "boost/assign.hpp"
-#include "boost/lexical_cast.hpp"
+#include "base/boost_include.h"
 
 using namespace std;
 using namespace boost;
@@ -59,12 +59,13 @@ void magnet::modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::p
   setSet
   (
     cm, location,
-    list_of
-    ("cellSet "+p_.name+" new zoneToCell "+p_.name)
-    ("faceSet "+p_.name+" new cellToFace "+p_.name+" all")
-    ("faceSet "+p_.name+" delete boundaryToFace")
+    {
+     "cellSet "+p_.name+" new zoneToCell "+p_.name,
+     "faceSet "+p_.name+" new cellToFace "+p_.name+" all",
+     "faceSet "+p_.name+" delete boundaryToFace"
+    }
   );
-  cm.executeCommand(location, "setsToZones", list_of("-noFlipMap"));
+  cm.executeCommand(location, "setsToZones", { "-noFlipMap" });
 }
  
 FarFieldBC::FarFieldBC

@@ -23,7 +23,7 @@
 #define INSIGHT_PARAMETERSET_H
 
 #include "base/exception.h"
-#include "base/parameter.h"
+#include "base/parameters.h"
 
 //#include "boost/ptr_container/ptr_map.hpp"
 //#include "boost/shared_ptr.hpp"
@@ -218,7 +218,7 @@ public:
     return this->get<VectorParameter> ( name ) ();
   }
   
-  inline const boost::filesystem::path getPath ( const std::string& name, const boost::filesystem::path& basePath ) const
+  inline const boost::filesystem::path getPath ( const std::string& name, const boost::filesystem::path& basePath = "" ) const
   {
     return this->get<PathParameter> ( name ) .filePath(basePath);
   }

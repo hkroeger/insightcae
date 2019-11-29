@@ -21,7 +21,7 @@
 #ifndef INSIGHT_ANALYSISCASEELEMENTS_H
 #define INSIGHT_ANALYSISCASEELEMENTS_H
 
-#include "basiccaseelements.h"
+#include "openfoam/caseelements/openfoamcaseelement.h"
 #include "base/resultset.h"
 #include "base/analysis.h"
 

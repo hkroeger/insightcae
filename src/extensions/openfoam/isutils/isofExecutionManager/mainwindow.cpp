@@ -6,6 +6,8 @@
 
 #include "base/boost_include.h"
 
+#include "openfoam/solveroutputanalyzer.h"
+
 #include <QtGlobal>
 #include <QDebug>
 #include <QProcess>

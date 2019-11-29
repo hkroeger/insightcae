@@ -20,9 +20,7 @@
 #ifndef INSIGHT_CHANNEL_H
 #define INSIGHT_CHANNEL_H
 
-#include "base/linearalgebra.h"
 #include "openfoam/openfoamanalysis.h"
-#include "openfoam/openfoamcaseelements.h"
 
 namespace insight {
 

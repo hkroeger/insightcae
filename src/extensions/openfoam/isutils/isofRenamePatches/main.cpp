@@ -22,6 +22,7 @@
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
 #include "openfoam/openfoamtools.h"
+#include "openfoam/ofes.h"
 
 #include <iostream>
 #include <fstream>

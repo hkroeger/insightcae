@@ -20,16 +20,25 @@
 #include "channel.h"
 
 #include "base/factory.h"
+#include "base/boost_include.h"
+
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
-#include "openfoam/caseelements/basiccaseelements.h"
 #include "refdata.h"
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign.hpp>
-#include "boost/lexical_cast.hpp"
-#include "boost/regex.hpp"
-#include "boost/format.hpp"
+#include "openfoam/caseelements/numerics/meshingnumerics.h"
+#include "openfoam/caseelements/numerics/unsteadyincompressiblenumerics.h"
+#include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
+#include "openfoam/caseelements/basic/passivescalar.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
+#include "openfoam/caseelements/boundaryconditions/wallbc.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
+#include "openfoam/caseelements/basic/singlephasetransportmodel.h"
+#include "openfoam/caseelements/boundaryconditions/simplebc.h"
+#include "openfoam/caseelements/boundaryconditions/cyclicpairbc.h"
+#include "openfoam/caseelements/boundaryconditions/wallbc.h"
+#include "openfoam/caseelements/turbulencemodelcaseelements.h"
+#include "openfoam/caseelements/basic/pressuregradientsource.h"
 
 using namespace arma;
 using namespace std;
@@ -573,23 +582,22 @@ void ChannelBase::evaluateAtSection(
         (
             section, executionPath(), "chartUVarianceCenter",
             "$t$", "$U$",
-            list_of
-            
-            (PlotCurve( t, U[0].col(ictr),                          "Ux_vs_t", "w l lt -1 lc 1 t '$U_x$'" ))
-            (PlotCurve( t, U_mean[0](ictr),                         "Uxmean",  "w l lt -1 lc 1 lw 2 t '$\\langle U_x \\rangle$'" ))
-            (PlotCurve( t, U_mean[0](ictr) + sqrt(U_var[0](ictr)),  "Uxvar_up",  "w l lt -1 lc 1 dt 2 t '$\\langle u^{\\prime 2}_x \\rangle$'" ))
-            (PlotCurve( t, U_mean[0](ictr) - sqrt(U_var[0](ictr)), 	"Uxvar_lo",  "w l lt -1 lc 1 dt 2 not" ))
-            
-            (PlotCurve( t, U[1].col(ictr),			                "Uy_vs_t", "w l lt -1 lc 2 t '$U_y$'" ))
-            (PlotCurve( t, U_mean[1](ictr),                         "Uymean",  "w l lt -1 lc 2 lw 2 t '$\\langle U_y \\rangle$'" ))
-            (PlotCurve( t, U_mean[1](ictr) + sqrt(U_var[1](ictr)), 	"Uyvar_up",  "w l lt -1 lc 2 dt 2 t '$\\langle u^{\\prime 2}_y \\rangle$'" ))
-            (PlotCurve( t, U_mean[1](ictr) - sqrt(U_var[1](ictr)), 	"Uyvar_lo",  "w l lt -1 lc 2 dt 2 not" ))
-            
-            (PlotCurve( t, U[2].col(ictr),			                "Uz_vs_t", "w l lt -1 lc 4 t '$U_z$'" ))
-            (PlotCurve( t, U_mean[2](ictr),                         "Uzmean",  "w l lt -1 lc 4 lw 2 t '$\\langle U_z \\rangle$'" ))
-            (PlotCurve( t, U_mean[2](ictr) + sqrt(U_var[2](ictr)), 	"Uzvar_up",  "w l lt -1 lc 4 dt 2 t '$\\langle u^{\\prime 2}_z \\rangle$'" ))
-            (PlotCurve( t, U_mean[2](ictr) - sqrt(U_var[2](ictr)), 	"Uzvar_lo",  "w l lt -1 lc 4 dt 2 not" ))
-            ,
+            {
+              PlotCurve( t, U[0].col(ictr),                          "Ux_vs_t", "w l lt -1 lc 1 t '$U_x$'" ),
+              PlotCurve( t, U_mean[0](ictr),                         "Uxmean",  "w l lt -1 lc 1 lw 2 t '$\\langle U_x \\rangle$'" ),
+              PlotCurve( t, U_mean[0](ictr) + sqrt(U_var[0](ictr)),  "Uxvar_up",  "w l lt -1 lc 1 dt 2 t '$\\langle u^{\\prime 2}_x \\rangle$'" ),
+              PlotCurve( t, U_mean[0](ictr) - sqrt(U_var[0](ictr)), 	"Uxvar_lo",  "w l lt -1 lc 1 dt 2 not" ),
+
+              PlotCurve( t, U[1].col(ictr),			                "Uy_vs_t", "w l lt -1 lc 2 t '$U_y$'" ),
+              PlotCurve( t, U_mean[1](ictr),                         "Uymean",  "w l lt -1 lc 2 lw 2 t '$\\langle U_y \\rangle$'" ),
+              PlotCurve( t, U_mean[1](ictr) + sqrt(U_var[1](ictr)), 	"Uyvar_up",  "w l lt -1 lc 2 dt 2 t '$\\langle u^{\\prime 2}_y \\rangle$'" ),
+              PlotCurve( t, U_mean[1](ictr) - sqrt(U_var[1](ictr)), 	"Uyvar_lo",  "w l lt -1 lc 2 dt 2 not" ),
+
+              PlotCurve( t, U[2].col(ictr),			                "Uz_vs_t", "w l lt -1 lc 4 t '$U_z$'" ),
+              PlotCurve( t, U_mean[2](ictr),                         "Uzmean",  "w l lt -1 lc 4 lw 2 t '$\\langle U_z \\rangle$'" ),
+              PlotCurve( t, U_mean[2](ictr) + sqrt(U_var[2](ictr)), 	"Uzvar_up",  "w l lt -1 lc 4 dt 2 t '$\\langle u^{\\prime 2}_z \\rangle$'" ),
+              PlotCurve( t, U_mean[2](ictr) - sqrt(U_var[2](ictr)), 	"Uzvar_lo",  "w l lt -1 lc 4 dt 2 not" )
+            },
             ""
         )
         .setOrder(so.next());
@@ -599,11 +607,11 @@ void ChannelBase::evaluateAtSection(
         (
             section, executionPath(), "chartUVariance",
             "$y^+$", "$\\langle u^{\\prime 2} \\rangle$",
-            list_of
-            (PlotCurve( yp, U_var[0],  "Uxvar_vs_yp", "w l lt -1 lc 1 t '$\\langle u^{\\prime 2} \\rangle$'" ))
-            (PlotCurve( yp, U_var[1],  "Uyvar_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime 2} \\rangle$'" ))
-            (PlotCurve( yp, U_var[2],  "Uzvar_vs_yp", "w l lt -1 lc 4 t '$\\langle u^{\\prime 2} \\rangle$'" ))
-            ,
+            {
+              PlotCurve( yp, U_var[0],  "Uxvar_vs_yp", "w l lt -1 lc 1 t '$\\langle u^{\\prime 2} \\rangle$'" ),
+              PlotCurve( yp, U_var[1],  "Uyvar_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime 2} \\rangle$'" ),
+              PlotCurve( yp, U_var[2],  "Uzvar_vs_yp", "w l lt -1 lc 4 t '$\\langle u^{\\prime 2} \\rangle$'" )
+            },
         ""
         );
             
@@ -630,12 +638,12 @@ void ChannelBase::evaluateAtSection(
             (
                 section, executionPath(), "chartThetaVariance",
                 "$y^+$", "$\\langle u^{\\prime 2} \\rangle$",
-                list_of
-                (PlotCurve( yp, s_var,            "svar_vs_yp",   "w l lt -1 lc 1 t '$\\langle \\vartheta^{\\prime 2}/\\vartheta_{max} \\rangle$'" ))
-                (PlotCurve( yp, s_flux[0]/utau_,  "sfluxx_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
-                (PlotCurve( yp, s_flux[1]/utau_,  "sfluxy_vs_yp", "w l lt -1 lc 4 t '$\\langle u^{\\prime}_y \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
-                (PlotCurve( yp, s_flux[2]/utau_,  "sfluxz_vs_yp", "w l lt -1 lc 6 t '$\\langle u^{\\prime}_z \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
-                ,
+                {
+                  PlotCurve( yp, s_var,            "svar_vs_yp",   "w l lt -1 lc 1 t '$\\langle \\vartheta^{\\prime 2}/\\vartheta_{max} \\rangle$'" ),
+                  PlotCurve( yp, s_flux[0]/utau_,  "sfluxx_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ),
+                  PlotCurve( yp, s_flux[1]/utau_,  "sfluxy_vs_yp", "w l lt -1 lc 4 t '$\\langle u^{\\prime}_y \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ),
+                  PlotCurve( yp, s_flux[2]/utau_,  "sfluxz_vs_yp", "w l lt -1 lc 6 t '$\\langle u^{\\prime}_z \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" )
+                },
                 ""
             );
         }
@@ -700,22 +708,22 @@ void ChannelBase::evaluateAtSection(
     wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     
-    PlotCurveList plotcurves = list_of
-      (PlotCurve(axial, 		"U", "w l lt 1 lc -1 lw 2 t '$U^+$'"))
-      (PlotCurve(wallnormal, 	"V", "w l lt 1 lc 1 lw 2 t '$V^+$'"))
-      (PlotCurve(spanwise, 		"W", "w l lt 1 lc 3 lw 2 t '$W^+$'"))
-      ;
+    PlotCurveList plotcurves({
+        PlotCurve(axial, 		"U", "w l lt 1 lc -1 lw 2 t '$U^+$'"),
+        PlotCurve(wallnormal, 	"V", "w l lt 1 lc 1 lw 2 t '$V^+$'"),
+        PlotCurve(spanwise, 		"W", "w l lt 1 lc 3 lw 2 t '$W^+$'")
+      });
       
     if (includeRefDataInCharts)
     {
-      PlotCurveList pc = list_of
-        (PlotCurve(refdata_umean180,	"UMKM180", "w l lt 2 lc -1 t '$U_{ref}^+(Re_{\\tau}=180)$'"))
-        (PlotCurve(refdata_wmean180, 	"WMKM180", "w l lt 2 lc 3 t '$W_{ref}^+(Re_{\\tau}=180)$'"))
-        (PlotCurve(refdata_umean395, 	"UMKM395", "w l lt 4 lc -1 t '$U_{ref}^+(Re_{\\tau}=395)$'"))
-        (PlotCurve(refdata_wmean395, 	"WMKM395", "w l lt 4 lc 3 t '$W_{ref}^+(Re_{\\tau}=395)$'"))
-        (PlotCurve(refdata_umean590, 	"UMKM590", "w l lt 3 lc -1 t '$U_{ref}^+(Re_{\\tau}=590)$'"))
-        (PlotCurve(refdata_wmean590, 	"WMKM590", "w l lt 3 lc 3 t '$W_{ref}^+(Re_{\\tau}=590)$'"))
-      ;
+      PlotCurveList pc({
+        PlotCurve(refdata_umean180,	"UMKM180", "w l lt 2 lc -1 t '$U_{ref}^+(Re_{\\tau}=180)$'"),
+        PlotCurve(refdata_wmean180, 	"WMKM180", "w l lt 2 lc 3 t '$W_{ref}^+(Re_{\\tau}=180)$'"),
+        PlotCurve(refdata_umean395, 	"UMKM395", "w l lt 4 lc -1 t '$U_{ref}^+(Re_{\\tau}=395)$'"),
+        PlotCurve(refdata_wmean395, 	"WMKM395", "w l lt 4 lc 3 t '$W_{ref}^+(Re_{\\tau}=395)$'"),
+        PlotCurve(refdata_umean590, 	"UMKM590", "w l lt 3 lc -1 t '$U_{ref}^+(Re_{\\tau}=590)$'"),
+        PlotCurve(refdata_wmean590, 	"WMKM590", "w l lt 3 lc 3 t '$W_{ref}^+(Re_{\\tau}=590)$'")
+      });
       plotcurves.insert(plotcurves.end(), pc.begin(), pc.end());
     }
       
@@ -777,12 +785,12 @@ void ChannelBase::evaluateAtSection(
     (
       section, executionPath(), "chartTurbulentLengthScale_"+title,
       "$y_{\\delta}$", "$ \\langle L_{\\delta_{RANS}} \\rangle$",
-      list_of
-       (PlotCurve(arma::mat(join_rows(ydelta, Lt1)), "cfdkO", "w l lt 2 lc 1 lw 1 t 'CFD (from k and omega)'"))
-       (PlotCurve(arma::mat(join_rows(ydelta, Lt2)), "Lmix", "w l lt 3 lc 1 lw 1 t 'Mixing length limit'"))
-       (PlotCurve(Ltp, "cfd", "w l lt 1 lc 1 lw 2 t 'CFD'"))
-       (PlotCurve(arma::mat(join_rows(ydelta, yfit)), "fit", "w l lt 2 lc 2 lw 2 t 'Fit'"))
-       ,
+      {
+       PlotCurve(arma::mat(join_rows(ydelta, Lt1)), "cfdkO", "w l lt 2 lc 1 lw 1 t 'CFD (from k and omega)'"),
+       PlotCurve(arma::mat(join_rows(ydelta, Lt2)), "Lmix", "w l lt 3 lc 1 lw 1 t 'Mixing length limit'"),
+       PlotCurve(Ltp, "cfd", "w l lt 1 lc 1 lw 2 t 'CFD'"),
+       PlotCurve(arma::mat(join_rows(ydelta, yfit)), "fit", "w l lt 2 lc 2 lw 2 t 'Fit'")
+      },
       "Wall normal profile of turbulent length scale at $x/H=" + str(format("%g")%xByH) + "$. Fit: $"
 		    + 	    str(format("%.5g") % m.c0)+" y_{\\delta}^{"+str(format("%.5g") % m.c2)+"}"
 		    +" + ("+str(format("%.5g") % m.c1)+" y_{\\delta}^{"+str(format("%.5g") % m.c3)+"})$",
@@ -797,12 +805,12 @@ void ChannelBase::evaluateAtSection(
      (
        new AttributeTableResult
        (
-	 list_of<string>
-	  ("c0")
-	  ("c1")
-	  ("c2")
-	  ("c3"),
-
+         {
+          "c0",
+          "c1",
+          "c2",
+          "c3"
+         },
 	 list_of<AttributeTableResult::AttributeValue>
 	  (m.c0)(m.c1)(m.c2)(m.c3),
 	"Regression coefficients", "", ""
@@ -887,40 +895,37 @@ void ChannelBase::evaluateAtSection(
     spanwise.save( 	( executionPath()/( "Rspanwise_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
     
     
-    PlotCurveList plotcurves =
-      list_of
-       (PlotCurve(axial, 	"Ruu", "w l lt 1 lc -1 lw 2 t '$R_{uu}^+$'"))
-       (PlotCurve(wallnormal, 	"Rvv", "w l lt 1 lc 1 lw 2 t '$R_{vv}^+$'"))
-       (PlotCurve(spanwise, 	"Rww", "w l lt 1 lc 3 lw 2 t '$R_{ww}^+$'"))
-       (PlotCurve(cross, 	"Ruv", "w l lt 1 lc 4 lw 2 t '$R_{uv}^+$'"))
-       ;
+    PlotCurveList plotcurves({
+       PlotCurve(axial, 	"Ruu", "w l lt 1 lc -1 lw 2 t '$R_{uu}^+$'"),
+       PlotCurve(wallnormal, 	"Rvv", "w l lt 1 lc 1 lw 2 t '$R_{vv}^+$'"),
+       PlotCurve(spanwise, 	"Rww", "w l lt 1 lc 3 lw 2 t '$R_{ww}^+$'"),
+       PlotCurve(cross, 	"Ruv", "w l lt 1 lc 4 lw 2 t '$R_{uv}^+$'")
+      });
        
     if (includeAllComponentsInCharts)
     {
-      PlotCurveList pc =
-      list_of
-        (PlotCurve(join_rows(yplus, Rxz), "Ruw", "w l lt 1 lc 5 t '$R_{uw}^+$'"))
-        (PlotCurve(join_rows(yplus, Ryz), "Rvw", "w l lt 1 lc 5 t '$R_{vw}^+$'"))
-        ;
+      PlotCurveList pc({
+        PlotCurve(join_rows(yplus, Rxz), "Ruw", "w l lt 1 lc 5 t '$R_{uw}^+$'"),
+        PlotCurve(join_rows(yplus, Ryz), "Rvw", "w l lt 1 lc 5 t '$R_{vw}^+$'")
+      });
       plotcurves.insert(plotcurves.end(), pc.begin(), pc.end());
     }
        
     if (includeRefDataInCharts)
     {
-      PlotCurveList pc =
-      list_of
-        (PlotCurve(refdata_Ruu, 	"RuuMKM180", "w l lt 2 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=180)$'"))
-        (PlotCurve(refdata_Rvv, 	"RvvMKM180", "w l lt 2 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=180)$'"))
-        (PlotCurve(refdata_Rww, 	"RwwMKM180", "w l lt 2 dt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=180)$'"))
+      PlotCurveList pc({
+        PlotCurve(refdata_Ruu, 	"RuuMKM180", "w l lt 2 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=180)$'"),
+        PlotCurve(refdata_Rvv, 	"RvvMKM180", "w l lt 2 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=180)$'"),
+        PlotCurve(refdata_Rww, 	"RwwMKM180", "w l lt 2 dt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=180)$'"),
         
-        (PlotCurve(refdata_Ruu395, 	"RuuMKM395", "w l lt 4 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=395)$'"))
-        (PlotCurve(refdata_Rvv395, 	"RvvMKM395", "w l lt 4 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=395)$'"))
-        (PlotCurve(refdata_Rww395, 	"RwwMKM395", "w l lt 4 dt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=395)$'"))
+        PlotCurve(refdata_Ruu395, 	"RuuMKM395", "w l lt 4 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=395)$'"),
+        PlotCurve(refdata_Rvv395, 	"RvvMKM395", "w l lt 4 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=395)$'"),
+        PlotCurve(refdata_Rww395, 	"RwwMKM395", "w l lt 4 dt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=395)$'"),
         
-        (PlotCurve(refdata_Ruu590, 	"RuuMKM590", "w l lt 3 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=590)$'"))
-        (PlotCurve(refdata_Rvv590, 	"RvvMKM590", "w l lt 3 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=590)$'"))
-        (PlotCurve(refdata_Rww590, 	"RwwMKM590", "w l lt 3 dt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=590)$'"))
-        ;
+        PlotCurve(refdata_Ruu590, 	"RuuMKM590", "w l lt 3 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=590)$'"),
+        PlotCurve(refdata_Rvv590, 	"RvvMKM590", "w l lt 3 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=590)$'"),
+        PlotCurve(refdata_Rww590, 	"RwwMKM590", "w l lt 3 dt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=590)$'")
+       });
       plotcurves.insert(plotcurves.end(), pc.begin(), pc.end());
     }
     
@@ -948,11 +953,11 @@ void ChannelBase::evaluateAtSection(
     
     arma::uword ck=cd["k"].col;
     
-    PlotCurveList kplots = list_of
-     (PlotCurve( refdata_K, 	"TKEMKM180", "u 1:2 w l lt 1 dt 2 lc 1 t 'DNS ($Re_{\\tau}=180$, MKM)'" ))
-     (PlotCurve( refdata_K395, 	"TKEMKM395", "u 1:2 w l lt 2 dt 2 lc 1 t 'DNS ($Re_{\\tau}=395$, MKM)'" ))
-     (PlotCurve( refdata_K590, 	"TKEMKM590", "u 1:2 w l lt 3 dt 2 lc 1 t 'DNS ($Re_{\\tau}=590$, MKM)'" ))
-    ;
+    PlotCurveList kplots({
+     PlotCurve( refdata_K, 	"TKEMKM180", "u 1:2 w l lt 1 dt 2 lc 1 t 'DNS ($Re_{\\tau}=180$, MKM)'" ),
+     PlotCurve( refdata_K395, 	"TKEMKM395", "u 1:2 w l lt 2 dt 2 lc 1 t 'DNS ($Re_{\\tau}=395$, MKM)'" ),
+     PlotCurve( refdata_K590, 	"TKEMKM590", "u 1:2 w l lt 3 dt 2 lc 1 t 'DNS ($Re_{\\tau}=590$, MKM)'" )
+    });
 
     arma::mat kres= 0.5*( Rxx + Ryy + Rzz ) / pow(utau_, 2);
     {
@@ -1116,10 +1121,10 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
     (
       results, executionPath(), "chartMeanWallFriction",
       "$x^+$", "$\\langle C_f \\rangle$",
-      list_of
-	(PlotCurve(Cf_vs_xp, "cfd", "w l lt 1 lc -1 lw 2 t 'CFD'"))
-	(PlotCurve(Cftheo_vs_xp, "ref", "w l lt 2 lc -1 lw 1 t 'Analytical'"))
-	,
+      {
+        PlotCurve(Cf_vs_xp, "cfd", "w l lt 1 lc -1 lw 2 t 'CFD'"),
+        PlotCurve(Cftheo_vs_xp, "ref", "w l lt 2 lc -1 lw 1 t 'Analytical'")
+      },
       "Axial profile of wall friction coefficient",
       "set key bottom right"
     ) .setOrder(o.next());    

@@ -41,7 +41,17 @@ set(toolkit_SOURCES
     base/caseelement.cpp
     base/case.cpp
     base/units.cpp
+    base/progressdisplayer.cpp
+
+    base/parameters/simpleparameter.cpp
+    base/parameters/pathparameter.cpp
+    base/parameters/selectionparameter.cpp
+    base/parameters/doublerangeparameter.cpp
+    base/parameters/arrayparameter.cpp
+    base/parameters/matrixparameter.cpp
     
+    openfoam/ofenvironment.cpp
+    openfoam/ofes.cpp
     openfoam/blockmesh_templates.cpp
     openfoam/openfoamanalysis.cpp
     openfoam/openfoamcase.cpp
@@ -57,22 +67,95 @@ set(toolkit_SOURCES
     openfoam/remoteserverlist.cpp
     openfoam/taskspoolerinterface.cpp
     openfoam/mountremote.cpp
+    openfoam/solveroutputanalyzer.cpp
+    openfoam/ofdicts.cpp
+
+    openfoam/caseelements/openfoamcaseelement.cpp
+    openfoam/caseelements/turbulencemodel.cpp
+
+    openfoam/caseelements/basic/thermodynamicmodel.cpp
+    openfoam/caseelements/basic/rasmodel.cpp
+    openfoam/caseelements/basic/lesmodel.cpp
+    openfoam/caseelements/basic/decomposepardict.cpp
+    openfoam/caseelements/basic/cellsetoption_selection.cpp
+    openfoam/caseelements/basic/gravity.cpp
+    openfoam/caseelements/basic/minimumtimesteplimit.cpp
+    openfoam/caseelements/basic/mirrormesh.cpp
+    openfoam/caseelements/basic/setfieldsconfiguration.cpp
+    openfoam/caseelements/basic/volumedrag.cpp
+    openfoam/caseelements/basic/fixedvalueconstraint.cpp
+    openfoam/caseelements/basic/source.cpp
+    openfoam/caseelements/basic/mrfzone.cpp
+    openfoam/caseelements/basic/passivescalar.cpp
+    openfoam/caseelements/basic/pressuregradientsource.cpp
+    openfoam/caseelements/basic/constantpressuregradientsource.cpp
+    openfoam/caseelements/basic/transportmodel.cpp
+    openfoam/caseelements/basic/singlephasetransportmodel.cpp
+    openfoam/caseelements/basic/twophasetransportproperties.cpp
+    openfoam/caseelements/basic/cavitationtwophasetransportproperties.cpp
+    openfoam/caseelements/basic/porouszone.cpp
+    openfoam/caseelements/basic/limitquantities.cpp
+    openfoam/caseelements/basic/customdictentries.cpp
+    openfoam/caseelements/basic/copyfiles.cpp
+    openfoam/caseelements/basic/srfoption.cpp
 
     openfoam/caseelements/numerics/pimplesettings.cpp
-    openfoam/caseelements/numerics/basicnumericscaseelements.cpp
-    openfoam/caseelements/numerics/incompressiblenumericscaseelements.cpp
-    openfoam/caseelements/numerics/compressiblenumericscaseelements.cpp
-    openfoam/caseelements/numerics/numericscaseelements.cpp
+    openfoam/caseelements/numerics/fvnumerics.cpp
+    openfoam/caseelements/numerics/fanumerics.cpp
+    openfoam/caseelements/numerics/tetfemnumerics.cpp
+    openfoam/caseelements/numerics/meshingnumerics.cpp
+    openfoam/caseelements/numerics/potentialfoamnumerics.cpp
+    openfoam/caseelements/numerics/laplacianfoamnumerics.cpp
+    openfoam/caseelements/numerics/steadyincompressiblenumerics.cpp
+    openfoam/caseelements/numerics/unsteadyincompressiblenumerics.cpp
+    openfoam/caseelements/numerics/steadycompressiblenumerics.cpp
+    openfoam/caseelements/numerics/unsteadycompressiblenumerics.cpp
+    openfoam/caseelements/numerics/potentialfreesurfacefoamnumerics.cpp
+    openfoam/caseelements/numerics/simpledymfoamnumerics.cpp
+    openfoam/caseelements/numerics/cavitatingfoamnumerics.cpp
+    openfoam/caseelements/numerics/interfoamnumerics.cpp
+    openfoam/caseelements/numerics/ltsinterfoamnumerics.cpp
+    openfoam/caseelements/numerics/interphasechangefoamnumerics.cpp
+    openfoam/caseelements/numerics/reactingfoamnumerics.cpp
+    openfoam/caseelements/numerics/reactingparcelfoamnumerics.cpp
+    openfoam/caseelements/numerics/buoyantsimplefoamnumerics.cpp
+    openfoam/caseelements/numerics/buoyantpimplefoamnumerics.cpp
+    openfoam/caseelements/numerics/fsidisplacementextrapolationnumerics.cpp
+    openfoam/caseelements/numerics/magneticfoamnumerics.cpp
 
-    openfoam/caseelements/boundaryconditioncaseelements.cpp
+    openfoam/caseelements/boundarycondition.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_heat.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.cpp
 
-    openfoam/caseelements/basiccaseelements.cpp
+    openfoam/caseelements/boundaryconditions/turbulentvelocityinletbc.cpp
+    openfoam/caseelements/boundaryconditions/potentialfreesurfacebc.cpp
+    openfoam/caseelements/boundaryconditions/wallbc.cpp
+    openfoam/caseelements/boundaryconditions/pressureoutletbc.cpp
+    openfoam/caseelements/boundaryconditions/simplebc.cpp
+    openfoam/caseelements/boundaryconditions/symmetrybc.cpp
+    openfoam/caseelements/boundaryconditions/emptybc.cpp
+    openfoam/caseelements/boundaryconditions/cyclicpairbc.cpp
+    openfoam/caseelements/boundaryconditions/ggibcbase.cpp
+    openfoam/caseelements/boundaryconditions/ggibc.cpp
+    openfoam/caseelements/boundaryconditions/cyclicggibc.cpp
+    openfoam/caseelements/boundaryconditions/overlapggibc.cpp
+    openfoam/caseelements/boundaryconditions/mixingplaneggibc.cpp
+    openfoam/caseelements/boundaryconditions/suctioninletbc.cpp
+    openfoam/caseelements/boundaryconditions/massflowbc.cpp
+    openfoam/caseelements/boundaryconditions/mappedvelocityinletbc.cpp
+    openfoam/caseelements/boundaryconditions/velocityinletbc.cpp
+    openfoam/caseelements/boundaryconditions/exptdatainletbc.cpp
+    openfoam/caseelements/boundaryconditions/compressibleinletbc.cpp
+
+    openfoam/caseelements/dynamicmesh/dynamicmesh.cpp
+    openfoam/caseelements/dynamicmesh/velocitytetfemmotionsolver.cpp
+    openfoam/caseelements/dynamicmesh/displacementfvmotionsolver.cpp
+    openfoam/caseelements/dynamicmesh/solidbodymotiondynamicmesh.cpp
+    openfoam/caseelements/dynamicmesh/rigidbodymotiondynamicmesh.cpp
+
     openfoam/caseelements/turbulencemodelcaseelements.cpp
-    openfoam/caseelements/dynamicmeshcaseelements.cpp
     openfoam/caseelements/analysiscaseelements.cpp
     openfoam/caseelements/thermophysicalcaseelements.cpp
     openfoam/caseelements/electromagneticscaseelements.cpp

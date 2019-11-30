@@ -833,7 +833,7 @@ if(DPKG_PROGRAM)
   message(STATUS "Package version: ${PACKAGE_VERSION}")
 
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot,python-numpy,python-scipy,python-matplotlib,texlive-base,texlive-latex-extra,imagemagick,texlive-fonts-recommended,texlive-font-utils,xdg-utils")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot,python-numpy,python-scipy,python-matplotlib,texlive-base,texlive-latex-extra,imagemagick,texlive-fonts-recommended,texlive-font-utils,xdg-utils,libssl1.0.0")
   if (INSIGHT_BUILD_OPENFOAM)
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},openfoamesi1806-insightcae,paraview5-insightcae|paraview5-offscreen-insightcae|paraview-insightcae|paraview-offscreen-insightcae,openmpi-bin")
   endif()
@@ -857,7 +857,7 @@ else(DPKG_PROGRAM)
      OUTPUT_STRIP_TRAILING_WHITESPACE
    )
    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CPACK_PACKAGE_VERSION_PATCH}.${CPACK_RPM_PACKAGE_ARCHITECTURE}")
-  set(CPACK_RPM_PACKAGE_REQUIRES "/usr/bin/gnuplot-wx,/usr/bin/pdflatex,/usr/bin/convert") #numpy,scipy,matplotlib
+  set(CPACK_RPM_PACKAGE_REQUIRES "/usr/bin/gnuplot-wx,/usr/bin/pdflatex,/usr/bin/convert,/usr/lib64/libcrypto.so") #numpy,scipy,matplotlib
   if (INSIGHT_BUILD_OPENFOAM)
     set(CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES},/usr/bin/pvbatch")
 #   if (INSIGHT_BUILD_CODEASTER)

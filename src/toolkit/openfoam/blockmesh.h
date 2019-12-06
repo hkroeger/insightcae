@@ -67,7 +67,8 @@ PointList P_4(const Point& p1, const Point& p2, const Point& p3, const Point& p4
 PointList P_4(const PointList& pts, int p1, int p2, int p3, int p4);
 PointList P_8(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
 	      const Point& p5, const Point& p6, const Point& p7, const Point& p8);
-
+PointList P_8_DZ(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
+              const arma::mat& dz0, const arma::mat& dz1);
 
 
 

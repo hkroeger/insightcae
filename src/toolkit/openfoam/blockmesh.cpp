@@ -108,6 +108,15 @@ PointList P_8(const Point& p1, const Point& p2, const Point& p3, const Point& p4
   return list_of<Point>(p1)(p2)(p3)(p4)(p5)(p6)(p7)(p8);
 }
 
+PointList P_8_DZ(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
+                 const arma::mat& dz0, const arma::mat& dz1)
+{
+  return list_of<Point>
+      (p1+dz0)(p2+dz0)(p3+dz0)(p4+dz0)
+      (p1+dz1)(p2+dz1)(p3+dz1)(p4+dz1)
+      ;
+}
+
 
 Block::Block
 (

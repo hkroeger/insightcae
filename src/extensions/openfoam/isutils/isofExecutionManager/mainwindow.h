@@ -17,7 +17,6 @@ namespace Ui {
 }
 
 
-Q_DECLARE_METATYPE(insight::TaskSpoolerInterface::JobList)
 
 class JobListBuilder
     : public QThread

@@ -36,7 +36,6 @@ namespace Ui {
   class PlotWidget;
 }
 
-Q_DECLARE_METATYPE(arma::mat);
 
 class MeanComputer : public QThread
 {

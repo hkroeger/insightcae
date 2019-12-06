@@ -44,7 +44,6 @@ namespace bf = boost::filesystem;
 
 int main(int argc, char *argv[])
 {
-  qRegisterMetaType<insight::TaskSpoolerInterface::JobList>("insight::TaskSpoolerInterface::JobList");
 
   bool anything_done=false;
 

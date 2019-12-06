@@ -74,8 +74,17 @@ public:
   inline void replaceFeature(insight::cad::FeaturePtr newModel)
   {
     smp_=newModel;
-    hide();
+    bool needShow=false;
+    if (isVisible())
+    {
+      hide();
+      needShow=true;
+    }
+
     ais_.Nullify();
+
+    if (needShow)
+      show();
   }
 
 public Q_SLOTS:

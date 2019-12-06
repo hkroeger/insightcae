@@ -32,7 +32,6 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  qRegisterMetaType<arma::mat>();
   qputenv("QT_STYLE_OVERRIDE", 0);
 
   InsightCAEApplication app(argc, argv);

@@ -22,6 +22,7 @@ set(toolkit_gui_SRCS
     snappyhexmesh_gui.cpp
     blockmesh_curvedcylinder.cpp
     blockmesh_cylwedge.cpp
+    blockmesh_cylwedgeortho.cpp
     blockmesh_tubemesh.cpp
     blockmesh_gui.cpp
     parametersetvisualizer.cpp
@@ -33,6 +34,7 @@ set(toolkit_gui_SRCS
     sdmdiarea.cpp
     blockmesh_cylwedge_gui.cpp
     blockmesh_cylwedgeortho_gui.cpp
+    metatypes.cpp
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")

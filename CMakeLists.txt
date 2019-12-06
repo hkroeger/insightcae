@@ -16,7 +16,7 @@ list(APPEND CMAKE_INCLUDE_PATH $ENV{INSIGHT_THIRDPARTYDIR}/include)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) # Relink needs to be avoided since it does not work for OF targets (multiple targets on a single file)
 #set(SKIP_BUILD_RPATH 1)
 
-OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI (Qt4 is required)" ON)
+OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI (Qt is required)" ON)
 OPTION(INSIGHT_BUILD_ADDONS "Build all present add-ons" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Install FreeCAD workbench" OFF)
 OPTION(INSIGHT_BUILD_OPENFOAM "Build the OpenFOAM extensions (OpenFOAM is required)" ON)

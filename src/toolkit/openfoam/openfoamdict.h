@@ -79,6 +79,7 @@ struct list
 : public std::vector<data> 
 {
   list();
+  list(std::initializer_list<OFDictData::data> ini);
   
   template<class T>
   void assign(const std::vector<T>& vec)

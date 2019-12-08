@@ -410,6 +410,12 @@ dimensionedData::dimensionedData(const std::string& n, const std::vector<int>& d
 
 list::list()
 {}
+
+list::list(std::initializer_list<OFDictData::data> ini)
+  : std::vector<OFDictData::data>(ini)
+{
+
+}
     
     
 void list::insertNoDuplicate(const OFDictData::data& d)

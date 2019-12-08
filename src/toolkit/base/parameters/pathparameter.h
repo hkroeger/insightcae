@@ -139,6 +139,13 @@ public:
      */
     void copyTo(const boost::filesystem::path& filePath) const;
 
+    /**
+     * @brief replaceContent
+     * reads the content from specified file. The original file path is retained.
+     * @param filePath
+     */
+    void replaceContent(const boost::filesystem::path& filePath);
+
     void clearPackedData() override;
 
 

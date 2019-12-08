@@ -239,23 +239,7 @@ bool PathParameter::isPacked() const
 void PathParameter::pack()
 {
   // read and store file
-
-  if (exists(value_))
-  {
-    // read raw file into buffer
-    std::cout<<"reading content of file "<<value_<<std::endl;
-    std::ifstream in(value_.c_str());
-    std::istreambuf_iterator<char> inputBegin(in), inputEnd;
-    file_content_.reset(new std::string);
-    std::back_insert_iterator<std::string> stringInsert(*file_content_);
-    copy(inputBegin, inputEnd, stringInsert);
-
-    // compute hash
-    MD5_CTX ctx;
-    MD5_Init(&ctx);
-    MD5_Update(&ctx, file_content_->data(), file_content_->size());
-    MD5_Final(file_content_hash_, &ctx);
-  }
+  replaceContent(value_);
 }
 
 void PathParameter::unpack(const boost::filesystem::path& basePath)
@@ -306,6 +290,27 @@ void PathParameter::copyTo(const boost::filesystem::path &filePath) const
   else
   {
     boost::filesystem::copy_file(value_, filePath, boost::filesystem::copy_option::overwrite_if_exists);
+  }
+}
+
+
+void PathParameter::replaceContent(const boost::filesystem::path& filePath)
+{
+  if (exists(filePath))
+  {
+    // read raw file into buffer
+    std::cout<<"reading content of file "<<filePath<<std::endl;
+    std::ifstream in(filePath.c_str());
+    std::istreambuf_iterator<char> inputBegin(in), inputEnd;
+    file_content_.reset(new std::string);
+    std::back_insert_iterator<std::string> stringInsert(*file_content_);
+    copy(inputBegin, inputEnd, stringInsert);
+
+    // compute hash
+    MD5_CTX ctx;
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, file_content_->data(), file_content_->size());
+    MD5_Final(file_content_hash_, &ctx);
   }
 }
 

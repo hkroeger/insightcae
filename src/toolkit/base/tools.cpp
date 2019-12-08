@@ -188,6 +188,30 @@ ExecTimer::~ExecTimer()
 
 
 
+void copyDirectoryRecursively(const path& sourceDir, const path& destinationDir)
+{
+    if (!exists(sourceDir) || !is_directory(sourceDir))
+    {
+        throw std::runtime_error("Source directory " + sourceDir.string() + " does not exist or is not a directory");
+    }
+    if (exists(destinationDir))
+    {
+        throw std::runtime_error("Destination directory " + destinationDir.string() + " already exists");
+    }
+    if (!create_directory(destinationDir))
+    {
+        throw std::runtime_error("Cannot create destination directory " + destinationDir.string());
+    }
+
+    for (const auto& dirEnt : boost::make_iterator_range(recursive_directory_iterator{sourceDir}, {}))
+    {
+        const auto& path = dirEnt.path();
+        auto relativePathStr = path.string();
+        boost::replace_first(relativePathStr, sourceDir.string(), "");
+        copy(path, destinationDir / relativePathStr);
+    }
+}
+
 
 void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
 {

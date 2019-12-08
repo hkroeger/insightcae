@@ -90,6 +90,9 @@ public:
 };
 
 
+void copyDirectoryRecursively(const boost::filesystem::path& sourceDir, const boost::filesystem::path& destinationDir);
+
+
 template<class T>
 T to_number(const std::string& s)
 {

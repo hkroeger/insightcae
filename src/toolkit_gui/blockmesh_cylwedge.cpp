@@ -980,17 +980,18 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     if ( Patch* cp = pc.pcyclp) cp->addFace(bl.face("2376"));
     }
 
-    auto middleCurve = [&](const PointList& c1, const PointList& c2)
-    {
-      PointList mc;
-      mc.push_back(prf0);
-      for (size_t i=1; i< c1.size()-1; i++)
-      {
-        mc.push_back(0.5*(c1[i]+c2[i]));
-      }
-      mc.push_back(prf1);
-      return mc;
-    };
+    auto middleCurve = [&](const PointList& c1, const PointList& c2, const arma::mat vLEnd)
+                        {
+                          PointList mc;
+                          mc.push_back(prf0+vLEnd);
+                          for (size_t i=1; i< c1.size()-1; i++)
+                          {
+                            mc.push_back(0.5*(c1[i]+c2[i]));
+                          }
+                          mc.push_back(prf1+vLEnd);
+                          return mc;
+                        };
+
     {
       auto sp1=createEdgeAlongCurve(spine_rvs, block.rvs_u0, block.rvs_u1,
                                     [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } );
@@ -1008,7 +1009,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
         this->addEdge ( createEdgeAlongCurve(spine_rvs, block.fwd_u0, block.fwd_u1,
                                              [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ) );
 
-      auto sp3=new SplineEdge(middleCurve(sp1->allPoints(), sp2->allPoints()));
+      auto sp3=new SplineEdge(middleCurve(sp1->allPoints(), sp2->allPoints(), vL0));
       this->addEdge ( sp3 );
 
       if (!no_top_edg)

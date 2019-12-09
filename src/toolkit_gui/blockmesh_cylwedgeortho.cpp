@@ -434,6 +434,10 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
   double dr;
   {
+    CurrentExceptionContext ex(
+          str(format("Creating intermediate blocks between %s and %s")%toStr(vL0)%toStr(vL1))
+          );
+
     arma::mat
         pr0 = vec3(spine_rvs->Value(block.rvs_u0)),
         pr1 = vec3(spine_rvs->Value(block.rvs_u1)),
@@ -479,17 +483,18 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     if ( Patch* cp = pc.pcyclp) cp->addFace(bl.face("2376"));
     }
 
-    auto middleCurve = [&](const PointList& c1, const PointList& c2)
-    {
-      PointList mc;
-      mc.push_back(prf0);
-      for (size_t i=1; i< c1.size()-1; i++)
-      {
-        mc.push_back(0.5*(c1[i]+c2[i]));
-      }
-      mc.push_back(prf1);
-      return mc;
-    };
+    auto middleCurve = [&](const PointList& c1, const PointList& c2, const arma::mat vLEnd)
+                        {
+                          PointList mc;
+                          mc.push_back(prf0+vLEnd);
+                          for (size_t i=1; i< c1.size()-1; i++)
+                          {
+                            mc.push_back(0.5*(c1[i]+c2[i]));
+                          }
+                          mc.push_back(prf1+vLEnd);
+                          return mc;
+                        };
+
     {
       auto sp1=createEdgeAlongCurve(spine_rvs, block.rvs_u0, block.rvs_u1,
                                     [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } );
@@ -507,7 +512,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
         this->addEdge ( createEdgeAlongCurve(spine_rvs, block.fwd_u0, block.fwd_u1,
                                              [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ) );
 
-      auto sp3=new SplineEdge(middleCurve(sp1->allPoints(), sp2->allPoints()));
+      auto sp3=new SplineEdge(middleCurve(sp1->allPoints(), sp2->allPoints(), vL0));
       this->addEdge ( sp3 );
 
       if (!no_top_edg)
@@ -521,6 +526,10 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   //  - Zwickel innen
   if (g_begin.collapse_pt_loc == Gusset::Rvs )
   {
+    CurrentExceptionContext ex(
+          str(format("Creating blocks at inner gusset (reverse orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          );
+
     gp_Pnt
         pa = spine_rvs->Value(g_begin.fwd_u0),
         pab = spine_rvs->Value((g_begin.fwd_u0+g_begin.fwd_u1)*0.5),
@@ -628,7 +637,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   }
   else if (g_begin.collapse_pt_loc == Gusset::Fwd )
   {
-
+    CurrentExceptionContext ex(
+          str(format("Creating blocks at inner gusset (forward orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          );
 
     gp_Pnt
         pa = spine_rvs->Value(g_begin.rvs_u0),
@@ -733,6 +744,10 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   }
   else if (g_begin.collapse_pt_loc == Gusset::None )
   {
+    CurrentExceptionContext ex(
+          str(format("Creating blocks at inner gusset (radial orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          );
+
     gp_Pnt
         pa = spine_rvs->Value(t0)
       ;
@@ -758,6 +773,10 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
   if (do_pro_inner_blocks)
   {
+    CurrentExceptionContext ex(
+          str(format("Creating blocks at inner protrusion between %s and %s")%toStr(vL0)%toStr(vL1))
+          );
+
     gp_Pnt
         pa = spine_rvs->Value(t00),
         pb = spine_rvs->Value(t0)
@@ -836,6 +855,10 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   //  - Zwickel aussen
   if (g_end.collapse_pt_loc == Gusset::Fwd )
   {
+    CurrentExceptionContext ex(
+          str(format("Creating blocks at outer gusset (forward orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          );
+
     gp_Pnt
         pa = spine_rvs->Value(g_end.rvs_u0),
         pab = spine_rvs->Value((g_end.rvs_u0+g_end.rvs_u1)*0.5),
@@ -935,6 +958,10 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   }
   else if (g_end.collapse_pt_loc == Gusset::Rvs )
   {
+    CurrentExceptionContext ex(
+          str(format("Creating blocks at outer gusset (reverse orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          );
+
     gp_Pnt
         pa = spine_rvs->Value(g_end.fwd_u0),
         pab = spine_rvs->Value((g_end.fwd_u0+g_end.fwd_u1)*0.5),
@@ -1025,6 +1052,10 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   }
   else if (g_end.collapse_pt_loc == Gusset::None )
   {
+    CurrentExceptionContext ex(
+          str(format("Creating blocks at outer gusset (radial orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          );
+
     gp_Pnt
         pb = spine_rvs->Value(t1)
       ;
@@ -1052,6 +1083,10 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
   if (do_pro_outer_blocks)
   {
+    CurrentExceptionContext ex(
+          str(format("Creating blocks at outer protrusion between %s and %s")%toStr(vL0)%toStr(vL1))
+          );
+
     gp_Pnt
         pa = spine_rvs->Value(t1),
         pb = spine_rvs->Value(t10)

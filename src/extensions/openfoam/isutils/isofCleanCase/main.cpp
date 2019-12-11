@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
         }
         else if (!pack)
         {
-          InsightCAEApplication app(argc, argv);
+          InsightCAEApplication app(argc, argv, "isofCleanCase");
           OFCleanCaseDialog dlg(cm, ".");
           dlg.exec();
         }

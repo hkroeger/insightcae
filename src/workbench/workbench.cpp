@@ -37,29 +37,67 @@
 #include "rapidxml/rapidxml_print.hpp"
 
 
+void workbench::updateRecentFileActions()
+{
+  QSettings settings;
+  QStringList files;
+  if (settings.contains("recentFileList"))
+    files = settings.value("recentFileList").toStringList();
+
+  int numRecentFiles = std::min<int>(files.size(), recentFileActs_.size());
+
+  for (int i = 0; i < numRecentFiles; ++i) {
+      QString text = tr("&%1 %2")
+          .arg(i + 1)
+          .arg( QFileInfo(files[i]).fileName() )
+          ;
+      recentFileActs_[i]->setText(text);
+      recentFileActs_[i]->setData(files[i]);
+      recentFileActs_[i]->setVisible(true);
+  }
+  for (int j = numRecentFiles; j < recentFileActs_.size(); ++j)
+      recentFileActs_[j]->setVisible(false);
+
+  separatorAct_->setVisible(numRecentFiles > 0);
+}
+
+
 workbench::workbench()
 {
-    setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
-    this->setWindowTitle("Insight Workbench");
-    
-    mdiArea_ = new SDMdiArea(this);
-    setCentralWidget( mdiArea_ );
-    connect(mdiArea_, &QMdiArea::subWindowActivated,
-            this, &workbench::onSubWindowActivated);
-    
-    QMenu *analysisMenu = menuBar()->addMenu( "&Analysis" );
+  setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
+  this->setWindowTitle("InsightCAE Workbench");
 
-    QAction* a = new QAction("New...", this); 
-    a->setShortcut(Qt::ControlModifier + Qt::Key_N);
-    connect(a, &QAction::triggered, this, &workbench::newAnalysis );
-    analysisMenu->addAction( a );
-    
-    a = new QAction("Open...", this); 
-    a->setShortcut(Qt::ControlModifier + Qt::Key_O);
-    connect(a, &QAction::triggered, this, &workbench::onOpenAnalysis );
-    analysisMenu->addAction( a );
+  mdiArea_ = new SDMdiArea(this);
+  setCentralWidget( mdiArea_ );
+  connect(mdiArea_, &QMdiArea::subWindowActivated,
+          this, &workbench::onSubWindowActivated);
 
-    readSettings();
+  QMenu *analysisMenu = menuBar()->addMenu( "&Analysis" );
+
+  QAction* a = new QAction("New...", this);
+  a->setShortcut(Qt::ControlModifier + Qt::Key_N);
+  connect(a, &QAction::triggered, this, &workbench::newAnalysis );
+  analysisMenu->addAction( a );
+
+  a = new QAction("Open...", this);
+  a->setShortcut(Qt::ControlModifier + Qt::Key_O);
+  connect(a, &QAction::triggered, this, &workbench::onOpenAnalysis );
+  analysisMenu->addAction( a );
+
+  separatorAct_ = analysisMenu->addSeparator();
+  for (int i = 0; i < recentFileActs_.size(); ++i)
+  {
+      recentFileActs_[i] = new QAction(this);
+
+      recentFileActs_[i]->setVisible(false);
+      analysisMenu->addAction(recentFileActs_[i]);
+
+      connect(recentFileActs_[i], SIGNAL(triggered()),
+              this, SLOT(openRecentFile()));
+  }
+  updateRecentFileActions();
+
+  readSettings();
 }
 
 workbench::~workbench()
@@ -90,9 +128,29 @@ void workbench::onOpenAnalysis()
   QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
   if (!fn.isEmpty()) openAnalysis(fn);
 }
-    
+
+
+void workbench::openRecentFile()
+{
+  QAction *action = qobject_cast<QAction *>(sender());
+  if (action)
+      openAnalysis(action->data().toString());
+}
+
+
+
 void workbench::openAnalysis(const QString& fn)
 {
+
+  QSettings settings;
+  QStringList files = settings.value("recentFileList").toStringList();
+  files.removeAll(fn);
+  files.prepend(fn);
+  while (files.size() > recentFileActs_.size())
+      files.removeLast();
+  settings.setValue("recentFileList", files);
+  updateRecentFileActions();
+
   using namespace rapidxml;
   
   boost::filesystem::path fp(fn.toStdString());

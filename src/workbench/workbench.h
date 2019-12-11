@@ -26,17 +26,26 @@
 
 #include <QApplication>
 #include <QMenuBar>
+#include <QAction>
 
 #include "insightcaeapplication.h"
 #include "sdmdiarea.h"
+
+#include <array>
 
 
 class workbench
 : public QMainWindow
 {
 Q_OBJECT
+
 private:
   SDMdiArea *mdiArea_;
+
+  QAction *separatorAct_;
+  std::array<QAction *,5> recentFileActs_;
+
+  void updateRecentFileActions();
 
 public:
 
@@ -62,6 +71,7 @@ public:
 private slots:
     void newAnalysis();
     void onOpenAnalysis();
+    void openRecentFile();
 
 private slots:
     void onSubWindowActivated( QMdiSubWindow * window );

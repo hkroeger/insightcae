@@ -83,7 +83,7 @@ int main ( int argc, char** argv )
 
   bool batch = false;
 
-  InsightCAEApplication app ( argc, argv );
+  InsightCAEApplication app ( argc, argv, "isofCaseBuilder" );
 
   try
   {
@@ -209,7 +209,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                  parameters.getPath(pair[1])=pair[2];
+                  parameters.setOriginalFileName(pair[1], pair[2]);
               }
           }
 

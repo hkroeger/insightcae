@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
 
   if (!anything_done)
   {
-    InsightCAEApplication app(argc, argv);
+    InsightCAEApplication app(argc, argv, "isofExecutionManager");
     MainWindow w(location);
     w.show();
     return app.exec();

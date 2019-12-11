@@ -146,7 +146,7 @@ int main ( int argc, char** argv )
   {
     //     XInitThreads();
 
-    InsightCAEApplication app ( argc, argv );
+    InsightCAEApplication app ( argc, argv, "isCAD" );
 
     try
     {

@@ -14,6 +14,7 @@
 #include <boost/archive/iterators/ostream_iterator.hpp>
 #include <boost/archive/iterators/remove_whitespace.hpp>
 
+
 #include "base/tools.h"
 
 
@@ -296,7 +297,7 @@ void PathParameter::copyTo(const boost::filesystem::path &filePath) const
 
 void PathParameter::replaceContent(const boost::filesystem::path& filePath)
 {
-  if (exists(filePath))
+  if (exists(filePath) && is_regular_file(filePath) )
   {
     // read raw file into buffer
     std::cout<<"reading content of file "<<filePath<<std::endl;
@@ -386,7 +387,18 @@ rapidxml::xml_node<>* PathParameter::appendToNode
       unsigned int base64length = ((4 * file_content_->size() / 3) + 3) & ~3;
 
       auto *xml_content = doc.allocate_string(0, base64length+1);
-      std::copy(base64_enc(file_content_->c_str()), base64_enc(file_content_->c_str()+len_rounded_down), xml_content);
+      std::copy(
+            base64_enc(file_content_->c_str()),
+            base64_enc(file_content_->c_str()+len_rounded_down),
+            xml_content
+            );
+//      std::ostringstream os;
+//      std::copy(
+//            base64_enc(file_content_->c_str()),
+//            base64_enc(file_content_->c_str()+file_content_->size()),
+//            std::ostream_iterator<char>(os)
+//            );
+//      os << base64_padding[file_content_->size() % 3];
 
       if (len_rounded_down != len)
       {
@@ -420,6 +432,7 @@ rapidxml::xml_node<>* PathParameter::appendToNode
       child->append_attribute(doc.allocate_attribute
       (
         "content",
+        //os.str().c_str()
         xml_content
       ));
 

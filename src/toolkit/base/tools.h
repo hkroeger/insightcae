@@ -52,6 +52,7 @@ public:
 };
 
 
+std::string timeCodePrefix();
 
 
 struct TemporaryCaseDir
@@ -59,7 +60,7 @@ struct TemporaryCaseDir
   bool keep_;
   boost::filesystem::path dir;
 
-  TemporaryCaseDir(bool keep=false, const std::string& prefix="");
+  TemporaryCaseDir(bool keep=false, const boost::filesystem::path& prefix="");
   ~TemporaryCaseDir();
 };
 

@@ -220,7 +220,7 @@ struct FilesCache
 
 void runLatex(const std::string& formula_code, const boost::filesystem::path& output)
 {
-  TemporaryCaseDir subdir(false, (boost::filesystem::temp_directory_path()/"runLatex-").string() );
+  TemporaryCaseDir subdir(false, boost::filesystem::temp_directory_path()/"runLatex" );
 
   boost::filesystem::path tex_filename = subdir.dir/"input.tex";
   std::ofstream tex( tex_filename.c_str() );

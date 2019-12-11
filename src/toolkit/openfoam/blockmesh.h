@@ -555,12 +555,7 @@ public:
     return *block;
   }
   
-  inline Edge& addEdge(Edge *edge) 
-  { 
-    edge->registerPoints(*this);
-    allEdges_.push_back(edge);
-    return *edge;
-  }
+  Edge& addEdge(Edge *edge);
   
   inline Patch& addPatch(const std::string& name, Patch *patch) 
   { 

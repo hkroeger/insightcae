@@ -1210,8 +1210,31 @@ void blockMesh::numberVertices(PointMap& pts) const
        i!=pts.end(); i++)
        {
 	 i->second = idx++;
-       }
+  }
 }
+
+Edge &blockMesh::addEdge(Edge *edge)
+{
+  // check if edge was already added
+  for (const auto& e: allEdges_)
+  {
+    if (e.connectsPoints(edge->c0(), edge->c1()))
+    {
+      auto c0=edge->c0();
+      auto c1=edge->c1();
+      throw insight::Exception(
+            boost::str(boost::format("There was already another edge added, which connect points [%g %g %g] and [%g %g %g]!")
+                %c0(0)%c0(1)%c0(2)
+                %c1(0)%c1(1)%c1(2))
+            );
+    }
+  }
+
+  edge->registerPoints(*this);
+  allEdges_.push_back(edge);
+  return *edge;
+}
+
 
 bool blockMesh::hasEdgeBetween(const Point& p1, const Point& p2) const
 {

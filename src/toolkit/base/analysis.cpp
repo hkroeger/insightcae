@@ -21,6 +21,7 @@
 
 #include "analysis.h"
 #include "exception.h"
+#include "tools.h"
 
 #include <fstream>
 #include <cstdlib>
@@ -225,7 +226,10 @@ boost::filesystem::path Analysis::setupExecutionEnvironment()
 {
   if ( executionPath_ =="" )
     {
-      executionPath_ = boost::filesystem::unique_path();
+      executionPath_ =
+          boost::filesystem::unique_path(
+            timeCodePrefix()+"_analysis-%%%%%%"
+            );
       if (!enforceExecutionPathRemovalBehaviour_) removeExecutionPath_=true;
     }
 
@@ -257,6 +261,14 @@ path Analysis::executionPath() const
     return executionPath_;
 }
 
+path Analysis::createExecutionPathIfNonexistent()
+{
+  if ( executionPath_ =="" )
+  {
+    setupExecutionEnvironment();
+  }
+  return executionPath();
+}
 
 Analysis::Analysis ( const std::string& name, const std::string& description, const ParameterSet& ps, const boost::filesystem::path& exePath )
 : name_ ( name ),

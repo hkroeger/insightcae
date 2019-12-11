@@ -122,6 +122,7 @@ const boost::filesystem::path& RemoteExecutionConfig::remoteDir() const
   return remoteDir_;
 }
 
+
 const boost::filesystem::path& RemoteExecutionConfig::metaFile() const
 {
   return meta_file_;
@@ -275,7 +276,7 @@ void RemoteExecutionConfig::syncToRemote
       args.push_back(ex);
     }
 
-    args.push_back(localDir_.string());
+    args.push_back(localDir_.string()+"/");
     args.push_back(server_+":"+remoteDir_.string());
 
     runRsync(args, pf);
@@ -328,7 +329,7 @@ void RemoteExecutionConfig::syncToLocal
       args.push_back(ex);
     }
 
-    args.push_back(server_+":"+remoteDir_.string()+"/*");
+    args.push_back(server_+":"+remoteDir_.string()+"/");
     args.push_back(localDir_.string());
 
     runRsync(args, pf);

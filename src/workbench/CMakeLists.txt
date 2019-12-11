@@ -14,6 +14,9 @@ set(workbench_SRCS
     resultelementwrapper.h
     analysisform.cpp
     analysisform.h
+    analysisform_queries.cpp
+    analysisform_localactions.cpp
+    analysisform_remoteactions.cpp
     newanalysisdlg.cpp
     newanalysisdlg.h
     workbench.cpp

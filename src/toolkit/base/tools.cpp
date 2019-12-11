@@ -39,6 +39,7 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+using namespace boost::posix_time;
 
 
 namespace insight
@@ -47,6 +48,19 @@ namespace insight
 
 std::unique_ptr<GlobalTemporaryDirectory> GlobalTemporaryDirectory::td_;
 
+
+
+std::string timeCodePrefix()
+{
+  ptime now = second_clock::universal_time();
+  static std::locale loc(std::cout.getloc(),
+                           new time_facet("%Y%m%d%H%M%S"));
+  std::ostringstream ss;
+  ss.imbue(loc);
+  ss << now;
+
+  return ss.str();
+}
 
 
 GlobalTemporaryDirectory::GlobalTemporaryDirectory()
@@ -75,12 +89,19 @@ GlobalTemporaryDirectory::~GlobalTemporaryDirectory()
 }
 
 
-TemporaryCaseDir::TemporaryCaseDir(bool keep, const std::string& prefix)
+
+TemporaryCaseDir::TemporaryCaseDir(bool keep, const boost::filesystem::path& prefix)
 : keep_(keep)
 {
   if (getenv("INSIGHT_KEEPTEMPCASEDIR"))
     keep_=true;
-  dir = unique_path(prefix+"%%%%%%%");
+
+  path fn=prefix.filename();
+
+
+
+  dir = unique_path( prefix.parent_path() / (timeCodePrefix() + "_" + fn.string() + "_%%%%") );
+
   create_directories(dir);
 }
 

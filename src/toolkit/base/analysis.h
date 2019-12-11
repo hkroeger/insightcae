@@ -181,7 +181,8 @@ public:
     virtual ~Analysis();
 
     virtual boost::filesystem::path executionPath() const;
-    
+    boost::filesystem::path createExecutionPathIfNonexistent();
+
     inline void setKeepExecutionDirectory(bool keep = true)
     {
         enforceExecutionPathRemovalBehaviour_=true;

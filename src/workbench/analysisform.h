@@ -48,11 +48,11 @@ class AnalysisForm;
 }
 
 
-
-
-Q_DECLARE_METATYPE(insight::ParameterSet);
-
-
+namespace insight
+{
+class TaskSpoolerInterface;
+class SolverOutputAnalyzer;
+}
 
 
 class AnalysisWorker
@@ -82,14 +82,19 @@ class AnalysisForm
   public workbench::WidgetWithDynamicMenuEntries
 {
   Q_OBJECT
+
   
 protected:
+
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
   insight::ParameterSet parameters_;
 
   std::shared_ptr<insight::Analysis> analysis_;  
   insight::ResultSetPtr results_;
+
+  std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
+  std::shared_ptr<insight::SolverOutputAnalyzer> soa_;
   
   GraphProgressDisplayer *progdisp_;
   std::shared_ptr<boost::thread> workerThread_;
@@ -131,13 +136,20 @@ protected:
   void updateSaveMenuLabel();
 
   bool hasValidExecutionPath() const;
-  boost::filesystem::path currentExecutionPath() const;
+  boost::filesystem::path currentExecutionPath(bool createIfNonexistent) const;
 
   std::map<std::string, boost::filesystem::path> remotePaths_;
 
-  bool isReadyForRemoteRun() const;
-  void initializeRemoteRun();
-  bool isRemoteRunInitialized() const;
+  // ================================================================================
+  // ================================================================================
+  // ===== Status queries
+
+  bool isRunningLocally() const;
+  bool isRunningRemotely() const;
+  bool isRunning() const;
+  bool remoteDownloadOrResumeIsPossible() const;
+
+  bool isRemoteDirectoryPresent() const;
 
   QProgressBar* progressbar_;
   
@@ -158,6 +170,31 @@ public:
   void saveParametersAs(bool *cancelled=nullptr);
 
   void setExecutionPath(const boost::filesystem::path& path);
+
+  // ================================================================================
+  // ================================================================================
+  // ===== Remote run logic
+
+  void autoSelectRemoteDir();
+  void lockRemoteControls();
+  void createRemoteDirectory();
+  void upload();
+  void startRemoteRun();
+  void resumeRemoteRun();
+  void disconnectFromRemoteRun();
+  void stopRemoteRun();
+  void unlockRemoteControls();
+  void download();
+  void cleanRemote();
+  void removeRemoteDirectory();
+
+  // ================================================================================
+  // ================================================================================
+  // ===== Local run logic
+
+  void startLocalRun();
+  void stopLocalRun();
+
 
 protected:
   virtual void	closeEvent ( QCloseEvent * event );
@@ -191,16 +228,15 @@ private Q_SLOTS:
   // =======================
   // == Remote exec actions
   void onRemoteServerChanged();
-  void onLockRemoteConfig();
-  void onAutoSelectRemoteDir();
-  void onUpload();
-  void onDownload();
+
+  void updateOutputAnalzer(QString line);
 
 Q_SIGNALS:
   void apply();
   void update();
   void runAnalysis(insight::ProgressDisplayer*);
   void statusMessage(const QString& message, int timeout=0);
+  void logReady(QString line);
   
 private:
   Ui::AnalysisForm* ui;

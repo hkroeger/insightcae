@@ -55,10 +55,16 @@ void RemoteExecutionConfig::execRemoteCmd(const std::string& command)
     }
 }
 
+
+
+
 bool RemoteExecutionConfig::isValid() const
 {
     return (!server_.empty())&&(!remoteDir_.empty());
 }
+
+
+
 
 bool RemoteExecutionConfig::remoteDirExists() const
 {
@@ -72,6 +78,20 @@ bool RemoteExecutionConfig::remoteDirExists() const
   }
   return false;
 }
+
+
+
+
+RemoteExecutionConfig::RemoteExecutionConfig(const RemoteExecutionConfig &o)
+  : meta_file_(o.meta_file_),
+    server_(o.server_),
+    localDir_(o.localDir_),
+    remoteDir_(o.remoteDir_)
+{
+}
+
+
+
 
 RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig, const bfs_path& meta_file)
   : localDir_(location)

@@ -28,6 +28,7 @@ protected:
     );
 
 public:
+    RemoteExecutionConfig(const RemoteExecutionConfig& orec);
     RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig=true, const bfs_path& meta_file="");
 
     const std::string& server() const;

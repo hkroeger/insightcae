@@ -49,6 +49,7 @@
 #include "of_clean_case.h"
 #include "remotesync.h"
 #include "remotedirselector.h"
+#include "remoteparaview.h"
 
 
 
@@ -788,10 +789,8 @@ void AnalysisForm::onStartPV()
     {
       if (isRemoteDirectoryPresent())
       {
-        auto exePath = currentExecutionPath(false);
-        ::system( boost::str( boost::format
-              ("cd %s; isPV.py &" ) % exePath.string()
-         ).c_str() );
+        RemoteParaview dlg( insight::RemoteExecutionConfig(currentExecutionPath(false)), this);
+        dlg.exec();
       }
     }
   }

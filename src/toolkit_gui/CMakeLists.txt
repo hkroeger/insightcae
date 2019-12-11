@@ -35,6 +35,8 @@ set(toolkit_gui_SRCS
     blockmesh_cylwedge_gui.cpp
     blockmesh_cylwedgeortho_gui.cpp
     metatypes.cpp
+    remoteparaview.cpp
+    remoteparaview.h
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
@@ -42,6 +44,7 @@ file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
 SET(toolkit_gui_FORMS
     of_clean_case.ui
     remotedirselector.ui
+    remoteparaview.ui
 )
 SET(toolkit_gui_RCCS toolkit_gui.qrc)
 

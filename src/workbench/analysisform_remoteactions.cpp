@@ -10,9 +10,10 @@
 #include "openfoam/remoteserverlist.h"
 #endif
 
-#include "remotesync.h"
+
 #include "remotedirselector.h"
 #include "openfoam/solveroutputanalyzer.h"
+#include "remotesync.h"
 
 #include <QMessageBox>
 
@@ -25,6 +26,37 @@ void AnalysisForm::onRemoteServerChanged()
 }
 
 
+
+void AnalysisForm::recheckButtonAvailability()
+{
+  ui->btnDownload->setEnabled( remoteDownloadOrResumeIsPossible() );
+  ui->btnDisconnect->setEnabled( isRunningRemotely() );
+  ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+  ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+}
+
+
+
+
+std::unique_ptr<insight::MountRemote> AnalysisForm::temporaryMountedRemoteDir() const
+{
+  std::unique_ptr<insight::MountRemote> result;
+
+
+  std::string server = ui->hostList->currentText().toStdString();
+  bf::path remote_dir( ui->remoteDir->text().toStdString() );
+
+  auto i = insight::remoteServers.findServer(server);
+
+  {
+    bf::path remoteCaseDir =
+        i.second.defaultDir_ / boost::filesystem::make_relative(i.second.defaultDir_, remote_dir);
+
+    result.reset(new insight::MountRemote(i.second.serverName_, remoteCaseDir));
+  }
+
+  return result;
+}
 
 
 
@@ -93,9 +125,7 @@ void AnalysisForm::createRemoteDirectory()
   cfg << i.second.serverName_ << ":" << remote_dir.string();
 
   lockRemoteControls();
-
-  ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
-  ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+  recheckButtonAvailability();
 }
 
 
@@ -129,8 +159,7 @@ void AnalysisForm::upload()
   rstr->start();
   rstr->wait();
 
-  ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
-  ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+  recheckButtonAvailability();
 }
 
 
@@ -153,7 +182,10 @@ void AnalysisForm::startRemoteRun()
   bf::path jobfile_filename;
   if (!ist_file_.empty())
   {
-    jobfile_filename = ist_file_.filename();
+    if (!pack_parameterset_)
+      jobfile_filename = ist_file_.filename().stem().string()+"_packed.ist";
+    else
+      jobfile_filename = ist_file_.filename();
   }
   else
   {
@@ -220,9 +252,7 @@ void AnalysisForm::resumeRemoteRun()
     );
   }
 
-  ui->btnDisconnect->setEnabled( isRunningRemotely() );
-  ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
-  ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+  recheckButtonAvailability();
 }
 
 
@@ -235,9 +265,7 @@ void AnalysisForm::disconnectFromRemoteRun()
     soa_.reset();
   }
 
-  ui->btnDisconnect->setEnabled( isRunningRemotely() );
-  ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
-  ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+  recheckButtonAvailability();
 }
 
 
@@ -260,9 +288,7 @@ void AnalysisForm::stopRemoteRun()
     soa_.reset();
   }
 
-  ui->btnDisconnect->setEnabled( isRunningRemotely() );
-  ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
-  ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+  recheckButtonAvailability();
 }
 
 
@@ -344,10 +370,7 @@ void AnalysisForm::removeRemoteDirectory()
 
       unlockRemoteControls();
 
-      ui->btnDownload->setEnabled( remoteDownloadOrResumeIsPossible() );
-      ui->btnDisconnect->setEnabled( isRunningRemotely() );
-      ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
-      ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+      recheckButtonAvailability();
     }
   }
 }

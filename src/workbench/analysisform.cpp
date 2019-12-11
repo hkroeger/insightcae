@@ -223,18 +223,14 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
               ui->remoteDir->setEnabled(isActive);
               ui->btnSelectRemoteDir->setEnabled(isActive);
               ui->btnUpload->setEnabled(isActive);
-              ui->btnDownload->setEnabled( remoteDownloadOrResumeIsPossible() );
-              ui->btnDisconnect->setEnabled( isRunningRemotely() );
-              ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
-              ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+              recheckButtonAvailability();
             }
     );
 
     connect(ui->remoteDir, &QLineEdit::textChanged,
             [&](const QString&)
             {
-              ui->btnDownload->setEnabled( remoteDownloadOrResumeIsPossible() );
-              ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() );
+              recheckButtonAvailability();
             }
     );
 
@@ -254,8 +250,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
                 catch (...)
                 {}
               }
-              ui->btnDownload->setEnabled( remoteDownloadOrResumeIsPossible() );
-              ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() );
+              recheckButtonAvailability();
               ui->cbDontKeepExeDir->setChecked( nt.isEmpty() ? Qt::Checked : Qt::Unchecked );
             }
     );
@@ -264,9 +259,6 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
             [&]()
             {
               resumeRemoteRun();
-              ui->btnDisconnect->setEnabled( isRunningRemotely() );
-              ui->btnResume->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
-              ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
             }
     );
 
@@ -833,7 +825,16 @@ void AnalysisForm::onCleanOFC()
       ofc=&(insight::OFEs::getCurrentOrPreferred());
     }
 
-    OFCleanCaseDialog dlg(*ofc, currentExecutionPath(false), this);
+    boost::filesystem::path exePath = currentExecutionPath(false);
+
+    std::unique_ptr<insight::MountRemote> rd;
+    if ( ui->cbRemoteRun->checkState() == Qt::Checked )
+    {
+      rd = std::move(temporaryMountedRemoteDir());
+      exePath = rd->mountpoint();
+    }
+
+    OFCleanCaseDialog dlg(*ofc, exePath, this);
     dlg.exec();
   }
 }
@@ -843,15 +844,22 @@ void AnalysisForm::onCleanOFC()
 
 void AnalysisForm::onWnow()
 {
-  if (hasValidExecutionPath())
+  if (isRunning())
   {
-    boost::filesystem::path exePath = currentExecutionPath(false);
+    std::unique_ptr<insight::MountRemote> rd;
 
-    if (boost::filesystem::exists(exePath))
+    boost::filesystem::path exePath = currentExecutionPath(false);
+    if (isRunningRemotely())
+    {
+      rd = std::move(temporaryMountedRemoteDir());
+      exePath = rd->mountpoint();
+    }
+
     {
       std::ofstream f( (exePath/"wnow").c_str() );
       f.close();
     }
+
   }
 }
 
@@ -860,10 +868,17 @@ void AnalysisForm::onWnow()
 
 void AnalysisForm::onWnowAndStop()
 {
-  if (hasValidExecutionPath())
+  if (isRunning())
   {
+    std::unique_ptr<insight::MountRemote> rd;
+
     boost::filesystem::path exePath = currentExecutionPath(false);
-    if (boost::filesystem::exists(exePath))
+    if (isRunningRemotely())
+    {
+      rd = std::move(temporaryMountedRemoteDir());
+      exePath = rd->mountpoint();
+    }
+
     {
       std::ofstream f( (exePath/"wnowandstop").c_str() );
       f.close();

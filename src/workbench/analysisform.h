@@ -40,7 +40,7 @@
 
 #include "qdebugstream.h"
 #include "logviewerwidget.h"
-
+#include "remotedirselector.h"
 
 namespace Ui
 {
@@ -175,6 +175,8 @@ public:
   // ================================================================================
   // ===== Remote run logic
 
+  void recheckButtonAvailability();
+  std::unique_ptr<insight::MountRemote> temporaryMountedRemoteDir() const;
   void autoSelectRemoteDir();
   void lockRemoteControls();
   void createRemoteDirectory();

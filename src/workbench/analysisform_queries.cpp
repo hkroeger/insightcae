@@ -23,7 +23,7 @@ bool AnalysisForm::isRunningRemotely() const
 {
   if (tsi_)
   {
-    if (!tsi_->isTailRunning())
+    if (tsi_->isTailRunning())
       return true;
   }
 

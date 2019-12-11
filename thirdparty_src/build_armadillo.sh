@@ -6,7 +6,7 @@ if [ ! -d TARBALLS ]; then
 fi
 
 DIR=armadillo-8.400.1
-[ -d $DIR ] || ( wget -q -O- https://sourceforge.net/projects/arma/files/${DIR}.tar.xz | tar xJ ) 
+[ -d $DIR ] || ( wget -q -O- https://sourceforge.net/projects/arma/files/${DIR}.tar.xz.orig | tar xJ ) 
 cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty

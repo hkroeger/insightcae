@@ -225,8 +225,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>1221</width>
-              <height>700</height>
+              <width>1230</width>
+              <height>710</height>
              </rect>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -343,6 +343,16 @@
          </property>
          <property name="text">
           <string>Write+Stop</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnShell">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Shell...</string>
          </property>
         </widget>
        </item>

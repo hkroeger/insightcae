@@ -93,6 +93,9 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
       connect( ui->wnowandstop, &QPushButton::clicked, this, &AnalysisForm::onWnowAndStop );
     }
 
+    connect( ui->btnShell, &QPushButton::clicked,
+             this, &AnalysisForm::onShell);
+
     QSplitter* spl=new QSplitter(Qt::Vertical);
     QWidget* lower = new QWidget;
     QHBoxLayout* hbl = new QHBoxLayout(lower);
@@ -884,3 +887,43 @@ void AnalysisForm::onWnowAndStop()
     }
   }
 }
+
+
+
+
+void AnalysisForm::onShell()
+{
+  if (ui->cbRemoteRun->checkState()==Qt::Checked)
+  {
+    if (isRemoteDirectoryPresent())
+    {
+      auto ep=currentExecutionPath(false);
+
+      QStringList args;
+      if (!QProcess::startDetached("isRemoteShell.sh", args, ep.c_str() ))
+      {
+        QMessageBox::critical(
+              this,
+              "Failed to start",
+              QString("Failed to start remote shell in directoy ")+ep.c_str()
+              );
+      }
+    }
+  }
+  else if (hasValidExecutionPath())
+  {
+    auto ep=currentExecutionPath(false);
+
+    QStringList args;
+    args << "--working-directory" << ep.c_str();
+    if (!QProcess::startDetached("mate-terminal", args, ep.c_str() ))
+    {
+      QMessageBox::critical(
+            this,
+            "Failed to start",
+            QString("Failed to start mate-terminal in directoy ")+ep.c_str()
+            );
+    }
+  }
+}
+

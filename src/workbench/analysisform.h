@@ -219,6 +219,7 @@ private Q_SLOTS:
   void onCleanOFC();
   void onWnow();
   void onWnowAndStop();
+  void onShell();
 
   void onShowParameterXML();
 

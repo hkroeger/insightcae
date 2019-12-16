@@ -9,27 +9,33 @@ find_package(Qt5Widgets CONFIG REQUIRED)
 #find_package(Qt5OpenGL CONFIG REQUIRED)
 
 set(insightcad_gui_SRCS 
+ iscadmetatyperegistrator.cpp
+ iscadmetatyperegistrator.h
+
  cadfeaturetransient.cpp
+ cadfeaturetransient.h
  pointertransient.cpp
+ pointertransient.h
  qoccviewercontext.cpp
+ qoccviewercontext.h
  qoccviewwidget.cpp
+ qoccviewwidget.h
  viewstate.cpp
- 
+ viewstate.h
+
  qvariableitem.cpp
+ qvariableitem.h
  qmodelstepitem.cpp
+ qmodelstepitem.h
  qdatumitem.cpp
+ qdatumitem.h
  qevaluationitem.cpp
- 
+ qevaluationitem.h
+
  qmodeltree.cpp
+ qmodeltree.h
 )
-#find_package(Boost COMPONENTS system filesystem REQUIRED)
 
-
-#include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
-#include_directories(${toolkit_SOURCE_DIR})
-# link_directories(${toolkit_BIN_DIR})
-
-#qt4_automoc(${insightcad_gui_SRCS})
 
 add_library(insightcad_gui SHARED ${insightcad_gui_SRCS})
 

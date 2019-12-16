@@ -36,7 +36,7 @@
 #include "openfoam/caseelements/analysiscaseelements.h"
 
 #include "cadfeatures.h"
-#include "stl.h"
+#include "cadfeatures/stl.h"
 #include "datum.h"
 
 using namespace std;

@@ -33,7 +33,7 @@
 #include <QSignalMapper>
 #include <QStatusBar>
 
-#include "modelfeature.h"
+#include "cadfeatures/modelfeature.h"
 #include "modelcomponentselectordlg.h"
 #include "insertfeaturedlg.h"
 

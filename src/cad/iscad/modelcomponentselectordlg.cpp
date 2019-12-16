@@ -21,7 +21,7 @@
 #include "ui_modelcomponentselectordlg.h"
 
 #include "base/boost_include.h"
-#include "modelfeature.h"
+#include "cadfeatures/modelfeature.h"
 
 #include <QTreeWidgetItem>
 

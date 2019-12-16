@@ -25,6 +25,7 @@
 
 #include "viewstate.h"
 #include "qoccviewercontext.h"
+#include "iscadmetatyperegistrator.h"
 
 #ifndef Q_MOC_RUN
 #include "cadtypes.h"
@@ -278,21 +279,5 @@ Q_SIGNALS:
     void unfocus();
 };
 
-
-
-Q_DECLARE_METATYPE(insight::cad::ScalarPtr)
-Q_DECLARE_METATYPE(insight::cad::VectorPtr)
-Q_DECLARE_METATYPE(insight::cad::FeaturePtr)
-Q_DECLARE_METATYPE(insight::cad::DatumPtr)
-Q_DECLARE_METATYPE(insight::cad::PostprocActionPtr)
-Q_DECLARE_METATYPE(insight::cad::VectorVariableType)
-
-class QMetaTypeRegistrator
-{
-public:
-  QMetaTypeRegistrator();
-};
-
-extern QMetaTypeRegistrator qmetatyperegistrator;
 
 #endif

@@ -38,7 +38,7 @@
 
 #include "base/qt5_helper.h"
 
-#include "modelfeature.h"
+#include "cadfeatures/modelfeature.h"
 #include "modelcomponentselectordlg.h"
 #include "insertfeaturedlg.h"
 

@@ -899,7 +899,6 @@ install(
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
 )
 
-message(STATUS "install targets:${TARGETS_TO_INSTALL}" )
 set(_inccmd "")
 foreach(_f ${TARGETS_TO_INSTALL})
     set(_inccmd "${_inccmd}\ninclude(\"\${CMAKE_CURRENT_LIST_DIR}/${_f}\")")

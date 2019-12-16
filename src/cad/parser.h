@@ -24,7 +24,7 @@
 #include "base/boost_include.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
-#include "drawingexport.h"
+#include "cadpostprocactions/drawingexport.h"
 
 #ifndef Q_MOC_RUN
 #include "boost/spirit/include/qi.hpp"

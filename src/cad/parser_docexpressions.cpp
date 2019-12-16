@@ -40,7 +40,7 @@
 #include "cadfeatures.h"
 #include "meshing.h"
 
-#include "diameter.h"
+#include "docitems/diameter.h"
 
 using namespace std;
 using namespace boost;

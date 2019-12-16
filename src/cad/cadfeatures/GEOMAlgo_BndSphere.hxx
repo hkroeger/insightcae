@@ -68,6 +68,6 @@ class GEOMAlgo_BndSphere  {
   Standard_Real myGap;
 };
 
-#include <GEOMAlgo_BndSphere.lxx>
+#include "GEOMAlgo_BndSphere.lxx"
 
 #endif

@@ -25,7 +25,7 @@
 // Author:      Peter KURNEV
 //              <peter@PREFEX>
 //
-#include <GEOMAlgo_PassKey.hxx>
+#include "GEOMAlgo_PassKey.hxx"
 
 #include <stdio.h>
 #include <string.h>

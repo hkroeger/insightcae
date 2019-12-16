@@ -23,7 +23,7 @@
 // File:     GEOMAlgo_Gluer2_1.cxx
 // Author:   Peter KURNEV
 
-#include <GEOMAlgo_Gluer2.hxx>
+#include "GEOMAlgo_Gluer2.hxx"
 
 #include <gp_XYZ.hxx>
 #include <gp_Pnt.hxx>
@@ -52,7 +52,7 @@
 #include <TopTools_ListOfShape.hxx>
 
 #include <BOPTools_AlgoTools.hxx>
-#include <GEOMAlgo_AlgoTools.hxx>
+#include "GEOMAlgo_AlgoTools.hxx"
 #include <BOPTools_AlgoTools2D.hxx>
 
 //=======================================================================

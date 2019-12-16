@@ -62,8 +62,23 @@ target_include_directories(toolkit_gui
   PUBLIC ${QT_INCLUDES} 
   PUBLIC ${QWT_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
-  PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
  )
+
+install(
+    TARGETS toolkit_gui EXPORT toolkit_gui_targets
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+export(EXPORT toolkit_gui_targets
+  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitGUITarget.cmake"
+  NAMESPACE insight::
+)
+install(EXPORT toolkit_gui_targets
+  FILE InsightCAEToolkitGUITarget.cmake
+  NAMESPACE insight::
+  DESTINATION ${INSIGHT_ConfigPackageLocation}
+)
 
 install(TARGETS toolkit_gui LIBRARY DESTINATION lib)

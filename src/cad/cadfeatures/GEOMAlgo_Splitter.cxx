@@ -26,7 +26,7 @@
 //              <pkv@irinox>
 //
 
-#include <GEOMAlgo_Splitter.hxx>
+#include "GEOMAlgo_Splitter.hxx"
 
 #include <TopAbs_ShapeEnum.hxx>
 

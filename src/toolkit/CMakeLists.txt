@@ -205,20 +205,15 @@ install(
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
     )
 export(EXPORT toolkit_targets
-  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAETargets.cmake"
+  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitTarget.cmake"
   NAMESPACE insight::
 )
 install(EXPORT toolkit_targets
-  FILE InsightCAETargets.cmake
+  FILE InsightCAEToolkitTarget.cmake
   NAMESPACE insight::
   DESTINATION ${INSIGHT_ConfigPackageLocation}
 )
-#install(
-#  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#  DESTINATION include/toolkit
-#  COMPONENT ${INSIGHT_INSTALL_COMPONENT}
-#  FILES_MATCHING PATTERN "*.h"
-#  )
+
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
     ADD_CUSTOM_COMMAND(

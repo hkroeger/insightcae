@@ -1,5 +1,6 @@
 project(insight)
 
+
 add_subdirectory(pdl)
 add_subdirectory(test)
 add_subdirectory(refdata)
@@ -19,21 +20,29 @@ if (INSIGHT_BUILD_OPENFOAM)
 ENDIF()
 
 IF(INSIGHT_BUILD_TOOLKIT)
+  LIST(APPEND TARGETS_TO_INSTALL "InsightCAEToolkitTarget.cmake")
   add_subdirectory(toolkit)
   add_subdirectory(analyze)
   add_subdirectory(istmod)
   add_subdirectory(isresulttool)
   add_subdirectory(modules)
+
   if (INSIGHT_BUILD_WORKBENCH)
     add_subdirectory(toolkit_gui)
+    LIST(APPEND TARGETS_TO_INSTALL "InsightCAEToolkitGUITarget.cmake")
     add_subdirectory(workbench)
   endif (INSIGHT_BUILD_WORKBENCH)
+
   IF(INSIGHT_BUILD_WEBWORKBENCH)
     add_subdirectory(webworkbench)
   ENDIF()
+
   if (INSIGHT_BUILD_CAD)
     add_subdirectory(cad)
+    LIST(APPEND TARGETS_TO_INSTALL "InsightCAECADTarget.cmake")
+    LIST(APPEND TARGETS_TO_INSTALL "InsightCAECADGUITarget.cmake")
   endif(INSIGHT_BUILD_CAD)
+
 endif()
 
 
@@ -45,6 +54,7 @@ IF (INSIGHT_BUILD_ADDONS)
   add_subdirectory(addons)
   SET(git-rev ${git-rev} PARENT_SCOPE)
 ENDIF()
+
 
 #-- Add an Option to toggle the generation of the API documentation
 if(BUILD_DOCUMENTATION)
@@ -65,3 +75,4 @@ if(BUILD_DOCUMENTATION)
   # then leave out the 'ALL' keyword from the above command.
 endif()
 
+SET(TARGETS_TO_INSTALL ${TARGETS_TO_INSTALL} PARENT_SCOPE)

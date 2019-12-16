@@ -71,6 +71,7 @@ PlotWidget::~PlotWidget()
   if (mc_)
   {
     if (mc_->isRunning()) mc_->terminate();
+    delete mc_;
   }
   delete ui;
 }
@@ -78,6 +79,7 @@ PlotWidget::~PlotWidget()
 void PlotWidget::setData(const arma::mat& x, const arma::mat& y)
 {
   rawdata_=arma::join_horiz(x,y);
+  visible_part_=rawdata_;
 
   raw_crv_->setSamples(x.colptr(0), y.colptr(0), x.n_rows);
   double dummy=0.;
@@ -100,10 +102,13 @@ void PlotWidget::onShow()
 
 void PlotWidget::onMeanAvgFractionChange(double)
 {
-  ui->info->setText("Computing moving average of raw data...");
-  mc_=new MeanComputer( this, rawdata_, ui->avg_fraction->value() );
-  connect(mc_, &MeanComputer::resultReady, this, &PlotWidget::onMeanDataReady);
-  mc_->start();
+  if (!mc_)
+  {
+    ui->info->setText("Computing moving average of raw data...");
+    mc_=new MeanComputer( this, visible_part_, ui->avg_fraction->value() );
+    connect(mc_, &MeanComputer::resultReady, this, &PlotWidget::onMeanDataReady);
+    mc_->start();
+  }
 }
 
 MeanComputer::MeanComputer(QObject* p, const arma::mat& rd, double frac)
@@ -128,25 +133,39 @@ void PlotWidget::onMeanDataReady(arma::mat avg)
   mean_crv_->setSamples(avg.colptr(0), avg.colptr(1), avg.n_rows);
   ui->info->setText("Moving average computed.");
   plot_->replot();
+
+  mc_->wait();
+  delete mc_;
+  mc_=nullptr;
 }
 
 
-void PlotWidget::onChangeX0(double x0)
+void PlotWidget::onChangeXRange(const QString& v0, const QString& v1)
 {
+  double x0=rawdata_.col(0).min();
   double x1=rawdata_.col(0).max();
 
-  arma::mat visible_part=rawdata_.rows( arma::find(rawdata_.col(0)>x0) );
-  double ymin=visible_part.col(1).min();
-  double ymax=visible_part.col(1).max();
+  if (!v0.isEmpty()) x0=v0.toDouble();
+  if (!v1.isEmpty()) x1=v1.toDouble();
 
-  if (ui->include_0_sw->isChecked())
+  visible_part_=rawdata_.rows( arma::find(rawdata_.col(0)>x0 && rawdata_.col(0)<x1) );
+  double ymin=0., ymax=1.;
+  if (visible_part_.n_rows>0)
   {
-    if (ymin>0.) ymin=0.;
-    if (ymax<0.) ymax=0.;
-  }
+    ymin=visible_part_.col(1).min();
+    ymax=visible_part_.col(1).max();
 
-  if (ymin<0.) ymin*=1.1; else ymin/=1.1;
-  if (ymax<0.) ymax/=1.1; else ymax*=1.1;
+    if (ui->include_0_sw->isChecked())
+    {
+      if (ymin>0.) ymin=0.;
+      if (ymax<0.) ymax=0.;
+    }
+
+    if (ymin<0.) ymin*=1.1; else ymin/=1.1;
+    if (ymax<0.) ymax/=1.1; else ymax*=1.1;
+
+    onMeanAvgFractionChange();
+  }
 
   plot_->setAxisScale(QwtPlot::xBottom, x0, x1);
   plot_->setAxisScale(QwtPlot::yLeft, ymin, ymax);
@@ -156,5 +175,14 @@ void PlotWidget::onChangeX0(double x0)
 
 void PlotWidget::onToggleY0(bool)
 {
-  onChangeX0( plot_->axisInterval(QwtPlot::xBottom).minValue() );
+  double x0=plot_->axisInterval(QwtPlot::xBottom).minValue();
+  double x1=plot_->axisInterval(QwtPlot::xBottom).maxValue();
+  QString sx0="";
+  QString sx1="";
+  if ( fabs(x1-x0)>0 )
+  {
+    sx0=QString::number(x0);
+    sx1=QString::number(x1);
+  }
+  onChangeXRange(sx0, sx1);
 }

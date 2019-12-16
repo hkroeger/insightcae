@@ -25,7 +25,7 @@
 // Author:      Peter KURNEV
 //              <peter@PREFEX>
 //
-#include <GEOMAlgo_Algo.hxx>
+#include "GEOMAlgo_Algo.hxx"
 
 //=======================================================================
 // function:

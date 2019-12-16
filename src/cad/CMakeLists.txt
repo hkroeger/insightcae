@@ -60,14 +60,28 @@ target_link_libraries(insightcad
 # set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
 
 target_include_directories(insightcad
-  PUBLIC ${toolkit_SOURCE_DIR}
   PUBLIC ${Boost_INCLUDE_DIRS}
   PUBLIC ${OCC_INCLUDE_DIR}
   PUBLIC ${DXFLIB_INCLUDE_DIR}
-  PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PUBLIC ${INCLUDE_DIRS}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
+
+install(
+    TARGETS insightcad EXPORT insightcad_targets
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+export(EXPORT insightcad_targets
+  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAECADTarget.cmake"
+  NAMESPACE insight::
+)
+install(EXPORT insightcad_targets
+  FILE InsightCAECADTarget.cmake
+  NAMESPACE insight::
+  DESTINATION ${INSIGHT_ConfigPackageLocation}
+)
+
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 
 add_pybindings(cad "cad.i" insightcad)

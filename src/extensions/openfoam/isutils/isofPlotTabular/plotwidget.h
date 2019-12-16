@@ -55,7 +55,8 @@ class PlotWidget : public QWidget
   Q_OBJECT
 
   arma::mat rawdata_;
-  MeanComputer *mc_=NULL;
+  arma::mat visible_part_;
+  MeanComputer *mc_=nullptr;
 
 public:
   explicit PlotWidget(QWidget *parent = 0);
@@ -67,7 +68,7 @@ public Q_SLOT:
   void onShow();
   void onMeanAvgFractionChange(double x=0);
   void onMeanDataReady(arma::mat meandata);
-  void onChangeX0(double x0);
+  void onChangeXRange(const QString& x0, const QString& x1);
   void onToggleY0(bool);
 
 private:

@@ -77,6 +77,7 @@ message(STATUS "git-rev base: ${git-rev}")
 string(TOLOWER "${CPACK_PACKAGE_NAME}" CPACK_PACKAGE_NAME_LOWERCASE)
 find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems")
 
+SET(TARGETS_TO_INSTALL "")
 
 add_subdirectory(src/desktop)
 
@@ -897,10 +898,17 @@ install(
     DESTINATION bin
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
 )
+
+message(STATUS "install targets:${TARGETS_TO_INSTALL}" )
+set(_inccmd "")
+foreach(_f ${TARGETS_TO_INSTALL})
+    set(_inccmd "${_inccmd}\ninclude(\"\${CMAKE_CURRENT_LIST_DIR}/${_f}\")")
+endforeach()
 configure_file(CMake/InsightCAEConfig.cmake.in
   "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEConfig.cmake"
-  COPYONLY
+  @ONLY #COPYONLY
 )
+
 
 install(
   FILES

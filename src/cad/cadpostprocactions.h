@@ -22,11 +22,11 @@
 
 #include "cadpostprocaction.h"
 
-#include "drawingexport.h"
-#include "export.h"
-#include "hydrostatics.h"
-#include "mesh.h"
-#include "solidproperties.h"
-#include "pointdistance.h"
+#include "cadpostprocactions/drawingexport.h"
+#include "cadpostprocactions/export.h"
+#include "cadpostprocactions/hydrostatics.h"
+#include "cadpostprocactions/mesh.h"
+#include "cadpostprocactions/solidproperties.h"
+#include "cadpostprocactions/pointdistance.h"
 
 #endif

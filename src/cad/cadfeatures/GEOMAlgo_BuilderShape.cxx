@@ -24,7 +24,7 @@
 // Created:
 // Author:      Peter KURNEV
 //
-#include <GEOMAlgo_BuilderShape.hxx>
+#include "GEOMAlgo_BuilderShape.hxx"
 
 //=======================================================================
 //function :

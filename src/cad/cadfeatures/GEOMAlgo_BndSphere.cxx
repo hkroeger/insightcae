@@ -22,7 +22,7 @@
 // Author:	Peter KURNEV
 //		<pkv@irinox>
 //
-#include <GEOMAlgo_BndSphere.hxx>
+#include "GEOMAlgo_BndSphere.hxx"
 
 //=======================================================================
 //function : 

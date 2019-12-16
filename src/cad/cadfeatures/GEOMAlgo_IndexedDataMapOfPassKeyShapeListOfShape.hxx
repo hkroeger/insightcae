@@ -25,9 +25,9 @@
 #ifndef GEOMAlgo_IndexedDataMapOfPassKeyShapeListOfShape_HeaderFile
 #define GEOMAlgo_IndexedDataMapOfPassKeyShapeListOfShape_HeaderFile
 
-#include <GEOMAlgo_PassKeyShape.hxx>
+#include "GEOMAlgo_PassKeyShape.hxx"
 #include <TopTools_ListOfShape.hxx>
-#include <GEOMAlgo_PassKeyShapeMapHasher.hxx>
+#include "GEOMAlgo_PassKeyShapeMapHasher.hxx"
 
 
 #define _NCollection_MapHasher

@@ -39,14 +39,28 @@ target_link_libraries(insightcad_gui
   ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${OPENGL_LIBRARIES}
   ${Boost_LIBRARIES}
   Qt5::Widgets
- # ${QWT_LIBRARY} ${QWT_LIBRARIES}
   ${DXFLIB_LIBRARIES}
   )
 
 target_include_directories(insightcad_gui
-  PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
  )
+
+install(
+    TARGETS insightcad_gui EXPORT insightcad_gui_targets
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+export(EXPORT insightcad_gui_targets
+  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAECADGUITarget.cmake"
+  NAMESPACE insight::
+)
+install(EXPORT insightcad_gui_targets
+  FILE InsightCAECADGUITarget.cmake
+  NAMESPACE insight::
+  DESTINATION ${INSIGHT_ConfigPackageLocation}
+)
 
 install(TARGETS insightcad_gui LIBRARY DESTINATION lib)
 endif()

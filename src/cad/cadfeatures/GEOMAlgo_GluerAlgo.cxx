@@ -24,7 +24,7 @@
 // Author:      Peter KURNEV
 //              <peter@PREFEX>
 //
-#include <GEOMAlgo_GluerAlgo.hxx>
+#include "GEOMAlgo_GluerAlgo.hxx"
 #include <IntTools_Context.hxx>
 
 //=======================================================================

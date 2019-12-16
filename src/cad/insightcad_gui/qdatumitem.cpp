@@ -23,7 +23,7 @@
 #include "qoccviewercontext.h"
 #include "datum.h"
 #include "AIS_Plane.hxx"
-#include "modelfeature.h"
+#include "cadfeatures/modelfeature.h"
 
 Handle_AIS_InteractiveObject QDatumItem::createAIS(AIS_InteractiveContext& context)
 {

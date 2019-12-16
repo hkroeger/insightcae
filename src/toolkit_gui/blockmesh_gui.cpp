@@ -4,8 +4,8 @@
 #include "qmodeltree.h"
 
 #include "datum.h"
-#include "box.h"
-#include "cylinder.h"
+#include "cadfeatures/box.h"
+#include "cadfeatures/cylinder.h"
 
 #include "base/boost_include.h"
 #include "base/units.h"

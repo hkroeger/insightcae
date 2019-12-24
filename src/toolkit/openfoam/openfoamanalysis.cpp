@@ -24,6 +24,9 @@
 #include "openfoam/caseelements/turbulencemodelcaseelements.h"
 #include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/ofes.h"
+#include "base/progressdisplayer/combinedprogressdisplayer.h"
+#include "base/progressdisplayer/convergenceanalysisdisplayer.h"
+#include "base/progressdisplayer/prefixedprogressdisplayer.h"
 
 #include "openfoamtools.h"
 #include "openfoamanalysis.h"

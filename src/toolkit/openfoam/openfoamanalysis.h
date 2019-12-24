@@ -25,6 +25,7 @@
 #include "base/analysis.h"
 
 #include "openfoam/caseelements/turbulencemodel.h"
+#include "base/progressdisplayer/convergenceanalysisdisplayer.h"
 
 
 

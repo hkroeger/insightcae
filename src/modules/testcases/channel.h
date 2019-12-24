@@ -241,6 +241,7 @@ public:
 #include "channel__ChannelCyclic__Parameters.h"
 /*
 PARAMETERSET>>> ChannelCyclic Parameters
+inherits ChannelBase::Parameters
 
 run = set {
  perturbU = bool true "Whether to impose artifical perturbations on the initial velocity field"

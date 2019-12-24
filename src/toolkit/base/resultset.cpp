@@ -1198,38 +1198,43 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
 
 void ResultElementCollection::saveToFile ( const boost::filesystem::path& file ) const
 {
-//   std::cout<<"Writing result set to file "<<file<<std::endl;
+  std::ofstream f ( file.c_str() );
 
-    xml_document<> doc;
+  saveToStream(f);
 
-    // xml declaration
-    xml_node<>* decl = doc.allocate_node ( node_declaration );
-    decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
-    decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
-    doc.append_node ( decl );
+  f << std::flush;
+  f.close();
+}
 
-    xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
-    doc.append_node ( rootnode );
+void ResultElementCollection::saveToStream(ostream &os) const
+{
+  //   std::cout<<"Writing result set to file "<<file<<std::endl;
 
-//   if (analysisName != "")
-//   {
-//     xml_node<> *analysisnamenode = doc.allocate_node(node_element, "analysis");
-//     rootnode->append_node(analysisnamenode);
-//     analysisnamenode->append_attribute(doc.allocate_attribute
-//     (
-//       "name",
-//       doc.allocate_string(analysisName.c_str())
-//     ));
-//   }
+      xml_document<> doc;
 
-    ResultElementCollection::appendToNode ( doc, *rootnode );
+      // xml declaration
+      xml_node<>* decl = doc.allocate_node ( node_declaration );
+      decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
+      decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
+      doc.append_node ( decl );
 
-    {
-        std::ofstream f ( file.c_str() );
-        f << doc << std::endl;
-        f << std::flush;
-        f.close();
-    }
+      xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
+      doc.append_node ( rootnode );
+
+  //   if (analysisName != "")
+  //   {
+  //     xml_node<> *analysisnamenode = doc.allocate_node(node_element, "analysis");
+  //     rootnode->append_node(analysisnamenode);
+  //     analysisnamenode->append_attribute(doc.allocate_attribute
+  //     (
+  //       "name",
+  //       doc.allocate_string(analysisName.c_str())
+  //     ));
+  //   }
+
+      ResultElementCollection::appendToNode ( doc, *rootnode );
+
+      os << doc << std::endl;
 }
 
 

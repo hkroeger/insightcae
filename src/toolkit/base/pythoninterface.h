@@ -25,9 +25,6 @@
 
 #include "Python.h"
 
-// class _ts;
-// 
-// typedef struct _ts PyThreadState;
 
 namespace insight
 {

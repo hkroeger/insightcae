@@ -502,11 +502,10 @@ ResultElementPtr polynomialFitResult
 
 
 
-
-
 class ResultElementCollection
     : public std::map<std::string, ResultElementPtr>
 {
+
 public:
 //     ResultElementCollection(const boost::filesystem::path & file);
     virtual ~ResultElementCollection();
@@ -555,6 +554,8 @@ public:
      * save result set to XML file
      */
     virtual void saveToFile ( const boost::filesystem::path& file ) const;
+
+    virtual void saveToStream( std::ostream& os ) const;
 
     /**
      * read result set from xml file

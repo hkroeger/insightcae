@@ -41,7 +41,13 @@ set(toolkit_SOURCES
     base/caseelement.cpp
     base/case.cpp
     base/units.cpp
+
     base/progressdisplayer.cpp
+
+    base/progressdisplayer/textprogressdisplayer.cpp
+    base/progressdisplayer/combinedprogressdisplayer.cpp
+    base/progressdisplayer/prefixedprogressdisplayer.cpp
+    base/progressdisplayer/convergenceanalysisdisplayer.cpp
 
     base/parameters/simpleparameter.cpp
     base/parameters/pathparameter.cpp

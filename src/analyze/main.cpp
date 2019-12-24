@@ -22,17 +22,22 @@
 
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
+#include "base/progressdisplayer/textprogressdisplayer.h"
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
+#include <memory>
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include "boost/format.hpp"
+
+#include "restapi.h"
+
 
 using namespace std;
 using namespace insight;
@@ -51,20 +56,21 @@ int main(int argc, char *argv[])
     // Declare the supported options.
     po::options_description desc("Allowed options");
     desc.add_options()
-    ("help", "produce help message")
-    ("skiplatex,x", "skip execution of pdflatex")
-    ("workdir,w", po::value<std::string>(), "execution directory")
-    ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
-    ("bool,b", po::value<StringList>(), "boolean variable assignment")
-    ("selection,l", po::value<StringList>(), "selection variable assignment")
-    ("string,s", po::value<StringList>(), "string variable assignment")
-    ("path,p", po::value<StringList>(), "path variable assignment")
-    ("double,d", po::value<StringList>(), "double variable assignment")
-    ("vector,v", po::value<StringList>(), "vector variable assignment")
-    ("int,i", po::value<StringList>(), "int variable assignment")
-    ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
-    ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
-    ("input-file,f", po::value< std::string >()->required(),"Specifies input file.")
+      ("help", "produce help message")
+      ("skiplatex,x", "skip execution of pdflatex")
+      ("workdir,w", po::value<std::string>(), "execution directory")
+      ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
+      ("bool,b", po::value<StringList>(), "boolean variable assignment")
+      ("selection,l", po::value<StringList>(), "selection variable assignment")
+      ("string,s", po::value<StringList>(), "string variable assignment")
+      ("path,p", po::value<StringList>(), "path variable assignment")
+      ("double,d", po::value<StringList>(), "double variable assignment")
+      ("vector,v", po::value<StringList>(), "vector variable assignment")
+      ("int,i", po::value<StringList>(), "int variable assignment")
+      ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
+      ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
+      ("input-file,f", po::value< std::string >()->required(),"Specifies input file.")
+      ("serveresults", "Keeps the application running after the analysis has finished. Once the result set is fetched via the REST API, the application exits.")
     ;
 
     po::positional_options_description p;
@@ -295,7 +301,6 @@ int main(int argc, char *argv[])
         {
             parameters.saveToFile( exedir/ vm["savecfg"].as<std::string>(), analysisName );
         }
-//         analysis->setParameters(parameters);
 
         std::cout<<std::string(80, '=')+'\n';
         std::cout<<"Applied Parameters for this run"<<std::endl;
@@ -304,31 +309,69 @@ int main(int argc, char *argv[])
 
         AnalysisPtr analysis ( insight::Analysis::lookup(analysisName, parameters, exedir) );        
         
+        AnalyzeRESTServer server(argc, argv, *analysis);
+
         // run analysis
-        TextProgressDisplayer pd;
-        ResultSetPtr results = (*analysis)(&pd);
+//        TextProgressDisplayer pd;
+        ProgressDisplayer& pd = server;
 
-        boost::filesystem::path resoutpath=analysis->executionPath()/ (filestem+".isr");
-        results->saveToFile( resoutpath );
+        ResultSetPtr results;
+        boost::thread solver_thread(
+              [&]()
+              {
+                results = (*analysis)( &pd );
+              }
+        );
+        server.setSolverThread(&solver_thread);
 
-        boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
-        results->writeLatexFile( outpath );
-
-        if (!vm.count("skiplatex"))
+        if (!server.start())
         {
-            for (int i=0; i<2; i++)
-            {
-                if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % exedir.string() % outpath.string() ).c_str() ))
-                {
-                    Warning("TeX input file was written but could not execute pdflatex successfully.");
-                    break;
-                }
-            }
+          std::cerr << "Could not start web server!" << std::endl;
         }
 
-        std::cout
-                << "#### ANALYSIS FINISHED SUCCESSFULLY. ####"
-                <<std::endl;
+        solver_thread.join();
+        server.setSolverThread(nullptr);
+
+        if (results)
+        {
+          if (vm.count("serveresults"))
+          {
+            server.setResults(results);
+            server.waitForResultDelivery();
+          }
+          else
+          {
+            boost::filesystem::path resoutpath=analysis->executionPath()/ (filestem+".isr");
+            results->saveToFile( resoutpath );
+
+            boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
+            results->writeLatexFile( outpath );
+
+            if (!vm.count("skiplatex"))
+            {
+                for (int i=0; i<2; i++)
+                {
+                    if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % exedir.string() % outpath.string() ).c_str() ))
+                    {
+                        Warning("TeX input file was written but could not execute pdflatex successfully.");
+                        break;
+                    }
+                }
+            }
+          }
+
+          std::cout
+                  << "#### ANALYSIS FINISHED SUCCESSFULLY. ####"
+                  <<std::endl;
+        }
+        else
+        {
+          std::cerr
+                  << "#### ANALYSIS STOPPED WITHOUT RESULTS. ####"
+                  <<std::endl;
+        }
+
+        server.stop();
     }
     catch (const std::exception& e)
     {

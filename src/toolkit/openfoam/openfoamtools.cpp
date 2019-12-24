@@ -21,6 +21,7 @@
 #include "base/analysis.h"
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
+#include "base/progressdisplayer/textprogressdisplayer.h"
 
 #include "openfoam/openfoamcase.h"
 #include "openfoam/ofes.h"

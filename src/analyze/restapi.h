@@ -18,23 +18,24 @@ class AnalyzeRESTServer
   public insight::TextProgressDisplayer
 {
   boost::thread* analysisThread_;
-  insight::Analysis& analysis_;
+  insight::Analysis* analysis_;
 
   boost::mutex mx_;
   std::deque<insight::ProgressState> recordedStates_;
 
   insight::ResultSetPtr results_;
+  std::string* inputFileContents_;
 
-  boost::condition_variable rdcv_;
+  boost::condition_variable wait_cv_;
 
   double nextStateInfo(Wt::Json::Object& ro);
 
 public:
   AnalyzeRESTServer(
-      int argc, char *argv[],
-      insight::Analysis& analysis
+      int argc, char *argv[]
       );
 
+  void setAnalysis(insight::Analysis* a);
   void setSolverThread(boost::thread* at);
   void setResults(insight::ResultSetPtr results);
 
@@ -42,6 +43,9 @@ public:
 
   bool hasResultsDelivered() const;
   void waitForResultDelivery();
+
+  bool hasInputFileReceived() const;
+  void waitForInputFile(std::string& inputFileContents_);
 
 protected:
 

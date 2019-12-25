@@ -36,7 +36,9 @@
 #include <boost/program_options/variables_map.hpp>
 #include "boost/format.hpp"
 
+#ifdef HAVE_WT
 #include "restapi.h"
+#endif
 
 
 using namespace std;
@@ -69,8 +71,10 @@ int main(int argc, char *argv[])
       ("int,i", po::value<StringList>(), "int variable assignment")
       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
       ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
-      ("input-file,f", po::value< std::string >()->required(),"Specifies input file.")
-      ("serveresults", "Keeps the application running after the analysis has finished. Once the result set is fetched via the REST API, the application exits.")
+      ("input-file,f", po::value< std::string >(),"Specifies input file.")
+#ifdef HAVE_WT
+      ("server", "Start with REST API server. Keeps the application running after the analysis has finished. Once the result set is fetched via the REST API, the application exits.")
+#endif
     ;
 
     po::positional_options_description p;
@@ -111,11 +115,27 @@ int main(int argc, char *argv[])
       exit(0);
     }
 
-    if (!vm.count("input-file"))
+    boost::filesystem::path workdir = boost::filesystem::current_path();
+    std::string filestem = "analysis";
+
+    if (vm.count("workdir"))
     {
-        cout<<"input file has to be specified!"<<endl;
-        exit(-1);
+        workdir=boost::filesystem::absolute(vm["workdir"].as<std::string>());
     }
+
+    boost::filesystem::path inputFileParentPath = workdir;
+
+#ifdef HAVE_WT
+    std::unique_ptr<AnalyzeRESTServer> server;
+    if (vm.count("server"))
+    {
+      server.reset(new AnalyzeRESTServer(argc, argv));
+      if (!server->start())
+      {
+        std::cerr << "Could not start web server!" << std::endl;
+      }
+    }
+#endif
 
     try
     {
@@ -135,30 +155,47 @@ int main(int argc, char *argv[])
             }
         }
         
-
-        std::string fn = vm["input-file"].as<std::string>();
-
-        if (!boost::filesystem::exists(fn))
-        {
-            std::cerr << std::endl 
-                << "Error: input file does not exist: "<<fn
-                <<std::endl<<std::endl;
-            exit(-1);
-        }
-        
         std::string contents;
-        try
+
+        if (!vm.count("input-file"))
         {
-            std::ifstream in(fn.c_str());
-            in.seekg(0, std::ios::end);
-            contents.resize(in.tellg());
-            in.seekg(0, std::ios::beg);
-            in.read(&contents[0], contents.size());
-            in.close();
+#ifdef HAVE_WT
+          if (server)
+          {
+            cout<<"Running in server mode without explicitly specified input file: waiting for input transmission"<<endl;
+            server->waitForInputFile(contents);
+          }
+          else
+#endif
+          {
+            cout<<"input file has to be specified!"<<endl;
+            exit(-1);
+          }
         }
-        catch (...)
+        else
         {
-            throw insight::Exception("Failed to read file "+fn);
+          boost::filesystem::path fn = vm["input-file"].as<std::string>();
+          inputFileParentPath = boost::filesystem::absolute(fn).parent_path();
+          filestem = fn.stem().string();
+
+          if (!boost::filesystem::exists(fn))
+          {
+              std::cerr << std::endl
+                  << "Error: input file does not exist: "<<fn
+                  <<std::endl<<std::endl;
+              exit(-1);
+          }
+
+          try
+          {
+              std::ifstream in(fn.c_str());
+              istreambuf_iterator<char> fbegin(in), fend;
+              std::copy(fbegin, fend, back_inserter(contents));
+          }
+          catch (...)
+          {
+              throw insight::Exception("Failed to read file "+fn.string());
+          }
         }
 
         xml_document<> doc;
@@ -172,30 +209,12 @@ int main(int argc, char *argv[])
         {
             analysisName = analysisnamenode->first_attribute("name")->value();
         }
-        /*
-        insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_.find(analysisName);
-        if (i==insight::Analysis::factories_.end())
-          throw insight::Exception("Could not lookup analysis type "+analysisName);
 
-        AnalysisPtr analysis( (*i->second)( insight::NoParameters() ) );
-        */
-//         AnalysisPtr analysis ( insight::Analysis::lookup(analysisName) );
-//         analysis->setDefaults();
+        cout<< "Executing analysis in directory "<<workdir<<endl;
 
-        boost::filesystem::path exedir = boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path();
-        if (vm.count("workdir"))
-        {
-            exedir=boost::filesystem::absolute(vm["workdir"].as<std::string>());
-        }
-        std::string filestem = boost::filesystem::path(fn).stem().string();
-        cout<< "Executing analysis in directory "<<exedir<<endl;
-//         analysis->setExecutionPath(dir);
-
-//         ParameterSet parameters = analysis->defaultParameters();
         ParameterSet parameters = insight::Analysis::defaultParameters(analysisName);
         
-        parameters.readFromNode(doc, *rootnode, 
-                                boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path() );
+        parameters.readFromNode(doc, *rootnode, inputFileParentPath );
 
         if (vm.count("merge"))
         {
@@ -299,7 +318,7 @@ int main(int argc, char *argv[])
 
         if (vm.count("savecfg"))
         {
-            parameters.saveToFile( exedir/ vm["savecfg"].as<std::string>(), analysisName );
+            parameters.saveToFile( workdir/ vm["savecfg"].as<std::string>(), analysisName );
         }
 
         std::cout<<std::string(80, '=')+'\n';
@@ -307,39 +326,54 @@ int main(int argc, char *argv[])
         std::cout<<parameters;
         std::cout<<std::string(80, '=')+"\n\n";
 
-        AnalysisPtr analysis ( insight::Analysis::lookup(analysisName, parameters, exedir) );        
+        AnalysisPtr analysis ( insight::Analysis::lookup(analysisName, parameters, workdir) );
+        TextProgressDisplayer tpd;
+        ProgressDisplayer* pd = &tpd;
         
-        AnalyzeRESTServer server(argc, argv, *analysis);
+#ifdef HAVE_WT
+        if (server)
+        {
+          server->setAnalysis( analysis.get() );
+          pd = server.get();
+        }
+#endif
 
         // run analysis
-//        TextProgressDisplayer pd;
-        ProgressDisplayer& pd = server;
-
         ResultSetPtr results;
         boost::thread solver_thread(
               [&]()
               {
-                results = (*analysis)( &pd );
+                results = (*analysis)( pd );
               }
         );
-        server.setSolverThread(&solver_thread);
 
-        if (!server.start())
+#ifdef HAVE_WT
+        if (server)
         {
-          std::cerr << "Could not start web server!" << std::endl;
+          server->setSolverThread(&solver_thread);
         }
+#endif
 
         solver_thread.join();
-        server.setSolverThread(nullptr);
+
+#ifdef HAVE_WT
+        if (server)
+        {
+          server->setSolverThread(nullptr);
+        }
+#endif
 
         if (results)
         {
-          if (vm.count("serveresults"))
+#ifdef HAVE_WT
+          if (server)
           {
-            server.setResults(results);
-            server.waitForResultDelivery();
+            server->setResults(results);
+            //server->waitForResultDelivery();
+            server->waitForShutdown();
           }
           else
+#endif
           {
             boost::filesystem::path resoutpath=analysis->executionPath()/ (filestem+".isr");
             results->saveToFile( resoutpath );
@@ -351,7 +385,7 @@ int main(int argc, char *argv[])
             {
                 for (int i=0; i<2; i++)
                 {
-                    if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % exedir.string() % outpath.string() ).c_str() ))
+                    if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % workdir.string() % outpath.string() ).c_str() ))
                     {
                         Warning("TeX input file was written but could not execute pdflatex successfully.");
                         break;
@@ -371,7 +405,12 @@ int main(int argc, char *argv[])
                   <<std::endl;
         }
 
-        server.stop();
+#ifdef HAVE_WT
+        if (server)
+        {
+          server->stop();
+        }
+#endif
     }
     catch (const std::exception& e)
     {

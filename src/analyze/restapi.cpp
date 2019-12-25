@@ -41,12 +41,11 @@ double AnalyzeRESTServer::nextStateInfo(
 
 
 AnalyzeRESTServer::AnalyzeRESTServer(
-    int argc, char *argv[],
-    insight::Analysis& a
+    int argc, char *argv[]
     )
   : Wt::WServer(argv[0]),
     analysisThread_(nullptr),
-    analysis_(a)
+    analysis_(nullptr)
 {
 
 #warning needs parameter
@@ -54,6 +53,11 @@ AnalyzeRESTServer::AnalyzeRESTServer(
   setServerConfiguration(5, const_cast<char**>(cargv) );
 
   addResource(this, std::string());
+}
+
+void AnalyzeRESTServer::setAnalysis(insight::Analysis *a)
+{
+  analysis_=a;
 }
 
 void AnalyzeRESTServer::setSolverThread(boost::thread *at)
@@ -86,7 +90,21 @@ void AnalyzeRESTServer::waitForResultDelivery()
 {
   boost::mutex::scoped_lock lock(mx_);
   while (!hasResultsDelivered())
-    rdcv_.wait(lock);
+    wait_cv_.wait(lock);
+}
+
+bool AnalyzeRESTServer::hasInputFileReceived() const
+{
+  return !inputFileContents_->empty();
+}
+
+void AnalyzeRESTServer::waitForInputFile(std::string& inputFileContents)
+{
+  inputFileContents_ = &inputFileContents;
+
+  boost::mutex::scoped_lock lock(mx_);
+  while (!hasInputFileReceived())
+    wait_cv_.wait(lock);
 }
 
 void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Response &response)
@@ -96,11 +114,14 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
 
   // extract payload with parameters
   Wt::Json::Object payload;
-  std::string raw_payload(
-        std::istreambuf_iterator<char>(request.in()),
-        std::istreambuf_iterator<char>()
-        );
-  Wt::Json::parse(raw_payload, payload);
+  if (request.contentType()=="application/json")
+  {
+    std::string raw_payload(
+          std::istreambuf_iterator<char>(request.in()),
+          std::istreambuf_iterator<char>()
+          );
+    Wt::Json::parse(raw_payload, payload);
+  }
 
 
 
@@ -110,7 +131,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
 
 
     auto whichState = payload.get("whichState");
-    enum StateSelection { Next, All, Latest, Results } stateSelection = Next;
+    enum StateSelection { Next, All, Latest, Results, ExePath } stateSelection = Next;
     if (!whichState.isNull())
     {
       std::string which = whichState.toString();
@@ -131,6 +152,10 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
       {
         stateSelection = Results;
       }
+      else if (which=="exepath")
+      {
+        stateSelection = ExePath;
+      }
     }
 
     if (stateSelection==Results)
@@ -144,11 +169,19 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         {
           boost::mutex::scoped_lock lock(mx_);
           results_.reset();
-          rdcv_.notify_one();
+          wait_cv_.notify_one();
         }
 
         return;
       }
+    }
+    else if (stateSelection==ExePath)
+    {
+      response.setStatus(200);
+      response.setMimeType("text/plain");
+      response.out() << analysis_->executionPath();
+
+      return;
     }
     else
     {
@@ -199,35 +232,69 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
   {
     std::cerr<<"control request"<<std::endl;
 
-    auto action_data = payload.get("action");
-    if (!action_data.isNull())
+    if (request.contentType()=="application/xml")
     {
-      std::string action = action_data.toString();
-      boost::algorithm::to_lower(action);
-      if (action=="kill")
+      // input file
+      istreambuf_iterator<char> fbegin(request.in()), fend;
+      std::copy(fbegin, fend, back_inserter(*inputFileContents_));
+
+      response.setStatus(200);
+      response.setMimeType("text/plain");
+      response.out()<<"OK\n";
+
       {
-        if (analysisThread_)
+        boost::mutex::scoped_lock lock(mx_);
+        results_.reset();
+        wait_cv_.notify_one();
+      }
+
+      return;
+    }
+    else
+    {
+      auto action_data = payload.get("action");
+      if (!action_data.isNull())
+      {
+        std::string action = action_data.toString();
+        boost::algorithm::to_lower(action);
+        if (action=="kill")
         {
-          analysisThread_->interrupt();
+          if (analysisThread_)
+          {
+            analysisThread_->interrupt();
+            response.setStatus(200);
+            response.setMimeType("text/plain");
+            response.out()<<"OK\n";
+            return;
+          }
+        }
+        else if (action=="exit")
+        {
+          if (analysisThread_)
+          {
+            analysisThread_->interrupt();
+          }
+          scheduleStop();
+
           response.setStatus(200);
           response.setMimeType("text/plain");
           response.out()<<"OK\n";
           return;
         }
-      }
-      else if (action=="wnow")
-      {
-        response.setStatus(200);
-        response.setMimeType("text/plain");
-        response.out()<<"OK\n";
-        return;
-      }
-      else if (action=="wnowandstop")
-      {
-        response.setStatus(200);
-        response.setMimeType("text/plain");
-        response.out()<<"OK\n";
-        return;
+        else if (action=="wnow")
+        {
+          response.setStatus(200);
+          response.setMimeType("text/plain");
+          response.out()<<"OK\n";
+          return;
+        }
+        else if (action=="wnowandstop")
+        {
+          response.setStatus(200);
+          response.setMimeType("text/plain");
+          response.out()<<"OK\n";
+          return;
+        }
       }
     }
 

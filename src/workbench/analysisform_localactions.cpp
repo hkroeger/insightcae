@@ -30,7 +30,7 @@ void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
 {
   try
   {
-    insight::ResultSetPtr results = (*analysis_)(pd);
+    insight::ResultSetPtr results = (*analysis_)(*pd);
     emit resultReady( results );
   }
   catch (const std::exception& e)

@@ -70,7 +70,7 @@ AirfoilSection::AirfoilSection(const ParameterSet& ps, const boost::filesystem::
 
 
 
-void AirfoilSection::calcDerivedInputData()
+void AirfoilSection::calcDerivedInputData(ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
 
@@ -126,7 +126,7 @@ void AirfoilSection::calcDerivedInputData()
   reportIntermediateParameter("c", c_, "[m] Chord length", "m");
 }
 
-void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
+void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
 
@@ -250,7 +250,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
 
 
 
-void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
+void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
  
@@ -338,11 +338,11 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
 
 
 
-insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
+insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
 
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
   
   arma::mat f_vs_iter=forces::readForces(cm, executionPath(), "foilForces");
   

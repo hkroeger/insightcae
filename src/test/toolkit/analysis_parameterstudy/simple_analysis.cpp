@@ -43,7 +43,7 @@ public:
     declareType("SimpleAnalysis");
     SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath);
     static std::string category() { return "Test"; }
-    ResultSetPtr operator()(ProgressDisplayer* p=NULL);
+    ResultSetPtr operator()(ProgressDisplayer& p = consoleProgressDisplayer) override;
 };
 
 
@@ -62,7 +62,7 @@ SimpleAnalysis::SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::
 
 
 
-ResultSetPtr SimpleAnalysis::operator()(ProgressDisplayer* pd)
+ResultSetPtr SimpleAnalysis::operator()(ProgressDisplayer& pd)
 {
     Parameters p(parameters());
     ResultSetPtr results( new ResultSet(parameters(), "Test", "") );

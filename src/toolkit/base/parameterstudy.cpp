@@ -240,14 +240,14 @@ template<
   class BaseAnalysis,
   const RangeParameterList& var_params
 >
-void ParameterStudy<BaseAnalysis,var_params>::processQueue(insight::ProgressDisplayer* displayer)
+void ParameterStudy<BaseAnalysis,var_params>::processQueue(insight::ProgressDisplayer& displayer)
 {
   int nt = std::min( parameters().getInt("run/numthread"), int(queue_.n_instances()) );
   
   boost::ptr_vector<AnalysisWorkerThread> threads;
   for (int i=0; i<nt; i++)
   {
-    threads.push_back(new AnalysisWorkerThread(&queue_, displayer));
+    threads.push_back(new AnalysisWorkerThread(&queue_, &displayer));
   }
   
   BOOST_FOREACH(AnalysisWorkerThread& t, threads)
@@ -304,7 +304,7 @@ template<
   class BaseAnalysis,
   const RangeParameterList& var_params
 >
-insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::operator()(insight::ProgressDisplayer* displayer)
+insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::operator()(insight::ProgressDisplayer& displayer)
 {  
   path dir = setupExecutionEnvironment();
   //parameters().saveToFile(dir/"parameters.ist", type());

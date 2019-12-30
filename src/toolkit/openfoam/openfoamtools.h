@@ -815,7 +815,7 @@ public:
 
   static std::string category() { return "General Postprocessing"; }
   
-  virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
+  virtual ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer);
 };
 
 
@@ -923,6 +923,17 @@ struct decompositionState
   Location newerFiles;
 
   decompositionState(const boost::filesystem::path& casedir);
+};
+
+
+class BoundingBox
+    : public arma::mat
+{
+public:
+  BoundingBox();
+  void extend(const arma::mat& bb);
+
+  void operator=(const arma::mat& bb);
 };
 
 

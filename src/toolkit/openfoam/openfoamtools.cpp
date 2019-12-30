@@ -2885,7 +2885,7 @@ HomogeneousAveragedProfile::HomogeneousAveragedProfile(const ParameterSet& ps, c
 }
 
 
-ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer)
+ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& displayer)
 {
   Parameters p(parameters_);
 //   setExecutionPath(p.casepath);
@@ -3630,6 +3630,27 @@ decompositionState::decompositionState(const boost::filesystem::path& casedir)
     }
   }
 
+}
+
+
+BoundingBox::BoundingBox()
+  : arma::mat(arma::zeros(3,2))
+{
+}
+
+void BoundingBox::extend(const arma::mat& bb2)
+{
+  arma::mat& bb = (*this);
+  for (arma::uword i=0; i<3; i++)
+  {
+   bb(i,0)=std::min( bb(i,0), bb2(i,0));
+   bb(i,1)=std::max( bb(i,1), bb2(i,1));
+  }
+}
+
+void BoundingBox::operator=(const arma::mat& bb)
+{
+  arma::mat::operator=(bb);
 }
 
 }

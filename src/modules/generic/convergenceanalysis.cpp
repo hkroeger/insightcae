@@ -37,7 +37,7 @@ ConvergenceAnalysis::ConvergenceAnalysis(const ParameterSet& ps, const boost::fi
 }
 
 
-ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer* displayer)
+ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
 {
   setupExecutionEnvironment();
   

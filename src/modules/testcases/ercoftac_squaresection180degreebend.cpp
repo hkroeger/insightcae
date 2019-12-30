@@ -91,7 +91,7 @@ insight::ParameterSet ERCOFTAC_SquareSection180DegreeBend::defaultParameters()
   
 }
 
-void ERCOFTAC_SquareSection180DegreeBend::calcDerivedInputData()
+void ERCOFTAC_SquareSection180DegreeBend::calcDerivedInputData(ProgressDisplayer& progress)
 {
   const ParameterSet& p=parameters_;
   PSINT(p, "mesh", nh);
@@ -117,7 +117,7 @@ void ERCOFTAC_SquareSection180DegreeBend::calcDerivedInputData()
   nbend_=M_PI*HeByD_*D_/delta_center;
 }
 
-void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm)
+void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   PSDBL(parameters(), "geometry", LoutByD); 
   double 
@@ -270,7 +270,7 @@ void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm)
   cm.executeCommand(dir, "blockMesh");
 }
 
-void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm)
+void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   path dir = executionPath();
 
@@ -360,7 +360,7 @@ void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm)
 
 
 
-insight::ResultSetPtr ERCOFTAC_SquareSection180DegreeBend::evaluateResults(insight::OpenFOAMCase& cm)
+insight::ResultSetPtr ERCOFTAC_SquareSection180DegreeBend::evaluateResults(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
 
 }

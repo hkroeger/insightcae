@@ -13,6 +13,9 @@ public:
     virtual void update ( const ProgressState& pi );
 };
 
+
+extern TextProgressDisplayer consoleProgressDisplayer;
+
 }
 
 #endif // TEXTPROGRESSDISPLAYER_H

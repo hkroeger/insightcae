@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
         boost::thread solver_thread(
               [&]()
               {
-                results = (*analysis)( pd );
+                results = (*analysis)( *pd );
               }
         );
 

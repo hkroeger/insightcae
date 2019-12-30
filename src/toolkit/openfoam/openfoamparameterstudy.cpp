@@ -84,7 +84,7 @@ template<
     class BaseAnalysis,
     const RangeParameterList& var_params
     >
-ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(ProgressDisplayer* displayer)
+ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(ProgressDisplayer& displayer)
 {
     ParameterSet& p = this->parameters_; //Analysis::parameters_;
 
@@ -129,7 +129,7 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
         {
             OpenFOAMCase meshCase(ofe);
             if (!meshCase.meshPresentOnDisk(dir))
-                base_case_->createMesh(meshCase);
+                base_case_->createMesh(meshCase, displayer);
             else
                 std::cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<std::endl;
         }

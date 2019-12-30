@@ -170,11 +170,11 @@ public:
   static std::string category() { return "Validation Cases"; }
   
   virtual void computeInitialLocation();
-  virtual void calcDerivedInputData();
+  virtual void calcDerivedInputData(ProgressDisplayer& progress);
   
   virtual void createInflowBC(OpenFOAMCase& cm, const OFDictData::dict& boundaryDict) const;
-  virtual void createCase(OpenFOAMCase& cm);
-  virtual void createMesh(OpenFOAMCase& cm);
+  virtual void createCase(OpenFOAMCase& cm, ProgressDisplayer& progress);
+  virtual void createMesh(OpenFOAMCase& cm, ProgressDisplayer& progress);
 
   virtual void evaluateAtSection
   (
@@ -185,7 +185,7 @@ public:
     const std::string& RFieldName,
     const FlatPlateBL::Parameters::eval_type::bc_extractsections_default_type* extract_section=NULL
   );  
-  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
+  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
   
   virtual Analysis* clone();
   

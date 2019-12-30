@@ -69,10 +69,10 @@ public:
 
     static std::string category() { return "Validation Cases/Inflow Generator"; }
     
-    virtual void createCase(insight::OpenFOAMCase& cm);
-    virtual void createMesh(insight::OpenFOAMCase& cm);
+    virtual void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
+    virtual void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
     
-    virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
+    virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
     virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
 };
 

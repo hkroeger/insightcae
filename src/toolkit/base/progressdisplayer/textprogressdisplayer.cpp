@@ -28,4 +28,6 @@ void TextProgressDisplayer::update ( const ProgressState& pi )
     cout<<pi.logMessage_<<endl;
 }
 
+TextProgressDisplayer consoleProgressDisplayer;
+
 }

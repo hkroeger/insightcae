@@ -84,9 +84,9 @@ void FlatPlateBL::computeInitialLocation()
 }
 
 
-void FlatPlateBL::calcDerivedInputData()
+void FlatPlateBL::calcDerivedInputData(ProgressDisplayer& progress)
 {
-  insight::OpenFOAMAnalysis::calcDerivedInputData();
+  insight::OpenFOAMAnalysis::calcDerivedInputData(progress);
   Parameters p(parameters_);
 
   in_="inlet";
@@ -198,7 +198,7 @@ void FlatPlateBL::calcDerivedInputData()
   n_hom_avg_=std::max(1, nlat_-2);
 }
 
-void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
+void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
   
@@ -326,7 +326,7 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
   }
 }
 
-void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
+void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
   path dir = executionPath();
@@ -677,12 +677,12 @@ void FlatPlateBL::evaluateAtSection
   }
 }
 
-insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
+insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
 
 
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
   
   std::string RFieldName="UPrime2Mean";
   std::string UMeanName="UMean";

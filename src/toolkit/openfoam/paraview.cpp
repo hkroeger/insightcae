@@ -173,7 +173,7 @@ ParaviewVisualization::ParaviewVisualization(const ParameterSet& ps, const boost
 {
 }
 
-ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer*)
+ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
 {
 //  boost::mutex::scoped_lock lock(runPvPython_mtx);
     setupExecutionEnvironment();

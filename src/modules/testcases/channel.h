@@ -204,16 +204,16 @@ public:
   static std::string category() { return "Validation Cases"; }
   
   std::string cyclPrefix() const;
-  virtual void calcDerivedInputData();
+  virtual void calcDerivedInputData(ProgressDisplayer& progress);
 
   virtual void createMesh
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );
   
   virtual void createCase
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
@@ -227,7 +227,7 @@ public:
     const std::string& vertical_probes_array_name="center_probes"
   );
     
-  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp);
+  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& progress);
   
 };
 
@@ -259,16 +259,16 @@ public:
 
   virtual void createMesh
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );  
   
   virtual void createCase
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
-  virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
   
 };
 

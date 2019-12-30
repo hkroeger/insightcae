@@ -118,7 +118,7 @@ insight::ParameterSet FreeShearFlow::defaultParameters()
   return p;  
 }
 
-void FreeShearFlow::calcDerivedInputData()
+void FreeShearFlow::calcDerivedInputData(ProgressDisplayer& progress)
 {
   const ParameterSet& p=parameters_;
 
@@ -151,7 +151,7 @@ void FreeShearFlow::calcDerivedInputData()
 }
 
 
-void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm)
+void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", H);
@@ -258,7 +258,7 @@ void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm)
 }
 
 
-void FreeShearFlow::createCase(insight::OpenFOAMCase& cm)
+void FreeShearFlow::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
 }
 

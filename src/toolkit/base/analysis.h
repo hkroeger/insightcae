@@ -29,6 +29,8 @@
 #include "base/analysisstepcontrol.h"
 #include "base/tools.h"
 
+#include "base/progressdisplayer/textprogressdisplayer.h"
+
 #include <queue>
 
 #include "base/boost_include.h"
@@ -156,7 +158,7 @@ public:
         return parameters_;
     }
 
-    virtual ResultSetPtr operator() ( ProgressDisplayer* displayer=nullptr ) =0;
+    virtual ResultSetPtr operator() ( ProgressDisplayer& displayer = consoleProgressDisplayer ) =0;
 
     virtual boost::filesystem::path getSharedFilePath ( const boost::filesystem::path& file );
 

@@ -222,7 +222,7 @@ scenes = array [
 
   static std::string category() { return "General Postprocessing"; }
 
-  virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
+  virtual ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer);
 };
 
 

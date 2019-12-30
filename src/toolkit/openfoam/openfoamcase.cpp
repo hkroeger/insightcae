@@ -60,7 +60,7 @@ OFDictData::dict OpenFOAMCase::diagonalSolverSetup() const
 OFDictData::dict OpenFOAMCase::stdAsymmSolverSetup(double tol, double reltol, int minIter) const
 {
   OFDictData::dict d;
-  if (OFversion()<010700)
+  if (OFversion()<170)
     d["solver"]="BiCGStab";
   else
     d["solver"]="PBiCGStab";

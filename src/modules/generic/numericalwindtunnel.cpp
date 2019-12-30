@@ -67,7 +67,7 @@ NumericalWindtunnel::NumericalWindtunnel(const ParameterSet& ps, const boost::fi
 
 boost::mutex mtx;
 
-void NumericalWindtunnel::calcDerivedInputData()
+void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& progress)
 {
   CurrentExceptionContext ex("computing further preprocessing informations");
 
@@ -148,7 +148,7 @@ void NumericalWindtunnel::calcDerivedInputData()
 
 
 
-void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
+void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   path dir = executionPath();
   Parameters p(parameters_);
@@ -438,7 +438,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
 
 
 
-void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm)
+void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
 
@@ -504,11 +504,11 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm)
 
 
 
-ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
+ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
   
-  ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm);
+  ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, progress);
   
   // get full name of car patch (depends on STL file)
   OFDictData::dict boundaryDict;
@@ -662,7 +662,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
     Parameters p(ps_);
     NumericalWindtunnel nwt(ps_, "");
-    nwt.calcDerivedInputData();
+    nwt.calcDerivedInputData(consoleProgressDisplayer);
 
 
     std::string geom_file_ext = p.geometry.objectfile->fileName().extension().string();

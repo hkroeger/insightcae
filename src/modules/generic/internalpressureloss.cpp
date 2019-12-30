@@ -67,18 +67,18 @@ InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::
 
 
 
-void extendBB(arma::mat& bb, const arma::mat& bb2)
-{
-  for (arma::uword i=0; i<3; i++)
-  {
-   bb(i,0)=std::min(bb(i,0), bb2(i,0));
-   bb(i,1)=std::max(bb(i,1), bb2(i,1));
-  }
-}
+//void extendBB(arma::mat& bb, const arma::mat& bb2)
+//{
+//  for (arma::uword i=0; i<3; i++)
+//  {
+//   bb(i,0)=std::min(bb(i,0), bb2(i,0));
+//   bb(i,1)=std::max(bb(i,1), bb2(i,1));
+//  }
+//}
 
-void InternalPressureLoss::calcDerivedInputData()
+void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& progress)
 {
-    insight::OpenFOAMAnalysis::calcDerivedInputData();
+    insight::OpenFOAMAnalysis::calcDerivedInputData(progress);
     Parameters p(parameters_);
     //reportIntermediateParameter("L", L_, "total domain length", "m");
 
@@ -109,16 +109,14 @@ void InternalPressureLoss::calcDerivedInputData()
               throw insight::Exception("Geometry file does not exist: "+io_extra->inlet_model->fileName().string());
             {
               FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
-              arma::mat bb = inletmodel->modelBndBox();
-              extendBB(bb_, bb);
+              bb_.extend(inletmodel->modelBndBox());
             }
 
             if (!io_extra->outlet_model->isValid())
               throw insight::Exception("Geometry file does not exist: "+io_extra->outlet_model->fileName().string());
             {
               FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
-              arma::mat bb = outletmodel->modelBndBox();
-              extendBB(bb_, bb);
+              bb_.extend(outletmodel->modelBndBox());
             }
           }
       }
@@ -134,15 +132,13 @@ void InternalPressureLoss::calcDerivedInputData()
           if (!geom_stl->inlet->isValid())
             throw insight::Exception("Geometry file does not exist: "+geom_stl->inlet->fileName().string());
 
-          arma::mat bb = STLBndBox(readSTL(geom_stl->inlet->filePath()));
-          extendBB(bb_, bb);
+          bb_.extend(STLBndBox(readSTL(geom_stl->inlet->filePath())));
         }
         {
           if (!geom_stl->outlet->isValid())
             throw insight::Exception("Geometry file does not exist: "+geom_stl->outlet->fileName().string());
 
-          arma::mat bb = STLBndBox(readSTL(geom_stl->outlet->filePath()));
-          extendBB(bb_, bb);
+          bb_.extend(STLBndBox(readSTL(geom_stl->outlet->filePath())));
         }
       }
 
@@ -170,7 +166,7 @@ void InternalPressureLoss::calcDerivedInputData()
 
 
 
-void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
+void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
     Parameters p(parameters_);
 
@@ -322,7 +318,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
 }
 
 
-void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm)
+void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
     Parameters p(parameters_);
     
@@ -370,10 +366,10 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm)
 }
 
 
-ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm)
+ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
     Parameters p(parameters_);
-    ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm);
+    ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, progress);
 
     arma::mat p_vs_t = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), "inlet_pressure");
 

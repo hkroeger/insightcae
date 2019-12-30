@@ -1217,7 +1217,7 @@ ComputeLengthScale::ComputeLengthScale(const ParameterSet& ps, const boost::file
 {
 }
 
-ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer*)
+ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer&)
 {
   setupExecutionEnvironment();
   ResultSetPtr results(new ResultSet(parameters_, name_, description_));

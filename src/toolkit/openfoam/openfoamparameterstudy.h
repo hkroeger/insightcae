@@ -52,7 +52,7 @@ public:
     );
 
     virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
-    virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
+    virtual ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
 
     virtual void evaluateCombinedResults(ResultSetPtr& results);
 };

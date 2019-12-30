@@ -46,8 +46,9 @@ namespace insight
 cavitatingFoamThermodynamics::cavitatingFoamThermodynamics(OpenFOAMCase& c, const ParameterSet& ps)
 : thermodynamicModel(c, ps),
   p_(ps)
-{
-}
+{}
+
+
 
 
 void cavitatingFoamThermodynamics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -108,17 +109,17 @@ void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts&
 
   OFDictData::dict tt;
 
-  if (tht==hePsiThermo)
+  if (tht == hePsiThermo)
     {
-      tt["type"]="hePsiThermo";
-      tt["thermo"]="eConst";
-      tt["energy"]="sensibleInternalEnergy";
+      tt["type"]    = "hePsiThermo";
+      tt["thermo"]  = "eConst";
+      tt["energy"]  = "sensibleInternalEnergy";
     }
-  else if (tht==heRhoThermo)
+  else if (tht == heRhoThermo)
     {
-      tt["type"]="heRhoThermo";
-      tt["thermo"]="hConst";
-      tt["energy"]="sensibleEnthalpy";
+      tt["type"]    = "heRhoThermo";
+      tt["thermo"]  = "hConst";
+      tt["energy"]  = "sensibleEnthalpy";
     }
 
   tt["mixture"]="pureMixture";

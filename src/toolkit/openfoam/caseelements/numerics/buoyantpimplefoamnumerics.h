@@ -17,6 +17,7 @@ public:
 PARAMETERSET>>> buoyantPimpleFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
+boussinesqApproach = bool false "Use boussinesq approach"
 time_integration = includedset "insight::CompressiblePIMPLESettings::Parameters" "Settings for time integration"
 
 <<<PARAMETERSET

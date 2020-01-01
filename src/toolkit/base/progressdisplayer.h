@@ -34,6 +34,9 @@ struct ProgressState
 };
 
 
+typedef std::shared_ptr<ProgressState> ProgressStatePtr;
+
+
 
 
 class ProgressDisplayer

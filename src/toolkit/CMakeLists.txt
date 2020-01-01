@@ -28,6 +28,8 @@ set(toolkit_SOURCES
     base/tools.cpp
     base/latextools.cpp
     base/linearalgebra.cpp
+    base/resultelement.cpp
+    base/resultelementcollection.cpp
     base/resultset.cpp
     base/global.cpp
     base/softwareenvironment.cpp
@@ -42,6 +44,7 @@ set(toolkit_SOURCES
     base/case.cpp
     base/units.cpp
 
+
     base/progressdisplayer.cpp
 
     base/progressdisplayer/textprogressdisplayer.cpp
@@ -55,6 +58,18 @@ set(toolkit_SOURCES
     base/parameters/doublerangeparameter.cpp
     base/parameters/arrayparameter.cpp
     base/parameters/matrixparameter.cpp
+
+    base/resultelements/image.cpp
+    base/resultelements/numericalresult.cpp
+    base/resultelements/tabularresult.cpp
+    base/resultelements/scalarresult.cpp
+    base/resultelements/vectorresult.cpp
+    base/resultelements/comment.cpp
+    base/resultelements/attributeresulttable.cpp
+    base/resultelements/resultsection.cpp
+    base/resultelements/chart.cpp
+    base/resultelements/polarchart.cpp
+    base/resultelements/contourchart.cpp
     
     openfoam/ofenvironment.cpp
     openfoam/ofes.cpp

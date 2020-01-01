@@ -128,22 +128,21 @@ int main(int argc, char *argv[])
         }
 
         std::vector<string> fns=vm["input-file"].as<StringList>();
-        std::vector<ResultElementCollection> r;
+        std::vector<ResultSetPtr> r;
 
         // load results
         for (std::string fn: fns)
         {
-          r.push_back(ResultElementCollection());
 
           cout<<"Reading results file "<<fn<<"..."<<flush;
-          r.back().readFromFile(fn);
+          r.push_back(ResultSetPtr(new ResultSet(fn)));
           cout<<"done."<<endl;
 
           if (vm.count("list"))
           {
             cout<<std::string(80, '=')<<endl<<endl;
             cout<<"Result file: "<<fn<<endl<<endl;
-            listContents(r.back());
+            listContents(*r.back());
             cout<<endl<<std::string(80, '=')<<endl<<endl;
           }
         }
@@ -178,7 +177,7 @@ int main(int argc, char *argv[])
             std::vector<double> vals;
             for (size_t j=0; j<varnames.size(); j++)
             {
-              vals.push_back(r[i].getScalar(varnames[j])*sfs[j]);
+              vals.push_back(r[i]->getScalar(varnames[j])*sfs[j]);
             }
             sorted_vals[vals[0]] = NameAndValues(fns[i], vals);
           }

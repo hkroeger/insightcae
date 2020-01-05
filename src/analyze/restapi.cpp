@@ -53,6 +53,11 @@ AnalyzeRESTServer::AnalyzeRESTServer(
   setServerConfiguration(5, const_cast<char**>(cargv) );
 
   addResource(this, std::string());
+  addResource(this, "/next");
+  addResource(this, "/all");
+  addResource(this, "/latest");
+  addResource(this, "/results");
+  addResource(this, "/exepath");
 }
 
 void AnalyzeRESTServer::setAnalysis(insight::Analysis *a)
@@ -130,29 +135,31 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     std::cerr<<"status or results request"<<std::endl;
 
 
-    auto whichState = payload.get("whichState");
+    //auto whichState = payload.get("whichState");
+    std::string which = request.path();
+    cout<<"which="<<which<<endl;
     enum StateSelection { Next, All, Latest, Results, ExePath } stateSelection = Next;
-    if (!whichState.isNull())
+//    if (!whichState.isNull())
     {
-      std::string which = whichState.toString();
+//      std::string which = whichState.toString();
       boost::algorithm::to_lower(which);
-      if (which=="next")
+      if (which=="/next")
       {
         stateSelection = Next;
       }
-      else if (which=="all")
+      else if (which=="/all")
       {
         stateSelection = All;
       }
-      else if (which=="latest")
+      else if (which=="/latest")
       {
         stateSelection = Latest;
       }
-      else if (which=="results")
+      else if (which=="/results")
       {
         stateSelection = Results;
       }
-      else if (which=="exepath")
+      else if (which=="/exepath")
       {
         stateSelection = ExePath;
       }
@@ -166,11 +173,11 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         response.setMimeType("application/xml");
         results_->saveToStream( response.out() );
 
-        {
-          boost::mutex::scoped_lock lock(mx_);
-          results_.reset();
-          wait_cv_.notify_one();
-        }
+//        {
+//          boost::mutex::scoped_lock lock(mx_);
+//          results_.reset();
+//          wait_cv_.notify_one();
+//        }
 
         return;
       }

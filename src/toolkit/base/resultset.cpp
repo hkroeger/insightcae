@@ -236,15 +236,17 @@ void ResultSet::readFrom ( std::string& contents )
   doc.parse<0> ( &contents[0] );
 
   xml_node<> *rootnode = doc.first_node ( "root" );
-  title_=rootnode->first_attribute("title")->value();
-  subtitle_=rootnode->first_attribute("subtitle")->value();
-  date_=rootnode->first_attribute("date")->value();
-  author_=rootnode->first_attribute("author")->value();
-  introduction_=rootnode->first_attribute("introduction")->value();
 
-  p_.readFromNode( doc, *rootnode->first_node("parameters"), "/" );
+  auto *pn = rootnode->first_node("parameters");
+  p_.readFromNode( doc, *pn, "/" );
 
-  ResultElementCollection::readElementsFromNode ( doc, *rootnode->first_node("results") );
+  auto *rn = rootnode->first_node("results");
+  title_=rn->first_attribute("title")->value();
+  subtitle_=rn->first_attribute("subtitle")->value();
+  date_=rn->first_attribute("date")->value();
+  author_=rn->first_attribute("author")->value();
+  introduction_=rn->first_attribute("introduction")->value();
+  ResultElementCollection::readElementsFromNode ( doc, *rn );
 }
 
 
@@ -269,42 +271,43 @@ void ResultSet::saveToStream(ostream &os) const
   xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
   doc.append_node ( rootnode );
 
-  rootnode->append_attribute(
+  xml_node<>* pc = doc.allocate_node ( node_element, doc.allocate_string ( "parameters" ) );
+  p_.appendToNode(doc, *pc, "/");
+  rootnode->append_node ( pc );
+
+  xml_node<>* rc = doc.allocate_node ( node_element, doc.allocate_string ( "results" ) );
+  rc->append_attribute(
         doc.allocate_attribute(
           "title",
           doc.allocate_string ( title_.c_str() )
           )
         );
-  rootnode->append_attribute(
+  rc->append_attribute(
         doc.allocate_attribute(
           "subtitle",
           doc.allocate_string ( subtitle_.c_str() )
           )
         );
-  rootnode->append_attribute(
+  rc->append_attribute(
         doc.allocate_attribute(
           "date",
           doc.allocate_string ( date_.c_str() )
           )
         );
-  rootnode->append_attribute(
+  rc->append_attribute(
         doc.allocate_attribute(
           "author",
           doc.allocate_string ( author_.c_str() )
           )
         );
-  rootnode->append_attribute(
+  rc->append_attribute(
         doc.allocate_attribute(
           "introduction",
           doc.allocate_string ( introduction_.c_str() )
           )
         );
-
-  xml_node<>* pc = doc.allocate_node ( node_element, doc.allocate_string ( "parameters" ) );
-  p_.appendToNode(doc, *pc, "/");
-
-  xml_node<>* rc = doc.allocate_node ( node_element, doc.allocate_string ( "results" ) );
   ResultElementCollection::appendElementsToNode ( doc, *rc );
+  rootnode->append_node ( rc );
 
   os << doc << std::endl;
 }

@@ -319,7 +319,8 @@ void AttributeTableResultWrapper::onUpdateGeometry()
   auto s1= treeWidget()->header()->sectionSize(1);
 //  auto s2= treeWidget()->header()->sectionSize(2);
 
-  setText(1, res().shortDescription().toHTML(s1).c_str());
+  const auto& r=res();
+  setText(1, r.shortDescription().toHTML(s1).c_str());
 
 }
 

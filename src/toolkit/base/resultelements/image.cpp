@@ -39,7 +39,20 @@ void Image::writeLatexCode ( std::ostream& f, const std::string& , int , const b
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative ( outputfilepath, imagePath_ ).c_str() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
-     "\\FloatBarrier";
+                                              "\\FloatBarrier";
+}
+
+void Image::readFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
+{
+ readBaseAttributesFromNode(name, doc, node);
+ boost::filesystem::path originalFileName (node.first_attribute("originalFileName")->value());
+ imagePath_ = boost::filesystem::unique_path(
+       boost::filesystem::temp_directory_path() /
+        (originalFileName.filename().stem().string() + "-%%%%%%%%" + originalFileName.extension().string())
+       );
+ std::string contents = base64_decode(node.first_attribute("data")->value());
+ std::ofstream f(imagePath_.c_str());
+ f << contents;
 }
 
 xml_node< char >* Image::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
@@ -47,13 +60,26 @@ xml_node< char >* Image::appendToNode ( const string& name, xml_document< char >
     using namespace rapidxml;
     xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
 
-    child->value
-    (
-        doc.allocate_string
-        (
-            base64_encode ( imagePath_ ).c_str()
-        )
-    );
+    child->append_attribute(
+          doc.allocate_attribute(
+            "originalFileName",
+            doc.allocate_string( imagePath_.c_str() )
+            )
+          );
+
+    child->append_attribute(
+          doc.allocate_attribute(
+            "data",
+            doc.allocate_string(base64_encode ( imagePath_ ).c_str())
+            )
+          );
+//    child->value
+//    (
+//        doc.allocate_string
+//        (
+//            base64_encode ( imagePath_ ).c_str()
+//        )
+//    );
 
     return child;
 }

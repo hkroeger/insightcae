@@ -241,6 +241,7 @@ void GraphProgressDisplayer::update(const insight::ProgressState& pi)
   }
 }
 
+
 void GraphProgressDisplayer::reset()
 {
   for (auto& c: charts_)

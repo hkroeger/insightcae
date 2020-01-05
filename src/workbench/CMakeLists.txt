@@ -22,6 +22,13 @@ set(workbench_SRCS
     workbench.cpp
     workbench.h
     main.cpp
+
+    workbenchaction.cpp
+    workbenchaction.h
+    localrun.cpp
+    localrun.h
+    remoterun.cpp
+    remoterun.h
 )
 SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui)
 SET(workbench_RCCS workbench.qrc)
@@ -29,7 +36,7 @@ SET(workbench_RCCS workbench.qrc)
 add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
 
 target_link_libraries(workbench
- toolkit toolkit_gui
+ toolkit toolkit_gui toolkit_remote
  Qt5::Widgets
  ${Boost_LIBRARIES}
  ${QWT_LIBRARY} ${QWT_LIBRARIES}

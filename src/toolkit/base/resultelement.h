@@ -90,6 +90,12 @@ public:
         rapidxml::xml_node<>& node
     ) const;
 
+    void readBaseAttributesFromNode
+        (
+            const std::string& name,
+            rapidxml::xml_document<>& doc,
+            rapidxml::xml_node<>& node
+        );
     /**
      * restore the contents of this element from the given node
      */

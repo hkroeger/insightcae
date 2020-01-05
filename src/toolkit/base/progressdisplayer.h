@@ -26,6 +26,7 @@ struct ProgressState
 {
   std::string logMessage_;
 
+  ProgressState(); // required for qMetaType registration
   ProgressState(
       double t,
       ProgressVariableList pvl,

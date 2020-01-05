@@ -4,13 +4,21 @@
 
 #include "remotesync.h"
 
+#include "localrun.h"
+#include "remoterun.h"
+
 
 bool AnalysisForm::isRunningLocally() const
 {
-  if (workerThread_)
+//  if (workerThread_)
+//  {
+//    if (!workerThread_->timed_join(boost::posix_time::seconds(0)))
+//      return true;
+//  }
+
+  if (currentWorkbenchAction_)
   {
-    if (!workerThread_->timed_join(boost::posix_time::seconds(0)))
-      return true;
+    return dynamic_cast<LocalRun*>(currentWorkbenchAction_.get());
   }
 
   return false;
@@ -21,10 +29,9 @@ bool AnalysisForm::isRunningLocally() const
 
 bool AnalysisForm::isRunningRemotely() const
 {
-  if (tsi_)
+  if (currentWorkbenchAction_)
   {
-    if (tsi_->isTailRunning())
-      return true;
+    return dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get());
   }
 
   return false;
@@ -43,7 +50,7 @@ bool AnalysisForm::isRunning() const
 
 bool AnalysisForm::hasValidExecutionPath() const
 {
-  return analysis_ || boost::filesystem::exists( ui->localDir->text().toStdString() );
+  return ui->localDir->text().isEmpty() || boost::filesystem::exists( ui->localDir->text().toStdString() );
 }
 
 
@@ -87,11 +94,7 @@ boost::filesystem::path AnalysisForm::currentExecutionPath(bool createIfNonexist
   QString setPath = ui->localDir->text();
   if (setPath.isEmpty())
   {
-    if (analysis_)
-    {
-      ep=analysis_->executionPath();
-    }
-    else if (createIfNonexistent)
+    if (createIfNonexistent)
     {
       std::unique_ptr<insight::Analysis> ta(insight::Analysis::lookup(analysisName_, parameters_, ""));
       ep = ta->createExecutionPathIfNonexistent();

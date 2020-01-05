@@ -58,6 +58,24 @@ void AttributeTableResult::exportDataToFile ( const string& name, const path& ou
     }
 }
 
+void AttributeTableResult::readFromNode(const string &name, rapidxml::xml_document<> &doc,
+                                        rapidxml::xml_node<> &node)
+{
+  readBaseAttributesFromNode(name, doc, node);
+  for (xml_node<> *e = node.first_node(); e; e = e->next_sibling())
+  {
+    names_.push_back(e->first_attribute("name")->value());
+    std::string typ(e->first_attribute("type")->value());
+    std::string value(e->first_attribute("value")->value());
+    if (typ=="int")
+      values_.push_back(boost::lexical_cast<int>(value));
+    else if (typ=="double")
+      values_.push_back(boost::lexical_cast<double>(value));
+    else if (typ=="string")
+      values_.push_back(value);
+  }
+}
+
 
 xml_node< char >* AttributeTableResult::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
 {
@@ -65,7 +83,10 @@ xml_node< char >* AttributeTableResult::appendToNode ( const string& name, xml_d
     xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
 
     for ( size_t i=0; i<names_.size(); i++ ) {
-        xml_node<>* cattr = doc.allocate_node ( node_element, doc.allocate_string ( str ( format ( "attribute_%i" ) %i ).c_str() ) );
+        xml_node<>* cattr = doc.allocate_node (
+              node_element,
+              doc.allocate_string ( str ( format ( "attribute_%i" ) %i ).c_str()
+                                    ) );
         child->append_node ( cattr );
 
         cattr->append_attribute ( doc.allocate_attribute

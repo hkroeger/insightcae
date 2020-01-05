@@ -28,6 +28,7 @@ set(toolkit_gui_SRCS
     parametersetvisualizer.cpp
     logviewerwidget.cpp
     graphprogressdisplayer.cpp
+    progressrelay.cpp
     insightcaeapplication.cpp
     remotedirselector.cpp
     remotesync.cpp

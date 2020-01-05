@@ -97,6 +97,7 @@ void ResultElement::exportDataToFile ( const std::string& , const boost::filesys
 {
 }
 
+
 rapidxml::xml_node< char >* ResultElement::appendToNode
 (
     const string& name,
@@ -142,6 +143,13 @@ rapidxml::xml_node< char >* ResultElement::appendToNode
     return child;
 }
 
+void ResultElement::readBaseAttributesFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
+{
+  shortDescription_=SimpleLatex(node.first_attribute("shortDescription")->value());
+  longDescription_=SimpleLatex(node.first_attribute("longDescription")->value());
+  unit_=SimpleLatex(node.first_attribute("unit")->value());
+  order_=boost::lexical_cast<double>(node.first_attribute("order")->value());
+}
 
 void ResultElement::readFromNode ( const string& name, rapidxml::xml_document< char >&, rapidxml::xml_node< char >& )
 {

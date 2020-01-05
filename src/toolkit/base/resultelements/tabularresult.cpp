@@ -202,7 +202,10 @@ xml_node< char >* TabularResult::appendToNode ( const string& name, xml_document
     xml_node<>* heads = doc.allocate_node ( node_element, doc.allocate_string ( "headings" ) );
     child->append_node ( heads );
     for ( size_t i=0; i<headings_.size(); i++ ) {
-        xml_node<>* chead = doc.allocate_node ( node_element, doc.allocate_string ( str ( format ( "header_%i" ) %i ).c_str() ) );
+        xml_node<>* chead = doc.allocate_node (
+              node_element,
+              doc.allocate_string ( str ( format ( "header_%i" ) %i ).c_str() ) );
+
         heads->append_node ( chead );
 
         chead->append_attribute ( doc.allocate_attribute
@@ -219,6 +222,30 @@ xml_node< char >* TabularResult::appendToNode ( const string& name, xml_document
     return child;
 }
 
+void TabularResult::readFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
+{
+  readBaseAttributesFromNode(name, doc, node);
+
+  auto* heads = node.first_node("headings");
+  for (xml_node<> *e = heads->first_node(); e; e = e->next_sibling())
+  {
+    headings_.push_back(e->first_attribute("title")->value());
+  }
+
+  auto* vals = node.first_node("values");
+  std::istringstream iss(vals->value());
+  arma::mat mat;
+  mat.load(iss, arma::raw_ascii);
+  for (arma::uword i=0; i<mat.n_rows; i++)
+  {
+    Row r;
+    for (arma::uword j=0; j<mat.n_cols; j++)
+    {
+      r.push_back(mat(i,j));
+    }
+    rows_.push_back(r);
+  }
+}
 
 void TabularResult::exportDataToFile ( const string& name, const path& outputdirectory ) const
 {
@@ -241,6 +268,8 @@ void TabularResult::exportDataToFile ( const string& name, const path& outputdir
         f<<endl;
     }
 }
+
+
 
 
 

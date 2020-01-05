@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
         {
 
           cout<<"Reading results file "<<fn<<"..."<<flush;
-          r.push_back(ResultSetPtr(new ResultSet(fn)));
+          r.push_back(ResultSetPtr(new ResultSet(boost::filesystem::path(fn))));
           cout<<"done."<<endl;
 
           if (vm.count("list"))

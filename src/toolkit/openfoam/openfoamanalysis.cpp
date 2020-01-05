@@ -342,14 +342,15 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm, ProgressDisplay
 
 void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer& progress)
 {
-  CurrentExceptionContext ex("creating OpenFOAM case in directory \""+executionPath().string()+"\"");
+  path dir = executionPath();
+
+  CurrentExceptionContext ex("creating OpenFOAM case in directory \""+dir.string()+"\"");
 
     Parameters p(parameters_);
 
     OFEnvironment ofe = OFEs::get(p.run.OFEname);
     ofe.setExecutionMachine(p.run.machine);
 
-    path dir = setupExecutionEnvironment();
     calcDerivedInputData(progress);
 
     bool evaluateonly=p.run.evaluateonly;
@@ -409,6 +410,8 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer
 
 ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer& progress)
 {  
+  setupExecutionEnvironment();
+
   CurrentExceptionContext ex("running OpenFOAM analysis in directory \""+executionPath().string()+"\"");
 
   Parameters p(parameters_);

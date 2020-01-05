@@ -54,27 +54,7 @@ class TaskSpoolerInterface;
 class SolverOutputAnalyzer;
 }
 
-
-class AnalysisWorker
-: public QObject
-{
-  Q_OBJECT
-
-  std::shared_ptr<insight::Analysis> analysis_;
-  
-public:
-  AnalysisWorker(const std::shared_ptr<insight::Analysis>& analysis);
-  
-public Q_SLOTS:
-  void doWork(insight::ProgressDisplayer* pd = nullptr);
-  
-Q_SIGNALS:
-  void resultReady(insight::ResultSetPtr);
-  void error(insight::Exception);
-  void killed();
-};
-
-
+class WorkbenchAction;
 
 
 class AnalysisForm
@@ -83,30 +63,31 @@ class AnalysisForm
 {
   Q_OBJECT
 
+  friend class WorkbenchAction;
+  friend class LocalRun;
+  friend class RemoteRun;
   
 protected:
 
+  // ====================================================================================
+  // ======== Analysis-related members
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
   insight::ParameterSet parameters_;
-
-  std::shared_ptr<insight::Analysis> analysis_;  
   insight::ResultSetPtr results_;
-
-  std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
-  std::shared_ptr<insight::SolverOutputAnalyzer> soa_;
   
+  // ====================================================================================
+  // ======== GUI widgets
   GraphProgressDisplayer *progdisp_;
-  std::shared_ptr<boost::thread> workerThread_;
-  
   QTreeWidget *rt_;
   QTreeWidgetItem* rtroot_;
-
   ParameterEditorWidget* peditor_;
-  
   Q_DebugStream *cout_log_, *cerr_log_;
   LogViewerWidget *log_;
-  
+  QProgressBar* progressbar_;
+
+  // ====================================================================================
+  // ======== control elements
   QPushButton *save_log_btn_, *send_log_btn_, *clear_log_btn_, *auto_scroll_down_btn_;
 
   QMenu *menu_parameters_=nullptr, *menu_actions_=nullptr, *menu_results_=nullptr, *menu_tools_=nullptr, *menu_tools_of_=nullptr;
@@ -140,6 +121,10 @@ protected:
 
   std::map<std::string, boost::filesystem::path> remotePaths_;
 
+  // ====================================================================================
+  // ======== current run action (or null, if idle)
+  std::unique_ptr<WorkbenchAction> currentWorkbenchAction_;
+
   // ================================================================================
   // ================================================================================
   // ===== Status queries
@@ -148,22 +133,21 @@ protected:
   bool isRunningRemotely() const;
   bool isRunning() const;
   bool remoteDownloadOrResumeIsPossible() const;
-
   bool isRemoteDirectoryPresent() const;
 
-  QProgressBar* progressbar_;
   
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
   ~AnalysisForm();
   
   inline insight::ParameterSet& parameters() { return parameters_; }
-  inline insight::Analysis& analysis() { return *analysis_; }
   
-  inline void forceUpdate() { emit update(); }
+  // ================================================================================
+  // ================================================================================
+  // ===== general logic
 
-  virtual void insertMenu(QMenuBar* mainMenu);
-  virtual void removeMenu();
+  void insertMenu(QMenuBar* mainMenu) override;
+  void removeMenu() override;
 
   void loadParameters(const boost::filesystem::path& fp);
   void saveParameters(bool *cancelled=nullptr);
@@ -176,30 +160,23 @@ public:
   // ===== Remote run logic
 
   void recheckButtonAvailability();
+
   std::unique_ptr<insight::MountRemote> temporaryMountedRemoteDir() const;
-  void autoSelectRemoteDir();
-  void lockRemoteControls();
-  void createRemoteDirectory();
   void upload();
   void startRemoteRun();
   void resumeRemoteRun();
   void disconnectFromRemoteRun();
-  void stopRemoteRun();
-  void unlockRemoteControls();
   void download();
-  void cleanRemote();
-  void removeRemoteDirectory();
 
   // ================================================================================
   // ================================================================================
   // ===== Local run logic
 
   void startLocalRun();
-  void stopLocalRun();
 
 
 protected:
-  virtual void	closeEvent ( QCloseEvent * event );
+  void	closeEvent ( QCloseEvent * event ) override;
 
 private Q_SLOTS:
   void onSaveParameters();
@@ -209,7 +186,12 @@ private Q_SLOTS:
   void onRunAnalysis();
   void onKillAnalysis();
   void onAnalysisKilled();
+
+  // ================================================================================
+  // ================================================================================
+  // ===== error handling
   void onAnalysisErrorOccurred(insight::Exception e);
+  void onAnalysisWarningOccurred(insight::Exception e);
 
   void onResultReady(insight::ResultSetPtr);
 
@@ -227,19 +209,10 @@ private Q_SLOTS:
 
   void onTogglePacking();
 
-
-  // =======================
-  // == Remote exec actions
-  void onRemoteServerChanged();
-
-  void updateOutputAnalzer(QString line);
-
 Q_SIGNALS:
   void apply();
   void update();
-  void runAnalysis(insight::ProgressDisplayer*);
   void statusMessage(const QString& message, int timeout=0);
-  void logReady(QString line);
   
 private:
   Ui::AnalysisForm* ui;

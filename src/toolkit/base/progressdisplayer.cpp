@@ -15,6 +15,9 @@ bool ProgressDisplayer::stopRun() const
   return false;
 }
 
+ProgressState::ProgressState()
+{}
+
 ProgressState::ProgressState(
     double t,
     ProgressVariableList pvl,

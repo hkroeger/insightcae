@@ -23,12 +23,10 @@ PressureOutletBC::PressureOutletBC
   OpenFOAMCase& c,
   const std::string& patchName,
   const OFDictData::dict& boundaryDict,
-  const ParameterSet& ps,
-  const boost::filesystem::path& casedir
+  const ParameterSet& ps
 )
 : BoundaryCondition(c, patchName, boundaryDict, ps),
-  ps_(ps),
-  casedir_(casedir)
+  ps_(ps)
 {
  BCtype_="patch";
 }

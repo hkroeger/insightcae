@@ -18,6 +18,9 @@
  *
  */
 
+#include "remoterun.h"
+#include "localrun.h"
+
 #ifndef Q_MOC_RUN
 #include "base/boost_include.h"
 #include "base/resultset.h"
@@ -50,8 +53,6 @@
 #include "remotesync.h"
 #include "remotedirselector.h"
 #include "remoteparaview.h"
-
-
 
 
 namespace bf = boost::filesystem;
@@ -121,8 +122,8 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
     ui->runTabLayout->addWidget(spl);
     
-    cout_log_ = new Q_DebugStream(std::cout);
-    connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendLine);
+//    cout_log_ = new Q_DebugStream(std::cout);
+//    connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendLine);
     cerr_log_ = new Q_DebugStream(std::cerr);
     connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendLine);
 
@@ -192,11 +193,6 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
               {
                   ui->hostList->setCurrentIndex( ui->hostList->findText( QString::fromStdString(dlg.selectedServer()) ) );
                   ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
-
-        //          std::ofstream cfg("meta.foam");
-        //          cfg << server_ << ":" << remoteDir_.string();
-
-        //          updateGUI();
               }
             }
     );
@@ -215,18 +211,14 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
             sb, &QStatusBar::showMessage);
 
     connect(ui->btnRemoveRemote, &QPushButton::clicked,
-            this, &AnalysisForm::removeRemoteDirectory);
+            []()
+            {
+            }
+    );
 
     connect(ui->cbRemoteRun, &QCheckBox::stateChanged,
             [&](int state)
             {
-              bool isActive = (state == Qt::Checked);
-              ui->lbRR1->setEnabled(isActive);
-              ui->hostList->setEnabled(isActive);
-              ui->lbRR2->setEnabled(isActive);
-              ui->remoteDir->setEnabled(isActive);
-              ui->btnSelectRemoteDir->setEnabled(isActive);
-              ui->btnUpload->setEnabled(isActive);
               recheckButtonAvailability();
             }
     );
@@ -249,7 +241,6 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
                   ui->cbRemoteRun->setCheckState(Qt::Checked);
                   ui->hostList->setCurrentText(QString::fromStdString(ec.server()));
                   ui->remoteDir->setText(QString::fromStdString(ec.remoteDir().string()));
-                  lockRemoteControls();
                 }
                 catch (...)
                 {}
@@ -280,7 +271,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
                                       QMessageBox::No);
                 if (answer==QMessageBox::Yes)
                 {
-                  stopLocalRun();
+                  onKillAnalysis();
                 }
                 else
                 {
@@ -314,11 +305,6 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
 AnalysisForm::~AnalysisForm()
 {
-  if (workerThread_)
-  {
-    workerThread_->join();
-  }
-
   delete ui;
 }
 
@@ -587,6 +573,22 @@ void AnalysisForm::setExecutionPath(const boost::filesystem::path &p)
 }
 
 
+void AnalysisForm::recheckButtonAvailability()
+{
+  bool isActive = (ui->cbRemoteRun->checkState() == Qt::Checked);
+  ui->lbRR1->setEnabled(isActive);
+  ui->hostList->setEnabled(isActive);
+  ui->portNum->setEnabled(isActive);
+  ui->lbRR2->setEnabled(isActive);
+  ui->remoteDir->setEnabled(isActive);
+  ui->btnSelectRemoteDir->setEnabled(isActive);
+  ui->btnUpload->setEnabled(isActive);
+
+  ui->btnDownload->setEnabled( remoteDownloadOrResumeIsPossible() );
+  ui->btnDisconnect->setEnabled( isActive && isRunningRemotely() );
+  ui->btnResume->setEnabled( /*remoteDownloadOrResumeIsPossible() && !isRunning()*/ isActive && !isRunning() );
+  ui->btnRemoveRemote->setEnabled( remoteDownloadOrResumeIsPossible() && !isRunning() );
+}
 
 
 void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
@@ -619,7 +621,7 @@ void AnalysisForm::onLoadParameters()
   if (!fn.isEmpty())
   {
     loadParameters(fn.toStdString());
-    emit update();
+    Q_EMIT update();
   }
 }
 
@@ -632,7 +634,7 @@ void AnalysisForm::onShowParameterXML()
     Ui::XML_Display ui;
     ui.setupUi(widget);
 
-    emit apply(); // apply all changes into parameter set
+    Q_EMIT apply(); // apply all changes into parameter set
 
     boost::filesystem::path refPath = boost::filesystem::current_path();
     if (!ist_file_.empty())
@@ -659,6 +661,9 @@ void AnalysisForm::onConfigModification()
 
 void AnalysisForm::onRunAnalysis()
 {
+  if (currentWorkbenchAction_)
+    throw insight::Exception("Internal error: there is an action running currently!");
+
   if (ui->cbRemoteRun->checkState()==Qt::Checked)
   {
     startRemoteRun();
@@ -674,15 +679,10 @@ void AnalysisForm::onRunAnalysis()
 
 void AnalysisForm::onKillAnalysis()
 {
-  if (ui->cbRemoteRun->checkState()==Qt::Checked)
-  {
-    stopRemoteRun();
-    QMessageBox::information(this, "Stopped!", "The remote analysis has been interrupted upon user request!");
-  }
-  else
-  {
-    stopLocalRun();
-  }
+  if (!currentWorkbenchAction_)
+    throw insight::Exception("Internal error: there is no action running currently!");
+
+  currentWorkbenchAction_->onCancel();
 }
 
 
@@ -690,13 +690,8 @@ void AnalysisForm::onKillAnalysis()
 
 void AnalysisForm::onAnalysisKilled()
 {
-  if (workerThread_)
-  {
-    workerThread_->join();
-    workerThread_.reset();
-
-    QMessageBox::information(this, "Stopped!", "The analysis has been interrupted upon user request!");
-  }
+  currentWorkbenchAction_.reset();
+  QMessageBox::information(this, "Stopped!", "The analysis has been interrupted upon user request!");
 }
 
 
@@ -704,12 +699,16 @@ void AnalysisForm::onAnalysisKilled()
 
 void AnalysisForm::onAnalysisErrorOccurred(insight::Exception e)
 {
-  if (workerThread_)
-  {
-    workerThread_->join();
-    workerThread_.reset();
-    throw e;
-  }
+  currentWorkbenchAction_.reset();
+  throw e;
+}
+
+
+
+
+void AnalysisForm::onAnalysisWarningOccurred(insight::Exception e)
+{
+  Q_EMIT statusMessage( QString::fromStdString(e.what()) );
 }
 
 
@@ -717,26 +716,20 @@ void AnalysisForm::onAnalysisErrorOccurred(insight::Exception e)
 
 void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
-  if (workerThread_)
-  {
-    workerThread_->join();
-    workerThread_.reset();
+  currentWorkbenchAction_.reset();
 
-    results_=results;
+  results_=results;
 
-  //   qDeleteAll(ui->outputContents->findChildren<ResultElementWrapper*>());
-  //   addWrapperToWidget(*results_, ui->outputContents, this);
+  rtroot_->takeChildren();
+  addWrapperToWidget(*results_, rtroot_, this);
+  ui->resultTree->doItemsLayout();
+  ui->resultTree->expandAll();
+  ui->resultTree->resizeColumnToContents(2);
 
-    rtroot_->takeChildren();
-    addWrapperToWidget(*results_, rtroot_, this);
-    ui->resultTree->doItemsLayout();
-    ui->resultTree->expandAll();
-    ui->resultTree->resizeColumnToContents(2);
+  ui->tabWidget->setCurrentWidget(ui->outputTab);
 
-    ui->tabWidget->setCurrentWidget(ui->outputTab);
+  QMessageBox::information(this, "Finished!", "The analysis has finished");
 
-    QMessageBox::information(this, "Finished!", "The analysis has finished");
-  }
 }
 
 

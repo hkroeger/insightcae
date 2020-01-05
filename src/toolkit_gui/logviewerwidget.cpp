@@ -7,6 +7,7 @@
 #include <QScrollBar>
 
 #include "email.h"
+#include "base/progressdisplayer.h"
 
 LogViewerWidget::LogViewerWidget(QWidget* parent)
   : QPlainTextEdit(parent)
@@ -22,6 +23,11 @@ LogViewerWidget::LogViewerWidget(QWidget* parent)
 void LogViewerWidget::appendLine(const QString& line)
 {
   appendPlainText(line);
+}
+
+void LogViewerWidget::appendLogMessage(const insight::ProgressState &ps)
+{
+  appendPlainText( QString::fromStdString(ps.logMessage_) );
 }
 
 

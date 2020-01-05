@@ -1,6 +1,15 @@
 #ifndef ANALYZECLIENT_H
 #define ANALYZECLIENT_H
 
+#ifndef Q_MOC_RUN
+#undef True
+#undef False
+#undef emit
+#include "Wt/Json/Object.h"
+#include "Wt/Http/Client.h"
+#include "Wt/WIOService.h"
+#endif
+
 #include <string>
 #include <system_error>
 
@@ -9,8 +18,6 @@
 #include "base/progressdisplayer.h"
 #include "boost/variant.hpp"
 
-#include "Wt/Json/Object.h"
-#include "Wt/Http/Client.h"
 
 namespace insight
 {
@@ -23,9 +30,8 @@ class AnalyzeClient
 public:
   typedef enum {
     None,
-    LaunchAnalysis,
+    SimpleRequest,
     QueryStatus,
-    Kill,
     QueryResults
   }
   CurrentRequestType;
@@ -43,8 +49,10 @@ public:
 protected:
   std::string url_;
 
+  Wt::WIOService ioService_;
   Wt::Http::Client httpClient_;
 
+  mutable boost::mutex mx_;
   CurrentRequestType crq_;
 
   boost::variant<
@@ -53,10 +61,15 @@ protected:
     QueryResultsCallback
   > currentCallback_;
 
+  void controlRequest(const std::string& action, AnalyzeClient::ReportSuccessCallback onCompletion);
+
   void handleHttpResponse(boost::system::error_code err, const Wt::Http::Message& response);
 
 public:
   AnalyzeClient(const std::string& url);
+  ~AnalyzeClient();
+
+  bool isBusy() const;
 
   void launchAnalysis(
       const ParameterSet& input,
@@ -68,6 +81,9 @@ public:
   void queryStatus( QueryStatusCallback onStatusAvailable );
 
   void kill( ReportSuccessCallback onCompletion );
+  void exit( ReportSuccessCallback onCompletion );
+  void wnow( ReportSuccessCallback onCompletion );
+  void wnowandstop( ReportSuccessCallback onCompletion );
 
   void queryResults( QueryResultsCallback onResultsAvailable );
 

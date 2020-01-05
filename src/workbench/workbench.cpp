@@ -190,7 +190,7 @@ void workbench::openAnalysis(const QString& fn)
   form->loadParameters(fp);
   boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();
   form->setExecutionPath(dir);
-  form->forceUpdate();
+  Q_EMIT update();
   form->showMaximized();
 }
 

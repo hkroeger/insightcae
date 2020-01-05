@@ -25,6 +25,7 @@ if (wt_FOUND)
 
     target_include_directories(toolkit_remote
       PUBLIC ${Boost_INCLUDE_DIR}
+      PUBLIC ${wt_INCLUDE_DIR}
       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
      )

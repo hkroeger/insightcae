@@ -311,12 +311,12 @@ rapidxml::xml_node<>* Chart::appendToNode
     child->append_attribute ( doc.allocate_attribute
                               (
                                   "ylabel",
-                                  doc.allocate_string ( xlabel_.c_str() )
+                                  doc.allocate_string ( ylabel_.c_str() )
                               ) );
     child->append_attribute ( doc.allocate_attribute
                               (
                                   "addinit",
-                                  doc.allocate_string ( xlabel_.c_str() )
+                                  doc.allocate_string ( addinit_.c_str() )
                               ) );
 
     for ( const PlotCurve& pc: plc_ ) {
@@ -349,6 +349,24 @@ rapidxml::xml_node<>* Chart::appendToNode
     }
 
     return child;
+}
+
+void Chart::readFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
+{
+  readBaseAttributesFromNode(name, doc, node);
+  xlabel_=node.first_attribute("xlabel")->value();
+  ylabel_=node.first_attribute("ylabel")->value();
+  addinit_=node.first_attribute("addinit")->value();
+  for (xml_node<> *e = node.first_node(); e; e = e->next_sibling())
+  {
+    std::string plaintextlabel=e->first_attribute("plaintextlabel")->value();
+    std::string plotcmd=e->first_attribute("plotcmd")->value();
+    std::string value_str=e->value();
+    std::istringstream iss(value_str);
+    arma::mat xy;
+    xy.load(iss, arma::raw_ascii);
+    plc_.push_back(PlotCurve(xy, plaintextlabel, plotcmd));
+  }
 }
 
 

@@ -31,7 +31,12 @@ set(workbench_SRCS
 )
 SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui)
 SET(workbench_RCCS workbench.qrc)
-
+set(workbench_LIBS
+    toolkit toolkit_gui
+    Qt5::Widgets
+    ${Boost_LIBRARIES}
+    ${QWT_LIBRARY} ${QWT_LIBRARIES}
+)
 if (wt_FOUND)
     message(STATUS "Found wt")
 
@@ -39,7 +44,7 @@ if (wt_FOUND)
         remoterun.cpp
         remoterun.h
     )
-    LIST(APPEND analyze_LIBS
+    LIST(APPEND workbench_LIBS
         toolkit_remote
     )
     ADD_DEFINITIONS("-DHAVE_WT")
@@ -49,12 +54,7 @@ endif()
 
 add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
 
-target_link_libraries(workbench
- toolkit toolkit_gui
- Qt5::Widgets
- ${Boost_LIBRARIES}
- ${QWT_LIBRARY} ${QWT_LIBRARIES}
-)
+target_link_libraries(workbench ${workbench_LIBS})
 
 target_include_directories(workbench
   PUBLIC ${QT_INCLUDES}

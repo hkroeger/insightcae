@@ -18,7 +18,9 @@
  *
  */
 
+#ifdef HAVE_WT
 #include "remoterun.h"
+#endif
 #include "localrun.h"
 
 #ifndef Q_MOC_RUN
@@ -298,6 +300,11 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
               }
             }
     );
+
+#ifndef HAVE_WT
+    ui->cbRemoteRun->setCheckState(Qt::Unchecked);
+    ui->cbRemoteRun->setEnabled(false);
+#endif
 }
 
 

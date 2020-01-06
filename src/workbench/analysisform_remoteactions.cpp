@@ -15,7 +15,9 @@
 #include "openfoam/solveroutputanalyzer.h"
 #include "remotesync.h"
 
+#ifdef HAVE_WT
 #include "remoterun.h"
+#endif
 
 #include <QMessageBox>
 #include <QDebug>
@@ -88,25 +90,27 @@ void AnalysisForm::upload()
 
 void AnalysisForm::startRemoteRun()
 {
+#ifdef HAVE_WT
   Q_EMIT apply(); // apply all changes into parameter set
   currentWorkbenchAction_.reset(new RemoteRun(this));
+#endif
 }
 
 
 
 void AnalysisForm::resumeRemoteRun()
 {
+#ifdef HAVE_WT
   if (currentWorkbenchAction_)
     throw insight::Exception("Internal error: there is an action running currently!");
 
   currentWorkbenchAction_.reset(new RemoteRun(this, true));
+#endif
 }
 
 
 void AnalysisForm::disconnectFromRemoteRun()
 {
-
-
   recheckButtonAvailability();
 }
 

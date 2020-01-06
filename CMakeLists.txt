@@ -99,20 +99,16 @@ find_package(Armadillo REQUIRED)
 find_package(GSL REQUIRED)
 find_package(PythonLibs 2.7 REQUIRED)
 
-find_package(Boost COMPONENTS system filesystem regex date_time timer thread iostreams python program_options REQUIRED)
+find_package(wt
+    HINTS /opt/witty
+)
 
+find_package(Boost COMPONENTS system filesystem regex date_time timer thread iostreams python program_options REQUIRED)
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
-
-
-
-
-if (INSIGHT_BUILD_WEBWORKBENCH)
-    find_package(Wt)
-endif()
 
 
 

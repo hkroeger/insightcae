@@ -5,17 +5,12 @@
 #include "remotesync.h"
 
 #include "localrun.h"
+#ifdef HAVE_WT
 #include "remoterun.h"
-
+#endif
 
 bool AnalysisForm::isRunningLocally() const
 {
-//  if (workerThread_)
-//  {
-//    if (!workerThread_->timed_join(boost::posix_time::seconds(0)))
-//      return true;
-//  }
-
   if (currentWorkbenchAction_)
   {
     return dynamic_cast<LocalRun*>(currentWorkbenchAction_.get());
@@ -29,10 +24,12 @@ bool AnalysisForm::isRunningLocally() const
 
 bool AnalysisForm::isRunningRemotely() const
 {
+#ifdef HAVE_WT
   if (currentWorkbenchAction_)
   {
     return dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get());
   }
+#endif
 
   return false;
 }

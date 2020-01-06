@@ -1,8 +1,5 @@
 project(analyze)
 
-find_package(wt
-    HINTS /opt/witty
-)
 
 set(analyze_SOURCES
     main.cpp

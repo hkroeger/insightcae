@@ -1,8 +1,5 @@
 project(toolkit_remote)
 
-find_package(wt
-    HINTS /opt/witty
-)
 
 set(toolkit_remote_SRCS
     analyzeclient.cpp

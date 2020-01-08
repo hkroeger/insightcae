@@ -387,56 +387,59 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
     ptr_map_insert<ScalarResult>(*results) ("delta_p", delta_p, "Pressure difference", "", "Pa");
 
     {
+      using namespace insight::paraview;
+      ParaviewVisualization::Parameters pvp;
+
       double Lmax=p.geometryscale*arma::as_scalar(arma::max(L_));
       arma::mat ctr=p.geometryscale*( bb_.col(1) + bb_.col(0) )*0.5;
-//      arma::mat ctri=inletprops.ctr_;
-
-      paraview::ParaviewVisualization::Parameters pvp;
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
-        .set_command(
-           "import numpy as np\n"
-
-           "eb=extractPatches(openfoam_case, 'wall.*')\n"
-           "Show(eb)\n"
-           "displaySolid(eb, 0.1)\n"
-        )
-      )));
 
       paraview::Streamtracer::Parameters::seed_cloud_type cloud;
       cloud.center=p.mesh.PiM *p.geometryscale;
       cloud.number=500;
       cloud.radius=0.5*arma::norm(L_,2);
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::Streamtracer(paraview::Streamtracer::Parameters()
-        .set_seed(cloud)
-        .set_dataset("openfoam_case[0]")
-        .set_field("U")
-        .set_maxLen(10.*Lmax)
-        .set_name("st")
-      )));
 
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
-        .set_bbmin(p.geometryscale*bb_.col(0))
-        .set_bbmax(p.geometryscale*bb_.col(1))
-        .set_imagename("streamlines")
+      pvp.scenes = {
+        PVScenePtr(new IsoView(IsoView::Parameters()
+                .set_bbmin(p.geometryscale*bb_.col(0))
+                .set_bbmax(p.geometryscale*bb_.col(1))
+                .set_imagename("streamlines")
+                .set_sceneElements({
+                  PVScriptElementPtr(new CustomScriptElement(CustomScriptElement::Parameters()
+                          .set_command(
+                             "import numpy as np\n"
 
-      )));
+                             "eb=extractPatches(openfoam_case, 'wall.*')\n"
+                             "displaySolid(eb, 0.1)\n"
+                          )
+                          .set_names({"eb"})
+                        )),
+                  PVScriptElementPtr(new Streamtracer(paraview::Streamtracer::Parameters()
+                          .set_seed(cloud)
+                          .set_dataset(ParaviewVisualization::OFCaseDatasetName()+"[0]")
+                          .set_field("U")
+                          .set_maxLen(10.*Lmax)
+                          .set_name("st")
+                        ))
+                })
+        )),
 
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
-        .set_command(
-            "Hide(st)\n"
-            "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.8, 0.25], barorient=1, opacity=1.)\n"
-        )
-      )));
+        PVScenePtr(new IsoView(IsoView::Parameters()
+                .set_bbmin(p.geometryscale*bb_.col(0))
+                .set_bbmax(p.geometryscale*bb_.col(1))
+                .set_imagename("pressureContour")
+                .set_sceneElements({
+                  PVScriptElementPtr(new CustomScriptElement(CustomScriptElement::Parameters()
+                        .set_command(
+                            "Hide(st)\n"
+                            "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.8, 0.25], barorient=1, opacity=1.)\n"
+                        )
+                        .set_names({"eb"})
+                  ))
+                })
+        ))
+      };
 
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
-        .set_bbmin(p.geometryscale*bb_.col(0))
-        .set_bbmax(p.geometryscale*bb_.col(1))
-        .set_imagename("pressureContour")
-      )));
-
-      paraview::ParaviewVisualization pv(pvp, executionPath());
-      ResultSetPtr images = pv();
-      results->insert ( "renderings", images );
+      results->insert ( "renderings", ParaviewVisualization(pvp, executionPath())() );
     }
     
     return results;

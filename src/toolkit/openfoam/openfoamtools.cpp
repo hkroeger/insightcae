@@ -2259,6 +2259,8 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
   }
 }
 
+
+
 void currentNumericalSettingsReport
 (
   const OpenFOAMCase& cm, 

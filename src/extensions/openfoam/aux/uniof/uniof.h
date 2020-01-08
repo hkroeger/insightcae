@@ -39,7 +39,7 @@
 #define UNIOF_OPTIONLOOKUP(args, name) args.optionLookup(name)
 #endif
 
-#if  (OF_VERSION<=010603) /*defined(OF16ext)&&!defined(Fx41)*/
+#if  (OF_VERSION<=010603)
 #define UNIOF_WORDRELIST 	wordList
 #else
 #define UNIOF_WORDRELIST 	wordReList
@@ -71,7 +71,7 @@
 #define UNIOF_HEADEROK(ioo,typ) ( ((ioo).headerOk()) && ((ioo).headerClassName() == pTraits<typ>::typeName) )
 #endif
 
-#if (defined(OF_FORK_esi) && (OF_VERSION>=060000)) //defined(OFesi1806)
+#if (defined(OF_FORK_esi) && (OF_VERSION>=060000))
 #define UNIOF_ADDARG(args,j) (args).args()[j+1]
 #elif (OF_VERSION>=030000) //(defined(OF301) || defined(OFplus)||defined(OFdev))
 #define UNIOF_ADDARG(args,j) (args).arg((j)+1)
@@ -79,7 +79,7 @@
 #define UNIOF_ADDARG(args,j) (args).additionalArgs()[j]
 #endif
 
-#if (OF_VERSION>=020300) //(defined(OF23x)||defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806)||defined(OFesi1906))
+#if (OF_VERSION>=020300)
 #define UNIOF_ADDOPT(aa,name,typ,desc) aa::addOption(name,typ,desc)
 #else
 #define UNIOF_ADDOPT(aa,name,typ,desc) aa::validOptions.insert(name,desc)
@@ -91,32 +91,31 @@
 #define UNIOF_OPTION(aa, optname) aa.option(optname)
 #endif
 
-#if (OF_VERSION>=040000) //defined(OFplus)||defined(OFdev)||defined(OFesi1806)||defined(OFesi1906)
+#if (OF_VERSION>=040000)
 #define UNIOF_INTERNALFIELD(f) f.primitiveField()
 #else
 #define UNIOF_INTERNALFIELD(f) f.internalField()
 #endif
 
 
-#if (OF_VERSION>=040000) //defined(OFplus)||defined(OFdev)||defined(OFesi1806)||defined(OFesi1906)
+#if (OF_VERSION>=040000)
 #define UNIOF_DIMINTERNALFIELD(f) (f).internalField()
 #else
 #define UNIOF_DIMINTERNALFIELD(f) (f).dimensionedInternalField()
 #endif
 
-#if (OF_VERSION>=040000) //defined(OFplus)||defined(OFdev)||defined(OFesi1806)||defined(OFesi1906)
+#if (OF_VERSION>=040000)
 #define UNIOF_INTERNALFIELD_NONCONST(f) (f).ref().field()
 #else
 #define UNIOF_INTERNALFIELD_NONCONST(f) (f).internalField()
 #endif
 
-#if defined(OF_FORK_extend) // defined(OF16ext)
+#if defined(OF_FORK_extend)
 #define UNIOF_LABELULIST unallocLabelList
-#elif (OF_VERSION>040000) //defined(OFplus)
+#elif (OF_VERSION>040000)
 #define UNIOF_LABELULIST labelList
 #else
 #define UNIOF_LABELULIST labelUList
 #endif
-
 
 #endif

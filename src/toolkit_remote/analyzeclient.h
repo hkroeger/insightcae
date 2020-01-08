@@ -12,6 +12,7 @@
 
 #include <string>
 #include <system_error>
+#include <future>
 
 #include "base/parameterset.h"
 #include "base/resultset.h"
@@ -32,7 +33,8 @@ public:
     None,
     SimpleRequest,
     QueryStatus,
-    QueryResults
+    QueryResults,
+    QueryExepath
   }
   CurrentRequestType;
 
@@ -45,6 +47,9 @@ public:
   // success flag, result data
   typedef std::function<void(bool, ResultSetPtr)> QueryResultsCallback;
 
+  // success flag, path
+  typedef std::function<void(bool, boost::filesystem::path)> QueryExepathCallback;
+
 
 protected:
   std::string url_;
@@ -56,6 +61,7 @@ protected:
   CurrentRequestType crq_;
 
   boost::variant<
+    QueryExepathCallback,
     ReportSuccessCallback,
     QueryStatusCallback,
     QueryResultsCallback
@@ -70,6 +76,9 @@ public:
   ~AnalyzeClient();
 
   bool isBusy() const;
+  void forgetRequest();
+
+  void queryExepath( QueryExepathCallback onExepathAvailable );
 
   void launchAnalysis(
       const ParameterSet& input,

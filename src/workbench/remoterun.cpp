@@ -61,8 +61,10 @@ void RemoteRun::launchRemoteAnalysisServer()
   int ret = bp::system
       (
         bp::search_path("ssh"),
-        bp::args( { i.second.serverName_, "nohup analyze --workdir=\""+remoteDir.string()+"\" --server >/dev/null 2>&1 &" } )
+        bp::args( { i.second.serverName_, "analyze --workdir=\""+remoteDir.string()+"\" --server >/dev/null 2>&1 </dev/null &" } )
         );
+
+  std::cout<<"ret="<<ret<<std::endl;
 
   if (ret!=0)
     throw insight::Exception("Failed to launch remote analysis server executable!");
@@ -121,11 +123,11 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
           try
           {
             p.packExternalFiles(); // pack
-
-//            createRemoteDirectory();
-//            launchRemoteAnalysisServer();
+            createRemoteDirectory();
+            launchRemoteAnalysisServer();
           }
           catch (...) { exceptionEmitter(); }
+
 
           auto monitor = [&]()
           {
@@ -160,25 +162,25 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
                                 {
                                   resultsFetched=true;
 
-//                                  ac_.exit(
-//                                        [=](bool success)
-//                                        {
-//                                          try {
-//                                          if (!success)
-//                                          {
-//                                            Q_EMIT failed( insight::Exception("Failed to stop remote server!") );
-//                                          }
-//                                          else
-//                                          {
+                                  ac_.exit(
+                                        [=](bool success)
+                                        {
+                                          try {
+                                          if (!success)
+                                          {
+                                            Q_EMIT failed( insight::Exception("Failed to stop remote server!") );
+                                          }
+                                          else
+                                          {
                                             Q_EMIT finished( results );
-//                                          }
-//                                          } catch (...) { exceptionEmitter(); }
-//                                        }
-//                                  );
+                                          }
+                                          } catch (...) { exceptionEmitter(); }
+                                        }
+                                  );
 
                                   try
                                   {
-                                    //removeRemoteDirectory();
+                                    removeRemoteDirectory();
                                   } catch (...) { exceptionEmitter(); }
                                 }
                                 } catch (...) { exceptionEmitter(); }
@@ -203,23 +205,51 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
           }
           else
           {
-            ac_.launchAnalysis(
-                  p, "/", af_->analysisName_,
+            // wait for server to come up
+            std::mutex m;
+            std::condition_variable cv;
+            bool contacted=false;
+            do
+            {
+              std::cout<<"start analysis attempt"<<std::endl;
 
-                  [&](bool success)
-                  {
-                    try {
-                    if (!success)
+              ac_.launchAnalysis(
+                    p, "/", af_->analysisName_,
+
+                    [&](bool success)
                     {
-                      Q_EMIT failed( insight::Exception("Failed to launch analysis!") );
+                      try {
+                      if (!success)
+                      {
+                        Q_EMIT failed( insight::Exception("Failed to launch analysis!") );
+                      }
+                      else
+                      {
+                        {
+                          std::cout<<"Ok"<<std::endl;
+                          std::unique_lock<std::mutex> lck(m);
+                          contacted=true;
+                          cv.notify_all();
+                        }
+                        monitor();
+                      }
+                      } catch (...) { exceptionEmitter(); }
                     }
-                    else
-                    {
-                      monitor();
-                    }
-                    } catch (...) { exceptionEmitter(); }
-                  }
-            );
+              );
+
+
+              {
+               std::unique_lock<std::mutex> lk(m);
+               cv.wait_for(lk, std::chrono::seconds(10) );
+
+               if (!contacted)
+                 ac_.forgetRequest();
+              }
+
+            } while(!contacted);
+
+            std::cout<<"Connection established."<<std::endl;
+
           }
         }
   );

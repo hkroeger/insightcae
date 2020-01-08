@@ -723,9 +723,9 @@ void AnalysisForm::onAnalysisWarningOccurred(insight::Exception e)
 
 void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
-  currentWorkbenchAction_.reset();
-
   results_=results;
+
+  currentWorkbenchAction_.reset();
 
   rtroot_->takeChildren();
   addWrapperToWidget(*results_, rtroot_, this);

@@ -40,34 +40,36 @@ void AnalyzeClient::controlRequest(const std::string &action, AnalyzeClient::Rep
 void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::Http::Message &response)
 {
 
-  mx_.lock();
-  auto crq=crq_;
+  boost::lock_guard<boost::mutex> lock(mx_);
 
-  std::cout<<"httpResponse err="<<err<<", crq="<<crq<<", body="<<response.body()<<std::endl;
+
+  std::string body=response.body();
+  std::cout<<"httpResponse err="<<err<<", crq="<<crq_
+          <<", body="<<body.substr(0, std::min<size_t>(80,body.size()))
+         <<std::endl;
 
   bool success = (!err && response.status() == 200);
 
-  switch (crq)
+  switch (crq_)
   {
 
     case SimpleRequest: {     
         crq_=None;
-        mx_.unlock();
-        boost::get<ReportSuccessCallback>(currentCallback_)(success);
+        boost::thread( boost::get<ReportSuccessCallback>(currentCallback_), success ).detach();
       }
       break;
 
     case QueryStatus: {
 
+      if (success)
+      {
         const auto *ct = response.getHeader("Content-Type");
         if (!ct)
         {
-          crq_=None;
-          mx_.unlock();
           throw insight::Exception("No content type specified in response!");
         }
 
-        if ( success && ( (*ct)=="application/json") )
+        if (  (*ct)=="application/json" )
         {
           Wt::Json::Object payload;
           Wt::Json::parse(response.body(), payload);
@@ -100,57 +102,82 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
                 pvl,
                 s.get("logMessage").toString()
                 ));
-              boost::get<QueryStatusCallback>(currentCallback_)(success, ps, false);
+              boost::thread( boost::get<QueryStatusCallback>(currentCallback_), success, ps, false).detach();
             }
-            crq_=None;
-            mx_.unlock();
+          }
+          else
+          {
+            boost::thread( boost::get<QueryStatusCallback>(currentCallback_), true, ProgressStatePtr(), false).detach();
           }
 
           if (resultsAvailable)
           {
-            crq_=None;
-            mx_.unlock();
-            boost::get<QueryStatusCallback>(currentCallback_)(success, ProgressStatePtr(), true);
+            boost::thread( boost::get<QueryStatusCallback>(currentCallback_), success, ProgressStatePtr(), true).detach();
           }
         }
         else
         {
-          crq_=None;
-          mx_.unlock();
-          boost::get<QueryStatusCallback>(currentCallback_)(false, ProgressStatePtr(), false);
-        }        
+          boost::thread( boost::get<QueryStatusCallback>(currentCallback_), false, ProgressStatePtr(), false).detach();
+        }
       }
-      break;
+      else
+      {
+        boost::thread( boost::get<QueryStatusCallback>(currentCallback_), false, ProgressStatePtr(), false).detach();
+      }
+    } break;
 
     case QueryResults: {
+      if (success)
+      {
 //      std::cout<<"call"<<std::endl;
         const auto *ct = response.getHeader("Content-Type");
         if (!ct)
           throw insight::Exception("No content type specified in response!");
-        if (success && ( (*ct)=="application/xml"))
+        if ( (*ct)=="application/xml")
         {
           auto body = response.body();
           ResultSetPtr r(new ResultSet(body));
-          crq_=None;
-          mx_.unlock();
-          boost::get<QueryResultsCallback>(currentCallback_)(success, r);
+          boost::thread( boost::get<QueryResultsCallback>(currentCallback_), success, r).detach();
         }
         else
         {
-          crq_=None;
-          mx_.unlock();
-          boost::get<QueryResultsCallback>(currentCallback_)(false, ResultSetPtr());
+          boost::thread( boost::get<QueryResultsCallback>(currentCallback_), false, ResultSetPtr()).detach();
         }
       }
-      break;
+      else
+      {
+        boost::thread( boost::get<QueryResultsCallback>(currentCallback_), false, ResultSetPtr()).detach();
+      }
+    } break;
+
+    case QueryExepath: {
+      if (success) {
+        const auto *ct = response.getHeader("Content-Type");
+        if (!ct)
+          throw insight::Exception("No content type specified in response!");
+        if ( (*ct)=="text/plain" )
+        {
+          boost::thread( boost::get<QueryExepathCallback>(currentCallback_), success, response.body()).detach();
+        }
+        else
+        {
+          boost::thread( boost::get<QueryExepathCallback>(currentCallback_), false, "").detach();
+        }
+      }
+      else
+      {
+        boost::thread( boost::get<QueryExepathCallback>(currentCallback_), false, "").detach();
+      }
+    } break;
 
     case None: {
-        mx_.unlock();
         insight::Warning("Internal error: got unexpected response.");
       }
       break;
 
   }
+
+  crq_=None;
 }
 
 
@@ -186,6 +213,25 @@ bool AnalyzeClient::isBusy() const
 {
   boost::lock_guard<boost::mutex> mxg(mx_);
   return crq_!=None;
+}
+
+void AnalyzeClient::forgetRequest()
+{
+  boost::lock_guard<boost::mutex> mxg(mx_);
+  crq_=None;
+}
+
+void AnalyzeClient::queryExepath(AnalyzeClient::QueryExepathCallback onExepathAvailable)
+{
+  boost::lock_guard<boost::mutex> mxg(mx_);
+
+  if (crq_!=None)
+    throw insight::Exception("There is an unfinished request!");
+
+  crq_=QueryExepath;
+  currentCallback_=onExepathAvailable;
+  if (!httpClient_.get(url_+"/exepath"))
+    throw insight::Exception("Could not query execution path of remote analysis!");
 }
 
 

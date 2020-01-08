@@ -17,54 +17,56 @@ namespace insight
 namespace paraview
 {
 
+std::string pvec(const arma::mat& v);
 
 
-
-class PVScene
+class PVScriptElement
 {
 public:
-//   declareFactoryTableNoArgs(PVScene);
-  declareDynamicClass(PVScene);
+  declareDynamicClass(PVScriptElement);
 
 public:
 
-#include "paraview__PVScene__Parameters.h"
+#include "paraview__PVScriptElement__Parameters.h"
 /*
-PARAMETERSET>>> PVScene Parameters
-
-name = string "out" "Name of output data set"
-resetview = bool false "If true, the view is cleared before rendering. Previous scene will be overlayed otherwise"
-imagename = string "" "Image name. Will be used as filename. If blank, the view created but not rendered. This can be useful to overlay with the next scene."
+PARAMETERSET>>> PVScriptElement Parameters
 
 <<<PARAMETERSET
 */
 
-  declareType("PVscene");
+protected:
+  std::vector<std::string> objNames_;
+  Parameters p_;
 
-  virtual ~PVScene();
+public:
+  declareType("PVScriptElement");
+
+  PVScriptElement(const Parameters& p, const std::vector<std::string>& objNames);
+  virtual ~PVScriptElement();
 
   virtual std::string pythonCommands() const =0;
   virtual std::vector<boost::filesystem::path> createdFiles() const;
+  virtual std::vector<std::string> createdObjects() const;
 
-  static std::string pvec(const arma::mat& v);
 };
 
-typedef std::shared_ptr<PVScene> PVScenePtr;
+typedef std::shared_ptr<PVScriptElement> PVScriptElementPtr;
 
 
 
-class CustomPVScene
-: public PVScene
+
+class CustomScriptElement
+: public PVScriptElement
 {
 
 public:
-#include "paraview__CustomPVScene__Parameters.h"
+#include "paraview__CustomScriptElement__Parameters.h"
 /*
-PARAMETERSET>>> CustomPVScene Parameters
-
-inherits insight::paraview::PVScene::Parameters
+PARAMETERSET>>> CustomScriptElement Parameters
+inherits insight::paraview::PVScriptElement::Parameters
 
 command = string "" "Python snippet to execute in pvBatch"
+names = array [ string "" "Name of crated PV script object" ] *0 "Names of created PV script object"
 
 <<<PARAMETERSET
 */
@@ -74,9 +76,9 @@ protected:
 public:
   declareType("CustomPVScene");
 
-  CustomPVScene(const ParameterSet&);
+  CustomScriptElement(const ParameterSet&);
 
-  virtual std::string pythonCommands() const;
+  std::string pythonCommands() const override;
 
   virtual ParameterSet getParameters() const { return p_; }
 };
@@ -85,15 +87,16 @@ public:
 
 
 class Cutplane
-: public PVScene
+: public PVScriptElement
 {
 
 public:
 #include "paraview__Cutplane__Parameters.h"
 /*
 PARAMETERSET>>> Cutplane Parameters
+inherits insight::paraview::PVScriptElement::Parameters
 
-inherits insight::paraview::PVScene::Parameters
+name = string "out" "Name of output data set"
 
 dataset = string "" "name of the data set to cut"
 field = string "" "name of the field to display on the plane"
@@ -118,18 +121,52 @@ public:
 
 
 
+class Arrows
+: public PVScriptElement
+{
+
+public:
+#include "paraview__Arrows__Parameters.h"
+/*
+PARAMETERSET>>> Arrows Parameters
+inherits insight::paraview::PVScriptElement::Parameters
+
+name = string "out" "Name of output data set"
+
+arrows = array [ set {
+ from = vector (0 0 0) "begin point in scene units"
+ to = vector (1 0 0) "end point in scene units"
+} ] *0 "definition of arrows"
+
+<<<PARAMETERSET
+*/
+protected:
+  Parameters p_;
+
+public:
+  declareType("Arrows");
+
+  Arrows(const ParameterSet&);
+
+  virtual std::string pythonCommands() const;
+
+  virtual ParameterSet getParameters() const { return p_; }
+};
+
+
 
 
 class Streamtracer
-: public PVScene
+: public PVScriptElement
 {
 
 public:
 #include "paraview__Streamtracer__Parameters.h"
 /*
 PARAMETERSET>>> Streamtracer Parameters
+inherits insight::paraview::PVScriptElement::Parameters
 
-inherits insight::paraview::PVScene::Parameters
+name = string "out" "Name of output data set"
 
 dataset = string "" "name of the data set to cut" *necessary
 field = string "U" "name of the vector field from which the stream tracers are to be computed"
@@ -165,6 +202,84 @@ public:
 
 
 
+class PVScene
+{
+
+
+public:
+    declareDynamicClass(PVScene);
+
+#include "paraview__PVScene__Parameters.h"
+/*
+PARAMETERSET>>> PVScene Parameters
+
+sceneElements = array [
+ dynamicclassconfig "paraview::PVScriptElement" default "Cutplane" "Scene definition"
+ ] *0 "Scene building bricks"
+
+resetview = bool false "If true, the view is cleared before rendering. Previous scene will be overlayed otherwise"
+imagename = string "" "Image name. Will be used as filename. If blank, the view created but not rendered. This can be useful to overlay with the next scene."
+
+
+<<<PARAMETERSET
+*/
+protected:
+  Parameters p_;
+
+public:
+  declareType("PVScene");
+
+  PVScene(const Parameters& p);
+  virtual ~PVScene();
+
+  std::vector<std::string> objectNames() const;
+
+  virtual std::string pythonCommands() const;
+
+  std::string sceneObjectsBoundingBoxCmd(const std::vector<std::string>& varnames) const;
+
+  virtual std::vector<boost::filesystem::path> createdFiles() const;
+};
+
+
+typedef std::shared_ptr<PVScene> PVScenePtr;
+
+
+
+
+class SingleView
+: public PVScene
+{
+
+public:
+#include "paraview__SingleView__Parameters.h"
+/*
+PARAMETERSET>>> SingleView Parameters
+inherits insight::paraview::PVScene::Parameters
+
+lookAt = vector (0 0 0) "Look at point"
+e_up = vector (0 0 1) "Upward direction"
+normal = vector (1 0 0) "direction from camera to lookAt point"
+
+<<<PARAMETERSET
+*/
+protected:
+  Parameters p_;
+
+public:
+  declareType("SingleView");
+
+  SingleView(const ParameterSet&);
+
+  virtual std::string pythonCommands() const;
+  virtual std::vector<boost::filesystem::path> createdFiles() const;
+
+  virtual ParameterSet getParameters() const { return p_; }
+};
+
+
+
+
 class IsoView
 : public PVScene
 {
@@ -173,7 +288,6 @@ public:
 #include "paraview__IsoView__Parameters.h"
 /*
 PARAMETERSET>>> IsoView Parameters
-
 inherits insight::paraview::PVScene::Parameters
 
 bbmin = vector (-1 -1 -1) "minimum point of bounding box"
@@ -210,7 +324,7 @@ public:
 PARAMETERSET>>> ParaviewVisualization Parameters
 
 scenes = array [
- dynamicclassconfig "paraview::PVScene" default "IsoView" "Scene configuration"
+ dynamicclassconfig "paraview::PVScene" default "SingleView" "Scene definition"
  ] *0 "Configuration of scenes"
 
 <<<PARAMETERSET
@@ -223,6 +337,8 @@ scenes = array [
   static std::string category() { return "General Postprocessing"; }
 
   virtual ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer);
+
+  static std::string OFCaseDatasetName();
 };
 
 

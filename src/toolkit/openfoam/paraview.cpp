@@ -4,6 +4,9 @@
 #include "openfoam/ofes.h"
 
 #include "boost/assign.hpp"
+#include "boost/algorithm/string.hpp"
+
+#include <cmath>
 
 using namespace std;
 using namespace boost;
@@ -17,86 +20,272 @@ namespace insight
 namespace paraview
 {
 
-defineType(PVScene);
-// defineFactoryTableNoArgs(PVScene);
-defineDynamicClass(PVScene);
 
-PVScene::~PVScene()
-{}
 
-std::string PVScene::pvec(const arma::mat& v)
+
+std::string pvec(const arma::mat& v)
 {
-  return boost::str( boost::format("[%g, %g, %g]") % v(0) % v(1) % v(2) );
+  return boost::str( boost::format("np.array([%g, %g, %g])") % v(0) % v(1) % v(2) );
 }
 
-std::vector<boost::filesystem::path> PVScene::createdFiles() const
+
+
+
+defineType(PVScriptElement);
+defineDynamicClass(PVScriptElement);
+
+PVScriptElement::PVScriptElement(const Parameters &p, const std::vector<std::string>& objNames)
+  : objNames_(objNames), p_(p)
+{}
+
+PVScriptElement::~PVScriptElement()
+{}
+
+
+
+std::vector<boost::filesystem::path> PVScriptElement::createdFiles() const
 {
   return std::vector<boost::filesystem::path>();
 }
 
-defineType(CustomPVScene);
-addToFactoryTable(PVScene, CustomPVScene);
-addToStaticFunctionTable(PVScene, CustomPVScene, defaultParameters);
+std::vector<std::string> PVScriptElement::createdObjects() const
+{
+  return objNames_;
+}
 
-CustomPVScene::CustomPVScene(const ParameterSet& ps)
-: p_(ps)
+
+
+
+defineType(CustomScriptElement);
+addToFactoryTable(PVScriptElement, CustomScriptElement);
+addToStaticFunctionTable(PVScriptElement, CustomScriptElement, defaultParameters);
+
+CustomScriptElement::CustomScriptElement(const ParameterSet& ps)
+  : PVScriptElement(ps, Parameters(ps).names), p_(ps)
 {}
 
 
-string CustomPVScene::pythonCommands() const
+string CustomScriptElement::pythonCommands() const
 {
   return p_.command;
 }
 
+
+
+
+defineType(Arrows);
+addToFactoryTable(PVScriptElement, Arrows);
+addToStaticFunctionTable(PVScriptElement, Arrows, defaultParameters);
+
+Arrows::Arrows(const ParameterSet& ps)
+: PVScriptElement(ps, {Parameters(ps).name}), p_(ps)
+{}
+
+
+string Arrows::pythonCommands() const
+{
+  std::string pycmd =
+      p_.name+"_input=[]\n"
+      ;
+  for (const auto& a: p_.arrows)
+  {
+    arma::mat R = a.to - a.from;
+    double r=norm(R,2);
+    R/=r;
+    double beta = 180.*atan2( -R(2), sqrt(1.-pow(R(2),2))) / M_PI;
+    double gamma = 180.*std::asin(R(1)/sqrt(1.-pow(R(2),2)))/M_PI;
+
+    pycmd +=
+        p_.name+"_source = Arrow()\n"+
+        p_.name+"_t1 = Transform(Input="+p_.name+"_source)\n"+
+        p_.name+"_t1.Transform = 'Transform'\n"+
+        p_.name+"_t1.Transform.Scale = "+boost::str(boost::format("[%g, %g, %g]\n")%r%r%r)+
+        p_.name+"_t1.Transform.Rotate = "+boost::str(boost::format("[0.0, %g, %g]\n")%beta%gamma)+
+        p_.name+"_obj = Transform(Input="+p_.name+"_t1)\n"+
+        p_.name+"_obj.Transform = 'Transform'\n"+
+        p_.name+"_obj.Transform.Translate = "+boost::str(boost::format("[%g, %g, %g]\n")%a.from(0)%a.from(1)%a.from(2))+
+        p_.name+"_input.append("+p_.name+"_obj)\n"
+        ;
+  }
+
+  pycmd +=
+      p_.name+" = GroupDatasets(Input = "+p_.name+"_input)\n"
+      ;
+
+  return pycmd;
+}
+
+
+
 defineType(Cutplane);
-addToFactoryTable(PVScene, Cutplane);
-addToStaticFunctionTable(PVScene, Cutplane, defaultParameters);
+addToFactoryTable(PVScriptElement, Cutplane);
+addToStaticFunctionTable(PVScriptElement, Cutplane, defaultParameters);
 
 Cutplane::Cutplane(const ParameterSet& ps)
-: p_(ps)
+: PVScriptElement(ps, {Parameters(ps).name}), p_(ps)
 {}
 
 
 string Cutplane::pythonCommands() const
 {
-  return "";
+  return
+      p_.name + " = planarSlice("+p_.dataset+", "+pvec(p_.p0)+","+pvec(p_.normal)+")\n"
+      "displayContour("+p_.name+", '"+p_.field+"', arrayType='CELL_DATA', barpos=[0.7,0.25], barorient=1)\n"
+      ;
 }
 
 
+
+
 defineType(Streamtracer);
-addToFactoryTable(PVScene, Streamtracer);
-addToStaticFunctionTable(PVScene, Streamtracer, defaultParameters);
+addToFactoryTable(PVScriptElement, Streamtracer);
+addToStaticFunctionTable(PVScriptElement, Streamtracer, defaultParameters);
 
 Streamtracer::Streamtracer(const ParameterSet& ps)
-: p_(ps)
+: PVScriptElement(ps, {Parameters(ps).name}), p_(ps)
 {}
 
 
 string Streamtracer::pythonCommands() const
 {
   std::string cmd;
-  cmd+=p_.name+"=StreamTracer(Input="+p_.dataset+", Vectors=['"+p_.field+"'], MaximumStreamlineLength="+lexical_cast<string>(p_.maxLen)+")\n";
+  cmd +=
+      p_.name+"=StreamTracer(Input="+p_.dataset+", "+
+              "Vectors=['"+p_.field+"'], "+
+              "MaximumStreamlineLength="+lexical_cast<string>(p_.maxLen)+")\n";
+
   if (const auto* cloud = boost::get<Parameters::seed_cloud_type>(&p_.seed))
   {
     cmd+=
        p_.name+".SeedType = 'Point Source'\n"+
-       p_.name+".SeedType.Center="+paraview::PVScene::pvec(cloud->center)+"\n"+
+       p_.name+".SeedType.Center="+pvec(cloud->center)+"\n"+
        p_.name+".SeedType.Radius="+lexical_cast<string>(cloud->radius)+"\n"+
        p_.name+".SeedType.NumberOfPoints="+lexical_cast<string>(cloud->number)+"\n"
        ;
   }
-
-  cmd+="Show("+p_.name+")\n";
-
   return cmd;
 }
+
+
+
+
+
+
+defineType(PVScene);
+defineDynamicClass(PVScene);
+
+PVScene::PVScene(const Parameters& p)
+  : p_(p)
+{}
+
+PVScene::~PVScene()
+{}
+
+std::vector<std::string> PVScene::objectNames() const
+{
+  std::vector<std::string> objnames;
+  for (PVScriptElementPtr scn: p_.sceneElements)
+  {
+    auto sn=scn->createdObjects();
+    std::copy(sn.begin(), sn.end(), std::back_inserter(objnames));
+  }
+  return objnames;
+}
+
+
+std::string PVScene::sceneObjectsBoundingBoxCmd(const std::vector<std::string> &vn) const
+{
+  auto objnames = objectNames();
+  return
+      vn[0]+"="+vn[1]+"="+vn[2]+"=1e10\n"+
+      vn[3]+"="+vn[4]+"="+vn[5]+"=-1e10\n"+
+      "for o in ["+boost::algorithm::join(objnames, ",")+"]:\n"
+      " (xmin,xmax,ymin,ymax,zmin,zmax)=o.GetDataInformation().GetBounds()\n"
+      " "+vn[0]+"=min(xmin,"+vn[0]+")\n"
+      " "+vn[1]+"=min(ymin,"+vn[1]+")\n"
+      " "+vn[2]+"=min(zmin,"+vn[2]+")\n"
+      " "+vn[3]+"=max(xmax,"+vn[3]+")\n"
+      " "+vn[4]+"=max(ymax,"+vn[4]+")\n"
+      " "+vn[5]+"=max(zmax,"+vn[5]+")\n"
+      ;
+}
+
+string PVScene::pythonCommands() const
+{
+  std::string pvscript;
+
+  for (PVScriptElementPtr scn: p_.sceneElements)
+  {
+    pvscript += scn->pythonCommands();
+  }
+
+  auto ons=objectNames();
+  for (const auto& on: ons)
+  {
+    pvscript += "Show("+on+")\n";
+  }
+
+  return pvscript;
+}
+
+
+std::vector<boost::filesystem::path> PVScene::createdFiles() const
+{
+  return std::vector<boost::filesystem::path>({p_.imagename});
+}
+
+
+
+
+defineType(SingleView);
+addToFactoryTable(PVScene, SingleView);
+addToStaticFunctionTable(PVScene, SingleView, defaultParameters);
+
+SingleView::SingleView(const ParameterSet& ps)
+: PVScene(ps), p_(ps)
+{}
+
+
+string SingleView::pythonCommands() const
+{
+  arma::mat e_up = p_.e_up; e_up/=norm(e_up, 2);
+  arma::mat e_n = -p_.normal; e_n/=norm(e_n, 2);
+  arma::mat eq=arma::cross(e_up, e_n);
+  eq/=norm(eq,2);
+
+  return
+      PVScene::pythonCommands()
+      +
+      sceneObjectsBoundingBoxCmd({"xmi", "ymi", "zmi", "xma", "yma", "zma"})
+      +
+      "L=np.array([xma-xmi,yma-ymi,zma-zmi])\n"
+      +
+      "setCam("
+        + pvec(p_.lookAt-p_.normal) + ", "
+        + pvec(p_.lookAt) + ", "
+        + pvec(p_.e_up) + ", "
+        + "(abs(np.dot(L,"+pvec(eq)+")),abs(np.dot(L,"+pvec(e_up)+")))"
+      +")\n"
+      "WriteImage('"+p_.imagename+".png')\n"
+  ;
+}
+
+std::vector<boost::filesystem::path> SingleView::createdFiles() const
+{
+  return std::vector<boost::filesystem::path>
+      ({ p_.imagename+".png" })
+      ;
+}
+
+
+
 
 defineType(IsoView);
 addToFactoryTable(PVScene, IsoView);
 addToStaticFunctionTable(PVScene, IsoView, defaultParameters);
 
 IsoView::IsoView(const ParameterSet& ps)
-: p_(ps)
+: PVScene(ps), p_(ps)
 {}
 
 
@@ -119,6 +308,8 @@ string IsoView::pythonCommands() const
            ;
 
   return
+      PVScene::pythonCommands()
+      +
       "setCam("
         + pvec(ctr+ex*Lx*1.5) + ", "
         + pvec(ctr) + ", "
@@ -155,12 +346,12 @@ string IsoView::pythonCommands() const
 
 std::vector<boost::filesystem::path> IsoView::createdFiles() const
 {
-  return list_of<boost::filesystem::path>
-      ( p_.imagename+"_front.png" )
-      ( p_.imagename+"_top.png" )
-      ( p_.imagename+"_side.png" )
-      ( p_.imagename+"_diag.png" )
-      ;
+  return std::vector<boost::filesystem::path>({
+       p_.imagename+"_front.png",
+       p_.imagename+"_top.png",
+       p_.imagename+"_side.png",
+       p_.imagename+"_diag.png"
+      });
 }
 
 
@@ -181,8 +372,10 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
     Parameters p(parameters_);
 
     std::string pvscript=
-     "openfoam_case=loadOFCase('.')\n"
-     "prepareSnapshots()\n"
+        "from Insight.Paraview import *\n"
+        "import numpy as np\n"+
+        OFCaseDatasetName() + " = loadOFCase('.')\n"
+        "prepareSnapshots()\n"
     ;
 
     for (PVScenePtr scn: p.scenes)
@@ -200,7 +393,6 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
     path tempfile=absolute(unique_path("%%%%%%%%%.py"));
     {
       std::ofstream tf(tempfile.c_str());
-      tf << "from Insight.Paraview import *\n";
       tf << pvscript;
       tf.close();
     }
@@ -212,7 +404,7 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
     ofc.executeCommand(executionPath(), "pvbatch", args, nullptr, 0, &machine);
 
 //    if (!keepScript)
-      remove(tempfile);
+//      remove(tempfile);
 
     ResultSetPtr results(new ResultSet(parameters_, "Paraview renderings", ""));
 
@@ -234,6 +426,11 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
     }
 
     return results;
+}
+
+string ParaviewVisualization::OFCaseDatasetName()
+{
+  return "openfoam_case";
 }
 
 

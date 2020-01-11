@@ -43,6 +43,7 @@ set(toolkit_SOURCES
     base/caseelement.cpp
     base/case.cpp
     base/units.cpp
+    base/vtkrendering.cpp
 
 
     base/progressdisplayer.cpp
@@ -90,6 +91,7 @@ set(toolkit_SOURCES
     openfoam/mountremote.cpp
     openfoam/solveroutputanalyzer.cpp
     openfoam/ofdicts.cpp
+
 
     openfoam/caseelements/openfoamcaseelement.cpp
     openfoam/caseelements/turbulencemodel.cpp
@@ -193,10 +195,18 @@ ENDIF()
 
 find_package(VTK COMPONENTS
     vtkFiltersCore
+    vtkFiltersGeneral
+    vtkFiltersSources
     vtkCommonCore
     vtkIOLegacy
     vtkIOGeometry
-    vtkFiltersGeneral
+    vtkIOExport
+    vtkIOImage
+    vtkIOXML
+    vtkImagingCore
+    vtkRenderingOpenGL2
+    vtkRenderingAnnotation
+    vtkFiltersExtraction
     REQUIRED
 )
 find_package(OpenSSL)

@@ -45,6 +45,9 @@ public:
   ~GSLExceptionHandling();
 };
 
+// ====================================================================================
+// ======== generation of vectors/matrices/tensors
+
 arma::mat vec1(double x);
 arma::mat vec2(double x, double y);
 arma::mat vec3(double x, double y, double z);
@@ -100,16 +103,23 @@ arma::mat vec3(const T& t)
   return rt;
 }
 
+
+// ====================================================================================
+// ======== conversion of vectors into different formats
+
 template<class T>
 T toVec(const arma::mat& v)
 {
   return T(v(0), v(1), v(2));
 }
 
+double* toArray(const arma::mat& v); // !non-const! return value to match VTK functions
+
+std::string toStr(const arma::mat& v3);
+
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis=vec3(0,0,1), const arma::mat& p0 = vec3(0,0,0) );
 
-std::string toStr(const arma::mat& v3);
 
 /**
  * Fits c_j in

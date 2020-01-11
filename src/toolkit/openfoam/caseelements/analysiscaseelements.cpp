@@ -476,18 +476,27 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
 
 arma::mat surfaceIntegrate::readSurfaceIntegrate
 (
-    const OpenFOAMCase&,
+    const OpenFOAMCase& cm,
     const boost::filesystem::path& location,
     const std::string& foName
 )
 {
   arma::mat result(0,2);
 
-  boost::filesystem::path dir = location / "postProcessing" / foName;
+  boost::filesystem::path dir;
+  if (cm.OFversion()<170)
+  {
+    dir = location / foName;
+  }
+  else
+  {
+    dir = location / "postProcessing" / foName;
+  }
   auto tdl = listTimeDirectories(dir);
   for(decltype(tdl)::const_reverse_iterator i = tdl.crbegin(); i!=tdl.crend(); i++)
   {
-    auto f = i->second / "surfaceFieldValue.dat";
+    auto f = i->second /
+        (cm.OFversion()<170 ? "faceSource.dat" : "surfaceFieldValue.dat");
 
     std::ifstream fs(f.c_str());
     arma::mat cr = readTextFile(fs);
@@ -507,7 +516,14 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
     }
   }
 
-  return result;
+  if (cm.OFversion()<170)
+  {
+    return arma::join_rows(result.col(0), result.col(2));
+  }
+  else
+  {
+    return result;
+  }
 }
 
 defineType(fieldMinMax);
@@ -807,7 +823,7 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
 
 arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
 {
-  CurrentExceptionContext ex("reading a line from forces file");
+  CurrentExceptionContext ex("reading a line from forces file", false);
 
   std::string line;
 

@@ -33,7 +33,7 @@ if (wt_FOUND)
         COMPONENT ${INSIGHT_INSTALL_COMPONENT}
         )
     export(EXPORT toolkit_remote_targets
-      FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitGUITarget.cmake"
+      FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitRemoteTarget.cmake"
       NAMESPACE insight::
     )
     install(EXPORT toolkit_remote_targets

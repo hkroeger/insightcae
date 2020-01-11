@@ -10,6 +10,10 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
+
+
+class vtkArrowSource;
+
 namespace insight
 {
 
@@ -18,6 +22,8 @@ namespace paraview
 {
 
 std::string pvec(const arma::mat& v);
+
+
 
 
 class PVScriptElement
@@ -48,10 +54,16 @@ public:
   virtual std::vector<boost::filesystem::path> createdFiles() const;
   virtual std::vector<std::string> createdObjects() const;
 
+
 };
 
 typedef std::shared_ptr<PVScriptElement> PVScriptElementPtr;
 
+template<class T>
+PVScriptElementPtr makeElement(const ParameterSet& ps)
+{
+  return PVScriptElementPtr(new T(ps));
+}
 
 
 
@@ -138,6 +150,8 @@ arrows = array [ set {
  to = vector (1 0 0) "end point in scene units"
 } ] *0 "definition of arrows"
 
+color = vector (0 1 1) "Arrow color, Red, green, blue intensity between 1 and 0."
+
 <<<PARAMETERSET
 */
 protected:
@@ -151,6 +165,7 @@ public:
   virtual std::string pythonCommands() const;
 
   virtual ParameterSet getParameters() const { return p_; }
+
 };
 
 
@@ -217,9 +232,9 @@ sceneElements = array [
  dynamicclassconfig "paraview::PVScriptElement" default "Cutplane" "Scene definition"
  ] *0 "Scene building bricks"
 
-resetview = bool false "If true, the view is cleared before rendering. Previous scene will be overlayed otherwise"
 imagename = string "" "Image name. Will be used as filename. If blank, the view created but not rendered. This can be useful to overlay with the next scene."
 
+resetview = bool false "If true, the view is cleared after rendering. Next scene will be overlayed otherwise"
 
 <<<PARAMETERSET
 */
@@ -245,6 +260,12 @@ public:
 typedef std::shared_ptr<PVScene> PVScenePtr;
 
 
+template<class T>
+PVScenePtr makeScene(const ParameterSet& ps)
+{
+  return PVScenePtr(new T(ps));
+}
+
 
 
 class SingleView
@@ -260,6 +281,17 @@ inherits insight::paraview::PVScene::Parameters
 lookAt = vector (0 0 0) "Look at point"
 e_up = vector (0 0 1) "Upward direction"
 normal = vector (1 0 0) "direction from camera to lookAt point"
+
+imageSize = selectablesubset {{
+
+ detect set { }
+
+ manual set {
+  Lvert = double 1.0 "vertical extent" *necessary
+  Lhoriz = double 1.0 "horizontal extent" *necessary
+ }
+
+}} detect "Size of image"
 
 <<<PARAMETERSET
 */

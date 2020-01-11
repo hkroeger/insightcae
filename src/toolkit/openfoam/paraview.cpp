@@ -8,6 +8,7 @@
 
 #include <cmath>
 
+
 using namespace std;
 using namespace boost;
 using namespace boost::assign;
@@ -27,7 +28,6 @@ std::string pvec(const arma::mat& v)
 {
   return boost::str( boost::format("np.array([%g, %g, %g])") % v(0) % v(1) % v(2) );
 }
-
 
 
 
@@ -92,8 +92,17 @@ string Arrows::pythonCommands() const
     arma::mat R = a.to - a.from;
     double r=norm(R,2);
     R/=r;
-    double beta = 180.*atan2( -R(2), sqrt(1.-pow(R(2),2))) / M_PI;
-    double gamma = 180.*std::asin(R(1)/sqrt(1.-pow(R(2),2)))/M_PI;
+    double denom=sqrt(1.-pow(R(2),2));
+    double beta = 180.*atan2( -R(2), denom ) / M_PI;
+    double asinarg = R(1) / denom;
+    double gamma;
+    if (asinarg<=-1.)
+      gamma=-90.;
+    else if (asinarg>=1.)
+      gamma=90.;
+    else
+      gamma = 180.*std::asin( asinarg )/M_PI;
+    std::cout<<"Arrows: "<<R(0)<<" "<<R(1)<<" "<<R(2)<<" "<<r<<" "<<denom<<" "<<beta<<" "<<gamma<<std::endl;
 
     pycmd +=
         p_.name+"_source = Arrow()\n"+
@@ -110,6 +119,7 @@ string Arrows::pythonCommands() const
 
   pycmd +=
       p_.name+" = GroupDatasets(Input = "+p_.name+"_input)\n"
+      "displaySolid("+p_.name+", 1, "+pvec(p_.color)+")\n"
       ;
 
   return pycmd;
@@ -253,21 +263,39 @@ string SingleView::pythonCommands() const
   arma::mat eq=arma::cross(e_up, e_n);
   eq/=norm(eq,2);
 
-  return
+  std::string pycmd =
       PVScene::pythonCommands()
       +
       sceneObjectsBoundingBoxCmd({"xmi", "ymi", "zmi", "xma", "yma", "zma"})
       +
       "L=np.array([xma-xmi,yma-ymi,zma-zmi])\n"
-      +
+      ;
+
+  if (const auto* detect = boost::get<Parameters::imageSize_detect_type>(&p_.imageSize))
+  {
+    pycmd +=
+      "Lh=abs(np.dot(L,"+pvec(eq)+"))\n"
+      "Lv=abs(np.dot(L,"+pvec(e_up)+"))\n"
+        ;
+  }
+  else if (const auto* manual = boost::get<Parameters::imageSize_manual_type>(&p_.imageSize))
+  {
+    pycmd += boost::str(boost::format(
+      "Lh=abs(%g)\nLv=abs(%g)\n"
+    ) % manual->Lhoriz % manual->Lvert );
+  }
+
+  pycmd +=
       "setCam("
         + pvec(p_.lookAt-p_.normal) + ", "
         + pvec(p_.lookAt) + ", "
         + pvec(p_.e_up) + ", "
-        + "(abs(np.dot(L,"+pvec(eq)+")),abs(np.dot(L,"+pvec(e_up)+")))"
+        + "(Lh,Lv)"
       +")\n"
       "WriteImage('"+p_.imagename+".png')\n"
   ;
+
+  return pycmd;
 }
 
 std::vector<boost::filesystem::path> SingleView::createdFiles() const
@@ -404,7 +432,7 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
     ofc.executeCommand(executionPath(), "pvbatch", args, nullptr, 0, &machine);
 
 //    if (!keepScript)
-//      remove(tempfile);
+    remove(tempfile);
 
     ResultSetPtr results(new ResultSet(parameters_, "Paraview renderings", ""));
 

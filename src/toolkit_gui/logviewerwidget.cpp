@@ -25,6 +25,16 @@ void LogViewerWidget::appendLine(const QString& line)
   appendPlainText(line);
 }
 
+void LogViewerWidget::appendErrorLine(const QString &line)
+{
+  appendHtml("<b>"+line+"</b>");
+}
+
+void LogViewerWidget::appendDimmedLine(const QString &line)
+{
+  appendHtml("<font color=\"Gray\">"+line+"</font>");
+}
+
 void LogViewerWidget::appendLogMessage(const insight::ProgressState &ps)
 {
   appendPlainText( QString::fromStdString(ps.logMessage_) );

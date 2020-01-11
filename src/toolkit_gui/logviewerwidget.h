@@ -15,6 +15,8 @@ public:
 
 public Q_SLOTS:
   void appendLine(const QString& line);
+  void appendErrorLine(const QString& line);
+  void appendDimmedLine(const QString& line);
   void appendLogMessage(const insight::ProgressState& ps);
   void saveLog();
   void sendLog();

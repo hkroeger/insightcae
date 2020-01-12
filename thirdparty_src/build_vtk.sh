@@ -5,9 +5,9 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-DIR=VTK-6.3.0
+DIR=VTK-7.1.1
 
-[ -d $DIR ] || ( wget -q -O- https://www.vtk.org/files/release/6.3/${DIR}.tar.gz | tar xz )
+[ -d $DIR ] || ( wget -q -O- https://www.vtk.org/files/release/7.1/${DIR}.tar.gz | tar xz )
 cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
@@ -21,6 +21,7 @@ cd $DIR && (
  -DVTK_USE_OFFSCREEN=ON\
  -DVTK_USE_X=OFF\
  -DVTK_OPENGL_HAS_OSMESA=ON\
+ -DVTK_QT_VERSION=5 \
  -DBUILD_TESTING=OFF\
 
  make -j48

@@ -111,7 +111,7 @@ std::string ChannelBase::cyclPrefix() const
 
 
 
-void ChannelBase::calcDerivedInputData()
+void ChannelBase::calcDerivedInputData(ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
   
@@ -228,7 +228,7 @@ void ChannelBase::calcDerivedInputData()
 
 void ChannelBase::createMesh
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {  
   // create local variables from ParameterSet
@@ -368,7 +368,7 @@ void ChannelBase::createMesh
 
 void ChannelBase::createCase
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {
   Parameters p(parameters_);
@@ -1062,7 +1062,7 @@ void ChannelBase::evaluateAtSection(
 
 
 
-ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
+ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   const ParameterSet& p=parameters_;
 //  PSDBL(p, "geometry", B);
@@ -1080,7 +1080,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
     UMeanName_="U";
   }
   
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
   Ordering o;
   
   const LinearTPCArray* tpcs=cm.get<LinearTPCArray>("tpc_interiorTPCArray");
@@ -1203,16 +1203,16 @@ ChannelCyclic::ChannelCyclic(const ParameterSet& ps, const boost::filesystem::pa
 
 void ChannelCyclic::createMesh
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {  
-  ChannelBase::createMesh(cm);
+  ChannelBase::createMesh(cm, progress);
   convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
 }
 
 void ChannelCyclic::createCase
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {  
   Parameters p(parameters_);
@@ -1223,7 +1223,7 @@ void ChannelCyclic::createCase
       
   cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
   
-  ChannelBase::createCase(cm);
+  ChannelBase::createCase(cm, progress);
   
   cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
 					    .set_Ubar(vec3(Ubulk_, 0, 0))
@@ -1231,7 +1231,7 @@ void ChannelCyclic::createCase
 
 }
 
-void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
+void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   const ParameterSet& p=parameters_;
 
@@ -1248,7 +1248,7 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
                 );
     }
   }
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm, progress);
 }
 
 void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)

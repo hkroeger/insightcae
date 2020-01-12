@@ -34,9 +34,9 @@
 #include <TopTools_ListOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 
-#include <GEOMAlgo_GluerAlgo.hxx>
-#include <GEOMAlgo_Algo.hxx>
-#include <GEOMAlgo_PassKeyShape.hxx>
+#include "GEOMAlgo_GluerAlgo.hxx"
+#include "GEOMAlgo_Algo.hxx"
+#include "GEOMAlgo_PassKeyShape.hxx"
 
 //=======================================================================
 //function : GEOMAlgo_GlueDetector

@@ -25,7 +25,7 @@
 #include "cadfeature.h"
 #include "datum.h"
 #include "sketch.h"
-#include "transform.h"
+#include "cadfeatures/transform.h"
 
 #include <base/exception.h>
 #include "boost/foreach.hpp"

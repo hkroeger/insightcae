@@ -22,19 +22,49 @@
         <item>
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>Start time =</string>
+           <string>Plot from </string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QDoubleSpinBox" name="doubleSpinBox">
-          <property name="maximum">
-           <double>10000000000000000905969664.000000000000000</double>
+         <widget class="QLineEdit" name="startTime">
+          <property name="placeholderText">
+           <string>minimum</string>
           </property>
-          <property name="singleStep">
-           <double>0.000000000000000</double>
+          <property name="clearButtonEnabled">
+           <bool>true</bool>
           </property>
          </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>to</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="endTime">
+          <property name="placeholderText">
+           <string>maximum</string>
+          </property>
+          <property name="clearButtonEnabled">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
         <item>
          <widget class="QPushButton" name="updateBtn">
@@ -75,7 +105,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>27</height>
+     <height>28</height>
     </rect>
    </property>
   </widget>

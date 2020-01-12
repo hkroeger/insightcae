@@ -22,18 +22,39 @@ set(workbench_SRCS
     workbench.cpp
     workbench.h
     main.cpp
+
+    workbenchaction.cpp
+    workbenchaction.h
+    localrun.cpp
+    localrun.h
+
 )
 SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui)
 SET(workbench_RCCS workbench.qrc)
+set(workbench_LIBS
+    toolkit toolkit_gui
+    Qt5::Widgets
+    ${Boost_LIBRARIES}
+    ${QWT_LIBRARY} ${QWT_LIBRARIES}
+)
+if (wt_FOUND)
+    message(STATUS "Found wt")
+
+    LIST(APPEND workbench_SRCS
+        remoterun.cpp
+        remoterun.h
+    )
+    LIST(APPEND workbench_LIBS
+        toolkit_remote
+    )
+    ADD_DEFINITIONS("-DHAVE_WT")
+else()
+    message(STATUS "Did not found wt, disabling remote execution functions.")
+endif()
 
 add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
 
-target_link_libraries(workbench
- toolkit toolkit_gui
- Qt5::Widgets
- ${Boost_LIBRARIES}
- ${QWT_LIBRARY} ${QWT_LIBRARIES}
-)
+target_link_libraries(workbench ${workbench_LIBS})
 
 target_include_directories(workbench
   PUBLIC ${QT_INCLUDES}

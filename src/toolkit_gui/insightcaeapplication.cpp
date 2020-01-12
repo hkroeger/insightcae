@@ -10,9 +10,12 @@
 
 
 
-InsightCAEApplication::InsightCAEApplication(int &argc, char **argv)
+InsightCAEApplication::InsightCAEApplication(int &argc, char **argv, const QString& appname)
 : QApplication(argc, argv)
-{}
+{
+  setOrganizationName("silentdynamics");
+  setApplicationName(appname);
+}
 
 
 

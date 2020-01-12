@@ -23,7 +23,7 @@
 // File:   GEOMAlgo_Gluer2_3.cxx
 // Author: Peter KURNEV
 
-#include <GEOMAlgo_Gluer2.hxx>
+#include "GEOMAlgo_Gluer2.hxx"
 
 #include <TopAbs_ShapeEnum.hxx>
 
@@ -44,13 +44,13 @@
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 
-#include <GEOMAlgo_CoupleOfShapes.hxx>
-#include <GEOMAlgo_ListOfCoupleOfShapes.hxx>
-#include <GEOMAlgo_ListIteratorOfListOfCoupleOfShapes.hxx>
+#include "GEOMAlgo_CoupleOfShapes.hxx"
+#include "GEOMAlgo_ListOfCoupleOfShapes.hxx"
+#include "GEOMAlgo_ListIteratorOfListOfCoupleOfShapes.hxx"
 
-#include <GEOMAlgo_AlgoTools.hxx>
-#include <GEOMAlgo_GlueDetector.hxx>
-#include <GEOMAlgo_IndexedDataMapOfShapeIndexedMapOfShape.hxx>
+#include "GEOMAlgo_AlgoTools.hxx"
+#include "GEOMAlgo_GlueDetector.hxx"
+#include "GEOMAlgo_IndexedDataMapOfShapeIndexedMapOfShape.hxx"
 
 
 static

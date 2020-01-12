@@ -82,13 +82,15 @@ public:
 
     GraphProgressChart* addChartIfNeeded(const std::string& name);
 
-    virtual void update(const insight::ProgressState& pi);
     virtual void reset();
 
 Q_SIGNALS:
     void createChart(bool log, const std::string name);
 
-private slots:
+public Q_SLOTS:
+    virtual void update(const insight::ProgressState& pi);
+
+private Q_SLOTS:
     void onCreateChart(bool log, const std::string name);
 };
 

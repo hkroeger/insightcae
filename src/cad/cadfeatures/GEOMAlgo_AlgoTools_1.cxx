@@ -23,12 +23,12 @@
 //  Created :
 //  Author  : Peter KURNEV
 
-#include <GEOMAlgo_AlgoTools.hxx>
+#include "GEOMAlgo_AlgoTools.hxx"
 
-#include <GEOMAlgo_ListOfCoupleOfShapes.hxx>
-#include <GEOMAlgo_IndexedDataMapOfShapeIndexedMapOfShape.hxx>
+#include "GEOMAlgo_ListOfCoupleOfShapes.hxx"
+#include "GEOMAlgo_IndexedDataMapOfShapeIndexedMapOfShape.hxx"
 #include <TopTools_IndexedMapOfShape.hxx>
-#include <GEOMAlgo_CoupleOfShapes.hxx>
+#include "GEOMAlgo_CoupleOfShapes.hxx"
 #include <TopoDS_Shape.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 

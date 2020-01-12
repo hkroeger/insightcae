@@ -23,7 +23,7 @@
 //  Created :
 //  Author  : Peter KURNEV
 
-#include <GEOMAlgo_AlgoTools.hxx>
+#include "GEOMAlgo_AlgoTools.hxx"
 
 #include <gp_Pnt.hxx>
 #include <gp_Pnt2d.hxx>
@@ -83,7 +83,7 @@
 #include <BOPTools_AlgoTools3D.hxx>
 #include <BOPTools_AlgoTools2D.hxx>
 
-#include <GEOMAlgo_PassKeyShape.hxx>
+#include "GEOMAlgo_PassKeyShape.hxx"
 
 
 static

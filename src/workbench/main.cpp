@@ -126,7 +126,7 @@ int main(int argc, char** argv)
         }
     }
     
-    InsightCAEApplication app(argc, argv);
+    InsightCAEApplication app(argc, argv, "InsightCAE Workbench");
 
     // After creation of application object!
     std::locale::global(std::locale::classic());

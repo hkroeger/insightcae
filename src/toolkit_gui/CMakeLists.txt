@@ -28,6 +28,7 @@ set(toolkit_gui_SRCS
     parametersetvisualizer.cpp
     logviewerwidget.cpp
     graphprogressdisplayer.cpp
+    progressrelay.cpp
     insightcaeapplication.cpp
     remotedirselector.cpp
     remotesync.cpp
@@ -35,6 +36,8 @@ set(toolkit_gui_SRCS
     blockmesh_cylwedge_gui.cpp
     blockmesh_cylwedgeortho_gui.cpp
     metatypes.cpp
+    remoteparaview.cpp
+    remoteparaview.h
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
@@ -42,6 +45,7 @@ file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
 SET(toolkit_gui_FORMS
     of_clean_case.ui
     remotedirselector.ui
+    remoteparaview.ui
 )
 SET(toolkit_gui_RCCS toolkit_gui.qrc)
 
@@ -59,8 +63,23 @@ target_include_directories(toolkit_gui
   PUBLIC ${QT_INCLUDES} 
   PUBLIC ${QWT_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
-  PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
  )
+
+install(
+    TARGETS toolkit_gui EXPORT toolkit_gui_targets
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+export(EXPORT toolkit_gui_targets
+  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitGUITarget.cmake"
+  NAMESPACE insight::
+)
+install(EXPORT toolkit_gui_targets
+  FILE InsightCAEToolkitGUITarget.cmake
+  NAMESPACE insight::
+  DESTINATION ${INSIGHT_ConfigPackageLocation}
+)
 
 install(TARGETS toolkit_gui LIBRARY DESTINATION lib)

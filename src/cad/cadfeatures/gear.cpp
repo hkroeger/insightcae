@@ -21,8 +21,8 @@
 #include "gear.h"
 #include "circle.h"
 
-#include "constantvector.h"
-#include "constantscalar.h"
+#include "cadparameters/constantvector.h"
+#include "cadparameters/constantscalar.h"
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>

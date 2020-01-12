@@ -24,7 +24,7 @@
 // Author:      Peter KURNEV
 //              <pkv@irinox>
 //
-#include <GEOMAlgo_CoupleOfShapes.hxx>
+#include "GEOMAlgo_CoupleOfShapes.hxx"
 //=======================================================================
 //function : GEOMAlgo_CoupleOfShapes
 //purpose  :

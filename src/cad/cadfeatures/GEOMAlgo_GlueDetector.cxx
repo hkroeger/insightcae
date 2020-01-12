@@ -23,7 +23,7 @@
 // File:        GEOMAlgo_GlueDetector.cxx
 // Author:      Peter KURNEV
 
-#include <GEOMAlgo_GlueDetector.hxx>
+#include "GEOMAlgo_GlueDetector.hxx"
 
 #include <Bnd_Box.hxx>
 #include <NCollection_UBTreeFiller.hxx>
@@ -57,14 +57,14 @@
 #include <TopExp_Explorer.hxx>
 #include <TopTools_MapOfShape.hxx>
 
-#include <GEOMAlgo_BndSphereTree.hxx>
-#include <GEOMAlgo_BndSphere.hxx>
-#include <GEOMAlgo_IndexedDataMapOfShapeBndSphere.hxx>
+#include "GEOMAlgo_BndSphereTree.hxx"
+#include "GEOMAlgo_BndSphere.hxx"
+#include "GEOMAlgo_IndexedDataMapOfShapeBndSphere.hxx"
 
-#include <GEOMAlgo_IndexedDataMapOfIntegerShape.hxx>
-#include <GEOMAlgo_PassKeyShape.hxx>
-#include <GEOMAlgo_IndexedDataMapOfPassKeyShapeListOfShape.hxx>
-#include <GEOMAlgo_AlgoTools.hxx>
+#include "GEOMAlgo_IndexedDataMapOfIntegerShape.hxx"
+#include "GEOMAlgo_PassKeyShape.hxx"
+#include "GEOMAlgo_IndexedDataMapOfPassKeyShapeListOfShape.hxx"
+#include "GEOMAlgo_AlgoTools.hxx"
 
 //
 static

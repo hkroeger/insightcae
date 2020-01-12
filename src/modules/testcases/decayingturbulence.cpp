@@ -67,7 +67,7 @@ double DecayingTurbulence::calcT() const
 }
 
 
-void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm)
+void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
  // create local variables from ParameterSet
@@ -136,7 +136,7 @@ int DecayingTurbulence::calcnh() const
   return std::max(1, int(p.geometry.H/(Delta/p.mesh.s)) );
 }
 
-void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm)
+void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   // create local variables from ParameterSet
   path dir = executionPath();
@@ -195,7 +195,7 @@ void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm)
   cm.executeCommand(dir, "blockMesh");  
 }
 
-void DecayingTurbulence::applyCustomPreprocessing(OpenFOAMCase& cm)
+void DecayingTurbulence::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   /*
   setFields(cm, executionPath(), 
@@ -206,7 +206,7 @@ void DecayingTurbulence::applyCustomPreprocessing(OpenFOAMCase& cm)
   
   cm.get<TurbulentVelocityInletBC>(inlet_+"BC")->initInflowBC(executionPath());
   */
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm, progress);
 }
 
 void DecayingTurbulence::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)

@@ -24,6 +24,9 @@
 #include "openfoam/caseelements/turbulencemodelcaseelements.h"
 #include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/ofes.h"
+#include "base/progressdisplayer/combinedprogressdisplayer.h"
+#include "base/progressdisplayer/convergenceanalysisdisplayer.h"
+#include "base/progressdisplayer/prefixedprogressdisplayer.h"
 
 #include "openfoamtools.h"
 #include "openfoamanalysis.h"
@@ -96,7 +99,6 @@ boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
 //     }
 //   }
   
-  calcDerivedInputData();
   return p;
 }
 
@@ -116,9 +118,8 @@ void OpenFOAMAnalysis::reportIntermediateParameter(const std::string& name, doub
   boost::assign::ptr_map_insert<ScalarResult>(*derivedInputData_) (name, value, description, "", unit);
 }
 
-void OpenFOAMAnalysis::calcDerivedInputData()
-{
-}
+void OpenFOAMAnalysis::calcDerivedInputData(ProgressDisplayer&)
+{}
 
 void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
@@ -161,11 +162,10 @@ void OpenFOAMAnalysis::writeDictsToDisk(OpenFOAMCase& cm, std::shared_ptr<OFdict
   cm.modifyCaseOnDisk(executionPath());
 }
 
-void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase&)
-{
-}
+void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase&, ProgressDisplayer&)
+{}
 
-void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::path& mapFromPath, bool is_parallel)
+void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, ProgressDisplayer&, const boost::filesystem::path& mapFromPath, bool is_parallel)
 {
   CurrentExceptionContext ex("mapping existing CFD solution from case \""+mapFromPath.string()+"\" to case \""+executionPath().string()+"\"");
 
@@ -193,7 +193,7 @@ void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::p
 }
 
 
-void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer*, OpenFOAMCase& cm)
+void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer& progress, OpenFOAMCase& cm)
 {
   CurrentExceptionContext ex("initializing solver run for case \""+executionPath().string()+"\"");
 
@@ -222,7 +222,7 @@ void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer*, OpenFOAMCase& cm)
     if ((cm.OFversion()>=230) && (p.run.mapFrom->isValid()))
     {
       // parallelTarget option is not present in OF2.3.x
-      mapFromOther(cm, p.run.mapFrom->filePath(executionPath()), false);
+      mapFromOther(cm, progress, p.run.mapFrom->filePath(executionPath()), false);
     }
   }
 
@@ -236,7 +236,7 @@ void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer*, OpenFOAMCase& cm)
   {
     if ( (!(cm.OFversion()>=230)) && (p.run.mapFrom->isValid()) )
     {
-      mapFromOther(cm, p.run.mapFrom->filePath(executionPath()), is_parallel);
+      mapFromOther(cm, progress, p.run.mapFrom->filePath(executionPath()), is_parallel);
     }
     else
     {
@@ -256,12 +256,12 @@ void OpenFOAMAnalysis::installConvergenceAnalysis(std::shared_ptr<ConvergenceAna
 }
 
 
-void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm)
+void OpenFOAMAnalysis::runSolver(ProgressDisplayer& displayer, OpenFOAMCase& cm)
 {
   CurrentExceptionContext ex("running solver");
 
   CombinedProgressDisplayer cpd(CombinedProgressDisplayer::OR), conv(CombinedProgressDisplayer::AND);
-  if (displayer) cpd.add(displayer);
+  cpd.add(&displayer);
   cpd.add(&conv);
   
   for (decltype(convergenceAnalysis_)::value_type& ca: convergenceAnalysis_)
@@ -287,7 +287,7 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm)
   
 }
 
-void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
+void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm, ProgressDisplayer&)
 {
   CurrentExceptionContext ex("finalizing solver run for case \""+executionPath().string()+"\"");
 
@@ -308,7 +308,7 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
   }
 }
 
-ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
+ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer&)
 {
   CurrentExceptionContext ex("evaluating the results for case \""+executionPath().string()+"\"");
 
@@ -340,16 +340,18 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
 
 
 
-void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
+void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer& progress)
 {
-  CurrentExceptionContext ex("creating OpenFOAM case in directory \""+executionPath().string()+"\"");
+  path dir = executionPath();
+
+  CurrentExceptionContext ex("creating OpenFOAM case in directory \""+dir.string()+"\"");
 
     Parameters p(parameters_);
 
     OFEnvironment ofe = OFEs::get(p.run.OFEname);
     ofe.setExecutionMachine(p.run.machine);
 
-    path dir = setupExecutionEnvironment();
+    calcDerivedInputData(progress);
 
     bool evaluateonly=p.run.evaluateonly;
     if (evaluateonly)
@@ -372,7 +374,7 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
                 }
                 else
                 {
-                  createMesh(*meshCase);
+                  createMesh(*meshCase, progress);
                 }
             }
             else
@@ -380,7 +382,7 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
         }
     }
 
-    createCase(runCase);
+    createCase(runCase, progress);
     std::shared_ptr<OFdicts> dicts;
     createDictsInMemory(runCase, dicts);
     applyCustomOptions(runCase, dicts);
@@ -396,7 +398,7 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
         if (meshcreated)
             runCase.modifyMeshOnDisk(executionPath());
         writeDictsToDisk(runCase, dicts);
-        applyCustomPreprocessing(runCase);
+        applyCustomPreprocessing(runCase, progress);
     }
     else
         cout<<"case in "<<dir<<": skipping case recreation."<<endl;
@@ -406,8 +408,10 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
 
 
 
-ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
+ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer& progress)
 {  
+  setupExecutionEnvironment();
+
   CurrentExceptionContext ex("running OpenFOAM analysis in directory \""+executionPath().string()+"\"");
 
   Parameters p(parameters_);
@@ -416,20 +420,20 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
   ofe.setExecutionMachine(p.run.machine);
 
   OpenFOAMCase runCase(ofe);
-  createCaseOnDisk(runCase);
+  createCaseOnDisk(runCase, progress);
   
   path dir = executionPath();
   
   if (!p.run.evaluateonly)
   {
-    PrefixedProgressDisplayer iniprogdisp(displayer, "initrun_");
-    initializeSolverRun(&iniprogdisp, runCase);
-    runSolver(displayer, runCase);
+    PrefixedProgressDisplayer iniprogdisp(&progress, "initrun_");
+    initializeSolverRun(iniprogdisp, runCase);
+    runSolver(progress, runCase);
   }
   
-  finalizeSolverRun(runCase);
+  finalizeSolverRun(runCase, progress);
 
-  return evaluateResults(runCase);
+  return evaluateResults(runCase, progress);
 }
 
 

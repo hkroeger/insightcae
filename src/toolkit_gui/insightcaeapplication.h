@@ -12,7 +12,7 @@ class InsightCAEApplication
 
 public:
 
-  InsightCAEApplication( int &argc, char **argv);
+  InsightCAEApplication( int &argc, char **argv, const QString& appname);
   ~InsightCAEApplication( );
 
   bool notify(QObject *rec, QEvent *ev);

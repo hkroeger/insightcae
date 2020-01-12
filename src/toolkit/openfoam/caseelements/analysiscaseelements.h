@@ -583,7 +583,7 @@ public:
   declareType("ComputeLengthScale");
   ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath );
 
-  ResultSetPtr operator()(ProgressDisplayer* displayer=nullptr) override;
+  ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;
 
   static std::string category() { return "General Postprocessing"; }
 };

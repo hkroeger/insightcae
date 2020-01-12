@@ -67,7 +67,7 @@ NumericalWindtunnel::NumericalWindtunnel(const ParameterSet& ps, const boost::fi
 
 boost::mutex mtx;
 
-void NumericalWindtunnel::calcDerivedInputData()
+void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& progress)
 {
   CurrentExceptionContext ex("computing further preprocessing informations");
 
@@ -148,7 +148,7 @@ void NumericalWindtunnel::calcDerivedInputData()
 
 
 
-void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
+void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   path dir = executionPath();
   Parameters p(parameters_);
@@ -438,7 +438,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
 
 
 
-void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm)
+void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
 
@@ -504,11 +504,11 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm)
 
 
 
-ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
+ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   Parameters p(parameters_);
   
-  ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm);
+  ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, progress);
   
   // get full name of car patch (depends on STL file)
   OFDictData::dict boundaryDict;
@@ -575,66 +575,67 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
 
 
   {
-    paraview::Streamtracer::Parameters::seed_cloud_type cloud1, cloud2;
+    using namespace insight::paraview;
+
+    Streamtracer::Parameters::seed_cloud_type cloud1, cloud2;
     cloud1.radius=cloud2.radius=0.2*Lref_;
     cloud1.number=cloud2.number=500;
     cloud1.center=vec3(0.5*l_, 0.5*w_, 0.5*h_);
     cloud2.center=vec3(0.5*l_, -0.5*w_, 0.5*h_);
 
-    paraview::ParaviewVisualization::Parameters pvp;
+    ParaviewVisualization::Parameters pvp;
+
     pvp.scenes = {
 
-      paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
-        .set_command(
-           "obj=extractPatches(openfoam_case, 'object.*')\n"
-           "floor=extractPatches(openfoam_case, 'floor.*')\n"
-           "displayContour(obj, 'p', arrayType='CELL_DATA')\n"
-           "displaySolid(floor, 0.1)\n"
-        )
-      )),
+      PVScenePtr(new IsoView(IsoView::Parameters()
+              .set_bbmin(vec3(0, -0.5*w_, 0))
+              .set_bbmax(vec3(l_, 0.5*w_, h_))
+              .set_e_ax(vec3(-1,0,0))
+              .set_sceneElements({
 
-      paraview::PVScenePtr(new paraview::Streamtracer(paraview::Streamtracer::Parameters()
-        .set_seed(cloud1)
-        .set_dataset("openfoam_case[0]")
-        .set_field("U")
-        .set_maxLen(10.*Lref_)
-        .set_name("st1")
-      )),
+                PVScriptElementPtr(new CustomScriptElement(CustomScriptElement::Parameters()
+                  .set_command(
+                     "obj=extractPatches("+ParaviewVisualization::OFCaseDatasetName()+", 'object.*')\n"
+                     "floor=extractPatches("+ParaviewVisualization::OFCaseDatasetName()+", 'floor.*')\n"
+                     "displayContour(obj, 'p', arrayType='CELL_DATA')\n"
+                     "displaySolid(floor, 0.1)\n"
+                  )
+                  .set_names({"obj", "floor"})
+                ))
 
-      paraview::PVScenePtr(new paraview::Streamtracer(paraview::Streamtracer::Parameters()
-        .set_seed(cloud2)
-        .set_dataset("openfoam_case[0]")
-        .set_field("U")
-        .set_maxLen(10.*Lref_)
-        .set_name("st2")
-      )),
+              })
+              .set_imagename("pressureContour")
+            )),
 
-      paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
-        .set_bbmin(vec3(0, -0.5*w_, 0))
-        .set_bbmax(vec3(l_, 0.5*w_, h_))
-        .set_e_ax(vec3(-1,0,0))
-        .set_imagename("streamlines")
-      )),
+      PVScenePtr(new IsoView(IsoView::Parameters()
+              .set_bbmin(vec3(0, -0.5*w_, 0))
+              .set_bbmax(vec3(l_, 0.5*w_, h_))
+              .set_e_ax(vec3(-1,0,0))
+              .set_sceneElements({
 
-      paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
-        .set_command(
-            "Hide(st1)\n"
-            "Hide(st2)\n"
-        )
-      )),
+                PVScriptElementPtr(new Streamtracer(Streamtracer::Parameters()
+                  .set_seed(cloud1)
+                  .set_dataset(ParaviewVisualization::OFCaseDatasetName()+"[0]")
+                  .set_field("U")
+                  .set_maxLen(10.*Lref_)
+                  .set_name("st1")
+                )),
 
-      paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
-        .set_bbmin(vec3(0, -0.5*w_, 0))
-        .set_bbmax(vec3(l_, 0.5*w_, h_))
-        .set_e_ax(vec3(-1,0,0))
-        .set_imagename("pressureContour")
-      ))
+                PVScriptElementPtr(new Streamtracer(Streamtracer::Parameters()
+                  .set_seed(cloud2)
+                  .set_dataset(ParaviewVisualization::OFCaseDatasetName()+"[0]")
+                  .set_field("U")
+                  .set_maxLen(10.*Lref_)
+                  .set_name("st2")
+                ))
 
+              })
+              .set_imagename("streamlines")
+            ))
     };
 
-    paraview::ParaviewVisualization pv(pvp, executionPath());
-    ResultSetPtr images = pv();
-    results->insert ( "renderings", images );
+    results->insert ( "renderings", ParaviewVisualization(pvp, executionPath())() );
+
   }
 
   return results;
@@ -662,7 +663,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
     Parameters p(ps_);
     NumericalWindtunnel nwt(ps_, "");
-    nwt.calcDerivedInputData();
+    nwt.calcDerivedInputData(consoleProgressDisplayer);
 
 
     std::string geom_file_ext = p.geometry.objectfile->fileName().extension().string();

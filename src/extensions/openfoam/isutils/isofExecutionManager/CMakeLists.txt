@@ -12,9 +12,6 @@ set(isofExecutionManager_SOURCES
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
-    remoteparaview.cpp
-    remoteparaview.h
-    remoteparaview.ui
 )
 
 set(isofExecutionManager_LIBS

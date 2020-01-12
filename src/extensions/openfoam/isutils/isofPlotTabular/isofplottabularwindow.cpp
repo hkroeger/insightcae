@@ -88,8 +88,10 @@ void IsofPlotTabularWindow::onUpdate(bool)
       ui->graphs->addTab(pw,
                          QString::fromStdString(str(format("Col %d")%j))
                          );
-      connect(ui->doubleSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-              pw, &PlotWidget::onChangeX0);
+      connect(ui->startTime, &QLineEdit::textChanged,
+              [=](const QString& nv) { pw->onChangeXRange(nv, ui->endTime->text()); } );
+      connect(ui->endTime, &QLineEdit::textChanged,
+              [=](const QString& nv) { pw->onChangeXRange(ui->startTime->text(), nv); } );
 
     }
 

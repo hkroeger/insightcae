@@ -85,7 +85,6 @@ public Q_SLOTS:
 private:
   Ui::MainWindow *ui;
 
-  QString rem_subdir_, rem_host_;
 };
 
 

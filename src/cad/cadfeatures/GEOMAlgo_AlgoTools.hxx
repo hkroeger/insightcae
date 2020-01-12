@@ -48,9 +48,9 @@
 #include <TopTools_ListOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeShape.hxx>
 
-#include <GEOMAlgo_IndexedDataMapOfPassKeyShapeListOfShape.hxx>
-#include <GEOMAlgo_ListOfCoupleOfShapes.hxx>
-#include <GEOMAlgo_IndexedDataMapOfShapeIndexedMapOfShape.hxx>
+#include "GEOMAlgo_IndexedDataMapOfPassKeyShapeListOfShape.hxx"
+#include "GEOMAlgo_ListOfCoupleOfShapes.hxx"
+#include "GEOMAlgo_IndexedDataMapOfShapeIndexedMapOfShape.hxx"
 
 //!  Auxiliary tools for Algorithms <br>
 //=======================================================================

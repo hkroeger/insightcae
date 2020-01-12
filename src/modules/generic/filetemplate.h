@@ -71,7 +71,7 @@ public:
     
     static std::string category() { return "Generic Analyses"; }
     
-    virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
+    ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;
     
 };
 }

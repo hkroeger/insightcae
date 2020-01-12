@@ -94,7 +94,10 @@ arma::mat tensor3(
   return v;
 }
 
-
+double* toArray(const arma::mat& v)
+{
+  return const_cast<double*>(v.memptr());
+}
 
 mat rotMatrix( double theta, mat u )
 {

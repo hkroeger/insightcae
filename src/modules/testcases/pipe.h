@@ -100,7 +100,7 @@ public:
   static std::string category() { return "Validation Cases"; }
   
   std::string cyclPrefix() const;
-  virtual void calcDerivedInputData();
+  virtual void calcDerivedInputData(ProgressDisplayer& progress);
 //   virtual double calcLc(const ParameterSet& p) const;
 //   virtual int calcnc(const ParameterSet& p) const;
 //   virtual int calcnr(const ParameterSet& p) const;
@@ -122,12 +122,12 @@ public:
   
   virtual void createMesh
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );
   
   virtual void createCase
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );
 
   virtual void evaluateAtSection(
@@ -135,7 +135,7 @@ public:
     ResultSetPtr results, double x, int i
   );
 
-  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
+  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
   
 };
 
@@ -152,16 +152,16 @@ public:
   
   virtual void createMesh
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );  
   
   virtual void createCase
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
-  virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
   
 };
 
@@ -188,18 +188,18 @@ public:
   
   virtual void createMesh
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );  
   
   virtual void createCase
   (
-    OpenFOAMCase& cm
+    OpenFOAMCase& cm, ProgressDisplayer& progress
   );
 
-  ResultSetPtr evaluateResults(OpenFOAMCase& cm);
+  ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
-  virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
   
 };
 

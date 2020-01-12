@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 {
   qputenv("QT_STYLE_OVERRIDE", 0);
 
-  InsightCAEApplication app(argc, argv);
+  InsightCAEApplication app(argc, argv, "isofPlotTabular");
 
   try
   {

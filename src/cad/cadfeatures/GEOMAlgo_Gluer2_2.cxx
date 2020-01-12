@@ -24,7 +24,7 @@
 // Author:      Peter KURNEV
 //              <peter@PREFEX>
 //
-#include <GEOMAlgo_Gluer2.hxx>
+#include "GEOMAlgo_Gluer2.hxx"
 
 #include <TopAbs_ShapeEnum.hxx>
 
@@ -33,7 +33,7 @@
 
 #include <BOPTools_AlgoTools.hxx>
 
-#include <GEOMAlgo_BuilderShape.hxx>
+#include "GEOMAlgo_BuilderShape.hxx"
 
 //=======================================================================
 //function : PrepareHistory

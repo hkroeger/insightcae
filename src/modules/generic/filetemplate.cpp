@@ -36,7 +36,7 @@ FileTemplate::FileTemplate(const ParameterSet& ps, const boost::filesystem::path
 }
 
 
-ResultSetPtr FileTemplate::operator()(ProgressDisplayer* displayer)
+ResultSetPtr FileTemplate::operator()(ProgressDisplayer& displayer)
 {
     Parameters p(parameters_);
     
@@ -114,7 +114,7 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer* displayer)
     path resf=dir/ReservedFileNames[EVALRESULTS];
     if (boost::filesystem::exists(resf))
     {
-      results->readFromFile(resf);
+      results->readFrom(resf);
     }
     else
     {

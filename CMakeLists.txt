@@ -77,6 +77,7 @@ message(STATUS "git-rev base: ${git-rev}")
 string(TOLOWER "${CPACK_PACKAGE_NAME}" CPACK_PACKAGE_NAME_LOWERCASE)
 find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems")
 
+SET(TARGETS_TO_INSTALL "")
 
 add_subdirectory(src/desktop)
 
@@ -98,20 +99,16 @@ find_package(Armadillo REQUIRED)
 find_package(GSL REQUIRED)
 find_package(PythonLibs 2.7 REQUIRED)
 
-find_package(Boost COMPONENTS system filesystem regex date_time timer thread iostreams python program_options REQUIRED)
+find_package(wt
+    HINTS /opt/witty
+)
 
+find_package(Boost COMPONENTS system filesystem regex date_time timer thread iostreams python program_options REQUIRED)
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
-
-
-
-
-if (INSIGHT_BUILD_WEBWORKBENCH)
-    find_package(Wt)
-endif()
 
 
 
@@ -897,10 +894,16 @@ install(
     DESTINATION bin
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
 )
+
+set(_inccmd "")
+foreach(_f ${TARGETS_TO_INSTALL})
+    set(_inccmd "${_inccmd}\ninclude(\"\${CMAKE_CURRENT_LIST_DIR}/${_f}\")")
+endforeach()
 configure_file(CMake/InsightCAEConfig.cmake.in
   "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEConfig.cmake"
-  COPYONLY
+  @ONLY #COPYONLY
 )
+
 
 install(
   FILES

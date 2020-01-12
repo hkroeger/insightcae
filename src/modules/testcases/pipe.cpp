@@ -106,7 +106,7 @@ std::string PipeBase::cyclPrefix() const
   return namePrefix;
 }
 
-void PipeBase::calcDerivedInputData()
+void PipeBase::calcDerivedInputData(ProgressDisplayer& progress)
 {
   const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", D);
@@ -276,7 +276,7 @@ void PipeBase::insertBlocksAndPatches
 
 void PipeBase::createMesh
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {  
   // create local variables from ParameterSet
@@ -301,7 +301,7 @@ void PipeBase::createMesh
 
 void PipeBase::createCase
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {
   const ParameterSet& p=parameters_;
@@ -547,14 +547,14 @@ void PipeBase::evaluateAtSection(
 }
 
   
-ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm)
+ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
 /*  
   boost::ptr_vector<sampleOps::set> sets;*/
   
@@ -632,16 +632,16 @@ PipeCyclic::PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& ex
 
 void PipeCyclic::createMesh
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {  
-  PipeBase::createMesh(cm);
+  PipeBase::createMesh(cm, progress);
   convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
 }
 
 void PipeCyclic::createCase
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {  
   const ParameterSet& p=parameters_;
@@ -655,7 +655,7 @@ void PipeCyclic::createCase
       
   cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
   
-  PipeBase::createCase(cm);
+  PipeBase::createCase(cm, progress);
   
   cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
 					    .set_Ubar(vec3(Ubulk_, 0, 0))
@@ -663,7 +663,7 @@ void PipeCyclic::createCase
 
 }
 
-void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
+void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   if (parameters().getBool("run/perturbU"))
   {
@@ -676,7 +676,7 @@ void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 		    );
   }
   
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm, progress);
 }
 
 void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
@@ -751,16 +751,16 @@ ParameterSet PipeInflow::defaultParameters()
 
 void PipeInflow::createMesh
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {  
-  PipeBase::createMesh(cm);
+  PipeBase::createMesh(cm, progress);
   //convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
 }
 
 void PipeInflow::createCase
 (
-  OpenFOAMCase& cm
+  OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {  
   const ParameterSet& p=parameters_;
@@ -791,7 +791,7 @@ void PipeInflow::createCase
                     ))
      ));
   
-  PipeBase::createCase(cm);
+  PipeBase::createCase(cm, progress);
   
   for (int i=0; i<ntpc_; i++)
   {
@@ -811,14 +811,14 @@ void PipeInflow::createCase
   
 }
 
-ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm)
+ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
   for (int i=0; i<ntpc_; i++)
   {
     evaluateAtSection(cm, results, (tpc_xlocs_[i]+1e-6)*L, i+1);
@@ -928,7 +928,7 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm)
   return results;
 }
 
-void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm)
+void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   
   setFields(cm, executionPath(), 
@@ -939,7 +939,7 @@ void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm)
   
 //   cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
   
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm, progress);
 }
 
 void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)

@@ -28,7 +28,7 @@
 
 #include <TopoDS_Shape.hxx>  
 #include <TopTools_ShapeMapHasher.hxx>
-#include <GEOMAlgo_BndSphere.hxx>
+#include "GEOMAlgo_BndSphere.hxx"
 
 #define _NCollection_MapHasher
 #include <NCollection_IndexedDataMap.hxx>

@@ -130,7 +130,7 @@ PythonAnalysis::PythonAnalysis(const boost::filesystem::path& scriptfile, const 
 }
  
  
-ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer* )
+ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer& )
 {
     setupExecutionEnvironment();
     

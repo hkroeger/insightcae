@@ -26,7 +26,7 @@
 #define GEOMAlgo_BndSphereTree_HeaderFile
 
 #include <NCollection_UBTree.hxx>
-#include <GEOMAlgo_BndSphere.hxx>
+#include "GEOMAlgo_BndSphere.hxx"
 #include <TColStd_MapOfInteger.hxx>
 #include <TColStd_ListOfInteger.hxx>
 

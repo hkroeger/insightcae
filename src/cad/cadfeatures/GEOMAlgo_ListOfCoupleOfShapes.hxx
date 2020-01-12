@@ -26,7 +26,7 @@
 #define GEOMAlgo_ListOfCoupleOfShapes_HeaderFile
 
 #include <NCollection_List.hxx>
-#include <GEOMAlgo_CoupleOfShapes.hxx>
+#include "GEOMAlgo_CoupleOfShapes.hxx"
 
 typedef NCollection_List<GEOMAlgo_CoupleOfShapes> GEOMAlgo_ListOfCoupleOfShapes;
 typedef GEOMAlgo_ListOfCoupleOfShapes::Iterator GEOMAlgo_ListIteratorOfListOfCoupleOfShapes;

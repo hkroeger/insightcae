@@ -13,9 +13,29 @@ class ProgressDisplayer;
 
 
 
-typedef std::shared_ptr<ProgressDisplayer> ProgressDisplayerPtr;
-typedef std::map<std::string, double> ProgressVariableList;
-typedef std::pair<double, ProgressVariableList> ProgressState;
+typedef
+  std::shared_ptr<ProgressDisplayer>
+  ProgressDisplayerPtr;
+
+typedef
+  std::map<std::string, double>
+  ProgressVariableList;
+
+struct ProgressState
+    : public std::pair<double, ProgressVariableList>
+{
+  std::string logMessage_;
+
+  ProgressState(); // required for qMetaType registration
+  ProgressState(
+      double t,
+      ProgressVariableList pvl,
+      const std::string& logMessage = std::string()
+      );
+};
+
+
+typedef std::shared_ptr<ProgressState> ProgressStatePtr;
 
 
 

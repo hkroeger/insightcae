@@ -3,7 +3,7 @@
 
 #include "feature.h"
 #include "base/exception.h"
-#include "constantquantity.h"
+#include "quantitycomputers/constantquantity.h"
 
 namespace insight
 {

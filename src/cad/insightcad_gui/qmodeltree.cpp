@@ -620,17 +620,3 @@ void QModelTree::showContextMenu(const QPoint &p)
     }
 }
 
-
-
-
-QMetaTypeRegistrator::QMetaTypeRegistrator()
-{
-  qRegisterMetaType<insight::cad::ScalarPtr>("insight::cad::ScalarPtr");
-  qRegisterMetaType<insight::cad::VectorPtr>("insight::cad::VectorPtr");
-  qRegisterMetaType<insight::cad::FeaturePtr>("insight::cad::FeaturePtr");
-  qRegisterMetaType<insight::cad::DatumPtr>("insight::cad::DatumPtr");
-  qRegisterMetaType<insight::cad::PostprocActionPtr>("insight::cad::PostprocActionPtr");
-  qRegisterMetaType<insight::cad::VectorVariableType>("insight::cad::VectorVariableType");
-}
-
-QMetaTypeRegistrator qmetatyperegistrator;

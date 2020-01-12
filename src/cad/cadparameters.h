@@ -23,14 +23,14 @@
 #include "cadtypes.h"
 #include "cadparameter.h"
 
-#include "constantscalar.h"
-#include "scalarfeatureprop.h"
-#include "scalarops.h"
+#include "cadparameters/constantscalar.h"
+#include "cadparameters/scalarfeatureprop.h"
+#include "cadparameters/scalarops.h"
 
-#include "constantvector.h"
-#include "lookuptablescalar.h"
-#include "vectorfeatureprop.h"
-#include "vectorops.h"
-#include "projectedpoint.h"
+#include "cadparameters/constantvector.h"
+#include "cadparameters/lookuptablescalar.h"
+#include "cadparameters/vectorfeatureprop.h"
+#include "cadparameters/vectorops.h"
+#include "cadparameters/projectedpoint.h"
 
 #endif

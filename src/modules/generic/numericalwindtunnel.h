@@ -127,12 +127,12 @@ public:
 
   static std::string category() { return "Generic Analyses"; }
   
-  virtual void calcDerivedInputData();
+  virtual void calcDerivedInputData(ProgressDisplayer& progress);
   
-  virtual void createCase(insight::OpenFOAMCase& cm);
-  virtual void createMesh(insight::OpenFOAMCase& cm);
+  virtual void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
+  virtual void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
   
-  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
+  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
 };
 
 

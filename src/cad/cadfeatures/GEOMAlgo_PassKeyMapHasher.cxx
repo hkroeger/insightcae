@@ -25,7 +25,7 @@
 // Author:      Peter KURNEV
 //              <pkv@irinox>
 //
-#include <GEOMAlgo_PassKeyMapHasher.hxx>
+#include "GEOMAlgo_PassKeyMapHasher.hxx"
 
 //=======================================================================
 //function : HashCode

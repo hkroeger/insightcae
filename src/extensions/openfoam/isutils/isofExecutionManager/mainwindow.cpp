@@ -19,7 +19,6 @@
 
 #include "base/qt5_helper.h"
 
-#include "ui_remoteparaview.h"
 #include "remoteparaview.h"
 #include "remotesync.h"
 
@@ -270,38 +269,9 @@ void MainWindow::onStartParaview()
 
 void MainWindow::onStartRemoteParaview()
 {
-  RemoteParaview dlg(this);
-//  dlg.ui->subdir->setText(rem_subdir_);
-
-  auto rds=remoteSubdirs();
-  for (auto d: rds) dlg.ui->subdir->addItem( QString::fromStdString(d.string()) );
-
-  dlg.ui->remhost->setText(rem_host_);
-  if (dlg.exec())
-  {
-    QStringList args;
-
-//    rem_subdir_ = dlg.ui->subdir->text();
-    rem_subdir_ = dlg.ui->subdir->currentText();
-
-    rem_host_ = dlg.ui->remhost->text();
-
-//    if (!dlg.ui->subdir->text().isEmpty())
-    if (!rem_subdir_.isEmpty())
-      args << "-s" << rem_subdir_ /*dlg.ui->subdir->text()*/;
-
-    if (!dlg.ui->remhost->text().isEmpty())
-      args << "-r" << dlg.ui->remhost->text();
-
-    if (!QProcess::startDetached("isPVRemote.sh", args, localDir().c_str() ))
-    {
-      QMessageBox::critical(this, "Failed to start", QString("Failed to start Paraview in directoy ")+localDir().c_str());
-    }
-  }
-
+  RemoteParaview dlg(*this, this);
+  dlg.exec();
 }
-
-
 
 
 void MainWindow::onClearProgressCharts()
@@ -321,8 +291,6 @@ void MainWindow::saveSettings()
     QSettings settings("silentdynamics", "isofExecutionManager");
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
-    settings.setValue("remhost", rem_host_);
-    settings.setValue("remsubdir", rem_subdir_);
     settings.setValue("vsplitter", ui->v_splitter->saveState());
 }
 
@@ -331,7 +299,5 @@ void MainWindow::readSettings()
     QSettings settings("silentdynamics", "isofExecutionManager");
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
-    rem_host_=settings.value("remhost").toString();
-    rem_subdir_=settings.value("remsubdir").toString();
     ui->v_splitter->restoreState(settings.value("vsplitter").toByteArray());
 }

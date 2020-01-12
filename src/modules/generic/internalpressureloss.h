@@ -22,6 +22,7 @@
 
 #include "openfoam/openfoamanalysis.h"
 #include "parametersetvisualizer.h"
+#include "openfoam/openfoamtools.h"
 
 namespace insight
 {
@@ -95,7 +96,8 @@ fluid=set
 
 protected:
     // derived data
-    arma::mat bb_, L_;
+    BoundingBox bb_;
+    arma::mat L_;
     
     int nx_, ny_, nz_;
     
@@ -108,11 +110,11 @@ public:
 
     static std::string category() { return "Generic Analyses"; }
     
-    virtual void calcDerivedInputData();
-    virtual void createCase(insight::OpenFOAMCase& cm);
-    virtual void createMesh(insight::OpenFOAMCase& cm);
+    void calcDerivedInputData(ProgressDisplayer& progress) override;
+    void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress) override;
+    void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress) override;
     
-    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp);
+    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& progress);
 };
 
 

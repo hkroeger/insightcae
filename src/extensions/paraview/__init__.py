@@ -80,7 +80,7 @@ try:
             p['RGBPoints'][4*i]=minV+(maxV-minV)*p['RGBPoints'][4*i]
         return GetLookupTableForArray(arrayName, component, **p)
     
-    def displaySolid(obj, opacity=1.0):
+    def displaySolid(obj, opacity=1.0, rgb=[0,1,1]):
         disp = GetDisplayProperties(obj)
         disp.LookupTable=None
         try:
@@ -90,7 +90,7 @@ try:
          # ceases to exists from paraview 4.2 onwards
          disp.ColorArrayName=(None, None)
 	disp.Representation = 'Surface'
-	disp.DiffuseColor = [0, 1, 1]
+        disp.DiffuseColor = rgb
 	disp.Opacity = opacity
     
     def displayContour(obj, arrayName, minV=None, maxV=None, component=-1, LUTName="bluered", 

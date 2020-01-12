@@ -36,7 +36,7 @@
 #include "openfoam/caseelements/analysiscaseelements.h"
 
 #include "cadfeatures.h"
-#include "stl.h"
+#include "cadfeatures/stl.h"
 #include "datum.h"
 
 using namespace std;
@@ -67,18 +67,18 @@ InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::
 
 
 
-void extendBB(arma::mat& bb, const arma::mat& bb2)
-{
-  for (arma::uword i=0; i<3; i++)
-  {
-   bb(i,0)=std::min(bb(i,0), bb2(i,0));
-   bb(i,1)=std::max(bb(i,1), bb2(i,1));
-  }
-}
+//void extendBB(arma::mat& bb, const arma::mat& bb2)
+//{
+//  for (arma::uword i=0; i<3; i++)
+//  {
+//   bb(i,0)=std::min(bb(i,0), bb2(i,0));
+//   bb(i,1)=std::max(bb(i,1), bb2(i,1));
+//  }
+//}
 
-void InternalPressureLoss::calcDerivedInputData()
+void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& progress)
 {
-    insight::OpenFOAMAnalysis::calcDerivedInputData();
+    insight::OpenFOAMAnalysis::calcDerivedInputData(progress);
     Parameters p(parameters_);
     //reportIntermediateParameter("L", L_, "total domain length", "m");
 
@@ -109,16 +109,14 @@ void InternalPressureLoss::calcDerivedInputData()
               throw insight::Exception("Geometry file does not exist: "+io_extra->inlet_model->fileName().string());
             {
               FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
-              arma::mat bb = inletmodel->modelBndBox();
-              extendBB(bb_, bb);
+              bb_.extend(inletmodel->modelBndBox());
             }
 
             if (!io_extra->outlet_model->isValid())
               throw insight::Exception("Geometry file does not exist: "+io_extra->outlet_model->fileName().string());
             {
               FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
-              arma::mat bb = outletmodel->modelBndBox();
-              extendBB(bb_, bb);
+              bb_.extend(outletmodel->modelBndBox());
             }
           }
       }
@@ -134,15 +132,13 @@ void InternalPressureLoss::calcDerivedInputData()
           if (!geom_stl->inlet->isValid())
             throw insight::Exception("Geometry file does not exist: "+geom_stl->inlet->fileName().string());
 
-          arma::mat bb = STLBndBox(readSTL(geom_stl->inlet->filePath()));
-          extendBB(bb_, bb);
+          bb_.extend(STLBndBox(readSTL(geom_stl->inlet->filePath())));
         }
         {
           if (!geom_stl->outlet->isValid())
             throw insight::Exception("Geometry file does not exist: "+geom_stl->outlet->fileName().string());
 
-          arma::mat bb = STLBndBox(readSTL(geom_stl->outlet->filePath()));
-          extendBB(bb_, bb);
+          bb_.extend(STLBndBox(readSTL(geom_stl->outlet->filePath())));
         }
       }
 
@@ -170,7 +166,7 @@ void InternalPressureLoss::calcDerivedInputData()
 
 
 
-void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
+void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
     Parameters p(parameters_);
 
@@ -322,7 +318,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
 }
 
 
-void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm)
+void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
     Parameters p(parameters_);
     
@@ -370,10 +366,10 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm)
 }
 
 
-ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm)
+ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
     Parameters p(parameters_);
-    ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm);
+    ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, progress);
 
     arma::mat p_vs_t = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), "inlet_pressure");
 
@@ -391,56 +387,59 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm)
     ptr_map_insert<ScalarResult>(*results) ("delta_p", delta_p, "Pressure difference", "", "Pa");
 
     {
+      using namespace insight::paraview;
+      ParaviewVisualization::Parameters pvp;
+
       double Lmax=p.geometryscale*arma::as_scalar(arma::max(L_));
       arma::mat ctr=p.geometryscale*( bb_.col(1) + bb_.col(0) )*0.5;
-//      arma::mat ctri=inletprops.ctr_;
-
-      paraview::ParaviewVisualization::Parameters pvp;
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
-        .set_command(
-           "import numpy as np\n"
-
-           "eb=extractPatches(openfoam_case, 'wall.*')\n"
-           "Show(eb)\n"
-           "displaySolid(eb, 0.1)\n"
-        )
-      )));
 
       paraview::Streamtracer::Parameters::seed_cloud_type cloud;
       cloud.center=p.mesh.PiM *p.geometryscale;
       cloud.number=500;
       cloud.radius=0.5*arma::norm(L_,2);
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::Streamtracer(paraview::Streamtracer::Parameters()
-        .set_seed(cloud)
-        .set_dataset("openfoam_case[0]")
-        .set_field("U")
-        .set_maxLen(10.*Lmax)
-        .set_name("st")
-      )));
 
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
-        .set_bbmin(p.geometryscale*bb_.col(0))
-        .set_bbmax(p.geometryscale*bb_.col(1))
-        .set_imagename("streamlines")
+      pvp.scenes = {
+        PVScenePtr(new IsoView(IsoView::Parameters()
+                .set_bbmin(p.geometryscale*bb_.col(0))
+                .set_bbmax(p.geometryscale*bb_.col(1))
+                .set_imagename("streamlines")
+                .set_sceneElements({
+                  PVScriptElementPtr(new CustomScriptElement(CustomScriptElement::Parameters()
+                          .set_command(
+                             "import numpy as np\n"
 
-      )));
+                             "eb=extractPatches(openfoam_case, 'wall.*')\n"
+                             "displaySolid(eb, 0.1)\n"
+                          )
+                          .set_names({"eb"})
+                        )),
+                  PVScriptElementPtr(new Streamtracer(paraview::Streamtracer::Parameters()
+                          .set_seed(cloud)
+                          .set_dataset(ParaviewVisualization::OFCaseDatasetName()+"[0]")
+                          .set_field("U")
+                          .set_maxLen(10.*Lmax)
+                          .set_name("st")
+                        ))
+                })
+        )),
 
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
-        .set_command(
-            "Hide(st)\n"
-            "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.8, 0.25], barorient=1, opacity=1.)\n"
-        )
-      )));
+        PVScenePtr(new IsoView(IsoView::Parameters()
+                .set_bbmin(p.geometryscale*bb_.col(0))
+                .set_bbmax(p.geometryscale*bb_.col(1))
+                .set_imagename("pressureContour")
+                .set_sceneElements({
+                  PVScriptElementPtr(new CustomScriptElement(CustomScriptElement::Parameters()
+                        .set_command(
+                            "Hide(st)\n"
+                            "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.8, 0.25], barorient=1, opacity=1.)\n"
+                        )
+                        .set_names({"eb"})
+                  ))
+                })
+        ))
+      };
 
-      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
-        .set_bbmin(p.geometryscale*bb_.col(0))
-        .set_bbmax(p.geometryscale*bb_.col(1))
-        .set_imagename("pressureContour")
-      )));
-
-      paraview::ParaviewVisualization pv(pvp, executionPath());
-      ResultSetPtr images = pv();
-      results->insert ( "renderings", images );
+      results->insert ( "renderings", ParaviewVisualization(pvp, executionPath())() );
     }
     
     return results;

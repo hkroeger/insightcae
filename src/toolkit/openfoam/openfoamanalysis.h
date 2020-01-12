@@ -25,6 +25,8 @@
 #include "base/analysis.h"
 
 #include "openfoam/caseelements/turbulencemodel.h"
+#include "base/progressdisplayer/textprogressdisplayer.h"
+#include "base/progressdisplayer/convergenceanalysisdisplayer.h"
 
 
 
@@ -92,9 +94,9 @@ public:
     
     virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="");
     
-    virtual void calcDerivedInputData();
-    virtual void createMesh(OpenFOAMCase& cm) =0;
-    virtual void createCase(OpenFOAMCase& cm) =0;
+    virtual void calcDerivedInputData(ProgressDisplayer& progress);
+    virtual void createMesh(OpenFOAMCase& cm, ProgressDisplayer& progress) =0;
+    virtual void createCase(OpenFOAMCase& cm, ProgressDisplayer& progress) =0;
     
     virtual void createDictsInMemory(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
     
@@ -108,23 +110,23 @@ public:
     /**
      * Do modifications to the case when it has been created on disk
      */
-    virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
+    virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
-    virtual void mapFromOther(OpenFOAMCase& cm, const boost::filesystem::path& mapFromPath, bool is_parallel);
-    virtual void initializeSolverRun(ProgressDisplayer* displayer, OpenFOAMCase& cm);
+    virtual void mapFromOther(OpenFOAMCase& cm, ProgressDisplayer& progress, const boost::filesystem::path& mapFromPath, bool is_parallel);
+    virtual void initializeSolverRun(ProgressDisplayer& progress, OpenFOAMCase& cm);
     
     virtual void installConvergenceAnalysis(std::shared_ptr<ConvergenceAnalysisDisplayer> cc);
-    virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm);
-    virtual void finalizeSolverRun(OpenFOAMCase& cm);
+    virtual void runSolver(ProgressDisplayer& displayer, OpenFOAMCase& cm);
+    virtual void finalizeSolverRun(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
-    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
+    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
     /**
      * integrate all steps before the actual run
      */
-    virtual void createCaseOnDisk(OpenFOAMCase& cm);
+    virtual void createCaseOnDisk(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
-    ResultSetPtr operator()(ProgressDisplayer* displayer=nullptr) override;
+    ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer ) override;
 };
 
 

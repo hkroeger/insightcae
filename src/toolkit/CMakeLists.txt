@@ -28,6 +28,8 @@ set(toolkit_SOURCES
     base/tools.cpp
     base/latextools.cpp
     base/linearalgebra.cpp
+    base/resultelement.cpp
+    base/resultelementcollection.cpp
     base/resultset.cpp
     base/global.cpp
     base/softwareenvironment.cpp
@@ -41,7 +43,15 @@ set(toolkit_SOURCES
     base/caseelement.cpp
     base/case.cpp
     base/units.cpp
+    base/vtkrendering.cpp
+
+
     base/progressdisplayer.cpp
+
+    base/progressdisplayer/textprogressdisplayer.cpp
+    base/progressdisplayer/combinedprogressdisplayer.cpp
+    base/progressdisplayer/prefixedprogressdisplayer.cpp
+    base/progressdisplayer/convergenceanalysisdisplayer.cpp
 
     base/parameters/simpleparameter.cpp
     base/parameters/pathparameter.cpp
@@ -49,6 +59,18 @@ set(toolkit_SOURCES
     base/parameters/doublerangeparameter.cpp
     base/parameters/arrayparameter.cpp
     base/parameters/matrixparameter.cpp
+
+    base/resultelements/image.cpp
+    base/resultelements/numericalresult.cpp
+    base/resultelements/tabularresult.cpp
+    base/resultelements/scalarresult.cpp
+    base/resultelements/vectorresult.cpp
+    base/resultelements/comment.cpp
+    base/resultelements/attributeresulttable.cpp
+    base/resultelements/resultsection.cpp
+    base/resultelements/chart.cpp
+    base/resultelements/polarchart.cpp
+    base/resultelements/contourchart.cpp
     
     openfoam/ofenvironment.cpp
     openfoam/ofes.cpp
@@ -69,6 +91,7 @@ set(toolkit_SOURCES
     openfoam/mountremote.cpp
     openfoam/solveroutputanalyzer.cpp
     openfoam/ofdicts.cpp
+
 
     openfoam/caseelements/openfoamcaseelement.cpp
     openfoam/caseelements/turbulencemodel.cpp
@@ -172,10 +195,18 @@ ENDIF()
 
 find_package(VTK COMPONENTS
     vtkFiltersCore
+    vtkFiltersGeneral
+    vtkFiltersSources
     vtkCommonCore
     vtkIOLegacy
     vtkIOGeometry
-    vtkFiltersGeneral
+    vtkIOExport
+    vtkIOImage
+    vtkIOXML
+    vtkImagingCore
+    vtkRenderingOpenGL2
+    vtkRenderingAnnotation
+    vtkFiltersExtraction
     REQUIRED
 )
 find_package(OpenSSL)
@@ -205,20 +236,15 @@ install(
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
     )
 export(EXPORT toolkit_targets
-  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAETargets.cmake"
+  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitTarget.cmake"
   NAMESPACE insight::
 )
 install(EXPORT toolkit_targets
-  FILE InsightCAETargets.cmake
+  FILE InsightCAEToolkitTarget.cmake
   NAMESPACE insight::
   DESTINATION ${INSIGHT_ConfigPackageLocation}
 )
-#install(
-#  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#  DESTINATION include/toolkit
-#  COMPONENT ${INSIGHT_INSTALL_COMPONENT}
-#  FILES_MATCHING PATTERN "*.h"
-#  )
+
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
     ADD_CUSTOM_COMMAND(

@@ -35,11 +35,11 @@
 #include <TopTools_DataMapOfShapeListOfShape.hxx>
 #include <TopTools_DataMapOfShapeShape.hxx>
 
-#include <GEOMAlgo_GluerAlgo.hxx>
-#include <GEOMAlgo_BuilderShape.hxx>
-#include <GEOMAlgo_GlueDetector.hxx>
-#include <GEOMAlgo_CoupleOfShapes.hxx>
-#include <GEOMAlgo_ListOfCoupleOfShapes.hxx>
+#include "GEOMAlgo_GluerAlgo.hxx"
+#include "GEOMAlgo_BuilderShape.hxx"
+#include "GEOMAlgo_GlueDetector.hxx"
+#include "GEOMAlgo_CoupleOfShapes.hxx"
+#include "GEOMAlgo_ListOfCoupleOfShapes.hxx"
 
 //=======================================================================
 //class : GEOMAlgo_Gluer2

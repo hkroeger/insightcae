@@ -48,6 +48,8 @@ protected:
     std::shared_ptr<double> last_dt_;
     std::shared_ptr<ExecTimeInfo> last_exec_time_info_, last_last_exec_time_info_;
 
+    std::string curLog_;
+
 //   std::map<std::string, std::vector<arma::mat> > trackedForces_;
 
 public:

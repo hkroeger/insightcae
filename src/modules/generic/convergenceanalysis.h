@@ -58,7 +58,7 @@ public:
     
     ConvergenceAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath);
     
-    virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
+    ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;
 
     static std::string category() { return "General Postprocessing"; }
 };

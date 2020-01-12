@@ -76,10 +76,10 @@ public:
   
   virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
   virtual void setupQueue();
-  virtual void processQueue(insight::ProgressDisplayer* displayer);
+  virtual void processQueue(insight::ProgressDisplayer& displayer);
   virtual ResultSetPtr evaluateRuns();
   
-  virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
+  virtual ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
 };
 
 }

@@ -29,6 +29,8 @@
 #include "base/analysisstepcontrol.h"
 #include "base/tools.h"
 
+#include "base/progressdisplayer/textprogressdisplayer.h"
+
 #include <queue>
 
 #include "base/boost_include.h"
@@ -36,78 +38,9 @@
 
 namespace insight
 {
-  
-    
-    
 
 
 
-class CombinedProgressDisplayer
-    : public ProgressDisplayer
-{
-public:
-    typedef enum {AND, OR} Ops;
-protected:
-    std::vector<ProgressDisplayer*> displayers_;
-    Ops op_;
-public:
-    CombinedProgressDisplayer ( Ops op );
-    void add ( ProgressDisplayer* );
-    virtual void update ( const ProgressState& pi );
-    virtual bool stopRun() const;
-};
- 
-
-
-
-class TextProgressDisplayer
-    : public ProgressDisplayer
-{
-public:
-    virtual void update ( const ProgressState& pi );
-};
-
-
-
-class PrefixedProgressDisplayer
-    : public ProgressDisplayer
-{
-  ProgressDisplayer* parent_;
-  std::string prefix_;
-
-public:
-  PrefixedProgressDisplayer(ProgressDisplayer* parent, const std::string& prefix);
-
-  virtual void update ( const ProgressState& pi );
-  virtual bool stopRun() const;
-};
-
-
-class ConvergenceAnalysisDisplayer
-  : public ProgressDisplayer
-{
-  std::string progvar_;
-  std::vector<double> trackedValues_;
-
-  int istart_, co_;
-  double threshold_;
-
-  bool converged_;
-
-public:
-  ConvergenceAnalysisDisplayer ( const std::string &progvar, double threshold = 1e-5 );
-
-  virtual void update ( const ProgressState &pi );
-
-  virtual bool stopRun() const;
-};
-
-
-
-
-
-
-typedef std::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDisplayerPtr;
 
 #define addToAnalysisFactoryTable(DerivedClass) \
  defineType(DerivedClass); \
@@ -225,7 +158,7 @@ public:
         return parameters_;
     }
 
-    virtual ResultSetPtr operator() ( ProgressDisplayer* displayer=nullptr ) =0;
+    virtual ResultSetPtr operator() ( ProgressDisplayer& displayer = consoleProgressDisplayer ) =0;
 
     virtual boost::filesystem::path getSharedFilePath ( const boost::filesystem::path& file );
 

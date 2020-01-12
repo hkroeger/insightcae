@@ -69,7 +69,6 @@ phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "unifor
 
 protected:
     ParameterSet ps_;
-    boost::filesystem::path casedir_;
 
 public:
     declareType ( "PressureOutletBC" );
@@ -78,8 +77,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& ps = Parameters::makeDefault(),
-        const boost::filesystem::path& casedir = "."
+        const ParameterSet& ps = Parameters::makeDefault()
     );
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 

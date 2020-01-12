@@ -206,8 +206,15 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
             if (curTime_ == curTime_)
             {
-                pdisp_.update( ProgressState(curTime_, curProgVars_));
+                pdisp_.update(
+                      ProgressState(
+                        curTime_,
+                        curProgVars_,
+                        curLog_
+                        )
+                      );
                 curProgVars_.clear();
+                curLog_.clear();
             }
             curTime_=to_number<double>(match[1]);
 
@@ -246,6 +253,9 @@ void SolverOutputAnalyzer::update(const std::string& line)
     {
       // ignore errors
     }
+
+    curLog_ += line+"\n";
+
 }
 
 bool SolverOutputAnalyzer::stopRun() const

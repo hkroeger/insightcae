@@ -32,7 +32,7 @@
 #include <Standard_Macro.hxx>
 #include <Standard_Integer.hxx>
 #include <Standard_Boolean.hxx>
-#include <GEOMAlgo_PassKeyShape.hxx>
+#include "GEOMAlgo_PassKeyShape.hxx"
 
 //=======================================================================
 //class    : GEOMAlgo_PassKeyShapeMapHasher

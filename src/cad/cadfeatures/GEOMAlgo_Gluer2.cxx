@@ -23,7 +23,7 @@
 // File:        GEOMAlgo_Gluer2.cxx
 // Author:      Peter KURNEV
 
-#include <GEOMAlgo_Gluer2.hxx>
+#include "GEOMAlgo_Gluer2.hxx"
 
 #include <TopAbs_ShapeEnum.hxx>
 
@@ -46,8 +46,8 @@
 
 #include <BOPTools_AlgoTools.hxx>
 
-#include <GEOMAlgo_GlueDetector.hxx>
-#include <GEOMAlgo_AlgoTools.hxx>
+#include "GEOMAlgo_GlueDetector.hxx"
+#include "GEOMAlgo_AlgoTools.hxx"
 
 //=======================================================================
 //function : GEOMAlgo_Gluer2

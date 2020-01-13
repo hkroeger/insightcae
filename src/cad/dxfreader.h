@@ -53,6 +53,7 @@ public:
   virtual void addLine(const DL_LineData &);
   virtual void addPolyline(const DL_PolylineData &);
   virtual void addVertex(const DL_VertexData &);
+  virtual void addVertexPolyLine(const DL_VertexData &, Polyline& pl);
 
   virtual void addSpline(const DL_SplineData&);
   virtual void addKnot(const DL_KnotData&);

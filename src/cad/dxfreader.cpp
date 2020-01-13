@@ -111,6 +111,8 @@ void DXFReader::addPolyline(const DL_PolylineData &pl)
       pl_->closed=true;
     }
   }
+  else
+    pl_.reset();
 }
 
 DXFReader::Polyline::Polyline(DXFReader& r, const std::string& layername)
@@ -128,7 +130,7 @@ DXFReader::Polyline::~Polyline()
       pv.y=p0->Y();
       pv.z=p0->Z();
       pv.bulge=0;
-      reader.addVertex(pv);
+      reader.addVertexPolyLine(pv, *this);
     }
 }
 
@@ -138,23 +140,29 @@ void DXFReader::addVertex(const DL_VertexData &pv)
 {
   if (notFiltered())
   {
+    addVertexPolyLine(pv, *pl_);
+  }
+}
+
+void DXFReader::addVertexPolyLine(const DL_VertexData & pv, Polyline& pl)
+{
     gp_Pnt p(pv.x, pv.y, pv.z);
 
-    if (!pl_->p0.get())
+    if (!pl.p0)
     {
-      pl_->p0.reset(new gp_Pnt(p));
+      pl.p0.reset(new gp_Pnt(p));
     }
     else
     {
-      double bulge=pl_->lbulge;
+      double bulge=pl.lbulge;
       if (fabs(bulge)<1e-10)
       {
-        TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*pl_->lp, p).Edge();
-        ls_[pl_->layername_].Append(e);
+        TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*pl.lp, p).Edge();
+        ls_[pl.layername_].Append(e);
       }
       else
       {
-        gp_XYZ pa(pl_->lp->XYZ());
+        gp_XYZ pa(pl.lp->XYZ());
         gp_XYZ pb(p.XYZ());
         double u=(pb-pa).Modulus();
         double i=bulge*u/2.0;
@@ -164,12 +172,12 @@ void DXFReader::addVertex(const DL_VertexData &pv)
           GC_MakeArcOfCircle(gp_Pnt(pa), gp_Pnt(pt), gp_Pnt(pb)).Value(),
           gp_Pnt(pa), gp_Pnt(pb)
         ).Edge();
-        ls_[pl_->layername_].Append(e);
+        ls_[pl.layername_].Append(e);
       }
     }
-    pl_->lp.reset(new gp_Pnt(p));
-    pl_->lbulge=pv.bulge;
-  }
+    pl.lp.reset(new gp_Pnt(p));
+    pl.lbulge=pv.bulge;
+
 }
 
 

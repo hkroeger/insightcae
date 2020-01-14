@@ -33,6 +33,8 @@ void InsightCAEApplication::setSplashScreen(QSplashScreen *sc)
 {
   sc_=sc;
   QTimer::singleShot(3000, sc, &QSplashScreen::close);
+  connect( sc, &QSplashScreen::close,
+          [&]() { sc_=nullptr; } );
 }
 
 
@@ -42,7 +44,10 @@ bool InsightCAEApplication::notify(QObject *rec, QEvent *ev)
 {
   if (sc_)
   {
-    if (dynamic_cast<QKeyEvent*>(ev) || (dynamic_cast<QMouseEvent*>(ev)&& ev->type()!=QEvent::MouseMove))
+    if (
+        dynamic_cast<QKeyEvent*>(ev) ||
+       (dynamic_cast<QMouseEvent*>(ev)&& ev->type()!=QEvent::MouseMove)
+        )
     {
       sc_->close();
       sc_=nullptr;

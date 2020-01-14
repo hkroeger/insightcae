@@ -17,10 +17,11 @@ for cfgd in $INSIGHT_USERSHAREDDIR ${INSIGHT_GLOBALSHAREDDIRS/:/ }; do # in that
  fi
 done
 
-if which python >/dev/null 2>&1; then
- export PYTHONPATH=$PYTHONPATH:$(python -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${INSIGHT_INSTDIR}' ) )")
+if [ ! $INSIGHT_GLOBALPYTHONMODULES ]; then
+    if which python >/dev/null 2>&1; then
+     export PYTHONPATH=$PYTHONPATH:$(python -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${INSIGHT_INSTDIR}' ) )")
+    fi
 fi
-
 
 source insight.profile.OpenFOAM
 

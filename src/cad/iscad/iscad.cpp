@@ -156,8 +156,8 @@ int main ( int argc, char** argv )
       QPixmap pixmap ( ":/resources/insight_cad_splash.png" );
       QSplashScreen splash ( pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen );
       splash.show();
+      app.setSplashScreen(&splash);
       splash.showMessage ( "Wait..." );
-      QElapsedTimer splashtime; splashtime.start();
 
       ISCADMainWindow window ( 0, 0, vm.count ( "nolog" ) );
       
@@ -182,8 +182,6 @@ int main ( int argc, char** argv )
       }
 
       window.show();
-
-      splash.finish(&window);
 
       window.raise();
 

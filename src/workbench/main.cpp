@@ -40,23 +40,7 @@
  
 using namespace boost;
 using namespace std;
- 
- 
-class I : public QThread
-{
-    QSplashScreen* sp_;
-    QWidget* win_;
-    
-public:
-    I(QSplashScreen* sp, QWidget* win) :sp_(sp), win_(win) 
-    {}
 
-    void run() 
-    {
-        QThread::sleep(3);
-        sp_->finish(win_);
-    }
-};
 
 
 
@@ -125,7 +109,7 @@ int main(int argc, char** argv)
            insight::loader.addLibrary(l);
         }
     }
-    
+
     InsightCAEApplication app(argc, argv, "InsightCAE Workbench");
 
     // After creation of application object!
@@ -135,6 +119,7 @@ int main(int argc, char** argv)
     QPixmap pixmap(":/resources/insight_workbench_splash.png");
     QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
     splash.show();
+    app.setSplashScreen(&splash);
     splash.showMessage("Wait...");
 
     workbench window;
@@ -153,9 +138,6 @@ int main(int argc, char** argv)
       window.show();
 
       app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
-
-      I w(&splash, &window);
-      w.start(); // splash is shown for 5 seconds
 
       window.raise();
 

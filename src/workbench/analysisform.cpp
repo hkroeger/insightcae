@@ -602,6 +602,7 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 {
   ist_file_=fp;
   parameters_.readFromFile(fp);
+  Q_EMIT update();
 }
 
 
@@ -628,7 +629,6 @@ void AnalysisForm::onLoadParameters()
   if (!fn.isEmpty())
   {
     loadParameters(fn.toStdString());
-    Q_EMIT update();
   }
 }
 

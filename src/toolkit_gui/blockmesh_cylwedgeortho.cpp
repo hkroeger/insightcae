@@ -106,19 +106,39 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     int nuBy2, int nx, int nr, double deltax
 )
 {
+  insight::CurrentExceptionContext ex(boost::str(boost::format(
+     "inserting blocks between z0=%g and z1=%g"
+    ) % z0 % z1) );
 
   bool is_highest = !no_top_edg;
 
   auto cyl_isec = [&](double r, Handle_Geom_Curve spine, gp_Pnt nearp)
   {
-      Handle_Geom_Surface cyl(new Geom_CylindricalSurface(gp_Ax3(center, ez), r));
+    insight::CurrentExceptionContext ex(boost::str(boost::format(
+       "determining point on spine for radius r=%g (endpoints %s and %s); starting at point %s"
+      ) % r
+        % vector_to_string( vec3(spine->Value(spine->FirstParameter())) )
+        % vector_to_string( vec3(spine->Value(spine->LastParameter())) )
+        % vector_to_string( vec3(nearp) )
+      ), false
+    );
 
+    gp_Ax3 cyl_cs(center, ez);
+    Handle_Geom_Surface cyl(new Geom_CylindricalSurface(cyl_cs, r));
+
+    double t1;
+
+    auto searchIntersection = [&]()
+    {
       GeomAPI_ExtremaCurveSurface ecs1(spine, cyl);
       double dist=1e100;
       int ii=-1;
       gp_Pnt isecp;
       for (int i=1; i<=ecs1.NbExtrema(); i++)
       {
+        gp_Pnt pc, ps;
+        ecs1.Points(i, pc, ps);
+        std::cout<<ecs1.Distance(i)<<" pc="<<vector_to_string(vec3(pc))<<" ps="<<vector_to_string(vec3(ps))<<std::endl;
         if (ecs1.Distance(i)<1e-6)
         {
           gp_Pnt p2;
@@ -131,12 +151,31 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
         }
       }
       if (ii<0)
+      {
+  //      BRepTools::Write( BRepBuilderAPI_MakeEdge(spine).Edge(), "dbg_spine.brep");
+  //      BRepTools::Write( BRepBuilderAPI_MakeFace(cyl, 1e-7).Face(), "dbg_cyl.brep");
         throw insight::Exception("Could not find intersection between cylinder and curve!");
+      }
 
-      double t1, dummy;
+      double dummy;
       ecs1.Parameters(ii, t1, dummy, dummy);
+    };
 
-      return t1;
+    try
+    {
+      searchIntersection();
+    }
+    catch (const insight::Exception& e)
+    {
+      // try cylinder rotated
+      gp_Trsf tr;
+      tr.SetRotation(gp_Ax1(center, ez), 45*SI::deg);
+      cyl_cs.Transform(tr);
+      cyl = new Geom_CylindricalSurface(cyl_cs, r);
+      searchIntersection();
+    }
+
+    return t1;
   };
 
   auto radius = [&](const gp_Pnt& p)
@@ -1164,6 +1203,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
 void blockMeshDict_CylWedgeOrtho::create_bmd()
 {
+    insight::CurrentExceptionContext("creating blockMeshDict from spine "+p_.geometry.wedge_spine_curve->fileName().string());
+
     this->setDefaultPatch(p_.mesh.defaultPatchName);
 
 

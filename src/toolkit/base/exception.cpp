@@ -65,14 +65,8 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
 }
 
 
-Exception::Exception()
+void Exception::saveContext(bool strace)
 {
-}
-
-Exception::Exception(const std::string& msg, bool strace)
-{
-  message_=msg;
-
   std::vector<std::string> context_list;
   exceptionContext.snapshot(context_list);
 
@@ -148,6 +142,24 @@ Exception::Exception(const std::string& msg, bool strace)
     strace_="";
 }
 
+Exception::Exception()
+{
+  saveContext(true);
+}
+
+Exception::Exception(const std::string& msg, bool strace)
+  : message_(msg)
+{
+  saveContext(strace);
+}
+
+Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> &contextGeometry, bool strace)
+  : message_(msg),
+    contextGeometry_(contextGeometry)
+{
+  saveContext(strace);
+}
+
 Exception::operator std::string() const
 {
   return message_;
@@ -157,6 +169,11 @@ Exception::operator std::string() const
 const char* Exception::what() const noexcept
 {
   return message_.c_str();
+}
+
+const std::map<string, cad::FeaturePtr> &Exception::contextGeometry() const
+{
+  return contextGeometry_;
 }
 
 void assertion(bool condition, const std::string& context_message)
@@ -310,6 +327,22 @@ void printException(const std::exception& e)
               << e.what() << std::endl
                  ;
   }
+}
+
+string vector_to_string(const arma::mat &vals, bool addMag)
+{
+  std::ostringstream os;
+  os <<"(";
+  for (arma::uword i=0; i<vals.n_elem; i++)
+  {
+    os<<" "<<vals(i);
+  }
+  os<<" )";
+  if (addMag)
+  {
+    os<<" |"<<arma::norm(vals,2)<<"|";
+  }
+  return os.str();
 }
 
 

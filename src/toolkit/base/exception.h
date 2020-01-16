@@ -26,6 +26,7 @@
 #include <iostream>
 #include <vector>
 #include <armadillo>
+#include <memory>
 
 namespace insight {
   
@@ -57,16 +58,27 @@ class Exception;
   
 std::ostream& operator<<(std::ostream& os, const Exception& ex);
 
+namespace cad
+{
+class Feature;
+typedef std::shared_ptr<Feature> FeaturePtr;
+}
+
 class Exception
 : public std::exception
 {
+
   std::string message_;
-//  std::vector<std::string> context_;
   std::string strace_;
+
+  std::map<std::string, cad::FeaturePtr> contextGeometry_;
+
+  void saveContext(bool strace);
   
 public:
   Exception();
   Exception(const std::string& msg, bool strace=true);
+  Exception(const std::string& msg, const std::map<std::string, cad::FeaturePtr>& contextGeometry, bool strace=true);
 
   inline std::string as_string() const { return static_cast<std::string>(*this); }
 
@@ -76,6 +88,7 @@ public:
   inline const std::string& strace() const { return strace_; }
 
   const char* what() const noexcept override;
+  const std::map<std::string, cad::FeaturePtr>& contextGeometry() const;
 
   friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
 };
@@ -86,6 +99,7 @@ void assertion(bool condition, const std::string& context_message);
 
 std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5);
 std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen=5);
+std::string vector_to_string(const arma::mat& vals, bool addMag=true);
 
 class ExceptionContext
 : public std::vector<CurrentExceptionContext*>

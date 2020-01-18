@@ -226,6 +226,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
       }
 
       res["states"] = states;
+      res["inputFileReceived"] = hasInputFileReceived();
       res["resultsAvailable"] = results_ ? true : false;
 
       response.setStatus(200);

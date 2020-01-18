@@ -429,7 +429,7 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
       throw insight::Exception("no OpenFOAM environment defined!");
 
     OpenFOAMCase ofc( *OFEs::list.begin()->second );
-    ofc.executeCommand(executionPath(), "pvbatch", args, nullptr, 0, &machine);
+    ofc.executeCommand(executionPath(), "pvbatch-offscreen", args, nullptr, 0, &machine);
 
 //    if (!keepScript)
     remove(tempfile);

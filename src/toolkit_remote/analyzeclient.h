@@ -75,8 +75,11 @@ public:
   AnalyzeClient(const std::string& url);
   ~AnalyzeClient();
 
+  bool waitForContact(int maxAttempts=20);
+
   bool isBusy() const;
   void forgetRequest();
+
 
   void queryExepath( QueryExepathCallback onExepathAvailable );
 

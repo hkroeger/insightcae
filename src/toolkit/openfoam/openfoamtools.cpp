@@ -1559,7 +1559,7 @@ void runPvPython
     tf.close();
   }
   args.push_back(tempfile.c_str());
-  ofc.executeCommand(location, "pvbatch", args, NULL, 0, &machine);
+  ofc.executeCommand(location, "pvbatch-offscreen", args, NULL, 0, &machine);
 
   if (!keepScript) remove(tempfile);
 

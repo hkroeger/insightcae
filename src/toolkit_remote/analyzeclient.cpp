@@ -42,13 +42,13 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
 
   boost::lock_guard<boost::mutex> lock(mx_);
 
+  bool success = (!err && response.status() == 200);
 
   std::string body=response.body();
   std::cout<<"httpResponse err="<<err<<", crq="<<crq_
-          <<", body="<<body.substr(0, std::min<size_t>(80,body.size()))
+          <<", status="<<response.status()<<", sucsess="<<success<<", body="<<body.substr(0, std::min<size_t>(80,body.size()))
          <<std::endl;
 
-  bool success = (!err && response.status() == 200);
 
   switch (crq_)
   {
@@ -219,6 +219,44 @@ void AnalyzeClient::forgetRequest()
 {
   boost::lock_guard<boost::mutex> mxg(mx_);
   crq_=None;
+}
+
+bool AnalyzeClient::waitForContact(int maxAttempts)
+{
+  // wait for server to come up
+  std::mutex m;
+  std::condition_variable cv;
+  bool contacted=false;
+  int attempts=0;
+  do
+  {
+    attempts++;
+
+    queryStatus(
+          [&](bool success, insight::ProgressStatePtr, bool)
+          {
+            std::unique_lock<std::mutex> lck(m);
+            if (success)
+            {
+              contacted=true;
+            }
+            cv.notify_all();
+          }
+    );
+
+    {
+     std::unique_lock<std::mutex> lk(m);
+     cv.wait_for(lk, std::chrono::seconds(10) );
+    }
+
+    if (!contacted)
+    {
+      forgetRequest();
+      boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
+    }
+  } while( !(contacted || (attempts > maxAttempts)) );
+
+  return contacted;
 }
 
 void AnalyzeClient::queryExepath(AnalyzeClient::QueryExepathCallback onExepathAvailable)

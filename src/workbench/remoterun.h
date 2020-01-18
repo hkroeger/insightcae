@@ -12,6 +12,7 @@ class RemoteRun
 {
   Q_OBJECT
 
+  bool resume_;
   boost::thread workerThread_, cancelThread_;
   insight::AnalyzeClient ac_;
 

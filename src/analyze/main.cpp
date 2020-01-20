@@ -343,7 +343,13 @@ int main(int argc, char *argv[])
         boost::thread solver_thread(
               [&]()
               {
-                results = (*analysis)( *pd );
+                try {
+                 results = (*analysis)( *pd );
+                }
+                catch (const std::exception& e)
+                {
+                 printException(e);
+                }
               }
         );
 

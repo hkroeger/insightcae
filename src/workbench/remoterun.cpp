@@ -117,7 +117,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
 
   // start
   workerThread_ = boost::thread(
-        [&]()
+        [this]
         {
           insight::ParameterSet p = af_->parameters_;
 
@@ -130,14 +130,14 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
           catch (...) { exceptionEmitter(); }
 
 
-          auto monitor = [&]()
+          auto monitor = [this]
           {
-            bool resultsFetched=false;
-            while (!resultsFetched)
+            std::atomic<bool> runMonitor(true);
+            while (runMonitor)
             {
               if (!ac_.isBusy())
                 ac_.queryStatus(
-                  [&](bool success, insight::ProgressStatePtr pi, bool resultsavail)
+                  [this,&runMonitor](bool success, insight::ProgressStatePtrList pis, bool resultsavail)
                   {
                     try {
                     if (!success)
@@ -146,14 +146,20 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
                     }
                     else
                     {
-                      if (pi)
+                      if (pis.size()>0)
                       {
-                        Q_EMIT analysisProgressUpdate(*pi);
+                        for (const auto pi: pis)
+                        {
+                          Q_EMIT analysisProgressUpdate(*pi);
+                        }
                       }
                       if (resultsavail)
                       {
+                        runMonitor=false;
+
                         ac_.queryResults(
-                              [&](bool success, insight::ResultSetPtr results)
+
+                              [this](bool success, insight::ResultSetPtr results)
                               {
                                 try
                                 {
@@ -163,10 +169,11 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
                                   }
                                   else
                                   {
-                                    resultsFetched=true;
+
+                                    Q_EMIT finished( results );
 
                                     ac_.exit(
-                                          [=](bool success)
+                                          [this](bool success)
                                           {
                                             try
                                             {
@@ -176,14 +183,13 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
                                               }
                                               else
                                               {
-                                                Q_EMIT finished( results );
+                                                removeRemoteDirectory();
                                               }
                                             }
                                             catch (...) { exceptionEmitter(); }
                                           }
                                     );
 
-                                    removeRemoteDirectory();
                                   }
                                 }
                                 catch (...) { exceptionEmitter(); }
@@ -194,7 +200,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
                     } catch (...) { exceptionEmitter(); }
                   }
               );
-              else std::cout<<"busy"<<std::endl;
+//              else std::cout<<"busy"<<std::endl;
 
 
 
@@ -214,17 +220,13 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
             ac_.launchAnalysis(
                   p, "/", af_->analysisName_,
 
-                  [&](bool success)
+                  [this](bool success)
                   {
                     try
                     {
                       if (!success)
                       {
                         Q_EMIT failed( insight::Exception("Failed to launch analysis!") );
-                      }
-                      else
-                      {
-                        monitor();
                       }
                     }
                     catch (...) { exceptionEmitter(); }
@@ -248,7 +250,9 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
 
 RemoteRun::~RemoteRun()
 {
+  cout<<"finish remote run"<<endl;
   workerThread_.join();
+  cout<<"worker thread joined"<<endl;
   if (cancelThread_.joinable()) cancelThread_.join();
 
   // unlock UI

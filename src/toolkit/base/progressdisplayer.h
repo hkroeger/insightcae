@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <map>
+#include <vector>
 
 
 namespace insight {
@@ -36,6 +37,7 @@ struct ProgressState
 
 
 typedef std::shared_ptr<ProgressState> ProgressStatePtr;
+typedef std::vector<ProgressStatePtr> ProgressStatePtrList;
 
 
 

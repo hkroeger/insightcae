@@ -7,11 +7,77 @@
 
 #include <functional>
 
+using namespace std;
 
 namespace insight
 {
 
+void TaskQueue::dispatchJobs()
+{
+  std::unique_lock<std::mutex> lck(mx_);
+  while (true)
+  {
+    //Wait until we have jobs
+    cv_.wait(lck, [this] {
+        return (jobQueue_.size());
+    });
 
+    while (jobQueue_.size()>0)
+    {
+      auto op = std::move(jobQueue_.front());
+      jobQueue_.pop();
+
+      lck.unlock();
+      op();
+      lck.lock();
+
+      boost::this_thread::interruption_point();
+    }
+
+  }
+}
+
+
+
+TaskQueue::TaskQueue()
+  : last_jid_(0),
+    workerThread_( boost::bind(&TaskQueue::dispatchJobs, this) )
+{
+}
+
+TaskQueue::~TaskQueue()
+{
+  cout<<"joining task queue"<<endl;
+  cancel();
+    workerThread_.join();
+    cout<<"task queue finished: "<<jobQueue_.size()<<" jobs remain unexecuted."<<endl;
+}
+
+void TaskQueue::post(TaskQueue::Job job)
+{
+  std::unique_lock<std::mutex> lck(mx_);
+
+  int i = last_jid_++;
+  cout<<"posted job "<<i<<endl;
+
+
+  jobQueue_.push(
+        [=]()
+        {
+          cout<<"launched job "<<i<<endl;
+          job();
+        }
+  );
+
+  lck.unlock();
+  cv_.notify_all();
+
+}
+
+void TaskQueue::cancel()
+{
+  workerThread_.interrupt();
+}
 
 
 void AnalyzeClient::controlRequest(const std::string &action, AnalyzeClient::ReportSuccessCallback onCompletion)
@@ -45,25 +111,37 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
   bool success = (!err && response.status() == 200);
 
   std::string body=response.body();
+  CurrentRequestType crq=crq_;
+  crq_=None;
   std::cout<<"httpResponse err="<<err<<", crq="<<crq_
-          <<", status="<<response.status()<<", sucsess="<<success<<", body="<<body.substr(0, std::min<size_t>(80,body.size()))
-         <<std::endl;
+           <<", status="<<response.status()
+           <<", success="<<success
+           <<", body="<<body.substr(0, std::min<size_t>(80,body.size()))
+           <<std::endl;
 
 
-  switch (crq_)
+  switch (crq)
   {
 
-    case SimpleRequest: {     
-        crq_=None;
-        boost::thread( boost::get<ReportSuccessCallback>(currentCallback_), success ).detach();
+    case SimpleRequest: {
+        tq_.post(
+              [=]()
+              {
+                boost::get<ReportSuccessCallback>(currentCallback_)(success);
+              }
+        );
       }
       break;
 
     case QueryStatus: {
 
+      ProgressStatePtrList pss;
+      bool resultsAvailable = false;
+
       if (success)
       {
         const auto *ct = response.getHeader("Content-Type");
+
         if (!ct)
         {
           throw insight::Exception("No content type specified in response!");
@@ -74,7 +152,7 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
           Wt::Json::Object payload;
           Wt::Json::parse(response.body(), payload);
 
-          bool resultsAvailable = payload["resultsAvailable"].toBool();
+          resultsAvailable = payload["resultsAvailable"].toBool();
           std::cout<<"resultsavail="<<resultsAvailable<<std::endl;
 
           Wt::Json::Array states = payload.get("states");
@@ -102,72 +180,73 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
                 pvl,
                 s.get("logMessage").toString()
                 ));
-              boost::thread( boost::get<QueryStatusCallback>(currentCallback_), success, ps, false).detach();
+              pss.push_back(ps);
             }
-          }
-          else
-          {
-            boost::thread( boost::get<QueryStatusCallback>(currentCallback_), true, ProgressStatePtr(), false).detach();
-          }
-
-          if (resultsAvailable)
-          {
-            boost::thread( boost::get<QueryStatusCallback>(currentCallback_), success, ProgressStatePtr(), true).detach();
           }
         }
         else
         {
-          boost::thread( boost::get<QueryStatusCallback>(currentCallback_), false, ProgressStatePtr(), false).detach();
+          success=false;
         }
       }
-      else
+
+      tq_.post( [=]()
       {
-        boost::thread( boost::get<QueryStatusCallback>(currentCallback_), false, ProgressStatePtr(), false).detach();
-      }
+        boost::get<QueryStatusCallback>(currentCallback_)(success, pss, resultsAvailable);
+      });
+
     } break;
 
     case QueryResults: {
+      ResultSetPtr r;
+
       if (success)
       {
-//      std::cout<<"call"<<std::endl;
         const auto *ct = response.getHeader("Content-Type");
+
         if (!ct)
           throw insight::Exception("No content type specified in response!");
+
         if ( (*ct)=="application/xml")
         {
           auto body = response.body();
-          ResultSetPtr r(new ResultSet(body));
-          boost::thread( boost::get<QueryResultsCallback>(currentCallback_), success, r).detach();
-        }
-        else
-        {
-          boost::thread( boost::get<QueryResultsCallback>(currentCallback_), false, ResultSetPtr()).detach();
+          r.reset(new ResultSet(body));
         }
       }
-      else
+
+      tq_.post( [=]()
       {
-        boost::thread( boost::get<QueryResultsCallback>(currentCallback_), false, ResultSetPtr()).detach();
-      }
+        boost::get<QueryResultsCallback>(currentCallback_)(success, r);
+      });
+
     } break;
 
     case QueryExepath: {
-      if (success) {
+      std::string exepath;
+
+      if (success)
+      {
+
         const auto *ct = response.getHeader("Content-Type");
+
         if (!ct)
           throw insight::Exception("No content type specified in response!");
+
         if ( (*ct)=="text/plain" )
         {
-          boost::thread( boost::get<QueryExepathCallback>(currentCallback_), success, response.body()).detach();
+          exepath=response.body();
         }
         else
         {
-          boost::thread( boost::get<QueryExepathCallback>(currentCallback_), false, "").detach();
+          success=false;
         }
       }
-      else
+
+      tq_.post( [=]()
       {
-        boost::thread( boost::get<QueryExepathCallback>(currentCallback_), false, "").detach();
-      }
+        boost::get<QueryExepathCallback>(currentCallback_)(success, exepath);
+      });
+
     } break;
 
     case None: {
@@ -176,8 +255,6 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
       break;
 
   }
-
-  crq_=None;
 }
 
 
@@ -204,16 +281,22 @@ AnalyzeClient::AnalyzeClient(
 
 
 
+
 AnalyzeClient::~AnalyzeClient()
 {
   ioService_.stop();
 }
 
+
+
+
 bool AnalyzeClient::isBusy() const
 {
-  boost::lock_guard<boost::mutex> mxg(mx_);
-  return crq_!=None;
+  return ( crq_!=None );
 }
+
+
+
 
 void AnalyzeClient::forgetRequest()
 {
@@ -221,19 +304,23 @@ void AnalyzeClient::forgetRequest()
   crq_=None;
 }
 
+
+
+
 bool AnalyzeClient::waitForContact(int maxAttempts)
 {
-  // wait for server to come up
+  // wait for server to come up and respond
   std::mutex m;
   std::condition_variable cv;
   bool contacted=false;
   int attempts=0;
+
   do
   {
     attempts++;
 
     queryStatus(
-          [&](bool success, insight::ProgressStatePtr, bool)
+          [&](bool success, insight::ProgressStatePtrList, bool)
           {
             std::unique_lock<std::mutex> lck(m);
             if (success)
@@ -252,12 +339,16 @@ bool AnalyzeClient::waitForContact(int maxAttempts)
     if (!contacted)
     {
       forgetRequest();
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
+      boost::this_thread::sleep_for(boost::chrono::milliseconds(2000));
     }
-  } while( !(contacted || (attempts > maxAttempts)) );
+  }
+  while( !(contacted || (attempts > maxAttempts)) );
 
   return contacted;
 }
+
+
+
 
 void AnalyzeClient::queryExepath(AnalyzeClient::QueryExepathCallback onExepathAvailable)
 {
@@ -353,6 +444,8 @@ void AnalyzeClient::queryResults(AnalyzeClient::QueryResultsCallback onResultsAv
   if (!httpClient_.get(url_+"/results"))
     throw insight::Exception("Could not query results of remote analysis!");
 }
+
+
 
 
 

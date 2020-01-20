@@ -12,7 +12,8 @@
 
 #include <string>
 #include <system_error>
-#include <future>
+#include <queue>
+#include <condition_variable>
 
 #include "base/parameterset.h"
 #include "base/resultset.h"
@@ -23,6 +24,32 @@
 namespace insight
 {
 
+
+/**
+ * @brief The TaskQueue class
+ * takes jobs, executes them one by one in a dedicated thread
+ */
+class TaskQueue
+{
+public:
+  typedef std::function<void(void)> Job;
+
+protected:
+  int last_jid_;
+  std::mutex mx_;
+  std::condition_variable cv_;
+  std::queue<Job> jobQueue_;
+  boost::thread workerThread_;
+
+  void dispatchJobs();
+
+public:
+  TaskQueue();
+  ~TaskQueue();
+
+  void post(Job job);
+  void cancel();
+};
 
 
 
@@ -42,7 +69,7 @@ public:
   typedef std::function<void(bool)> ReportSuccessCallback;
 
   // success flag, progress state, results availability flag
-  typedef std::function<void(bool, ProgressStatePtr, bool)> QueryStatusCallback;
+  typedef std::function<void(bool, ProgressStatePtrList, bool)> QueryStatusCallback;
 
   // success flag, result data
   typedef std::function<void(bool, ResultSetPtr)> QueryResultsCallback;
@@ -58,7 +85,7 @@ protected:
   Wt::Http::Client httpClient_;
 
   mutable boost::mutex mx_;
-  CurrentRequestType crq_;
+  std::atomic<CurrentRequestType> crq_;
 
   boost::variant<
     QueryExepathCallback,
@@ -66,6 +93,8 @@ protected:
     QueryStatusCallback,
     QueryResultsCallback
   > currentCallback_;
+
+  TaskQueue tq_;
 
   void controlRequest(const std::string& action, AnalyzeClient::ReportSuccessCallback onCompletion);
 

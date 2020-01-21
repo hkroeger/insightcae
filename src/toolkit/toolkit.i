@@ -199,6 +199,7 @@ using namespace insight::createPatchOps;
 
 %include "openfoam/caseelements/analysiscaseelements.h"
 %include "openfoam/paraview.h"
+%include "openfoam/ofes.h"
 %include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
 %include "openfoam/caseelements/numerics/laplacianfoamnumerics.h"
 %include "openfoam/caseelements/numerics/cavitatingfoamnumerics.h"

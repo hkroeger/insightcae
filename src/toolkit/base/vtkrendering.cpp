@@ -23,6 +23,7 @@
 #include "vtkStringArray.h"
 #include "vtkDiscretizableColorTransferFunction.h"
 #include "vtkTextProperty.h"
+#include "vtkLineSource.h"
 
 #include "vtkPointData.h"
 #include "vtkExtractBlock.h"
@@ -50,49 +51,55 @@ vtkSmartPointer<vtkPolyData> createArrows(
     const arma::mat& from = ft.first;
     const arma::mat& to = ft.second;
 
-    arma::mat R = to - from;
-    double r=norm(R,2);
-    R/=r;
-    double denom=sqrt(1.-pow(R(2),2));
-    double beta = 180.*atan2( -R(2), denom ) / M_PI;
-    double asinarg = R(1) / denom;
-    double gamma;
-    if (asinarg<=-1.)
-      gamma=-90.;
-    else if (asinarg>=1.)
-      gamma=90.;
-    else
-      gamma = 180.*std::asin( asinarg )/M_PI;
-    std::cout<<"Arrows: "<<R(0)<<" "<<R(1)<<" "<<R(2)<<" "<<r<<" "<<denom<<" "<<beta<<" "<<gamma<<std::endl;
+//    arma::mat R = to - from;
+//    double r=norm(R,2);
+//    R/=r;
+//    double gamma = 180.*atan2( R(2), R(1) ) / M_PI;
+//    double acosarg = sqrt( R(1)*R(1) + R(2)*R(2) );
+//    double beta;
+//    if (acosarg<=-1.)
+//      beta=180.;
+//    else if (acosarg>=1.)
+//      beta=0.;
+//    else
+//      beta = 180.*std::acos( acosarg )/M_PI;
+//    std::cout<<"Arrows: "<<R(0)<<" "<<R(1)<<" "<<R(2)<<" "<<r<<" "<<acosarg<<" "<<beta<<" "<<gamma<<std::endl;
 
 
-    auto a0 = vtkSmartPointer<vtkArrowSource>::New();
-    a0->SetTipRadius(0.025);
-    a0->SetTipLength(0.1);
-    a0->SetShaftRadius(0.0075);
-//    auto a0 = vtkSmartPointer<vtkGlyphSource2D>::New();
-//    a0->SetGlyphTypeToEdgeArrow();
-//    a0->FilledOff();
-//    a0->SetCenter(0.5, 0, 0);
+//    auto a0 = vtkSmartPointer<vtkArrowSource>::New();
+//    a0->SetTipRadius(0.025);
+//    a0->SetTipLength(0.1);
+//    a0->SetShaftRadius(0.0075);
+////    auto a0 = vtkSmartPointer<vtkGlyphSource2D>::New();
+////    a0->SetGlyphTypeToEdgeArrow();
+////    a0->FilledOff();
+////    a0->SetCenter(0.5, 0, 0);
 
-    auto t1= vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-    t1->SetInputConnection(a0->GetOutputPort());
-    {
-      auto t = vtkSmartPointer<vtkTransform>::New();
-      t->Scale(r, r, r);
-      t->RotateZ(gamma);
-      t->RotateY(beta);
-      t1->SetTransform(t);
-    }
-    auto t2= vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-    t2->SetInputConnection(t1->GetOutputPort());
-    {
-      auto t = vtkSmartPointer<vtkTransform>::New();
-      t->Translate( toArray(from) );
-      t2->SetTransform(t);
-    }
-    t2->Update();
-    af->AddInputData(t2->GetOutput());
+//    auto t1= vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+//    t1->SetInputConnection(a0->GetOutputPort());
+//    {
+//      auto t = vtkSmartPointer<vtkTransform>::New();
+//      t->PostMultiply();
+//      t->Scale(r, r, r);
+//      t->RotateY(beta);
+//      t->RotateZ(gamma);
+//      t1->SetTransform(t);
+//    }
+//    auto t2= vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+//    t2->SetInputConnection(t1->GetOutputPort());
+//    {
+//      auto t = vtkSmartPointer<vtkTransform>::New();
+//      t->Translate( toArray(from) );
+//      t2->SetTransform(t);
+//    }
+//    t2->Update();
+//    af->AddInputData(t2->GetOutput());
+
+    auto l = vtkSmartPointer<vtkLineSource>::New();
+    l->SetPoint1( toArray(from) );
+    l->SetPoint2( toArray(to) );
+    l->Update();
+    af->AddInputData(l->GetOutput());
   }
   af->Update();
   return af->GetOutput();

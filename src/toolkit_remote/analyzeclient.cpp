@@ -40,31 +40,24 @@ void TaskQueue::dispatchJobs()
 
 
 TaskQueue::TaskQueue()
-  : last_jid_(0),
-    workerThread_( boost::bind(&TaskQueue::dispatchJobs, this) )
-{
-}
+  : workerThread_(
+      boost::bind(&TaskQueue::dispatchJobs, this)
+    )
+{}
 
 TaskQueue::~TaskQueue()
 {
-  cout<<"joining task queue"<<endl;
   cancel();
-    workerThread_.join();
-    cout<<"task queue finished: "<<jobQueue_.size()<<" jobs remain unexecuted."<<endl;
+  workerThread_.join();
 }
 
 void TaskQueue::post(TaskQueue::Job job)
 {
   std::unique_lock<std::mutex> lck(mx_);
 
-  int i = last_jid_++;
-  cout<<"posted job "<<i<<endl;
-
-
   jobQueue_.push(
         [=]()
         {
-          cout<<"launched job "<<i<<endl;
           job();
         }
   );

@@ -35,7 +35,6 @@ public:
   typedef std::function<void(void)> Job;
 
 protected:
-  int last_jid_;
   std::mutex mx_;
   std::condition_variable cv_;
   std::queue<Job> jobQueue_;

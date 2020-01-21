@@ -124,10 +124,10 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
     ui->runTabLayout->addWidget(spl);
     
-//    cout_log_ = new Q_DebugStream(std::cout);
-//    connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendDimmedLine);
-//    cerr_log_ = new Q_DebugStream(std::cerr);
-//    connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendErrorLine);
+    cout_log_ = new Q_DebugStream(std::cout);
+    connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendDimmedLine);
+    cerr_log_ = new Q_DebugStream(std::cerr);
+    connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendErrorLine);
 
     this->setWindowTitle(analysisName_.c_str());
     connect(ui->runBtn, &QPushButton::clicked, this, &AnalysisForm::onRunAnalysis);

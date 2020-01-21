@@ -70,6 +70,7 @@ public:
 
   outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet & ps = defaultParameters() );
   virtual OFDictData::dict functionObjectDict() const =0;
+  void addIntoControlDict(OFDictData::dict& controlDict) const;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   virtual void evaluate
   (

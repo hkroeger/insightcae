@@ -70,15 +70,16 @@ struct OpenFOAMDictParser
         rquery =  *( rpair );
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
         ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
-        rstring = '"' >> *(~qi::char_('"')) >> '"';
-        rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
+        rstring = qi::lexeme[ char_('"') >> *(~qi::char_('"')) >> char_('"') ];
+        rraw = ( ~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
         qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
         rentry = ( strict_double | rlist | qi::int_ |  rdimensionedData | rstring | ridentifier | rsubdict );
         rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
         rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
         rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
 
-//     	BOOST_SPIRIT_DEBUG_NODE(rpair);   
+//        BOOST_SPIRIT_DEBUG_NODE(rstring);
+//     	BOOST_SPIRIT_DEBUG_NODE(rpair);
 //     	BOOST_SPIRIT_DEBUG_NODE(rentry);   
     }
 
@@ -112,7 +113,7 @@ struct OpenFOAMBoundaryDictParser
     
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
         ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
-        rstring = '"' >> *(~qi::char_('"')) >> '"';
+        rstring = qi::lexeme[ char_('"') >> *(~qi::char_('"')) >> char_('"') ];
         rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
         qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
         rentry = (strict_double | rlist | rdimensionedData | qi::int_ | rstring | ridentifier| rsubdict );

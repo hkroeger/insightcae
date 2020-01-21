@@ -67,7 +67,7 @@ outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, const Pa
 {
 }
 
-void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) const
+void outputFilterFunctionObject::addIntoControlDict(OFDictData::dict& controlDict) const
 {
   OFDictData::dict fod=functionObjectDict();
   fod["enabled"]=true;
@@ -82,9 +82,14 @@ void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) cons
       fod["outputInterval"]=p_.outputInterval;
     }
   fod["timeStart"]=p_.timeStart;
-  
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+
   controlDict.subDict("functions")[p_.name]=fod;
+}
+
+void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  addIntoControlDict(controlDict);
 }
 
 void outputFilterFunctionObject::evaluate

@@ -55,7 +55,7 @@ void CAD_ParameterSet_Visualizer::addFeature(const std::string& name, insight::c
 void CAD_ParameterSet_Visualizer::update(const ParameterSet& ps)
 {
   ParameterSet_Visualizer::update(ps);
-  emit GUINeedsUpdate();
+  Q_EMIT GUINeedsUpdate();
 }
 
 void CAD_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)

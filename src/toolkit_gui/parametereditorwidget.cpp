@@ -26,6 +26,8 @@
 #include <QSplitter>
 #include <QLabel>
 
+#include <mutex>
+
 
 ParameterTreeWidget::ParameterTreeWidget(QWidget* p)
   : QTreeWidget(p)
@@ -269,8 +271,14 @@ void ParameterSetDisplay::visualizationUpdateFinished()
 }
 
 
+std::mutex vis_mtx;
+
+
+
 void VisualizerThread::run()
 {
+  std::lock_guard<std::mutex> lck(vis_mtx);
+
   insight::cad::cache.initRebuild();
 
   insight::CAD_ParameterSet_Visualizer::UsageTracker ut(psd_->modeltree_);

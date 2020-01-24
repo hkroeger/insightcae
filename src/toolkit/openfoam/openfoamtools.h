@@ -43,7 +43,7 @@ namespace insight
 typedef std::map<double, boost::filesystem::path> TimeDirectoryList;
 
 
-TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir);
+TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir, const boost::filesystem::path& fileInsideToAppend = "");
 
 // std::string for compat with SWIG wrapper
 std::string getLatestTimeDirectory(const boost::filesystem::path& dir);

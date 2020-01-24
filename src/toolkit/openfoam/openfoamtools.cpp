@@ -54,7 +54,7 @@ using namespace boost::assign;
 namespace insight
 {
   
-TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir)
+TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir, const boost::filesystem::path& fta)
 {
     TimeDirectoryList list;
     if ( exists( dir ) )
@@ -66,15 +66,22 @@ TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir)
         {
             if ( is_directory(itr->status()) )
             {
-                std::string fn=itr->path().filename().string();
-                try
-                {
-                    double time = to_number<double>(fn);
-                    list[time]=itr->path();
-                }
-                catch (...)
-                {
-                }
+              auto td = itr->path();
+              std::string fn=td.filename().string();
+              try
+              {
+                  double time = to_number<double>(fn);
+                  if (!fta.empty())
+                  {
+                    if (exists(td/fta))
+                      list[time]=td/fta;
+                  }
+                  else
+                    list[time]=td;
+              }
+              catch (...)
+              {
+              }
             }
         }
     }

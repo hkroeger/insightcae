@@ -72,6 +72,7 @@ public:
   virtual OFDictData::dict functionObjectDict() const =0;
   void addIntoControlDict(OFDictData::dict& controlDict) const;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
+
   virtual void evaluate
   (
     OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 

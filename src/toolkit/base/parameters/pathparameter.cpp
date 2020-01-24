@@ -473,15 +473,16 @@ void PathParameter::readFromNode
 
     if (auto* a = child->first_attribute("content"))
     {
-      file_content_.reset(new std::string);
 
       char *src = a->value();
-      unsigned long size = a->value_size();
+      size_t size = a->value_size();
 
-      if (size && src[size - 1] == '=') {
-        src[size-1]='A'; --size;
-        if (size && src[size - 1] == '=') {
-           src[size-1]='A'; --size;
+      if ((size>0) && src[size - 1] == '=')
+      {
+        --size;
+        if ((size>0) && src[size - 1] == '=')
+        {
+           --size;
         }
       }
 

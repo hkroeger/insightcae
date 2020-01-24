@@ -223,7 +223,9 @@ void ParameterSet::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_nod
   }
 }
 
-void ParameterSet::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+void ParameterSet::readFromNode(
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
 {
   for( iterator i=begin(); i!= end(); i++)
@@ -406,7 +408,10 @@ rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rap
   return child;
 }
 
-void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+void SubsetParameter::readFromNode(
+    const std::string& name,
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
@@ -544,14 +549,20 @@ rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string&
   return child;  
 }
 
-void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+void SelectableSubsetParameter::readFromNode
+(
+    const std::string& name,
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name, type());
   if (child)
   {
-    selection_=child->first_attribute("value")->value();
+    auto valuenode=child->first_attribute("value");
+    insight::assertion(valuenode, "No value attribute present!");
+    selection_=valuenode->value();
     
     if (value_.find(selection_)==value_.end())
       throw insight::Exception("Invalid selection key during read of selectableSubset "+name);

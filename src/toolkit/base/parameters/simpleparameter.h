@@ -104,7 +104,9 @@ public:
         xml_node<>* child = findNode ( node, name, type() );
         if ( child )
         {
-            stringToValue ( child->first_attribute ( "value" )->value(), value_ );
+          auto valueattr=child->first_attribute ( "value" );
+          insight::assertion(valueattr, "No value attribute present in "+name+"!");
+          stringToValue ( valueattr->value(), value_ );
         }
         else
         {

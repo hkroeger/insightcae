@@ -2,9 +2,11 @@
 #include "parametereditorwidget.h"
 
 CaseElementData::CaseElementData(QListWidget* parent, const std::string& type_name, ParameterSetDisplay* d)
-  : QListWidgetItem(parent), disp_(d), type_name_(type_name)
+  : QListWidgetItem(parent),
+    type_name_(type_name),
+    disp_(d)
 {
-  setText(type_name.c_str());
+  setText(QString::fromStdString(type_name_));
 }
 
 CaseElementData::~CaseElementData()
@@ -28,10 +30,14 @@ void CaseElementData::updateVisualization()
   }
 }
 
-InsertedCaseElement::InsertedCaseElement(QListWidget* parent, const std::string& type_name, ParameterSetDisplay* d)
+InsertedCaseElement::InsertedCaseElement(
+    QListWidget* parent,
+    const std::string& type_name,
+    ParameterSetDisplay* d
+    )
 : CaseElementData(parent, type_name, d)
 {
-    curp_ = insight::OpenFOAMCaseElement::defaultParameters(type_name);
+    curp_ = insight::OpenFOAMCaseElement::defaultParameters(type_name_);
     defp_ = curp_;
     if (type_name_!="")
     {

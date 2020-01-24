@@ -338,13 +338,11 @@ isofCaseBuilderWindow::~isofCaseBuilderWindow()
 
 void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool skipBCs)
 {
+
     std::ifstream in(file.c_str());
     std::string contents;
-    in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents[0], contents.size());
-    in.close();
+    std::istreambuf_iterator<char> fbegin(in), fend;
+    std::copy(fbegin, fend, back_inserter(contents));
 
     xml_document<> doc;
     doc.parse<0>(&contents[0]);
@@ -370,15 +368,22 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
       script_case_=QString(script_node->first_attribute("code")->value());
     }
 
+    std::set<CaseElementData*> elemsForVizUpdate;
     bool needsCAD=false;
-    for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement"); e; e = e->next_sibling("OpenFOAMCaseElement"))
+    for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement");
+         e;
+         e = e->next_sibling("OpenFOAMCaseElement"))
     {
-        std::string type_name = e->first_attribute("type")->value();
-    
-        InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name, display_);
-        ice->parameters().readFromNode(doc, *e, file.parent_path());
-        ice->updateVisualization();
-        needsCAD = needsCAD || ice->visualizer();
+      auto typeattr = e->first_attribute("type");
+      insight::assertion(typeattr, "Missing \"type\" attribute!");
+      std::string type_name( typeattr->value() );
+
+      InsertedCaseElement* ice = new InsertedCaseElement(
+            ui->selected_elements, type_name, display_
+            );
+      ice->parameters().readFromNode(doc, *e, file.parent_path());
+      elemsForVizUpdate.insert(ice);
+      needsCAD = needsCAD || ice->visualizer();
     }
 
     if (!skipBCs)
@@ -387,20 +392,29 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
       if (BCnode)
       {
               ui->patch_list->clear();
-	      xml_node<> *unassignedBCnode = BCnode->first_node( "UnassignedPatches" );
+              xml_node<> *unassignedBCnode =
+                  BCnode->first_node( "UnassignedPatches" );
+              insight::assertion(unassignedBCnode, "Configuration of unassigned patches is missing!");
               auto * dp = new DefaultPatch(ui->patch_list, doc, *unassignedBCnode, file.parent_path(), display_);
-              dp->updateVisualization();
+              elemsForVizUpdate.insert(dp);
 	      
-	      for (xml_node<> *e = BCnode->first_node("Patch"); e; e = e->next_sibling("Patch"))
+              for (xml_node<> *e = BCnode->first_node("Patch");
+                   e;
+                   e = e->next_sibling("Patch"))
 	      {
                     auto * p = new Patch(ui->patch_list, doc, *e, file.parent_path(), display_);
-                    p->updateVisualization();
+                    elemsForVizUpdate.insert(p);
 	      }
       }
     }
 
     if (needsCAD && CADisCollapsed()) expandCAD();
     if (!needsCAD) collapseCAD();
+
+    for(auto e: elemsForVizUpdate)
+    {
+      e->updateVisualization();
+    }
 
     current_config_file_=file;
     config_is_modified_=false;

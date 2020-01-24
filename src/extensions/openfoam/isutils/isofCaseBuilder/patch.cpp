@@ -6,33 +6,44 @@ using namespace rapidxml;
 
 
 Patch::Patch(QListWidget*parent, const std::string& patch_name, ParameterSetDisplay* d)
-: CaseElementData(parent, "", d), patch_name_(patch_name)
+: CaseElementData(parent, "", d),
+  patch_name_(patch_name)
 {
-    //setText(patch_name_.c_str());
   updateText();
 }
 
 
-Patch::Patch(QListWidget*parent, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath, ParameterSetDisplay* d)
+Patch::Patch(QListWidget*parent,
+             rapidxml::xml_document<>& doc,
+             rapidxml::xml_node<>& node,
+             boost::filesystem::path inputfilepath,
+             ParameterSetDisplay* d
+             )
 : CaseElementData(parent, "", d)
 {
-    patch_name_ = node.first_attribute ( "patchName" )->value();
-    //setText(patch_name_.c_str());
-    updateText();
-    type_name_ = node.first_attribute ( "BCtype" )->value();
-    if (type_name_!="")
-    {
-        set_bc_type(type_name_);
-        curp_.readFromNode(doc, node, inputfilepath);
-    }
+  auto patchnameattr=node.first_attribute ( "patchName" );
+  insight::assertion(patchnameattr, "Patch name attribute missing!");
+  patch_name_ = patchnameattr->value();
+
+  updateText();
+
+  auto typenameattr=node.first_attribute ( "BCtype" );
+  insight::assertion(typenameattr, "Patch type attribute missing!");
+  type_name_ = typenameattr->value();
+
+  if (type_name_!="")
+  {
+      set_bc_type(type_name_);
+      curp_.readFromNode(doc, node, inputfilepath);
+  }
 }
 
 void Patch::updateText()
 {
   if (type_name_.empty())
-    setText( (patch_name_).c_str() );
+    setText( QString::fromStdString(patch_name_) );
   else
-    setText( (patch_name_+" ("+type_name_+")").c_str() );
+    setText( QString::fromStdString(patch_name_+" ("+type_name_+")") );
 }
 
 void Patch::set_bc_type(const std::string& type_name)

@@ -96,12 +96,18 @@ macro(create_script SCRIPTFILE SCR_CONTENT)
 endmacro(create_script)
 
 if (INSIGHT_BUILD_TOOLKIT)
+
     find_package(Armadillo REQUIRED)
+
     find_package(GSL REQUIRED)
+
     find_package(PythonLibs 2.7 REQUIRED)
+
+    # modifies Boost_LIBRARIES for some reason, put it first!
     find_package(wt
         HINTS /opt/witty
     )
+
     find_package(Boost COMPONENTS
         regex
         system
@@ -114,6 +120,7 @@ if (INSIGHT_BUILD_TOOLKIT)
         program_options
         REQUIRED
         )
+
     find_package(VTK COMPONENTS
         HINTS /opt/paraview-offscreen/lib/cmake/paraview-5.6
         vtkFiltersCore

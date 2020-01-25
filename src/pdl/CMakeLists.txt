@@ -21,6 +21,6 @@ set(pdl_SOURCES
 )
 
 add_executable(pdl ${pdl_SOURCES})
-target_link_libraries(pdl ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+target_link_libraries(pdl ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS pdl RUNTIME DESTINATION bin)

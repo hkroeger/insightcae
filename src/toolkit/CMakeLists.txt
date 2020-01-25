@@ -193,27 +193,27 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
   )
 ENDIF()
 
-find_package(VTK COMPONENTS
-    vtkFiltersCore
-    vtkFiltersGeneral
-    vtkFiltersSources
-    vtkCommonCore
-    vtkIOLegacy
-    vtkIOGeometry
-    vtkIOExport
-    vtkIOImage
-    vtkIOXML
-    vtkImagingCore
-    vtkRenderingOpenGL2
-    vtkRenderingAnnotation
-    vtkFiltersExtraction
-    REQUIRED
-)
+#find_package(VTK COMPONENTS
+#    vtkFiltersCore
+#    vtkFiltersGeneral
+#    vtkFiltersSources
+#    vtkCommonCore
+#    vtkIOLegacy
+#    vtkIOGeometry
+#    vtkIOExport
+#    vtkIOImage
+#    vtkIOXML
+#    vtkImagingCore
+#    vtkRenderingOpenGL2
+#    vtkRenderingAnnotation
+#    vtkFiltersExtraction
+#    REQUIRED
+#)
 find_package(OpenSSL)
 
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
-include(${VTK_USE_FILE})
+#include(${VTK_USE_FILE})
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
 target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} ${VTK_LIBRARIES} OpenSSL::SSL)

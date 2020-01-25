@@ -95,15 +95,44 @@ macro(create_script SCRIPTFILE SCR_CONTENT)
   install(FILES "${SRC}" DESTINATION bin COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(create_script)
 
-find_package(Armadillo REQUIRED)
-find_package(GSL REQUIRED)
-find_package(PythonLibs 2.7 REQUIRED)
-
-find_package(wt
-    HINTS /opt/witty
-)
-
-find_package(Boost COMPONENTS system filesystem regex date_time timer thread iostreams python program_options REQUIRED)
+if (INSIGHT_BUILD_TOOLKIT)
+    find_package(Armadillo REQUIRED)
+    find_package(GSL REQUIRED)
+    find_package(PythonLibs 2.7 REQUIRED)
+    find_package(wt
+        HINTS /opt/witty
+    )
+    find_package(Boost COMPONENTS
+        regex
+        system
+        filesystem
+        date_time
+        timer
+        thread
+        iostreams
+        python
+        program_options
+        REQUIRED
+        )
+    find_package(VTK COMPONENTS
+        HINTS /opt/paraview-offscreen/lib/cmake/paraview-5.6
+        vtkFiltersCore
+        vtkFiltersGeneral
+        vtkFiltersSources
+        vtkCommonCore
+        vtkIOLegacy
+        vtkIOGeometry
+        vtkIOExport
+        vtkIOImage
+        vtkIOXML
+        vtkImagingCore
+        vtkRenderingOpenGL2
+        vtkRenderingAnnotation
+        vtkFiltersExtraction
+        REQUIRED
+    )
+    include(${VTK_USE_FILE})
+endif()
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIR})

@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
     ("comparescalar", po::value< string >(), "Compare scalar values. Specify path of scalar in result archive. "
                                              "Multiple scalars may plotted together: give list, separated by comma (without spaces). "
                                               "Put optional scale factor after variable name, separated by colon.")
+    ("render", "Render into PDF")
     ;
 
     po::positional_options_description p;
@@ -133,17 +134,25 @@ int main(int argc, char *argv[])
         // load results
         for (std::string fn: fns)
         {
+          boost::filesystem::path inpath(fn);
 
-          cout<<"Reading results file "<<fn<<"..."<<flush;
-          r.push_back(ResultSetPtr(new ResultSet(boost::filesystem::path(fn))));
+          cout<<"Reading results file "<<inpath<<"..."<<flush;
+          r.push_back(ResultSetPtr(new ResultSet(inpath)));
           cout<<"done."<<endl;
 
           if (vm.count("list"))
           {
             cout<<std::string(80, '=')<<endl<<endl;
-            cout<<"Result file: "<<fn<<endl<<endl;
+            cout<<"Result file: "<<inpath<<endl<<endl;
             listContents(*r.back());
             cout<<endl<<std::string(80, '=')<<endl<<endl;
+          }
+
+          if (vm.count("render"))
+          {
+            boost::filesystem::path outpath =
+                inpath.parent_path() / (inpath.filename().stem().string()+".pdf");
+            r.back()->generatePDF( outpath );
           }
         }
 

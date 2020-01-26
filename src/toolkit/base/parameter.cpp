@@ -24,6 +24,7 @@
 #include <iostream>
 
 #include <iterator>
+#include "boost/algorithm/string/trim.hpp"
 
 
 
@@ -160,7 +161,13 @@ void stringToValue(const std::string& s, arma::mat& v)
   CurrentExceptionContext ex("converting string \""+s+"\" into vector");
 
   std::vector<std::string> cmpts;
-  boost::split(cmpts, s, boost::is_any_of(" \t,;"), token_compress_on);
+  auto st = boost::trim_copy(s);
+  boost::split(
+        cmpts,
+        st,
+        boost::is_any_of(" \t\n,;"),
+        token_compress_on
+        );
   std::vector<double> vals;
   for (size_t i=0; i<cmpts.size(); i++)
   {

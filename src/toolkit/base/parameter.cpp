@@ -158,7 +158,7 @@ std::string valueToString(const arma::mat& value)
 
 void stringToValue(const std::string& s, arma::mat& v)
 {
-  CurrentExceptionContext ex("converting string \""+s+"\" into vector");
+  CurrentExceptionContext ex("converting string \""+s+"\" into vector", false);
 
   std::vector<std::string> cmpts;
   auto st = boost::trim_copy(s);

@@ -89,14 +89,32 @@ public:
 /*
 PARAMETERSET>>> ExternalWallBC Parameters
 
+kappaSource = selectablesubset {{
+
+ fluidThermo
+ set { }
+
+ lookup
+ set
+ {
+   kappaFieldName = string "kappa" "Name of field with thermal conductivity"
+ }
+
+}} fluidThermo "Source of thermal conductivity"
+
 heatflux = selectablesubset {{
 
- constant
+ fixedPower
+ set {
+   Q = double 0.0 "[W] Total heat flux"
+ }
+
+ fixedHeatFlux
  set {
    q = double 0.0 "[W/m^2] Heat flux per unit area"
  }
 
- convective
+ fixedHeatTransferCoeff
  set {
    h = double 10 "[W/m^2/K] Heat transfer coefficient"
    Ta = double 300 "[K] Ambient temperature (beyond domain)"

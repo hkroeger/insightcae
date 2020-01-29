@@ -21,6 +21,8 @@ void buoyantPimpleFoamNumerics::init()
   {
     OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({0}), volField ) );
     OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({0}), volField ) );
+
+    OFcase().addField("alphat", FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   }
   else
   {

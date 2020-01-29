@@ -100,18 +100,33 @@ bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const Field
     {
         BC["type"]="externalWallHeatFluxTemperature";
 
-        BC["kappaMethod"]="fluidThermo";
-        BC["kappa"]="none";
+        if (const auto* ft = boost::get<Parameters::kappaSource_fluidThermo_type>(&p_.kappaSource))
+        {
+          BC["kappaMethod"]="fluidThermo";
+          BC["kappa"]="none";
+        }
+        else if (const auto* lu = boost::get<Parameters::kappaSource_lookup_type>(&p_.kappaSource))
+        {
+          BC["kappaMethod"]="lookup";
+          BC["kappa"]=lu->kappaFieldName;
+        }
 
         BC["Qr"]="none";
         BC["relaxation"]=1.0;
 
-        if (const Parameters::heatflux_constant_type* const_q = boost::get<Parameters::heatflux_constant_type>(&p_.heatflux))
+        if (const auto* const_p = boost::get<Parameters::heatflux_fixedPower_type>(&p_.heatflux))
           {
+            BC["mode"]="power";
+            BC["Q"]=boost::str(boost::format("%g")%const_p->Q );
+          }
+        else if (const auto* const_q = boost::get<Parameters::heatflux_fixedHeatFlux_type>(&p_.heatflux))
+          {
+            BC["mode"]="flux";
             BC["q"]=boost::str(boost::format("uniform %g")%const_q->q );
           }
-        else if (const Parameters::heatflux_convective_type* conv_q = boost::get<Parameters::heatflux_convective_type>(&p_.heatflux))
+        else if (const auto* conv_q = boost::get<Parameters::heatflux_fixedHeatTransferCoeff_type>(&p_.heatflux))
           {
+            BC["mode"]="coefficient";
             BC["Ta"]=boost::str(boost::format("uniform %g") % conv_q->Ta );
             BC["h"]=boost::str(boost::format("uniform %g") % conv_q->h );
           }

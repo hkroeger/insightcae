@@ -1,5 +1,6 @@
 
 add_subdirectory(extendedForcesFunctionObject)
+add_subdirectory(provideFields)
 add_subdirectory(minPatchPressure)
 add_subdirectory(numericsFunctionObjects)
 add_subdirectory(scalarTransport2FunctionObject)

@@ -121,8 +121,9 @@ if (INSIGHT_BUILD_TOOLKIT)
         REQUIRED
         )
 
-    find_package(VTK COMPONENTS
+    find_package(VTK
         HINTS /opt/paraview-offscreen/lib/cmake/paraview-5.6
+        COMPONENTS
         vtkFiltersCore
         vtkFiltersGeneral
         vtkFiltersSources

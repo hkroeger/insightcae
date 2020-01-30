@@ -46,7 +46,7 @@ InsertedCaseElement::InsertedCaseElement(
         disp_->registerVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_) );
       }
       catch (...)
-      { /* skip */ }
+      { /* skip, if there is no visualizer defined */ }
     }
 }
 

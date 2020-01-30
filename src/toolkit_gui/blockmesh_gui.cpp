@@ -34,7 +34,7 @@ void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements(Us
 {
   CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
 
-  blockMeshDict_Box::Parameters p(ps_);
+  blockMeshDict_Box::Parameters p(*ps_);
 
   arma::mat ey = arma::cross( p.geometry.ez, p.geometry.ex);
 
@@ -65,7 +65,7 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 {
   CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
 
-  blockMeshDict_Cylinder::Parameters p(ps_);
+  blockMeshDict_Cylinder::Parameters p(*ps_);
 
   arma::mat ex=p.geometry.ex;
   arma::mat er=p.geometry.er;
@@ -116,7 +116,7 @@ void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements
 {
   CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
 
-  blockMeshDict_Sphere::Parameters p(ps_);
+  blockMeshDict_Sphere::Parameters p(*ps_);
 
   arma::mat ex=p.geometry.ex;
   arma::mat ez=p.geometry.ez;

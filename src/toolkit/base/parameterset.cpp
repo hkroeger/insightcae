@@ -645,7 +645,7 @@ ParameterSet_Visualizer::~ParameterSet_Visualizer()
 
 void ParameterSet_Visualizer::update(const ParameterSet& ps)
 {
-    ps_=ps;
+    ps_=&ps;
 }
 
 

@@ -66,7 +66,11 @@ void CAD_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut
 
 cad::FeaturePtr CAD_ParameterSet_Visualizer::feature(const std::string& name)
 {
-  if (auto* fi = dynamic_cast<QFeatureItem*>(ut_->mt_->findFeature(QString::fromStdString(name), true)))
+  if (auto* fi =
+      dynamic_cast<QFeatureItem*>(
+        ut_->mt_->findFeature(QString::fromStdString(name), true)
+        )
+      )
   {
     return fi->solidmodelPtr();
   }
@@ -75,7 +79,11 @@ cad::FeaturePtr CAD_ParameterSet_Visualizer::feature(const std::string& name)
 
 void CAD_ParameterSet_Visualizer::replaceFeature(const std::string& name, insight::cad::FeaturePtr newModel)
 {
-  if (auto* fi = dynamic_cast<QFeatureItem*>(ut_->mt_->findFeature(QString::fromStdString(name), true)))
+  if (auto* fi =
+      dynamic_cast<QFeatureItem*>(
+        ut_->mt_->findFeature(QString::fromStdString(name), true)
+        )
+      )
   {
     return fi->replaceFeature(newModel);
   }

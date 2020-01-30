@@ -30,7 +30,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
 {
   CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
 
-  snappyHexMeshConfiguration::Parameters p(ps_);
+  snappyHexMeshConfiguration::Parameters p(*ps_);
 
   for (const auto& feat: p.features)
   {

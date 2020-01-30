@@ -257,7 +257,8 @@ void ParameterSetDisplay::onUpdateVisualization()
   if (!vt_)
   {
     vt_=new VisualizerThread(this);
-    connect(vt_, &VisualizerThread::finished, this, &ParameterSetDisplay::visualizationUpdateFinished);
+    connect(vt_, &VisualizerThread::finished,
+            this, &ParameterSetDisplay::visualizationUpdateFinished);
     vt_->start();
   }
 

@@ -41,15 +41,21 @@ double AnalyzeRESTServer::nextStateInfo(
 
 
 AnalyzeRESTServer::AnalyzeRESTServer(
-    int argc, char *argv[]
+    const std::string& srvname,
+    const std::string& listenAddr, int port
     )
-  : Wt::WServer(argv[0]),
+  : Wt::WServer(srvname.c_str()),
     analysisThread_(nullptr),
     analysis_(nullptr)
 {
 
-#warning needs parameter
-  const char *cargv[]={argv[0], "--docroot", ".", "--http-listen", "localhost:8090"};
+  auto addr = boost::str(boost::format(listenAddr+":%d") % port);
+  const char *cargv[]={
+    srvname.c_str(),
+    "--docroot", ".",
+    "--http-listen", addr.c_str()
+  };
+
   setServerConfiguration(5, const_cast<char**>(cargv) );
 
   addResource(this, std::string());

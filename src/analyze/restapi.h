@@ -32,7 +32,8 @@ class AnalyzeRESTServer
 
 public:
   AnalyzeRESTServer(
-      int argc, char *argv[]
+      const std::string& srvname,
+      const std::string& listenAddr, int port
       );
 
   void setAnalysis(insight::Analysis* a);

@@ -29,6 +29,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <atomic>
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 #include <boost/program_options/options_description.hpp>
@@ -36,14 +37,21 @@
 #include <boost/program_options/variables_map.hpp>
 #include "boost/format.hpp"
 
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include "boost/asio/io_service.hpp"
+
 #ifdef HAVE_WT
 #include "restapi.h"
+#include "detectionhandler.h"
 #endif
 
 
 using namespace std;
 using namespace insight;
 using namespace boost;
+
 
 int main(int argc, char *argv[])
 {
@@ -74,6 +82,9 @@ int main(int argc, char *argv[])
       ("input-file,f", po::value< std::string >(),"Specifies input file.")
 #ifdef HAVE_WT
       ("server", "Start with REST API server. Keeps the application running after the analysis has finished. Once the result set is fetched via the REST API, the application exits.")
+      ("listen", po::value<std::string>()->default_value("127.0.0.1"), "Server address")
+      ("port", po::value<int>()->default_value(8090), "Server port")
+      ("broadcastport", po::value<int>()->default_value(8090), "Broadcast listen port")
 #endif
     ;
 
@@ -125,15 +136,47 @@ int main(int argc, char *argv[])
 
     boost::filesystem::path inputFileParentPath = workdir;
 
+    std::string analysisName = "";
+
 #ifdef HAVE_WT
     std::unique_ptr<AnalyzeRESTServer> server;
+    boost::thread detectionHandler;
     if (vm.count("server"))
     {
-      server.reset(new AnalyzeRESTServer(argc, argv));
+
+      server.reset(new AnalyzeRESTServer(
+                     argv[0],
+                     vm["listen"].as<std::string>(),
+                     vm["port"].as<int>()
+          ));
+
       if (!server->start())
       {
         std::cerr << "Could not start web server!" << std::endl;
       }
+
+      detectionHandler = boost::thread(
+            [&]()
+            {
+              try
+              {
+                boost::asio::io_service ios;
+                DetectionHandler dh(
+                      ios,
+                      vm["broadcastport"].as<int>(),
+                      vm["listen"].as<std::string>(),
+                      vm["port"].as<int>(),
+                      analysisName
+                    );
+                ios.run();
+              }
+              catch (std::exception& e)
+              {
+                cerr<<"Error: could not start broadcast listener! Reason: "<<e.what()<<endl;
+                cerr<<"Note: This execution server detection will not be detectable."<<endl;
+              }
+            }
+      );
     }
 #endif
 
@@ -203,7 +246,7 @@ int main(int argc, char *argv[])
 
         xml_node<> *rootnode = doc.first_node("root");
 
-        std::string analysisName;
+
         xml_node<> *analysisnamenode = rootnode->first_node("analysis");
         if (analysisnamenode)
         {
@@ -414,6 +457,8 @@ int main(int argc, char *argv[])
 #ifdef HAVE_WT
         if (server)
         {
+          detectionHandler.interrupt();
+          detectionHandler.join();
           server->stop();
         }
 #endif

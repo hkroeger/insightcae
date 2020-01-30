@@ -16,6 +16,8 @@ if (wt_FOUND)
     LIST(APPEND analyze_SOURCES
         restapi.cpp
         restapi.h
+        detectionhandler.cpp
+        detectionhandler.h
     )
     LIST(APPEND analyze_LIBS
         Wt::Wt Wt::HTTP

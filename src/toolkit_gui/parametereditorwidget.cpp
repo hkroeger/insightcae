@@ -277,20 +277,29 @@ std::mutex vis_mtx;
 
 void VisualizerThread::run()
 {
-  std::lock_guard<std::mutex> lck(vis_mtx);
-
-  insight::cad::cache.initRebuild();
-
-  insight::CAD_ParameterSet_Visualizer::UsageTracker ut(psd_->modeltree_);
-
-  for (auto& vz: psd_->visualizers_)
+  try
   {
-    vz->recreateVisualizationElements(&ut);
+    std::lock_guard<std::mutex> lck(vis_mtx);
+
+    insight::cad::cache.initRebuild();
+
+    insight::CAD_ParameterSet_Visualizer::UsageTracker ut(psd_->modeltree_);
+
+    for (auto& vz: psd_->visualizers_)
+    {
+      vz->recreateVisualizationElements(&ut);
+    }
+
+    ut.cleanupModelTree();
+
+    insight::cad::cache.finishRebuild();
   }
-
-  ut.cleanupModelTree();
-
-  insight::cad::cache.finishRebuild();
+  catch (insight::Exception& e)
+  {
+    cerr<<"Warning: could not rebuild visualization."
+          " Error was:"<<e
+       <<endl;
+  }
 }
 
 VisualizerThread::VisualizerThread(ParameterSetDisplay* psd)

@@ -140,7 +140,8 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_WT
     std::unique_ptr<AnalyzeRESTServer> server;
-    boost::thread detectionHandler;
+    std::unique_ptr<DetectionHandler> detectionHandler;
+
     if (vm.count("server"))
     {
 
@@ -155,28 +156,12 @@ int main(int argc, char *argv[])
         std::cerr << "Could not start web server!" << std::endl;
       }
 
-      detectionHandler = boost::thread(
-            [&]()
-            {
-              try
-              {
-                boost::asio::io_service ios;
-                DetectionHandler dh(
-                      ios,
+      detectionHandler = DetectionHandler::start(
                       vm["broadcastport"].as<int>(),
                       vm["listen"].as<std::string>(),
                       vm["port"].as<int>(),
                       analysisName
                     );
-                ios.run();
-              }
-              catch (std::exception& e)
-              {
-                cerr<<"Error: could not start broadcast listener! Reason: "<<e.what()<<endl;
-                cerr<<"Note: This execution server detection will not be detectable."<<endl;
-              }
-            }
-      );
     }
 #endif
 
@@ -457,8 +442,6 @@ int main(int argc, char *argv[])
 #ifdef HAVE_WT
         if (server)
         {
-          detectionHandler.interrupt();
-          detectionHandler.join();
           server->stop();
         }
 #endif

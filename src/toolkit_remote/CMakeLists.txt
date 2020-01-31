@@ -3,6 +3,11 @@ project(toolkit_remote)
 
 set(toolkit_remote_SRCS
     analyzeclient.cpp
+    analyzeclient.h
+    analyzeserverdetector.cpp
+    analyzeserverdetector.h
+    detectionhandler.cpp
+    detectionhandler.h
 )
 
 if (wt_FOUND)
@@ -43,6 +48,9 @@ if (wt_FOUND)
     )
 
     install(TARGETS toolkit_remote LIBRARY DESTINATION lib)
+
+    add_subdirectory(tests)
+
 else()
     message(STATUS "Did not found wt, disabling toolkit remote interface lib.")
 endif()

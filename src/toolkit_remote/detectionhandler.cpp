@@ -9,11 +9,11 @@ namespace ba = boost::asio;
 namespace bai = boost::asio::ip;
 
 DetectionHandler::DetectionHandler(
-    ba::io_service& service, unsigned int port,
+    unsigned int port,
     const std::string& srvaddr, int srvport,
     const std::string& analysisName
     )
-: socket_(service),
+: socket_(ios_),
   srvaddr_(srvaddr), srvport_(srvport),
   analysisName_(analysisName)
 {
@@ -25,6 +25,57 @@ DetectionHandler::DetectionHandler(
         );
   socket_.bind(listenEndpoint_);
   waitForBroadcast();
+
+  detectionHandlerThread_ =
+    boost::thread(
+        [&]()
+        {
+          try
+          {
+            run();
+          }
+          catch (std::exception& e)
+          {
+            cerr<<"Error: could not start broadcast listener! Reason: "<<e.what()<<endl;
+            cerr<<"Note: This execution server detection will not be detectable."<<endl;
+          }
+        }
+  );
+}
+
+DetectionHandler::~DetectionHandler()
+{
+  stop();
+}
+
+void DetectionHandler::run()
+{
+  ios_.run();
+}
+
+void DetectionHandler::stop()
+{
+  ios_.stop();
+}
+
+std::unique_ptr<DetectionHandler> DetectionHandler::start
+(
+    unsigned int port,
+    const string &srvaddr, int srvport,
+    const string &analysisName
+)
+{
+  std::unique_ptr<DetectionHandler> dh
+      (
+        new DetectionHandler
+        (
+          port,
+          srvaddr, srvport,
+          analysisName
+        )
+      );
+
+  return dh;
 }
 
 void DetectionHandler::waitForBroadcast()

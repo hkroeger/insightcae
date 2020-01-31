@@ -6,7 +6,7 @@ set(analyze_SOURCES
 )
 
 set(analyze_LIBS
-    toolkit
+    toolkit toolkit_remote
     ${Boost_LIBRARIES}
 )
 
@@ -16,8 +16,6 @@ if (wt_FOUND)
     LIST(APPEND analyze_SOURCES
         restapi.cpp
         restapi.h
-        detectionhandler.cpp
-        detectionhandler.h
     )
     LIST(APPEND analyze_LIBS
         Wt::Wt Wt::HTTP

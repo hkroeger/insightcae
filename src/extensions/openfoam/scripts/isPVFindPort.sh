@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-port=11111
+port=${port:-11111}
 quit=0
 
 while [ "$quit" -ne 1 ]; do

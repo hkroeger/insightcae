@@ -16,14 +16,12 @@ file(GLOB_RECURSE testcases_HEADERS "*.h")
 
 include_directories(${toolkit_SOURCE_DIR})
 include_directories(${refdata_SOURCE_DIR})
-include_directories(${GSL_INCLUDE_DIR})
 
 add_library(testcases SHARED ${testcases_SOURCES})
 add_PDL(testcases "${testcases_HEADERS}")
 set(testcases_LIBS
   toolkit
   refdata
-  ${GSL_LIBRARIES}
 )
 target_link_libraries(testcases ${testcases_LIBS})
 target_include_directories(testcases

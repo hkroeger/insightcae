@@ -29,6 +29,8 @@ OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench (Wt is required)" OFF
 OPTION(INSIGHT_BUILD_INSTALLDESKTOP "Install MIME types and Desktop integration (already during build)" OFF)
 OPTION(INSIGHT_INSTALL_DESKTOP "Install MIME types and Desktop integration" ON)
 OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)
+SET(INSIGHT_SUPERBUILD "" CACHE STRING "Path to superbuild (build directory). If set, use dependencies from that superbuild")
+
 option(BUILD_DOCUMENTATION "Use Doxygen to create the documentation (doxygen is required)" OFF)
 
 if (INSIGHT_BUILD_ISCAD AND NOT INSIGHT_BUILD_CAD)
@@ -37,6 +39,11 @@ endif()
 if (INSIGHT_BUILD_WORKBENCH AND NOT INSIGHT_BUILD_TOOLKIT)
  message(FATAL_ERROR "It is not possible to build insight workbench without the toolkit library. Please reconsider your option selection.")
 endif()
+
+if (NOT ${INSIGHT_SUPERBUILD} STREQUAL "")
+ include (${INSIGHT_SUPERBUILD}/InsightSuperbuildDependencies.cmake)
+ENDIF()
+
 
 INCLUDE(InstallRequiredSystemLibraries)
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "InsightCAE")
@@ -95,6 +102,7 @@ macro(create_script SCRIPTFILE SCR_CONTENT)
   install(FILES "${SRC}" DESTINATION bin COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(create_script)
 
+
 if (INSIGHT_BUILD_TOOLKIT)
 
     find_package(Armadillo REQUIRED)
@@ -104,9 +112,7 @@ if (INSIGHT_BUILD_TOOLKIT)
     find_package(PythonLibs 2.7 REQUIRED)
 
     # modifies Boost_LIBRARIES for some reason, put it first!
-    find_package(wt
-        HINTS /opt/witty
-    )
+    find_package(wt)
 
     find_package(Boost COMPONENTS
         regex
@@ -122,7 +128,6 @@ if (INSIGHT_BUILD_TOOLKIT)
         )
 
     find_package(VTK
-        HINTS /opt/paraview-offscreen/lib/cmake/paraview-5.6
         COMPONENTS
         vtkFiltersCore
         vtkFiltersGeneral
@@ -139,7 +144,7 @@ if (INSIGHT_BUILD_TOOLKIT)
         vtkFiltersExtraction
         REQUIRED
     )
-    include(${VTK_USE_FILE})
+    #include(${VTK_USE_FILE})
 endif()
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})

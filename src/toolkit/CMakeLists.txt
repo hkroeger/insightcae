@@ -217,14 +217,17 @@ file(GLOB_RECURSE toolkit_HEADERS "*.h")
 #include(${VTK_USE_FILE})
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
-target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} ${VTK_LIBRARIES} OpenSSL::SSL)
+target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} 
+	GSL::gsl GSL::gslcblas
+	OpenSSL::SSL 
+	${VTK_LIBRARIES}
+	)
 
 target_include_directories(toolkit 
   PUBLIC ${VTK_INCLUDE_DIRS}
   PUBLIC ${PYTHON_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
-  PUBLIC ${GSL_INCLUDE_DIR}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )

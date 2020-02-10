@@ -11,7 +11,6 @@ set(genericmodules_LIBS
   toolkit
   toolkit_gui
   refdata
-  ${GSL_LIBRARIES}
 )
 
 if (INSIGHT_BUILD_OPENFOAM AND INSIGHT_BUILD_CAD)
@@ -25,7 +24,6 @@ endif()
 file(GLOB_RECURSE genericmodules_HEADERS "*.h")
 include_directories(${toolkit_SOURCE_DIR})
 include_directories(${refdata_SOURCE_DIR})
-include_directories(${GSL_INCLUDE_DIR})
 #include_directories(${OCC_INCLUDE_DIR})
 #include_directories(${journalbearingcommon_SOURCE_DIR})
 

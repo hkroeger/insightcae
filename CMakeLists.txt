@@ -102,6 +102,7 @@ macro(create_script SCRIPTFILE SCR_CONTENT)
   install(FILES "${SRC}" DESTINATION bin COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(create_script)
 
+
 if (INSIGHT_BUILD_TOOLKIT)
 
     find_package(Armadillo REQUIRED)
@@ -127,7 +128,6 @@ if (INSIGHT_BUILD_TOOLKIT)
         )
 
     find_package(VTK
-        HINTS /opt/paraview-offscreen/lib/cmake/paraview-5.6
         COMPONENTS
         vtkFiltersCore
         vtkFiltersGeneral
@@ -144,7 +144,7 @@ if (INSIGHT_BUILD_TOOLKIT)
         vtkFiltersExtraction
         REQUIRED
     )
-    include(${VTK_USE_FILE})
+    #include(${VTK_USE_FILE})
 endif()
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})

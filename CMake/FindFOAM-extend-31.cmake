@@ -179,7 +179,8 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx31_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${Fx31_INSIGHT_BIN})
-    target_link_libraries(${targetname} 
+    set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+    target_link_libraries(${targetname}
       #${Fx31_LIB_DIR}/libfoam.so 
       ${Fx31_LIBRARIES}
       #${Fx31_FOAM_MPI_LIBBIN}/libPstream.so 
@@ -207,7 +208,8 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx31_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${Fx31_INSIGHT_LIB})
-    target_link_libraries(${targetname} ${Fx31_LIBRARIES} ${ARGN}) 
+    set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+    target_link_libraries(${targetname} ${Fx31_LIBRARIES} ${ARGN})
     install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx31_INSIGHT_INSTALL_LIB}  COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})

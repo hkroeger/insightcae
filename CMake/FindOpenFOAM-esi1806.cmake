@@ -149,7 +149,8 @@ overset
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OFesi1806_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OFesi1806_INSIGHT_BIN})
-    target_link_libraries(${targetname} 
+    set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+    target_link_libraries(${targetname}
       ${OFesi1806_LIBRARIES}
       ${ARGN}
       ) 
@@ -176,6 +177,7 @@ overset
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OFesi1806_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OFesi1806_INSIGHT_LIB})
+    set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
     target_link_libraries(${targetname} ${OFesi1806_LIBRARIES} ${ARGN})
     target_include_directories(${targetname}
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 

@@ -173,7 +173,8 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF22x_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF22x_INSIGHT_BIN})
-    target_link_libraries(${targetname} ${OF22x_LIBRARIES} ${ARGN} ) 
+    set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+    target_link_libraries(${targetname} ${OF22x_LIBRARIES} ${ARGN} )
     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF22x_INSIGHT_INSTALL_BIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
@@ -194,7 +195,8 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF22x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF22x_INSIGHT_LIB})
-    target_link_libraries(${targetname} ${OF22x_LIBRARIES} ${ARGN}) 
+    set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+    target_link_libraries(${targetname} ${OF22x_LIBRARIES} ${ARGN})
     install(TARGETS ${targetname} LIBRARY DESTINATION ${OF22x_INSIGHT_INSTALL_LIB} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})

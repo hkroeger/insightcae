@@ -159,7 +159,8 @@ randomProcesses
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF23x_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF23x_INSIGHT_BIN})
-    target_link_libraries(${targetname} 
+    set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+    target_link_libraries(${targetname}
       ${OF23x_LIBRARIES}
       ${ARGN}
       ) 
@@ -186,7 +187,8 @@ randomProcesses
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF23x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF23x_INSIGHT_LIB})
-    target_link_libraries(${targetname} ${OF23x_LIBRARIES} ${ARGN}) 
+    set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+    target_link_libraries(${targetname} ${OF23x_LIBRARIES} ${ARGN})
     target_include_directories(${targetname}
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

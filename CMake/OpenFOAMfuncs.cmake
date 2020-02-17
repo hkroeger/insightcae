@@ -40,7 +40,7 @@ macro(addOFConfig prefix shortcut versionnumber)
 #")
   # do not install the following, just keep in bin dir. Installed variant is generated in superbuild
   file(WRITE "${CMAKE_BINARY_DIR}/share/insight/ofes.d/${shortcut}.ofe" 
-"<?xml version="1.0" encoding="utf-8"?>
+"<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <root>
  <ofe label=\"${prefix}\" bashrc=\"${${prefix}_BASHRC}\" version=\"${versionnumber}\"/>
 </root>

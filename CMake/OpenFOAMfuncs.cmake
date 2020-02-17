@@ -34,10 +34,18 @@ endmacro()
 
 macro(addOFConfig prefix shortcut versionnumber)
   #list(APPEND INSIGHT_OFES_VARCONTENT "${prefix}@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.${shortcut} -print -quit`#${versionnumber}")
-  list(APPEND INSIGHT_OFES_VARCONTENT
-"FILE=`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.${shortcut} -print -quit`
-if [ -e \$FILE ] && [ -e ${${prefix}_BASHRC} ]; then INSIGHT_OFES=\"${prefix}@\$FILE#${versionnumber}:$INSIGHT_OFES\"; fi
+#  list(APPEND INSIGHT_OFES_VARCONTENT
+#"FILE=`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.${shortcut} -print -quit`
+#if [ -e \$FILE ] && [ -e ${${prefix}_BASHRC} ]; then INSIGHT_OFES=\"${prefix}@\$FILE#${versionnumber}:$INSIGHT_OFES\"; fi
+#")
+  # do not install the following, just keep in bin dir. Installed variant is generated in superbuild
+  file(WRITE "${CMAKE_BINARY_DIR}/share/insight/ofes.d/${shortcut}.ofe" 
+"<?xml version="1.0" encoding="utf-8"?>
+<root>
+ <ofe label=\"${prefix}\" bashrc=\"${${prefix}_BASHRC}\" version=\"${versionnumber}\"/>
+</root>
 ")
+
   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
 alias ${shortcut}=\"source insight.bashrc.${shortcut}\"
 ")
@@ -45,7 +53,8 @@ alias ${shortcut}=\"source insight.bashrc.${shortcut}\"
   set(${prefix}_ISCFG_BASHRC ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/insight.bashrc.${shortcut})
   
   create_script("insight.bashrc.${shortcut}"
-"source ${${prefix}_BASHRC}
+#"source ${${prefix}_BASHRC}
+"source openfoam.bashrc.${shortcut}
 
 export CURRENT_OFE=${prefix}
 export CURRENT_OFE_FILE=$(basename $CURRENT_OFE)

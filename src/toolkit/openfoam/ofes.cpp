@@ -90,30 +90,80 @@ const OFEnvironment& OFEs::getCurrentOrPreferred()
 
 OFEs::OFEs()
 {
-  const char *envvar=getenv("INSIGHT_OFES");
-  if (!envvar)
+  using namespace rapidxml;
+
+  SharedPathList spaths;
+  for ( const path& p: spaths )
   {
-    std::cout<<"Warning: No OpenFOAM installations defined! (environment variable INSIGHT_OFES)"<<std::endl;
-    return;
+   if ( exists(p) && is_directory(p) )
+   {
+    path ofesdir = p / "ofes.d";
+    if ( exists(ofesdir) && is_directory (ofesdir) )
+     {
+       for ( directory_iterator itr(ofesdir);
+              itr != directory_iterator();
+              ++itr )
+       {
+        if ( is_regular_file(itr->status()) )
+        {
+         if ( itr->path().extension() == ".ofe" )
+         {
+          try
+          {   
+              std::string contents;
+              std::ifstream in(itr->path().c_str());
+              istreambuf_iterator<char> fbegin(in), fend;
+              std::copy(fbegin, fend, back_inserter(contents));
+              xml_document<> doc;
+              doc.parse<0>(&contents[0]);
+
+              xml_node<> *rootnode = doc.first_node("root");
+              for (xml_node<> *e = child->first_node("ofe"); e; e = e->next_sibling("ofe"))
+              {
+               std::string label(e->first_attribute("label")->value());
+               std::string bashrc(e->first_attribute("bashrc")->value());
+               std::string version(e->first_attribute("version")->value());
+
+               (*this).insert(label, new OFEnvironment(boost::lexical_cast<int>(version), bashrc)); 
+              }
+          }
+          catch (const std::exception& e)
+          {
+              insight::Warning("Failed to read OpenFOAM environments from file "+fn.string()+".\nReason: "+e.what());
+          }
+         }
+        }
+       }
+     }
+   }
   }
-  std::string cfgvar(envvar);
-  std::vector<std::string> ofestrs;
-  boost::split(ofestrs, cfgvar, boost::is_any_of(":"));
-  for (const std::string& ofe: ofestrs)
+
+  if (const char *envvar=getenv("INSIGHT_OFES"))
   {
-    std::vector<std::string> strs;
-    boost::split(strs, ofe, boost::is_any_of("@#"));
-    if (strs.size()==3)
-    {
-        try
-        {
-            (*this).insert(strs[0], new OFEnvironment(boost::lexical_cast<int>(strs[2]), strs[1]));
-        }
-        catch (...)
-        {
-            insight::Warning("Error while parsing INSIGHT_OFES environment variable: OFE specification is invalid: \""+ofe+"\"");
-        }
-    }
+   std::string cfgvar(envvar);
+   std::vector<std::string> ofestrs;
+   boost::split(ofestrs, cfgvar, boost::is_any_of(":"));
+   for (const std::string& ofe: ofestrs)
+   {
+     std::vector<std::string> strs;
+     boost::split(strs, ofe, boost::is_any_of("@#"));
+     if (strs.size()==3)
+     {
+         try
+         {
+             (*this).insert(strs[0], new OFEnvironment(boost::lexical_cast<int>(strs[2]), strs[1]));
+         }
+         catch (...)
+         {
+             insight::Warning("Error while parsing INSIGHT_OFES environment variable: OFE specification is invalid: \""+ofe+"\"");
+         }
+     }
+   }
+  }
+
+  if (this->size()==0)
+  {
+   insight::Warning("There are no OpenFOAM environments defined!");
   }
 }
 

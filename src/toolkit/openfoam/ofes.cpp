@@ -1,4 +1,10 @@
 #include "ofes.h"
+#include "base/tools.h"
+#include "rapidxml/rapidxml.hpp"
+
+#include <iostream>
+#include <fstream>
+#include <iterator>
 
 namespace insight {
 
@@ -91,6 +97,8 @@ const OFEnvironment& OFEs::getCurrentOrPreferred()
 OFEs::OFEs()
 {
   using namespace rapidxml;
+  using namespace std;
+  using namespace boost::filesystem;
 
   SharedPathList spaths;
   for ( const path& p: spaths )
@@ -108,17 +116,18 @@ OFEs::OFEs()
         {
          if ( itr->path().extension() == ".ofe" )
          {
+          path fn= itr->path();
           try
           {   
               std::string contents;
-              std::ifstream in(itr->path().c_str());
+              std::ifstream in(fn.c_str());
               istreambuf_iterator<char> fbegin(in), fend;
               std::copy(fbegin, fend, back_inserter(contents));
               xml_document<> doc;
               doc.parse<0>(&contents[0]);
 
               xml_node<> *rootnode = doc.first_node("root");
-              for (xml_node<> *e = child->first_node("ofe"); e; e = e->next_sibling("ofe"))
+              for (xml_node<> *e = rootnode->first_node("ofe"); e; e = e->next_sibling("ofe"))
               {
                std::string label(e->first_attribute("label")->value());
                std::string bashrc(e->first_attribute("bashrc")->value());

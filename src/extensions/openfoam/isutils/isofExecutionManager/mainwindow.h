@@ -5,7 +5,7 @@
 #include <QThread>
 #include <QProgressBar>
 
-#include "terminal.h"
+#include "qtermwidget/qtermwidget.h"
 #include "base/boost_include.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/remoteexecution.h"
@@ -42,9 +42,8 @@ class MainWindow
 {
   Q_OBJECT
 
-#ifdef HAVE_KF5
-  TerminalWidget *terminal_;
-#endif
+  QTermWidget *terminal_;
+
   std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
   std::shared_ptr<insight::SolverOutputAnalyzer> soa_;
 

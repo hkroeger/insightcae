@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "terminal.h"
 
 #include <cstdlib>
 
@@ -31,10 +30,11 @@ void MainWindow::updateGUI()
     ui->server->setText(server().c_str());
     ui->localDir->setText(loc_dir.c_str());
     ui->remoteDir->setText(remoteDir().c_str());
-#ifdef HAVE_KF5
-    terminal_->setDirectory(localDir().c_str());
-    terminal_->sendInput(QString("ssh ")+server().c_str()+" -t \"cd '"+remoteDir().c_str()+"'; bash -l\"\n");
-#endif
+
+    terminal_->changeDir(localDir().c_str());
+    auto cmd = QString("ssh ")+server().c_str()+" -t 'cd '"+remoteDir().c_str()+"'; bash -l'\n";
+    terminal_->sendText(cmd);
+
     tsi_.reset(new insight::TaskSpoolerInterface(socket(), server()));
     onRefreshJobList();
   }
@@ -140,13 +140,14 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(this, &MainWindow::logReady, ui->log, &LogViewerWidget::appendLine);
   connect(this, &MainWindow::logReady, this, &MainWindow::updateOutputAnalzer ); // through signal/slot to execute analysis in GUI thread
 
-#ifdef HAVE_KF5
-  terminal_ = new TerminalWidget(/*ui->v_splitter*/ ui->tabWidget );
-  terminal_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+
+  terminal_ = new QTermWidget( 1, ui->tabWidget );
+
+  QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+  terminal_->setTerminalFont(font);
+
   ui->tabWidget->addTab(terminal_, "&4 - Terminal");
-  //ui->v_splitter->addWidget(terminal_);
-  terminal_->initialise();
-#endif
+
 
   connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWindow::onRefreshJobList);
   connect(ui->btn_kill, &QPushButton::clicked,

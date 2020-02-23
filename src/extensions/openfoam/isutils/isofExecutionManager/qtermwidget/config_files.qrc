@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/">
+        <file>kb-layouts/default.keytab</file>
+        <file>kb-layouts/linux.keytab</file>
+        <file>kb-layouts/macbook.keytab</file>
+        <file>kb-layouts/solaris.keytab</file>
+        <file>kb-layouts/vt420pc.keytab</file>
+        <file>color-schemes/BlackOnLightYellow.schema</file>
+        <file>color-schemes/BlackOnRandomLight.colorscheme</file>
+        <file>color-schemes/BlackOnWhite.schema</file>
+        <file>color-schemes/DarkPastels.colorscheme</file>
+        <file>color-schemes/GreenOnBlack.colorscheme</file>
+        <file>color-schemes/Linux.colorscheme</file>
+        <file>color-schemes/WhiteOnBlack.schema</file>
+    </qresource>
+</RCC>

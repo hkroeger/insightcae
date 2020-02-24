@@ -82,11 +82,19 @@ function cleanup() {
 
 trap 'cleanup' SIGINT
 
+echo "Launching PV server..."
 ssh -L$LOCALPORT:127.0.0.1:$PORT $SSHTARGET -t "bash -lc \"cd $DIR ; pvserver-offscreen --use-offscreen-rendering --server-port=$PORT\"" > $LOG 2>&1 &
 PVSERVERPID=$!
 
-tail -f $LOG | grep -qe "Accepting connection(s)"
+#tail -f -n+0 $LOG | grep -qe "Accepting connection(s)"
+bash -c "echo \"\$\$\"; exec tail -f -n+0 $LOG" | {
+  IFS= read pid
+  grep -qe "Accepting connection(s)"
+  kill "$pid"
+}
+echo "PV server is up"
 
+echo "Launching PV client..."
 paraview --server-url=cs://127.0.0.1:$LOCALPORT --data=$DIR/system/controlDict
 
 cleanup

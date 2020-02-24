@@ -54,8 +54,13 @@ fi
 #TOOL=${@:$OPTIND+1:1}
 #RES=${@:$OPTIND+2:1}
 
+SSHTARGET=$SERVER
+if [ "$REMHOST" ]; then
+ SSHTARGET="-J $SERVER $REMHOST"
+fi
+
 read LABEL PORT << EOF
-$(ssh $SERVER isPVFindPort.sh|tail -n 1)
+$(ssh $SSHTARGET "bash -lc isPVFindPort.sh"|tail -n 1)
 EOF
 if [ "$LABEL" != "PORT" ]; then
  echo While determining remote port: expected "PORT", got "$LABEL"
@@ -68,20 +73,20 @@ if [ "$LABEL" != "PORT" ]; then
  echo While determining local port: expected "PORT", got "$LABEL"
 fi
 
-if [ "$REMHOST" ]; then
- read LABEL2 PORT2 << EOF
- $(ssh $SERVER ssh $REMHOST isPVFindPort.sh|tail -n 1)
-EOF
- if [ "$LABEL2" != "PORT" ]; then
-  echo While determining remote-remote port: expected "PORT", got "$LABEL2"
- fi
-fi
+LOG=$(mktemp)
 
-if [ "$REMHOST" ]; then
- ssh -L$LOCALPORT:127.0.0.1:$PORT $SERVER "ssh -L$PORT:127.0.0.1:$PORT2 $REMHOST \"cd $DIR ; pvserver --use-offscreen-rendering --server-port=$PORT2\"" &
-else
- ssh -L$LOCALPORT:127.0.0.1:$PORT $SERVER "cd $DIR ; pvserver --use-offscreen-rendering --server-port=$PORT" &
-fi
-sleep 1
+function cleanup() {
+ kill $PVSERVERPID
+ rm -vf $LOG
+}
+
+trap 'cleanup' SIGINT
+
+ssh -L$LOCALPORT:127.0.0.1:$PORT $SSHTARGET -t "bash -lc \"cd $DIR ; pvserver-offscreen --use-offscreen-rendering --server-port=$PORT\"" > $LOG 2>&1 &
+PVSERVERPID=$!
+
+tail -f $LOG | grep -qe "Accepting connection(s)"
 
 paraview --server-url=cs://127.0.0.1:$LOCALPORT --data=$DIR/system/controlDict
+
+cleanup

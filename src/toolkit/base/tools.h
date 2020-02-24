@@ -204,6 +204,11 @@ void writeSTL
    const boost::filesystem::path& outfile
 );
 
+
+std::string collectIntoSingleCommand( const std::string& cmd, const std::vector<std::string>& args = std::vector<std::string>() );
+std::string escapeShellSymbols(const std::string& expr);
+
+
 }
 
 #endif // TOOLS_H

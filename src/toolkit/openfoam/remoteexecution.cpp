@@ -331,30 +331,39 @@ boost::filesystem::path RemoteExecutionConfig::socket() const
   return remoteDir()/"tsp.socket";
 }
 
+
+
 void RemoteExecutionConfig::execRemoteCmd(const std::string& command)
 {
+  insight::CurrentExceptionContext ex("executing command one remote host: "+command);
+
     std::ostringstream cmd;
 
-    cmd << "ssh " << server_ << " \"";
-     cmd << "export TS_SOCKET="<<socket()<<";";
+    cmd << "export TS_SOCKET="<<socket()<<";";
 
-     try
-     {
-         const OFEnvironment& cofe = OFEs::getCurrent();
-         cmd << "source " << cofe.bashrc().filename() << ";";
-     }
-     catch (const std::exception& /*e*/) {
-         // ignore, don't load OF config remotely
-     }
-
-     cmd << "cd "<<remoteDir_<<" && (";
-     cmd << command;
-    cmd << ")\"";
-
-    std::cout<<cmd.str()<<std::endl;
-    if (! ( std::system(cmd.str().c_str()) == 0 ))
+    try
     {
-        throw insight::Exception("Could not execute command on server "+server_+": \""+cmd.str()+"\"");
+       const OFEnvironment& cofe = OFEs::getCurrent();
+       cmd << "source " << cofe.bashrc().filename() << ";";
+    }
+    catch (const std::exception& /*e*/) {
+       // ignore, don't load OF config remotely
+    }
+
+    cmd << "cd "<<remoteDir_<<" && (" << command << ")";
+
+    int ret = boost::process::system(
+                boost::process::search_path("ssh"),
+                boost::process::args({
+                   server(),
+                   "bash -lc \""+escapeShellSymbols(cmd.str())+"\""
+                })
+          );
+
+    cout<<"cmd string: >>>"<<cmd.str()<<"<<<"<<endl;
+    if ( ret != 0 )
+    {
+        throw insight::Exception("Could not execute command on server "+server()+": \""+cmd.str()+"\"");
     }
 }
 
@@ -461,7 +470,8 @@ void RemoteExecutionConfig::removeRemoteDir()
 
 bool RemoteExecutionConfig::isValid() const
 {
-    return (!server_.empty())&&(!remoteDir_.empty());
+  return (!server_.empty())&&(!remoteDir_.empty());
 }
+
 
 }

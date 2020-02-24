@@ -1,5 +1,6 @@
 #include "taskspoolerinterface.h"
 #include "base/exception.h"
+#include "base/tools.h"
 #include <boost/asio.hpp>
 #include <boost/process/async.hpp>
 
@@ -352,11 +353,14 @@ int TaskSpoolerInterface::startJob(const std::vector<std::string>& commandline)
 {
   if (!remote_machine_.empty())
   {
-    std::vector<std::string> args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp"});
-    std::copy( commandline.begin(), commandline.end(), std::back_inserter(args) );
+//    std::vector<std::string> args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp"});
+
+    //std::copy( commandline.begin(), commandline.end(), std::back_inserter(args) );
+    auto cmd = "TS_SOCKET=\""+socket_.string()+"\" tsp " + algorithm::join(commandline, " ");
+
     return boost::process::system(
           boost::process::search_path("ssh"),
-          boost::process::args(args)
+          boost::process::args( { "bash", "-lc", "\""+escapeShellSymbols(cmd)+"\"" } )
           );
   }
   else

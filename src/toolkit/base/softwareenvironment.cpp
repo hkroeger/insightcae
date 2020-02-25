@@ -236,7 +236,9 @@ SoftwareEnvironment::JobPtr SoftwareEnvironment::forkCommand
         argv.insert(argv.begin(), "-lc");
         argv.insert(argv.begin(), "bash");
         // keep only a selected set of environment variables
-        std::vector<std::string> keepvars = { "DISPLAY", "HOME", "USER", "SHELL", "INSIGHT_BINDIR", "INSIGHT_LIBDIR", "INSIGHT_OFES", "PYTHONPATH" };
+        std::vector<std::string> keepvars = { "DISPLAY", "HOME", "USER", "SHELL",
+                                              "INSIGHT_INSTDIR", "INSIGHT_BINDIR", "INSIGHT_LIBDIR",
+                                              "INSIGHT_OFES", "PYTHONPATH" };
         for (const std::string& varname: keepvars)
         {
             if (char* varvalue=getenv(varname.c_str()))

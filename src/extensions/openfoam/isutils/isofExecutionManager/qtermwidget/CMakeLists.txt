@@ -72,13 +72,11 @@ add_library ( qtermwidget SHARED ${SRCS} config_files.qrc)
 
 
 #| Library Properties
-set_target_properties ( qtermwidget PROPERTIES
-	#OUTPUT_NAME "alternateName"
-	#PREFIX "lib"
-	SOVERSION ${qtermwidget_VERSION_MAJOR}
-	#SUFFIX "so"
-	VERSION ${qtermwidget_VERSION}
-)
+#set_target_properties ( qtermwidget
+#       PROPERTIES
+#	SOVERSION ${qtermwidget_VERSION_MAJOR}
+#	VERSION ${qtermwidget_VERSION}
+#)
 
 target_link_libraries ( qtermwidget Qt5::Widgets )
 

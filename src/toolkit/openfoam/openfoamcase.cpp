@@ -579,9 +579,11 @@ const
   std::string shellcmd="";
   
   shellcmd += 
+    "export PATH=$PATH:$INSIGHT_BINDIR;"
+    "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_LIBDIR;"
     "source "+env_.bashrc().string()+";"
-    "export PATH=$PATH:$INSIGHT_BINDIR:$INSIGHT_BINDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
-    "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_LIBDIR:$INSIGHT_LIBDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
+    "export PATH=$PATH:$INSIGHT_BINDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
+    "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_LIBDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
     "cd \""+boost::filesystem::absolute(location).string()+"\";"
     + cmd;
   for (std::string& arg: argv)

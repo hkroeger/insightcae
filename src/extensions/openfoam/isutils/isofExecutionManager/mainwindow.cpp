@@ -21,24 +21,24 @@
 #include "remoteparaview.h"
 #include "remotesync.h"
 
+
+
+
 void MainWindow::updateGUI()
 {
-  if (isValid())
-  {
-    bfs_path loc_dir=boost::filesystem::absolute(localDir());
-    setWindowTitle(QString(loc_dir.c_str())+" - InsightCAE Execution Manager");
-    ui->server->setText(server().c_str());
-    ui->localDir->setText(loc_dir.c_str());
-    ui->remoteDir->setText(remoteDir().c_str());
+  setWindowTitle( ui->localDir->text() + " - InsightCAE Execution Manager" );
 
-    terminal_->changeDir(localDir().c_str());
-    auto cmd = QString("ssh ")+server().c_str()+" -t 'cd '"+remoteDir().c_str()+"'; bash -l'\n";
+  if (remote_)
+  {
+    terminal_->changeDir( ui->localDir->text() );
+    auto cmd = QString("ssh ")+remote_->server().c_str()+" -t 'cd '"+remote_->remoteDir().c_str()+"'; bash -l'\n";
     terminal_->sendText(cmd);
 
-    tsi_.reset(new insight::TaskSpoolerInterface(socket(), server()));
+    tsi_.reset(new insight::TaskSpoolerInterface(remote_->socket(), remote_->server()));
     onRefreshJobList();
   }
 }
+
 
 
 
@@ -47,11 +47,15 @@ JobListBuilder::JobListBuilder(std::shared_ptr<insight::TaskSpoolerInterface> ts
 {}
 
 
+
+
 void JobListBuilder::run()
 {
   auto result = tsi_->jobs();
   emit jobListReady(result);
 }
+
+
 
 
 void MainWindow::onRefreshJobList()
@@ -77,6 +81,8 @@ void MainWindow::onRefreshJobList()
 }
 
 
+
+
 void MainWindow::onJobListReady(insight::TaskSpoolerInterface::JobList jl)
 {
   ui->commands->clear();
@@ -98,6 +104,8 @@ void MainWindow::onJobListReady(insight::TaskSpoolerInterface::JobList jl)
 }
 
 
+
+
 void MainWindow::onStartTail()
 {
   if (tsi_)
@@ -112,17 +120,30 @@ void MainWindow::onStartTail()
   }
 }
 
+
+
+
 void MainWindow::updateOutputAnalzer(QString line)
 {
   soa_->update(line.toStdString());
 }
 
+
+
+
 MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent) :
   QMainWindow(parent),
-  insight::RemoteExecutionConfig(location, false),
   ui(new Ui::MainWindow)
 {
+  if ( boost::filesystem::exists( insight::RemoteExecutionConfig::defaultConfigFile(location) ) )
+  {
+    remote_.reset(new insight::RemoteExecutionConfig(location));
+  }
+
   ui->setupUi(this);
+
+  ui->localDir->setText( boost::filesystem::absolute(location).c_str() );
+
   setWindowIcon(QIcon(":/resources/logo_insight_cae.svg"));
   this->setWindowTitle("InsightCAE Execution Manager");
 
@@ -188,6 +209,9 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   statusBar()->addPermanentWidget(progressbar_);
 }
 
+
+
+
 MainWindow::~MainWindow()
 {
   if (tsi_)
@@ -197,16 +221,24 @@ MainWindow::~MainWindow()
   delete ui;
 }
 
+
+
+
 void MainWindow::onSelectRemoteDir()
 {
   RemoteDirSelector dlg(this);
+
   if (dlg.exec() == QDialog::Accepted)
   {
-      server_=dlg.selectedServer();
-      remoteDir_=dlg.selectedRemoteDir();
 
-      std::ofstream cfg("meta.foam");
-      cfg << server_ << ":" << remoteDir_.string();
+      ui->server->setText( QString::fromStdString(dlg.selectedServer()) );
+      ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
+
+      insight::RemoteLocation::writeConfigFile(
+            insight::RemoteExecutionConfig::defaultConfigFile("."),
+            dlg.selectedServer(),
+            dlg.selectedRemoteDir()
+            );
 
       updateGUI();
   }
@@ -216,22 +248,26 @@ void MainWindow::onSelectRemoteDir()
 
 void MainWindow::syncLocalToRemote()
 {
-  auto *rstr = new insight::RunSyncToRemote(*this);
-  connect(rstr, &insight::RunSyncToRemote::progressValueChanged, progressbar_, &QProgressBar::setValue);
-  connect(rstr, &insight::RunSyncToRemote::progressTextChanged,
-          this, [=](const QString& text) { statusBar()->showMessage(text); } );
-  connect(rstr, &insight::RunSyncToRemote::transferFinished,
-          this, [&]()
+  if (remote_)
   {
-    progressbar_->setHidden(true);
-    statusBar()->showMessage("Transfer to remote location finished");
-  });
-  connect(rstr, &insight::RunSyncToRemote::transferFinished, rstr, &QObject::deleteLater);
+    auto *rstr = new insight::RunSyncToRemote(*remote_);
 
-  progressbar_->setHidden(false);
-  statusBar()->showMessage("Transfer to remote location started");
+    connect(rstr, &insight::RunSyncToRemote::progressValueChanged, progressbar_, &QProgressBar::setValue);
+    connect(rstr, &insight::RunSyncToRemote::progressTextChanged,
+            this, [=](const QString& text) { statusBar()->showMessage(text); } );
+    connect(rstr, &insight::RunSyncToRemote::transferFinished,
+            this, [&]()
+    {
+      progressbar_->setHidden(true);
+      statusBar()->showMessage("Transfer to remote location finished");
+    });
+    connect(rstr, &insight::RunSyncToRemote::transferFinished, rstr, &QObject::deleteLater);
 
-  rstr->start();
+    progressbar_->setHidden(false);
+    statusBar()->showMessage("Transfer to remote location started");
+
+    rstr->start();
+  }
 }
 
 
@@ -240,7 +276,10 @@ void MainWindow::syncLocalToRemote()
 
 void MainWindow::syncRemoteToLocal()
 {
-    auto* rstl = new insight::RunSyncToLocal(*this);
+  if (remote_)
+  {
+    auto* rstl = new insight::RunSyncToLocal(*remote_);
+
     connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
             progressbar_, &QProgressBar::setValue);
     connect(rstl, &insight::RunSyncToLocal::progressTextChanged,
@@ -257,21 +296,25 @@ void MainWindow::syncRemoteToLocal()
     statusBar()->showMessage("Transfer from remote location to local directory started");
 
     rstl->start();
+  }
 }
 
 void MainWindow::onStartParaview()
 {
-  if (!QProcess::startDetached("isPV.py", QStringList(), localDir().c_str() ))
+  if (!QProcess::startDetached("isPV.py", QStringList(), ui->localDir->text() ))
   {
-    QMessageBox::critical(this, "Failed to start", QString("Failed to start Paraview in directoy ")+localDir().c_str());
+    QMessageBox::critical(this, "Failed to start", "Failed to start Paraview in directoy "+ui->localDir->text());
   }
 }
 
 
 void MainWindow::onStartRemoteParaview()
 {
-  RemoteParaview dlg(*this, this);
-  dlg.exec();
+  if (remote_)
+  {
+    RemoteParaview dlg(*remote_, this);
+    dlg.exec();
+  }
 }
 
 

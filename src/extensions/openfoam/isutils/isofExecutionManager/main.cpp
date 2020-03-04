@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     bf::path meta=mf;
     if (meta.empty())
     {
-      meta="meta.foam";
+      meta=insight::RemoteExecutionConfig::defaultConfigFile(location);
     }
 
     if (bf::exists(meta)&&(!vm.count("force-create-remote-temp")))
@@ -149,36 +149,9 @@ int main(int argc, char *argv[])
     {
 
       string server=vm["create-remote-temp"].as<std::string>();
-
-      //            auto i = insight::remoteServers.find(server);
-      //            if (i==insight::remoteServers.end())
-      //              {
-      //                throw insight::Exception("Remote server \""+server+"\" not found in configuration!");
-      //              }
-
       auto i = insight::remoteServers.findServer(server);
 
-      bf::path absloc=bf::canonical(bf::absolute(location));
-      string casedirname = absloc.filename().string();
-
-      bf::path mountpoint = boost::filesystem::unique_path( boost::filesystem::temp_directory_path()/"remote-%%%%-%%%%-%%%%-%%%%" );
-      boost::filesystem::create_directories(mountpoint);
-
-      bf::path remote_dir;
-      {
-        MountRemote m(mountpoint, i.second.serverName_, i.second.defaultDir_);
-
-        bf::path target_dir = boost::filesystem::unique_path( mountpoint/("isofexecution-"+casedirname+"-%%%%%%%%") );
-
-        remote_dir =
-            i.second.defaultDir_ / boost::filesystem::make_relative(mountpoint, target_dir);
-
-        boost::filesystem::create_directories(target_dir);
-      }
-      boost::filesystem::remove(mountpoint);
-
-      std::ofstream cfg(meta.c_str());
-      cfg << i.second.serverName_ << ":" << remote_dir.string();
+      insight::RemoteExecutionConfig rec(i.second, location); // creates config file
 
       anything_done=true;
     }
@@ -187,7 +160,7 @@ int main(int argc, char *argv[])
   try
   {
 
-    insight::RemoteExecutionConfig re(location, false, mf);
+    insight::RemoteExecutionConfig re(location, mf);
     boost::filesystem::path local_mp = location / "mnt_remote" / "default";
 
     if (re.isValid())
@@ -274,8 +247,10 @@ int main(int argc, char *argv[])
 
       if(vm.count("clean"))
       {
-        re.removeRemoteDir();
+//        re.removeRemoteDir();
+        re.cleanup();
         boost::filesystem::remove(re.metaFile());
+
         return 0; // configuration is invalidated, exit here
         //                    anything_done=true;
       }

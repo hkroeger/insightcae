@@ -135,7 +135,8 @@ protected:
   bool remoteDownloadOrResumeIsPossible() const;
   bool isRemoteDirectoryPresent() const;
 
-  
+  std::unique_ptr<insight::MountRemote> temporaryMountedRemoteDir() const;
+
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
   ~AnalysisForm();
@@ -161,7 +162,6 @@ public:
 
   void recheckButtonAvailability();
 
-  std::unique_ptr<insight::MountRemote> temporaryMountedRemoteDir() const;
   void upload();
   void startRemoteRun();
   void resumeRemoteRun();

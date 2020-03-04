@@ -17,11 +17,14 @@ RemoteServerInfo::RemoteServerInfo()
 {}
 
 
-RemoteServerInfo::RemoteServerInfo(const std::string& serverName, const bfs_path& defaultDir)
-  : serverName_(serverName), defaultDir_(defaultDir)
+RemoteServerInfo::RemoteServerInfo(const std::string& server, bool hasLaunchScript, const bfs_path& defaultDir)
+  : hasLaunchScript_(hasLaunchScript), server_(server), defaultDir_(defaultDir)
 {}
 
-
+bool RemoteServerInfo::isOnDemand() const
+{
+  return hasLaunchScript_;
+}
 
 
 RemoteServerList::RemoteServerList()
@@ -35,38 +38,71 @@ RemoteServerList::RemoteServerList()
 
           if ( exists(serverlist) )
           {
-              std::string line;
-              std::ifstream f(serverlist.c_str());
-              bool anything_read=false;
-              int i=0;
-              while (getline(f, line))
-                {
-                  i++;
+            bool anything_read=false;
 
-                  std::regex pat("([^ ]+) *= *([^ ]+):([^ ]+)");
-                  std::smatch m;
-                  std::regex_match(line, m, pat);
-                  if (m.size()!=4)
-                    {
-                      insight::Warning(boost::str(
-                               boost::format("invalid remote server config in line %d of file %s (content: \"%s\"). Ignored")
-                                                 % i % serverlist.string() % line
-                                                 ));
-                    }
-                  else
-                    {
-                      RemoteServerInfo s;
-                      std::string key= m[1];
-                      s.serverName_ = m[2];
-                      s.defaultDir_ = bfs_path(m[3]);
-                      (*this)[key]=s;
-                      anything_read=true;
-                    }
-                }
-
-              if (!anything_read)
-                insight::Warning("Could not read valid data from "+serverlist.string());
+            // read xml
+            string content;
+            try
+            {
+                std::ifstream in(serverlist.c_str());
+                istreambuf_iterator<char> fbegin(in), fend;
+                std::copy(fbegin, fend, back_inserter(content));
             }
+            catch (...)
+            {
+                throw insight::Exception("Failed to read file "+serverlist.string());
+            }
+
+            using namespace rapidxml;
+            xml_document<> doc;
+
+            try {
+              doc.parse<0>(&content[0]);
+            }
+            catch (...)
+            {
+              throw insight::Exception("Failed to parse XML from file "+serverlist.string());
+            }
+
+            auto *rootnode = doc.first_node("root");
+            if (!rootnode)
+              throw insight::Exception("No valid \"remote\" node found in XML!");
+
+            for (xml_node<> *e = rootnode->first_node(); e; e = e->next_sibling())
+            {
+              if (e->name()==string("remoteServer"))
+              {
+                RemoteServerInfo s;
+
+                string label(e->first_attribute("label")->value());
+                s.defaultDir_ = boost::filesystem::path(e->first_attribute("baseDirectory")->value());
+
+                auto* ha = e->first_attribute("host");
+                auto* lsaa = e->first_attribute("launchScript");
+                if (ha && lsaa)
+                {
+                  throw insight::Exception("Invalid configuration of remote server "+label+": either host name or launch script must be specified!");
+                }
+                else if (ha)
+                {
+                  s.server_=ha->value();
+                  s.hasLaunchScript_=false;
+                  (*this)[label]=s;
+                  anything_read=true;
+                }
+                else if (lsaa)
+                {
+                  s.server_=lsaa->value();
+                  s.hasLaunchScript_=true;
+                  (*this)[label]=s;
+                  anything_read=true;
+                }
+              }
+            }
+
+            if (!anything_read)
+              insight::Warning("Could not read valid data from "+serverlist.string());
+          }
         }
     }
 }

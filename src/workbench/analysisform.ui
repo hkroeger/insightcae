@@ -40,7 +40,7 @@
      <item>
       <widget class="QCheckBox" name="cbDontKeepExeDir">
        <property name="text">
-        <string>remove after completion )</string>
+        <string>remove after analysis is finished )</string>
        </property>
        <property name="checked">
         <bool>true</bool>
@@ -261,8 +261,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>1409</width>
-              <height>871</height>
+              <width>1447</width>
+              <height>899</height>
              </rect>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">

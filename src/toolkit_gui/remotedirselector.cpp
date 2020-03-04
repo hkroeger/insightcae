@@ -55,7 +55,12 @@ RemoteDirSelector::~RemoteDirSelector()
 
 std::string RemoteDirSelector::selectedServer()
 {
-    return insight::remoteServers[ui->server->currentText().toStdString()].serverName_;
+  auto s = insight::remoteServers[ui->server->currentText().toStdString()];
+
+  if (s.hasLaunchScript_)
+    throw insight::Exception("Cannot select directories on dynamically allocated hosts");
+
+  return s.server_;
 }
 
 
@@ -69,8 +74,17 @@ bfs_path RemoteDirSelector::selectedRemoteDir()
 
 void RemoteDirSelector::serverChanged(const QString& name)
 {
-    mount_.reset();
-    mount_.reset(new insight::MountRemote(mountpoint_, insight::remoteServers[name.toStdString()].serverName_, "/"));
+  mount_.reset();
+
+  auto s = insight::remoteServers[name.toStdString()];
+
+  if (s.hasLaunchScript_)
+  {
+    throw insight::Exception("Cannot select directories on dynamically allocated hosts");
+  }
+  else
+  {
+    mount_.reset(new insight::MountRemote(mountpoint_, s.server_, "/"));
 
     QString mp=QString::fromStdString(boost::filesystem::absolute(mountpoint_).string());
     qDebug()<<mp;
@@ -80,18 +94,13 @@ void RemoteDirSelector::serverChanged(const QString& name)
     qDebug()<<idx;
     ui->directory->setRootIndex(idx);
 
-//    auto i=std::find_if(insight::remoteServers.begin(),
-//                        insight::remoteServers.end(),
-//                        [&](const insight::RemoteServerInfo& s)
-//                         { return s.serverName_==name.toStdString(); }
-//    );
     auto i = insight::remoteServers.find(name.toStdString());
     if (i!=insight::remoteServers.end())
     {
         auto ci = fs_model_->index( (mountpoint_/i->second.defaultDir_).c_str() );
         ui->directory->setCurrentIndex(ci);
     }
-
+  }
 }
 
 

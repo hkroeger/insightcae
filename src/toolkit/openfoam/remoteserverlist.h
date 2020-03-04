@@ -8,11 +8,14 @@ namespace insight {
 
 struct RemoteServerInfo
 {
-    std::string serverName_;
-    bfs_path defaultDir_;
+  bool hasLaunchScript_;
+  std::string server_;
+  bfs_path defaultDir_;
 
-    RemoteServerInfo();
-    RemoteServerInfo(const std::string& serverName, const bfs_path& defaultDir);
+  RemoteServerInfo();
+  RemoteServerInfo(const std::string& server, bool hasLaunchScript, const bfs_path& defaultDir);
+
+  bool isOnDemand() const;
 };
 
 

@@ -27,7 +27,7 @@ using namespace insight;
 
 namespace fs=boost::filesystem;
 
-int main()
+void test_existing_directory(bool old_format)
 {
   auto d = fs::unique_path( fs::temp_directory_path() / "remoteexec-test-%%%%%%" );
   fs::create_directory(d);
@@ -37,23 +37,29 @@ int main()
   {
     {
       ofstream f( (d/"meta.foam").c_str() );
-      cout << "localhost:"<<d.string()<<endl;
-      f << "localhost:"<<d.string()<<endl;
+
+      if (old_format)
+      {
+        f << "localhost:"<<d.string()<<endl;
+      }
+      else
+      {
+        f << "<remote server=\"localhost\" directory=\""<<d.string()<<"\"/>"<<endl;
+      }
     }
 
     RemoteExecutionConfig ec(d);
 
     try
     {
-      ec.queueRemoteCommand("ls -l");
-      ec.waitLastCommandFinished();
-
+      ec.queueRemoteCommand("pwd");
+      ec.queueRemoteCommand("ls -la");
       ec.queueRemoteCommand("echo $SSH_CLIENT");
       ec.waitLastCommandFinished();
     }
     catch (...)
     {
-      ret=-2;
+      ret=2;
     }
 
     ec.cancelRemoteCommands();
@@ -61,9 +67,161 @@ int main()
   catch (const std::exception& e)
   {
    cerr<<e.what();
-   ret=-1;
+   ret=1;
   }
 
   fs::remove_all(d);
+
+  if (ret) throw ret;
+}
+
+
+
+
+int test_auto_create()
+{
+  auto d = fs::unique_path( fs::temp_directory_path() / "remoteexec-test-%%%%%%" );
+  fs::create_directory(d);
+  int ret=0;
+
+  try
+  {
+
+    auto i=insight::remoteServers.find("localhost");
+
+    RemoteExecutionConfig ec(i->second, d);
+
+    try
+    {
+      ec.queueRemoteCommand("pwd");
+      ec.queueRemoteCommand("ls -la");
+      ec.queueRemoteCommand("echo $SSH_CLIENT");
+      ec.waitLastCommandFinished();
+    }
+    catch (...)
+    {
+      ret=2;
+    }
+
+    ec.cancelRemoteCommands();
+  }
+  catch (const std::exception& e)
+  {
+   cerr<<e.what();
+   ret=1;
+  }
+
+  fs::remove_all(d);
+
+  if (ret) throw ret;
+}
+
+
+
+
+void test_start_disconnect(fs::path d)
+{
+
+  int ret=0;
+
+  try
+  {
+
+    auto i=insight::remoteServers.find("localhost");
+
+    RemoteExecutionConfig ec(i->second, d);
+
+    try
+    {
+      ec.queueRemoteCommand("pwd");
+      ec.queueRemoteCommand("ls -la");
+      ec.waitLastCommandFinished();
+    }
+    catch (...)
+    {
+      ret=2;
+    }
+  }
+  catch (const std::exception& e)
+  {
+   cerr<<e.what();
+   ret=1;
+  }
+
+  if (ret) throw ret;
+
+}
+
+
+
+void test_reconnect_stop(fs::path d)
+{
+
+  int ret=0;
+
+  try
+  {
+
+    RemoteExecutionConfig ec(d);
+
+    try
+    {
+      ec.queueRemoteCommand("echo $SSH_CLIENT");
+      ec.waitLastCommandFinished();
+    }
+    catch (...)
+    {
+      ret=2;
+    }
+
+    ec.cancelRemoteCommands();
+  }
+  catch (const std::exception& e)
+  {
+   cerr<<e.what();
+   ret=1;
+  }
+
+  if (ret) throw ret;
+}
+
+
+
+int main()
+{
+  int ret=0;
+
+  try
+  {
+    test_existing_directory(true);
+
+    test_existing_directory(false);
+
+    test_auto_create();
+
+    {
+      auto d = fs::unique_path( fs::temp_directory_path() / "remoteexec-test-%%%%%%" );
+      fs::create_directory(d);
+
+      int rtest=0;
+      try
+      {
+        test_start_disconnect(d);
+        test_reconnect_stop(d);
+      }
+      catch (int r)
+      {
+        rtest=r;
+      }
+
+      fs::remove_all(d);
+      if (rtest) throw rtest;
+    }
+  }
+  catch (int r)
+  {
+    ret=r;
+  }
+
   return ret;
 }

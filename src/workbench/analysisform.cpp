@@ -190,11 +190,20 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     connect(ui->btnSelectRemoteDir, &QPushButton::clicked,
             [&]()
             {
-              RemoteDirSelector dlg(this, ui->hostList->currentText().toStdString() );
-              if (dlg.exec() == QDialog::Accepted)
+              auto i = insight::remoteServers.find(ui->hostList->currentText().toStdString());
+              if (i->second.isOnDemand())
               {
-                  ui->hostList->setCurrentIndex( ui->hostList->findText( QString::fromStdString(dlg.selectedServer()) ) );
-                  ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
+                QMessageBox::critical(this, "Error", "Selected host is an on-demand host. Can only select directories on permanent hosts.");
+                return;
+              }
+              else
+              {
+                RemoteDirSelector dlg( this, i->second.server_ );
+                if (dlg.exec() == QDialog::Accepted)
+                {
+                    ui->hostList->setCurrentIndex( ui->hostList->findText( QString::fromStdString(dlg.selectedServer()) ) );
+                    ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
+                }
               }
             }
     );

@@ -36,11 +36,14 @@ Q_SIGNALS:
 };
 
 
+
+
 class MainWindow
-: public QMainWindow,
-  public insight::RemoteExecutionConfig
+: public QMainWindow
 {
   Q_OBJECT
+
+  std::unique_ptr<insight::RemoteExecutionConfig> remote_;
 
   QTermWidget *terminal_;
 

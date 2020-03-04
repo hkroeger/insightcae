@@ -26,22 +26,31 @@ namespace bf = boost::filesystem;
 
 
 
+
 std::unique_ptr<insight::MountRemote> AnalysisForm::temporaryMountedRemoteDir() const
 {
   std::unique_ptr<insight::MountRemote> result;
 
+  std::string server;
+  boost::filesystem::path remoteDir;
 
-  std::string server = ui->hostList->currentText().toStdString();
-  bf::path remote_dir( ui->remoteDir->text().toStdString() );
-
-  auto i = insight::remoteServers.findServer(server);
-
+  if ( auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get()) )
   {
-    bf::path remoteCaseDir =
-        i.second.defaultDir_ / boost::filesystem::make_relative(i.second.defaultDir_, remote_dir);
-
-    result.reset(new insight::MountRemote(i.second.serverName_, remoteCaseDir));
+    server = rr->remote().server();
+    remoteDir = rr->remote().remoteDir();
   }
+  else
+  {
+    auto i=insight::remoteServers.find( ui->hostList->currentText().toStdString() );
+    if (i->second.isOnDemand())
+    {
+      throw insight::Exception("Can not mount on-demand instances!");
+    }
+    server = i->second.server_;
+    remoteDir = ui->remoteDir->text().toStdString();
+  }
+
+  result.reset(new insight::MountRemote(server, remoteDir));
 
   return result;
 }

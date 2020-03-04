@@ -11,76 +11,21 @@
 namespace bf=boost::filesystem;
 namespace bp=boost::process;
 
-void RemoteRun::createRemoteDirectory()
-{
-  std::string server = af_->ui->hostList->currentText().toStdString();
-  bf::path target_dir, remote_dir( af_->ui->remoteDir->text().toStdString() );
-  auto i = insight::remoteServers.findServer(server);
-
-  insight::MountRemote m(i.second.serverName_, i.second.defaultDir_);
-
-  if (remote_dir.empty())
-  {
-    std::string casename=af_->analysisName_;
-    casename.erase(
-          remove_if(casename.begin(), casename.end(), [](const char c) { return !isalnum(c); } ),
-          casename.end());
-
-    if (!af_->ist_file_.empty())
-      casename = af_->ist_file_.filename().string();
-
-
-    target_dir = boost::filesystem::unique_path( m.mountpoint()/("isofexecution-"+casename+"-%%%%%%%%") );
-
-    boost::filesystem::create_directories(target_dir);
-
-    remote_dir =
-        i.second.defaultDir_ / boost::filesystem::make_relative(m.mountpoint(), target_dir);
-
-    af_->ui->remoteDir->setText( QString::fromStdString(remote_dir.string()) );
-  }
-  else
-  {
-    target_dir =  m.mountpoint() / boost::filesystem::make_relative(i.second.defaultDir_, remote_dir);
-  }
-
-  if (!bf::exists(target_dir))
-    throw insight::Exception("Remote directory does not exist!");
-
-}
-
-
 
 
 void RemoteRun::launchRemoteAnalysisServer()
 {
-  std::string server = af_->ui->hostList->currentText().toStdString();
-  bf::path remoteDir( af_->ui->remoteDir->text().toStdString() );
-  auto i = insight::remoteServers.findServer(server);
-
-  int ret = bp::system
-      (
-        bp::search_path("ssh"),
-        bp::args( { i.second.serverName_, "analyze --workdir=\""+remoteDir.string()+"\" --server >\""+remoteDir.string()+"/server.log\" 2>&1 </dev/null &" } )
-        );
-
-  std::cout<<"ret="<<ret<<std::endl;
+  int ret = remote_->execRemoteCmd(
+        "analyze "
+        "--workdir=\""+remote_->remoteDir().string()+"\" "
+        "--server >\""+remote_->remoteDir().string()+"/server.log\" 2>&1 </dev/null &"
+      );
 
   if (ret!=0)
     throw insight::Exception("Failed to launch remote analysis server executable!");
 }
 
 
-
-
-void RemoteRun::removeRemoteDirectory()
-{
-  std::string server = af_->ui->hostList->currentText().toStdString();
-  bf::path remoteDir( af_->ui->remoteDir->text().toStdString() );
-  auto i = insight::remoteServers.findServer(server);
-
-  insight::RemoteLocation(i.second.serverName_, remoteDir).removeRemoteDir();
-}
 
 
 
@@ -94,6 +39,31 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
          +QString::number(af_->ui->portNum->value()).toStdString()
          )
 {
+  if (resume)
+  {
+    remote_.reset
+    (
+       new insight::RemoteExecutionConfig
+       (
+         af->ui->localDir->text().toStdString()
+       )
+    );
+  }
+  else
+  {
+    remote_.reset
+    (
+       new insight::RemoteExecutionConfig
+       (
+         insight::remoteServers.findServer(
+           af->ui->hostList->currentText().toStdString()
+           ).second,
+         af->ui->localDir->text().toStdString(),
+         af->ui->remoteDir->text().toStdString()
+       )
+    );
+  }
+
   // lock UI
   af_->ui->label_2->setEnabled(false);
   af_->ui->localDir->setEnabled(false);
@@ -124,7 +94,6 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
           try
           {
             p.packExternalFiles(); // pack
-            createRemoteDirectory();
             launchRemoteAnalysisServer();
           }
           catch (...) { exceptionEmitter(); }
@@ -183,7 +152,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
                                               }
                                               else
                                               {
-                                                removeRemoteDirectory();
+                                                remote_->cleanup();
                                               }
                                             }
                                             catch (...) { exceptionEmitter(); }
@@ -264,6 +233,14 @@ RemoteRun::~RemoteRun()
   af_->ui->cbRemoteRun->setEnabled(true);
   af_->recheckButtonAvailability();
 }
+
+
+
+insight::RemoteExecutionConfig& RemoteRun::remote()
+{
+  return *remote_;
+}
+
 
 
 void RemoteRun::onCancel()

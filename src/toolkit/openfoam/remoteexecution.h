@@ -10,28 +10,98 @@ namespace insight
 {
 
 
+
+
+bool hostAvailable(const std::string& host);
+
+
+
+
 class RemoteLocation
 {
 protected:
+    boost::filesystem::path launchScript_;
     std::string server_;
     boost::filesystem::path remoteDir_;
+    bool autoCreateRemoteDirRequired_;
+
+    bool isValid_;
 
     void runRsync
     (
         const std::vector<std::string>& args,
-        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+        std::function<void(int progress,const std::string& status_text)> progress_callback =
+            std::function<void(int,const std::string&)>()
     );
 
-public:
-    RemoteLocation(const RemoteLocation& orec);
-    RemoteLocation(const boost::filesystem::path& mf);
-    RemoteLocation(const std::string& hostName, const boost::filesystem::path& remoteDir);
+    virtual void launchHost();
+    virtual void validate();
+    virtual void removeRemoteDir();
+    virtual void disposeHost();
 
+    void initialize();
+
+    void assertValid() const;
+
+public:
+    /**
+     * @brief RemoteLocation
+     * copies configuration from another remote location container
+     * @param orec
+     */
+    RemoteLocation(const RemoteLocation& orec);
+
+    /**
+     * @brief RemoteLocation
+     * read settings of existing remote location from configuration file
+     * @param mf
+     */
+    RemoteLocation(const boost::filesystem::path& mf);
+
+    /**
+     * @brief RemoteLocation
+     * Construct from remote server info
+     * @param rsi
+     * remote server
+     * @param remoteRelPath
+     * directory (absolute on remote machine). If empty, it will be auto-created and its name can be queried using remoteDir().
+     */
+    RemoteLocation(const RemoteServerInfo& rsi, const boost::filesystem::path& remotePath);
+
+
+
+    // ====================================================================================
+    // ======== query functions
     const std::string& server() const;
     const boost::filesystem::path& remoteDir() const;
 
+
+    // ====================================================================================
+    // ======== init /deinit
+
+    void cleanup();
+
+    // ====================================================================================
+    // ======== query remote location
+
+    bool serverIsUp() const;
+    /**
+     * @brief remoteDirExists
+     * checks, if remote dir is existing
+     * @return
+     */
+    bool remoteDirExists() const;
+
     std::vector<bfs_path> remoteLS() const;
     std::vector<bfs_path> remoteSubdirs() const;
+
+
+
+
+    // ====================================================================================
+    // ======== action functions
+
+    virtual int execRemoteCmd(const std::string& cmd, bool throwOnFail=true);
 
     /**
      * @brief putFile
@@ -45,31 +115,47 @@ public:
     (
         const boost::filesystem::path& localFile,
         const boost::filesystem::path& remoteFileName,
-        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+        std::function<void(int progress,const std::string& status_text)> progress_callback =
+                            std::function<void(int,const std::string&)>()
     );
 
     virtual void syncToRemote
     (
         const boost::filesystem::path& localDir,
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
-        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+        std::function<void(int progress,const std::string& status_text)> progress_callback =
+                            std::function<void(int,const std::string&)>()
     );
     virtual void syncToLocal
     (
         const boost::filesystem::path& localDir,
         bool skipTimeSteps=false,
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
-        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+        std::function<void(int progress,const std::string& status_text)> progress_callback =
+                            std::function<void(int,const std::string&)>()
     );
 
-    virtual void removeRemoteDir();
 
-    /**
-     * @brief remoteDirExists
-     * checks, if remote dir is existing
-     * @return
-     */
-    bool remoteDirExists() const;
+    // ====================================================================================
+    // ======== queue commands
+
+    boost::filesystem::path socket() const;
+
+    void queueRemoteCommand(const std::string& command, bool waitForPreviousFinished=true);
+    void waitRemoteQueueFinished();
+    void waitLastCommandFinished();
+
+    void cancelRemoteCommands();
+
+
+    static void writeConfigFile(
+        const boost::filesystem::path& cfgf,
+        const std::string& server,
+        const boost::filesystem::path& remoteDir,
+        const boost::filesystem::path& launchScript = ""
+        );
+
+    bool isValid() const;
 };
 
 
@@ -79,16 +165,20 @@ class RemoteExecutionConfig
     : public RemoteLocation
 {
 protected:
-    bfs_path meta_file_;
+    boost::filesystem::path localREConfigFile_;
     boost::filesystem::path localDir_;
 
-    boost::filesystem::path socket() const;
-
-    void execRemoteCmd(const std::string& cmd);
 
 public:
     RemoteExecutionConfig(const RemoteExecutionConfig& orec);
-    RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig=true, const bfs_path& meta_file="");
+
+    RemoteExecutionConfig(const boost::filesystem::path& location,
+                          const boost::filesystem::path& localREConfigFile = "");
+
+    RemoteExecutionConfig(const RemoteServerInfo& rsi,
+                          const boost::filesystem::path& location,
+                          const boost::filesystem::path& remoteRelPath = "",
+                          const boost::filesystem::path& localREConfigFile = "");
 
     const boost::filesystem::path& localDir() const;
     const boost::filesystem::path& metaFile() const;
@@ -105,35 +195,27 @@ public:
     (
         const boost::filesystem::path& localFile,
         const boost::filesystem::path& remoteFileName,
-        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+        std::function<void(int progress,const std::string& status_text)> progress_callback =
+                            std::function<void(int,const std::string&)>()
     ) override;
 
     virtual void syncToRemote
     (
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
-        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+        std::function<void(int progress,const std::string& status_text)> progress_callback =
+                            std::function<void(int,const std::string&)>()
     );
 
     virtual void syncToLocal
     (
         bool skipTimeSteps=false,
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
-        std::function<void(int progress,const std::string& status_text)> progress_callback = std::function<void(int,const std::string&)>()
+        std::function<void(int progress,const std::string& status_text)> progress_callback =
+                            std::function<void(int,const std::string&)>()
     );
 
-    void queueRemoteCommand(const std::string& command, bool waitForPreviousFinished=true);
-    void waitRemoteQueueFinished();
-    void waitLastCommandFinished();
 
-    void cancelRemoteCommands();
-    void removeRemoteDir() override;
-
-    /**
-     * @brief isValid
-     * checks, if configuration data is valid (not if remote dir really exists)
-     * @return
-     */
-    bool isValid() const;
+    static boost::filesystem::path defaultConfigFile(const boost::filesystem::path& location);
 
 };
 

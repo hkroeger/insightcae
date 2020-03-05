@@ -764,7 +764,7 @@ void AnalysisForm::onCreateReport()
       this, 
     "Save Report",
     QString(ist_file_.parent_path().c_str()),
-    "PDF file (*.pdf);;LaTeX file (*.tex)"
+    "PDF file (*.pdf);;LaTeX file (*.tex);;InsightCAE result set (*.isr)"
   );
 
   if (!fn.isEmpty())
@@ -779,6 +779,10 @@ void AnalysisForm::onCreateReport()
     else if (boost::algorithm::to_lower_copy(ext)==".pdf")
       {
         results_->generatePDF( outpath );
+      }
+    else if (boost::algorithm::to_lower_copy(ext)==".isr")
+      {
+        results_->saveToFile ( outpath );
       }
     else
       {

@@ -23,6 +23,7 @@
 #include <dlfcn.h>
 
 #include "base/boost_include.h"
+#include "boost/asio.hpp"
 #include "base/exception.h"
 
 #include "vtkSTLReader.h"
@@ -35,6 +36,7 @@
 #include "vtkCellArray.h"
 #include "vtkTransform.h"
 #include "vtkTransformPolyDataFilter.h"
+
 
 using namespace std;
 using namespace boost;
@@ -647,6 +649,28 @@ string escapeShellSymbols(const string &expr)
   algorithm::replace_all(res, "\\", "\\\\");
   algorithm::replace_all(res, "$", "\\$");
   return res;
+}
+
+
+int findFreePort()
+{
+  using namespace boost::asio;
+  using ip::tcp;
+
+  io_service svc;
+  tcp::acceptor a(svc);
+
+  boost::system::error_code ec;
+  a.open(tcp::v4(), ec) || a.bind({ tcp::v4(), 0 }, ec);
+
+  if (ec == error::address_in_use)
+  {
+    throw insight::Exception("Could not find a free TCP/IP port on the local machine!");
+  }
+  else
+  {
+   return  a.local_endpoint().port(); //.address().to_string();
+  }
 }
 
 

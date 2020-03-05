@@ -1,13 +1,17 @@
+#include "base/tools.h"
+#include "openfoam/remoteexecution.h"
+
 #include "remoterun.h"
 #include "analysisform.h"
 #include "ui_analysisform.h"
 
-#include "openfoam/remoteexecution.h"
 
 #include <boost/chrono.hpp>
 #include <boost/thread/thread.hpp>
 #include "boost/process.hpp"
 
+using namespace std;
+using namespace boost;
 namespace bf=boost::filesystem;
 namespace bp=boost::process;
 
@@ -32,12 +36,7 @@ void RemoteRun::launchRemoteAnalysisServer()
 
 RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
   : WorkbenchAction(af),
-    resume_(resume),
-    ac_( "http://"
-         +af_->ui->hostList->currentText().toStdString()
-         +":"
-         +QString::number(af_->ui->portNum->value()).toStdString()
-         )
+    resume_(resume)
 {
   if (resume)
   {
@@ -63,6 +62,18 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
        )
     );
   }
+
+  int localPort = insight::findFreePort();
+  remote_->createTunnels(
+    {},
+    { {localPort, "localhost", af_->ui->portNum->value()} }
+  );
+
+  ac_.reset(
+        new insight::AnalyzeClient(
+          str(format("http://localhost:%d") % localPort)
+       )
+  );
 
   // lock UI
   af_->ui->label_2->setEnabled(false);
@@ -104,8 +115,8 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
             std::atomic<bool> runMonitor(true);
             while (runMonitor)
             {
-              if (!ac_.isBusy())
-                ac_.queryStatus(
+              if (!ac_->isBusy())
+                ac_->queryStatus(
                   [this,&runMonitor](bool success, insight::ProgressStatePtrList pis, bool resultsavail)
                   {
                     try {
@@ -126,7 +137,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
                       {
                         runMonitor=false;
 
-                        ac_.queryResults(
+                        ac_->queryResults(
 
                               [this](bool success, insight::ResultSetPtr results)
                               {
@@ -141,7 +152,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
 
                                     Q_EMIT finished( results );
 
-                                    ac_.exit(
+                                    ac_->exit(
                                           [this](bool success)
                                           {
                                             try
@@ -183,10 +194,10 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
           {
             std::cout<<"Start"<<std::endl;
 
-            if (!ac_.waitForContact())
+            if (!ac_->waitForContact())
               Q_EMIT failed( insight::Exception("Failed to contact analysis server after launch!") );
 
-            ac_.launchAnalysis(
+            ac_->launchAnalysis(
                   p, "/", af_->analysisName_,
 
                   [this](bool success)
@@ -257,7 +268,7 @@ void RemoteRun::onCancel()
             }
 
             // stop and exit
-            ac_.kill(
+            ac_->kill(
                   [=](bool success)
                   {
                     if (!success)

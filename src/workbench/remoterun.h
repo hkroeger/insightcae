@@ -16,7 +16,7 @@ class RemoteRun
   bool resume_;
   boost::thread workerThread_, cancelThread_;
   std::unique_ptr<insight::RemoteExecutionConfig> remote_;
-  insight::AnalyzeClient ac_;
+  std::unique_ptr<insight::AnalyzeClient> ac_;
 
   void launchRemoteAnalysisServer();
 

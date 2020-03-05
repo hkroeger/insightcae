@@ -16,6 +16,8 @@
 #include <regex>
 #include "rapidxml/rapidxml_print.hpp"
 
+#include <signal.h>
+
 using namespace std;
 using namespace boost;
 namespace bp = boost::process;
@@ -166,6 +168,63 @@ RemoteLocation::RemoteLocation(const RemoteServerInfo& rsi, const boost::filesys
   }
 
   initialize();
+}
+
+RemoteLocation::~RemoteLocation()
+{
+  stopTunnels();
+}
+
+void RemoteLocation::createTunnels(
+    std::vector<boost::tuple<int, string, int> > remoteListenPorts,
+    std::vector<boost::tuple<int, string, int> > localListenPorts
+    )
+{
+  std::vector<std::string> args = { "-N" };
+
+  for (const auto& rlp: remoteListenPorts)
+  {
+    args.insert(
+          std::end(args),
+          {"-R", str(format("%d:%s:%d") % get<0>(rlp) % get<1>(rlp) % get<2>(rlp)) }
+    );
+  }
+
+  for (const auto& llp: localListenPorts)
+  {
+    args.insert(
+          std::end(args),
+          {"-L", str(format("%d:%s:%d") % get<0>(llp) % get<1>(llp) % get<2>(llp)) }
+    );
+  }
+
+  args.push_back( server() );
+
+  tunnelProcesses_.push_back(
+      bp::child
+      (
+       bp::search_path("ssh"),
+       bp::args( args )
+      )
+        );
+}
+
+void RemoteLocation::stopTunnels()
+{
+  size_t i=0;
+  for (auto& t: tunnelProcesses_)
+  {
+    i++;
+    cout << "Stopping tunnel instance "<<i<<"/"<<tunnelProcesses_.size()<<"..." << endl;
+    //try graceful exit
+    kill(t.id(), SIGTERM);
+    if (!t.wait_for( std::chrono::seconds(10) ))
+    {
+      t.terminate();
+    }
+
+  }
+  tunnelProcesses_.clear();
 }
 
 
@@ -708,8 +767,11 @@ RemoteExecutionConfig::RemoteExecutionConfig(const RemoteServerInfo &rsi,
         server(),
         remoteDir(),
         rsi.hasLaunchScript_ ? rsi.server_ : ""
-  );
+                               );
 }
+
+RemoteExecutionConfig::~RemoteExecutionConfig()
+{}
 
 
 const boost::filesystem::path& RemoteExecutionConfig::localDir() const
@@ -720,6 +782,12 @@ const boost::filesystem::path& RemoteExecutionConfig::localDir() const
 const boost::filesystem::path& RemoteExecutionConfig::metaFile() const
 {
   return localREConfigFile_;
+}
+
+void RemoteExecutionConfig::cleanup()
+{
+  RemoteLocation::cleanup();
+  boost::filesystem::remove(metaFile());
 }
 
 

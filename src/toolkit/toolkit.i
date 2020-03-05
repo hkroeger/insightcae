@@ -188,6 +188,7 @@ using namespace insight::createPatchOps;
 %include "base/case.h"
 %include "base/caseelement.h"
 %include "base/linearalgebra.h"
+%include "base/tools.h"
 
 %include "openfoam/caseelements/boundarycondition.h"
 %include "openfoam/openfoamcase.h"

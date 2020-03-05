@@ -209,6 +209,8 @@ std::string collectIntoSingleCommand( const std::string& cmd, const std::vector<
 std::string escapeShellSymbols(const std::string& expr);
 
 
+int findFreePort();
+
 }
 
 #endif // TOOLS_H

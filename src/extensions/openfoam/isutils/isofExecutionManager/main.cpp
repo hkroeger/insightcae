@@ -247,12 +247,8 @@ int main(int argc, char *argv[])
 
       if(vm.count("clean"))
       {
-//        re.removeRemoteDir();
         re.cleanup();
-        boost::filesystem::remove(re.metaFile());
-
         return 0; // configuration is invalidated, exit here
-        //                    anything_done=true;
       }
 
       if (vm.count("remote-dir-for-mapping"))

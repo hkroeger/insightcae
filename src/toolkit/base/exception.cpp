@@ -186,9 +186,12 @@ void assertion(bool condition, const std::string& context_message)
 CurrentExceptionContext::CurrentExceptionContext(const std::string& desc, bool verbose)
 : desc_(desc)
 {
-  if (verbose)
+  if (getenv("INSIGHT_VERBOSE"))
   {
-    std::cout << desc << std::endl;
+    if (verbose)
+    {
+      std::cout << desc << std::endl;
+    }
   }
   exceptionContext.push_back(this);
 }

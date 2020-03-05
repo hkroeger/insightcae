@@ -27,6 +27,8 @@ protected:
 
     bool isValid_;
 
+    std::vector<boost::process::child> tunnelProcesses_;
+
     void runRsync
     (
         const std::vector<std::string>& args,
@@ -68,7 +70,31 @@ public:
      */
     RemoteLocation(const RemoteServerInfo& rsi, const boost::filesystem::path& remotePath);
 
+    virtual ~RemoteLocation();
 
+    /**
+     * @brief createTunnels
+     * create tunnels to remote location
+     * @param remoteListenPorts
+     * Will be translated to a subset of SSH's -R option:
+     * Specifies that connections to the given TCP port or Unix socket on the remote (server) host are to be
+     * forwarded to the local side.
+     * This works by allocating a socket to listen to either a TCP port or to a Unix socket on the remote side.
+     * -R localport:host:hostport
+     *
+     * @param localListenPorts
+     * Will be translated to a subset of SSH's -L option:
+     * Specifies that connections to the given TCP port or Unix socket on the local (client) host are to be
+     * forwarded to the given host and port, or Unix socket, on the remote side.
+     * -L localport:host:hostport
+     *
+     */
+    void createTunnels(
+        std::vector<boost::tuple<int,std::string,int> > remoteListenPorts = {},
+        std::vector<boost::tuple<int,std::string,int> > localListenPorts = {}
+        );
+
+    void stopTunnels();
 
     // ====================================================================================
     // ======== query functions
@@ -79,7 +105,7 @@ public:
     // ====================================================================================
     // ======== init /deinit
 
-    void cleanup();
+    virtual void cleanup();
 
     // ====================================================================================
     // ======== query remote location
@@ -180,8 +206,12 @@ public:
                           const boost::filesystem::path& remoteRelPath = "",
                           const boost::filesystem::path& localREConfigFile = "");
 
+    ~RemoteExecutionConfig();
+
     const boost::filesystem::path& localDir() const;
     const boost::filesystem::path& metaFile() const;
+
+    void cleanup() override;
 
     /**
      * @brief putFile

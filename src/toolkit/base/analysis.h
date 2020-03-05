@@ -85,7 +85,6 @@ protected:
 
     void extendSharedSearchPath ( const std::string& name );
 
-    virtual boost::filesystem::path setupExecutionEnvironment();
     virtual void setExecutionPath ( const boost::filesystem::path& exePath );
     virtual void setParameters ( const ParameterSet& p );
     
@@ -112,6 +111,8 @@ public:
      */
     Analysis(const std::string& name, const std::string& description, const ParameterSet& ps, const boost::filesystem::path& exePath );
     virtual ~Analysis();
+
+    virtual boost::filesystem::path setupExecutionEnvironment();
 
     virtual boost::filesystem::path executionPath() const;
     boost::filesystem::path createExecutionPathIfNonexistent();

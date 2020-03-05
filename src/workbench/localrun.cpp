@@ -30,8 +30,14 @@ LocalRun::LocalRun(AnalysisForm *af)
   af_->ui->btnDownload->setEnabled(false);
   af_->ui->btnRemoveRemote->setEnabled(false);
 
+  boost::filesystem::path exedir(af_->ui->localDir->text().toStdString());
   analysis_.reset( insight::Analysis::lookup(af_->analysisName_, af_->parameters_,
-                                             boost::filesystem::path(af_->ui->localDir->text().toStdString())) );
+                                             exedir) );
+
+  if (!exedir.empty() && !boost::filesystem::exists(exedir))
+      throw insight::Exception("Error: specified execution directory \""+exedir.string()+"\" has to exist!");
+
+  af_->ui->localDir->setText( QString::fromStdString(analysis_->setupExecutionEnvironment().string()) );
 
   af_->progdisp_->reset();
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);

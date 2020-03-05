@@ -22,8 +22,11 @@
      </item>
      <item>
       <widget class="QLineEdit" name="localDir">
+       <property name="toolTip">
+        <string>Given path has to exist. If left empty: unique directory will be created.</string>
+       </property>
        <property name="placeholderText">
-        <string>(if remains unset: unique directory will be created)</string>
+        <string>(auto create)</string>
        </property>
        <property name="clearButtonEnabled">
         <bool>true</bool>
@@ -161,6 +164,9 @@
        <property name="enabled">
         <bool>false</bool>
        </property>
+       <property name="toolTip">
+        <string>Given path has to exist. If left empty: unique directory will be created.</string>
+       </property>
        <property name="placeholderText">
         <string>(auto create)</string>
        </property>
@@ -261,8 +267,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>1447</width>
-              <height>899</height>
+              <width>1430</width>
+              <height>884</height>
              </rect>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">

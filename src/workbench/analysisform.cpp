@@ -191,6 +191,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
             [&]()
             {
               auto i = insight::remoteServers.find(ui->hostList->currentText().toStdString());
+
               if (i->second.isOnDemand())
               {
                 QMessageBox::critical(this, "Error", "Selected host is an on-demand host. Can only select directories on permanent hosts.");
@@ -246,15 +247,22 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
             {
               if (!nt.isEmpty())
               {
-                try
+                if (boost::filesystem::exists(
+                      insight::RemoteExecutionConfig::defaultConfigFile(currentExecutionPath(false)))
+                    )
                 {
-                  insight::RemoteExecutionConfig ec(currentExecutionPath(false));
-                  ui->cbRemoteRun->setCheckState(Qt::Checked);
-                  ui->hostList->setCurrentText(QString::fromStdString(ec.server()));
-                  ui->remoteDir->setText(QString::fromStdString(ec.remoteDir().string()));
+                  Q_EMIT statusMessage("Found remote location config. Validating now...");
+                  try
+                  {
+                    insight::RemoteExecutionConfig ec(currentExecutionPath(false));
+                    ui->cbRemoteRun->setCheckState(Qt::Checked);
+                    ui->hostList->setCurrentText(QString::fromStdString(ec.server()));
+                    ui->remoteDir->setText(QString::fromStdString(ec.remoteDir().string()));
+                    Q_EMIT statusMessage("Remote location configuration is valid.");
+                  }
+                  catch (...)
+                  {}
                 }
-                catch (...)
-                {}
               }
               recheckButtonAvailability();
               ui->cbDontKeepExeDir->setChecked( nt.isEmpty() ? Qt::Checked : Qt::Unchecked );

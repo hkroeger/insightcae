@@ -30,6 +30,12 @@ void MainWindow::updateGUI()
 
   if (remote_)
   {
+    bfs_path loc_dir=boost::filesystem::absolute(remote_->localDir());
+    setWindowTitle(QString(loc_dir.c_str())+" - InsightCAE Execution Manager");
+    ui->server->setText(remote_->server().c_str());
+    ui->localDir->setText(loc_dir.c_str());
+    ui->remoteDir->setText(remote_->remoteDir().c_str());
+
     terminal_->changeDir( ui->localDir->text() );
     auto cmd = QString("ssh ")+remote_->server().c_str()+" -t 'cd '"+remote_->remoteDir().c_str()+"'; bash -l'\n";
     terminal_->sendText(cmd);

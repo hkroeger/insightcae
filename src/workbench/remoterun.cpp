@@ -61,7 +61,10 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
          af->ui->remoteDir->text().toStdString()
        )
     );
+
   }
+
+  af->ui->remoteDir->setText( QString::fromStdString(remote_->remoteDir().string()) );
 
   int localPort = insight::findFreePort();
   remote_->createTunnels(

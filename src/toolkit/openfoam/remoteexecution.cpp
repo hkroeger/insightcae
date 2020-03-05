@@ -747,7 +747,8 @@ RemoteExecutionConfig::RemoteExecutionConfig(const RemoteExecutionConfig &o)
 
 
 
-RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location, const bfs_path& localREConfigFile)
+RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location,
+                                             const bfs_path& localREConfigFile)
   : RemoteLocation( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
     localREConfigFile_( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
     localDir_(location)

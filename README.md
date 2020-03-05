@@ -29,16 +29,23 @@ Installation
 
 See INSTALL.md
 
+Documentation
+-------------
+
+The documentation is hosted is a [separate repository](https://github.com/hkroeger/insightcae-documentation).
+
 Contribute
 ----------
 
 - [Issue Tracker](https://github.com/hkroeger/insightcae/issues)
 - [Source Code](https://github.com/hkroeger/insightcae)
 
+Contributions are very welcome! If you made any extensions or modifications, please send us a pull request!
+
 Support
 -------
 
-If you are having issues, please let us know.
+If you are having issues, please let us know through the issue tracker.
 We have a [forum located here](https://groups.google.com/forum/#!forum/insightcae)
 
 License

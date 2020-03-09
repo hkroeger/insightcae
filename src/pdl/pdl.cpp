@@ -83,7 +83,7 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
 {  
   r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
   r_description_string = (r_string | attr(""));
-  r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
+  r_identifier = lexeme[ alpha >> *(alnum | char_('_') | char_(':') ) >> !(alnum | '_' | ':') ];
   r_path = lexeme[ alpha >> *(alnum | char_('_') | char_('/') ) >> !(alnum | '_' | '/' ) ];
   r_up_to_semicolon = qi::as_string[ qi::lexeme [ *~(qi::char_(";")) >> ";" ] ];
 
@@ -262,7 +262,7 @@ int main ( int argc, char *argv[] )
           // declare variables and types
           for ( const ParameterSetEntry& pe: result )
           {
-            pe.second->writeCppHeader ( f, pe.first );
+            pe.second->writeCppHeader ( f, pe.first, "" );
           }
 
           f<<name<<"()"<<endl;
@@ -355,7 +355,8 @@ int main ( int argc, char *argv[] )
                 (
                   f,
                   "p",
-                  pe.first
+                  pe.first,
+                  ""
                   );
           }
           f<<addTo_makeDefault<<endl;

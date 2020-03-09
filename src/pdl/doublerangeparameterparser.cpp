@@ -21,7 +21,7 @@ std::string DoubleRangeParameterParser::Data::cppParamType(const std::string&) c
   return "insight::DoubleRangeParameter";
 }
 
-std::string DoubleRangeParameterParser::Data::cppValueRep(const std::string&) const
+std::string DoubleRangeParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope) const
 {
   std::ostringstream os;
   os<<"boost::assign::list_of";

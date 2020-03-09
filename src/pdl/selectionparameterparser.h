@@ -13,24 +13,26 @@ struct SelectionParameterParser
 
     Data(const std::vector<std::string>& sels, const std::string& sel, const std::string& d);
 
-    virtual std::string cppType(const std::string&) const;
-    virtual std::string cppTypeDecl(const std::string& name) const;
-    virtual std::string cppValueRep(const std::string& ) const;
+    std::string cppType(const std::string&) const override;
+    std::string cppTypeDecl(const std::string& name,
+                            const std::string& thisscope) const override;
+    std::string cppValueRep(const std::string& name, const std::string& thisscope ) const override;
 
-    virtual std::string cppParamType(const std::string& ) const;
+    std::string cppParamType(const std::string& ) const override;
 
-    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const;
+    void cppWriteCreateStatement(std::ostream& os, const std::string& name,
+                                 const std::string& thisscope) const override;
 
-    virtual void cppWriteSetStatement(
+    void cppWriteSetStatement(
         std::ostream& os,
         const std::string&,
         const std::string& varname,
         const std::string& staticname,
         const std::string&
-    ) const;
+    ) const override;
 
-    virtual void cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
-      const std::string& thisscope) const;
+    void cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
+      const std::string& thisscope) const override;
 
   };
 

@@ -17,13 +17,14 @@ std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppType
     return os.str();
 }
 
-std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppTypeDecl(const std::string& name) const
+std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppTypeDecl(const std::string& name,
+                                                                                     const std::string& thisscope) const
 {
     return std::string("struct "+cppTypeName(name)+" { std::string selection; ")+cppType(name)+" parameters; };";
 }
 
 
-std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppValueRep ( const std::string&  ) const
+std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppValueRep ( const std::string&, const std::string& thisscope  ) const
 {
   return "{ \""+default_sel_+"\", "+base_type+"::defaultParameters(\""+default_sel_+"\") }";
 }
@@ -34,7 +35,8 @@ std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppPara
     return "insight::SelectableSubsetParameter";
 };
 
-void DynamicClassParametersSelectableSubsetParameterParser::Data::cppWriteCreateStatement ( std::ostream& os, const std::string& name ) const
+void DynamicClassParametersSelectableSubsetParameterParser::Data::cppWriteCreateStatement ( std::ostream& os, const std::string& name,
+                                                                                            const std::string& thisscope ) const
 {
 
     os <<

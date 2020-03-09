@@ -12,7 +12,8 @@ std::string SelectionParameterParser::Data::cppType(const std::string&) const
   return "#error";
 }
 
-std::string SelectionParameterParser::Data::cppTypeDecl(const std::string& name) const
+std::string SelectionParameterParser::Data::cppTypeDecl(const std::string& name,
+                                                        const std::string& thisscope) const
 {
   std::ostringstream os;
   os<<"enum "<<cppTypeName(name)<<"\n{"<<endl;
@@ -25,9 +26,9 @@ std::string SelectionParameterParser::Data::cppTypeDecl(const std::string& name)
   os<<"};";
   return os.str();
 }
-std::string SelectionParameterParser::Data::cppValueRep(const std::string& ) const
+std::string SelectionParameterParser::Data::cppValueRep(const std::string& name, const std::string& thisscope) const
 {
-  return selection;
+  return extendtype(extendtype(thisscope, name+"_type"), selection);
 }
 
 std::string SelectionParameterParser::Data::cppParamType(const std::string& ) const
@@ -35,7 +36,8 @@ std::string SelectionParameterParser::Data::cppParamType(const std::string& ) co
   return "insight::SelectionParameter";
 }
 
-void SelectionParameterParser::Data::cppWriteCreateStatement(std::ostream& os, const std::string& name) const
+void SelectionParameterParser::Data::cppWriteCreateStatement(std::ostream& os, const std::string& name,
+                                                             const std::string& thisscope) const
 {
 
   os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;

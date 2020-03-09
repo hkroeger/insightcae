@@ -13,39 +13,41 @@ struct ArrayParameterParser
 
     Data(ParserDataBase::Ptr v, size_t n, const std::string& d);
 
-    virtual void cppAddHeader(std::set<std::string>& headers) const;
+    void cppAddHeader(std::set<std::string>& headers) const override;
 
-    virtual std::string cppValueRep(const std::string& name) const;
+    std::string cppValueRep(const std::string& name, const std::string& thisscope) const override;
 
-    virtual std::string cppType(const std::string& name) const;
+    std::string cppType(const std::string& name) const override;
 
-    virtual std::string cppTypeDecl ( const std::string& name ) const;
+    std::string cppTypeDecl ( const std::string& name,
+                              const std::string& thisscope ) const override;
 
-    virtual std::string cppParamType(const std::string& ) const;
+    std::string cppParamType(const std::string& ) const override;
 
-    virtual void cppWriteCreateStatement
+    void cppWriteCreateStatement
     (
         std::ostream& os,
-        const std::string& name
-    ) const;
+        const std::string& name,
+        const std::string& thisscope
+    ) const override;
 
-    virtual void cppWriteSetStatement
+    void cppWriteSetStatement
     (
         std::ostream& os,
         const std::string& name,
         const std::string& varname,
         const std::string& staticname,
         const std::string& thisscope
-    ) const;
+    ) const override;
 
-    virtual void cppWriteGetStatement
+    void cppWriteGetStatement
     (
         std::ostream& os,
         const std::string& name,
         const std::string& varname,
         const std::string& staticname,
         const std::string& thisscope
-    ) const;
+    ) const override;
 
   };
 

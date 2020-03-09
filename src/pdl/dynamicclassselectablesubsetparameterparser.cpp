@@ -16,7 +16,7 @@ std::string DynamicClassSelectableSubsetParameterParser::Data::cppType ( const s
     os << "std::shared_ptr<"<<base_type<<">";
     return os.str();
 }
-std::string DynamicClassSelectableSubsetParameterParser::Data::cppValueRep ( const std::string&  ) const
+std::string DynamicClassSelectableSubsetParameterParser::Data::cppValueRep ( const std::string&, const std::string& thisscope  ) const
 {
     return "#error";
 }
@@ -30,7 +30,8 @@ std::string DynamicClassSelectableSubsetParameterParser::Data::cppParamType ( co
 void DynamicClassSelectableSubsetParameterParser::Data::cppWriteCreateStatement
 (
     std::ostream& os,
-    const std::string& name
+    const std::string& name,
+    const std::string& thisscope
 ) const
 {
 

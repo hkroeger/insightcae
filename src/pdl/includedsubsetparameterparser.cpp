@@ -12,7 +12,7 @@ std::string IncludedSubsetParameterParser::Data::cppType(const std::string&) con
     return value;
 }
 
-std::string IncludedSubsetParameterParser::Data::cppValueRep(const std::string&) const
+std::string IncludedSubsetParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope) const
 {
     return value+"()";
 }
@@ -25,7 +25,8 @@ std::string IncludedSubsetParameterParser::Data::cppParamType(const std::string&
 void IncludedSubsetParameterParser::Data::cppWriteCreateStatement
 (
     std::ostream& os,
-    const std::string& name
+    const std::string& name,
+    const std::string& thisscope
 ) const
 {
     os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name
@@ -85,12 +86,13 @@ void IncludedSubsetParameterParser::Data::cppWriteInsertStatement
 (
     std::ostream& os,
     const std::string& psvarname,
-    const std::string& name
+    const std::string& name,
+    const std::string& thisscope
 ) const
 {
     os<<"{ ";
     os<<" std::string key(\""<<name<<"\"); ";
-    this->cppWriteCreateStatement(os, name);
+    this->cppWriteCreateStatement(os, name, extendtype(thisscope, name+"_type"));
 
     os<<" if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {\n";
     os<<  psvarname<<".getSubset(key).merge(*"<<name<<"); ";

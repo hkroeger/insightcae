@@ -46,9 +46,9 @@ written by writeCppHeader:
 void ParserDataBase::cppAddHeader(std::set<std::string>&) const
 {}
 
-std::string ParserDataBase::cppConstructorParameters(const std::string &name) const
+std::string ParserDataBase::cppConstructorParameters(const std::string &name, const std::string& thisscope) const
 {
-  return cppValueRep(name);
+  return cppValueRep(name, thisscope);
 }
 
 
@@ -57,14 +57,16 @@ std::string ParserDataBase::cppTypeName(const std::string& name) const
     return name+"_type";
 }
 
-std::string ParserDataBase::cppTypeDecl(const std::string& name) const
+std::string ParserDataBase::cppTypeDecl(const std::string& name,
+                                        const std::string& thisscope) const
 {
     return std::string("typedef ")+cppType(name)+" "+cppTypeName(name)+";";
 }
 
-void ParserDataBase::writeCppHeader(std::ostream& os, const std::string& name) const
+void ParserDataBase::writeCppHeader(std::ostream& os, const std::string& name,
+                                    const std::string& thisscope) const
 {
-    os<<cppTypeDecl(name)<<std::endl;
+    os<<cppTypeDecl(name, thisscope)<<std::endl;
     os<<cppTypeName(name)+" "<<name<<";"<<std::endl;
 }
 
@@ -74,11 +76,12 @@ void ParserDataBase::writeCppHeader(std::ostream& os, const std::string& name) c
 void ParserDataBase::cppWriteCreateStatement
 (
     std::ostream& os,
-    const std::string& name
+    const std::string& name,
+    const std::string& thisscope
 ) const
 {
     os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<"("
-      "new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description
+      "new "<<cppParamType(name)<<"("<<cppValueRep(name, thisscope)<<", \""<<description
       <<"\", "
       << (isHidden?"true":"false")<<","
       << (isExpert?"true":"false")<<","
@@ -95,12 +98,13 @@ void ParserDataBase::cppWriteInsertStatement
 (
     std::ostream& os,
     const std::string& psvarname,
-    const std::string& name
+    const std::string& name,
+    const std::string& thisscope
 ) const
 {
     os<<"{ ";
     os<<"std::string key(\""<<name<<"\"); ";
-    this->cppWriteCreateStatement(os, name);
+    this->cppWriteCreateStatement(os, name, thisscope);
     os<<psvarname<<".emplace(key, std::move("<<name<<")); ";
     os<<"}"<<std::endl;
 }

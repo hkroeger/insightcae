@@ -45,7 +45,7 @@ std::string MatrixParameterParser::Data::cppParamType(const std::string& ) const
   return "insight::MatrixParameter";
 }
 
-std::string MatrixParameterParser::Data::cppValueRep(const std::string& ) const
+std::string MatrixParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope ) const
 {
   std::ostringstream os;
   os<<"arma::mat(boost::assign::list_of";
@@ -62,7 +62,8 @@ std::string MatrixParameterParser::Data::cppValueRep(const std::string& ) const
 
 void MatrixParameterParser::Data::cppWriteCreateStatement
 (
-    std::ostream& os, const std::string& name
+    std::ostream& os, const std::string& name,
+    const std::string& thisscope
 ) const
 {
 

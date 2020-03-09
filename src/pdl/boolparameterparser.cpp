@@ -17,7 +17,7 @@ std::string BoolParameterParser::Data::cppParamType(const std::string&) const
   return "insight::BoolParameter";
 }
 
-std::string BoolParameterParser::Data::cppValueRep(const std::string&) const
+std::string BoolParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope) const
 {
   return boost::lexical_cast<std::string>(value);
 }

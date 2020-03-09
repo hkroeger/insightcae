@@ -20,43 +20,45 @@ struct IncludedSubsetParameterParser
 
         Data(const std::string& v, const std::string& d, const DefaultValueModifications& defmod);
 
-        virtual std::string cppType(const std::string&) const;
+        std::string cppType(const std::string&) const override;
 
-        virtual std::string cppValueRep(const std::string& ) const;
+        std::string cppValueRep(const std::string&, const std::string& thisscope ) const override;
 
-        virtual std::string cppParamType(const std::string& ) const;
+        std::string cppParamType(const std::string& ) const override;
 
-        virtual void cppWriteCreateStatement
+        void cppWriteCreateStatement
         (
             std::ostream& os,
-            const std::string& name
-        ) const;
+            const std::string& name,
+            const std::string& thisscope
+        ) const override;
 
-        virtual void cppWriteInsertStatement
+        void cppWriteInsertStatement
         (
             std::ostream& os,
             const std::string& psvarname,
-            const std::string& name
-        ) const;
+            const std::string& name,
+            const std::string& thisscope
+        ) const override;
 
 
-        virtual void cppWriteSetStatement
+        void cppWriteSetStatement
         (
             std::ostream& os,
             const std::string& ,
             const std::string& varname,
             const std::string& staticname,
             const std::string&
-        ) const;
+        ) const override;
 
-        virtual void cppWriteGetStatement
+        void cppWriteGetStatement
         (
             std::ostream& os,
             const std::string& ,
             const std::string& varname,
             const std::string& staticname,
             const std::string&
-        ) const;
+        ) const override;
 
     };
 

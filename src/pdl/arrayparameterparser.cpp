@@ -12,14 +12,14 @@ void ArrayParameterParser::Data::cppAddHeader(std::set<std::string>& headers) co
   value->cppAddHeader(headers);
 }
 
-std::string ArrayParameterParser::Data::cppValueRep(const std::string& name) const
+std::string ArrayParameterParser::Data::cppValueRep(const std::string& name, const std::string& thisscope) const
 {
   std::ostringstream rep;
   rep << "{";
   for (size_t i=0; i<num; i++)
   {
     if (i>0) rep<<",";
-    rep << value->cppConstructorParameters(name+"_default") ;
+    rep << value->cppConstructorParameters(name+"_default", thisscope) ;
   }
   rep << "}";
   return rep.str();
@@ -30,12 +30,13 @@ std::string ArrayParameterParser::Data::cppType(const std::string& name) const
   return "std::vector<"+value->cppTypeName(name+"_default")+">";
 }
 
-std::string ArrayParameterParser::Data::cppTypeDecl ( const std::string& name ) const
+std::string ArrayParameterParser::Data::cppTypeDecl ( const std::string& name,
+                                                      const std::string& thisscope ) const
 {
   return
-    value->cppTypeDecl ( name+"_default" )
+    value->cppTypeDecl ( name+"_default", thisscope )
     +"\n"
-    +ParserDataBase::cppTypeDecl ( name );
+    +ParserDataBase::cppTypeDecl ( name, thisscope );
 }
 
 std::string ArrayParameterParser::Data::cppParamType(const std::string& ) const
@@ -46,7 +47,8 @@ std::string ArrayParameterParser::Data::cppParamType(const std::string& ) const
 void ArrayParameterParser::Data::cppWriteCreateStatement
 (
     std::ostream& os,
-    const std::string& name
+    const std::string& name,
+    const std::string& thisscope
 ) const
 {
 
@@ -55,7 +57,7 @@ void ArrayParameterParser::Data::cppWriteCreateStatement
   os<<"{"<<endl;
   value->cppWriteCreateStatement
   (
-    os, name+"_default_value"
+    os, name+"_default_value", thisscope
   );
   os<<name<<"->setDefaultValue(*"<<name<<"_default_value.release());"<<endl;
   if (num>0)

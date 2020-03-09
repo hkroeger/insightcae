@@ -12,11 +12,11 @@ struct DoubleParameterParser
 
     Data(double v, const std::string& d);
 
-    virtual std::string cppType(const std::string&) const;
+    std::string cppType(const std::string&) const override;
 
-    virtual std::string cppParamType(const std::string&) const;
+    std::string cppParamType(const std::string&) const override;
 
-    virtual std::string cppValueRep(const std::string&) const;
+    std::string cppValueRep(const std::string&, const std::string& thisscope) const override;
   };
 
   template <typename Iterator, typename Skipper = skip_grammar<Iterator> >

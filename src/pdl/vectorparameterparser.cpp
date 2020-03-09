@@ -21,7 +21,7 @@ std::string VectorParameterParser::Data::cppParamType(const std::string& ) const
   return "insight::VectorParameter";
 }
 
-std::string VectorParameterParser::Data::cppValueRep(const std::string& ) const
+std::string VectorParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope ) const
 {
   std::ostringstream os;
   os<<"arma::mat(boost::assign::list_of";

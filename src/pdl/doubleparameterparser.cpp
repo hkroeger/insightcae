@@ -17,7 +17,7 @@ std::string DoubleParameterParser::Data::cppParamType(const std::string&) const
   return "insight::DoubleParameter";
 }
 
-std::string DoubleParameterParser::Data::cppValueRep(const std::string&) const
+std::string DoubleParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope) const
 {
   return boost::lexical_cast<std::string>(value);
 }

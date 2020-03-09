@@ -28,23 +28,24 @@ std::string SelectableSubsetParameterParser::Data::cppType ( const std::string& 
     return os.str();
 }
 
-std::string SelectableSubsetParameterParser::Data::cppValueRep ( const std::string&  name) const
+std::string SelectableSubsetParameterParser::Data::cppValueRep ( const std::string&  name, const std::string& thisscope) const
 {
-    return name + "_" + default_sel+"_type()";
+    return extendtype(thisscope, name + "_" + default_sel+"_type()");
 }
 
-std::string SelectableSubsetParameterParser::Data::cppTypeDecl ( const std::string& name ) const
+std::string SelectableSubsetParameterParser::Data::cppTypeDecl ( const std::string& name,
+                                                                 const std::string& thisscope ) const
 {
     std::ostringstream os;
     for ( const SubsetData& pe: value )
     {
         std::string tname= ( name+"_"+boost::fusion::get<0> ( pe ) );
         ParserDataBase::Ptr pd=boost::fusion::get<1> ( pe );
-        os<<pd->cppTypeDecl ( tname ) <<endl;
+        os<<pd->cppTypeDecl ( tname, thisscope ) <<endl;
     }
     return
         os.str()+"\n"
-        +ParserDataBase::cppTypeDecl ( name );
+        +ParserDataBase::cppTypeDecl ( name, thisscope );
 }
 
 std::string SelectableSubsetParameterParser::Data::cppParamType ( const std::string&  ) const
@@ -55,7 +56,8 @@ std::string SelectableSubsetParameterParser::Data::cppParamType ( const std::str
 void SelectableSubsetParameterParser::Data::cppWriteCreateStatement
 (
     std::ostream& os,
-    const std::string& name
+    const std::string& name,
+    const std::string& thisscope
 ) const
 {
 
@@ -71,7 +73,7 @@ void SelectableSubsetParameterParser::Data::cppWriteCreateStatement
         os<<"{"<<endl;
           pd->cppWriteCreateStatement
           (
-              os, sel_name
+              os, sel_name, extendtype(thisscope, name+"_"+sel_name+"_type")
           );
         os<<name<<"_selection.push_back(insight::SelectableSubsetParameter::SingleSubset(\""<<sel_name<<"\", "<<sel_name<<".release()));"<<endl;
         os<<"}"<<endl;

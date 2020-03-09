@@ -14,15 +14,16 @@ struct PathParameterParser
 
     Data(const boost::filesystem::path& v, const std::string& d);
 
-    virtual void cppAddHeader(std::set< std::string >& headers) const;
+    void cppAddHeader(std::set< std::string >& headers) const override;
 
-    virtual std::string cppType(const std::string&) const;
+    std::string cppType(const std::string&) const override;
 
-    virtual std::string cppParamType(const std::string& ) const;
+    std::string cppParamType(const std::string& ) const override;
 
-    virtual std::string cppValueRep(const std::string& ) const;
+    std::string cppValueRep(const std::string&, const std::string& thisscope ) const override;
 
-    virtual std::string cppConstructorParameters(const std::string &name) const;
+    std::string cppConstructorParameters(const std::string &name,
+                                         const std::string& thisscope) const override;
 
     void cppWriteSetStatement
     (
@@ -31,7 +32,7 @@ struct PathParameterParser
         const std::string& varname,
         const std::string& staticname,
         const std::string&
-    ) const;
+    ) const override;
 
 
     void cppWriteGetStatement
@@ -41,7 +42,7 @@ struct PathParameterParser
         const std::string& varname,
         const std::string& staticname,
         const std::string&
-    ) const;
+    ) const override;
 
   };
 

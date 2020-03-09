@@ -22,12 +22,13 @@ std::string PathParameterParser::Data::cppParamType(const std::string& ) const
   return "insight::PathParameter";
 }
 
-std::string PathParameterParser::Data::cppValueRep(const std::string& name) const
+std::string PathParameterParser::Data::cppValueRep(const std::string& name, const std::string& thisscope) const
 {
   return "\""+value.string()+"\"";
 }
 
-std::string PathParameterParser::Data::cppConstructorParameters(const std::string &name) const
+std::string PathParameterParser::Data::cppConstructorParameters(const std::string &name,
+                                                                const std::string& thisscope) const
 {
   return cppType(name)+"(new "
     + cppParamType(name)

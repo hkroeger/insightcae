@@ -20,16 +20,19 @@ std::string SubsetParameterParser::Data::cppType(const std::string&) const
     return "";
 }
 
-std::string SubsetParameterParser::Data::cppTypeDecl(const std::string& name) const
+std::string SubsetParameterParser::Data::cppTypeDecl(const std::string& name,
+                                                     const std::string& thisscope) const
 {
     std::ostringstream os;
     std::string structname = cppTypeName(name);
+    std::string subscope = extendtype(thisscope, name+"_type");
+
     os<<"struct "<<structname<<"\n{"<<endl;
     // members
     for (const ParameterSetEntry& pe: value)
     {
                                       /* name */
-        pe.second->writeCppHeader(os, pe.first);
+        pe.second->writeCppHeader( os, pe.first, subscope );
     }
 
     // default constructor
@@ -41,7 +44,7 @@ std::string SubsetParameterParser::Data::cppTypeDecl(const std::string& name) co
       for (const ParameterSetEntry& pe: value)
       {
           if (!first) os<<",\n"; else first=false;
-          os << pe.first<<"("<<(pe.second->cppConstructorParameters(pe.first))<<")";
+          os << pe.first<<"("<<(pe.second->cppConstructorParameters(pe.first, subscope))<<")";
       }
     }
     os <<"{}\n";
@@ -74,7 +77,7 @@ std::string SubsetParameterParser::Data::cppTypeDecl(const std::string& name) co
     return os.str();
 }
 
-std::string SubsetParameterParser::Data::cppValueRep(const std::string& ) const
+std::string SubsetParameterParser::Data::cppValueRep(const std::string& name, const std::string& thisscope ) const
 {
     //return "#error";
   std::ostringstream rep;
@@ -85,7 +88,7 @@ std::string SubsetParameterParser::Data::cppValueRep(const std::string& ) const
     for (const ParameterSetEntry& pe: value)
     {
         if (!first) rep<<",\n"; else first=false;
-        rep <<(pe.second->cppConstructorParameters(pe.first));
+        rep <<(pe.second->cppConstructorParameters(pe.first, extendtype(thisscope, name+"_type")));
     }
     rep<<"}";
   }
@@ -101,12 +104,13 @@ void SubsetParameterParser::Data::cppWriteInsertStatement
 (
     std::ostream& os,
     const std::string& psvarname,
-    const std::string& name
+    const std::string& name,
+    const std::string& thisscope
 ) const
 {
     os<<"{ ";
     os<<"std::string key(\""<<name<<"\"); ";
-    this->cppWriteCreateStatement(os, name);
+    this->cppWriteCreateStatement(os, name, extendtype(thisscope, name+"_type"));
     os<<"if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {"<<endl;
     os<<psvarname<<".getSubset(key).merge(*"<<name<<"); ";
     os<<"} else {"<<endl;
@@ -118,7 +122,8 @@ void SubsetParameterParser::Data::cppWriteInsertStatement
 void SubsetParameterParser::Data::cppWriteCreateStatement
 (
     std::ostream& os,
-    const std::string& name
+    const std::string& name,
+    const std::string& thisscope
 ) const
 {
     os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;
@@ -129,7 +134,8 @@ void SubsetParameterParser::Data::cppWriteCreateStatement
         (
             os,
             "(*"+name+")()",
-            pe.first
+            pe.first,
+            extendtype(thisscope, name+"_type")
         );
     }
     os<<"}"<<endl;

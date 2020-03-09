@@ -21,7 +21,7 @@ std::string StringParameterParser::Data::cppParamType(const std::string& ) const
   return "insight::StringParameter";
 }
 
-std::string StringParameterParser::Data::cppValueRep(const std::string& ) const
+std::string StringParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope ) const
 {
   return "\""+boost::lexical_cast<std::string>(value)+"\"";
 }

@@ -144,12 +144,14 @@ public:
 
     virtual std::string cppParamType(const std::string& name) const =0;
     virtual std::string cppType(const std::string& name) const =0;
-    virtual std::string cppValueRep(const std::string& name) const =0;
-    virtual std::string cppConstructorParameters(const std::string& name) const;
+    virtual std::string cppValueRep(const std::string& name, const std::string& thisscope) const =0;
+    virtual std::string cppConstructorParameters(const std::string& name, const std::string& thisscope) const;
     virtual std::string cppTypeName(const std::string& name) const;
-    virtual std::string cppTypeDecl(const std::string& name) const;
+    virtual std::string cppTypeDecl(const std::string& name,
+                                    const std::string& thisscope) const;
 
-    virtual void writeCppHeader(std::ostream& os, const std::string& name) const;
+    virtual void writeCppHeader(std::ostream& os, const std::string& name,
+                                const std::string& thisscope) const;
 
     /**
      * write the code to create a new parameter object for the dynamic parameter set
@@ -157,7 +159,8 @@ public:
     virtual void cppWriteCreateStatement
     (
         std::ostream& os,
-        const std::string& name
+        const std::string& name,
+        const std::string& thisscope
     ) const;
 
     /**
@@ -167,7 +170,8 @@ public:
     (
         std::ostream& os,
         const std::string& psvarname,
-        const std::string& name
+        const std::string& name,
+        const std::string& thisscope
     ) const;
 
     /**

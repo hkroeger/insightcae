@@ -16,34 +16,35 @@ struct DynamicClassSelectableSubsetParameterParser {
 
         Data ( const std::string& base,  const std::string& default_sel, const std::string& d );
 
-        virtual void cppAddHeader ( std::set<std::string>&  ) const;
-        virtual std::string cppType ( const std::string&  ) const;
-        virtual std::string cppValueRep ( const std::string&  ) const;
-        virtual std::string cppParamType ( const std::string&  ) const;
+        void cppAddHeader ( std::set<std::string>&  ) const override;
+        std::string cppType ( const std::string&  ) const override;
+        std::string cppValueRep ( const std::string&, const std::string& thisscope  ) const override;
+        std::string cppParamType ( const std::string&  ) const;
 
-        virtual void cppWriteCreateStatement
+        void cppWriteCreateStatement
         (
             std::ostream& os,
-            const std::string& name
-        ) const;
+            const std::string& name,
+            const std::string& thisscope
+        ) const override;
 
-        virtual void cppWriteSetStatement
-        (
-            std::ostream& os,
-            const std::string& ,
-            const std::string& varname,
-            const std::string& staticname,
-            const std::string&
-        ) const;
-
-        virtual void cppWriteGetStatement
+        void cppWriteSetStatement
         (
             std::ostream& os,
             const std::string& ,
             const std::string& varname,
             const std::string& staticname,
             const std::string&
-        ) const;
+        ) const override;
+
+        void cppWriteGetStatement
+        (
+            std::ostream& os,
+            const std::string& ,
+            const std::string& varname,
+            const std::string& staticname,
+            const std::string&
+        ) const override;
     };
 
 

@@ -18,8 +18,6 @@ namespace turbulenceBC
 {
 
 defineType(turbulenceBC);
-// defineFactoryTable(turbulenceBC, LIST(const ParameterSet& ps), LIST(ps));
-// defineStaticFunctionTable(turbulenceBC, defaultParameters, ParameterSet);
 defineDynamicClass(turbulenceBC);
 
 

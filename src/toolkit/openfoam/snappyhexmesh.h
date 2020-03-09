@@ -173,6 +173,7 @@ scale = vector (1 1 1) "Geometry scaling factor for each spatial direction"
 translate = vector (0 0 0) "Translation vector"
 rollPitchYaw = vector (0 0 0) "Euler angles around X, Y and Z axis respectively"
 level = int 4 "Refinement level at curve"
+distance = double 0 "Refinement distance"
 
 <<<PARAMETERSET
 */

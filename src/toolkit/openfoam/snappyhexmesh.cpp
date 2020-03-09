@@ -190,7 +190,7 @@ void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict refdict;
   refdict["file"]=std::string("\"")+p_.fileName->fileName().c_str()+"\"";
-  refdict["level"]=p_.level;
+  refdict["levels"]=OFDictData::list( {OFDictData::list({p_.distance, p_.level}) });
   sHMDict.subDict("castellatedMeshControls").getList("features").push_back(refdict);
 
 }

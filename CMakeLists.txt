@@ -757,7 +757,7 @@ endmacro()
 
 macro (get_python_install_path PATHVARNAME INSTALL_PREFIX)
  execute_process(
-    COMMAND python -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${INSTALL_PREFIX}' ) )"
+	 COMMAND python -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=False, prefix='${INSTALL_PREFIX}' ) )"
     OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
     OUTPUT_STRIP_TRAILING_WHITESPACE
  )

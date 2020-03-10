@@ -21,17 +21,16 @@
 
 */
 
+#include <QtDebug>
+
 // Own
 #include "BlockArray.h"
 
 // System
-#include <assert.h>
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <unistd.h>
-#include <stdio.h>
-
-#include <QDebug>
+#include <cstdio>
 
 
 using namespace Konsole;
@@ -42,9 +41,9 @@ BlockArray::BlockArray()
         : size(0),
         current(size_t(-1)),
         index(size_t(-1)),
-        lastmap(0),
+        lastmap(nullptr),
         lastmap_index(size_t(-1)),
-        lastblock(0), ion(-1),
+        lastblock(nullptr), ion(-1),
         length(0)
 {
     // lastmap_index = index = current = size_t(-1);
@@ -57,7 +56,7 @@ BlockArray::BlockArray()
 BlockArray::~BlockArray()
 {
     setHistorySize(0);
-    assert(!lastblock);
+    Q_ASSERT(!lastblock);
 }
 
 size_t BlockArray::append(Block * block)
@@ -139,7 +138,7 @@ const Block * BlockArray::at(size_t i)
 
     if (i > index) {
         qDebug() << "BlockArray::at() i > index\n";
-        return 0;
+        return nullptr;
     }
 
 //     if (index - i >= length) {
@@ -149,14 +148,14 @@ const Block * BlockArray::at(size_t i)
 
     size_t j = i; // (current - (index - i) + (index/size+1)*size) % size ;
 
-    assert(j < size);
+    Q_ASSERT(j < size);
     unmap();
 
-    Block * block = (Block *)mmap(0, blocksize, PROT_READ, MAP_PRIVATE, ion, j * blocksize);
+    Block * block = (Block *)mmap(nullptr, blocksize, PROT_READ, MAP_PRIVATE, ion, j * blocksize);
 
     if (block == (Block *)-1) {
         perror("mmap");
-        return 0;
+        return nullptr;
     }
 
     lastmap = block;
@@ -173,7 +172,7 @@ void BlockArray::unmap()
             perror("munmap");
         }
     }
-    lastmap = 0;
+    lastmap = nullptr;
     lastmap_index = size_t(-1);
 }
 
@@ -194,7 +193,7 @@ bool BlockArray::setHistorySize(size_t newsize)
 
     if (!newsize) {
         delete lastblock;
-        lastblock = 0;
+        lastblock = nullptr;
         if (ion >= 0) {
             close(ion);
         }
@@ -218,7 +217,7 @@ bool BlockArray::setHistorySize(size_t newsize)
             return false;
         }
 
-        assert(!lastblock);
+        Q_ASSERT(!lastblock);
 
         lastblock = new Block();
         size = newsize;

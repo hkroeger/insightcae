@@ -26,8 +26,7 @@
 #include "Session.h"
 
 // Standard
-#include <assert.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 // Qt
 #include <QApplication>
@@ -37,7 +36,7 @@
 #include <QRegExp>
 #include <QStringList>
 #include <QFile>
-#include <QtCore>
+#include <QtDebug>
 
 #include "Pty.h"
 //#include "kptyprocess.h"
@@ -49,15 +48,17 @@ using namespace Konsole;
 
 int Session::lastSessionId = 0;
 
-Session::Session() :
-        _shellProcess(0)
-        , _emulation(0)
+Session::Session(QObject* parent) :
+    QObject(parent),
+        _shellProcess(nullptr)
+        , _emulation(nullptr)
         , _monitorActivity(false)
         , _monitorSilence(false)
         , _notifiedActivity(false)
         , _autoClose(true)
         , _wantedClose(false)
         , _silenceSeconds(10)
+        , _isTitleChanged(false)
         , _addToUtmp(false)  // disabled by default because of a bug encountered on certain systems
         // which caused Konsole to hang when closing a tab and then opening a new
         // one.  A 'QProcess destroyed while still running' warning was being
@@ -78,6 +79,7 @@ Session::Session() :
 
     //create teletype for I/O with shell process
     _shellProcess = new Pty();
+    ptySlaveFd = _shellProcess->pty()->slaveFd();
 
     //create emulation backend
     _emulation = new Vt102Emulation();
@@ -92,9 +94,13 @@ Session::Session() :
              this, SIGNAL( changeTabTextColorRequest( int ) ) );
     connect( _emulation, SIGNAL(profileChangeCommandReceived(const QString &)),
              this, SIGNAL( profileChangeCommandReceived(const QString &)) );
-    // TODO
-    // connect( _emulation,SIGNAL(imageSizeChanged(int,int)) , this ,
-    //        SLOT(onEmulationSizeChange(int,int)) );
+
+    connect(_emulation, SIGNAL(imageResizeRequest(QSize)),
+            this, SLOT(onEmulationSizeChange(QSize)));
+    connect(_emulation, SIGNAL(imageSizeChanged(int, int)),
+            this, SLOT(onViewSizeChange(int, int)));
+    connect(_emulation, &Vt102Emulation::cursorChanged,
+            this, &Session::cursorChanged);
 
     //connect teletype to emulation backend
     _shellProcess->setUtf8Mode(_emulation->utf8());
@@ -117,31 +123,11 @@ Session::Session() :
 
 WId Session::windowId() const
 {
-    // Returns a window ID for this session which is used
-    // to set the WINDOWID environment variable in the shell
-    // process.
-    //
-    // Sessions can have multiple views or no views, which means
-    // that a single ID is not always going to be accurate.
-    //
-    // If there are no views, the window ID is just 0.  If
-    // there are multiple views, then the window ID for the
-    // top-level window which contains the first view is
-    // returned
-
-    if ( _views.count() == 0 ) {
-        return 0;
-    } else {
-        QWidget * window = _views.first();
-
-        Q_ASSERT( window );
-
-        while ( window->parentWidget() != 0 ) {
-            window = window->parentWidget();
-        }
-
-        return window->winId();
-    }
+    // On Qt5, requesting window IDs breaks QQuickWidget and the likes,
+    // for example, see the following bug reports:
+    // https://bugreports.qt.io/browse/QTBUG-40765
+    // https://codereview.qt-project.org/#/c/94880/
+    return 0;
 }
 
 void Session::setDarkBackground(bool darkBackground)
@@ -186,7 +172,7 @@ void Session::addView(TerminalDisplay * widget)
 
     _views.append(widget);
 
-    if ( _emulation != 0 ) {
+    if ( _emulation != nullptr ) {
         // connect emulation - view signals and slots
         connect( widget , SIGNAL(keyPressedSignal(QKeyEvent *)) , _emulation ,
                  SLOT(sendKeyEvent(QKeyEvent *)) );
@@ -201,6 +187,11 @@ void Session::addView(TerminalDisplay * widget)
                  SLOT(setUsesMouse(bool)) );
 
         widget->setUsesMouse( _emulation->programUsesMouse() );
+
+        connect( _emulation , SIGNAL(programBracketedPasteModeChanged(bool)) ,
+                 widget , SLOT(setBracketedPasteMode(bool)) );
+
+        widget->setBracketedPasteMode(_emulation->programBracketedPasteMode());
 
         widget->setScreenWindow(_emulation->createWindow());
     }
@@ -229,19 +220,19 @@ void Session::removeView(TerminalDisplay * widget)
 {
     _views.removeAll(widget);
 
-    disconnect(widget,0,this,0);
+    disconnect(widget,nullptr,this,nullptr);
 
-    if ( _emulation != 0 ) {
+    if ( _emulation != nullptr ) {
         // disconnect
         //  - key presses signals from widget
         //  - mouse activity signals from widget
         //  - string sending signals from widget
         //
         //  ... and any other signals connected in addView()
-        disconnect( widget, 0, _emulation, 0);
+        disconnect( widget, nullptr, _emulation, nullptr);
 
         // disconnect state change signals emitted by emulation
-        disconnect( _emulation , 0 , widget , 0);
+        disconnect( _emulation , nullptr , widget , nullptr);
     }
 
     // close the session automatically when the last view is removed
@@ -252,24 +243,8 @@ void Session::removeView(TerminalDisplay * widget)
 
 void Session::run()
 {
-    //check that everything is in place to run the session
-    if (_program.isEmpty()) {
-        qDebug() << "Session::run() - program to run not set.";
-    }
-    else {
-        qDebug() << "Session::run() - program:" << _program;
-    }
-
-    if (_arguments.isEmpty()) {
-        qDebug() << "Session::run() - no command line arguments specified.";
-    }
-    else {
-        qDebug() << "Session::run() - arguments:" << _arguments;
-    }
-
     // Upon a KPty error, there is no description on what that error was...
     // Check to see if the given program is executable.
-
 
     /* ok iam not exactly sure where _program comes from - however it was set to /bin/bash on my system
      * Thats bad for BSD as its /usr/local/bin/bash there - its also bad for arch as its /usr/bin/bash there too!
@@ -277,28 +252,31 @@ void Session::run()
      * As far as i know /bin/sh exists on every unix system.. You could also just put some ifdef __FREEBSD__ here but i think these 2 filechecks are worth
      * their computing time on any system - especially with the problem on arch linux beeing there too.
      */
-    QString exec = QFile::encodeName(_program);
+    QString exec = QString::fromLocal8Bit(QFile::encodeName(_program));
     // if 'exec' is not specified, fall back to default shell.  if that
     // is not set then fall back to /bin/sh
 
     // here we expect full path. If there is no fullpath let's expect it's
     // a custom shell (eg. python, etc.) available in the PATH.
-    if (exec.startsWith("/"))
+    if (exec.startsWith(QLatin1Char('/')) || exec.isEmpty())
     {
+        const QString defaultShell{QLatin1String("/bin/sh")};
+
         QFile excheck(exec);
         if ( exec.isEmpty() || !excheck.exists() ) {
-            exec = getenv("SHELL");
+            exec = QString::fromLocal8Bit(qgetenv("SHELL"));
         }
         excheck.setFileName(exec);
 
         if ( exec.isEmpty() || !excheck.exists() ) {
-            exec = "/bin/sh";
+            qWarning() << "Neither default shell nor $SHELL is set to a correct path. Fallback to" << defaultShell;
+            exec = defaultShell;
         }
     }
 
     // _arguments sometimes contain ("") so isEmpty()
     // or count() does not work as expected...
-    QString argsTmp(_arguments.join(" ").trimmed());
+    QString argsTmp(_arguments.join(QLatin1Char(' ')).trimmed());
     QStringList arguments;
     arguments << exec;
     if (argsTmp.length())
@@ -318,7 +296,7 @@ void Session::run()
     // tell the terminal exactly which colors are being used, but instead approximates
     // the color scheme as "black on white" or "white on black" depending on whether
     // the background color is deemed dark or not
-    QString backgroundColorHint = _hasDarkBackground ? "COLORFGBG=15;0" : "COLORFGBG=0;15";
+    QString backgroundColorHint = _hasDarkBackground ? QLatin1String("COLORFGBG=15;0") : QLatin1String("COLORFGBG=0;15");
 
     /* if we do all the checking if this shell exists then we use it ;)
      * Dont know about the arguments though.. maybe youll need some more checking im not sure
@@ -336,7 +314,20 @@ void Session::run()
     }
 
     _shellProcess->setWriteable(false);  // We are reachable via kwrited.
-    qDebug() << "started!";
+    emit started();
+}
+
+void Session::runEmptyPTY()
+{
+    _shellProcess->setFlowControlEnabled(_flowControl);
+    _shellProcess->setErase(_emulation->eraseChar());
+    _shellProcess->setWriteable(false);
+
+    // disconnet send data from emulator to internal terminal process
+    disconnect( _emulation,SIGNAL(sendData(const char *,int)),
+                _shellProcess, SLOT(sendData(const char *,int)) );
+
+    _shellProcess->setEmptyPTYProperties();
     emit started();
 }
 
@@ -347,6 +338,7 @@ void Session::setUserTitle( int what, const QString & caption )
 
     // (btw: what=0 changes _userTitle and icon, what=1 only icon, what=2 only _nameTitle
     if ((what == 0) || (what == 2)) {
+        _isTitleChanged = true;
         if ( _userTitle != caption ) {
             _userTitle = caption;
             modified = true;
@@ -354,6 +346,7 @@ void Session::setUserTitle( int what, const QString & caption )
     }
 
     if ((what == 0) || (what == 1)) {
+        _isTitleChanged = true;
         if ( _iconText != caption ) {
             _iconText = caption;
             modified = true;
@@ -361,8 +354,8 @@ void Session::setUserTitle( int what, const QString & caption )
     }
 
     if (what == 11) {
-        QString colorString = caption.section(';',0,0);
-        qDebug() << __FILE__ << __LINE__ << ": setting background colour to " << colorString;
+        QString colorString = caption.section(QLatin1Char(';'),0,0);
+        //qDebug() << __FILE__ << __LINE__ << ": setting background colour to " << colorString;
         QColor backColor = QColor(colorString);
         if (backColor.isValid()) { // change color via \033]11;Color\007
             if (backColor != _modifiedBackground) {
@@ -379,6 +372,7 @@ void Session::setUserTitle( int what, const QString & caption )
     }
 
     if (what == 30) {
+        _isTitleChanged = true;
         if ( _nameTitle != caption ) {
             setTitle(Session::NameRole,caption);
             return;
@@ -387,12 +381,13 @@ void Session::setUserTitle( int what, const QString & caption )
 
     if (what == 31) {
         QString cwd=caption;
-        cwd=cwd.replace( QRegExp("^~"), QDir::homePath() );
+        cwd=cwd.replace( QRegExp(QLatin1String("^~")), QDir::homePath() );
         emit openUrlRequest(cwd);
     }
 
     // change icon via \033]32;Icon\007
     if (what == 32) {
+        _isTitleChanged = true;
         if ( _iconName != caption ) {
             _iconName = caption;
 
@@ -444,9 +439,7 @@ void Session::monitorTimerDone()
 
     //FIXME: Make message text for this notification and the activity notification more descriptive.
     if (_monitorSilence) {
-//    KNotification::event("Silence", ("Silence in session '%1'", _nameTitle), QPixmap(),
-//                    QApplication::activeWindow(),
-//                    KNotification::CloseWhenWidgetActivated);
+        emit silence();
         emit stateChanged(NOTIFYSILENCE);
     } else {
         emit stateChanged(NOTIFYNORMAL);
@@ -458,10 +451,7 @@ void Session::monitorTimerDone()
 void Session::activityStateSet(int state)
 {
     if (state==NOTIFYBELL) {
-        QString s;
-        s.sprintf("Bell in session '%s'",_nameTitle.toLatin1()/*toAscii()*/.data());
-
-        emit bellRequest( s );
+        emit bellRequest(tr("Bell in session '%1'").arg(_nameTitle));
     } else if (state==NOTIFYACTIVITY) {
         if (_monitorSilence) {
             _monitorTimer->start(_silenceSeconds*1000);
@@ -470,10 +460,8 @@ void Session::activityStateSet(int state)
         if ( _monitorActivity ) {
             //FIXME:  See comments in Session::monitorTimerDone()
             if (!_notifiedActivity) {
-//        KNotification::event("Activity", ("Activity in session '%1'", _nameTitle), QPixmap(),
-//                        QApplication::activeWindow(),
-//        KNotification::CloseWhenWidgetActivated);
                 _notifiedActivity=true;
+                emit activity();
             }
         }
     }
@@ -492,9 +480,9 @@ void Session::onViewSizeChange(int /*height*/, int /*width*/)
 {
     updateTerminalSize();
 }
-void Session::onEmulationSizeChange(int lines , int columns)
+void Session::onEmulationSizeChange(QSize size)
 {
-    setSize( QSize(lines,columns) );
+    setSize(size);
 }
 
 void Session::updateTerminalSize()
@@ -577,6 +565,11 @@ void Session::sendText(const QString & text) const
     _emulation->sendText(text);
 }
 
+void Session::sendKeyEvent(QKeyEvent* e) const
+{
+    _emulation->sendKeyEvent(e);
+}
+
 Session::~Session()
 {
     delete _emulation;
@@ -597,26 +590,27 @@ QString Session::profileKey() const
 void Session::done(int exitStatus)
 {
     if (!_autoClose) {
-        _userTitle = ("This session is done. Finished");
+        _userTitle = QString::fromLatin1("This session is done. Finished");
         emit titleChanged();
         return;
     }
 
+    // message is not being used. But in the original kpty.cpp file
+    // (https://cgit.kde.org/kpty.git/) it's part of a notification.
+    // So, we make it translatable, hoping that in the future it will
+    // be used in some kind of notification.
     QString message;
     if (!_wantedClose || exitStatus != 0) {
 
         if (_shellProcess->exitStatus() == QProcess::NormalExit) {
-            message.sprintf("Session '%s' exited with status %d.",
-                          _nameTitle.toLatin1()/*toAscii()*/.data(), exitStatus);
+            message = tr("Session '%1' exited with status %2.").arg(_nameTitle).arg(exitStatus);
         } else {
-            message.sprintf("Session '%s' crashed.",
-                          _nameTitle.toLatin1()/*toAscii()*/.data());
+            message = tr("Session '%1' crashed.").arg(_nameTitle);
         }
     }
 
     if ( !_wantedClose && _shellProcess->exitStatus() != QProcess::NormalExit )
-        message.sprintf("Session '%s' exited unexpectedly.",
-                        _nameTitle.toLatin1()/*toAscii()*/.data());
+        message = tr("Session '%1' exited unexpectedly.").arg(_nameTitle);
     else
         emit finished();
 
@@ -698,6 +692,11 @@ QString Session::iconName() const
 QString Session::iconText() const
 {
     return _iconText;
+}
+
+bool Session::isTitleChanged() const
+{
+    return _isTitleChanged;
 }
 
 void Session::setHistoryType(const HistoryType & hType)
@@ -931,6 +930,10 @@ int Session::processId() const
 {
     return _shellProcess->pid();
 }
+int Session::getPtySlaveFd() const
+{
+    return ptySlaveFd;
+}
 
 SessionGroup::SessionGroup()
         : _masterMode(0)
@@ -1013,8 +1016,7 @@ void SessionGroup::setMasterStatus(Session * session, bool master)
     bool wasMaster = _sessions[session];
     _sessions[session] = master;
 
-    if ((!wasMaster && !master)
-            || (wasMaster && master)) {
+    if (wasMaster == master) {
         return;
     }
 

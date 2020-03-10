@@ -17,6 +17,7 @@ set ( SRCS
     Emulation.cpp
     Filter.cpp
     History.cpp
+    HistorySearch.cpp
     KeyboardTranslator.cpp
     konsole_wcwidth.cpp
     kprocess.cpp
@@ -27,6 +28,7 @@ set ( SRCS
     qtermwidget.cpp
     Screen.cpp
     ScreenWindow.cpp
+    SearchBar.cpp
     Session.cpp
     ShellCommand.cpp
     TerminalCharacterDecoder.cpp
@@ -38,17 +40,37 @@ set ( SRCS
 #| Headers
 #| 	Only the Headers that need to be moc'd go here
 set ( HDRS
+    BlockArray.h
+    CharacterColor.h
+    Character.h
+    ColorScheme.h
+    ColorTables.h
+    DefaultTranslatorText.h
     Emulation.h
+    ExtendedDefaultTranslator.h
     Filter.h
+    History.h
+    HistorySearch.h
+    KeyboardTranslator.h
+    konsole_wcwidth.h
     kprocess.h
     kptydevice.h
+    kpty.h
+    kpty_p.h
     kptyprocess.h
+    LineFont.h
     Pty.h
     qtermwidget.h
+    Screen.h
     ScreenWindow.h
+    SearchBar.h
     Session.h
+    ShellCommand.h
+    TerminalCharacterDecoder.h
     TerminalDisplay.h
+    tools.h
     Vt102Emulation.h
+
 )
 
 

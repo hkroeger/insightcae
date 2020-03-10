@@ -12,5 +12,33 @@
         <file>color-schemes/GreenOnBlack.colorscheme</file>
         <file>color-schemes/Linux.colorscheme</file>
         <file>color-schemes/WhiteOnBlack.schema</file>
+        <file>color-schemes/BreezeModified.colorscheme</file>
+        <file>color-schemes/Solarized.colorscheme</file>
+        <file>color-schemes/SolarizedLight.colorscheme</file>
+        <file>color-schemes/Tango.colorscheme</file>
+        <file>color-schemes/Ubuntu.colorscheme</file>
+        <file>translations/qtermwidget.ts</file>
+        <file>translations/qtermwidget_arn.ts</file>
+        <file>translations/qtermwidget_ast.ts</file>
+        <file>translations/qtermwidget_ca.ts</file>
+        <file>translations/qtermwidget_cs.ts</file>
+        <file>translations/qtermwidget_cy.ts</file>
+        <file>translations/qtermwidget_da.ts</file>
+        <file>translations/qtermwidget_de.ts</file>
+        <file>translations/qtermwidget_el.ts</file>
+        <file>translations/qtermwidget_es.ts</file>
+        <file>translations/qtermwidget_fr.ts</file>
+        <file>translations/qtermwidget_gl.ts</file>
+        <file>translations/qtermwidget_he.ts</file>
+        <file>translations/qtermwidget_hu.ts</file>
+        <file>translations/qtermwidget_ja.ts</file>
+        <file>translations/qtermwidget_lt.ts</file>
+        <file>translations/qtermwidget_nb_NO.ts</file>
+        <file>translations/qtermwidget_pl.ts</file>
+        <file>translations/qtermwidget_pt.ts</file>
+        <file>translations/qtermwidget_pt_BR.ts</file>
+        <file>translations/qtermwidget_tr.ts</file>
+        <file>translations/qtermwidget_zh_CN.ts</file>
+        <file>translations/qtermwidget_zh_TW.ts</file>
     </qresource>
 </RCC>

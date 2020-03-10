@@ -135,7 +135,23 @@ void MainWindow::updateOutputAnalzer(QString line)
 }
 
 
+bool isFixedPitch(const QFont &font) {
+   const QFontInfo fi(font);
+   qDebug() << fi.family() << fi.fixedPitch();
+   return fi.fixedPitch();
+}
 
+QFont getMonospaceFont() {
+  QFont font("fixed");
+  if (isFixedPitch(font)) return font;
+  font.setFamily("monospace");
+  if (isFixedPitch(font)) return font;
+  font.setStyleHint(QFont::Monospace);
+  if (isFixedPitch(font)) return font;
+  font.setStyleHint(QFont::TypeWriter);
+  if (isFixedPitch(font)) return font;
+  return font;
+}
 
 MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent) :
   QMainWindow(parent),
@@ -170,7 +186,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
   terminal_ = new QTermWidget( 1, ui->tabWidget );
 
-  QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+  QFont font = getMonospaceFont();
   terminal_->setTerminalFont(font);
 
   ui->tabWidget->addTab(terminal_, "&4 - Terminal");

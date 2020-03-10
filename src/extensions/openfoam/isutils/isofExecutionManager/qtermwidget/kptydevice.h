@@ -31,16 +31,17 @@
 
 #include "kpty_p.h"
 
-#include <QtCore/QIODevice>
+#include <QIODevice>
 
 #define KMAXINT ((int)(~0U >> 1))
 
 struct KPtyDevicePrivate;
+class QSocketNotifier;
 
 #define Q_DECLARE_PRIVATE_MI(Class, SuperClass) \
     inline Class##Private* d_func() { return reinterpret_cast<Class##Private *>(SuperClass::d_ptr); } \
     inline const Class##Private* d_func() const { return reinterpret_cast<const Class##Private *>(SuperClass::d_ptr); } \
-    friend class Class##Private;
+    friend struct Class##Private;
 
 /**
  * Encapsulates KPty into a QIODevice, so it can be used with Q*Stream, etc.
@@ -54,7 +55,7 @@ public:
     /**
      * Constructor
      */
-    KPtyDevice(QObject *parent = 0);
+    KPtyDevice(QObject *parent = nullptr);
 
     /**
      * Destructor:
@@ -62,14 +63,14 @@ public:
      *  If the pty is still open, it will be closed. Note, however, that
      *  an utmp registration is @em not undone.
      */
-    virtual ~KPtyDevice();
+    ~KPtyDevice() override;
 
     /**
      * Create a pty master/slave pair.
      *
      * @return true if a pty pair was successfully opened
      */
-    virtual bool open(OpenMode mode = ReadWrite | Unbuffered);
+    bool open(OpenMode mode = ReadWrite | Unbuffered) override;
 
     /**
      * Open using an existing pty master. The ownership of the fd
@@ -89,7 +90,7 @@ public:
     /**
      * Close the pty master/slave pair.
      */
-    virtual void close();
+    void close() override;
 
     /**
      * Sets whether the KPtyDevice monitors the pty for incoming data.
@@ -118,30 +119,30 @@ public:
     /**
      * @return always true
      */
-    virtual bool isSequential() const;
+    bool isSequential() const override;
 
     /**
      * @reimp
      */
-    bool canReadLine() const;
+    bool canReadLine() const override;
 
     /**
      * @reimp
      */
-    bool atEnd() const;
+    bool atEnd() const override;
 
     /**
      * @reimp
      */
-    qint64 bytesAvailable() const;
+    qint64 bytesAvailable() const override;
 
     /**
      * @reimp
      */
-    qint64 bytesToWrite() const;
+    qint64 bytesToWrite() const override;
 
-    bool waitForBytesWritten(int msecs = -1);
-    bool waitForReadyRead(int msecs = -1);
+    bool waitForBytesWritten(int msecs = -1) override;
+    bool waitForReadyRead(int msecs = -1) override;
 
 
 Q_SIGNALS:
@@ -153,9 +154,9 @@ Q_SIGNALS:
     void readEof();
 
 protected:
-    virtual qint64 readData(char *data, qint64 maxSize);
-    virtual qint64 readLineData(char *data, qint64 maxSize);
-    virtual qint64 writeData(const char *data, qint64 maxSize);
+    qint64 readData(char *data, qint64 maxSize) override;
+    qint64 readLineData(char *data, qint64 maxSize) override;
+    qint64 writeData(const char *data, qint64 maxSize) override;
 
 private:
     Q_PRIVATE_SLOT(d_func(), bool _k_canRead())
@@ -166,8 +167,8 @@ private:
 // Helper. Remove when QRingBuffer becomes public. //
 /////////////////////////////////////////////////////
 
-#include <QtCore/qbytearray.h>
-#include <QtCore/qlinkedlist.h>
+#include <QByteArray>
+#include <QLinkedList>
 
 #define CHUNKSIZE 4096
 
@@ -277,7 +278,7 @@ public:
     {
         int index = 0;
         int start = head;
-        QLinkedList<QByteArray>::ConstIterator it = buffers.begin();
+        QLinkedList<QByteArray>::ConstIterator it = buffers.constBegin();
         forever {
             if (!maxLength)
                 return index;
@@ -338,7 +339,7 @@ struct KPtyDevicePrivate : public KPtyPrivate {
     KPtyDevicePrivate(KPty* parent) :
         KPtyPrivate(parent),
         emittedReadyRead(false), emittedBytesWritten(false),
-        readNotifier(0), writeNotifier(0)
+        readNotifier(nullptr), writeNotifier(nullptr)
     {
     }
 

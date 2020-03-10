@@ -69,11 +69,18 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
   boost::process::ipstream is;
   std::shared_ptr<boost::process::child> c;
 
+
   if (!remote_machine_.empty())
   {
+    std::ostringstream cmd;
+    cmd << "TS_SOCKET="<<socket_.string()<<" tsp";
+
     c.reset(new boost::process::child(
               boost::process::search_path("ssh"),
-              boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp"}),
+              boost::process::args({
+                                     remote_machine_,
+                                     "bash -lc \""+escapeShellSymbols(cmd.str())+"\""
+                                   }),
               boost::process::std_out > is
               ));
   }
@@ -155,9 +162,14 @@ int TaskSpoolerInterface::clean()
 {
   if (!remote_machine_.empty())
   {
+    std::ostringstream cmd;
+    cmd << "TS_SOCKET="<<socket_.string()<<" tsp -C";
+
       return boost::process::system(
             boost::process::search_path("ssh"),
-            boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-C"})
+            boost::process::args({remote_machine_,
+                                 "bash -lc \""+escapeShellSymbols(cmd.str())+"\""
+                                 })
             );
   }
   else
@@ -175,9 +187,13 @@ int TaskSpoolerInterface::kill()
 {
   if (!remote_machine_.empty())
   {
+    std::ostringstream cmd;
+    cmd << "TS_SOCKET="<<socket_.string()<<" tsp -k";
+
       return boost::process::system(
             boost::process::search_path("ssh"),
-            boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-k"})
+            boost::process::args({remote_machine_,
+                                  "bash -lc \""+escapeShellSymbols(cmd.str())+"\""})
             );
   }
   else
@@ -239,9 +255,14 @@ void TaskSpoolerInterface::startTail(std::function<void(const std::string&)> rec
   {
     if (!remote_machine_.empty())
     {
+      std::ostringstream cmd;
+      cmd << "TS_SOCKET="<<socket_.string()<<" tsp -t";
+
       tail_c_.reset(new boost::process::child(
                       boost::process::search_path("ssh"),
-                      boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-t"}),
+                      boost::process::args({remote_machine_,
+                                            "bash -lc \""+escapeShellSymbols(cmd.str())+"\""
+                                           }),
 
                       (boost::process::std_out & boost::process::std_err) > *tail_cout_,
 
@@ -360,7 +381,7 @@ int TaskSpoolerInterface::startJob(const std::vector<std::string>& commandline)
 
     return boost::process::system(
           boost::process::search_path("ssh"),
-          boost::process::args( { "bash", "-lc", "\""+escapeShellSymbols(cmd)+"\"" } )
+          boost::process::args( { remote_machine_,  "bash", "-lc", "\""+escapeShellSymbols(cmd)+"\"" } )
           );
   }
   else
@@ -385,9 +406,10 @@ int TaskSpoolerInterface::stopTaskspoolerServer()
 {
   if (!remote_machine_.empty())
   {
+    auto cmd = "TS_SOCKET=\""+socket_.string()+"\" tsp -K";
       return boost::process::system(
             boost::process::search_path("ssh"),
-            boost::process::args({remote_machine_, "TS_SOCKET=\""+socket_.string()+"\"", "tsp", "-K"})
+            boost::process::args({remote_machine_, "bash", "-lc", "\""+escapeShellSymbols(cmd)+"\""})
             );
   }
   else

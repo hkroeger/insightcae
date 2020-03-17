@@ -37,13 +37,15 @@ class IsofPlotTabularWindow : public QMainWindow
 
     Ui_MainWindow *ui;
 
-    boost::filesystem::path file_;
+    std::vector<boost::filesystem::path> files_;
     arma::mat data_;
 
     std::vector<QwtPlotCurve*> curve_;
 
+    void readFiles();
+
 public:
-    IsofPlotTabularWindow(const boost::filesystem::path& file);
+    IsofPlotTabularWindow(const std::vector<boost::filesystem::path>& files);
 
 public Q_SLOTS:
     void onUpdate(bool checked=false);

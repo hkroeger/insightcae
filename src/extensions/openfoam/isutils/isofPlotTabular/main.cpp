@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help", "produce help message")
-    ("input-file,f", po::value< std::string >(),"Specifies input file.")
+    ("input-file,f", po::value< std::vector<boost::filesystem::path> >(), "Input file names. Use \"-\" to read from stdin.")
     ;
 
     po::positional_options_description p;
@@ -85,20 +85,23 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    std::string fn = vm["input-file"].as<std::string>();
+    auto fns = vm["input-file"].as<std::vector<boost::filesystem::path> >();
 
-    if (fn!="-")
+    for (const auto& fn: fns)
     {
-      if (!boost::filesystem::exists(fn))
+      if (fn!="-")
       {
-          std::cerr << std::endl
-              << "Error: input file does not exist: "<<fn
-              <<std::endl<<std::endl;
-          exit(-1);
+        if (!boost::filesystem::exists(fn))
+        {
+            std::cerr << std::endl
+                << "Error: input file does not exist: "<<fn
+                <<std::endl<<std::endl;
+            exit(-1);
+        }
       }
     }
 
-    IsofPlotTabularWindow window(fn);
+    IsofPlotTabularWindow window(fns);
     window.show();
     return app.exec();
   }

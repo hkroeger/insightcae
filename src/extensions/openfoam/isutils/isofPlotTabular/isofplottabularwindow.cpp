@@ -37,15 +37,19 @@
 using namespace std;
 using namespace boost;
 
-IsofPlotTabularWindow::IsofPlotTabularWindow(const boost::filesystem::path& file)
+IsofPlotTabularWindow::IsofPlotTabularWindow(const std::vector<boost::filesystem::path>& files)
   : QMainWindow(),
-    file_(file)
+    files_(files)
 {
   ui=new Ui_MainWindow;
   ui->setupUi(this);
 
+  vector<string> filenames;
+  transform(files_.begin(), files_.end(), back_inserter(filenames),
+            [](const filesystem::path& fp) { return fp.string(); } );
+
   setWindowTitle( "PlotTabularData: CWD "+QString::fromStdString( boost::filesystem::current_path().string() )
-                  +", displaying "+ QString::fromStdString( file.string() ) );
+                  +", displaying "+ QString::fromStdString( algorithm::join(filenames, ", ") ) );
 
   connect(ui->updateBtn, &QPushButton::clicked,
           this, &IsofPlotTabularWindow::onUpdate);
@@ -54,22 +58,48 @@ IsofPlotTabularWindow::IsofPlotTabularWindow(const boost::filesystem::path& file
 }
 
 
+void IsofPlotTabularWindow::readFiles()
+{
+  data_ = arma::mat();
+
+  for (const auto& file: files_)
+  {
+    std::istream* f;
+    std::shared_ptr<std::ifstream> fs;
+
+    if (file.string()=="-")
+    {
+      f=&std::cin;
+    }
+    else
+    {
+      fs.reset(new ifstream(file.c_str()));
+      f=fs.get();
+    }
+
+    arma::mat fd = insight::readTextFile(*f);
+    if (data_.size()==0)
+    {
+      data_=fd;
+    }
+    else
+    {
+      if (fd.n_cols!=data_.n_cols)
+        throw insight::Exception(str(format("Incompatible data in file %s: number cols is %d but should be %d!")%file.string()%fd.n_cols%data_.n_cols));
+
+      data_.insert_rows(data_.n_rows, fd);
+    }
+  }
+
+  if (files_.size()>1)
+    data_ = insight::sortedByCol(data_, 0);
+}
+
+
 void IsofPlotTabularWindow::onUpdate(bool)
 {
-  std::istream* f;
-  std::shared_ptr<std::ifstream> fs;
 
-  if (file_.string()=="-")
-  {
-    f=&std::cin;
-  }
-  else
-  {
-    fs.reset(new ifstream(file_.c_str()));
-    f=fs.get();
-  }
-
-  data_ = insight::readTextFile(*f);
+  readFiles();
 
   if (data_.n_rows!=0)
   {
@@ -117,7 +147,6 @@ void IsofPlotTabularWindow::onTabChanged(int ct)
 {
   if (PlotWidget* pw = dynamic_cast<PlotWidget*>(ui->graphs->widget(ct)))
   {
-//    qDebug()<<"ct="<<ct;
     pw->onShow();
   }
 }

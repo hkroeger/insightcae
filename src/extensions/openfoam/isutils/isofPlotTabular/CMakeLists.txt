@@ -10,7 +10,9 @@ find_package(Qwt REQUIRED)
 set(isofPlotTabular_SRCS
     main.cpp
     isofplottabularwindow.cpp
+    isofplottabularwindow.h
     plotwidget.cpp
+    plotwidget.h
 )
 SET(isofPlotTabular_FORMS isofplottabularwindow.ui plotwidget.ui)
 SET(isofPlotTabular_RCCS

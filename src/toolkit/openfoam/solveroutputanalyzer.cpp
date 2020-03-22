@@ -18,6 +18,7 @@ const std::string SolverOutputAnalyzer::pre_orient="rb_orientation/";
 const std::string SolverOutputAnalyzer::pre_motion="rb_motion/";
 const std::string SolverOutputAnalyzer::pre_courant="courant_no/";
 const std::string SolverOutputAnalyzer::pre_exectime="exec_time/";
+const std::string SolverOutputAnalyzer::pre_simspeed="sim_speed/";
 const std::string SolverOutputAnalyzer::pre_deltat="delta_t/";
 
 
@@ -237,6 +238,12 @@ void SolverOutputAnalyzer::update(const std::string& line)
               curProgVars_[pre_exectime+"delta_exec_time"]=last_exec_time_info_->exec - last_last_exec_time_info_->exec;
               curProgVars_[pre_exectime+"delta_clock_time"]=last_exec_time_info_->wallclock - last_last_exec_time_info_->wallclock;
             }
+            if (last_dt_ && last_exec_time_info_ && last_last_exec_time_info_)
+            {
+              curProgVars_[pre_simspeed+"sim_second_per_wall_clock_hour"]=3600.* (*last_dt_) / (last_exec_time_info_->wallclock - last_last_exec_time_info_->wallclock);
+              curProgVars_[pre_simspeed+"sim_second_per_exec_hour"]=3600.* (*last_dt_) / (last_exec_time_info_->exec - last_last_exec_time_info_->exec);
+            }
+
         }
         else if ( boost::regex_search( line, match, solver_pattern, boost::match_default ) )
         {

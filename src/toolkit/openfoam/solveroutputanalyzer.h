@@ -23,6 +23,7 @@ public:
       pre_motion,
       pre_courant,
       pre_exectime,
+      pre_simspeed,
       pre_deltat;
 #endif
 

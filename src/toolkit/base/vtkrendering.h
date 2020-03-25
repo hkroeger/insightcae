@@ -50,23 +50,38 @@ typedef std::pair<double, double> MinMax;
 
 typedef enum { Cell, Point } FieldSupport;
 
-typedef boost::fusion::tuple
+struct FieldSelection
+   : public boost::fusion::tuple
     <
      std::string,
      FieldSupport,
      int
     >
-        FieldSelection;
+{
+  FieldSelection(
+      std::string fieldName,
+      FieldSupport fieldSupport,
+      int component=-1
+      );
+
+  std::string fieldName() const;
+};
 
 typedef boost::variant<boost::blank,MinMax> RangeSelection;
 
-typedef boost::fusion::tuple
+struct FieldColor : public boost::fusion::tuple
     <
      FieldSelection,
      vtkSmartPointer<vtkLookupTable>,
      RangeSelection
     >
-        FieldColor;
+{
+  FieldColor(FieldSelection fieldSelection,
+             vtkSmartPointer<vtkLookupTable> lookupTable,
+             RangeSelection rangeSelection);
+
+  vtkSmartPointer<vtkLookupTable> lookupTable() const;
+};
 
 typedef boost::variant
     <
@@ -103,7 +118,7 @@ public:
   template<class Mapper, class Input>
   void addAlgo(
       Input input,
-      ColorSpecification colorspec
+      ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0))
       )
   {
     input->Update();
@@ -113,7 +128,7 @@ public:
   template<class Mapper, class Input>
   void addData(
       Input input,
-      ColorSpecification colorspec
+      ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0))
       )
   {
     auto mapper = vtkSmartPointer<Mapper>::New();
@@ -121,6 +136,8 @@ public:
 
     addProperties<Mapper>(mapper, colorspec, input);
   }
+
+  void addActor2D(vtkSmartPointer<vtkActor2D> actor);
 
   template<class Mapper>
   void addProperties(
@@ -133,6 +150,7 @@ public:
 
     if (const auto* c = boost::get<arma::mat>(&colorspec))
     {
+      mapper->ScalarVisibilityOff();
       actor->GetProperty()->SetColor((*c)(0), (*c)(1), (*c)(2));
     }
     else if (const auto *c = boost::get<FieldColor>(&colorspec))
@@ -188,7 +206,9 @@ public:
   vtkSmartPointer<vtkScalarBarActor> addColorBar(
       const std::string& title,
       vtkSmartPointer<vtkLookupTable> lut,
-      double x=0.9, double y=0.1, double w=0.075,
+      double x=0.9, double y=0.1,
+      bool horiz=false,
+      double w=0.09, double len=0.8,
       double fontmult=3.
       );
 
@@ -206,6 +226,11 @@ public:
       );
 
   void fitAll(double mult=1.05);
+
+  void clearScene();
+
+  void removeActor(vtkActor* act);
+  void removeActor2D(vtkActor2D* act);
 };
 
 
@@ -227,9 +252,15 @@ public:
 
   vtkSmartPointer<vtkOpenFOAMReader> ofcase() const;
   vtkUnstructuredGrid* internalMesh() const;
+
+  std::vector<std::string> matchingPatchNames(const std::string& patchNamePattern) const;
+
   vtkPolyData* patch(const std::string& name) const;
+  vtkSmartPointer<vtkPolyData> patches(const std::string& namePattern) const;
+
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(int blockIdx) const;
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::string& name) const;
+  vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::vector<int>& blockIdxs) const;
 };
 
 

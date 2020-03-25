@@ -24,6 +24,8 @@
 #include "vtkDiscretizableColorTransferFunction.h"
 #include "vtkTextProperty.h"
 #include "vtkLineSource.h"
+#include "vtkRendererCollection.h"
+#include "vtkActor2DCollection.h"
 
 #include "vtkPointData.h"
 #include "vtkExtractBlock.h"
@@ -31,9 +33,18 @@
 #include "vtkAlgorithmOutput.h"
 #include "vtkMultiBlockDataSet.h"
 #include "vtkInformation.h"
+#include "vtkOrientationMarkerWidget.h"
+#include "vtkAxesActor.h"
+#include "vtkRenderWindowInteractor.h"
+#include "vtkLightKit.h"
+
+#include "base/exception.h"
 
 VTK_MODULE_INIT(vtkRenderingOpenGL2)
 VTK_MODULE_INIT(vtkRenderingFreeType)
+
+using namespace std;
+using namespace boost;
 
 namespace insight
 {
@@ -206,21 +217,52 @@ VTKOffscreenScene::VTKOffscreenScene()
   renderWindow_->OffScreenRenderingOn();
   renderWindow_->SetSize(1920, 1440);
   renderer_->SetBackground(1, 1, 1); // Background color white
+
+  auto renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+  renderWindowInteractor->SetRenderWindow(renderWindow_);
+  auto axes = vtkSmartPointer<vtkAxesActor>::New();
+  auto widget = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
+  widget->SetOutlineColor( 0.9300, 0.5700, 0.1300 );
+  widget->SetOrientationMarker( axes );
+  widget->SetInteractor( renderWindowInteractor );
+  widget->SetViewport( 0.0, 0.0, 0.4, 0.4 );
+  widget->SetEnabled( 1 );
+  widget->InteractiveOn();
+
+  auto light_kit = vtkSmartPointer<vtkLightKit>::New();
+  light_kit->SetKeyLightIntensity(1.0);
+  light_kit->AddLightsToRenderer(renderer_);
 }
+
+void VTKOffscreenScene::addActor2D(vtkSmartPointer<vtkActor2D> actor)
+{
+  renderer_->AddActor2D(actor);
+}
+
 
 vtkSmartPointer<vtkScalarBarActor> VTKOffscreenScene::addColorBar(
       const std::string& title,
       vtkSmartPointer<vtkLookupTable> lut,
-      double x,
-      double y,
-      double w,
+      double x, double y,
+      bool horiz,
+      double w, double len,
       double fontmult
       )
 {
   auto cb = vtkSmartPointer<vtkScalarBarActor>::New();
   cb->SetLookupTable(lut);
-  cb->SetWidth(0.08);
-  cb->SetPosition(0.9, 0.1);
+  if (horiz)
+  {
+    cb->SetOrientationToHorizontal();
+    cb->SetHeight(w);
+    cb->SetWidth(len);
+  }
+  else
+  {
+    cb->SetHeight(len);
+    cb->SetWidth(w);
+  }
+  cb->SetPosition(x, y);
   cb->SetLabelFormat("%g");
   cb->SetNumberOfLabels(5);
   cb->VisibilityOn();
@@ -280,12 +322,13 @@ void VTKOffscreenScene::setParallelScale(
   if (const auto* sz = boost::get<std::pair<double,double> >(&scaleOrSize))
   {
       double w = sz->first;
-      double h =sz->second;
+      double h = sz->second;
       double W = renderWindow_->GetSize()[0];
       double H = renderWindow_->GetSize()[1];
       double HbyW=H/W;
       double scale=0.5*std::max(w*HbyW, h);
       //print W, H, w, h, scale
+      cout<<"setParallelScale: W, H, w, h, scale = "<<W<<", "<<H<<", "<<w<<", "<<h<<", "<<scale<<endl;
       activeCamera()->SetParallelScale(scale);
   }
   else if (const auto* sc = boost::get<double>(&scaleOrSize))
@@ -297,6 +340,8 @@ void VTKOffscreenScene::setParallelScale(
 void VTKOffscreenScene::fitAll(double mult)
 {
   double bnds[6] = {DBL_MAX, -DBL_MAX, DBL_MAX, -DBL_MAX, DBL_MAX, -DBL_MAX};
+
+  renderWindow_->Render();
 
   auto aa = renderer_->GetActors();
   aa->InitTraversal();
@@ -318,28 +363,63 @@ void VTKOffscreenScene::fitAll(double mult)
       0.5*(bnds[5]+bnds[4])
       );
 
+  cout<<"fitAll:"<<endl;
+  cout<<"L="<<L<<", ctr="<<ctr<<endl;
+
   arma::mat p, fp, ey;
   p=fp=ey=vec3(0,0,0);
   activeCamera()->GetPosition(p.memptr());
   activeCamera()->GetFocalPoint(fp.memptr());
   activeCamera()->GetViewUp(ey.memptr());
+  cout<<"camera: pos="<<p<<", focus="<<fp<<", up="<<ey<<endl;
   arma::mat n=p-fp; n/=norm(n,2);
   ey/=norm(ey,2);
   arma::mat ex=-arma::cross(n,ey); ex/=norm(ex,2);
+  ey = arma::cross(n, ex);
+  cout<<"n="<<n<<", ex="<<ex<<", ey="<<ey<<endl;
 
 
   arma::mat diff=ctr-p; diff-=dot(diff,n)*n;
   arma::mat np=p+diff, nfp=fp+diff;
   activeCamera()->SetPosition( np.memptr() );
   activeCamera()->SetFocalPoint( nfp.memptr() );
+  cout<<"set camera to pos="<<np<<", focus="<<nfp<<endl;
 
-
-  double w= fabs(arma::dot(L, ex));
-  double h= fabs(arma::dot(L, ey));
+  double w= fabs(arma::dot(vec3(L[0],0,0), ex))+fabs(arma::dot(vec3(0,L[1],0), ex))+fabs(arma::dot(vec3(0,0,L[2]), ex));
+  double h= fabs(arma::dot(vec3(L[0],0,0), ey))+fabs(arma::dot(vec3(0,L[1],0), ey))+fabs(arma::dot(vec3(0,0,L[2]), ey));
+  cout<<"calculated w="<<w<<", h="<<h<<endl;
 
   setParallelScale(std::pair<double,double>(mult*w, mult*h));
 }
 
+void VTKOffscreenScene::clearScene()
+{
+  auto acts = renderer_->GetActors();
+  vtkActor *act;
+  for( acts->InitTraversal(); (act = acts->GetNextItem())!=nullptr; )
+  {
+      renderer_->RemoveActor( act );
+  }
+
+  auto acts2 = renderer_->GetActors2D();
+  vtkActor2D *act2;
+  for( acts2->InitTraversal(); (act2 = acts2->GetNextItem())!=nullptr; )
+  {
+      renderer_->RemoveActor2D( act2 );
+  }
+
+  renderer_->Clear();
+}
+
+void VTKOffscreenScene::removeActor(vtkActor *act)
+{
+  renderer_->RemoveActor(act);
+}
+
+void VTKOffscreenScene::removeActor2D(vtkActor2D *act)
+{
+  renderer_->RemoveActor2D(act);
+}
 
 
 
@@ -408,6 +488,23 @@ vtkUnstructuredGrid* OpenFOAMCaseScene::internalMesh() const
   return nullptr;
 }
 
+std::vector<std::string> OpenFOAMCaseScene::matchingPatchNames(const std::string& patchNamePattern) const
+{
+  std::vector<string> patchNames;
+
+  regex pattern(patchNamePattern);
+  for (const auto& p: patches_)
+  {
+    if (regex_match(p.first, pattern))
+    {
+      patchNames.push_back(p.first);
+      cout<<"selecting for "<<patchNamePattern<<": "<<p.first<<" (id "<<p.second<<")"<<endl;
+    }
+  }
+
+  return patchNames;
+}
+
 vtkPolyData* OpenFOAMCaseScene::patch(const std::string& name) const
 {
   auto oo=ofcase_->GetOutput();
@@ -431,6 +528,19 @@ vtkPolyData* OpenFOAMCaseScene::patch(const std::string& name) const
   return nullptr;
 }
 
+vtkSmartPointer<vtkPolyData> OpenFOAMCaseScene::patches(const std::string& namePattern) const
+{
+  auto names = matchingPatchNames(namePattern);
+
+  auto af = vtkSmartPointer<vtkAppendPolyData>::New();
+  for (const auto& pn: names)
+  {
+    af->AddInputData(patch(pn));
+  }
+  af->Update();
+
+  return af->GetOutput();
+}
 
 vtkSmartPointer<vtkOpenFOAMReader> OpenFOAMCaseScene::ofcase() const
 {
@@ -439,20 +549,72 @@ vtkSmartPointer<vtkOpenFOAMReader> OpenFOAMCaseScene::ofcase() const
 
 vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(const std::string& name) const
 {
-  return extractBlock(patches_.at(name));
+  std::vector<int> blkIdx;
+  if (patches_.find(name)!=patches_.end())
+  {
+    int i=patches_.at(name);
+    blkIdx.push_back(i);
+  }
+  else
+  {
+    auto names = matchingPatchNames(name);
+    for (const auto& pn: names)
+    {
+      blkIdx.push_back(patches_.at(pn));
+    }
+    if (blkIdx.size()==0)
+      throw insight::Exception(
+          str(format("No patch matches expression \"%s\"!")%name)
+          );
+  }
+  return extractBlock(blkIdx);
 }
 
 vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(int blockIdx) const
 {
+  return extractBlock(std::vector<int>({blockIdx}));
+}
+
+vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(const std::vector<int>& blockIdxs) const
+{
   auto eb = vtkSmartPointer<vtkExtractBlock>::New();
   eb->SetInputConnection(ofcase_->GetOutputPort());
-  eb->AddIndex( blockIdx );
+  for (int i: blockIdxs) eb->AddIndex( i );
   auto eb2 = vtkSmartPointer<vtkCompositeDataGeometryFilter>::New();
   eb2->SetInputConnection(eb->GetOutputPort());
   return eb2;
 }
 
+FieldSelection::FieldSelection(string fieldName, FieldSupport fieldSupport, int component)
+  : boost::fusion::tuple
+    <
+     std::string,
+     FieldSupport,
+     int
+    > ( fieldName, fieldSupport, component)
+{}
 
+string FieldSelection::fieldName() const
+{
+  return boost::fusion::at_c<0>(*this);
+}
+
+
+FieldColor::FieldColor(FieldSelection fs,
+           vtkSmartPointer<vtkLookupTable> lut,
+           RangeSelection rs)
+  : boost::fusion::tuple
+    <
+     FieldSelection,
+     vtkSmartPointer<vtkLookupTable>,
+     RangeSelection
+    >(fs, lut, rs)
+{}
+
+vtkSmartPointer<vtkLookupTable> FieldColor::lookupTable() const
+{
+  return boost::fusion::at_c<1>(*this);
+}
 
 
 }

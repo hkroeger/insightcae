@@ -132,6 +132,10 @@ if (INSIGHT_BUILD_TOOLKIT)
         vtkFiltersCore
         vtkFiltersGeneral
         vtkFiltersSources
+        vtkFiltersGeneric
+        vtkFiltersExtraction
+        vtkFiltersPoints
+        vtkFiltersFlowPaths
         vtkCommonCore
         vtkIOLegacy
         vtkIOGeometry
@@ -141,7 +145,7 @@ if (INSIGHT_BUILD_TOOLKIT)
         vtkImagingCore
         vtkRenderingOpenGL2
         vtkRenderingAnnotation
-        vtkFiltersExtraction
+        vtkPVVTKExtensionsDefault
         REQUIRED
     )
     #include(${VTK_USE_FILE})

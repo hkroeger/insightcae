@@ -89,7 +89,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     )
   )
   {
-    solvers["pcorr"+f.first]=OFcase().stdSymmSolverSetup(1e-7, 0.01*f.second);
+    solvers["pcorr"+f.first]=OFcase().stdSymmSolverSetup(1e-3, 0.01*f.second);
 //    if (OFversion()>=600)
 //    {
 //      solvers["pcorrFinal"]=stdSymmSolverSetup(1e-7, 0.01);

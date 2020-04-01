@@ -467,51 +467,65 @@ void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements
       {
         using namespace insight::cad;
 
-        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
+        if (geom_cad->cadmodel->isValid())
+        {
+          FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
 
-        if ( const Parameters::geometry_STEP_type::inout_named_surfaces_type* io_name =
-             boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
-          {
-              auto inletss=cadmodel->providedSubshapes().find("face_"+io_name->inlet_name);
-              if (inletss==cadmodel->providedSubshapes().end())
-                  throw insight::Exception("named face \""+io_name->inlet_name+"\" not found in CAD model!");
+          if ( const Parameters::geometry_STEP_type::inout_named_surfaces_type* io_name =
+               boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
+            {
+                auto inletss=cadmodel->providedSubshapes().find("face_"+io_name->inlet_name);
+                if (inletss==cadmodel->providedSubshapes().end())
+                    throw insight::Exception("named face \""+io_name->inlet_name+"\" not found in CAD model!");
 
-              FeaturePtr inlet=inletss->second;
-              inlet->checkForBuildDuringAccess();
+                FeaturePtr inlet=inletss->second;
+                inlet->checkForBuildDuringAccess();
 
-              auto outletss=cadmodel->providedSubshapes().find("face_"+io_name->outlet_name);
-              if (outletss==cadmodel->providedSubshapes().end())
-                  throw insight::Exception("named face \""+io_name->outlet_name+"\" not found in CAD model!");
+                auto outletss=cadmodel->providedSubshapes().find("face_"+io_name->outlet_name);
+                if (outletss==cadmodel->providedSubshapes().end())
+                    throw insight::Exception("named face \""+io_name->outlet_name+"\" not found in CAD model!");
 
-              FeaturePtr outlet=outletss->second;
-              outlet->checkForBuildDuringAccess();
+                FeaturePtr outlet=outletss->second;
+                outlet->checkForBuildDuringAccess();
 
-              FeatureSetParserArgList args;
-              args.push_back(cadmodel->providedFeatureSet("face_"+io_name->inlet_name));
-              args.push_back(cadmodel->providedFeatureSet("face_"+io_name->outlet_name));
-              FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
-              FeaturePtr walls(new Feature(fp));
+                FeatureSetParserArgList args;
+                args.push_back(cadmodel->providedFeatureSet("face_"+io_name->inlet_name));
+                args.push_back(cadmodel->providedFeatureSet("face_"+io_name->outlet_name));
+                FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
+                FeaturePtr walls(new Feature(fp));
 
-              addFeature("walls", walls);
-              addFeature("inlet", inlet);
-              addFeature("outlet", outlet);
-          }
-        else if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
-             boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
-          {
-            addFeature("walls", cadmodel);
-            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
-            addFeature("inlet", inletmodel);
-            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
-            addFeature("outlet", outletmodel);
-          }
+                addFeature("walls", walls);
+                addFeature("inlet", inlet);
+                addFeature("outlet", outlet);
+            }
+          else if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
+               boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
+            {
+              addFeature("walls", cadmodel);
+              if (io_extra->inlet_model->isValid())
+              {
+                FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
+                addFeature("inlet", inletmodel);
+              }
+              if (io_extra->outlet_model->isValid())
+              {
+                FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
+                addFeature("outlet", outletmodel);
+              }
+            }
+        }
       }
     else if ( const Parameters::geometry_STL_type* geom_stl =
               boost::get<Parameters::geometry_STL_type>(&p.geometry) )
       {
-        addFeature("walls", insight::cad::STL::create(geom_stl->cadmodel->filePath()) );
-        addFeature("inlet", insight::cad::STL::create(geom_stl->inlet->filePath()) );
-        addFeature("outlet", insight::cad::STL::create(geom_stl->outlet->filePath()) );
+        if (geom_stl->cadmodel->isValid())
+          addFeature("walls", insight::cad::STL::create(geom_stl->cadmodel->filePath()) );
+
+        if (geom_stl->inlet->isValid())
+          addFeature("inlet", insight::cad::STL::create(geom_stl->inlet->filePath()) );
+
+        if (geom_stl->outlet->isValid())
+          addFeature("outlet", insight::cad::STL::create(geom_stl->outlet->filePath()) );
       }
 
     addDatum( "PiM",

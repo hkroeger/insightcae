@@ -49,6 +49,7 @@ add_sources(insightcad_SOURCES
  stitchedcompound.cpp
  stitchedshell.cpp
  stitchedsolid.cpp
+ stringer.cpp
 
  stl.cpp
 
@@ -56,6 +57,7 @@ add_sources(insightcad_SOURCES
  thicken.cpp
  transform.cpp
  tri.cpp
+ tongue.cpp
  wire.cpp
  wirefillet.cpp
  modelfeature.cpp

@@ -826,48 +826,46 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 
-arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
+void cleanFileContent(string& file)
+{
+  erase_all ( file, "(" );
+  erase_all ( file, ")" );
+  replace_all ( file, ",", " " );
+  replace_all ( file, "\t", " " );
+  while (file.find("  ")!=std::string::npos)
+  {
+    replace_all ( file, "  ", " " );
+  }
+}
+
+void readForcesLine(std::istream& f, int nc_expected, bool& skip, std::vector<double>& row)
 {
   CurrentExceptionContext ex("reading a line from forces file", false);
 
   std::string line;
 
   getline ( f, line );
-//   std::cout<<"RAW: "<<line<<std::endl;
   
-  if ( f.fail() ) return arma::mat();
+  if ( f.fail() ) { row.clear(); return; }
 
-  if ( starts_with ( line, "#" ) ) { skip=true; return arma::mat(); };
-
-  erase_all ( line, "(" );
-  erase_all ( line, ")" );
-  replace_all ( line, ",", " " );
-  replace_all ( line, "\t", " " );
-  while (line.find("  ")!=std::string::npos)
-  {
-    replace_all ( line, "  ", " " );
-  }
-//   std::cout<<"CLEAN: "<<line<<std::endl;
+  if ( starts_with ( line, "#" ) ) { skip=true; row.clear(); return; };
 
   std::vector<string> strs;
   boost::split ( strs, line, boost::is_any_of ( " " ) );
 
-  if ( strs.size() != nc_expected ) 
+  if ( strs.size() != nc_expected )
   {
-//       std::cout<<"found "<<strs.size()<<" fields, expected "<<nc_expected<<std::endl;
-      return arma::mat();
+      row.clear();
   }
 
-  arma::mat row;
-  row.set_size ( 1, strs.size() );
+  row.resize(strs.size());
 
   int k=0;
   for ( const string& e: strs )
   {
-    row ( 0, k++ ) =to_number<double> ( e );
+    row[k++] = to_number<double> ( e );
   }
-  
-  return row;
+
 }
 
 arma::mat forces::readForces
@@ -879,7 +877,7 @@ arma::mat forces::readForces
 {
   CurrentExceptionContext ex("reading output of forces function object "+foName+" in case \""+location.string()+"\"");
 
-  arma::mat fl;
+  std::vector<std::vector<double> >  fl;
 
   path fp;
   if ( c.OFversion() <170 )
@@ -896,18 +894,35 @@ arma::mat forces::readForces
   for ( const TimeDirectoryList::value_type& td: tdl )
   {
     path f_name, f2_name;
-    std::ifstream f, f2;
+    stringstream f, f2;
+
     if ( c.OFversion() >=300 )
     {
       f_name=( td.second/"force.dat" );
       f2_name=( td.second/"moment.dat" );
-      f.open ( f_name.c_str() );
-      f2.open ( f2_name.c_str() );
     }
     else
     {
       f_name=( td.second/"forces.dat" );
-      f.open ( f_name.c_str() );
+    }
+
+    {
+      std::ifstream ff;
+      ff.open ( f_name.c_str() );
+      istreambuf_iterator<char> endf;
+      std::string fc( istreambuf_iterator<char>(ff), endf );
+      cleanFileContent(fc);
+      f.str(fc);
+    }
+
+    if (!f2_name.empty())
+    {
+      std::ifstream ff2;
+      ff2.open ( f2_name.c_str() );
+      istreambuf_iterator<char> endf;
+      std::string fc2( istreambuf_iterator<char>(ff2), endf );
+      cleanFileContent(fc2);
+      f2.str(fc2);
     }
 
     int line_num=0;
@@ -915,52 +930,43 @@ arma::mat forces::readForces
     {
       line_num++;
 
+//      if (line_num%1000) cout<<"."<<flush;
+
         bool skip=false;
 
-        arma::mat row;
+        std::vector<double> row;
         if ( c.OFversion() >=300 )
           {
-            arma::mat r1, r2;
+            std::vector<double> r1, r2;
             {
               CurrentExceptionContext ex(str(format("reading line %d from files \"%s\"")%line_num%f_name.string()), false);
-              r1=readForcesLine ( f, ncexp, skip );
+              readForcesLine ( f, ncexp, skip, r1 );
             }
             {
               CurrentExceptionContext ex(str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()), false);
-              r2=readForcesLine ( f2, ncexp, skip );
+              readForcesLine ( f2, ncexp, skip, r2 );
             }
-//             std::cout<<r1<<r2<<std::endl;
-            if ( (r1.n_cols==0) || (r2.n_cols==0) )
+
+            if ( (r1.size()==0) || (r2.size()==0) )
             {
                 if ( !skip ) break;
             }
             else
             {
                 // make compatible with earlier OF versions
-                r1.shed_cols(1,3); // remove total force
-                r2.shed_cols(1,3); // remove total moment
-                r2.shed_col(0); // remove time column
-//                 if (r1.n_cols==7) // append porosity columns, if not present
-//                 {
-//                     arma::mat rm=arma::join_rows(r1, arma::zeros(1,3));
-//                     r1=rm;
-//                 }
-//                 if (r2.n_cols==7) // append porosity columns, if not present
-//                 {
-//                     arma::mat rm=arma::join_rows(r2, arma::zeros(1,3));
-//                     r2=rm;
-//                 }
-                
-                row=arma::join_rows ( r1, r2 );
-//     std::cout<<"r="<<row<<std::endl;
-                
+                r1.erase(r1.begin()+1,r1.begin()+3+1); // remove total force
+                r2.erase(r2.begin()+1,r2.begin()+3+1); // remove total moment
+                r2.erase(r2.begin()); // remove time column
+
+                row=r1;
+                row.insert( row.end(), r2.begin(), r2.end() );
             }
           }
         else
           {
             CurrentExceptionContext ex(str(format("reading line %d from file \"%s\"")%line_num%f_name.string()), false);
-            row=readForcesLine ( f, ncexp, skip );
-            if ( row.n_cols==0 )
+            readForcesLine ( f, ncexp, skip, row );
+            if ( row.size()==0 )
             {
                 if ( !skip ) break;
             }
@@ -969,35 +975,36 @@ arma::mat forces::readForces
                 if ( c.OFversion() >=220 )
                 {
                     // remove porous forces
-                    row.shed_cols ( 16,18 );
-                    row.shed_cols ( 7,9 );
+                    row.erase ( row.begin()+16, row.begin()+18+1 );
+                    row.erase ( row.begin()+7, row.begin()+9+1 );
                 } 
             }
         }
 
-        if (row.n_cols>0)
+        if (row.size()>0)
         {
-         if ( fl.n_rows==0 )
-           {
-             fl=row;
-           }
-         else
-           {
-             fl.resize ( fl.n_rows+1, fl.n_cols );
-             fl.row ( fl.n_rows-1 ) = row;
-           }
+          if (fl.size()>0)
+          {
+            if (fl.back().size()!=row.size())
+              throw insight::Exception("Inconsistent number of columns in forces file!");
+          }
+          fl.push_back(row);
         }
       }
   }
 
-//   if ( c.OFversion() >=220 )
-//     {
-//       // remove porous forces
-//       fl.shed_cols ( 16,18 );
-//       fl.shed_cols ( 7,9 );
-//     }
-
-  return fl;
+  arma::mat result;
+  if (fl.size()>0)
+  {
+    auto nr=fl.size(), nc=fl.back().size();
+    result=arma::zeros(nr, nc);
+    for (size_t r=0; r<nr; r++)
+      for (size_t c=0; c<nc; c++)
+      {
+        result(r, c)=fl[r][c];
+      }
+  }
+  return result;
 }
 
 

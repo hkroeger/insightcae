@@ -187,12 +187,12 @@ if not statefile is None:
     subprocess.call(["pvbatch", "--use-offscreen-rendering", scrp])
   else:
     scrp=writeloadscript(statefile, os.getcwd(), opts.batch, loadcmd=False, appendFile=opts.loadscript);
-    subprocess.call(["paraview", "--state="+statefile, "--script="+scrp])
+    subprocess.call(["paraview", "--title", casename, "--state="+statefile, "--script="+scrp])
   #os.remove(scrp)
 else:
   cn=casename+".foam"
   touch(cn)
-  subprocess.call(["paraview", "--data="+cn])
+  subprocess.call(["paraview", "--title", casename, "--data="+cn])
   os.remove(cn)
   
 if remove_statefile:

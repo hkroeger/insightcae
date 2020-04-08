@@ -28,9 +28,16 @@ if [ -e "$1" ]; then
  META=$1
 fi
 
+function basenameOrNothing() {
+  P=`pwd`; if [ "$P" != "/" ]; then basename ${P}$1; fi
+}
+
+CASENAME=""
 if [ -e $META ]; then
 
  cd $(dirname $META)
+ CASENAME=$(cd ../.. && basenameOrNothing _)$(cd .. && basenameOrNothing _)$(basenameOrNothing)
+
  META=$(basename $META)
 
  read SERVER DIR << EOF
@@ -95,6 +102,6 @@ bash -c "echo \"\$\$\"; exec tail -f -n+0 $LOG" | {
 echo "PV server is up"
 
 echo "Launching PV client..."
-paraview --server-url=cs://127.0.0.1:$LOCALPORT --data=$DIR/system/controlDict
+paraview --title "$CASENAME" --server-url=cs://127.0.0.1:$LOCALPORT --data=$DIR/system/controlDict
 
 cleanup

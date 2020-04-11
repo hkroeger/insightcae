@@ -3,15 +3,17 @@
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 SERVER=localhost
 META=meta.foam
+STATEFILE=""
 SUBDIR=""
 
-while getopts "h?m:s:r:" opt; do
+while getopts "h?m:s:r:t:" opt; do
     case "$opt" in
     h|\?)
         echo "Usage $0 [-m] [<meta file name>]"
         echo "-m <file name>: meta file name"
         echo "-s <sub dir>: case directory is subdirectory in remote dir"
         echo "-r <remote host>: continue to <remote host> behind target host (e.g. a cluster node)"
+        echo "-t <state file>: load the specified state file"
         exit 0
         ;;
     m)  META=$OPTARG
@@ -19,6 +21,8 @@ while getopts "h?m:s:r:" opt; do
     s)  SUBDIR=$OPTARG
         ;;
     r)  REMHOST=$OPTARG
+        ;;
+    t)  STATEFILE=$OPTARG
         ;;
     esac
 done
@@ -80,11 +84,21 @@ if [ "$LABEL" != "PORT" ]; then
  echo While determining local port: expected "PORT", got "$LABEL"
 fi
 
-LOG=$(mktemp)
+LOG=$(mktemp --tmpdir log_${CASENAME}_XXXX.txt)
+
+if [ -n "$STATEFILE" ]; then
+ LOADSCRIPT=$(mktemp --tmpdir loadscript_${CASENAME}_XXXX.py)
+ cat > $LOADSCRIPT << EOF
+import paraview.simple
+paraview.simple.LoadState("$STATEFILE",
+                       LoadStateDataFileOptions='Search files under specified directory',
+                       DataDirectory='$DIR/system' )
+EOF
+fi
 
 function cleanup() {
  kill $PVSERVERPID
- rm -vf $LOG
+ rm -vf $LOG $LOADSCRIPT
 }
 
 trap 'cleanup' SIGINT
@@ -102,6 +116,11 @@ bash -c "echo \"\$\$\"; exec tail -f -n+0 $LOG" | {
 echo "PV server is up"
 
 echo "Launching PV client..."
-paraview --title "$CASENAME" --server-url=cs://127.0.0.1:$LOCALPORT --data=$DIR/system/controlDict
+if [ -n "$STATEFILE" ]; then
+ LOADOPT="--state=$LOADSCRIPT"
+else
+ LOADOPT="--data=$DIR/system/controlDict"
+fi
+paraview --title "$CASENAME" --server-url=cs://127.0.0.1:$LOCALPORT $LOADOPT
 
 cleanup

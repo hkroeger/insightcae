@@ -86,7 +86,6 @@ Session *TermWidgetImpl::createSession(QWidget* parent)
     session->setProgram(QString::fromLocal8Bit(qgetenv("SHELL")));
 
 
-
     QStringList args = QStringList(QString());
     session->setArguments(args);
     session->setAutoClose(true);
@@ -99,6 +98,11 @@ Session *TermWidgetImpl::createSession(QWidget* parent)
     session->setDarkBackground(true);
 
     session->setKeyBindings(QString());
+
+    auto env=session->environment();
+    env << "TERM=xterm-color";
+    session->setEnvironment(env);
+
     return session;
 }
 

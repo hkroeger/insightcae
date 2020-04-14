@@ -3,12 +3,13 @@
 
 int main(int argc, char *argv[])
 {
+    argList::validOptions.insert("alphaName", "name of alpha field");
+
     #include "setRootCase.H"
     #include "createTime.H"
     #include "createMesh.H"
 
 
-    argList::validOptions.insert("alphaName", "name of alpha field");
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

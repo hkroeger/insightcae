@@ -137,8 +137,6 @@ randomProcesses
   
   addOFConfig(Fx32 fx32 162)
 
-  SET(LIB_SEARCHFLAGS "-L${Fx32_LIB_DIR} -L${Fx32_FOAM_MPI_LIBBIN} -L${Fx32_METIS_LIB_DIR} -L${Fx32_PARMETIS_LIB_DIR} -L${Fx32_SCOTCH_LIB_DIR} -L${Fx32_MESQUITE_LIB_DIR} -L${Fx32_PARMGRIDGEN_LIB_DIR}")
-
   macro (setup_exe_target_Fx32 targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
     
@@ -149,7 +147,7 @@ randomProcesses
     LIST(APPEND allincludes "${Fx32_INCLUDE_PATHS}")
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${Fx32_CXX_FLAGS})
-    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx32_LINKEXE} ${LIB_SEARCHFLAGS}")
+    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx32_LINKEXE}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${Fx32_INSIGHT_BIN})
     set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
@@ -178,7 +176,7 @@ randomProcesses
     LIST(APPEND allincludes "${Fx32_INCLUDE_PATHS}")
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${Fx32_CXX_FLAGS})
-    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx32_LINKLIBSO} ${LIB_SEARCHFLAGS}")
+    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx32_LINKLIBSO}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${Fx32_INSIGHT_LIB})
     set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)

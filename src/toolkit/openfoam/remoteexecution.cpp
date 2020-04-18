@@ -487,7 +487,8 @@ int RemoteLocation::execRemoteCmd(const std::string& command, bool throwOnFail)
        const OFEnvironment& cofe = OFEs::getCurrent();
        cmd << "source " << cofe.bashrc().filename() << ";";
     }
-    catch (const std::exception& /*e*/) {
+    catch (const std::exception& e) {
+      std::cerr<<e.what()<<std::endl;
        // ignore, don't load OF config remotely
     }
 

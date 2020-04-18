@@ -28,6 +28,7 @@ endmacro()
 
 macro(detectIncPaths prefix)
  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${${prefix}_BASHRC} ${ARGN} OUTPUT_VARIABLE ${prefix}_INCLUDE_PATHS)
+ list(APPEND ${prefix}_INCLUDE_PATHS ${${prefix}_LIBSRC_DIR})
 endmacro()
 
 

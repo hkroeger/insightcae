@@ -24,7 +24,7 @@ IF(Fx32_BASHRC)
   GET_FILENAME_COMPONENT(Fx32_ETC_DIR ${Fx32_BASHRC} PATH)
   GET_FILENAME_COMPONENT(Fx32_DIR ${Fx32_ETC_DIR} PATH)
 
-  detectEnvVars(Fx32 WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
+  detectEnvVars(Fx32 WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN MESQUITE_LIB_DIR MESQUITE_INCLUDE_DIR PARMGRIDGEN_LIB_DIR PARMGRIDGEN_INCLUDE_DIR)
   detectEnvVar(Fx32 LINKLIBSO LINKLIBSO_full)
   detectEnvVar(Fx32 LINKEXE LINKEXE_full)
   detectEnvVar(Fx32 FOAM_MPI MPI)
@@ -137,11 +137,14 @@ randomProcesses
   
   addOFConfig(Fx32 fx32 162)
 
+  SET(LIB_SEARCHFLAGS "-L${Fx32_LIB_DIR} -L${Fx32_FOAM_MPI_LIBBIN} -L${Fx32_METIS_LIB_DIR} -L${Fx32_PARMETIS_LIB_DIR} -L${Fx32_SCOTCH_LIB_DIR} -L${Fx32_MESQUITE_LIB_DIR} -L${Fx32_PARMGRIDGEN_LIB_DIR}")
+
   macro (setup_exe_target_Fx32 targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
     
     add_executable(${targetname} ${sources})
-    
+
+ 
     set(allincludes ${includes})
     LIST(APPEND allincludes "${Fx32_INCLUDE_PATHS}")
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
@@ -156,7 +159,9 @@ randomProcesses
 #      ${Fx32_PARMETIS_LIB_DIR}/libparmetis.a
 #      ${Fx32_SCOTCH_LIB_DIR}/libscotch.so
 #      ${Fx32_SCOTCH_LIB_DIR}/libscotcherr.so
-#      ${Fx32_MESQUITE_LIB_DIR}/libmesquite.so
+      ${Fx32_MESQUITE_LIB_DIR}/libmesquite.so
+      ${Fx32_PARMGRIDGEN_LIB_DIR}/libMGridGen.so
+      ${Fx32_PARMGRIDGEN_LIB_DIR}/libIMlib.so
      )
      install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx32_INSIGHT_INSTALL_BIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
      
@@ -166,8 +171,6 @@ randomProcesses
   
   macro (setup_lib_target_Fx32 targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
-    
-    SET(LIB_SEARCHFLAGS "-L${Fx32_LIB_DIR} -L${Fx32_FOAM_MPI_LIBBIN} -L${Fx32_METIS_LIB_DIR} -L${Fx32_PARMETIS_LIB_DIR} -L${Fx32_SCOTCH_LIB_DIR} -L${Fx32_MESQUITE_LIB_DIR}")
     
     add_library(${targetname} SHARED ${sources})
     
@@ -179,7 +182,13 @@ randomProcesses
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${Fx32_INSIGHT_LIB})
     set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-    target_link_libraries(${targetname} ${Fx32_LIBRARIES} ${ARGN})
+    target_link_libraries(${targetname} 
+	     ${Fx32_LIBRARIES} 
+	     ${ARGN}
+      ${Fx32_MESQUITE_LIB_DIR}/libmesquite.so
+      ${Fx32_PARMGRIDGEN_LIB_DIR}/libMGridGen.so
+      ${Fx32_PARMGRIDGEN_LIB_DIR}/libIMlib.so
+	     )
     target_include_directories(${targetname}
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

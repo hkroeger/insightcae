@@ -24,7 +24,7 @@ IF(Fx41_BASHRC)
   GET_FILENAME_COMPONENT(Fx41_ETC_DIR ${Fx41_BASHRC} PATH)
   GET_FILENAME_COMPONENT(Fx41_DIR ${Fx41_ETC_DIR} PATH)
 
-  detectEnvVars(Fx41 WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
+  detectEnvVars(Fx41 WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN MESQUITE_LIB_DIR MESQUITE_INCLUDE_DIR PARMGRIDGEN_LIB_DIR PARMGRIDGEN_INCLUDE_DIR)
   detectEnvVar(Fx41 LINKLIBSO LINKLIBSO_full)
   detectEnvVar(Fx41 LINKEXE LINKEXE_full)
   detectEnvVar(Fx41 FOAM_MPI MPI)
@@ -154,17 +154,16 @@ conjugateHeatTransfer
     LIST(APPEND allincludes "${Fx41_INCLUDE_PATHS}")
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${Fx41_CXX_FLAGS})
-    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx41_LINKEXE} ${LIB_SEARCHFLAGS}")
+    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx41_LINKEXE}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${Fx41_INSIGHT_BIN})
     set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
     target_link_libraries(${targetname}
-      ${Fx41_LIBRARIES}
-      ${ARGN}
-#      ${Fx41_PARMETIS_LIB_DIR}/libparmetis.a
-#      ${Fx41_SCOTCH_LIB_DIR}/libscotch.so
-#      ${Fx41_SCOTCH_LIB_DIR}/libscotcherr.so
-#      ${Fx41_MESQUITE_LIB_DIR}/libmesquite.so
+        ${Fx41_LIBRARIES}
+        ${ARGN}
+        ${Fx41_MESQUITE_LIB_DIR}/libmesquite.so
+        ${Fx41_PARMGRIDGEN_LIB_DIR}/libMGridGen.so
+        ${Fx41_PARMGRIDGEN_LIB_DIR}/libIMlib.so
      )
      install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx41_INSIGHT_INSTALL_BIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
      
@@ -175,19 +174,23 @@ conjugateHeatTransfer
   macro (setup_lib_target_Fx41 targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
     
-    SET(LIB_SEARCHFLAGS "-L${Fx41_LIB_DIR} -L${Fx41_FOAM_MPI_LIBBIN} -L${Fx41_METIS_LIB_DIR} -L${Fx41_PARMETIS_LIB_DIR} -L${Fx41_SCOTCH_LIB_DIR} -L${Fx41_MESQUITE_LIB_DIR}")
-    
     add_library(${targetname} SHARED ${sources})
     
     set(allincludes ${includes})
     LIST(APPEND allincludes "${Fx41_INCLUDE_PATHS}")
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${Fx41_CXX_FLAGS})
-    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx41_LINKLIBSO} ${LIB_SEARCHFLAGS}")
+    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx41_LINKLIBSO}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${Fx41_INSIGHT_LIB})
     set_target_properties(${targetname} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-    target_link_libraries(${targetname} ${Fx41_LIBRARIES} ${ARGN})
+    target_link_libraries(${targetname} 
+        ${Fx41_LIBRARIES}
+        ${ARGN}
+        ${Fx41_MESQUITE_LIB_DIR}/libmesquite.so
+        ${Fx41_PARMGRIDGEN_LIB_DIR}/libMGridGen.so
+        ${Fx41_PARMGRIDGEN_LIB_DIR}/libIMlib.so
+    )
     target_include_directories(${targetname}
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

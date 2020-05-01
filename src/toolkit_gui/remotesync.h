@@ -2,7 +2,7 @@
 #define REMOTESYNC_H
 
 #include <QThread>
-#include "openfoam/remoteexecution.h"
+#include "base/remoteexecution.h"
 
 
 namespace insight {

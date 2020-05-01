@@ -6,7 +6,7 @@
 #include <QFileSystemModel>
 
 #include "base/boost_include.h"
-#include "openfoam/mountremote.h"
+#include "base/mountremote.h"
 
 namespace Ui {
   class RemoteDirSelector;

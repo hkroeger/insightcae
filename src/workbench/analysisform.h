@@ -24,6 +24,7 @@
 #ifndef Q_MOC_RUN
 #include "base/analysis.h"
 #include "base/resultset.h"
+#include "base/remoteexecution.h"
 #include "parametereditorwidget.h"
 #endif
 
@@ -41,6 +42,11 @@
 #include "qdebugstream.h"
 #include "logviewerwidget.h"
 #include "remotedirselector.h"
+
+#include "localrun.h"
+#ifdef HAVE_WT
+#include "remoterun.h"
+#endif
 
 namespace Ui
 {
@@ -96,6 +102,7 @@ protected:
   QAction *act_save_rpt_=nullptr;
   QAction *act_tool_of_paraview_=nullptr, *act_tool_of_clean_=nullptr;
 
+
   /**
    * @brief ist_file_
    * currently opened file
@@ -115,30 +122,49 @@ protected:
   bool is_modified_;
 
   void updateSaveMenuLabel();
+  void updateWindowTitle();
 
-  bool hasValidExecutionPath() const;
-  boost::filesystem::path currentExecutionPath(bool createIfNonexistent) const;
+  insight::RemoteServerInfo lookupRemoteServerByLabel(const QString& hostLabel) const;
 
-  std::map<std::string, boost::filesystem::path> remotePaths_;
+  bool checkAnalysisExecutionPreconditions();
+  bool changeWorkingDirectory(const QString& wd);
+  bool changeRemoteLocation(const QString& hostLabel, const QString& remoteDir);
+  bool changeRemoteLocation(const insight::RemoteExecutionConfig* rec = nullptr);
+  void applyDirectorySettings();
 
   // ====================================================================================
-  // ======== current run action (or null, if idle)
+  // ======== current action objects
+  std::unique_ptr<insight::CaseDirectory> caseDirectory_;
+  std::unique_ptr<insight::RemoteExecutionConfig> remoteDirectory_;
   std::unique_ptr<WorkbenchAction> currentWorkbenchAction_;
 
   // ================================================================================
   // ================================================================================
   // ===== Status queries
 
-  bool isRunningLocally() const;
-  bool isRunningRemotely() const;
-  bool isRunning() const;
-  bool remoteDownloadOrResumeIsPossible() const;
-  bool isRemoteDirectoryPresent() const;
+  inline bool isRunningLocally() const
+  {
+    if (currentWorkbenchAction_)
+      return dynamic_cast<LocalRun*>(currentWorkbenchAction_.get());
+    return false;
+  }
 
-  std::unique_ptr<insight::MountRemote> temporaryMountedRemoteDir() const;
+  inline bool isRunningRemotely() const
+  {
+#ifdef HAVE_WT
+    if (currentWorkbenchAction_)
+      return dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get());
+#endif
+    return false;
+  }
+
+  inline bool isRunning() const
+  {
+    return isRunningLocally() || isRunningRemotely();
+  }
 
 public:
-  AnalysisForm(QWidget* parent, const std::string& analysisName);
+  AnalysisForm(QWidget* parent, const std::string& analysisName, const boost::filesystem::path& workingDirectory="");
   ~AnalysisForm();
   
   inline insight::ParameterSet& parameters() { return parameters_; }
@@ -154,19 +180,15 @@ public:
   void saveParameters(bool *cancelled=nullptr);
   void saveParametersAs(bool *cancelled=nullptr);
 
-  void setExecutionPath(const boost::filesystem::path& path);
 
   // ================================================================================
   // ================================================================================
   // ===== Remote run logic
 
-  void recheckButtonAvailability();
 
-  void upload();
   void startRemoteRun();
   void resumeRemoteRun();
   void disconnectFromRemoteRun();
-  void download();
 
   // ================================================================================
   // ================================================================================
@@ -182,6 +204,8 @@ private Q_SLOTS:
   void onSaveParameters();
   void onSaveParametersAs();
   void onLoadParameters();
+
+  void workingDirectoryInputChanged();
 
   void onRunAnalysis();
   void onKillAnalysis();
@@ -203,11 +227,12 @@ private Q_SLOTS:
   void onWnowAndStop();
   void onShell();
 
+  void upload();
+  void download();
+
   void onShowParameterXML();
 
   void onConfigModification();
-
-  void onTogglePacking();
 
 Q_SIGNALS:
   void apply();
@@ -215,6 +240,8 @@ Q_SIGNALS:
   void statusMessage(const QString& message, int timeout=0);
   
 private:
+
+  QString lastWorkingDirectory_ = "", lastRemoteDirectory_ = "";
   Ui::AnalysisForm* ui;
 
 };

@@ -6,7 +6,7 @@
 #include "base/parameterset.h"
 #include "base/resultset.h"
 #include "base/exception.h"
-#include "openfoam/taskspoolerinterface.h"
+#include "base/taskspoolerinterface.h"
 #include "base/progressdisplayer.h"
 
 #include <armadillo>

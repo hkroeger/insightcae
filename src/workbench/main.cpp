@@ -25,6 +25,7 @@
 
 #include "insightcaeapplication.h"
 #include "base/boost_include.h"
+#include "base/toolkitversion.h"
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -58,6 +59,7 @@ int main(int argc, char** argv)
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help", "produce help message")
+    ("version,r", "print version and exit")
     ("libs", po::value< StringList >(), "Additional libraries with analysis modules to load")
     ("input-file,f", po::value< std::string >(), "Specifies input file.")
     ;
@@ -93,7 +95,13 @@ int main(int argc, char** argv)
         displayHelp();
         exit(0);
     }
-    
+
+    if (vm.count("version"))
+    {
+        cout << std::string(insight::ToolkitVersion::current) << endl;
+        exit(0);
+    }
+
     if (vm.count("libs"))
     {
         StringList libs=vm["libs"].as<StringList>();
@@ -120,7 +128,7 @@ int main(int argc, char** argv)
     QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
     splash.show();
     app.setSplashScreen(&splash);
-    splash.showMessage("Wait...");
+    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current) + ", Wait...");
 
     workbench window;
 

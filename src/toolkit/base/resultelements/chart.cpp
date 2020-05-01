@@ -215,7 +215,7 @@ void Chart::generatePlotImage ( const path& imagepath ) const
     bool keep=false;
     if (getenv("INSIGHT_KEEP_TEMP_DIRS"))
       keep=true;
-    TemporaryCaseDir tmp ( keep, bn+"-generate" );
+    CaseDirectory tmp ( keep, bn+"-generate" );
 
     {
         Gnuplot gp;
@@ -242,9 +242,9 @@ void Chart::generatePlotImage ( const path& imagepath ) const
 
     ::system (
         (
-            "mv "+bn+".tex "+ ( tmp.dir/ ( bn+".tex" ) ).string()+"; "
-            "mv "+bn+"-inc.eps "+ ( tmp.dir/ ( bn+"-inc.eps" ) ).string()+"; "
-            "cd "+tmp.dir.string()+"; "
+            "mv "+bn+".tex "+ ( tmp/ ( bn+".tex" ) ).string()+"; "
+            "mv "+bn+"-inc.eps "+ ( tmp/ ( bn+"-inc.eps" ) ).string()+"; "
+            "cd "+tmp.string()+"; "
             "pdflatex -interaction=batchmode -shell-escape "+bn+".tex; "
             "convert -density 600 "+bn+".pdf "+absolute ( imagepath ).string()
         ).c_str() );

@@ -49,6 +49,26 @@ Author
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+
+#define CHECKPF(FLD) \
+{\
+  Info << #FLD " min / max / avg = "<<min(FLD).value() << " / " << max(FLD).value() << " / "<<average(FLD).value() << endl;\
+}
+
+#define CHECK(FLD) \
+{\
+  volScalarField FLD = thermo.FLD();\
+  Info << #FLD " min / max / avg = "<<min(FLD).value() << " / " << max(FLD).value() << " / "<<average(FLD).value() << endl;\
+}
+
+#define CHECKALL \
+  CHECKPF(rho) \
+  CHECK(T) \
+  CHECK(e) \
+  CHECK(psi) \
+  CHECK(Cp) \
+  CHECK(Cv) \
+
 int main(int argc, char *argv[])
 {
 #   include "setRootCase.H"
@@ -119,6 +139,8 @@ int main(int argc, char *argv[])
             mrfZones.relativeVelocity(Urel);
            
             turbulence->correct();
+
+            CHECKALL
         }
 #if OF_VERSION<010604
         while (++oCorr < nOuterCorr);

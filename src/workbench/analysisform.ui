@@ -12,226 +12,208 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Execution directory:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="localDir">
-       <property name="toolTip">
-        <string>Given path has to exist. If left empty: unique directory will be created.</string>
-       </property>
-       <property name="placeholderText">
-        <string>(auto create)</string>
-       </property>
-       <property name="clearButtonEnabled">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>(</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="cbDontKeepExeDir">
-       <property name="text">
-        <string>remove after analysis is finished )</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnSelectExecDir">
-       <property name="text">
-        <string>...</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4">
-     <item>
-      <widget class="QCheckBox" name="cbRemoteRun">
-       <property name="text">
-        <string>Remote execution,</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="lbRR1">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>run on:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="hostList">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="currentText">
-        <string>localhost</string>
-       </property>
-       <item>
-        <property name="text">
-         <string>localhost</string>
+    <widget class="QGroupBox" name="gbExecution">
+     <property name="title">
+      <string>Execution</string>
+     </property>
+     <property name="flat">
+      <bool>false</bool>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_4">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Working directory:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leWorkingDirectory">
+          <property name="toolTip">
+           <string>Given path has to exist. If left empty: unique directory will be created.</string>
+          </property>
+          <property name="placeholderText">
+           <string>(auto create)</string>
+          </property>
+          <property name="clearButtonEnabled">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnSelectWorkingDirectory">
+          <property name="text">
+           <string>...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="cbRemoveWorkingDirectory">
+          <property name="text">
+           <string>remove after analysis is finished</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="gbExecuteOnRemoteHost">
+        <property name="title">
+         <string>Execute on remote host</string>
         </property>
-       </item>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSpinBox" name="portNum">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximum">
-        <number>65535</number>
-       </property>
-       <property name="singleStep">
-        <number>1</number>
-       </property>
-       <property name="value">
-        <number>8090</number>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnResume">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>Resume</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnDisconnect">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>Disconnect</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QLabel" name="lbRR2">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>Remote dir:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="remoteDir">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="toolTip">
-        <string>Given path has to exist. If left empty: unique directory will be created.</string>
-       </property>
-       <property name="placeholderText">
-        <string>(auto create)</string>
-       </property>
-       <property name="clearButtonEnabled">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnSelectRemoteDir">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>...</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnUpload">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="toolTip">
-        <string>Upload to remote location</string>
-       </property>
-       <property name="text">
-        <string>Up</string>
-       </property>
-       <property name="icon">
-        <iconset>
-         <normalon>:/resources/upload.png</normalon>
-        </iconset>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnDownload">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="toolTip">
-        <string>Download from remote location</string>
-       </property>
-       <property name="text">
-        <string>Down</string>
-       </property>
-       <property name="icon">
-        <iconset>
-         <normalon>:/resources/download.png</normalon>
-        </iconset>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnRemoveRemote">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>Remove remote</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+        <property name="flat">
+         <bool>false</bool>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <item>
+          <widget class="QLabel" name="lbRR1">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="text">
+            <string>run on:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="ddlExecutionHosts">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="currentText">
+            <string>localhost</string>
+           </property>
+           <item>
+            <property name="text">
+             <string>localhost</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lbRR2">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="text">
+            <string>Remote dir:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="leRemoteDirectory">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="toolTip">
+            <string>Given path has to exist. If left empty: unique directory will be created.</string>
+           </property>
+           <property name="placeholderText">
+            <string>(auto create)</string>
+           </property>
+           <property name="clearButtonEnabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnSelectRemoteDirectory">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="text">
+            <string>...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnResume">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="text">
+            <string>Resume</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnUpload">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="toolTip">
+            <string>Upload to remote location</string>
+           </property>
+           <property name="text">
+            <string>Up</string>
+           </property>
+           <property name="icon">
+            <iconset>
+             <normalon>:/resources/upload.png</normalon>
+            </iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnDownload">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="toolTip">
+            <string>Download from remote location</string>
+           </property>
+           <property name="text">
+            <string>Down</string>
+           </property>
+           <property name="icon">
+            <iconset>
+             <normalon>:/resources/download.png</normalon>
+            </iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnRemoveRemote">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="text">
+            <string>Remove remote</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -267,8 +249,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>1430</width>
-              <height>884</height>
+              <width>1435</width>
+              <height>772</height>
              </rect>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -320,14 +302,14 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QPushButton" name="runBtn">
+        <widget class="QPushButton" name="btnRun">
          <property name="text">
           <string>Run</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="killBtn">
+        <widget class="QPushButton" name="btnKill">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -337,7 +319,17 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="paraviewbtn">
+        <widget class="QPushButton" name="btnDisconnect">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Disconnect</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnParaview">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -353,7 +345,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="cleanbtn">
+        <widget class="QPushButton" name="btnClean">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -366,7 +358,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="wnow">
+        <widget class="QPushButton" name="btnWriteNow">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -379,7 +371,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="wnowandstop">
+        <widget class="QPushButton" name="btnWriteNowAndStop">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -394,7 +386,7 @@
        <item>
         <widget class="QPushButton" name="btnShell">
          <property name="enabled">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <property name="text">
           <string>Shell...</string>

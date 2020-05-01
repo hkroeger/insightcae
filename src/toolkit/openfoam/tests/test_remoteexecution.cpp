@@ -19,7 +19,7 @@
 
 
 #include "base/boost_include.h"
-#include "openfoam/remoteexecution.h"
+#include "base/remoteexecution.h"
 
 using namespace std;
 using namespace boost;

@@ -23,6 +23,7 @@
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
+#include "base/toolkitversion.h"
 
 #include <iostream>
 #include <fstream>
@@ -68,6 +69,7 @@ int main(int argc, char *argv[])
     desc.add_options()
       ("help", "produce help message")
       ("skiplatex,x", "skip execution of pdflatex")
+      ("version,r", "print version and exit")
       ("workdir,w", po::value<std::string>(), "execution directory")
       ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
       ("bool,b", po::value<StringList>(), "boolean variable assignment")
@@ -123,6 +125,12 @@ int main(int argc, char *argv[])
     if (vm.count("help"))
     {
       displayHelp();
+      exit(0);
+    }
+
+    if (vm.count("version"))
+    {
+      cout << std::string(insight::ToolkitVersion::current) << endl;
       exit(0);
     }
 

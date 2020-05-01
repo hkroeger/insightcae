@@ -36,6 +36,8 @@
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 
+#include "base/toolkitversion.h"
+
 
 void workbench::updateRecentFileActions()
 {
@@ -55,7 +57,7 @@ void workbench::updateRecentFileActions()
       recentFileActs_[i]->setData(files[i]);
       recentFileActs_[i]->setVisible(true);
   }
-  for (int j = numRecentFiles; j < recentFileActs_.size(); ++j)
+  for (size_t j = numRecentFiles; j < recentFileActs_.size(); ++j)
       recentFileActs_[j]->setVisible(false);
 
   separatorAct_->setVisible(numRecentFiles > 0);
@@ -85,7 +87,7 @@ workbench::workbench()
   analysisMenu->addAction( a );
 
   separatorAct_ = analysisMenu->addSeparator();
-  for (int i = 0; i < recentFileActs_.size(); ++i)
+  for (size_t i = 0; i < recentFileActs_.size(); ++i)
   {
       recentFileActs_[i] = new QAction(this);
 
@@ -96,6 +98,22 @@ workbench::workbench()
               this, SLOT(openRecentFile()));
   }
   updateRecentFileActions();
+
+  QMenu *helpMenu = menuBar()->addMenu( "&Help" );
+
+  QAction* ab = new QAction("About...", this);
+  helpMenu->addAction( ab );
+  connect(ab, &QAction::triggered,
+          [&]()
+          {
+            QMessageBox::information(
+                  this,
+                  "Workbench Information",
+                  "InsightCAE Analysis Workbench\n"
+                  "Version "+QString::fromStdString(insight::ToolkitVersion::current)+"\n"
+                  );
+          }
+  );
 
   readSettings();
 }
@@ -178,7 +196,10 @@ void workbench::openAnalysis(const QString& fn)
   AnalysisForm *form;
   try
   {
-    form = new AnalysisForm(mdiArea_, analysisName);
+    form = new AnalysisForm(mdiArea_,
+                            analysisName,
+                            boost::filesystem::path(fn.toStdString()).parent_path()
+                            );
   }
   catch (const std::exception& e)
   {
@@ -188,8 +209,6 @@ void workbench::openAnalysis(const QString& fn)
   }
   //form->parameters().readFromNode(doc, *rootnode, fp.parent_path());
   form->loadParameters(fp);
-  boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();
-  form->setExecutionPath(dir);
   Q_EMIT update();
   form->showMaximized();
 }

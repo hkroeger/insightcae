@@ -24,6 +24,7 @@
 
 #include "base/boost_include.h"
 #include "base/exception.h"
+#include "base/toolkitversion.h"
 #include "insightcaeapplication.h"
 #include "iscadmainwindow.h"
 #include "qinsighterror.h"
@@ -53,6 +54,7 @@ int main ( int argc, char** argv )
   po::options_description desc ( "Allowed options" );
   desc.add_options()
   ( "help,h", "produce help message" )
+  ( "version,r", "print version and exit" )
   ( "batch,b", "evaluate model from specified input file without starting GUI" )
   ( "nolog,l", "put debug output to console instead of log window" )
   ( "nobgparse,g", "deactivate background parsing" )
@@ -91,6 +93,12 @@ int main ( int argc, char** argv )
   if ( vm.count ( "help" ) )
     {
       displayHelp();
+      exit ( 0 );
+    }
+
+  if ( vm.count ( "version" ) )
+    {
+      cout << std::string(insight::ToolkitVersion::current) << endl;
       exit ( 0 );
     }
 

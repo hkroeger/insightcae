@@ -6,7 +6,7 @@
 #include <QProcess>
 
 #include "base/boost_include.h"
-#include "openfoam/remoteexecution.h"
+#include "base/remoteexecution.h"
 
 namespace Ui {
 class TaskSpoolerMonitor;

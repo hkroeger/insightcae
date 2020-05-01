@@ -29,7 +29,7 @@
 #include "insertedcaseelement.h"
 
 #ifndef Q_MOC_RUN
-#include "openfoam/remoteexecution.h"
+#include "base/remoteexecution.h"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh_templates.h"

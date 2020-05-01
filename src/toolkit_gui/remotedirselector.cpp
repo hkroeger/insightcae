@@ -2,7 +2,7 @@
 #include "ui_remotedirselector.h"
 
 #include "base/exception.h"
-#include "openfoam/remoteexecution.h"
+#include "base/remoteexecution.h"
 #include <cstdlib>
 
 #include <QDebug>

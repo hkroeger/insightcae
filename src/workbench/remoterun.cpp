@@ -1,5 +1,5 @@
 #include "base/tools.h"
-#include "openfoam/remoteexecution.h"
+#include "base/remoteexecution.h"
 
 #include "remoterun.h"
 #include "analysisform.h"
@@ -19,10 +19,12 @@ namespace bp=boost::process;
 
 void RemoteRun::launchRemoteAnalysisServer()
 {
-  int ret = remote_->execRemoteCmd(
+  auto rd = remote_.remoteDir();
+
+  int ret = remote_.execRemoteCmd(
         "analyze "
-        "--workdir=\""+remote_->remoteDir().string()+"\" "
-        "--server >\""+remote_->remoteDir().string()+"/server.log\" 2>&1 </dev/null &"
+        "--workdir=\""+rd.string()+"\" "
+        "--server >\""+rd.string()+"/server.log\" 2>&1 </dev/null &"
       );
 
   if (ret!=0)
@@ -36,40 +38,16 @@ void RemoteRun::launchRemoteAnalysisServer()
 
 RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
   : WorkbenchAction(af),
-    resume_(resume)
+    resume_( resume ),
+    remote_( *(af->remoteDirectory_) )
 {
-  if (resume)
-  {
-    remote_.reset
-    (
-       new insight::RemoteExecutionConfig
-       (
-         af->ui->localDir->text().toStdString()
-       )
-    );
-  }
-  else
-  {
-    remote_.reset
-    (
-       new insight::RemoteExecutionConfig
-       (
-         insight::remoteServers.findServer(
-           af->ui->hostList->currentText().toStdString()
-           ).second,
-         af->ui->localDir->text().toStdString(),
-         af->ui->remoteDir->text().toStdString()
-       )
-    );
-
-  }
-
-  af->ui->remoteDir->setText( QString::fromStdString(remote_->remoteDir().string()) );
+  if (!af->remoteDirectory_)
+    throw std::logic_error("Internal error: remote directory is  not set!");
 
   int localPort = insight::findFreePort();
-  remote_->createTunnels(
+  remote_.createTunnels(
     {},
-    { {localPort, "localhost", af_->ui->portNum->value()} }
+    { {localPort, "localhost", /*af_->ui->portNum->value()*/8090 } }
   );
 
   ac_.reset(
@@ -77,24 +55,6 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
           str(format("http://localhost:%d") % localPort)
        )
   );
-
-  // lock UI
-  af_->ui->label_2->setEnabled(false);
-  af_->ui->localDir->setEnabled(false);
-  af_->ui->cbDontKeepExeDir->setEnabled(false);
-  af_->ui->btnSelectExecDir->setEnabled(false);
-  af_->ui->cbRemoteRun->setEnabled(false);
-  af_->ui->lbRR1->setEnabled(false);
-  af_->ui->hostList->setEnabled(false);
-  af_->ui->portNum->setEnabled(false);
-  af_->ui->btnResume->setEnabled(false);
-  af_->ui->btnDisconnect->setEnabled(false);
-  af_->ui->lbRR2->setEnabled(false);
-  af_->ui->remoteDir->setEnabled(false);
-  af_->ui->btnSelectRemoteDir->setEnabled(false);
-  af_->ui->btnUpload->setEnabled(false);
-  af_->ui->btnDownload->setEnabled(false);
-  af_->ui->btnRemoveRemote->setEnabled(false);
 
   af_->progdisp_->reset();
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
@@ -166,7 +126,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
                                               }
                                               else
                                               {
-                                                remote_->cleanup();
+                                                remote_.cleanup();
                                               }
                                             }
                                             catch (...) { exceptionEmitter(); }
@@ -233,27 +193,10 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
 
 RemoteRun::~RemoteRun()
 {
-  cout<<"finish remote run"<<endl;
   workerThread_.join();
-  cout<<"worker thread joined"<<endl;
   if (cancelThread_.joinable()) cancelThread_.join();
-
-  // unlock UI
-  af_->ui->label_2->setEnabled(true);
-  af_->ui->localDir->setEnabled(true);
-  af_->ui->cbDontKeepExeDir->setEnabled(true);
-  af_->ui->btnSelectExecDir->setEnabled(true);
-
-  af_->ui->cbRemoteRun->setEnabled(true);
-  af_->recheckButtonAvailability();
 }
 
-
-
-insight::RemoteExecutionConfig& RemoteRun::remote()
-{
-  return *remote_;
-}
 
 
 

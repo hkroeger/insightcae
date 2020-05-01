@@ -1,12 +1,20 @@
 #include "mountremote.h"
 
 #include "base/exception.h"
-#include "openfoam/remoteexecution.h"
+#include "base/remoteexecution.h"
 #include <cstdlib>
+
+
+
 
 namespace bf = boost::filesystem;
 
+
+
+
 namespace insight {
+
+
 
 
 bool MountRemote::isAlreadyMounted() const
@@ -33,16 +41,23 @@ bool MountRemote::isAlreadyMounted() const
 }
 
 
+
+
 void MountRemote::mount(const std::string& server, const bfs_path& remotedir)
 {
   auto gid = getgid();
   auto uid = getuid();
 
-  std::string cmd=boost::str(boost::format( "sshfs -o uid=%d,gid=%d,follow_symlinks \"%s:%s\" \"%s\"") % uid % gid % server % remotedir.string() % mountpoint_.string() );
-  std::cout<<cmd<<std::endl;
+  std::string cmd=boost::str(boost::format( "sshfs -o uid=%d,gid=%d,follow_symlinks \"%s:%s\" \"%s\"")
+                             % uid % gid
+                             % server % remotedir.string()
+                             % mountpoint_.string() );
+
   if (std::system( cmd.c_str() )!=0)
       throw insight::Exception("Could not mount remote filesystem. Failed command was: "+cmd);
 }
+
+
 
 
 void MountRemote::unmount()
@@ -50,6 +65,9 @@ void MountRemote::unmount()
   std::string cmd="fusermount -z -u \""+mountpoint_.string()+"\"";
   std::system(cmd.c_str());
 }
+
+
+
 
 MountRemote::MountRemote(const bfs_path& mountpoint, const std::string& server, const bfs_path& remotedir, bool keep, bool expect_mounted)
     : mountpoint_(mountpoint), keep_(keep), removeMountPoint_(false)
@@ -65,8 +83,10 @@ MountRemote::MountRemote(const bfs_path& mountpoint, const std::string& server, 
     mount(server, remotedir);
 }
 
-MountRemote::MountRemote(const std::string &server, const bfs_path &remotedir)
-  : keep_(false), removeMountPoint_(true)
+
+
+
+void MountRemote::createTemporaryMountPoint()
 {
   mountpoint_ = bf::unique_path( bf::temp_directory_path()/"remote-%%%%-%%%%-%%%%-%%%%" );
   try
@@ -77,8 +97,29 @@ MountRemote::MountRemote(const std::string &server, const bfs_path &remotedir)
   {
     throw insight::Exception("Failed to create temporary mount point \""+mountpoint_.string()+"\"!");
   }
+}
+
+
+
+
+MountRemote::MountRemote(const std::string &server, const bfs_path &remotedir)
+  : keep_(false), removeMountPoint_(true)
+{
+  createTemporaryMountPoint();
   mount(server, remotedir);
 }
+
+
+
+
+MountRemote::MountRemote(const RemoteLocation& rloc)
+  : keep_(false), removeMountPoint_(true)
+{
+  createTemporaryMountPoint();
+  mount(rloc.server(), rloc.remoteDir());
+}
+
+
 
 
 MountRemote::~MountRemote()
@@ -94,10 +135,14 @@ MountRemote::~MountRemote()
 }
 
 
+
+
 const boost::filesystem::path& MountRemote::mountpoint() const
 {
   return mountpoint_;
 }
+
+
 
 
 } // namespace insight

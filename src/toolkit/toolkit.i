@@ -18,8 +18,10 @@
  *
  */
 
+
 %include "common.i"
 %include "exception.i"
+
 
 %module(directors="1") toolkit
 
@@ -36,17 +38,18 @@
 #include "base/case.h"
 #include "base/caseelement.h"
 #include "base/linearalgebra.h"
+#include "base/mountremote.h"
+#include "base/taskspoolerinterface.h"
+#include "base/remoteserverlist.h"
+#include "base/remoteexecution.h"
 
 #include "openfoam/blockmesh_templates.h"
-#include "openfoam/taskspoolerinterface.h"
 #include "openfoam/openfoamdict.h"
-#include "openfoam/mountremote.h"
 #include "openfoam/ofenvironment.h"
 #include "openfoam/openfoamparameterstudy.h"
 #include "openfoam/snappyhexmesh.h"
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/stretchtransformation.h"
-#include "openfoam/remoteserverlist.h"
 #include "openfoam/ofes.h"
 #include "openfoam/paraview.h"
 #include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
@@ -134,7 +137,6 @@
 #include "openfoam/cfmesh.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh.h"
-#include "openfoam/remoteexecution.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/ofdicts.h"
 
@@ -189,6 +191,7 @@ using namespace insight::createPatchOps;
 %include "base/caseelement.h"
 %include "base/linearalgebra.h"
 %include "base/tools.h"
+%include "base/remoteexecution.h"
 
 %include "openfoam/caseelements/boundarycondition.h"
 %include "openfoam/openfoamcase.h"
@@ -196,8 +199,6 @@ using namespace insight::createPatchOps;
 %include "openfoam/openfoamtools.h"
 %include "openfoam/solveroutputanalyzer.h"
 %include "openfoam/caseelements/boundarycondition.h"
-//%include "openfoam/ofdicts.h"
-
 %include "openfoam/caseelements/analysiscaseelements.h"
 %include "openfoam/paraview.h"
 %include "openfoam/ofes.h"
@@ -275,7 +276,6 @@ using namespace insight::createPatchOps;
 %include "openfoam/caseelements/basic/pressuregradientsource.h"
 
 %include "openfoam/openfoamanalysis.h"
-%include "openfoam/remoteexecution.h"
 
 %rename(Cylinder_Parameters) Cylinder::Parameters;
 

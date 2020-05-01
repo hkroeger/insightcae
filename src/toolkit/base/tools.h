@@ -55,13 +55,19 @@ public:
 std::string timeCodePrefix();
 
 
-struct TemporaryCaseDir
+class CaseDirectory
+    : public boost::filesystem::path
 {
   bool keep_;
-  boost::filesystem::path dir;
 
-  TemporaryCaseDir(bool keep=false, const boost::filesystem::path& prefix="");
-  ~TemporaryCaseDir();
+public:
+  CaseDirectory(const boost::filesystem::path& path);
+  CaseDirectory(bool keep=true, const boost::filesystem::path& prefix="");
+  ~CaseDirectory();
+
+  void createDirectory();
+  bool keep() const;
+  void setKeep(bool keep);
 };
 
 

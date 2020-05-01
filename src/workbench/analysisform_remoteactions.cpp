@@ -4,10 +4,10 @@
 #ifndef Q_MOC_RUN
 #include "base/boost_include.h"
 #include "base/resultset.h"
+#include "base/remoteserverlist.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
-#include "openfoam/remoteserverlist.h"
 #endif
 
 
@@ -22,47 +22,31 @@
 #include <QMessageBox>
 #include <QDebug>
 
-namespace bf = boost::filesystem;
 
 
 
 
-std::unique_ptr<insight::MountRemote> AnalysisForm::temporaryMountedRemoteDir() const
-{
-  std::unique_ptr<insight::MountRemote> result;
+namespace fs = boost::filesystem;
 
-  std::string server;
-  boost::filesystem::path remoteDir;
-
-  if ( auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get()) )
-  {
-    server = rr->remote().server();
-    remoteDir = rr->remote().remoteDir();
-  }
-  else
-  {
-    auto i=insight::remoteServers.find( ui->hostList->currentText().toStdString() );
-    if (i->second.isOnDemand())
-    {
-      throw insight::Exception("Can not mount on-demand instances!");
-    }
-    server = i->second.server_;
-    remoteDir = ui->remoteDir->text().toStdString();
-  }
-
-  result.reset(new insight::MountRemote(server, remoteDir));
-
-  return result;
-}
 
 
 
 
 void AnalysisForm::upload()
 {
-  insight::RemoteExecutionConfig rec(currentExecutionPath(false));
+  if (!caseDirectory_)
+  {
+    throw std::logic_error("Internal error: no case directory configured!");
+  }
 
-  auto *rstr = new insight::RunSyncToRemote(rec);
+  if (!remoteDirectory_)
+  {
+    throw std::logic_error("Internal error: attempt to upload but no remote directory configured!");
+  }
+
+  applyDirectorySettings();
+
+  auto *rstr = new insight::RunSyncToRemote(*remoteDirectory_);
 
   connect(rstr, &insight::RunSyncToRemote::progressValueChanged,
           progressbar_, &QProgressBar::setValue);
@@ -90,7 +74,6 @@ void AnalysisForm::upload()
   rstr->start();
   rstr->wait();
 
-  recheckButtonAvailability();
 }
 
 
@@ -99,6 +82,8 @@ void AnalysisForm::upload()
 
 void AnalysisForm::startRemoteRun()
 {
+  applyDirectorySettings();
+
 #ifdef HAVE_WT
   Q_EMIT apply(); // apply all changes into parameter set
   currentWorkbenchAction_.reset(new RemoteRun(this, false));
@@ -109,6 +94,8 @@ void AnalysisForm::startRemoteRun()
 
 void AnalysisForm::resumeRemoteRun()
 {
+  applyDirectorySettings();
+
 #ifdef HAVE_WT
   if (currentWorkbenchAction_)
     throw insight::Exception("Internal error: there is an action running currently!");
@@ -120,7 +107,6 @@ void AnalysisForm::resumeRemoteRun()
 
 void AnalysisForm::disconnectFromRemoteRun()
 {
-  recheckButtonAvailability();
 }
 
 
@@ -128,38 +114,50 @@ void AnalysisForm::disconnectFromRemoteRun()
 
 void AnalysisForm::download()
 {
-  if (isRemoteDirectoryPresent())
+  if (!caseDirectory_)
   {
-    insight::RemoteExecutionConfig rec(currentExecutionPath(false));
-
-    auto* rstl = new insight::RunSyncToLocal(rec);
-
-    connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
-            progressbar_, &QProgressBar::setValue);
-    connect(rstl, &insight::RunSyncToLocal::progressTextChanged,
-            this,
-            [=](const QString& text)
-            {
-              Q_EMIT statusMessage(text);
-            }
-    );
-    connect(rstl, &insight::RunSyncToLocal::transferFinished,
-            rstl, &QObject::deleteLater);
-    connect(rstl, &insight::RunSyncToLocal::transferFinished,
-            this,
-            [&]()
-            {
-              progressbar_->setHidden(true);
-              Q_EMIT statusMessage("Transfer from remote location to local directory finished");
-            }
-    );
-
-    progressbar_->setHidden(false);
-    Q_EMIT statusMessage("Transfer from remote location to local directory started");
-
-    rstl->start();
-    rstl->wait();
+    throw std::logic_error("Internal error: no case directory configured!");
   }
+
+  if (!remoteDirectory_)
+  {
+    throw std::logic_error("Internal error: attempt to upload but no remote directory configured!");
+  }
+
+  if (!remoteDirectory_->remoteDirExists())
+  {
+    throw std::logic_error("The remote directory does not exist! Cannot download.");
+  }
+
+  applyDirectorySettings();
+
+  auto* rstl = new insight::RunSyncToLocal(*remoteDirectory_);
+
+  connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
+          progressbar_, &QProgressBar::setValue);
+  connect(rstl, &insight::RunSyncToLocal::progressTextChanged,
+          this,
+          [=](const QString& text)
+          {
+            Q_EMIT statusMessage(text);
+          }
+  );
+  connect(rstl, &insight::RunSyncToLocal::transferFinished,
+          rstl, &QObject::deleteLater);
+  connect(rstl, &insight::RunSyncToLocal::transferFinished,
+          this,
+          [&]()
+          {
+            progressbar_->setHidden(true);
+            Q_EMIT statusMessage("Transfer from remote location to local directory finished");
+          }
+  );
+
+  progressbar_->setHidden(false);
+  Q_EMIT statusMessage("Transfer from remote location to local directory started");
+
+  rstl->start();
+  rstl->wait();
 }
 
 

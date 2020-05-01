@@ -220,9 +220,9 @@ struct FilesCache
 
 void runLatex(const std::string& formula_code, const boost::filesystem::path& output)
 {
-  TemporaryCaseDir subdir(false, boost::filesystem::temp_directory_path()/"runLatex" );
+  CaseDirectory subdir(false, boost::filesystem::temp_directory_path()/"runLatex" );
 
-  boost::filesystem::path tex_filename = subdir.dir/"input.tex";
+  boost::filesystem::path tex_filename = subdir/"input.tex";
   std::ofstream tex( tex_filename.c_str() );
   tex<<
         "\\documentclass{article}\n"
@@ -244,7 +244,7 @@ void runLatex(const std::string& formula_code, const boost::filesystem::path& ou
           "-interaction=nonstopmode",
           tex_filename.filename().string()
          }),
-     boost::process::start_dir(boost::filesystem::absolute(subdir.dir))
+     boost::process::start_dir(boost::filesystem::absolute(subdir))
   );
 
   boost::process::system

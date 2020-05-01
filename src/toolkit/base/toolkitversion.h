@@ -2,13 +2,28 @@
 #define INSIGHT_TOOLKITVERSION_H
 
 
-namespace insight {
+#include <string>
+
+namespace insight
+{
 
 class ToolkitVersion
 {
+
+    ToolkitVersion();
+
 public:
-  ToolkitVersion();
+    int majorVersion() const;
+    int minorVersion() const;
+
+    std::string patchInfo() const;
+
+    operator std::string() const;
+
+    static ToolkitVersion current;
 };
+
+
 
 } // namespace insight
 

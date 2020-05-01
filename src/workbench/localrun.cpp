@@ -13,31 +13,30 @@ LocalRun::LocalRun(AnalysisForm *af)
 {
 
   // lock UI
-  af_->ui->label_2->setEnabled(false);
-  af_->ui->localDir->setEnabled(false);
-  af_->ui->cbDontKeepExeDir->setEnabled(false);
-  af_->ui->btnSelectExecDir->setEnabled(false);
-  af_->ui->cbRemoteRun->setEnabled(false);
-  af_->ui->lbRR1->setEnabled(false);
-  af_->ui->hostList->setEnabled(false);
-  af_->ui->portNum->setEnabled(false);
-  af_->ui->btnResume->setEnabled(false);
-  af_->ui->btnDisconnect->setEnabled(false);
-  af_->ui->lbRR2->setEnabled(false);
-  af_->ui->remoteDir->setEnabled(false);
-  af_->ui->btnSelectRemoteDir->setEnabled(false);
-  af_->ui->btnUpload->setEnabled(false);
-  af_->ui->btnDownload->setEnabled(false);
-  af_->ui->btnRemoveRemote->setEnabled(false);
+//  af_->ui->label_2->setEnabled(false);
+//  af_->ui->localDir->setEnabled(false);
+//  af_->ui->cbDontKeepExeDir->setEnabled(false);
+//  af_->ui->btnSelectExecDir->setEnabled(false);
+//  af_->ui->cbRemoteRun->setEnabled(false);
+//  af_->ui->lbRR1->setEnabled(false);
+//  af_->ui->hostList->setEnabled(false);
+//  af_->ui->portNum->setEnabled(false);
+//  af_->ui->btnResume->setEnabled(false);
+//  af_->ui->btnDisconnect->setEnabled(false);
+//  af_->ui->lbRR2->setEnabled(false);
+//  af_->ui->remoteDir->setEnabled(false);
+//  af_->ui->btnSelectRemoteDir->setEnabled(false);
+//  af_->ui->btnUpload->setEnabled(false);
+//  af_->ui->btnDownload->setEnabled(false);
+//  af_->ui->btnRemoveRemote->setEnabled(false);
 
-  boost::filesystem::path exedir(af_->ui->localDir->text().toStdString());
-  analysis_.reset( insight::Analysis::lookup(af_->analysisName_, af_->parameters_,
-                                             exedir) );
-
-  if (!exedir.empty() && !boost::filesystem::exists(exedir))
-      throw insight::Exception("Error: specified execution directory \""+exedir.string()+"\" has to exist!");
-
-  af_->ui->localDir->setText( QString::fromStdString(analysis_->setupExecutionEnvironment().string()) );
+  analysis_.reset(
+        insight::Analysis::lookup(
+          af_->analysisName_,
+          af_->parameters_,
+          *(af_->caseDirectory_)
+          )
+        );
 
   af_->progdisp_->reset();
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
@@ -65,14 +64,14 @@ LocalRun::~LocalRun()
 {
   workerThread_.join();
 
-  // unlock UI
-  af_->ui->label_2->setEnabled(true);
-  af_->ui->localDir->setEnabled(true);
-  af_->ui->cbDontKeepExeDir->setEnabled(true);
-  af_->ui->btnSelectExecDir->setEnabled(true);
+//  // unlock UI
+//  af_->ui->label_2->setEnabled(true);
+//  af_->ui->localDir->setEnabled(true);
+//  af_->ui->cbDontKeepExeDir->setEnabled(true);
+//  af_->ui->btnSelectExecDir->setEnabled(true);
 
-  af_->ui->cbRemoteRun->setEnabled(true);
-  af_->recheckButtonAvailability();
+//  af_->ui->cbRemoteRun->setEnabled(true);
+
 }
 
 void LocalRun::onCancel()

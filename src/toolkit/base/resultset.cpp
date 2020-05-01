@@ -398,19 +398,19 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
       }
   }
 
-  TemporaryCaseDir gendir;
-  boost::filesystem::path outpath = gendir.dir / (stem+".tex");
+  CaseDirectory gendir;
+  boost::filesystem::path outpath = gendir / (stem+".tex");
   writeLatexFile( outpath );
 
   for (int i=0; i<2; i++)
   {
-      if ( ::system( str( format("cd \"%s\" && pdflatex -interaction=batchmode \"%s\"") % gendir.dir.string() % outpath.filename().string() ).c_str() ))
+      if ( ::system( str( format("cd \"%s\" && pdflatex -interaction=batchmode \"%s\"") % gendir.string() % outpath.filename().string() ).c_str() ))
       {
           throw insight::Exception("TeX input file was written but could not execute pdflatex successfully.");
       }
   }
 
-  boost::filesystem::copy_file( gendir.dir/ (stem+".pdf"), file, copy_option::overwrite_if_exists );
+  boost::filesystem::copy_file( gendir/ (stem+".pdf"), file, copy_option::overwrite_if_exists );
 
 }
 

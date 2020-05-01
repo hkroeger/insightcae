@@ -5,7 +5,7 @@
 
 #include "workbenchaction.h"
 #include "analyzeclient.h"
-#include "openfoam/remoteexecution.h"
+#include "base/remoteexecution.h"
 
 
 class RemoteRun
@@ -14,8 +14,8 @@ class RemoteRun
   Q_OBJECT
 
   bool resume_;
+  insight::RemoteExecutionConfig& remote_;
   boost::thread workerThread_, cancelThread_;
-  std::unique_ptr<insight::RemoteExecutionConfig> remote_;
   std::unique_ptr<insight::AnalyzeClient> ac_;
 
   void launchRemoteAnalysisServer();
@@ -24,7 +24,6 @@ public:
   RemoteRun(AnalysisForm* af, bool resume=false);
   ~RemoteRun();
 
-  insight::RemoteExecutionConfig& remote();
 
 public Q_SLOTS:
   void onCancel() override;

@@ -45,6 +45,8 @@ namespace insight
 {
 
 
+
+
 /**
  * @brief The TaskQueue class
  * takes jobs, executes them one by one in a dedicated thread
@@ -69,6 +71,7 @@ public:
   void post(Job job);
   void cancel();
 };
+
 
 
 

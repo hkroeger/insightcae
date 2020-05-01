@@ -2,8 +2,8 @@
 #define INSIGHT_MOUNTREMOTE_H
 
 #include "base/boost_include.h"
-
-#include "openfoam/remoteserverlist.h"
+#include "base/remotelocation.h"
+#include "base/remoteserverlist.h"
 
 
 namespace insight {
@@ -17,6 +17,7 @@ class MountRemote
     bool isAlreadyMounted() const;
     void mount(const std::string& server, const bfs_path& remotedir);
     void unmount();
+    void createTemporaryMountPoint();
 
 public:
     /**
@@ -40,6 +41,8 @@ public:
     * @param expect_mounted
     */
    MountRemote(const std::string& server, const bfs_path& remotedir);
+
+   MountRemote(const RemoteLocation& rloc);
 
     ~MountRemote();
 

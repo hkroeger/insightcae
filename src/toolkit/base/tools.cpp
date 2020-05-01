@@ -41,6 +41,7 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+namespace fs = boost::filesystem;
 using namespace boost::posix_time;
 
 
@@ -92,7 +93,24 @@ GlobalTemporaryDirectory::~GlobalTemporaryDirectory()
 
 
 
-TemporaryCaseDir::TemporaryCaseDir(bool keep, const boost::filesystem::path& prefix)
+
+CaseDirectory::CaseDirectory(const boost::filesystem::path& p)
+  : keep_(true)
+{
+  if (!p.empty())
+  {
+    boost::filesystem::path::operator=(p);
+  }
+  else
+  {
+    boost::filesystem::path::operator=(
+          unique_path(timeCodePrefix() + "_analysis_%%%%")
+          );
+  }
+}
+
+
+CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
 : keep_(keep)
 {
   if (getenv("INSIGHT_KEEPTEMPCASEDIR"))
@@ -100,18 +118,40 @@ TemporaryCaseDir::TemporaryCaseDir(bool keep, const boost::filesystem::path& pre
 
   path fn=prefix.filename();
 
+  boost::filesystem::path::operator=(
+        unique_path(
+          prefix.parent_path()
+          /
+          (timeCodePrefix() + "_" + fn.string() + "_%%%%")
+         )
+        );
 
-
-  dir = unique_path( prefix.parent_path() / (timeCodePrefix() + "_" + fn.string() + "_%%%%") );
-
-  create_directories(dir);
+  createDirectory();
 }
 
-TemporaryCaseDir::~TemporaryCaseDir()
+CaseDirectory::~CaseDirectory()
 {
   if (!keep_)
-    remove_all(dir);
+    remove_all(*this);
 }
+
+void CaseDirectory::createDirectory()
+{
+  if (!fs::exists(*this))
+    create_directories(*this);
+}
+
+bool CaseDirectory::keep() const
+{
+  return keep_;
+}
+
+void CaseDirectory::setKeep(bool keep)
+{
+  keep_=keep;
+}
+
+
 
 
 SharedPathList::SharedPathList()

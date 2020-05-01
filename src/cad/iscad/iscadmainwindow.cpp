@@ -40,6 +40,7 @@
 #include "datum.h"
 
 #include "base/qt5_helper.h"
+#include "base/toolkitversion.h"
 
  
 
@@ -316,6 +317,21 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     QMenu *mmenu = menuBar()->addMenu("&Model");
     QMenu *vmenu = menuBar()->addMenu("&View");
     QMenu *msmenu = menuBar()->addMenu("M&easure");
+    QMenu *helpmenu = menuBar()->addMenu("&Help");
+
+    QAction* ab = new QAction("About...", this);
+    helpmenu->addAction( ab );
+    connect(ab, &QAction::triggered,
+            [&]()
+            {
+              QMessageBox::information(
+                    this,
+                    "ISCAD Information",
+                    "InsightCAE CAD Script Editor\n"
+                    "Version "+QString::fromStdString(insight::ToolkitVersion::current)+"\n"
+                    );
+            }
+    );
 
     QAction *act;
 

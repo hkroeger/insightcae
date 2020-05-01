@@ -4,10 +4,10 @@
 #include <QMessageBox>
 
 #include "base/analysis.h"
+#include "base/remoteserverlist.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
-#include "openfoam/remoteserverlist.h"
 
 #ifndef Q_MOC_RUN
 #include "base/boost_include.h"
@@ -19,46 +19,29 @@
 #include "localrun.h"
 
 
-namespace bf = boost::filesystem;
+namespace fs = boost::filesystem;
 
 
 
 void AnalysisForm::startLocalRun()
 {
-  if (currentWorkbenchAction_)
-    throw insight::Exception("Internal error: there is already an action running!");
 
-  if (results_)
-  {
-      QMessageBox msgBox;
-      msgBox.setText("There is currently a result set in memory!");
-      msgBox.setInformativeText("If you continue, the results will be deleted and the execution directory on disk will be removed (only if it was created). Continue?");
-      msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-      msgBox.setDefaultButton(QMessageBox::Cancel);
+  if (!checkAnalysisExecutionPreconditions())
+    return;
 
-
-      if (msgBox.exec()==QMessageBox::Yes)
-      {
-          results_.reset();
-      } else {
-          return;
-      }
-  }
-
-  boost::filesystem::path exePath( ui->localDir->text().toStdString() );
-  // it's ok, if path is empty in the following checks
+  applyDirectorySettings();
 
   if (isOpenFOAMAnalysis_)
   {
     bool evalOnly = insight::OpenFOAMAnalysis::Parameters(parameters_).run.evaluateonly;
 
-    if (boost::filesystem::exists(exePath / "constant" / "polyMesh" ))
+    if (boost::filesystem::exists(*caseDirectory_ / "constant" / "polyMesh" ))
     {
       if (!evalOnly)
       {
         QMessageBox msgBox;
         msgBox.setText("There is already an OpenFOAM case present in the execution directory \""
-                       +QString(exePath.c_str())+"\"!");
+                       +QString::fromStdString(caseDirectory_->string())+"\"!");
         msgBox.setInformativeText(
               "Depending on the state of the data, the behaviour will be as follows:<br><ul>"
               "<li>the mesh exists (\"constant/polyMesh/\") and a time directory exists (e.g. \"0/\"): the solver will be restarted,</li>"
@@ -83,7 +66,7 @@ void AnalysisForm::startLocalRun()
       {
         QMessageBox msgBox;
         msgBox.setText("You have selected to run the evaluation only but there is no valid OpenFOAM case present in the execution directory \""
-                       +QString(exePath.c_str())+"\"!");
+                       +QString::fromStdString(caseDirectory_->string())+"\"!");
         msgBox.setInformativeText(
               "The subsequent step is likely to fail.<br>"
               "Are you sure, that you want to continue?"
@@ -100,7 +83,7 @@ void AnalysisForm::startLocalRun()
     }
   }
 
-  emit apply(); // apply all changes into parameter set
+  Q_EMIT apply(); // apply all changes into parameter set
 
   currentWorkbenchAction_.reset(new LocalRun(this));
 }

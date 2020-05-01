@@ -22,6 +22,7 @@ project(toolkit)
 #find_package(Boost COMPONENTS filesystem regex date_time thread REQUIRED)
 
 set(toolkit_SOURCES
+    base/toolkitversion.cpp
     base/analysis.cpp
     base/parameter.cpp
     base/exception.cpp
@@ -33,7 +34,6 @@ set(toolkit_SOURCES
     base/resultset.cpp
     base/global.cpp
     base/softwareenvironment.cpp
-#     base/parameterstudy.cpp
     base/stltools.cpp
     base/parameterset.cpp
     base/analysisstepcontrol.cpp
@@ -44,7 +44,11 @@ set(toolkit_SOURCES
     base/case.cpp
     base/units.cpp
     base/vtkrendering.cpp
-
+    base/remotelocation.cpp
+    base/remoteexecution.cpp
+    base/remoteserverlist.cpp
+    base/taskspoolerinterface.cpp
+    base/mountremote.cpp
 
     base/progressdisplayer.cpp
 
@@ -84,11 +88,7 @@ set(toolkit_SOURCES
     openfoam/blockmesh.cpp
     openfoam/fielddata.cpp
     openfoam/paraview.cpp
-    openfoam/remoteexecution.cpp
     openfoam/stretchtransformation.cpp
-    openfoam/remoteserverlist.cpp
-    openfoam/taskspoolerinterface.cpp
-    openfoam/mountremote.cpp
     openfoam/solveroutputanalyzer.cpp
     openfoam/ofdicts.cpp
 

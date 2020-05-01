@@ -32,8 +32,9 @@ void WorkbenchAction::exceptionEmitter()
 WorkbenchAction::WorkbenchAction(AnalysisForm *af)
   : af_(af)
 {
-  af_->ui->runBtn->setEnabled(false);
-  af_->ui->killBtn->setEnabled(true);
+  af_->ui->gbExecution->setEnabled(false);
+  af_->ui->btnRun->setEnabled(false);
+  af_->ui->btnKill->setEnabled(true);
 
   // presumption: all signals have to be emitted from another thread!
   connect(this, &WorkbenchAction::failed,
@@ -64,6 +65,7 @@ WorkbenchAction::WorkbenchAction(AnalysisForm *af)
 
 WorkbenchAction::~WorkbenchAction()
 {
-  af_->ui->runBtn->setEnabled(true);
-  af_->ui->killBtn->setEnabled(false);
+  af_->ui->gbExecution->setEnabled(true);
+  af_->ui->btnRun->setEnabled(true);
+  af_->ui->btnKill->setEnabled(false);
 }

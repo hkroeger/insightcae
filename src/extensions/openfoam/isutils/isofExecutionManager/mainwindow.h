@@ -7,8 +7,8 @@
 
 #include "qtermwidget/qtermwidget.h"
 #include "base/boost_include.h"
+#include "base/remoteexecution.h"
 #include "openfoam/openfoamcase.h"
-#include "openfoam/remoteexecution.h"
 #include "remotedirselector.h"
 #include "remotesync.h"
 

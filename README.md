@@ -45,3 +45,14 @@ License
 -------
 
 The project is licensed under the [version 2 of the GNU General Public License](http://www.gnu.org/licenses/old-licenses/gpl-2.0.html).
+
+
+Release Cycle
+-------------
+
+A new version is released each year at the beginning of May.
+Maintenance releases are published in between when appropriate.
+The current release is based on the master branch in the Git repository.
+
+Changes for the next release are collected in the branch "next-release".
+

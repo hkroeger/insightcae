@@ -1,9 +1,10 @@
-if (INSIGHT_BUILD_WORKBENCH)
+add_subdirectory(isofRenamePatches)
+add_subdirectory(isofVTKToField)
+
+if (INSIGHT_BUILD_GUICOMPONENTS)
  add_subdirectory(isofCaseBuilder)
  add_subdirectory(isofManageFunctionObject)
  add_subdirectory(isofPlotTabular)
  add_subdirectory(isofCleanCase)
- add_subdirectory(isofRenamePatches)
- add_subdirectory(isofVTKToField)
  add_subdirectory(isofExecutionManager)
 endif()

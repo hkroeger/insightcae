@@ -1,0 +1,56 @@
+Dn?=5;
+mult_dbore?=1;
+lmin=TableLookup(ScrewDIN464Knurled, Dn, Dn, lmin);
+lmax=TableLookup(ScrewDIN464Knurled, Dn, Dn, lmax);
+k=TableLookup(ScrewDIN464Knurled, Dn, Dn, k);
+h=TableLookup(ScrewDIN464Knurled, Dn, Dn, h);
+ds=TableLookup(ScrewDIN464Knurled, Dn, Dn, ds);
+dk=TableLookup(ScrewDIN464Knurled, Dn, Dn, dk);
+dh=TableLookup(ScrewDIN, Dn, Dn, dh);
+P=TableLookup(ScrewDIN, Dn, Dn, P);
+e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
+hk=0.5*P;
+L?=lmax;
+
+mat=loadmodel(material_props);
+
+screw:
+(
+ Cylinder([-h,0,0], [-h+k,0,0], dk)
+|
+ Cylinder([0,0,0], [-h,0,0], ds)
+|
+ Cylinder([0,0,0], [L,0,0], Dn)
+)
+- Revolution(
+ Tri([L,0.5*Dn,0], [0,-P,0], [-P,0,0]),
+ O, EX, 2.*M_PI)
+;
+screw->density=mat$rho_steel;
+
+Lthr?=L;
+throughhole=
+Cylinder(
+ O,
+ O+Lthr*EX,
+ mult_dbore*dh
+);
+
+Lhh?=2*L;
+headhole=
+Cylinder(
+ O,
+ O-Lhh*EX,
+ mult_dbore*ds
+);
+
+#Lblind?=1.2*L;
+dbl=mult_dbore*(Dn-P);
+blindhole=
+Place(
+ loadmodel(drill_hole, D=dbl, L=(L+e1), ofsTimesHtip=1, ofsTimesL=1), 
+ O, -EX, EZ)
+;
+
+pl_contact=YZ;
+axis=RefAxis(O, EX);

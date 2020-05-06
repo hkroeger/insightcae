@@ -41,6 +41,7 @@
 #include "base/mountremote.h"
 #include "base/taskspoolerinterface.h"
 #include "base/remoteserverlist.h"
+#include "base/remotelocation.h"
 #include "base/remoteexecution.h"
 
 #include "openfoam/blockmesh_templates.h"
@@ -191,6 +192,7 @@ using namespace insight::createPatchOps;
 %include "base/caseelement.h"
 %include "base/linearalgebra.h"
 %include "base/tools.h"
+%include "base/remotelocation.h"
 %include "base/remoteexecution.h"
 
 %include "openfoam/caseelements/boundarycondition.h"

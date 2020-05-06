@@ -583,7 +583,7 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
 
     // not linked to CAD; don't use any non-forward definitions from CAD module
   protected:
-      const ParameterSet* ps_;
+      ParameterSet ps_;
 
   public:
       virtual ~ParameterSet_Visualizer();

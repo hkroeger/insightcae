@@ -48,10 +48,10 @@ void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElemen
 {
   CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
 
-  Parameters p(*ps_);
+  Parameters p(ps_);
 
   OpenFOAMCase oc(OFEs::getCurrentOrPreferred());
-  blockMeshDict_CylWedge bcw( oc, *ps_ );
+  blockMeshDict_CylWedge bcw( oc, ps_ );
 
   auto dom =
       cad::Revolution::create(

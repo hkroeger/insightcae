@@ -29,6 +29,16 @@ UName = string "U" "Name of velocity field"
 turb_I = double 0.05 "[-] turbulence intensity at inflow"
 turb_L = double 0.1 "[m] turbulent length scale at inflow"
 
+inletBehaviour = selectablesubset {{
+
+ normal set { }
+
+ directed set {
+  inflowDirection = vector (1 0 0) "flow direction vector"
+ }
+
+}} normal "Behaviour of inlet"
+
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
 <<<PARAMETERSET

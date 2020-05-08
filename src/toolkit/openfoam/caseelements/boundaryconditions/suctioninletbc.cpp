@@ -49,8 +49,20 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
         if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
+
+          if (const auto *normal = boost::get<Parameters::inletBehaviour_normal_type>(&p.inletBehaviour))
+          {
             BC["type"]=OFDictData::data ( "pressureInletOutletVelocity" );
-            BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+          }
+          else if (const auto *directed = boost::get<Parameters::inletBehaviour_directed_type>(&p.inletBehaviour))
+          {
+            BC["type"]=OFDictData::data ( "pressureDirectedInletOutletVelocity" );
+            double dmag=arma::norm(directed->inflowDirection,2);
+            if (dmag<1e-10)
+              throw insight::Exception("SuctionInletBC: direction vector magnitude must not be zero!");
+            BC["inletDirection"]=OFDictData::data ( "uniform " + OFDictData::to_OF(directed->inflowDirection/dmag) );
+          }
+          BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
         } else if (
             ( field.first=="T" )
             &&

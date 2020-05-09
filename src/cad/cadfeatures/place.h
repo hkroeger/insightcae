@@ -38,11 +38,12 @@ class Place
     VectorPtr p0_;
     VectorPtr ex_;
     VectorPtr ez_;
+    VectorPtr refpt_;
     FeaturePtr other_;
 
     std::shared_ptr<gp_Trsf> trsf_;
 
-    Place ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez );
+    Place ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez, VectorPtr refpt = VectorPtr() );
     Place ( FeaturePtr m, FeaturePtr other );
 
     virtual size_t calcHash() const;
@@ -54,6 +55,7 @@ public:
     Place ( FeaturePtr m, const gp_Ax2& cs );
 
     static FeaturePtr create ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez );
+    static FeaturePtr create_refpt ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez, VectorPtr refpt );
     static FeaturePtr create_other ( FeaturePtr m, FeaturePtr other );
 
 

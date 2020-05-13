@@ -10,8 +10,73 @@
 
 #include "boost/algorithm/string.hpp"
 
+#include <csignal>
+
 using namespace std;
 using namespace Wt;
+
+
+
+
+void globalSignalHandler(int sig);
+
+class SignalChecker;
+
+SignalChecker* currentSignalHandler = nullptr;
+
+class SignalChecker
+{
+  boost::condition_variable& cv_;
+  boost::mutex& mx_;
+  int& signal_;
+
+  __sighandler_t
+    old_SIGHUP_,
+    old_SIGINT_,
+    old_SIGPIPE_,
+    old_SIGTERM_;
+
+public:
+  void signalHandler(int signal)
+  {
+    boost::mutex::scoped_lock lock(mx_);
+    signal_=signal;
+    cout<<"Got signal "<<signal<<endl;
+    cv_.notify_all();
+  }
+
+  SignalChecker(boost::condition_variable& cv, boost::mutex& mx, int& signal)
+    : cv_(cv),
+      mx_(mx),
+      signal_(signal)
+  {
+    if (currentSignalHandler)
+      throw std::logic_error("Internal error: There is already another signal checker active!");
+
+    currentSignalHandler=this;
+    old_SIGHUP_ = std::signal(SIGHUP, globalSignalHandler);
+    old_SIGINT_ = std::signal(SIGINT, globalSignalHandler);
+    old_SIGPIPE_ = std::signal(SIGPIPE, globalSignalHandler);
+    old_SIGTERM_ = std::signal(SIGTERM, globalSignalHandler);
+  }
+
+  ~SignalChecker()
+  {
+    // restore
+    std::signal(SIGHUP, old_SIGHUP_);
+    std::signal(SIGINT, old_SIGINT_);
+    std::signal(SIGPIPE, old_SIGPIPE_);
+    std::signal(SIGTERM, old_SIGTERM_);
+  }
+};
+
+
+
+void globalSignalHandler(int sig)
+{
+  currentSignalHandler->signalHandler(sig);
+}
+
 
 
 double AnalyzeRESTServer::nextStateInfo(
@@ -66,6 +131,7 @@ AnalyzeRESTServer::AnalyzeRESTServer(
   addResource(this, "/exepath");
 }
 
+
 void AnalyzeRESTServer::setAnalysis(insight::Analysis *a)
 {
   analysis_=a;
@@ -92,30 +158,44 @@ void AnalyzeRESTServer::update(
   mx_.unlock();
 }
 
-bool AnalyzeRESTServer::hasResultsDelivered() const
-{
-  return !results_;
-}
-
-void AnalyzeRESTServer::waitForResultDelivery()
-{
-  boost::mutex::scoped_lock lock(mx_);
-  while (!hasResultsDelivered())
-    wait_cv_.wait(lock);
-}
 
 bool AnalyzeRESTServer::hasInputFileReceived() const
 {
   return !inputFileContents_->empty();
 }
 
-void AnalyzeRESTServer::waitForInputFile(std::string& inputFileContents)
+bool AnalyzeRESTServer::waitForInputFile(std::string& inputFileContents)
 {
   inputFileContents_ = &inputFileContents;
 
+  int sig=0;
+  SignalChecker sighld(wait_cv_, mx_, sig);
+
   boost::mutex::scoped_lock lock(mx_);
-  while (!hasInputFileReceived())
+  while (!( hasInputFileReceived() || (sig!=0) ))
+  {
     wait_cv_.wait(lock);
+  }
+
+  return sig==0;
+}
+
+
+bool AnalyzeRESTServer::hasResultsDelivered() const
+{
+  return !results_;
+}
+
+bool AnalyzeRESTServer::waitForResultDelivery()
+{
+  boost::mutex::scoped_lock lock(mx_);
+  int sig;
+  SignalChecker sighld(wait_cv_, mx_, sig);
+  while ( !hasResultsDelivered() && (sig==0) )
+  {
+    wait_cv_.wait(lock);
+  }
+  return sig==0;
 }
 
 void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Response &response)
@@ -259,7 +339,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
       {
         boost::mutex::scoped_lock lock(mx_);
         results_.reset();
-        wait_cv_.notify_one();
+        wait_cv_.notify_all();
       }
 
       return;

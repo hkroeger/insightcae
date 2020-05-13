@@ -53,7 +53,6 @@ using namespace std;
 using namespace insight;
 using namespace boost;
 
-
 int main(int argc, char *argv[])
 {
     insight::UnhandledExceptionHandling ueh;
@@ -199,7 +198,10 @@ int main(int argc, char *argv[])
           if (server)
           {
             cout<<"Running in server mode without explicitly specified input file: waiting for input transmission"<<endl;
-            server->waitForInputFile(contents);
+            if (!server->waitForInputFile(contents))
+            {
+              throw insight::Exception("Received interruption!");
+            }
           }
           else
 #endif

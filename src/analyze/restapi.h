@@ -36,6 +36,7 @@ public:
       const std::string& listenAddr, int port
       );
 
+
   void setAnalysis(insight::Analysis* a);
   void setSolverThread(boost::thread* at);
   void setResults(insight::ResultSetPtr results);
@@ -43,10 +44,10 @@ public:
   void update( const insight::ProgressState& pi ) override;
 
   bool hasResultsDelivered() const;
-  void waitForResultDelivery();
+  bool waitForResultDelivery();
 
   bool hasInputFileReceived() const;
-  void waitForInputFile(std::string& inputFileContents_);
+  bool waitForInputFile(std::string& inputFileContents_);
 
 protected:
 

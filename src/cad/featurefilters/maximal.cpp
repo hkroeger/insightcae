@@ -61,7 +61,7 @@ bool maximal::checkMatch(FeatureID feature) const
           const RankEntry& e = ranking_[j];
           if (e.second==feature)
           {
-            std::cout<<"Feature #"<<feature<<" rank="<<j<<" match!"<<std::endl;
+            //std::cout<<"Feature #"<<feature<<" rank="<<j<<" match!"<<std::endl;
             return true;
           }
       }

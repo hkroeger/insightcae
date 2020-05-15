@@ -20,6 +20,7 @@
 #include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -183,7 +184,10 @@ gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
 
 void Transform::build()
 {
+  ExecTimer t("Transform::build() ["+featureSymbolName()+"]");
 
+  if (!cache.contains(hash()))
+  {
     if (!trsf_)
     {
         if (other_)
@@ -251,6 +255,12 @@ void Transform::build()
     copyDatumsTransformed(*m1_, *trsf_, "", 
                           boost::assign::list_of("scaleFactor")("translation")("rotationOrigin")("rotation")
                          );
+    cache.insert(shared_from_this());
+  }
+  else
+  {
+      this->operator=(*cache.markAsUsed<Transform>(hash()));
+  }
 }
 
 

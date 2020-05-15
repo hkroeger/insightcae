@@ -124,7 +124,7 @@ void CurvePattern::build()
         tr.SetTransformation ( gp_Ax3 ( p, tan, side ) );
         tr.Invert();
 
-        components_[str ( format ( "component%d" ) % ( j+1 ) )] = FeaturePtr ( new Transform ( m1_, tr ) );
+        components_[str ( format ( "component%d" ) % ( j+1 ) )] = Transform::create_trsf( m1_, tr );
         j++;
     }
 

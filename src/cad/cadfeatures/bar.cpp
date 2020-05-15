@@ -138,7 +138,7 @@ void Bar::build()
             )
         );
         
-        FeaturePtr xsect ( new Transform(xsec_, tr.Inverted()) );
+        auto xsect=Transform::create_trsf(xsec_, tr.Inverted());
 //         TopoDS_Shape xsecs =
 //             BRepBuilderAPI_Transform
 //             (

@@ -120,7 +120,7 @@ heatflux = selectablesubset {{
    Ta = double 300 "[K] Ambient temperature (beyond domain)"
  }
 
-}} convective "Heat flux specification"
+}} fixedHeatTransferCoeff "Heat flux specification"
 
 wallLayers = array [
  set {

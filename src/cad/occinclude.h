@@ -127,7 +127,7 @@
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Wireframe.hxx>
 #include "ShapeAnalysis_FreeBounds.hxx"
-#include <BRepMesh.hxx>
+//#include <BRepMesh.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepBndLib.hxx>
 #include <Bnd_Box.hxx>

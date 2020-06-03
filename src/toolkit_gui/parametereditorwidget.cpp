@@ -28,6 +28,7 @@
 
 #include <mutex>
 
+using namespace std;
 
 ParameterTreeWidget::ParameterTreeWidget(QWidget* p)
   : QTreeWidget(p)

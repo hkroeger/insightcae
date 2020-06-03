@@ -38,10 +38,36 @@
 
 namespace insight {
 namespace cad {
+
+
+Handle_AIS_MultipleConnectedInteractive
+buildMultipleConnectedInteractive
+(
+    AIS_InteractiveContext &context,
+    std::vector<Handle_AIS_InteractiveObject> objs
+)
+{
+  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
+
+#if (OCC_VERSION_MAJOR<=7 && OCC_VERSION_MINOR<4)
+  context.Load(ais);
+#endif
+
+  for (auto o: objs)
+  {
+#if (OCC_VERSION_MAJOR<=7 && OCC_VERSION_MINOR<4)
+    context.Load(o);
+#endif
+    ais->Connect(o);
+  }
+
+  return ais;
+}
+
   
 Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::string& text)
 {
-  Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
+  Handle(AIS_RadiusDimension) dim=new AIS_RadiusDimension
   (
    shape
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<=6))
@@ -66,7 +92,7 @@ Handle_AIS_InteractiveObject createLengthDimension
   const std::string& text
 )
 {
-  Handle_AIS_LengthDimension dim(new AIS_LengthDimension(
+  Handle(AIS_LengthDimension) dim(new AIS_LengthDimension(
     from,
     to,
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<=6))
@@ -172,7 +198,7 @@ void InteractiveText::set_position (const arma::mat& pos)
 // -------------------------- Implementation ---------------------------
 
 void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& /*pm*/,
-                               const Handle_Prs3d_Presentation& pres,
+                               const Handle(Prs3d_Presentation)& pres,
                                const Standard_Integer mode)
 {
   Handle_Prs3d_TextAspect at=new Prs3d_TextAspect();

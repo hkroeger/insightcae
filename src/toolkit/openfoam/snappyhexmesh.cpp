@@ -725,6 +725,7 @@ void snappyHexMesh
   //  populate with defaults
   setStdSnapCtrls(snapCtrls);
 
+  snapCtrls["nSmoothPatch"]=p.nSmoothPatch;
   snapCtrls["implicitFeatureSnap"]=p.doImplicitFeatureSnap;
   snapCtrls["explicitFeatureSnap"]=p.doExplicitFeatureSnap;
 

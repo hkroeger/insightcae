@@ -25,6 +25,7 @@
 #include "Prs3d_TextAspect.hxx"
 #include "occtools.h"
 
+using namespace std;
 using namespace boost;
 
 size_t insight::cad::Distance::calcHash() const

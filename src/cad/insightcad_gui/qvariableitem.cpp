@@ -69,21 +69,14 @@ Handle_AIS_InteractiveObject QVectorVariableItem::createAIS(AIS_InteractiveConte
 {
   gp_Pnt p=to_Pnt(value_);
 
-  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
-  context.Load(ais);
-
-  Handle_AIS_InteractiveObject apoint(new AIS_Shape( BRepBuilderAPI_MakeVertex(p)));
-  context.Load(apoint);
-  Handle_AIS_InteractiveObject alabel(new insight::cad::InteractiveText
-    (
-      boost::str(boost::format("PT:%s") % name_.toStdString()), insight::Vector(p.XYZ())
-    ));
-  context.Load(alabel);
-
-  ais->Connect(apoint);
-  ais->Connect(alabel);
-
-  return ais;
+  return insight::cad::buildMultipleConnectedInteractive(context,
+  {
+   Handle_AIS_InteractiveObject(new AIS_Shape( BRepBuilderAPI_MakeVertex(p))),
+   Handle_AIS_InteractiveObject(new insight::cad::InteractiveText
+     (
+       boost::str(boost::format("PT:%s") % name_.toStdString()), insight::Vector(p.XYZ())
+     ))
+  });
 }
 
 

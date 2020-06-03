@@ -37,6 +37,8 @@
 
 #include "occinclude.h"
 
+using namespace std;
+
 namespace insight {
 namespace cad {
 
@@ -47,7 +49,7 @@ Datum::Datum(bool point, bool axis, bool planar)
 {
 }
 
-Datum::Datum(istream& file)
+Datum::Datum(std::istream& file)
 {
   file>>providesPointReference_;
   file>>providesAxisReference_;
@@ -100,7 +102,7 @@ Handle_AIS_InteractiveObject Datum::createAISRepr(AIS_InteractiveContext&, const
   return NULL;
 }
 
-void Datum::write(ostream& file) const
+void Datum::write(std::ostream& file) const
 {
   file<<providesPointReference_<<endl;
   file<<providesAxisReference_<<endl;
@@ -195,21 +197,17 @@ gp_Pnt DatumPoint::point() const
 
 Handle_AIS_InteractiveObject DatumPoint::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 {
-  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
-  context.Load(ais);
+  checkForBuildDuringAccess();
 
-  Handle_AIS_InteractiveObject apoint(new AIS_Shape( BRepBuilderAPI_MakeVertex(point().Transformed(tr)) ));
-  context.Load(apoint);
-  Handle_AIS_InteractiveObject alabel(new InteractiveText
-    (
-      boost::str(boost::format("PT:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
-    ));
-  context.Load(alabel);
-
-  ais->Connect(apoint);
-  ais->Connect(alabel);
-
-  return ais;
+  return buildMultipleConnectedInteractive(context,
+  {
+    Handle_AIS_InteractiveObject(
+     new AIS_Shape( BRepBuilderAPI_MakeVertex(point().Transformed(tr)) )
+    ),
+    Handle_AIS_InteractiveObject(new InteractiveText(
+     boost::str(boost::format("PT:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
+    ))
+   });
 }
 
 
@@ -303,23 +301,15 @@ gp_Ax1 DatumAxis::axis() const
 Handle_AIS_InteractiveObject DatumAxis::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 {
   checkForBuildDuringAccess();
-  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
-  context.Load(ais);
 
-  Handle_AIS_InteractiveObject aaxis(new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(axis().Transformed(tr)))));
-  context.Load(aaxis);
-
-  Handle_AIS_InteractiveObject alabel(new InteractiveText
-    (
-      boost::str(boost::format("AX:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
-    ));
-  context.Load(alabel);
-
-  ais->Connect(aaxis);
-  ais->Connect(alabel);
-
-//   ais->SetWidth(100);
-  return ais;
+  return buildMultipleConnectedInteractive(context,
+  {
+   Handle_AIS_InteractiveObject(new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(axis().Transformed(tr))))),
+   Handle_AIS_InteractiveObject(new InteractiveText
+     (
+       boost::str(boost::format("AX:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
+     ))
+  });
 }
 
 
@@ -362,28 +352,21 @@ gp_Ax3 DatumPlaneData::plane() const
 Handle_AIS_InteractiveObject DatumPlaneData::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 {
   checkForBuildDuringAccess();
-  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
-  context.Load(ais);
 
   auto plt = plane().Transformed(tr);
-
   Handle_AIS_Plane aplane(new AIS_Plane(
           Handle_Geom_Plane(new Geom_Plane(plt))
   ));
   aplane->SetCenter(plt.Location()); // will be displayed around origin otherwise
 
-  context.Load(aplane);
-
-  Handle_AIS_InteractiveObject alabel(new InteractiveText
-    (
-      boost::str(boost::format("PL:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
-    ));
-  context.Load(alabel);
-
-  ais->Connect(aplane);
-  ais->Connect(alabel);
-
-  return ais;
+  return buildMultipleConnectedInteractive(context,
+  {
+    aplane,
+    Handle_AIS_InteractiveObject(new InteractiveText
+     (
+       boost::str(boost::format("PL:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
+     ))
+  });
 }
 
 
@@ -487,7 +470,7 @@ DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool)
 
 
 
-void DatumPlane::write(ostream& file) const
+void DatumPlane::write(std::ostream& file) const
 {
   checkForBuildDuringAccess();
   insight::cad::Datum::write(file);

@@ -69,6 +69,14 @@ pressure_velocity_coupling = selectablesubset {{
 
 }} SIMPLE "Pressure-velocity coupling scheme"
 
+
+pRefValue = double 0 "Reference pressure value"
+
+pRefLocation = selectablesubset {{
+ cellID set { pRefCell = int 0 "Reference pressure cell index" }
+ location set { pRefPoint = vector (0 0 0) "Reference pressure point coordinates" }
+}} cellID "Location of reference pressure"
+
 <<<PARAMETERSET
 */
 protected:

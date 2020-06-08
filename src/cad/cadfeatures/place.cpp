@@ -44,6 +44,7 @@ size_t Place::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*m_;
+  if (refpt_) h+=refpt_->value();
   if (other_)
     {
       h+=*other_;
@@ -78,8 +79,8 @@ Place::Place(FeaturePtr m, const gp_Ax2& cs)
 
 
 
-Place::Place(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez)
-: DerivedFeature(m), m_(m), p0_(p0), ex_(ex), ez_(ez)
+Place::Place(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez, VectorPtr refpt)
+: DerivedFeature(m), m_(m), p0_(p0), ex_(ex), ez_(ez), refpt_(refpt)
 {}
 
 
@@ -97,6 +98,11 @@ FeaturePtr Place::create(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez)
     return FeaturePtr(new Place(m, p0, ex, ez));
 }
 
+
+FeaturePtr Place::create_refpt(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez, VectorPtr refpt)
+{
+    return FeaturePtr(new Place(m, p0, ex, ez, refpt));
+}
 
 
 
@@ -130,13 +136,21 @@ void Place::build()
     {
         arma::mat p0=p0_->value(), ez=ez_->value(), ex=ex_->value();
         trsf_->SetTransformation(gp_Ax3(to_Pnt(p0), to_Vec(ez), to_Vec(ex)));
+
         refpoints_["origin"]=p0;
         refvectors_["ex"]=ex;
         refvectors_["ez"]=ez;
     }
     
     trsf_->Invert();
-  //   makePlacement(m, tr.Inverted());
+
+    if (refpt_)
+    {
+      gp_Trsf translat;
+      translat.SetTranslation(to_Vec(-refpt_->value()));
+      trsf_->Multiply(translat);
+    }
+
   }
  
   setShape(BRepBuilderAPI_Transform(m_->shape(), *trsf_).Shape());
@@ -158,9 +172,10 @@ void Place::insertrule(parser::ISCADParser& ruleset) const
        >> ruleset.r_solidmodel_expression >> ',' 
        >> ruleset.r_vectorExpression >> ',' 
        >> ruleset.r_vectorExpression >> ',' 
-       >> ruleset.r_vectorExpression 
+       >> ruleset.r_vectorExpression >>
+      ( ( ',' >> ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
        >> ')' ) 
-      [ qi::_val = phx::bind(&Place::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
+      [ qi::_val = phx::bind(&Place::create_refpt, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
     |
     ( '(' 
        >> ruleset.r_solidmodel_expression >> ',' 
@@ -182,8 +197,8 @@ FeatureCmdInfoList Place::ruleDocumentation() const
         FeatureCmdInfo
         (
             "Place",
-            "( <feature:base>, ( <vector:p0>, <vector:ex>, <vector:ez> ) | <feature:other_place> )",
-            "Places the feature base in a new coordinate system. The new origin is at point p0, the new x-axis along vector ex and the new z-direction is ez."
+            "( <feature:base>, ( <vector:p0>, <vector:ex>, <vector:ez> [, <vector:refpt> ] ) | <feature:other_place> )",
+            "Places the feature base in a new coordinate system. The new origin is at point p0, the new x-axis along vector ex and the new z-direction is ez. Optionally, the point refpt is made coincident with p0 instead of the origin."
             " Alternatively, the placement is copied from another Place-feature other_place."
         )
     );

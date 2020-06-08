@@ -440,6 +440,7 @@ features = array [
 
 doExplicitFeatureSnap = bool false "Disable/Enable snapping of explicit features (eMesh)"
 doImplicitFeatureSnap = bool true "Disable/Enable snapping to implicit features"
+nSmoothPatch = int 3 "Number of patch smoothing operations"
 
 allowFreeStandingZoneFaces = bool true "allowFreeStandingZoneFaces"
     

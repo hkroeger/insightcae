@@ -117,7 +117,7 @@ void LinearPattern::build()
         tr.SetTranslation ( ax*delta_x*double ( i ) );
 //     bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
 
-        components_[str ( format ( "component%d" ) % ( j+1 ) )] = FeaturePtr ( new Transform ( m1_, tr ) );
+        components_[str ( format ( "component%d" ) % ( j+1 ) )] = Transform::create_trsf ( m1_, tr );
         j++;
     }
 

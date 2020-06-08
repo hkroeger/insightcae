@@ -25,6 +25,17 @@
 
 namespace insight {
 namespace cad {
+
+
+Handle_AIS_MultipleConnectedInteractive
+buildMultipleConnectedInteractive
+(
+    AIS_InteractiveContext& context,
+    std::vector<Handle_AIS_InteractiveObject> objs
+);
+
+
+
   
 Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::string& text);
 Handle_AIS_InteractiveObject createLengthDimension
@@ -111,7 +122,7 @@ public:
 private:
 //! -- from PrsMgr_PresentableObject.
     void Compute (const Handle_PrsMgr_PresentationManager3d& pm,
-                  const Handle_Prs3d_Presentation& pres,
+                  const Handle(Prs3d_Presentation)& pres,
                   const Standard_Integer mode);
 
 //! -- from PrsMgr_PresentableObject.

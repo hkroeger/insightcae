@@ -40,6 +40,7 @@
 
 #include "qmodeltree.h"
 
+using namespace std;
 using namespace boost;
 using namespace boost::assign;
 

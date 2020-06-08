@@ -166,7 +166,7 @@ void CircularPattern::build()
             tr.SetRotation(ax, phi0+delta_phi*double(i));
             
             components_[str( format("component%d") % (j+1) )] =
-                FeaturePtr(new Transform(m1_, tr));
+                Transform::create_trsf(m1_, tr);
                 
             j++;
         }

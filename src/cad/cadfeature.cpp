@@ -330,102 +330,102 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
         // set shape
         setShape(res);
 
-        // now detect named features
-        //
-        cout<<"detecting names"<<endl;
+//        // now detect named features
+//        //
+//        cout<<"detecting names"<<endl;
 
-        typedef std::map<std::string, FeatureSetPtr> Feats;
-        Feats feats;
+//        typedef std::map<std::string, FeatureSetPtr> Feats;
+//        Feats feats;
 
-        Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-all");
-        reader.TransferList(shapeList);
-
-
-        const Handle_XSControl_WorkSession & theSession = reader.WS();
-        const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
-        const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
-
-        for(int i=1; i <= shapeList->Length(); i++)
-        {
-            Handle_Standard_Transient transient = shapeList->Value(i);
-            TopoDS_Shape shape = TransferBRep::ShapeResult(tp, transient);
-            if(!shape.IsNull())
-            {
-                Handle_Standard_Transient anEntity = aReader->EntityFromShapeResult(shape, 1);
-                if(!anEntity.IsNull())
-                {
-                    Handle_StepRepr_RepresentationItem entity = Handle_StepRepr_RepresentationItem::DownCast(anEntity);
-                    if(!entity.IsNull())
-                    {
-                        if (!entity->Name()->IsEmpty())  // found named entity
-                        {
-                            std::string n(entity->Name()->ToCString());
-                            if (shape.ShapeType()==TopAbs_FACE)
-                            {
-                                std::vector<FeatureID> ids;
-                                for(TopExp_Explorer ex(res, TopAbs_FACE); ex.More(); ex.Next())
-                                {
-                                    TopoDS_Face f=TopoDS::Face(ex.Current());
-                                    if (f.IsPartner(shape))
-                                    {
-                                        ids.push_back(faceID(f));
-//                                        std::cout<<"MATCH! face id="<<(ids.back())<<std::endl;
-                                    }
-                                }
-                                if (ids.size()==0)
-                                {
-                                    insight::Warning("could not identify named face in model! (face named \""+n+"\")");
-                                }
-                                else
-                                {
-                                    std::string name="face_"+n;
-                                    if (feats.find(name)==feats.end())
-                                        feats[name].reset(new FeatureSet(shared_from_this(), Face));
-                                    for (const FeatureID& i: ids)
-                                    {
-                                        feats[name]->add(i);
-                                    }
-                                }
-                            }
-                            else if (shape.ShapeType()==TopAbs_SOLID)
-                            {
-                                std::vector<FeatureID> ids;
-                                for(TopExp_Explorer ex(res, TopAbs_SOLID); ex.More(); ex.Next())
-                                {
-                                    TopoDS_Solid f=TopoDS::Solid(ex.Current());
-                                    if (f.IsPartner(shape))
-                                    {
-                                        ids.push_back(solidID(f));
-//                                        std::cout<<"MATCH! solid id="<<ids.back()<<std::endl;
-                                    }
-                                }
-                                if (ids.size()==0)
-                                {
-                                    insight::Warning("could not identify named solid in model! (solid named \""+n+"\")");
-                                }
-                                else
-                                {
-                                    std::string name="solid_"+n;
-                                    if (feats.find(name)==feats.end())
-                                        feats[name].reset(new FeatureSet(shared_from_this(), Solid));
-                                    for (const FeatureID& i: ids)
-                                    {
-                                        feats[name]->add(i);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+//        Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-all");
+//        reader.TransferList(shapeList);
 
 
-        for (Feats::value_type& f: feats)
-        {
-            providedFeatureSets_[f.first]=f.second;
-            providedSubshapes_[f.first].reset(new Feature(f.second));
-        }
+//        const Handle_XSControl_WorkSession & theSession = reader.WS();
+//        const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
+//        const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
+
+//        for(int i=1; i <= shapeList->Length(); i++)
+//        {
+//            Handle_Standard_Transient transient = shapeList->Value(i);
+//            TopoDS_Shape shape = TransferBRep::ShapeResult(tp, transient);
+//            if(!shape.IsNull())
+//            {
+//                Handle_Standard_Transient anEntity = aReader->EntityFromShapeResult(shape, 1);
+//                if(!anEntity.IsNull())
+//                {
+//                    Handle_StepRepr_RepresentationItem entity = Handle_StepRepr_RepresentationItem::DownCast(anEntity);
+//                    if(!entity.IsNull())
+//                    {
+//                        if (!entity->Name()->IsEmpty())  // found named entity
+//                        {
+//                            std::string n(entity->Name()->ToCString());
+//                            if (shape.ShapeType()==TopAbs_FACE)
+//                            {
+//                                std::vector<FeatureID> ids;
+//                                for(TopExp_Explorer ex(res, TopAbs_FACE); ex.More(); ex.Next())
+//                                {
+//                                    TopoDS_Face f=TopoDS::Face(ex.Current());
+//                                    if (f.IsPartner(shape))
+//                                    {
+//                                        ids.push_back(faceID(f));
+////                                        std::cout<<"MATCH! face id="<<(ids.back())<<std::endl;
+//                                    }
+//                                }
+//                                if (ids.size()==0)
+//                                {
+//                                    insight::Warning("could not identify named face in model! (face named \""+n+"\")");
+//                                }
+//                                else
+//                                {
+//                                    std::string name="face_"+n;
+//                                    if (feats.find(name)==feats.end())
+//                                        feats[name].reset(new FeatureSet(shared_from_this(), Face));
+//                                    for (const FeatureID& i: ids)
+//                                    {
+//                                        feats[name]->add(i);
+//                                    }
+//                                }
+//                            }
+//                            else if (shape.ShapeType()==TopAbs_SOLID)
+//                            {
+//                                std::vector<FeatureID> ids;
+//                                for(TopExp_Explorer ex(res, TopAbs_SOLID); ex.More(); ex.Next())
+//                                {
+//                                    TopoDS_Solid f=TopoDS::Solid(ex.Current());
+//                                    if (f.IsPartner(shape))
+//                                    {
+//                                        ids.push_back(solidID(f));
+////                                        std::cout<<"MATCH! solid id="<<ids.back()<<std::endl;
+//                                    }
+//                                }
+//                                if (ids.size()==0)
+//                                {
+//                                    insight::Warning("could not identify named solid in model! (solid named \""+n+"\")");
+//                                }
+//                                else
+//                                {
+//                                    std::string name="solid_"+n;
+//                                    if (feats.find(name)==feats.end())
+//                                        feats[name].reset(new FeatureSet(shared_from_this(), Solid));
+//                                    for (const FeatureID& i: ids)
+//                                    {
+//                                        feats[name]->add(i);
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+
+
+//        for (Feats::value_type& f: feats)
+//        {
+//            providedFeatureSets_[f.first]=f.second;
+//            providedSubshapes_[f.first].reset(new Feature(f.second));
+//        }
 
     }
     else
@@ -720,7 +720,18 @@ Feature& Feature::operator=(const Feature& o)
 
   if (o.valid())
   {
-    setShape(o.shape_);
+    if (o.volprops_)
+      volprops_.reset(new GProp_GProps(*o.volprops_));
+
+    shape_=o.shape_;
+    fmap_=o.fmap_;
+    emap_=o.emap_;
+    vmap_=o.vmap_;
+    somap_=o.somap_;
+    shmap_=o.shmap_;
+    wmap_=o.wmap_;
+    setValid();
+//    setShape(o.shape_);
   }
   return *this;
 }
@@ -1182,7 +1193,7 @@ FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, FilterPtr f
   for (int i: fs)
   {
     bool ok=f->checkMatch(i);
-    if (ok) std::cout<<"match! ("<<i<<")"<<std::endl;
+    //if (ok) std::cout<<"match! ("<<i<<")"<<std::endl;
     if (ok) res.insert(i);
   }
   cout<<"QUERY_FACES RESULT = "<<res<<endl;
@@ -1968,7 +1979,7 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
         {
             if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
                 throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-            providedSubshapes_[prefix+sf.first]=FeaturePtr(new Transform(sf.second, trsf));
+            providedSubshapes_[prefix+sf.first]=Transform::create_trsf(sf.second, trsf);
         }
     }
     for (const DatumPtrMap::value_type& df: m1.providedDatums())

@@ -40,6 +40,8 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 
+using namespace std;
+
 QoccViewWidget::QoccViewWidget
 ( 
  QWidget *parent,
@@ -217,16 +219,29 @@ void QoccViewWidget::initializeOCC(/*const Handle_AIS_InteractiveContext& aConte
 //       }
 //       myViewer->SetDefaultLights();
       
-Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(myViewer, Quantity_NOC_WHITE);
+Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(
+#if (OCC_VERSION_MINOR<4)
+      myViewer,
+#endif
+      Quantity_NOC_WHITE);
 //Handle(V3d_Light) La = new V3d_PositionalLight(myViewer,10000,-3000,30000,Quantity_NOC_WHITE, 0.8, 0);
 //Handle(V3d_Light) Lb = new V3d_PositionalLight(myViewer,10000,-3000,-30000,Quantity_NOC_WHITE, 0.8, 0);
 //Handle(V3d_Light) Lc = new V3d_PositionalLight(myViewer,-30000,-3000,-10000,Quantity_NOC_WHITE, 0.8, 0);
-Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(myViewer,V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
+Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(
+#if (OCC_VERSION_MINOR<4)
+      myViewer,
+#endif
+      V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
 
     //       myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
 //       myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,-30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
 //       myView->SetLightOn(new V3d_PositionalLight (myViewer,-30000,-3000,-10000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
 //       myView->UpdateLights();
+#if (OCC_VERSION_MAJOR>=7 && OCC_VERSION_MINOR>=4)
+myViewer->AddLight(L1);
+myViewer->AddLight(L2);
+#endif
+
       myViewer->SetLightOn();
 
       //Handle_V3d_Light myDirectionalLight = new V3d_DirectionalLight( myViewer, 0,0,0, 1,-0.3,0.5 , Quantity_NOC_WHITE, Standard_True );//, V3d_TypeOfOrientation(-1, 0,0), Quantity_NOC_WHITE, Standard_False);

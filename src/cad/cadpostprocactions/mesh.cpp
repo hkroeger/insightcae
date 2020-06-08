@@ -31,6 +31,8 @@
 
 #include "openfoam/blockmesh_templates.h"
 
+using namespace std;
+
 namespace insight
 {
 namespace cad

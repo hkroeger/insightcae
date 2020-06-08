@@ -127,13 +127,13 @@ transport = selectablesubset {{
 
  constant
  set {
-   nu = double 1.8e-5 "Kinematic viscosity"
+   mu = double 1.8e-5 "Dynamic viscosity"
    Pr = double 0.7 "Prandtl number"
  }
 
  sutherland
  set {
-   nu = double 9.41e-6 "Kinematic viscosity at $T_{ref}$"
+   mu = double 9.41e-6 "Dynamic viscosity at $T_{ref}$"
    Tref = double 440 "Reference temperature $T_{ref}$"
  }
 
@@ -143,6 +143,11 @@ transport = selectablesubset {{
 
 
 equationOfState = selectablesubset {{
+
+ rhoConst
+ set {
+   rho = double 1.0 "[kg/m^3] Density"
+ }
 
  idealGas
  set { }

@@ -22,6 +22,8 @@
 
 #include "boost/foreach.hpp"
 
+using namespace std;
+
 namespace insight {
 namespace cad {
 

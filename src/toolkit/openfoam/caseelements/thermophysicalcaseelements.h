@@ -89,6 +89,8 @@ public:
 
 
 
+double sutherland_As(double mu, double Ts);
+
 class compressibleSinglePhaseThermophysicalProperties
     : public thermodynamicModel
 {
@@ -135,6 +137,7 @@ transport = selectablesubset {{
  set {
    mu = double 9.41e-6 "Dynamic viscosity at $T_{ref}$"
    Tref = double 440 "Reference temperature $T_{ref}$"
+   Pr = double 0.7 "Prandtl number"
  }
 
 }} constant "Transport properties"

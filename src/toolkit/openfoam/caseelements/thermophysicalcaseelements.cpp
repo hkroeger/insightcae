@@ -160,6 +160,11 @@ void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts&
 }
 
 
+double sutherland_As(double mu, double Ts)
+{
+  return 2.*mu / sqrt(Ts);
+}
+
 
 
 defineType(compressibleSinglePhaseThermophysicalProperties);
@@ -250,7 +255,7 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
     {
       tt+="sutherlandTransport";
       mixp_transp =
-          boost::str(boost::format("%g %g") % st->mu % st->Tref );
+          boost::str(boost::format("%g %g") % sutherland_As(st->mu, st->Tref) % st->Tref );
     }
 
     tt+="<specieThermo<";
@@ -325,8 +330,8 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
     {
       thermoType["transport"]="sutherland";
       mixture_transport["Ts"]=st->Tref;
-      mixture_transport["As"]=st->mu;
-      mixture_transport["Pr"]=1.0;
+      mixture_transport["As"]=sutherland_As(st->mu, st->Tref);
+      mixture_transport["Pr"]=ct->Pr;
     }
 
     if (const auto *ct = boost::get<Parameters::thermo_constant_type>(&p_.thermo))

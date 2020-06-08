@@ -77,22 +77,23 @@ int main(int argc, char *argv[])
   );
 
 
-//  if (UNIOF_HEADEROK(ioo, scalar))
-//  {
-//      scale<scalar>(mesh, ioo, s);
-//  }
-//  else if (UNIOF_HEADEROK(ioo, vector))
-//  {
-//      scale<vector>(mesh, ioo, s);
-//  }
-//  else if (UNIOF_HEADEROK(ioo, symmTensor))
-//  {
-//      scale<symmTensor>(mesh, ioo, s);
-//  }
-//  else if (UNIOF_HEADEROK(ioo, tensor))
-//  {
-//      scale<tensor>(mesh, ioo, s);
-//  }
+  if (UNIOF_HEADEROK(ioo, volVectorField))
+  {
+      scale<vector>(mesh, ioo, s);
+  }
+  else if (UNIOF_HEADEROK(ioo, volSymmTensorField))
+  {
+      scale<symmTensor>(mesh, ioo, s);
+  }
+  else if (UNIOF_HEADEROK(ioo, volTensorField))
+  {
+      scale<tensor>(mesh, ioo, s);
+  }
+  else if (UNIOF_HEADEROK(ioo, volScalarField))
+  {
+      scale<scalar>(mesh, ioo, s);
+  }
+
 
   Info<< "End\n" << endl;
 

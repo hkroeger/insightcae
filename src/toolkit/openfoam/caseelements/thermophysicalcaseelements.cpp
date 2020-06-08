@@ -230,10 +230,11 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
   OFDictData::dict& thermophysicalProperties =
       dictionaries.lookupDict("constant/thermophysicalProperties");
 
-  std::string tt = requiredThermoType();
 
   if (OFversion()<170)
   {
+    std::string tt = requiredThermoType();
+
     tt += "<pureMixture<";
 
     std::string mixp_eqn, mixp_thermo, mixp_transp, mixp =
@@ -243,13 +244,13 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
     {
       tt+="constTransport";
       mixp_transp =
-          boost::str(boost::format("%g %g") % ct->nu % ct->Pr );
+          boost::str(boost::format("%g %g") % ct->mu % ct->Pr );
     }
     else if (const auto *st = boost::get<Parameters::transport_sutherland_type>(&p_.transport))
     {
       tt+="sutherlandTransport";
       mixp_transp =
-          boost::str(boost::format("%g %g") % st->nu % st->Tref );
+          boost::str(boost::format("%g %g") % st->mu % st->Tref );
     }
 
     tt+="<specieThermo<";
@@ -292,6 +293,10 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
            boost::str(boost::format("%g %g %g %g")
             % pre->Tc % 0.0 % pre->Pc % pre->omega );
     }
+    else
+    {
+      throw insight::Exception("Unsupported equation of state!");
+    }
 
     tt+=">>>>>";
 
@@ -300,7 +305,93 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
   }
   else
   {
-    throw insight::Exception("OF version currently unsupported.");
+
+    OFDictData::dict thermoType,
+        mixture_specie, mixture_thermodynamics,
+        mixture_transport, mixture_equationOfState;
+
+    thermoType["type"]=requiredThermoType();
+    thermoType["specie"]="specie";
+
+    mixture_specie["molWeight"]=p_.M;
+
+    if (const auto *ct = boost::get<Parameters::transport_constant_type>(&p_.transport))
+    {
+      thermoType["transport"]="const";
+      mixture_transport["Pr"]=ct->Pr;
+      mixture_transport["mu"]=ct->mu;
+    }
+    else if (const auto *st = boost::get<Parameters::transport_sutherland_type>(&p_.transport))
+    {
+      thermoType["transport"]="sutherland";
+      mixture_transport["Ts"]=st->Tref;
+      mixture_transport["As"]=st->mu;
+      mixture_transport["Pr"]=1.0;
+    }
+
+    if (const auto *ct = boost::get<Parameters::thermo_constant_type>(&p_.thermo))
+    {
+      thermoType["thermo"]="hConst";
+      mixture_thermodynamics["Cp"] = ct->Cp;
+      mixture_thermodynamics["Hf"] = ct->Hf;
+    }
+    else if (const auto *jt = boost::get<Parameters::thermo_janaf_type>(&p_.thermo))
+    {
+      thermoType["thermo"]="janaf";
+      mixture_thermodynamics["Tlow"]=jt->Tlow;
+      mixture_thermodynamics["Thigh"]=jt->Thi;
+      mixture_thermodynamics["Tcommon"]=jt->Tmid;
+
+      {
+        OFDictData::list cpc;
+        for (arma::uword i=0; i<jt->coeffs_hi.size(); i++)
+        {
+          cpc.push_back(jt->coeffs_hi(i));
+        }
+        mixture_thermodynamics["highCpCoeffs"]=cpc;
+      }
+
+      {
+        OFDictData::list cpc;
+        for (arma::uword i=0; i<jt->coeffs_lo.size(); i++)
+        {
+          cpc.push_back(jt->coeffs_lo(i));
+        }
+        mixture_thermodynamics["lowCpCoeffs"]=cpc;
+      }
+    }
+
+
+    if (const auto *pe = boost::get<Parameters::equationOfState_idealGas_type>(&p_.equationOfState))
+    {
+      thermoType["equationOfState"]="perfectGas";
+    }
+    else if (const auto *pre = boost::get<Parameters::equationOfState_PengRobinson_type>(&p_.equationOfState))
+    {
+      thermoType["equationOfState"]="PengRobinsonGas";
+      mixture_equationOfState["Tc"]=pre->Tc;
+      mixture_equationOfState["Vc"]=0.0;
+      mixture_equationOfState["Pc"]=pre->Pc;
+      mixture_equationOfState["omega"]=pre->omega;
+    }
+    else if (const auto *rc = boost::get<Parameters::equationOfState_rhoConst_type>(&p_.equationOfState))
+    {
+      thermoType["equationOfState"]="rhoConst";
+      mixture_equationOfState["rho"]=rc->rho;
+    }
+    else
+    {
+      throw insight::Exception("Unsupported equation of state!");
+    }
+
+
+    thermophysicalProperties["thermoType"]=thermoType;
+    OFDictData::dict mixdict;
+    mixdict["specie"]=mixture_specie;
+    mixdict["thermodynamics"]=mixture_thermodynamics;
+    mixdict["tranport"]=mixture_transport;
+    mixdict["equationOfState"]=mixture_equationOfState;
+    thermophysicalProperties["mixture"]=mixdict;
   }
 
 }

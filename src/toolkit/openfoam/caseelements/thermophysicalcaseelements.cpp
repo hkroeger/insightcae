@@ -317,6 +317,8 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
 
     thermoType["type"]=requiredThermoType();
     thermoType["specie"]="specie";
+    thermoType["energy"]="sensibleEnthalpy";
+    thermoType["mixture"]="pureMixture";
 
     mixture_specie["molWeight"]=p_.M;
 
@@ -331,7 +333,7 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
       thermoType["transport"]="sutherland";
       mixture_transport["Ts"]=st->Tref;
       mixture_transport["As"]=sutherland_As(st->mu, st->Tref);
-      mixture_transport["Pr"]=ct->Pr;
+      mixture_transport["Pr"]=st->Pr;
     }
 
     if (const auto *ct = boost::get<Parameters::thermo_constant_type>(&p_.thermo))
@@ -394,7 +396,7 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
     OFDictData::dict mixdict;
     mixdict["specie"]=mixture_specie;
     mixdict["thermodynamics"]=mixture_thermodynamics;
-    mixdict["tranport"]=mixture_transport;
+    mixdict["transport"]=mixture_transport;
     mixdict["equationOfState"]=mixture_equationOfState;
     thermophysicalProperties["mixture"]=mixdict;
   }

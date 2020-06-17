@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+project(InsightCAE)
+
 enable_language (C)
 enable_language (CXX)
 enable_language (Fortran OPTIONAL)

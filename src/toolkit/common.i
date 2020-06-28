@@ -18,7 +18,7 @@
 %shared_ptr(insight::ResultElementCollection);
 %shared_ptr(insight::ResultSet);
 
-%typemap(typecheck) insight::ParameterSet::EntryList& 
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) insight::ParameterSet::EntryList&
 {
     $1 = PySequence_Check($input) ? 1 : 0;
 }
@@ -55,7 +55,7 @@
 }
 
 
-%typemap(typecheck) boost::ptr_vector<insight::sampleOps::set>& 
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) boost::ptr_vector<insight::sampleOps::set>&
 {
     $1 = PySequence_Check($input) ? 1 : 0;
 }
@@ -87,7 +87,7 @@
     $1 = &vIn;
 }
 
-%typemap(typecheck) insight::PlotCurveList& 
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) insight::PlotCurveList&
 {
     $1 = PySequence_Check($input) ? 1 : 0;
 }
@@ -118,7 +118,7 @@
     $1 = &vIn;
 }
 
-%typemap(typecheck) arma::mat& {
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) arma::mat& {
     $1 = PySequence_Check($input) ? 1 : 0;
 }
 
@@ -220,7 +220,7 @@
 
 
 
-%typemap(typecheck) arma::cube& {
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) arma::cube& {
     $1 = PySequence_Check($input) ? 1 : 0;
 }
 
@@ -266,23 +266,34 @@
 }
 
 
-
-%typemap(typecheck) boost::filesystem::path& {
-    $1 = PyString_Check($input) ? 1 : 0;
+%typemap(typecheck, precedence=SWIG_TYPECHECK_STRING) boost::filesystem::path {
+    //$1 = PyString_Check($input) ? 1 : 0;
+    $1 = PyUnicode_Check($input) ? 1 : 0;
 }
 
-%typemap(out) const boost::filesystem::path& {
-    $result = PyString_FromString($1->c_str());
+// C --> Python
+%typemap(out) boost::filesystem::path {
+    //$result = PyString_FromString($1->c_str());
+    $result = PyUnicode_FromString($1.c_str());
 }
 
 
+// Python -> C
+%typemap(in) boost::filesystem::path {
+    //vIn=PyString_AsString($input);
+    //$1 = &vIn;
 
-%typemap(in) boost::filesystem::path& (boost::filesystem::path vIn) {
-    vIn=PyString_AsString($input);
-    $1 = &vIn;
+    PyObject * temp_bytes = PyUnicode_AsEncodedString($input, "UTF-8", "strict"); // Owned reference
+    if (temp_bytes != NULL) {
+        char *my_result = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
+        $1 = boost::filesystem::path(my_result);
+        Py_DECREF(temp_bytes);
+    } else {
+        // TODO: Handle encoding error.
+    }
 }
 
-%typemap(typecheck) GeomAbs_CurveType {
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) GeomAbs_CurveType {
     $1 = PyString_Check($input) ? 1 : 0;
 }
 
@@ -303,7 +314,7 @@
     $1 = ct;
 }
 
-%typemap(typecheck) GeomAbs_SurfaceType {
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) GeomAbs_SurfaceType {
     $1 = PyString_Check($input) ? 1 : 0;
 }
 

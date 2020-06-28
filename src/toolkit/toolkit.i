@@ -19,10 +19,6 @@
  */
 
 
-%include "common.i"
-%include "exception.i"
-
-
 %module(directors="1") toolkit
 
 %{
@@ -150,6 +146,9 @@ using namespace insight::bmd;
 using namespace insight::multiphaseBC;
 using namespace insight::createPatchOps;
 %}
+
+%include "common.i"
+%include "exception.i"
 
 %exception {
 	try {

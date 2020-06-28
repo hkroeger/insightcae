@@ -34,9 +34,20 @@ VelocityInletBC::VelocityInletBC
 
 
 
-void VelocityInletBC::setField_p(OFDictData::dict& BC, OFdicts&) const
+void VelocityInletBC::setField_p(OFDictData::dict& BC, OFdicts&, bool isPrgh) const
 {
-  BC["type"]=OFDictData::data("zeroGradient");
+  if (isPrgh)
+  {
+    if ( OFversion() >=210 ) {
+        BC["type"]=OFDictData::data ( "fixedFluxPressure" );
+    } else {
+        BC["type"]=OFDictData::data ( "buoyantPressure" );
+    }
+  }
+  else
+  {
+    BC["type"]=OFDictData::data("zeroGradient");
+  }
 }
 
 
@@ -76,7 +87,7 @@ void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries) const
         else if (
             ( field.first=="p" ) && ( get<0> ( field.second ) ==scalarField )
         ) {
-            setField_p ( BC, dictionaries );
+            setField_p ( BC, dictionaries, false );
         } else if (
             ( field.first=="T" )
             &&
@@ -86,13 +97,12 @@ void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries) const
 //       BC["type"]=OFDictData::data("fixedValue");
 //       BC["value"]="uniform "+lexical_cast<string>(p_.T());
         } else if (isPrghPressureField(field)) {
-            if ( OFversion() >=210 ) {
-                BC["type"]=OFDictData::data ( "fixedFluxPressure" );
-            } else {
-                BC["type"]=OFDictData::data ( "buoyantPressure" );
-            }
-//       BC["type"]=OFDictData::data("calculated");
-//       BC["value"]=OFDictData::data("uniform 0");
+          setField_p ( BC, dictionaries, true );
+//            if ( OFversion() >=210 ) {
+//                BC["type"]=OFDictData::data ( "fixedFluxPressure" );
+//            } else {
+//                BC["type"]=OFDictData::data ( "buoyantPressure" );
+//            }
         }
 
         else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {

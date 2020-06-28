@@ -32,7 +32,7 @@ public:
         const OFDictData::dict& boundaryDict,
         const ParameterSet& p = Parameters::makeDefault()
     );
-    virtual void setField_p ( OFDictData::dict& BC, OFdicts& dictionaries ) const;
+    virtual void setField_p ( OFDictData::dict& BC, OFdicts& dictionaries, bool isPrgh ) const;
 
 
 };

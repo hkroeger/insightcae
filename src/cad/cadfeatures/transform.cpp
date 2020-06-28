@@ -52,6 +52,7 @@ size_t Transform::calcHash() const
   if (rotorg_) h+=rotorg_->value();
   if (sf_) h+=sf_->value();
   if (other_) h+=*other_;
+  if (trsf_) h+=*trsf_;
   return h.getHash();
 }
 
@@ -105,8 +106,12 @@ Transform::Transform(FeaturePtr m1, ScalarPtr sf)
 
 Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
 : DerivedFeature(m1),
-  m1_(m1), trsf_(new gp_Trsf(trsf))
-{}
+  m1_(m1), trsf_(new gp_Trsf)
+{
+  *trsf_=trsf;
+//  std::cout<<"TRSF:"<<std::endl;
+//  trsf_->DumpJson(std::cout);
+}
 
 
 
@@ -190,6 +195,7 @@ void Transform::build()
   {
     if (!trsf_)
     {
+
         if (other_)
         {
             trsf_.reset(new gp_Trsf(calcTrsfFromOtherTransformFeature(other_)));

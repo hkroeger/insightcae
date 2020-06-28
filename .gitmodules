@@ -1,4 +1,0 @@
-[submodule "src/addons/insight-gas_dispersion"]
-	path = src/addons/gas_dispersion
-	url = ssh://gogs@rostock.silentdynamics.de:222/silentdynamics/insight-gas_dispersion.git
-	branch = master

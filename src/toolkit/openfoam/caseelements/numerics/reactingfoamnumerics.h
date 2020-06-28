@@ -5,7 +5,8 @@
 #include "openfoam/caseelements/numerics/pimplesettings.h"
 
 
-namespace insight {
+namespace insight
+{
 
 class reactingFoamNumerics
     : public FVNumerics
@@ -22,6 +23,8 @@ time_integration = includedset "insight::CompressiblePIMPLESettings::Parameters"
 
 forceLES = bool false "Whether to enforce LES numerics"
 
+buoyancy = bool false "Whether to use a buoyancy formulation"
+
 <<<PARAMETERSET
 */
 
@@ -35,6 +38,8 @@ public:
     reactingFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
+
+    inline const reactingFoamNumerics::Parameters& parameters() const { return p_; }
 };
 
 } // namespace insight

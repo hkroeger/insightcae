@@ -147,14 +147,14 @@ struct dict
 
   list& getList(const std::string& key, bool createIfNonexistent=true);
 
-  inline double& getDouble(const std::string& key)
+  inline double& getDoubleRef(const std::string& key)
   {
     return this->lookup<double>(key);
   }
 
   inline double getDouble(const std::string& key) const
   {
-     return this->lookup<double>(key);
+     return this->getDoubleOrInt(key);
   }
 
   inline double getDoubleOrInt(const std::string& key) const
@@ -169,22 +169,22 @@ struct dict
     }
   }
 
-  inline int& getInt(const std::string& key)
+  inline int& getIntRef(const std::string& key)
   {
     return this->lookup<int>(key);
   }
 
-  inline const int& getInt(const std::string& key) const
+  inline int getInt(const std::string& key) const
   {
     return this->lookup<int>(key);
   }
 
-  inline std::string& getString(const std::string& key)
+  inline std::string& getStringRef(const std::string& key)
   {
     return this->lookup<std::string>(key);
   }
 
-  inline const std::string& getString(const std::string& key) const
+  inline std::string getString(const std::string& key) const
   {
     return this->lookup<std::string>(key);
   }

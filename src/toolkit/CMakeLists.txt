@@ -232,6 +232,8 @@ target_include_directories(toolkit
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
 
+install_shared_file(gri_species openfoam/caseelements/gri.species thermophysical)
+
 add_PDL(toolkit "${toolkit_HEADERS}")
 
 install(

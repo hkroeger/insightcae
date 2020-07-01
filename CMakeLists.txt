@@ -730,11 +730,12 @@ macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     ${SHAREDFILE})
     
+  get_filename_component(FNAME ${SHAREDFILE} NAME)
   add_custom_target(${NAME} ALL
     COMMENT "Copying file: ${SHAREDFILE}")
 
   set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
-  set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${SHAREDFILE}")
+  set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${FNAME}")
 
   add_custom_command(
     TARGET ${NAME}

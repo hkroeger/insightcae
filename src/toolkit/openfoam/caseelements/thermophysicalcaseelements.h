@@ -126,7 +126,7 @@ name = string "N2" "Name of specie (i.e. the field name). Has to be unique!" *ne
 properties = selectablesubset {{
 
   fromLibrary set {
-   specie = selection ( dummy ) dummy "Species library entry"
+   specie = selection ( no_library_available ) no_library_available "Species library entry"
   }
 
   custom set {

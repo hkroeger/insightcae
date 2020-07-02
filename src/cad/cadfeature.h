@@ -168,7 +168,7 @@ class FreelyIndexedMapOfShape
  : public std::map<int, TopoDS_Shape>
 {
 public:
-    int Add(const TopoDS_Shape& s, int index=-1);
+    void Add(const TopoDS_Shape& s, int index=-1);
     bool contains (const TopoDS_Shape& K)  const;
     const  TopoDS_Shape& FindKey (const Standard_Integer I)  const;
     const  TopoDS_Shape& operator () (const Standard_Integer I)  const;

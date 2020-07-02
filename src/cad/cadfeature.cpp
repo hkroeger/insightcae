@@ -211,7 +211,7 @@ FeatureCmdInfo::FeatureCmdInfo
 {}
 
 
-int FreelyIndexedMapOfShape::Add(const TopoDS_Shape& s, int index)
+void FreelyIndexedMapOfShape::Add(const TopoDS_Shape& s, int index)
 {
     // ensure that entity is only contained once
     int i=FindIndex(s);
@@ -754,7 +754,6 @@ GeomAbs_CurveType Feature::edgeType(FeatureID i) const
 GeomAbs_SurfaceType Feature::faceType(FeatureID i) const
 {
   const TopoDS_Face& f = face(i);
-  double t0, t1;
   Handle_Geom_Surface surf=BRep_Tool::Surface(f);
   GeomAdaptor_Surface adapt(surf);
   return adapt.GetType();
@@ -799,7 +798,7 @@ double Feature::subsolidVolume(FeatureID i) const
 }
 
 
-arma::mat Feature::modelCoG(double density_ovr) const
+arma::mat Feature::modelCoG(double /*density_ovr*/) const
 {
   checkForBuildDuringAccess();
 //   GProp_GProps props;
@@ -810,7 +809,7 @@ arma::mat Feature::modelCoG(double density_ovr) const
   return vec3(cog);
 }
 
-arma::mat Feature::surfaceCoG(double areaWeight_ovr) const
+arma::mat Feature::surfaceCoG(double /*areaWeight_ovr*/) const
 {
   GProp_GProps props;
   BRepGProp::SurfaceProperties(shape(), props);
@@ -1537,7 +1536,7 @@ void Feature::exportEMesh
 
       }
       
-      for (int i=1; i<points.size()-iofs; i++)
+      for (size_t i=1; i<points.size()-iofs; i++)
       {
 	int from=iofs+i-1;
 	int to=iofs+i;

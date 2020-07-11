@@ -201,7 +201,9 @@ domain = selectablesubset {{
 
 }} wholedomain "select domain of integration"
 
-operation = selection ( sum sumMag average volAverage volIntegrate min max CoV) volIntegrate "operation to execute on data"
+weightFieldName = string "none" "Name of field for weighting. This is ignored, if no operation with weighting is selected."
+
+operation = selection ( sum sumMag average volAverage volIntegrate min max CoV weightedVolIntegrate) volIntegrate "operation to execute on data"
 
 <<<PARAMETERSET
 */

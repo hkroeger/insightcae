@@ -377,6 +377,11 @@ OFDictData::dict volumeIntegrate::functionObjectDict() const
     op="max";
   else if (p_.operation == Parameters::CoV)
     op="CoV";
+  else if (p_.operation == Parameters::weightedVolIntegrate)
+  {
+    op="weightedVolIntegrate";
+    fod["weightField"]=p_.weightFieldName;
+  }
   fod["operation"]=op;
 
   OFDictData::list fl; fl.resize(p_.fields.size());

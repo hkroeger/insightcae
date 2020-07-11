@@ -36,6 +36,12 @@
 
 #include "openfoam/caseelements/analysiscaseelements.h"
 
+#include "base/vtkrendering.h"
+#include "vtkDataSetMapper.h"
+#include "vtkStreamTracer.h"
+#include "vtkPointSource.h"
+#include "vtkPolyDataMapper.h"
+
 #include "cadfeatures.h"
 
 using namespace arma;
@@ -198,7 +204,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   Patch& floor = 	bmd->addPatch("floor", new Patch("wall"));
 
   // points in cross section
-  std::map<int, Point> pts = boost::assign::map_list_of       
+  std::map<int, bmd::Point> pts = boost::assign::map_list_of
 	(0, 	vec3( -Lupstream, 0, 0))
 	(1, 	vec3( 0, 0, 0))
         (2, 	vec3( l_, 0, 0))
@@ -575,70 +581,207 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
   );    
   
 
-
   {
-    using namespace insight::paraview;
+    // A renderer and render window
+    OpenFOAMCaseScene scene( executionPath()/"system"/"controlDict" );
 
-    Streamtracer::Parameters::seed_cloud_type cloud1, cloud2;
-    cloud1.radius=cloud2.radius=0.2*Lref_;
-    cloud1.number=cloud2.number=500;
-    cloud1.center=vec3(0.5*l_, 0.5*w_, 0.5*h_);
-    cloud2.center=vec3(0.5*l_, -0.5*w_, 0.5*h_);
+    auto patches = scene.patches("object.*|floor.*");
 
-    ParaviewVisualization::Parameters pvp;
+    FieldSelection sl_field("p", FieldSupport::Point, -1);
+    auto sl_range=calcRange(sl_field, {patches}, {});
+    auto sl_cm=createColorMap();
+    FieldColor sl_fc(sl_field, sl_cm, sl_range);
 
-    pvp.scenes = {
+    scene.addData<vtkDataSetMapper>(patches, sl_fc);
+    scene.addColorBar("Pressure\n[m^2/s^2]", sl_cm);
 
-      PVScenePtr(new IsoView(IsoView::Parameters()
-              .set_bbmin(vec3(0, -0.5*w_, 0))
-              .set_bbmax(vec3(l_, 0.5*w_, h_))
-              .set_e_ax(vec3(-1,0,0))
-              .set_sceneElements({
+    auto camera = scene.activeCamera();
+    camera->ParallelProjectionOn();
 
-                PVScriptElementPtr(new CustomScriptElement(CustomScriptElement::Parameters()
-                  .set_command(
-                     "obj=extractPatches("+ParaviewVisualization::OFCaseDatasetName()+", 'object.*')\n"
-                     "floor=extractPatches("+ParaviewVisualization::OFCaseDatasetName()+", 'floor.*')\n"
-                     "displayContour(obj, 'p', arrayType='CELL_DATA')\n"
-                     "displaySolid(floor, 0.1)\n"
-                  )
-                  .set_names({"obj", "floor"})
-                ))
+    auto viewctr=vec3(0.5*l_, 0, 0.5*h_);
+    camera->SetFocalPoint( toArray(viewctr) );
 
-              })
-              .set_imagename("pressureContour")
-            )),
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+vec3(-10.0*l_,0,0)) );
 
-      PVScenePtr(new IsoView(IsoView::Parameters()
-              .set_bbmin(vec3(0, -0.5*w_, 0))
-              .set_bbmax(vec3(l_, 0.5*w_, h_))
-              .set_e_ax(vec3(-1,0,0))
-              .set_sceneElements({
+      auto img = executionPath() / "pressureContour_front.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(w_, h_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Pressure contour (front view)", ""
+      )));
+    }
 
-                PVScriptElementPtr(new Streamtracer(Streamtracer::Parameters()
-                  .set_seed(cloud1)
-                  .set_dataset(ParaviewVisualization::OFCaseDatasetName()+"[0]")
-                  .set_field("U")
-                  .set_maxLen(10.*Lref_)
-                  .set_name("st1")
-                )),
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+vec3(0,-10.0*w_,0)) );
 
-                PVScriptElementPtr(new Streamtracer(Streamtracer::Parameters()
-                  .set_seed(cloud2)
-                  .set_dataset(ParaviewVisualization::OFCaseDatasetName()+"[0]")
-                  .set_field("U")
-                  .set_maxLen(10.*Lref_)
-                  .set_name("st2")
-                ))
+      auto img = executionPath() / "pressureContour_side.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(l_, h_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Pressure contour (side view)", ""
+      )));
+    }
 
-              })
-              .set_imagename("streamlines")
-            ))
-    };
+    {
+      camera->SetViewUp( toArray(vec3(0,1,0)) );
+      camera->SetPosition( toArray(viewctr+vec3(0,0,10.0*h_)) );
 
-    results->insert ( "renderings", ParaviewVisualization(pvp, executionPath())() );
+      auto img = executionPath() / "pressureContour_top.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(l_, w_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Pressure contour (top view)", ""
+      )));
+    }
+
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+10.*vec3(-l_,-w_,h_)) );
+
+      auto img = executionPath() / "pressureContour_diag.png";
+//      scene.fitAll();
+      double f=sqrt(2.);
+      scene.setParallelScale(std::pair<double,double>(
+                               std::max(f*l_, f*w_),
+                               std::max(f*l_, f*h_)
+                               ));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Pressure contour (isometric view)", ""
+      )));
+    }
+
+    auto im = scene.internalMesh();
+
+    {
+      auto seeds = vtkSmartPointer<vtkPointSource>::New();
+      seeds->SetCenter(toArray(vec3(0.5*l_, 0.5*w_, 0.5*h_)));
+      seeds->SetRadius(0.2*Lref_);
+      seeds->SetDistributionToUniform();
+      seeds->SetNumberOfPoints(100);
+
+      auto st = vtkSmartPointer<vtkStreamTracer>::New();
+      st->SetInputData(im);
+      st->SetSourceConnection(seeds->GetOutputPort());
+      st->SetIntegrationDirectionToBoth();
+      st->SetInputArrayToProcess(
+            0, 0, 0,
+            vtkDataObject::FIELD_ASSOCIATION_POINTS,
+            "U");
+
+      st->Update();
+      scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
+    }
+
+    {
+      auto seeds = vtkSmartPointer<vtkPointSource>::New();
+      seeds->SetCenter(toArray(vec3(0.5*l_, -0.5*w_, 0.5*h_)));
+      seeds->SetRadius(0.2*Lref_);
+      seeds->SetDistributionToUniform();
+      seeds->SetNumberOfPoints(100);
+
+      auto st = vtkSmartPointer<vtkStreamTracer>::New();
+      st->SetInputData(im);
+      st->SetSourceConnection(seeds->GetOutputPort());
+      st->SetIntegrationDirectionToBoth();
+      st->SetInputArrayToProcess(
+            0, 0, 0,
+            vtkDataObject::FIELD_ASSOCIATION_POINTS,
+            "U");
+
+      st->Update();
+      scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
+    }
+
+
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+vec3(-10.0*l_,0,0)) );
+
+      auto img = executionPath() / "streamLines_front.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(2.*w_, 2.*h_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Stream lines (front view)", ""
+      )));
+    }
+
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+vec3(0,-10.0*w_,0)) );
+
+      auto img = executionPath() / "streamLines_side.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(2.*l_, 2.*h_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Stream lines (side view)", ""
+      )));
+    }
+
+    {
+      camera->SetViewUp( toArray(vec3(0,1,0)) );
+      camera->SetPosition( toArray(viewctr+vec3(0,0,10.0*h_)) );
+
+      auto img = executionPath() / "streamLines_top.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(2.*l_, 2.*w_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Stream lines (top view)", ""
+      )));
+    }
+
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+10.*vec3(-l_,-w_,h_)) );
+
+      auto img = executionPath() / "streamLines_diag.png";
+//      scene.fitAll();
+      double f=sqrt(2.);
+      scene.setParallelScale(std::pair<double,double>(
+                               2.*std::max(f*l_, f*w_),
+                               2.*std::max(f*l_, f*h_)
+                               ));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Stream lines (isometric view)", ""
+      )));
+    }
 
   }
+
 
   return results;
 }

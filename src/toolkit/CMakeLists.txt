@@ -122,6 +122,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/basic/copyfiles.cpp
     openfoam/caseelements/basic/srfoption.cpp
     openfoam/caseelements/basic/providefields.cpp
+    openfoam/caseelements/basic/rangeweightfield.cpp
 
     openfoam/caseelements/numerics/pimplesettings.cpp
     openfoam/caseelements/numerics/fvnumerics.cpp

@@ -49,4 +49,7 @@ double mps=1.;
 double kmh=3.6;
 double kt=0.51444;
 
+double Pa=1.0;
+double bar=1e5;
+
 }

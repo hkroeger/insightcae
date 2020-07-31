@@ -217,6 +217,8 @@ public:
   void insertThermodynamicsEntries(OFDictData::dict& d) const;
   void insertTransportEntries(OFDictData::dict& d) const;
   void insertElementsEntries(OFDictData::dict& d) const;
+
+  std::pair<double,double> temperatureLimits() const;
 };
 
 

@@ -501,6 +501,16 @@ void SpeciesData::insertSpecieEntries(OFDictData::dict& d) const
   d["specie"]=specie;
 }
 
+std::pair<double,double> SpeciesData::temperatureLimits() const
+{
+  std::pair<double,double> mima(0, 1e10);
+  if (const auto *jt = boost::get<Parameters::properties_custom_type::thermo_janaf_type>(&p_.thermo))
+  {
+    mima.first=jt->Tlow;
+    mima.second=jt->Thi;
+  }
+  return mima;
+}
 
 void SpeciesData::insertThermodynamicsEntries(OFDictData::dict& d) const
 {

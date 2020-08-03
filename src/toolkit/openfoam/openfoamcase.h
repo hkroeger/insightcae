@@ -194,6 +194,11 @@ public:
     OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0) const;
     OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0) const;
 
+    std::vector<boost::filesystem::path> functionObjectOutputDirectories
+    (
+        const boost::filesystem::path& location
+    ) const;
+
 };
 
 

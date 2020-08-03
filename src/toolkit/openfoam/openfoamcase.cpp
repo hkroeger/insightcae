@@ -753,4 +753,43 @@ void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dic
     }
 }
 
+
+std::vector<boost::filesystem::path> OpenFOAMCase::functionObjectOutputDirectories
+(
+    const boost::filesystem::path& caseLocation
+) const
+{
+  path fp;
+  std::shared_ptr<regex> filter;
+  if ( OFversion() <170 )
+  {
+    fp=absolute ( caseLocation );
+    filter.reset(new regex("(processor.*|constant|system|[0-9].*)"));
+  }
+  else
+  {
+    fp=absolute ( caseLocation ) / "postProcessing";
+  }
+
+  std::vector<boost::filesystem::path> results;
+
+  for (directory_iterator it(fp);
+       it!=directory_iterator(); ++it)
+  {
+    if (is_directory(it->status())) // if is directory
+    {
+      auto cp=it->path();
+      if (!filter || (filter && !regex_search(cp.filename().string(), *filter))) // and not matching filter
+      {
+        if (listTimeDirectories(cp).size()>0) // and if contains time dirs
+        {
+          results.push_back(cp); // then add
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
 }

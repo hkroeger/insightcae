@@ -27,6 +27,13 @@
 
 namespace insight {
 
+
+arma::mat readAndCombineTabularFiles
+(
+    const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
+    const std::string& FOName, const std::string& fileName,
+    const std::string& filterChars="()"
+);
   
   
   
@@ -214,6 +221,13 @@ protected:
 public:
     declareType("volumeIntegrate");
     volumeIntegrate(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+
+    static arma::mat readVolumeIntegrals
+    (
+        const OpenFOAMCase& c,
+        const boost::filesystem::path& location,
+        const std::string& FOName
+    );
 
     static std::string category() {
         return "Postprocessing";

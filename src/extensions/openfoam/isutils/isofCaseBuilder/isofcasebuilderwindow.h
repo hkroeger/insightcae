@@ -73,7 +73,7 @@ private:
     Ui::isofCaseBuilderWindow* ui;
     QHBoxLayout *pe_layout_, *bc_pe_layout_;
 
-    QoccViewerContext* context_;
+//    QoccViewerContext* context_;
     QoccViewWidget* viewer_;
     QModelTree* modeltree_;
     ParameterSetDisplay* display_;

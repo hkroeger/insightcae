@@ -40,8 +40,10 @@
 
 #include "base/exception.h"
 
-VTK_MODULE_INIT(vtkRenderingOpenGL2)
-VTK_MODULE_INIT(vtkRenderingFreeType)
+
+void vtkRenderingOpenGL2_AutoInit_Construct();
+void vtkRenderingFreeType_AutoInit_Construct();
+void vtkInteractionStyle_AutoInit_Construct();
 
 using namespace std;
 using namespace boost;
@@ -65,6 +67,7 @@ vtkSmartPointer<vtkPolyData> createArrows(
 //    arma::mat R = to - from;
 //    double r=norm(R,2);
 //    R/=r;
+
 //    double gamma = 180.*atan2( R(2), R(1) ) / M_PI;
 //    double acosarg = sqrt( R(1)*R(1) + R(2)*R(2) );
 //    double beta;
@@ -211,6 +214,10 @@ MinMax calcRange(
 
 VTKOffscreenScene::VTKOffscreenScene()
 {
+  vtkRenderingOpenGL2_AutoInit_Construct();
+  vtkRenderingFreeType_AutoInit_Construct();
+  vtkInteractionStyle_AutoInit_Construct();
+
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
   renderWindow_ = vtkSmartPointer<vtkRenderWindow>::New();
   renderWindow_->AddRenderer(renderer_);
@@ -233,6 +240,16 @@ VTKOffscreenScene::VTKOffscreenScene()
   light_kit->SetKeyLightIntensity(1.0);
   light_kit->AddLightsToRenderer(renderer_);
 }
+
+
+
+
+VTKOffscreenScene::~VTKOffscreenScene()
+{
+}
+
+
+
 
 void VTKOffscreenScene::addActor2D(vtkSmartPointer<vtkActor2D> actor)
 {

@@ -53,7 +53,7 @@
 #include <WNT_Window.hxx>
 #else
 //#include <Handle_Xw_Window.hxx>
-#include <Xw_Window.hxx>
+//#include <Xw_Window.hxx>
 #endif
 #undef Opposite
 #undef Bool

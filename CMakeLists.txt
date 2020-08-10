@@ -165,30 +165,32 @@ if (INSIGHT_BUILD_TOOLKIT)
         timer
         thread
         iostreams
-        python
+        python3
         program_options
         REQUIRED
         )
 
     find_package(VTK
         COMPONENTS
-        vtkFiltersCore
-        vtkFiltersGeneral
-        vtkFiltersSources
-        vtkFiltersGeneric
-        vtkFiltersExtraction
-        vtkFiltersPoints
-        vtkFiltersFlowPaths
-        vtkCommonCore
-        vtkIOLegacy
-        vtkIOGeometry
-        vtkIOExport
-        vtkIOImage
-        vtkIOXML
-        vtkImagingCore
-        vtkRenderingOpenGL2
-        vtkRenderingAnnotation
-        vtkPVVTKExtensionsDefault
+        FiltersCore
+        FiltersGeneral
+        FiltersSources
+        FiltersGeneric
+        FiltersExtraction
+        FiltersPoints
+        FiltersFlowPaths
+        CommonCore
+        IOLegacy
+        IOGeometry
+        IOExport
+        IOImage
+        IOXML
+        ImagingCore
+        RenderingOpenGL2
+        RenderingAnnotation
+         InteractionWidgets
+         InteractionStyle
+        #vtkPVVTKExtensionsDefault
         REQUIRED
     )
     #include(${VTK_USE_FILE})

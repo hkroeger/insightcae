@@ -284,7 +284,7 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
 
     lines->InitTraversal();
     vtkIdType npts=-1;
-    vtkIdType *pt=nullptr;
+    const vtkIdType *pt=nullptr;
     for (vtkIdType i=0; lines->GetNextCell(npts, pt); i++)
       {
 
@@ -320,7 +320,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     {
         lines->InitTraversal();
         vtkIdType npts=-1;
-        vtkIdType *pt=nullptr;
+        const vtkIdType *pt=nullptr;
         for (int i=0; lines->GetNextCell(npts, pt); i++)
           {
             if (npts==2)

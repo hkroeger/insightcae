@@ -1,21 +1,30 @@
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
-
-#include "clear_occ_macros.h"
-#define QT_NO_OPENGL
-#include <QtCore>
-#include <QtGui>
+#include <QWidget>
+#include <QAction>
 #include <QDialog>
-//#include <QtOpenGL/QGLWidget>
 
-
-#include "qocc.h"
+#include "Standard_Version.hxx"
+#include "V3d_View.hxx"
+#include "V3d_Plane.hxx"
+#include "AIS_InteractiveContext.hxx"
 #include "AIS_Plane.hxx"
+#include "AIS_ViewController.hxx"
+#include "V3d_Coordinate.hxx"
 
-#include "qmodelstepitem.h"
-
+class Aspect_GraphicCallbackStruct;
 class QDisplayableModelTreeItem;
+class QModelTree;
+class QRubberBand;
+class OpenGl_GraphicDriver;
+class V3d_Viewer;
+
+namespace insight { namespace cad {
+class PostprocAction;
+class Vector;
+class FeatureSet;
+} }
 
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR>=7))
 #include "Graphic3d_ClipPlane.hxx"
@@ -30,19 +39,34 @@ class QDisplayableModelTreeItem;
 #define PANSHORTCUTKEY Qt::ShiftModifier 
 #define ROTATESHORTCUTKEY Qt::AltModifier
 
-#define ValZWMin 1 /** For elastic bean selection */
+/* For elastic bean selection */
+const double ValZWMin = 1;
 
-// class Handle_AIS_InteractiveContext;
-// class Handle_V3d_View;
 
-class QOCC_DECLSPEC QoccViewWidget
-: public QWidget
+
+
+class QoccViewWidget
+: public QWidget,
+  protected AIS_ViewController
 {
-	Q_OBJECT
+
+  Q_OBJECT
+
+private:
+  static Handle(OpenGl_GraphicDriver) aGraphicDriver;
+  static Handle(V3d_Viewer) createViewer
+  (
+      const Standard_ExtString ,
+      const Standard_CString ,
+      const Standard_Real theViewSize,
+      const V3d_TypeOfOrientation theViewProj,
+      const Standard_Boolean theComputedMode,
+      const Standard_Boolean theDefaultComputedMode
+  );
 
 public:
 
-  enum CurrentAction3d 
+  enum CurrentAction3d
   {	
     CurAction3d_Undefined,
     CurAction3d_Nothing, 
@@ -80,23 +104,28 @@ public:
   QoccViewWidget
     (
      QWidget *parent,
-     const Handle_AIS_InteractiveContext& aContext = Handle_AIS_InteractiveContext(),
-     Qt::WindowFlags wflags = 0 
+     Qt::WindowFlags wflags = 0
     );
   
   ~QoccViewWidget();
   
-  void initializeOCC(/*const Handle_AIS_InteractiveContext& aContext = NULL*/);
+//  void initializeOCC(/*const Handle_AIS_InteractiveContext& aContext = NULL*/);
 
-  inline Handle_AIS_InteractiveContext&	getContext( void ) { return myContext_; }
-  inline const Handle_V3d_View& getView( void )    { return myView; }
-  inline const Handle_V3d_View& getOccView( void )    { return myView; }
+  inline Handle_AIS_InteractiveContext&	getContext()
+  { return myContext_; }
+
+  inline const Handle_V3d_View& getView()
+  { return myView; }
+
+  inline const Handle_V3d_View& getOccView()
+  { return myView; }
 
   //Overrides
   QPaintEngine* paintEngine() const;
   //QToolBar*	  myToolBar;
 
-  void redraw( bool isPainting = false );
+
+//  void redraw( bool isPainting = false );
 
   QDisplayableModelTreeItem* getOwnerItem(Handle_AIS_InteractiveObject selected);
   QDisplayableModelTreeItem* getSelectedItem();
@@ -115,7 +144,7 @@ Q_SIGNALS:
   //! Just a placeholder for now
   void error ( int errorCode, QString& errorDescription );
 
-  void addEvaluationToModel (const QString& name, insight::cad::PostprocActionPtr smp, bool visible);
+  void addEvaluationToModel (const QString& name, std::shared_ptr<insight::cad::PostprocAction> smp, bool visible);
 
   void insertNotebookText(const QString& text);
 
@@ -198,13 +227,12 @@ private: // members
 #ifdef WNT
   Handle_WNT_Window		myWindow;
 #else
-  Handle_Xw_Window		myWindow;
+//  Handle_Xw_Window		myWindow;
 #endif // WNT
   
-  QoccViewerContext *myContextObj_=nullptr;
-  Handle_AIS_InteractiveContext   myContext_;
   Handle_V3d_View                 myView;
   Handle_V3d_Viewer               myViewer;
+  Handle_AIS_InteractiveContext   myContext_;
 
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<7))
   Handle_V3d_Plane		clipPlane_;
@@ -212,17 +240,17 @@ private: // members
   Handle_Graphic3d_ClipPlane	clipPlane_;  
 #endif
 
-  bool		myViewResized;
-  bool		myViewInitialized;
+  bool                          myViewResized;
+  bool                          myViewInitialized;
   CurrentAction3d               myMode;
-  double               myCurZoom;
-  bool		myGridSnap;
+  double                        myCurZoom;
+  bool                          myGridSnap;
   AIS_StatusOfDetection		myDetection;
   
   V3d_Coordinate					
-    myV3dX,   
-    myV3dY,   
-    myV3dZ;
+                                myV3dX,
+                                myV3dY,
+                                myV3dZ;
   
   QRubberBand*			myRubberBand;
   QPoint			myStartPoint;
@@ -230,20 +258,20 @@ private: // members
   
   double			myPrecision;
   double			myViewPrecision;
-  bool		myMapIsValid;
+  bool                          myMapIsValid;
   Qt::KeyboardModifiers		myKeyboardFlags;
   Qt::MouseButton		myButtonFlags;
   QCursor			myCrossCursor;
   
-  bool showGrid;
+  bool                          showGrid;
 
-  CurrentInteractionMode cimode_;
+  CurrentInteractionMode        cimode_;
 
   // data for measure points
-  insight::cad::VectorPtr measpts_p1_, measpts_p2_;
+  std::shared_ptr<insight::cad::Vector> measpts_p1_, measpts_p2_;
 
   // for pointIDs
-  insight::cad::FeatureSetPtr selpts_;
+  std::shared_ptr<insight::cad::FeatureSet> selpts_;
 
 private: // methods
   
@@ -306,23 +334,23 @@ public:
 
 };
 
-//----------------------------------------------------------------------------------------------------------
+////----------------------------------------------------------------------------------------------------------
 
-class OCCViewScreenshots : public QDialog
-{
-  Q_OBJECT
-protected:
-  QoccViewWidget* occWidget_;
-  QString format_, initialPath_;
+//class OCCViewScreenshots : public QDialog
+//{
+//  Q_OBJECT
+//protected:
+//  QoccViewWidget* occWidget_;
+//  QString format_, initialPath_;
 
-public:
-  QStringList files;
+//public:
+//  QStringList files;
 
-  OCCViewScreenshots(Handle_AIS_InteractiveContext& context, QString initPath );
+//  OCCViewScreenshots(/*Handle_AIS_InteractiveContext& context, */QString initPath );
 
-public slots:
-  void screenShot(void);
+//public slots:
+//  void screenShot(void);
 
-};
+//};
 
 #endif // QoccViewWidget_H

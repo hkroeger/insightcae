@@ -32,6 +32,7 @@
 
 #include <QSignalMapper>
 #include <QStatusBar>
+#include <QSettings>
 
 #include "cadfeatures/modelfeature.h"
 #include "modelcomponentselectordlg.h"

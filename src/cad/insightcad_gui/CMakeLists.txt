@@ -16,8 +16,10 @@ set(insightcad_gui_SRCS
  cadfeaturetransient.h
  pointertransient.cpp
  pointertransient.h
- qoccviewercontext.cpp
- qoccviewercontext.h
+# qoccviewercontext.cpp
+# qoccviewercontext.h
+ OcctWindow.cpp
+ OcctWindow.h
  qoccviewwidget.cpp
  qoccviewwidget.h
  viewstate.cpp
@@ -42,7 +44,7 @@ add_library(insightcad_gui SHARED ${insightcad_gui_SRCS})
 target_link_libraries(insightcad_gui
   toolkit
   insightcad
-  ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${OPENGL_LIBRARIES}
+  ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} #${OPENGL_LIBRARIES}
   ${Boost_LIBRARIES}
   Qt5::Widgets
   ${DXFLIB_LIBRARIES}

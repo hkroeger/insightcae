@@ -211,14 +211,19 @@ ENDIF()
 #    vtkFiltersExtraction
 #    REQUIRED
 #)
+
 find_package(OpenSSL)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
 
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
 #include(${VTK_USE_FILE})
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
-target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} 
+target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY}
+    PkgConfig::poppler-cpp
 	GSL::gsl GSL::gslcblas
 	OpenSSL::SSL 
 	${VTK_LIBRARIES}

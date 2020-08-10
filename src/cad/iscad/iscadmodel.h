@@ -31,7 +31,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-#include "qoccviewercontext.h"
+//#include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
 #include "qdebugstream.h"
 #include "viewstate.h"
@@ -284,7 +284,7 @@ class ISCADModelEditor
     Q_OBJECT
 
 protected:
-    QoccViewerContext* context_;
+//    QoccViewerContext* context_;
     QoccViewWidget* viewer_;
     QModelTree* modeltree_;
     ISCADModel* model_;

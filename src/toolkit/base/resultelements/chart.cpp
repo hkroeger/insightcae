@@ -4,6 +4,9 @@
 
 #include "gnuplot-iostream.h"
 
+#include "cpp/poppler-document.h"
+#include "cpp/poppler-page.h"
+#include "cpp/poppler-page-renderer.h"
 
 using namespace std;
 using namespace boost;
@@ -206,25 +209,27 @@ void Chart::gnuplotCommand(gnuplotio::Gnuplot& gp) const
 }
 
 
-
-void Chart::generatePlotImage ( const path& imagepath ) const
+void Chart::generatePlotImage( const path& imagepath ) const
 {
-//   std::string chart_file_name=(workdir/(resultelementname+".png")).string();
-    std::string bn ( imagepath.filename().stem().string() );
+  CurrentExceptionContext ex("rendering chart into image "+imagepath.string());
 
-    bool keep=false;
-    if (getenv("INSIGHT_KEEP_TEMP_DIRS"))
-      keep=true;
-    CaseDirectory tmp ( keep, bn+"-generate" );
+  std::string bn ( imagepath.filename().stem().string() );
 
-    {
-        Gnuplot gp;
+  bool keep=false;
+  if (getenv("INSIGHT_KEEP_TEMP_DIRS"))
+    keep=true;
+  CaseDirectory tmp ( keep, bn+"-generate" );
 
-        //gp<<"set terminal pngcairo; set termoption dash;";
-        gp<<"set terminal epslatex standalone color dash linewidth 3 header \"\\\\usepackage{graphicx}\\n\\\\usepackage{epstopdf}\";";
-        gp<<"set output '"+bn+".tex';";
-//     gp<<"set output '"<<absolute(imagepath).string()<<"';";
-        /*
+  {
+    CurrentExceptionContext ex("executing gnuplot");
+
+    Gnuplot gp;
+
+    //gp<<"set terminal pngcairo; set termoption dash;";
+    gp<<"set terminal epslatex standalone color dash linewidth 3 header \"\\\\usepackage{graphicx}\\n\\\\usepackage{epstopdf}\";";
+    gp<<"set output '"+bn+".tex';";
+    //     gp<<"set output '"<<absolute(imagepath).string()<<"';";
+    /*
             gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
                 "set linetype  2 lc rgb '#8A2BE2' lw 1;"
                 "set linetype  3 lc rgb '#A52A2A' lw 1;"
@@ -237,17 +242,44 @@ void Chart::generatePlotImage ( const path& imagepath ) const
                 "set linetype cycle  9;";
         */
 
-       gnuplotCommand(gp);
-    }
+    gnuplotCommand(gp);
+  }
 
-    ::system (
+  std::system (
         (
-            "mv "+bn+".tex "+ ( tmp/ ( bn+".tex" ) ).string()+"; "
-            "mv "+bn+"-inc.eps "+ ( tmp/ ( bn+"-inc.eps" ) ).string()+"; "
-            "cd "+tmp.string()+"; "
-            "pdflatex -interaction=batchmode -shell-escape "+bn+".tex; "
-            "convert -density 600 "+bn+".pdf "+absolute ( imagepath ).string()
-        ).c_str() );
+          "mv "+bn+".tex "+ ( tmp/ ( bn+".tex" ) ).string()+"; "
+          "mv "+bn+"-inc.eps "+ ( tmp/ ( bn+"-inc.eps" ) ).string()+"; "
+          "cd "+tmp.string()+"; "
+          "pdflatex -interaction=batchmode -shell-escape "+bn+".tex; "
+          //"convert -density 600 "+bn+".pdf "+absolute ( imagepath ).string()
+          ).c_str() );
+
+  std::shared_ptr<poppler::document> doc( poppler::document::load_from_file( (tmp/(bn+".pdf")).string() ) );
+  if (!doc) {
+    throw insight::Exception("loading error");
+  }
+  if (doc->is_locked()) {
+    throw insight::Exception("pdflatex produced encrypted document");
+  }
+  if (doc->pages()!=1)
+    throw insight::Exception(str(format("expected one single page in chart PDF, got %d!")%doc->pages()));
+
+  std::shared_ptr<poppler::page> page(doc->create_page(0));
+  if (!page) {
+    throw insight::Exception("could not extract page from PDF document");
+  }
+  poppler::page_renderer pr;
+  pr.set_render_hint(poppler::page_renderer::antialiasing, true);
+  pr.set_render_hint(poppler::page_renderer::text_antialiasing, true);
+
+  poppler::image img = pr.render_page(page.get(), 600, 600);
+  if (!img.is_valid()) {
+    throw insight::Exception("rendering failed");
+  }
+
+  if (!img.save( absolute(imagepath).string(), "png", 600)) {
+    throw insight::Exception("saving to file failed");
+  }
 }
 
 

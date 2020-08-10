@@ -44,6 +44,8 @@
 #include <QTemporaryFile>
 #include <QScrollBar>
 #include <QStatusBar>
+#include <QSettings>
+#include <QProcess>
 #include "email.h"
 
 #include "ui_xml_display.h"

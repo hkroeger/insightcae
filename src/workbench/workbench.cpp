@@ -27,6 +27,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QStatusBar>
+#include <QSettings>
 
 #include "newanalysisdlg.h"
 #include "analysisform.h"

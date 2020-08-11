@@ -45,6 +45,7 @@
 #include "AIS_Plane.hxx"
 #include "AIS_Point.hxx"
 #include "IntAna_IntConicQuad.hxx"
+#include <Xw_Window.hxx>
 
 #include <cmath>
 #include <iostream>
@@ -210,12 +211,24 @@ void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
   {
     myView = myContext_->CurrentViewer()->CreateView();
 
-    Handle(OcctWindow) hWnd = new OcctWindow ( this );
-    myView->SetWindow (hWnd);
+//    Handle(OcctWindow) hWnd = new OcctWindow ( this );
+//    myView->SetWindow (hWnd);
+
+    int windowHandle = (int) winId();
+    Handle(Xw_Window) hWnd = new Xw_Window
+        (
+          myContext_->CurrentViewer()->Driver()->GetDisplayConnection(), windowHandle
+        );
+    Aspect_RenderingContext rc = 0;
+    myView->SetWindow( hWnd, rc );
+
+
     if ( !hWnd->IsMapped() )
     {
       hWnd->Map();
     }
+
+
     myView->SetBackgroundColor (Quantity_NOC_WHITE);
     myView->MustBeResized();
 
@@ -227,11 +240,10 @@ void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
     myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1, V3d_WIREFRAME );
     myView->SetShadingModel(V3d_PHONG);
 
-    Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(Quantity_NOC_WHITE);
-    Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
-
-    myViewer->AddLight(L1);
-    myViewer->AddLight(L2);
+//    Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(Quantity_NOC_WHITE);
+//    Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
+//    myViewer->AddLight(L1);
+//    myViewer->AddLight(L2);
 
     myViewer->SetLightOn();
 

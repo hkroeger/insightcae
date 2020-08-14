@@ -34,7 +34,7 @@ SET(INSIGHT_SUPERBUILD "" CACHE STRING "Path to superbuild (build directory). If
 
 option(BUILD_DOCUMENTATION "Use Doxygen to create the documentation (doxygen is required)" OFF)
 
-option(INSIGHT_BUILD_GUICOMPONENTS "Enable the GUI tools (workbench, CAD, case builder..., Qt and Qwt is required)" ON)
+option(INSIGHT_BUILD_GUICOMPONENTS "Enable the GUI tools (workbench, CAD, case builder..., Qt is required)" ON)
 if (INSIGHT_BUILD_GUICOMPONENTS)
  OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI (Qt is required)" ON)
  OPTION(INSIGHT_BUILD_ISCAD "Build the ISCAD editor (OCE and Qt is required)" ON)
@@ -173,28 +173,27 @@ if (INSIGHT_BUILD_TOOLKIT)
 
     find_package(VTK
         COMPONENTS
-        FiltersCore
-        FiltersGeneral
-        FiltersSources
-        FiltersGeneric
-        FiltersExtraction
-        FiltersPoints
-        FiltersFlowPaths
-        CommonCore
-        IOLegacy
-        IOGeometry
-        IOExport
-        IOImage
-        IOXML
-        ImagingCore
-        RenderingOpenGL2
-        RenderingAnnotation
-         InteractionWidgets
-         InteractionStyle
-        #vtkPVVTKExtensionsDefault
+            FiltersCore
+            FiltersGeneral
+            FiltersSources
+            FiltersGeneric
+            FiltersExtraction
+            FiltersPoints
+            FiltersFlowPaths
+            CommonCore
+            IOLegacy
+            IOGeometry
+            IOExport
+            IOImage
+            IOXML
+            ImagingCore
+            RenderingOpenGL2
+            RenderingAnnotation
+             InteractionWidgets
+             InteractionStyle
         REQUIRED
     )
-    #include(${VTK_USE_FILE})
+
 endif()
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})

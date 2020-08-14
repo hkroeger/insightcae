@@ -1,6 +1,8 @@
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
+#include <memory>
+
 #include <QWidget>
 #include <QAction>
 #include <QDialog>
@@ -19,6 +21,7 @@ class QModelTree;
 class QRubberBand;
 class OpenGl_GraphicDriver;
 class V3d_Viewer;
+class Xw_Window;
 
 namespace insight { namespace cad {
 class PostprocAction;
@@ -98,6 +101,8 @@ protected:
   std::vector<Handle_AIS_InteractiveObject> additionalDisplayObjectsForSelection_;
 
   std::shared_ptr<FocusObject> focussedObject;
+
+  void init();
 
 public:
 
@@ -228,6 +233,7 @@ private: // members
   Handle_WNT_Window		myWindow;
 #else
 //  Handle_Xw_Window		myWindow;
+  Handle(Xw_Window)             hWnd;
 #endif // WNT
   
   Handle_V3d_View                 myView;

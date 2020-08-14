@@ -25,7 +25,7 @@
 #include <Graphic3d_GraphicDriver.hxx>
 #include <Graphic3d_TextureEnv.hxx>
 
-#include <OcctWindow.h>
+#include <occtwindow.h>
 #include <Aspect_DisplayConnection.hxx>
 #include <AIS_InteractiveObject.hxx>
 #include <Graphic3d_NameOfMaterial.hxx>
@@ -60,8 +60,6 @@
 #include "pointertransient.h"
 #include "qmodelstepitem.h"
 
-//#include "X11/Xlib.h"
-//#include "EGL/egl.h"
 
 using namespace std;
 
@@ -69,7 +67,7 @@ Handle(OpenGl_GraphicDriver) QoccViewWidget::aGraphicDriver;
 
 Handle(V3d_Viewer) QoccViewWidget::createViewer
 (
-    const Standard_ExtString ,
+    const Standard_ExtString,
     const Standard_CString ,
     const Standard_Real theViewSize,
     const V3d_TypeOfOrientation theViewProj,
@@ -82,7 +80,7 @@ Handle(V3d_Viewer) QoccViewWidget::createViewer
     Handle(Aspect_DisplayConnection) aDisplayConnection;
 
 #if !defined(_WIN32) && !defined(__WIN32__) && (!defined(__APPLE__) || defined(MACOSX_USE_GLX))
-    aDisplayConnection = new Aspect_DisplayConnection();
+    aDisplayConnection = new Aspect_DisplayConnection(getenv("DISPLAY"));
 #endif
 
     //Display* aDisplay = aDisplayConnection->GetDisplay();
@@ -93,10 +91,14 @@ Handle(V3d_Viewer) QoccViewWidget::createViewer
 
 
   Handle(V3d_Viewer) aViewer = new V3d_Viewer (aGraphicDriver);
+  aViewer->SetDefaultLights();
+  aViewer->SetLightOn();
+
   aViewer->SetDefaultViewSize (theViewSize);
   aViewer->SetDefaultViewProj (theViewProj);
   aViewer->SetComputedMode (theComputedMode);
   aViewer->SetDefaultComputedMode (theDefaultComputedMode);
+
   return aViewer;
 }
 
@@ -120,37 +122,19 @@ QoccViewWidget::QoccViewWidget
     showGrid            ( false ),
     cimode_             ( CIM_Normal )
 {
-  TCollection_ExtendedString a3DName ("Visu3D");
-
-  myViewer = createViewer (a3DName.ToExtString(), "", 1000.0, V3d_XposYnegZpos, Standard_True, Standard_True);
-
-  myViewer->SetDefaultLights();
-  myViewer->SetLightOn();
-
-  myContext_ = new AIS_InteractiveContext (myViewer);
-
-
   // Needed to generate mouse events
   setMouseTracking( true );
-  
-  // Avoid Qt background clears to improve resizing speed,
-  // along with a couple of other attributes
-//  setAutoFillBackground( false );
   setBackgroundRole( QPalette::NoRole );
   setAttribute( Qt::WA_NoSystemBackground );
-//  setWindowFlags( windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint );
-
-  // This next attribute seems to be the secret of allowing OCC on Win32
-  // to "own" the window, even though its only supposed to work on X11.
   setAttribute( Qt::WA_PaintOnScreen );
-  
+
   // Here's a modified pick point cursor from AutoQ3D
   QBitmap curb1( 48, 48 );
   QBitmap curb2( 48, 48 );
   curb1.fill( QColor( 255, 255, 255 ) );
   curb2.fill( QColor( 255, 255, 255 ) );
   QPainter p;
-  
+
   p.begin( &curb1 );
   p.drawLine( 24,  0, 24, 47 );
   p.drawLine(  0, 24, 47, 24 );
@@ -158,15 +142,16 @@ QoccViewWidget::QoccViewWidget
   p.drawRect( 18, 18, 12, 12 );
   p.end();
   myCrossCursor = QCursor( curb2, curb1, 24, 24 );
-  
+
   // Create a rubber band box for later mouse activity
   myRubberBand = new QRubberBand( QRubberBand::Rectangle, this );
-//  if (myRubberBand)
-//    {
-//      // If you don't set a style, QRubberBand doesn't work properly
-//      // take this line out if you don't believe me.
-//      myRubberBand->setStyle( (QStyle*) new QPlastiqueStyle() );
-//    }
+
+  TCollection_ExtendedString a3DName ("Visu3D");
+  myViewer = createViewer (a3DName.ToExtString(), "", 1000.0, V3d_XposYnegZpos, Standard_True, Standard_True);
+  myContext_ = new AIS_InteractiveContext (myViewer);
+
+
+  init();
 
   connect
       (
@@ -199,6 +184,57 @@ QPaintEngine* QoccViewWidget::paintEngine() const
   return nullptr;
 }
 
+
+void QoccViewWidget::init()
+{
+
+#if 0
+  Aspect_Handle windowHandle = static_cast<Aspect_Handle>(winId());
+  hWnd = new Xw_Window
+      (
+        myContext_->CurrentViewer()->Driver()->GetDisplayConnection(),
+        windowHandle
+      );
+#else
+  myView = myContext_->CurrentViewer()->CreateView();
+  Handle(OcctWindow) hWnd = new OcctWindow ( this );
+#endif
+
+  myView->SetWindow( hWnd );
+
+
+  if ( !hWnd->IsMapped() )
+  {
+    hWnd->Map();
+  }
+
+
+  myView->SetBackgroundColor (Quantity_NOC_WHITE);
+  myView->MustBeResized();
+
+
+  // Set up axes (Trihedron) in lower left corner.
+  myView->SetScale( 2 );			// Choose a "nicer" intial scale
+
+  // Set up axes (Trihedron) in lower left corner.
+  myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1, V3d_WIREFRAME );
+  myView->SetShadingModel(V3d_PHONG);
+
+//    Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(Quantity_NOC_WHITE);
+//    Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
+//    myViewer->AddLight(L1);
+//    myViewer->AddLight(L2);
+
+  myViewer->SetLightOn();
+
+  myView->SetProj( V3d_Zpos );
+  myView->SetUp( V3d_Xpos );
+
+  myViewInitialized = true;
+  myMode = CurAction3d_Nothing;
+}
+
+
 /*!
 \brief	Paint Event
 		Called when the Widget needs to repaint itself
@@ -207,53 +243,12 @@ QPaintEngine* QoccViewWidget::paintEngine() const
 void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
 {
 
-  if ( !myViewInitialized )
+  if ( !myViewInitialized /*&& winId()*/ )
   {
-    myView = myContext_->CurrentViewer()->CreateView();
-
-//    Handle(OcctWindow) hWnd = new OcctWindow ( this );
-//    myView->SetWindow (hWnd);
-
-    int windowHandle = (int) winId();
-    Handle(Xw_Window) hWnd = new Xw_Window
-        (
-          myContext_->CurrentViewer()->Driver()->GetDisplayConnection(), windowHandle
-        );
-    Aspect_RenderingContext rc = 0;
-    myView->SetWindow( hWnd, rc );
-
-
-    if ( !hWnd->IsMapped() )
-    {
-      hWnd->Map();
-    }
-
-
-    myView->SetBackgroundColor (Quantity_NOC_WHITE);
-    myView->MustBeResized();
-
-
-    // Set up axes (Trihedron) in lower left corner.
-    myView->SetScale( 2 );			// Choose a "nicer" intial scale
-
-    // Set up axes (Trihedron) in lower left corner.
-    myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1, V3d_WIREFRAME );
-    myView->SetShadingModel(V3d_PHONG);
-
-//    Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(Quantity_NOC_WHITE);
-//    Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
-//    myViewer->AddLight(L1);
-//    myViewer->AddLight(L2);
-
-    myViewer->SetLightOn();
-
-    myView->SetProj( V3d_Zpos );
-    myView->SetUp( V3d_Xpos );
-
-    myViewInitialized = true;
-    myMode = CurAction3d_Nothing;
+    init();
   }
-else
+
+  if (myViewInitialized)
   {
     myView->InvalidateImmediate();
     FlushViewEvents (myContext_, myView, true);

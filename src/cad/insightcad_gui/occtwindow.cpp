@@ -1,4 +1,4 @@
-#include <OcctWindow.h>
+#include <occtwindow.h>
 
 IMPLEMENT_STANDARD_RTTIEXT(OcctWindow,Aspect_Window)
 
@@ -152,8 +152,8 @@ Standard_Real OcctWindow::Ratio() const
 void OcctWindow::Size ( Standard_Integer& theWidth, Standard_Integer& theHeight ) const
 {
   QRect aRect = myWidget->rect();
-  theWidth  = aRect.right();
-  theHeight = aRect.bottom();
+  theWidth  = aRect.width();
+  theHeight = aRect.height();
 }
 
 // =======================================================================

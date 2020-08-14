@@ -29,12 +29,32 @@ ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const st
 
 std::string ArrayParameter::latexRepresentation() const
 {
-  return std::string();
+  std::ostringstream os;
+  if (size()>0)
+  {
+    os<<"\\begin{enumerate}\n";
+
+    for(value_type::const_iterator i=value_.begin(); i!=value_.end(); i++)
+    {
+      os << "\\item \n" << (*i)->latexRepresentation();
+    }
+    os << "\\end{enumerate}\n";
+  }
+  return os.str();
 }
 
-std::string ArrayParameter::plainTextRepresentation(int) const
+std::string ArrayParameter::plainTextRepresentation(int indent) const
 {
-  return std::string();
+  std::ostringstream os;
+  if (size()>0)
+  {
+    for(value_type::const_iterator i=value_.begin(); i!=value_.end(); i++)
+    {
+      os << std::string(indent, ' ')  << "item " << (i-value_.begin()) << " :\n"
+         << std::string(indent, ' ')  << (*i)->plainTextRepresentation(indent);
+    }
+  }
+  return os.str();
 }
 
 bool ArrayParameter::isPacked() const

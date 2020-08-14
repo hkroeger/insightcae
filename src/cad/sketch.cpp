@@ -227,7 +227,7 @@ void Sketch::build()
             }
 
             std::string cmd = str( format("psketchercmd %s -o %s") % infilename % filename ) + vargs;
-            cout<<"CMD=\""<<cmd<<"\""<<endl;
+            std::cout<<"CMD=\""<<cmd<<"\""<<std::endl;
             if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
             {
                 throw insight::Exception("Conversion of pSketch file "+infilename.string()+" into DXF "+filename.string()+" failed!");

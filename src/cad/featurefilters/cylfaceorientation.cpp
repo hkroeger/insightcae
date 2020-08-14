@@ -66,8 +66,8 @@ bool cylFaceOrientation::checkMatch(FeatureID feature) const
 	if (! (fabs(vec.XYZ().Dot(dr) - 1.) < 1e-6) ) return true;
       }
   }
-  else
-    return false;
+
+  return false;
 }
 
 FilterPtr cylFaceOrientation::clone() const

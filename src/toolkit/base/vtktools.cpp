@@ -58,7 +58,7 @@ void vtkModel::appendPointVectorField(const std::string& name, const double x[],
   //cout<<"Append PointVectorField "<<name<<" to VTK"<<endl;
   pointVectorFields_[name]=VectorField();
   VectorField& vf = pointVectorFields_[name];
-  for (int i=0; i<pts_.size(); i++)
+  for (size_t i=0; i<pts_.size(); i++)
   {
     //cout<<i<<" "<<x[i]<<" "<<y[i]<<" "<<z[i]<<endl;
     vf.push_back(vec3(x[i], y[i], z[i]));
@@ -70,7 +70,7 @@ void vtkModel::appendPointTensorField(const string& name, const double xx[], con
   //cout<<"Append PointVectorField "<<name<<" to VTK"<<endl;
   pointVectorFields_[name]=VectorField();
   VectorField& vf = pointVectorFields_[name];
-  for (int i=0; i<pts_.size(); i++)
+  for (size_t i=0; i<pts_.size(); i++)
   {
     //cout<<i<<" "<<x[i]<<" "<<y[i]<<" "<<z[i]<<endl;
     vf.push_back(tensor3(xx[i], xy[i], xz[i], yx[i], yy[i], yz[i], zx[i], zy[i], zz[i]));
@@ -155,7 +155,7 @@ void vtkModel2d::appendCellScalarField(const std::string& name, const double s[]
 {
   cellScalarFields_[name]=ScalarField();
   ScalarField& vf = cellScalarFields_[name];
-  for (int i=0; i<poly_.size(); i++)
+  for (size_t i=0; i<poly_.size(); i++)
   {
     vf.push_back(s[i]);
   }  
@@ -166,7 +166,7 @@ void vtkModel2d::appendCellVectorField(const std::string& name, const double x[]
 {
   cellVectorFields_[name]=VectorField();
   VectorField& vf = cellVectorFields_[name];
-  for (int i=0; i<poly_.size(); i++)
+  for (size_t i=0; i<poly_.size(); i++)
   {
     vf.push_back(vec3(x[i], y[i], z[i]));
   }  
@@ -180,7 +180,7 @@ void vtkModel2d::appendCellTensorField(const std::string& name,
 {
   cellVectorFields_[name]=VectorField();
   VectorField& vf = cellVectorFields_[name];
-  for (int i=0; i<poly_.size(); i++)
+  for (size_t i=0; i<poly_.size(); i++)
   {
     vf.push_back(tensor3(xx[i], xy[i], xz[i], yx[i], yy[i], yz[i], zx[i], zy[i], zz[i]));
   } 

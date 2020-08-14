@@ -19,7 +19,6 @@
 #
 
 project(toolkit)
-#find_package(Boost COMPONENTS filesystem regex date_time thread REQUIRED)
 
 set(toolkit_SOURCES
     base/toolkitversion.cpp
@@ -195,22 +194,6 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
   )
 ENDIF()
 
-#find_package(VTK COMPONENTS
-#    vtkFiltersCore
-#    vtkFiltersGeneral
-#    vtkFiltersSources
-#    vtkCommonCore
-#    vtkIOLegacy
-#    vtkIOGeometry
-#    vtkIOExport
-#    vtkIOImage
-#    vtkIOXML
-#    vtkImagingCore
-#    vtkRenderingOpenGL2
-#    vtkRenderingAnnotation
-#    vtkFiltersExtraction
-#    REQUIRED
-#)
 
 find_package(OpenSSL)
 
@@ -219,15 +202,18 @@ pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
 
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
-#include(${VTK_USE_FILE})
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
-target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY}
+message(STATUS "VTK: ${VTK_LIBRARIES} <<ok")
+target_link_libraries(toolkit
+    ${PYTHON_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${ARMADILLO_LIBRARY}
     PkgConfig::poppler-cpp
-	GSL::gsl GSL::gslcblas
-	OpenSSL::SSL 
-	${VTK_LIBRARIES}
-	)
+    GSL::gsl GSL::gslcblas
+    OpenSSL::SSL
+    ${VTK_LIBRARIES}
+)
 
 target_include_directories(toolkit 
   PUBLIC ${VTK_INCLUDE_DIRS}

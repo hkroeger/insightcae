@@ -31,6 +31,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "boost/stacktrace.hpp"
+
 using namespace std;
 
 namespace insight
@@ -82,60 +84,8 @@ void Exception::saveContext(bool strace)
 
   if (strace)
   {
-    int num_max=30;
-    void *callstack[num_max];
-
-    // get void*'s for all entries on the stack
-    int nFrames = backtrace(callstack, num_max);
-
-    // print out all the frames to stderr
-    char **symbols=backtrace_symbols(callstack, nFrames);
-
     ostringstream trace_buf;
-
-    char buf[1024];
-    for (int i=0; i<nFrames; i++)
-    {
-        Dl_info info;
-        if (dladdr(callstack[i], &info) && info.dli_sname) {
-            char *demangled = NULL;
-            int status = -1;
-            if (info.dli_sname[0] == '_')
-                demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-            snprintf
-                (
-                  buf, sizeof(buf),
-//                  "%-3d %*p %s + %zd\n",
-                  "%-3d %s\n",
-                      i,
-//                      int(2 + sizeof(void*) * 2),
-//                      callstack[i],
-                      (
-                        (status == 0) ?
-                        demangled :
-                        info.dli_sname == 0 ? symbols[i] : info.dli_sname
-                      )/*,
-                      (char *)callstack[i] - (char *)info.dli_saddr*/
-                     );
-            free(demangled);
-        } else {
-            snprintf
-                (
-                  buf, sizeof(buf),
-//                    "%-3d %*p %s\n",
-                    "%-3d %s\n",
-                     i,
-//                     int(2 + sizeof(void*) * 2),
-//                     callstack[i],
-                     symbols[i]
-                );
-        }
-        trace_buf << buf;
-//      trace_buf<<symbols[i]<<endl;
-      //free(str[i]);
-    }
-    //free(str);
-
+    trace_buf  << boost::stacktrace::stacktrace();
     strace_=trace_buf.str();
   }
   else

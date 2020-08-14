@@ -84,7 +84,8 @@ AnalysisForm::AnalysisForm(
 : QMdiSubWindow(parent),
   analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
-  pack_parameterset_(true)
+  pack_parameterset_(true),
+  is_modified_(false)
 {
     // load default parameters
     auto defaultParams = insight::Analysis::defaultParameters(analysisName_);

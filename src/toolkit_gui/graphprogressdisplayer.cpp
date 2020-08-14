@@ -29,24 +29,22 @@
 #include <QTimer>
 #include <QThread>
 
-#include "qwt_scale_engine.h"
-#include "qwt_plot_grid.h"
-#include "qwt_legend.h"
+#include <QtCharts/QLogValueAxis>
+#include <QtCharts/QValueAxis>
 
 using namespace insight;
 
 void GraphProgressChart::reset()
 {
-  typedef std::map<std::string, QwtPlotCurve*> CurveList;
   for ( CurveList::value_type& i: curve_)
   {
-    delete i.second;
+    i.second->deleteLater();
   }
   curve_.clear();
   progressX_.clear();
   progressY_.clear();
   needsRedraw_=true;
-  this->replot();
+//  this->replot();
 }
 
 
@@ -69,32 +67,38 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
       y.erase(y.begin());
   }
   
-  setAxisAutoScale(QwtPlot::yLeft);
+//  setAxisAutoScale(QwtPlot::yLeft);
   needsRedraw_=true;
   
   mutex_.unlock();
 }
 
 GraphProgressChart::GraphProgressChart(bool logscale, QWidget* parent)
-: QwtPlot(parent),
+  : QtCharts::QChartView(parent),
+    chartData_(new QtCharts::QChart()),
   maxCnt_(8000),
   needsRedraw_(true),
   logscale_(logscale)
 {
-  insertLegend( new QwtLegend() );
-  setCanvasBackground( Qt::white );
-  
+  setChart(chartData_);
+
+  setBackgroundBrush( Qt::white );
+
   if (logscale_)
   {
-#if (QWT_VERSION < 0x060100)
-    setAxisScaleEngine(QwtPlot::yLeft, new QwtLog10ScaleEngine() );
-#else
-    setAxisScaleEngine(QwtPlot::yLeft, new QwtLogScaleEngine() );
-#endif
+    auto *ly = new QtCharts::QLogValueAxis();
+    ly->setBase(10);
+    chartData_->addAxis(ly, Qt::AlignLeft);
   }
-  
-  QwtPlotGrid *grid = new QwtPlotGrid();
-  grid->attach(this);
+  else
+  {
+    chartData_->addAxis(new QtCharts::QValueAxis, Qt::AlignLeft);
+  }
+  chartData_->addAxis(new QtCharts::QValueAxis, Qt::AlignBottom);
+
+  chartData_->axes(Qt::Horizontal)[0]->setGridLineVisible(true);
+  chartData_->axes(Qt::Vertical)[0]->setGridLineVisible(true);
+
   
   QTimer *timer=new QTimer;
   connect(timer, &QTimer::timeout, this, &GraphProgressChart::checkForUpdate);
@@ -113,27 +117,55 @@ void GraphProgressChart::checkForUpdate()
     if (needsRedraw_)
     {
         needsRedraw_=false;
+        double ymin=0, ymax=1, xmin=0, xmax=1;
+
         for ( const ArrayList::value_type& i: progressX_ )
         {
             const std::string& name=i.first;
+            const auto& px = i.second;
 
-            if (curve_.find(name) == curve_.end())
+            QtCharts::QLineSeries *crv=nullptr;
+            auto ic=curve_.find(name);
+            if (ic == curve_.end())
             {
-                QwtPlotCurve *crv=new QwtPlotCurve();
-                crv->setTitle(name.c_str());
+//                QwtPlotCurve *crv=new QwtPlotCurve();
+                crv=new QtCharts::QLineSeries;
+                crv->setName(name.c_str());
                 crv->setPen(QPen(QColor(
                                      double(qrand())*255.0/double(RAND_MAX),
                                      double(qrand())*255.0/double(RAND_MAX),
                                      double(qrand())*255.0/double(RAND_MAX)
                                  ), 2.0));
-                crv->attach(this);
+                chartData_->addSeries(crv);
+                crv->attachAxis(chartData_->axes(Qt::Vertical)[0]);
+                crv->attachAxis(chartData_->axes(Qt::Horizontal)[0]);
                 curve_[name]=crv;
             }
+            else
+            {
+              crv=ic->second;
+            }
 
-            curve_[name]->setSamples(&progressX_[name][0], &progressY_[name][0], progressY_[name].size()); // leave out first sample, since it is sometimes =0 and this make logscaled plot unreadable
+            if (px.size()>1)
+            {
+              xmin=std::min(xmin, *px.begin());
+              xmax=std::max(xmax, px.back());
+              const auto& py = progressY_[name];
+              crv->clear();
+              for (arma::uword i=0; i<py.size(); i++)
+              {
+                crv->append(px[i], py[i]);
+                ymin=std::min(ymin, py[i]);
+                ymax=std::max(ymax, py[i]);
+              }
+
+            }
         }
 
-        this->replot();
+        chartData_->axes(Qt::Horizontal)[0]->setRange(xmin, xmax);
+        chartData_->axes(Qt::Vertical)[0]->setRange(ymin, ymax);
+
+//        this->replot();
     }
 
     mutex_.unlock();

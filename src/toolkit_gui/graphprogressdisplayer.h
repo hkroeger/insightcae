@@ -34,21 +34,26 @@
 #include <QMutex>
 #include <QTabWidget>
 
-#include <qwt.h>
-#include <qwt_plot.h>
-#include <qwt_plot_curve.h>
+#include <QtCharts/QChartView>
+#include <QtCharts/QChart>
+#include <QtCharts/QLineSeries>
 
 class GraphProgressChart
-    : public QwtPlot
+    : public QtCharts::QChartView
 {
   Q_OBJECT
 
+public:
+  typedef std::map<std::string, QtCharts::QLineSeries*> CurveList;
+
 protected:
+  QtCharts::QChart* chartData_;
+
   size_t maxCnt_;
   typedef std::map<std::string, std::vector<double> > ArrayList;
   ArrayList progressX_;
   ArrayList progressY_;
-  std::map<std::string, QwtPlotCurve*> curve_;
+  CurveList curve_;
   bool needsRedraw_;
   QMutex mutex_;
   bool logscale_;

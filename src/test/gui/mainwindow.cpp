@@ -50,8 +50,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
    auto defaultParams = insight::Analysis::defaultParameters("GasDispersion");
    parameters_ = defaultParams;
-//  insight::AnalysisPtr a( insight::Analysis::lookup("GasDispersion", defaultParams, "") );
-  insight::AnalysisPtr a( new insight::GasDispersion(defaultParams, "") );
+  insight::AnalysisPtr a( insight::Analysis::lookup("GasDispersion", defaultParams, "") );
+//  insight::AnalysisPtr a( new insight::GasDispersion(defaultParams, "") );
 
   setCentralWidget(new QoccViewWidget(this));
 }

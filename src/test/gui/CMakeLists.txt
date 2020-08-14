@@ -15,14 +15,12 @@ set(guitest_LIBS
     toolkit toolkit_gui
     Qt5::Widgets
     ${Boost_LIBRARIES}
-    ${QWT_LIBRARY} ${QWT_LIBRARIES}
     gas_dispersion
 )
 
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 
-find_package(Qwt REQUIRED)
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${QWT_INCLUDE_DIR})
 
 
@@ -46,7 +44,6 @@ target_link_libraries(guitest ${guitest_LIBS})
 
 target_include_directories(guitest
     PUBLIC ${QT_INCLUDES}
-    PUBLIC ${QWT_INCLUDE_DIR}
     PUBLIC ${Boost_INCLUDE_DIR}
     PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

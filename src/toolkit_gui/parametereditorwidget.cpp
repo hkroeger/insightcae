@@ -189,6 +189,11 @@ void ParameterEditorWidget::doUpdateVisualization()
   }
 }
 
+bool ParameterEditorWidget::hasVisualizer() const
+{
+  return bool(viz_);
+}
+
 
 void ParameterEditorWidget::onParameterSetChanged()
 {

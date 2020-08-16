@@ -183,7 +183,12 @@ AnalysisForm::AnalysisForm(
     ui->resultTree->addTopLevelItem(rtroot_);
 
     QSettings settings("silentdynamics", "workbench");
-    peditor_->restoreState(settings.value("parameterEditor").toByteArray());
+
+    if (peditor_->hasVisualizer())
+      peditor_->restoreState(settings.value("parameterEditor_wViz").toByteArray());
+    else
+      peditor_->restoreState(settings.value("parameterEditor_woViz").toByteArray());
+
     pack_parameterset_ = settings.value("pack_parameterset", QVariant(true)).toBool();
 
 
@@ -540,7 +545,12 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
     if (event->isAccepted())
     {
       QSettings settings("silentdynamics", "workbench");
-      settings.setValue("parameterEditor", peditor_->saveState());
+
+      if (peditor_->hasVisualizer())
+        settings.setValue("parameterEditor_wViz", peditor_->saveState());
+      else
+        settings.setValue("parameterEditor_woViz", peditor_->saveState());
+
       settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
 
       QMdiSubWindow::closeEvent(event);

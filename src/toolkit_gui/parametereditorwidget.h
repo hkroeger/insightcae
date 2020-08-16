@@ -99,6 +99,7 @@ public:
     
     void insertParameter(const QString& name, insight::Parameter& parameter, const insight::Parameter& defaultParameter);
     void doUpdateVisualization();
+    bool hasVisualizer() const;
     
 public Q_SLOTS:
     void onApply();

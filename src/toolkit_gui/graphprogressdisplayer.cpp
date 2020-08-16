@@ -117,7 +117,7 @@ void GraphProgressChart::checkForUpdate()
     if (needsRedraw_)
     {
         needsRedraw_=false;
-        double ymin=0, ymax=1, xmin=0, xmax=1;
+        double ymin=1e10, ymax=-1e10, xmin=1e10, xmax=-1e10;
 
         for ( const ArrayList::value_type& i: progressX_ )
         {
@@ -162,10 +162,14 @@ void GraphProgressChart::checkForUpdate()
             }
         }
 
+        if (fabs(xmax-xmin)<1e-20) { xmax=xmin+1e-4; } // all values the same
+        if (xmin>xmax) { xmin=0; xmax=1.; } // no values
+
+        if (fabs(ymax-ymin)<1e-20) { ymax=ymin+1e-4; }
+        if (ymin>ymax) { ymin=0; ymax=1.; }
+
         chartData_->axes(Qt::Horizontal)[0]->setRange(xmin, xmax);
         chartData_->axes(Qt::Vertical)[0]->setRange(ymin, ymax);
-
-//        this->replot();
     }
 
     mutex_.unlock();

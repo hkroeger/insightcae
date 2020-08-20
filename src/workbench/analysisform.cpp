@@ -37,7 +37,7 @@
 #include "analysisform.h"
 #include "ui_analysisform.h"
 #include "parameterwrapper.h"
-#include "resultelementwrapper.h"
+#include "qresultsetmodel.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -176,11 +176,11 @@ AnalysisForm::AnalysisForm(
     connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
             this, &AnalysisForm::onConfigModification);
 
-    rtroot_=new QTreeWidgetItem(0);
-    rtroot_->setText(0, "Results");
-    ui->resultTree->setColumnCount(3);
-    ui->resultTree->setHeaderLabels( QStringList() << "Result Element" << "Description" << "Current Value" );
-    ui->resultTree->addTopLevelItem(rtroot_);
+//    rtroot_=new QTreeWidgetItem(0);
+//    rtroot_->setText(0, "Results");
+//    ui->resultTree->setColumnCount(3);
+//    ui->resultTree->setHeaderLabels( QStringList() << "Result Element" << "Description" << "Current Value" );
+//    ui->resultTree->addTopLevelItem(rtroot_);
 
     QSettings settings("silentdynamics", "workbench");
 
@@ -382,6 +382,8 @@ AnalysisForm::AnalysisForm(
               }
             }
     );
+
+    insight::connectToCWithContentsDisplay(ui->resultsToC, ui->resultElementDetails);
 
 #ifndef HAVE_WT
     ui->gbExecuteOnRemoteHost->setChecked(false);
@@ -778,11 +780,17 @@ void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 
   currentWorkbenchAction_.reset();
 
-  rtroot_->takeChildren();
-  addWrapperToWidget(*results_, rtroot_, this);
-  ui->resultTree->doItemsLayout();
-  ui->resultTree->expandAll();
-  ui->resultTree->resizeColumnToContents(2);
+//  rtroot_->takeChildren();
+//  addWrapperToWidget(*results_, rtroot_, this);
+//  ui->resultTree->doItemsLayout();
+//  ui->resultTree->expandAll();
+//  ui->resultTree->resizeColumnToContents(2);
+
+  resultsModel_=new insight::QResultSetModel(results_, ui->resultsToC);
+  ui->resultsToC->setModel(resultsModel_);
+  ui->resultsToC->expandAll();
+  ui->resultsToC->resizeColumnToContents(0);
+  ui->resultsToC->resizeColumnToContents(1);
 
   ui->tabWidget->setCurrentWidget(ui->outputTab);
 

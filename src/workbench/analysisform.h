@@ -48,6 +48,8 @@
 #include "remoterun.h"
 #endif
 
+#include "qresultsetmodel.h"
+
 namespace Ui
 {
 class AnalysisForm;
@@ -81,12 +83,12 @@ protected:
   bool isOpenFOAMAnalysis_;
   insight::ParameterSet parameters_;
   insight::ResultSetPtr results_;
+  insight::QResultSetModel* resultsModel_;
   
   // ====================================================================================
   // ======== GUI widgets
   GraphProgressDisplayer *progdisp_;
-  QTreeWidget *rt_;
-  QTreeWidgetItem* rtroot_;
+//  QTreeWidgetItem* rtroot_;
   ParameterEditorWidget* peditor_;
   Q_DebugStream *cout_log_, *cerr_log_;
   LogViewerWidget *log_;

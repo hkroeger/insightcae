@@ -10,7 +10,7 @@
     <height>1044</height>
    </rect>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
     <widget class="QGroupBox" name="gbExecution">
      <property name="title">
@@ -82,7 +82,7 @@
          <item>
           <widget class="QLabel" name="lbRR1">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="text">
             <string>run on:</string>
@@ -92,7 +92,7 @@
          <item>
           <widget class="QComboBox" name="ddlExecutionHosts">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="currentText">
             <string>localhost</string>
@@ -107,7 +107,7 @@
          <item>
           <widget class="QLabel" name="lbRR2">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="text">
             <string>Remote dir:</string>
@@ -117,7 +117,7 @@
          <item>
           <widget class="QLineEdit" name="leRemoteDirectory">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="toolTip">
             <string>Given path has to exist. If left empty: unique directory will be created.</string>
@@ -133,7 +133,7 @@
          <item>
           <widget class="QPushButton" name="btnSelectRemoteDirectory">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="text">
             <string>...</string>
@@ -156,7 +156,7 @@
          <item>
           <widget class="QPushButton" name="btnResume">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="text">
             <string>Resume</string>
@@ -166,7 +166,7 @@
          <item>
           <widget class="QPushButton" name="btnUpload">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="toolTip">
             <string>Upload to remote location</string>
@@ -184,7 +184,7 @@
          <item>
           <widget class="QPushButton" name="btnDownload">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="toolTip">
             <string>Download from remote location</string>
@@ -202,7 +202,7 @@
          <item>
           <widget class="QPushButton" name="btnRemoveRemote">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="text">
             <string>Remove remote</string>
@@ -249,46 +249,28 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>1435</width>
-              <height>772</height>
+              <width>1434</width>
+              <height>782</height>
              </rect>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <item>
-              <widget class="QTreeWidget" name="resultTree">
-               <property name="editTriggers">
-                <set>QAbstractItemView::NoEditTriggers</set>
+              <widget class="QSplitter" name="splitter">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
                </property>
-               <property name="alternatingRowColors">
-                <bool>true</bool>
-               </property>
-               <property name="selectionBehavior">
-                <enum>QAbstractItemView::SelectItems</enum>
-               </property>
-               <property name="verticalScrollMode">
-                <enum>QAbstractItemView::ScrollPerPixel</enum>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-               <property name="columnCount">
-                <number>3</number>
-               </property>
-               <column>
-                <property name="text">
-                 <string notr="true">1</string>
-                </property>
-               </column>
-               <column>
-                <property name="text">
-                 <string notr="true">2</string>
-                </property>
-               </column>
-               <column>
-                <property name="text">
-                 <string notr="true">3</string>
-                </property>
-               </column>
+               <widget class="QTreeView" name="resultsToC"/>
+               <widget class="QWidget" name="layoutWidget">
+                <layout class="QVBoxLayout" name="verticalLayout_2">
+                 <item>
+                  <widget class="QGroupBox" name="resultElementDetails">
+                   <property name="title">
+                    <string>Result element details</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
               </widget>
              </item>
             </layout>

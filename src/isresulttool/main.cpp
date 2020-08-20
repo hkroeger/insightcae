@@ -38,12 +38,9 @@
 #include <QApplication>
 #include <QMainWindow>
 
-#include "qwt_plot.h"
-#include "qwt_plot_grid.h"
-#include "qwt_legend.h"
-#include "qwt_plot_multi_barchart.h"
-#include "qwt_scale_draw.h"
-#include "qwt_column_symbol.h"
+#include "resultviewwindow.h"
+
+#include <QtCharts>
 
 using namespace std;
 using namespace insight;
@@ -81,6 +78,7 @@ int main(int argc, char *argv[])
     ("help,h", "produce help message")
     ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
     ("list,l", "List contents of result file")
+    ("display,d", "Display each result file in separate window")
     ("input-file,f", po::value< StringList >(),"Specifies input file(s).")
 //    ("compareplot", po::value< string >(), "Compare plots. Specify path to plot. Optionally append name of curve with '_'.")
     ("comparescalar", po::value< string >(), "Compare scalar values. Specify path of scalar in result archive. "
@@ -163,6 +161,7 @@ int main(int argc, char *argv[])
           if (varnames.size()<1)
             throw insight::Exception("At least one variable name has to be specified for comparison!");
 
+          // store scale factors, default to 1
           std::vector<double> sfs;
           for (size_t i=0; i< varnames.size(); i++)
           {
@@ -179,6 +178,7 @@ int main(int argc, char *argv[])
               throw insight::Exception("Invalid syntax: "+vm["comparescalar"].as<string>());
           }
 
+          // sort files by value of first scalar
           typedef std::pair<string,std::vector<double> > NameAndValues;
           std::map<double,NameAndValues > sorted_vals;
           for (size_t i=0; i<r.size(); i++)
@@ -190,6 +190,8 @@ int main(int argc, char *argv[])
             }
             sorted_vals[vals[0]] = NameAndValues(fns[i], vals);
           }
+
+          // output
           for (const auto& v: sorted_vals)
           {
             cout<<v.second.first<<":\t";
@@ -201,83 +203,64 @@ int main(int argc, char *argv[])
           QApplication app(argc, argv);
 
           QMainWindow mw;
-          QwtPlot *plot=new QwtPlot();
-          mw.setCentralWidget(plot);
-
-          plot->insertLegend( new QwtLegend() );
-          plot->setCanvasBackground( Qt::white );
-
-          QwtPlotGrid *grid = new QwtPlotGrid();
-          grid->attach(plot);
-
-          QwtPlotMultiBarChart *d_barChartItem = new QwtPlotMultiBarChart( "Bar Chart " );
-          d_barChartItem->setLayoutPolicy( QwtPlotMultiBarChart::AutoAdjustSamples );
-          d_barChartItem->setSpacing( 20 );
-          d_barChartItem->setMargin( 3 );
-
-          d_barChartItem->attach( plot );
+          auto chartData = new QChart;
+          auto chart=new QChartView;
+          chart->setChart(chartData);
+          mw.setCentralWidget(chart);
 
 
+          QStringList categories;
+          QBarSeries *series = new QBarSeries();
           for ( size_t i = 0; i < varnames.size(); i++ )
           {
-              QwtColumnSymbol *symbol = new QwtColumnSymbol( QwtColumnSymbol::Box );
-              // Die Konfiguration ist ähnlich der regulärer Widgets
-              symbol->setLineWidth( 1 ); // Pixel-Dimension
-              symbol->setFrameStyle( QwtColumnSymbol::Plain );
-              symbol->setPalette( QPalette( QColor( rand()%255, rand()%255, rand()%255 ) ) );
+            QString label;
+            if ( fabs(sfs[i]-1.0)>1e-10) label+=QString("%1 x ").arg(sfs[i]);
+            label+=QString::fromStdString(varnames[i]);
+            auto bs = new QBarSet(label);
 
-              d_barChartItem->setSymbol( i, symbol );
-          }
-
-          QList<QwtText> titles;
-          QVector< QVector<double> > values;
-          QMap<double,QString> labels;
-          int j=0;
-          for (const auto& v: sorted_vals)
-          {
-            values.push_back( QVector<double>::fromStdVector(v.second.second) );
-            labels[j++]=QString::fromStdString(v.second.first);
-          }
-
-          d_barChartItem->setBarTitles( titles );
-          d_barChartItem->setSamples( values );
-
-          class BarChartScaleDraw : public QwtScaleDraw
-          {
-          private:
-            QMap<double,QString> *ids;
-          public:
-            BarChartScaleDraw(QMap<double,QString> *x)
-              : ids(x)
+            bs->setColor( QColor( rand()%255, rand()%255, rand()%255 ) );
+            for (const auto& v: sorted_vals) // through all files
             {
-              enableComponent(QwtAbstractScaleDraw::Ticks, false);
-              setLabelRotation(-90.);
-              setLabelAlignment(Qt::AlignLeft);
+              bs->append( v.second.second[i] );
+              categories.append(QString::fromStdString(v.second.first));
             }
+            series->append(bs);
+          }
+          chartData->addSeries(series);
 
-            virtual QwtText label(double v) const
-            {
-                    if (ids->contains(v))
-                    {
-                      QwtText t(ids->find(v).value());
-                            return t;
-                    }
-                    else
-                            return QwtText();
-            }
-          };
+          QBarCategoryAxis *axisX = new QBarCategoryAxis();
+          axisX->append(categories);
+          chartData->addAxis(axisX, Qt::AlignBottom);
+          series->attachAxis(axisX);
 
-          string ylabel;
+          QValueAxis *axisY = new QValueAxis();
+          QString ylabel;
           for (size_t i=0; i<varnames.size(); i++)
           {
-            if (i>0) ylabel+="\n";
-            if ( fabs(sfs[i]-1.0)>1e-10) ylabel+=boost::str(boost::format("%g x ") % sfs[i]);
-            ylabel+=varnames[i];
+            if (i>0) ylabel+="<br>";
+            if ( fabs(sfs[i]-1.0)>1e-10) ylabel+=QString("%1 x ").arg(sfs[i]);
+            ylabel+=QString::fromStdString(varnames[i]);
           }
-          plot->setAxisTitle( QwtPlot::yLeft, QString::fromStdString(ylabel) );
-          plot->setAxisScaleDraw(QwtPlot::xBottom, new BarChartScaleDraw(&labels));
-          plot->setAxisScale(QwtPlot::xBottom, 0, j-1, 1);
+          axisY->setTitleText(ylabel);
+          chartData->addAxis(axisY, Qt::AlignLeft);
+          series->attachAxis(axisY);
+
+          chartData->legend()->setVisible(true);
+          chartData->legend()->setAlignment(Qt::AlignBottom);
+
           mw.show();
+          return app.exec();
+        }
+        else if (vm.count("display"))
+        {
+          QApplication app(argc, argv);
+          for (size_t i=0; i<r.size(); i++)
+          {
+            auto& cr=r[i];
+            auto w=new ResultViewWindow(cr);
+            w->setWindowTitle(w->windowTitle()+" - "+QString::fromStdString(fns[i]));
+            w->show();
+          }
           return app.exec();
         }
     }

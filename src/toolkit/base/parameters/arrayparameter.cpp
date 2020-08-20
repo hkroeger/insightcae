@@ -34,11 +34,15 @@ std::string ArrayParameter::latexRepresentation() const
   {
     os<<"\\begin{enumerate}\n";
 
-    for(value_type::const_iterator i=value_.begin(); i!=value_.end(); i++)
+    for(value_type::const_iterator i=value_.begin(); i!=value_.end(); ++i)
     {
-      os << "\\item \n" << (*i)->latexRepresentation();
+      os << "\\item item " << (i-value_.begin()) << " :\\\\\n" << (*i)->latexRepresentation();
     }
     os << "\\end{enumerate}\n";
+  }
+  else
+  {
+    os << "(empty)\n";
   }
   return os.str();
 }
@@ -48,11 +52,16 @@ std::string ArrayParameter::plainTextRepresentation(int indent) const
   std::ostringstream os;
   if (size()>0)
   {
+    os << "\n";
     for(value_type::const_iterator i=value_.begin(); i!=value_.end(); i++)
     {
-      os << std::string(indent, ' ')  << "item " << (i-value_.begin()) << " :\n"
-         << std::string(indent, ' ')  << (*i)->plainTextRepresentation(indent);
+      os << std::string(indent+1, ' ')  << "item " << (i-value_.begin()) << " :\n"
+         << std::string(indent+1, ' ')  << (*i)->plainTextRepresentation(indent+1);
     }
+  }
+  else
+  {
+    os << "(empty)\n";
   }
   return os.str();
 }

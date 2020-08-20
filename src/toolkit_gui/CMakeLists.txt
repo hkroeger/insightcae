@@ -35,6 +35,26 @@ set(toolkit_gui_SRCS
     metatypes.cpp
     remoteparaview.cpp
     remoteparaview.h
+
+
+    qresultsetmodel.cpp
+    qresultsetmodel.h
+    qresultelements/qcomment.cpp
+    qresultelements/qcomment.h
+    qresultelements/qimage.cpp
+    qresultelements/qimage.h
+    qresultelements/qchart.cpp
+    qresultelements/qchart.h
+    qresultelements/qattributeresulttable.cpp
+    qresultelements/qattributeresulttable.h
+    qresultelements/qscalarresult.cpp
+    qresultelements/qscalarresult.h
+    qresultelements/qtabularresult.cpp
+    qresultelements/qtabularresult.h
+    qresultelements/qvectorresult.cpp
+    qresultelements/qvectorresult.h
+    qresultelements/qresultsection.cpp
+    qresultelements/qresultsection.h
 )
 
 file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")

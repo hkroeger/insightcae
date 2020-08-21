@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    bool someActionDone=false;
     try
     {
 
@@ -156,6 +157,7 @@ int main(int argc, char *argv[])
 
         if (vm.count("comparescalar"))
         {
+          someActionDone=true;
           std::vector<string> varnames;
           boost::split(varnames, vm["comparescalar"].as<string>(), boost::is_any_of(","));
           if (varnames.size()<1)
@@ -251,7 +253,7 @@ int main(int argc, char *argv[])
           mw.show();
           return app.exec();
         }
-        else if (vm.count("display"))
+        else if (vm.count("display") || !someActionDone)
         {
           QApplication app(argc, argv);
           for (size_t i=0; i<r.size(); i++)

@@ -15,6 +15,7 @@ class QImage
 {
   Q_OBJECT
 
+  int delta_w_;
   QScrollArea* sa_;
   QLabel *id_;
   QPixmap image_;

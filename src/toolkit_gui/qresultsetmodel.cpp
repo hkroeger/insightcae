@@ -8,6 +8,7 @@
 #include <QTextEdit>
 #include <QTreeView>
 #include <QSpacerItem>
+#include <QDebug>
 
 namespace insight
 {
@@ -85,7 +86,7 @@ void QResultElement::createFullDisplay(QVBoxLayout* layout)
       shortDesc_=new QTextEdit;
       shortDesc_->setReadOnly(true);
       shortDesc_->setFrameShape(QFrame::NoFrame);
-      shortDesc_->setMinimumHeight (2*QFontMetrics(shortDesc_->font()).lineSpacing()) ;
+      shortDesc_->setMinimumHeight (2*QFontMetrics(shortDesc_->font()).lineSpacing());
       layout->addWidget(shortDesc_);
     }
     if (!resultElement_->longDescription().empty())
@@ -102,7 +103,10 @@ void QResultElement::createFullDisplay(QVBoxLayout* layout)
   auto ef=new ResizeEventNotifier(layout->parentWidget());
   layout->parentWidget()->installEventFilter(ef);
   connect(ef, &ResizeEventNotifier::resized,
-          [&](int w, int h) { this->resetContents(w, h); }
+          [this](int w, int h)
+  {
+    this->resetContents(w, h);
+  }
   );
 }
 
@@ -117,13 +121,13 @@ void QResultElement::resetContents(int, int)
     {
       shortDesc_->setHtml( QString::fromStdString(
           SimpleLatex(resultElement_->shortDescription()).toHTML(shortDesc_->width())
-                           ));
+      ));
     }
     if (!resultElement_->longDescription().empty())
     {
       longDesc_->setHtml( QString::fromStdString(
           SimpleLatex(resultElement_->longDescription()).toHTML(shortDesc_->width())
-                           ));
+      ));
     }
   }
 }
@@ -210,6 +214,7 @@ void QStaticTextResultElement::createFullDisplay(QVBoxLayout* layout)
 void QResultSetModel::addResultElements(const ResultElementCollection &rec, QResultElement *parent)
 {
 
+  // sort according to stored "order" field
   std::vector<std::pair<ResultElementCollection::key_type,ResultElementCollection::mapped_type> > sortedrec;
   std::copy(rec.begin(), rec.end(), back_inserter(sortedrec));
   std::sort
@@ -236,9 +241,8 @@ void QResultSetModel::addResultElements(const ResultElementCollection &rec, QRes
             );
       }
       catch (const std::exception& e) {
-        curnode=new QStaticTextResultElement(parent, label, "(error)", QString::fromStdString(e.what()));
+        curnode=new QStaticTextResultElement(parent, label, "(unknown)", QString::fromStdString(e.what()));
       }
-
 
       parent->children_.append(curnode);
 
@@ -370,13 +374,11 @@ void connectToCWithContentsDisplay(QTreeView* ToCView, QWidget* contentDisplayWi
 
       re->createFullDisplay(layout);
 
-      layout->addItem(new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding));
+      layout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
-      if (auto p = layout->parentWidget())
-      {
-        auto r=p->size();
-        re->resetContents(r.width(), r.height());
-      }
+      auto r=contentDisplayWidget->size();
+      re->resetContents(r.width(), r.height());
+
     }
   }
   );

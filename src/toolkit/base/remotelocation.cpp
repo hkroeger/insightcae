@@ -533,7 +533,7 @@ int RemoteLocation::execRemoteCmd(const std::string& command, bool throwOnFail)
        cmd << "source " << cofe.bashrc().filename() << ";";
     }
     catch (const std::exception& e) {
-      std::cerr<<e.what()<<std::endl;
+      warnings.issue("Could not detect currently loaded OpenFOAM environment. Running remote command without any OpenFOAM environment loaded.");
        // ignore, don't load OF config remotely
     }
 

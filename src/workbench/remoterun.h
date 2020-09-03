@@ -7,6 +7,7 @@
 #include "analyzeclient.h"
 #include "base/remoteexecution.h"
 
+#include "qanalysisthread.h"
 
 class RemoteRun
     : public WorkbenchAction
@@ -15,8 +16,9 @@ class RemoteRun
 
   bool resume_;
   insight::RemoteExecutionConfig& remote_;
-  boost::thread workerThread_, cancelThread_;
+  boost::thread cancelThread_;
   std::unique_ptr<insight::AnalyzeClient> ac_;
+  std::unique_ptr<insight::QAnalysisThread> workerThread_;
 
   void launchRemoteAnalysisServer();
 

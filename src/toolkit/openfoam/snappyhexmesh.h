@@ -27,6 +27,7 @@
 #include "base/boost_include.h"
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
+#include "base/progressdisplayer.h"
 
 namespace insight {
   
@@ -489,7 +490,8 @@ void snappyHexMesh
   const ParameterSet &ps = snappyHexMeshConfiguration::Parameters::makeDefault(),
   bool overwrite=true,
   bool isalreadydecomposed=false,
-  bool keepdecomposedafterfinish=false
+  bool keepdecomposedafterfinish=false,
+  ProgressDisplayer* progress=nullptr
 );
 
 

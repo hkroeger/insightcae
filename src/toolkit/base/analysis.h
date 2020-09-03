@@ -28,10 +28,12 @@
 #include "base/resultset.h"
 #include "base/analysisstepcontrol.h"
 #include "base/tools.h"
+#include "boost/chrono/duration.hpp"
 
 #include "base/progressdisplayer/textprogressdisplayer.h"
 
 #include <queue>
+#include <thread>
 
 #include "base/boost_include.h"
 #include "boost/thread.hpp"
@@ -170,10 +172,22 @@ public:
 
 
 
-typedef std::shared_ptr<Analysis> AnalysisPtr;
-typedef boost::tuple<std::string, AnalysisPtr, ResultSetPtr> AnalysisInstance;
-typedef std::vector<AnalysisInstance> AnalysisInstanceList;
 
+typedef std::shared_ptr<Analysis> AnalysisPtr;
+
+
+
+
+
+struct AnalysisInstance
+{
+  std::string name;
+  AnalysisPtr analysis;
+  ResultSetPtr results;
+  std::exception_ptr exception;
+};
+
+typedef std::vector<AnalysisInstance> AnalysisInstanceList;
 
 
 // Queue class that has thread synchronisation
@@ -187,10 +201,13 @@ private:
     AnalysisInstanceList processed_;
 
 public:
+
     // Add data to the queue and notify others
     void enqueue ( const AnalysisInstance& data );
+
     // Get data from the queue. Wait for data if not available
     AnalysisInstance dequeue();
+
     inline size_t n_instances() const
     {
         return m_queue.size();
@@ -201,10 +218,12 @@ public:
         m_queue=std::queue<AnalysisInstance>();
         processed_.clear();
     }
+
     inline bool isEmpty()
     {
         return m_queue.size() ==0;
     }
+
     inline AnalysisInstance& front()
     {
         return m_queue.front();
@@ -220,19 +239,13 @@ public:
 
 
 
-
-class CollectingProgressDisplayer
-    : public ProgressDisplayer
-{
-    std::string id_;
-    ProgressDisplayer* receiver_;
-
-public:
-    CollectingProgressDisplayer ( const std::string& id, ProgressDisplayer* receiver );
-    virtual void update ( const ProgressState& pi );
-};
-
-
+/**
+ * @brief The AnalysisWorkerThread class
+ * Objects of this class work together with the SynchronizedAnalysisQueue.
+ * The latter holds a pool of Analyses to process.
+ * For each processor, an AnalysisWorkerThread object is created.
+ * It grabs an Analysis form the queue, processes it and grabs the next until none is left.
+ */
 class AnalysisWorkerThread
     : boost::noncopyable
 {
@@ -240,11 +253,100 @@ protected:
     ProgressDisplayer* displayer_;
     SynchronisedAnalysisQueue* queue_;
 
+    /**
+     * @brief exception
+     * stores the exception, if any occurred
+     */
+    std::exception_ptr exception_;
+
+    WarningDispatcher* mainThreadWarningDispatcher_;
+
 public:
+    /**
+     * @brief AnalysisWorkerThread
+     * @param queue
+     * @param displayer
+     * Constructs the worker.
+     * This is expected to be executed in the main thread.
+     */
     AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer=nullptr );
 
+    /**
+     * @brief operator ()
+     * Executes the job.
+     * This function runs in a separate thread.
+     */
     void operator() ();
+
+    void rethrowIfNeeded() const;
 };
+
+
+
+
+/**
+ * @brief The AnalysisThread class
+ * This class wraps the execution of an analysis in a separate thread.
+ * It is made sure, the warnings and progress info is properly propagated
+ * to the main thread.
+ */
+class AnalysisThread
+{
+
+  boost::thread thread_;
+
+protected:
+  /**
+   * @brief results_
+   * stores the result set
+   */
+  ResultSetPtr results_;
+
+  /**
+   * @brief exception
+   * stores the exception, if any occurred
+   */
+  std::exception_ptr exception_;
+
+  std::function<void(std::exception_ptr)> exceptionHandler_;
+
+  void launch(std::function<void(void)> action);
+
+public:
+  AnalysisThread(
+      AnalysisPtr analysis,
+      ProgressDisplayer* pd
+#ifndef SWIG
+      ,
+      std::function<void(void)> preAction = []()->void {},
+      std::function<void(void)> postAction = []()->void {},
+      std::function<void(std::exception_ptr)> exHdlr = [](std::exception_ptr)->void {}
+#endif
+  );
+
+#ifndef SWIG
+  AnalysisThread(
+      std::function<void(void)> action,
+      std::function<void(std::exception_ptr)> exHdlr = [](std::exception_ptr)->void {}
+  );
+#endif
+
+  void interrupt();
+
+  /**
+   * @brief join
+   * join thread and rethrow any exception, if there was no handler set
+   * @return
+   */
+  ResultSetPtr join();
+
+  template <class Rep, class Period>
+  bool try_join_for(const boost::chrono::duration<Rep, Period>& rel_time)
+  {
+    return thread_.try_join_for(rel_time);
+  }
+};
+
 
 
 

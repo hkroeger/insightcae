@@ -47,30 +47,25 @@ namespace insight
 
 
 
-/**
- * @brief The TaskQueue class
- * takes jobs, executes them one by one in a dedicated thread
- */
-class TaskQueue
-{
-public:
-  typedef std::function<void(void)> Job;
+///**
+// * @brief The TaskQueue class
+// * takes jobs, executes them one by one in the thread, from which dispatchJobs() was called
+// */
+//class TaskQueue
+//{
+//public:
+//  typedef std::function<void(void)> Job;
 
-protected:
-  std::mutex mx_;
-  std::condition_variable cv_;
-  std::queue<Job> jobQueue_;
-  boost::thread workerThread_;
+//protected:
+//  std::mutex mx_;
+//  std::condition_variable cv_;
+//  std::queue<Job> jobQueue_;
 
-  void dispatchJobs();
 
-public:
-  TaskQueue();
-  ~TaskQueue();
-
-  void post(Job job);
-  void cancel();
-};
+//public:
+//  void post(Job job);
+//  void dispatchJobs();
+//};
 
 
 
@@ -91,7 +86,7 @@ public:
   typedef std::function<void(bool)> ReportSuccessCallback;
 
   // success flag, progress state, results availability flag
-  typedef std::function<void(bool, ProgressStatePtrList, bool)> QueryStatusCallback;
+  typedef std::function<void(bool, bool)> QueryStatusCallback;
 
   // success flag, result data
   typedef std::function<void(bool, ResultSetPtr)> QueryResultsCallback;
@@ -99,6 +94,7 @@ public:
   // success flag, path
   typedef std::function<void(bool, boost::filesystem::path)> QueryExepathCallback;
 
+  typedef std::function<void(std::exception_ptr)> ExceptionHandler;
 
 protected:
   std::string url_;
@@ -116,21 +112,30 @@ protected:
     QueryResultsCallback
   > currentCallback_;
 
-  TaskQueue tq_;
+//  TaskQueue tq_;
+  ExceptionHandler exHdlr_;
+
+  insight::ProgressDisplayer* progressDisplayer_;
 
   void controlRequest(const std::string& action, AnalyzeClient::ReportSuccessCallback onCompletion);
 
   void handleHttpResponse(boost::system::error_code err, const Wt::Http::Message& response);
 
 public:
-  AnalyzeClient(const std::string& url);
+  AnalyzeClient(
+      const std::string& url,
+      insight::ProgressDisplayer* progressDisplayer_
+#ifndef SWIG
+      ,
+      ExceptionHandler exceptionHandler = [](std::exception_ptr)->void {}
+#endif
+      );
   ~AnalyzeClient();
 
   bool waitForContact(int maxAttempts=20);
 
   bool isBusy() const;
   void forgetRequest();
-
 
   void queryExepath( QueryExepathCallback onExepathAvailable );
 

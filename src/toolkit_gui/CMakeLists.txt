@@ -36,6 +36,10 @@ set(toolkit_gui_SRCS
     remoteparaview.cpp
     remoteparaview.h
 
+    qanalysisthread.cpp
+    qanalysisthread.h
+    qactionprogressdisplayerwidget.cpp
+    qactionprogressdisplayerwidget.h
 
     qresultsetmodel.cpp
     qresultsetmodel.h

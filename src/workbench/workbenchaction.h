@@ -9,6 +9,10 @@
 
 class AnalysisForm;
 
+namespace insight {
+class QAnalysisThread;
+}
+
 class WorkbenchAction
     : public QObject
 {
@@ -17,23 +21,23 @@ class WorkbenchAction
 protected:
   AnalysisForm* af_;
 
-  void exceptionEmitter();
+  void connectAnalysisThread(insight::QAnalysisThread *t);
 
 public:
   WorkbenchAction(AnalysisForm* af);
   virtual ~WorkbenchAction();
 
+
 public Q_SLOTS:
   virtual void onCancel() =0;
 
 Q_SIGNALS:
-  void analysisProgressUpdate(const insight::ProgressState& ps);
   void logMessage(const QString& logmsg);
+  void statusMessage(const QString& msg);
 
-  void killed();
   void finished(insight::ResultSetPtr results);
-  void failed(insight::Exception e);
-  void warning(insight::Exception e);
+  void failed(std::exception_ptr e);
+  void cancelled();
 };
 
 #endif // WORKBENCHACTION_H

@@ -181,20 +181,13 @@ void GraphProgressChart::checkForUpdate()
 
 GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
 : QTabWidget(parent)
-{
-  connect
-      (
-        this, &GraphProgressDisplayer::createChart,
-        this, &GraphProgressDisplayer::onCreateChart,
-        Qt::BlockingQueuedConnection
-      );
-}
+{}
 
 GraphProgressDisplayer::~GraphProgressDisplayer()
 {
 }
 
-void GraphProgressDisplayer::onCreateChart(bool log, const std::string name)
+void GraphProgressDisplayer::createChart(bool log, const std::string name)
 {
   GraphProgressChart* c=new GraphProgressChart(log, this);
   addTab(c, QString::fromStdString(name));
@@ -219,14 +212,8 @@ GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& 
   decltype(charts_)::iterator c;
   if ( (c=charts_.find(name))==charts_.end())
   {
-    if (QThread::currentThread() != this->thread())
-    {
-      emit createChart(log, name); // create in GUI thread
-    }
-    else
-    {
-      onCreateChart(log, name); // we are in GUI thread, simply call
-    }
+
+    createChart(log, name);
 //    GraphProgressChart* c=new GraphProgressChart(log, this);
 //    addTab(c, QString::fromStdString(name));
 //    charts_[name]=c;
@@ -244,37 +231,43 @@ GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& 
 
 void GraphProgressDisplayer::update(const insight::ProgressState& pi)
 {
-  double t=pi.first;
-  const ProgressVariableList& pvl=pi.second;
+  QMetaObject::invokeMethod(  // run in GUI thread as update might be called from different thread
+        qApp,
+        [this,pi]()
+        {
+          double t=pi.first;
+          const ProgressVariableList& pvl=pi.second;
 
-  for ( const ProgressVariableList::value_type& i: pvl)
-  {
-    const std::string& name = i.first;
-    double y_value = i.second;
+          for ( const ProgressVariableList::value_type& i: pvl)
+          {
+            const std::string& name = i.first;
+            double y_value = i.second;
 
-    std::vector<std::string> np;
-    boost::split(np, name, boost::is_any_of("/"));
+            std::vector<std::string> np;
+            boost::split(np, name, boost::is_any_of("/"));
 
-    if (np.size()==1)
-    {
-      GraphProgressChart* c = addChartIfNeeded("Progress");
-      c->update(t, np[0], y_value);
-    }
-    else if (np.size()==2)
-    {
-      GraphProgressChart* c = addChartIfNeeded(np[0]);
-      c->update(t, np[1], y_value);
-    }
-    else if (np.size()>2)
-    {
-      std::string ln=*np.rbegin();
-      np.erase(np.end()-1);
-      std::string pn = boost::algorithm::join(np, "/");
+            if (np.size()==1)
+            {
+              GraphProgressChart* c = addChartIfNeeded("Progress");
+              c->update(t, np[0], y_value);
+            }
+            else if (np.size()==2)
+            {
+              GraphProgressChart* c = addChartIfNeeded(np[0]);
+              c->update(t, np[1], y_value);
+            }
+            else if (np.size()>2)
+            {
+              std::string ln=*np.rbegin();
+              np.erase(np.end()-1);
+              std::string pn = boost::algorithm::join(np, "/");
 
-      GraphProgressChart* c = addChartIfNeeded(pn);
-      c->update(t, ln, y_value);
-    }
-  }
+              GraphProgressChart* c = addChartIfNeeded(pn);
+              c->update(t, ln, y_value);
+            }
+          }
+        }
+  );
 }
 
 
@@ -287,3 +280,16 @@ void GraphProgressDisplayer::reset()
   }
   charts_.clear();
 }
+
+
+
+void GraphProgressDisplayer::setActionProgressValue(const std::string&, double)
+{}
+
+
+void GraphProgressDisplayer::setMessageText(const std::string&, const std::string&)
+{}
+
+
+void GraphProgressDisplayer::finishActionProgress(const std::string&)
+{}

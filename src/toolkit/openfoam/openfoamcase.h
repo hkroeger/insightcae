@@ -34,7 +34,7 @@ namespace insight {
     
     
 class ProgressDisplayer;
-class SolverOutputAnalyzer;
+class OutputAnalyzer;
 
 
 
@@ -142,7 +142,7 @@ public:
     void runSolver
     (
         const boost::filesystem::path& location,
-        SolverOutputAnalyzer& analyzer,
+        OutputAnalyzer& analyzer,
         std::string solverName,
         int np=0,
         const std::vector<std::string>& addopts = std::vector<std::string>()
@@ -155,6 +155,13 @@ public:
         std::vector<std::string> argv = std::vector<std::string>(),
         std::string *ovr_machine = nullptr
     ) const;
+
+    void runBlockMesh
+    (
+        const boost::filesystem::path& location,
+        int nBlocks=1,
+        ProgressDisplayer* progressDisplayer=nullptr
+    );
 
     inline const FieldList& fields() const
     {

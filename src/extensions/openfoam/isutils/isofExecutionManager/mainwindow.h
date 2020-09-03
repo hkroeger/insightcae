@@ -48,7 +48,7 @@ class MainWindow
   QTermWidget *terminal_;
 
   std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
-  std::shared_ptr<insight::SolverOutputAnalyzer> soa_;
+  std::shared_ptr<insight::OutputAnalyzer> soa_;
 
   QTimer *refreshTimer_;
   JobListBuilder* jbl_thread_ = nullptr;

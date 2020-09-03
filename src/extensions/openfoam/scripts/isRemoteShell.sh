@@ -5,7 +5,7 @@ SERVER=localhost
 
 if [ -e meta.foam ]; then
 read SERVER DIR << EOF
-$(python -c "from Insight.toolkit import *; rec=RemoteExecutionConfig('.', 'meta.foam'); print rec.server(), rec.remoteDir()")
+$(python3 -c "from Insight.toolkit import *; rec=RemoteExecutionConfig('.', 'meta.foam'); print(rec.server(), rec.remoteDir())")
 EOF
 fi
 

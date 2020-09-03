@@ -21,9 +21,10 @@
 #include "base/exception.h"
 #include "base/analysis.h"
 #include "base/boost_include.h"
+#include "base/outputanalyzer.h"
+#include "openfoam/blockmeshoutputanalyzer.h"
 
 #include "openfoam/ofes.h"
-#include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamdict.h"
@@ -617,24 +618,24 @@ void OpenFOAMCase::executeCommand
 void OpenFOAMCase::runSolver
 (
   const boost::filesystem::path& location, 
-  SolverOutputAnalyzer& analyzer,
-  std::string solverName,
+  OutputAnalyzer& analyzer,
+  std::string cmd,
   int np,
   const std::vector<std::string>& addopts
 ) const
 {
-  string cmd=solverName;
+  string execmd=cmd;
   std::vector<std::string> argv;
   if (np>1)
   {
-    cmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    execmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
     argv.push_back("-parallel");
   }
   std::copy(addopts.begin(), addopts.end(), back_inserter(argv));
 
 
 
-  SoftwareEnvironment::JobPtr job = env_.forkCommand( cmdString(location, cmd, argv) );
+  SoftwareEnvironment::JobPtr job = env_.forkCommand( cmdString(location, execmd, argv) );
 
 
   std::function<void()> read_start_out = [&]() {
@@ -697,7 +698,7 @@ void OpenFOAMCase::runSolver
   job->process->wait();
 
   if (job->process->exit_code()!=0)
-      throw insight::Exception("OpenFOAMCase::runSolver(): solver execution failed with nonzero exit code!");
+      throw insight::Exception("OpenFOAMCase::runSolver(): external command execution failed with nonzero exit code!");
 }
 
 std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& boundaryDict) const
@@ -742,6 +743,16 @@ SoftwareEnvironment::JobPtr OpenFOAMCase::forkCommand
 }
 
 
+void OpenFOAMCase::runBlockMesh
+(
+    const boost::filesystem::path& location,
+    int nBlocks,
+    ProgressDisplayer* progressDisplayer
+)
+{
+  BlockMeshOutputAnalyzer bma(progressDisplayer, nBlocks);
+  runSolver(location, bma, "blockMesh");
+}
 
 void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dict& boundaryDict, const ParameterSet& ps )
 {

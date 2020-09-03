@@ -81,22 +81,22 @@ class GraphProgressDisplayer
 protected:
   std::map<std::string, GraphProgressChart*> charts_;
 
+  void createChart(bool log, const std::string name);
+
 public:
-    GraphProgressDisplayer(QWidget* parent=nullptr);
-    virtual ~GraphProgressDisplayer();
+  GraphProgressDisplayer(QWidget* parent=nullptr);
+  virtual ~GraphProgressDisplayer();
 
-    GraphProgressChart* addChartIfNeeded(const std::string& name);
+  GraphProgressChart* addChartIfNeeded(const std::string& name);
 
-    virtual void reset();
+  virtual void reset();
 
-Q_SIGNALS:
-    void createChart(bool log, const std::string name);
+  void update(const insight::ProgressState& pi) override;
+  void setActionProgressValue(const std::string& path, double value) override;
+  void setMessageText(const std::string& path, const std::string& message) override;
+  void finishActionProgress(const std::string& path) override;
 
-public Q_SLOTS:
-    virtual void update(const insight::ProgressState& pi);
 
-private Q_SLOTS:
-    void onCreateChart(bool log, const std::string name);
 };
 
 #endif // GRAPHPROGRESSDISPLAYER_H

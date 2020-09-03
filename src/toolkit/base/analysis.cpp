@@ -31,6 +31,8 @@
 #include "boost/function.hpp"
 #include "boost/thread.hpp"
 
+#include "base/progressdisplayer/prefixedprogressdisplayer.h"
+
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -178,85 +180,172 @@ Analysis* Analysis::clone() const
 
 
 
-CollectingProgressDisplayer::CollectingProgressDisplayer ( const std::string& id, ProgressDisplayer* receiver )
-    : id_ ( id ), receiver_ ( receiver )
-{}
+// ====================================================================================
+// ======== AnaylsisThread
 
-void CollectingProgressDisplayer::update ( const ProgressState& pi )
+void AnalysisThread::launch(std::function<void(void)> action)
 {
-//    double maxv=-1e10;
-//    for ( const ProgressVariableList::value_type v: pi.second ) {
-//        if ( v.second > maxv ) {
-//            maxv=v.second;
-//        }
-//    }
-//    ProgressVariableList pvl;
-//    pvl[id_]=maxv;
-//    receiver_->update ( ProgressState ( pi.first, pvl ) );
+  thread_ = boost::thread(
 
-  ProgressVariableList pvl;
-  for (const ProgressVariableList::value_type& v: pi.second )
-  {
-    pvl[id_ + "/" + v.first]=v.second;
-  }
-  receiver_->update ( ProgressState(pi.first, pvl) );
+        [this,action](WarningDispatcher* globalWarning)
+        {
+          try
+          {
+            warnings.setSuperDispatcher(globalWarning);
+
+            action();
+
+          }
+          catch (...)
+          {
+            auto e = std::current_exception();
+            if (exceptionHandler_)
+              exceptionHandler_(e);
+            else
+              exception_ = e;
+          }
+        },
+
+        &warnings
+  );
 }
+
+AnalysisThread::AnalysisThread(
+    AnalysisPtr analysis,
+    ProgressDisplayer *pd,
+    std::function<void(void)> preAction,
+    std::function<void(void)> postAction,
+    std::function<void(std::exception_ptr)> exHdlr
+)
+  : exceptionHandler_(exHdlr)
+{
+  launch(
+        [this,analysis,pd,preAction,postAction]()
+        {
+          preAction();
+          results_ = (*analysis)( *pd );
+          postAction();
+        }
+  );
+}
+
+AnalysisThread::AnalysisThread
+(
+    std::function<void(void)> action,
+    std::function<void(std::exception_ptr)> exHdlr
+)
+  : exceptionHandler_(exHdlr)
+{
+  launch(
+        [action]()
+        {
+          action();
+        }
+  );
+}
+
+void AnalysisThread::interrupt()
+{
+  thread_.interrupt();
+}
+
+ResultSetPtr AnalysisThread::join()
+{
+  thread_.join();
+  if (exception_) std::rethrow_exception(exception_);
+  return results_;
+}
+
+
+
+
+
+
+
 
 
 
 
 AnalysisWorkerThread::AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer )
     :
-      displayer_ ( displayer ),
-      queue_ ( queue )
+      displayer_(displayer),
+      queue_(queue),
+      mainThreadWarningDispatcher_(&warnings)
 {}
+
+
+
 
 void AnalysisWorkerThread::operator() ()
 {
+  warnings.setSuperDispatcher(mainThreadWarningDispatcher_);
+
   try
   {
-    while ( !queue_->isEmpty() ) {
-      AnalysisInstance ai=queue_->dequeue();
+    while ( !queue_->isEmpty() )
+    {
+      AnalysisInstance ai = queue_->dequeue();
 
       // run analysis and transfer results into given ResultSet object
-      CollectingProgressDisplayer pd ( boost::get<0> ( ai ), displayer_ );
-      boost::get<2> ( ai )->transfer ( * ( *boost::get<1> ( ai ) ) ( pd ) ); // call operator() from analysis object
+      PrefixedProgressDisplayer pd(displayer_, ai.name,
+                                   PrefixedProgressDisplayer::Prefixed,
+                                   PrefixedProgressDisplayer::ParallelPrefix);
 
-      // Make sure we can be interrupted
+      try
+      {
+        auto& analysis= *(ai.analysis);
+        ai.results->transfer( *analysis(pd) ); // call operator() from analysis object
+      }
+      catch ( const std::exception& e )
+      {
+        ai.exception = std::current_exception();
+        warnings.issue(
+              "An exception has occurred while processing the instance "+ai.name+" of the parameter study."
+              "The analsis of this instance was not completed.\n"
+              "Reason: "+e.what()
+              );
+      }
+
+      // Make sure we can be interrupted at least between analyses
       boost::this_thread::interruption_point();
     }
   }
   catch ( const std::exception& e )
   {
-    insight::Warning(std::string("Exception occurred:\n")+e.what());
+    exception_=std::current_exception();
   }
 }
 
+
+void AnalysisWorkerThread::rethrowIfNeeded() const
+{
+  if (exception_) std::rethrow_exception(exception_);
+}
 
 
 
 // Add data to the queue and notify others
 void SynchronisedAnalysisQueue::enqueue ( const AnalysisInstance& data )
 {
-    // Acquire lock on the queue
     boost::unique_lock<boost::mutex> lock ( m_mutex );
+
     // Add the data to the queue
     m_queue.push ( data );
     // Notify others that data is ready
     m_cond.notify_one();
-} // Lock is automatically released here
+}
 
 
 // Get data from the queue. Wait for data if not available
 AnalysisInstance SynchronisedAnalysisQueue::dequeue()
 {
-    // Acquire lock on the queue
     boost::unique_lock<boost::mutex> lock ( m_mutex );
 
     // When there is no data, wait till someone fills it.
     // Lock is automatically released in the wait and obtained
     // again after the wait
-    while ( m_queue.size() ==0 ) {
+    while ( m_queue.size() ==0 )
+    {
         m_cond.wait ( lock );
     }
 
@@ -264,8 +353,9 @@ AnalysisInstance SynchronisedAnalysisQueue::dequeue()
     AnalysisInstance result=m_queue.front();
     processed_.push_back ( result );
     m_queue.pop();
+
     return result;
-} // Lock is automatically released here
+}
 
 
 void SynchronisedAnalysisQueue::cancelAll()
@@ -276,7 +366,13 @@ void SynchronisedAnalysisQueue::cancelAll()
 //    }
 }
 
-    
+
+
+
+
+// ====================================================================================
+// ======== AnalysisLibraryLoader
+
 
 AnalysisLibraryLoader::AnalysisLibraryLoader()
 {
@@ -327,9 +423,9 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 
 AnalysisLibraryLoader::~AnalysisLibraryLoader()
 {
-    for ( void *handle: handles_ ) {
-        //dlclose(handle);
-    }
+//    for ( void *handle: handles_ ) {
+//        //dlclose(handle);
+//    }
 }
 
 void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
@@ -337,15 +433,18 @@ void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
     void *handle = dlopen ( location.c_str(), RTLD_NOW|RTLD_GLOBAL /*RTLD_LAZY|RTLD_NODELETE*/ );
     if ( !handle ) 
     {
-        std::cerr<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
+        std::cerr<<"Could not load module library "<<location<<"! Reason: " << dlerror() << std::endl;
     } else 
     {
-//        std::cout<<"Loaded module library "<<location << std::endl;
         handles_.push_back ( handle );
     }
 }
 
 
 AnalysisLibraryLoader loader;
+
+
+
+
 
 }

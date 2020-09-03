@@ -24,6 +24,8 @@
 #include "openfoam/openfoamtools.h"
 #include "base/exception.h"
 
+#include "openfoam/snappyhexmeshoutputanalyzer.h"
+
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -699,7 +701,8 @@ void snappyHexMesh
   const ParameterSet& ps,
   bool overwrite,
   bool isalreadydecomposed,
-  bool keepdecomposedafterfinish
+  bool keepdecomposedafterfinish,
+  ProgressDisplayer* progress
 )
 {
   using namespace snappyHexMeshFeats;
@@ -800,30 +803,33 @@ void snappyHexMesh
   }
   
   //cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
-  std::vector<std::string> output;
-  ofc.executeCommand(location, "snappyHexMesh", opts, &output, np);
+//  std::vector<std::string> output;
+
+  snappyHexMeshOutputAnalyzer saa(progress);
+//  ofc.executeCommand(location, "snappyHexMesh", opts, &output, np);
+  ofc.runSolver(location, saa, "snappyHexMesh", np, opts);
 
   
   // Check fraction of extruded faces on wall patches
-  boost::regex re_extrudedfaces("^Extruding ([0-9]+) out of ([0-9]+) faces.*");
-  boost::match_results<std::string::const_iterator> what;
-  int exfaces=-1, totalfaces=-1;
-  for (const std::string& line: output)
+//  boost::regex re_extrudedfaces("^Extruding ([0-9]+) out of ([0-9]+) faces.*");
+//  boost::match_results<std::string::const_iterator> what;
+//  int exfaces=-1, totalfaces=-1;
+//  for (const std::string& line: output)
+//  {
+//    if (boost::regex_match(line, what, re_extrudedfaces))
+//    {
+//      //cout<< "\""<<line<<"\""<<what[1]<<", "<<what[2]<<endl;
+//      exfaces=lexical_cast<int>(what[1]);
+//      totalfaces=lexical_cast<int>(what[2]);
+//    }
+//  }
+  if (saa.totalFaces()>=0)
   {
-    if (boost::regex_match(line, what, re_extrudedfaces))
-    {
-      //cout<< "\""<<line<<"\""<<what[1]<<", "<<what[2]<<endl;
-      exfaces=lexical_cast<int>(what[1]);
-      totalfaces=lexical_cast<int>(what[2]);
-    }
-  }
-  if (totalfaces>=0)
-  {
-    double exfrac=double(exfaces)/double(totalfaces);
-    if (exfrac<0.9)
+//    double exfrac=double(exfaces)/double(totalfaces);
+    if (saa.extrudedFraction()<0.9)
     {
       std::string msg=
-      "Prism layer covering is only "+str(format("%g")%(100.*exfrac))+"\% (<90%)!\n"
+      "Prism layer covering is only "+str(format("%g")%(100.*saa.extrudedFraction()))+"\% (<90%)!\n"
       "Please reconsider prism layer thickness and tune number of prism layers!";
       
       if (p.stopOnBadPrismLayer)

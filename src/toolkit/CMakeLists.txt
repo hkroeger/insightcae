@@ -48,6 +48,7 @@ set(toolkit_SOURCES
     base/remoteserverlist.cpp
     base/taskspoolerinterface.cpp
     base/mountremote.cpp
+    base/outputanalyzer.cpp
 
     base/progressdisplayer.cpp
 
@@ -89,6 +90,8 @@ set(toolkit_SOURCES
     openfoam/paraview.cpp
     openfoam/stretchtransformation.cpp
     openfoam/solveroutputanalyzer.cpp
+    openfoam/blockmeshoutputanalyzer.cpp
+    openfoam/snappyhexmeshoutputanalyzer.cpp
     openfoam/ofdicts.cpp
 
 

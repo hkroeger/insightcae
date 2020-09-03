@@ -43,6 +43,7 @@
 #include "vtkPolyDataMapper.h"
 
 #include "cadfeatures.h"
+#include "openfoam/blockmeshoutputanalyzer.h"
 
 using namespace arma;
 using namespace std;
@@ -66,14 +67,12 @@ void NumericalWindtunnel::modifyDefaults(ParameterSet& p)
 
 NumericalWindtunnel::NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis("Numerical Wind Tunnel", "", ps, exepath)
-{
-
-}
+{}
 
 
 boost::mutex mtx;
 
-void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& progress)
+void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& parentProgresss)
 {
   CurrentExceptionContext ex("computing further preprocessing informations");
 
@@ -102,9 +101,11 @@ void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& progress)
 
   arma::mat bb; // bounding box in SI, rotated to wind tunnel CS
 
+  parentProgresss.message("Getting geometry file"); // extraction may take place now
   std::string geom_file_ext = p.geometry.objectfile->fileName().extension().string();
   boost::to_lower(geom_file_ext);
 
+  parentProgresss.message("Loading geometry file, computing bounding box");
   if (geom_file_ext==".stl" || geom_file_ext==".stlb")
   {
     vtk_ChangeCS trsf(
@@ -154,7 +155,7 @@ void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& progress)
 
 
 
-void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
+void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentProgress)
 {
   path dir = executionPath();
   Parameters p(parameters_);
@@ -336,10 +337,11 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
     }
   }
   
+  int nb=bmd->nBlocks();
   cm.insert(bmd.release());
   
   cm.createOnDisk(executionPath());
-  cm.executeCommand(executionPath(), "blockMesh");  
+  cm.runBlockMesh(executionPath(), nb, &parentProgress);
     
   create_directory(objectSTLFile.parent_path());
 
@@ -435,7 +437,9 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   snappyHexMesh
   (
     cm, executionPath(),
-    shm_cfg
+    shm_cfg,
+    true, false, false,
+    &parentProgress
   );
 
   
@@ -446,7 +450,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
 
 
 
-void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
+void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer&)
 {
   Parameters p(parameters_);
 
@@ -512,11 +516,13 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
 
 
 
-ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
+ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& pp)
 {
   Parameters p(parameters_);
   
-  ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, progress);
+  ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, pp);
+
+  auto ap = pp.forkNewAction(13, "Evaluation");
   
   // get full name of car patch (depends on STL file)
   OFDictData::dict boundaryDict;
@@ -531,19 +537,23 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
     }
   }
 
+  ap.message("Computing projected area");
   arma::mat Ah=projectedArea(cm, executionPath(), 
     vec3(1,0,0),
     list_of<std::string>("object")
   );
   double A=Ah(Ah.n_rows-1,1);
+++ap;
 
   
   double Re=p.operation.v*Lref_/p.fluid.nu;
   ptr_map_insert<ScalarResult>(*results) ("Re", Re, "Reynolds number", "", "");
   ptr_map_insert<ScalarResult>(*results) ("Afront", A, "Projected frontal area", "", "$m^2$");
     
+  ap.message("Reading forces");
   arma::mat f=forces::readForces(cm, executionPath(), "forces");
   arma::mat t = f.col(0);
+++ap;
   
   double mult = p.mesh.longitudinalSymmetry ? 2.0 : 1.0;
 
@@ -567,6 +577,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
   double Pe=Rtot(Rtot.n_rows-1) * p.operation.v;
   ptr_map_insert<ScalarResult>(*results) ("Pe", Pe, "Effective power $P_e=R_{tot} v$", "", "W");
 
+  ap.message("Creating resistance plot");
   // Resistance convergence
   addPlot
   (
@@ -579,8 +590,9 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
     },
     "Convergence history of resistance force"
   );    
-  
+++ap;
 
+  ap.message("Rendering images");
   {
     // A renderer and render window
     OpenFOAMCaseScene scene( executionPath()/"system"/"controlDict" );
@@ -616,6 +628,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         "Pressure contour (front view)", ""
       )));
     }
+  ++ap;
 
     {
       camera->SetViewUp( toArray(vec3(0,0,1)) );
@@ -632,6 +645,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         "Pressure contour (side view)", ""
       )));
     }
+  ++ap;
 
     {
       camera->SetViewUp( toArray(vec3(0,1,0)) );
@@ -648,6 +662,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         "Pressure contour (top view)", ""
       )));
     }
+  ++ap;
 
     {
       camera->SetViewUp( toArray(vec3(0,0,1)) );
@@ -668,6 +683,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         "Pressure contour (isometric view)", ""
       )));
     }
+  ++ap;
 
     auto im = scene.internalMesh();
 
@@ -690,6 +706,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
       st->Update();
       scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
     }
+  ++ap;
 
     {
       auto seeds = vtkSmartPointer<vtkPointSource>::New();
@@ -710,6 +727,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
       st->Update();
       scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
     }
+  ++ap;
 
 
     {
@@ -727,6 +745,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         "Stream lines (front view)", ""
       )));
     }
+  ++ap;
 
     {
       camera->SetViewUp( toArray(vec3(0,0,1)) );
@@ -743,6 +762,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         "Stream lines (side view)", ""
       )));
     }
+  ++ap;
 
     {
       camera->SetViewUp( toArray(vec3(0,1,0)) );
@@ -759,6 +779,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         "Stream lines (top view)", ""
       )));
     }
+  ++ap;
 
     {
       camera->SetViewUp( toArray(vec3(0,0,1)) );
@@ -779,6 +800,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         "Stream lines (isometric view)", ""
       )));
     }
+  ++ap;
 
   }
 

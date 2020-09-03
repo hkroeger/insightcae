@@ -45,7 +45,7 @@ if [ -e $META ]; then
  META=$(basename $META)
 
  read SERVER DIR << EOF
-$(python -c "from Insight.toolkit import *; rec=RemoteExecutionConfig('.', '$META'); print rec.server(), rec.remoteDir()")
+$(python3 -c "from Insight.toolkit import *; rec=RemoteExecutionConfig('.', '$META'); print(rec.server(), rec.remoteDir())")
 EOF
 
  if [ "$SUBDIR" ]; then

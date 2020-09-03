@@ -1,15 +1,19 @@
 #ifndef INSIGHT_SOLVEROUTPUTANALYZER_H
 #define INSIGHT_SOLVEROUTPUTANALYZER_H
 
+#include "base/outputanalyzer.h"
+#include "base/progressdisplayer.h"
+
 #include <map>
 #include <memory>
 #include <armadillo>
 
 namespace insight {
 
-class ProgressDisplayer;
+
 
 class SolverOutputAnalyzer
+    : public OutputAnalyzer
 {
 public:
 
@@ -31,7 +35,6 @@ public:
   struct ExecTimeInfo { double exec, wallclock; };
 
 protected:
-    ProgressDisplayer& pdisp_;
 
     double curTime_;
     std::map<std::string, double> curProgVars_;
@@ -51,14 +54,14 @@ protected:
 
     std::string curLog_;
 
-//   std::map<std::string, std::vector<arma::mat> > trackedForces_;
+    std::shared_ptr<ActionProgress> solverActionProgress_;
 
 public:
-    SolverOutputAnalyzer ( ProgressDisplayer& pdisp );
+    SolverOutputAnalyzer ( ProgressDisplayer& pd, double endTime=1000 );
 
-    void update ( const std::string& line );
+    void update (const std::string& line) override;
 
-    bool stopRun() const;
+    bool stopRun() const override;
 };
 
 

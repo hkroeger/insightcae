@@ -33,8 +33,8 @@ void InsightCAEApplication::setSplashScreen(QSplashScreen *sc)
 {
   sc_=sc;
   QTimer::singleShot(3000, sc, &QSplashScreen::close);
-  connect( sc, &QSplashScreen::close,
-          [&]() { sc_=nullptr; } );
+//  connect( sc, &QSplashScreen::close,
+//          [&]() { sc_=nullptr; } );
 }
 
 

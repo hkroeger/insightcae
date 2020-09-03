@@ -32,6 +32,7 @@
 #include <cstdlib>
 
 #include "boost/stacktrace.hpp"
+#include "boost/algorithm/string.hpp"
 
 using namespace std;
 
@@ -45,8 +46,20 @@ std::ostream& operator<<(std::ostream& os, const Exception& ex)
 }
 
 
-std::string splitMessage(const std::string& message, std::size_t width, std::string whitespace)
+std::string splitMessage(const std::string& message, std::size_t width, std::string begMark, string endMark, std::string whitespace)
 {
+
+  if (!begMark.empty())
+  {
+    width-=2;
+    begMark+=" ";
+  }
+  if (!endMark.empty())
+  {
+    width-=2;
+    endMark=" "+endMark;
+  }
+
   std::string source(message);
 
   std::size_t  currIndex = width - 1;
@@ -60,10 +73,26 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
     if (currIndex == std::string::npos)
         break;
     sizeToElim = source.find_first_not_of(whitespace,currIndex + 1) - currIndex - 1;
+
     source.replace( currIndex + 1, sizeToElim , "\n");
     currIndex += (width + 1); //due to the recently inserted "\n"
   }
-  return source;
+
+  std::vector<string> splittext;
+  boost::split(splittext, source, boost::is_any_of("\n"));
+
+  string result;
+  for (auto l: splittext)
+  {
+    result+=begMark+l;
+    if (l.size()<width)
+    {
+      result+=string(width-l.size(), ' ');
+    }
+    result+=endMark+"\n";
+  }
+
+  return result;
 }
 
 
@@ -214,25 +243,71 @@ std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen)
 }
 
 
+
+
+WarningDispatcher::WarningDispatcher()
+{}
+
+void WarningDispatcher::setSuperDispatcher(WarningDispatcher *superDispatcher)
+{
+  superDispatcher_=superDispatcher;
+}
+
+void WarningDispatcher::issue(const std::string& message)
+{
+  issue(insight::Exception(message));
+}
+
+void WarningDispatcher::issue(const insight::Exception& warning)
+{
+  if (superDispatcher_)
+  {
+    superDispatcher_->issue(warning);
+  }
+  else
+  {
+    displayFramed("Warning follows", warning, '-', std::cerr);
+    warnings_.push_back(warning);
+  }
+}
+
+void displayFramed(const std::string& title, const std::string& msg, char titleChar, ostream &os)
+{
+  int dif=80-title.size()-2-2;
+  int nx=dif/2;
+  int ny=dif-nx;
+
+  os
+     <<"\n"
+       "+"<<std::string(nx,titleChar)<<" "<<title<<" "<<std::string(ny, titleChar)<<"+\n"
+     <<"|"      <<string(78, ' ')                                                   <<"|\n"
+                            <<splitMessage(msg, 80, "|", "|")
+     <<"|"      <<string(78, ' ')                                                   <<"|\n"<<
+       "+------------------------------------------------------------------------------+\n"
+     <<"\n"
+       ;
+
+}
+
+const decltype(WarningDispatcher::warnings_)& WarningDispatcher::warnings() const
+{
+  return warnings_;
+}
+
+size_t WarningDispatcher::nWarnings() const
+{
+  return warnings_.size();
+}
+
+
+
+thread_local WarningDispatcher warnings;
+
+
+
 void Warning(const std::string& msg)
 {
-  std::cerr<<"\n\n"
-"================================================================\n"
-"================================================================\n"
-"    WW      WW   AAA   RRRRRR  NN   NN IIIII NN   NN   GGGG     \n"
-"    WW      WW  AAAAA  RR   RR NNN  NN  III  NNN  NN  GG  GG    \n"
-"    WW   W  WW AA   AA RRRRRR  NN N NN  III  NN N NN GG         \n"
-"     WW WWW WW AAAAAAA RR  RR  NN  NNN  III  NN  NNN GG   GG    \n"
-"      WW   WW  AA   AA RR   RR NN   NN IIIII NN   NN  GGGGGG    \n"
-"================================================================\n"
-    <<std::endl;
-    
-  std::cerr<<splitMessage(msg, 60)<<std::endl;
-  
-  std::cerr<<std::endl<<
-"================================================================\n"
-"================================================================\n\n"
-    <<std::endl;
+  warnings.issue( msg );
 }
 
 void UnhandledExceptionHandling::handler()
@@ -262,10 +337,12 @@ void printException(const std::exception& e)
 {
   if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
   {
-    std::cerr << std::endl
-              << "An error has occurred:" << std::endl
-              << ie->message() << std::endl
-                 ;
+//    std::cerr << std::endl
+//              << "An error has occurred:" << std::endl
+//              << ie->message() << std::endl
+//                 ;
+
+    displayFramed("***ERROR***", ie->message(), '=', std::cerr);
 
     if (getenv("INSIGHT_STACKTRACE"))
     {
@@ -275,10 +352,11 @@ void printException(const std::exception& e)
   }
   else
   {
-    std::cerr << std::endl
-              << "An error has occurred:" << std::endl
-              << e.what() << std::endl
-                 ;
+//    std::cerr << std::endl
+//              << "An error has occurred:" << std::endl
+//              << e.what() << std::endl
+//                 ;
+    displayFramed("***ERROR***", e.what(), '=', std::cerr);
   }
 }
 

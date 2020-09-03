@@ -110,11 +110,11 @@ public:
 
     static std::string category() { return "Generic Analyses"; }
     
-    void calcDerivedInputData(ProgressDisplayer& progress) override;
-    void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress) override;
-    void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress) override;
+    void calcDerivedInputData(ProgressDisplayer& parentActionProgress) override;
+    void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
+    void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
     
-    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& progress);
+    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& parentActionProgress);
 };
 
 

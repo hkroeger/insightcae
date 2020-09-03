@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
     ("clean-proc,r", "clean processor directories")
     ("clean-all,c", "clean all time steps, postprocessing data, processor directories and constant+system folder")
     ("keep-first-time,0", "keep first time directory")
+    ("dry-run,d", "don't delete anything, just priint the files and directories to be deleted")
     ;
 
     po::positional_options_description p;

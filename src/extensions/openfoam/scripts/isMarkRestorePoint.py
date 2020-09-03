@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os, sys, subprocess, pprint, re, shutil
 from optparse import OptionParser
@@ -30,7 +30,7 @@ if not os.path.exists(rp):
   if os.path.exists(os.path.join('processor0', rp)):
     os.system('reconstructPar -time '+rp)
   else:
-    print "Error: time directory "+rp+" does not exist!"
+    print("Error: time directory "+rp+" does not exist!")
     sys.exit(-1)
 
 print "Creating restore point ", rp
@@ -43,5 +43,5 @@ for d in ['constant', 'system']:
       fn=os.path.join(d, fn)
       targ=fn+"."+rp
       if os.path.exists(targ):
-	print "Warning: overwriting "+targ+"!"
+        print("Warning: overwriting "+targ+"!")
       shutil.copyfile(fn, targ)

@@ -99,6 +99,29 @@ double AnalyzeRESTServer::nextStateInfo(
 }
 
 
+void AnalyzeRESTServer::nextProgressInfo(
+    Json::Object &s
+    )
+{
+  auto& pi = recordedProgressStates_.front();
+
+  s["path"]=Wt::WString(pi.path);
+  if (auto *dbl=boost::get<double>(&pi.value))
+  {
+    s["double"]=*dbl;
+  }
+  else if (auto *text=boost::get<std::string>(&pi.value))
+  {
+    s["text"]=Wt::WString(*text);
+  }
+  else
+  {
+    // blank
+  }
+
+  recordedProgressStates_.pop_front();
+}
+
 
 
 
@@ -137,7 +160,7 @@ void AnalyzeRESTServer::setAnalysis(insight::Analysis *a)
   analysis_=a;
 }
 
-void AnalyzeRESTServer::setSolverThread(boost::thread *at)
+void AnalyzeRESTServer::setSolverThread(insight::AnalysisThread *at)
 {
   analysisThread_=at;
 }
@@ -155,6 +178,30 @@ void AnalyzeRESTServer::update(
   TextProgressDisplayer::update(pi);
   mx_.lock();
   recordedStates_.push_back(pi);
+  mx_.unlock();
+}
+
+void AnalyzeRESTServer::setActionProgressValue(const string &path, double value)
+{
+  TextProgressDisplayer::setActionProgressValue(path, value);
+  mx_.lock();
+  recordedProgressStates_.push_back( ProgressState{ path, value } );
+  mx_.unlock();
+}
+
+void AnalyzeRESTServer::setMessageText(const string &path, const string &message)
+{
+  TextProgressDisplayer::setMessageText(path, message);
+  mx_.lock();
+  recordedProgressStates_.push_back( ProgressState{ path, message } );
+  mx_.unlock();
+}
+
+void AnalyzeRESTServer::finishActionProgress(const string &path)
+{
+  TextProgressDisplayer::finishActionProgress(path);
+  mx_.lock();
+  recordedProgressStates_.push_back( ProgressState{ path, boost::blank() } );
   mx_.unlock();
 }
 
@@ -259,12 +306,6 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         response.setMimeType("application/xml");
         results_->saveToStream( response.out() );
 
-//        {
-//          boost::mutex::scoped_lock lock(mx_);
-//          results_.reset();
-//          wait_cv_.notify_one();
-//        }
-
         return;
       }
     }
@@ -278,8 +319,8 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     }
     else
     {
-      Wt::Json::Object res, state;
-      Wt::Json::Array states;
+      Wt::Json::Object res, state, progressState;
+      Wt::Json::Array states, progressStates;
 
       if (recordedStates_.size()>0)
       {
@@ -311,7 +352,14 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
       }
 
+      while (recordedProgressStates_.size()>0)
+      {
+        nextProgressInfo(progressState);
+        progressStates.push_back(progressState);
+      }
+
       res["states"] = states;
+      res["progressStates"] = progressStates;
       res["inputFileReceived"] = hasInputFileReceived();
       res["resultsAvailable"] = results_ ? true : false;
 

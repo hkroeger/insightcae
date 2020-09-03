@@ -14,8 +14,9 @@ LogViewerWidget::LogViewerWidget(QWidget* parent)
 {
   setMaximumBlockCount(10000);
   QTextDocument *doc = document();
-  QFont font = doc->defaultFont();
-  font.setFamily("Courier New");
+  doc->setDefaultStyleSheet("p, b, font, li { white-space: pre-wrap; }");
+  QFont font("unexistent");
+  font.setStyleHint(QFont::Monospace);
   doc->setDefaultFont(font);
 }
 

@@ -6,7 +6,7 @@ set(analyze_SOURCES
 )
 
 set(analyze_LIBS
-    toolkit toolkit_remote
+    toolkit_remote
     ${Boost_LIBRARIES}
 )
 
@@ -25,12 +25,8 @@ else()
     message(STATUS "Did not found wt, disabling server.")
 endif()
 
-include_directories(${toolkit_SOURCE_DIR})
-link_directories(${toolkit_BIN_DIR})
-
-
-
 add_executable(analyze ${analyze_SOURCES})
 target_link_libraries(analyze ${analyze_LIBS})
+linkToolkitVtk(analyze Offscreen)
 
 install(TARGETS analyze RUNTIME DESTINATION bin)

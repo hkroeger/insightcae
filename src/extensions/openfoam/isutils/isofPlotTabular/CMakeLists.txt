@@ -21,9 +21,10 @@ SET(isofPlotTabular_RCCS
 
 add_executable(isofPlotTabular ${isofPlotTabular_SRCS} ${isofPlotTabular_FORMS} ${isofPlotTabular_RCCS})
 target_link_libraries(isofPlotTabular
- toolkit toolkit_gui
+ toolkit_gui
  Qt5::Widgets Qt5::Charts
 )
+linkToolkitVtk(isofPlotTabular Onscreen)
 target_include_directories(isofPlotTabular
   PUBLIC ${QT_INCLUDES}
   PUBLIC ${Boost_INCLUDE_DIR}

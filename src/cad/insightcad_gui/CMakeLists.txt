@@ -44,7 +44,6 @@ target_link_libraries(insightcad_gui
   toolkit
   insightcad
   ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES}
-  ${Boost_LIBRARIES}
   Qt5::Widgets
   ${DXFLIB_LIBRARIES}
   )

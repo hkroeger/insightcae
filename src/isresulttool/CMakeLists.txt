@@ -21,9 +21,10 @@ SET(isresulttool_RCCS
 
 add_executable(isResultTool ${isresulttool_SOURCES} ${isresulttool_FORMS} ${isresulttool_RCCS})
 target_link_libraries(isResultTool
-    ${Boost_LIBRARIES} toolkit toolkit_gui
+    toolkit_gui
     Qt5::Widgets Qt5::Charts
     )
+linkToolkitVtk(isResultTool Onscreen)
 target_include_directories(isResultTool
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}

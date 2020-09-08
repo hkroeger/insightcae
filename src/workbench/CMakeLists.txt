@@ -32,9 +32,8 @@ set(workbench_SRCS
 SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui qsetupremotedialog.ui)
 SET(workbench_RCCS workbench.qrc)
 set(workbench_LIBS
-    toolkit toolkit_gui
+    toolkit_gui
     Qt5::Widgets
-    ${Boost_LIBRARIES}
 )
 if (wt_FOUND)
     message(STATUS "Found wt")
@@ -51,9 +50,11 @@ else()
     message(STATUS "Did not found wt, disabling remote execution functions.")
 endif()
 
+
 add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
 
 target_link_libraries(workbench ${workbench_LIBS})
+linkToolkitVtk(workbench Onscreen)
 
 target_include_directories(workbench
   PUBLIC ${QT_INCLUDES}

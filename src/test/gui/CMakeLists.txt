@@ -11,18 +11,13 @@ set(guitest_SRCS
 )
 
 set(guitest_LIBS
-    #insightcad_gui
-    toolkit toolkit_gui
+    toolkit_gui
     Qt5::Widgets
-    ${Boost_LIBRARIES}
     gas_dispersion
 )
 
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${QWT_INCLUDE_DIR})
-
 
 if (wt_FOUND)
     message(STATUS "Found wt")
@@ -41,6 +36,8 @@ endif()
 add_executable(guitest ${guitest_SRCS})
 
 target_link_libraries(guitest ${guitest_LIBS})
+
+linkToolkitVtk(guitest Onscreen)
 
 target_include_directories(guitest
     PUBLIC ${QT_INCLUDES}

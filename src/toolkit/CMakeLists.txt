@@ -207,7 +207,8 @@ file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
-message(STATUS "VTK: ${VTK_LIBRARIES} <<ok")
+#set_target_properties(toolkit PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+
 target_link_libraries(toolkit
     ${PYTHON_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -215,11 +216,10 @@ target_link_libraries(toolkit
     PkgConfig::poppler-cpp
     GSL::gsl GSL::gslcblas
     OpenSSL::SSL
-    ${VTK_LIBRARIES}
+    vtkHeaders
 )
 
-target_include_directories(toolkit 
-  PUBLIC ${VTK_INCLUDE_DIRS}
+target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
@@ -247,19 +247,19 @@ install(EXPORT toolkit_targets
 )
 
 
-IF(INSIGHT_BUILD_PYTHONBINDINGS)
-    ADD_CUSTOM_COMMAND(
-        OUTPUT toolkit_swigpyrun.timestamp
-        COMMAND "${SWIG_EXECUTABLE}" -python -external-runtime
-        COMMAND touch toolkit_swigpyrun.timestamp
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    )
-    ADD_CUSTOM_TARGET( toolkit_swigpyrun DEPENDS toolkit_swigpyrun.timestamp
-            COMMENT "Checking for swigpyrun.h generation" )
-    ADD_DEPENDENCIES( toolkit toolkit_swigpyrun )
-ENDIF()
+#IF(INSIGHT_BUILD_PYTHONBINDINGS)
+#    ADD_CUSTOM_COMMAND(
+#        OUTPUT toolkit_swigpyrun.timestamp
+#        COMMAND "${SWIG_EXECUTABLE}" -python -external-runtime
+#        COMMAND touch toolkit_swigpyrun.timestamp
+#        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+#    )
+#    ADD_CUSTOM_TARGET( toolkit_swigpyrun DEPENDS toolkit_swigpyrun.timestamp
+#            COMMENT "Checking for swigpyrun.h generation" )
+#    ADD_DEPENDENCIES( toolkit toolkit_swigpyrun )
+#ENDIF()
 
-add_pybindings(toolkit "toolkit.i" toolkit)
+add_pybindings(toolkit "toolkit.i" toolkit vtkOffscreen)
 
 add_subdirectory(openfoam/tests)
 

@@ -8,7 +8,6 @@ set(OF_LIBS
 
 set(LIBS
  uniof
- toolkit
 )
 
 set(INCLUDE_DIRS
@@ -16,3 +15,4 @@ set(INCLUDE_DIRS
 )
 
 setup_exe_target_OF(momentumBalance "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
+linkToolkit_OF( momentumBalance )

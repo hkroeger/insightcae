@@ -15,8 +15,8 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS
- toolkit
 )
 
 set(OF_VERSIONS OFplus OFesi1806 OFesi1906)
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
+linkToolkit_OF( ${PRJ} )

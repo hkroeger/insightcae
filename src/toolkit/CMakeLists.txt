@@ -259,7 +259,7 @@ install(EXPORT toolkit_targets
 #    ADD_DEPENDENCIES( toolkit toolkit_swigpyrun )
 #ENDIF()
 
-add_pybindings(toolkit "toolkit.i" toolkit vtkOffscreen)
+add_pybindings(toolkit "toolkit.i" toolkit)
 
 add_subdirectory(openfoam/tests)
 

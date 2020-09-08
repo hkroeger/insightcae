@@ -378,7 +378,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 {
 
     SharedPathList paths;
-    for ( const path& p: /*SharedPathList::searchPathList*/paths )
+    for ( const path& p: paths )
     {
         if ( exists(p) && is_directory ( p ) )
         {
@@ -389,10 +389,9 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
             {
               if ( is_directory ( userconfigdir ) )
               {
-                directory_iterator end_itr; // default construction yields past-the-end
-                for ( directory_iterator itr ( userconfigdir );
-                        itr != end_itr;
-                        ++itr )
+                for (
+                     directory_iterator itr ( userconfigdir );
+                     itr != directory_iterator(); ++itr )
                 {
                     if ( is_regular_file ( itr->status() ) )
                     {
@@ -402,7 +401,6 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
                             std::string type;
                             path location;
                             f>>type>>location;
-                            //cout<<itr->path()<<": type="<<type<<" location="<<location<<endl;
 
                             if ( type=="library" )
                             {
@@ -430,10 +428,10 @@ AnalysisLibraryLoader::~AnalysisLibraryLoader()
 
 void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
 {
-    void *handle = dlopen ( location.c_str(), RTLD_NOW|RTLD_GLOBAL /*RTLD_LAZY|RTLD_NODELETE*/ );
+    void *handle = dlopen ( location.c_str(), RTLD_LAZY|RTLD_GLOBAL|RTLD_NODELETE );
     if ( !handle ) 
     {
-        std::cerr<<"Could not load module library "<<location<<"! Reason: " << dlerror() << std::endl;
+        std::cerr<<"Could not load module library "<<location<<"!\nReason: " << dlerror() << std::endl;
     } else 
     {
         handles_.push_back ( handle );

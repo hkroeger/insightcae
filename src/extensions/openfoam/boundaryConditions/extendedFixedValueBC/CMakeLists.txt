@@ -25,3 +25,4 @@ set(IS_OF_LIBS
 )
 
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "${IS_OF_LIBS}")
+linkToolkit_OF(${PRJ})

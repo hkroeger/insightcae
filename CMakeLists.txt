@@ -199,6 +199,7 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 macro(linkToolkitVtk target OnOffscreen)
     target_link_libraries(${target} toolkit vtk${OnOffscreen})
     set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+    set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,--copy-dt-needed-entries")
 endmacro()
 
 function(JOIN VALUES GLUE OUTPUT)
@@ -841,6 +842,7 @@ macro (add_pybindings TARGETNAME IFFILE LIBS)
         LANGUAGE python
         SOURCES ${IFFILE})
     target_link_libraries(${PYTARGET} ${LIBS})
+    linkToolkitVtk(${PYTARGET} Offscreen)
     set_target_properties(${PYTARGET}
         PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SWIG_OUTDIR}
         )

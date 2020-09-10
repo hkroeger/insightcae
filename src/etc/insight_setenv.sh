@@ -8,8 +8,24 @@ export INSIGHT_LIBDIR=${INSIGHT_INSTDIR}/lib
 export INSIGHT_USERSHAREDDIR=$HOME/.insight/share
 export INSIGHT_GLOBALSHAREDDIRS=$INSIGHT_INSTDIR/share/insight:/usr/share/insight
 
-export PATH=$INSIGHT_BINDIR:$PATH
-export LD_LIBRARY_PATH=$INSIGHT_LIBDIR:$LD_LIBRARY_PATH
+
+## setup PATH and LD_LIBRARY_PATH
+if [ -n "$LD_LIBRARY_PATH" ]; then
+ ORG_LDPATH=:${LD_LIBRARY_PATH}
+fi
+if [ -n "$PATH" ]; then
+ ORG_PATH=:${PATH}
+fi
+
+PATH=${INSIGHT_BINDIR}
+LD_LIBRARY_PATH=${INSIGHT_LIBDIR}
+if [ -d ${INSIGHT_INSTDIR}/paraview-offscreen ]; then
+ PATH=$PATH:${INSIGHT_INSTDIR}/paraview-offscreen/bin
+ LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSIGHT_INSTDIR}/paraview-offscreen/lib
+fi
+export PATH=$PATH${ORG_PATH}
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${ORG_LDPATH}
+
 
 for cfgd in $INSIGHT_USERSHAREDDIR ${INSIGHT_GLOBALSHAREDDIRS/:/ }; do # in that order!
  if [ -d $cfgd/tex ]; then

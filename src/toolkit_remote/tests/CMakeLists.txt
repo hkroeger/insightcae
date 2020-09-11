@@ -1,5 +1,6 @@
 
 add_executable(test_detectionBroadcast test_detectionBroadcast.cpp)
-target_link_libraries(test_detectionBroadcast toolkit_remote)
+target_link_libraries(test_detectionBroadcast toolkit toolkit_remote)
+linkToolkitVtk(test_detectionBroadcast Offscreen)
 
 add_test(detectionBroadcast test_detectionBroadcast)

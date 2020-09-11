@@ -14,8 +14,6 @@ set(testcases_SOURCES
   
 file(GLOB_RECURSE testcases_HEADERS "*.h")
 
-include_directories(${toolkit_SOURCE_DIR})
-include_directories(${refdata_SOURCE_DIR})
 
 add_library(testcases SHARED ${testcases_SOURCES})
 add_PDL(testcases "${testcases_HEADERS}")

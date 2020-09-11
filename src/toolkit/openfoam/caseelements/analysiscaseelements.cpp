@@ -47,7 +47,157 @@ bool operator==(const std::string& s, const insight::OFDictData::data& d)
 
 namespace insight
 {
-  
+
+
+
+
+arma::mat readAndCombineTabularFiles
+(
+    const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
+    const std::string& FOName, const std::string& fileNamePattern,
+    const std::string& filterChars
+)
+{
+  CurrentExceptionContext ex("reading output files "+fileNamePattern+" for function object "+FOName+" (filtering out any of '"+filterChars+"')");
+
+  std::string fileNameBase, fileNameExt;
+  {
+    path fnp(fileNamePattern);
+    fileNameBase = fnp.filename().stem().string();
+    fileNameExt = fnp.filename().extension().string();
+  }
+
+
+  path fp;
+  if ( cm.OFversion() <170 )
+    fp=absolute ( caseLocation ) / FOName;
+  else
+    fp=absolute ( caseLocation ) / "postProcessing" / FOName;
+
+  if (!exists(fp))
+      throw insight::Exception("data path "+fp.string()+" of function object "+FOName+" does not exist!");
+
+  std::map<double, std::vector<double> > rows; // out files are read earliest first: latest added row (last attempt) will survive
+
+  // find all time directories
+  auto tdl = listTimeDirectories ( fp );
+
+  std::time_t lastWriteTime=0;
+  for ( const auto& td: tdl ) // loop over all times, start
+  {
+    // find newest out file
+    std::map<std::time_t, boost::filesystem::path> candidates;
+    boost::regex expr(fileNameBase+"(|_.*)"+fileNameExt);
+    for ( directory_iterator itr( td.second );
+            itr != directory_iterator(); ++itr )
+    {
+      if (!is_directory(itr->status()))
+      {
+        auto cp = itr->path();
+        if (boost::regex_match(cp.filename().string(), expr))
+        {
+          candidates[last_write_time(cp)]=cp;
+        }
+      }
+    }
+
+    if (candidates.size()<1)
+    {
+        insight::Warning("no valid output file was not found in time directory "+td.second.string()+"!");
+    }
+    else
+    {
+      // select newest (last in list)
+      auto selectedCandidate = candidates.rbegin();
+      auto ffp = selectedCandidate->second;
+
+      if (lastWriteTime > selectedCandidate->first)
+      {
+        insight::Warning(
+              "Possible inconsistency in solver output data detected!"
+              "File "+ffp.string()+" from time directory "+td.second.string()+
+              " was created before the output file of the previous time directory."
+              );
+      }
+      lastWriteTime=selectedCandidate->first;
+
+      std::ifstream f( ffp.string() );
+      if (!f)
+        throw insight::Exception("Failed to open file "+ffp.string()+"!");
+
+      int lineNo=0;
+      std::string line;
+      while ( getline ( f, line ) )
+      {
+        lineNo++;
+        CurrentExceptionContext ex(str(format("reading line %d of file %s")%lineNo%ffp.string()));
+
+        trim(line);
+
+        if ( !starts_with ( line, "#" ) )
+        {
+          for (auto c: filterChars)
+            erase_all(line, std::string(1, c));
+          replace_all(line, "\t", " ");
+
+          string line_org;
+          do {
+            line_org=line;
+            replace_all(line, "  ", " ");
+          } while (line_org!=line);
+
+          std::vector<string> fields;
+          split(fields, line,  boost::is_any_of(" "));
+
+          std::vector<double> fieldsNum;
+          transform(
+                fields.begin(), fields.end(), std::back_inserter(fieldsNum),
+                [](const std::string& t) { return to_number<double>(t); }
+          );
+
+          if (fieldsNum.size()<2)
+            throw insight::Exception("invalid data: expected at least two columns (time + 1 data), got: "+line);
+
+          rows[fieldsNum[0]] = fieldsNum;
+        }
+      }
+    }
+  }
+
+  arma::mat data;
+
+  if (rows.size()>0)
+  {
+    size_t nf = rows.begin()->second.size();
+    data.resize(rows.size(), nf);
+
+    arma::uword k=0;
+    for (auto r=rows.begin(); r!=rows.end(); ++r)
+    {
+
+      if ( nf != r->second.size() )
+      {
+        throw insight::Exception(
+              str(format("Invalid data for time %g: expected %d data columns, got %d.")
+                  % r->first % nf % r->second.size()
+                  ));
+      }
+
+      for (arma::uword j=0; j<nf; j++)
+      {
+        data(k,j)=r->second[j];
+      }
+
+      ++k;
+    }
+  }
+
+  return data;
+}
+
+
+
+
 defineType(outputFilterFunctionObject);
 defineFactoryTable
 (
@@ -61,11 +211,17 @@ defineFactoryTable
 );
 defineStaticFunctionTable(outputFilterFunctionObject, defaultParameters, ParameterSet);
 
+
+
+
 outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet& ps )
 : OpenFOAMCaseElement(c, Parameters(ps).name+"outputFilterFunctionObject", ps),
   p_(ps)
 {
 }
+
+
+
 
 void outputFilterFunctionObject::addIntoControlDict(OFDictData::dict& controlDict) const
 {
@@ -86,11 +242,17 @@ void outputFilterFunctionObject::addIntoControlDict(OFDictData::dict& controlDic
   controlDict.subDict("functions")[p_.name]=fod;
 }
 
+
+
+
 void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) const
 {
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   addIntoControlDict(controlDict);
 }
+
+
+
 
 void outputFilterFunctionObject::evaluate
 (
@@ -101,8 +263,12 @@ void outputFilterFunctionObject::evaluate
 }
 
 
+
+
 defineType(fieldAveraging);
 addToOpenFOAMCaseElementFactoryTable(fieldAveraging);
+
+
 
 
 fieldAveraging::fieldAveraging(OpenFOAMCase& c,  const ParameterSet& ps )
@@ -110,6 +276,9 @@ fieldAveraging::fieldAveraging(OpenFOAMCase& c,  const ParameterSet& ps )
   p_(ps)
 {
 }
+
+
+
 
 OFDictData::dict fieldAveraging::functionObjectDict() const
 {
@@ -140,11 +309,17 @@ OFDictData::dict fieldAveraging::functionObjectDict() const
 defineType(probes);
 addToOpenFOAMCaseElementFactoryTable(probes);
 
+
+
+
 probes::probes(OpenFOAMCase& c,  const ParameterSet& ps )
 : outputFilterFunctionObject(c, ps),
   p_(ps)
 {
 }
+
+
+
 
 OFDictData::dict probes::functionObjectDict() const
 {
@@ -377,6 +552,11 @@ OFDictData::dict volumeIntegrate::functionObjectDict() const
     op="max";
   else if (p_.operation == Parameters::CoV)
     op="CoV";
+  else if (p_.operation == Parameters::weightedVolIntegrate)
+  {
+    op="weightedVolIntegrate";
+    fod["weightField"]=p_.weightFieldName;
+  }
   fod["operation"]=op;
 
   OFDictData::list fl; fl.resize(p_.fields.size());
@@ -386,7 +566,19 @@ OFDictData::dict volumeIntegrate::functionObjectDict() const
   return fod;
 }
 
-
+arma::mat volumeIntegrate::readVolumeIntegrals
+(
+    const OpenFOAMCase& c,
+    const boost::filesystem::path& location,
+    const std::string& FOName
+)
+{
+  return readAndCombineTabularFiles
+      (
+        c, location,
+        FOName, "volFieldValue.dat"
+      );
+}
 
 defineType(surfaceIntegrate);
 addToOpenFOAMCaseElementFactoryTable(surfaceIntegrate);

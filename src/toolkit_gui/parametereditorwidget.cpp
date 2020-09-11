@@ -25,6 +25,7 @@
 
 #include <QSplitter>
 #include <QLabel>
+#include <QPainter>
 
 #include <mutex>
 
@@ -95,10 +96,10 @@ ParameterEditorWidget::ParameterEditorWidget
       if (!display)
       {
         // no existing displayer supplied; create one
-        QoccViewerContext *context=new QoccViewerContext(this);
+//        QoccViewerContext *context=new QoccViewerContext(this);
         QWidget *w=new QWidget(this);
         QVBoxLayout *l=new QVBoxLayout(w);
-        QoccViewWidget *viewer=new QoccViewWidget(w, context->getContext());
+        QoccViewWidget *viewer=new QoccViewWidget(w/*, context->getContext()*/);
         viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         QLabel *hints=new QLabel(w);
         hints->setStyleSheet("font: 8pt;");
@@ -186,6 +187,11 @@ void ParameterEditorWidget::doUpdateVisualization()
   {
     viz_->update(parameters_);
   }
+}
+
+bool ParameterEditorWidget::hasVisualizer() const
+{
+  return bool(viz_);
 }
 
 

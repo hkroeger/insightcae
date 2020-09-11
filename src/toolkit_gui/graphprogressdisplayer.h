@@ -34,21 +34,26 @@
 #include <QMutex>
 #include <QTabWidget>
 
-#include <qwt.h>
-#include <qwt_plot.h>
-#include <qwt_plot_curve.h>
+#include <QtCharts/QChartView>
+#include <QtCharts/QChart>
+#include <QtCharts/QLineSeries>
 
 class GraphProgressChart
-    : public QwtPlot
+    : public QtCharts::QChartView
 {
   Q_OBJECT
 
+public:
+  typedef std::map<std::string, QtCharts::QLineSeries*> CurveList;
+
 protected:
+  QtCharts::QChart* chartData_;
+
   size_t maxCnt_;
   typedef std::map<std::string, std::vector<double> > ArrayList;
   ArrayList progressX_;
   ArrayList progressY_;
-  std::map<std::string, QwtPlotCurve*> curve_;
+  CurveList curve_;
   bool needsRedraw_;
   QMutex mutex_;
   bool logscale_;
@@ -76,22 +81,22 @@ class GraphProgressDisplayer
 protected:
   std::map<std::string, GraphProgressChart*> charts_;
 
+  void createChart(bool log, const std::string name);
+
 public:
-    GraphProgressDisplayer(QWidget* parent=nullptr);
-    virtual ~GraphProgressDisplayer();
+  GraphProgressDisplayer(QWidget* parent=nullptr);
+  virtual ~GraphProgressDisplayer();
 
-    GraphProgressChart* addChartIfNeeded(const std::string& name);
+  GraphProgressChart* addChartIfNeeded(const std::string& name);
 
-    virtual void reset();
+  virtual void reset();
 
-Q_SIGNALS:
-    void createChart(bool log, const std::string name);
+  void update(const insight::ProgressState& pi) override;
+  void setActionProgressValue(const std::string& path, double value) override;
+  void setMessageText(const std::string& path, const std::string& message) override;
+  void finishActionProgress(const std::string& path) override;
 
-public Q_SLOTS:
-    virtual void update(const insight::ProgressState& pi);
 
-private Q_SLOTS:
-    void onCreateChart(bool log, const std::string name);
 };
 
 #endif // GRAPHPROGRESSDISPLAYER_H

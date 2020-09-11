@@ -34,7 +34,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-#include "qoccviewercontext.h"
+//#include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
 #include "qdebugstream.h"
 #include "viewstate.h"

@@ -71,7 +71,8 @@ public:
         rapidxml::xml_node<>& node
     ) override
     {
-      using namespace rapidxml;
+       readBaseAttributesFromNode(name, doc, node);
+       using namespace rapidxml;
 //      xml_node<>* child = findNode ( node, name, type() );
 //      if ( child ) {
           stringToValue ( node.first_attribute ( "value" )->value(), value_ );

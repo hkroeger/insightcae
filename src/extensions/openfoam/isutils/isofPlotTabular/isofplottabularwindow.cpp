@@ -78,6 +78,7 @@ void IsofPlotTabularWindow::readFiles()
     }
 
     arma::mat fd = insight::readTextFile(*f);
+
     if (data_.size()==0)
     {
       data_=fd;
@@ -135,6 +136,7 @@ void IsofPlotTabularWindow::onUpdate(bool)
     {
       if (PlotWidget *pw = dynamic_cast<PlotWidget*>(ui->graphs->currentWidget()))
       {
+        pw->onChangeXRange(ui->startTime->text(), ui->endTime->text());
         pw->onShow();
       }
     }

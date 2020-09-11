@@ -56,6 +56,9 @@ extern double mps;
 extern double kmh;
 extern double kt;
 
+extern double Pa;
+extern double bar;
+
 }
 
 #endif // UNITS_H

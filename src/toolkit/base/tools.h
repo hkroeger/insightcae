@@ -59,13 +59,17 @@ class CaseDirectory
     : public boost::filesystem::path
 {
   bool keep_;
+  bool isAutoCreated_;
 
 public:
-  CaseDirectory(const boost::filesystem::path& path);
+  CaseDirectory(const boost::filesystem::path& path, bool keep=true);
   CaseDirectory(bool keep=true, const boost::filesystem::path& prefix="");
   ~CaseDirectory();
 
   void createDirectory();
+  bool isAutoCreated() const;
+  bool isExistingAndWillBeRemoved() const;
+  bool isExistingAndNotEmpty() const;
   bool keep() const;
   void setKeep(bool keep);
 };

@@ -176,13 +176,16 @@ std::string ParameterSet::latexRepresentation() const
     "\\begin{enumerate}\n";
     for(const_iterator i=begin(); i!=end(); i++)
     {
+      auto ldesc=i->second->description().toLaTeX();
+
+      result+="\\item ";
+      if (!ldesc.empty())
+        result+=ldesc+"\\\\";
       result+=
-      "\\item "
-	+i->second->description().toLaTeX()
-	+"\\\\\n"
-	+"\\textbf{"+SimpleLatex(i->first).toLaTeX()+"} = "
-	+i->second->latexRepresentation()
-	+"\n";
+          "\n"
+          "\\textbf{"+SimpleLatex(i->first).toLaTeX()+"} = "
+          +i->second->latexRepresentation()
+          +"\n";
     }
     result+="\\end{enumerate}\n";
   }

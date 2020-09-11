@@ -29,7 +29,7 @@
 
 #include <vector>
 
-#include "qwt_plot_curve.h"
+#include <QtCharts/QLineSeries>
 
 class IsofPlotTabularWindow : public QMainWindow
 {
@@ -40,7 +40,7 @@ class IsofPlotTabularWindow : public QMainWindow
     std::vector<boost::filesystem::path> files_;
     arma::mat data_;
 
-    std::vector<QwtPlotCurve*> curve_;
+    std::vector<QtCharts::QLineSeries*> curve_;
 
     void readFiles();
 

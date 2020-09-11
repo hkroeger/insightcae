@@ -8,5 +8,5 @@ casebuilder_test_OF(test_unsteadyCompressibleNumerics_rhoPimpleFoam     test_uns
 
 
 add_executable(test_remoteexecution test_remoteexecution.cpp)
-target_link_libraries(test_remoteexecution toolkit)
+linkToolkitVtk(test_remoteexecution Offscreen)
 add_test(NAME test_remoteexecution COMMAND test_remoteexecution)

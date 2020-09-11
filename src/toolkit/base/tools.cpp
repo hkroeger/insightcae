@@ -94,24 +94,32 @@ GlobalTemporaryDirectory::~GlobalTemporaryDirectory()
 
 
 
-CaseDirectory::CaseDirectory(const boost::filesystem::path& p)
-  : keep_(true)
+CaseDirectory::CaseDirectory(const boost::filesystem::path& p, bool keep)
+  : boost::filesystem::path(p),
+    keep_(keep),
+    isAutoCreated_(false)
 {
-  if (!p.empty())
-  {
-    boost::filesystem::path::operator=(p);
-  }
-  else
+  if (p.empty())
   {
     boost::filesystem::path::operator=(
           unique_path(timeCodePrefix() + "_analysis_%%%%")
           );
+    isAutoCreated_=true;
+    createDirectory();
   }
+  else if (!p.empty() && !fs::exists(p))
+  {
+    boost::filesystem::path::operator=(p);
+    isAutoCreated_=true;
+    createDirectory();
+  }
+
 }
 
 
 CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
-: keep_(keep)
+: keep_(keep),
+  isAutoCreated_(true)
 {
   if (getenv("INSIGHT_KEEPTEMPCASEDIR"))
     keep_=true;
@@ -133,6 +141,29 @@ CaseDirectory::~CaseDirectory()
 {
   if (!keep_)
     remove_all(*this);
+}
+
+bool CaseDirectory::isAutoCreated() const
+{
+  return isAutoCreated_;
+}
+
+bool CaseDirectory::isExistingAndWillBeRemoved() const
+{
+  return !keep_ && fs::exists(*this) && fs::is_directory(*this);
+}
+
+bool CaseDirectory::isExistingAndNotEmpty() const
+{
+  if (fs::exists(*this) && fs::is_directory(*this))
+  {
+    int n=0;
+    for (fs::directory_iterator di(*this);
+         di!=fs::directory_iterator(); ++di)
+      ++n;
+    return n>0;
+  }
+  return false;
 }
 
 void CaseDirectory::createDirectory()
@@ -284,7 +315,7 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
 
     lines->InitTraversal();
     vtkIdType npts=-1;
-    vtkIdType *pt=nullptr;
+    const vtkIdType *pt=nullptr;
     for (vtkIdType i=0; lines->GetNextCell(npts, pt); i++)
       {
 
@@ -320,7 +351,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     {
         lines->InitTraversal();
         vtkIdType npts=-1;
-        vtkIdType *pt=nullptr;
+        const vtkIdType *pt=nullptr;
         for (int i=0; lines->GetNextCell(npts, pt); i++)
           {
             if (npts==2)

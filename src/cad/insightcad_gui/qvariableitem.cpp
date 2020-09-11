@@ -23,7 +23,7 @@
 #include <string>
 #include <QMenu>
 
-#include "qoccviewercontext.h"
+//#include "qoccviewercontext.h"
 #include "boost/lexical_cast.hpp"
 
 using namespace std;

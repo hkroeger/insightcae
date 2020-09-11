@@ -1,9 +1,15 @@
 #include "solveroutputanalyzer.h"
 
+#include <memory>
+
 #include "base/progressdisplayer.h"
 #include "base/tools.h"
 #include "base/units.h"
 #include "base/boost_include.h"
+
+
+using namespace std;
+using namespace boost;
 
 namespace insight {
 
@@ -24,13 +30,17 @@ const std::string SolverOutputAnalyzer::pre_deltat="delta_t/";
 
 
 
-SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
-: pdisp_(pdisp),
+SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pd, double endTime)
+: OutputAnalyzer(&pd),
   curTime_(nan("NAN")),
   curforcename_(""),
   curforcesection_(1),
   currbname_("")
 {
+  solverActionProgress_ = std::make_shared<ActionProgress>
+      (
+        pd.forkNewAction(endTime, "Solver run")
+      );
 }
 
 
@@ -207,7 +217,7 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
             if (curTime_ == curTime_)
             {
-                pdisp_.update(
+                progress_->update(
                       ProgressState(
                         curTime_,
                         curProgVars_,
@@ -216,6 +226,8 @@ void SolverOutputAnalyzer::update(const std::string& line)
                       );
                 curProgVars_.clear();
                 curLog_.clear();
+
+                if (solverActionProgress_) solverActionProgress_->stepTo(curTime_);
             }
             curTime_=to_number<double>(match[1]);
 
@@ -267,8 +279,9 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
 bool SolverOutputAnalyzer::stopRun() const
 {
-  return pdisp_.stopRun();
+  return progress_->stopRun();
 }
+
 
 
 

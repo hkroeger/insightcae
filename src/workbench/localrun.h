@@ -8,6 +8,8 @@
 #include "base/progressdisplayer.h"
 #include "base/boost_include.h"
 
+#include "qanalysisthread.h"
+
 #include <memory>
 
 
@@ -17,13 +19,14 @@ class LocalRun
 {
   Q_OBJECT
 
-  boost::thread workerThread_;
   std::shared_ptr<insight::Analysis> analysis_;
   insight::ResultSetPtr results_;
+  insight::QAnalysisThread workerThread_;
 
 public:
   LocalRun(AnalysisForm *af);
   ~LocalRun();
+
 
 public Q_SLOTS:
   void onCancel() override;

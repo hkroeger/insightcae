@@ -348,9 +348,113 @@ SpeciesData::SpeciesData(const ParameterSet &ps)
 }
 
 
+SpeciesData::SpeciesData(
+    const std::string& name,
+    std::vector<std::pair<double, SpeciesData> > mixture
+    )
+  : name_(name)
+{
+  Parameters::properties_custom_type::thermo_janaf_type mixthermo;
+  std::fill(mixthermo.coeffs_hi.begin(), mixthermo.coeffs_hi.end(), 0.);
+  std::fill(mixthermo.coeffs_lo.begin(), mixthermo.coeffs_lo.end(), 0.);
+
+  Parameters::properties_custom_type::transport_sutherland_type mixtrans;
+  double mix_st_A=0.0;
+  mixtrans.Tref=0.0;
+
+  Parameters::properties_custom_type::elements_type elements;
+
+  double wtotal=0.0;
+
+  for (auto s=mixture.begin(); s!=mixture.end(); ++s)
+  {
+    auto sp=s->second.p_;
+
+    wtotal += s->first;
+
+    if (const auto *jt = boost::get<Parameters::properties_custom_type::thermo_janaf_type>(&sp.thermo))
+    {
+      if (s==mixture.begin())
+      {
+        mixthermo.Tlow=jt->Tlow;
+        mixthermo.Thi=jt->Thi;
+        mixthermo.Tmid=jt->Tmid;
+      }
+      else
+      {
+        mixthermo.Tlow=std::max(mixthermo.Tlow, jt->Tlow);
+        mixthermo.Thi=std::max(mixthermo.Thi, jt->Thi);
+
+        if (
+            (fabs(mixthermo.Tmid-jt->Tmid)>1e-3)
+            )
+          throw insight::Exception("Cannot lump species: middle temperature of janaf polynomials do not match for all species!");
+      }
+
+      insight::assertion(mixthermo.coeffs_lo.size()==jt->coeffs_lo.size(), "length of low temperature janaf coefficient arrays must match");
+      insight::assertion(mixthermo.coeffs_hi.size()==jt->coeffs_hi.size(), "length of high temperature janaf coefficient arrays must match");
+
+      for (size_t i=0; i<mixthermo.coeffs_lo.size(); i++)
+      {
+        mixthermo.coeffs_lo[i] += s->first * jt->coeffs_lo[i];
+        mixthermo.coeffs_hi[i] += s->first * jt->coeffs_hi[i];
+      }
+    }
+    else
+    {
+      throw insight::Exception("Can only lump mixtures which homogeneously use janaf polynomials.");
+    }
+
+    if (const auto *st = boost::get<Parameters::properties_custom_type::transport_sutherland_type>(&sp.transport))
+    {
+      mix_st_A += s->first * sutherland_As(st->mu, st->Tref);
+      mixtrans.Tref += s->first * st->Tref;
+    }
+    else
+    {
+      throw insight::Exception("Can only lump mixtures which homogeneously use sutherland transport.");
+    }
+
+    for (const auto& e: sp.elements)
+    {
+      double nj=e.number/s->first;
+
+      bool wasPresent=false;
+      for (auto& ee: elements)
+      {
+        if (ee.element==e.element)
+        {
+          ee.number += nj;
+          wasPresent=true;
+        }
+      }
+      if (!wasPresent)
+      {
+        Parameters::properties_custom_type::elements_default_type eee;
+        eee.element=e.element;
+        eee.number=nj;
+        elements.push_back(eee);
+      }
+    }
+
+  }
+
+  if (fabs(wtotal-1.0)>1e-3)
+    throw insight::Exception("The mass fraction of the species in the lumped mixture does not add to 1!");
+
+  p_.thermo=mixthermo;
+
+  mixtrans.mu = sutherland_mu(mix_st_A, mixtrans.Tref);
+  p_.transport=mixtrans;
+
+  p_.elements=elements;
+}
+
+
 double SpeciesData::M() const
 {
   double result=0;
+
   for(const auto& e: p_.elements)
   {
     auto ed = elements.find(e.element);
@@ -358,7 +462,7 @@ double SpeciesData::M() const
     if (ed==elements.end())
       throw insight::Exception("Unknown element "+e.element);
 
-    result += e.number*ed->second.M;
+    result += e.number * ed->second.M;
   }
 
   return result;
@@ -397,6 +501,16 @@ void SpeciesData::insertSpecieEntries(OFDictData::dict& d) const
   d["specie"]=specie;
 }
 
+std::pair<double,double> SpeciesData::temperatureLimits() const
+{
+  std::pair<double,double> mima(0, 1e10);
+  if (const auto *jt = boost::get<Parameters::properties_custom_type::thermo_janaf_type>(&p_.thermo))
+  {
+    mima.first=jt->Tlow;
+    mima.second=jt->Thi;
+  }
+  return mima;
+}
 
 void SpeciesData::insertThermodynamicsEntries(OFDictData::dict& d) const
 {
@@ -461,6 +575,7 @@ void SpeciesData::insertElementsEntries(OFDictData::dict& d) const
   }
   d["elements"]=elements;
 }
+
 
 
 
@@ -708,32 +823,45 @@ std::vector<std::string> detailedGasReactionThermodynamics::speciesNames() const
 {
   std::vector<std::string> sns;
 
-  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
-  {
-    std::transform(list->species.begin(), list->species.end(),
-                   std::back_inserter(sns),
-                   [](const Parameters::composition_fromList_type::species_default_type& e)
-                    {
-                      return e.name;
-                    }
-    );
-  }
-  else if (const auto * file = boost::get<Parameters::composition_fromFile_type>(&p_.composition))
-  {
-    std::istream& tf = (file->foamChemistryThermoFile)->stream();
+  std::transform(species_.begin(), species_.end(),
+                 std::back_inserter(sns),
+                 [](const SpeciesList::value_type& e)
+                  {
+                    return e.first;
+                  }
+  );
 
-    OFDictData::dict td;
-    readOpenFOAMDict(tf, td);
-    std::transform(td.begin(), td.end(),
-                   std::back_inserter(sns),
-                   [](const OFDictData::dict::value_type& tde)
-                    {
-                      return tde.first;
-                    }
-    );
-  }
+//  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+//  {
+//    std::transform(list->species.begin(), list->species.end(),
+//                   std::back_inserter(sns),
+//                   [](const Parameters::composition_fromList_type::species_default_type& e)
+//                    {
+//                      return e.name;
+//                    }
+//    );
+//  }
+//  else if (const auto * file = boost::get<Parameters::composition_fromFile_type>(&p_.composition))
+//  {
+//    std::istream& tf = (file->foamChemistryThermoFile)->stream();
+
+//    OFDictData::dict td;
+//    readOpenFOAMDict(tf, td);
+//    std::transform(td.begin(), td.end(),
+//                   std::back_inserter(sns),
+//                   [](const OFDictData::dict::value_type& tde)
+//                    {
+//                      return tde.first;
+//                    }
+//    );
+//  }
 
   return sns;
+}
+
+detailedGasReactionThermodynamics::SpeciesList detailedGasReactionThermodynamics::species() const
+{
+  return species_;
 }
 
 
@@ -751,6 +879,36 @@ detailedGasReactionThermodynamics::defaultComposition() const
   return defaultComposition;
 }
 
+
+
+void detailedGasReactionThermodynamics::removeSpecie(const std::string& name)
+{
+  auto s = species_.find(name);
+
+  if (s==species_.end())
+    throw insight::Exception("Specie "+name+" was not foound in the composition!");
+
+  if (const auto* sd = boost::get<SpeciesData>(&(s->second)))
+  {
+    species_.erase(s);
+  }
+  else
+  {
+    throw insight::Exception("Modfication of the species composition is only supported, if the fromFile option is not used!");
+  }
+}
+
+void detailedGasReactionThermodynamics::addSpecie(const std::string& name, SpeciesData d)
+{
+  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+  {
+    species_[name]=d;
+  }
+  else
+  {
+    throw insight::Exception("Modfication of the species composition is only supported, if the fromFile option is not used!");
+  }
+}
 
 
 std::string detailedGasReactionThermodynamics::getTransportType() const
@@ -814,6 +972,9 @@ detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
   p_(ps)
 {
 
+  // ====================================================================================
+  // ======== sanity check
+
   if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
   {
     if (list->species.size()<1)
@@ -837,6 +998,32 @@ detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
     getThermoType();
   }
 
+  // ====================================================================================
+  // ======== load composition
+
+  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+  {
+    for (const auto& l: list->species)
+    {
+      species_[l.name]=SpeciesData(l);
+    }
+  }
+  else if (const auto * file = boost::get<Parameters::composition_fromFile_type>(&p_.composition))
+  {
+    std::istream& tf = (file->foamChemistryThermoFile)->stream();
+
+    OFDictData::dict td;
+    readOpenFOAMDict(tf, td);
+    for (auto de=td.begin(); de!=td.end(); ++de)
+    {
+      species_[de->first]=boost::blank();
+    }
+  }
+}
+
+
+void detailedGasReactionThermodynamics::addFields(OpenFOAMCase &c) const
+{
   c.addField("Ydefault", FieldInfo(scalarField, 	dimless, 	FieldValue({0.0}), volField ) );
 
   auto dc=defaultComposition();
@@ -856,9 +1043,7 @@ void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionarie
   const FVNumerics* nce = OFcase().get<FVNumerics>("FVNumerics");
 
   std::string ttn;
-  if (
-      const auto *rfn = dynamic_cast<const reactingFoamNumerics*>(nce)
-      )
+  if ( const auto *rfn = dynamic_cast<const reactingFoamNumerics*>(nce) )
   {
     if (rfn->parameters().buoyancy)
     {
@@ -938,18 +1123,17 @@ void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionarie
 
     if (OFversion()>=200)
     {
-      if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+      for (const auto& s: species_)
       {
-        for (const auto& s: list->species)
-        {
-          OFDictData::dict tsd;
-          SpeciesData sd(s);
-          sd.insertSpecieEntries(tsd);
-          sd.insertThermodynamicsEntries(tsd);
-          sd.insertTransportEntries(tsd);
-          sd.insertElementsEntries(tsd);
-          td[s.name]=tsd;
-        }
+        auto name = s.first;
+        auto sd = boost::get<SpeciesData>(s.second);
+
+        OFDictData::dict tsd;
+        sd.insertSpecieEntries(tsd);
+        sd.insertThermodynamicsEntries(tsd);
+        sd.insertTransportEntries(tsd);
+        sd.insertElementsEntries(tsd);
+        td[name]=tsd;
       }
     }
 
@@ -1024,6 +1208,7 @@ void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionarie
 SpeciesData::SpeciesLibrary SpeciesData::speciesLibrary_;
 
 SpeciesData::SpeciesLibrary::SpeciesLibrary()
+
 {
   using namespace boost::filesystem;
 

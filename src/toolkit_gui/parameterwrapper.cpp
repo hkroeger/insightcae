@@ -34,6 +34,9 @@
 #include <QInputDialog>
 #include <QTextEdit>
 #include <QMessageBox>
+#include <QPainter>
+#include <QProcess>
+#include <QDesktopServices>
 
 #include "helpwidget.h"
 

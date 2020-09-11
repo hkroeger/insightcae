@@ -24,7 +24,7 @@
 #include <QTreeWidgetItem>
 
 #include "viewstate.h"
-#include "qoccviewercontext.h"
+//#include "qoccviewercontext.h"
 #include "iscadmetatyperegistrator.h"
 
 #ifndef Q_MOC_RUN

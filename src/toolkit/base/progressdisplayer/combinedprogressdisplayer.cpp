@@ -19,9 +19,42 @@ void CombinedProgressDisplayer::add ( ProgressDisplayer* d )
 
 void CombinedProgressDisplayer::update ( const ProgressState& pi )
 {
-    for ( ProgressDisplayer* d: displayers_ ) {
+    for (auto* d: displayers_)
+    {
         d->update ( pi );
     }
+}
+
+void CombinedProgressDisplayer::setActionProgressValue(const string &path, double value)
+{
+  for (auto* d: displayers_)
+  {
+      d->setActionProgressValue (path, value );
+  }
+}
+
+void CombinedProgressDisplayer::setMessageText(const string &path, const string &message)
+{
+  for (auto* d: displayers_)
+  {
+      d->setMessageText ( path, message );
+  }
+}
+
+void CombinedProgressDisplayer::finishActionProgress(const string &path)
+{
+  for (auto* d: displayers_)
+  {
+      d->finishActionProgress ( path );
+  }
+}
+
+void CombinedProgressDisplayer::reset()
+{
+  for (auto* d: displayers_)
+  {
+      d->reset();
+  }
 }
 
 

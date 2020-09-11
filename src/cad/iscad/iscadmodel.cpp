@@ -620,8 +620,7 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     QSplitter *spl=new QSplitter(Qt::Horizontal);
     layout->addWidget(spl);
 
-    context_=new QoccViewerContext;
-    viewer_=new QoccViewWidget(spl, context_->getContext());
+    viewer_=new QoccViewWidget(this);
     viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     spl->addWidget(viewer_);
     

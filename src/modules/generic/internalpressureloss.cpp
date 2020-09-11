@@ -24,7 +24,7 @@
 #include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh.h"
 #include "openfoam/snappyhexmesh.h"
-#include "openfoam/paraview.h"
+#include "base/vtkrendering.h"
 
 #include "openfoam/caseelements/numerics/meshingnumerics.h"
 #include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
@@ -38,6 +38,11 @@
 #include "cadfeatures.h"
 #include "cadfeatures/stl.h"
 #include "datum.h"
+
+#include "vtkPointSource.h"
+#include "vtkStreamTracer.h"
+#include "vtkDataSetMapper.h"
+#include "vtkPolyDataMapper.h"
 
 using namespace std;
 using namespace boost;
@@ -67,20 +72,12 @@ InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::
 
 
 
-//void extendBB(arma::mat& bb, const arma::mat& bb2)
-//{
-//  for (arma::uword i=0; i<3; i++)
-//  {
-//   bb(i,0)=std::min(bb(i,0), bb2(i,0));
-//   bb(i,1)=std::max(bb(i,1), bb2(i,1));
-//  }
-//}
 
-void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& progress)
+void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& prg)
 {
-    insight::OpenFOAMAnalysis::calcDerivedInputData(progress);
+    insight::OpenFOAMAnalysis::calcDerivedInputData(prg);
+
     Parameters p(parameters_);
-    //reportIntermediateParameter("L", L_, "total domain length", "m");
 
     inletstlfile_=executionPath()/"constant"/"triSurface"/"inlet.stlb";
     outletstlfile_=executionPath()/"constant"/"triSurface"/"outlet.stlb";
@@ -91,6 +88,8 @@ void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& progress)
     // * Domain BB
     // * Inlet hydraulic diam.
     
+
+    prg.message("Analyzing geometry...");
     if ( const Parameters::geometry_STEP_type* geom_cad =
          boost::get<Parameters::geometry_STEP_type>(&p.geometry) )
       {
@@ -166,7 +165,7 @@ void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& progress)
 
 
 
-void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
+void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pp)
 {
     Parameters p(parameters_);
 
@@ -179,7 +178,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
     bmd->setDefaultPatch("walls", "wall");
 
     double eps=0.01*arma::min(bb_.col(1)-bb_.col(0));
-    std::map<int, Point> pt = boost::assign::map_list_of
+    std::map<int, bmd::Point> pt = boost::assign::map_list_of
           (0, 	vec3(bb_(0,0)-eps, bb_(1,0)-eps, bb_(2,0)-eps))
           (1, 	vec3(bb_(0,1)+eps, bb_(1,0)-eps, bb_(2,0)-eps))
           (2, 	vec3(bb_(0,1)+eps, bb_(1,1)+eps, bb_(2,0)-eps))
@@ -188,7 +187,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
           (5, 	vec3(bb_(0,1)+eps, bb_(1,0)-eps, bb_(2,1)+eps))
           (6, 	vec3(bb_(0,1)+eps, bb_(1,1)+eps, bb_(2,1)+eps))
           (7, 	vec3(bb_(0,0)-eps, bb_(1,1)+eps, bb_(2,1)+eps))
-          .convert_to_container<std::map<int, Point> >()
+          .convert_to_container<std::map<int, bmd::Point> >()
           ;
 
     // create patches
@@ -203,9 +202,10 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
 		      )
 	);
     }
+    int nb=bmd->nBlocks();
     cm.insert(bmd.release());
     cm.createOnDisk(executionPath());
-    cm.executeCommand(executionPath(), "blockMesh");
+    cm.runBlockMesh(executionPath(), nb, &pp);
 
 
     create_directory(wallstlfile_.parent_path());
@@ -306,8 +306,10 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
     
     snappyHexMesh
     (
-      cm, executionPath(),
-      shm_cfg
+          cm, executionPath(),
+          shm_cfg,
+          true, false, false,
+          &pp
     );
 
 
@@ -318,7 +320,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
 }
 
 
-void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
+void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer&)
 {
     Parameters p(parameters_);
     
@@ -366,13 +368,18 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 }
 
 
-ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
+ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& pp)
 {
     Parameters p(parameters_);
-    ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, progress);
+    ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, pp);
 
+    auto ap = pp.forkNewAction(8, "Evaluation");
+
+    ap.message("Computing average surface pressure...");
     arma::mat p_vs_t = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), "inlet_pressure");
+  ++ap;
 
+    ap.message("Producing convergence history plot...");
     addPlot
     (
       results, executionPath(), "chartPressureDifference",
@@ -382,64 +389,150 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       },
       "Plot of pressure difference between inlet and outlet vs. iterations"
     );
+  ++ap;
 
     double delta_p=p_vs_t(p_vs_t.n_rows-1,1)*p.fluid.rho;
     ptr_map_insert<ScalarResult>(*results) ("delta_p", delta_p, "Pressure difference", "", "Pa");
 
+    ap.message("Rendering images...");
     {
-      using namespace insight::paraview;
-      ParaviewVisualization::Parameters pvp;
+      // A renderer and render window
+      OpenFOAMCaseScene scene( executionPath()/"system"/"controlDict" );
+
+      auto patches = scene.patches("wall.*");
+      auto im = scene.internalMesh();
+
+      FieldSelection sl_field("p", FieldSupport::Point, -1);
+      auto sl_range=calcRange(sl_field, {patches}, {});
+      auto sl_cm=createColorMap();
+      FieldColor sl_fc(sl_field, sl_cm, sl_range);
 
       double Lmax=p.geometryscale*arma::as_scalar(arma::max(L_));
       arma::mat ctr=p.geometryscale*( bb_.col(1) + bb_.col(0) )*0.5;
 
-      paraview::Streamtracer::Parameters::seed_cloud_type cloud;
-      cloud.center=p.mesh.PiM *p.geometryscale;
-      cloud.number=500;
-      cloud.radius=0.5*arma::norm(L_,2);
+      {
+        auto seeds = vtkSmartPointer<vtkPointSource>::New();
+        seeds->SetCenter(toArray(p.mesh.PiM *p.geometryscale));
+        seeds->SetRadius(0.5*arma::norm(L_,2));
+        seeds->SetDistributionToUniform();
+        seeds->SetNumberOfPoints(500);
 
-      pvp.scenes = {
-        PVScenePtr(new IsoView(IsoView::Parameters()
-                .set_bbmin(p.geometryscale*bb_.col(0))
-                .set_bbmax(p.geometryscale*bb_.col(1))
-                .set_imagename("streamlines")
-                .set_sceneElements({
-                  PVScriptElementPtr(new CustomScriptElement(CustomScriptElement::Parameters()
-                          .set_command(
-                             "import numpy as np\n"
+        auto st = vtkSmartPointer<vtkStreamTracer>::New();
+        st->SetInputData(im);
+        st->SetSourceConnection(seeds->GetOutputPort());
+        st->SetMaximumPropagation(10.*Lmax);
+        st->SetIntegrationDirectionToBoth();
+        st->SetInputArrayToProcess(
+              0, 0, 0,
+              vtkDataObject::FIELD_ASSOCIATION_POINTS,
+              "U");
 
-                             "eb=extractPatches(openfoam_case, 'wall.*')\n"
-                             "displaySolid(eb, 0.1)\n"
-                          )
-                          .set_names({"eb"})
-                        )),
-                  PVScriptElementPtr(new Streamtracer(paraview::Streamtracer::Parameters()
-                          .set_seed(cloud)
-                          .set_dataset(ParaviewVisualization::OFCaseDatasetName()+"[0]")
-                          .set_field("U")
-                          .set_maxLen(10.*Lmax)
-                          .set_name("st")
-                        ))
-                })
-        )),
+        st->Update();
+        scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
+      }
 
-        PVScenePtr(new IsoView(IsoView::Parameters()
-                .set_bbmin(p.geometryscale*bb_.col(0))
-                .set_bbmax(p.geometryscale*bb_.col(1))
-                .set_imagename("pressureContour")
-                .set_sceneElements({
-                  PVScriptElementPtr(new CustomScriptElement(CustomScriptElement::Parameters()
-                        .set_command(
-                            "Hide(st)\n"
-                            "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.8, 0.25], barorient=1, opacity=1.)\n"
-                        )
-                        .set_names({"eb"})
-                  ))
-                })
-        ))
-      };
+      scene.addData<vtkPolyDataMapper>(patches, vec3(0.9, 0.9, 0.9));
 
-      results->insert ( "renderings", ParaviewVisualization(pvp, executionPath())() );
+      auto camera = scene.activeCamera();
+      camera->ParallelProjectionOn();
+
+      camera->SetFocalPoint( toArray(ctr) );
+
+      {
+        camera->SetViewUp( toArray(vec3(0,0,1)) );
+        camera->SetPosition( toArray(ctr+10.*vec3(-L_[0],-L_[1],L_[2])) );
+
+        auto img = executionPath() / "streamLines_diag.png";
+  //      scene.fitAll();
+        double f=sqrt(2.);
+        scene.setParallelScale(std::pair<double,double>(
+                                 std::max(f*L_[0], f*L_[1]),
+                                 std::max(f*L_[0], f*L_[2])
+                                 ));
+        scene.exportImage(img);
+        results->insert(img.filename().stem().string(),
+          std::unique_ptr<Image>(new Image
+          (
+          executionPath(), img.filename(),
+          "Stream lines (isometric view)", ""
+        )));
+      }
+    ++ap;
+
+      scene.clearScene();
+
+      scene.addData<vtkDataSetMapper>(patches, sl_fc);
+      scene.addColorBar("Pressure\n[m^2/s^2]", sl_cm);
+
+      {
+        camera->SetViewUp( toArray(vec3(0,0,1)) );
+        camera->SetPosition( toArray(ctr+10.*vec3(-L_[0],-L_[1],L_[2])) );
+
+        auto img = executionPath() / "pressure_diag.png";
+  //      scene.fitAll();
+        double f=sqrt(2.);
+        scene.setParallelScale(std::pair<double,double>(
+                                 std::max(f*L_[0], f*L_[1]),
+                                 std::max(f*L_[0], f*L_[2])
+                                 ));
+        scene.exportImage(img);
+        results->insert(img.filename().stem().string(),
+          std::unique_ptr<Image>(new Image
+          (
+          executionPath(), img.filename(),
+          "Pressure (isometric view)", ""
+        )));
+      }
+    ++ap;
+
+      {
+        camera->SetViewUp( toArray(vec3(0,0,1)) );
+        camera->SetPosition( toArray(ctr+10.*vec3(L_[0],0,0)) );
+
+        auto img = executionPath() / "streamLines_front.png";
+        scene.setParallelScale(std::pair<double,double>( L_[1], L_[2]));
+        scene.exportImage(img);
+        results->insert(img.filename().stem().string(),
+          std::unique_ptr<Image>(new Image
+          (
+          executionPath(), img.filename(),
+          "Stream lines (front view)", ""
+        )));
+      }
+    ++ap;
+
+      {
+        camera->SetViewUp( toArray(vec3(0,0,1)) );
+        camera->SetPosition( toArray(ctr+10.*vec3(0,L_[1],0)) );
+
+        auto img = executionPath() / "streamLines_side.png";
+        scene.setParallelScale(std::pair<double,double>( L_[0], L_[2]));
+        scene.exportImage(img);
+        results->insert(img.filename().stem().string(),
+          std::unique_ptr<Image>(new Image
+          (
+          executionPath(), img.filename(),
+          "Stream lines (side view)", ""
+        )));
+      }
+    ++ap;
+
+      {
+        camera->SetViewUp( toArray(vec3(0,-1,0)) );
+        camera->SetPosition( toArray(ctr+10.*vec3(0,0,L_[2])) );
+
+        auto img = executionPath() / "streamLines_top.png";
+        scene.setParallelScale(std::pair<double,double>( L_[0], L_[1]));
+        scene.exportImage(img);
+        results->insert(img.filename().stem().string(),
+          std::unique_ptr<Image>(new Image
+          (
+          executionPath(), img.filename(),
+          "Stream lines (top view)", ""
+        )));
+      }
+    ++ap;
+
     }
     
     return results;

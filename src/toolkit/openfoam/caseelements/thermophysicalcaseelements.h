@@ -111,6 +111,8 @@ public:
     double M;
   };
 
+  typedef std::vector<std::pair<double, SpeciesData> > SpeciesMixture;
+
   // from https://www.qmul.ac.uk/sbcs/iupac/AtWt/
   static const std::map<std::string, SpeciesData::ElementData> elements;
 
@@ -175,7 +177,7 @@ properties = selectablesubset {{
 
     elements = array [ set {
      element = string "N" "Name of the element"
-     number = int 2 "Number of atoms per molecule"
+     number = double 2 "Number of atoms per molecule. May be a fraction, if the specie represents a mixture."
      } ] *1 "Elemental composition"
 
    }
@@ -201,6 +203,10 @@ protected:
 
 public:
   SpeciesData(const ParameterSet& ps);
+  SpeciesData(
+      const std::string& name,
+      SpeciesMixture mixture
+      );
 
   double M() const;
 
@@ -211,7 +217,12 @@ public:
   void insertThermodynamicsEntries(OFDictData::dict& d) const;
   void insertTransportEntries(OFDictData::dict& d) const;
   void insertElementsEntries(OFDictData::dict& d) const;
+
+  std::pair<double,double> temperatureLimits() const;
 };
+
+
+
 
 
 class compressibleSinglePhaseThermophysicalProperties
@@ -313,11 +324,15 @@ class detailedGasReactionThermodynamics
 {
 
 public:
-  typedef std::map<std::string, SpeciesData> SpeciesList;
+  typedef std::map<std::string, boost::variant<boost::blank,SpeciesData> > SpeciesList;
   typedef std::map<std::string, double> SpeciesMassFractionList;
 
   std::vector<std::string> speciesNames() const;
+  SpeciesList species() const;
   SpeciesMassFractionList defaultComposition() const;
+
+  void removeSpecie(const std::string& name);
+  void addSpecie(const std::string& name, SpeciesData d);
 
 protected:
   std::string getTransportType() const;
@@ -373,10 +388,13 @@ combustionModel = selectablesubset {{
 
 protected:
   Parameters p_;
-  
+  SpeciesList species_;
+
 public:
   detailedGasReactionThermodynamics(OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault());
+  void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
+
 };
 
 

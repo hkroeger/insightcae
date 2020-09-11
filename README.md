@@ -53,7 +53,6 @@ License
 
 The project is licensed under the [version 2 of the GNU General Public License](http://www.gnu.org/licenses/old-licenses/gpl-2.0.html).
 
-
 Release Cycle
 -------------
 

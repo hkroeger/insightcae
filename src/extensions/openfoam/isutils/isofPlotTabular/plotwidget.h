@@ -27,10 +27,9 @@
 
 #include "base/linearalgebra.h"
 
-#include "qwt_scale_engine.h"
-#include "qwt_plot_grid.h"
-#include "qwt_legend.h"
-#include "qwt_plot_curve.h"
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
 
 namespace Ui {
   class PlotWidget;
@@ -68,13 +67,15 @@ public Q_SLOT:
   void onShow();
   void onMeanAvgFractionChange(double x=0);
   void onMeanDataReady(arma::mat meandata);
-  void onChangeXRange(const QString& x0, const QString& x1);
+  void onChangeXRange(const QString& x0="", const QString& x1="");
   void onToggleY0(bool);
 
 private:
   Ui::PlotWidget *ui;
-  QwtPlot* plot_;
-  QwtPlotCurve *raw_crv_, *mean_crv_;
+
+  QtCharts::QChartView* plot_;
+  QtCharts::QChart* plotData_;
+  QtCharts::QLineSeries *raw_crv_, *mean_crv_;
 };
 
 #endif // PLOTWIDGET_H

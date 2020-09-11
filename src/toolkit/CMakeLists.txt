@@ -19,7 +19,6 @@
 #
 
 project(toolkit)
-#find_package(Boost COMPONENTS filesystem regex date_time thread REQUIRED)
 
 set(toolkit_SOURCES
     base/toolkitversion.cpp
@@ -49,6 +48,7 @@ set(toolkit_SOURCES
     base/remoteserverlist.cpp
     base/taskspoolerinterface.cpp
     base/mountremote.cpp
+    base/outputanalyzer.cpp
 
     base/progressdisplayer.cpp
 
@@ -90,6 +90,8 @@ set(toolkit_SOURCES
     openfoam/paraview.cpp
     openfoam/stretchtransformation.cpp
     openfoam/solveroutputanalyzer.cpp
+    openfoam/blockmeshoutputanalyzer.cpp
+    openfoam/snappyhexmeshoutputanalyzer.cpp
     openfoam/ofdicts.cpp
 
 
@@ -122,6 +124,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/basic/copyfiles.cpp
     openfoam/caseelements/basic/srfoption.cpp
     openfoam/caseelements/basic/providefields.cpp
+    openfoam/caseelements/basic/rangeweightfield.cpp
 
     openfoam/caseelements/numerics/pimplesettings.cpp
     openfoam/caseelements/numerics/fvnumerics.cpp
@@ -194,37 +197,29 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
   )
 ENDIF()
 
-#find_package(VTK COMPONENTS
-#    vtkFiltersCore
-#    vtkFiltersGeneral
-#    vtkFiltersSources
-#    vtkCommonCore
-#    vtkIOLegacy
-#    vtkIOGeometry
-#    vtkIOExport
-#    vtkIOImage
-#    vtkIOXML
-#    vtkImagingCore
-#    vtkRenderingOpenGL2
-#    vtkRenderingAnnotation
-#    vtkFiltersExtraction
-#    REQUIRED
-#)
+
 find_package(OpenSSL)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
 
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
-#include(${VTK_USE_FILE})
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
-target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} 
-	GSL::gsl GSL::gslcblas
-	OpenSSL::SSL 
-	${VTK_LIBRARIES}
-	)
+#set_target_properties(toolkit PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
 
-target_include_directories(toolkit 
-  PUBLIC ${VTK_INCLUDE_DIRS}
+target_link_libraries(toolkit
+    ${PYTHON_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${ARMADILLO_LIBRARY}
+    PkgConfig::poppler-cpp
+    GSL::gsl GSL::gslcblas
+    OpenSSL::SSL
+    vtkHeaders
+)
+
+target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}

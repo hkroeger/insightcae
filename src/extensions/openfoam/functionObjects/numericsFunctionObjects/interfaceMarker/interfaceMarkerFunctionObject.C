@@ -19,7 +19,6 @@
  */
 
 #include "interfaceMarkerFunctionObject.H"
-#include <boost/graph/graph_concepts.hpp>
 #include "fvCFD.H"
 #if OF_VERSION>=010700 //ndef OF16ext
 #include "fvcSmooth.H"

@@ -36,7 +36,14 @@
 
 #include "openfoam/caseelements/analysiscaseelements.h"
 
+#include "base/vtkrendering.h"
+#include "vtkDataSetMapper.h"
+#include "vtkStreamTracer.h"
+#include "vtkPointSource.h"
+#include "vtkPolyDataMapper.h"
+
 #include "cadfeatures.h"
+#include "openfoam/blockmeshoutputanalyzer.h"
 
 using namespace arma;
 using namespace std;
@@ -60,14 +67,12 @@ void NumericalWindtunnel::modifyDefaults(ParameterSet& p)
 
 NumericalWindtunnel::NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis("Numerical Wind Tunnel", "", ps, exepath)
-{
-
-}
+{}
 
 
 boost::mutex mtx;
 
-void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& progress)
+void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& parentProgresss)
 {
   CurrentExceptionContext ex("computing further preprocessing informations");
 
@@ -96,9 +101,11 @@ void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& progress)
 
   arma::mat bb; // bounding box in SI, rotated to wind tunnel CS
 
+  parentProgresss.message("Getting geometry file"); // extraction may take place now
   std::string geom_file_ext = p.geometry.objectfile->fileName().extension().string();
   boost::to_lower(geom_file_ext);
 
+  parentProgresss.message("Loading geometry file, computing bounding box");
   if (geom_file_ext==".stl" || geom_file_ext==".stlb")
   {
     vtk_ChangeCS trsf(
@@ -148,7 +155,7 @@ void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& progress)
 
 
 
-void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
+void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentProgress)
 {
   path dir = executionPath();
   Parameters p(parameters_);
@@ -198,7 +205,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   Patch& floor = 	bmd->addPatch("floor", new Patch("wall"));
 
   // points in cross section
-  std::map<int, Point> pts = boost::assign::map_list_of       
+  std::map<int, bmd::Point> pts = boost::assign::map_list_of
 	(0, 	vec3( -Lupstream, 0, 0))
 	(1, 	vec3( 0, 0, 0))
         (2, 	vec3( l_, 0, 0))
@@ -330,10 +337,11 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
     }
   }
   
+  int nb=bmd->nBlocks();
   cm.insert(bmd.release());
   
   cm.createOnDisk(executionPath());
-  cm.executeCommand(executionPath(), "blockMesh");  
+  cm.runBlockMesh(executionPath(), nb, &parentProgress);
     
   create_directory(objectSTLFile.parent_path());
 
@@ -429,7 +437,9 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   snappyHexMesh
   (
     cm, executionPath(),
-    shm_cfg
+    shm_cfg,
+    true, false, false,
+    &parentProgress
   );
 
   
@@ -440,7 +450,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
 
 
 
-void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
+void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer&)
 {
   Parameters p(parameters_);
 
@@ -506,11 +516,13 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
 
 
 
-ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
+ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& pp)
 {
   Parameters p(parameters_);
   
-  ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, progress);
+  ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, pp);
+
+  auto ap = pp.forkNewAction(13, "Evaluation");
   
   // get full name of car patch (depends on STL file)
   OFDictData::dict boundaryDict;
@@ -525,120 +537,273 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
     }
   }
 
+  ap.message("Computing projected area");
   arma::mat Ah=projectedArea(cm, executionPath(), 
     vec3(1,0,0),
     list_of<std::string>("object")
   );
   double A=Ah(Ah.n_rows-1,1);
+++ap;
 
   
   double Re=p.operation.v*Lref_/p.fluid.nu;
   ptr_map_insert<ScalarResult>(*results) ("Re", Re, "Reynolds number", "", "");
   ptr_map_insert<ScalarResult>(*results) ("Afront", A, "Projected frontal area", "", "$m^2$");
     
+  ap.message("Reading forces");
   arma::mat f=forces::readForces(cm, executionPath(), "forces");
   arma::mat t = f.col(0);
+++ap;
   
   double mult = p.mesh.longitudinalSymmetry ? 2.0 : 1.0;
 
   arma::mat Rtot = (f.col(1)+f.col(4)) *mult;
-  arma::mat Rtlat = (f.col(2)+f.col(5)) *mult;
-  arma::mat At = (f.col(3)+f.col(6)) *mult;
+  arma::mat Flat = (f.col(2)+f.col(5)) *mult;
+  arma::mat L = (f.col(3)+f.col(6)) *mult;
   
   ptr_map_insert<ScalarResult>(*results) ("Rtot", Rtot(Rtot.n_rows-1), "Total resistance", "", "N");
-  ptr_map_insert<ScalarResult>(*results) ("Rtlat", Rtlat(Rtlat.n_rows-1), "Lateral force", "", "N");
-  ptr_map_insert<ScalarResult>(*results) ("At", At(At.n_rows-1), "Lifting force", "", "N");
+  ptr_map_insert<ScalarResult>(*results) ("Flat", Flat(Flat.n_rows-1), "Lateral force", "", "N");
+  ptr_map_insert<ScalarResult>(*results) ("L", L(L.n_rows-1), "Lifting force", "", "N");
 
-  double cw=Rtot(Rtot.n_rows-1) / (0.5*p.fluid.rho*pow(p.operation.v,2)*A);
-  ptr_map_insert<ScalarResult>(*results) ("cw", cw, "Resistance coefficient", "", "");
+  double cr=Rtot(Rtot.n_rows-1) / (0.5*p.fluid.rho*pow(p.operation.v,2)*A);
+  ptr_map_insert<ScalarResult>(*results) ("cr", cr, "Resistance coefficient", "", "");
   
-  double ca=At(At.n_rows-1) / (0.5*p.fluid.rho*pow(p.operation.v,2)*A);
-  ptr_map_insert<ScalarResult>(*results) ("ca", ca, "Lifting coefficient", "with respect to projected frontal area and forward velocity", "");
+  double cl=L(L.n_rows-1) / (0.5*p.fluid.rho*pow(p.operation.v,2)*A);
+  ptr_map_insert<ScalarResult>(*results) ("cl", cl, "Lifting coefficient", "with respect to projected frontal area and forward velocity", "");
 
-  double cl=Rtlat(Rtlat.n_rows-1) / (0.5*p.fluid.rho*pow(p.operation.v,2)*A);
-  ptr_map_insert<ScalarResult>(*results) ("cl", cl, "Lateral forces coefficient", "with respect to projected frontal area and forward velocity", "");
+  double cs=Flat(Flat.n_rows-1) / (0.5*p.fluid.rho*pow(p.operation.v,2)*A);
+  ptr_map_insert<ScalarResult>(*results) ("cs", cs, "Lateral forces coefficient", "with respect to projected frontal area and forward velocity", "");
 
   double Pe=Rtot(Rtot.n_rows-1) * p.operation.v;
-  ptr_map_insert<ScalarResult>(*results) ("Pe", Pe, "Effective power", "", "W");
+  ptr_map_insert<ScalarResult>(*results) ("Pe", Pe, "Effective power $P_e=R_{tot} v$", "", "W");
 
+  ap.message("Creating resistance plot");
   // Resistance convergence
   addPlot
   (
     results, executionPath(), "chartResistance",
     "Iteration", "F [N]",
     {
-      PlotCurve( arma::mat(join_rows(t, Rtot)),  "Fdtot", "w l lw 2 t 'Total resistance'"),
-      PlotCurve( arma::mat(join_rows(t, Rtlat)), "Flat", "w l lw 2 t 'Lateral force'"),
-      PlotCurve( arma::mat(join_rows(t, At)),    "FLift", "w l lw 2 t 'Lifting force'")
+      PlotCurve( arma::mat(join_rows(t, Rtot)),  "Rtot", "w l lw 2 t 'Total resistance'"),
+      PlotCurve( arma::mat(join_rows(t, Flat)), "Flat", "w l lw 2 t 'Lateral force'"),
+      PlotCurve( arma::mat(join_rows(t, L)),    "L", "w l lw 2 t 'Lifting force'")
     },
     "Convergence history of resistance force"
   );    
-  
+++ap;
 
-
+  ap.message("Rendering images");
   {
-    using namespace insight::paraview;
+    // A renderer and render window
+    OpenFOAMCaseScene scene( executionPath()/"system"/"controlDict" );
 
-    Streamtracer::Parameters::seed_cloud_type cloud1, cloud2;
-    cloud1.radius=cloud2.radius=0.2*Lref_;
-    cloud1.number=cloud2.number=500;
-    cloud1.center=vec3(0.5*l_, 0.5*w_, 0.5*h_);
-    cloud2.center=vec3(0.5*l_, -0.5*w_, 0.5*h_);
+    auto patches = scene.patches("object.*|floor.*");
 
-    ParaviewVisualization::Parameters pvp;
+    FieldSelection sl_field("p", FieldSupport::Point, -1);
+    auto sl_range=calcRange(sl_field, {patches}, {});
+    auto sl_cm=createColorMap();
+    FieldColor sl_fc(sl_field, sl_cm, sl_range);
 
-    pvp.scenes = {
+    scene.addData<vtkDataSetMapper>(patches, sl_fc);
+    scene.addColorBar("Pressure\n[m^2/s^2]", sl_cm);
 
-      PVScenePtr(new IsoView(IsoView::Parameters()
-              .set_bbmin(vec3(0, -0.5*w_, 0))
-              .set_bbmax(vec3(l_, 0.5*w_, h_))
-              .set_e_ax(vec3(-1,0,0))
-              .set_sceneElements({
+    auto camera = scene.activeCamera();
+    camera->ParallelProjectionOn();
 
-                PVScriptElementPtr(new CustomScriptElement(CustomScriptElement::Parameters()
-                  .set_command(
-                     "obj=extractPatches("+ParaviewVisualization::OFCaseDatasetName()+", 'object.*')\n"
-                     "floor=extractPatches("+ParaviewVisualization::OFCaseDatasetName()+", 'floor.*')\n"
-                     "displayContour(obj, 'p', arrayType='CELL_DATA')\n"
-                     "displaySolid(floor, 0.1)\n"
-                  )
-                  .set_names({"obj", "floor"})
-                ))
+    auto viewctr=vec3(0.5*l_, 0, 0.5*h_);
+    camera->SetFocalPoint( toArray(viewctr) );
 
-              })
-              .set_imagename("pressureContour")
-            )),
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+vec3(-10.0*l_,0,0)) );
 
-      PVScenePtr(new IsoView(IsoView::Parameters()
-              .set_bbmin(vec3(0, -0.5*w_, 0))
-              .set_bbmax(vec3(l_, 0.5*w_, h_))
-              .set_e_ax(vec3(-1,0,0))
-              .set_sceneElements({
+      auto img = executionPath() / "pressureContour_front.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(w_, h_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Pressure contour (front view)", ""
+      )));
+    }
+  ++ap;
 
-                PVScriptElementPtr(new Streamtracer(Streamtracer::Parameters()
-                  .set_seed(cloud1)
-                  .set_dataset(ParaviewVisualization::OFCaseDatasetName()+"[0]")
-                  .set_field("U")
-                  .set_maxLen(10.*Lref_)
-                  .set_name("st1")
-                )),
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+vec3(0,-10.0*w_,0)) );
 
-                PVScriptElementPtr(new Streamtracer(Streamtracer::Parameters()
-                  .set_seed(cloud2)
-                  .set_dataset(ParaviewVisualization::OFCaseDatasetName()+"[0]")
-                  .set_field("U")
-                  .set_maxLen(10.*Lref_)
-                  .set_name("st2")
-                ))
+      auto img = executionPath() / "pressureContour_side.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(l_, h_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Pressure contour (side view)", ""
+      )));
+    }
+  ++ap;
 
-              })
-              .set_imagename("streamlines")
-            ))
-    };
+    {
+      camera->SetViewUp( toArray(vec3(0,1,0)) );
+      camera->SetPosition( toArray(viewctr+vec3(0,0,10.0*h_)) );
 
-    results->insert ( "renderings", ParaviewVisualization(pvp, executionPath())() );
+      auto img = executionPath() / "pressureContour_top.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(l_, w_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Pressure contour (top view)", ""
+      )));
+    }
+  ++ap;
+
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+10.*vec3(-l_,-w_,h_)) );
+
+      auto img = executionPath() / "pressureContour_diag.png";
+//      scene.fitAll();
+      double f=sqrt(2.);
+      scene.setParallelScale(std::pair<double,double>(
+                               std::max(f*l_, f*w_),
+                               std::max(f*l_, f*h_)
+                               ));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Pressure contour (isometric view)", ""
+      )));
+    }
+  ++ap;
+
+    auto im = scene.internalMesh();
+
+    {
+      auto seeds = vtkSmartPointer<vtkPointSource>::New();
+      seeds->SetCenter(toArray(vec3(0.5*l_, 0.5*w_, 0.5*h_)));
+      seeds->SetRadius(0.2*Lref_);
+      seeds->SetDistributionToUniform();
+      seeds->SetNumberOfPoints(100);
+
+      auto st = vtkSmartPointer<vtkStreamTracer>::New();
+      st->SetInputData(im);
+      st->SetSourceConnection(seeds->GetOutputPort());
+      st->SetIntegrationDirectionToBoth();
+      st->SetInputArrayToProcess(
+            0, 0, 0,
+            vtkDataObject::FIELD_ASSOCIATION_POINTS,
+            "U");
+
+      st->Update();
+      scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
+    }
+  ++ap;
+
+    {
+      auto seeds = vtkSmartPointer<vtkPointSource>::New();
+      seeds->SetCenter(toArray(vec3(0.5*l_, -0.5*w_, 0.5*h_)));
+      seeds->SetRadius(0.2*Lref_);
+      seeds->SetDistributionToUniform();
+      seeds->SetNumberOfPoints(100);
+
+      auto st = vtkSmartPointer<vtkStreamTracer>::New();
+      st->SetInputData(im);
+      st->SetSourceConnection(seeds->GetOutputPort());
+      st->SetIntegrationDirectionToBoth();
+      st->SetInputArrayToProcess(
+            0, 0, 0,
+            vtkDataObject::FIELD_ASSOCIATION_POINTS,
+            "U");
+
+      st->Update();
+      scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
+    }
+  ++ap;
+
+
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+vec3(-10.0*l_,0,0)) );
+
+      auto img = executionPath() / "streamLines_front.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(2.*w_, 2.*h_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Stream lines (front view)", ""
+      )));
+    }
+  ++ap;
+
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+vec3(0,-10.0*w_,0)) );
+
+      auto img = executionPath() / "streamLines_side.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(2.*l_, 2.*h_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Stream lines (side view)", ""
+      )));
+    }
+  ++ap;
+
+    {
+      camera->SetViewUp( toArray(vec3(0,1,0)) );
+      camera->SetPosition( toArray(viewctr+vec3(0,0,10.0*h_)) );
+
+      auto img = executionPath() / "streamLines_top.png";
+//      scene.fitAll();
+      scene.setParallelScale(std::pair<double,double>(2.*l_, 2.*w_));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Stream lines (top view)", ""
+      )));
+    }
+  ++ap;
+
+    {
+      camera->SetViewUp( toArray(vec3(0,0,1)) );
+      camera->SetPosition( toArray(viewctr+10.*vec3(-l_,-w_,h_)) );
+
+      auto img = executionPath() / "streamLines_diag.png";
+//      scene.fitAll();
+      double f=sqrt(2.);
+      scene.setParallelScale(std::pair<double,double>(
+                               2.*std::max(f*l_, f*w_),
+                               2.*std::max(f*l_, f*h_)
+                               ));
+      scene.exportImage(img);
+      results->insert(img.filename().stem().string(),
+        std::unique_ptr<Image>(new Image
+        (
+        executionPath(), img.filename(),
+        "Stream lines (isometric view)", ""
+      )));
+    }
+  ++ap;
 
   }
+
 
   return results;
 }

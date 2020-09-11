@@ -21,9 +21,10 @@
 #include "base/exception.h"
 #include "base/analysis.h"
 #include "base/boost_include.h"
+#include "base/outputanalyzer.h"
+#include "openfoam/blockmeshoutputanalyzer.h"
 
 #include "openfoam/ofes.h"
-#include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamdict.h"
@@ -617,24 +618,24 @@ void OpenFOAMCase::executeCommand
 void OpenFOAMCase::runSolver
 (
   const boost::filesystem::path& location, 
-  SolverOutputAnalyzer& analyzer,
-  std::string solverName,
+  OutputAnalyzer& analyzer,
+  std::string cmd,
   int np,
   const std::vector<std::string>& addopts
 ) const
 {
-  string cmd=solverName;
+  string execmd=cmd;
   std::vector<std::string> argv;
   if (np>1)
   {
-    cmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    execmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
     argv.push_back("-parallel");
   }
   std::copy(addopts.begin(), addopts.end(), back_inserter(argv));
 
 
 
-  SoftwareEnvironment::JobPtr job = env_.forkCommand( cmdString(location, cmd, argv) );
+  SoftwareEnvironment::JobPtr job = env_.forkCommand( cmdString(location, execmd, argv) );
 
 
   std::function<void()> read_start_out = [&]() {
@@ -697,7 +698,7 @@ void OpenFOAMCase::runSolver
   job->process->wait();
 
   if (job->process->exit_code()!=0)
-      throw insight::Exception("OpenFOAMCase::runSolver(): solver execution failed with nonzero exit code!");
+      throw insight::Exception("OpenFOAMCase::runSolver(): external command execution failed with nonzero exit code!");
 }
 
 std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& boundaryDict) const
@@ -742,6 +743,16 @@ SoftwareEnvironment::JobPtr OpenFOAMCase::forkCommand
 }
 
 
+void OpenFOAMCase::runBlockMesh
+(
+    const boost::filesystem::path& location,
+    int nBlocks,
+    ProgressDisplayer* progressDisplayer
+)
+{
+  BlockMeshOutputAnalyzer bma(progressDisplayer, nBlocks);
+  runSolver(location, bma, "blockMesh");
+}
 
 void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dict& boundaryDict, const ParameterSet& ps )
 {
@@ -751,6 +762,45 @@ void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dic
     for ( StringSet::const_iterator i=unhandledPatches.begin(); i!=unhandledPatches.end(); i++ ) {
         insert ( BoundaryCondition::lookup ( bc_type, *this, *i, boundaryDict, ps ) );
     }
+}
+
+
+std::vector<boost::filesystem::path> OpenFOAMCase::functionObjectOutputDirectories
+(
+    const boost::filesystem::path& caseLocation
+) const
+{
+  path fp;
+  std::shared_ptr<regex> filter;
+  if ( OFversion() <170 )
+  {
+    fp=absolute ( caseLocation );
+    filter.reset(new regex("(processor.*|constant|system|[0-9].*)"));
+  }
+  else
+  {
+    fp=absolute ( caseLocation ) / "postProcessing";
+  }
+
+  std::vector<boost::filesystem::path> results;
+
+  for (directory_iterator it(fp);
+       it!=directory_iterator(); ++it)
+  {
+    if (is_directory(it->status())) // if is directory
+    {
+      auto cp=it->path();
+      if (!filter || (filter && !regex_search(cp.filename().string(), *filter))) // and not matching filter
+      {
+        if (listTimeDirectories(cp).size()>0) // and if contains time dirs
+        {
+          results.push_back(cp); // then add
+        }
+      }
+    }
+  }
+
+  return results;
 }
 
 }

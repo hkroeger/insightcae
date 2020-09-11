@@ -144,7 +144,7 @@ void FreeCADModel::build()
 
     std::string cmd = str ( format ( "FreeCADCmd %s" ) % macrofilename );
 //     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
-    cout<<"CMD=\""<<cmd<<"\""<<endl;
+    std::cout<<"CMD=\""<<cmd<<"\""<<std::endl;
     if ( ::system ( cmd.c_str() ) || !boost::filesystem::exists ( filename ) ) {
         throw insight::Exception ( "Conversion of FreeCAD file "+infilename.string()+" into BREP "+filename.string()+" failed!" );
     }

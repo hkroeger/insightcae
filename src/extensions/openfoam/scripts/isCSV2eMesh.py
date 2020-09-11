@@ -1,15 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os, sys
 import numpy as np
 
 if len(sys.argv)<3:
-  print "please provide at least one input file name and the output file name as the last parameter!"
+  print("please provide at least one input file name and the output file name as the last parameter!")
   sys.exit(-1)
 
 ofn=sys.argv[-1]
 if not ofn.endswith("eMesh"):
-  print "output file name has to end with \"eMesh\"!"
+  print("output file name has to end with \"eMesh\"!")
   sys.exit(-1)
 
 
@@ -28,7 +28,7 @@ for fn in sys.argv[1:-1]:
     
     i0+=l
   else:
-    print "not enough points contained: ignoring", fn
+    print("not enough points contained: ignoring", fn)
     
 open(ofn, 'w').write("""
 FoamFile

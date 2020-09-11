@@ -45,107 +45,93 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
     throw std::logic_error("Internal error: remote directory is  not set!");
 
   int localPort = insight::findFreePort();
+
   remote_.createTunnels(
     {},
     { {localPort, "localhost", /*af_->ui->portNum->value()*/8090 } }
   );
 
+  af_->progressDisplayer_.reset();
+  af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
+
   ac_.reset(
         new insight::AnalyzeClient(
-          str(format("http://localhost:%d") % localPort)
+          str(format("http://localhost:%d") % localPort),
+          &af_->progressDisplayer_,
+          [this](std::exception_ptr e)
+            {
+              workerThread_->interrupt();
+              Q_EMIT failed(e);
+            }
        )
   );
 
-  af_->progdisp_->reset();
-  af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
 
   // start
-  workerThread_ = boost::thread(
+  workerThread_.reset( new insight::QAnalysisThread(
         [this]
         {
+
           insight::ParameterSet p = af_->parameters_;
 
-          try
-          {
-            p.packExternalFiles(); // pack
-            launchRemoteAnalysisServer();
-          }
-          catch (...) { exceptionEmitter(); }
+          p.packExternalFiles(); // pack
+          launchRemoteAnalysisServer();
 
 
           auto monitor = [this]
           {
             std::atomic<bool> runMonitor(true);
+
             while (runMonitor)
             {
               if (!ac_->isBusy())
+              {
                 ac_->queryStatus(
-                  [this,&runMonitor](bool success, insight::ProgressStatePtrList pis, bool resultsavail)
+                  [this,&runMonitor](bool success, bool resultsavail)
                   {
-                    try {
                     if (!success)
                     {
-                      Q_EMIT warning( insight::Exception("Failed to query status!") );
+                      Q_EMIT statusMessage( "Failed to query status!" );
                     }
                     else
                     {
-                      if (pis.size()>0)
-                      {
-                        for (const auto pi: pis)
-                        {
-                          Q_EMIT analysisProgressUpdate(*pi);
-                        }
-                      }
                       if (resultsavail)
                       {
                         runMonitor=false;
 
                         ac_->queryResults(
 
-                              [this](bool success, insight::ResultSetPtr results)
-                              {
-                                try
+                            [this](bool success, insight::ResultSetPtr results)
+                            {
+                                if (!success)
                                 {
-                                  if (!success)
-                                  {
-                                    Q_EMIT failed( insight::Exception("Failed to fetch results!") );
-                                  }
-                                  else
-                                  {
-
-                                    Q_EMIT finished( results );
-
-                                    ac_->exit(
-                                          [this](bool success)
-                                          {
-                                            try
-                                            {
-                                              if (!success)
-                                              {
-                                                Q_EMIT failed( insight::Exception("Failed to stop remote server!") );
-                                              }
-                                              else
-                                              {
-                                                remote_.cleanup();
-                                              }
-                                            }
-                                            catch (...) { exceptionEmitter(); }
-                                          }
-                                    );
-
-                                  }
+                                  throw insight::Exception("Failed to fetch results!");
                                 }
-                                catch (...) { exceptionEmitter(); }
-                              }
+                                else
+                                {
+                                  Q_EMIT finished( results );
+
+                                  ac_->exit(
+                                        [this](bool success)
+                                        {
+                                          if (!success)
+                                          {
+                                            throw insight::Exception("Failed to stop remote server!");
+                                          }
+                                          else
+                                          {
+                                            remote_.cleanup();
+                                          }
+                                        }
+                                  );
+                                }
+                            }
                         );
                       }
                     }
-                    } catch (...) { exceptionEmitter(); }
                   }
-              );
-//              else std::cout<<"busy"<<std::endl;
-
-
+                );
+              }
 
               boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
             }
@@ -155,25 +141,17 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
 
           if (!resume_)
           {
-            std::cout<<"Start"<<std::endl;
 
             if (!ac_->waitForContact())
-              Q_EMIT failed( insight::Exception("Failed to contact analysis server after launch!") );
+              throw insight::Exception("Failed to contact analysis server after launch!");
 
             ac_->launchAnalysis(
-                  p, "/", af_->analysisName_,
+                p, "/", af_->analysisName_,
 
-                  [this](bool success)
-                  {
-                    try
-                    {
-                      if (!success)
-                      {
-                        Q_EMIT failed( insight::Exception("Failed to launch analysis!") );
-                      }
-                    }
-                    catch (...) { exceptionEmitter(); }
-                  }
+                [](bool success)
+                {
+                  if (!success) throw insight::Exception("Failed to launch analysis!");
+                }
             );
 
 
@@ -187,13 +165,15 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
 
           monitor();
         }
-  );
+  ) );
+
+  connectAnalysisThread(workerThread_.get());
 }
 
 
 RemoteRun::~RemoteRun()
 {
-  workerThread_.join();
+  workerThread_->join();
   if (cancelThread_.joinable()) cancelThread_.join();
 }
 
@@ -202,13 +182,13 @@ RemoteRun::~RemoteRun()
 
 void RemoteRun::onCancel()
 {
-  workerThread_.interrupt();
+  workerThread_->interrupt();
 
   cancelThread_ = boost::thread(
         [&]()
         {
             // wait for workerThread to end
-            while (!workerThread_.try_join_for(boost::chrono::milliseconds(1)))
+            while (!workerThread_->try_join_for(boost::chrono::milliseconds(1)))
             {
               boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
             }
@@ -219,14 +199,11 @@ void RemoteRun::onCancel()
                   {
                     if (!success)
                     {
-                      Q_EMIT failed( insight::Exception("Failed to stop remote server!") );
+                      Q_EMIT failed( std::make_exception_ptr(insight::Exception("Failed to stop remote server!") ) );
                     }
                     else
                     {
-                      try {
-                       //removeRemoteDirectory();
-                      } catch (...) { exceptionEmitter(); }
-                      Q_EMIT killed();
+                      Q_EMIT cancelled();
                     }
                   }
             );

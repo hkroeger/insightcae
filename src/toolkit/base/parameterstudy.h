@@ -37,6 +37,13 @@ class ParameterStudy
 : public Analysis
 {
 protected:
+  void generateInstance
+  (
+    SynchronisedAnalysisQueue& instances,
+    const ParameterSet& templ,
+    DoubleRangeParameter::RangeList::const_iterator i[]
+  );
+
   void generateInstances
   (
     SynchronisedAnalysisQueue& instances, 

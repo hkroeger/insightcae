@@ -21,9 +21,13 @@ class ConvergenceAnalysisDisplayer
 public:
   ConvergenceAnalysisDisplayer ( const std::string &progvar, double threshold = 1e-5 );
 
-  virtual void update ( const ProgressState &pi );
+  void update ( const ProgressState &pi ) override;
+  void setActionProgressValue(const std::string& path, double value) override;
+  void setMessageText(const std::string& path, const std::string& message) override;
+  void finishActionProgress(const std::string& path) override;
+  void reset() override;
 
-  virtual bool stopRun() const;
+  bool stopRun() const override;
 };
 
 typedef std::shared_ptr<ConvergenceAnalysisDisplayer>

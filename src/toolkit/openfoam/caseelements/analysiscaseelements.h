@@ -27,6 +27,13 @@
 
 namespace insight {
 
+
+arma::mat readAndCombineTabularFiles
+(
+    const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
+    const std::string& FOName, const std::string& fileName,
+    const std::string& filterChars="()"
+);
   
   
   
@@ -201,7 +208,9 @@ domain = selectablesubset {{
 
 }} wholedomain "select domain of integration"
 
-operation = selection ( sum sumMag average volAverage volIntegrate min max CoV) volIntegrate "operation to execute on data"
+weightFieldName = string "none" "Name of field for weighting. This is ignored, if no operation with weighting is selected."
+
+operation = selection ( sum sumMag average volAverage volIntegrate min max CoV weightedVolIntegrate) volIntegrate "operation to execute on data"
 
 <<<PARAMETERSET
 */
@@ -212,6 +221,13 @@ protected:
 public:
     declareType("volumeIntegrate");
     volumeIntegrate(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+
+    static arma::mat readVolumeIntegrals
+    (
+        const OpenFOAMCase& c,
+        const boost::filesystem::path& location,
+        const std::string& FOName
+    );
 
     static std::string category() {
         return "Postprocessing";
@@ -666,6 +682,9 @@ extern const char LinearTPCArrayTypeName[];
 typedef TPCArray<twoPointCorrelation, LinearTPCArrayTypeName> LinearTPCArray;
 extern const char RadialTPCArrayTypeName[];
 typedef TPCArray<cylindricalTwoPointCorrelation, RadialTPCArrayTypeName> RadialTPCArray;
+
+
+
 
 }
 

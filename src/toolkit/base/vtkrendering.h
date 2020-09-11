@@ -114,6 +114,7 @@ protected:
 
 public:
   VTKOffscreenScene();
+  ~VTKOffscreenScene();
 
   template<class Mapper, class Input>
   void addAlgo(

@@ -20,7 +20,7 @@
 #include "qdatumitem.h"
 
 #include <QMenu>
-#include "qoccviewercontext.h"
+//#include "qoccviewercontext.h"
 #include "datum.h"
 #include "AIS_Plane.hxx"
 #include "cadfeatures/modelfeature.h"

@@ -2,7 +2,7 @@ project(testPDL)
 
 file(GLOB_RECURSE test_pdl_HEADERS "*.h")
 add_executable(test_pdl test_pdl.cpp)
-target_link_libraries(test_pdl toolkit)
+linkToolkitVtk(test_pdl Offscreen)
 target_include_directories(test_pdl
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )

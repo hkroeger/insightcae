@@ -266,30 +266,47 @@
 }
 
 
-%typemap(typecheck, precedence=SWIG_TYPECHECK_STRING) boost::filesystem::path {
+
+%naturalvar;
+
+%typecheck(SWIG_TYPECHECK_STRING) boost::filesystem::path, const boost::filesystem::path& {
     //$1 = PyString_Check($input) ? 1 : 0;
     $1 = PyUnicode_Check($input) ? 1 : 0;
 }
 
 // C --> Python
 %typemap(out) boost::filesystem::path {
-    //$result = PyString_FromString($1->c_str());
     $result = PyUnicode_FromString($1.c_str());
+}
+
+%typemap(out) const boost::filesystem::path& {
+    $result = PyString_FromString($1->c_str());
 }
 
 
 // Python -> C
 %typemap(in) boost::filesystem::path {
-    //vIn=PyString_AsString($input);
-    //$1 = &vIn;
-
     PyObject * temp_bytes = PyUnicode_AsEncodedString($input, "UTF-8", "strict"); // Owned reference
     if (temp_bytes != NULL) {
         char *my_result = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
         $1 = boost::filesystem::path(my_result);
         Py_DECREF(temp_bytes);
     } else {
-        // TODO: Handle encoding error.
+       PyErr_SetString(PyExc_TypeError, "string encoding error");
+       SWIG_fail;
+    }
+}
+
+%typemap(in) const boost::filesystem::path& (boost::filesystem::path temp) {
+    PyObject * temp_bytes = PyUnicode_AsEncodedString($input, "UTF-8", "strict"); // Owned reference
+    if (temp_bytes != NULL) {
+        char *my_result = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
+        temp = boost::filesystem::path(my_result);
+        $1 = &temp;
+        Py_DECREF(temp_bytes);
+    } else {
+       PyErr_SetString(PyExc_TypeError, "string encoding error");
+       SWIG_fail;
     }
 }
 

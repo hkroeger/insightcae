@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
+cmake_policy(SET CMP0078 NEW)
+cmake_policy(SET CMP0086 NEW)
+
 project(InsightCAE)
 
 enable_language (C)
@@ -27,13 +30,14 @@ OPTION(INSIGHT_BUILD_TOOLKIT "Build the Insight toolkit and related tools" ON)
 OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit and related tools (SWIG is required)" ON)
 OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench (Wt is required)" OFF)
 OPTION(INSIGHT_BUILD_INSTALLDESKTOP "Install MIME types and Desktop integration (already during build)" OFF)
+OPTION(INSIGHT_BUILD_TESTS "Build all executables for testing" OFF)
 OPTION(INSIGHT_INSTALL_DESKTOP "Install MIME types and Desktop integration" ON)
 OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)
 SET(INSIGHT_SUPERBUILD "" CACHE STRING "Path to superbuild (build directory). If set, use dependencies from that superbuild")
 
 option(BUILD_DOCUMENTATION "Use Doxygen to create the documentation (doxygen is required)" OFF)
 
-option(INSIGHT_BUILD_GUICOMPONENTS "Enable the GUI tools (workbench, CAD, case builder..., Qt and Qwt is required)" ON)
+option(INSIGHT_BUILD_GUICOMPONENTS "Enable the GUI tools (workbench, CAD, case builder..., Qt is required)" ON)
 if (INSIGHT_BUILD_GUICOMPONENTS)
  OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI (Qt is required)" ON)
  OPTION(INSIGHT_BUILD_ISCAD "Build the ISCAD editor (OCE and Qt is required)" ON)
@@ -146,6 +150,17 @@ macro(create_script SCRIPTFILE SCR_CONTENT)
 endmacro(create_script)
 
 
+set(IS_INSIGHTCAE_PROJECT 1) # activate depency of pdl-generated headers on pdl target
+include(InsightCAE_CMakeFunctions)
+
+
+include(CMakePackageConfigHelpers)
+
+add_custom_target(cmake_dev_config ALL COMMENT "CMake development configuration")
+set(INSIGHT_ConfigPackageLocation lib/cmake/insightcae)
+SET(INSIGHT_CMAKE_CONFIG_DIR_BIN "${CMAKE_BINARY_DIR}/${INSIGHT_ConfigPackageLocation}")
+
+
 if (INSIGHT_BUILD_TOOLKIT)
 
     find_package(Armadillo REQUIRED)
@@ -165,33 +180,14 @@ if (INSIGHT_BUILD_TOOLKIT)
         timer
         thread
         iostreams
-        python
+        python3
         program_options
         REQUIRED
         )
 
-    find_package(VTK
-        COMPONENTS
-        vtkFiltersCore
-        vtkFiltersGeneral
-        vtkFiltersSources
-        vtkFiltersGeneric
-        vtkFiltersExtraction
-        vtkFiltersPoints
-        vtkFiltersFlowPaths
-        vtkCommonCore
-        vtkIOLegacy
-        vtkIOGeometry
-        vtkIOExport
-        vtkIOImage
-        vtkIOXML
-        vtkImagingCore
-        vtkRenderingOpenGL2
-        vtkRenderingAnnotation
-        vtkPVVTKExtensionsDefault
-        REQUIRED
-    )
-    #include(${VTK_USE_FILE})
+    add_subdirectory(CMake/vtkTargets/vtkOnscreen)
+    add_subdirectory(CMake/vtkTargets/vtkOffscreen)
+
 endif()
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})
@@ -200,7 +196,10 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 
-
+macro(linkToolkitVtk target OnOffscreen)
+    target_link_libraries(${target} toolkit vtk${OnOffscreen})
+    set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")
+endmacro()
 
 function(JOIN VALUES GLUE OUTPUT)
   string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
@@ -255,6 +254,9 @@ endif()
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   FIND_PACKAGE(SWIG REQUIRED)
+  set(UseSWIG_TARGET_NAME_PREFERENCE STANDARD)
+  #set(USE_TARGET_INCLUDE_DIRECTORIES TRUE)
+  INCLUDE(${SWIG_USE_FILE})
 ENDIF()
 
 set (CMAKE_CXX_STANDARD 11)
@@ -361,7 +363,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${PRJ_NAME}" 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
+      )
     endif()
     if (${_ofvers} STREQUAL "Fx31")
       setup_exe_target_Fx31(
@@ -370,7 +372,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${PRJ_NAME}" 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
+      )
     endif()
     if (${_ofvers} STREQUAL "Fx32")
       setup_exe_target_Fx32(
@@ -379,7 +381,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${PRJ_NAME}" 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
+      )
     endif()
     if (${_ofvers} STREQUAL "Fx40")
       setup_exe_target_Fx40(
@@ -388,7 +390,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${PRJ_NAME}" 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
+      )
     endif()
     if (${_ofvers} STREQUAL "Fx41")
       setup_exe_target_Fx41(
@@ -406,7 +408,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${PRJ_NAME}" 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
+      )
     endif()
     if (${_ofvers} STREQUAL "OF22x")
       setup_exe_target_OF22x(
@@ -415,7 +417,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${PRJ_NAME}" 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
+      )
     endif()
     if (${_ofvers} STREQUAL "OF22eng")
       setup_exe_target_OF22eng(
@@ -424,7 +426,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${PRJ_NAME}" 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
+      )
     endif()
     if (${_ofvers} STREQUAL "OF23x")
       setup_exe_target_OF23x(
@@ -433,7 +435,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${PRJ_NAME}" 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
+      )
     endif()
     if (${_ofvers} STREQUAL "OF24x")
       setup_exe_target_OF24x(
@@ -442,7 +444,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${PRJ_NAME}" 
 	"${${PRJ_NAME}_INCLUDE_DIRS}"
 	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
+      )
     endif()
     if (${_ofvers} STREQUAL "OF301")
       setup_exe_target_OF301(
@@ -668,7 +670,14 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
   endforeach()
 endmacro(setup_lib_target_OF)
 
-
+macro(linkToolkit_OF target)
+ version_list_OF()
+ foreach (_ofvers ${OF_VERSIONS})
+  if (${_ofvers}_FOUND)
+   linkToolkitVtk(${target}${_ofvers} Offscreen)
+  endif()
+ endforeach()
+endmacro()
 
 
 macro(setup_test_OF PRJ_NAME cmd)
@@ -819,23 +828,25 @@ endmacro()
 get_python_install_path(INSIGHT_INSTALL_PYTHON_PATH ${CMAKE_INSTALL_PREFIX})
 get_python_install_path(INSIGHT_PYTHON_PATH ${CMAKE_BINARY_DIR})
 
+set(CMAKE_SWIG_OUTDIR ${INSIGHT_PYTHON_PATH}/Insight)
 
-macro (add_pybindings TARGETNAME IFFILES LIBS)
+macro (add_pybindings TARGETNAME IFFILE LIBS)
   IF(INSIGHT_BUILD_PYTHONBINDINGS)
-    INCLUDE(${SWIG_USE_FILE})
-    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-    set(CMAKE_SWIG_OUTDIR ${INSIGHT_PYTHON_PATH}/Insight)
-    SET(${TARGETNAME}_INTERFACES ${IFFILES})
-    SET(CMAKE_SWIG_FLAGS "")
-    SET_SOURCE_FILES_PROPERTIES(${${TARGETNAME}_INTERFACES} PROPERTIES CPLUSPLUS ON)
-    SWIG_ADD_LIBRARY(${TARGETNAME} LANGUAGE python SOURCES ${${TARGETNAME}_INTERFACES})
-    SWIG_LINK_LIBRARIES(${TARGETNAME} ${LIBS})
-    set_target_properties(
-        ${SWIG_MODULE_${TARGETNAME}_REAL_NAME}
-        PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${INSIGHT_PYTHON_PATH}/Insight
+    set(PYTARGET ${TARGETNAME}_python)
+    set_property(SOURCE ${IFFILE} PROPERTY CPLUSPLUS ON)
+    message(STATUS "tooklit ${toolkit_SOURCE_DIR}")
+    set_property(SOURCE ${IFFILE} PROPERTY INCLUDE_DIRECTORIES ${toolkit_SOURCE_DIR})
+    set_property(SOURCE ${IFFILE} PROPERTY SWIG_MODULE_NAME ${TARGETNAME})
+    swig_add_library(${PYTARGET}
+        LANGUAGE python
+        SOURCES ${IFFILE})
+    target_link_libraries(${PYTARGET} ${LIBS})
+    linkToolkitVtk(${PYTARGET} Offscreen)
+    set_target_properties(${PYTARGET}
+        PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SWIG_OUTDIR}
         )
-    INSTALL ( FILES ${INSIGHT_PYTHON_PATH}/Insight/_${TARGETNAME}.so DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
-    INSTALL ( FILES ${INSIGHT_PYTHON_PATH}/Insight/${TARGETNAME}.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/_${PYTARGET}.so DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/${TARGETNAME}.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   ENDIF()
 endmacro()
 
@@ -877,15 +888,6 @@ endmacro(install_package_script)
 
 
 
-set(IS_INSIGHTCAE_PROJECT 1) # activate depency of pdl-generated headers on pdl target
-include(InsightCAE_CMakeFunctions)
-
-
-include(CMakePackageConfigHelpers)
-
-add_custom_target(cmake_dev_config ALL COMMENT "CMake development configuration")
-set(INSIGHT_ConfigPackageLocation lib/cmake/insightcae)
-SET(INSIGHT_CMAKE_CONFIG_DIR_BIN "${CMAKE_BINARY_DIR}/${INSIGHT_ConfigPackageLocation}")
 
 
 add_subdirectory(src)

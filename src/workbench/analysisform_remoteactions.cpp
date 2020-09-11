@@ -11,7 +11,6 @@
 #endif
 
 
-#include "remotedirselector.h"
 #include "openfoam/solveroutputanalyzer.h"
 #include "remotesync.h"
 
@@ -22,6 +21,7 @@
 #include <QMessageBox>
 #include <QDebug>
 
+#include "qsetupremotedialog.h"
 
 
 
@@ -29,23 +29,102 @@
 namespace fs = boost::filesystem;
 
 
+void AnalysisForm::connectRemoteActions()
+{
+  connect(ui->btnSetupRemote, &QPushButton::clicked,
+          [&]()
+          {
+            if (!ensureWorkingDirectoryExistence()) return;
+
+            QSetupRemoteDialog dlg(ui->lblHostName->text(), ui->lblRemoteDirectory->text(), this);
+
+            auto btn=dlg.exec();
+
+            if (btn == QDialog::Accepted)
+            {
+              remoteDirectory_.reset();
+
+              auto rsi = lookupRemoteServerByLabel(dlg.hostName());
+
+              remoteDirectory_.reset(
+                    new QRemoteExecutionConfig(
+                      this,
+                      rsi,
+                      *caseDirectory_,
+                      dlg.remoteDirectory().toStdString()
+                      )
+                    );
+
+              ui->lblHostName->setText( QString::fromStdString(remoteDirectory_->server()) );
+              ui->lblRemoteDirectory->setText( QString::fromStdString(remoteDirectory_->remoteDir().string() ) );
+            }
+          }
+  );
 
 
+  connect(ui->leWorkingDirectory, &QLineEdit::editingFinished,
+          this, &AnalysisForm::checkForRemoteConfig);
+
+  connect(ui->btnDisconnect, &QPushButton::clicked,
+          [&]()
+          {
+            if (isRunningRemotely())
+              currentWorkbenchAction_.reset();
+            if (remoteDirectory_)
+              remoteDirectory_.reset();
+          }
+  );
+
+  connect(ui->btnUpload, &QPushButton::clicked,
+          this, &AnalysisForm::upload );
+  connect(ui->btnDownload, &QPushButton::clicked,
+          this, &AnalysisForm::download );
+
+  connect(ui->btnRemoveRemote, &QPushButton::clicked,
+          []()
+          {
+          }
+  );
+
+  connect(ui->btnResume, &QPushButton::clicked,
+          [&]()
+          {
+            resumeRemoteRun();
+          }
+  );
+}
+
+void AnalysisForm::checkForRemoteConfig()
+{
+  if ( caseDirectory_ )
+  {
+    if (remoteDirectory_)
+      remoteDirectory_.reset();
+
+    try
+    {
+
+      remoteDirectory_.reset(
+            new QRemoteExecutionConfig(
+              this,
+              *caseDirectory_
+              )
+            );
+
+
+      ui->lblHostName->setText( QString::fromStdString(remoteDirectory_->server()) );
+      ui->lblRemoteDirectory->setText( QString::fromStdString(remoteDirectory_->remoteDir().string() ) );
+
+    }
+    catch (const std::exception& e)
+    {
+      Q_EMIT statusMessage(e.what());
+    }
+  }
+}
 
 void AnalysisForm::upload()
 {
-  if (!caseDirectory_)
-  {
-    throw std::logic_error("Internal error: no case directory configured!");
-  }
-
-  if (!remoteDirectory_)
-  {
-    throw std::logic_error("Internal error: attempt to upload but no remote directory configured!");
-  }
-
-  applyDirectorySettings();
-
   auto *rstr = new insight::RunSyncToRemote(*remoteDirectory_);
 
   connect(rstr, &insight::RunSyncToRemote::progressValueChanged,
@@ -82,8 +161,6 @@ void AnalysisForm::upload()
 
 void AnalysisForm::startRemoteRun()
 {
-  applyDirectorySettings();
-
 #ifdef HAVE_WT
   Q_EMIT apply(); // apply all changes into parameter set
   currentWorkbenchAction_.reset(new RemoteRun(this, false));
@@ -94,8 +171,6 @@ void AnalysisForm::startRemoteRun()
 
 void AnalysisForm::resumeRemoteRun()
 {
-  applyDirectorySettings();
-
 #ifdef HAVE_WT
   if (currentWorkbenchAction_)
     throw insight::Exception("Internal error: there is an action running currently!");
@@ -105,31 +180,15 @@ void AnalysisForm::resumeRemoteRun()
 }
 
 
-void AnalysisForm::disconnectFromRemoteRun()
-{
-}
-
 
 
 
 void AnalysisForm::download()
 {
-  if (!caseDirectory_)
-  {
-    throw std::logic_error("Internal error: no case directory configured!");
-  }
-
-  if (!remoteDirectory_)
-  {
-    throw std::logic_error("Internal error: attempt to upload but no remote directory configured!");
-  }
-
   if (!remoteDirectory_->remoteDirExists())
   {
     throw std::logic_error("The remote directory does not exist! Cannot download.");
   }
-
-  applyDirectorySettings();
 
   auto* rstl = new insight::RunSyncToLocal(*remoteDirectory_);
 

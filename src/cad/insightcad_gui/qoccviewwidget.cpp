@@ -736,8 +736,8 @@ void QoccViewWidget::connectModelTree(QModelTree* mt) const
 QSize QoccViewWidget::sizeHint() const
 {
   QSize s;
-  s.setWidth(1024);
-  s.setHeight(768);
+  s.setWidth(640);
+  s.setHeight(480);
   return s;
 }
 

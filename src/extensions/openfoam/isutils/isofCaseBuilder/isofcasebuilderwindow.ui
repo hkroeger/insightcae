@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1235</width>
-    <height>953</height>
+    <width>1955</width>
+    <height>1164</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -83,7 +83,7 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <widget class="QWidget" name="">
+        <widget class="QWidget" name="layoutWidget">
          <layout class="QVBoxLayout" name="verticalLayout_15">
           <item>
            <widget class="QoccViewWidget" name="occview" native="true">
@@ -97,6 +97,12 @@
           </item>
           <item>
            <widget class="QLabel" name="viewer_hints">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="styleSheet">
              <string notr="true">font: 8pt;</string>
             </property>
@@ -301,8 +307,8 @@
               </property>
               <property name="baseSize">
                <size>
-                <width>800</width>
-                <height>600</height>
+                <width>0</width>
+                <height>0</height>
                </size>
               </property>
               <property name="title">

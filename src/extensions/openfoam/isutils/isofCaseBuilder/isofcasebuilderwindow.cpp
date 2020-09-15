@@ -252,7 +252,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
       this, &isofCaseBuilderWindow::onReset_script_case
     );
 
-    ui->available_elements->setIconSize(QSize(32, 32));
+//    ui->available_elements->setIconSize(QSize(32, 32));
     fillCaseElementList();
     onResetPatchDef();
 //     // populate list of available case elements

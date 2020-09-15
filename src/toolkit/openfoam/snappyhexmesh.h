@@ -101,7 +101,7 @@ public:
 PARAMETERSET>>> Geometry Parameters
 inherits insight::ExternalGeometryFile::Parameters
 
-name = string "" "Name of the geometry feature"  *necessary
+name = string "unnamed" "Name of the geometry feature"  *necessary
 minLevel = int 0 "Minimum refinement level"
 maxLevel = int 4 "Maximum refinement level"
 nLayers = int 2 "Number of prism layers"

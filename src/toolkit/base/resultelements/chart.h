@@ -79,9 +79,7 @@ struct PlotCurveList
 };
 
 
-#ifdef SWIG
-%template(vector_PlotCurve) std::vector<insight::PlotCurve>;
-#endif
+
 
 
 class Chart
@@ -153,5 +151,10 @@ insight::ResultElement& addPlot
 
 
 } // namespace insight
+
+
+#ifdef SWIG
+%template(vector_PlotCurve) std::vector<insight::PlotCurve>;
+#endif
 
 #endif // INSIGHT_CHART_H

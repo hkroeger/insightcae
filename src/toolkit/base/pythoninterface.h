@@ -50,7 +50,7 @@ public:
     ~PythonInterpreter();
 };
 
-//extern PythonInterpreter pythonInterpreter;
+extern PythonInterpreter pythonInterpreter;
 
 }
 

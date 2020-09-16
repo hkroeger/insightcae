@@ -28,6 +28,7 @@
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_Sewing.hxx>
+#include <BRepPrimAPI_MakeSphere.hxx>
 #include <gp_Pnt.hxx>
 #include <OSD_Path.hxx>
 #include <RWStl.hxx>
@@ -230,16 +231,26 @@ void STL::build()
     {
       bb.Add(aSTLMesh_->Node(i));
     }
-    double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
-    gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
 
-    TopoDS_Face aFace;
-    BRep_Builder aB;
-    //  aB.MakeFace(aFace, aSTLMesh);
-    aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
-    aB.UpdateFace(aFace, aSTLMesh_);
+    if (!bb.IsVoid())
+    {
+      double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
+      gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
 
-    setShape( aFace );
+      TopoDS_Face aFace;
+      BRep_Builder aB;
+      //  aB.MakeFace(aFace, aSTLMesh);
+      aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
+      aB.UpdateFace(aFace, aSTLMesh_);
+
+      setShape( aFace );
+
+    }
+    else
+    {
+      // just insert some non-void geometry
+      setShape(BRepPrimAPI_MakeSphere(1).Shape());
+    }
 
     cache.insert(shared_from_this());
   }

@@ -31,14 +31,25 @@
     for(unsigned int i = 0; i < iLen; i++) 
     {
         PyObject *o = PySequence_GetItem($input, i);
-        
+        if (!PyTuple_Check(o))
+        {
+            PyErr_SetString(PyExc_TypeError,"expected a list of tuples!");
+            return nullptr;
+        }
+        if (PyTuple_Size(o)!=2)
+        {
+            PyErr_SetString(PyExc_ValueError,boost::str(boost::format("the tuple at position %d in the list is not of size 2!")%i).c_str());
+            return nullptr;
+        }
+
         std::string n;
         insight::Parameter* p;
-        
-        n = PyString_AsString
-        (
-            PyTuple_GetItem(o, 0)
-        );
+
+        PyObject* str = PyUnicode_AsEncodedString(PyTuple_GetItem(o, 0), "utf-8", "~E~");
+        n= PyBytes_AS_STRING(str);
+        Py_XDECREF(str);
+
+
         int res1 = SWIG_ConvertPtr
         ( 
             PyTuple_GetItem(o, 1), 

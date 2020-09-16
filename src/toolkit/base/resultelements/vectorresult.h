@@ -6,9 +6,13 @@
 
 namespace insight {
 
+#ifdef SWIG
+%template(vectorNumericalResult) NumericalResult<arma::mat>;
+#endif
+typedef NumericalResult<arma::mat> vectorNumericalResult;
 
 class VectorResult
-    : public NumericalResult<arma::mat>
+    : public vectorNumericalResult
 {
 public:
     declareType ( "VectorResult" );
@@ -19,10 +23,9 @@ public:
     ResultElementPtr clone() const override;
 };
 
-#ifdef SWIG
-%template(vectorNumericalResult) NumericalResult<arma::mat>;
-#endif
 
 } // namespace insight
+
+
 
 #endif // INSIGHT_VECTORRESULT_H

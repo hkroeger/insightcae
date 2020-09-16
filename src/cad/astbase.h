@@ -47,6 +47,8 @@ class ASTBase
   static std::mutex cancel_mtx_;
   static std::set<std::thread::id> cancel_requests_;
 
+  mutable std::mutex build_mtx_;
+
 protected:
   void setValid();
 
@@ -72,6 +74,8 @@ public:
    * returns the hash, if it already computed. Triggers computation otherwise
    */
   size_t hash() const;
+
+  ASTBase& operator=(const ASTBase& o);
 
 };
 

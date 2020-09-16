@@ -22,10 +22,10 @@ public:
      * elem is put into a shared_ptr but not clone. So don't delete it!
      */
     ResultElement& insert ( const std::string& key, ResultElement* elem );
-#endif
 
 //   void insert(const std::string& key, std::unique_ptr<ResultElement> elem);
     ResultElement& insert ( const std::string& key, ResultElementPtr elem );
+#endif
 
     /**
      * insert elem into the set.

@@ -6,8 +6,13 @@
 
 namespace insight {
 
+#ifdef SWIG
+%template(doubleNumericalResult) NumericalResult<double>;
+#endif
+typedef NumericalResult<double> doubleNumericalResult;
+
 class ScalarResult
-    : public NumericalResult<double>
+    : public doubleNumericalResult
 {
 public:
     declareType ( "ScalarResult" );
@@ -18,10 +23,8 @@ public:
     ResultElementPtr clone() const override;
 };
 
-#ifdef SWIG
-%template(doubleNumericalResult) NumericalResult<double>;
-#endif
 
 } // namespace insight
+
 
 #endif // INSIGHT_SCALARRESULT_H

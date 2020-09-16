@@ -93,6 +93,6 @@ PythonInterpreter::~PythonInterpreter()
 }
 
 
-//PythonInterpreter pythonInterpreter;
+PythonInterpreter pythonInterpreter;
     
 }

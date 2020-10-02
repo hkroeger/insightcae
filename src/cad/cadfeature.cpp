@@ -73,6 +73,7 @@
 #include "TransferBRep.hxx"
 #include "Transfer_Binder.hxx"
 #include "Transfer_TransientProcess.hxx"
+#include "TopTools_DataMapIteratorOfDataMapOfIntegerShape.hxx"
 
 #include "openfoam/openfoamdict.h"
 
@@ -446,8 +447,8 @@ size_t Feature::calcShapeHash() const
   size_t hash=0;
   
   boost::hash_combine(hash, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash, boost::hash<int>()(vmap_.size()));
-  boost::hash_combine(hash, boost::hash<int>()(fmap_.size()));
+  boost::hash_combine(hash, boost::hash<int>()(vmap_.Size()));
+  boost::hash_combine(hash, boost::hash<int>()(fmap_.Size()));
 
   FeatureSetData vset=allVerticesSet();
   for (const insight::cad::FeatureID& j: vset)
@@ -993,17 +994,17 @@ FeatureSetData Feature::allVerticesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ), 
-//     boost::counting_iterator<int>( vmap_.Extent()+1 ) 
-//   );
-  std::transform
-  (
-      vmap_.begin(),
-      vmap_.end(), 
-      std::inserter(fsd, fsd.begin()), 
-      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
-  );
+   fsd.insert(
+     boost::counting_iterator<int>( 1 ),
+     boost::counting_iterator<int>( vmap_.Extent()+1 )
+   );
+//  std::transform
+//  (
+//      vmap_.begin(),
+//      vmap_.end(),
+//      std::inserter(fsd, fsd.begin()),
+//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
+//  );
   return fsd;
 }
 
@@ -1011,17 +1012,17 @@ FeatureSetData Feature::allEdgesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ), 
-//     boost::counting_iterator<int>( emap_.Extent()+1 ) 
-//   );
-  std::transform
-  (
-      emap_.begin(),
-      emap_.end(), 
-      std::inserter(fsd, fsd.begin()), 
-      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
-  );
+   fsd.insert(
+     boost::counting_iterator<int>( 1 ),
+     boost::counting_iterator<int>( emap_.Extent()+1 )
+   );
+//  std::transform
+//  (
+//      emap_.begin(),
+//      emap_.end(),
+//      std::inserter(fsd, fsd.begin()),
+//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
+//  );
   return fsd;
 }
 
@@ -1029,17 +1030,17 @@ FeatureSetData Feature::allFacesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ), 
-//     boost::counting_iterator<int>( fmap_.Extent()+1 ) 
-//   );
-  std::transform
-  (
-      fmap_.begin(),
-      fmap_.end(), 
-      std::inserter(fsd, fsd.begin()), 
-      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
-  );
+   fsd.insert(
+     boost::counting_iterator<int>( 1 ),
+     boost::counting_iterator<int>( fmap_.Extent()+1 )
+   );
+//  std::transform
+//  (
+//      fmap_.begin(),
+//      fmap_.end(),
+//      std::inserter(fsd, fsd.begin()),
+//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
+//  );
   return fsd;
 }
 
@@ -1047,17 +1048,17 @@ FeatureSetData Feature::allSolidsSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;  
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ), 
-//     boost::counting_iterator<int>( somap_.Extent()+1 ) 
-//   );
-  std::transform
-  (
-      somap_.begin(),
-      somap_.end(), 
-      std::inserter(fsd, fsd.begin()), 
-      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
-  );
+   fsd.insert(
+     boost::counting_iterator<int>( 1 ),
+     boost::counting_iterator<int>( somap_.Extent()+1 )
+   );
+//  std::transform
+//  (
+//      somap_.begin(),
+//      somap_.end(),
+//      std::inserter(fsd, fsd.begin()),
+//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
+//  );
   return fsd;
 }
 
@@ -2079,12 +2080,12 @@ arma::mat Feature::getDatumVector(const std::string& name) const
 void Feature::nameFeatures()
 {
   // Don't call "shape()" here!
-  fmap_.clear();
-  emap_.clear(); 
-  vmap_.clear(); 
-  somap_.clear(); 
-  shmap_.clear(); 
-  wmap_.clear();
+  fmap_.Clear();
+  emap_.Clear();
+  vmap_.Clear();
+  somap_.Clear();
+  shmap_.Clear();
+  wmap_.Clear();
   
 #ifdef GMSH_NUMBERING_V1
   // Solids
@@ -2234,7 +2235,175 @@ void Feature::nameFeatures()
       if(vmap_.FindIndex(vertex) < 1)
 	  vmap_.Add(vertex);
   }
-  
+
+#elif defined(GMSH_NUMBERING_V2)
+
+  // iterate over all shapes with tags, and import them into the (sub)shape
+   // _maps
+   somap_.clear();
+   shmap_.clear();
+   fmap_.clear();
+   wmap_.clear();
+   emap_.clear();
+   vmap_.clear();
+
+   auto _addShapeToMaps = [&](const TopoDS_Shape &shape)
+   {
+     // Solids
+     TopExp_Explorer exp0, exp1, exp2, exp3, exp4, exp5;
+     for(exp0.Init(shape, TopAbs_SOLID); exp0.More(); exp0.Next()) {
+       TopoDS_Solid solid = TopoDS::Solid(exp0.Current());
+       if(somap_.FindIndex(solid) < 1) {
+         somap_.Add(solid);
+         for(exp1.Init(solid, TopAbs_SHELL); exp1.More(); exp1.Next()) {
+           TopoDS_Shell shell = TopoDS::Shell(exp1.Current());
+           if(shmap_.FindIndex(shell) < 1) {
+             shmap_.Add(shell);
+
+             for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
+               TopoDS_Face face = TopoDS::Face(exp2.Current());
+               if(fmap_.FindIndex(face) < 1) {
+                 fmap_.Add(face);
+
+                 for(exp3.Init(face.Oriented(TopAbs_FORWARD), TopAbs_WIRE);
+                     exp3.More(); exp3.Next()) {
+                   // for(exp3.Init(face, TopAbs_WIRE); exp3.More(); exp3.Next()){
+                   TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+                   if(wmap_.FindIndex(wire) < 1) {
+                     wmap_.Add(wire);
+
+                     for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
+                       TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+                       if(emap_.FindIndex(edge) < 1) {
+                         emap_.Add(edge);
+
+                         for(exp5.Init(edge, TopAbs_VERTEX); exp5.More();
+                             exp5.Next()) {
+                           TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+                           if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+                         }
+                       }
+                     }
+                   }
+                 }
+               }
+             }
+           }
+         }
+       }
+     }
+
+     // Free Shells
+     for(exp1.Init(shape, TopAbs_SHELL, TopAbs_SOLID); exp1.More(); exp1.Next()) {
+       const TopoDS_Shape &shell = exp1.Current();
+       if(shmap_.FindIndex(shell) < 1) {
+         shmap_.Add(shell);
+
+         for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
+           TopoDS_Face face = TopoDS::Face(exp2.Current());
+           if(fmap_.FindIndex(face) < 1) {
+             fmap_.Add(face);
+
+             for(exp3.Init(face, TopAbs_WIRE); exp3.More(); exp3.Next()) {
+               TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+               if(wmap_.FindIndex(wire) < 1) {
+                 wmap_.Add(wire);
+
+                 for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
+                   TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+                   if(emap_.FindIndex(edge) < 1) {
+                     emap_.Add(edge);
+
+                     for(exp5.Init(edge, TopAbs_VERTEX); exp5.More();
+                         exp5.Next()) {
+                       TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+                       if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+                     }
+                   }
+                 }
+               }
+             }
+           }
+         }
+       }
+     }
+
+     // Free Faces
+     for(exp2.Init(shape, TopAbs_FACE, TopAbs_SHELL); exp2.More(); exp2.Next()) {
+       TopoDS_Face face = TopoDS::Face(exp2.Current());
+       if(fmap_.FindIndex(face) < 1) {
+         fmap_.Add(face);
+
+         for(exp3.Init(face, TopAbs_WIRE); exp3.More(); exp3.Next()) {
+           TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+           if(wmap_.FindIndex(wire) < 1) {
+             wmap_.Add(wire);
+
+             for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
+               TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+               if(emap_.FindIndex(edge) < 1) {
+                 emap_.Add(edge);
+
+                 for(exp5.Init(edge, TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+                   TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+                   if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+                 }
+               }
+             }
+           }
+         }
+       }
+     }
+
+     // Free Wires
+     for(exp3.Init(shape, TopAbs_WIRE, TopAbs_FACE); exp3.More(); exp3.Next()) {
+       TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+       if(wmap_.FindIndex(wire) < 1) {
+         wmap_.Add(wire);
+
+         for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
+           TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+           if(emap_.FindIndex(edge) < 1) {
+             emap_.Add(edge);
+
+             for(exp5.Init(edge, TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+               TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+               if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+             }
+           }
+         }
+       }
+     }
+
+     // Free Edges
+     for(exp4.Init(shape, TopAbs_EDGE, TopAbs_WIRE); exp4.More(); exp4.Next()) {
+       TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+       if(emap_.FindIndex(edge) < 1) {
+         emap_.Add(edge);
+
+         for(exp5.Init(edge, TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+           TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+           if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+         }
+       }
+     }
+
+     // Free Vertices
+     for(exp5.Init(shape, TopAbs_VERTEX, TopAbs_EDGE); exp5.More(); exp5.Next()) {
+       TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+       if(vmap_.FindIndex(vertex) < 1) { vmap_.Add(vertex); }
+     }
+   };
+
+   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp0(_tagVertex);
+   for(; exp0.More(); exp0.Next()) _addShapeToMaps(exp0.Value());
+   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp1(_tagEdge);
+   for(; exp1.More(); exp1.Next()) _addShapeToMaps(exp1.Value());
+   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp2(_tagFace);
+   for(; exp2.More(); exp2.Next()) _addShapeToMaps(exp2.Value());
+   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp3(_tagSolid);
+   for(; exp3.More(); exp3.Next()) _addShapeToMaps(exp3.Value());
+
 
 #else
 
@@ -2349,10 +2518,11 @@ void Feature::extractReferenceFeatures()
   ///////////////////////////////////////////////////////////////////////////////
   /////////////// save reference points
 
-//   for (int i=1; i<=vmap_.Extent(); i++)
-  for (const FreelyIndexedMapOfShape::value_type& i: vmap_)
+   for (int i=1; i<=vmap_.Extent(); i++)
+//  for (const FreelyIndexedMapOfShape::value_type& j: vmap_)
   {
-    refpoints_[ str(format("v%d")%i.first) ] = vertexLocation(i.first);
+//     int i=j.first;
+    refpoints_[ str(format("v%d")%i) ] = vertexLocation(i);
   }
 }
 

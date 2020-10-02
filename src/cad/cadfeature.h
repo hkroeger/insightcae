@@ -231,8 +231,8 @@ private:
   
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
-  /*TopTools_IndexedMapOfShape*/
-  FreelyIndexedMapOfShape
+  TopTools_IndexedMapOfShape
+//  FreelyIndexedMapOfShape
    fmap_, emap_, vmap_, somap_, shmap_, wmap_;
   
   SubfeatureMap providedSubshapes_;

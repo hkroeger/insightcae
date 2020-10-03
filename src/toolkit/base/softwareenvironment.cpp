@@ -216,19 +216,25 @@ void SoftwareEnvironment::executeCommand
 
 SoftwareEnvironment::JobPtr SoftwareEnvironment::forkCommand
 (
-  const std::string& cmd,
-  std::vector<std::string> argv,
+  const std::string& cmd_exe,
+  std::vector<std::string> cmd_argv,
   std::string *ovr_machine
 ) const
 {
   CurrentExceptionContext ex(
-        "launching command \""+cmd+"\" as subprocess"
-        + (argv.size()>0 ? " with arguments:\n"+boost::join(argv, "\n") : "")
+        "launching command \""+cmd_exe+"\" as subprocess"
+        + (cmd_argv.size()>0 ? " with arguments:\n"+boost::join(cmd_argv, "\n") : "")
         );
 
   std::string machine=executionMachine_;
   if (ovr_machine) machine=*ovr_machine;
 
+  std::string cmd = cmd_exe;
+  std::vector<std::string> argv;
+  for (const auto& a: cmd_argv)
+  {
+    cmd+=" \""+a+"\"";
+  }
   argv.insert(argv.begin(), cmd);
 
   if (machine=="")

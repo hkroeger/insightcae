@@ -85,7 +85,7 @@ void Mesh::write(std::ostream& ) const
 
 void Mesh::build()
 {
-  GmshCase c(*model_, L_[0]->value(), L_[1]->value());
+  GmshCase c(model_, outpath_, L_[0]->value(), L_[1]->value());
   if (!quad_) c.setLinear();
   for (const GroupDesc& gd: vertexGroups_)
   {
@@ -143,7 +143,7 @@ void Mesh::build()
       c.setFaceEdgeLen(gname, (*gs)->value());
     }
   }
-  c.doMeshing(/*volname_,*/ outpath_, true);
+  c.doMeshing();
 }
 
 

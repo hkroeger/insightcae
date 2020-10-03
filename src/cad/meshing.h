@@ -25,32 +25,66 @@
 #include "boost/ptr_container/ptr_map.hpp"
 #endif
 #include "cadfeature.h"
+#include "base/tools.h"
+
+#include <list>
 
 namespace insight {
 namespace cad {
-  
+
+class GmshCase;
+
+std::ostream& operator<<(std::ostream& os, GmshCase& gc);
+
 class GmshCase
+    : std::list<std::string>
 {
+  friend std::ostream& operator<<(std::ostream& os, GmshCase& gc);
+
 public:
   typedef std::map<std::string, FeatureSetPtr> NamedFeatureSet;
   
 private:
-  const Feature& part_;
-  double Lmax_, Lmin_;
-  
-  NamedFeatureSet namedVertices_, namedEdges_, namedFaces_, namedSolids_;
-  std::vector<std::string> options_;
-  
-  int elementOrder_;
-  int secondOrderLinear_;
+  CaseDirectory workDir_;
+
+protected:
+  iterator
+    endOfPreamble_,
+    endOfExternalGeometryMerging_,
+      endOfNamedVerticesDefinition_,
+      endOfNamedEdgesDefinition_,
+      endOfNamedFacesDefinition_,
+      endOfNamedSolidsDefinition_,
+    endOfGeometryDefinition_,
+    endOfMeshingOptions_,
+    endOfMeshingActions_;
+
+  ConstFeaturePtr part_;
   
   int additionalPoints_;
+
+  std::string executableName_ = "gmsh";
+
+  boost::filesystem::path outputMeshFile_;
   
 public:
-  GmshCase(const Feature& part, double Lmax=500., double Lmin=0.1);
-  
-  inline void setLinear() { elementOrder_=1; }
-  inline void setQuadratic() { elementOrder_=2; }
+  GmshCase(
+      ConstFeaturePtr part,
+      const boost::filesystem::path& outputMeshFile,
+      double Lmax=500., double Lmin=0.1,
+      const std::string& exeName="gmsh"
+      );
+
+  void insertLinesBefore(iterator i, const std::vector<std::string>& lines);
+
+  std::set<int> findNamedDefinition(const std::string& keyword, const std::string& name) const;
+  std::set<int> findNamedEdges(const std::string& name) const;
+  std::set<int> findNamedFaces(const std::string& name) const;
+  std::set<int> findNamedSolids(const std::string& name) const;
+
+  void setLinear();
+  void setQuadratic();
+  void setMinimumCirclePoints(int mp);
   
   void nameVertices(const std::string& name, const FeatureSet& vertices);
   void nameEdges(const std::string& name, const FeatureSet& edges);
@@ -62,14 +96,11 @@ public:
   void setEdgeLen(const std::string& en, double L);
   void setFaceEdgeLen(const std::string& fn, double L);
   
-  void doMeshing
-  (
-//     const std::string& volname,
-    const boost::filesystem::path& outputMeshFile,
-    bool keeptmpdir=false
-  );
+  void doMeshing();
 };
   
+
+
 }
 }
 

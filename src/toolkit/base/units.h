@@ -20,6 +20,28 @@
 #ifndef UNITS_H
 #define UNITS_H
 
+
+#include <boost/units/systems/si/energy.hpp>
+#include <boost/units/systems/si/force.hpp>
+#include <boost/units/systems/si/length.hpp>
+#include <boost/units/systems/si/volume.hpp>
+#include <boost/units/systems/si/electric_potential.hpp>
+#include <boost/units/systems/si/current.hpp>
+#include <boost/units/systems/si/resistance.hpp>
+#include <boost/units/systems/si/io.hpp>
+#include "boost/units/systems/si/prefixes.hpp"
+#include "boost/units/physical_dimensions.hpp"
+
+namespace boost {
+namespace units {
+namespace si {
+
+static const boost::units::quantity<boost::units::si::length, double> millimeters( 1.0*si::milli*si::meters );
+
+}
+}
+}
+
 namespace SI
 {
 

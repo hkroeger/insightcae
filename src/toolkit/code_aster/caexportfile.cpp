@@ -25,14 +25,17 @@
 
 #include <fstream>
 
+namespace fs=boost::filesystem;
+
 namespace insight
 {
 
 CAExportFile::CAExportFile(const boost::filesystem::path& commFile, std::string version, int t_max, int mem_max)
-: t_max_(t_max),
-  mem_max_(mem_max),
-  version_(version),
-  commFile_(commFile)
+  : boost::filesystem::path(commFile.parent_path()/(commFile.filename().stem().string()+".export")),
+    t_max_(t_max),
+    mem_max_(mem_max),
+    version_(version),
+    commFile_(commFile)
 {
   setMessFile("output.mess");
   setRMedFile("results.med");
@@ -42,9 +45,17 @@ CAExportFile::~CAExportFile()
 {
 }
 
-void CAExportFile::writeFile(const boost::filesystem::path& location)
+const boost::filesystem::path &CAExportFile::commFilePath() const
 {
-  std::ofstream f(location.c_str());
+  return commFile_;
+}
+
+void CAExportFile::writeFile(const fs::path& exportFileName) const
+{
+  fs::path fn=*this;
+  if (!exportFileName.empty())
+    fn=exportFileName;
+  std::ofstream f(fn.string());
   f
   <<"P actions make_etude\n"
   <<"P mode interactif\n"

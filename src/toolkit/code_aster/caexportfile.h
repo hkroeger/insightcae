@@ -28,6 +28,7 @@
 namespace insight {
 
 class CAExportFile
+    : public boost::filesystem::path
 {
   
 public:
@@ -71,7 +72,9 @@ public:
       mmedFiles_[unit]=fn;
     }
 
-    virtual void writeFile(const boost::filesystem::path& location);
+    const boost::filesystem::path& commFilePath() const;
+
+    virtual void writeFile(const boost::filesystem::path& exportFileName="") const;
 };
 }
 

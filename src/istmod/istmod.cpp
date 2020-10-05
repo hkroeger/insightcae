@@ -134,19 +134,7 @@ int main(int argc, char *argv[])
         }
 
         std::string contents;
-        try
-        {
-            std::ifstream in(fn.c_str());
-            in.seekg(0, std::ios::end);
-            contents.resize(in.tellg());
-            in.seekg(0, std::ios::beg);
-            in.read(&contents[0], contents.size());
-            in.close();
-        }
-        catch (...)
-        {
-            throw insight::Exception("Could not open file: "+fn);
-        }
+        readFileIntoString(fn, contents);
 
         xml_document<> doc;
         doc.parse<0>(&contents[0]);

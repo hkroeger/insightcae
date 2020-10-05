@@ -93,13 +93,8 @@ std::string base64_encode(const std::string& s)
 
 std::string base64_encode(const boost::filesystem::path& f)
 {
-  std::ifstream in(f.c_str());
   std::string contents_raw;
-  in.seekg(0, std::ios::end);
-  contents_raw.resize(in.tellg());
-  in.seekg(0, std::ios::beg);
-  in.read(&contents_raw[0], contents_raw.size());
-
+  readFileIntoString(f, contents_raw);
   return base64_encode(contents_raw);
 }
 

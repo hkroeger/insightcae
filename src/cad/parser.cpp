@@ -418,11 +418,7 @@ iscadParserException::iscadParserException(const std::string& reason, int from_p
 bool parseISCADModelStream ( std::istream& in, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd,
                              const boost::filesystem::path& filenameinfo )
 {
-//   std::string contents_raw;
-//   in.seekg ( 0, std::ios::end );
-//   contents_raw.resize ( in.tellg() );
-//   in.seekg ( 0, std::ios::beg );
-//   in.read ( &contents_raw[0], contents_raw.size() );
+
   in >> std::noskipws;
 
 // use stream iterators to copy the stream to a string

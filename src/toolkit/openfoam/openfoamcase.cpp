@@ -469,13 +469,8 @@ void OpenFOAMCase::loadFromFile(const boost::filesystem::path& filename, bool sk
     if (!boost::filesystem::exists(filename))
         throw insight::Exception("Input file "+filename.string()+" does not exist!");
     
-    std::ifstream in(filename.c_str());
     std::string contents;
-    in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents[0], contents.size());
-    in.close();
+    readFileIntoString(filename, contents);
     
     setFromXML(contents, filename, skipOFE, skipBCs, casepath);
 }

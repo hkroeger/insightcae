@@ -243,16 +243,7 @@ int main(int argc, char *argv[])
               exit(-1);
           }
 
-          try
-          {
-              std::ifstream in(fn.c_str());
-              istreambuf_iterator<char> fbegin(in), fend;
-              std::copy(fbegin, fend, back_inserter(contents));
-          }
-          catch (...)
-          {
-              throw insight::Exception("Failed to read file "+fn.string());
-          }
+          readFileIntoString(fn, contents);
         }
 
         xml_document<> doc;

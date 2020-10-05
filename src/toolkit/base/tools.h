@@ -30,6 +30,8 @@ class vtkCellArray;
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 
+#include <istream>
+
 
 namespace insight
 {
@@ -220,6 +222,34 @@ std::string escapeShellSymbols(const std::string& expr);
 
 
 int findFreePort();
+
+
+void readStreamIntoString
+(
+    std::istream& in,
+    std::string& fileContent
+);
+
+void readFileIntoString
+(
+    const boost::filesystem::path& fileName,
+    std::string& fileContent
+);
+
+
+class TemplateFile
+    : public std::string
+{
+public:
+  TemplateFile(const std::string& hardCodedTemplate);
+  TemplateFile(std::istream& in);
+  TemplateFile(const boost::filesystem::path& in);
+
+  void replace(const std::string& keyword, const std::string& content);
+
+  void write(std::ostream& os) const;
+  void write(const boost::filesystem::path& outfile) const;
+};
 
 }
 

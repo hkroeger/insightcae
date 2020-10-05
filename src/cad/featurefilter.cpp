@@ -22,6 +22,7 @@
 
 #include <memory>
 #include "base/linearalgebra.h"
+#include "base/tools.h"
 #include "featurefilter.h"
 #include <base/exception.h>
 #include "boost/foreach.hpp"
@@ -601,10 +602,7 @@ FilterPtr parseFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)
 //   skip_grammar<Iterator> skip;
   
   std::string contents_raw;
-  in.seekg(0, std::ios::end);
-  contents_raw.resize(in.tellg());
-  in.seekg(0, std::ios::beg);
-  in.read(&contents_raw[0], contents_raw.size());
+  readStreamIntoString(in, contents_raw);
   
   std::string::iterator first=contents_raw.begin();
   std::string::iterator last=contents_raw.end();

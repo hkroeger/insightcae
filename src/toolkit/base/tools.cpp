@@ -745,4 +745,58 @@ int findFreePort()
 }
 
 
+
+void readStreamIntoString(istream &in, string &fileContent)
+{
+  in.seekg(0, std::ios::end);
+  fileContent.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&fileContent[0], fileContent.size());
+}
+
+void readFileIntoString(const path &fileName, string &fileContent)
+{
+  std::ifstream in(fileName.string(), std::ios::in | std::ios::binary);
+  if (!in)
+  {
+    throw insight::Exception("Could not open file "+fileName.string()+"!");
+  }
+  readStreamIntoString(in, fileContent);
+}
+
+
+
+TemplateFile::TemplateFile(const string &hardCodedTemplate)
+  : std::string(hardCodedTemplate)
+{}
+
+TemplateFile::TemplateFile(std::istream &in)
+{
+  readStreamIntoString(in, *this);
+}
+
+TemplateFile::TemplateFile(const boost::filesystem::path& in)
+{
+  readFileIntoString(in, *this);
+}
+
+void TemplateFile::replace(const string &keyword, const string &content)
+{
+  boost::replace_all ( *this, "###"+keyword+"###", content );
+}
+
+void TemplateFile::write(ostream &os) const
+{
+  os << (*this);
+}
+
+void TemplateFile::write(const path &outfile) const
+{
+  std::ofstream f(outfile.string());
+  write(f);
+}
+
+
+
+
 }

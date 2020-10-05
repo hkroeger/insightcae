@@ -22,6 +22,7 @@
 #include "parameterset.h"
 #include "base/parameter.h"
 #include "base/latextools.h"
+#include "base/tools.h"
 
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
@@ -298,13 +299,8 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string a
 
 std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
 {
-  std::ifstream in(file.c_str());
   std::string contents;
-  in.seekg(0, std::ios::end);
-  contents.resize(in.tellg());
-  in.seekg(0, std::ios::beg);
-  in.read(&contents[0], contents.size());
-  in.close();
+  readFileIntoString(file, contents);
 
   xml_document<> doc;
   doc.parse<0>(&contents[0]);

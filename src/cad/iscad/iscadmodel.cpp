@@ -36,6 +36,7 @@
 #include <QPushButton>
 #include <QCheckBox>
 
+#include "base/tools.h"
 #include "base/qt5_helper.h"
 
 #include "cadfeatures/modelfeature.h"
@@ -162,13 +163,8 @@ void ISCADModel::loadFile(const boost::filesystem::path& file)
     clearDerivedData();
 
     setFilename(file);
-    std::ifstream in(file.c_str());
-
     std::string contents_raw;
-    in.seekg(0, std::ios::end);
-    contents_raw.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents_raw[0], contents_raw.size());
+    insight::readFileIntoString(file, contents_raw);
 
     setScript(contents_raw);
 }

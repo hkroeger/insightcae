@@ -174,13 +174,8 @@ void workbench::openAnalysis(const QString& fn)
   
   boost::filesystem::path fp(fn.toStdString());
   
-  std::ifstream in(fp.c_str());
   std::string contents;
-  in.seekg(0, std::ios::end);
-  contents.resize(in.tellg());
-  in.seekg(0, std::ios::beg);
-  in.read(&contents[0], contents.size());
-  in.close();
+  insight::readFileIntoString(fp, contents);
 
   xml_document<> doc;
   doc.parse<0>(&contents[0]);

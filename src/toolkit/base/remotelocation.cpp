@@ -123,16 +123,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
     {
       // read xml
       string content;
-      try
-      {
-          std::ifstream in(mf.c_str());
-          istreambuf_iterator<char> fbegin(in), fend;
-          std::copy(fbegin, fend, back_inserter(content));
-      }
-      catch (...)
-      {
-          throw insight::Exception("Failed to read file "+mf.string());
-      }
+      readFileIntoString(mf, content);
 
       using namespace rapidxml;
       xml_document<> doc;

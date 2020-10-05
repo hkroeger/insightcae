@@ -339,10 +339,8 @@ isofCaseBuilderWindow::~isofCaseBuilderWindow()
 void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool skipBCs)
 {
 
-    std::ifstream in(file.c_str());
     std::string contents;
-    std::istreambuf_iterator<char> fbegin(in), fend;
-    std::copy(fbegin, fend, back_inserter(contents));
+    readFileIntoString(file, contents);
 
     xml_document<> doc;
     doc.parse<0>(&contents[0]);

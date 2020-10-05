@@ -20,14 +20,20 @@
 
 #include "codeasterrun.h"
 
+#include "boost/process.hpp"
+
 using namespace std;
+using namespace boost;
+namespace fs=boost::filesystem;
 
 namespace insight
 {
 
 CAEnvironment::CAEnvironment(const boost::filesystem::path& asrun_cmd)
-: asrun_cmd_(asrun_cmd)
+  : asrun_cmd_(asrun_cmd)
 {
+  if (!fs::exists(asrun_cmd_))
+    asrun_cmd_=which(asrun_cmd_.string());
 }
 
 int CAEnvironment::version() const
@@ -50,7 +56,7 @@ void CAEnvironment::forkCase
 
   std::string sys("bash -lc '( "); sys += cmd+" ) &'";
   cout<<"Executing "<<sys<<endl;
-  system(sys.c_str());
+  ::system(sys.c_str());
 }
 
 }

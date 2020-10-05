@@ -36,7 +36,7 @@ protected:
   boost::filesystem::path asrun_cmd_;
   
 public:
-  CAEnvironment(const boost::filesystem::path& asrun_cmd);
+  CAEnvironment(const boost::filesystem::path& asrun_cmd = "as_run");
   
   virtual int version() const;
   virtual const boost::filesystem::path& asrun_cmd() const;

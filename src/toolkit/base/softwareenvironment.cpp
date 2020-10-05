@@ -25,6 +25,7 @@
 #include <boost/asio/steady_timer.hpp>
 
 using namespace std;
+namespace fs=boost::filesystem;
 
 namespace insight
 {
@@ -166,6 +167,18 @@ SoftwareEnvironment::~SoftwareEnvironment()
 int SoftwareEnvironment::version() const
 {
   return -1;
+}
+
+fs::path SoftwareEnvironment::which(const string &command) const
+{
+  insight::CurrentExceptionContext ex("determining full path to "+command);
+  std::vector<std::string> result;
+
+  executeCommand("which", { command }, &result);
+
+  if (result.size()!=1)
+    throw insight::Exception("Command executable "+command+" not found!");
+  return fs::path(result[0]);
 }
 
 

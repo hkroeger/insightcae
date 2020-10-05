@@ -79,6 +79,8 @@ public:
     inline const std::string& executionMachine() const { return executionMachine_; }
     
     virtual int version() const;
+
+    boost::filesystem::path which(const std::string& command) const;
     
     virtual void executeCommand
     (  

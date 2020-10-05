@@ -320,14 +320,14 @@ public:
       ,
       std::function<void(void)> preAction = []()->void {},
       std::function<void(void)> postAction = []()->void {},
-      std::function<void(std::exception_ptr)> exHdlr = [](std::exception_ptr)->void {}
+      std::function<void(std::exception_ptr)> exHdlr = std::function<void(std::exception_ptr)>()
 #endif
   );
 
 #ifndef SWIG
   AnalysisThread(
       std::function<void(void)> action,
-      std::function<void(std::exception_ptr)> exHdlr = [](std::exception_ptr)->void {}
+      std::function<void(std::exception_ptr)> exHdlr = std::function<void(std::exception_ptr)>()
   );
 #endif
 

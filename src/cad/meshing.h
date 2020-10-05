@@ -72,10 +72,14 @@ public:
       ConstFeaturePtr part,
       const boost::filesystem::path& outputMeshFile,
       double Lmax=500., double Lmin=0.1,
-      const std::string& exeName="gmsh"
+      const std::string& exeName="gmsh",
+      bool keepDir=false
       );
 
-  void insertLinesBefore(iterator i, const std::vector<std::string>& lines);
+  void insertLinesBefore(
+      std::list<std::string>::iterator i,
+      const std::vector<std::string>& lines
+      );
 
   std::set<int> findNamedDefinition(const std::string& keyword, const std::string& name) const;
   std::set<int> findNamedEdges(const std::string& name) const;

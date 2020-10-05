@@ -45,9 +45,10 @@ GmshCase::GmshCase(
     insight::cad::ConstFeaturePtr part,
     const boost::filesystem::path& outputMeshFile,
     double Lmax, double Lmin,
-    const std::string& exeName
+    const std::string& exeName,
+    bool keepDir
     )
-: workDir_(/*false*/),
+: workDir_(keepDir),
   part_(part),
   additionalPoints_(0),
   executableName_(exeName),

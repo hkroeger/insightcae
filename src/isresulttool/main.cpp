@@ -84,6 +84,7 @@ int main(int argc, char *argv[])
     ("comparescalar", po::value< string >(), "Compare scalar values. Specify path of scalar in result archive. "
                                              "Multiple scalars may plotted together: give list, separated by comma (without spaces). "
                                               "Put optional scale factor after variable name, separated by colon.")
+    ("sort,s", "sort entries in comparison")
     ("render", "Render into PDF")
     ;
 
@@ -182,7 +183,7 @@ int main(int argc, char *argv[])
 
           // sort files by value of first scalar
           typedef std::pair<string,std::vector<double> > NameAndValues;
-          std::map<double,NameAndValues > sorted_vals;
+          std::vector<NameAndValues > sorted_vals;
           for (size_t i=0; i<r.size(); i++)
           {
             std::vector<double> vals;
@@ -190,15 +191,25 @@ int main(int argc, char *argv[])
             {
               vals.push_back(r[i]->getScalar(varnames[j])*sfs[j]);
             }
-            sorted_vals[vals[0]] = NameAndValues(fns[i], vals);
+            sorted_vals.push_back(NameAndValues(fns[i], vals));
+          }
+
+          if (vm.count("sorted"))
+          {
+            sort(sorted_vals.begin(), sorted_vals.end(),
+                [](const NameAndValues& v1, const NameAndValues& v2)
+                {
+                  return v1.second[0]<v2.second[0];
+                }
+            );
           }
 
           // output
           for (const auto& v: sorted_vals)
           {
-            cout<<v.second.first<<":\t";
+            cout<<v.first<<":\t";
             for (size_t i=0; i<varnames.size(); i++)
-             cout <<"\t"<<varnames[i]<<" = "<<v.second.second[i]/sfs[i];
+             cout <<"\t"<<varnames[i]<<" = "<<v.second[i]/sfs[i];
             cout<<endl;
           }
 
@@ -223,8 +234,8 @@ int main(int argc, char *argv[])
             bs->setColor( QColor( rand()%255, rand()%255, rand()%255 ) );
             for (const auto& v: sorted_vals) // through all files
             {
-              bs->append( v.second.second[i] );
-              categories.append(QString::fromStdString(v.second.first));
+              bs->append( v.second[i] );
+              categories.append(QString::fromStdString(v.first));
             }
             series->append(bs);
           }

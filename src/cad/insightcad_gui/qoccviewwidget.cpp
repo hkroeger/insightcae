@@ -91,13 +91,26 @@ Handle(V3d_Viewer) QoccViewWidget::createViewer
 
 
   Handle(V3d_Viewer) aViewer = new V3d_Viewer (aGraphicDriver);
-  aViewer->SetDefaultLights();
+
+//  aViewer->SetDefaultLights();
+
+  Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(Quantity_NOC_WHITE);
+  L1->SetIntensity(0.4);
+  aViewer->AddLight(L1);
+
+  Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
+  L2->SetIntensity(0.8);
+  aViewer->AddLight(L2);
+
   aViewer->SetLightOn();
 
-  aViewer->SetDefaultViewSize (theViewSize);
-  aViewer->SetDefaultViewProj (theViewProj);
-  aViewer->SetComputedMode (theComputedMode);
-  aViewer->SetDefaultComputedMode (theDefaultComputedMode);
+  aViewer->SetDefaultShadingModel(Graphic3d_TOSM_FRAGMENT);
+
+//  aViewer->SetDefaultViewSize (theViewSize);
+//  aViewer->SetDefaultViewProj (theViewProj);
+//  aViewer->SetComputedMode (theComputedMode);
+//  aViewer->SetDefaultComputedMode (theDefaultComputedMode);
+
 
   return aViewer;
 }
@@ -217,15 +230,8 @@ void QoccViewWidget::init()
   myView->SetScale( 2 );			// Choose a "nicer" intial scale
 
   // Set up axes (Trihedron) in lower left corner.
-  myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1, V3d_WIREFRAME );
-  myView->SetShadingModel(V3d_PHONG);
-
-//    Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(Quantity_NOC_WHITE);
-//    Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
-//    myViewer->AddLight(L1);
-//    myViewer->AddLight(L2);
-
-  myViewer->SetLightOn();
+  myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1, V3d_ZBUFFER );
+//  myView->SetShadingModel(V3d_PHONG);
 
   myView->SetProj( V3d_Zpos );
   myView->SetUp( V3d_Xpos );

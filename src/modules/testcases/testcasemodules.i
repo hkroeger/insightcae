@@ -24,6 +24,7 @@
 %import "toolkit.i"
 
 %{
+#include "code_aster/caexportfile.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/paraview.h"
 #include "openfoam/caseelements/analysiscaseelements.h"

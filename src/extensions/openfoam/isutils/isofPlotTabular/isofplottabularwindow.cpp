@@ -130,15 +130,8 @@ void IsofPlotTabularWindow::onUpdate(bool)
     {
       PlotWidget *p = dynamic_cast<PlotWidget*>(ui->graphs->widget(j-1));
       p->setData(data_.col(0), data_.col(j));
-    }
-
-    if (ui->graphs->count()!=0)
-    {
-      if (PlotWidget *pw = dynamic_cast<PlotWidget*>(ui->graphs->currentWidget()))
-      {
-        pw->onChangeXRange(ui->startTime->text(), ui->endTime->text());
-        pw->onShow();
-      }
+      p->onChangeXRange(ui->startTime->text(), ui->endTime->text());
+      p->onShow();
     }
   }
 

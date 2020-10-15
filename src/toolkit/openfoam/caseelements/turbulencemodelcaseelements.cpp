@@ -316,7 +316,8 @@ void kOmegaSST_RASModel::addFields( OpenFOAMCase& c ) const
 }
 
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
-: RASModel(c)
+: RASModel(c),
+  p_(ps)
 {
 //   addFields();
 }
@@ -327,10 +328,23 @@ void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASModel::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  RASProperties["RASModel"]="kOmegaSST";
+  if (const auto *none = boost::get<Parameters::freeSurfaceProductionDamping_none_type>(&p_.freeSurfaceProductionDamping))
+  {
+    RASProperties["RASModel"]="kOmegaSST";
+    RASProperties.subDict("kOmegaSSTCoeffs");
+  }
+  else if (const auto *damp = boost::get<Parameters::freeSurfaceProductionDamping_enabled_type>(&p_.freeSurfaceProductionDamping))
+  {
+    RASProperties["RASModel"]="kOmegaSST3";
+
+    auto& coeffs = RASProperties.subDict("kOmegaSST3Coeffs");
+    coeffs["freeSurfaceAlphaName"]=damp->alphaFieldName;
+
+    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+    controlDict.getList("libs").insertNoDuplicate( "\"libkOmegaSST3.so\"" );
+  }
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
-  RASProperties.subDict("kOmegaSSTCoeffs");
 }
 
 bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
@@ -601,7 +615,7 @@ void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   string modelName="hybKOmegaSST2";
 
   if (OFversion()<230)
-    throw insight::Exception("The LES model "+modelName+" is unsupported in the selected OF version!");
+    throw insight::UnsupportedFeature("The LES model "+modelName+" is unsupported in the selected OF version!");
     
   RASProperties["RASModel"]=modelName;
   RASProperties["delta"]="maxEdge";

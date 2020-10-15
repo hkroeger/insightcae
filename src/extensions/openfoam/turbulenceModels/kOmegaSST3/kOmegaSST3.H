@@ -57,7 +57,7 @@ Description
 
     The default model coefficients correspond to the following:
     @verbatim
-        kOmegaSST_EngysCoeffs
+        kOmegaSST
         {
             alphaK1     0.85034;
             alphaK2     1.0;

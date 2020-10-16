@@ -5,6 +5,8 @@
 
 int main(int, char*argv[])
 {
+  return executeTest([=](){
+
     OpenFOAM_blockMeshTemplate_Test tc(argv[1]);
 
     bmd::blockMeshDict_Box::Parameters p;
@@ -12,5 +14,5 @@ int main(int, char*argv[])
     tc.insert(new bmd::blockMeshDict_Box(tc, p));
 
     tc.runTest();
-    return 0;
+  });
 }

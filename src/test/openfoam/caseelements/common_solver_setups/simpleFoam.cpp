@@ -7,6 +7,7 @@
 
 int main(int, char*argv[])
 {
+    return executeTest([=](){
     OpenFOAMCaseWithCylinderMesh tc(argv[1]);
 
     steadyIncompressibleNumerics::Parameters p;
@@ -16,8 +17,8 @@ int main(int, char*argv[])
 
     tc.insert(new singlePhaseTransportProperties(tc));
 
-    tc.insert(new laminar_RASModel(tc));
+    tc.insert(new kOmegaSST_RASModel(tc));
 
     tc.runTest();
-    return 0;
+    });
 }

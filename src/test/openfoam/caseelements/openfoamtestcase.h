@@ -1,6 +1,7 @@
 #ifndef OPENFOAMTESTCASE_H
 #define OPENFOAMTESTCASE_H
 
+#include <functional>
 #include "openfoam/openfoamcase.h"
 
 using namespace std;
@@ -15,5 +16,7 @@ public:
 
   virtual void runTest() =0;
 };
+
+int executeTest(std::function<void(void)> testAlgo);
 
 #endif // OPENFOAMTESTCASE_H

@@ -15,7 +15,7 @@ void buoyantSimpleFoamNumerics::init()
 {
 
   if (OFversion() < 230)
-    throw insight::Exception("buoyantSimpleFoamNumerics currently supports only OF >=230");
+    throw insight::UnsupportedFeature("buoyantSimpleFoamNumerics currently supports only OF >=230");
 
   OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );
   OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );

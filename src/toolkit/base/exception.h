@@ -96,6 +96,15 @@ public:
 };
 
 
+
+class UnsupportedFeature
+    : public Exception
+{
+public:
+  UnsupportedFeature();
+  UnsupportedFeature(const std::string& msg, bool strace=true);
+};
+
 void assertion(bool condition, const std::string& context_message);
 
 

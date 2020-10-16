@@ -15,7 +15,7 @@ void buoyantPimpleFoamNumerics::init()
 {
 
   if (OFversion() < 230)
-    throw insight::Exception("buoyantSimpleFoamNumerics currently supports only OF >=230");
+    throw insight::UnsupportedFeature("buoyantSimpleFoamNumerics currently supports only OF >=230");
 
   if (p_.boussinesqApproach)
   {

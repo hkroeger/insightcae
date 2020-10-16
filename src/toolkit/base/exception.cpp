@@ -376,6 +376,13 @@ string vector_to_string(const arma::mat &vals, bool addMag)
   return os.str();
 }
 
+UnsupportedFeature::UnsupportedFeature()
+{}
+
+UnsupportedFeature::UnsupportedFeature(const string &msg, bool strace)
+  : Exception(msg, strace)
+{}
+
 
 
 

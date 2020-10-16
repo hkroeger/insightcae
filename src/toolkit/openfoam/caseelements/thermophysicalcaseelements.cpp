@@ -1201,7 +1201,7 @@ void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionarie
   }
   else
   {
-    throw insight::Exception("unsupported OpenFOAM version");
+    throw insight::UnsupportedFeature("unsupported OpenFOAM version");
   }
 }
 

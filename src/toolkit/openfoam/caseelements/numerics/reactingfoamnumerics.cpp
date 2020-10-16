@@ -19,7 +19,7 @@ void reactingFoamNumerics::init()
 {
 
   if (OFversion() < 230)
-    throw insight::Exception("reactingFoamNumerics currently supports only OF >=230");
+    throw insight::UnsupportedFeature("reactingFoamNumerics currently supports only OF >=230");
 
   OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	FieldValue({1e5}), volField ) );
   OFcase().addField(pName_, FieldInfo(scalarField, 	dimPressure, 	FieldValue({1e5}), volField ) );

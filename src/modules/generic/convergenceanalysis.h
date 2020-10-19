@@ -45,7 +45,7 @@ p_est = double 2 "Expected convergence order"
 solutions = array [ set {
   deltax = double 1 "Value of refined quantity (e.g. mesh size $\\Delta x$). Smaller value means finer resolution."
   S = double 1 "Solution value"
- } ] *3 "Solution quantity on different resolution levels. The list has to contain 3 elements."
+ } ] *3 "Solution quantity on different resolution levels. The list has to contain 3 elements. Coarsest first, finest last."
 
 <<<PARAMETERSET
 */

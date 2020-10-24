@@ -40,45 +40,55 @@ ProjectedPoint::ProjectedPoint(VectorPtr p0, DatumPtr plane, VectorPtr along)
 
 arma::mat ProjectedPoint::value() const
 {
-  if (!plane_->providesPlanarReference())
-    throw insight::Exception("Given datum does not provide a plane!");
-      
-  if (!along_)
-  {  
-    Handle_Geom_Plane pl(new Geom_Plane(plane_->plane()));
-    GeomAPI_ProjectPointOnSurf proj(to_Pnt(p0_->value()), pl);
-    gp_Pnt p=proj.NearestPoint();
-    return vec3(p.X(), p.Y(), p.Z());
+  if (plane_->providesPlanarReference())
+  {
+    if (!along_)
+    {
+      Handle_Geom_Plane pl(new Geom_Plane(plane_->plane()));
+      GeomAPI_ProjectPointOnSurf proj(to_Pnt(p0_->value()), pl);
+      gp_Pnt p=proj.NearestPoint();
+      return vec3(p.X(), p.Y(), p.Z());
+    }
+    else
+    {
+      arma::mat dir=along_->value();
+
+      gp_Dir d(dir(0), dir(1), dir(2));
+      Handle_Geom_Curve l(new Geom_Line( to_Pnt(p0_->value()), d ));
+      Handle_Geom_Surface pl(new Geom_Plane(plane_->plane()));
+
+      GeomAPI_IntCS isec(l, pl);
+
+      double nearest=DBL_MAX;
+      arma::mat res;
+      for (int i=1; i<=isec.NbPoints(); i++)
+      {
+        gp_Pnt p=isec.Point(i);
+        arma::mat loc=vec3(p.X(), p.Y(), p.Z());
+        double dist=norm( loc - p0_->value(), 2);
+        if (dist<nearest)
+        {
+          nearest=dist;
+          res=loc;
+        }
+      }
+
+      if (isec.NbPoints()<1)
+        throw insight::Exception("projection not successful!");
+
+      return res;
+    }
+  }
+  else if (plane_->providesAxisReference())
+  {
+
+      Handle_Geom_Curve l(new Geom_Line( plane_->axis() ));
+      GeomAPI_ProjectPointOnCurve proj(to_Pnt(p0_->value()), l);
+      gp_Pnt p=proj.NearestPoint();
+      return vec3(p.X(), p.Y(), p.Z());
   }
   else
-  {
-    arma::mat dir=along_->value();
-    
-    gp_Dir d(dir(0), dir(1), dir(2));
-    Handle_Geom_Curve l(new Geom_Line( to_Pnt(p0_->value()), d ));
-    Handle_Geom_Surface pl(new Geom_Plane(plane_->plane()));
-
-    GeomAPI_IntCS isec(l, pl);
-    
-    double nearest=DBL_MAX;
-    arma::mat res;
-    for (int i=1; i<=isec.NbPoints(); i++)
-    {
-      gp_Pnt p=isec.Point(i);
-      arma::mat loc=vec3(p.X(), p.Y(), p.Z());
-      double dist=norm( loc - p0_->value(), 2);
-      if (dist<nearest) 
-      {
-	nearest=dist;
-	res=loc;
-      }
-    }
-    
-    if (isec.NbPoints()<1)
-      throw insight::Exception("projection not successful!");
-    
-    return res;
-  }
+    throw insight::Exception("Unhandled operators for projection!");
 }
 
 

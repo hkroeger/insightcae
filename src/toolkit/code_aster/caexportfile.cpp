@@ -20,6 +20,7 @@
 
 #include "caexportfile.h"
 
+#include "base/tools.h"
 #include "boost/foreach.hpp"
 #include <boost/iterator/iterator_concepts.hpp>
 
@@ -55,12 +56,31 @@ void CAExportFile::writeFile(const fs::path& exportFileName) const
   fs::path fn=*this;
   if (!exportFileName.empty())
     fn=exportFileName;
+
+  long int mem_max = mem_max_;
+  if (mem_max<1)
+  {
+    MemoryInfo mi;
+    mem_max = mi.memTotal_/1024/1024; // MB
+  }
+
   std::ofstream f(fn.string());
   f
   <<"P actions make_etude\n"
+  <<"P consbtc oui\n"
+  <<"P corefilesize unlimited\n"
+  <<"P cpresok RESNOOK\n"
+  <<"P debug nodebug\n"
+  <<"P soumbtc oui\n"
+  <<"P facmtps 1\n"
+
   <<"P mode interactif\n"
   <<"P version " << version_ << "\n"
-  <<"A memjeveux " << mem_max_ << "\n"
+  <<"P mpi_nbcpu "<<np_mpi_<<"\n"
+  <<"P mpi_nbnoeud 1\n"
+  <<"P ncpus "<<np_omp_<<"\n"
+  <<"A args\n"
+  <<"A memjeveux " << (mem_max/8/np_mpi_) << "\n"
   <<"A tpmax " << t_max_ << "\n"
   <<"F comm " << commFile_.c_str() << " D  1\n";
   

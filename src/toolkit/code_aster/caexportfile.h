@@ -43,10 +43,18 @@ protected:
   
   std::unique_ptr<boost::filesystem::path> messFile_;
   std::unique_ptr<boost::filesystem::path> rmedFile_;
+
+  int np_omp_, np_mpi_;
   
 public:
-    CAExportFile(const boost::filesystem::path& commFile, std::string version="stable", int t_max=24*60*60, int mem_max=512);
+    CAExportFile(const boost::filesystem::path& commFile, std::string version="stable", int t_max=7*24*60*60, int mem_max=0 /*MB*/);
     ~CAExportFile();
+
+    inline void setNP(int np_omp=1, int np_mpi=1)
+    {
+      np_omp_=np_omp;
+      np_mpi_=np_mpi;
+    }
     
     inline void setMessFile(const boost::filesystem::path& fn)
     {

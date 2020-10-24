@@ -796,6 +796,24 @@ void TemplateFile::write(const path &outfile) const
   write(f);
 }
 
+MemoryInfo::MemoryInfo()
+{
+  std::map<string, pair<long long, string> > entries;
+
+  std::ifstream f("/proc/meminfo");
+  string line;
+  while (getline(f, line))
+  {
+    std::vector<string> s;
+    boost::split(s, line, boost::is_any_of("\t "), boost::token_compress_on);
+
+    entries[s[0]]=pair<int, string>( lexical_cast<long long>(s[1]), s.size()>2?s[2]:"" );
+  }
+
+  memTotal_=entries["MemTotal:"].first * 1024;
+  memFree_=entries["MemFree:"].first * 1024;
+}
+
 
 
 

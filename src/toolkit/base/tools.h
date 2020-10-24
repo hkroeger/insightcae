@@ -251,6 +251,13 @@ public:
   void write(const boost::filesystem::path& outfile) const;
 };
 
+struct MemoryInfo
+{
+  long long memTotal_, memFree_;
+
+  MemoryInfo();
+};
+
 }
 
 #endif // TOOLS_H

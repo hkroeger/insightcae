@@ -50,9 +50,9 @@ protected:
   QtCharts::QChart* chartData_;
 
   size_t maxCnt_;
-  typedef std::map<std::string, std::vector<double> > ArrayList;
-  ArrayList progressX_;
-  ArrayList progressY_;
+//  typedef std::map<std::string, std::vector<double> > ArrayList;
+//  ArrayList progressX_;
+//  ArrayList progressY_;
   CurveList curve_;
   bool needsRedraw_;
   QMutex mutex_;

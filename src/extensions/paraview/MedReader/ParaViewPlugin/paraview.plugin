@@ -1,0 +1,23 @@
+NAME
+  MedReader
+DESCRIPTION
+  Reading MED Files. Created by EDF, modified by silentdynamics GmbH
+CONDITION
+  PARAVIEW_USE_QT
+REQUIRES_MODULES
+  ParaView::pqApplicationComponents
+  ParaView::pqComponents
+  ParaView::RemotingCore
+  ParaView::RemotingServerManager
+  ParaView::RemotingViews
+  VTK::CommonCore
+  VTK::CommonDataModel
+  VTK::IOCore
+  VTK::IOImage
+  VTK::IOXML
+  VTK::IOXMLParser
+  VTK::InteractionWidgets
+  VTK::RenderingCore
+  VTK::RenderingOpenGL2
+  VTK::RenderingOpenVR
+  VTK::ViewsCore

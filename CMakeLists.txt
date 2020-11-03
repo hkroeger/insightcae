@@ -185,8 +185,8 @@ if (INSIGHT_BUILD_TOOLKIT)
         REQUIRED
         )
 
-    add_subdirectory(CMake/vtkTargets/vtkOnscreen)
     add_subdirectory(CMake/vtkTargets/vtkOffscreen)
+    add_subdirectory(CMake/vtkTargets/vtkOnscreen)
 
 endif()
 

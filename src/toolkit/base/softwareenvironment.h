@@ -99,6 +99,8 @@ public:
     
 };
 
+typedef SoftwareEnvironment::JobPtr JobPtr;
+
 }
 
 #endif // SOFTWAREENVIRONMENT_H

@@ -46,17 +46,18 @@ const boost::filesystem::path& CAEnvironment::asrun_cmd() const
   return asrun_cmd_;
 }
 
-void CAEnvironment::forkCase
+SoftwareEnvironment::JobPtr CAEnvironment::forkCase
 (
   const boost::filesystem::path& exportfile
 ) const
 {
   boost::filesystem::path dir=exportfile.parent_path();
-  std::string cmd = std::string("cd ")+dir.c_str()+"; "+asrun_cmd().c_str()+" --run "+exportfile.filename().c_str();
 
-  std::string sys("bash -lc '( "); sys += cmd+" ) &'";
-  cout<<"Executing "<<sys<<endl;
-  ::system(sys.c_str());
+  return forkCommand(
+        "cd "+dir.string()+"; "+asrun_cmd().string(),
+        {"--run", exportfile.string()}
+        );
+
 }
 
 }

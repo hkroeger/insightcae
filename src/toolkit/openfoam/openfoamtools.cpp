@@ -1551,7 +1551,7 @@ void runPvPython
   
   redi::opstream proc;  
   std::vector<string> args;
-  args.push_back("--use-offscreen-rendering");
+  args.push_back("--force-offscreen-rendering");
   std::string machine=""; // execute always on local machine
   //ofc.forkCommand(proc, location, "pvpython", args);
   

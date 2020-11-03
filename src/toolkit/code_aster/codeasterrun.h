@@ -41,10 +41,11 @@ public:
   virtual int version() const;
   virtual const boost::filesystem::path& asrun_cmd() const;
   
-  void forkCase
+  JobPtr forkCase
   (
     const boost::filesystem::path& exportfile
   ) const;
+
 };
 
 }

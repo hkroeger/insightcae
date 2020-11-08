@@ -49,9 +49,11 @@ ENDIF(NOT VTK_FOUND)
 
 	 
 # Standard CMake option for building libraries shared or static by default.
-OPTION(BUILD_SHARED_LIBS
-       "Build with shared libraries."
-       ${VTK_BUILD_SHARED_LIBS})
+#OPTION(BUILD_SHARED_LIBS
+#       "Build with shared libraries."
+#       ${VTK_BUILD_SHARED_LIBS})
+SET(BUILD_SHARED_LIBS ON)
+
 #
 # Find dependant Library
 #
@@ -89,6 +91,7 @@ if(MedReader_BUILD_ParaView_Plugin)
 
     paraview_plugin_scan(
       PLUGIN_FILES      "${CMAKE_CURRENT_SOURCE_DIR}/ParaViewPlugin/paraview.plugin"
+      ENABLE_BY_DEFAULT ON
       PROVIDES_PLUGINS  plugins
       REQUIRES_MODULES  required_modules)
 

@@ -19,18 +19,18 @@ void buoyantPimpleFoamNumerics::init()
 
   if (p_.boussinesqApproach)
   {
-    OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({0}), volField ) );
-    OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({0}), volField ) );
+    OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p_.pinternal}), volField ) );
+    OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p_.pinternal}), volField ) );
 
     OFcase().addField("alphat", FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   }
   else
   {
-    OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({1e5}), volField ) );
-    OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({1e5}), volField ) );
+    OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );
+    OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );
   }
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0, 0.0, 0.0}), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({300.0}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p_.Tinternal}), volField ) );
 }
 
 

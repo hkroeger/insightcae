@@ -20,6 +20,9 @@ inherits FVNumerics::Parameters
 boussinesqApproach = bool false "Use boussinesq approach"
 time_integration = includedset "insight::CompressiblePIMPLESettings::Parameters" "Settings for time integration"
 
+Tinternal = double 300 "initial temperature in internal field"
+pinternal = double 1e5 "initial pressure in internal field. Should be zero, if boussinesqApproach is set to true and some physical reasonable absolut pressure value otherwise."
+
 <<<PARAMETERSET
 */
 

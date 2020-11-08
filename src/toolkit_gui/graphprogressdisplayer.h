@@ -58,6 +58,8 @@ protected:
   QMutex mutex_;
   bool logscale_;
 
+  double ymin_=1e10, ymax_=-1e10, xmin_=1e10, xmax_=-1e10;
+
 public:
   GraphProgressChart(bool logscale, QWidget* parent=nullptr);
   ~GraphProgressChart();

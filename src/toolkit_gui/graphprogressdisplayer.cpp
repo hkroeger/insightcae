@@ -49,7 +49,8 @@ void GraphProgressChart::reset()
 void GraphProgressChart::update(double iter, const std::string& name, double y_value)
 {
   mutex_.lock();
-  
+  setUpdatesEnabled(false);
+
 
   QtCharts::QLineSeries* crv;
   auto i = curve_.find(name);
@@ -72,10 +73,14 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
     curve_[name]=crv;
   }
 
-
   if ( !logscale_ || (logscale_&&(y_value > 0.0)) ) // only add, if y>0. Plot gets unreadable otherwise
   {
       crv->append(iter, y_value);
+
+      xmin_=std::min(xmin_, iter);
+      xmax_=std::max(xmax_, iter);
+      ymin_=std::min(ymin_, y_value);
+      ymax_=std::max(ymax_, y_value);
   }
   if (crv->count() > maxCnt_)
   {
@@ -85,6 +90,7 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
 //  setAxisAutoScale(QwtPlot::yLeft);
   needsRedraw_=true;
   
+  setUpdatesEnabled(true);
   mutex_.unlock();
 }
 
@@ -113,7 +119,6 @@ GraphProgressChart::GraphProgressChart(bool logscale, QWidget* parent)
 
   chartData_->axes(Qt::Horizontal)[0]->setGridLineVisible(true);
   chartData_->axes(Qt::Vertical)[0]->setGridLineVisible(true);
-
   
   QTimer *timer=new QTimer;
   connect(timer, &QTimer::timeout, this, &GraphProgressChart::checkForUpdate);
@@ -131,23 +136,9 @@ void GraphProgressChart::checkForUpdate()
 
     if (needsRedraw_)
     {
-        needsRedraw_=false;
-        double ymin=1e10, ymax=-1e10, xmin=1e10, xmax=-1e10;
+        needsRedraw_=false;        
 
-        for ( const CurveList::value_type i: curve_ )
-        {
-          QtCharts::QLineSeries *crv = i.second;
-
-          for (int j=0; j<crv->count(); j++)
-          {
-            const auto p = crv->at(j);
-            xmin=std::min(xmin, p.x());
-            xmax=std::max(xmax, p.x());
-            ymin=std::min(ymin, p.y());
-            ymax=std::max(ymax, p.y());
-          }
-
-        }
+        double xmin=xmin_, xmax=xmax_, ymin=ymin_, ymax=ymax_;
 
         if (fabs(xmax-xmin)<1e-20) { xmax=xmin+1e-4; } // all values the same
         if (xmin>xmax) { xmin=0; xmax=1.; } // no values
@@ -158,6 +149,8 @@ void GraphProgressChart::checkForUpdate()
         chartData_->axes(Qt::Horizontal)[0]->setRange(xmin, 1.05*xmax);
         double delta=fabs(ymax-ymin);
         chartData_->axes(Qt::Vertical)[0]->setRange(ymin-0.05*delta, ymax+0.05*delta);
+
+        repaint();
     }
 
     mutex_.unlock();

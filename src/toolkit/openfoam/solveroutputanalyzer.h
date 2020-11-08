@@ -8,6 +8,8 @@
 #include <memory>
 #include <armadillo>
 
+#include "boost/regex.hpp"
+
 namespace insight {
 
 
@@ -55,6 +57,25 @@ protected:
     std::string curLog_;
 
     std::shared_ptr<ActionProgress> solverActionProgress_;
+
+    boost::regex p_pattern;
+    boost::regex v_pattern;
+    boost::regex por_pattern;
+    boost::regex time_pattern;
+    boost::regex solver_pattern;
+    boost::regex cont_pattern;
+    boost::regex force_pattern;
+    boost::regex sw_pattern;
+
+    boost::regex rb_pattern;
+    boost::regex rb_cor_pattern;
+    boost::regex rb_ori_pattern;
+
+    boost::regex courant_pattern;
+    boost::regex if_courant_pattern;
+    boost::regex dt_pattern;
+    boost::regex exec_time_pattern;
+
 
 public:
     SolverOutputAnalyzer ( ProgressDisplayer& pd, double endTime=1000 );

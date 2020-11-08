@@ -9,6 +9,13 @@ export INSIGHT_USERSHAREDDIR=$HOME/.insight/share
 export INSIGHT_GLOBALSHAREDDIRS=$INSIGHT_INSTDIR/share/insight:/usr/share/insight
 
 
+## check if thirdparty config exists, load if yes
+INSIGHT_THIRDPARTY_CONFIGSCRIPT=${INSIGHT_BINDIR}/insight_setthirdpartyenv.sh
+if [ -e ${INSIGHT_THIRDPARTY_CONFIGSCRIPT} ]; then
+ source ${INSIGHT_THIRDPARTY_CONFIGSCRIPT}
+fi
+
+
 ## setup PATH and LD_LIBRARY_PATH
 if [ -n "$LD_LIBRARY_PATH" ]; then
  ORG_LDPATH=:${LD_LIBRARY_PATH}
@@ -17,12 +24,9 @@ if [ -n "$PATH" ]; then
  ORG_PATH=:${PATH}
 fi
 
-PATH=${INSIGHT_BINDIR}
-LD_LIBRARY_PATH=${INSIGHT_LIBDIR}
-if [ -d ${INSIGHT_INSTDIR}/paraview-offscreen ]; then
- PATH=$PATH:${INSIGHT_INSTDIR}/paraview-offscreen/bin
- LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSIGHT_INSTDIR}/paraview-offscreen/lib
-fi
+[[ ":$PATH:" != *":${INSIGHT_BINDIR}:"* ]] && PATH="${INSIGHT_BINDIR}"
+[[ ":$LD_LIBRARY_PATH:" != *":${INSIGHT_LIBDIR}:"* ]] && LD_LIBRARY_PATH="${INSIGHT_LIBDIR}"
+
 export PATH=$PATH${ORG_PATH}
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${ORG_LDPATH}
 

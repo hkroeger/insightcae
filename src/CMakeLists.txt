@@ -2,9 +2,7 @@ project(insight)
 
 
 add_subdirectory(pdl)
-IF(INSIGHT_BUILD_TESTS)
-    add_subdirectory(test)
-ENDIF()
+add_subdirectory(test)
 add_subdirectory(refdata)
 add_subdirectory(etc)
 add_subdirectory(taskspooler)

@@ -65,6 +65,11 @@ public:
     {
       rmedFile_.reset(new boost::filesystem::path(fn));
     }
+
+    inline boost::filesystem::path RMedFile() const
+    {
+      return *rmedFile_;
+    }
     
     inline void addMeshMedFile(const boost::filesystem::path& fn, int unit=-1)
     {

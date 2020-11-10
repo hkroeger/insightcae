@@ -73,27 +73,31 @@ namespace insight {
 namespace cad {
 
 
-    
+sharedModelLocations::sharedModelLocations()
+{
+  const char* e=getenv("ISCAD_MODEL_PATH");
+  if (e)
+  {
+    std::vector<std::string> paths;
+    boost::split(paths, e, boost::is_any_of(":"));
+    std::copy(paths.begin(), paths.end(), back_inserter(*this));
+  }
+  {
+      for (const path& p: insight::SharedPathList::searchPathList)
+      {
+        if (boost::filesystem::is_directory(p/"iscad-library"))
+          push_back(p/"iscad-library");
+        else if (boost::filesystem::is_directory(p))
+          push_back(p);
+      }
+  }
+  push_back(".");
+}
+
     
 boost::filesystem::path sharedModelFilePath(const std::string& name)
 {
-    std::vector<boost::filesystem::path> paths;
-    const char* e=getenv("ISCAD_MODEL_PATH");
-    if (e)
-    {
-        boost::split(paths, e, boost::is_any_of(":"));
-    }
-    {
-//         insight::SharedPathList spl;
-	for (const path& p: insight::SharedPathList::searchPathList)
-	{
-	  if (boost::filesystem::is_directory(p/"iscad-library"))
-	    paths.push_back(p/"iscad-library");
-	  else if (boost::filesystem::is_directory(p))
-	    paths.push_back(p);
-	}
-    }
-    paths.push_back(".");
+    sharedModelLocations paths;
 
     for (const boost::filesystem::path& ps: paths)
     {

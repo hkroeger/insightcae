@@ -47,36 +47,7 @@
 
 void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor* lme)
 {
-    act_load_->disconnect();
-    act_save_->disconnect();
-    act_saveas_->disconnect();
-    act_rebuild_->disconnect();
-    act_rebuild_UTC_->disconnect();
-    act_insert_section_comment_->disconnect();
-    act_insert_feat_->disconnect();
-    act_insert_component_name_->disconnect();
-    act_clear_cache_->disconnect();
-    act_fit_all_->disconnect();
-    act_view_plusx_->disconnect();
-    act_view_minusx_->disconnect();
-    act_view_plusy_->disconnect();
-    act_view_minusy_->disconnect();
-    act_view_plusz_->disconnect();
-    act_view_minusz_->disconnect();
-    act_toggle_grid_->disconnect();
-    act_toggle_clipxy_->disconnect();
-    act_toggle_clipyz_->disconnect();
-    act_toggle_clipxz_->disconnect();
-    act_background_color_->disconnect();
-    act_display_all_shaded_->disconnect();
-    act_display_all_wire_->disconnect();
-    act_reset_shading_->disconnect();
-
-    act_measure_distance_->disconnect();
-    act_sel_pts_->disconnect();
-    act_sel_edgs_->disconnect();
-    act_sel_faces_->disconnect();
-    act_sel_solids_->disconnect();
+  for(auto a: act_) a.second->disconnect();
 
     if (lme!=NULL)
       {
@@ -90,69 +61,71 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
 
     if (me)
     {
-        connect(act_save_, &QAction::triggered,
+        connect(act_[save], &QAction::triggered,
                 me->model(), &ISCADModel::saveModel);
-        connect(act_saveas_, &QAction::triggered,
+        connect(act_[saveas], &QAction::triggered,
                 me->model(), &ISCADModel::saveModelAs);
-        connect(act_rebuild_, &QAction::triggered,
+        connect(act_[rebuild], &QAction::triggered,
                 me->model(), &ISCADModel::rebuildModel);
-        connect(act_rebuild_UTC_, &QAction::triggered,
+        connect(act_[rebuild_UTC], &QAction::triggered,
                 me->model(), &ISCADModel::rebuildModelUpToCursor);
-        connect(act_insert_section_comment_, &QAction::triggered,
+        connect(act_[insert_section_comment], &QAction::triggered,
                 me->model(), &ISCADModel::insertSectionCommentAtCursor);
-        connect(act_insert_feat_, &QAction::triggered,
+        connect(act_[insert_feat], &QAction::triggered,
                 me->model(), &ISCADModel::insertFeatureAtCursor);
-        connect(act_insert_component_name_, &QAction::triggered,
+        connect(act_[insert_loadmodel], &QAction::triggered,
+                me->model(), &ISCADModel::insertLibraryModelAtCursor);
+        connect(act_[insert_component_name], &QAction::triggered,
                 me->model(), &ISCADModel::insertComponentNameAtCursor);
-        connect(act_clear_cache_, &QAction::triggered,
+        connect(act_[clear_cache], &QAction::triggered,
                 me->model(), &ISCADModel::clearCache);
 
-        connect(act_fit_all_, &QAction::triggered,
+        connect(act_[fit_all], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::fitAll);
 
-        connect(act_view_plusx_, &QAction::triggered,
+        connect(act_[view_plusx], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::viewRight);
-        connect(act_view_minusx_, &QAction::triggered,
+        connect(act_[view_minusx], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::viewLeft);
-        connect(act_view_plusy_, &QAction::triggered,
+        connect(act_[view_plusy], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::viewBack);
-        connect(act_view_minusy_, &QAction::triggered,
+        connect(act_[view_minusy], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::viewFront);
-        connect(act_view_plusz_, &QAction::triggered,
+        connect(act_[view_plusz], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::viewTop);
-        connect(act_view_minusz_, &QAction::triggered,
+        connect(act_[view_minusz], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::viewBottom);
 
-        connect(act_toggle_grid_, &QAction::triggered,
+        connect(act_[toggle_grid], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::toggleGrid);
-        connect(act_toggle_clipxy_, &QAction::triggered,
+        connect(act_[toggle_clipxy], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::toggleClipXY);
-        connect(act_toggle_clipyz_, &QAction::triggered,
+        connect(act_[toggle_clipyz], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::toggleClipYZ);
-        connect(act_toggle_clipxz_, &QAction::triggered,
+        connect(act_[toggle_clipxz], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::toggleClipXZ);
-        connect(act_background_color_, &QAction::triggered,
+        connect(act_[background_color], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::background);
-        connect(act_display_all_shaded_, &QAction::triggered,
+        connect(act_[display_all_shaded], &QAction::triggered,
                 me->modeltree(), &QModelTree::allShaded);
-        connect(act_display_all_wire_, &QAction::triggered,
+        connect(act_[display_all_wire], &QAction::triggered,
                 me->modeltree(), &QModelTree::allWireframe);
-        connect(act_reset_shading_, &QAction::triggered,
+        connect(act_[reset_shading], &QAction::triggered,
                 me->modeltree(), &QModelTree::resetViz);
 
-        connect(act_measure_distance_, &QAction::triggered,
+        connect(act_[measure_distance], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::onMeasureDistance);
 
-        connect(act_sel_pts_, &QAction::triggered,
+        connect(act_[sel_pts], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::onSelectPoints);
 
-        connect(act_sel_edgs_, &QAction::triggered,
+        connect(act_[sel_edgs], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::onSelectEdges);
 
-        connect(act_sel_faces_, &QAction::triggered,
+        connect(act_[sel_faces], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::onSelectFaces);
 
-        connect(act_sel_solids_, &QAction::triggered,
+        connect(act_[sel_solids], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::onSelectSolids);
 
         me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
@@ -293,19 +266,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     connect(modelTabs_, &QTabWidget::currentChanged, this, &ISCADMainWindow::activateModel);
     connect(modelTabs_, &QTabWidget::tabCloseRequested, this, &ISCADMainWindow::onCloseModel);
 
-//    {
-//      QList<int> sizes;
-//      sizes << 1500 << 8500;
-//      spl->setSizes(sizes);
-//    }
     spl->setStretchFactor(0,0);
     spl->setStretchFactor(1,1);
 
-//    {
-//      QList<int> sizes;
-//      sizes << 9500 << 500;
-//      spl0->setSizes(sizes);
-//    }
     spl0->setStretchFactor(0, 5);
     spl0->setStretchFactor(1, 0);
 
@@ -318,6 +281,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     QMenu *mmenu = menuBar()->addMenu("&Model");
     QMenu *vmenu = menuBar()->addMenu("&View");
     QMenu *msmenu = menuBar()->addMenu("M&easure");
+    QMenu *selmenu = menuBar()->addMenu("&Selection");
     QMenu *helpmenu = menuBar()->addMenu("&Help");
 
     QAction* ab = new QAction("About...", this);
@@ -340,16 +304,16 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     fmenu->addAction(act);
     connect(act, &QAction::triggered, this, &ISCADMainWindow::onNewModel);
 
-    act_load_=new QAction(("&Load"), this);
-    fmenu->addAction(act_load_);
-    connect(act_load_, &QAction::triggered, this, &ISCADMainWindow::loadModel);
+    act=new QAction(("&Load"), this);
+    fmenu->addAction(act);
+    connect(act, &QAction::triggered, this, &ISCADMainWindow::loadModel);
 
-    act_save_ = new QAction(("&Save"), this);
-    act_save_->setShortcut(Qt::ControlModifier + Qt::Key_S);
-    fmenu->addAction(act_save_);
+    act_[save] = new QAction(("&Save"), this);
+    act_[save]->setShortcut(Qt::ControlModifier + Qt::Key_S);
+    fmenu->addAction(act_[save]);
 
-    act_saveas_ = new QAction(("&Save as..."), this);
-    fmenu->addAction(act_saveas_);
+    act_[saveas] = new QAction(("&Save as..."), this);
+    fmenu->addAction(act_[saveas]);
 
     fmenu->addSeparator();
     act =new QAction(("&Quit"), this);
@@ -358,90 +322,97 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     connect(act, &QAction::triggered, this, &ISCADMainWindow::close);
 
 
-    act_rebuild_ = new QAction(("&Rebuild model"), this);
-    act_rebuild_->setShortcut(Qt::ControlModifier + Qt::Key_Return);
-    mmenu->addAction(act_rebuild_);
+    act_[rebuild] = new QAction(("&Rebuild model"), this);
+    act_[rebuild]->setShortcut(Qt::ControlModifier + Qt::Key_Return);
+    mmenu->addAction(act_[rebuild]);
 
-    act_rebuild_UTC_ = new QAction(("&Rebuild model up to cursor"), this);
-    act_rebuild_UTC_->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Return);
-    mmenu->addAction(act_rebuild_UTC_);
+    act_[rebuild_UTC] = new QAction(("&Rebuild model up to cursor"), this);
+    act_[rebuild_UTC]->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Return);
+    mmenu->addAction(act_[rebuild_UTC]);
+
+    mmenu->addSeparator();
     
-    act_insert_feat_ = new QAction(("Insert &feature..."), this);
-    act_insert_feat_->setShortcut(Qt::ControlModifier + Qt::Key_F);
-    mmenu->addAction(act_insert_feat_);
+    act_[insert_feat] = new QAction(("Insert &feature..."), this);
+    act_[insert_feat]->setShortcut(Qt::ControlModifier + Qt::Key_F);
+    mmenu->addAction(act_[insert_feat]);
 
-    act_insert_component_name_ = new QAction(("Insert &component name..."), this);
-    act_insert_component_name_->setShortcut(Qt::ControlModifier + Qt::Key_I);
-    mmenu->addAction(act_insert_component_name_);
+    act_[insert_loadmodel] = new QAction(("Insert &model from library..."), this);
+    act_[insert_loadmodel]->setShortcut(Qt::ControlModifier + Qt::Key_L);
+    mmenu->addAction(act_[insert_loadmodel]);
+
+    act_[insert_component_name] = new QAction(("Inspect model &symbols..."), this);
+    act_[insert_component_name]->setShortcut(Qt::ControlModifier + Qt::Key_I);
+    mmenu->addAction(act_[insert_component_name]);
 
     
-    act_insert_section_comment_ = new QAction(("Insert comment: new section..."), this);
-    act_insert_section_comment_->setShortcut(Qt::AltModifier + Qt::Key_S);
-    mmenu->addAction(act_insert_section_comment_);
+    act_[insert_section_comment] = new QAction(("Insert comment: new section..."), this);
+    act_[insert_section_comment]->setShortcut(Qt::AltModifier + Qt::Key_S);
+    mmenu->addAction(act_[insert_section_comment]);
 
-    act_clear_cache_ = new QAction(("C&lear cache"), this);
-    act_clear_cache_->setShortcut(Qt::ControlModifier + Qt::Key_L);
-    mmenu->addAction(act_clear_cache_);
+    mmenu->addSeparator();
 
-    act_fit_all_ = new QAction(("Fit &all"), this);
-    act_fit_all_->setShortcut(Qt::ControlModifier + Qt::Key_A);
-    vmenu->addAction(act_fit_all_);
+    act_[clear_cache] = new QAction(("C&lear cache"), this);
+    mmenu->addAction(act_[clear_cache]);
+
+    act_[fit_all] = new QAction(("Fit &all"), this);
+    act_[fit_all]->setShortcut(Qt::ControlModifier + Qt::Key_A);
+    vmenu->addAction(act_[fit_all]);
 
     QMenu* directionmenu=vmenu->addMenu("Standard views");
-    directionmenu->addAction( act_view_plusx_ = new QAction(("+X"), this) );
-    act_view_plusx_->setShortcut(Qt::ControlModifier + Qt::Key_X);
-    directionmenu->addAction( act_view_minusx_ = new QAction(("-X"), this) );
-    act_view_minusx_->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_X);
+    directionmenu->addAction( act_[view_plusx] = new QAction(("+X"), this) );
+    act_[view_plusx]->setShortcut(Qt::ControlModifier + Qt::Key_X);
+    directionmenu->addAction( act_[view_minusx] = new QAction(("-X"), this) );
+    act_[view_minusx]->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_X);
 
-    directionmenu->addAction( act_view_plusy_ = new QAction(("+Y"), this) );
-    act_view_plusy_->setShortcut(Qt::ControlModifier + Qt::Key_Y);
-    directionmenu->addAction( act_view_minusy_ = new QAction(("-Y"), this) );
-    act_view_minusy_->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Y);
+    directionmenu->addAction( act_[view_plusy] = new QAction(("+Y"), this) );
+    act_[view_plusy]->setShortcut(Qt::ControlModifier + Qt::Key_Y);
+    directionmenu->addAction( act_[view_minusy] = new QAction(("-Y"), this) );
+    act_[view_minusy]->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Y);
 
-    directionmenu->addAction( act_view_plusz_ = new QAction(("+Z"), this) );
-    act_view_plusz_->setShortcut(Qt::ControlModifier + Qt::Key_Z);
-    directionmenu->addAction( act_view_minusz_ = new QAction(("-Z"), this) );
-    act_view_minusz_->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Z);
+    directionmenu->addAction( act_[view_plusz] = new QAction(("+Z"), this) );
+    act_[view_plusz]->setShortcut(Qt::ControlModifier + Qt::Key_Z);
+    directionmenu->addAction( act_[view_minusz] = new QAction(("-Z"), this) );
+    act_[view_minusz]->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Z);
 
-    act_toggle_grid_ = new QAction(("Toggle &grid"), this);
-    vmenu->addAction(act_toggle_grid_);
+    act_[toggle_grid] = new QAction(("Toggle &grid"), this);
+    vmenu->addAction(act_[toggle_grid]);
     
-    act_toggle_clipxy_ = new QAction(("Toggle clip plane (&XY)"), this);
-    vmenu->addAction(act_toggle_clipxy_);
-    act_toggle_clipyz_ = new QAction(("Toggle clip plane (&YZ)"), this);
-    vmenu->addAction(act_toggle_clipyz_);
-    act_toggle_clipxz_ = new QAction(("Toggle clip plane (X&Z)"), this);
-    vmenu->addAction(act_toggle_clipxz_);
+    act_[toggle_clipxy] = new QAction(("Toggle clip plane (&XY)"), this);
+    vmenu->addAction(act_[toggle_clipxy]);
+    act_[toggle_clipyz] = new QAction(("Toggle clip plane (&YZ)"), this);
+    vmenu->addAction(act_[toggle_clipyz]);
+    act_[toggle_clipxz] = new QAction(("Toggle clip plane (X&Z)"), this);
+    vmenu->addAction(act_[toggle_clipxz]);
     
     clipplanemenu_=vmenu->addMenu("Clip at datum plane");
     clipplanemenu_->setDisabled(true);
     
-    act_background_color_ = new QAction(("Change background color..."), this);
-    vmenu->addAction(act_background_color_);
-    act_display_all_shaded_ = new QAction(("Display all &shaded"), this);
-    vmenu->addAction(act_display_all_shaded_);
-    act_display_all_wire_ = new QAction(("Display all &wireframe"), this);
-    vmenu->addAction(act_display_all_wire_);
-    act_reset_shading_ = new QAction(("&Reset shading and visibility"), this);
+    act_[background_color] = new QAction(("Change background color..."), this);
+    vmenu->addAction(act_[background_color]);
+    act_[display_all_shaded] = new QAction(("Display all &shaded"), this);
+    vmenu->addAction(act_[display_all_shaded]);
+    act_[display_all_wire] = new QAction(("Display all &wireframe"), this);
+    vmenu->addAction(act_[display_all_wire]);
+    act_[reset_shading] = new QAction(("&Reset shading and visibility"), this);
 //     act->setShortcut(Qt::ControlModifier + Qt::Key_A);
-    vmenu->addAction(act_reset_shading_);
+    vmenu->addAction(act_[reset_shading]);
 
 
-    act_measure_distance_=new QAction("Distance between points", this);
-    act_measure_distance_->setShortcut(Qt::ControlModifier + Qt::Key_M);
-    msmenu->addAction(act_measure_distance_);
+    act_[measure_distance]=new QAction("Distance between points", this);
+    act_[measure_distance]->setShortcut(Qt::ControlModifier + Qt::Key_M);
+    msmenu->addAction(act_[measure_distance]);
 
-    act_sel_pts_=new QAction("Select vertices", this);
-    msmenu->addAction(act_sel_pts_);
+    act_[sel_pts]=new QAction("Select vertices", this);
+    selmenu->addAction(act_[sel_pts]);
 
-    act_sel_edgs_=new QAction("Select edges", this);
-    msmenu->addAction(act_sel_edgs_);
+    act_[sel_edgs]=new QAction("Select edges", this);
+    selmenu->addAction(act_[sel_edgs]);
 
-    act_sel_faces_=new QAction("Select faces", this);
-    msmenu->addAction(act_sel_faces_);
+    act_[sel_faces]=new QAction("Select faces", this);
+    selmenu->addAction(act_[sel_faces]);
 
-    act_sel_solids_=new QAction("Select solids", this);
-    msmenu->addAction(act_sel_solids_);
+    act_[sel_solids]=new QAction("Select solids", this);
+    selmenu->addAction(act_[sel_solids]);
 
     QSettings settings("silentdynamics", "iscad");
     restoreGeometry(settings.value("geometry").toByteArray());

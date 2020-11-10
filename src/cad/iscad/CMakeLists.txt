@@ -3,26 +3,35 @@ if (INSIGHT_BUILD_ISCAD)
 project(iscad)
 
 set(iscad_SRCS 
- iscad.cpp
- iscadmainwindow.cpp
- iscadsyntaxhighlighter.cpp
- iscadmodel.cpp
+    iscad.cpp
+    iscadmainwindow.cpp
+    iscadsyntaxhighlighter.cpp
+    iscadmodel.cpp
 
- modelcomponentselectordlg.cpp
- insertfeaturedlg.cpp
+    modelcomponentselectordlg.cpp
+    insertfeaturedlg.cpp
+    loadmodeldialog.cpp
 
- bgparsingthread.cpp
+    bgparsingthread.cpp
 )
+
+set(iscad_FORMS
+    modelcomponentselectordlg.ui
+    insertfeaturedlg.ui
+    loadmodeldialog.ui
+    )
+
+set(iscad_RCCS
+    iscad.qrc
+    )
+
+
 
 set(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-
-SET(iscad_FORMS modelcomponentselectordlg.ui insertfeaturedlg.ui) #newanalysisdlg.ui analysisform.ui)
-
-SET(iscad_RCCS iscad.qrc)
 
 
 add_executable(iscad ${iscad_SRCS} ${iscad_FORMS} ${iscad_RCCS})

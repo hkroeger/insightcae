@@ -163,6 +163,7 @@ public slots:
     void insertSectionCommentAtCursor();
     void insertFeatureAtCursor();
     void insertComponentNameAtCursor();
+    void insertLibraryModelAtCursor();
     
 //    /**
 //     * display everything shaded

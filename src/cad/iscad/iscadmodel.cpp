@@ -42,6 +42,7 @@
 #include "cadfeatures/modelfeature.h"
 #include "modelcomponentselectordlg.h"
 #include "insertfeaturedlg.h"
+#include "loadmodeldialog.h"
 
 #include "datum.h"
 
@@ -451,6 +452,19 @@ void ISCADModel::insertComponentNameAtCursor()
         std::string id = dlg->selected();
         textCursor().insertText(id.c_str());
     }
+}
+
+void ISCADModel::insertLibraryModelAtCursor()
+{
+  auto dlg = new LoadModelDialog(this);
+  if ( dlg->exec() == QDialog::Accepted )
+  {
+    std::string expr = dlg->expression();
+    if (!expr.empty())
+    {
+      textCursor().insertText(expr.c_str());
+    }
+  }
 }
 
 

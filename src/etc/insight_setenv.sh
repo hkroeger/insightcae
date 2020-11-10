@@ -43,8 +43,6 @@ if [ ! $INSIGHT_GLOBALPYTHONMODULES ]; then
     fi
 fi
 
-source insight.profile.OpenFOAM
-
 case "$-" in
  # interactive shell
  *i*) source insight_aliases.sh ;;

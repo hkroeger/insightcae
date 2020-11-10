@@ -211,7 +211,6 @@ endfunction()
 
 
 if (INSIGHT_BUILD_OPENFOAM)
-    SET(INSIGHT_OFES_VARCONTENT "")
     SET(INSIGHT_OF_ALIASES "")
     
     find_package(OpenFOAM-16ext)
@@ -229,25 +228,12 @@ if (INSIGHT_BUILD_OPENFOAM)
     find_package(OpenFOAM-dev)
     find_package(OpenFOAM-esi1806)
     find_package(OpenFOAM-esi1906)
-
-    join("${INSIGHT_OFES_VARCONTENT}" "\n" INSIGHT_OFES)
-    #message(STATUS "\"${INSIGHT_OFES}\"")
     
-    create_script("insight.profile.OpenFOAM"
-"INSIGHT_OFES=\"\"
-${INSIGHT_OFES}
-export INSIGHT_OFES
-"
-)
     create_script("insight.aliases.OpenFOAM"
 "${INSIGHT_OF_ALIASES}
 "
 )
-    create_script("insight.bashrc.OpenFOAM"
-"source insight.profile.OpenFOAM
-source insight.aliases.OpenFOAM
-"
-)
+
 endif()
 
 

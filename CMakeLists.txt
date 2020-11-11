@@ -146,6 +146,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 macro(create_script SCRIPTFILE SCR_CONTENT)
 #   message(STATUS  "CTS: ${SCR_CONTENT}")
   set(SRC "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SCRIPTFILE}")
+  message(STATUS "Creating ${SRC}")
   file(WRITE "${SRC}" "${SCR_CONTENT}")
   install(FILES "${SRC}" DESTINATION bin COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(create_script)
@@ -211,6 +212,7 @@ endfunction()
 
 
 if (INSIGHT_BUILD_OPENFOAM)
+    SET(INSIGHT_OFES_VARCONTENT "")
     SET(INSIGHT_OF_ALIASES "")
     
     find_package(OpenFOAM-16ext)

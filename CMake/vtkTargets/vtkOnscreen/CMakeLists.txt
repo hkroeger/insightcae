@@ -29,14 +29,11 @@ find_package(VTK
     HINTS ${VTK_ONSCREEN_DIR}
 )
 
-message(STATUS "VTK (onscreen): ${VTK_LIBRARIES}")
-
 set(LIBS "")
 
 macro(adddeps _target)
     get_target_property(_libs ${_target} INTERFACE_LINK_LIBRARIES)
     get_target_property(_prop ${_target} IMPORTED_LOCATION_RELEASE)
-    message(STATUS "Targ ${_target}: libs = ${_libs};;; ${_prop}")
     foreach (_l ${_libs})
          if(TARGET ${_l})
           if (_prop MATCHES ".*-NOTFOUND")
@@ -53,7 +50,6 @@ foreach (_l ${VTK_LIBRARIES})
     adddeps(${_l})
 endforeach()
 list(REMOVE_DUPLICATES LIBS)
-message(STATUS "LIBS = ${LIBS}")
 
 
 add_library( vtkOnscreen INTERFACE )

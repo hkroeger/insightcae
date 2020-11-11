@@ -28,14 +28,11 @@ find_package(VTK
     HINTS ${VTK_OFFSCREEN_DIR}
 )
 
-message(STATUS "VTK (offscreen) targets: ${VTK_LIBRARIES}")
-
 set(LIBS "")
 
 macro(adddeps _target)
     get_target_property(_libs ${_target} INTERFACE_LINK_LIBRARIES)
     get_target_property(_prop ${_target} IMPORTED_LOCATION_RELEASE)
-    message(STATUS "Targ ${_target}: libs = ${_libs};;; ${_prop}")
     foreach (_l ${_libs})
  	 if(TARGET ${_l})
 	  if (_prop MATCHES ".*-NOTFOUND")
@@ -52,7 +49,6 @@ foreach (_l ${VTK_LIBRARIES})
     adddeps(${_l})
 endforeach()
 list(REMOVE_DUPLICATES LIBS)
-message(STATUS "LIBS = ${LIBS}")
 
 target_link_libraries(vtkOffscreen INTERFACE ${LIBS})
 
@@ -61,8 +57,6 @@ get_target_property(vtkOffscreen_INCLUDES VTK::FiltersCore INTERFACE_INCLUDE_DIR
 add_library(vtkHeaders INTERFACE)
 target_include_directories(vtkHeaders INTERFACE ${vtkOffscreen_INCLUDES})
 
-
-message(STATUS "VTK (offscreen) includes : ${vtkOffscreen_INCLUDES}")
 
 install(
     TARGETS vtkHeaders EXPORT vtkHeaders_targets

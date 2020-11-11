@@ -3,7 +3,10 @@ SCRPATH=${BASH_SOURCE[0]}
 
 export INSIGHT_BINDIR=$(cd `dirname $SCRPATH`; pwd)
 export INSIGHT_INSTDIR=$(cd $INSIGHT_BINDIR; cd ..; pwd)
+# basic library directory
 export INSIGHT_LIBDIR=${INSIGHT_INSTDIR}/lib
+# all library directories, including pvoffscreen
+export INSIGHT_LIBDIRS=$INSIGHT_LIBDIR:${INSIGHT_INSTDIR}/paraview-offscreen/lib
 
 export INSIGHT_USERSHAREDDIR=$HOME/.insight/share
 export INSIGHT_GLOBALSHAREDDIRS=$INSIGHT_INSTDIR/share/insight:/usr/share/insight

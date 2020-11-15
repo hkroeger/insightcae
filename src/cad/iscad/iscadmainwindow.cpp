@@ -73,6 +73,8 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
                 me->model(), &ISCADModel::insertSectionCommentAtCursor);
         connect(act_[insert_feat], &QAction::triggered,
                 me->model(), &ISCADModel::insertFeatureAtCursor);
+        connect(act_[insert_import], &QAction::triggered,
+                me->model(), &ISCADModel::insertImportedModelAtCursor);
         connect(act_[insert_loadmodel], &QAction::triggered,
                 me->model(), &ISCADModel::insertLibraryModelAtCursor);
         connect(act_[insert_component_name], &QAction::triggered,
@@ -336,6 +338,10 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     act_[insert_feat]->setShortcut(Qt::ControlModifier + Qt::Key_F);
     mmenu->addAction(act_[insert_feat]);
 
+    act_[insert_import] = new QAction(("Insert &imported STEP, IGES, BREP..."), this);
+    act_[insert_import]->setShortcut(Qt::ControlModifier + Qt::Key_M);
+    mmenu->addAction(act_[insert_import]);
+
     act_[insert_loadmodel] = new QAction(("Insert &model from library..."), this);
     act_[insert_loadmodel]->setShortcut(Qt::ControlModifier + Qt::Key_L);
     mmenu->addAction(act_[insert_loadmodel]);
@@ -399,7 +405,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
 
 
     act_[measure_distance]=new QAction("Distance between points", this);
-    act_[measure_distance]->setShortcut(Qt::ControlModifier + Qt::Key_M);
+    act_[measure_distance]->setShortcut(Qt::ControlModifier + Qt::Key_D);
     msmenu->addAction(act_[measure_distance]);
 
     act_[sel_pts]=new QAction("Select vertices", this);

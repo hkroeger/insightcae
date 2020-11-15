@@ -162,6 +162,7 @@ public slots:
     
     void insertSectionCommentAtCursor();
     void insertFeatureAtCursor();
+    void insertImportedModelAtCursor();
     void insertComponentNameAtCursor();
     void insertLibraryModelAtCursor();
     

@@ -35,6 +35,7 @@
 #include <QGroupBox>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QFileDialog>
 
 #include "base/tools.h"
 #include "base/qt5_helper.h"
@@ -441,6 +442,15 @@ void ISCADModel::insertFeatureAtCursor()
     {
         textCursor().insertText(dlg->insert_string_);
     }
+}
+
+void ISCADModel::insertImportedModelAtCursor()
+{
+  auto fn = QFileDialog::getOpenFileName(this, "Please select file", "", "STEP model (*.step *.stp);;IGES model (*.igs *.iges);;BREP model (*.brep)");
+  if (!fn.isEmpty())
+  {
+    textCursor().insertText(QString("import(\"%1\")").arg(fn));
+  }
 }
 
 

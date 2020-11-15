@@ -77,6 +77,7 @@ protected:
       rebuild_UTC,
       insert_section_comment,
       insert_feat,
+      insert_import,
       insert_component_name,
       insert_loadmodel,
       clear_cache,

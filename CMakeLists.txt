@@ -823,14 +823,13 @@ macro (add_pybindings TARGETNAME IFFILE LIBS)
   IF(INSIGHT_BUILD_PYTHONBINDINGS)
     set(PYTARGET ${TARGETNAME}_python)
     set_property(SOURCE ${IFFILE} PROPERTY CPLUSPLUS ON)
-    message(STATUS "tooklit ${toolkit_SOURCE_DIR}")
     set_property(SOURCE ${IFFILE} PROPERTY INCLUDE_DIRECTORIES ${toolkit_SOURCE_DIR})
     set_property(SOURCE ${IFFILE} PROPERTY SWIG_MODULE_NAME ${TARGETNAME})
     swig_add_library(${PYTARGET}
         LANGUAGE python
         SOURCES ${IFFILE})
     target_link_libraries(${PYTARGET} ${LIBS})
-    linkToolkitVtk(${PYTARGET} Offscreen)
+    #linkToolkitVtk(${PYTARGET} Offscreen) # causes clash in workbench (links onscreen and offscreen at the same time)
     set_target_properties(${PYTARGET}
         PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SWIG_OUTDIR}
         )

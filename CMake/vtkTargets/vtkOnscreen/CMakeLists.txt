@@ -14,6 +14,9 @@ find_package(VTK
         FiltersPoints
         FiltersFlowPaths
         CommonCore
+        CommonDataModel
+        CommonMisc
+        CommonExecutionModel
         IOLegacy
         IOGeometry
         IOExport
@@ -31,6 +34,12 @@ find_package(VTK
 
 set(LIBS "")
 
+if (INSIGHT_BUILD_MEDREADER)
+    list(APPEND LIBS
+        ${CMAKE_BINARY_DIR}/medreader-onscreen/lib/libvtkMedReader-pvis.so
+    )
+endif()
+
 macro(adddeps _target)
     get_target_property(_libs ${_target} INTERFACE_LINK_LIBRARIES)
     get_target_property(_prop ${_target} IMPORTED_LOCATION_RELEASE)
@@ -44,7 +53,6 @@ macro(adddeps _target)
          endif()
     endforeach()
 endmacro()
-
 
 foreach (_l ${VTK_LIBRARIES})
     adddeps(${_l})

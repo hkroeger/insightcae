@@ -13,6 +13,9 @@ find_package(VTK
         FiltersPoints
         FiltersFlowPaths
         CommonCore
+        CommonDataModel
+        CommonMisc
+        CommonExecutionModel
         IOLegacy
         IOGeometry
         IOExport
@@ -30,6 +33,13 @@ find_package(VTK
 
 set(LIBS "")
 
+if (INSIGHT_BUILD_MEDREADER)
+    list(APPEND LIBS
+        ${CMAKE_BINARY_DIR}/medreader-offscreen/lib/libvtkMedReader-pvisoffscreen.so
+    )
+endif()
+
+
 macro(adddeps _target)
     get_target_property(_libs ${_target} INTERFACE_LINK_LIBRARIES)
     get_target_property(_prop ${_target} IMPORTED_LOCATION_RELEASE)
@@ -38,11 +48,19 @@ macro(adddeps _target)
 	  if (_prop MATCHES ".*-NOTFOUND")
            adddeps(${_l})
 	  else()
-	   list(APPEND LIBS ${_prop})
-	  endif()
+           list(APPEND LIBS ${_prop})
+          endif()
          endif()
     endforeach()
 endmacro()
+
+get_target_property(vtkOffscreen_INCLUDES VTK::FiltersCore INTERFACE_INCLUDE_DIRECTORIES)
+
+if (INSIGHT_BUILD_MEDREADER)
+    list(APPEND vtkOffscreen_INCLUDES
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/medreader-offscreen/include> $<INSTALL_INTERFACE:paraview-offscreen/include>
+    )
+endif()
 
 add_library(vtkOffscreen INTERFACE)
 foreach (_l ${VTK_LIBRARIES})
@@ -51,8 +69,6 @@ endforeach()
 list(REMOVE_DUPLICATES LIBS)
 
 target_link_libraries(vtkOffscreen INTERFACE ${LIBS})
-
-get_target_property(vtkOffscreen_INCLUDES VTK::FiltersCore INTERFACE_INCLUDE_DIRECTORIES)
 
 add_library(vtkHeaders INTERFACE)
 target_include_directories(vtkHeaders INTERFACE ${vtkOffscreen_INCLUDES})

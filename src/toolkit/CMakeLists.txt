@@ -259,7 +259,46 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
     ADD_DEPENDENCIES( toolkit toolkit_swigpyrun )
 ENDIF()
 
+
+
+## pull-in modules for VTK on/offscreen in toolkit python wrapper
+IF(INSIGHT_BUILD_PYTHONBINDINGS)
+  foreach(_variant Offscreen Onscreen)
+      set(TARGETNAME vtkPy${_variant})
+      set(PYTARGET ${TARGETNAME}_python)
+      set(IFFILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i)
+      set_property(SOURCE ${IFFILE} PROPERTY CPLUSPLUS ON)
+      set_property(SOURCE ${IFFILE} PROPERTY SWIG_MODULE_NAME ${TARGETNAME})
+
+      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i "
+%module ${TARGETNAME}
+%{
+#include <iostream>
+%}
+%pythonbegin %{
+import os,sys
+sys.setdlopenflags(os.RTLD_LAZY | os.RTLD_GLOBAL)
+%}
+")
+
+      swig_add_library(${PYTARGET}
+          LANGUAGE python
+          SOURCES ${IFFILE})
+      target_link_libraries(${PYTARGET} vtk${_variant})
+      set_target_properties(${PYTARGET}
+          PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SWIG_OUTDIR}
+          )
+    #  set_target_properties(${PYTARGET}
+    #      PROPERTIES LINK_WHAT_YOU_USE TRUE # has no effect...
+    #      )
+      SET_TARGET_PROPERTIES(${PYTARGET} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+      INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/_${PYTARGET}.so DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+      INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/${TARGETNAME}.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+  endforeach()
+ENDIF()
+
 add_pybindings(toolkit "toolkit.i" toolkit)
+
 
 add_subdirectory(openfoam/tests)
 

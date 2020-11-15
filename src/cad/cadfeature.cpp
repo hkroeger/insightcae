@@ -962,15 +962,25 @@ arma::mat Feature::modelBndBox(double deflection) const
   BRepBndLib::Add(shape(), boundingBox);
 
   arma::mat x=arma::zeros(3,2);
-  double g=boundingBox.GetGap();
-//   cout<<"gap="<<g<<endl;
-  boundingBox.Get
-  (
-    x(0,0), x(1,0), x(2,0), 
-    x(0,1), x(1,1), x(2,1)
-  );
-  x.col(0)+=g;
-  x.col(1)-=g;
+  if (!boundingBox.IsVoid())
+  {
+    double g=boundingBox.GetGap();
+    double x0, x1, y0, y1, z0, z1;
+    boundingBox.Get
+    (
+          x0, y0, z0,
+          x1, y1, z1
+  //    x(0,0), x(1,0), x(2,0),
+  //    x(0,1), x(1,1), x(2,1)
+    );
+    x
+        << x0 << x1 << arma::endr
+        << y0 << y1 << arma::endr
+        << z0 << z1 << arma::endr
+           ;
+    x.col(0)+=g;
+    x.col(1)-=g;
+  }
 
   return x;
 }

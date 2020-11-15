@@ -38,8 +38,8 @@ CAExportFile::CAExportFile(const boost::filesystem::path& commFile, std::string 
     version_(version),
     commFile_(commFile)
 {
-  setMessFile("output.mess");
-  setRMedFile("results.med");
+  setMessFile(commFile.parent_path()/(commFile.filename().stem().string()+".mess.txt"));
+  setRMedFile(commFile.parent_path()/(commFile.filename().stem().string()+".rmed"));
 }
 
 CAExportFile::~CAExportFile()
@@ -86,17 +86,17 @@ void CAExportFile::writeFile(const fs::path& exportFileName) const
   
   for (const FileList::value_type& item: mmedFiles_)
   {
-    f << "F mmed " << item.second.c_str() << " D  " << item.first << "\n";
+    f << "F mmed " << item.second.string() << " D  " << item.first << "\n";
   }
   
   if (rmedFile_.get())
   {
-    f << "F rmed " << rmedFile_->c_str() << " R  80\n";
+    f << "F rmed " << rmedFile_->string() << " R  80\n";
   }
   
   if (messFile_.get())
   {
-    f << "F mess " << messFile_->c_str() << " R  6\n";
+    f << "F mess " << messFile_->string() << " R  6\n";
   }
   
 }

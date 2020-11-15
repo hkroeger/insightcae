@@ -44,7 +44,7 @@ SET(SM_SRCS
 
 IF(PARAVIEW_BUILD_QT_GUI)
 
-    find_package(Qt5 REQUIRED COMPONENTS Widgets Network)
+    #find_package(Qt5 REQUIRED COMPONENTS Widgets Network)
 
     set(CLIENT_INTERFACES)
     SET(CLIENT_UI_SRCS
@@ -80,38 +80,21 @@ IF(PARAVIEW_BUILD_QT_GUI)
 #    )
 #    list(APPEND CLIENT_INTERFACES ${dock2_interfaces})
 #    list(APPEND CLIENT_SRCS ${dock2_sources})
+endif()
 
-    paraview_add_plugin(MedReader
-      VERSION "4.0"
-      UI_FILES ${CLIENT_UI_SRCS}
-      UI_INTERFACES ${CLIENT_INTERFACES}
-      REQUIRED_ON_SERVER
-      SERVER_MANAGER_XML Resources/MedReaderServer.xml
-      MODULES vtkMedReader
-      SOURCES ${CLIENT_SRCS} ${SM_SRCS}
-    )
-
-    target_link_libraries(MedReader PUBLIC vtkMedReader)
-        
-ELSE(PARAVIEW_BUILD_QT_GUI)
-          
-#    # create the med reader plugin itself
-#    ADD_PARAVIEW_PLUGIN(MedReaderPlugin "4.0"
-#        SERVER_MANAGER_SOURCES ${MEDREADER_HDRS} ${EXTRACTGROUP_HDRS} ${SM_SRCS}
-#        SERVER_MANAGER_XML Resources/MedReaderServer.xml
-#    )
-    
-ENDIF(PARAVIEW_BUILD_QT_GUI)
-
-TARGET_LINK_LIBRARIES(MedReader PUBLIC vtkMedReader)
-
-# Install
-INSTALL(
-    TARGETS MedReader
-    RUNTIME DESTINATION lib/paraview
-    LIBRARY DESTINATION lib/paraview
-    ARCHIVE DESTINATION lib/paraview
+paraview_add_plugin(MedReader
+  VERSION "4.0"
+  UI_FILES ${CLIENT_UI_SRCS}
+  UI_INTERFACES ${CLIENT_INTERFACES}
+  REQUIRED_ON_SERVER
+  SERVER_MANAGER_XML Resources/MedReaderServer.xml
+  MODULES ${vtkMedReaderTargetName}
+  SOURCES ${CLIENT_SRCS} ${SM_SRCS}
 )
+
+
+TARGET_LINK_LIBRARIES(MedReader PUBLIC ${vtkMedReaderTargetName})
+
 
 
 

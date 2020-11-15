@@ -16,95 +16,111 @@
 #
 # See http://www.salome-platform.org/ or email : webmaster.salome@opencascade.com
 #
-
+cmake_minimum_required(VERSION 3.18)
 project(MedReader)
 
-if (INSIGHT_BUILD_MEDREADER)
+#if(COMMAND cmake_policy)
+#	 cmake_policy(SET CMP0003 NEW)
+#endif(COMMAND cmake_policy)
 
-    #if(COMMAND cmake_policy)
-    #	 cmake_policy(SET CMP0003 NEW)
-    #endif(COMMAND cmake_policy)
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+option(MedReader_BUILD_ParaView_Plugin "Build a plugin for paraview (additional to the VTK module)" ON)
 
-    SET(MED_READER_MAJOR_VERSION 3)
-    SET(MED_READER_MINOR_VERSION 1)
-    SET(MED_READER_BUILD_VERSION 0)
-    SET(MED_READER_VERSION
-        "${MED_READER_MAJOR_VERSION}.${MED_READER_MINOR_VERSION}.${MED_READER_BUILD_VERSION}")
+SET(MED_READER_MAJOR_VERSION 3)
+SET(MED_READER_MINOR_VERSION 1)
+SET(MED_READER_BUILD_VERSION 0)
+SET(MED_READER_VERSION
+    "${MED_READER_MAJOR_VERSION}.${MED_READER_MINOR_VERSION}.${MED_READER_BUILD_VERSION}")
 
-    #
-    # Load the ParaView/VTK packages
-    #
-    set(MedReader_BUILD_ParaView_Plugin ON CACHE BOOL "Build the ParaView plugin")
+find_package(VTK
+    NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH
+    REQUIRED
+)
 
-    if(MedReader_BUILD_ParaView_Plugin)
-        FIND_PACKAGE(ParaView REQUIRED)
-        if(NOT ParaView_FOUND)
-            MESSAGE(FATAL_ERROR "Please locate ParaView." )
-        ENDIF(NOT ParaView_FOUND)
-    endif(MedReader_BUILD_ParaView_Plugin)
+if (MedReader_BUILD_ParaView_Plugin)
+    find_package(ParaView
+        REQUIRED
+    )
+endif()
 
-    FIND_PACKAGE(VTK REQUIRED)
-    if(NOT VTK_FOUND)
-        MESSAGE(FATAL_ERROR "Please locate VTK." )
-    ENDIF(NOT VTK_FOUND)
+set(vtkMedReaderTargetName vtkMedReader)
 
 
-    # Standard CMake option for building libraries shared or static by default.
-    #OPTION(BUILD_SHARED_LIBS
-    #       "Build with shared libraries."
-    #       ${VTK_BUILD_SHARED_LIBS})
-    SET(BUILD_SHARED_LIBS ON)
+include(GNUInstallDirs)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
 
-    #
-    # Find dependant Library
-    #
-    SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMake ${CMAKE_MODULE_PATH} )
-    FIND_PACKAGE(MED REQUIRED)
-    include_directories(${MED_INCLUDE_DIRS})
+#
+# Load the ParaView/VTK packages
+#
 
-    #
-    # Build the vtkMedReader
-    #
-    #add_subdirectory(IO)
+#if(MedReader_BUILD_ParaView_Plugin)
+#    FIND_PACKAGE(ParaView REQUIRED)
+#    if(NOT ParaView_FOUND)
+#        MESSAGE(FATAL_ERROR "Please locate ParaView." )
+#    ENDIF(NOT ParaView_FOUND)
+#endif(MedReader_BUILD_ParaView_Plugin)
 
-    vtk_module_scan(
-        MODULE_FILES      ${CMAKE_CURRENT_SOURCE_DIR}/IO/vtk.module
-        WANT_BY_DEFAULT   ON
-        PROVIDES_MODULES  _mod
-        )
+#FIND_PACKAGE(VTK REQUIRED)
+#if(NOT VTK_FOUND)
+#    MESSAGE(FATAL_ERROR "Please locate VTK." )
+#ENDIF(NOT VTK_FOUND)
 
-    set(CMAKE_INSTALL_LIBDIR "lib")
-    set(CMAKE_INSTALL_BINDIR "bin")
-    set(CMAKE_INSTALL_DATAROOTDIR "share")
-    set(CMAKE_INSTALL_INCLUDEDIR "include")
-    vtk_module_build(
-        MODULES ${_mod}
-        )
-    ##
-    ## Build the parallel vtkPMedReader
-    ##
-    #set(MedReader_BUILD_PARALLEL ${VTK_USE_PARALLEL} CACHE BOOL "Build the Med Reader with parallel support.")
 
-    ##
-    ## Build the ParaView Plugin
-    ##
-    if(MedReader_BUILD_ParaView_Plugin)
+# Standard CMake option for building libraries shared or static by default.
 
-        paraview_plugin_scan(
-          PLUGIN_FILES      "${CMAKE_CURRENT_SOURCE_DIR}/ParaViewPlugin/paraview.plugin"
-          ENABLE_BY_DEFAULT ON
-          PROVIDES_PLUGINS  plugins
-          REQUIRES_MODULES  required_modules)
 
-        paraview_plugin_build(
-          RUNTIME_DESTINATION "${CMAKE_INSTALL_BINDIR}"
-          LIBRARY_DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-          LIBRARY_SUBDIRECTORY "${PARAVIEW_PLUGIN_SUBDIR}"
-          PLUGINS ${plugins})
+#
+# Find dependant Library
+#
+SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMake ${CMAKE_MODULE_PATH} )
+FIND_PACKAGE(MED REQUIRED)
+include_directories(${MED_INCLUDE_DIRS})
 
-        #add_subdirectory(ParaViewPlugin)
+##
+## Build the parallel vtkPMedReader
+##
+#set(MedReader_BUILD_PARALLEL ${VTK_USE_PARALLEL} CACHE BOOL "Build the Med Reader with parallel support.")
 
-    endif(MedReader_BUILD_ParaView_Plugin)
 
+#
+# Build the vtkMedReader
+#
+vtk_module_scan(
+    MODULE_FILES      ${CMAKE_CURRENT_SOURCE_DIR}/IO/vtk.module
+    WANT_BY_DEFAULT   ON
+    PROVIDES_MODULES  _mod
+    )
+vtk_module_build(
+    RUNTIME_DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY_DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    #HEADERS_DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/medreader-${LIBRARY_NAME_SUFFIX}"
+    #CMAKE_DESTINATION "medreader-${LIBRARY_NAME_SUFFIX}/cmake"
+    #HIERARCHY_DESTINATION "medreader-${LIBRARY_NAME_SUFFIX}/vtk/hierarchy"
+
+    LIBRARY_NAME_SUFFIX ${LIBRARY_NAME_SUFFIX}
+    MODULES ${_mod}
+    )
+##
+## Build the ParaView Plugin
+##
+if(MedReader_BUILD_ParaView_Plugin)
+
+    paraview_plugin_scan(
+      PLUGIN_FILES      "${CMAKE_CURRENT_SOURCE_DIR}/ParaViewPlugin/paraview.plugin"
+      ENABLE_BY_DEFAULT ON
+      PROVIDES_PLUGINS  plugins
+      REQUIRES_MODULES  required_modules)
+
+    paraview_plugin_build(
+      RUNTIME_DESTINATION "${CMAKE_INSTALL_BINDIR}"
+      LIBRARY_DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+      LIBRARY_SUBDIRECTORY "${PARAVIEW_PLUGIN_SUBDIR}"
+      PLUGINS ${plugins}
+    )
 
 endif()
+
+
+

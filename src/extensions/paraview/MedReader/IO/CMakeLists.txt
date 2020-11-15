@@ -58,49 +58,22 @@ set(MedReader_CLASSES
     vtkGenerateStructElement
 )
 
-#set_source_files_properties(
-#  vtkMedGrid
-#  vtkMedRegularGrid
-#  vtkMedUtilities
-#  PROPERTIES ABSTRACT 1
-#)
+set(MedReader_HEADERS
+    vtkMedSetGet.h
+)
 
-#set_source_files_properties(
-#  vtkMedIntArrayInternal
-#  vtkMedUtilities
-#  PROPERTIES WRAP_EXCLUDE 1
-#)
-
-#add_library(vtkMedReader ${MedReader_SRCS})
-
-#set(VTK_LIBS vtkIO)
-#if(${HDF5_IS_PARALLEL})
-#  set(VTK_LIBS ${VTK_LIBS} vtkParallel)
-#endif(${HDF5_IS_PARALLEL})
-
-# Introducing selection for parallel compilation
-
-#add_definitions( -I${CMAKE_CURRENT_BINARY_DIR} )
-
-vtk_module_add_module(vtkMedReader
-  FORCE_STATIC
+vtk_module_add_module(${vtkMedReaderTargetName}
   CLASSES ${MedReader_CLASSES}
+  HEADERS ${MedReader_HEADERS}
 )
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h )
-target_include_directories(vtkMedReader PUBLIC ${CMAKE_CURRENT_BINARY_DIR} )
+target_include_directories(${vtkMedReaderTargetName} PUBLIC ${CMAKE_CURRENT_BINARY_DIR} )
 
-target_link_libraries(vtkMedReader PUBLIC
+target_link_libraries(${vtkMedReaderTargetName} PUBLIC
     ${MED_LIBRARIES}
     VTK::CommonExecutionModel
     ${VTK_PARALLEL}
     ${vtkPVServerManager}
   )
 
-# Install
-INSTALL(
-    TARGETS vtkMedReader
-    RUNTIME DESTINATION lib/paraview
-    LIBRARY DESTINATION lib/paraview
-    ARCHIVE DESTINATION lib/paraview
-)

@@ -1,0 +1,7 @@
+<ParaViewReaders>
+    <Reader name="MedReader"
+            extensions="med rmed mmed"
+            file_description="MED Files">
+    </Reader>
+<!--    <Filter name="ExtractGroup"/> -->
+</ParaViewReaders>

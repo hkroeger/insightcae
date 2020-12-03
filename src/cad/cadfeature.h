@@ -186,6 +186,8 @@ class Feature
 {
   
   friend class ParameterListHash;
+
+  static std::mutex step_read_mutex_;
   
 public:
   declareFactoryTableNoArgs(Feature); 

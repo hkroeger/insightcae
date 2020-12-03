@@ -284,6 +284,7 @@ defineFactoryTableNoArgs(Feature);
 addToFactoryTable(Feature, Feature);
 
 
+std::mutex Feature::step_read_mutex_;
 
 void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 {
@@ -319,15 +320,19 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     }
     else if ( (ext==".stp") || (ext==".step") )
     {
-        // import STEP
-        STEPControl_Reader reader;
-        reader.ReadFile(filename.c_str());
-        reader.TransferRoots();
-        cout<<"STEP transferred"<<endl;
+        TopoDS_Shape res;
+        {
+          std::lock_guard<std::mutex> guard(step_read_mutex_);
 
-        TopoDS_Shape res=reader.OneShape();
-        cout<<"=> one shape"<<endl;
+          // import STEP
+          STEPControl_Reader reader;
+          reader.ReadFile(filename.c_str());
+          reader.TransferRoots();
+          cout<<"STEP transferred"<<endl;
 
+          res=reader.OneShape();
+          cout<<"=> one shape"<<endl;
+        }
         // set shape
         setShape(res);
 

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
@@ -22,6 +23,7 @@
 #include "vtkAlgorithm.h"
 #include "vtkOpenFOAMReader.h"
 #include "vtkUnstructuredGrid.h"
+#include "vtkMultiBlockDataSet.h"
 #include "vtkCompositeDataGeometryFilter.h"
 
 
@@ -99,7 +101,19 @@ MinMax calcRange(
     );
 
 
+class MultiBlockDataSetExtractor
+{
+  vtkMultiBlockDataSet* mbds_;
+  std::map<vtkDataObject*,int> flatIndices_;
 
+
+public:
+  MultiBlockDataSetExtractor(vtkMultiBlockDataSet* mbds);
+
+  std::set<int> flatIndices(const std::vector<std::string>& groupNamePatterns) const;
+
+  static std::set<vtkDataObject*> findObjectsBelowGroup(const std::string& name_pattern, vtkDataObject* input);
+};
 
 
 class VTKOffscreenScene

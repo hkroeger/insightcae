@@ -26,6 +26,7 @@
 #include "vtkLineSource.h"
 #include "vtkRendererCollection.h"
 #include "vtkActor2DCollection.h"
+#include "vtkDataObjectTreeIterator.h"
 
 #include "vtkPointData.h"
 #include "vtkExtractBlock.h"
@@ -207,6 +208,108 @@ MinMax calcRange(
 //            throw insight::Exception("invalid input algorithm provided (does not return vtkDataSet)");
     }
     return mm;
+}
+
+
+
+std::set<vtkDataObject*> MultiBlockDataSetExtractor::findObjectsBelowGroup(const std::string& name_pattern, vtkDataObject* input)
+{
+  insight::CurrentExceptionContext ex("searching for groups with names matching \""+name_pattern+"\"");
+
+  std::set<vtkDataObject*> res;
+
+  vtkMultiBlockDataSet *mbds=vtkMultiBlockDataSet::SafeDownCast(input);
+  insight::assertion(mbds!=nullptr, "valid vtkMultiBlockDataset expected!");
+
+  boost::regex pattern(name_pattern);
+  vtkSmartPointer<vtkDataObjectTreeIterator> iter = mbds->NewTreeIterator();
+  iter->VisitOnlyLeavesOff();
+  iter->TraverseSubTreeOff();
+
+  for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+  {
+    std::string name(iter->GetCurrentMetaData()->Get(vtkCompositeDataSet::NAME()));
+
+//    iter->Print(std::cout);
+//    iter->GetCurrentMetaData()->Print(std::cout);
+
+    auto j=iter->GetCurrentDataObject();
+    if (boost::regex_match(name, pattern))
+    {
+      std::cout<<name<<" matches "<<name_pattern<<" ("<<j<<")"<<std::endl;
+      res.insert(j);
+    }
+    else
+    {
+      std::cout<<name<<" not matching "<<name_pattern<<" ("<<j<<")"<<std::endl;
+    }
+  }
+
+  return res;
+}
+
+
+
+MultiBlockDataSetExtractor::MultiBlockDataSetExtractor(vtkMultiBlockDataSet* mbds)
+  : mbds_(mbds)
+{
+  CurrentExceptionContext ex("generating flat index list of vtkMultiBlockDataSet");
+
+  insight::assertion(mbds_!=nullptr, "a non-null pointer to the MultiBlockDataSet is expected!");
+
+  vtkSmartPointer<vtkDataObjectTreeIterator> iter = mbds_->NewTreeIterator();
+  iter->VisitOnlyLeavesOff();
+  iter->SkipEmptyNodesOff();
+
+  for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+  {
+    auto o=iter->GetCurrentDataObject();
+    auto j=iter->GetCurrentFlatIndex();
+    std::cout<<j<<" "<<iter->GetCurrentMetaData()->Get(vtkCompositeDataSet::NAME())<<std::endl;
+    flatIndices_[o]=j;
+  }
+}
+
+
+
+
+std::set<int> MultiBlockDataSetExtractor::flatIndices(const std::vector<std::string>& groupNamePatterns) const
+{
+  auto i = groupNamePatterns.begin();
+
+  auto gi = findObjectsBelowGroup(*i, mbds_); // top level
+
+  if (i!=groupNamePatterns.end())
+  {
+    for ( ++i; i!=groupNamePatterns.end() ; ++i) // get one level down
+    {
+      std::cout<<"level = "<<*i<<std::endl;
+      std::set<vtkDataObject*> ngi;
+      for (auto j: gi)
+      {
+        auto r=findObjectsBelowGroup(*i, j);
+        ngi.insert(r.begin(), r.end());
+      }
+      gi=ngi;
+    }
+  }
+
+  std::set<int> res;
+  for(auto j: gi) // get all leaf objects below found groups
+  {
+    vtkSmartPointer<vtkDataObjectTreeIterator> iter =
+        vtkMultiBlockDataSet::SafeDownCast(j)->NewTreeIterator();
+    iter->VisitOnlyLeavesOn();
+    std::cout<<"final index = ";
+    for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+    {
+      int fi=flatIndices_.at(iter->GetCurrentDataObject());
+      std::cout<<fi<<" ";
+      res.insert(fi);
+    }
+    std::cout<<std::endl;
+  }
+  return res;
 }
 
 

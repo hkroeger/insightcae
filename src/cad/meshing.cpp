@@ -353,5 +353,70 @@ std::ostream& operator<<(std::ostream& os, GmshCase& gc)
   return os;
 }
 
+
+
+
+SurfaceGmshCase::SurfaceGmshCase(
+    cad::ConstFeaturePtr part,
+    const boost::filesystem::path& outputMeshFile,
+    double Lmax, double Lmin,
+    const std::string& name,
+    bool keepDir
+    )
+  : cad::GmshCase(part, outputMeshFile,
+                  Lmax, Lmin, "gmshinsightcae", keepDir)
+{
+  insertLinesBefore(endOfMeshingOptions_, {
+    "Mesh.RecombinationAlgorithm = 0",
+    "Mesh.SecondOrderIncomplete=1",
+    "Mesh.RecombineAll = 1",
+    "Mesh.Optimize = 1",
+    "Mesh.OptimizeNetgen = 1",
+    "Physical Surface(\""+name+"\")=Surface{:}"
+   });
+  setQuadratic();
+}
+
+
+
+
+SheetExtrusionGmshCase::SheetExtrusionGmshCase(
+    cad::ConstFeaturePtr part,
+    const boost::filesystem::path& outputMeshFile,
+    double L, double h, int nLayers,
+    bool keepDir
+    )
+  : cad::GmshCase(part, outputMeshFile,
+                  L, L, "gmshinsightcae", keepDir)
+{
+  insertLinesBefore(endOfMeshingOptions_, {
+    "Mesh.RecombinationAlgorithm = 0",
+    "Mesh.SecondOrderIncomplete=1",
+    "Mesh.RecombineAll = 1",
+    "Mesh.Optimize = 1"
+   });
+
+  std::vector<string> latbndnames;
+  int i=1;
+  for (TopExp_Explorer ex(part->shape(), TopAbs_EDGE); ex.More(); ex.Next())
+  {
+    latbndnames.push_back(str(format("out[%d]")%(++i)));
+  }
+  insertLinesBefore(endOfMeshingActions_, {
+    //"Mesh 2",
+    "Physical Surface(\"she_die\") = Surface{:}",
+    str(format("out[] = Extrude {0.,0.,%g} { Surface{:}; Layers{%d}; Recombine; }")
+                      % h % nLayers ),
+    "Physical Volume(\"she\") = out[1]",
+    "Physical Surface(\"she_sta\") = out[0]",
+    "Physical Surface(\"she_lat\") = { " + boost::join(latbndnames, ",") + "}"
+  });
+
+
+
+  setLinear();
+}
+
+
 }
 }

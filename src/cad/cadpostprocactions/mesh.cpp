@@ -51,7 +51,7 @@ Mesh::Mesh
   const boost::filesystem::path& outpath, 
   insight::cad::FeaturePtr model, 
 //   const std::string& volname, 
-  std::vector< insight::cad::ScalarPtr > L,
+  boost::fusion::vector< ScalarPtr,ScalarPtr > L,
   bool quad, 
   const insight::cad::GroupsDesc& vertexGroups, 
   const insight::cad::GroupsDesc& edgeGroups, 
@@ -63,7 +63,7 @@ Mesh::Mesh
   outpath_(outpath),
   model_(model),
 //   volname_(volname),
-  L_(L),
+  Lmax_(boost::fusion::at_c<0>(L)), Lmin_(boost::fusion::at_c<1>(L)),
   quad_(quad),
   vertexGroups_(vertexGroups),
   edgeGroups_(edgeGroups),
@@ -80,12 +80,10 @@ Handle_AIS_InteractiveObject Mesh::createAISRepr() const
 }
 
 void Mesh::write(std::ostream& ) const
-{
-}
+{}
 
-void Mesh::build()
+void Mesh::setupGmshCase(GmshCase& c)
 {
-  GmshCase c(model_, outpath_, L_[0]->value(), L_[1]->value());
   if (!quad_) c.setLinear();
   for (const GroupDesc& gd: vertexGroups_)
   {
@@ -117,7 +115,7 @@ void Mesh::build()
     const arma::mat& loc=boost::fusion::at_c<1>(gd)->value();
     c.addSingleNamedVertex(gname, loc);
   }
-  
+
   for (const GroupDesc& gd: vertexGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
@@ -143,8 +141,68 @@ void Mesh::build()
       c.setFaceEdgeLen(gname, (*gs)->value());
     }
   }
+}
+
+void Mesh::build()
+{
+  GmshCase c(model_, outpath_, Lmax_->value(), Lmin_->value());
+  setupGmshCase(c);
   c.doMeshing();
 }
+
+
+
+
+
+
+
+ExtrudedMesh::ExtrudedMesh
+(
+  const boost::filesystem::path& outpath,
+  insight::cad::FeaturePtr model,
+//   const std::string& volname,
+  boost::fusion::vector< ScalarPtr,ScalarPtr,ScalarPtr,ScalarPtr > L_h_nLayers,
+  bool quad,
+  const insight::cad::GroupsDesc& vertexGroups,
+  const insight::cad::GroupsDesc& edgeGroups,
+  const insight::cad::GroupsDesc& faceGroups,
+  const insight::cad::GroupsDesc& solidGroups,
+  const insight::cad::NamedVertices& namedVertices
+)
+: Mesh(
+    outpath,
+    model,
+    boost::fusion::vector<ScalarPtr,ScalarPtr>(
+      boost::fusion::at_c<0>(L_h_nLayers),
+      boost::fusion::at_c<1>(L_h_nLayers)
+      ),
+    quad,
+    vertexGroups,
+    edgeGroups,
+    faceGroups,
+    solidGroups,
+    namedVertices
+    ),
+  h_(boost::fusion::at_c<2>(L_h_nLayers)),
+  nLayers_(boost::fusion::at_c<3>(L_h_nLayers))
+{}
+
+
+
+
+void ExtrudedMesh::build()
+{
+  SheetExtrusionGmshCase c(
+        model_, outpath_,
+        Lmin_->value(),
+        h_->value(),
+        nLayers_->value()
+      );
+  setupGmshCase(c);
+  c.doMeshing();
+}
+
+
 
 
 

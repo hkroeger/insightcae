@@ -105,6 +105,35 @@ public:
   
 
 
+class SurfaceGmshCase
+    : public cad::GmshCase
+{
+public:
+  SurfaceGmshCase(
+      cad::ConstFeaturePtr part,
+      const boost::filesystem::path& outputMeshFile,
+      double Lmax, double Lmin,
+      const std::string& name,
+      bool keepDir=false
+      );
+};
+
+
+
+
+class SheetExtrusionGmshCase
+    : public cad::GmshCase
+{
+public:
+  SheetExtrusionGmshCase(
+      cad::ConstFeaturePtr part,
+      const boost::filesystem::path& outputMeshFile,
+      double L, double h, int nLayers,
+      bool keepDir=false
+      );
+};
+
+
 }
 }
 

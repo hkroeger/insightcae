@@ -19,7 +19,9 @@
  */
 
 
+#include "base/tools.h"
 #include "base/softwareenvironment.h"
+
 #include <boost/asio.hpp>
 #include <boost/process/async.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -242,59 +244,69 @@ SoftwareEnvironment::JobPtr SoftwareEnvironment::forkCommand
   std::string machine=executionMachine_;
   if (ovr_machine) machine=*ovr_machine;
 
-  std::string cmd = cmd_exe;
   std::vector<std::string> argv;
-  for (const auto& a: cmd_argv)
-  {
-    cmd+=" \""+a+"\"";
-  }
-  argv.insert(argv.begin(), cmd);
 
   if (machine=="")
-    {
-        argv.insert(argv.begin(), "-lc");
-        argv.insert(argv.begin(), "bash");
-        // keep only a selected set of environment variables
-        std::vector<std::string> keepvars = { "DISPLAY", "HOME", "USER", "SHELL",
-                                              "INSIGHT_INSTDIR", "INSIGHT_BINDIR", "INSIGHT_LIBDIR", "INSIGHT_LIBDIRS", "INSIGHT_OFES",
-                                              "LANG", "LC_ALL", // req. for python/Code_Aster
-                                              "PYTHONPATH", "INSIGHT_THIRDPARTY_DIR" };
-        for (const std::string& varname: keepvars)
-        {
-            if (char* varvalue=getenv(varname.c_str()))
-            {
-                // shellcmd+="export "+varname+"=\""+std::string(varvalue)+"\";";
-                argv.insert(argv.begin(), varname+"="+std::string(varvalue));
-            }
-        }
-        argv.insert(argv.begin(), "-i");
-        argv.insert(argv.begin(), "env");
-    }
+  {
+      // set up clean environment for InsightCAE
+      argv.insert(argv.end(), {
+                    "env", "-i"
+                  });
+      // keep only a selected set of environment variables
+      std::vector<std::string> keepvars = {
+        "DISPLAY", "HOME", "USER", "SHELL",
+        //"INSIGHT_INSTDIR", "INSIGHT_BINDIR", "INSIGHT_LIBDIR", "INSIGHT_LIBDIRS", "INSIGHT_OFES",
+        "LANG", "LC_ALL", // req. for python/Code_Aster
+        "PYTHONPATH" //, "INSIGHT_THIRDPARTY_DIR"
+      };
+      for (const std::string& varname: keepvars)
+      {
+          if (char* varvalue=getenv(varname.c_str()))
+          {
+              argv.push_back(varname+"="+std::string(varvalue));
+          }
+      }
+      argv.insert(argv.end(), {
+                    "bash", "-lc"
+                  });
+  }
   else if (boost::starts_with(machine, "qrsh-wrap"))
   {
     //argv.insert(argv.begin(), "n");
     //argv.insert(argv.begin(), "-now");
-    argv.insert(argv.begin(), "qrsh-wrap");
+    argv.insert(argv.end(), "qrsh-wrap");
   }
   else
   {
-    argv.insert(argv.begin(), machine);
-    argv.insert(argv.begin(), "ssh");
+    argv.insert(argv.end(), { "ssh", machine} );
   }
 
-  std::ostringstream dbgs;
+  // wrap into single command string
+  std::string cmd = cmd_exe;
+  if (char* cfgpath=getenv("INSIGHT_CONFIGSCRIPT"))
+  {
+      cmd = "source "+std::string(cfgpath)+";" + cmd;
+  }
+  else
+  {
+    insight::Warning("There is no INSIGHT_CONFIGSCRIPT variable defined! Please check environment configuration.");
+  }
+
+  for (const auto& a: cmd_argv)
+  {
+    cmd+=" \""+escapeShellSymbols(a)+"\"";
+  }
+  argv.insert(argv.end(), cmd);
+
   for (const std::string& a: argv)
-    dbgs<<a<<" ";
-  std::cout<<dbgs.str()<<std::endl;
+    std::cout<<a<<" ";
+  std::cout<<std::endl;
 
   JobPtr job(new Job);
 
   namespace bp = boost::process;
   std::vector<std::string> args(argv.begin()+1, argv.end());
 
-//std::cout<<argv[0]<<std::endl;
-//for(const auto& arg: args)
-//  std::cout<<arg<<std::endl;
 
   job->process.reset(
         new bp::child(
@@ -316,7 +328,7 @@ SoftwareEnvironment::JobPtr SoftwareEnvironment::forkCommand
               );
   }
 
-  std::cout<<"Executing "<</*dbgs.str()*/cmd<<std::endl;
+  std::cout<<"Executing "<<cmd<<std::endl;
 
   return job;
 }

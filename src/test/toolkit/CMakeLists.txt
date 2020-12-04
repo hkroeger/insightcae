@@ -8,5 +8,6 @@ endmacro()
 
 add_toolkit_test(test_simplelatex)
 add_toolkit_test(test_meminfo)
+add_toolkit_test(test_execution)
 
 add_subdirectory(analysis_parameterstudy)

@@ -2,6 +2,7 @@
 SCRPATH=${BASH_SOURCE[0]}
 
 export INSIGHT_BINDIR=$(cd `dirname $SCRPATH`; pwd)
+export INSIGHT_CONFIGSCRIPT=${INSIGHT_BINDIR}/$(basename ${SCRPATH})
 export INSIGHT_INSTDIR=$(cd $INSIGHT_BINDIR; cd ..; pwd)
 # basic library directory
 export INSIGHT_LIBDIR=${INSIGHT_INSTDIR}/lib

@@ -260,6 +260,11 @@ void OpenFOAMAnalysis::installConvergenceAnalysis(std::shared_ptr<ConvergenceAna
   convergenceAnalysis_.push_back(cc);
 }
 
+void OpenFOAMAnalysis::prepareCaseCreation(ProgressDisplayer &/*progress*/)
+{
+  // do nothing by default
+}
+
 
 void OpenFOAMAnalysis::runSolver(ProgressDisplayer& parentProgress, OpenFOAMCase& cm)
 {
@@ -449,7 +454,7 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer& progress)
 
   Parameters p(parameters_);
 
-  auto ofprg = progress.forkNewAction( p.run.evaluateonly? 4 : 6 );
+  auto ofprg = progress.forkNewAction( p.run.evaluateonly? 5 : 7 );
 
   ofprg.message("Creating execution environment");
   setupExecutionEnvironment();
@@ -457,6 +462,10 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer& progress)
   
   OFEnvironment ofe = OFEs::get(p.run.OFEname);
   ofe.setExecutionMachine(p.run.machine);
+
+  ofprg.message("Preparing case creation");
+  prepareCaseCreation(ofprg);
+  ++ofprg;
 
   OpenFOAMCase runCase(ofe);
   ofprg.message("Creating case on disk");

@@ -2,3 +2,4 @@ project(installationTests)
 
 add_executable(insttest_VTKoffscreenRendering insttest_VTKoffscreenRendering.cpp)
 linkToolkitVtk(insttest_VTKoffscreenRendering Offscreen)
+install(TARGETS insttest_VTKoffscreenRendering RUNTIME DESTINATION bin)

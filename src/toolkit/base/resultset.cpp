@@ -24,6 +24,7 @@
 #include "base/latextools.h"
 #include "base/tools.h"
 #include "base/case.h"
+#include "base/analysis.h"
 
 #include <fstream>
 #include <algorithm>
@@ -50,21 +51,24 @@ addToFactoryTable ( ResultElement, ResultSet );
 
 
 
-ResultSet::ResultSet(const path &fileName)
+ResultSet::ResultSet(const path &fileName, const std::string& analysisName)
   : ResultElement ( "", "", "" )
 {
+  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
   readFrom(fileName);
 }
 
-ResultSet::ResultSet(istream &is)
+ResultSet::ResultSet(istream &is, const std::string& analysisName)
   : ResultElement ( "", "", "" )
 {
+  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
   readFrom(is);
 }
 
-ResultSet::ResultSet(string &c)
+ResultSet::ResultSet(string &c, const std::string& analysisName)
   : ResultElement ( "", "", "" )
 {
+  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
   readFrom(c);
 }
 

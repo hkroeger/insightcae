@@ -97,6 +97,7 @@ public:
   typedef std::function<void(std::exception_ptr)> ExceptionHandler;
 
 protected:
+  std::string analysisName_;
   std::string url_;
 
   Wt::WIOService ioService_;
@@ -123,6 +124,7 @@ protected:
 
 public:
   AnalyzeClient(
+      const std::string analysisName,
       const std::string& url,
       insight::ProgressDisplayer* progressDisplayer_
 #ifndef SWIG

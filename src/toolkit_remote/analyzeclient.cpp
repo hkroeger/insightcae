@@ -233,7 +233,7 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
           if ( (*ct)=="application/xml")
           {
             auto body = response.body();
-            r.reset(new ResultSet(body));
+            r.reset(new ResultSet(analysisName_, body));
           }
         }
 
@@ -293,11 +293,13 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
 
 
 AnalyzeClient::AnalyzeClient(
+    const std::string analysisName,
     const std::string &url,
     insight::ProgressDisplayer* progressDisplayer,
     ExceptionHandler exceptionHandler
     )
-  : url_(url),
+  : analysisName_(analysisName),
+    url_(url),
     ioService_(),
     httpClient_(ioService_),
     crq_(None),

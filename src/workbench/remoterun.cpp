@@ -56,6 +56,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
 
   ac_.reset(
         new insight::AnalyzeClient(
+          af_->analysisName_,
           str(format("http://localhost:%d") % localPort),
           &af_->progressDisplayer_,
           [this](std::exception_ptr e)

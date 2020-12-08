@@ -82,7 +82,11 @@ void Mesh::write(std::ostream& ) const
 
 void Mesh::setupGmshCase(GmshCase& c)
 {
-  if (!quad_) c.setLinear();
+  if (quad_)
+    c.setQuadratic();
+  else
+    c.setLinear();
+
   for (const GroupDesc& gd: vertexGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);

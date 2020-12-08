@@ -509,8 +509,6 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     }
   }
 
-
-  setLinear();
 }
 
 

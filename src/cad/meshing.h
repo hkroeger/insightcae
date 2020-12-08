@@ -124,11 +124,21 @@ public:
 class SheetExtrusionGmshCase
     : public cad::GmshCase
 {
+
+public:
+  typedef std::pair<std::string, cad::FeatureSetPtr> NamedEntity;
+
+protected:
+  std::map<cad::FeatureID, std::string> namedBottomFaces_, namedTopFaces_, namedLateralEdges_;
+
 public:
   SheetExtrusionGmshCase(
       cad::ConstFeaturePtr part,
       const boost::filesystem::path& outputMeshFile,
       double L, double h, int nLayers,
+      const std::vector<NamedEntity>& namedBottomFaces,
+      const std::vector<NamedEntity>& namedTopFaces,
+      const std::vector<NamedEntity>& namedLateralEdges,
       bool keepDir=false
       );
 };

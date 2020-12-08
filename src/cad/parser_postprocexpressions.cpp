@@ -162,23 +162,18 @@ void ISCADParser::createPostProcExpressions()
           >> r_solidmodel_expression //>> lit("as") >> r_identifier
           >> hold[ lit("L") >> '=' >> '(' >> r_scalarExpression >> r_scalarExpression >> ')' ] // Lmax, Lmin
           >> ( ( lit("linear") >> attr(false) ) | attr(true) )
-          >> ( lit("vertexGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')' | attr(GroupsDesc()) )
+          >> hold[
+             ( lit("vertexGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')' | attr(GroupsDesc()) )
           >> ( lit("edgeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
           >> ( lit("faceGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
           >> ( lit("volumeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_solidFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
+             ]
           >> ( lit("vertices") >> '(' >> *( (r_identifier|r_string) >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
-//         >> ( (lit("keeptmpdir")>attr(true)) | attr(false) )
+          >> ( (lit("keepTmpDir")>attr(true)) | attr(false) )
           >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<Mesh>(
-                                qi::_1,
-                                qi::_2, qi::_3,
-                                qi::_4,
-                                qi::_5,
-                                qi::_6,
-                                qi::_7,
-                                qi::_8,
-                                qi::_9
+                                qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7
                             ))) ]
         |
 
@@ -188,23 +183,19 @@ void ISCADParser::createPostProcExpressions()
           >> hold[ ( lit("L") >> '=' >> '(' >> r_scalarExpression >> r_scalarExpression >> ')'  // Lmax, Lmin
           >>  lit("h") >> '=' >> r_scalarExpression >> lit("nLayers") >> '=' >> r_scalarExpression ) ]  // h nLayer
           >> ( ( lit("linear") >> attr(false) ) | attr(true) )
-          >> ( lit("vertexGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')' | attr(GroupsDesc()) )
+          >> hold[
+             ( lit("vertexGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')' | attr(GroupsDesc()) )
           >> ( lit("edgeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
-          >> ( lit("faceGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
+          >> ( lit("baseFaceGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
+          >> ( lit("topFaceGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
           >> ( lit("volumeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_solidFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
+             ]
           >> ( lit("vertices") >> '(' >> *( (r_identifier|r_string) >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
-//         >> ( (lit("keeptmpdir")>attr(true)) | attr(false) )
+          >> ( (lit("keepTmpDir")>attr(true)) | attr(false) )
           >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<ExtrudedMesh>(
-                                qi::_1,
-                                qi::_2, qi::_3,
-                                qi::_4,
-                                qi::_5,
-                                qi::_6,
-                                qi::_7,
-                                qi::_8,
-                                qi::_9
+                                qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7
                             ))) ]
         |
         
@@ -224,9 +215,7 @@ void ISCADParser::createPostProcExpressions()
           >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<cad::SnappyHexMesh>(
-                                qi::_1, qi::_2,
-                                qi::_3, qi::_4, 
-                                qi::_5, qi::_6
+                                qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6
                             ))) ]
         |
         

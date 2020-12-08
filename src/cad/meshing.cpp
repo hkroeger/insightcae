@@ -224,7 +224,7 @@ void GmshCase::addSingleNamedVertex(const std::string& vn, const arma::mat& p)
   additionalPoints_++;
   int id=part_->allVertices().data().size()+additionalPoints_;
   insertLinesBefore(endOfGeometryDefinition_, {
-    str( format("Point(%d) = {%g, %g, %g, 999};")%p(0)%p(1)%(p(2)) ),
+    str( format("Point(%d) = {%g, %g, %g, 999};")%id%p(0)%p(1)%(p(2)) ),
     str( format("Physical Point(\"%s\") = {%d};")%vn%id )
   });
 }
@@ -384,34 +384,130 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     cad::ConstFeaturePtr part,
     const boost::filesystem::path& outputMeshFile,
     double L, double h, int nLayers,
+    const std::vector<NamedEntity>& namedBottomFaces,
+    const std::vector<NamedEntity>& namedTopFaces,
+    const std::vector<NamedEntity>& namedLateralEdges,
     bool keepDir
     )
   : cad::GmshCase(part, outputMeshFile,
                   L, L, "gmshinsightcae", keepDir)
 {
+
+  for (const auto& nbf: namedBottomFaces)
+  {
+    for (const auto& fi: nbf.second->data())
+    {
+      namedBottomFaces_[fi]=nbf.first;
+    }
+  }
+  for (const auto& ntf: namedTopFaces)
+  {
+    for (const auto& fi: ntf.second->data())
+    {
+      namedTopFaces_[fi]=ntf.first;
+    }
+  }
+  for (const auto& nle: namedLateralEdges)
+  {
+    for (const auto& ei: nle.second->data())
+    {
+      namedLateralEdges_[ei]=nle.first;
+    }
+  }
+
+
   insertLinesBefore(endOfMeshingOptions_, {
     "Mesh.RecombinationAlgorithm = 0",
     "Mesh.SecondOrderIncomplete=1",
     "Mesh.RecombineAll = 1",
-    "Mesh.Optimize = 1"
+    "Mesh.Optimize = 1",
+
+    "Physical Volume(1) = {}"
    });
 
-  std::vector<string> latbndnames;
-  int i=1;
-  for (TopExp_Explorer ex(part->shape(), TopAbs_EDGE); ex.More(); ex.Next())
+//  for (const auto& nbf: namedBottomFaces_)
+//  {
+//    insertLinesBefore(endOfMeshingOptions_, {
+//                        "Physical Surface(\""+nbf.second+"\")={}"
+//                      });
+//  }
+  for (const auto& ntf: namedTopFaces_)
   {
-    latbndnames.push_back(str(format("out[%d]")%(++i)));
+    insertLinesBefore(endOfMeshingOptions_, {
+                        "Physical Surface(\""+ntf.second+"\")={}"
+                      });
   }
+  for (const auto& nle: namedLateralEdges_)
+  {
+    insertLinesBefore(endOfMeshingOptions_, {
+                        "Physical Surface(\""+nle.second+"\")={}"
+                      });
+  }
+  // insert faces one by one
+  auto faces=part->allFacesSet();
+
+//  for (FeatureID fi : faces)
+//  {
+//    auto nbf=namedBottomFaces_.find(fi);
+//    if (nbf!=namedBottomFaces_.end())
+//    {
+//      insertLinesBefore(endOfMeshingActions_, {
+//        str(format("Physical Surface(\"%s\") += Surface{%d}")%nbf->second%fi)
+//                        });
+//    }
+//  }
+
+
+  for (FeatureID fi : faces)
+  {
+    std::string out=str(format("out%d")%fi);
+
+    insertLinesBefore(endOfMeshingActions_, {
+      str(format(out+"[] = Extrude {0.,0.,%g} { Surface{%d}; Layers{%d}; Recombine; }")
+                        % h % fi % nLayers ),
+      "Physical Volume(1) += "+out+"[1]"
+    });
+  }
+
   insertLinesBefore(endOfMeshingActions_, {
-    //"Mesh 2",
-    "Physical Surface(\"she_die\") = Surface{:}",
-    str(format("out[] = Extrude {0.,0.,%g} { Surface{:}; Layers{%d}; Recombine; }")
-                      % h % nLayers ),
-    "Physical Volume(\"she\") = out[1]",
-    "Physical Surface(\"she_sta\") = out[0]",
-    "Physical Surface(\"she_lat\") = { " + boost::join(latbndnames, ",") + "}"
+    "Coherence Mesh"
   });
 
+
+  for (FeatureID fi : faces)
+  {
+    std::string out=str(format("out%d")%fi);
+
+    // get list of the edge IDs, sort by their ID
+    std::vector<FeatureID> currentFaceEdges;
+    for (TopExp_Explorer ex(part->face(fi), TopAbs_EDGE); ex.More(); ex.Next())
+    {
+      currentFaceEdges.push_back(part->edgeID(ex.Current()));
+    }
+    std::sort(currentFaceEdges.begin(), currentFaceEdges.end());
+
+
+    auto ntf=namedTopFaces_.find(fi);
+    if (ntf!=namedTopFaces_.end())
+    {
+      insertLinesBefore(endOfMeshingActions_, {
+        str(format("Physical Surface(\"%s\") += %s[0]")%ntf->second%out)
+                        });
+    }
+
+    for (int i=0; i<currentFaceEdges.size(); i++)
+    {
+      auto eid = currentFaceEdges[i];
+      auto nle = namedLateralEdges_.find(eid);
+      if (nle!=namedLateralEdges_.end())
+      {
+        insertLinesBefore(endOfMeshingActions_, {
+          str(format("Physical Surface(\"%s\") += %s[%d]")
+                            % nle->second % out % (2+i) )
+                          });
+      }
+    }
+  }
 
 
   setLinear();

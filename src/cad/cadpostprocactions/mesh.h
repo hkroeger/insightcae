@@ -25,6 +25,8 @@
 #include "cadparameters.h"
 #include "cadpostprocaction.h"
 
+
+
 namespace insight 
 {
 namespace cad 
@@ -38,7 +40,12 @@ typedef std::vector<GroupDesc> GroupsDesc;
 typedef boost::fusion::vector2<std::string, VectorPtr> NamedVertex;
 typedef std::vector<NamedVertex> NamedVertices;
 
-
+typedef boost::fusion::vector<
+    insight::cad::GroupsDesc, //vertexGroups,
+    insight::cad::GroupsDesc, //edgeGroups,
+    insight::cad::GroupsDesc, //faceGroups,
+    insight::cad::GroupsDesc //solidGroups,
+  > GroupDefinitions;
 
 
 class Mesh 
@@ -55,6 +62,7 @@ protected:
   GroupsDesc faceGroups_;
   GroupsDesc solidGroups_;
   NamedVertices namedVertices_;
+  bool keepTmpDir_;
   
   size_t calcHash() const override;
 
@@ -66,14 +74,11 @@ public:
   (
     const boost::filesystem::path& outpath,
     FeaturePtr model,
-//     const std::string& volname,
     boost::fusion::vector<ScalarPtr,ScalarPtr> L,
     bool quad,
-    const GroupsDesc& vertexGroups,
-    const GroupsDesc& edgeGroups,
-    const GroupsDesc& faceGroups,
-    const GroupsDesc& solidGroups_,
-    const NamedVertices& namedVertices
+    const GroupDefinitions& v_e_f_s_groups,
+    const NamedVertices& namedVertices,
+    bool keepTmpDir=false
   );
   
 
@@ -82,6 +87,13 @@ public:
 };
 
 
+typedef boost::fusion::vector<
+    insight::cad::GroupsDesc, //vertexGroups,
+    insight::cad::GroupsDesc, //edgeGroups,
+    insight::cad::GroupsDesc, //baseFaceGroups,
+    insight::cad::GroupsDesc, //topFaceGroups,
+    insight::cad::GroupsDesc //solidGroups,
+  > ExtrudedGroupDefinitions;
 
 class ExtrudedMesh
 : public Mesh
@@ -89,6 +101,7 @@ class ExtrudedMesh
 
 protected:
   ScalarPtr h_, nLayers_;
+  std::vector<std::pair<std::string, cad::FeatureSetPtr> > namedBottomFaces_, namedTopFaces_, namedLateralEdges_;
 
   virtual void build();
 
@@ -97,14 +110,11 @@ public:
   (
     const boost::filesystem::path& outpath,
     FeaturePtr model,
-//     const std::string& volname,
     boost::fusion::vector<ScalarPtr,ScalarPtr,ScalarPtr,ScalarPtr> L_h_nLayers,
     bool quad,
-    const GroupsDesc& vertexGroups,
-    const GroupsDesc& edgeGroups,
-    const GroupsDesc& faceGroups,
-    const GroupsDesc& solidGroups_,
-    const NamedVertices& namedVertices
+    const ExtrudedGroupDefinitions& v_e_bf_tf_s_groups,
+    const NamedVertices& namedVertices,
+    bool keepTmpDir=false
   );
 };
 

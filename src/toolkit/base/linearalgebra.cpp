@@ -26,6 +26,7 @@
 #include "boost/tuple/tuple.hpp"
 #include "boost/format.hpp"
 #include "base/exception.h"
+#include "base/units.h"
 
 // #include "minpack.h"
 // #include <dlib/optimization.h>
@@ -112,6 +113,46 @@ mat rotMatrix( double theta, mat u )
       << ux*uz*(1-c)-uy*s << uy*uz*(1-c)+ux*s << uz*uz+(1-uz*uz)*c << endr;
     return m;
 }
+
+
+bool isRotationMatrix(const arma::mat &R)
+{
+  return arma::norm(R.t()*R - arma::eye(3,3), 2) < 1e-10;
+}
+
+/**
+* @brief rotationMatrixToRollPitchYaw
+* computes euler angles from a rotation matrix
+* @param R
+* @return
+* vector of euler angles in degrees
+*/
+arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R)
+{
+  CurrentExceptionContext ex("compution euler angles from rotation matrix");
+
+  insight::assertion(isRotationMatrix(R), "the argument is not a rotation matrix");
+
+  double sy=sqrt(R(0,0) * R(0,0) +  R(1,0) * R(1,0) );
+  bool singular = sy < 1e-10;
+
+  double x, y, z;
+
+  if (!singular)
+  {
+    x = atan2(R(2,1), R(2,2));
+    y = atan2(-R(2,0), sy);
+    z = atan2(R(1,0), R(0,0));
+  }
+  else
+  {
+    x = atan2(-R(1,2), R(1,1));
+    y = atan2(-R(2,0), sy);
+    z = 0;
+  }
+  return vec3(x/SI::deg, y/SI::deg, z/SI::deg);
+}
+
 
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis, const arma::mat& p0 )
 {

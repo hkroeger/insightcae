@@ -719,6 +719,7 @@ string escapeShellSymbols(const string &expr)
   string res(expr);
   algorithm::replace_all(res, "\\", "\\\\");
   algorithm::replace_all(res, "$", "\\$");
+  algorithm::replace_all(res, "\"", "\\\"");
   return res;
 }
 

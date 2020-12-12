@@ -34,6 +34,10 @@ OPTION(INSIGHT_BUILD_INSTALLDESKTOP "Install MIME types and Desktop integration 
 OPTION(INSIGHT_BUILD_TESTS "Build all executables for testing" OFF)
 OPTION(INSIGHT_INSTALL_DESKTOP "Install MIME types and Desktop integration" ON)
 OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)
+
+set(INSIGHT_CHARTRENDERER "gnuplot" CACHE STRING "Select renderer for charts")
+set_property(CACHE INSIGHT_CHARTRENDERER PROPERTY STRINGS gnuplot matplotlib)
+
 SET(INSIGHT_SUPERBUILD "" CACHE STRING "Path to superbuild (build directory). If set, use dependencies from that superbuild")
 
 option(BUILD_DOCUMENTATION "Use Doxygen to create the documentation (doxygen is required)" OFF)

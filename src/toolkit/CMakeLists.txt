@@ -74,8 +74,6 @@ set(toolkit_SOURCES
     base/resultelements/resultsection.cpp
     base/resultelements/chart.cpp
     base/resultelements/chartrenderer.cpp
-    base/resultelements/gnuplotrenderer.cpp
-    base/resultelements/matplotlibrenderer.cpp
     base/resultelements/polarchart.cpp
     base/resultelements/contourchart.cpp
     
@@ -193,6 +191,14 @@ set(toolkit_SOURCES
     code_aster/caexportfile.cpp
     code_aster/codeasterrun.cpp
 )
+
+if( "${INSIGHT_CHARTRENDERER}" STREQUAL "gnuplot" )
+    list(APPEND toolkit_SOURCES base/resultelements/gnuplotrenderer.cpp)
+    add_definitions(-DCHART_RENDERER_GNUPLOT)
+elseif("${INSIGHT_CHARTRENDERER}" STREQUAL "matplotlib" )
+    list(APPEND toolkit_SOURCES base/resultelements/matplotlibrenderer.cpp)
+    add_definitions(-DCHART_RENDERER_MATPLOTLIB)
+endif()
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   LIST(APPEND toolkit_SOURCES

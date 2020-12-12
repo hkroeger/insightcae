@@ -2,8 +2,11 @@
 
 #include "base/tools.h"
 
+#ifdef CHART_RENDERER_GNUPLOT
 #include "base/resultelements/gnuplotrenderer.h"
+#elif defined(CHART_RENDERER_MATPLOTLIB)
 #include "base/resultelements/matplotlibrenderer.h"
+#endif
 
 using namespace std;
 using namespace boost;
@@ -187,8 +190,11 @@ void Chart::generatePlotImage( const path& imagepath ) const
 {
   std::shared_ptr<ChartRenderer> renderer;
 
+#ifdef CHART_RENDERER_GNUPLOT
   renderer.reset( new GnuplotRenderer(chartData()) );
-  //renderer.reset( new MatplotlibRenderer(chartData()) );
+#elif defined(CHART_RENDERER_MATPLOTLIB)
+  renderer.reset( new MatplotlibRenderer(chartData()) );
+#endif
 
   renderer->render(imagepath);
 }

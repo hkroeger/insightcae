@@ -5,20 +5,40 @@
 #include "base/resultelementcollection.h"
 
 
-namespace gnuplotio {
- class Gnuplot;
-}
-
-
 
 namespace insight {
 
 
+struct PlotCurveStyle
+{
+#define ADD(NAME, SETFNAME, TYPE, DEF) \
+  TYPE NAME##_=DEF; \
+  PlotCurveStyle& set_##NAME(const TYPE& v) { NAME##_=v; return *this; } \
+  PlotCurveStyle& SETFNAME(const TYPE& v) { NAME##_=v; return *this; }
+
+  ADD(color, lc, int, -1)
+  ADD(lineWidth, lw, int, 1)
+  ADD(dashType, dt, int, 0)
+
+  ADD(withPoints, wp, bool, true)
+  ADD(withLines, wl, bool, false)
+
+  PlotCurveStyle& wlp() { set_withPoints(true); set_withLines(true); return *this; }
+
+  ADD(errorLines, el, bool, false)
+  ADD(title, t, std::string, "") // automatic
+  ADD(ax_y, y, int, 1)
+
+  PlotCurveStyle& no_t() { title_=""; return *this; }
+
+#undef ADD
+};
 
 
 struct PlotCurve {
     arma::mat xy_;
     std::string plotcmd_;
+    PlotCurveStyle style_;
 
     /**
      * curve identifier on plain-text-level
@@ -42,6 +62,8 @@ struct PlotCurve {
      * construct from separate x and y column vectors (sizes have to match)
      */
     PlotCurve ( const arma::mat& x, const arma::mat& y, const std::string& plaintextlabel, const std::string& plotcmd );
+
+    PlotCurve ( const arma::mat& x, const arma::mat& y, const std::string& plaintextlabel, const PlotCurveStyle& style );
 
     /**
      * construct a horizontal line spanning xrange with value y
@@ -82,15 +104,21 @@ struct PlotCurveList
 
 
 
-class Chart
-    : public ResultElement
+struct ChartData
 {
-protected:
-    std::string xlabel_;
-    std::string ylabel_;
-    PlotCurveList plc_;
-    std::string addinit_;
+  std::string xlabel_;
+  std::string ylabel_;
+  PlotCurveList plc_;
+  std::string addinit_;
+};
 
+
+
+
+class Chart
+    : public ResultElement,
+      protected ChartData
+{
 public:
     declareType ( "Chart" );
 
@@ -104,7 +132,8 @@ public:
         const std::string& addinit = ""
     );
 
-    virtual void gnuplotCommand(gnuplotio::Gnuplot&) const;
+    const ChartData* chartData() const;
+
     virtual void generatePlotImage ( const boost::filesystem::path& imagepath ) const;
 
     void writeLatexHeaderCode ( std::ostream& f ) const override;

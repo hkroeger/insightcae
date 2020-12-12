@@ -73,6 +73,9 @@ set(toolkit_SOURCES
     base/resultelements/attributeresulttable.cpp
     base/resultelements/resultsection.cpp
     base/resultelements/chart.cpp
+    base/resultelements/chartrenderer.cpp
+    base/resultelements/gnuplotrenderer.cpp
+    base/resultelements/matplotlibrenderer.cpp
     base/resultelements/polarchart.cpp
     base/resultelements/contourchart.cpp
     

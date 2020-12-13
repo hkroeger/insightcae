@@ -75,6 +75,8 @@ set(toolkit_SOURCES
     base/resultelements/chart.cpp
     base/resultelements/chartrenderer.cpp
     base/resultelements/polarchart.cpp
+    base/resultelements/polarchartrenderer.cpp
+    base/resultelements/gnuplotpolarchartrenderer.cpp
     base/resultelements/contourchart.cpp
     
     openfoam/ofenvironment.cpp

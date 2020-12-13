@@ -33,26 +33,6 @@ public:
 };
 
 
-class PolarChartRenderer
-    : public ChartRenderer
-{
-protected:
-  double phi_unit_;
-
-public:
-  PolarChartRenderer(const ChartData* data, double phi_unit);
-};
-
-class GnuplotPolarChartRenderer
-    : public GnuplotRendererBase<PolarChartRenderer>
-{
-  void gnuplotCommand(gnuplotio::Gnuplot&) const override;
-
-public:
-  GnuplotPolarChartRenderer(const ChartData* data, double phi_unit);
-};
-
-
 insight::ResultElement& addPolarPlot
 (
     std::shared_ptr<ResultElementCollection> results,

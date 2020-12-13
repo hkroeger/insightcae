@@ -245,7 +245,7 @@ AnalysisForm::AnalysisForm(
 //    ui->verticalLayout->addWidget(actionProgress_);
     
 
-    if (!logToConsole_)
+    if (!logToConsole)
     {
       cout_log_ = new Q_DebugStream(std::cout);
       connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendDimmedLine);

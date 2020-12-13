@@ -59,7 +59,6 @@
 #include "remotedirselector.h"
 
 
-
 namespace fs = boost::filesystem;
 
 
@@ -174,7 +173,8 @@ QRemoteExecutionConfig::~QRemoteExecutionConfig()
 AnalysisForm::AnalysisForm(
     QWidget* parent,
     const std::string& analysisName,
-    const boost::filesystem::path& workingDirectory
+    const boost::filesystem::path& workingDirectory,
+    bool logToConsole
     )
 : QMdiSubWindow(parent),
   analysisName_(analysisName),
@@ -219,20 +219,20 @@ AnalysisForm::AnalysisForm(
     QSplitter* spl=new QSplitter(Qt::Vertical);
     QWidget* lower = new QWidget;
     QHBoxLayout* hbl = new QHBoxLayout(lower);
-    log_=new LogViewerWidget(spl);
     spl->addWidget(graphProgress_);
     spl->addWidget(lower);
+    log_=new LogViewerWidget(spl);
     hbl->addWidget(log_);
 
     QVBoxLayout* vbl=new QVBoxLayout;
     hbl->addLayout(vbl);
     save_log_btn_=new QPushButton("Save...");
-    connect(save_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::saveLog);
     send_log_btn_=new QPushButton("Email...");
-    connect(send_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::sendLog);
     clear_log_btn_=new QPushButton("Clear");
-    connect(clear_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::clearLog);
     auto_scroll_down_btn_=new QPushButton("Auto Scroll");
+    connect(save_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::saveLog);
+    connect(send_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::sendLog);
+    connect(clear_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::clearLog);
     connect(auto_scroll_down_btn_, &QPushButton::clicked, log_, &LogViewerWidget::autoScrollLog);
     vbl->addWidget(save_log_btn_);
     vbl->addWidget(send_log_btn_);
@@ -244,10 +244,14 @@ AnalysisForm::AnalysisForm(
 
 //    ui->verticalLayout->addWidget(actionProgress_);
     
-    cout_log_ = new Q_DebugStream(std::cout);
-    connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendDimmedLine);
-    cerr_log_ = new Q_DebugStream(std::cerr);
-    connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendErrorLine);
+
+    if (!logToConsole_)
+    {
+      cout_log_ = new Q_DebugStream(std::cout);
+      connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendDimmedLine);
+      cerr_log_ = new Q_DebugStream(std::cerr);
+      connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendErrorLine);
+    }
 
     updateWindowTitle();
     connect(ui->btnRun, &QPushButton::clicked, this, &AnalysisForm::onRunAnalysis);

@@ -65,7 +65,8 @@ void workbench::updateRecentFileActions()
 }
 
 
-workbench::workbench()
+workbench::workbench(bool logToConsole)
+  : logToConsole_(logToConsole)
 {
   setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
   this->setWindowTitle("InsightCAE Workbench");
@@ -131,7 +132,7 @@ void workbench::newAnalysis()
     std::string analysisName = dlg.getAnalysisName();
     try
     {
-      form = new AnalysisForm(mdiArea_, analysisName);
+      form = new AnalysisForm(mdiArea_, analysisName, boost::filesystem::path(), logToConsole_);
     }
     catch (const std::exception& e)
     {
@@ -194,7 +195,8 @@ void workbench::openAnalysis(const QString& fn)
   {
     form = new AnalysisForm(mdiArea_,
                             analysisName,
-                            boost::filesystem::path(fn.toStdString()).parent_path()
+                            boost::filesystem::path(fn.toStdString()).parent_path(),
+                            logToConsole_
                             );
   }
   catch (const std::exception& e)

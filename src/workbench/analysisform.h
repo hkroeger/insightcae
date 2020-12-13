@@ -216,7 +216,8 @@ public:
   AnalysisForm(
       QWidget* parent,
       const std::string& analysisName,
-      const boost::filesystem::path& workingDirectory = boost::filesystem::path()
+      const boost::filesystem::path& workingDirectory = boost::filesystem::path(),
+      bool logToConsole=false
       );
   ~AnalysisForm();
   

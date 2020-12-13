@@ -60,6 +60,7 @@ int main(int argc, char** argv)
     desc.add_options()
     ("help", "produce help message")
     ("version,r", "print version and exit")
+    ("nolog,l", "put debug output to console instead of log window")
     ("libs", po::value< StringList >(), "Additional libraries with analysis modules to load")
     ("input-file,f", po::value< std::string >(), "Specifies input file.")
     ;
@@ -130,7 +131,7 @@ int main(int argc, char** argv)
     app.setSplashScreen(&splash);
     splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current) + ", Wait...");
 
-    workbench window;
+    workbench window(vm.count("nolog"));
 
     try
     {

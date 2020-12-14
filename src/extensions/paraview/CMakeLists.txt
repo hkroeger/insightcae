@@ -39,8 +39,8 @@ if (INSIGHT_BUILD_MEDREADER)
 
     # librarys and include paths are added in
     # vtkOnscreen/vtkOffscreen CMake includes
+    add_dependencies(vtkOnscreen medreader-onscreen)
     add_dependencies(vtkOffscreen medreader-offscreen)
-    add_dependencies(vtkOnscreen medreader-omscreen)
 
 endif()
 

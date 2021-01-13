@@ -116,6 +116,8 @@ T to_number(const std::string& s)
   }
 }
 
+bool isNumber(const std::string& s);
+
 
 class LineMesh_to_OrderedPointTable
         : public std::vector<arma::mat>

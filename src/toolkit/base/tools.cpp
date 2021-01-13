@@ -815,6 +815,18 @@ MemoryInfo::MemoryInfo()
   memFree_=entries["MemFree:"].first * 1024;
 }
 
+bool isNumber(const string &s)
+{
+  try {
+    auto result = boost::lexical_cast<double>(s);
+    return true;
+  }
+  catch (const boost::bad_lexical_cast&)
+  {
+    return false;
+  }
+}
+
 
 
 

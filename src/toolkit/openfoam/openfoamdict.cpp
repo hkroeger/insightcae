@@ -68,7 +68,8 @@ struct OpenFOAMDictParser
       using namespace qi;
       
         rquery =  *( rpair );
-        rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
+        rpair  =
+            ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
         ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
         rstring = qi::lexeme[ char_('"') >> *(~qi::char_('"')) >> char_('"') ];
         rraw = ( ~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
@@ -78,9 +79,10 @@ struct OpenFOAMDictParser
         rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
         rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
 
+//        BOOST_SPIRIT_DEBUG_NODE(ridentifier);
 //        BOOST_SPIRIT_DEBUG_NODE(rstring);
-//     	BOOST_SPIRIT_DEBUG_NODE(rpair);
-//     	BOOST_SPIRIT_DEBUG_NODE(rentry);   
+//     	  BOOST_SPIRIT_DEBUG_NODE(rpair);
+//     	  BOOST_SPIRIT_DEBUG_NODE(rentry);
     }
 
     qi::rule<Iterator, OFDictData::dict(), Skipper> rquery;

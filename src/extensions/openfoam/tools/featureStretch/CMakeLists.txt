@@ -18,4 +18,4 @@ set(LIBS
 )
 
 setup_exe_target_OF(featureStretch "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
-linkToolkit_OF( featureStretch )
+linkToolkit_OF_Exe( featureStretch )

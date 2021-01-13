@@ -202,10 +202,6 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 
-macro(linkToolkitVtk target OnOffscreen)
-    target_link_libraries(${target} toolkit vtk${OnOffscreen})
-    set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")
-endmacro()
 
 function(JOIN VALUES GLUE OUTPUT)
   string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
@@ -663,14 +659,7 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
   endforeach()
 endmacro(setup_lib_target_OF)
 
-macro(linkToolkit_OF target)
- version_list_OF()
- foreach (_ofvers ${OF_VERSIONS})
-  if (${_ofvers}_FOUND)
-   linkToolkitVtk(${target}${_ofvers} Offscreen)
-  endif()
- endforeach()
-endmacro()
+
 
 
 macro(setup_test_OF PRJ_NAME cmd)
@@ -884,6 +873,9 @@ endmacro(install_package_script)
 
 add_subdirectory(src)
 add_subdirectory(share)
+
+
+
 
 SET(CPACK_PACKAGE_VERSION_PATCH ${git-rev})
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")

@@ -22,4 +22,4 @@ set(LIBS
 # add_subdirectory(twoPointCorrelation)
 
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
-linkToolkit_OF( ${PRJ} )
+linkToolkit_OF_ShLib( ${PRJ} )

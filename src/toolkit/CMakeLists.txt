@@ -238,6 +238,85 @@ target_include_directories(toolkit
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
 
+
+add_library(toolkitHeaders INTERFACE)
+target_include_directories(toolkitHeaders INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+
+
+set(EXPORT_OPTS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")
+
+macro(linkToolkitVtk2Exe target OnOffscreen)
+    target_link_libraries(${target} toolkit vtk${OnOffscreen} )
+    set_target_properties(${target} PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
+endmacro()
+
+macro(buildLibraryList VTK_LIB_LIST)
+    set(LIBRARY_LIST "")
+    foreach (_l ${VTK_LIB_LIST})
+        get_filename_component(_ln ${_l} NAME)
+        if (LIBRARY_LIST)
+            set(LIBRARY_LIST "${LIBRARY_LIST}, \"${_ln}\"")
+        else()
+            set(LIBRARY_LIST "\"${_ln}\"")
+        endif()
+    endforeach()
+    set(LIBRARY_LIST "${LIBRARY_LIST}, \"libtoolkit.so\"")
+endmacro()
+
+
+
+buildLibraryList("${VTK_OFFSCREEN_LIBRARIES}")
+configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOffscreenLoader.cpp @ONLY)
+add_library(toolkitVtkOffscreenLoader SHARED toolkitVtkOffscreenLoader.cpp)
+set_target_properties(toolkitVtkOffscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
+install(
+    TARGETS toolkitVtkOffscreenLoader # EXPORT toolkit_targets
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+
+buildLibraryList("${VTK_ONSCREEN_LIBRARIES}")
+configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOnscreenLoader.cpp @ONLY)
+add_library(toolkitVtkOnscreenLoader SHARED toolkitVtkOnscreenLoader.cpp)
+set_target_properties(toolkitVtkOnscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
+install(
+    TARGETS toolkitVtkOnscreenLoader # EXPORT toolkit_targets
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+
+macro(linkToolkitVtk2ShLib target OnOffscreen)
+    target_link_libraries(${target} toolkitHeaders toolkitVtk${OnOffscreen}Loader )
+endmacro()
+
+macro(linkToolkitVtk target OnOffscreen)
+    target_link_libraries(${target} toolkit vtk${OnOffscreen} )
+    set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")
+endmacro()
+
+
+macro(linkToolkit_OF_Exe target)
+ version_list_OF()
+ foreach (_ofvers ${OF_VERSIONS})
+  if (${_ofvers}_FOUND)
+   linkToolkitVtk(${target}${_ofvers} Offscreen)
+  endif()
+ endforeach()
+endmacro()
+
+
+macro(linkToolkit_OF_ShLib target)
+ version_list_OF()
+ foreach (_ofvers ${OF_VERSIONS})
+  if (${_ofvers}_FOUND)
+   linkToolkitVtk2ShLib(${target}${_ofvers} Offscreen)
+  endif()
+ endforeach()
+endmacro()
+
+
+
+
 install_shared_file(gri_species openfoam/caseelements/gri.species thermophysical)
 
 add_PDL(toolkit "${toolkit_HEADERS}")

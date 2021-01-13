@@ -18,4 +18,4 @@ set(LIBS
 )
 
 setup_exe_target_OF(surfaceStretch "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
-linkToolkit_OF( surfaceStretch )
+linkToolkit_OF_Exe( surfaceStretch )

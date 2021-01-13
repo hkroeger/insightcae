@@ -2,6 +2,12 @@ project(insight)
 
 
 add_subdirectory(pdl)
+
+IF(INSIGHT_BUILD_TOOLKIT)
+  LIST(APPEND TARGETS_TO_INSTALL "InsightCAEToolkitTarget.cmake")
+  add_subdirectory(toolkit)
+ENDIF()
+
 add_subdirectory(test)
 add_subdirectory(refdata)
 add_subdirectory(etc)
@@ -20,8 +26,6 @@ if (INSIGHT_BUILD_OPENFOAM)
 ENDIF()
 
 IF(INSIGHT_BUILD_TOOLKIT)
-  LIST(APPEND TARGETS_TO_INSTALL "InsightCAEToolkitTarget.cmake")
-  add_subdirectory(toolkit)
   add_subdirectory(toolkit_remote)
   LIST(APPEND TARGETS_TO_INSTALL "InsightCAEToolkitRemoteTarget.cmake")
   add_subdirectory(analyze)

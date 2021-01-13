@@ -53,9 +53,9 @@ bool rangeWeightField::execute()
         const volScalarField& sf = mesh_.lookupObject<volScalarField>(sourceFieldName_);
 
         outputScalarField_->internalField() =
-                pos(sf.internalField()-min_)
+                pos(sf.internalField()-dimensionedScalar("min", sf.dimensions(), min_))
                 *
-                neg(sf.internalField()-max_)
+                neg(sf.internalField()-dimensionedScalar("max", sf.dimensions(), max_))
                 ;
 
         if (!multiplyFieldName_.empty())

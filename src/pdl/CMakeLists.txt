@@ -25,4 +25,4 @@ target_link_libraries(pdl ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS pdl RUNTIME DESTINATION bin)
 
-add_subdirectory(tests)
+#add_subdirectory(tests)

@@ -14,6 +14,7 @@ add_sources(insightcad_SOURCES
  circularpattern.cpp
  compound.cpp
  cutaway.cpp
+ cutup.cpp
  cylinder.cpp
  cone.cpp
  torus.cpp

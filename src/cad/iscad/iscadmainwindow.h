@@ -100,7 +100,9 @@ protected:
       sel_pts,
       sel_edgs,
       sel_faces,
-      sel_solids
+      sel_solids,
+      editor_font_larger,
+      editor_font_smaller
     };
 
     std::map<ActionNames, QAction*> act_;

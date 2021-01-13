@@ -81,6 +81,9 @@ protected:
 
     QSize sizehint_;
 
+    int fontSize_;
+
+    void setFontSize(int fontSize);
     
 protected:
     void clearDerivedData();
@@ -166,6 +169,8 @@ public slots:
     void insertComponentNameAtCursor();
     void insertLibraryModelAtCursor();
     
+    void onIncreaseFontSize();
+    void onDecreaseFontSize();
 //    /**
 //     * display everything shaded
 //     */

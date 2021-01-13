@@ -81,6 +81,11 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
                 me->model(), &ISCADModel::insertComponentNameAtCursor);
         connect(act_[clear_cache], &QAction::triggered,
                 me->model(), &ISCADModel::clearCache);
+        connect(act_[editor_font_larger], &QAction::triggered,
+                me->model(), &ISCADModel::onIncreaseFontSize);
+        connect(act_[editor_font_smaller], &QAction::triggered,
+                me->model(), &ISCADModel::onDecreaseFontSize);
+
 
         connect(act_[fit_all], &QAction::triggered,
                 me->viewer(), &QoccViewWidget::fitAll);
@@ -282,6 +287,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     QMenu *fmenu = menuBar()->addMenu("&File");
     QMenu *mmenu = menuBar()->addMenu("&Model");
     QMenu *vmenu = menuBar()->addMenu("&View");
+    QMenu *emenu = menuBar()->addMenu("&Editor");
     QMenu *msmenu = menuBar()->addMenu("M&easure");
     QMenu *selmenu = menuBar()->addMenu("&Selection");
     QMenu *helpmenu = menuBar()->addMenu("&Help");
@@ -419,6 +425,16 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
 
     act_[sel_solids]=new QAction("Select solids", this);
     selmenu->addAction(act_[sel_solids]);
+
+
+    act_[editor_font_larger]=new QAction("&Increase font size", this);
+    act_[editor_font_larger]->setShortcut(Qt::ControlModifier + Qt::Key_Plus);
+    emenu->addAction(act_[editor_font_larger]);
+
+    act_[editor_font_smaller]=new QAction("&Decrease font size", this);
+    act_[editor_font_smaller]->setShortcut(Qt::ControlModifier + Qt::Key_Minus);
+    emenu->addAction(act_[editor_font_smaller]);
+
 
     QSettings settings("silentdynamics", "iscad");
     restoreGeometry(settings.value("geometry").toByteArray());

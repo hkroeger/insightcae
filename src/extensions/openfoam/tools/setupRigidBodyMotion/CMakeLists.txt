@@ -20,3 +20,4 @@ set(IS_OF_TARGS
 
 set (OF_VERSIONS OFplus OFesi1806 OFesi1906)
 setup_exe_target_OF(setupRigidBodyMotion "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "${IS_OF_TARGS}")
+linkToolkit_OF_Exe(setupRigidBodyMotion)

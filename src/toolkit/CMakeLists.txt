@@ -240,7 +240,9 @@ target_include_directories(toolkit
 
 
 add_library(toolkitHeaders INTERFACE)
-target_include_directories(toolkitHeaders INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)
+message(STATUS "toolkit_INCLUDE_DIRS ${toolkit_INCLUDE_DIRS}")
+target_include_directories(toolkitHeaders INTERFACE ${toolkit_INCLUDE_DIRS})
 
 
 set(EXPORT_OPTS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")

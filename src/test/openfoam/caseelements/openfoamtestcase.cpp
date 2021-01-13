@@ -15,7 +15,9 @@ int executeTest(std::function<void(void)> testFunction)
   }
   catch(const insight::UnsupportedFeature& ue)
   {
-    cout<<ue<<endl;
+    cout
+       <<"Skipped because feature is unsupported:"<<endl
+       <<ue<<endl;
     return 0;
   }
   catch(const std::exception& e)

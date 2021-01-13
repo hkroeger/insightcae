@@ -91,11 +91,14 @@ void Bar::build()
         p0 += -baraxis*(*ext0_);
         p1 +=  baraxis*(*ext1_);
         double L=norm(p1-p0, 2);
+        insight::assertion(L>1e-10, "the bar length must not be zero!");
 
         refpoints_["start"]=*p0_;
         refpoints_["end"]=*p1_;
         refpoints_["p0"]=p0;
         refpoints_["p1"]=p1;
+
+        refvectors_["ex"]=(p1 - p0)/L;
 
         refvalues_["L"]=L;
 
@@ -139,12 +142,6 @@ void Bar::build()
         );
         
         auto xsect=Transform::create_trsf(xsec_, tr.Inverted());
-//         TopoDS_Shape xsecs =
-//             BRepBuilderAPI_Transform
-//             (
-//                 xsec_->shape(),
-//                 tr.Inverted()
-//             ).Shape();
         providedSubshapes_["xsec"]=xsect;
         TopoDS_Shape xsecs = *xsect;
 

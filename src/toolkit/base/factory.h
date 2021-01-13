@@ -103,16 +103,21 @@ static std::vector<std::string> factoryToC()
  baseT::Factory::~Factory() {} \
  baseT* baseT::lookup(const std::string& key , argList) \
  { \
+  if (factories_) { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
    if (i==baseT::factories_->end()) \
     throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
    return (*i->second)( parList ); \
+  } \
+  else throw insight::Exception("Factory table of type \"" #baseT "\" is empty!" ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
  { \
    std::vector<std::string> toc; \
-   for (const FactoryTable::value_type& e: *factories_) \
-   { toc.push_back(e.first); } \
+   if (factories_) { \
+    for (const FactoryTable::value_type& e: *factories_) \
+    { toc.push_back(e.first); } \
+   } \
    return toc; \
  } \
  baseT::FactoryTable* baseT::factories_=nullptr
@@ -124,16 +129,21 @@ static std::vector<std::string> factoryToC()
  baseT::Factory::~Factory() {} \
  baseT* baseT::lookup(const std::string& key) \
  { \
-   baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
-   if (i==baseT::factories_->end()) \
-    throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
-  return (*i->second)(); \
+   if (factories_) { \
+    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
+    if (i==baseT::factories_->end()) \
+     throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
+    return (*i->second)(); \
+   } \
+   else throw insight::Exception("Factory table of type \"" #baseT "\" is empty!" ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
  { \
    std::vector<std::string> toc; \
-   for (const FactoryTable::value_type& e: *factories_) \
-   { toc.push_back(e.first); } \
+   if (factories_) { \
+    for (const FactoryTable::value_type& e: *factories_) \
+    { toc.push_back(e.first); } \
+   } \
    return toc; \
  } \
  baseT::FactoryTable* baseT::factories_=nullptr
@@ -162,6 +172,7 @@ static struct add##specT##To##baseT##FactoryTable \
     if (baseT::factories_->size()==0) \
     { \
      delete baseT::factories_;\
+     baseT::factories_=nullptr;\
     }\
   }\
 } v_add##specT##To##baseT##FactoryTable

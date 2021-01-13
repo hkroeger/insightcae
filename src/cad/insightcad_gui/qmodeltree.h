@@ -124,6 +124,7 @@ public Q_SLOTS:
     virtual void shaded();
     virtual void onlyThisShaded();
     virtual void randomizeColor();
+    virtual void chooseColor();
     virtual void setResolution();
 
 Q_SIGNALS:

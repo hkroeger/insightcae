@@ -236,8 +236,12 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
     connect(a, &QAction::triggered, this, &QFeatureItem::wireframe);
     myMenu.addAction(a);
     
-    a=new QAction("Randomize Color", &myMenu);
+    a=new QAction("Randomize color", &myMenu);
     connect(a, &QAction::triggered, this, &QFeatureItem::randomizeColor);
+    myMenu.addAction(a);
+
+    a=new QAction("Choose color...", &myMenu);
+    connect(a, &QAction::triggered, this, &QFeatureItem::chooseColor);
     myMenu.addAction(a);
 
     myMenu.addSeparator();

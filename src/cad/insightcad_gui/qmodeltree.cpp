@@ -20,6 +20,7 @@
 
 #include <QtGlobal>
 #include <QInputDialog>
+#include <QColorDialog>
 
 #include "base/qt5_helper.h"
 #include "qmodeltree.h"
@@ -30,6 +31,12 @@
 #include "qevaluationitem.h"
 
 #include "base/boost_include.h"
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/discrete_distribution.hpp>
+#include <boost/random/exponential_distribution.hpp>
+
+boost::mt19937 boostRenGen;
 
 QModelTreeItem::QModelTreeItem
 (
@@ -107,9 +114,13 @@ Quantity_Color QDisplayableModelTreeItem::color() const
 
 void QDisplayableModelTreeItem::setRandomColor()
 {
-  r_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
-  g_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
-  b_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
+  boost::random::exponential_distribution<> ed(2);
+  r_ = std::max(0., std::min(1., ed(boostRenGen)));
+  g_ = std::max(0., std::min(1., ed(boostRenGen)));
+  b_ = std::max(0., std::min(1., ed(boostRenGen)));
+//  r_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
+//  g_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
+//  b_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
 }
 
 void QDisplayableModelTreeItem::copyDisplayProperties(QDisplayableModelTreeItem* di)
@@ -174,6 +185,19 @@ void QDisplayableModelTreeItem::randomizeColor()
 {
   setRandomColor();
   emit setColor(this, color());
+}
+
+void QDisplayableModelTreeItem::chooseColor()
+{
+  QColor c(r_*255., g_*255., b_*255.);
+  auto nc = QColorDialog::getColor(c, treeWidget(), "Please select color");
+  if (nc.isValid())
+  {
+    r_=nc.red()/255.;
+    g_=nc.green()/255.;
+    b_=nc.blue()/255.;
+    emit setColor(this, color());
+  }
 }
 
 void QDisplayableModelTreeItem::setResolution()

@@ -18,6 +18,7 @@
  */
 
 #include "line.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
@@ -84,15 +85,29 @@ void Line::build()
 {
   arma::mat p0=p0_->value();
   arma::mat p1;
+  VectorPtr dir;
   if (second_is_dir_)
+  {
     p1=p0+p1_->value();
+    dir=p1_;
+  }
   else
+  {
     p1=p1_->value();
+    dir=std::make_shared<SubtractedVector>(p1_, p0_);
+  }
 
   refpoints_["p0"]=p0;
   refpoints_["p1"]=p1;
 //   refvalues_["L"]=arma::norm(p1-p0, 2);
   refvectors_["ex"]=(p1 - p0)/arma::norm(p1 - p0, 2);
+
+
+  providedDatums_["axis"]=
+      std::make_shared<ExplicitDatumAxis>(
+        p0_,
+        dir
+        );
   
   setShape(BRepBuilderAPI_MakeEdge(
       GC_MakeSegment(to_Pnt(p0), to_Pnt(p1)).Value()

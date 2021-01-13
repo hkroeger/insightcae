@@ -18,8 +18,13 @@
  */
 
 #include "quad.h"
+#include "datum.h"
+
 #include "base/boost_include.h"
+#include "base/linearalgebra.h"
+
 #include <boost/spirit/include/qi.hpp>
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -136,7 +141,11 @@ void Quad::build()
         refpoints_["c3"]=vec3 ( p3 );
         refpoints_["c4"]=vec3 ( p4 );
 
-        //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
+        providedDatums_["plane"] = std::make_shared<DatumPlane>(
+              p0_,
+              matconst(insight::Vector(p2)),
+              matconst(insight::Vector(p4))
+        );
         providedSubshapes_["OuterWire"]=FeaturePtr ( new Feature ( w.Wire() ) );
 
         TopoDS_Shape s = BRepBuilderAPI_MakeFace ( w.Wire() );

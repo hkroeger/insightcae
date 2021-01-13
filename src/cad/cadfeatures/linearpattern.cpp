@@ -112,6 +112,9 @@ void LinearPattern::build()
     int j=0;
     CompoundFeatureMap instances;
 
+    std::map<std::string, std::vector<FeaturePtr> > subshapeCompoundFeatures;
+    auto sf = m1_->providedSubshapes();
+
     for ( int i=0; i<n; i++ ) {
         gp_Trsf tr;
         tr.SetTranslation ( ax*delta_x*double ( i ) );
@@ -119,12 +122,22 @@ void LinearPattern::build()
 
         components_[str ( format ( "component%d" ) % ( j+1 ) )] = Transform::create_trsf ( m1_, tr );
         j++;
+
+        for (const auto& pss: sf)
+        {
+          subshapeCompoundFeatures[pss.first].push_back(Transform::create_trsf ( m1_->subshape(pss.first), tr ));
+        }
     }
 
     refvalues_["n"]=n;
     refvalues_["delta_x"]=delta_x;
     refvectors_["axis"]=ax0;
     providedSubshapes_["basefeat"]=m1_;
+
+    for (const auto& pss: sf)
+    {
+      providedSubshapes_[pss.first]=Compound::create(subshapeCompoundFeatures[pss.first]);
+    }
 
     m1_->unsetLeaf();
     Compound::build();

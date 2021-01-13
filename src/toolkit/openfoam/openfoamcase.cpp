@@ -18,6 +18,8 @@
  *
  */
 
+#include <iostream>
+
 #include "base/exception.h"
 #include "base/analysis.h"
 #include "base/boost_include.h"
@@ -43,6 +45,7 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+namespace fs = boost::filesystem;
 using namespace insight::OFDictData;
 
 
@@ -180,6 +183,39 @@ void OpenFOAMCase::modifyFilesOnDiskBeforeDictCreation ( const boost::filesystem
 }
 
 
+std::string modifyPathForRegion(const std::string& orgPath, const std::string& regionName)
+{
+  fs::path dpath(orgPath);
+
+  cout<<dpath<< " ==>> ";
+
+  if (dpath.is_relative())
+  {
+    std::vector<fs::path> pathcmpts;
+    std::copy(dpath.begin(), dpath.end(), std::back_inserter(pathcmpts));
+    if (
+        (pathcmpts[0]=="constant")
+        ||
+        (pathcmpts[0]=="system")
+        ||
+        isNumber(pathcmpts[0].string())
+        )
+    {
+      pathcmpts.insert( ++pathcmpts.begin(), regionName );
+    }
+
+    dpath = pathcmpts[0];
+    for (auto i = ++pathcmpts.begin(); i!=pathcmpts.end(); ++i)
+    {
+      dpath /= *i;
+    }
+  }
+
+  cout << dpath << endl;
+
+  return dpath.string();
+}
+
 std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {
   std::shared_ptr<OFdicts> dictionaries(new OFdicts);
@@ -220,6 +256,20 @@ std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 	 }
        }  
 
+  // Include all dicts belonging to regions. Modify their path accordingly.
+  for (const auto& region: regions_)
+  {
+    std::shared_ptr<OFdicts> rd = region.second->createDictionaries();
+
+    while (rd->size())
+    {
+      auto dictName = rd->begin()->first;
+      auto dict = rd->release(rd->begin());
+      auto newPath=modifyPathForRegion(dictName, region.first);
+      dictionaries->insert(newPath, dict.release());
+    }
+  }
+
   return dictionaries;
 }
 
@@ -257,6 +307,10 @@ void OpenFOAMCase::createOnDisk
     const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
 )
 {
+
+  if (!restrictToFiles)
+    modifyFilesOnDiskBeforeDictCreation( location );
+
   std::shared_ptr<OFdicts> dictionaries=createDictionaries();
   createOnDisk(location, dictionaries, restrictToFiles);
 }
@@ -282,7 +336,7 @@ void OpenFOAMCase::createOnDisk
     if (restrictToFiles)
     {
         ok_to_create=false;
-        for (boost::filesystem::path fp: *restrictToFiles)
+        for (const boost::filesystem::path& fp: *restrictToFiles)
         {
             if ( boost::filesystem::equivalent(dictpath, fp) ) ok_to_create=true;
         }
@@ -541,6 +595,16 @@ OpenFOAMCase::~OpenFOAMCase()
 {
 }
 
+void OpenFOAMCase::addRegionCase(const std::string& regionName, std::shared_ptr<OpenFOAMCase> regionCase)
+{
+  insight::assertion(
+        regionCase->OFversion()==OFversion(),
+        "the selected OpenFOAM versions have to be identical"
+        );
+
+  regions_.emplace(regionName, regionCase);
+}
+
 void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
 {
     if (fieldListCompleted_)
@@ -549,15 +613,18 @@ void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
   fields_[name]=field;
 }
 
-boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::path& location) const
+boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::path& location, const std::string& regionName) const
 {
   boost::filesystem::path basepath(location);
-  return basepath / "constant" / "polyMesh" / "boundary";
+  if (regionName.empty())
+    return basepath / "constant" / "polyMesh" / "boundary";
+  else
+    return basepath / "constant" / regionName / "polyMesh" / "boundary";
 }
 
-void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict) const
+void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName) const
 {
-  boost::filesystem::path dictpath = boundaryDictPath(location);
+  boost::filesystem::path dictpath = boundaryDictPath(location, regionName);
   std::ifstream f(dictpath.c_str());
   if (!readOpenFOAMBoundaryDict(f, boundaryDict))
       throw insight::Exception("Failed to parse boundary dict "+dictpath.string());

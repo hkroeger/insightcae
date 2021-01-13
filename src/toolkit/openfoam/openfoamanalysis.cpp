@@ -409,6 +409,19 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer
         }
     }
 
+    int np=1;
+    if (boost::filesystem::exists(executionPath()/"system"/"decomposeParDict"))
+    {
+        np=readDecomposeParDict(executionPath());
+    }
+    bool is_parallel = np>1;
+
+    if (!runCase.outputTimesPresentOnDisk(dir, is_parallel) && !evaluateonly)
+    {
+      runCase.modifyFilesOnDiskBeforeDictCreation( executionPath() );
+    }
+
+
     parentActionProgress.message("Creating the case setup.");
     createCase(runCase, parentActionProgress);
 
@@ -420,12 +433,13 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer
     parentActionProgress.message("Applying custom modifications to dictionaries.");
     applyCustomOptions(runCase, dicts);
 
-    int np=1;
+    // might have changed
     if (boost::filesystem::exists(executionPath()/"system"/"decomposeParDict"))
     {
         np=readDecomposeParDict(executionPath());
     }
-    bool is_parallel = np>1;
+    is_parallel = np>1;
+
     if (!runCase.outputTimesPresentOnDisk(dir, is_parallel) && !evaluateonly)
     {
         if (meshcreated)

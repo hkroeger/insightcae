@@ -24,9 +24,9 @@ void volumeDrag::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict cd;
   cd["type"]="volumeDrag";
   cd["active"]=true;
-  cd["selectionMode"]="cellZone";
-  cd["cellZone"]=p_.name;
   OFDictData::dict vdd;
+  vdd["cellZone"]=p_.name;
+  vdd["selectionMode"]="cellZone";
   vdd["CD"]=OFDictData::to_OF(p_.CD);
   cd["volumeDragCoeffs"]=vdd;
 

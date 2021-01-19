@@ -425,12 +425,12 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     "Physical Volume(1) = {}"
    });
 
-//  for (const auto& nbf: namedBottomFaces_)
-//  {
-//    insertLinesBefore(endOfMeshingOptions_, {
-//                        "Physical Surface(\""+nbf.second+"\")={}"
-//                      });
-//  }
+  for (const auto& nbf: namedBottomFaces_)
+  {
+    insertLinesBefore(endOfMeshingOptions_, {
+                        "Physical Surface(\""+nbf.second+"\")={}"
+                      });
+  }
   for (const auto& ntf: namedTopFaces_)
   {
     insertLinesBefore(endOfMeshingOptions_, {
@@ -486,7 +486,13 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     }
     std::sort(currentFaceEdges.begin(), currentFaceEdges.end());
 
-
+    auto nbf=namedBottomFaces_.find(fi);
+    if (nbf!=namedBottomFaces_.end())
+    {
+      insertLinesBefore(endOfMeshingActions_, {
+        str(format("Physical Surface(\"%s\") += %s[1]")%nbf->second%out)
+                        });
+    }
     auto ntf=namedTopFaces_.find(fi);
     if (ntf!=namedTopFaces_.end())
     {

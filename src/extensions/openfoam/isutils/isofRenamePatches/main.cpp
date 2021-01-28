@@ -56,7 +56,9 @@ int main(int argc, char *argv[])
     ("ofe,o", po::value<std::string>(), "use specified OpenFOAM environment instead of detected")
 
     ("case-dir,l", po::value<std::string>(), "case location")
-    ("rename,r", po::value<StringList>(), "rename patch, specify as <current name>:<new name>")
+    ("rename,r", po::value<StringList>(), "rename patch, specify as <current name>:<new name>[:new patch type]")
+    ("time,t", po::value<std::string>(), "time, defaults to constant")
+    ("filterZero,z", "filter out zero sized patches")
     ;
 
     po::positional_options_description p;
@@ -97,13 +99,19 @@ int main(int argc, char *argv[])
         location = vm["case-dir"].as<std::string>();
     }
 
+    std::string time="constant";
+    if (vm.count("time"))
+    {
+      time=vm["time"].as<std::string>();
+    }
+
 
     try
     {
         OpenFOAMCase cm( OFEs::getCurrentOrPreferred() );
 
         OFDictData::dictFile boundaryDict;
-        cm.parseBoundaryDict(location, boundaryDict);
+        cm.parseBoundaryDict(location, boundaryDict, string(), time);
 
         if (vm.count("rename"))
         {
@@ -113,12 +121,12 @@ int main(int argc, char *argv[])
           {
             std::vector<std::string> pair;
             boost::split(pair, s, boost::is_any_of(":"));
-            if (pair.size()!=2)
+            if (pair.size()<2 || pair.size()>3)
                 throw insight::Exception
                 (
                     "Invalid specification of rename operation in command line!\n"
                     "Each rename operation has to be given as:\n"
-                    " <current patch name>:<new patch name>"
+                    " <current patch name>:<new patch name>[:new patch type]"
                     " (was "+s+")"
                 );
 
@@ -129,12 +137,20 @@ int main(int argc, char *argv[])
 
             auto value = i->second;
             boundaryDict.erase(i);
+            if (pair.size()>2)
+            {
+              OFDictData::dict& bi = boost::get<OFDictData::dict&>(value);
+              bi["type"]=pair[2];
+              auto i = bi.find("inGroups");
+              if (i!=bi.end())
+                bi.erase(i);
+            }
             boundaryDict[pair[1]]=value;
           }
         }
 
-        std::ofstream bf( (location/"constant"/"polyMesh"/"boundary").c_str() );
-        writeOpenFOAMBoundaryDict(bf, boundaryDict);
+        std::ofstream bf( (location/time/"polyMesh"/"boundary").c_str() );
+        writeOpenFOAMBoundaryDict(bf, boundaryDict, vm.count("filterZero")>0);
 
     }
     catch (std::exception e)

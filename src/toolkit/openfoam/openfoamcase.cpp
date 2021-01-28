@@ -613,18 +613,18 @@ void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
   fields_[name]=field;
 }
 
-boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::path& location, const std::string& regionName) const
+boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::path& location, const std::string& regionName, const std::string& time) const
 {
   boost::filesystem::path basepath(location);
   if (regionName.empty())
-    return basepath / "constant" / "polyMesh" / "boundary";
+    return basepath / time / "polyMesh" / "boundary";
   else
-    return basepath / "constant" / regionName / "polyMesh" / "boundary";
+    return basepath / time / regionName / "polyMesh" / "boundary";
 }
 
-void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName) const
+void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName, const std::string& time) const
 {
-  boost::filesystem::path dictpath = boundaryDictPath(location, regionName);
+  boost::filesystem::path dictpath = boundaryDictPath(location, regionName, time);
   std::ifstream f(dictpath.c_str());
   if (!readOpenFOAMBoundaryDict(f, boundaryDict))
       throw insight::Exception("Failed to parse boundary dict "+dictpath.string());

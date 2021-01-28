@@ -76,8 +76,8 @@ public:
 
     void addField ( const std::string& name, const FieldInfo& field );
 
-    boost::filesystem::path boundaryDictPath(const boost::filesystem::path& location, const std::string& regionName = std::string() ) const;
-    void parseBoundaryDict ( const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName = std::string() ) const;
+    boost::filesystem::path boundaryDictPath(const boost::filesystem::path& location, const std::string& regionName = std::string(), const std::string& time = "constant" ) const;
+    void parseBoundaryDict ( const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName = std::string(), const std::string& time = "constant" ) const;
 
     std::set<std::string> getUnhandledPatches ( OFDictData::dict& boundaryDict ) const;
 

@@ -302,15 +302,32 @@ bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
    return true;
 }
 
-void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
+void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d, bool filterZeroSizesPatches)
 {
-  typedef std::map<int, std::string> Ordering;
+  struct PatchInfo { std::string name; int startFace; int nFaces; };
+  typedef std::vector<PatchInfo> Ordering;
+
   Ordering ord;
   for ( const OFDictData::dictFile::value_type& i: d )
   {
-    ord[d.subDict(i.first).getInt("startFace")] = i.first;
+    auto sd=d.subDict(i.first);
+
+    int nfaces=sd.getInt("nFaces");
+
+    if ( !(filterZeroSizesPatches && nfaces==0) )
+      ord.push_back( PatchInfo{i.first, sd.getInt("startFace"), nfaces} );
   }
   
+  std::sort(ord.begin(), ord.end(),
+            [](const Ordering::value_type& f, const Ordering::value_type& s)
+            {
+              if (f.startFace == s.startFace)
+                return (f.nFaces < s.nFaces);
+              else
+                return (f.startFace < s.startFace);
+            }
+  );
+
   out /*<< std::scientific*/ << std::setprecision(18);
     out<<"FoamFile"<<endl
        <<"{"<<endl
@@ -320,12 +337,12 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
        <<" object      boundary;"<<endl
        <<"}"<<endl;
 
-    out << d.size() << endl
+    out << ord.size() << endl
 	<< "(" << endl;
 	
     for (const auto& j: ord)
     {
-      auto i=d.find(j.second);
+      auto i=d.find(j.name);
       out<< i->first << "\n" << i->second;
 //       const OFDictData::data* o=&(i->second);
       //if (!boost::get<OFDictData::dict>(o)) out<<";";

@@ -61,7 +61,7 @@ void OpenFOAMCaseWithCylinderMesh::createMesh()
   bmd::blockMeshDict_Cylinder::Parameters mp;
   mp.mesh.basePatchName="inlet";
   mp.mesh.topPatchName="outlet";
-  mp.mesh.resolution = bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{9};
+  mp.mesh.resolution = bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{9,0.5};
   meshCase.insert(new bmd::blockMeshDict_Cylinder(meshCase, mp));
 
   meshCase.createOnDisk(dir_);

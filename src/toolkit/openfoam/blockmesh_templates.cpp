@@ -88,9 +88,15 @@ void blockMeshDict_Cylinder::create_bmd()
     bool hollow = p_.geometry.d > 1e-10;
 
     int nu, nx, nr;
-    double
+    double L_r, L_u;
+
+    auto setLrLu = [&](double x)
+    {
         L_r = 0.5*(p_.geometry.D-p_.geometry.d),
-        L_u = 2.*M_PI * 0.5*(p_.geometry.d+p_.geometry.D) /4.;
+        L_u = 2.*M_PI * ( (1.-x)*p_.geometry.d + x*p_.geometry.D ) /4.;
+    };
+
+    setLrLu(0.5);
 
     if (const auto* ic = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
     {
@@ -100,12 +106,15 @@ void blockMeshDict_Cylinder::create_bmd()
     }
     else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
     {
+      setLrLu(ic->xcubical);
       nx=std::max(1, int(std::ceil(p_.geometry.L/ic->delta)));
       nr=std::max(1, int(std::ceil(L_r/ic->delta)));
       nu=std::max(1, int(std::ceil(L_u/ic->delta)));
     }
     else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
     {
+      setLrLu(ic->xcubical);
+
       auto Ls={p_.geometry.L, L_r, L_u};
       double delta = *std::max_element(Ls.begin(), Ls.end()) / double(ic->n_max);
 
@@ -169,7 +178,8 @@ void blockMeshDict_Cylinder::create_bmd()
                                         p0+r1*pts[0], p0+r2*pts[0], p0+r3*pts[0], p0+r0*pts[0],
                                         p0+( r1*pts[0] )+vL, p0+( r2*pts[0] )+vL, p0+( r3*pts[0] )+vL, p0+( r0*pts[0] )+vL
                                     ),
-                                    nu, nu, nx
+                                    nu, nu, nx,
+                                    {1, 1, p_.mesh.gradax}
                                   )
                     );
         if ( base ) {
@@ -193,7 +203,7 @@ void blockMeshDict_Cylinder::create_bmd()
                                             p0+( r1*pts[0] )+vL, p0+( r0*pts[0] )+vL, p0+( r0*pts[1] )+vL, p0+( r1*pts[1] )+vL
                                         ),
                                         nu, nr, nx,
-                                        list_of<double> ( 1 ) ( 1./p_.mesh.gradr ) ( 1 )
+                                        { 1,  1./p_.mesh.gradr, p_.mesh.gradax }
                                       )
                         );
             if ( base ) {

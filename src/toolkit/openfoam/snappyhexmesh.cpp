@@ -97,9 +97,7 @@ addToStaticFunctionTable(Feature, Geometry, defaultParameters);
 Geometry::Geometry( const ParameterSet& ps )
 : ExternalGeometryFile(ps),
   p_(ps)
-{
-  std::cout<<"added \""<<p_.fileName<<"\" as "<<p_.name<<std::endl;
-}
+{}
 
 void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
@@ -107,7 +105,10 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name;
     //boost::filesystem::path x; x.f
-  sHMDict.subDict("geometry")[p_.fileName->fileName().string()]=geodict;
+  std::string fn=p_.fileName->fileName().string();
+  if (!isalpha(fn[0]))
+    fn="\""+fn+"\"";
+  sHMDict.subDict("geometry")[fn]=geodict;
 
   OFDictData::dict castdict;
   OFDictData::list levels;
@@ -625,9 +626,17 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
   if (p.PiM.size()>1)
   {
     OFDictData::list PiM;
+    int i=1;
     for (const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim: p.PiM)
     {
+      if (OFversion()>=600)
+      {
+        PiM.push_back(OFDictData::list{ OFDictData::vector3(pim), str(format("zone%d")%(i++)) });
+      }
+      else
+      {
         PiM.push_back(OFDictData::vector3(pim));
+      }
     }
     castellatedCtrls["locationsInMesh"]=PiM;
   }
@@ -740,9 +749,17 @@ void snappyHexMesh
   if (p.PiM.size()>1)
   {
     OFDictData::list PiM;
+    int i=1;
     for (const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim: p.PiM)
     {
+      if (ofc.OFversion()>=600)
+      {
+        PiM.push_back(OFDictData::list{ OFDictData::vector3(pim), str(format("zone%d")%(i++)) });
+      }
+      else
+      {
         PiM.push_back(OFDictData::vector3(pim));
+      }
     }
     castellatedCtrls["locationsInMesh"]=PiM;
   }

@@ -321,5 +321,41 @@ std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
   return os;
 }
 
+FeatureSetPtr makeEdgeFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
+{
+  auto data=expression.empty() ? feat->allEdges().data() : feat->query_edges(expression, refs);
+  std::vector<FeatureID> data2;
+  std::copy(data.begin(), data.end(), std::back_inserter(data2));
+  return std::make_shared<FeatureSet>(
+        feat,
+        EntityType::Edge,
+        data2
+  );
+}
+
+FeatureSetPtr makeFaceFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
+{
+  auto data=expression.empty() ? feat->allFaces().data() : feat->query_faces(expression, refs);
+  std::vector<FeatureID> data2;
+  std::copy(data.begin(), data.end(), std::back_inserter(data2));
+  return std::make_shared<FeatureSet>(
+        feat,
+        EntityType::Face,
+        data2
+  );
+}
+
+FeatureSetPtr makeSolidFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
+{
+  auto data=expression.empty() ? feat->allSolids().data() : feat->query_solids(expression, refs);
+  std::vector<FeatureID> data2;
+  std::copy(data.begin(), data.end(), std::back_inserter(data2));
+  return std::make_shared<FeatureSet>(
+        feat,
+        EntityType::Solid,
+        data2
+  );
+}
+
 }
 }

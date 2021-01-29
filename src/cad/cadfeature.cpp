@@ -552,6 +552,11 @@ FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
   return f;
 }
 
+FeaturePtr Feature::CreateFromFeaturesSet(FeatureSetPtr shapes)
+{
+  return std::make_shared<Feature>(shapes);
+}
+
 Feature::~Feature()
 {
 }

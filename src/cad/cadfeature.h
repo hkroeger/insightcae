@@ -287,7 +287,8 @@ public:
   Feature(FeatureSetPtr creashapes);
   
   static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
-  
+  static FeaturePtr CreateFromFeaturesSet(FeatureSetPtr shapes);
+
   virtual ~Feature();
   
   inline bool isleaf() const { return isleaf_; }

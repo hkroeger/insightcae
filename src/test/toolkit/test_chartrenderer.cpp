@@ -21,4 +21,6 @@ int main(int, char*[])
           );
 
   res->writeLatexFile("out.tex"); // triggers rendering
+
+  return 0;
 }

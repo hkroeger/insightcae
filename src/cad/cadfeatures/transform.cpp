@@ -168,6 +168,13 @@ FeaturePtr Transform::create_trsf ( FeaturePtr m1, const gp_Trsf& trsf )
 
 gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
 {
+  std::shared_ptr<Transform> ot = dynamic_pointer_cast<Transform>(other);
+  if (ot && ot->trsf_)
+  {
+    return *(ot->trsf_);
+  }
+  else
+  {
     gp_Trsf tr0, tr1, tr2;
 
     tr0.SetScaleFactor(other->getDatumScalar("scaleFactor"));
@@ -185,6 +192,7 @@ gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
     }
 
     return tr2.Multiplied(tr1).Multiplied(tr0);
+  }
 }
 
 void Transform::build()

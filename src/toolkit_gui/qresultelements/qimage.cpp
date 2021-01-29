@@ -21,7 +21,7 @@ QImage::QImage(QObject *parent, const QString &label, insight::ResultElementPtr 
 {
   if (auto im = resultElementAs<insight::Image>())
   {
-    setImage( QPixmap(QString::fromStdString(im->imagePath().string())) );
+    setImage( QPixmap(QString::fromStdString(im->filePath().string())) );
   }
 }
 

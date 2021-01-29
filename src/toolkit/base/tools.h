@@ -32,6 +32,8 @@ class vtkCellArray;
 
 #include <istream>
 
+#include <boost/mpl/clear.hpp>
+
 
 namespace insight
 {
@@ -50,7 +52,16 @@ public:
 
   static const GlobalTemporaryDirectory& path();
 
+  /**
+   * @brief clear
+   * Removes the temporary directory and all its contents.
+   * This is only provided for use in test programs.
+   * Cleanup is intendend to be done automatically at program exit.
+   */
+  static void clear();
+
   ~GlobalTemporaryDirectory();
+
 };
 
 
@@ -75,6 +86,21 @@ public:
   bool keep() const;
   void setKeep(bool keep);
 };
+
+
+
+class TemporaryFile
+{
+  boost::filesystem::path tempFilePath_;
+
+  TemporaryFile(const TemporaryFile& other); // forbid copies
+
+public:
+  TemporaryFile(const std::string& fileNameModel="%%%%%.dat", const boost::filesystem::path& baseDir=boost::filesystem::path());
+  ~TemporaryFile();
+  const boost::filesystem::path& path() const;
+};
+
 
 
 

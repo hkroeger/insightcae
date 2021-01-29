@@ -11,6 +11,7 @@ add_toolkit_test(test_meminfo)
 add_toolkit_test(test_execution)
 add_toolkit_test(test_chartrenderer)
 add_toolkit_test(test_multiregion)
+add_toolkit_test(test_filecontainer)
 
 
 add_subdirectory(analysis_parameterstudy)

@@ -86,10 +86,18 @@ const GlobalTemporaryDirectory &GlobalTemporaryDirectory::path()
   return *td_;
 }
 
+void GlobalTemporaryDirectory::clear()
+{
+  td_.reset();
+}
+
+
 GlobalTemporaryDirectory::~GlobalTemporaryDirectory()
 {
   remove_all(*this);
 }
+
+
 
 
 
@@ -182,6 +190,37 @@ void CaseDirectory::setKeep(bool keep)
   keep_=keep;
 }
 
+
+
+
+TemporaryFile::TemporaryFile
+(
+    const std::string& fileNameModel,
+    const boost::filesystem::path& baseDir
+)
+  : tempFilePath_( boost::filesystem::unique_path(
+             (baseDir.empty() ? boost::filesystem::temp_directory_path() : baseDir)
+             /
+             fileNameModel
+             ) )
+{}
+
+
+TemporaryFile::~TemporaryFile()
+{
+  if (!getenv("INSIGHT_KEEPTEMPORARYFILES"))
+  {
+    if (fs::exists(tempFilePath_))
+    {
+      fs::remove(tempFilePath_);
+    }
+  }
+}
+
+const boost::filesystem::path& TemporaryFile::path() const
+{
+  return tempFilePath_;
+}
 
 
 

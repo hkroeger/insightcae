@@ -49,6 +49,7 @@ set(toolkit_SOURCES
     base/taskspoolerinterface.cpp
     base/mountremote.cpp
     base/outputanalyzer.cpp
+    base/filecontainer.cpp
 
     base/progressdisplayer.cpp
 
@@ -64,6 +65,7 @@ set(toolkit_SOURCES
     base/parameters/arrayparameter.cpp
     base/parameters/matrixparameter.cpp
 
+    base/resultelements/fileresult.cpp
     base/resultelements/image.cpp
     base/resultelements/numericalresult.cpp
     base/resultelements/tabularresult.cpp

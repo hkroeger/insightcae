@@ -167,12 +167,16 @@ static struct add##specT##To##baseT##FactoryTable \
   {\
     std::string key(specT::typeName); \
     baseT::FactoryTable::iterator k=baseT::factories_->find(key); \
-    delete k->second; \
-    baseT::factories_->erase(k); \
-    if (baseT::factories_->size()==0) \
-    { \
-     delete baseT::factories_;\
-     baseT::factories_=nullptr;\
+    if (k!=baseT::factories_->end()) { \
+     delete k->second; \
+     baseT::factories_->erase(k); \
+     if (baseT::factories_->size()==0) \
+     { \
+      delete baseT::factories_;\
+      baseT::factories_=nullptr;\
+     }\
+    } else {\
+      std::cerr<<"Internal error: attempt to remove factory of "<<key<<" twice."<<std::endl;\
     }\
   }\
 } v_add##specT##To##baseT##FactoryTable

@@ -23,6 +23,7 @@
 #define PARAMETERS_H
 
 #include "base/parameters/simpleparameter.h"
+#include "base/parameters/simpledimensionedparameter.h"
 #include "base/parameters/pathparameter.h"
 #include "base/parameters/arrayparameter.h"
 #include "base/parameters/doublerangeparameter.h"

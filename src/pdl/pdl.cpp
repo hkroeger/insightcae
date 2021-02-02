@@ -144,6 +144,7 @@ struct PDLParser
   {
     BoolParameterParser::insertrule<Iterator, Skipper>(rules);
     DoubleParameterParser::insertrule<Iterator, Skipper>(rules);
+    dimensionedScalarParameterParser::insertrule<Iterator, Skipper>(rules);
     VectorParameterParser::insertrule<Iterator, Skipper>(rules);
     StringParameterParser::insertrule<Iterator, Skipper>(rules);
     PathParameterParser::insertrule<Iterator, Skipper>(rules);

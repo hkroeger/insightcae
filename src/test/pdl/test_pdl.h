@@ -35,6 +35,8 @@ public:
 /*
 PARAMETERSET>>> TestPDL Parameters
 
+L = dimensionedScalar Length millimeters 1.0 "One millimeter"
+
 run = set {
 
  regime = selectablesubset

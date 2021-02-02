@@ -34,6 +34,8 @@
 #include <QAction>
 #include <QMenu>
 
+#include <QLabel>
+
 #ifndef Q_MOC_RUN
 #include "base/factory.h"
 #include "base/parameter.h"
@@ -44,6 +46,8 @@
 #include "base/parameters/doublerangeparameter.h"
 #include "base/parameters/arrayparameter.h"
 #include "base/parameterset.h"
+
+#include "helpwidget.h"
 #endif
 
 
@@ -160,11 +164,50 @@ public:
   void createWidgets() override;
   inline insight::DoubleParameter& param() { return dynamic_cast<insight::DoubleParameter&>(p_); }
 
+  virtual void editorToValue();
+  virtual void valueToEditor();
+
 public Q_SLOTS:
   void onApply() override;
   void onUpdate() override;
 };
 
+
+
+template<class DimensionedParameter>
+class ScalarParameterWrapper
+: public DoubleParameterWrapper
+{
+
+public:
+  declareType(DimensionedParameter::typeName_());
+  ScalarParameterWrapper
+  (
+      QTreeWidgetItem* parent,
+      const QString& name,
+      insight::Parameter& p,
+      const insight::Parameter& defp,
+      QWidget* detailw,
+      QObject* superform
+  )
+  : DoubleParameterWrapper(parent, name, p, defp, detailw, superform)
+  { }
+
+  inline DimensionedParameter& param() { return dynamic_cast<DimensionedParameter&>(p_); }
+
+  void editorToValue() override
+  {
+    param().setInDefaultUnit( le_->text().toDouble() );
+    setText(1, QString::number( param().getInDefaultUnit() ));
+  }
+
+  void valueToEditor() override
+  {
+    setText(1, QString::number( param().getInDefaultUnit() ));
+    if (widgetsDisplayed_)
+      le_->setText(QString::number( param().getInDefaultUnit() ));
+  }
+};
 
 
 

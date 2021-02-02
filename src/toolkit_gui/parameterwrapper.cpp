@@ -66,6 +66,7 @@ void addWrapperToWidget
               *i->second, *(default_pset.find(i->first)->second), // parameter, default parameter
               detaileditwidget, superform
             );
+        wrapper->onUpdate();
 
         QObject::connect ( parentnode->treeWidget(), &QTreeWidget::itemSelectionChanged,
                            wrapper, &ParameterWrapper::onSelectionChanged );
@@ -254,9 +255,7 @@ IntParameterWrapper::IntParameterWrapper
     QObject* superform
 )
 : ParameterWrapper(parent, name, p, defp, detailw, superform)
-{
-  onUpdate();
-}
+{}
 
 void IntParameterWrapper::createWidgets()
 {
@@ -325,9 +324,7 @@ DoubleParameterWrapper::DoubleParameterWrapper
 )
 : ParameterWrapper(parent, name, p, defp, detailw, superform),
   le_(nullptr)
-{
-  onUpdate();
-}
+{}
 
 void DoubleParameterWrapper::createWidgets()
 {
@@ -340,7 +337,7 @@ void DoubleParameterWrapper::createWidgets()
   layout->addWidget(nameLabel);
   
   HelpWidget *shortDescLabel =
-    new HelpWidget( detaileditwidget_, param().description() );
+    new HelpWidget( detaileditwidget_, p_.description() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -348,8 +345,9 @@ void DoubleParameterWrapper::createWidgets()
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
   connect(le_, &QLineEdit::destroyed, this, &DoubleParameterWrapper::onDestruction);
-  le_->setText(QString::number(param()()));
+//  le_->setText(QString::number(param()()));
   le_->setValidator(new QDoubleValidator());
+  valueToEditor();
   connect(le_, &QLineEdit::returnPressed, this, &DoubleParameterWrapper::onApply);
   layout2->addWidget(le_);
   
@@ -374,23 +372,42 @@ void DoubleParameterWrapper::createWidgets()
 //   detaileditwidget_->setLayout(layout);
 }
 
+
+void DoubleParameterWrapper::editorToValue()
+{
+  param()()=le_->text().toDouble();
+  setText(1, QString::number(param()()));
+}
+
+void DoubleParameterWrapper::valueToEditor()
+{
+  setText(1, QString::number(param()()));
+  if (widgetsDisplayed_)
+    le_->setText(QString::number(param()()));
+}
+
 void DoubleParameterWrapper::onApply()
 {
   if (widgetsDisplayed_)
   {
-    param()()=le_->text().toDouble();
-    setText(1, QString::number(param()()));
+    editorToValue();
     emit parameterSetChanged();
   }
 }
 
 void DoubleParameterWrapper::onUpdate()
 {
-  setText(1, QString::number(param()()));
-  if (widgetsDisplayed_) le_->setText(QString::number(param()()));
+  valueToEditor();
 }
 
 
+#define defineDimensionedScalarParameterWrapper(dimensionTypeName) \
+ typedef ScalarParameterWrapper<insight::scalar##dimensionTypeName##Parameter> scalar##dimensionTypeName##ParameterWrapper; \
+ template<> defineType(scalar##dimensionTypeName##ParameterWrapper); \
+ addToFactoryTable(ParameterWrapper, scalar##dimensionTypeName##ParameterWrapper)
+
+defineDimensionedScalarParameterWrapper(Length);
+defineDimensionedScalarParameterWrapper(Velocity);
 
 
 defineType(StringParameterWrapper);
@@ -408,9 +425,7 @@ VectorParameterWrapper::VectorParameterWrapper
 )
 : ParameterWrapper(parent, name, p, defp, detailw, superform),
   le_(nullptr)
-{
-  onUpdate();
-}
+{}
 
 void VectorParameterWrapper::createWidgets()
 {
@@ -493,9 +508,7 @@ StringParameterWrapper::StringParameterWrapper
 )
 : ParameterWrapper(parent, name, p, defp, detailw, superform),
   le_(nullptr)
-{
-  onUpdate();
-}
+{}
 
 void StringParameterWrapper::createWidgets()
 {
@@ -571,9 +584,7 @@ BoolParameterWrapper::BoolParameterWrapper
 )
 : ParameterWrapper(parent, name, p, defp, detailw, superform),
   cb_(nullptr)
-{
-  onUpdate();
-}
+{}
 
 void BoolParameterWrapper::createWidgets()
 {
@@ -661,9 +672,7 @@ PathParameterWrapper::PathParameterWrapper
 )
 : ParameterWrapper(parent, name, p, defp, detailw, superform),
   le_(nullptr)
-{
-  onUpdate();
-}
+{}
 
 void PathParameterWrapper::createWidgets()
 {
@@ -838,9 +847,7 @@ MatrixParameterWrapper::MatrixParameterWrapper
 )
 : ParameterWrapper(parent, name, p, defp, detailw, superform),
   le_(nullptr)
-{
-  onUpdate();
-}
+{}
 
 void MatrixParameterWrapper::createWidgets()
 {
@@ -967,9 +974,7 @@ SelectionParameterWrapper::SelectionParameterWrapper
 )
 : ParameterWrapper(parent, name, p, defp, detailw, superform),
   selBox_(nullptr)
-{
-  onUpdate();
-}
+{}
 
 void SelectionParameterWrapper::createWidgets()
 {
@@ -1407,9 +1412,7 @@ SelectableSubsetParameterWrapper::SelectableSubsetParameterWrapper
 )
 : ParameterWrapper(parent, name, p, defp, detailw, superform),
   selBox_(nullptr)
-{
-  onUpdate();
-}
+{}
 
 void SelectableSubsetParameterWrapper::createWidgets()
 {

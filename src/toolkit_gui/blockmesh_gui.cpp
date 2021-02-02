@@ -70,28 +70,50 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
   arma::mat ex=p.geometry.ex;
   arma::mat er=p.geometry.er;
   arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, er);
-  double Lc=p.geometry.D*p.mesh.core_fraction;
+
+  std::string label = "blockMeshDict_Cylinder";
+
+  if (p.geometry.d<1e-10)
+  {
+    double Lc=p.geometry.D*p.mesh.core_fraction;
 
 
-  auto cyl=cad::Cylinder::create(
-             cad::matconst(p.geometry.p0),
-             cad::matconst(ex * p.geometry.L),
-             cad::scalarconst( p.geometry.D ),
-             true,
-             false
-             );
+    auto cyl=cad::Cylinder::create(
+               cad::matconst(p.geometry.p0),
+               cad::matconst(ex * p.geometry.L),
+               cad::scalarconst( p.geometry.D ),
+               true,
+               false
+               );
 
-  auto core=cad::Box::create(
-              cad::matconst(p.geometry.p0),
-              cad::matconst(ex * p.geometry.L),
-              cad::matconst(Lc*ey), cad::matconst(Lc*er),
-              cad::BoxCentering(false, true, true)
-              );
+    auto core=cad::Box::create(
+                cad::matconst(p.geometry.p0),
+                cad::matconst(ex * p.geometry.L),
+                cad::matconst(Lc*ey), cad::matconst(Lc*er),
+                cad::BoxCentering(false, true, true)
+                );
 
-  addFeature( "blockMeshDict_Cylinder",
-              cad::Compound::create(cad::CompoundFeatureList({cyl, core})),
-              DisplayStyle::Wireframe
-              );
+    addFeature( label,
+                cad::Compound::create(cad::CompoundFeatureList({cyl, core})),
+                DisplayStyle::Wireframe
+                );
+  }
+  else
+  {
+    auto cyl=cad::Cylinder::create_hollow(
+               cad::matconst(p.geometry.p0),
+               cad::matconst(ex * p.geometry.L),
+               cad::scalarconst( p.geometry.D ),
+               cad::scalarconst( p.geometry.d ),
+               true,
+               false
+               );
+
+    addFeature( label,
+                cyl,
+                DisplayStyle::Wireframe
+                );
+  }
 }
 
 

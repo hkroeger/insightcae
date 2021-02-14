@@ -117,6 +117,14 @@ double* toArray(const arma::mat& v); // !non-const! return value to match VTK fu
 
 std::string toStr(const arma::mat& v3);
 
+/**
+ * @brief rotMatrix
+ * @param theta
+ * angle in radians
+ * @param u
+ * rotation axis (defaults to Z axis)
+ * @return
+ */
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis=vec3(0,0,1), const arma::mat& p0 = vec3(0,0,0) );
 

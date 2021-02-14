@@ -10,18 +10,17 @@ namespace insight {
 
 
 
-template<class T, class Dim, char const* N>
+template<class T, class Unit, char const* N>
 class SimpleDimensionedParameter
     : public Parameter
 {
 
 public:
     typedef T base_value_type;
-    typedef Dim dimension_type;
-    typedef boost::units::quantity<dimension_type, base_value_type> value_type;
+    typedef Unit unit_type;
+    typedef boost::units::quantity<unit_type, base_value_type> value_type;
 
 protected:
-    boost::units::quantity<dimension_type, double> defaultUnit_;
     value_type value_;
 
 public:
@@ -42,19 +41,17 @@ public:
         bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0
     )
         : Parameter ( description, isHidden, isExpert, isNecessary, order ),
-          value_ ( value ),
-          defaultUnit_(1.0*dimension_type())
+          value_ ( value )
     {}
 
     SimpleDimensionedParameter
     (
-        const base_value_type& value, const boost::units::quantity<dimension_type, double>& defaultUnit,
+        const base_value_type& value,
         const std::string& description,
         bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0
     )
         : Parameter ( description, isHidden, isExpert, isNecessary, order ),
-          defaultUnit_(defaultUnit),
-          value_ ( value_type::from_value(value*defaultUnit_.value()) )
+          value_ ( value*unit_type() )
     {}
 
     virtual value_type& operator() ()
@@ -68,31 +65,31 @@ public:
 
     void setInDefaultUnit(const base_value_type& newValue)
     {
-      value_ = value_type::from_value( newValue * defaultUnit_.value() );
+      value_ = newValue * unit_type();
     }
 
     base_value_type getInDefaultUnit() const
     {
-      return value_.value()/defaultUnit_.value();
+      return value_.value();
     }
 
     std::string latexRepresentation() const override
     {
-        return SimpleLatex( valueToString ( value_.value() ) + boost::units::symbol_string(dimension_type()) ).toLaTeX();
+        return SimpleLatex( valueToString ( value_.value() ) + boost::units::symbol_string(unit_type()) ).toLaTeX();
     }
 
     std::string plainTextRepresentation(int /*indent*/=0) const override
     {
-        return SimpleLatex( valueToString ( value_.value() ) + boost::units::symbol_string(dimension_type()) ).toPlainText();
+        return SimpleLatex( valueToString ( value_.value() ) + boost::units::symbol_string(unit_type()) ).toPlainText();
     }
 
 
     Parameter* clone() const override
     {
       using namespace boost::units;
-        return new SimpleDimensionedParameter<T, Dim, N>
+        return new SimpleDimensionedParameter<T, Unit, N>
             (
-              value_.value()/defaultUnit_.value(), defaultUnit_,
+              value_.value(),
               description_.simpleLatex(),
               isHidden_, isExpert_, isNecessary_, order_
             );
@@ -103,7 +100,7 @@ public:
     {
         using namespace rapidxml;
         xml_node<>* child = Parameter::appendToNode ( name, doc, node, inputfilepath );
-        base_value_type nv = value_.value()/defaultUnit_.value();
+        base_value_type nv = value_.value();
         child->append_attribute
         (
             doc.allocate_attribute
@@ -132,7 +129,7 @@ public:
           insight::assertion(valueattr, "No value attribute present in "+name+"!");
           base_value_type nv;
           stringToValue ( valueattr->value(), nv );
-          value_ = value_type::from_value(defaultUnit_.value() * nv);
+          value_ = value_type(nv * Unit());
         }
         else
         {
@@ -148,7 +145,7 @@ public:
 
     void reset(const Parameter& p) override
     {
-      if (const auto* op = dynamic_cast<const SimpleDimensionedParameter<T,Dim,N>*>(&p))
+      if (const auto* op = dynamic_cast<const SimpleDimensionedParameter<T,Unit,N>*>(&p))
       {
         Parameter::reset(p);
         value_=op->value_;
@@ -162,9 +159,10 @@ public:
 
 
 
-#define declareDimensionedParameter(baseType, baseTypeName, dimensionType, dimensionTypeName) \
+#define declareDimensionedParameter(baseType, baseTypeName, _unit, dimensionTypeName) \
   extern char baseTypeName##dimensionTypeName[]; \
-  typedef SimpleDimensionedParameter<baseType, dimensionType, baseTypeName##dimensionTypeName> baseTypeName##dimensionTypeName##Parameter
+  typedef SimpleDimensionedParameter<baseType, _unit, baseTypeName##dimensionTypeName> \
+      baseTypeName##dimensionTypeName##Parameter
 
 
 
@@ -174,8 +172,22 @@ public:
 
 
 
+#define defineDimensionedParameter(baseType, baseTypeName, dimensionTypeName) \
+  char baseTypeName##dimensionTypeName[] = #baseTypeName#dimensionTypeName; \
+  template<> defineType(baseTypeName##dimensionTypeName##Parameter);\
+  addToFactoryTable(Parameter, baseTypeName##dimensionTypeName##Parameter)
+
+
+
+#define defineDimensionedParameters(baseType, baseTypeName) \
+  defineDimensionedParameter(baseType, baseTypeName, Length); \
+  defineDimensionedParameter(baseType, baseTypeName, Velocity)
+
+
+
+
 declareDimensionedParameters(double, scalar);
-declareDimensionedParameters(arma::mat, vector);
+//declareDimensionedParameters(arma::mat, vector);
 
 
 

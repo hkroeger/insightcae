@@ -50,20 +50,20 @@ std::string dimensionedScalarParameterParser::Data::cppParamType(const std::stri
 
 std::string dimensionedScalarParameterParser::Data::cppValueRep(const std::string&name, const std::string& /*thisscope*/) const
 {
-  return cppType(name)+"::from_value("+cppParamType(name)+"::base_value_type("+boost::lexical_cast<std::string>(value)+") * boost::units::si::"+defaultUnit_+".value())";
+  return cppType(name)+"("+cppParamType(name)+"::base_value_type("+boost::lexical_cast<std::string>(value)+") * boost::units::si::"+defaultUnit_+")";
 }
 
 void dimensionedScalarParameterParser::Data::cppWriteCreateStatement
 (
    std::ostream& os,
    const std::string& name,
-   const std::string& /*thisscope*/
+   const std::string& thisscope
 ) const
 {
    os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<"("
      "new "<<cppParamType(name)<<"("
-     <<boost::lexical_cast<std::string>(value)<<", "
-     <<"boost::units::si::"+defaultUnit_<<", "
+     //<<boost::lexical_cast<std::string>(value)<<", "
+     <<cppValueRep(name, thisscope)<<", "
      <<"\""<<description<<"\", "
      << (isHidden?"true":"false")<<", "
      << (isExpert?"true":"false")<<", "

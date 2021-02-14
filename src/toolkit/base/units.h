@@ -22,6 +22,8 @@
 
 
 #include <boost/units/systems/si/energy.hpp>
+#include <boost/units/systems/si/plane_angle.hpp>
+#include <boost/units/systems/angle/degrees.hpp>
 #include <boost/units/systems/si/force.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/volume.hpp>
@@ -30,17 +32,100 @@
 #include <boost/units/systems/si/resistance.hpp>
 #include <boost/units/systems/si/io.hpp>
 #include "boost/units/systems/si/prefixes.hpp"
+#include <boost/units/base_units/metric/knot.hpp>
+#include <boost/units/base_units/metric/ton.hpp>
 #include "boost/units/physical_dimensions.hpp"
 
-namespace boost {
-namespace units {
-namespace si {
+#include <armadillo>
 
-static const boost::units::quantity<boost::units::si::length, double> millimeters( 1.0*si::milli*si::meters );
 
-}
-}
-}
+
+namespace boost { namespace units { namespace si {
+
+
+ // some commonly used units and aliases
+
+ static const auto millimeters = milli*meters;
+ static const auto millimeter = milli*meter;
+ static const auto mps = meter/second;
+
+ static const auto dimless = si::dimensionless();
+
+
+
+ typedef metric::knot_base_unit::unit_type knot_unit;
+ typedef quantity<knot_unit> knot_quantity;
+ static const knot_unit knot;
+
+ typedef metric::ton_base_unit::unit_type metric_ton_unit;
+ typedef quantity<metric_ton_unit> metric_ton_quantity;
+ static const metric_ton_unit metric_ton;
+
+
+ typedef degree::plane_angle::unit_type angle_deg_unit;
+ typedef quantity<angle_deg_unit> angle_deg_quantity;
+ static const angle_deg_unit angle_deg;
+
+ typedef si::plane_angle::unit_type angle_rad_unit;
+ typedef quantity<angle_rad_unit> angle_rad_quantity;
+ static const angle_rad_unit angle_rad;
+
+
+
+
+ template<class Dimension, class Type, class Unit>
+ Type toValue(const quantity<Dimension,Type>& q, const Unit& u)
+ {
+   return ( static_cast<quantity<Unit, Type> >(q) / u).value();
+ }
+
+
+
+ template<class Unit, class Type>
+ class matQuantity
+     : public quantity<Unit, Type>
+ {
+ public:
+   typedef quantity<Unit, typename Type::elem_type> dimensioned_elem_type;
+
+   matQuantity() : quantity<Unit, Type>() {}
+
+   matQuantity(const dimensioned_elem_type&x, const dimensioned_elem_type&y, const dimensioned_elem_type&z)
+     : quantity<Unit,Type>(Type({toValue(x, Unit()), toValue(y, Unit()), toValue(z, Unit())})*Unit())
+   {}
+
+   template<class P1>
+   matQuantity(P1 p1) : quantity<Unit,Type>(p1) {}
+
+   template<class P1, class P2>
+   matQuantity(P1 p1, P2 p2) : quantity<Unit,Type>(p1, p2) {}
+
+
+   inline dimensioned_elem_type operator()(arma::uword i) const
+   { return dimensioned_elem_type( this->value()(i)*Unit() ); }
+
+   inline dimensioned_elem_type operator()(arma::uword i, arma::uword j) const
+   { return dimensioned_elem_type( this->value()(i,j)*Unit() ); }
+
+   inline dimensioned_elem_type operator[](arma::uword i) const
+   { return dimensioned_elem_type( this->value()[i]*Unit() ); }
+
+ };
+
+
+
+ typedef matQuantity<dimensionless, arma::mat> DimlessVector;
+
+ typedef quantity<length, double> Length;
+ typedef matQuantity<length, arma::mat> LengthVector;
+
+ typedef quantity<velocity, double> Velocity;
+
+ typedef quantity<plane_angle, double> Angle;
+
+}}}
+
+namespace si = boost::units::si;
 
 namespace SI
 {

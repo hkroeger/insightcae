@@ -66,6 +66,22 @@ OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
 
 
 
+OCCtransformToVTK::OCCtransformToVTK(const gp_Trsf& t)
+  : OCCtransformToOF(t)
+{}
+
+vtkSmartPointer<vtkTransform> OCCtransformToVTK::operator()() const
+{
+  auto t = vtkSmartPointer<vtkTransform>::New();
+  t->Translate( translate()(0), translate()(1), translate()(2) );
+  t->RotateX( rollPitchYaw()(0) );
+  t->RotateY( rollPitchYaw()(1) );
+  t->RotateZ( rollPitchYaw()(2) );
+  t->Scale( scale(), scale(), scale() );
+  return t;
+}
+
+
 Handle_AIS_MultipleConnectedInteractive
 buildMultipleConnectedInteractive
 (

@@ -29,6 +29,10 @@
 
 #include "base/linearalgebra.h"
 
+
+class vtkPolyData;
+
+
 namespace insight {
   
 namespace vtk {
@@ -122,7 +126,24 @@ public:
 
 typedef std::shared_ptr<vtkModel2d> vtkModel2dPtr;
 
+
+
 }
+
+
+
+/**
+ * @brief orientNormals
+ * reorients the normals, so that the mean normals point towards the point pFar
+ * which is supposed to be far away from the surface
+ * @param vpm
+ * this data set will be modified. It is supposed to contain a field "Normals"
+ * @param pFar
+ * the point to which the normals should point to. It shall be far away from the surface.
+ */
+bool checkNormalsOrientation(vtkPolyData* vpm, const arma::mat& pFar, bool modifyNormalsFields=false);
+
+
 
 }
 

@@ -36,7 +36,7 @@
 #include <boost/units/base_units/metric/ton.hpp>
 #include "boost/units/physical_dimensions.hpp"
 
-#include <armadillo>
+#include "base/linearalgebra.h"
 
 
 
@@ -91,7 +91,7 @@ namespace boost { namespace units { namespace si {
    matQuantity() : quantity<Unit, Type>() {}
 
    matQuantity(const dimensioned_elem_type&x, const dimensioned_elem_type&y, const dimensioned_elem_type&z)
-     : quantity<Unit,Type>(Type({toValue(x, Unit()), toValue(y, Unit()), toValue(z, Unit())})*Unit())
+     : quantity<Unit,Type>(insight::vec3(toValue(x, Unit()), toValue(y, Unit()), toValue(z, Unit()))*Unit())
    {}
 
    template<class P1>

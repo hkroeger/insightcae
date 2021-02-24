@@ -16,8 +16,10 @@ defineType(HeatBC);
 defineDynamicClass(HeatBC);
 
 HeatBC::~HeatBC()
-{
-}
+{}
+
+void HeatBC::addOptionsToBoundaryDict(OFDictData::dict &BCdict) const
+{}
 
 
 void HeatBC::addIntoDictionaries(OFdicts&) const
@@ -139,6 +141,52 @@ bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const Field
         }
         BC["thicknessLayers"]=tL;
         BC["kappaLayers"]=kL;
+
+        BC["value"]=boost::str(boost::format("uniform %g") % 300.0 );
+      return true;
+    }
+    else
+      return false;
+}
+
+
+
+
+
+defineType(CHTCoupledWall);
+addToFactoryTable(HeatBC, CHTCoupledWall);
+addToStaticFunctionTable(HeatBC, CHTCoupledWall, defaultParameters);
+
+CHTCoupledWall::CHTCoupledWall(const ParameterSet& ps)
+  : p_(ps)
+{}
+
+void CHTCoupledWall::addOptionsToBoundaryDict(OFDictData::dict &BCdict) const
+{
+  HeatBC::addOptionsToBoundaryDict(BCdict);
+  BCdict["type"]="mappedWall";
+  BCdict["sampleMode"]="nearestPatchFace";
+  BCdict["sampleRegion"]=p_.sampleRegion;
+  BCdict["samplePatch"]=p_.samplePatch;
+}
+
+bool CHTCoupledWall::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts&) const
+{
+    if
+    (
+      (fieldname=="T")
+      &&
+      (get<0>(fieldinfo)==scalarField)
+    )
+    {
+        BC["type"]="compressible::turbulentTemperatureCoupledBaffleMixed";
+        BC["Tnbr"]=p_.Tnbr;
+        BC["thicknessLayers"]=OFDictData::list();
+        BC["kappaLayers"]=OFDictData::list();
+        BC["kappaMethod"]="fluidThermo";
+        BC["kappa"]="none";
+        BC["alphaAni"]="none";
+
 
         BC["value"]=boost::str(boost::format("uniform %g") % 300.0 );
       return true;

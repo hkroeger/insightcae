@@ -25,6 +25,7 @@ public:
 
     virtual ~HeatBC();
 
+    virtual void addOptionsToBoundaryDict ( OFDictData::dict& BCdict ) const;
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const =0;
 };
@@ -146,6 +147,34 @@ public:
 };
 
 
+class CHTCoupledWall
+  : public HeatBC
+{
+public:
+#include "boundarycondition_heat__CHTCoupledWall__Parameters.h"
+/*
+PARAMETERSET>>> CHTCoupledWall Parameters
+
+sampleRegion = string "" "Neighbouring region" *necessary
+samplePatch = string "" "Name of coupled patch in neighbouring region" *necessary
+Tnbr = string "T" "Name of temperature field in neighbouring region"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType ( "CHTCoupledWall" );
+  CHTCoupledWall ( const ParameterSet& ps = ParameterSet() );
+
+  ParameterSet getParameters() const override { return p_; }
+
+  void addOptionsToBoundaryDict ( OFDictData::dict& BCdict ) const override;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
+
+};
 
 typedef std::shared_ptr<HeatBC> HeatBCPtr;
 

@@ -48,13 +48,13 @@ class faceQualityMarkerFunctionObject
     void operator=(const faceQualityMarkerFunctionObject&);
   
 protected:
-    List<surfaceScalarField*> blendingFactors_;
 
     //- Reference to main object registry
     const Time& time_;
 
     //- Region name
-    word regionName_;
+    wordList regionNames_;
+    List<List<surfaceScalarField*> > blendingFactors_;
 
     bool markNonOrthFaces_;
     bool markSkewFaces_;
@@ -71,13 +71,13 @@ protected:
     scalar smoothingCoeff_;
     wordList sets_;
 
-    const polyMesh& mesh_;
+    List<const polyMesh*> meshes_;
     wordList blendingFieldNames_;
 
 // Private Member Functions
 
 
-    void markFaceSet(const faceSet& faces);
+    void markFaceSet(label mi, const faceSet& faces);
     void updateBlendingFactor();
 
 public:

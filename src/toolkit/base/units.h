@@ -35,6 +35,7 @@
 #include <boost/units/base_units/metric/knot.hpp>
 #include <boost/units/base_units/metric/ton.hpp>
 #include "boost/units/physical_dimensions.hpp"
+#include "boost/units/systems/si/codata/physico-chemical_constants.hpp"
 
 #include "base/linearalgebra.h"
 
@@ -122,6 +123,10 @@ namespace boost { namespace units { namespace si {
  typedef quantity<velocity, double> Velocity;
 
  typedef quantity<plane_angle, double> Angle;
+
+ typedef quantity<pressure, double> Pressure;
+
+ typedef quantity<temperature, double> Temperature;
 
 }}}
 

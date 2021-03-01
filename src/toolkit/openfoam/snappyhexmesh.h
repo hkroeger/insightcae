@@ -57,11 +57,10 @@ public:
   
   std::string fileName() const;
   
-  virtual void putIntoConstantTrisurface
-  (
-    const OpenFOAMCase& ofc,
-    const boost::filesystem::path& location
-  ) const;
+  virtual void putIntoConstantTrisurface(
+      const OpenFOAMCase& ofc,
+      const boost::filesystem::path& location
+      ) const;
 };
 
 
@@ -81,11 +80,13 @@ class Feature
 {
 public:
   declareType ( "Feature" );
+
   declareDynamicClass ( Feature );
 
   virtual void addIntoDictionary ( OFDictData::dict& sHMDict ) const =0;
-  virtual void modifyFiles ( const OpenFOAMCase& ofc,
-                             const boost::filesystem::path& location ) const;
+  virtual void modifyFiles (
+      const OpenFOAMCase& ofc,
+      const boost::filesystem::path& location ) const;
 };
 
 
@@ -106,6 +107,7 @@ minLevel = int 0 "Minimum refinement level"
 maxLevel = int 4 "Maximum refinement level"
 nLayers = int 2 "Number of prism layers"
 zoneName = string "" "Zone name"
+
 regionRefinements = array [ set {
  regionname = string "" "Name of geometry region" *necessary
  minLevel = int 0 "Minimum refinement level"
@@ -119,14 +121,15 @@ protected:
   Parameters p_;
 
 public:
-    declareType("Geometry");
+  declareType("Geometry");
+
   Geometry(const ParameterSet& ps = Parameters::makeDefault() );
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
   
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   void modifyFiles(const OpenFOAMCase& ofc,
-                  const boost::filesystem::path& location) const override;
+                   const boost::filesystem::path& location) const override;
 };
 
 
@@ -150,7 +153,8 @@ protected:
   Parameters p_;
 
 public:
-    declareType("PatchLayers");
+  declareType("PatchLayers");
+
   PatchLayers(const ParameterSet& ps = Parameters::makeDefault() );
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
@@ -183,14 +187,15 @@ protected:
   Parameters p_;
 
 public:
-    declareType("ExplicitFeatureCurve");
+  declareType("ExplicitFeatureCurve");
+
   ExplicitFeatureCurve(const ParameterSet& ps = Parameters::makeDefault() );
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   void modifyFiles(const OpenFOAMCase& ofc,
-                  const boost::filesystem::path& location) const override;
+                   const boost::filesystem::path& location) const override;
 };
 
 
@@ -217,6 +222,7 @@ protected:
 
 public:
   declareType ( "RefinementRegion" );
+
   RefinementRegion ( const ParameterSet& ps = Parameters::makeDefault() );
 
   inline const Parameters& parameters() const { return p_; }
@@ -252,6 +258,7 @@ protected:
 
 public:
   declareType ( "RefinementBox" );
+
   RefinementBox ( const ParameterSet& ps = Parameters::makeDefault() );
   ParameterSet getParameters() const override
   {
@@ -286,6 +293,7 @@ protected:
 
 public:
   declareType ( "RefinementCylinder" );
+
   RefinementCylinder ( const ParameterSet& ps = Parameters::makeDefault() );
   ParameterSet getParameters() const override
   {
@@ -318,6 +326,7 @@ protected:
 
 public:
   declareType ( "RefinementSphere" );
+
   RefinementSphere ( const ParameterSet& ps = Parameters::makeDefault() );
   ParameterSet getParameters() const override
   {
@@ -351,15 +360,16 @@ protected:
   ExternalGeometryFile geometryfile_;
 
 public:
-    declareType("RefinementGeometry");
+  declareType("RefinementGeometry");
+
   RefinementGeometry( const ParameterSet& ps = Parameters::makeDefault() );
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
   bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const override;
-//   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
+  //   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
   void modifyFiles(const OpenFOAMCase& ofc,
-                  const boost::filesystem::path& location) const override;
+                   const boost::filesystem::path& location) const override;
 
 };
 
@@ -370,8 +380,9 @@ class NearSurfaceRefinement
 : public RefinementRegion
 {
 public:
-    declareType("NearSurfaceRefinement");
-    NearSurfaceRefinement( const ParameterSet& ps = Parameters::makeDefault() );
+  declareType("NearSurfaceRefinement");
+
+  NearSurfaceRefinement( const ParameterSet& ps = Parameters::makeDefault() );
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
@@ -400,16 +411,21 @@ protected:
 
 public:
   declareType ( "NearTemplatePatchRefinement" );
+
   NearTemplatePatchRefinement ( const ParameterSet& ps = Parameters::makeDefault() );
   ParameterSet getParameters() const override { return p_; }
   inline const Parameters& parameters() const { return p_; }
 
   void modifyFiles ( const OpenFOAMCase& ofc,
-                             const boost::filesystem::path& location ) const override;
+                     const boost::filesystem::path& location ) const override;
   bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
 
+
+
+
 }
+
 
 
 
@@ -449,15 +465,16 @@ allowFreeStandingZoneFaces = bool true "allowFreeStandingZoneFaces"
 */
 
 protected:
-    Parameters p_;
+  Parameters p_;
 
 public:
-    declareType ( "snappyHexMeshConfiguration" );
-    snappyHexMeshConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-    void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
+  declareType ( "snappyHexMeshConfiguration" );
 
-    static std::string category() { return "Meshing"; }
+  snappyHexMeshConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+  void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
+
+  static std::string category() { return "Meshing"; }
 
 };
 
@@ -472,13 +489,22 @@ void setRelaxedQualityCtrls(OFDictData::dict& qualityCtrls);
 void setDisabledQualityCtrls(OFDictData::dict& qualityCtrls);
 void setNoQualityCtrls(OFDictData::dict& qualityCtrls);
 
+
+
+
 double computeFinalLayerThickness(double totalLayerThickness, double expRatio, int nlayer);
+
+
+
 
 void reconstructParMesh
 (
   const OpenFOAMCase& ofc,
   const boost::filesystem::path& location
 );
+
+
+
 
 void snappyHexMesh
 (

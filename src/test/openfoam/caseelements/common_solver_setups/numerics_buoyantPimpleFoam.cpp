@@ -30,7 +30,7 @@ int main(int argc, char*argv[])
     }
     else
     {
-      cm.insert(new perfectGasSinglePhaseThermophysicalProperties(cm));
+      cm.insert(new compressibleSinglePhaseThermophysicalProperties(cm));
     }
 
     cm.insert(new kOmegaSST_RASModel(cm));

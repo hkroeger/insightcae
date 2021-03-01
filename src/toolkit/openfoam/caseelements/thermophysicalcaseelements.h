@@ -60,39 +60,6 @@ public:
 
 
 
-class perfectGasSinglePhaseThermophysicalProperties
-    : public thermodynamicModel
-{
-
-
-public:
-#include "thermophysicalcaseelements__perfectGasSinglePhaseThermophysicalProperties__Parameters.h"
-/*
-PARAMETERSET>>> perfectGasSinglePhaseThermophysicalProperties Parameters
-
-Tref = double 300 "Reference temperature $T_{ref}$"
-pref = double 1e5 "Reference pressure $p_{ref}$"
-
-rho = double 1.0 "Density at $T_{ref}$ and $p_{ref}$"
-nu = double 1.8e-5 "Kinematic viscosity at $T_{ref}$"
-kappa = double 1.4 "Heat capacity reatio"
-Pr = double 0.7 "Prandtl number"
-
-<<<PARAMETERSET
-*/
-
-protected:
-    Parameters p_;
-
-public:
-    declareType ( "perfectGasSinglePhaseThermophysicalProperties" );
-    perfectGasSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-
-    static std::string category() { return "Material Properties"; }
-};
-
-
 
 
 double sutherland_As(double mu, double Ts);
@@ -319,7 +286,7 @@ public:
 
 
 
-class detailedGasReactionThermodynamics
+class compressibleMixtureThermophysicalProperties
 : public thermodynamicModel
 {
 
@@ -339,9 +306,9 @@ protected:
   std::string getThermoType() const;
 
 public:
-#include "thermophysicalcaseelements__detailedGasReactionThermodynamics__Parameters.h"
+#include "thermophysicalcaseelements__compressibleMixtureThermophysicalProperties__Parameters.h"
 /*
-PARAMETERSET>>> detailedGasReactionThermodynamics Parameters
+PARAMETERSET>>> compressibleMixtureThermophysicalProperties Parameters
 
 inertSpecie = string "N2" ""
 
@@ -391,7 +358,7 @@ protected:
   SpeciesList species_;
 
 public:
-  detailedGasReactionThermodynamics(OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault());
+  compressibleMixtureThermophysicalProperties(OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault());
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 

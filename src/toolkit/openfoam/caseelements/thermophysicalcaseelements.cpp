@@ -30,6 +30,7 @@
 #include "openfoam/caseelements/numerics/buoyantpimplefoamnumerics.h"
 #include "openfoam/caseelements/numerics/steadycompressiblenumerics.h"
 #include "openfoam/caseelements/numerics/unsteadycompressiblenumerics.h"
+#include "openfoam/caseelements/numerics/chtmultiregionnumerics.h"
 
 #include <utility>
 
@@ -76,89 +77,6 @@ void cavitatingFoamThermodynamics::addIntoDictionaries(OFdicts& dictionaries) co
 
 
 
-defineType(perfectGasSinglePhaseThermophysicalProperties);
-addToOpenFOAMCaseElementFactoryTable(perfectGasSinglePhaseThermophysicalProperties);
-
-perfectGasSinglePhaseThermophysicalProperties::perfectGasSinglePhaseThermophysicalProperties( OpenFOAMCase& c, const ParameterSet& ps )
-: thermodynamicModel(c, ps),
-  p_(ps)
-{
-}
-
-void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts& dictionaries) const
-{
-  OFDictData::dict& thermophysicalProperties=dictionaries.lookupDict("constant/thermophysicalProperties");
-
-  enum thermoType { hePsiThermo, heRhoThermo } tht = hePsiThermo;
-  try
-  {
-    const FVNumerics* nce = OFcase().get<FVNumerics>("FVNumerics");
-
-    if (
-        dynamic_cast<const buoyantSimpleFoamNumerics*>(nce) ||
-        dynamic_cast<const buoyantPimpleFoamNumerics*>(nce) ||
-        dynamic_cast<const steadyCompressibleNumerics*>(nce)
-        )
-      {
-        tht=heRhoThermo;
-      }
-  }
-  catch (...)
-  {
-    insight::Warning("Cannot determine required thermo type! Using default hePsiThermo.");
-  }
-
-  OFDictData::dict tt;
-
-  if (tht == hePsiThermo)
-    {
-      tt["type"]    = "hePsiThermo";
-      tt["thermo"]  = "eConst";
-      tt["energy"]  = "sensibleInternalEnergy";
-    }
-  else if (tht == heRhoThermo)
-    {
-      tt["type"]    = "heRhoThermo";
-      tt["thermo"]  = "hConst";
-      tt["energy"]  = "sensibleEnthalpy";
-    }
-
-  tt["mixture"]="pureMixture";
-  tt["transport"]="const";
-  tt["equationOfState"]="perfectGas";
-  tt["specie"]="specie";
-
-  thermophysicalProperties["thermoType"]=tt;
-
-  const double R=8.3144598;
-  double M = p_.rho*R*p_.Tref/p_.pref;
-
-  OFDictData::dict mixture, mix_sp, mix_td, mix_tr;
-  mix_sp["nMoles"]=1.;
-  mix_sp["molWeight"]=1e3*M;
-
-  if (tht==hePsiThermo)
-    {
-      double cv = R/(p_.kappa-1.) / M;
-      mix_td["Cv"]=cv;
-    }
-  else if (tht==heRhoThermo)
-    {
-      double cp = p_.kappa*R/(p_.kappa-1.) / M;
-      mix_td["Cp"]=cp;
-    }
-
-  mix_td["Hf"]=0.;
-
-  mix_tr["mu"]=p_.nu*p_.rho;
-  mix_tr["Pr"]=p_.Pr;
-
-  mixture["specie"]=mix_sp;
-  mixture["thermodynamics"]=mix_td;
-  mixture["transport"]=mix_tr;
-
-  thermophysicalProperties["mixture"]=mixture;
-}
 
 
 double sutherland_As(double mu, double Ts)
@@ -597,7 +515,8 @@ std::string compressibleSinglePhaseThermophysicalProperties::requiredThermoType(
 
   if (
       dynamic_cast<const buoyantSimpleFoamNumerics*>(nce) ||
-      dynamic_cast<const buoyantPimpleFoamNumerics*>(nce)
+      dynamic_cast<const buoyantPimpleFoamNumerics*>(nce) ||
+      dynamic_cast<const chtMultiRegionFluidNumerics*>(nce)
       )
   {
     if (OFversion()<170)
@@ -624,7 +543,8 @@ std::string compressibleSinglePhaseThermophysicalProperties::requiredThermoType(
   {
     if (OFversion()<170)
     {
-      if (unsteadyCompressibleNumerics::Parameters(t->parameters()).formulation == unsteadyCompressibleNumerics::Parameters::sonicFoam)
+      if (unsteadyCompressibleNumerics::Parameters(t->parameters()).formulation ==
+            unsteadyCompressibleNumerics::Parameters::sonicFoam)
       {
         tt="ePsiThermo";
       }
@@ -819,7 +739,7 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
 
 
 
-std::vector<std::string> detailedGasReactionThermodynamics::speciesNames() const
+std::vector<std::string> compressibleMixtureThermophysicalProperties::speciesNames() const
 {
   std::vector<std::string> sns;
 
@@ -859,14 +779,14 @@ std::vector<std::string> detailedGasReactionThermodynamics::speciesNames() const
   return sns;
 }
 
-detailedGasReactionThermodynamics::SpeciesList detailedGasReactionThermodynamics::species() const
+compressibleMixtureThermophysicalProperties::SpeciesList compressibleMixtureThermophysicalProperties::species() const
 {
   return species_;
 }
 
 
-detailedGasReactionThermodynamics::SpeciesMassFractionList
-detailedGasReactionThermodynamics::defaultComposition() const
+compressibleMixtureThermophysicalProperties::SpeciesMassFractionList
+compressibleMixtureThermophysicalProperties::defaultComposition() const
 {
   SpeciesMassFractionList defaultComposition;
   auto sns=speciesNames();
@@ -881,7 +801,7 @@ detailedGasReactionThermodynamics::defaultComposition() const
 
 
 
-void detailedGasReactionThermodynamics::removeSpecie(const std::string& name)
+void compressibleMixtureThermophysicalProperties::removeSpecie(const std::string& name)
 {
   auto s = species_.find(name);
 
@@ -898,7 +818,7 @@ void detailedGasReactionThermodynamics::removeSpecie(const std::string& name)
   }
 }
 
-void detailedGasReactionThermodynamics::addSpecie(const std::string& name, SpeciesData d)
+void compressibleMixtureThermophysicalProperties::addSpecie(const std::string& name, SpeciesData d)
 {
   if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
   {
@@ -911,7 +831,7 @@ void detailedGasReactionThermodynamics::addSpecie(const std::string& name, Speci
 }
 
 
-std::string detailedGasReactionThermodynamics::getTransportType() const
+std::string compressibleMixtureThermophysicalProperties::getTransportType() const
 {
   std::string tn="";
 
@@ -937,7 +857,7 @@ std::string detailedGasReactionThermodynamics::getTransportType() const
   return tn;
 }
 
-std::string detailedGasReactionThermodynamics::getThermoType() const
+std::string compressibleMixtureThermophysicalProperties::getThermoType() const
 {
   std::string tn="";
 
@@ -963,7 +883,7 @@ std::string detailedGasReactionThermodynamics::getThermoType() const
   return tn;
 }
 
-detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
+compressibleMixtureThermophysicalProperties::compressibleMixtureThermophysicalProperties
 (
   OpenFOAMCase& c, 
   const ParameterSet& ps
@@ -1022,7 +942,7 @@ detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
 }
 
 
-void detailedGasReactionThermodynamics::addFields(OpenFOAMCase &c) const
+void compressibleMixtureThermophysicalProperties::addFields(OpenFOAMCase &c) const
 {
   c.addField("Ydefault", FieldInfo(scalarField, 	dimless, 	FieldValue({0.0}), volField ) );
 
@@ -1036,7 +956,7 @@ void detailedGasReactionThermodynamics::addFields(OpenFOAMCase &c) const
 
 
 
-void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionaries) const
+void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& dictionaries) const
 {
   OFDictData::dict& thermodynamicProperties=dictionaries.lookupDict("constant/thermophysicalProperties");
 

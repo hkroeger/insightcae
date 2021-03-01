@@ -19,6 +19,7 @@
 
 #include "cylinder.h"
 #include "base/boost_include.h"
+#include "base/tools.h"
 #include "datum.h"
 
 #include <boost/spirit/include/qi.hpp>
@@ -93,6 +94,10 @@ FeaturePtr Cylinder::create_hollow ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, S
 
 void Cylinder::build()
 {
+  ExecTimer t("Cylinder::build() ["+featureSymbolName()+"]");
+
+  if (!cache.contains(hash()))
+  {
     arma::mat p1, p2;
 
     p1=p1_->value();
@@ -150,6 +155,12 @@ void Cylinder::build()
     providedDatums_["axis"]=DatumPtr ( new ExplicitDatumAxis ( p1_, VectorPtr ( new SubtractedVector ( p2_, p1_ ) ) ) );
 
     setShape ( cyl );
+    cache.insert(shared_from_this());
+  }
+  else
+  {
+      this->operator=(*cache.markAsUsed<Cylinder>(hash()));
+  }
 }
 
 

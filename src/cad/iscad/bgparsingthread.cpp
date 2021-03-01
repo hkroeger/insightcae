@@ -117,8 +117,6 @@ void BGParsingThread::run()
           {
               emit statusMessage("Model parsed successfully, starting rebuild...");
 
-              insight::cad::cache.initRebuild();
-
               insight::cad::Model::ScalarTableContents scalars=model_->scalars();
               insight::cad::Model::VectorTableContents points=model_->points();
               insight::cad::Model::VectorTableContents directions=model_->directions();
@@ -259,7 +257,7 @@ void BGParsingThread::run()
 
               last_rebuilt_model_ = model_;
 
-              insight::cad::cache.finishRebuild();
+              insight::cad::cache.printSummary(std::cout);
 
               std::cout << "total cost of model = " << model_->totalCost();
 

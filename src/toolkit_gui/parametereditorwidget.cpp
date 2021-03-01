@@ -289,8 +289,6 @@ void VisualizerThread::run()
   {
     std::lock_guard<std::mutex> lck(vis_mtx);
 
-    insight::cad::cache.initRebuild();
-
     insight::CAD_ParameterSet_Visualizer::UsageTracker ut(psd_->modeltree_);
 
     for (auto& vz: psd_->visualizers_)
@@ -300,7 +298,7 @@ void VisualizerThread::run()
 
     ut.cleanupModelTree();
 
-    insight::cad::cache.finishRebuild();
+    insight::cad::cache.printSummary(std::cout);
   }
   catch (insight::Exception& e)
   {

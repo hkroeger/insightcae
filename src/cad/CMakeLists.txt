@@ -25,6 +25,7 @@ set(insightcad_SOURCES
   geotest.cpp 
   cadparameter.cpp
   cadfeature.cpp 
+  featurecache.cpp
   cadmodel.cpp
   meshing.cpp 
   featurefilter.cpp 

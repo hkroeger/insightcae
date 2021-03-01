@@ -542,6 +542,13 @@ Feature::Feature(FeatureSetPtr creashapes)
   featureSymbolName_("subshapesOf_"+creashapes->model()->featureSymbolName())
 {}
 
+Feature::~Feature()
+{
+  auto h=hash();
+  if (cache.contains(h))
+    cache.erase(h);
+}
+
 FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 {
   FeaturePtr f(new Feature());
@@ -555,10 +562,6 @@ FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 FeaturePtr Feature::CreateFromFeaturesSet(FeatureSetPtr shapes)
 {
   return std::make_shared<Feature>(shapes);
-}
-
-Feature::~Feature()
-{
 }
 
 void Feature::setFeatureSymbolName( const std::string& name)
@@ -2763,121 +2766,6 @@ bool SingleVolumeFeature::isSingleVolume() const
 {
   return true;
 }
-
-// FeatureCache::FeatureCache(const filesystem::path& cacheDir)
-// : cacheDir_(cacheDir),
-//   removeCacheDir_(false)
-// {
-//   if (cacheDir.empty())
-//   {
-//     removeCacheDir_=true;
-//     cacheDir_ = boost::filesystem::unique_path
-//     (
-//       boost::filesystem::temp_directory_path()/("iscad_cache_%%%%%%%")
-//     );
-// //     boost::filesystem::create_directories(cacheDir_);
-//   }
-// }
-// 
-// FeatureCache::~FeatureCache()
-// {
-// //   if (removeCacheDir_)
-// //   {
-// //     boost::filesystem::remove_all(cacheDir_);
-// //   }
-// }
-// 
-// void FeatureCache::initRebuild()
-// {
-// //   usedFilesDuringRebuild_.clear();
-// }
-// 
-// void FeatureCache::finishRebuild()
-// {
-//   // remove all cache files that have not been used
-// }
-// 
-// 
-// bool FeatureCache::contains(size_t hash) const
-// {
-// //   return boost::filesystem::exists(fileName(hash));
-//   return false;
-// }
-// 
-// 
-// filesystem::path FeatureCache::markAsUsed(size_t hash)
-// {
-// //   usedFilesDuringRebuild_.insert(fileName(hash));
-//   return fileName(hash);
-// }
-// 
-// filesystem::path FeatureCache::fileName(size_t hash) const
-// {
-//   return boost::filesystem::absolute
-//   (
-//     cacheDir_ /
-//     boost::filesystem::path( str(format("%x")%hash) + ".iscad_cache" )
-//   );
-// }
-
-
-FeatureCache::FeatureCache()
-{}
-
-FeatureCache::~FeatureCache()
-{}
-
-void FeatureCache::initRebuild()
-{
-   usedDuringRebuild_.clear();
-}
-
-void FeatureCache::finishRebuild()
-{
-  // remove all cache entries that have not been used
-  std::cout<<"== Finish Rebuild: Cache Summary =="<<std::endl;
-  std::cout<<"cache size after rebuild: "<<size()<<std::endl;
-  std::cout<<"# used during rebuild: "<<usedDuringRebuild_.size()<<std::endl;
-  
-  for (auto it = cbegin(); it != cend();)
-  {
-    if ( usedDuringRebuild_.find(it->first)==usedDuringRebuild_.end() )
-    {
-      erase(it++);
-    }
-    else
-    {
-      ++it;
-    }
-  }
-  std::cout<<"cache size after cleanup: "<<size()<<std::endl;
-}
-
-void FeatureCache::insert(FeaturePtr p)
-{
-  size_t h=p->hash();
-  const_iterator i=find(h);
-  if (i!=end())
-    {
-      std::ostringstream msg;
-      msg<<"Internal error: trying to insert feature into CAD feature cache twice!\n";
-      msg<<"feature to insert: hash="<<h<<" (of type "<<p->type()<<" named \""<<p->featureSymbolName()<<"\")\n";
-      msg<<"present feature: hash="<<i->second->hash()<<" (of type "<<i->second->type()<<" named \""<<i->second->featureSymbolName()<<"\")\n";
-      throw insight::cad::CADException(p, msg.str());
-    }
-  (*this)[h]=p;
-  usedDuringRebuild_.insert(h);
-}
-
-
-bool FeatureCache::contains(size_t hash) const
-{
-  return ( this->find(hash) != end() );
-}
-
-
-
-FeatureCache cache;
 
 }
 }

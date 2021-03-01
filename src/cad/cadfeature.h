@@ -49,6 +49,8 @@
 
 #include "parser.h"
 
+#include "featurecache.h"
+
 namespace insight 
 {
 namespace cad 
@@ -285,11 +287,11 @@ public:
   Feature(const TopoDS_Shape& shape);
 //   Feature(const boost::filesystem::path& filepath);
   Feature(FeatureSetPtr creashapes);
+
+  virtual ~Feature();
   
   static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
   static FeaturePtr CreateFromFeaturesSet(FeatureSetPtr shapes);
-
-  virtual ~Feature();
   
   inline bool isleaf() const { return isleaf_; }
   inline void unsetLeaf() const { isleaf_=false; }
@@ -517,75 +519,6 @@ public:
 };
 
 
-// class FeatureCache
-// {
-//   boost::filesystem::path cacheDir_;
-//   bool removeCacheDir_;
-//   
-//   std::set<boost::filesystem::path> usedFilesDuringRebuild_;
-//   
-//   boost::filesystem::path fileName(size_t hash) const;
-//   
-// public:
-//   FeatureCache(const boost::filesystem::path& cacheDir="");
-//   ~FeatureCache();
-//   
-//   void initRebuild();
-//   void finishRebuild();
-//   
-//   bool contains(size_t hash) const;
-//   boost::filesystem::path markAsUsed(size_t hash);
-//   
-// };
-
-
-// #warning cachable feature always have to be stored in shared_ptrs! create functions and private constructors should be issues to ensure this.
-class FeatureCache
-: public std::map<size_t, FeaturePtr>
-{
-
-  std::set<size_t> usedDuringRebuild_;
-  
-public:
-  FeatureCache();
-  ~FeatureCache();
-  
-  void initRebuild();
-  void finishRebuild();
-  
-  void insert(FeaturePtr p);
-  bool contains(size_t hash) const;
-  
-  template<class T>
-  std::shared_ptr<T> markAsUsed(size_t hash)
-  {
-    iterator i=this->find(hash);
-    
-    if (i==end()) 
-      throw insight::Exception
-      (
-	"requested entry in CAD feature cache is not found!"
-      );
-    
-    std::shared_ptr<T> cp
-    ( 
-      std::dynamic_pointer_cast<T>( i->second )
-    );
-    
-    if (!cp) 
-      throw insight::Exception
-      (
-	"requested entry in CAD feature cache found,"
-	" but is of wrong type! (cache: "+i->second->type()
-      );
-    
-    usedDuringRebuild_.insert(hash);
-    return cp;
-  }
-  
-};
-
-extern FeatureCache cache;
 
 }
 }

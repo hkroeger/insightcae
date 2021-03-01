@@ -2,8 +2,11 @@
 
 #include <streambuf>
 #include <ostream>
+#include <memory>
 
+#include "vtkSTLWriter.h"
 
+#include "base/tools.h"
 
 namespace insight
 {
@@ -14,12 +17,18 @@ namespace insight
 defineType(PathParameter);
 addToFactoryTable(Parameter, PathParameter);
 
+
+
+
 PathParameter::PathParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
     )
 : Parameter(description, isHidden, isExpert, isNecessary, order)
 {}
+
+
+
 
 PathParameter::PathParameter(
     const boost::filesystem::path& value, const std::string& description,
@@ -30,6 +39,9 @@ PathParameter::PathParameter(
   FileContainer(value, binary_content)
 {}
 
+
+
+
 PathParameter::PathParameter(
     const FileContainer& fc, const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
@@ -39,34 +51,70 @@ PathParameter::PathParameter(
 {}
 
 
+
+
 std::string PathParameter::latexRepresentation() const
 {
     return SimpleLatex( valueToString ( originalFilePath_ ) ).toLaTeX();
 }
+
+
+
 
 std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 {
   return SimpleLatex( valueToString ( originalFilePath_ ) ).toPlainText();
 }
 
+
+
+
 bool PathParameter::isPacked() const
 {
-  return FileContainer::isPacked();
+//  return FileContainer::isPacked();
+  return hasFileContent();
 }
+
+
+
 
 void PathParameter::pack()
 {
-  FileContainer::pack();
+//  FileContainer::pack()
+  replaceContent(originalFilePath_);
 }
+
+
+
 
 void PathParameter::unpack(const boost::filesystem::path &basePath)
 {
-  FileContainer::unpack(basePath);
+  auto up = unpackFilePath(basePath);
+  if (needsUnpack(up)) copyTo(up, true);
+//  FileContainer::unpack(basePath);
 }
+
+
+
 
 void PathParameter::clearPackedData()
 {
   FileContainer::clearPackedData();
+}
+
+
+
+
+boost::filesystem::path PathParameter::filePath(boost::filesystem::path baseDirectory) const
+{
+  auto up=unpackFilePath(baseDirectory);
+
+  if (needsUnpack(up))
+  {
+    copyTo(up, true);
+  }
+
+  return up;
 }
 
 
@@ -171,7 +219,7 @@ void PathParameter::operator=(const PathParameter &op)
 
   originalFilePath_ = op.originalFilePath_;
   file_content_ = op.file_content_;
-  memcpy(file_content_hash_, op.file_content_hash_, sizeof(op.file_content_hash_));
+//  fileContentHash_=op.fileContentHash_;
 }
 
 
@@ -181,7 +229,7 @@ void PathParameter::operator=(const FileContainer& oc)
 {
   originalFilePath_ = oc.originalFilePath_;
   file_content_ = oc.file_content_;
-  memcpy(file_content_hash_, oc.file_content_hash_, sizeof(oc.file_content_hash_));
+//  fileContentHash_=oc.fileContentHash_;
 }
 
 
@@ -199,6 +247,25 @@ std::shared_ptr<PathParameter> make_filepath(const FileContainer& fc)
 {
   return std::shared_ptr<PathParameter>(new PathParameter(fc, "temporary file path"));
 }
+
+
+
+std::shared_ptr<PathParameter> make_filepath(
+    vtkSmartPointer<vtkPolyData> pd,
+    const boost::filesystem::path& originalFilePath )
+{
+  TemporaryFile tf( originalFilePath.filename().stem().string()+"-%%%%%%.stl" );
+  auto msw = vtkSmartPointer<vtkSTLWriter>::New();
+  msw->SetInputData(pd);
+  msw->SetFileTypeToBinary();
+  msw->SetFileName(tf.path().string().c_str());
+  msw->Update();
+  return std::make_shared<PathParameter>(
+        FileContainer(originalFilePath, tf),
+        "temporary file path" );
+}
+
+
 
 
 
@@ -286,6 +353,7 @@ void DirectoryParameter::reset(const Parameter& p)
   else
     throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
 }
+
 
 
 }

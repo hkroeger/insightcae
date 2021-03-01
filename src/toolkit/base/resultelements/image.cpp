@@ -13,10 +13,14 @@ defineType ( Image );
 addToFactoryTable ( ResultElement, Image );
 
 
+
+
 Image::Image ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
     : FileResult ( shortdesc, longdesc, unit )
-{
-}
+{}
+
+
+
 
 Image::Image
 (
@@ -27,8 +31,10 @@ Image::Image
     std::shared_ptr<std::string> base64_content
 )
     : FileResult ( location, value, shortDesc, longDesc, base64_content )
-{
-}
+{}
+
+
+
 
 void Image::writeLatexHeaderCode ( std::ostream& f ) const
 {
@@ -36,18 +42,31 @@ void Image::writeLatexHeaderCode ( std::ostream& f ) const
     f<<"\\usepackage{placeins}\n";
 }
 
-void Image::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path& outputfilepath ) const
+
+
+
+void Image::writeLatexCode (
+    std::ostream& f,
+    const std::string& ,
+    int ,
+    const boost::filesystem::path& outputfilepath ) const
 {
-    //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
-    f<<
-     "\n\nSee figure below.\n"
+  auto up=unpackFilePath(outputfilepath);
+  if (needsUnpack(up))
+    copyTo(up);
+
+  //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
+  f<<
+      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
-     "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative ( outputfilepath, filePath(outputfilepath) ).c_str() << "}\n"
+     "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
+      << make_relative ( outputfilepath, up ).c_str() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier"
     ;
 }
+
 
 
 
@@ -65,6 +84,8 @@ ResultElementPtr Image::clone() const
     res->setOrder ( order() );
     return res;
 }
+
+
 
 
 } // namespace insight

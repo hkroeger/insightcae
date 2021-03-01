@@ -35,6 +35,8 @@ public:
     void writeLatexHeaderCode ( std::ostream& f ) const override;
     void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
 
+    boost::filesystem::path filePath(boost::filesystem::path baseDirectory = "") const;
+
     /**
      * append the contents of this element to the given xml node
      */

@@ -35,7 +35,11 @@ FileResult::FileResult
     : ResultElement ( shortDesc, longDesc, "" ),
       FileContainer ( absolute ( value, location ), base64_content )
 {
-  if (!file_content_) pack();
+  if (!file_content_)
+  {
+//    pack();
+    replaceContent(originalFilePath());
+  }
 }
 
 void FileResult::writeLatexHeaderCode ( std::ostream& ) const
@@ -45,8 +49,26 @@ void FileResult::writeLatexCode ( std::ostream& f, const std::string& , int , co
 {
     f<<  "\\texttt{"
        + SimpleLatex( boost::lexical_cast<std::string>(boost::filesystem::absolute(originalFilePath_)) ).toLaTeX()
-       + "}";
+         + "}";
 }
+
+
+
+
+path FileResult::filePath(path baseDirectory) const
+{
+  auto up=unpackFilePath(baseDirectory);
+
+  if (needsUnpack(up))
+  {
+    copyTo(up, true);
+  }
+
+  return up;
+}
+
+
+
 
 void FileResult::readFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
 {

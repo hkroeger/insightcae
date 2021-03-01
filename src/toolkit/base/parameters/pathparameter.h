@@ -24,7 +24,8 @@
 #include "base/filecontainer.h"
 #include "base/parameter.h"
 
-
+#include "vtkSmartPointer.h"
+#include "vtkPolyData.h"
 
 
 
@@ -33,7 +34,12 @@ namespace insight
 
 
 
-
+/**
+ * @brief The PathParameter class stores a reference to some external file.
+ * It can store only the path but the external content can be "packed", i.e.
+ * loaded and stored in memory. When the parameter is saved, the packed contents
+ * will be stored in the parameter file in Base64 encoding.
+ */
 class PathParameter
     : public Parameter,
       public FileContainer
@@ -41,47 +47,83 @@ class PathParameter
 
 
 public:
-    declareType ( "path" );
+  declareType ( "path" );
 
-    PathParameter ( const std::string& description,
-                    bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0
-        );
+  PathParameter (
+      const std::string& description,
+      bool isHidden=false,
+      bool isExpert=false,
+      bool isNecessary=false,
+      int order=0  );
 
-    PathParameter ( const boost::filesystem::path& value, const std::string& description,
-                    bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0,
-                    std::shared_ptr<std::string> binary_content = std::shared_ptr<std::string>()
-        );
+  PathParameter (
+      const boost::filesystem::path& value,
+      const std::string& description,
+      bool isHidden=false,
+      bool isExpert=false,
+      bool isNecessary=false,
+      int order=0,
+      std::shared_ptr<std::string> binary_content = std::shared_ptr<std::string>()  );
 
-    PathParameter ( const FileContainer& fc, const std::string& description,
-                    bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0
-        );
+  PathParameter (
+      const FileContainer& fc,
+      const std::string& description,
+      bool isHidden=false,
+      bool isExpert=false,
+      bool isNecessary=false,
+      int order=0 );
 
-    std::string latexRepresentation() const override;
-    std::string plainTextRepresentation(int /*indent*/=0) const override;
+  std::string latexRepresentation() const override;
+  std::string plainTextRepresentation(int /*indent*/=0) const override;
 
-    bool isPacked() const override;
-    void pack() override;
-    void unpack(const boost::filesystem::path& basePath) override;
-    void clearPackedData() override;
+  bool isPacked() const override;
+  void pack() override;
+  void unpack(const boost::filesystem::path& basePath) override;
+  void clearPackedData() override;
 
-    rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-     boost::filesystem::path inputfilepath) const override;
+  /**
+   * @brief filePath
+   * Get the path of the file.
+   * It will be created, if it does not exist on the filesystem yet
+   * but its content is available in memory.
+   * @param baseDirectory
+   * The working directory. If the file is only in memory,
+   * it will be created in a temporary directory under this path.
+   * @return
+   */
+  boost::filesystem::path filePath(boost::filesystem::path baseDirectory = "") const;
 
-    void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-     boost::filesystem::path inputfilepath) override;
+  rapidxml::xml_node<>* appendToNode(
+      const std::string& name,
+      rapidxml::xml_document<>& doc,
+      rapidxml::xml_node<>& node,
+      boost::filesystem::path inputfilepath) const override;
 
-    PathParameter* clonePathParameter() const;
-    Parameter* clone() const override;
-    void reset(const Parameter& p) override;
+  void readFromNode(
+      const std::string& name,
+      rapidxml::xml_document<>& doc,
+      rapidxml::xml_node<>& node,
+      boost::filesystem::path inputfilepath) override;
 
-    void operator=(const PathParameter& op);
-    void operator=(const FileContainer& oc);
+  PathParameter* clonePathParameter() const;
+  Parameter* clone() const override;
+  void reset(const Parameter& p) override;
+
+  void operator=(const PathParameter& op);
+  void operator=(const FileContainer& oc);
 
 };
 
 
+
+
 std::shared_ptr<PathParameter> make_filepath(const boost::filesystem::path& path);
+
 std::shared_ptr<PathParameter> make_filepath(const FileContainer& fc);
+
+std::shared_ptr<PathParameter> make_filepath(
+    vtkSmartPointer<vtkPolyData> pd,
+    const boost::filesystem::path& originalFilePath );
 
 
 

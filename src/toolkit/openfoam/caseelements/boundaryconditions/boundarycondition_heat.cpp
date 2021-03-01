@@ -18,7 +18,7 @@ defineDynamicClass(HeatBC);
 HeatBC::~HeatBC()
 {}
 
-void HeatBC::addOptionsToBoundaryDict(OFDictData::dict &BCdict) const
+void HeatBC::addOptionsToBoundaryDict(OFDictData::dict &) const
 {}
 
 
@@ -32,7 +32,7 @@ defineType(AdiabaticBC);
 addToFactoryTable(HeatBC, AdiabaticBC);
 addToStaticFunctionTable(HeatBC, AdiabaticBC, defaultParameters);
 
-AdiabaticBC::AdiabaticBC(const ParameterSet& ps)
+AdiabaticBC::AdiabaticBC(const ParameterSet&)
 {}
 
 bool AdiabaticBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts&) const
@@ -164,10 +164,24 @@ CHTCoupledWall::CHTCoupledWall(const ParameterSet& ps)
 void CHTCoupledWall::addOptionsToBoundaryDict(OFDictData::dict &BCdict) const
 {
   HeatBC::addOptionsToBoundaryDict(BCdict);
+
   BCdict["type"]="mappedWall";
-  BCdict["sampleMode"]="nearestPatchFace";
+
+  std::string method;
+  switch (p_.method)
+  {
+    case Parameters::nearestPatchFace: method="nearestPatchFace"; break;
+    case Parameters::nearestPatchFaceAMI: method="nearestPatchFaceAMI"; break;
+  }
+  BCdict["sampleMode"]=method;
+
   BCdict["sampleRegion"]=p_.sampleRegion;
   BCdict["samplePatch"]=p_.samplePatch;
+
+  if (const auto *uofs = boost::get<Parameters::offset_uniform_type>(&p_.offset))
+  {
+    BCdict["offset"]=OFDictData::vector3(uofs->distance);
+  }
 }
 
 bool CHTCoupledWall::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts&) const

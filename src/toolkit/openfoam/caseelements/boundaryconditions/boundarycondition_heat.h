@@ -159,6 +159,15 @@ sampleRegion = string "" "Neighbouring region" *necessary
 samplePatch = string "" "Name of coupled patch in neighbouring region" *necessary
 Tnbr = string "T" "Name of temperature field in neighbouring region"
 
+offset = selectablesubset {{
+ none set { }
+ uniform set {
+  distance = vector (0 0 0) "this value is uniformly added to the coordinates of the neighbour patch to make it coincident with the current one." *necessary
+ }
+}} none "The offset is added to the coordinates of the other neighbour patch to make it conincident with the current patch."
+
+method = selection (nearestPatchFace nearestPatchFaceAMI) nearestPatchFace "The mapping method"
+
 <<<PARAMETERSET
 */
 

@@ -238,6 +238,15 @@ arma::mat STLBndBox(
   vtkSmartPointer<vtkPolyDataAlgorithm> stl_data_Set
 );
 
+/**
+  * return bounding box of model
+  * first col: min point
+  * second col: max point
+  */
+arma::mat PolyDataBndBox(
+  vtkSmartPointer<vtkPolyData> stl_data_Set
+);
+
 void writeSTL
 (
    vtkSmartPointer<vtkPolyDataAlgorithm> stl,

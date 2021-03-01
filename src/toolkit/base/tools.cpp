@@ -703,9 +703,17 @@ arma::mat STLBndBox
 {
   CurrentExceptionContext ec("Computing bounding box of VTK poly data set");
 
-  double bb[6];
   in->Update();
-  in->GetOutput()->GetBounds(bb);
+  return PolyDataBndBox(in->GetOutput());
+}
+
+arma::mat PolyDataBndBox
+(
+  vtkSmartPointer<vtkPolyData> in
+)
+{
+  double bb[6];
+  in->GetBounds(bb);
 
   arma::mat bbm;
   bbm

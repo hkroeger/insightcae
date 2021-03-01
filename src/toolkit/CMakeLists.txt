@@ -155,6 +155,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/numerics/buoyantpimplefoamnumerics.cpp
     openfoam/caseelements/numerics/fsidisplacementextrapolationnumerics.cpp
     openfoam/caseelements/numerics/magneticfoamnumerics.cpp
+    openfoam/caseelements/numerics/chtmultiregionnumerics.cpp
 
     openfoam/caseelements/boundarycondition.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_heat.cpp

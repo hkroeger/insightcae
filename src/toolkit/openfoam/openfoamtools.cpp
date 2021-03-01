@@ -148,7 +148,10 @@ std::string getOpenFOAMComponentLabel(int i, int ncmpt)
 }
 
 
-void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, const std::vector<std::string>& cmds)
+void setSet(
+    const OpenFOAMCase& ofc,
+    const boost::filesystem::path& location,
+    const std::vector<std::string>& cmds )
 {
   CurrentExceptionContext ex("executing setSet command with the instructions:\n"+boost::join(cmds, "\n"));
 

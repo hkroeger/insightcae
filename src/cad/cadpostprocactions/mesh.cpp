@@ -216,7 +216,7 @@ void ExtrudedMesh::build()
 {
 
   SheetExtrusionGmshCase c(
-        model_, outpath_,
+        model_, "G_3D_1", outpath_,
         Lmin_->value(),
         h_->value(),
         nLayers_->value(),

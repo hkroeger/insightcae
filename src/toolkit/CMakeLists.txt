@@ -23,6 +23,8 @@ project(toolkit)
 set(toolkit_SOURCES
     base/toolkitversion.cpp
     base/analysis.cpp
+    base/cacheableentity.cpp
+    base/cacheableentityhashes.cpp
     base/parameter.cpp
     base/exception.cpp
     base/tools.cpp

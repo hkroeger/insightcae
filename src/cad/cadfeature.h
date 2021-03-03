@@ -49,6 +49,7 @@
 
 #include "parser.h"
 
+#include "base/cacheableentityhashes.h"
 #include "featurecache.h"
 
 namespace insight 
@@ -66,11 +67,6 @@ namespace boost
 template<> struct hash<TopoDS_Shape>
 {
   std::size_t operator()(const TopoDS_Shape& shape) const;
-};
-
-template<> struct hash<arma::mat>
-{
-  std::size_t operator()(const arma::mat& v) const;
 };
 
 template<> struct hash<gp_Pnt>
@@ -98,10 +94,7 @@ template<> struct hash<insight::cad::FeatureSet>
   std::size_t operator()(const insight::cad::FeatureSet& m) const;
 };
 
-template<> struct hash<boost::filesystem::path>
-{
-  std::size_t operator()(const boost::filesystem::path& fn) const;
-};
+
 
 
 }

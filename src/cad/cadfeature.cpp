@@ -92,23 +92,14 @@ using namespace boost;
 
 namespace boost
 {
- 
+
+
 std::size_t hash<TopoDS_Shape>::operator()(const TopoDS_Shape& shape) const
 {
   insight::cad::Feature m(shape);  
   return m.hash();
 }
 
-std::size_t hash<arma::mat>::operator()(const arma::mat& v) const
-{
-  std::hash<double> dh;
-  size_t h=0;
-  for (int i=0; i<v.n_elem; i++)
-  {
-    boost::hash_combine(h, dh(v(i)));
-  }
-  return h;
-}
 
 std::size_t hash<gp_Pnt>::operator()(const gp_Pnt& v) const
 {
@@ -136,32 +127,24 @@ std::size_t hash<gp_Trsf>::operator()(const gp_Trsf& t) const
   return h;
 }
 
+
 std::size_t hash<insight::cad::Datum>::operator()(const insight::cad::Datum& m) const
 {
   return m.hash();
 }
+
 
 std::size_t hash<insight::cad::Feature>::operator()(const insight::cad::Feature& m) const
 {
   return m.hash();
 }
 
-std::size_t hash<boost::filesystem::path>::operator()(const boost::filesystem::path& fn) const
-{
-  size_t h=0;
-  // build from file path string and last write time (latter only if file exists)
-  boost::hash_combine(h, fn.string());
-  if (boost::filesystem::exists(fn))
-  {
-    boost::hash_combine(h, boost::filesystem::last_write_time(fn));
-  }
-  return h;
-}
 
 std::size_t hash<insight::cad::FeatureSet>::operator()(const insight::cad::FeatureSet& m) const
 {
   return m.hash();
 }
+
 
 }
 

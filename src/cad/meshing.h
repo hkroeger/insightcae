@@ -134,6 +134,7 @@ protected:
 public:
   SheetExtrusionGmshCase(
       cad::ConstFeaturePtr part,
+      const std::string& solidName,
       const boost::filesystem::path& outputMeshFile,
       double L, double h, int nLayers,
       const std::vector<NamedEntity>& namedBottomFaces,

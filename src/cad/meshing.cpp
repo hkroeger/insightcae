@@ -382,6 +382,7 @@ SurfaceGmshCase::SurfaceGmshCase(
 
 SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     cad::ConstFeaturePtr part,
+    const std::string& solidName,
     const boost::filesystem::path& outputMeshFile,
     double L, double h, int nLayers,
     const std::vector<NamedEntity>& namedBottomFaces,
@@ -422,7 +423,7 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     "Mesh.RecombineAll = 1",
     "Mesh.Optimize = 1",
 
-    "Physical Volume(1) = {}"
+    "Physical Volume(\""+solidName+"\") = {}"
    });
 
   for (const auto& nbf: namedBottomFaces_)
@@ -446,17 +447,6 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
   // insert faces one by one
   auto faces=part->allFacesSet();
 
-//  for (FeatureID fi : faces)
-//  {
-//    auto nbf=namedBottomFaces_.find(fi);
-//    if (nbf!=namedBottomFaces_.end())
-//    {
-//      insertLinesBefore(endOfMeshingActions_, {
-//        str(format("Physical Surface(\"%s\") += Surface{%d}")%nbf->second%fi)
-//                        });
-//    }
-//  }
-
 
   for (FeatureID fi : faces)
   {
@@ -465,7 +455,7 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     insertLinesBefore(endOfMeshingActions_, {
       str(format(out+"[] = Extrude {0.,0.,%g} { Surface{%d}; Layers{%d}; Recombine; }")
                         % h % fi % nLayers ),
-      "Physical Volume(1) += "+out+"[1]"
+      "Physical Volume(\""+solidName+"\") += "+out+"[1]"
     });
   }
 

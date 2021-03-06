@@ -191,6 +191,7 @@ public:
 };
 
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
+double nonlinearSolve1D(const std::function<double(double)>& model, double x_min, double x_max);
 double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max);
 arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol=1e-3, const arma::mat& steps = arma::mat());
 

@@ -349,6 +349,21 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
   return x_l;
 }
 
+
+double nonlinearSolve1D(const std::function<double(double)>& model, double x_min, double x_max)
+{
+  struct Obj : public Objective1D
+  {
+    const std::function<double(double)>& model_;
+    Obj(const std::function<double(double)>& m) : model_(m) {}
+    double operator()(double x) const override
+    {
+      return model_(x);
+    }
+  } obj(model);
+  return nonlinearSolve1D(obj, x_min, x_max);
+}
+
 double F_min_obj(const gsl_vector* x, void *param)
 {
   const Objective1D& model=*static_cast<Objective1D*>(param);

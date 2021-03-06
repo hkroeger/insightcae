@@ -693,65 +693,30 @@ void OpenFOAMCase::runSolver
 
 
 
-  SoftwareEnvironment::JobPtr job = env_.forkCommand( cmdString(location, execmd, argv) );
+  auto job = env_.forkCommand( cmdString(location, execmd, argv) );
 
 
-  std::function<void()> read_start_out = [&]() {
-    boost::asio::async_read_until(
-     job->out, job->buf_out, "\n",
-     [&](const boost::system::error_code &error, std::size_t /*size*/)
-     {
-      if (!error)
-      {
-        // read a line
-       std::string line;
-       std::istream is(&(job->buf_out));
-       getline(is, line);
+  job->ios_run_with_interruption(
 
-       // mirror to console
-       cout<<line<<endl; // mirror to console
-       analyzer.update(line);
+        [&](const std::string& line)
+        {
+          cout<<line<<endl; // mirror to console
+          analyzer.update(line);
 
-       if (analyzer.stopRun())
-       {
-         std::ofstream f( (location/"wnowandstop").c_str() );
-         f<<"STOP"<<std::endl;
-       }
+          if (analyzer.stopRun())
+          {
+            std::ofstream f( (location/"wnowandstop").c_str() );
+            f<<"STOP"<<std::endl;
+          }
+        },
 
-       // restart read
-       read_start_out();
-      }
-     }
-    );
-  };
-
-
-  std::function<void()> read_start_err = [&]() {
-    boost::asio::async_read_until(
-     job->err, job->buf_err, "\n",
-     [&](const boost::system::error_code &error, std::size_t /*size*/)
-     {
-      if (!error)
-      {
-        // read a line
-       std::string line;
-       std::istream is(&job->buf_err);
-       getline(is, line);
-
-       // mirror to console
-       cout<<"[E] "<<line<<endl; // mirror to console
-       analyzer.update("[E] "+line);
-
-       read_start_err();
-      }
-     }
-    );
-  };
-
-  read_start_out();
-  read_start_err();
-
-  job->ios_run_with_interruption();
+        [&](const std::string& line)
+        {
+          // mirror to console
+          cout<<"[E] "<<line<<endl; // mirror to console
+          analyzer.update("[E] "+line);
+        }
+  );
 
   job->process->wait();
 
@@ -789,7 +754,7 @@ std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& bounda
 }
 
 
-SoftwareEnvironment::JobPtr OpenFOAMCase::forkCommand
+JobPtr OpenFOAMCase::forkCommand
 (
     const boost::filesystem::path& location,
     const std::string& cmd,

@@ -153,7 +153,7 @@ public:
         const std::vector<std::string>& addopts = std::vector<std::string>()
     ) const;
 
-    SoftwareEnvironment::JobPtr forkCommand
+    JobPtr forkCommand
     (
         const boost::filesystem::path& location,
         const std::string& cmd,

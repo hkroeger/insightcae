@@ -26,10 +26,110 @@
 
 #include <fstream>
 
+
+#if BOOST_VERSION>016500
+#else
+#include <boost/fusion/container/vector/limits.hpp>
+#endif
+#include "boost/spirit/include/qi.hpp"
+#include "boost/variant/recursive_variant.hpp"
+#include "boost/spirit/repository/include/qi_confix.hpp"
+#include <boost/spirit/include/qi_eol.hpp>
+#include <boost/spirit/include/phoenix.hpp>
+#include <boost/phoenix/function.hpp>
+#include <boost/phoenix/function/adapt_callable.hpp>
+#include <boost/spirit/include/qi_no_case.hpp>
+#include <boost/spirit/home/classic/utility/distinct.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/karma.hpp>
+#include <boost/spirit/repository/include/qi_iter_pos.hpp>
+#include <boost/fusion/adapted.hpp>
+
+
 namespace fs=boost::filesystem;
 
 namespace insight
 {
+
+CAExportFile::FileInfo::FileInfo()
+{}
+
+
+CAExportFile::FileInfo::FileInfo(
+  std::string ft,
+  boost::filesystem::path fp )
+  :fileType(ft), filePath(fp)
+{}
+
+CAExportFile::CAExportFile(const boost::filesystem::path& exportFile)
+: boost::filesystem::path(exportFile),
+  mem_max_(-1)
+{
+  std::ifstream in(exportFile.string());
+
+  in >> std::noskipws; // ! keep newline,spaces etc !
+
+  std::istream_iterator<char> inbeg(in);
+  std::istream_iterator<char> inend;
+  std::string contents_raw(inbeg, inend);
+
+  std::string::iterator
+      first=contents_raw.begin(),
+      last=contents_raw.end();
+
+  namespace qi = boost::spirit::qi;
+  using namespace qi;
+  namespace repo = boost::spirit::repository;
+  namespace phx  = boost::phoenix;
+  namespace bf = boost::fusion;
+
+
+  qi::rule<std::string::iterator, std::string(), decltype(boost::spirit::ascii::space)>
+      r_word = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ],
+      r_string =  lexeme[ *(~char_(" ") - qi::eol) >> omit[-qi::eol] ]
+      ;
+
+  bool ok = phrase_parse
+  (
+     first, last,
+
+     *(
+          ('P' >> lit("mpi_nbcpu") >> int_[ phx::bind(&CAExportFile::np_mpi_, this)= qi::_1 ])
+        | ('P' >> lit("ncpus") >> int_[ phx::bind(&CAExportFile::np_omp_, this)= qi::_1 ])
+        | ('P' >> lit("version") >> r_word[ phx::bind(&CAExportFile::version_, this)= qi::_1 ])
+        | ('P' >> lit("rep_trav") >> r_string[ phx::bind(&CAExportFile::workDir_, this)= qi::_1 ])
+        | ('A' >> lit("tpmax") >> int_[ phx::bind(&CAExportFile::t_max_, this)= qi::_1 ])
+
+        | ('F' >> lit("comm") >> r_string >> char_ >> int_ )
+          [ phx::bind(&CAExportFile::commFile_, this) = qi::_1 ]
+
+        | ('F' >> lit("mmed") >> r_string >> char_ >> int_ )
+            [  phx::insert( phx::ref(inputFiles_),
+                            phx::construct<FileList::value_type>( qi::_3, phx::construct<FileInfo>("mmed", qi::_1) ) ) ]
+
+        | ('F' >> lit("rmed") >> r_string >> char_ >> int_ )
+            [  phx::insert( phx::ref(outputFiles_),
+                            phx::construct<FileList::value_type>( qi::_3, phx::construct<FileInfo>("rmed", qi::_1) ) ) ]
+
+        | ('F' >> lit("mess") >> r_string >> char_ >> int_ )
+            [  phx::insert( phx::ref(outputFiles_),
+                            phx::construct<FileList::value_type>( qi::_3, phx::construct<FileInfo>("mess", qi::_1) ) ) ]
+
+        | ( no_skip[ qi::as_string[ *(qi::char_- qi::eol) ] >> qi::eol ] )   // ignore else
+
+      ),
+
+      boost::spirit::ascii::space //skipper
+  );
+
+  if ( (!ok) || (first!=last) )
+  {
+    throw insight::Exception(
+          "Could not parse the export file correctly!\n"
+          "This part remained unparsed:\n"
+          + std::string(first, last) );
+  }
+}
 
 
 
@@ -115,6 +215,18 @@ void CAExportFile::addMeshMedFile(const boost::filesystem::path& fn, int unit)
   inputFiles_[unit] = FileInfo{MMED, fn};
 }
 
+std::set<boost::filesystem::path> CAExportFile::inputFiles(const std::string &fileType) const
+{
+  std::set<boost::filesystem::path> result;
+
+  for (const auto& of: inputFiles_)
+    if (of.second.fileType==fileType)
+      result.insert(of.second.filePath);
+
+  return result;
+}
+
+
 std::set<boost::filesystem::path> CAExportFile::outputFiles(const std::string &fileType) const
 {
   std::set<boost::filesystem::path> result;
@@ -132,6 +244,11 @@ std::set<boost::filesystem::path> CAExportFile::outputFiles(const std::string &f
 const boost::filesystem::path &CAExportFile::commFilePath() const
 {
   return commFile_;
+}
+
+const boost::filesystem::path &CAExportFile::workDir() const
+{
+  return workDir_;
 }
 
 

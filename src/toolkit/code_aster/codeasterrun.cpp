@@ -19,8 +19,16 @@
  */
 
 #include "codeasterrun.h"
+#include "caexportfile.h"
+
+#include "base/outputanalyzer.h"
+#include "base/filewatcher.h"
 
 #include "boost/process.hpp"
+
+#include <memory>
+#include <boost/asio.hpp>
+#include <boost/process/async.hpp>
 
 using namespace std;
 using namespace boost;
@@ -46,7 +54,7 @@ const boost::filesystem::path& CAEnvironment::asrun_cmd() const
   return asrun_cmd_;
 }
 
-SoftwareEnvironment::JobPtr CAEnvironment::forkCase
+JobPtr CAEnvironment::forkCase
 (
   const boost::filesystem::path& exportfile
 ) const
@@ -57,6 +65,59 @@ SoftwareEnvironment::JobPtr CAEnvironment::forkCase
         "cd "+dir.string()+"; "+asrun_cmd().string(),
         {"--run", exportfile.string()}
         );
+
+}
+
+
+
+void CAEnvironment::runSolver(const filesystem::path &exportfile, OutputAnalyzer &analyzer) const
+{
+ auto job = forkCase(exportfile);
+
+ std::unique_ptr<FileWatcher> logFileWatcher;
+
+ job->ios_run_with_interruption(
+       [&](const std::string& line)
+       {
+         if ( boost::starts_with(
+                line,
+                "        -- CODE_ASTER -- VERSION :")
+              && !logFileWatcher
+              )
+         {
+           std::cout<<"Solver has started. launching log file parser."<<std::endl;
+
+           CAExportFile cef(exportfile);
+
+           auto wd = cef.workDir();
+           if (wd.filename().string()=="global")
+           {
+             wd = wd.parent_path()/"proc.0";
+           }
+           auto logFile = wd/"fort.6";
+
+           logFileWatcher.reset(
+                 new FileWatcher(
+                   logFile,
+                   [&](const std::string& line)
+                   {
+                     std::cout<<line<<std::endl;
+                     analyzer.update(line);
+                   }, true ) );
+         }
+       },
+       [&](const std::string& line)
+       {
+         // mirror to console
+         cout<<"[E] "<<line<<endl; // mirror to console
+       }
+ );
+
+ job->process->wait();
+
+
+ if (job->process->exit_code()!=0)
+     throw insight::Exception("CAEnvironment::runSolver(): solver run failed with nonzero exit code!");
 
 }
 

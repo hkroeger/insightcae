@@ -42,6 +42,11 @@ public:
   {
     std::string fileType;
     boost::filesystem::path filePath;
+
+    FileInfo();
+    FileInfo(
+      std::string ft,
+      boost::filesystem::path fp );
   };
   typedef std::map<int, FileInfo> FileList;
   
@@ -49,13 +54,29 @@ protected:
   int t_max_, mem_max_;
   std::string version_;
   
-  boost::filesystem::path commFile_;
+  boost::filesystem::path commFile_, workDir_;
   FileList inputFiles_, outputFiles_;
   
   int np_omp_, np_mpi_;
   
 public:
-    CAExportFile(const boost::filesystem::path& commFile, std::string version="stable", int t_max=7*24*60*60, int mem_max=0 /*MB*/);
+  /**
+     * @brief CAExportFile
+     * parse an existing export file
+     * @param exportFile
+     * path to existing export file
+     */
+    CAExportFile(const boost::filesystem::path& exportFile);
+
+    /**
+     * @brief CAExportFile
+     * create an export file
+     * @param commFile
+     * @param version
+     * @param t_max
+     * @param mem_max
+     */
+    CAExportFile(const boost::filesystem::path& commFile, std::string version/*="stable"*/, int t_max=7*24*60*60, int mem_max=0 /*MB*/);
     ~CAExportFile();
 
     void setNP(int np_omp=1, int np_mpi=1);
@@ -64,9 +85,11 @@ public:
     void setRMedFile(const boost::filesystem::path& fn);
     void addMeshMedFile(const boost::filesystem::path& fn, int unit=-1);
 
+    std::set<boost::filesystem::path> inputFiles(const std::string& fileType="mmed") const;
     std::set<boost::filesystem::path> outputFiles(const std::string& fileType="mmed") const;
 
     const boost::filesystem::path& commFilePath() const;
+    const boost::filesystem::path& workDir() const;
 
     boost::filesystem::path RMedFile() const;
 

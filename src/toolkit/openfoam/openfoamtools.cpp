@@ -159,7 +159,7 @@ void setSet(
   if ((ofc.OFversion()>=220) && (listTimeDirectories(location).size()==0)) opts.push_back("-constant");
   std::string machine=""; // problems, if job is put into queue system
 
-  SoftwareEnvironment::JobPtr job = ofc.forkCommand(location, "setSet", opts, &machine);
+  auto job = ofc.forkCommand(location, "setSet", opts, &machine);
 
   for (const std::string& line: cmds)
   {

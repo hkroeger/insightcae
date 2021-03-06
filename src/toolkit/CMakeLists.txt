@@ -27,6 +27,8 @@ set(toolkit_SOURCES
     base/cacheableentityhashes.cpp
     base/parameter.cpp
     base/exception.cpp
+    base/externalprocess.cpp
+    base/filewatcher.cpp
     base/tools.cpp
     base/latextools.cpp
     base/linearalgebra.cpp
@@ -198,6 +200,7 @@ set(toolkit_SOURCES
 
     code_aster/caexportfile.cpp
     code_aster/codeasterrun.cpp
+    code_aster/casolveroutputanalyzer.cpp
 )
 
 if( "${INSIGHT_CHARTRENDERER}" STREQUAL "gnuplot" )

@@ -1,5 +1,7 @@
 #include "casolveroutputanalyzer.h"
 
+#include "base/exception.h"
+
 
 using namespace std;
 using namespace boost;
@@ -78,6 +80,13 @@ void CASolverOutputAnalyzer::update (const std::string& line)
     if (currentMessage_) // end of msg
     {
       std::cout<<*currentMessage_;
+
+      if (currentMessage_->msgType_==Message::Warning)
+        insight::Warning(
+              "Code_Aster Warning "+currentMessage_->msgCode_+":\n"
+              +static_cast<std::string>(*currentMessage_)
+        );
+
       messages_.push_back(std::move(currentMessage_));
     }
     else // begin of msg
@@ -105,6 +114,30 @@ void CASolverOutputAnalyzer::update (const std::string& line)
 bool CASolverOutputAnalyzer::stopRun() const
 {
   return false;
+}
+
+std::vector<std::shared_ptr<Message> > CASolverOutputAnalyzer::messages(Message::MsgType t) const
+{
+  std::vector<std::shared_ptr<Message> > w;
+  std::copy_if(
+        messages_.begin(), messages_.end(),
+        std::back_inserter(w),
+        [t](const std::shared_ptr<Message> mp)
+        {
+          return (mp->msgType_==t);
+        }
+  );
+  return w;
+}
+
+std::vector<std::shared_ptr<Message> > CASolverOutputAnalyzer::warnings() const
+{
+  return messages(Message::Warning);
+}
+
+std::vector<std::shared_ptr<Message> > CASolverOutputAnalyzer::exceptions() const
+{
+  return messages(Message::Exception);
 }
 
 

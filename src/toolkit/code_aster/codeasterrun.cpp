@@ -21,7 +21,7 @@
 #include "codeasterrun.h"
 #include "caexportfile.h"
 
-#include "base/outputanalyzer.h"
+#include "code_aster/casolveroutputanalyzer.h"
 #include "base/filewatcher.h"
 
 #include "boost/process.hpp"
@@ -70,7 +70,7 @@ JobPtr CAEnvironment::forkCase
 
 
 
-void CAEnvironment::runSolver(const filesystem::path &exportfile, OutputAnalyzer &analyzer) const
+void CAEnvironment::runSolver(const filesystem::path &exportfile, CASolverOutputAnalyzer &analyzer) const
 {
  auto job = forkCase(exportfile);
 
@@ -85,8 +85,6 @@ void CAEnvironment::runSolver(const filesystem::path &exportfile, OutputAnalyzer
               && !logFileWatcher
               )
          {
-           std::cout<<"Solver has started. launching log file parser."<<std::endl;
-
            CAExportFile cef(exportfile);
 
            auto wd = cef.workDir();
@@ -116,8 +114,22 @@ void CAEnvironment::runSolver(const filesystem::path &exportfile, OutputAnalyzer
  job->process->wait();
 
 
- if (job->process->exit_code()!=0)
-     throw insight::Exception("CAEnvironment::runSolver(): solver run failed with nonzero exit code!");
+ std::string msg;
+ auto exceptions = analyzer.exceptions();
+ if (exceptions.size()>0)
+ {
+   std::ostringstream ms;
+   ms<<"\nReported exceptions:\n\n";
+   for (const auto &e: exceptions)
+   {
+     ms<<e;
+   }
+   msg=ms.str();
+ }
+
+
+ if ( (job->process->exit_code()!=0) || (exceptions.size()>0) )
+     throw insight::Exception("CAEnvironment::runSolver(): solver run failed!"+msg);
 
 }
 

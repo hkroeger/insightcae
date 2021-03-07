@@ -28,7 +28,7 @@
 namespace insight 
 {
 
-class OutputAnalyzer;
+class CASolverOutputAnalyzer;
 
 
 class CAEnvironment
@@ -52,7 +52,7 @@ public:
   void runSolver
   (
       const boost::filesystem::path& exportfile,
-      OutputAnalyzer& analyzer
+      CASolverOutputAnalyzer& analyzer
   ) const;
 
 };

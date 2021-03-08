@@ -122,7 +122,7 @@ void CAEnvironment::runSolver(const filesystem::path &exportfile, CASolverOutput
    ms<<"\nReported exceptions:\n\n";
    for (const auto &e: exceptions)
    {
-     ms<<e;
+     ms<<(*e);
    }
    msg=ms.str();
  }

@@ -2,7 +2,6 @@
 #define QT_CLEAN_NAMESPACE         /* avoid definition of INT32 and INT8 */
 #endif
 
-#include "qoccviewwidget.h"
 
 #include <QApplication>
 #include <QPainter>
@@ -25,7 +24,6 @@
 #include <Graphic3d_GraphicDriver.hxx>
 #include <Graphic3d_TextureEnv.hxx>
 
-#include <occtwindow.h>
 #include <Aspect_DisplayConnection.hxx>
 #include <AIS_InteractiveObject.hxx>
 #include <Graphic3d_NameOfMaterial.hxx>
@@ -50,6 +48,7 @@
 #include <cmath>
 #include <iostream>
 
+#include "occtwindow.h"
 #include "occtools.h"
 #include "pointertransient.h"
 #include "cadtypes.h"
@@ -60,6 +59,7 @@
 #include "pointertransient.h"
 #include "qmodelstepitem.h"
 
+#include "qoccviewwidget.h"
 
 using namespace std;
 

@@ -73,21 +73,26 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
       OUTPUT_VARIABLE git-rev
       OUTPUT_STRIP_TRAILING_WHITESPACE
+      RESULT_VARIABLE ret
     )
-    execute_process(
-      COMMAND git rev-parse --abbrev-ref HEAD
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-      OUTPUT_VARIABLE INSIGHT_BRANCH
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    message(STATUS "InsightCAE git describe: ${git-rev}")
-    STRING(REGEX REPLACE
-        "^([0-9]+)\\.([0-9]+)-([^ ]+)\$"
-        "\\1;\\2;\\3" VERSIONS ${git-rev})
-
-    LIST(GET VERSIONS 0 INSIGHT_VERSION_MAJOR)
-    LIST(GET VERSIONS 1 INSIGHT_VERSION_MINOR)
-    LIST(GET VERSIONS 2 INSIGHT_VERSION_PATCH)
+    if (ret EQUAL "0")
+     execute_process(
+       COMMAND git rev-parse --abbrev-ref HEAD
+       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+       OUTPUT_VARIABLE INSIGHT_BRANCH
+       OUTPUT_STRIP_TRAILING_WHITESPACE
+     )
+     message(STATUS "InsightCAE git describe: ${git-rev}")
+     STRING(REGEX REPLACE
+         "^([0-9]+)\\.([0-9]+)-([^ ]+)\$"
+         "\\1;\\2;\\3" VERSIONS ${git-rev})
+ 
+     LIST(GET VERSIONS 0 INSIGHT_VERSION_MAJOR)
+     LIST(GET VERSIONS 1 INSIGHT_VERSION_MINOR)
+     LIST(GET VERSIONS 2 INSIGHT_VERSION_PATCH)
+   else()
+     message(STATUS "git describe failed")
+   endif()
 endif()
 
 add_definitions(

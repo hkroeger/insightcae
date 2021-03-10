@@ -426,24 +426,27 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     "Physical Volume(\""+solidName+"\") = {}"
    });
 
-  for (const auto& nbf: namedBottomFaces_)
+  auto insertPhysical = [&](const std::string& entityTypeName, const std::map<cad::FeatureID, std::string>& nfs)
   {
-    insertLinesBefore(endOfMeshingOptions_, {
-                        "Physical Surface(\""+nbf.second+"\")={}"
-                      });
-  }
-  for (const auto& ntf: namedTopFaces_)
-  {
-    insertLinesBefore(endOfMeshingOptions_, {
-                        "Physical Surface(\""+ntf.second+"\")={}"
-                      });
-  }
-  for (const auto& nle: namedLateralEdges_)
-  {
-    insertLinesBefore(endOfMeshingOptions_, {
-                        "Physical Surface(\""+nle.second+"\")={}"
-                      });
-  }
+    std::set<std::string> names;
+
+    std::transform(nfs.begin(), nfs.end(),
+                   std::inserter(names, names.begin()),
+                   [](const std::map<cad::FeatureID, std::string>::value_type& i) { return i.second; } );
+
+    for (const auto& nbf: names)
+    {
+      insertLinesBefore(endOfMeshingOptions_, {
+                          "Physical "+entityTypeName+"(\""+nbf+"\")={}"
+                        });
+    }
+  };
+
+  insertPhysical("Surface", namedBottomFaces_);
+  insertPhysical("Surface", namedTopFaces_);
+  insertPhysical("Surface", namedLateralEdges_);
+
+
   // insert faces one by one
   auto faces=part->allFacesSet();
 
@@ -480,14 +483,14 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     if (nbf!=namedBottomFaces_.end())
     {
       insertLinesBefore(endOfMeshingActions_, {
-        str(format("Physical Surface(\"%s\") += %s[1]")%nbf->second%out)
+        str(format("Physical Surface(\"%s\") += {%d}") % nbf->second % nbf->first)
                         });
     }
     auto ntf=namedTopFaces_.find(fi);
     if (ntf!=namedTopFaces_.end())
     {
       insertLinesBefore(endOfMeshingActions_, {
-        str(format("Physical Surface(\"%s\") += %s[0]")%ntf->second%out)
+        str(format("Physical Surface(\"%s\") += %s[0]") % ntf->second % out)
                         });
     }
 

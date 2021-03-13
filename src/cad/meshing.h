@@ -43,6 +43,11 @@ class GmshCase
 
 public:
   typedef std::map<std::string, FeatureSetPtr> NamedFeatureSet;
+
+  enum MSHFileVersion
+  {
+    v10, v20, v22, v30, v40, v41
+  };
   
 private:
   CaseDirectory workDir_;
@@ -66,6 +71,7 @@ protected:
   std::string executableName_ = "gmsh";
 
   boost::filesystem::path outputMeshFile_;
+  MSHFileVersion mshFileVersion_;
   
 public:
   GmshCase(
@@ -75,6 +81,8 @@ public:
       const std::string& exeName="gmsh",
       bool keepDir=false
       );
+
+  void setMSHFileVersion(MSHFileVersion v);
 
   void insertLinesBefore(
       std::list<std::string>::iterator i,

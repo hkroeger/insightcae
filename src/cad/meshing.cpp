@@ -52,7 +52,8 @@ GmshCase::GmshCase(
   part_(part),
   additionalPoints_(0),
   executableName_(exeName),
-  outputMeshFile_(outputMeshFile)
+  outputMeshFile_(outputMeshFile),
+  mshFileVersion_(v41)
 {
   push_back("SetFactory(\"OpenCASCADE\")");
   push_back("// Preamble");
@@ -103,7 +104,12 @@ GmshCase::GmshCase(
     "Mesh.Smoothing = 10",
     "Mesh.SmoothNormals = 1",
     "Mesh.Explode = 1"
-   });
+                    });
+}
+
+void GmshCase::setMSHFileVersion(GmshCase::MSHFileVersion v)
+{
+  mshFileVersion_=v;
 }
 
 
@@ -295,7 +301,24 @@ void GmshCase::doMeshing()
                       });
     setMinimumCirclePoints(20);
   }
-  else if (ext==".msh") otype=1;
+  else if (ext==".msh")
+  {
+    otype=1;
+
+    std::string versionOption;
+    switch (mshFileVersion_)
+    {
+      case v10: versionOption="1.0"; break;
+      case v20: versionOption="2.0"; break;
+      case v22: versionOption="2.2"; break;
+      case v30: versionOption="3.0"; break;
+      case v40: versionOption="4.0"; break;
+      case v41: versionOption="4.1"; break;
+    }
+    insertLinesBefore(endOfMeshingOptions_, {
+                        "Mesh.MshFileVersion="+versionOption
+                      });
+  }
   else if (ext==".unv") otype=2;
   else if (ext==".med") otype=33;
   else

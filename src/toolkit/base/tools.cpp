@@ -69,9 +69,12 @@ std::string timeCodePrefix()
 GlobalTemporaryDirectory::GlobalTemporaryDirectory()
   : boost::filesystem::path
     (
-      unique_path
+      absolute
       (
-        temp_directory_path() / "insightcae-%%%%%%"
+        unique_path
+        (
+          temp_directory_path() / "insightcae-%%%%%%"
+        )
       )
     )
 {
@@ -110,14 +113,14 @@ CaseDirectory::CaseDirectory(const boost::filesystem::path& p, bool keep)
   if (p.empty())
   {
     boost::filesystem::path::operator=(
-          unique_path(timeCodePrefix() + "_analysis_%%%%")
+          absolute(unique_path(timeCodePrefix() + "_analysis_%%%%"))
           );
     isAutoCreated_=true;
     createDirectory();
   }
   else if (!p.empty() && !fs::exists(p))
   {
-    boost::filesystem::path::operator=(p);
+    boost::filesystem::path::operator=(absolute(p));
     isAutoCreated_=true;
     createDirectory();
   }
@@ -135,11 +138,13 @@ CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
   path fn=prefix.filename();
 
   boost::filesystem::path::operator=(
-        unique_path(
-          prefix.parent_path()
-          /
-          (timeCodePrefix() + "_" + fn.string() + "_%%%%")
-         )
+        absolute(
+          unique_path(
+            prefix.parent_path()
+            /
+            (timeCodePrefix() + "_" + fn.string() + "_%%%%")
+           )
+          )
         );
 
   createDirectory();

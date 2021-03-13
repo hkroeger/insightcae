@@ -82,6 +82,46 @@ bool FixedTemperatureBC::addIntoFieldDictionary(const string& fieldname, const F
 
 
 
+defineType(TemperatureGradientBC);
+addToFactoryTable(HeatBC, TemperatureGradientBC);
+addToStaticFunctionTable(HeatBC, TemperatureGradientBC, defaultParameters);
+
+TemperatureGradientBC::TemperatureGradientBC(const ParameterSet& ps)
+: p_(ps)
+{}
+
+bool TemperatureGradientBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries) const
+{
+    if
+    (
+      (fieldname=="T")
+      &&
+      (get<0>(fieldinfo)==scalarField)
+    )
+    {
+      BC["type"]="uniformFixedGradient";
+      std::ostringstream tableData;
+      if (const auto* cd = boost::get<Parameters::gradT_constant_type>(&p_.gradT))
+      {
+        tableData << cd->gradT;
+      }
+      else if (const auto* ud = boost::get<Parameters::gradT_unsteady_type>(&p_.gradT))
+      {
+        tableData << "table (";
+        for (const auto& d: ud->gradT_vs_t)
+        {
+          tableData << " (" << d.t<<" "<<d.gradT<<")";
+        }
+        tableData << " )";
+      }
+      BC["uniformGradient"]=tableData.str();
+      return true;
+    }
+    else
+      return false;
+}
+
+
 
 defineType(ExternalWallBC);
 addToFactoryTable(HeatBC, ExternalWallBC);

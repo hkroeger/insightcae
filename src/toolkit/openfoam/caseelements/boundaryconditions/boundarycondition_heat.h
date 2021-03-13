@@ -81,6 +81,48 @@ public:
 
 
 
+class TemperatureGradientBC
+  : public HeatBC
+{
+public:
+#include "boundarycondition_heat__TemperatureGradientBC__Parameters.h"
+/*
+PARAMETERSET>>> TemperatureGradientBC Parameters
+
+gradT = selectablesubset {{
+
+ constant set {
+  gradT = double 0. "[K/m] prescribed temperature gradient"
+ }
+
+ unsteady set {
+  gradT_vs_t = array [ set {
+   t = double 0.0 "time instant"
+   gradT = double 0.0 "temperature gradient at that time instant"
+  } ]*1 ""
+ }
+}} constant "specification of temperature gradient"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType ( "TemperatureGradientBC" );
+  TemperatureGradientBC ( const ParameterSet& ps = ParameterSet() );
+
+  ParameterSet getParameters() const override { return p_; }
+
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
+
+};
+
+
+
+
+
 class ExternalWallBC
   : public HeatBC
 {

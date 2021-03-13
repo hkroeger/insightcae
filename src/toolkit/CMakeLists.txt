@@ -94,6 +94,7 @@ set(toolkit_SOURCES
     openfoam/snappyhexmesh.cpp
     openfoam/cfmesh.cpp
     openfoam/openfoamdict.cpp
+    openfoam/openfoamboundarydict.cpp
     openfoam/openfoamtools.cpp
     openfoam/blockmesh.cpp
     openfoam/fielddata.cpp
@@ -148,6 +149,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/numerics/steadycompressiblenumerics.cpp
     openfoam/caseelements/numerics/unsteadycompressiblenumerics.cpp
     openfoam/caseelements/numerics/potentialfreesurfacefoamnumerics.cpp
+    openfoam/caseelements/numerics/scalartransportfoamnumerics.cpp
     openfoam/caseelements/numerics/simpledymfoamnumerics.cpp
     openfoam/caseelements/numerics/cavitatingfoamnumerics.cpp
     openfoam/caseelements/numerics/interfoamnumerics.cpp

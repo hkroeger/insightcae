@@ -14,7 +14,7 @@ laplacianFoamNumerics::laplacianFoamNumerics(OpenFOAMCase& c, const ParameterSet
 : FVNumerics(c, ps, "p"),
   p_(ps)
 {
-  OFcase().addField("T", FieldInfo(vectorField, 	dimTemperature, 		FieldValue({p_.Tinternal}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 		FieldValue({p_.Tinternal}), volField ) );
 }
 
 

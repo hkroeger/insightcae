@@ -99,7 +99,6 @@ struct OpenFOAMDictParser
 
 
 
-
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct OpenFOAMBoundaryDictParser
   : qi::grammar<Iterator, OFDictData::dict(), Skipper>
@@ -108,11 +107,11 @@ struct OpenFOAMBoundaryDictParser
       : OpenFOAMBoundaryDictParser::base_type(rquery)
     {
       using namespace qi;
-      
-        rquery =  
-         rpair >> 
+
+        rquery =
+         rpair >>
          qi::omit[ qi::int_ ] >> qi::lit('(') >> *(rpair) >> qi::lit(')') >> (-qi::lit(';'));
-    
+
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
         ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
         rstring = qi::lexeme[ char_('"') >> *(~qi::char_('"')) >> char_('"') ];
@@ -123,17 +122,17 @@ struct OpenFOAMBoundaryDictParser
         rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
         rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
 /*
-	BOOST_SPIRIT_DEBUG_NODE(rquery);
-	BOOST_SPIRIT_DEBUG_NODE(rpair);   
-	BOOST_SPIRIT_DEBUG_NODE(ridentifier);
-	BOOST_SPIRIT_DEBUG_NODE(rstring);
-	BOOST_SPIRIT_DEBUG_NODE(rraw);
-	BOOST_SPIRIT_DEBUG_NODE(rentry);
-	BOOST_SPIRIT_DEBUG_NODE(rsubdict);
-	BOOST_SPIRIT_DEBUG_NODE(rlist);
+        BOOST_SPIRIT_DEBUG_NODE(rquery);
+        BOOST_SPIRIT_DEBUG_NODE(rpair);
+        BOOST_SPIRIT_DEBUG_NODE(ridentifier);
+        BOOST_SPIRIT_DEBUG_NODE(rstring);
+        BOOST_SPIRIT_DEBUG_NODE(rraw);
+        BOOST_SPIRIT_DEBUG_NODE(rentry);
+        BOOST_SPIRIT_DEBUG_NODE(rsubdict);
+        BOOST_SPIRIT_DEBUG_NODE(rlist);
 */
     }
-    
+
     qi::rule<Iterator, OFDictData::dict(), Skipper> rquery;
     qi::rule<Iterator, OFDictData::entry(), Skipper> rpair;
     qi::rule<Iterator, std::string()> ridentifier;
@@ -143,8 +142,10 @@ struct OpenFOAMBoundaryDictParser
     qi::rule<Iterator, OFDictData::dimensionedData(), Skipper> rdimensionedData;
     qi::rule<Iterator, OFDictData::dict(), Skipper> rsubdict;
     qi::rule<Iterator, OFDictData::list(), Skipper> rlist;
-    
+
 };
+
+
 
 template <typename Parser, typename Result, typename Iterator>
 bool parseOpenFOAMDict(Iterator first, Iterator last, Result& d)
@@ -267,6 +268,7 @@ void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const s
     }
 }
 
+
 bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
 {
     std::istreambuf_iterator<char> eos;
@@ -276,31 +278,34 @@ bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
     {
         return false;
     }
-    
+
     // remove "FoamFile" entry, if present
     OFDictData::dict::iterator i=d.find("FoamFile");
     if (i!=d.end())
     {
       d.erase(i);
     }
-    
+
     for ( OFDictData::dict::const_iterator i=d.begin(); i!=d.end(); i++)
-	{
-	  std::cout << "\"" << i->first << "\"" << std::endl;
-	}
-   /* 
+        {
+          std::cout << "\"" << i->first << "\"" << std::endl;
+        }
+   /*
     OFDictData::list bl;
     for(OFDictData::dict::const_iterator i=d.begin();
-	i!=d.end(); i++)
-	{
-	  //std::cout << i->first << std::endl;
-	  bl.push_back( OFDictData::data(i->first) );
-	  bl.push_back( i->second );
-	}
+        i!=d.end(); i++)
+        {
+          //std::cout << i->first << std::endl;
+          bl.push_back( OFDictData::data(i->first) );
+          bl.push_back( i->second );
+        }
     d2[""]=bl;
     */
    return true;
 }
+
+
+
 
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d, bool filterZeroSizesPatches)
 {
@@ -317,7 +322,7 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d,
     if ( !(filterZeroSizesPatches && nfaces==0) )
       ord.push_back( PatchInfo{i.first, sd.getInt("startFace"), nfaces} );
   }
-  
+
   std::sort(ord.begin(), ord.end(),
             [](const Ordering::value_type& f, const Ordering::value_type& s)
             {
@@ -338,8 +343,8 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d,
        <<"}"<<endl;
 
     out << ord.size() << endl
-	<< "(" << endl;
-	
+        << "(" << endl;
+
     for (const auto& j: ord)
     {
       auto i=d.find(j.name);

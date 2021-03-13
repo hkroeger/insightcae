@@ -23,6 +23,7 @@
 #include "base/analysis.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/ofes.h"
+#include "openfoam/openfoamboundarydict.h"
 
 #include <iostream>
 #include <fstream>
@@ -110,8 +111,10 @@ int main(int argc, char *argv[])
     {
         OpenFOAMCase cm( OFEs::getCurrentOrPreferred() );
 
-        OFDictData::dictFile boundaryDict;
-        cm.parseBoundaryDict(location, boundaryDict, string(), time);
+        OpenFOAMBoundaryDict bd(cm, location, string(), time);
+
+        if (vm.count("filterZero")>0)
+          bd.removeZeroSizedPatches();
 
         if (vm.count("rename"))
         {
@@ -130,28 +133,11 @@ int main(int argc, char *argv[])
                     " (was "+s+")"
                 );
 
-            auto i = boundaryDict.find(pair[0]);
-
-            if (i==boundaryDict.end())
-              throw insight::Exception("Boundary definition did not contain a patch named "+pair[0]);
-
-            auto value = i->second;
-            boundaryDict.erase(i);
-            if (pair.size()>2)
-            {
-              OFDictData::dict& bi = boost::get<OFDictData::dict&>(value);
-              bi["type"]=pair[2];
-              auto i = bi.find("inGroups");
-              if (i!=bi.end())
-                bi.erase(i);
-            }
-            boundaryDict[pair[1]]=value;
+            bd.renamePatch(pair[0], pair[1], (pair.size()>2)? pair[2]:std::string() );
           }
         }
 
-        std::ofstream bf( (location/time/"polyMesh"/"boundary").c_str() );
-        writeOpenFOAMBoundaryDict(bf, boundaryDict, vm.count("filterZero")>0);
-
+        bd.write();
     }
     catch (std::exception e)
     {

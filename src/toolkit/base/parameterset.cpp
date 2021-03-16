@@ -638,6 +638,10 @@ const ParameterSet_Validator::ErrorList& ParameterSet_Validator::ParameterSet_Va
 
 
 
+ParameterSet_Visualizer::ParameterSet_Visualizer()
+  : defaultProgressDisplayer_(),
+    progress_(&defaultProgressDisplayer_)
+{}
 
 ParameterSet_Visualizer::~ParameterSet_Visualizer()
 {}
@@ -652,6 +656,14 @@ void ParameterSet_Visualizer::update(const ParameterSet& ps)
 
 void ParameterSet_Visualizer::setIcon(QIcon*)
 {
+}
+
+void ParameterSet_Visualizer::setProgressDisplayer(ProgressDisplayer* pd)
+{
+  if (pd!=nullptr)
+    progress_=pd;
+  else
+    progress_=&defaultProgressDisplayer_;
 }
 
 }

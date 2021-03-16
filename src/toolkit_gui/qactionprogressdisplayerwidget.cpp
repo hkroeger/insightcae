@@ -1,4 +1,6 @@
+
 #include <QApplication>
+#include <QDebug>
 
 #include "qactionprogressdisplayerwidget.h"
 
@@ -57,6 +59,7 @@ QActionProgressDisplayerWidget::getOrCreateItem
     auto ir=c->items.find(r);
     if (ir==c->items.end())
     {
+      qDebug()<<"adding progress bar "<<QString::fromStdString(path);
       ProgressItem pi;
 
       pi.p=new QProgressBar;
@@ -77,6 +80,8 @@ QActionProgressDisplayerWidget::getOrCreateItem
 
 void QActionProgressDisplayerWidget::deleteItem(const string &path)
 {
+  qDebug()<<"deleting progress bar "<<QString::fromStdString(path);
+
   vector<string> splitPath;
   auto ic=getColumn(path, splitPath);
 
@@ -115,6 +120,7 @@ void QActionProgressDisplayerWidget::setActionProgressValue(const std::string &p
         qApp,
         [this,path,value]()
         {
+          qDebug()<<"setting value for "<<QString::fromStdString(path)<<" to "<<100.*value;
           auto i=getOrCreateItem(path);
           i.p->setValue(std::round(100.*value));
         },
@@ -128,6 +134,7 @@ void QActionProgressDisplayerWidget::setMessageText(const std::string &path, con
         qApp,
         [this,path,message]()
         {
+          qDebug()<<"setting text for "<<QString::fromStdString(path)<<" to "<<QString::fromStdString(message);
           auto i=getOrCreateItem(path);
           i.p->setFormat( QString::fromStdString(message) );
         },

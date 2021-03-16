@@ -24,6 +24,8 @@
 
 #include "base/exception.h"
 #include "base/parameters.h"
+#include "base/progressdisplayer.h"
+#include "base/progressdisplayer/textprogressdisplayer.h"
 
 //#include "boost/ptr_container/ptr_map.hpp"
 //#include "boost/shared_ptr.hpp"
@@ -582,10 +584,14 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
   {
 
     // not linked to CAD; don't use any non-forward definitions from CAD module
+  private:
+      TextProgressDisplayer defaultProgressDisplayer_;
   protected:
       ParameterSet ps_;
+      ProgressDisplayer* progress_;
 
   public:
+      ParameterSet_Visualizer();
       virtual ~ParameterSet_Visualizer();
 
       /**
@@ -597,6 +603,8 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
       virtual void update(const ParameterSet& ps);
 
       virtual void setIcon(QIcon* icon);
+
+      void setProgressDisplayer(ProgressDisplayer* pd);
   };
 
   typedef std::shared_ptr<ParameterSet_Visualizer> ParameterSet_VisualizerPtr;

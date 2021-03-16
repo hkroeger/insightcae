@@ -240,7 +240,8 @@ AnalysisForm::AnalysisForm(
     vbl->addWidget(auto_scroll_down_btn_);
     vbl->addSpacerItem(new QSpacerItem(0,0,QSizePolicy::Minimum,QSizePolicy::Expanding));
     ui->runTabLayout->addWidget(spl);
-    ui->runTabLayout->addWidget(actionProgress_);
+    //ui->runTabLayout->addWidget(actionProgress_);
+    ui->verticalLayout_5->addWidget(actionProgress_);
 
 //    ui->verticalLayout->addWidget(actionProgress_);
     
@@ -263,6 +264,7 @@ AnalysisForm::AnalysisForm(
 
     try {
         viz = insight::Analysis::visualizer(analysisName_);
+        viz ->setProgressDisplayer(&progressDisplayer_);
     } catch (const std::exception& e)
     {
       /* ignore, if non-existent */

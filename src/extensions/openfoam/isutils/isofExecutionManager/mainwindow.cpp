@@ -15,6 +15,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QStatusBar>
+#include <QDateTime>
 
 #include "base/qt5_helper.h"
 
@@ -311,7 +312,7 @@ void MainWindow::syncRemoteToLocal()
             this, [&]()
     {
       progressbar_->setHidden(true);
-      statusBar()->showMessage("Transfer from remote location to local directory finished");
+      statusBar()->showMessage(QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm:ss.z : ")+"Transfer from remote location to local directory finished");
     });
 
     progressbar_->setHidden(false);

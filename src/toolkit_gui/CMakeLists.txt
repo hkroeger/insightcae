@@ -35,6 +35,7 @@ set(toolkit_gui_SRCS
     metatypes.cpp
     remoteparaview.cpp
     remoteparaview.h
+    visualizerthread.cpp
 
     qanalysisthread.cpp
     qanalysisthread.h

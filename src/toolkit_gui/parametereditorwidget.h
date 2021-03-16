@@ -28,6 +28,7 @@
 #include "parametersetvisualizer.h"
 #include "qoccviewwidget.h"
 #include "qmodeltree.h"
+#include "base/progressdisplayer.h"
 
 #undef None
 #undef Bool
@@ -152,20 +153,6 @@ public Q_SLOTS:
 private Q_SLOTS:
   void visualizationUpdateFinished();
 
-};
-
-
-class VisualizerThread
-    : public QThread
-{
-  Q_OBJECT
-
-  ParameterSetDisplay *psd_;
-
-  void run() override;
-
-public:
-  VisualizerThread(ParameterSetDisplay* psd);
 };
 
 

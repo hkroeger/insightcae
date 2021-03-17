@@ -27,10 +27,12 @@ find_package(VTK
         RenderingAnnotation
          InteractionWidgets
          InteractionStyle
+
     REQUIRED
     NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH
     HINTS ${VTK_OFFSCREEN_DIR}
 )
+
 
 set(LIBS "")
 

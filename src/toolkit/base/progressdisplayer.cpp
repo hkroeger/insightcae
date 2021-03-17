@@ -43,13 +43,13 @@ ActionProgress ProgressDisplayer::forkNewAction(double nSteps, const std::string
 void ProgressDisplayer::stepUp(double steps)
 {
   ci_+=steps;
-  setActionProgressValue(actionPath(), ci_/maxi_);
+  setActionProgressValue(actionPath(), ci_/(maxi_+1));
 }
 
 void ProgressDisplayer::stepTo(double i)
 {
   ci_=i;
-  setActionProgressValue(actionPath(), ci_/maxi_);
+  setActionProgressValue(actionPath(), ci_/(maxi_+1));
 }
 
 void ProgressDisplayer::operator++()

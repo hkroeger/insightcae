@@ -40,43 +40,18 @@ struct ProgressState
 };
 
 
+
+
 typedef std::shared_ptr<ProgressState> ProgressStatePtr;
 typedef std::vector<ProgressStatePtr> ProgressStatePtrList;
 
 
-//class ProgressDisplayer;
-
-
-//class ActionProgress
-//{
-//  friend class ProgressDisplayer;
-
-//  ProgressDisplayer& dispatcher_;
-//  std::string path_;
-//  double ci_, maxi_;
-
-//  ActionProgress(ProgressDisplayer& dispatcher, std::string path, double nSteps);
-
-//public:
-//  ActionProgress(const ActionProgress& o);
-//  ~ActionProgress();
-
-//  // ====================================================================================
-//  // ======== other action status reporting
-
-//  ActionProgress forkNewAction(const std::string& name, double nSteps) const;
-//  void stepUp(double steps=1);
-//  void stepTo(double i);
-//  void operator++();
-//  void operator+=(double n);
-//  void message(const std::string& message) const;
-
-//  void update(const ProgressState& pi) const;
-//  bool stopRun() const;
-//};
 
 
 class ActionProgress;
+
+
+
 
 class ProgressDisplayer
 {
@@ -136,7 +111,7 @@ protected:
 
 public:
   ActionProgress(const ProgressDisplayer& parentAction, std::string path, double nSteps);
-  ~ActionProgress();
+  virtual ~ActionProgress();
 
   void setActionProgressValue(const std::string &path, double value) override;
   void setMessageText(const std::string &path, const std::string& message) override;
@@ -145,6 +120,8 @@ public:
   void update ( const ProgressState& pi ) override;
   void reset() override;
 };
+
+
 
 
 } // namespace insight

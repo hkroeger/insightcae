@@ -63,6 +63,7 @@ void listContents(const ResultElementCollection& el, const std::string indent=""
 };
 
 
+
 const std::vector<unsigned int> colorTable = {
   0xe6194b,
   0x3cb44b,
@@ -88,14 +89,88 @@ const std::vector<unsigned int> colorTable = {
   0x000000
 };
 
+
+
 QColor colorValue(int crvIndex)
 {
   auto cv=colorTable[ crvIndex%colorTable.size() ];
   return QColor( (cv&0xff0000)>>16, (cv&0xff00)>>8, cv&0xff );
 }
 
+
+
+
+void plotCurves(
+    const QString& xlabel,
+    const QString& ylabel,
+    const std::map<QString, PlotCurve>& curves)
+{
+  auto chartData = new QChart;
+  chartData->legend()->setVisible(true);
+  chartData->legend()->setAlignment(Qt::AlignBottom);
+
+  size_t i=0;
+  for ( const auto& theCurve: curves )
+  {
+    auto *series = new QLineSeries();
+
+    series->setName(theCurve.first);
+
+    series->setPen(QPen(QBrush(colorValue(i)), 2));
+    for (arma::uword j=0; j<theCurve.second.xy().n_rows; j++)
+    {
+      series->append(
+            theCurve.second.xy()(j,0),
+            theCurve.second.xy()(j,1) );
+    }
+    chartData->addSeries(series);
+
+    ++i;
+  }
+
+  chartData->createDefaultAxes();
+  chartData->axes(Qt::Horizontal)[0]->setTitleText(xlabel);
+  chartData->axes(Qt::Vertical)[0]->setTitleText(ylabel);
+
+  auto* mw = new QMainWindow;
+  auto chartView = new QChartView(chartData);
+  chartView->setRenderHint(QPainter::Antialiasing);
+  mw->setCentralWidget(chartView);
+  mw->resize(800, 600);
+  mw->show();
+}
+
+
+class MyQApplication
+{
+  std::unique_ptr<QApplication> theApp = nullptr;
+
+public:
+  void initializeIfNeeded(int argc, char* argv[])
+  {
+    if (!theApp)
+    {
+      theApp.reset( new QApplication(argc, argv) );
+    }
+  }
+
+  int executeIfNeeded()
+  {
+    if (theApp)
+      return theApp->exec();
+    else
+      return 0;
+  }
+};
+
+
+
+
+
 int main(int argc, char *argv[])
 {
+    MyQApplication myqapp;
+
     insight::UnhandledExceptionHandling ueh;
     insight::GSLExceptionHandling gsl_errtreatment;
 
@@ -108,14 +183,21 @@ int main(int argc, char *argv[])
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help,h", "produce help message")
+    ("analysis,a", po::value< string >(), "analysis type name. Default is none. If not specified, the input parameter set will not be loaded.")
     ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
     ("list,l", "List contents of result file")
     ("display,d", "Display each result file in separate window")
     ("input-file,f", po::value< StringList >(),"Specifies input file(s).")
     ("compareplot", po::value< string >(), "Compare plots. Specify path to plot. Append name of the curve with ':'.")
-    ("comparescalar", po::value< string >(), "Compare scalar values. Specify path of scalar in result archive. "
-                                             "Multiple scalars may plotted together: give list, separated by comma (without spaces). "
-                                              "Put optional scale factor after variable name, separated by colon.")
+    ("compareplotpoints", po::value< string >(),
+      "Compare points in plots. Specify path to plot. "
+      "Append name of the curve with ':' and finally the plot X value in round brackets."
+      "Optionally, append the name of a scalar result or parameter to be used as a x coordinate. "
+      "Multiple scalars may be plotted together: give list, separated by comma (without spaces). " )
+    ("comparescalar", po::value< string >(),
+      "Compare scalar values. Specify path of scalar in result archive. "
+      "Multiple scalars may be plotted together: give list, separated by comma (without spaces). "
+      "Put optional scale factor after variable name, separated by colon." )
     ("sort,s", "sort entries in comparison")
     ("render", "Render into PDF")
     ;
@@ -165,6 +247,11 @@ int main(int argc, char *argv[])
         std::vector<string> fns=vm["input-file"].as<StringList>();
         std::vector<ResultSetPtr> results;
 
+        std::string analysisName;
+        if (vm.count("analysis"))
+        {
+          analysisName=vm["analysis"].as<std::string>();
+        }
 
 
         // load results
@@ -176,7 +263,7 @@ int main(int argc, char *argv[])
                               "input file "+inpath.string()+" does not exist!" );
 
           cout<<"Reading results file "<<inpath<<"..."<<flush;
-          results.push_back(ResultSetPtr(new ResultSet(inpath)));
+          results.push_back(ResultSetPtr(new ResultSet(inpath, analysisName)));
           cout<<"done."<<endl;
 
           if (vm.count("list"))
@@ -254,13 +341,13 @@ int main(int argc, char *argv[])
             cout<<endl;
           }
 
-          QApplication app(argc, argv);
+          myqapp.initializeIfNeeded(argc, argv);
 
-          QMainWindow mw;
+          auto *mw = new QMainWindow();
           auto chartData = new QChart;
           auto chart=new QChartView;
           chart->setChart(chartData);
-          mw.setCentralWidget(chart);
+          mw->setCentralWidget(chart);
 
 
           QStringList categories;
@@ -303,8 +390,7 @@ int main(int argc, char *argv[])
           chartData->legend()->setVisible(true);
           chartData->legend()->setAlignment(Qt::AlignBottom);
 
-          mw.show();
-          return app.exec();
+          mw->show();
         }
 
         if (vm.count("compareplot"))
@@ -319,7 +405,7 @@ int main(int argc, char *argv[])
           for (size_t j=0; j<chartAndCurveNames.size(); j++)
           {
 
-            std::vector<PlotCurve> curves;
+            std::map<QString,PlotCurve> curves;
             QString xlabel, ylabel;
             for (size_t i=0; i<results.size(); i++)
             {
@@ -335,7 +421,7 @@ int main(int argc, char *argv[])
               insight::assertion( crv!=chart.chartData()->plc_.end(),
                                   "no curve of name "+chart_curve[1]+" found in chart "+chart_curve[0]+"!" );
 
-              curves.push_back( *crv );
+              curves[QString::fromStdString(fns[i])] = *crv;
 
               if (xlabel.isEmpty())
                 xlabel=QString::fromStdString(chart.chartData()->xlabel_);
@@ -343,43 +429,99 @@ int main(int argc, char *argv[])
                 ylabel=QString::fromStdString(chart.chartData()->ylabel_);
             }
 
-            QApplication app(argc, argv);
-
-            auto chartData = new QChart;
-            chartData->legend()->setVisible(true);
-            chartData->legend()->setAlignment(Qt::AlignBottom);
-
-            for ( size_t i = 0; i < curves.size(); i++ )
-            {
-              auto *series = new QLineSeries();
-
-              auto label = QString::fromStdString(fns[i]);
-              series->setName(label);
-
-              series->setPen(QPen(QBrush(colorValue(i)), 2));
-              for (arma::uword j=0; j<curves[i].xy().n_rows; j++)
-              {
-                series->append( curves[i].xy()(j,0), curves[i].xy()(j,1) );
-              }
-              chartData->addSeries(series);
-            }
-            chartData->createDefaultAxes();
-            chartData->axes(Qt::Horizontal)[0]->setTitleText(xlabel);
-            chartData->axes(Qt::Vertical)[0]->setTitleText(ylabel);
-
-            QMainWindow mw;
-            auto chartView=new QChartView(chartData);
-            chartView->setRenderHint(QPainter::Antialiasing);
-            mw.setCentralWidget(chartView);
-            mw.resize(800, 600);
-            mw.show();
-            return app.exec();
+            myqapp.initializeIfNeeded(argc, argv);
+            plotCurves(xlabel, ylabel, curves);
           }
         }
 
+
+        if (vm.count("compareplotpoints"))
+        {
+          someActionDone=true;
+          std::vector<string> chartAndCurveNames;
+          boost::split(chartAndCurveNames, vm["compareplotpoints"].as<string>(), boost::is_any_of(","));
+          if (chartAndCurveNames.size()<1)
+            throw insight::Exception("At least one variable name has to be specified for comparison!");
+
+          std::map<QString,PlotCurve> curves;
+
+          for (size_t j=0; j<chartAndCurveNames.size(); j++)
+          {
+            std::vector<string> chart_curve;
+            boost::split(chart_curve, chartAndCurveNames[j], boost::is_any_of(":"));
+            insight::assertion( (chart_curve.size()==2)||(chart_curve.size()==3),
+                                "a curve name must be specified after each chart name, separated by colon. Optionally, the name of a scalar parameter for the x value may be appended after another colon." );
+
+            boost::regex crv_x("(.*)\\((.*)\\)");
+            boost::smatch m;
+            if (!boost::regex_search(chart_curve[1], m, crv_x))
+            {
+              throw insight::Exception("Expected curve name and x coordinate in the form \"<curveName>(<x-value>)\", got "+chart_curve[1]);
+            }
+            std::string chartName=chart_curve[0], curveName=m[1];
+            double xeval = insight::to_number<double>(m[2]);
+
+            QString ylabel, xlabel = "Result set index";
+            std::vector<double> x, y;
+            if (chart_curve.size()==3)
+            {
+              xlabel=QString::fromStdString(chart_curve[2]);
+            }
+            for (size_t i=0; i<results.size(); i++)
+            {
+
+              const auto& chart = results[i]->get<Chart>(chartName);
+
+              auto crv = std::find_if( chart.chartData()->plc_.begin(), chart.chartData()->plc_.end(),
+                                       [&](const PlotCurve& pc) { return pc.plaintextlabel()==curveName; } );
+
+              insight::assertion( crv!=chart.chartData()->plc_.end(),
+                                  "no curve of name "+curveName+" found in chart "+chartName+"!" );
+
+              if (chart_curve.size()==3)
+              {
+                std::string xparamname=chart_curve[2];
+                try
+                {
+                  const auto& sr = results[i]->get<ScalarResult>(xparamname);
+                  x.push_back(sr());
+                }
+                catch (const std::exception& e)
+                {
+                  try
+                  {
+                    // try parameters
+                    auto sp = results[i]->parameters().getDouble(xparamname);
+                    x.push_back(sp);
+                  }
+                  catch (const std::exception& e)
+                  {
+                    throw insight::Exception(fns[i]+": The desired x value source "+xparamname+" has neither been found in the result set nor in the parameter set");
+                  }
+                }
+              }
+              else
+              {
+                x.push_back(i);
+              }
+              y.push_back(insight::Interpolator(crv->xy())(xeval)(0));
+
+              if (ylabel.isEmpty())
+                ylabel=QString::fromStdString(chart.chartData()->ylabel_);
+            }
+            curves[QString::fromStdString(chartName)]=
+                PlotCurve(x, y, str(format("curve_%d")%j) );
+
+            myqapp.initializeIfNeeded(argc, argv);
+            plotCurves(xlabel, ylabel, curves);
+          }
+
+        }
+
+
         if (vm.count("display") || !someActionDone)
         {
-          QApplication app(argc, argv);
+          myqapp.initializeIfNeeded(argc, argv);
           for (size_t i=0; i<results.size(); i++)
           {
             auto& cr=results[i];
@@ -387,8 +529,10 @@ int main(int argc, char *argv[])
             w->setWindowTitle(w->windowTitle()+" - "+QString::fromStdString(fns[i]));
             w->show();
           }
-          return app.exec();
         }
+
+
+        return myqapp.executeIfNeeded();
 
     }
 

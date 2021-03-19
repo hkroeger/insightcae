@@ -230,7 +230,12 @@ void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer& parentProgress, Op
     if (!exists(executionPath()/"processor0"))
     {
       parentProgress.message("Executing decomposePar");
-      cm.executeCommand(executionPath(), "decomposePar");
+
+      std::vector<std::string> opts;
+      if (exists(executionPath()/"constant"/"regionProperties"))
+        opts={"-allRegions"};
+
+      cm.executeCommand(executionPath(), "decomposePar", opts);
     }
   }
   
@@ -313,7 +318,12 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm, ProgressDisplayer& pa
         if (checkIfReconstructLatestTimestepNeeded(cm, executionPath()))
         {
           parentAction.message("Running reconstructPar for latest time step");
-          cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
+
+          std::vector<std::string> opts={"-latestTime"};
+          if (exists(executionPath()/"constant"/"regionProperties"))
+            opts.push_back("-allRegions");
+
+          cm.executeCommand(executionPath(), "reconstructPar", opts );
         }
         else
         {

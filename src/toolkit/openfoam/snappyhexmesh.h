@@ -450,6 +450,11 @@ stopOnBadPrismLayer = bool false "Whether to stop of too few layers get extruded
 qualityCtrls = selection ( standard relaxed disabled ) relaxed "Select quality requirements"
 
 PiM = array [ vector (0 0 0) "point inside mesh" ]*0 "One or more points inside meshing domain"
+PiMZoneNames = array [ string "zone%d"
+ "name of zone which is created from the PiM with the same index as this name. "
+ "May contain %d as a placeholder of the zone index starting from one. "
+ "If this list is shorter than the list of PiMs, the default 'zone%d' will be used for the remainder." ]*0
+ "Names for the cell zones which are created by the according points in mesh. If"
 
 features = array [
  dynamicclassconfig "insight::snappyHexMeshFeats::Feature" default "Geometry" "SnappyHexMesh feature"

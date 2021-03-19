@@ -749,17 +749,31 @@ void snappyHexMesh
   if (p.PiM.size()>1)
   {
     OFDictData::list PiM;
-    int i=1;
+    int i=0;
     for (const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim: p.PiM)
     {
       if (ofc.OFversion()>=600)
       {
-        PiM.push_back(OFDictData::list{ OFDictData::vector3(pim), str(format("zone%d")%(i++)) });
+        std::string zoneName="zone%d";
+
+        if (p.PiMZoneNames.size()>=size_t(i+1))
+        {
+          zoneName=p.PiMZoneNames[i];
+        }
+
+        if (zoneName.find("%d")!=std::string::npos)
+        {
+          zoneName=str(format(zoneName)%(i+1));
+        }
+
+        PiM.push_back(OFDictData::list{ OFDictData::vector3(pim), zoneName });
       }
       else
       {
         PiM.push_back(OFDictData::vector3(pim));
       }
+
+      ++i;
     }
     castellatedCtrls["locationsInMesh"]=PiM;
   }

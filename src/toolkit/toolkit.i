@@ -147,6 +147,7 @@ if len(liblist)==0:
 #include "openfoam/caseelements/basic/mrfzone.h"
 #include "openfoam/caseelements/basic/fixedvalueconstraint.h"
 #include "openfoam/caseelements/basic/pressuregradientsource.h"
+#include "openfoam/caseelements/basic/wallheatflux.h"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "openfoam/caseelements/analysiscaseelements.h"
 #include "openfoam/caseelements/boundarycondition.h"
@@ -311,6 +312,7 @@ using namespace insight::createPatchOps;
 %include "openfoam/caseelements/basic/mrfzone.h"
 %include "openfoam/caseelements/basic/fixedvalueconstraint.h"
 %include "openfoam/caseelements/basic/pressuregradientsource.h"
+%include "openfoam/caseelements/basic/wallheatflux.h"
 
 %include "openfoam/openfoamanalysis.h"
 

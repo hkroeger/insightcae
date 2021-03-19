@@ -136,6 +136,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/basic/srfoption.cpp
     openfoam/caseelements/basic/providefields.cpp
     openfoam/caseelements/basic/rangeweightfield.cpp
+    openfoam/caseelements/basic/wallheatflux.cpp
 
     openfoam/caseelements/numerics/pimplesettings.cpp
     openfoam/caseelements/numerics/fvnumerics.cpp

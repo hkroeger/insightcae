@@ -78,6 +78,7 @@ boost::filesystem::path cleanLatexImageFileName(const boost::filesystem::path& s
 {
   std::string stem=s.stem().string();
   replace_all(stem, ".", "_");
+  replace_all(stem, " ", "_");
   return s.parent_path()/(stem+s.extension().string());
 }
 

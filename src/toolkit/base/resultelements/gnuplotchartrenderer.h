@@ -81,10 +81,10 @@ public:
 
     std::system (
           (
-            "mv "+bn+".tex "+ ( tmp/ ( bn+".tex" ) ).string()+"; "
-            "mv "+bn+"-inc.eps "+ ( tmp/ ( bn+"-inc.eps" ) ).string()+"; "
-            "cd "+tmp.string()+"; "
-            "pdflatex -interaction=batchmode -shell-escape "+bn+".tex; "
+            "mv \""+bn+".tex\" \""+ ( tmp/ ( bn+".tex" ) ).string()+"\"; "
+            "mv \""+bn+"-inc.eps\" \""+ ( tmp/ ( bn+"-inc.eps" ) ).string()+"\"; "
+            "cd \""+tmp.string()+"\"; "
+            "pdflatex -interaction=batchmode -shell-escape \""+bn+".tex\"; "
             //"convert -density 600 "+bn+".pdf "+absolute ( imagepath ).string()
             ).c_str() );
 

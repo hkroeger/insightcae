@@ -82,7 +82,7 @@ std::map<std::string,arma::mat> wallHeatFlux::readWallHeatFlux(
     arma::mat r = arma::zeros(i->second.size(), 4);
     for (arma::uword j=0; j<i->second.size(); ++j)
     {
-      r.row(j)=i->second[j];
+      r.row(j)=i->second[j].t();
     }
     result[i->first]=r;
   }

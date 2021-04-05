@@ -35,7 +35,14 @@ arma::mat readAndCombineTabularFiles
     const std::string& filterChars="()"
 );
   
-  
+std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
+(
+    const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
+    const std::string& FOName, const std::string& fileName,
+    int groupByColumn,
+    const std::string& filterChars="()"
+);
+
   
 /** ===========================================================================
  * Base class for function objects, that understand the output* options
@@ -329,6 +336,12 @@ public:
         return "Postprocessing";
     }
 
+    static std::map<std::string,arma::mat> readOutput
+    (
+        const OpenFOAMCase& c,
+        const boost::filesystem::path& location,
+        const std::string& foName
+    );
 };
 
 

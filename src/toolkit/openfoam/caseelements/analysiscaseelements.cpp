@@ -58,6 +58,20 @@ arma::mat readAndCombineTabularFiles
     const std::string& filterChars
 )
 {
+  return readAndCombineGroupedTabularFiles(cm, caseLocation, FOName, fileNamePattern, -1, filterChars)
+          .begin()->second;
+}
+
+
+
+std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
+(
+    const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
+    const std::string& FOName, const std::string& fileNamePattern,
+    int groupByColumn,
+    const std::string& filterChars
+)
+{
   CurrentExceptionContext ex("reading output files "+fileNamePattern+" for function object "+FOName+" (filtering out any of '"+filterChars+"')");
 
   std::string fileNameBase, fileNameExt;
@@ -77,7 +91,7 @@ arma::mat readAndCombineTabularFiles
   if (!exists(fp))
       throw insight::Exception("data path "+fp.string()+" of function object "+FOName+" does not exist!");
 
-  std::map<double, std::vector<double> > rows; // out files are read earliest first: latest added row (last attempt) will survive
+  std::map<std::string, std::map<double, std::vector<double> > > rows; // out files are read earliest first: latest added row (last attempt) will survive
 
   // find all time directories
   auto tdl = listTimeDirectories ( fp );
@@ -103,7 +117,7 @@ arma::mat readAndCombineTabularFiles
 
     if (candidates.size()<1)
     {
-        insight::Warning("no valid output file was not found in time directory "+td.second.string()+"!");
+        insight::Warning("no valid output file was found in time directory "+td.second.string()+"!");
     }
     else
     {
@@ -140,6 +154,7 @@ arma::mat readAndCombineTabularFiles
             erase_all(line, std::string(1, c));
           replace_all(line, "\t", " ");
 
+          // eliminate double spaces
           string line_org;
           do {
             line_org=line;
@@ -148,6 +163,13 @@ arma::mat readAndCombineTabularFiles
 
           std::vector<string> fields;
           split(fields, line,  boost::is_any_of(" "));
+
+          std::string groupName="default";
+          if (groupByColumn>=0)
+          {
+            groupName=fields[groupByColumn];
+            fields.erase(fields.begin()+groupByColumn);
+          }
 
           std::vector<double> fieldsNum;
           transform(
@@ -158,42 +180,53 @@ arma::mat readAndCombineTabularFiles
           if (fieldsNum.size()<2)
             throw insight::Exception("invalid data: expected at least two columns (time + 1 data), got: "+line);
 
-          rows[fieldsNum[0]] = fieldsNum;
+
+          rows[groupName][fieldsNum[0]] = fieldsNum;
         }
       }
     }
   }
 
-  arma::mat data;
+  std::map<std::string,arma::mat> rdata;
 
-  if (rows.size()>0)
+  for (const auto& rg: rows)
   {
-    size_t nf = rows.begin()->second.size();
-    data.resize(rows.size(), nf);
+    const auto& crows=rg.second;
 
-    arma::uword k=0;
-    for (auto r=rows.begin(); r!=rows.end(); ++r)
+    arma::mat data;
+
+    if (crows.size()>0)
     {
+      size_t nf = crows.begin()->second.size();
+      data.resize(crows.size(), nf);
 
-      if ( nf != r->second.size() )
+      arma::uword k=0;
+      for (auto r=crows.begin(); r!=crows.end(); ++r)
       {
-        throw insight::Exception(
-              str(format("Invalid data for time %g: expected %d data columns, got %d.")
-                  % r->first % nf % r->second.size()
-                  ));
-      }
 
-      for (arma::uword j=0; j<nf; j++)
-      {
-        data(k,j)=r->second[j];
-      }
+        if ( nf != r->second.size() )
+        {
+          throw insight::Exception(
+                str(format("Invalid data for time %g: expected %d data columns, got %d.")
+                    % r->first % nf % r->second.size()
+                    ));
+        }
 
-      ++k;
+        for (arma::uword j=0; j<nf; j++)
+        {
+          data(k,j)=r->second[j];
+        }
+
+        ++k;
+      }
     }
+
+    rdata[rg.first]=data;
   }
 
-  return data;
+  return rdata;
 }
+
 
 
 
@@ -750,6 +783,21 @@ OFDictData::dict fieldMinMax::functionObjectDict() const
   fod["fields"]=fl;
 
   return fod;
+}
+
+std::map<std::string,arma::mat> fieldMinMax::readOutput
+(
+    const OpenFOAMCase& c,
+    const boost::filesystem::path& location,
+    const std::string& FOName
+)
+{
+  return readAndCombineGroupedTabularFiles
+      (
+        c, location,
+        FOName, "fieldMinMax.dat",
+        1
+      );
 }
 
 

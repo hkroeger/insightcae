@@ -92,6 +92,7 @@ public:
 
     boost::filesystem::path setupExecutionEnvironment() override;
     
+    void initializeDerivedInputDataSection();
     virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="");
     
     virtual void calcDerivedInputData(ProgressDisplayer& progress);

@@ -103,15 +103,19 @@ boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
 
 
 
-
-void OpenFOAMAnalysis::reportIntermediateParameter(const std::string& name, double value, const std::string& description, const std::string& unit)
+void OpenFOAMAnalysis::initializeDerivedInputDataSection()
 {
   if (!derivedInputData_)
   {
     ParameterSet empty_ps;
     derivedInputData_.reset(new ResultSet(empty_ps, "Derived Input Data", ""));
   }
-  
+}
+
+void OpenFOAMAnalysis::reportIntermediateParameter(const std::string& name, double value, const std::string& description, const std::string& unit)
+{
+  initializeDerivedInputDataSection();
+
   std::cout<<">>> Intermediate parameter "<<name<<" = "<<value<<" "<<unit;
   if (description!="")
     std::cout<<" ("<<description<<")";

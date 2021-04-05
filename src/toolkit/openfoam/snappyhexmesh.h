@@ -451,10 +451,10 @@ qualityCtrls = selection ( standard relaxed disabled ) relaxed "Select quality r
 
 PiM = array [ vector (0 0 0) "point inside mesh" ]*0 "One or more points inside meshing domain"
 PiMZoneNames = array [ string "zone%d"
- "name of zone which is created from the PiM with the same index as this name. "
- "May contain %d as a placeholder of the zone index starting from one. "
- "If this list is shorter than the list of PiMs, the default 'zone%d' will be used for the remainder." ]*0
- "Names for the cell zones which are created by the according points in mesh. If"
+ "name of zone which is created from the PiM with the same index as this name.
+ May contain %d as a placeholder of the zone index starting from one.
+ If this list is shorter than the list of PiMs, the default 'zone%d' will be used for the remainder." ]*0
+ "Names for the cell zones which are created by the according points in mesh."
 
 features = array [
  dynamicclassconfig "insight::snappyHexMeshFeats::Feature" default "Geometry" "SnappyHexMesh feature"
@@ -522,7 +522,8 @@ void snappyHexMesh
   bool overwrite=true,
   bool isalreadydecomposed=false,
   bool keepdecomposedafterfinish=false,
-  ProgressDisplayer* progress=nullptr
+  ProgressDisplayer* progress=nullptr,
+  std::function<void(OFDictData::dict&)> sHMDictModifier = std::function<void(OFDictData::dict&)>()
 );
 
 

@@ -711,7 +711,8 @@ void snappyHexMesh
   bool overwrite,
   bool isalreadydecomposed,
   bool keepdecomposedafterfinish,
-  ProgressDisplayer* progress
+  ProgressDisplayer* progress,
+  std::function<void(OFDictData::dict&)> sHMDictModifier
 )
 {
   using namespace snappyHexMeshFeats;
@@ -816,6 +817,8 @@ void snappyHexMesh
   {
     boost::filesystem::create_directories(dictpath.parent_path());
   }
+
+  if (sHMDictModifier) sHMDictModifier(sHMDict);
   
   {
     std::ofstream f(dictpath.c_str());

@@ -94,7 +94,9 @@ mesh = set
     gradr = double 1 "grading towards outer boundary"
     gradax = double 1 "grading towards top boundary"
 
-    core_fraction = double 0.33 "radial extent of core block given as fraction of radius"
+    core_fraction = double 0.33 "core block radius given as fraction of outer diameter"
+
+    smoothCore = bool false "use splines as boundaries of core block and attempt to create a uniform distance from core border to outer perimeter"
 
     defaultPatchName = string "walls" "name of patch where all patches with empty names are assigned to."
     circumPatchName = string "" "name of patch on outer circumferential surface"

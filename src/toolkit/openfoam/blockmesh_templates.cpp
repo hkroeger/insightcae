@@ -191,7 +191,8 @@ void blockMeshDict_Cylinder::create_bmd()
     }
 
     // radial blocks
-    for ( int i=0; i<4; i++ ) {
+    for ( int i=0; i<4; i++ )
+    {
         arma::mat r0=rotMatrix ( double ( i+0.5 ) *al, ex );
         arma::mat r1=rotMatrix ( double ( i+1.5 ) *al, ex );
 
@@ -231,6 +232,26 @@ void blockMeshDict_Cylinder::create_bmd()
         {
            this->addEdge(new ArcEdge(p0+r1*pts[0], p0+r0*pts[0], p0+rmid*pts[0]));
            this->addEdge(new ArcEdge(p0+(r1*pts[0])+vL, p0+(r0*pts[0])+vL, p0+(rmid*pts[0])+vL));
+        }
+        else
+        {
+          if (p_.mesh.smoothCore)
+          {
+            auto pstart = p0+r0*pts[0];
+            auto pend = p0+r1*pts[0];
+
+            auto pmid = p0+rmid*pts[0];
+            auto pmido = p0+rmid*pts[1];
+            arma::mat elo=pmid-pmido;
+            elo/=arma::norm(elo,2);
+
+            double linfrac=0.2;
+            auto& e1 = this->addEdge(new SplineEdge(
+                            {pstart, //(1.-linfrac)*pstart + linfrac*pend,
+                             pmido + elo*(0.5*p_.geometry.D-Lc),
+                             /*linfrac*pstart+(1.-linfrac)*pend, */pend}));
+            this->addEdge(e1.transformed(arma::eye(3,3), vL));
+          }
         }
 
     }

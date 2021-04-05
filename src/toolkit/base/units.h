@@ -26,6 +26,7 @@
 #include <boost/units/systems/angle/degrees.hpp>
 #include <boost/units/systems/si/force.hpp>
 #include <boost/units/systems/si/length.hpp>
+#include <boost/units/systems/si/area.hpp>
 #include <boost/units/systems/si/volume.hpp>
 #include <boost/units/systems/si/electric_potential.hpp>
 #include <boost/units/systems/si/current.hpp>
@@ -120,6 +121,8 @@ namespace boost { namespace units { namespace si {
  typedef quantity<length, double> Length;
  typedef matQuantity<length, arma::mat> LengthVector;
 
+ typedef quantity<area, double> Area;
+
  typedef quantity<velocity, double> Velocity;
 
  typedef quantity<plane_angle, double> Angle;
@@ -127,6 +130,8 @@ namespace boost { namespace units { namespace si {
  typedef quantity<pressure, double> Pressure;
 
  typedef quantity<temperature, double> Temperature;
+
+ typedef quantity<power, double> Power;
 
 }}}
 

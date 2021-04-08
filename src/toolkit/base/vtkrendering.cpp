@@ -528,7 +528,7 @@ void VTKOffscreenScene::clearScene()
       renderer_->RemoveActor2D( act2 );
   }
 
-  renderer_->Clear();
+//  renderer_->Clear();
 }
 
 void VTKOffscreenScene::removeActor(vtkActor *act)

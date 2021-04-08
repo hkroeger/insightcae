@@ -551,6 +551,7 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath)
     ofcase_(vtkSmartPointer<vtkOpenFOAMReader>::New())
 {
   ofcase_->SetFileName( casepath.c_str() );
+  ofcase_->SetSkipZeroTime(false);
   ofcase_->Update();
 
   ofcase_->CreateCellToPointOn();
@@ -560,37 +561,38 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath)
   ofcase_->EnableAllPointArrays();
   ofcase_->EnableAllPatchArrays();
 
-  vtkSmartPointer<vtkDoubleArray> times = ofcase_->GetTimeValues();
+  times_ = ofcase_->GetTimeValues();
   cout<<"VTK OpenFOAM Reader: available times = (";
-  for (int i=0; i<times->GetNumberOfTuples(); i++)
+  for (int i=0; i<times_->GetNumberOfTuples(); i++)
   {
-    cout<<" "<<times->GetTuple1(i)<<":"<<i<<endl;
+    cout<<" "<<times_->GetTuple1(i)<<":"<<i<<endl;
   }
   cout<<" )"<<endl;
-  ofcase_->SetTimeValue( times->GetTuple1(times->GetNumberOfTuples()-1) );
-  ofcase_->Update();
+
+  setTimeIndex( times_->GetNumberOfTuples()-1 );
 
   for (int i=0; i<ofcase_->GetNumberOfPatchArrays(); i++)
   {
-//    cout<<ofcase_->GetPatchArrayName(i)<<": "<<i<<endl;
     patches_[ofcase_->GetPatchArrayName(i)]=i;
   }
 
-//  auto oo=ofcase_->GetOutput();
-//  for (int i=0; i<oo->GetNumberOfBlocks(); i++)
-//  {
-//    cout<<"block "<<i<<":"<<oo->GetMetaData(i)->Get(vtkCompositeDataSet::NAME())<<endl;
-//    oo->GetBlock(1);
-//  }
+}
 
-//  for (int i=0; i<ofcase_->GetNumberOfPointArrays(); i++)
-//  {
-//    cout<<"point field "<<i<<": "<<ofcase_->GetPointArrayName(i)<<endl;
-//  }
-//  for (int i=0; i<ofcase_->GetNumberOfCellArrays(); i++)
-//  {
-//    cout<<"cell field "<<i<<": "<<ofcase_->GetCellArrayName(i)<<endl;
-//  }
+vtkDoubleArray *OpenFOAMCaseScene::times() const
+{
+  return times_;
+}
+
+void OpenFOAMCaseScene::setTimeValue(double t)
+{
+  ofcase_->SetTimeValue( t );
+  ofcase_->Modified();
+  ofcase_->Update();
+}
+
+void OpenFOAMCaseScene::setTimeIndex(vtkIdType timeId)
+{
+  setTimeValue( times_->GetTuple1(timeId) );
 }
 
 vtkUnstructuredGrid* OpenFOAMCaseScene::internalMesh() const

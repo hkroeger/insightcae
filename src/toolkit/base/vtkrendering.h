@@ -261,9 +261,14 @@ class OpenFOAMCaseScene
 {
   vtkSmartPointer<vtkOpenFOAMReader> ofcase_;
   std::map<std::string,int> patches_;
+  vtkSmartPointer<vtkDoubleArray> times_;
 
 public:
   OpenFOAMCaseScene(const boost::filesystem::path& casepath);
+
+  vtkDoubleArray* times() const;
+  void setTimeValue(double t);
+  void setTimeIndex(vtkIdType timeId);
 
   vtkSmartPointer<vtkOpenFOAMReader> ofcase() const;
   vtkUnstructuredGrid* internalMesh() const;

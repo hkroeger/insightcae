@@ -84,12 +84,15 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
      )
      message(STATUS "InsightCAE git describe: ${git-rev}")
      STRING(REGEX REPLACE
-         "^([0-9]+)\\.([0-9]+)-([^ ]+)\$"
+         "^([0-9]+)\\.([0-9]+)[-]*([^ ]+|)\$"
          "\\1;\\2;\\3" VERSIONS ${git-rev})
  
      LIST(GET VERSIONS 0 INSIGHT_VERSION_MAJOR)
      LIST(GET VERSIONS 1 INSIGHT_VERSION_MINOR)
      LIST(GET VERSIONS 2 INSIGHT_VERSION_PATCH)
+     IF (CPACK_PACKAGE_VERSION_PATCH STREQUAL "")
+      set(CPACK_PACKAGE_VERSION_PATCH "0")
+     ENDIF()
    else()
      message(STATUS "git describe failed")
    endif()

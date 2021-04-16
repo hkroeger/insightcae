@@ -3369,15 +3369,27 @@ void OpenFOAMCaseDirs::packCase(const boost::filesystem::path& archive_file,Open
   std::string cmd;
   cmd+="cd "+location_.string()+";";
   cmd+="tar czf "+archive_file.string();
-  for (const auto& c: sysDirs_) cmd+=" "+make_relative(location_, c).string();
-  for (const auto& c: postDirs_) cmd+=" "+make_relative(location_, c).string();
+
+  std::vector<std::string> filesAndDirsToPack;
+  for (const auto& c: sysDirs_) filesAndDirsToPack.push_back(make_relative(location_, c).string());
+  for (const auto& c: postDirs_) filesAndDirsToPack.push_back(make_relative(location_, c).string());
 
   auto tds = timeDirs(td);
-  for (const auto& c: tds) cmd+=" "+make_relative(location_, c).string();
+  for (const auto& c: tds) filesAndDirsToPack.push_back(make_relative(location_, c).string());
 
-  if (::system(cmd.c_str()) != 0)
-    throw insight::Exception("Could not pack OpenFOAM case files.\n"
-                             "Command was \""+cmd+"\"");
+  if (filesAndDirsToPack.size()>0)
+  {
+
+    cmd+=" "+boost::join(filesAndDirsToPack, " " );
+
+    if (::system(cmd.c_str()) != 0)
+      throw insight::Exception("Could not pack OpenFOAM case files.\n"
+                               "Command was \""+cmd+"\"");
+  }
+  else
+  {
+    insight::Warning("There are no files or directories to pack. Nothing archived.");
+  }
 }
 
 void OpenFOAMCaseDirs::cleanCase

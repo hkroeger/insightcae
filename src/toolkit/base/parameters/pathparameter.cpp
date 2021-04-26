@@ -51,6 +51,30 @@ PathParameter::PathParameter(
 {}
 
 
+bool PathParameter::isDifferent(const Parameter& p) const
+{
+  if (const auto *pp = dynamic_cast<const PathParameter*>(&p))
+  {
+    if (pp->originalFilePath()!=originalFilePath())
+      return true;
+
+    if (isPacked())
+    {
+      if (!pp->isPacked())
+        return true;
+
+      if (!(pp->contentModificationTime()==contentModificationTime()))
+        return true;
+
+      if (pp->contentBufferSize()!=contentBufferSize())
+        return true;
+    }
+
+    return false;
+  }
+  else
+    return true;
+}
 
 
 std::string PathParameter::latexRepresentation() const

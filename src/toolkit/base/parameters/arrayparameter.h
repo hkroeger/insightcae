@@ -24,7 +24,6 @@
 
 #include "base/parameter.h"
 
-
 namespace insight
 {
 
@@ -32,7 +31,8 @@ namespace insight
 
 
 class ArrayParameter
-    : public Parameter
+    : public Parameter,
+      public ArrayParameterBase
 {
 public:
     typedef std::vector<ParameterPtr> value_type;
@@ -47,6 +47,8 @@ public:
 
     ArrayParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     ArrayParameter ( const Parameter& defaultValue, int size, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    bool isDifferent(const Parameter& p) const override;
 
     //inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
     inline void setDefaultValue ( const Parameter& defP )
@@ -75,16 +77,17 @@ public:
     }
     inline Parameter& operator[] ( int i )
     {
-        return *(value_[i]);
+        return elementRef(i);
     }
     inline const Parameter& operator[] ( int i ) const
     {
-        return *(value_[i]);
+        return element(i);
     }
-    inline int size() const
-    {
-        return value_.size();
-    }
+
+    const Parameter& element(int i) const override;
+
+    int size() const override;
+
     inline void clear()
     {
         value_.clear();

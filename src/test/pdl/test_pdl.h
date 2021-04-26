@@ -23,6 +23,7 @@
 
 #include "base/boost_include.h"
 #include "base/parameterset.h"
+#include "base/parameters.h"
 
 namespace insight {
 

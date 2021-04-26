@@ -24,6 +24,7 @@
 
 #include "base/progressdisplayer.h"
 #include "base/parameterset.h"
+#include "base/parameters.h"
 #include "base/factory.h"
 #include "base/resultset.h"
 #include "base/analysisstepcontrol.h"

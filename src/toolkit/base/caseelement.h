@@ -26,6 +26,7 @@
 
 #include "base/softwareenvironment.h"
 #include "base/parameterset.h"
+#include "base/parameters.h"
 #include <boost/typeof/typeof.hpp>
 
 

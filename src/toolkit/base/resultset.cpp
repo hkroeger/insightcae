@@ -25,6 +25,7 @@
 #include "base/tools.h"
 #include "base/case.h"
 #include "base/analysis.h"
+#include "base/parameters/subsetparameter.h"
 
 #include <fstream>
 #include <algorithm>
@@ -436,8 +437,8 @@ ParameterSetPtr ResultSet::convertIntoParameterSet() const
 
 ParameterPtr ResultSet::convertIntoParameter() const
 {
-    ParameterPtr ps ( new SubsetParameter() );
-    static_cast<SubsetParameter*> ( ps.get() )->setParameterSet ( *convertIntoParameterSet() );
+    auto ps = std::make_shared<SubsetParameter>();
+    ps->subsetRef().extend ( convertIntoParameterSet()->entries() );
     return ps;
 }
 

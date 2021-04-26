@@ -22,6 +22,7 @@
 #define INSIGHT_PARAMETERSTUDY_H
 
 #include <base/analysis.h>
+#include "base/parameters/doublerangeparameter.h"
 
 namespace insight {
 

@@ -1,5 +1,6 @@
 
 #include "base/parameterset.h"
+#include "base/parameters.h"
 #include "openfoam/openfoamdict.h"
 
 #include "cellsetoption_selection.h"

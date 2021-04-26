@@ -2,6 +2,7 @@
 #define FIELDDATA_H
 
 #include "base/parameterset.h"
+#include "base/parameters.h"
 #include "base/resultset.h"
 #include "openfoam/openfoamdict.h"
 

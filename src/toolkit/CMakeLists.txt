@@ -69,6 +69,8 @@ set(toolkit_SOURCES
     base/parameters/arrayparameter.cpp
     base/parameters/matrixparameter.cpp
     base/parameters/simpledimensionedparameter.cpp
+    base/parameters/subsetparameter.cpp
+    base/parameters/selectablesubsetparameter.cpp
 
     base/resultelements/fileresult.cpp
     base/resultelements/image.cpp

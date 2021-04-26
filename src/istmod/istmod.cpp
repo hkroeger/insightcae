@@ -23,6 +23,7 @@
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
 #include "base/tools.h"
+#include "base/parameters.h"
 
 #include <iostream>
 #include <fstream>

@@ -40,6 +40,17 @@ SelectionParameter::~SelectionParameter()
 {
 }
 
+bool SelectionParameter::isDifferent(const Parameter& p) const
+{
+  if (const auto *sp = dynamic_cast<const SelectionParameter*>(&p))
+  {
+    return selection()!=sp->selection();
+  }
+  else
+    return true;
+}
+
+
 const SelectionParameter::ItemList& SelectionParameter::items() const
 {
   return items_;

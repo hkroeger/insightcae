@@ -539,7 +539,16 @@ void FileContainer::replaceContentBuffer(std::shared_ptr<std::string> newContent
 {
   file_content_=newContent;
   clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
-//  fileContentHash_ = calcBufferHash(*file_content_);
+  //  fileContentHash_ = calcBufferHash(*file_content_);
+}
+
+size_t FileContainer::contentBufferSize() const
+{
+  if (file_content_)
+  {
+    return file_content_->size();
+  }
+  return 0;
 }
 
 

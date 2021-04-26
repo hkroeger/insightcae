@@ -22,6 +22,15 @@ MatrixParameter::MatrixParameter
   value_(defaultValue)
 {}
 
+bool MatrixParameter::isDifferent(const Parameter& p) const
+{
+  if (const auto* mp=dynamic_cast<const MatrixParameter*>(&p))
+  {
+    return (*mp)()!=value_;
+  }
+  else
+    return true;
+}
 
 arma::mat& MatrixParameter::operator()()
 {

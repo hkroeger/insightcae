@@ -24,6 +24,7 @@
 #include "base/analysis.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
 #include "base/toolkitversion.h"
+#include "base/parameters.h"
 
 #include <iostream>
 #include <fstream>

@@ -36,7 +36,7 @@
 
 #include "analysisform.h"
 #include "ui_analysisform.h"
-#include "parameterwrapper.h"
+//#include "parameterwrapper.h"
 #include "qresultsetmodel.h"
 
 #include <QMessageBox>
@@ -184,7 +184,7 @@ AnalysisForm::AnalysisForm(
 {
     // load default parameters
     auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
-    parameters_ = defaultParams;
+//    parameters_ = defaultParams;
 
     {
       insight::AnalysisPtr a( insight::Analysis::lookup(analysisName_, defaultParams, "") );
@@ -276,11 +276,11 @@ AnalysisForm::AnalysisForm(
     } catch (const std::exception& e)
     { /* ignore, if non-existent */ }
 
-    peditor_=new ParameterEditorWidget(parameters_, defaultParams, ui->inputTab, viz, vali);
+    peditor_=new ParameterEditorWidget(/*parameters_*/defaultParams, defaultParams, ui->inputTab, viz, vali);
     ui->inputTabLayout->addWidget(peditor_);
 
-    QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
-    QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
+//    QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
+//    QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
 
     connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
             this, &AnalysisForm::onConfigModification);
@@ -373,6 +373,12 @@ AnalysisForm::AnalysisForm(
     checkForRemoteConfig();
 }
 
+
+
+const insight::ParameterSet& AnalysisForm::parameters() const
+{
+  return peditor_->model()->getParameterSet();
+}
 
 
 
@@ -562,16 +568,19 @@ void AnalysisForm::saveParameters(bool *cancelled)
   }
   else
   {
+    insight::ParameterSet p = parameters();
+
     if (pack_parameterset_)
     {
-      parameters_.packExternalFiles();
+      p.packExternalFiles();
     }
     else
     {
-      parameters_.removePackedData();
+      p.removePackedData();
     }
 
-    parameters_.saveToFile(ist_file_, analysisName_);
+    p.saveToFile(ist_file_, analysisName_);
+
     is_modified_=false;
     updateWindowTitle();
   }
@@ -632,8 +641,10 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
 void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 {
   ist_file_=fp;
-  parameters_.readFromFile(fp);
-  Q_EMIT update();
+  insight::ParameterSet ps = parameters();
+  ps.readFromFile(fp);
+  peditor_->model()->resetParameters(ps, insight::Analysis::defaultParameters(analysisName_) );
+//  Q_EMIT update();
 }
 
 
@@ -674,7 +685,7 @@ void AnalysisForm::onShowParameterXML()
     Ui::XML_Display ui;
     ui.setupUi(widget);
 
-    Q_EMIT apply(); // apply all changes into parameter set
+//    Q_EMIT apply(); // apply all changes into parameter set
 
     boost::filesystem::path refPath = boost::filesystem::current_path();
     if (!ist_file_.empty())
@@ -682,7 +693,7 @@ void AnalysisForm::onShowParameterXML()
       refPath=ist_file_.parent_path();
     }
     std::ostringstream os;
-    parameters_.saveToStream(os, refPath, analysisName_);
+    parameters().saveToStream(os, refPath, analysisName_);
     ui.textDisplay->setText(QString::fromStdString(os.str()));
 
     widget->exec();

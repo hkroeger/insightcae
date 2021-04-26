@@ -6,10 +6,27 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
+find_package(Qt5Test CONFIG REQUIRED)
 
 set(toolkit_gui_SRCS 
-    parameterwrapper.cpp 
     parametereditorwidget.cpp
+
+    iqparametersetmodel.cpp
+    iqparameter.cpp
+    iqparameters/iqintparameter.cpp
+    iqparameters/iqdoubleparameter.cpp
+    iqparameters/iqvectorparameter.cpp
+    iqparameters/iqstringparameter.cpp
+    iqparameters/iqboolparameter.cpp
+    iqparameters/iqpathparameter.cpp
+    iqparameters/iqmatrixparameter.cpp
+    iqparameters/iqdirectoryparameter.cpp
+    iqparameters/iqselectionparameter.cpp
+    iqparameters/iqarrayparameter.cpp
+    iqparameters/iqselectablesubsetparameter.cpp
+    iqparameters/iqdoublerangeparameter.cpp
+    iqparameters/iqarrayelementparameter.cpp
+
     qdebugstream.cpp
     qinsighterror.cpp
     email.cpp

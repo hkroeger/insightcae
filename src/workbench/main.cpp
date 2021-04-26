@@ -126,11 +126,14 @@ int main(int argc, char** argv)
     QLocale::setDefault(QLocale::C);
 
     QPixmap pixmap(":/resources/insight_workbench_splash.png");
-    QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
+    QSplashScreen splash(pixmap, /*Qt::WindowStaysOnTopHint|*/Qt::SplashScreen);
     splash.show();
-    app.setSplashScreen(&splash);
-    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current) + ", Wait...");
+    QCoreApplication::processEvents();
 
+    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current) + ", Wait...");
+    QCoreApplication::processEvents();
+
+    app.setSplashScreen(&splash);
     workbench window(vm.count("nolog"));
 
     try

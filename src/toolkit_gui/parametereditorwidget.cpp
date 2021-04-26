@@ -18,42 +18,19 @@
  *
  */
 
-#include "parametersetvisualizer.h"
-#include "parametereditorwidget.h"
-#include "parameterwrapper.h"
-
-
 #include <QSplitter>
 #include <QLabel>
 #include <QPainter>
+#include <QVBoxLayout>
+
+#include "parametersetvisualizer.h"
+#include "parametereditorwidget.h"
 
 #include "visualizerthread.h"
 
 
 using namespace std;
 
-ParameterTreeWidget::ParameterTreeWidget(QWidget* p)
-  : QTreeWidget(p)
-{
-}
-
-void ParameterTreeWidget::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
-{
-  QStyleOptionViewItem newOption(option);
-
-  if ( QTreeWidgetItem * it = this->itemFromIndex(index) )
-  {
-    QBrush c = it->background(0);
-    if ( c.color() != Qt::black )
-    {
-      painter->fillRect(option.rect, c);
-      newOption.palette.setBrush( QPalette::Base, c);
-      newOption.palette.setBrush( QPalette::AlternateBase, c);
-    }
-  }
-
-  QTreeWidget::drawRow(painter, newOption, index);
-}
 
 ParameterEditorWidget::ParameterEditorWidget
 (
@@ -65,21 +42,52 @@ ParameterEditorWidget::ParameterEditorWidget
   ParameterSetDisplay* display
 )
 : QSplitter(Qt::Horizontal, parent),
-  parameters_(pset),
+//  parameters_(pset),
   defaultParameters_(default_pset),
+  model_(new IQParameterSetModel(pset, default_pset, this)),
   vali_(vali),
   viz_(std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz))
 {
+
+  connect(model_, &IQParameterSetModel::parameterSetChanged,
+          this, &ParameterEditorWidget::onParameterSetChanged );
   {
     QWidget *w=new QWidget(this);
     QVBoxLayout *l=new QVBoxLayout(w);
     w->setLayout(l);
-    ptree_=new ParameterTreeWidget(w);
-    l->addWidget(ptree_);
+
+    parameterTreeView_ = new QTreeView(w);
+    parameterTreeView_->setModel(model_);
+    parameterTreeView_->setAlternatingRowColors(true);
+    parameterTreeView_->expandAll();
+    parameterTreeView_->resizeColumnToContents(0);
+    parameterTreeView_->resizeColumnToContents(1);
+    parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
+    l->addWidget(parameterTreeView_);
+
+    QObject::connect( parameterTreeView_, &QTreeView::clicked,
+             [=](const QModelIndex& index)
+             {
+               model_->IQParameterSetModel::handleClick(index, inputContents_);
+             }
+    );
+
+    QObject::connect(
+          parameterTreeView_, &QTreeView::customContextMenuRequested,
+          [=](const QPoint& p)
+    {
+      model_->contextMenu( parameterTreeView_,
+                           parameterTreeView_->indexAt(p),
+                           p );
+    }
+    );
+
+
+
     QLabel *hints=new QLabel(w);
     hints->setStyleSheet("font: 8pt;");
     hints->setText(
-          "Please adapt the parameters in the list above.\n"
+          "Please edit the parameters in the list above.\n"
           "Yellow background: need to revised for each case.\n"
           "Light gray: can usually be left on default values."
           );
@@ -87,106 +95,70 @@ ParameterEditorWidget::ParameterEditorWidget
     addWidget(w);
   }
 
-    inputContents_=new QWidget(this);
-    addWidget(inputContents_);
+  inputContents_=new QWidget(this);
+  addWidget(inputContents_);
 
-    if (viz_)
+  if (viz_)
+  {
+    // there is a visualization generator available
+
+    if (!display)
     {
-      // there is a visualization generator available
+      // no existing displayer supplied; create one
+      QWidget *w=new QWidget(this);
+      QVBoxLayout *l=new QVBoxLayout(w);
+      QoccViewWidget *viewer=new QoccViewWidget(w/*, context->getContext()*/);
+      viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+      QLabel *hints=new QLabel(w);
+      hints->setStyleSheet("font: 8pt;");
+      hints->setWordWrap(true);
+      hints->setText(
+            "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
+            "<b>Context Menu</b>: Right click on object or canvas."
+            );
+      l->addWidget(viewer);
+      l->addWidget(hints);
+      w->setLayout(l);
+      addWidget(w);
 
-      if (!display)
-      {
-        // no existing displayer supplied; create one
-//        QoccViewerContext *context=new QoccViewerContext(this);
-        QWidget *w=new QWidget(this);
-        QVBoxLayout *l=new QVBoxLayout(w);
-        QoccViewWidget *viewer=new QoccViewWidget(w/*, context->getContext()*/);
-        viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        QLabel *hints=new QLabel(w);
-        hints->setStyleSheet("font: 8pt;");
-        hints->setWordWrap(true);
-        hints->setText(
-              "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
-              "<b>Context Menu</b>: Right click on object or canvas."
-              );
-        l->addWidget(viewer);
-        l->addWidget(hints);
-        w->setLayout(l);
-        addWidget(w);
+      QModelTree* modeltree =new QModelTree(this);
+      addWidget(modeltree);
 
-        QModelTree* modeltree =new QModelTree(this);
-        addWidget(modeltree);
+      viewer->connectModelTree(modeltree);
 
-        viewer->connectModelTree(modeltree);
-
-        display_=new ParameterSetDisplay(this, viewer, modeltree);
-        display_->registerVisualizer(viz_);
-      }
-      else
-      {
-        // use supplied displayer
-        display_=display;
-      }
+      display_=new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree);
+      display_->registerVisualizer(viz_);
     }
     else
     {
-      display_ = nullptr;
+      // use supplied displayer
+      display_=display;
     }
+  }
+  else
+  {
+    display_ = nullptr;
+  }
 
-    root_=new QTreeWidgetItem(0);
-    root_->setText(0, "Parameters");
-    ptree_->setColumnCount(2);
-    ptree_->setHeaderLabels( QStringList() << "Parameter Name" << "Current Value" );
-    ptree_->addTopLevelItem(root_);
-    ptree_->setAlternatingRowColors(true);
-//    ptree_->setStyleSheet(
-//          "QTreeView::branch{background:palette(base)}"
-//          "QTreeWidget::branch::!has-children:selected {background-color: rgb(128, 255, 0);}\n"
-//          "QTreeWidget::item:selected { show-decoration-selected: 0; background-color:rgb(128, 255, 0); color:black; border:1px dashed red;}\n"
-
-////          "QTreeWidget::branch::!has-children:selected:alternate {background-color: rgb(0, 0, 0);}\n"
-
-////          "QTreeWidget { show-decoration-selected: 0; selection-color: red; selection-background-color: transparent; }\n"
-
-////          "QTreeWidget::item:selected:!active { background: transparent; }\n"
-////          "QTreeWidget::item:selected:active { background: transparent; }\n"
-//          );
-    
-    addWrapperToWidget(parameters_, defaultParameters_, root_, inputContents_, this);
-
+  {
+    QList<int> l;
+    l << 3300 << 6600;
+    if (viz_ && !display_)
     {
-      QList<int> l;
-      l << 3300 << 6600;
-      if (viz_ && !display_)
-      {
-        l.append(6600);
-        l.append(0);
-      }
-      setSizes(l);
+      l.append(6600);
+      l.append(0);
     }
-    
-    ptree_->expandAll();
-    ptree_->resizeColumnToContents(0);
-    ptree_->resizeColumnToContents(1);
-    ptree_->setContextMenuPolicy(Qt::CustomContextMenu);
+    setSizes(l);
+  }
+
 }
 
-void ParameterEditorWidget::onApply()
-{
-  emit apply();
-}
-
-void ParameterEditorWidget::onUpdate()
-{
-  emit update();
-  doUpdateVisualization();
-}
 
 void ParameterEditorWidget::doUpdateVisualization()
 {
   if (viz_)
   {
-    viz_->update(parameters_);
+    viz_->update(model_->getParameterSet());
   }
 }
 
@@ -198,28 +170,8 @@ bool ParameterEditorWidget::hasVisualizer() const
 
 void ParameterEditorWidget::onParameterSetChanged()
 {
-  emit parameterSetChanged();
+  Q_EMIT parameterSetChanged();
   doUpdateVisualization();
-}
-
-
-void ParameterEditorWidget::insertParameter(const QString& name, insight::Parameter& parameter, const insight::Parameter& defaultParameter)
-{
-    DirectoryParameterWrapper *dp =
-        new DirectoryParameterWrapper
-    (
-        root_,
-        name,
-        parameter,
-        defaultParameter,
-        inputContents_,
-        this
-    );
-     
-  QObject::connect(ptree_, &QTreeWidget::itemSelectionChanged, dp, &DirectoryParameterWrapper::onSelectionChanged);
-  
-  QObject::connect(this, &ParameterEditorWidget::apply, dp, &DirectoryParameterWrapper::onApply);
-  QObject::connect(this, &ParameterEditorWidget::update, dp, &DirectoryParameterWrapper::onUpdate);
 }
 
 

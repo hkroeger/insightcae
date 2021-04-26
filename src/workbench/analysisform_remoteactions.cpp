@@ -162,7 +162,7 @@ void AnalysisForm::upload()
 void AnalysisForm::startRemoteRun()
 {
 #ifdef HAVE_WT
-  Q_EMIT apply(); // apply all changes into parameter set
+//  Q_EMIT apply(); // apply all changes into parameter set
   currentWorkbenchAction_.reset(new RemoteRun(this, false));
 #endif
 }

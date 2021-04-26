@@ -73,7 +73,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
         [this]
         {
 
-          insight::ParameterSet p = af_->parameters_;
+          insight::ParameterSet p = af_->parameters();
 
           p.packExternalFiles(); // pack
           launchRemoteAnalysisServer();

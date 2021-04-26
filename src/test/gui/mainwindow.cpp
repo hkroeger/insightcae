@@ -17,7 +17,7 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "parameterwrapper.h"
+//#include "parameterwrapper.h"
 
 #include <QMessageBox>
 #include <QFileDialog>

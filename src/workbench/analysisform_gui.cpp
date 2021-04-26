@@ -173,9 +173,9 @@ void AnalysisForm::onCleanOFC()
   if (caseDirectory_)
   {
     const insight::OFEnvironment* ofc = nullptr;
-    if (parameters_.contains("run/OFEname"))
+    if (parameters().contains("run/OFEname"))
     {
-      std::string ofename=parameters_.getString("run/OFEname");
+      std::string ofename=parameters().getString("run/OFEname");
       ofc=&(insight::OFEs::get(ofename));
     }
     else

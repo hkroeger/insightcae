@@ -119,7 +119,7 @@ protected:
   // ======== Analysis-related members
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
-  insight::ParameterSet parameters_;
+//  insight::ParameterSet parameters_;
   insight::ResultSetPtr results_;
   insight::QResultSetModel* resultsModel_;
   
@@ -221,7 +221,7 @@ public:
       );
   ~AnalysisForm();
   
-  inline insight::ParameterSet& parameters() { return parameters_; }
+  const insight::ParameterSet& parameters() const;
   
   // ================================================================================
   // ================================================================================
@@ -290,7 +290,7 @@ private Q_SLOTS:
   void checkForRemoteConfig();
 
 Q_SIGNALS:
-  void apply();
+//  void apply();
   void update();
   void statusMessage(const QString& message, int timeout=0);
   

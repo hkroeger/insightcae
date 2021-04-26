@@ -1053,4 +1053,20 @@ bool compareArmaMat::operator()(const arma::mat& v1, const arma::mat& v2) const
   else return v1(0)<v2(0);
 }
 
+
+bool operator!=(const arma::mat &m1, const arma::mat &m2)
+{
+  if ( m1.n_rows!=m2.n_rows || m1.n_cols!=m2.n_cols )
+    return true;
+
+  bool isdiff=false;
+  for (arma::uword i=0; i<m2.n_rows; ++i)
+    for (arma::uword j=0; j<m2.n_cols; ++j)
+    {
+      if ( m1(i,j)!=m2(i,j) ) return true;
+    }
+
+  return false;
+}
+
 }

@@ -13,7 +13,7 @@ LocalRun::LocalRun(AnalysisForm *af)
     analysis_(
           insight::Analysis::lookup(
             af_->analysisName_,
-            af_->parameters_,
+            af_->parameters(),
             *(af_->caseDirectory_)
             )
           ),

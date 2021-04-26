@@ -32,16 +32,17 @@ namespace insight {
 
 
 #define declareType(typenameStr) \
- static const char *typeName_() { return typenameStr; } \
+ static const char* typeName_() { return typenameStr; } \
  virtual const std::string& type() const { return typeName; } \
  static const std::string typeName
  
  
- 
- 
+  
 #define defineType(T) \
  const std::string T::typeName( T::typeName_() )
 
+#define defineTemplateType(T) \
+ template<> const std::string T::typeName( T::typeName_() )
 
  
 #define LIST(...) __VA_ARGS__

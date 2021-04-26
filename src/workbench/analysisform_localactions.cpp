@@ -135,7 +135,7 @@ void AnalysisForm::startLocalRun()
 {
   if (isOpenFOAMAnalysis_)
   {
-    bool evalOnly = insight::OpenFOAMAnalysis::Parameters(parameters_).run.evaluateonly;
+    bool evalOnly = insight::OpenFOAMAnalysis::Parameters(parameters()).run.evaluateonly;
 
     if (boost::filesystem::exists(*caseDirectory_ / "constant" / "polyMesh" ))
     {
@@ -185,7 +185,7 @@ void AnalysisForm::startLocalRun()
     }
   }
 
-  Q_EMIT apply(); // apply all changes into parameter set
+//  Q_EMIT apply(); // apply all changes into parameter set
 
   currentWorkbenchAction_.reset(new LocalRun(this));
 }

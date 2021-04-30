@@ -20,7 +20,7 @@
 #include "qevaluationitem.h"
 
 #include <QMenu>
-#include "qoccviewercontext.h"
+//#include "qoccviewercontext.h"
 
 Handle_AIS_InteractiveObject QEvaluationItem::createAIS(AIS_InteractiveContext&)
 {

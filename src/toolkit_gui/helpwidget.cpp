@@ -7,6 +7,7 @@ HelpWidget::HelpWidget(QWidget* p, const insight::SimpleLatex& content)
   cur_content_width_(-1)
 {
 //  setHtml( content_.toHTML(width()).c_str() );
+  setFrameStyle(QFrame::NoFrame);
 }
 
 

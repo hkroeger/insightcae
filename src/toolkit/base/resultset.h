@@ -58,9 +58,9 @@ protected:
 public:
     declareType ( "ResultSet" );
 
-    ResultSet( const boost::filesystem::path& fileName );
-    ResultSet( std::istream& is );
-    ResultSet( std::string& cont );
+    ResultSet( const boost::filesystem::path& fileName, const std::string& analysisName = "" );
+    ResultSet( std::istream& is, const std::string& analysisName = "" );
+    ResultSet( std::string& cont, const std::string& analysisName = "" );
 
     ResultSet
     (

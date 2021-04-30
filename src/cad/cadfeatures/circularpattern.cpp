@@ -145,6 +145,9 @@ void CircularPattern::build()
     int j=0;
     CompoundFeatureMap instances;
 
+    std::map<std::string, std::vector<FeaturePtr> > subshapeCompoundFeatures;
+    auto sf = m1_->providedSubshapes();
+
     for (int i=0; i<n; i++)
     {
         bool ok=true;
@@ -166,12 +169,21 @@ void CircularPattern::build()
             tr.SetRotation(ax, phi0+delta_phi*double(i));
             
             components_[str( format("component%d") % (j+1) )] =
-                FeaturePtr(new Transform(m1_, tr));
+                Transform::create_trsf(m1_, tr);
                 
             j++;
+
+            for (const auto& pss: sf)
+            {
+              subshapeCompoundFeatures[pss.first].push_back(Transform::create_trsf ( m1_->subshape(pss.first), tr ));
+            }
         }
     }
 
+    for (const auto& pss: sf)
+    {
+      providedSubshapes_[pss.first]=Compound::create(subshapeCompoundFeatures[pss.first]);
+    }
 
     m1_->unsetLeaf();
     Compound::build();

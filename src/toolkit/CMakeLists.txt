@@ -19,13 +19,16 @@
 #
 
 project(toolkit)
-#find_package(Boost COMPONENTS filesystem regex date_time thread REQUIRED)
 
 set(toolkit_SOURCES
     base/toolkitversion.cpp
     base/analysis.cpp
+    base/cacheableentity.cpp
+    base/cacheableentityhashes.cpp
     base/parameter.cpp
     base/exception.cpp
+    base/externalprocess.cpp
+    base/filewatcher.cpp
     base/tools.cpp
     base/latextools.cpp
     base/linearalgebra.cpp
@@ -48,6 +51,8 @@ set(toolkit_SOURCES
     base/remoteserverlist.cpp
     base/taskspoolerinterface.cpp
     base/mountremote.cpp
+    base/outputanalyzer.cpp
+    base/filecontainer.cpp
 
     base/progressdisplayer.cpp
 
@@ -62,7 +67,11 @@ set(toolkit_SOURCES
     base/parameters/doublerangeparameter.cpp
     base/parameters/arrayparameter.cpp
     base/parameters/matrixparameter.cpp
+    base/parameters/simpledimensionedparameter.cpp
+    base/parameters/subsetparameter.cpp
+    base/parameters/selectablesubsetparameter.cpp
 
+    base/resultelements/fileresult.cpp
     base/resultelements/image.cpp
     base/resultelements/numericalresult.cpp
     base/resultelements/tabularresult.cpp
@@ -72,7 +81,10 @@ set(toolkit_SOURCES
     base/resultelements/attributeresulttable.cpp
     base/resultelements/resultsection.cpp
     base/resultelements/chart.cpp
+    base/resultelements/chartrenderer.cpp
     base/resultelements/polarchart.cpp
+    base/resultelements/polarchartrenderer.cpp
+    base/resultelements/gnuplotpolarchartrenderer.cpp
     base/resultelements/contourchart.cpp
     
     openfoam/ofenvironment.cpp
@@ -83,12 +95,15 @@ set(toolkit_SOURCES
     openfoam/snappyhexmesh.cpp
     openfoam/cfmesh.cpp
     openfoam/openfoamdict.cpp
+    openfoam/openfoamboundarydict.cpp
     openfoam/openfoamtools.cpp
     openfoam/blockmesh.cpp
     openfoam/fielddata.cpp
     openfoam/paraview.cpp
     openfoam/stretchtransformation.cpp
     openfoam/solveroutputanalyzer.cpp
+    openfoam/blockmeshoutputanalyzer.cpp
+    openfoam/snappyhexmeshoutputanalyzer.cpp
     openfoam/ofdicts.cpp
 
 
@@ -121,6 +136,8 @@ set(toolkit_SOURCES
     openfoam/caseelements/basic/copyfiles.cpp
     openfoam/caseelements/basic/srfoption.cpp
     openfoam/caseelements/basic/providefields.cpp
+    openfoam/caseelements/basic/rangeweightfield.cpp
+    openfoam/caseelements/basic/wallheatflux.cpp
 
     openfoam/caseelements/numerics/pimplesettings.cpp
     openfoam/caseelements/numerics/fvnumerics.cpp
@@ -134,6 +151,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/numerics/steadycompressiblenumerics.cpp
     openfoam/caseelements/numerics/unsteadycompressiblenumerics.cpp
     openfoam/caseelements/numerics/potentialfreesurfacefoamnumerics.cpp
+    openfoam/caseelements/numerics/scalartransportfoamnumerics.cpp
     openfoam/caseelements/numerics/simpledymfoamnumerics.cpp
     openfoam/caseelements/numerics/cavitatingfoamnumerics.cpp
     openfoam/caseelements/numerics/interfoamnumerics.cpp
@@ -145,6 +163,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/numerics/buoyantpimplefoamnumerics.cpp
     openfoam/caseelements/numerics/fsidisplacementextrapolationnumerics.cpp
     openfoam/caseelements/numerics/magneticfoamnumerics.cpp
+    openfoam/caseelements/numerics/chtmultiregionnumerics.cpp
 
     openfoam/caseelements/boundarycondition.cpp
     openfoam/caseelements/boundaryconditions/boundarycondition_heat.cpp
@@ -185,7 +204,16 @@ set(toolkit_SOURCES
 
     code_aster/caexportfile.cpp
     code_aster/codeasterrun.cpp
+    code_aster/casolveroutputanalyzer.cpp
 )
+
+if( "${INSIGHT_CHARTRENDERER}" STREQUAL "gnuplot" )
+    list(APPEND toolkit_SOURCES base/resultelements/gnuplotrenderer.cpp)
+    add_definitions(-DCHART_RENDERER_GNUPLOT)
+elseif("${INSIGHT_CHARTRENDERER}" STREQUAL "matplotlib" )
+    list(APPEND toolkit_SOURCES base/resultelements/matplotlibrenderer.cpp)
+    add_definitions(-DCHART_RENDERER_MATPLOTLIB)
+endif()
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   LIST(APPEND toolkit_SOURCES
@@ -194,49 +222,116 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
   )
 ENDIF()
 
-#find_package(VTK COMPONENTS
-#    vtkFiltersCore
-#    vtkFiltersGeneral
-#    vtkFiltersSources
-#    vtkCommonCore
-#    vtkIOLegacy
-#    vtkIOGeometry
-#    vtkIOExport
-#    vtkIOImage
-#    vtkIOXML
-#    vtkImagingCore
-#    vtkRenderingOpenGL2
-#    vtkRenderingAnnotation
-#    vtkFiltersExtraction
-#    REQUIRED
-#)
+
 find_package(OpenSSL)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
 
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
-#include(${VTK_USE_FILE})
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
-set(toolkit_LINK_LIBS
+target_link_libraries(toolkit
+    ${PYTHON_LIBRARIES}
     ${Boost_LIBRARIES}
     ${ARMADILLO_LIBRARY}
+    PkgConfig::poppler-cpp
     GSL::gsl GSL::gslcblas
     OpenSSL::SSL
-    ${VTK_LIBRARIES}
-    )
-if (PYTHONLIBS_FOUND)
-    list(toolkit_LINK_LIBS APPEND ${PYTHON_LIBRARIES})
-endif()
-target_link_libraries(toolkit ${toolkit_LINK_LIBS})
+    vtkHeaders
+)
 
-target_include_directories(toolkit 
-  PUBLIC ${VTK_INCLUDE_DIRS}
+target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
+
+
+add_library(toolkitHeaders INTERFACE)
+get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)
+message(STATUS "toolkit_INCLUDE_DIRS ${toolkit_INCLUDE_DIRS}")
+target_include_directories(toolkitHeaders INTERFACE ${toolkit_INCLUDE_DIRS})
+
+
+set(EXPORT_OPTS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")
+
+macro(linkToolkitVtk2Exe target OnOffscreen)
+    target_link_libraries(${target} toolkit vtk${OnOffscreen} )
+    set_target_properties(${target} PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
+endmacro()
+
+macro(buildLibraryList VTK_LIB_LIST)
+    set(LIBRARY_LIST "")
+    foreach (_l ${VTK_LIB_LIST})
+        get_filename_component(_ln ${_l} NAME)
+        if (LIBRARY_LIST)
+            set(LIBRARY_LIST "${LIBRARY_LIST}, \"${_ln}\"")
+        else()
+            set(LIBRARY_LIST "\"${_ln}\"")
+        endif()
+    endforeach()
+    set(LIBRARY_LIST "${LIBRARY_LIST}, \"libtoolkit.so\"")
+endmacro()
+
+
+
+buildLibraryList("${VTK_OFFSCREEN_LIBRARIES}")
+configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOffscreenLoader.cpp @ONLY)
+add_library(toolkitVtkOffscreenLoader SHARED toolkitVtkOffscreenLoader.cpp)
+set_target_properties(toolkitVtkOffscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
+install(
+    TARGETS toolkitVtkOffscreenLoader # EXPORT toolkit_targets
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+
+buildLibraryList("${VTK_ONSCREEN_LIBRARIES}")
+configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOnscreenLoader.cpp @ONLY)
+add_library(toolkitVtkOnscreenLoader SHARED toolkitVtkOnscreenLoader.cpp)
+set_target_properties(toolkitVtkOnscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
+install(
+    TARGETS toolkitVtkOnscreenLoader # EXPORT toolkit_targets
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+
+macro(linkToolkitVtk2ShLib target OnOffscreen)
+    target_link_libraries(${target} toolkitHeaders toolkitVtk${OnOffscreen}Loader )
+endmacro()
+
+macro(linkToolkitVtk target OnOffscreen)
+    target_link_libraries(${target} toolkit vtk${OnOffscreen} )
+    set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")
+endmacro()
+
+
+macro(linkToolkit_OF_Exe target)
+ version_list_OF()
+ foreach (_ofvers ${OF_VERSIONS})
+  if (${_ofvers}_FOUND)
+   linkToolkitVtk(${target}${_ofvers} Offscreen)
+  endif()
+ endforeach()
+endmacro()
+
+
+macro(linkToolkit_OF_ShLib target)
+ version_list_OF()
+ foreach (_ofvers ${OF_VERSIONS})
+  if (${_ofvers}_FOUND)
+   linkToolkitVtk2ShLib(${target}${_ofvers} Offscreen)
+  endif()
+ endforeach()
+endmacro()
+
+
+
+
+install_shared_file(gri_species openfoam/caseelements/gri.species thermophysical)
 
 add_PDL(toolkit "${toolkit_HEADERS}")
 
@@ -276,7 +371,46 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
     ADD_DEPENDENCIES( toolkit toolkit_swigpyrun )
 ENDIF()
 
+
+
+## pull-in modules for VTK on/offscreen in toolkit python wrapper
+IF(INSIGHT_BUILD_PYTHONBINDINGS)
+  foreach(_variant Offscreen Onscreen)
+      set(TARGETNAME vtkPy${_variant})
+      set(PYTARGET ${TARGETNAME}_python)
+      set(IFFILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i)
+      set_property(SOURCE ${IFFILE} PROPERTY CPLUSPLUS ON)
+      set_property(SOURCE ${IFFILE} PROPERTY SWIG_MODULE_NAME ${TARGETNAME})
+
+      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i "
+%module ${TARGETNAME}
+%{
+#include <iostream>
+%}
+%pythonbegin %{
+import os,sys
+sys.setdlopenflags(os.RTLD_LAZY | os.RTLD_GLOBAL)
+%}
+")
+
+      swig_add_library(${PYTARGET}
+          LANGUAGE python
+          SOURCES ${IFFILE})
+      target_link_libraries(${PYTARGET} vtk${_variant})
+      set_target_properties(${PYTARGET}
+          PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SWIG_OUTDIR}
+          )
+    #  set_target_properties(${PYTARGET}
+    #      PROPERTIES LINK_WHAT_YOU_USE TRUE # has no effect...
+    #      )
+      SET_TARGET_PROPERTIES(${PYTARGET} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+      INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/_${PYTARGET}.so DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+      INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/${TARGETNAME}.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+  endforeach()
+ENDIF()
+
 add_pybindings(toolkit "toolkit.i" toolkit)
+
 
 add_subdirectory(openfoam/tests)
 

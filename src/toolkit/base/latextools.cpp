@@ -78,6 +78,7 @@ boost::filesystem::path cleanLatexImageFileName(const boost::filesystem::path& s
 {
   std::string stem=s.stem().string();
   replace_all(stem, ".", "_");
+  replace_all(stem, " ", "_");
   return s.parent_path()/(stem+s.extension().string());
 }
 
@@ -112,6 +113,9 @@ boost::filesystem::path findSharedImageFile(const std::string& file)
 }
 
 
+
+
+
 struct Replacements
 {
   std::string reformatted_;
@@ -140,6 +144,41 @@ struct Replacements
 };
 
 Replacements::~Replacements()
+{}
+
+
+
+
+struct PlainTextReplacements
+: Replacements
+{
+
+  PlainTextReplacements();
+
+  virtual void appendImage(double, const std::string& imagename)
+  {
+    boost::filesystem::path fname = findSharedImageFile(imagename);
+
+    reformatted_ += str(format("\nfile://%s\n") % fname.string() );
+  }
+
+  virtual void appendInlineFormula(const std::string& latex_formula)
+  {
+    reformatted_ += latex_formula;
+  }
+
+  virtual void appendDisplayFormula(const std::string& latex_formula)
+  {
+    reformatted_ += "\n  "+latex_formula+"\n";
+  }
+
+  virtual void appendFormattedText(const std::string& text, Format)
+  {
+    reformatted_ += text;
+  }
+};
+
+PlainTextReplacements::PlainTextReplacements()
 {}
 
 
@@ -209,6 +248,10 @@ struct TemporaryCachedFile
       boost::filesystem::remove(*this);
   }
 };
+
+
+
+
 
 typedef std::shared_ptr<TemporaryCachedFile> TemporaryCachedFilePtr;
 
@@ -287,6 +330,9 @@ struct FormulaRenderFilesCache
   }
 };
 
+
+
+
 struct HTMLReplacements
 : Replacements
 {
@@ -323,6 +369,11 @@ struct HTMLReplacements
 
 FormulaRenderFilesCache HTMLReplacements::formulaCache;
 
+std::string combine(const std::vector<std::string>& strings)
+{
+  return join(strings, "");
+}
+
 HTMLReplacements::HTMLReplacements(int imageWidth)
   : imageWidth_(imageWidth)
 {
@@ -331,8 +382,8 @@ HTMLReplacements::HTMLReplacements(int imageWidth)
   simple_replacements_.add("&", "&amp;");
   simple_replacements_.add("<", "&lt;");
   simple_replacements_.add(">", "&gt;");
-  simple_replacements_.add("~", "&circ;");
-  simple_replacements_.add("^", "&tilde;");
+  simple_replacements_.add("^", "&circ;");
+  simple_replacements_.add("~", "&tilde;");
 }
 
 struct StringParser
@@ -341,24 +392,31 @@ struct StringParser
   
   qi::rule< std::string::iterator > start;   
   qi::rule< std::string::iterator, std::string() >
-   inlineformula, displayformula, image;
+   inlineformula, displayformula, image, verbatimtext;
     
 
     StringParser(Replacements& rep)
     : qi::grammar<std::string::iterator>::base_type(start)
     {
-      inlineformula =  qi::as_string[ '$' >> +(~qi::char_("$")) - qi::char_('$')  >> '$' ];
-      displayformula =  qi::as_string[ qi::lit("$$") >> +(~qi::char_("$")) - qi::char_('$')  >> qi::lit("$$") ];
+      inlineformula =  qi::as_string[ '$' > +(~qi::char_("$")) - qi::char_('$')  > '$' ];
+      displayformula =  qi::as_string[ qi::lit("$$") > +(~qi::char_("$")) - qi::char_('$') > qi::lit("$$") ];
+      verbatimtext =
+            qi::lit("\\begin{verbatim}")
+          > qi::lexeme[ *( (qi::as_string[~qi::char_(rep.specialchars_)])|rep.simple_replacements_ - qi::lit("\\end{verbatim}") ) ][ qi::_val = phx::bind(&combine, qi::_1) ]
+          > qi::lit("\\end{verbatim}");
 
       image = 
       (
 	qi::lit("\\includegraphics") 
-	>> '[' >> qi::lit("width") >> *qi::char_(' ') >> '=' >> *qi::char_(' ') >> (qi::double_|qi::attr(1.0)) >> qi::lit("\\linewidth") >> ']'
-	>> '{' >> qi::as_string[qi::lexeme[ *(qi::char_ - qi::char_('}')) ]] >> '}'
-      ) [ phx::bind(&Replacements::appendImage, &rep, qi::_3, qi::_4) ]
+        > '[' > qi::lit("width") > '=' > (qi::double_|qi::attr(1.0)) > qi::lit("\\linewidth") > ']'
+        > '{' > qi::as_string[qi::lexeme[ *(qi::char_ - qi::char_('}')) ]] > '}'
+      ) [ phx::bind(&Replacements::appendImage, &rep, qi::_1, qi::_2) ]
 	;
       
       start = *(
+        verbatimtext
+          [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
+        |
         ( '{' >>
           ( qi::as_string[ qi::lit("\\bf") >> qi::lexeme[ *(qi::char_ - qi::char_('}')) ] >> '}' ] )
             [ phx::bind(&Replacements::appendFormattedText, &rep, qi::_1, Replacements::BOLD) ]
@@ -367,19 +425,18 @@ struct StringParser
 //            [ phx::bind(&Replacements::appendFormattedText, &rep, qi::_1, Replacements::BOLD) ]
         )
         |
-	qi::as_string[ +(~qi::char_(rep.specialchars_)) - qi::char_(rep.specialchars_) ] //[ std::cout<<"TEXT:{{"<<qi::_1<<"}}"<<std::endl ] 
+        qi::as_string[ +(~qi::char_(rep.specialchars_)) - qi::char_(rep.specialchars_) ]
 	  [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
 	|
 	image
-	|
+        |
+        displayformula
+          [ phx::bind(&Replacements::appendDisplayFormula, &rep, qi::_1) ]
+        |
 	inlineformula 
 	  [ phx::bind(&Replacements::appendInlineFormula, &rep, qi::_1) ]
-	|
-	displayformula 
-	  [ phx::bind(&Replacements::appendDisplayFormula, &rep, qi::_1) ]
         |
-          rep.simple_replacements_ [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
-
+        rep.simple_replacements_ [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
       )
       ; 
       
@@ -473,11 +530,18 @@ std::string SimpleLatex::toHTML(int imageWidth) const
 
 
 
-
 std::string SimpleLatex::toPlainText() const
 {
-  return simpleLatex_code_;
+  PlainTextReplacements rep;
+  return reformat(simpleLatex_code_, rep);
 }
+
+bool SimpleLatex::empty() const
+{
+  return simpleLatex_code_.empty();
+}
+
+
 
 std::string SimpleLatex::LaTeXFromPlainText(const std::string&)
 {

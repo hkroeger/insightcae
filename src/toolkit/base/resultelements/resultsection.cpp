@@ -25,6 +25,16 @@ ResultSection::ResultSection ( const std::string& sectionName, const std::string
       introduction_ ( introduction )
 {}
 
+const string &ResultSection::secionName() const
+{
+  return sectionName_;
+}
+
+const string &ResultSection::introduction() const
+{
+  return introduction_;
+}
+
 
 
 

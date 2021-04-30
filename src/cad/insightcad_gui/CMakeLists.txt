@@ -6,7 +6,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-#find_package(Qt5OpenGL CONFIG REQUIRED)
 
 set(insightcad_gui_SRCS 
  iscadmetatyperegistrator.cpp
@@ -16,8 +15,10 @@ set(insightcad_gui_SRCS
  cadfeaturetransient.h
  pointertransient.cpp
  pointertransient.h
- qoccviewercontext.cpp
- qoccviewercontext.h
+# qoccviewercontext.cpp
+# qoccviewercontext.h
+ occtwindow.cpp
+ occtwindow.h
  qoccviewwidget.cpp
  qoccviewwidget.h
  viewstate.cpp
@@ -42,8 +43,7 @@ add_library(insightcad_gui SHARED ${insightcad_gui_SRCS})
 target_link_libraries(insightcad_gui
   toolkit
   insightcad
-  ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${OPENGL_LIBRARIES}
-  ${Boost_LIBRARIES}
+  ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES}
   Qt5::Widgets
   ${DXFLIB_LIBRARIES}
   )

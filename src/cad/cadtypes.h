@@ -83,6 +83,11 @@ typedef boost::fusion::vector2<VectorPtr,VectorVariableType> VectorPtrAndType;
 typedef boost::variant<FeaturePtr, DatumPtr, VectorPtrAndType, ScalarPtr>  ModelVariable;
 typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVariableTable;
 
+struct sharedModelLocations
+    : public std::vector<boost::filesystem::path>
+{
+  sharedModelLocations();
+};
 
 boost::filesystem::path sharedModelFilePath(const std::string& name);
 

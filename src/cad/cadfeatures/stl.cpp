@@ -28,6 +28,7 @@
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_Sewing.hxx>
+#include <BRepPrimAPI_MakeSphere.hxx>
 #include <gp_Pnt.hxx>
 #include <OSD_Path.hxx>
 #include <RWStl.hxx>
@@ -85,10 +86,27 @@ addToFactoryTable(Feature, STL);
 size_t STL::calcHash() const
 {
   ParameterListHash h;
+
   h+=this->type();
-  h+=fname_;
-  if (trsf_) h+=*trsf_;
-  if (other_trsf_) h+=*other_trsf_;
+
+  if (const auto* fname = boost::get<boost::filesystem::path>(&geometry_))
+  {
+    h+=*fname;
+  }
+  else if (const auto* vpd = boost::get<vtkSmartPointer<vtkPolyData> >(&geometry_))
+  {
+    h+=vpd->Get(); // memory address
+  }
+
+  if (const auto* trsf = boost::get<gp_Trsf>(&transform_))
+  {
+    h+=*trsf;
+  }
+  else if (const auto* ofeat = boost::get<FeaturePtr>(&transform_))
+  {
+    h+=*ofeat;
+  }
+
   return h.getHash();
 }
 
@@ -99,58 +117,42 @@ STL::STL()
 
 
 
-STL::STL(const boost::filesystem::path& fname)
-  : fname_(fname)
+STL::STL(GeometrySpecification geometry)
+  : geometry_(geometry)
 {}
 
 
 
 
-STL::STL(const boost::filesystem::path& fname, const gp_Trsf& trsf)
-  : fname_(fname), trsf_(new gp_Trsf(trsf))
+STL::STL(GeometrySpecification geometry,
+         TransformationSpecification transform)
+  : geometry_(geometry), transform_(transform)
 {}
 
-
-
-
-STL::STL(const boost::filesystem::path& fname, FeaturePtr other_trsf)
-  : fname_(fname), other_trsf_(other_trsf)
-{}
 
 
 
 
 FeaturePtr STL::create
 (
-    const boost::filesystem::path& fname
+    GeometrySpecification geometry
 )
 {
-  return FeaturePtr(new STL(fname));
+  return FeaturePtr(new STL(geometry));
 }
 
 
 
 
-FeaturePtr STL::create_trsf
-(
-    const boost::filesystem::path& fname,
-    gp_Trsf trsf
-    )
+FeaturePtr STL::create_trsf(
+    GeometrySpecification geometry,
+    TransformationSpecification transform )
 {
-  return FeaturePtr(new STL(fname, trsf));
+  return FeaturePtr(new STL(geometry,transform));
 }
 
 
 
-
-FeaturePtr STL::create_other
-(
-    const boost::filesystem::path& fname,
-    FeaturePtr other_trsf
-    )
-{
-  return FeaturePtr(new STL(fname, other_trsf));
-}
 
 
 void STL::build()
@@ -159,13 +161,23 @@ void STL::build()
 
   if (!cache.contains(hash()))
   {
-//    std::cout<<"STL was not in cache"<<std::endl;
+    vtkSmartPointer<vtkPolyData> pd;
 
-    vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
-    stl->SetFileName(fname_.c_str());
+    if (const auto* fname = boost::get<boost::filesystem::path>(&geometry_))
+    {
+      vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
+      stl->SetFileName(fname->c_str());
+      stl->Update();
+      pd=stl->GetOutput();
+    }
+    else if (const auto* vpd = boost::get<vtkSmartPointer<vtkPolyData> >(&geometry_))
+    {
+      pd=*vpd;
+    }
+
 
     vtkSmartPointer<vtkPolyDataNormals> split = vtkSmartPointer<vtkPolyDataNormals>::New();
-    split->SetInputConnection(stl->GetOutputPort());
+    split->SetInputData(pd);
     split->SplittingOn();
     split->ComputeCellNormalsOn();
     split->ConsistencyOn();
@@ -205,21 +217,20 @@ void STL::build()
     }
 
     // transform points, if required
-    if (trsf_ || other_trsf_)
+    std::unique_ptr<gp_Trsf> tr;
+    if (const auto* trsf = boost::get<gp_Trsf>(&transform_))
     {
-      gp_Trsf tr;
-      if (trsf_)
-      {
-        tr = *trsf_;
-      }
-      else if (other_trsf_)
-      {
-        tr = Transform::calcTrsfFromOtherTransformFeature(other_trsf_);
-      }
-
+      tr.reset(new gp_Trsf(*trsf));
+    }
+    else if (const auto* ofeat = boost::get<FeaturePtr>(&transform_))
+    {
+      tr.reset(new gp_Trsf(Transform::calcTrsfFromOtherTransformFeature(*ofeat)));
+    }
+    if (tr)
+    {
       for (int i=1; i<=aSTLMesh_->NbNodes();i++)
       {
-        aSTLMesh_->ChangeNode(i).Transform(tr);
+        aSTLMesh_->ChangeNode(i).Transform(*tr);
       }
     }
 
@@ -230,16 +241,26 @@ void STL::build()
     {
       bb.Add(aSTLMesh_->Node(i));
     }
-    double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
-    gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
 
-    TopoDS_Face aFace;
-    BRep_Builder aB;
-    //  aB.MakeFace(aFace, aSTLMesh);
-    aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
-    aB.UpdateFace(aFace, aSTLMesh_);
+    if (!bb.IsVoid())
+    {
+      double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
+      gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
 
-    setShape( aFace );
+      TopoDS_Face aFace;
+      BRep_Builder aB;
+      //  aB.MakeFace(aFace, aSTLMesh);
+      aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
+      aB.UpdateFace(aFace, aSTLMesh_);
+
+      setShape( aFace );
+
+    }
+    else
+    {
+      // just insert some non-void geometry
+      setShape(BRepPrimAPI_MakeSphere(1).Shape());
+    }
 
     cache.insert(shared_from_this());
   }
@@ -267,7 +288,7 @@ void STL::insertrule(parser::ISCADParser& ruleset) const
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
            ( '(' >> ruleset.r_path >> ')' ) [ qi::_val = phx::bind(&STL::create, qi::_1) ]
             |
-           ( '(' >> ruleset.r_path >> ',' >> ruleset.r_solidmodel_expression >> ')' ) [ qi::_val = phx::bind(&STL::create_other, qi::_1, qi::_2) ]
+           ( '(' >> ruleset.r_path >> ',' >> ruleset.r_solidmodel_expression >> ')' ) [ qi::_val = phx::bind(&STL::create_trsf, qi::_1, qi::_2) ]
           ))
       );
 }

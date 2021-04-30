@@ -59,7 +59,7 @@ void ArrayParameterParser::Data::cppWriteCreateStatement
   (
     os, name+"_default_value", thisscope
   );
-  os<<name<<"->setDefaultValue(*"<<name<<"_default_value.release());"<<endl;
+  os<<name<<"->setDefaultValue(*"<<name<<"_default_value);"<<endl;
   if (num>0)
   {
     os<<"for (size_t i=0; i<"<<num<<"; i++) "<<name<<"->appendEmpty();"<<endl;

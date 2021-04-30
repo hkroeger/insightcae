@@ -23,25 +23,25 @@ void copyFiles::addIntoDictionaries(OFdicts&) const
 {
 }
 
-void copyFiles::modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const
+void copyFiles::modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& /*cm*/, const boost::filesystem::path& location ) const
 {
   for (const auto& f: p_.files)
-    {
-      boost::filesystem::path src = f.source->filePath(location);
-      boost::filesystem::path targ = location / f.target;
+  {
+    boost::filesystem::path src = f.source->filePath(location);
+    boost::filesystem::path targ = location / f.target;
 
-      if (!exists(src))
-        throw insight::Exception("Source file/directory "+src.string()+" does not exist!");
+    if (!exists(src))
+      throw insight::Exception("Source file/directory "+src.string()+" does not exist!");
 
-      if (!exists(targ.parent_path()))
-        create_directories(targ.parent_path());
+    if (!exists(targ.parent_path()))
+      create_directories(targ.parent_path());
 
-      if (boost::filesystem::is_directory(src))
-        copyDirectoryRecursively(src, targ);
-      else
-        boost::filesystem::copy_file(src, targ);
+    if (boost::filesystem::is_directory(src))
+      copyDirectoryRecursively(src, targ);
+    else
+      boost::filesystem::copy_file(src, targ);
 
-    }
+  }
 }
 
 

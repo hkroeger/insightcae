@@ -21,11 +21,12 @@
 #include "plotwidget.h"
 #include "ui_plotwidget.h"
 
-#include "qwt_plot.h"
 
 #include "base/boost_include.h"
 
 #include "base/qt5_helper.h"
+
+#include <QtCharts/QValueAxis>
 
 using namespace std;
 using namespace boost;
@@ -39,24 +40,34 @@ PlotWidget::PlotWidget(QWidget *parent) :
   QVBoxLayout *layout=new QVBoxLayout(ui->plotcanvas);
   ui->plotcanvas->setLayout(layout);
 
-  plot_=new QwtPlot(this);
+  plotData_=new QtCharts::QChart();
+
+  plot_=new /*QwtPlot*/QtCharts::QChartView(plotData_, this);
   layout->addWidget(plot_);
 
-  plot_->insertLegend( new QwtLegend() );
-  plot_->setCanvasBackground( Qt::white );
 
-  QwtPlotGrid *grid = new QwtPlotGrid();
-  grid->attach(plot_);
+  plotData_->setBackgroundBrush( Qt::white );
+  plotData_->addAxis(new QtCharts::QValueAxis, Qt::AlignLeft);
+  plotData_->addAxis(new QtCharts::QValueAxis, Qt::AlignBottom);
 
-  raw_crv_=new QwtPlotCurve();
-  raw_crv_->setTitle("raw");
+  plotData_->axes(Qt::Horizontal)[0]->setGridLineVisible(true);
+  plotData_->axes(Qt::Vertical)[0]->setGridLineVisible(true);
+
+
+  raw_crv_=new QtCharts::QLineSeries();
+  raw_crv_->setName("raw");
   raw_crv_->setPen(QPen(Qt::red, 2.0));
-  raw_crv_->attach(plot_);
+  plotData_->addSeries(raw_crv_);
+  raw_crv_->attachAxis(plotData_->axes(Qt::Horizontal)[0]);
+  raw_crv_->attachAxis(plotData_->axes(Qt::Vertical)[0]);
 
-  mean_crv_=new QwtPlotCurve();
-  mean_crv_->setTitle("mean");
+
+  mean_crv_=new QtCharts::QLineSeries();
+  mean_crv_->setName("mean");
   mean_crv_->setPen(QPen(Qt::black, 3.0));
-  mean_crv_->attach(plot_);
+  plotData_->addSeries(mean_crv_);
+  mean_crv_->attachAxis(plotData_->axes(Qt::Horizontal)[0]);
+  mean_crv_->attachAxis(plotData_->axes(Qt::Vertical)[0]);
 
   connect(ui->include_0_sw, &QCheckBox::toggled,
           this, &PlotWidget::onToggleY0);
@@ -81,9 +92,12 @@ void PlotWidget::setData(const arma::mat& x, const arma::mat& y)
   rawdata_=arma::join_horiz(x,y);
   visible_part_=rawdata_;
 
-  raw_crv_->setSamples(x.colptr(0), y.colptr(0), x.n_rows);
-  double dummy=0.;
-  mean_crv_->setSamples(&dummy, &dummy, 0);
+  raw_crv_->clear();
+  for (arma::uword i=0; i< x.n_rows; i++)
+    raw_crv_->append(x(i), y(i));
+
+  mean_crv_->clear();
+
 
   ui->final_vals->setText(QString::fromStdString(
     str(format("Final values: raw=%g / mean = (-)")%y(y.n_rows-1))
@@ -94,7 +108,7 @@ void PlotWidget::setData(const arma::mat& x, const arma::mat& y)
 
 void PlotWidget::onShow()
 {
-  if (mean_crv_->data()->size()==0)
+  if (mean_crv_->count()==0)
   {
     onMeanAvgFractionChange();
   }
@@ -124,15 +138,25 @@ void MeanComputer::run()
 
 void PlotWidget::onMeanDataReady(arma::mat avg)
 {
-  ui->final_vals->setText(QString::fromStdString(
-    str(format("Final values: raw=%g / mean = %g")
-         %( rawdata_.col(1)(rawdata_.n_rows-1) )
-         %( avg.col(1)(avg.n_rows-1) ))
-  ));
+  if (avg.n_rows>0)
+  {
+    ui->final_vals->setText(QString::fromStdString(
+      str(format("Final values: raw=%g / mean = %g")
+           %( rawdata_.col(1)(rawdata_.n_rows-1) )
+           %( avg.col(1)(avg.n_rows-1) ))
+    ));
 
-  mean_crv_->setSamples(avg.colptr(0), avg.colptr(1), avg.n_rows);
-  ui->info->setText("Moving average computed.");
-  plot_->replot();
+    mean_crv_->clear();
+    for (arma::uword i=0; i<avg.n_rows; ++i)
+      mean_crv_->append(avg(i,0), avg(i,1));
+
+    ui->info->setText("Moving average computed.");
+  //  plot_->replot();
+  }
+  else
+  {
+    ui->info->setText("Empty moving average.");
+  }
 
   mc_->wait();
   delete mc_;
@@ -167,16 +191,16 @@ void PlotWidget::onChangeXRange(const QString& v0, const QString& v1)
     onMeanAvgFractionChange();
   }
 
-  plot_->setAxisScale(QwtPlot::xBottom, x0, x1);
-  plot_->setAxisScale(QwtPlot::yLeft, ymin, ymax);
+  plotData_->axisX()->setRange(x0, x1);
+  plotData_->axisY()->setRange(ymin, ymax);
 
-  plot_->replot();
+//  plot_->replot();
 }
 
 void PlotWidget::onToggleY0(bool)
 {
-  double x0=plot_->axisInterval(QwtPlot::xBottom).minValue();
-  double x1=plot_->axisInterval(QwtPlot::xBottom).maxValue();
+  double x0=dynamic_cast<const QtCharts::QValueAxis&>(*plotData_->axisX()).min();
+  double x1=dynamic_cast<const QtCharts::QValueAxis&>(*plotData_->axisX()).max();
   QString sx0="";
   QString sx1="";
   if ( fabs(x1-x0)>0 )

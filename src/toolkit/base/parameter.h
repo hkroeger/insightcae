@@ -65,6 +65,22 @@ rapidxml::xml_node<> *findNode(rapidxml::xml_node<>& father, const std::string& 
 void writeMatToXMLNode(const arma::mat& matrix, rapidxml::xml_document< char >& doc, rapidxml::xml_node< char >& node);
 
 
+class Parameter;
+class ParameterSet;
+
+
+
+class ArrayParameterBase
+{
+public:
+  virtual ~ArrayParameterBase();
+
+  virtual int size() const =0;
+  Parameter& elementRef ( int i );
+  virtual const Parameter& element( int i ) const =0;
+};
+
+
 
 
 class Parameter
@@ -90,6 +106,7 @@ public:
     bool isHidden() const;
     bool isExpert() const;
     bool isNecessary() const;
+    virtual bool isDifferent(const Parameter& p) const;
     int order() const;
 
     inline const SimpleLatex& description() const
@@ -153,6 +170,59 @@ public:
     virtual void clearPackedData();
 
     virtual void reset(const Parameter&);
+
+
+
+    /**
+     * @brief The SearchResultParentInDict struct
+     * contains the result of the parent search operation
+     * for the case that the parameter was contained in a dictionary
+     */
+    struct SearchResultParentInDict {
+      /**
+      * @brief myIterator
+      * iterator to the current parameter in the parent parameter set
+      */
+     std::map<std::string, std::unique_ptr<Parameter> >::const_iterator myIterator;
+
+     /**
+      * @brief myParentSet
+      * pointer to the containing (parent) parameter set
+      */
+     const ParameterSet* myParentSet = nullptr;
+
+     /**
+      * @brief myParentSetParameter
+      * if the containing parameter set is wrapped in a parameter, pointer to the
+      * parameter. Otherwise (if contained in the top level) a nullptr
+      */
+     const Parameter* myParentSetParameter = nullptr;
+    };
+
+
+    /**
+     * @brief The SearchResultParentInArray struct
+     * contains the result of the parent search operation
+     * for the case that the parameter was contained in an array
+     */
+    struct SearchResultParentInArray {
+      int i = -1;
+      const Parameter* myParentArrayParameter = nullptr;
+    };
+
+
+    typedef boost::variant<SearchResultParentInDict,SearchResultParentInArray,boost::blank> SearchParentResult;
+
+    /**
+     * @brief searchMyParentIn
+     * searches the parent section of this parameter in the given parameter set.
+     * An exception is thrown, if the parameter was not found in the set.
+     * @param ps
+     * ParameterSet to be searched.
+     * @return
+     * SearchParentResult struct
+     */
+    SearchParentResult searchMyParentIn(const ParameterSet& ps) const;
 };
 
 

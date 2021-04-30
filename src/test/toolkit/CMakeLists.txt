@@ -1,9 +1,17 @@
 project(test_toolkit)
 
-add_executable(test_simplelatex test_simplelatex.cpp)
-target_link_libraries(test_simplelatex toolkit)
-add_test(NAME test_toolkit_simplelatex
-    COMMAND test_simplelatex
-) 
+macro(add_toolkit_test SRC)
+    add_executable(${SRC} ${SRC}.cpp)
+    linkToolkitVtk(${SRC} Offscreen)
+    add_test(NAME ${SRC} COMMAND ${SRC})
+endmacro()
+
+add_toolkit_test(test_simplelatex)
+add_toolkit_test(test_meminfo)
+add_toolkit_test(test_execution)
+add_toolkit_test(test_chartrenderer)
+add_toolkit_test(test_multiregion)
+add_toolkit_test(test_filecontainer)
+
 
 add_subdirectory(analysis_parameterstudy)

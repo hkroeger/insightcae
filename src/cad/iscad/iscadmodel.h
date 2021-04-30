@@ -31,7 +31,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-#include "qoccviewercontext.h"
+//#include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
 #include "qdebugstream.h"
 #include "viewstate.h"
@@ -81,6 +81,9 @@ protected:
 
     QSize sizehint_;
 
+    int fontSize_;
+
+    void setFontSize(int fontSize);
     
 protected:
     void clearDerivedData();
@@ -162,8 +165,12 @@ public slots:
     
     void insertSectionCommentAtCursor();
     void insertFeatureAtCursor();
+    void insertImportedModelAtCursor();
     void insertComponentNameAtCursor();
+    void insertLibraryModelAtCursor();
     
+    void onIncreaseFontSize();
+    void onDecreaseFontSize();
 //    /**
 //     * display everything shaded
 //     */
@@ -284,7 +291,7 @@ class ISCADModelEditor
     Q_OBJECT
 
 protected:
-    QoccViewerContext* context_;
+//    QoccViewerContext* context_;
     QoccViewWidget* viewer_;
     QModelTree* modeltree_;
     ISCADModel* model_;

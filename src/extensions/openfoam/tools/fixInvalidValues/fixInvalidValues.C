@@ -29,6 +29,8 @@
 #include <memory>
 #include <vector>
 
+#include "simpleFilter.H"
+
 using namespace Foam;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -43,6 +45,7 @@ int main(int argc, char *argv[])
     argList::validArgs.append("indicator field name (will be corrected as well)");
     argList::validArgs.append("list of fields to correct");
     argList::validOptions.insert("threshold", "indicator field value below which mapping is considered to have failed");
+    argList::validOptions.insert("smooth", "smooth fields for specified number of iterations after fixing");
 
 #   include "setRootCase.H"
 #   include "createTime.H"
@@ -200,6 +203,42 @@ int main(int argc, char *argv[])
       }
     }
 
+
+    if (args.options().found("smooth"))
+    {
+      label nIter = readLabel(IStringStream(args.options()["smooth"])());
+      Info << "Filtering" << flush;
+
+      simpleFilter filter(mesh);
+
+      for (label i=0; i<nIter; i++)
+      {
+        if (i%5==0)
+          Info<<"."<<flush;
+
+        for (size_t k=0; k<scalarFields.size(); k++)
+        {
+          volScalarField& field = *scalarFields[k];
+          field = filter(field);
+        }
+        for (size_t k=0; k<vectorFields.size(); k++)
+        {
+          volVectorField& field = *vectorFields[k];
+          field = filter(field);
+        }
+        for (size_t k=0; k<tensorFields.size(); k++)
+        {
+          volTensorField& field = *tensorFields[k];
+          field = filter(field);
+        }
+        for (size_t k=0; k<symmTensorFields.size(); k++)
+        {
+          volSymmTensorField& field = *symmTensorFields[k];
+          field = filter(field);
+        }
+      }
+      Info<<"done."<<endl;
+    }
 
 
     for (auto sf: scalarFields) sf->write();

@@ -1,0 +1,20 @@
+#include <vector>
+#include <iostream>
+#include <string>
+#include <dlfcn.h>
+
+struct CombinedLoader
+{
+    CombinedLoader()
+    {
+        for (const auto& lib: std::vector<std::string>(
+                {@LIBRARY_LIST@}
+             ))
+        {
+            if ( !dlopen ( lib.c_str(), RTLD_LAZY|RTLD_GLOBAL ) ) 
+            {
+                std::cerr<<"Could not load module library "<<lib<<"!\nReason: " << dlerror() << std::endl;
+            }
+        }
+    }
+} combinedLoader;

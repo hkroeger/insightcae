@@ -79,8 +79,9 @@ struct list
 : public std::vector<data> 
 {
   list();
+
   list(std::initializer_list<OFDictData::data> ini);
-  
+
   template<class T>
   void assign(const std::vector<T>& vec)
   {
@@ -147,14 +148,14 @@ struct dict
 
   list& getList(const std::string& key, bool createIfNonexistent=true);
 
-  inline double& getDouble(const std::string& key)
+  inline double& getDoubleRef(const std::string& key)
   {
     return this->lookup<double>(key);
   }
 
   inline double getDouble(const std::string& key) const
   {
-     return this->lookup<double>(key);
+     return this->getDoubleOrInt(key);
   }
 
   inline double getDoubleOrInt(const std::string& key) const
@@ -169,22 +170,22 @@ struct dict
     }
   }
 
-  inline int& getInt(const std::string& key)
+  inline int& getIntRef(const std::string& key)
   {
     return this->lookup<int>(key);
   }
 
-  inline const int& getInt(const std::string& key) const
+  inline int getInt(const std::string& key) const
   {
     return this->lookup<int>(key);
   }
 
-  inline std::string& getString(const std::string& key)
+  inline std::string& getStringRef(const std::string& key)
   {
     return this->lookup<std::string>(key);
   }
 
-  inline const std::string& getString(const std::string& key) const
+  inline std::string getString(const std::string& key) const
   {
     return this->lookup<std::string>(key);
   }
@@ -249,11 +250,11 @@ void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const s
 void writeOpenFOAMDict(const boost::filesystem::path& dictpath, const OFDictData::dictFile& dict);
 
 bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
-void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d);
+void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d, bool filterZeroSizesPatches=false);
+bool patchExists(const OFDictData::dict& bd, const std::string& patchName);
 
 void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname, bool skip_header=false);
 
-bool patchExists(const OFDictData::dict& bd, const std::string& patchName);
 
 }
 

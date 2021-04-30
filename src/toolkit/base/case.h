@@ -38,7 +38,7 @@ class Case
 {
 
 protected:
-  ParameterSet parameters_;
+//  ParameterSet parameters_;
   boost::ptr_vector<CaseElement> elements_;
 
 public:
@@ -179,8 +179,8 @@ public:
         return const_cast<const T&> ( const_cast<Case*>(this)->getUniqueElement<T>() );
     }
 
-    inline const ParameterSet& params() const
-    { return parameters_; }
+//    inline const ParameterSet& params() const
+//    { return parameters_; }
     
     virtual void createOnDisk
     (

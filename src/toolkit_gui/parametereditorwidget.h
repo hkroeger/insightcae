@@ -28,13 +28,17 @@
 #include "parametersetvisualizer.h"
 #include "qoccviewwidget.h"
 #include "qmodeltree.h"
+#include "base/progressdisplayer.h"
+
+#include "iqparametersetmodel.h"
 
 #undef None
 #undef Bool
 #include <QWidget>
 #include <QSplitter>
-#include <QTreeWidget>
+//#include <QTreeWidget>
 #include <QThread>
+#include <QTreeView>
 
 #include <set>
 #include <memory>
@@ -42,13 +46,13 @@
 
 class VisualizerThread;
 
-class ParameterTreeWidget
-    : public QTreeWidget
-{
-public:
-  ParameterTreeWidget(QWidget* p);
-  void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-};
+//class ParameterTreeWidget
+//    : public QTreeWidget
+//{
+//public:
+//  ParameterTreeWidget(QWidget* p);
+//  void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+//};
 
 class ParameterSetDisplay;
 namespace insight {
@@ -61,18 +65,22 @@ class ParameterEditorWidget
     Q_OBJECT
     
 protected:
-    ParameterTreeWidget *ptree_;
+//    ParameterTreeWidget *ptree_;
+    QTreeView* parameterTreeView_;
     QWidget *inputContents_;
 
     ParameterSetDisplay* display_;
 
-    QTreeWidgetItem* root_;
+//    QTreeWidgetItem* root_;
     
-    insight::ParameterSet& parameters_;
+//    insight::ParameterSet& parameters_;
     insight::ParameterSet defaultParameters_;
+
+    IQParameterSetModel* model_;
 
     insight::ParameterSet_ValidatorPtr vali_;
     std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz_;
+
 
 public:
 
@@ -97,17 +105,20 @@ public:
         ParameterSetDisplay* display = nullptr
     );
     
-    void insertParameter(const QString& name, insight::Parameter& parameter, const insight::Parameter& defaultParameter);
+//    void insertParameter(const QString& name, insight::Parameter& parameter, const insight::Parameter& defaultParameter);
     void doUpdateVisualization();
+    bool hasVisualizer() const;
+
+    inline IQParameterSetModel* model() const { return model_; }
     
 public Q_SLOTS:
-    void onApply();
-    void onUpdate();
+//    void onApply();
+//    void onUpdate();
     void onParameterSetChanged();
 
 Q_SIGNALS:
-    void apply();
-    void update();
+//    void apply();
+//    void update();
     void parameterSetChanged();
 };
 
@@ -151,20 +162,6 @@ public Q_SLOTS:
 private Q_SLOTS:
   void visualizationUpdateFinished();
 
-};
-
-
-class VisualizerThread
-    : public QThread
-{
-  Q_OBJECT
-
-  ParameterSetDisplay *psd_;
-
-  void run() override;
-
-public:
-  VisualizerThread(ParameterSetDisplay* psd);
 };
 
 

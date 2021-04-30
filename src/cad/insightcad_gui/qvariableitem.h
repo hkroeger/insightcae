@@ -30,7 +30,7 @@
 #include "cadfeature.h"
 #endif
 
-class QoccViewerContext;
+//class QoccViewerContext;
 
 
 class QScalarVariableItem

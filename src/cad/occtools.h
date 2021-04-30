@@ -22,9 +22,53 @@
 #define INSIGHT_OCCTOOLS_H
 
 #include "occinclude.h"
+#include "vtkSmartPointer.h"
+#include "vtkTransform.h"
 
 namespace insight {
 namespace cad {
+
+
+gp_Trsf OFtransformToOCC(const arma::mat& translate, const arma::mat& rollPitchYaw, double scale);
+
+class OCCtransformToOF
+{
+  arma::mat translate_;
+  arma::mat rollPitchYaw_;
+  double scale_;
+
+public:
+  OCCtransformToOF(const gp_Trsf& t);
+  inline const arma::mat& translate() const { return translate_; }
+  /**
+   * @brief rollPitchYaw
+   * @return Euler angles in degrees.
+   */
+  inline const arma::mat& rollPitchYaw() const { return rollPitchYaw_; }
+  inline double scale() const { return scale_; }
+};
+
+
+
+
+class OCCtransformToVTK
+    : public OCCtransformToOF
+{
+public:
+  OCCtransformToVTK(const gp_Trsf& t);
+
+  vtkSmartPointer<vtkTransform> operator()() const;
+};
+
+
+
+Handle_AIS_MultipleConnectedInteractive
+buildMultipleConnectedInteractive
+(
+    AIS_InteractiveContext& context,
+    std::vector<Handle_AIS_InteractiveObject> objs
+);
+
   
 Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::string& text);
 Handle_AIS_InteractiveObject createLengthDimension
@@ -111,7 +155,7 @@ public:
 private:
 //! -- from PrsMgr_PresentableObject.
     void Compute (const Handle_PrsMgr_PresentationManager3d& pm,
-                  const Handle_Prs3d_Presentation& pres,
+                  const Handle(Prs3d_Presentation)& pres,
                   const Standard_Integer mode);
 
 //! -- from PrsMgr_PresentableObject.

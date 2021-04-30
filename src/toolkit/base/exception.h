@@ -51,6 +51,8 @@ std::string splitMessage
 (
     const std::string& message,
     std::size_t width = 80,
+    std::string begMark=std::string(),
+    std::string endMark=std::string(),
     std::string whitespace = " \t\r"
 );
 
@@ -94,6 +96,15 @@ public:
 };
 
 
+
+class UnsupportedFeature
+    : public Exception
+{
+public:
+  UnsupportedFeature();
+  UnsupportedFeature(const std::string& msg, bool strace=true);
+};
+
 void assertion(bool condition, const std::string& context_message);
 
 
@@ -109,6 +120,35 @@ public:
 };
 
 extern thread_local ExceptionContext exceptionContext;
+
+
+
+
+class WarningDispatcher
+{
+
+  WarningDispatcher *superDispatcher_=nullptr;
+  std::vector<insight::Exception> warnings_;
+
+
+public:
+  WarningDispatcher();
+  void setSuperDispatcher(WarningDispatcher* superDispatcher);
+
+  void issue(const std::string& message);
+  void issue(const insight::Exception& warning);
+
+
+  const decltype(warnings_)& warnings() const;
+  size_t nWarnings() const;
+
+
+};
+
+extern thread_local WarningDispatcher warnings;
+
+void displayFramed(const std::string& title, const std::string& msg, char titleChar = '=', std::ostream &os = std::cerr);
+
 
 void Warning(const std::string& msg);
 

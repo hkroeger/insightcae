@@ -49,6 +49,9 @@
 
 #include "parser.h"
 
+#include "base/cacheableentityhashes.h"
+#include "featurecache.h"
+
 namespace insight 
 {
 namespace cad 
@@ -64,11 +67,6 @@ namespace boost
 template<> struct hash<TopoDS_Shape>
 {
   std::size_t operator()(const TopoDS_Shape& shape) const;
-};
-
-template<> struct hash<arma::mat>
-{
-  std::size_t operator()(const arma::mat& v) const;
 };
 
 template<> struct hash<gp_Pnt>
@@ -96,10 +94,7 @@ template<> struct hash<insight::cad::FeatureSet>
   std::size_t operator()(const insight::cad::FeatureSet& m) const;
 };
 
-template<> struct hash<boost::filesystem::path>
-{
-  std::size_t operator()(const boost::filesystem::path& fn) const;
-};
+
 
 
 }
@@ -168,7 +163,7 @@ class FreelyIndexedMapOfShape
  : public std::map<int, TopoDS_Shape>
 {
 public:
-    int Add(const TopoDS_Shape& s, int index=-1);
+    void Add(const TopoDS_Shape& s, int index=-1);
     bool contains (const TopoDS_Shape& K)  const;
     const  TopoDS_Shape& FindKey (const Standard_Integer I)  const;
     const  TopoDS_Shape& operator () (const Standard_Integer I)  const;
@@ -186,6 +181,8 @@ class Feature
 {
   
   friend class ParameterListHash;
+
+  static std::mutex step_read_mutex_;
   
 public:
   declareFactoryTableNoArgs(Feature); 
@@ -231,8 +228,8 @@ private:
   
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
-  /*TopTools_IndexedMapOfShape*/
-  FreelyIndexedMapOfShape
+  TopTools_IndexedMapOfShape
+//  FreelyIndexedMapOfShape
    fmap_, emap_, vmap_, somap_, shmap_, wmap_;
   
   SubfeatureMap providedSubshapes_;
@@ -283,10 +280,11 @@ public:
   Feature(const TopoDS_Shape& shape);
 //   Feature(const boost::filesystem::path& filepath);
   Feature(FeatureSetPtr creashapes);
+
+  virtual ~Feature();
   
   static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
-  
-  virtual ~Feature();
+  static FeaturePtr CreateFromFeaturesSet(FeatureSetPtr shapes);
   
   inline bool isleaf() const { return isleaf_; }
   inline void unsetLeaf() const { isleaf_=false; }
@@ -514,75 +512,6 @@ public:
 };
 
 
-// class FeatureCache
-// {
-//   boost::filesystem::path cacheDir_;
-//   bool removeCacheDir_;
-//   
-//   std::set<boost::filesystem::path> usedFilesDuringRebuild_;
-//   
-//   boost::filesystem::path fileName(size_t hash) const;
-//   
-// public:
-//   FeatureCache(const boost::filesystem::path& cacheDir="");
-//   ~FeatureCache();
-//   
-//   void initRebuild();
-//   void finishRebuild();
-//   
-//   bool contains(size_t hash) const;
-//   boost::filesystem::path markAsUsed(size_t hash);
-//   
-// };
-
-
-// #warning cachable feature always have to be stored in shared_ptrs! create functions and private constructors should be issues to ensure this.
-class FeatureCache
-: public std::map<size_t, FeaturePtr>
-{
-
-  std::set<size_t> usedDuringRebuild_;
-  
-public:
-  FeatureCache();
-  ~FeatureCache();
-  
-  void initRebuild();
-  void finishRebuild();
-  
-  void insert(FeaturePtr p);
-  bool contains(size_t hash) const;
-  
-  template<class T>
-  std::shared_ptr<T> markAsUsed(size_t hash)
-  {
-    iterator i=this->find(hash);
-    
-    if (i==end()) 
-      throw insight::Exception
-      (
-	"requested entry in CAD feature cache is not found!"
-      );
-    
-    std::shared_ptr<T> cp
-    ( 
-      std::dynamic_pointer_cast<T>( i->second )
-    );
-    
-    if (!cp) 
-      throw insight::Exception
-      (
-	"requested entry in CAD feature cache found,"
-	" but is of wrong type! (cache: "+i->second->type()
-      );
-    
-    usedDuringRebuild_.insert(hash);
-    return cp;
-  }
-  
-};
-
-extern FeatureCache cache;
 
 }
 }

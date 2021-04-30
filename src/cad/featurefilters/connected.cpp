@@ -46,6 +46,8 @@ public:
 
   bool addNeighbours(const TopoDS_Shape& f, std::set<FeatureID>& result)
   {
+    bool wasAdded=false;
+
     result.insert(s_.faceID(f)); // add current face
 
     for (TopExp_Explorer ex(f, TopAbs_EDGE); ex.More(); ex.Next())
@@ -58,11 +60,9 @@ public:
         FeatureID fi = s_.faceID(bn);
         if (result.find(fi)==result.end()) // if not yet visited
         {
-          cout<<"add"<<endl;
           addNeighbours(bn, result);
+          wasAdded=true;
         }
-        else
-          cout<<"not added"<<endl;
       }
     }
 
@@ -82,6 +82,8 @@ public:
 //          cout<<"not added"<<endl;
 //      }
 //    }
+
+    return wasAdded;
   }
 };
 

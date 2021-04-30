@@ -62,6 +62,8 @@ public:
   std::string toLaTeX() const;
   std::string toHTML(int imageWidth) const;
   std::string toPlainText() const;
+
+  bool empty() const;
   
   static std::string LaTeXFromPlainText(const std::string& plainText);
 };

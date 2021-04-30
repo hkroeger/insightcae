@@ -20,7 +20,7 @@ set(isofExecutionManager_SOURCES
 )
 
 set(isofExecutionManager_LIBS
-    ${Boost_LIBRARIES} toolkit Qt5::Widgets toolkit_gui
+    ${Boost_LIBRARIES} Qt5::Widgets toolkit_gui
 )
 
 set(isofExecutionManager_RCCS
@@ -36,5 +36,6 @@ target_include_directories(isofExecutionManager
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
+linkToolkitVtk(isofExecutionManager Onscreen)
 
 install(TARGETS isofExecutionManager RUNTIME DESTINATION bin)

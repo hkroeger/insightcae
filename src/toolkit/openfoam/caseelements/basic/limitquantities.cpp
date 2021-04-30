@@ -18,6 +18,15 @@ limitQuantities::limitQuantities( OpenFOAMCase& c, const ParameterSet& ps )
 
 void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  if (p_.limitFields.size()>0)
+  {
+    dictionaries
+        .lookupDict("system/controlDict")
+        .getList("libs")
+        .insertNoDuplicate("\"liblimitField.so\"")
+        ;
+  }
+
   OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
 
   cellSetOption_Selection sel(p_.cells);
@@ -57,7 +66,7 @@ void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
       switch (i.type)
         {
          case Parameters::limitFields_default_type::scalar:
-           type="scalarlimitFields";
+           type="scalarlimitField";
           break;
         }
 

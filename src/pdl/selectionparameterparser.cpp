@@ -23,6 +23,7 @@ std::string SelectionParameterParser::Data::cppTypeDecl(const std::string& name,
     os<<comma<<s<<endl;
     comma=",";
   }
+  //os<<",invalid_"+cppTypeName(name)+"_selection";
   os<<"};";
   return os.str();
 }
@@ -71,5 +72,6 @@ void SelectionParameterParser::Data::cppWriteSetStatement(
 void SelectionParameterParser::Data::cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
   const std::string& thisscope) const
 {
-  os<<staticname<<"="<<extendtype(thisscope, cppTypeName(name))<<"("<<varname<<"());"<<endl;
+  os<<staticname<<"="<<extendtype(thisscope, cppTypeName(name))
+   <<"(" /*"std::min<int>("<<selections.size()<<","*/<<varname<<"()" /*")"*/ ");"<<endl;
 }

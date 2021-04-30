@@ -1,0 +1,6 @@
+L?=500;
+
+profile:Extrusion(
+ import("i-type_60x60_slot10.brep"),
+ L*EZ
+);

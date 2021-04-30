@@ -24,8 +24,13 @@
 %import "toolkit.i"
 
 %{
+#include "code_aster/caexportfile.h"
 #include "convergenceanalysis.h"
 #include "filetemplate.h"
+#include "openfoam/openfoamtools.h"
+#include "openfoam/openfoamanalysis.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
+#include "openfoam/paraview.h"
 
 using namespace insight;
 %}

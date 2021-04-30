@@ -31,6 +31,7 @@ public:
   inline insight::ParameterSet& parameters() { return curp_; }
   inline const insight::ParameterSet& defaultParameters() { return defp_; }
   inline const insight::ParameterSet& parameters() const { return curp_; }
+  inline const std::string& type_name() const { return type_name_; }
 
   insight::ParameterSet_VisualizerPtr visualizer();
   void updateVisualization();
@@ -44,8 +45,6 @@ class InsertedCaseElement
 
 public:
     InsertedCaseElement(QListWidget*, const std::string& type_name, ParameterSetDisplay* d);
-
-    inline const std::string& type_name() const { return type_name_; }
 
     insight::OpenFOAMCaseElement* createElement(insight::OpenFOAMCase& c) const;
     void insertElement(insight::OpenFOAMCase& ofc) const;

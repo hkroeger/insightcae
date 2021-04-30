@@ -8,6 +8,6 @@ project(isofVTKToField)
 set(isofVTKToField_SOURCES main.cpp)
 
 add_executable(isofVTKToField ${isofVTKToField_SOURCES})
-target_link_libraries(isofVTKToField toolkit)
+linkToolkitVtk(isofVTKToField Onscreen)
 
 install(TARGETS isofVTKToField RUNTIME DESTINATION bin)

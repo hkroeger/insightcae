@@ -15,7 +15,7 @@ public:
 /*
 PARAMETERSET>>> volumeDrag Parameters
 
-name = string "volumeDrag" "Name of the volume drag element"
+name = string "volumeDrag" "Name of the volume drag element. Equals the name of the cell zone."
 CD = vector (1 0 0) "Volume drag coefficient for each direction"
 
 <<<PARAMETERSET

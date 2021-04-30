@@ -2,6 +2,7 @@
 #include "analysisform.h"
 #include "ui_analysisform.h"
 #include <QMessageBox>
+#include <QDebug>
 
 #include "base/analysis.h"
 #include "base/remoteserverlist.h"
@@ -15,6 +16,7 @@
 #endif
 
 #include <QMessageBox>
+#include <QFileDialog>
 
 #include "localrun.h"
 
@@ -22,18 +24,118 @@
 namespace fs = boost::filesystem;
 
 
+void AnalysisForm::connectLocalActions()
+{
+  // ====================================================================================
+  // ======== working directory
+
+
+  connect(ui->btnSelectWorkingDirectory, &QPushButton::clicked,
+           [&]()
+           {
+             QString dir = QFileDialog::getExistingDirectory(
+                   this,
+                   "Please select working directory",
+                   ui->leWorkingDirectory->text()
+                   );
+             if (!dir.isEmpty())
+             {
+               ui->leWorkingDirectory->setText(dir); // checks will be performed in lineEdit handler
+             }
+           }
+   );
+
+
+  connect(ui->leWorkingDirectory, &QLineEdit::textEdited,
+          this, &AnalysisForm::workingDirectoryEdited);
+
+  connect(ui->cbRemoveWorkingDirectory, &QCheckBox::toggled,
+          [&](bool checked)
+          {
+            bool keep = !checked;
+
+            if (caseDirectory_)
+            {
+              if ( !keep && (caseDirectory_->isExistingAndNotEmpty() && caseDirectory_->keep()) )
+              {
+                auto answer = QMessageBox::warning(
+                      this,
+                      "Attention!",
+
+                      "You selected an <b>existing directory</b> as working directory and\n"
+                      "you requested <b>removal of that directory</b> after the analysis is finished!\n"
+                      "All data in the directory<br>"
+                      "<b>"+QString::fromStdString(caseDirectory_->string())+"</b><br>"
+                      "will be deleted after the analysis!"
+                      "<br>"
+                      "Do you really want to continue?",
+
+                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
+                      QMessageBox::No
+                      );
+
+                if (answer!=QMessageBox::Yes)
+                {
+                  ui->cbRemoveWorkingDirectory->setChecked( Qt::Unchecked );
+                  return;
+                }
+              }
+              caseDirectory_->setKeep(keep);
+            }
+          }
+  );
+}
+
+
+void AnalysisForm::workingDirectoryEdited(const QString &qnwd)
+{
+  fs::path nwd=qnwd.toStdString();
+
+  if ( !nwd.empty() && fs::exists(nwd) && fs::is_directory(nwd) )
+  {
+    caseDirectory_.reset(); // delete first
+    caseDirectory_.reset(new QCaseDirectory( this, nwd, true ));
+  }
+  else
+  {
+    caseDirectory_.reset();
+  }
+
+  if (nwd.empty())
+  {
+    ui->cbRemoveWorkingDirectory->setChecked( Qt::Checked );
+  }
+  else if (fs::exists(nwd))
+  {
+    ui->cbRemoveWorkingDirectory->setChecked( Qt::Unchecked );
+  }
+}
+
+
+bool AnalysisForm::ensureWorkingDirectoryExistence()
+{
+  if (!caseDirectory_)
+  {
+    qDebug()<<"RESET";
+    bool keep = !ui->cbRemoveWorkingDirectory->isChecked();
+    fs::path nwd = ui->leWorkingDirectory->text().toStdString();
+
+    caseDirectory_.reset(new QCaseDirectory(this, nwd, keep));
+
+    ui->leWorkingDirectory->setText(QString::fromStdString(caseDirectory_->string()));
+  }
+
+  return true;
+}
+
+
+
 
 void AnalysisForm::startLocalRun()
 {
-
-  if (!checkAnalysisExecutionPreconditions())
-    return;
-
-  applyDirectorySettings();
-
   if (isOpenFOAMAnalysis_)
   {
-    bool evalOnly = insight::OpenFOAMAnalysis::Parameters(parameters_).run.evaluateonly;
+    bool evalOnly = insight::OpenFOAMAnalysis::Parameters(parameters()).run.evaluateonly;
 
     if (boost::filesystem::exists(*caseDirectory_ / "constant" / "polyMesh" ))
     {
@@ -83,7 +185,7 @@ void AnalysisForm::startLocalRun()
     }
   }
 
-  Q_EMIT apply(); // apply all changes into parameter set
+//  Q_EMIT apply(); // apply all changes into parameter set
 
   currentWorkbenchAction_.reset(new LocalRun(this));
 }

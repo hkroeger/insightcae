@@ -73,6 +73,7 @@
 #include "TransferBRep.hxx"
 #include "Transfer_Binder.hxx"
 #include "Transfer_TransientProcess.hxx"
+#include "TopTools_DataMapIteratorOfDataMapOfIntegerShape.hxx"
 
 #include "openfoam/openfoamdict.h"
 
@@ -91,23 +92,14 @@ using namespace boost;
 
 namespace boost
 {
- 
+
+
 std::size_t hash<TopoDS_Shape>::operator()(const TopoDS_Shape& shape) const
 {
   insight::cad::Feature m(shape);  
   return m.hash();
 }
 
-std::size_t hash<arma::mat>::operator()(const arma::mat& v) const
-{
-  std::hash<double> dh;
-  size_t h=0;
-  for (int i=0; i<v.n_elem; i++)
-  {
-    boost::hash_combine(h, dh(v(i)));
-  }
-  return h;
-}
 
 std::size_t hash<gp_Pnt>::operator()(const gp_Pnt& v) const
 {
@@ -135,32 +127,24 @@ std::size_t hash<gp_Trsf>::operator()(const gp_Trsf& t) const
   return h;
 }
 
+
 std::size_t hash<insight::cad::Datum>::operator()(const insight::cad::Datum& m) const
 {
   return m.hash();
 }
+
 
 std::size_t hash<insight::cad::Feature>::operator()(const insight::cad::Feature& m) const
 {
   return m.hash();
 }
 
-std::size_t hash<boost::filesystem::path>::operator()(const boost::filesystem::path& fn) const
-{
-  size_t h=0;
-  // build from file path string and last write time (latter only if file exists)
-  boost::hash_combine(h, fn.string());
-  if (boost::filesystem::exists(fn))
-  {
-    boost::hash_combine(h, boost::filesystem::last_write_time(fn));
-  }
-  return h;
-}
 
 std::size_t hash<insight::cad::FeatureSet>::operator()(const insight::cad::FeatureSet& m) const
 {
   return m.hash();
 }
+
 
 }
 
@@ -211,7 +195,7 @@ FeatureCmdInfo::FeatureCmdInfo
 {}
 
 
-int FreelyIndexedMapOfShape::Add(const TopoDS_Shape& s, int index)
+void FreelyIndexedMapOfShape::Add(const TopoDS_Shape& s, int index)
 {
     // ensure that entity is only contained once
     int i=FindIndex(s);
@@ -283,6 +267,7 @@ defineFactoryTableNoArgs(Feature);
 addToFactoryTable(Feature, Feature);
 
 
+std::mutex Feature::step_read_mutex_;
 
 void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 {
@@ -318,114 +303,118 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     }
     else if ( (ext==".stp") || (ext==".step") )
     {
-        // import STEP
-        STEPControl_Reader reader;
-        reader.ReadFile(filename.c_str());
-        reader.TransferRoots();
-        cout<<"STEP transferred"<<endl;
+        TopoDS_Shape res;
+        {
+          std::lock_guard<std::mutex> guard(step_read_mutex_);
 
-        TopoDS_Shape res=reader.OneShape();
-        cout<<"=> one shape"<<endl;
+          // import STEP
+          STEPControl_Reader reader;
+          reader.ReadFile(filename.c_str());
+          reader.TransferRoots();
+          cout<<"STEP transferred"<<endl;
 
+          res=reader.OneShape();
+          cout<<"=> one shape"<<endl;
+        }
         // set shape
         setShape(res);
 
-        // now detect named features
-        //
-        cout<<"detecting names"<<endl;
+//        // now detect named features
+//        //
+//        cout<<"detecting names"<<endl;
 
-        typedef std::map<std::string, FeatureSetPtr> Feats;
-        Feats feats;
+//        typedef std::map<std::string, FeatureSetPtr> Feats;
+//        Feats feats;
 
-        Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-all");
-        reader.TransferList(shapeList);
-
-
-        const Handle_XSControl_WorkSession & theSession = reader.WS();
-        const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
-        const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
-
-        for(int i=1; i <= shapeList->Length(); i++)
-        {
-            Handle_Standard_Transient transient = shapeList->Value(i);
-            TopoDS_Shape shape = TransferBRep::ShapeResult(tp, transient);
-            if(!shape.IsNull())
-            {
-                Handle_Standard_Transient anEntity = aReader->EntityFromShapeResult(shape, 1);
-                if(!anEntity.IsNull())
-                {
-                    Handle_StepRepr_RepresentationItem entity = Handle_StepRepr_RepresentationItem::DownCast(anEntity);
-                    if(!entity.IsNull())
-                    {
-                        if (!entity->Name()->IsEmpty())  // found named entity
-                        {
-                            std::string n(entity->Name()->ToCString());
-                            if (shape.ShapeType()==TopAbs_FACE)
-                            {
-                                std::vector<FeatureID> ids;
-                                for(TopExp_Explorer ex(res, TopAbs_FACE); ex.More(); ex.Next())
-                                {
-                                    TopoDS_Face f=TopoDS::Face(ex.Current());
-                                    if (f.IsPartner(shape))
-                                    {
-                                        ids.push_back(faceID(f));
-//                                        std::cout<<"MATCH! face id="<<(ids.back())<<std::endl;
-                                    }
-                                }
-                                if (ids.size()==0)
-                                {
-                                    insight::Warning("could not identify named face in model! (face named \""+n+"\")");
-                                }
-                                else
-                                {
-                                    std::string name="face_"+n;
-                                    if (feats.find(name)==feats.end())
-                                        feats[name].reset(new FeatureSet(shared_from_this(), Face));
-                                    for (const FeatureID& i: ids)
-                                    {
-                                        feats[name]->add(i);
-                                    }
-                                }
-                            }
-                            else if (shape.ShapeType()==TopAbs_SOLID)
-                            {
-                                std::vector<FeatureID> ids;
-                                for(TopExp_Explorer ex(res, TopAbs_SOLID); ex.More(); ex.Next())
-                                {
-                                    TopoDS_Solid f=TopoDS::Solid(ex.Current());
-                                    if (f.IsPartner(shape))
-                                    {
-                                        ids.push_back(solidID(f));
-//                                        std::cout<<"MATCH! solid id="<<ids.back()<<std::endl;
-                                    }
-                                }
-                                if (ids.size()==0)
-                                {
-                                    insight::Warning("could not identify named solid in model! (solid named \""+n+"\")");
-                                }
-                                else
-                                {
-                                    std::string name="solid_"+n;
-                                    if (feats.find(name)==feats.end())
-                                        feats[name].reset(new FeatureSet(shared_from_this(), Solid));
-                                    for (const FeatureID& i: ids)
-                                    {
-                                        feats[name]->add(i);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+//        Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-all");
+//        reader.TransferList(shapeList);
 
 
-        for (Feats::value_type& f: feats)
-        {
-            providedFeatureSets_[f.first]=f.second;
-            providedSubshapes_[f.first].reset(new Feature(f.second));
-        }
+//        const Handle_XSControl_WorkSession & theSession = reader.WS();
+//        const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
+//        const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
+
+//        for(int i=1; i <= shapeList->Length(); i++)
+//        {
+//            Handle_Standard_Transient transient = shapeList->Value(i);
+//            TopoDS_Shape shape = TransferBRep::ShapeResult(tp, transient);
+//            if(!shape.IsNull())
+//            {
+//                Handle_Standard_Transient anEntity = aReader->EntityFromShapeResult(shape, 1);
+//                if(!anEntity.IsNull())
+//                {
+//                    Handle_StepRepr_RepresentationItem entity = Handle_StepRepr_RepresentationItem::DownCast(anEntity);
+//                    if(!entity.IsNull())
+//                    {
+//                        if (!entity->Name()->IsEmpty())  // found named entity
+//                        {
+//                            std::string n(entity->Name()->ToCString());
+//                            if (shape.ShapeType()==TopAbs_FACE)
+//                            {
+//                                std::vector<FeatureID> ids;
+//                                for(TopExp_Explorer ex(res, TopAbs_FACE); ex.More(); ex.Next())
+//                                {
+//                                    TopoDS_Face f=TopoDS::Face(ex.Current());
+//                                    if (f.IsPartner(shape))
+//                                    {
+//                                        ids.push_back(faceID(f));
+////                                        std::cout<<"MATCH! face id="<<(ids.back())<<std::endl;
+//                                    }
+//                                }
+//                                if (ids.size()==0)
+//                                {
+//                                    insight::Warning("could not identify named face in model! (face named \""+n+"\")");
+//                                }
+//                                else
+//                                {
+//                                    std::string name="face_"+n;
+//                                    if (feats.find(name)==feats.end())
+//                                        feats[name].reset(new FeatureSet(shared_from_this(), Face));
+//                                    for (const FeatureID& i: ids)
+//                                    {
+//                                        feats[name]->add(i);
+//                                    }
+//                                }
+//                            }
+//                            else if (shape.ShapeType()==TopAbs_SOLID)
+//                            {
+//                                std::vector<FeatureID> ids;
+//                                for(TopExp_Explorer ex(res, TopAbs_SOLID); ex.More(); ex.Next())
+//                                {
+//                                    TopoDS_Solid f=TopoDS::Solid(ex.Current());
+//                                    if (f.IsPartner(shape))
+//                                    {
+//                                        ids.push_back(solidID(f));
+////                                        std::cout<<"MATCH! solid id="<<ids.back()<<std::endl;
+//                                    }
+//                                }
+//                                if (ids.size()==0)
+//                                {
+//                                    insight::Warning("could not identify named solid in model! (solid named \""+n+"\")");
+//                                }
+//                                else
+//                                {
+//                                    std::string name="solid_"+n;
+//                                    if (feats.find(name)==feats.end())
+//                                        feats[name].reset(new FeatureSet(shared_from_this(), Solid));
+//                                    for (const FeatureID& i: ids)
+//                                    {
+//                                        feats[name]->add(i);
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+
+
+//        for (Feats::value_type& f: feats)
+//        {
+//            providedFeatureSets_[f.first]=f.second;
+//            providedSubshapes_[f.first].reset(new Feature(f.second));
+//        }
 
     }
     else
@@ -446,8 +435,8 @@ size_t Feature::calcShapeHash() const
   size_t hash=0;
   
   boost::hash_combine(hash, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash, boost::hash<int>()(vmap_.size()));
-  boost::hash_combine(hash, boost::hash<int>()(fmap_.size()));
+  boost::hash_combine(hash, boost::hash<int>()(vmap_.Size()));
+  boost::hash_combine(hash, boost::hash<int>()(fmap_.Size()));
 
   FeatureSetData vset=allVerticesSet();
   for (const insight::cad::FeatureID& j: vset)
@@ -536,6 +525,13 @@ Feature::Feature(FeatureSetPtr creashapes)
   featureSymbolName_("subshapesOf_"+creashapes->model()->featureSymbolName())
 {}
 
+Feature::~Feature()
+{
+  auto h=hash();
+  if (cache.contains(h))
+    cache.erase(h);
+}
+
 FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 {
   FeaturePtr f(new Feature());
@@ -546,8 +542,9 @@ FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
   return f;
 }
 
-Feature::~Feature()
+FeaturePtr Feature::CreateFromFeaturesSet(FeatureSetPtr shapes)
 {
+  return std::make_shared<Feature>(shapes);
 }
 
 void Feature::setFeatureSymbolName( const std::string& name)
@@ -720,7 +717,18 @@ Feature& Feature::operator=(const Feature& o)
 
   if (o.valid())
   {
-    setShape(o.shape_);
+    if (o.volprops_)
+      volprops_.reset(new GProp_GProps(*o.volprops_));
+
+    shape_=o.shape_;
+    fmap_=o.fmap_;
+    emap_=o.emap_;
+    vmap_=o.vmap_;
+    somap_=o.somap_;
+    shmap_=o.shmap_;
+    wmap_=o.wmap_;
+    setValid();
+//    setShape(o.shape_);
   }
   return *this;
 }
@@ -743,7 +751,6 @@ GeomAbs_CurveType Feature::edgeType(FeatureID i) const
 GeomAbs_SurfaceType Feature::faceType(FeatureID i) const
 {
   const TopoDS_Face& f = face(i);
-  double t0, t1;
   Handle_Geom_Surface surf=BRep_Tool::Surface(f);
   GeomAdaptor_Surface adapt(surf);
   return adapt.GetType();
@@ -788,7 +795,7 @@ double Feature::subsolidVolume(FeatureID i) const
 }
 
 
-arma::mat Feature::modelCoG(double density_ovr) const
+arma::mat Feature::modelCoG(double /*density_ovr*/) const
 {
   checkForBuildDuringAccess();
 //   GProp_GProps props;
@@ -799,7 +806,7 @@ arma::mat Feature::modelCoG(double density_ovr) const
   return vec3(cog);
 }
 
-arma::mat Feature::surfaceCoG(double areaWeight_ovr) const
+arma::mat Feature::surfaceCoG(double /*areaWeight_ovr*/) const
 {
   GProp_GProps props;
   BRepGProp::SurfaceProperties(shape(), props);
@@ -951,15 +958,25 @@ arma::mat Feature::modelBndBox(double deflection) const
   BRepBndLib::Add(shape(), boundingBox);
 
   arma::mat x=arma::zeros(3,2);
-  double g=boundingBox.GetGap();
-//   cout<<"gap="<<g<<endl;
-  boundingBox.Get
-  (
-    x(0,0), x(1,0), x(2,0), 
-    x(0,1), x(1,1), x(2,1)
-  );
-  x.col(0)+=g;
-  x.col(1)-=g;
+  if (!boundingBox.IsVoid())
+  {
+    double g=boundingBox.GetGap();
+    double x0, x1, y0, y1, z0, z1;
+    boundingBox.Get
+    (
+          x0, y0, z0,
+          x1, y1, z1
+  //    x(0,0), x(1,0), x(2,0),
+  //    x(0,1), x(1,1), x(2,1)
+    );
+    x
+        << x0 << x1 << arma::endr
+        << y0 << y1 << arma::endr
+        << z0 << z1 << arma::endr
+           ;
+    x.col(0)+=g;
+    x.col(1)-=g;
+  }
 
   return x;
 }
@@ -983,17 +1000,17 @@ FeatureSetData Feature::allVerticesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ), 
-//     boost::counting_iterator<int>( vmap_.Extent()+1 ) 
-//   );
-  std::transform
-  (
-      vmap_.begin(),
-      vmap_.end(), 
-      std::inserter(fsd, fsd.begin()), 
-      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
-  );
+   fsd.insert(
+     boost::counting_iterator<int>( 1 ),
+     boost::counting_iterator<int>( vmap_.Extent()+1 )
+   );
+//  std::transform
+//  (
+//      vmap_.begin(),
+//      vmap_.end(),
+//      std::inserter(fsd, fsd.begin()),
+//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
+//  );
   return fsd;
 }
 
@@ -1001,17 +1018,17 @@ FeatureSetData Feature::allEdgesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ), 
-//     boost::counting_iterator<int>( emap_.Extent()+1 ) 
-//   );
-  std::transform
-  (
-      emap_.begin(),
-      emap_.end(), 
-      std::inserter(fsd, fsd.begin()), 
-      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
-  );
+   fsd.insert(
+     boost::counting_iterator<int>( 1 ),
+     boost::counting_iterator<int>( emap_.Extent()+1 )
+   );
+//  std::transform
+//  (
+//      emap_.begin(),
+//      emap_.end(),
+//      std::inserter(fsd, fsd.begin()),
+//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
+//  );
   return fsd;
 }
 
@@ -1019,17 +1036,17 @@ FeatureSetData Feature::allFacesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ), 
-//     boost::counting_iterator<int>( fmap_.Extent()+1 ) 
-//   );
-  std::transform
-  (
-      fmap_.begin(),
-      fmap_.end(), 
-      std::inserter(fsd, fsd.begin()), 
-      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
-  );
+   fsd.insert(
+     boost::counting_iterator<int>( 1 ),
+     boost::counting_iterator<int>( fmap_.Extent()+1 )
+   );
+//  std::transform
+//  (
+//      fmap_.begin(),
+//      fmap_.end(),
+//      std::inserter(fsd, fsd.begin()),
+//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
+//  );
   return fsd;
 }
 
@@ -1037,17 +1054,17 @@ FeatureSetData Feature::allSolidsSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;  
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ), 
-//     boost::counting_iterator<int>( somap_.Extent()+1 ) 
-//   );
-  std::transform
-  (
-      somap_.begin(),
-      somap_.end(), 
-      std::inserter(fsd, fsd.begin()), 
-      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
-  );
+   fsd.insert(
+     boost::counting_iterator<int>( 1 ),
+     boost::counting_iterator<int>( somap_.Extent()+1 )
+   );
+//  std::transform
+//  (
+//      somap_.begin(),
+//      somap_.end(),
+//      std::inserter(fsd, fsd.begin()),
+//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
+//  );
   return fsd;
 }
 
@@ -1182,7 +1199,7 @@ FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, FilterPtr f
   for (int i: fs)
   {
     bool ok=f->checkMatch(i);
-    if (ok) std::cout<<"match! ("<<i<<")"<<std::endl;
+    //if (ok) std::cout<<"match! ("<<i<<")"<<std::endl;
     if (ok) res.insert(i);
   }
   cout<<"QUERY_FACES RESULT = "<<res<<endl;
@@ -1526,7 +1543,7 @@ void Feature::exportEMesh
 
       }
       
-      for (int i=1; i<points.size()-iofs; i++)
+      for (size_t i=1; i<points.size()-iofs; i++)
       {
 	int from=iofs+i-1;
 	int to=iofs+i;
@@ -1968,7 +1985,7 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
         {
             if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
                 throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-            providedSubshapes_[prefix+sf.first]=FeaturePtr(new Transform(sf.second, trsf));
+            providedSubshapes_[prefix+sf.first]=Transform::create_trsf(sf.second, trsf);
         }
     }
     for (const DatumPtrMap::value_type& df: m1.providedDatums())
@@ -2069,12 +2086,12 @@ arma::mat Feature::getDatumVector(const std::string& name) const
 void Feature::nameFeatures()
 {
   // Don't call "shape()" here!
-  fmap_.clear();
-  emap_.clear(); 
-  vmap_.clear(); 
-  somap_.clear(); 
-  shmap_.clear(); 
-  wmap_.clear();
+  fmap_.Clear();
+  emap_.Clear();
+  vmap_.Clear();
+  somap_.Clear();
+  shmap_.Clear();
+  wmap_.Clear();
   
 #ifdef GMSH_NUMBERING_V1
   // Solids
@@ -2224,7 +2241,175 @@ void Feature::nameFeatures()
       if(vmap_.FindIndex(vertex) < 1)
 	  vmap_.Add(vertex);
   }
-  
+
+#elif defined(GMSH_NUMBERING_V2)
+
+  // iterate over all shapes with tags, and import them into the (sub)shape
+   // _maps
+   somap_.clear();
+   shmap_.clear();
+   fmap_.clear();
+   wmap_.clear();
+   emap_.clear();
+   vmap_.clear();
+
+   auto _addShapeToMaps = [&](const TopoDS_Shape &shape)
+   {
+     // Solids
+     TopExp_Explorer exp0, exp1, exp2, exp3, exp4, exp5;
+     for(exp0.Init(shape, TopAbs_SOLID); exp0.More(); exp0.Next()) {
+       TopoDS_Solid solid = TopoDS::Solid(exp0.Current());
+       if(somap_.FindIndex(solid) < 1) {
+         somap_.Add(solid);
+         for(exp1.Init(solid, TopAbs_SHELL); exp1.More(); exp1.Next()) {
+           TopoDS_Shell shell = TopoDS::Shell(exp1.Current());
+           if(shmap_.FindIndex(shell) < 1) {
+             shmap_.Add(shell);
+
+             for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
+               TopoDS_Face face = TopoDS::Face(exp2.Current());
+               if(fmap_.FindIndex(face) < 1) {
+                 fmap_.Add(face);
+
+                 for(exp3.Init(face.Oriented(TopAbs_FORWARD), TopAbs_WIRE);
+                     exp3.More(); exp3.Next()) {
+                   // for(exp3.Init(face, TopAbs_WIRE); exp3.More(); exp3.Next()){
+                   TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+                   if(wmap_.FindIndex(wire) < 1) {
+                     wmap_.Add(wire);
+
+                     for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
+                       TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+                       if(emap_.FindIndex(edge) < 1) {
+                         emap_.Add(edge);
+
+                         for(exp5.Init(edge, TopAbs_VERTEX); exp5.More();
+                             exp5.Next()) {
+                           TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+                           if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+                         }
+                       }
+                     }
+                   }
+                 }
+               }
+             }
+           }
+         }
+       }
+     }
+
+     // Free Shells
+     for(exp1.Init(shape, TopAbs_SHELL, TopAbs_SOLID); exp1.More(); exp1.Next()) {
+       const TopoDS_Shape &shell = exp1.Current();
+       if(shmap_.FindIndex(shell) < 1) {
+         shmap_.Add(shell);
+
+         for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
+           TopoDS_Face face = TopoDS::Face(exp2.Current());
+           if(fmap_.FindIndex(face) < 1) {
+             fmap_.Add(face);
+
+             for(exp3.Init(face, TopAbs_WIRE); exp3.More(); exp3.Next()) {
+               TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+               if(wmap_.FindIndex(wire) < 1) {
+                 wmap_.Add(wire);
+
+                 for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
+                   TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+                   if(emap_.FindIndex(edge) < 1) {
+                     emap_.Add(edge);
+
+                     for(exp5.Init(edge, TopAbs_VERTEX); exp5.More();
+                         exp5.Next()) {
+                       TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+                       if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+                     }
+                   }
+                 }
+               }
+             }
+           }
+         }
+       }
+     }
+
+     // Free Faces
+     for(exp2.Init(shape, TopAbs_FACE, TopAbs_SHELL); exp2.More(); exp2.Next()) {
+       TopoDS_Face face = TopoDS::Face(exp2.Current());
+       if(fmap_.FindIndex(face) < 1) {
+         fmap_.Add(face);
+
+         for(exp3.Init(face, TopAbs_WIRE); exp3.More(); exp3.Next()) {
+           TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+           if(wmap_.FindIndex(wire) < 1) {
+             wmap_.Add(wire);
+
+             for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
+               TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+               if(emap_.FindIndex(edge) < 1) {
+                 emap_.Add(edge);
+
+                 for(exp5.Init(edge, TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+                   TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+                   if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+                 }
+               }
+             }
+           }
+         }
+       }
+     }
+
+     // Free Wires
+     for(exp3.Init(shape, TopAbs_WIRE, TopAbs_FACE); exp3.More(); exp3.Next()) {
+       TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+       if(wmap_.FindIndex(wire) < 1) {
+         wmap_.Add(wire);
+
+         for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
+           TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+           if(emap_.FindIndex(edge) < 1) {
+             emap_.Add(edge);
+
+             for(exp5.Init(edge, TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+               TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+               if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+             }
+           }
+         }
+       }
+     }
+
+     // Free Edges
+     for(exp4.Init(shape, TopAbs_EDGE, TopAbs_WIRE); exp4.More(); exp4.Next()) {
+       TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+       if(emap_.FindIndex(edge) < 1) {
+         emap_.Add(edge);
+
+         for(exp5.Init(edge, TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+           TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+           if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
+         }
+       }
+     }
+
+     // Free Vertices
+     for(exp5.Init(shape, TopAbs_VERTEX, TopAbs_EDGE); exp5.More(); exp5.Next()) {
+       TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+       if(vmap_.FindIndex(vertex) < 1) { vmap_.Add(vertex); }
+     }
+   };
+
+   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp0(_tagVertex);
+   for(; exp0.More(); exp0.Next()) _addShapeToMaps(exp0.Value());
+   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp1(_tagEdge);
+   for(; exp1.More(); exp1.Next()) _addShapeToMaps(exp1.Value());
+   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp2(_tagFace);
+   for(; exp2.More(); exp2.Next()) _addShapeToMaps(exp2.Value());
+   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp3(_tagSolid);
+   for(; exp3.More(); exp3.Next()) _addShapeToMaps(exp3.Value());
+
 
 #else
 
@@ -2339,10 +2524,11 @@ void Feature::extractReferenceFeatures()
   ///////////////////////////////////////////////////////////////////////////////
   /////////////// save reference points
 
-//   for (int i=1; i<=vmap_.Extent(); i++)
-  for (const FreelyIndexedMapOfShape::value_type& i: vmap_)
+   for (int i=1; i<=vmap_.Extent(); i++)
+//  for (const FreelyIndexedMapOfShape::value_type& j: vmap_)
   {
-    refpoints_[ str(format("v%d")%i.first) ] = vertexLocation(i.first);
+//     int i=j.first;
+    refpoints_[ str(format("v%d")%i) ] = vertexLocation(i);
   }
 }
 
@@ -2563,121 +2749,6 @@ bool SingleVolumeFeature::isSingleVolume() const
 {
   return true;
 }
-
-// FeatureCache::FeatureCache(const filesystem::path& cacheDir)
-// : cacheDir_(cacheDir),
-//   removeCacheDir_(false)
-// {
-//   if (cacheDir.empty())
-//   {
-//     removeCacheDir_=true;
-//     cacheDir_ = boost::filesystem::unique_path
-//     (
-//       boost::filesystem::temp_directory_path()/("iscad_cache_%%%%%%%")
-//     );
-// //     boost::filesystem::create_directories(cacheDir_);
-//   }
-// }
-// 
-// FeatureCache::~FeatureCache()
-// {
-// //   if (removeCacheDir_)
-// //   {
-// //     boost::filesystem::remove_all(cacheDir_);
-// //   }
-// }
-// 
-// void FeatureCache::initRebuild()
-// {
-// //   usedFilesDuringRebuild_.clear();
-// }
-// 
-// void FeatureCache::finishRebuild()
-// {
-//   // remove all cache files that have not been used
-// }
-// 
-// 
-// bool FeatureCache::contains(size_t hash) const
-// {
-// //   return boost::filesystem::exists(fileName(hash));
-//   return false;
-// }
-// 
-// 
-// filesystem::path FeatureCache::markAsUsed(size_t hash)
-// {
-// //   usedFilesDuringRebuild_.insert(fileName(hash));
-//   return fileName(hash);
-// }
-// 
-// filesystem::path FeatureCache::fileName(size_t hash) const
-// {
-//   return boost::filesystem::absolute
-//   (
-//     cacheDir_ /
-//     boost::filesystem::path( str(format("%x")%hash) + ".iscad_cache" )
-//   );
-// }
-
-
-FeatureCache::FeatureCache()
-{}
-
-FeatureCache::~FeatureCache()
-{}
-
-void FeatureCache::initRebuild()
-{
-   usedDuringRebuild_.clear();
-}
-
-void FeatureCache::finishRebuild()
-{
-  // remove all cache entries that have not been used
-  std::cout<<"== Finish Rebuild: Cache Summary =="<<std::endl;
-  std::cout<<"cache size after rebuild: "<<size()<<std::endl;
-  std::cout<<"# used during rebuild: "<<usedDuringRebuild_.size()<<std::endl;
-  
-  for (auto it = cbegin(); it != cend();)
-  {
-    if ( usedDuringRebuild_.find(it->first)==usedDuringRebuild_.end() )
-    {
-      erase(it++);
-    }
-    else
-    {
-      ++it;
-    }
-  }
-  std::cout<<"cache size after cleanup: "<<size()<<std::endl;
-}
-
-void FeatureCache::insert(FeaturePtr p)
-{
-  size_t h=p->hash();
-  const_iterator i=find(h);
-  if (i!=end())
-    {
-      std::ostringstream msg;
-      msg<<"Internal error: trying to insert feature into CAD feature cache twice!\n";
-      msg<<"feature to insert: hash="<<h<<" (of type "<<p->type()<<" named \""<<p->featureSymbolName()<<"\")\n";
-      msg<<"present feature: hash="<<i->second->hash()<<" (of type "<<i->second->type()<<" named \""<<i->second->featureSymbolName()<<"\")\n";
-      throw insight::cad::CADException(p, msg.str());
-    }
-  (*this)[h]=p;
-  usedDuringRebuild_.insert(h);
-}
-
-
-bool FeatureCache::contains(size_t hash) const
-{
-  return ( this->find(hash) != end() );
-}
-
-
-
-FeatureCache cache;
 
 }
 }

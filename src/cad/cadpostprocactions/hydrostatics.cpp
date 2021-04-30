@@ -135,6 +135,7 @@ Handle_AIS_InteractiveObject Hydrostatics::createAISRepr() const
     cG, str(format("G: m = %g") % m_)
   ));
 
+#warning Needs context in older version
   Handle_AIS_MultipleConnectedInteractive ais(new AIS_MultipleConnectedInteractive());
 
   ais->Connect(aisG);

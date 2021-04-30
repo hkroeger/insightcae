@@ -45,6 +45,8 @@ public:
     MatrixParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     MatrixParameter ( const arma::mat& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
+    bool isDifferent(const Parameter& p) const override;
+
     arma::mat& operator() ();
     const arma::mat& operator() () const;
 

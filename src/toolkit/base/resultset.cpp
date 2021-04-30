@@ -24,6 +24,8 @@
 #include "base/latextools.h"
 #include "base/tools.h"
 #include "base/case.h"
+#include "base/analysis.h"
+#include "base/parameters/subsetparameter.h"
 
 #include <fstream>
 #include <algorithm>
@@ -36,6 +38,7 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+namespace fs=boost::filesystem;
 using namespace boost::assign;
 using namespace rapidxml;
 
@@ -49,21 +52,24 @@ addToFactoryTable ( ResultElement, ResultSet );
 
 
 
-ResultSet::ResultSet(const path &fileName)
+ResultSet::ResultSet(const path &fileName, const std::string& analysisName)
   : ResultElement ( "", "", "" )
 {
+  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
   readFrom(fileName);
 }
 
-ResultSet::ResultSet(istream &is)
+ResultSet::ResultSet(istream &is, const std::string& analysisName)
   : ResultElement ( "", "", "" )
 {
+  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
   readFrom(is);
 }
 
-ResultSet::ResultSet(string &c)
+ResultSet::ResultSet(string &c, const std::string& analysisName)
   : ResultElement ( "", "", "" )
 {
+  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
   readFrom(c);
 }
 
@@ -225,8 +231,10 @@ void ResultSet::readFrom ( const boost::filesystem::path& file )
 
 void ResultSet::readFrom ( std::istream& is )
 {
-  istreambuf_iterator<char> fbegin(is), fend;
-  std::string contents(fbegin, fend);
+  std::string contents;
+  readStreamIntoString(is, contents);
+//  istreambuf_iterator<char> fbegin(is), fend;
+//  std::string contents(fbegin, fend);
   readFrom(contents);
 }
 
@@ -352,30 +360,27 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 
     writeLatexCode ( content, "", 0, filepath.parent_path() );
 
-    // insert into template
-    std::string file_content=builtin_template;
+    std::unique_ptr<TemplateFile> reportTemplate;
 
     std::string envvarname="INSIGHT_REPORT_TEMPLATE";
-    if ( char *TEMPL=getenv ( envvarname.c_str() ) ) {
-        std::ifstream in ( TEMPL );
-        in.seekg ( 0, std::ios::end );
-        file_content.resize ( in.tellg() );
-        in.seekg ( 0, std::ios::beg );
-        in.read ( &file_content[0], file_content.size() );
-    }
-
-    boost::replace_all ( file_content, "###AUTHOR###", author_ );
-    boost::replace_all ( file_content, "###DATE###", date_ );
-    boost::replace_all ( file_content, "###TITLE###", title_ );
-    boost::replace_all ( file_content, "###SUBTITLE###", subtitle_ );
-
-    boost::replace_all ( file_content, "###HEADER###", header.str() );
-    boost::replace_all ( file_content, "###CONTENT###", content.str() );
-
+    if ( char *TEMPL=getenv ( envvarname.c_str() ) )
     {
-        std::ofstream f ( filepath.c_str() );
-        f<<file_content;
+      reportTemplate.reset(new TemplateFile(fs::path(TEMPL)));
     }
+    else
+    {
+      reportTemplate.reset(new TemplateFile(builtin_template));
+    }
+
+    reportTemplate->replace("AUTHOR", author_ );
+    reportTemplate->replace("DATE", date_ );
+    reportTemplate->replace("TITLE", title_ );
+    reportTemplate->replace("SUBTITLE", subtitle_ );
+
+    reportTemplate->replace("HEADER", header.str() );
+    reportTemplate->replace("CONTENT", content.str() );
+
+    reportTemplate->write(filepath);
 
     {
         path outdir ( filepath.parent_path() / ( "report_data_"+filepath.stem().string() ) );
@@ -432,8 +437,8 @@ ParameterSetPtr ResultSet::convertIntoParameterSet() const
 
 ParameterPtr ResultSet::convertIntoParameter() const
 {
-    ParameterPtr ps ( new SubsetParameter() );
-    static_cast<SubsetParameter*> ( ps.get() )->setParameterSet ( *convertIntoParameterSet() );
+    auto ps = std::make_shared<SubsetParameter>();
+    ps->subsetRef().extend ( convertIntoParameterSet()->entries() );
     return ps;
 }
 

@@ -25,10 +25,14 @@
 #include "cadparameters.h"
 #include "cadpostprocaction.h"
 
+
+
 namespace insight 
 {
 namespace cad 
 {
+
+class GmshCase;
 
 typedef boost::fusion::vector3<std::string, FeatureSetPtr, boost::optional<ScalarPtr> > GroupDesc;
 typedef std::vector<GroupDesc> GroupsDesc;
@@ -36,47 +40,83 @@ typedef std::vector<GroupDesc> GroupsDesc;
 typedef boost::fusion::vector2<std::string, VectorPtr> NamedVertex;
 typedef std::vector<NamedVertex> NamedVertices;
 
-
+typedef boost::fusion::vector<
+    insight::cad::GroupsDesc, //vertexGroups,
+    insight::cad::GroupsDesc, //edgeGroups,
+    insight::cad::GroupsDesc, //faceGroups,
+    insight::cad::GroupsDesc //solidGroups,
+  > GroupDefinitions;
 
 
 class Mesh 
 : public insight::cad::PostprocAction
 {
+protected:
   boost::filesystem::path outpath_;
   FeaturePtr model_;
   std::string volname_;
-  std::vector<ScalarPtr> L_;
+  ScalarPtr Lmax_, Lmin_;
   bool quad_;
   GroupsDesc vertexGroups_;
   GroupsDesc edgeGroups_;
   GroupsDesc faceGroups_;
   GroupsDesc solidGroups_;
   NamedVertices namedVertices_;
+  bool keepTmpDir_;
   
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+
+  virtual void setupGmshCase(GmshCase& c);
+  void build() override;
 
 public:
   Mesh
   (
     const boost::filesystem::path& outpath,
     FeaturePtr model,
-//     const std::string& volname,
-    std::vector<ScalarPtr> L,
+    boost::fusion::vector<ScalarPtr,ScalarPtr> L,
     bool quad,
-    const GroupsDesc& vertexGroups,
-    const GroupsDesc& edgeGroups,
-    const GroupsDesc& faceGroups,
-    const GroupsDesc& solidGroups_,
-    const NamedVertices& namedVertices
+    const GroupDefinitions& v_e_f_s_groups,
+    const NamedVertices& namedVertices,
+    bool keepTmpDir=false
   );
   
 
-  virtual Handle_AIS_InteractiveObject createAISRepr() const;
-  virtual void write(std::ostream& ) const;
+  Handle_AIS_InteractiveObject createAISRepr() const override;
+  void write(std::ostream& ) const override;
 };
 
 
+typedef boost::fusion::vector<
+    insight::cad::GroupsDesc, //vertexGroups,
+    insight::cad::GroupsDesc, //edgeGroups,
+    insight::cad::GroupsDesc, //baseFaceGroups,
+    insight::cad::GroupsDesc, //topFaceGroups,
+    insight::cad::GroupsDesc //solidGroups,
+  > ExtrudedGroupDefinitions;
+
+class ExtrudedMesh
+: public Mesh
+{
+
+protected:
+  ScalarPtr h_, nLayers_;
+  std::vector<std::pair<std::string, cad::FeatureSetPtr> > namedBottomFaces_, namedTopFaces_, namedLateralEdges_;
+
+  virtual void build();
+
+public:
+  ExtrudedMesh
+  (
+    const boost::filesystem::path& outpath,
+    FeaturePtr model,
+    boost::fusion::vector<ScalarPtr,ScalarPtr,ScalarPtr,ScalarPtr> L_h_nLayers,
+    bool quad,
+    const ExtrudedGroupDefinitions& v_e_bf_tf_s_groups,
+    const NamedVertices& namedVertices,
+    bool keepTmpDir=false
+  );
+};
 
 typedef boost::fusion::vector5<FeaturePtr, std::string, ScalarPtr, boost::optional<boost::fusion::vector2<ScalarPtr, ScalarPtr> >, boost::optional<ScalarPtr> > GeometryDesc;
 typedef std::vector<GeometryDesc> GeometrysDesc;

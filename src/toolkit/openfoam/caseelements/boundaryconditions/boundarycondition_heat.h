@@ -25,6 +25,7 @@ public:
 
     virtual ~HeatBC();
 
+    virtual void addOptionsToBoundaryDict ( OFDictData::dict& BCdict ) const;
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const =0;
 };
@@ -80,6 +81,48 @@ public:
 
 
 
+class TemperatureGradientBC
+  : public HeatBC
+{
+public:
+#include "boundarycondition_heat__TemperatureGradientBC__Parameters.h"
+/*
+PARAMETERSET>>> TemperatureGradientBC Parameters
+
+gradT = selectablesubset {{
+
+ constant set {
+  gradT = double 0. "[K/m] prescribed temperature gradient"
+ }
+
+ unsteady set {
+  gradT_vs_t = array [ set {
+   t = double 0.0 "time instant"
+   gradT = double 0.0 "temperature gradient at that time instant"
+  } ]*1 ""
+ }
+}} constant "specification of temperature gradient"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType ( "TemperatureGradientBC" );
+  TemperatureGradientBC ( const ParameterSet& ps = ParameterSet() );
+
+  ParameterSet getParameters() const override { return p_; }
+
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
+
+};
+
+
+
+
+
 class ExternalWallBC
   : public HeatBC
 {
@@ -120,7 +163,7 @@ heatflux = selectablesubset {{
    Ta = double 300 "[K] Ambient temperature (beyond domain)"
  }
 
-}} convective "Heat flux specification"
+}} fixedHeatTransferCoeff "Heat flux specification"
 
 wallLayers = array [
  set {
@@ -146,6 +189,43 @@ public:
 };
 
 
+class CHTCoupledWall
+  : public HeatBC
+{
+public:
+#include "boundarycondition_heat__CHTCoupledWall__Parameters.h"
+/*
+PARAMETERSET>>> CHTCoupledWall Parameters
+
+sampleRegion = string "" "Neighbouring region" *necessary
+samplePatch = string "" "Name of coupled patch in neighbouring region" *necessary
+Tnbr = string "T" "Name of temperature field in neighbouring region"
+
+offset = selectablesubset {{
+ none set { }
+ uniform set {
+  distance = vector (0 0 0) "this value is uniformly added to the coordinates of the neighbour patch to make it coincident with the current one." *necessary
+ }
+}} none "The offset is added to the coordinates of the other neighbour patch to make it conincident with the current patch."
+
+method = selection (nearestPatchFace nearestPatchFaceAMI) nearestPatchFace "The mapping method"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType ( "CHTCoupledWall" );
+  CHTCoupledWall ( const ParameterSet& ps = ParameterSet() );
+
+  ParameterSet getParameters() const override { return p_; }
+
+  void addOptionsToBoundaryDict ( OFDictData::dict& BCdict ) const override;
+  bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
+
+};
 
 typedef std::shared_ptr<HeatBC> HeatBCPtr;
 

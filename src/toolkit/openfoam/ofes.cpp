@@ -147,7 +147,8 @@ OFEs::OFEs()
    }
   }
 
-  if (const char *envvar=getenv("INSIGHT_OFES"))
+  char *envvar=getenv("INSIGHT_OFES");
+  if (envvar!=nullptr)
   {
    std::string cfgvar(envvar);
    std::vector<std::string> ofestrs;

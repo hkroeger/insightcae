@@ -112,6 +112,10 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 void WallBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
 {
   BoundaryCondition::addOptionsToBoundaryDict(bndDict);
+
+  HeatBC::HeatBCPtr heattransfer =
+      HeatBC::HeatBC::create( ps_.get<SelectableSubsetParameter>("heattransfer") );
+  heattransfer->addOptionsToBoundaryDict(bndDict);
 }
 
 } // namespace insight

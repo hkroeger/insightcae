@@ -19,11 +19,15 @@
  */
 
 
-%include "common.i"
-%include "exception.i"
-
-
 %module(directors="1") toolkit
+
+%pythonbegin %{
+import re, os
+liblist=list(filter(re.compile('libvtkCommon.*so.*').search, [l[73:].strip() for l in open('/proc/%d/maps'%os.getpid(), 'r').readlines()]))
+if len(liblist)==0:
+  import Insight.vtkPyOffscreen
+%}
+
 
 %{
 #include "base/boost_include.h"
@@ -31,7 +35,20 @@
 #include "base/factory.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
+#include "base/resultelement.h"
+#include "base/resultelementcollection.h"
 #include "base/resultset.h"
+#include "base/resultelements/numericalresult.h"
+#include "base/resultelements/scalarresult.h"
+#include "base/resultelements/vectorresult.h"
+#include "base/resultelements/tabularresult.h"
+#include "base/resultelements/resultsection.h"
+#include "base/resultelements/polarchart.h"
+#include "base/resultelements/image.h"
+#include "base/resultelements/contourchart.h"
+#include "base/resultelements/comment.h"
+#include "base/resultelements/chart.h"
+#include "base/resultelements/attributeresulttable.h"
 #include "base/analysis.h"
 #include "base/pythonanalysis.h"
 #include "base/parameterstudy.h"
@@ -130,6 +147,7 @@
 #include "openfoam/caseelements/basic/mrfzone.h"
 #include "openfoam/caseelements/basic/fixedvalueconstraint.h"
 #include "openfoam/caseelements/basic/pressuregradientsource.h"
+#include "openfoam/caseelements/basic/wallheatflux.h"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "openfoam/caseelements/analysiscaseelements.h"
 #include "openfoam/caseelements/boundarycondition.h"
@@ -150,6 +168,9 @@ using namespace insight::bmd;
 using namespace insight::multiphaseBC;
 using namespace insight::createPatchOps;
 %}
+
+%include "common.i"
+%include "exception.i"
 
 %exception {
 	try {
@@ -177,7 +198,22 @@ using namespace insight::createPatchOps;
 %include "base/factory.h"
 %include "base/parameter.h"
 %include "base/parameterset.h"
+%include "base/resultelement.h"
+%include "base/resultelementcollection.h"
 %include "base/resultset.h"
+
+%include "base/resultelements/numericalresult.h"
+%include "base/resultelements/scalarresult.h"
+%include "base/resultelements/vectorresult.h"
+%include "base/resultelements/tabularresult.h"
+%include "base/resultelements/resultsection.h"
+%include "base/resultelements/polarchart.h"
+%include "base/resultelements/image.h"
+%include "base/resultelements/contourchart.h"
+%include "base/resultelements/comment.h"
+%include "base/resultelements/chart.h"
+%include "base/resultelements/attributeresulttable.h"
+
 %include "base/parameter.h"
 %include "base/parameters/simpleparameter.h"
 %include "base/parameters/doublerangeparameter.h"
@@ -276,6 +312,7 @@ using namespace insight::createPatchOps;
 %include "openfoam/caseelements/basic/mrfzone.h"
 %include "openfoam/caseelements/basic/fixedvalueconstraint.h"
 %include "openfoam/caseelements/basic/pressuregradientsource.h"
+%include "openfoam/caseelements/basic/wallheatflux.h"
 
 %include "openfoam/openfoamanalysis.h"
 

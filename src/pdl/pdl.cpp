@@ -110,7 +110,11 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
      qi::lit("addTo_makeDefault") >> as_string[ lexeme [ "{" >> *~char_("}") >> "}" ] ] [qi::_val = qi::_1]
     ;
 
-  r_pdl_content =  (r_addcode | qi::attr(std::string())) >> r_parameterset;
+  r_pdl_content =
+         -( qi::lit("inherits") >> r_identifier )
+      >> -( qi::lit("description") >> r_string )
+      >> (r_addcode | qi::attr(std::string()))
+      >> r_parameterset;
 
   
   //   BOOST_SPIRIT_DEBUG_NODE(r_identifier);
@@ -129,10 +133,9 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
 
 
 
-
 template <typename Iterator, typename Skipper>
 struct PDLParser
-    : qi::grammar< Iterator, boost::fusion::vector2<std::string, ParameterSetData>(), Skipper >
+    : qi::grammar< Iterator, PDLParserResult(), Skipper >
 {
 
   public:
@@ -144,6 +147,7 @@ struct PDLParser
   {
     BoolParameterParser::insertrule<Iterator, Skipper>(rules);
     DoubleParameterParser::insertrule<Iterator, Skipper>(rules);
+    dimensionedScalarParameterParser::insertrule<Iterator, Skipper>(rules);
     VectorParameterParser::insertrule<Iterator, Skipper>(rules);
     StringParameterParser::insertrule<Iterator, Skipper>(rules);
     PathParameterParser::insertrule<Iterator, Skipper>(rules);
@@ -193,16 +197,6 @@ int main ( int argc, char *argv[] )
       PDLParser<std::string::iterator> parser;
       skip_grammar<std::string::iterator> skip;
 
-      std::string first_word, base_type_name="";
-      in>>first_word;
-      if ( first_word=="inherits" )
-      {
-        in>>base_type_name;
-      }
-      else
-      {
-        in.seekg ( 0, std::ios::beg );
-      }
 
       std::istreambuf_iterator<char> eos;
       std::string contents_raw ( std::istreambuf_iterator<char> ( in ), eos );
@@ -210,7 +204,7 @@ int main ( int argc, char *argv[] )
       std::string::iterator first=contents_raw.begin();
       std::string::iterator last=contents_raw.end();
 
-      boost::fusion::vector2<std::string, ParameterSetData> result_all;
+      PDLParserResult result_all;
       if (!qi::phrase_parse
           (
             first,
@@ -223,8 +217,16 @@ int main ( int argc, char *argv[] )
         throw PDLException("Parsing PDL "+inf.string()+" failed!");
       }
 
-      std::string& addTo_makeDefault = boost::fusion::get<0>(result_all);
-      ParameterSetData result = boost::fusion::get<1>(result_all);
+      std::string base_type_name="";
+      auto inheritParam = boost::fusion::get<0>(result_all);
+      if (inheritParam) base_type_name=*inheritParam;
+
+      std::string description="";
+      auto descParam = boost::fusion::get<1>(result_all);
+      if (descParam) description=*descParam;
+
+      std::string& addTo_makeDefault = boost::fusion::get<2>(result_all);
+      ParameterSetData result = boost::fusion::get<3>(result_all);
 
       {
         std::string bname=inf.stem().string();
@@ -349,6 +351,7 @@ int main ( int argc, char *argv[] )
           {
             f<<" p="<<base_type_name<<"::makeDefault();"<<endl;
           }
+          f<<" p.setParameterSetDescription(\""<<description<<"\");"<<endl;
           for ( const ParameterSetEntry& pe: result )
           {
             pe.second->cppWriteInsertStatement

@@ -1,7 +1,7 @@
 project(insightcad)
 
 find_package(OCC REQUIRED)
-find_package(OpenGL)
+#find_package(OpenGL)
 find_package(DXFlib)
 #find_package(GEOM)
 #find_package(dlib)
@@ -25,6 +25,7 @@ set(insightcad_SOURCES
   geotest.cpp 
   cadparameter.cpp
   cadfeature.cpp 
+  featurecache.cpp
   cadmodel.cpp
   meshing.cpp 
   featurefilter.cpp 
@@ -43,8 +44,6 @@ add_subdirectory(cadparameters)
 add_subdirectory(cadpostprocactions)
 add_subdirectory(docitems)
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${toolkit_SOURCE_DIR})
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad 
@@ -60,7 +59,6 @@ target_link_libraries(insightcad
 # set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
 
 target_include_directories(insightcad
-  PUBLIC ${Boost_INCLUDE_DIRS}
   PUBLIC ${OCC_INCLUDE_DIR}
   PUBLIC ${DXFLIB_INCLUDE_DIR}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>

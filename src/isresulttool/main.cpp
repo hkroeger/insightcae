@@ -23,6 +23,7 @@
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
 #include "base/resultset.h"
+#include "base/resultelements/chart.h"
 
 #include <iostream>
 #include <fstream>
@@ -38,12 +39,9 @@
 #include <QApplication>
 #include <QMainWindow>
 
-#include "qwt_plot.h"
-#include "qwt_plot_grid.h"
-#include "qwt_legend.h"
-#include "qwt_plot_multi_barchart.h"
-#include "qwt_scale_draw.h"
-#include "qwt_column_symbol.h"
+#include "resultviewwindow.h"
+
+#include <QtCharts>
 
 using namespace std;
 using namespace insight;
@@ -65,8 +63,114 @@ void listContents(const ResultElementCollection& el, const std::string indent=""
 };
 
 
+
+const std::vector<unsigned int> colorTable = {
+  0xe6194b,
+  0x3cb44b,
+  0xffe119,
+  0x0082c8,
+  0xf58231,
+  0x911eb4,
+  0x46f0f0,
+  0xf032e6,
+  0xd2f53c,
+  0xfabebe,
+  0x008080,
+  0xe6beff,
+  0xaa6e28,
+  0xfffac8,
+  0x800000,
+  0xaaffc3,
+  0x808000,
+  0xffd8b1,
+  0x000080,
+  0x808080,
+  0xffffff,
+  0x000000
+};
+
+
+
+QColor colorValue(int crvIndex)
+{
+  auto cv=colorTable[ crvIndex%colorTable.size() ];
+  return QColor( (cv&0xff0000)>>16, (cv&0xff00)>>8, cv&0xff );
+}
+
+
+
+
+void plotCurves(
+    const QString& xlabel,
+    const QString& ylabel,
+    const std::map<QString, PlotCurve>& curves)
+{
+  auto chartData = new QChart;
+  chartData->legend()->setVisible(true);
+  chartData->legend()->setAlignment(Qt::AlignBottom);
+
+  size_t i=0;
+  for ( const auto& theCurve: curves )
+  {
+    auto *series = new QLineSeries();
+
+    series->setName(theCurve.first);
+
+    series->setPen(QPen(QBrush(colorValue(i)), 2));
+    for (arma::uword j=0; j<theCurve.second.xy().n_rows; j++)
+    {
+      series->append(
+            theCurve.second.xy()(j,0),
+            theCurve.second.xy()(j,1) );
+    }
+    chartData->addSeries(series);
+
+    ++i;
+  }
+
+  chartData->createDefaultAxes();
+  chartData->axes(Qt::Horizontal)[0]->setTitleText(xlabel);
+  chartData->axes(Qt::Vertical)[0]->setTitleText(ylabel);
+
+  auto* mw = new QMainWindow;
+  auto chartView = new QChartView(chartData);
+  chartView->setRenderHint(QPainter::Antialiasing);
+  mw->setCentralWidget(chartView);
+  mw->resize(800, 600);
+  mw->show();
+}
+
+
+class MyQApplication
+{
+  std::unique_ptr<QApplication> theApp = nullptr;
+
+public:
+  void initializeIfNeeded(int argc, char* argv[])
+  {
+    if (!theApp)
+    {
+      theApp.reset( new QApplication(argc, argv) );
+    }
+  }
+
+  int executeIfNeeded()
+  {
+    if (theApp)
+      return theApp->exec();
+    else
+      return 0;
+  }
+};
+
+
+
+
+
 int main(int argc, char *argv[])
 {
+    MyQApplication myqapp;
+
     insight::UnhandledExceptionHandling ueh;
     insight::GSLExceptionHandling gsl_errtreatment;
 
@@ -79,13 +183,22 @@ int main(int argc, char *argv[])
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help,h", "produce help message")
+    ("analysis,a", po::value< string >(), "analysis type name. Default is none. If not specified, the input parameter set will not be loaded.")
     ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
     ("list,l", "List contents of result file")
+    ("display,d", "Display each result file in separate window")
     ("input-file,f", po::value< StringList >(),"Specifies input file(s).")
-//    ("compareplot", po::value< string >(), "Compare plots. Specify path to plot. Optionally append name of curve with '_'.")
-    ("comparescalar", po::value< string >(), "Compare scalar values. Specify path of scalar in result archive. "
-                                             "Multiple scalars may plotted together: give list, separated by comma (without spaces). "
-                                              "Put optional scale factor after variable name, separated by colon.")
+    ("compareplot", po::value< string >(), "Compare plots. Specify path to plot. Append name of the curve with ':'.")
+    ("compareplotpoints", po::value< string >(),
+      "Compare points in plots. Specify path to plot. "
+      "Append name of the curve with ':' and finally the plot X value in round brackets."
+      "Optionally, append the name of a scalar result or parameter to be used as a x coordinate. "
+      "Multiple scalars may be plotted together: give list, separated by comma (without spaces). " )
+    ("comparescalar", po::value< string >(),
+      "Compare scalar values. Specify path of scalar in result archive. "
+      "Multiple scalars may be plotted together: give list, separated by comma (without spaces). "
+      "Put optional scale factor after variable name, separated by colon." )
+    ("sort,s", "sort entries in comparison")
     ("render", "Render into PDF")
     ;
 
@@ -109,6 +222,7 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    bool someActionDone=false;
     try
     {
 
@@ -128,23 +242,35 @@ int main(int argc, char *argv[])
             }
         }
 
+
+
         std::vector<string> fns=vm["input-file"].as<StringList>();
-        std::vector<ResultSetPtr> r;
+        std::vector<ResultSetPtr> results;
+
+        std::string analysisName;
+        if (vm.count("analysis"))
+        {
+          analysisName=vm["analysis"].as<std::string>();
+        }
+
 
         // load results
         for (std::string fn: fns)
         {
           boost::filesystem::path inpath(fn);
 
+          insight::assertion( boost::filesystem::exists(inpath),
+                              "input file "+inpath.string()+" does not exist!" );
+
           cout<<"Reading results file "<<inpath<<"..."<<flush;
-          r.push_back(ResultSetPtr(new ResultSet(inpath)));
+          results.push_back(ResultSetPtr(new ResultSet(inpath, analysisName)));
           cout<<"done."<<endl;
 
           if (vm.count("list"))
           {
             cout<<std::string(80, '=')<<endl<<endl;
             cout<<"Result file: "<<inpath<<endl<<endl;
-            listContents(*r.back());
+            listContents(*results.back());
             cout<<endl<<std::string(80, '=')<<endl<<endl;
           }
 
@@ -152,17 +278,21 @@ int main(int argc, char *argv[])
           {
             boost::filesystem::path outpath =
                 inpath.parent_path() / (inpath.filename().stem().string()+".pdf");
-            r.back()->generatePDF( outpath );
+            results.back()->generatePDF( outpath );
           }
         }
 
+
+
         if (vm.count("comparescalar"))
         {
+          someActionDone=true;
           std::vector<string> varnames;
           boost::split(varnames, vm["comparescalar"].as<string>(), boost::is_any_of(","));
           if (varnames.size()<1)
             throw insight::Exception("At least one variable name has to be specified for comparison!");
 
+          // store scale factors, default to 1
           std::vector<double> sfs;
           for (size_t i=0; i< varnames.size(); i++)
           {
@@ -179,107 +309,231 @@ int main(int argc, char *argv[])
               throw insight::Exception("Invalid syntax: "+vm["comparescalar"].as<string>());
           }
 
+          // sort files by value of first scalar
           typedef std::pair<string,std::vector<double> > NameAndValues;
-          std::map<double,NameAndValues > sorted_vals;
-          for (size_t i=0; i<r.size(); i++)
+          std::vector<NameAndValues > sorted_vals;
+          for (size_t i=0; i<results.size(); i++)
           {
             std::vector<double> vals;
             for (size_t j=0; j<varnames.size(); j++)
             {
-              vals.push_back(r[i]->getScalar(varnames[j])*sfs[j]);
+              vals.push_back(results[i]->getScalar(varnames[j])*sfs[j]);
             }
-            sorted_vals[vals[0]] = NameAndValues(fns[i], vals);
+            sorted_vals.push_back(NameAndValues(fns[i], vals));
           }
+
+          if (vm.count("sorted"))
+          {
+            sort(sorted_vals.begin(), sorted_vals.end(),
+                [](const NameAndValues& v1, const NameAndValues& v2)
+                {
+                  return v1.second[0]<v2.second[0];
+                }
+            );
+          }
+
+          // output
           for (const auto& v: sorted_vals)
           {
-            cout<<v.second.first<<":\t";
+            cout<<v.first<<":\t";
             for (size_t i=0; i<varnames.size(); i++)
-             cout <<"\t"<<varnames[i]<<" = "<<v.second.second[i]/sfs[i];
+             cout <<"\t"<<varnames[i]<<" = "<<v.second[i]/sfs[i];
             cout<<endl;
           }
 
-          QApplication app(argc, argv);
+          myqapp.initializeIfNeeded(argc, argv);
 
-          QMainWindow mw;
-          QwtPlot *plot=new QwtPlot();
-          mw.setCentralWidget(plot);
-
-          plot->insertLegend( new QwtLegend() );
-          plot->setCanvasBackground( Qt::white );
-
-          QwtPlotGrid *grid = new QwtPlotGrid();
-          grid->attach(plot);
-
-          QwtPlotMultiBarChart *d_barChartItem = new QwtPlotMultiBarChart( "Bar Chart " );
-          d_barChartItem->setLayoutPolicy( QwtPlotMultiBarChart::AutoAdjustSamples );
-          d_barChartItem->setSpacing( 20 );
-          d_barChartItem->setMargin( 3 );
-
-          d_barChartItem->attach( plot );
+          auto *mw = new QMainWindow();
+          auto chartData = new QChart;
+          auto chart=new QChartView;
+          chart->setChart(chartData);
+          mw->setCentralWidget(chart);
 
 
+          QStringList categories;
+          QBarSeries *series = new QBarSeries();
           for ( size_t i = 0; i < varnames.size(); i++ )
           {
-              QwtColumnSymbol *symbol = new QwtColumnSymbol( QwtColumnSymbol::Box );
-              // Die Konfiguration ist ähnlich der regulärer Widgets
-              symbol->setLineWidth( 1 ); // Pixel-Dimension
-              symbol->setFrameStyle( QwtColumnSymbol::Plain );
-              symbol->setPalette( QPalette( QColor( rand()%255, rand()%255, rand()%255 ) ) );
+            QString label;
+            if ( fabs(sfs[i]-1.0)>1e-10) label+=QString("%1 x ").arg(sfs[i]);
+            label+=QString::fromStdString(varnames[i]);
+            auto bs = new QBarSet(label);
 
-              d_barChartItem->setSymbol( i, symbol );
-          }
-
-          QList<QwtText> titles;
-          QVector< QVector<double> > values;
-          QMap<double,QString> labels;
-          int j=0;
-          for (const auto& v: sorted_vals)
-          {
-            values.push_back( QVector<double>::fromStdVector(v.second.second) );
-            labels[j++]=QString::fromStdString(v.second.first);
-          }
-
-          d_barChartItem->setBarTitles( titles );
-          d_barChartItem->setSamples( values );
-
-          class BarChartScaleDraw : public QwtScaleDraw
-          {
-          private:
-            QMap<double,QString> *ids;
-          public:
-            BarChartScaleDraw(QMap<double,QString> *x)
-              : ids(x)
+            //bs->setColor( QColor( rand()%255, rand()%255, rand()%255 ) );
+            bs->setColor(colorValue(i));
+            for (const auto& v: sorted_vals) // through all files
             {
-              enableComponent(QwtAbstractScaleDraw::Ticks, false);
-              setLabelRotation(-90.);
-              setLabelAlignment(Qt::AlignLeft);
+              bs->append( v.second[i] );
+              categories.append(QString::fromStdString(v.first));
             }
+            series->append(bs);
+          }
+          chartData->addSeries(series);
 
-            virtual QwtText label(double v) const
-            {
-                    if (ids->contains(v))
-                    {
-                      QwtText t(ids->find(v).value());
-                            return t;
-                    }
-                    else
-                            return QwtText();
-            }
-          };
+          QBarCategoryAxis *axisX = new QBarCategoryAxis();
+          axisX->append(categories);
+          chartData->addAxis(axisX, Qt::AlignBottom);
+          series->attachAxis(axisX);
 
-          string ylabel;
+          QValueAxis *axisY = new QValueAxis();
+          QString ylabel;
           for (size_t i=0; i<varnames.size(); i++)
           {
-            if (i>0) ylabel+="\n";
-            if ( fabs(sfs[i]-1.0)>1e-10) ylabel+=boost::str(boost::format("%g x ") % sfs[i]);
-            ylabel+=varnames[i];
+            if (i>0) ylabel+="<br>";
+            if ( fabs(sfs[i]-1.0)>1e-10) ylabel+=QString("%1 x ").arg(sfs[i]);
+            ylabel+=QString::fromStdString(varnames[i]);
           }
-          plot->setAxisTitle( QwtPlot::yLeft, QString::fromStdString(ylabel) );
-          plot->setAxisScaleDraw(QwtPlot::xBottom, new BarChartScaleDraw(&labels));
-          plot->setAxisScale(QwtPlot::xBottom, 0, j-1, 1);
-          mw.show();
-          return app.exec();
+          axisY->setTitleText(ylabel);
+          chartData->addAxis(axisY, Qt::AlignLeft);
+          series->attachAxis(axisY);
+
+          chartData->legend()->setVisible(true);
+          chartData->legend()->setAlignment(Qt::AlignBottom);
+
+          mw->show();
         }
+
+        if (vm.count("compareplot"))
+        {
+          someActionDone=true;
+          std::vector<string> chartAndCurveNames;
+          boost::split(chartAndCurveNames, vm["compareplot"].as<string>(), boost::is_any_of(","));
+          if (chartAndCurveNames.size()<1)
+            throw insight::Exception("At least one variable name has to be specified for comparison!");
+
+
+          for (size_t j=0; j<chartAndCurveNames.size(); j++)
+          {
+
+            std::map<QString,PlotCurve> curves;
+            QString xlabel, ylabel;
+            for (size_t i=0; i<results.size(); i++)
+            {
+              std::vector<string> chart_curve;
+              boost::split(chart_curve, chartAndCurveNames[j], boost::is_any_of(":"));
+              insight::assertion( chart_curve.size()==2,
+                                  "a curve name must be specified after each chart name, separated by colon" );
+
+              const auto& chart = results[i]->get<Chart>(chart_curve[0]);
+
+              auto crv = std::find_if( chart.chartData()->plc_.begin(), chart.chartData()->plc_.end(),
+                                       [&](const PlotCurve& pc) { return pc.plaintextlabel()==chart_curve[1]; } );
+              insight::assertion( crv!=chart.chartData()->plc_.end(),
+                                  "no curve of name "+chart_curve[1]+" found in chart "+chart_curve[0]+"!" );
+
+              curves[QString::fromStdString(fns[i])] = *crv;
+
+              if (xlabel.isEmpty())
+                xlabel=QString::fromStdString(chart.chartData()->xlabel_);
+              if (ylabel.isEmpty())
+                ylabel=QString::fromStdString(chart.chartData()->ylabel_);
+            }
+
+            myqapp.initializeIfNeeded(argc, argv);
+            plotCurves(xlabel, ylabel, curves);
+          }
+        }
+
+
+        if (vm.count("compareplotpoints"))
+        {
+          someActionDone=true;
+          std::vector<string> chartAndCurveNames;
+          boost::split(chartAndCurveNames, vm["compareplotpoints"].as<string>(), boost::is_any_of(","));
+          if (chartAndCurveNames.size()<1)
+            throw insight::Exception("At least one variable name has to be specified for comparison!");
+
+          std::map<QString,PlotCurve> curves;
+
+          for (size_t j=0; j<chartAndCurveNames.size(); j++)
+          {
+            std::vector<string> chart_curve;
+            boost::split(chart_curve, chartAndCurveNames[j], boost::is_any_of(":"));
+            insight::assertion( (chart_curve.size()==2)||(chart_curve.size()==3),
+                                "a curve name must be specified after each chart name, separated by colon. Optionally, the name of a scalar parameter for the x value may be appended after another colon." );
+
+            boost::regex crv_x("(.*)\\((.*)\\)");
+            boost::smatch m;
+            if (!boost::regex_search(chart_curve[1], m, crv_x))
+            {
+              throw insight::Exception("Expected curve name and x coordinate in the form \"<curveName>(<x-value>)\", got "+chart_curve[1]);
+            }
+            std::string chartName=chart_curve[0], curveName=m[1];
+            double xeval = insight::to_number<double>(m[2]);
+
+            QString ylabel, xlabel = "Result set index";
+            std::vector<double> x, y;
+            if (chart_curve.size()==3)
+            {
+              xlabel=QString::fromStdString(chart_curve[2]);
+            }
+            for (size_t i=0; i<results.size(); i++)
+            {
+
+              const auto& chart = results[i]->get<Chart>(chartName);
+
+              auto crv = std::find_if( chart.chartData()->plc_.begin(), chart.chartData()->plc_.end(),
+                                       [&](const PlotCurve& pc) { return pc.plaintextlabel()==curveName; } );
+
+              insight::assertion( crv!=chart.chartData()->plc_.end(),
+                                  "no curve of name "+curveName+" found in chart "+chartName+"!" );
+
+              if (chart_curve.size()==3)
+              {
+                std::string xparamname=chart_curve[2];
+                try
+                {
+                  const auto& sr = results[i]->get<ScalarResult>(xparamname);
+                  x.push_back(sr());
+                }
+                catch (const std::exception& e)
+                {
+                  try
+                  {
+                    // try parameters
+                    auto sp = results[i]->parameters().getDouble(xparamname);
+                    x.push_back(sp);
+                  }
+                  catch (const std::exception& e)
+                  {
+                    throw insight::Exception(fns[i]+": The desired x value source "+xparamname+" has neither been found in the result set nor in the parameter set");
+                  }
+                }
+              }
+              else
+              {
+                x.push_back(i);
+              }
+              y.push_back(insight::Interpolator(crv->xy())(xeval)(0));
+
+              if (ylabel.isEmpty())
+                ylabel=QString::fromStdString(chart.chartData()->ylabel_);
+            }
+            curves[QString::fromStdString(chartName)]=
+                PlotCurve(x, y, str(format("curve_%d")%j) );
+
+            myqapp.initializeIfNeeded(argc, argv);
+            plotCurves(xlabel, ylabel, curves);
+          }
+
+        }
+
+
+        if (vm.count("display") || !someActionDone)
+        {
+          myqapp.initializeIfNeeded(argc, argv);
+          for (size_t i=0; i<results.size(); i++)
+          {
+            auto& cr=results[i];
+            auto w=new ResultViewWindow(cr);
+            w->setWindowTitle(w->windowTitle()+" - "+QString::fromStdString(fns[i]));
+            w->show();
+          }
+        }
+
+
+        return myqapp.executeIfNeeded();
+
     }
 
 

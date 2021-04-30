@@ -118,13 +118,32 @@ class kOmegaSST_RASModel
 : public RASModel
 {
 public:
+#include "turbulencemodelcaseelements__kOmegaSST_RASModel__Parameters.h"
+/*
+PARAMETERSET>>> kOmegaSST_RASModel Parameters
+
+freeSurfaceProductionDamping = selectablesubset {{
+
+ none set { }
+
+ enabled set {
+   alphaFieldName = string "alpha.phase1" "Name of the volume fraction field"
+ }
+
+}} none "Option for selection of extra turbulence production damping close to the free surface in VOF simulations"
+
+<<<PARAMETERSET
+*/
+protected:
+    Parameters p_;
+
+public:
   declareType("kOmegaSST");
   
-  kOmegaSST_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  kOmegaSST_RASModel(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
-  inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
 class kEpsilonBase_RASModel

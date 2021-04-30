@@ -20,6 +20,9 @@ public:
     ResultSection ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
     ResultSection ( const std::string& sectionName, const std::string& introduction=std::string() );
 
+    const std::string& secionName() const;
+    const std::string& introduction() const;
+
     void writeLatexHeaderCode ( std::ostream& f ) const override;
     void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;

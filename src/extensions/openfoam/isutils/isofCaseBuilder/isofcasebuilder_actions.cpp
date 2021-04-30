@@ -81,6 +81,14 @@ void isofCaseBuilderWindow::createCase
       skipBCs=true;
   }
 
+  if ( ui->patch_list->count() <= 1 && dynamic_cast<DefaultPatch*>(ui->patch_list->item(0))->type_name().empty() )
+  {
+    if (!skipBCs)
+      QMessageBox::warning(this, "Warning", "No boundary patches have been configured: skipping BC creation!");
+
+    skipBCs=true;
+  }
+
   insight::OFDictData::dict boundaryDict;
   if ( !skipBCs )
     {

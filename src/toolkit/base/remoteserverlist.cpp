@@ -42,16 +42,7 @@ RemoteServerList::RemoteServerList()
 
             // read xml
             string content;
-            try
-            {
-                std::ifstream in(serverlist.c_str());
-                istreambuf_iterator<char> fbegin(in), fend;
-                std::copy(fbegin, fend, back_inserter(content));
-            }
-            catch (...)
-            {
-                throw insight::Exception("Failed to read file "+serverlist.string());
-            }
+            readFileIntoString(serverlist, content);
 
             using namespace rapidxml;
             xml_document<> doc;

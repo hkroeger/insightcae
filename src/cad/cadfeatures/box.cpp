@@ -18,9 +18,10 @@
  */
 
 #include "box.h"
-
+#include "base/tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -91,6 +92,10 @@ FeaturePtr Box::create
 
 void Box::build()
 { 
+  ExecTimer t("Box::build() ["+featureSymbolName()+"]");
+
+  if (!cache.contains(hash()))
+  {
     arma::mat p0=p0_->value();
     if (boost::fusion::at_c<0>(center_))  p0-=0.5*+L1_->value();
     if (boost::fusion::at_c<1>(center_))  p0-=0.5*+L2_->value();
@@ -106,6 +111,10 @@ void Box::build()
     refvectors_["e1"]=L1_->value()/arma::norm(L1_->value(), 2);
     refvectors_["e2"]=L2_->value()/arma::norm(L2_->value(), 2);
     refvectors_["e3"]=L3_->value()/arma::norm(L3_->value(), 2);
+
+    refvectors_["L1"]=L1_->value();
+    refvectors_["L2"]=L2_->value();
+    refvectors_["L3"]=L3_->value();
 
     Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0), to_Pnt(p0+L1_->value()), to_Pnt(p0+L2_->value())).Value();
     TopoDS_Shape box=
@@ -127,6 +136,13 @@ void Box::build()
         ).Shape();
 
     setShape(box);
+
+    cache.insert(shared_from_this());
+  }
+  else
+  {
+      this->operator=(*cache.markAsUsed<Box>(hash()));
+  }
 }
 
 

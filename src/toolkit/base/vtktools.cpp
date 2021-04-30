@@ -23,6 +23,12 @@
 #include <iostream>
 #include "boost/foreach.hpp"
 
+#include "base/exception.h"
+
+#include "vtkPointData.h"
+#include "vtkCellData.h"
+#include "vtkPolyData.h"
+
 using namespace std;
 
 namespace insight
@@ -58,7 +64,7 @@ void vtkModel::appendPointVectorField(const std::string& name, const double x[],
   //cout<<"Append PointVectorField "<<name<<" to VTK"<<endl;
   pointVectorFields_[name]=VectorField();
   VectorField& vf = pointVectorFields_[name];
-  for (int i=0; i<pts_.size(); i++)
+  for (size_t i=0; i<pts_.size(); i++)
   {
     //cout<<i<<" "<<x[i]<<" "<<y[i]<<" "<<z[i]<<endl;
     vf.push_back(vec3(x[i], y[i], z[i]));
@@ -70,7 +76,7 @@ void vtkModel::appendPointTensorField(const string& name, const double xx[], con
   //cout<<"Append PointVectorField "<<name<<" to VTK"<<endl;
   pointVectorFields_[name]=VectorField();
   VectorField& vf = pointVectorFields_[name];
-  for (int i=0; i<pts_.size(); i++)
+  for (size_t i=0; i<pts_.size(); i++)
   {
     //cout<<i<<" "<<x[i]<<" "<<y[i]<<" "<<z[i]<<endl;
     vf.push_back(tensor3(xx[i], xy[i], xz[i], yx[i], yy[i], yz[i], zx[i], zy[i], zz[i]));
@@ -155,7 +161,7 @@ void vtkModel2d::appendCellScalarField(const std::string& name, const double s[]
 {
   cellScalarFields_[name]=ScalarField();
   ScalarField& vf = cellScalarFields_[name];
-  for (int i=0; i<poly_.size(); i++)
+  for (size_t i=0; i<poly_.size(); i++)
   {
     vf.push_back(s[i]);
   }  
@@ -166,7 +172,7 @@ void vtkModel2d::appendCellVectorField(const std::string& name, const double x[]
 {
   cellVectorFields_[name]=VectorField();
   VectorField& vf = cellVectorFields_[name];
-  for (int i=0; i<poly_.size(); i++)
+  for (size_t i=0; i<poly_.size(); i++)
   {
     vf.push_back(vec3(x[i], y[i], z[i]));
   }  
@@ -180,7 +186,7 @@ void vtkModel2d::appendCellTensorField(const std::string& name,
 {
   cellVectorFields_[name]=VectorField();
   VectorField& vf = cellVectorFields_[name];
-  for (int i=0; i<poly_.size(); i++)
+  for (size_t i=0; i<poly_.size(); i++)
   {
     vf.push_back(tensor3(xx[i], xy[i], xz[i], yx[i], yy[i], yz[i], zx[i], zy[i], zz[i]));
   } 
@@ -320,6 +326,74 @@ void vtkModel2d::writeGeometryToLegacyFile(std::ostream& os) const
   }
 }
 
+}
+
+
+bool checkNormalsOrientation(vtkPolyData* vpm, const arma::mat& pFar, bool modifyNormalsFields)
+{
+  auto* pn = vpm->GetPointData()->GetArray("Normals");
+  insight::assertion(pn!=nullptr, "the input data does not contain a field \"Normals\"!");
+
+  bool toBeInverted=false;
+
+  if (pn->GetNumberOfTuples()>0) // skip empty mesh
+  {
+    // calc mean normals and CoG
+    arma::mat meanN, CoG;
+    meanN=CoG=arma::zeros(3);
+
+    insight::assertion(pn->GetNumberOfTuples()==vpm->GetNumberOfPoints(),
+                       "internal error: number of point normals not equal to number of points!");
+
+    for (vtkIdType i=0; i<pn->GetNumberOfTuples(); ++i)
+    {
+      arma::mat n(pn->GetTuple3(i), 3, 1);
+      meanN += n;
+      arma::mat p(vpm->GetPoint(i), 3, 1);
+      CoG += p;
+    }
+    meanN /= double(pn->GetNumberOfTuples());
+    CoG /= double(vpm->GetNumberOfPoints());
+
+    // check side of pFar
+    arma::mat dir = pFar-CoG;
+    double ldir=arma::norm(dir,2);
+    insight::assertion(ldir>1e-10, "pFar must not be identical with the CoG of the model points!");
+    dir/=ldir;
+
+    double Lmean=arma::norm(meanN, 2);
+    insight::assertion(Lmean>1e-10, "mean normal vector is zero!");
+    meanN /= Lmean;
+
+    toBeInverted = arma::dot(dir, meanN)<0;
+
+    if (!modifyNormalsFields)
+      return toBeInverted;
+
+    if (toBeInverted)
+    {
+      // invert point normals (and, if present also cell normals)
+
+      std::vector<vtkDataArray*> normalArraysToBeInverted = {pn};
+      if (auto* cn = vpm->GetCellData()->GetArray("Normals"))
+      {
+        normalArraysToBeInverted.push_back(cn);
+      }
+
+      for (vtkDataArray* narray: normalArraysToBeInverted)
+      {
+        for (vtkIdType i=0; i<narray->GetNumberOfTuples(); ++i)
+        {
+          double n[3];
+          narray->GetTuple(i, n);
+          for (int i=0; i<3; i++) n[i]*=-1.;
+          narray->SetTuple(i, n);
+        }
+      }
+    }
+  }
+
+  return toBeInverted;
 }
 
 }

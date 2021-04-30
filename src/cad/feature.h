@@ -219,6 +219,9 @@ public:
 };
 
 
+FeatureSetPtr makeEdgeFeatureSet( ConstFeaturePtr feat, const std::string& expression="", const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
+FeatureSetPtr makeFaceFeatureSet( ConstFeaturePtr feat, const std::string& expression="", const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
+FeatureSetPtr makeSolidFeatureSet( ConstFeaturePtr feat, const std::string& expression="", const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
 
 
 }

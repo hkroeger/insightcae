@@ -10,8 +10,73 @@
 
 #include "boost/algorithm/string.hpp"
 
+#include <csignal>
+
 using namespace std;
 using namespace Wt;
+
+
+
+
+void globalSignalHandler(int sig);
+
+class SignalChecker;
+
+SignalChecker* currentSignalHandler = nullptr;
+
+class SignalChecker
+{
+  boost::condition_variable& cv_;
+  boost::mutex& mx_;
+  int& signal_;
+
+  __sighandler_t
+    old_SIGHUP_,
+    old_SIGINT_,
+    old_SIGPIPE_,
+    old_SIGTERM_;
+
+public:
+  void signalHandler(int signal)
+  {
+    boost::mutex::scoped_lock lock(mx_);
+    signal_=signal;
+    cout<<"Got signal "<<signal<<endl;
+    cv_.notify_all();
+  }
+
+  SignalChecker(boost::condition_variable& cv, boost::mutex& mx, int& signal)
+    : cv_(cv),
+      mx_(mx),
+      signal_(signal)
+  {
+    if (currentSignalHandler)
+      throw std::logic_error("Internal error: There is already another signal checker active!");
+
+    currentSignalHandler=this;
+    old_SIGHUP_ = std::signal(SIGHUP, globalSignalHandler);
+    old_SIGINT_ = std::signal(SIGINT, globalSignalHandler);
+    old_SIGPIPE_ = std::signal(SIGPIPE, globalSignalHandler);
+    old_SIGTERM_ = std::signal(SIGTERM, globalSignalHandler);
+  }
+
+  ~SignalChecker()
+  {
+    // restore
+    std::signal(SIGHUP, old_SIGHUP_);
+    std::signal(SIGINT, old_SIGINT_);
+    std::signal(SIGPIPE, old_SIGPIPE_);
+    std::signal(SIGTERM, old_SIGTERM_);
+  }
+};
+
+
+
+void globalSignalHandler(int sig)
+{
+  currentSignalHandler->signalHandler(sig);
+}
+
 
 
 double AnalyzeRESTServer::nextStateInfo(
@@ -33,6 +98,29 @@ double AnalyzeRESTServer::nextStateInfo(
   return t;
 }
 
+
+void AnalyzeRESTServer::nextProgressInfo(
+    Json::Object &s
+    )
+{
+  auto& pi = recordedProgressStates_.front();
+
+  s["path"]=Wt::WString(pi.path);
+  if (auto *dbl=boost::get<double>(&pi.value))
+  {
+    s["double"]=*dbl;
+  }
+  else if (auto *text=boost::get<std::string>(&pi.value))
+  {
+    s["text"]=Wt::WString(*text);
+  }
+  else
+  {
+    // blank
+  }
+
+  recordedProgressStates_.pop_front();
+}
 
 
 
@@ -66,12 +154,13 @@ AnalyzeRESTServer::AnalyzeRESTServer(
   addResource(this, "/exepath");
 }
 
+
 void AnalyzeRESTServer::setAnalysis(insight::Analysis *a)
 {
   analysis_=a;
 }
 
-void AnalyzeRESTServer::setSolverThread(boost::thread *at)
+void AnalyzeRESTServer::setSolverThread(insight::AnalysisThread *at)
 {
   analysisThread_=at;
 }
@@ -92,30 +181,68 @@ void AnalyzeRESTServer::update(
   mx_.unlock();
 }
 
-bool AnalyzeRESTServer::hasResultsDelivered() const
+void AnalyzeRESTServer::setActionProgressValue(const string &path, double value)
 {
-  return !results_;
+  TextProgressDisplayer::setActionProgressValue(path, value);
+  mx_.lock();
+  recordedProgressStates_.push_back( ProgressState{ path, value } );
+  mx_.unlock();
 }
 
-void AnalyzeRESTServer::waitForResultDelivery()
+void AnalyzeRESTServer::setMessageText(const string &path, const string &message)
 {
-  boost::mutex::scoped_lock lock(mx_);
-  while (!hasResultsDelivered())
-    wait_cv_.wait(lock);
+  TextProgressDisplayer::setMessageText(path, message);
+  mx_.lock();
+  recordedProgressStates_.push_back( ProgressState{ path, message } );
+  mx_.unlock();
 }
+
+void AnalyzeRESTServer::finishActionProgress(const string &path)
+{
+  TextProgressDisplayer::finishActionProgress(path);
+  mx_.lock();
+  recordedProgressStates_.push_back( ProgressState{ path, boost::blank() } );
+  mx_.unlock();
+}
+
 
 bool AnalyzeRESTServer::hasInputFileReceived() const
 {
   return !inputFileContents_->empty();
 }
 
-void AnalyzeRESTServer::waitForInputFile(std::string& inputFileContents)
+bool AnalyzeRESTServer::waitForInputFile(std::string& inputFileContents)
 {
   inputFileContents_ = &inputFileContents;
 
+  int sig=0;
+  SignalChecker sighld(wait_cv_, mx_, sig);
+
   boost::mutex::scoped_lock lock(mx_);
-  while (!hasInputFileReceived())
+  while (!( hasInputFileReceived() || (sig!=0) ))
+  {
     wait_cv_.wait(lock);
+  }
+
+  return sig==0;
+}
+
+
+bool AnalyzeRESTServer::hasResultsDelivered() const
+{
+  return !results_;
+}
+
+bool AnalyzeRESTServer::waitForResultDelivery()
+{
+  boost::mutex::scoped_lock lock(mx_);
+  int sig;
+  SignalChecker sighld(wait_cv_, mx_, sig);
+  while ( !hasResultsDelivered() && (sig==0) )
+  {
+    wait_cv_.wait(lock);
+  }
+  return sig==0;
 }
 
 void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Response &response)
@@ -179,12 +306,6 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         response.setMimeType("application/xml");
         results_->saveToStream( response.out() );
 
-//        {
-//          boost::mutex::scoped_lock lock(mx_);
-//          results_.reset();
-//          wait_cv_.notify_one();
-//        }
-
         return;
       }
     }
@@ -198,8 +319,8 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     }
     else
     {
-      Wt::Json::Object res, state;
-      Wt::Json::Array states;
+      Wt::Json::Object res, state, progressState;
+      Wt::Json::Array states, progressStates;
 
       if (recordedStates_.size()>0)
       {
@@ -231,7 +352,14 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
       }
 
+      while (recordedProgressStates_.size()>0)
+      {
+        nextProgressInfo(progressState);
+        progressStates.push_back(progressState);
+      }
+
       res["states"] = states;
+      res["progressStates"] = progressStates;
       res["inputFileReceived"] = hasInputFileReceived();
       res["resultsAvailable"] = results_ ? true : false;
 
@@ -259,7 +387,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
       {
         boost::mutex::scoped_lock lock(mx_);
         results_.reset();
-        wait_cv_.notify_one();
+        wait_cv_.notify_all();
       }
 
       return;

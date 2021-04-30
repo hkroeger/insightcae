@@ -30,6 +30,8 @@ public:
     DoubleRangeParameter ( double defaultFrom, double defaultTo, int defaultNum, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     ~DoubleRangeParameter() override;
 
+    bool isDifferent(const Parameter& p) const override;
+
     inline void insertValue ( double v )
     {
         values_.insert ( v );

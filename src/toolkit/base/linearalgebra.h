@@ -103,6 +103,8 @@ arma::mat vec3(const T& t)
   return rt;
 }
 
+bool operator!=(const arma::mat& m1, const arma::mat& m2);
+
 
 // ====================================================================================
 // ======== conversion of vectors into different formats
@@ -117,9 +119,18 @@ double* toArray(const arma::mat& v); // !non-const! return value to match VTK fu
 
 std::string toStr(const arma::mat& v3);
 
+/**
+ * @brief rotMatrix
+ * @param theta
+ * angle in radians
+ * @param u
+ * rotation axis (defaults to Z axis)
+ * @return
+ */
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis=vec3(0,0,1), const arma::mat& p0 = vec3(0,0,0) );
 
+arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R);
 
 /**
  * Fits c_j in
@@ -182,6 +193,7 @@ public:
 };
 
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
+double nonlinearSolve1D(const std::function<double(double)>& model, double x_min, double x_max);
 double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max);
 arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol=1e-3, const arma::mat& steps = arma::mat());
 

@@ -121,16 +121,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
     {
       // read xml
       string content;
-      try
-      {
-          std::ifstream in(mf.c_str());
-          istreambuf_iterator<char> fbegin(in), fend;
-          std::copy(fbegin, fend, back_inserter(content));
-      }
-      catch (...)
-      {
-          throw insight::Exception("Failed to read file "+mf.string());
-      }
+      readFileIntoString(mf, content);
 
       using namespace rapidxml;
       xml_document<> doc;
@@ -557,7 +548,7 @@ int RemoteLocation::execRemoteCmd(const std::string& command, bool throwOnFail)
        cmd << "source " << cofe.bashrc().filename() << ";";
     }
     catch (const std::exception& e) {
-      std::cerr<<e.what()<<std::endl;
+      warnings.issue("Could not detect currently loaded OpenFOAM environment. Running remote command without any OpenFOAM environment loaded.");
        // ignore, don't load OF config remotely
     }
 

@@ -1350,6 +1350,11 @@ void blockMesh::writeVTK(const boost::filesystem::path& fn) const
   m.writeLegacyFile(os);
 }
 
+int blockMesh::nBlocks() const
+{
+  return allBlocks_.size();
+}
+
 }
 
 }

@@ -29,76 +29,100 @@
 #include <QTimer>
 #include <QThread>
 
-#include "qwt_scale_engine.h"
-#include "qwt_plot_grid.h"
-#include "qwt_legend.h"
+#include <QtCharts/QLogValueAxis>
+#include <QtCharts/QValueAxis>
 
 using namespace insight;
 
 void GraphProgressChart::reset()
 {
-  typedef std::map<std::string, QwtPlotCurve*> CurveList;
   for ( CurveList::value_type& i: curve_)
   {
-    delete i.second;
+    i.second->deleteLater();
   }
   curve_.clear();
-  progressX_.clear();
-  progressY_.clear();
   needsRedraw_=true;
-  this->replot();
+//  this->replot();
 }
 
 
 void GraphProgressChart::update(double iter, const std::string& name, double y_value)
 {
   mutex_.lock();
-  
+  setUpdatesEnabled(false);
 
-  std::vector<double>& x = progressX_[name];
-  std::vector<double>& y = progressY_[name];
+
+  QtCharts::QLineSeries* crv;
+  auto i = curve_.find(name);
+  if (i!=curve_.end())
+  {
+    crv=i->second;
+  }
+  else
+  {
+    crv=new QtCharts::QLineSeries;
+    crv->setName(name.c_str());
+    crv->setPen(QPen(QColor(
+                         double(qrand())*255.0/double(RAND_MAX),
+                         double(qrand())*255.0/double(RAND_MAX),
+                         double(qrand())*255.0/double(RAND_MAX)
+                     ), 2.0));
+    chartData_->addSeries(crv);
+    crv->attachAxis(chartData_->axes(Qt::Vertical)[0]);
+    crv->attachAxis(chartData_->axes(Qt::Horizontal)[0]);
+    curve_[name]=crv;
+  }
 
   if ( !logscale_ || (logscale_&&(y_value > 0.0)) ) // only add, if y>0. Plot gets unreadable otherwise
   {
-      x.push_back(iter);
-      y.push_back(y_value);
+      crv->append(iter, y_value);
+
+      xmin_=std::min(xmin_, iter);
+      xmax_=std::max(xmax_, iter);
+      ymin_=std::min(ymin_, y_value);
+      ymax_=std::max(ymax_, y_value);
   }
-  if (x.size() > maxCnt_)
+  if (crv->count() > maxCnt_)
   {
-      x.erase(x.begin());
-      y.erase(y.begin());
+      crv->remove(0);
   }
   
-  setAxisAutoScale(QwtPlot::yLeft);
+//  setAxisAutoScale(QwtPlot::yLeft);
   needsRedraw_=true;
   
+  setUpdatesEnabled(true);
   mutex_.unlock();
 }
 
 GraphProgressChart::GraphProgressChart(bool logscale, QWidget* parent)
-: QwtPlot(parent),
+  : QtCharts::QChartView(parent),
+    chartData_(new QtCharts::QChart()),
   maxCnt_(8000),
   needsRedraw_(true),
   logscale_(logscale)
 {
-  insertLegend( new QwtLegend() );
-  setCanvasBackground( Qt::white );
-  
+  setChart(chartData_);
+
+  setBackgroundBrush( Qt::white );
+
   if (logscale_)
   {
-#if (QWT_VERSION < 0x060100)
-    setAxisScaleEngine(QwtPlot::yLeft, new QwtLog10ScaleEngine() );
-#else
-    setAxisScaleEngine(QwtPlot::yLeft, new QwtLogScaleEngine() );
-#endif
+    auto *ly = new QtCharts::QLogValueAxis();
+    ly->setBase(10);
+    chartData_->addAxis(ly, Qt::AlignLeft);
   }
-  
-  QwtPlotGrid *grid = new QwtPlotGrid();
-  grid->attach(this);
+  else
+  {
+    chartData_->addAxis(new QtCharts::QValueAxis, Qt::AlignLeft);
+  }
+  chartData_->addAxis(new QtCharts::QValueAxis, Qt::AlignBottom);
+
+  chartData_->axes(Qt::Horizontal)[0]->setGridLineVisible(true);
+  chartData_->axes(Qt::Vertical)[0]->setGridLineVisible(true);
   
   QTimer *timer=new QTimer;
   connect(timer, &QTimer::timeout, this, &GraphProgressChart::checkForUpdate);
-  timer->setInterval(500);
+  timer->setInterval(1000);
   timer->start();
 }
 
@@ -112,28 +136,21 @@ void GraphProgressChart::checkForUpdate()
 
     if (needsRedraw_)
     {
-        needsRedraw_=false;
-        for ( const ArrayList::value_type& i: progressX_ )
-        {
-            const std::string& name=i.first;
+        needsRedraw_=false;        
 
-            if (curve_.find(name) == curve_.end())
-            {
-                QwtPlotCurve *crv=new QwtPlotCurve();
-                crv->setTitle(name.c_str());
-                crv->setPen(QPen(QColor(
-                                     double(qrand())*255.0/double(RAND_MAX),
-                                     double(qrand())*255.0/double(RAND_MAX),
-                                     double(qrand())*255.0/double(RAND_MAX)
-                                 ), 2.0));
-                crv->attach(this);
-                curve_[name]=crv;
-            }
+        double xmin=xmin_, xmax=xmax_, ymin=ymin_, ymax=ymax_;
 
-            curve_[name]->setSamples(&progressX_[name][0], &progressY_[name][0], progressY_[name].size()); // leave out first sample, since it is sometimes =0 and this make logscaled plot unreadable
-        }
+        if (fabs(xmax-xmin)<1e-20) { xmax=xmin+1e-4; } // all values the same
+        if (xmin>xmax) { xmin=0; xmax=1.; } // no values
 
-        this->replot();
+        if (fabs(ymax-ymin)<1e-20) { ymax=ymin+1e-4; }
+        if (ymin>ymax) { ymin=0; ymax=1.; }
+
+        chartData_->axes(Qt::Horizontal)[0]->setRange(xmin, 1.05*xmax);
+        double delta=fabs(ymax-ymin);
+        chartData_->axes(Qt::Vertical)[0]->setRange(ymin-0.05*delta, ymax+0.05*delta);
+
+        repaint();
     }
 
     mutex_.unlock();
@@ -145,20 +162,13 @@ void GraphProgressChart::checkForUpdate()
 
 GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
 : QTabWidget(parent)
-{
-  connect
-      (
-        this, &GraphProgressDisplayer::createChart,
-        this, &GraphProgressDisplayer::onCreateChart,
-        Qt::BlockingQueuedConnection
-      );
-}
+{}
 
 GraphProgressDisplayer::~GraphProgressDisplayer()
 {
 }
 
-void GraphProgressDisplayer::onCreateChart(bool log, const std::string name)
+void GraphProgressDisplayer::createChart(bool log, const std::string name)
 {
   GraphProgressChart* c=new GraphProgressChart(log, this);
   addTab(c, QString::fromStdString(name));
@@ -183,14 +193,8 @@ GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& 
   decltype(charts_)::iterator c;
   if ( (c=charts_.find(name))==charts_.end())
   {
-    if (QThread::currentThread() != this->thread())
-    {
-      emit createChart(log, name); // create in GUI thread
-    }
-    else
-    {
-      onCreateChart(log, name); // we are in GUI thread, simply call
-    }
+
+    createChart(log, name);
 //    GraphProgressChart* c=new GraphProgressChart(log, this);
 //    addTab(c, QString::fromStdString(name));
 //    charts_[name]=c;
@@ -208,37 +212,43 @@ GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& 
 
 void GraphProgressDisplayer::update(const insight::ProgressState& pi)
 {
-  double t=pi.first;
-  const ProgressVariableList& pvl=pi.second;
+  QMetaObject::invokeMethod(  // run in GUI thread as update might be called from different thread
+        qApp,
+        [this,pi]()
+        {
+          double t=pi.first;
+          const ProgressVariableList& pvl=pi.second;
 
-  for ( const ProgressVariableList::value_type& i: pvl)
-  {
-    const std::string& name = i.first;
-    double y_value = i.second;
+          for ( const ProgressVariableList::value_type& i: pvl)
+          {
+            const std::string& name = i.first;
+            double y_value = i.second;
 
-    std::vector<std::string> np;
-    boost::split(np, name, boost::is_any_of("/"));
+            std::vector<std::string> np;
+            boost::split(np, name, boost::is_any_of("/"));
 
-    if (np.size()==1)
-    {
-      GraphProgressChart* c = addChartIfNeeded("Progress");
-      c->update(t, np[0], y_value);
-    }
-    else if (np.size()==2)
-    {
-      GraphProgressChart* c = addChartIfNeeded(np[0]);
-      c->update(t, np[1], y_value);
-    }
-    else if (np.size()>2)
-    {
-      std::string ln=*np.rbegin();
-      np.erase(np.end()-1);
-      std::string pn = boost::algorithm::join(np, "/");
+            if (np.size()==1)
+            {
+              GraphProgressChart* c = addChartIfNeeded("Progress");
+              c->update(t, np[0], y_value);
+            }
+            else if (np.size()==2)
+            {
+              GraphProgressChart* c = addChartIfNeeded(np[0]);
+              c->update(t, np[1], y_value);
+            }
+            else if (np.size()>2)
+            {
+              std::string ln=*np.rbegin();
+              np.erase(np.end()-1);
+              std::string pn = boost::algorithm::join(np, "/");
 
-      GraphProgressChart* c = addChartIfNeeded(pn);
-      c->update(t, ln, y_value);
-    }
-  }
+              GraphProgressChart* c = addChartIfNeeded(pn);
+              c->update(t, ln, y_value);
+            }
+          }
+        }
+  );
 }
 
 
@@ -251,3 +261,16 @@ void GraphProgressDisplayer::reset()
   }
   charts_.clear();
 }
+
+
+
+void GraphProgressDisplayer::setActionProgressValue(const std::string&, double)
+{}
+
+
+void GraphProgressDisplayer::setMessageText(const std::string&, const std::string&)
+{}
+
+
+void GraphProgressDisplayer::finishActionProgress(const std::string&)
+{}

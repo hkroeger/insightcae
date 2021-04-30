@@ -1,9 +1,15 @@
 #include "solveroutputanalyzer.h"
 
+#include <memory>
+
 #include "base/progressdisplayer.h"
 #include "base/tools.h"
 #include "base/units.h"
 #include "base/boost_include.h"
+
+
+using namespace std;
+using namespace boost;
 
 namespace insight {
 
@@ -24,13 +30,32 @@ const std::string SolverOutputAnalyzer::pre_deltat="delta_t/";
 
 
 
-SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
-: pdisp_(pdisp),
+SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pd, double endTime)
+: OutputAnalyzer(&pd),
   curTime_(nan("NAN")),
   curforcename_(""),
   curforcesection_(1),
-  currbname_("")
+  currbname_(""),
+  p_pattern("^ *[Pp]ressure *: *\\((.*) (.*) (.*)\\)$"),
+  v_pattern("^ *[Vv]iscous *: *\\((.*) (.*) (.*)\\)$"),
+  por_pattern("^ *[Pp]orous *: *\\((.*) (.*) (.*)\\)$"),
+  time_pattern("^Time = (.+)$"),
+  solver_pattern("^(.+): +Solving for (.+), Initial residual = (.+), Final residual = (.+), No Iterations (.+)$"),
+  cont_pattern("^time step continuity errors : sum local = (.+), global = (.+), cumulative = (.+)$"),
+  force_pattern("^(extendedForces|forces) (.+) (output|write):$"),
+  sw_pattern("^ *[Ss]um of moments"),
+  rb_pattern("Rigid-body motion of the (.+)"),
+  rb_cor_pattern(" *Centre of rotation: \\((.+) (.+) (.+)\\)"),
+  rb_ori_pattern(" *Orientation: \\((.+) (.+) (.+) (.+) (.+) (.+) (.+) (.+) (.+)\\)"),
+  courant_pattern("^ *Courant Number mean: (.+) max: (.+)"),
+  if_courant_pattern("^ *Interface Courant Number mean: (.+) max: (.+)"),
+  dt_pattern(" *deltaT = (.+)"),
+  exec_time_pattern(" *ExecutionTime = (.+) s  ClockTime = (.+) s")
 {
+  solverActionProgress_ = std::make_shared<ActionProgress>
+      (
+        pd.forkNewAction(endTime, "Solver run")
+      );
 }
 
 
@@ -39,24 +64,6 @@ SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
 void SolverOutputAnalyzer::update(const std::string& line)
 {
     boost::smatch match;
-
-    boost::regex p_pattern("^ *[Pp]ressure *: *\\((.*) (.*) (.*)\\)$");
-    boost::regex v_pattern("^ *[Vv]iscous *: *\\((.*) (.*) (.*)\\)$");
-    boost::regex por_pattern("^ *[Pp]orous *: *\\((.*) (.*) (.*)\\)$");
-    boost::regex time_pattern("^Time = (.+)$");
-    boost::regex solver_pattern("^(.+): +Solving for (.+), Initial residual = (.+), Final residual = (.+), No Iterations (.+)$");
-    boost::regex cont_pattern("^time step continuity errors : sum local = (.+), global = (.+), cumulative = (.+)$");
-    boost::regex force_pattern("^(extendedForces|forces) (.+) (output|write):$");
-    boost::regex sw_pattern("^ *[Ss]um of moments");
-
-    boost::regex rb_pattern("Rigid-body motion of the (.+)");
-    boost::regex rb_cor_pattern(" *Centre of rotation: \\((.+) (.+) (.+)\\)");
-    boost::regex rb_ori_pattern(" *Orientation: \\((.+) (.+) (.+) (.+) (.+) (.+) (.+) (.+) (.+)\\)");
-
-    boost::regex courant_pattern("^ *Courant Number mean: (.+) max: (.+)");
-    boost::regex if_courant_pattern("^ *Interface Courant Number mean: (.+) max: (.+)");
-    boost::regex dt_pattern(" *deltaT = (.+)");
-    boost::regex exec_time_pattern(" *ExecutionTime = (.+) s  ClockTime = (.+) s");
 
     try
     {
@@ -207,7 +214,7 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
             if (curTime_ == curTime_)
             {
-                pdisp_.update(
+                progress_->update(
                       ProgressState(
                         curTime_,
                         curProgVars_,
@@ -216,6 +223,8 @@ void SolverOutputAnalyzer::update(const std::string& line)
                       );
                 curProgVars_.clear();
                 curLog_.clear();
+
+                if (solverActionProgress_) solverActionProgress_->stepTo(curTime_);
             }
             curTime_=to_number<double>(match[1]);
 
@@ -267,8 +276,9 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
 bool SolverOutputAnalyzer::stopRun() const
 {
-  return pdisp_.stopRun();
+  return progress_->stopRun();
 }
+
 
 
 

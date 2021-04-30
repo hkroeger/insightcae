@@ -2,6 +2,7 @@
 #include "cadfeature.h"
 #include "qoccviewwidget.h"
 #include "qmodeltree.h"
+#include "qmodelstepitem.h"
 
 
 namespace insight

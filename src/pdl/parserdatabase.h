@@ -210,6 +210,8 @@ typedef std::vector< ParameterSetEntry > ParameterSetData;
 
 
 
+typedef boost::fusion::vector4<boost::optional<std::string>, boost::optional<std::string>, std::string, ParameterSetData> PDLParserResult;
+
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct PDLParserRuleset
@@ -226,7 +228,7 @@ struct PDLParserRuleset
 
     qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
 
-    qi::rule<Iterator, boost::fusion::vector2<std::string, ParameterSetData>(), Skipper> r_pdl_content;
+    qi::rule<Iterator, PDLParserResult(), Skipper> r_pdl_content;
 
     PDLParserRuleset();
 

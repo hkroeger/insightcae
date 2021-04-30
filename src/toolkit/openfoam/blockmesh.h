@@ -597,6 +597,8 @@ public:
   void addIntoDictionaries(insight::OFdicts& dictionaries) const override;
 
   void writeVTK(const boost::filesystem::path& fn) const;
+
+  int nBlocks() const;
   
   static std::string category() { return "Meshing"; }
 };

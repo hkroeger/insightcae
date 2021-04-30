@@ -26,7 +26,7 @@
 #include <iterator>
 #include "boost/algorithm/string/trim.hpp"
 
-
+#include "base/parameterset.h"
 
 
 
@@ -75,6 +75,20 @@ void writeMatToXMLNode(const arma::mat& matrix, xml_document< char >& doc, xml_n
 
 
 
+
+ArrayParameterBase::~ArrayParameterBase()
+{}
+
+Parameter &ArrayParameterBase::elementRef(int i)
+{
+  return const_cast<Parameter&>(element(i));
+}
+
+
+
+
+
+
 defineType(Parameter);
 defineFactoryTable(Parameter, LIST(const std::string& desc), LIST(desc) );
 
@@ -96,6 +110,13 @@ Parameter::~Parameter()
 bool Parameter::isHidden() const { return isHidden_; }
 bool Parameter::isExpert() const {return isExpert_; }
 bool Parameter::isNecessary() const { return isNecessary_; }
+
+bool Parameter::isDifferent(const Parameter &) const
+{
+  throw insight::Exception("cannot compare parameters: the isDifferent function is not implemented1");
+  return true;
+}
+
 int Parameter::order() const { return order_; }
 
 
@@ -141,6 +162,73 @@ void Parameter::reset(const Parameter& op)
   isExpert_ = op.isExpert_;
   isNecessary_ = op.isNecessary_;
   order_ = op.order_;
+}
+
+
+
+Parameter::SearchParentResult
+Parameter::searchMyParentIn(const ParameterSet &ps) const
+{
+  SearchParentResult result = boost::blank();
+
+  std::function<void(const ParameterSet *, const Parameter* p)> searchSubdicts;
+  std::function<void(const ArrayParameterBase *)> searchArray;
+  std::function<void(const Parameter* p)> searchParameter;
+
+  searchParameter = [&](const Parameter* p)
+  {
+    if (const auto* sps = dynamic_cast<const SubParameterSet*>(p))
+    {
+      searchSubdicts( &(sps->subset()), p );
+    }
+    else if (const auto* sa = dynamic_cast<const ArrayParameterBase*>(p))
+    {
+      searchArray( sa );
+    }
+  };
+
+  searchSubdicts = [&](const ParameterSet *ps, const Parameter* p)
+  {
+    for (auto entry=ps->begin(); entry!=ps->end(); ++entry)
+    {
+      if (this == entry->second.get())
+      {
+        SearchResultParentInDict r;
+        r.myIterator=entry;
+        r.myParentSet=ps;
+        r.myParentSetParameter=p;
+        result=r;
+        break;
+      }
+      searchParameter(entry->second.get());
+      if ( !boost::get<boost::blank>(&result) ) break;
+    }
+  };
+
+  searchArray = [&](const ArrayParameterBase *a)
+  {
+    for (int i=0; i<a->size(); ++i)
+    {
+      if ( this == &a->element(i) )
+      {
+        SearchResultParentInArray r;
+        r.i=i;
+        r.myParentArrayParameter=dynamic_cast<const Parameter*>(a);
+        result=r;
+        break;
+      }
+      searchParameter( &a->element(i) );
+      if ( !boost::get<boost::blank>(&result) ) break;
+    }
+  };
+
+  searchSubdicts(&ps, nullptr);
+
+  insight::assertion(
+        !boost::get<boost::blank>(&result),
+        "No parent section found for this parameter in supplied parameter set!" );
+
+  return result;
 }
 
 

@@ -80,6 +80,7 @@ public:
     virtual bool isGAMGOk() const;
 
     void setApplicationName(OFdicts& dictionaries, const std::string& appname) const;
+
     void setRelaxationFactors
     (
         OFdicts& dictionaries,

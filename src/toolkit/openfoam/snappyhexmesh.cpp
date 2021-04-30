@@ -24,6 +24,8 @@
 #include "openfoam/openfoamtools.h"
 #include "base/exception.h"
 
+#include "openfoam/snappyhexmeshoutputanalyzer.h"
+
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -95,9 +97,7 @@ addToStaticFunctionTable(Feature, Geometry, defaultParameters);
 Geometry::Geometry( const ParameterSet& ps )
 : ExternalGeometryFile(ps),
   p_(ps)
-{
-  std::cout<<"added \""<<p_.fileName<<"\" as "<<p_.name<<std::endl;
-}
+{}
 
 void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
@@ -105,7 +105,10 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name;
     //boost::filesystem::path x; x.f
-  sHMDict.subDict("geometry")[p_.fileName->fileName().string()]=geodict;
+  std::string fn=p_.fileName->fileName().string();
+  if (!isalpha(fn[0]))
+    fn="\""+fn+"\"";
+  sHMDict.subDict("geometry")[fn]=geodict;
 
   OFDictData::dict castdict;
   OFDictData::list levels;
@@ -623,9 +626,17 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
   if (p.PiM.size()>1)
   {
     OFDictData::list PiM;
+    int i=1;
     for (const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim: p.PiM)
     {
+      if (OFversion()>=600)
+      {
+        PiM.push_back(OFDictData::list{ OFDictData::vector3(pim), str(format("zone%d")%(i++)) });
+      }
+      else
+      {
         PiM.push_back(OFDictData::vector3(pim));
+      }
     }
     castellatedCtrls["locationsInMesh"]=PiM;
   }
@@ -699,7 +710,9 @@ void snappyHexMesh
   const ParameterSet& ps,
   bool overwrite,
   bool isalreadydecomposed,
-  bool keepdecomposedafterfinish
+  bool keepdecomposedafterfinish,
+  ProgressDisplayer* progress,
+  std::function<void(OFDictData::dict&)> sHMDictModifier
 )
 {
   using namespace snappyHexMeshFeats;
@@ -727,6 +740,7 @@ void snappyHexMesh
   //  populate with defaults
   setStdSnapCtrls(snapCtrls);
 
+  snapCtrls["nSmoothPatch"]=p.nSmoothPatch;
   snapCtrls["implicitFeatureSnap"]=p.doImplicitFeatureSnap;
   snapCtrls["explicitFeatureSnap"]=p.doExplicitFeatureSnap;
 
@@ -736,9 +750,31 @@ void snappyHexMesh
   if (p.PiM.size()>1)
   {
     OFDictData::list PiM;
+    int i=0;
     for (const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim: p.PiM)
     {
+      if (ofc.OFversion()>=600)
+      {
+        std::string zoneName="zone%d";
+
+        if (p.PiMZoneNames.size()>=size_t(i+1))
+        {
+          zoneName=p.PiMZoneNames[i];
+        }
+
+        if (zoneName.find("%d")!=std::string::npos)
+        {
+          zoneName=str(format(zoneName)%(i+1));
+        }
+
+        PiM.push_back(OFDictData::list{ OFDictData::vector3(pim), zoneName });
+      }
+      else
+      {
         PiM.push_back(OFDictData::vector3(pim));
+      }
+
+      ++i;
     }
     castellatedCtrls["locationsInMesh"]=PiM;
   }
@@ -781,6 +817,8 @@ void snappyHexMesh
   {
     boost::filesystem::create_directories(dictpath.parent_path());
   }
+
+  if (sHMDictModifier) sHMDictModifier(sHMDict);
   
   {
     std::ofstream f(dictpath.c_str());
@@ -799,30 +837,33 @@ void snappyHexMesh
   }
   
   //cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
-  std::vector<std::string> output;
-  ofc.executeCommand(location, "snappyHexMesh", opts, &output, np);
+//  std::vector<std::string> output;
+
+  snappyHexMeshOutputAnalyzer saa(progress);
+//  ofc.executeCommand(location, "snappyHexMesh", opts, &output, np);
+  ofc.runSolver(location, saa, "snappyHexMesh", np, opts);
 
   
   // Check fraction of extruded faces on wall patches
-  boost::regex re_extrudedfaces("^Extruding ([0-9]+) out of ([0-9]+) faces.*");
-  boost::match_results<std::string::const_iterator> what;
-  int exfaces=-1, totalfaces=-1;
-  for (const std::string& line: output)
+//  boost::regex re_extrudedfaces("^Extruding ([0-9]+) out of ([0-9]+) faces.*");
+//  boost::match_results<std::string::const_iterator> what;
+//  int exfaces=-1, totalfaces=-1;
+//  for (const std::string& line: output)
+//  {
+//    if (boost::regex_match(line, what, re_extrudedfaces))
+//    {
+//      //cout<< "\""<<line<<"\""<<what[1]<<", "<<what[2]<<endl;
+//      exfaces=lexical_cast<int>(what[1]);
+//      totalfaces=lexical_cast<int>(what[2]);
+//    }
+//  }
+  if (saa.totalFaces()>=0)
   {
-    if (boost::regex_match(line, what, re_extrudedfaces))
-    {
-      //cout<< "\""<<line<<"\""<<what[1]<<", "<<what[2]<<endl;
-      exfaces=lexical_cast<int>(what[1]);
-      totalfaces=lexical_cast<int>(what[2]);
-    }
-  }
-  if (totalfaces>=0)
-  {
-    double exfrac=double(exfaces)/double(totalfaces);
-    if (exfrac<0.9)
+//    double exfrac=double(exfaces)/double(totalfaces);
+    if (saa.extrudedFraction()<0.9)
     {
       std::string msg=
-      "Prism layer covering is only "+str(format("%g")%(100.*exfrac))+"\% (<90%)!\n"
+      "Prism layer covering is only "+str(format("%g")%(100.*saa.extrudedFraction()))+"\% (<90%)!\n"
       "Please reconsider prism layer thickness and tune number of prism layers!";
       
       if (p.stopOnBadPrismLayer)

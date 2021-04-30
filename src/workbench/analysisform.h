@@ -36,6 +36,7 @@
 #include <QPlainTextEdit>
 #include <QProgressBar>
 
+#include "base/progressdisplayer/combinedprogressdisplayer.h"
 #include "workbench.h"
 #include "graphprogressdisplayer.h"
 
@@ -47,6 +48,9 @@
 #ifdef HAVE_WT
 #include "remoterun.h"
 #endif
+
+#include "qresultsetmodel.h"
+#include "qactionprogressdisplayerwidget.h"
 
 namespace Ui
 {
@@ -61,6 +65,40 @@ class SolverOutputAnalyzer;
 }
 
 class WorkbenchAction;
+class AnalysisForm;
+
+
+class QCaseDirectory
+    : public insight::CaseDirectory
+{
+  AnalysisForm *af_;
+
+  void setAFEnabledState(bool enabled);
+
+public:
+  QCaseDirectory(AnalysisForm *af, const boost::filesystem::path& path, bool keep=true);
+  QCaseDirectory(AnalysisForm *af, bool keep=true, const boost::filesystem::path& prefix="");
+  ~QCaseDirectory();
+};
+
+class QRemoteExecutionConfig
+: public insight::RemoteExecutionConfig
+{
+  AnalysisForm *af_;
+
+  void setAFEnabledState(bool enabled);
+
+public:
+  QRemoteExecutionConfig(AnalysisForm *af,
+                         const boost::filesystem::path& location,
+                         const boost::filesystem::path& localREConfigFile = "");
+  QRemoteExecutionConfig(AnalysisForm *af,
+                         const insight::RemoteServerInfo& rsi,
+                         const boost::filesystem::path& location,
+                         const boost::filesystem::path& remotePath = "",
+                         const boost::filesystem::path& localREConfigFile = "");
+  ~QRemoteExecutionConfig();
+};
 
 
 class AnalysisForm
@@ -72,6 +110,8 @@ class AnalysisForm
   friend class WorkbenchAction;
   friend class LocalRun;
   friend class RemoteRun;
+  friend class QCaseDirectory;
+  friend class QRemoteExecutionConfig;
   
 protected:
 
@@ -79,18 +119,22 @@ protected:
   // ======== Analysis-related members
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
-  insight::ParameterSet parameters_;
+//  insight::ParameterSet parameters_;
   insight::ResultSetPtr results_;
+  insight::QResultSetModel* resultsModel_;
   
   // ====================================================================================
   // ======== GUI widgets
-  GraphProgressDisplayer *progdisp_;
-  QTreeWidget *rt_;
-  QTreeWidgetItem* rtroot_;
+//  QTreeWidgetItem* rtroot_;
   ParameterEditorWidget* peditor_;
   Q_DebugStream *cout_log_, *cerr_log_;
   LogViewerWidget *log_;
+
   QProgressBar* progressbar_;
+
+  GraphProgressDisplayer *graphProgress_;
+  insight::QActionProgressDisplayerWidget* actionProgress_;
+  insight::CombinedProgressDisplayer progressDisplayer_;
 
   // ====================================================================================
   // ======== control elements
@@ -121,21 +165,26 @@ protected:
    */
   bool is_modified_;
 
+  void connectLocalActions();
+  void connectRemoteActions();
+
+  bool ensureWorkingDirectoryExistence();
+
   void updateSaveMenuLabel();
   void updateWindowTitle();
 
   insight::RemoteServerInfo lookupRemoteServerByLabel(const QString& hostLabel) const;
 
   bool checkAnalysisExecutionPreconditions();
-  bool changeWorkingDirectory(const QString& wd);
-  bool changeRemoteLocation(const QString& hostLabel, const QString& remoteDir);
-  bool changeRemoteLocation(const insight::RemoteExecutionConfig* rec = nullptr);
-  void applyDirectorySettings();
+//  bool changeWorkingDirectory(const QString& wd);
+//  bool changeRemoteLocation(const QString& hostLabel, const QString& remoteDir);
+//  bool changeRemoteLocation(const insight::RemoteExecutionConfig* rec = nullptr);
+//  void applyDirectorySettings();
 
   // ====================================================================================
   // ======== current action objects
-  std::unique_ptr<insight::CaseDirectory> caseDirectory_;
-  std::unique_ptr<insight::RemoteExecutionConfig> remoteDirectory_;
+  std::unique_ptr<QCaseDirectory> caseDirectory_;
+  std::unique_ptr<QRemoteExecutionConfig> remoteDirectory_;
   std::unique_ptr<WorkbenchAction> currentWorkbenchAction_;
 
   // ================================================================================
@@ -145,7 +194,7 @@ protected:
   inline bool isRunningLocally() const
   {
     if (currentWorkbenchAction_)
-      return dynamic_cast<LocalRun*>(currentWorkbenchAction_.get());
+      return (dynamic_cast<LocalRun*>(currentWorkbenchAction_.get()) != nullptr);
     return false;
   }
 
@@ -153,7 +202,7 @@ protected:
   {
 #ifdef HAVE_WT
     if (currentWorkbenchAction_)
-      return dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get());
+      return (dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get()) != nullptr);
 #endif
     return false;
   }
@@ -164,10 +213,15 @@ protected:
   }
 
 public:
-  AnalysisForm(QWidget* parent, const std::string& analysisName, const boost::filesystem::path& workingDirectory="");
+  AnalysisForm(
+      QWidget* parent,
+      const std::string& analysisName,
+      const boost::filesystem::path& workingDirectory = boost::filesystem::path(),
+      bool logToConsole=false
+      );
   ~AnalysisForm();
   
-  inline insight::ParameterSet& parameters() { return parameters_; }
+  const insight::ParameterSet& parameters() const;
   
   // ================================================================================
   // ================================================================================
@@ -188,7 +242,7 @@ public:
 
   void startRemoteRun();
   void resumeRemoteRun();
-  void disconnectFromRemoteRun();
+//  void disconnectFromRemoteRun();
 
   // ================================================================================
   // ================================================================================
@@ -205,19 +259,16 @@ private Q_SLOTS:
   void onSaveParametersAs();
   void onLoadParameters();
 
-  void workingDirectoryInputChanged();
-
   void onRunAnalysis();
   void onKillAnalysis();
-  void onAnalysisKilled();
 
   // ================================================================================
   // ================================================================================
   // ===== error handling
-  void onAnalysisErrorOccurred(insight::Exception e);
-  void onAnalysisWarningOccurred(insight::Exception e);
-
   void onResultReady(insight::ResultSetPtr);
+  void onAnalysisError(std::exception_ptr e);
+  void onAnalysisCancelled();
+
 
   void onCreateReport();
 
@@ -234,8 +285,12 @@ private Q_SLOTS:
 
   void onConfigModification();
 
+private Q_SLOTS:
+  void workingDirectoryEdited(const QString& qnwd);
+  void checkForRemoteConfig();
+
 Q_SIGNALS:
-  void apply();
+//  void apply();
   void update();
   void statusMessage(const QString& message, int timeout=0);
   

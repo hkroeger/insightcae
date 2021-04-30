@@ -261,7 +261,7 @@ def generatePythonFilterFromFiles(scriptFile, outputFile):
     open(outputFile, 'w').write(xmlOutput)
 def main():
     if len(sys.argv) != 3:
-        print 'Usage: %s <python input filename> <xml output filename>' % sys.argv[0]
+        print('Usage: %s <python input filename> <xml output filename>' % sys.argv[0])
         sys.exit(1)
     inputScript = sys.argv[1]
     outputFile = sys.argv[2]

@@ -29,18 +29,23 @@
 
 #include "base/boost_include.h"
 
+#include <QDebug>
 #include <QSignalMapper>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QFileDialog>
+#include <QSettings>
 
+#include "base/tools.h"
 #include "base/qt5_helper.h"
 
 #include "cadfeatures/modelfeature.h"
 #include "modelcomponentselectordlg.h"
 #include "insertfeaturedlg.h"
+#include "loadmodeldialog.h"
 
 #include "datum.h"
 
@@ -56,14 +61,32 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
   bgparsethread_(),
   skipPostprocActions_(true)
 {
-    setFontFamily("Courier New");
+    //setDocument(new QTextDocument(parent));
+
+    QFont defaultFont("Courier New");
+    document()->setDefaultFont(defaultFont);
+    setCurrentFont(defaultFont);
+
+    // this fixes issue with font info vanishing in empty doc
+    QTextCursor editorCursor = textCursor();
+    editorCursor.movePosition(QTextCursor::Start);
+    setTextCursor(editorCursor);
+
     setContextMenuPolicy(Qt::CustomContextMenu);
 
-    QFontMetrics fm(this->font());
+    QSettings settings("silentdynamics", "iscad");
+    auto fs=settings.value("fontSize", this->font().pointSize()).toInt();
+
+    setFontSize(fs);
+
+    auto f=this->font();
+    f.setPointSize(fs);
+    QFontMetrics fm(f);
     sizehint_=QSize(
           3*fm.width("abcdefghijklmnopqrstuvwxyz_-+*"),
           fm.height()
         );
+
     
     connect
         (
@@ -144,6 +167,24 @@ bool ISCADModel::saveModelAs()
 
 
 
+void ISCADModel::setFontSize(int fontSize)
+{
+  fontSize_=std::max(2, fontSize);
+
+  auto f=document()->defaultFont();
+  f.setPointSize(fontSize_);
+  document()->setDefaultFont(f);
+
+  QTextCursor cursor = textCursor();
+  selectAll();
+  setCurrentFont(f);
+  setTextCursor( cursor );
+
+  QSettings settings("silentdynamics", "iscad");
+  settings.setValue("fontSize", fontSize_);
+}
+
+
 void ISCADModel::clearDerivedData()
 {
   clear();
@@ -162,13 +203,8 @@ void ISCADModel::loadFile(const boost::filesystem::path& file)
     clearDerivedData();
 
     setFilename(file);
-    std::ifstream in(file.c_str());
-
     std::string contents_raw;
-    in.seekg(0, std::ios::end);
-    contents_raw.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents_raw[0], contents_raw.size());
+    insight::readFileIntoString(file, contents_raw);
 
     setScript(contents_raw);
 }
@@ -209,14 +245,17 @@ void ISCADModel::onEditorSelectionChanged()
         highlighter_->rehighlight();
     }
 
-    insight::cad::FeaturePtr fp=syn_elem_dir_->findElement( textCursor().position() );
-    if (fp)
+    if (syn_elem_dir_)
     {
-      emit focus(fp->buildVisualization());
-    }
-    else
-    {
-      emit unfocus();
+      insight::cad::FeaturePtr fp=syn_elem_dir_->findElement( textCursor().position() );
+      if (fp)
+      {
+        emit focus(fp->buildVisualization());
+      }
+      else
+      {
+        emit unfocus();
+      }
     }
 
     connect
@@ -446,6 +485,15 @@ void ISCADModel::insertFeatureAtCursor()
     }
 }
 
+void ISCADModel::insertImportedModelAtCursor()
+{
+  auto fn = QFileDialog::getOpenFileName(this, "Please select file", "", "STEP model (*.step *.stp);;IGES model (*.igs *.iges);;BREP model (*.brep)");
+  if (!fn.isEmpty())
+  {
+    textCursor().insertText(QString("import(\"%1\")").arg(fn));
+  }
+}
+
 
 void ISCADModel::insertComponentNameAtCursor()
 {
@@ -457,6 +505,29 @@ void ISCADModel::insertComponentNameAtCursor()
     }
 }
 
+void ISCADModel::insertLibraryModelAtCursor()
+{
+  auto dlg = new LoadModelDialog(this);
+  if ( dlg->exec() == QDialog::Accepted )
+  {
+    std::string expr = dlg->expression();
+    if (!expr.empty())
+    {
+      textCursor().insertText(expr.c_str());
+    }
+  }
+}
+
+
+void ISCADModel::onIncreaseFontSize()
+{
+  setFontSize(++fontSize_);
+}
+
+void ISCADModel::onDecreaseFontSize()
+{
+  setFontSize(--fontSize_);
+}
 
 
 
@@ -620,8 +691,7 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     QSplitter *spl=new QSplitter(Qt::Horizontal);
     layout->addWidget(spl);
 
-    context_=new QoccViewerContext;
-    viewer_=new QoccViewWidget(spl, context_->getContext());
+    viewer_=new QoccViewWidget(this);
     viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     spl->addWidget(viewer_);
     

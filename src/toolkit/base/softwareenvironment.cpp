@@ -19,122 +19,18 @@
  */
 
 
+#include "base/tools.h"
 #include "base/softwareenvironment.h"
+
 #include <boost/asio.hpp>
 #include <boost/process/async.hpp>
 #include <boost/asio/steady_timer.hpp>
 
 using namespace std;
+namespace fs=boost::filesystem;
 
 namespace insight
 {
-
-
-
-
-
-SoftwareEnvironment::Job::Job()
-  : out(ios), err(ios)
-{
-}
-
-
-
-
-void SoftwareEnvironment::Job::runAndTransferOutput
-(
-    std::vector<std::string>* pstdout,
-    std::vector<std::string>* pstderr
-)
-{
-
-
-  std::function<void()> read_start_out = [&]() {
-    boost::asio::async_read_until(
-     out, buf_out, "\n",
-     [&](const boost::system::error_code &error, std::size_t /*size*/)
-     {
-      if (!error)
-      {
-        // read a line
-       std::string line;
-       std::istream is(&buf_out);
-       getline(is, line);
-
-       // mirror to console
-       std::cout<<line<<std::endl;
-       if (pstdout) pstdout->push_back(line);
-
-       // restart read
-       read_start_out();
-      }
-     }
-    );
-  };
-
-
-  std::function<void()> read_start_err = [&]() {
-    boost::asio::async_read_until(
-     err, buf_err, "\n",
-     [&](const boost::system::error_code &error, std::size_t /*size*/)
-     {
-      if (!error)
-      {
-        // read a line
-       std::string line;
-       std::istream is(&buf_err);
-       getline(is, line);
-
-       // mirror to console
-       std::cout<<"[E] "<<line<<std::endl;
-       if (pstderr)
-       {
-         pstderr->push_back(line);
-       }
-       else
-       {
-         if (pstdout)
-           pstdout->push_back("[E] "+line);
-       }
-
-       read_start_err();
-      }
-     }
-    );
-  };
-
-  read_start_out();
-  read_start_err();
-
-  ios_run_with_interruption();
-
-  process->wait(); // exit code is not set correctly, if this is skipped
-}
-
-
-void SoftwareEnvironment::Job::ios_run_with_interruption()
-{
-  boost::asio::steady_timer t(ios);
-
-  std::function<void(boost::system::error_code)> interruption_handler =
-   [&] (boost::system::error_code) {
-    try
-    {
-      boost::this_thread::interruption_point();
-    }
-    catch (const boost::thread_interrupted& i)
-    {
-      process->terminate();
-      throw i;
-    }
-
-    t.expires_from_now(std::chrono::seconds( 1 ));
-    if (process->running())
-      t.async_wait(interruption_handler);
-   };
-  interruption_handler({});
-  ios.run();
-}
 
 
 
@@ -166,6 +62,18 @@ SoftwareEnvironment::~SoftwareEnvironment()
 int SoftwareEnvironment::version() const
 {
   return -1;
+}
+
+fs::path SoftwareEnvironment::which(const string &command) const
+{
+  insight::CurrentExceptionContext ex("determining full path to "+command);
+  std::vector<std::string> result;
+
+  executeCommand("which", { command }, &result);
+
+  if (result.size()!=1)
+    throw insight::Exception("Command executable "+command+" not found!");
+  return fs::path(result[0]);
 }
 
 
@@ -214,91 +122,82 @@ void SoftwareEnvironment::executeCommand
 
 
 
-SoftwareEnvironment::JobPtr SoftwareEnvironment::forkCommand
+JobPtr SoftwareEnvironment::forkCommand
 (
-  const std::string& cmd,
-  std::vector<std::string> argv,
+  const std::string& cmd_exe,
+  std::vector<std::string> cmd_argv,
   std::string *ovr_machine
 ) const
 {
   CurrentExceptionContext ex(
-        "launching command \""+cmd+"\" as subprocess"
-        + (argv.size()>0 ? " with arguments:\n"+boost::join(argv, "\n") : "")
+        "launching command \""+cmd_exe+"\" as subprocess"
+        + (cmd_argv.size()>0 ? " with arguments:\n"+boost::join(cmd_argv, "\n") : "")
         );
 
   std::string machine=executionMachine_;
   if (ovr_machine) machine=*ovr_machine;
 
-  argv.insert(argv.begin(), cmd);
+  std::vector<std::string> argv;
 
   if (machine=="")
-    {
-        argv.insert(argv.begin(), "-lc");
-        argv.insert(argv.begin(), "bash");
-        // keep only a selected set of environment variables
-        std::vector<std::string> keepvars = { "DISPLAY", "HOME", "USER", "SHELL",
-                                              "INSIGHT_INSTDIR", "INSIGHT_BINDIR", "INSIGHT_LIBDIR",
-                                              "INSIGHT_OFES", "PYTHONPATH" };
-        for (const std::string& varname: keepvars)
-        {
-            if (char* varvalue=getenv(varname.c_str()))
-            {
-                // shellcmd+="export "+varname+"=\""+std::string(varvalue)+"\";";
-                argv.insert(argv.begin(), varname+"="+std::string(varvalue));
-            }
-        }
-        argv.insert(argv.begin(), "-i");
-        argv.insert(argv.begin(), "env");
-    }
+  {
+      // set up clean environment for InsightCAE
+      argv.insert(argv.end(), {
+                    "env", "-i"
+                  });
+      // keep only a selected set of environment variables
+      std::vector<std::string> keepvars = {
+        "DISPLAY", "HOME", "USER", "SHELL",
+        //"INSIGHT_INSTDIR", "INSIGHT_BINDIR", "INSIGHT_LIBDIR", "INSIGHT_LIBDIRS", "INSIGHT_OFES",
+        "LANG", "LC_ALL", // req. for python/Code_Aster
+        "PYTHONPATH" //, "INSIGHT_THIRDPARTY_DIR"
+      };
+      for (const std::string& varname: keepvars)
+      {
+          if (char* varvalue=getenv(varname.c_str()))
+          {
+              argv.push_back(varname+"="+std::string(varvalue));
+          }
+      }
+      argv.insert(argv.end(), {
+                    "bash", "-lc"
+                  });
+  }
   else if (boost::starts_with(machine, "qrsh-wrap"))
   {
     //argv.insert(argv.begin(), "n");
     //argv.insert(argv.begin(), "-now");
-    argv.insert(argv.begin(), "qrsh-wrap");
+    argv.insert(argv.end(), "qrsh-wrap");
   }
   else
   {
-    argv.insert(argv.begin(), machine);
-    argv.insert(argv.begin(), "ssh");
+    argv.insert(argv.end(), { "ssh", machine} );
   }
 
-  std::ostringstream dbgs;
+  // wrap into single command string
+  std::string cmd = cmd_exe;
+  if (char* cfgpath=getenv("INSIGHT_CONFIGSCRIPT"))
+  {
+      cmd = "source "+std::string(cfgpath)+";" + cmd;
+  }
+  else
+  {
+    insight::Warning("There is no INSIGHT_CONFIGSCRIPT variable defined! Please check environment configuration.");
+  }
+
+  for (const auto& a: cmd_argv)
+  {
+    cmd+=" \""+escapeShellSymbols(a)+"\"";
+  }
+  argv.insert(argv.end(), cmd);
+
   for (const std::string& a: argv)
-    dbgs<<a<<" ";
-  std::cout<<dbgs.str()<<std::endl;
+    std::cout<<a<<" ";
+  std::cout<<std::endl;
 
-  JobPtr job(new Job);
-
-  namespace bp = boost::process;
   std::vector<std::string> args(argv.begin()+1, argv.end());
 
-//std::cout<<argv[0]<<std::endl;
-//for(const auto& arg: args)
-//  std::cout<<arg<<std::endl;
-
-  job->process.reset(
-        new bp::child(
-           bp::search_path(argv[0]),
-           bp::args( args ),
-           bp::std_in < job->in,
-           bp::std_out > job->out,
-           bp::std_err > job->err
-          )
-        );
-
-  if (!job->process->running())
-  {
-    //throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess!\n(Command was \""+dbgs.str()+"\")");
-    throw insight::Exception(
-              boost::str(boost::format(
-                 "Launching of external application \"%s\" as subprocess failed!\n")
-                  % cmd)
-              );
-  }
-
-  std::cout<<"Executing "<</*dbgs.str()*/cmd<<std::endl;
-
-  return job;
+  return forkExternalProcess(argv[0], args);
 }
 
 }

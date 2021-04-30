@@ -18,12 +18,15 @@
  *
  */
 
+#include <iostream>
+
 #include "base/exception.h"
 #include "base/analysis.h"
 #include "base/boost_include.h"
+#include "base/outputanalyzer.h"
+#include "openfoam/blockmeshoutputanalyzer.h"
 
 #include "openfoam/ofes.h"
-#include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamdict.h"
@@ -42,6 +45,7 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+namespace fs = boost::filesystem;
 using namespace insight::OFDictData;
 
 
@@ -179,6 +183,39 @@ void OpenFOAMCase::modifyFilesOnDiskBeforeDictCreation ( const boost::filesystem
 }
 
 
+std::string modifyPathForRegion(const std::string& orgPath, const std::string& regionName)
+{
+  fs::path dpath(orgPath);
+
+  cout<<dpath<< " ==>> ";
+
+  if (dpath.is_relative())
+  {
+    std::vector<fs::path> pathcmpts;
+    std::copy(dpath.begin(), dpath.end(), std::back_inserter(pathcmpts));
+    if (
+        (pathcmpts[0]=="constant")
+        ||
+        (pathcmpts[0]=="system")
+        ||
+        isNumber(pathcmpts[0].string())
+        )
+    {
+      pathcmpts.insert( ++pathcmpts.begin(), regionName );
+    }
+
+    dpath = pathcmpts[0];
+    for (auto i = ++pathcmpts.begin(); i!=pathcmpts.end(); ++i)
+    {
+      dpath /= *i;
+    }
+  }
+
+  cout << dpath << endl;
+
+  return dpath.string();
+}
+
 std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {
   std::shared_ptr<OFdicts> dictionaries(new OFdicts);
@@ -219,6 +256,20 @@ std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 	 }
        }  
 
+  // Include all dicts belonging to regions. Modify their path accordingly.
+  for (const auto& region: regions_)
+  {
+    std::shared_ptr<OFdicts> rd = region.second->createDictionaries();
+
+    while (rd->size())
+    {
+      auto dictName = rd->begin()->first;
+      auto dict = rd->release(rd->begin());
+      auto newPath=modifyPathForRegion(dictName, region.first);
+      dictionaries->insert(newPath, dict.release());
+    }
+  }
+
   return dictionaries;
 }
 
@@ -256,6 +307,10 @@ void OpenFOAMCase::createOnDisk
     const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
 )
 {
+
+  if (!restrictToFiles)
+    modifyFilesOnDiskBeforeDictCreation( location );
+
   std::shared_ptr<OFdicts> dictionaries=createDictionaries();
   createOnDisk(location, dictionaries, restrictToFiles);
 }
@@ -281,7 +336,7 @@ void OpenFOAMCase::createOnDisk
     if (restrictToFiles)
     {
         ok_to_create=false;
-        for (boost::filesystem::path fp: *restrictToFiles)
+        for (const boost::filesystem::path& fp: *restrictToFiles)
         {
             if ( boost::filesystem::equivalent(dictpath, fp) ) ok_to_create=true;
         }
@@ -468,13 +523,8 @@ void OpenFOAMCase::loadFromFile(const boost::filesystem::path& filename, bool sk
     if (!boost::filesystem::exists(filename))
         throw insight::Exception("Input file "+filename.string()+" does not exist!");
     
-    std::ifstream in(filename.c_str());
     std::string contents;
-    in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents[0], contents.size());
-    in.close();
+    readFileIntoString(filename, contents);
     
     setFromXML(contents, filename, skipOFE, skipBCs, casepath);
 }
@@ -545,6 +595,16 @@ OpenFOAMCase::~OpenFOAMCase()
 {
 }
 
+void OpenFOAMCase::addRegionCase(const std::string& regionName, std::shared_ptr<OpenFOAMCase> regionCase)
+{
+  insight::assertion(
+        regionCase->OFversion()==OFversion(),
+        "the selected OpenFOAM versions have to be identical"
+        );
+
+  regions_.emplace(regionName, regionCase);
+}
+
 void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
 {
     if (fieldListCompleted_)
@@ -553,15 +613,18 @@ void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
   fields_[name]=field;
 }
 
-boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::path& location) const
+boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::path& location, const std::string& regionName, const std::string& time) const
 {
   boost::filesystem::path basepath(location);
-  return basepath / "constant" / "polyMesh" / "boundary";
+  if (regionName.empty())
+    return basepath / time / "polyMesh" / "boundary";
+  else
+    return basepath / time / regionName / "polyMesh" / "boundary";
 }
 
-void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict) const
+void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName, const std::string& time) const
 {
-  boost::filesystem::path dictpath = boundaryDictPath(location);
+  boost::filesystem::path dictpath = boundaryDictPath(location, regionName, time);
   std::ifstream f(dictpath.c_str());
   if (!readOpenFOAMBoundaryDict(f, boundaryDict))
       throw insight::Exception("Failed to parse boundary dict "+dictpath.string());
@@ -579,16 +642,12 @@ const
   std::string shellcmd="";
   
   shellcmd += 
-    "export PATH=$PATH:$INSIGHT_BINDIR;"
-    "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_LIBDIR;"
     "source "+env_.bashrc().string()+";"
-    "export PATH=$PATH:$INSIGHT_BINDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
-    "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_LIBDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
     "cd \""+boost::filesystem::absolute(location).string()+"\";"
     + cmd;
   for (std::string& arg: argv)
   {
-    shellcmd+=" \""+arg+"\"";
+    shellcmd+=" \""+escapeShellSymbols(arg)+"\"";
   }
 
   return shellcmd;
@@ -617,87 +676,52 @@ void OpenFOAMCase::executeCommand
 void OpenFOAMCase::runSolver
 (
   const boost::filesystem::path& location, 
-  SolverOutputAnalyzer& analyzer,
-  std::string solverName,
+  OutputAnalyzer& analyzer,
+  std::string cmd,
   int np,
   const std::vector<std::string>& addopts
 ) const
 {
-  string cmd=solverName;
+  string execmd=cmd;
   std::vector<std::string> argv;
   if (np>1)
   {
-    cmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    execmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
     argv.push_back("-parallel");
   }
   std::copy(addopts.begin(), addopts.end(), back_inserter(argv));
 
 
 
-  SoftwareEnvironment::JobPtr job = env_.forkCommand( cmdString(location, cmd, argv) );
+  auto job = env_.forkCommand( cmdString(location, execmd, argv) );
 
 
-  std::function<void()> read_start_out = [&]() {
-    boost::asio::async_read_until(
-     job->out, job->buf_out, "\n",
-     [&](const boost::system::error_code &error, std::size_t /*size*/)
-     {
-      if (!error)
-      {
-        // read a line
-       std::string line;
-       std::istream is(&(job->buf_out));
-       getline(is, line);
+  job->ios_run_with_interruption(
 
-       // mirror to console
-       cout<<line<<endl; // mirror to console
-       analyzer.update(line);
+        [&](const std::string& line)
+        {
+          cout<<line<<endl; // mirror to console
+          analyzer.update(line);
 
-       if (analyzer.stopRun())
-       {
-         std::ofstream f( (location/"wnowandstop").c_str() );
-         f<<"STOP"<<std::endl;
-       }
+          if (analyzer.stopRun())
+          {
+            std::ofstream f( (location/"wnowandstop").c_str() );
+            f<<"STOP"<<std::endl;
+          }
+        },
 
-       // restart read
-       read_start_out();
-      }
-     }
-    );
-  };
-
-
-  std::function<void()> read_start_err = [&]() {
-    boost::asio::async_read_until(
-     job->err, job->buf_err, "\n",
-     [&](const boost::system::error_code &error, std::size_t /*size*/)
-     {
-      if (!error)
-      {
-        // read a line
-       std::string line;
-       std::istream is(&job->buf_err);
-       getline(is, line);
-
-       // mirror to console
-       cout<<"[E] "<<line<<endl; // mirror to console
-       analyzer.update("[E] "+line);
-
-       read_start_err();
-      }
-     }
-    );
-  };
-
-  read_start_out();
-  read_start_err();
-
-  job->ios_run_with_interruption();
+        [&](const std::string& line)
+        {
+          // mirror to console
+          cout<<"[E] "<<line<<endl; // mirror to console
+          analyzer.update("[E] "+line);
+        }
+  );
 
   job->process->wait();
 
   if (job->process->exit_code()!=0)
-      throw insight::Exception("OpenFOAMCase::runSolver(): solver execution failed with nonzero exit code!");
+      throw insight::Exception("OpenFOAMCase::runSolver(): external command execution failed with nonzero exit code!");
 }
 
 std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& boundaryDict) const
@@ -730,7 +754,7 @@ std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& bounda
 }
 
 
-SoftwareEnvironment::JobPtr OpenFOAMCase::forkCommand
+JobPtr OpenFOAMCase::forkCommand
 (
     const boost::filesystem::path& location,
     const std::string& cmd,
@@ -742,6 +766,16 @@ SoftwareEnvironment::JobPtr OpenFOAMCase::forkCommand
 }
 
 
+void OpenFOAMCase::runBlockMesh
+(
+    const boost::filesystem::path& location,
+    int nBlocks,
+    ProgressDisplayer* progressDisplayer
+)
+{
+  BlockMeshOutputAnalyzer bma(progressDisplayer, nBlocks);
+  runSolver(location, bma, "blockMesh");
+}
 
 void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dict& boundaryDict, const ParameterSet& ps )
 {
@@ -751,6 +785,45 @@ void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dic
     for ( StringSet::const_iterator i=unhandledPatches.begin(); i!=unhandledPatches.end(); i++ ) {
         insert ( BoundaryCondition::lookup ( bc_type, *this, *i, boundaryDict, ps ) );
     }
+}
+
+
+std::vector<boost::filesystem::path> OpenFOAMCase::functionObjectOutputDirectories
+(
+    const boost::filesystem::path& caseLocation
+) const
+{
+  path fp;
+  std::shared_ptr<regex> filter;
+  if ( OFversion() <170 )
+  {
+    fp=absolute ( caseLocation );
+    filter.reset(new regex("(processor.*|constant|system|[0-9].*)"));
+  }
+  else
+  {
+    fp=absolute ( caseLocation ) / "postProcessing";
+  }
+
+  std::vector<boost::filesystem::path> results;
+
+  for (directory_iterator it(fp);
+       it!=directory_iterator(); ++it)
+  {
+    if (is_directory(it->status())) // if is directory
+    {
+      auto cp=it->path();
+      if (!filter || (filter && !regex_search(cp.filename().string(), *filter))) // and not matching filter
+      {
+        if (listTimeDirectories(cp).size()>0) // and if contains time dirs
+        {
+          results.push_back(cp); // then add
+        }
+      }
+    }
+  }
+
+  return results;
 }
 
 }

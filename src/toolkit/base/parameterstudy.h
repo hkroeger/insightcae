@@ -22,6 +22,7 @@
 #define INSIGHT_PARAMETERSTUDY_H
 
 #include <base/analysis.h>
+#include "base/parameters/doublerangeparameter.h"
 
 namespace insight {
 
@@ -37,6 +38,13 @@ class ParameterStudy
 : public Analysis
 {
 protected:
+  void generateInstance
+  (
+    SynchronisedAnalysisQueue& instances,
+    const ParameterSet& templ,
+    DoubleRangeParameter::RangeList::const_iterator i[]
+  );
+
   void generateInstances
   (
     SynchronisedAnalysisQueue& instances, 

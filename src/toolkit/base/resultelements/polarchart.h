@@ -3,10 +3,11 @@
 
 
 #include "base/resultelements/chart.h"
+#include "base/resultelements/chartrenderer.h"
+#include "base/resultelements/gnuplotchartrenderer.h"
 #include "base/units.h"
 
 namespace insight {
-
 
 class PolarChart
   : public Chart
@@ -26,12 +27,10 @@ public:
      const std::string& addinit = ""
  );
 
- void gnuplotCommand(gnuplotio::Gnuplot&) const override;
+ void generatePlotImage ( const boost::filesystem::path& imagepath ) const override;
 
  ResultElementPtr clone() const override;
 };
-
-
 
 
 insight::ResultElement& addPolarPlot

@@ -92,6 +92,7 @@ public:
 
     boost::filesystem::path setupExecutionEnvironment() override;
     
+    void initializeDerivedInputDataSection();
     virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="");
     
     virtual void calcDerivedInputData(ProgressDisplayer& progress);
@@ -100,12 +101,12 @@ public:
     
     virtual void createDictsInMemory(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
     
+    virtual void writeDictsToDisk(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
     /**
      * Customize dictionaries before they get written to disk
      */
     virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
     
-    virtual void writeDictsToDisk(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
     
     /**
      * Do modifications to the case when it has been created on disk
@@ -113,19 +114,29 @@ public:
     virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
     virtual void mapFromOther(OpenFOAMCase& cm, ProgressDisplayer& progress, const boost::filesystem::path& mapFromPath, bool is_parallel);
-    virtual void initializeSolverRun(ProgressDisplayer& progress, OpenFOAMCase& cm);
     
     virtual void installConvergenceAnalysis(std::shared_ptr<ConvergenceAnalysisDisplayer> cc);
-    virtual void runSolver(ProgressDisplayer& displayer, OpenFOAMCase& cm);
-    virtual void finalizeSolverRun(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
-    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
+    /**
+     * @brief prepareCaseCreation
+     * perform action prior to actual case setup,
+     * e.g. running another solver to obtain corrections for settings
+     * @param progress
+     */
+    virtual void prepareCaseCreation(ProgressDisplayer& progress);
+
     /**
      * integrate all steps before the actual run
      */
     virtual void createCaseOnDisk(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
+    virtual void initializeSolverRun(ProgressDisplayer& progress, OpenFOAMCase& cm);
+    virtual void runSolver(ProgressDisplayer& displayer, OpenFOAMCase& cm);
+    virtual void finalizeSolverRun(OpenFOAMCase& cm, ProgressDisplayer& progress);
+
+    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
+
     ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer ) override;
 };
 

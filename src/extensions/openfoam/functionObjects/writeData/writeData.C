@@ -143,27 +143,29 @@ Foam::writeData::execute()
 
     if (write)
     {
+      Info<< "USER REQUESTED DATA WRITE AT (timeIndex="
+          << obr_.time().timeIndex()
+          << ")"
+          << endl;
+
 #if OF_VERSION<=020100 //defined(OF16ext) || defined(OF21x)
-        const_cast<Time&>(obr_.time()).writeNow();
+      const_cast<Time&>(obr_.time()).writeNow();
 #else
-        const_cast<Time&>(obr_.time()).writeOnce();
+      const_cast<Time&>(obr_.time()).writeOnce();
 #endif
-        Info<< "USER REQUESTED DATA WRITE AT (timeIndex="
-            << obr_.time().timeIndex()
-            << ")"
-            << endl;
     }
     
     if (abort)
     {
+      Info<< "USER REQUESTED ABORT (timeIndex="
+          << obr_.time().timeIndex()
+          << "): stop+write data"
+          << endl;
+
 #if OF_VERSION<010700 //defined(OF16ext) //defined(OF21x)
-//        const_cast<Time&>(obr_.time()).setStopAt(Time::saWriteNow);
+      const_cast<Time&>(obr_.time()).writeAndEnd();
 #else
-        const_cast<Time&>(obr_.time()).stopAt(Time::saWriteNow);
-	Info<< "USER REQUESTED ABORT (timeIndex="
-	    << obr_.time().timeIndex()
-	    << "): stop+write data"
-	    << endl;
+      const_cast<Time&>(obr_.time()).stopAt(Time::saWriteNow);
 #endif
     }
 #if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)

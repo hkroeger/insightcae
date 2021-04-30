@@ -32,65 +32,48 @@ using namespace std;
 namespace insight
 {
 
-void TaskQueue::dispatchJobs()
-{
-  std::unique_lock<std::mutex> lck(mx_);
-  while (true)
-  {
-    //Wait until we have jobs
-    cv_.wait(lck, [this] {
-        return (jobQueue_.size());
-    });
-
-    while (jobQueue_.size()>0)
-    {
-      auto op = std::move(jobQueue_.front());
-      jobQueue_.pop();
-
-      lck.unlock();
-      op();
-      lck.lock();
-
-      boost::this_thread::interruption_point();
-    }
-
-  }
-}
 
 
 
-TaskQueue::TaskQueue()
-  : workerThread_(
-      boost::bind(&TaskQueue::dispatchJobs, this)
-    )
-{}
+//void TaskQueue::post(TaskQueue::Job job)
+//{
+//  std::unique_lock<std::mutex> lck(mx_);
 
-TaskQueue::~TaskQueue()
-{
-  cancel();
-  workerThread_.join();
-}
+//  jobQueue_.push(job);
 
-void TaskQueue::post(TaskQueue::Job job)
-{
-  std::unique_lock<std::mutex> lck(mx_);
+//  lck.unlock();
+//  cv_.notify_all();
 
-  jobQueue_.push(
-        [=]()
-        {
-          job();
-        }
-  );
+//}
 
-  lck.unlock();
-  cv_.notify_all();
 
-}
+//void TaskQueue::dispatchJobs()
+//{
+//  std::unique_lock<std::mutex> lck(mx_);
 
-void TaskQueue::cancel()
-{
-  workerThread_.interrupt();
-}
+//  while (true)
+//  {
+//    //Wait until we have jobs
+//    cv_.wait(lck, [this] {
+//        return (jobQueue_.size());
+//    });
+
+//    while (jobQueue_.size()>0)
+//    {
+//      auto op = std::move(jobQueue_.front());
+//      jobQueue_.pop();
+
+//      lck.unlock();
+//      op();
+//      lck.lock();
+
+//      boost::this_thread::interruption_point();
+//    }
+//  }
+//}
+
+
+
 
 
 void AnalyzeClient::controlRequest(const std::string &action, AnalyzeClient::ReportSuccessCallback onCompletion)
@@ -121,152 +104,188 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
 
   boost::lock_guard<boost::mutex> lock(mx_);
 
-  bool success = (!err && response.status() == 200);
-
-  std::string body=response.body();
-  CurrentRequestType crq=crq_;
-  crq_=None;
-  std::cout<<"httpResponse err="<<err<<", crq="<<crq_
-           <<", status="<<response.status()
-           <<", success="<<success
-           <<", body="<<body.substr(0, std::min<size_t>(80,body.size()))
-           <<std::endl;
-
-
-  switch (crq)
+  try
   {
+    bool success = (!err && response.status() == 200);
 
-    case SimpleRequest: {
-        tq_.post(
-              [=]()
-              {
-                boost::get<ReportSuccessCallback>(currentCallback_)(success);
-              }
-        );
-      }
-      break;
+    std::string body=response.body();
+    CurrentRequestType crq=crq_;
+    crq_=None;
 
-    case QueryStatus: {
+    std::cout<<"httpResponse err="<<err<<", crq="<<crq_
+             <<", status="<<response.status()
+             <<", success="<<success
+             <<", body="<<body.substr(0, std::min<size_t>(80,body.size()))
+             <<std::endl;
 
-      ProgressStatePtrList pss;
-      bool resultsAvailable = false;
+    switch (crq)
+    {
 
-      if (success)
-      {
-        const auto *ct = response.getHeader("Content-Type");
-
-        if (!ct)
-        {
-          throw insight::Exception("No content type specified in response!");
+      case SimpleRequest: {
+//          tq_.post(
+//                [=]()
+//                {
+                  boost::get<ReportSuccessCallback>(currentCallback_)(success);
+//                }
+//          );
         }
+        break;
 
-        if (  (*ct)=="application/json" )
+      case QueryStatus: {
+
+//        ProgressStatePtrList pss;
+        bool resultsAvailable = false;
+
+        if (success)
         {
-          Wt::Json::Object payload;
-          Wt::Json::parse(response.body(), payload);
+          const auto *ct = response.getHeader("Content-Type");
 
-          resultsAvailable = payload["resultsAvailable"].toBool();
-          std::cout<<"resultsavail="<<resultsAvailable<<std::endl;
-
-          Wt::Json::Array states = payload.get("states");
-          //for (const Wt::Json::Object& s: states)
-          if (states.size()>0)
+          if (!ct)
           {
-            for (Wt::Json::Array::const_iterator i=states.begin(); i!=states.end(); i++)
-            {
-              //std::cout<<"state"<<std::endl;
-              Wt::Json::Object s=*i;
+            throw insight::Exception("No content type specified in response!");
+          }
 
-              ProgressVariableList pvl;
-              if (!s.isNull("ProgressVariableList"))
+          if (  (*ct)=="application/json" )
+          {
+            Wt::Json::Object payload;
+            Wt::Json::parse(response.body(), payload);
+
+            resultsAvailable = payload["resultsAvailable"].toBool();
+
+            if (progressDisplayer_)
+            {
+              Wt::Json::Array states = payload.get("states");
+              if (states.size()>0)
               {
-                Wt::Json::Object pvs = s.get("ProgressVariableList");
-                for (const auto& pv: pvs)
+                for (Wt::Json::Array::const_iterator i=states.begin(); i!=states.end(); i++)
                 {
-                  //std::cout<<pv.first<<"="<<double(pv.second.toNumber())<<std::endl;;
-                  pvl[pv.first]=pv.second.toNumber();
+                  Wt::Json::Object s=*i;
+
+                  ProgressVariableList pvl;
+                  if (!s.isNull("ProgressVariableList"))
+                  {
+                    Wt::Json::Object pvs = s.get("ProgressVariableList");
+                    for (const auto& pv: pvs)
+                    {
+                      pvl[pv.first]=pv.second.toNumber();
+                    }
+                  }
+
+                  progressDisplayer_->update(
+                        ProgressState(
+                          s.get("time").toNumber(),
+                          pvl,
+                          s.get("logMessage").toString()
+                          )
+                        );
                 }
               }
-              //std::cout<<double(s.get("time").toNumber())<<":\""<<std::string(s.get("logMessage").toString())<<"\""<<std::endl;
-              ProgressStatePtr ps(new ProgressState(
-                s.get("time").toNumber(),
-                pvl,
-                s.get("logMessage").toString()
-                ));
-              pss.push_back(ps);
+
+              Wt::Json::Array progressStates = payload.get("progressStates");
+              if (progressStates.size()>0)
+              {
+                for (auto i=progressStates.begin();
+                     i!=progressStates.end(); i++)
+                {
+                  Wt::Json::Object s=*i;
+                  auto path = s.get("path").toString();
+                  if (!s.isNull("double"))
+                  {
+                    double value = s.get("double").toNumber();
+                    progressDisplayer_->setActionProgressValue(path, value);
+                  }
+                  else if (!s.isNull("text"))
+                  {
+                    string text = s.get("text").toString();
+                    progressDisplayer_->setMessageText(path, text);
+                  }
+                  else
+                  {
+                    progressDisplayer_->finishActionProgress(path);
+                  }
+                }
+              }
             }
           }
+          else
+          {
+            success=false;
+          }
         }
-        else
+
+//        tq_.post( [=]()
+//        {
+          boost::get<QueryStatusCallback>(currentCallback_)(success, resultsAvailable);
+//        });
+
+      } break;
+
+      case QueryResults: {
+        ResultSetPtr r;
+
+        if (success)
         {
-          success=false;
+          const auto *ct = response.getHeader("Content-Type");
+
+          if (!ct)
+            throw insight::Exception("No content type specified in response!");
+
+          if ( (*ct)=="application/xml")
+          {
+            auto body = response.body();
+            r.reset(new ResultSet(analysisName_, body));
+          }
         }
-      }
 
-      tq_.post( [=]()
-      {
-        boost::get<QueryStatusCallback>(currentCallback_)(success, pss, resultsAvailable);
-      });
+//        tq_.post( [=]()
+//        {
+          boost::get<QueryResultsCallback>(currentCallback_)(success, r);
+//        });
 
-    } break;
+      } break;
 
-    case QueryResults: {
-      ResultSetPtr r;
+      case QueryExepath: {
+        std::string exepath;
 
-      if (success)
-      {
-        const auto *ct = response.getHeader("Content-Type");
-
-        if (!ct)
-          throw insight::Exception("No content type specified in response!");
-
-        if ( (*ct)=="application/xml")
+        if (success)
         {
-          auto body = response.body();
-          r.reset(new ResultSet(body));
+
+          const auto *ct = response.getHeader("Content-Type");
+
+          if (!ct)
+            throw insight::Exception("No content type specified in response!");
+
+          if ( (*ct)=="text/plain" )
+          {
+            exepath=response.body();
+          }
+          else
+          {
+            success=false;
+          }
         }
-      }
 
-      tq_.post( [=]()
-      {
-        boost::get<QueryResultsCallback>(currentCallback_)(success, r);
-      });
+//        tq_.post( [=]()
+//        {
+          boost::get<QueryExepathCallback>(currentCallback_)(success, exepath);
+//        });
 
-    } break;
+      } break;
 
-    case QueryExepath: {
-      std::string exepath;
-
-      if (success)
-      {
-
-        const auto *ct = response.getHeader("Content-Type");
-
-        if (!ct)
-          throw insight::Exception("No content type specified in response!");
-
-        if ( (*ct)=="text/plain" )
-        {
-          exepath=response.body();
+      case None: {
+          insight::Warning("Internal error: got unexpected response.");
         }
-        else
-        {
-          success=false;
-        }
-      }
+        break;
 
-      tq_.post( [=]()
-      {
-        boost::get<QueryExepathCallback>(currentCallback_)(success, exepath);
-      });
-
-    } break;
-
-    case None: {
-        insight::Warning("Internal error: got unexpected response.");
-      }
-      break;
-
+    }
+  }
+  catch (const std::exception&)
+  {
+    auto ex = std::current_exception();
+    if (exHdlr_)
+      exHdlr_(ex);
+    else
+      std::rethrow_exception(ex);
   }
 }
 
@@ -274,12 +293,18 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
 
 
 AnalyzeClient::AnalyzeClient(
-    const std::string &url
+    const std::string analysisName,
+    const std::string &url,
+    insight::ProgressDisplayer* progressDisplayer,
+    ExceptionHandler exceptionHandler
     )
-  : url_(url),
+  : analysisName_(analysisName),
+    url_(url),
     ioService_(),
     httpClient_(ioService_),
-    crq_(None)
+    crq_(None),
+    progressDisplayer_(progressDisplayer),
+    exHdlr_(exceptionHandler)
 {
   httpClient_.setMaximumResponseSize(512*1024*1024);
   httpClient_.setTimeout(std::chrono::seconds{24*3600});
@@ -333,7 +358,7 @@ bool AnalyzeClient::waitForContact(int maxAttempts)
     attempts++;
 
     queryStatus(
-          [&](bool success, insight::ProgressStatePtrList, bool)
+          [&](bool success, bool)
           {
             std::unique_lock<std::mutex> lck(m);
             if (success)
@@ -457,8 +482,6 @@ void AnalyzeClient::queryResults(AnalyzeClient::QueryResultsCallback onResultsAv
   if (!httpClient_.get(url_+"/results"))
     throw insight::Exception("Could not query results of remote analysis!");
 }
-
-
 
 
 

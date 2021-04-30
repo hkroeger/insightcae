@@ -28,23 +28,33 @@
 namespace insight 
 {
 
+class CASolverOutputAnalyzer;
+
 
 class CAEnvironment
 : public SoftwareEnvironment
 {
 protected:
   boost::filesystem::path asrun_cmd_;
+
   
 public:
-  CAEnvironment(const boost::filesystem::path& asrun_cmd);
+  CAEnvironment(const boost::filesystem::path& asrun_cmd = "as_run");
   
   virtual int version() const;
   virtual const boost::filesystem::path& asrun_cmd() const;
   
-  void forkCase
+  JobPtr forkCase
   (
     const boost::filesystem::path& exportfile
   ) const;
+
+  void runSolver
+  (
+      const boost::filesystem::path& exportfile,
+      CASolverOutputAnalyzer& analyzer
+  ) const;
+
 };
 
 }

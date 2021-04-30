@@ -22,34 +22,30 @@ try:
     
     def loadOFCase(caseDir):
         import re
-    
+
         case = OpenFOAMReader(FileName = os.path.join(caseDir, "x.foam"))
         bnds=case.GetPropertyValue('PatchArrayInfo')
-        #print bnds
-        
+
         regions=['internalMesh']+[bnds[i] for i in range(0, len(bnds), 2)]
-        #print regions
-        
+
         blockIndices={regions[0]: 1}
-        #blockIndices.update({n: 2+i for i,n in enumerate(regions[1:])})
         for i,n in enumerate(regions[1:]):
-	   blockIndices[n]=2+i
-        
-        #print blockIndices
+            blockIndices[n]=2+i
+
         case.MeshRegions=regions
-        
+
         vs=case.TimestepValues
         view=GetActiveView()
         if not view:
-	  # When using the ParaView UI, the View will be present, not otherwise.
-	  view = CreateRenderView()
+            # When using the ParaView UI, the View will be present, not otherwise.
+            view = CreateRenderView()
 
         view.ViewTime=vs[-1]
         view.Background = [1,1,1]
         #view.ViewSize = [1024, 768]
         #view.ViewSize = [1920, 1080] # HD-Ready!
         view.ViewSize = [3840, 2160]
-        
+
         return (case, blockIndices)
     
     
@@ -76,7 +72,7 @@ try:
     
     def getLookupTable(arrayName, minV, maxV, component, template):
         p=copy.deepcopy(template)
-        for i in range(0, len(p['RGBPoints'])/4):
+        for i in range(0, int(len(p['RGBPoints'])/4)):
             p['RGBPoints'][4*i]=minV+(maxV-minV)*p['RGBPoints'][4*i]
         return GetLookupTableForArray(arrayName, component, **p)
     
@@ -84,14 +80,14 @@ try:
         disp = GetDisplayProperties(obj)
         disp.LookupTable=None
         try:
-         disp.ColorAttributeType=None
-	 disp.ColorArrayName=None
+            disp.ColorAttributeType=None
+            disp.ColorArrayName=None
         except:
-         # ceases to exists from paraview 4.2 onwards
-         disp.ColorArrayName=(None, None)
-	disp.Representation = 'Surface'
+            # ceases to exists from paraview 4.2 onwards
+            disp.ColorArrayName=(None, None)
+        disp.Representation = 'Surface'
         disp.DiffuseColor = rgb
-	disp.Opacity = opacity
+        disp.Opacity = opacity
     
     def displayContour(obj, arrayName, minV=None, maxV=None, component=-1, LUTName="bluered", 
                        title=None, 
@@ -101,58 +97,58 @@ try:
                        opacity=1.0):
         disp = GetDisplayProperties(obj)
         if minV is None or maxV is None:
-	  if (arrayType=='POINT_DATA'):
-	    pdi=obj.PointData.GetArray(arrayName)
-	  else:
-	    pdi=obj.CellData.GetArray(arrayName)
-	  mi, ma = pdi.GetRange(component)
-	  if minV is None: minV=mi
-	  if maxV is None: maxV=ma
+            if (arrayType=='POINT_DATA'):
+                pdi=obj.PointData.GetArray(arrayName)
+            else:
+                pdi=obj.CellData.GetArray(arrayName)
+            mi, ma = pdi.GetRange(component)
+            if minV is None: minV=mi
+            if maxV is None: maxV=ma
         #disp.LookupTable=MakeBlueToRedLT(-1, 1)
         c=component
-        if component<0: 
-           c=1
-        disp.LookupTable=getLookupTable(arrayName, minV, maxV, 
-                                        c, #1 if component<0 else component, 
+        if component<0:
+            c=1
+        disp.LookupTable=getLookupTable(arrayName, minV, maxV,
+                                        c, #1 if component<0 else component,
                                         lookupTableTemplates[LUTName])
         if component>=0:
             disp.LookupTable.VectorComponent=component
             disp.LookupTable.VectorMode="Component"
         disp.Representation = 'Surface'
         try:
-         disp.ColorAttributeType=arrayType
-	 disp.ColorArrayName=arrayName
+            disp.ColorAttributeType=arrayType
+            disp.ColorArrayName=arrayName
         except:
-         # ceases to exists from paraview 4.2 onwards
-         disp.ColorArrayName=(arrayType, arrayName)
-	disp.Opacity = opacity
-   
+            # ceases to exists from paraview 4.2 onwards
+            disp.ColorArrayName=(arrayType, arrayName)
+        disp.Opacity = opacity
+
         t=title
         if title is None:
-           t=arrayName 
+            t=arrayName
         bar=None
         if (barsize is None):
-	  bar = CreateScalarBar(
-                              LookupTable=disp.LookupTable, 
+            bar = CreateScalarBar(
+                              LookupTable=disp.LookupTable,
                               Title=t, #(arrayName if title is None else title),
-                              Position=barpos, 
+                              Position=barpos,
                               Orientation=barorient,
                               TitleFontSize=14, LabelFontSize=12,
                               TitleColor=[0,0,0], LabelColor=[0,0,0]
                               )
-	else:
-          try:
-    	      bar = CreateScalarBar(
-                              LookupTable=disp.LookupTable, 
+        else:
+            try:
+                bar = CreateScalarBar(
+                              LookupTable=disp.LookupTable,
                               Title=t, #(arrayName if title is None else title),
-                              Position=barpos, 
-                              Position2=barsize, #[barpos[0]+barsize[0], barpos[1]+barsize[1]], 
+                              Position=barpos,
+                              Position2=barsize, #[barpos[0]+barsize[0], barpos[1]+barsize[1]],
                               Orientation=barorient,
                               TitleFontSize=14, LabelFontSize=12,
                               TitleColor=[0,0,0], LabelColor=[0,0,0]
                               )
-          except:
-              bar = CreateScalarBar(
+            except:
+                bar = CreateScalarBar(
                               LookupTable=disp.LookupTable,
                               Title=t, #(arrayName if title is None else title),
                               #TitleFontSize=14, LabelFontSize=12,
@@ -164,10 +160,10 @@ try:
                               ScalarBarLength=max(barsize),
                               ScalarBarThickness=50
                               )
-              if (min(barsize)>0.):
-                bar.ScalarBarThickness=int(min(barsize)*2160.0)
+                if (min(barsize)>0.):
+                    bar.ScalarBarThickness=int(min(barsize)*2160.0)
 
-	bar.ComponentTitle=""
+        bar.ComponentTitle=""
         GetRenderView().Representations.append(bar)
         return (bar,obj)
 
@@ -179,7 +175,7 @@ try:
     
     
     def extractInterior(cbi):
-        case, blockIndices=cbi        
+        case, blockIndices=cbi
         eb=ExtractBlock(Input=case, PruneOutput=1)
         eb.BlockIndices=[1]
         return eb
@@ -196,12 +192,12 @@ try:
             bi=[]
             for n,i in blockIndices.items():
                 if se.match(n):
-		  print "selected patch %s (id %d)"%(n,i)
-                  bi.append(i)
+                    print("selected patch %s (id %d)"%(n,i))
+                    bi.append(i)
             eb.BlockIndices=bi
         else:
             raise Exception("no valid patch selection given! Specify either a string list or a single regex string")
-        
+
         return eb
 
 
@@ -211,46 +207,47 @@ try:
 
 
     def planarSlice(cbi, origin, normal):
-      reader,blockindices=cbi
-      sl = Slice(Input=reader)
-      sl.SliceType.Normal=normal
-      sl.SliceType.Origin=origin
-      return sl
+        reader,blockindices=cbi
+        sl = Slice(Input=reader)
+        sl.SliceType.Normal=normal
+        sl.SliceType.Origin=origin
+        return sl
     
     
     def waterSurface(cbi, minZ, maxZ):
         case, blockIndices=cbi
-        
+
         alphaname="alpha1"
         for fn in case.PointData.keys():
-	  if fn.startswith("alpha"):
-	    alphaname=fn
-	    break
-	print "alphaname=", alphaname
-	  
+            if fn.startswith("alpha"):
+                alphaname=fn
+                break
+        print("alphaname=", alphaname)
+
         surf0=Contour(Input=case, ContourBy=alphaname, Isosurfaces=[0.5])
-        #elev=Elevation(Input=surf, 
-                       #LowPoint=[0,0,minZ], 
-                       #HighPoint=[0,0,maxZ], 
+        #elev=Elevation(Input=surf,
+                       #LowPoint=[0,0,minZ],
+                       #HighPoint=[0,0,maxZ],
                        #ScalarRange=[minZ, maxZ]
                        #)
-	extractSurface1 = ExtractSurface(Input=surf0)
-	surf = GenerateSurfaceNormals(Input=extractSurface1)
-	surf.ComputeCellNormals = 1
-	
+        extractSurface1 = ExtractSurface(Input=surf0)
+        surf = GenerateSurfaceNormals(Input=extractSurface1)
+        surf.ComputeCellNormals = 1
+
         Show(surf)
         surf.UpdatePipeline()
         if minZ is None or maxZ is None:
-	  mima=surf.GetDataInformation().DataInformation.GetBounds() #elev.PointData.GetArray('Elevation').GetRange()
-	  if minZ is None: minZ=mima[4]
-	  if maxZ is None: maxZ=mima[5]
-	  print mima, minZ, maxZ
+            mima=surf.GetDataInformation().DataInformation.GetBounds() #elev.PointData.GetArray('Elevation').GetRange()
+            if minZ is None: minZ=mima[4]
+            if maxZ is None: maxZ=mima[5]
+            print(mima, minZ, maxZ)
+
         elev=Elevation(Input=surf,
          LowPoint=[0,0,minZ],
          HighPoint=[0,0,maxZ],
          ScalarRange=[minZ, maxZ])
 
-	return elev, minZ, maxZ
+        return elev, minZ, maxZ
     
     # @scale: viewport height will be two times the given value!
     def setCam(pos, focus=[0,0,0], up=[0,0,1], scaleOrSize=None):
@@ -264,24 +261,24 @@ try:
                 w, h = scaleOrSize
                 W, H = GetRenderView().ViewSize
                 scale=0.5*max(float(w), float(h))
-                print W, H, w, h, scale
+                print(W, H, w, h, scale)
                 cam.SetParallelScale(scale)
             else:
                 scale=float(scaleOrSize)
                 cam.SetParallelScale(scale)
-	else:
-	  ResetCamera() # rescales but keeps view direction intact
+        else:
+            ResetCamera() # rescales but keeps view direction intact
 
     def prepareSnapshots():
         paraview.simple._DisableFirstRenderCameraReset()
         #active_objects.source.SMProxy.InvokeEvent('UserEvent', 'HideWidget')
-	RenderView1 = GetRenderView()
-	RenderView1.OrientationAxesVisibility = 1
-	RenderView1.CenterAxesVisibility=0
-	# Turn off "Head Light"
-	#RenderView1.LightSwitch = 0
-	# Turn off "Light Kit"
-	RenderView1.UseLight = 1 
+        RenderView1 = GetRenderView()
+        RenderView1.OrientationAxesVisibility = 1
+        RenderView1.CenterAxesVisibility=0
+        # Turn off "Head Light"
+        #RenderView1.LightSwitch = 0
+        # Turn off "Light Kit"
+        RenderView1.UseLight = 1
 
     def getBoundingBox(ds):
         ds.UpdatePipeline()

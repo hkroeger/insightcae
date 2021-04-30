@@ -57,7 +57,7 @@ public:
         const ParameterSet& p = Parameters::makeDefault()
     );
 
-    virtual void setField_p ( OFDictData::dict& BC, OFdicts& dictionaries  ) const;
+    virtual void setField_p ( OFDictData::dict& BC, OFdicts& dictionaries, bool isPrgh  ) const;
     virtual void setField_U ( OFDictData::dict& BC, OFdicts& dictionaries ) const;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 

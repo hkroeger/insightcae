@@ -47,6 +47,8 @@ public:
     SelectionParameter ( const std::string& key, const ItemList& items, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     ~SelectionParameter() override;
 
+    bool isDifferent(const Parameter& p) const override;
+
     inline ItemList& items()
     {
         return items_;

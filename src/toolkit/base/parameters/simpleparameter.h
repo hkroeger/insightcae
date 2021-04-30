@@ -50,6 +50,15 @@ public:
           value_ ( value )
     {}
 
+    bool isDifferent(const Parameter& p) const override
+    {
+      if (const auto *sp = dynamic_cast<const SimpleParameter<T,N>*>(&p))
+      {
+        return (value_!=(*sp)());
+      }
+      else
+        return true;
+    }
 
     virtual T& operator() ()
     {

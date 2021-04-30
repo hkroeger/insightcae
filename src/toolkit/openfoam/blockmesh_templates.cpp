@@ -88,9 +88,15 @@ void blockMeshDict_Cylinder::create_bmd()
     bool hollow = p_.geometry.d > 1e-10;
 
     int nu, nx, nr;
-    double
+    double L_r, L_u;
+
+    auto setLrLu = [&](double x)
+    {
         L_r = 0.5*(p_.geometry.D-p_.geometry.d),
-        L_u = 2.*M_PI * 0.5*(p_.geometry.d+p_.geometry.D) /4.;
+        L_u = 2.*M_PI * ( (1.-x)*p_.geometry.d + x*p_.geometry.D ) /4.;
+    };
+
+    setLrLu(0.5);
 
     if (const auto* ic = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
     {
@@ -100,12 +106,15 @@ void blockMeshDict_Cylinder::create_bmd()
     }
     else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
     {
+      setLrLu(ic->xcubical);
       nx=std::max(1, int(std::ceil(p_.geometry.L/ic->delta)));
       nr=std::max(1, int(std::ceil(L_r/ic->delta)));
       nu=std::max(1, int(std::ceil(L_u/ic->delta)));
     }
     else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
     {
+      setLrLu(ic->xcubical);
+
       auto Ls={p_.geometry.L, L_r, L_u};
       double delta = *std::max_element(Ls.begin(), Ls.end()) / double(ic->n_max);
 
@@ -169,7 +178,8 @@ void blockMeshDict_Cylinder::create_bmd()
                                         p0+r1*pts[0], p0+r2*pts[0], p0+r3*pts[0], p0+r0*pts[0],
                                         p0+( r1*pts[0] )+vL, p0+( r2*pts[0] )+vL, p0+( r3*pts[0] )+vL, p0+( r0*pts[0] )+vL
                                     ),
-                                    nu, nu, nx
+                                    nu, nu, nx,
+                                    {1, 1, p_.mesh.gradax}
                                   )
                     );
         if ( base ) {
@@ -181,7 +191,8 @@ void blockMeshDict_Cylinder::create_bmd()
     }
 
     // radial blocks
-    for ( int i=0; i<4; i++ ) {
+    for ( int i=0; i<4; i++ )
+    {
         arma::mat r0=rotMatrix ( double ( i+0.5 ) *al, ex );
         arma::mat r1=rotMatrix ( double ( i+1.5 ) *al, ex );
 
@@ -193,7 +204,7 @@ void blockMeshDict_Cylinder::create_bmd()
                                             p0+( r1*pts[0] )+vL, p0+( r0*pts[0] )+vL, p0+( r0*pts[1] )+vL, p0+( r1*pts[1] )+vL
                                         ),
                                         nu, nr, nx,
-                                        list_of<double> ( 1 ) ( 1./p_.mesh.gradr ) ( 1 )
+                                        { 1,  1./p_.mesh.gradr, p_.mesh.gradax }
                                       )
                         );
             if ( base ) {
@@ -221,6 +232,26 @@ void blockMeshDict_Cylinder::create_bmd()
         {
            this->addEdge(new ArcEdge(p0+r1*pts[0], p0+r0*pts[0], p0+rmid*pts[0]));
            this->addEdge(new ArcEdge(p0+(r1*pts[0])+vL, p0+(r0*pts[0])+vL, p0+(rmid*pts[0])+vL));
+        }
+        else
+        {
+          if (p_.mesh.smoothCore)
+          {
+            auto pstart = p0+r0*pts[0];
+            auto pend = p0+r1*pts[0];
+
+            auto pmid = p0+rmid*pts[0];
+            auto pmido = p0+rmid*pts[1];
+            arma::mat elo=pmid-pmido;
+            elo/=arma::norm(elo,2);
+
+            double linfrac=0.2;
+            auto& e1 = this->addEdge(new SplineEdge(
+                            {pstart, //(1.-linfrac)*pstart + linfrac*pend,
+                             pmido + elo*(0.5*p_.geometry.D-Lc),
+                             /*linfrac*pstart+(1.-linfrac)*pend, */pend}));
+            this->addEdge(e1.transformed(arma::eye(3,3), vL));
+          }
         }
 
     }

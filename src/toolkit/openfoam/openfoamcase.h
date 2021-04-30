@@ -27,6 +27,7 @@
 #include "openfoam/ofenvironment.h"
 #include "openfoam/openfoamdict.h"
 #include "openfoam/ofdicts.h"
+#include "openfoam/ofes.h"
 
 
 namespace insight {
@@ -34,7 +35,7 @@ namespace insight {
     
     
 class ProgressDisplayer;
-class SolverOutputAnalyzer;
+class OutputAnalyzer;
 
 
 
@@ -52,11 +53,13 @@ protected:
     FieldList fields_;
     bool fieldListCompleted_ = false;
     MapMethod requiredMapMethod_;
+
+    std::map<std::string, std::shared_ptr<OpenFOAMCase> > regions_;
     
     void createFieldListIfRequired() const;
 
 public:
-    OpenFOAMCase ( const OFEnvironment& env );
+    OpenFOAMCase ( const OFEnvironment& env = OFEs::getCurrentOrPreferred() );
     OpenFOAMCase ( const OpenFOAMCase& other );
     virtual ~OpenFOAMCase();
 
@@ -69,10 +72,12 @@ public:
         return requiredMapMethod_;
     }
 
+    void addRegionCase(const std::string& regionName, std::shared_ptr<OpenFOAMCase> regionCase);
+
     void addField ( const std::string& name, const FieldInfo& field );
 
-    boost::filesystem::path boundaryDictPath(const boost::filesystem::path& location) const;
-    void parseBoundaryDict ( const boost::filesystem::path& location, OFDictData::dict& boundaryDict ) const;
+    boost::filesystem::path boundaryDictPath(const boost::filesystem::path& location, const std::string& regionName = std::string(), const std::string& time = "constant" ) const;
+    void parseBoundaryDict ( const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName = std::string(), const std::string& time = "constant" ) const;
 
     std::set<std::string> getUnhandledPatches ( OFDictData::dict& boundaryDict ) const;
 
@@ -101,7 +106,7 @@ public:
     bool isCompressible() const;
 
     void modifyFilesOnDiskBeforeDictCreation ( const boost::filesystem::path& location ) const;
-    std::shared_ptr<OFdicts> createDictionaries() const;
+    virtual std::shared_ptr<OFdicts> createDictionaries() const;
     virtual void modifyMeshOnDisk ( const boost::filesystem::path& location ) const;
     virtual void modifyCaseOnDisk ( const boost::filesystem::path& location ) const;
 
@@ -142,19 +147,26 @@ public:
     void runSolver
     (
         const boost::filesystem::path& location,
-        SolverOutputAnalyzer& analyzer,
+        OutputAnalyzer& analyzer,
         std::string solverName,
         int np=0,
         const std::vector<std::string>& addopts = std::vector<std::string>()
     ) const;
 
-    SoftwareEnvironment::JobPtr forkCommand
+    JobPtr forkCommand
     (
         const boost::filesystem::path& location,
         const std::string& cmd,
         std::vector<std::string> argv = std::vector<std::string>(),
         std::string *ovr_machine = nullptr
     ) const;
+
+    void runBlockMesh
+    (
+        const boost::filesystem::path& location,
+        int nBlocks=1,
+        ProgressDisplayer* progressDisplayer=nullptr
+    );
 
     inline const FieldList& fields() const
     {
@@ -193,6 +205,11 @@ public:
     OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0) const;
     OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0) const;
     OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0) const;
+
+    std::vector<boost::filesystem::path> functionObjectOutputDirectories
+    (
+        const boost::filesystem::path& location
+    ) const;
 
 };
 

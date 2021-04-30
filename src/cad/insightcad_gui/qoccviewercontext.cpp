@@ -17,6 +17,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
+
+#if !defined _WIN32
+#define QT_CLEAN_NAMESPACE         /* avoid definition of INT32 and INT8 */
+#endif
+
 #include <QtCore>
 #include "qoccinternal.h"
 #include "qoccviewercontext.h"
@@ -81,26 +86,39 @@ Handle_V3d_Viewer QoccViewerContext::createViewer
 #ifndef WNT
   
 #if ((OCC_VERSION_MAJOR>=7)||(OCC_VERSION_MINOR>=6))
-  static Handle_Graphic3d_GraphicDriver defaultdevice;
+  static Handle(OpenGl_GraphicDriver) aGraphicDriver;
 #if ((OCC_VERSION_MAJOR>=7)||(OCC_VERSION_MINOR>6))
-  Handle_Aspect_DisplayConnection displayConnection(new Aspect_DisplayConnection());
-  defaultdevice = new OpenGl_GraphicDriver( displayConnection );
+  if (aGraphicDriver.IsNull())
+  {
+    Handle(Aspect_DisplayConnection) displayConnection;
+
+    displayConnection = new Aspect_DisplayConnection(OSD_Environment ("DISPLAY").Value());
+    aGraphicDriver = new OpenGl_GraphicDriver( displayConnection );
+  }
 //   Handle_OpenGl_GraphicDriver::DownCast(defaultdevice)->ChangeOptions().ffpEnable=false; // fix to make clip planes work
 #else
-  defaultdevice = new OpenGl_GraphicDriver(getenv(aDisplay));
+  aGraphicDriver = new OpenGl_GraphicDriver(getenv(aDisplay));
 #endif
 #else
-  static Handle(Graphic3d_GraphicDevice) defaultdevice;
+  static Handle(Graphic3d_GraphicDevice) aGraphicDriver;
   
-//  if( defaultdevice.IsNull() )
+//  if( aGraphicDriver.IsNull() )
 //    {
-      defaultdevice = new Graphic3d_GraphicDevice( getenv(aDisplay) );
+      aGraphicDriver = new Graphic3d_GraphicDevice( getenv(aDisplay) );
 //    }
 #endif
+
   Handle_V3d_Viewer viewer=
+//#if (OCC_VERSION_MAJOR>=7)
+//      new V3d_Viewer
+//          (
+//           aGraphicDriver
+//        );
+//  viewer->SetDefaultViewSize (ViewSize);
+//#else
   /*return */ new V3d_Viewer
     (	
-     defaultdevice,
+     aGraphicDriver,
      aName,
      aDomain,
      ViewSize,
@@ -110,17 +128,19 @@ Handle_V3d_Viewer QoccViewerContext::createViewer
      V3d_ZBUFFER,
      V3d_GOURAUD
     );
+//#endif
+
 #else
-  static Handle( Graphic3d_WNTGraphicDevice ) defaultdevice;
-  if( defaultdevice.IsNull() )
+  static Handle( Graphic3d_WNTGraphicDevice ) aGraphicDriver;
+  if( aGraphicDriver.IsNull() )
     {
-      defaultdevice = new Graphic3d_WNTGraphicDevice();
+      aGraphicDriver = new Graphic3d_WNTGraphicDevice();
     }
 
   Handle_V3d_Viewer viewer=
   /*return*/ new V3d_Viewer
     (	
-     defaultdevice,
+     aGraphicDriver,
      aName,
      aDomain,
      ViewSize,

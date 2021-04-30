@@ -31,6 +31,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "boost/stacktrace.hpp"
+#include "boost/algorithm/string.hpp"
+
 using namespace std;
 
 namespace insight
@@ -43,8 +46,20 @@ std::ostream& operator<<(std::ostream& os, const Exception& ex)
 }
 
 
-std::string splitMessage(const std::string& message, std::size_t width, std::string whitespace)
+std::string splitMessage(const std::string& message, std::size_t width, std::string begMark, string endMark, std::string whitespace)
 {
+
+  if (!begMark.empty())
+  {
+    width-=2;
+    begMark+=" ";
+  }
+  if (!endMark.empty())
+  {
+    width-=2;
+    endMark=" "+endMark;
+  }
+
   std::string source(message);
 
   std::size_t  currIndex = width - 1;
@@ -58,10 +73,26 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
     if (currIndex == std::string::npos)
         break;
     sizeToElim = source.find_first_not_of(whitespace,currIndex + 1) - currIndex - 1;
+
     source.replace( currIndex + 1, sizeToElim , "\n");
     currIndex += (width + 1); //due to the recently inserted "\n"
   }
-  return source;
+
+  std::vector<string> splittext;
+  boost::split(splittext, source, boost::is_any_of("\n"));
+
+  string result;
+  for (auto l: splittext)
+  {
+    result+=begMark+l;
+    if (l.size()<width)
+    {
+      result+=string(width-l.size(), ' ');
+    }
+    result+=endMark+"\n";
+  }
+
+  return result;
 }
 
 
@@ -83,60 +114,8 @@ void Exception::saveContext(bool strace)
 #ifndef WIN32
   if (strace)
   {
-    int num_max=30;
-    void *callstack[num_max];
-
-    // get void*'s for all entries on the stack
-    int nFrames = backtrace(callstack, num_max);
-
-    // print out all the frames to stderr
-    char **symbols=backtrace_symbols(callstack, nFrames);
-
     ostringstream trace_buf;
-
-    char buf[1024];
-    for (int i=0; i<nFrames; i++)
-    {
-        Dl_info info;
-        if (dladdr(callstack[i], &info) && info.dli_sname) {
-            char *demangled = NULL;
-            int status = -1;
-            if (info.dli_sname[0] == '_')
-                demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-            snprintf
-                (
-                  buf, sizeof(buf),
-//                  "%-3d %*p %s + %zd\n",
-                  "%-3d %s\n",
-                      i,
-//                      int(2 + sizeof(void*) * 2),
-//                      callstack[i],
-                      (
-                        (status == 0) ?
-                        demangled :
-                        info.dli_sname == 0 ? symbols[i] : info.dli_sname
-                      )/*,
-                      (char *)callstack[i] - (char *)info.dli_saddr*/
-                     );
-            free(demangled);
-        } else {
-            snprintf
-                (
-                  buf, sizeof(buf),
-//                    "%-3d %*p %s\n",
-                    "%-3d %s\n",
-                     i,
-//                     int(2 + sizeof(void*) * 2),
-//                     callstack[i],
-                     symbols[i]
-                );
-        }
-        trace_buf << buf;
-//      trace_buf<<symbols[i]<<endl;
-      //free(str[i]);
-    }
-    //free(str);
-
+    trace_buf  << boost::stacktrace::stacktrace();
     strace_=trace_buf.str();
   }
   else
@@ -266,25 +245,71 @@ std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen)
 }
 
 
+
+
+WarningDispatcher::WarningDispatcher()
+{}
+
+void WarningDispatcher::setSuperDispatcher(WarningDispatcher *superDispatcher)
+{
+  superDispatcher_=superDispatcher;
+}
+
+void WarningDispatcher::issue(const std::string& message)
+{
+  issue(insight::Exception(message));
+}
+
+void WarningDispatcher::issue(const insight::Exception& warning)
+{
+  if (superDispatcher_)
+  {
+    superDispatcher_->issue(warning);
+  }
+  else
+  {
+    displayFramed("Warning follows", warning, '-', std::cerr);
+    warnings_.push_back(warning);
+  }
+}
+
+void displayFramed(const std::string& title, const std::string& msg, char titleChar, ostream &os)
+{
+  int dif=80-title.size()-2-2;
+  int nx=dif/2;
+  int ny=dif-nx;
+
+  os
+     <<"\n"
+       "+"<<std::string(nx,titleChar)<<" "<<title<<" "<<std::string(ny, titleChar)<<"+\n"
+     <<"|"      <<string(78, ' ')                                                   <<"|\n"
+                            <<splitMessage(msg, 80, "|", "|")
+     <<"|"      <<string(78, ' ')                                                   <<"|\n"<<
+       "+------------------------------------------------------------------------------+\n"
+     <<"\n"
+       ;
+
+}
+
+const decltype(WarningDispatcher::warnings_)& WarningDispatcher::warnings() const
+{
+  return warnings_;
+}
+
+size_t WarningDispatcher::nWarnings() const
+{
+  return warnings_.size();
+}
+
+
+
+thread_local WarningDispatcher warnings;
+
+
+
 void Warning(const std::string& msg)
 {
-  std::cerr<<"\n\n"
-"================================================================\n"
-"================================================================\n"
-"    WW      WW   AAA   RRRRRR  NN   NN IIIII NN   NN   GGGG     \n"
-"    WW      WW  AAAAA  RR   RR NNN  NN  III  NNN  NN  GG  GG    \n"
-"    WW   W  WW AA   AA RRRRRR  NN N NN  III  NN N NN GG         \n"
-"     WW WWW WW AAAAAAA RR  RR  NN  NNN  III  NN  NNN GG   GG    \n"
-"      WW   WW  AA   AA RR   RR NN   NN IIIII NN   NN  GGGGGG    \n"
-"================================================================\n"
-    <<std::endl;
-    
-  std::cerr<<splitMessage(msg, 60)<<std::endl;
-  
-  std::cerr<<std::endl<<
-"================================================================\n"
-"================================================================\n\n"
-    <<std::endl;
+  warnings.issue( msg );
 }
 
 void UnhandledExceptionHandling::handler()
@@ -315,10 +340,12 @@ void printException(const std::exception& e)
 {
   if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
   {
-    std::cerr << std::endl
-              << "An error has occurred:" << std::endl
-              << ie->message() << std::endl
-                 ;
+//    std::cerr << std::endl
+//              << "An error has occurred:" << std::endl
+//              << ie->message() << std::endl
+//                 ;
+
+    displayFramed("***ERROR***", ie->message(), '=', std::cerr);
 
     if (getenv("INSIGHT_STACKTRACE"))
     {
@@ -328,10 +355,11 @@ void printException(const std::exception& e)
   }
   else
   {
-    std::cerr << std::endl
-              << "An error has occurred:" << std::endl
-              << e.what() << std::endl
-                 ;
+//    std::cerr << std::endl
+//              << "An error has occurred:" << std::endl
+//              << e.what() << std::endl
+//                 ;
+    displayFramed("***ERROR***", e.what(), '=', std::cerr);
   }
 }
 
@@ -350,6 +378,13 @@ string vector_to_string(const arma::mat &vals, bool addMag)
   }
   return os.str();
 }
+
+UnsupportedFeature::UnsupportedFeature()
+{}
+
+UnsupportedFeature::UnsupportedFeature(const string &msg, bool strace)
+  : Exception(msg, strace)
+{}
 
 
 

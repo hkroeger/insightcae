@@ -35,7 +35,7 @@
 
 
 class ISCADMainWindow;
-class QoccViewerContext;
+//class QoccViewerContext;
 class QFeatureItem;
 
 

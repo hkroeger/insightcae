@@ -80,11 +80,12 @@ void ASTBase::checkForBuildDuringAccess() const
       }
   }
 
-  boost::mutex m_mutex;
-  boost::unique_lock<boost::mutex> lock(m_mutex);
+//  boost::mutex m_mutex;
+//  boost::unique_lock<boost::mutex> lock(m_mutex);
   
   if (!valid()) 
   {
+      std::lock_guard<std::mutex> l(build_mtx_);
       building_=true;
       const_cast<ASTBase*>(this)->build();
       building_=false;
@@ -100,6 +101,14 @@ size_t ASTBase::hash() const
       hash_=calcHash();
     }
   return hash_;
+}
+
+ASTBase &ASTBase::operator=(const ASTBase &o)
+{
+  valid_=o.valid_;
+  building_=false;
+  hash_=o.hash_;
+  return *this;
 }
 
 

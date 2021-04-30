@@ -1,0 +1,6 @@
+NAME
+   vtkMedReader
+DEPENDS
+  VTK::FiltersCore
+  VTK::FiltersGeneral
+  VTK::IOLegacy

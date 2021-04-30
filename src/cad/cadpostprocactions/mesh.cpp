@@ -31,6 +31,8 @@
 
 #include "openfoam/blockmesh_templates.h"
 
+using namespace std;
+
 namespace insight
 {
 namespace cad
@@ -47,27 +49,25 @@ size_t Mesh::calcHash() const
 Mesh::Mesh
 (
   const boost::filesystem::path& outpath, 
-  insight::cad::FeaturePtr model, 
-//   const std::string& volname, 
-  std::vector< insight::cad::ScalarPtr > L,
+  insight::cad::FeaturePtr model,
+  boost::fusion::vector< ScalarPtr,ScalarPtr > L,
   bool quad, 
-  const insight::cad::GroupsDesc& vertexGroups, 
-  const insight::cad::GroupsDesc& edgeGroups, 
-  const insight::cad::GroupsDesc& faceGroups, 
-  const insight::cad::GroupsDesc& solidGroups, 
-  const insight::cad::NamedVertices& namedVertices
+  const GroupDefinitions& v_e_f_s_groups,
+  const insight::cad::NamedVertices& namedVertices,
+  bool keepTmpDir
 )
 : 
   outpath_(outpath),
   model_(model),
 //   volname_(volname),
-  L_(L),
+  Lmax_(boost::fusion::at_c<0>(L)), Lmin_(boost::fusion::at_c<1>(L)),
   quad_(quad),
-  vertexGroups_(vertexGroups),
-  edgeGroups_(edgeGroups),
-  faceGroups_(faceGroups),
-  solidGroups_(solidGroups),
-  namedVertices_(namedVertices)
+  vertexGroups_(boost::fusion::at_c<0>(v_e_f_s_groups)),
+  edgeGroups_(boost::fusion::at_c<1>(v_e_f_s_groups)),
+  faceGroups_(boost::fusion::at_c<2>(v_e_f_s_groups)),
+  solidGroups_(boost::fusion::at_c<3>(v_e_f_s_groups)),
+  namedVertices_(namedVertices),
+  keepTmpDir_(keepTmpDir)
 {}
 
 
@@ -78,13 +78,15 @@ Handle_AIS_InteractiveObject Mesh::createAISRepr() const
 }
 
 void Mesh::write(std::ostream& ) const
-{
-}
+{}
 
-void Mesh::build()
+void Mesh::setupGmshCase(GmshCase& c)
 {
-  GmshCase c(*model_, L_[0]->value(), L_[1]->value());
-  if (!quad_) c.setLinear();
+  if (quad_)
+    c.setQuadratic();
+  else
+    c.setLinear();
+
   for (const GroupDesc& gd: vertexGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
@@ -115,7 +117,7 @@ void Mesh::build()
     const arma::mat& loc=boost::fusion::at_c<1>(gd)->value();
     c.addSingleNamedVertex(gname, loc);
   }
-  
+
   for (const GroupDesc& gd: vertexGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
@@ -141,8 +143,91 @@ void Mesh::build()
       c.setFaceEdgeLen(gname, (*gs)->value());
     }
   }
-  c.doMeshing(/*volname_,*/ outpath_, true);
 }
+
+void Mesh::build()
+{
+  GmshCase c(model_, outpath_, Lmax_->value(), Lmin_->value(), "gmsh", keepTmpDir_);
+  setupGmshCase(c);
+  c.doMeshing();
+}
+
+
+
+
+
+
+
+ExtrudedMesh::ExtrudedMesh
+(
+  const boost::filesystem::path& outpath,
+  insight::cad::FeaturePtr model,
+  boost::fusion::vector< ScalarPtr,ScalarPtr,ScalarPtr,ScalarPtr > L_h_nLayers,
+  bool quad,
+  const ExtrudedGroupDefinitions& v_e_bf_tf_s_groups,
+  const insight::cad::NamedVertices& namedVertices,
+  bool keepTmpDir
+)
+: Mesh(
+    outpath,
+    model,
+    boost::fusion::vector<ScalarPtr,ScalarPtr>(
+      boost::fusion::at_c<0>(L_h_nLayers),
+      boost::fusion::at_c<1>(L_h_nLayers)
+      ),
+    quad,
+    GroupDefinitions(
+      boost::fusion::at_c<0>(v_e_bf_tf_s_groups),
+      boost::fusion::at_c<1>(v_e_bf_tf_s_groups),
+      boost::fusion::at_c<2>(v_e_bf_tf_s_groups),
+      boost::fusion::at_c<4>(v_e_bf_tf_s_groups)
+      ),
+    namedVertices,
+    keepTmpDir
+    ),
+  h_(boost::fusion::at_c<2>(L_h_nLayers)),
+  nLayers_(boost::fusion::at_c<3>(L_h_nLayers))
+{
+  auto transf = [&](const GroupsDesc& g, std::vector<SheetExtrusionGmshCase::NamedEntity>& tg)
+  {
+    std::transform(
+          g.begin(), g.end(),
+          std::back_inserter(tg),
+          [&](const GroupDesc& a) -> SheetExtrusionGmshCase::NamedEntity
+          {
+            return SheetExtrusionGmshCase::NamedEntity
+            (
+              boost::fusion::at_c<0>(a),
+              boost::fusion::at_c<1>(a)
+            );
+          }
+    );
+  };
+
+  transf( boost::fusion::at_c<2>(v_e_bf_tf_s_groups), namedBottomFaces_ );
+  transf( boost::fusion::at_c<3>(v_e_bf_tf_s_groups), namedTopFaces_ );
+  transf( boost::fusion::at_c<1>(v_e_bf_tf_s_groups), namedLateralEdges_ );
+}
+
+
+
+
+void ExtrudedMesh::build()
+{
+
+  SheetExtrusionGmshCase c(
+        model_, "G_3D_1", outpath_,
+        Lmin_->value(),
+        h_->value(),
+        nLayers_->value(),
+        namedBottomFaces_, namedTopFaces_, namedLateralEdges_,
+        keepTmpDir_
+      );
+  setupGmshCase(c);
+  c.doMeshing();
+}
+
+
 
 
 

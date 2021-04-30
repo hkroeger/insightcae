@@ -19,15 +19,29 @@
  */
 
 #include "codeasterrun.h"
+#include "caexportfile.h"
+
+#include "code_aster/casolveroutputanalyzer.h"
+#include "base/filewatcher.h"
+
+#include "boost/process.hpp"
+
+#include <memory>
+#include <boost/asio.hpp>
+#include <boost/process/async.hpp>
 
 using namespace std;
+using namespace boost;
+namespace fs=boost::filesystem;
 
 namespace insight
 {
 
 CAEnvironment::CAEnvironment(const boost::filesystem::path& asrun_cmd)
-: asrun_cmd_(asrun_cmd)
+  : asrun_cmd_(asrun_cmd)
 {
+  if (!fs::exists(asrun_cmd_))
+    asrun_cmd_=which(asrun_cmd_.string());
 }
 
 int CAEnvironment::version() const
@@ -40,17 +54,83 @@ const boost::filesystem::path& CAEnvironment::asrun_cmd() const
   return asrun_cmd_;
 }
 
-void CAEnvironment::forkCase
+JobPtr CAEnvironment::forkCase
 (
   const boost::filesystem::path& exportfile
 ) const
 {
   boost::filesystem::path dir=exportfile.parent_path();
-  std::string cmd = std::string("cd ")+dir.string()+"; "+asrun_cmd().string()+" --run "+exportfile.filename().string();
 
-  std::string sys("bash -lc '( "); sys += cmd+" ) &'";
-  cout<<"Executing "<<sys<<endl;
-  system(sys.c_str());
+  return forkCommand(
+        "cd "+dir.string()+"; "+asrun_cmd().string(),
+        {"--run", exportfile.string()}
+        );
+
+}
+
+
+
+void CAEnvironment::runSolver(const filesystem::path &exportfile, CASolverOutputAnalyzer &analyzer) const
+{
+ auto job = forkCase(exportfile);
+
+ std::unique_ptr<FileWatcher> logFileWatcher;
+
+ job->ios_run_with_interruption(
+       [&](const std::string& line)
+       {
+         if ( boost::starts_with(
+                line,
+                "        -- CODE_ASTER -- VERSION :")
+              && !logFileWatcher
+              )
+         {
+           CAExportFile cef(exportfile);
+
+           auto wd = cef.workDir();
+           if (wd.filename().string()=="global")
+           {
+             wd = wd.parent_path()/"proc.0";
+           }
+           auto logFile = wd/"fort.6";
+
+           logFileWatcher.reset(
+                 new FileWatcher(
+                   logFile,
+                   [&](const std::string& line)
+                   {
+                     std::cout<<line<<std::endl;
+                     analyzer.update(line);
+                   }, true ) );
+         }
+       },
+       [&](const std::string& line)
+       {
+         // mirror to console
+         cout<<"[E] "<<line<<endl; // mirror to console
+       }
+ );
+
+ job->process->wait();
+
+
+ std::string msg;
+ auto exceptions = analyzer.exceptions();
+ if (exceptions.size()>0)
+ {
+   std::ostringstream ms;
+   ms<<"\nReported exceptions:\n\n";
+   for (const auto &e: exceptions)
+   {
+     ms<<(*e);
+   }
+   msg=ms.str();
+ }
+
+
+ if ( (job->process->exit_code()!=0) || (exceptions.size()>0) )
+     throw insight::Exception("CAEnvironment::runSolver(): solver run failed!"+msg);
+
 }
 
 }

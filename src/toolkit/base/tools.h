@@ -30,6 +30,10 @@ class vtkCellArray;
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 
+#include <istream>
+
+#include <boost/mpl/clear.hpp>
+
 
 namespace insight
 {
@@ -48,7 +52,16 @@ public:
 
   static const GlobalTemporaryDirectory& path();
 
+  /**
+   * @brief clear
+   * Removes the temporary directory and all its contents.
+   * This is only provided for use in test programs.
+   * Cleanup is intendend to be done automatically at program exit.
+   */
+  static void clear();
+
   ~GlobalTemporaryDirectory();
+
 };
 
 
@@ -59,16 +72,35 @@ class CaseDirectory
     : public boost::filesystem::path
 {
   bool keep_;
+  bool isAutoCreated_;
 
 public:
-  CaseDirectory(const boost::filesystem::path& path);
+  CaseDirectory(const boost::filesystem::path& path, bool keep=true);
   CaseDirectory(bool keep=true, const boost::filesystem::path& prefix="");
   ~CaseDirectory();
 
   void createDirectory();
+  bool isAutoCreated() const;
+  bool isExistingAndWillBeRemoved() const;
+  bool isExistingAndNotEmpty() const;
   bool keep() const;
   void setKeep(bool keep);
 };
+
+
+
+class TemporaryFile
+{
+  boost::filesystem::path tempFilePath_;
+
+  TemporaryFile(const TemporaryFile& other); // forbid copies
+
+public:
+  TemporaryFile(const std::string& fileNameModel="%%%%%.dat", const boost::filesystem::path& baseDir=boost::filesystem::path());
+  ~TemporaryFile();
+  const boost::filesystem::path& path() const;
+};
+
 
 
 
@@ -109,6 +141,8 @@ T to_number(const std::string& s)
     throw insight::Exception("expected a number, got \""+s+"\"");
   }
 }
+
+bool isNumber(const std::string& s);
 
 
 class LineMesh_to_OrderedPointTable
@@ -204,6 +238,15 @@ arma::mat STLBndBox(
   vtkSmartPointer<vtkPolyDataAlgorithm> stl_data_Set
 );
 
+/**
+  * return bounding box of model
+  * first col: min point
+  * second col: max point
+  */
+arma::mat PolyDataBndBox(
+  vtkSmartPointer<vtkPolyData> stl_data_Set
+);
+
 void writeSTL
 (
    vtkSmartPointer<vtkPolyDataAlgorithm> stl,
@@ -216,6 +259,41 @@ std::string escapeShellSymbols(const std::string& expr);
 
 
 int findFreePort();
+
+
+void readStreamIntoString
+(
+    std::istream& in,
+    std::string& fileContent
+);
+
+void readFileIntoString
+(
+    const boost::filesystem::path& fileName,
+    std::string& fileContent
+);
+
+
+class TemplateFile
+    : public std::string
+{
+public:
+  TemplateFile(const std::string& hardCodedTemplate);
+  TemplateFile(std::istream& in);
+  TemplateFile(const boost::filesystem::path& in);
+
+  void replace(const std::string& keyword, const std::string& content);
+
+  void write(std::ostream& os) const;
+  void write(const boost::filesystem::path& outfile) const;
+};
+
+struct MemoryInfo
+{
+  long long memTotal_, memFree_;
+
+  MemoryInfo();
+};
 
 }
 

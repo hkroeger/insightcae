@@ -362,7 +362,7 @@ void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm, 
 
 insight::ResultSetPtr ERCOFTAC_SquareSection180DegreeBend::evaluateResults(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-
+  return OpenFOAMAnalysis::evaluateResults(cm, progress);
 }
 
 }

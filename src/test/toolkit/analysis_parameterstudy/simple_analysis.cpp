@@ -20,6 +20,7 @@
 
 #include "base/analysis.h"
 #include "base/parameterstudy.h"
+#include "base/parameters/subsetparameter.h"
 
 namespace insight
 {

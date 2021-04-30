@@ -55,6 +55,18 @@ void ConvergenceAnalysisDisplayer::update ( const ProgressState& pi )
     }
 }
 
+void ConvergenceAnalysisDisplayer::setActionProgressValue(const string &, double)
+{}
+
+void ConvergenceAnalysisDisplayer::setMessageText(const string &, const string &)
+{}
+
+void ConvergenceAnalysisDisplayer::finishActionProgress(const string &)
+{}
+
+void ConvergenceAnalysisDisplayer::reset()
+{}
+
 bool ConvergenceAnalysisDisplayer::stopRun() const
 {
     return converged_;

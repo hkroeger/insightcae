@@ -49,6 +49,7 @@ class Transform
     Transform ( FeaturePtr m1, VectorPtr trans );
     Transform ( FeaturePtr m1, ScalarPtr scale );
     Transform ( FeaturePtr m1, FeaturePtr other );
+    Transform ( FeaturePtr m1, const gp_Trsf& trsf );
 
     virtual size_t calcHash() const;
     virtual void build();
@@ -57,7 +58,6 @@ public:
     declareType ( "Transform" );
 
     Transform ();
-    Transform ( FeaturePtr m1, const gp_Trsf& trsf );
 
     static FeaturePtr create ( FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf );
     static FeaturePtr create_rotate ( FeaturePtr m1, VectorPtr rot, VectorPtr rotorg );

@@ -2,9 +2,15 @@
 #include "ui_analysisform.h"
 
 #include <QMessageBox>
+#include <QProcess>
 
 #include "base/remotelocation.h"
 #include "base/remoteexecution.h"
+#include "openfoam/ofes.h"
+
+#include "remoteparaview.h"
+#include "remotedirselector.h"
+#include "of_clean_case.h"
 
 namespace fs = boost::filesystem;
 
@@ -45,22 +51,6 @@ void AnalysisForm::updateWindowTitle()
 
 bool AnalysisForm::checkAnalysisExecutionPreconditions()
 {
-  if (currentWorkbenchAction_)
-  {
-    QMessageBox::critical(this,
-                          "Cannot continue",
-                          "There is already an action running!");
-    return false;
-  }
-
-  if (!caseDirectory_)
-  {
-    QMessageBox::critical(this,
-                          "Cannot continue",
-                          "Please select a working directory first!");
-    return false;
-  }
-
   if (results_)
   {
     QMessageBox msgBox;
@@ -82,180 +72,210 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
 }
 
 
-void AnalysisForm::workingDirectoryInputChanged()
+
+
+
+void AnalysisForm::onRunAnalysis()
 {
-  QString nwd=ui->leWorkingDirectory->text();
-  if (nwd!=lastWorkingDirectory_)
-  {
-    if (changeWorkingDirectory(nwd))
-    {
-      lastWorkingDirectory_=nwd;
-    }
-    else
-    {
-      ui->leWorkingDirectory->setText(lastWorkingDirectory_);
-    }
-  }
-}
-
-
-bool AnalysisForm::changeWorkingDirectory(const QString& newWorkingDirectory)
-{
-  if (remoteDirectory_)
-  {
-    QMessageBox::critical(this,
-                          "Cannot continue",
-                          "There is a remote directory connected to the current working directory!\n"
-                          "Cannot continue!");
-    return false;
-  }
-
   if (currentWorkbenchAction_)
+    throw insight::Exception("Internal error: there is an action running currently!");
+
+  if (!checkAnalysisExecutionPreconditions())
+    return;
+
+  if (!ensureWorkingDirectoryExistence())
+    return;
+
+  if (ui->cbRemoteExecution->isChecked())
   {
-    QMessageBox::critical(this,
-                          "Cannot continue",
-                          "There is currently an analysis running!\n"
-                          "Cannot continue!");
-    return false;
+    startRemoteRun();
   }
-
-  fs::path nwd = newWorkingDirectory.toStdString();
-
-  if (caseDirectory_)
+  else if (!ui->cbRemoteExecution->isChecked())
   {
-      if (!caseDirectory_->empty() && fs::exists(*caseDirectory_) && !caseDirectory_->keep())
-      {
-        auto answer = QMessageBox::question(
-              this,
-              "Reset working directory",
-              "There is a ephemeral working directory configured and existing.\n"
-              "If you continue, this will be deleted!\n"
-              "Do you want to continue?",
-              QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
-              );
-
-        if (answer!=QMessageBox::Yes)
-        {
-          return false;
-        }
-      }
+    startLocalRun();
   }
-
-
-  caseDirectory_.reset(
-        new insight::CaseDirectory(nwd)
-         );
-
-
-  if (nwd.empty())
-  {
-    ui->cbRemoveWorkingDirectory->setChecked( Qt::Checked );
-  }
-  else if (fs::exists(nwd))
-  {
-    ui->cbRemoveWorkingDirectory->setChecked( Qt::Unchecked );
-  }
-
-  ui->leWorkingDirectory->setToolTip(QString::fromStdString(caseDirectory_->string()));
-
-  if (fs::exists(*caseDirectory_))
-  {
-    if (boost::filesystem::exists(
-          insight::RemoteExecutionConfig::defaultConfigFile(*caseDirectory_))
-        )
-    {
-      Q_EMIT statusMessage("Found remote location config. Validating now...");
-      try
-      {
-        insight::RemoteExecutionConfig rec(*caseDirectory_);
-        changeRemoteLocation( &rec );
-        ui->gbExecuteOnRemoteHost->setChecked(true);
-        ui->ddlExecutionHosts->setCurrentText(QString::fromStdString(remoteDirectory_->server()));
-        ui->leRemoteDirectory->setText(QString::fromStdString(remoteDirectory_->remoteDir().string()));
-        Q_EMIT statusMessage("Remote location configuration is valid.");
-
-        resumeRemoteRun();
-      }
-      catch (...)
-      {}
-    }
-  }
-
-  return true;
 }
 
 
 
-bool AnalysisForm::changeRemoteLocation(const QString& hostLabel, const QString& remoteDir)
+
+void AnalysisForm::onKillAnalysis()
 {
-  if (!hostLabel.isEmpty())
-  {
-    auto rsi = lookupRemoteServerByLabel(hostLabel);
-    insight::RemoteExecutionConfig rec(rsi, *caseDirectory_);
-    return changeRemoteLocation(&rec);
-  }
-  else
-    return changeRemoteLocation();
+  if (!currentWorkbenchAction_)
+    throw insight::Exception("Internal error: there is no action running currently!");
+
+  currentWorkbenchAction_->onCancel();
 }
 
 
-bool AnalysisForm::changeRemoteLocation(const insight::RemoteExecutionConfig* rec)
-{
-  if (!caseDirectory_)
-  {
-    QMessageBox::critical(
-          this,
-          "Cannot continue",
-          "A local directory needs to be set up first!"
-          );
-    return false;
-  }
 
-  if (remoteDirectory_)
+
+void AnalysisForm::onResultReady(insight::ResultSetPtr results)
+{
+  results_=results;
+
+  currentWorkbenchAction_.reset();
+
+  resultsModel_=new insight::QResultSetModel(results_, ui->resultsToC);
+  ui->resultsToC->setModel(resultsModel_);
+  ui->resultsToC->expandAll();
+  ui->resultsToC->resizeColumnToContents(0);
+  ui->resultsToC->resizeColumnToContents(1);
+
+  ui->tabWidget->setCurrentWidget(ui->outputTab);
+
+
+  QMessageBox::information(this, "Finished!", "The analysis has finished");
+
+}
+
+void AnalysisForm::onAnalysisError(std::__exception_ptr::exception_ptr e)
+{
+  currentWorkbenchAction_.reset();
+  if (e) std::rethrow_exception(e);
+}
+
+
+
+
+void AnalysisForm::onAnalysisCancelled()
+{
+  currentWorkbenchAction_.reset();
+  QMessageBox::information(this, "Stopped!", "The analysis has been interrupted upon user request!");
+}
+
+
+
+
+void AnalysisForm::onStartPV()
+{
+  if (ui->cbRemoteExecution->isChecked() && remoteDirectory_ && caseDirectory_)
   {
     if (remoteDirectory_->remoteDirExists())
     {
-      auto answer = QMessageBox::question(
-            this,
-            "Decision required",
-            "The current analysis is alreadinsight::Exceptiony connected to an existing remote directory.\n"
-            "The remote host is: "+QString::fromStdString(remoteDirectory_->server())+"\n"
-            "The path on the remote host is:\n"
-            +QString::fromStdString(remoteDirectory_->remoteDir().string())+"\n"
-            "Do you want to proceed and loose the connection to this remote location?",
-            QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
-            );
-       if (answer!=QMessageBox::Yes)
-         return false;
+      RemoteParaview dlg( *remoteDirectory_, this );
+      dlg.exec();
     }
   }
-
-  if (rec)
+  else if (!ui->cbRemoteExecution->isChecked() && caseDirectory_)
   {
-    remoteDirectory_.reset(
-          new insight::RemoteExecutionConfig(*rec)
-          );
-    if (!ui->gbExecuteOnRemoteHost->isChecked())
-      ui->gbExecuteOnRemoteHost->setChecked(true);
+    ::system( boost::str( boost::format
+          ("cd %s; isPV.py &" ) % caseDirectory_->string()
+     ).c_str() );
   }
-  else
-  {
-    remoteDirectory_.reset();
-    if (ui->gbExecuteOnRemoteHost->isChecked())
-      ui->gbExecuteOnRemoteHost->setChecked(false);
-  }
-
-  return true;
 }
 
 
-void AnalysisForm::applyDirectorySettings()
+
+
+void AnalysisForm::onCleanOFC()
 {
-  if (!caseDirectory_)
-    throw std::logic_error("Internal error: no local case directory set!");
+  if (caseDirectory_)
+  {
+    const insight::OFEnvironment* ofc = nullptr;
+    if (parameters().contains("run/OFEname"))
+    {
+      std::string ofename=parameters().getString("run/OFEname");
+      ofc=&(insight::OFEs::get(ofename));
+    }
+    else
+    {
+      ofc=&(insight::OFEs::getCurrentOrPreferred());
+    }
 
-  caseDirectory_->createDirectory();
+    fs::path exePath = *caseDirectory_;
+    std::unique_ptr<insight::MountRemote> rd;
+    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_)
+    {
+        rd.reset(new insight::MountRemote(*remoteDirectory_));
+        exePath = rd->mountpoint();
+    }
+
+    OFCleanCaseDialog dlg(*ofc, exePath, this);
+    dlg.exec();
+  }
 }
 
 
+
+
+void AnalysisForm::onWnow()
+{
+  if (isRunning())
+  {
+    fs::path exePath = *caseDirectory_;
+    std::unique_ptr<insight::MountRemote> rd;
+    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_)
+    {
+        rd.reset(new insight::MountRemote(*remoteDirectory_));
+        exePath = rd->mountpoint();
+    }
+
+    {
+      std::ofstream f( (exePath/"wnow").c_str() );
+      f.close();
+    }
+  }
+}
+
+
+
+
+void AnalysisForm::onWnowAndStop()
+{
+  if (isRunning())
+  {
+    fs::path exePath = *caseDirectory_;
+    std::unique_ptr<insight::MountRemote> rd;
+    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_)
+    {
+        rd.reset(new insight::MountRemote(*remoteDirectory_));
+        exePath = rd->mountpoint();
+    }
+
+    {
+      std::ofstream f( (exePath/"wnowandstop").c_str() );
+      f.close();
+    }
+  }
+}
+
+
+
+
+void AnalysisForm::onShell()
+{
+  if (caseDirectory_)
+  {
+    auto locDir = QString::fromStdString(caseDirectory_->string());
+
+    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_ && remoteDirectory_->remoteDirExists())
+    {
+      QStringList args;
+      if ( !QProcess::startDetached("isRemoteShell.sh",
+                                    args, locDir)
+           )
+      {
+        QMessageBox::critical(
+              this,
+              "Failed to start",
+              "Failed to start remote shell in directoy "+locDir
+              );
+      }
+    }
+    else if (!ui->cbRemoteExecution->isChecked())
+    {
+      QStringList args;
+      args << "--working-directory" << locDir;
+      if (!QProcess::startDetached("mate-terminal", args, locDir ))
+      {
+        QMessageBox::critical(
+              this,
+              "Failed to start",
+              "Failed to start mate-terminal in directoy "+locDir
+              );
+      }
+    }
+  }
+}
 

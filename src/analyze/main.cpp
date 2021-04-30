@@ -24,6 +24,7 @@
 #include "base/analysis.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
 #include "base/toolkitversion.h"
+#include "base/parameters.h"
 
 #include <iostream>
 #include <fstream>
@@ -52,7 +53,6 @@
 using namespace std;
 using namespace insight;
 using namespace boost;
-
 
 int main(int argc, char *argv[])
 {
@@ -173,6 +173,25 @@ int main(int argc, char *argv[])
     }
 #endif
 
+    auto summarizeWarnings = [&]()
+    {
+      if (warnings.nWarnings()>0)
+      {
+        std::cerr
+            << "\n"
+            << "There have been "<<warnings.nWarnings()<<" warnings.\n"
+            << "Please review:\n";
+
+        int i=0;
+        for (const auto& w: warnings.warnings())
+        {
+          std::cerr<<"\n** Warning "<<(++i)<<":\n";
+          displayFramed("Warning", w.what(), '-', std::cout);
+        }
+      }
+    };
+
+
     try
     {
         if (vm.count("libs"))
@@ -199,7 +218,10 @@ int main(int argc, char *argv[])
           if (server)
           {
             cout<<"Running in server mode without explicitly specified input file: waiting for input transmission"<<endl;
-            server->waitForInputFile(contents);
+            if (!server->waitForInputFile(contents))
+            {
+              throw insight::Exception("Received interruption!");
+            }
           }
           else
 #endif
@@ -222,16 +244,7 @@ int main(int argc, char *argv[])
               exit(-1);
           }
 
-          try
-          {
-              std::ifstream in(fn.c_str());
-              istreambuf_iterator<char> fbegin(in), fend;
-              std::copy(fbegin, fend, back_inserter(contents));
-          }
-          catch (...)
-          {
-              throw insight::Exception("Failed to read file "+fn.string());
-          }
+          readFileIntoString(fn, contents);
         }
 
         xml_document<> doc;
@@ -257,8 +270,8 @@ int main(int argc, char *argv[])
             StringList ists=vm["merge"].as<StringList>();
             for (const string& ist: ists)
             {
-// 	ParameterSet to_merge;
-                parameters.readFromFile(ist);
+              // 	ParameterSet to_merge;
+              parameters.readFromFile(ist);
             }
         }
 
@@ -375,19 +388,8 @@ int main(int argc, char *argv[])
 #endif
 
         // run analysis
-        ResultSetPtr results;
-        boost::thread solver_thread(
-              [&]()
-              {
-                try {
-                 results = (*analysis)( *pd );
-                }
-                catch (const std::exception& e)
-                {
-                 printException(e);
-                }
-              }
-        );
+
+        AnalysisThread solver_thread(analysis, pd);
 
 #ifdef HAVE_WT
         if (server)
@@ -396,7 +398,7 @@ int main(int argc, char *argv[])
         }
 #endif
 
-        solver_thread.join();
+        ResultSetPtr results = solver_thread.join();
 
 #ifdef HAVE_WT
         if (server)
@@ -411,7 +413,6 @@ int main(int argc, char *argv[])
           if (server)
           {
             server->setResults(results);
-            //server->waitForResultDelivery();
             server->waitForShutdown();
           }
           else
@@ -456,9 +457,14 @@ int main(int argc, char *argv[])
     }
     catch (const std::exception& e)
     {
-        printException(e);
-        exit(-1);
+      summarizeWarnings();
+
+      std::cerr<<"*** The analysis was stopped due to this error:\n\n";
+      printException(e);
+      return -1;
     }
+
+    summarizeWarnings();
 
     return 0;
 }

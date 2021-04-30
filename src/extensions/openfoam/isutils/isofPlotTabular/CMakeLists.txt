@@ -5,7 +5,7 @@ SET(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qwt REQUIRED)
+find_package(Qt5Charts CONFIG REQUIRED)
 
 set(isofPlotTabular_SRCS
     main.cpp
@@ -21,13 +21,12 @@ SET(isofPlotTabular_RCCS
 
 add_executable(isofPlotTabular ${isofPlotTabular_SRCS} ${isofPlotTabular_FORMS} ${isofPlotTabular_RCCS})
 target_link_libraries(isofPlotTabular
- toolkit toolkit_gui
- ${QWT_LIBRARY} ${QWT_LIBRARIES}
- Qt5::Widgets
+ toolkit_gui
+ Qt5::Widgets Qt5::Charts
 )
+linkToolkitVtk(isofPlotTabular Onscreen)
 target_include_directories(isofPlotTabular
   PUBLIC ${QT_INCLUDES}
-  PUBLIC ${QWT_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

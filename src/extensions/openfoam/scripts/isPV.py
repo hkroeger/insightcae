@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os, sys, subprocess, pprint, re, tempfile
 from optparse import OptionParser
+from pathlib import Path
 
 parser = OptionParser()
 parser.add_option("-s", "--statefile", dest="statefile", metavar='FILE', default="",
@@ -34,8 +35,7 @@ parser.add_option("-l", "--list", dest="list",
 (opts, args) = parser.parse_args()
 
 def touch(fname, times=None):
-    with file(fname, 'a'):
-        os.utime(fname, times)
+    Path(fname).touch()
         
 def split(more, path):
   head,tail=os.path.split(path)
@@ -56,7 +56,6 @@ except: from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
 import os,sys,re
 
-#print os.getcwd()
 def isfloat(x):
  try:
   float(x)
@@ -65,7 +64,6 @@ def isfloat(x):
   return False;
 
 times=sorted(map(float, filter(isfloat, os.listdir("."))))
-print times
 #curtime=times[-1]
 """
 + ('paraview.simple.LoadState("%s")\n'%scrname if loadcmd else "") +
@@ -81,11 +79,7 @@ if (len(times)>0):
       f.write(line)
       
   if batch:
-    print opts.fromt, opts.tot # error occurs, when this statement is removed
-#  for i in range(0,len(GetRenderViews())):
-#    fname="%s_view%%02d_t%%g.png"%%(i,curtime)
-#    print "Writing", fname
-#    WriteImage(fname, GetRenderViews()[i], Writer="vtkPNGWriter", Magnification=1)
+    print(opts.fromt, opts.tot) # error occurs, when this statement is removed
 
     rescalesnippet=""
     if (opts.rescale):
@@ -133,7 +127,7 @@ for curtime in ftimes:
       fname+="_t%%g.png"%%(curtime)
     else:
       fname+="_latesttime.png"
-    print "Writing", fname
+    print("Writing", fname)
     SaveScreenshot(fname, layout=layouts[l], magnification=1, quality=100)
 """)%(
   "True" if opts.onlylatesttime else "False",
@@ -165,13 +159,13 @@ if (opts.statefile!=""):
     for d in searchdirs:
       sf=os.path.join(d, os.path.splitext(opts.statefile)[0]+".pvsm")
       if os.path.exists(sf):
-	statefile=sf
-	break
+        statefile=sf
+        break
   else:
     statefile=os.path.abspath(opts.statefile)
     
   if statefile is None:
-    print "Specified state file not found: ", opts.statefile
+    print("Specified state file not found: ", opts.statefile)
     sys.exit(-1)
 
 remove_statefile=False

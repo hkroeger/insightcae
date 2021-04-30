@@ -18,8 +18,9 @@
  *
  */
 
+#include "base/linearalgebra.h"
 #include "occtools.h"
-
+#include "base/units.h"
 #include "Prs3d_Text.hxx"
 #include "StdPrs_Point.hxx"
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<6))
@@ -38,10 +39,77 @@
 
 namespace insight {
 namespace cad {
+
+
+
+gp_Trsf OFtransformToOCC(const arma::mat &translate, const arma::mat &rollPitchYaw, double scale)
+{
+  gp_Trsf tr; tr.SetTranslation(to_Vec(translate));
+  gp_Trsf rx; rx.SetRotation(gp::OX(), rollPitchYaw(0)*SI::deg);
+  gp_Trsf ry; ry.SetRotation(gp::OY(), rollPitchYaw(1)*SI::deg);
+  gp_Trsf rz; rz.SetRotation(gp::OZ(), rollPitchYaw(2)*SI::deg);
+  gp_Trsf sc; sc.SetScaleFactor(scale);
+  return sc*rz*ry*rx*tr;
+}
+
+OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
+{
+  arma::mat R(3,3);
+  for (int i=0;i<3;i++)
+    for (int j=0;j<3;j++)
+      R(i,j)=t.Value(i+1,j+1);
+
+  scale_ = t.ScaleFactor();
+  rollPitchYaw_ = rotationMatrixToRollPitchYaw(R);
+  translate_ = (1./scale_)*inv(R)*Vector(t.TranslationPart()).t();
+}
+
+
+
+OCCtransformToVTK::OCCtransformToVTK(const gp_Trsf& t)
+  : OCCtransformToOF(t)
+{}
+
+vtkSmartPointer<vtkTransform> OCCtransformToVTK::operator()() const
+{
+  auto t = vtkSmartPointer<vtkTransform>::New();
+  t->Translate( translate()(0), translate()(1), translate()(2) );
+  t->RotateX( rollPitchYaw()(0) );
+  t->RotateY( rollPitchYaw()(1) );
+  t->RotateZ( rollPitchYaw()(2) );
+  t->Scale( scale(), scale(), scale() );
+  return t;
+}
+
+
+Handle_AIS_MultipleConnectedInteractive
+buildMultipleConnectedInteractive
+(
+    AIS_InteractiveContext &context,
+    std::vector<Handle_AIS_InteractiveObject> objs
+)
+{
+  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
+
+#if (OCC_VERSION_MAJOR<=7 && OCC_VERSION_MINOR<4)
+  context.Load(ais);
+#endif
+
+  for (auto o: objs)
+  {
+#if (OCC_VERSION_MAJOR<=7 && OCC_VERSION_MINOR<4)
+    context.Load(o);
+#endif
+    ais->Connect(o);
+  }
+
+  return ais;
+}
+
   
 Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::string& text)
 {
-  Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
+  Handle(AIS_RadiusDimension) dim=new AIS_RadiusDimension
   (
    shape
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<=6))
@@ -66,7 +134,7 @@ Handle_AIS_InteractiveObject createLengthDimension
   const std::string& text
 )
 {
-  Handle_AIS_LengthDimension dim(new AIS_LengthDimension(
+  Handle(AIS_LengthDimension) dim(new AIS_LengthDimension(
     from,
     to,
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<=6))
@@ -172,7 +240,7 @@ void InteractiveText::set_position (const arma::mat& pos)
 // -------------------------- Implementation ---------------------------
 
 void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& /*pm*/,
-                               const Handle_Prs3d_Presentation& pres,
+                               const Handle(Prs3d_Presentation)& pres,
                                const Standard_Integer mode)
 {
   Handle_Prs3d_TextAspect at=new Prs3d_TextAspect();
@@ -193,6 +261,7 @@ void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& /*pm*/
   myDrawer->PointAspect()->SetColor(Quantity_NOC_BLACK);
   Handle_Geom_Point p(new Geom_CartesianPoint(location));
   StdPrs_Point::Add(pres,p,myDrawer);
+
 }
 
 // void InteractiveText::Compute (const Handle_Prs3d_Projector& proj,

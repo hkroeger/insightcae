@@ -58,16 +58,32 @@ std::string ParserDataBase::cppTypeName(const std::string& name) const
 }
 
 std::string ParserDataBase::cppTypeDecl(const std::string& name,
-                                        const std::string& thisscope) const
+                                        const std::string& /*thisscope*/) const
 {
     return std::string("typedef ")+cppType(name)+" "+cppTypeName(name)+";";
 }
 
+
 void ParserDataBase::writeCppHeader(std::ostream& os, const std::string& name,
                                     const std::string& thisscope) const
 {
-    os<<cppTypeDecl(name, thisscope)<<std::endl;
-    os<<cppTypeName(name)+" "<<name<<";"<<std::endl;
+  // typedef
+  os<<cppTypeDecl(name, thisscope)<<std::endl;
+
+  // doxygen description
+  os
+      << "/**\n"
+      << " * @brief\n"
+  ;
+  std::vector<std::string> lines;
+  boost::split(lines, description, boost::is_any_of("\n"));
+  for (const auto& line: lines)
+  {
+    os << " * "<<line<<"\n";
+  }
+  os   << " */\n";
+  // variable declaration
+  os<<cppTypeName(name)+" "<<name<<";"<<std::endl;
 }
 
 /**

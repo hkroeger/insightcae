@@ -69,9 +69,12 @@ std::string timeCodePrefix()
 GlobalTemporaryDirectory::GlobalTemporaryDirectory()
   : boost::filesystem::path
     (
-      unique_path
+      absolute
       (
-        temp_directory_path() / "insightcae-%%%%%%"
+        unique_path
+        (
+          temp_directory_path() / "insightcae-%%%%%%"
+        )
       )
     )
 {
@@ -86,6 +89,12 @@ const GlobalTemporaryDirectory &GlobalTemporaryDirectory::path()
   return *td_;
 }
 
+void GlobalTemporaryDirectory::clear()
+{
+  td_.reset();
+}
+
+
 GlobalTemporaryDirectory::~GlobalTemporaryDirectory()
 {
   remove_all(*this);
@@ -94,24 +103,34 @@ GlobalTemporaryDirectory::~GlobalTemporaryDirectory()
 
 
 
-CaseDirectory::CaseDirectory(const boost::filesystem::path& p)
-  : keep_(true)
+
+
+CaseDirectory::CaseDirectory(const boost::filesystem::path& p, bool keep)
+  : boost::filesystem::path(p),
+    keep_(keep),
+    isAutoCreated_(false)
 {
-  if (!p.empty())
-  {
-    boost::filesystem::path::operator=(p);
-  }
-  else
+  if (p.empty())
   {
     boost::filesystem::path::operator=(
-          unique_path(timeCodePrefix() + "_analysis_%%%%")
+          absolute(unique_path(timeCodePrefix() + "_analysis_%%%%"))
           );
+    isAutoCreated_=true;
+    createDirectory();
   }
+  else if (!p.empty() && !fs::exists(p))
+  {
+    boost::filesystem::path::operator=(absolute(p));
+    isAutoCreated_=true;
+    createDirectory();
+  }
+
 }
 
 
 CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
-: keep_(keep)
+: keep_(keep),
+  isAutoCreated_(true)
 {
   if (getenv("INSIGHT_KEEPTEMPCASEDIR"))
     keep_=true;
@@ -119,11 +138,13 @@ CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
   path fn=prefix.filename();
 
   boost::filesystem::path::operator=(
-        unique_path(
-          prefix.parent_path()
-          /
-          (timeCodePrefix() + "_" + fn.string() + "_%%%%")
-         )
+        absolute(
+          unique_path(
+            prefix.parent_path()
+            /
+            (timeCodePrefix() + "_" + fn.string() + "_%%%%")
+           )
+          )
         );
 
   createDirectory();
@@ -133,6 +154,29 @@ CaseDirectory::~CaseDirectory()
 {
   if (!keep_)
     remove_all(*this);
+}
+
+bool CaseDirectory::isAutoCreated() const
+{
+  return isAutoCreated_;
+}
+
+bool CaseDirectory::isExistingAndWillBeRemoved() const
+{
+  return !keep_ && fs::exists(*this) && fs::is_directory(*this);
+}
+
+bool CaseDirectory::isExistingAndNotEmpty() const
+{
+  if (fs::exists(*this) && fs::is_directory(*this))
+  {
+    int n=0;
+    for (fs::directory_iterator di(*this);
+         di!=fs::directory_iterator(); ++di)
+      ++n;
+    return n>0;
+  }
+  return false;
 }
 
 void CaseDirectory::createDirectory()
@@ -151,6 +195,37 @@ void CaseDirectory::setKeep(bool keep)
   keep_=keep;
 }
 
+
+
+
+TemporaryFile::TemporaryFile
+(
+    const std::string& fileNameModel,
+    const boost::filesystem::path& baseDir
+)
+  : tempFilePath_( boost::filesystem::unique_path(
+             (baseDir.empty() ? boost::filesystem::temp_directory_path() : baseDir)
+             /
+             fileNameModel
+             ) )
+{}
+
+
+TemporaryFile::~TemporaryFile()
+{
+  if (!getenv("INSIGHT_KEEPTEMPORARYFILES"))
+  {
+    if (fs::exists(tempFilePath_))
+    {
+      fs::remove(tempFilePath_);
+    }
+  }
+}
+
+const boost::filesystem::path& TemporaryFile::path() const
+{
+  return tempFilePath_;
+}
 
 
 
@@ -284,7 +359,7 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
 
     lines->InitTraversal();
     vtkIdType npts=-1;
-    vtkIdType *pt=nullptr;
+    const vtkIdType *pt=nullptr;
     for (vtkIdType i=0; lines->GetNextCell(npts, pt); i++)
       {
 
@@ -320,7 +395,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     {
         lines->InitTraversal();
         vtkIdType npts=-1;
-        vtkIdType *pt=nullptr;
+        const vtkIdType *pt=nullptr;
         for (int i=0; lines->GetNextCell(npts, pt); i++)
           {
             if (npts==2)
@@ -633,9 +708,17 @@ arma::mat STLBndBox
 {
   CurrentExceptionContext ec("Computing bounding box of VTK poly data set");
 
-  double bb[6];
   in->Update();
-  in->GetOutput()->GetBounds(bb);
+  return PolyDataBndBox(in->GetOutput());
+}
+
+arma::mat PolyDataBndBox
+(
+  vtkSmartPointer<vtkPolyData> in
+)
+{
+  double bb[6];
+  in->GetBounds(bb);
 
   arma::mat bbm;
   bbm
@@ -688,6 +771,7 @@ string escapeShellSymbols(const string &expr)
   string res(expr);
   algorithm::replace_all(res, "\\", "\\\\");
   algorithm::replace_all(res, "$", "\\$");
+  algorithm::replace_all(res, "\"", "\\\"");
   return res;
 }
 
@@ -712,6 +796,90 @@ int findFreePort()
    return  a.local_endpoint().port(); //.address().to_string();
   }
 }
+
+
+
+void readStreamIntoString(istream &in, string &fileContent)
+{
+  in.seekg(0, std::ios::end);
+  fileContent.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&fileContent[0], fileContent.size());
+}
+
+void readFileIntoString(const path &fileName, string &fileContent)
+{
+  std::ifstream in(fileName.string(), std::ios::in | std::ios::binary);
+  if (!in)
+  {
+    throw insight::Exception("Could not open file "+fileName.string()+"!");
+  }
+  readStreamIntoString(in, fileContent);
+}
+
+
+
+TemplateFile::TemplateFile(const string &hardCodedTemplate)
+  : std::string(hardCodedTemplate)
+{}
+
+TemplateFile::TemplateFile(std::istream &in)
+{
+  readStreamIntoString(in, *this);
+}
+
+TemplateFile::TemplateFile(const boost::filesystem::path& in)
+{
+  readFileIntoString(in, *this);
+}
+
+void TemplateFile::replace(const string &keyword, const string &content)
+{
+  boost::replace_all ( *this, "###"+keyword+"###", content );
+}
+
+void TemplateFile::write(ostream &os) const
+{
+  os << (*this);
+}
+
+void TemplateFile::write(const path &outfile) const
+{
+  std::ofstream f(outfile.string());
+  write(f);
+}
+
+MemoryInfo::MemoryInfo()
+{
+  std::map<string, pair<long long, string> > entries;
+
+  std::ifstream f("/proc/meminfo");
+  string line;
+  while (getline(f, line))
+  {
+    std::vector<string> s;
+    boost::split(s, line, boost::is_any_of("\t "), boost::token_compress_on);
+
+    entries[s[0]]=pair<int, string>( lexical_cast<long long>(s[1]), s.size()>2?s[2]:"" );
+  }
+
+  memTotal_=entries["MemTotal:"].first * 1024;
+  memFree_=entries["MemFree:"].first * 1024;
+}
+
+bool isNumber(const string &s)
+{
+  try {
+    auto result = boost::lexical_cast<double>(s);
+    return true;
+  }
+  catch (const boost::bad_lexical_cast&)
+  {
+    return false;
+  }
+}
+
+
 
 
 }

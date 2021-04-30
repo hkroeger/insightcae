@@ -117,7 +117,7 @@ Foam::fv::volumeDrag::volumeDrag
     const fvMesh& mesh
 )
 :
-#if defined(OFplus)
+#if OF_VERSION>=040000
     cellSetOption(sourceName, modelType, dict, mesh),
 #else
     option(sourceName, modelType, dict, mesh),
@@ -199,7 +199,7 @@ Foam::tmp<Foam::vectorField> Foam::fv::volumeDrag::computeSup(fvMatrix<vector>& 
     
     const vectorField& U = eqn.psi();
     
-#if defined(OFplus)
+#if OF_VERSION>=040000
     Su
 #else
     Su()

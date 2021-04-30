@@ -73,11 +73,7 @@ void StitchedShell::build()
   sew.Perform();
   sew.Dump();
   
-  TopoDS_Shell sshell = TopoDS::Shell(sew.SewedShape());
-  //BRepCheck_Shell acheck(sshell);
-  
-  
-  setShape(sshell);
+  setShape(sew.SewedShape());
 }
 
 void StitchedShell::insertrule(parser::ISCADParser& ruleset) const

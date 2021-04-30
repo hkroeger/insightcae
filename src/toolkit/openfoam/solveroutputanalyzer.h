@@ -1,15 +1,21 @@
 #ifndef INSIGHT_SOLVEROUTPUTANALYZER_H
 #define INSIGHT_SOLVEROUTPUTANALYZER_H
 
+#include "base/outputanalyzer.h"
+#include "base/progressdisplayer.h"
+
 #include <map>
 #include <memory>
 #include <armadillo>
 
+#include "boost/regex.hpp"
+
 namespace insight {
 
-class ProgressDisplayer;
+
 
 class SolverOutputAnalyzer
+    : public OutputAnalyzer
 {
 public:
 
@@ -31,7 +37,6 @@ public:
   struct ExecTimeInfo { double exec, wallclock; };
 
 protected:
-    ProgressDisplayer& pdisp_;
 
     double curTime_;
     std::map<std::string, double> curProgVars_;
@@ -51,14 +56,33 @@ protected:
 
     std::string curLog_;
 
-//   std::map<std::string, std::vector<arma::mat> > trackedForces_;
+    std::shared_ptr<ActionProgress> solverActionProgress_;
+
+    boost::regex p_pattern;
+    boost::regex v_pattern;
+    boost::regex por_pattern;
+    boost::regex time_pattern;
+    boost::regex solver_pattern;
+    boost::regex cont_pattern;
+    boost::regex force_pattern;
+    boost::regex sw_pattern;
+
+    boost::regex rb_pattern;
+    boost::regex rb_cor_pattern;
+    boost::regex rb_ori_pattern;
+
+    boost::regex courant_pattern;
+    boost::regex if_courant_pattern;
+    boost::regex dt_pattern;
+    boost::regex exec_time_pattern;
+
 
 public:
-    SolverOutputAnalyzer ( ProgressDisplayer& pdisp );
+    SolverOutputAnalyzer ( ProgressDisplayer& pd, double endTime=1000 );
 
-    void update ( const std::string& line );
+    void update (const std::string& line) override;
 
-    bool stopRun() const;
+    bool stopRun() const override;
 };
 
 

@@ -104,7 +104,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=
-                (compressible_case ? "compressible::" : "")
+                (compressible_case&&(OFversion()<300) ? "compressible::" : "")
                 + std::string("turbulentMixingLengthFrequencyInlet");
             BC["mixingLength"]=p.turb_L;
             BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( 1.0 ) );
@@ -112,7 +112,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         else if ( ( field.first=="epsilon" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=
-                (compressible_case ? "compressible::" : "")
+                (compressible_case&&(OFversion()<300) ? "compressible::" : "")
                 + std::string("turbulentMixingLengthDissipationRateInlet");
             BC["mixingLength"]=p.turb_L;
             BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( 1.0 ) );

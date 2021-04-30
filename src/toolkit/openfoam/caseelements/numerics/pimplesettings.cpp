@@ -44,9 +44,16 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
   PIMPLE["nNonOrthogonalCorrectors"]=p_.nonOrthogonalCorrectors;
   PIMPLE["momentumPredictor"]=p_.momentumPredictor;
 
-  PIMPLE["pRefCell"]=0;
-#warning need proper pressure value here!
-  PIMPLE["pRefValue"]=0.0;
+  if (const auto* pcp = boost::get<Parameters::pRefLocation_location_type>(&p_.pRefLocation))
+  {
+    PIMPLE["pRefPoint"]=OFDictData::vector3(pcp->pRefPoint);
+  }
+  else if (const auto* pci = boost::get<Parameters::pRefLocation_cellID_type>(&p_.pRefLocation))
+  {
+    PIMPLE["pRefCell"]=pci->pRefCell;
+  }
+
+  PIMPLE["pRefValue"]=p_.pRefValue;
 
   if (const auto* piso = boost::get<Parameters::pressure_velocity_coupling_PISO_type>(&p_.pressure_velocity_coupling))
   {

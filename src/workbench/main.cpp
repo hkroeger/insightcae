@@ -60,6 +60,7 @@ int main(int argc, char** argv)
     desc.add_options()
     ("help", "produce help message")
     ("version,r", "print version and exit")
+    ("nolog,l", "put debug output to console instead of log window")
     ("libs", po::value< StringList >(), "Additional libraries with analysis modules to load")
     ("input-file,f", po::value< std::string >(), "Specifies input file.")
     ;
@@ -125,12 +126,15 @@ int main(int argc, char** argv)
     QLocale::setDefault(QLocale::C);
 
     QPixmap pixmap(":/resources/insight_workbench_splash.png");
-    QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
+    QSplashScreen splash(pixmap, /*Qt::WindowStaysOnTopHint|*/Qt::SplashScreen);
     splash.show();
-    app.setSplashScreen(&splash);
-    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current) + ", Wait...");
+    QCoreApplication::processEvents();
 
-    workbench window;
+    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current) + ", Wait...");
+    QCoreApplication::processEvents();
+
+    app.setSplashScreen(&splash);
+    workbench window(vm.count("nolog"));
 
     try
     {

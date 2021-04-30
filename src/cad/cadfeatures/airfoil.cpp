@@ -330,6 +330,8 @@ FoilShape Airfoil::lookupFoil(const std::string& name) const
             InterpolatedCurvePtr(new InterpolatedCurve(x, t))
         );
     }
+    else
+      throw insight::Exception("Unknown airfoil type: "+name);
 }
 
 

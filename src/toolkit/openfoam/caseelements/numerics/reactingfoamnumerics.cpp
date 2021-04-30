@@ -6,6 +6,8 @@
 
 #include "openfoam/caseelements/turbulencemodel.h"
 
+using namespace std;
+
 namespace insight {
 
 
@@ -17,9 +19,10 @@ void reactingFoamNumerics::init()
 {
 
   if (OFversion() < 230)
-    throw insight::Exception("reactingFoamNumerics currently supports only OF >=230");
+    throw insight::UnsupportedFeature("reactingFoamNumerics currently supports only OF >=230");
 
   OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	FieldValue({1e5}), volField ) );
+  OFcase().addField(pName_, FieldInfo(scalarField, 	dimPressure, 	FieldValue({1e5}), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0,0.0,0.0}), volField ) );
   OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({300.0}), volField ) );
 }
@@ -29,7 +32,8 @@ reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, const ParameterSet& 
 : FVNumerics(c, ps, "p"),
   p_(ps)
 {
-    init();
+  if (p_.buoyancy) pName_="p_rgh";
+  init();
 }
 
 
@@ -40,7 +44,10 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]="reactingFoam";
+  std::string solverName="reactingFoam";
+  if (p_.buoyancy)
+    solverName="rhoReactingBuoyantFoam";
+  controlDict["application"]=solverName;
 
   CompressiblePIMPLESettings ps(p_.time_integration);
   ps.addIntoDictionaries(OFcase(), dictionaries);
@@ -49,9 +56,11 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
 
+
+
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   solvers["\"rho.*\""]=OFcase().stdSymmSolverSetup(0, 0);
-  solvers["p"]=OFcase().stdSymmSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
+  solvers[pName_]=OFcase().stdSymmSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["U"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
   solvers["k"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
   solvers["h"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
@@ -59,7 +68,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilon"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
   solvers["nuTilda"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
 
-  solvers["pFinal"]=OFcase().stdSymmSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
+  solvers[pName_+"Final"]=OFcase().stdSymmSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=OFcase().stdAsymmSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=OFcase().stdAsymmSolverSetup(1e-8, 0);
   solvers["hFinal"]=OFcase().stdAsymmSolverSetup(1e-8, 0);
@@ -123,11 +132,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
       div["div(phi,U)"]="Gauss LUST grad(U)";
     else*/
       div["div(phi,U)"]="Gauss linear";
-    div["div(phi,k)"]="Gauss limitedLinear 1";
-  }
-  else
-  {
-    div["div(phi,U)"]="Gauss linearUpwindV limitedGrad";
+
     div["div(phid,p)"]="Gauss limitedLinear 1";
     div["div(phi,k)"]="Gauss limitedLinear 1";
     div["div(phi,Yi_h)"]="Gauss limitedLinear 1";
@@ -135,8 +140,25 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     div["div(phi,omega)"]="Gauss limitedLinear 1";
     div["div(phi,nuTilda)"]="Gauss limitedLinear 1";
   }
+  else
+  {
+    div["div(phi,U)"]="Gauss linearUpwindV limitedGrad";
+    div["div(phid,p)"]="Gauss limitedLinear 1";
+    div["div(phi,k)"]="Gauss linearUpwind limitedGrad";
+    div["div(phi,Yi_h)"]="Gauss upwind";
+    div["div(phi,epsilon)"]="Gauss linearUpwind limitedGrad";
+    div["div(phi,omega)"]="Gauss linearUpwind limitedGrad";
+    div["div(phi,nuTilda)"]="Gauss linearUpwind limitedGrad";
+  }
 
-  div["div((muEff*dev2(T(grad(U)))))"]="Gauss linear";
+  if (OFversion()>=600)
+  {
+    div["div(((rho*nuEff)*dev2(T(grad(U)))))"]="Gauss linear";
+  }
+  else
+  {
+    div["div((muEff*dev2(T(grad(U)))))"]="Gauss linear";
+  }
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
   laplacian["default"]="Gauss linear limited 0.66";
@@ -150,7 +172,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
-  fluxRequired["p"]="";
+  fluxRequired[pName_]="";
 }
 
 

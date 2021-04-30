@@ -1,0 +1,16 @@
+L?=500;
+
+profile:Extrusion(
+ import("i-type_40x40_slot8.brep"),
+ L*EZ
+);
+
+ax_slot1=RefAxis(0.5*L*EZ +20*EX, EZ);
+ax_slot2=RefAxis(0.5*L*EZ +20*EY, EZ);
+ax_slot3=RefAxis(0.5*L*EZ -20*EX, EZ);
+ax_slot4=RefAxis(0.5*L*EZ -20*EY, EZ);
+
+pl_side1=Plane(0.5*L*EZ +20*EX, EX);
+pl_side2=Plane(0.5*L*EZ +20*EY, EY);
+pl_side3=Plane(0.5*L*EZ -20*EX, -EX);
+pl_side4=Plane(0.5*L*EZ -20*EY, -EY);

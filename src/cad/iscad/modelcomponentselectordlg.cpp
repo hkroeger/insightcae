@@ -64,7 +64,7 @@ void addPointSymbols(const insight::cad::Feature& feat, QTreeWidgetItem* parent,
     }
     for (const insight::cad::Feature::RefVectorsList::value_type& v: feat.getDatumVectors())
     {
-        std::string thisname=basename+"^"+v.first;
+        std::string thisname=basename+"!"+v.first;
         QStringList sl; sl << v.first.c_str() << thisname.c_str();
         QTreeWidgetItem *curnode = new QTreeWidgetItem(parent, sl);
         QFont f=curnode->font(0);

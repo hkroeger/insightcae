@@ -5,13 +5,10 @@ SET(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qwt REQUIRED)
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${QWT_INCLUDE_DIR})
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
 set(workbench_SRCS
-    resultelementwrapper.cpp
-    resultelementwrapper.h
     analysisform.cpp
     analysisform.h
     analysisform_gui.cpp
@@ -28,14 +25,15 @@ set(workbench_SRCS
     localrun.cpp
     localrun.h
 
+    qsetupremotedialog.cpp
+    qsetupremotedialog.h
+
 )
-SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui)
+SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui qsetupremotedialog.ui)
 SET(workbench_RCCS workbench.qrc)
 set(workbench_LIBS
-    toolkit toolkit_gui
+    toolkit_gui
     Qt5::Widgets
-    ${Boost_LIBRARIES}
-    ${QWT_LIBRARY} ${QWT_LIBRARIES}
 )
 if (wt_FOUND)
     message(STATUS "Found wt")
@@ -52,13 +50,14 @@ else()
     message(STATUS "Did not found wt, disabling remote execution functions.")
 endif()
 
+
 add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
 
 target_link_libraries(workbench ${workbench_LIBS})
+linkToolkitVtk(workbench Onscreen)
 
 target_include_directories(workbench
   PUBLIC ${QT_INCLUDES}
-  PUBLIC ${QWT_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

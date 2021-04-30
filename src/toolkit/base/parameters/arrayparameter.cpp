@@ -12,11 +12,17 @@ namespace insight
 defineType(ArrayParameter);
 addToFactoryTable(Parameter, ArrayParameter);
 
+
+
+
 ArrayParameter::ArrayParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
 : Parameter(description, isHidden, isExpert, isNecessary, order),
   defaultSize_(0)
 {
 }
+
+
+
 
 ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
 : Parameter(description, isHidden, isExpert, isNecessary, order),
@@ -27,15 +33,86 @@ ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const st
 }
 
 
-std::string ArrayParameter::latexRepresentation() const
+bool ArrayParameter::isDifferent(const Parameter& p) const
 {
-  return std::string();
+  if (const auto* ap = dynamic_cast<const ArrayParameter*>(&p))
+  {
+    if (ap->size()!=size())
+      return true;
+
+    for (int i=0; i<size(); ++i)
+    {
+      if ( element(i).isDifferent(ap->element(i)) )
+        return true;
+    }
+
+    return false;
+  }
+  else
+    return true;
 }
 
-std::string ArrayParameter::plainTextRepresentation(int) const
+
+const Parameter& ArrayParameter::element(int i) const
 {
-  return std::string();
+  return *(value_[i]);
 }
+
+
+
+
+int ArrayParameter::size() const
+{
+    return value_.size();
+}
+
+
+
+
+std::string ArrayParameter::latexRepresentation() const
+{
+  std::ostringstream os;
+  if (size()>0)
+  {
+    os<<"\\begin{enumerate}\n";
+
+    for(value_type::const_iterator i=value_.begin(); i!=value_.end(); ++i)
+    {
+      os << "\\item item " << (i-value_.begin()) << " :\\\\\n" << (*i)->latexRepresentation();
+    }
+    os << "\\end{enumerate}\n";
+  }
+  else
+  {
+    os << "(empty)\n";
+  }
+  return os.str();
+}
+
+
+
+
+std::string ArrayParameter::plainTextRepresentation(int indent) const
+{
+  std::ostringstream os;
+  if (size()>0)
+  {
+    os << "\n";
+    for(value_type::const_iterator i=value_.begin(); i!=value_.end(); i++)
+    {
+      os << std::string(indent+1, ' ')  << "item " << (i-value_.begin()) << " :\n"
+         << std::string(indent+1, ' ')  << (*i)->plainTextRepresentation(indent+1);
+    }
+  }
+  else
+  {
+    os << "(empty)\n";
+  }
+  return os.str();
+}
+
+
+
 
 bool ArrayParameter::isPacked() const
 {
@@ -47,6 +124,9 @@ bool ArrayParameter::isPacked() const
   return is_packed;
 }
 
+
+
+
 void ArrayParameter::pack()
 {
   for (auto& p: value_)
@@ -54,6 +134,9 @@ void ArrayParameter::pack()
     p->pack();
   }
 }
+
+
+
 
 void ArrayParameter::unpack(const boost::filesystem::path& basePath)
 {
@@ -63,6 +146,9 @@ void ArrayParameter::unpack(const boost::filesystem::path& basePath)
   }
 }
 
+
+
+
 void ArrayParameter::clearPackedData()
 {
   for (auto& p: value_)
@@ -70,6 +156,8 @@ void ArrayParameter::clearPackedData()
     p->clearPackedData();
   }
 }
+
+
 
 
 rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
@@ -84,6 +172,9 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapi
   }
   return child;
 }
+
+
+
 
 void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
@@ -139,6 +230,7 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
 
 
 
+
 Parameter* ArrayParameter::clone () const
 {
   ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
@@ -148,6 +240,7 @@ Parameter* ArrayParameter::clone () const
   }
   return np;
 }
+
 
 
 void ArrayParameter::reset(const Parameter& p)

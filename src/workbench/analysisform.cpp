@@ -36,14 +36,16 @@
 
 #include "analysisform.h"
 #include "ui_analysisform.h"
-#include "parameterwrapper.h"
-#include "resultelementwrapper.h"
+//#include "parameterwrapper.h"
+#include "qresultsetmodel.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTemporaryFile>
 #include <QScrollBar>
 #include <QStatusBar>
+#include <QSettings>
+#include <QProcess>
 #include "email.h"
 
 #include "ui_xml_display.h"
@@ -55,7 +57,6 @@
 #include "remotesync.h"
 #include "base/remoteserverlist.h"
 #include "remotedirselector.h"
-#include "remoteparaview.h"
 
 
 namespace fs = boost::filesystem;
@@ -74,19 +75,116 @@ insight::RemoteServerInfo AnalysisForm::lookupRemoteServerByLabel(const QString&
 }
 
 
+
+
+void QCaseDirectory::setAFEnabledState(bool enabled)
+{
+//  af_->ui->leWorkingDirectory->setEnabled(enabled);
+//  af_->ui->btnSelectWorkingDirectory->setEnabled(enabled);
+
+  af_->ui->btnParaview->setEnabled(enabled);
+  af_->ui->btnClean->setEnabled(enabled);
+  af_->ui->btnShell->setEnabled(enabled);
+
+//  af_->ui->btnWriteNow->setEnabled(enabled);
+//  af_->ui->btnWriteNowAndStop->setEnabled(enabled);
+}
+
+
+
+
+QCaseDirectory::QCaseDirectory(AnalysisForm *af, const boost::filesystem::path& path, bool keep)
+  : insight::CaseDirectory(path, keep),
+    af_(af)
+{
+  setAFEnabledState(true);
+}
+
+
+
+
+QCaseDirectory::QCaseDirectory(AnalysisForm *af, bool keep, const boost::filesystem::path& prefix)
+  : insight::CaseDirectory(keep, prefix),
+    af_(af)
+{
+  setAFEnabledState(true);
+}
+
+
+
+
+QCaseDirectory::~QCaseDirectory()
+{
+  setAFEnabledState(false);
+}
+
+
+
+
+void QRemoteExecutionConfig::setAFEnabledState(bool enabled)
+{
+  af_->ui->btnDisconnect->setEnabled(enabled);
+  af_->ui->btnResume->setEnabled(enabled);
+  af_->ui->btnUpload->setEnabled(enabled);
+  af_->ui->btnDownload->setEnabled(enabled);
+  af_->ui->btnRemoveRemote->setEnabled(enabled);
+  af_->ui->cbRemoteExecution->setEnabled(enabled);
+  af_->ui->lblHostName->setEnabled(enabled);
+  af_->ui->label->setEnabled(enabled);
+  af_->ui->lblRemoteDirectory->setEnabled(enabled);
+  if (!enabled) af_->ui->cbRemoteExecution->setChecked(false);
+}
+
+
+QRemoteExecutionConfig::QRemoteExecutionConfig(
+    AnalysisForm *af,
+    const boost::filesystem::path& location,
+    const boost::filesystem::path& localREConfigFile
+    )
+  : insight::RemoteExecutionConfig(location, localREConfigFile),
+    af_(af)
+{
+  setAFEnabledState(true);
+}
+
+
+QRemoteExecutionConfig::QRemoteExecutionConfig(
+    AnalysisForm *af,
+    const insight::RemoteServerInfo& rsi,
+    const boost::filesystem::path& location,
+    const boost::filesystem::path& remotePath,
+    const boost::filesystem::path& localREConfigFile
+    )
+  : insight::RemoteExecutionConfig(rsi, location, remotePath, localREConfigFile),
+    af_(af)
+{
+  setAFEnabledState(true);
+}
+
+QRemoteExecutionConfig::~QRemoteExecutionConfig()
+{
+  setAFEnabledState(false);
+}
+
+
+
+
+
 AnalysisForm::AnalysisForm(
     QWidget* parent,
     const std::string& analysisName,
-    const boost::filesystem::path& workingDirectory
+    const boost::filesystem::path& workingDirectory,
+    bool logToConsole
     )
 : QMdiSubWindow(parent),
   analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
-  pack_parameterset_(true)
+  pack_parameterset_(true),
+  is_modified_(false)
 {
     // load default parameters
     auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
-    parameters_ = defaultParams;
+//    parameters_ = defaultParams;
 
     {
       insight::AnalysisPtr a( insight::Analysis::lookup(analysisName_, defaultParams, "") );
@@ -113,35 +211,48 @@ AnalysisForm::AnalysisForm(
     connect( ui->btnShell, &QPushButton::clicked,
              this, &AnalysisForm::onShell);
 
+    graphProgress_=new GraphProgressDisplayer;
+    actionProgress_=new insight::QActionProgressDisplayerWidget;
+    progressDisplayer_.add(graphProgress_);
+    progressDisplayer_.add(actionProgress_);
+
     QSplitter* spl=new QSplitter(Qt::Vertical);
     QWidget* lower = new QWidget;
     QHBoxLayout* hbl = new QHBoxLayout(lower);
-    progdisp_=new GraphProgressDisplayer(spl);
+    spl->addWidget(graphProgress_);
+    spl->addWidget(lower);
     log_=new LogViewerWidget(spl);
-    spl->addWidget(progdisp_);
-    spl->addWidget(lower); //log_);
     hbl->addWidget(log_);
+
     QVBoxLayout* vbl=new QVBoxLayout;
     hbl->addLayout(vbl);
     save_log_btn_=new QPushButton("Save...");
-    connect(save_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::saveLog);
     send_log_btn_=new QPushButton("Email...");
-    connect(send_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::sendLog);
     clear_log_btn_=new QPushButton("Clear");
-    connect(clear_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::clearLog);
     auto_scroll_down_btn_=new QPushButton("Auto Scroll");
+    connect(save_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::saveLog);
+    connect(send_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::sendLog);
+    connect(clear_log_btn_, &QPushButton::clicked, log_, &LogViewerWidget::clearLog);
     connect(auto_scroll_down_btn_, &QPushButton::clicked, log_, &LogViewerWidget::autoScrollLog);
     vbl->addWidget(save_log_btn_);
     vbl->addWidget(send_log_btn_);
     vbl->addWidget(clear_log_btn_);
     vbl->addWidget(auto_scroll_down_btn_);
-
+    vbl->addSpacerItem(new QSpacerItem(0,0,QSizePolicy::Minimum,QSizePolicy::Expanding));
     ui->runTabLayout->addWidget(spl);
+    //ui->runTabLayout->addWidget(actionProgress_);
+    ui->verticalLayout_5->addWidget(actionProgress_);
+
+//    ui->verticalLayout->addWidget(actionProgress_);
     
-    cout_log_ = new Q_DebugStream(std::cout);
-    connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendDimmedLine);
-    cerr_log_ = new Q_DebugStream(std::cerr);
-    connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendErrorLine);
+
+    if (!logToConsole)
+    {
+      cout_log_ = new Q_DebugStream(std::cout);
+      connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendDimmedLine);
+      cerr_log_ = new Q_DebugStream(std::cerr);
+      connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendErrorLine);
+    }
 
     updateWindowTitle();
     connect(ui->btnRun, &QPushButton::clicked, this, &AnalysisForm::onRunAnalysis);
@@ -153,6 +264,7 @@ AnalysisForm::AnalysisForm(
 
     try {
         viz = insight::Analysis::visualizer(analysisName_);
+        viz ->setProgressDisplayer(&progressDisplayer_);
     } catch (const std::exception& e)
     {
       /* ignore, if non-existent */
@@ -164,143 +276,26 @@ AnalysisForm::AnalysisForm(
     } catch (const std::exception& e)
     { /* ignore, if non-existent */ }
 
-    peditor_=new ParameterEditorWidget(parameters_, defaultParams, ui->inputTab, viz, vali);
+    peditor_=new ParameterEditorWidget(/*parameters_*/defaultParams, defaultParams, ui->inputTab, viz, vali);
     ui->inputTabLayout->addWidget(peditor_);
 
-    QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
-    QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
+//    QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
+//    QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
 
     connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
             this, &AnalysisForm::onConfigModification);
 
-    rtroot_=new QTreeWidgetItem(0);
-    rtroot_->setText(0, "Results");
-    ui->resultTree->setColumnCount(3);
-    ui->resultTree->setHeaderLabels( QStringList() << "Result Element" << "Description" << "Current Value" );
-    ui->resultTree->addTopLevelItem(rtroot_);
-
     QSettings settings("silentdynamics", "workbench");
-    peditor_->restoreState(settings.value("parameterEditor").toByteArray());
+
+    if (peditor_->hasVisualizer())
+      peditor_->restoreState(settings.value("parameterEditor_wViz").toByteArray());
+    else
+      peditor_->restoreState(settings.value("parameterEditor_woViz").toByteArray());
+
     pack_parameterset_ = settings.value("pack_parameterset", QVariant(true)).toBool();
 
-
-
-    for (const auto& i: insight::remoteServers)
-    {
-      ui->ddlExecutionHosts->addItem( QString::fromStdString(i.first) );
-    }
-
-
-    // ====================================================================================
-    // ======== working directory
-
-    connect(ui->cbRemoveWorkingDirectory, &QCheckBox::toggled,
-            [&](bool checked)
-            {
-              if (caseDirectory_)
-                caseDirectory_->setKeep(!checked);
-            }
-    );
-
-    connect(ui->leWorkingDirectory, &QLineEdit::editingFinished,
-            this, &AnalysisForm::workingDirectoryInputChanged);
-
-    connect(ui->leWorkingDirectory, &QLineEdit::textChanged,
-            [&](const QString& nt)
-            {
-              if (nt.isEmpty())
-              {
-                workingDirectoryInputChanged();
-              }
-            }
-            );
-
-    connect(ui->btnSelectWorkingDirectory, &QPushButton::clicked,
-            [&]()
-            {
-              QString dir = QFileDialog::getExistingDirectory(
-                    this,
-                    "Please select working directory",
-                    ui->leWorkingDirectory->text()
-                    );
-              if (!dir.isEmpty())
-              {
-                ui->leWorkingDirectory->setText(dir); // checks will be performed in lineEdit handler
-                workingDirectoryInputChanged();
-              }
-            }
-    );
-
-
-    // ====================================================================================
-    // ======== remote directory
-
-    connect(ui->leRemoteDirectory, &QLineEdit::editingFinished,
-            [&]()
-            {
-              QString newrd = ui->leRemoteDirectory->text();
-              if (newrd!=lastRemoteDirectory_)
-              {
-                if (changeRemoteLocation(
-                      ui->ddlExecutionHosts->currentText(),
-                      newrd
-                      ))
-                {
-                  lastRemoteDirectory_=newrd;
-                }
-                else
-                {
-                  ui->leRemoteDirectory->setText(lastRemoteDirectory_);
-                }
-              }
-            }
-    );
-
-
-    connect(ui->btnSelectRemoteDirectory, &QPushButton::clicked,
-            [&]()
-            {
-              auto i = insight::remoteServers.find(
-                    ui->ddlExecutionHosts->currentText().toStdString()
-                    );
-
-              if (i->second.isOnDemand())
-              {
-                QMessageBox::critical(this,
-                                      "Error",
-                                      "Selected host is an on-demand host.\n"
-                                      "Selection of remote directories is only supported on permanent hosts.");
-                return;
-              }
-              else
-              {
-                RemoteDirSelector dlg( this, i->second.server_ );
-                if (dlg.exec() == QDialog::Accepted)
-                {
-                    ui->ddlExecutionHosts->setCurrentIndex(
-                          ui->ddlExecutionHosts->findText( QString::fromStdString(dlg.selectedServer()) )
-                          );
-                    ui->leRemoteDirectory->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
-                }
-              }
-            }
-    );
-
-    connect(ui->ddlExecutionHosts, &QComboBox::currentTextChanged,
-            [&](const QString& newHostLabel)
-            {
-              changeRemoteLocation(
-                    newHostLabel,
-                    ui->leRemoteDirectory->text()
-                    );
-            }
-    );
-
-
-    connect(ui->btnUpload, &QPushButton::clicked,
-            this, &AnalysisForm::upload );
-    connect(ui->btnDownload, &QPushButton::clicked,
-            this, &AnalysisForm::download );
+    connectLocalActions();
+    connectRemoteActions();
 
     progressbar_=new QProgressBar(this);
     auto *sb = new QStatusBar(this);
@@ -309,71 +304,62 @@ AnalysisForm::AnalysisForm(
     connect(this, &AnalysisForm::statusMessage,
             sb, &QStatusBar::showMessage);
 
-    connect(ui->btnRemoveRemote, &QPushButton::clicked,
-            []()
-            {
-            }
-    );
 
-    connect(ui->btnResume, &QPushButton::clicked,
-            [&]()
-            {
-              resumeRemoteRun();
-            }
-    );
 
-    connect(ui->gbExecuteOnRemoteHost, &QGroupBox::toggled,
-            [&](bool checked)
-            {
-              if (checked && isRunningLocally())
-              {
-                auto answer= QMessageBox::critical(this,
-                                      "Attention",
-                                      "There is a local analysis running. It has to be terminated, before any remote analysis can be managed.\n"
-                                      "You might consider to gracefully stop the simulation by triggering \"Write now+stop\" before switching to remote execution.\n"
-                                      "\nKill local analysis?",
-                                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
-                                      QMessageBox::No);
-                if (answer==QMessageBox::Yes)
-                {
-                  onKillAnalysis();
-                }
-                else
-                {
-                  ui->gbExecuteOnRemoteHost->setChecked(false);
-                }
-              }
-              if (!checked && isRunningRemotely())
-              {
-                auto answer= QMessageBox::critical(this,
-                                      "Attention",
-                                      "There is a remote analysis running. It has to be disconnected, before any local analysis can be managed.\n"
-                                      "The remote analysis will continue and you can reconnect at any time.\n"
-                                      "\nDisconnect from remote analysis?",
-                                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
-                                      QMessageBox::Yes);
-                if (answer==QMessageBox::Yes)
-                {
-                  disconnectFromRemoteRun();
-                }
-                else
-                {
-                  ui->gbExecuteOnRemoteHost->setChecked(true);
-                }
-              }
-              if (!isRunning())
-              {
-                if (checked && !remoteDirectory_)
-                {
-                  changeRemoteLocation(ui->ddlExecutionHosts->currentText(), ui->leRemoteDirectory->text());
-                }
-                if (!checked && remoteDirectory_)
-                {
-                  remoteDirectory_.reset();
-                }
-              }
-            }
-    );
+//    connect(ui->gbExecuteOnRemoteHost, &QGroupBox::toggled,
+//            [&](bool checked)
+//            {
+//              if (checked && isRunningLocally())
+//              {
+//                auto answer= QMessageBox::critical(this,
+//                                      "Attention",
+//                                      "There is a local analysis running. It has to be terminated, before any remote analysis can be managed.\n"
+//                                      "You might consider to gracefully stop the simulation by triggering \"Write now+stop\" before switching to remote execution.\n"
+//                                      "\nKill local analysis?",
+//                                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
+//                                      QMessageBox::No);
+//                if (answer==QMessageBox::Yes)
+//                {
+//                  onKillAnalysis();
+//                }
+//                else
+//                {
+//                  ui->gbExecuteOnRemoteHost->setChecked(false);
+//                }
+//              }
+//              if (!checked && isRunningRemotely())
+//              {
+//                auto answer= QMessageBox::critical(this,
+//                                      "Attention",
+//                                      "There is a remote analysis running. It has to be disconnected, before any local analysis can be managed.\n"
+//                                      "The remote analysis will continue and you can reconnect at any time.\n"
+//                                      "\nDisconnect from remote analysis?",
+//                                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
+//                                      QMessageBox::Yes);
+//                if (answer==QMessageBox::Yes)
+//                {
+//                  disconnectFromRemoteRun();
+//                }
+//                else
+//                {
+//                  ui->gbExecuteOnRemoteHost->setChecked(true);
+//                }
+//              }
+//              if (!isRunning())
+//              {
+//                if (checked && !remoteDirectory_)
+//                {
+//                  changeRemoteLocation(ui->ddlExecutionHosts->currentText(), ui->leRemoteDirectory->text());
+//                }
+//                if (!checked && remoteDirectory_)
+//                {
+//                  remoteDirectory_.reset();
+//                }
+//              }
+//            }
+//    );
+
+    insight::connectToCWithContentsDisplay(ui->resultsToC, ui->resultElementDetails);
 
 #ifndef HAVE_WT
     ui->gbExecuteOnRemoteHost->setChecked(false);
@@ -381,16 +367,24 @@ AnalysisForm::AnalysisForm(
 #endif
 
     // set after installing textChanged signal handler
-    QString nwd = QString::fromStdString(workingDirectory.string());
+    auto nwd=QString::fromStdString(workingDirectory.string());
     ui->leWorkingDirectory->setText(nwd);
-    changeWorkingDirectory(nwd);
+    workingDirectoryEdited(nwd);
+    checkForRemoteConfig();
 }
 
+
+
+const insight::ParameterSet& AnalysisForm::parameters() const
+{
+  return peditor_->model()->getParameterSet();
+}
 
 
 
 AnalysisForm::~AnalysisForm()
 {
+  currentWorkbenchAction_.reset();
   delete ui;
 }
 
@@ -537,7 +531,12 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
     if (event->isAccepted())
     {
       QSettings settings("silentdynamics", "workbench");
-      settings.setValue("parameterEditor", peditor_->saveState());
+
+      if (peditor_->hasVisualizer())
+        settings.setValue("parameterEditor_wViz", peditor_->saveState());
+      else
+        settings.setValue("parameterEditor_woViz", peditor_->saveState());
+
       settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
 
       QMdiSubWindow::closeEvent(event);
@@ -569,16 +568,19 @@ void AnalysisForm::saveParameters(bool *cancelled)
   }
   else
   {
+    insight::ParameterSet p = parameters();
+
     if (pack_parameterset_)
     {
-      parameters_.packExternalFiles();
+      p.packExternalFiles();
     }
     else
     {
-      parameters_.removePackedData();
+      p.removePackedData();
     }
 
-    parameters_.saveToFile(ist_file_, analysisName_);
+    p.saveToFile(ist_file_, analysisName_);
+
     is_modified_=false;
     updateWindowTitle();
   }
@@ -639,8 +641,10 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
 void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 {
   ist_file_=fp;
-  parameters_.readFromFile(fp);
-  Q_EMIT update();
+  insight::ParameterSet ps = parameters();
+  ps.readFromFile(fp);
+  peditor_->model()->resetParameters(ps, insight::Analysis::defaultParameters(analysisName_) );
+//  Q_EMIT update();
 }
 
 
@@ -673,13 +677,15 @@ void AnalysisForm::onLoadParameters()
 
 
 
+
+
 void AnalysisForm::onShowParameterXML()
 {
     QDialog *widget = new QDialog(this);
     Ui::XML_Display ui;
     ui.setupUi(widget);
 
-    Q_EMIT apply(); // apply all changes into parameter set
+//    Q_EMIT apply(); // apply all changes into parameter set
 
     boost::filesystem::path refPath = boost::filesystem::current_path();
     if (!ist_file_.empty())
@@ -687,7 +693,7 @@ void AnalysisForm::onShowParameterXML()
       refPath=ist_file_.parent_path();
     }
     std::ostringstream os;
-    parameters_.saveToStream(os, refPath, analysisName_);
+    parameters().saveToStream(os, refPath, analysisName_);
     ui.textDisplay->setText(QString::fromStdString(os.str()));
 
     widget->exec();
@@ -701,81 +707,6 @@ void AnalysisForm::onConfigModification()
   is_modified_=true;
 }
 
-
-
-
-void AnalysisForm::onRunAnalysis()
-{
-  if (currentWorkbenchAction_)
-    throw insight::Exception("Internal error: there is an action running currently!");
-
-  if (ui->gbExecuteOnRemoteHost->isChecked())
-  {
-    startRemoteRun();
-  }
-  else
-  {
-    startLocalRun();
-  }
-}
-
-
-
-
-void AnalysisForm::onKillAnalysis()
-{
-  if (!currentWorkbenchAction_)
-    throw insight::Exception("Internal error: there is no action running currently!");
-
-  currentWorkbenchAction_->onCancel();
-}
-
-
-
-
-void AnalysisForm::onAnalysisKilled()
-{
-  currentWorkbenchAction_.reset();
-  QMessageBox::information(this, "Stopped!", "The analysis has been interrupted upon user request!");
-}
-
-
-
-
-void AnalysisForm::onAnalysisErrorOccurred(insight::Exception e)
-{
-  currentWorkbenchAction_.reset();
-  throw e;
-}
-
-
-
-
-void AnalysisForm::onAnalysisWarningOccurred(insight::Exception e)
-{
-  Q_EMIT statusMessage( QString::fromStdString(e.what()) );
-}
-
-
-
-
-void AnalysisForm::onResultReady(insight::ResultSetPtr results)
-{
-  results_=results;
-
-  currentWorkbenchAction_.reset();
-
-  rtroot_->takeChildren();
-  addWrapperToWidget(*results_, rtroot_, this);
-  ui->resultTree->doItemsLayout();
-  ui->resultTree->expandAll();
-  ui->resultTree->resizeColumnToContents(2);
-
-  ui->tabWidget->setCurrentWidget(ui->outputTab);
-
-  QMessageBox::information(this, "Finished!", "The analysis has finished");
-
-}
 
 
 
@@ -801,6 +732,16 @@ void AnalysisForm::onCreateReport()
     boost::filesystem::path outpath=fn.toStdString();
     std::string ext=outpath.extension().string();
 
+    if (ext.empty())
+    {
+      QMessageBox::critical(
+            this,
+            "Error!",
+            "Please specify the file name with an extension!"
+            );
+      return;
+    }
+
     if (boost::algorithm::to_lower_copy(ext)==".tex")
       {
         results_->writeLatexFile( outpath );
@@ -815,7 +756,11 @@ void AnalysisForm::onCreateReport()
       }
     else
       {
-        QMessageBox::critical(this, "Error!", "Unknown file format: "+fn);
+        QMessageBox::critical(
+              this,
+              "Error!",
+              "Unknown file format: "+fn
+              );
         return;
       }
 
@@ -823,138 +768,4 @@ void AnalysisForm::onCreateReport()
   }
 }
 
-
-
-
-void AnalysisForm::onStartPV()
-{
-  if (remoteDirectory_ && caseDirectory_)
-  {
-    if (remoteDirectory_->remoteDirExists())
-    {
-      RemoteParaview dlg( *remoteDirectory_, this );
-      dlg.exec();
-    }
-  }
-  else if (caseDirectory_)
-  {
-    ::system( boost::str( boost::format
-          ("cd %s; isPV.py &" ) % caseDirectory_->string()
-     ).c_str() );
-  }
-}
-
-
-
-
-void AnalysisForm::onCleanOFC()
-{
-  if (caseDirectory_)
-  {
-    const insight::OFEnvironment* ofc = nullptr;
-    if (parameters_.contains("run/OFEname"))
-    {
-      std::string ofename=parameters_.getString("run/OFEname");
-      ofc=&(insight::OFEs::get(ofename));
-    }
-    else
-    {
-      ofc=&(insight::OFEs::getCurrentOrPreferred());
-    }
-
-    fs::path exePath = *caseDirectory_;
-    std::unique_ptr<insight::MountRemote> rd;
-    if (remoteDirectory_)
-    {
-        rd.reset(new insight::MountRemote(*remoteDirectory_));
-        exePath = rd->mountpoint();
-    }
-
-    OFCleanCaseDialog dlg(*ofc, exePath, this);
-    dlg.exec();
-  }
-}
-
-
-
-
-void AnalysisForm::onWnow()
-{
-  if (isRunning())
-  {
-    fs::path exePath = *caseDirectory_;
-    std::unique_ptr<insight::MountRemote> rd;
-    if (remoteDirectory_)
-    {
-        rd.reset(new insight::MountRemote(*remoteDirectory_));
-        exePath = rd->mountpoint();
-    }
-
-    {
-      std::ofstream f( (exePath/"wnow").c_str() );
-      f.close();
-    }
-  }
-}
-
-
-
-
-void AnalysisForm::onWnowAndStop()
-{
-  if (isRunning())
-  {
-    fs::path exePath = *caseDirectory_;
-    std::unique_ptr<insight::MountRemote> rd;
-    if (remoteDirectory_)
-    {
-        rd.reset(new insight::MountRemote(*remoteDirectory_));
-        exePath = rd->mountpoint();
-    }
-
-    {
-      std::ofstream f( (exePath/"wnowandstop").c_str() );
-      f.close();
-    }
-  }
-}
-
-
-
-
-void AnalysisForm::onShell()
-{
-  if (caseDirectory_)
-  {
-    auto locDir = QString::fromStdString(caseDirectory_->string());
-
-    if (remoteDirectory_ && remoteDirectory_->remoteDirExists())
-    {
-      QStringList args;
-      if ( !QProcess::startDetached("isRemoteShell.sh",
-                                    args, locDir)
-           )
-      {
-        QMessageBox::critical(
-              this,
-              "Failed to start",
-              "Failed to start remote shell in directoy "+locDir
-              );
-      }
-    }
-    else
-    {
-      QStringList args;
-      args << "--working-directory" << locDir;
-      if (!QProcess::startDetached("mate-terminal", args, locDir ))
-      {
-        QMessageBox::critical(
-              this,
-              "Failed to start",
-              "Failed to start mate-terminal in directoy "+locDir
-              );
-      }
-    }
-  }
-}
 

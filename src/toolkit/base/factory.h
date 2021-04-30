@@ -32,16 +32,17 @@ namespace insight {
 
 
 #define declareType(typenameStr) \
- static const char *typeName_() { return typenameStr; } \
+ static const char* typeName_() { return typenameStr; } \
  virtual const std::string& type() const { return typeName; } \
  static const std::string typeName
  
  
- 
- 
+  
 #define defineType(T) \
  const std::string T::typeName( T::typeName_() )
 
+#define defineTemplateType(T) \
+ template<> const std::string T::typeName( T::typeName_() )
 
  
 #define LIST(...) __VA_ARGS__
@@ -103,16 +104,21 @@ static std::vector<std::string> factoryToC()
  baseT::Factory::~Factory() {} \
  baseT* baseT::lookup(const std::string& key , argList) \
  { \
+  if (factories_) { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
    if (i==baseT::factories_->end()) \
     throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
    return (*i->second)( parList ); \
+  } \
+  else throw insight::Exception("Factory table of type \"" #baseT "\" is empty!" ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
  { \
    std::vector<std::string> toc; \
-   for (const FactoryTable::value_type& e: *factories_) \
-   { toc.push_back(e.first); } \
+   if (factories_) { \
+    for (const FactoryTable::value_type& e: *factories_) \
+    { toc.push_back(e.first); } \
+   } \
    return toc; \
  } \
  baseT::FactoryTable* baseT::factories_=nullptr
@@ -124,16 +130,21 @@ static std::vector<std::string> factoryToC()
  baseT::Factory::~Factory() {} \
  baseT* baseT::lookup(const std::string& key) \
  { \
-   baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
-   if (i==baseT::factories_->end()) \
-    throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
-  return (*i->second)(); \
+   if (factories_) { \
+    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
+    if (i==baseT::factories_->end()) \
+     throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
+    return (*i->second)(); \
+   } \
+   else throw insight::Exception("Factory table of type \"" #baseT "\" is empty!" ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
  { \
    std::vector<std::string> toc; \
-   for (const FactoryTable::value_type& e: *factories_) \
-   { toc.push_back(e.first); } \
+   if (factories_) { \
+    for (const FactoryTable::value_type& e: *factories_) \
+    { toc.push_back(e.first); } \
+   } \
    return toc; \
  } \
  baseT::FactoryTable* baseT::factories_=nullptr
@@ -157,11 +168,16 @@ static struct add##specT##To##baseT##FactoryTable \
   {\
     std::string key(specT::typeName); \
     baseT::FactoryTable::iterator k=baseT::factories_->find(key); \
-    delete k->second; \
-    baseT::factories_->erase(k); \
-    if (baseT::factories_->size()==0) \
-    { \
-     delete baseT::factories_;\
+    if (k!=baseT::factories_->end()) { \
+     delete k->second; \
+     baseT::factories_->erase(k); \
+     if (baseT::factories_->size()==0) \
+     { \
+      delete baseT::factories_;\
+      baseT::factories_=nullptr;\
+     }\
+    } else {\
+      std::cerr<<"Internal error: attempt to remove factory of "<<key<<" twice."<<std::endl;\
     }\
   }\
 } v_add##specT##To##baseT##FactoryTable

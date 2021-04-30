@@ -23,6 +23,7 @@
 #include "base/analysis.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/ofes.h"
+#include "openfoam/openfoamboundarydict.h"
 
 #include <iostream>
 #include <fstream>
@@ -56,7 +57,9 @@ int main(int argc, char *argv[])
     ("ofe,o", po::value<std::string>(), "use specified OpenFOAM environment instead of detected")
 
     ("case-dir,l", po::value<std::string>(), "case location")
-    ("rename,r", po::value<StringList>(), "rename patch, specify as <current name>:<new name>")
+    ("rename,r", po::value<StringList>(), "rename patch, specify as <current name>:<new name>[:new patch type]")
+    ("time,t", po::value<std::string>(), "time, defaults to constant")
+    ("filterZero,z", "filter out zero sized patches")
     ;
 
     po::positional_options_description p;
@@ -97,13 +100,21 @@ int main(int argc, char *argv[])
         location = vm["case-dir"].as<std::string>();
     }
 
+    std::string time="constant";
+    if (vm.count("time"))
+    {
+      time=vm["time"].as<std::string>();
+    }
+
 
     try
     {
         OpenFOAMCase cm( OFEs::getCurrentOrPreferred() );
 
-        OFDictData::dictFile boundaryDict;
-        cm.parseBoundaryDict(location, boundaryDict);
+        OpenFOAMBoundaryDict bd(cm, location, string(), time);
+
+        if (vm.count("filterZero")>0)
+          bd.removeZeroSizedPatches();
 
         if (vm.count("rename"))
         {
@@ -113,29 +124,20 @@ int main(int argc, char *argv[])
           {
             std::vector<std::string> pair;
             boost::split(pair, s, boost::is_any_of(":"));
-            if (pair.size()!=2)
+            if (pair.size()<2 || pair.size()>3)
                 throw insight::Exception
                 (
                     "Invalid specification of rename operation in command line!\n"
                     "Each rename operation has to be given as:\n"
-                    " <current patch name>:<new patch name>"
+                    " <current patch name>:<new patch name>[:new patch type]"
                     " (was "+s+")"
                 );
 
-            auto i = boundaryDict.find(pair[0]);
-
-            if (i==boundaryDict.end())
-              throw insight::Exception("Boundary definition did not contain a patch named "+pair[0]);
-
-            auto value = i->second;
-            boundaryDict.erase(i);
-            boundaryDict[pair[1]]=value;
+            bd.renamePatch(pair[0], pair[1], (pair.size()>2)? pair[2]:std::string() );
           }
         }
 
-        std::ofstream bf( (location/"constant"/"polyMesh"/"boundary").c_str() );
-        writeOpenFOAMBoundaryDict(bf, boundaryDict);
-
+        bd.write();
     }
     catch (std::exception e)
     {

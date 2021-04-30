@@ -26,6 +26,7 @@
 #include "vtkLineSource.h"
 #include "vtkRendererCollection.h"
 #include "vtkActor2DCollection.h"
+#include "vtkDataObjectTreeIterator.h"
 
 #include "vtkPointData.h"
 #include "vtkExtractBlock.h"
@@ -40,8 +41,10 @@
 
 #include "base/exception.h"
 
-VTK_MODULE_INIT(vtkRenderingOpenGL2)
-VTK_MODULE_INIT(vtkRenderingFreeType)
+
+void vtkRenderingOpenGL2_AutoInit_Construct();
+void vtkRenderingFreeType_AutoInit_Construct();
+void vtkInteractionStyle_AutoInit_Construct();
 
 using namespace std;
 using namespace boost;
@@ -65,6 +68,7 @@ vtkSmartPointer<vtkPolyData> createArrows(
 //    arma::mat R = to - from;
 //    double r=norm(R,2);
 //    R/=r;
+
 //    double gamma = 180.*atan2( R(2), R(1) ) / M_PI;
 //    double acosarg = sqrt( R(1)*R(1) + R(2)*R(2) );
 //    double beta;
@@ -208,9 +212,115 @@ MinMax calcRange(
 
 
 
+std::set<vtkDataObject*> MultiBlockDataSetExtractor::findObjectsBelowGroup(const std::string& name_pattern, vtkDataObject* input)
+{
+  insight::CurrentExceptionContext ex("searching for groups with names matching \""+name_pattern+"\"");
+
+  std::set<vtkDataObject*> res;
+
+  vtkMultiBlockDataSet *mbds=vtkMultiBlockDataSet::SafeDownCast(input);
+  insight::assertion(mbds!=nullptr, "valid vtkMultiBlockDataset expected!");
+
+  boost::regex pattern(name_pattern);
+  vtkSmartPointer<vtkDataObjectTreeIterator> iter = mbds->NewTreeIterator();
+  iter->VisitOnlyLeavesOff();
+  iter->TraverseSubTreeOff();
+
+  for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+  {
+    std::string name(iter->GetCurrentMetaData()->Get(vtkCompositeDataSet::NAME()));
+
+//    iter->Print(std::cout);
+//    iter->GetCurrentMetaData()->Print(std::cout);
+
+    auto j=iter->GetCurrentDataObject();
+    if (boost::regex_match(name, pattern))
+    {
+      std::cout<<name<<" matches "<<name_pattern<<" ("<<j<<")"<<std::endl;
+      res.insert(j);
+    }
+    else
+    {
+      std::cout<<name<<" not matching "<<name_pattern<<" ("<<j<<")"<<std::endl;
+    }
+  }
+
+  return res;
+}
+
+
+
+MultiBlockDataSetExtractor::MultiBlockDataSetExtractor(vtkMultiBlockDataSet* mbds)
+  : mbds_(mbds)
+{
+  CurrentExceptionContext ex("generating flat index list of vtkMultiBlockDataSet");
+
+  insight::assertion(mbds_!=nullptr, "a non-null pointer to the MultiBlockDataSet is expected!");
+
+  vtkSmartPointer<vtkDataObjectTreeIterator> iter = mbds_->NewTreeIterator();
+  iter->VisitOnlyLeavesOff();
+  iter->SkipEmptyNodesOff();
+
+  for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+  {
+    auto o=iter->GetCurrentDataObject();
+    auto j=iter->GetCurrentFlatIndex();
+    std::cout<<j<<" "<<iter->GetCurrentMetaData()->Get(vtkCompositeDataSet::NAME())<<std::endl;
+    flatIndices_[o]=j;
+  }
+}
+
+
+
+
+std::set<int> MultiBlockDataSetExtractor::flatIndices(const std::vector<std::string>& groupNamePatterns) const
+{
+  auto i = groupNamePatterns.begin();
+
+  auto gi = findObjectsBelowGroup(*i, mbds_); // top level
+
+  if (i!=groupNamePatterns.end())
+  {
+    for ( ++i; i!=groupNamePatterns.end() ; ++i) // get one level down
+    {
+      std::cout<<"level = "<<*i<<std::endl;
+      std::set<vtkDataObject*> ngi;
+      for (auto j: gi)
+      {
+        auto r=findObjectsBelowGroup(*i, j);
+        ngi.insert(r.begin(), r.end());
+      }
+      gi=ngi;
+    }
+  }
+
+  std::set<int> res;
+  for(auto j: gi) // get all leaf objects below found groups
+  {
+    vtkSmartPointer<vtkDataObjectTreeIterator> iter =
+        vtkMultiBlockDataSet::SafeDownCast(j)->NewTreeIterator();
+    iter->VisitOnlyLeavesOn();
+    std::cout<<"final index = ";
+    for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+    {
+      int fi=flatIndices_.at(iter->GetCurrentDataObject());
+      std::cout<<fi<<" ";
+      res.insert(fi);
+    }
+    std::cout<<std::endl;
+  }
+  return res;
+}
+
+
+
 
 VTKOffscreenScene::VTKOffscreenScene()
 {
+  vtkRenderingOpenGL2_AutoInit_Construct();
+  vtkRenderingFreeType_AutoInit_Construct();
+  vtkInteractionStyle_AutoInit_Construct();
+
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
   renderWindow_ = vtkSmartPointer<vtkRenderWindow>::New();
   renderWindow_->AddRenderer(renderer_);
@@ -233,6 +343,16 @@ VTKOffscreenScene::VTKOffscreenScene()
   light_kit->SetKeyLightIntensity(1.0);
   light_kit->AddLightsToRenderer(renderer_);
 }
+
+
+
+
+VTKOffscreenScene::~VTKOffscreenScene()
+{
+}
+
+
+
 
 void VTKOffscreenScene::addActor2D(vtkSmartPointer<vtkActor2D> actor)
 {
@@ -408,7 +528,7 @@ void VTKOffscreenScene::clearScene()
       renderer_->RemoveActor2D( act2 );
   }
 
-  renderer_->Clear();
+//  renderer_->Clear();
 }
 
 void VTKOffscreenScene::removeActor(vtkActor *act)
@@ -430,7 +550,8 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath)
   : VTKOffscreenScene(),
     ofcase_(vtkSmartPointer<vtkOpenFOAMReader>::New())
 {
-  ofcase_->SetFileName( casepath.string().c_str() );
+  ofcase_->SetFileName( casepath.c_str() );
+  ofcase_->SetSkipZeroTime(false);
   ofcase_->Update();
 
   ofcase_->CreateCellToPointOn();
@@ -440,37 +561,38 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath)
   ofcase_->EnableAllPointArrays();
   ofcase_->EnableAllPatchArrays();
 
-  vtkSmartPointer<vtkDoubleArray> times = ofcase_->GetTimeValues();
+  times_ = ofcase_->GetTimeValues();
   cout<<"VTK OpenFOAM Reader: available times = (";
-  for (int i=0; i<times->GetNumberOfTuples(); i++)
+  for (int i=0; i<times_->GetNumberOfTuples(); i++)
   {
-    cout<<" "<<times->GetTuple1(i)<<":"<<i<<endl;
+    cout<<" "<<times_->GetTuple1(i)<<":"<<i<<endl;
   }
   cout<<" )"<<endl;
-  ofcase_->SetTimeValue( times->GetTuple1(times->GetNumberOfTuples()-1) );
-  ofcase_->Update();
+
+  setTimeIndex( times_->GetNumberOfTuples()-1 );
 
   for (int i=0; i<ofcase_->GetNumberOfPatchArrays(); i++)
   {
-//    cout<<ofcase_->GetPatchArrayName(i)<<": "<<i<<endl;
     patches_[ofcase_->GetPatchArrayName(i)]=i;
   }
 
-//  auto oo=ofcase_->GetOutput();
-//  for (int i=0; i<oo->GetNumberOfBlocks(); i++)
-//  {
-//    cout<<"block "<<i<<":"<<oo->GetMetaData(i)->Get(vtkCompositeDataSet::NAME())<<endl;
-//    oo->GetBlock(1);
-//  }
+}
 
-//  for (int i=0; i<ofcase_->GetNumberOfPointArrays(); i++)
-//  {
-//    cout<<"point field "<<i<<": "<<ofcase_->GetPointArrayName(i)<<endl;
-//  }
-//  for (int i=0; i<ofcase_->GetNumberOfCellArrays(); i++)
-//  {
-//    cout<<"cell field "<<i<<": "<<ofcase_->GetCellArrayName(i)<<endl;
-//  }
+vtkDoubleArray *OpenFOAMCaseScene::times() const
+{
+  return times_;
+}
+
+void OpenFOAMCaseScene::setTimeValue(double t)
+{
+  ofcase_->SetTimeValue( t );
+  ofcase_->Modified();
+  ofcase_->Update();
+}
+
+void OpenFOAMCaseScene::setTimeIndex(vtkIdType timeId)
+{
+  setTimeValue( times_->GetTuple1(timeId) );
 }
 
 vtkUnstructuredGrid* OpenFOAMCaseScene::internalMesh() const

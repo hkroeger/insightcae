@@ -632,11 +632,44 @@ std::string readSolverName(const boost::filesystem::path& ofcloc);
 int readDecomposeParDict(const boost::filesystem::path& ofcloc);
 std::string readTurbulenceModelName(const OpenFOAMCase& c, const boost::filesystem::path& ofcloc);
 
-void meshQualityReport(const OpenFOAMCase& cm, 
-		       const boost::filesystem::path& location, 
-		       ResultSetPtr results,
-		       const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
-		      );
+struct MeshQualityInfo
+{
+  std::string time;
+
+  int ncells;
+  int nhex, nprism, ntet, npoly;
+
+  int nmeshregions;
+
+  arma::mat bb_min, bb_max;
+  double max_aspect_ratio;
+  std::string min_faceA, min_cellV;
+
+  double max_nonorth, avg_nonorth;
+  int n_severe_nonorth;
+
+  int n_neg_facepyr;
+
+  double max_skewness;
+  int n_severe_skew;
+
+  MeshQualityInfo();
+};
+
+typedef std::vector<MeshQualityInfo> MeshQualityList;
+
+MeshQualityList getMeshQuality(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location,
+    const std::vector<std::string>& addopts
+    );
+
+void meshQualityReport(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location,
+    ResultSetPtr results,
+    const std::vector<std::string>& addopts = {"-latestTime"}
+);
 
 void currentNumericalSettingsReport(const OpenFOAMCase& cm, 
 		       const boost::filesystem::path& location, 

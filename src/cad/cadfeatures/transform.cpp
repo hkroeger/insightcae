@@ -20,6 +20,7 @@
 #include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -51,6 +52,7 @@ size_t Transform::calcHash() const
   if (rotorg_) h+=rotorg_->value();
   if (sf_) h+=sf_->value();
   if (other_) h+=*other_;
+  if (trsf_) h+=*trsf_;
   return h.getHash();
 }
 
@@ -104,8 +106,12 @@ Transform::Transform(FeaturePtr m1, ScalarPtr sf)
 
 Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
 : DerivedFeature(m1),
-  m1_(m1), trsf_(new gp_Trsf(trsf))
-{}
+  m1_(m1), trsf_(new gp_Trsf)
+{
+  *trsf_=trsf;
+//  std::cout<<"TRSF:"<<std::endl;
+//  trsf_->DumpJson(std::cout);
+}
 
 
 
@@ -162,6 +168,13 @@ FeaturePtr Transform::create_trsf ( FeaturePtr m1, const gp_Trsf& trsf )
 
 gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
 {
+  std::shared_ptr<Transform> ot = dynamic_pointer_cast<Transform>(other);
+  if (ot && ot->trsf_)
+  {
+    return *(ot->trsf_);
+  }
+  else
+  {
     gp_Trsf tr0, tr1, tr2;
 
     tr0.SetScaleFactor(other->getDatumScalar("scaleFactor"));
@@ -179,13 +192,18 @@ gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
     }
 
     return tr2.Multiplied(tr1).Multiplied(tr0);
+  }
 }
 
 void Transform::build()
 {
+  ExecTimer t("Transform::build() ["+featureSymbolName()+"]");
 
+  if (!cache.contains(hash()))
+  {
     if (!trsf_)
     {
+
         if (other_)
         {
             trsf_.reset(new gp_Trsf(calcTrsfFromOtherTransformFeature(other_)));
@@ -251,6 +269,12 @@ void Transform::build()
     copyDatumsTransformed(*m1_, *trsf_, "", 
                           boost::assign::list_of("scaleFactor")("translation")("rotationOrigin")("rotation")
                          );
+    cache.insert(shared_from_this());
+  }
+  else
+  {
+      this->operator=(*cache.markAsUsed<Transform>(hash()));
+  }
 }
 
 

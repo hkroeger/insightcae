@@ -2,8 +2,11 @@
 
 #include "base/tools.h"
 
-#include "gnuplot-iostream.h"
-
+#ifdef CHART_RENDERER_GNUPLOT
+#include "base/resultelements/gnuplotrenderer.h"
+#elif defined(CHART_RENDERER_MATPLOTLIB)
+#include "base/resultelements/matplotlibrenderer.h"
+#endif
 
 using namespace std;
 using namespace boost;
@@ -47,8 +50,8 @@ PlotCurve::PlotCurve(const std::vector<double>& x, const std::vector<double>& y,
   xy_ = join_rows( arma::mat(x.data(), x.size(), 1), arma::mat(y.data(), y.size(), 1) );
 }
 
-PlotCurve::PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& plaintextlabel, const std::string& plotcmd)
-: plotcmd_(plotcmd),
+PlotCurve::PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& plaintextlabel, const std::string &style)
+: plotcmd_(style),
   plaintextlabel_(plaintextlabel)
 {
   if (x.n_rows!=y.n_rows)
@@ -61,6 +64,22 @@ PlotCurve::PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& 
   }
   xy_ = join_rows(x, y);
 }
+
+PlotCurve::PlotCurve ( const arma::mat& x, const arma::mat& y, const std::string& plaintextlabel, const PlotCurveStyle& style )
+  : style_(style),
+    plaintextlabel_(plaintextlabel)
+  {
+    if (x.n_rows!=y.n_rows)
+    {
+        throw insight::Exception
+        (
+          boost::str(boost::format("plot curve %s: number of point x (%d) != number of points y (%d)!")
+            % plaintextlabel_ % x.n_rows % y.n_rows )
+        );
+    }
+    xy_ = join_rows(x, y);
+  }
+
 
 PlotCurve::PlotCurve ( const arma::mat& xrange, double y, const std::string& plaintextlabel, const std::string& plotcmd )
 : plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
@@ -154,100 +173,30 @@ Chart::Chart
   const std::string& addinit
 )
 : ResultElement(shortDesc, longDesc, ""),
-  xlabel_(xlabel),
-  ylabel_(ylabel),
-  plc_(plc),
-  addinit_(addinit)
+  ChartData{xlabel, ylabel, plc, addinit}
 {
 }
 
-
-void Chart::gnuplotCommand(gnuplotio::Gnuplot& gp) const
+const ChartData* Chart::chartData() const
 {
- gp<<addinit_<<";";
- gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
- if ( plc_.size() >0 )
- {
-  gp<<"plot ";
-  bool is_first=true;
-
-  if (plc_.include_zero)
-  {
-   gp<<"0 not lt -1";
-   is_first=false;
-  }
-
-  for ( const PlotCurve& pc: plc_ )
-  {
-   if ( !pc.plotcmd_.empty() )
-   {
-    if (!is_first) { gp << ","; is_first=false; }
-    if ( pc.xy_.n_rows>0 )
-    {
-     gp<<"'-' "<<pc.plotcmd_;
-    } else
-    {
-     gp<<pc.plotcmd_;
-    }
-   }
-  }
-
-  gp<<endl;
-
-  for ( const PlotCurve& pc: plc_ )
-  {
-   if ( pc.xy_.n_rows>0 )
-   {
-    gp.send1d ( pc.xy_ );
-   }
-  }
-
- }
+  return this;
 }
 
 
 
-void Chart::generatePlotImage ( const path& imagepath ) const
+
+
+void Chart::generatePlotImage( const path& imagepath ) const
 {
-//   std::string chart_file_name=(workdir/(resultelementname+".png")).string();
-    std::string bn ( imagepath.filename().stem().string() );
+  std::shared_ptr<ChartRenderer> renderer;
 
-    bool keep=false;
-    if (getenv("INSIGHT_KEEP_TEMP_DIRS"))
-      keep=true;
-    CaseDirectory tmp ( keep, bn+"-generate" );
+#ifdef CHART_RENDERER_GNUPLOT
+  renderer.reset( new GnuplotRenderer(chartData()) );
+#elif defined(CHART_RENDERER_MATPLOTLIB)
+  renderer.reset( new MatplotlibRenderer(chartData()) );
+#endif
 
-    {
-        Gnuplot gp;
-
-        //gp<<"set terminal pngcairo; set termoption dash;";
-        gp<<"set terminal epslatex standalone color dash linewidth 3 header \"\\\\usepackage{graphicx}\\n\\\\usepackage{epstopdf}\";";
-        gp<<"set output '"+bn+".tex';";
-//     gp<<"set output '"<<absolute(imagepath).string()<<"';";
-        /*
-            gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
-                "set linetype  2 lc rgb '#8A2BE2' lw 1;"
-                "set linetype  3 lc rgb '#A52A2A' lw 1;"
-                "set linetype  4 lc rgb '#E9967A' lw 1;"
-                "set linetype  5 lc rgb '#5F9EA0' lw 1;"
-                "set linetype  6 lc rgb '#006400' lw 1;"
-                "set linetype  7 lc rgb '#8B008B' lw 1;"
-                "set linetype  8 lc rgb '#696969' lw 1;"
-                "set linetype  9 lc rgb '#DAA520' lw 1;"
-                "set linetype cycle  9;";
-        */
-
-       gnuplotCommand(gp);
-    }
-
-    ::system (
-        (
-            "mv "+bn+".tex "+ ( tmp/ ( bn+".tex" ) ).string()+"; "
-            "mv "+bn+"-inc.eps "+ ( tmp/ ( bn+"-inc.eps" ) ).string()+"; "
-            "cd "+tmp.string()+"; "
-            "pdflatex -interaction=batchmode -shell-escape "+bn+".tex; "
-            "convert -density 600 "+bn+".pdf "+absolute ( imagepath ).string()
-        ).c_str() );
+  renderer->render(imagepath);
 }
 
 
@@ -414,8 +363,10 @@ insight::ResultElement& addPlot
                                  xlabel, ylabel, plc,
                                  shortDescription, "",
                                  precmd
-                             ) );
+                               ) );
 }
+
+
 
 
 } // namespace insight

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-
-port=${port:-11111}
+forbiddenports="$*"
+port=${port:-1024}
 quit=0
 
 while [ "$quit" -ne 1 ]; do
-  netstat -an | grep $port >> /dev/null
-  if [ $? -gt 0 ]; then
+
+  if ! ( netstat -tulpn 2>&1 |grep  :$port[^0-9] > /dev/null ) && ! (echo $forbiddenports | grep -w -q $port ); then
     quit=1
   else
     port=`expr $port + 1`

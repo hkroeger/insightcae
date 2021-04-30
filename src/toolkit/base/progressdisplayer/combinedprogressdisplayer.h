@@ -17,10 +17,17 @@ protected:
     std::vector<ProgressDisplayer*> displayers_;
     Ops op_;
 public:
-    CombinedProgressDisplayer ( Ops op );
+    CombinedProgressDisplayer ( Ops op = AND );
+
     void add ( ProgressDisplayer* );
-    virtual void update ( const ProgressState& pi );
-    virtual bool stopRun() const;
+
+    void update ( const ProgressState& pi ) override;
+    void setActionProgressValue(const std::string& path, double value) override;
+    void setMessageText(const std::string& path, const std::string& message) override;
+    void finishActionProgress(const std::string& path) override;
+    void reset() override;
+
+    bool stopRun() const override;
 };
 
 

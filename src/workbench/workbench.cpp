@@ -27,6 +27,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QStatusBar>
+#include <QSettings>
 
 #include "newanalysisdlg.h"
 #include "analysisform.h"
@@ -64,7 +65,8 @@ void workbench::updateRecentFileActions()
 }
 
 
-workbench::workbench()
+workbench::workbench(bool logToConsole)
+  : logToConsole_(logToConsole)
 {
   setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
   this->setWindowTitle("InsightCAE Workbench");
@@ -130,7 +132,7 @@ void workbench::newAnalysis()
     std::string analysisName = dlg.getAnalysisName();
     try
     {
-      form = new AnalysisForm(mdiArea_, analysisName);
+      form = new AnalysisForm(mdiArea_, analysisName, boost::filesystem::path(), logToConsole_);
     }
     catch (const std::exception& e)
     {
@@ -173,13 +175,8 @@ void workbench::openAnalysis(const QString& fn)
   
   boost::filesystem::path fp(fn.toStdString());
   
-  std::ifstream in(fp.c_str());
   std::string contents;
-  in.seekg(0, std::ios::end);
-  contents.resize(in.tellg());
-  in.seekg(0, std::ios::beg);
-  in.read(&contents[0], contents.size());
-  in.close();
+  insight::readFileIntoString(fp, contents);
 
   xml_document<> doc;
   doc.parse<0>(&contents[0]);
@@ -198,7 +195,8 @@ void workbench::openAnalysis(const QString& fn)
   {
     form = new AnalysisForm(mdiArea_,
                             analysisName,
-                            boost::filesystem::path(fn.toStdString()).parent_path()
+                            boost::filesystem::path(fn.toStdString()).parent_path(),
+                            logToConsole_
                             );
   }
   catch (const std::exception& e)

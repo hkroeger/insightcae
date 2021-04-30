@@ -31,8 +31,9 @@
 // #include "boost/foreach.hpp"
 // #include "boost/algorithm/string.hpp"
 #include "base/boost_include.h"
+#include "base/externalprocess.h"
+
 #include "boost/process.hpp"
-#include "boost/asio/io_service.hpp"
 
 #include "base/exception.h"
 
@@ -42,32 +43,8 @@ namespace insight
 
 class SoftwareEnvironment
 {
-public:
 
-  struct Job
-  {
-    boost::asio::io_service ios;
-    boost::process::opstream in;
-    boost::process::async_pipe out, err;
-    boost::asio::streambuf buf_out, buf_err;
-
-    std::shared_ptr<boost::process::child> process;
-
-    Job();
-
-    void runAndTransferOutput
-    (
-        std::vector<std::string>* pstdout = nullptr,
-        std::vector<std::string>* pstderr = nullptr
-    );
-
-    void ios_run_with_interruption();
-  };
-
- typedef std::shared_ptr<Job> JobPtr;
-
-private:
-  
+private:  
   std::string executionMachine_;
 
 public:
@@ -79,6 +56,8 @@ public:
     inline const std::string& executionMachine() const { return executionMachine_; }
     
     virtual int version() const;
+
+    boost::filesystem::path which(const std::string& command) const;
     
     virtual void executeCommand
     (  
@@ -96,6 +75,7 @@ public:
     ) const;
     
 };
+
 
 }
 

@@ -198,7 +198,8 @@ FeatureCmdInfoList Place::ruleDocumentation() const
         (
             "Place",
             "( <feature:base>, ( <vector:p0>, <vector:ex>, <vector:ez> [, <vector:refpt> ] ) | <feature:other_place> )",
-            "Places the feature base in a new coordinate system. The new origin is at point p0, the new x-axis along vector ex and the new z-direction is ez. Optionally, the point refpt is made coincident with p0 instead of the origin."
+            "Places the feature base in a new coordinate system. The new origin is at point p0, the new x-axis along vector ex and the new z-direction is ez. "
+            "Optionally, the point refpt is made coincident with p0 instead of the origin."
             " Alternatively, the placement is copied from another Place-feature other_place."
         )
     );

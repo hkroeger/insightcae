@@ -28,7 +28,7 @@
 // #include "cadtypes.h"
 #include "cadfeature.h"
 #endif
-class QoccViewerContext;
+//class QoccViewerContext;
 
 class QEvaluationItem
 : public QDisplayableModelTreeItem

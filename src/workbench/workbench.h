@@ -45,6 +45,8 @@ private:
   QAction *separatorAct_;
   std::array<QAction *,5> recentFileActs_;
 
+  bool logToConsole_;
+
   void updateRecentFileActions();
 
 public:
@@ -61,7 +63,7 @@ public:
    WidgetWithDynamicMenuEntries *lastActive_ =0;
 
 public:
-    workbench();
+    workbench(bool logToConsole=false);
     virtual ~workbench();
 
     void openAnalysis(const QString& fn);

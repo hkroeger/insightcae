@@ -30,14 +30,21 @@
 #include "boost/thread.hpp"
 #include "boost/assign/ptr_map_inserter.hpp"
 
+
+
 using namespace boost;
 using namespace boost::assign;
 using namespace boost::filesystem;
 
+
+
 namespace insight
 {
 
-// defineType(ParameterStudy);
+
+
+
+
 
 template<
   class BaseAnalysis,
@@ -65,12 +72,20 @@ ParameterSet ParameterStudy<BaseAnalysis,var_params>::defaultParameters()
 
   ParameterSet dfp = Analysis::defaultParameters(BaseAnalysis::typeName);
   
-  BOOST_FOREACH( const std::string& parname, var_params )
+  // == Modify parameter set of base analysis:
+
+  // replace selected double parameters by range of parameters each
+  for(const std::string& parname: var_params )
   {
     double orgval=dfp.getDouble(parname);
-    dfp.replace( parname, new DoubleRangeParameter(orgval, 0, 1, dfp.get<DoubleParameter>(parname).description().simpleLatex()) );
+    dfp.replace
+            (
+                parname,
+                new DoubleRangeParameter(orgval, 0, 1, dfp.get<DoubleParameter>(parname).description().simpleLatex())
+            );
   }
   
+  // if there is no run/numthread parameter, add one
   std::string subname("run");
   if (!dfp.contains(subname))
   {
@@ -108,6 +123,47 @@ template<
   class BaseAnalysis,
   const RangeParameterList& var_params
 >
+void ParameterStudy<BaseAnalysis,var_params>::generateInstance
+(
+  SynchronisedAnalysisQueue& instances,
+  const ParameterSet& templ,
+  DoubleRangeParameter::RangeList::const_iterator i[]
+)
+{
+    std::ostringstream n; n<<"subcase";
+
+    ParameterSetPtr newp( templ.cloneParameterSet() );
+    for (int j=0; j<var_params.size(); j++)
+    {
+      // Replace RangeParameter by actual single value
+      const DoubleRangeParameter& rp = templ.get<DoubleRangeParameter>(var_params[j]);
+      DoubleParameter* p=rp.toDoubleParameter(i[j]);
+      newp->replace(var_params[j], p);
+
+      std::string nmod(var_params[j]);
+      boost::replace_all(nmod, "/", "_");
+      n<<"__"<<nmod<<"="<<(*p)();
+    }
+
+    //append instance
+    ResultSetPtr emptyresset( new ResultSet(*newp, name_, "Computation instance "+n.str()) );
+    modifyInstanceParameters(n.str(), newp);
+    path ep=executionPath()/n.str();
+
+    // create analysis object
+    AnalysisPtr newinst( Analysis::lookup(BaseAnalysis::typeName, *newp, ep) );
+    newinst->setKeepExecutionDirectory();
+
+    instances.enqueue( AnalysisInstance{ n.str(), newinst, emptyresset, nullptr } );
+}
+
+
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
 void ParameterStudy<BaseAnalysis,var_params>::generateInstances
 (
   SynchronisedAnalysisQueue& instances, 
@@ -119,39 +175,14 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstances
   if (myIdx == var_params.size())
   {
     // Put it all together
-    std::ostringstream n; n<<"subcase";
-    ParameterSetPtr newp( templ.cloneParameterSet() /*Analysis::defaultParameters(BaseAnalysis::typeName).cloneParameterSet()*/ );
-    for (int j=0; j<var_params.size(); j++)
-    {
-      // Replace RangeParameter by actual single value
-      const DoubleRangeParameter& rp = templ.get<DoubleRangeParameter>(var_params[j]);
-      DoubleParameter* p=rp.toDoubleParameter(i[j]);
-      newp->replace(var_params[j], p);
-      
-      std::string nmod(var_params[j]);
-      boost::replace_all(nmod, "/", "_");
-      n<<"__"<<nmod<<"="<<(*p)();
-    }
-    
-    //newp->getPath("run/dir") /= n.str();
-    
-    //append instance
-    ResultSetPtr emptyresset( new ResultSet(*newp, name_, "Computation instance "+n.str()) );
-    modifyInstanceParameters(n.str(), newp);
-    path ep=executionPath()/n.str();
-//     newinst->setExecutionPath( ep );
-    AnalysisPtr newinst( /*baseAnalysis_->clone()*/ Analysis::lookup(BaseAnalysis::typeName, *newp, ep) );
-    newinst -> setKeepExecutionDirectory();
-//     newinst->setParameters(*newp);
-    instances.enqueue( AnalysisInstance( n.str(), newinst, emptyresset ));
-
+      generateInstance(instances, templ, i);
   }
   else
   {
     const DoubleRangeParameter& crp = templ.get<DoubleRangeParameter>(var_params[myIdx]);
     for (i[myIdx] = crp.values().begin(); i[myIdx] != crp.values().end(); ++i[myIdx])
     {
-      generateInstances(instances, templ, myIdx+1, i);
+        generateInstances(instances, templ, myIdx+1, i);
     }
   }
 }
@@ -186,25 +217,24 @@ ResultElementPtr ParameterStudy<BaseAnalysis,var_params>::table
 ) const
 {
   TabularResult::Table tab;
-  BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
+  for( const AnalysisInstance& ai: queue_.processed() )
   {
-    const AnalysisPtr& a = get<1>(ai);
-    const ResultSetPtr& r = get<2>(ai);
-
-    double x=a->parameters().getDouble(varp);
+    double x = ai.analysis->parameters().getDouble(varp);
     
     std::vector<double> row;
     row.push_back(x);
-    BOOST_FOREACH( const std::string& ren, res)
+    for( const std::string& ren: res)
     {
-      row.push_back( dynamic_cast<ScalarResult*>(r->at(ren).get())->value() ); 
+      row.push_back( dynamic_cast<ScalarResult*>(ai.results->at(ren).get())->value() );
     }
     tab.push_back( row );    
   }
   
   std::vector<std::string> heads;
   if (headers) 
+  {
     heads=*headers;
+  }
   else
   {
     heads=res;
@@ -250,19 +280,34 @@ void ParameterStudy<BaseAnalysis,var_params>::processQueue(insight::ProgressDisp
     threads.push_back(new AnalysisWorkerThread(&queue_, &displayer));
   }
   
-  BOOST_FOREACH(AnalysisWorkerThread& t, threads)
+  for(auto& t: threads)
   {
     workers_.create_thread(boost::ref(t));
   }
   
   //wait for computation to finish
   workers_.join_all();
+
+  for(auto& t: threads)
+  {
+    t.rethrowIfNeeded();
+  }
+
+  int nFailed=0;
+  for (const AnalysisInstance& ai: queue_.processed())
+  {
+      if (ai.exception) nFailed++;
+  }
+  if (queue_.processed().size()-nFailed==0)
+  {
+      throw insight::Exception("No analsis of any variant has been successful!");
+  }
 }
 
 
 struct ai_sort_pred {
     bool operator()(const AnalysisInstance& ai1, const AnalysisInstance& ai2) {
-         return ( get<0>(ai1) < get<0>(ai2) );
+         return ( ai1.name < ai2.name );
       }
 };
 
@@ -276,22 +321,23 @@ insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::evaluateRuns()
   
   TabularResult::Table force_data;
   AnalysisInstanceList processed_analyses = queue_.processed();
-  sort(processed_analyses.begin(), processed_analyses.end(),
-       //[&](const AnalysisInstance& ai1, const AnalysisInstance& ai2) -> bool {
-       //   return ( get<0>(ai1) < get<0>(ai2) );
-      //}
-      ai_sort_pred()
-  );
+  sort(
+          processed_analyses.begin(),
+          processed_analyses.end(),
+          ai_sort_pred()
+      );
 
   Ordering o(1000);
-  BOOST_FOREACH( const AnalysisInstance& ai,  processed_analyses)
+  for( const AnalysisInstance& ai:  processed_analyses)
   {
-    const std::string& n = get<0>(ai);
-//    const AnalysisPtr& a = get<1>(ai);
-    const ResultSetPtr& r = get<2>(ai);
-
-    std::string key=n;
-    results->insert( key, r->clone() ).setOrder(o.next());
+      if (!ai.exception)
+      {
+          results->insert( ai.name, ai.results->clone() ).setOrder(o.next());
+      }
+      else
+      {
+          warnings.issue("Analysis of the variant "+ai.name+" failed and the results are not considered in the report.");
+      }
   }
   
   return results;
@@ -307,10 +353,11 @@ template<
 insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::operator()(insight::ProgressDisplayer& displayer)
 {  
   path dir = setupExecutionEnvironment();
-  //parameters().saveToFile(dir/"parameters.ist", type());
 
   setupQueue();
+
   processQueue(displayer);
+
   return evaluateRuns();
 }
 

@@ -38,7 +38,6 @@ set(toolkit_SOURCES
     base/parameterset.cpp
     base/analysisstepcontrol.cpp
     base/plottools.cpp
-    base/pythoninterface.cpp
     base/vtktools.cpp
     base/caseelement.cpp
     base/case.cpp
@@ -191,6 +190,7 @@ set(toolkit_SOURCES
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   LIST(APPEND toolkit_SOURCES
    base/pythonanalysis.cpp
+   base/pythoninterface.cpp
   )
 ENDIF()
 
@@ -217,11 +217,17 @@ file(GLOB_RECURSE toolkit_HEADERS "*.h")
 #include(${VTK_USE_FILE})
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
-target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} 
-	GSL::gsl GSL::gslcblas
-	OpenSSL::SSL 
-	${VTK_LIBRARIES}
-	)
+set(toolkit_LINK_LIBS
+    ${Boost_LIBRARIES}
+    ${ARMADILLO_LIBRARY}
+    GSL::gsl GSL::gslcblas
+    OpenSSL::SSL
+    ${VTK_LIBRARIES}
+    )
+if (PYTHONLIBS_FOUND)
+    list(toolkit_LINK_LIBS APPEND ${PYTHON_LIBRARIES})
+endif()
+target_link_libraries(toolkit ${toolkit_LINK_LIBS})
 
 target_include_directories(toolkit 
   PUBLIC ${VTK_INCLUDE_DIRS}
@@ -234,21 +240,29 @@ target_include_directories(toolkit
 
 add_PDL(toolkit "${toolkit_HEADERS}")
 
-install(
-    TARGETS toolkit EXPORT toolkit_targets
-    LIBRARY DESTINATION lib
-    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
-    )
-export(EXPORT toolkit_targets
-  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitTarget.cmake"
-  NAMESPACE insight::
-)
-install(EXPORT toolkit_targets
-  FILE InsightCAEToolkitTarget.cmake
-  NAMESPACE insight::
-  DESTINATION ${INSIGHT_ConfigPackageLocation}
-)
 
+if (INSIGHT_DEVELOPMENT_FILES)
+    install(
+        TARGETS toolkit EXPORT toolkit_targets
+        LIBRARY DESTINATION lib
+        COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+        )
+    export(EXPORT toolkit_targets
+      FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitTarget.cmake"
+      NAMESPACE insight::
+    )
+    install(EXPORT toolkit_targets
+      FILE InsightCAEToolkitTarget.cmake
+      NAMESPACE insight::
+      DESTINATION ${INSIGHT_ConfigPackageLocation}
+    )
+else()
+   install(
+        TARGETS toolkit
+	LIBRARY DESTINATION lib
+	COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+        )
+endif()
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
     ADD_CUSTOM_COMMAND(

@@ -43,8 +43,8 @@ SoftwareEnvironment::Job::Job()
 
 void SoftwareEnvironment::Job::runAndTransferOutput
 (
-    std::vector<std::string>* stdout,
-    std::vector<std::string>* stderr
+    std::vector<std::string>* pstdout,
+    std::vector<std::string>* pstderr
 )
 {
 
@@ -63,7 +63,7 @@ void SoftwareEnvironment::Job::runAndTransferOutput
 
        // mirror to console
        std::cout<<line<<std::endl;
-       if (stdout) stdout->push_back(line);
+       if (pstdout) pstdout->push_back(line);
 
        // restart read
        read_start_out();
@@ -87,14 +87,14 @@ void SoftwareEnvironment::Job::runAndTransferOutput
 
        // mirror to console
        std::cout<<"[E] "<<line<<std::endl;
-       if (stderr)
+       if (pstderr)
        {
-         stderr->push_back(line);
+         pstderr->push_back(line);
        }
        else
        {
-         if (stdout)
-           stdout->push_back("[E] "+line);
+         if (pstdout)
+           pstdout->push_back("[E] "+line);
        }
 
        read_start_err();

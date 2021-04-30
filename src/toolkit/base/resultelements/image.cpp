@@ -63,7 +63,7 @@ xml_node< char >* Image::appendToNode ( const string& name, xml_document< char >
     child->append_attribute(
           doc.allocate_attribute(
             "originalFileName",
-            doc.allocate_string( imagePath_.c_str() )
+            doc.allocate_string( imagePath_.string().c_str() )
             )
           );
 

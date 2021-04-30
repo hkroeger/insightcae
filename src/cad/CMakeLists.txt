@@ -67,20 +67,28 @@ target_include_directories(insightcad
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
 
-install(
+if (INSIGHT_DEVELOPMENT_FILES)
+ install(
     TARGETS insightcad EXPORT insightcad_targets
     LIBRARY DESTINATION lib
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
     )
-export(EXPORT insightcad_targets
+ export(EXPORT insightcad_targets
   FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAECADTarget.cmake"
   NAMESPACE insight::
-)
-install(EXPORT insightcad_targets
+ )
+ install(EXPORT insightcad_targets
   FILE InsightCAECADTarget.cmake
   NAMESPACE insight::
   DESTINATION ${INSIGHT_ConfigPackageLocation}
-)
+ )
+else()
+ install(
+    TARGETS insightcad
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+endif()
 
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 

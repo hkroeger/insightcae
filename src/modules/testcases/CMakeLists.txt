@@ -1,3 +1,5 @@
+if (PYTHONLIBS_FOUND)
+
 project(testcases)
 
 #find_package(OpenCasCade REQUIRED)
@@ -40,3 +42,5 @@ install_shared_file(doc_airfoilsection_sketches_alpha airfoilsection_sketches_al
 install_shared_file(doc_airfoilsection_sketches_csv airfoilsection_sketches_csv.png testcases)
 
 install_script(isCreateChannelProfiles isCreateChannelProfiles.py)
+
+endif()

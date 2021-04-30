@@ -46,7 +46,7 @@ void CAEnvironment::forkCase
 ) const
 {
   boost::filesystem::path dir=exportfile.parent_path();
-  std::string cmd = std::string("cd ")+dir.c_str()+"; "+asrun_cmd().c_str()+" --run "+exportfile.filename().c_str();
+  std::string cmd = std::string("cd ")+dir.string()+"; "+asrun_cmd().string()+" --run "+exportfile.filename().string();
 
   std::string sys("bash -lc '( "); sys += cmd+" ) &'";
   cout<<"Executing "<<sys<<endl;

@@ -12,8 +12,6 @@
 #include <boost/asio.hpp>
 #include <boost/process/async.hpp>
 
-#include "pstreams/pstream.h"
-
 #include <regex>
 #include "rapidxml/rapidxml_print.hpp"
 
@@ -236,7 +234,11 @@ void RemoteLocation::stopTunnels()
     i++;
     cout << "Stopping tunnel instance "<<i<<"/"<<tunnelProcesses_.size()<<"..." << endl;
     //try graceful exit
+#ifndef WIN32
     kill(t.id(), SIGTERM);
+#else
+#warning implement WIN32 kill!
+#endif
     if (!t.wait_for( std::chrono::seconds(10) ))
     {
       t.terminate();
@@ -452,31 +454,53 @@ std::vector<bfs_path> RemoteLocation::remoteLS() const
 
   std::vector<bfs_path> res;
 
-  redi::ipstream p_in;
+//  redi::ipstream p_in;
 
-  p_in.open("ssh", { "ssh", server(), "ls", remoteDir().string() } );
+//  p_in.open("ssh", { "ssh", server(), "ls", remoteDir().string() } );
 
-  if (!p_in.is_open())
-  {
+//  if (!p_in.is_open())
+//  {
+//    throw insight::Exception("RemoteExecutionConfig::remoteLS: Failed to launch directory listing subprocess!");
+//  }
+
+//  std::string line;
+//  while (std::getline(p_in.out(), line))
+//  {
+//    cout<<line<<endl;
+//    res.push_back(line);
+//  }
+//  while (std::getline(p_in.err(), line))
+//  {
+//    cerr<<"ERR: "<<line<<endl;
+//  }
+//  p_in.close();
+
+//  if (p_in.rdbuf()->status()!=0)
+//  {
+//    throw insight::Exception("RemoteExecutionConfig::remoteLS: command failed with nonzero return code.");
+//  }
+
+  bp::ipstream is, ise;
+  bp::child p_in(
+              bp::search_path("ssh"),
+              bp::args({server(), "ls", remoteDir().string()}),
+              bp::std_out > is, bp::std_err > ise
+              );
+  if (!p_in.running())
     throw insight::Exception("RemoteExecutionConfig::remoteLS: Failed to launch directory listing subprocess!");
-  }
 
   std::string line;
-  while (std::getline(p_in.out(), line))
+  while (std::getline(is, line))
   {
     cout<<line<<endl;
     res.push_back(line);
   }
-  while (std::getline(p_in.err(), line))
+  while (std::getline(ise, line))
   {
     cerr<<"ERR: "<<line<<endl;
   }
-  p_in.close();
 
-  if (p_in.rdbuf()->status()!=0)
-  {
-    throw insight::Exception("RemoteExecutionConfig::remoteLS: command failed with nonzero return code.");
-  }
+  p_in.wait();
 
   return res;
 }
@@ -659,14 +683,14 @@ void RemoteLocation::syncToLocal
         files.erase(remove_if(files.begin(), files.end(),
                 [&](const bfs_path& f)
                 {
-                  try { to_number<double>(f.c_str()); return false; }
+                  try { to_number<double>(f.string()); return false; }
                   catch (...) { return true; }
                 }), files.end());
 
         for (const auto& f: files)
           {
             args.push_back("--exclude");
-            args.push_back(f.c_str());
+            args.push_back(f.string());
           }
       }
 
@@ -704,7 +728,7 @@ void RemoteLocation::writeConfigFile(
   if (!launchScript.empty())
     rootnode->append_attribute(doc.allocate_attribute
                                ("launchScript",
-                                 doc.allocate_string(launchScript.c_str())
+                                 doc.allocate_string(launchScript.string().c_str())
                                  )
                                );
   rootnode->append_attribute(doc.allocate_attribute
@@ -714,7 +738,7 @@ void RemoteLocation::writeConfigFile(
                                );
   rootnode->append_attribute(doc.allocate_attribute
                                ("directory",
-                                 doc.allocate_string(remoteDir.c_str())
+                                 doc.allocate_string(remoteDir.string().c_str())
                                  )
                                );
 

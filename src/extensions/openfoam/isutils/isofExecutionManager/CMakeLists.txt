@@ -4,7 +4,11 @@ set(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-add_subdirectory(qtermwidget)
+if (NOT WIN32)
+    add_subdirectory(qtermwidget)
+else()
+    add_definitions(-DNO_TERMWIDGET)
+endif()
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 

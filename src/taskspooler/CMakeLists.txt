@@ -1,3 +1,5 @@
+if (NOT WIN32)
+
 project(taskspooler)
 
 set(tsp_SRC
@@ -53,3 +55,5 @@ if (INSIGHT_BUILD_WORKBENCH)
 
  install(TARGETS taskspoolermonitor LIBRARY DESTINATION lib)
 endif()
+
+endif(NOT WIN32)

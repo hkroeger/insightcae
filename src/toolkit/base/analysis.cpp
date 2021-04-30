@@ -31,6 +31,10 @@
 #include "boost/function.hpp"
 #include "boost/thread.hpp"
 
+#ifdef WIN32
+#include "libloaderapi.h"
+#endif
+
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -302,7 +306,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
                     {
                         if ( itr->path().extension() == ".module" )
                         {
-                            std::ifstream f ( itr->path().c_str() );
+                            std::ifstream f ( itr->path().string() );
                             std::string type;
                             path location;
                             f>>type>>location;
@@ -334,7 +338,14 @@ AnalysisLibraryLoader::~AnalysisLibraryLoader()
 
 void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
 {
-    void *handle = dlopen ( location.c_str(), RTLD_NOW|RTLD_GLOBAL /*RTLD_LAZY|RTLD_NODELETE*/ );
+#ifdef WIN32
+  HMODULE lib = LoadLibraryA(location.string().c_str());
+  if (!lib)
+  {
+    std::cerr<<"Could not load module library "<<location<< std::endl;
+  }
+#else
+    void *handle = dlopen ( location.string().c_str(), RTLD_NOW|RTLD_GLOBAL /*RTLD_LAZY|RTLD_NODELETE*/ );
     if ( !handle ) 
     {
         std::cerr<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
@@ -343,6 +354,7 @@ void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
 //        std::cout<<"Loaded module library "<<location << std::endl;
         handles_.push_back ( handle );
     }
+#endif
 }
 
 

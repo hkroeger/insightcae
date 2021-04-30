@@ -128,7 +128,7 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
         }
         else if (j.state==Running)
         {
-          j.output=m1[3];
+          j.output=string(m1[3]);
           j.commandLine=m1[4];
         }
         else if (j.state==Finished)
@@ -137,7 +137,7 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
             boost::smatch m2;
             boost::regex_match(line, m2, re_f);
 
-            j.output=boost::filesystem::path(m2[3]);
+            j.output=string(m2[3]);
 
             j.elevel=boost::lexical_cast<int>(m2[4]);
 

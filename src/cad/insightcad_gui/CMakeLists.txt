@@ -53,20 +53,28 @@ target_include_directories(insightcad_gui
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
  )
 
-install(
+if (INSIGHT_DEVELOPMENT_FILES)
+ install(
     TARGETS insightcad_gui EXPORT insightcad_gui_targets
     LIBRARY DESTINATION lib
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
     )
-export(EXPORT insightcad_gui_targets
+ export(EXPORT insightcad_gui_targets
   FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAECADGUITarget.cmake"
   NAMESPACE insight::
-)
-install(EXPORT insightcad_gui_targets
+ )
+ install(EXPORT insightcad_gui_targets
   FILE InsightCAECADGUITarget.cmake
   NAMESPACE insight::
   DESTINATION ${INSIGHT_ConfigPackageLocation}
-)
+ )
+else()
+ install(
+    TARGETS insightcad_gui
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+endif()
 
 install(TARGETS insightcad_gui LIBRARY DESTINATION lib)
 endif()

@@ -32,21 +32,24 @@ if (wt_FOUND)
       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
      )
 
-    install(TARGETS toolkit_remote EXPORT toolkit_remote_targets
-      LIBRARY DESTINATION lib
-      COMPONENT ${INSIGHT_INSTALL_COMPONENT}
-    )
-    export(EXPORT toolkit_remote_targets
-      FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitRemoteTarget.cmake"
-      NAMESPACE insight::
-    )
-    install(EXPORT toolkit_remote_targets
-      FILE InsightCAEToolkitRemoteTarget.cmake
-      NAMESPACE insight::
-      DESTINATION ${INSIGHT_ConfigPackageLocation}
-    )
+     if (INSIGHT_DEVELOPMENT_FILES)
+        install(TARGETS toolkit_remote EXPORT toolkit_remote_targets
+          LIBRARY DESTINATION lib
+          COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+        )
+        export(EXPORT toolkit_remote_targets
+          FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitRemoteTarget.cmake"
+          NAMESPACE insight::
+        )
+        install(EXPORT toolkit_remote_targets
+          FILE InsightCAEToolkitRemoteTarget.cmake
+          NAMESPACE insight::
+          DESTINATION ${INSIGHT_ConfigPackageLocation}
+        )
+    else()
+	    install(TARGETS toolkit_remote LIBRARY DESTINATION lib)
+    endif()
 
-    install(TARGETS toolkit_remote LIBRARY DESTINATION lib)
 
     add_subdirectory(tests)
 

@@ -412,7 +412,7 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
     }
 
 
-    redi::opstream proc;
+//    redi::opstream proc;
     std::vector<string> args;
     args.push_back("--use-offscreen-rendering");
     std::string machine=""; // execute always on local machine
@@ -424,7 +424,7 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
       tf << pvscript;
       tf.close();
     }
-    args.push_back(tempfile.c_str());
+    args.push_back(tempfile.string());
     if (OFEs::list.size()==0)
       throw insight::Exception("no OpenFOAM environment defined!");
 

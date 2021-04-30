@@ -20,12 +20,12 @@
 
 
 #include "exception.h"
-#include <execinfo.h>
 #include <sstream>
 #include <cstdlib>
 
-
+#ifndef WIN32
 #include <execinfo.h> // for backtrace
+#endif
 #include <dlfcn.h>    // for dladdr
 #include <cxxabi.h>   // for __cxa_demangle
 #include <cstdio>
@@ -80,6 +80,7 @@ void Exception::saveContext(bool strace)
     message_ += "\n" + context;
   }
 
+#ifndef WIN32
   if (strace)
   {
     int num_max=30;
@@ -139,6 +140,7 @@ void Exception::saveContext(bool strace)
     strace_=trace_buf.str();
   }
   else
+#endif
     strace_="";
 }
 
@@ -287,6 +289,7 @@ void Warning(const std::string& msg)
 
 void UnhandledExceptionHandling::handler()
 {
+#ifndef WIN32
     void *trace_elems[20];
     int trace_elem_count(backtrace( trace_elems, 20 ));
     char **stack_syms(backtrace_symbols( trace_elems, trace_elem_count ));
@@ -295,7 +298,7 @@ void UnhandledExceptionHandling::handler()
         std::cout << stack_syms[i] << "\n";
     }
     free( stack_syms );
-
+#endif
     exit(1);
 }
 

@@ -200,7 +200,7 @@ path SharedPathList::getSharedFilePath(const path& file)
   // nothing found
   throw insight::Exception(
         std::string("Requested shared file ")
-         +file.c_str()
+         +file.string()
          +" not found either in global nor user shared directories"
         );
 }
@@ -612,7 +612,7 @@ readSTL
     throw insight::Exception("file "+path.string()+" does not exist!");
 
   vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
-  stl->SetFileName(path.c_str());
+  stl->SetFileName(path.string().c_str());
 
   std::vector<vtkSmartPointer<vtkPolyDataAlgorithm> > imr;
   vtkSmartPointer<vtkPolyDataAlgorithm> i0=stl;
@@ -660,7 +660,7 @@ void writeSTL
 
   vtkSmartPointer<vtkSTLWriter> sw = vtkSmartPointer<vtkSTLWriter>::New();
   sw->SetInputConnection(stl->GetOutputPort());
-  sw->SetFileName(outfile.c_str());
+  sw->SetFileName(outfile.string().c_str());
   if (file_ext==".stlb")
   {
     sw->SetFileTypeToBinary();

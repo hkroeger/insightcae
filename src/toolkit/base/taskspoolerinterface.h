@@ -3,6 +3,7 @@
 
 #include "base/boost_include.h"
 #include "boost/process.hpp"
+#include "boost/asio/io_service.hpp"
 
 
 namespace insight

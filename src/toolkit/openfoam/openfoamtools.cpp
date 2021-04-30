@@ -187,7 +187,7 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   if (!exists(target))
     create_directories(target);
   
-  std::string cmd("ls "); cmd+=source.c_str();
+  std::string cmd("ls "); cmd+=source.string();
   ::system(cmd.c_str());
   
   std::vector<std::string> files=list_of<std::string>("boundary")("faces")("neighbour")("owner")("points");
@@ -215,7 +215,7 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
         copy_file(source/fname, target/fname);
       }
       else 
-        if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+        if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.string());
     }
   }
   else
@@ -252,7 +252,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   if (!exists(target))
     create_directories(target);
   
-  std::string cmd("ls "); cmd+=source.c_str();
+  std::string cmd("ls "); cmd+=source.string();
   ::system(cmd.c_str());
   
   {
@@ -286,7 +286,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
       readOpenFOAMBoundaryDict(bf, org_bnd);
     }
     else 
-      throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+      throw insight::Exception("Essential mesh file "+fname+" not present in "+source.string());
 
     OFDictData::dictFile new_bnd;
     for (const auto& b: org_bnd)
@@ -319,7 +319,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
     path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
     if (exists(source/gzname)) create_symlink_force_overwrite(source/gzname, target/gzname);
     else if (exists(source/fname)) create_symlink_force_overwrite(source/fname, target/fname);
-    else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+    else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.string());
   }
 }
 
@@ -635,7 +635,7 @@ line::line(ParameterSet const& p )
 {
 }
 
-void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+void line::addIntoDictionary(const OpenFOAMCase& /*ofc*/, OFDictData::dict& sampleDict) const
 {
   OFDictData::list& l=sampleDict.getList("sets");
   
@@ -650,7 +650,7 @@ void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDi
 //   sd["end"]=OFDictData::vector3(p_.end());
 //   sd["nPoints"]=p_.np();
   OFDictData::list pl;
-  for (int i=0; i<p_.points.n_rows; i++)
+  for (arma::uword i=0; i<p_.points.n_rows; i++)
     pl.push_back(OFDictData::vector3(p_.points.row(i).t()));
   sd["points"]=pl;
   
@@ -721,7 +721,7 @@ arma::mat line::readSamples
     
     // join contents of all files in one time directory by column 
     // provide the mapping field<>column in coldescr
-    for (int i=0; i<files.size(); i++)
+    for (size_t i=0; i<files.size(); i++)
     {
       std::string fn=files[i];
       path fp=timedir/fn;
@@ -750,7 +750,7 @@ arma::mat line::readSamples
       }
       
       int ncmpt=(res.n_cols-1)/flnames.size(); // retrieve number of cols per field
-      for (int j=0; j<flnames.size(); j++)
+      for (size_t j=0; j<flnames.size(); j++)
       {
 	if (coldescr) 
 	{
@@ -777,7 +777,7 @@ arma::mat line::readSamples
     // compute expected length coordinates from prescribed sampling points => coords
     std::vector<double> d;
     d.push_back(0.0);
-    for (int k=1; k<p_.points.n_rows; k++)
+    for (arma::uword k=1; k<p_.points.n_rows; k++)
     {
       d.push_back( d[k-1] + norm( p_.points.row(k) - p_.points.row(k-1), 2) );
     }
@@ -857,8 +857,6 @@ circumferentialAveragedUniformLine::circumferentialAveragedUniformLine(Parameter
 
 void circumferentialAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
-  OFDictData::list& l=sampleDict.getList("sets");
-  
   for (const line& l: lines_)
   {
     l.addIntoDictionary(ofc, sampleDict);
@@ -906,7 +904,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 	  }
 	  else
 	  {
-	    for (int c=0; c<ci.ncmpt; c++)
+            for (size_t c=0; c<ci.ncmpt; c++)
 	      f<<" "+fn.first+"_"+lexical_cast<string>(c);
 	  }
 	  //cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
@@ -936,7 +934,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 	{
 	  // symmetric tensor
 	  int c0=ci.col;
-	  for (int j=0; j<datai.n_rows; j++)
+          for (arma::uword j=0; j<datai.n_rows; j++)
 	  {
 	    arma::mat t;
 	    t << datai(j,c0)   << datai(j,c0+1) << datai(j,c0+2) << endr
@@ -1221,19 +1219,21 @@ void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& 
     targetcase.executeCommand
     (
       target, "mergeMeshes", 
-      list_of<std::string>
-      (".")(".")
-      (src.parent_path().c_str()) (basename(src).c_str()) 
-      ("-noFunctionObjects")
+      {
+       ".", ".",
+       src.parent_path().string(), basename(src),
+       "-noFunctionObjects"
+      }
     );
   }
   else
     targetcase.executeCommand
     (
       target, "mergeMeshes", 
-      list_of<std::string>
-      (".")
-      (boost::filesystem::absolute(source).c_str()) 
+      {
+       ".",
+       boost::filesystem::absolute(source).string()
+      }
     );
 }
 
@@ -1269,10 +1269,11 @@ void mapFields
   }
 
   std::vector<string> args =
-    list_of<std::string>
-    (boost::filesystem::absolute(source).c_str())
-    ("-sourceTime")("latestTime")
-    ;
+    {
+     boost::filesystem::absolute(source).string(),
+     "-sourceTime", "latestTime"
+    };
+
   if (parallelTarget) 
     args.push_back("-parallelTarget");
   
@@ -1359,7 +1360,7 @@ void mapFields
 }
 
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones, bool is_parallel)
+void resetMeshToLatestTimestep(const OpenFOAMCase& /*c*/, const boost::filesystem::path& location, bool ignoremissing, bool include_zones, bool is_parallel)
 {
     if (!is_parallel)
     {
@@ -1549,7 +1550,7 @@ void runPvPython
 {
   boost::mutex::scoped_lock lock(runPvPython_mtx);
   
-  redi::opstream proc;  
+//  redi::opstream proc;
   std::vector<string> args;
   args.push_back("--use-offscreen-rendering");
   std::string machine=""; // execute always on local machine
@@ -1565,7 +1566,7 @@ void runPvPython
     }
     tf.close();
   }
-  args.push_back(tempfile.c_str());
+  args.push_back(tempfile.string());
   ofc.executeCommand(location, "pvbatch-offscreen", args, NULL, 0, &machine);
 
   if (!keepScript) remove(tempfile);
@@ -1711,7 +1712,7 @@ patchIntegrate::patchIntegrate
       {
         ncomp=data[0].n_cols;
         arma::mat res=zeros ( data.size(), 2+ncomp );
-        for ( int i=0; i<data.size(); i++ )
+        for ( size_t i=0; i<data.size(); i++ )
           {
             res ( i,0 ) =times[i];
             res ( i,1 ) =areadata[i];
@@ -2270,7 +2271,7 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
 
 void currentNumericalSettingsReport
 (
-  const OpenFOAMCase& cm, 
+  const OpenFOAMCase& /*cm*/,
   const boost::filesystem::path& location, 
   ResultSetPtr results
 )
@@ -2343,9 +2344,9 @@ arma::mat viscousForceProfile
   TimeDirectoryList tdl=listTimeDirectories(pref);
   path lastTimeDir=tdl.rbegin()->second;
   arma::mat vfm;
-  vfm.load( ( lastTimeDir/"walls_viscousForceMean.dat").c_str(), arma::raw_ascii);
+  vfm.load( ( lastTimeDir/"walls_viscousForceMean.dat").string(), arma::raw_ascii);
   arma::mat vf;
-  vf.load( (lastTimeDir/"walls_viscousForce.dat").c_str(), arma::raw_ascii);
+  vf.load( (lastTimeDir/"walls_viscousForce.dat").string(), arma::raw_ascii);
   
   return arma::mat(join_rows(vfm, vf.cols(1, vf.n_cols-1)));
 }
@@ -2709,7 +2710,7 @@ arma::mat interiorPressureFluctuationProfile
   TimeDirectoryList tdl=listTimeDirectories(pref);
   path lastTimeDir=tdl.rbegin()->second;
   arma::mat vfm;
-  vfm.load( ( lastTimeDir/"interior_pPrime2Mean.dat").c_str(), arma::raw_ascii);
+  vfm.load( ( lastTimeDir/"interior_pPrime2Mean.dat").string(), arma::raw_ascii);
   
   return vfm;
 }
@@ -2894,7 +2895,7 @@ HomogeneousAveragedProfile::HomogeneousAveragedProfile(const ParameterSet& ps, c
 }
 
 
-ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& displayer)
+ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*displayer*/)
 {
   Parameters p(parameters_);
 //   setExecutionPath(p.casepath);
@@ -3127,7 +3128,7 @@ bool checkIfAnyFileIsNewerOrNonexistent
 
 bool checkIfReconstructLatestTimestepNeeded
 (
-  const OpenFOAMCase& cm, 
+  const OpenFOAMCase& /*cm*/,
   const boost::filesystem::path& location
 )
 {
@@ -3411,7 +3412,7 @@ void OpenFOAMCaseDirs::cleanCase
 void VTKFieldToOpenFOAMField(const boost::filesystem::path& vtkfile, const std::string& fieldname, std::ostream& out)
 {
   vtkSmartPointer<vtkPolyDataReader> in = vtkPolyDataReader::New();
-  in->SetFileName(vtkfile.c_str());
+  in->SetFileName(vtkfile.string().c_str());
   in->ReadAllScalarsOn();
   in->ReadAllVectorsOn();
   in->ReadAllTensorsOn();

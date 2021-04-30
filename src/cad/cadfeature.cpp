@@ -295,7 +295,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     {
         BRep_Builder bb;
         TopoDS_Shape s;
-        BRepTools::Read(s, filename.c_str(), bb);
+        BRepTools::Read(s, filename.string().c_str(), bb);
         setShape(s);
     }
     else if ( (ext==".igs") || (ext==".iges") )

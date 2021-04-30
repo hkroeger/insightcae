@@ -27,12 +27,12 @@
 #include <iostream>
 #include <sstream>
 
-#include "pstreams/pstream.h"
 
 // #include "boost/foreach.hpp"
 // #include "boost/algorithm/string.hpp"
 #include "base/boost_include.h"
 #include "boost/process.hpp"
+#include "boost/asio/io_service.hpp"
 
 #include "base/exception.h"
 
@@ -57,8 +57,8 @@ public:
 
     void runAndTransferOutput
     (
-        std::vector<std::string>* stdout = nullptr,
-        std::vector<std::string>* stderr = nullptr
+        std::vector<std::string>* pstdout = nullptr,
+        std::vector<std::string>* pstderr = nullptr
     );
 
     void ios_run_with_interruption();

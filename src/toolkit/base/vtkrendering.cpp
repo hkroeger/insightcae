@@ -287,7 +287,7 @@ void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file)
 {
   auto x3d=vtkSmartPointer<vtkX3DExporter>::New();
   x3d->SetInput(renderWindow_);
-  x3d->SetFileName(file.c_str());
+  x3d->SetFileName(file.string().c_str());
   x3d->BinaryOff();
   x3d->Update();
   x3d->Write();
@@ -300,7 +300,7 @@ void VTKOffscreenScene::exportImage(const boost::filesystem::path& pngfile)
   windowToImageFilter->SetInput(renderWindow_);
   windowToImageFilter->Update();
   auto writer = vtkSmartPointer<vtkPNGWriter>::New();
-  writer->SetFileName(pngfile.c_str());
+  writer->SetFileName(pngfile.string().c_str());
   writer->SetInputConnection(windowToImageFilter->GetOutputPort());
   writer->Write();
 }
@@ -430,7 +430,7 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath)
   : VTKOffscreenScene(),
     ofcase_(vtkSmartPointer<vtkOpenFOAMReader>::New())
 {
-  ofcase_->SetFileName( casepath.c_str() );
+  ofcase_->SetFileName( casepath.string().c_str() );
   ofcase_->Update();
 
   ofcase_->CreateCellToPointOn();

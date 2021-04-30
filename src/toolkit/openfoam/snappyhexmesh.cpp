@@ -105,7 +105,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name;
     //boost::filesystem::path x; x.f
-  sHMDict.subDict("geometry")[p_.fileName->fileName().c_str()]=geodict;
+  sHMDict.subDict("geometry")[p_.fileName->fileName().string()]=geodict;
 
   OFDictData::dict castdict;
   OFDictData::list levels;
@@ -189,7 +189,7 @@ ExplicitFeatureCurve::ExplicitFeatureCurve( const ParameterSet& ps )
 void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict refdict;
-  refdict["file"]=std::string("\"")+p_.fileName->fileName().c_str()+"\"";
+  refdict["file"]=std::string("\"")+p_.fileName->fileName().string()+"\"";
   refdict["levels"]=OFDictData::list( {OFDictData::list({p_.distance, p_.level}) });
   sHMDict.subDict("castellatedMeshControls").getList("features").push_back(refdict);
 
@@ -368,6 +368,7 @@ bool RefinementGeometry::setGeometrySubdict(OFDictData::dict& geodict, std::stri
   geodict["name"]=p_.name;
 //   //boost::filesystem::path x; x.f
 //   sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
+  return true;
 }
 
 void RefinementGeometry::modifyFiles(const OpenFOAMCase& ofc, 
@@ -432,6 +433,7 @@ bool NearTemplatePatchRefinement::setGeometrySubdict(OFDictData::dict& geodict, 
   entryTitle=p_.fileName->fileName().string();
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name;
+  return true;
 }
 
 

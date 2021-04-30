@@ -35,7 +35,11 @@ target_include_directories(genericmodules
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   )
-install(TARGETS genericmodules LIBRARY DESTINATION lib)
+if (NOT WIN32)
+    install(TARGETS genericmodules LIBRARY DESTINATION lib)
+else()
+    install(TARGETS genericmodules ARCHIVE DESTINATION lib)
+endif()
 
 install_shared_file(genericmodules_module_cfg genericmodules.module modules.d)
 

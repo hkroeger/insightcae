@@ -67,19 +67,27 @@ target_include_directories(toolkit_gui
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
  )
 
-install(
+if (INSIGHT_DEVELOPMENT_FILES)
+ install(
     TARGETS toolkit_gui EXPORT toolkit_gui_targets
     LIBRARY DESTINATION lib
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
     )
-export(EXPORT toolkit_gui_targets
+ export(EXPORT toolkit_gui_targets
   FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitGUITarget.cmake"
   NAMESPACE insight::
-)
-install(EXPORT toolkit_gui_targets
+ )
+ install(EXPORT toolkit_gui_targets
   FILE InsightCAEToolkitGUITarget.cmake
   NAMESPACE insight::
   DESTINATION ${INSIGHT_ConfigPackageLocation}
-)
+ )
+else()
+ install(
+    TARGETS toolkit_gui
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+endif()
 
 install(TARGETS toolkit_gui LIBRARY DESTINATION lib)

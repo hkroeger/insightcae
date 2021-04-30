@@ -45,6 +45,7 @@ bool MountRemote::isAlreadyMounted() const
 
 void MountRemote::mount(const std::string& server, const bfs_path& remotedir)
 {
+#ifndef WIN32
   auto gid = getgid();
   auto uid = getuid();
 
@@ -55,6 +56,9 @@ void MountRemote::mount(const std::string& server, const bfs_path& remotedir)
 
   if (std::system( cmd.c_str() )!=0)
       throw insight::Exception("Could not mount remote filesystem. Failed command was: "+cmd);
+#else
+#warning need WIN32 implementation
+#endif
 }
 
 

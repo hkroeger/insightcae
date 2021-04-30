@@ -62,7 +62,7 @@ DXFReader::DXFReader(const boost::filesystem::path& filename, const std::string&
 : layername_(layername)
 {
   std::unique_ptr<DL_Dxf> dxf(new DL_Dxf());
-  if (!dxf->in(filename.c_str(), this))
+  if (!dxf->in(filename.string(), this))
   {
     std::cerr << filename << " could not be opened." << std::endl;
   }

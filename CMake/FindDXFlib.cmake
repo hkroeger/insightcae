@@ -14,10 +14,11 @@
     PATH_SUFFIXES dxflib
   )
 
-  FIND_LIBRARY(DXFLIB_LIBRARY libdxflib.so
-    HINTS /usr/lib
-    /usr/local/lib
-    ENV LD_LIBRARY_PATH
+  FIND_LIBRARY(DXFLIB_LIBRARY 
+    NAMES libdxflib.so libdxflib.a libdxflib.dll.a
+    #HINTS /usr/lib
+    # /usr/local/lib
+    #ENV LD_LIBRARY_PATH
   )
 
 

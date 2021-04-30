@@ -381,9 +381,9 @@ rapidxml::xml_node<>* PathParameter::appendToNode
 
       char tail[3] = {0,0,0};
       size_t len=file_content_->size();
-      uint one_third_len = len/3;
-      uint len_rounded_down = one_third_len*3;
-      uint j = len_rounded_down + one_third_len;
+      unsigned int one_third_len = len/3;
+      unsigned int len_rounded_down = one_third_len*3;
+      unsigned int j = len_rounded_down + one_third_len;
       unsigned int base64length = ((4 * file_content_->size() / 3) + 3) & ~3;
 
       auto *xml_content = doc.allocate_string(0, base64length+1);
@@ -402,7 +402,7 @@ rapidxml::xml_node<>* PathParameter::appendToNode
 
       if (len_rounded_down != len)
       {
-          uint i=0;
+          unsigned int i=0;
           for(; i < len - len_rounded_down; ++i)
           {
               tail[i] = (*file_content_)[len_rounded_down+i];
@@ -602,7 +602,7 @@ rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, 
     child->append_attribute(doc.allocate_attribute
     (
       "value",
-      doc.allocate_string(value_.c_str())
+      doc.allocate_string(value_.string().c_str())
     ));
     return child;
 }

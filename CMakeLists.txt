@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+project(insightcae)
+
 enable_language (C)
 enable_language (CXX)
 enable_language (Fortran OPTIONAL)
@@ -26,6 +28,7 @@ OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit a
 OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench (Wt is required)" OFF)
 OPTION(INSIGHT_BUILD_INSTALLDESKTOP "Install MIME types and Desktop integration (already during build)" OFF)
 OPTION(INSIGHT_INSTALL_DESKTOP "Install MIME types and Desktop integration" ON)
+OPTION(INSIGHT_DEVELOPMENT_FILES "Install development files" OFF)
 OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)
 SET(INSIGHT_SUPERBUILD "" CACHE STRING "Path to superbuild (build directory). If set, use dependencies from that superbuild")
 
@@ -150,12 +153,16 @@ if (INSIGHT_BUILD_TOOLKIT)
 
     find_package(GSL REQUIRED)
 
-    find_package(PythonLibs 2.7 REQUIRED)
+    if (INSIGHT_BUILD_PYTHONBINDINGS)
+        find_package(PythonLibs)
+    else()
+        set(PYTHONLIBS_FOUND OFF)
+    endif()
 
     # modifies Boost_LIBRARIES for some reason, put it first!
     find_package(wt)
 
-    find_package(Boost COMPONENTS
+    SET(INSIGHT_BOOST_COMPONENTS
         regex
         system
         filesystem
@@ -163,30 +170,35 @@ if (INSIGHT_BUILD_TOOLKIT)
         timer
         thread
         iostreams
-        python
         program_options
-        REQUIRED
-        )
+    )
+
+    if (PYTHONLIBS_FOUND)
+     list(INSIGHT_BOOST_COMPONENTS APPEND python)
+     add_definitions(-DHAS_PYTHONLIBS)
+    endif()
+
+    find_package(Boost COMPONENTS ${INSIGHT_BOOST_COMPONENTS} REQUIRED)
 
     find_package(VTK
-        COMPONENTS
-        vtkFiltersCore
-        vtkFiltersGeneral
-        vtkFiltersSources
-        vtkFiltersGeneric
-        vtkFiltersExtraction
-        vtkFiltersPoints
-        vtkFiltersFlowPaths
-        vtkCommonCore
-        vtkIOLegacy
-        vtkIOGeometry
-        vtkIOExport
-        vtkIOImage
-        vtkIOXML
-        vtkImagingCore
-        vtkRenderingOpenGL2
-        vtkRenderingAnnotation
-        vtkPVVTKExtensionsDefault
+#        COMPONENTS
+#        vtkFiltersCore
+#        vtkFiltersGeneral
+#        vtkFiltersSources
+#        vtkFiltersGeneric
+#        vtkFiltersExtraction
+#        vtkFiltersPoints
+#        vtkFiltersFlowPaths
+#        vtkCommonCore
+#        vtkIOLegacy
+#        vtkIOGeometry
+#        vtkIOExport
+#        vtkIOImage
+#        vtkIOXML
+#        vtkImagingCore
+#        vtkRenderingOpenGL2
+#        vtkRenderingAnnotation
+#        #vtkPVVTKExtensionsDefault
         REQUIRED
     )
     #include(${VTK_USE_FILE})

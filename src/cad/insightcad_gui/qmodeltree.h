@@ -26,6 +26,7 @@
 #include "viewstate.h"
 //#include "qoccviewercontext.h"
 #include "iscadmetatyperegistrator.h"
+#include "boost/variant.hpp"
 
 #ifndef Q_MOC_RUN
 #include "cadtypes.h"
@@ -60,7 +61,8 @@ Q_SIGNALS:
 
   void createdVariable    (const QString& sn, insight::cad::ScalarPtr sv);
   void createdVariable    (const QString& sn, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
-  void createdFeature     (const QString& sn, insight::cad::FeaturePtr sm, bool is_component);
+  void createdFeature     (const QString& sn, insight::cad::FeaturePtr sm, bool is_component,
+                           boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank() );
   void createdDatum       (const QString& sn, insight::cad::DatumPtr dm);
   void createdEvaluation  (const QString& sn, insight::cad::PostprocActionPtr em, bool visible);
 
@@ -141,6 +143,7 @@ public:
 
     Handle_AIS_InteractiveObject ais(AIS_InteractiveContext& context);
     inline AIS_DisplayMode shadingMode() const { return shadingMode_; }
+    void setShadingMode(AIS_DisplayMode ds);
     inline double red() const { return r_; }
     inline double green() const { return g_; }
     inline double blue() const { return b_; }
@@ -283,7 +286,8 @@ public Q_SLOTS:
 
     void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
     void onAddVector     (const QString& name, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
-    void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component);
+    void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component,
+                          boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank() );
     void onAddDatum      (const QString& name, insight::cad::DatumPtr smp);
     void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp, bool visible=false);
     void removeNonRecreatedSymbols();

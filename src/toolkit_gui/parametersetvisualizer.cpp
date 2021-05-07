@@ -10,25 +10,6 @@
 namespace insight
 {
 
-CAD_ParameterSet_Visualizer::UsageTracker::UsageTracker(QModelTree* mt)
-  : mt_(mt)
-{
-  mt->getFeatureNames(removedFeatures_);
-  mt->getDatumNames(removedDatums_);
-}
-
-
-void CAD_ParameterSet_Visualizer::UsageTracker::cleanupModelTree()
-{
-  for (const std::string& sn: removedFeatures_)
-  {
-    mt_->onRemoveFeature( QString::fromStdString(sn) );
-  }
-  for (const std::string& sn: removedDatums_)
-  {
-    mt_->onRemoveDatum( QString::fromStdString(sn) );
-  }
-}
 
 
 void CAD_ParameterSet_Visualizer::addDatum(const std::string& name, insight::cad::DatumPtr dat)
@@ -36,9 +17,9 @@ void CAD_ParameterSet_Visualizer::addDatum(const std::string& name, insight::cad
   Q_EMIT createdDatum(QString::fromStdString(name), dat);
 }
 
-void CAD_ParameterSet_Visualizer::addFeature(const std::string& name, insight::cad::FeaturePtr feat, DisplayStyle ds)
+void CAD_ParameterSet_Visualizer::addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds)
 {
-  Q_EMIT createdFeature( QString::fromStdString(name), feat, true );
+  Q_EMIT createdFeature( QString::fromStdString(name), feat, true, ds );
 }
 
 void CAD_ParameterSet_Visualizer::update(const ParameterSet& ps)
@@ -46,9 +27,8 @@ void CAD_ParameterSet_Visualizer::update(const ParameterSet& ps)
   ParameterSet_Visualizer::update(ps);
 }
 
-void CAD_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void CAD_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  ut_=ut;
 }
 
 
@@ -80,7 +60,7 @@ void CAD_ParameterSet_Visualizer::visualizeScheduledParameters()
       {
         Q_EMIT beginRebuild();
 
-        recreateVisualizationElements(nullptr);
+        recreateVisualizationElements();
 
         Q_EMIT finishedRebuild();
 

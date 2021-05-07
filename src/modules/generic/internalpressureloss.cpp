@@ -547,9 +547,9 @@ ParameterSet_VisualizerPtr InternalPressureLoss_visualizer()
 addStandaloneFunctionToStaticFunctionTable(Analysis, InternalPressureLoss, visualizer, InternalPressureLoss_visualizer);
 
 
-void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
   Parameters p(currentParameters());
 

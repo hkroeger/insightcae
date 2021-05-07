@@ -26,7 +26,6 @@
 #include "parametersetvisualizer.h"
 #include "parametereditorwidget.h"
 
-#include "visualizerthread.h"
 
 
 using namespace std;

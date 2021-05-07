@@ -30,9 +30,9 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Bo
 
 
 
-void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
   blockMeshDict_Box::Parameters p(currentParameters());
 
@@ -45,7 +45,7 @@ void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements(Us
                 cad::matconst(           ey * p.geometry.W),
                 cad::matconst(p.geometry.ez * p.geometry.H)
                 ),
-              DisplayStyle::Wireframe
+              AIS_WireFrame
               );
 }
 
@@ -61,9 +61,9 @@ ParameterSet_VisualizerPtr blockMeshDict_Cylinder_visualizer()
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Cylinder, visualizer, blockMeshDict_Cylinder_visualizer);
 
 
-void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
   blockMeshDict_Cylinder::Parameters p(currentParameters());
 
@@ -95,7 +95,7 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 
     addFeature( label,
                 cad::Compound::create(cad::CompoundFeatureList({cyl, core})),
-                DisplayStyle::Wireframe
+                AIS_WireFrame
                 );
   }
   else
@@ -111,7 +111,7 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 
     addFeature( label,
                 cyl,
-                DisplayStyle::Wireframe
+                AIS_WireFrame
                 );
   }
 }
@@ -134,9 +134,9 @@ ParameterSet_VisualizerPtr blockMeshDict_Sphere_visualizer()
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Sphere, visualizer, blockMeshDict_Sphere_visualizer);
 
 
-void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
   blockMeshDict_Sphere::Parameters p(currentParameters());
 
@@ -158,7 +158,7 @@ void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements
 
   addFeature( "blockMeshDict_Sphere",
               cad::Compound::create(cad::CompoundFeatureList({sph, core})),
-              DisplayStyle::Wireframe
+              AIS_WireFrame
               );
 }
 

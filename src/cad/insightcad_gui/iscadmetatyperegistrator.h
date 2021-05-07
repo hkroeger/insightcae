@@ -4,6 +4,8 @@
 #include <QMetaType>
 #include <QVector>
 
+#include <boost/variant.hpp>
+
 #include "cadparameters.h"
 #include "cadfeature.h"
 
@@ -15,6 +17,8 @@ Q_DECLARE_METATYPE(insight::cad::FeaturePtr)
 Q_DECLARE_METATYPE(insight::cad::DatumPtr)
 Q_DECLARE_METATYPE(insight::cad::PostprocActionPtr)
 Q_DECLARE_METATYPE(insight::cad::VectorVariableType)
+typedef boost::variant<boost::blank,AIS_DisplayMode> Optional_AIS_DisplayMode;
+Q_DECLARE_METATYPE(Optional_AIS_DisplayMode)
 Q_DECLARE_METATYPE(QVector<int>)
 Q_DECLARE_METATYPE(AIS_DisplayMode)
 

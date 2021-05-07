@@ -26,9 +26,9 @@ ParameterSet_VisualizerPtr snappyHexMeshConfiguration_visualizer()
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, snappyHexMeshConfiguration, visualizer, snappyHexMeshConfiguration_visualizer);
 
 
-void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
   snappyHexMeshConfiguration::Parameters p(currentParameters());
 

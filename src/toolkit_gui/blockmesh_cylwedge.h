@@ -136,8 +136,8 @@ public:
     typedef blockMeshDict_CylWedge::Parameters Parameters;
 
 public:
-    void recreateVisualizationElements(UsageTracker* ut, const std::string& blockMeshName );
-    void recreateVisualizationElements(UsageTracker* ut) override;
+    void recreateVisualizationElements(const std::string& blockMeshName );
+    void recreateVisualizationElements() override;
 };
 
 

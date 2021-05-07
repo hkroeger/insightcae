@@ -112,6 +112,13 @@ Handle_AIS_InteractiveObject QDisplayableModelTreeItem::ais(AIS_InteractiveConte
   return ais_;
 }
 
+void QDisplayableModelTreeItem::setShadingMode(AIS_DisplayMode ds)
+{
+  shadingMode_=ds;
+  if (isVisible())
+    emit setDisplayMode(this, shadingMode_);
+}
+
 Quantity_Color QDisplayableModelTreeItem::color() const
 {
   return Quantity_Color(r_, g_, b_, Quantity_TOC_RGB);
@@ -626,21 +633,35 @@ void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv, in
   newf->initDisplay();
 }
 
-void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component)
+void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component, boost::variant<boost::blank,AIS_DisplayMode> ds)
 {
   QFeatureItem *newf, *old;
   QTreeWidgetItem* cat;
   {
     SignalBlocker b(this);
 
+    AIS_DisplayMode ads;
     if (is_component)
-      cat=componentfeatures_;
+      {
+        cat=componentfeatures_;
+        ads=AIS_Shaded;
+      }
     else
-      cat=features_;
+      {
+        cat=features_;
+        ads=AIS_WireFrame;
+      }
+
+    if (const auto* eds = boost::get<AIS_DisplayMode>(&ds)) //override
+      ads=*eds;
 
     old = findItem<QFeatureItem>(cat, name);
     newf = new QFeatureItem(name, smp, is_component, cat, is_component);
-    if (old) newf->copyDisplayProperties(old);
+    if (old)
+      newf->copyDisplayProperties(old);
+    else
+      newf->setShadingMode(ads);
+
     connectDisplayableItem(newf);
     connect(newf, &QFeatureItem::addEvaluation,
             this, &QModelTree::onAddEvaluation);

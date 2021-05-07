@@ -13,7 +13,7 @@ class snappyHexMeshConfiguration_ParameterSet_Visualizer
  : public CAD_ParameterSet_Visualizer
 {
 public:
-    virtual void recreateVisualizationElements(UsageTracker *ut);
+    virtual void recreateVisualizationElements();
     virtual void setIcon(QIcon* icon);
 };
 

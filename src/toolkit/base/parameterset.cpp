@@ -181,6 +181,107 @@ ParameterSet& ParameterSet::merge(const ParameterSet& p)
 }
 
 
+std::string splitOffFirstParameter(std::string& path, int& nRemaining)
+{
+  using namespace boost;
+  using namespace boost::algorithm;
+
+  if ( boost::contains ( path, "/" ) )
+  {
+    std::string prefix = copy_range<std::string> ( *make_split_iterator ( path, first_finder ( "/" ) ) );
+
+    std::string remain = path;
+    erase_head ( remain, prefix.size()+1 );
+
+    path=remain;
+    nRemaining = std::count(path.begin(), path.end(), '/')+1;
+    return prefix;
+  }
+  else
+  {
+    std::string prefix=path;
+    path="";
+    nRemaining=0;
+    return prefix;
+  }
+}
+
+
+
+Parameter &ParameterSet::getParameter(std::string path)
+{
+  using namespace boost;
+  using namespace boost::algorithm;
+
+  int nRemaining=-1;
+  std::string parameterName = splitOffFirstParameter(path, nRemaining);
+
+  insight::CurrentExceptionContext ex("looking up parameter "+parameterName);
+
+  auto parameter = find(parameterName);
+
+  if (parameter == end())
+  {
+    throw insight::Exception("There is no parameter with name "+parameterName);
+  }
+
+  if (nRemaining == 0)
+  {
+    return *parameter->second;
+  }
+  else
+  {
+    SubParameterSet* sps = nullptr;
+
+    if (! (sps = dynamic_cast<insight::SubParameterSet*>(parameter->second.get())))
+    {
+      if (auto* ap = dynamic_cast<insight::ArrayParameter*>(parameter->second.get()))
+      {
+        std::string indexString = splitOffFirstParameter(path, nRemaining);
+
+        insight::Parameter* arrayElement=nullptr;
+
+        if (indexString=="default")
+        {
+          arrayElement=&const_cast<Parameter&>(ap->defaultValue());
+        }
+        else
+        {
+          int i = to_number<int>(indexString);
+
+          if ( (i<0) || (i>=ap->size()) )
+            throw insight::Exception(
+                str(format("requested array index %d beyond array bounds (size %d)") % i % ap->size())
+                );
+
+          arrayElement = &(*ap)[i];
+        }
+
+        if (nRemaining==0)
+        {
+          return *arrayElement;
+        }
+        else // nRemaining >0
+        {
+          sps = dynamic_cast<SubParameterSet*>(arrayElement);
+        }
+      }
+    }
+
+    if (sps)
+    {
+        return sps->subsetRef().getParameter(path);
+    }
+    else
+    {
+        throw insight::Exception(
+            "cannot lookup subpath "+path+" because parameter "
+            +parameterName+" is not a sub dictionary."
+            );
+    }
+  }
+}
+
 
 int& ParameterSet::getInt ( const std::string& name )
 {
@@ -468,6 +569,14 @@ std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
 }
 
 
+
+//void AtomicParameterSet::operator=(const ParameterSet& ps)
+//{
+//  boost::mutex::scoped_lock lck(mx_);
+//  ps_=ps;
+//}
+
+
 std::ostream& operator<<(std::ostream& os, const ParameterSet& ps)
 {
     os << ps.plainTextRepresentation(0);
@@ -513,6 +622,34 @@ const ParameterSet_Validator::ErrorList& ParameterSet_Validator::ParameterSet_Va
 
 
 
+
+
+const ParameterSet &ParameterSet_Visualizer::currentParameters() const
+{
+  if (visualizedParameters_)
+    return *visualizedParameters_;
+  else
+    throw insight::Exception("internal error: no parameters selected for visualization!");
+}
+
+bool ParameterSet_Visualizer::selectScheduledParameters()
+{
+  if (!visualizedParameters_)
+  {
+    if (scheduledParameters_)
+    {
+      visualizedParameters_ = std::move(scheduledParameters_);
+      return true;
+    }
+  }
+  return false;
+}
+
+void ParameterSet_Visualizer::clearScheduledParameters()
+{
+  visualizedParameters_.reset();
+}
+
 ParameterSet_Visualizer::ParameterSet_Visualizer()
   : defaultProgressDisplayer_(),
     progress_(&defaultProgressDisplayer_)
@@ -523,7 +660,7 @@ ParameterSet_Visualizer::~ParameterSet_Visualizer()
 
 void ParameterSet_Visualizer::update(const ParameterSet& ps)
 {
-    ps_=ps;
+  scheduledParameters_.reset(new ParameterSet(ps));
 }
 
 

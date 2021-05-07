@@ -423,6 +423,18 @@ const char *FileContainer::binaryFileContent() const
 //  replaceContent(originalFilePath_);
 //}
 
+
+timespec highres_last_write_time(const boost::filesystem::path& file)
+{
+  int file_descript = open(file.string().c_str(), O_RDONLY);
+  struct stat statbuf;
+  if(fstat(file_descript, &statbuf) < 0)
+    throw insight::Exception("Failed to get file attributes of file "+file.string());
+  return statbuf.st_mtim;
+}
+
+
+
 bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
 {
   if (!originalFilePath_.empty())
@@ -438,11 +450,7 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
       else
       {
         // only consider unpacking, if the data we have is newer than what is on disk
-        int file_descript = open(unpackPath.c_str(), O_RDONLY);
-        struct stat statbuf;
-        if(fstat(file_descript, &statbuf) < 0)
-          throw insight::Exception("Failed to get file attributes of file "+unpackPath.string());
-        auto last_write_time = statbuf.st_mtim;
+        auto last_write_time = highres_last_write_time(unpackPath);
 
         if (last_write_time < fileContentTimestamp_)
         {

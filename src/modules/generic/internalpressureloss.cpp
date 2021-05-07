@@ -551,7 +551,7 @@ void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements
 {
   CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
 
-  Parameters p(ps_);
+  Parameters p(currentParameters());
 
   try
   {

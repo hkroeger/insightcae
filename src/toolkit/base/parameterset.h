@@ -22,6 +22,12 @@
 #ifndef INSIGHT_PARAMETERSET_H
 #define INSIGHT_PARAMETERSET_H
 
+#include <memory>
+#include <map>
+#include <vector>
+#include <iostream>
+#include <algorithm>
+
 #include "base/exception.h"
 #include "base/parameter.h"
 #include "base/parameters/arrayparameter.h"
@@ -34,10 +40,6 @@
 
 #include "rapidxml/rapidxml.hpp"
 
-#include <memory>
-#include <map>
-#include <vector>
-#include <iostream>
 
 class QoccViewWidget;
 class QModelTree;
@@ -68,6 +70,9 @@ public:
   virtual const ParameterSet& subset() const =0;
 };
 
+
+
+std::string splitOffFirstParameter(std::string& path, int& nRemaining);
 
 
 
@@ -109,6 +114,8 @@ public:
    * return a non-const reference to this PS to anable call chains like PS.merge().merge()...
    */
   ParameterSet& merge ( const ParameterSet& other );
+
+  insight::Parameter& getParameter( std::string path );
 
   template<class T>
   T& get ( const std::string& name );
@@ -212,6 +219,29 @@ public:
 };
 
 
+//class AtomicParameterSet
+//{
+//  mutable boost::mutex mx_;
+//  ParameterSet ps_;
+
+//public:
+//  void operator=(const ParameterSet& ps);
+
+//  template<class StaticParameters>
+//  std::unique_ptr<StaticParameters> get() const
+//  {
+//    boost::mutex::scoped_lock lck(mx_);
+//    return std::unique_ptr<StaticParameters>(new StaticParameters(ps_));
+//  }
+
+//  operator ParameterSet&()
+//  {
+//    return ps_;
+//  }
+//};
+
+
+
 #ifndef SWIG
 std::ostream& operator<<(std::ostream& os, const ParameterSet& ps);
 #endif
@@ -284,9 +314,14 @@ class ParameterSet_Visualizer
   // not linked to CAD; don't use any non-forward definitions from CAD module
 private:
     TextProgressDisplayer defaultProgressDisplayer_;
+    std::unique_ptr<ParameterSet> scheduledParameters_, visualizedParameters_;
+
 protected:
-    ParameterSet ps_;
     ProgressDisplayer* progress_;
+
+    const ParameterSet& currentParameters() const;
+    bool selectScheduledParameters();
+    void clearScheduledParameters();
 
 public:
     ParameterSet_Visualizer();
@@ -313,94 +348,21 @@ typedef std::shared_ptr<ParameterSet_Visualizer> ParameterSet_VisualizerPtr;
 template<class T>
 T& ParameterSet::get ( const std::string& name )
 {
-  using namespace boost;
-  using namespace boost::algorithm;
   typedef T PT;
 
-  if ( boost::contains ( name, "/" ) )
-    {
-      std::string prefix = copy_range<std::string> ( *make_split_iterator ( name, first_finder ( "/" ) ) );
-      std::string remain=name;
-      erase_head ( remain, prefix.size()+1 );
+  auto& p = this->getParameter(name);
 
-      std::vector<std::string> path;
-      boost::split(path, name, boost::is_any_of("/"));
-      insight::ArrayParameter* ap=NULL;
-      if (path.size()>=2)
-      {
-          if ( this->find(path[0]) != this->end() )
-              ap=dynamic_cast<insight::ArrayParameter*> ( find(path[0])->second.get() );
-      }
-
-      if (ap)
-      {
-        int i=boost::lexical_cast<int>(path[1]);
-
-        if (i>=0 && i<ap->size())
-        {
-          if (path.size()==2)
-          {
-              PT* pt=dynamic_cast<PT*> ( &ap[i] );
-              if ( pt )
-                  return ( *pt );
-              else
-              {
-                  throw insight::Exception ( "Parameter "+name+" not of requested type!" );
-              }
-          }
-          else
-          {
-              std::string key=accumulate
-              (
-                  path.begin()+2,
-                  path.end(),
-                  std::string(),
-                  [](std::string &ss, std::string &s)
-                  {
-                      return ss.empty() ? s : ss + "/" + s;
-                  }
-              );
-
-              if (SubParameterSet* sps=dynamic_cast<SubParameterSet*>(&(*ap)[i]))
-              {
-                  return sps->subsetRef().get<T> ( key );
-              }
-              else
-              {
-                  throw insight::Exception ( "Array "+path[0]+" does not contain parameter sets!" );
-              }
-          }
-        }
-
-        else
-
-        {
-          throw insight::Exception(str(format("array does not contain element with index %d (has length %d)")
-                                       % i % ap->size()));
-        }
-
-      }
-      else
-          return this->getSubset ( prefix ).get<T> ( remain );
-    }
+  if ( PT* const pt=dynamic_cast<PT* const>(&p) )
+  {
+    return *pt;
+  }
   else
-    {
-      iterator i = find ( name );
-      if ( i==end() )
-        {
-          throw insight::Exception ( "Parameter "+name+" not found in parameterset" );
-        }
-      else
-        {
-          PT* const pt=dynamic_cast<PT* const> ( i->second.get() );
-          if ( pt )
-            return ( *pt );
-          else
-          {
-            throw insight::Exception ( "Parameter "+name+" not of requested type!" );
-          }
-        }
-    }
+  {
+    throw insight::Exception(
+          "Parameter "+name+" not of requested type!"
+          " (actual type is "+p.type()+")"
+          );
+  }
 }
 
 }

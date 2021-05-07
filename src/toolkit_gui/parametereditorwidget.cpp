@@ -51,6 +51,7 @@ ParameterEditorWidget::ParameterEditorWidget
 
   connect(model_, &IQParameterSetModel::parameterSetChanged,
           this, &ParameterEditorWidget::onParameterSetChanged );
+
   {
     QWidget *w=new QWidget(this);
     QVBoxLayout *l=new QVBoxLayout(w);
@@ -127,13 +128,15 @@ ParameterEditorWidget::ParameterEditorWidget
       viewer->connectModelTree(modeltree);
 
       display_=new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree);
-      display_->registerVisualizer(viz_);
+      display_->connectVisualizer(viz_);
     }
     else
     {
       // use supplied displayer
       display_=display;
     }
+    connect(this, &ParameterEditorWidget::parameterSetChanged,
+            viz_.get(), &insight::CAD_ParameterSet_Visualizer::visualizeScheduledParameters);
   }
   else
   {
@@ -154,14 +157,6 @@ ParameterEditorWidget::ParameterEditorWidget
 }
 
 
-void ParameterEditorWidget::doUpdateVisualization()
-{
-  if (viz_)
-  {
-    viz_->update(model_->getParameterSet());
-  }
-}
-
 bool ParameterEditorWidget::hasVisualizer() const
 {
   return bool(viz_);
@@ -170,8 +165,11 @@ bool ParameterEditorWidget::hasVisualizer() const
 
 void ParameterEditorWidget::onParameterSetChanged()
 {
+  if (viz_)
+  {
+    viz_->update(model_->getParameterSet());
+  }
   Q_EMIT parameterSetChanged();
-  doUpdateVisualization();
 }
 
 
@@ -184,53 +182,25 @@ ParameterSetDisplay::ParameterSetDisplay
 )
   : QObject(parent),
     viewer_(viewer),
-    modeltree_(modeltree),
-    vt_(nullptr)
-{
-}
+    modeltree_(modeltree)
+{}
 
-void ParameterSetDisplay::registerVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
+void ParameterSetDisplay::connectVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
 {
   if (viz)
   {
-    if (visualizers_.find(viz)==visualizers_.end())
-    {
-      visualizers_.insert(viz);
-      connect(viz.get(), &insight::CAD_ParameterSet_Visualizer::GUINeedsUpdate,
-              this, &ParameterSetDisplay::onUpdateVisualization);
-    }
+    modeltree_->connectModel(viz.get());
   }
 }
 
-void ParameterSetDisplay::deregisterVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
+void ParameterSetDisplay::disconnectVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
 {
   if (viz)
   {
-    disconnect(viz.get(), &insight::CAD_ParameterSet_Visualizer::GUINeedsUpdate,
-               this, &ParameterSetDisplay::onUpdateVisualization);
-    visualizers_.erase(viz);
+    modeltree_->disconnectModel(viz.get());
   }
 }
 
-
-void ParameterSetDisplay::onUpdateVisualization()
-{
-  if (!vt_)
-  {
-    vt_=new VisualizerThread(this);
-    connect(vt_, &VisualizerThread::finished,
-            this, &ParameterSetDisplay::visualizationUpdateFinished);
-    vt_->start();
-  }
-
-}
-
-
-void ParameterSetDisplay::visualizationUpdateFinished()
-{
-  vt_->deleteLater();
-  vt_=nullptr;
-}
 
 
 

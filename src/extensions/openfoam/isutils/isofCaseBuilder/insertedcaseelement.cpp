@@ -13,7 +13,7 @@ CaseElementData::~CaseElementData()
 {
   if (disp_ && viz_)
   {
-    disp_->deregisterVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_) );
+    disp_->disconnectVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_) );
   }
 }
 
@@ -43,7 +43,7 @@ InsertedCaseElement::InsertedCaseElement(
     {
       try {
         viz_ = insight::OpenFOAMCaseElement::visualizer(type_name_);
-        disp_->registerVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_) );
+        disp_->connectVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_) );
       }
       catch (...)
       { /* skip, if there is no visualizer defined */ }

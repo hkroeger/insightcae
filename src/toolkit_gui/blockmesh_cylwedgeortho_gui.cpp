@@ -50,7 +50,7 @@ void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationE
 {
   CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
 
-  Parameters p(ps_);
+  Parameters p(currentParameters());
 
   auto wsc =
       insight::cad::Import::create( p.geometry.wedge_spine_curve->filePath() );

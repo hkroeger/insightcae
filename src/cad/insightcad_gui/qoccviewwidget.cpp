@@ -202,6 +202,7 @@ void QoccViewWidget::init()
 {
 
 #if 0
+  myView = myContext_->CurrentViewer()->CreateView();
   Aspect_Handle windowHandle = static_cast<Aspect_Handle>(winId());
   hWnd = new Xw_Window
       (
@@ -774,8 +775,8 @@ void QoccViewWidget::fitAll( void )
   if (!myView.IsNull())
 
     {
-      myView->ZFitAll();
       myView->FitAll();
+      myView->ZFitAll();
       viewPrecision( true );
     }
 }

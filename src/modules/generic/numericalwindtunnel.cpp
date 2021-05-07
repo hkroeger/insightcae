@@ -828,8 +828,8 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
   try
   {
 
-    Parameters p(ps_);
-    NumericalWindtunnel nwt(ps_, "");
+    Parameters p(currentParameters());
+    NumericalWindtunnel nwt(currentParameters(), "");
     nwt.calcDerivedInputData(consoleProgressDisplayer);
 
 

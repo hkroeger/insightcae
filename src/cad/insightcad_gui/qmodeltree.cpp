@@ -38,6 +38,11 @@
 
 boost::mt19937 boostRenGen;
 
+
+IQISCADModel::IQISCADModel(QObject* parent)
+  : QObject(parent)
+{}
+
 QModelTreeItem::QModelTreeItem
 (
   const QString& name,
@@ -375,6 +380,223 @@ QDisplayableModelTreeItem* QModelTree::findFeature(const QString& name, bool is_
     return findItem<QDisplayableModelTreeItem>(features_, name);
   }
 }
+
+
+
+
+void QModelTree::storeSymbolSnapshot()
+{
+  SymbolsSnapshot sysn;
+  for (int i=0; i<scalars_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QScalarVariableItem*>(scalars_->child(i)))
+    {
+      sysn.scalars_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<points_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QVectorVariableItem*>(points_->child(i)))
+    {
+      sysn.points_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<directions_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QVectorVariableItem*>(directions_->child(i)))
+    {
+      sysn.directions_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<componentfeatures_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QFeatureItem*>(componentfeatures_->child(i)))
+    {
+      sysn.componentfeatures_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<features_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QFeatureItem*>(features_->child(i)))
+    {
+      sysn.features_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<datums_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QDatumItem*>(datums_->child(i)))
+    {
+      sysn.datums_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<postprocactions_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QEvaluationItem*>(postprocactions_->child(i)))
+    {
+      sysn.postprocactions_.insert( mti->name() );
+    }
+  }
+  symbolsSnapshot_=sysn;
+}
+
+
+
+
+void QModelTree::removeNonRecreatedSymbols()
+{
+  for (int i=0; i<scalars_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QScalarVariableItem*>(scalars_->child(i)))
+    {
+      if (symbolsSnapshot_.scalars_.find( mti->name() ) != symbolsSnapshot_.scalars_.end())
+      {
+        onRemoveScalar(mti->name());
+      }
+    }
+  }
+  for (int i=0; i<points_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QVectorVariableItem*>(points_->child(i)))
+    {
+      if (symbolsSnapshot_.points_.find( mti->name() ) != symbolsSnapshot_.points_.end())
+      {
+        onRemoveVector(mti->name(), insight::cad::VectorVariableType::Point );
+      }
+    }
+  }
+  for (int i=0; i<directions_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QVectorVariableItem*>(directions_->child(i)))
+    {
+      if (symbolsSnapshot_.directions_.find( mti->name() ) != symbolsSnapshot_.directions_.end())
+      {
+        onRemoveVector(mti->name(), insight::cad::VectorVariableType::Direction );
+      }
+    }
+  }
+  for (int i=0; i<componentfeatures_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QFeatureItem*>(componentfeatures_->child(i)))
+    {
+      if (symbolsSnapshot_.componentfeatures_.find( mti->name() ) != symbolsSnapshot_.componentfeatures_.end())
+      {
+        onRemoveFeature(mti->name());
+      }
+    }
+  }
+  for (int i=0; i<features_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QFeatureItem*>(features_->child(i)))
+    {
+      if (symbolsSnapshot_.features_.find( mti->name() ) != symbolsSnapshot_.features_.end())
+      {
+        onRemoveFeature(mti->name());
+      }
+    }
+  }
+  for (int i=0; i<datums_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QDatumItem*>(datums_->child(i)))
+    {
+      if (symbolsSnapshot_.datums_.find( mti->name() ) != symbolsSnapshot_.datums_.end())
+      {
+        onRemoveDatum(mti->name());
+      }
+    }
+  }
+  for (int i=0; i<postprocactions_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QEvaluationItem*>(postprocactions_->child(i)))
+    {
+      if (symbolsSnapshot_.postprocactions_.find( mti->name() ) != symbolsSnapshot_.postprocactions_.end())
+      {
+        onRemoveEvaluation(mti->name());
+      }
+    }
+  }
+}
+
+
+void QModelTree::addCreatedScalarToSymbolSnapshot(const QString& name,insight::cad::ScalarPtr)
+{
+  symbolsSnapshot_.scalars_.erase(name);
+}
+
+void QModelTree::addCreatedVectorToSymbolSnapshot(const QString& name,insight::cad::VectorPtr,insight::cad::VectorVariableType t)
+{
+  if (t==insight::cad::VectorVariableType::Point)
+    symbolsSnapshot_.points_.erase(name);
+  else if (t==insight::cad::VectorVariableType::Direction)
+    symbolsSnapshot_.directions_.erase(name);
+}
+
+void QModelTree::addCreatedFeatureToSymbolSnapshot(const QString& name, insight::cad::FeaturePtr, bool is_component)
+{
+  if (is_component)
+    symbolsSnapshot_.componentfeatures_.erase(name);
+  else
+    symbolsSnapshot_.componentfeatures_.erase(name);
+}
+
+void QModelTree::addCreatedDatumToSymbolSnapshot(const QString& name, insight::cad::DatumPtr)
+{
+  symbolsSnapshot_.datums_.erase(name);
+}
+
+void QModelTree::addCreatedPostprocActionToSymbolSnapshot(const QString& name, insight::cad::PostprocActionPtr, bool)
+{
+  symbolsSnapshot_.postprocactions_.erase(name);
+}
+
+
+void QModelTree::connectModel(IQISCADModel *model)
+{
+  connect(model, &IQISCADModel::beginRebuild,
+          this, &QModelTree::storeSymbolSnapshot );
+  connect(model, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModel::createdVariable),
+          this, &QModelTree::onAddScalar);
+  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModel::createdVariable),
+          this, &QModelTree::onAddVector);
+  connect(model, &IQISCADModel::createdFeature,
+          this, &QModelTree::onAddFeature);
+  connect(model, &IQISCADModel::createdDatum,
+          this, &QModelTree::onAddDatum);
+  connect(model, &IQISCADModel::createdEvaluation,
+          this, &QModelTree::onAddEvaluation );
+
+  connect(model, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModel::createdVariable),
+          this, &QModelTree::addCreatedScalarToSymbolSnapshot);
+  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModel::createdVariable),
+          this, &QModelTree::addCreatedVectorToSymbolSnapshot);
+  connect(model, &IQISCADModel::createdFeature,
+          this, &QModelTree::addCreatedFeatureToSymbolSnapshot);
+  connect(model, &IQISCADModel::createdDatum,
+          this, &QModelTree::addCreatedDatumToSymbolSnapshot);
+  connect(model, &IQISCADModel::createdEvaluation,
+          this, &QModelTree::addCreatedPostprocActionToSymbolSnapshot);
+
+  connect(model, &IQISCADModel::removedScalar,
+          this, &QModelTree::onRemoveScalar);
+  connect(model, &IQISCADModel::removedVector,
+          this, &QModelTree::onRemoveVector);
+  connect(model, &IQISCADModel::removedFeature,
+          this, &QModelTree::onRemoveFeature);
+  connect(model, &IQISCADModel::removedDatum,
+          this, &QModelTree::onRemoveDatum);
+  connect(model, &IQISCADModel::removedEvaluation,
+          this, &QModelTree::onRemoveEvaluation);
+
+  connect(model, &IQISCADModel::finishedRebuild,
+          this, &QModelTree::removeNonRecreatedSymbols);
+
+}
+
+
+void QModelTree::disconnectModel(IQISCADModel* model)
+{
+  this->disconnect(model, 0, this, 0);
+}
+
 
 void QModelTree::onAddScalar(const QString& name, insight::cad::ScalarPtr sv)
 {

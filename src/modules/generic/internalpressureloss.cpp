@@ -262,7 +262,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
         cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->outlet->filePath().string(), outletstlfile_.string()});
       }
     
-    surfaceFeatureExtract(cm, executionPath(), wallstlfile_.filename().c_str());
+    surfaceFeatureExtract(cm, executionPath(), wallstlfile_.filename().string());
     
     snappyHexMeshConfiguration::Parameters shm_cfg;
 

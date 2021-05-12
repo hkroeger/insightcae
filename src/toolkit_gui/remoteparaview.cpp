@@ -61,7 +61,8 @@ RemoteParaview::RemoteParaview
               if (!statefile.isEmpty())
                 args << "-t" << statefile;
 
-              if (!QProcess::startDetached("isPVRemote.sh", args, rec_.localDir().c_str() ))
+              if (!QProcess::startDetached("isPVRemote.sh", args,
+                                           QString::fromStdString(rec_.localDir().string()) ))
               {
                 QMessageBox::critical(
                       this,

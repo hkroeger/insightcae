@@ -1,6 +1,10 @@
 #ifndef INSIGHTCAEAPPLICATION_H
 #define INSIGHTCAEAPPLICATION_H
 
+#ifdef QT_STATICPLUGIN
+#include <QtPlugin>
+Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
+#endif
 
 #include <QApplication>
 

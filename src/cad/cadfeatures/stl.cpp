@@ -51,6 +51,7 @@
 #include "MeshVS_ElementalColorPrsBuilder.hxx"
 #include "MeshVS_Drawer.hxx"
 #include "MeshVS_DrawerAttribute.hxx"
+#include "gp_Sphere.hxx"
 
 #include "base/tools.h"
 #include "base/boost_include.h"
@@ -166,7 +167,7 @@ void STL::build()
     if (const auto* fname = boost::get<boost::filesystem::path>(&geometry_))
     {
       vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
-      stl->SetFileName(fname->c_str());
+      stl->SetFileName(fname->string().c_str());
       stl->Update();
       pd=stl->GetOutput();
     }
@@ -200,14 +201,27 @@ void STL::build()
     {
       double xyz[3];
       split_mesh->GetPoint(i, xyz);
-      aSTLMesh_->ChangeNode (i+1) = gp_Pnt(xyz[0], xyz[1], xyz[2]);
+      aSTLMesh_->
+#if OCC_VERSION_MAJOR<7
+          ChangeNodes().ChangeValue(i+1)
+#else
+          ChangeNode (i+1)
+#endif
+          = gp_Pnt(xyz[0], xyz[1], xyz[2]);
     }
 
     for (vtkIdType i = 0; i < split_mesh->GetNumberOfCells(); i++)
     {
       vtkCell *c = split_mesh->GetCell(i);
       insight::assertion( c->GetNumberOfPoints()==3, "STL mesh cell needs to have exactly 3 corners");
-      aSTLMesh_->ChangeTriangle (i + 1) =
+      aSTLMesh_->
+#if OCC_VERSION_MAJOR<7
+          ChangeTriangles().ChangeValue(i+1)
+#else
+          ChangeTriangle(i+1)
+#endif
+
+          =
           Poly_Triangle
           (
             c->GetPointId(0)+1,
@@ -230,7 +244,13 @@ void STL::build()
     {
       for (int i=1; i<=aSTLMesh_->NbNodes();i++)
       {
-        aSTLMesh_->ChangeNode(i).Transform(*tr);
+        aSTLMesh_->
+#if OCC_VERSION_MAJOR<7
+            ChangeNodes().ChangeValue(i+1)
+#else
+            ChangeNode(i)
+#endif
+            .Transform(*tr);
       }
     }
 
@@ -239,7 +259,13 @@ void STL::build()
     Bnd_Box bb;
     for (int i=1; i<=aSTLMesh_->NbNodes();i++)
     {
-      bb.Add(aSTLMesh_->Node(i));
+      bb.Add(aSTLMesh_->
+#if OCC_VERSION_MAJOR<7
+             Nodes().Value(i)
+#else
+             Node(i)
+#endif
+             );
     }
 
     if (!bb.IsVoid())

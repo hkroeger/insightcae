@@ -550,7 +550,7 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath)
   : VTKOffscreenScene(),
     ofcase_(vtkSmartPointer<vtkOpenFOAMReader>::New())
 {
-  ofcase_->SetFileName( casepath.c_str() );
+  ofcase_->SetFileName( casepath.string().c_str() );
   ofcase_->SetSkipZeroTime(false);
   ofcase_->Update();
 

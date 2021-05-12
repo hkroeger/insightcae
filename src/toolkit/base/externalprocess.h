@@ -1,6 +1,7 @@
 #ifndef INSIGHT_EXTERNALPROCESS_H
 #define INSIGHT_EXTERNALPROCESS_H
 
+
 #include "base/boost_include.h"
 #include "boost/process.hpp"
 
@@ -31,8 +32,8 @@ public:
 
   void runAndTransferOutput
   (
-      std::vector<std::string>* stdout = nullptr,
-      std::vector<std::string>* stderr = nullptr
+      std::vector<std::string>* stdoutbuffer = nullptr,
+      std::vector<std::string>* stderrbuffer = nullptr
   );
 
   void ios_run_with_interruption(

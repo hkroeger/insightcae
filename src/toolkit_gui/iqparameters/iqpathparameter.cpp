@@ -78,7 +78,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(IQParameterSetModel* model, c
   {
     lineEdit->setToolTip
     (
-      QString("(Evaluates to \"")+boost::filesystem::absolute(lineEdit->text().toStdString()).c_str()+"\")"
+      QString("(Evaluates to \"")+boost::filesystem::absolute(lineEdit->text().toStdString()).string().c_str()+"\")"
     );
   }
   );

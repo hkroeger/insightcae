@@ -723,7 +723,7 @@ void AnalysisForm::onCreateReport()
   (
       this, 
     "Save Report",
-    QString(ist_file_.parent_path().c_str()),
+    QString::fromStdString(ist_file_.parent_path().string()),
     "PDF file (*.pdf);;LaTeX file (*.tex);;InsightCAE result set (*.isr)"
   );
 

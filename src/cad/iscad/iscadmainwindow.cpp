@@ -183,8 +183,8 @@ void ISCADMainWindow::onUpdateTabTitle(ISCADModelEditor* model, const boost::fil
     int i=modelTabs_->indexOf(model);
     if (i>=0)
     {
-        modelTabs_->setTabText(i, QString(isUnSaved?"*":"") + QString(filepath.filename().c_str()));
-        modelTabs_->setTabToolTip(i, QString(filepath.c_str()));
+        modelTabs_->setTabText(i, QString(isUnSaved?"*":"") + QString::fromStdString(filepath.filename().string()));
+        modelTabs_->setTabToolTip(i, QString::fromStdString(filepath.string()));
     }
 }
 

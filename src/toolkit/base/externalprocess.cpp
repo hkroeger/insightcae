@@ -1,7 +1,6 @@
 #include "externalprocess.h"
 #include "base/exception.h"
 
-#include <boost/asio.hpp>
 #include <boost/process/async.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -69,29 +68,29 @@ Job::Job()
 
 void Job::runAndTransferOutput
 (
-    std::vector<std::string>* stdout,
-    std::vector<std::string>* stderr
+    std::vector<std::string>* stdoutbuffer,
+    std::vector<std::string>* stderrbuffer
 )
 {
 
   ios_run_with_interruption(
-        [stdout](const std::string& line)
+        [stdoutbuffer](const std::string& line)
         {
           std::cout<<line<<std::endl;
-          if (stdout) stdout->push_back(line);
+          if (stdoutbuffer) stdoutbuffer->push_back(line);
         },
-        [stdout,stderr](const std::string& line)
+        [stdoutbuffer,stderrbuffer](const std::string& line)
         {
           // mirror to console
           std::cout<<"[E] "<<line<<std::endl;
-          if (stderr)
+          if (stderrbuffer)
           {
-            stderr->push_back(line);
+            stderrbuffer->push_back(line);
           }
           else
           {
-            if (stdout)
-              stdout->push_back("[E] "+line);
+            if (stdoutbuffer)
+              stdoutbuffer->push_back("[E] "+line);
           }
         }
   );

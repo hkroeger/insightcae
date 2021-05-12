@@ -9,6 +9,10 @@ enable_language (C)
 enable_language (CXX)
 enable_language (Fortran OPTIONAL)
 
+if(WIN32)
+ add_link_options(LINKER:--export-all-symbols)
+endif()
+
 enable_testing()
 
 if (DEFINED ENV{WM_PROJECT_VERSION})
@@ -66,6 +70,7 @@ SET(INSIGHT_VERSION_MAJOR "0")
 SET(INSIGHT_VERSION_MINOR "0")
 SET(INSIGHT_VERSION_PATCH "0")
 SET(INSIGHT_BRANCH "none")
+
 
 if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
     execute_process(
@@ -181,12 +186,15 @@ if (INSIGHT_BUILD_TOOLKIT)
 
     find_package(GSL REQUIRED)
 
-    find_package(PythonLibs REQUIRED)
+    find_package(PythonLibs)
+    if (NOT PYTHONLIBS_FOUND)
+        message(STATUS "No python libraries found - python analyses will be unavailable")
+    endif()
 
     # modifies Boost_LIBRARIES for some reason, put it first!
     find_package(wt)
 
-    find_package(Boost COMPONENTS
+    set(BOOST_COMPONENTS
         regex
         system
         filesystem
@@ -194,9 +202,13 @@ if (INSIGHT_BUILD_TOOLKIT)
         timer
         thread
         iostreams
-        python3
         program_options
-        REQUIRED
+        )
+    if (PYTHONLIBS_FOUND)
+        list(APPEND BOOST_COMPONENTS python3)
+    endif()
+
+    find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED
         )
 
     add_subdirectory(CMake/vtkTargets/vtkOffscreen)

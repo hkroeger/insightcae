@@ -145,7 +145,7 @@ int main(int argc, char** argv)
           {
               throw insight::Exception("Input file does not exist: "+fn.string());
           }
-          window.openAnalysis(boost::filesystem::absolute(fn).c_str());
+          window.openAnalysis( QString::fromStdString(boost::filesystem::absolute(fn).string()) );
       }
       window.show();
 

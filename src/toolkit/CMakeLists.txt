@@ -232,8 +232,7 @@ file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES} ${toolkit_HEADERS})
-target_link_libraries(toolkit
-    ${PYTHON_LIBRARIES}
+set(toolkit_LINK_LIBS
     ${Boost_LIBRARIES}
     ${ARMADILLO_LIBRARY}
     PkgConfig::poppler-cpp
@@ -241,6 +240,13 @@ target_link_libraries(toolkit
     OpenSSL::SSL
     vtkHeaders
 )
+if (PYTHONLIBS_FOUND)
+    list(APPEND toolkit_LINK_LIBS ${PYTHON_LIBRARIES})
+endif()
+if (WIN32)
+    list(APPEND toolkit_LINK_LIBS vtkOnscreen)
+endif()
+target_link_libraries(toolkit ${toolkit_LINK_LIBS} ${Boost_LIBRARIES})
 
 target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
@@ -278,34 +284,45 @@ macro(buildLibraryList VTK_LIB_LIST)
 endmacro()
 
 
+if (NOT WIN32)
 
-buildLibraryList("${VTK_OFFSCREEN_LIBRARIES}")
-configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOffscreenLoader.cpp @ONLY)
-add_library(toolkitVtkOffscreenLoader SHARED toolkitVtkOffscreenLoader.cpp)
-set_target_properties(toolkitVtkOffscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
-install(
-    TARGETS toolkitVtkOffscreenLoader # EXPORT toolkit_targets
-    LIBRARY DESTINATION lib
-    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
-    )
+    buildLibraryList("${VTK_OFFSCREEN_LIBRARIES}")
+    configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOffscreenLoader.cpp @ONLY)
+    add_library(toolkitVtkOffscreenLoader SHARED toolkitVtkOffscreenLoader.cpp)
+    set_target_properties(toolkitVtkOffscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
+    install(
+        TARGETS toolkitVtkOffscreenLoader # EXPORT toolkit_targets
+        LIBRARY DESTINATION lib
+        COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+        )
 
-buildLibraryList("${VTK_ONSCREEN_LIBRARIES}")
-configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOnscreenLoader.cpp @ONLY)
-add_library(toolkitVtkOnscreenLoader SHARED toolkitVtkOnscreenLoader.cpp)
-set_target_properties(toolkitVtkOnscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
-install(
-    TARGETS toolkitVtkOnscreenLoader # EXPORT toolkit_targets
-    LIBRARY DESTINATION lib
-    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
-    )
+    buildLibraryList("${VTK_ONSCREEN_LIBRARIES}")
+    configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOnscreenLoader.cpp @ONLY)
+    add_library(toolkitVtkOnscreenLoader SHARED toolkitVtkOnscreenLoader.cpp)
+    set_target_properties(toolkitVtkOnscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
+    install(
+        TARGETS toolkitVtkOnscreenLoader # EXPORT toolkit_targets
+        LIBRARY DESTINATION lib
+        COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+        )
+
+endif()
 
 macro(linkToolkitVtk2ShLib target OnOffscreen)
-    target_link_libraries(${target} toolkitHeaders toolkitVtk${OnOffscreen}Loader )
+    if (WIN32)
+        target_link_libraries(${target} toolkit)
+    else()
+        target_link_libraries(${target} toolkitHeaders toolkitVtk${OnOffscreen}Loader )
+    endif()
 endmacro()
 
 macro(linkToolkitVtk target OnOffscreen)
-    target_link_libraries(${target} toolkit vtk${OnOffscreen} )
-    set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")
+    if (WIN32)
+        target_link_libraries(${target} toolkit)
+    else()
+        target_link_libraries(${target} toolkit vtk${OnOffscreen} )
+        set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")
+    endif()
 endmacro()
 
 

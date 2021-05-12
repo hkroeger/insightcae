@@ -148,7 +148,9 @@ MD5HashPtr calcBufferHash(const std::string& buffer)
 }
 
 
-
+#ifdef WIN32
+#warning hash calculation routine not working
+#else
 MD5HashPtr calcFileHash(const boost::filesystem::path& filePath)
 {
   insight::CurrentExceptionContext ex("computing MD5 hash of file "+filePath.string());
@@ -159,7 +161,7 @@ MD5HashPtr calcFileHash(const boost::filesystem::path& filePath)
   unsigned long file_size;
   char* file_buffer;
 
-  file_descript = open(filePath.c_str(), O_RDONLY);
+  file_descript = open(filePath.string().c_str(), O_RDONLY);
   if(file_descript < 0) exit(-1);
 
   struct stat statbuf;
@@ -182,7 +184,7 @@ MD5HashPtr calcFileHash(const boost::filesystem::path& filePath)
 
   return hash;
 }
-
+#endif
 
 
 
@@ -411,7 +413,6 @@ const char *FileContainer::binaryFileContent() const
 
 
 
-
 //bool FileContainer::isPacked() const
 //{
 //  return bool(file_content_);
@@ -422,6 +423,27 @@ const char *FileContainer::binaryFileContent() const
 //  // read and store file
 //  replaceContent(originalFilePath_);
 //}
+
+timespec highres_last_write_time(const boost::filesystem::path& file)
+{
+  int file_descript = open(file.string().c_str(), O_RDONLY);
+
+  struct stat statbuf;
+  if(fstat(file_descript, &statbuf) < 0)
+    throw insight::Exception("Failed to get file attributes of file "+file.string());
+
+#ifdef WIN32
+#warning limited timestamp resolution in windows
+  timespec result;
+  result.tv_sec=statbuf.st_mtime;
+  result.tv_nsec=0;
+  return result;
+#else
+  return statbuf.st_mtim;
+#endif
+}
+
+
 
 bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
 {
@@ -438,11 +460,7 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
       else
       {
         // only consider unpacking, if the data we have is newer than what is on disk
-        int file_descript = open(unpackPath.c_str(), O_RDONLY);
-        struct stat statbuf;
-        if(fstat(file_descript, &statbuf) < 0)
-          throw insight::Exception("Failed to get file attributes of file "+unpackPath.string());
-        auto last_write_time = statbuf.st_mtim;
+        auto last_write_time = highres_last_write_time(unpackPath);
 
         if (last_write_time < fileContentTimestamp_)
         {
@@ -463,6 +481,7 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
     return false;
   }
 }
+
 
 
 //void FileContainer::unpack(const boost::filesystem::path& basePath)
@@ -604,9 +623,9 @@ void FileContainer::appendToNode
 
     char tail[3] = {0,0,0};
     size_t len=file_content_->size();
-    uint one_third_len = len/3;
-    uint len_rounded_down = one_third_len*3;
-    uint j = len_rounded_down + one_third_len;
+    unsigned int one_third_len = len/3;
+    unsigned int len_rounded_down = one_third_len*3;
+    unsigned int j = len_rounded_down + one_third_len;
     unsigned int base64length = ((4 * file_content_->size() / 3) + 3) & ~3;
 
     auto *xml_content = doc.allocate_string(0, base64length+1);
@@ -618,7 +637,7 @@ void FileContainer::appendToNode
 
     if (len_rounded_down != len)
     {
-        uint i=0;
+        unsigned int i=0;
         for(; i < len - len_rounded_down; ++i)
         {
             tail[i] = (*file_content_)[len_rounded_down+i];

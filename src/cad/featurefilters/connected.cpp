@@ -32,7 +32,12 @@ public:
   NeighbourhoodExplorer(const Feature& s)
     : s_(s)
   {
-    TopExp::MapShapesAndUniqueAncestors(
+#if OCC_VERSION_MAJOR<7
+    TopExp::MapShapesAndAncestors
+#else
+    TopExp::MapShapesAndUniqueAncestors
+#endif
+        (
           s_.shape(),
           TopAbs_EDGE, TopAbs_FACE,
           edgeFaces_

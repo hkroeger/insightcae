@@ -1,20 +1,21 @@
 #include <occtwindow.h>
 
-IMPLEMENT_STANDARD_RTTIEXT(OcctWindow,Aspect_Window)
 
 // =======================================================================
 // function : OcctWindow
 // purpose  :
 // =======================================================================
-OcctWindow::OcctWindow ( QWidget* theWidget, const Quantity_NameOfColor theBackColor )
-: Aspect_Window(), 
-  myWidget( theWidget )
+OcctWindow::OcctWindow ( QWidget* widget, const Quantity_NameOfColor backColor )
+: Aspect_Window(),
+  widget_( widget )
 {
-  SetBackground (theBackColor);
-  myXLeft   = myWidget->rect().left();
-  myYTop    = myWidget->rect().top();
-  myXRight  = myWidget->rect().right();
-  myYBottom = myWidget->rect().bottom();
+  SetBackground (backColor);
+
+  auto rect = widgetRect();
+  xLeft_   = rect.left();
+  yTop_    = rect.top();
+  xRight_  = rect.right();
+  yBottom_ = rect.bottom();
 }
 
 // =======================================================================
@@ -23,7 +24,17 @@ OcctWindow::OcctWindow ( QWidget* theWidget, const Quantity_NameOfColor theBackC
 // =======================================================================
 void OcctWindow::Destroy()
 {
-  myWidget = NULL;
+  widget_ = NULL;
+}
+
+QRect OcctWindow::widgetRect() const
+{
+  return widget_->rect();
+}
+
+OcctWindow::~OcctWindow()
+{
+  Destroy();
 }
 
 // =======================================================================
@@ -32,9 +43,9 @@ void OcctWindow::Destroy()
 // =======================================================================
 Aspect_Drawable OcctWindow::NativeParentHandle() const
 {
-  QWidget* aParentWidget = myWidget->parentWidget();
-  if ( aParentWidget != NULL )
-    return (Aspect_Drawable)aParentWidget->winId();
+  QWidget* parentWidget = widget_->parentWidget();
+  if ( parentWidget != NULL )
+    return (Aspect_Drawable)parentWidget->winId();
   else
     return 0;
 }
@@ -45,7 +56,7 @@ Aspect_Drawable OcctWindow::NativeParentHandle() const
 // =======================================================================
 Aspect_Drawable OcctWindow::NativeHandle() const
 {
-  return (Aspect_Drawable)myWidget->winId();
+  return (Aspect_Drawable)widget_->winId();
 }
 
 // =======================================================================
@@ -54,7 +65,12 @@ Aspect_Drawable OcctWindow::NativeHandle() const
 // =======================================================================
 Standard_Boolean OcctWindow::IsMapped() const
 {
-  return !( myWidget->isMinimized() || myWidget->isHidden() );
+  return !( widget_->isMinimized() || widget_->isHidden() );
+}
+
+Standard_Boolean OcctWindow::DoMapping() const
+{
+  return Standard_True;
 }
 
 // =======================================================================
@@ -63,8 +79,8 @@ Standard_Boolean OcctWindow::IsMapped() const
 // =======================================================================
 void OcctWindow::Map() const
 {
-  myWidget->show();
-  myWidget->update();
+  widget_->show();
+  widget_->update();
 }
 
 // =======================================================================
@@ -73,8 +89,8 @@ void OcctWindow::Map() const
 // =======================================================================
 void OcctWindow::Unmap() const
 {
-  myWidget->hide();
-  myWidget->update();
+  widget_->hide();
+  widget_->update();
 }
 
 // =======================================================================
@@ -82,16 +98,21 @@ void OcctWindow::Unmap() const
 // purpose  :
 // =======================================================================
 Aspect_TypeOfResize OcctWindow::DoResize()
+#if OCC_VERSION_MAJOR<7
+const
+#endif
 {
   int                 aMask = 0;
   Aspect_TypeOfResize aMode = Aspect_TOR_UNKNOWN;
 
-  if ( !myWidget->isMinimized() )
+  if ( !widget_->isMinimized() )
   {
-    if ( Abs ( myWidget->rect().left()   - myXLeft   ) > 2 ) aMask |= 1;
-    if ( Abs ( myWidget->rect().right()  - myXRight  ) > 2 ) aMask |= 2;
-    if ( Abs ( myWidget->rect().top()    - myYTop    ) > 2 ) aMask |= 4;
-    if ( Abs ( myWidget->rect().bottom() - myYBottom ) > 2 ) aMask |= 8;
+    auto rect = widgetRect();
+
+    if ( Abs ( rect.left()   - xLeft_   ) > 2 ) aMask |= 1;
+    if ( Abs ( rect.right()  - xRight_  ) > 2 ) aMask |= 2;
+    if ( Abs ( rect.top()    - yTop_    ) > 2 ) aMask |= 4;
+    if ( Abs ( rect.bottom() - yBottom_ ) > 2 ) aMask |= 8;
 
     switch ( aMask )
     {
@@ -126,10 +147,10 @@ Aspect_TypeOfResize OcctWindow::DoResize()
         break;
     }  // end switch
 
-    myXLeft   = myWidget->rect().left();
-    myXRight  = myWidget->rect().right();
-    myYTop    = myWidget->rect().top();
-    myYBottom = myWidget->rect().bottom();
+    xLeft_   = rect.left();
+    xRight_  = rect.right();
+    yTop_    = rect.top();
+    yBottom_ = rect.bottom();
   }
 
   return aMode;
@@ -141,8 +162,8 @@ Aspect_TypeOfResize OcctWindow::DoResize()
 // =======================================================================
 Standard_Real OcctWindow::Ratio() const
 {
-  QRect aRect = myWidget->rect();
-  return Standard_Real( aRect.right() - aRect.left() ) / Standard_Real( aRect.bottom() - aRect.top() );
+  QRect rect = widgetRect();
+  return Standard_Real( rect.right() - rect.left() ) / Standard_Real( rect.bottom() - rect.top() );
 }
 
 // =======================================================================
@@ -151,10 +172,18 @@ Standard_Real OcctWindow::Ratio() const
 // =======================================================================
 void OcctWindow::Size ( Standard_Integer& theWidth, Standard_Integer& theHeight ) const
 {
-  QRect aRect = myWidget->rect();
-  theWidth  = aRect.width();
-  theHeight = aRect.height();
+  QRect rect = widgetRect();
+  theWidth  = rect.width();
+  theHeight = rect.height();
 }
+
+
+#if OCC_VERSION_MAJOR>=7
+Aspect_FBConfig OcctWindow::NativeFBConfig() const
+{
+  return nullptr;
+}
+#endif
 
 // =======================================================================
 // function : Position
@@ -163,8 +192,9 @@ void OcctWindow::Size ( Standard_Integer& theWidth, Standard_Integer& theHeight 
 void OcctWindow::Position ( Standard_Integer& theX1, Standard_Integer& theY1,
                             Standard_Integer& theX2, Standard_Integer& theY2 ) const
 {
-  theX1 = myWidget->rect().left();
-  theX2 = myWidget->rect().right();
-  theY1 = myWidget->rect().top();
-  theY2 = myWidget->rect().bottom();
+  auto rect = widgetRect();
+  theX1 = rect.left();
+  theX2 = rect.right();
+  theY1 = rect.top();
+  theY2 = rect.bottom();
 }

@@ -54,6 +54,8 @@ target_link_libraries(insightcad
  #${GEOM_LIBRARIES}
  #${DLIB_LIBRARIES}
  )
+include(GenerateExportHeader)
+generate_export_header(insightcad)
 
 ## PROFILING
 # set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)

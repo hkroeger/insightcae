@@ -35,7 +35,7 @@
 #include "base/linearalgebra.h"
 #include "occinclude.h"
 
-
+#ifndef WIN32
 namespace boost
 {
   
@@ -46,6 +46,7 @@ struct is_arithmetic<arma::mat>
 };
 
 }
+#endif
 
 namespace insight 
 {

@@ -8,14 +8,19 @@
 #include <QDialog>
 
 #include "Standard_Version.hxx"
+#include <OpenGl_GraphicDriver.hxx>
 #include "V3d_View.hxx"
 #include "V3d_Plane.hxx"
 #include "AIS_InteractiveContext.hxx"
 #include "AIS_Plane.hxx"
-#include "AIS_ViewController.hxx"
 #include "V3d_Coordinate.hxx"
 
+#if OCC_VERSION_MAJOR>=7
+#include "AIS_ViewController.hxx"
+
 class Aspect_GraphicCallbackStruct;
+#endif
+
 class QDisplayableModelTreeItem;
 class QModelTree;
 class QRubberBand;
@@ -49,23 +54,21 @@ const double ValZWMin = 1;
 
 
 class QoccViewWidget
-: public QWidget,
-  protected AIS_ViewController
+: public QWidget
+#if OCC_VERSION_MAJOR>=7
+  , protected AIS_ViewController
+#endif
 {
 
   Q_OBJECT
 
 private:
-  static Handle(OpenGl_GraphicDriver) aGraphicDriver;
-  static Handle(V3d_Viewer) createViewer
-  (
-      const Standard_ExtString ,
-      const Standard_CString ,
-      const Standard_Real theViewSize,
-      const V3d_TypeOfOrientation theViewProj,
-      const Standard_Boolean theComputedMode,
-      const Standard_Boolean theDefaultComputedMode
-  );
+  static Handle_OpenGl_GraphicDriver aGraphicDriver;
+
+  std::vector<Handle_V3d_Light> lights_;
+
+  void addLights();
+
 
 public:
 
@@ -102,19 +105,11 @@ protected:
 
   std::shared_ptr<FocusObject> focussedObject;
 
-  void init();
-
 public:
 
-  QoccViewWidget
-    (
-     QWidget *parent,
-     Qt::WindowFlags wflags = 0
-    );
-  
+  QoccViewWidget(QWidget *parent = nullptr);
   ~QoccViewWidget();
-  
-//  void initializeOCC(/*const Handle_AIS_InteractiveContext& aContext = NULL*/);
+
 
   inline Handle_AIS_InteractiveContext&	getContext()
   { return myContext_; }
@@ -125,12 +120,7 @@ public:
   inline const Handle_V3d_View& getOccView()
   { return myView; }
 
-  //Overrides
-  QPaintEngine* paintEngine() const;
-  //QToolBar*	  myToolBar;
-
-
-//  void redraw( bool isPainting = false );
+  QPaintEngine* paintEngine() const override;
 
   QDisplayableModelTreeItem* getOwnerItem(Handle_AIS_InteractiveObject selected);
   QDisplayableModelTreeItem* getSelectedItem();
@@ -229,12 +219,7 @@ protected: // methods
   
 private: // members
 
-#ifdef WNT
-  Handle_WNT_Window		myWindow;
-#else
-//  Handle_Xw_Window		myWindow;
-  Handle(Xw_Window)             hWnd;
-#endif // WNT
+  Handle(Aspect_Window)             hWnd;
   
   Handle_V3d_View                 myView;
   Handle_V3d_Viewer               myViewer;
@@ -247,7 +232,6 @@ private: // members
 #endif
 
   bool                          myViewResized;
-  bool                          myViewInitialized;
   CurrentAction3d               myMode;
   double                        myCurZoom;
   bool                          myGridSnap;

@@ -294,7 +294,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 
         igesReader = IGESControl_Reader();
         igesReader.SetReadVisible( true );
-        igesReader.ReadFile(filename.c_str());
+        igesReader.ReadFile(filename.string().c_str());
         igesReader.PrintCheckLoad(false, IFSelect_ItemsByEntity);
 
         igesReader.TransferRoots();
@@ -309,7 +309,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 
           // import STEP
           STEPControl_Reader reader;
-          reader.ReadFile(filename.c_str());
+          reader.ReadFile(filename.string().c_str());
           reader.TransferRoots();
           cout<<"STEP transferred"<<endl;
 
@@ -435,8 +435,20 @@ size_t Feature::calcShapeHash() const
   size_t hash=0;
   
   boost::hash_combine(hash, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash, boost::hash<int>()(vmap_.Size()));
-  boost::hash_combine(hash, boost::hash<int>()(fmap_.Size()));
+  boost::hash_combine(hash, boost::hash<int>()(vmap_.
+#if OCC_VERSION_MAJOR<7
+                                               Extent()
+#else
+                                               Size()
+#endif
+                                               ));
+  boost::hash_combine(hash, boost::hash<int>()(fmap_.
+#if OCC_VERSION_MAJOR<7
+                                               Extent()
+#else
+                                               Size()
+#endif
+                                               ));
 
   FeatureSetData vset=allVerticesSet();
   for (const insight::cad::FeatureID& j: vset)
@@ -1315,7 +1327,7 @@ void Feature::saveAs
 
   if (ext==".brep")
   {
-    BRepTools::Write(shape(), filename.c_str());
+    BRepTools::Write(shape(), filename.string().c_str());
   } 
 
 
@@ -1326,7 +1338,7 @@ void Feature::saveAs
     igesctrl.Init();
     IGESControl_Writer igeswriter;
     igeswriter.AddShape(shape());
-    igeswriter.Write(filename.c_str());
+    igeswriter.Write(filename.string().c_str());
   } 
 
 
@@ -1427,7 +1439,7 @@ void Feature::saveAs
    // edit STEP header
    APIHeaderSection_MakeHeader makeHeader(writer.ChangeWriter().Model());
 
-   Handle_TCollection_HAsciiString headerFileName = new TCollection_HAsciiString(filename.stem().c_str());
+   Handle_TCollection_HAsciiString headerFileName = new TCollection_HAsciiString(filename.stem().string().c_str());
 //    Handle(TCollection_HAsciiString) headerAuthor      = new TCollection_HAsciiString("silentdynamics GmbH");
    Handle_TCollection_HAsciiString headerOrganization = new TCollection_HAsciiString("silentdynamics GmbH");
    Handle_TCollection_HAsciiString headerOriginatingSystem = new TCollection_HAsciiString("Insight CAD");
@@ -1459,7 +1471,7 @@ void Feature::saveAs
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
     stlwriter.SetCoefficient(5e-5);
 #endif
-    stlwriter.Write(shape(), filename.c_str());
+    stlwriter.Write(shape(), filename.string().c_str());
   }
   else
   {
@@ -1485,7 +1497,7 @@ void Feature::exportSTL(const boost::filesystem::path& filename, double abstol, 
   BRepMesh_IncrementalMesh binc(os, abstol);
 #endif
 
-  stlwriter.Write(os, filename.c_str());
+  stlwriter.Write(os, filename.string().c_str());
 }
 
 

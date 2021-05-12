@@ -330,7 +330,7 @@ rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, 
     child->append_attribute(doc.allocate_attribute
     (
       "value",
-      doc.allocate_string(originalFilePath_.c_str())
+      doc.allocate_string(originalFilePath_.string().c_str())
     ));
     return child;
 }

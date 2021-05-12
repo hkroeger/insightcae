@@ -97,7 +97,7 @@ void RemoteDirSelector::serverChanged(const QString& name)
     auto i = insight::remoteServers.find(name.toStdString());
     if (i!=insight::remoteServers.end())
     {
-        auto ci = fs_model_->index( (mountpoint_/i->second.defaultDir_).c_str() );
+        auto ci = fs_model_->index( (mountpoint_/i->second.defaultDir_).string().c_str() );
         ui->directory->setCurrentIndex(ci);
     }
   }
@@ -126,7 +126,7 @@ void RemoteDirSelector::serverChanged(const QString& name)
          if (ok)
          {
              boost::filesystem::create_directory(base_dir/newdir);
-             auto ci = fs_model_->index( (base_dir/newdir).c_str() );
+             auto ci = fs_model_->index( QString::fromStdString((base_dir/newdir).string()) );
              ui->directory->setCurrentIndex(ci);
          }
      }

@@ -27,7 +27,6 @@
 #include <Aspect_DisplayConnection.hxx>
 #include <AIS_InteractiveObject.hxx>
 #include <Graphic3d_NameOfMaterial.hxx>
-#include <OpenGl_GraphicDriver.hxx>
 #if !defined(_WIN32) && !defined(__WIN32__) && (!defined(__APPLE__) || defined(MACOSX_USE_GLX))
 #include <OSD_Environment.hxx>
 #endif
@@ -43,7 +42,8 @@
 #include "AIS_Plane.hxx"
 #include "AIS_Point.hxx"
 #include "IntAna_IntConicQuad.hxx"
-#include <Xw_Window.hxx>
+#include "AIS_ListOfInteractive.hxx"
+#include "AIS_ListIteratorOfListOfInteractive.hxx"
 
 #include <cmath>
 #include <iostream>
@@ -65,65 +65,44 @@ using namespace std;
 
 Handle(OpenGl_GraphicDriver) QoccViewWidget::aGraphicDriver;
 
-Handle(V3d_Viewer) QoccViewWidget::createViewer
-(
-    const Standard_ExtString,
-    const Standard_CString ,
-    const Standard_Real theViewSize,
-    const V3d_TypeOfOrientation theViewProj,
-    const Standard_Boolean theComputedMode,
-    const Standard_Boolean theDefaultComputedMode
-)
-{
-  if (aGraphicDriver.IsNull())
-  {
-    Handle(Aspect_DisplayConnection) aDisplayConnection;
 
-#if !defined(_WIN32) && !defined(__WIN32__) && (!defined(__APPLE__) || defined(MACOSX_USE_GLX))
-    aDisplayConnection = new Aspect_DisplayConnection(getenv("DISPLAY"));
+void QoccViewWidget::addLights()
+{
+  Handle_V3d_AmbientLight L1 = new V3d_AmbientLight(
+#if OCC_VERSION_MAJOR<7
+        myViewer,
+#endif
+        Quantity_NOC_WHITE );
+
+#if !(OCC_VERSION_MAJOR<7)
+  L1->SetIntensity(0.4);
+  myViewer->AddLight(L1);
 #endif
 
-    //Display* aDisplay = aDisplayConnection->GetDisplay();
-    //Aspect_RenderingContext myEglDisplay = (Aspect_Display )eglGetDisplay (aDisplay);
-//    Aspect_RenderingContext myEglDisplay = (Aspect_Display )eglGetDisplay (EGL_DEFAULT_DISPLAY);
-    aGraphicDriver = new OpenGl_GraphicDriver (aDisplayConnection);
-  }
+  lights_.push_back(L1);
 
+  Handle_V3d_DirectionalLight L2 = new V3d_DirectionalLight(
+#if OCC_VERSION_MAJOR<7
+        myViewer,
+#endif
+        V3d_XnegYnegZneg, Quantity_NOC_WHITE, true );
 
-  Handle(V3d_Viewer) aViewer = new V3d_Viewer (aGraphicDriver);
-
-//  aViewer->SetDefaultLights();
-
-  Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(Quantity_NOC_WHITE);
-  L1->SetIntensity(0.4);
-  aViewer->AddLight(L1);
-
-  Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
+#if !(OCC_VERSION_MAJOR<7)
   L2->SetIntensity(0.8);
-  aViewer->AddLight(L2);
+  myViewer->AddLight(L2);
+#endif
 
-  aViewer->SetLightOn();
+  lights_.push_back(L2);
 
-  aViewer->SetDefaultShadingModel(Graphic3d_TOSM_FRAGMENT);
+  myViewer->SetLightOn();
 
-//  aViewer->SetDefaultViewSize (theViewSize);
-//  aViewer->SetDefaultViewProj (theViewProj);
-//  aViewer->SetComputedMode (theComputedMode);
-//  aViewer->SetDefaultComputedMode (theDefaultComputedMode);
-
-
-  return aViewer;
 }
 
 
-QoccViewWidget::QoccViewWidget
-( 
- QWidget *parent,
- Qt::WindowFlags f 
-)
-  : QWidget( parent/*, f | Qt::MSWindowsOwnDC*/ ),
+
+QoccViewWidget::QoccViewWidget(QWidget *parent)
+  : QWidget(parent),
     myViewResized       ( Standard_False ),
-    myViewInitialized   ( Standard_False ),
     myMode              ( CurAction3d_Undefined ),
     myGridSnap          ( Standard_False ),
     myDetection         ( AIS_SOD_Nothing ),
@@ -140,6 +119,7 @@ QoccViewWidget::QoccViewWidget
   setBackgroundRole( QPalette::NoRole );
   setAttribute( Qt::WA_NoSystemBackground );
   setAttribute( Qt::WA_PaintOnScreen );
+  setFocusPolicy(Qt::StrongFocus);
 
   // Here's a modified pick point cursor from AutoQ3D
   QBitmap curb1( 48, 48 );
@@ -159,12 +139,79 @@ QoccViewWidget::QoccViewWidget
   // Create a rubber band box for later mouse activity
   myRubberBand = new QRubberBand( QRubberBand::Rectangle, this );
 
-  TCollection_ExtendedString a3DName ("Visu3D");
-  myViewer = createViewer (a3DName.ToExtString(), "", 1000.0, V3d_XposYnegZpos, Standard_True, Standard_True);
+  if (aGraphicDriver.IsNull())
+  {
+    Handle(Aspect_DisplayConnection) aDisplayConnection;
+#if !defined(_WIN32) && !defined(__WIN32__) && (!defined(__APPLE__) || defined(MACOSX_USE_GLX))
+    aDisplayConnection = new Aspect_DisplayConnection(getenv("DISPLAY"));
+#endif
+    aGraphicDriver = new OpenGl_GraphicDriver (aDisplayConnection);
+  }
+
+  myViewer = new V3d_Viewer (
+        aGraphicDriver
+#if OCC_VERSION_MAJOR<7
+        ,
+       TCollection_ExtendedString("Visu3D").ToExtString(),
+       "",
+       1000,
+       V3d_XposYnegZpos,
+       Quantity_NOC_GRAY30,
+       V3d_ZBUFFER,
+       V3d_GOURAUD,
+       V3d_WAIT,
+       Standard_True,
+       Standard_True,
+       V3d_TEX_NONE
+#endif
+        );
+#if OCC_VERSION_MAJOR>=7
+  myViewer->SetDefaultViewSize (1000);
+  myViewer->SetDefaultViewProj (V3d_XposYnegZpos);
+  myViewer->SetComputedMode (Standard_True);
+  myViewer->SetDefaultComputedMode (Standard_True);
+#endif
+
+  addLights();
+
+#if !(OCC_VERSION_MAJOR<7)
+  myViewer->SetDefaultShadingModel(Graphic3d_TOSM_FRAGMENT);
+#endif
+
   myContext_ = new AIS_InteractiveContext (myViewer);
 
+  myView = myContext_->CurrentViewer()->CreateView();
 
-  init();
+//  auto *w = new QWindow( this->windowHandle() );
+//  hWnd = new Xw_Window
+//      (
+//        myContext_->CurrentViewer()->Driver()->GetDisplayConnection(),
+//        winId()
+//      );
+  hWnd = new OcctWindow(this);
+
+  myView->SetWindow( hWnd );
+  if ( !hWnd->IsMapped() )
+  {
+    hWnd->Map();
+  }
+
+
+  myView->SetBackgroundColor (Quantity_NOC_WHITE);
+  myView->MustBeResized();
+
+
+  // Set up axes (Trihedron) in lower left corner.
+  myView->SetScale( 2 );			// Choose a "nicer" intial scale
+
+  // Set up axes (Trihedron) in lower left corner.
+  myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1, V3d_ZBUFFER );
+//  myView->SetShadingModel(V3d_PHONG);
+
+  myView->SetProj( V3d_Zpos );
+  myView->SetUp( V3d_Xpos );
+
+  myMode = CurAction3d_Nothing;
 
   connect
       (
@@ -198,48 +245,6 @@ QPaintEngine* QoccViewWidget::paintEngine() const
 }
 
 
-void QoccViewWidget::init()
-{
-
-#if 0
-  Aspect_Handle windowHandle = static_cast<Aspect_Handle>(winId());
-  hWnd = new Xw_Window
-      (
-        myContext_->CurrentViewer()->Driver()->GetDisplayConnection(),
-        windowHandle
-      );
-#else
-  myView = myContext_->CurrentViewer()->CreateView();
-  Handle(OcctWindow) hWnd = new OcctWindow ( this );
-#endif
-
-  myView->SetWindow( hWnd );
-
-
-  if ( !hWnd->IsMapped() )
-  {
-    hWnd->Map();
-  }
-
-
-  myView->SetBackgroundColor (Quantity_NOC_WHITE);
-  myView->MustBeResized();
-
-
-  // Set up axes (Trihedron) in lower left corner.
-  myView->SetScale( 2 );			// Choose a "nicer" intial scale
-
-  // Set up axes (Trihedron) in lower left corner.
-  myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1, V3d_ZBUFFER );
-//  myView->SetShadingModel(V3d_PHONG);
-
-  myView->SetProj( V3d_Zpos );
-  myView->SetUp( V3d_Xpos );
-
-  myViewInitialized = true;
-  myMode = CurAction3d_Nothing;
-}
-
 
 /*!
 \brief	Paint Event
@@ -249,15 +254,14 @@ void QoccViewWidget::init()
 void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
 {
 
-  if ( !myViewInitialized /*&& winId()*/ )
+  if (!myView.IsNull())
   {
-    init();
-  }
-
-  if (myViewInitialized)
-  {
+#if OCC_VERSION_MAJOR<7
+    myView->Redraw();
+#else
     myView->InvalidateImmediate();
     FlushViewEvents (myContext_, myView, true);
+#endif
   }
 }
 
@@ -288,7 +292,7 @@ void QoccViewWidget::resizeEvent ( QResizeEvent * /* e */ )
 */
 void QoccViewWidget::mousePressEvent( QMouseEvent* e )
 {
-  if (myViewInitialized)
+  if (!myView.IsNull())
   {
     myButtonFlags = e->button();
 
@@ -323,7 +327,7 @@ void QoccViewWidget::mousePressEvent( QMouseEvent* e )
 */
 void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
 {
-  if (myViewInitialized)
+  if (!myView.IsNull())
   {
     myButtonFlags = Qt::NoButton;
 //    redraw();							// Clears up screen when menu selected but not used.
@@ -354,7 +358,7 @@ void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
 */
 void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
 {
-  if (myViewInitialized)
+  if (!myView.IsNull())
   {
 
     Standard_Real X, Y, Z;
@@ -531,7 +535,7 @@ void QoccViewWidget::displayContextMenu( const QPoint& p)
 */
 void QoccViewWidget::wheelEvent ( QWheelEvent* e )
 {
-  if (myViewInitialized)
+  if (!myView.IsNull())
     {
       Standard_Real currentScale = myView->Scale();
       if (e->delta() > 0)
@@ -1098,9 +1102,15 @@ Bnd_Box QoccViewWidget::sceneBoundingBox() const
     myContext_->DisplayedObjects(loi);
 
     Bnd_Box bbb;
-    for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
+#if OCC_VERSION_MAJOR<7
+    for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
+      {
+          Handle_AIS_InteractiveObject o = i.Value();
+#else
+    for (auto i=loi.cbegin(); i!=loi.cend(); i++)
       {
           Handle_AIS_InteractiveObject o = *i;
+#endif
           if (QFeatureItem* it
                 = dynamic_cast<QFeatureItem*>(const_cast<QoccViewWidget*>(this)->getOwnerItem(o)))
           {
@@ -1156,9 +1166,15 @@ void QoccViewWidget::updatePlanesSizes()
 
     AIS_ListOfInteractive loi;
     getContext()->DisplayedObjects(loi);
-    for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
-    {
-        Handle_AIS_InteractiveObject o=*i;
+#if OCC_VERSION_MAJOR<7
+    for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
+      {
+          Handle_AIS_InteractiveObject o = i.Value();
+#else
+    for (auto i=loi.cbegin(); i!=loi.cend(); i++)
+      {
+          Handle_AIS_InteractiveObject o = *i;
+#endif
         updatePlaneSize(o, size);
     }
 }
@@ -1309,9 +1325,15 @@ void QoccViewWidget::doUnfocus(bool newFocusIntended)
     // make everything else transparent
     AIS_ListOfInteractive loi;
     getContext()->DisplayedObjects(loi);
-    for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
-    {
-        Handle_AIS_InteractiveObject o=*i;
+#if OCC_VERSION_MAJOR<7
+    for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
+      {
+          Handle_AIS_InteractiveObject o = i.Value();
+#else
+    for (auto i=loi.cbegin(); i!=loi.cend(); i++)
+      {
+          Handle_AIS_InteractiveObject o = *i;
+#endif
         if (o!=focussedObject->ais)
           getContext()->SetTransparency(o, 0, false);
     }
@@ -1334,9 +1356,15 @@ void QoccViewWidget::onFocus(Handle_AIS_InteractiveObject ais)
   // make everything else transparent
   AIS_ListOfInteractive loi;
   getContext()->DisplayedObjects(loi);
-  for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
-  {
-      Handle_AIS_InteractiveObject o=*i;
+#if OCC_VERSION_MAJOR<7
+  for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
+    {
+        Handle_AIS_InteractiveObject o = i.Value();
+#else
+  for (auto i=loi.cbegin(); i!=loi.cend(); i++)
+    {
+        Handle_AIS_InteractiveObject o = *i;
+#endif
       if (o!=ais)
         getContext()->SetTransparency(o, 0.9, false);
   }

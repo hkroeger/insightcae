@@ -26,6 +26,7 @@ SignalChecker* currentSignalHandler = nullptr;
 
 class SignalChecker
 {
+#ifndef WIN32
   boost::condition_variable& cv_;
   boost::mutex& mx_;
   int& signal_;
@@ -35,21 +36,28 @@ class SignalChecker
     old_SIGINT_,
     old_SIGPIPE_,
     old_SIGTERM_;
+#endif
 
 public:
+
   void signalHandler(int signal)
   {
+#ifndef WIN32
     boost::mutex::scoped_lock lock(mx_);
     signal_=signal;
     cout<<"Got signal "<<signal<<endl;
     cv_.notify_all();
+#endif
   }
 
   SignalChecker(boost::condition_variable& cv, boost::mutex& mx, int& signal)
+#ifndef WIN32
     : cv_(cv),
       mx_(mx),
       signal_(signal)
+#endif
   {
+#ifndef WIN32
     if (currentSignalHandler)
       throw std::logic_error("Internal error: There is already another signal checker active!");
 
@@ -58,15 +66,18 @@ public:
     old_SIGINT_ = std::signal(SIGINT, globalSignalHandler);
     old_SIGPIPE_ = std::signal(SIGPIPE, globalSignalHandler);
     old_SIGTERM_ = std::signal(SIGTERM, globalSignalHandler);
+#endif
   }
 
   ~SignalChecker()
   {
+#ifndef WIN32
     // restore
     std::signal(SIGHUP, old_SIGHUP_);
     std::signal(SIGINT, old_SIGINT_);
     std::signal(SIGPIPE, old_SIGPIPE_);
     std::signal(SIGTERM, old_SIGTERM_);
+#endif
   }
 };
 

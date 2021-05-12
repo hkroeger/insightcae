@@ -32,14 +32,16 @@ void MainWindow::updateGUI()
   if (remote_)
   {
     bfs_path loc_dir=boost::filesystem::absolute(remote_->localDir());
-    setWindowTitle(QString(loc_dir.c_str())+" - InsightCAE Execution Manager");
+    setWindowTitle(QString::fromStdString(loc_dir.string())+" - InsightCAE Execution Manager");
     ui->server->setText(remote_->server().c_str());
-    ui->localDir->setText(loc_dir.c_str());
-    ui->remoteDir->setText(remote_->remoteDir().c_str());
+    ui->localDir->setText(QString::fromStdString(loc_dir.string()));
+    ui->remoteDir->setText(QString::fromStdString(remote_->remoteDir().string()));
 
+#ifndef NO_TERMWIDGET
     terminal_->changeDir( ui->localDir->text() );
     auto cmd = QString("ssh ")+remote_->server().c_str()+" -t 'cd '"+remote_->remoteDir().c_str()+"'; bash -l'\n";
     terminal_->sendText(cmd);
+#endif
 
     tsi_.reset(new insight::TaskSpoolerInterface(remote_->socket(), remote_->server()));
     onRefreshJobList();
@@ -165,7 +167,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
   ui->setupUi(this);
 
-  ui->localDir->setText( boost::filesystem::absolute(location).c_str() );
+  ui->localDir->setText( QString::fromStdString(boost::filesystem::absolute(location).string()) );
 
   setWindowIcon(QIcon(":/resources/logo_insight_cae.svg"));
   this->setWindowTitle("InsightCAE Execution Manager");
@@ -184,14 +186,14 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(this, &MainWindow::logReady, ui->log, &LogViewerWidget::appendLine);
   connect(this, &MainWindow::logReady, this, &MainWindow::updateOutputAnalzer ); // through signal/slot to execute analysis in GUI thread
 
-
+#ifndef NO_TERMWIDGET
   terminal_ = new QTermWidget( 1, ui->tabWidget );
 
   QFont font = getMonospaceFont();
   terminal_->setTerminalFont(font);
 
   ui->tabWidget->addTab(terminal_, "&4 - Terminal");
-
+#endif
 
   connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWindow::onRefreshJobList);
   connect(ui->btn_kill, &QPushButton::clicked,

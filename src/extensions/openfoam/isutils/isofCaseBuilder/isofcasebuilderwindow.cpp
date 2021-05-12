@@ -162,7 +162,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
 
     connect(ui->btn_select_case_dir, &QPushButton::clicked,
             this, &isofCaseBuilderWindow::selectCaseDir);
-    ui->case_dir->setText( boost::filesystem::current_path().c_str() );
+    ui->case_dir->setText( QString::fromStdString(boost::filesystem::current_path().string()) );
 
     connect(ui->btn_paraview, &QPushButton::clicked,
             this, &isofCaseBuilderWindow::onStartPV);
@@ -797,7 +797,7 @@ void isofCaseBuilderWindow::updateTitle()
   QString title="InsightCAE OpenFOAM Case Builder";
   if (!current_config_file_.empty())
   {
-    title+=QString(": ")+current_config_file_.c_str();
+    title+=": "+QString::fromStdString(current_config_file_.string());
   }
   if (config_is_modified_)
   {
@@ -1058,7 +1058,7 @@ void isofCaseBuilderWindow::onCleanCase()
     msg.setText("The following files and directories will be deleted. Please confirm!");
     QString list;
     for (const auto & c: cands)
-      list+=QString(c.filename().c_str())+"\n";
+      list+=QString::fromStdString(c.filename().string())+"\n";
     msg.setDetailedText(list);
     if (msg.exec() == QMessageBox::Yes)
     {

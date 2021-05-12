@@ -5,7 +5,9 @@
 #include <QThread>
 #include <QProgressBar>
 
+#ifndef NO_TERMWIDGET
 #include "qtermwidget/qtermwidget.h"
+#endif
 #include "base/boost_include.h"
 #include "base/remoteexecution.h"
 #include "openfoam/openfoamcase.h"
@@ -45,7 +47,9 @@ class MainWindow
 
   std::unique_ptr<insight::RemoteExecutionConfig> remote_;
 
+#ifndef NO_TERMWIDGET
   QTermWidget *terminal_;
+#endif
 
   std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
   std::shared_ptr<insight::OutputAnalyzer> soa_;

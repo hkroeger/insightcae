@@ -41,8 +41,8 @@ set(insightcad_gui_SRCS
 add_library(insightcad_gui SHARED ${insightcad_gui_SRCS})
 
 target_link_libraries(insightcad_gui
-  toolkit
   insightcad
+  toolkit
   ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES}
   Qt5::Widgets
   ${DXFLIB_LIBRARIES}

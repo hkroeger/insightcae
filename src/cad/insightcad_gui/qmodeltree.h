@@ -26,6 +26,7 @@
 #include "viewstate.h"
 //#include "qoccviewercontext.h"
 #include "iscadmetatyperegistrator.h"
+#include "boost/variant.hpp"
 
 #ifndef Q_MOC_RUN
 #include "cadtypes.h"
@@ -43,6 +44,40 @@ class QDatumItem;
 class QEvaluationItem;
 class QModelTree;
 
+
+
+
+class IQISCADModel
+    : public QObject
+{
+  Q_OBJECT
+
+public:
+  IQISCADModel(QObject* parent=nullptr);
+
+Q_SIGNALS:
+
+  void beginRebuild();
+
+  void createdVariable    (const QString& sn, insight::cad::ScalarPtr sv);
+  void createdVariable    (const QString& sn, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
+  void createdFeature     (const QString& sn, insight::cad::FeaturePtr sm, bool is_component,
+                           boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank() );
+  void createdDatum       (const QString& sn, insight::cad::DatumPtr dm);
+  void createdEvaluation  (const QString& sn, insight::cad::PostprocActionPtr em, bool visible);
+
+  void finishedRebuild();
+
+  void removedScalar      (const QString& sn);
+  void removedVector      (const QString& sn, insight::cad::VectorVariableType vt);
+  void removedFeature     (const QString& sn);
+  void removedDatum       (const QString& sn);
+  void removedEvaluation  (const QString& sn);
+
+  void statusMessage(const QString& msg, double timeout=0);
+  void statusProgress(int step, int totalSteps);
+
+};
 
 
 
@@ -108,6 +143,7 @@ public:
 
     Handle_AIS_InteractiveObject ais(AIS_InteractiveContext& context);
     inline AIS_DisplayMode shadingMode() const { return shadingMode_; }
+    void setShadingMode(AIS_DisplayMode ds);
     inline double red() const { return r_; }
     inline double green() const { return g_; }
     inline double blue() const { return b_; }
@@ -140,7 +176,13 @@ Q_SIGNALS:
 };
 
 
-
+struct SymbolsSnapshot
+{
+  std::set<QString>
+      scalars_, points_, directions_,
+      componentfeatures_, features_,
+      datums_, postprocactions_;
+};
 
 class QModelTree
 : public QTreeWidget
@@ -191,6 +233,8 @@ protected:
     QTreeWidgetItem *postprocactions_;
 
 
+    SymbolsSnapshot symbolsSnapshot_;
+
     template<class ItemType>
     ItemType* findItem(QTreeWidgetItem *p, const QString& name)
     {
@@ -228,12 +272,25 @@ public:
 
     QDisplayableModelTreeItem* findFeature(const QString& name, bool is_component);
 
+    void connectModel(IQISCADModel* model);
+    void disconnectModel(IQISCADModel* model);
+
 public Q_SLOTS:
+    void storeSymbolSnapshot();
+
+    void addCreatedScalarToSymbolSnapshot(const QString& name,insight::cad::ScalarPtr);
+    void addCreatedVectorToSymbolSnapshot(const QString& name,insight::cad::VectorPtr,insight::cad::VectorVariableType t);
+    void addCreatedFeatureToSymbolSnapshot(const QString& name, insight::cad::FeaturePtr, bool is_component);
+    void addCreatedDatumToSymbolSnapshot(const QString& name, insight::cad::DatumPtr);
+    void addCreatedPostprocActionToSymbolSnapshot(const QString& name, insight::cad::PostprocActionPtr, bool);
+
     void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
     void onAddVector     (const QString& name, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
-    void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component);
+    void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component,
+                          boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank() );
     void onAddDatum      (const QString& name, insight::cad::DatumPtr smp);
     void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp, bool visible=false);
+    void removeNonRecreatedSymbols();
 
     void onRemoveScalar      (const QString& sn);
     void onRemoveVector      (const QString& sn, insight::cad::VectorVariableType vt);

@@ -46,11 +46,11 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Cy
 
 
 
-void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut, const std::string& blockMeshName)
+void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements(const std::string& blockMeshName)
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
-  Parameters p(ps_);
+  Parameters p(currentParameters());
 
   auto wsc =
       insight::cad::Import::create( p.geometry.wedge_spine_curve->filePath() );
@@ -170,13 +170,13 @@ void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationE
 
   addFeature( blockMeshName,
               wedge,
-              DisplayStyle::Wireframe
+              AIS_WireFrame
               );
 }
 
-void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  recreateVisualizationElements(ut, "blockMeshDict_CylWedgeOrtho");
+  recreateVisualizationElements("blockMeshDict_CylWedgeOrtho");
 }
 
 }

@@ -37,19 +37,19 @@ IQParameterSetModel::IQParameterSetModel(const insight::ParameterSet& ps, const 
   connect( this, &QAbstractItemModel::dataChanged,
            [&](const QModelIndex&, const QModelIndex&, const QVector<int> &)
   {
-    parameterSetChanged();
+    Q_EMIT parameterSetChanged();
   } );
 
   connect( this, &QAbstractItemModel::rowsInserted,
            [&](const QModelIndex &, int, int)
   {
-    parameterSetChanged();
+    Q_EMIT parameterSetChanged();
   } );
 
   connect( this, &QAbstractItemModel::rowsRemoved,
            [&](const QModelIndex &, int, int)
   {
-    parameterSetChanged();
+    Q_EMIT parameterSetChanged();
   } );
 }
 
@@ -117,7 +117,6 @@ QModelIndex IQParameterSetModel::index(int row, int column, const QModelIndex &p
     }
   }
 
-//  qDebug()<<"index of row "<<row<<"/"<<column<<"under"<<parent<<": "<<i;
   return i;
 }
 
@@ -243,7 +242,7 @@ QList<IQParameter*> IQParameterSetModel::decorateSubdictContent(QObject* parent,
     auto& cp=*p.second;
     auto name=QString::fromStdString(p.first);
     auto iqp = IQParameter::create(parent, name, cp, defaultParameterSet_);
-//      qDebug()<<QString(level, ' ')+name<<iqp;
+
     decorateChildren(iqp, &cp, level);
     children.append(iqp);
   }
@@ -258,7 +257,7 @@ IQParameter* IQParameterSetModel::decorateArrayElement(QObject* parent, int i, i
 {
   auto name=QString("%1").arg(i);
   auto iqp = IQArrayElementParameterBase::create(parent, name, cp, defaultParameterSet_);
-//      qDebug()<<QString(level, ' ')+name<<iqp;
+
   decorateChildren(iqp, &cp, level);
   return iqp;
 }
@@ -289,7 +288,7 @@ void IQParameterSetModel::resetParameters(const insight::ParameterSet &ps, const
 
   // create decorators that store parent relationship
 
-  beginInsertRows(QModelIndex(), 0, parameterSet_.size());
+  beginInsertRows(QModelIndex(), 0, parameterSet_.size()-1);
   rootParameters_=decorateSubdictContent(this, parameterSet_, 0);
   endInsertRows();
 }
@@ -322,6 +321,10 @@ insight::Parameter &IQParameterSetModel::parameterRef(const QModelIndex &index)
 
 void IQParameterSetModel::notifyParameterChange(const QModelIndex &index)
 {
+  if (auto *p=static_cast<IQParameter*>(index.internalPointer()))
+  {
+    p->resetModificationState();
+  }
   emit dataChanged(index, index);
 }
 

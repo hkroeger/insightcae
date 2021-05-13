@@ -17,7 +17,7 @@ class blockMeshDict_Box_ParameterSet_Visualizer
  : public CAD_ParameterSet_Visualizer
 {
 public:
-    void recreateVisualizationElements(UsageTracker* ut) override;
+    void recreateVisualizationElements() override;
 };
 
 
@@ -27,7 +27,7 @@ class blockMeshDict_Cylinder_ParameterSet_Visualizer
  : public CAD_ParameterSet_Visualizer
 {
 public:
-    void recreateVisualizationElements(UsageTracker* ut) override;
+    void recreateVisualizationElements() override;
     void setIcon(QIcon* i) override;
 };
 
@@ -38,7 +38,7 @@ class blockMeshDict_Sphere_ParameterSet_Visualizer
  : public CAD_ParameterSet_Visualizer
 {
 public:
-    void recreateVisualizationElements(UsageTracker* ut) override;
+    void recreateVisualizationElements() override;
 };
 
 

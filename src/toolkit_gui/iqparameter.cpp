@@ -1,5 +1,6 @@
 #include <QColor>
 #include <QFont>
+#include <QDebug>
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -59,22 +60,28 @@ void IQParameter::setName(const QString &newName)
   name_=newName;
 }
 
-const QString IQParameter::path() const
+
+const QString IQParameter::buildPath(const QString& name, bool redirectArrayElementsToDefault) const
 {
   QString thePath;
   if (const auto *p = parentParameter())
   {
-    thePath=p->path();
+    thePath = p->path(redirectArrayElementsToDefault);
   }
   if (!thePath.isEmpty())
   {
-    thePath = thePath+"/"+name();
+    thePath = thePath+"/"+name;
   }
   else
   {
-    thePath=name();
+    thePath =name;
   }
   return thePath;
+}
+
+const QString IQParameter::path(bool redirectArrayElementsToDefault) const
+{
+  return buildPath(name(), redirectArrayElementsToDefault);
 }
 
 
@@ -83,17 +90,42 @@ QString IQParameter::valueText() const
   return QString::fromStdString(parameter_.type());
 }
 
+
+
+void IQParameter::resetModificationState()
+{
+  markedAsModified_.reset();
+}
+
 bool IQParameter::isModified() const
 {
-  try
+  if (!markedAsModified_)
   {
-    const auto& dp = defaultParameterSet_.get<insight::Parameter>(path().toStdString());
-    return parameter().isDifferent(dp);
+    bool cmodified = false;
+    try
+    {
+      if (size()>0) // has children
+      {
+        for (auto& p: (*this))
+        {
+          cmodified |= p->isModified();
+        }
+      }
+      else
+      {
+        const auto& dp = defaultParameterSet_.get<insight::Parameter>(path(true).toStdString());
+        cmodified = parameter().isDifferent(dp);
+      }
+    }
+    catch (...)
+    {
+      cmodified=true;
+    }
+
+    markedAsModified_.reset(new bool(cmodified));
   }
-  catch (...)
-  {
-    return true;
-  }
+
+  return *markedAsModified_;
 }
 
 QVariant IQParameter::backgroundColor() const

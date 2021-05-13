@@ -424,6 +424,7 @@ const char *FileContainer::binaryFileContent() const
 //  replaceContent(originalFilePath_);
 //}
 
+
 timespec highres_last_write_time(const boost::filesystem::path& file)
 {
   int file_descript = open(file.string().c_str(), O_RDONLY);
@@ -441,6 +442,7 @@ timespec highres_last_write_time(const boost::filesystem::path& file)
 #else
   return statbuf.st_mtim;
 #endif
+
 }
 
 

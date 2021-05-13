@@ -736,10 +736,6 @@ void isofCaseBuilderWindow::onRemoveElement()
     {
       delete cur;
     }
-    if (neededCAD)
-    {
-      display_->onUpdateVisualization();
-    }
   }
 
   // check whether CAD view is still needed

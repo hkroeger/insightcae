@@ -33,6 +33,8 @@ private:
   insight::Parameter& parameter_;
   const insight::ParameterSet& defaultParameterSet_;
 
+  mutable std::unique_ptr<bool> markedAsModified_;
+
 public:
   declareType("IQParameter");
 
@@ -49,8 +51,11 @@ public:
 
   const QString& name() const;
   void setName(const QString& newName);
-  const QString path() const;
+  const QString buildPath(const QString& name, bool redirectArrayElementsToDefault) const;
+  virtual const QString path(bool redirectArrayElementsToDefault=false) const;
   virtual QString valueText() const;
+
+  void resetModificationState();
   virtual bool isModified() const;
 
   QVariant backgroundColor() const;

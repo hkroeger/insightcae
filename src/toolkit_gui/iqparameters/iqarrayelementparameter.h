@@ -51,6 +51,14 @@ public:
       IQArrayElementParameterBase(parent, name, parameter, defaultParameterSet)
   {}
 
+  const QString path(bool redirectArrayElementsToDefault=false) const override
+  {
+    QString n=this->name();
+    if (redirectArrayElementsToDefault) n="default";
+    return this->buildPath(n, redirectArrayElementsToDefault);
+  }
+
+
   virtual void populateContextMenu(IQParameterSetModel* model, const QModelIndex &index, QMenu* m);
 //  virtual QVBoxLayout* populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer);
 };

@@ -42,7 +42,7 @@ bool ArrayParameter::isDifferent(const Parameter& p) const
 
     for (int i=0; i<size(); ++i)
     {
-      if ( element(i).isDifferent(ap->element(i)) )
+      if ( element(i).isDifferent( ap->element(i) ) )
         return true;
     }
 

@@ -127,7 +127,7 @@ public:
     typedef InternalPressureLoss::Parameters Parameters;
 
 public:
-    void recreateVisualizationElements(UsageTracker* ut) override;
+    void recreateVisualizationElements() override;
 };
 
 }

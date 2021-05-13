@@ -819,17 +819,17 @@ ParameterSet_VisualizerPtr NumericalWindtunnel_visualizer()
 addStandaloneFunctionToStaticFunctionTable(Analysis, NumericalWindtunnel, visualizer, NumericalWindtunnel_visualizer);
 
 
-void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements()
 {
   CurrentExceptionContext ec("Creating visualization of numerical wind tunnel parameters");
 
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
   try
   {
 
-    Parameters p(ps_);
-    NumericalWindtunnel nwt(ps_, "");
+    Parameters p(currentParameters());
+    NumericalWindtunnel nwt(currentParameters(), "");
     nwt.calcDerivedInputData(consoleProgressDisplayer);
 
 
@@ -868,7 +868,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
           cad::matconst(vec3( 0, 0, Lup)),
           cad::matconst(vec3( 0, Laside+0.5*nwt.w_, 0))
          ),
-         DisplayStyle::Wireframe
+         AIS_WireFrame
       );
     }
     else
@@ -882,7 +882,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
           cad::matconst(vec3( 0, 0, Lup)),
           cad::matconst(vec3( 0, 2.*Laside+nwt.w_, 0))
          ),
-         DisplayStyle::Wireframe
+         AIS_WireFrame
       );
     }
 
@@ -904,7 +904,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
             cad::matconst(bc->H*vec3(0,0,1)),
             cad::BoxCentering(true, true, true)
            ),
-           DisplayStyle::Wireframe
+           AIS_WireFrame
         );
       }
       else if (const auto* b =
@@ -920,7 +920,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
             cad::matconst(d(1)*vec3(0,1,0)),
             cad::matconst(d(2)*vec3(0,0,1))
            ),
-           DisplayStyle::Wireframe
+           AIS_WireFrame
         );
       }
 

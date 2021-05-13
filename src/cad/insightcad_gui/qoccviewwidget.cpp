@@ -779,8 +779,8 @@ void QoccViewWidget::fitAll( void )
   if (!myView.IsNull())
 
     {
-      myView->ZFitAll();
       myView->FitAll();
+      myView->ZFitAll();
       viewPrecision( true );
     }
 }

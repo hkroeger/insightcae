@@ -2,6 +2,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QPushButton>
+#include <QDebug>
 
 #include "iqselectablesubsetparameter.h"
 #include "iqparametersetmodel.h"
@@ -39,7 +40,6 @@ QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(IQParameterSetMod
   QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
   layout2->addWidget(new QLabel("Selection:", editControlsContainer));
   auto* selBox_=new QComboBox(editControlsContainer);
-//  connect(selBox_, &QComboBox::destroyed, this, &SelectableSubsetParameterWrapper::onDestruction);
   for ( auto& pair: p.items() )
   {
     selBox_->addItem( QString::fromStdString(pair.first) );
@@ -59,6 +59,9 @@ QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(IQParameterSetMod
 
   layout->addStretch();
 
+
+
+
   connect(apply, &QPushButton::clicked, [=]()
   {
     auto* iqp = static_cast<IQParameter*>(index.internalPointer());
@@ -77,8 +80,8 @@ QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(IQParameterSetMod
     p.selection() = selBox_->currentText().toStdString();
 
     // repopulate
+    model->beginInsertRows(index, 0, p().size()-1);
     auto newc = model->decorateSubdictContent(iqp, p(), 0);
-    model->beginInsertRows(index, 0, newc.size()-1);
     model->endInsertRows();
 
     model->notifyParameterChange(index);

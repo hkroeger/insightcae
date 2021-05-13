@@ -428,17 +428,27 @@ AnalysisLibraryLoader::~AnalysisLibraryLoader()
 
 void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
 {
+  boost::filesystem::path libFile = location;
+  if (libFile.extension().empty())
+  {
 #ifdef WIN32
-  HMODULE lib = LoadLibraryA(location.string().c_str());
+    libFile = libFile.parent_path()/("lib"+libFile.stem().string()+".dll");
+#else
+    libFile = libFile.parent_path()/("lib"+libFile.stem().string()+".so");
+#endif
+  }
+
+#ifdef WIN32
+  HMODULE lib = LoadLibraryA(libFile.string().c_str());
   if (!lib)
   {
-    std::cerr<<"Could not load module library "<<location<< std::endl;
+    std::cerr<<"Could not load module library "<<libFile<< std::endl;
   }
 #else
-    void *handle = dlopen ( location.c_str(), RTLD_LAZY|RTLD_GLOBAL|RTLD_NODELETE );
+    void *handle = dlopen ( libFile.c_str(), RTLD_LAZY|RTLD_GLOBAL|RTLD_NODELETE );
     if ( !handle ) 
     {
-        std::cerr<<"Could not load module library "<<location<<"!\nReason: " << dlerror() << std::endl;
+        std::cerr<<"Could not load module library "<<libFile<<"!\nReason: " << dlerror() << std::endl;
     } else 
     {
         handles_.push_back ( handle );

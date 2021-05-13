@@ -47,7 +47,7 @@ QModelTreeItem::QModelTreeItem
   : QTreeWidgetItem ( parent ),
     name_ ( name )
 {
-    setText(COL_NAME, name_);
+  setText(COL_NAME, name_);
 }
 
 
@@ -58,12 +58,12 @@ QModelTree* QModelTreeItem::modelTree() const
 
 void QModelTreeItem::insertName()
 {
-  emit insertParserStatementAtCursor(name_);
+  Q_EMIT insertParserStatementAtCursor(name_);
 }
 
 void QModelTreeItem::jumpToName()
 {
-    emit(jumpTo(name_));
+  Q_EMIT jumpTo(name_);
 }
 
 
@@ -146,7 +146,7 @@ void QDisplayableModelTreeItem::show()
 //    {
 //      ais_=createAIS(*getContext());
 //    }
-  emit show(this);
+  Q_EMIT show(this);
 }
 
 
@@ -155,7 +155,7 @@ void QDisplayableModelTreeItem::hide()
   setCheckState(COL_VIS, Qt::Unchecked);
   if (!ais_.IsNull())
     {
-      emit hide(this);
+      Q_EMIT hide(this);
     }
 }
 
@@ -163,14 +163,14 @@ void QDisplayableModelTreeItem::wireframe()
 {
   shadingMode_=AIS_WireFrame;
   if (isVisible())
-    emit setDisplayMode(this, AIS_WireFrame);
+    Q_EMIT setDisplayMode(this, AIS_WireFrame);
 }
 
 void QDisplayableModelTreeItem::shaded()
 {
   shadingMode_=AIS_Shaded;
   if (isVisible())
-    emit setDisplayMode(this, AIS_Shaded);
+    Q_EMIT setDisplayMode(this, AIS_Shaded);
 }
 
 void QDisplayableModelTreeItem::onlyThisShaded()
@@ -184,7 +184,7 @@ void QDisplayableModelTreeItem::onlyThisShaded()
 void QDisplayableModelTreeItem::randomizeColor()
 {
   setRandomColor();
-  emit setColor(this, color());
+  Q_EMIT setColor(this, color());
 }
 
 void QDisplayableModelTreeItem::chooseColor()
@@ -196,7 +196,7 @@ void QDisplayableModelTreeItem::chooseColor()
     r_=nc.red()/255.;
     g_=nc.green()/255.;
     b_=nc.blue()/255.;
-    emit setColor(this, color());
+    Q_EMIT setColor(this, color());
   }
 }
 
@@ -206,7 +206,7 @@ void QDisplayableModelTreeItem::setResolution()
   double res=QInputDialog::getDouble(treeWidget(), "Set Resolution", "Resolution:", 0.001, 1e-7, 0.1, 7, &ok);
   if (ok)
   {
-    emit setResolution(this, res);
+    Q_EMIT setResolution(this, res);
   }
 }
 
@@ -406,6 +406,7 @@ void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv, in
 
 void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component)
 {
+  std::cerr<<"onAddFeature"<<std::endl;
   QFeatureItem *newf, *old;
   QTreeWidgetItem* cat;
   {
@@ -516,13 +517,13 @@ void QModelTree::onItemSelectionChanged()
   QTreeWidgetItem *item = currentItem();
   if (auto * m = dynamic_cast<QFeatureItem*>(item))
   {
-    emit focus(m->solidmodel().buildVisualization());
+    Q_EMIT focus(m->solidmodel().buildVisualization());
   }
 }
 
 void QModelTree::focusOutEvent(QFocusEvent */*event*/)
 {
-  emit unfocus();
+  Q_EMIT unfocus();
 }
 
 void QModelTree::getFeatureNames(std::set<std::string>& featnames) const

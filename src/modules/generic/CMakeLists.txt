@@ -10,7 +10,6 @@ set(genericmodules_SOURCES
 set(genericmodules_LIBS
   toolkit
   toolkit_gui
-  refdata
 )
 
 if (INSIGHT_BUILD_OPENFOAM AND INSIGHT_BUILD_CAD)

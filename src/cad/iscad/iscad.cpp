@@ -48,8 +48,6 @@ int main ( int argc, char** argv )
 {
   namespace po = boost::program_options;
 
-  typedef std::vector<std::string> StringList;
-
   // Declare the supported options.
   po::options_description desc ( "Allowed options" );
   desc.add_options()

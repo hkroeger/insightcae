@@ -20,6 +20,7 @@
 #include <QPushButton>
 #include <QTreeWidget>
 #include <QBitmap>
+#include <QDebug>
 
 #include <Graphic3d_GraphicDriver.hxx>
 #include <Graphic3d_TextureEnv.hxx>
@@ -538,7 +539,7 @@ void QoccViewWidget::wheelEvent ( QWheelEvent* e )
   if (!myView.IsNull())
     {
       Standard_Real currentScale = myView->Scale();
-      if (e->delta() > 0)
+      if (e->angleDelta().y() > 0)
 	{
 	  currentScale *= 1.10; // +10%
 	}
@@ -1181,8 +1182,10 @@ void QoccViewWidget::updatePlanesSizes()
 
 void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 {
+  std::cerr<<"onShow"<<std::endl;
   if (di)
     {
+    std::cerr<<" do display"<<std::endl;
       Handle_AIS_InteractiveObject ais = di->ais( *getContext() );
 
       getContext()->Display
@@ -1260,12 +1263,44 @@ void QoccViewWidget::onSetClipPlane(QObject* qdatum)
 }
 
 
+
+void ActivateAll(Handle_AIS_InteractiveContext context, TopAbs_ShapeEnum mode)
+{
+#if OCC_VERSION_MAJOR>=7
+  context->Activate( AIS_Shape::SelectionMode(mode) );
+#else
+  AIS_ListOfInteractive loi;
+  context->DisplayedObjects(loi);
+  for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
+  {
+    context->Activate( i.Value(), AIS_Shape::SelectionMode(mode) );
+  }
+#endif
+}
+
+
+void DeactivateAll(Handle_AIS_InteractiveContext context, TopAbs_ShapeEnum mode)
+{
+#if OCC_VERSION_MAJOR>=7
+  context->Deactivate( AIS_Shape::SelectionMode(mode) );
+#else
+  AIS_ListOfInteractive loi;
+  context->DisplayedObjects(loi);
+  for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
+  {
+    context->Deactivate( i.Value(), AIS_Shape::SelectionMode(mode) );
+  }
+#endif
+}
+
+
+
 void QoccViewWidget::onMeasureDistance()
 {
   measpts_p1_.reset();
   measpts_p2_.reset();
   cimode_=CIM_MeasurePoints;
-  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+  ActivateAll(getContext(), TopAbs_VERTEX);
   emit sendStatus("Please select first point!");
 }
 
@@ -1274,7 +1309,7 @@ void QoccViewWidget::onSelectPoints()
 {
   selpts_.reset();
   cimode_=CIM_InsertPointIDs;
-  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+  ActivateAll(getContext(), TopAbs_VERTEX);
   emit sendStatus("Please select points and finish with right click!");
 }
 
@@ -1282,7 +1317,7 @@ void QoccViewWidget::onSelectEdges()
 {
   selpts_.reset();
   cimode_=CIM_InsertEdgeIDs;
-  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_EDGE) );
+  ActivateAll(getContext(), TopAbs_EDGE);
   emit sendStatus("Please select edges and finish with right click!");
 }
 
@@ -1290,7 +1325,7 @@ void QoccViewWidget::onSelectFaces()
 {
   selpts_.reset();
   cimode_=CIM_InsertFaceIDs;
-  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_FACE) );
+  ActivateAll(getContext(), TopAbs_FACE);
   emit sendStatus("Please select faces and finish with right click!");
 }
 
@@ -1298,7 +1333,7 @@ void QoccViewWidget::onSelectSolids()
 {
   selpts_.reset();
   cimode_=CIM_InsertSolidIDs;
-  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_SOLID) );
+  ActivateAll(getContext(), TopAbs_SOLID);
   emit sendStatus("Please select solids and finish with right click!");
 }
 
@@ -1541,7 +1576,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 
 		    measpts_p1_.reset();
 		    measpts_p2_.reset();
-		    getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+                    DeactivateAll(getContext(), TopAbs_VERTEX);
 		    cimode_=CIM_Normal;
 		  }
 	      }
@@ -1562,7 +1597,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
                       if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
                         {
                           // restrict further selection to current shape
-                          getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+                          DeactivateAll( getContext(), TopAbs_VERTEX );
                           getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_VERTEX) );
 
                           selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Vertex));
@@ -1591,7 +1626,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
                       if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
                         {
                           // restrict further selection to current shape
-                          getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_EDGE) );
+                          DeactivateAll( getContext(), TopAbs_EDGE );
                           getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_EDGE) );
 
                           selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Edge));
@@ -1621,7 +1656,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
                       if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
                         {
                           // restrict further selection to current shape
-                          getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_FACE) );
+                          DeactivateAll( getContext(), TopAbs_FACE );
                           getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_FACE) );
 
                           selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Face));
@@ -1651,7 +1686,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
                       if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
                         {
                           // restrict further selection to current shape
-                          getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_SOLID) );
+                          DeactivateAll( getContext(), TopAbs_SOLID );
                           getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_SOLID) );
 
                           selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Solid));
@@ -1758,7 +1793,7 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
 	      text+=")\n";
 	      emit insertNotebookText(text);
 
-	      getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+              DeactivateAll( getContext(), TopAbs_VERTEX );
 	      cimode_=CIM_Normal;
 	    }
 	  else if (cimode_==CIM_InsertEdgeIDs)
@@ -1773,7 +1808,7 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
 	      text+=")\n";
 	      emit insertNotebookText(text);
 
-	      getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_EDGE) );
+              DeactivateAll( getContext(), TopAbs_EDGE );
 	      cimode_=CIM_Normal;
 	    }
 	  else if (cimode_==CIM_InsertFaceIDs)
@@ -1788,7 +1823,7 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
 	      text+=")\n";
 	      emit insertNotebookText(text);
 
-	      getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_FACE) );
+              DeactivateAll( getContext(), TopAbs_FACE );
 	      cimode_=CIM_Normal;
 	    }
           else if (cimode_==CIM_InsertSolidIDs)
@@ -1803,7 +1838,7 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
               text+=")\n";
               emit insertNotebookText(text);
 
-              getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_SOLID) );
+              DeactivateAll( getContext(), TopAbs_SOLID );
               cimode_=CIM_Normal;
             }	  //	  emit popupMenu ( this, point );
         }

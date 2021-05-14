@@ -39,7 +39,7 @@ class ModelComponentSelectorDlg
     Q_OBJECT
     
 public:
-    ModelComponentSelectorDlg(const insight::cad::ModelPtr& m, QWidget* parent=NULL, Qt::WindowFlags f=0);
+    ModelComponentSelectorDlg(const insight::cad::ModelPtr& m, QWidget* parent=nullptr);
     
     std::string selected() const;
 

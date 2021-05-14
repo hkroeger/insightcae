@@ -25,6 +25,7 @@
 #include "boost/foreach.hpp"
 #endif
 
+#include <QRandomGenerator>
 #include <QCoreApplication>
 #include <QTimer>
 #include <QThread>
@@ -63,9 +64,9 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
     crv=new QtCharts::QLineSeries;
     crv->setName(name.c_str());
     crv->setPen(QPen(QColor(
-                         double(qrand())*255.0/double(RAND_MAX),
-                         double(qrand())*255.0/double(RAND_MAX),
-                         double(qrand())*255.0/double(RAND_MAX)
+                         QRandomGenerator::system()->generateDouble()*255.0/double(RAND_MAX),
+                         QRandomGenerator::system()->generateDouble()*255.0/double(RAND_MAX),
+                         QRandomGenerator::system()->generateDouble()*255.0/double(RAND_MAX)
                      ), 2.0));
     chartData_->addSeries(crv);
     crv->attachAxis(chartData_->axes(Qt::Vertical)[0]);

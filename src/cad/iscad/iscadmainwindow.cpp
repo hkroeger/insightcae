@@ -222,8 +222,8 @@ void ISCADMainWindow::onLoadModelFile(const boost::filesystem::path& modelfile)
 }
 
 
-ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool nolog)
-: QMainWindow(parent, flags),
+ISCADMainWindow::ISCADMainWindow(QWidget* parent, bool nolog)
+: QMainWindow(parent),
   lastTabIndex_(-1)
 {
     
@@ -571,6 +571,7 @@ void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
     QFileInfo fi=fileModel_->fileInfo(fileTree_->currentIndex());
     
     a=new QAction("Create new file...", &myMenu);
+
     mapper = new QSignalMapper(a) ;
     connect(a, &QAction::triggered,
             mapper, QOverload<>::of(&QSignalMapper::map)) ;
@@ -580,7 +581,8 @@ void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
     else
         dir=fi.absolutePath();
     mapper->setMapping(a, dir);
-    connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mapped),
+
+    connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mappedString),
             this, &ISCADMainWindow::onCreateNewModel);
     myMenu.addAction(a);
 
@@ -591,7 +593,7 @@ void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
         connect(a, &QAction::triggered,
                 mapper, QOverload<>::of(&QSignalMapper::map) );
         mapper->setMapping(a, fi.absoluteFilePath());
-        connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mapped),
+        connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mappedString),
                 this, &ISCADMainWindow::onDeleteModel);
         myMenu.addAction(a);
     }

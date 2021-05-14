@@ -85,7 +85,7 @@ QVBoxLayout* IQDoubleRangeParameter::populateEditControls(IQParameterSetModel* m
     {
       auto&p = dynamic_cast<insight::DoubleRangeParameter&>(model->parameterRef(index));
 
-      QStringList il=res.split(" ", QString::SkipEmptyParts);
+      QStringList il=res.split(" ", Qt::SkipEmptyParts);
       double x0=il[0].toDouble();
       double x1=il[1].toDouble();
       int num=il[2].toInt();

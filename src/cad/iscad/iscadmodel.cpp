@@ -355,17 +355,21 @@ void ISCADModel::populateClipPlaneMenu(QMenu* clipplanemenu, QoccViewWidget* vie
             {
                 QAction *act = new QAction( v.first.c_str(), this );
                 
-                QSignalMapper *signalMapper = new QSignalMapper(this);
-                signalMapper->setMapping( act, reinterpret_cast<QObject*>(d.get()) );
-                connect
-                    (
-                      signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
-                      viewer, &QoccViewWidget::onSetClipPlane
-                    );
+//                QSignalMapper *signalMapper = new QSignalMapper(this);
+//                signalMapper->setMapping( act, reinterpret_cast<QObject*>(d.get()) );
+//                connect
+//                    (
+//                      signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
+//                      viewer, &QoccViewWidget::onSetClipPlane
+//                    );
                 connect
                     (
                       act, &QAction::triggered,
-                      signalMapper, QOverload<>::of(&QSignalMapper::map)
+//                      signalMapper, QOverload<>::of(&QSignalMapper::map)
+                      [d,&viewer]()
+                      {
+                        viewer->onSetClipPlane(reinterpret_cast<QObject*>(d.get()));
+                      }
                     );
                 clipplanemenu->addAction(act);
                 
@@ -582,23 +586,33 @@ void ISCADModel::showEditorContextMenu(const QPoint& pt)
         insight::cad::FeaturePtr fp=syn_elem_dir_->findElement(po);
         if (fp)
         {
-            QSignalMapper *signalMapper = new QSignalMapper(this);
-            QAction *act=NULL;
+//            QSignalMapper *signalMapper = new QSignalMapper(this);
+            QAction *act=nullptr;
 
             insight::cad::Feature* fpp=fp.get();
+
+            std::function<void()> slotFunction;
             if (insight::cad::Sketch* sk=dynamic_cast<insight::cad::Sketch*>(fpp))
             {
                 act=new QAction("Edit Sketch...", this);
-                signalMapper->setMapping(act, reinterpret_cast<QObject*>(sk));
-                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
-                        this, &ISCADModel::editSketch);
+                slotFunction=[this,sk]()
+                {
+                  this->editSketch(reinterpret_cast<QObject*>(sk));
+                };
+//                signalMapper->setMapping(act, reinterpret_cast<QObject*>(sk));
+//                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
+//                        this, &ISCADModel::editSketch);
             }
             else if (insight::cad::ModelFeature* mo=dynamic_cast<insight::cad::ModelFeature*>(fpp))
             {
                 act=new QAction("Edit Model...", this);
-                signalMapper->setMapping(act, reinterpret_cast<QObject*>(mo));
-                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
-                        this, &ISCADModel::editModel);
+                slotFunction=[this,mo]()
+                {
+                  this->editSketch(reinterpret_cast<QObject*>(mo));
+                };
+//                signalMapper->setMapping(act, reinterpret_cast<QObject*>(mo));
+//                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
+//                        this, &ISCADModel::editModel);
             }
             else
             {
@@ -608,7 +622,8 @@ void ISCADModel::showEditorContextMenu(const QPoint& pt)
             if (act)
             {
                 connect(act, &QAction::triggered,
-                        signalMapper, QOverload<>::of(&QSignalMapper::map));
+                        /*signalMapper, QOverload<>::of(&QSignalMapper::map)*/
+                        slotFunction );
                 menu->addSeparator();
                 menu->addAction(act);
             }

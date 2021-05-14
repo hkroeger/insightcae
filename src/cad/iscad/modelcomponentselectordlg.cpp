@@ -119,7 +119,7 @@ void addModelsteps
     }
 }
 
-ModelComponentSelectorDlg::ModelComponentSelectorDlg(const insight::cad::ModelPtr& m, QWidget* parent, Qt::WindowFlags f)
+ModelComponentSelectorDlg::ModelComponentSelectorDlg(const insight::cad::ModelPtr& m, QWidget* parent)
 {
     ui = new Ui::ModelComponentSelectorDlg;
     ui->setupUi(this);

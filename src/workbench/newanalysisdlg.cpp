@@ -103,7 +103,11 @@ void newAnalysisDlg::fillAnalysisList()
         i != insight::Analysis::factories_->end(); i++ )
     {
       std::string analysisName = i->first;
-      QStringList path = QString::fromStdString ( insight::Analysis::category ( analysisName ) ).split ( "/", QString::SkipEmptyParts );
+
+      QStringList path =
+          QString::fromStdString ( insight::Analysis::category ( analysisName ) )
+          .split ( "/", Qt::SkipEmptyParts );
+
       HierarchyLevel* parent = &toplevel;
       for ( QStringList::const_iterator pit = path.constBegin(); pit != path.constEnd(); ++pit )
         {

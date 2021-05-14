@@ -165,7 +165,7 @@ int main ( int argc, char** argv )
       app.setSplashScreen(&splash);
       splash.showMessage ( "Wait..." );
 
-      ISCADMainWindow window ( 0, 0, vm.count ( "nolog" ) );
+      ISCADMainWindow window ( nullptr, vm.count ( "nolog" ) );
       
       bool dobgparsing = (vm.count ( "nobgparse" ) == 0);
       

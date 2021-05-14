@@ -67,7 +67,7 @@ RemoteParaview::RemoteParaview
                 QMessageBox::critical(
                       this,
                       "Failed to start",
-                      QString("Failed to start Paraview in directoy ")+rec_.localDir().c_str()
+                      "Failed to start Paraview in directoy "+QString::fromStdString(rec_.localDir().string())
                       );
               }
            }

@@ -133,7 +133,7 @@ public slots:
     void updateProgress(int step, int totalSteps);
 
 public:
-    ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0, bool nolog=false);
+    ISCADMainWindow(QWidget* parent = nullptr, bool nolog=false);
     ~ISCADMainWindow();
 
     ISCADModelEditor* insertEmptyModel(bool bgparsing=true);

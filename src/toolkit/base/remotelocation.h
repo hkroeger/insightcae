@@ -126,6 +126,7 @@ public:
     std::vector<bfs_path> remoteSubdirs() const;
 
 
+    std::string remoteSourceOFEnvStatement() const;
 
 
     // ====================================================================================

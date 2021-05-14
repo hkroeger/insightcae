@@ -533,6 +533,28 @@ std::vector<bfs_path> RemoteLocation::remoteSubdirs() const
 
 
 
+std::string RemoteLocation::remoteSourceOFEnvStatement() const
+{
+  try
+  {
+     const OFEnvironment& cofe = OFEs::getCurrent();
+     return "source " + cofe.bashrc().filename().string() + ";";
+  }
+  catch (const std::exception& e)
+  {
+    warnings.issue("Could not detect currently loaded OpenFOAM environment. "
+                   "Running remote command with default OpenFOAM environment loaded.");
+
+    const OFEnvironment& cofe = OFEs::getCurrentOrPreferred();
+    return "source " + cofe.bashrc().filename().string() + ";";
+  }
+
+  return "";
+}
+
+
+
+
 int RemoteLocation::execRemoteCmd(const std::string& command, bool throwOnFail)
 {
   insight::CurrentExceptionContext ex("executing command on remote host: "+command);
@@ -540,19 +562,10 @@ int RemoteLocation::execRemoteCmd(const std::string& command, bool throwOnFail)
 
     std::ostringstream cmd;
 
-    cmd << "export TS_SOCKET="<<socket()<<";";
-
-    try
-    {
-       const OFEnvironment& cofe = OFEs::getCurrent();
-       cmd << "source " << cofe.bashrc().filename() << ";";
-    }
-    catch (const std::exception& e) {
-      warnings.issue("Could not detect currently loaded OpenFOAM environment. Running remote command without any OpenFOAM environment loaded.");
-       // ignore, don't load OF config remotely
-    }
-
-    cmd << "cd "<<remoteDir_<<" && (" << command << ")";
+    cmd
+        << "export TS_SOCKET="<<socket()<<";"
+        << remoteSourceOFEnvStatement()
+        << "cd "<<remoteDir_<<" && (" << command << ")";
 
     int ret = bp::system(
                 bp::search_path("ssh"),

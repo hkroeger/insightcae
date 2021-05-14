@@ -1,7 +1,7 @@
 #ifndef CHARTRENDERER_H
 #define CHARTRENDERER_H
 
-
+#include <memory>
 #include <string>
 
 namespace boost { namespace filesystem { class path; } }
@@ -21,6 +21,8 @@ protected:
 public:
   ChartRenderer(const ChartData* data);
   virtual void render(const boost::filesystem::path& outimagepath) const =0;
+
+  static std::unique_ptr<ChartRenderer> create(const ChartData* data);
 };
 
 

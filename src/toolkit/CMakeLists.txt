@@ -207,10 +207,12 @@ set(toolkit_SOURCES
     code_aster/casolveroutputanalyzer.cpp
 )
 
-if( "${INSIGHT_CHARTRENDERER}" STREQUAL "gnuplot" )
+if (INSIGHT_GNUPLOT_CHARTRENDERER)
     list(APPEND toolkit_SOURCES base/resultelements/gnuplotrenderer.cpp)
     add_definitions(-DCHART_RENDERER_GNUPLOT)
-elseif("${INSIGHT_CHARTRENDERER}" STREQUAL "matplotlib" )
+endif()
+
+if (INSIGHT_MATPLOTLIB_CHARTRENDERER)
     list(APPEND toolkit_SOURCES base/resultelements/matplotlibrenderer.cpp)
     add_definitions(-DCHART_RENDERER_MATPLOTLIB)
 endif()

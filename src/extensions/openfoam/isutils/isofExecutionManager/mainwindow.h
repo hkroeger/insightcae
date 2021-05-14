@@ -36,6 +36,23 @@ Q_SIGNALS:
 };
 
 
+class AuxiliaryJob
+    : public QObject
+{
+  Q_OBJECT
+
+  insight::JobPtr job_;
+
+public:
+  AuxiliaryJob(insight::JobPtr job);
+
+  void run();
+
+Q_SIGNALS:
+  void outputLineReceived(const QString& line);
+  void completed(int returnValue);
+};
+
 
 
 class MainWindow
@@ -55,6 +72,8 @@ class MainWindow
 
   QProgressBar* progressbar_;
 
+  QThread auxJobThread_;
+
 protected:
     void updateGUI();
     void onStartTail();
@@ -69,6 +88,8 @@ public:
     virtual void closeEvent(QCloseEvent *event);
     void saveSettings();
     void readSettings();
+
+    void remoteWriteAndCopyBack(bool parallel);
 
 public Q_SLOTS:
     void onSelectRemoteDir();

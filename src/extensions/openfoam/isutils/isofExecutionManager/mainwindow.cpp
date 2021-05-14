@@ -4,6 +4,7 @@
 #include <cstdlib>
 
 #include "base/boost_include.h"
+#include "base/tools.h"
 
 #include "openfoam/solveroutputanalyzer.h"
 
@@ -177,6 +178,14 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
   connect(ui->sync_to_remote, &QPushButton::clicked, this, &MainWindow::syncLocalToRemote);
   connect(ui->sync_to_local, &QPushButton::clicked, this, &MainWindow::syncRemoteToLocal);
+  connect(ui->actionRemote_write_and_copy_to_local, &QAction::triggered,
+          [=]() {
+            this->remoteWriteAndCopyBack(false);
+          });
+  connect(ui->actionRemote_write_reconstruct_and_copy_to_local, &QAction::triggered,
+          [=]() {
+            this->remoteWriteAndCopyBack(true);
+          });
 
   connect(ui->actionStart_Paraview, &QAction::triggered, this, &MainWindow::onStartParaview);
   connect(ui->actionStart_Remote_Paraview, &QAction::triggered, this, &MainWindow::onStartRemoteParaview);
@@ -241,6 +250,10 @@ MainWindow::~MainWindow()
   {
     tsi_->stopTail();
   }
+
+  auxJobThread_.quit();
+  auxJobThread_.wait();
+
   delete ui;
 }
 
@@ -353,6 +366,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
+
 void MainWindow::saveSettings()
 {
     QSettings settings("silentdynamics", "isofExecutionManager");
@@ -361,6 +375,7 @@ void MainWindow::saveSettings()
     settings.setValue("vsplitter", ui->v_splitter->saveState());
 }
 
+
 void MainWindow::readSettings()
 {
     QSettings settings("silentdynamics", "isofExecutionManager");
@@ -368,3 +383,64 @@ void MainWindow::readSettings()
     restoreState(settings.value("windowState").toByteArray());
     ui->v_splitter->restoreState(settings.value("vsplitter").toByteArray());
 }
+
+
+AuxiliaryJob::AuxiliaryJob( insight::JobPtr job )
+  : job_(job)
+{}
+
+
+void AuxiliaryJob::run()
+{
+  auto handleOutputLine=[this](const std::string& line)
+  {
+    std::cout<<line<<std::endl;
+    if (!line.empty())
+    {
+      Q_EMIT outputLineReceived( QString::fromStdString(line) );
+    }
+  };
+
+  job_->ios_run_with_interruption(
+        handleOutputLine,
+        handleOutputLine
+  );
+  job_->process->wait();
+
+  Q_EMIT completed(job_->process->exit_code());
+}
+
+
+void MainWindow::remoteWriteAndCopyBack(bool parallel)
+{
+  std::ostringstream cmd;
+
+  cmd
+      << remote_->remoteSourceOFEnvStatement()
+      << "cd "<<remote_->remoteDir()<<" && "
+      << "( isofWaitForWrite.sh "
+      << (parallel ? "-p" : "") << " )";
+
+
+  auto *aj = new AuxiliaryJob(
+        insight::forkExternalProcess(
+          "ssh", { remote_->server(), "bash -lc \""+insight::escapeShellSymbols(cmd.str())+"\"" } )
+        );
+
+  connect( aj, &AuxiliaryJob::outputLineReceived,
+           ui->log, &LogViewerWidget::appendLine );
+  connect( aj, &AuxiliaryJob::completed,
+           [this,aj](int rv) {
+            if (rv==0)
+            {
+              this->syncRemoteToLocal();
+            }
+            aj->deleteLater();
+           });
+
+  aj->moveToThread(&auxJobThread_);
+  auxJobThread_.start();
+  QMetaObject::invokeMethod(aj, &AuxiliaryJob::run, Qt::QueuedConnection);
+}
+
+

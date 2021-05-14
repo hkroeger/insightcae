@@ -89,10 +89,9 @@ int main(int argc, char *argv[])
   auto displayHelp = [&]{
     std::ostream &os = std::cout;
 
-    os << "Usage:" << std::endl;
-    os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
-    os << std::endl;
-    os << desc << endl;
+    os << "Usage:\n"
+          " " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << "\n"
+       << desc;
   };
 
   po::variables_map vm;

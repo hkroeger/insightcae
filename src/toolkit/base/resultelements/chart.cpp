@@ -1,12 +1,7 @@
 #include "chart.h"
+#include "base/resultelements/chartrenderer.h"
 
 #include "base/tools.h"
-
-#ifdef CHART_RENDERER_GNUPLOT
-#include "base/resultelements/gnuplotrenderer.h"
-#elif defined(CHART_RENDERER_MATPLOTLIB)
-#include "base/resultelements/matplotlibrenderer.h"
-#endif
 
 using namespace std;
 using namespace boost;
@@ -188,15 +183,7 @@ const ChartData* Chart::chartData() const
 
 void Chart::generatePlotImage( const path& imagepath ) const
 {
-  std::shared_ptr<ChartRenderer> renderer;
-
-#ifdef CHART_RENDERER_GNUPLOT
-  renderer.reset( new GnuplotRenderer(chartData()) );
-#elif defined(CHART_RENDERER_MATPLOTLIB)
-  renderer.reset( new MatplotlibRenderer(chartData()) );
-#endif
-
-  renderer->render(imagepath);
+  ChartRenderer::create(chartData())->render(imagepath);
 }
 
 

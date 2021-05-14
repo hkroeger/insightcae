@@ -35,8 +35,8 @@ OPTION(INSIGHT_BUILD_TESTS "Build all executables for testing" OFF)
 OPTION(INSIGHT_INSTALL_DESKTOP "Install MIME types and Desktop integration" ON)
 OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)
 
-set(INSIGHT_CHARTRENDERER "gnuplot" CACHE STRING "Select renderer for charts")
-set_property(CACHE INSIGHT_CHARTRENDERER PROPERTY STRINGS gnuplot matplotlib)
+OPTION(INSIGHT_GNUPLOT_CHARTRENDERER "Enable gnuplot for rendering charts" ON)
+OPTION(INSIGHT_MATPLOTLIB_CHARTRENDERER "Enable matplotlib for rendering charts" OFF)
 
 SET(INSIGHT_SUPERBUILD "" CACHE STRING "Path to superbuild (build directory). If set, use dependencies from that superbuild")
 

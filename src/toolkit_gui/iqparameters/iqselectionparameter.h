@@ -1,11 +1,14 @@
 #ifndef IQSELECTIONPARAMETER_H
 #define IQSELECTIONPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 
 #include "base/parameters/selectionparameter.h"
 
-class IQSelectionParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQSelectionParameter : public IQParameter
 {
 public:
   declareType(insight::SelectionParameter::typeName_());

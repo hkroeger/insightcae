@@ -20,10 +20,13 @@
 #ifndef QVARIABLEITEM_H
 #define QVARIABLEITEM_H
 
+#include "insightcad_gui_export.h"
+
 #include <QObject>
 #include <QListWidgetItem>
 
 #include "qmodeltree.h"
+
 
 #ifndef Q_MOC_RUN
 #include "occinclude.h"
@@ -33,7 +36,7 @@
 //class QoccViewerContext;
 
 
-class QScalarVariableItem
+class INSIGHTCAD_GUI_EXPORT QScalarVariableItem
 : public QModelTreeItem
 {
   Q_OBJECT 
@@ -55,7 +58,7 @@ public slots:
 
 
 
-class QVectorVariableItem
+class INSIGHTCAD_GUI_EXPORT QVectorVariableItem
 : public QDisplayableModelTreeItem
 {
   Q_OBJECT 

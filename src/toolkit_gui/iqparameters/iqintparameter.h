@@ -1,12 +1,15 @@
 #ifndef IQINTPARAMETER_H
 #define IQINTPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 
 #include "base/parameters/simpleparameter.h"
 
 
-class IQIntParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQIntParameter : public IQParameter
 {
 public:
     declareType(insight::IntParameter::typeName_());

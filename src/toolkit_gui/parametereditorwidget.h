@@ -21,6 +21,9 @@
 #ifndef PARAMETEREDITORWIDGET_H
 #define PARAMETEREDITORWIDGET_H
 
+#include "toolkit_gui_export.h"
+
+
 #ifndef Q_MOC_RUN
 #include "base/parameterset.h"
 #endif
@@ -59,7 +62,7 @@ namespace insight {
 class CAD_ParameterSet_Visualizer;
 }
 
-class ParameterEditorWidget
+class TOOLKIT_GUI_EXPORT ParameterEditorWidget
 : public QSplitter
 {
     Q_OBJECT
@@ -119,7 +122,7 @@ Q_SIGNALS:
  * Represents a union of CAD 3D display and modeltree
  * has interface to display and update multiple parameter set visualizers
  */
-class ParameterSetDisplay
+class TOOLKIT_GUI_EXPORT ParameterSetDisplay
  : public QObject
 {
   Q_OBJECT

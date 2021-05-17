@@ -20,6 +20,8 @@
 #ifndef INSIGHT_QMODELTREE_H
 #define INSIGHT_QMODELTREE_H
 
+#include "insightcad_gui_export.h"
+
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
@@ -47,13 +49,13 @@ class QModelTree;
 
 
 
-class IQISCADModel
+class INSIGHTCAD_GUI_EXPORT IQISCADModelContainer
     : public QObject
 {
   Q_OBJECT
 
 public:
-  IQISCADModel(QObject* parent=nullptr);
+  IQISCADModelContainer(QObject* parent=nullptr);
 
 Q_SIGNALS:
 
@@ -81,7 +83,7 @@ Q_SIGNALS:
 
 
 
-class QModelTreeItem
+class INSIGHTCAD_GUI_EXPORT QModelTreeItem
 : public QObject,
   public QTreeWidgetItem
 {
@@ -116,7 +118,7 @@ public Q_SLOTS:
 
 
 
-class QDisplayableModelTreeItem
+class INSIGHTCAD_GUI_EXPORT QDisplayableModelTreeItem
 : public QModelTreeItem
 {
     Q_OBJECT
@@ -164,12 +166,12 @@ public Q_SLOTS:
     virtual void setResolution();
 
 Q_SIGNALS:
-    void show(QDisplayableModelTreeItem* di);
-    void hide(QDisplayableModelTreeItem* di);
+    void showItem(QDisplayableModelTreeItem* di);
+    void hideItem(QDisplayableModelTreeItem* di);
 
     void setDisplayMode(QDisplayableModelTreeItem* di, AIS_DisplayMode sm);
     void setColor(QDisplayableModelTreeItem* di, Quantity_Color c);
-    void setResolution(QDisplayableModelTreeItem* di, double res);
+    void setItemResolution(QDisplayableModelTreeItem* di, double res);
 
     void focus(Handle_AIS_InteractiveObject ais);
     void unfocus();
@@ -184,7 +186,9 @@ struct SymbolsSnapshot
       datums_, postprocactions_;
 };
 
-class QModelTree
+
+
+class INSIGHTCAD_GUI_EXPORT QModelTree
 : public QTreeWidget
 {
     Q_OBJECT
@@ -272,8 +276,8 @@ public:
 
     QDisplayableModelTreeItem* findFeature(const QString& name, bool is_component);
 
-    void connectModel(IQISCADModel* model);
-    void disconnectModel(IQISCADModel* model);
+    void connectModel(IQISCADModelContainer* model);
+    void disconnectModel(IQISCADModelContainer* model);
 
 public Q_SLOTS:
     void storeSymbolSnapshot();
@@ -322,12 +326,12 @@ protected Q_SLOTS:
 
 Q_SIGNALS:
     // relay signals
-    void show(QDisplayableModelTreeItem* di);
-    void hide(QDisplayableModelTreeItem* di);
+    void showItem(QDisplayableModelTreeItem* di);
+    void hideItem(QDisplayableModelTreeItem* di);
 
     void setDisplayMode(QDisplayableModelTreeItem* di, AIS_DisplayMode sm);
     void setColor(QDisplayableModelTreeItem* di, Quantity_Color c);
-    void setResolution(QDisplayableModelTreeItem* di, double res);
+    void setItemResolution(QDisplayableModelTreeItem* di, double res);
 
     void insertParserStatementAtCursor(const QString& statement);
     void insertIntoNotebook(const QString& statement);

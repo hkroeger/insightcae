@@ -764,7 +764,7 @@ void AnalysisForm::onCreateReport()
         return;
       }
 
-    QMessageBox::information(this, "Done!", QString("The report has been created as\n")+outpath.c_str());
+    QMessageBox::information(this, "Done!", "The report has been created as\n"+QString::fromStdString(outpath.string()) );
   }
 }
 

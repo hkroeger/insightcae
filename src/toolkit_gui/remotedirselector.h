@@ -1,6 +1,9 @@
 #ifndef REMOTEDIRSELECTOR_H
 #define REMOTEDIRSELECTOR_H
 
+#include "toolkit_gui_export.h"
+
+
 
 #include <QDialog>
 #include <QFileSystemModel>
@@ -14,7 +17,7 @@ namespace Ui {
 
 
 
-class RemoteDirSelector : public QDialog
+class TOOLKIT_GUI_EXPORT RemoteDirSelector : public QDialog
 {
   Q_OBJECT
 

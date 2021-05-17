@@ -11,6 +11,9 @@ set(insightcad_gui_SRCS
  iscadmetatyperegistrator.cpp
  iscadmetatyperegistrator.h
 
+ iqcadmodelcontainer.h
+ iqcadmodelcontainer.cpp
+
  cadfeaturetransient.cpp
  cadfeaturetransient.h
  pointertransient.cpp
@@ -39,6 +42,10 @@ set(insightcad_gui_SRCS
 
 
 add_library(insightcad_gui SHARED ${insightcad_gui_SRCS})
+
+# --export-all-symbols is not sufficient for signal/slots to work across DLLs
+generate_export_header(insightcad_gui)
+target_compile_definitions(insightcad_gui PRIVATE insightcad_gui_EXPORTS)
 
 target_link_libraries(insightcad_gui
   insightcad

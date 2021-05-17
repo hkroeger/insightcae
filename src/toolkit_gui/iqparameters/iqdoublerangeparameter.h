@@ -1,11 +1,14 @@
 #ifndef IQDOUBLERANGEPARAMETER_H
 #define IQDOUBLERANGEPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 
 #include "base/parameters/doublerangeparameter.h"
 
-class IQDoubleRangeParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQDoubleRangeParameter : public IQParameter
 {
 public:
     declareType(insight::DoubleRangeParameter::typeName_());

@@ -1,11 +1,14 @@
 #ifndef IQBOOLPARAMETER_H
 #define IQBOOLPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 
 #include "base/parameters/simpleparameter.h"
 
-class IQBoolParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQBoolParameter : public IQParameter
 {
 public:
   declareType(insight::BoolParameter::typeName_());

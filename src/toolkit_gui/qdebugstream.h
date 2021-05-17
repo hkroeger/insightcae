@@ -1,6 +1,9 @@
 #ifndef Q_DEBUGSTREAM_H
 #define Q_DEBUGSTREAM_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iostream>
 #include <streambuf>
 #include <string>
@@ -15,7 +18,7 @@
 extern QMutex qdebugstream_mutex;
 
 
-class Q_DebugStream 
+class TOOLKIT_GUI_EXPORT Q_DebugStream
 : public QObject, 
   public std::basic_streambuf<char>
 {

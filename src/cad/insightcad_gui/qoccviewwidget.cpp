@@ -602,7 +602,7 @@ void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
 
 
 
-void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* viewer)
+void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* /*viewer*/)
 {
     // Remove previously displayed sub objects from display
     for (Handle_AIS_InteractiveObject& o: additionalDisplayObjectsForSelection_)
@@ -732,15 +732,15 @@ QDisplayableModelTreeItem* QoccViewWidget::getSelectedItem()
 
 void QoccViewWidget::connectModelTree(QModelTree* mt) const
 {
-  connect(mt, &QModelTree::show,
+  connect(mt, &QModelTree::showItem,
           this, &QoccViewWidget::onShow);
-  connect(mt, &QModelTree::hide,
+  connect(mt, &QModelTree::hideItem,
           this, &QoccViewWidget::onHide);
   connect(mt, &QModelTree::setDisplayMode,
           this, &QoccViewWidget::onSetDisplayMode);
   connect(mt, &QModelTree::setColor,
           this, &QoccViewWidget::onSetColor);
-  connect(mt, &QModelTree::setResolution,
+  connect(mt, &QModelTree::setItemResolution,
           this, &QoccViewWidget::onSetResolution);
 }
 
@@ -1029,7 +1029,7 @@ void QoccViewWidget::toggleClipYZ(void)
  */
 void QoccViewWidget::toggleGrid  ( void )
 {
-  Aspect_GridType		myGridType= Aspect_GT_Rectangular;
+//  Aspect_GridType		myGridType= Aspect_GT_Rectangular;
   Aspect_GridDrawMode		myGridMode=Aspect_GDM_Lines;
   Quantity_NameOfColor	myGridColor = Quantity_NOC_RED4;
   Quantity_NameOfColor	myGridTenthColor=Quantity_NOC_GRAY90;
@@ -1092,7 +1092,7 @@ void QoccViewWidget::toggleClip(double px, double py, double pz, double nx, doub
 }
 
 
-void QoccViewWidget::displayMessage(const QString& msg)
+void QoccViewWidget::displayMessage(const QString& /*msg*/)
 {
 }
 
@@ -1182,10 +1182,8 @@ void QoccViewWidget::updatePlanesSizes()
 
 void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 {
-  std::cerr<<"onShow"<<std::endl;
   if (di)
     {
-    std::cerr<<" do display"<<std::endl;
       Handle_AIS_InteractiveObject ais = di->ais( *getContext() );
 
       getContext()->Display
@@ -1482,7 +1480,7 @@ void QoccViewWidget::onLeftButtonDown(  Qt::KeyboardModifiers nFlags, const QPoi
 /*!
   \brief	This function handles middle button down events from the mouse.
 */
-void QoccViewWidget::onMiddleButtonDown(  Qt::KeyboardModifiers nFlags, const QPoint point )
+void QoccViewWidget::onMiddleButtonDown(  Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/ )
 {
 /*
   myStartPoint = point;

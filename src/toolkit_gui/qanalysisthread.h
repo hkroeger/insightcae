@@ -1,6 +1,9 @@
 #ifndef QANALYSISTHREAD_H
 #define QANALYSISTHREAD_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QObject>
 
 #include "base/analysis.h"
@@ -9,7 +12,7 @@
 namespace insight
 {
 
-class QAnalysisThread
+class TOOLKIT_GUI_EXPORT QAnalysisThread
     : public QObject,
       public AnalysisThread
 {

@@ -1,6 +1,9 @@
 #ifndef QCOMMENT_H
 #define QCOMMENT_H
 
+#include "toolkit_gui_export.h"
+
+
 #include "qresultsetmodel.h"
 
 class QTextEdit;
@@ -9,7 +12,7 @@ namespace insight
 {
 
 
-class QComment
+class TOOLKIT_GUI_EXPORT QComment
 : public QResultElement
 {
     Q_OBJECT

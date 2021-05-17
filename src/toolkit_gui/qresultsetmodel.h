@@ -1,6 +1,9 @@
 #ifndef QRESULTSETMODEL_H
 #define QRESULTSETMODEL_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QAbstractItemModel>
 
 class QVBoxLayout;
@@ -16,7 +19,7 @@ namespace insight
 
 
 
-class ResizeEventNotifier
+class TOOLKIT_GUI_EXPORT ResizeEventNotifier
     : public QObject
 {
   Q_OBJECT
@@ -34,7 +37,7 @@ Q_SIGNALS:
 
 
 
-class QResultElement
+class TOOLKIT_GUI_EXPORT QResultElement
  : public QObject
 {
     Q_OBJECT
@@ -76,7 +79,7 @@ public:
 
 
 
-class QRootResultElement
+class TOOLKIT_GUI_EXPORT QRootResultElement
  : public QResultElement
 {
     Q_OBJECT
@@ -92,7 +95,7 @@ public:
 
 
 
-class QStaticTextResultElement
+class TOOLKIT_GUI_EXPORT QStaticTextResultElement
  : public QResultElement
 {
     Q_OBJECT
@@ -110,7 +113,7 @@ public:
 
 
 
-class QResultSetModel
+class TOOLKIT_GUI_EXPORT QResultSetModel
         : public QAbstractItemModel
 {
     Q_OBJECT

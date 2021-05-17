@@ -6,6 +6,9 @@
 #ifndef EMAILPRIVATE_H
 #define EMAILPRIVATE_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QString>
 #include <QList>
 
@@ -13,7 +16,7 @@
 /**
   * PIMPL pattern object for QxtEmail to avoid dirty namings.
   */
-struct EmailPrivate
+struct TOOLKIT_GUI_EXPORT EmailPrivate
 {
     QString senderAddress;
     QString receiverAddress;

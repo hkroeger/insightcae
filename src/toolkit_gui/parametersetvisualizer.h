@@ -1,6 +1,9 @@
 #ifndef PARAMETERSETVISUALIZER_H
 #define PARAMETERSETVISUALIZER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QObject>
 #include <QThread>
 
@@ -12,8 +15,8 @@
 namespace insight
 {
 
-class CAD_ParameterSet_Visualizer
-: public IQISCADModel,
+class TOOLKIT_GUI_EXPORT CAD_ParameterSet_Visualizer
+: public IQISCADModelContainer,
   public ParameterSet_Visualizer
 {
 

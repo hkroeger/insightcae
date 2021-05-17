@@ -1,11 +1,14 @@
 #ifndef IQDIRECTORYPARAMETER_H
 #define IQDIRECTORYPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 
 #include "base/parameters/pathparameter.h"
 
-class IQDirectoryParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQDirectoryParameter : public IQParameter
 {
 public:
   declareType(insight::DirectoryParameter::typeName_());

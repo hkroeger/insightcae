@@ -1,6 +1,9 @@
 #ifndef REMOTEPARAVIEW_H
 #define REMOTEPARAVIEW_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QDialog>
 
 #include "base/boost_include.h"
@@ -10,7 +13,7 @@ namespace Ui {
 class RemoteParaview;
 }
 
-class RemoteParaview : public QDialog
+class TOOLKIT_GUI_EXPORT RemoteParaview : public QDialog
 {
   Q_OBJECT
 

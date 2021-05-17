@@ -90,6 +90,11 @@ SET(toolkit_gui_RCCS toolkit_gui.qrc)
 add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_HEADERS} ${toolkit_gui_FORMS} ${toolkit_gui_RCCS})
 add_PDL(toolkit_gui "${toolkit_gui_HEADERS}")
 
+# --export-all-symbols is not sufficient for signal/slots to work across DLLs
+include(GenerateExportHeader)
+generate_export_header(toolkit_gui)
+target_compile_definitions(toolkit_gui PRIVATE toolkit_gui_EXPORTS)
+
 target_link_libraries(toolkit_gui
  toolkit insightcad_gui
  Qt5::Widgets Qt5::Charts

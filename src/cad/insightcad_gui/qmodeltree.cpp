@@ -39,7 +39,7 @@
 boost::mt19937 boostRenGen;
 
 
-IQISCADModel::IQISCADModel(QObject* parent)
+IQISCADModelContainer::IQISCADModelContainer(QObject* parent)
   : QObject(parent)
 {}
 
@@ -115,8 +115,8 @@ Handle_AIS_InteractiveObject QDisplayableModelTreeItem::ais(AIS_InteractiveConte
 void QDisplayableModelTreeItem::setShadingMode(AIS_DisplayMode ds)
 {
   shadingMode_=ds;
-  if (isVisible())
-    emit setDisplayMode(this, shadingMode_);
+//  if (isVisible())
+//    emit setDisplayMode(this, shadingMode_);
 }
 
 Quantity_Color QDisplayableModelTreeItem::color() const
@@ -154,11 +154,7 @@ void QDisplayableModelTreeItem::initDisplay()
 void QDisplayableModelTreeItem::show()
 {
   setCheckState(COL_VIS, Qt::Checked);
-//  if (ais_.IsNull())
-//    {
-//      ais_=createAIS(*getContext());
-//    }
-  Q_EMIT show(this);
+  Q_EMIT showItem(this);
 }
 
 
@@ -167,7 +163,7 @@ void QDisplayableModelTreeItem::hide()
   setCheckState(COL_VIS, Qt::Unchecked);
   if (!ais_.IsNull())
     {
-      Q_EMIT hide(this);
+      Q_EMIT hideItem(this);
     }
 }
 
@@ -218,7 +214,7 @@ void QDisplayableModelTreeItem::setResolution()
   double res=QInputDialog::getDouble(treeWidget(), "Set Resolution", "Resolution:", 0.001, 1e-7, 0.1, 7, &ok);
   if (ok)
   {
-    Q_EMIT setResolution(this, res);
+    Q_EMIT setItemResolution(this, res);
   }
 }
 
@@ -257,16 +253,16 @@ void QModelTree::replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QT
 
 void QModelTree::connectDisplayableItem(QDisplayableModelTreeItem* newf)
 {
-  connect(newf, QOverload<QDisplayableModelTreeItem*>::of(&QDisplayableModelTreeItem::show),
-          this, &QModelTree::show);
-  connect(newf, QOverload<QDisplayableModelTreeItem*>::of(&QDisplayableModelTreeItem::hide),
-          this, &QModelTree::hide);
+  connect(newf, &QDisplayableModelTreeItem::showItem,
+          this, &QModelTree::showItem);
+  connect(newf, &QDisplayableModelTreeItem::hideItem,
+          this, &QModelTree::hideItem);
   connect(newf, &QDisplayableModelTreeItem::setDisplayMode,
           this, &QModelTree::setDisplayMode);
   connect(newf, &QDisplayableModelTreeItem::setColor,
           this, &QModelTree::setColor);
-  connect(newf, QOverload<QDisplayableModelTreeItem*,double>::of(&QDisplayableModelTreeItem::setResolution),
-          this, &QModelTree::setResolution);
+  connect(newf, &QDisplayableModelTreeItem::setItemResolution,
+          this, &QModelTree::setItemResolution);
   connect(newf, &QDisplayableModelTreeItem::insertParserStatementAtCursor,
           this, &QModelTree::insertParserStatementAtCursor);
   connect(newf, &QDisplayableModelTreeItem::jumpTo,
@@ -556,50 +552,50 @@ void QModelTree::addCreatedPostprocActionToSymbolSnapshot(const QString& name, i
 }
 
 
-void QModelTree::connectModel(IQISCADModel *model)
+void QModelTree::connectModel(IQISCADModelContainer *model)
 {
-  connect(model, &IQISCADModel::beginRebuild,
+  connect(model, &IQISCADModelContainer::beginRebuild,
           this, &QModelTree::storeSymbolSnapshot );
-  connect(model, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModel::createdVariable),
+  connect(model, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelContainer::createdVariable),
           this, &QModelTree::onAddScalar);
-  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModel::createdVariable),
+  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelContainer::createdVariable),
           this, &QModelTree::onAddVector);
-  connect(model, &IQISCADModel::createdFeature,
+  connect(model, &IQISCADModelContainer::createdFeature,
           this, &QModelTree::onAddFeature);
-  connect(model, &IQISCADModel::createdDatum,
+  connect(model, &IQISCADModelContainer::createdDatum,
           this, &QModelTree::onAddDatum);
-  connect(model, &IQISCADModel::createdEvaluation,
+  connect(model, &IQISCADModelContainer::createdEvaluation,
           this, &QModelTree::onAddEvaluation );
 
-  connect(model, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModel::createdVariable),
+  connect(model, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelContainer::createdVariable),
           this, &QModelTree::addCreatedScalarToSymbolSnapshot);
-  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModel::createdVariable),
+  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelContainer::createdVariable),
           this, &QModelTree::addCreatedVectorToSymbolSnapshot);
-  connect(model, &IQISCADModel::createdFeature,
+  connect(model, &IQISCADModelContainer::createdFeature,
           this, &QModelTree::addCreatedFeatureToSymbolSnapshot);
-  connect(model, &IQISCADModel::createdDatum,
+  connect(model, &IQISCADModelContainer::createdDatum,
           this, &QModelTree::addCreatedDatumToSymbolSnapshot);
-  connect(model, &IQISCADModel::createdEvaluation,
+  connect(model, &IQISCADModelContainer::createdEvaluation,
           this, &QModelTree::addCreatedPostprocActionToSymbolSnapshot);
 
-  connect(model, &IQISCADModel::removedScalar,
+  connect(model, &IQISCADModelContainer::removedScalar,
           this, &QModelTree::onRemoveScalar);
-  connect(model, &IQISCADModel::removedVector,
+  connect(model, &IQISCADModelContainer::removedVector,
           this, &QModelTree::onRemoveVector);
-  connect(model, &IQISCADModel::removedFeature,
+  connect(model, &IQISCADModelContainer::removedFeature,
           this, &QModelTree::onRemoveFeature);
-  connect(model, &IQISCADModel::removedDatum,
+  connect(model, &IQISCADModelContainer::removedDatum,
           this, &QModelTree::onRemoveDatum);
-  connect(model, &IQISCADModel::removedEvaluation,
+  connect(model, &IQISCADModelContainer::removedEvaluation,
           this, &QModelTree::onRemoveEvaluation);
 
-  connect(model, &IQISCADModel::finishedRebuild,
+  connect(model, &IQISCADModelContainer::finishedRebuild,
           this, &QModelTree::removeNonRecreatedSymbols);
 
 }
 
 
-void QModelTree::disconnectModel(IQISCADModel* model)
+void QModelTree::disconnectModel(IQISCADModelContainer* model)
 {
   this->disconnect(model, 0, this, 0);
 }
@@ -635,7 +631,6 @@ void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv, in
 
 void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component, boost::variant<boost::blank,AIS_DisplayMode> ds)
 {
-  std::cerr<<"onAddFeature"<<std::endl;
   QFeatureItem *newf, *old;
   QTreeWidgetItem* cat;
   {

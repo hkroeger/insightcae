@@ -1,6 +1,9 @@
 #ifndef REMOTESYNC_H
 #define REMOTESYNC_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QThread>
 #include "base/remoteexecution.h"
 
@@ -8,7 +11,7 @@
 namespace insight {
 
 
-class RunSyncToRemote : public QThread
+class TOOLKIT_GUI_EXPORT RunSyncToRemote : public QThread
 {
   Q_OBJECT
 
@@ -28,7 +31,7 @@ Q_SIGNALS:
 
 
 
-class RunSyncToLocal : public QThread
+class TOOLKIT_GUI_EXPORT RunSyncToLocal : public QThread
 {
   Q_OBJECT
 

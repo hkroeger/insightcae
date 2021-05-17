@@ -1,11 +1,14 @@
 #ifndef PROGRESSRELAY_H
 #define PROGRESSRELAY_H
 
+#include "toolkit_gui_export.h"
+
+
 #include "base/progressdisplayer.h"
 
 #include <QObject>
 
-class ProgressRelay
+class TOOLKIT_GUI_EXPORT ProgressRelay
  : public QObject,
    public insight::ProgressDisplayer
 {

@@ -1,6 +1,9 @@
 #ifndef INSIGHT_QACTIONPROGRESSDISPLAYERWIDGET_H
 #define INSIGHT_QACTIONPROGRESSDISPLAYERWIDGET_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QWidget>
 #include <QProgressBar>
 #include <QVBoxLayout>
@@ -12,7 +15,7 @@
 
 namespace insight {
 
-class QActionProgressDisplayerWidget
+class TOOLKIT_GUI_EXPORT QActionProgressDisplayerWidget
 : public QWidget,
   public insight::ProgressDisplayer
 {

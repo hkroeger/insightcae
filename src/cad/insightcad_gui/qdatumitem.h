@@ -20,6 +20,8 @@
 #ifndef QDATUMITEM_H
 #define QDATUMITEM_H
 
+#include "insightcad_gui_export.h"
+
 #include <QListWidgetItem>
 #include "qmodeltree.h"
 
@@ -30,7 +32,7 @@
 
 //class QoccViewerContext;
 
-class QDatumItem
+class INSIGHTCAD_GUI_EXPORT QDatumItem
 : public QDisplayableModelTreeItem
 {
   Q_OBJECT

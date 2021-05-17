@@ -1,11 +1,14 @@
 #ifndef INSIGHT_QCHART_H
 #define INSIGHT_QCHART_H
 
+#include "toolkit_gui_export.h"
+
+
 #include "qimage.h"
 
 namespace insight {
 
-class QChart
+class TOOLKIT_GUI_EXPORT QChart
  : public QImage
 {
     Q_OBJECT

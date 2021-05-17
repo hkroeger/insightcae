@@ -1,11 +1,14 @@
 #ifndef INSIGHT_QATTRIBUTERESULTTABLE_H
 #define INSIGHT_QATTRIBUTERESULTTABLE_H
 
+#include "toolkit_gui_export.h"
+
+
 #include "qresultsetmodel.h"
 
 namespace insight {
 
-class QAttributeResultTable
+class TOOLKIT_GUI_EXPORT QAttributeResultTable
   : public QResultElement
 {
     Q_OBJECT

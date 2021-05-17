@@ -20,6 +20,8 @@
 #ifndef QEVALUATIONITEM_H
 #define QEVALUATIONITEM_H
 
+#include "insightcad_gui_export.h"
+
 #include <QListWidgetItem>
 #include "qmodeltree.h"
 
@@ -30,7 +32,7 @@
 #endif
 //class QoccViewerContext;
 
-class QEvaluationItem
+class INSIGHTCAD_GUI_EXPORT QEvaluationItem
 : public QDisplayableModelTreeItem
 {
   insight::cad::PostprocActionPtr smp_;

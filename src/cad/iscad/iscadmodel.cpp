@@ -83,7 +83,7 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
     f.setPointSize(fs);
     QFontMetrics fm(f);
     sizehint_=QSize(
-          3*fm.width("abcdefghijklmnopqrstuvwxyz_-+*"),
+          3*fm.horizontalAdvance("abcdefghijklmnopqrstuvwxyz_-+*"),
           fm.height()
         );
 
@@ -124,7 +124,7 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
 
 ISCADModel::~ISCADModel()
 {
-//     bgparsethread_.stop();
+    bgparsethread_.quit();
     bgparsethread_.wait();
 }
 
@@ -806,15 +806,15 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 
     model_->connectModelTree(modeltree_);
 
-    connect(modeltree_, &QModelTree::show,
-            viewer_, &QoccViewWidget::onShow/*(QDisplayableModelTreeItem*)*/);
-    connect(modeltree_, &QModelTree::hide/*(QDisplayableModelTreeItem*)*/,
+    connect(modeltree_, &QModelTree::showItem,
+            viewer_, &QoccViewWidget::onShow);
+    connect(modeltree_, &QModelTree::hideItem,
             viewer_, &QoccViewWidget::onHide);
-    connect(modeltree_, &QModelTree::setDisplayMode/*(QDisplayableModelTreeItem*, AIS_DisplayMode)*/,
+    connect(modeltree_, &QModelTree::setDisplayMode,
             viewer_, &QoccViewWidget::onSetDisplayMode);
-    connect(modeltree_, &QModelTree::setColor/*(QDisplayableModelTreeItem*, Quantity_Color)*/,
+    connect(modeltree_, &QModelTree::setColor,
             viewer_, &QoccViewWidget::onSetColor);
-    connect(modeltree_, &QModelTree::setResolution/*(QDisplayableModelTreeItem*, double)*/,
+    connect(modeltree_, &QModelTree::setItemResolution,
             viewer_, &QoccViewWidget::onSetResolution);
 
     connect(modeltree_, &QModelTree::focus,
@@ -832,7 +832,7 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     connect(model_, &ISCADModel::updateTitle,
             this, &ISCADModelEditor::onUpdateTitle);
 
-    connect(viewer_, &QoccViewWidget::addEvaluationToModel/*(QString,insight::cad::PostprocActionPtr, bool)*/,
+    connect(viewer_, &QoccViewWidget::addEvaluationToModel,
             modeltree_, &QModelTree::onAddEvaluation);
 
     connect(viewer_, &QoccViewWidget::insertNotebookText,

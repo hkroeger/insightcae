@@ -1,6 +1,9 @@
 #ifndef OF_CLEAN_CASE_H
 #define OF_CLEAN_CASE_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QWidget>
 #include <QDialog>
 #include <QTimer>
@@ -15,7 +18,7 @@ class OFCleanCaseForm;
 }
 
 
-class OFCleanCaseForm
+class TOOLKIT_GUI_EXPORT OFCleanCaseForm
  : public QWidget
 {
     Q_OBJECT
@@ -40,7 +43,7 @@ Q_SIGNALS:
     void statusMessage(const QString& msg);
 };
 
-class OFCleanCaseDialog
+class TOOLKIT_GUI_EXPORT OFCleanCaseDialog
 : public QDialog
 {
 public:

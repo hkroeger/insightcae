@@ -1,6 +1,9 @@
 #ifndef BLOCKMESH_GUI_H
 #define BLOCKMESH_GUI_H
 
+#include "toolkit_gui_export.h"
+
+
 #include "openfoam/blockmesh_templates.h"
 
 #include "cadtypes.h"
@@ -13,7 +16,7 @@ namespace bmd
 
 
 
-class blockMeshDict_Box_ParameterSet_Visualizer
+class TOOLKIT_GUI_EXPORT blockMeshDict_Box_ParameterSet_Visualizer
  : public CAD_ParameterSet_Visualizer
 {
 public:
@@ -23,7 +26,7 @@ public:
 
 
 
-class blockMeshDict_Cylinder_ParameterSet_Visualizer
+class TOOLKIT_GUI_EXPORT blockMeshDict_Cylinder_ParameterSet_Visualizer
  : public CAD_ParameterSet_Visualizer
 {
 public:
@@ -34,7 +37,7 @@ public:
 
 
 
-class blockMeshDict_Sphere_ParameterSet_Visualizer
+class TOOLKIT_GUI_EXPORT blockMeshDict_Sphere_ParameterSet_Visualizer
  : public CAD_ParameterSet_Visualizer
 {
 public:

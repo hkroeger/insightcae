@@ -22,6 +22,9 @@
 #ifndef GRAPHPROGRESSDISPLAYER_H
 #define GRAPHPROGRESSDISPLAYER_H
 
+#include "toolkit_gui_export.h"
+
+
 #ifndef Q_MOC_RUN
 #include <base/analysis.h>
 #endif
@@ -38,7 +41,7 @@
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
 
-class GraphProgressChart
+class TOOLKIT_GUI_EXPORT GraphProgressChart
     : public QtCharts::QChartView
 {
   Q_OBJECT
@@ -74,7 +77,7 @@ public slots:
 
 
 
-class GraphProgressDisplayer 
+class TOOLKIT_GUI_EXPORT GraphProgressDisplayer
 : public QTabWidget,
   public insight::ProgressDisplayer
 {

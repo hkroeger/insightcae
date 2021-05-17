@@ -1,13 +1,16 @@
 #ifndef LOGVIEWERWIDGET_H
 #define LOGVIEWERWIDGET_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QPlainTextEdit>
 
 namespace insight {
 class ProgressState;
 }
 
-class LogViewerWidget
+class TOOLKIT_GUI_EXPORT LogViewerWidget
 : public QPlainTextEdit
 {
 public:

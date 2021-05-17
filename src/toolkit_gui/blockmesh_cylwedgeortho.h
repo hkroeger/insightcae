@@ -21,6 +21,8 @@
 #ifndef BLOCKMESH_CYLWEDGEORTHO_H
 #define BLOCKMESH_CYLWEDGEORTHO_H
 
+#include "toolkit_gui_export.h"
+
 #include "parametersetvisualizer.h"
 #include "openfoam/blockmesh_templates.h"
 #include "cadtypes.h"
@@ -43,7 +45,7 @@ class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer;
 
 
 
-class blockMeshDict_CylWedgeOrtho
+class TOOLKIT_GUI_EXPORT blockMeshDict_CylWedgeOrtho
     : public BlockMeshTemplate
 {
   friend class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer;

@@ -21,6 +21,8 @@
 #ifndef INSIGHT_CAD_CADFEATURETRANSIENT_H
 #define INSIGHT_CAD_CADFEATURETRANSIENT_H
 
+#include "insightcad_gui_export.h"
+
 #ifndef Q_MOC_RUN
 #include "cadfeature.h"
 #if (OCC_VERSION_MAJOR<7)
@@ -31,7 +33,7 @@
 namespace insight {
 namespace cad {
 
-class FeatureTransient 
+class INSIGHTCAD_GUI_EXPORT FeatureTransient
 : public Standard_Transient
 {
 protected:

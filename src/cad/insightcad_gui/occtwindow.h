@@ -1,6 +1,8 @@
 #ifndef OcctWindow_H
 #define OcctWindow_H
 
+#include "insightcad_gui_export.h"
+
 #include <Standard_Version.hxx>
 #include <Aspect_Window.hxx>
 
@@ -34,7 +36,7 @@ class OcctWindow;
   of Aspect_Window interface at application level.
 */
 
-class OcctWindow : public Aspect_Window
+class INSIGHTCAD_GUI_EXPORT OcctWindow : public Aspect_Window
 {
 
 protected:

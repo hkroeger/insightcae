@@ -20,6 +20,8 @@
 #ifndef BLOCKMESHDICT_CYLWEDGE_H
 #define BLOCKMESHDICT_CYLWEDGE_H
 
+#include "toolkit_gui_export.h"
+
 #include "parametersetvisualizer.h"
 #include "openfoam/blockmesh_templates.h"
 #include "cadtypes.h"
@@ -37,7 +39,7 @@ namespace bmd
 
 class blockMeshDict_CylWedge_ParameterSet_Visualizer;
 
-class blockMeshDict_CylWedge
+class TOOLKIT_GUI_EXPORT blockMeshDict_CylWedge
     : public BlockMeshTemplate
 {
   friend class blockMeshDict_CylWedge_ParameterSet_Visualizer;

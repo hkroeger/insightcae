@@ -1,9 +1,12 @@
 #ifndef IQARRAYELEMENTPARAMETER_H
 #define IQARRAYELEMENTPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 
-class IQArrayElementParameterBase
+class TOOLKIT_GUI_EXPORT IQArrayElementParameterBase
 {
 public:
   declareFactoryTable

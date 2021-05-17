@@ -1,6 +1,8 @@
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
+#include "insightcad_gui_export.h"
+
 #include <memory>
 
 #include <QWidget>
@@ -53,7 +55,7 @@ const double ValZWMin = 1;
 
 
 
-class QoccViewWidget
+class INSIGHTCAD_GUI_EXPORT QoccViewWidget
 : public QWidget
 #if OCC_VERSION_MAJOR>=7
   , protected AIS_ViewController
@@ -127,7 +129,7 @@ public:
 
   void connectModelTree(QModelTree* mt) const;
 
-  virtual QSize	sizeHint() const;
+  QSize	sizeHint() const override;
 
 Q_SIGNALS:
 
@@ -204,16 +206,15 @@ public Q_SLOTS:
 
 protected: // methods
 
-  virtual void paintEvent        ( QPaintEvent* e );
-  virtual void resizeEvent       ( QResizeEvent* e );
-  virtual void mousePressEvent   ( QMouseEvent* e );
-  virtual void mouseReleaseEvent ( QMouseEvent* e );
-  virtual void mouseMoveEvent    ( QMouseEvent* e );
-  virtual void wheelEvent        ( QWheelEvent* e );
-  virtual void keyPressEvent     ( QKeyEvent* e );
-  virtual void keyReleaseEvent   ( QKeyEvent* e );
-  
-  virtual void leaveEvent	 ( QEvent * );
+  void paintEvent        ( QPaintEvent* e ) override;
+  void resizeEvent       ( QResizeEvent* e ) override;
+  void mousePressEvent   ( QMouseEvent* e ) override;
+  void mouseReleaseEvent ( QMouseEvent* e ) override;
+  void mouseMoveEvent    ( QMouseEvent* e ) override;
+  void wheelEvent        ( QWheelEvent* e ) override;
+  void keyPressEvent     ( QKeyEvent* e ) override;
+  void keyReleaseEvent   ( QKeyEvent* e ) override;
+  void leaveEvent	 ( QEvent * ) override;
 
   void displayContextMenu( const QPoint& p);
   

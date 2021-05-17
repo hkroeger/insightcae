@@ -6,6 +6,9 @@
 #ifndef MIMETYPEMANAGER_H
 #define MIMETYPEMANAGER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QMap>
 #include <QString>
 
@@ -21,7 +24,7 @@
   * but this would be too complex and this simple solution works for 99% of the cases covered
   * by this module.
   */
-class MimeTypeManager
+class TOOLKIT_GUI_EXPORT MimeTypeManager
 {
 public:
     explicit MimeTypeManager(const QString&);

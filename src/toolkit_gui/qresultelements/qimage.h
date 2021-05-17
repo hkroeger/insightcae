@@ -1,6 +1,9 @@
 #ifndef INSIGHT_QIMAGE_H
 #define INSIGHT_QIMAGE_H
 
+#include "toolkit_gui_export.h"
+
+
 #include "qresultsetmodel.h"
 
 #include <QPixmap>
@@ -10,7 +13,7 @@ class QScrollArea;
 
 namespace insight {
 
-class QImage
+class TOOLKIT_GUI_EXPORT QImage
 : public QResultElement
 {
   Q_OBJECT

@@ -20,6 +20,8 @@
 #ifndef BLOCKMESHDICT_CURVEDCYLINDER_H
 #define BLOCKMESHDICT_CURVEDCYLINDER_H
 
+#include "toolkit_gui_export.h"
+
 #include "openfoam/blockmesh_templates.h"
 
 namespace insight {
@@ -33,7 +35,7 @@ namespace bmd
  * A cylindrical tube meshed with an O-grid
  */
 
-class blockMeshDict_CurvedCylinder
+class TOOLKIT_GUI_EXPORT blockMeshDict_CurvedCylinder
 : public BlockMeshTemplate
 {
 public:

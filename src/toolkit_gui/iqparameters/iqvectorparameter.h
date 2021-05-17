@@ -1,11 +1,14 @@
 #ifndef IQVECTORPARAMETER_H
 #define IQVECTORPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 
 #include "base/parameters/simpleparameter.h"
 
-class IQVectorParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQVectorParameter : public IQParameter
 {
 public:
   declareType(insight::VectorParameter::typeName_());

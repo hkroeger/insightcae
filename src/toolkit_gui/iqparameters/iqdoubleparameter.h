@@ -1,10 +1,13 @@
 #ifndef IQDOUBLEPARAMETER_H
 #define IQDOUBLEPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 #include "base/parameters/simpleparameter.h"
 
-class IQDoubleParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQDoubleParameter : public IQParameter
 {
 public:
     declareType(insight::DoubleParameter::typeName_());

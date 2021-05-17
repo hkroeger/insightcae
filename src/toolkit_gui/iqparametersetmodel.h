@@ -1,6 +1,9 @@
 #ifndef IQPARAMETERSETMODEL_H
 #define IQPARAMETERSETMODEL_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QAbstractItemModel>
 #include <QScopedPointer>
 
@@ -11,7 +14,7 @@ class IQArrayParameter;
 class IQSelectableSubsetParameter;
 template<class IQBaseParameter, const char* N> class IQArrayElementParameter;
 
-class IQParameterSetModel
+class TOOLKIT_GUI_EXPORT IQParameterSetModel
     : public QAbstractItemModel
 {
   Q_OBJECT

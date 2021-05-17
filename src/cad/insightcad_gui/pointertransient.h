@@ -20,6 +20,8 @@
 #ifndef INSIGHT_CAD_POINTERTRANSIENT_H
 #define INSIGHT_CAD_POINTERTRANSIENT_H
 
+#include "insightcad_gui_export.h"
+
 #include "Standard_Version.hxx"
 #include "Standard_OStream.hxx"
 #if (OCC_VERSION_MAJOR<7)
@@ -30,7 +32,7 @@
 
 class QObject;
 
-class PointerTransient 
+class INSIGHTCAD_GUI_EXPORT PointerTransient
 : public Standard_Transient
 {
 protected:

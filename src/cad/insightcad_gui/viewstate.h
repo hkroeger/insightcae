@@ -20,7 +20,9 @@
 #ifndef VIEWSTATE_H
 #define VIEWSTATE_H
 
-struct ViewState
+#include "insightcad_gui_export.h"
+
+struct INSIGHTCAD_GUI_EXPORT ViewState
 {
   int shading;
   bool visible;

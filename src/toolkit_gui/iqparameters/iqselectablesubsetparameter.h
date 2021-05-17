@@ -1,11 +1,14 @@
 #ifndef IQSELECTABLESUBSETPARAMETER_H
 #define IQSELECTABLESUBSETPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 
 #include "base/parameters/selectablesubsetparameter.h"
 
-class IQSelectableSubsetParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQSelectableSubsetParameter : public IQParameter
 {
 public:
   declareType(insight::SelectableSubsetParameter::typeName_());

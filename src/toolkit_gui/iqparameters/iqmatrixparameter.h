@@ -1,11 +1,14 @@
 #ifndef IQMATRIXPARAMETER_H
 #define IQMATRIXPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <iqparameter.h>
 
 #include "base/parameters/matrixparameter.h"
 
-class IQMatrixParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQMatrixParameter : public IQParameter
 {
 public:
   declareType(insight::MatrixParameter::typeName_());

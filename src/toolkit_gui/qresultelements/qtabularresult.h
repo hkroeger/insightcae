@@ -1,12 +1,15 @@
 #ifndef INSIGHT_QTABULARRESULT_H
 #define INSIGHT_QTABULARRESULT_H
 
+#include "toolkit_gui_export.h"
+
+
 #include "qresultsetmodel.h"
 
 
 namespace insight {
 
-class QTabularResult
+class TOOLKIT_GUI_EXPORT QTabularResult
         : public QResultElement
 {
     Q_OBJECT

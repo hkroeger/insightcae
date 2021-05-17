@@ -1,6 +1,9 @@
 #ifndef IQPARAMETER_H
 #define IQPARAMETER_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QObject>
 #include <QVariant>
 #include <QMenu>
@@ -12,7 +15,7 @@
 class QVBoxLayout;
 class IQParameterSetModel;
 
-class IQParameter
+class TOOLKIT_GUI_EXPORT IQParameter
 : public QObject,
   public QList<IQParameter*>
 {

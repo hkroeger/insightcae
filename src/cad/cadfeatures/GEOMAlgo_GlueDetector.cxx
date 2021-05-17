@@ -554,7 +554,11 @@ Standard_Integer CheckAncesstors
   //
   iRet=0;
   //
-  #warning reenable!//pLE=const_cast<TopTools_IndexedDataMapOfShapeListOfShape&>(aMVE).ChangeSeek(aVSD);
+#ifdef WIN32
+#warning workaround needed!
+#else
+  pLE=const_cast<TopTools_IndexedDataMapOfShapeListOfShape&>(aMVE).ChangeSeek(aVSD);
+#endif
   if (!pLE) {
     return iRet;
   }
@@ -562,7 +566,11 @@ Standard_Integer CheckAncesstors
   for (; aItLE.More(); aItLE.Next()) {
     const TopoDS_Shape& aE=aItLE.Value();
     //
-    #warning reenable!//pLV=const_cast<TopTools_IndexedDataMapOfShapeListOfShape&>(aMEV).ChangeSeek(aE);
+#ifdef WIN32
+#warning workaround needed!
+#else
+    pLV=const_cast<TopTools_IndexedDataMapOfShapeListOfShape&>(aMEV).ChangeSeek(aE);
+#endif
     if (!pLV) {
       continue; // it should be not so
     }
@@ -586,7 +594,11 @@ Standard_Integer CheckAncesstors
     //
     iRet=1;
     //
-    #warning reenable!//pLVZ=aMEVZ.ChangeSeek(aE);
+#ifdef WIN32
+#warning workaround needed!
+#else
+    pLVZ=aMEVZ.ChangeSeek(aE);
+#endif
     if (!pLVZ) {
       aMEVZ.Add(aE, aLVX);
     }

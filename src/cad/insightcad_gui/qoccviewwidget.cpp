@@ -24,6 +24,7 @@
 
 #include <Graphic3d_GraphicDriver.hxx>
 #include <Graphic3d_TextureEnv.hxx>
+#include <OpenGl_GraphicDriver.hxx>
 
 #include <Aspect_DisplayConnection.hxx>
 #include <AIS_InteractiveObject.hxx>
@@ -64,7 +65,7 @@
 
 using namespace std;
 
-Handle(OpenGl_GraphicDriver) QoccViewWidget::aGraphicDriver;
+static Handle(OpenGl_GraphicDriver) aGraphicDriver;
 
 
 void QoccViewWidget::addLights()

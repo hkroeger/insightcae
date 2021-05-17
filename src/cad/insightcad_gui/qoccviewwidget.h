@@ -10,7 +10,6 @@
 #include <QDialog>
 
 #include "Standard_Version.hxx"
-#include <OpenGl_GraphicDriver.hxx>
 #include "V3d_View.hxx"
 #include "V3d_Plane.hxx"
 #include "AIS_InteractiveContext.hxx"
@@ -65,8 +64,6 @@ class INSIGHTCAD_GUI_EXPORT QoccViewWidget
   Q_OBJECT
 
 private:
-  static Handle_OpenGl_GraphicDriver aGraphicDriver;
-
   std::vector<Handle_V3d_Light> lights_;
 
   void addLights();

@@ -572,18 +572,19 @@ void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
     
     a=new QAction("Create new file...", &myMenu);
 
-    mapper = new QSignalMapper(a) ;
-    connect(a, &QAction::triggered,
-            mapper, QOverload<>::of(&QSignalMapper::map)) ;
     QString dir;
     if (fi.isDir())
         dir=fi.absoluteFilePath();
     else
         dir=fi.absolutePath();
-    mapper->setMapping(a, dir);
 
-    connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mappedString),
-            this, &ISCADMainWindow::onCreateNewModel);
+    connect(a, &QAction::triggered,
+            [this, dir]()
+            {
+              this->onCreateNewModel(dir);
+            }
+    );
+
     myMenu.addAction(a);
 
     if (!fi.isDir())
@@ -591,10 +592,12 @@ void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
         a=new QAction("Delete file "+fi.baseName(), &myMenu);
         mapper = new QSignalMapper(a) ;
         connect(a, &QAction::triggered,
-                mapper, QOverload<>::of(&QSignalMapper::map) );
-        mapper->setMapping(a, fi.absoluteFilePath());
-        connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mappedString),
-                this, &ISCADMainWindow::onDeleteModel);
+                [this, fi]()
+                {
+                  this->onDeleteModel(fi.absoluteFilePath());
+                }
+                );
+
         myMenu.addAction(a);
     }
 

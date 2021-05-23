@@ -342,11 +342,11 @@ public:
             const vectorField& Ap = mesh.Sf().boundaryField()[id];
             
             
-            vectorField f = 
+            vectorField f(
               rhop * Up * (Up & Ap)
               +
               pp*Ap
-              ;
+              );
               
             vector F = gSum( f );
             vector M = gSum( mesh.Cf().boundaryField()[id] ^ f );
@@ -533,12 +533,15 @@ void Foam::extendedRigidBodyMeshMotion::solve()
             {
                 const directThrustForce& df = body.directThrustForces_[j];
                 point cur_poa = model_.transformPoints(bodyID, pointField(1, df.PoA_))()[0];
+                point cur_poa_ofs = model_.transformPoints(bodyID, pointField(1, df.PoA_+df.direction_))()[0];
+                vector cur_dir = cur_poa_ofs - cur_poa; cur_dir/=mag(cur_dir);
                 point cur_ctr = model_.transformPoints(bodyID, pointField(1, model_.bodies()[bodyID].c()))()[0];
                 
-                Info<<"PoA : "<<df.PoA_<<cur_poa<<endl;
+                Info<<"PoA : "<<df.PoA_<<cur_poa<<" "<<cur_poa_ofs<<endl;
+                Info<<"Dir : "<<cur_dir<<endl;
                 Info<<"Ctr : "<<model_.bodies()[bodyID].c()<<cur_ctr<<endl;
                 
-                vector ddf = - (R * df.resistance_fraction_ / (df.direction_ & body.globalMotionDirection_)) * df.direction_;
+                vector ddf = - (R * df.resistance_fraction_ / (df.direction_ & body.globalMotionDirection_)) * cur_dir; // scale force
                 vector ddm = ( cur_poa - cur_ctr ) ^ ddf;
                 dF+=ddf;
                 dM+=ddm;

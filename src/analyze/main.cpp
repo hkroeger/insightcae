@@ -146,44 +146,17 @@ int main(int argc, char *argv[])
 
     std::string analysisName = "";
 
-#ifdef HAVE_WT
-    std::unique_ptr<AnalyzeRESTServer> server;
-    std::unique_ptr<DetectionHandler> detectionHandler;
-
-    if (vm.count("server"))
-    {
-
-      server.reset(new AnalyzeRESTServer(
-                     argv[0],
-                     vm["listen"].as<std::string>(),
-                     vm["port"].as<int>()
-          ));
-
-      if (!server->start())
-      {
-        std::cerr << "Could not start web server!" << std::endl;
-      }
-
-      detectionHandler = DetectionHandler::start(
-                      vm["broadcastport"].as<int>(),
-                      vm["listen"].as<std::string>(),
-                      vm["port"].as<int>(),
-                      analysisName
-                    );
-    }
-#endif
-
     auto summarizeWarnings = [&]()
     {
-      if (warnings.nWarnings()>0)
+      if (WarningDispatcher::getCurrent().nWarnings()>0)
       {
         std::cerr
             << "\n"
-            << "There have been "<<warnings.nWarnings()<<" warnings.\n"
+            << "There have been "<<WarningDispatcher::getCurrent().nWarnings()<<" warnings.\n"
             << "Please review:\n";
 
         int i=0;
-        for (const auto& w: warnings.warnings())
+        for (const auto& w: WarningDispatcher::getCurrent().warnings())
         {
           std::cerr<<"\n** Warning "<<(++i)<<":\n";
           displayFramed("Warning", w.what(), '-', std::cout);
@@ -194,6 +167,36 @@ int main(int argc, char *argv[])
 
     try
     {
+
+#ifdef HAVE_WT
+      std::unique_ptr<AnalyzeRESTServer> server;
+      std::unique_ptr<DetectionHandler> detectionHandler;
+
+      if (vm.count("server"))
+      {
+
+        server.reset(new AnalyzeRESTServer(
+                       argv[0],
+                       vm["listen"].as<std::string>(),
+                       vm["port"].as<int>()
+            ));
+
+        if (!server->start())
+        {
+          std::cerr << "Could not start web server!" << std::endl;
+        }
+
+        detectionHandler = DetectionHandler::start(
+                        vm["broadcastport"].as<int>(),
+                        vm["listen"].as<std::string>(),
+                        vm["port"].as<int>(),
+                        analysisName
+                      );
+      }
+#endif
+
+
+
         if (vm.count("libs"))
         {
             StringList libs=vm["libs"].as<StringList>();

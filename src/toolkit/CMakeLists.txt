@@ -249,7 +249,10 @@ if (WIN32)
     list(APPEND toolkit_LINK_LIBS vtkOnscreen)
 endif()
 target_link_libraries(toolkit ${toolkit_LINK_LIBS} ${Boost_LIBRARIES})
-
+# --export-all-symbols is not sufficient for signal/slots to work across DLLs
+include(GenerateExportHeader)
+generate_export_header(toolkit)
+target_compile_definitions(toolkit PRIVATE toolkit_EXPORTS)
 target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}

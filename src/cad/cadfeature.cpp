@@ -612,12 +612,14 @@ double Feature::mass(double density_ovr, double aw_ovr) const
   double aw=areaWeight();
   if (aw_ovr>=0.) aw=aw_ovr;
   
-//   std::cout<<rho<<" ("<<density_ovr<<")"<<std::endl;
+  dbg()<<"rho="<<rho<<" ("<<density_ovr<<")"<<std::endl;
   
   double mtot=rho*modelVolume() + aw*modelSurfaceArea();
-//   cout<<"Computed mass rho / V = "<<rho<<" / "<<modelVolume()
-//       <<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
-//       <<", m = "<<mtot<<endl;
+
+  dbg()<<"Computed mass rho / V = "<<rho<<" / "<<modelVolume()
+       <<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
+       <<", m = "<<mtot<<endl;
+
   return mtot;
 }
 
@@ -627,13 +629,16 @@ void Feature::checkForBuildDuringAccess() const
   {
     if (!valid())
       {
-        std::cout<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
+        dbg()<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
       }
     ASTBase::checkForBuildDuringAccess();
   }
   catch (const Standard_Failure& e)
   {
-    throw insight::cad::CADException(shared_from_this(), e.GetMessageString());
+    dbg()<<"exception during feature rebuild"<<std::endl;
+    throw insight::cad::CADException(
+          shared_from_this(),
+          e.GetMessageString() ? e.GetMessageString() : "(no error message)" );
   }
 }
 

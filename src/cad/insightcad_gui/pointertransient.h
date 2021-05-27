@@ -25,10 +25,13 @@
 #include "Standard_Version.hxx"
 #include "Standard_OStream.hxx"
 #if (OCC_VERSION_MAJOR<7)
+#include "Standard_Transient.hxx"
 #include "Standard_Transient_proto.hxx"
 #else
 #include "Standard_Transient.hxx"
 #endif
+
+#include <Standard_DefineHandle.hxx>
 
 class QObject;
 
@@ -47,7 +50,10 @@ public:
   void operator=(QObject* mi);
   QObject* getPointer();
     
+  DEFINE_STANDARD_RTTI(PointerTransient)
+
 };
 
+DEFINE_STANDARD_HANDLE(PointerTransient, Standard_Transient)
 
 #endif // INSIGHT_CAD_POINTERTRANSIENT_H

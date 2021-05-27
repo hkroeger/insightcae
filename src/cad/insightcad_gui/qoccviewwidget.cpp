@@ -50,6 +50,7 @@
 #include <cmath>
 #include <iostream>
 
+#include "base/exception.h"
 #include "occtwindow.h"
 #include "occtools.h"
 #include "pointertransient.h"
@@ -258,12 +259,20 @@ void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
 
   if (!myView.IsNull())
   {
+    try
+    {
 #if OCC_VERSION_MAJOR<7
-    myView->Redraw();
+      myView->Redraw();
 #else
-    myView->InvalidateImmediate();
-    FlushViewEvents (myContext_, myView, true);
+      myView->InvalidateImmediate();
+      FlushViewEvents (myContext_, myView, true);
 #endif
+    }
+    catch (Standard_Failure e)
+    {
+      throw insight::Exception(
+            e.GetMessageString() ? e.GetMessageString() : "(no error message)" );
+    }
   }
 }
 
@@ -696,10 +705,14 @@ void QoccViewWidget::idle( )
 
 QDisplayableModelTreeItem* QoccViewWidget::getOwnerItem(Handle_AIS_InteractiveObject selected)
 {
+  insight::CurrentExceptionContext ec("retrieving owner item of interactive shape");
+
   Handle_Standard_Transient own=selected->GetOwner();
   if (!own.IsNull())
   {
-      if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
+    insight::dbg()<<"owner exists"<<std::endl;
+
+    if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
 #if (OCC_VERSION_MAJOR<7)
               .Access()
 #else
@@ -707,10 +720,12 @@ QDisplayableModelTreeItem* QoccViewWidget::getOwnerItem(Handle_AIS_InteractiveOb
 #endif
       ))
       {
-          if (QDisplayableModelTreeItem* mi=dynamic_cast<QDisplayableModelTreeItem*>(smo->getPointer()))
-          {
-              return mi;
-          }
+        insight::dbg()<<"owner is PointerTransient"<<std::endl;
+        if (QDisplayableModelTreeItem* mi=dynamic_cast<QDisplayableModelTreeItem*>(smo->getPointer()))
+        {
+          insight::dbg()<<"owner is QDisplayableModelTreeItem"<<std::endl;
+          return mi;
+        }
       }
   }
 
@@ -719,10 +734,13 @@ QDisplayableModelTreeItem* QoccViewWidget::getOwnerItem(Handle_AIS_InteractiveOb
 
 QDisplayableModelTreeItem* QoccViewWidget::getSelectedItem()
 {
+  insight::CurrentExceptionContext ec("looking up the selected CAD feature");
+
   if (myContext_->HasDetected())
   {
       if (myContext_->DetectedInteractive()->HasOwner())
       {
+        insight::dbg()<<"has owner"<<std::endl;
           return getOwnerItem(myContext_->DetectedInteractive());
       }
   }
@@ -1100,6 +1118,7 @@ void QoccViewWidget::displayMessage(const QString& /*msg*/)
 
 Bnd_Box QoccViewWidget::sceneBoundingBox() const
 {
+  insight::CurrentExceptionContext ec("computing scene bounding box");
     AIS_ListOfInteractive loi;
     myContext_->DisplayedObjects(loi);
 
@@ -1113,6 +1132,7 @@ Bnd_Box QoccViewWidget::sceneBoundingBox() const
       {
           Handle_AIS_InteractiveObject o = *i;
 #endif
+          insight::dbg()<<"next item"<<std::endl;
           if (QFeatureItem* it
                 = dynamic_cast<QFeatureItem*>(const_cast<QoccViewWidget*>(this)->getOwnerItem(o)))
           {
@@ -1183,6 +1203,7 @@ void QoccViewWidget::updatePlanesSizes()
 
 void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 {
+  insight::CurrentExceptionContext ec("showing model tree item in viewer");
   if (di)
     {
       Handle_AIS_InteractiveObject ais = di->ais( *getContext() );
@@ -1194,7 +1215,9 @@ void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
         , false
 #endif
       );
+
       getContext()->SetDisplayMode(ais, di->shadingMode(), Standard_False );
+
       getContext()->SetColor(ais, di->color(), Standard_True );
 
       updatePlanesSizes();
@@ -1204,6 +1227,7 @@ void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 
 void QoccViewWidget::onHide(QDisplayableModelTreeItem* di)
 {
+  insight::CurrentExceptionContext ec("hiding model tree item in viewer");
   if (di)
     {
       Handle_AIS_InteractiveObject ais = di->ais( *getContext() );
@@ -1931,7 +1955,7 @@ void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
 	  break;
 
 	default:
-	  Standard_Failure::Raise( "Incompatible Current Mode" );
+          throw insight::Exception( "Incompatible Current Mode" );
 	  break;
 	}
     }
@@ -1946,11 +1970,21 @@ void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
 AIS_StatusOfDetection QoccViewWidget::moveEvent( QPoint point )
 {
   AIS_StatusOfDetection status;
-  status = myContext_->MoveTo( point.x(), point.y(), myView
+  try
+  {
+//    insight::dbg()<<"moveto "<<point.x()<<" "<<point.y()<<std::endl;
+  status = myContext_->MoveTo(
+        point.x(), point.y(),
+        myView
 #if (OCC_VERSION_MAJOR>=7)
-   , true
+        , true
 #endif
-);
+  );
+  }
+  catch (const Standard_Failure& e)
+  {
+    std::cerr<<( e.GetMessageString()?e.GetMessageString():"(no message)" )<<std::endl;
+  }
   return status;
 }
 

@@ -30,6 +30,7 @@
 #include "base/boost_include.h"
 #include "boost/function.hpp"
 #include "boost/thread.hpp"
+#include "boost/process.hpp"
 
 #include "base/progressdisplayer/prefixedprogressdisplayer.h"
 
@@ -191,7 +192,7 @@ void AnalysisThread::launch(std::function<void(void)> action)
         {
           try
           {
-            warnings.setSuperDispatcher(globalWarning);
+            WarningDispatcher::getCurrent().setSuperDispatcher(globalWarning);
 
             action();
 
@@ -206,7 +207,7 @@ void AnalysisThread::launch(std::function<void(void)> action)
           }
         },
 
-        &warnings
+        &WarningDispatcher::getCurrent()
   );
 }
 
@@ -270,7 +271,7 @@ AnalysisWorkerThread::AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, P
     :
       displayer_(displayer),
       queue_(queue),
-      mainThreadWarningDispatcher_(&warnings)
+      mainThreadWarningDispatcher_(&WarningDispatcher::getCurrent())
 {}
 
 
@@ -278,7 +279,7 @@ AnalysisWorkerThread::AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, P
 
 void AnalysisWorkerThread::operator() ()
 {
-  warnings.setSuperDispatcher(mainThreadWarningDispatcher_);
+  WarningDispatcher::getCurrent().setSuperDispatcher(mainThreadWarningDispatcher_);
 
   try
   {
@@ -299,7 +300,7 @@ void AnalysisWorkerThread::operator() ()
       catch ( const std::exception& e )
       {
         ai.exception = std::current_exception();
-        warnings.issue(
+        WarningDispatcher::getCurrent().issue(
               "An exception has occurred while processing the instance "+ai.name+" of the parameter study."
               "The analsis of this instance was not completed.\n"
               "Reason: "+e.what()
@@ -376,47 +377,54 @@ void SynchronisedAnalysisQueue::cancelAll()
 
 AnalysisLibraryLoader::AnalysisLibraryLoader()
 {
+  CurrentExceptionContext ex("loading analysis libraries");
 
-    SharedPathList paths;
-    for ( const path& p: paths )
+  SharedPathList paths;
+  for ( const path& p: paths )
+  {
+    CurrentExceptionContext ex("checking path "+p.string());
+
+    if ( exists(p) && is_directory ( p ) )
     {
-        if ( exists(p) && is_directory ( p ) )
+      path userconfigdir ( p );
+      userconfigdir /= "modules.d";
+
+      CurrentExceptionContext ex("checking directory "+userconfigdir.string());
+
+      if ( exists(userconfigdir) )
+      {
+        if ( is_directory ( userconfigdir ) )
         {
-            path userconfigdir ( p );
-            userconfigdir /= "modules.d";
-
-            if ( exists(userconfigdir) )
+          for (
+               directory_iterator itr ( userconfigdir );
+               itr != directory_iterator(); ++itr )
+          {
+            if ( is_regular_file ( itr->status() ) )
             {
-              if ( is_directory ( userconfigdir ) )
+              if ( itr->path().extension() == ".module" )
               {
-                for (
-                     directory_iterator itr ( userconfigdir );
-                     itr != directory_iterator(); ++itr )
-                {
-                    if ( is_regular_file ( itr->status() ) )
-                    {
-                        if ( itr->path().extension() == ".module" )
-                        {
-                            std::ifstream f ( itr->path().string() );
-                            std::string type;
-                            path location;
-                            f>>type>>location;
+                CurrentExceptionContext ex("processing config file "+itr->path().string());
 
-                            if ( type=="library" )
-                            {
-                                addLibrary(location);
-                            }
-                        }
-                    }
+                std::ifstream f ( itr->path().string() );
+                std::string type;
+                path location;
+                f>>type>>location;
+
+                if ( type=="library" )
+                {
+                  addLibrary(location);
                 }
               }
             }
+          }
         }
-        else
-        {
-            //cout<<"Not existing: "<<p<<endl;
-        }
+      }
     }
+    else
+    {
+      //cout<<"Not existing: "<<p<<endl;
+    }
+  }
 }
 
 AnalysisLibraryLoader::~AnalysisLibraryLoader()
@@ -428,6 +436,8 @@ AnalysisLibraryLoader::~AnalysisLibraryLoader()
 
 void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
 {
+  CurrentExceptionContext ex("loading library "+location.string());
+
   boost::filesystem::path libFile = location;
   if (libFile.extension().empty())
   {
@@ -436,6 +446,7 @@ void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
 #else
     libFile = libFile.parent_path()/("lib"+libFile.stem().string()+".so");
 #endif
+    dbg()<<libFile<<std::endl;
   }
 
 #ifdef WIN32

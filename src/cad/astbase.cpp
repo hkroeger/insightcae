@@ -19,7 +19,7 @@
 
 #include "boost/thread.hpp"
 #include "astbase.h"
-
+#include "base/exception.h"
 
 namespace insight
 {
@@ -76,6 +76,7 @@ void ASTBase::checkForBuildDuringAccess() const
     if ( i != cancel_requests_.end())
       {
         cancel_requests_.erase(i);
+        insight::dbg()<<"issue cancel rebuild request"<<std::endl;
         throw RebuildCancelException();
       }
   }

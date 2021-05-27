@@ -24,7 +24,14 @@
 
 Handle_AIS_InteractiveObject QEvaluationItem::createAIS(AIS_InteractiveContext&)
 {
-  return smp_->createAISRepr();
+  insight::CurrentExceptionContext ec("creating AIS representation of CAD feature");
+  try {
+    return smp_->createAISRepr();
+  }
+  catch (Standard_Failure& e)
+  {
+    throw insight::Exception(e.GetMessageString()?e.GetMessageString():"(no error message)");
+  }
 }
 
 

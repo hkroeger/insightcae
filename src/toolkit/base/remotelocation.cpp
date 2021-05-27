@@ -542,8 +542,9 @@ std::string RemoteLocation::remoteSourceOFEnvStatement() const
   }
   catch (const std::exception& e)
   {
-    warnings.issue("Could not detect currently loaded OpenFOAM environment. "
-                   "Running remote command with default OpenFOAM environment loaded.");
+    WarningDispatcher::getCurrent().issue(
+          "Could not detect currently loaded OpenFOAM environment. "
+          "Running remote command with default OpenFOAM environment loaded.");
 
     const OFEnvironment& cofe = OFEs::getCurrentOrPreferred();
     return "source " + cofe.bashrc().filename().string() + ";";

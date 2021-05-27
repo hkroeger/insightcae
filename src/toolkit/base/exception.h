@@ -22,6 +22,8 @@
 #ifndef INSIGHT_EXCEPTION_H
 #define INSIGHT_EXCEPTION_H
 
+#include "toolkit_export.h"
+
 #include <string>
 #include <iostream>
 #include <vector>
@@ -47,6 +49,12 @@ public:
 
 };
 
+
+std::ostream& dbg();
+
+
+
+
 std::string splitMessage
 (
     const std::string& message,
@@ -56,15 +64,27 @@ std::string splitMessage
     std::string whitespace = " \t\r"
 );
 
+
+
+
 class Exception;
   
+
+
+
 std::ostream& operator<<(std::ostream& os, const Exception& ex);
+
+
+
 
 namespace cad
 {
 class Feature;
 typedef std::shared_ptr<Feature> FeaturePtr;
 }
+
+
+
 
 class Exception
 : public std::exception
@@ -97,6 +117,7 @@ public:
 
 
 
+
 class UnsupportedFeature
     : public Exception
 {
@@ -105,6 +126,9 @@ public:
   UnsupportedFeature(const std::string& msg, bool strace=true);
 };
 
+
+
+
 void assertion(bool condition, const std::string& context_message);
 
 
@@ -112,14 +136,26 @@ std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5
 std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen=5);
 std::string vector_to_string(const arma::mat& vals, bool addMag=true);
 
+
+
+
 class ExceptionContext
 : public std::vector<CurrentExceptionContext*>
 {
 public:
   void snapshot(std::vector<std::string>& context);
+
+  static ExceptionContext& getCurrent();
 };
 
-extern thread_local ExceptionContext exceptionContext;
+
+
+
+//extern
+//#ifndef WIN32
+//thread_local
+//#endif
+//ExceptionContext exceptionContext;
 
 
 
@@ -142,10 +178,15 @@ public:
   const decltype(warnings_)& warnings() const;
   size_t nWarnings() const;
 
+  static WarningDispatcher& getCurrent();
 
 };
 
-extern thread_local WarningDispatcher warnings;
+//extern
+//#ifndef WIN32
+//thread_local
+//#endif
+//WarningDispatcher warnings;
 
 void displayFramed(const std::string& title, const std::string& msg, char titleChar = '=', std::ostream &os = std::cerr);
 

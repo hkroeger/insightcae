@@ -231,6 +231,8 @@ const boost::filesystem::path& TemporaryFile::path() const
 
 SharedPathList::SharedPathList()
 {
+  CurrentExceptionContext ec("building list of shared paths");
+
   char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR");
   char *var_globalshareddir=getenv("INSIGHT_GLOBALSHAREDDIRS");
   
@@ -250,7 +252,13 @@ SharedPathList::SharedPathList()
   if (var_globalshareddir) 
   {
     std::vector<string> globals;
-    split(globals, var_globalshareddir, is_any_of(":"));
+    split(globals, var_globalshareddir,
+#ifdef WIN32
+          is_any_of(";") // colon collides with drive letter in windows
+#else
+          is_any_of(":")
+#endif
+          );
     for (const string& s: globals) push_back(s);
   }
   else

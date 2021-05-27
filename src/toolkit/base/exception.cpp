@@ -22,6 +22,7 @@
 #include "exception.h"
 #include <sstream>
 #include <cstdlib>
+#include <thread>
 
 #ifndef WIN32
 #include <execinfo.h> // for backtrace
@@ -33,6 +34,9 @@
 
 #include "boost/stacktrace.hpp"
 #include "boost/algorithm/string.hpp"
+
+#include "boost/iostreams/stream.hpp"
+#include "boost/iostreams/device/null.hpp"
 
 using namespace std;
 
@@ -99,7 +103,7 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
 void Exception::saveContext(bool strace)
 {
   std::vector<std::string> context_list;
-  exceptionContext.snapshot(context_list);
+  ExceptionContext::getCurrent().snapshot(context_list);
 
   if (context_list.size()>0)
   {
@@ -171,22 +175,45 @@ CurrentExceptionContext::CurrentExceptionContext(const std::string& desc, bool v
   {
     if (verbose)
     {
-      std::cout << desc << std::endl;
+      std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << desc << std::endl;
     }
   }
-  exceptionContext.push_back(this);
+  ExceptionContext::getCurrent().push_back(this);
 }
 
 
 CurrentExceptionContext::~CurrentExceptionContext()
 {
-  if (exceptionContext.back()==this)
-    exceptionContext.pop_back();
+  if (ExceptionContext::getCurrent().back()==this)
+    ExceptionContext::getCurrent().pop_back();
   else
     {
       std::cerr<<"Oops: CurrentExceptionContext destructor: expected to be last!"<<endl;
     }
+
+  if (getenv("INSIGHT_VERBOSE"))
+  {
+    std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<desc_ << std::endl;
+  }
 }
+
+
+boost::iostreams::stream< boost::iostreams::null_sink > nullOstream( ( boost::iostreams::null_sink() ) );
+
+std::ostream& dbg()
+{
+  if (getenv("INSIGHT_VERBOSE"))
+  {
+    std::cerr<<"[DBG, " << std::this_thread::get_id() <<"]: ";
+    return std::cerr;
+  }
+  else
+  {
+    return nullOstream;
+  }
+}
+
+
 
 void ExceptionContext::snapshot(std::vector<std::string>& context)
 {
@@ -198,6 +225,12 @@ void ExceptionContext::snapshot(std::vector<std::string>& context)
 }
 
 thread_local ExceptionContext exceptionContext;
+
+ExceptionContext& ExceptionContext::getCurrent()
+{
+  return exceptionContext;
+}
+
 
 std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen)
 {
@@ -248,6 +281,7 @@ std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen)
 
 
 WarningDispatcher::WarningDispatcher()
+  : superDispatcher_(nullptr)
 {}
 
 void WarningDispatcher::setSuperDispatcher(WarningDispatcher *superDispatcher)
@@ -303,13 +337,18 @@ size_t WarningDispatcher::nWarnings() const
 
 
 
-thread_local WarningDispatcher warnings;
+thread_local WarningDispatcher thisThreadsWarnings;
+
+WarningDispatcher& WarningDispatcher::getCurrent()
+{
+  return thisThreadsWarnings;
+}
 
 
 
 void Warning(const std::string& msg)
 {
-  warnings.issue( msg );
+  WarningDispatcher::getCurrent().issue( msg );
 }
 
 void UnhandledExceptionHandling::handler()
@@ -323,6 +362,8 @@ void UnhandledExceptionHandling::handler()
         std::cout << stack_syms[i] << "\n";
     }
     free( stack_syms );
+#else
+    std::cerr<<"Unhandled exception occurred!"<<std::endl;
 #endif
     exit(1);
 }
@@ -338,6 +379,9 @@ UnhandledExceptionHandling::UnhandledExceptionHandling()
 
 void printException(const std::exception& e)
 {
+  std::ostringstream title;
+  title<<"*** ERROR ["<< std::this_thread::get_id() <<"] ***";
+
   if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
   {
 //    std::cerr << std::endl
@@ -345,8 +389,7 @@ void printException(const std::exception& e)
 //              << ie->message() << std::endl
 //                 ;
 
-    displayFramed("***ERROR***", ie->message(), '=', std::cerr);
-
+    displayFramed(title.str(), ie->message(), '=', std::cerr);
     if (getenv("INSIGHT_STACKTRACE"))
     {
       std::cerr << "Stack trace:" << std::endl
@@ -359,7 +402,7 @@ void printException(const std::exception& e)
 //              << "An error has occurred:" << std::endl
 //              << e.what() << std::endl
 //                 ;
-    displayFramed("***ERROR***", e.what(), '=', std::cerr);
+    displayFramed(title.str(), e.what(), '=', std::cerr);
   }
 }
 
@@ -385,6 +428,7 @@ UnsupportedFeature::UnsupportedFeature()
 UnsupportedFeature::UnsupportedFeature(const string &msg, bool strace)
   : Exception(msg, strace)
 {}
+
 
 
 

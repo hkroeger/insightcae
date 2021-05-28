@@ -39,18 +39,18 @@ QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(IQParameterSetMod
 
   QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
   layout2->addWidget(new QLabel("Selection:", editControlsContainer));
-  auto* selBox_=new QComboBox(editControlsContainer);
+  auto* selBox=new QComboBox(editControlsContainer);
   for ( auto& pair: p.items() )
   {
-    selBox_->addItem( QString::fromStdString(pair.first) );
+    selBox->addItem( QString::fromStdString(pair.first) );
   }
-  selBox_->setCurrentIndex(
-        selBox_->findText(
+  selBox->setCurrentIndex(
+        selBox->findText(
           QString::fromStdString(p.selection())
           )
         );
 
-  layout2->addWidget(selBox_);
+  layout2->addWidget(selBox);
   layout->addLayout(layout2);
 
 
@@ -61,28 +61,38 @@ QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(IQParameterSetMod
 
 
 
+  auto* iqp = static_cast<IQParameter*>(index.internalPointer());
 
-  connect(apply, &QPushButton::clicked, [=]()
+  connect(apply, &QPushButton::clicked, iqp, [=]()
   {
-    auto* iqp = static_cast<IQParameter*>(index.internalPointer());
     auto &p = dynamic_cast<insight::SelectableSubsetParameter&>(model->parameterRef(index));
 
-    // remove existing child params
-    model->beginRemoveRows(index, 0, iqp->size()-1);
-    for (auto* c: *iqp)
+//    qDebug()<<"beginRemoveRows"<<index;
+//    qDebug()<<iqp;
+//    qDebug()<<iqp->size();
+    if (iqp->size())
     {
-      c->deleteLater();
+      // remove existing child params
+      model->beginRemoveRows(index, 0, iqp->size()-1);
+      for (auto* c: *iqp)
+      {
+  //      qDebug()<<"delete "<<c->name();
+        c->deleteLater();
+      }
+      iqp->clear();
+      model->endRemoveRows();
     }
-    iqp->clear();
-    model->endRemoveRows();
 
     // change data
-    p.selection() = selBox_->currentText().toStdString();
+    p.selection() = selBox->currentText().toStdString();
 
-    // repopulate
-    model->beginInsertRows(index, 0, p().size()-1);
-    auto newc = model->decorateSubdictContent(iqp, p(), 0);
-    model->endInsertRows();
+    if (p().size())
+    {
+      // repopulate
+      model->beginInsertRows(index, 0, p().size()-1);
+      auto newc = model->decorateSubdictContent(iqp, p(), 0);
+      model->endInsertRows();
+    }
 
     model->notifyParameterChange(index);
   }

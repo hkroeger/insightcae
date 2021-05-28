@@ -85,7 +85,7 @@ int IQParameterSetModel::rowCount(const QModelIndex &parent) const
   int s=0;
   if (!parent.isValid())
   {
-    s=parameterSet_.size();
+    s=rootParameters_.size();
   }
   else if (const auto* p=static_cast<IQParameter*>(parent.internalPointer()))
   {
@@ -325,7 +325,9 @@ void IQParameterSetModel::notifyParameterChange(const QModelIndex &index)
   {
     p->resetModificationState();
   }
-  emit dataChanged(index, index);
+  emit dataChanged(
+        createIndex(index.row(), 0, index.internalPointer()),
+        createIndex(index.row(), columnCount(index)-1, index.internalPointer()) );
 }
 
 

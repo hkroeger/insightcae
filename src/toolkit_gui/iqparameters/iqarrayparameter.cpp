@@ -37,14 +37,17 @@ QVBoxLayout* IQArrayParameter::populateEditControls(IQParameterSetModel* model, 
 
   QPushButton *addbtn=new QPushButton("+ Add new", editControlsContainer);
   layout2->addWidget(addbtn);
-  connect(addbtn, &QPushButton::clicked, [=]()
+
+  auto *iqp = static_cast<IQParameter*>(index.internalPointer());
+
+  connect(addbtn, &QPushButton::clicked, iqp, [=]()
   {
     auto &p = dynamic_cast<insight::ArrayParameter&>(model->parameterRef(index));
 
     p.appendEmpty();
 
     int i=p.size()-1;
-    model->beginInsertRows(index, i-1, i);
+    model->beginInsertRows(index, std::max(0,i-1), i);
     auto* iqap = static_cast<IQParameter*>(index.internalPointer());
     iqap->append( model->decorateArrayElement(
           iqap,
@@ -59,7 +62,7 @@ QVBoxLayout* IQArrayParameter::populateEditControls(IQParameterSetModel* model, 
 
   QPushButton *clearbtn=new QPushButton("Clear all", editControlsContainer);
   layout2->addWidget(clearbtn);
-  connect(clearbtn, &QPushButton::clicked, [=]()
+  connect(clearbtn, &QPushButton::clicked, iqp, [=]()
   {
     auto &p = dynamic_cast<insight::ArrayParameter&>(model->parameterRef(index));
 

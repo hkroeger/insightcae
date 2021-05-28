@@ -85,28 +85,36 @@ void IQArrayElementParameter<IQBaseParameter, N>::populateContextMenu(IQParamete
   auto *removeAction = new QAction("Remove this array element");
   cm->addAction(removeAction);
 
-  QObject::connect(removeAction, &QAction::triggered,
-          [=]()
+  auto* iqp = static_cast<IQParameter*>(index.internalPointer());
+  auto mp = model->pathFromIndex(model->parent(index));
+  auto row = index.row();
+
+  QObject::connect(removeAction, &QAction::triggered, iqp,
+          [model,mp,row,iqp]()
           {
-            auto parentIndex = model->parent(index);
+            auto parentIndex = model->indexFromPath(mp);
+            Q_ASSERT(parentIndex.isValid());
+
             auto &parentParameter = dynamic_cast<insight::ArrayParameter&>(model->parameterRef(parentIndex));
 
-            model->beginRemoveRows(parentIndex, index.row(), index.row());
+            model->beginRemoveRows(parentIndex, row, row);
 
-            auto *eiqp = static_cast<IQParameter*>(index.internalPointer());
-            eiqp->deleteLater();
+            iqp->deleteLater();
 
             auto *aiqp = static_cast<IQParameter*>(parentIndex.internalPointer());
-            aiqp->erase(aiqp->begin()+index.row());
+            aiqp->erase(aiqp->begin()+row);
 
             model->endRemoveRows();
 
-            parentParameter.eraseValue(index.row());
 
+            parentParameter.eraseValue(row);
+
+            parentIndex = model->indexFromPath(mp);
+            Q_ASSERT(parentIndex.isValid());
             model->notifyParameterChange(parentIndex);
 
             // change name for all subsequent parameters
-            for (int i=index.row(); i<aiqp->size(); ++i)
+            for (int i=row; i<aiqp->size(); ++i)
             {
               (*aiqp)[i]->setName(QString("%1").arg(i));
               model->notifyParameterChange( model->index(i, 1, parentIndex) );

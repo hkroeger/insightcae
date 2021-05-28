@@ -55,6 +55,9 @@ public:
   insight::Parameter& parameterRef(const QModelIndex &index);
   void notifyParameterChange(const QModelIndex &index);
 
+  QList<int> pathFromIndex(const QModelIndex& i) const;
+  QModelIndex indexFromPath(const QList<int>& p) const;
+
 public Q_SLOTS:
   void clearParameters();
   void resetParameters(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps);

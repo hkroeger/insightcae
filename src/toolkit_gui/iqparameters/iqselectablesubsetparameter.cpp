@@ -62,39 +62,43 @@ QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(IQParameterSetMod
 
 
   auto* iqp = static_cast<IQParameter*>(index.internalPointer());
+  auto mp = model->pathFromIndex(index);
 
-  connect(apply, &QPushButton::clicked, iqp, [=]()
+  connect(apply, &QPushButton::clicked, iqp, [iqp,model,selBox,mp]()
   {
-    auto &p = dynamic_cast<insight::SelectableSubsetParameter&>(model->parameterRef(index));
+    auto rindex = model->indexFromPath(mp);
+    Q_ASSERT(rindex.isValid());
 
-//    qDebug()<<"beginRemoveRows"<<index;
-//    qDebug()<<iqp;
-//    qDebug()<<iqp->size();
+    auto* param = dynamic_cast<insight::SelectableSubsetParameter*>(&(model->parameterRef(rindex)));
+
     if (iqp->size())
     {
       // remove existing child params
-      model->beginRemoveRows(index, 0, iqp->size()-1);
+      model->beginRemoveRows(rindex, 0, iqp->size()-1);
       for (auto* c: *iqp)
       {
-  //      qDebug()<<"delete "<<c->name();
         c->deleteLater();
       }
       iqp->clear();
       model->endRemoveRows();
     }
 
-    // change data
-    p.selection() = selBox->currentText().toStdString();
+    // index invalid after model structure change
+    rindex = model->indexFromPath(mp);
+    Q_ASSERT(rindex.isValid());
 
-    if (p().size())
+    // change data
+    param->selection() = selBox->currentText().toStdString();
+
+    if ((*param)().size())
     {
       // repopulate
-      model->beginInsertRows(index, 0, p().size()-1);
-      auto newc = model->decorateSubdictContent(iqp, p(), 0);
+      model->beginInsertRows(rindex, 0, (*param)().size()-1);
+      auto newc = model->decorateSubdictContent(iqp, (*param)(), 0);
       model->endInsertRows();
     }
 
-    model->notifyParameterChange(index);
+    model->notifyParameterChange(rindex);
   }
   );
 

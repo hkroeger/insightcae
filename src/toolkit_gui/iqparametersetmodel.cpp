@@ -333,6 +333,37 @@ void IQParameterSetModel::notifyParameterChange(const QModelIndex &index)
 
 
 
+QList<int> IQParameterSetModel::pathFromIndex(const QModelIndex &i) const
+{
+  QList<int> p;
+  QModelIndex ii = i;
+  while (ii.isValid())
+  {
+    p<<ii.row();
+    ii=parent(ii);
+  }
+  return p;
+}
+
+
+
+
+QModelIndex IQParameterSetModel::indexFromPath(const QList<int> &p) const
+{
+  QModelIndex ii;
+  if (p.size())
+  {
+    for (int i=p.size()-1; i>=0; --i)
+    {
+      ii=index(p[i], 0, ii);
+    }
+  }
+  return ii;
+}
+
+
+
+
 void IQParameterSetModel::handleClick(const QModelIndex &index, QWidget* editControlsContainer)
 {
   if (index.isValid())

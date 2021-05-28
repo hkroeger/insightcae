@@ -40,6 +40,7 @@ QVBoxLayout* IQStringParameter::populateEditControls(IQParameterSetModel* model,
   layout2->addWidget(promptLabel);
   auto *lineEdit=new QLineEdit(editControlsContainer);
 //  connect(le_, &QLineEdit::destroyed, this, &StringParameterWrapper::onDestruction);
+  lineEdit->setText(valueText());
   layout2->addWidget(lineEdit);
   layout->addLayout(layout2);
 
@@ -51,7 +52,7 @@ QVBoxLayout* IQStringParameter::populateEditControls(IQParameterSetModel* model,
   auto applyFunction = [=]()
   {
     auto &p = dynamic_cast<insight::StringParameter&>(model->parameterRef(index));
-    p()=lineEdit->text().toInt();
+    p()=lineEdit->text().toStdString();
     model->notifyParameterChange(index);
   };
 

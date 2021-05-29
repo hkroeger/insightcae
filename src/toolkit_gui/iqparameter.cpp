@@ -8,6 +8,8 @@
 #include "helpwidget.h"
 #include "iqparameter.h"
 
+#include "base/exception.h"
+
 
 defineType(IQParameter);
 defineFactoryTable
@@ -42,6 +44,7 @@ IQParameter::IQParameter(QObject *parent, const QString &name, insight::Paramete
 
 IQParameter* IQParameter::parentParameter() const
 {
+//  qDebug()<<"request parent of "<<name_;
   return dynamic_cast<IQParameter*>(parent());
 }
 

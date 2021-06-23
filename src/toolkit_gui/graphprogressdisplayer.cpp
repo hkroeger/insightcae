@@ -35,6 +35,8 @@
 
 using namespace insight;
 
+auto* globalRanGen = QRandomGenerator::system();
+
 void GraphProgressChart::reset()
 {
   for ( CurveList::value_type& i: curve_)
@@ -63,11 +65,11 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
   {
     crv=new QtCharts::QLineSeries;
     crv->setName(name.c_str());
-    crv->setPen(QPen(QColor(
-                         QRandomGenerator::system()->generateDouble()*255.0/double(RAND_MAX),
-                         QRandomGenerator::system()->generateDouble()*255.0/double(RAND_MAX),
-                         QRandomGenerator::system()->generateDouble()*255.0/double(RAND_MAX)
-                     ), 2.0));
+    QColor c(
+            globalRanGen->generateDouble()*255.0,
+            globalRanGen->generateDouble()*255.0,
+            globalRanGen->generateDouble()*255.0 );
+    crv->setPen(QPen(c, 2.0));
     chartData_->addSeries(crv);
     crv->attachAxis(chartData_->axes(Qt::Vertical)[0]);
     crv->attachAxis(chartData_->axes(Qt::Horizontal)[0]);

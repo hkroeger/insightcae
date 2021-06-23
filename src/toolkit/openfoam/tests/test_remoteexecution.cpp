@@ -87,9 +87,9 @@ void test_auto_create()
   try
   {
 
-    auto i=insight::remoteServers.find("localhost");
+    auto i=insight::remoteServers.findServer("localhost");
 
-    RemoteExecutionConfig ec(i->second, d);
+    RemoteExecutionConfig ec(i, d);
 
     try
     {
@@ -127,9 +127,9 @@ void test_start_disconnect(fs::path d)
   try
   {
 
-    auto i=insight::remoteServers.find("localhost");
+    auto i=insight::remoteServers.findServer("localhost");
 
-    RemoteExecutionConfig ec(i->second, d);
+    RemoteExecutionConfig ec(i, d);
 
     try
     {

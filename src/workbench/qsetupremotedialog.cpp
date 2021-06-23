@@ -13,7 +13,7 @@ QSetupRemoteDialog::QSetupRemoteDialog(const QString& hostName, const QString& p
 
   for (const auto& i: insight::remoteServers)
   {
-    ui->cbHost->addItem( QString::fromStdString(i.first) );
+    ui->cbHost->addItem( QString::fromStdString(*i) );
   }
 
   if (!hostName.isEmpty())
@@ -28,11 +28,11 @@ QSetupRemoteDialog::QSetupRemoteDialog(const QString& hostName, const QString& p
   connect(ui->btnSelectRemoteDirectory, &QPushButton::clicked,
           [&]()
           {
-              auto i = insight::remoteServers.find(
+              auto i = insight::remoteServers.findServer(
                     ui->cbHost->currentText().toStdString()
                     );
 
-              if (i->second.isOnDemand())
+              if (i->isDynamicallyAllocated())
               {
                 QMessageBox::critical(this,
                                       "Error",

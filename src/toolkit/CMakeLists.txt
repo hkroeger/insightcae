@@ -49,6 +49,12 @@ set(toolkit_SOURCES
     base/remotelocation.cpp
     base/remoteexecution.cpp
     base/remoteserverlist.cpp
+    base/remoteserver.h
+    base/remoteserver.cpp
+    base/sshlinuxserver.h
+    base/sshlinuxserver.cpp
+    base/wsllinuxserver.h
+    base/wsllinuxserver.cpp
     base/taskspoolerinterface.cpp
     base/mountremote.cpp
     base/outputanalyzer.cpp

@@ -36,19 +36,21 @@ void RemoteRun::launchRemoteAnalysisServer()
 
 
 
-RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
+RemoteRun::RemoteRun(AnalysisForm *af, const insight::RemoteExecutionConfig& rec, bool resume)
   : WorkbenchAction(af),
     resume_( resume ),
-    remote_( *(af->remoteDirectory_) )
+    remote_( rec )
+{}
+
+void RemoteRun::launch()
 {
-  if (!af->remoteDirectory_)
-    throw std::logic_error("Internal error: remote directory is  not set!");
+//  int localPort = insight::findFreePort();
 
-  int localPort = insight::findFreePort();
-
-  remote_.createTunnels(
-    {},
-    { {localPort, "localhost", /*af_->ui->portNum->value()*/8090 } }
+  portMappings_ = remote_.server()->makePortsAccessible(
+      {8090},
+      {}
+//    {},
+//    { {localPort, "localhost", /*af_->ui->portNum->value()*/8090 } }
   );
 
   af_->progressDisplayer_.reset();
@@ -57,7 +59,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
   ac_.reset(
         new insight::AnalyzeClient(
           af_->analysisName_,
-          str(format("http://localhost:%d") % localPort),
+          str(format("http://localhost:%d") % /*localPort*/portMappings_->localListenerPort(8090) ),
           &af_->progressDisplayer_,
           [this](std::exception_ptr e)
             {
@@ -169,6 +171,13 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
   ) );
 
   connectAnalysisThread(workerThread_.get());
+}
+
+std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, const insight::RemoteExecutionConfig& rec, bool resume)
+{
+  std::unique_ptr<RemoteRun> a(new RemoteRun(af, rec, resume));
+  a->launch();
+  return a;
 }
 
 

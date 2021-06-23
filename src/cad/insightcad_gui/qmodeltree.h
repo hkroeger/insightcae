@@ -242,6 +242,8 @@ protected:
     template<class ItemType>
     ItemType* findItem(QTreeWidgetItem *p, const QString& name)
     {
+        insight::CurrentExceptionContext ex("searching model tree for item "+name.toStdString());
+
         ItemType *found=NULL;
 
         for (int i=0; i<p->childCount(); i++)

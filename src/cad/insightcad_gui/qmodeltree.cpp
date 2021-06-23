@@ -22,6 +22,7 @@
 #include <QInputDialog>
 #include <QColorDialog>
 
+#include "base/exception.h"
 #include "base/qt5_helper.h"
 #include "qmodeltree.h"
 
@@ -82,8 +83,8 @@ QDisplayableModelTreeItem::QDisplayableModelTreeItem
 : QModelTreeItem ( name, parent ),
   shadingMode_(dm)
 {
-    setCheckState(COL_VIS, visible ? Qt::Checked : Qt::Unchecked);
-    setRandomColor();
+  setCheckState(COL_VIS, visible ? Qt::Checked : Qt::Unchecked);
+  setRandomColor();
 }
 
 QDisplayableModelTreeItem::~QDisplayableModelTreeItem()
@@ -105,10 +106,11 @@ bool QDisplayableModelTreeItem::isHidden() const
 
 Handle_AIS_InteractiveObject QDisplayableModelTreeItem::ais(AIS_InteractiveContext& context)
 {
+  insight::CurrentExceptionContext ec("get AIS interactive object");
   if (ais_.IsNull())
-    {
-      ais_=createAIS(context);
-    }
+  {
+    ais_=createAIS(context);
+  }
   return ais_;
 }
 
@@ -631,6 +633,8 @@ void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv, in
 
 void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component, boost::variant<boost::blank,AIS_DisplayMode> ds)
 {
+  insight::CurrentExceptionContext ex("adding feature "+name.toStdString()+" to model tree");
+
   QFeatureItem *newf, *old;
   QTreeWidgetItem* cat;
   {
@@ -654,15 +658,23 @@ void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp,
     old = findItem<QFeatureItem>(cat, name);
     newf = new QFeatureItem(name, smp, is_component, cat, is_component);
     if (old)
+    {
+      insight::dbg()<<"copy display properties of old "<<name.toStdString()<<std::endl;
       newf->copyDisplayProperties(old);
+    }
     else
+    {
+      insight::dbg()<<"set display properties of "<<name.toStdString()<<" as "<<ads<<std::endl;
       newf->setShadingMode(ads);
+    }
 
     connectDisplayableItem(newf);
     connect(newf, &QFeatureItem::addEvaluation,
             this, &QModelTree::onAddEvaluation);
   }
   replaceOrAdd(cat, newf, old);
+
+  insight::dbg()<<"initDisplay of "<<name.toStdString()<<std::endl;
   newf->initDisplay();
 }
 
@@ -683,6 +695,7 @@ void QModelTree::onAddDatum(const QString& name, insight::cad::DatumPtr smp)
 
 void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActionPtr smp, bool visible)
 {
+  insight::dbg()<<"start onAddEvaluation"<<std::endl;
   QEvaluationItem *old, *newf;
   {
     SignalBlocker b(this);
@@ -691,8 +704,11 @@ void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActi
     if (old) newf->copyDisplayProperties(old);
     connectDisplayableItem(newf);
   }
+  insight::dbg()<<"replaceOrAdd"<<std::endl;
   replaceOrAdd(postprocactions_, newf, old);
+  insight::dbg()<<"init display"<<std::endl;
   newf->initDisplay();
+  insight::dbg()<<"finish onAddEvaluation"<<std::endl;
 }
 
 

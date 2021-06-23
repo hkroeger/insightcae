@@ -50,7 +50,7 @@ public:
   void operator=(QObject* mi);
   QObject* getPointer();
     
-  DEFINE_STANDARD_RTTI(PointerTransient)
+  DEFINE_STANDARD_RTTI(PointerTransient);
 
 };
 

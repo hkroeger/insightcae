@@ -1,5 +1,5 @@
 #include "progressdisplayer.h"
-
+#include "base/exception.h"
 
 
 namespace insight {
@@ -43,12 +43,14 @@ ActionProgress ProgressDisplayer::forkNewAction(double nSteps, const std::string
 void ProgressDisplayer::stepUp(double steps)
 {
   ci_+=steps;
+  insight::dbg()<<"stepUp: progress "<<ci_<<"/"<<maxi_<<std::endl;
   setActionProgressValue(actionPath(), ci_/(maxi_+1));
 }
 
 void ProgressDisplayer::stepTo(double i)
 {
   ci_=i;
+  insight::dbg()<<"stepTo: progress "<<ci_<<"/"<<maxi_<<std::endl;
   setActionProgressValue(actionPath(), ci_/(maxi_+1));
 }
 
@@ -64,6 +66,7 @@ void ProgressDisplayer::operator+=(double n)
 
 void ProgressDisplayer::message(const std::string &message)
 {
+  insight::dbg()<<message<<std::endl;
   setMessageText(actionPath(), message);
 }
 

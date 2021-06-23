@@ -1,0 +1,82 @@
+#ifndef INSIGHT_WSLLINUXSERVER_H
+#define INSIGHT_WSLLINUXSERVER_H
+
+#include "base/remoteserver.h"
+
+namespace insight {
+
+/**
+ * @brief The WSLLinuxServer class
+ * local WSL instance (not on a remote machine!)
+ */
+class WSLLinuxServer
+    : public RemoteServer
+{
+public:
+  struct Config : public RemoteServer::Config
+  {
+    boost::filesystem::path WSLExecutable_;
+
+    Config(
+        const boost::filesystem::path& bp,
+        const boost::filesystem::path& WSLExecutable );
+
+    Config(rapidxml::xml_node<> *e);
+
+    std::shared_ptr<RemoteServer> getInstanceIfRunning() override;
+    std::shared_ptr<RemoteServer> instance() override;
+
+    bool isDynamicallyAllocated() const override;
+
+    void save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const override;
+  };
+
+protected:
+  void runRsync
+  (
+      const std::vector<std::string>& args,
+      std::function<void(int,const std::string&)> pf
+  );
+
+
+public:
+  WSLLinuxServer(ConfigPtr serverConfig);
+
+  Config* serverConfig() const;
+  bool hostIsAvailable() override;
+
+//  int executeCommand(const std::string& command, bool throwOnFail) override;
+  std::pair<boost::filesystem::path,std::vector<std::string> > commandAndArgs(const std::string& command) override;
+
+  void putFile
+  (
+      const boost::filesystem::path& localFilePath,
+      const boost::filesystem::path& remoteFilePath,
+      std::function<void(int progress,const std::string& status_text)> progress_callback =
+                          std::function<void(int,const std::string&)>()
+  ) override;
+
+  void syncToRemote
+  (
+      const boost::filesystem::path& localDir,
+      const boost::filesystem::path& remoteDir,
+      const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
+      std::function<void(int progress,const std::string& status_text)> progress_callback =
+                          std::function<void(int,const std::string&)>()
+  ) override;
+
+  void syncToLocal
+  (
+      const boost::filesystem::path& localDir,
+      const boost::filesystem::path& remoteDir,
+      const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
+      std::function<void(int progress,const std::string& status_text)> progress_callback =
+                          std::function<void(int,const std::string&)>()
+  ) override;
+
+};
+
+
+} // namespace insight
+
+#endif // INSIGHT_WSLLINUXSERVER_H

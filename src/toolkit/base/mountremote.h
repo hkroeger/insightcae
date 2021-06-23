@@ -49,7 +49,9 @@ public:
      * @param keep
      * @param expect_mounted
      */
-    MountRemote(const bfs_path& mountpoint, const std::string& server, const bfs_path& remotedir, bool keep=false, bool expect_mounted=false);
+    MountRemote(const bfs_path& mountpoint, const std::string& hostName, const bfs_path& remotedir, bool keep=false, bool expect_mounted=false);
+
+    MountRemote(const bfs_path& mountpoint, const insight::RemoteLocation& rl, bool keep=false, bool expect_mounted=false);
 
     /**
     * @brief MountRemote
@@ -61,6 +63,8 @@ public:
     * @param expect_mounted
     */
    MountRemote(const std::string& server, const bfs_path& remotedir);
+
+   MountRemote(insight::RemoteServer::ConfigPtr rsc, const bfs_path& remotedir);
 
    MountRemote(const RemoteLocation& rloc);
 

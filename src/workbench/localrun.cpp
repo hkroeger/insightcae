@@ -14,7 +14,7 @@ LocalRun::LocalRun(AnalysisForm *af)
           insight::Analysis::lookup(
             af_->analysisName_,
             af_->parameters(),
-            *(af_->caseDirectory_)
+            af_->localCaseDirectory()
             )
           ),
     workerThread_(analysis_, &af->progressDisplayer_)

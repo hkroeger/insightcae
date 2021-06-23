@@ -28,6 +28,8 @@ class vtkCellArray;
 
 #include "base/exception.h"
 #include "base/boost_include.h"
+#include "boost/process.hpp"
+#include "boost/process/args.hpp"
 #include "base/linearalgebra.h"
 
 #include <istream>
@@ -102,6 +104,33 @@ public:
 };
 
 
+/**
+ * @brief The SSHCommand class
+ * wraps SSH command with unique interface in Linux and Windows
+ */
+class SSHCommand
+{
+  std::string hostName_;
+  std::vector<std::string> args_;
+
+public:
+  SSHCommand(const std::string& hostName, const std::vector<std::string>& arguments);
+
+  boost::filesystem::path command() const;
+  std::vector<std::string> arguments() const;
+};
+
+
+class RSYNCCommand
+{
+  std::vector<std::string> args_;
+
+public:
+  RSYNCCommand(const std::vector<std::string>& arguments);
+
+  boost::filesystem::path command() const;
+  std::vector<std::string> arguments() const;
+};
 
 
 class SharedPathList 
@@ -259,6 +288,7 @@ std::string escapeShellSymbols(const std::string& expr);
 
 
 int findFreePort();
+int findRemoteFreePort(const std::string& SSHHostName);
 
 
 void readStreamIntoString
@@ -294,6 +324,53 @@ struct MemoryInfo
 
   MemoryInfo();
 };
+
+
+class RSyncProgressAnalyzer
+    : public boost::process::ipstream
+{
+public:
+  RSyncProgressAnalyzer();
+  void runAndParse(boost::process::child& rsyncProcess, std::function<void(int,const std::string&)> progressFunction);
+};
+
+
+template<class OrgKeyType, class KeyType = OrgKeyType>
+int predictSetInsertionLocation(const std::set<OrgKeyType>& org_keys, const KeyType& newKey)
+{
+  std::set<KeyType> keys;
+  std::transform(
+        org_keys.begin(), org_keys.end(),
+        std::inserter(keys, keys.begin()),
+        [](const typename std::set<OrgKeyType>::value_type& i)
+        {
+          return static_cast<KeyType>(i);
+        }
+  );
+  keys.insert(newKey);
+  auto i=keys.find(newKey);
+  return std::distance(keys.begin(), i);
+}
+
+
+
+template<class KeyType, class Container>
+int predictInsertionLocation(const Container& org_data, const KeyType& newKey)
+{
+  std::set<KeyType> org_keys;
+  // retrieve keys only
+  std::transform(
+        org_data.begin(), org_data.end(),
+        std::inserter(org_keys, org_keys.begin()),
+        [](const typename Container::value_type& i)
+        {
+          return static_cast<KeyType>(i.first);
+        }
+  );
+  return predictSetInsertionLocation(org_keys, newKey);
+}
+
+
 
 }
 

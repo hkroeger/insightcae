@@ -150,6 +150,7 @@ void NumericalWindtunnel::calcDerivedInputData(ProgressDisplayer& parentProgress
   {
     throw insight::Exception("Bounding box of object has zero size!");
   }
+
 }
 
 
@@ -827,7 +828,6 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
   try
   {
-
     Parameters p(currentParameters());
     NumericalWindtunnel nwt(currentParameters(), "");
     nwt.calcDerivedInputData(consoleProgressDisplayer);
@@ -853,9 +853,13 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
     addFeature("object", org_geom);
 
     double Lupstream = nwt.Lref_*p.geometry.LupstreamByL;
+    dbg()<<"Lupstream="<<Lupstream<<std::endl;
     double Ldownstream = nwt.Lref_*p.geometry.LdownstreamByL;
+    dbg()<<"Ldownstream="<<Ldownstream<<std::endl;
     double Lup = nwt.Lref_*p.geometry.LupByL;
+    dbg()<<"Lup="<<Lup<<std::endl;
     double Laside = nwt.Lref_*p.geometry.LasideByL;
+    dbg()<<"Laside="<<Laside<<std::endl;
 
     if (p.mesh.longitudinalSymmetry)
     {

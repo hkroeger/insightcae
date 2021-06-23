@@ -336,7 +336,7 @@ insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::evaluateRuns()
       }
       else
       {
-          warnings.issue("Analysis of the variant "+ai.name+" failed and the results are not considered in the report.");
+          insight::Warning("Analysis of the variant "+ai.name+" failed and the results are not considered in the report.");
       }
   }
   

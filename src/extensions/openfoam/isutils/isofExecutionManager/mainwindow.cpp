@@ -34,7 +34,7 @@ void MainWindow::updateGUI()
   {
     bfs_path loc_dir=boost::filesystem::absolute(remote_->localDir());
     setWindowTitle(QString::fromStdString(loc_dir.string())+" - InsightCAE Execution Manager");
-    ui->server->setText(remote_->server().c_str());
+    ui->server->setText(QString::fromStdString(remote_->server()->serverLabel()));
     ui->localDir->setText(QString::fromStdString(loc_dir.string()));
     ui->remoteDir->setText(QString::fromStdString(remote_->remoteDir().string()));
 
@@ -424,10 +424,16 @@ void MainWindow::remoteWriteAndCopyBack(bool parallel)
       << (parallel ? "-p" : "") << " )";
 
 
-  auto *aj = new AuxiliaryJob(
-        insight::forkExternalProcess(
-          "ssh", { remote_->server(), "bash -lc \""+insight::escapeShellSymbols(cmd.str())+"\"" } )
-        );
+  auto job=std::make_shared<insight::Job>();
+//  insight::SSHCommand sc(remote_->server(), { "bash -lc \""+insight::escapeShellSymbols(cmd.str())+"\"" });
+  insight::forkExternalProcess(
+        job, remote_->server()->launchCommand(
+          cmd.str(),
+          boost::process::std_in < job->in,
+          boost::process::std_out > job->out,
+          boost::process::std_err > job->err
+          ));
+  auto *aj = new AuxiliaryJob(job);
 
   connect( aj, &AuxiliaryJob::outputLineReceived,
            ui->log, &LogViewerWidget::appendLine );

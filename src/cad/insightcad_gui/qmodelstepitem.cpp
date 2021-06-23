@@ -22,6 +22,7 @@
 #include <QMenu>
 #include <QAction>
 
+#include "base/exception.h"
 #include "base/qt5_helper.h"
 
 #ifndef Q_MOC_RUN
@@ -32,8 +33,12 @@
 #include "AIS_Point.hxx"
 #endif
 
+
+
 Handle_AIS_InteractiveObject QFeatureItem::createAIS(AIS_InteractiveContext&)
 {
+  insight::CurrentExceptionContext ec("creating AIS representation of CAD feature");
+
   Handle_AIS_InteractiveObject ais( smp_->buildVisualization() );
 
   Handle_Standard_Transient owner_container(new PointerTransient(this));
@@ -55,8 +60,7 @@ QFeatureItem::QFeatureItem
 : QDisplayableModelTreeItem(name, visible, is_component ? AIS_Shaded : AIS_WireFrame, parent),
   smp_(smp),
   is_component_(is_component)
-{
-}
+{}
 
 
 void QFeatureItem::exportShape()

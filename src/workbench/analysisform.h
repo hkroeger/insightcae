@@ -68,7 +68,12 @@ class WorkbenchAction;
 class AnalysisForm;
 
 
-class QCaseDirectory
+
+/**
+ * @brief The QCaseDirectory class
+ * sets GUI enable/disable states, inserts text
+ */
+class QCaseDirectoryState
     : public insight::CaseDirectory
 {
   AnalysisForm *af_;
@@ -76,12 +81,17 @@ class QCaseDirectory
   void setAFEnabledState(bool enabled);
 
 public:
-  QCaseDirectory(AnalysisForm *af, const boost::filesystem::path& path, bool keep=true);
-  QCaseDirectory(AnalysisForm *af, bool keep=true, const boost::filesystem::path& prefix="");
-  ~QCaseDirectory();
+  QCaseDirectoryState(AnalysisForm *af, const boost::filesystem::path& path, bool keep=true);
+  QCaseDirectoryState(AnalysisForm *af, bool keep=true, const boost::filesystem::path& prefix="");
+  ~QCaseDirectoryState();
+
+  operator QString() const;
 };
 
-class QRemoteExecutionConfig
+
+
+
+class QRemoteExecutionState
 : public insight::RemoteExecutionConfig
 {
   AnalysisForm *af_;
@@ -89,16 +99,21 @@ class QRemoteExecutionConfig
   void setAFEnabledState(bool enabled);
 
 public:
-  QRemoteExecutionConfig(AnalysisForm *af,
+  QRemoteExecutionState(AnalysisForm *af,
+                        const boost::filesystem::path& location,
+                        const insight::RemoteLocation& remoteLocation);
+  QRemoteExecutionState(AnalysisForm *af,
                          const boost::filesystem::path& location,
                          const boost::filesystem::path& localREConfigFile = "");
-  QRemoteExecutionConfig(AnalysisForm *af,
-                         const insight::RemoteServerInfo& rsi,
+  QRemoteExecutionState(AnalysisForm *af,
+                         insight::RemoteServer::ConfigPtr rsc,
                          const boost::filesystem::path& location,
                          const boost::filesystem::path& remotePath = "",
                          const boost::filesystem::path& localREConfigFile = "");
-  ~QRemoteExecutionConfig();
+  ~QRemoteExecutionState();
 };
+
+
 
 
 class AnalysisForm
@@ -110,8 +125,9 @@ class AnalysisForm
   friend class WorkbenchAction;
   friend class LocalRun;
   friend class RemoteRun;
-  friend class QCaseDirectory;
-  friend class QRemoteExecutionConfig;
+  friend class WSLRun;
+  friend class QCaseDirectoryState;
+  friend class QRemoteExecutionState;
   
 protected:
 
@@ -119,13 +135,12 @@ protected:
   // ======== Analysis-related members
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
-//  insight::ParameterSet parameters_;
+
   insight::ResultSetPtr results_;
   insight::QResultSetModel* resultsModel_;
   
   // ====================================================================================
   // ======== GUI widgets
-//  QTreeWidgetItem* rtroot_;
   ParameterEditorWidget* peditor_;
   Q_DebugStream *cout_log_, *cerr_log_;
   LogViewerWidget *log_;
@@ -168,12 +183,8 @@ protected:
   void connectLocalActions();
   void connectRemoteActions();
 
-  bool ensureWorkingDirectoryExistence();
-
   void updateSaveMenuLabel();
   void updateWindowTitle();
-
-  insight::RemoteServerInfo lookupRemoteServerByLabel(const QString& hostLabel) const;
 
   bool checkAnalysisExecutionPreconditions();
 //  bool changeWorkingDirectory(const QString& wd);
@@ -183,9 +194,29 @@ protected:
 
   // ====================================================================================
   // ======== current action objects
-  std::unique_ptr<QCaseDirectory> caseDirectory_;
-  std::unique_ptr<QRemoteExecutionConfig> remoteDirectory_;
+  std::unique_ptr<QCaseDirectoryState> localCaseDirectory_;
+  void resetLocalCaseDirectory(const boost::filesystem::path& lcd);
+  std::unique_ptr<QRemoteExecutionState> remoteExecutionConfiguration_;
+
+
   std::unique_ptr<WorkbenchAction> currentWorkbenchAction_;
+
+  // access functions
+
+  /**
+   * @brief localCaseDirectory
+   * Returns selected local working direcory. Creates the directory, if required.
+   * @return local case directory path
+   */
+  boost::filesystem::path localCaseDirectory() const;
+
+  /**
+   * @brief remoteExecutionConfiguration
+   *
+   * @return
+   * reference to remote config
+   */
+  insight::RemoteExecutionConfig* remoteExecutionConfiguration() const;
 
   // ================================================================================
   // ================================================================================
@@ -216,7 +247,6 @@ public:
   AnalysisForm(
       QWidget* parent,
       const std::string& analysisName,
-      const boost::filesystem::path& workingDirectory = boost::filesystem::path(),
       bool logToConsole=false
       );
   ~AnalysisForm();
@@ -241,7 +271,6 @@ public:
 
 
   void startRemoteRun();
-  void resumeRemoteRun();
 //  void disconnectFromRemoteRun();
 
   // ================================================================================
@@ -280,14 +309,12 @@ private Q_SLOTS:
 
   void upload();
   void download();
+  void resumeRemoteRun();
 
   void onShowParameterXML();
 
   void onConfigModification();
 
-private Q_SLOTS:
-  void workingDirectoryEdited(const QString& qnwd);
-  void checkForRemoteConfig();
 
 Q_SIGNALS:
 //  void apply();

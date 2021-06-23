@@ -263,10 +263,15 @@ struct FilesCache
 
 void runLatex(const std::string& formula_code, const boost::filesystem::path& output)
 {
+  insight::CurrentExceptionContext ex("rendering formula into PNG image");
+
+  insight::dbg()<<"formula code: "<<formula_code<<std::endl;
+
   CaseDirectory subdir(false, boost::filesystem::temp_directory_path()/"runLatex" );
+  insight::dbg()<<"subdir: "<<subdir<<std::endl;
 
   boost::filesystem::path tex_filename = subdir/"input.tex";
-  std::ofstream tex( tex_filename.c_str() );
+  std::ofstream tex( tex_filename.string() );
   tex<<
         "\\documentclass{article}\n"
         "\\pagestyle{empty}\n"
@@ -306,6 +311,8 @@ void runLatex(const std::string& formula_code, const boost::filesystem::path& ou
           tex_filename.replace_extension(".dvi").string()
          })
   );
+
+  insight::dbg()<<"tex file: "<<tex_filename<<", output file: "<<output<<std::endl;
 }
 
 struct FormulaRenderFilesCache

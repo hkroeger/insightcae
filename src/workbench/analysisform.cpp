@@ -46,6 +46,7 @@
 #include <QStatusBar>
 #include <QSettings>
 #include <QProcess>
+#include <QCheckBox>
 #include "email.h"
 
 #include "ui_xml_display.h"
@@ -62,38 +63,26 @@
 namespace fs = boost::filesystem;
 
 
-insight::RemoteServerInfo AnalysisForm::lookupRemoteServerByLabel(const QString& hostLabel) const
+
+
+void QCaseDirectoryState::setAFEnabledState(bool enabled)
 {
-  auto i = insight::remoteServers.find( hostLabel.toStdString() );
-
-  if ( i == insight::remoteServers.end() )
-  {
-    throw std::logic_error("Can find remote server "+hostLabel.toStdString()+"!");
-  }
-
-  return i->second;
-}
-
-
-
-
-void QCaseDirectory::setAFEnabledState(bool enabled)
-{
-//  af_->ui->leWorkingDirectory->setEnabled(enabled);
-//  af_->ui->btnSelectWorkingDirectory->setEnabled(enabled);
+  insight::dbg()<<"set QCaseDirectoryState to enabled="
+                <<enabled<<std::endl;
+  if (enabled)
+    af_->ui->lblWorkingDirectory->setText( *this );
+  else
+    af_->ui->lblWorkingDirectory->setText("(unset)");
 
   af_->ui->btnParaview->setEnabled(enabled);
   af_->ui->btnClean->setEnabled(enabled);
   af_->ui->btnShell->setEnabled(enabled);
-
-//  af_->ui->btnWriteNow->setEnabled(enabled);
-//  af_->ui->btnWriteNowAndStop->setEnabled(enabled);
 }
 
 
 
 
-QCaseDirectory::QCaseDirectory(AnalysisForm *af, const boost::filesystem::path& path, bool keep)
+QCaseDirectoryState::QCaseDirectoryState(AnalysisForm *af, const boost::filesystem::path& path, bool keep)
   : insight::CaseDirectory(path, keep),
     af_(af)
 {
@@ -103,7 +92,7 @@ QCaseDirectory::QCaseDirectory(AnalysisForm *af, const boost::filesystem::path& 
 
 
 
-QCaseDirectory::QCaseDirectory(AnalysisForm *af, bool keep, const boost::filesystem::path& prefix)
+QCaseDirectoryState::QCaseDirectoryState(AnalysisForm *af, bool keep, const boost::filesystem::path& prefix)
   : insight::CaseDirectory(keep, prefix),
     af_(af)
 {
@@ -113,30 +102,60 @@ QCaseDirectory::QCaseDirectory(AnalysisForm *af, bool keep, const boost::filesys
 
 
 
-QCaseDirectory::~QCaseDirectory()
+QCaseDirectoryState::~QCaseDirectoryState()
 {
   setAFEnabledState(false);
 }
 
 
-
-
-void QRemoteExecutionConfig::setAFEnabledState(bool enabled)
+QCaseDirectoryState::operator QString() const
 {
+  return QString::fromStdString( string() );
+}
+
+
+
+
+void QRemoteExecutionState::setAFEnabledState(bool enabled)
+{
+  insight::dbg()<<"set QRemoteExecutionState to enabled="
+                <<enabled<<std::endl;
+
+  af_->ui->lblHostName->setEnabled(enabled);
+  if (enabled)
+    af_->ui->lblHostName->setText(
+          QString::fromStdString(server()->serverLabel()) );
+  else
+    af_->ui->lblHostName->setText("(none)");
+
+  af_->ui->lblRemoteDirectory->setEnabled(enabled);
+  if (enabled)
+    af_->ui->lblRemoteDirectory->setText(
+          QString::fromStdString(remoteDir().string()) );
+  else
+    af_->ui->lblRemoteDirectory->setText("(none)");
+
   af_->ui->btnDisconnect->setEnabled(enabled);
   af_->ui->btnResume->setEnabled(enabled);
   af_->ui->btnUpload->setEnabled(enabled);
   af_->ui->btnDownload->setEnabled(enabled);
   af_->ui->btnRemoveRemote->setEnabled(enabled);
-  af_->ui->cbRemoteExecution->setEnabled(enabled);
-  af_->ui->lblHostName->setEnabled(enabled);
-  af_->ui->label->setEnabled(enabled);
-  af_->ui->lblRemoteDirectory->setEnabled(enabled);
-  if (!enabled) af_->ui->cbRemoteExecution->setChecked(false);
+  af_->ui->lblRemote_1->setEnabled(enabled);
+  af_->ui->lblRemote_2->setEnabled(enabled);
+}
+
+QRemoteExecutionState::QRemoteExecutionState(
+    AnalysisForm *af,
+    const boost::filesystem::path& location,
+    const RemoteLocation &remoteLocation )
+  : insight::RemoteExecutionConfig(location, remoteLocation),
+    af_(af)
+{
+  setAFEnabledState(true);
 }
 
 
-QRemoteExecutionConfig::QRemoteExecutionConfig(
+QRemoteExecutionState::QRemoteExecutionState(
     AnalysisForm *af,
     const boost::filesystem::path& location,
     const boost::filesystem::path& localREConfigFile
@@ -148,20 +167,20 @@ QRemoteExecutionConfig::QRemoteExecutionConfig(
 }
 
 
-QRemoteExecutionConfig::QRemoteExecutionConfig(
+QRemoteExecutionState::QRemoteExecutionState(
     AnalysisForm *af,
-    const insight::RemoteServerInfo& rsi,
+    insight::RemoteServer::ConfigPtr rsc,
     const boost::filesystem::path& location,
     const boost::filesystem::path& remotePath,
     const boost::filesystem::path& localREConfigFile
     )
-  : insight::RemoteExecutionConfig(rsi, location, remotePath, localREConfigFile),
+  : insight::RemoteExecutionConfig(rsc, location, remotePath, localREConfigFile),
     af_(af)
 {
   setAFEnabledState(true);
 }
 
-QRemoteExecutionConfig::~QRemoteExecutionConfig()
+QRemoteExecutionState::~QRemoteExecutionState()
 {
   setAFEnabledState(false);
 }
@@ -173,7 +192,6 @@ QRemoteExecutionConfig::~QRemoteExecutionConfig()
 AnalysisForm::AnalysisForm(
     QWidget* parent,
     const std::string& analysisName,
-    const boost::filesystem::path& workingDirectory,
     bool logToConsole
     )
 : QMdiSubWindow(parent),
@@ -366,11 +384,6 @@ AnalysisForm::AnalysisForm(
     ui->gbExecuteOnRemoteHost->setEnabled(false);
 #endif
 
-    // set after installing textChanged signal handler
-    auto nwd=QString::fromStdString(workingDirectory.string());
-    ui->leWorkingDirectory->setText(nwd);
-    workingDirectoryEdited(nwd);
-    checkForRemoteConfig();
 }
 
 
@@ -624,6 +637,11 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
 //     parameters_.saveToFile(fn.toStdString(), analysis_->type());
     ist_file_=fn.toStdString();
 
+    if (!localCaseDirectory_)
+    {
+      resetLocalCaseDirectory(ist_file_.parent_path());
+    }
+
     saveParameters(cancelled);
 
     if (cancelled) *cancelled=false;
@@ -636,15 +654,39 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
 
 
 
+void AnalysisForm::resetLocalCaseDirectory(const boost::filesystem::path& lcd)
+{
+  localCaseDirectory_.reset(); // delete old one FIRST
+  localCaseDirectory_.reset(
+        new QCaseDirectoryState(this, lcd, true) );
+  try
+  {
+    std::unique_ptr<insight::RemoteLocation> rl(
+          new insight::RemoteLocation( lcd )
+          );
 
+    remoteExecutionConfiguration_.reset(
+          new QRemoteExecutionState(this, lcd, *rl) );
+  }
+  catch (...)
+  {
+  }
+}
 
 void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 {
-  ist_file_=fp;
+  ist_file_=boost::filesystem::absolute(fp);
+
+  if (!localCaseDirectory_)
+  {
+    resetLocalCaseDirectory(ist_file_.parent_path());
+  }
+
   insight::ParameterSet ps = parameters();
-  ps.readFromFile(fp);
-  peditor_->model()->resetParameters(ps, insight::Analysis::defaultParameters(analysisName_) );
-//  Q_EMIT update();
+  ps.readFromFile(ist_file_);
+  peditor_->model()->resetParameters(
+        ps,
+        insight::Analysis::defaultParameters(analysisName_) );
 }
 
 

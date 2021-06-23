@@ -133,6 +133,20 @@ void Job::ios_run_with_interruption(
 
 
 
+void forkExternalProcess
+(
+    JobPtr job,
+    std::shared_ptr<boost::process::child> child
+)
+{
+  job->process = child;
+  if (!job->process->running())
+  {
+   throw insight::Exception(
+                "launching of external application as subprocess failed!\n"
+             );
+  }
+}
 
 JobPtr forkExternalProcess
 (
@@ -140,30 +154,18 @@ JobPtr forkExternalProcess
     std::vector<std::string> argv
 )
 {
+  insight::CurrentExceptionContext ex("launch external command \""+cmd+"\"");
   auto job = std::make_shared<Job>();
-
-  job->process.reset(
-        new bp::child(
-           bp::search_path(cmd),
-           bp::args( argv ),
-           bp::std_in < job->in,
-           bp::std_out > job->out,
-           bp::std_err > job->err
+  forkExternalProcess(
+        job,
+        std::make_shared<boost::process::child>(
+          bp::search_path(cmd),
+          bp::args( argv ),
+          bp::std_in < job->in,
+          bp::std_out > job->out,
+          bp::std_err > job->err
           )
         );
-
-  if (!job->process->running())
-  {
-    //throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess!\n(Command was \""+dbgs.str()+"\")");
-    throw insight::Exception(
-              boost::str(boost::format(
-                 "Launching of external application \"%s\" as subprocess failed!\n")
-                  % cmd)
-              );
-  }
-
-  std::cout<<"Executing "<<cmd<<std::endl;
-
   return job;
 }
 

@@ -638,15 +638,19 @@ bool ParameterSet_Visualizer::selectScheduledParameters()
   {
     if (scheduledParameters_)
     {
+      CurrentExceptionContext ex("selecting new parameter set for next visualization");
+
       visualizedParameters_ = std::move(scheduledParameters_);
       return true;
     }
   }
+  dbg() << "no new parameter set selected for visualization";
   return false;
 }
 
 void ParameterSet_Visualizer::clearScheduledParameters()
 {
+  CurrentExceptionContext ex("clearing parameter set for visualization");
   visualizedParameters_.reset();
 }
 
@@ -660,6 +664,7 @@ ParameterSet_Visualizer::~ParameterSet_Visualizer()
 
 void ParameterSet_Visualizer::update(const ParameterSet& ps)
 {
+  CurrentExceptionContext ex("updating visualizer parameters");
   scheduledParameters_.reset(new ParameterSet(ps));
 }
 

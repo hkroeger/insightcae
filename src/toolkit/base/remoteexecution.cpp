@@ -105,19 +105,17 @@ RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& loca
 
 
 
-RemoteExecutionConfig::RemoteExecutionConfig(const RemoteServerInfo &rsi,
+RemoteExecutionConfig::RemoteExecutionConfig(RemoteServer::ConfigPtr rsc,
                                              const filesystem::path &location,
                                              const filesystem::path &remotePath,
                                              const filesystem::path &localREConfigFile)
-  : RemoteLocation(rsi, remotePath),
+  : RemoteLocation(rsc, remotePath),
     localDir_(location)
 {
   writeConfigFile(
         localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile,
-        server(),
-        remoteDir(),
-        rsi.hasLaunchScript_ ? rsi.server_ : ""
-                               );
+        *serverConfig_,
+        remoteDir_ );
 }
 
 

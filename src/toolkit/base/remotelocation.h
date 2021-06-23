@@ -16,38 +16,44 @@ namespace insight
 
 
 
-bool hostAvailable(const std::string& host);
-
-
-
-
+/**
+ * @brief The RemoteLocation class
+ * points to a directory on a remote host
+ * can be inactive (i.e. remote directory does not yet exist; remote host is not running)
+ * or active (directory exists, remote host is up)
+ */
 class RemoteLocation
 {
 protected:
-    boost::filesystem::path launchScript_;
-    std::string server_;
-    boost::filesystem::path remoteDir_;
-    bool autoCreateRemoteDirRequired_;
+  RemoteServer::ConfigPtr serverConfig_;
+  RemoteServerPtr serverInstance_;
 
-    bool isValid_;
+  /**
+   * @brief remoteDir_
+   * basolute path on remote host
+   */
+  boost::filesystem::path remoteDir_;
+  bool emptyRemotePathSupplied_, autoCreateRemoteDir_;
 
-    std::vector<boost::process::child> tunnelProcesses_;
 
-    void runRsync
-    (
-        const std::vector<std::string>& args,
-        std::function<void(int progress,const std::string& status_text)> progress_callback =
-            std::function<void(int,const std::string&)>()
-    );
+//    std::vector<boost::process::child> tunnelProcesses_;
 
-    virtual void launchHost();
-    virtual void validate();
+//    void runRsync
+//    (
+//        const std::vector<std::string>& args,
+//        std::function<void(int progress,const std::string& status_text)> progress_callback =
+//            std::function<void(int,const std::string&)>()
+//    );
+
+//    virtual void launchHost();
     virtual void removeRemoteDir();
-    virtual void disposeHost();
+//    virtual void disposeHost();
 
     void initialize();
 
-    void assertValid() const;
+    bool isActive_;
+    void validate();
+    void assertActive() const;
 
 public:
     /**
@@ -67,12 +73,12 @@ public:
     /**
      * @brief RemoteLocation
      * Construct from remote server info
-     * @param rsi
-     * remote server
+     * @param rsc
+     * remote server configuration
      * @param remotePath
      * directory (absolute on remote machine). If empty, it will be auto-created and its name can be queried using remoteDir().
      */
-    RemoteLocation(const RemoteServerInfo& rsi, const boost::filesystem::path& remotePath = "");
+    RemoteLocation(RemoteServer::ConfigPtr rsc, const boost::filesystem::path& remotePath = "", bool autoCreateRemoteDir = true);
 
     virtual ~RemoteLocation();
 
@@ -81,7 +87,7 @@ public:
      * create tunnels to remote location
      * @param remoteListenPorts
      * Will be translated to a subset of SSH's -R option:
-     * Specifies that connections to the given TCP port or Unix socket on the remote (server) host are to be
+     * Specifies that connections to the given TCPsecond port or Unix socket on the remote (server) host are to be
      * forwarded to the local side.
      * This works by allocating a socket to listen to either a TCP port or to a Unix socket on the remote side.
      * -R localport:host:hostport
@@ -93,16 +99,19 @@ public:
      * -L localport:host:hostport
      *
      */
-    void createTunnels(
-        std::vector<boost::tuple<int,std::string,int> > remoteListenPorts = {},
-        std::vector<boost::tuple<int,std::string,int> > localListenPorts = {}
-        );
 
-    void stopTunnels();
+    // get from server()
+//    void createTunnels(
+//        std::vector<boost::tuple<int,std::string,int> > remoteListenPorts = {},
+//        std::vector<boost::tuple<int,std::string,int> > localListenPorts = {}
+//        );
+
+//    void stopTunnels();
 
     // ====================================================================================
     // ======== query functions
-    const std::string& server() const;
+    RemoteServerPtr server() const;
+    RemoteServer::ConfigPtr serverConfig() const;
     const boost::filesystem::path& remoteDir() const;
 
 
@@ -114,7 +123,7 @@ public:
     // ==================================openfoam==================================================
     // ======== query remote location
 
-    bool serverIsUp() const;
+//    bool serverIsUp() const;
     /**
      * @brief remoteDirExists
      * checks, if remote dir is existing
@@ -182,11 +191,10 @@ public:
     static void writeConfigFile(
         const boost::filesystem::path& cfgf,
         const std::string& server,
-        const boost::filesystem::path& remoteDir,
-        const boost::filesystem::path& launchScript = ""
+        const boost::filesystem::path& remoteDir
         );
 
-    bool isValid() const;
+    bool isActive() const;
 };
 
 

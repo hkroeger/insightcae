@@ -5,7 +5,6 @@
 #include "boost/process.hpp"
 #include "base/remotelocation.h"
 #include "base/remoteserverlist.h"
-#include "base/taskspoolerinterface.h"
 
 
 
@@ -15,7 +14,11 @@ namespace insight
 
 
 
-
+/**
+ * @brief The RemoteExecutionConfig class
+ * stores the connection from a local directory to a remote location,
+ * saves the selected connection in a XML file (default meta.foam)
+ */
 class RemoteExecutionConfig
     : public RemoteLocation
 {
@@ -34,7 +37,7 @@ public:
     RemoteExecutionConfig(const boost::filesystem::path& location,
                           const boost::filesystem::path& localREConfigFile = "");
 
-    RemoteExecutionConfig(const RemoteServerInfo& rsi,
+    RemoteExecutionConfig(RemoteServer::ConfigPtr rsc,
                           const boost::filesystem::path& location,
                           const boost::filesystem::path& remotePath = "",
                           const boost::filesystem::path& localREConfigFile = "");

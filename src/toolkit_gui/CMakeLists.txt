@@ -27,6 +27,17 @@ set(toolkit_gui_SRCS
     iqparameters/iqdoublerangeparameter.cpp
     iqparameters/iqarrayelementparameter.cpp
 
+    iqremoteservereditdialog.h
+    iqremoteservereditdialog.cpp
+    iqremoteservereditdialog.ui
+
+    iqselectremotehosttypedialog.h
+    iqselectremotehosttypedialog.cpp
+    iqselectremotehosttypedialog.ui
+
+    iqremoteserverlistmodel.h
+    iqremoteserverlistmodel.cpp
+
     qdebugstream.cpp
     qinsighterror.cpp
     email.cpp

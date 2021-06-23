@@ -21,11 +21,12 @@
 #ifndef ISOFPLOTTABULARWINDOW_H
 #define ISOFPLOTTABULARWINDOW_H
 
+#include "base/boost_include.h"
+#include "base/linearalgebra.h"
+
 #include <QtGui>
 #include "ui_isofplottabularwindow.h"
 
-#include "base/boost_include.h"
-#include "base/linearalgebra.h"
 
 #include <vector>
 

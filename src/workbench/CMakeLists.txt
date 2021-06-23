@@ -24,12 +24,17 @@ set(workbench_SRCS
     workbenchaction.h
     localrun.cpp
     localrun.h
+    #wslrun.h
+    #wslrun.cpp
 
-    qsetupremotedialog.cpp
-    qsetupremotedialog.h
+    #qsetupremotedialog.cpp
+    #qsetupremotedialog.h
+
+    qexecutionenvironmentdialog.h
+    qexecutionenvironmentdialog.cpp
 
 )
-SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui qsetupremotedialog.ui)
+SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui qsetupremotedialog.ui qexecutionenvironmentdialog.ui)
 SET(workbench_RCCS workbench.qrc)
 set(workbench_LIBS
     toolkit_gui

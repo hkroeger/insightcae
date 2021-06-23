@@ -7,24 +7,19 @@
 #include "base/tools.h"
 #include "openfoam/openfoamcase.h"
 
+#include "rapidxml/rapidxml_print.hpp"
+
+
+
 using namespace std;
 using namespace boost;
+
+
+
 
 namespace insight {
 
 
-RemoteServerInfo::RemoteServerInfo()
-{}
-
-
-RemoteServerInfo::RemoteServerInfo(const std::string& server, bool hasLaunchScript, const bfs_path& defaultDir)
-  : hasLaunchScript_(hasLaunchScript), server_(server), defaultDir_(defaultDir)
-{}
-
-bool RemoteServerInfo::isOnDemand() const
-{
-  return hasLaunchScript_;
-}
 
 
 RemoteServerList::RemoteServerList()
@@ -63,30 +58,17 @@ RemoteServerList::RemoteServerList()
             {
               if (e->name()==string("remoteServer"))
               {
-                RemoteServerInfo s;
-
-                string label(e->first_attribute("label")->value());
-                s.defaultDir_ = boost::filesystem::path(e->first_attribute("baseDirectory")->value());
-
-                auto* ha = e->first_attribute("host");
-                auto* lsaa = e->first_attribute("launchScript");
-                if (ha && lsaa)
+                if ( auto rsc = RemoteServer::Config::create(e) )
                 {
-                  throw insight::Exception("Invalid configuration of remote server "+label+": either host name or launch script must be specified!");
-                }
-                else if (ha)
-                {
-                  s.server_=ha->value();
-                  s.hasLaunchScript_=false;
-                  (*this)[label]=s;
+                  insert(rsc);
                   anything_read=true;
                 }
-                else if (lsaa)
+                else
                 {
-                  s.server_=lsaa->value();
-                  s.hasLaunchScript_=true;
-                  (*this)[label]=s;
-                  anything_read=true;
+                  std::string label("(unlabelled)");
+                  if (auto *le=e->first_attribute("label"))
+                    label=std::string(le->value());
+                  insight::Warning("ignored invalid remote machine configuration: "+label);
                 }
               }
             }
@@ -96,21 +78,69 @@ RemoteServerList::RemoteServerList()
           }
         }
     }
+
 }
 
 
-const RemoteServerList::value_type RemoteServerList::findServer(const std::string& server) const
+RemoteServerList::RemoteServerList(const RemoteServerList& o)
+  : std::set<std::shared_ptr<RemoteServer::Config> >(o)
 {
-  auto i = find(server);
+}
+
+
+
+
+void RemoteServerList::writeConfiguration(const boost::filesystem::path& file)
+{
+  using namespace rapidxml;
+
+  xml_document<> doc;
+  xml_node<>* decl = doc.allocate_node(node_declaration);
+  decl->append_attribute(doc.allocate_attribute("version", "1.0"));
+  decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
+  doc.append_node(decl);
+  xml_node<> *rootnode = doc.allocate_node(node_element, "root");
+  for (const auto& rs: *this)
+  {
+    xml_node<> *srvnode = doc.allocate_node(node_element, "remoteServer");
+    rs->save(srvnode, doc);
+    rootnode->append_node(srvnode);
+  }
+
+  doc.append_node(rootnode);
+
+  ofstream f(file.string());
+  f << doc;
+}
+
+
+
+
+std::shared_ptr<RemoteServer::Config> RemoteServerList::findServer(
+    const std::string& serverLabel ) const
+{
+  auto i = std::find_if(
+        begin(), end(),
+        [&](const value_type& entry)
+        {
+          return static_cast<std::string&>(*entry)==serverLabel;
+        }
+  );
+
   if (i==end())
     {
-      throw insight::Exception("Remote server \""+server+"\" not found in configuration!");
+      throw insight::Exception("Remote server \""+serverLabel+"\" not found in configuration!");
     }
   return *i;
 }
 
 
+
+
 RemoteServerList remoteServers;
+
+
+
 
 
 

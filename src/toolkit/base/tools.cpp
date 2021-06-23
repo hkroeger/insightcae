@@ -153,7 +153,17 @@ CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
 CaseDirectory::~CaseDirectory()
 {
   if (!keep_)
-    remove_all(*this);
+  {
+    insight::CurrentExceptionContext ex("removing case directory "+this->string());
+    try
+    {
+      remove_all(*this);
+    }
+    catch (std::exception& e)
+    {
+      std::cerr<<e.what()<<std::endl;
+    }
+  }
 }
 
 bool CaseDirectory::isAutoCreated() const
@@ -182,7 +192,10 @@ bool CaseDirectory::isExistingAndNotEmpty() const
 void CaseDirectory::createDirectory()
 {
   if (!fs::exists(*this))
+  {
+    insight::CurrentExceptionContext ex("creating case directory "+this->string());
     create_directories(*this);
+  }
 }
 
 bool CaseDirectory::keep() const
@@ -226,6 +239,68 @@ const boost::filesystem::path& TemporaryFile::path() const
 {
   return tempFilePath_;
 }
+
+
+
+
+SSHCommand::SSHCommand(const std::string& hostName, const std::vector<std::string>& arguments)
+  : hostName_(hostName), args_(arguments)
+{
+}
+
+boost::filesystem::path SSHCommand::command() const
+{
+#if defined(WIN32)
+    return boost::process::search_path("plink");
+#else
+    return boost::process::search_path("ssh");
+#endif
+}
+
+std::vector<std::string> SSHCommand::arguments() const
+{
+  std::vector<std::string> a(args_);
+#if defined(WIN32)
+  a.insert(a.begin(), { "-load", hostName_, "-no-antispoof" });
+#else
+  a.insert(a.begin(), { hostName_ });
+#endif
+  return a;
+}
+
+
+
+
+RSYNCCommand::RSYNCCommand(const std::vector<std::string>& arguments)
+  : args_(arguments)
+{}
+
+boost::filesystem::path RSYNCCommand::command() const
+{
+#if defined(WIN32)
+    return boost::process::search_path("rsync.exe");
+#else
+    return boost::process::search_path("rsync");
+#endif
+}
+
+std::vector<std::string> RSYNCCommand::arguments() const
+{
+  std::vector<std::string> a(args_);
+
+#if defined(WIN32)
+  auto cygnative = boost::process::search_path("cygnative.exe");
+  auto plink = boost::process::search_path("plink.exe");
+  a.insert(a.begin(),
+           boost::str(boost::format("-e=\"%s %s -P %d\"")
+                      % cygnative.string() % plink.string() % 22 )
+  );
+#else
+  // keep args
+#endif
+  return a;
+}
+
 
 
 
@@ -814,6 +889,38 @@ int findFreePort()
 }
 
 
+int findRemoteFreePort(const std::string& SSHHostName)
+{
+  CurrentExceptionContext ce("determining free port on "+SSHHostName);
+
+  boost::process::ipstream out;
+
+  SSHCommand sc(SSHHostName, {"bash", "-lc", "isPVFindPort.sh"});
+  int ret = boost::process::system(
+        sc.command(), boost::process::args(sc.arguments()),
+        boost::process::std_out > out
+        );
+
+  if (ret!=0)
+  {
+    throw insight::Exception(
+          str( format("Failed to query host %s for free network port!") % SSHHostName)
+          );
+  }
+
+  std::string outline;
+  getline(out, outline);
+  std::vector<std::string> parts;
+  boost::split(parts, outline, is_any_of(" "));
+  if (parts.size()==2)
+  {
+    if (parts[0]=="PORT")
+      return to_number<int>(parts[1]);
+  }
+
+  throw insight::Exception("unexpected answer: \""+outline+"\"");
+}
+
 
 void readStreamIntoString(istream &in, string &fileContent)
 {
@@ -882,6 +989,45 @@ MemoryInfo::MemoryInfo()
   memTotal_=entries["MemTotal:"].first * 1024;
   memFree_=entries["MemFree:"].first * 1024;
 }
+
+
+
+
+RSyncProgressAnalyzer::RSyncProgressAnalyzer()
+{}
+
+
+
+
+void RSyncProgressAnalyzer::runAndParse(
+    boost::process::child& rsyncProcess,
+    std::function<void(int,const std::string&)> pf )
+{
+  std::string line;
+  boost::regex pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*) \\(xfr#([0-9]+), to-chk=([0-9]+)/([0-9]+)\\)");
+  while (rsyncProcess.running() && std::getline(*this, line) && !line.empty())
+  {
+    boost::smatch match;
+    if (boost::regex_search( line, match, pattern, boost::match_default ))
+    {
+      std::string percent=match[1];
+      std::string rate=match[2];
+      std::string eta=match[3];
+//        int i_file=to_number<int>(match[4]);
+      int i_to_chk=to_number<int>(match[5]);
+      int total_to_chk=to_number<int>(match[6]);
+
+      double progress = total_to_chk==0? 1.0 : double(total_to_chk-i_to_chk) / double(total_to_chk);
+
+      if (pf) pf(int(100.*progress), rate+", "+eta+" (current file: "+percent+")");
+    }
+  }
+
+  rsyncProcess.wait();
+}
+
+
+
 
 bool isNumber(const string &s)
 {

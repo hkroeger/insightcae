@@ -3,6 +3,8 @@
 
 #include "base/exception.h"
 #include "base/remoteexecution.h"
+#include "base/remoteserverlist.h"
+#include "base/sshlinuxserver.h"
 #include <cstdlib>
 
 #include <QDebug>
@@ -21,7 +23,7 @@ RemoteDirSelector::RemoteDirSelector(QWidget *parent, const std::string& default
   ui->setupUi(this);
 
   for (const auto& s: insight::remoteServers)
-    ui->server->addItem( /*s.serverName_.c_str()*/ s.first.c_str() );
+    ui->server->addItem( QString::fromStdString(*s) );
 
   mountpoint_ = boost::filesystem::unique_path( boost::filesystem::temp_directory_path()/"remote-%%%%-%%%%-%%%%-%%%%" );
   boost::filesystem::create_directories(mountpoint_);
@@ -55,12 +57,12 @@ RemoteDirSelector::~RemoteDirSelector()
 
 std::string RemoteDirSelector::selectedServer()
 {
-  auto s = insight::remoteServers[ui->server->currentText().toStdString()];
+  auto s = insight::remoteServers.findServer( ui->server->currentText().toStdString() );
 
-  if (s.hasLaunchScript_)
+  if ( s->isDynamicallyAllocated() )
     throw insight::Exception("Cannot select directories on dynamically allocated hosts");
 
-  return s.server_;
+  return *s;
 }
 
 
@@ -76,30 +78,33 @@ void RemoteDirSelector::serverChanged(const QString& name)
 {
   mount_.reset();
 
-  auto s = insight::remoteServers[name.toStdString()];
+  auto s = insight::remoteServers.findServer( name.toStdString() );
 
-  if (s.hasLaunchScript_)
+  if (s->isDynamicallyAllocated())
   {
     throw insight::Exception("Cannot select directories on dynamically allocated hosts");
   }
   else
   {
-    mount_.reset(new insight::MountRemote(mountpoint_, s.server_, "/"));
-
-    QString mp=QString::fromStdString(boost::filesystem::absolute(mountpoint_).string());
-    qDebug()<<mp;
-    fs_model_->setRootPath(mp);
-
-    QModelIndex idx = fs_model_->index(mp);
-    qDebug()<<idx;
-    ui->directory->setRootIndex(idx);
-
-    auto i = insight::remoteServers.find(name.toStdString());
-    if (i!=insight::remoteServers.end())
+    if (auto sshh = std::dynamic_pointer_cast<insight::SSHLinuxServer>(s->getInstanceIfRunning()))
     {
-        auto ci = fs_model_->index( (mountpoint_/i->second.defaultDir_).string().c_str() );
-        ui->directory->setCurrentIndex(ci);
+      mount_.reset(new insight::MountRemote(mountpoint_, sshh->hostName(), "/"));
+
+      QString mp=QString::fromStdString(boost::filesystem::absolute(mountpoint_).string());
+      qDebug()<<mp;
+      fs_model_->setRootPath(mp);
+
+      QModelIndex idx = fs_model_->index(mp);
+      qDebug()<<idx;
+      ui->directory->setRootIndex(idx);
+
+      auto i = insight::remoteServers.findServer(name.toStdString());
+
+      auto ci = fs_model_->index( QString::fromStdString((mountpoint_/i->defaultDirectory_).string()) );
+      ui->directory->setCurrentIndex(ci);
     }
+    else
+      throw insight::Exception("Cannot select directories on non-linux hosts");
   }
 }
 

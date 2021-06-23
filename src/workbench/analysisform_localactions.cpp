@@ -17,6 +17,7 @@
 
 #include <QMessageBox>
 #include <QFileDialog>
+#include "qexecutionenvironmentdialog.h"
 
 #include "localrun.h"
 
@@ -29,106 +30,59 @@ void AnalysisForm::connectLocalActions()
   // ====================================================================================
   // ======== working directory
 
-
-  connect(ui->btnSelectWorkingDirectory, &QPushButton::clicked,
-           [&]()
-           {
-             QString dir = QFileDialog::getExistingDirectory(
-                   this,
-                   "Please select working directory",
-                   ui->leWorkingDirectory->text()
-                   );
-             if (!dir.isEmpty())
-             {
-               ui->leWorkingDirectory->setText(dir); // checks will be performed in lineEdit handler
-             }
-           }
-   );
-
-
-  connect(ui->leWorkingDirectory, &QLineEdit::textEdited,
-          this, &AnalysisForm::workingDirectoryEdited);
-
-  connect(ui->cbRemoveWorkingDirectory, &QCheckBox::toggled,
-          [&](bool checked)
+  connect(ui->btnSetExecutionEnvironment, &QPushButton::clicked, this,
+          [&]()
           {
-            bool keep = !checked;
+            QExecutionEnvironmentDialog dlg(
+                  localCaseDirectory_.get(),
+                  remoteExecutionConfiguration_.get(),
+                  this );
 
-            if (caseDirectory_)
+            if (dlg.exec() == QDialog::Accepted)
             {
-              if ( !keep && (caseDirectory_->isExistingAndNotEmpty() && caseDirectory_->keep()) )
+              remoteExecutionConfiguration_.reset();
+              localCaseDirectory_.reset();
+
+              auto lwd = dlg.localDirectory();
+              if (lwd.empty())
               {
-                auto answer = QMessageBox::warning(
-                      this,
-                      "Attention!",
-
-                      "You selected an <b>existing directory</b> as working directory and\n"
-                      "you requested <b>removal of that directory</b> after the analysis is finished!\n"
-                      "All data in the directory<br>"
-                      "<b>"+QString::fromStdString(caseDirectory_->string())+"</b><br>"
-                      "will be deleted after the analysis!"
-                      "<br>"
-                      "Do you really want to continue?",
-
-                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
-                      QMessageBox::No
-                      );
-
-                if (answer!=QMessageBox::Yes)
-                {
-                  ui->cbRemoveWorkingDirectory->setChecked( Qt::Unchecked );
-                  return;
-                }
+                localCaseDirectory_.reset(
+                      new QCaseDirectoryState(
+                        this, boost::filesystem::path(), false) );
               }
-              caseDirectory_->setKeep(keep);
+              else
+              {
+                localCaseDirectory_.reset(
+                      new QCaseDirectoryState(
+                        this, lwd ) );
+              }
+
+              if (dlg.remoteLocation())
+              {
+                remoteExecutionConfiguration_.reset(
+                      new QRemoteExecutionState(
+                        this,
+                        *localCaseDirectory_,
+                        *dlg.remoteLocation() ) );
+              }
             }
           }
   );
+
 }
 
 
-void AnalysisForm::workingDirectoryEdited(const QString &qnwd)
+boost::filesystem::path AnalysisForm::localCaseDirectory() const
 {
-  fs::path nwd=qnwd.toStdString();
-
-  if ( !nwd.empty() && fs::exists(nwd) && fs::is_directory(nwd) )
+  if (!localCaseDirectory_)
   {
-    caseDirectory_.reset(); // delete first
-    caseDirectory_.reset(new QCaseDirectory( this, nwd, true ));
+    const_cast<std::unique_ptr<QCaseDirectoryState>&>
+        (localCaseDirectory_).reset(
+          new QCaseDirectoryState(
+            const_cast<AnalysisForm*>(this), false ) );
   }
-  else
-  {
-    caseDirectory_.reset();
-  }
-
-  if (nwd.empty())
-  {
-    ui->cbRemoveWorkingDirectory->setChecked( Qt::Checked );
-  }
-  else if (fs::exists(nwd))
-  {
-    ui->cbRemoveWorkingDirectory->setChecked( Qt::Unchecked );
-  }
+  return *localCaseDirectory_;
 }
-
-
-bool AnalysisForm::ensureWorkingDirectoryExistence()
-{
-  if (!caseDirectory_)
-  {
-    qDebug()<<"RESET";
-    bool keep = !ui->cbRemoveWorkingDirectory->isChecked();
-    fs::path nwd = ui->leWorkingDirectory->text().toStdString();
-
-    caseDirectory_.reset(new QCaseDirectory(this, nwd, keep));
-
-    ui->leWorkingDirectory->setText(QString::fromStdString(caseDirectory_->string()));
-  }
-
-  return true;
-}
-
-
 
 
 void AnalysisForm::startLocalRun()
@@ -137,13 +91,13 @@ void AnalysisForm::startLocalRun()
   {
     bool evalOnly = insight::OpenFOAMAnalysis::Parameters(parameters()).run.evaluateonly;
 
-    if (boost::filesystem::exists(*caseDirectory_ / "constant" / "polyMesh" ))
+    if ( boost::filesystem::exists( localCaseDirectory() / "constant" / "polyMesh" ) )
     {
       if (!evalOnly)
       {
         QMessageBox msgBox;
         msgBox.setText("There is already an OpenFOAM case present in the execution directory \""
-                       +QString::fromStdString(caseDirectory_->string())+"\"!");
+                       +QString::fromStdString(localCaseDirectory().string())+"\"!");
         msgBox.setInformativeText(
               "Depending on the state of the data, the behaviour will be as follows:<br><ul>"
               "<li>the mesh exists (\"constant/polyMesh/\") and a time directory exists (e.g. \"0/\"): the solver will be restarted,</li>"
@@ -168,7 +122,7 @@ void AnalysisForm::startLocalRun()
       {
         QMessageBox msgBox;
         msgBox.setText("You have selected to run the evaluation only but there is no valid OpenFOAM case present in the execution directory \""
-                       +QString::fromStdString(caseDirectory_->string())+"\"!");
+                       +QString::fromStdString(localCaseDirectory().string())+"\"!");
         msgBox.setInformativeText(
               "The subsequent step is likely to fail.<br>"
               "Are you sure, that you want to continue?"

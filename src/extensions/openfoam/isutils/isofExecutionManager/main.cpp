@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
       string server=vm["create-remote-temp"].as<std::string>();
       auto i = insight::remoteServers.findServer(server);
 
-      insight::RemoteExecutionConfig rec(i.second, location); // creates config file
+      insight::RemoteExecutionConfig rec(i, location); // creates config file
 
       anything_done=true;
     }
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     insight::RemoteExecutionConfig re(location, mf);
     boost::filesystem::path local_mp = location / "mnt_remote" / "default";
 
-    if (re.isValid())
+    if (re.isActive())
     {
 
       if(vm.count("list-remote"))
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
         if (!boost::filesystem::exists(local_mp))
           boost::filesystem::create_directories(local_mp);
 
-        MountRemote m(local_mp, re.server(), re.remoteDir(), true);
+        MountRemote m(local_mp, re, true);
 
         anything_done=true;
       }
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
         if (!boost::filesystem::exists(local_mp))
           throw insight::Exception("mount point "+local_mp.string()+" does not exist!");
         else {
-          MountRemote m(local_mp, re.server(), re.remoteDir(), false, true);
+          MountRemote m(local_mp, re, false, true);
         }
         anything_done=true;
       }
@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
         RemoteExecutionConfig orc(other_case_path);
 
         if (orc.server() != re.server())
-          throw insight::Exception("Remote directory of case in "+other_case_path.string()+" is on server "+orc.server()+" which is different than the server of the current case "+re.server());
+          throw insight::Exception("Remote directory of case is on a different server than the current case");
 
         if (!orc.remoteDirExists())
           throw insight::Exception("Remote directory of case in "+other_case_path.string()+" does not exists!");

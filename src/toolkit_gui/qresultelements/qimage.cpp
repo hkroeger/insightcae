@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QScrollArea>
+#include <QFile>
 #include <QDebug>
 
 namespace insight {
@@ -21,7 +22,22 @@ QImage::QImage(QObject *parent, const QString &label, insight::ResultElementPtr 
 {
   if (auto im = resultElementAs<insight::Image>())
   {
-    setImage( QPixmap(QString::fromStdString(im->filePath().string())) );
+    QByteArray data;
+    {
+      // read from stream, because intermediate file will remain locked in windows
+      // and disable removal of temporary case directories
+      auto& f=im->stream();
+      char Buffer[128];
+      while (!f.eof())
+      {
+          int BytesIn= f.read(Buffer, sizeof(Buffer)).gcount();
+          data.append(Buffer, BytesIn);
+      }
+      insight::dbg()<<"closing image file"<<std::endl;
+    }
+    QPixmap pm;
+    pm.loadFromData(data);
+    setImage( pm );
   }
 }
 

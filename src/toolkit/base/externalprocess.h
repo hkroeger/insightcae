@@ -39,6 +39,8 @@ public:
   void ios_run_with_interruption(
       std::function<void(const std::string& line)> processStdOut,
       std::function<void(const std::string& line)> processStdErr );
+
+
 };
 
 
@@ -47,6 +49,17 @@ public:
 typedef std::shared_ptr<Job> JobPtr;
 
 
+/**
+ * @brief forkExternalProcess
+ * @param job
+ * @param child
+ * the child needs to be created with the job's redirections !!
+ */
+void forkExternalProcess
+(
+    JobPtr job,
+    std::shared_ptr<boost::process::child> child
+);
 
 JobPtr forkExternalProcess
 (

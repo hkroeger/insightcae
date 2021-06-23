@@ -2,6 +2,7 @@
 
 #include "base/exception.h"
 #include "base/remoteexecution.h"
+#include "base/sshlinuxserver.h"
 #include <cstdlib>
 
 
@@ -43,7 +44,7 @@ bool MountRemote::isAlreadyMounted() const
 
 
 
-void MountRemote::mount(const std::string& server, const bfs_path& remotedir)
+void MountRemote::mount(const std::string& hostName, const bfs_path& remotedir)
 {
 #ifndef WIN32
   auto gid = getgid();
@@ -51,8 +52,11 @@ void MountRemote::mount(const std::string& server, const bfs_path& remotedir)
 
   std::string cmd=boost::str(boost::format( "sshfs -o uid=%d,gid=%d,follow_symlinks \"%s:%s\" \"%s\"")
                              % uid % gid
-                             % server % remotedir.string()
-                             % mountpoint_.string() );
+                             % hostName % remotedir.string()
+                             % mountpoint_.strWSLLinuxServer::WSLLinuxServer()
+                             {
+
+                             }ing() );
 
   if (std::system( cmd.c_str() )!=0)
       throw insight::Exception("Could not mount remote filesystem. Failed command was: "+cmd);
@@ -73,7 +77,7 @@ void MountRemote::unmount()
 
 
 
-MountRemote::MountRemote(const bfs_path& mountpoint, const std::string& server, const bfs_path& remotedir, bool keep, bool expect_mounted)
+MountRemote::MountRemote(const bfs_path& mountpoint, const std::string& hostName, const bfs_path& remotedir, bool keep, bool expect_mounted)
     : mountpoint_(mountpoint), keep_(keep), removeMountPoint_(false)
 {
   bool is_mounted=isAlreadyMounted();
@@ -84,10 +88,35 @@ MountRemote::MountRemote(const bfs_path& mountpoint, const std::string& server, 
     throw insight::Exception("Expected mounted directory, but found it unmounted!");
 
   if (!expect_mounted)
-    mount(server, remotedir);
+    mount(hostName, remotedir);
 }
 
+MountRemote::MountRemote(const bfs_path& mountpoint, const insight::RemoteLocation& rl, bool keep, bool expect_mounted)
+    : mountpoint_(mountpoint), keep_(keep), removeMountPoint_(false)
+{
+  bool is_mounted=isAlreadyMounted();
 
+  if (is_mounted && !expect_mounted)
+    throw insight::Exception("Trying to mount to directory, which is already mounted!");
+  else if (!is_mounted && expect_mounted)
+    throw insight::Exception("Expected mounted directory, but found it unmounted!");
+
+  if (!expect_mounted)
+  {
+    if (auto ri = rl.server())
+    {
+      if (auto sshh = std::dynamic_pointer_cast<SSHLinuxServer>(ri))
+      {
+        createTemporaryMountPoint();
+        mount(sshh->hostName(), rl.remoteDir());
+      }
+      else
+        throw insight::Exception("The remote server is not a linux based SSH server");
+    }
+    else
+      throw insight::Exception("The remote server is not reachable");
+  }
+}
 
 
 void MountRemote::createTemporaryMountPoint()
@@ -106,21 +135,41 @@ void MountRemote::createTemporaryMountPoint()
 
 
 
-MountRemote::MountRemote(const std::string &server, const bfs_path &remotedir)
+MountRemote::MountRemote(const std::string &hostName, const bfs_path &remotedir)
   : keep_(false), removeMountPoint_(true)
 {
   createTemporaryMountPoint();
-  mount(server, remotedir);
+  mount(hostName, remotedir);
 }
 
-
+MountRemote::MountRemote(insight::RemoteServer::ConfigPtr rsc, const bfs_path& remotedir)
+  : keep_(false), removeMountPoint_(true)
+{
+  if (auto ri = rsc->getInstanceIfRunning())
+  {
+    if (auto sshh = std::dynamic_pointer_cast<SSHLinuxServer>(ri))
+    {
+      createTemporaryMountPoint();
+      mount(sshh->hostName(), remotedir);
+    }
+    else
+      throw insight::Exception("The remote server is not a linux based SSH server");
+  }
+  else
+    throw insight::Exception("The remote server is not reachable");
+}
 
 
 MountRemote::MountRemote(const RemoteLocation& rloc)
   : keep_(false), removeMountPoint_(true)
 {
   createTemporaryMountPoint();
-  mount(rloc.server(), rloc.remoteDir());
+  if (auto sshs = std::dynamic_pointer_cast<SSHLinuxServer>(rloc.server()))
+  {
+    mount(sshs->hostName(), rloc.remoteDir());
+  }
+  else
+    throw insight::Exception("The remote server is not a linux based SSH server");
 }
 
 

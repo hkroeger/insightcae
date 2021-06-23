@@ -32,6 +32,7 @@
 #include "newanalysisdlg.h"
 #include "analysisform.h"
 #include "qinsighterror.h"
+#include "iqremoteservereditdialog.h"
 
 #include <fstream>
 #include "rapidxml/rapidxml.hpp"
@@ -101,6 +102,18 @@ workbench::workbench(bool logToConsole)
   }
   updateRecentFileActions();
 
+  QMenu *settingsMenu = menuBar()->addMenu( "&Settings" );
+
+  a = new QAction("Remote servers...", this);
+  connect(a, &QAction::triggered, this,
+          [&]()
+          {
+            IQRemoteServerEditDialog dlg(this);
+            dlg.exec();
+          }
+  );
+  settingsMenu->addAction( a );
+
   QMenu *helpMenu = menuBar()->addMenu( "&Help" );
 
   QAction* ab = new QAction("About...", this);
@@ -132,7 +145,7 @@ void workbench::newAnalysis()
     std::string analysisName = dlg.getAnalysisName();
     try
     {
-      form = new AnalysisForm(mdiArea_, analysisName, boost::filesystem::path(), logToConsole_);
+      form = new AnalysisForm(mdiArea_, analysisName, logToConsole_);
     }
     catch (const std::exception& e)
     {
@@ -195,7 +208,6 @@ void workbench::openAnalysis(const QString& fn)
   {
     form = new AnalysisForm(mdiArea_,
                             analysisName,
-                            boost::filesystem::path(fn.toStdString()).parent_path(),
                             logToConsole_
                             );
   }

@@ -63,7 +63,9 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
     if (msgBox.exec()==QMessageBox::Yes)
     {
         results_.reset();
-    } else {
+    }
+    else
+    {
         return false;
     }
   }
@@ -83,14 +85,11 @@ void AnalysisForm::onRunAnalysis()
   if (!checkAnalysisExecutionPreconditions())
     return;
 
-  if (!ensureWorkingDirectoryExistence())
-    return;
-
-  if (ui->cbRemoteExecution->isChecked())
+  if (remoteExecutionConfiguration_)
   {
     startRemoteRun();
   }
-  else if (!ui->cbRemoteExecution->isChecked())
+  else
   {
     startLocalRun();
   }
@@ -149,18 +148,18 @@ void AnalysisForm::onAnalysisCancelled()
 
 void AnalysisForm::onStartPV()
 {
-  if (ui->cbRemoteExecution->isChecked() && remoteDirectory_ && caseDirectory_)
+  if (auto* rec = remoteExecutionConfiguration())
   {
-    if (remoteDirectory_->remoteDirExists())
+    if (rec->remoteDirExists())
     {
-      RemoteParaview dlg( *remoteDirectory_, this );
+      RemoteParaview dlg( *rec, this );
       dlg.exec();
     }
   }
-  else if (!ui->cbRemoteExecution->isChecked() && caseDirectory_)
+  else
   {
     ::system( boost::str( boost::format
-          ("cd %s; isPV.py &" ) % caseDirectory_->string()
+          ("cd %s; isPV.py &" ) % localCaseDirectory().string()
      ).c_str() );
   }
 }
@@ -170,30 +169,27 @@ void AnalysisForm::onStartPV()
 
 void AnalysisForm::onCleanOFC()
 {
-  if (caseDirectory_)
+  const insight::OFEnvironment* ofc = nullptr;
+  if (parameters().contains("run/OFEname"))
   {
-    const insight::OFEnvironment* ofc = nullptr;
-    if (parameters().contains("run/OFEname"))
-    {
-      std::string ofename=parameters().getString("run/OFEname");
-      ofc=&(insight::OFEs::get(ofename));
-    }
-    else
-    {
-      ofc=&(insight::OFEs::getCurrentOrPreferred());
-    }
-
-    fs::path exePath = *caseDirectory_;
-    std::unique_ptr<insight::MountRemote> rd;
-    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_)
-    {
-        rd.reset(new insight::MountRemote(*remoteDirectory_));
-        exePath = rd->mountpoint();
-    }
-
-    OFCleanCaseDialog dlg(*ofc, exePath, this);
-    dlg.exec();
+    std::string ofename=parameters().getString("run/OFEname");
+    ofc=&(insight::OFEs::get(ofename));
   }
+  else
+  {
+    ofc=&(insight::OFEs::getCurrentOrPreferred());
+  }
+
+  fs::path exePath = localCaseDirectory();
+  std::unique_ptr<insight::MountRemote> rd;
+  if (auto* rec = remoteExecutionConfiguration())
+  {
+      rd.reset(new insight::MountRemote(*rec));
+      exePath = rd->mountpoint();
+  }
+
+  OFCleanCaseDialog dlg(*ofc, exePath, this);
+  dlg.exec();
 }
 
 
@@ -203,11 +199,11 @@ void AnalysisForm::onWnow()
 {
   if (isRunning())
   {
-    fs::path exePath = *caseDirectory_;
+    fs::path exePath = localCaseDirectory();
     std::unique_ptr<insight::MountRemote> rd;
-    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_)
+    if ( auto* rec = remoteExecutionConfiguration() )
     {
-        rd.reset(new insight::MountRemote(*remoteDirectory_));
+        rd.reset(new insight::MountRemote(*rec));
         exePath = rd->mountpoint();
     }
 
@@ -225,11 +221,11 @@ void AnalysisForm::onWnowAndStop()
 {
   if (isRunning())
   {
-    fs::path exePath = *caseDirectory_;
+    fs::path exePath = localCaseDirectory();
     std::unique_ptr<insight::MountRemote> rd;
-    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_)
+    if ( auto* rec = remoteExecutionConfiguration() )
     {
-        rd.reset(new insight::MountRemote(*remoteDirectory_));
+        rd.reset(new insight::MountRemote(*rec));
         exePath = rd->mountpoint();
     }
 
@@ -245,11 +241,11 @@ void AnalysisForm::onWnowAndStop()
 
 void AnalysisForm::onShell()
 {
-  if (caseDirectory_)
-  {
-    auto locDir = QString::fromStdString(caseDirectory_->string());
+  auto locDir = QString::fromStdString(localCaseDirectory().string());
 
-    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_ && remoteDirectory_->remoteDirExists())
+  if ( auto* rec = remoteExecutionConfiguration() )
+  {
+    if (rec->remoteDirExists())
     {
       QStringList args;
       if ( !QProcess::startDetached("isRemoteShell.sh",
@@ -263,18 +259,18 @@ void AnalysisForm::onShell()
               );
       }
     }
-    else if (!ui->cbRemoteExecution->isChecked())
+  }
+  else
+  {
+    QStringList args;
+    args << "--working-directory" << locDir;
+    if (!QProcess::startDetached("mate-terminal", args, locDir ))
     {
-      QStringList args;
-      args << "--working-directory" << locDir;
-      if (!QProcess::startDetached("mate-terminal", args, locDir ))
-      {
-        QMessageBox::critical(
-              this,
-              "Failed to start",
-              "Failed to start mate-terminal in directoy "+locDir
-              );
-      }
+      QMessageBox::critical(
+            this,
+            "Failed to start",
+            "Failed to start mate-terminal in directoy "+locDir
+            );
     }
   }
 }

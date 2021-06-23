@@ -101,6 +101,11 @@ const std::string base64_padding[] = {"", "==","="};
 
 std::string base64_encode(const std::string& s)
 {
+  insight::CurrentExceptionContext ex(
+        boost::str(boost::format("performing base64 encode of buffer of size %d")
+                   % s.size() )
+        );
+
   namespace bai = boost::archive::iterators;
 
   std::stringstream os;
@@ -449,6 +454,7 @@ timespec highres_last_write_time(const boost::filesystem::path& file)
 
 bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
 {
+  insight::CurrentExceptionContext ex("checking, if file content needs to be unpacked into "+unpackPath.string());
   if (!originalFilePath_.empty())
   {
     bool needUnpack = false;
@@ -457,15 +463,19 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
     {
       if (!exists(unpackPath)) // unpack only, if not already done
       {
+        insight::dbg() << "needUnpack: target file does not exist"<< std::endl;
         needUnpack = true;
       }
       else
       {
         // only consider unpacking, if the data we have is newer than what is on disk
-        auto last_write_time = highres_last_write_time(unpackPath);
+        auto lastWriteTime = highres_last_write_time(unpackPath);
 
-        if (last_write_time < fileContentTimestamp_)
+        if (lastWriteTime < fileContentTimestamp_)
         {
+            insight::dbg() << "needUnpack: target file time stamp is older than buffer time stamp"<< std::endl;
+            insight::dbg() << "  "<<lastWriteTime<<" < "<<fileContentTimestamp_<<std::endl;
+
 //          // check if the file on disk is actually different
 //          auto cmd5 = calcFileHash(unpackPath);
 //          if (*cmd5 != *fileContentHash_)
@@ -476,10 +486,13 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
       }
     }
 
+    insight::dbg() << "needUnpack = " << needUnpack << std::endl;
     return needUnpack;
   }
   else
   {
+    insight::dbg() << " original file path is empty" << std::endl;
+    insight::dbg() << "needUnpack = " << false << std::endl;
     return false;
   }
 }
@@ -510,6 +523,11 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
 
 void FileContainer::copyTo(const boost::filesystem::path &filePath, bool createParentPath) const
 {
+  insight::CurrentExceptionContext ex(
+        boost::str(boost::format(
+            "writing file content into %d (create parent path %d)"
+        ) % filePath.string() % createParentPath ) );
+
   if (createParentPath)
   {
     if (!exists(filePath.parent_path()) )
@@ -542,15 +560,18 @@ void FileContainer::replaceContent(const boost::filesystem::path& filePath)
 {
   if (exists(filePath) && is_regular_file(filePath) )
   {
+    insight::CurrentExceptionContext ex("reading file "+filePath.string()+" content into buffer");
+
     // read raw file into buffer
     auto newContent = std::make_shared<std::string>();
 
-    std::ifstream in(filePath.c_str());
-    std::istreambuf_iterator<char> inputBegin(in), inputEnd;
-    std::back_insert_iterator<std::string> stringInsert(*newContent);
+//    std::ifstream in(filePath.string());
+//    std::istreambuf_iterator<char> inputBegin(in), inputEnd;
+//    std::back_insert_iterator<std::string> stringInsert(*newContent);
 
-    copy(inputBegin, inputEnd, stringInsert);
+//    copy(inputBegin, inputEnd, stringInsert);
 
+    readFileIntoString(filePath, *newContent);
     replaceContentBuffer(newContent);
   }
 }
@@ -558,6 +579,15 @@ void FileContainer::replaceContent(const boost::filesystem::path& filePath)
 
 void FileContainer::replaceContentBuffer(std::shared_ptr<std::string> newContent)
 {
+  std::string msg;
+  if (newContent)
+    msg = boost::str(boost::format(
+           "replacing content buffer with data of size %d"
+          ) % newContent->size() );
+  else
+    msg = "resetting content buffer";
+
+  insight::CurrentExceptionContext ex( msg );
   file_content_=newContent;
   clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
   //  fileContentHash_ = calcBufferHash(*file_content_);
@@ -577,6 +607,7 @@ size_t FileContainer::contentBufferSize() const
 
 void FileContainer::clearPackedData()
 {
+  insight::CurrentExceptionContext ex("clearing content buffer");
   file_content_.reset();
   fileContentTimestamp_={0,0};
 }

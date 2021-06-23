@@ -204,7 +204,8 @@ void Chart::writeLatexCode ( std::ostream& f, const std::string& name, int , con
     f<<
      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
-     "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative ( outputfilepath, chart_file ).c_str() << "}\n"
+     "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
+        << make_relative ( outputfilepath, chart_file ).string() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier";
@@ -222,8 +223,6 @@ void Chart::exportDataToFile ( const std::string& name, const boost::filesystem:
         }
 
         boost::filesystem::path fname ( outputdirectory/ ( name+"__"+suf+".xy" ) );
-
-        std::ofstream f ( fname.c_str() );
         pc.xy_.save ( fname.string(), arma::raw_ascii );
         curveID++;
     }

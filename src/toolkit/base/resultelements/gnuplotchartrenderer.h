@@ -59,34 +59,22 @@ public:
 
       gnuplotio::Gnuplot gp;
 
-      //gp<<"set terminal pngcairo; set termoption dash;";
-      gp<<"set terminal epslatex standalone color dash linewidth 3 header \"\\\\usepackage{graphicx}\\n\\\\usepackage{epstopdf}\";";
-      gp<<"set output '"+bn+".tex';";
-      //     gp<<"set output '"<<absolute(imagepath).string()<<"';";
-      /*
-              gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
-                  "set linetype  2 lc rgb '#8A2BE2' lw 1;"
-                  "set linetype  3 lc rgb '#A52A2A' lw 1;"
-                  "set linetype  4 lc rgb '#E9967A' lw 1;"
-                  "set linetype  5 lc rgb '#5F9EA0' lw 1;"
-                  "set linetype  6 lc rgb '#006400' lw 1;"
-                  "set linetype  7 lc rgb '#8B008B' lw 1;"
-                  "set linetype  8 lc rgb '#696969' lw 1;"
-                  "set linetype  9 lc rgb '#DAA520' lw 1;"
-                  "set linetype cycle  9;";
-          */
+      std::string gpfname = (tmp/(bn+".tex")).string();
+#ifdef WIN32
+      replace_all(gpfname, "\\", "/");
+#endif
+      gp<<"set terminal cairolatex pdf standalone color dash linewidth 3;";
+      gp<<"set output '" << gpfname << "';";
 
       gnuplotCommand(gp);
     }
 
-    std::system (
-          (
-            "mv \""+bn+".tex\" \""+ ( tmp/ ( bn+".tex" ) ).string()+"\"; "
-            "mv \""+bn+"-inc.eps\" \""+ ( tmp/ ( bn+"-inc.eps" ) ).string()+"\"; "
-            "cd \""+tmp.string()+"\"; "
-            "pdflatex -interaction=batchmode -shell-escape \""+bn+".tex\"; "
-            //"convert -density 600 "+bn+".pdf "+absolute ( imagepath ).string()
-            ).c_str() );
+    boost::process::system(
+          boost::process::search_path("pdflatex"),
+          boost::process::args(
+            { "-interaction=batchmode", "-shell-escape", bn+".tex" }),
+          boost::process::start_dir(tmp)
+          );
 
     std::shared_ptr<document> doc( document::load_from_file( (tmp/(bn+".pdf")).string() ) );
     if (!doc) {

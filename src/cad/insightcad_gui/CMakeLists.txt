@@ -22,6 +22,12 @@ set(insightcad_gui_SRCS
 # qoccviewercontext.h
  occtwindow.cpp
  occtwindow.h
+ viewwidgetaction.h
+ viewwidgetaction.cpp
+ viewwidgetinsertids.h
+ viewwidgetinsertids.cpp
+ navigationmanager.h
+ navigationmanager.cpp
  qoccviewwidget.cpp
  qoccviewwidget.h
  viewstate.cpp

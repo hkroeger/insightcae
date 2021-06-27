@@ -63,6 +63,9 @@
 
 #include "qoccviewwidget.h"
 
+#include "viewwidgetinsertids.h"
+
+
 using namespace std;
 
 static Handle(OpenGl_GraphicDriver) aGraphicDriver;
@@ -104,17 +107,17 @@ void QoccViewWidget::addLights()
 
 QoccViewWidget::QoccViewWidget(QWidget *parent)
   : QWidget(parent),
-    myViewResized       ( Standard_False ),
-    myMode              ( CurAction3d_Undefined ),
+    currentNavigationAction_(nullptr),
+    navigationManager_(
+      std::make_shared<TouchpadNavigationManager>(currentNavigationAction_, this, myView) ),
     myGridSnap          ( Standard_False ),
     myDetection         ( AIS_SOD_Nothing ),
-    myRubberBand        ( NULL ),
     myPrecision		( 0.0001 ),
     myViewPrecision     ( 0.0 ),
     myKeyboardFlags     ( Qt::NoModifier ),
     myButtonFlags	( Qt::NoButton ),
-    showGrid            ( false ),
-    cimode_             ( CIM_Normal )
+    showGrid            ( false )/*,
+    cimode_             ( CIM_Normal )*/
 {
   // Needed to generate mouse events
   setMouseTracking( true );
@@ -139,7 +142,7 @@ QoccViewWidget::QoccViewWidget(QWidget *parent)
   myCrossCursor = QCursor( curb2, curb1, 24, 24 );
 
   // Create a rubber band box for later mouse activity
-  myRubberBand = new QRubberBand( QRubberBand::Rectangle, this );
+//  myRubberBand = new QRubberBand( QRubberBand::Rectangle, this );
 
   if (aGraphicDriver.IsNull())
   {
@@ -213,7 +216,7 @@ QoccViewWidget::QoccViewWidget(QWidget *parent)
   myView->SetProj( V3d_Zpos );
   myView->SetUp( V3d_Xpos );
 
-  myMode = CurAction3d_Nothing;
+//  myMode = CurAction3d_Nothing;
 
   connect
       (
@@ -230,10 +233,10 @@ QoccViewWidget::QoccViewWidget(QWidget *parent)
 */
 QoccViewWidget::~QoccViewWidget()
 {
- if ( myRubberBand )
-    {
-      delete myRubberBand;
-    }
+// if ( myRubberBand )
+//    {
+//      delete myRubberBand;
+//    }
 }
 
 
@@ -288,33 +291,38 @@ void QoccViewWidget::resizeEvent ( QResizeEvent * /* e */ )
 
 
 
-/*!
-\brief	Mouse press event
-\param	e The event data.
-*/
+
 void QoccViewWidget::mousePressEvent( QMouseEvent* e )
 {
   if (!myView.IsNull())
   {
-    myButtonFlags = e->button();
-
-    // Cache the keyboard flags for the whole gesture
-    myKeyboardFlags = e->modifiers();
-
-    // The button mappings can be used as a mask. This code prevents conflicts
-    // when more than one button pressed simutaneously.
     if ( e->button() & Qt::LeftButton )
       {
-        onLeftButtonDown  ( myKeyboardFlags, e->pos() );
+        navigationManager_->onLeftButtonDown( e->modifiers(), e->pos() );
+        if (currentNavigationAction_)
+          currentNavigationAction_->onLeftButtonDown( e->modifiers(), e->pos() );
+        if (currentUserActivity_)
+          currentUserActivity_->onLeftButtonDown( e->modifiers(), e->pos() );
       }
     else if ( e->button() & Qt::RightButton )
       {
-        onRightButtonDown ( myKeyboardFlags, e->pos() );
+        navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
+        if (currentNavigationAction_)
+          currentNavigationAction_->onRightButtonDown( e->modifiers(), e->pos() );
+        if (currentUserActivity_)
+          currentUserActivity_->onRightButtonDown( e->modifiers(), e->pos() );
       }
     else if ( e->button() & Qt::MidButton )
       {
-        onMiddleButtonDown( myKeyboardFlags, e->pos() );
+        navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
+        if (currentNavigationAction_)
+          currentNavigationAction_->onMiddleButtonDown( e->modifiers(), e->pos() );
+        if (currentUserActivity_)
+          currentUserActivity_->onMiddleButtonDown( e->modifiers(), e->pos() );
       }
+
+    if (currentUserActivity_ && currentUserActivity_->finished())
+      currentUserActivity_.reset();
   }
   else
     e->ignore();
@@ -323,29 +331,38 @@ void QoccViewWidget::mousePressEvent( QMouseEvent* e )
 
 
 
-/*!
-\brief	Mouse release event
-\param	e The event data.
-*/
+
 void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
 {
   if (!myView.IsNull())
   {
-    myButtonFlags = Qt::NoButton;
-//    redraw();							// Clears up screen when menu selected but not used.
-    hideRubberBand();
     if ( e->button() & Qt::LeftButton )
       {
-        onLeftButtonUp  ( myKeyboardFlags, e->pos() );
+        navigationManager_->onLeftButtonUp( e->modifiers(), e->pos() );
+        if (currentNavigationAction_)
+          currentNavigationAction_->onLeftButtonUp( e->modifiers(), e->pos() );
+        if (currentUserActivity_)
+          currentUserActivity_->onLeftButtonUp( e->modifiers(), e->pos() );
       }
     else if ( e->button() & Qt::RightButton )
       {
-        onRightButtonUp ( myKeyboardFlags, e->pos() );
+        navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
+        if (currentNavigationAction_)
+          currentNavigationAction_->onRightButtonUp( e->modifiers(), e->pos() );
+        if (currentUserActivity_)
+          currentUserActivity_->onRightButtonUp( e->modifiers(), e->pos() );
       }
     else if ( e->button() & Qt::MidButton )
       {
-        onMiddleButtonUp( myKeyboardFlags, e->pos() );
+        navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
+        if (currentNavigationAction_)
+          currentNavigationAction_->onMiddleButtonUp( e->modifiers(), e->pos() );
+        if (currentUserActivity_)
+          currentUserActivity_->onMiddleButtonUp( e->modifiers(), e->pos() );
       }
+
+    if (currentUserActivity_ && currentUserActivity_->finished())
+      currentUserActivity_.reset();
   }
   else
     e->ignore();
@@ -363,43 +380,59 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
   if (!myView.IsNull())
   {
 
-    Standard_Real X, Y, Z;
+//    Standard_Real X, Y, Z;
   
-    myCurrentPoint = e->pos();
-    //Check if the grid is active and that we're snapping to it
-    if( myContext_->CurrentViewer()->Grid()->IsActive() && myGridSnap )
-      {
-        myView->ConvertToGrid
-          (
-           myCurrentPoint.x(),
-           myCurrentPoint.y(),
-           myV3dX,
-           myV3dY,
-           myV3dZ
-          );
-        emit mouseMoved( myV3dX, myV3dY, myV3dZ );
-      }
-    else //	this is the standard case
-      {
-        if (convertToPlane
-            (
-             myCurrentPoint.x(),
-             myCurrentPoint.y(),
-             X, Y, Z
-            ) )
-          {
-            myV3dX = precision( X );
-            myV3dY = precision( Y );
-            myV3dZ = precision( Z );
-            emit mouseMoved( myV3dX, myV3dY, myV3dZ );
-          }
-        else
-          {
-            emit sendStatus ( tr("Indeterminate Point") );
-          }
-      }
+//    myCurrentPoint = e->pos();
+//    //Check if the grid is active and that we're snapping to it
+//    if( myContext_->CurrentViewer()->Grid()->IsActive() && myGridSnap )
+//      {
+//        myView->ConvertToGrid
+//          (
+//           myCurrentPoint.x(),
+//           myCurrentPoint.y(),
+//           myV3dX,
+//           myV3dY,
+//           myV3dZ
+//          );
+//        emit mouseMoved( myV3dX, myV3dY, myV3dZ );
+//      }
+//    else //	this is the standard case
+//      {
+//        if (convertToPlane
+//            (
+//             myCurrentPoint.x(),
+//             myCurrentPoint.y(),
+//             X, Y, Z
+//            ) )
+//          {
+//            myV3dX = precision( X );
+//            myV3dY = precision( Y );
+//            myV3dZ = precision( Z );
+//            emit mouseMoved( myV3dX, myV3dY, myV3dZ );
+//          }
+//        else
+//          {
+//            emit sendStatus ( tr("Indeterminate Point") );
+//          }
+//      }
 
-    onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
+    myContext_->MoveTo(
+          e->pos().x(), e->pos().y(),
+          myView
+#if (OCC_VERSION_MAJOR>=7)
+          , true
+#endif
+    );
+
+    navigationManager_->onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
+    if (currentNavigationAction_)
+      currentNavigationAction_->onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
+    if (currentUserActivity_)
+      currentUserActivity_->onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
+
+    if (currentUserActivity_ && currentUserActivity_->finished())
+      currentUserActivity_.reset();
+
   }
   else
     e->ignore();
@@ -418,7 +451,7 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
 */
 void QoccViewWidget::leaveEvent ( QEvent* /* e */ )
 {
-  myButtonFlags = Qt::NoButton;
+//  myButtonFlags = Qt::NoButton;
 }
 
 
@@ -539,16 +572,25 @@ void QoccViewWidget::wheelEvent ( QWheelEvent* e )
 {
   if (!myView.IsNull())
     {
-      Standard_Real currentScale = myView->Scale();
-      if (e->angleDelta().y() > 0)
-	{
-	  currentScale *= 1.10; // +10%
-	}
-      else
-	{
-	  currentScale /= 1.10; // -10%
-	}
-      myView->SetScale( currentScale );
+//      Standard_Real currentScale = myView->Scale();
+//      if (e->angleDelta().y() > 0)
+//	{
+//	  currentScale *= 1.10; // +10%
+//	}
+//      else
+//	{
+//	  currentScale /= 1.10; // -10%
+//	}
+//      myView->SetScale( currentScale );
+      navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+      if (currentNavigationAction_)
+        currentNavigationAction_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+      if (currentUserActivity_)
+        currentUserActivity_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+
+      if (currentUserActivity_ && currentUserActivity_->finished())
+        currentUserActivity_.reset();
+
     }
   else
     {
@@ -561,21 +603,41 @@ void QoccViewWidget::wheelEvent ( QWheelEvent* e )
 
 void QoccViewWidget::keyPressEvent(QKeyEvent* e)
 {
-//   std::cout<<e->modifiers()<<std::endl;
-    if ( ( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
-    {
-      setMode(CurAction3d_DynamicZooming);
-    }  
-    else if ( ( e->modifiers() & PANSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
-    {
-      setMode(CurAction3d_DynamicPanning);
-    }  
-    else if ( ( e->modifiers() & ROTATESHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
-    {
-      setMode(CurAction3d_DynamicRotation);
-    }
-    else
-      QWidget::keyPressEvent(e);
+////   std::cout<<e->modifiers()<<std::endl;
+//    if ( ( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
+//    {
+//      setMode(CurAction3d_DynamicZooming);
+//    }
+//    else if ( ( e->modifiers() & PANSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
+//    {
+//      setMode(CurAction3d_DynamicPanning);
+//    }
+//    else if ( ( e->modifiers() & ROTATESHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
+//    {
+//      setMode(CurAction3d_DynamicRotation);
+//    }
+//    else
+//      QWidget::keyPressEvent(e);
+
+  if (e->key() == Qt::Key_Escape)
+  {
+    currentNavigationAction_.reset();
+    currentUserActivity_.reset();
+  }
+
+
+  navigationManager_->onKeyPress(e->modifiers(), e->key());
+
+  if (currentNavigationAction_)
+    currentNavigationAction_->onKeyPress(e->modifiers(), e->key());
+
+  if (currentUserActivity_)
+    currentUserActivity_->onKeyPress(e->modifiers(), e->key());
+
+  if (currentUserActivity_ && currentUserActivity_->finished())
+    currentUserActivity_.reset();
+
+  QWidget::keyPressEvent(e);
 }
 
 
@@ -583,21 +645,33 @@ void QoccViewWidget::keyPressEvent(QKeyEvent* e)
 
 void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
 {
-//   std::cout<<e->modifiers()<<std::endl;
-    if ( !( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_DynamicZooming) )
-    {
-      setMode(CurAction3d_Nothing);
-    }  
-    else if ( !( e->modifiers() & PANSHORTCUTKEY ) && (myMode == CurAction3d_DynamicPanning) )
-    {
-      setMode(CurAction3d_Nothing);
-    }  
-    else if ( !( e->modifiers() & ROTATESHORTCUTKEY ) && (myMode == CurAction3d_DynamicRotation) )
-    {
-      setMode(CurAction3d_Nothing);
-    }
-    else
-      QWidget::keyReleaseEvent(e);
+////   std::cout<<e->modifiers()<<std::endl;
+//    if ( !( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_DynamicZooming) )
+//    {
+//      setMode(CurAction3d_Nothing);
+//    }
+//    else if ( !( e->modifiers() & PANSHORTCUTKEY ) && (myMode == CurAction3d_DynamicPanning) )
+//    {
+//      setMode(CurAction3d_Nothing);
+//    }
+//    else if ( !( e->modifiers() & ROTATESHORTCUTKEY ) && (myMode == CurAction3d_DynamicRotation) )
+//    {
+//      setMode(CurAction3d_Nothing);
+//    }
+//    else
+//      QWidget::keyReleaseEvent(e);
+  navigationManager_->onKeyRelease(e->modifiers(), e->key());
+
+  if (currentNavigationAction_)
+    currentNavigationAction_->onKeyRelease(e->modifiers(), e->key());
+
+  if (currentUserActivity_)
+    currentUserActivity_->onKeyRelease(e->modifiers(), e->key());
+
+  if (currentUserActivity_ && currentUserActivity_->finished())
+    currentUserActivity_.reset();
+
+  QWidget::keyReleaseEvent(e);
 }
 
 
@@ -656,14 +730,14 @@ void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* sele
 }
 
 
-/*!
-  \brief	Go idle
-  This called from various locations, and also exposed as a slot.
-*/
-void QoccViewWidget::idle( )
-{
-  setMode( CurAction3d_Nothing );
-}
+///*!
+//  \brief	Go idle
+//  This called from various locations, and also exposed as a slot.
+//*/
+//void QoccViewWidget::idle( )
+//{
+//  setMode( CurAction3d_Nothing );
+//}
 
 
 
@@ -786,60 +860,60 @@ void QoccViewWidget::fitAll( void )
     }
 }
 
-//-----------------------------------------------------------------------------
-/*!
-\brief	Sets up the view for a rubberband window zoom
-\return	Nothing
-*/
-void QoccViewWidget::fitArea( void )
-{
-  setMode( CurAction3d_WindowZooming );
-}
+////-----------------------------------------------------------------------------
+///*!
+//\brief	Sets up the view for a rubberband window zoom
+//\return	Nothing
+//*/
+//void QoccViewWidget::fitArea( void )
+//{
+//  setMode( CurAction3d_WindowZooming );
+//}
 
-/*!
-\brief	Sets up the view for a dynamic zoom
-\return	Nothing
-*/
-void QoccViewWidget::zoom( void )
-{
-  setMode( CurAction3d_DynamicZooming );
-}
+///*!
+//\brief	Sets up the view for a dynamic zoom
+//\return	Nothing
+//*/
+//void QoccViewWidget::zoom( void )
+//{
+//  setMode( CurAction3d_DynamicZooming );
+//}
 
-/*!
-\brief	Sets up the view for panning
-\return	Nothing
-*/
-void QoccViewWidget::pan( void )
-{
-  setMode( CurAction3d_DynamicPanning );
-}
+///*!
+//\brief	Sets up the view for panning
+//\return	Nothing
+//*/
+//void QoccViewWidget::pan( void )
+//{
+//  setMode( CurAction3d_DynamicPanning );
+//}
 
-/*!
-\brief	Sets up the view for dynamic rotation
-\return	Nothing
-*/
-void QoccViewWidget::rotation( void )
-{
-  setMode( CurAction3d_DynamicRotation );
-}
+///*!
+//\brief	Sets up the view for dynamic rotation
+//\return	Nothing
+//*/
+//void QoccViewWidget::rotation( void )
+//{
+//  setMode( CurAction3d_DynamicRotation );
+//}
 
-/*!
-\brief	Sets up the view for global panning, whatever that is!
-\return	Nothing
-*/
-void QoccViewWidget::globalPan()
-{
-  if (!myView.IsNull())
-    {
-      // save the current zoom value
-      myCurZoom = myView->Scale();
-      // Do a Global Zoom
-      myView->FitAll();
-      viewPrecision( true );
-      // Set the mode
-      setMode( CurAction3d_GlobalPanning );
-    }
-}
+///*!
+//\brief	Sets up the view for global panning, whatever that is!
+//\return	Nothing
+//*/
+//void QoccViewWidget::globalPan()
+//{
+//  if (!myView.IsNull())
+//    {
+//      // save the current zoom value
+//      myCurZoom = myView->Scale();
+//      // Do a Global Zoom
+//      myView->FitAll();
+//      viewPrecision( true );
+//      // Set the mode
+//      setMode( CurAction3d_GlobalPanning );
+//    }
+//}
 
 /*!
 \brief	This aligns the view to the current privilege plane.
@@ -1263,83 +1337,56 @@ void QoccViewWidget::onSetClipPlane(QObject* qdatum)
 
 
 
-void ActivateAll(Handle_AIS_InteractiveContext context, TopAbs_ShapeEnum mode)
-{
-#if OCC_VERSION_MAJOR>=7
-  context->Activate( AIS_Shape::SelectionMode(mode) );
-#else
-  AIS_ListOfInteractive loi;
-  context->DisplayedObjects(loi);
-  for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
-  {
-    context->Activate( i.Value(), AIS_Shape::SelectionMode(mode) );
-  }
-#endif
-}
-
-
-void DeactivateAll(Handle_AIS_InteractiveContext context, TopAbs_ShapeEnum mode)
-{
-#if OCC_VERSION_MAJOR>=7
-  context->Deactivate( AIS_Shape::SelectionMode(mode) );
-#else
-  AIS_ListOfInteractive loi;
-  context->DisplayedObjects(loi);
-  for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
-  {
-    context->Deactivate( i.Value(), AIS_Shape::SelectionMode(mode) );
-  }
-#endif
-}
 
 
 
 void QoccViewWidget::onMeasureDistance()
 {
-  measpts_p1_.reset();
-  measpts_p2_.reset();
-  cimode_=CIM_MeasurePoints;
-  ActivateAll(getContext(), TopAbs_VERTEX);
-  emit sendStatus("Please select first point!");
+  currentUserActivity_= std::make_shared<ViewWidgetMeasurePoints>(this);
 }
+
+
 
 
 void QoccViewWidget::onSelectPoints()
 {
-  selpts_.reset();
-  cimode_=CIM_InsertPointIDs;
-  ActivateAll(getContext(), TopAbs_VERTEX);
-  emit sendStatus("Please select points and finish with right click!");
+  currentUserActivity_= std::make_shared<ViewWidgetInsertPointIDs>(this);
 }
+
+
+
 
 void QoccViewWidget::onSelectEdges()
 {
-  selpts_.reset();
-  cimode_=CIM_InsertEdgeIDs;
-  ActivateAll(getContext(), TopAbs_EDGE);
-  emit sendStatus("Please select edges and finish with right click!");
+  currentUserActivity_= std::make_shared<ViewWidgetInsertEdgeIDs>(this);
 }
+
+
+
 
 void QoccViewWidget::onSelectFaces()
 {
-  selpts_.reset();
-  cimode_=CIM_InsertFaceIDs;
-  ActivateAll(getContext(), TopAbs_FACE);
-  emit sendStatus("Please select faces and finish with right click!");
+  currentUserActivity_= std::make_shared<ViewWidgetInsertFaceIDs>(this);
 }
+
+
+
 
 void QoccViewWidget::onSelectSolids()
 {
-  selpts_.reset();
-  cimode_=CIM_InsertSolidIDs;
-  ActivateAll(getContext(), TopAbs_SOLID);
-  emit sendStatus("Please select solids and finish with right click!");
+  currentUserActivity_= std::make_shared<ViewWidgetInsertSolidIDs>(this);
 }
+
+
+
 
 void QoccViewWidget::onUnfocus()
 {
   doUnfocus();
 }
+
+
+
 
 void QoccViewWidget::doUnfocus(bool newFocusIntended)
 {
@@ -1425,534 +1472,536 @@ void QoccViewWidget::onFocus(Handle_AIS_InteractiveObject ais)
   getContext()->UpdateCurrentViewer();
 }
 
-/*!
-  \brief	This function handles left button down events from the mouse.
-*/
-void QoccViewWidget::onLeftButtonDown(  Qt::KeyboardModifiers nFlags, const QPoint point )
-{
-  myStartPoint = point;
+///*!
+//  \brief	This function handles left button down events from the mouse.
+//*/
+//void QoccViewWidget::onLeftButtonDown(  Qt::KeyboardModifiers nFlags, const QPoint point )
+//{
+//  myStartPoint = point;
 
-  if ( nFlags & ZOOMSHORTCUTKEY )
-    {
-      setMode( CurAction3d_DynamicZooming );
-    }
-  else if ( nFlags & PANSHORTCUTKEY )
-    {
-      setMode( CurAction3d_DynamicPanning );
-    }
-  else if ( nFlags & ROTATESHORTCUTKEY )
-    {
-      setMode( CurAction3d_DynamicRotation );
-      myView->StartRotation( point.x(), point.y() );
-    }  else
-    {
-      switch ( myMode )
-        {
-	case CurAction3d_Nothing:
-	  // emit pointClicked( myV3dX, myV3dY, myV3dZ );
-	  break;
-
-	case CurAction3d_Picking:
-	  break;
-
-	case CurAction3d_DynamicZooming:
-	  break;
-
-	case CurAction3d_WindowZooming:
-	  break;
-
-	case CurAction3d_DynamicPanning:
-	  break;
-
-	case CurAction3d_GlobalPanning:
-	  break;
-
-	case CurAction3d_DynamicRotation:
-	  myView->StartRotation( myStartPoint.x(), myStartPoint.y() );
-	  break;
-
-	default:
-	  Standard_Failure::Raise( "Incompatible Current Mode" );
-	  break;
-        }
-    }
-}
-
-/*!
-  \brief	This function handles middle button down events from the mouse.
-*/
-void QoccViewWidget::onMiddleButtonDown(  Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/ )
-{
-/*
-  myStartPoint = point;
-  if ( nFlags & ZOOMSHORTCUTKEY )
-    {
-      setMode( CurAction3d_DynamicZooming );
-    }
-  else if ( nFlags & PANSHORTCUTKEY )
-    {
-      setMode( CurAction3d_DynamicPanning );
-    }
-  else
-    {
-      setMode( CurAction3d_DynamicRotation );
-      myView->StartRotation( point.x(), point.y() );
-    }
-*/
-}
-
-/*!
-  \brief	This function handles right button down events from the mouse.
-*/
-void QoccViewWidget::onRightButtonDown(  Qt::KeyboardModifiers, const QPoint point )
-{
-  myStartPoint = point;
-  //  else
+//  if ( nFlags & ZOOMSHORTCUTKEY )
 //    {
-//      emit popupMenu ( this, point );
+//      setMode( CurAction3d_DynamicZooming );
 //    }
-}
+//  else if ( nFlags & PANSHORTCUTKEY )
+//    {
+//      setMode( CurAction3d_DynamicPanning );
+//    }
+//  else if ( nFlags & ROTATESHORTCUTKEY )
+//    {
+//      setMode( CurAction3d_DynamicRotation );
+//      myView->StartRotation( point.x(), point.y() );
+//    }  else
+//    {
+//      switch ( myMode )
+//        {
+//	case CurAction3d_Nothing:
+//	  // emit pointClicked( myV3dX, myV3dY, myV3dZ );
+//	  break;
 
-/*!
-  \brief	This function handles left button up events from the mouse.
-  This marks the end of the gesture.
-*/
-void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint point )
-{
-  myCurrentPoint = point;
+//	case CurAction3d_Picking:
+//	  break;
+
+//	case CurAction3d_DynamicZooming:
+//	  break;
+
+//	case CurAction3d_WindowZooming:
+//	  break;
+
+//	case CurAction3d_DynamicPanning:
+//	  break;
+
+//	case CurAction3d_GlobalPanning:
+//	  break;
+
+//	case CurAction3d_DynamicRotation:
+//	  myView->StartRotation( myStartPoint.x(), myStartPoint.y() );
+//	  break;
+
+//	default:
+//	  Standard_Failure::Raise( "Incompatible Current Mode" );
+//	  break;
+//        }
+//    }
+//}
+
+///*!
+//  \brief	This function handles middle button down events from the mouse.
+//*/
+//void QoccViewWidget::onMiddleButtonDown(  Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/ )
+//{
+///*
+//  myStartPoint = point;
+//  if ( nFlags & ZOOMSHORTCUTKEY )
+//    {
+//      setMode( CurAction3d_DynamicZooming );
+//    }
+//  else if ( nFlags & PANSHORTCUTKEY )
+//    {
+//      setMode( CurAction3d_DynamicPanning );
+//    }
+//  else
+//    {
+//      setMode( CurAction3d_DynamicRotation );
+//      myView->StartRotation( point.x(), point.y() );
+//    }
+//*/
+//}
+
+///*!
+//  \brief	This function handles right button down events from the mouse.
+//*/
+//void QoccViewWidget::onRightButtonDown(  Qt::KeyboardModifiers, const QPoint point )
+//{
+//  myStartPoint = point;
+//  //  else
+////    {
+////      emit popupMenu ( this, point );
+////    }
+//}
+
+///*!
+//  \brief	This function handles left button up events from the mouse.
+//  This marks the end of the gesture.
+//*/
+//void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint point )
+//{
+//  myCurrentPoint = point;
   
-  if (
-  ( nFlags & ZOOMSHORTCUTKEY )
-  ||( nFlags & PANSHORTCUTKEY )
-  ||( nFlags & ROTATESHORTCUTKEY )
-   )
-    {
-      // Deactivates dynamic zooming
-      setMode( CurAction3d_Nothing );
-    }
-    else
-    {
-      switch( myMode )
-	{
+//  if (
+//  ( nFlags & ZOOMSHORTCUTKEY )
+//  ||( nFlags & PANSHORTCUTKEY )
+//  ||( nFlags & ROTATESHORTCUTKEY )
+//   )
+//    {
+//      // Deactivates dynamic zooming
+//      setMode( CurAction3d_Nothing );
+//    }
+//    else
+//    {
+//      switch( myMode )
+//	{
 
-	case CurAction3d_Nothing:
+//	case CurAction3d_Nothing:
 
-	  myContext_->Select(true);
+//	  myContext_->Select(true);
 
-	  if (cimode_==CIM_Normal)
-	    {
-	      emit graphicalSelectionChanged(getSelectedItem(), this);
-	    }
-	  else if (cimode_==CIM_MeasurePoints)
-	    {
-	      myContext_->InitSelected();
-	      if (myContext_->MoreSelected())
-	      {
-		TopoDS_Shape v = myContext_->SelectedShape();
-//		BRepTools::Dump(v, std::cout);
-		gp_Pnt p =BRep_Tool::Pnt(TopoDS::Vertex(v));
-		std::cout<< p.X() <<" "<<p.Y()<< " " << p.Z()<<std::endl;
+//	  if (cimode_==CIM_Normal)
+//	    {
+//	      emit graphicalSelectionChanged(getSelectedItem(), this);
+//	    }
+//	  else if (cimode_==CIM_MeasurePoints)
+//	    {
+//	      myContext_->InitSelected();
+//	      if (myContext_->MoreSelected())
+//	      {
+//		TopoDS_Shape v = myContext_->SelectedShape();
+////		BRepTools::Dump(v, std::cout);
+//		gp_Pnt p =BRep_Tool::Pnt(TopoDS::Vertex(v));
+//		std::cout<< p.X() <<" "<<p.Y()<< " " << p.Z()<<std::endl;
 
-		if (!measpts_p1_)
-		  {
-		    measpts_p1_=insight::cad::matconst(insight::vec3(p));
-		    emit sendStatus("Please select second point!");
-		  }
-		else if (!measpts_p2_)
-		  {
-		    measpts_p2_=insight::cad::matconst(insight::vec3(p));
-		    emit sendStatus("Measurement is created...");
+//		if (!measpts_p1_)
+//		  {
+//		    measpts_p1_=insight::cad::matconst(insight::vec3(p));
+//		    emit sendStatus("Please select second point!");
+//		  }
+//		else if (!measpts_p2_)
+//		  {
+//		    measpts_p2_=insight::cad::matconst(insight::vec3(p));
+//		    emit sendStatus("Measurement is created...");
 
-		    emit addEvaluationToModel
-			(
-			  "distance measurement",
-			  insight::cad::PostprocActionPtr
-			  (
-			    new insight::cad::Distance(measpts_p1_, measpts_p2_)
-			  ),
-			  true
-			);
+//		    emit addEvaluationToModel
+//			(
+//			  "distance measurement",
+//			  insight::cad::PostprocActionPtr
+//			  (
+//			    new insight::cad::Distance(measpts_p1_, measpts_p2_)
+//			  ),
+//			  true
+//			);
 
-		    measpts_p1_.reset();
-		    measpts_p2_.reset();
-                    DeactivateAll(getContext(), TopAbs_VERTEX);
-		    cimode_=CIM_Normal;
-		  }
-	      }
+//		    measpts_p1_.reset();
+//		    measpts_p2_.reset();
+//                    DeactivateAll(getContext(), TopAbs_VERTEX);
+//		    cimode_=CIM_Normal;
+//		  }
+//	      }
 
 
 
-            }
-          else if (cimode_==CIM_InsertPointIDs)
-            {
-              myContext_->InitSelected();
-              if (myContext_->MoreSelected())
-                {
-                  TopoDS_Shape v = myContext_->SelectedShape();
-                  TopoDS_Vertex vv = TopoDS::Vertex(v);
-                  gp_Pnt vp = BRep_Tool::Pnt(vv);
-                  if (!selpts_)
-                    {
-                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
-                        {
-                          // restrict further selection to current shape
-                          DeactivateAll( getContext(), TopAbs_VERTEX );
-                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+//            }
+//          else if (cimode_==CIM_InsertPointIDs)
+//            {
+//              myContext_->InitSelected();
+//              if (myContext_->MoreSelected())
+//                {
+//                  TopoDS_Shape v = myContext_->SelectedShape();
+//                  TopoDS_Vertex vv = TopoDS::Vertex(v);
+//                  gp_Pnt vp = BRep_Tool::Pnt(vv);
+//                  if (!selpts_)
+//                    {
+//                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
+//                        {
+//                          // restrict further selection to current shape
+//                          DeactivateAll( getContext(), TopAbs_VERTEX );
+//                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_VERTEX) );
 
-                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Vertex));
+//                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Vertex));
 
-                          insight::cad::FeatureID vid = parent->solidmodel().vertexID(v);
-                          selpts_->add(vid);
-                          emit sendStatus(boost::str(boost::format("Selected vertex %d. Select next vertex, end with right click.")%vid).c_str());
-                        }
-                    }
-                  else
-                    {
-                      insight::cad::FeatureID vid = selpts_->model()->vertexID(v);
-                      selpts_->add(vid);
-                      emit sendStatus(boost::str(boost::format("Selected vertex %d. Select next vertex, end with right click.")%vid).c_str());
-                    }
-                }
-            }
-          else if (cimode_==CIM_InsertEdgeIDs)
-            {
-              myContext_->InitSelected();
-              if (myContext_->MoreSelected())
-                {
-                  TopoDS_Shape e = myContext_->SelectedShape();
-                  if (!selpts_)
-                    {
-                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
-                        {
-                          // restrict further selection to current shape
-                          DeactivateAll( getContext(), TopAbs_EDGE );
-                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_EDGE) );
+//                          insight::cad::FeatureID vid = parent->solidmodel().vertexID(v);
+//                          selpts_->add(vid);
+//                          emit sendStatus(boost::str(boost::format("Selected vertex %d. Select next vertex, end with right click.")%vid).c_str());
+//                        }
+//                    }
+//                  else
+//                    {
+//                      insight::cad::FeatureID vid = selpts_->model()->vertexID(v);
+//                      selpts_->add(vid);
+//                      emit sendStatus(boost::str(boost::format("Selected vertex %d. Select next vertex, end with right click.")%vid).c_str());
+//                    }
+//                }
+//            }
+//          else if (cimode_==CIM_InsertEdgeIDs)
+//            {
+//              myContext_->InitSelected();
+//              if (myContext_->MoreSelected())
+//                {
+//                  TopoDS_Shape e = myContext_->SelectedShape();
+//                  if (!selpts_)
+//                    {
+//                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
+//                        {
+//                          // restrict further selection to current shape
+//                          DeactivateAll( getContext(), TopAbs_EDGE );
+//                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_EDGE) );
 
-                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Edge));
+//                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Edge));
 
-                          insight::cad::FeatureID eid = parent->solidmodel().edgeID(e);
-                          selpts_->add(eid);
-                          emit sendStatus(boost::str(boost::format("Selected edge %d. Select next edge, end with right click.")%eid).c_str());
-                        }
-                    }
-                  else
-                    {
-                      insight::cad::FeatureID eid = selpts_->model()->edgeID(e);
-                      selpts_->add(eid);
-                      emit sendStatus(boost::str(boost::format("Selected edge %d. Select next edge, end with right click.")%eid).c_str());
-                    }
-                }
-            }
-          else if (cimode_==CIM_InsertFaceIDs)
-            {
-              myContext_->InitSelected();
-              if (myContext_->MoreSelected())
-                {
-                  TopoDS_Shape f = myContext_->SelectedShape();
-                  TopoDS_Face ff = TopoDS::Face(f);
-                  if (!selpts_)
-                    {
-                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
-                        {
-                          // restrict further selection to current shape
-                          DeactivateAll( getContext(), TopAbs_FACE );
-                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_FACE) );
+//                          insight::cad::FeatureID eid = parent->solidmodel().edgeID(e);
+//                          selpts_->add(eid);
+//                          emit sendStatus(boost::str(boost::format("Selected edge %d. Select next edge, end with right click.")%eid).c_str());
+//                        }
+//                    }
+//                  else
+//                    {
+//                      insight::cad::FeatureID eid = selpts_->model()->edgeID(e);
+//                      selpts_->add(eid);
+//                      emit sendStatus(boost::str(boost::format("Selected edge %d. Select next edge, end with right click.")%eid).c_str());
+//                    }
+//                }
+//            }
+//          else if (cimode_==CIM_InsertFaceIDs)
+//            {
+//              myContext_->InitSelected();
+//              if (myContext_->MoreSelected())
+//                {
+//                  TopoDS_Shape f = myContext_->SelectedShape();
+//                  TopoDS_Face ff = TopoDS::Face(f);
+//                  if (!selpts_)
+//                    {
+//                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
+//                        {
+//                          // restrict further selection to current shape
+//                          DeactivateAll( getContext(), TopAbs_FACE );
+//                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_FACE) );
 
-                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Face));
+//                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Face));
 
-                          insight::cad::FeatureID fid = parent->solidmodel().faceID(f);
-                          selpts_->add(fid);
-                          emit sendStatus(boost::str(boost::format("Selected face %d. Select next face, end with right click.")%fid).c_str());
-                        }
-                    }
-                  else
-                    {
-                      insight::cad::FeatureID fid = selpts_->model()->faceID(f);
-                      selpts_->add(fid);
-                      emit sendStatus(boost::str(boost::format("Selected face %d. Select next face, end with right click.")%fid).c_str());
-                    }
-                }
-            }
-          else if (cimode_==CIM_InsertSolidIDs)
-            {
-              myContext_->InitSelected();
-              if (myContext_->MoreSelected())
-                {
-                  TopoDS_Shape f = myContext_->SelectedShape();
-                  TopoDS_Solid ff = TopoDS::Solid(f);
-                  if (!selpts_)
-                    {
-                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
-                        {
-                          // restrict further selection to current shape
-                          DeactivateAll( getContext(), TopAbs_SOLID );
-                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_SOLID) );
+//                          insight::cad::FeatureID fid = parent->solidmodel().faceID(f);
+//                          selpts_->add(fid);
+//                          emit sendStatus(boost::str(boost::format("Selected face %d. Select next face, end with right click.")%fid).c_str());
+//                        }
+//                    }
+//                  else
+//                    {
+//                      insight::cad::FeatureID fid = selpts_->model()->faceID(f);
+//                      selpts_->add(fid);
+//                      emit sendStatus(boost::str(boost::format("Selected face %d. Select next face, end with right click.")%fid).c_str());
+//                    }
+//                }
+//            }
+//          else if (cimode_==CIM_InsertSolidIDs)
+//            {
+//              myContext_->InitSelected();
+//              if (myContext_->MoreSelected())
+//                {
+//                  TopoDS_Shape f = myContext_->SelectedShape();
+//                  TopoDS_Solid ff = TopoDS::Solid(f);
+//                  if (!selpts_)
+//                    {
+//                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
+//                        {
+//                          // restrict further selection to current shape
+//                          DeactivateAll( getContext(), TopAbs_SOLID );
+//                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_SOLID) );
 
-                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Solid));
+//                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Solid));
 
-                          insight::cad::FeatureID id = parent->solidmodel().solidID(f);
-                          selpts_->add(id);
-                          emit sendStatus(boost::str(boost::format("Selected solid %d. Select next solid, end with right click.")%id).c_str());
-                        }
-                    }
-                  else
-                    {
-                      insight::cad::FeatureID id = selpts_->model()->solidID(f);
-                      selpts_->add(id);
-                      emit sendStatus(boost::str(boost::format("Selected solid %d. Select next solid, end with right click.")%id).c_str());
-                    }
-                }
-            }
-	  break;
+//                          insight::cad::FeatureID id = parent->solidmodel().solidID(f);
+//                          selpts_->add(id);
+//                          emit sendStatus(boost::str(boost::format("Selected solid %d. Select next solid, end with right click.")%id).c_str());
+//                        }
+//                    }
+//                  else
+//                    {
+//                      insight::cad::FeatureID id = selpts_->model()->solidID(f);
+//                      selpts_->add(id);
+//                      emit sendStatus(boost::str(boost::format("Selected solid %d. Select next solid, end with right click.")%id).c_str());
+//                    }
+//                }
+//            }
+//	  break;
 
-	case CurAction3d_Picking:
-	  // Shouldn't get here yet
-	  if ( myCurrentPoint == myStartPoint )
-	    {
-	      inputEvent( nFlags & MULTISELECTIONKEY );
-	    }
-	  else
-	    {
-	      dragEvent( myStartPoint,
-			 myCurrentPoint,
-			 nFlags & MULTISELECTIONKEY );
-	    }
-	  break;
+//	case CurAction3d_Picking:
+//	  // Shouldn't get here yet
+//	  if ( myCurrentPoint == myStartPoint )
+//	    {
+//	      inputEvent( nFlags & MULTISELECTIONKEY );
+//	    }
+//	  else
+//	    {
+//	      dragEvent( myStartPoint,
+//			 myCurrentPoint,
+//			 nFlags & MULTISELECTIONKEY );
+//	    }
+//	  break;
 
-	case CurAction3d_DynamicZooming:
-	  viewPrecision( true );
-	  break;
+//	case CurAction3d_DynamicZooming:
+//	  viewPrecision( true );
+//	  break;
 
-	case CurAction3d_WindowZooming:
-	  if ( (abs( myCurrentPoint.x() - myStartPoint.x() ) > ValZWMin ) ||
-	       (abs( myCurrentPoint.y() - myStartPoint.y() ) > ValZWMin ) )
-	    {
-	      myView->WindowFitAll( myStartPoint.x(),
-				    myStartPoint.y(),
-				    myCurrentPoint.x(),
-				    myCurrentPoint.y() );
-	    }
-	  viewPrecision( true );
-	  break;
+//	case CurAction3d_WindowZooming:
+//	  if ( (abs( myCurrentPoint.x() - myStartPoint.x() ) > ValZWMin ) ||
+//	       (abs( myCurrentPoint.y() - myStartPoint.y() ) > ValZWMin ) )
+//	    {
+//	      myView->WindowFitAll( myStartPoint.x(),
+//				    myStartPoint.y(),
+//				    myCurrentPoint.x(),
+//				    myCurrentPoint.y() );
+//	    }
+//	  viewPrecision( true );
+//	  break;
 
-	case CurAction3d_DynamicPanning:
-	  break;
+//	case CurAction3d_DynamicPanning:
+//	  break;
 
-	case CurAction3d_GlobalPanning :
-	  myView->Place( myCurrentPoint.x(), myCurrentPoint.y(), myCurZoom );
-	  break;
+//	case CurAction3d_GlobalPanning :
+//	  myView->Place( myCurrentPoint.x(), myCurrentPoint.y(), myCurZoom );
+//	  break;
 
-	case CurAction3d_DynamicRotation:
-	  break;
+//	case CurAction3d_DynamicRotation:
+//	  break;
 
-	default:
-	  Standard_Failure::Raise(" Incompatible Current Mode ");
-	  break;
-	}
-    }
-}
-/*!
-  \brief	Middle button up event handler.
-  This marks the end of the gesture.
-*/
-void QoccViewWidget::onMiddleButtonUp(  Qt::KeyboardModifiers /* nFlags */, const QPoint /* point */ )
-{
- // setMode( CurAction3d_Nothing );
-}
+//	default:
+//	  Standard_Failure::Raise(" Incompatible Current Mode ");
+//	  break;
+//	}
+//    }
+//}
+///*!
+//  \brief	Middle button up event handler.
+//  This marks the end of the gesture.
+//*/
+//void QoccViewWidget::onMiddleButtonUp(  Qt::KeyboardModifiers /* nFlags */, const QPoint /* point */ )
+//{
+// // setMode( CurAction3d_Nothing );
+//}
 
-/*!
-  \brief	Right button up event handler.
-  This marks the end of the gesture.
-*/
-void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point )
-{
-  myCurrentPoint = point;
-  /*
-  if ( nFlags & CASCADESHORTCUTKEY )
-    {
-      setMode( CurAction3d_Nothing );
-    }
-    else*/
-    {
-      if ( myMode == CurAction3d_Nothing )
-	{
-	  if (cimode_==CIM_Normal)
-	    {
-	      displayContextMenu(point);
-	    }
-	  else if (cimode_==CIM_InsertPointIDs)
-	    {
-	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?vid=(";
-	      int j=0;
-	      for (insight::cad::FeatureID i: selpts_->data())
-		{
-		  text+=QString::number( i );
-		  if (j++ < selpts_->size()-1) text+=",";
-		}
-	      text+=")\n";
-	      emit insertNotebookText(text);
+///*!
+//  \brief	Right button up event handler.
+//  This marks the end of the gesture.
+//*/
+//void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point )
+//{
+//  myCurrentPoint = point;
+//  /*
+//  if ( nFlags & CASCADESHORTCUTKEY )
+//    {
+//      setMode( CurAction3d_Nothing );
+//    }
+//    else*/
+//    {
+//      if ( myMode == CurAction3d_Nothing )
+//	{
+//	  if (cimode_==CIM_Normal)
+//	    {
+//	      displayContextMenu(point);
+//	    }
+//	  else if (cimode_==CIM_InsertPointIDs)
+//	    {
+//	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?vid=(";
+//	      int j=0;
+//	      for (insight::cad::FeatureID i: selpts_->data())
+//		{
+//		  text+=QString::number( i );
+//		  if (j++ < selpts_->size()-1) text+=",";
+//		}
+//	      text+=")\n";
+//	      emit insertNotebookText(text);
 
-              DeactivateAll( getContext(), TopAbs_VERTEX );
-	      cimode_=CIM_Normal;
-	    }
-	  else if (cimode_==CIM_InsertEdgeIDs)
-	    {
-	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?eid=(";
-	      int j=0;
-	      for (insight::cad::FeatureID i: selpts_->data())
-		{
-		  text+=QString::number( i );
-		  if (j++ < selpts_->size()-1) text+=",";
-		}
-	      text+=")\n";
-	      emit insertNotebookText(text);
+//              DeactivateAll( getContext(), TopAbs_VERTEX );
+//	      cimode_=CIM_Normal;
+//	    }
+//	  else if (cimode_==CIM_InsertEdgeIDs)
+//	    {
+//	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?eid=(";
+//	      int j=0;
+//	      for (insight::cad::FeatureID i: selpts_->data())
+//		{
+//		  text+=QString::number( i );
+//		  if (j++ < selpts_->size()-1) text+=",";
+//		}
+//	      text+=")\n";
+//	      emit insertNotebookText(text);
 
-              DeactivateAll( getContext(), TopAbs_EDGE );
-	      cimode_=CIM_Normal;
-	    }
-	  else if (cimode_==CIM_InsertFaceIDs)
-	    {
-	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?fid=(";
-	      int j=0;
-	      for (insight::cad::FeatureID i: selpts_->data())
-		{
-		  text+=QString::number( i );
-		  if (j++ < selpts_->size()-1) text+=",";
-		}
-	      text+=")\n";
-	      emit insertNotebookText(text);
+//              DeactivateAll( getContext(), TopAbs_EDGE );
+//	      cimode_=CIM_Normal;
+//	    }
+//	  else if (cimode_==CIM_InsertFaceIDs)
+//	    {
+//	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?fid=(";
+//	      int j=0;
+//	      for (insight::cad::FeatureID i: selpts_->data())
+//		{
+//		  text+=QString::number( i );
+//		  if (j++ < selpts_->size()-1) text+=",";
+//		}
+//	      text+=")\n";
+//	      emit insertNotebookText(text);
 
-              DeactivateAll( getContext(), TopAbs_FACE );
-	      cimode_=CIM_Normal;
-	    }
-          else if (cimode_==CIM_InsertSolidIDs)
-            {
-              QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?sid=(";
-              int j=0;
-              for (insight::cad::FeatureID i: selpts_->data())
-                {
-                  text+=QString::number( i );
-                  if (j++ < selpts_->size()-1) text+=",";
-                }
-              text+=")\n";
-              emit insertNotebookText(text);
+//              DeactivateAll( getContext(), TopAbs_FACE );
+//	      cimode_=CIM_Normal;
+//	    }
+//          else if (cimode_==CIM_InsertSolidIDs)
+//            {
+//              QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?sid=(";
+//              int j=0;
+//              for (insight::cad::FeatureID i: selpts_->data())
+//                {
+//                  text+=QString::number( i );
+//                  if (j++ < selpts_->size()-1) text+=",";
+//                }
+//              text+=")\n";
+//              emit insertNotebookText(text);
 
-              DeactivateAll( getContext(), TopAbs_SOLID );
-              cimode_=CIM_Normal;
-            }	  //	  emit popupMenu ( this, point );
-        }
-      else
-	{
-	  setMode( CurAction3d_Nothing );
-	}
-    }
-}
+//              DeactivateAll( getContext(), TopAbs_SOLID );
+//              cimode_=CIM_Normal;
+//            }	  //	  emit popupMenu ( this, point );
+//        }
+//      else
+//	{
+//	  setMode( CurAction3d_Nothing );
+//	}
+//    }
+//}
 
-/*!
-  \brief	Mouse move event handler.
-  \param	buttons
-  \param	nFlags
-  \param	point
-  \return Nothing
-*/
-void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
-				  Qt::KeyboardModifiers nFlags,
-				  const QPoint point,
-     Qt::KeyboardModifiers curFlags )
-{
-  myCurrentPoint = point;
+///*!
+//  \brief	Mouse move event handler.
+//  \param	buttons
+//  \param	nFlags
+//  \param	point
+//  \return Nothing
+//*/
+//void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
+//				  Qt::KeyboardModifiers nFlags,
+//				  const QPoint point,
+//     Qt::KeyboardModifiers curFlags )
+//{
+//  myCurrentPoint = point;
 
-// cout<< ( curFlags & ZOOMSHORTCUTKEY )<<" "<< ( curFlags & PANSHORTCUTKEY )<<" "<<( curFlags & ROTATESHORTCUTKEY ) <<curFlags<<myMode<<endl;
+//// cout<< ( curFlags & ZOOMSHORTCUTKEY )<<" "<< ( curFlags & PANSHORTCUTKEY )<<" "<<( curFlags & ROTATESHORTCUTKEY ) <<curFlags<<myMode<<endl;
   
-//   if ( buttons & Qt::LeftButton  ||
-//        buttons & Qt::RightButton ||
-//        buttons & Qt::MidButton )
-    {
-      switch ( myMode )
-	{
-	case CurAction3d_Nothing:
-	  if ( curFlags & ZOOMSHORTCUTKEY )
-	  {
-	    myStartPoint = point;
-	    setMode(CurAction3d_DynamicZooming);
-	  }  
-	  else if ( curFlags & PANSHORTCUTKEY )
-	  {
-	    myStartPoint = point;
-	    setMode(CurAction3d_DynamicPanning);
-	  }  
-	  else if ( curFlags & ROTATESHORTCUTKEY )
-	  {
-	    myStartPoint = point;
-	    setMode(CurAction3d_DynamicRotation);
-	    myView->StartRotation( point.x(), point.y() );
-	  }
-	  break;
+////   if ( buttons & Qt::LeftButton  ||
+////        buttons & Qt::RightButton ||
+////        buttons & Qt::MidButton )
+//    {
+//      switch ( myMode )
+//	{
+//	case CurAction3d_Nothing:
+//	  if ( curFlags & ZOOMSHORTCUTKEY )
+//	  {
+//	    myStartPoint = point;
+//	    setMode(CurAction3d_DynamicZooming);
+//	  }
+//	  else if ( curFlags & PANSHORTCUTKEY )
+//	  {
+//	    myStartPoint = point;
+//	    setMode(CurAction3d_DynamicPanning);
+//	  }
+//	  else if ( curFlags & ROTATESHORTCUTKEY )
+//	  {
+//	    myStartPoint = point;
+//	    setMode(CurAction3d_DynamicRotation);
+//	    myView->StartRotation( point.x(), point.y() );
+//	  }
+//	  break;
 
-	case CurAction3d_Picking:
-	  if ( buttons & Qt::LeftButton)
-	  {
-	  // Shouldn't get here yet
-	  drawRubberBand ( myStartPoint, myCurrentPoint );
-	  dragEvent( myStartPoint, myCurrentPoint, nFlags & MULTISELECTIONKEY );
-	  break;
-	  }
+//	case CurAction3d_Picking:
+//	  if ( buttons & Qt::LeftButton)
+//	  {
+//	  // Shouldn't get here yet
+//	  drawRubberBand ( myStartPoint, myCurrentPoint );
+//	  dragEvent( myStartPoint, myCurrentPoint, nFlags & MULTISELECTIONKEY );
+//	  break;
+//	  }
 
-	case CurAction3d_DynamicZooming:
-	  myView->Zoom(	myStartPoint.x(),
-			myStartPoint.y(),
-			myCurrentPoint.x(),
-			myCurrentPoint.y() );
-	  viewPrecision( true );
-	  myStartPoint = myCurrentPoint;
-	  if ( !(curFlags & ZOOMSHORTCUTKEY) ) setMode(CurAction3d_Nothing);
-	  break;
+//	case CurAction3d_DynamicZooming:
+//	  myView->Zoom(	myStartPoint.x(),
+//			myStartPoint.y(),
+//			myCurrentPoint.x(),
+//			myCurrentPoint.y() );
+//	  viewPrecision( true );
+//	  myStartPoint = myCurrentPoint;
+//	  if ( !(curFlags & ZOOMSHORTCUTKEY) ) setMode(CurAction3d_Nothing);
+//	  break;
 
-	case CurAction3d_WindowZooming:
-	  if ( buttons & Qt::LeftButton)
-	  {
-	  drawRubberBand ( myStartPoint, myCurrentPoint );
-	  }
-	  break;
+//	case CurAction3d_WindowZooming:
+//	  if ( buttons & Qt::LeftButton)
+//	  {
+//	  drawRubberBand ( myStartPoint, myCurrentPoint );
+//	  }
+//	  break;
 
-	case CurAction3d_DynamicPanning:
-	  myView->Pan( myCurrentPoint.x() - myStartPoint.x(),
-		       myStartPoint.y() - myCurrentPoint.y() );
-	  myStartPoint = myCurrentPoint;
-	  if ( !(curFlags & PANSHORTCUTKEY) ) setMode(CurAction3d_Nothing);
-	  break;
+//	case CurAction3d_DynamicPanning:
+//	  myView->Pan( myCurrentPoint.x() - myStartPoint.x(),
+//		       myStartPoint.y() - myCurrentPoint.y() );
+//	  myStartPoint = myCurrentPoint;
+//	  if ( !(curFlags & PANSHORTCUTKEY) ) setMode(CurAction3d_Nothing);
+//	  break;
 
-	case CurAction3d_GlobalPanning:
-	  break;
+//	case CurAction3d_GlobalPanning:
+//	  break;
 
-	case CurAction3d_DynamicRotation:
-	  myView->Rotation( myCurrentPoint.x(), myCurrentPoint.y() );
-	  if ( !(curFlags & ROTATESHORTCUTKEY) ) setMode(CurAction3d_Nothing);
-	  break;
+//	case CurAction3d_DynamicRotation:
+//	  myView->Rotation( myCurrentPoint.x(), myCurrentPoint.y() );
+//	  if ( !(curFlags & ROTATESHORTCUTKEY) ) setMode(CurAction3d_Nothing);
+//	  break;
 
-	default:
-	  Standard_Failure::Raise( "Incompatible Current Mode" );
-	  break;
-	}
-    }
-//   else
-    {
-      moveEvent( myCurrentPoint );
-    }
-}
-/*!
-  \brief	Move event detection handler
-*/
-AIS_StatusOfDetection QoccViewWidget::moveEvent( QPoint point )
-{
-  AIS_StatusOfDetection status;
-  status = myContext_->MoveTo( point.x(), point.y(), myView
-#if (OCC_VERSION_MAJOR>=7)
-   , true
-#endif
-);
-  return status;
-}
+//	default:
+//	  Standard_Failure::Raise( "Incompatible Current Mode" );
+//	  break;
+//	}
+//    }
+////   else
+//    {
+//      moveEvent( myCurrentPoint );
+//    }
+//}
+
+
+///*!
+//  \brief	Move event detection handler
+//*/
+//AIS_StatusOfDetection QoccViewWidget::moveEvent( QPoint point )
+//{
+//  AIS_StatusOfDetection status;
+//  status = myContext_->MoveTo( point.x(), point.y(), myView
+//#if (OCC_VERSION_MAJOR>=7)
+//   , true
+//#endif
+//);
+//  return status;
+//}
 
 /*!
   \brief	Drag event handler.
@@ -1996,32 +2045,32 @@ AIS_StatusOfPick QoccViewWidget::dragEvent( const QPoint startPoint, const QPoin
   \param	multi	Selects multiple objects if true (default false).
   \return The status of the objects under the cursor
 */
-AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
-{
-  AIS_StatusOfPick pick = AIS_SOP_NothingSelected;
+//AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
+//{
+//  AIS_StatusOfPick pick = AIS_SOP_NothingSelected;
 
-  if (multi)
-    {
-      pick = myContext_->ShiftSelect(
-#if (OCC_VERSION_MAJOR>=7)
-                    true
-#endif          
-            );
-    }
-  else
-    {
-      pick = myContext_->Select(
-#if (OCC_VERSION_MAJOR>=7)
-                    true
-#endif                    
-            );
-    }
-  if ( pick != AIS_SOP_NothingSelected )
-    {
-      emit graphicalSelectionChanged(getSelectedItem(), this);
-    }
-  return pick;
-}
+//  if (multi)
+//    {
+//      pick = myContext_->ShiftSelect(
+//#if (OCC_VERSION_MAJOR>=7)
+//                    true
+//#endif
+//            );
+//    }
+//  else
+//    {
+//      pick = myContext_->Select(
+//#if (OCC_VERSION_MAJOR>=7)
+//                    true
+//#endif
+//            );
+//    }
+//  if ( pick != AIS_SOP_NothingSelected )
+//    {
+//      emit graphicalSelectionChanged(getSelectedItem(), this);
+//    }
+//  return pick;
+//}
 
 bool QoccViewWidget::dump(Standard_CString theFile)
 {
@@ -2029,42 +2078,42 @@ bool QoccViewWidget::dump(Standard_CString theFile)
   return myView->Dump(theFile);
 }
 
-/*!
-  \brief This function sets the current cursor for the given interraction mode.
-  \param mode		The interraction mode
-*/
-void QoccViewWidget::setMode( const CurrentAction3d mode )
-{
-  if ( mode != myMode )
-    {
-      switch( mode )
-	{
-	case CurAction3d_DynamicPanning:
-	  setCursor( Qt::SizeAllCursor );
-	  break;
-	case CurAction3d_DynamicZooming:
-	  setCursor( Qt::CrossCursor );
-	  break;
-	case CurAction3d_DynamicRotation:
-	  setCursor( Qt::CrossCursor );
-	  break;
-	case CurAction3d_GlobalPanning:
-	  setCursor( Qt::CrossCursor );
-	  break;
-	case CurAction3d_WindowZooming:
-	  setCursor( Qt::PointingHandCursor );
-	  break;
-	case CurAction3d_Nothing:
-	  //setCursor( myCrossCursor );
-	  setCursor( Qt::CrossCursor );
-	  break;
-	default:
-	  setCursor( Qt::ArrowCursor );
-	  break;
-	}
-      myMode = mode;
-    }
-}
+///*!
+//  \brief This function sets the current cursor for the given interraction mode.
+//  \param mode		The interraction mode
+//*/
+//void QoccViewWidget::setMode( const CurrentAction3d mode )
+//{
+//  if ( mode != myMode )
+//    {
+//      switch( mode )
+//	{
+//	case CurAction3d_DynamicPanning:
+//	  setCursor( Qt::SizeAllCursor );
+//	  break;
+//	case CurAction3d_DynamicZooming:
+//	  setCursor( Qt::CrossCursor );
+//	  break;
+//	case CurAction3d_DynamicRotation:
+//	  setCursor( Qt::CrossCursor );
+//	  break;
+//	case CurAction3d_GlobalPanning:
+//	  setCursor( Qt::CrossCursor );
+//	  break;
+//	case CurAction3d_WindowZooming:
+//	  setCursor( Qt::PointingHandCursor );
+//	  break;
+//	case CurAction3d_Nothing:
+//	  //setCursor( myCrossCursor );
+//	  setCursor( Qt::CrossCursor );
+//	  break;
+//	default:
+//	  setCursor( Qt::ArrowCursor );
+//	  break;
+//	}
+//      myMode = mode;
+//    }
+//}
 
 /*!
   \brief This is a Utility function for rounding the input value to a specific DP
@@ -2134,43 +2183,45 @@ Standard_Boolean QoccViewWidget::convertToPlane(const Standard_Integer Xs,
     }
   return Standard_False;
 }
-/*!
-  \brief	Draws the rubberband box
-  This function is designed to reduce "flicker" as the box is redrawn,
-  especially when the origin in the bottom corner of the window
-  \param	origin		A QPoint defining the screen origin
-  \param	position	A QPoint defining the current cursor screen location
-*/
-void QoccViewWidget::drawRubberBand( const QPoint origin, const QPoint position )
-{
-  if ( myRubberBand )
-    {
-//      redraw();
-      hideRubberBand();
-      myRubberBand->setGeometry( QRect( origin, position ).normalized() );
-      showRubberBand();
-    }
-}
-/*!
-  \brief	Shows the rubberband box
-*/
-void QoccViewWidget::showRubberBand( void )
-{
-  if ( myRubberBand )
-    {
-      myRubberBand->show();
-    }
-}
-/*!
-  \brief	Hides the rubberband box
-*/
-void QoccViewWidget::hideRubberBand( void )
-{
-  if ( myRubberBand )
-    {
-      myRubberBand->hide();
-    }
-}
+
+
+///*!
+//  \brief	Draws the rubberband box
+//  This function is designed to reduce "flicker" as the box is redrawn,
+//  especially when the origin in the bottom corner of the window
+//  \param	origin		A QPoint defining the screen origin
+//  \param	position	A QPoint defining the current cursor screen location
+//*/
+//void QoccViewWidget::drawRubberBand( const QPoint origin, const QPoint position )
+//{
+//  if ( myRubberBand )
+//    {
+////      redraw();
+//      hideRubberBand();
+//      myRubberBand->setGeometry( QRect( origin, position ).normalized() );
+//      showRubberBand();
+//    }
+//}
+///*!
+//  \brief	Shows the rubberband box
+//*/
+//void QoccViewWidget::showRubberBand( void )
+//{
+//  if ( myRubberBand )
+//    {
+//      myRubberBand->show();
+//    }
+//}
+///*!
+//  \brief	Hides the rubberband box
+//*/
+//void QoccViewWidget::hideRubberBand( void )
+//{
+//  if ( myRubberBand )
+//    {
+//      myRubberBand->hide();
+//    }
+//}
 
 #if (OCC_VERSION_MAJOR<7)
 /*!
@@ -2315,4 +2366,11 @@ Standard_Real QoccViewWidget::viewPrecision( bool resized )
 //  const Handle_V3d_View& myView = occWidget_->getView();
 //  myView->Dump(fName);
 //}
+
+
+
+
+
+
+
 

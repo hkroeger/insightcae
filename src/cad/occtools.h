@@ -175,6 +175,9 @@ private:
 
 };
 
+void ActivateAll(Handle_AIS_InteractiveContext context, TopAbs_ShapeEnum mode);
+void DeactivateAll(Handle_AIS_InteractiveContext context, TopAbs_ShapeEnum mode);
+
 }
 }
 

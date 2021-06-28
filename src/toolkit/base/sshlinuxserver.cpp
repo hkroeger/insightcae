@@ -52,14 +52,19 @@ SSHLinuxServer::Config::Config(rapidxml::xml_node<> *e)
 
 std::shared_ptr<RemoteServer> SSHLinuxServer::Config::getInstanceIfRunning()
 {
-#warning incomplete
-  return nullptr;
+  auto srv = std::make_shared<SSHLinuxServer>( std::make_shared<Config>(*this) );
+  if (srv->hostIsAvailable())
+    return srv;
+  else
+    return nullptr;
 }
 
 std::shared_ptr<RemoteServer> SSHLinuxServer::Config::instance()
 {
-#warning incomplete
-  return nullptr;
+  auto srv = std::make_shared<SSHLinuxServer>( std::make_shared<Config>(*this) );
+  if (!srv->hostIsAvailable())
+    srv->launch();
+  return srv;
 }
 
 bool SSHLinuxServer::Config::isDynamicallyAllocated() const
@@ -76,6 +81,13 @@ void SSHLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_documen
   e->append_attribute( doc.allocate_attribute( "baseDirectory", doc.allocate_string(
                                                defaultDirectory_.string().c_str() ) ) );
 }
+
+
+
+
+
+
+
 
 
 void SSHLinuxServer::runRsync
@@ -97,15 +109,23 @@ void SSHLinuxServer::runRsync
 }
 
 
+
+
 SSHLinuxServer::SSHLinuxServer(ConfigPtr serverConfig)
 {
   serverConfig_=serverConfig;
 }
 
+
+
+
 SSHLinuxServer::Config *SSHLinuxServer::serverConfig() const
 {
   return std::dynamic_pointer_cast<Config>(serverConfig_).get();
 }
+
+
+
 
 string SSHLinuxServer::hostName() const
 {
@@ -114,37 +134,75 @@ string SSHLinuxServer::hostName() const
 
 
 
-bool SSHLinuxServer::hostIsAvailable()
-{
-//  SSHCommand sc(host, { "exit" });
-//  int ret = bp::system(
-//        sc.command(), bp::args(sc.arguments())
-//        );
-  return (executeCommand("exit", false) == 0);
-}
 
-//int SSHLinuxServer::executeCommand(const std::string& command, bool throwOnFail)
+
 std::pair<boost::filesystem::path,std::vector<std::string> > SSHLinuxServer::commandAndArgs(const std::string& command)
 {
-//  insight::CurrentExceptionContext ex("executing command on remote host: "+command);
-//  assertRunning();
+  std::string expr = "bash -lc \""+escapeShellSymbols(command)+"\"";
 
-//  std::ostringstream cmd;
-
-//  cmd
-//      << "export TS_SOCKET="<<socket()<<";"
-//      << remoteSourceOFEnvStatement()
-//      << "cd "<<remoteDir_<<" && (" << command << ")";
-
-  SSHCommand sc(hostName(), {"bash -lc \""+escapeShellSymbols(command)+"\"" });
-//  int ret = boost::process::system(
-//              sc.command(), boost::process::args(sc.arguments())
-//        );
+  SSHCommand sc(hostName(), { expr });
 
   return { sc.command(),
-           sc.arguments() };
+        sc.arguments() };
 }
 
+
+
+SSHLinuxServer::BackgroundJob::BackgroundJob(RemoteServer &server, int remotePid)
+  : RemoteServer::BackgroundJob(server),
+    remotePid_(remotePid)
+{}
+
+void SSHLinuxServer::BackgroundJob::kill()
+{
+  server_.executeCommand(
+        boost::str(boost::format
+         ("kill %d") % remotePid_
+        ),
+        true
+        );
+}
+
+
+RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(const std::string &cmd)
+{
+  boost::process::ipstream is;
+
+  auto process = launchCommand(
+        cmd+" & echo PID===$!===PID",
+#ifdef WIN32
+        boost::process::std_out > is
+#else
+        boost::process::std_err > is
+#endif
+        );
+
+  if (!process->running())
+  {
+   throw insight::Exception("could not start background process");
+  }
+
+  boost::regex re("PID===([0-9+)===PID");
+  int remotePid = -1;
+  int linesRead = 0;
+  while (remotePid<0 && linesRead<100)
+  {
+    std::string line;
+    if (getline(is, line))
+    {
+      linesRead++;
+      boost::smatch res;
+      if (boost::regex_match(line, res, re))
+      {
+        remotePid=boost::lexical_cast<int>(res[1]);
+        std::cout<<"remote process PID = "<<remotePid<<std::endl;
+        break;
+      }
+    }
+  }
+  process->detach();
+  return std::make_shared<BackgroundJob>(*this, remotePid);
+}
 
 
 
@@ -297,16 +355,21 @@ void SSHLinuxServer::syncToLocal
 
 
 
+
 RemoteServer::PortMappingPtr SSHLinuxServer::makePortsAccessible(
     const std::set<int> &remoteListenerPorts,
     const std::set<int> &localListenerPorts)
 {
+  insight::CurrentExceptionContext ex("create port tunnels via SSH");
+
   return std::make_shared<SSHTunnelPortMapping>(
         *serverConfig(),
         remoteListenerPorts,
         localListenerPorts
         );
 }
+
+
 
 
 SSHLinuxServer::SSHTunnelPortMapping::SSHTunnelPortMapping(
@@ -348,8 +411,14 @@ SSHLinuxServer::SSHTunnelPortMapping::SSHTunnelPortMapping(
    ;
 }
 
+
+
+
 SSHLinuxServer::SSHTunnelPortMapping::~SSHTunnelPortMapping()
 {}
+
+
+
 
 int SSHLinuxServer::SSHTunnelPortMapping::localListenerPort(int remoteListenerPort) const
 {
@@ -358,11 +427,16 @@ int SSHLinuxServer::SSHTunnelPortMapping::localListenerPort(int remoteListenerPo
   return localToRemote_.at(remoteListenerPort);
 }
 
+
+
+
 int SSHLinuxServer::SSHTunnelPortMapping::remoteListenerPort(int localListenerPort) const
 {
   insight::CurrentExceptionContext ex(
         boost::str(boost::format("returning remote port to local listener port %d")%localListenerPort));
   return remoteToLocal_.at(localListenerPort);
 }
+
+
 
 }

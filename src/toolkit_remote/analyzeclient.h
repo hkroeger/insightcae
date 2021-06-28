@@ -83,16 +83,32 @@ public:
   CurrentRequestType;
 
   // success flag
-  typedef std::function<void(bool)> ReportSuccessCallback;
+  struct ReportSuccessResult
+  {
+    bool success = false;
+  };
+  typedef std::function<void(ReportSuccessResult)> ReportSuccessCallback;
 
   // success flag, progress state, results availability flag
-  typedef std::function<void(bool, bool)> QueryStatusCallback;
+  struct QueryStatusResult : public ReportSuccessResult
+  {
+    bool resultsAreAvailable;
+  };
+  typedef std::function<void(QueryStatusResult)> QueryStatusCallback;
 
   // success flag, result data
-  typedef std::function<void(bool, ResultSetPtr)> QueryResultsCallback;
+  struct QueryResultsResult : public ReportSuccessResult
+  {
+    ResultSetPtr results;
+  };
+  typedef std::function<void(QueryResultsResult)> QueryResultsCallback;
 
   // success flag, path
-  typedef std::function<void(bool, boost::filesystem::path)> QueryExepathCallback;
+  struct QueryExepathResult : public ReportSuccessResult
+  {
+    boost::filesystem::path exePath;
+  };
+  typedef std::function<void(QueryExepathResult)> QueryExepathCallback;
 
   typedef std::function<void(std::exception_ptr)> ExceptionHandler;
 
@@ -118,9 +134,46 @@ protected:
 
   insight::ProgressDisplayer* progressDisplayer_;
 
+  int timeout_ = 60*10;
+
   void controlRequest(const std::string& action, AnalyzeClient::ReportSuccessCallback onCompletion);
 
   void handleHttpResponse(boost::system::error_code err, const Wt::Http::Message& response);
+
+  template <class ResultType>
+  ResultType syncRun( std::function< void(std::function<void(ResultType)>) > function, bool throwOnNoSuccess = true)
+  {
+    std::mutex m;
+    std::condition_variable cv;
+    bool received=false;
+    ResultType result;
+
+    function(
+          [&](ResultType r)
+          {
+            std::unique_lock<std::mutex> lck(m);
+            received=true;
+            result=r;
+            cv.notify_all();
+          }
+    );
+
+    {
+     std::unique_lock<std::mutex> lk(m);
+     cv.wait_for(lk, std::chrono::seconds(timeout_) );
+    }
+
+    if (!received)
+      throw insight::Exception( boost::str(boost::format(
+                  "no response from the remote server was received within %d seconds!"
+            ) % timeout_ ) );
+
+    if (!result.success && throwOnNoSuccess)
+      throw insight::Exception("the query returned no success");
+
+    return result;
+  }
+
 
 public:
   AnalyzeClient(
@@ -147,15 +200,30 @@ public:
       const std::string& analysisName,
       ReportSuccessCallback onCompletion
       );
+  ReportSuccessResult launchAnalysisSync(
+      const ParameterSet& input,
+      const boost::filesystem::path& parent_path,
+      const std::string& analysisName,
+      bool throwOnNoSuccess = true
+      );
 
-  void queryStatus( QueryStatusCallback onStatusAvailable );
+  void queryStatus( QueryStatusCallback onStatusAvailable ); // async
+  QueryStatusResult queryStatusSync(bool throwOnNoSuccess = true); //sync
 
   void kill( ReportSuccessCallback onCompletion );
+  ReportSuccessResult killSync(bool throwOnNoSuccess = true);
+
   void exit( ReportSuccessCallback onCompletion );
+  ReportSuccessResult exitSync(bool throwOnNoSuccess = true);
+
   void wnow( ReportSuccessCallback onCompletion );
+  ReportSuccessResult wnowSync(bool throwOnNoSuccess = true);
+
   void wnowandstop( ReportSuccessCallback onCompletion );
+  ReportSuccessResult wnowandstopSync(bool throwOnNoSuccess = true);
 
   void queryResults( QueryResultsCallback onResultsAvailable );
+  QueryResultsResult queryResultsSync(bool throwOnNoSuccess = true);
 
 };
 

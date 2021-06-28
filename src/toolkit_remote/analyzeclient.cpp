@@ -122,18 +122,13 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
     {
 
       case SimpleRequest: {
-//          tq_.post(
-//                [=]()
-//                {
-                  boost::get<ReportSuccessCallback>(currentCallback_)(success);
-//                }
-//          );
+            ReportSuccessResult rsr;
+            rsr.success=success;
+            boost::get<ReportSuccessCallback>(currentCallback_)(rsr);
         }
         break;
 
       case QueryStatus: {
-
-//        ProgressStatePtrList pss;
         bool resultsAvailable = false;
 
         if (success)
@@ -213,10 +208,10 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
           }
         }
 
-//        tq_.post( [=]()
-//        {
-          boost::get<QueryStatusCallback>(currentCallback_)(success, resultsAvailable);
-//        });
+        QueryStatusResult qsr;
+        qsr.success=success;
+        qsr.resultsAreAvailable=resultsAvailable;
+        boost::get<QueryStatusCallback>(currentCallback_)(qsr);
 
       } break;
 
@@ -237,10 +232,10 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
           }
         }
 
-//        tq_.post( [=]()
-//        {
-          boost::get<QueryResultsCallback>(currentCallback_)(success, r);
-//        });
+        QueryResultsResult qrr;
+        qrr.success=success;
+        qrr.results=r;
+        boost::get<QueryResultsCallback>(currentCallback_)(qrr);
 
       } break;
 
@@ -265,10 +260,10 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
           }
         }
 
-//        tq_.post( [=]()
-//        {
-          boost::get<QueryExepathCallback>(currentCallback_)(success, exepath);
-//        });
+        QueryExepathResult qer;
+        qer.success=success;
+        qer.exePath=exepath;
+        boost::get<QueryExepathCallback>(currentCallback_)(qer);
 
       } break;
 
@@ -303,8 +298,8 @@ AnalyzeClient::AnalyzeClient(
     ioService_(),
     httpClient_(ioService_),
     crq_(None),
-    progressDisplayer_(progressDisplayer),
-    exHdlr_(exceptionHandler)
+    exHdlr_(exceptionHandler),
+    progressDisplayer_(progressDisplayer)
 {
   httpClient_.setMaximumResponseSize(512*1024*1024);
   httpClient_.setTimeout(std::chrono::seconds{24*3600});
@@ -358,10 +353,10 @@ bool AnalyzeClient::waitForContact(int maxAttempts)
     attempts++;
 
     queryStatus(
-          [&](bool success, bool)
+          [&](QueryStatusResult r)
           {
             std::unique_lock<std::mutex> lck(m);
-            if (success)
+            if (r.success)
             {
               contacted=true;
             }
@@ -429,6 +424,22 @@ void AnalyzeClient::launchAnalysis(
 }
 
 
+AnalyzeClient::ReportSuccessResult AnalyzeClient::launchAnalysisSync(
+    const ParameterSet& input,
+    const boost::filesystem::path& parent_path,
+    const std::string& analysisName,
+    bool throwOnNoSuccess
+    )
+{
+  return syncRun<ReportSuccessResult>(
+        std::bind(
+          &AnalyzeClient::launchAnalysis, this,
+          input, parent_path, analysisName,
+          std::placeholders::_1 ),
+        throwOnNoSuccess
+        );
+}
+
 
 
 void AnalyzeClient::queryStatus(AnalyzeClient::QueryStatusCallback onStatusAvailable)
@@ -444,7 +455,13 @@ void AnalyzeClient::queryStatus(AnalyzeClient::QueryStatusCallback onStatusAvail
     throw insight::Exception("Could not query status of remote analysis!");
 }
 
-
+AnalyzeClient::QueryStatusResult AnalyzeClient::queryStatusSync(bool throwOnNoSuccess)
+{
+  return syncRun<QueryStatusResult>(
+        std::bind(&AnalyzeClient::queryStatus, this, std::placeholders::_1),
+        throwOnNoSuccess
+        );
+}
 
 
 void AnalyzeClient::kill(AnalyzeClient::ReportSuccessCallback onCompletion)
@@ -452,14 +469,40 @@ void AnalyzeClient::kill(AnalyzeClient::ReportSuccessCallback onCompletion)
   controlRequest("kill", onCompletion);
 }
 
+AnalyzeClient::ReportSuccessResult AnalyzeClient::killSync(bool throwOnNoSuccess)
+{
+  return syncRun<ReportSuccessResult>(
+        std::bind(&AnalyzeClient::controlRequest, this, "kill", std::placeholders::_1),
+        throwOnNoSuccess
+        );
+}
+
 void AnalyzeClient::exit(AnalyzeClient::ReportSuccessCallback onCompletion)
 {
   controlRequest("exit", onCompletion);
 }
 
+AnalyzeClient::ReportSuccessResult AnalyzeClient::exitSync(bool throwOnNoSuccess)
+{
+  return syncRun<ReportSuccessResult>(
+        std::bind(&AnalyzeClient::controlRequest, this, "exit", std::placeholders::_1),
+        throwOnNoSuccess
+        );
+}
+
+
 void AnalyzeClient::wnow(AnalyzeClient::ReportSuccessCallback onCompletion)
 {
   controlRequest("wnow", onCompletion);
+}
+
+
+AnalyzeClient::ReportSuccessResult AnalyzeClient::wnowSync(bool throwOnNoSuccess)
+{
+  return syncRun<ReportSuccessResult>(
+        std::bind(&AnalyzeClient::controlRequest, this, "wnow", std::placeholders::_1),
+        throwOnNoSuccess
+        );
 }
 
 void AnalyzeClient::wnowandstop(AnalyzeClient::ReportSuccessCallback onCompletion)
@@ -468,6 +511,13 @@ void AnalyzeClient::wnowandstop(AnalyzeClient::ReportSuccessCallback onCompletio
 }
 
 
+AnalyzeClient::ReportSuccessResult AnalyzeClient::wnowandstopSync(bool throwOnNoSuccess)
+{
+  return syncRun<ReportSuccessResult>(
+        std::bind(&AnalyzeClient::controlRequest, this, "wnowandstop", std::placeholders::_1),
+        throwOnNoSuccess
+        );
+}
 
 
 void AnalyzeClient::queryResults(AnalyzeClient::QueryResultsCallback onResultsAvailable)
@@ -484,6 +534,12 @@ void AnalyzeClient::queryResults(AnalyzeClient::QueryResultsCallback onResultsAv
 }
 
 
-
+AnalyzeClient::QueryResultsResult AnalyzeClient::queryResultsSync(bool throwOnNoSuccess)
+{
+  return syncRun<QueryResultsResult>(
+        std::bind(&AnalyzeClient::queryResults, this, std::placeholders::_1),
+        throwOnNoSuccess
+        );
+}
 
 }

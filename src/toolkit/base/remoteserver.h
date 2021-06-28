@@ -62,14 +62,13 @@ protected:
 public:
   std::string serverLabel() const;
 
-  virtual bool hostIsAvailable() =0;
 
   virtual std::pair<boost::filesystem::path,std::vector<std::string> > commandAndArgs(const std::string& command) =0;
 
   template<typename ...Args>
   int executeCommand(const std::string& command, bool throwOnFail, Args&&... addArgs)
   {
-    insight::CurrentExceptionContext ex("executing command on remote host: "+command);
+    insight::CurrentExceptionContext ex("executing command on remote server");
     assertRunning();
 
     auto c_and_a = commandAndArgs(command);
@@ -99,6 +98,24 @@ public:
                 std::forward<Args>(addArgs)...
           ));
   }
+
+
+
+
+  struct BackgroundJob
+  {
+  protected:
+    RemoteServer& server_;
+  public:
+    BackgroundJob(RemoteServer& server);
+    virtual void kill() =0;
+  };
+  typedef std::shared_ptr<BackgroundJob> BackgroundJobPtr;
+
+  virtual BackgroundJobPtr launchBackgroundProcess(const std::string& cmd) =0;
+
+
+
 
   virtual void putFile
   (
@@ -151,7 +168,7 @@ public:
 
 
   virtual void launch();
-  virtual bool checkIfRunning() =0;
+  virtual bool hostIsAvailable() =0;
   virtual void stop();
 };
 

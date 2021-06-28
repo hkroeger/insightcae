@@ -32,7 +32,7 @@ namespace fs = boost::filesystem;
 void AnalysisForm::connectRemoteActions()
 {
 
-  connect(ui->btnDisconnect, &QPushButton::clicked,
+  connect(ui->btnDisconnect, &QPushButton::clicked, ui->btnDisconnect,
           [&]()
           {
             if (isRunningRemotely())

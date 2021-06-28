@@ -1,6 +1,8 @@
 #include "qexecutionenvironmentdialog.h"
 #include "ui_qexecutionenvironmentdialog.h"
 
+#include "base/wsllinuxserver.h"
+#include "base/sshlinuxserver.h"
 
 #include <QFileDialog>
 
@@ -74,7 +76,13 @@ bool QExecutionEnvironmentDialog::checkAndUpdateRemoteConfig(
           false
           )
         );
-  if ( newDirPath.empty() || (!newDirPath.empty() /*&& rl->remoteDirExists()*/) )
+
+  if (auto wsl = std::dynamic_pointer_cast<insight::WSLLinuxServer>(rl->server()))
+    insight::dbg()<<"WSL "<<wsl->serverConfig()->WSLExecutable_<<std::endl;
+  if (auto ssh = std::dynamic_pointer_cast<insight::SSHLinuxServer>(rl->server()))
+    insight::dbg()<<"SSH "<<ssh->serverConfig()->hostName_<<std::endl;
+
+  if ( newDirPath.empty() || (!newDirPath.empty() && rl->remoteDirExists() ) )
   {
     //ok
     remoteLocation_ = std::move(rl);

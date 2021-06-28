@@ -31,6 +31,8 @@ std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml
     std::string t(ta->value());
     if (t=="SSHLinux")
       result = std::make_shared<SSHLinuxServer::Config>(e);
+    else if (t=="WSLLinux")
+      result = std::make_shared<WSLLinuxServer::Config>(e);
   }
   else // type SSH
   {
@@ -53,6 +55,9 @@ std::string RemoteServer::serverLabel() const
 {
   return static_cast<std::string>(*serverConfig_);
 }
+
+
+
 
 
 void RemoteServer::launch()
@@ -86,6 +91,10 @@ RemoteServer::PortMappingPtr RemoteServer::makePortsAccessible(
 {
   return std::make_shared<PortMapping>();
 }
+
+RemoteServer::BackgroundJob::BackgroundJob(RemoteServer &server)
+  : server_(server)
+{}
 
 
 

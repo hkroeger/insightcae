@@ -120,7 +120,7 @@ WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, insight::RemoteServer::ConfigPtr i
 
 insight::RemoteServer::ConfigPtr WSLLinuxSetup::result()
 {
-  return std::make_shared<insight::SSHLinuxServer::Config>(
+  return std::make_shared<insight::WSLLinuxServer::Config>(
         leBaseDir_->text().toStdString(),
         leWSLExecutable_->text().toStdString()
         );

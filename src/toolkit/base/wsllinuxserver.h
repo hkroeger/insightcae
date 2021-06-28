@@ -1,7 +1,7 @@
 #ifndef INSIGHT_WSLLINUXSERVER_H
 #define INSIGHT_WSLLINUXSERVER_H
 
-#include "base/remoteserver.h"
+#include "base/linuxremoteserver.h"
 
 namespace insight {
 
@@ -10,7 +10,7 @@ namespace insight {
  * local WSL instance (not on a remote machine!)
  */
 class WSLLinuxServer
-    : public RemoteServer
+    : public LinuxRemoteServer
 {
 public:
   struct Config : public RemoteServer::Config
@@ -43,10 +43,21 @@ public:
   WSLLinuxServer(ConfigPtr serverConfig);
 
   Config* serverConfig() const;
-  bool hostIsAvailable() override;
 
 //  int executeCommand(const std::string& command, bool throwOnFail) override;
   std::pair<boost::filesystem::path,std::vector<std::string> > commandAndArgs(const std::string& command) override;
+
+  struct BackgroundJob : public RemoteServer::BackgroundJob
+  {
+  protected:
+    std::unique_ptr<boost::process::child> process_;
+  public:
+    BackgroundJob(RemoteServer& server, std::unique_ptr<boost::process::child> process);
+    void kill() override;
+  };
+
+  BackgroundJobPtr launchBackgroundProcess(const std::string& cmd) override;
+
 
   void putFile
   (

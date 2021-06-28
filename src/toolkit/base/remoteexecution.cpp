@@ -34,7 +34,7 @@ namespace insight
 
 boost::filesystem::path RemoteLocation::socket() const
 {
-  return remoteDir()/"tsp.socket";
+  return (remoteDir()/"tsp.socket").generic_path();
 }
 
 

@@ -17,19 +17,54 @@ namespace bp=boost::process;
 
 
 
+ExecutionProgram::ExecutionProgram(const StepList &steps)
+  : steps_(steps)
+{}
+
+
+void ExecutionProgram::run()
+{
+  for (int step=0; step < steps_.size(); ++step)
+  {
+    try
+    {
+      steps_[step].first(); // call run function
+    }
+    catch (std::exception& e)
+    {
+      // attempt to roll back
+      for (int backStep=step; backStep>=0; --backStep)
+      {
+        try
+        {
+          steps_[backStep].second(); // call undo function
+        }
+        catch (std::exception& re)
+        {
+          insight::Warning(std::string("Exception occurred during rollback: ")+re.what());
+        }
+      }
+
+      // rethrow
+      throw e;
+    }
+  }
+}
+
+
 void RemoteRun::launchRemoteAnalysisServer()
 {
   auto rd = remote_.remoteDir();
-
   int ret = remote_.execRemoteCmd(
         "analyze "
         "--workdir=\""+rd.string()+"\" "
-        "--server >\""+rd.string()+"/server.log\" 2>&1 </dev/null &"
+        "--server" //>\""+rd.string()+"/server.log\" 2>&1 </dev/null &"
       );
 
   if (ret!=0)
     throw insight::Exception("Failed to launch remote analysis server executable!");
 }
+
 
 
 
@@ -44,13 +79,10 @@ RemoteRun::RemoteRun(AnalysisForm *af, const insight::RemoteExecutionConfig& rec
 
 void RemoteRun::launch()
 {
-//  int localPort = insight::findFreePort();
 
   portMappings_ = remote_.server()->makePortsAccessible(
       {8090},
       {}
-//    {},
-//    { {localPort, "localhost", /*af_->ui->portNum->value()*/8090 } }
   );
 
   af_->progressDisplayer_.reset();
@@ -59,7 +91,7 @@ void RemoteRun::launch()
   ac_.reset(
         new insight::AnalyzeClient(
           af_->analysisName_,
-          str(format("http://localhost:%d") % /*localPort*/portMappings_->localListenerPort(8090) ),
+          str(format("http://127.0.0.1:%d") % portMappings_->localListenerPort(8090) ),
           &af_->progressDisplayer_,
           [this](std::exception_ptr e)
             {
@@ -70,104 +102,119 @@ void RemoteRun::launch()
   );
 
 
+  ExecutionProgram::StepList initSteps =
+  {
+
+    // check remote work dir, launch machine and create, if needed
+    {
+      [&]()
+      {
+        insight::dbg()<<"initialize remote location"<<std::endl;
+        remote_.initialize();
+      },
+      [&]()
+      {
+        insight::dbg()<<"cleanup remote location"<<std::endl;
+        // undo: if needed: remove remote work dir again, shutdown remote machine
+        remote_.cleanup();
+      }
+    },
+
+    // launch remote execution server
+    {
+      [&]()
+      {
+        insight::dbg()<<"launch execution server"<<std::endl;
+
+        auto rd = remote_.remoteDir();
+
+        boost::process::ipstream is;
+        analyzeProcess_ = remote_.server()->launchBackgroundProcess(
+              "analyze "
+              "--workdir=\""+rd.string()+"\" "
+              "--server"
+            );
+      },
+      [&]() {} // nothing to undo
+    },
+
+    // contact remote exec server
+    {
+      [&]()
+      {
+        insight::dbg()<<"waiting for contact"<<std::endl;
+
+        if (!ac_->waitForContact())
+          throw insight::Exception("Could not contact analysis server after launching it!");
+      },
+      [&]()
+      {
+        insight::dbg()<<"kill remote server"<<std::endl;
+
+        // undo: kill remote server process
+        analyzeProcess_->kill();
+      }
+    },
+
+    {
+      [&]()
+      {
+        insight::dbg()<<"packing parameter set"<<std::endl;
+
+        insight::ParameterSet p = af_->parameters();
+        p.packExternalFiles(); // pack
+
+        insight::dbg()<<"launch remote analysis"<<std::endl;
+
+        auto res = ac_->launchAnalysisSync(
+            p, "/", af_->analysisName_ );
+
+        if (!res.success)
+          throw insight::Exception("Failed to start analysis on remote server!");
+      },
+      [&]() {} // no undo
+    }
+
+  };
+
+
+
+
   // start
   workerThread_.reset( new insight::QAnalysisThread(
-        [this]
+                         [this,initSteps]
+  {
+
+    // launch everything, if we do not resume
+    if (!resume_)
+      ExecutionProgram(initSteps).run();
+
+    // continue with monitoring
+    for ( bool runMonitor=true; runMonitor; )
+    {
+      if (!ac_->isBusy())
+      {
+        insight::dbg()<<"query status"<<std::endl;
+
+        auto qsr = ac_->queryStatusSync();
+
+        if (qsr.resultsAreAvailable)
         {
+          runMonitor=false;
 
-          insight::ParameterSet p = af_->parameters();
+          auto qrs = ac_->queryResultsSync();
 
-          p.packExternalFiles(); // pack
-          launchRemoteAnalysisServer();
+          Q_EMIT finished( qrs.results );
 
-
-          auto monitor = [this]
-          {
-            std::atomic<bool> runMonitor(true);
-
-            while (runMonitor)
-            {
-              if (!ac_->isBusy())
-              {
-                ac_->queryStatus(
-                  [this,&runMonitor](bool success, bool resultsavail)
-                  {
-                    if (!success)
-                    {
-                      Q_EMIT statusMessage( "Failed to query status!" );
-                    }
-                    else
-                    {
-                      if (resultsavail)
-                      {
-                        runMonitor=false;
-
-                        ac_->queryResults(
-
-                            [this](bool success, insight::ResultSetPtr results)
-                            {
-                                if (!success)
-                                {
-                                  throw insight::Exception("Failed to fetch results!");
-                                }
-                                else
-                                {
-                                  Q_EMIT finished( results );
-
-                                  ac_->exit(
-                                        [this](bool success)
-                                        {
-                                          if (!success)
-                                          {
-                                            throw insight::Exception("Failed to stop remote server!");
-                                          }
-                                          else
-                                          {
-                                            remote_.cleanup();
-                                          }
-                                        }
-                                  );
-                                }
-                            }
-                        );
-                      }
-                    }
-                  }
-                );
-              }
-
-              boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
-            }
-          };
-
-
-
-          if (!resume_)
-          {
-
-            if (!ac_->waitForContact())
-              throw insight::Exception("Failed to contact analysis server after launch!");
-
-            ac_->launchAnalysis(
-                p, "/", af_->analysisName_,
-
-                [](bool success)
-                {
-                  if (!success) throw insight::Exception("Failed to launch analysis!");
-                }
-            );
-
-
-            std::cout<<"Connection established."<<std::endl;
-
-          }
-          else
-          {
-            std::cout<<"Resume"<<std::endl;
-          }
-
-          monitor();
+          ac_->exitSync();
+          remote_.cleanup();
         }
+
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
+      }
+    };
+
+  }
   ) );
 
   connectAnalysisThread(workerThread_.get());
@@ -204,20 +251,12 @@ void RemoteRun::onCancel()
             }
 
             // stop and exit
-            ac_->kill(
-                  [=](bool success)
-                  {
-                    if (!success)
-                    {
-                      Q_EMIT failed( std::make_exception_ptr(insight::Exception("Failed to stop remote server!") ) );
-                    }
-                    else
-                    {
-                      Q_EMIT cancelled();
-                    }
-                  }
-            );
+            ac_->killSync();
+
+            Q_EMIT cancelled();
         }
   );
 
 }
+
+

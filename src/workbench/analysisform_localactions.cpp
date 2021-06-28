@@ -44,6 +44,9 @@ void AnalysisForm::connectLocalActions()
               localCaseDirectory_.reset();
 
               auto lwd = dlg.localDirectory();
+
+              insight::dbg()<<"localDirectory="<<lwd<<std::endl;
+
               if (lwd.empty())
               {
                 localCaseDirectory_.reset(
@@ -57,7 +60,7 @@ void AnalysisForm::connectLocalActions()
                         this, lwd ) );
               }
 
-              if (dlg.remoteLocation())
+              if (localCaseDirectory_ && dlg.remoteLocation())
               {
                 remoteExecutionConfiguration_.reset(
                       new QRemoteExecutionState(

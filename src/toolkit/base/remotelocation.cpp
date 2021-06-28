@@ -268,39 +268,13 @@ void RemoteLocation::initialize()
   {
     if (emptyRemotePathSupplied_)
     {
-//      bp::ipstream out;
-
-//      SSHCommand sc(server(), { "mktemp", "-d", (remoteDir_/"irXXXXXX").string() });
-//      int ret = bp::system(
-//            sc.command(), bp::args(sc.arguments()),
-//            bp::std_out > out
-//            );
-
-//      if (ret==0)
-//      {
-//        string line;
-//        getline(out, line);
-//        remoteDir_=line;
-//      }
-//      else
-//      {
-//        throw insight::Exception("Could not auto-create remote directory!");
-//      }
       remoteDir_ = serverInstance_->createTemporaryDirectory(remoteDir_/"irXXXXXX");
     }
     else if (!remoteDirExists())
     {
-//      SSHCommand sc(server(), { "mkdir -p \""+remoteDir().string()+"\""});
-//      int ret = bp::system(
-//                  sc.command(), bp::args(sc.arguments())
-//            );
-
-//      if (ret!=0)
-//        throw insight::Exception("Failed to create remote directory!");
       serverInstance_->createDirectory(remoteDir_);
     }
   }
-
   validate();
 }
 
@@ -312,7 +286,7 @@ void RemoteLocation::validate()
   isActive_=false;
   if (serverInstance_ && !remoteDir_.empty())
   {
-    if (server()->checkIfRunning())
+    if (server()->hostIsAvailable())
     {
       if (remoteDirExists())
         isActive_=true;
@@ -328,14 +302,6 @@ void RemoteLocation::removeRemoteDir()
   if (remoteDirExists())
   {
     serverInstance_->removeDirectory( remoteDir_ );
-//    SSHCommand sc(server(), { "rm -rf \""+remoteDir().string()+"\"" } );
-//    int ret = bp::system(
-//                sc.command(),
-//                bp::args(sc.arguments())
-//          );
-//    if (ret!=0)
-//      throw insight::Exception("Failed to remove remote directory!");
-
     isActive_=false;
   }
 }
@@ -379,16 +345,6 @@ void RemoteLocation::assertActive() const
 
 
 
-//bool RemoteLocation::serverIsUp() const
-//{
-//  if (!server_.empty())
-//    return hostAvailable(server_);
-//  else
-//    return false;
-//}
-
-
-
 
 std::vector<bfs_path> RemoteLocation::remoteLS() const
 {
@@ -396,31 +352,6 @@ std::vector<bfs_path> RemoteLocation::remoteLS() const
   assertActive();
 
   return serverInstance_->listRemoteDirectory(remoteDir_);
-//  std::vector<bfs_path> res;
-
-//  bp::ipstream is, ise;
-//  SSHCommand sc(server(), {"ls", remoteDir().string()} );
-//  bp::child p_in(
-//              sc.command(), bp::args(sc.arguments()),
-//              bp::std_out > is, bp::std_err > ise
-//              );
-//  if (!p_in.running())
-//    throw insight::Exception("RemoteExecutionConfig::remoteLS: Failed to launch directory listing subprocess!");
-
-//  std::string line;
-//  while (std::getline(is, line))
-//  {
-//    cout<<line<<endl;
-//    res.push_back(line);
-//  }
-//  while (std::getline(ise, line))
-//  {
-//    cerr<<"ERR: "<<line<<endl;
-//  }
-
-//  p_in.wait();
-
-//  return res;
 }
 
 
@@ -432,30 +363,6 @@ std::vector<bfs_path> RemoteLocation::remoteSubdirs() const
   assertActive();
 
   return serverInstance_->listRemoteSubdirectories(remoteDir_);
-//  std::vector<bfs_path> res;
-//  bp::ipstream is;
-//  std::shared_ptr<bp::child> c;
-
-//  SSHCommand sc(server(), {
-//                  "find", remoteDir().string()+"/", // add slash for symbolic links
-//                  "-maxdepth", "1", "-type", "d", "-printf", "%P\\\\n"} );
-//  c.reset(new bp::child(
-//            sc.command(), bp::args(sc.arguments()),
-//            bp::std_out > is
-//            ));
-
-//  if (!c->running())
-//    throw insight::Exception("Could not execute remote dir list process!");
-
-//  std::string line;
-//  while (std::getline(is, line))
-//  {
-//    res.push_back(line);
-//  }
-
-//  c->wait();
-
-//  return res;
 }
 
 
@@ -470,33 +377,25 @@ std::string RemoteLocation::remoteSourceOFEnvStatement() const
   }
   catch (const std::exception& e)
   {
-    WarningDispatcher::getCurrent().issue(
-          "Could not detect currently loaded OpenFOAM environment. "
-          "Running remote command with default OpenFOAM environment loaded.");
+    try
+    {
+      const OFEnvironment& cofe = OFEs::getCurrentOrPreferred();
 
-    const OFEnvironment& cofe = OFEs::getCurrentOrPreferred();
-    return "source " + cofe.bashrc().filename().string() + ";";
+      WarningDispatcher::getCurrent().issue(
+            "Could not detect currently loaded OpenFOAM environment. "
+            "Running remote command with default OpenFOAM environment loaded.");
+
+      return "source " + cofe.bashrc().filename().string() + ";";
+    }
+    catch (...)
+    {
+      WarningDispatcher::getCurrent().issue(
+            "Could not detect any usable OpenFOAM environment. "
+            "Running remote command with no OpenFOAM environment loaded.");
+    }
   }
 
   return "";
-}
-
-
-
-
-int RemoteLocation::execRemoteCmd(const std::string& command, bool throwOnFail)
-{
-  insight::CurrentExceptionContext ex("executing command on remote host: "+command);
-  assertActive();
-
-  std::ostringstream cmd;
-
-  cmd
-      << "export TS_SOCKET="<<socket()<<";"
-      << remoteSourceOFEnvStatement()
-      << "cd "<<remoteDir_<<" && (" << command << ")";
-
-  return server()->executeCommand(cmd.str(), throwOnFail);
 }
 
 
@@ -682,13 +581,6 @@ bool RemoteLocation::remoteDirExists() const
     return false;
 
   return serverInstance_->checkIfDirectoryExists(remoteDir_);
-//  SSHCommand sc(server(), {"cd", remoteDir().string()});
-//  int ret = bp::system( sc.command(), bp::args(sc.arguments()) );
-
-//  if (ret==0)
-//    return true;
-//  else
-//    return false;
 }
 
 

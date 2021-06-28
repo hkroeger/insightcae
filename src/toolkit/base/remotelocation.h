@@ -49,8 +49,6 @@ protected:
     virtual void removeRemoteDir();
 //    virtual void disposeHost();
 
-    void initialize();
-
     bool isActive_;
     void validate();
     void assertActive() const;
@@ -82,32 +80,6 @@ public:
 
     virtual ~RemoteLocation();
 
-    /**
-     * @brief createTunnels
-     * create tunnels to remote location
-     * @param remoteListenPorts
-     * Will be translated to a subset of SSH's -R option:
-     * Specifies that connections to the given TCPsecond port or Unix socket on the remote (server) host are to be
-     * forwarded to the local side.
-     * This works by allocating a socket to listen to either a TCP port or to a Unix socket on the remote side.
-     * -R localport:host:hostport
-     *
-     * @param localListenPorts
-     * Will be translated to a subset of SSH's -L option:
-     * Specifies that connections to the given TCP port or Unix socket on the local (client) host are to be
-     * forwarded to the given host and port, or Unix socket, on the remote side.
-     * -L localport:host:hostport
-     *
-     */
-
-    // get from server()
-//    void createTunnels(
-//        std::vector<boost::tuple<int,std::string,int> > remoteListenPorts = {},
-//        std::vector<boost::tuple<int,std::string,int> > localListenPorts = {}
-//        );
-
-//    void stopTunnels();
-
     // ====================================================================================
     // ======== query functions
     RemoteServerPtr server() const;
@@ -118,6 +90,7 @@ public:
     // ====================================================================================
     // ======== init /deinit
 
+    void initialize();
     virtual void cleanup();
 
     // ==================================openfoam==================================================
@@ -141,7 +114,24 @@ public:
     // ====================================================================================
     // ======== action functions
 
-    virtual int execRemoteCmd(const std::string& cmd, bool throwOnFail=true);
+//    virtual int execRemoteCmd(const std::string& cmd, bool throwOnFail=true);
+    template<typename ...Args>
+    int execRemoteCmd(const std::string& command, bool throwOnFail = true, Args&&... addArgs)
+    {
+      insight::CurrentExceptionContext ex("executing command in remote location");
+      assertActive();
+
+      std::ostringstream cmd;
+      cmd
+          << "export TS_SOCKET="<<socket()<<";"
+          << remoteSourceOFEnvStatement()
+          << "cd "<<remoteDir_<<" && (" << command << ")";
+
+      insight::dbg()<<cmd.str()<<std::endl;
+
+      return server()->executeCommand(cmd.str(), throwOnFail, std::forward<Args>(addArgs)...);
+    }
+
 
     /**
      * @brief putFile

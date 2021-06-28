@@ -34,14 +34,15 @@ WSLLinuxServer::Config::Config(rapidxml::xml_node<> *e)
 
 std::shared_ptr<RemoteServer> WSLLinuxServer::Config::getInstanceIfRunning()
 {
-#warning incomplete
-  return nullptr;
+  return instance();
 }
 
 std::shared_ptr<RemoteServer> WSLLinuxServer::Config::instance()
 {
-#warning incomplete
-  return nullptr;
+  auto srv = std::make_shared<WSLLinuxServer>( std::make_shared<Config>(*this) );
+  if (!srv->hostIsAvailable())
+    throw insight::Exception("The WSL distribution "+WSLExecutable_.string()+" does not work!");
+  return srv;
 }
 
 bool WSLLinuxServer::Config::isDynamicallyAllocated() const
@@ -75,15 +76,44 @@ WSLLinuxServer::Config *WSLLinuxServer::serverConfig() const
 
 
 
-bool WSLLinuxServer::hostIsAvailable()
-{
-  return (executeCommand("exit", false) == 0);
-}
 
 std::pair<boost::filesystem::path,std::vector<std::string> > WSLLinuxServer::commandAndArgs(const std::string& command)
 {
   return { serverConfig()->WSLExecutable_,
-           { "run", "bash", "-lc", command } };
+    { "run", "bash", "-lc", "'"+command+"'" } };
+}
+
+
+
+WSLLinuxServer::BackgroundJob::BackgroundJob(
+    RemoteServer &server,
+    std::unique_ptr<boost::process::child> process )
+  : RemoteServer::BackgroundJob(server),
+    process_(std::move(process))
+{}
+
+
+void WSLLinuxServer::BackgroundJob::kill()
+{
+  if (process_)
+  {
+    process_->terminate();
+    process_->wait();
+    process_.reset();
+  }
+}
+
+
+RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(const std::string &cmd)
+{
+  auto process = launchCommand(cmd);
+
+  if (!process->running())
+  {
+   throw insight::Exception("could not start background process");
+  }
+
+  return std::make_shared<BackgroundJob>(*this, std::move(process));
 }
 
 
@@ -223,6 +253,7 @@ void WSLLinuxServer::syncToLocal
 
     runRsync(args, pf);
 }
+
 
 
 } // namespace insight

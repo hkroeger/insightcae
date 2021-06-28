@@ -51,6 +51,8 @@ set(toolkit_SOURCES
     base/remoteserverlist.cpp
     base/remoteserver.h
     base/remoteserver.cpp
+    base/linuxremoteserver.h
+    base/linuxremoteserver.cpp
     base/sshlinuxserver.h
     base/sshlinuxserver.cpp
     base/wsllinuxserver.h

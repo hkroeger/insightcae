@@ -1,7 +1,7 @@
 #ifndef SSHLINUXSERVER_H
 #define SSHLINUXSERVER_H
 
-#include "base/remoteserver.h"
+#include "base/linuxremoteserver.h"
 
 
 namespace insight
@@ -13,7 +13,7 @@ namespace insight
  * Server with ssh based command execution and rsync based file transfer
  */
 class SSHLinuxServer
-    : public RemoteServer
+    : public LinuxRemoteServer
 {
 public:
   struct Config : public RemoteServer::Config
@@ -48,10 +48,21 @@ public:
 
   Config* serverConfig() const;
   std::string hostName() const;
-  bool hostIsAvailable() override;
+
 
 //  int executeCommand(const std::string& command, bool throwOnFail) override;
   std::pair<boost::filesystem::path,std::vector<std::string> > commandAndArgs(const std::string& command) override;
+
+  struct BackgroundJob : public RemoteServer::BackgroundJob
+  {
+  protected:
+    int remotePid_;
+  public:
+    BackgroundJob(RemoteServer& server, int remotePid);
+    void kill() override;
+  };
+
+  BackgroundJobPtr launchBackgroundProcess(const std::string& cmd) override;
 
   void putFile
   (
@@ -78,6 +89,9 @@ public:
       std::function<void(int progress,const std::string& status_text)> progress_callback =
                           std::function<void(int,const std::string&)>()
   ) override;
+
+
+
 
   struct SSHTunnelPortMapping
       : public PortMapping

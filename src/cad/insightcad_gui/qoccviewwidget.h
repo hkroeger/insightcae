@@ -16,8 +16,12 @@
 #include "AIS_Plane.hxx"
 #include "V3d_Coordinate.hxx"
 
+#include "viewwidgetaction.h"
+#include "navigationmanager.h"
+
 #if OCC_VERSION_MAJOR>=7
 #include "AIS_ViewController.hxx"
+
 
 class Aspect_GraphicCallbackStruct;
 #endif
@@ -40,13 +44,13 @@ class FeatureSet;
 #endif
 
 /** the key for multi selection */
-#define MULTISELECTIONKEY  Qt::ShiftModifier   
+//#define MULTISELECTIONKEY  Qt::ShiftModifier
 
 /** The key for shortcut ( use to activate dynamic rotation, panning ) */
 //#define CASCADESHORTCUTKEY Qt::ControlModifier 
-#define ZOOMSHORTCUTKEY Qt::ControlModifier 
-#define PANSHORTCUTKEY Qt::ShiftModifier 
-#define ROTATESHORTCUTKEY Qt::AltModifier
+//#define ZOOMSHORTCUTKEY Qt::ControlModifier
+//#define PANSHORTCUTKEY Qt::ShiftModifier
+//#define ROTATESHORTCUTKEY Qt::AltModifier
 
 /* For elastic bean selection */
 const double ValZWMin = 1;
@@ -68,30 +72,34 @@ private:
 
   void addLights();
 
+  std::shared_ptr<ViewWidgetAction> currentNavigationAction_;
+  std::shared_ptr<NavigationManager> navigationManager_;
+  std::shared_ptr<ViewWidgetAction> currentUserActivity_;
 
 public:
 
-  enum CurrentAction3d
-  {	
-    CurAction3d_Undefined,
-    CurAction3d_Nothing, 
-    CurAction3d_Picking,
-    CurAction3d_DynamicZooming,
-    CurAction3d_WindowZooming, 
-    CurAction3d_DynamicPanning,
-    CurAction3d_GlobalPanning, 
-    CurAction3d_DynamicRotation,
-  };
 
-  enum CurrentInteractionMode
-  {
-    CIM_Normal,
-    CIM_MeasurePoints,
-    CIM_InsertPointIDs,
-    CIM_InsertEdgeIDs,
-    CIM_InsertFaceIDs,
-    CIM_InsertSolidIDs
-  };
+//  enum CurrentAction3d
+//  {
+//    CurAction3d_Undefined,
+//    CurAction3d_Nothing,
+//    CurAction3d_Picking,
+//    CurAction3d_DynamicZooming,
+//    CurAction3d_WindowZooming,
+//    CurAction3d_DynamicPanning,
+//    CurAction3d_GlobalPanning,
+//    CurAction3d_DynamicRotation,
+//  };
+
+//  enum CurrentInteractionMode
+//  {
+//    CIM_Normal,
+//    CIM_MeasurePoints,
+//    CIM_InsertPointIDs,
+//    CIM_InsertEdgeIDs,
+//    CIM_InsertFaceIDs,
+//    CIM_InsertSolidIDs
+//  };
 
   struct FocusObject
   {
@@ -148,14 +156,14 @@ protected Q_SLOTS:
 
 public Q_SLOTS:
   
-  void idle();
+//  void idle();
   void fitExtents();
   void fitAll();
-  void fitArea();
-  void zoom();
-  void pan();
-  void globalPan();
-  void rotation();
+//  void fitArea();
+//  void zoom();
+//  void pan();
+//  void globalPan();
+//  void rotation();
   void hiddenLineOn();
   void hiddenLineOff();
   void background();
@@ -229,8 +237,6 @@ private: // members
   Handle_Graphic3d_ClipPlane	clipPlane_;  
 #endif
 
-  bool                          myViewResized;
-  CurrentAction3d               myMode;
   double                        myCurZoom;
   bool                          myGridSnap;
   AIS_StatusOfDetection		myDetection;
@@ -239,10 +245,7 @@ private: // members
                                 myV3dX,
                                 myV3dY,
                                 myV3dZ;
-  
-  QRubberBand*			myRubberBand;
-  QPoint			myStartPoint;
-  QPoint			myCurrentPoint;
+
   
   double			myPrecision;
   double			myViewPrecision;
@@ -253,7 +256,7 @@ private: // members
   
   bool                          showGrid;
 
-  CurrentInteractionMode        cimode_;
+//  CurrentInteractionMode        cimode_;
 
   // data for measure points
   std::shared_ptr<insight::cad::Vector> measpts_p1_, measpts_p2_;
@@ -285,10 +288,10 @@ private: // methods
      const bool multi = false 
      );
 
-  AIS_StatusOfPick inputEvent( const bool multi = false );
-  AIS_StatusOfDetection	moveEvent ( const QPoint point );
+//  AIS_StatusOfPick inputEvent( const bool multi = false );
+//  AIS_StatusOfDetection	moveEvent ( const QPoint point );
   
-  void setMode( const CurrentAction3d mode );
+//  void setMode( const CurrentAction3d mode );
     
   Standard_Real precision( Standard_Real aReal );
   Standard_Real viewPrecision( bool resized = false );

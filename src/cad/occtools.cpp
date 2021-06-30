@@ -36,6 +36,10 @@
 #include "SelectMgr_Selection.hxx"
 #include "SelectMgr_EntityOwner.hxx"
 #endif
+#if OCC_VERSION_MAJOR<7
+#include "AIS_ListOfInteractive.hxx"
+#include "AIS_ListIteratorOfListOfInteractive.hxx"
+#endif
 
 namespace insight {
 namespace cad {
@@ -300,6 +304,35 @@ void InteractiveText::ComputeSelection (const Handle_SelectMgr_Selection& sel,
                               position_(1),
                               position_(2)));
       sel->Add (aSensitivePoint);
+}
+
+void ActivateAll(Handle_AIS_InteractiveContext context, TopAbs_ShapeEnum mode)
+{
+#if OCC_VERSION_MAJOR>=7
+  context->Activate( AIS_Shape::SelectionMode(mode) );
+#else
+  AIS_ListOfInteractive loi;
+  context->DisplayedObjects(loi);
+  for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
+  {
+    context->Activate( i.Value(), AIS_Shape::SelectionMode(mode) );
+  }
+#endif
+}
+
+
+void DeactivateAll(Handle_AIS_InteractiveContext context, TopAbs_ShapeEnum mode)
+{
+#if OCC_VERSION_MAJOR>=7
+  context->Deactivate( AIS_Shape::SelectionMode(mode) );
+#else
+  AIS_ListOfInteractive loi;
+  context->DisplayedObjects(loi);
+  for (AIS_ListIteratorOfListOfInteractive i(loi); i.More(); i.Next())
+  {
+    context->Deactivate( i.Value(), AIS_Shape::SelectionMode(mode) );
+  }
+#endif
 }
 
 }

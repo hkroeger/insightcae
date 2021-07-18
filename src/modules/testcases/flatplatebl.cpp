@@ -845,7 +845,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
     arma::mat Re_theta=tabcoeffs.getColByName("$Re_\\theta$");
     arma::mat xL=tabcoeffs.getColByName("x/L");
     arma::mat Rex=(Rex_0_ + uinf_*xL*L_/p.fluid.nu)/1e5;
-    Interpolator delta2exp_vs_x_i(delta2exp_vs_x);
+//    Interpolator delta2exp_vs_x_i(delta2exp_vs_x);
     addPlot
     (
       results, executionPath(), "chartRetheta",

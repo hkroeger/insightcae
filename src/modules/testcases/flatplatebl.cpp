@@ -749,9 +749,9 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
 
 #ifdef HAS_REFDATA
   arma::mat Cfexp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/cf_vs_x");
+//  Interpolator Cfexp_vs_x_i(Cfexp_vs_x);
 #endif
 
-  Interpolator Cfexp_vs_x_i(Cfexp_vs_x);
   
   addPlot
   (

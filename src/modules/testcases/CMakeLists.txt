@@ -8,6 +8,9 @@ set(testcases_SOURCES
   airfoilsection.cpp
   )
 
+set(testcases_LIBS
+  toolkit
+)
 if (INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
     list(APPEND testcases_SOURCES
         flatplatebl.cpp
@@ -17,6 +20,9 @@ if (INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
         ercoftac_squaresection180degreebend.cpp
         freeshearflow.cpp
         )
+    list(APPEND testcases_LIBS
+        refdata
+        )
 endif()
   
 file(GLOB_RECURSE testcases_HEADERS "*.h")
@@ -24,10 +30,7 @@ file(GLOB_RECURSE testcases_HEADERS "*.h")
 
 add_library(testcases SHARED ${testcases_SOURCES})
 add_PDL(testcases "${testcases_HEADERS}")
-set(testcases_LIBS
-  toolkit
-  refdata
-)
+
 target_link_libraries(testcases ${testcases_LIBS})
 target_include_directories(testcases
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 

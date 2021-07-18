@@ -5,14 +5,19 @@ project(testcases)
 #find_package(OpenCasCade REQUIRED)
 
 set(testcases_SOURCES 
-  flatplatebl.cpp 
-  decayingturbulence.cpp 
-  pipe.cpp 
-  channel.cpp 
-  ercoftac_squaresection180degreebend.cpp 
   airfoilsection.cpp
-  freeshearflow.cpp
   )
+
+if (INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
+    list(APPEND testcases_SOURCES
+        flatplatebl.cpp
+        decayingturbulence.cpp
+        pipe.cpp
+        channel.cpp
+        ercoftac_squaresection180degreebend.cpp
+        freeshearflow.cpp
+        )
+endif()
   
 file(GLOB_RECURSE testcases_HEADERS "*.h")
 

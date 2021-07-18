@@ -6,6 +6,7 @@ project(testcases)
 
 set(testcases_SOURCES 
   airfoilsection.cpp
+  flatplatebl.cpp
   )
 
 set(testcases_LIBS
@@ -13,7 +14,6 @@ set(testcases_LIBS
 )
 if (INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
     list(APPEND testcases_SOURCES
-        flatplatebl.cpp
         decayingturbulence.cpp
         pipe.cpp
         channel.cpp
@@ -23,6 +23,7 @@ if (INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
     list(APPEND testcases_LIBS
         refdata
         )
+    ADD_DEFINITIONS( -DHAS_REFDATA )
 endif()
   
 file(GLOB_RECURSE testcases_HEADERS "*.h")

@@ -272,11 +272,12 @@ void MainWindow::onSelectRemoteDir()
       ui->server->setText( QString::fromStdString(dlg.selectedServer()) );
       ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
 
-      insight::RemoteLocation::writeConfigFile(
-            insight::RemoteExecutionConfig::defaultConfigFile("."),
-            dlg.selectedServer(),
+      insight::RemoteLocation(
+            insight::remoteServers.findServer(
+              dlg.selectedServer() ),
             dlg.selectedRemoteDir()
-            );
+            ).writeConfigFile(
+            insight::RemoteExecutionConfig::defaultConfigFile("."));
 
       updateGUI();
   }

@@ -1,5 +1,6 @@
 #include "base/tools.h"
 #include "base/remoteexecution.h"
+#include "base/sshlinuxserver.h"
 
 #include "remoterun.h"
 #include "analysisform.h"
@@ -41,12 +42,18 @@ void ExecutionProgram::run()
         }
         catch (std::exception& re)
         {
-          insight::Warning(std::string("Exception occurred during rollback: ")+re.what());
+          insight::Warning(
+                boost::str(boost::format("during rollback in step %d:\n %s")
+                           % (backStep+1) % re.what())
+                );
         }
       }
 
       // rethrow
-      throw e;
+      throw insight::Exception(
+            boost::str(boost::format("in step %d:\n %s")
+                       % (step+1) % e.what()
+                       ));
     }
   }
 }
@@ -71,7 +78,7 @@ void RemoteRun::launchRemoteAnalysisServer()
 
 
 
-RemoteRun::RemoteRun(AnalysisForm *af, const insight::RemoteExecutionConfig& rec, bool resume)
+RemoteRun::RemoteRun(AnalysisForm *af, insight::RemoteExecutionConfig& rec, bool resume)
   : WorkbenchAction(af),
     resume_( resume ),
     remote_( rec )
@@ -110,13 +117,24 @@ void RemoteRun::launch()
       [&]()
       {
         insight::dbg()<<"initialize remote location"<<std::endl;
+
         remote_.initialize();
+
+        if (!remote_.isActive())
+          throw insight::Exception("Remote directory is invalid!");
       },
       [&]()
       {
         insight::dbg()<<"cleanup remote location"<<std::endl;
         // undo: if needed: remove remote work dir again, shutdown remote machine
-        remote_.cleanup();
+        try
+        {
+          remote_.cleanup();
+        }
+        catch (std::exception& e)
+        {
+          insight::Warning(std::string("Could not clean remote location! Reason: ")+e.what());
+        }
       }
     },
 
@@ -128,11 +146,11 @@ void RemoteRun::launch()
 
         auto rd = remote_.remoteDir();
 
-        boost::process::ipstream is;
         analyzeProcess_ = remote_.server()->launchBackgroundProcess(
               "analyze "
-              "--workdir=\""+rd.string()+"\" "
-              "--server"
+              " --workdir=\""+insight::toUnixPath(rd)+"\""
+              " --server"
+              " >\""+insight::toUnixPath(rd/"analyze.log")+"\" 2>&1 </dev/null"
             );
       },
       [&]() {} // nothing to undo
@@ -164,7 +182,7 @@ void RemoteRun::launch()
         insight::ParameterSet p = af_->parameters();
         p.packExternalFiles(); // pack
 
-        insight::dbg()<<"launch remote analysis"<<std::endl;
+        insight::dbg()<<"launch remote analysis"<<p<<std::endl;
 
         auto res = ac_->launchAnalysisSync(
             p, "/", af_->analysisName_ );
@@ -192,6 +210,8 @@ void RemoteRun::launch()
     // continue with monitoring
     for ( bool runMonitor=true; runMonitor; )
     {
+      boost::this_thread::interruption_point();
+
       if (!ac_->isBusy())
       {
         insight::dbg()<<"query status"<<std::endl;
@@ -220,7 +240,7 @@ void RemoteRun::launch()
   connectAnalysisThread(workerThread_.get());
 }
 
-std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, const insight::RemoteExecutionConfig& rec, bool resume)
+std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, insight::RemoteExecutionConfig& rec, bool resume)
 {
   std::unique_ptr<RemoteRun> a(new RemoteRun(af, rec, resume));
   a->launch();
@@ -230,8 +250,15 @@ std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, const insight::Re
 
 RemoteRun::~RemoteRun()
 {
+  if (cancelThread_.joinable())
+  {
+    cancelThread_.join();
+  }
+
+  workerThread_->interrupt();
   workerThread_->join();
-  if (cancelThread_.joinable()) cancelThread_.join();
+
+  af_->progressDisplayer_.reset();
 }
 
 
@@ -239,21 +266,23 @@ RemoteRun::~RemoteRun()
 
 void RemoteRun::onCancel()
 {
-  workerThread_->interrupt();
-
   cancelThread_ = boost::thread(
         [&]()
         {
+
+            workerThread_->interrupt();
+
             // wait for workerThread to end
-            while (!workerThread_->try_join_for(boost::chrono::milliseconds(1)))
+            if (!workerThread_->try_join_for(boost::chrono::seconds(60*5)))
             {
-              boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
+              insight::Warning("could not stop monitoring thread!");
             }
 
+            insight::dbg()<<"remote analysis killSync"<<std::endl;
             // stop and exit
             ac_->killSync();
 
-            Q_EMIT cancelled();
+//            Q_EMIT cancelled(); // already emitted through workerThread->interrupt
         }
   );
 

@@ -76,7 +76,8 @@ TaskSpoolerInterface::JobList TaskSpoolerInterface::jobs() const
 
     c = server_->launchCommand(
               cmd.str(),
-              boost::process::std_out > is
+              boost::process::std_out > is,
+              boost::process::std_in < boost::process::null
               );
 
 

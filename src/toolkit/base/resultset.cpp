@@ -225,21 +225,26 @@ void ResultSet::exportDataToFile ( const std::string& name, const boost::filesys
 
 void ResultSet::readFrom ( const boost::filesystem::path& file )
 {
-  std::ifstream is(file.c_str());
-  readFrom(is);
+  CurrentExceptionContext ex("reading results set from file "+file.string());
+  std::string contents;
+  readFileIntoString(file, contents);
+  readFrom(contents);
 }
 
 void ResultSet::readFrom ( std::istream& is )
 {
+  CurrentExceptionContext ex("reading result set from input stream");
+
   std::string contents;
   readStreamIntoString(is, contents);
-//  istreambuf_iterator<char> fbegin(is), fend;
-//  std::string contents(fbegin, fend);
   readFrom(contents);
 }
 
 void ResultSet::readFrom ( std::string& contents )
 {
+  CurrentExceptionContext ex("reading result set from content string");
+
+
   xml_document<> doc;
   doc.parse<0> ( &contents[0] );
 

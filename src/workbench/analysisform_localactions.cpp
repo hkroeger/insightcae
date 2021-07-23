@@ -35,12 +35,13 @@ void AnalysisForm::connectLocalActions()
           {
             QExecutionEnvironmentDialog dlg(
                   localCaseDirectory_.get(),
-                  remoteExecutionConfiguration_.get(),
+                  remoteExecutionConfiguration_,
                   this );
 
             if (dlg.exec() == QDialog::Accepted)
             {
-              remoteExecutionConfiguration_.reset();
+              if (remoteExecutionConfiguration_)
+                delete remoteExecutionConfiguration_;
               localCaseDirectory_.reset();
 
               auto lwd = dlg.localDirectory();
@@ -62,11 +63,14 @@ void AnalysisForm::connectLocalActions()
 
               if (localCaseDirectory_ && dlg.remoteLocation())
               {
-                remoteExecutionConfiguration_.reset(
+                if (remoteExecutionConfiguration_)
+                  delete remoteExecutionConfiguration_;
+
+                remoteExecutionConfiguration_ =
                       new QRemoteExecutionState(
                         this,
                         *localCaseDirectory_,
-                        *dlg.remoteLocation() ) );
+                        *dlg.remoteLocation() );
               }
             }
           }

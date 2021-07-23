@@ -241,7 +241,12 @@ void QResultSetModel::addResultElements(const ResultElementCollection &rec, QRes
             );
       }
       catch (const std::exception& e) {
-        curnode=new QStaticTextResultElement(parent, label, "(unknown)", QString::fromStdString(e.what()));
+        curnode=new QStaticTextResultElement(
+              parent, label,
+              "",
+              "(There is currently no viewer implemented for this result element.)"
+              //QString::fromStdString(e.what())
+              );
       }
 
       parent->children_.append(curnode);

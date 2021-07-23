@@ -115,8 +115,15 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
     std::cout<<"httpResponse err="<<err<<", crq="<<crq_
              <<", status="<<response.status()
              <<", success="<<success
-             <<", body="<<body.substr(0, std::min<size_t>(80,body.size()))
-             <<std::endl;
+             <<", body=";//<<body.substr(0, std::min<size_t>(80,body.size()))
+             //<<std::endl;
+    if (body.size()<1024)
+      std::cout<<body;
+    else
+    {
+      std::cout<<body.substr(0, 512)<<"\n...\n"<<body.substr(body.size()-512, body.size());
+    }
+    std::cout<<std::endl;
 
     switch (crq)
     {
@@ -143,7 +150,7 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
           if (  (*ct)=="application/json" )
           {
             Wt::Json::Object payload;
-            Wt::Json::parse(response.body(), payload);
+            Wt::Json::parse(body, payload);
 
             resultsAvailable = payload["resultsAvailable"].toBool();
 
@@ -227,8 +234,7 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
 
           if ( (*ct)=="application/xml")
           {
-            auto body = response.body();
-            r.reset(new ResultSet(analysisName_, body));
+            r.reset(new ResultSet(body, analysisName_));
           }
         }
 
@@ -252,7 +258,7 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
 
           if ( (*ct)=="text/plain" )
           {
-            exepath=response.body();
+            exepath=body;
           }
           else
           {
@@ -451,7 +457,7 @@ void AnalyzeClient::queryStatus(AnalyzeClient::QueryStatusCallback onStatusAvail
 
   crq_=QueryStatus;
   currentCallback_=onStatusAvailable;
-  if (!httpClient_.get(url_+"/latest"))
+  if (!httpClient_.get(url_+"/all"))
     throw insight::Exception("Could not query status of remote analysis!");
 }
 

@@ -35,6 +35,7 @@
 #include <QPushButton>
 #include <QPlainTextEdit>
 #include <QProgressBar>
+#include <QPointer>
 
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
 #include "workbench.h"
@@ -92,7 +93,8 @@ public:
 
 
 class QRemoteExecutionState
-: public insight::RemoteExecutionConfig
+: public QObject,
+  public insight::RemoteExecutionConfig
 {
   AnalysisForm *af_;
 
@@ -111,6 +113,8 @@ public:
                          const boost::filesystem::path& remotePath = "",
                          const boost::filesystem::path& localREConfigFile = "");
   ~QRemoteExecutionState();
+
+  void cleanup() override;
 };
 
 
@@ -196,7 +200,7 @@ protected:
   // ======== current action objects
   std::unique_ptr<QCaseDirectoryState> localCaseDirectory_;
   void resetLocalCaseDirectory(const boost::filesystem::path& lcd);
-  std::unique_ptr<QRemoteExecutionState> remoteExecutionConfiguration_;
+  QPointer<QRemoteExecutionState> remoteExecutionConfiguration_;
 
 
   std::unique_ptr<WorkbenchAction> currentWorkbenchAction_;

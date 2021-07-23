@@ -5,11 +5,18 @@ using namespace std;
 
 namespace insight {
 
+std::string toUnixPath(const boost::filesystem::path& wp)
+{
+  auto wpl = wp.relative_path().generic_path().string();
+  if (wp.is_absolute() || ( (wpl.size()>0) && (wp.string()[0]=='/' || wp.string()[0]=='\\')) )
+    wpl="/"+wpl;
+  return wpl;
+}
 
 bool LinuxRemoteServer::checkIfDirectoryExists(const boost::filesystem::path& dir)
 {
   int ret = executeCommand(
-        "cd \""+dir.string()+"\"", false );
+        "cd \""+toUnixPath(dir)+"\"", false );
 
   if (ret==0)
     return true;
@@ -17,13 +24,15 @@ bool LinuxRemoteServer::checkIfDirectoryExists(const boost::filesystem::path& di
     return false;
 }
 
-boost::filesystem::path LinuxRemoteServer::createTemporaryDirectory(const boost::filesystem::path& templatePath)
+boost::filesystem::path LinuxRemoteServer::getTemporaryDirectoryName(const boost::filesystem::path& templatePath)
 {
   boost::process::ipstream out;
 
   int ret = executeCommand(
-        "mktemp -d \""+templatePath.string()+"\"", false,
-        boost::process::std_out > out );
+        "mktemp -du \""+toUnixPath(templatePath)+"\"", false,
+        boost::process::std_out > out,
+        boost::process::std_in < boost::process::null
+        );
 
   if (ret==0)
   {
@@ -33,16 +42,18 @@ boost::filesystem::path LinuxRemoteServer::createTemporaryDirectory(const boost:
   }
   else
   {
-    throw insight::Exception("Could not auto-create remote directory!");
+    throw insight::Exception("Could not find temporary remote directory name!");
   }
+
+  return "";
 }
 
 void LinuxRemoteServer::createDirectory(const boost::filesystem::path& remoteDirectory)
 {
   int ret = executeCommand(
-        "mkdir -p \""+remoteDirectory.string()+"\"", false );
+        "mkdir -p \""+toUnixPath(remoteDirectory)+"\"", false );
 
-  if (ret==0)
+  if (ret!=0)
   {
     throw insight::Exception("Failed to create remote directory!");
   }
@@ -51,9 +62,9 @@ void LinuxRemoteServer::createDirectory(const boost::filesystem::path& remoteDir
 void LinuxRemoteServer::removeDirectory(const boost::filesystem::path& remoteDirectory)
 {
   int ret = executeCommand(
-        "rm -rf \""+remoteDirectory.string()+"\"", false );
+        "rm -rf \""+toUnixPath(remoteDirectory)+"\"", false );
 
-  if (ret==0)
+  if (ret!=0)
   {
     throw insight::Exception("Failed to remove remote directory!");
   }
@@ -65,7 +76,7 @@ std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteDirectory(cons
 
   boost::process::ipstream is, ise;
   auto childPtr = launchCommand(
-        "ls \""+remoteDirectory.string()+"\"",
+        "ls \""+toUnixPath(remoteDirectory)+"\"",
         boost::process::std_out > is, boost::process::std_err > ise );
   if (!childPtr->running())
     throw insight::Exception("RemoteExecutionConfig::remoteLS: Failed to launch directory listing subprocess!");
@@ -92,7 +103,7 @@ std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteSubdirectories
   boost::process::ipstream is;
 
   auto c = launchCommand(
-        "find", remoteDirectory.string()+"/" // add slash for symbolic links
+        "find", toUnixPath(remoteDirectory)+"/" // add slash for symbolic links
         " -maxdepth 1 -type d -printf \"%P\\\\n\"",
         boost::process::std_out > is );
 
@@ -114,7 +125,8 @@ std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteSubdirectories
 
 bool LinuxRemoteServer::hostIsAvailable()
 {
-  return (executeCommand("exit", false) == 0);
+  setRunning(executeCommand("exit", false) == 0);
+  return isRunning();
 }
 
 

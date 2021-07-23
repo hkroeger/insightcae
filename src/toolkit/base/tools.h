@@ -291,6 +291,12 @@ int findFreePort();
 int findRemoteFreePort(const std::string& SSHHostName);
 
 
+/**
+ * @brief readStreamIntoString
+ * stream needs to be opened in binary mode (std::ios::in | std::ios::binary)
+ * @param in
+ * @param fileContent
+ */
 void readStreamIntoString
 (
     std::istream& in,

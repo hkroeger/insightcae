@@ -5,13 +5,15 @@
 
 namespace insight {
 
+std::string toUnixPath(const boost::filesystem::path& wp);
+
 class LinuxRemoteServer
     : public RemoteServer
 {
 public:
 
   bool checkIfDirectoryExists(const boost::filesystem::path& dir) override;
-  boost::filesystem::path createTemporaryDirectory(const boost::filesystem::path& templatePath) override;
+  boost::filesystem::path getTemporaryDirectoryName(const boost::filesystem::path& templatePath) override;
   void createDirectory(const boost::filesystem::path& remoteDirectory) override;
   void removeDirectory(const boost::filesystem::path& remoteDirectory) override;
   std::vector<boost::filesystem::path> listRemoteDirectory(const boost::filesystem::path& remoteDirectory) override;

@@ -77,7 +77,8 @@ WSLLinuxServer::Config *WSLLinuxServer::serverConfig() const
 
 
 
-std::pair<boost::filesystem::path,std::vector<std::string> > WSLLinuxServer::commandAndArgs(const std::string& command)
+std::pair<boost::filesystem::path,std::vector<std::string> >
+WSLLinuxServer::commandAndArgs(const std::string& command)
 {
   return { serverConfig()->WSLExecutable_,
     { "run", "bash", "-lc", "'"+command+"'" } };
@@ -138,7 +139,8 @@ void WSLLinuxServer::runRsync
   boost::process::child c
   (
    ca.first, boost::process::args(ca.second),
-   boost::process::std_out > rpa
+   boost::process::std_out > rpa,
+   boost::process::std_in < boost::process::null
   );
   rpa.runAndParse(c, pf);
 }

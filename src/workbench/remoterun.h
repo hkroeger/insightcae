@@ -38,7 +38,7 @@ class RemoteRun
 
   bool resume_;
   insight::RemoteServer::PortMappingPtr portMappings_;
-  insight::RemoteExecutionConfig remote_;
+  insight::RemoteExecutionConfig& remote_;
   boost::thread cancelThread_;
   std::unique_ptr<insight::AnalyzeClient> ac_;
   insight::RemoteServer::BackgroundJobPtr analyzeProcess_;
@@ -49,12 +49,12 @@ class RemoteRun
 
 
 protected:
-  RemoteRun(AnalysisForm* af, const insight::RemoteExecutionConfig& rec, bool resume=false);
+  RemoteRun(AnalysisForm* af, insight::RemoteExecutionConfig& rec, bool resume=false);
 
   void launch();
 
 public:
-  static std::unique_ptr<RemoteRun> create(AnalysisForm* af, const insight::RemoteExecutionConfig& rec, bool resume=false);
+  static std::unique_ptr<RemoteRun> create(AnalysisForm* af, insight::RemoteExecutionConfig& rec, bool resume=false);
 
   ~RemoteRun();
 

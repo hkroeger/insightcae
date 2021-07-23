@@ -50,8 +50,31 @@ void AnalysisForm::connectRemoteActions()
           this, &AnalysisForm::download );
 
   connect(ui->btnRemoveRemote, &QPushButton::clicked,
-          []()
+          [&]()
           {
+            if (!isRunningRemotely())
+            {
+               if (remoteExecutionConfiguration_)
+               {
+                 auto answer = QMessageBox::question(
+                       this, "Decision required",
+                       QString("The directory %1 on server %2 and its contents will be deleted!\nContinue?")
+                        .arg(QString::fromStdString(remoteExecutionConfiguration_->remoteDir().string()))
+                        .arg(QString::fromStdString( *(remoteExecutionConfiguration_->serverConfig()) ))
+                       );
+                 if (answer==QMessageBox::Yes)
+                 {
+                   remoteExecutionConfiguration_->cleanup();
+                   delete remoteExecutionConfiguration_;
+                 }
+              }
+            }
+            else
+            {
+              QMessageBox::critical(
+                    this, "Not possible",
+                    "There is currently a remote analysis running. Please terminate that first!");
+            }
           }
   );
 
@@ -61,7 +84,7 @@ void AnalysisForm::connectRemoteActions()
 insight::RemoteExecutionConfig* AnalysisForm::remoteExecutionConfiguration() const
 {
   insight::assertion( bool(remoteExecutionConfiguration_), "internal error: remote execution configuration is unset!");
-  return remoteExecutionConfiguration_.get();
+  return remoteExecutionConfiguration_;
 }
 
 
@@ -105,8 +128,6 @@ void AnalysisForm::upload()
 void AnalysisForm::startRemoteRun()
 {
 #ifdef HAVE_WT
-//  Q_EMIT apply(); // apply all changes into parameter set
-//  currentWorkbenchAction_.reset(new RemoteRun(this, *remoteExecutionConfiguration(), false));
   currentWorkbenchAction_ = RemoteRun::create(this, *remoteExecutionConfiguration(), false);
 #endif
 }
@@ -119,7 +140,6 @@ void AnalysisForm::resumeRemoteRun()
   if (currentWorkbenchAction_)
     throw insight::Exception("Internal error: there is an action running currently!");
 
-//  currentWorkbenchAction_.reset(new RemoteRun(this, *remoteExecutionConfiguration(), true));
   currentWorkbenchAction_ = RemoteRun::create(this, *remoteExecutionConfiguration(), true);
 #endif
 }

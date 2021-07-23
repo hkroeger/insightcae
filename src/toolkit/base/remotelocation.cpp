@@ -40,17 +40,18 @@ RemoteLocation::RemoteLocation(const RemoteLocation& orec)
   : serverConfig_(orec.serverConfig_),
     serverInstance_(orec.serverInstance_),
     remoteDir_(orec.remoteDir_),
-    emptyRemotePathSupplied_(orec.emptyRemotePathSupplied_),
     autoCreateRemoteDir_(orec.autoCreateRemoteDir_),
-    isActive_(orec.isActive_)
+    isTemporaryStorage_(orec.isTemporaryStorage_),
+    isValidated_(orec.isValidated_)
 {}
 
 
 
 
 RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
-  : emptyRemotePathSupplied_(false),
-    autoCreateRemoteDir_(false)
+  : autoCreateRemoteDir_(false),
+    isTemporaryStorage_(false),
+    isValidated_(false)
 {
   CurrentExceptionContext ce("reading configuration for remote execution in  directory "+mf.parent_path().string()+" from file "+mf.string());
 
@@ -80,6 +81,24 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
     else
       throw insight::Exception("no server name was configured for remote location");
 
+    if (auto s = rootnode->first_attribute("temporary"))
+    {
+      std::string v(s->value());
+      boost::to_lower(v);
+      isTemporaryStorage_ = (v=="1")||(v=="yes")||(v=="on");
+    }
+    else
+      insight::Warning("no temporary storage information configured for remote location. Assuming non-temporary storage.");
+
+    if (auto s = rootnode->first_attribute("autocreate"))
+    {
+      std::string v(s->value());
+      boost::to_lower(v);
+      autoCreateRemoteDir_ = (v=="1")||(v=="yes")||(v=="on");
+    }
+    else
+      insight::Warning("no auto-create storage flag configured for remote location. Assuming no auto creation.");
+
     if (auto rd = rootnode->first_attribute("directory"))
       remoteDir_ = rd->value();
 
@@ -87,7 +106,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
 
     validate();
 
-    if (!isActive_)
+    if (!isValidated_)
     {
       throw insight::Exception("Remote execution configuration is invalid!");
     }
@@ -97,94 +116,35 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
 
 
 
-RemoteLocation::RemoteLocation(RemoteServer::ConfigPtr rsc, const boost::filesystem::path& remotePath, bool autoCreateRemoteDir)
+RemoteLocation::RemoteLocation(
+    RemoteServer::ConfigPtr rsc,
+    const boost::filesystem::path& remotePath,
+    bool autoCreateRemoteDir,
+    bool isTemporaryStorage
+    )
   : serverConfig_( rsc ),
-    emptyRemotePathSupplied_(remotePath.empty()),
-    autoCreateRemoteDir_( /*remotePath.empty()*/autoCreateRemoteDir )
+    remoteDir_( remotePath ),
+    autoCreateRemoteDir_( autoCreateRemoteDir ),
+    isTemporaryStorage_( isTemporaryStorage )
 {
-  serverInstance_ = serverConfig_->getInstanceIfRunning();
-
-  if (!remotePath.empty())
+  if (remoteDir_.empty())
   {
-    remoteDir_ = remotePath;
+    autoCreateRemoteDir_=true;
+    isTemporaryStorage_=true;
+
+    serverInstance_ = serverConfig_->getInstanceIfRunning();
+
+    if (serverInstance_)
+    {
+      remoteDir_ = serverInstance_->getTemporaryDirectoryName(
+            serverConfig()->defaultDirectory_/"irXXXXXX" );
+    }
+    else
+    {
+      throw insight::Exception("remote instance is not running: cannot determine suitable temporary storage");
+    }
   }
-  else
-  {
-    remoteDir_ = rsc->defaultDirectory_;
-  }
-
-  initialize();
 }
-
-
-
-
-RemoteLocation::~RemoteLocation()
-{
-//  stopTunnels();
-}
-
-
-
-
-//void RemoteLocation::createTunnels(
-//    std::vector<boost::tuple<int, string, int> > remoteListenPorts,
-//    std::vector<boost::tuple<int, string, int> > localListenPorts
-//    )
-//{
-//  std::vector<std::string> args = { "-N" };
-
-//  for (const auto& rlp: remoteListenPorts)
-//  {
-//    args.insert(
-//          std::end(args),
-//          {"-R", str(format("%d:%s:%d") % get<0>(rlp) % get<1>(rlp) % get<2>(rlp)) }
-//    );
-//  }
-
-//  for (const auto& llp: localListenPorts)
-//  {
-//    args.insert(
-//          std::end(args),
-//          {"-L", str(format("%d:%s:%d") % get<0>(llp) % get<1>(llp) % get<2>(llp)) }
-//    );
-//  }
-
-////  args.push_back( server() );
-
-//  SSHCommand sc(server(), args);
-//  tunnelProcesses_.push_back(
-//      bp::child
-//      (
-//       sc.command(), bp::args( sc.arguments() )
-//      )
-//   );
-//}
-
-
-
-
-//void RemoteLocation::stopTunnels()
-//{
-//  size_t i=0;
-//  for (auto& t: tunnelProcesses_)
-//  {
-//    i++;
-//    cout << "Stopping tunnel instance "<<i<<"/"<<tunnelProcesses_.size()<<"..." << endl;
-//    //try graceful exit
-//#ifndef WIN32
-//    kill(t.id(), SIGTERM);
-//#else
-//#warning implement WIN32 kill!
-//#endif
-//    if (!t.wait_for( std::chrono::seconds(10) ))
-//    {
-//      t.terminate();
-//    }
-
-//  }
-//  tunnelProcesses_.clear();
-//}
 
 
 
@@ -193,6 +153,9 @@ RemoteServerPtr RemoteLocation::server() const
 {
   return serverInstance_;
 }
+
+
+
 
 RemoteServer::ConfigPtr RemoteLocation::serverConfig() const
 {
@@ -213,12 +176,12 @@ const boost::filesystem::path& RemoteLocation::remoteDir() const
 void RemoteLocation::cleanup()
 {
   CurrentExceptionContext ex("clean remote server");
-  assertActive();
+  assertValid();
 
   execRemoteCmd("tsp -K");
 
-  removeRemoteDir();
-//  disposeHost();
+  if (isTemporaryStorage())
+    removeRemoteDir();
 }
 
 
@@ -261,20 +224,24 @@ void RemoteLocation::cleanup()
 
 void RemoteLocation::initialize()
 {
-  if (!serverInstance_)
-    serverInstance_ = serverConfig_->instance();
-
-  if (autoCreateRemoteDir_)
+  if (!isValidated_)
   {
-    if (emptyRemotePathSupplied_)
+    CurrentExceptionContext ex("initializing remote location");
+
+    if (!serverInstance_)
+      serverInstance_ = serverConfig_->instance();
+
+    if (autoCreateRemoteDir_)
     {
-      remoteDir_ = serverInstance_->createTemporaryDirectory(remoteDir_/"irXXXXXX");
-    }
-    else if (!remoteDirExists())
-    {
-      serverInstance_->createDirectory(remoteDir_);
+
+      if (!remoteDirExists())
+      {
+        serverInstance_->createDirectory(remoteDir_);
+      }
+
     }
   }
+
   validate();
 }
 
@@ -283,13 +250,13 @@ void RemoteLocation::initialize()
 
 void RemoteLocation::validate()
 {
-  isActive_=false;
+  isValidated_=false;
   if (serverInstance_ && !remoteDir_.empty())
   {
     if (server()->hostIsAvailable())
     {
       if (remoteDirExists())
-        isActive_=true;
+        isValidated_=true;
     }
   }
 }
@@ -302,7 +269,7 @@ void RemoteLocation::removeRemoteDir()
   if (remoteDirExists())
   {
     serverInstance_->removeDirectory( remoteDir_ );
-    isActive_=false;
+    isValidated_=false;
   }
 }
 
@@ -336,9 +303,9 @@ void RemoteLocation::removeRemoteDir()
 
 
 
-void RemoteLocation::assertActive() const
+void RemoteLocation::assertValid() const
 {
-  if (!isActive_)
+  if (!isValidated_)
     throw insight::Exception("Error: attempted communication with invalid remote location!");
 }
 
@@ -349,7 +316,7 @@ void RemoteLocation::assertActive() const
 std::vector<bfs_path> RemoteLocation::remoteLS() const
 {
   CurrentExceptionContext ex("list remote directory contents");
-  assertActive();
+  assertValid();
 
   return serverInstance_->listRemoteDirectory(remoteDir_);
 }
@@ -360,7 +327,7 @@ std::vector<bfs_path> RemoteLocation::remoteLS() const
 std::vector<bfs_path> RemoteLocation::remoteSubdirs() const
 {
   CurrentExceptionContext ex("list remote subdirectories");
-  assertActive();
+  assertValid();
 
   return serverInstance_->listRemoteSubdirectories(remoteDir_);
 }
@@ -409,17 +376,11 @@ void RemoteLocation::putFile
     )
 {
   CurrentExceptionContext ex("put file "+localFile.string()+" to remote location");
-  assertActive();
+  assertValid();
 
   boost::filesystem::path rf=remoteFileName;
   if (rf.is_relative()) rf=remoteDir_/rf;
-//  std::vector<std::string> args=
-//      {
-//       lf.string(),
-//       server_+":"+rf.string()
-//      };
 
-//  runRsync(args, pf);
   server()->putFile(localFile, rf, pf);
 }
 
@@ -434,35 +395,9 @@ void RemoteLocation::syncToRemote
 )
 {
   CurrentExceptionContext ex("upload local directory "+localDir.string()+" to remote location");
-  assertActive();
+  assertValid();
 
-//    std::vector<std::string> args=
-//        {
-//         "-az",
-//         "--delete",
-//         "--info=progress",
-
-//         "--exclude", "processor*",
-//         "--exclude", "*.foam",
-//         "--exclude", "postProcessing",
-//         "--exclude", "*.socket",
-//         "--exclude", "backup",
-//         "--exclude", "archive",
-//         "--exclude", "mnt_remote"
-//        };
-
-//    for (const auto& ex: exclude_pattern)
-//    {
-//      args.push_back("--exclude");
-//      args.push_back(ex);
-//    }
-
-//    args.push_back(localDir.string()+"/");
-//    args.push_back(server_+":"+remoteDir_.string());
-
-//    runRsync(args, pf);
-
-    server()->syncToRemote(localDir, remoteDir_, exclude_pattern, pf);
+  server()->syncToRemote(localDir, remoteDir_, exclude_pattern, pf);
 }
 
 
@@ -477,63 +412,36 @@ void RemoteLocation::syncToLocal
 )
 {
   CurrentExceptionContext ex("download remote files to local directory");
-  assertActive();
+  assertValid();
 
-//  std::vector<std::string> args;
+  std::vector<std::string> excl = exclude_pattern;
+  if (skipTimeSteps)
+  {
+    auto files = remoteLS();
 
-//    args =
-//    {
-//      "-az",
-//      "--info=progress",
-//      "--exclude", "processor*",
-//      "--exclude", "*.foam",
-//      "--exclude", "*.socket",
-//      "--exclude", "backup",
-//      "--exclude", "archive",
-//      "--exclude", "mnt_remote"
-//    };
+    // remove non-numbers
+    files.erase(remove_if(files.begin(), files.end(),
+                          [&](const bfs_path& f)
+    {
+      try { to_number<double>(f.string()); return false; }
+      catch (...) { return true; }
+    }), files.end());
 
-    std::vector<std::string> excl = exclude_pattern;
-    if (skipTimeSteps)
-      {
-        auto files = remoteLS();
+    for (const auto& f: files)
+    {
+      excl.push_back(f.string());
+    }
+  }
 
-        // remove non-numbers
-        files.erase(remove_if(files.begin(), files.end(),
-                [&](const bfs_path& f)
-                {
-                  try { to_number<double>(f.string()); return false; }
-                  catch (...) { return true; }
-                }), files.end());
-
-        for (const auto& f: files)
-          {
-            excl.push_back(f.string());
-          }
-      }
-
-//    for (const auto& ex: exclude_pattern)
-//    {
-//      args.push_back("--exclude");
-//      args.push_back(ex);
-//    }
-
-//    args.push_back(server_+":"+remoteDir_.string()+"/");
-//    args.push_back(localDir.string());
-
-//    runRsync(args, pf);
-
-    server()->syncToLocal(localDir, remoteDir_, excl, pf);
+  server()->syncToLocal(localDir, remoteDir_, excl, pf);
 }
 
 
 
 
 void RemoteLocation::writeConfigFile(
-    const filesystem::path &cfgf,
-    const string &server,
-    const filesystem::path &remoteDir
-    )
+    const filesystem::path &cfgf
+    ) const
 {
   using namespace rapidxml;
 
@@ -547,18 +455,34 @@ void RemoteLocation::writeConfigFile(
 
   rootnode->append_attribute(doc.allocate_attribute
                                ("server",
-                                 doc.allocate_string(server.c_str())
+                                 doc.allocate_string(serverConfig()->c_str())
+                                 )
+                               );
+  rootnode->append_attribute(doc.allocate_attribute
+                               ("temporary",
+                                 doc.allocate_string(
+                                   isTemporaryStorage() ?
+                                    "yes" : "no"
+                                  )
+                                 )
+                               );
+  rootnode->append_attribute(doc.allocate_attribute
+                               ("autocreate",
+                                 doc.allocate_string(
+                                   autoCreateRemoteDir_ ?
+                                    "yes" : "no"
+                                  )
                                  )
                                );
   rootnode->append_attribute(doc.allocate_attribute
                                ("directory",
-                                 doc.allocate_string(remoteDir.string().c_str())
+                                 doc.allocate_string(remoteDir().string().c_str())
                                  )
                                );
 
   doc.append_node(rootnode);
 
-  ofstream f(cfgf.c_str());
+  ofstream f(cfgf.string());
   f << doc;
 }
 
@@ -567,7 +491,12 @@ void RemoteLocation::writeConfigFile(
 
 bool RemoteLocation::isActive() const
 {
-  return isActive_;
+  return isValidated_;
+}
+
+bool RemoteLocation::isTemporaryStorage() const
+{
+  return isTemporaryStorage_;
 }
 
 

@@ -12,6 +12,8 @@ add_toolkit_test(test_execution)
 add_toolkit_test(test_chartrenderer)
 add_toolkit_test(test_multiregion)
 add_toolkit_test(test_filecontainer)
+add_toolkit_test(test_toUnixPath)
+add_toolkit_test(test_remoteExecutionConfig)
 
 
 add_subdirectory(analysis_parameterstudy)

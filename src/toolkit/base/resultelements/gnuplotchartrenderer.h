@@ -59,12 +59,10 @@ public:
 
       gnuplotio::Gnuplot gp;
 
-      std::string gpfname = (tmp/(bn+".tex")).string();
-#ifdef WIN32
-      replace_all(gpfname, "\\", "/");
-#endif
+      std::string gpfname = (tmp/(bn+".tex")).generic_path().string();
       gp<<"set terminal cairolatex pdf standalone color dash linewidth 3;";
       gp<<"set output '" << gpfname << "';";
+      insight::dbg()<<gpfname<<std::endl;
 
       gnuplotCommand(gp);
     }

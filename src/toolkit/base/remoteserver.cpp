@@ -46,10 +46,24 @@ std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml
 }
 
 
+bool RemoteServer::isRunning() const
+{
+  return isRunning_;
+}
+
+void RemoteServer::setRunning(bool isRunning)
+{
+  isRunning_=isRunning;
+}
+
 void RemoteServer::assertRunning()
 {
   insight::assertion(isRunning_, "the remote machine is not yet started!");
 }
+
+RemoteServer::RemoteServer()
+  : isRunning_(false)
+{}
 
 std::string RemoteServer::serverLabel() const
 {

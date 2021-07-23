@@ -59,7 +59,15 @@ public:
     declareType ( "ResultSet" );
 
     ResultSet( const boost::filesystem::path& fileName, const std::string& analysisName = "" );
+
+    /**
+     * @brief ResultSet
+     * stream needs to opened in binary!! (mode std::ios::in | std::ios::binary)
+     * @param is
+     * @param analysisName
+     */
     ResultSet( std::istream& is, const std::string& analysisName = "" );
+
     ResultSet( std::string& cont, const std::string& analysisName = "" );
 
     ResultSet

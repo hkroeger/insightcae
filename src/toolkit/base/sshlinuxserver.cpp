@@ -54,7 +54,9 @@ std::shared_ptr<RemoteServer> SSHLinuxServer::Config::getInstanceIfRunning()
 {
   auto srv = std::make_shared<SSHLinuxServer>( std::make_shared<Config>(*this) );
   if (srv->hostIsAvailable())
+  {
     return srv;
+  }
   else
     return nullptr;
 }
@@ -136,11 +138,14 @@ string SSHLinuxServer::hostName() const
 
 
 
-std::pair<boost::filesystem::path,std::vector<std::string> > SSHLinuxServer::commandAndArgs(const std::string& command)
+std::pair<boost::filesystem::path,std::vector<std::string> >
+SSHLinuxServer::commandAndArgs(const std::string& command)
 {
-  std::string expr = "bash -lc \""+escapeShellSymbols(command)+"\"";
+  std::string expr = "bash -lc '"+command+"'";
 
   SSHCommand sc(hostName(), { expr });
+
+  insight::dbg() << sc.command() << " " << boost::join(sc.arguments(), " ") << std::endl;
 
   return { sc.command(),
         sc.arguments() };
@@ -175,6 +180,7 @@ RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(const std
 #else
         boost::process::std_err > is
 #endif
+        , boost::process::std_in < boost::process::null
         );
 
   if (!process->running())
@@ -182,10 +188,10 @@ RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(const std
    throw insight::Exception("could not start background process");
   }
 
-  boost::regex re("PID===([0-9+)===PID");
+  boost::regex re("PID===([0-9]+)===PID");
   int remotePid = -1;
   int linesRead = 0;
-  while (remotePid<0 && linesRead<100)
+  while (remotePid<0 && linesRead<100 && process->running())
   {
     std::string line;
     if (getline(is, line))
@@ -221,7 +227,7 @@ void SSHLinuxServer::putFile
   std::vector<std::string> args=
       {
        localFilePath.string(),
-       hostName()+":"+remoteFilePath.string()
+       hostName()+":"+toUnixPath(remoteFilePath)
       };
 
   runRsync(args, pf);
@@ -263,7 +269,7 @@ void SSHLinuxServer::syncToRemote
     }
 
     args.push_back(localDir.string()+"/");
-    args.push_back(hostName()+":"+remoteDir.string());
+    args.push_back(hostName()+":"+toUnixPath(remoteDir));
 
     runRsync(args, pf);
 }
@@ -296,57 +302,13 @@ void SSHLinuxServer::syncToLocal
       "--exclude", "mnt_remote"
     };
 
-
-//    if (skipTimeSteps)
-//      {
-//        auto files = remoteLS();
-    //                RemoteServerInfo s;
-
-    //                string label(e->first_attribute("label")->value());
-    //                s.defaultDir_ = boostH:\Projekte\build-insight-windows-MXE_32_shared-Release\share\insight\remoteservers.list::filesystem::path(e->first_attribute("baseDirectory")->value());
-
-    //                auto* ha = e->first_attribute("host");
-    //                auto* lsaa = e->first_attribute("launchScript");
-    //                if (ha && lsaa)
-    //                {
-    //                  throw insight::Exception("Invalid configuration of remote server "+label+": either host name or launch script must be specified!");
-    //                }
-    //                else if (ha)
-    //                {
-    //                  s.server_=ha->value();
-    //                  s.hasLaunchScript_=false;
-    //                  (*this)[label]=s;
-    //                  anything_read=true;
-    //                }
-    //                else if (lsaa)
-    //                {
-    //                  s.server_=lsaa->value();
-    //                  s.hasLaunchScript_=true;
-    //                  (*this)[label]=s;
-    //                  anything_read=true;
-    //                }
-//        // remove non-numbers
-//        files.erase(remove_if(files.begin(), files.end(),
-//                [&](const bfs_path& f)
-//                {
-//                  try { to_number<double>(f.string()); return false; }
-//                  catch (...) { return true; }
-//                }), files.end());
-
-//        for (const auto& f: files)
-//          {
-//            args.push_back("--exclude");
-//            args.push_back(f.string());
-//          }
-//      }
-
     for (const auto& ex: exclude_pattern)
     {
       args.push_back("--exclude");
       args.push_back(ex);
     }
 
-    args.push_back(hostName()+":"+remoteDir.string()+"/");
+    args.push_back(hostName()+":"+toUnixPath(remoteDir)+"/");
     args.push_back(localDir.string());
 
     runRsync(args, pf);
@@ -383,20 +345,22 @@ SSHLinuxServer::SSHTunnelPortMapping::SSHTunnelPortMapping(
   for (const auto& rlp: remoteListenerPorts)
   {
     int localPort = findFreePort();
+    insight::dbg()<<"remoteListenerPort: "<<rlp<<" / "<<localPort<<std::endl;
     remoteToLocal_.insert( std::pair<int,int>(rlp, localPort) );
     args.insert(
           std::end(args),
-          {"-R", str(format("%d:%s:%d") % localPort % "127.0.0.1" % rlp) }
+          {"-L", str(format("%d:%s:%d") % localPort % "127.0.0.1" % rlp) }
     );
   }
 
   for (const auto& llp: localListenerPorts)
   {
     int remotePort = findRemoteFreePort(cfg.hostName_);
+    insight::dbg()<<"localListenerPorts: "<<llp<<" / "<<remotePort<<std::endl;
     localToRemote_.insert( std::pair<int,int>(llp, remotePort) );
     args.insert(
           std::end(args),
-          {"-L", str(format("%d:%s:%d") % llp % "127.0.0.1" % remotePort) }
+          {"-R", str(format("%d:%s:%d") % remotePort % "127.0.0.1" % llp ) }
     );
   }
 
@@ -424,7 +388,7 @@ int SSHLinuxServer::SSHTunnelPortMapping::localListenerPort(int remoteListenerPo
 {
   insight::CurrentExceptionContext ex(
         boost::str(boost::format("returning local port to remote listener port %d")%remoteListenerPort));
-  return localToRemote_.at(remoteListenerPort);
+  return remoteToLocal_.at(remoteListenerPort);
 }
 
 
@@ -434,7 +398,7 @@ int SSHLinuxServer::SSHTunnelPortMapping::remoteListenerPort(int localListenerPo
 {
   insight::CurrentExceptionContext ex(
         boost::str(boost::format("returning remote port to local listener port %d")%localListenerPort));
-  return remoteToLocal_.at(localListenerPort);
+  return localToRemote_.at(localListenerPort);
 }
 
 

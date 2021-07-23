@@ -196,9 +196,12 @@ QExecutionEnvironmentDialog::QExecutionEnvironmentDialog(
   connect(this, &QDialog::accepted, this,
           [&]()
           {
-            checkAndUpdateRemoteConfig(
-                  ui->cbHost->currentText(),
-                  ui->leRemoteDirectory->text()
+            remoteLocation_.reset(
+                  new insight::RemoteLocation(
+                    insight::remoteServers.findServer(
+                      ui->cbHost->currentText().toStdString() ),
+                    ui->leRemoteDirectory->text().toStdString()
+                    )
                   );
           }
   );

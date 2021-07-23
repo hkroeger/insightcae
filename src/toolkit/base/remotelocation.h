@@ -19,7 +19,7 @@ namespace insight
 /**
  * @brief The RemoteLocation class
  * points to a directory on a remote host
- * can be inactive (i.e. remote directory does not yet exist; remote host is not running)
+ * can be validated (i.e. remote directory does not yet exist; remote host is not running)
  * or active (directory exists, remote host is up)
  */
 class RemoteLocation
@@ -33,25 +33,14 @@ protected:
    * basolute path on remote host
    */
   boost::filesystem::path remoteDir_;
-  bool emptyRemotePathSupplied_, autoCreateRemoteDir_;
+  bool autoCreateRemoteDir_, isTemporaryStorage_;
 
+  virtual void removeRemoteDir();
 
-//    std::vector<boost::process::child> tunnelProcesses_;
+  bool isValidated_;
 
-//    void runRsync
-//    (
-//        const std::vector<std::string>& args,
-//        std::function<void(int progress,const std::string& status_text)> progress_callback =
-//            std::function<void(int,const std::string&)>()
-//    );
-
-//    virtual void launchHost();
-    virtual void removeRemoteDir();
-//    virtual void disposeHost();
-
-    bool isActive_;
-    void validate();
-    void assertActive() const;
+  void validate(); // should not throw
+  void assertValid() const;
 
 public:
     /**
@@ -74,11 +63,15 @@ public:
      * @param rsc
      * remote server configuration
      * @param remotePath
-     * directory (absolute on remote machine). If empty, it will be auto-created and its name can be queried using remoteDir().
+     * directory (absolute on remote machine).
+     * If empty, it will be auto-created and its name can be queried using remoteDir().
      */
-    RemoteLocation(RemoteServer::ConfigPtr rsc, const boost::filesystem::path& remotePath = "", bool autoCreateRemoteDir = true);
+    RemoteLocation(RemoteServer::ConfigPtr rsc,
+                   const boost::filesystem::path& remotePath = "",
+                   bool autoCreateRemoteDir = false,
+                   bool isTemporaryStorage = false );
 
-    virtual ~RemoteLocation();
+
 
     // ====================================================================================
     // ======== query functions
@@ -119,7 +112,7 @@ public:
     int execRemoteCmd(const std::string& command, bool throwOnFail = true, Args&&... addArgs)
     {
       insight::CurrentExceptionContext ex("executing command in remote location");
-      assertActive();
+      assertValid();
 
       std::ostringstream cmd;
       cmd
@@ -178,13 +171,12 @@ public:
     void cancelRemoteCommands();
 
 
-    static void writeConfigFile(
-        const boost::filesystem::path& cfgf,
-        const std::string& server,
-        const boost::filesystem::path& remoteDir
-        );
+    void writeConfigFile(
+        const boost::filesystem::path& cfgf
+        ) const;
 
     bool isActive() const;
+    bool isTemporaryStorage() const;
 };
 
 

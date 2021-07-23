@@ -54,6 +54,12 @@ void ProgressDisplayer::stepTo(double i)
   setActionProgressValue(actionPath(), ci_/(maxi_+1));
 }
 
+void ProgressDisplayer::completed()
+{
+  stepTo(maxi_);
+  finishActionProgress(actionPath());
+}
+
 void ProgressDisplayer::operator++()
 {
   stepUp();

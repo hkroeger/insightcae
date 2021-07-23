@@ -352,20 +352,27 @@ struct HTMLReplacements
   virtual void appendImage(double width, const std::string& imagename)
   {
     boost::filesystem::path fname = findSharedImageFile(imagename);
-    
-    reformatted_ += str(format("<img width=\"%d\" src=\"file://%s\">") % int( double(imageWidth_)*width ) % fname.string() );
+    std::string code =
+        str(format("<img width=\"%d\" src=\"file:///%s\">")
+            % int( double(imageWidth_)*width ) % fname.generic_path().string() );
+    insight::dbg()<<code<<std::endl;
+    reformatted_ += code;
   }
   
   virtual void appendInlineFormula(const std::string& latex_formula)
   {
     auto rff = formulaCache.renderLatexFormula(latex_formula);
-    reformatted_ += "<img src=\"file://"+rff.string()+"\">";
+    std::string code = "<img src=\"file:///"+rff.generic_path().string()+"\">";
+    insight::dbg()<<code<<std::endl;
+    reformatted_ += code;
   }
 
   virtual void appendDisplayFormula(const std::string& latex_formula)
   {
     auto rff = formulaCache.renderLatexFormula(latex_formula);
-    reformatted_ += "<br>\n  <img src=\"file://"+rff.string()+"\"><br>\n";
+    std::string code = "<br>\n  <img src=\"file:///"+rff.generic_path().string()+"\"><br>\n";
+    insight::dbg()<<code<<std::endl;
+    reformatted_ += code;
   }
 
   virtual void appendFormattedText(const std::string& text, Format)

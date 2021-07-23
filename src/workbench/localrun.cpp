@@ -28,7 +28,10 @@ LocalRun::LocalRun(AnalysisForm *af)
 
 LocalRun::~LocalRun()
 {
+  workerThread_.interrupt();
   workerThread_.join();
+
+  af_->progressDisplayer_.reset();
 }
 
 

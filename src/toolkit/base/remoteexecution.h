@@ -28,21 +28,48 @@ protected:
 
 
 public:
+
+    /**
+     * @brief RemoteExecutionConfig
+     * create a copy
+     * @param orec
+     */
     RemoteExecutionConfig(const RemoteExecutionConfig& orec);
 
+    /**
+     * @brief RemoteExecutionConfig
+     * read properties from config file
+     * @param location
+     * @param localREConfigFile
+     */
+    RemoteExecutionConfig(const boost::filesystem::path& location,
+                          const boost::filesystem::path& localREConfigFile = "");
+
+    /**
+     * @brief RemoteExecutionConfig
+     * Attach remote location to local work dir. Save remote location to file in local dir.
+     * @param location
+     * @param rloc
+     * @param localREConfigFile
+     */
     RemoteExecutionConfig(const boost::filesystem::path& location,
                           const RemoteLocation& rloc,
                           const boost::filesystem::path& localREConfigFile = "");
 
-    RemoteExecutionConfig(const boost::filesystem::path& location,
-                          const boost::filesystem::path& localREConfigFile = "");
-
+    /**
+     * @brief RemoteExecutionConfig
+     * Attach remote location (server / directory) to local work dir.
+     * Save remote location to file in local dir.
+     * @param rsc
+     * @param location
+     * @param remotePath
+     * @param localREConfigFile
+     */
     RemoteExecutionConfig(RemoteServer::ConfigPtr rsc,
                           const boost::filesystem::path& location,
                           const boost::filesystem::path& remotePath = "",
                           const boost::filesystem::path& localREConfigFile = "");
 
-    ~RemoteExecutionConfig();
 
     const boost::filesystem::path& localDir() const;
     const boost::filesystem::path& metaFile() const;
@@ -82,6 +109,7 @@ public:
 
 
     static boost::filesystem::path defaultConfigFile(const boost::filesystem::path& location);
+    void writeConfig(const boost::filesystem::path& localREConfigFile = "") const;
 
 };
 

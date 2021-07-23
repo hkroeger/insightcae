@@ -108,6 +108,8 @@ QCaseDirectoryState::~QCaseDirectoryState()
 }
 
 
+
+
 QCaseDirectoryState::operator QString() const
 {
   return QString::fromStdString( string() );
@@ -144,15 +146,21 @@ void QRemoteExecutionState::setAFEnabledState(bool enabled)
   af_->ui->lblRemote_2->setEnabled(enabled);
 }
 
+
+
+
 QRemoteExecutionState::QRemoteExecutionState(
     AnalysisForm *af,
     const boost::filesystem::path& location,
     const RemoteLocation &remoteLocation )
-  : insight::RemoteExecutionConfig(location, remoteLocation),
+  : QObject(af),
+    insight::RemoteExecutionConfig(location, remoteLocation),
     af_(af)
 {
   setAFEnabledState(true);
 }
+
+
 
 
 QRemoteExecutionState::QRemoteExecutionState(
@@ -160,11 +168,14 @@ QRemoteExecutionState::QRemoteExecutionState(
     const boost::filesystem::path& location,
     const boost::filesystem::path& localREConfigFile
     )
-  : insight::RemoteExecutionConfig(location, localREConfigFile),
+  : QObject(af),
+    insight::RemoteExecutionConfig(location, localREConfigFile),
     af_(af)
 {
   setAFEnabledState(true);
 }
+
+
 
 
 QRemoteExecutionState::QRemoteExecutionState(
@@ -174,16 +185,32 @@ QRemoteExecutionState::QRemoteExecutionState(
     const boost::filesystem::path& remotePath,
     const boost::filesystem::path& localREConfigFile
     )
-  : insight::RemoteExecutionConfig(rsc, location, remotePath, localREConfigFile),
+  : QObject(af),
+    insight::RemoteExecutionConfig(rsc, location, remotePath, localREConfigFile),
     af_(af)
 {
   setAFEnabledState(true);
 }
 
+
+
+
 QRemoteExecutionState::~QRemoteExecutionState()
 {
   setAFEnabledState(false);
 }
+
+
+
+
+void QRemoteExecutionState::cleanup()
+{
+  RemoteExecutionConfig::cleanup();
+  deleteLater();
+}
+
+
+
 
 
 
@@ -280,18 +307,22 @@ AnalysisForm::AnalysisForm(
     insight::ParameterSet_VisualizerPtr viz;
     insight::ParameterSet_ValidatorPtr vali;
 
-    try {
+    try
+    {
         viz = insight::Analysis::visualizer(analysisName_);
         viz ->setProgressDisplayer(&progressDisplayer_);
-    } catch (const std::exception& e)
+    }
+    catch (const std::exception& e)
     {
       /* ignore, if non-existent */
       std::cout<<"Info: no visualizer for \""<<analysisName_<<"\" available."<<std::endl;
     }
 
-    try {
+    try
+    {
         vali = insight::Analysis::validator(analysisName_);
-    } catch (const std::exception& e)
+    }
+    catch (const std::exception& e)
     { /* ignore, if non-existent */ }
 
     peditor_=new ParameterEditorWidget(/*parameters_*/defaultParams, defaultParams, ui->inputTab, viz, vali);
@@ -427,7 +458,7 @@ void AnalysisForm::insertMenu(QMenuBar* mainMenu)
     act_pack_->setCheckable(true);
 
     menu_parameters_->addAction( act_pack_ );
-    connect( act_pack_, &QAction::triggered,
+    connect( act_pack_, &QAction::triggered, act_pack_,
              [&]()
              {
                pack_parameterset_ = act_pack_->isChecked();
@@ -662,14 +693,18 @@ void AnalysisForm::resetLocalCaseDirectory(const boost::filesystem::path& lcd)
   try
   {
     std::unique_ptr<insight::RemoteLocation> rl(
-          new insight::RemoteLocation( lcd )
+          new insight::RemoteLocation(
+            insight::RemoteExecutionConfig::defaultConfigFile(lcd) )
           );
 
-    remoteExecutionConfiguration_.reset(
-          new QRemoteExecutionState(this, lcd, *rl) );
+    if (remoteExecutionConfiguration_)
+      delete remoteExecutionConfiguration_;
+    remoteExecutionConfiguration_ =
+        new QRemoteExecutionState(this, lcd, *rl);
   }
-  catch (...)
+  catch (std::exception& e)
   {
+    insight::dbg()<<"resetLocalCaseDirectory: "<<e.what()<<std::endl;
   }
 }
 
@@ -785,26 +820,26 @@ void AnalysisForm::onCreateReport()
     }
 
     if (boost::algorithm::to_lower_copy(ext)==".tex")
-      {
-        results_->writeLatexFile( outpath );
-      }
+    {
+      results_->writeLatexFile( outpath );
+    }
     else if (boost::algorithm::to_lower_copy(ext)==".pdf")
-      {
-        results_->generatePDF( outpath );
-      }
+    {
+      results_->generatePDF( outpath );
+    }
     else if (boost::algorithm::to_lower_copy(ext)==".isr")
-      {
-        results_->saveToFile ( outpath );
-      }
+    {
+      results_->saveToFile ( outpath );
+    }
     else
-      {
-        QMessageBox::critical(
-              this,
-              "Error!",
-              "Unknown file format: "+fn
-              );
-        return;
-      }
+    {
+      QMessageBox::critical(
+            this,
+            "Error!",
+            "Unknown file format: "+fn
+            );
+      return;
+    }
 
     QMessageBox::information(this, "Done!", "The report has been created as\n"+QString::fromStdString(outpath.string()) );
   }

@@ -85,16 +85,6 @@ RemoteExecutionConfig::RemoteExecutionConfig(const RemoteExecutionConfig &o)
 
 
 RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location,
-                                             const RemoteLocation& rloc,
-                                             const bfs_path& localREConfigFile)
-  : RemoteLocation(rloc),
-    localREConfigFile_( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
-    localDir_(location)
-{
-}
-
-
-RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location,
                                              const bfs_path& localREConfigFile)
   : RemoteLocation( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
     localREConfigFile_( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
@@ -102,6 +92,16 @@ RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& loca
 {
 }
 
+
+RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location,
+                                             const RemoteLocation& rloc,
+                                             const bfs_path& localREConfigFile)
+  : RemoteLocation(rloc),
+    localREConfigFile_( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
+    localDir_(location)
+{
+  writeConfig(localREConfigFile);
+}
 
 
 
@@ -112,17 +112,17 @@ RemoteExecutionConfig::RemoteExecutionConfig(RemoteServer::ConfigPtr rsc,
   : RemoteLocation(rsc, remotePath),
     localDir_(location)
 {
-  writeConfigFile(
-        localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile,
-        *serverConfig_,
-        remoteDir_ );
+  writeConfig(localREConfigFile);
 }
 
 
+void RemoteExecutionConfig::writeConfig(const boost::filesystem::path& localREConfigFile) const
+{
+  writeConfigFile(
+        localREConfigFile.empty() ? defaultConfigFile(localDir()) : localREConfigFile
+  );
+}
 
-
-RemoteExecutionConfig::~RemoteExecutionConfig()
-{}
 
 
 

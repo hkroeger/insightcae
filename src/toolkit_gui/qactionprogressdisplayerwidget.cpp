@@ -15,7 +15,8 @@ using namespace boost;
 namespace insight {
 
 
-QActionProgressDisplayerWidget::Columns::iterator QActionProgressDisplayerWidget::getColumn(const string &path, std::vector<std::string>& splitPath)
+QActionProgressDisplayerWidget::Columns::iterator
+QActionProgressDisplayerWidget::getColumn(const string &path, std::vector<std::string>& splitPath)
 {
   string colname;
   std::vector<std::string> variant_path;

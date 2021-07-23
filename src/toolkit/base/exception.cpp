@@ -107,7 +107,7 @@ void Exception::saveContext(bool strace)
 
   if (context_list.size()>0)
   {
-    string context="\nThe error occurred";
+    string context="\nThe problem occurred";
     for (const std::string& c: context_list)
       {
         context+= "\nwhile "+c;

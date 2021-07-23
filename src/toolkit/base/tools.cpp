@@ -261,7 +261,7 @@ std::vector<std::string> SSHCommand::arguments() const
 {
   std::vector<std::string> a(args_);
 #if defined(WIN32)
-  a.insert(a.begin(), { "-load", hostName_, "-no-antispoof" });
+  a.insert(a.begin(), { "-load", hostName_, "-no-antispoof", "-batch" });
 #else
   a.insert(a.begin(), { hostName_ });
 #endif
@@ -898,7 +898,8 @@ int findRemoteFreePort(const std::string& SSHHostName)
   SSHCommand sc(SSHHostName, {"bash", "-lc", "isPVFindPort.sh"});
   int ret = boost::process::system(
         sc.command(), boost::process::args(sc.arguments()),
-        boost::process::std_out > out
+        boost::process::std_out > out,
+        boost::process::std_in < boost::process::null
         );
 
   if (ret!=0)

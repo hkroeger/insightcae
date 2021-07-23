@@ -26,7 +26,11 @@ typedef
 
 
 
-
+/**
+ * @brief The ProgressState struct represents a change in progress of some action.
+ * It is marked by a single number (e.g. a time value) and can have some additional properties:
+ * a set of numbers (maybe residuals) and a log message.
+ */
 struct ProgressState
     : public std::pair<double, ProgressVariableList>
 {
@@ -81,6 +85,7 @@ public:
     ActionProgress forkNewAction(double nSteps, const std::string& name="Overall" );
     void stepUp(double steps=1);
     void stepTo(double i);
+    void completed();
     void operator++();
     void operator+=(double n);
     void message(const std::string& message);
@@ -114,11 +119,12 @@ public:
   ActionProgress(const ProgressDisplayer& parentAction, std::string path, double nSteps);
   virtual ~ActionProgress();
 
+  void update ( const ProgressState& pi ) override;
+
   void setActionProgressValue(const std::string &path, double value) override;
   void setMessageText(const std::string &path, const std::string& message) override;
   void finishActionProgress(const std::string &path) override;
 
-  void update ( const ProgressState& pi ) override;
   void reset() override;
 };
 

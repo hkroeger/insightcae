@@ -18,6 +18,8 @@ class RemoteServer
   bool isRunning_;
 
 protected:
+  bool isRunning() const;
+  void setRunning(bool isRunning);
   void assertRunning();
 
 public:
@@ -60,6 +62,9 @@ protected:
   ConfigPtr serverConfig_;
 
 public:
+
+  RemoteServer();
+
   std::string serverLabel() const;
 
 
@@ -68,8 +73,8 @@ public:
   template<typename ...Args>
   int executeCommand(const std::string& command, bool throwOnFail, Args&&... addArgs)
   {
-    insight::CurrentExceptionContext ex("executing command on remote server");
-    assertRunning();
+    insight::CurrentExceptionContext ex("executing command \""+command+"\" on remote server");
+    if (throwOnFail) assertRunning();
 
     auto c_and_a = commandAndArgs(command);
     int ret = boost::process::system(
@@ -145,7 +150,7 @@ public:
 
 
   virtual bool checkIfDirectoryExists(const boost::filesystem::path& dir) =0;
-  virtual boost::filesystem::path createTemporaryDirectory(const boost::filesystem::path& templatePath) =0;
+  virtual boost::filesystem::path getTemporaryDirectoryName(const boost::filesystem::path& templatePath) =0;
   virtual void createDirectory(const boost::filesystem::path& remoteDirectory) =0;
   virtual void removeDirectory(const boost::filesystem::path& remoteDirectory) =0;
   virtual std::vector<boost::filesystem::path> listRemoteDirectory(const boost::filesystem::path& remoteDirectory) =0;

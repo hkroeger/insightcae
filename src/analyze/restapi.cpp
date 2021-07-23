@@ -90,10 +90,9 @@ void globalSignalHandler(int sig)
 
 
 
-double AnalyzeRESTServer::nextStateInfo(
-    Json::Object &s
-    )
+std::pair<double,Json::Object> AnalyzeRESTServer::nextStateInfo()
 {
+  Json::Object s;
   auto& pi = recordedStates_.front();
   double t = pi.first; //copy (non-reference) for proper use as return value
   s["time"]=t;
@@ -106,14 +105,15 @@ double AnalyzeRESTServer::nextStateInfo(
   s["logMessage"]=Wt::WString(pi.logMessage_);
 
   recordedStates_.pop_front();
-  return t;
+
+  return std::make_pair(t, s);
 }
 
 
-void AnalyzeRESTServer::nextProgressInfo(
-    Json::Object &s
-    )
+Json::Object AnalyzeRESTServer::nextProgressInfo()
 {
+  Json::Object s;
+
   auto& pi = recordedProgressStates_.front();
 
   s["path"]=Wt::WString(pi.path);
@@ -131,6 +131,8 @@ void AnalyzeRESTServer::nextProgressInfo(
   }
 
   recordedProgressStates_.pop_front();
+
+  return s;
 }
 
 
@@ -330,22 +332,19 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     }
     else
     {
-      Wt::Json::Object res, state, progressState;
       Wt::Json::Array states, progressStates;
 
       if (recordedStates_.size()>0)
       {
         if (stateSelection==Next)
         {
-          nextStateInfo(state);
-          states.push_back(state);
+          states.push_back( nextStateInfo().second );
         }
         else if (stateSelection==All)
         {
           while (recordedStates_.size()>0)
           {
-            nextStateInfo(state);
-            states.push_back(state);
+            states.push_back( nextStateInfo().second );
           }
         }
         else if (stateSelection==Latest)
@@ -357,18 +356,17 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
           }
           if (recordedStates_.size()>0)
           {
-            nextStateInfo(state);
-            states.push_back(state);
+            states.push_back( nextStateInfo().second );
           }
         }
       }
 
       while (recordedProgressStates_.size()>0)
       {
-        nextProgressInfo(progressState);
-        progressStates.push_back(progressState);
+        progressStates.push_back( nextProgressInfo() );
       }
 
+      Wt::Json::Object res;
       res["states"] = states;
       res["progressStates"] = progressStates;
       res["inputFileReceived"] = hasInputFileReceived();

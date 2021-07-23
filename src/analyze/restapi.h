@@ -42,8 +42,8 @@ class AnalyzeRESTServer
 
   boost::condition_variable wait_cv_;
 
-  double nextStateInfo(Wt::Json::Object& ro);
-  void nextProgressInfo(Wt::Json::Object& ro);
+  std::pair<double,Wt::Json::Object> nextStateInfo();
+  Wt::Json::Object nextProgressInfo();
 
 public:
   AnalyzeRESTServer(

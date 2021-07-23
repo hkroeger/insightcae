@@ -5,24 +5,33 @@ project(testcases)
 #find_package(OpenCasCade REQUIRED)
 
 set(testcases_SOURCES 
-  flatplatebl.cpp 
-  decayingturbulence.cpp 
-  pipe.cpp 
-  channel.cpp 
-  ercoftac_squaresection180degreebend.cpp 
   airfoilsection.cpp
-  freeshearflow.cpp
+  flatplatebl.cpp
   )
+
+set(testcases_LIBS
+  toolkit
+)
+if (INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
+    list(APPEND testcases_SOURCES
+        decayingturbulence.cpp
+        pipe.cpp
+        channel.cpp
+        ercoftac_squaresection180degreebend.cpp
+        freeshearflow.cpp
+        )
+    list(APPEND testcases_LIBS
+        refdata
+        )
+    ADD_DEFINITIONS( -DHAS_REFDATA )
+endif()
   
 file(GLOB_RECURSE testcases_HEADERS "*.h")
 
 
 add_library(testcases SHARED ${testcases_SOURCES})
 add_PDL(testcases "${testcases_HEADERS}")
-set(testcases_LIBS
-  toolkit
-  refdata
-)
+
 target_link_libraries(testcases ${testcases_LIBS})
 target_include_directories(testcases
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 

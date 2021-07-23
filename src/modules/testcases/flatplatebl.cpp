@@ -38,7 +38,10 @@
 #include "openfoam/caseelements/turbulencemodelcaseelements.h"
 #include "openfoam/caseelements/analysiscaseelements.h"
 
+
+#ifdef HAS_REFDATA
 #include "refdata.h"
+#endif
 
 using namespace std;
 using namespace arma;
@@ -744,16 +747,22 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
   Cf_vs_x.save( (executionPath()/"Cf_vs_x.txt").c_str(), arma_ascii);
   Interpolator Cf_vs_x_i(Cf_vs_x);
 
+#ifdef HAS_REFDATA
   arma::mat Cfexp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/cf_vs_x");
-  Interpolator Cfexp_vs_x_i(Cfexp_vs_x);
+//  Interpolator Cfexp_vs_x_i(Cfexp_vs_x);
+#endif
+
   
   addPlot
   (
     results, executionPath(), "chartMeanWallFriction",
     "x [m]", "$\\langle C_f \\rangle$",
     {
-      PlotCurve(Cf_vs_x, "cfd", "w l lt 1 lc 2 lw 2 t 'CFD'"),
+      PlotCurve(Cf_vs_x, "cfd", "w l lt 1 lc 2 lw 2 t 'CFD'")
+#ifdef HAS_REFDATA
+          ,
       PlotCurve(Cfexp_vs_x, "ref", "w p lt 2 lc 2 t 'Wieghardt 1951 (u=17.8m/s)'")
+#endif
     },
     "Axial profile of wall friction coefficient"
   );    
@@ -804,9 +813,11 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
   }
 
   {  
+#ifdef HAS_REFDATA
     arma::mat delta1exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta1_vs_x");
     arma::mat delta2exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta2_vs_x");
     arma::mat delta3exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta3_vs_x");
+#endif
     
     const insight::TabularResult& tabcoeffs=results->get<TabularResult>("tableCoefficients");
     const insight::TabularResult& tabvals=results->get<TabularResult>("tableValues");
@@ -817,10 +828,12 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
       results, executionPath(), "chartDelta",
       "x [m]", "$\\delta$ [m]",
       {
+#ifdef HAS_REFDATA
         PlotCurve(delta1exp_vs_x, "delta1ref", "w p lt 1 lc 1 t '$\\delta_1$ (Wieghardt 1951, u=17.8m/s)'"),
         PlotCurve(delta2exp_vs_x, "delta2ref", "w p lt 2 lc 3 t '$\\delta_2$ (Wieghardt 1951, u=17.8m/s)'"),
         PlotCurve(delta3exp_vs_x, "delta3ref", "w p lt 3 lc 4 t '$\\delta_3$ (Wieghardt 1951, u=17.8m/s)'"),
-	
+#endif
+
         PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta1"))), "delta1", "w l lt 1 lc 1 lw 2 t '$\\delta_1$'"),
         PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta2"))), "delta2", "w l lt 1 lc 3 lw 2 t '$\\delta_2$'"),
         PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta3"))), "delta3", "w l lt 1 lc 4 lw 2 t '$\\delta_3$'")
@@ -832,7 +845,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
     arma::mat Re_theta=tabcoeffs.getColByName("$Re_\\theta$");
     arma::mat xL=tabcoeffs.getColByName("x/L");
     arma::mat Rex=(Rex_0_ + uinf_*xL*L_/p.fluid.nu)/1e5;
-    Interpolator delta2exp_vs_x_i(delta2exp_vs_x);
+//    Interpolator delta2exp_vs_x_i(delta2exp_vs_x);
     addPlot
     (
       results, executionPath(), "chartRetheta",

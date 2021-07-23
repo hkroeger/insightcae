@@ -1,4 +1,4 @@
-if (PYTHONLIBS_FOUND)
+if (PYTHONLIBS_FOUND AND INSIGHT_BUILD_PYTHONBINDINGS)
 
     project(refdata)
     #find_package(Boost COMPONENTS filesystem regex date_time thread REQUIRED)

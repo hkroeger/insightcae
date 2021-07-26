@@ -47,7 +47,7 @@ QObject *PointerTransient::getPointer()
   return mi_;
 }
 
-
+#if OCC_VERSION_MAJOR<7
 IMPLEMENT_STANDARD_TYPE(PointerTransient)
 IMPLEMENT_STANDARD_SUPERTYPE_ARRAY()
   STANDARD_TYPE(Standard_Transient),
@@ -57,3 +57,4 @@ IMPLEMENT_STANDARD_TYPE_END(PointerTransient)
 
 IMPLEMENT_DOWNCAST(PointerTransient,Standard_Transient)
 IMPLEMENT_STANDARD_RTTI(PointerTransient)
+#endif

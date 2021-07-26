@@ -35,8 +35,7 @@
 #include "boost/stacktrace.hpp"
 #include "boost/algorithm/string.hpp"
 
-#include "boost/iostreams/stream.hpp"
-#include "boost/iostreams/device/null.hpp"
+
 
 using namespace std;
 
@@ -197,11 +196,18 @@ CurrentExceptionContext::~CurrentExceptionContext()
   }
 }
 
+class NullBuffer : public std::streambuf
+{
+public:
+  int overflow(int c) { return c; }
+};
 
-boost::iostreams::stream< boost::iostreams::null_sink > nullOstream( ( boost::iostreams::null_sink() ) );
 
 std::ostream& dbg()
 {
+  static NullBuffer nullBuffer;
+  static std::ostream nullOstream(&nullBuffer);
+
   if (getenv("INSIGHT_VERBOSE"))
   {
     std::cerr<<"[DBG, " << std::this_thread::get_id() <<"]: ";

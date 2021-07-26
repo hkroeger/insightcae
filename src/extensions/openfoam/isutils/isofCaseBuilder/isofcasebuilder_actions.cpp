@@ -296,7 +296,7 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with, bool skipMonitor)
   }
   else
   {
-    insight::TaskSpoolerInterface tsi(ts_socket, "");
+    insight::TaskSpoolerInterface tsi(ts_socket);
     tsi.startTail(
           [&](const std::string& line)
           {

@@ -22,7 +22,7 @@
 
 #include "remoteparaview.h"
 #include "remotesync.h"
-
+#include "base/sshlinuxserver.h"
 
 
 
@@ -40,8 +40,15 @@ void MainWindow::updateGUI()
 
 #ifndef NO_TERMWIDGET
     terminal_->changeDir( ui->localDir->text() );
-    auto cmd = QString("ssh ")+remote_->server().c_str()+" -t 'cd '"+remote_->remoteDir().c_str()+"'; bash -l'\n";
-    terminal_->sendText(cmd);
+    if ( std::shared_ptr<insight::SSHLinuxServer> ssh =
+            std::dynamic_pointer_cast<insight::SSHLinuxServer>(remote_->server()) )
+    {
+      auto cmd = QString("ssh %1 -t 'cd '%2'; bash -l'\n")
+          .arg(QString::fromStdString(ssh->serverConfig()->hostName_))
+          .arg(QString::fromStdString(remote_->remoteDir().string()))
+          ;
+      terminal_->sendText(cmd);
+    }
 #endif
 
     tsi_.reset(new insight::TaskSpoolerInterface(remote_->socket(), remote_->server()));

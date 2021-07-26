@@ -53,10 +53,7 @@ void MountRemote::mount(const std::string& hostName, const bfs_path& remotedir)
   std::string cmd=boost::str(boost::format( "sshfs -o uid=%d,gid=%d,follow_symlinks \"%s:%s\" \"%s\"")
                              % uid % gid
                              % hostName % remotedir.string()
-                             % mountpoint_.strWSLLinuxServer::WSLLinuxServer()
-                             {
-
-                             }ing() );
+                             % mountpoint_.string() );
 
   if (std::system( cmd.c_str() )!=0)
       throw insight::Exception("Could not mount remote filesystem. Failed command was: "+cmd);

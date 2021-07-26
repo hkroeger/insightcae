@@ -205,7 +205,7 @@ void Chart::writeLatexCode ( std::ostream& f, const std::string& name, int , con
      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
-        << make_relative ( outputfilepath, chart_file ).string() << "}\n"
+        << make_relative ( outputfilepath, chart_file ).generic_path().string() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier";

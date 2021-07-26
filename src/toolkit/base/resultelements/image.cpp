@@ -59,7 +59,7 @@ void Image::writeLatexCode (
       "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
-      << make_relative ( outputfilepath, up ).string() << "}\n"
+      << make_relative ( outputfilepath, up ).generic_path().string() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier"

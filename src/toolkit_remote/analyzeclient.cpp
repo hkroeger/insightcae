@@ -114,14 +114,18 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
 
     std::cout<<"httpResponse err="<<err<<", crq="<<crq_
              <<", status="<<response.status()
-             <<", success="<<success
+             <<", success="<<success;
+    if (success)
+    {
+      std::cout
              <<", body=";//<<body.substr(0, std::min<size_t>(80,body.size()))
              //<<std::endl;
-    if (body.size()<1024)
-      std::cout<<body;
-    else
-    {
-      std::cout<<body.substr(0, 512)<<"\n...\n"<<body.substr(body.size()-512, body.size());
+      if (body.size()<1024)
+        std::cout<<body;
+      else
+      {
+        std::cout<<body.substr(0, 512)<<"\n...\n"<<body.substr(body.size()-512, body.size());
+      }
     }
     std::cout<<std::endl;
 

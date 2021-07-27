@@ -222,11 +222,16 @@ void RemoteRun::launch()
         {
           runMonitor=false;
 
+          insight::dbg()<<"query results"<<std::endl;
           auto qrs = ac_->queryResultsSync();
 
+          insight::dbg()<<"emit finished"<<std::endl;
           Q_EMIT finished( qrs.results );
 
+          insight::dbg()<<"exit sync"<<std::endl;
           ac_->exitSync();
+
+          insight::dbg()<<"cleanup"<<std::endl;
           remote_.cleanup();
         }
 

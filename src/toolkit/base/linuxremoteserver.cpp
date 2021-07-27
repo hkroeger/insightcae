@@ -31,6 +31,7 @@ boost::filesystem::path LinuxRemoteServer::getTemporaryDirectoryName(const boost
   int ret = executeCommand(
         "mktemp -du \""+toUnixPath(templatePath)+"\"", false,
         boost::process::std_out > out,
+        boost::process::std_err > stderr,
         boost::process::std_in < boost::process::null
         );
 
@@ -38,6 +39,7 @@ boost::filesystem::path LinuxRemoteServer::getTemporaryDirectoryName(const boost
   {
     string line;
     getline(out, line);
+    insight::dbg()<<line<<std::endl;
     return line;
   }
   else

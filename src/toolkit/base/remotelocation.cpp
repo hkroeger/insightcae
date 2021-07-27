@@ -125,7 +125,8 @@ RemoteLocation::RemoteLocation(
   : serverConfig_( rsc ),
     remoteDir_( remotePath ),
     autoCreateRemoteDir_( autoCreateRemoteDir ),
-    isTemporaryStorage_( isTemporaryStorage )
+    isTemporaryStorage_( isTemporaryStorage ),
+    isValidated_(false)
 {
   if (remoteDir_.empty())
   {

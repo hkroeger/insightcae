@@ -85,7 +85,7 @@ void AnalysisForm::onRunAnalysis()
   if (!checkAnalysisExecutionPreconditions())
     return;
 
-  if (remoteExecutionConfiguration_)
+  if (remoteExecutionConfiguration())
   {
     startRemoteRun();
   }

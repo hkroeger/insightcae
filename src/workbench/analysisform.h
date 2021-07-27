@@ -53,6 +53,10 @@
 #include "qresultsetmodel.h"
 #include "qactionprogressdisplayerwidget.h"
 
+#ifdef WIN32
+#define WSL_DEFAULT
+#endif
+
 namespace Ui
 {
 class AnalysisForm;

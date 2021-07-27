@@ -5,6 +5,7 @@
 #include "base/boost_include.h"
 #include "base/resultset.h"
 #include "base/remoteserverlist.h"
+#include "base/wsllinuxserver.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
@@ -83,7 +84,17 @@ void AnalysisForm::connectRemoteActions()
 
 insight::RemoteExecutionConfig* AnalysisForm::remoteExecutionConfiguration() const
 {
-  insight::assertion( bool(remoteExecutionConfiguration_), "internal error: remote execution configuration is unset!");
+#ifdef WSL_DEFAULT
+  if (!remoteExecutionConfiguration_)
+  {
+    auto* af = const_cast<AnalysisForm*>(this);
+    af->remoteExecutionConfiguration_ = new QRemoteExecutionState(
+          af,
+          insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*"),
+          localCaseDirectory()
+          );
+  }
+#endif
   return remoteExecutionConfiguration_;
 }
 

@@ -399,8 +399,8 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     if (request.contentType()=="application/xml")
     {
       // input file
-      istreambuf_iterator<char> fbegin(request.in()), fend;
-      std::copy(fbegin, fend, back_inserter(*inputFileContents_));
+      insight::readStreamIntoString(request.in(), *inputFileContents_);
+
 
       response.setStatus(200);
       response.setMimeType("text/plain");

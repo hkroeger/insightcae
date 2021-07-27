@@ -186,12 +186,14 @@ int main(int argc, char *argv[])
           std::cerr << "Could not start web server!" << std::endl;
         }
 
+#ifndef WIN32
         detectionHandler = DetectionHandler::start(
                         vm["broadcastport"].as<int>(),
                         vm["listen"].as<std::string>(),
                         vm["port"].as<int>(),
                         analysisName
                       );
+#endif
       }
 #endif
 

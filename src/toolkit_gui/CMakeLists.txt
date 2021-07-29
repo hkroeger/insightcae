@@ -55,6 +55,7 @@ set(toolkit_gui_SRCS
     graphprogressdisplayer.cpp
     progressrelay.cpp
     insightcaeapplication.cpp
+    iqremotefoldermodel.h iqremotefoldermodel.cpp
     remotedirselector.cpp
     remotesync.cpp
     sdmdiarea.cpp

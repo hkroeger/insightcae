@@ -28,18 +28,24 @@ namespace fs = boost::filesystem;
 void AnalysisForm::connectLocalActions()
 {
   // ====================================================================================
-  // ======== working directory
+  // ======== edit working directory
 
   connect(ui->btnSetExecutionEnvironment, &QPushButton::clicked, this,
           [&]()
           {
+            insight::RemoteLocation *rl = nullptr;
+            if (auto* rec = remoteExecutionConfiguration())
+              rl=&rec->location();
+
             QExecutionEnvironmentDialog dlg(
                   localCaseDirectory_.get(),
-                  remoteExecutionConfiguration_,
+                  rl,
                   this );
 
             if (dlg.exec() == QDialog::Accepted)
             {
+              remoteExeConfigWasEdited_ = true;
+
               if (remoteExecutionConfiguration_)
                 delete remoteExecutionConfiguration_;
               localCaseDirectory_.reset();
@@ -51,13 +57,13 @@ void AnalysisForm::connectLocalActions()
               if (lwd.empty())
               {
                 localCaseDirectory_.reset(
-                      new QCaseDirectoryState(
+                      new IQCaseDirectoryState(
                         this, boost::filesystem::path(), false) );
               }
               else
               {
                 localCaseDirectory_.reset(
-                      new QCaseDirectoryState(
+                      new IQCaseDirectoryState(
                         this, lwd ) );
               }
 
@@ -67,9 +73,8 @@ void AnalysisForm::connectLocalActions()
                   delete remoteExecutionConfiguration_;
 
                 remoteExecutionConfiguration_ =
-                      new QRemoteExecutionState(
+                      new IQRemoteExecutionState(
                         this,
-                        *localCaseDirectory_,
                         *dlg.remoteLocation() );
               }
             }
@@ -83,9 +88,9 @@ boost::filesystem::path AnalysisForm::localCaseDirectory() const
 {
   if (!localCaseDirectory_)
   {
-    const_cast<std::unique_ptr<QCaseDirectoryState>&>
+    const_cast<std::unique_ptr<IQCaseDirectoryState>&>
         (localCaseDirectory_).reset(
-          new QCaseDirectoryState(
+          new IQCaseDirectoryState(
             const_cast<AnalysisForm*>(this), false ) );
   }
   return *localCaseDirectory_;

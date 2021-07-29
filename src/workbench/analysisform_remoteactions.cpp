@@ -60,12 +60,12 @@ void AnalysisForm::connectRemoteActions()
                  auto answer = QMessageBox::question(
                        this, "Decision required",
                        QString("The directory %1 on server %2 and its contents will be deleted!\nContinue?")
-                        .arg(QString::fromStdString(remoteExecutionConfiguration_->remoteDir().string()))
-                        .arg(QString::fromStdString( *(remoteExecutionConfiguration_->serverConfig()) ))
+                        .arg(QString::fromStdString(remoteExecutionConfiguration_->location().remoteDir().string()))
+                        .arg(QString::fromStdString( *(remoteExecutionConfiguration_->location().serverConfig()) ))
                        );
                  if (answer==QMessageBox::Yes)
                  {
-                   remoteExecutionConfiguration_->cleanup();
+                   remoteExecutionConfiguration_->cleanup(true);
                    delete remoteExecutionConfiguration_;
                  }
               }
@@ -82,16 +82,15 @@ void AnalysisForm::connectRemoteActions()
 }
 
 
-insight::RemoteExecutionConfig* AnalysisForm::remoteExecutionConfiguration() const
+IQRemoteExecutionState* AnalysisForm::remoteExecutionConfiguration()
 {
 #ifdef WSL_DEFAULT
-  if (!remoteExecutionConfiguration_)
+  if (isOpenFOAMAnalysis_ && !remoteExecutionConfiguration_ && !remoteExeConfigWasEdited_)
   {
     auto* af = const_cast<AnalysisForm*>(this);
-    af->remoteExecutionConfiguration_ = new QRemoteExecutionState(
+    af->remoteExecutionConfiguration_ = new IQRemoteExecutionState(
           af,
-          insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*"),
-          localCaseDirectory()
+          insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*")
           );
   }
 #endif
@@ -102,7 +101,9 @@ insight::RemoteExecutionConfig* AnalysisForm::remoteExecutionConfiguration() con
 void AnalysisForm::upload()
 {
 
-  auto *rstr = new insight::RunSyncToRemote( *remoteExecutionConfiguration() );
+  remoteExecutionConfiguration()->commit( localCaseDirectory() );
+
+  auto *rstr = new insight::RunSyncToRemote( remoteExecutionConfiguration()->exeConfig() );
 
   connect(rstr, &insight::RunSyncToRemote::progressValueChanged,
           progressbar_, &QProgressBar::setValue);
@@ -139,7 +140,8 @@ void AnalysisForm::upload()
 void AnalysisForm::startRemoteRun()
 {
 #ifdef HAVE_WT
-  currentWorkbenchAction_ = RemoteRun::create(this, *remoteExecutionConfiguration(), false);
+  remoteExecutionConfiguration()->commit( localCaseDirectory() );
+  currentWorkbenchAction_ = RemoteRun::create(this, remoteExecutionConfiguration()->exeConfig(), false);
 #endif
 }
 
@@ -151,7 +153,8 @@ void AnalysisForm::resumeRemoteRun()
   if (currentWorkbenchAction_)
     throw insight::Exception("Internal error: there is an action running currently!");
 
-  currentWorkbenchAction_ = RemoteRun::create(this, *remoteExecutionConfiguration(), true);
+  remoteExecutionConfiguration()->commit( localCaseDirectory() );
+  currentWorkbenchAction_ = RemoteRun::create(this, remoteExecutionConfiguration()->exeConfig(), true);
 #endif
 }
 
@@ -161,7 +164,7 @@ void AnalysisForm::resumeRemoteRun()
 
 void AnalysisForm::download()
 {
-  auto* rstl = new insight::RunSyncToLocal(*remoteExecutionConfiguration());
+  auto* rstl = new insight::RunSyncToLocal( remoteExecutionConfiguration()->exeConfig() );
 
   connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
           progressbar_, &QProgressBar::setValue);

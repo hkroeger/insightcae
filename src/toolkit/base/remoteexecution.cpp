@@ -143,9 +143,9 @@ const boost::filesystem::path& RemoteExecutionConfig::metaFile() const
 
 
 
-void RemoteExecutionConfig::cleanup()
+void RemoteExecutionConfig::cleanup(bool forceRemoval)
 {
-  RemoteLocation::cleanup();
+  RemoteLocation::cleanup(forceRemoval);
   boost::filesystem::remove(metaFile());
 }
 

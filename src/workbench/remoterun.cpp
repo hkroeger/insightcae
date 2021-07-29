@@ -148,6 +148,7 @@ void RemoteRun::launch()
 
         analyzeProcess_ = remote_.server()->launchBackgroundProcess(
               "analyze "
+              " --savecfg param.ist"
               " --workdir=\""+insight::toUnixPath(rd)+"\""
               " --server"
               " >\""+insight::toUnixPath(rd/"analyze.log")+"\" 2>&1 </dev/null"

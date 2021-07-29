@@ -9,6 +9,11 @@ find_package(Qt5Widgets CONFIG REQUIRED)
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
 set(workbench_SRCS
+    iqremoteexecutionstate.h
+    iqremoteexecutionstate.cpp
+    iqcasedirectorystate.h
+    iqcasedirectorystate.cpp
+
     analysisform.cpp
     analysisform.h
     analysisform_gui.cpp

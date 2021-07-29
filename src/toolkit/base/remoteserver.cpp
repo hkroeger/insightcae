@@ -65,6 +65,11 @@ RemoteServer::RemoteServer()
   : isRunning_(false)
 {}
 
+RemoteServer::Config *RemoteServer::genericServerConfig() const
+{
+  return serverConfig_.get();
+}
+
 std::string RemoteServer::serverLabel() const
 {
   return static_cast<std::string>(*serverConfig_);

@@ -74,7 +74,7 @@ public:
     const boost::filesystem::path& localDir() const;
     const boost::filesystem::path& metaFile() const;
 
-    void cleanup() override;
+    void cleanup(bool forceRemoval=false) override;
 
     /**
      * @brief putFile

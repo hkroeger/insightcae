@@ -150,9 +150,9 @@ void AnalysisForm::onStartPV()
 {
   if (auto* rec = remoteExecutionConfiguration())
   {
-    if (rec->remoteDirExists())
+    if (rec->location().remoteDirExists())
     {
-      RemoteParaview dlg( *rec, this );
+      RemoteParaview dlg( rec->exeConfig(), this );
       dlg.exec();
     }
   }
@@ -169,6 +169,7 @@ void AnalysisForm::onStartPV()
 
 void AnalysisForm::onCleanOFC()
 {
+#ifndef WIN32
   const insight::OFEnvironment* ofc = nullptr;
   if (parameters().contains("run/OFEname"))
   {
@@ -190,6 +191,7 @@ void AnalysisForm::onCleanOFC()
 
   OFCleanCaseDialog dlg(*ofc, exePath, this);
   dlg.exec();
+#endif
 }
 
 
@@ -197,6 +199,7 @@ void AnalysisForm::onCleanOFC()
 
 void AnalysisForm::onWnow()
 {
+#ifndef WIN32
   if (isRunning())
   {
     fs::path exePath = localCaseDirectory();
@@ -212,6 +215,7 @@ void AnalysisForm::onWnow()
       f.close();
     }
   }
+#endif
 }
 
 
@@ -219,6 +223,7 @@ void AnalysisForm::onWnow()
 
 void AnalysisForm::onWnowAndStop()
 {
+#ifndef WIN32
   if (isRunning())
   {
     fs::path exePath = localCaseDirectory();
@@ -234,6 +239,7 @@ void AnalysisForm::onWnowAndStop()
       f.close();
     }
   }
+#endif
 }
 
 
@@ -245,7 +251,7 @@ void AnalysisForm::onShell()
 
   if ( auto* rec = remoteExecutionConfiguration() )
   {
-    if (rec->remoteDirExists())
+    if (rec->location().remoteDirExists())
     {
       QStringList args;
       if ( !QProcess::startDetached("isRemoteShell.sh",

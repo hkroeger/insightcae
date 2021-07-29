@@ -77,6 +77,7 @@ public:
     // ======== query functions
     RemoteServerPtr server() const;
     RemoteServer::ConfigPtr serverConfig() const;
+    std::string serverLabel() const;
     const boost::filesystem::path& remoteDir() const;
 
 
@@ -84,7 +85,7 @@ public:
     // ======== init /deinit
 
     void initialize();
-    virtual void cleanup();
+    virtual void cleanup(bool forceRemoval=false);
 
     // ==================================openfoam==================================================
     // ======== query remote location

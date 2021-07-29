@@ -15,12 +15,17 @@ using namespace boost;
 namespace insight {
 
 
+
+
 WSLLinuxServer::Config::Config(
         const boost::filesystem::path& bp,
         const boost::filesystem::path& WSLExecutable )
   : RemoteServer::Config(bp),
     WSLExecutable_(WSLExecutable)
 {}
+
+
+
 
 WSLLinuxServer::Config::Config(rapidxml::xml_node<> *e)
   :RemoteServer::Config(
@@ -32,10 +37,16 @@ WSLLinuxServer::Config::Config(rapidxml::xml_node<> *e)
   WSLExecutable_=ha->value();
 }
 
+
+
+
 std::shared_ptr<RemoteServer> WSLLinuxServer::Config::getInstanceIfRunning()
 {
   return instance();
 }
+
+
+
 
 std::shared_ptr<RemoteServer> WSLLinuxServer::Config::instance()
 {
@@ -45,10 +56,16 @@ std::shared_ptr<RemoteServer> WSLLinuxServer::Config::instance()
   return srv;
 }
 
+
+
+
 bool WSLLinuxServer::Config::isDynamicallyAllocated() const
 {
   return false;
 }
+
+
+
 
 void WSLLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const
 {
@@ -67,6 +84,9 @@ WSLLinuxServer::WSLLinuxServer(ConfigPtr serverConfig)
 {
   serverConfig_=serverConfig;
 }
+
+
+
 
 WSLLinuxServer::Config *WSLLinuxServer::serverConfig() const
 {
@@ -125,6 +145,8 @@ void WSLLinuxServer::runRsync
     std::function<void(int,const std::string&)> pf
 )
 {
+  CurrentExceptionContext ex("runRsync, args: "+boost::join(args, " "));
+
   assertRunning();
 
   boost::process::ipstream is;
@@ -135,11 +157,15 @@ void WSLLinuxServer::runRsync
     joinedArgs+=" "+escapeShellSymbols(a);
   }
   auto ca = commandAndArgs(joinedArgs);
+
+  insight::dbg() << ca.first << " " << boost::join(ca.second, " ") << std::endl;
+
   RSyncProgressAnalyzer rpa;
   boost::process::child c
   (
    ca.first, boost::process::args(ca.second),
    boost::process::std_out > rpa,
+   boost::process::std_err > stderr,
    boost::process::std_in < boost::process::null
   );
   rpa.runAndParse(c, pf);

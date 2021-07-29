@@ -5,13 +5,16 @@
 #include "base/sshlinuxserver.h"
 
 #include <QFileDialog>
+#include "remotedirselector.h"
+
+
 
 void QExecutionEnvironmentDialog::resetServerName()
 {
   if (remoteLocation_)
   {
     auto serverName =
-        QString::fromStdString( *remoteLocation_->serverConfig() );
+        QString::fromStdString( remoteLocation_->serverLabel() );
     if (!serverName.isEmpty())
     {
       ui->cbHost->setCurrentIndex(
@@ -20,6 +23,9 @@ void QExecutionEnvironmentDialog::resetServerName()
     }
   }
 }
+
+
+
 
 void QExecutionEnvironmentDialog::resetRemoteWorkingDir()
 {
@@ -31,12 +37,16 @@ void QExecutionEnvironmentDialog::resetRemoteWorkingDir()
   }
 }
 
+
+
+
 void QExecutionEnvironmentDialog::setInvalidWorkingDir(bool changeLE)
 {
   if (changeLE) ui->leLocalWorkingDirectory->setText("");
-  ui->gbPerformRemoteExecution->setEnabled(false);
-  remoteLocation_.reset();
 }
+
+
+
 
 bool QExecutionEnvironmentDialog::checkAndUpdateWorkingDir(const QString& newDir, bool changeLE)
 {
@@ -49,7 +59,11 @@ bool QExecutionEnvironmentDialog::checkAndUpdateWorkingDir(const QString& newDir
   }
   else
   {
-    if (boost::filesystem::exists(newDirPath))
+    if (newDir.isEmpty())
+    {
+      return true;
+    }
+    else if (boost::filesystem::exists(newDirPath))
     {
       if (!remoteLocation_)
         setRemoteConfigFromWorkingDir();
@@ -63,43 +77,26 @@ bool QExecutionEnvironmentDialog::checkAndUpdateWorkingDir(const QString& newDir
   }
 }
 
+
+
+
 bool QExecutionEnvironmentDialog::checkAndUpdateRemoteConfig(
     const QString& serverName,
     const QString& newDir )
 {
   auto newDirPath = newDir.toStdString();
-  std::unique_ptr<insight::RemoteLocation> rl(
+  remoteLocation_.reset(
         new insight::RemoteLocation(
           insight::remoteServers.findServer(
             serverName.toStdString() ),
           newDirPath,
           false
-          )
-        );
+          ) );
 
-  if (auto wsl = std::dynamic_pointer_cast<insight::WSLLinuxServer>(rl->server()))
-    insight::dbg()<<"WSL "<<wsl->serverConfig()->WSLExecutable_<<std::endl;
-  if (auto ssh = std::dynamic_pointer_cast<insight::SSHLinuxServer>(rl->server()))
-    insight::dbg()<<"SSH "<<ssh->serverConfig()->hostName_<<std::endl;
-
-  if ( newDirPath.empty() || (!newDirPath.empty() && rl->remoteDirExists() ) )
-  {
-    //ok
-    remoteLocation_ = std::move(rl);
-    ui->leRemoteDirectory->setPalette(defaultPal_);
-    ui->leRemoteDirectory->setToolTip("");
-    return true;
-  }
-  else
-  {
-    QPalette palette;
-    palette.setColor(QPalette::Base, Qt::red);
-    palette.setColor(QPalette::Text, Qt::black);
-    ui->leRemoteDirectory->setPalette(palette);
-    ui->leRemoteDirectory->setToolTip("The remote directory must exist. If you want an auto-created remote directory, leave the input empty!");
-    return false;
-  }
+  return true;
 }
+
+
 
 
 void QExecutionEnvironmentDialog::setRemoteConfigFromWorkingDir()
@@ -127,6 +124,8 @@ void QExecutionEnvironmentDialog::setRemoteConfigFromWorkingDir()
 }
 
 
+
+
 QExecutionEnvironmentDialog::QExecutionEnvironmentDialog(
     const insight::CaseDirectory* localDirectory,
     const insight::RemoteLocation* remoteLocation,
@@ -135,12 +134,17 @@ QExecutionEnvironmentDialog::QExecutionEnvironmentDialog(
   ui(new Ui::QExecutionEnvironmentDialog)
 {
   ui->setupUi(this);
+
+  // populate controls
+
   defaultPal_ = ui->leRemoteDirectory->palette();
 
   for (const auto& i: insight::remoteServers)
   {
     ui->cbHost->addItem( QString::fromStdString(*i) );
   }
+
+  // connect actions
 
   connect(ui->leLocalWorkingDirectory, &QLineEdit::textChanged, this,
           [&](const QString& newDir)
@@ -193,20 +197,53 @@ QExecutionEnvironmentDialog::QExecutionEnvironmentDialog(
          }
   );
 
+  connect(ui->btnSelectRemoteDirectory, &QPushButton::clicked, this,
+          [&]()
+          {
+            insight::dbg()<<"1"<<std::endl;
+            if (remoteLocation_)
+            {
+              insight::dbg()<<"2"<<std::endl;
+              if (auto server = remoteLocation_->serverConfig()->getInstanceIfRunning())
+              {
+                insight::dbg()<<"3"<<std::endl;
+                RemoteDirSelector dlg(this, server);
+                if (dlg.exec()==QDialog::Accepted)
+                {
+                  auto dir=dlg.selectedRemoteDir().generic_path();
+                  insight::dbg()<<dir<<std::endl;
+                  checkAndUpdateRemoteConfig(
+                        ui->cbHost->currentText(),
+                        QString::fromStdString(dir.string()) );
+                  resetRemoteWorkingDir();
+                }
+              }
+            }
+          }
+  );
+
   connect(this, &QDialog::accepted, this,
           [&]()
           {
-            remoteLocation_.reset(
-                  new insight::RemoteLocation(
-                    insight::remoteServers.findServer(
-                      ui->cbHost->currentText().toStdString() ),
-                    ui->leRemoteDirectory->text().toStdString()
-                    )
-                  );
+            if (ui->gbPerformRemoteExecution->isChecked())
+            {
+              remoteLocation_.reset(
+                    new insight::RemoteLocation(
+                      insight::remoteServers.findServer(
+                        ui->cbHost->currentText().toStdString() ),
+                      ui->leRemoteDirectory->text().toStdString()
+                      )
+                    );
+            }
+            else
+            {
+              remoteLocation_.reset();
+            }
           }
   );
 
 
+  // set initial values
   if (localDirectory)
   {
     ui->leLocalWorkingDirectory->setText( QString::fromStdString(localDirectory->string()) ); // remoteLocation_ will be set by signal handler above
@@ -216,14 +253,28 @@ QExecutionEnvironmentDialog::QExecutionEnvironmentDialog(
   if (remoteLocation)
   {
     remoteLocation_.reset(
-          new insight::RemoteLocation(*remoteLocation_));
+          new insight::RemoteLocation(*remoteLocation));
 
     ui->gbPerformRemoteExecution->setChecked(true);
-    resetServerName();
-    resetRemoteWorkingDir();
+
+    auto serverName =
+        QString::fromStdString( remoteLocation_->serverLabel() );
+
+    if (!serverName.isEmpty())
+    {
+      ui->cbHost->setCurrentIndex(
+          ui->cbHost->findText( serverName )
+          );
+    }
+
+    ui->leRemoteDirectory->setText(
+          QString::fromStdString(
+            remoteLocation_->remoteDir().string() ) );
   }
 
 }
+
+
 
 
 boost::filesystem::path QExecutionEnvironmentDialog::localDirectory() const
@@ -231,10 +282,15 @@ boost::filesystem::path QExecutionEnvironmentDialog::localDirectory() const
   return ui->leLocalWorkingDirectory->text().toStdString();
 }
 
+
+
+
 insight::RemoteLocation* QExecutionEnvironmentDialog::remoteLocation() const
 {
   return remoteLocation_.get();
 }
+
+
 
 
 QExecutionEnvironmentDialog::~QExecutionEnvironmentDialog()

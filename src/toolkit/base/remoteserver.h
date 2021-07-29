@@ -65,6 +65,7 @@ public:
 
   RemoteServer();
 
+  Config* genericServerConfig() const;
   std::string serverLabel() const;
 
 

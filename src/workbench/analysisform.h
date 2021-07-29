@@ -24,7 +24,7 @@
 #ifndef Q_MOC_RUN
 #include "base/analysis.h"
 #include "base/resultset.h"
-#include "base/remoteexecution.h"
+
 #include "parametereditorwidget.h"
 #endif
 
@@ -53,6 +53,10 @@
 #include "qresultsetmodel.h"
 #include "qactionprogressdisplayerwidget.h"
 
+#include "iqcasedirectorystate.h"
+#include "iqremoteexecutionstate.h"
+
+
 #ifdef WIN32
 #define WSL_DEFAULT
 #endif
@@ -70,56 +74,6 @@ class SolverOutputAnalyzer;
 }
 
 class WorkbenchAction;
-class AnalysisForm;
-
-
-
-/**
- * @brief The QCaseDirectory class
- * sets GUI enable/disable states, inserts text
- */
-class QCaseDirectoryState
-    : public insight::CaseDirectory
-{
-  AnalysisForm *af_;
-
-  void setAFEnabledState(bool enabled);
-
-public:
-  QCaseDirectoryState(AnalysisForm *af, const boost::filesystem::path& path, bool keep=true);
-  QCaseDirectoryState(AnalysisForm *af, bool keep=true, const boost::filesystem::path& prefix="");
-  ~QCaseDirectoryState();
-
-  operator QString() const;
-};
-
-
-
-
-class QRemoteExecutionState
-: public QObject,
-  public insight::RemoteExecutionConfig
-{
-  AnalysisForm *af_;
-
-  void setAFEnabledState(bool enabled);
-
-public:
-  QRemoteExecutionState(AnalysisForm *af,
-                        const boost::filesystem::path& location,
-                        const insight::RemoteLocation& remoteLocation);
-  QRemoteExecutionState(AnalysisForm *af,
-                         const boost::filesystem::path& location,
-                         const boost::filesystem::path& localREConfigFile = "");
-  QRemoteExecutionState(AnalysisForm *af,
-                         insight::RemoteServer::ConfigPtr rsc,
-                         const boost::filesystem::path& location,
-                         const boost::filesystem::path& remotePath = "",
-                         const boost::filesystem::path& localREConfigFile = "");
-  ~QRemoteExecutionState();
-
-  void cleanup() override;
-};
 
 
 
@@ -134,8 +88,8 @@ class AnalysisForm
   friend class LocalRun;
   friend class RemoteRun;
   friend class WSLRun;
-  friend class QCaseDirectoryState;
-  friend class QRemoteExecutionState;
+  friend class IQCaseDirectoryState;
+  friend class IQRemoteExecutionState;
   
 protected:
 
@@ -176,7 +130,10 @@ protected:
    */
   boost::filesystem::path ist_file_;
 
-  /**
+  /** if (checkAndUpdateWorkingDir(newDir, true))
+              lastValidLocalWorkDirSetting_=newDir;
+            else
+              ui->leL
    * @brief pack_parameterset_
    * store preference for pack/not packing the parameter set during saving
    */
@@ -202,9 +159,10 @@ protected:
 
   // ====================================================================================
   // ======== current action objects
-  std::unique_ptr<QCaseDirectoryState> localCaseDirectory_;
+  std::unique_ptr<IQCaseDirectoryState> localCaseDirectory_;
   void resetLocalCaseDirectory(const boost::filesystem::path& lcd);
-  QPointer<QRemoteExecutionState> remoteExecutionConfiguration_;
+  QPointer<IQRemoteExecutionState> remoteExecutionConfiguration_;
+  bool remoteExeConfigWasEdited_ = false;
 
 
   std::unique_ptr<WorkbenchAction> currentWorkbenchAction_;
@@ -224,7 +182,7 @@ protected:
    * @return
    * reference to remote config
    */
-  insight::RemoteExecutionConfig* remoteExecutionConfiguration() const;
+  IQRemoteExecutionState* remoteExecutionConfiguration();
 
   // ================================================================================
   // ================================================================================

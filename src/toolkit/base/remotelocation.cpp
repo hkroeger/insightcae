@@ -128,23 +128,23 @@ RemoteLocation::RemoteLocation(
     isTemporaryStorage_( isTemporaryStorage ),
     isValidated_(false)
 {
-  if (remoteDir_.empty())
-  {
-    autoCreateRemoteDir_=true;
-    isTemporaryStorage_=true;
+//  if (remoteDir_.empty())
+//  {
+//    autoCreateRemoteDir_=true;
+//    isTemporaryStorage_=true;
 
-    serverInstance_ = serverConfig_->getInstanceIfRunning();
+//    serverInstance_ = serverConfig_->getInstanceIfRunning();
 
-    if (serverInstance_)
-    {
-      remoteDir_ = serverInstance_->getTemporaryDirectoryName(
-            serverConfig()->defaultDirectory_/"irXXXXXX" );
-    }
-    else
-    {
-      throw insight::Exception("remote instance is not running: cannot determine suitable temporary storage");
-    }
-  }
+//    if (serverInstance_)
+//    {
+//      remoteDir_ = serverInstance_->getTemporaryDirectoryName(
+//            serverConfig()->defaultDirectory_/"irXXXXXX" );
+//    }
+//    else
+//    {
+//      throw insight::Exception("remote instance is not running: cannot determine suitable temporary storage");
+//    }
+//  }
 }
 
 
@@ -164,6 +164,12 @@ RemoteServer::ConfigPtr RemoteLocation::serverConfig() const
 }
 
 
+string RemoteLocation::serverLabel() const
+{
+  return *serverConfig();
+}
+
+
 
 
 const boost::filesystem::path& RemoteLocation::remoteDir() const
@@ -174,14 +180,14 @@ const boost::filesystem::path& RemoteLocation::remoteDir() const
 
 
 
-void RemoteLocation::cleanup()
+void RemoteLocation::cleanup(bool forceRemoval)
 {
   CurrentExceptionContext ex("clean remote server");
   assertValid();
 
   execRemoteCmd("tsp -K");
 
-  if (isTemporaryStorage())
+  if (isTemporaryStorage() || forceRemoval)
     removeRemoteDir();
 }
 
@@ -232,14 +238,31 @@ void RemoteLocation::initialize()
     if (!serverInstance_)
       serverInstance_ = serverConfig_->instance();
 
+    if (remoteDir_.empty())
+    {
+      autoCreateRemoteDir_=true;
+      isTemporaryStorage_=true;
+
+//      serverInstance_ = serverConfig_->getInstanceIfRunning();
+
+//      if (serverInstance_)
+//      {
+        remoteDir_ = serverInstance_->getTemporaryDirectoryName(
+              serverConfig()->defaultDirectory_/"irXXXXXX" );
+//      }
+//      else
+//      {
+//        throw insight::Exception("remote instance is not running: cannot determine suitable temporary storage");
+//      }
+    }
+
+
     if (autoCreateRemoteDir_)
     {
-
       if (!remoteDirExists())
       {
         serverInstance_->createDirectory(remoteDir_);
       }
-
     }
   }
 

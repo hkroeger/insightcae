@@ -35,7 +35,7 @@
 #include "boost/stacktrace.hpp"
 #include "boost/algorithm/string.hpp"
 
-
+#define DEBUG
 
 using namespace std;
 
@@ -230,7 +230,10 @@ void ExceptionContext::snapshot(std::vector<std::string>& context)
     }
 }
 
-thread_local ExceptionContext exceptionContext;
+#if !(defined(WIN32)&&defined(DEBUG))
+thread_local
+#endif
+ExceptionContext exceptionContext;
 
 ExceptionContext& ExceptionContext::getCurrent()
 {
@@ -292,7 +295,9 @@ WarningDispatcher::WarningDispatcher()
 
 void WarningDispatcher::setSuperDispatcher(WarningDispatcher *superDispatcher)
 {
+#if !(defined(WIN32)&&defined(DEBUG))
   superDispatcher_=superDispatcher;
+#endif
 }
 
 void WarningDispatcher::issue(const std::string& message)
@@ -342,8 +347,10 @@ size_t WarningDispatcher::nWarnings() const
 }
 
 
-
-thread_local WarningDispatcher thisThreadsWarnings;
+#if !(defined(WIN32)&&defined(DEBUG))
+thread_local
+#endif
+WarningDispatcher thisThreadsWarnings;
 
 WarningDispatcher& WarningDispatcher::getCurrent()
 {

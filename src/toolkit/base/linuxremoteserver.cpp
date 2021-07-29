@@ -79,7 +79,10 @@ std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteDirectory(cons
   boost::process::ipstream is, ise;
   auto childPtr = launchCommand(
         "ls \""+toUnixPath(remoteDirectory)+"\"",
-        boost::process::std_out > is, boost::process::std_err > ise );
+        boost::process::std_out > is,
+        boost::process::std_err > ise,
+        boost::process::std_in < boost::process::null
+        );
   if (!childPtr->running())
     throw insight::Exception("RemoteExecutionConfig::remoteLS: Failed to launch directory listing subprocess!");
 
@@ -105,9 +108,12 @@ std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteSubdirectories
   boost::process::ipstream is;
 
   auto c = launchCommand(
-        "find", toUnixPath(remoteDirectory)+"/" // add slash for symbolic links
+        "find "+toUnixPath(remoteDirectory)+"/" // add slash for symbolic links
         " -maxdepth 1 -type d -printf \"%P\\\\n\"",
-        boost::process::std_out > is );
+        boost::process::std_out > is,
+        boost::process::std_err > stderr,
+        boost::process::std_in < boost::process::null
+        );
 
   if (!c->running())
     throw insight::Exception("Could not execute remote dir list process!");
@@ -115,7 +121,8 @@ std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteSubdirectories
   std::string line;
   while (std::getline(is, line))
   {
-    res.push_back(line);
+    if (!line.empty())
+      res.push_back(line);
   }
 
   c->wait();

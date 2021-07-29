@@ -1004,10 +1004,16 @@ void RSyncProgressAnalyzer::runAndParse(
     boost::process::child& rsyncProcess,
     std::function<void(int,const std::string&)> pf )
 {
+  if (!rsyncProcess.running())
+  {
+    throw insight::Exception("could not start rsync process!");
+  }
+
   std::string line;
   boost::regex pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*) \\(xfr#([0-9]+), to-chk=([0-9]+)/([0-9]+)\\)");
   while (rsyncProcess.running() && std::getline(*this, line) && !line.empty())
   {
+    insight::dbg()<<line<<std::endl;
     boost::smatch match;
     if (boost::regex_search( line, match, pattern, boost::match_default ))
     {

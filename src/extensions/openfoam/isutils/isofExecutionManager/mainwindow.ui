@@ -513,6 +513,7 @@
      <string>Remote</string>
     </property>
     <addaction name="actionSet_local_directory"/>
+    <addaction name="actionSelect_remote_server"/>
     <addaction name="actionSelect_Remote_Directory"/>
    </widget>
    <widget class="QMenu" name="menuSync">
@@ -599,6 +600,11 @@
   <action name="actionRemote_write_reconstruct_and_copy_to_local">
    <property name="text">
     <string>Remote write, reconstruct and copy to local</string>
+   </property>
+  </action>
+  <action name="actionSelect_remote_server">
+   <property name="text">
+    <string>Select remote server...</string>
    </property>
   </action>
  </widget>

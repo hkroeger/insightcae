@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
+#include "base/mountremote.h"
 #include "openfoam/openfoamtools.h"
 
 #include <iostream>
@@ -79,8 +80,10 @@ int main(int argc, char *argv[])
       ("cancel,c", "cancel remote commands (remove all from queue)")
       ("clean,x", "remove the remote case directory from server")
       ("list-remote,D", "list remote directory contents")
+#ifndef WIN32
       ("mount-remote,M", "mount the remote directory locally using sshfs (needs to be installed)")
       ("unmount-remote,U", "unmount the remote directory")
+#endif
       ;
 
   po::positional_options_description p;
@@ -175,6 +178,7 @@ int main(int argc, char *argv[])
         anything_done=true;
       }
 
+#ifndef WIN32
       if(vm.count("mount-remote"))
       {
         if (!boost::filesystem::exists(local_mp))
@@ -184,6 +188,7 @@ int main(int argc, char *argv[])
 
         anything_done=true;
       }
+#endif
 
       if(vm.count("cancel"))
       {
@@ -233,6 +238,7 @@ int main(int argc, char *argv[])
         anything_done=true;
       }
 
+#ifndef WIN32
       if(vm.count("unmount-remote"))
       {
         if (!boost::filesystem::exists(local_mp))
@@ -242,6 +248,7 @@ int main(int argc, char *argv[])
         }
         anything_done=true;
       }
+#endif
 
 
       if(vm.count("clean"))

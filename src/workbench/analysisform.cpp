@@ -63,10 +63,52 @@
 #include "remotesync.h"
 #include "base/remoteserverlist.h"
 #include "remotedirselector.h"
-
+#include "base/wsllinuxserver.h"
 
 namespace fs = boost::filesystem;
 
+
+
+
+void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
+{
+  insight::dbg()<<"set IQWorkbenchRemoteExecutionState to enabled="
+                <<enabled<<std::endl;
+
+  auto* ui = dynamic_cast<AnalysisForm*>(parent())->ui;
+
+  ui->lblHostName->setEnabled(enabled);
+  if (enabled)
+    ui->lblHostName->setText(
+          QString::fromStdString( rlc_->serverLabel() ) );
+  else
+    ui->lblHostName->setText("(none)");
+
+  ui->lblRemoteDirectory->setEnabled(enabled);
+  if (enabled)
+    ui->lblRemoteDirectory->setText(
+          QString::fromStdString( rlc_->remoteDir().string() ) );
+  else
+    ui->lblRemoteDirectory->setText("(none)");
+
+  if (std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(rlc_->serverConfig()))
+  {
+    ui->btnDisconnect->setEnabled(false);
+    ui->btnResume->setEnabled(false);
+  }
+  else
+  {
+    ui->btnDisconnect->setEnabled(enabled);
+    ui->btnResume->setEnabled(enabled);
+  }
+  ui->btnUpload->setEnabled(enabled);
+  ui->btnDownload->setEnabled(enabled);
+  ui->btnRemoveRemote->setEnabled(enabled);
+  ui->lblRemote_1->setEnabled(enabled);
+  ui->lblRemote_2->setEnabled(enabled);
+
+  insight::dbg()<<"IQWorkbenchRemoteExecutionState updated"<<std::endl;
+}
 
 
 
@@ -552,7 +594,7 @@ void AnalysisForm::resetLocalCaseDirectory(const boost::filesystem::path& lcd)
       delete remoteExecutionConfiguration_;
 
     remoteExecutionConfiguration_ =
-        new IQRemoteExecutionState(
+        IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
           this,
           insight::RemoteExecutionConfig::defaultConfigFile(lcd) );
   }

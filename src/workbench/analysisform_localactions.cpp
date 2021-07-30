@@ -73,7 +73,7 @@ void AnalysisForm::connectLocalActions()
                   delete remoteExecutionConfiguration_;
 
                 remoteExecutionConfiguration_ =
-                      new IQRemoteExecutionState(
+                      IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
                         this,
                         *dlg.remoteLocation() );
               }

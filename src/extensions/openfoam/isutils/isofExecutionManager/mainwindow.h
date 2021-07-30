@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QThread>
 #include <QProgressBar>
+#include <QPointer>
 
 #ifndef NO_TERMWIDGET
 #include "qtermwidget/qtermwidget.h"
@@ -11,6 +12,7 @@
 #include "base/boost_include.h"
 #include "base/remoteexecution.h"
 #include "openfoam/openfoamcase.h"
+#include "iqremoteexecutionstate.h"
 #include "remotedirselector.h"
 #include "remotesync.h"
 
@@ -57,12 +59,21 @@ Q_SIGNALS:
 
 
 
+class IQRXRemoteExecutionState
+    : public IQRemoteExecutionState
+{
+  void updateGUI(bool enabled) override;
+};
+
+
 class MainWindow
 : public QMainWindow
 {
   Q_OBJECT
 
-  std::unique_ptr<insight::RemoteExecutionConfig> remote_;
+  friend class IQRXRemoteExecutionState;
+
+  QPointer<IQRemoteExecutionState> remote_;
 
 #ifndef NO_TERMWIDGET
   QTermWidget *terminal_;
@@ -79,7 +90,7 @@ class MainWindow
   QThread auxJobThread_;
 
 protected:
-    void updateGUI();
+//    void updateGUI();
     void onStartTail();
 
 Q_SIGNALS:
@@ -96,7 +107,6 @@ public:
     void remoteWriteAndCopyBack(bool parallel);
 
 public Q_SLOTS:
-    void onSelectRemoteDir();
     void syncLocalToRemote();
     void syncRemoteToLocal();
 

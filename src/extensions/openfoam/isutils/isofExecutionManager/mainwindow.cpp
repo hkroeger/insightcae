@@ -17,6 +17,7 @@
 #include <QTimer>
 #include <QStatusBar>
 #include <QDateTime>
+#include <QInputDialog>
 
 #include "base/qt5_helper.h"
 
@@ -25,36 +26,76 @@
 #include "base/sshlinuxserver.h"
 
 
-
-void MainWindow::updateGUI()
+void IQRXRemoteExecutionState::updateGUI(bool enabled)
 {
-  setWindowTitle( ui->localDir->text() + " - InsightCAE Execution Manager" );
+  auto *mw = dynamic_cast<MainWindow*>(parent());
+  auto *ui = mw->ui;
 
-  if (remote_)
+  if (enabled)
   {
-    bfs_path loc_dir=boost::filesystem::absolute(remote_->localDir());
-    setWindowTitle(QString::fromStdString(loc_dir.string())+" - InsightCAE Execution Manager");
-    ui->server->setText(QString::fromStdString(remote_->server()->serverLabel()));
-    ui->localDir->setText(QString::fromStdString(loc_dir.string()));
-    ui->remoteDir->setText(QString::fromStdString(remote_->remoteDir().string()));
+    ui->server->setText(QString::fromStdString(rlc_->serverLabel()));
+    ui->remoteDir->setText(QString::fromStdString(rlc_->remoteDir().string()));
+
+    if (isCommitted())
+    {
+      bfs_path loc_dir=boost::filesystem::absolute(exeConfig().localDir());
+      mw->setWindowTitle(QString::fromStdString(loc_dir.string())+" - InsightCAE Execution Manager");
 
 #ifndef NO_TERMWIDGET
-    terminal_->changeDir( ui->localDir->text() );
+    mw->terminal_->changeDir( ui->localDir->text() );
     if ( std::shared_ptr<insight::SSHLinuxServer> ssh =
-            std::dynamic_pointer_cast<insight::SSHLinuxServer>(remote_->server()) )
+            std::dynamic_pointer_cast<insight::SSHLinuxServer>(exeConfig().server()) )
     {
       auto cmd = QString("ssh %1 -t 'cd '%2'; bash -l'\n")
           .arg(QString::fromStdString(ssh->serverConfig()->hostName_))
-          .arg(QString::fromStdString(remote_->remoteDir().string()))
+          .arg(QString::fromStdString(rlc_->remoteDir().string()))
           ;
-      terminal_->sendText(cmd);
+      mw->terminal_->sendText(cmd);
     }
 #endif
 
-    tsi_.reset(new insight::TaskSpoolerInterface(remote_->socket(), remote_->server()));
-    onRefreshJobList();
+      mw->tsi_.reset(new insight::TaskSpoolerInterface(
+                   exeConfig().socket(), exeConfig().server()));
+      mw->onRefreshJobList();
+    }
+  }
+  else
+  {
+    mw->setWindowTitle( ui->localDir->text() + " - InsightCAE Execution Manager" );
+    mw->tsi_.reset();
   }
 }
+
+
+//void MainWindow::updateGUI()
+//{
+//  setWindowTitle( ui->localDir->text() + " - InsightCAE Execution Manager" );
+
+//  if (remote_)
+//  {
+//    bfs_path loc_dir=boost::filesystem::absolute(remote_->localDir());
+//    setWindowTitle(QString::fromStdString(loc_dir.string())+" - InsightCAE Execution Manager");
+//    ui->server->setText(QString::fromStdString(remote_->server()->serverLabel()));
+//    ui->localDir->setText(QString::fromStdString(loc_dir.string()));
+//    ui->remoteDir->setText(QString::fromStdString(remote_->remoteDir().string()));
+
+//#ifndef NO_TERMWIDGET
+//    terminal_->changeDir( ui->localDir->text() );
+//    if ( std::shared_ptr<insight::SSHLinuxServer> ssh =
+//            std::dynamic_pointer_cast<insight::SSHLinuxServer>(remote_->server()) )
+//    {
+//      auto cmd = QString("ssh %1 -t 'cd '%2'; bash -l'\n")
+//          .arg(QString::fromStdString(ssh->serverConfig()->hostName_))
+//          .arg(QString::fromStdString(remote_->remoteDir().string()))
+//          ;
+//      terminal_->sendText(cmd);
+//    }
+//#endif
+
+//    tsi_.reset(new insight::TaskSpoolerInterface(remote_->socket(), remote_->server()));
+//    onRefreshJobList();
+//  }
+//}
 
 
 
@@ -168,9 +209,12 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   QMainWindow(parent),
   ui(new Ui::MainWindow)
 {
-  if ( boost::filesystem::exists( insight::RemoteExecutionConfig::defaultConfigFile(location) ) )
+  auto reccfg = insight::RemoteExecutionConfig::defaultConfigFile(location);
+  if ( boost::filesystem::exists( reccfg ) )
   {
-    remote_.reset(new insight::RemoteExecutionConfig(location));
+    //remote_.reset(new insight::RemoteExecutionConfig(location));
+    remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+          this, reccfg );
   }
 
   ui->setupUi(this);
@@ -182,7 +226,64 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
   soa_.reset(new insight::SolverOutputAnalyzer(*ui->graph));
 
-  connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this, &MainWindow::onSelectRemoteDir);
+  connect(ui->actionSelect_remote_server, &QAction::triggered, this,
+          [&]()
+  {
+    QStringList servers;
+    for (const auto& s: insight::remoteServers)
+    {
+      servers<<QString::fromStdString(*s);
+    }
+
+    int currentServerIdx = 0;
+    if (remote_)
+    {
+      currentServerIdx =
+          servers.indexOf(QString::fromStdString(remote_->location().serverLabel()));
+    }
+    bool ok = false;
+
+    auto selectedServer = QInputDialog::getItem(
+          this,
+          "Select remote server",
+          "Please select the remote server:", servers,
+          currentServerIdx, false, &ok);
+
+    if (!selectedServer.isEmpty())
+    {
+      remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+            this,
+            insight::remoteServers.findServer(
+              selectedServer.toStdString() )
+            );
+      remote_->location().writeConfigFile(
+            insight::RemoteExecutionConfig::defaultConfigFile("."));
+
+    }
+  }
+  );
+
+  connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this,
+          [&]()
+          {
+            RemoteDirSelector dlg(this);
+
+            if (dlg.exec() == QDialog::Accepted)
+            {
+
+                ui->server->setText( QString::fromStdString(dlg.selectedServer()) );
+                ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
+
+                remote_ = IQRXRemoteExecutionState::New(
+                      insight::remoteServers.findServer(
+                        dlg.selectedServer() ),
+                      dlg.selectedRemoteDir()
+                      ).writeConfigFile(
+                      insight::RemoteExecutionConfig::defaultConfigFile("."));
+            }
+          }
+  );
+
   connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
   connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
   connect(ui->sync_to_remote, &QPushButton::clicked, this, &MainWindow::syncLocalToRemote);
@@ -242,8 +343,6 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(refreshTimer_, &QTimer::timeout, this, &MainWindow::onRefreshJobList);
   refreshTimer_->start(5000);
 
-  updateGUI();
-
   readSettings(); 
 
   progressbar_=new QProgressBar(this);
@@ -267,28 +366,6 @@ MainWindow::~MainWindow()
 }
 
 
-
-
-void MainWindow::onSelectRemoteDir()
-{
-  RemoteDirSelector dlg(this);
-
-  if (dlg.exec() == QDialog::Accepted)
-  {
-
-      ui->server->setText( QString::fromStdString(dlg.selectedServer()) );
-      ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
-
-      insight::RemoteLocation(
-            insight::remoteServers.findServer(
-              dlg.selectedServer() ),
-            dlg.selectedRemoteDir()
-            ).writeConfigFile(
-            insight::RemoteExecutionConfig::defaultConfigFile("."));
-
-      updateGUI();
-  }
-}
 
 
 

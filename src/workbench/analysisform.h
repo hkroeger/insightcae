@@ -56,7 +56,6 @@
 #include "iqcasedirectorystate.h"
 #include "iqremoteexecutionstate.h"
 
-
 #ifdef WIN32
 #define WSL_DEFAULT
 #endif
@@ -76,6 +75,13 @@ class SolverOutputAnalyzer;
 class WorkbenchAction;
 
 
+class IQWorkbenchRemoteExecutionState
+    : public IQRemoteExecutionState
+{
+protected:
+  void updateGUI(bool enabled) override;
+};
+
 
 
 class AnalysisForm
@@ -89,7 +95,7 @@ class AnalysisForm
   friend class RemoteRun;
   friend class WSLRun;
   friend class IQCaseDirectoryState;
-  friend class IQRemoteExecutionState;
+  friend class IQWorkbenchRemoteExecutionState;
   
 protected:
 

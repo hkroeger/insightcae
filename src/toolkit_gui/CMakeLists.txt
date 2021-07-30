@@ -6,10 +6,13 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
-find_package(Qt5Test CONFIG REQUIRED)
+#find_package(Qt5Test CONFIG REQUIRED)
 
 set(toolkit_gui_SRCS 
     parametereditorwidget.cpp
+
+    iqremoteexecutionstate.cpp
+    iqremoteexecutionstate.h
 
     iqparametersetmodel.cpp
     iqparameter.cpp

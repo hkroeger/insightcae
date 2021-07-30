@@ -50,7 +50,7 @@ void AnalysisForm::connectRemoteActions()
   connect(ui->btnDownload, &QPushButton::clicked,
           this, &AnalysisForm::download );
 
-  connect(ui->btnRemoveRemote, &QPushButton::clicked,
+  connect(ui->btnRemoveRemote, &QPushButton::clicked, this,
           [&]()
           {
             if (!isRunningRemotely())
@@ -88,7 +88,8 @@ IQRemoteExecutionState* AnalysisForm::remoteExecutionConfiguration()
   if (isOpenFOAMAnalysis_ && !remoteExecutionConfiguration_ && !remoteExeConfigWasEdited_)
   {
     auto* af = const_cast<AnalysisForm*>(this);
-    af->remoteExecutionConfiguration_ = new IQRemoteExecutionState(
+    af->remoteExecutionConfiguration_ =
+        IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
           af,
           insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*")
           );

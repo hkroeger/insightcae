@@ -62,6 +62,7 @@ Q_SIGNALS:
 class IQRXRemoteExecutionState
     : public IQRemoteExecutionState
 {
+protected:
   void updateGUI(bool enabled) override;
 };
 

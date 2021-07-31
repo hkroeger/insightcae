@@ -7,6 +7,7 @@
 #include "base/remotelocation.h"
 #include "base/remoteexecution.h"
 #include "openfoam/ofes.h"
+#include "base/mountremote.h"
 
 #include "remoteparaview.h"
 #include "remotedirselector.h"
@@ -185,7 +186,7 @@ void AnalysisForm::onCleanOFC()
   std::unique_ptr<insight::MountRemote> rd;
   if (auto* rec = remoteExecutionConfiguration())
   {
-      rd.reset(new insight::MountRemote(*rec));
+      rd.reset(new insight::MountRemote(rec->location()));
       exePath = rd->mountpoint();
   }
 
@@ -206,7 +207,7 @@ void AnalysisForm::onWnow()
     std::unique_ptr<insight::MountRemote> rd;
     if ( auto* rec = remoteExecutionConfiguration() )
     {
-        rd.reset(new insight::MountRemote(*rec));
+        rd.reset(new insight::MountRemote(rec->location()));
         exePath = rd->mountpoint();
     }
 
@@ -230,7 +231,7 @@ void AnalysisForm::onWnowAndStop()
     std::unique_ptr<insight::MountRemote> rd;
     if ( auto* rec = remoteExecutionConfiguration() )
     {
-        rd.reset(new insight::MountRemote(*rec));
+        rd.reset(new insight::MountRemote(rec->location()));
         exePath = rd->mountpoint();
     }
 

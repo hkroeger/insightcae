@@ -65,11 +65,12 @@ public:
   template<typename DerivedClass>
   static IQRemoteExecutionState* New(
       QObject *parent,
+      const boost::filesystem::path& localDir,
       const boost::filesystem::path& configFile )
   {
     auto *iqr = new DestructionGuard<DerivedClass>;
     iqr->setParent(parent);
-    iqr->rlc_.reset(new insight::RemoteLocation(configFile));
+    iqr->rlc_.reset(new insight::RemoteExecutionConfig(localDir, configFile));
     iqr->updateGUI(true);
     return iqr;
   }

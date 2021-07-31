@@ -544,7 +544,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionSelect_Remote_Directory">
    <property name="text">
-    <string>Select Remote Directory...</string>
+    <string>Select remote directory...</string>
    </property>
   </action>
   <action name="action_syncLocalToRemote">

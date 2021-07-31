@@ -29,10 +29,15 @@
 void IQRXRemoteExecutionState::updateGUI(bool enabled)
 {
   auto *mw = dynamic_cast<MainWindow*>(parent());
+  insight::assertion(mw, "internal error: main window is unset");
+
   auto *ui = mw->ui;
+  insight::assertion(ui, "internal error: user interface record is unset");
 
   if (enabled)
   {
+    insight::assertion(bool(rlc_), "internal error: remote location is unset");
+
     ui->server->setText(QString::fromStdString(rlc_->serverLabel()));
     ui->remoteDir->setText(QString::fromStdString(rlc_->remoteDir().string()));
 
@@ -209,17 +214,10 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   QMainWindow(parent),
   ui(new Ui::MainWindow)
 {
-  auto reccfg = insight::RemoteExecutionConfig::defaultConfigFile(location);
-  if ( boost::filesystem::exists( reccfg ) )
-  {
-    //remote_.reset(new insight::RemoteExecutionConfig(location));
-    remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
-          this, reccfg );
-  }
-
   ui->setupUi(this);
 
   ui->localDir->setText( QString::fromStdString(boost::filesystem::absolute(location).string()) );
+
 
   setWindowIcon(QIcon(":/resources/logo_insight_cae.svg"));
   this->setWindowTitle("InsightCAE Execution Manager");
@@ -228,60 +226,66 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
   connect(ui->actionSelect_remote_server, &QAction::triggered, this,
           [&]()
-  {
-    QStringList servers;
-    for (const auto& s: insight::remoteServers)
-    {
-      servers<<QString::fromStdString(*s);
-    }
+          {
+            QStringList servers;
+            for (const auto& s: insight::remoteServers)
+            {
+              servers<<QString::fromStdString(*s);
+            }
 
-    int currentServerIdx = 0;
-    if (remote_)
-    {
-      currentServerIdx =
-          servers.indexOf(QString::fromStdString(remote_->location().serverLabel()));
-    }
-    bool ok = false;
+            int currentServerIdx = 0;
+            if (remote_)
+            {
+              currentServerIdx =
+                  servers.indexOf(QString::fromStdString(remote_->location().serverLabel()));
+            }
+            bool ok = false;
 
-    auto selectedServer = QInputDialog::getItem(
-          this,
-          "Select remote server",
-          "Please select the remote server:", servers,
-          currentServerIdx, false, &ok);
+            auto selectedServer = QInputDialog::getItem(
+                  this,
+                  "Select remote server",
+                  "Please select the remote server:", servers,
+                  currentServerIdx, false, &ok);
 
-    if (!selectedServer.isEmpty())
-    {
-      remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
-            this,
-            insight::remoteServers.findServer(
-              selectedServer.toStdString() )
-            );
-      remote_->location().writeConfigFile(
-            insight::RemoteExecutionConfig::defaultConfigFile("."));
+            if (!selectedServer.isEmpty())
+            {
+              remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+                    this,
+                    insight::remoteServers.findServer(
+                      selectedServer.toStdString() )
+                    );
+              remote_->location().writeConfigFile(
+                    insight::RemoteExecutionConfig::defaultConfigFile("."));
 
-    }
-  }
+            }
+          }
   );
 
   connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this,
           [&]()
           {
-            RemoteDirSelector dlg(this);
+    if (remote_)
+    {
+      auto server = remote_->location().serverConfig()->getInstanceIfRunning();
+      insight::assertion(bool(server), "server is not running");
 
-            if (dlg.exec() == QDialog::Accepted)
-            {
+        RemoteDirSelector dlg(this, server);
 
-                ui->server->setText( QString::fromStdString(dlg.selectedServer()) );
-                ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
+        if (dlg.exec() == QDialog::Accepted)
+        {
 
-                remote_ = IQRXRemoteExecutionState::New(
-                      insight::remoteServers.findServer(
-                        dlg.selectedServer() ),
-                      dlg.selectedRemoteDir()
-                      ).writeConfigFile(
-                      insight::RemoteExecutionConfig::defaultConfigFile("."));
-            }
-          }
+            ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
+
+            remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+                  this,
+                  remote_->location().serverConfig(),
+                  dlg.selectedRemoteDir()
+                  );
+            remote_->location().writeConfigFile(
+                  insight::RemoteExecutionConfig::defaultConfigFile("."));
+        }
+      }
+    }
   );
 
   connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
@@ -347,6 +351,15 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
   progressbar_=new QProgressBar(this);
   statusBar()->addPermanentWidget(progressbar_);
+
+  auto reccfg = insight::RemoteExecutionConfig::defaultConfigFile(location);
+  if ( boost::filesystem::exists( reccfg ) )
+  {
+    remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+          this,
+          location,
+          reccfg );
+  }
 }
 
 
@@ -373,7 +386,7 @@ void MainWindow::syncLocalToRemote()
 {
   if (remote_)
   {
-    auto *rstr = new insight::RunSyncToRemote(*remote_);
+    auto *rstr = new insight::RunSyncToRemote(remote_->exeConfig());
 
     connect(rstr, &insight::RunSyncToRemote::progressValueChanged, progressbar_, &QProgressBar::setValue);
     connect(rstr, &insight::RunSyncToRemote::progressTextChanged,
@@ -401,7 +414,7 @@ void MainWindow::syncRemoteToLocal()
 {
   if (remote_)
   {
-    auto* rstl = new insight::RunSyncToLocal(*remote_);
+    auto* rstl = new insight::RunSyncToLocal(remote_->exeConfig());
 
     connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
             progressbar_, &QProgressBar::setValue);
@@ -435,7 +448,7 @@ void MainWindow::onStartRemoteParaview()
 {
   if (remote_)
   {
-    RemoteParaview dlg(*remote_, this);
+    RemoteParaview dlg(remote_->exeConfig(), this);
     dlg.exec();
   }
 }
@@ -503,8 +516,8 @@ void MainWindow::remoteWriteAndCopyBack(bool parallel)
   std::ostringstream cmd;
 
   cmd
-      << remote_->remoteSourceOFEnvStatement()
-      << "cd "<<remote_->remoteDir()<<" && "
+      << remote_->exeConfig().remoteSourceOFEnvStatement()
+      << "cd "<<remote_->location().remoteDir()<<" && "
       << "( isofWaitForWrite.sh "
       << (parallel ? "-p" : "") << " )";
 
@@ -512,7 +525,7 @@ void MainWindow::remoteWriteAndCopyBack(bool parallel)
   auto job=std::make_shared<insight::Job>();
 //  insight::SSHCommand sc(remote_->server(), { "bash -lc \""+insight::escapeShellSymbols(cmd.str())+"\"" });
   insight::forkExternalProcess(
-        job, remote_->server()->launchCommand(
+        job, remote_->exeConfig().server()->launchCommand(
           cmd.str(),
           boost::process::std_in < job->in,
           boost::process::std_out > job->out,

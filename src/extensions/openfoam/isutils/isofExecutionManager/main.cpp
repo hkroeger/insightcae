@@ -154,6 +154,8 @@ int main(int argc, char *argv[])
       auto i = insight::remoteServers.findServer(server);
 
       insight::RemoteExecutionConfig rec(i, location); // creates config file
+      rec.initialize();
+      rec.writeConfig(meta);
 
       anything_done=true;
     }
@@ -162,15 +164,20 @@ int main(int argc, char *argv[])
   try
   {
 
-    insight::RemoteExecutionConfig re(location, mf);
+    std::unique_ptr<insight::RemoteExecutionConfig> re;
+    try
+    {
+      re.reset(new insight::RemoteExecutionConfig(location, mf));
+    }
+    catch (...) {}
     boost::filesystem::path local_mp = location / "mnt_remote" / "default";
 
-    if (re.isActive())
+    if (re && re->isActive())
     {
 
       if(vm.count("list-remote"))
       {
-        auto files=re.remoteLS();
+        auto files=re->remoteLS();
         for (const auto&f: files)
         {
           std::cout<<f<<std::endl;
@@ -184,7 +191,7 @@ int main(int argc, char *argv[])
         if (!boost::filesystem::exists(local_mp))
           boost::filesystem::create_directories(local_mp);
 
-        MountRemote m(local_mp, re, true);
+        MountRemote m(local_mp, *re, true);
 
         anything_done=true;
       }
@@ -192,13 +199,13 @@ int main(int argc, char *argv[])
 
       if(vm.count("cancel"))
       {
-        re.cancelRemoteCommands();
+        re->cancelRemoteCommands();
         anything_done=true;
       }
 
       if (vm.count("sync-remote"))
       {
-        re.syncToRemote(skip_dirs);
+        re->syncToRemote(skip_dirs);
         anything_done=true;
       }
 
@@ -206,7 +213,7 @@ int main(int argc, char *argv[])
       {
         for (const auto& c: cmds)
         {
-          re.queueRemoteCommand(c);
+          re->queueRemoteCommand(c);
           anything_done=true;
         }
       }
@@ -215,26 +222,26 @@ int main(int argc, char *argv[])
       {
         for (const auto& c: icmds)
         {
-          re.queueRemoteCommand(c, false);
+          re->queueRemoteCommand(c, false);
           anything_done=true;
         }
       }
 
       if (vm.count("wait"))
       {
-        re.waitRemoteQueueFinished();
+        re->waitRemoteQueueFinished();
         anything_done=true;
       }
 
       if (vm.count("wait-last"))
       {
-        re.waitLastCommandFinished();
+        re->waitLastCommandFinished();
         anything_done=true;
       }
 
       if(vm.count("sync-local"))
       {
-        re.syncToLocal( (vm.count("skip-timesteps")>0), skip_dirs );
+        re->syncToLocal( (vm.count("skip-timesteps")>0), skip_dirs );
         anything_done=true;
       }
 
@@ -244,7 +251,7 @@ int main(int argc, char *argv[])
         if (!boost::filesystem::exists(local_mp))
           throw insight::Exception("mount point "+local_mp.string()+" does not exist!");
         else {
-          MountRemote m(local_mp, re, false, true);
+          MountRemote m(local_mp, *re, false, true);
         }
         anything_done=true;
       }
@@ -253,7 +260,7 @@ int main(int argc, char *argv[])
 
       if(vm.count("clean"))
       {
-        re.cleanup();
+        re->cleanup(true);
         return 0; // configuration is invalidated, exit here
       }
 
@@ -262,7 +269,7 @@ int main(int argc, char *argv[])
         boost::filesystem::path other_case_path( vm["remote-dir-for-mapping"].as<std::string>() );
         RemoteExecutionConfig orc(other_case_path);
 
-        if (orc.server() != re.server())
+        if (orc.server() != re->server())
           throw insight::Exception("Remote directory of case is on a different server than the current case");
 
         if (!orc.remoteDirExists())

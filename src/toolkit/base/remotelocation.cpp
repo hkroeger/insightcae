@@ -18,6 +18,8 @@
 
 #include <signal.h>
 
+#include "sshlinuxserver.h"
+
 using namespace std;
 using namespace boost;
 namespace bp = boost::process;
@@ -167,6 +169,19 @@ RemoteServer::ConfigPtr RemoteLocation::serverConfig() const
 string RemoteLocation::serverLabel() const
 {
   return *serverConfig();
+}
+
+
+string RemoteLocation::hostName() const
+{
+  if ( auto scfg =
+       std::dynamic_pointer_cast<SSHLinuxServer::Config>(
+         serverConfig()) )
+  {
+    return scfg->hostName_;
+  }
+
+  return std::string();
 }
 
 

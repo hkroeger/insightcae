@@ -78,6 +78,15 @@ public:
     RemoteServerPtr server() const;
     RemoteServer::ConfigPtr serverConfig() const;
     std::string serverLabel() const;
+
+    /**
+     * @brief hostName
+     * attempt to find a hostName. Not recommended to use.
+     * Returns emty string, if hostname is not suitable.
+     * @return
+     */
+    std::string hostName() const;
+
     const boost::filesystem::path& remoteDir() const;
 
 

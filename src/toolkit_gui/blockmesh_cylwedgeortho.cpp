@@ -313,14 +313,20 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
   // Schnittpunkt Normale/gegenüberliegende Kurve
 
+  auto removeInnerGusset = [&]()
+  {
+    cout<<"remove inner gusset"<<endl;
+    g_begin.collapse_pt_loc=Gusset::None;
+    g_begin.fwd_u0 = g_begin.fwd_u1 = g_begin.rvs_u0 = g_begin.rvs_u1 = t0;
+    g_begin.ctr = g_begin.interf = gp_Pnt( spine_rvs->Value(t0).Transformed(rot_fwd_ctr).XYZ() );
+  };
+
   double u_sp1;
   cout<<"Begin: scalar product = "<<en_circ1.Dot(en1)<<endl;
   if ( fabs(en_circ1.Dot(en1)) < 0.1 )
   {
     // radial auslaufend
-    g_begin.collapse_pt_loc=Gusset::None;
-    g_begin.fwd_u0 = g_begin.fwd_u1 = g_begin.rvs_u0 = g_begin.rvs_u1 = t0;
-    g_begin.ctr = g_begin.interf = gp_Pnt( spine_rvs->Value(t0).Transformed(rot_fwd_ctr).XYZ() );
+    removeInnerGusset();
   }
   else if ( en_circ1.Dot(en1) > 0 )
   {
@@ -354,6 +360,12 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                   +
                   0.2 * ( spine_rvs->Value(0.5*(t0+u_sp1)).Transformed(rot_fwd).XYZ() )
                   );
+
+    // check
+    double dr=spine_rvs->Value(t0).Distance(spine_rvs->Value(u_sp1));
+    double du=spine_rvs->Value(t0).Distance( spine_rvs->Value(t0).Transformed(rot_fwd) );
+    cout<<"dr="<<dr<<", du="<<du<<endl;
+    if (dr/du<0.1) removeInnerGusset();
   }
   else
   {
@@ -386,6 +398,12 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                 +
                 0.2* ( spine_rvs->Value(0.5*(u_sp1 + t0)).XYZ() )
                 );
+
+    // check
+    double dr=spine_rvs->Value(t0).Distance(spine_rvs->Value(u_sp1));
+    double du=spine_rvs->Value(t0).Distance( spine_rvs->Value(t0).Transformed(rot_fwd) );
+    cout<<"dr="<<dr<<", du="<<du<<endl;
+    if (dr/du<0.1) removeInnerGusset();
   }
 
 
@@ -404,12 +422,19 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
   double u_sp2;
   cout<<"End: scalar product = "<<en_circ2.Dot(en2)<<endl;
-  if ( fabs(en_circ2.Dot(en2)) < 0.1 )
+
+  auto removeOuterGusset = [&]()
   {
-    // radial auslaufend
+    cout<<"remove outer gusset"<<endl;
     g_end.collapse_pt_loc=Gusset::None;
     g_end.fwd_u0 = g_end.fwd_u1 = g_end.rvs_u0 = g_end.rvs_u1 = t1;
     g_end.ctr = g_end.interf = gp_Pnt( spine_rvs->Value(t1).Transformed(rot_fwd_ctr).XYZ() );
+  };
+
+  if ( fabs(en_circ2.Dot(en2)) < 0.1 )
+  {
+    // radial auslaufend
+    removeOuterGusset();
   }
   else if ( en_circ2.Dot(en2) > 0 )
   {
@@ -442,6 +467,12 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                 +
                 0.2* ( spine_rvs->Value(0.5*(u_sp2 + t1)).XYZ() )
                 );
+
+    // check
+    double dr=spine_rvs->Value(t1).Distance(spine_rvs->Value(u_sp2));
+    double du=spine_rvs->Value(t1).Distance( spine_rvs->Value(t1).Transformed(rot_fwd) );
+    cout<<"dr="<<dr<<", du="<<du<<endl;
+    if (dr/du<0.1) removeOuterGusset();
   }
   else
   {
@@ -475,6 +506,11 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                 0.2* ( spine_rvs->Value(0.5*(u_sp2 + t1)).Transformed(rot_fwd).XYZ() )
                 );
 
+    // check
+    double dr=spine_rvs->Value(t1).Distance(spine_rvs->Value(u_sp2));
+    double du=spine_rvs->Value(t1).Distance( spine_rvs->Value(t1).Transformed(rot_fwd) );
+    cout<<"dr="<<dr<<", du="<<du<<endl;
+    if (dr/du<0.1) removeOuterGusset();
   }
 
   // Blockgeometrien

@@ -358,8 +358,12 @@ void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
         navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
         if (currentNavigationAction_)
           currentNavigationAction_->onRightButtonUp( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
+        else if (currentUserActivity_)
           currentUserActivity_->onRightButtonUp( e->modifiers(), e->pos() );
+        else
+        {
+          displayContextMenu(e->pos());
+        }
       }
     else if ( e->button() & Qt::MidButton )
       {

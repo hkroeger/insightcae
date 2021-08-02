@@ -44,10 +44,15 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Cy
 
 
 
-
-
-void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements(const std::string& blockMeshName)
+void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::setBlockMeshName(const std::string& blockMeshName)
 {
+  blockMeshName_=blockMeshName;
+}
+
+void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements()
+{
+  CurrentExceptionContext ex("computed visualization of CylWedgeOrtho block mesh template");
+
   CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
   Parameters p(currentParameters());
@@ -168,16 +173,12 @@ void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationE
 //    wedge = cad::Compound::create(feats);
   }
 
-  addFeature( blockMeshName,
+  addFeature( blockMeshName_,
               wedge,
               AIS_WireFrame
               );
 }
 
-void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements()
-{
-  recreateVisualizationElements("blockMeshDict_CylWedgeOrtho");
-}
 
 }
 }

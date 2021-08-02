@@ -43,8 +43,12 @@ ParameterSet_VisualizerPtr blockMeshDict_CylWedge_visualizer()
 
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_CylWedge, visualizer, blockMeshDict_CylWedge_visualizer);
 
+void blockMeshDict_CylWedge_ParameterSet_Visualizer::setBlockMeshName(const std::string& blockMeshName)
+{
+  blockMeshName_ = blockMeshName;
+}
 
-void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElements(const std::string& featureName)
+void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElements()
 {
   CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
@@ -67,18 +71,13 @@ void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElemen
         )
       ;
 
-  addFeature( featureName,
+  addFeature( blockMeshName_,
               cad::Compound::create(cad::CompoundFeatureList({dom})),
               AIS_WireFrame
               );
 }
 
 
-
-void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElements()
-{
-  recreateVisualizationElements("blockMeshDict_CylWedge");
-}
 
 }
 }

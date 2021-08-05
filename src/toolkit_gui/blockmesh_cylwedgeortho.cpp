@@ -550,32 +550,53 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                   ) / double(nr);
 
     {
-    Block& bl = this->addBlock
-                (
-                    new Block ( P_8_DZ (
-                                  pr0, pr1, prf1, prf0,
-                                  vL0, vL1
-                                ),
-                                nr, nuBy2, nx
-                              )
-                );
-    if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
-    if ( is_highest && pc.top ) pc.top->addFace ( bl.face ( "4567" ) );
-    if (pc.pcyclm) pc.pcyclm->addFace(bl.face("0154"));
+      Block& bl = this->addBlock
+                  (
+                      new Block ( P_8_DZ (
+                                    pr0, pr1, prf1, prf0,
+                                    vL0, vL1
+                                  ),
+                                  nr, nuBy2, nx
+                                )
+                  );
+      if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
+      if ( is_highest && pc.top ) pc.top->addFace ( bl.face ( "4567" ) );
+      if (pc.pcyclm) pc.pcyclm->addFace(bl.face("0154"));
+
+//      if((g_begin.collapse_pt_loc == Gusset::None) && !do_pro_inner_blocks)
+//      {
+//        if ( Patch* cp = pc.innerif) cp->addFace(bl.face("0473"));
+//      }
+//      if((g_end.collapse_pt_loc == Gusset::None) && !do_pro_outer_blocks)
+//      {
+//        if ( Patch* cp = pc.outerif) cp->addFace(bl.face("1265"));
+//      }
     }
+
+    std::cout<<pc.innerif<<" "<<g_begin.collapse_pt_loc<<" "<<Gusset::None<<" "<<do_pro_inner_blocks<<std::endl;
     {
-    Block& bl = this->addBlock
-                (
-                    new Block ( P_8_DZ (
-                                  prf0, prf1, pf1, pf0,
-                                  vL0, vL1
-                                ),
-                                nr, nuBy2, nx
-                              )
-                );
-    if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
-    if ( is_highest && pc.top ) pc.top->addFace ( bl.face ( "4567" ) );
-    if ( Patch* cp = pc.pcyclp) cp->addFace(bl.face("2376"));
+      Block& bl = this->addBlock
+                  (
+                      new Block ( P_8_DZ (
+                                    prf0, prf1, pf1, pf0,
+                                    vL0, vL1
+                                  ),
+                                  nr, nuBy2, nx
+                                )
+                  );
+      if ( is_lowest && pc.base ) pc.base->addFace ( bl.face ( "0321" ) );
+      if ( is_highest && pc.top ) pc.top->addFace ( bl.face ( "4567" ) );
+      if ( Patch* cp = pc.pcyclp) cp->addFace(bl.face("2376"));
+
+//      if((g_begin.collapse_pt_loc == Gusset::None) && !do_pro_inner_blocks)
+//      {
+//        if ( Patch* cp = pc.innerif) cp->addFace(bl.face("0473"));
+//      }
+//      if((g_end.collapse_pt_loc == Gusset::None) && !do_pro_outer_blocks)
+//      {
+//        if ( Patch* cp = pc.outerif) cp->addFace(bl.face("1265"));
+//      }
+
     }
 
     auto middleCurve = [&](const PointList& c1, const PointList& c2, const arma::mat vLEnd)
@@ -864,6 +885,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
                                                vec3(pa)+vL1,
                                                vec3(center0)+vL1 ) );
     }
+
   }
 
   if (do_pro_inner_blocks)

@@ -136,9 +136,10 @@ class blockMeshDict_CylWedge_ParameterSet_Visualizer
 {
 public:
     typedef blockMeshDict_CylWedge::Parameters Parameters;
+    std::string blockMeshName_ = "blockMeshDict_CylWedge";
 
 public:
-    void recreateVisualizationElements(const std::string& blockMeshName );
+    void setBlockMeshName(const std::string& blockMeshName);
     void recreateVisualizationElements() override;
 };
 

@@ -34,7 +34,6 @@ void CAD_ParameterSet_Visualizer::recreateVisualizationElements()
 }
 
 
-std::mutex vis_mtx;
 
 CAD_ParameterSet_Visualizer::CAD_ParameterSet_Visualizer()
 {
@@ -52,7 +51,7 @@ CAD_ParameterSet_Visualizer::~CAD_ParameterSet_Visualizer()
 
 void CAD_ParameterSet_Visualizer::visualizeScheduledParameters()
 {
-  std::unique_lock<std::mutex> lck(vis_mtx, std::defer_lock);
+  std::unique_lock<std::mutex> lck(vis_mtx_, std::defer_lock);
 
   CurrentExceptionContext ex("computing visualization of scheduled parameter set");
 

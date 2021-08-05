@@ -24,6 +24,7 @@ private:
   Q_OBJECT
 
   QThread asyncRebuildThread_;
+  std::mutex vis_mtx_;
 
 public:
 

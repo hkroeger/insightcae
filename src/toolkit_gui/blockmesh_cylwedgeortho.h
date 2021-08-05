@@ -176,10 +176,11 @@ class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer
  : public CAD_ParameterSet_Visualizer
 {
 public:
+    std::string blockMeshName_ = "blockMeshDict_CylWedgeOrtho";
     typedef blockMeshDict_CylWedgeOrtho::Parameters Parameters;
 
 public:
-    void recreateVisualizationElements(const std::string& blockMeshName );
+    void setBlockMeshName(const std::string& blockMeshName);
     void recreateVisualizationElements() override;
 };
 

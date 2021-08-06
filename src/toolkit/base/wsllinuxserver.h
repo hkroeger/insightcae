@@ -15,11 +15,11 @@ class WSLLinuxServer
 public:
   struct Config : public RemoteServer::Config
   {
-    boost::filesystem::path WSLExecutable_;
+    std::string distributionLabel_;
 
     Config(
         const boost::filesystem::path& bp,
-        const boost::filesystem::path& WSLExecutable );
+        const std::string& distributionLabel );
 
     Config(rapidxml::xml_node<> *e);
 

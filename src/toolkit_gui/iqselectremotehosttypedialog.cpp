@@ -82,10 +82,10 @@ WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, insight::RemoteServer::ConfigPtr i
   {
     auto *l = new QHBoxLayout;
     l->addWidget(new QLabel("WSL executable:"));
-    leWSLExecutable_ = new QLineEdit;
+    leDistributionLabel_ = new QLineEdit;
     if (ini)
-      leWSLExecutable_->setText( QString::fromStdString(ini->WSLExecutable_.string()) );
-    l->addWidget(leWSLExecutable_);
+      leDistributionLabel_->setText( QString::fromStdString(ini->distributionLabel_) );
+    l->addWidget(leDistributionLabel_);
     auto* btn=new QPushButton("...");
     QObject::connect(btn, &QPushButton::clicked, btn,
             [&]()
@@ -96,7 +96,7 @@ WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, insight::RemoteServer::ConfigPtr i
                     "", "Executables (*.exe)");
               if (!sf.isEmpty())
               {
-                leWSLExecutable_->setText(sf);
+                leDistributionLabel_->setText(sf);
               }
             }
     );
@@ -122,7 +122,7 @@ insight::RemoteServer::ConfigPtr WSLLinuxSetup::result()
 {
   return std::make_shared<insight::WSLLinuxServer::Config>(
         leBaseDir_->text().toStdString(),
-        leWSLExecutable_->text().toStdString()
+        leDistributionLabel_->text().toStdString()
         );
 }
 

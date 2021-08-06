@@ -19,9 +19,9 @@ namespace insight {
 
 WSLLinuxServer::Config::Config(
         const boost::filesystem::path& bp,
-        const boost::filesystem::path& WSLExecutable )
+        const std::string& distributionLabel )
   : RemoteServer::Config(bp),
-    WSLExecutable_(WSLExecutable)
+    distributionLabel_(distributionLabel)
 {}
 
 
@@ -32,9 +32,9 @@ WSLLinuxServer::Config::Config(rapidxml::xml_node<> *e)
      boost::filesystem::path(e->first_attribute("baseDirectory")->value())
      )
 {
-  auto* ha = e->first_attribute("WSLExecutable");
+  auto* ha = e->first_attribute("distributionLabel");
 
-  WSLExecutable_=ha->value();
+  distributionLabel_=ha->value();
 }
 
 
@@ -52,7 +52,7 @@ std::shared_ptr<RemoteServer> WSLLinuxServer::Config::instance()
 {
   auto srv = std::make_shared<WSLLinuxServer>( std::make_shared<Config>(*this) );
   if (!srv->hostIsAvailable())
-    throw insight::Exception("The WSL distribution "+WSLExecutable_.string()+" does not work!");
+    throw insight::Exception("The WSL distribution "+distributionLabel_+" does not work!");
   return srv;
 }
 
@@ -71,8 +71,8 @@ void WSLLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_documen
 {
   e->append_attribute( doc.allocate_attribute( "label", this->c_str() ) );
   e->append_attribute( doc.allocate_attribute( "type", "WSLLinux" ) );
-  e->append_attribute( doc.allocate_attribute( "WSLExecutable",doc.allocate_string(
-                                               WSLExecutable_.string().c_str() ) ) );
+  e->append_attribute( doc.allocate_attribute( "distributionLabel",doc.allocate_string(
+                                               distributionLabel_.c_str() ) ) );
   e->append_attribute( doc.allocate_attribute( "baseDirectory", doc.allocate_string(
                                                defaultDirectory_.string().c_str() ) ) );
 }
@@ -100,8 +100,8 @@ WSLLinuxServer::Config *WSLLinuxServer::serverConfig() const
 std::pair<boost::filesystem::path,std::vector<std::string> >
 WSLLinuxServer::commandAndArgs(const std::string& command)
 {
-  return { serverConfig()->WSLExecutable_,
-    { "run", "bash", "-lc", "'"+command+"'" } };
+  return { boost::process::search_path("wsl.exe"),
+    { "-d", serverConfig()->distributionLabel_, "bash", "-lc", "'"+command+"'" } };
 }
 
 

@@ -30,7 +30,7 @@ struct SSHLinuxSetup
 struct WSLLinuxSetup
     : public ServerSetup
 {
-  QLineEdit *leWSLExecutable_, *leBaseDir_;
+  QLineEdit *leDistributionLabel_, *leBaseDir_;
 
   WSLLinuxSetup(QWidget* parent, insight::RemoteServer::ConfigPtr initialcfg = insight::RemoteServer::ConfigPtr() );
 

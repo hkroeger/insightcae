@@ -68,7 +68,7 @@ protected:
   
   int additionalPoints_;
 
-  std::string executableName_ = "gmsh";
+  boost::filesystem::path executable_;
 
   boost::filesystem::path outputMeshFile_;
   MSHFileVersion mshFileVersion_;
@@ -78,7 +78,7 @@ public:
       ConstFeaturePtr part,
       const boost::filesystem::path& outputMeshFile,
       double Lmax=500., double Lmin=0.1,
-      const std::string& exeName="gmsh",
+//      const std::string& exeName="gmsh",
       bool keepDir=false
       );
 

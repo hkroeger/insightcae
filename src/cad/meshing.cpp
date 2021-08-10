@@ -45,16 +45,25 @@ GmshCase::GmshCase(
     insight::cad::ConstFeaturePtr part,
     const boost::filesystem::path& outputMeshFile,
     double Lmax, double Lmin,
-    const std::string& exeName,
     bool keepDir
     )
 : workDir_(keepDir),
   part_(part),
   additionalPoints_(0),
-  executableName_(exeName),
   outputMeshFile_(outputMeshFile),
   mshFileVersion_(v41)
 {
+  // prefer gmsh from insightcae dependency package
+  executable_ = boost::process::search_path("gmshinsightcae");
+  if (executable_.empty())
+  {
+    executable_ = boost::process::search_path("gmsh");
+  }
+  if (executable_.empty())
+  {
+    throw insight::Exception("Could not find executable \"gmsh\" in PATH! Please check, if it is installed correctly,");
+  }
+
   push_back("SetFactory(\"OpenCASCADE\")");
   push_back("// Preamble");
   push_back("");
@@ -357,7 +366,7 @@ void GmshCase::doMeshing()
                   "-o", fs::absolute(outputMeshFile_).string()
                 });
 
-    auto job = ee.forkCommand( executableName_, argv );
+    auto job = ee.forkCommand( executable_.string(), argv );
     job->runAndTransferOutput();
   } 
 }
@@ -387,7 +396,7 @@ SurfaceGmshCase::SurfaceGmshCase(
     bool keepDir
     )
   : cad::GmshCase(part, outputMeshFile,
-                  Lmax, Lmin, "gmshinsightcae", keepDir)
+                  Lmax, Lmin, keepDir)
 {
   insertLinesBefore(endOfMeshingOptions_, {
     "Mesh.RecombinationAlgorithm = 0",
@@ -414,7 +423,7 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     bool keepDir
     )
   : cad::GmshCase(part, outputMeshFile,
-                  L, L, "gmshinsightcae", keepDir)
+                  L, L, keepDir)
 {
 
   for (const auto& nbf: namedBottomFaces)
@@ -517,7 +526,7 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
                         });
     }
 
-    for (int i=0; i<currentFaceEdges.size(); i++)
+    for (size_t i=0; i<currentFaceEdges.size(); i++)
     {
       auto eid = currentFaceEdges[i];
       auto nle = namedLateralEdges_.find(eid);

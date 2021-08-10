@@ -147,7 +147,7 @@ void Mesh::setupGmshCase(GmshCase& c)
 
 void Mesh::build()
 {
-  GmshCase c(model_, outpath_, Lmax_->value(), Lmin_->value(), "gmsh", keepTmpDir_);
+  GmshCase c(model_, outpath_, Lmax_->value(), Lmin_->value(), keepTmpDir_);
   setupGmshCase(c);
   c.doMeshing();
 }

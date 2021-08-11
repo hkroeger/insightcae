@@ -309,7 +309,7 @@ FileContainer::FileContainer(const FileContainer& other)
 FileContainer::FileContainer(
     const boost::filesystem::path& originalFileName,
     std::shared_ptr<std::string> binary_content )
-  : originalFilePath_(originalFileName),
+  : originalFilePath_(originalFileName.generic_path()),
     file_content_(binary_content)
 
 {
@@ -322,7 +322,7 @@ FileContainer::FileContainer(
 FileContainer::FileContainer(
     const boost::filesystem::path &originalFileName,
     const TemporaryFile &tf )
-  : originalFilePath_(originalFileName)
+  : originalFilePath_(originalFileName.generic_path())
 {
   replaceContent(tf.path());
 }
@@ -333,7 +333,7 @@ FileContainer::FileContainer(
 FileContainer::FileContainer(
     const char *binaryFileContent, size_t size,
     const boost::filesystem::path &originalFileName )
-  : originalFilePath_(originalFileName),
+  : originalFilePath_(originalFileName.generic_path()),
     file_content_(new std::string(binaryFileContent, size))
 {
   clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
@@ -382,7 +382,7 @@ boost::filesystem::path FileContainer::fileName() const
 
 void FileContainer::setOriginalFilePath(const boost::filesystem::path &value)
 {
-  originalFilePath_=value;
+  originalFilePath_=value.generic_path();
   clearPackedData();
 }
 
@@ -397,7 +397,7 @@ std::istream& FileContainer::stream() const
   }
   else
   {
-    file_content_stream_.reset(new std::ifstream(originalFilePath_.c_str()));
+    file_content_stream_.reset(new std::ifstream(originalFilePath_.string()));
     if (! (*file_content_stream_) )
     {
       throw insight::Exception("Could not open file "+originalFilePath_.string()+" for reading!");
@@ -629,7 +629,7 @@ void FileContainer::appendToNode
   std::string relpath="";
   if (!originalFilePath_.empty())
   {
-    relpath=make_relative(inputfilepath, originalFilePath_).string();
+    relpath=make_relative(inputfilepath, originalFilePath_).generic_path().string();
   }
   node.append_attribute(doc.allocate_attribute
   (

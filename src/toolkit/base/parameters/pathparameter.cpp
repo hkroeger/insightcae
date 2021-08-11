@@ -79,7 +79,7 @@ bool PathParameter::isDifferent(const Parameter& p) const
 
 std::string PathParameter::latexRepresentation() const
 {
-    return SimpleLatex( valueToString ( originalFilePath_ ) ).toLaTeX();
+    return SimpleLatex( originalFilePath_.string() ).toLaTeX();
 }
 
 
@@ -87,7 +87,7 @@ std::string PathParameter::latexRepresentation() const
 
 std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 {
-  return SimpleLatex( valueToString ( originalFilePath_ ) ).toPlainText();
+  return SimpleLatex( originalFilePath_.string() ).toPlainText();
 }
 
 

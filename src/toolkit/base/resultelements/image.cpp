@@ -53,7 +53,7 @@ void Image::writeLatexCode (
 {
   auto up=unpackFilePath(outputfilepath);
   if (needsUnpack(up))
-    copyTo(up);
+    copyTo(up, true);
 
   f<<
       "\n\nSee figure below.\n"

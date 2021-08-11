@@ -420,10 +420,13 @@ void AnalyzeClient::launchAnalysis(
     throw insight::Exception("There is an unfinished request!");
 
   Wt::Http::Message msg;
-  msg.setHeader("Content-Type", "application/xml");
-  std::ostringstream cs;
-  input.saveToStream(cs, parent_path, analysisName);
-  msg.addBodyText(cs.str());
+  {
+    CurrentExceptionContext ex("composing parameter set message to server");
+    msg.setHeader("Content-Type", "application/xml");
+    std::ostringstream cs;
+    input.saveToStream(cs, parent_path, analysisName);
+    msg.addBodyText(cs.str());
+  }
 
   crq_=SimpleRequest;
   currentCallback_=onCompletion;

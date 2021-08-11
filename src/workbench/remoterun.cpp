@@ -33,6 +33,8 @@ void ExecutionProgram::run()
     }
     catch (std::exception& e)
     {
+      insight::dbg()<<"error occurred in step "<<step<<", starting roll back."<<std::endl;
+
       // attempt to roll back
       for (int backStep=step; backStep>=0; --backStep)
       {
@@ -112,7 +114,7 @@ void RemoteRun::launch()
   ExecutionProgram::StepList initSteps =
   {
 
-    // check remote work dir, launch machine and create, if needed
+    // 1. check remote work dir, launch machine and create, if needed
     {
       [&]()
       {
@@ -138,7 +140,7 @@ void RemoteRun::launch()
       }
     },
 
-    // launch remote execution server
+    // 2. launch remote execution server
     {
       [&]()
       {
@@ -157,7 +159,7 @@ void RemoteRun::launch()
       [&]() {} // nothing to undo
     },
 
-    // contact remote exec server
+    // 3. contact remote exec server
     {
       [&]()
       {
@@ -175,6 +177,7 @@ void RemoteRun::launch()
       }
     },
 
+    // 4. launch analysis
     {
       [&]()
       {

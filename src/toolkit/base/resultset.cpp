@@ -346,7 +346,7 @@ std::string builtin_template=
 
 void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 {
-  CurrentExceptionContext ec("write latex representation of result set into file "+file.string());
+  CurrentExceptionContext ec("writing latex representation of result set into file "+file.string());
 
     path filepath ( absolute ( file ) );
 

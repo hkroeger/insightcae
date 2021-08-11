@@ -24,9 +24,6 @@
 #include <cstdlib>
 #include <thread>
 
-#ifndef WIN32
-#include <execinfo.h> // for backtrace
-#endif
 #include <dlfcn.h>    // for dladdr
 #include <cxxabi.h>   // for __cxa_demangle
 #include <cstdio>
@@ -85,7 +82,7 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
   boost::split(splittext, source, boost::is_any_of("\n"));
 
   string result;
-  for (auto l: splittext)
+  for (const auto& l: splittext)
   {
     result+=begMark+l;
     if (l.size()<width)
@@ -114,7 +111,6 @@ void Exception::saveContext(bool strace)
     message_ += "\n" + context;
   }
 
-#ifndef WIN32
   if (strace)
   {
     ostringstream trace_buf;
@@ -122,7 +118,6 @@ void Exception::saveContext(bool strace)
     strace_=trace_buf.str();
   }
   else
-#endif
     strace_="";
 }
 
@@ -196,6 +191,18 @@ CurrentExceptionContext::~CurrentExceptionContext()
   }
 }
 
+std::string CurrentExceptionContext::contextDescription() const
+{
+  return desc_;
+}
+
+CurrentExceptionContext::operator std::string() const
+{
+  return desc_;
+}
+
+
+
 class NullBuffer : public std::streambuf
 {
 public:
@@ -226,18 +233,19 @@ void ExceptionContext::snapshot(std::vector<std::string>& context)
   context.clear();
   for (const auto& i: *this)
     {
-      context.push_back(*i);
+      context.push_back( i->contextDescription() );
     }
 }
 
-#if !(defined(WIN32)&&defined(DEBUG))
-thread_local
-#endif
-ExceptionContext exceptionContext;
+////#if !(defined(WIN32)&&defined(DEBUG))
+//thread_local
+////#endif
+//ExceptionContext exceptionContext;
 
 ExceptionContext& ExceptionContext::getCurrent()
 {
-  return exceptionContext;
+  static thread_local ExceptionContext thisThreadsExceptionContext;
+  return thisThreadsExceptionContext;
 }
 
 
@@ -295,9 +303,9 @@ WarningDispatcher::WarningDispatcher()
 
 void WarningDispatcher::setSuperDispatcher(WarningDispatcher *superDispatcher)
 {
-#if !(defined(WIN32)&&defined(DEBUG))
+//#if !(defined(WIN32)&&defined(DEBUG))
   superDispatcher_=superDispatcher;
-#endif
+//#endif
 }
 
 void WarningDispatcher::issue(const std::string& message)
@@ -347,13 +355,14 @@ size_t WarningDispatcher::nWarnings() const
 }
 
 
-#if !(defined(WIN32)&&defined(DEBUG))
-thread_local
-#endif
-WarningDispatcher thisThreadsWarnings;
+////#if !(defined(WIN32)&&defined(DEBUG))
+//thread_local
+////#endif
+//WarningDispatcher thisThreadsWarnings;
 
 WarningDispatcher& WarningDispatcher::getCurrent()
 {
+  static thread_local WarningDispatcher thisThreadsWarnings;
   return thisThreadsWarnings;
 }
 
@@ -366,19 +375,9 @@ void Warning(const std::string& msg)
 
 void UnhandledExceptionHandling::handler()
 {
-#ifndef WIN32
-    void *trace_elems[20];
-    int trace_elem_count(backtrace( trace_elems, 20 ));
-    char **stack_syms(backtrace_symbols( trace_elems, trace_elem_count ));
-    for ( int i = 0 ; i < trace_elem_count ; ++i )
-    {
-        std::cout << stack_syms[i] << "\n";
-    }
-    free( stack_syms );
-#else
-    std::cerr<<"Unhandled exception occurred!"<<std::endl;
-#endif
-    exit(1);
+  std::cerr<<"Unhandled exception occurred!"<<std::endl;
+  std::cerr << boost::stacktrace::stacktrace();
+  exit(1);
 }
 
 UnhandledExceptionHandling::UnhandledExceptionHandling()

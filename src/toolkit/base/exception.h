@@ -42,10 +42,8 @@ public:
   CurrentExceptionContext(const std::string& desc, bool verbose=true);
   ~CurrentExceptionContext();
 
-  inline operator std::string() const
-  {
-    return desc_;
-  }
+  std::string contextDescription() const;
+  operator std::string() const;
 
 };
 

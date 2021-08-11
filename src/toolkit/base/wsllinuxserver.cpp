@@ -100,8 +100,18 @@ WSLLinuxServer::Config *WSLLinuxServer::serverConfig() const
 std::pair<boost::filesystem::path,std::vector<std::string> >
 WSLLinuxServer::commandAndArgs(const std::string& command)
 {
-  return { boost::process::search_path("wsl.exe"),
-    { "-d", serverConfig()->distributionLabel_, "bash", "-lc", "'"+command+"'" } };
+  std::string windir("C:\\Windows");
+  if (auto *wdv=getenv("WINDIR"))
+  {
+    windir=wdv;
+  }
+  auto wsl =boost::filesystem::path(windir+"\\Sysnative\\wsl.exe"); // weird: system32 does not work...
+
+  insight::dbg()<<"WSL executable: "<<wsl<<std::endl;
+  return {
+    wsl,
+    { "-d", serverConfig()->distributionLabel_, "--", "bash", "-lc", command }
+  };
 }
 
 

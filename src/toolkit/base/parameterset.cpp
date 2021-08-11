@@ -490,6 +490,7 @@ void ParameterSet::readFromNode(
 
 void ParameterSet::packExternalFiles()
 {
+  CurrentExceptionContext ex("packing external files into parameter set");
   for (auto& p: *this)
   {
     p.second->pack();
@@ -507,6 +508,7 @@ void ParameterSet::removePackedData()
 
 void ParameterSet::saveToStream(std::ostream& os, const boost::filesystem::path& parent_path, std::string analysisName ) const
 {
+  CurrentExceptionContext ex("writing parameter set content into output stream (parent path "+parent_path.string()+", analysis name "+analysisName);
 //   std::cout<<"Writing parameterset to file "<<file<<std::endl;
 
 
@@ -579,8 +581,9 @@ std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
 
 std::ostream& operator<<(std::ostream& os, const ParameterSet& ps)
 {
-    os << ps.plainTextRepresentation(0);
-    return os;
+  CurrentExceptionContext ex("writing plain text representation of parameter set to output stream (via << operator)");
+  os << ps.plainTextRepresentation(0);
+  return os;
 }
 
 

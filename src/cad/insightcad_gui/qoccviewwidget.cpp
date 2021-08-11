@@ -120,6 +120,8 @@ QoccViewWidget::QoccViewWidget(QWidget *parent)
     showGrid            ( false )/*,
     cimode_             ( CIM_Normal )*/
 {
+  insight::CurrentExceptionContext ex("construct QoccViewWidget");
+
   // Needed to generate mouse events
   setMouseTracking( true );
   setBackgroundRole( QPalette::NoRole );
@@ -259,6 +261,7 @@ QPaintEngine* QoccViewWidget::paintEngine() const
 */
 void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
 {
+  insight::dbg()<<"paint event"<<std::endl;
 
   if (!myView.IsNull())
   {
@@ -273,8 +276,8 @@ void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
     }
     catch (Standard_Failure e)
     {
-      throw insight::Exception(
-            e.GetMessageString() ? e.GetMessageString() : "(no error message)" );
+      insight::Warning(
+            e.GetMessageString() ? e.GetMessageString() : "Error during redraw (no error message)" );
     }
   }
 }
@@ -288,6 +291,7 @@ void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
 */
 void QoccViewWidget::resizeEvent ( QResizeEvent * /* e */ )
 {
+  insight::dbg()<<"resize event"<<std::endl;
 //  myViewResized = Standard_True;
 
   //  QApplication::syncX();
@@ -303,6 +307,7 @@ void QoccViewWidget::resizeEvent ( QResizeEvent * /* e */ )
 
 void QoccViewWidget::mousePressEvent( QMouseEvent* e )
 {
+  insight::dbg()<<"mousepressevent"<<std::endl;
   if (!myView.IsNull())
   {
     if ( e->button() & Qt::LeftButton )
@@ -343,6 +348,7 @@ void QoccViewWidget::mousePressEvent( QMouseEvent* e )
 
 void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
 {
+  insight::dbg()<<"mousereleaseevent"<<std::endl;
   if (!myView.IsNull())
   {
     if ( e->button() & Qt::LeftButton )
@@ -390,6 +396,7 @@ void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
 */
 void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
 {
+//  insight::dbg()<<"mousemoveevent"<<std::endl;
   if (!myView.IsNull())
   {
 
@@ -429,13 +436,20 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
 //          }
 //      }
 
-    myContext_->MoveTo(
+    try // sometimes fails in WIN32
+    {
+      myContext_->MoveTo(
           e->pos().x(), e->pos().y(),
           myView
 #if (OCC_VERSION_MAJOR>=7)
           , true
 #endif
-    );
+      );
+    }
+    catch (...)
+    {
+      insight::dbg()<<"Failed moveTo"<<std::endl;
+    }
 
     navigationManager_->onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
     if (currentNavigationAction_)
@@ -583,6 +597,7 @@ void QoccViewWidget::displayContextMenu( const QPoint& p)
 */
 void QoccViewWidget::wheelEvent ( QWheelEvent* e )
 {
+  insight::dbg()<<"wheelevent"<<std::endl;
   if (!myView.IsNull())
     {
 //      Standard_Real currentScale = myView->Scale();
@@ -616,6 +631,7 @@ void QoccViewWidget::wheelEvent ( QWheelEvent* e )
 
 void QoccViewWidget::keyPressEvent(QKeyEvent* e)
 {
+  insight::dbg()<<"key press event"<<std::endl;
 ////   std::cout<<e->modifiers()<<std::endl;
 //    if ( ( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
 //    {
@@ -658,6 +674,7 @@ void QoccViewWidget::keyPressEvent(QKeyEvent* e)
 
 void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
 {
+  insight::dbg()<<"key release event"<<std::endl;
 ////   std::cout<<e->modifiers()<<std::endl;
 //    if ( !( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_DynamicZooming) )
 //    {
@@ -692,6 +709,7 @@ void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
 
 void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* /*viewer*/)
 {
+  insight::dbg()<<"onGraphicalSelectionChanged"<<std::endl;
     // Remove previously displayed sub objects from display
     for (Handle_AIS_InteractiveObject& o: additionalDisplayObjectsForSelection_)
     {

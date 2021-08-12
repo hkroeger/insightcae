@@ -205,7 +205,39 @@ set(toolkit_SOURCES
     openfoam/caseelements/dynamicmesh/solidbodymotiondynamicmesh.cpp
     openfoam/caseelements/dynamicmesh/rigidbodymotiondynamicmesh.cpp
 
-    openfoam/caseelements/turbulencemodelcaseelements.cpp
+    openfoam/caseelements/turbulencemodels/laminar_rasmodel.h
+    openfoam/caseelements/turbulencemodels/laminar_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/smagorinsky_lesmodel.h
+    openfoam/caseelements/turbulencemodels/smagorinsky_lesmodel.cpp
+    openfoam/caseelements/turbulencemodels/oneeqeddy_lesmodel.h
+    openfoam/caseelements/turbulencemodels/oneeqeddy_lesmodel.cpp
+    openfoam/caseelements/turbulencemodels/dynoneeqeddy_lesmodel.h
+    openfoam/caseelements/turbulencemodels/dynoneeqeddy_lesmodel.cpp
+    openfoam/caseelements/turbulencemodels/dynsmagorinsky_lesmodel.h
+    openfoam/caseelements/turbulencemodels/dynsmagorinsky_lesmodel.cpp
+    openfoam/caseelements/turbulencemodels/komegasst_rasmodel.h
+    openfoam/caseelements/turbulencemodels/komegasst_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/kepsilonbase_rasmodel.h
+    openfoam/caseelements/turbulencemodels/kepsilonbase_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/kepsilon_rasmodel.h
+    openfoam/caseelements/turbulencemodels/kepsilon_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/realizablekepsilon_rasmodel.h
+    openfoam/caseelements/turbulencemodels/realizablekepsilon_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/spalartallmaras_rasmodel.h
+    openfoam/caseelements/turbulencemodels/spalartallmaras_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/lemoshybrid_rasmodel.h
+    openfoam/caseelements/turbulencemodels/lemoshybrid_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/komegasst_lowre_rasmodel.h
+    openfoam/caseelements/turbulencemodels/komegasst_lowre_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/komegasst2_rasmodel.h
+    openfoam/caseelements/turbulencemodels/komegasst2_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/komegahe_rasmodel.h
+    openfoam/caseelements/turbulencemodels/komegahe_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/lrr_rasmodel.h
+    openfoam/caseelements/turbulencemodels/lrr_rasmodel.cpp
+    openfoam/caseelements/turbulencemodels/wale_lesmodel.h
+    openfoam/caseelements/turbulencemodels/wale_lesmodel.cpp
+
     openfoam/caseelements/analysiscaseelements.cpp
     openfoam/caseelements/thermophysicalcaseelements.cpp
     openfoam/caseelements/electromagneticscaseelements.cpp

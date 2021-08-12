@@ -21,12 +21,13 @@
 
 #include "openfoam/caseelements/basic/decomposepardict.h"
 #include "openfoam/caseelements/turbulencemodel.h"
-#include "openfoam/caseelements/turbulencemodelcaseelements.h"
 #include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/ofes.h"
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
 #include "base/progressdisplayer/convergenceanalysisdisplayer.h"
 #include "base/progressdisplayer/prefixedprogressdisplayer.h"
+
+#include "openfoam/caseelements/basic/rasmodel.h"
 
 #include "openfoamtools.h"
 #include "openfoamanalysis.h"

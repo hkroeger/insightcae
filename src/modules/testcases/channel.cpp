@@ -37,8 +37,8 @@
 #include "openfoam/caseelements/boundaryconditions/simplebc.h"
 #include "openfoam/caseelements/boundaryconditions/cyclicpairbc.h"
 #include "openfoam/caseelements/boundaryconditions/wallbc.h"
-#include "openfoam/caseelements/turbulencemodelcaseelements.h"
 #include "openfoam/caseelements/basic/pressuregradientsource.h"
+#include "openfoam/caseelements/basic/rasmodel.h"
 
 using namespace arma;
 using namespace std;

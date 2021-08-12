@@ -4,7 +4,7 @@
 #include "openfoam/caseelements/basic/singlephasetransportmodel.h"
 #include "openfoam/caseelements/basic/gravity.h"
 #include "openfoam/caseelements/thermophysicalcaseelements.h"
-#include "openfoam/caseelements/turbulencemodelcaseelements.h"
+#include "openfoam/caseelements/turbulencemodels/komegasst_rasmodel.h"
 
 
 int main(int argc, char*argv[])

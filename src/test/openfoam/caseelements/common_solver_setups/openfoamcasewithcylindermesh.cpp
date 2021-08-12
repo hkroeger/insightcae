@@ -11,7 +11,7 @@
 #include "openfoam/caseelements/numerics/unsteadyincompressiblenumerics.h"
 #include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
 #include "openfoam/caseelements/basic/singlephasetransportmodel.h"
-#include "openfoam/caseelements/turbulencemodelcaseelements.h"
+#include "openfoam/caseelements/turbulencemodels/komegasst_rasmodel.h"
 
 #include "openfoam/openfoamtools.h"
 

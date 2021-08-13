@@ -757,6 +757,28 @@ macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
 endmacro(install_shared_file)
 
 
+macro(install_shared_file2 SHAREDFILE DSTLOCATION)
+    string(REGEX REPLACE "[,\.;/\\ ]" "_" NAME ${SHAREDFILE})
+    message(STATUS "auto target name ${NAME} from ${SHAREDFILE}")
+
+  file(GLOB COPY_FILES
+    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    ${SHAREDFILE})
+
+  get_filename_component(FNAME ${SHAREDFILE} NAME)
+  add_custom_target(${NAME} ALL
+    COMMENT "Copying file: ${SHAREDFILE}")
+
+  set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
+  set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${FNAME}")
+
+  add_custom_command(
+    TARGET ${NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+    )
+  install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+endmacro(install_shared_file)
+
 
 
 macro(install_shared_directory NAME SHAREDDIR DSTLOCATION)

@@ -5,6 +5,7 @@
 #include "qactionprogressdisplayerwidget.h"
 
 #include "boost/algorithm/string.hpp"
+#include "base/exception.h"
 
 #include <iostream>
 #include <cmath>
@@ -121,7 +122,7 @@ void QActionProgressDisplayerWidget::setActionProgressValue(const std::string &p
         qApp,
         [this,path,value]()
         {
-          qDebug()<<"setting value for "<<QString::fromStdString(path)<<" to "<<100.*value;
+          insight::dbg()<<"setting value for "<<path<<" to "<<100.*value<<std::endl;
           auto i=getOrCreateItem(path);
           i.p->setValue(std::round(100.*value));
         },
@@ -135,7 +136,7 @@ void QActionProgressDisplayerWidget::setMessageText(const std::string &path, con
         qApp,
         [this,path,message]()
         {
-          qDebug()<<"setting text for "<<QString::fromStdString(path)<<" to "<<QString::fromStdString(message);
+          insight::dbg()<<"setting text for "<<path<<" to "<<message<<std::endl;
           auto i=getOrCreateItem(path);
           i.p->setFormat( QString::fromStdString(message) );
         },

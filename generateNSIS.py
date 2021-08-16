@@ -87,6 +87,30 @@ RequestExecutionLevel user
 LicenseData "{srcPath}/gpl.txt"
 Icon "{srcPath}/insightpackage.ico"
 
+
+Function .onInit
+    ${{IfNot}} ${{RunningX64}}
+        MessageBox MB_OK "This is a 32bit system! Only 64bit systems are supported. The installer will stop now."
+        abort
+    ${{EndIf}} 
+    
+    # create temp directory PLUGINSDIR
+    InitPluginsDir
+    
+    # active wsl using auxiliary installer, if required
+    IfFileExists "$WINDIR\Sysnative\wsl.exe" exists notInstalled
+    exists:
+        ClearErrors
+        ExecWait '"$WINDIR\Sysnative\wsl.exe" --list'
+        IfErrors 0 noError
+    notInstalled:
+        File "/oname=$PLUGINSDIR\wsl-activation-installer.exe" "{srcPath}/wsl-activation-installer.exe"
+        ExecShellWait "" "$PLUGINSDIR\wsl-activation-installer.exe" "/insightInstallerPath=$EXEPATH"
+        Abort
+    noError:
+FunctionEnd
+
+
 Page license
 Page components
 Page instfiles

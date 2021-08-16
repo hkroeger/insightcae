@@ -22,12 +22,11 @@ parser.add_option("-p", "--password", dest="password", metavar='password', defau
 (opts, args) = parser.parse_args()
 
 packageName='InsightCAE WSL Environment'
-wsldistlabel="insightcae-ubuntu-1804"
+wsldistlabel=wix.wslDistributionLabel(opts.customer)
 ubunturootfsfile="ubuntu-18.04-server-cloudimg-amd64-wsl.rootfs.tar.gz"
 
 if not (opts.customer=="ce" or opts.customer=="ce-dev"):
     packageName+=" ("+opts.customer+")"
-    wsldistlabel+="-"+opts.customer
 
 
 
@@ -51,18 +50,18 @@ wxs.addExecutionSteps([
  ('setupwsl1', "{prefix} apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg"\
         .format( prefix=wslcommand ) ),
 
- ('setupwsl2', "{prefix} add-apt-repository http://downloads.silentdynamics.de/ubuntu"\
+ ('setupwsl2', "{prefix} add-apt-repository {repourl}"\
         .format(
             prefix=wslcommand,
-            repourl={
+            repourl=({
              'ce': "http://downloads.silentdynamics.de/ubuntu",
              'ce-dev': "http://downloads.silentdynamics.de/ubuntu_dev"
             }.get(opts.customer,
               "https://{customer}:{pwd}@rostock.kroegeronline.net/customers/{customer}".format(
                 customer=opts.customer, pwd=opts.password )
-              )
+              ))
         ) ),
-
+              
  ('setupwsl3', "{prefix} apt-get update"\
         .format( prefix=wslcommand ) ),
 

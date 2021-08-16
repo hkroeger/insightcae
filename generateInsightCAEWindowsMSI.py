@@ -74,7 +74,7 @@ class FileList:
 
     def addFile(self, sourceFile, targetDir):
         bn=os.path.basename(sourceFile)
-        print("add file: ", sourceFile, targetDir)
+        print("add file: ", sourceFile, targetDir, "as", bn)
         self.files[bn] = ( wix.sanitizeId(bn), sourceFile, targetDir )
 
     def addFiles(self, subdir, pattern=".*", targetprefix="", removeprefix=""):
@@ -113,6 +113,12 @@ class FileList:
 
         print("added", added, "dependencies")
         return added
+    
+    def replaceFile(self, filename, newSourcePath):
+        if not filename in self.files:
+            raise RuntimeError("file "+filename+" is not in the list of files to include in the package!")
+        f=self.files[filename]
+        self.files[filename]=(f[0], newSourcePath, f[2])
 
 
 
@@ -137,6 +143,16 @@ wxs.addEnvVar('INSIGHT_GLOBALSHAREDDIRS','[INSTALLDIR]share\\insight','2dba120f-
 while (fl.addDependencies()>0):
     pass
 
+# generate remoteServers.xml
+wsldistlabel=wix.wslDistributionLabel(opts.customer)
+nfn="remoteservers.list.package"
+open(nfn, 'w').write("""<?xml version="1.0" encoding="utf-8"?>
+<root>
+        <remoteServer label="WSL" type="WSLLinux" distributionLabel="{wsldistlabel}" baseDirectory="/root"/>
+</root>
+""".format(wsldistlabel=wsldistlabel))
+fl.replaceFile("remoteservers.list", nfn)
+
 print(fl.files)
 
 wxs.addFiles(fl.files)
@@ -144,6 +160,8 @@ wxs.addFiles(fl.files)
 wxs.addShortcut('workbenchshortcut', "Workbench", "Simulation apps are run through this front end", '[INSTALLDIR]bin\\workbench.exe', os.path.join(sourcePath, "symbole", 'logo_insight_cae.ico'))
 wxs.addShortcut('iscadshortcut', "isCAD", "A script-based CAD editor", '[INSTALLDIR]bin\\iscad.exe', os.path.join(sourcePath, "symbole", 'logo_insight_cae.ico'), False)
 wxs.addShortcut('isresulttoolshortcut', "Result Viewer", "A viewer for InsightCAE's ISR result files", '[INSTALLDIR]bin\\isResultTool.exe', os.path.join(sourcePath, "symbole", 'logo_insight_cae.ico'), False)
+
+
 
 wxs.write("insightcae.wxs")
 subprocess.run([os.path.join(sourcePath,"wixbuild.sh"), "insightcae"])

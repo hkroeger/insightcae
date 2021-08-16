@@ -149,3 +149,9 @@ class WixInput:
         tree = ET.ElementTree(self.wix)
         tree.write(fn)
 
+
+def wslDistributionLabel(customer):
+    wsldistlabel="insightcae-ubuntu-1804"
+    if not (customer=="ce" or customer=="ce-dev"):
+        wsldistlabel+="-"+customer
+    return wsldistlabel

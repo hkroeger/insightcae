@@ -57,7 +57,7 @@ createIQArrayElement(IQDirectoryParameter, "directory");
 createIQArrayElement(IQArrayParameter, "array");
 createIQArrayElement(IQMatrixParameter, "matrix");
 createIQArrayElement(IQSelectionParameter, "selection");
-createIQArrayElement(IQSelectableSubsetParameter, "selectablesubset");
+createIQArrayElement(IQSelectableSubsetParameter, "selectableSubset");
 createIQArrayElement(IQDoubleRangeParameter, "doubleRange");
 
 

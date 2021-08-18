@@ -696,8 +696,13 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
                  cur->visualizer(), vali,
                  display_
                );
-        connect(ped_, &ParameterEditorWidget::parameterSetChanged,
-                this, &isofCaseBuilderWindow::onConfigModification);
+        connect(ped_, &ParameterEditorWidget::parameterSetChanged, ped_,
+                [&,cur]()
+                {
+                  cur->parameters() = ped_->model()->getParameterSet();
+                  onConfigModification();
+                }
+        );
         pe_layout_->addWidget(ped_);
 
         if (!last_pe_state_.isEmpty())

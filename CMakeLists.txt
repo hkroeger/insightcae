@@ -777,7 +777,7 @@ macro(install_shared_file2 SHAREDFILE DSTLOCATION)
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
     )
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
-endmacro(install_shared_file)
+endmacro(install_shared_file2)
 
 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #awk 'sub(/^PARAMETERSET>>> /,""){f=1} /<<<PARAMETERSET/{f=0} f' $*
 import sys, re, os, shutil, glob
@@ -14,7 +14,7 @@ f=open(filename, "r")
 inside=False
 out=None
 
-print "Scanning", filename, "for PDL definitions"
+print("Scanning", filename, "for PDL definitions")
 generated=[]
 expanded_glob=set([])
 
@@ -49,7 +49,7 @@ for l in f.readlines():
       prefix=m.group(1)
       classname=m.group(2).rstrip()
       outfname=basename+"__"+prefix+"__"+classname
-      print "Generating", outfname
+      print("Generating", outfname)
       generated.append(outfname)
       out=open(outfname+".pdl", "w")
       inside=True

@@ -56,7 +56,8 @@ for l in f.readlines():
       
       
 for f in generated:
-  os.system("\"%s\" \"%s\""%(pdlexe, f+".pdl"))
+  if os.system("\"%s\" \"%s\""%(pdlexe, f+".pdl"))!=0:
+      sys.exit(-1)
   for file in glob.glob(f+"__*.h"):
       for al in addlocs:
           shutil.copy(file, al)

@@ -259,6 +259,7 @@ outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, const Pa
 void outputFilterFunctionObject::addIntoControlDict(OFDictData::dict& controlDict) const
 {
   OFDictData::dict fod=functionObjectDict();
+  fod["region"]=p_.region;
   fod["enabled"]=true;
   if (OFversion()>=400)
     {
@@ -708,7 +709,8 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
 (
     const OpenFOAMCase& cm,
     const boost::filesystem::path& location,
-    const std::string& foName
+    const std::string& foName,
+    const std::string& regionName
 )
 {
   arma::mat result(0,2);
@@ -720,7 +722,10 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
   }
   else
   {
-    dir = location / "postProcessing" / foName;
+    dir = location / "postProcessing";
+    if (!regionName.empty())
+      dir = dir / regionName;
+    dir = dir / foName;
   }
   auto tdl = listTimeDirectories(dir);
   for(decltype(tdl)::const_reverse_iterator i = tdl.crbegin(); i!=tdl.crend(); i++)

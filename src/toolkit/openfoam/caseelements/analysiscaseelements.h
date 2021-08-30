@@ -58,6 +58,7 @@ public:
 PARAMETERSET>>> outputFilterFunctionObject Parameters
 
 name = string "unnamed" "Name of the function object"
+region = string "default" "name of the region"
 timeStart = double 0 "Time value, when the function object evaluation should start"
 outputControl = string "outputTime" "Output time control"
 outputInterval = double 1.0 "Time interval between outputs"
@@ -294,7 +295,8 @@ public:
     (
         const OpenFOAMCase& c,
         const boost::filesystem::path& location,
-        const std::string& foName
+        const std::string& foName,
+        const std::string& regionName = ""
     );
 };
 

@@ -14,7 +14,7 @@ f=open(filename, "r")
 inside=False
 out=None
 
-print "Scanning", filename, "for PDL definitions"
+print("Scanning", filename, "for PDL definitions")
 generated=[]
 expanded_glob=set([])
 
@@ -33,7 +33,7 @@ def copy(l, out, expanded):
     out.write(l);
   
 for l in f.readlines():
-  #print l
+  #print(l)
   
   if inside:
     if not re.match(re_end, l) is None:
@@ -49,7 +49,7 @@ for l in f.readlines():
       prefix=m.group(1)
       classname=m.group(2).rstrip()
       outfname=basename+"__"+prefix+"__"+classname
-      print "Generating", outfname
+      print("Generating", outfname)
       generated.append(outfname)
       out=open(outfname+".pdl", "w")
       inside=True

@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
     if (vm.count("workdir"))
     {
         workdir=boost::filesystem::absolute(vm["workdir"].as<std::string>());
+        boost::filesystem::current_path(workdir); // make it the current directory
     }
 
     boost::filesystem::path inputFileParentPath = workdir;

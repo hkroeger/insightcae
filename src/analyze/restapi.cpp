@@ -262,7 +262,7 @@ bool AnalyzeRESTServer::hasResultsDelivered() const
 bool AnalyzeRESTServer::waitForResultDelivery()
 {
   boost::mutex::scoped_lock lock(mx_);
-  int sig;
+  int sig=-1;
   SignalChecker sighld(wait_cv_, mx_, sig);
   while ( !hasResultsDelivered() && (sig==0) )
   {

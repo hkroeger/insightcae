@@ -30,7 +30,6 @@
 #include "base/analysis.h"
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
-#include "progrock/cppx/collections/options_boosted.h"
 
 
 #ifdef SWIG
@@ -78,17 +77,18 @@ void copyFields(const boost::filesystem::path& from, const boost::filesystem::pa
 #ifndef SWIG
 namespace setFieldOps
 {
-  
-//typedef boost::tuple<std::string, std::string, FieldValue> FieldValueSpec;
-typedef std::string FieldValueSpec;
-typedef std::vector<FieldValueSpec> FieldValueSpecList;
 
 class setFieldOperator
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-      ( fieldValues, FieldValueSpecList, FieldValueSpecList() )
-  )
+#include "openfoamtools__setFieldOperator__Parameters.h"
+/*
+PARAMETERSET>>> setFieldOperator Parameters
+
+fieldValues = array [ string "" "field value specification" ]*0 "list of field value specifications"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
@@ -107,11 +107,17 @@ class fieldToCellOperator
 : public setFieldOperator
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, setFieldOperator::Parameters,
-      ( fieldName, std::string, "" )
-      ( min, double, 0.0 )
-      ( max, double, DBL_MAX )
-  )
+#include "openfoamtools__fieldToCellOperator__Parameters.h"
+/*
+PARAMETERSET>>> fieldToCellOperator Parameters
+inherits setFieldOperator::Parameters
+
+fieldName = string "" "name of the field"
+min = double 0.0 "minimum value"
+max = double 1e10 "maximum value"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
@@ -128,10 +134,17 @@ class boxToCellOperator
 : public setFieldOperator
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, setFieldOperator::Parameters,
-      ( min, arma::mat, vec3(-1e10, -1e10, -1e10) )
-      ( max, arma::mat, vec3(1e10, 1e10, 1e10) )
-  )
+#include "openfoamtools__boxToCellOperator__Parameters.h"
+/*
+PARAMETERSET>>> boxToCellOperator Parameters
+inherits setFieldOperator::Parameters
+
+fieldName = string "" "name of the field"
+min = vector (-1e10 -1e10 -1e10) "minimum corner"
+max = vector (1e10 1e10 1e10) "maximum corner"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
@@ -149,9 +162,15 @@ class cellToCellOperator
 : public setFieldOperator
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, setFieldOperator::Parameters,
-      ( cellSet, std::string, "cellSet" )
-  )
+#include "openfoamtools__cellToCellOperator__Parameters.h"
+/*
+PARAMETERSET>>> cellToCellOperator Parameters
+inherits setFieldOperator::Parameters
+
+cellSet = string "cellSet" "name of the cell set"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
@@ -173,7 +192,7 @@ inline setFieldOperator* new_clone(const setFieldOperator& op)
 
 void setFields(const OpenFOAMCase& ofc, 
 	       const boost::filesystem::path& location, 
-	       const std::vector<setFieldOps::FieldValueSpec>& defaultValues,
+               const setFieldOps::setFieldOperator::Parameters::fieldValues_type& defaultValues,
 	       const boost::ptr_vector<setFieldOps::setFieldOperator>& ops);
 
 #endif

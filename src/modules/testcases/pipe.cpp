@@ -932,8 +932,9 @@ void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& p
 {
   
   setFields(cm, executionPath(), 
-	    list_of<setFieldOps::FieldValueSpec>
-	      ("volVectorFieldValue U ("+lexical_cast<string>(Ubulk_)+" 0 0)"),
+            {
+              "volVectorFieldValue U ("+lexical_cast<string>(Ubulk_)+" 0 0)"
+            },
 	    ptr_vector<setFieldOps::setFieldOperator>()
   );
   

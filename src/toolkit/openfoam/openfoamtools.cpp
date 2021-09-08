@@ -365,12 +365,12 @@ fieldToCellOperator::fieldToCellOperator(Parameters const& p)
 void fieldToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["fieldName"]=p_.fieldName();
-  opdict["min"]=p_.min();
-  opdict["max"]=p_.max();
+  opdict["fieldName"]=p_.fieldName;
+  opdict["min"]=p_.min;
+  opdict["max"]=p_.max;
 
   OFDictData::list fve;
-  for (const FieldValueSpec& fvs: p_.fieldValues())
+  for (const auto& fvs: p_.fieldValues)
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -396,10 +396,10 @@ boxToCellOperator::boxToCellOperator(Parameters const& p )
 void boxToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["box"]=OFDictData::to_OF(p_.min()) + OFDictData::to_OF(p_.max());
+  opdict["box"]=OFDictData::to_OF(p_.min) + OFDictData::to_OF(p_.max);
 
   OFDictData::list fve;
-  for (const FieldValueSpec& fvs: p_.fieldValues())
+  for (const auto& fvs: p_.fieldValues)
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -425,10 +425,10 @@ cellToCellOperator::cellToCellOperator(Parameters const& p )
 void cellToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["set"]=p_.cellSet();
+  opdict["set"]=p_.cellSet;
 
   OFDictData::list fve;
-  for (const FieldValueSpec& fvs: p_.fieldValues())
+  for (const auto& fvs: p_.fieldValues)
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -447,7 +447,7 @@ setFieldOperator* cellToCellOperator::clone() const
 }
 
 void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-	       const std::vector<setFieldOps::FieldValueSpec>& defaultValues,
+               const setFieldOps::setFieldOperator::Parameters::fieldValues_type& defaultValues,
 	       const boost::ptr_vector<setFieldOps::setFieldOperator>& ops)
 {
   using namespace setFieldOps;
@@ -455,7 +455,7 @@ void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
   OFDictData::dictFile setFieldsDict;
   
   OFDictData::list& dvl = setFieldsDict.getList("defaultFieldValues");
-  for ( const FieldValueSpec& dv: defaultValues)
+  for ( const auto& dv: defaultValues)
   {
     dvl.push_back( dv );
   }

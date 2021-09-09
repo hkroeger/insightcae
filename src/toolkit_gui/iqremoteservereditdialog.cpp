@@ -85,17 +85,7 @@ void IQRemoteServerEditDialog::accept()
   {
       if ( exists(p) && is_directory ( p ) )
       {
-        auto testp = boost::filesystem::unique_path( p/"%%%%%.test" );
-        bool writable=false;
-        try {
-          std::ofstream f(testp.string());
-          f<<"SOMETHING";
-          f.close();
-          boost::filesystem::remove(testp);
-          writable=true;
-        } catch(...) {}
-
-        if (writable)
+        if ( insight::directoryIsWritable(p) )
         {
           bfs_path serverlist = bfs_path(p) / "remoteservers.list";
 

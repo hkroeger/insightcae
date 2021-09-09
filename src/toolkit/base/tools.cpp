@@ -49,6 +49,29 @@ namespace insight
 {
 
 
+
+bool directoryIsWritable( const boost::filesystem::path& directory )
+{
+        auto testp = boost::filesystem::unique_path( directory/"%%%%%.test" );
+        try
+        {
+
+          std::ofstream f(testp.string()); f.close();
+
+          if (!boost::filesystem::exists(testp)) return false;
+
+          boost::filesystem::remove(testp);
+
+          return true;
+        }
+        catch (...)
+        {
+          return false;
+        }
+}
+
+
+
 std::unique_ptr<GlobalTemporaryDirectory> GlobalTemporaryDirectory::td_;
 
 
@@ -112,8 +135,13 @@ CaseDirectory::CaseDirectory(const boost::filesystem::path& p, bool keep)
 {
   if (p.empty())
   {
+    auto parentcasedir = boost::filesystem::current_path();
+
+    if (!directoryIsWritable(parentcasedir))
+      parentcasedir=boost::filesystem::temp_directory_path();
+
     boost::filesystem::path::operator=(
-          absolute(unique_path(timeCodePrefix() + "_analysis_%%%%"))
+          absolute(unique_path( parentcasedir / (timeCodePrefix() + "_analysis_%%%%") ))
           );
     isAutoCreated_=true;
     createDirectory();
@@ -137,14 +165,19 @@ CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
 
   path fn=prefix.filename();
 
+  auto parentcasedir=prefix.parent_path();
+
+  if (!directoryIsWritable(parentcasedir))
+    parentcasedir=boost::filesystem::temp_directory_path();
+
   boost::filesystem::path::operator=(
         absolute(
-          unique_path(
-            prefix.parent_path()
-            /
-            (timeCodePrefix() + "_" + fn.string() + "_%%%%")
-           )
-          )
+              unique_path(
+                parentcasedir
+                /
+                (timeCodePrefix() + "_" + fn.string() + "_%%%%")
+               )
+              )
         );
 
   createDirectory();

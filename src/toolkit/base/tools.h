@@ -41,6 +41,7 @@ namespace insight
 {
   
 
+bool directoryIsWritable( const boost::filesystem::path& directory );
 
 class GlobalTemporaryDirectory
     : public boost::filesystem::path

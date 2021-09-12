@@ -27,8 +27,6 @@
 #include "boost/lexical_cast.hpp"
 #include "boost/format.hpp"
 
-#include "gnuplot-iostream.h"
-
 namespace insight
 {
 

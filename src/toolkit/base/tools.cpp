@@ -50,24 +50,35 @@ namespace insight
 
 
 
-bool directoryIsWritable( const boost::filesystem::path& directory )
+bool directoryIsWritable( const boost::filesystem::path& directoryToTest )
 {
-        auto testp = boost::filesystem::unique_path( directory/"%%%%%.test" );
-        try
-        {
+  boost::filesystem::path directory = directoryToTest;
 
-          std::ofstream f(testp.string()); f.close();
+  if (directory.empty())
+    directory=".";
 
-          if (!boost::filesystem::exists(testp)) return false;
+  insight::CurrentExceptionContext ex("checking write permissions of directory "+directory.string());
 
-          boost::filesystem::remove(testp);
+  auto testp = boost::filesystem::unique_path( directory/"%%%%%.test" );
+  try
+  {
 
-          return true;
-        }
-        catch (...)
-        {
-          return false;
-        }
+    if (std::system( ("echo xx > \""+testp.string()+"\"").c_str() )!=0) return false;
+
+//    std::ofstream f(testp.string());
+//    if (!f.is_open()) return false;
+//    f.close();
+
+    if (!boost::filesystem::exists(testp)) return false;
+
+    boost::filesystem::remove(testp);
+
+    return true;
+  }
+  catch (...)
+  {
+    return false;
+  }
 }
 
 
@@ -135,13 +146,21 @@ CaseDirectory::CaseDirectory(const boost::filesystem::path& p, bool keep)
 {
   if (p.empty())
   {
-    auto parentcasedir = boost::filesystem::current_path();
+    auto parentcasedir = absolute(boost::filesystem::current_path());
 
     if (!directoryIsWritable(parentcasedir))
+    {
+      insight::dbg() << "directory is NOT writable: "<<parentcasedir<<std::endl;
       parentcasedir=boost::filesystem::temp_directory_path();
+      insight::dbg() << "diverting to "<<parentcasedir<<std::endl;
+    }
+    else
+    {
+      insight::dbg() << "directory is writable: "<<parentcasedir<<std::endl;
+    }
 
     boost::filesystem::path::operator=(
-          absolute(unique_path( parentcasedir / (timeCodePrefix() + "_analysis_%%%%") ))
+          unique_path( parentcasedir / (timeCodePrefix() + "_analysis_%%%%") )
           );
     isAutoCreated_=true;
     createDirectory();
@@ -165,19 +184,25 @@ CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
 
   path fn=prefix.filename();
 
-  auto parentcasedir=prefix.parent_path();
+  auto parentcasedir=absolute(prefix.parent_path());
 
   if (!directoryIsWritable(parentcasedir))
+  {
+    insight::dbg() << "directory is NOT writable: "<<parentcasedir<<std::endl;
     parentcasedir=boost::filesystem::temp_directory_path();
+    insight::dbg() << "diverting to "<<parentcasedir<<std::endl;
+  }
+  else
+  {
+    insight::dbg() << "directory is writable: "<<parentcasedir<<std::endl;
+  }
 
   boost::filesystem::path::operator=(
-        absolute(
               unique_path(
                 parentcasedir
                 /
                 (timeCodePrefix() + "_" + fn.string() + "_%%%%")
                )
-              )
         );
 
   createDirectory();

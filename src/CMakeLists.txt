@@ -6,6 +6,7 @@ add_subdirectory(pdl)
 IF(INSIGHT_BUILD_TOOLKIT)
   LIST(APPEND TARGETS_TO_INSTALL "InsightCAEToolkitTarget.cmake")
   add_subdirectory(toolkit)
+  add_subdirectory(psdoc)
 ENDIF()
 
 add_subdirectory(test)

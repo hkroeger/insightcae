@@ -292,8 +292,39 @@ void GmshCase::setFaceEdgeLen(const std::string& fn, double L)
                     });
 }
 
+int GmshCase::outputType() const
+{
+  int otype=-1;
+
+  std::string ext=outputMeshFile_.extension().string();
+  if (ext==".stl") otype=27;
+  else if (ext==".msh") otype=1;
+  else if (ext==".unv") otype=2;
+  else if (ext==".med") otype=33;
+  else
+    insight::Warning("Mesh file extension "+ext+" is unrecognized!");
+  return otype;
+}
 
 
+void GmshCase::insertMeshingCommand()
+{
+  if (outputType()==27)
+  {
+    // STL surface mesh
+    insertLinesBefore(endOfMeshingActions_, {
+      "Mesh 2"
+    });
+  }
+  else
+  {
+    // volume mesh
+    insertLinesBefore(endOfMeshingActions_, {
+      "Mesh 3",
+      "Coherence Mesh"
+    });
+  }
+}
 
 void GmshCase::doMeshing()
 {
@@ -301,19 +332,16 @@ void GmshCase::doMeshing()
 
   std::string ext=outputMeshFile_.extension().string();
 
-  int otype=-1;
-  if (ext==".stl")
+  int otype = outputType();
+  if (otype==27)
   {
-    otype=27;
     insertLinesBefore(endOfMeshingOptions_, {
                         "Mesh.Binary=1"
                       });
     setMinimumCirclePoints(20);
   }
-  else if (ext==".msh")
+  else if (otype==1)
   {
-    otype=1;
-
     std::string versionOption;
     switch (mshFileVersion_)
     {
@@ -328,16 +356,12 @@ void GmshCase::doMeshing()
                         "Mesh.MshFileVersion="+versionOption
                       });
   }
-  else if (ext==".unv") otype=2;
-  else if (ext==".med") otype=33;
-  else
-    insight::Warning("Mesh file extension "+ext+" is unrecognized!");
 
   insertLinesBefore(endOfMeshingOptions_, {
                       "Mesh.Format="+lexical_cast<string>(otype)
                     });
 
-
+  insertMeshingCommand();
 
   // write file
   boost::filesystem::path inputFile = workDir_ / (outputMeshFile_.stem().string() + ".geo");
@@ -347,7 +371,6 @@ void GmshCase::doMeshing()
   }
 
 
-
   if (otype>=0)
   {
       
@@ -355,13 +378,8 @@ void GmshCase::doMeshing()
 
     std::vector<std::string> argv;
 
-    if (otype==27)
-        argv.push_back("-2");
-    else
-        argv.push_back("-3");
-
     argv.insert(argv.end(), {
-                  "-v", "10",
+                  "-save", "-v", "10",
                   fs::absolute(inputFile).string(),
                   "-o", fs::absolute(outputMeshFile_).string()
                 });
@@ -420,11 +438,14 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     const std::vector<NamedEntity>& namedBottomFaces,
     const std::vector<NamedEntity>& namedTopFaces,
     const std::vector<NamedEntity>& namedLateralEdges,
+    double grading,
     bool keepDir
     )
   : cad::GmshCase(part, outputMeshFile,
-                  L, L, keepDir)
+                  L, L, keepDir),
+    grading_(grading)
 {
+  insight::assertion(grading_>0., "grading must be larger than zero!");
 
   for (const auto& nbf: namedBottomFaces)
   {
@@ -482,21 +503,56 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
   // insert faces one by one
   auto faces=part->allFacesSet();
 
+  std::string layerSpecification;
+
+  if (fabs(1.-grading_)<1e-10)
+  {
+    layerSpecification =
+      str( format("Layers{%d}") % nLayers );
+  }
+  else
+  {
+    double g=pow(grading_, 1./double(nLayers-1));
+
+    std::cout<<grading_<<" g= "<<g<<std::endl;
+    arma::mat h = arma::ones(nLayers);
+    for (int i=1; i<nLayers; ++i)
+      h(i)=g*h(i-1);
+    h/=arma::as_scalar(sum(h));
+    std::cout<<"h="<<h<<endl;
+
+    arma::mat hcum = arma::zeros(nLayers);
+    hcum(0)=h(0);
+    for (int i=1; i<nLayers; ++i)
+    {
+      hcum(i)=hcum(i-1)+h(i);
+    }
+    std::cout<<"hcum="<<hcum<<endl;
+
+    std::string layerNum,layerHeight;
+    for (int i=0;i<nLayers;++i)
+    {
+      layerNum += "1";
+      layerHeight += boost::lexical_cast<std::string>( hcum(i) );
+      if (i<nLayers-1)
+      {
+        layerNum+=",";
+        layerHeight+=",";
+      }
+    }
+    layerSpecification="Layers{ {"+layerNum+"}, {"+layerHeight+"} }";
+  }
 
   for (FeatureID fi : faces)
   {
     std::string out=str(format("out%d")%fi);
 
     insertLinesBefore(endOfMeshingActions_, {
-      str(format(out+"[] = Extrude {0.,0.,%g} { Surface{%d}; Layers{%d}; Recombine; }")
-                        % h % fi % nLayers ),
+      str(format(out+"[] = Extrude {0.,0.,%g} { Surface{%d}; %s; Recombine; }")
+                        % h % fi % layerSpecification ),
       "Physical Volume(\""+solidName+"\") += "+out+"[1]"
     });
   }
-
-  insertLinesBefore(endOfMeshingActions_, {
-    "Coherence Mesh"
-  });
 
 
   for (FeatureID fi : faces)

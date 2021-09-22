@@ -52,7 +52,7 @@ public:
 private:
   CaseDirectory workDir_;
 
-protected:
+public:
   iterator
     endOfPreamble_,
     endOfExternalGeometryMerging_,
@@ -64,6 +64,7 @@ protected:
     endOfMeshingOptions_,
     endOfMeshingActions_;
 
+protected:
   ConstFeaturePtr part_;
   
   int additionalPoints_;
@@ -72,6 +73,8 @@ protected:
 
   boost::filesystem::path outputMeshFile_;
   MSHFileVersion mshFileVersion_;
+
+  virtual void insertMeshingCommand();
   
 public:
   GmshCase(
@@ -107,7 +110,9 @@ public:
   void setVertexLen(const std::string& vn, double L);
   void setEdgeLen(const std::string& en, double L);
   void setFaceEdgeLen(const std::string& fn, double L);
-  
+
+  int outputType() const;
+
   void doMeshing();
 };
   
@@ -138,6 +143,7 @@ public:
 
 protected:
   std::map<cad::FeatureID, std::string> namedBottomFaces_, namedTopFaces_, namedLateralEdges_;
+  double grading_;
 
 public:
   SheetExtrusionGmshCase(
@@ -148,6 +154,7 @@ public:
       const std::vector<NamedEntity>& namedBottomFaces,
       const std::vector<NamedEntity>& namedTopFaces,
       const std::vector<NamedEntity>& namedLateralEdges,
+      double grading=1.,
       bool keepDir=false
       );
 };

@@ -382,30 +382,48 @@ int main(int argc, char *argv[])
         std::cout<<parameters;
         std::cout<<std::string(80, '=')+"\n\n";
 
-        AnalysisPtr analysis ( insight::Analysis::lookup(analysisName, parameters, workdir) );
-        TextProgressDisplayer tpd;
-        ProgressDisplayer* pd = &tpd;
+        ResultSetPtr results;
+        AnalysisPtr analysis;
+        try
+        {
+          analysis.reset( insight::Analysis::lookup(analysisName, parameters, workdir) );
+          TextProgressDisplayer tpd;
+          ProgressDisplayer* pd = &tpd;
         
 #ifdef HAVE_WT
-        if (server)
-        {
-          server->setAnalysis( analysis.get() );
-          pd = server.get();
-        }
+          if (server)
+          {
+            server->setAnalysis( analysis.get() );
+            pd = server.get();
+          }
 #endif
 
-        // run analysis
+          // run analysis
 
-        AnalysisThread solver_thread(analysis, pd);
+          AnalysisThread solver_thread(analysis, pd);
 
 #ifdef HAVE_WT
-        if (server)
-        {
-          server->setSolverThread(&solver_thread);
-        }
+          if (server)
+          {
+            server->setSolverThread(&solver_thread);
+          }
 #endif
 
-        ResultSetPtr results = solver_thread.join();
+          results = solver_thread.join();
+        }
+        catch (insight::Exception& ex)
+        {
+          if (server)
+          {
+            server->setException(ex);
+            server->waitForShutdown();
+          }
+          else
+          {
+            // rethrow
+            throw ex;
+          }
+        }
 
 #ifdef HAVE_WT
         if (server)

@@ -139,6 +139,8 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
 
       case QueryStatus: {
         bool resultsAvailable = false;
+        bool errorOccurred = false;
+        std::shared_ptr<insight::Exception> exception_;
 
         if (success)
         {
@@ -210,6 +212,16 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
                 }
               }
             }
+
+            if (payload["errorOccurred"].toBool())
+            {
+              errorOccurred=true;
+              exception_=std::make_shared<insight::Exception>(
+                    std::string(payload.get("errorMessage").toString()),
+                    std::string(payload.get("errorStackTrace").toString())
+                    );
+            }
+
           }
           else
           {
@@ -220,6 +232,8 @@ void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::
         QueryStatusResult qsr;
         qsr.success=success;
         qsr.resultsAreAvailable=resultsAvailable;
+        qsr.errorOccurred=errorOccurred;
+        qsr.exception=exception_;
         boost::get<QueryStatusCallback>(currentCallback_)(qsr);
 
       } break;

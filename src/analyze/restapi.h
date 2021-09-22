@@ -37,6 +37,7 @@ class AnalyzeRESTServer
   };
   std::deque<ProgressState> recordedProgressStates_;
 
+  std::shared_ptr<insight::Exception> exception_;
   insight::ResultSetPtr results_;
   std::string* inputFileContents_;
 
@@ -55,6 +56,7 @@ public:
   void setAnalysis(insight::Analysis* a);
   void setSolverThread(insight::AnalysisThread* at);
   void setResults(insight::ResultSetPtr results);
+  void setException(const insight::Exception& ex);
 
   void update( const insight::ProgressState& pi ) override;
   void setActionProgressValue(const std::string &path, double value) override;

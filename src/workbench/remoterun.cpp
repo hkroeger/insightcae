@@ -222,6 +222,11 @@ void RemoteRun::launch()
 
         auto qsr = ac_->queryStatusSync();
 
+        if (qsr.errorOccurred)
+        {
+          throw *qsr.exception;
+        }
+
         if (qsr.resultsAreAvailable)
         {
           runMonitor=false;

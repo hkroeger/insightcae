@@ -183,6 +183,11 @@ void AnalyzeRESTServer::setResults(insight::ResultSetPtr results)
   results_=results;
 }
 
+void AnalyzeRESTServer::setException(const insight::Exception &ex)
+{
+  exception_=std::make_shared<insight::Exception>(ex);
+}
+
 
 
 
@@ -384,6 +389,9 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
       res["progressStates"] = progressStates;
       res["inputFileReceived"] = hasInputFileReceived();
       res["resultsAvailable"] = results_ ? true : false;
+      res["errorOccurred"] = exception_ ? true : false;
+      res["errorMessage"] = exception_ ? exception_->what() : "";
+      res["errorStackTrace"] = exception_ ? exception_->strace().c_str() : "";
 
       response.setStatus(200);
       response.setMimeType("application/json");

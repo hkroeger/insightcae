@@ -93,6 +93,8 @@ public:
   struct QueryStatusResult : public ReportSuccessResult
   {
     bool resultsAreAvailable;
+    bool errorOccurred;
+    std::shared_ptr<insight::Exception> exception;
   };
   typedef std::function<void(QueryStatusResult)> QueryStatusCallback;
 

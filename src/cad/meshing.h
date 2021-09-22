@@ -37,7 +37,7 @@ class GmshCase;
 std::ostream& operator<<(std::ostream& os, GmshCase& gc);
 
 class GmshCase
-    : std::list<std::string>
+    : public std::list<std::string>
 {
   friend std::ostream& operator<<(std::ostream& os, GmshCase& gc);
 
@@ -53,7 +53,7 @@ private:
   CaseDirectory workDir_;
 
 public:
-  iterator
+  GmshCase::iterator
     endOfPreamble_,
     endOfExternalGeometryMerging_,
       endOfNamedVerticesDefinition_,

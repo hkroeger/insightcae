@@ -179,7 +179,7 @@ CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
 : keep_(keep),
   isAutoCreated_(true)
 {
-  if (getenv("INSIGHT_KEEPTEMPCASEDIR"))
+  if (getenv("INSIGHT_KEEPTEMPDIRS"))
     keep_=true;
 
   path fn=prefix.filename();

@@ -49,7 +49,7 @@ public:
     string bn ( outimagepath.filename().stem().string() );
 
     bool keep=false;
-    if (getenv("INSIGHT_KEEP_TEMP_DIRS"))
+    if (getenv("INSIGHT_KEEPTEMPDIRS"))
       keep=true;
 
     CaseDirectory tmp ( keep, bn+"-generate" );

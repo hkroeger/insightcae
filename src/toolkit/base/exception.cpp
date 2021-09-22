@@ -139,6 +139,11 @@ Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> 
   saveContext(strace);
 }
 
+Exception::Exception(const std::string& msg, const std::string& strace)
+  : message_(msg), strace_(strace)
+{
+}
+
 Exception::operator std::string() const
 {
   return message_;

@@ -99,6 +99,7 @@ public:
   Exception();
   Exception(const std::string& msg, bool strace=true);
   Exception(const std::string& msg, const std::map<std::string, cad::FeaturePtr>& contextGeometry, bool strace=true);
+  Exception(const std::string& msg, const std::string& strace);
 
   inline std::string as_string() const { return static_cast<std::string>(*this); }
 

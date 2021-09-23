@@ -363,6 +363,11 @@ void GmshCase::doMeshing()
 
   insertMeshingCommand();
 
+  // insert write statement
+  insertLinesBefore(endOfMeshingActions_, {
+    "Save \""+fs::absolute(outputMeshFile_).string()+"\""
+  });
+
   // write file
   boost::filesystem::path inputFile = workDir_ / (outputMeshFile_.stem().string() + ".geo");
   {
@@ -379,9 +384,9 @@ void GmshCase::doMeshing()
     std::vector<std::string> argv;
 
     argv.insert(argv.end(), {
-                  "-save", "-v", "10",
+                  "-v", "10",
                   fs::absolute(inputFile).string(),
-                  "-o", fs::absolute(outputMeshFile_).string()
+                  "-"
                 });
 
     auto job = ee.forkCommand( executable_.string(), argv );

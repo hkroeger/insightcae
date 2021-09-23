@@ -71,6 +71,10 @@ IF (WIN32)
     add_library(vtkOffscreen INTERFACE)
     target_link_libraries(vtkOffscreen INTERFACE ${VTK_LIBRARIES})
 
+    add_library(vtkHeaders INTERFACE)
+    target_include_directories(vtkHeaders INTERFACE ${VTK_INCLUDE_DIRS})
+    target_link_libraries(vtkHeaders INTERFACE ${VTK_LIBRARIES})
+
 else()
 
     set(LIBS "")

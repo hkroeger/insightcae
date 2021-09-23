@@ -1,13 +1,13 @@
 project(vtkOffscreen)
 
-add_library(vtkHeaders INTERFACE)
 
 if (WIN32)
 
-    # leave vtkOffscreen adn vtkHeaders empty
-    # vtkOffscreen target is created elsewhere
+    # everything is onscreen in Windows
+    # vtkOffscreen and vtkHeaders target is created along with vtkOnscreen
 
 else()
+    add_library(vtkHeaders INTERFACE)
 
     unset(VTK_DIR CACHE)
     unset(VTKm_DIR CACHE)

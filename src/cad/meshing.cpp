@@ -33,6 +33,33 @@ namespace fs=boost::filesystem;
 namespace insight {
 namespace cad {
 
+
+
+
+const std::map<std::string, int> GmshCase::algorithms2D =
+{
+  {"MeshAdapt", 1},
+  {"Automatic", 2},
+  {"Delaunay", 5},
+  {"Frontal-Delaunay", 6},
+  {"BAMG", 7},
+  {"DelQuad", 8}
+};
+
+
+
+
+const std::map<std::string, int> GmshCase::algorithms3D =
+{
+  {"Delaunay", 1},
+  {"Frontal", 4},
+  {"MMG3D", 7},
+  {"R-Tree", 9}
+};
+
+
+
+
 void GmshCase::insertLinesBefore(GmshCase::iterator i, const std::vector<string> &lines)
 {
   for (auto j=lines.begin(); j!=lines.end(); ++j)
@@ -51,8 +78,11 @@ GmshCase::GmshCase(
   part_(part),
   additionalPoints_(0),
   outputMeshFile_(outputMeshFile),
-  mshFileVersion_(v41)
+  mshFileVersion_(v41),
+  algo2D_(1), algo3D_(4)
 {
+  setGlobalLminLmax(Lmin, Lmax);
+
   // prefer gmsh from insightcae dependency package
   executable_ = boost::process::search_path("gmshinsightcae");
   if (executable_.empty())
@@ -103,18 +133,26 @@ GmshCase::GmshCase(
   insertLinesBefore(endOfExternalGeometryMerging_, {
     "Merge \""+fs::absolute(geomFile).string()+"\""
                     });
-
-  insertLinesBefore(endOfMeshingOptions_, {
-    "Mesh.Algorithm = 1", /* 1=MeshAdapt, 2=Automatic, 5=Delaunay, 6=Frontal, 7=bamg, 8=delquad */
-    "Mesh.Algorithm3D = 4", /* 1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D, 9=R-tree */
-    "Mesh.CharacteristicLengthMin = "+lexical_cast<string>(Lmin),
-    "Mesh.CharacteristicLengthMax = "+lexical_cast<string>(Lmax),
-
-    "Mesh.Smoothing = 10",
-    "Mesh.SmoothNormals = 1",
-    "Mesh.Explode = 1"
-                    });
 }
+
+void GmshCase::setAlgorithm2D(int a)
+{
+  algo2D_=a;
+}
+
+
+void GmshCase::setAlgorithm3D(int a)
+{
+  algo3D_=a;
+}
+
+
+void GmshCase::setGlobalLminLmax(double Lmin, double Lmax)
+{
+  Lmin_=Lmin;
+  Lmax_=Lmax;
+}
+
 
 void GmshCase::setMSHFileVersion(GmshCase::MSHFileVersion v)
 {
@@ -307,8 +345,22 @@ int GmshCase::outputType() const
 }
 
 
+
+
 void GmshCase::insertMeshingCommand()
 {
+  insertLinesBefore(endOfMeshingOptions_, {
+    "Mesh.Algorithm = "+lexical_cast<std::string>(algo2D_), /* 1=MeshAdapt, 2=Automatic, 5=Delaunay, 6=Frontal, 7=bamg, 8=delquad */
+    "Mesh.Algorithm3D = "+lexical_cast<std::string>(algo3D_), /* 1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D, 9=R-tree */
+    "Mesh.CharacteristicLengthMin = "+lexical_cast<string>(Lmin_),
+    "Mesh.CharacteristicLengthMax = "+lexical_cast<string>(Lmax_),
+
+    "Mesh.Smoothing = 10",
+    "Mesh.SmoothNormals = 1",
+    "Mesh.Explode = 1"
+  });
+
+
   if (outputType()==27)
   {
     // STL surface mesh
@@ -519,12 +571,10 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
   {
     double g=pow(grading_, 1./double(nLayers-1));
 
-    std::cout<<grading_<<" g= "<<g<<std::endl;
     arma::mat h = arma::ones(nLayers);
     for (int i=1; i<nLayers; ++i)
       h(i)=g*h(i-1);
     h/=arma::as_scalar(sum(h));
-    std::cout<<"h="<<h<<endl;
 
     arma::mat hcum = arma::zeros(nLayers);
     hcum(0)=h(0);
@@ -532,7 +582,6 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     {
       hcum(i)=hcum(i-1)+h(i);
     }
-    std::cout<<"hcum="<<hcum<<endl;
 
     std::string layerNum,layerHeight;
     for (int i=0;i<nLayers;++i)

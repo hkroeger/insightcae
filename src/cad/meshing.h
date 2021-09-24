@@ -48,7 +48,10 @@ public:
   {
     v10, v20, v22, v30, v40, v41
   };
-  
+
+  typedef std::map<std::string, int> AlgorithmList;
+  static const AlgorithmList algorithms2D, algorithms3D;
+
 private:
   CaseDirectory workDir_;
 
@@ -74,6 +77,9 @@ protected:
   boost::filesystem::path outputMeshFile_;
   MSHFileVersion mshFileVersion_;
 
+  double Lmin_, Lmax_;
+  int algo2D_, algo3D_;
+
   virtual void insertMeshingCommand();
   
 public:
@@ -84,6 +90,10 @@ public:
 //      const std::string& exeName="gmsh",
       bool keepDir=false
       );
+
+  void setAlgorithm2D(int);
+  void setAlgorithm3D(int);
+  void setGlobalLminLmax(double Lmin, double Lmax);
 
   void setMSHFileVersion(MSHFileVersion v);
 

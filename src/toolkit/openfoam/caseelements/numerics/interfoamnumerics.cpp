@@ -8,7 +8,13 @@
 
 namespace insight {
 
-OFDictData::dict stdMULESSolverSetup(double cAlpha, double icAlpha, double tol, double reltol, bool LTS)
+OFDictData::dict stdMULESSolverSetup(
+    double cAlpha,
+    double icAlpha,
+    double tol,
+    double reltol,
+    bool LTS,
+    int nLimiterIter )
 {
   OFDictData::dict d;
 
@@ -18,7 +24,7 @@ OFDictData::dict stdMULESSolverSetup(double cAlpha, double icAlpha, double tol, 
   d["icAlpha"]=icAlpha;
 
   d["MULESCorr"]=true;
-  d["nLimiterIter"]=15;
+  d["nLimiterIter"]=nLimiterIter;
   d["alphaApplyPrevCorr"]=LTS;
 
   d["solver"]="smoothSolver";
@@ -108,7 +114,15 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
 
   {
-   OFDictData::dict asd=stdMULESSolverSetup(p_.cAlpha, p_.icAlpha);
+   OFDictData::dict asd=stdMULESSolverSetup(
+         p_.cAlpha,
+         p_.icAlpha,
+
+         1e-8,
+         0.0,
+         false,
+         p_.alphaLimiterIter
+         );
    asd["nAlphaSubCycles"]=p_.alphaSubCycles;
    solvers["\"alpha.*\""]=asd;
   }

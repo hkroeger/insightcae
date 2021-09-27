@@ -13,7 +13,8 @@ OFDictData::dict stdMULESSolverSetup
         double icAlpha,
         double tol=1e-8,
         double reltol=0.0,
-        bool LTS=false
+        bool LTS=false,
+        int nLimiterIter=15
 );
 
 
@@ -36,6 +37,7 @@ time_integration = includedset "insight::MultiphasePIMPLESettings::Parameters" "
 
 
 alphaSubCycles = int 1 "Number of alpha integration subcycles"
+alphaLimiterIter = int 15 "Number of alpha limiter iterations"
 
 cAlpha = double 0.25 "[-] Interface compression coefficient"
 icAlpha = double 0 "[-] Isotropic interface compression coefficient"

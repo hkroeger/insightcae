@@ -7,6 +7,9 @@
 #include "openfoam/fielddata.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
 
+#include "pressureoutletbc__PressureOutletBC__Parameters_headers.h"
+
+
 namespace insight {
 
 

@@ -63,7 +63,7 @@ public:
   virtual gp_Ax3 plane() const;
   operator const gp_Ax3 () const;
 
-  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 
   virtual void write(std::ostream& file) const;
   
@@ -92,8 +92,10 @@ public:
     virtual gp_Pnt point() const;
     virtual gp_Ax1 axis() const;
     virtual gp_Ax3 plane() const;
+    gp_Trsf trsf() const;
+    DatumPtr baseDatum() const;
     
-    virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
+//    virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 
@@ -110,7 +112,7 @@ public:
   
   virtual gp_Pnt point() const;
 
-  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 
@@ -128,7 +130,7 @@ public:
   virtual gp_Pnt point() const;
   virtual gp_Ax1 axis() const;
 
-  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 
@@ -145,7 +147,7 @@ public:
   virtual gp_Pnt point() const;
   virtual gp_Ax3 plane() const;
 
-  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 #endif
@@ -172,8 +174,9 @@ public:
   virtual gp_Pnt point() const;
   virtual gp_Ax1 axis() const;
   virtual gp_Ax3 plane() const;
+  DatumPtr baseDatum() const;
 
-  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 

@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "copyfiles__copyFiles__Parameters_headers.h"
 
 namespace insight {
 

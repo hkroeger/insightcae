@@ -22,6 +22,7 @@ set(insightcad_gui_SRCS
 # qoccviewercontext.h
  occtwindow.cpp
  occtwindow.h
+ occguitools.h occguitools.cpp
  viewwidgetaction.h
  viewwidgetaction.cpp
  viewwidgetinsertids.h
@@ -44,6 +45,11 @@ set(insightcad_gui_SRCS
 
  qmodeltree.cpp
  qmodeltree.h
+
+ postprocactionvisualizer.h postprocactionvisualizer.cpp
+ postprocactionvisualizers/hydrostaticsvisualizer.cpp
+ postprocactionvisualizers/distancevisualizer.cpp
+ postprocactionvisualizers/solidpropertiesvisualizer.cpp
 )
 
 
@@ -56,7 +62,7 @@ target_compile_definitions(insightcad_gui PRIVATE insightcad_gui_EXPORTS)
 target_link_libraries(insightcad_gui
   insightcad
   toolkit
-  ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES}
+  ${OCC_GUI_LIBRARIES}
   Qt5::Widgets
   ${DXFLIB_LIBRARIES}
   )

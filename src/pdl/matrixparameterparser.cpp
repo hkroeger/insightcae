@@ -33,6 +33,7 @@ MatrixParameterParser::Data::Data(const std::vector<std::vector<double> >& mat, 
 void MatrixParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
 {
   headers.insert("<armadillo>");
+  headers.insert("\"base/parameters/matrixparameter.h\"");
 }
 
 std::string MatrixParameterParser::Data::cppType(const std::string&) const

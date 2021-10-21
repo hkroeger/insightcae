@@ -57,6 +57,8 @@ class DrawingExport
   virtual void build();
 
 public:
+  declareType("DrawingExport");
+
   DrawingExport
   (
     const boost::filesystem::path& file,
@@ -64,7 +66,7 @@ public:
   );
   
 
-  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
 };
 }

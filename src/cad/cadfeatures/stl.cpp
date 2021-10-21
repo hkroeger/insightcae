@@ -314,12 +314,6 @@ void STL::build()
 }
 
 
-Handle_AIS_InteractiveObject STL::buildVisualization() const
-{
-  Handle_AIS_InteractiveObject as( new AIS_Shape(shape()) );
-  return as;
-}
-
 
 
 void STL::insertrule(parser::ISCADParser& ruleset) const

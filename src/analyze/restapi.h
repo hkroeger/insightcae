@@ -3,6 +3,7 @@
 
 #include "boost/thread.hpp"
 #include "base/analysis.h"
+#include "base/analysisthread.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
 
 #include <Wt/WServer.h>

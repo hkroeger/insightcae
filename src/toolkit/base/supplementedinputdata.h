@@ -1,0 +1,130 @@
+#ifndef INSIGHT_SUPPLEMENTEDINPUTDATA_H
+#define INSIGHT_SUPPLEMENTEDINPUTDATA_H
+
+
+#include <memory>
+
+#include "base/parameterset.h"
+#include "base/cppextensions.h"
+
+
+namespace insight {
+
+struct ParametersBase
+{
+  ParametersBase();
+  ParametersBase(const insight::ParameterSet& p);
+  virtual ~ParametersBase();
+
+  virtual void set(insight::ParameterSet& p) const =0;
+  virtual void get(const insight::ParameterSet& p) =0;
+
+  static ParameterSet makeDefault();
+};
+
+
+class supplementedInputDataBase
+    : public std::unique_ptr<ParametersBase>
+{
+public:
+  typedef ParametersBase input_type;
+
+  supplementedInputDataBase(std::unique_ptr<ParametersBase> pPtr);
+  virtual ~supplementedInputDataBase();
+
+  inline const ParametersBase* baseParametersPtr() const
+  { return this->get(); }
+  inline ParametersBase* baseParametersPtrRef()
+  { return this->get(); }
+};
+
+
+
+//template<class ParametersType>
+//class supplementedInputDataBase
+//    : public std::unique_ptr<ParametersType>
+//{
+//public:
+//  typedef ParametersType base_input_type;
+//  typedef ParametersType input_type;
+
+//  supplementedInputDataBase(std::unique_ptr<ParametersType> pPtr)
+//    : std::unique_ptr<ParametersType>( std::move(pPtr) )
+//  {}
+
+//  inline const ParametersType* baseParametersPtr() const
+//  { return this->get(); }
+//  inline ParametersType* baseParametersPtrRef()
+//  { return this->get(); }
+
+//  inline const ParametersType& p() const
+//  { return dynamic_cast<const ParametersType&>(*this->baseParametersPtr()); }
+//  inline ParametersType& pRef()
+//  { return dynamic_cast<ParametersType&>(*this->baseParametersPtrRef()); }
+//};
+
+
+
+
+template<class ParametersType, class SupplementedInputDataBaseType = supplementedInputDataBase>
+class supplementedInputDataDerived
+    : public SupplementedInputDataBaseType
+{
+public:
+  typedef ParametersType input_type;
+
+  template<typename... Args>
+  supplementedInputDataDerived( std::unique_ptr<typename SupplementedInputDataBaseType::input_type> pPtr, Args&&... args)
+    : SupplementedInputDataBaseType(std::move(pPtr), std::forward<Args>(args)... )
+  {}
+
+  template<typename... Args>
+  supplementedInputDataDerived( std::unique_ptr<input_type> pPtr, Args&&... args)
+    : SupplementedInputDataBaseType(
+        std::dynamic_unique_ptr_cast<typename SupplementedInputDataBaseType::input_type>( std::move(pPtr) ),
+        std::forward<Args>(args)...
+        )
+  {}
+
+  inline const ParametersType& p() const
+  { return dynamic_cast<const ParametersType&>(*this->baseParametersPtr()); }
+  inline ParametersType& pRef()
+  { return dynamic_cast<ParametersType&>(*this->baseParametersPtrRef()); }
+};
+
+
+
+
+#define defineBaseClassWithSupplementedInputData(ParameterClass, SupplementedInputDataBaseType) \
+protected:\
+  std::unique_ptr<SupplementedInputDataBaseType> parameters_;\
+  const ParameterClass& p() const\
+  { return dynamic_cast<const ParameterClass&>(parameters_->p()); }\
+  ParameterClass& pRef()\
+  { return dynamic_cast<ParameterClass&>(parameters_->pRef()); }\
+  const SupplementedInputDataBaseType& sp() const\
+  { return dynamic_cast<const SupplementedInputDataBaseType&>(*parameters_); }\
+  SupplementedInputDataBaseType& spRef()\
+  { return dynamic_cast<SupplementedInputDataBaseType&>(*parameters_); }
+
+
+
+
+#define defineDerivedClassWithSupplementedInputData(ParametersType, SupplementedInputDataBaseType) \
+protected:\
+  inline const ParametersType& p() const\
+  { return dynamic_cast<const ParametersType&>(this->parameters_->p()); }\
+  inline ParametersType& pRef()\
+  { return dynamic_cast<ParametersType&>(this->parameters_->pRef()); }\
+  inline const SupplementedInputDataBaseType& sp() const\
+  { return dynamic_cast<const SupplementedInputDataBaseType&>(*this->parameters_); }\
+  inline SupplementedInputDataBaseType& spRef()\
+  { return dynamic_cast<SupplementedInputDataBaseType&>(*this->parameters_); }\
+
+
+
+
+
+} // namespace insight
+
+#endif // INSIGHT_SUPPLEMENTEDINPUTDATA_H

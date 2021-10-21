@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "providefields__provideFields__Parameters_headers.h"
+
 namespace insight {
 
 class provideFields

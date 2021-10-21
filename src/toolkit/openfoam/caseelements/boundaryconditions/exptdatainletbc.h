@@ -5,6 +5,8 @@
 
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
 
+#include "exptdatainletbc__ExptDataInletBC__Parameters_headers.h"
+
 namespace insight {
 
 namespace OFDictData { class dict; }

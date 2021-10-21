@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/basic/lesmodel.h"
 
+#include "smagorinsky_lesmodel__Smagorinsky_LESModel__Parameters_headers.h"
+
 namespace insight {
 
 class Smagorinsky_LESModel

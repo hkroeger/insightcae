@@ -113,6 +113,7 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
   r_pdl_content =
          -( qi::lit("inherits") >> r_identifier )
       >> -( qi::lit("description") >> r_string )
+      >> ( ( qi::lit("skipDefaultParametersMember") >> qi::attr(true) ) | qi::attr(false) )
       >> (r_addcode | qi::attr(std::string()))
       >> r_parameterset;
 
@@ -217,7 +218,8 @@ int main ( int argc, char *argv[] )
         throw PDLException("Parsing PDL "+inf.string()+" failed!");
       }
 
-      std::string base_type_name="";
+      std::string default_base_type_name="insight::ParametersBase";
+      std::string base_type_name=default_base_type_name;
       auto inheritParam = boost::fusion::get<0>(result_all);
       if (inheritParam) base_type_name=*inheritParam;
 
@@ -225,8 +227,11 @@ int main ( int argc, char *argv[] )
       auto descParam = boost::fusion::get<1>(result_all);
       if (descParam) description=*descParam;
 
-      std::string& addTo_makeDefault = boost::fusion::get<2>(result_all);
-      ParameterSetData result = boost::fusion::get<3>(result_all);
+      bool skipDefaultParamMember = boost::fusion::get<2>(result_all);
+
+      std::string addTo_makeDefault = boost::fusion::get<3>(result_all);
+
+      ParameterSetData result = boost::fusion::get<4>(result_all);
 
       {
         std::string bname=inf.stem().string();
@@ -242,6 +247,10 @@ int main ( int argc, char *argv[] )
         {
           std::ofstream f ( bname+"_headers.h" );
           std::set<std::string> headers;
+          if (base_type_name==default_base_type_name)
+          {
+            headers.insert("\"base/supplementedinputdata.h\"");
+          }
           for ( const ParameterSetEntry& pe: result )
           {
             pe.second->cppAddHeader ( headers );
@@ -287,13 +296,14 @@ int main ( int argc, char *argv[] )
           <<"}"<<endl
             ;
 
-          f<<"virtual ~"<<name<<"()"<<endl;
-          f<<"{}"<<endl;
+//          f<<"virtual ~"<<name<<"()"<<endl;
+//          f<<"{}"<<endl;
 
           //set into other ParameterSet
-          f<<"void set(insight::ParameterSet& p) const"<<endl
+//          f<<"virtual void set(insight::ParameterSet& p) const"<<endl
+          f<<"void set(insight::ParameterSet& p) const override"<<endl
           <<"{"<<endl;
-          if ( !base_type_name.empty() )
+          if ( !base_type_name.empty() && (base_type_name!=default_base_type_name) )
           {
             f<<" "<<base_type_name<<"::set(p);"<<endl;
           }
@@ -312,9 +322,10 @@ int main ( int argc, char *argv[] )
           f<<"}"<<endl;
 
           //from other ParameterSet into current static data
-          f<<"void get(const insight::ParameterSet& p)"<<endl
+//          f<<"virtual void get(const insight::ParameterSet& p)"<<endl
+          f<<"void get(const insight::ParameterSet& p) override"<<endl
           <<"{"<<endl;
-          if ( !base_type_name.empty() )
+          if ( !base_type_name.empty() && (base_type_name!=default_base_type_name) )
           {
             f<<" "<<base_type_name<<"::get(p);"<<endl;
           }
@@ -372,7 +383,8 @@ int main ( int argc, char *argv[] )
           f<<"};"<<endl;
 
 
-          f << "static ParameterSet defaultParameters() { return Parameters::makeDefault(); }" << endl;
+          if (!skipDefaultParamMember)
+            f << "static ParameterSet defaultParameters() { return Parameters::makeDefault(); }" << endl;
         }
       }
     }

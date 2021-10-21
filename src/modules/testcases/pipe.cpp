@@ -51,103 +51,46 @@ namespace insight
 {
 
 
-  
-defineType(PipeBase);
 
-double PipeBase::Re(double Re_tau)
+
+PipeBase::supplementedInputData::supplementedInputData(
+    std::unique_ptr<Parameters> pPtr,
+    const boost::filesystem::path &/*workDir*/,
+    ProgressDisplayer &progress)
+  : supplementedInputDataDerived<Parameters>( std::move(pPtr) ),
+    cycl_in_("cycl_half0"),
+    cycl_out_("cycl_half1")
 {
-  double k=0.41;
-  double Cplus=5.0;
-  
-  return Re_tau*((1./k)*log(Re_tau)+Cplus-3.04);
-}
-
-
-double PipeBase::Retau(double Re)
-{
-  struct Obj: public Objective1D
-  {
-    double Re;
-    virtual double operator()(double x) const { return Re-PipeBase::Re(x); }
-  } obj;
-  obj.Re=Re;
-  return nonlinearSolve1D(obj, 1e-3*Re, Re);
-}
-
-double PipeBase::UmaxByUbulk(double Retau)
-{
-  return 1 + 0.7 * Retau/PipeBase::Re(Retau); // Constant not given explictly in Schlichting, taken from Rotta, p. 190
-}
-
-PipeBase::PipeBase(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: OpenFOAMAnalysis
-  (
-    "Pipe Flow Test Case",
-    "Cylindrical domain with cyclic BCs on axial ends",
-    ps, exepath
-  ),
-  cycl_in_("cycl_half0"),
-  cycl_out_("cycl_half1")
-{}
-
-PipeBase::~PipeBase()
-{
-
-}
-
-
-
-std::string PipeBase::cyclPrefix() const
-{
-  boost:smatch m;
-  boost::regex_search(cycl_in_, m, boost::regex("(.*)_half[0,1]"));
-  std::string namePrefix=m[1];
-  cout<<namePrefix<<endl;
-  return namePrefix;
-}
-
-void PipeBase::calcDerivedInputData(ProgressDisplayer& progress)
-{
-  const ParameterSet& p=parameters_;
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-
-  PSDBL(p, "mesh", ypluswall);
-  PSDBL(p, "mesh", dxplus);
-  PSDBL(p, "mesh", dzplus);
-  PSDBL(p, "mesh", x);
-  PSBOOL(p, "mesh", fixbuf);
 
   // Physics
-  Re_=Re(Re_tau);
-  Ubulk_=Re_/Re_tau;
-  T_=L/Ubulk_;
-  nu_=1./Re_tau;
-  utau_=Re_tau*nu_/(0.5*D);
+  Re_=Re(p().operation.Re_tau);
+  Ubulk_=Re_/p().operation.Re_tau;
+  T_=p().geometry.L/Ubulk_;
+  nu_=1./p().operation.Re_tau;
+  utau_=p().operation.Re_tau*nu_/(0.5*p().geometry.D);
 
-  Lc_ = x*D;
-  nax_=int( (L/(0.5*D)) * Re_tau/dxplus);  
-  nc_=int( (M_PI*D/(0.5*D)) * Re_tau/dzplus) /4;
-  
-  double rc = 0.5*D - 0.5*sqrt(2.*Lc_*Lc_); // radial distance core block edge => outer wall
+  Lc_ = p().mesh.x*p().geometry.D;
+  nax_=int( (p().geometry.L/(0.5*p().geometry.D)) * p().operation.Re_tau/p().mesh.dxplus);
+  nc_=int( (M_PI*p().geometry.D/(0.5*p().geometry.D)) * p().operation.Re_tau/p().mesh.dzplus) /4;
 
-  ywall_ = ypluswall*0.5*D/Re_tau;
+  double rc = 0.5*p().geometry.D - 0.5*sqrt(2.*Lc_*Lc_); // radial distance core block edge => outer wall
+
+  ywall_ = p().mesh.ypluswall*0.5*p().geometry.D/p().operation.Re_tau;
 
   nrbuf_=0;
-  if (fixbuf>0)
+  if (p().mesh.fixbuf>0)
   {
     double ypbuf=30.;
-    rbuf_=ypbuf/Re_tau;
+    rbuf_=ypbuf/p().operation.Re_tau;
     nrbuf_=std::max(1.0, rbuf_/ywall_);
 
   }
-  
+
   bmd::GradingAnalyzer ga( ywall_, Lc_/double(nc_) );
   gradr_=ga.grad();
   cout<<gradr_<<endl;
   nr_=ga.calc_n(ywall_, rc-rbuf_);
-  
+
   cout<<"Derived data:"<<endl
       <<"============================================="<<endl;
   cout<<"Reynolds number \tRe="<<Re_<<endl;
@@ -162,6 +105,90 @@ void PipeBase::calcDerivedInputData(ProgressDisplayer& progress)
   cout<<"# grading vertical \tgradr="<<gradr_<<endl;
   cout<<"============================================="<<endl;
 }
+  
+
+
+
+defineType(PipeBase);
+
+
+
+
+double PipeBase::Re(double Re_tau)
+{
+  double k=0.41;
+  double Cplus=5.0;
+  
+  return Re_tau*((1./k)*log(Re_tau)+Cplus-3.04);
+}
+
+
+
+
+double PipeBase::Retau(double Re)
+{
+  struct Obj: public Objective1D
+  {
+    double Re;
+    virtual double operator()(double x) const { return Re-PipeBase::Re(x); }
+  } obj;
+  obj.Re=Re;
+  return nonlinearSolve1D(obj, 1e-3*Re, Re);
+}
+
+
+
+
+double PipeBase::UmaxByUbulk(double Retau)
+{
+  return 1 + 0.7 * Retau/PipeBase::Re(Retau); // Constant not given explictly in Schlichting, taken from Rotta, p. 190
+}
+
+
+
+
+PipeBase::PipeBase(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
+: OpenFOAMAnalysis
+  (
+    "Pipe Flow Test Case",
+    "Cylindrical domain with cyclic BCs on axial ends",
+    ps, exepath
+  ),
+  parameters_( new supplementedInputData(
+                 std::make_unique<Parameters>(ps),
+                 exepath, progress
+                 ) )
+{}
+
+
+
+
+PipeBase::~PipeBase()
+{
+
+}
+
+
+
+
+std::string PipeBase::cyclPrefix() const
+{
+  boost:smatch m;
+  boost::regex_search(sp().cycl_in_, m, boost::regex("(.*)_half[0,1]"));
+  std::string namePrefix=m[1];
+  cout<<namePrefix<<endl;
+  return namePrefix;
+}
+
+
+
+
+void PipeBase::calcDerivedInputData(ProgressDisplayer& progress)
+{
+  OpenFOAMAnalysis::calcDerivedInputData(progress);
+}
+
+
 
 
 void PipeBase::insertBlocksAndPatches
@@ -173,32 +200,22 @@ void PipeBase::insertBlocksAndPatches
     double angleshift
 ) const
 {
-  const ParameterSet& p=parameters_;
-  
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-  PSBOOL(p, "mesh", fixbuf);
-  
-  std::cout<<D<<" "<<L<<std::endl;
-  
   double al = M_PI/2.;
   
   using namespace insight::bmd;
   
-  std::map<int, Point> pts;
-  pts = boost::assign::map_list_of   
-      (12, 	vec3(xshift, 0.5*D, 0))
-      (11, 	vec3(xshift, 0.5*D-rbuf_, 0))
-      (10, 	vec3(xshift,  cos(0.5*al+angleshift)*Lc_, 0.))
-      (9, 	vec3(xshift,  0.5*Lc_, 0.))
-      .convert_to_container<std::map<int, Point> >()
-  ;
-  arma::mat vL=vec3(L, 0, 0);
+  std::map<int, Point> pts = {
+      {12, 	vec3(xshift, 0.5*p().geometry.D, 0)},
+      {11, 	vec3(xshift, 0.5*p().geometry.D-sp().rbuf_, 0)},
+      {10, 	vec3(xshift,  cos(0.5*al+angleshift)*sp().Lc_, 0.)},
+      {9, 	vec3(xshift,  0.5*sp().Lc_, 0.)}
+  };
+  arma::mat vL=vec3(p().geometry.L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);
   
   // create patches
-  Patch& cycl_in= 	bmd->addPatch(prefix+cycl_in_, new Patch());
-  Patch& cycl_out= 	bmd->addPatch(prefix+cycl_out_, new Patch());
+  Patch& cycl_in= 	bmd->addPatch(prefix+sp().cycl_in_, new Patch());
+  Patch& cycl_out= 	bmd->addPatch(prefix+sp().cycl_out_, new Patch());
   
   // core block
   {
@@ -213,7 +230,7 @@ void PipeBase::insertBlocksAndPatches
         r1*pts[10], r2*pts[10], r3*pts[10], r0*pts[10],
         (r1*pts[10])+vL, (r2*pts[10])+vL, (r3*pts[10])+vL, (r0*pts[10])+vL
         ),
-        nc_, nc_, nax_
+        sp().nc_, sp().nc_, sp().nax_
       )
     );
     cycl_in.addFace(bl.face("0321"));
@@ -233,15 +250,15 @@ void PipeBase::insertBlocksAndPatches
             r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
             (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
         ),
-        nc_, nr_, nax_,
-        list_of<double>(1)(1./gradr_)(1)
+        sp().nc_, sp().nr_, sp().nax_,
+        { 1, 1./sp().gradr_, 1 }
         )
       );
       cycl_in.addFace(bl.face("0321"));
       cycl_out.addFace(bl.face("4567"));
     }
 
-    if (fixbuf)
+    if (p().mesh.fixbuf)
     {    
       Block& bl = bmd->addBlock
       (
@@ -249,8 +266,8 @@ void PipeBase::insertBlocksAndPatches
             r1*pts[11], r0*pts[11], r0*pts[12], r1*pts[12],
             (r1*pts[11])+vL, (r0*pts[11])+vL, (r0*pts[12])+vL, (r1*pts[12])+vL
         ),
-        nc_, nrbuf_, nax_,
-        list_of<double>(1)(1)(1)
+        sp().nc_, sp().nrbuf_, sp().nax_,
+        { 1, 1, 1 }
         )
       );
       cycl_in.addFace(bl.face("0321"));
@@ -261,7 +278,7 @@ void PipeBase::insertBlocksAndPatches
     bmd->addEdge(new ArcEdge(r1*pts[12], r0*pts[12], rmid*pts[12]));
     bmd->addEdge(new ArcEdge((r1*pts[12])+vL, (r0*pts[12])+vL, (rmid*pts[12])+vL));
 
-    if (fixbuf)
+    if (p().mesh.fixbuf)
     {
         bmd->addEdge(new ArcEdge(r1*pts[11], r0*pts[11], rmid*pts[11]));
         bmd->addEdge(new ArcEdge((r1*pts[11])+vL, (r0*pts[11])+vL, (rmid*pts[11])+vL));
@@ -281,7 +298,6 @@ void PipeBase::createMesh
 {  
   // create local variables from ParameterSet
   path dir = executionPath();
-  const ParameterSet& p=parameters_;
   
   cm.insert(new MeshingNumerics(cm));
   
@@ -304,16 +320,6 @@ void PipeBase::createCase
   OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {
-  const ParameterSet& p=parameters_;
-  // create local variables from ParameterSet
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  PSINT(p, "fluid", turbulenceModel);
-  
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
@@ -328,28 +334,30 @@ void PipeBase::createCase
   ));
   
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
-    .set_fields(list_of<std::string>("p")("U"))
-    .set_timeStart(inittime*T_)
+    .set_fields({ "p", "U" })
+    .set_timeStart(p().evaluation.inittime*sp().T_)
     .set_name("zzzaveraging") // shall be last FO in list
   ));
   
   cm.insert(new RadialTPCArray(cm, typename RadialTPCArray::Parameters()
-    .set_R(0.5*D)
-      .set_p0(vec3(0, 0, 0.5*L)) // in cyl coord sys
+    .set_R(0.5*p().geometry.D)
+      .set_p0(vec3(0, 0, 0.5*p().geometry.L)) // in cyl coord sys
       .set_e_ax(vec3(0,0,1))
       .set_e_rad(vec3(1,0,0))
       .set_e_tan(vec3(0,1,0))
 //     .set_x(0.5*L)
-    .set_axSpan(0.5*L)
+    .set_axSpan(0.5*p().geometry.L)
     .set_tanSpan(M_PI)
     .set_name("tpc_interior")
-    .set_timeStart( (inittime+meantime)*T_ )
+    .set_timeStart( (p().evaluation.inittime+p().evaluation.meantime)*sp().T_ )
   ));
   
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu_) ));
+  cm.insert(new singlePhaseTransportProperties(
+              cm,
+              singlePhaseTransportProperties::Parameters().set_nu(sp().nu_) ));
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
-  insertTurbulenceModel(cm, p.get<SelectableSubsetParameter>("fluid/turbulenceModel"));
+  insertTurbulenceModel(cm, p());
 
 }
 
@@ -358,10 +366,6 @@ void PipeBase::evaluateAtSection(
   ResultSetPtr results, double x, int i
 )
 {
-  const ParameterSet& p=parameters_;
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
   
   ostringstream sns; sns<<"section_x"<<x;
   string title=sns.str();
@@ -369,9 +373,10 @@ void PipeBase::evaluateAtSection(
     
   boost::ptr_vector<sampleOps::set> sets;
   
-  sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
-    .set_start( vec3(x, 0,  0.01* 0.5*D))
-    .set_end(   vec3(x, 0, 0.997* 0.5*D))
+  sets.push_back(new sampleOps::circumferentialAveragedUniformLine(
+    sampleOps::circumferentialAveragedUniformLine::Parameters()
+    .set_start( vec3(x, 0,  0.01* 0.5*p().geometry.D))
+    .set_end(   vec3(x, 0, 0.997* 0.5*p().geometry.D))
     .set_axis(vec3(1,0,0))
     .set_name("section"+lexical_cast<string>(i))
   ));
@@ -392,17 +397,17 @@ void PipeBase::evaluateAtSection(
   // Mean velocity profiles
   {
     int c=cd["UMean"].col;
-    double fac_yp=Re_tau*2.0/D;
-    double fac_Up=1./utau_;
+    double fac_yp=p().operation.Re_tau*2.0/p().geometry.D;
+    double fac_Up=1./sp().utau_;
 
     addPlot
     (
       results, executionPath(), "chartMeanVelocity_"+title,
       "$y^+$", "$\\langle U^+ \\rangle$",
       {
-        PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Up*data.col(c))), "Up", "w l lt 1 lc 1 lw 3 t 'Axial'"),
-        PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Up*data.col(c+1))), "Vp", "w l lt 1 lc 2 lw 3 t 'Radial'" ),
-        PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Up*data.col(c+2))), "Wp", "w l lt 1 lc 3 lw 3 t 'Circumferential'" ),
+        PlotCurve( arma::mat(join_rows(p().operation.Re_tau-fac_yp*data.col(0), fac_Up*data.col(c))), "Up", "w l lt 1 lc 1 lw 3 t 'Axial'"),
+        PlotCurve( arma::mat(join_rows(p().operation.Re_tau-fac_yp*data.col(0), fac_Up*data.col(c+1))), "Vp", "w l lt 1 lc 2 lw 3 t 'Radial'" ),
+        PlotCurve( arma::mat(join_rows(p().operation.Re_tau-fac_yp*data.col(0), fac_Up*data.col(c+2))), "Wp", "w l lt 1 lc 3 lw 3 t 'Circumferential'" ),
         PlotCurve( refdata_umean180, "Uref", "w l lt 2 lc 1 t '$U_{ref}$ (K\\_Pipe)'" ),
         PlotCurve( refdata_vmean180, "Vref", "w l lt 2 lc 2 t '$V_{ref}$ (K\\_Pipe)'" ),
         PlotCurve( refdata_wmean180, "Wref", "w l lt 2 lc 3 t '$W_{ref}$ (K\\_Pipe)'" )
@@ -449,17 +454,17 @@ void PipeBase::evaluateAtSection(
   // Mean reynolds stress profiles
   {
     int c=cd["UPrime2Mean"].col;
-    double fac_yp=Re_tau*2.0/D;
-    double fac_Rp=1./pow(utau_,2);
+    double fac_yp=p().operation.Re_tau*2.0/p().geometry.D;
+    double fac_Rp=1./pow(sp().utau_,2);
 
     addPlot
     (
       results, executionPath(), "chartMeanRstress_"+title,
       "$y^+$", "$\\langle R^+ \\rangle$",
       {
-        PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c))),   "Ruu", "w l lt 1 lc 1 lw 4 t '$R_{uu}$ (axial)'"  ),
-        PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c+3))), "Rvv", "w l lt 1 lc 2 lw 4 t '$R_{vv}$ (radial)'" ),
-        PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c+5))), "Rww", "w l lt 1 lc 3 lw 4 t '$R_{ww}$ (circumf.)'" ),
+        PlotCurve( arma::mat(join_rows(p().operation.Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c))),   "Ruu", "w l lt 1 lc 1 lw 4 t '$R_{uu}$ (axial)'"  ),
+        PlotCurve( arma::mat(join_rows(p().operation.Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c+3))), "Rvv", "w l lt 1 lc 2 lw 4 t '$R_{vv}$ (radial)'" ),
+        PlotCurve( arma::mat(join_rows(p().operation.Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c+5))), "Rww", "w l lt 1 lc 3 lw 4 t '$R_{ww}$ (circumf.)'" ),
         PlotCurve( refdata_Ruu, "Ruuref", "w l lt 2 lc 1 t '$R_{uu,ref}$ (K\\_Pipe, $Re_{\\tau}=180$)'"  ),
         PlotCurve( refdata_Rvv, "Rvvref", "w l lt 2 lc 2 t '$R_{vv,ref}$ (K\\_Pipe, $Re_{\\tau}=180$)'" ),
         PlotCurve( refdata_Rww, "Rwwref", "w l lt 2 lc 3 t '$R_{ww,ref}$ (K\\_Pipe, $Re_{\\tau}=180$)'" )
@@ -549,17 +554,13 @@ void PipeBase::evaluateAtSection(
   
 ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-  const ParameterSet& p=parameters_;
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  
+
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
 /*  
   boost::ptr_vector<sampleOps::set> sets;*/
   
   //double x=L*0.5;
-  evaluateAtSection(cm, results, 0.5*L, 0);
+  evaluateAtSection(cm, results, 0.5*p().geometry.L, 0);
 
   const RadialTPCArray* tpcs=cm.get<RadialTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
@@ -625,8 +626,8 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& prog
 
 
 
-PipeCyclic::PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: PipeBase(ps, exepath)
+PipeCyclic::PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
+: PipeBase(ps, exepath, progress)
 {
 }
 
@@ -643,9 +644,7 @@ void PipeCyclic::createCase
 (
   OpenFOAMCase& cm, ProgressDisplayer& progress
 )
-{  
-  const ParameterSet& p=parameters_;
-  
+{
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
@@ -658,21 +657,21 @@ void PipeCyclic::createCase
   PipeBase::createCase(cm, progress);
   
   cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
-					    .set_Ubar(vec3(Ubulk_, 0, 0))
+                                            .set_Ubar(vec3(sp().Ubulk_, 0, 0))
 		));
 
 }
 
 void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-  if (parameters().getBool("run/perturbU"))
+  if (p().run.perturbU)
   {
-    PSDBL(parameters(), "operation", Re_tau);
     
     cm.executeCommand(executionPath(), "perturbU", 
-		      list_of<string>
-		      (lexical_cast<string>(Re_tau))
-		      ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
+                      {
+                       lexical_cast<string>(p().operation.Re_tau),
+                       "("+lexical_cast<string>(sp().Ubulk_)+" 0 0)"
+                      }
 		    );
   }
   
@@ -681,11 +680,6 @@ void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& p
 
 void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
-  const ParameterSet& p=parameters_;
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  PSDBL(p, "evaluation", mean2time);
-
   OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
   OFDictData::dictFile& decomposeParDict=dicts->lookupDict("system/decomposeParDict");
@@ -705,257 +699,272 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& 
   {
     controlDict["application"]="channelFoam";
   }
-  controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
+  controlDict["endTime"] = (
+        p().evaluation.inittime
+        +p().evaluation.meantime
+        +p().evaluation.mean2time )*sp().T_;
 }
 
 addToAnalysisFactoryTable(PipeCyclic);
 
-const char* PipeInflow::tpc_names_[] = 
-  {
-    "tpc0_inlet",
-    "tpc1_intermediate1",
-    "tpc2_intermediate2",
-    "tpc3_intermediate3"
-  };
 
-const double PipeInflow::tpc_xlocs_[] = {0.0, 0.125, 0.25, 0.375};
 
-PipeInflow::PipeInflow(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: PipeBase(ps, exepath)
-{
-}
 
-ParameterSet PipeInflow::defaultParameters()
-{
-  ParameterSet p(PipeBase::defaultParameters());
 
-  std::unique_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
+
+//const char* PipeInflow::tpc_names_[] =
+//  {
+//    "tpc0_inlet",
+//    "tpc1_intermediate1",
+//    "tpc2_intermediate2",
+//    "tpc3_intermediate3"
+//  };
+
+
+
+
+
+//const double PipeInflow::tpc_xlocs_[] = {0.0, 0.125, 0.25, 0.375};
+
+
+//PipeInflow::PipeInflow(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
+//: PipeBase(ps, exepath, progress)
+//{
+//}
+
+//ParameterSet PipeInflow::defaultParameters()
+//{
+//  ParameterSet p(PipeBase::defaultParameters());
+
+//  std::unique_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
   
-//   (*inflowparams)().extend
-//   (
-//       boost::assign::list_of<ParameterSet::SingleEntry>
-//       ("umean", FieldData::defaultParameter(vec3(1,0,0)))
-//       .convert_to_container<ParameterSet::EntryList>()
-//   );
-//   
+////   (*inflowparams)().extend
+////   (
+////       boost::assign::list_of<ParameterSet::SingleEntry>
+////       ("umean", FieldData::defaultParameter(vec3(1,0,0)))
+////       .convert_to_container<ParameterSet::EntryList>()
+////   );
+////
   
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-    ("inflow", inflowparams.release())
-    .convert_to_container<ParameterSet::EntryList>()
-  );
+//  p.extend
+//  (
+//    boost::assign::list_of<ParameterSet::SingleEntry>
+//    ("inflow", inflowparams.release())
+//    .convert_to_container<ParameterSet::EntryList>()
+//  );
     
-  return p;
-}
+//  return p;
+//}
 
-void PipeInflow::createMesh
-(
-  OpenFOAMCase& cm, ProgressDisplayer& progress
-)
-{  
-  PipeBase::createMesh(cm, progress);
-  //convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
-}
+//void PipeInflow::createMesh
+//(
+//  OpenFOAMCase& cm, ProgressDisplayer& progress
+//)
+//{
+//  PipeBase::createMesh(cm, progress);
+//  //convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
+//}
 
-void PipeInflow::createCase
-(
-  OpenFOAMCase& cm, ProgressDisplayer& progress
-)
-{  
-  const ParameterSet& p=parameters_;
-  // create local variables from ParameterSet
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
+//void PipeInflow::createCase
+//(
+//  OpenFOAMCase& cm, ProgressDisplayer& progress
+//)
+//{
+
+//  path dir = executionPath();
+
+//  OFDictData::dict boundaryDict;
+//  cm.parseBoundaryDict(dir, boundaryDict);
+
+//  cm.insert(new unsteadyIncompressibleNumerics(cm, unsteadyIncompressibleNumerics::Parameters()
+//  ));
+
+//  cm.insert(new TurbulentVelocityInletBC( cm, sp().cycl_in_, boundaryDict,
+//                                          p.getSubset("inflow") ));
+  
+//  cm.insert(new PressureOutletBC(cm, sp().cycl_out_, boundaryDict, PressureOutletBC::Parameters()
+////    .set_pressure(0.0)
+////    .set_behaviour(PressureOutletBC::Parameters::behaviour_fixMeanValue_type())
+//     .set_behaviour(PressureOutletBC::Parameters::behaviour_fixMeanValue_type(
+//                    0.0
+//                    ))
+//     ));
+  
+//  PipeBase::createCase(cm, progress);
+  
+//  for (int i=0; i<ntpc_; i++)
+//  {
+//    cm.insert(new RadialTPCArray(cm, RadialTPCArray::Parameters()
+//      .set_R(0.5*D)
+////       .set_x(tpc_xlocs_[i]*L)
+//      .set_p0(vec3(0, 0, tpc_xlocs_[i]*L)) // in cyl coord sys
+//      .set_e_ax(vec3(0,0,1))
+//      .set_e_rad(vec3(1,0,0))
+//      .set_e_tan(vec3(0,1,0))
+//      .set_axSpan(0.5*L)
+//      .set_tanSpan(M_PI)
+//      .set_name(tpc_names_[i])
+//      .set_timeStart( (inittime+meantime)*T_ )
+//    ));
+//  }
+  
+//}
+
+//ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
+//{
+//  const ParameterSet& p=parameters_;
+//  PSDBL(p, "geometry", D);
+//  PSDBL(p, "geometry", L);
 //  PSDBL(p, "operation", Re_tau);
-//  PSINT(p, "fluid", turbulenceModel);
   
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-
-  path dir = executionPath();
-
-  OFDictData::dict boundaryDict;
-  cm.parseBoundaryDict(dir, boundaryDict);
-
-  cm.insert(new unsteadyIncompressibleNumerics(cm, unsteadyIncompressibleNumerics::Parameters()
-  ));
-
-  cm.insert(new TurbulentVelocityInletBC( cm, cycl_in_, boundaryDict, p.getSubset("inflow") ));
-  
-  cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
-//    .set_pressure(0.0)
-//    .set_behaviour(PressureOutletBC::Parameters::behaviour_fixMeanValue_type())
-     .set_behaviour(PressureOutletBC::Parameters::behaviour_fixMeanValue_type(
-                    0.0
-                    ))
-     ));
-  
-  PipeBase::createCase(cm, progress);
-  
-  for (int i=0; i<ntpc_; i++)
-  {
-    cm.insert(new RadialTPCArray(cm, RadialTPCArray::Parameters()
-      .set_R(0.5*D)
-//       .set_x(tpc_xlocs_[i]*L)
-      .set_p0(vec3(0, 0, tpc_xlocs_[i]*L)) // in cyl coord sys
-      .set_e_ax(vec3(0,0,1))
-      .set_e_rad(vec3(1,0,0))
-      .set_e_tan(vec3(0,1,0))
-      .set_axSpan(0.5*L)
-      .set_tanSpan(M_PI)
-      .set_name(tpc_names_[i])
-      .set_timeStart( (inittime+meantime)*T_ )
-    ));
-  }
-  
-}
-
-ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
-{
-  const ParameterSet& p=parameters_;
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
-  for (int i=0; i<ntpc_; i++)
-  {
-    evaluateAtSection(cm, results, (tpc_xlocs_[i]+1e-6)*L, i+1);
+//  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
+//  for (int i=0; i<ntpc_; i++)
+//  {
+//    evaluateAtSection(cm, results, (tpc_xlocs_[i]+1e-6)*L, i+1);
     
-    const RadialTPCArray* tpcs=cm.get<RadialTPCArray>( string(tpc_names_[i])+"TPCArray");
-    if (!tpcs)
-      throw insight::Exception("tpc FO array "+string(tpc_names_[i])+" not found in case!");
-    tpcs->evaluate(cm, executionPath(), results,
-      "two-point correlation of velocity at different radii at x/L="+lexical_cast<string>(tpc_xlocs_[i]+1e-6)
-    );
-  }
+//    const RadialTPCArray* tpcs=cm.get<RadialTPCArray>( string(tpc_names_[i])+"TPCArray");
+//    if (!tpcs)
+//      throw insight::Exception("tpc FO array "+string(tpc_names_[i])+" not found in case!");
+//    tpcs->evaluate(cm, executionPath(), results,
+//      "two-point correlation of velocity at different radii at x/L="+lexical_cast<string>(tpc_xlocs_[i]+1e-6)
+//    );
+//  }
   
-  // ============= Longitudinal profile of Velocity an RMS ================
-  int nr=10;
-  for (int i=0; i<nr; i++)
-  {
-    double r0=0.1, r1=0.997;
-    double r=r0+(r1-r0)*double(i)/double(nr-1);
+//  // ============= Longitudinal profile of Velocity an RMS ================
+//  int nr=10;
+//  for (int i=0; i<nr; i++)
+//  {
+//    double r0=0.1, r1=0.997;
+//    double r=r0+(r1-r0)*double(i)/double(nr-1);
     
-    ostringstream sns; sns<<"longitudinal_r"<<r;
-    string title=sns.str();
-    replace_all(title, ".", "_");
+//    ostringstream sns; sns<<"longitudinal_r"<<r;
+//    string title=sns.str();
+//    replace_all(title, ".", "_");
 
-    boost::ptr_vector<sampleOps::set> sets;
+//    boost::ptr_vector<sampleOps::set> sets;
     
-    sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
-      .set_start( vec3(0.001*L, 0, r*0.5*D))
-      .set_end(   vec3(0.999*L, 0, r*0.5*D))
-      .set_axis(vec3(1,0,0))
-      .set_name("longitudinal"+lexical_cast<string>(i))
-    ));
+//    sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
+//      .set_start( vec3(0.001*L, 0, r*0.5*D))
+//      .set_end(   vec3(0.999*L, 0, r*0.5*D))
+//      .set_axis(vec3(1,0,0))
+//      .set_name("longitudinal"+lexical_cast<string>(i))
+//    ));
     
-    sample(cm, executionPath(), 
-      list_of<std::string>("p")("U")("UMean")("UPrime2Mean"),
-      sets
-    );
+//    sample(cm, executionPath(),
+//      list_of<std::string>("p")("U")("UMean")("UPrime2Mean"),
+//      sets
+//    );
     
-    sampleOps::ColumnDescription cd;
-    arma::mat data = static_cast<sampleOps::circumferentialAveragedUniformLine&>(*sets.begin())
-      .readSamples(cm, executionPath(), &cd);
+//    sampleOps::ColumnDescription cd;
+//    arma::mat data = static_cast<sampleOps::circumferentialAveragedUniformLine&>(*sets.begin())
+//      .readSamples(cm, executionPath(), &cd);
       
       
-    // Mean velocity profiles
-    {
-      Gnuplot gp;
-      string chart_name="chartMeanVelocity_"+title;
-      string chart_file_name=chart_name+".png";
+//    // Mean velocity profiles
+//    {
+//      Gnuplot gp;
+//      string chart_name="chartMeanVelocity_"+title;
+//      string chart_file_name=chart_name+".png";
       
-      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-      gp<<"set xlabel 'x+'; set ylabel '<U+>'; set grid; ";
-      //gp<<"set logscale x;";
+//      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+//      gp<<"set xlabel 'x+'; set ylabel '<U+>'; set grid; ";
+//      //gp<<"set logscale x;";
       
-      int c=cd["UMean"].col;
+//      int c=cd["UMean"].col;
       
-      double fac_yp=Re_tau*2.0/D;
-      double fac_Up=1./utau_;
-      gp<<"plot 0 not lt -1,"
-	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Axial',"
-	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Circumferential',"
-	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Radial'"<<endl;
-      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
-      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+1))) );
-      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
+//      double fac_yp=Re_tau*2.0/D;
+//      double fac_Up=1./utau_;
+//      gp<<"plot 0 not lt -1,"
+//	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Axial',"
+//	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Circumferential',"
+//	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Radial'"<<endl;
+//      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
+//      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+1))) );
+//      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
 
-      results->insert(chart_name,
-        std::unique_ptr<Image>(new Image
-	(
-	executionPath(), chart_file_name, 
-	"Longitudinal profiles of averaged velocities", ""
-      )));
+//      results->insert(chart_name,
+//        std::unique_ptr<Image>(new Image
+//	(
+//	executionPath(), chart_file_name,
+//	"Longitudinal profiles of averaged velocities", ""
+//      )));
       
-    }
+//    }
     
-    // Mean reynolds stress profiles
-    {
-      Gnuplot gp;
-      string chart_name="chartMeanRstress_"+title;
-      string chart_file_name=chart_name+".png";
-      double fac_yp=Re_tau*2.0/D;
-      double fac_Rp=1./pow(utau_,2);
-      int c=cd["UPrime2Mean"].col;
+//    // Mean reynolds stress profiles
+//    {
+//      Gnuplot gp;
+//      string chart_name="chartMeanRstress_"+title;
+//      string chart_file_name=chart_name+".png";
+//      double fac_yp=Re_tau*2.0/D;
+//      double fac_Rp=1./pow(utau_,2);
+//      int c=cd["UPrime2Mean"].col;
       
-      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-      gp<<"set xlabel 'x+'; set ylabel '<R+>'; set grid; ";
-      //gp<<"set logscale x;";
-      gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
+//      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+//      gp<<"set xlabel 'x+'; set ylabel '<R+>'; set grid; ";
+//      //gp<<"set logscale x;";
+//      gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
       
       
-      gp<<"plot 0 not lt -1,"
-	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
-	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
-	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)'"<<endl;
-      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
-      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
-      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
+//      gp<<"plot 0 not lt -1,"
+//	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
+//	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
+//	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)'"<<endl;
+//      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
+//      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
+//      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
 
-      results->insert(chart_name,
-        std::unique_ptr<Image>(new Image
-	(
-	executionPath(), chart_file_name, 
-	"Longitudinal profiles of averaged reynolds stresses", ""
-      )));
+//      results->insert(chart_name,
+//        std::unique_ptr<Image>(new Image
+//	(
+//	executionPath(), chart_file_name,
+//	"Longitudinal profiles of averaged reynolds stresses", ""
+//      )));
       
-    }
-  }
+//    }
+//  }
     
-  return results;
-}
+//  return results;
+//}
 
-void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
-{
+
+
+
+//void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
+//{
   
-  setFields(cm, executionPath(), 
-            {
-              "volVectorFieldValue U ("+lexical_cast<string>(Ubulk_)+" 0 0)"
-            },
-	    ptr_vector<setFieldOps::setFieldOperator>()
-  );
+//  setFields(cm, executionPath(),
+//            {
+//              "volVectorFieldValue U ("+lexical_cast<string>(sp().Ubulk_)+" 0 0)"
+//            },
+//	    ptr_vector<setFieldOps::setFieldOperator>()
+//  );
   
-//   cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
+////   cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
   
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm, progress);
-}
+//  OpenFOAMAnalysis::applyCustomPreprocessing(cm, progress);
+//}
 
-void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
-{
-  const ParameterSet& p=parameters_;
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  PSDBL(p, "evaluation", mean2time);
 
-  OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
+
+
+//void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
+//{
+//  OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
-  OFDictData::dictFile& controlDict=dicts->lookupDict("system/controlDict");
-  controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
-}
+//  OFDictData::dictFile& controlDict=dicts->lookupDict("system/controlDict");
+//  controlDict["endTime"] = (
+//         p().evaluation.inittime
+//        +p().evaluation.meantime
+//        +p().evaluation.mean2time )*sp().T_;
+//}
 
-addToAnalysisFactoryTable(PipeInflow);
+
+
+
+//addToAnalysisFactoryTable(PipeInflow);
+
+
+
 
 }

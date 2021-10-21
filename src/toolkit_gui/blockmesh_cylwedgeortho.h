@@ -30,6 +30,7 @@
 #include "Geom_BoundedCurve.hxx"
 #include "gp_Pnt.hxx"
 #include "gp_Vec.hxx"
+#include "blockmesh_cylwedgeortho__blockMeshDict_CylWedgeOrtho__Parameters_headers.h"
 
 namespace insight
 {

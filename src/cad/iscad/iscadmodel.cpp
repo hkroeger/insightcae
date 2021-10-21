@@ -250,7 +250,7 @@ void ISCADModel::onEditorSelectionChanged()
       insight::cad::FeaturePtr fp=syn_elem_dir_->findElement( textCursor().position() );
       if (fp)
       {
-        emit focus(fp->buildVisualization());
+        emit focus(Handle_AIS_Shape(new AIS_Shape(fp->shape())));
       }
       else
       {

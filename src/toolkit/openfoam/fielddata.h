@@ -6,6 +6,8 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamdict.h"
 
+#include "fielddata__FieldData__Parameters_headers.h"
+
 namespace insight
 {
 

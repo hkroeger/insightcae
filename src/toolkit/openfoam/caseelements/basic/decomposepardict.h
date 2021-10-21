@@ -4,6 +4,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "decomposepardict__decomposeParDict__Parameters_headers.h"
+
 
 namespace insight {
 

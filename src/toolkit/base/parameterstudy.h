@@ -38,6 +38,9 @@ class ParameterStudy
 : public Analysis
 {
 protected:
+  ParameterSet parameters_;
+
+protected:
   void generateInstance
   (
     SynchronisedAnalysisQueue& instances,
@@ -65,7 +68,8 @@ public:
     const std::string& name, 
     const std::string& description, 
     const ParameterSet& ps,
-    const boost::filesystem::path& exePath
+    const boost::filesystem::path& exePath,
+    ProgressDisplayer& displayer = consoleProgressDisplayer
   );
 
   static ParameterSet defaultParameters();
@@ -86,6 +90,11 @@ public:
   virtual void setupQueue();
   virtual void processQueue(insight::ProgressDisplayer& displayer);
   virtual ResultSetPtr evaluateRuns();
+
+  inline ParameterSet parameters() const override
+  {
+    return parameters_;
+  }
   
   virtual ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
 };

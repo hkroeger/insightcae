@@ -4,6 +4,8 @@
 
 #include "openfoam/caseelements/boundaryconditions/ggibcbase.h"
 
+#include "overlapggibc__OverlapGGIBC__Parameters_headers.h"
+
 namespace insight {
 
 

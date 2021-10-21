@@ -23,6 +23,8 @@
 #include "occinclude.h"
 #include "astbase.h"
 
+#include "base/factory.h"
+
 namespace insight 
 {
 namespace cad 
@@ -32,10 +34,12 @@ class PostprocAction
 : public ASTBase
 {
 public:
+  declareType ( "PostprocAction" );
+
   virtual void execute();
   
   virtual void write(std::ostream&) const =0;
-  virtual Handle_AIS_InteractiveObject createAISRepr() const =0;
+//  virtual Handle_AIS_InteractiveObject createAISRepr() const =0;
 };
 
 }

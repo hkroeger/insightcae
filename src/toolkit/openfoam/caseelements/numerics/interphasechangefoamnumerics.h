@@ -2,6 +2,7 @@
 #define INSIGHT_INTERPHASECHANGEFOAMNUMERICS_H
 
 #include "openfoam/caseelements/numerics/interfoamnumerics.h"
+#include "interphasechangefoamnumerics__interPhaseChangeFoamNumerics__Parameters_headers.h"
 
 namespace insight {
 

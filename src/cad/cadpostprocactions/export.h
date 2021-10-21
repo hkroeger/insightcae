@@ -44,6 +44,7 @@ class Export
   virtual void build();
 
 public:
+  declareType("Export");
   Export(FeaturePtr model, const boost::filesystem::path& filename, ExportNamedFeatures namedfeats = ExportNamedFeatures() );
   
   virtual Handle_AIS_InteractiveObject createAISRepr() const;
@@ -63,6 +64,7 @@ class ExportEMesh
   virtual void build();
 
 public:
+  declareType("ExportEMesh");
   ExportEMesh(FeatureSetPtr eMesh_featureSet, const boost::filesystem::path& filename, ScalarPtr eMesh_accuracy, ScalarPtr eMesh_maxlen);
 
   virtual Handle_AIS_InteractiveObject createAISRepr() const;
@@ -83,6 +85,7 @@ class ExportSTL
   virtual void build();
 
 public:
+  declareType("ExportSTL");
   ExportSTL(FeaturePtr model, const boost::filesystem::path& filename, ScalarPtr STL_accuracy, bool force_binary=false);
 
   virtual Handle_AIS_InteractiveObject createAISRepr() const;

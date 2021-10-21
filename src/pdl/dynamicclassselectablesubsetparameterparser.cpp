@@ -6,8 +6,9 @@ DynamicClassSelectableSubsetParameterParser::Data::Data ( const std::string& bas
     : ParserDataBase ( d ), base_type( base ), default_sel_(default_sel)
 {}
 
-void DynamicClassSelectableSubsetParameterParser::Data::cppAddHeader ( std::set<std::string>&  ) const
+void DynamicClassSelectableSubsetParameterParser::Data::cppAddHeader ( std::set<std::string>& headers ) const
 {
+  headers.insert("\"base/parameters/selectablesubsetparameter.h\"");
 }
 
 std::string DynamicClassSelectableSubsetParameterParser::Data::cppType ( const std::string&  ) const

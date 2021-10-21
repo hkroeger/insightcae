@@ -49,7 +49,6 @@ namespace insight
 {
 
 
-
 bool directoryIsWritable( const boost::filesystem::path& directoryToTest )
 {
   boost::filesystem::path directory = directoryToTest;

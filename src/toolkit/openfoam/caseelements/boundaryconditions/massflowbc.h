@@ -6,6 +6,8 @@
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
 
+#include "massflowbc__MassflowBC__Parameters_headers.h"
+
 namespace insight {
 
 

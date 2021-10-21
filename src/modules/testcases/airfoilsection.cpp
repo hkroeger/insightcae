@@ -55,37 +55,31 @@ addToAnalysisFactoryTable(AirfoilSection);
 
 
 
-AirfoilSection::AirfoilSection(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: OpenFOAMAnalysis("Airfoil 2D", "Steady RANS simulation of a 2-D flow over an airfoil section", ps, exepath),
-  in_("in"), 
-  out_("out"), 
-  up_("up"), 
-  down_("down"), 
-  fb_("frontAndBack"),
-  foil_("foil")
-{}
-
-
-
-
-
-
-void AirfoilSection::calcDerivedInputData(ProgressDisplayer& progress)
+AirfoilSection::supplementedInputData::supplementedInputData(
+    std::unique_ptr<Parameters> pPtr,
+    const path &workDir,
+    ProgressDisplayer &progress )
+  : supplementedInputDataDerived<Parameters>( std::move(pPtr) ),
+    in_("in"),
+    out_("out"),
+    up_("up"),
+    down_("down"),
+    fb_("frontAndBack"),
+    foil_("foil")
 {
-  Parameters p(parameters_);
 
-  if (!p.geometry.foilfile->isValid())
-    throw insight::Exception("Foil data file does not exist: "+p.geometry.foilfile->fileName().string());
+  if (!p().geometry.foilfile->isValid())
+    throw insight::Exception("Foil data file does not exist: "+p().geometry.foilfile->fileName().string());
 
-  std::cout<<"Reading foil from "<<p.geometry.foilfile->fileName().string()<<std::endl;
+  std::cout<<"Reading foil from "<<p().geometry.foilfile->fileName().string()<<std::endl;
   {
     std::string data;
-    std::string ext = p.geometry.foilfile->fileName().extension().string();
+    std::string ext = p().geometry.foilfile->fileName().extension().string();
 
     int lnr=0;
 
     {
-      auto& f = p.geometry.foilfile->stream();
+      auto& f = p().geometry.foilfile->stream();
       if (ext==".dat") // xflr 5
         {
           std::string foil_name;
@@ -102,7 +96,7 @@ void AirfoilSection::calcDerivedInputData(ProgressDisplayer& progress)
           double x, y;
           l >> x >> y;
           if (l.fail()) throw insight::Exception(boost::str(boost::format("Error in foil file %s:%d: could not read x and y from \"%s\"!")
-                                                            % p.geometry.foilfile->fileName().string() % lnr % line));
+                                                            % p().geometry.foilfile->fileName().string() % lnr % line));
           data += boost::str(boost::format("%g %g\n") % x % y);
         }
 
@@ -122,18 +116,36 @@ void AirfoilSection::calcDerivedInputData(ProgressDisplayer& progress)
     {
       contour_.shed_row(contour_.n_rows-1);
     }
+}
 
-  reportIntermediateParameter("c", c_, "[m] Chord length", "m");
+
+
+AirfoilSection::AirfoilSection(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
+: OpenFOAMAnalysis("Airfoil 2D", "Steady RANS simulation of a 2-D flow over an airfoil section", ps, exepath),
+  parameters_( new supplementedInputData(
+                 std::make_unique<Parameters>(ps),
+                 exepath, progress
+                 ) )
+{}
+
+
+
+
+
+
+void AirfoilSection::calcDerivedInputData(ProgressDisplayer& progress)
+{
+  OpenFOAMAnalysis::calcDerivedInputData(progress);
+  reportIntermediateParameter("c", sp().c_, "[m] Chord length", "m");
 }
 
 void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-  Parameters p(parameters_);
 
   path dir = executionPath();
     
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
-    .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+    .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
   ));
   
   using namespace insight::bmd;
@@ -141,29 +153,27 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
   bmd->setScaleFactor(1.0);
   bmd->setDefaultPatch("walls", "wall");
   
-  double delta=c_/double(p.mesh.nc);
+  double delta=sp().c_/double(p().mesh.nc);
   
-  std::map<int, Point> pts;
   double z0=0, h=delta;
-  pts = boost::assign::map_list_of   
-      (0, 	vec3(-(p.geometry.LinByc+0.5)*c_, -p.geometry.HByc*c_, z0))
-      (1, 	vec3((p.geometry.LoutByc+0.5)*c_, -p.geometry.HByc*c_, z0))
-      (2, 	vec3((p.geometry.LoutByc+0.5)*c_, p.geometry.HByc*c_, z0))
-      (3, 	vec3(-(p.geometry.LinByc+0.5)*c_, p.geometry.HByc*c_, z0))
-      .convert_to_container<std::map<int, Point> >()
-  ;
+  std::map<int, Point> pts = {
+      {0, 	vec3(-(p().geometry.LinByc+0.5)*sp().c_,  -p().geometry.HByc*sp().c_, z0)},
+      {1, 	vec3( (p().geometry.LoutByc+0.5)*sp().c_, -p().geometry.HByc*sp().c_, z0)},
+      {2, 	vec3( (p().geometry.LoutByc+0.5)*sp().c_,  p().geometry.HByc*sp().c_, z0)},
+      {3, 	vec3(-(p().geometry.LinByc+0.5)*sp().c_,   p().geometry.HByc*sp().c_, z0)}
+  };
   
-  arma::mat PiM=vec3(-(p.geometry.LinByc+0.4)*c_, 0.01*c_, z0+0.0001*h);
+  arma::mat PiM=vec3(-(p().geometry.LinByc+0.4)*sp().c_, 0.01*sp().c_, z0+0.0001*h);
   
   int nx = int( (pts[1][0]-pts[0][0])/delta );
   int ny = int( (pts[2][1]-pts[1][1])/delta );
   
-  Patch& in= 	bmd->addPatch(in_, new Patch());
-  Patch& out= 	bmd->addPatch(out_, new Patch());
-  Patch& up= 	bmd->addPatch(up_, new Patch());
-  Patch& down= 	bmd->addPatch(down_, new Patch());
+  Patch& in= 	bmd->addPatch(sp().in_, new Patch());
+  Patch& out= 	bmd->addPatch(sp().out_, new Patch());
+  Patch& up= 	bmd->addPatch(sp().up_, new Patch());
+  Patch& down= 	bmd->addPatch(sp().down_, new Patch());
   Patch& dummy= bmd->addPatch("dummy", new Patch());
-  Patch& fb= 	bmd->addPatch(fb_, new Patch());
+  Patch& fb= 	bmd->addPatch(sp().fb_, new Patch());
   
   arma::mat vH=vec3(0,0,h);
   
@@ -193,7 +203,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
   
   path targ_path(dir/"constant"/"triSurface"/"foil.stl");
   create_directories(targ_path.parent_path());
-  STLExtruder(contour_, 0, z0+2.0, targ_path);
+  STLExtruder(sp().contour_, 0, z0+2.0, targ_path);
   
   cm.executeCommand(dir, "blockMesh");  
 
@@ -206,22 +216,24 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
       .set_nLayerIter(10)
       ;
   
-  shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-    .set_name(foil_)
-    .set_minLevel(p.mesh.lmfoil)
-    .set_maxLevel(p.mesh.lxfoil)
-    .set_nLayers(p.mesh.nlayer)
+  shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(
+    snappyHexMeshFeats::Geometry::Parameters()
+    .set_name(sp().foil_)
+    .set_minLevel(p().mesh.lmfoil)
+    .set_maxLevel(p().mesh.lxfoil)
+    .set_nLayers(p().mesh.nlayer)
     
     .set_fileName(make_filepath(targ_path))
-    .set_scale(vec3(c_, c_, 1))
-    .set_rollPitchYaw(vec3(0,0,-p.geometry.alpha))
+    .set_scale(vec3(sp().c_, sp().c_, 1))
+    .set_rollPitchYaw(vec3(0,0,-p().geometry.alpha))
   )));
   
-  shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::NearSurfaceRefinement( snappyHexMeshFeats::NearSurfaceRefinement::Parameters()
-    .set_name(foil_)
+  shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::NearSurfaceRefinement(
+    snappyHexMeshFeats::NearSurfaceRefinement::Parameters()
+    .set_name(sp().foil_)
     .set_mode( snappyHexMeshFeats::NearSurfaceRefinement::Parameters::distance )
-    .set_level(p.mesh.lmfoil)
-    .set_dist(0.1*c_)
+    .set_level(p().mesh.lmfoil)
+    .set_dist(0.1*sp().c_)
   )));
 
   shm_cfg.PiM.push_back(PiM);
@@ -241,7 +253,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
   extrude2DMesh
   (
     cm, dir,
-    fb_,
+    sp().fb_,
     "", false, 1.0,
     vec3(0,0,-delta-0.5), vec3(0,0,1)
   );
@@ -252,8 +264,6 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
 
 void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-  Parameters p(parameters_);
- 
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
@@ -263,24 +273,30 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
     .set_checkResiduals(false)
     .set_purgeWrite(2)
     .set_endTime(5000)
-    .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+    .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
   )); 
   
   std::string force_fo_name("foilForces");
 
   cm.insert(new forces(cm, forces::Parameters()
     .set_name(force_fo_name)
-    .set_patches( list_of("\""+foil_+".*\"") )
-    .set_rhoInf(p.fluid.rho)
+    .set_patches( {"\""+sp().foil_+".*\""} )
+    .set_rhoInf(p().fluid.rho)
     .set_CofR(vec3(0,0,0))
     ));  
 
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(SolverOutputAnalyzer::pre_force+force_fo_name+"/fpx", p.run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(SolverOutputAnalyzer::pre_force+force_fo_name+"/fvx", p.run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(SolverOutputAnalyzer::pre_force+force_fo_name+"/fpy", p.run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(SolverOutputAnalyzer::pre_force+force_fo_name+"/fvy", p.run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(SolverOutputAnalyzer::pre_moment+force_fo_name+"/mpz", p.run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(SolverOutputAnalyzer::pre_moment+force_fo_name+"/mvz", p.run.residual));
+  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
+                               SolverOutputAnalyzer::pre_force+force_fo_name+"/fpx", p().run.residual));
+  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
+                               SolverOutputAnalyzer::pre_force+force_fo_name+"/fvx", p().run.residual));
+  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
+                               SolverOutputAnalyzer::pre_force+force_fo_name+"/fpy", p().run.residual));
+  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
+                               SolverOutputAnalyzer::pre_force+force_fo_name+"/fvy", p().run.residual));
+  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
+                               SolverOutputAnalyzer::pre_moment+force_fo_name+"/mpz", p().run.residual));
+  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
+                               SolverOutputAnalyzer::pre_moment+force_fo_name+"/mvz", p().run.residual));
 
 //   cm.insert(new minMaxSurfacePressure(cm, minMaxSurfacePressure::Parameters()
 //       .set_name("minPressure")
@@ -289,10 +305,10 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
 //       .set_section_radii(list_of(0.0)(1.0))
 //       ));
 
-  cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
-    .set_velocity( FieldData::uniformSteady(p.operation.vinf, 0, 0) ) 
+  cm.insert(new VelocityInletBC(cm, sp().in_, boundaryDict, VelocityInletBC::Parameters()
+    .set_velocity( FieldData::uniformSteady(p().operation.vinf, 0, 0) )
     ));
-  cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
+  cm.insert(new PressureOutletBC(cm, sp().out_, boundaryDict, PressureOutletBC::Parameters()
 //                                 .set_pressure(0.0)
                                  .set_behaviour(PressureOutletBC::Parameters::behaviour_uniform_type(
                                                 FieldData::Parameters().set_fielddata(
@@ -303,9 +319,9 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
                                                 ))
                                  ));
    
-  cm.insert(new SimpleBC(cm, up_, boundaryDict, "symmetryPlane" ));
-  cm.insert(new SimpleBC(cm, down_, boundaryDict, "symmetryPlane" ));
-  cm.insert(new SimpleBC(cm, fb_, boundaryDict, "empty" ));
+  cm.insert(new SimpleBC(cm, sp().up_, boundaryDict, "symmetryPlane" ));
+  cm.insert(new SimpleBC(cm, sp().down_, boundaryDict, "symmetryPlane" ));
+  cm.insert(new SimpleBC(cm, sp().fb_, boundaryDict, "empty" ));
 
   //   cm.insert(new cuttingPlane(cm, cuttingPlane::Parameters()
 //     .set_name("plane")
@@ -329,7 +345,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
 //     .set_timeStart( (inittime+meantime)*T_ )
 //   ));
 //   
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(p.fluid.nu) ));
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(p().fluid.nu) ));
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   insertTurbulenceModel(cm, parameters().get<SelectableSubsetParameter>("fluid/turbulenceModel"));
@@ -340,13 +356,11 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
 
 insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-  Parameters p(parameters_);
-
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
   
   arma::mat f_vs_iter=forces::readForces(cm, executionPath(), "foilForces");
   
-  double Aref=1.*c_, Re=c_*p.operation.vinf/p.fluid.nu;
+  double Aref=1.*sp().c_, Re=sp().c_ * p().operation.vinf/p().fluid.nu;
   
   ptr_map_insert<ScalarResult>(*results) 
     ("Aref", Aref, "Reference area", "", "$m^2$");
@@ -354,13 +368,13 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
     ("Re", Re, "Reynolds number", "", "");
   
   arma::mat cl = (f_vs_iter.col(2)+f_vs_iter.col(5))
-		  / ( 0.5*p.fluid.rho * pow(p.operation.vinf,2) * Aref );
+                  / ( 0.5*p().fluid.rho * pow(p().operation.vinf,2) * Aref );
   arma::mat cd = (f_vs_iter.col(1)+f_vs_iter.col(4))
-		  / ( 0.5*p.fluid.rho * pow(p.operation.vinf,2) * Aref );
+                  / ( 0.5*p().fluid.rho * pow(p().operation.vinf,2) * Aref );
   arma::mat eps = cl/cd;
   
   double minPbyrho=minPatchPressure(cm, executionPath(), "foil")(0,1);
-  double cpmin=minPbyrho/(0.5*pow(p.operation.vinf,2));
+  double cpmin=minPbyrho/(0.5*pow(p().operation.vinf,2));
   
   ptr_map_insert<ScalarResult>(*results) 
     ("cl", cl(cl.n_elem-1), "Lift coefficient", "", "");
@@ -422,7 +436,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
 "Show(streamTracerWithCustomSource1)\n"
 "streamTracerWithCustomSource1Display = GetDisplayProperties(streamTracerWithCustomSource1, view=GetActiveView())\n"
 "ColorBy(streamTracerWithCustomSource1Display, None)\n"
-"setCam(["+lexical_cast<std::string>(0.5*c_)+",0,1], ["+lexical_cast<std::string>(0.5*c_)+",0,0], [0,1,0], "+lexical_cast<std::string>(c_)+")\n"
+"setCam(["+lexical_cast<std::string>(0.5*sp().c_)+",0,1], ["+lexical_cast<std::string>(0.5*sp().c_)+",0,0], [0,1,0], "+lexical_cast<std::string>(sp().c_)+")\n"
   
 	"WriteImage('"+fname+"')\n"
     )
@@ -432,7 +446,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
     std::unique_ptr<Image>(new Image
     (
     executionPath(), fname, 
-    str(format("Relative velocity (angle of attack %gdeg)")%p.geometry.alpha), ""
+    str(format("Relative velocity (angle of attack %gdeg)") % p().geometry.alpha), ""
   )));  
   
   return results;
@@ -443,12 +457,16 @@ addToAnalysisFactoryTable(AirfoilSectionPolar);
 
 RangeParameterList rpl_AirfoilSectionPolar = list_of<std::string>("geometry/alpha");
 
-AirfoilSectionPolar::AirfoilSectionPolar(const ParameterSet& ps, const boost::filesystem::path& exepath)
+AirfoilSectionPolar::AirfoilSectionPolar(
+    const ParameterSet& ps,
+    const boost::filesystem::path& exepath,
+    ProgressDisplayer& displayer )
 : OpenFOAMParameterStudy
   (
     "Polar of Airfoil",
     "Computes the polar of a 2D airfoil section using CFD",
     ps, exepath, 
+    displayer,
     true
   )
 {}
@@ -458,7 +476,7 @@ void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
 
   std::string key="coeffTable";
   results->insert(key, table("", "", "geometry/alpha", 
-			     list_of<std::string>("cl")("cd")("eps")("cpmin")));
+                             {"cl", "cd", "eps", "cpmin"}));
   const TabularResult& tab = 
     static_cast<const TabularResult&>(*(results->find(key)->second));
   

@@ -4,8 +4,13 @@
 using namespace std;
 
 SelectionParameterParser::Data::Data(const std::vector<std::string>& sels, const std::string& sel, const std::string& d)
-: ParserDataBase(d), selections(sels), selection(sel)
+  : ParserDataBase(d), selections(sels), selection(sel)
 {}
+
+void SelectionParameterParser::Data::cppAddHeader(std::set<std::string> &headers) const
+{
+  headers.insert("\"base/parameters/selectionparameter.h\"");
+}
 
 std::string SelectionParameterParser::Data::cppType(const std::string&) const
 {

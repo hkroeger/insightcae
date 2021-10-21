@@ -22,6 +22,7 @@
 
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
+#include "base/analysislibrary.h"
 #include "base/resultset.h"
 #include "base/resultelements/chart.h"
 
@@ -238,7 +239,7 @@ int main(int argc, char *argv[])
                               <<std::endl<<std::endl;
                     exit(-1);
                 }
-                loader.addLibrary(l);
+                analysisLibraries.addLibrary(l);
             }
         }
 

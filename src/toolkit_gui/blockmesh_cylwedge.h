@@ -30,6 +30,8 @@
 #include "gp_Pnt.hxx"
 #include "gp_Vec.hxx"
 
+#include "blockmesh_cylwedge__blockMeshDict_CylWedge__Parameters_headers.h"
+
 namespace insight
 {
 

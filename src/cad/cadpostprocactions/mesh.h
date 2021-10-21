@@ -70,6 +70,7 @@ protected:
   void build() override;
 
 public:
+  declareType("Mesh");
   Mesh
   (
     const boost::filesystem::path& outpath,
@@ -82,7 +83,7 @@ public:
   );
   
 
-  Handle_AIS_InteractiveObject createAISRepr() const override;
+//  Handle_AIS_InteractiveObject createAISRepr() const override;
   void write(std::ostream& ) const override;
 };
 
@@ -106,6 +107,7 @@ protected:
   virtual void build();
 
 public:
+  declareType("ExtrudedMesh");
   ExtrudedMesh
   (
     const boost::filesystem::path& outpath,
@@ -139,6 +141,8 @@ class SnappyHexMesh
   virtual void build();
 
 public:
+  declareType("SnappyHexMesh");
+
   SnappyHexMesh
   (
     const boost::filesystem::path& outpath,
@@ -150,7 +154,7 @@ public:
   );
   
 
-  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
 };
 

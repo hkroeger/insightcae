@@ -36,6 +36,8 @@ public:
   {
   }
 
+  ParameterSet parameters() const override { return ParameterSet(); }
+
   // create mesh
   void createMesh(OpenFOAMCase& cm, ProgressDisplayer& progress) override
   {

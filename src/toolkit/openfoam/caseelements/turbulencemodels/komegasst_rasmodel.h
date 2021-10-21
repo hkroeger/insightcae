@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/basic/rasmodel.h"
 
+#include "komegasst_rasmodel__kOmegaSST_RASModel__Parameters_headers.h"
+
 namespace insight {
 
 class kOmegaSST_RASModel

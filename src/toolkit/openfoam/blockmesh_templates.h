@@ -23,6 +23,7 @@
 #define INSIGHT_BLOCKMESH_TEMPLATES_H
 
 #include "openfoam/blockmesh.h"
+#include "blockmesh_templates__blockMeshDict_Cylinder__Parameters_headers.h"
 
 namespace insight {
   

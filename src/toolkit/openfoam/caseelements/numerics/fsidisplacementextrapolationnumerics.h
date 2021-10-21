@@ -2,6 +2,7 @@
 #define INSIGHT_FSIDISPLACEMENTEXTRAPOLATIONNUMERICS_H
 
 #include "openfoam/caseelements/numerics/fanumerics.h"
+#include "fsidisplacementextrapolationnumerics__FSIDisplacementExtrapolationNumerics__Parameters_headers.h"
 
 namespace insight {
 

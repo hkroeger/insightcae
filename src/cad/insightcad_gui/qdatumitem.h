@@ -40,7 +40,14 @@ class INSIGHTCAD_GUI_EXPORT QDatumItem
   insight::cad::DatumPtr smp_;
     
 protected:
-  virtual Handle_AIS_InteractiveObject createAIS(AIS_InteractiveContext& context);
+  virtual Handle_AIS_InteractiveObject createAIS(
+      insight::cad::DatumPtr datum,
+      AIS_InteractiveContext& context,
+      const gp_Trsf& tr
+      );
+  Handle_AIS_InteractiveObject createAIS(
+        AIS_InteractiveContext& context
+        );
 
 public:
   QDatumItem(const QString& name, insight::cad::DatumPtr smp, QTreeWidgetItem* parent);

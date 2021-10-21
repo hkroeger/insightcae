@@ -14,11 +14,11 @@ set(testcases_LIBS
 )
 if (INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
     list(APPEND testcases_SOURCES
-        decayingturbulence.cpp
+        #decayingturbulence.cpp
         pipe.cpp
         channel.cpp
-        ercoftac_squaresection180degreebend.cpp
-        freeshearflow.cpp
+        #ercoftac_squaresection180degreebend.cpp
+        #freeshearflow.cpp
         )
     list(APPEND testcases_LIBS
         refdata

@@ -10,6 +10,7 @@ SelectableSubsetParameterParser::Data::Data ( const SubsetListData& v, const std
 void SelectableSubsetParameterParser::Data::cppAddHeader ( std::set<std::string>& headers ) const
 {
     headers.insert ( "<boost/variant.hpp>" );
+    headers.insert("\"base/parameters/selectablesubsetparameter.h\"");
     for ( const SubsetData& pe: value ) {
         boost::fusion::get<1> ( pe )->cppAddHeader ( headers );
     }

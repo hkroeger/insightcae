@@ -12,6 +12,8 @@ struct IntParameterParser
 
         Data(int v, const std::string& d);
 
+        void cppAddHeader(std::set<std::string>& headers) const override;
+
         std::string cppType(const std::string&) const override;
 
         std::string cppParamType(const std::string& ) const override;

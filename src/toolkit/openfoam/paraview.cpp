@@ -387,8 +387,12 @@ std::vector<boost::filesystem::path> IsoView::createdFiles() const
 
 addToAnalysisFactoryTable(ParaviewVisualization);
 
-ParaviewVisualization::ParaviewVisualization(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: Analysis("", "", ps, exepath)
+ParaviewVisualization::ParaviewVisualization(
+    const ParameterSet& ps,
+    const boost::filesystem::path& exepath,
+    ProgressDisplayer& progress )
+: Analysis("", "", ps, exepath, progress),
+  p_(ps)
 {
 }
 
@@ -397,8 +401,6 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
 //  boost::mutex::scoped_lock lock(runPvPython_mtx);
     setupExecutionEnvironment();
 
-    Parameters p(parameters_);
-
     std::string pvscript=
         "from Insight.Paraview import *\n"
         "import numpy as np\n"+
@@ -406,7 +408,7 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
         "prepareSnapshots()\n"
     ;
 
-    for (PVScenePtr scn: p.scenes)
+    for (PVScenePtr scn: p_.scenes)
     {
         pvscript += scn->pythonCommands();
     }
@@ -434,10 +436,10 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
 //    if (!keepScript)
     remove(tempfile);
 
-    ResultSetPtr results(new ResultSet(parameters_, "Paraview renderings", ""));
+    ResultSetPtr results(new ResultSet(p_, "Paraview renderings", ""));
 
     std::vector<boost::filesystem::path> files;
-    for (PVScenePtr scn: p.scenes)
+    for (PVScenePtr scn: p_.scenes)
     {
         std::vector<boost::filesystem::path> af=scn->createdFiles();
         std::copy(af.begin(), af.end(), std::back_inserter(files));

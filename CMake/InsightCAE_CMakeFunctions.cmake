@@ -18,12 +18,27 @@ endmacro(install_headers)
 
 
 ## installs headers and PDL-generated headers
-macro (add_PDL TARGETNAME HEADERS)
+macro (add_PDL TARGETNAME FILES)
   #file(GLOB_RECURSE HEADERS "*.h")
 
+  foreach (_hdrrel ${FILES})
+    get_filename_component(_ext ${_hdrrel} EXT)
+    if (_ext STREQUAL ".h")
+        if (NOT IS_ABSOLUTE ${_hdrrel})
+            set(_hdr ${CMAKE_CURRENT_SOURCE_DIR}/${_hdrrel})
+        else()
+            set(_hdr ${_hdrrel})
+        endif()
+        LIST(APPEND HEADERS ${_hdr})
+    endif()
+  endforeach()
+
   install_headers(${TARGETNAME} "${HEADERS}")
+
   foreach (_hdr ${HEADERS})
+    #message(STATUS "${_hdr} ${_hdrrel}")
     get_filename_component(BN ${_hdr} NAME_WE)
+
     #message(STATUS ${_hdr} ${BN})
     list (APPEND ${TARGETNAME}_TIMESTAMPS ${BN}_pdl.timestamp)
 
@@ -40,7 +55,6 @@ macro (add_PDL TARGETNAME HEADERS)
                         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include/insightcae
                         COMMAND "${GENSETSPY}" "${_hdr}" "${PDL}" "${CMAKE_BINARY_DIR}/include/insightcae/"
                         COMMAND touch ${BN}_pdl.timestamp
-                        #COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/*__*.h ${CMAKE_BINARY_DIR}/include/insightcae/ # *__* probably too weak criterion
                         DEPENDS ${DEPS}
                         COMMENT "Generating source code from PDL in header ${_hdr}" )
     install(
@@ -48,7 +62,6 @@ macro (add_PDL TARGETNAME HEADERS)
       CODE "file( INSTALL \${_GeneratedHeaders} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/insightcae )"
       COMPONENT ${INSIGHT_INSTALL_COMPONENT}
      )
-
   endforeach()
   ADD_CUSTOM_TARGET( ${TARGETNAME}_PDLGenerator DEPENDS ${${TARGETNAME}_TIMESTAMPS}
                     COMMENT "Checking if PDL re-generation is required" )

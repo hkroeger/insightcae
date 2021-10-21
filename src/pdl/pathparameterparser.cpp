@@ -7,8 +7,8 @@ PathParameterParser::Data::Data(const boost::filesystem::path& v, const std::str
 
 void PathParameterParser::Data::cppAddHeader(std::set< std::string >& headers) const
 {
-//  headers.insert("<boost/filesystem.hpp>");
   headers.insert("<memory>");
+  headers.insert("\"base/parameters/pathparameter.h\"");
 }
 
 std::string PathParameterParser::Data::cppType(const std::string&) const

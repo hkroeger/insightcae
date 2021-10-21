@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "minimumtimesteplimit__minimumTimestepLimit__Parameters_headers.h"
+
 namespace insight {
 
 class minimumTimestepLimit

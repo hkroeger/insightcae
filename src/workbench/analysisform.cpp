@@ -129,8 +129,9 @@ AnalysisForm::AnalysisForm(
 //    parameters_ = defaultParams;
 
     {
-      insight::AnalysisPtr a( insight::Analysis::lookup(analysisName_, defaultParams, "") );
-      isOpenFOAMAnalysis_ = bool( std::dynamic_pointer_cast<insight::OpenFOAMAnalysis>( a ) );
+#warning check for OpenFOAM analysis in a different way
+//      insight::AnalysisPtr a( insight::Analysis::lookup(analysisName_, defaultParams, "") );
+      isOpenFOAMAnalysis_ = true; //bool( std::dynamic_pointer_cast<insight::OpenFOAMAnalysis>( a ) );
     }
 
     ui = new Ui::AnalysisForm;

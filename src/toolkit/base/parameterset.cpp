@@ -627,6 +627,11 @@ const ParameterSet_Validator::ErrorList& ParameterSet_Validator::ParameterSet_Va
 
 
 
+bool ParameterSet_Visualizer::hasScheduledParameters() const
+{
+  return bool(scheduledParameters_);
+}
+
 const ParameterSet &ParameterSet_Visualizer::currentParameters() const
 {
   if (visualizedParameters_)
@@ -647,7 +652,7 @@ bool ParameterSet_Visualizer::selectScheduledParameters()
       return true;
     }
   }
-  dbg() << "no new parameter set selected for visualization";
+  dbg() << "no new parameter set selected for visualization" << std::endl;
   return false;
 }
 
@@ -667,7 +672,7 @@ ParameterSet_Visualizer::~ParameterSet_Visualizer()
 
 void ParameterSet_Visualizer::update(const ParameterSet& ps)
 {
-  CurrentExceptionContext ex("updating visualizer parameters");
+  CurrentExceptionContext ex("scheduling parameters for visualization");
   scheduledParameters_.reset(new ParameterSet(ps));
 }
 

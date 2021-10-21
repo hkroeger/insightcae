@@ -28,7 +28,7 @@
 #include "base/progressdisplayer/textprogressdisplayer.h"
 #include "base/progressdisplayer/convergenceanalysisdisplayer.h"
 
-
+#include "openfoamanalysis__OpenFOAMAnalysis__Parameters_headers.h"
 
 namespace insight {
 
@@ -77,9 +77,11 @@ eval = set
 */
 
 protected:
-    ResultSetPtr derivedInputData_;
-    
-    std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
+  Parameters p_;
+
+  ResultSetPtr derivedInputData_;
+
+  std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
 
 public:
     OpenFOAMAnalysis
@@ -113,6 +115,7 @@ public:
      */
     virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
+    void changeMapFromPath(const boost::filesystem::path& newMapFromPath);
     virtual void mapFromOther(OpenFOAMCase& cm, ProgressDisplayer& progress, const boost::filesystem::path& mapFromPath, bool is_parallel);
     
     virtual void installConvergenceAnalysis(std::shared_ptr<ConvergenceAnalysisDisplayer> cc);

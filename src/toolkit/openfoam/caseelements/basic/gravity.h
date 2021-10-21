@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "gravity__gravity__Parameters_headers.h"
+
 namespace insight {
 
 class gravity

@@ -2,6 +2,7 @@
 #define INSIGHT_CHTMULTIREGIONNUMERICS_H
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
+#include "chtmultiregionnumerics__chtMultiRegionNumerics__Parameters_headers.h"
 
 namespace insight {
 

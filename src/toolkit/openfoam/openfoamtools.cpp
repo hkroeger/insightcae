@@ -2880,55 +2880,54 @@ std::vector<boost::filesystem::path> searchOFCasesBelow(const boost::filesystem:
 
 
 
-HomogeneousAveragedProfile::HomogeneousAveragedProfile(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: Analysis("Homogeneous Averaged Profile", "", ps, exepath)
-{
-  setParameters(ps);
-}
+HomogeneousAveragedProfile::HomogeneousAveragedProfile(
+    const ParameterSet& ps,
+    const boost::filesystem::path& exepath,
+    ProgressDisplayer& progress )
+: Analysis("Homogeneous Averaged Profile", "", ps, exepath, progress),
+  p_(ps)
+{}
 
 
 ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*displayer*/)
 {
-  Parameters p(parameters_);
-//   setExecutionPath(p.casepath);
-  
-  OpenFOAMCase cm(OFEs::get(p.OFEname));
+  OpenFOAMCase cm(OFEs::get(p_.OFEname));
   
   arma::mat xs;
   
-  if ( Parameters::grading_type::none == p.grading )
+  if ( Parameters::grading_type::none == p_.grading )
   {
-    xs=linspace(0., 1., p.np);
+    xs=linspace(0., 1., p_.np);
   }
-  else if ( Parameters::grading_type::towardsEnd == p.grading )
+  else if ( Parameters::grading_type::towardsEnd == p_.grading )
   {
-    xs=cos(0.5*M_PI*(linspace(0., 1., p.np)-1.0));
+    xs=cos(0.5*M_PI*(linspace(0., 1., p_.np)-1.0));
   }
-  else if ( Parameters::grading_type::towardsStart == p.grading )
+  else if ( Parameters::grading_type::towardsStart == p_.grading )
   {
-    xs=1.0 - cos(0.5*M_PI*linspace(0., 1., p.np));
+    xs=1.0 - cos(0.5*M_PI*linspace(0., 1., p_.np));
   }
 
   
   arma::mat pts = arma::trans(
-     p.L * arma::trans(xs) 
+     p_.L * arma::trans(xs)
      + 
-     p.p0 * arma::ones(1,p.np)
+     p_.p0 * arma::ones(1,p_.np)
   );
   
   boost::ptr_vector<sampleOps::set> sets;
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_points( pts )
-    .set_dir1(p.homdir1)
-    .set_dir2(p.homdir2)
-    .set_nd1(p.n_homavg1)
-    .set_nd2(p.n_homavg2)
-    .set_name(p.profile_name)
+    .set_dir1(p_.homdir1)
+    .set_dir2(p_.homdir2)
+    .set_nd1(p_.n_homavg1)
+    .set_nd2(p_.n_homavg2)
+    .set_name(p_.profile_name)
   ));
 
-  auto casepath = p.casepath->filePath(executionPath());
+  auto casepath = p_.casepath->filePath(executionPath());
   
-  sample(cm, casepath, p.fields, sets);
+  sample(cm, casepath, p_.fields, sets);
       
   sampleOps::ColumnDescription cd;
   arma::mat data = dynamic_cast<sampleOps::linearAveragedPolyLine*>(&sets[0])
@@ -2938,7 +2937,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
   results->introduction() = description_;
   Ordering so;
   
-  for (const std::string& fieldname: p.fields)
+  for (const std::string& fieldname: p_.fields)
   {
     int c=cd[fieldname].col;
     int ncmpt=cd[fieldname].ncmpt;

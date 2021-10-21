@@ -28,7 +28,12 @@
 using namespace std;
 using namespace boost;
 
-size_t insight::cad::Distance::calcHash() const
+namespace insight {
+namespace cad {
+
+defineType(Distance);
+
+size_t Distance::calcHash() const
 {
   ParameterListHash h;
   h+=p1_->value();
@@ -37,7 +42,7 @@ size_t insight::cad::Distance::calcHash() const
 }
 
 
-insight::cad::Distance::Distance(insight::cad::VectorPtr p1, insight::cad::VectorPtr p2)
+Distance::Distance(insight::cad::VectorPtr p1, insight::cad::VectorPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
@@ -52,43 +57,9 @@ void insight::cad::Distance::build()
 }
 
 void insight::cad::Distance::write(ostream&) const
-{
+{}
+
+
 
 }
-
-
-Handle_AIS_InteractiveObject insight::cad::Distance::createAISRepr() const
-{
-  checkForBuildDuringAccess();
-
-  arma::mat p1=p1_->value();
-  arma::mat p2=p2_->value();
-  double L=arma::norm(p2-p1,2);
-
-  Handle_AIS_InteractiveObject aisDim(createLengthDimension(
-    BRepBuilderAPI_MakeVertex(to_Pnt(p1)),
-    BRepBuilderAPI_MakeVertex(to_Pnt(p2)),
-    Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(p1), gp_Vec(0,0,1)))),
-    L,
-    ""
-  ));
-  Handle_AIS_InteractiveObject p1Label(new InteractiveText
-    (
-      str(format("[%g %g %g]") % p1(0)%p1(1)%p1(2) ).c_str(),
-      p1
-    ));
-  Handle_AIS_InteractiveObject p2Label(new InteractiveText
-    (
-      str(format("[%g %g %g]") % p2(0)%p2(1)%p2(2) ).c_str(),
-      p2
-    ));
-
-
-  Handle_AIS_MultipleConnectedInteractive ais(new AIS_MultipleConnectedInteractive());
-
-  ais->Connect(aisDim);
-  ais->Connect(p1Label);
-  ais->Connect(p2Label);
-
-  return ais;
 }

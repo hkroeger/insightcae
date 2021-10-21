@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "base/analysis.h"
+#include "base/analysislibrary.h"
 
 #include "boost/program_options.hpp"
 #include "boost/filesystem.hpp"
@@ -74,7 +75,7 @@ int main(int argc, char* argv[])
                   <<std::endl<<std::endl;
               exit(-1);
           }
-          insight::loader.addLibrary(l);
+          insight::analysisLibraries.addLibrary(l);
       }
   }
 

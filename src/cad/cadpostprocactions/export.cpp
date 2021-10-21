@@ -25,6 +25,8 @@ namespace insight
 namespace cad 
 {
 
+defineType(Export);
+
 size_t Export::calcHash() const
 {
   ParameterListHash h;
@@ -63,6 +65,7 @@ void Export::write(std::ostream& ) const
 
 
 
+defineType(ExportEMesh);
 
 size_t ExportEMesh::calcHash() const
 {
@@ -101,7 +104,7 @@ void ExportEMesh::write(std::ostream& ) const
 
 
 
-
+defineType(ExportSTL);
 
 size_t ExportSTL::calcHash() const
 {

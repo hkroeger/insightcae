@@ -24,6 +24,7 @@
 #include "base/resultset.h"
 #include "parameterstudy.h"
 #include "base/plottools.h"
+#include "base/analysisthread.h"
 
 #include "boost/assign.hpp"
 #include "boost/ptr_container/ptr_deque.hpp"
@@ -55,9 +56,11 @@ ParameterStudy<BaseAnalysis,var_params>::ParameterStudy
   const std::string& name,
   const std::string& description,
   const ParameterSet& ps,
-  const boost::filesystem::path& exePath
+  const boost::filesystem::path& exePath,
+  ProgressDisplayer& progress
 )
-  : Analysis ( name, description, ps, exePath )
+  : Analysis ( name, description, ps, exePath, progress ),
+    parameters_(ps)
 {}
 
 

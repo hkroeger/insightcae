@@ -32,18 +32,22 @@ class Distance
 : public PostprocAction
 {
 
-  VectorPtr p1_, p2_;
-  double distance_;
 
   virtual size_t calcHash() const;
 
 public:
+  VectorPtr p1_, p2_;
+  double distance_;
+
+public:
+  declareType("Distance");
+
   Distance(VectorPtr p1, VectorPtr p2);
 
   virtual void build();
 
   virtual void write(std::ostream&) const;
-  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr() const;
 };
 
 

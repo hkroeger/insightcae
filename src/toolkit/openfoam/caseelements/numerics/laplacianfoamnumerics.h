@@ -2,6 +2,7 @@
 #define INSIGHT_LAPLACIANFOAMNUMERICS_H
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
+#include "laplacianfoamnumerics__laplacianFoamNumerics__Parameters_headers.h"
 
 namespace insight {
 

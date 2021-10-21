@@ -31,6 +31,7 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
+#include "openfoamtools__setFieldOperator__Parameters_headers.h"
 
 #ifdef SWIG
 %template(TimeDirectoryList) std::map<double, boost::filesystem::path>;
@@ -860,12 +861,20 @@ fields = array [
 <<<PARAMETERSET
 */
 
+protected:
+  Parameters p_;
+
 public:
   declareType("HomogeneousAveragedProfile");
 
-  HomogeneousAveragedProfile(const ParameterSet& p, const boost::filesystem::path& exepath);
+  HomogeneousAveragedProfile(
+      const ParameterSet& p,
+      const boost::filesystem::path& exepath,
+      ProgressDisplayer& progress = consoleProgressDisplayer );
 
   static std::string category() { return "General Postprocessing"; }
+
+  inline ParameterSet parameters() const override { return p_; }
   
   virtual ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer);
 };

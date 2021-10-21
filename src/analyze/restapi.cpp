@@ -10,6 +10,8 @@
 
 #include "boost/algorithm/string.hpp"
 
+#include "base/analysisthread.h"
+
 #include <csignal>
 
 using namespace std;

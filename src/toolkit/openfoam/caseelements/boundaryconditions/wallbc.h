@@ -7,6 +7,7 @@
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_heat.h"
 
+#include "wallbc__WallBC__Parameters_headers.h"
 
 namespace insight {
 

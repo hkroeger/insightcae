@@ -60,10 +60,11 @@ PythonAnalysis::PythonAnalysisFactory::~PythonAnalysisFactory()
 Analysis* PythonAnalysis::PythonAnalysisFactory::operator() 
 (
     const ParameterSet& ps,
-    const boost::filesystem::path& exePath
+    const boost::filesystem::path& exePath,
+    ProgressDisplayer& progress
 ) const
 {
-    return new PythonAnalysis ( scriptfile_, ps, exePath );
+    return new PythonAnalysis ( scriptfile_, ps, exePath, progress );
 }
 
 ParameterSet PythonAnalysis::PythonAnalysisFactory::defaultParameters() const
@@ -123,8 +124,13 @@ std::string PythonAnalysis::PythonAnalysisFactory::category() const
 
 std::set<PythonAnalysis::PythonAnalysisFactoryPtr> PythonAnalysis::pythonAnalysisFactories_;
 
-PythonAnalysis::PythonAnalysis(const boost::filesystem::path& scriptfile, const ParameterSet& ps, const boost::filesystem::path& exePath )
-: Analysis("", "", ps, exePath),
+PythonAnalysis::PythonAnalysis(
+    const boost::filesystem::path& scriptfile,
+    const ParameterSet& ps,
+    const boost::filesystem::path& exePath,
+    ProgressDisplayer& progress )
+: Analysis("", "", ps, exePath, progress ),
+  parameters_(ps),
   scriptfile_(scriptfile)
 {
 }
@@ -212,7 +218,8 @@ PythonAnalysisLoader::PythonAnalysisLoader()
                             {
                                 Analysis::factories_=new Analysis::FactoryTable();
                             }
-                            PythonAnalysis::PythonAnalysisFactoryPtr fac(new PythonAnalysis::PythonAnalysisFactory( itr->path() ) );
+                            PythonAnalysis::PythonAnalysisFactoryPtr fac(
+                                  new PythonAnalysis::PythonAnalysisFactory( itr->path() ) );
                             
                             std::string key(itr->path().stem().string());
                             (*Analysis::factories_)[key]=fac.get();

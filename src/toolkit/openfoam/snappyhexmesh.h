@@ -29,6 +29,8 @@
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "base/progressdisplayer.h"
 
+#include "snappyhexmesh__ExternalGeometryFile__Parameters_headers.h"
+
 namespace insight {
   
     

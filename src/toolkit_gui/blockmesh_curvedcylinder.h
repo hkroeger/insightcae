@@ -24,6 +24,8 @@
 
 #include "openfoam/blockmesh_templates.h"
 
+#include "blockmesh_curvedcylinder__blockMeshDict_CurvedCylinder__Parameters_headers.h"
+
 namespace insight {
 
 namespace bmd

@@ -94,21 +94,37 @@ fluid=set
 <<<PARAMETERSET
 */
 
-protected:
-    // derived data
+
+  struct supplementedInputData
+      : public supplementedInputDataDerived<Parameters>
+  {
+  public:
+    supplementedInputData(std::unique_ptr<Parameters> p,
+                          const boost::filesystem::path& workDir,
+                          ProgressDisplayer& progress = consoleProgressDisplayer );
+
     BoundingBox bb_;
     arma::mat L_;
-    
+
     int nx_, ny_, nz_;
-    
+
     boost::filesystem::path wallstlfile_, inletstlfile_, outletstlfile_;
-  
+
+  };
+
+#ifndef SWIG
+  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
+#endif
+
+
 public:
     declareType("Internal Pressure Loss");
 
-    InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath);
+    InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
 
     static std::string category() { return "Generic Analyses"; }
+
+    ParameterSet parameters() const override;
     
     void calcDerivedInputData(ProgressDisplayer& parentActionProgress) override;
     void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;

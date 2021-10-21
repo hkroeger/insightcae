@@ -410,7 +410,7 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
       }
   }
 
-  CaseDirectory gendir;
+  CaseDirectory gendir(false);
   boost::filesystem::path outpath = gendir / (stem+".tex");
   writeLatexFile( outpath );
 

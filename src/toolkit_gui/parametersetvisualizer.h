@@ -20,19 +20,19 @@ class TOOLKIT_GUI_EXPORT CAD_ParameterSet_Visualizer
   public ParameterSet_Visualizer
 {
 
-private:
   Q_OBJECT
 
   QThread asyncRebuildThread_;
   std::mutex vis_mtx_;
+
 
 public:
 
   CAD_ParameterSet_Visualizer();
   ~CAD_ParameterSet_Visualizer();
 
-  void addDatum(const std::string& name, insight::cad::DatumPtr dat);
-  void addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds = AIS_Shaded );
+  virtual void addDatum(const std::string& name, insight::cad::DatumPtr dat);
+  virtual void addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds = AIS_Shaded );
 
   void update(const ParameterSet& ps) override;
 
@@ -45,7 +45,38 @@ public Q_SLOTS:
   void visualizeScheduledParameters();
 
 Q_SIGNALS:
+  void launchVisualizationCalculation();
   void visualizationCalculationFinished();
+};
+
+
+
+
+class TOOLKIT_GUI_EXPORT Multi_CAD_ParameterSet_Visualizer
+: public CAD_ParameterSet_Visualizer
+{
+  Q_OBJECT
+
+  std::set<CAD_ParameterSet_Visualizer*> visualizers_;
+  mutable std::set<CAD_ParameterSet_Visualizer*> finishedVisualizers_;
+
+public:
+  bool hasScheduledParameters() const override;
+  bool selectScheduledParameters() override;
+  void clearScheduledParameters() override;
+
+  Multi_CAD_ParameterSet_Visualizer();
+
+  void registerVisualizer(CAD_ParameterSet_Visualizer* vis);
+  void unregisterVisualizer(CAD_ParameterSet_Visualizer* vis);
+  int size() const;
+
+  void recreateVisualizationElements() override;
+
+
+public Q_SLOTS:
+  void onSubVisualizationCalculationFinished();
+
 };
 
 

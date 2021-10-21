@@ -9,6 +9,7 @@ VectorParameterParser::Data::Data(const arma::mat& v, const std::string& d)
 void VectorParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
 {
   headers.insert("<armadillo>");
+  headers.insert("\"base/parameters/simpleparameter.h\"");
 }
 
 std::string VectorParameterParser::Data::cppType(const std::string&) const

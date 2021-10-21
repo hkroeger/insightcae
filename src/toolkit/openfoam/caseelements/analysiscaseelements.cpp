@@ -1484,8 +1484,11 @@ double CorrelationFunctionModel::lengthScale() const
 
 addToAnalysisFactoryTable(ComputeLengthScale);
 
-ComputeLengthScale::ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath )
-  : Analysis("Length Scale", "Compute the length scale from autocorrelation functions", ps, exepath),
+ComputeLengthScale::ComputeLengthScale(
+    const ParameterSet& ps,
+    const boost::filesystem::path& exepath,
+    ProgressDisplayer& progress )
+  : Analysis("Length Scale", "Compute the length scale from autocorrelation functions", ps, exepath, progress),
     p_(ps)
 {
 }
@@ -1493,7 +1496,7 @@ ComputeLengthScale::ComputeLengthScale(const ParameterSet& ps, const boost::file
 ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer&)
 {
   setupExecutionEnvironment();
-  ResultSetPtr results(new ResultSet(parameters_, name_, description_));
+  ResultSetPtr results(new ResultSet(parameters(), name_, description_));
 
   CorrelationFunctionModel m;
   nonlinearRegression(p_.R_vs_x.col(1), p_.R_vs_x.col(0), m);

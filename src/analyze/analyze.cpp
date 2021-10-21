@@ -22,6 +22,8 @@
 
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
+#include "base/analysislibrary.h"
+#include "base/analysisthread.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
 #include "base/toolkitversion.h"
 #include "base/parameters.h"
@@ -213,7 +215,7 @@ int main(int argc, char *argv[])
                         <<std::endl<<std::endl;
                     exit(-1);
                 }
-                loader.addLibrary(l);
+                analysisLibraries.addLibrary(l);
             }
         }
         

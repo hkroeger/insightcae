@@ -4,7 +4,7 @@
 
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
-
+#include "pimplesettings__PIMPLESettings__Parameters_headers.h"
 
 namespace insight
 {

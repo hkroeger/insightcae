@@ -210,7 +210,7 @@ typedef std::vector< ParameterSetEntry > ParameterSetData;
 
 
 
-typedef boost::fusion::vector4<boost::optional<std::string>, boost::optional<std::string>, std::string, ParameterSetData> PDLParserResult;
+typedef boost::fusion::vector4<boost::optional<std::string>, boost::optional<std::string>, bool, std::string, ParameterSetData> PDLParserResult;
 
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >

@@ -37,7 +37,10 @@
 #include "insertedcaseelement.h"
 #include "patch.h"
 
-
+#include "availablebcsmodel.h"
+#include "availablecaseelementsmodel.h"
+#include "boundaryconfigurationmodel.h"
+#include "caseconfigurationmodel.h"
 
 
 
@@ -73,10 +76,15 @@ private:
     Ui::isofCaseBuilderWindow* ui;
     QHBoxLayout *pe_layout_, *bc_pe_layout_;
 
-//    QoccViewerContext* context_;
     QoccViewWidget* viewer_;
     QModelTree* modeltree_;
     ParameterSetDisplay* display_;
+    insight::Multi_CAD_ParameterSet_Visualizer* multiViz_;
+
+    AvailableBCsModel* availableBCsModel_;
+    AvailableCaseElementsModel* availableCaseElementsModel_;
+    CaseConfigurationModel* caseConfigModel_;
+    BoundaryConfigurationModel* BCConfigModel_;
 
 protected:
 
@@ -85,9 +93,13 @@ protected:
     bool pack_config_file_=true;
 
     std::shared_ptr<insight::OpenFOAMCase> ofc_;
-    insight::ParameterSet parameters_;
-    ParameterEditorWidget *ped_, *bc_ped_;
+//    insight::ParameterSet parameters_;
 
+    QPointer<ParameterEditorWidget> caseElementParameterEditor_;
+    QPointer<ParameterEditorWidget> patchParameterEditor_;
+//    ParameterEditorWidget *bc_ped_;
+
+    // Widget geometries
     QByteArray last_pe_state_, last_bc_pe_state_;
 
     QString script_pre_, script_mesh_, script_case_;
@@ -96,53 +108,41 @@ protected:
 
 
   
-    void fillCaseElementList();
+//    void fillCaseElementList();
     void updateTitle();
 
     bool CADisCollapsed() const;
+    void expandOrCollapseCADIfNeeded();
 
     bool checkIfSaveNeeded();
     bool checkIfCaseIsEmpty();
     void saveToFile(const boost::filesystem::path& file);
 
+
 public:
     isofCaseBuilderWindow();
+
+protected:
+    void showEvent(QShowEvent *ev);
+
+public:
     virtual ~isofCaseBuilderWindow();
     
     void loadFile(const boost::filesystem::path& file, bool skipBCs=false);
 
     void createCase
     (
-        bool skipBCs=false, 
-        const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
+        bool skipBCs = false,
+        const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles =
+            std::shared_ptr<std::vector<boost::filesystem::path> >()
     );
 
     void run(ExecutionStep begin_with, bool skipMonitor=false);
 
     void closeEvent(QCloseEvent *event);
     void readSettings();
-    
-    void expandCAD();
-    void collapseCAD();
 
-    template<class T>
-    bool containsCE() const
-    {
-      insight::OpenFOAMCase ofc(insight::OFEs::get(ui->OFversion->currentText().toStdString()));
-      for ( int i=0; i < ui->selected_elements->count(); i++ )
-        {
-          InsertedCaseElement* cur
-            = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
-          if ( cur )
-            {
-              std::unique_ptr<insight::OpenFOAMCaseElement> ce( cur->createElement(ofc) );
-              if ( dynamic_cast<T*>(ce.get()) ) return true;
-            }
-        }
-      return false;
-    }
-
-    QString applicationName() const;
+//    QString applicationName() const;
 
     QString generateDefault_script_pre();
     QString generateDefault_script_mesh();
@@ -153,23 +153,23 @@ public:
 //    void updateCAD();
 
 public Q_SLOTS:
-    void onItemSelectionChanged();
+//    void onCaseElementClicked(const QModelIndex &index);
     
-    void onAddElement();
-    void onRemoveElement();
-    void onMoveElementUp();
-    void onMoveElementDown();
+//    void onAddElement();
+//    void onRemoveElement();
+//    void onMoveElementUp();
+//    void onMoveElementDown();
     
     void onSaveAs();
     void onSave();
     void onLoad();
-    void onParseBF();
-    void onAddPatchManually();
-    void onRemovePatch();
-    void onRenamePatch();
-    void onResetPatchDef();
-    void onAssignBC();
-    void onPatchSelectionChanged();
+//    void onParseBF();
+//    void onAddPatchManually();
+//    void onRemovePatch();
+//    void onRenamePatch();
+//    void onResetPatchDef();
+//    void onAssignBC();
+//    void onPatchSelectionChanged();
 
     void onCleanCase();
     void onCreate();

@@ -2,6 +2,7 @@
 #define INSIGHT_MAGNETICFOAMNUMERICS_H
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
+#include "magneticfoamnumerics__magneticFoamNumerics__Parameters_headers.h"
 
 namespace insight {
 

@@ -24,6 +24,7 @@
 #include "base/boost_include.h"
 #include "base/parameterset.h"
 #include "base/parameters.h"
+#include "test_pdl__TestPDL__Parameters_headers.h"
 
 namespace insight {
 

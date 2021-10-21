@@ -6,6 +6,8 @@
 
 #include "blockmesh_curvedcylinder.h"
 
+#include "blockmesh_tubemesh__blockMeshDict_TubeMesh__Parameters_headers.h"
+
 namespace insight {
 
 namespace bmd

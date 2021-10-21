@@ -3,6 +3,9 @@
 
 #include "openfoam/caseelements/basic/transportmodel.h"
 
+#include "twophasetransportproperties__twoPhaseTransportProperties__Parameters_headers.h"
+
+
 namespace insight {
 
 class twoPhaseTransportProperties

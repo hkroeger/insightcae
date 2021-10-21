@@ -20,6 +20,8 @@ struct IncludedSubsetParameterParser
 
         Data(const std::string& v, const std::string& d, const DefaultValueModifications& defmod);
 
+        void cppAddHeader(std::set<std::string>& headers) const override;
+
         std::string cppType(const std::string&) const override;
 
         std::string cppValueRep(const std::string&, const std::string& thisscope ) const override;

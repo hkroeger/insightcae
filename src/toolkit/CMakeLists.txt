@@ -22,7 +22,10 @@ project(toolkit)
 
 set(toolkit_SOURCES
     base/toolkitversion.cpp
+    base/supplementedinputdata.cpp
     base/analysis.cpp
+    base/analysislibrary.cpp
+    base/analysisthread.cpp
     base/cacheableentity.cpp
     base/cacheableentityhashes.cpp
     base/parameter.cpp
@@ -304,7 +307,6 @@ target_include_directories(toolkit
 
 add_library(toolkitHeaders INTERFACE)
 get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)
-message(STATUS "toolkit_INCLUDE_DIRS ${toolkit_INCLUDE_DIRS}")
 target_include_directories(toolkitHeaders INTERFACE ${toolkit_INCLUDE_DIRS})
 
 

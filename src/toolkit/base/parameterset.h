@@ -249,11 +249,11 @@ std::ostream& operator<<(std::ostream& os, const ParameterSet& ps);
 
 typedef std::shared_ptr<ParameterSet> ParameterSetPtr;
 
-#define PSINT(p, subdict, key) int key = p[subdict].getInt(#key);
-#define PSDBL(p, subdict, key) double key = p[subdict].getDouble(#key);
-#define PSSTR(p, subdict, key) std::string key = p[subdict].getString(#key);
-#define PSBOOL(p, subdict, key) bool key = p[subdict].getBool(#key);
-#define PSPATH(p, subdict, key) boost::filesystem::path key = p[subdict].getPath(#key);
+//#define PSINT(p, subdict, key) int key = p[subdict].getInt(#key);
+//#define PSDBL(p, subdict, key) double key = p[subdict].getDouble(#key);
+//#define PSSTR(p, subdict, key) std::string key = p[subdict].getString(#key);
+//#define PSBOOL(p, subdict, key) bool key = p[subdict].getBool(#key);
+//#define PSPATH(p, subdict, key) boost::filesystem::path key = p[subdict].getPath(#key);
 
 
 
@@ -319,11 +319,12 @@ private:
 protected:
     ProgressDisplayer* progress_;
 
-    const ParameterSet& currentParameters() const;
-    bool selectScheduledParameters();
-    void clearScheduledParameters();
-
 public:
+    virtual bool hasScheduledParameters() const;
+    virtual const ParameterSet& currentParameters() const;
+    virtual bool selectScheduledParameters();
+    virtual void clearScheduledParameters();
+
     ParameterSet_Visualizer();
     virtual ~ParameterSet_Visualizer();
 

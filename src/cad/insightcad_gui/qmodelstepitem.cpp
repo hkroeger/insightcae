@@ -39,7 +39,7 @@ Handle_AIS_InteractiveObject QFeatureItem::createAIS(AIS_InteractiveContext&)
 {
   insight::CurrentExceptionContext ec("creating AIS representation of CAD feature");
 
-  Handle_AIS_InteractiveObject ais( smp_->buildVisualization() );
+  Handle_AIS_InteractiveObject ais( new AIS_Shape(smp_->shape()) );
 
   Handle_Standard_Transient owner_container(new PointerTransient(this));
   ais->SetOwner(owner_container);
@@ -166,7 +166,7 @@ void QFeatureItem::addSymbolsToSubmenu(const QString& name, QMenu *menu, insight
         });
       connect(a, &QAction::hovered,
               [=]() {
-        focus(i.second->buildVisualization());
+        focus(Handle_AIS_Shape(new AIS_Shape(i.second->shape())));
 //          contextMenu->setStyleSheet( "QMenu { background-color: rgba(0,0,0,0%); }" );
       });
 

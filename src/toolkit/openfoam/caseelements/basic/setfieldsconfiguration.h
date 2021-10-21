@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "setfieldsconfiguration__setFieldsConfiguration__Parameters_headers.h"
+
 namespace insight {
 
 class setFieldsConfiguration

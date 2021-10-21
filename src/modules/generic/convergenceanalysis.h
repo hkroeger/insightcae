@@ -22,7 +22,7 @@
 #define CONVERGENCEANALYSIS_H
 
 #include "base/analysis.h"
-
+#include "convergenceanalysis__ConvergenceAnalysis__Parameters_headers.h"
 
 namespace insight
 {
@@ -56,8 +56,9 @@ protected:
 public:
     declareType("ConvergenceAnalysis");
     
-    ConvergenceAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath);
+    ConvergenceAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
     
+    ParameterSet parameters() const override;
     ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;
 
     static std::string category() { return "General Postprocessing"; }

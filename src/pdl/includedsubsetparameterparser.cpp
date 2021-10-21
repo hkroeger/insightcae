@@ -7,6 +7,11 @@ IncludedSubsetParameterParser::Data::Data(const std::string& v, const std::strin
     : ParserDataBase(d), value(v), default_value_modifications(defmod)
 {}
 
+void IncludedSubsetParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
+{
+  headers.insert("\"base/parameters/subsetparameter.h\"");
+}
+
 std::string IncludedSubsetParameterParser::Data::cppType(const std::string&) const
 {
     return value;

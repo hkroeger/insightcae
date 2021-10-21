@@ -32,6 +32,8 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Bo
 
 void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements()
 {
+  CurrentExceptionContext ex("computing visualization of blockMeshDict box template");
+
   CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
   blockMeshDict_Box::Parameters p(currentParameters());

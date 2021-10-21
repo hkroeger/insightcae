@@ -24,6 +24,7 @@
 #include <QSplashScreen>
 
 #include "insightcaeapplication.h"
+#include "base/analysislibrary.h"
 #include "base/boost_include.h"
 #include "base/toolkitversion.h"
 #include <boost/program_options/options_description.hpp>
@@ -115,7 +116,7 @@ int main(int argc, char** argv)
                     <<std::endl<<std::endl;
                 exit(-1);
             }
-           insight::loader.addLibrary(l);
+           insight::analysisLibraries.addLibrary(l);
         }
     }
 

@@ -6,6 +6,7 @@
 #include "BRep_Tool.hxx"
 
 #include "occtools.h"
+#include "occguitools.h"
 #include "cadpostprocactions.h"
 
 
@@ -41,8 +42,8 @@ void InputReceiver::onKeyRelease ( Qt::KeyboardModifiers, int )
 
 void InputReceiver::onMouseMove
   (
-   Qt::MouseButtons ,
-   Qt::KeyboardModifiers ,
+   Qt::MouseButtons,
+   Qt::KeyboardModifiers,
    const QPoint point,
    Qt::KeyboardModifiers
    )

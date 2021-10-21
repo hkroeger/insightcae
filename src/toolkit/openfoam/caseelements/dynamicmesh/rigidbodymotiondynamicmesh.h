@@ -2,6 +2,7 @@
 #define INSIGHT_RIGIDBODYMOTIONDYNAMICMESH_H
 
 #include "openfoam/caseelements/dynamicmesh/dynamicmesh.h"
+#include "rigidbodymotiondynamicmesh__rigidBodyMotionDynamicMesh__Parameters_headers.h"
 
 namespace insight {
 

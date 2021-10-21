@@ -144,6 +144,7 @@ public:
     bool isHidden() const;
 
     Handle_AIS_InteractiveObject ais(AIS_InteractiveContext& context);
+    Handle_AIS_InteractiveObject existingAis() const;
     inline AIS_DisplayMode shadingMode() const { return shadingMode_; }
     void setShadingMode(AIS_DisplayMode ds);
     inline double red() const { return r_; }

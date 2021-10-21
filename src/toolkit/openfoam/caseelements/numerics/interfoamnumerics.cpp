@@ -142,7 +142,9 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   div["div(rho*phi,U)"]		= "Gauss linearUpwindV "+gradNameOrScheme(dictionaries, "grad(U)");
   div["div(rhoPhi,U)"]		= "Gauss linearUpwindV "+gradNameOrScheme(dictionaries, "grad(U)");
-  div["div(phi,alpha)"]		= "Gauss vanLeer";
+//  div["div(phi,alpha)"]		= "Gauss vanLeer";
+//  div["div(phirb,alpha)"]	= "Gauss linear";
+  div["div(phi,alpha)"]		= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(alpha)");
   div["div(phirb,alpha)"]	= "Gauss linear";
   div["div(phi,k)"]		= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(k)");
   div["div(phi,epsilon)"]	= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(epsilon)");

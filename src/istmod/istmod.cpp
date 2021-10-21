@@ -22,6 +22,7 @@
 
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
+#include "base/analysislibrary.h"
 #include "base/tools.h"
 #include "base/parameters.h"
 
@@ -118,7 +119,7 @@ int main(int argc, char *argv[])
                     <<std::endl<<std::endl;
                 exit(-1);
             }
-            loader.addLibrary(l);
+            analysisLibraries.addLibrary(l);
         }
     }
 
@@ -178,7 +179,7 @@ int main(int argc, char *argv[])
             StringList ists=vm["merge"].as<StringList>();
             for (const string& ist: ists)
             {
-// 	ParameterSet to_merge;
+                // ParameterSet to_merge;
                 parameters.readFromFile(ist);
             }
         }

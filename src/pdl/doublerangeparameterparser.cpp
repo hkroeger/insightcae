@@ -9,6 +9,7 @@ DoubleRangeParameterParser::Data::Data(const std::vector<double>& v, const std::
 void DoubleRangeParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
 {
   headers.insert("<set>");
+  headers.insert("\"base/parameters/doublerangeparameter.h\"");
 }
 
 std::string DoubleRangeParameterParser::Data::cppType(const std::string&) const

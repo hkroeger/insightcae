@@ -20,6 +20,7 @@
 #ifndef INSIGHT_AIRFOILSECTION_H
 #define INSIGHT_AIRFOILSECTION_H
 
+#include "base/supplementedinputdata.h"
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/openfoamparameterstudy.h"
 //#include "base/stltools.h"
@@ -108,14 +109,30 @@ The maximum relative change between the last 15 average values needs to stay bel
 */  
 
 
-  std::string in_, out_, up_, down_, fb_, foil_;
-  arma::mat contour_;
-  double c_;
+  struct supplementedInputData : public supplementedInputDataDerived<Parameters>
+  {
+    supplementedInputData(
+        std::unique_ptr<Parameters> pPtr,
+        const boost::filesystem::path& workDir,
+        ProgressDisplayer& progress = consoleProgressDisplayer
+        );
+
+    std::string in_, out_, up_, down_, fb_, foil_;
+    arma::mat contour_;
+    double c_;
+  };
+
+#ifndef SWIG
+  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
+#endif
 
 public:
   declareType("Airfoil 2D");
   
-  AirfoilSection(const ParameterSet& ps, const boost::filesystem::path& exepath);
+  AirfoilSection(
+      const ParameterSet& ps,
+      const boost::filesystem::path& exepath,
+      ProgressDisplayer& progress );
 
   
   static std::string category() { return "Generic Analyses"; }
@@ -125,6 +142,8 @@ public:
   virtual void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
   virtual void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
   virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
+
+  inline ParameterSet parameters() const override { return p(); }
   
 };
 
@@ -139,7 +158,10 @@ public:
     
     static std::string category() { return "Generic Analyses"; }
     
-    AirfoilSectionPolar(const ParameterSet& ps, const boost::filesystem::path& exepath);    
+    AirfoilSectionPolar(
+        const ParameterSet& ps,
+        const boost::filesystem::path& exepath,
+        ProgressDisplayer& progress );
     virtual void evaluateCombinedResults(ResultSetPtr& results);
 };
 

@@ -19,6 +19,7 @@
 
 #include "qvariableitem.h"
 #include "occtools.h"
+#include "occguitools.h"
 
 #include <string>
 #include <QMenu>

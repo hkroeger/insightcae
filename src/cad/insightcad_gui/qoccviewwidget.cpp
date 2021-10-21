@@ -53,6 +53,7 @@
 #include "base/exception.h"
 #include "occtwindow.h"
 #include "occtools.h"
+#include "occguitools.h"
 #include "pointertransient.h"
 #include "cadtypes.h"
 #include "cadpostprocactions.h"

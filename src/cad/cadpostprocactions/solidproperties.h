@@ -32,6 +32,7 @@ class SolidProperties
 {
   FeaturePtr model_;
   
+public:
   /**
    * total mass
    */
@@ -65,12 +66,14 @@ class SolidProperties
   virtual size_t calcHash() const;
   
 public:
+  declareType("SolidProperties");
+
   SolidProperties(FeaturePtr model);
 
   virtual void build();
   
   virtual void write(std::ostream&) const;
-  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr() const;
 };
 
 

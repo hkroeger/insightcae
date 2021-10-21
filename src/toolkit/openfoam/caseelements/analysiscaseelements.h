@@ -25,6 +25,8 @@
 #include "base/resultset.h"
 #include "base/analysis.h"
 
+#include "analysiscaseelements__outputFilterFunctionObject__Parameters_headers.h"
+
 namespace insight {
 
 
@@ -614,9 +616,11 @@ protected:
 
 public:
   declareType("ComputeLengthScale");
-  ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath );
+  ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress );
 
   ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;
+
+  inline ParameterSet parameters() const override { return p_; }
 
   static std::string category() { return "General Postprocessing"; }
 };

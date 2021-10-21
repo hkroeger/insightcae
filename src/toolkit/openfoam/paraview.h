@@ -10,7 +10,7 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
-
+#include "paraview__PVScriptElement__Parameters_headers.h"
 
 class vtkArrowSource;
 
@@ -362,11 +362,20 @@ scenes = array [
 <<<PARAMETERSET
 */
 
+protected:
+  Parameters p_;
+
+public:
   declareType("ParaviewVisualization");
 
-  ParaviewVisualization(const ParameterSet& ps, const boost::filesystem::path& exepath);
+  ParaviewVisualization(
+      const ParameterSet& ps,
+      const boost::filesystem::path& exepath,
+      ProgressDisplayer& progress = consoleProgressDisplayer );
 
   static std::string category() { return "General Postprocessing"; }
+
+  inline ParameterSet parameters() const override { return p_; }
 
   virtual ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer);
 

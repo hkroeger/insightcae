@@ -28,6 +28,8 @@
 #include <array>
 #include <map>
 
+#include "thermophysicalcaseelements__cavitatingFoamThermodynamics__Parameters_headers.h"
+
 namespace insight {
 
 

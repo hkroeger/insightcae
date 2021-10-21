@@ -23,6 +23,7 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "openfoam/caseelements/boundarycondition.h"
+#include "electromagneticscaseelements__magnet__Parameters_headers.h"
 
 namespace insight 
 {

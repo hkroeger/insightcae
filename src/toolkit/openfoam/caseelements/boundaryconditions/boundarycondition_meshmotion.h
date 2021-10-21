@@ -6,6 +6,8 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
+#include "boundarycondition_meshmotion__CAFSIBC__Parameters_headers.h"
+
 
 namespace insight
 {

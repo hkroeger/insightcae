@@ -8,6 +8,7 @@
 #include "qmodelstepitem.h"
 #include "qoccviewwidget.h"
 #include "occtools.h"
+#include "occguitools.h"
 
 template<
     TopAbs_ShapeEnum shapeEnum,

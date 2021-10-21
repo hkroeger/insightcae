@@ -17,6 +17,10 @@ set(isofCaseBuilder_SRCS
     isofcasebuilderwindow.ui
     isofcasebuilder_actions.cpp
     isofcasebuilder_patches.cpp
+    availablecaseelementsmodel.h availablecaseelementsmodel.cpp
+    availablebcsmodel.h availablebcsmodel.cpp
+    caseconfigurationmodel.h caseconfigurationmodel.cpp
+    boundaryconfigurationmodel.h boundaryconfigurationmodel.cpp
 )
 SET(isofCaseBuilder_FORMS isofcasebuilderwindow.ui)
 SET(isofCaseBuilder_RCCS isofCaseBuilder.qrc)

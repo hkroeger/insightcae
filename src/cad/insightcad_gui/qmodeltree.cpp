@@ -114,6 +114,13 @@ Handle_AIS_InteractiveObject QDisplayableModelTreeItem::ais(AIS_InteractiveConte
   return ais_;
 }
 
+Handle_AIS_InteractiveObject QDisplayableModelTreeItem::existingAis() const
+{
+  insight::assertion( !ais_.IsNull(), "Internal error: The interactive representation is not existing yet!");
+  return ais_;
+}
+
+
 void QDisplayableModelTreeItem::setShadingMode(AIS_DisplayMode ds)
 {
   shadingMode_=ds;
@@ -771,7 +778,7 @@ void QModelTree::onItemSelectionChanged()
   QTreeWidgetItem *item = currentItem();
   if (auto * m = dynamic_cast<QFeatureItem*>(item))
   {
-    Q_EMIT focus(m->solidmodel().buildVisualization());
+    Q_EMIT focus(m->existingAis());
   }
 }
 

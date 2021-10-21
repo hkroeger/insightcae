@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/boundaryconditions/velocityinletbc.h"
 
+#include "compressibleinletbc__CompressibleInletBC__Parameters_headers.h"
+
 namespace insight {
 
 class CompressibleInletBC

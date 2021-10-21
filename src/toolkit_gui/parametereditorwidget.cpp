@@ -134,8 +134,8 @@ ParameterEditorWidget::ParameterEditorWidget
       // use supplied displayer
       display_=display;
     }
-    connect(this, &ParameterEditorWidget::parameterSetChanged,
-            viz_.get(), &insight::CAD_ParameterSet_Visualizer::visualizeScheduledParameters);
+//    connect(this, &ParameterEditorWidget::parameterSetChanged,
+//            viz_.get(), &insight::CAD_ParameterSet_Visualizer::visualizeScheduledParameters);
   }
   else
   {

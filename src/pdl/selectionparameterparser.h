@@ -13,6 +13,8 @@ struct SelectionParameterParser
 
     Data(const std::vector<std::string>& sels, const std::string& sel, const std::string& d);
 
+    void cppAddHeader(std::set<std::string>& headers) const override;
+
     std::string cppType(const std::string&) const override;
     std::string cppTypeDecl(const std::string& name,
                             const std::string& thisscope) const override;

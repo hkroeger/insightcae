@@ -6,7 +6,7 @@
 
 #include <QObject>
 
-#include "base/analysis.h"
+#include "base/analysisthread.h"
 #include "progressrelay.h"
 
 namespace insight

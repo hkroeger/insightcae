@@ -116,11 +116,18 @@ public:
 };
 
 
+
+
 class VTKOffscreenScene
 {
 
 public:
-
+  enum DatasetRepresentation
+  {
+    Points = VTK_POINTS,
+    Wireframe = VTK_WIREFRAME,
+    Surface = VTK_SURFACE
+  };
 
 protected:
   vtkSmartPointer<vtkRenderer> renderer_;
@@ -133,23 +140,25 @@ public:
   template<class Mapper, class Input>
   void addAlgo(
       Input input,
-      ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0))
+      ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0)),
+      DatasetRepresentation repr = Surface
       )
   {
     input->Update();
-    addData<Mapper>(input->GetOutput(), colorspec);
+    addData<Mapper>(input->GetOutput(), colorspec, repr);
   }
 
   template<class Mapper, class Input>
   void addData(
       Input input,
-      ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0))
+      ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0)),
+      DatasetRepresentation repr = Surface
       )
   {
     auto mapper = vtkSmartPointer<Mapper>::New();
     mapper->SetInputData(input);
 
-    addProperties<Mapper>(mapper, colorspec, input);
+    addProperties<Mapper>(mapper, colorspec, input, repr);
   }
 
   void addActor2D(vtkSmartPointer<vtkActor2D> actor);
@@ -158,7 +167,8 @@ public:
   void addProperties(
       vtkSmartPointer<Mapper>& mapper,
       ColorSpecification colorspec,
-          vtkDataSet *ds
+      vtkDataSet *ds,
+      DatasetRepresentation repr = Surface
       )
   {
     auto actor = vtkSmartPointer<vtkActor>::New();
@@ -214,6 +224,7 @@ public:
 
     actor->SetMapper(mapper);
     actor->GetProperty()->BackfaceCullingOff();
+    actor->GetProperty()->SetRepresentation(repr);
 
     renderer_->AddActor(actor);
   }

@@ -188,34 +188,60 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QTreeWidget" name="available_elements">
+                      <widget class="QTreeView" name="availableCaseElements">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                          <horstretch>0</horstretch>
                          <verstretch>0</verstretch>
                         </sizepolicy>
                        </property>
-                       <property name="rootIsDecorated">
-                        <bool>true</bool>
-                       </property>
-                       <attribute name="headerVisible">
-                        <bool>false</bool>
-                       </attribute>
-                       <column>
-                        <property name="text">
-                         <string notr="true">1</string>
-                        </property>
-                       </column>
                       </widget>
                      </item>
                     </layout>
                    </item>
                    <item>
-                    <widget class="QPushButton" name="add_btn">
-                     <property name="text">
-                      <string>&gt;&gt;</string>
-                     </property>
-                    </widget>
+                    <layout class="QVBoxLayout" name="verticalLayout_17">
+                     <item>
+                      <spacer name="verticalSpacer_6">
+                       <property name="orientation">
+                        <enum>Qt::Vertical</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>20</width>
+                         <height>40</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="btnAddCaseElement">
+                       <property name="text">
+                        <string>&gt;&gt;</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="btnRemoveCaseElement">
+                       <property name="text">
+                        <string>&lt;&lt;</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="verticalSpacer_7">
+                       <property name="orientation">
+                        <enum>Qt::Vertical</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>20</width>
+                         <height>40</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                    </layout>
                    </item>
                   </layout>
                  </widget>
@@ -237,7 +263,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QListWidget" name="selected_elements">
+                      <widget class="QListView" name="caseConfiguration">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                          <horstretch>0</horstretch>
@@ -245,44 +271,6 @@
                         </sizepolicy>
                        </property>
                       </widget>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <layout class="QVBoxLayout" name="verticalLayout_10">
-                     <item>
-                      <widget class="QPushButton" name="up_btn">
-                       <property name="text">
-                        <string>Up</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QPushButton" name="down_btn">
-                       <property name="text">
-                        <string>Down</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QPushButton" name="remove_btn">
-                       <property name="text">
-                        <string>Remove</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="verticalSpacer_5">
-                       <property name="orientation">
-                        <enum>Qt::Vertical</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>20</width>
-                         <height>40</height>
-                        </size>
-                       </property>
-                      </spacer>
                      </item>
                     </layout>
                    </item>
@@ -352,14 +340,14 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QListWidget" name="patch_list"/>
+                      <widget class="QTableView" name="boundaryConfiguration"/>
                      </item>
                     </layout>
                    </item>
                    <item>
-                    <widget class="QPushButton" name="assign_bc_btn">
+                    <widget class="QPushButton" name="btnAssignBCType">
                      <property name="text">
-                      <string>&lt; Assign &lt;</string>
+                      <string>&lt;&lt;</string>
                      </property>
                     </widget>
                    </item>
@@ -375,7 +363,7 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QListWidget" name="bc_element_list"/>
+                    <widget class="QListView" name="availableBCs"/>
                    </item>
                   </layout>
                  </widget>
@@ -387,35 +375,35 @@
                   <enum>QLayout::SetDefaultConstraint</enum>
                  </property>
                  <item>
-                  <widget class="QPushButton" name="parse_bf_btn">
+                  <widget class="QPushButton" name="btnParseBoundaryFile">
                    <property name="text">
                     <string>Parse boundary file</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="add_patch_btn">
+                  <widget class="QPushButton" name="btnAddUnconfiguredPatch">
                    <property name="text">
                     <string>Add patch...</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="btn_remove_patch">
+                  <widget class="QPushButton" name="btnRemovePatch">
                    <property name="text">
                     <string>Remove</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="btn_rename_patch">
+                  <widget class="QPushButton" name="btnRenamePatch">
                    <property name="text">
                     <string>Rename</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="btn_clear_patches">
+                  <widget class="QPushButton" name="btnClearPatchList">
                    <property name="text">
                     <string>Clear</string>
                    </property>
@@ -740,19 +728,16 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>available_elements</tabstop>
+  <tabstop>availableCaseElements</tabstop>
   <tabstop>create_btn</tabstop>
   <tabstop>OFversion</tabstop>
   <tabstop>saveOFversion</tabstop>
-  <tabstop>up_btn</tabstop>
-  <tabstop>down_btn</tabstop>
-  <tabstop>remove_btn</tabstop>
-  <tabstop>patch_list</tabstop>
-  <tabstop>assign_bc_btn</tabstop>
-  <tabstop>bc_element_list</tabstop>
-  <tabstop>parse_bf_btn</tabstop>
-  <tabstop>add_patch_btn</tabstop>
-  <tabstop>selected_elements</tabstop>
+  <tabstop>boundaryConfiguration</tabstop>
+  <tabstop>btnAssignBCType</tabstop>
+  <tabstop>availableBCs</tabstop>
+  <tabstop>btnParseBoundaryFile</tabstop>
+  <tabstop>btnAddUnconfiguredPatch</tabstop>
+  <tabstop>caseConfiguration</tabstop>
   <tabstop>BCTab</tabstop>
  </tabstops>
  <resources>

@@ -39,7 +39,6 @@ class vtkCellArray;
 
 namespace insight
 {
-  
 
 bool directoryIsWritable( const boost::filesystem::path& directory );
 

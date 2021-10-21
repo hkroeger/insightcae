@@ -4,6 +4,7 @@
 #include "openfoam/caseelements/numerics/fvnumerics.h"
 #include "openfoam/caseelements/numerics/pimplesettings.h"
 
+#include "reactingfoamnumerics__reactingFoamNumerics__Parameters_headers.h"
 
 namespace insight
 {

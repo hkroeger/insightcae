@@ -20,6 +20,8 @@ struct ParametersBase
   virtual void get(const insight::ParameterSet& p) =0;
 
   static ParameterSet makeDefault();
+
+  virtual operator ParameterSet() const =0;
 };
 
 
@@ -36,6 +38,8 @@ public:
   { return this->get(); }
   inline ParametersBase* baseParametersPtrRef()
   { return this->get(); }
+  inline ParameterSet parameters() const
+  { return *baseParametersPtr(); }
 };
 
 

@@ -139,7 +139,7 @@ void ParameterSet::extend(const EntryList& entries)
         myp->subsetRef().extend(p->subset().entries());
 	delete p;
     }
-    else 
+    else if (!this->contains(key))
     {
       // otherwise, append, if key is not existing
       // note: insert does not replace! insertion will be omitted, if key exists already

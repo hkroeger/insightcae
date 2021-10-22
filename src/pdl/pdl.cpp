@@ -377,7 +377,7 @@ int main ( int argc, char *argv[] )
           f<<"return p;"<<endl<<"}"<<endl;
 
           // convert static data into a ParameterSet
-          f<<"virtual operator ParameterSet() const"<<endl;
+          f<<"operator ParameterSet() const override"<<endl;
           f<<"{ ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
 
           f<<"};"<<endl;

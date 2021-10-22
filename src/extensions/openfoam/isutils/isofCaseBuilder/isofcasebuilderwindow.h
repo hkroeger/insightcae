@@ -93,11 +93,9 @@ protected:
     bool pack_config_file_=true;
 
     std::shared_ptr<insight::OpenFOAMCase> ofc_;
-//    insight::ParameterSet parameters_;
 
     QPointer<ParameterEditorWidget> caseElementParameterEditor_;
     QPointer<ParameterEditorWidget> patchParameterEditor_;
-//    ParameterEditorWidget *bc_ped_;
 
     // Widget geometries
     QByteArray last_pe_state_, last_bc_pe_state_;
@@ -107,8 +105,7 @@ protected:
     QAction *act_pack_;
 
 
-  
-//    void fillCaseElementList();
+
     void updateTitle();
 
     bool CADisCollapsed() const;
@@ -142,7 +139,6 @@ public:
     void closeEvent(QCloseEvent *event);
     void readSettings();
 
-//    QString applicationName() const;
 
     QString generateDefault_script_pre();
     QString generateDefault_script_mesh();
@@ -150,26 +146,14 @@ public:
 
     boost::filesystem::path casepath() const;
 
-//    void updateCAD();
 
 public Q_SLOTS:
-//    void onCaseElementClicked(const QModelIndex &index);
-    
-//    void onAddElement();
-//    void onRemoveElement();
-//    void onMoveElementUp();
-//    void onMoveElementDown();
-    
     void onSaveAs();
     void onSave();
     void onLoad();
-//    void onParseBF();
-//    void onAddPatchManually();
-//    void onRemovePatch();
-//    void onRenamePatch();
-//    void onResetPatchDef();
-//    void onAssignBC();
-//    void onPatchSelectionChanged();
+
+    void showParameterEditorForCaseElement(const QModelIndex& index);
+    void showParameterEditorForPatch(const QModelIndex& index);
 
     void onCleanCase();
     void onCreate();

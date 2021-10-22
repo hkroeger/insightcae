@@ -39,7 +39,7 @@ public:
   int nCaseElements() const;
 
   void clear();
-  void addCaseElement(CaseElementData *ce);
+  QModelIndex addCaseElement(CaseElementData *ce);
   void removeElement(const QModelIndex& index);
   QString applicationName(const QString& OFEname) const;
 

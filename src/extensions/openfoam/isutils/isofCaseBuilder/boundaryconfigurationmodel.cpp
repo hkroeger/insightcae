@@ -153,6 +153,8 @@ void BoundaryConfigurationModel::addPatchConfiguration(Patch* patch)
     patches_.append(patch);
     endInsertRows();
   }
+
+  patch->updateVisualization();
 }
 
 

@@ -123,13 +123,17 @@ void CaseConfigurationModel::clear()
 
 
 
-void CaseConfigurationModel::addCaseElement(CaseElementData *ce)
+QModelIndex CaseConfigurationModel::addCaseElement(CaseElementData *ce)
 {
   int r = caseElements_.size();
   beginInsertRows(QModelIndex(), r, r);
   ce->setParent(this);
   caseElements_.append(ce);
   endInsertRows();
+
+  ce->updateVisualization();
+
+  return createIndex(caseElements_.size()-1, 0);
 }
 
 

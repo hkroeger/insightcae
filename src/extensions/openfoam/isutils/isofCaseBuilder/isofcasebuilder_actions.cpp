@@ -77,7 +77,7 @@ void isofCaseBuilderWindow::createCase
     skipBCs=true;
   }
 
-  if ( BCConfigModel_->isValid() )
+  if ( !BCConfigModel_->isValid() )
   {
     if (!skipBCs)
       QMessageBox::warning(this, "Warning", "No boundary patches have been configured: skipping BC creation!");
@@ -95,7 +95,10 @@ void isofCaseBuilderWindow::createCase
     {
       cur->insertElement ( *ofc_, boundaryDict );
     }
+
+    BCConfigModel_->defaultPatch()->insertElement( *ofc_, boundaryDict );
   }
+
   if ( ofc_->getUnhandledPatches ( boundaryDict ).size() > 0 )
   {
     throw insight::Exception ( "Incorrect case setup: There are unhandled patches. Continuing would result in an invalid boundary definition." );

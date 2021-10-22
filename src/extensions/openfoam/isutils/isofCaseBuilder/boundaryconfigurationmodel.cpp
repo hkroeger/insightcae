@@ -215,9 +215,13 @@ void BoundaryConfigurationModel::renamePatch(const QModelIndex& index, const QSt
 bool BoundaryConfigurationModel::isValid() const
 {
   return (
-        ( patches_.size() <= 1 )
-        &&
-        defaultPatch_->type_name().empty()
+        ( patches_.size() > 0 )
+        ||
+        (
+          ( patches_.size() == 0 )
+          &&
+          !defaultPatch_->type_name().empty()
+        )
         );
 }
 
@@ -233,9 +237,8 @@ const DefaultPatch *BoundaryConfigurationModel::defaultPatch() const
 QList<const Patch *> BoundaryConfigurationModel::allNamedPatches() const
 {
   QList<const Patch *> result;
-  for (int i=1; i < patches_.size(); i++)
+  for (const auto *p : patches_)
   {
-    const auto* p = patches_[i];
     if (!p->type_name().empty())
       result.append(p);
   }

@@ -109,6 +109,8 @@ void isofCaseBuilderWindow::createCase
 }
 
 
+
+
 bool isofCaseBuilderWindow::checkIfCaseIsEmpty()
 {
   if (caseConfigModel_->nCaseElements() > 0)
@@ -121,6 +123,8 @@ bool isofCaseBuilderWindow::checkIfCaseIsEmpty()
     return false;
   }
 }
+
+
 
 
 void isofCaseBuilderWindow::onCreate()
@@ -148,6 +152,7 @@ void isofCaseBuilderWindow::onCreate()
      }
   }
 }
+
 
 
 
@@ -204,6 +209,8 @@ void createAndRunScript(const insight::OpenFOAMCase& ofc, const boost::filesyste
 
 //  boost::filesystem::remove(fn);
 }
+
+
 
 
 void isofCaseBuilderWindow::run(ExecutionStep begin_with, bool skipMonitor)

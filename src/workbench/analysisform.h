@@ -38,7 +38,7 @@
 #include <QPointer>
 
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
-#include "workbench.h"
+#include "workbenchwindow.h"
 #include "graphprogressdisplayer.h"
 
 #include "qdebugstream.h"

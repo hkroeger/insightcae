@@ -30,7 +30,7 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-#include "workbench.h"
+#include "workbenchwindow.h"
 #include "qinsighterror.h"
 
 #include "base/analysis.h"

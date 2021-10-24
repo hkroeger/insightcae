@@ -18,7 +18,7 @@
  *
  */
 
-#include "workbench.h"
+#include "workbenchwindow.h"
 
 #include <QLabel>
 #include <QMenu>

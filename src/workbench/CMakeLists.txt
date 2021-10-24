@@ -19,8 +19,8 @@ set(workbench_SRCS
     analysisform_remoteactions.cpp
     newanalysisdlg.cpp
     newanalysisdlg.h
-    workbench.cpp
-    workbench.h
+    workbenchwindow.cpp
+    workbenchwindow.h
     main.cpp
 
     workbenchaction.cpp

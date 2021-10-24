@@ -46,7 +46,13 @@ std::ostream& operator<<(std::ostream& os, const Exception& ex)
 }
 
 
-std::string splitMessage(const std::string& message, std::size_t width, std::string begMark, string endMark, std::string whitespace)
+std::string splitMessage(
+    const std::string& message,
+    std::size_t width,
+    std::string begMark,
+    string endMark,
+    std::string whitespace
+    )
 {
 
   if (!begMark.empty())
@@ -54,6 +60,7 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
     width-=2;
     begMark+=" ";
   }
+
   if (!endMark.empty())
   {
     width-=2;
@@ -61,30 +68,63 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
   }
 
   std::string source(message);
+  std::vector<string> splittext;
 
-  std::size_t  currIndex = width - 1;
-  std::size_t  sizeToElim;
-  while ( currIndex < message.length() )
+  while ( source.length()>0 )
   {
-    currIndex = source.find_last_of(whitespace,currIndex + 1);
-    if (currIndex == std::string::npos)
-        break;
-    currIndex = source.find_last_not_of(whitespace,currIndex);
-    if (currIndex == std::string::npos)
-        break;
-    sizeToElim = source.find_first_not_of(whitespace,currIndex + 1) - currIndex - 1;
 
-    source.replace( currIndex + 1, sizeToElim , "\n");
-    currIndex += (width + 1); //due to the recently inserted "\n"
+    size_t i = string::npos;
+
+    std::vector<size_t> splitPoints;
+    do
+    {
+      size_t inl = source.find_first_of("\n", i==string::npos? 0 : i+1 );
+      i = source.find_first_of(whitespace, i==string::npos? 0 : i+1 );
+
+      if (i == string::npos)
+      {
+        i = source.length();
+      }
+      splitPoints.push_back(i);
+
+
+      if ( (inl != string::npos) && (i != string::npos) && (inl < i) )
+      {
+        i = inl;
+        splitPoints.back()=inl;
+        break;
+      }
+
+      if (i == string::npos)
+        break;
+
+    }
+    while ( (i<width) && (i<source.length()) );
+
+    // try to go back, if too wide
+    if (i>width)
+    {
+      if (splitPoints.size()>1)
+      {
+        i = *(++splitPoints.rbegin());
+      }
+    }
+
+    if (i>0)
+    {
+      splittext.push_back( source.substr(0, i) ); // without white space
+      source.erase(0, i+1); // remove including whitespace
+    }
+    else
+      break;
+
   }
 
-  std::vector<string> splittext;
-  boost::split(splittext, source, boost::is_any_of("\n"));
-
-  string result;
+  std::string result;
   for (const auto& l: splittext)
   {
-    result+=begMark+l;
+    result+=begMark;
+    result+=l;
     if (l.size()<width)
     {
       result+=string(width-l.size(), ' ');

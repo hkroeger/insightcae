@@ -39,6 +39,7 @@ void generateLatexTable(
     const std::string& label,
     const std::string& description,
     const insight::ParameterSet& ps,
-    const std::string& prefix = "");
+    const std::string& prefix = "",
+    int firstColWidthLimit = 20);
 
 #endif // LATEXTABLE_H

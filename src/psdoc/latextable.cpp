@@ -11,6 +11,9 @@
 
 using namespace insight;
 
+
+
+
 LatexTable::LatexTable(
     const std::string& label,
     const std::string& description,
@@ -38,12 +41,17 @@ LatexTable::LatexTable(
     widthFractions_.push_back(1.-total);
 }
 
+
+
+
 void LatexTable::append(const std::vector<std::string> &line)
 {
   if (line.size()!=nCols_)
     throw insight::Exception("attempt to add a line with wrong number of columns!");
   push_back(line);
 }
+
+
 
 
 void LatexTable::print(std::ostream& os) const
@@ -68,12 +76,15 @@ void LatexTable::print(std::ostream& os) const
 }
 
 
+
+
 void generateLatexTable(
     LatexDocumentation& doc,
     const std::string& label,
     const std::string& description,
     const insight::ParameterSet& ps,
-    const std::string& prefix)
+    const std::string& prefix,
+    int firstColWidthLimit )
 {
   auto tabPtr = std::make_shared<LatexTable>(label, description, 2);
   auto& tab = *tabPtr;
@@ -135,7 +146,13 @@ void generateLatexTable(
 
     }
 
-    tab.append({ lxlabel, lxdesc });
+    if (lxlabel.length()>firstColWidthLimit)
+    {
+      tab.append({ lxlabel, "" });
+      tab.append({ "", "\\begin{minipage}[t]{\\linewidth}"+lxdesc+"\\end{minipage}" });
+    }
+    else
+      tab.append({ lxlabel, "\\begin{minipage}[t]{\\linewidth}"+lxdesc+"\\end{minipage}" });
   }
 
 }

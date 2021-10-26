@@ -33,9 +33,18 @@
 #include <QtCharts/QLogValueAxis>
 #include <QtCharts/QValueAxis>
 
+
+
+
 using namespace insight;
 
+
+
+
 auto* globalRanGen = QRandomGenerator::system();
+
+
+
 
 void GraphProgressChart::reset()
 {
@@ -45,8 +54,9 @@ void GraphProgressChart::reset()
   }
   curve_.clear();
   needsRedraw_=true;
-//  this->replot();
 }
+
+
 
 
 void GraphProgressChart::update(double iter, const std::string& name, double y_value)
@@ -76,7 +86,7 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
     curve_[name]=crv;
   }
 
-  if ( !logscale_ || (logscale_&&(y_value > 0.0)) ) // only add, if y>0. Plot gets unreadable otherwise
+  if ( !logscale_ || ( logscale_ && (y_value > 0.0) ) ) // only add, if y>0. Plot gets unreadable otherwise
   {
       crv->append(iter, y_value);
 
@@ -96,6 +106,9 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
   setUpdatesEnabled(true);
   mutex_.unlock();
 }
+
+
+
 
 GraphProgressChart::GraphProgressChart(bool logscale, QWidget* parent)
   : QtCharts::QChartView(parent),
@@ -129,9 +142,14 @@ GraphProgressChart::GraphProgressChart(bool logscale, QWidget* parent)
   timer->start();
 }
 
+
+
+
 GraphProgressChart::~GraphProgressChart()
-{
-}
+{}
+
+
+
 
 void GraphProgressChart::checkForUpdate()
 {
@@ -151,7 +169,7 @@ void GraphProgressChart::checkForUpdate()
 
         chartData_->axes(Qt::Horizontal)[0]->setRange(xmin, 1.05*xmax);
         double delta=fabs(ymax-ymin);
-        chartData_->axes(Qt::Vertical)[0]->setRange(ymin-0.05*delta, ymax+0.05*delta);
+        chartData_->axes(Qt::Vertical)[0]->setRange(ymin - (logscale_?0.0:0.05*delta), ymax+0.05*delta);
 
         repaint();
     }
@@ -167,16 +185,24 @@ GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
 : QTabWidget(parent)
 {}
 
+
+
+
 GraphProgressDisplayer::~GraphProgressDisplayer()
-{
-}
+{}
+
+
+
 
 void GraphProgressDisplayer::createChart(bool log, const std::string name)
 {
-  GraphProgressChart* c=new GraphProgressChart(log, this);
+  GraphProgressChart* c = new GraphProgressChart(log, this);
   addTab(c, QString::fromStdString(name));
-  charts_[name]=c;
+  charts_[name] = c;
 }
+
+
+
 
 GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& name)
 {
@@ -211,6 +237,8 @@ GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& 
     return c->second;
   }
 }
+
+
 
 
 void GraphProgressDisplayer::update(const insight::ProgressState& pi)
@@ -255,11 +283,12 @@ void GraphProgressDisplayer::update(const insight::ProgressState& pi)
 }
 
 
+
+
 void GraphProgressDisplayer::reset()
 {
   for (auto& c: charts_)
   {
-//    c.second->reset();
     c.second->deleteLater();
   }
   charts_.clear();
@@ -267,12 +296,17 @@ void GraphProgressDisplayer::reset()
 
 
 
+
 void GraphProgressDisplayer::setActionProgressValue(const std::string&, double)
 {}
 
 
+
+
 void GraphProgressDisplayer::setMessageText(const std::string&, const std::string&)
 {}
+
+
 
 
 void GraphProgressDisplayer::finishActionProgress(const std::string&)

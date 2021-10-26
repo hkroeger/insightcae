@@ -31,7 +31,7 @@ value = selectablesubset {{
 
  vector set {
   value_const = vector (0 0 0) "constant contribution"
-  value_lin = vector (0 0 0) "contribution propotional to base field value"
+  value_lin = double 0 "contribution propotional to base field value"
  }
 
 }} scalar "value of the source"

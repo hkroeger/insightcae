@@ -37,7 +37,7 @@ void source::addIntoDictionaries ( OFdicts& dictionaries ) const
     cd["type"]="vectorSemiImplicitSource";
     OFDictData::list vals;
     vals.push_back( OFDictData::vector3(cs->value_const) );
-    vals.push_back( OFDictData::vector3(cs->value_lin) );
+    vals.push_back( cs->value_lin );
     ijr[p_.fieldName]=vals;
   }
 

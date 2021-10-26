@@ -11,6 +11,7 @@
 #include "base/exception.h"
 #include "base/taskspoolerinterface.h"
 #include "base/progressdisplayer.h"
+#include "base/supplementedinputdata.h"
 
 #include <armadillo>
 
@@ -21,6 +22,7 @@ Q_DECLARE_METATYPE(insight::ProgressState);
 Q_DECLARE_METATYPE(insight::ProgressStatePtr);
 Q_DECLARE_METATYPE(insight::TaskSpoolerInterface::JobList);
 Q_DECLARE_METATYPE(arma::mat);
+Q_DECLARE_METATYPE(insight::supplementedInputDataBasePtr);
 
 class TOOLKIT_GUI_EXPORT ISMetaTypeRegistrator
 {

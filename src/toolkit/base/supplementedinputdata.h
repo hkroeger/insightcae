@@ -8,7 +8,12 @@
 #include "base/cppextensions.h"
 
 
+
+
 namespace insight {
+
+
+
 
 struct ParametersBase
 {
@@ -25,14 +30,40 @@ struct ParametersBase
 };
 
 
+
+
 class supplementedInputDataBase
     : public std::unique_ptr<ParametersBase>
 {
+
 public:
   typedef ParametersBase input_type;
 
+  typedef boost::variant<double, arma::mat, std::string> ReportedSupplementQuantityValue;
+
+  struct ReportedSupplementQuantity
+  {
+    ReportedSupplementQuantityValue value;
+    std::string description;
+    std::string unit;
+  };
+
+  typedef std::map<std::string, ReportedSupplementQuantity> ReportedSupplementQuantitiesTable;
+
+private:
+  ReportedSupplementQuantitiesTable reportedSupplementQuantities_;
+
+public:
   supplementedInputDataBase(std::unique_ptr<ParametersBase> pPtr);
   virtual ~supplementedInputDataBase();
+
+  void reportSupplementQuantity(
+      const std::string& name,
+      ReportedSupplementQuantityValue value,
+      const std::string& description,
+      const std::string& unit );
+
+  const ReportedSupplementQuantitiesTable& reportedSupplementQuantities() const;
 
   inline const ParametersBase* baseParametersPtr() const
   { return this->get(); }
@@ -41,6 +72,8 @@ public:
   inline ParameterSet parameters() const
   { return *baseParametersPtr(); }
 };
+
+typedef std::shared_ptr<supplementedInputDataBase> supplementedInputDataBasePtr;
 
 
 

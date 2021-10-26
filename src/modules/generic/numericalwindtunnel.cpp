@@ -70,7 +70,7 @@ boost::mutex mtx;
 
 NumericalWindtunnel::supplementedInputData::supplementedInputData(
     std::unique_ptr<Parameters> pPtr,
-    const boost::filesystem::path &workDir,
+    const boost::filesystem::path &/*workDir*/,
     ProgressDisplayer &parentProgresss )
   : supplementedInputDataDerived<Parameters>( std::move(pPtr) )
 {
@@ -124,8 +124,11 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
     bb = p().geometryscale * obj->modelBndBox(bbdefl);
   }
 
+
   arma::mat pmin=bb.col(0);
+  reportSupplementQuantity("pmin", pmin, "Minimum point of bounding box", "m");
   arma::mat pmax=bb.col(1);
+  reportSupplementQuantity("pmax", pmax, "Maximum point of bounding box", "m");
 
   gp_Trsf sc; sc.SetScaleFactor(p().geometryscale);
   gp_Trsf tr; tr.SetTranslation(gp_Vec(-pmin(0), -0.5*(pmax(1)+pmin(1)), -pmin(2)));
@@ -133,25 +136,39 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
   cad_to_cfd_ = tr.Multiplied(sc).Multiplied(rot);
 
   l_=(pmax(0)-pmin(0));
+  reportSupplementQuantity("l", l_, "object length", "m");
   if (l_<1e-12)
     throw insight::Exception("Length of the object is zero!");
 
   w_=(pmax(1)-pmin(1));
-  if (l_<1e-12)
+  reportSupplementQuantity("w", w_, "object width", "m");
+  if (w_<1e-12)
     throw insight::Exception("Width of the object is zero!");
 
   h_=(pmax(2)-pmin(2));
-  if (l_<1e-12)
+  reportSupplementQuantity("h", h_, "object height", "m");
+  if (h_<1e-12)
     throw insight::Exception("Height of the object is zero!");
 
   Lref_ = arma::norm( bb.col(1)-bb.col(0), 2);
-
+  reportSupplementQuantity("Lref", Lref_, "Reference length of object", "m");
   if (Lref_ < 1e-12)
   {
     throw insight::Exception("Bounding box of object has zero size!");
   }
 
+  Lupstream_ = Lref_*p().geometry.LupstreamByL;
+  reportSupplementQuantity("Lupstream", Lupstream_, "Domain extent upstream from object", "m");
+  Ldownstream_ = Lref_*p().geometry.LdownstreamByL;
+  reportSupplementQuantity("Ldownstream", Ldownstream_, "Domain extent downstream from object", "m");
+  Lup_ = Lref_*p().geometry.LupByL;
+  reportSupplementQuantity("Lup", Lup_, "Domain extent above object", "m");
+  Laside_ = Lref_*p().geometry.LasideByL;
+  reportSupplementQuantity("Laside", Laside_, "Domain sideways from object", "m");
 }
+
+
+
 
 NumericalWindtunnel::NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
 : OpenFOAMAnalysis("Numerical Wind Tunnel", "", ps, exepath),
@@ -840,7 +857,10 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
   try
   {
-    NumericalWindtunnel::supplementedInputData sp(std::make_unique<Parameters>(currentParameters()), "", *progress_);
+    auto spp = std::make_shared<NumericalWindtunnel::supplementedInputData>(
+          std::make_unique<Parameters>(currentParameters()), "", *progress_);
+    Q_EMIT updateSupplementedInputData( std::dynamic_pointer_cast<insight::supplementedInputDataBase>(spp) );
+    auto& sp=*spp;
     auto& p=sp.p();
 
 
@@ -863,14 +883,6 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
     addFeature("object", org_geom);
 
-    double Lupstream = sp.Lref_*p.geometry.LupstreamByL;
-    dbg()<<"Lupstream="<<Lupstream<<std::endl;
-    double Ldownstream = sp.Lref_*p.geometry.LdownstreamByL;
-    dbg()<<"Ldownstream="<<Ldownstream<<std::endl;
-    double Lup = sp.Lref_*p.geometry.LupByL;
-    dbg()<<"Lup="<<Lup<<std::endl;
-    double Laside = sp.Lref_*p.geometry.LasideByL;
-    dbg()<<"Laside="<<Laside<<std::endl;
 
     if (p.mesh.longitudinalSymmetry)
     {
@@ -878,10 +890,10 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
       (
         "domain",
          cad::Box::create(
-          cad::matconst(vec3( -Lupstream, 0, 0)),
-          cad::matconst(vec3( Lupstream+sp.l_+Ldownstream, 0, 0)),
-          cad::matconst(vec3( 0, 0, Lup)),
-          cad::matconst(vec3( 0, Laside+0.5*sp.w_, 0))
+          cad::matconst(vec3( -sp.Lupstream_, 0, 0)),
+          cad::matconst(vec3( sp.Lupstream_+sp.l_+sp.Ldownstream_, 0, 0)),
+          cad::matconst(vec3( 0, 0, sp.Lup_)),
+          cad::matconst(vec3( 0, sp.Laside_+0.5*sp.w_, 0))
          ),
          AIS_WireFrame
       );
@@ -892,10 +904,10 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
       (
         "domain",
          cad::Box::create(
-          cad::matconst(vec3( -Lupstream, -0.5*sp.w_-Laside, 0)),
-          cad::matconst(vec3( Lupstream+sp.l_+Ldownstream, 0, 0)),
-          cad::matconst(vec3( 0, 0, Lup)),
-          cad::matconst(vec3( 0, 2.*Laside+sp.w_, 0))
+          cad::matconst(vec3( -sp.Lupstream_, -0.5*sp.w_-sp.Laside_, 0)),
+          cad::matconst(vec3( sp.Lupstream_+sp.l_+sp.Ldownstream_, 0, 0)),
+          cad::matconst(vec3( 0, 0, sp.Lup_)),
+          cad::matconst(vec3( 0, 2.*sp.Laside_+sp.w_, 0))
          ),
          AIS_WireFrame
       );

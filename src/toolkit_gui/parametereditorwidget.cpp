@@ -101,6 +101,10 @@ ParameterEditorWidget::ParameterEditorWidget
   if (viz_)
   {
     // there is a visualization generator available
+    connect(
+          viz_.get(), &insight::CAD_ParameterSet_Visualizer::updateSupplementedInputData,
+          this, &ParameterEditorWidget::updateSupplementedInputData
+          );
 
     if (!display)
     {

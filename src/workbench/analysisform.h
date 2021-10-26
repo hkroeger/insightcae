@@ -36,6 +36,8 @@
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPointer>
+#include <QTableView>
+
 
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
 #include "workbenchwindow.h"
@@ -55,6 +57,7 @@
 
 #include "iqcasedirectorystate.h"
 #include "iqremoteexecutionstate.h"
+#include "iqsupplementedinputdatamodel.h"
 
 #ifdef WIN32
 #define WSL_DEFAULT
@@ -106,10 +109,12 @@ protected:
 
   insight::ResultSetPtr results_;
   insight::QResultSetModel* resultsModel_;
+  IQSupplementedInputDataModel supplementedInputDataModel_;
   
   // ====================================================================================
   // ======== GUI widgets
   ParameterEditorWidget* peditor_;
+  QTableView *sidtab_;
   Q_DebugStream *cout_log_, *cerr_log_;
   LogViewerWidget *log_;
 
@@ -286,6 +291,8 @@ private Q_SLOTS:
   void onShowParameterXML();
 
   void onConfigModification();
+
+  void onUpdateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
 
 
 Q_SIGNALS:

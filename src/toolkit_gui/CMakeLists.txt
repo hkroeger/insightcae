@@ -30,6 +30,8 @@ set(toolkit_gui_SRCS
     iqparameters/iqdoublerangeparameter.cpp
     iqparameters/iqarrayelementparameter.cpp
 
+    iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
+
     iqremoteservereditdialog.h
     iqremoteservereditdialog.cpp
     iqremoteservereditdialog.ui

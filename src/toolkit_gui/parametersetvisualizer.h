@@ -8,12 +8,14 @@
 #include <QThread>
 
 #include "base/parameterset.h"
+#include "base/supplementedinputdata.h"
 #include "cadtypes.h"
 #include "qmodeltree.h"
 
 
 namespace insight
 {
+
 
 class TOOLKIT_GUI_EXPORT CAD_ParameterSet_Visualizer
 : public IQISCADModelContainer,
@@ -47,6 +49,7 @@ public Q_SLOTS:
 Q_SIGNALS:
   void launchVisualizationCalculation();
   void visualizationCalculationFinished();
+  void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
 };
 
 

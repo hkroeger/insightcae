@@ -206,7 +206,7 @@
         <attribute name="title">
          <string>Input</string>
         </attribute>
-        <layout class="QHBoxLayout" name="inputTabLayout"/>
+        <layout class="QVBoxLayout" name="inputTabLayout"/>
        </widget>
        <widget class="QWidget" name="runTab">
         <attribute name="title">

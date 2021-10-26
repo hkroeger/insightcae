@@ -223,8 +223,25 @@ AnalysisForm::AnalysisForm(
     catch (const std::exception& e)
     { /* ignore, if non-existent */ }
 
+    auto vsplit = new QSplitter;
+    vsplit->setOrientation(Qt::Vertical);
+    ui->inputTabLayout->addWidget(vsplit);
+
     peditor_=new ParameterEditorWidget(/*parameters_*/defaultParams, defaultParams, ui->inputTab, viz, vali);
-    ui->inputTabLayout->addWidget(peditor_);
+    connect(
+          peditor_, &ParameterEditorWidget::updateSupplementedInputData,
+          this, &AnalysisForm::onUpdateSupplementedInputData
+          );
+    //ui->inputTabLayout->addWidget(peditor_);
+    vsplit->addWidget(peditor_);
+
+    sidtab_ = new QTableView;
+    sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    sidtab_->setAlternatingRowColors(true);
+    sidtab_->setModel(&supplementedInputDataModel_);
+    //ui->inputTabLayout->addWidget(sidtab_);
+    vsplit->addWidget(sidtab_);
+    sidtab_->hide();
 
 //    QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
 //    QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
@@ -682,6 +699,15 @@ void AnalysisForm::onShowParameterXML()
 void AnalysisForm::onConfigModification()
 {
   is_modified_=true;
+}
+
+void AnalysisForm::onUpdateSupplementedInputData(insight::supplementedInputDataBasePtr sid)
+{
+  supplementedInputDataModel_.reset( sid->reportedSupplementQuantities() );
+  if (sid->reportedSupplementQuantities().size())
+    sidtab_->show();
+  else
+    sidtab_->hide();
 }
 
 

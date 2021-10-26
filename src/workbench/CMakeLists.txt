@@ -9,6 +9,8 @@ find_package(Qt5Widgets CONFIG REQUIRED)
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
 set(workbench_SRCS
+    workbench.cpp
+
     iqcasedirectorystate.h
     iqcasedirectorystate.cpp
 
@@ -21,7 +23,6 @@ set(workbench_SRCS
     newanalysisdlg.h
     workbenchwindow.cpp
     workbenchwindow.h
-    main.cpp
 
     workbenchaction.cpp
     workbenchaction.h

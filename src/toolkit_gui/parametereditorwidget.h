@@ -113,6 +113,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void parameterSetChanged();
+    void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
 };
 
 

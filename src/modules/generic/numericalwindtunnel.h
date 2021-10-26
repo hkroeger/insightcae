@@ -53,7 +53,7 @@ geometry = set {
  forwarddir     = vector (1 0 0) "direction from rear to forward end in CAD geometry CS"
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
  
- objectfile     = path "object.stp" "Path to object geometry. May be STL, STEP or IGES." *necessary
+ objectfile     = path "" "Path to object geometry. May be STL, STEP or IGES." *necessary
  
 } "Geometrical properties of the domain"
       
@@ -125,6 +125,10 @@ fluid = set {
                           ProgressDisplayer& progress = consoleProgressDisplayer );
 
     gp_Trsf cad_to_cfd_;
+    double Lupstream_;
+    double Ldownstream_;
+    double Lup_;
+    double Laside_;
     double Lref_, l_, w_, h_;
   };
 

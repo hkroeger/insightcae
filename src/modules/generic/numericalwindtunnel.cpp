@@ -477,12 +477,6 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   
 }
 
-ParameterSet NumericalWindtunnel::parameters() const
-{
-  return p();
-}
-
-
 
 
 void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer&)
@@ -541,7 +535,7 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
 
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters() );
 
-  insertTurbulenceModel(cm, p());
+  insertTurbulenceModel(cm, p().fluid.turbulenceModel);
 
 }
 

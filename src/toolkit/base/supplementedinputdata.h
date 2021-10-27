@@ -132,7 +132,7 @@ public:
 
 
 
-#define defineBaseClassWithSupplementedInputData(ParameterClass, SupplementedInputDataBaseType) \
+#define defineBaseClassWithSupplementedInputData_WithoutParametersFunction(ParameterClass, SupplementedInputDataBaseType) \
 protected:\
   std::unique_ptr<SupplementedInputDataBaseType> parameters_;\
   const ParameterClass& p() const\
@@ -144,6 +144,13 @@ protected:\
   SupplementedInputDataBaseType& spRef()\
   { return dynamic_cast<SupplementedInputDataBaseType&>(*parameters_); }
 
+
+
+
+#define defineBaseClassWithSupplementedInputData(ParameterClass, SupplementedInputDataBaseType) \
+  defineBaseClassWithSupplementedInputData_WithoutParametersFunction(ParameterClass, SupplementedInputDataBaseType) \
+public:\
+  inline ParameterSet parameters() const override { return parameters_->parameters(); }
 
 
 

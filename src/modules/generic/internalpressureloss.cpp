@@ -158,10 +158,7 @@ InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::
 {}
 
 
-ParameterSet InternalPressureLoss::parameters() const
-{
-  return p();
-}
+
 
 void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& /*prg*/)
 {
@@ -375,7 +372,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 
     cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters() );
     
-    insertTurbulenceModel(cm, p);
+    insertTurbulenceModel(cm, p.fluid.turbulenceModel);
 }
 
 

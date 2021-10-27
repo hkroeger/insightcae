@@ -45,36 +45,12 @@ namespace insight
 
 
 
-turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const OpenFOAMAnalysis::Parameters& params)
-{
-  CurrentExceptionContext ex("inserting turbulence model configuration into OpenFOAM case");
-
-  const OpenFOAMAnalysis::Parameters::fluid_type::turbulenceModel_type& tmp
-      = params.fluid.turbulenceModel;
-
-  turbulenceModel* model = turbulenceModel::lookup(tmp.selection, cm, tmp.parameters);
-
-  if (!model)
-    throw insight::Exception("Unrecognized RASModel selection: "+tmp.selection);
-
-  return cm.insert(model);
-}
-
-
-
-
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps)
 {
   CurrentExceptionContext ex("inserting turbulence model configuration into OpenFOAM case");
-
-  turbulenceModel* model = turbulenceModel::lookup(ps.selection(), cm, ps());
-  
-  if (!model) 
-    throw insight::Exception("Unrecognized RASModel selection: "+ps.selection());
-  
-  return cm.insert(model);
+  struct P { std::string selection; ParameterSet parameters; };
+  return insertTurbulenceModel(cm, P{ ps.selection(), ps() } );
 }
-
 
 
 

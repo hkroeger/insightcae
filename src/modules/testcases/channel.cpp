@@ -483,7 +483,7 @@ void ChannelBase::createCase
                              .set_roughness_z0(p().operation.y0)
                              );
   
-  insertTurbulenceModel(cm, parameters().get<SelectableSubsetParameter>("fluid/turbulenceModel"));
+  insertTurbulenceModel(cm, p().fluid.turbulenceModel);
 }
 
 

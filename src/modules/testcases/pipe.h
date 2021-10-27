@@ -72,7 +72,11 @@ mesh = set {
 operation = set {
  Re_tau = double 180 "[-] Friction-Velocity-Reynolds number"
 } "Definition of the operation point under consideration"
-      
+
+fluid = set {
+ turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
+} "Parameters of the fluid"
+
 run = set {
  perturbU = bool true "Whether to impose artifical perturbations on the initial velocity field"
 } "Execution parameters"
@@ -152,8 +156,6 @@ public:
   );
 
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
-  
-  inline ParameterSet parameters() const override { return p(); }
 
 };
 

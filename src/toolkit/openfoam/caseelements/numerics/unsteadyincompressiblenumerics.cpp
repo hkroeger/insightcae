@@ -42,6 +42,7 @@ void unsteadyIncompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) 
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   solvers[pName_]=isGAMGOk() ? OFcase().GAMGSolverSetup(1e-8, 0.01) : OFcase().stdSymmSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
+  solvers["pcorr"]=OFcase().stdSymmSolverSetup(1e-3, 0.01);
   solvers["U"]=OFcase().smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=OFcase().smoothSolverSetup(1e-8, 0.1);
   solvers["omega"]=OFcase().smoothSolverSetup(1e-12, 0.1, 1);
@@ -49,6 +50,7 @@ void unsteadyIncompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) 
   solvers["nuTilda"]=OFcase().smoothSolverSetup(1e-8, 0.1);
 
   solvers[pName_+"Final"]=isGAMGOk() ? OFcase().GAMGPCGSolverSetup(1e-8, 0.0) : OFcase().stdSymmSolverSetup(1e-8, 0.0); //GAMGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
+  solvers["pcorrFinal"]=OFcase().stdSymmSolverSetup(1e-3, 0.0);
   solvers["UFinal"]=OFcase().smoothSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=OFcase().smoothSolverSetup(1e-8, 0);
   solvers["omegaFinal"]=OFcase().smoothSolverSetup(1e-14, 0, 1);

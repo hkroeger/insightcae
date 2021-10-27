@@ -110,6 +110,7 @@ fluid = set {
 
  rho            = double 1.0 "[kg/m^3] Density of the fluid"
  nu             = double 1.5e-5 "[m^2/s] Viscosity of the fluid"
+ turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
  
 } "Parameters of the fluid"
 
@@ -147,8 +148,6 @@ public:
   
   void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
   void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
-  
-  ParameterSet parameters() const override;
 
   ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
 };

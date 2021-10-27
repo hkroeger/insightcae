@@ -63,6 +63,7 @@ operation=set
 fluid = set 
 {
   nu = double 1.8e-5 "[m^2/s] Viscosity of the fluid"
+  turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 } "Parameters of the fluid"
 
 run = set 
@@ -243,7 +244,6 @@ public:
   static arma::mat integrateDelta123(const arma::mat& uByUinf_vs_y);
   static double searchDelta99(const arma::mat& uByUinf_vs_y);
 
-  inline ParameterSet parameters() const override { return p(); }
 };
 
 }

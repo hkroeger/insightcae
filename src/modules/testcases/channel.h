@@ -64,6 +64,7 @@ operation=set
 fluid = set 
 {
   nu = double 1.8e-5 "[m^2/s] Viscosity of the fluid"
+  turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 } "Parameters of the fluid"
 
 run = set 
@@ -244,8 +245,7 @@ public:
   );
     
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& progress);
-  
-  inline ParameterSet parameters() const override { return p(); }
+
 };
 
 
@@ -289,8 +289,7 @@ public:
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
   virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
-  
-  inline ParameterSet parameters() const override { return p(); }
+
 };
 
 

@@ -87,8 +87,11 @@ operation=set
 
 fluid=set
 {
+
   rho		= double 	998.0 		"[kg/m^3] Density of the fluid"
   nu		= double 	1e-6 		"[m^2/s] Viscosity of the fluid"
+  turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
+
 } "Parameters of the fluid"
 
 <<<PARAMETERSET
@@ -123,8 +126,6 @@ public:
     InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
 
     static std::string category() { return "Generic Analyses"; }
-
-    ParameterSet parameters() const override;
     
     void calcDerivedInputData(ProgressDisplayer& parentActionProgress) override;
     void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;

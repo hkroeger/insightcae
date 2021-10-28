@@ -112,7 +112,7 @@ QVariant BoundaryConfigurationModel::data(const QModelIndex &index, int role) co
  void BoundaryConfigurationModel::clear()
  {
    auto n=patches_.size();
-   beginRemoveRows(QModelIndex(), 1, n-1);
+   beginRemoveRows(QModelIndex(), 1, n);
    for (auto* p: patches_)
    {
      p->deleteLater();
@@ -140,8 +140,8 @@ void BoundaryConfigurationModel::addPatchConfiguration(Patch* patch)
     patch->setParent(this);
     patches_[r]=patch;
     Q_EMIT dataChanged(
-          createIndex(r, 0),
-          createIndex(r, 1)
+          createIndex(r+1, 0),
+          createIndex(r+1, 1)
           );
     p->deleteLater();
   }
@@ -149,7 +149,7 @@ void BoundaryConfigurationModel::addPatchConfiguration(Patch* patch)
   {
     int r=patches_.size();
     // not there, append
-    beginInsertRows(QModelIndex(), r, r);
+    beginInsertRows(QModelIndex(), r+1, r+1);
     patches_.append(patch);
     endInsertRows();
   }
@@ -165,8 +165,7 @@ void BoundaryConfigurationModel::addUnconfiguredPatchIfNonexistent(
   {
     int r=patches_.size();
     // not there, append
-    beginInsertRows(QModelIndex(), r, r);
-    std::cout<<"insert "<<patchName<<" at "<<r<<std::endl;
+    beginInsertRows(QModelIndex(), r+1, r+1);
     patches_.append(new Patch(patchName, defaultPatch_->multiVisualizer(), this));
     endInsertRows();
   }
@@ -190,11 +189,16 @@ void BoundaryConfigurationModel::removePatch(const QModelIndex& index)
 {
   if (index.isValid())
   {
-    int r=index.row();
+    if (index.row()<1)
+    {
+      throw insight::Exception("the default patch cannot be removed!");
+    }
+
+    int r=index.row()-1;
     auto *p=patchByIndex(index);
     beginRemoveRows(QModelIndex(), r, r);
-    p->deleteLater();
     patches_.removeAt(r);
+    p->deleteLater();
     endRemoveRows();
   }
 }
@@ -204,6 +208,10 @@ void BoundaryConfigurationModel::renamePatch(const QModelIndex& index, const QSt
 {
   if (auto *p=patchByIndex(index))
   {
+    if (index.row()<1)
+    {
+      throw insight::Exception("the default patch cannot be renamed!");
+    }
     p->set_patch_name(newPatchName);
     auto r=index.row();
     Q_EMIT dataChanged(

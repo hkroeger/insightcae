@@ -1039,11 +1039,8 @@ void isofCaseBuilderWindow::showParameterEditorForCaseElement(const QModelIndex&
 
     connect(caseElementParameterEditor_, &ParameterEditorWidget::parameterSetChanged,
             caseElementParameterEditor_,
-            [&]()
-    {
-      onConfigModification();
-    }
-    );
+            [&]() { onConfigModification(); } );
+
     pe_layout_->addWidget(caseElementParameterEditor_);
 
     if (!last_pe_state_.isEmpty())
@@ -1074,11 +1071,12 @@ void isofCaseBuilderWindow::showParameterEditorForPatch(const QModelIndex& index
 
       connect(patchParameterEditor_, &ParameterEditorWidget::parameterSetChanged,
               patchParameterEditor_,
-              [&]()
-      {
-        onConfigModification();
-      }
-      );
+              [&]() { onConfigModification(); } );
+
+      auto* patch = BCConfigModel_->patch(index);
+      connect(patch, &QObject::destroyed,
+              patch,
+              [&]() { patchParameterEditor_->deleteLater(); } );
 
       bc_pe_layout_->addWidget(patchParameterEditor_);
 

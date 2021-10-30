@@ -232,7 +232,7 @@ transport = selectablesubset {{
 
  constant
  set {
-   mu = double 1.8e-5 "Dynamic viscosity"
+   mu = double 1.8e-5 "[Pa s] Dynamic viscosity"
    Pr = double 0.7 "Prandtl number"
  }
 
@@ -252,7 +252,7 @@ equationOfState = selectablesubset {{
 
  rhoConst
  set {
-   rho = double 1.0 "[kg/m^3] Density"
+   rho = double 1.25 "[kg/m^3] Density"
  }
 
  idealGas

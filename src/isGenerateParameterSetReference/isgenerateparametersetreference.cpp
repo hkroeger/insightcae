@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
     ("help", "produce help message")
     ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
     ("analysisname", po::value< std::string >(),"The name of the analysis whichs parameter reference shall be generated")
+    ("labelprefix", po::value< std::string >(),"An optional prefix for latex labels")
   ;
 
   po::positional_options_description p;
@@ -79,11 +80,17 @@ int main(int argc, char* argv[])
       }
   }
 
+  std::string labelprefix="";
+  if (vm.count("labelprefix"))
+  {
+    labelprefix = vm["labelprefix"].as<std::string>();
+  }
+
   auto analysisName = vm["analysisname"].as<std::string>();
   auto ps = insight::Analysis::defaultParameters(analysisName);
 
-  LatexDocumentation doc(ps);
-  doc.print(std::cout);
+  LatexDocumentation doc(ps, labelprefix);
+  doc.print(std::cout, labelprefix);
 
   return 0;
 }

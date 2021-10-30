@@ -29,7 +29,7 @@ public:
 
   void append(const std::vector<std::string>& line);
 
-  void print(std::ostream& os) const;
+  void print(std::ostream& os, const std::string& labelPrefix="") const;
 };
 
 typedef std::shared_ptr<LatexTable> LatexTablePtr;
@@ -40,6 +40,7 @@ void generateLatexTable(
     const std::string& description,
     const insight::ParameterSet& ps,
     const std::string& prefix = "",
-    int firstColWidthLimit = 20);
+    int firstColWidthLimit = 20,
+    const std::string& labelprefix = "");
 
 #endif // LATEXTABLE_H

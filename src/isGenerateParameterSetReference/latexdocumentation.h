@@ -12,9 +12,10 @@ class LatexDocumentation
     : public std::vector<LatexTablePtr>
 {
 public:
-  LatexDocumentation(const insight::ParameterSet& ps);
+  LatexDocumentation(const insight::ParameterSet& ps,
+                     const std::string& labelprefix);
 
-  void print(std::ostream& os) const;
+  void print(std::ostream& os, const std::string& labelPrefix="") const;
 };
 
 #endif // LATEXDOCUMENTATION_H

@@ -54,7 +54,7 @@ void LatexTable::append(const std::vector<std::string> &line)
 
 
 
-void LatexTable::print(std::ostream& os) const
+void LatexTable::print(std::ostream& os, const std::string& labelPrefix) const
 {
   os << "\\begin{table}[h]\n";
   os << "\\begin{tabular}{";
@@ -71,7 +71,7 @@ void LatexTable::print(std::ostream& os) const
   os << "\\hline\n";
   os << "\\end{tabular}\n";
   os << "\\caption{"+description_+"}\n";
-  os << "\\label{"<<label_<<"}\n";
+  os << "\\label{"<<labelPrefix+label_<<"}\n";
   os << "\\end{table}\n";
 }
 
@@ -84,7 +84,8 @@ void generateLatexTable(
     const std::string& description,
     const insight::ParameterSet& ps,
     const std::string& prefix,
-    int firstColWidthLimit )
+    int firstColWidthLimit,
+    const std::string& labelprefix )
 {
   auto tabPtr = std::make_shared<LatexTable>(label, description, 2);
   auto& tab = *tabPtr;
@@ -107,9 +108,15 @@ void generateLatexTable(
 
     if (const auto* subp = dynamic_cast<const SubsetParameter*>(pptr))
     {
-      generateLatexTable(doc, ppath_clean, "Parameters of sub dict "+ppath, subp->subset(), ppath);
+      generateLatexTable(
+            doc,
+            ppath_clean,
+            "Parameters of sub dict "+ppath,
+            subp->subset(), ppath,
+            firstColWidthLimit, labelprefix
+            );
 
-      lxdesc+="\n\nSee table \\ref{"+ppath_clean+"} for the description of this sub dict.\n";
+      lxdesc+="\n\nSee table \\ref{"+(labelprefix+ppath_clean)+"} for the description of this sub dict.\n";
     }
     else if (const auto* ssubp = dynamic_cast<const SelectableSubsetParameter*>(pptr))
     {
@@ -127,9 +134,10 @@ void generateLatexTable(
                 ppath_clean+"_"+sellabel,
                 "Parameters of sub dict "+ppath+" for selection "+SimpleLatex(sellabel).toLaTeX(),
                 *item.second,
-                ppath);
+                ppath,
+                firstColWidthLimit, labelprefix);
 
-          refs.push_back( "table \\ref{"+ppath_clean+"_"+sellabel+"} for "+SimpleLatex(sellabel).toLaTeX() );
+          refs.push_back( "table \\ref{"+labelprefix+ppath_clean+"_"+sellabel+"} for "+SimpleLatex(sellabel).toLaTeX() );
         }
       }
 

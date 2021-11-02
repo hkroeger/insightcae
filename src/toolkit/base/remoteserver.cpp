@@ -30,9 +30,13 @@ std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml
   {
     std::string t(ta->value());
     if (t=="SSHLinux")
+    {
       result = std::make_shared<SSHLinuxServer::Config>(e);
+    }
     else if (t=="WSLLinux")
+    {
       result = std::make_shared<WSLLinuxServer::Config>(e);
+    }
   }
   else // type SSH
   {

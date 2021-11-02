@@ -100,7 +100,7 @@ int main(int argc, char** argv)
 
     if (vm.count("version"))
     {
-        cout << std::string(insight::ToolkitVersion::current) << endl;
+        cout << std::string(insight::ToolkitVersion::current()) << endl;
         exit(0);
     }
 
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
     splash.show();
     QCoreApplication::processEvents();
 
-    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current) + ", Wait...");
+    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current()) + ", Wait...");
     QCoreApplication::processEvents();
 
     app.setSplashScreen(&splash);

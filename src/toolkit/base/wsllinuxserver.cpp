@@ -9,6 +9,7 @@
 
 #include "rapidxml/rapidxml_print.hpp"
 
+
 using namespace std;
 using namespace boost;
 
@@ -116,12 +117,15 @@ WSLLinuxServer::commandAndArgs(const std::string& command)
 
 
 
+
 WSLLinuxServer::BackgroundJob::BackgroundJob(
     RemoteServer &server,
     std::unique_ptr<boost::process::child> process )
   : RemoteServer::BackgroundJob(server),
     process_(std::move(process))
 {}
+
+
 
 
 void WSLLinuxServer::BackgroundJob::kill()
@@ -135,6 +139,8 @@ void WSLLinuxServer::BackgroundJob::kill()
 }
 
 
+
+
 RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(const std::string &cmd)
 {
   auto process = launchCommand(cmd);
@@ -146,6 +152,7 @@ RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(const std
 
   return std::make_shared<BackgroundJob>(*this, std::move(process));
 }
+
 
 
 
@@ -182,6 +189,8 @@ void WSLLinuxServer::runRsync
 }
 
 
+
+
 boost::filesystem::path convertWindowsPathToWSLPath(const boost::filesystem::path& wp)
 {
   auto wpg = boost::filesystem::absolute(wp).generic_path();
@@ -189,6 +198,8 @@ boost::filesystem::path convertWindowsPathToWSLPath(const boost::filesystem::pat
   boost::algorithm::to_lower(drive);
   return (boost::filesystem::path("/mnt") / drive / wpg.relative_path()).generic_path();
 }
+
+
 
 
 void WSLLinuxServer::putFile
@@ -291,6 +302,66 @@ void WSLLinuxServer::syncToLocal
 
     runRsync(args, pf);
 }
+
+
+
+
+ToolkitVersion WSLLinuxServer::checkInstalledVersion()
+{
+  boost::process::ipstream out;
+
+  std::string cmd="LC_ALL=C sudo apt policy insightcae";
+  int ret = executeCommand(
+        cmd, false,
+        boost::process::std_out > out,
+        boost::process::std_err > stderr,
+        boost::process::std_in < boost::process::null
+        );
+
+  if (ret==0)
+  {
+    std::string line;
+    boost::regex pat("^  Installed: (.*)\\.(.*)\\.(.*)-(.*)~(.*)$");
+    while (getline(out, line))
+    {
+      dbg()<<line<<std::endl;
+      boost::smatch m;
+      if (boost::regex_search(line, m, pat))
+      {
+        dbg()<<m[1]<<" "<<m[2]<<" "<<m[3]<<" "<<m[4]<<" "<<m[5]<<std::endl;
+        int majorVersion = lexical_cast<int>(m[1]);
+        int minorVersion = lexical_cast<int>(m[2]);
+        std::string patchVersion = m[3]+"-"+m[4];
+        return ToolkitVersion(majorVersion, minorVersion, patchVersion, "");
+      }
+    }
+    throw insight::Exception("Could not parse version information.\nMaybe package is not installed?");
+  }
+  else
+  {
+    throw insight::Exception("Could not execute command for version check (\""+cmd+"\")");
+  }
+}
+
+
+
+
+void WSLLinuxServer::updateInstallation()
+{
+  std::string cmd="sudo apt install -y insightcae";
+  int ret = executeCommand(
+        cmd, false,
+        boost::process::std_out > stdout,
+        boost::process::std_err > stderr,
+        boost::process::std_in < boost::process::null
+        );
+
+  if (ret!=0)
+  {
+    throw insight::Exception("Could not execute WSL update command (\""+cmd+"\")");
+  }
+}
+
 
 
 

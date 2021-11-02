@@ -9,18 +9,29 @@ namespace insight
 
 class ToolkitVersion
 {
-
-    ToolkitVersion();
+  int majorVersion_, minorVersion_;
+  std::string patchVersion_;
+  std::string branch_;
 
 public:
-    int majorVersion() const;
-    int minorVersion() const;
+  ToolkitVersion(
+      int majorVersion, int minorVersion,
+      const std::string& patchVersion,
+      const std::string& branch
+      );
 
-    std::string patchInfo() const;
+  int majorVersion() const;
+  int minorVersion() const;
+  std::string patchVersion() const;
 
-    operator std::string() const;
+  std::string patchInfo() const;
 
-    static ToolkitVersion current;
+  std::string toString() const;
+  operator std::string() const;
+
+  static const ToolkitVersion& current();
+
+  bool operator==(const ToolkitVersion& otv) const;
 };
 
 

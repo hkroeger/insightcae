@@ -2,6 +2,7 @@
 #define INSIGHT_WSLLINUXSERVER_H
 
 #include "base/linuxremoteserver.h"
+#include "toolkitversion.h"
 
 namespace insight {
 
@@ -84,6 +85,10 @@ public:
       std::function<void(int progress,const std::string& status_text)> progress_callback =
                           std::function<void(int,const std::string&)>()
   ) override;
+
+
+  ToolkitVersion checkInstalledVersion();
+  void updateInstallation();
 
 };
 

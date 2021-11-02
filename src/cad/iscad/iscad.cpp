@@ -96,7 +96,7 @@ int main ( int argc, char** argv )
 
   if ( vm.count ( "version" ) )
     {
-      cout << std::string(insight::ToolkitVersion::current) << endl;
+      cout << std::string(insight::ToolkitVersion::current()) << endl;
       exit ( 0 );
     }
 

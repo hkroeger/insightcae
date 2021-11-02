@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QInputDialog>
 
 
 const int RST_SSHLINUX=0;
@@ -81,26 +82,30 @@ WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, insight::RemoteServer::ConfigPtr i
 
   {
     auto *l = new QHBoxLayout;
-    l->addWidget(new QLabel("WSL executable:"));
+    l->addWidget(new QLabel("WSL distribution label:"));
     leDistributionLabel_ = new QLineEdit;
     if (ini)
       leDistributionLabel_->setText( QString::fromStdString(ini->distributionLabel_) );
+    else
+      leDistributionLabel_->setText( "insightcae-ubuntu-1804" );
     l->addWidget(leDistributionLabel_);
-    auto* btn=new QPushButton("...");
-    QObject::connect(btn, &QPushButton::clicked, btn,
-            [&]()
-            {
-              auto sf = QFileDialog::getOpenFileName(
-                    parent_,
-                    "Select WSL executable",
-                    "", "Executables (*.exe)");
-              if (!sf.isEmpty())
-              {
-                leDistributionLabel_->setText(sf);
-              }
-            }
-    );
-    l->addWidget(btn);
+//    auto* btn=new QPushButton("...");
+//    QObject::connect(btn, &QPushButton::clicked, btn,
+//            [&]()
+//            {
+//              bool ok=false;
+//              auto sf = QInputDialog::getText(
+//                    parent_,
+//                    "WSL distribution label",
+//                    "Please enter WSL distribution label:", QLineEdit::Normal,
+//                    "insightcae-ubuntu-1804", &ok);
+//              if (ok)
+//              {
+//                leDistributionLabel_->setText(sf);
+//              }
+//            }
+//    );
+//    l->addWidget(btn);
     vl->addLayout(l);
   }
 

@@ -27,11 +27,15 @@
 #include <QApplication>
 #include <QMenuBar>
 #include <QAction>
+#include <QThread>
 
 #include "insightcaeapplication.h"
 #include "sdmdiarea.h"
 
 #include <array>
+
+#include "base/wsllinuxserver.h"
+
 
 
 class workbench
@@ -74,6 +78,11 @@ private slots:
     void newAnalysis();
     void onOpenAnalysis();
     void openRecentFile();
+
+#ifdef WIN32
+    void checkWSLVersion(bool reportSummary=false);
+    void updateWSLVersion( std::shared_ptr<insight::WSLLinuxServer> wsl );
+#endif
 
 private slots:
     void onSubWindowActivated( QMdiSubWindow * window );

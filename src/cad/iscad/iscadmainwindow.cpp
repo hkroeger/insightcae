@@ -301,7 +301,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, bool nolog)
                     this,
                     "ISCAD Information",
                     "InsightCAE CAD Script Editor\n"
-                    "Version "+QString::fromStdString(insight::ToolkitVersion::current)+"\n"
+                    "Version "+QString::fromStdString(insight::ToolkitVersion::current().toString())+"\n"
                     );
             }
     );

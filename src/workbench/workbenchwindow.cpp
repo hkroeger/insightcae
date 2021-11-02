@@ -33,12 +33,14 @@
 #include "analysisform.h"
 #include "qinsighterror.h"
 #include "iqremoteservereditdialog.h"
+#include "qanalysisthread.h"
 
 #include <fstream>
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 
 #include "base/toolkitversion.h"
+
 
 
 void workbench::updateRecentFileActions()
@@ -64,6 +66,8 @@ void workbench::updateRecentFileActions()
 
   separatorAct_->setVisible(numRecentFiles > 0);
 }
+
+
 
 
 workbench::workbench(bool logToConsole)
@@ -125,16 +129,32 @@ workbench::workbench(bool logToConsole)
                   this,
                   "Workbench Information",
                   "InsightCAE Analysis Workbench\n"
-                  "Version "+QString::fromStdString(insight::ToolkitVersion::current)+"\n"
+                  "Version "+QString::fromStdString(insight::ToolkitVersion::current().toString())+"\n"
                   );
           }
   );
 
   readSettings();
+
+#ifdef WIN32
+  {
+    checkWSLVersion(false);
+    QAction* be = new QAction("Check backend installation version...", this);
+    helpMenu->addAction( be );
+    connect(be, &QAction::triggered,
+            this, [&]() { checkWSLVersion(true); } );
+  }
+#endif
 }
+
+
+
 
 workbench::~workbench()
 {}
+
+
+
 
 void workbench::newAnalysis()
 {
@@ -156,6 +176,9 @@ void workbench::newAnalysis()
   }
 }
 
+
+
+
 void workbench::onOpenAnalysis()
 {
   QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
@@ -163,12 +186,90 @@ void workbench::onOpenAnalysis()
 }
 
 
+
+
 void workbench::openRecentFile()
 {
   QAction *action = qobject_cast<QAction *>(sender());
   if (action)
-      openAnalysis(action->data().toString());
+    openAnalysis(action->data().toString());
 }
+
+
+
+
+#ifdef WIN32
+void workbench::checkWSLVersion(bool reportSummary)
+{
+  bool anythingChecked=false, anythingOutdated=false;
+
+  for (auto& rs: insight::remoteServers)
+  {
+    if ( auto wslcfg = std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(rs) )
+    {
+      // check installed version inside WSL distribution
+      if (auto wsl = std::dynamic_pointer_cast<insight::WSLLinuxServer>(wslcfg->instance()))
+      {
+        auto wslVersion = wsl->checkInstalledVersion();
+        anythingChecked=true;
+        if ( !(wslVersion == insight::ToolkitVersion::current()) )
+        {
+          anythingOutdated=true;
+          auto answer = QMessageBox::warning(
+                this,
+                "Inconsistent configuration",
+                "The backend package in the WSL environment is not of the same version as this GUI frontend.\n"
+                "(GUI version: "+QString::fromStdString(insight::ToolkitVersion::current().toString())+","
+                " WSL version: "+QString::fromStdString(wslVersion.toString())+")\n"
+                "Please check the reason. If you recently updated the GUI package, please update the backend before executing analyses.\n"
+                "\nExecute the backend update now?",
+                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
+                );
+          if (answer==QMessageBox::Yes)
+          {
+            updateWSLVersion( wsl );
+          }
+        }
+      }
+    }
+  }
+
+  if (anythingChecked && reportSummary)
+  {
+    if (!anythingOutdated)
+    {
+      QMessageBox::information(
+            this,
+            "WSL backend version check",
+            "All backend versions are correct!");
+    }
+  }
+}
+
+
+
+
+void workbench::updateWSLVersion(std::shared_ptr<insight::WSLLinuxServer> wsl)
+{
+  auto *t = new insight::QAnalysisThread(
+        [this,wsl]()
+        {
+          statusBar()->showMessage("Update of WSL backend instance is running.");
+          wsl->updateInstallation();
+        }
+  );
+  connect(t, &insight::QAnalysisThread::finished,
+          t, [&](insight::ResultSetPtr)
+          {
+            QMessageBox::information(
+                  this,
+                  "WSL backend updated.",
+                  "The backend update finished without error." );
+          }
+  );
+}
+#endif
+
 
 
 

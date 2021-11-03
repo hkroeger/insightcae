@@ -87,7 +87,7 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
        OUTPUT_VARIABLE INSIGHT_BRANCH
        OUTPUT_STRIP_TRAILING_WHITESPACE
      )
-     if (INSIGHT_BRANCH EQUAL "HEAD")
+     if (INSIGHT_BRANCH STREQUAL "HEAD")
        execute_process(
          COMMAND bash -c "basename $(git log -1 --pretty=%D|sed -e 's/,/\\n/g'|grep \"origin/\"|tail -n 1)"
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

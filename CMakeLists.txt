@@ -82,11 +82,12 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
     )
     if (ret EQUAL "0")
      execute_process(
-       COMMAND git rev-parse --abbrev-ref HEAD
+       COMMAND bash -c "basename $(git log -1 --pretty=%D|sed -e 's/,/\\n/g'|grep \"origin/\"|tail -n 1)"
        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
        OUTPUT_VARIABLE INSIGHT_BRANCH
        OUTPUT_STRIP_TRAILING_WHITESPACE
      )
+     message(STATUS "InsightCAE git branch: ${INSIGHT_BRANCH}")
      message(STATUS "InsightCAE git describe: ${git-rev}")
      STRING(REGEX REPLACE
          "^([0-9]+)\\.([0-9]+)[-]*([^ ]+|)\$"

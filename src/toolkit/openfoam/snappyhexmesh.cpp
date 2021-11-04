@@ -87,6 +87,11 @@ void Feature::modifyFiles
 {
 }
 
+bool Feature::producesPrismLayers() const
+{
+  return false;
+}
+
 
 
 defineType(Geometry);
@@ -156,6 +161,11 @@ void Geometry::modifyFiles(const OpenFOAMCase& ofc,
   ExternalGeometryFile::putIntoConstantTrisurface(ofc, location);
 }
 
+bool Geometry::producesPrismLayers() const
+{
+  return p_.nLayers>0;
+}
+
 
 
 
@@ -174,6 +184,11 @@ void PatchLayers::addIntoDictionary(OFDictData::dict& sHMDict) const
   OFDictData::dict layerdict;
   layerdict["nSurfaceLayers"]=p_.nLayers;
   sHMDict.subDict("addLayersControls").subDict("layers")[p_.name]=layerdict;
+}
+
+bool PatchLayers::producesPrismLayers() const
+{
+  return p_.nLayers>0;
 }
 
 
@@ -857,7 +872,12 @@ void snappyHexMesh
 //      totalfaces=lexical_cast<int>(what[2]);
 //    }
 //  }
-  if (saa.totalFaces()>=0)
+  bool anyExtrusionRequested=false;
+  for (const auto& f: p.features)
+  {
+    anyExtrusionRequested = anyExtrusionRequested || f->producesPrismLayers();
+  }
+  if ( (saa.totalFaces()>=0) && anyExtrusionRequested )
   {
 //    double exfrac=double(exfaces)/double(totalfaces);
     if (saa.extrudedFraction()<0.9)
@@ -871,7 +891,9 @@ void snappyHexMesh
 	throw insight::Exception(msg);
       }
       else
+      {
 	insight::Warning(msg);
+      }
     }
   }
   

@@ -89,6 +89,8 @@ public:
   virtual void modifyFiles (
       const OpenFOAMCase& ofc,
       const boost::filesystem::path& location ) const;
+
+  virtual bool producesPrismLayers() const;
 };
 
 
@@ -132,6 +134,7 @@ public:
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   void modifyFiles(const OpenFOAMCase& ofc,
                    const boost::filesystem::path& location) const override;
+  bool producesPrismLayers() const override;
 };
 
 
@@ -162,6 +165,7 @@ public:
   inline const Parameters& parameters() const { return p_; }
 
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
+  bool producesPrismLayers() const override;
 };
 
 

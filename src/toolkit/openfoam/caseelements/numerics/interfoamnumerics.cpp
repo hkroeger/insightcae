@@ -70,7 +70,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   FVNumerics::addIntoDictionaries(dictionaries);
 
   // ============ setup controlDict ================================
-  if (OFversion()<06000 && OFcase().findElements<dynamicMesh>().size()>0)
+  if (OFversion()<600 && OFcase().findElements<dynamicMesh>().size()>0)
    setApplicationName(dictionaries, "interDyMFoam");
   else
    setApplicationName(dictionaries, "interFoam");

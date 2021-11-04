@@ -348,17 +348,24 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 
 void WSLLinuxServer::updateInstallation()
 {
-  std::string cmd="sudo apt install -y insightcae";
-  int ret = executeCommand(
-        cmd, false,
-        boost::process::std_out > stdout,
-        boost::process::std_err > stderr,
-        boost::process::std_in < boost::process::null
-        );
+  std::vector<std::string> cmds={
+    "sudo apt update -y",
+    "sudo apt install -y insightcae"
+  };
 
-  if (ret!=0)
+  for (const auto& cmd: cmds)
   {
-    throw insight::Exception("Could not execute WSL update command (\""+cmd+"\")");
+    int ret = executeCommand(
+          cmd, false,
+          boost::process::std_out > stdout,
+          boost::process::std_err > stderr,
+          boost::process::std_in < boost::process::null
+          );
+
+    if (ret!=0)
+    {
+      throw insight::Exception("Could not execute WSL update command (\""+cmd+"\")");
+    }
   }
 }
 

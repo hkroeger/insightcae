@@ -124,6 +124,8 @@ AnalysisForm::AnalysisForm(
   pack_parameterset_(true),
   is_modified_(false)
 {
+  setAttribute(Qt::WA_DeleteOnClose, true);
+
     // load default parameters
     auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
 //    parameters_ = defaultParams;

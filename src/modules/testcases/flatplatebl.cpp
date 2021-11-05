@@ -555,7 +555,7 @@ void FlatPlateBL::evaluateAtSection
       u.save( (
 	executionPath() /
 	str( format("umean_vs_y_%s_x%05.2f.txt") % extract_section->name_prefix % x )
-      ).c_str(), raw_ascii);
+      ).string(), raw_ascii);
     }
     
     double maxU=1.1*sp().uinf_;
@@ -616,7 +616,7 @@ void FlatPlateBL::evaluateAtSection
       R_vs_y.save( (
 	executionPath() /
 	str( format("R_vs_y_%s_x%05.2f.txt") % extract_section->name_prefix % x )
-      ).c_str(), raw_ascii);
+      ).string(), raw_ascii);
     }
     
     double maxRp=1.1*as_scalar(arma::max(arma::max(R_vs_y.cols(1,6))))/pow(utau,2);
@@ -652,7 +652,7 @@ void FlatPlateBL::evaluateAtSection
       k_vs_y.save( (
 	executionPath() /
 	str( format("k_vs_y_%s_x%05.2f.txt") % extract_section->name_prefix % x )
-      ).c_str(), raw_ascii);
+      ).string(), raw_ascii);
     }
     
     addPlot
@@ -729,7 +729,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
       wallforce.col(0), 
       wallforce.col(1)/(0.5*pow(sp().uinf_,2))
     ));
-  Cf_vs_x.save( (executionPath()/"Cf_vs_x.txt").c_str(), arma_ascii);
+  Cf_vs_x.save( (executionPath()/"Cf_vs_x.txt").string(), arma_ascii);
   Interpolator Cf_vs_x_i(Cf_vs_x);
 
 #ifdef HAS_REFDATA

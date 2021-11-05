@@ -1,5 +1,3 @@
-if (PYTHONLIBS_FOUND)
-
 project(testcases)
 
 #find_package(OpenCasCade REQUIRED)
@@ -12,7 +10,7 @@ set(testcases_SOURCES
 set(testcases_LIBS
   toolkit
 )
-if (INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
+if (PYTHONLIBS_FOUND AND INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
     list(APPEND testcases_SOURCES
         #decayingturbulence.cpp
         pipe.cpp
@@ -39,14 +37,16 @@ target_include_directories(testcases
   )
 install(TARGETS testcases LIBRARY DESTINATION lib)
 
-add_pybindings(TestcaseModules "testcasemodules.i" testcases)
-
 install_shared_file(testcases_module_cfg testcases.module modules.d)
 install_shared_file(doc_airfoilsection_sketches_1 airfoilsection_sketches_1.png testcases)
 install_shared_file(doc_airfoilsection_sketches_L airfoilsection_sketches_L.png testcases)
 install_shared_file(doc_airfoilsection_sketches_H airfoilsection_sketches_H.png testcases)
 install_shared_file(doc_airfoilsection_sketches_alpha airfoilsection_sketches_alpha.png testcases)
 install_shared_file(doc_airfoilsection_sketches_csv airfoilsection_sketches_csv.png testcases)
+
+if (PYTHONLIBS_FOUND AND INSIGHT_BUILD_PYTHONBINDINGS)
+
+add_pybindings(TestcaseModules "testcasemodules.i" testcases)
 
 install_script(isCreateChannelProfiles isCreateChannelProfiles.py)
 

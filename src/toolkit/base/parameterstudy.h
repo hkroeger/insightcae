@@ -96,7 +96,7 @@ public:
     return parameters_;
   }
   
-  virtual ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
+  ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
 };
 
 }

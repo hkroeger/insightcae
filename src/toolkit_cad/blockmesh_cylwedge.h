@@ -17,20 +17,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#ifndef BLOCKMESHDICT_CYLWEDGE_H
+#define BLOCKMESHDICT_CYLWEDGE_H
 
-#ifndef BLOCKMESH_CYLWEDGEORTHO_H
-#define BLOCKMESH_CYLWEDGEORTHO_H
-
-#include "toolkit_gui_export.h"
-
-#include "parametersetvisualizer.h"
+#include "base/supplementedinputdata.h"
 #include "openfoam/blockmesh_templates.h"
 #include "cadtypes.h"
 
 #include "Geom_BoundedCurve.hxx"
 #include "gp_Pnt.hxx"
 #include "gp_Vec.hxx"
-#include "blockmesh_cylwedgeortho__blockMeshDict_CylWedgeOrtho__Parameters_headers.h"
+
+#include "blockmesh_cylwedge__blockMeshDict_CylWedge__Parameters_headers.h"
 
 namespace insight
 {
@@ -38,60 +36,29 @@ namespace insight
 namespace bmd
 {
 
-
-
-class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer;
-
-
-
-
-
-class TOOLKIT_GUI_EXPORT blockMeshDict_CylWedgeOrtho
+class blockMeshDict_CylWedge
     : public BlockMeshTemplate
 {
-  friend class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer;
 
 public:
-#include "blockmesh_cylwedgeortho__blockMeshDict_CylWedgeOrtho__Parameters.h"
+#include "blockmesh_cylwedge__blockMeshDict_CylWedge__Parameters.h"
 /*
-PARAMETERSET>>> blockMeshDict_CylWedgeOrtho Parameters
+PARAMETERSET>>> blockMeshDict_CylWedge Parameters
 
 geometry = set
 {
+    d = double 0.0 "[m] Inner diameter"
+    D = double 1.0 "[m] Outer diameter" *necessary
     L = double 1.0 "[m] Length" *necessary
-    p0 = vector (0 0 0) "[m] Center point of axis. Mesh extrusion will start on axial location of spine base point, regardless of this parameter."
+    p0 = vector (0 0 0) "[m] Center point of base surface"
     ex = vector (0 0 1) "[m] Axial direction"
+    er = vector (1 0 0) "[m] Radial direction"
     wedge_angle = double 90 "[deg] Wedge angle, symmetric around er" *necessary
 
     wedge_spine_curve = path ""
 "CAD file containing a single curve, which controls the circumferential sweeping of the wedge segment.
 The underlying curve needs to be defined from d to D and has to be in the same coordinate system as the target mesh. Errors will occur, if this is not the case.
 If the parameter is left blank, a straight radial segment is generated."
-
-    inner_interface = selectablesubset {{
-
-     none set {}
-
-     extend set {
-      distance = double 1 "Protrusion distance (towards inside)" *necessary
-      z0 = double 0 "lower z-coordinate, measured from p0" *necessary
-      z1 = double 1 "upper z-coordinate, measured from p0" *necessary
-     }
-
-    }} none "Protrusion for interface at inner cylindrical boundary"
-
-    outer_interface = selectablesubset {{
-
-     none set {}
-
-     extend set {
-      distance = double 1 "Protrusion distance (towards inside)" *necessary
-      z0 = double 0 "lower z-coordinate, measured from p0" *necessary
-      z1 = double 1 "upper z-coordinate, measured from p0" *necessary
-     }
-
-    }} none "Protrusion for interface at outer cylindrical boundary"
-
 }
 
 mesh = set
@@ -120,51 +87,48 @@ mesh = set
     defaultPatchName = string "walls" "name of patch where all patches with empty names are assigned to."
     outerPatchName = string "" "name of patch on outer circumferential surface"
     innerPatchName = string "" "name of patch on inner circumferential surface"
-    outerInterfacePatchName = string "" "name of protrusion patch on outer circumferential surface"
-    innerInterfacePatchName = string "" "name of protrusion patch on inner circumferential surface"
     basePatchName = string "" "name of patch on base end"
     topPatchName = string "" "name of patch on top end"
     cyclmPatchName = string "" "name of patch on cyclic boundary at -0.5*wedge_angle"
     cyclpPatchName = string "" "name of patch on cyclic boundary at +0.5*wedge_angle"
+
+    outerPatchSections = array [ set {
+     x0 = double 0 "Beginning of the section. Measured along ex from p0." *necessary
+     x1 = double 1 "Beginning of the section. Measured along ex from p0." *necessary
+     name = string "" "name of the patch between x0 and x1. If left blank, no different patch will be added
+and the section will remain part of outerPatch."
+    } ]*0 "Optional axial parts in the outer patch. The outer patch will be split at the specified axial
+ coordinates and the surface in between will be given the specified name."
 }
 
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
+  struct supplementedInputData
+      : public supplementedInputDataDerived<Parameters>
+  {
+  private:
 
-    struct Patches
-    {
-      Patch* base=nullptr;
-      Patch* top=nullptr;
-      Patch* outer=nullptr;
-      Patch* inner=nullptr;
-      Patch* outerif=nullptr;
-      Patch* innerif=nullptr;
-      Patch* pcyclm=nullptr;
-      Patch* pcyclp=nullptr;
-    };
+  public:
+    supplementedInputData(std::unique_ptr<Parameters> p,
+                          const boost::filesystem::path& workDir,
+                          ProgressDisplayer& progress = consoleProgressDisplayer );
 
-    void insertBlocks
-    (
-        Handle_Geom_Curve spine_rvs,  // first param: inside@r0, last param: outside@r1
-        double t0, double t1,
-        double angle,
-        gp_Vec ez, gp_Pnt center,
-        double z0, double z1,
-        Patches& pc,
-        const Parameters::geometry_type::inner_interface_type& pro_inner,
-        const Parameters::geometry_type::outer_interface_type& pro_outer,
-        bool no_top_edg,
-        bool is_lowest,
-        int nuBy2, int nx, int nr, double deltax
-    );
+    arma::mat p0_, ex_, er_, ey_;
+    Handle_Geom_Curve spine_;
+
+    std::pair<double,double> limit_angles() const;
+    arma::mat point_on_spine(double r) const;
+  };
+
+#ifndef SWIG
+  defineBaseClassWithSupplementedInputData_WithoutParametersFunction(Parameters, supplementedInputData)
+#endif
 
 public:
-    declareType ( "blockMeshDict_CylWedgeOrtho" );
+    declareType ( "blockMeshDict_CylWedge" );
 
-    blockMeshDict_CylWedgeOrtho ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    blockMeshDict_CylWedge ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
 
     virtual void create_bmd();
 
@@ -173,20 +137,8 @@ public:
 
 
 
-class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer
- : public CAD_ParameterSet_Visualizer
-{
-public:
-    std::string blockMeshName_ = "blockMeshDict_CylWedgeOrtho";
-    typedef blockMeshDict_CylWedgeOrtho::Parameters Parameters;
-
-public:
-    void setBlockMeshName(const std::string& blockMeshName);
-    void recreateVisualizationElements() override;
-};
 
 }
-
 }
 
-#endif // BLOCKMESH_CYLWEDGEORTHO_H
+#endif // BLOCKMESHDICT_CYLWEDGE_H

@@ -1,8 +1,6 @@
 #ifndef BLOCKMESH_TUBEMESH_H
 #define BLOCKMESH_TUBEMESH_H
 
-#include "toolkit_gui_export.h"
-
 
 #include "blockmesh_curvedcylinder.h"
 
@@ -19,7 +17,7 @@ namespace bmd
  * A cylindrical tube meshed with an O-grid
  */
 
-class TOOLKIT_GUI_EXPORT blockMeshDict_TubeMesh
+class blockMeshDict_TubeMesh
 : public BlockMeshTemplate
 {
 public:

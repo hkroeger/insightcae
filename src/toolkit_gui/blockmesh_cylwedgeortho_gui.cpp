@@ -34,6 +34,18 @@ namespace insight
 namespace bmd
 {
 
+class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
+{
+public:
+    std::string blockMeshName_ = "blockMeshDict_CylWedgeOrtho";
+    typedef blockMeshDict_CylWedgeOrtho::Parameters Parameters;
+
+public:
+    void setBlockMeshName(const std::string& blockMeshName);
+    void recreateVisualizationElements() override;
+};
+
 
 ParameterSet_VisualizerPtr create_blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer()
 {

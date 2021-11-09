@@ -17,13 +17,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "blockmesh_cylwedge.h"
+#include "blockmesh_cylwedge_gui.h"
 
 #include "base/tools.h"
 #include "base/units.h"
 
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
+
 
 #include "cadfeatures.h"
 #include "datum.h"
@@ -41,7 +42,15 @@ ParameterSet_VisualizerPtr blockMeshDict_CylWedge_visualizer()
     return ParameterSet_VisualizerPtr( new blockMeshDict_CylWedge_ParameterSet_Visualizer );
 }
 
-addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_CylWedge, visualizer, blockMeshDict_CylWedge_visualizer);
+
+
+
+addStandaloneFunctionToStaticFunctionTable(
+    OpenFOAMCaseElement, blockMeshDict_CylWedge,
+    visualizer, blockMeshDict_CylWedge_visualizer);
+
+
+
 
 void blockMeshDict_CylWedge_ParameterSet_Visualizer::setBlockMeshName(const std::string& blockMeshName)
 {
@@ -52,10 +61,12 @@ void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElemen
 {
   CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
-  Parameters p(currentParameters());
-
-  OpenFOAMCase oc(OFEs::getCurrentOrPreferred());
-  blockMeshDict_CylWedge bcw( oc, currentParameters() );
+  auto spp = std::make_shared<blockMeshDict_CylWedge::supplementedInputData>(
+        std::make_unique<blockMeshDict_CylWedge::Parameters>(currentParameters()),
+        "", *progress_ );
+  Q_EMIT updateSupplementedInputData(spp);
+  auto &p = spp->p();
+  auto &bcw = *spp;
 
   auto dom =
       cad::Revolution::create(

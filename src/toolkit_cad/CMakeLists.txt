@@ -1,0 +1,21 @@
+if (INSIGHT_BUILD_ISCAD)
+
+project(toolkit_cad)
+
+set(toolkit_cad_SRCS
+    blockmesh_curvedcylinder.cpp blockmesh_curvedcylinder.h
+    blockmesh_cylwedgeortho.cpp blockmesh_cylwedgeortho.h
+    blockmesh_tubemesh.cpp blockmesh_tubemesh.h
+    blockmesh_cylwedge.cpp blockmesh_cylwedge.h
+    )
+
+add_library(toolkit_cad SHARED ${toolkit_cad_SRCS})
+add_PDL(toolkit_cad "${toolkit_cad_SRCS}")
+target_link_libraries(toolkit_cad insightcad toolkit)
+target_include_directories(toolkit_cad
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+ )
+install(TARGETS toolkit_cad LIBRARY DESTINATION lib)
+
+endif()

@@ -50,11 +50,6 @@ set(toolkit_gui_SRCS
     helpwidget.cpp
     of_clean_case.cpp
     snappyhexmesh_gui.cpp
-    blockmesh_curvedcylinder.cpp
-    blockmesh_cylwedge.cpp
-    blockmesh_cylwedgeortho.cpp
-    blockmesh_tubemesh.cpp
-    blockmesh_gui.cpp
     parametersetvisualizer.cpp
     logviewerwidget.cpp
     graphprogressdisplayer.cpp
@@ -64,8 +59,9 @@ set(toolkit_gui_SRCS
     remotedirselector.cpp
     remotesync.cpp
     sdmdiarea.cpp
-    blockmesh_cylwedge_gui.cpp
-    blockmesh_cylwedgeortho_gui.cpp
+    blockmesh_gui.cpp
+    blockmesh_cylwedge_gui.cpp blockmesh_cylwedge_gui.h
+    #blockmesh_cylwedgeortho_gui.cpp
     metatypes.cpp
     remoteparaview.cpp
     remoteparaview.h
@@ -114,7 +110,7 @@ generate_export_header(toolkit_gui)
 target_compile_definitions(toolkit_gui PRIVATE toolkit_gui_EXPORTS)
 
 target_link_libraries(toolkit_gui
- toolkit insightcad_gui
+ toolkit toolkit_cad insightcad_gui
  Qt5::Widgets Qt5::Charts
  ${Boost_LIBRARIES}
  )

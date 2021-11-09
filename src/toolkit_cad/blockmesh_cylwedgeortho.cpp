@@ -38,7 +38,6 @@
 #include "GeomAPI_ExtremaCurveSurface.hxx"
 #include "BRepBuilderAPI_NurbsConvert.hxx"
 
-#include "qmodeltree.h"
 
 using namespace std;
 using namespace boost;

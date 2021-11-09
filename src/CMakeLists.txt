@@ -48,6 +48,7 @@ IF(INSIGHT_BUILD_TOOLKIT)
 
   if (INSIGHT_BUILD_CAD)
     add_subdirectory(cad)
+    add_subdirectory(toolkit_cad)
     LIST(APPEND TARGETS_TO_INSTALL "InsightCAECADTarget.cmake")
     LIST(APPEND TARGETS_TO_INSTALL "InsightCAECADGUITarget.cmake")
   endif(INSIGHT_BUILD_CAD)

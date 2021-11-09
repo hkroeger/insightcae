@@ -19,7 +19,7 @@ std::string DynamicClassSelectableSubsetParameterParser::Data::cppType ( const s
 }
 std::string DynamicClassSelectableSubsetParameterParser::Data::cppValueRep ( const std::string&, const std::string& thisscope  ) const
 {
-    return "#error";
+    return "nullptr";
 }
 
 

@@ -72,6 +72,7 @@ SET(INSIGHT_VERSION_PATCH "0")
 SET(INSIGHT_BRANCH "none")
 
 
+
 if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
     execute_process(
       COMMAND git describe

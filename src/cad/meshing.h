@@ -137,7 +137,8 @@ public:
       const boost::filesystem::path& outputMeshFile,
       double Lmax, double Lmin,
       const std::string& name,
-      bool keepDir=false
+      bool keepDir=false,
+      bool recombineTris = true
       );
 };
 
@@ -165,7 +166,8 @@ public:
       const std::vector<NamedEntity>& namedTopFaces,
       const std::vector<NamedEntity>& namedLateralEdges,
       double grading=1.,
-      bool keepDir=false
+      bool keepDir=false,
+      bool recombineTris = true
       );
 };
 

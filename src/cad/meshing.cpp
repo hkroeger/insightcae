@@ -468,15 +468,21 @@ SurfaceGmshCase::SurfaceGmshCase(
     const boost::filesystem::path& outputMeshFile,
     double Lmax, double Lmin,
     const std::string& name,
-    bool keepDir
+    bool keepDir,
+    bool recombineTris
     )
   : cad::GmshCase(part, outputMeshFile,
                   Lmax, Lmin, keepDir)
 {
+  if (recombineTris)
+  {
+    insertLinesBefore(endOfMeshingOptions_, {
+      "Mesh.RecombinationAlgorithm = 0",
+      "Mesh.RecombineAll = 1",
+    });
+  }
   insertLinesBefore(endOfMeshingOptions_, {
-    "Mesh.RecombinationAlgorithm = 0",
     "Mesh.SecondOrderIncomplete=1",
-    "Mesh.RecombineAll = 1",
     "Mesh.Optimize = 1",
     "Mesh.OptimizeNetgen = 1",
     "Physical Surface(\""+name+"\")=Surface{:}"
@@ -496,7 +502,8 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     const std::vector<NamedEntity>& namedTopFaces,
     const std::vector<NamedEntity>& namedLateralEdges,
     double grading,
-    bool keepDir
+    bool keepDir,
+    bool recombineTris
     )
   : cad::GmshCase(part, outputMeshFile,
                   L, L, keepDir),
@@ -526,13 +533,17 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     }
   }
 
+  if (recombineTris)
+  {
+    insertLinesBefore(endOfMeshingOptions_, {
+      "Mesh.RecombinationAlgorithm = 0",
+      "Mesh.RecombineAll = 1",
+     });
+  }
 
   insertLinesBefore(endOfMeshingOptions_, {
-    "Mesh.RecombinationAlgorithm = 0",
     "Mesh.SecondOrderIncomplete=1",
-    "Mesh.RecombineAll = 1",
     "Mesh.Optimize = 1",
-
     "Physical Volume(\""+solidName+"\") = {}"
    });
 

@@ -43,6 +43,12 @@ std::string ToolkitVersion::patchVersion() const
 }
 
 
+string ToolkitVersion::branch() const
+{
+  return branch_;
+}
+
+
 std::string ToolkitVersion::patchInfo() const
 {
 //    return std::string( XSTR(INSIGHT_VERSION_PATCH) " (" XSTR(INSIGHT_BRANCH) ")" );

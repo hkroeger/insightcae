@@ -23,6 +23,7 @@ public:
   int majorVersion() const;
   int minorVersion() const;
   std::string patchVersion() const;
+  std::string branch() const;
 
   std::string patchInfo() const;
 

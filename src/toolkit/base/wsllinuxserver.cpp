@@ -304,24 +304,34 @@ void WSLLinuxServer::syncToLocal
 }
 
 
-
+std::mutex g_child_mutex;
 
 ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 {
   boost::process::ipstream out;
 
-  std::string cmd="LC_ALL=C sudo apt policy insightcae";
-  int ret = executeCommand(
-        cmd, false,
-        boost::process::std_out > out,
-        boost::process::std_err > stderr,
-        boost::process::std_in < boost::process::null
-        );
+  std::string packageName="insightcae";
 
+  if (ToolkitVersion::current().branch()=="next-release" || ToolkitVersion::current().branch()=="master")
+  {
+    packageName="insightcae-ce";
+  }
+
+  std::string cmd="LC_ALL=C sudo apt policy "+packageName;
+
+  int ret = executeCommand(
+      cmd, false,
+      boost::process::std_out > out,
+      boost::process::std_err > stderr,
+      boost::process::std_in < boost::process::null
+      );
+
+
+  dbg()<<"ret="<<ret<<std::endl;
   if (ret==0)
   {
-    std::string line;
     boost::regex pat("^  Installed: (.*)\\.(.*)\\.(.*)-(.*)~(.*)$");
+    std::string line;
     while (getline(out, line))
     {
       dbg()<<line<<std::endl;

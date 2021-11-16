@@ -210,38 +210,59 @@ void workbench::checkWSLVersion(bool reportSummary)
       // check installed version inside WSL distribution
       if (auto wsl = std::dynamic_pointer_cast<insight::WSLLinuxServer>(wslcfg->instance()))
       {
-        auto wslVersion = wsl->checkInstalledVersion();
-        anythingChecked=true;
-        if ( !(wslVersion == insight::ToolkitVersion::current()) )
+        try
         {
-          anythingOutdated=true;
-          auto answer = QMessageBox::warning(
+          auto wslVersion = wsl->checkInstalledVersion();
+          anythingChecked=true;
+          if ( !(wslVersion == insight::ToolkitVersion::current()) )
+          {
+            anythingOutdated=true;
+            auto answer = QMessageBox::warning(
+                  this,
+                  "Inconsistent configuration",
+                  "The backend package in the WSL environment is not of the same version as this GUI frontend.\n"
+                  "(GUI version: "+QString::fromStdString(insight::ToolkitVersion::current().toString())+","
+                  " WSL version: "+QString::fromStdString(wslVersion.toString())+")\n"
+                  "Please check the reason. If you recently updated the GUI package, please update the backend before executing analyses.\n"
+                  "\nExecute the backend update now?",
+                  QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
+                  );
+            if (answer==QMessageBox::Yes)
+            {
+              updateWSLVersion( wsl );
+            }
+          }
+        }
+        catch (const insight::Exception& ex)
+        {
+          QMessageBox::warning(
                 this,
                 "Inconsistent configuration",
-                "The backend package in the WSL environment is not of the same version as this GUI frontend.\n"
-                "(GUI version: "+QString::fromStdString(insight::ToolkitVersion::current().toString())+","
-                " WSL version: "+QString::fromStdString(wslVersion.toString())+")\n"
-                "Please check the reason. If you recently updated the GUI package, please update the backend before executing analyses.\n"
-                "\nExecute the backend update now?",
-                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
+                "Installed backend version could not be checked.\n"+QString::fromStdString(ex.message())
                 );
-          if (answer==QMessageBox::Yes)
-          {
-            updateWSLVersion( wsl );
-          }
         }
       }
     }
   }
 
-  if (anythingChecked && reportSummary)
+  if (reportSummary)
   {
-    if (!anythingOutdated)
+    if (anythingChecked)
+    {
+      if (!anythingOutdated)
+      {
+        QMessageBox::information(
+              this,
+              "WSL backend version check",
+              "All backend versions are correct!");
+      }
+    }
+    else
     {
       QMessageBox::information(
             this,
             "WSL backend version check",
-            "All backend versions are correct!");
+            "There are no WSL backends defined.");
     }
   }
 }

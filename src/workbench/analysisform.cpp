@@ -128,12 +128,15 @@ AnalysisForm::AnalysisForm(
 
     // load default parameters
     auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
-//    parameters_ = defaultParams;
 
+    try
     {
-#warning check for OpenFOAM analysis in a different way
-//      insight::AnalysisPtr a( insight::Analysis::lookup(analysisName_, defaultParams, "") );
-      isOpenFOAMAnalysis_ = true; //bool( std::dynamic_pointer_cast<insight::OpenFOAMAnalysis>( a ) );
+      defaultParams.getString("run/OFEname"); // try to access
+      isOpenFOAMAnalysis_ = true;
+    }
+    catch (...)
+    {
+      isOpenFOAMAnalysis_ = false;
     }
 
     ui = new Ui::AnalysisForm;

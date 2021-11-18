@@ -19,6 +19,7 @@ if (INSIGHT_BUILD_MEDREADER)
          -DLIBRARY_NAME_SUFFIX=pvis
 
         INSTALL_DIR ${CMAKE_BINARY_DIR}/medreader-onscreen
+        BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkMedReader-pvis.so # required for ninja
     )
 
     externalproject_add(medreader-offscreen
@@ -32,6 +33,7 @@ if (INSIGHT_BUILD_MEDREADER)
          -DLIBRARY_NAME_SUFFIX=pvisoffscreen
 
         INSTALL_DIR ${CMAKE_BINARY_DIR}/medreader-offscreen
+        BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkMedReader-pvisoffscreen.so # required for ninja
     )
 
     install(DIRECTORY ${CMAKE_BINARY_DIR}/medreader-onscreen/ DESTINATION "." USE_SOURCE_PERMISSIONS)

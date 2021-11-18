@@ -27,6 +27,8 @@ struct ParametersBase
   static ParameterSet makeDefault();
 
   virtual operator ParameterSet() const =0;
+
+  virtual std::unique_ptr<ParametersBase> clone() const =0;
 };
 
 
@@ -61,7 +63,7 @@ public:
       const std::string& name,
       ReportedSupplementQuantityValue value,
       const std::string& description,
-      const std::string& unit );
+      const std::string& unit = "" );
 
   const ReportedSupplementQuantitiesTable& reportedSupplementQuantities() const;
 
@@ -119,6 +121,14 @@ public:
   supplementedInputDataDerived( std::unique_ptr<input_type> pPtr, Args&&... args)
     : SupplementedInputDataBaseType(
         std::dynamic_unique_ptr_cast<typename SupplementedInputDataBaseType::input_type>( std::move(pPtr) ),
+        std::forward<Args>(args)...
+        )
+  {}
+
+  template<typename... Args>
+  supplementedInputDataDerived( const input_type& pRef, Args&&... args)
+    : SupplementedInputDataBaseType(
+        std::dynamic_unique_ptr_cast<typename SupplementedInputDataBaseType::input_type>( pRef.clone() ),
         std::forward<Args>(args)...
         )
   {}

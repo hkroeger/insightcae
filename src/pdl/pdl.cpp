@@ -380,6 +380,10 @@ int main ( int argc, char *argv[] )
           f<<"operator ParameterSet() const override"<<endl;
           f<<"{ ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
 
+          // clone function
+          f<<"std::unique_ptr<ParametersBase> clone() const override"<<endl;
+          f<<"{ return std::make_unique<"<<name<<">(*this); }"<<endl;
+
           f<<"};"<<endl;
 
 

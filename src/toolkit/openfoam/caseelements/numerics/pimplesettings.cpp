@@ -90,15 +90,21 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
     // residual control
     OFDictData::dict& residualControl = PIMPLE.subDict("residualControl");
 
-    OFDictData::dict tol_p;
-    tol_p["tolerance"]=simple->residual_p;
-    tol_p["relTol"]=0.0;
-    residualControl["\"(p|p_rgh|pd).*\""] = tol_p;
+    if (simple->residual_p>1e-20)
+    {
+        OFDictData::dict tol_p;
+        tol_p["tolerance"]=simple->residual_p;
+        tol_p["relTol"]=0.0;
+        residualControl["\"(p|p_rgh|pd).*\""] = tol_p;
+    }
 
-    OFDictData::dict tol_U;
-    tol_U["tolerance"]=simple->residual_U;
-    tol_U["relTol"]=0.0;
-    residualControl["\"(U|k|epsilon|omega|nuTilda)\""] = tol_U;
+    if (simple->residual_U>1e-20)
+    {
+        OFDictData::dict tol_U;
+        tol_U["tolerance"]=simple->residual_U;
+        tol_U["relTol"]=0.0;
+        residualControl["\"(U|k|epsilon|omega|nuTilda)\""] = tol_U;
+    }
 
   }
   else if (const auto* pimple = boost::get<Parameters::pressure_velocity_coupling_PIMPLE_type>(&p_.pressure_velocity_coupling))
@@ -131,15 +137,21 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
     // residual control
     OFDictData::dict& residualControl = PIMPLE.subDict("residualControl");
 
-    OFDictData::dict tol_p;
-    tol_p["tolerance"]=pimple->residual_p;
-    tol_p["relTol"]=0.0;
-    residualControl["\"(p|p_rgh|pd).*\""] = tol_p;
+    if (pimple->residual_p>1e-20)
+    {
+        OFDictData::dict tol_p;
+        tol_p["tolerance"]=pimple->residual_p;
+        tol_p["relTol"]=0.0;
+        residualControl["\"(p|p_rgh|pd).*\""] = tol_p;
+    }
 
-    OFDictData::dict tol_U;
-    tol_U["tolerance"]=pimple->residual_U;
-    tol_U["relTol"]=0.0;
-    residualControl["\"(U|k|epsilon|omega|nuTilda)\""] = tol_U;
+    if (pimple->residual_U>1e-20)
+    {
+        OFDictData::dict tol_U;
+        tol_U["tolerance"]=pimple->residual_U;
+        tol_U["relTol"]=0.0;
+        residualControl["\"(U|k|epsilon|omega|nuTilda)\""] = tol_U;
+    }
 
   }
   else

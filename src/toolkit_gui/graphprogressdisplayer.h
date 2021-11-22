@@ -47,7 +47,23 @@ class TOOLKIT_GUI_EXPORT GraphProgressChart
   Q_OBJECT
 
 public:
-  typedef std::map<std::string, QtCharts::QLineSeries*> CurveList;
+  class LineSeriesData
+  {
+      const int maxRecent=100;
+
+      QtCharts::QLineSeries* crv;
+
+      QList<QPointF> values;
+
+  public:
+      LineSeriesData(const QString& name, QtCharts::QChart* chartData);
+      ~LineSeriesData();
+
+      void append(double x, double y);
+      void updateLineSeries(int maxResolution=1000);
+  };
+
+  typedef std::map<std::string, std::shared_ptr<LineSeriesData> > CurveList;
 
 protected:
   QtCharts::QChart* chartData_;

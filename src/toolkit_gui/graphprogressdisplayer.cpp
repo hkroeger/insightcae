@@ -50,7 +50,7 @@ void GraphProgressChart::reset()
 {
   for ( CurveList::value_type& i: curve_)
   {
-    i.second->deleteLater();
+    i.second.reset();
   }
   curve_.clear();
   needsRedraw_=true;
@@ -65,7 +65,7 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
   setUpdatesEnabled(false);
 
 
-  QtCharts::QLineSeries* crv;
+  std::shared_ptr<LineSeriesData> crv;
   auto i = curve_.find(name);
   if (i!=curve_.end())
   {
@@ -73,16 +73,7 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
   }
   else
   {
-    crv=new QtCharts::QLineSeries;
-    crv->setName(name.c_str());
-    QColor c(
-            globalRanGen->generateDouble()*255.0,
-            globalRanGen->generateDouble()*255.0,
-            globalRanGen->generateDouble()*255.0 );
-    crv->setPen(QPen(c, 2.0));
-    chartData_->addSeries(crv);
-    crv->attachAxis(chartData_->axes(Qt::Vertical)[0]);
-    crv->attachAxis(chartData_->axes(Qt::Horizontal)[0]);
+    crv=std::make_shared<LineSeriesData>(QString::fromStdString(name), chartData_);
     curve_[name]=crv;
   }
 
@@ -94,10 +85,6 @@ void GraphProgressChart::update(double iter, const std::string& name, double y_v
       xmax_=std::max(xmax_, iter);
       ymin_=std::min(ymin_, y_value);
       ymax_=std::max(ymax_, y_value);
-  }
-  if (crv->count() > maxCnt_)
-  {
-      crv->remove(0);
   }
   
 //  setAxisAutoScale(QwtPlot::yLeft);
@@ -157,7 +144,12 @@ void GraphProgressChart::checkForUpdate()
 
     if (needsRedraw_)
     {
-        needsRedraw_=false;        
+        needsRedraw_=false;
+
+        for (auto& sd: curve_)
+        {
+            sd.second->updateLineSeries(width());
+        }
 
         double xmin=xmin_, xmax=xmax_, ymin=ymin_, ymax=ymax_;
 
@@ -311,3 +303,48 @@ void GraphProgressDisplayer::setMessageText(const std::string&, const std::strin
 
 void GraphProgressDisplayer::finishActionProgress(const std::string&)
 {}
+
+GraphProgressChart::LineSeriesData::LineSeriesData(const QString& name, QtCharts::QChart* chart)
+{
+    crv=new QtCharts::QLineSeries;
+
+    crv->setName(name);
+    QColor c(
+            globalRanGen->generateDouble()*255.0,
+            globalRanGen->generateDouble()*255.0,
+            globalRanGen->generateDouble()*255.0 );
+    crv->setPen(QPen(c, 2.0));
+    chart->addSeries(crv);
+    crv->attachAxis(chart->axes(Qt::Vertical)[0]);
+    crv->attachAxis(chart->axes(Qt::Horizontal)[0]);
+}
+
+GraphProgressChart::LineSeriesData::~LineSeriesData()
+{
+    crv->deleteLater();
+}
+
+
+void GraphProgressChart::LineSeriesData::append(double x, double y)
+{
+    values.append(QPointF(x,y));
+}
+
+void GraphProgressChart::LineSeriesData::updateLineSeries(int maxResolution)
+{
+    QList<QPointF> ptDisplay;
+
+    int nv=values.size();
+    int i=0;
+    if (nv>maxRecent)
+    {
+        int nx = nv-1-maxRecent;
+        int spc = std::max<int>(1, floor(double(nx)/double(maxResolution-maxRecent)));
+        for (;i<nx;i+=spc)
+            ptDisplay.append(values.at(i));
+    }
+    for(;i<nv;++i)
+        ptDisplay.append(values.at(i));
+
+    crv->replace(ptDisplay);
+}

@@ -142,27 +142,6 @@ void plotCurves(
 }
 
 
-class MyQApplication
-{
-  std::unique_ptr<QApplication> theApp = nullptr;
-
-public:
-  void initializeIfNeeded(int argc, char* argv[])
-  {
-    if (!theApp)
-    {
-      theApp.reset( new QApplication(argc, argv) );
-    }
-  }
-
-  int executeIfNeeded()
-  {
-    if (theApp)
-      return theApp->exec();
-    else
-      return 0;
-  }
-};
 
 
 
@@ -170,7 +149,13 @@ public:
 
 int main(int argc, char *argv[])
 {
-    MyQApplication myqapp;
+//    MyQApplication myqapp;
+    QScopedPointer<QCoreApplication> app;
+
+    auto initializeQApp = [&]()
+    {
+        app.reset(new QApplication(argc, argv));
+    };
 
     insight::UnhandledExceptionHandling ueh;
     insight::GSLExceptionHandling gsl_errtreatment;
@@ -269,6 +254,7 @@ int main(int argc, char *argv[])
 
           if (vm.count("list"))
           {
+            someActionDone=true;
             cout<<std::string(80, '=')<<endl<<endl;
             cout<<"Result file: "<<inpath<<endl<<endl;
             listContents(*results.back());
@@ -277,6 +263,7 @@ int main(int argc, char *argv[])
 
           if (vm.count("render"))
           {
+            someActionDone=true;
             boost::filesystem::path outpath =
                 inpath.parent_path() / (inpath.filename().stem().string()+".pdf");
             results.back()->generatePDF( outpath );
@@ -287,7 +274,9 @@ int main(int argc, char *argv[])
 
         if (vm.count("comparescalar"))
         {
+          initializeQApp();
           someActionDone=true;
+
           std::vector<string> varnames;
           boost::split(varnames, vm["comparescalar"].as<string>(), boost::is_any_of(","));
           if (varnames.size()<1)
@@ -342,7 +331,6 @@ int main(int argc, char *argv[])
             cout<<endl;
           }
 
-          myqapp.initializeIfNeeded(argc, argv);
 
           auto *mw = new QMainWindow();
           auto chartData = new QChart;
@@ -396,6 +384,8 @@ int main(int argc, char *argv[])
 
         if (vm.count("compareplot"))
         {
+          initializeQApp();
+
           someActionDone=true;
           std::vector<string> chartAndCurveNames;
           boost::split(chartAndCurveNames, vm["compareplot"].as<string>(), boost::is_any_of(","));
@@ -430,7 +420,6 @@ int main(int argc, char *argv[])
                 ylabel=QString::fromStdString(chart.chartData()->ylabel_);
             }
 
-            myqapp.initializeIfNeeded(argc, argv);
             plotCurves(xlabel, ylabel, curves);
           }
         }
@@ -438,7 +427,9 @@ int main(int argc, char *argv[])
 
         if (vm.count("compareplotpoints"))
         {
+          initializeQApp();
           someActionDone=true;
+
           std::vector<string> chartAndCurveNames;
           boost::split(chartAndCurveNames, vm["compareplotpoints"].as<string>(), boost::is_any_of(","));
           if (chartAndCurveNames.size()<1)
@@ -513,7 +504,6 @@ int main(int argc, char *argv[])
             curves[QString::fromStdString(chartName)]=
                 PlotCurve(x, y, str(format("curve_%d")%j) );
 
-            myqapp.initializeIfNeeded(argc, argv);
             plotCurves(xlabel, ylabel, curves);
           }
 
@@ -522,7 +512,8 @@ int main(int argc, char *argv[])
 
         if (vm.count("display") || !someActionDone)
         {
-          myqapp.initializeIfNeeded(argc, argv);
+          initializeQApp();
+
           for (size_t i=0; i<results.size(); i++)
           {
             auto& cr=results[i];
@@ -533,7 +524,8 @@ int main(int argc, char *argv[])
         }
 
 
-        return myqapp.executeIfNeeded();
+        if (!app.isNull())
+            return app->exec();
 
     }
 

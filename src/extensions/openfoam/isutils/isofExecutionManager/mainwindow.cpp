@@ -28,47 +28,49 @@
 
 void IQRXRemoteExecutionState::updateGUI(bool enabled)
 {
-  auto *mw = dynamic_cast<MainWindow*>(parent());
-  insight::assertion(mw, "internal error: main window is unset");
-
-  auto *ui = mw->ui;
-  insight::assertion(ui, "internal error: user interface record is unset");
-
-  if (enabled)
+  if (auto *mw = dynamic_cast<MainWindow*>(parent()))
   {
-    insight::assertion(bool(rlc_), "internal error: remote location is unset");
+      auto *ui = mw->ui;
+      insight::assertion(ui, "internal error: user interface record is unset");
 
-    ui->server->setText(QString::fromStdString(rlc_->serverLabel()));
-    ui->remoteDir->setText(QString::fromStdString(rlc_->remoteDir().string()));
+      if (enabled)
+      {
+        insight::assertion(bool(rlc_), "internal error: remote location is unset");
 
-    if (isCommitted())
-    {
-      bfs_path loc_dir=boost::filesystem::absolute(exeConfig().localDir());
-      mw->setWindowTitle(QString::fromStdString(loc_dir.string())+" - InsightCAE Execution Manager");
+        ui->server->setText(QString::fromStdString(rlc_->serverLabel()));
+        ui->remoteDir->setText(QString::fromStdString(rlc_->remoteDir().string()));
+
+        if (isCommitted())
+        {
+          bfs_path loc_dir=boost::filesystem::absolute(exeConfig().localDir());
+          mw->setWindowTitle(QString::fromStdString(loc_dir.string())+" - InsightCAE Execution Manager");
 
 #ifndef NO_TERMWIDGET
-    mw->terminal_->changeDir( ui->localDir->text() );
-    if ( std::shared_ptr<insight::SSHLinuxServer> ssh =
-            std::dynamic_pointer_cast<insight::SSHLinuxServer>(exeConfig().server()) )
-    {
-      auto cmd = QString("ssh %1 -t 'cd '%2'; bash -l'\n")
-          .arg(QString::fromStdString(ssh->serverConfig()->hostName_))
-          .arg(QString::fromStdString(rlc_->remoteDir().string()))
-          ;
-      mw->terminal_->sendText(cmd);
-    }
+        mw->terminal_->changeDir( ui->localDir->text() );
+        if ( std::shared_ptr<insight::SSHLinuxServer> ssh =
+                std::dynamic_pointer_cast<insight::SSHLinuxServer>(exeConfig().server()) )
+        {
+          auto cmd = QString("ssh %1 -t 'cd '%2'; bash -l'\n")
+              .arg(QString::fromStdString(ssh->serverConfig()->hostName_))
+              .arg(QString::fromStdString(rlc_->remoteDir().string()))
+              ;
+          mw->terminal_->sendText(cmd);
+        }
 #endif
 
-      mw->tsi_.reset(new insight::TaskSpoolerInterface(
-                   exeConfig().socket(), exeConfig().server()));
-      mw->onRefreshJobList();
-    }
+          mw->tsi_.reset(new insight::TaskSpoolerInterface(
+                       exeConfig().socket(), exeConfig().server()));
+          mw->onRefreshJobList();
+        }
+      }
+      else
+      {
+        mw->setWindowTitle( ui->localDir->text() + " - InsightCAE Execution Manager" );
+        mw->tsi_.reset();
+      }
   }
-  else
-  {
-    mw->setWindowTitle( ui->localDir->text() + " - InsightCAE Execution Manager" );
-    mw->tsi_.reset();
-  }
+//  else insight::assertion(mw, "internal error: main window is unset");
+
 }
 
 

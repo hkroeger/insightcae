@@ -72,6 +72,10 @@ KPtyProcess::~KPtyProcess()
                     this, SLOT(_k_onStateChanged(QProcess::ProcessState)));
         }
     }
+
+    d->pty->close();
+    //    closeReadChannel();
+    closeWriteChannel();
     delete d->pty;
     waitForFinished(300); // give it some time to finish
     if (state() != QProcess::NotRunning)
@@ -80,7 +84,9 @@ KPtyProcess::~KPtyProcess()
         ::kill(pid(), SIGHUP);
         waitForFinished(300);
         if (state() != QProcess::NotRunning)
+        {
             qCritical() << Q_FUNC_INFO << "process didn't stop upon SIGHUP and will be SIGKILL-ed";
+        }
     }
 }
 

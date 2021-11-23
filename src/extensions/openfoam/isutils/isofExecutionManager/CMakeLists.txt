@@ -18,7 +18,7 @@ endif()
 find_package(Qt5Widgets CONFIG REQUIRED)
 
 set(isofExecutionManager_SOURCES
-    main.cpp
+    isofexecutionmanager.cpp
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui

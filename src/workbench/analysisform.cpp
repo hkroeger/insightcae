@@ -75,37 +75,40 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
   insight::dbg()<<"set IQWorkbenchRemoteExecutionState to enabled="
                 <<enabled<<std::endl;
 
-  auto* ui = dynamic_cast<AnalysisForm*>(parent())->ui;
-
-  ui->lblHostName->setEnabled(enabled);
-  if (enabled)
-    ui->lblHostName->setText(
-          QString::fromStdString( rlc_->serverLabel() ) );
-  else
-    ui->lblHostName->setText("(none)");
-
-  ui->lblRemoteDirectory->setEnabled(enabled);
-  if (enabled)
-    ui->lblRemoteDirectory->setText(
-          QString::fromStdString( rlc_->remoteDir().string() ) );
-  else
-    ui->lblRemoteDirectory->setText("(none)");
-
-  if (std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(rlc_->serverConfig()))
+  if (auto af=dynamic_cast<AnalysisForm*>(parent()))
   {
-    ui->btnDisconnect->setEnabled(false);
-    ui->btnResume->setEnabled(false);
+      auto* ui = af->ui;
+
+      ui->lblHostName->setEnabled(enabled);
+      if (enabled)
+        ui->lblHostName->setText(
+              QString::fromStdString( rlc_->serverLabel() ) );
+      else
+        ui->lblHostName->setText("(none)");
+
+      ui->lblRemoteDirectory->setEnabled(enabled);
+      if (enabled)
+        ui->lblRemoteDirectory->setText(
+              QString::fromStdString( rlc_->remoteDir().string() ) );
+      else
+        ui->lblRemoteDirectory->setText("(none)");
+
+      if (std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(rlc_->serverConfig()))
+      {
+        ui->btnDisconnect->setEnabled(false);
+        ui->btnResume->setEnabled(false);
+      }
+      else
+      {
+        ui->btnDisconnect->setEnabled(enabled);
+        ui->btnResume->setEnabled(enabled);
+      }
+      ui->btnUpload->setEnabled(enabled);
+      ui->btnDownload->setEnabled(enabled);
+      ui->btnRemoveRemote->setEnabled(enabled);
+      ui->lblRemote_1->setEnabled(enabled);
+      ui->lblRemote_2->setEnabled(enabled);
   }
-  else
-  {
-    ui->btnDisconnect->setEnabled(enabled);
-    ui->btnResume->setEnabled(enabled);
-  }
-  ui->btnUpload->setEnabled(enabled);
-  ui->btnDownload->setEnabled(enabled);
-  ui->btnRemoveRemote->setEnabled(enabled);
-  ui->lblRemote_1->setEnabled(enabled);
-  ui->lblRemote_2->setEnabled(enabled);
 
   insight::dbg()<<"IQWorkbenchRemoteExecutionState updated"<<std::endl;
 }
@@ -169,6 +172,7 @@ AnalysisForm::AnalysisForm(
     QHBoxLayout* hbl = new QHBoxLayout(lower);
     spl->addWidget(graphProgress_);
     spl->addWidget(lower);
+    spl->setSizes( {500, 500} );
     log_=new LogViewerWidget(spl);
     hbl->addWidget(log_);
 
@@ -273,60 +277,6 @@ AnalysisForm::AnalysisForm(
     connect(this, &AnalysisForm::statusMessage,
             sb, &QStatusBar::showMessage);
 
-
-
-//    connect(ui->gbExecuteOnRemoteHost, &QGroupBox::toggled,
-//            [&](bool checked)
-//            {
-//              if (checked && isRunningLocally())
-//              {
-//                auto answer= QMessageBox::critical(this,
-//                                      "Attention",
-//                                      "There is a local analysis running. It has to be terminated, before any remote analysis can be managed.\n"
-//                                      "You might consider to gracefully stop the simulation by triggering \"Write now+stop\" before switching to remote execution.\n"
-//                                      "\nKill local analysis?",
-//                                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
-//                                      QMessageBox::No);
-//                if (answer==QMessageBox::Yes)
-//                {
-//                  onKillAnalysis();
-//                }
-//                else
-//                {
-//                  ui->gbExecuteOnRemoteHost->setChecked(false);
-//                }
-//              }
-//              if (!checked && isRunningRemotely())
-//              {
-//                auto answer= QMessageBox::critical(this,
-//                                      "Attention",
-//                                      "There is a remote analysis running. It has to be disconnected, before any local analysis can be managed.\n"
-//                                      "The remote analysis will continue and you can reconnect at any time.\n"
-//                                      "\nDisconnect from remote analysis?",
-//                                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
-//                                      QMessageBox::Yes);
-//                if (answer==QMessageBox::Yes)
-//                {
-//                  disconnectFromRemoteRun();
-//                }
-//                else
-//                {
-//                  ui->gbExecuteOnRemoteHost->setChecked(true);
-//                }
-//              }
-//              if (!isRunning())
-//              {
-//                if (checked && !remoteDirectory_)
-//                {
-//                  changeRemoteLocation(ui->ddlExecutionHosts->currentText(), ui->leRemoteDirectory->text());
-//                }
-//                if (!checked && remoteDirectory_)
-//                {
-//                  remoteDirectory_.reset();
-//                }
-//              }
-//            }
-//    );
 
     insight::connectToCWithContentsDisplay(ui->resultsToC, ui->resultElementDetails);
 

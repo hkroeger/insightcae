@@ -262,8 +262,6 @@ QPaintEngine* QoccViewWidget::paintEngine() const
 */
 void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
 {
-  insight::dbg()<<"paint event"<<std::endl;
-
   if (!myView.IsNull())
   {
     try
@@ -292,10 +290,6 @@ void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
 */
 void QoccViewWidget::resizeEvent ( QResizeEvent * /* e */ )
 {
-  insight::dbg()<<"resize event"<<std::endl;
-//  myViewResized = Standard_True;
-
-  //  QApplication::syncX();
     if( !myView.IsNull() )
     {
       myView->MustBeResized();

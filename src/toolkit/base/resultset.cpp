@@ -52,25 +52,31 @@ addToFactoryTable ( ResultElement, ResultSet );
 
 
 
-ResultSet::ResultSet(const path &fileName, const std::string& analysisName)
+ResultSet::ResultSet(const std::string& analysisName)
   : ResultElement ( "", "", "" )
 {
   if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
-  readFrom(fileName);
 }
 
-ResultSet::ResultSet(istream &is, const std::string& analysisName)
-  : ResultElement ( "", "", "" )
+ResultSetPtr ResultSet::createFromFile( const boost::filesystem::path& fileName, const std::string& analysisName )
 {
-  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
-  readFrom(is);
+    auto r = std::make_shared<ResultSet>(analysisName);
+    r->readFromFile(fileName);
+    return r;
 }
 
-ResultSet::ResultSet(string &c, const std::string& analysisName)
-  : ResultElement ( "", "", "" )
+ResultSetPtr ResultSet::createFromStream( std::istream& is, const std::string& analysisName )
 {
-  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
-  readFrom(c);
+    auto r = std::make_shared<ResultSet>(analysisName);
+    r->readFromStream(is);
+    return r;
+}
+
+ResultSetPtr ResultSet::createFromString( const std::string& cont, const std::string& analysisName )
+{
+    auto r = std::make_shared<ResultSet>(analysisName);
+    r->readFromString(cont);
+    return r;
 }
 
 
@@ -223,30 +229,31 @@ void ResultSet::exportDataToFile ( const std::string& name, const boost::filesys
 }
 
 
-void ResultSet::readFrom ( const boost::filesystem::path& file )
+void ResultSet::readFromFile ( const boost::filesystem::path& file )
 {
   CurrentExceptionContext ex("reading results set from file "+file.string());
   std::string contents;
   readFileIntoString(file, contents);
-  readFrom(contents);
+  readFromString(contents);
 }
 
-void ResultSet::readFrom ( std::istream& is )
+void ResultSet::readFromStream ( std::istream& is )
 {
   CurrentExceptionContext ex("reading result set from input stream");
 
   std::string contents;
   readStreamIntoString(is, contents);
-  readFrom(contents);
+  readFromString(contents);
 }
 
-void ResultSet::readFrom ( std::string& contents )
+void ResultSet::readFromString ( const std::string& contents )
 {
   CurrentExceptionContext ex("reading result set from content string");
 
 
+  char* startChar = const_cast<char*>(&contents[0]);
   xml_document<> doc;
-  doc.parse<0> ( &contents[0] );
+  doc.parse<0> ( startChar );
 
   xml_node<> *rootnode = doc.first_node ( "root" );
 

@@ -18,60 +18,36 @@ namespace bp=boost::process;
 
 
 
-ExecutionProgram::ExecutionProgram(const StepList &steps)
-  : steps_(steps)
-{}
 
-
-void ExecutionProgram::run()
+void UndoSteps::addUndoStep(UndoFunction undoFunction, const std::string& label)
 {
-  for (int step=0; step < steps_.size(); ++step)
-  {
-    try
-    {
-      steps_[step].first(); // call run function
-    }
-    catch (std::exception& e)
-    {
-      insight::dbg()<<"error occurred in step "<<step<<", starting roll back."<<std::endl;
-
-      // attempt to roll back
-      for (int backStep=step; backStep>=0; --backStep)
-      {
-        try
-        {
-          steps_[backStep].second(); // call undo function
-        }
-        catch (std::exception& re)
-        {
-          insight::Warning(
-                boost::str(boost::format("during rollback in step %d:\n %s")
-                           % (backStep+1) % re.what())
-                );
-        }
-      }
-
-      // rethrow
-      throw insight::Exception(
-            boost::str(boost::format("in step %d:\n %s")
-                       % (step+1) % e.what()
-                       ));
-    }
-  }
+    undoSteps_.insert(undoSteps_.begin(), { undoFunction, label });
 }
 
 
-void RemoteRun::launchRemoteAnalysisServer()
-{
-  auto rd = remote_.remoteDir();
-  int ret = remote_.execRemoteCmd(
-        "analyze "
-        "--workdir=\""+rd.string()+"\" "
-        "--server" //>\""+rd.string()+"/server.log\" 2>&1 </dev/null &"
-      );
 
-  if (ret!=0)
-    throw insight::Exception("Failed to launch remote analysis server executable!");
+
+void UndoSteps::performUndo(std::exception_ptr undoReason, bool rethrow)
+{
+    // attempt to roll back
+    for (auto& undoStep: undoSteps_)
+    {
+      try
+      {
+        undoStep.undoFunction(); // call undo function
+      }
+      catch (std::exception& re)
+      {
+
+        insight::Warning(
+              boost::str(boost::format("during rollback in step %s:\n %s")
+                         % undoStep.label % re.what())
+              );
+      }
+    }
+
+    // rethrow
+    if (rethrow) throw undoReason;
 }
 
 
@@ -83,8 +59,12 @@ void RemoteRun::launchRemoteAnalysisServer()
 RemoteRun::RemoteRun(AnalysisForm *af, insight::RemoteExecutionConfig& rec, bool resume)
   : WorkbenchAction(af),
     resume_( resume ),
-    remote_( rec )
+    remote_( rec ),
+    cancelled_(false)
 {}
+
+
+
 
 void RemoteRun::launch()
 {
@@ -97,182 +77,351 @@ void RemoteRun::launch()
   af_->progressDisplayer_.reset();
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
 
-  ac_.reset(
-        new insight::AnalyzeClient(
-          af_->analysisName_,
-          str(format("http://127.0.0.1:%d") % portMappings_->localListenerPort(8090) ),
-          &af_->progressDisplayer_,
-          [this](std::exception_ptr e)
-            {
-              workerThread_->interrupt();
-              Q_EMIT failed(e);
-            }
-       )
+  ac_ = std::make_unique<insight::AnalyzeClient>(
+      af_->analysisName_,
+      str(format("http://127.0.0.1:%d") % portMappings_->localListenerPort(8090) ),
+      &af_->progressDisplayer_
   );
 
+  if (!resume_)
+      ac_->ioService().post( std::bind(&RemoteRun::setupRemoteEnvironment, this) );
+  else
+      ac_->ioService().post( std::bind(&RemoteRun::monitor, this) );
+}
 
-  ExecutionProgram::StepList initSteps =
-  {
 
-    // 1. check remote work dir, launch machine and create, if needed
-    {
-      [&]()
-      {
+
+
+void RemoteRun::setupRemoteEnvironment()
+{
+    try {
+        checkIfCancelled();
+
         insight::dbg()<<"initialize remote location"<<std::endl;
 
         remote_.initialize();
 
         if (!remote_.isActive())
-          throw insight::Exception("Remote directory is invalid!");
-      },
-      [&]()
-      {
-        insight::dbg()<<"cleanup remote location"<<std::endl;
-        // undo: if needed: remove remote work dir again, shutdown remote machine
-        try
-        {
-          remote_.cleanup();
-        }
-        catch (std::exception& e)
-        {
-          insight::Warning(std::string("Could not clean remote location! Reason: ")+e.what());
-        }
-      }
-    },
+            throw insight::Exception("Remote directory is invalid!");
 
-    // 2. launch remote execution server
+        addUndoStep( std::bind(&RemoteRun::undoSetupRemoteEnvironment, this),
+                     "setting up the execution environment" );
+        ac_->ioService().post( std::bind(&RemoteRun::launchRemoteExecutionServer, this) );
+
+    } catch (...) { onError(std::current_exception()); }
+}
+
+
+
+void RemoteRun::undoSetupRemoteEnvironment()
+{
+    insight::dbg()<<"cleanup remote location"<<std::endl;
+    // undo: if needed: remove remote work dir again, shutdown remote machine
+    try
     {
-      [&]()
-      {
+        remote_.cleanup();
+    }
+    catch (std::exception& e)
+    {
+        insight::Warning(std::string("Could not clean remote location! Reason: ")+e.what());
+    }
+}
+
+
+
+
+void RemoteRun::launchRemoteExecutionServer()
+{
+    try
+    {
+        checkIfCancelled();
+
         insight::dbg()<<"launch execution server"<<std::endl;
 
         auto rd = remote_.remoteDir();
 
         analyzeProcess_ = remote_.server()->launchBackgroundProcess(
-              "analyze "
-              " --savecfg param.ist"
-              " --workdir=\""+insight::toUnixPath(rd)+"\""
-              " --server"
-              " >\""+insight::toUnixPath(rd/"analyze.log")+"\" 2>&1 </dev/null"
-            );
-      },
-      [&]() {} // nothing to undo
-    },
+                    "analyze "
+                    " --savecfg param.ist"
+                    " --workdir=\""+insight::toUnixPath(rd)+"\""
+                    " --server"
+                    " >\""+insight::toUnixPath(rd/"analyze.log")+"\" 2>&1 </dev/null"
+                    );
 
-    // 3. contact remote exec server
+        addUndoStep( std::bind(&RemoteRun::undoLaunchRemoteExecutionServer, this),
+                     "launching the remote execution server" );
+        ac_->ioService().post( std::bind(&RemoteRun::waitForContact, this, 20) );
+
+    } catch (...) { onError(std::current_exception()); }
+}
+
+
+
+void RemoteRun::undoLaunchRemoteExecutionServer()
+{
+    insight::dbg()<<"kill remote server"<<std::endl;
+    try
     {
-      [&]()
-      {
-        insight::dbg()<<"waiting for contact"<<std::endl;
-
-        if (!ac_->waitForContact())
-          throw insight::Exception("Could not contact analysis server after launching it!");
-      },
-      [&]()
-      {
-        insight::dbg()<<"kill remote server"<<std::endl;
-
         // undo: kill remote server process
         analyzeProcess_->kill();
-      }
-    },
-
-    // 4. launch analysis
+    }
+    catch (std::exception& e)
     {
-      [&]()
-      {
+        insight::Warning(std::string("Could not clean remote location! Reason: ")+e.what());
+    }
+}
+
+
+
+void RemoteRun::waitForContact( int maxAttempts )
+{
+    auto scheduleNextAttempt = [this,maxAttempts]() {
+        // schedule next attempt in 10 secs, if some remain
+        if (maxAttempts>0)
+        {
+            ac_->ioService().schedule(
+                    std::chrono::seconds(2),
+                    std::bind( &RemoteRun::waitForContact, this,
+                               maxAttempts-1 ) );
+        }
+        else
+        {
+            // cancel otherwise
+            ac_->ioService().post(
+                        std::bind(
+                        &RemoteRun::onErrorString, this,
+                            std::string{"Could not contact analysis server after launching it!"} ) );
+        }
+
+    };
+
+    try {
+
+        insight::dbg()<<"waiting for contact"<<std::endl;
+
+        checkIfCancelled();
+
+        ac_->queryStatus(
+                [this,scheduleNextAttempt](insight::QueryStatusAction::Result r)
+                {
+                    if (r.success)
+                    {
+                        // execute callback on success
+                        ac_->ioService().post( std::bind( &RemoteRun::launchAnalysis, this ));
+                    }
+                    else
+                    {
+                        scheduleNextAttempt();
+                    }
+                },
+
+                scheduleNextAttempt
+        );
+
+    } catch (...) { onError(std::current_exception()); }
+}
+
+
+
+
+
+void RemoteRun::launchAnalysis()
+{
+    try {
+
         insight::dbg()<<"packing parameter set"<<std::endl;
+
+        checkIfCancelled();
 
         insight::ParameterSet p = af_->parameters();
         p.packExternalFiles(); // pack
 
         insight::dbg()<<"launch remote analysis"<<p<<std::endl;
 
-        auto res = ac_->launchAnalysisSync(
-            p, "/", af_->analysisName_ );
+        ac_->launchAnalysis(
+                    p, "/", af_->analysisName_,
 
-        if (!res.success)
-          throw insight::Exception("Failed to start analysis on remote server!");
-      },
-      [&]() {} // no undo
-    }
+                    // on response
+                    [&](insight::AnalyzeClientAction::ReportSuccessResult r)
+                    {
+                        if (r.success)
+                        {
+                            ac_->ioService().post(std::bind(
+                                                      &RemoteRun::monitor, this));
+                        }
+                        else
+                        {
+                            ac_->ioService().post(std::bind(
+                                                      &RemoteRun::onErrorString, this,
+                                                      "Failed to start analysis on remote server!"));
+                        }
+                    },
 
-  };
+                    // on timeout
+                    [&]()
+                    {
+                        ac_->ioService().post(std::bind(
+                                                  &RemoteRun::onErrorString, this,
+                                                  "No response after starting analysis on remote server!"));
+                    }
+        );
 
-
-
-
-  // start
-  workerThread_.reset( new insight::QAnalysisThread(
-                         [this,initSteps]
-  {
-
-    // launch everything, if we do not resume
-    if (!resume_)
-      ExecutionProgram(initSteps).run();
-
-    // continue with monitoring
-    for ( bool runMonitor=true; runMonitor; )
-    {
-      boost::this_thread::interruption_point();
-
-      if (!ac_->isBusy())
-      {
-        insight::dbg()<<"query status"<<std::endl;
-
-        auto qsr = ac_->queryStatusSync();
-
-        if (qsr.errorOccurred)
-        {
-          throw *qsr.exception;
-        }
-
-        if (qsr.resultsAreAvailable)
-        {
-          runMonitor=false;
-
-          insight::dbg()<<"query results"<<std::endl;
-          auto qrs = ac_->queryResultsSync();
-
-          insight::dbg()<<"emit finished"<<std::endl;
-          Q_EMIT finished( qrs.results );
-
-          insight::dbg()<<"exit sync"<<std::endl;
-          ac_->exitSync();
-
-          insight::dbg()<<"cleanup"<<std::endl;
-          remote_.cleanup();
-        }
-
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
-      }
-    };
-
-  }
-  ) );
-
-  connectAnalysisThread(workerThread_.get());
+    } catch(...) { onError(std::current_exception()); }
 }
+
+
+
+
+void RemoteRun::monitor()
+{
+    insight::dbg()<<"query status"<<std::endl;
+
+    try {
+
+        checkIfCancelled();
+
+        ac_->queryStatus(
+                    [this](insight::QueryStatusAction::Result qsr)
+                    {
+                        if (qsr.errorOccurred)
+                        {
+                            onError(std::make_exception_ptr(*qsr.exception));
+                        }
+                        else
+                        {
+                            if (qsr.resultsAreAvailable)
+                            {
+                                // proceed with result query
+                                ac_->ioService().post( std::bind(&RemoteRun::fetchResults, this) );
+                            }
+                            else
+                            {
+                                // schedule next status query
+                                ac_->ioService().schedule(
+                                            std::chrono::milliseconds(1000),
+                                            std::bind(&RemoteRun::monitor, this) );
+                            }
+                        }
+                    },
+
+                    std::bind( &RemoteRun::onErrorString, this,
+                               "timeout in quering status of analysis server" )
+        );
+
+    } catch(...) { onError(std::current_exception()); }
+}
+
+
+
+
+void RemoteRun::fetchResults()
+{
+    insight::dbg()<<"query results"<<std::endl;
+    try {
+
+        checkIfCancelled();
+
+        ac_->queryResults(
+                    [this](insight::QueryResultsAction::Result qrs)
+                    {
+                        insight::dbg()<<"emit finished"<<std::endl;
+                        Q_EMIT finished( qrs.results );
+
+                        ac_->ioService().post(
+                                    std::bind(&RemoteRun::stopRemoteExecutionServer, this ) );
+                    },
+
+                    std::bind(&RemoteRun::onErrorString, this, "timeout while fetching results")
+        );
+
+    } catch(...) { onError(std::current_exception()); }
+}
+
+
+
+
+void RemoteRun::stopRemoteExecutionServer()
+{
+    insight::dbg()<<"exit server"<<std::endl;
+    try {
+
+        checkIfCancelled();
+
+        ac_->exit(
+                    [this](insight::AnalyzeClientAction::ReportSuccessResult rs)
+                    {
+                        insight::dbg() << "stop server "
+                                       << (rs.success?"was":"was not")
+                                       << " successful " <<std::endl;
+
+                        ac_->ioService().post( std::bind(&RemoteRun::cleanupRemote, this) );
+                    },
+
+                    std::bind(&RemoteRun::onErrorString, this,
+                              "timeout while stopping remote analysis server")
+                );
+
+    } catch(...) { onError(std::current_exception()); }
+}
+
+
+
+
+void RemoteRun::cleanupRemote()
+{
+    try
+    {
+
+        checkIfCancelled();
+
+        insight::dbg()<<"cleanup"<<std::endl;
+        remote_.cleanup();
+
+    } catch (...) { onError(std::current_exception()); }
+}
+
+
+
+
+void RemoteRun::checkIfCancelled()
+{
+    if (cancelled_)
+    {
+        throw insight::Exception("remote run cancelled");
+    }
+}
+
+
+
+
+void RemoteRun::onErrorString(const std::string& errorMessage)
+{
+    onError( std::make_exception_ptr(
+                 insight::Exception(errorMessage) ) );
+}
+
+
+
+void RemoteRun::onError(std::exception_ptr ex)
+{
+    performUndo(ex, false);
+    Q_EMIT failed(ex);
+}
+
+
+
 
 std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, insight::RemoteExecutionConfig& rec, bool resume)
 {
-  std::unique_ptr<RemoteRun> a(new RemoteRun(af, rec, resume));
-  a->launch();
-  return a;
+    std::unique_ptr<RemoteRun> a(new RemoteRun(af, rec, resume));
+    a->launch();
+    return a;
 }
 
 
 RemoteRun::~RemoteRun()
 {
-  if (cancelThread_.joinable())
-  {
-    cancelThread_.join();
-  }
-
-  workerThread_->interrupt();
-  workerThread_->join();
-
-  af_->progressDisplayer_.reset();
+    af_->progressDisplayer_.reset();
 }
 
 
@@ -280,26 +429,8 @@ RemoteRun::~RemoteRun()
 
 void RemoteRun::onCancel()
 {
-  cancelThread_ = boost::thread(
-        [&]()
-        {
-
-            workerThread_->interrupt();
-
-            // wait for workerThread to end
-            if (!workerThread_->try_join_for(boost::chrono::seconds(60*5)))
-            {
-              insight::Warning("could not stop monitoring thread!");
-            }
-
-            insight::dbg()<<"remote analysis killSync"<<std::endl;
-            // stop and exit
-            ac_->killSync();
-
-//            Q_EMIT cancelled(); // already emitted through workerThread->interrupt
-        }
-  );
-
+    ac_->httpClient().abort();
+    cancelled_=true;
 }
 
 

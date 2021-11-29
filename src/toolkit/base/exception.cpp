@@ -163,12 +163,14 @@ void Exception::saveContext(bool strace)
 
 Exception::Exception()
 {
+  dbg()<<"Unspecified exception created."<<std::endl;
   saveContext(true);
 }
 
 Exception::Exception(const std::string& msg, bool strace)
   : message_(msg)
 {
+  dbg()<<msg<<std::endl;
   saveContext(strace);
 }
 
@@ -176,12 +178,14 @@ Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> 
   : message_(msg),
     contextGeometry_(contextGeometry)
 {
+  dbg()<<msg<<std::endl;
   saveContext(strace);
 }
 
 Exception::Exception(const std::string& msg, const std::string& strace)
   : message_(msg), strace_(strace)
 {
+  dbg()<<msg<<std::endl;
 }
 
 Exception::operator std::string() const

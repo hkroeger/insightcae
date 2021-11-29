@@ -19,6 +19,8 @@ protected:
 public:
     CombinedProgressDisplayer ( Ops op = AND );
 
+    void setOp(Ops op);
+
     void add ( ProgressDisplayer* );
 
     void update ( const ProgressState& pi ) override;

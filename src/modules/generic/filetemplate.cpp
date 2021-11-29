@@ -119,7 +119,7 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer& displayer)
     path resf=dir/ReservedFileNames[EVALRESULTS];
     if (boost::filesystem::exists(resf))
     {
-      results->readFrom(resf);
+      results->readFromFile(resf);
     }
     else
     {

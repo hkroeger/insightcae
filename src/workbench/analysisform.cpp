@@ -164,8 +164,6 @@ AnalysisForm::AnalysisForm(
 
     graphProgress_=new GraphProgressDisplayer;
     actionProgress_=new insight::QActionProgressDisplayerWidget;
-    progressDisplayer_.add(graphProgress_);
-    progressDisplayer_.add(actionProgress_);
 
     QSplitter* spl=new QSplitter(Qt::Vertical);
     QWidget* lower = new QWidget;
@@ -197,6 +195,10 @@ AnalysisForm::AnalysisForm(
 
 //    ui->verticalLayout->addWidget(actionProgress_);
     
+    progressDisplayer_.setOp( insight::CombinedProgressDisplayer::OR );
+    progressDisplayer_.add(graphProgress_);
+    progressDisplayer_.add(actionProgress_);
+    progressDisplayer_.add(log_);
 
     if (!logToConsole)
     {

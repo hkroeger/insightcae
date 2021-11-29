@@ -12,46 +12,78 @@
 
 
 
-class ExecutionProgram
+class UndoSteps
 {
 public:
-  typedef std::function<void()> RunFunction;
   typedef std::function<void()> UndoFunction;
-  typedef std::pair< RunFunction, UndoFunction > Step;
-  typedef std::vector<Step> StepList;
+  struct UndoStep
+  {
+      UndoFunction undoFunction;
+      std::string label;
+  };
+  typedef std::vector<UndoStep> UndoStepList;
 
 protected:
-  StepList steps_;
+  UndoStepList undoSteps_;
+
 
 public:
-  ExecutionProgram(const StepList& steps);
-  void run();
+  void addUndoStep(UndoFunction undoFunction, const std::string& label);
+  void performUndo(std::exception_ptr undoReason, bool rethrow = false);
 };
 
 
 
 
 class RemoteRun
-    : public WorkbenchAction
+    : public WorkbenchAction,
+      protected UndoSteps
 {
   Q_OBJECT
 
   bool resume_;
   insight::RemoteServer::PortMappingPtr portMappings_;
   insight::RemoteExecutionConfig& remote_;
-  boost::thread cancelThread_;
   std::unique_ptr<insight::AnalyzeClient> ac_;
   insight::RemoteServer::BackgroundJobPtr analyzeProcess_;
-  int remotePid_ =-1;
-  std::unique_ptr<insight::QAnalysisThread> workerThread_;
-
-  virtual void launchRemoteAnalysisServer();
+  bool cancelled_;
 
 
 protected:
   RemoteRun(AnalysisForm* af, insight::RemoteExecutionConfig& rec, bool resume=false);
 
   void launch();
+
+  // STEPS:
+  // 1. check remote work dir, launch machine and create, if needed
+  void setupRemoteEnvironment();
+  void undoSetupRemoteEnvironment();
+
+  // 2. launch remote execution server
+  void launchRemoteExecutionServer();
+  void undoLaunchRemoteExecutionServer();
+
+  // 3. contact remote exec server
+  void waitForContact( int maxAttempt=20 );
+
+  // 4. launch analysis
+  void launchAnalysis();
+
+  // 5. monitor running simulation
+  void monitor();
+
+  // 6. fetch results, trigger server exit
+  void fetchResults();
+
+  // 7. stop remote server
+  void stopRemoteExecutionServer();
+
+  // 8. cleanup remote
+  void cleanupRemote();
+
+  void checkIfCancelled();
+  void onErrorString(const std::string& errorMessage);
+  void onError(std::exception_ptr ex);
 
 public:
   static std::unique_ptr<RemoteRun> create(AnalysisForm* af, insight::RemoteExecutionConfig& rec, bool resume=false);

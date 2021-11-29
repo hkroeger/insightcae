@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
                               "input file "+inpath.string()+" does not exist!" );
 
           cout<<"Reading results file "<<inpath<<"..."<<flush;
-          results.push_back(std::make_shared<ResultSet>(boost::filesystem::path(fn), analysisName));
+          results.push_back( ResultSet::createFromFile(boost::filesystem::path(fn), analysisName) );
           cout<<"done."<<endl;
 
           if (vm.count("list"))

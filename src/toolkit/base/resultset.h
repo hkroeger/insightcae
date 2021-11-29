@@ -43,6 +43,9 @@
 namespace insight 
 {
 
+class ResultSet;
+
+typedef std::shared_ptr<ResultSet> ResultSetPtr;
 
 
 class ResultSet
@@ -58,17 +61,7 @@ protected:
 public:
     declareType ( "ResultSet" );
 
-    ResultSet( const boost::filesystem::path& fileName, const std::string& analysisName = "" );
-
-    /**
-     * @brief ResultSet
-     * stream needs to opened in binary!! (mode std::ios::in | std::ios::binary)
-     * @param is
-     * @param analysisName
-     */
-    ResultSet( std::istream& is, const std::string& analysisName = "" );
-
-    ResultSet( std::string& cont, const std::string& analysisName = "" );
+    ResultSet( const std::string& analysisName = "" );
 
     ResultSet
     (
@@ -78,6 +71,15 @@ public:
         const std::string *author = NULL,
         const std::string *date = NULL
     );
+
+    static ResultSetPtr createFromFile( const boost::filesystem::path& fileName, const std::string& analysisName = "" );
+
+    /**
+     * stream needs to opened in binary!! (mode std::ios::in | std::ios::binary)
+     */
+    static ResultSetPtr createFromStream( std::istream& is, const std::string& analysisName = "" );
+
+    static ResultSetPtr createFromString( const std::string& cont, const std::string& analysisName = "" );
 
 
     /* =======================================================================================================*/
@@ -145,18 +147,15 @@ public:
     /**
      * read result set from xml file
      */
-    virtual void readFrom ( const boost::filesystem::path& file );
-    virtual void readFrom ( std::istream& is );
-    virtual void readFrom ( std::string& contents );
+    virtual void readFromFile ( const boost::filesystem::path& file );
+    virtual void readFromStream ( std::istream& is );
+    virtual void readFromString ( const std::string& contents );
 
     virtual ParameterSetPtr convertIntoParameterSet() const;
     ParameterPtr convertIntoParameter() const override;
 
     ResultElementPtr clone() const override;
 };
-
-
-typedef std::shared_ptr<ResultSet> ResultSetPtr;
 
 
 

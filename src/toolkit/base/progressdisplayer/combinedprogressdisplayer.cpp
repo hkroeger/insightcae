@@ -12,6 +12,12 @@ CombinedProgressDisplayer::CombinedProgressDisplayer ( CombinedProgressDisplayer
 {}
 
 
+void CombinedProgressDisplayer::setOp(Ops op)
+{
+    op_=op;
+}
+
+
 void CombinedProgressDisplayer::add ( ProgressDisplayer* d )
 {
     displayers_.push_back ( d );

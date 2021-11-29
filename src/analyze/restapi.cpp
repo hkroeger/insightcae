@@ -153,13 +153,17 @@ AnalyzeRESTServer::AnalyzeRESTServer(
 {
 
   auto addr = boost::str(boost::format(listenAddr+":%d") % port);
+  auto mmrs = boost::lexical_cast<string>(32 * 1024*1024);
+  auto mrs = boost::lexical_cast<string>(512 * 1024*1024*1024);
   const char *cargv[]={
     srvname.c_str(),
     "--docroot", ".",
-    "--http-listen", addr.c_str()
+    "--http-listen", addr.c_str(),
+    "--max-memory-request-size", mmrs.c_str(),
+    "--max-request-size", mrs.c_str()
   };
 
-  setServerConfiguration(5, const_cast<char**>(cargv) );
+  setServerConfiguration(9, const_cast<char**>(cargv) );
 
   addResource(this, std::string());
   addResource(this, "/next");
@@ -280,6 +284,12 @@ bool AnalyzeRESTServer::waitForResultDelivery()
 
 void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Response &response)
 {
+  insight::dbg() << "incoming request" << std::endl;
+  insight::dbg() << request.path() << ", "
+                 << request.method() << ", "
+                 << request.contentType() << ", "
+                 << (request.tooLarge() ? "(size too large!)" : "(size ok)")
+                 << std::endl;
 
   response.addHeader("Server", "InsightCAE analyze");
 
@@ -298,12 +308,12 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
 
   if (request.method()=="GET")
   {
-    std::cerr<<"status or results request"<<std::endl;
+    insight::dbg()<<"status or results request"<<std::endl;
 
 
     //auto whichState = payload.get("whichState");
     std::string which = request.path();
-    cout<<"which="<<which<<endl;
+    insight::dbg()<<"which="<<which<<endl;
     enum StateSelection { Next, All, Latest, Results, ExePath } stateSelection = Next;
 //    if (!whichState.isNull())
     {
@@ -404,7 +414,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
   }
   else if (request.method()=="POST")
   {
-    std::cerr<<"control request"<<std::endl;
+    insight::dbg()<<"control request"<<std::endl;
 
     if (request.contentType()=="application/xml")
     {

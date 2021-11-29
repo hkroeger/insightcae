@@ -49,6 +49,9 @@ QActionProgressDisplayerWidget::getColumn(const string &path, std::vector<std::s
   return ic;
 }
 
+
+
+
 QActionProgressDisplayerWidget::ProgressItem
 QActionProgressDisplayerWidget::getOrCreateItem
 (const std::string &path)
@@ -80,6 +83,9 @@ QActionProgressDisplayerWidget::getOrCreateItem
   return c->items.at( splitPath.back() );
 }
 
+
+
+
 void QActionProgressDisplayerWidget::deleteItem(const string &path)
 {
   qDebug()<<"deleting progress bar "<<QString::fromStdString(path);
@@ -107,6 +113,9 @@ void QActionProgressDisplayerWidget::deleteItem(const string &path)
 
 }
 
+
+
+
 QActionProgressDisplayerWidget::QActionProgressDisplayerWidget
 (QWidget *parent)
   : QWidget(parent)
@@ -116,9 +125,17 @@ QActionProgressDisplayerWidget::QActionProgressDisplayerWidget
 }
 
 
+
+
+void QActionProgressDisplayerWidget::update(const ProgressState &/*pi*/)
+{}
+
+
+
+
 void QActionProgressDisplayerWidget::setActionProgressValue(const std::string &path, double value)
 {
-  QMetaObject::invokeMethod(
+  QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
         qApp,
         [this,path,value]()
         {
@@ -130,9 +147,12 @@ void QActionProgressDisplayerWidget::setActionProgressValue(const std::string &p
   );
 }
 
+
+
+
 void QActionProgressDisplayerWidget::setMessageText(const std::string &path, const std::string &message)
 {
-  QMetaObject::invokeMethod(
+  QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
         qApp,
         [this,path,message]()
         {
@@ -144,9 +164,12 @@ void QActionProgressDisplayerWidget::setMessageText(const std::string &path, con
   );
 }
 
+
+
+
 void QActionProgressDisplayerWidget::finishActionProgress(const string &path)
 {
-  QMetaObject::invokeMethod(
+  QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
         qApp,
         [this,path]()
         {
@@ -157,6 +180,8 @@ void QActionProgressDisplayerWidget::finishActionProgress(const string &path)
 }
 
 
+
+
 void QActionProgressDisplayerWidget::reset()
 {
   for (auto& c: columns_)
@@ -165,7 +190,6 @@ void QActionProgressDisplayerWidget::reset()
 }
 
 
-void QActionProgressDisplayerWidget::update(const ProgressState &/*pi*/)
-{}
+
 
 } // namespace insight

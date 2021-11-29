@@ -87,6 +87,8 @@ void SubsetParameter::clearPackedData()
 rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath) const
 {
+  insight::CurrentExceptionContext ex("appending subset "+name+" to node "+node.name());
+
 //   std::cout<<"appending subset "<<name<<std::endl;
   using namespace rapidxml;
   xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);

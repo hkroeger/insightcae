@@ -70,6 +70,8 @@ std::string SelectionParameter::plainTextRepresentation(int) const
 rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath) const
 {
+    insight::CurrentExceptionContext ex("appending selection "+name+" to node "+node.name());
+
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
     child->append_attribute(doc.allocate_attribute

@@ -167,6 +167,7 @@ rapidxml::xml_node<>* PathParameter::appendToNode
   boost::filesystem::path inputfilepath
 ) const
 {
+    insight::CurrentExceptionContext ex("appending path "+name+" to node "+node.name());
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 

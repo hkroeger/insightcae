@@ -541,6 +541,7 @@ void ParameterSet::saveToStream(std::ostream& os, const boost::filesystem::path&
 
 void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string analysisName ) const
 {
+    CurrentExceptionContext ex("writing parameter set to file "+file.string());
     std::ofstream f(file.c_str());
     saveToStream( f, file.parent_path(), analysisName );
     f << std::endl;
@@ -550,6 +551,8 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string a
 
 std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
 {
+  CurrentExceptionContext ex("reading parameter set from file "+file.string());
+
   std::string contents;
   readFileIntoString(file, contents);
 

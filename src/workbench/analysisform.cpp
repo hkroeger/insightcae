@@ -202,10 +202,12 @@ AnalysisForm::AnalysisForm(
 
     if (!logToConsole)
     {
-      cout_log_ = new Q_DebugStream(std::cout);
-      connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendDimmedLine);
-      cerr_log_ = new Q_DebugStream(std::cerr);
-      connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendErrorLine);
+      cout_log_ = new IQDebugStream(std::cout);
+      connect(cout_log_, &IQDebugStream::appendText,
+              log_, &LogViewerWidget::appendDimmedLine);
+      cerr_log_ = new IQDebugStream(std::cerr);
+      connect(cerr_log_, &IQDebugStream::appendText,
+              log_, &LogViewerWidget::appendErrorLine);
     }
 
     updateWindowTitle();

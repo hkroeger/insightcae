@@ -32,6 +32,7 @@ public:
   void finishActionProgress(const std::string &path) override;
 
   void update ( const ProgressState& pi ) override;
+  void logMessage(const std::string& line)  override;
   void reset() override;
 
   bool stopRun() const override;

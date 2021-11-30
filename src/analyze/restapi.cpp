@@ -112,6 +112,8 @@ std::pair<double,Json::Object> AnalyzeRESTServer::nextStateInfo()
 }
 
 
+
+
 Json::Object AnalyzeRESTServer::nextProgressInfo()
 {
   Json::Object s;
@@ -139,6 +141,13 @@ Json::Object AnalyzeRESTServer::nextProgressInfo()
 
 
 
+
+Wt::WString AnalyzeRESTServer::nextLogLine()
+{
+    auto s( Wt::WString(logLines_.front()) );
+    logLines_.pop_front();
+    return s;
+}
 
 
 
@@ -231,13 +240,24 @@ void AnalyzeRESTServer::finishActionProgress(const string &path)
 
 
 void AnalyzeRESTServer::update(
-    const insight::ProgressState& pi
-    )
+        const insight::ProgressState& pi
+        )
 {
-  TextProgressDisplayer::update(pi);
-  mx_.lock();
-  recordedStates_.push_back(pi);
-  mx_.unlock();
+    TextProgressDisplayer::update(pi);
+    mx_.lock();
+    recordedStates_.push_back(pi);
+    mx_.unlock();
+}
+
+
+
+
+void AnalyzeRESTServer::logMessage(const std::string &line)
+{
+    //TextProgressDisplayer::logMessage(line); // locks due to output to cout...
+    mx_.lock();
+    logLines_.push_back(line);
+    mx_.unlock();
 }
 
 
@@ -247,6 +267,9 @@ bool AnalyzeRESTServer::hasInputFileReceived() const
 {
   return !inputFileContents_->empty();
 }
+
+
+
 
 bool AnalyzeRESTServer::waitForInputFile(std::string& inputFileContents)
 {
@@ -362,7 +385,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     }
     else
     {
-      Wt::Json::Array states, progressStates;
+      Wt::Json::Array states, progressStates, logLines;
 
       if (recordedStates_.size()>0)
       {
@@ -396,8 +419,14 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         progressStates.push_back( nextProgressInfo() );
       }
 
+      while (logLines_.size()>0)
+      {
+        logLines.push_back( nextLogLine() );
+      }
+
       Wt::Json::Object res;
       res["states"] = states;
+      res["logLines"] = logLines;
       res["progressStates"] = progressStates;
       res["inputFileReceived"] = hasInputFileReceived();
       res["resultsAvailable"] = results_ ? true : false;

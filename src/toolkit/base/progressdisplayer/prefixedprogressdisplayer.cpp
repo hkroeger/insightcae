@@ -68,6 +68,15 @@ void PrefixedProgressDisplayer::update (
 }
 
 
+void PrefixedProgressDisplayer::logMessage(const std::string &line)
+{
+    std::string p;
+    if (pvPrefix_==Prefixed)
+      p=prefix_+"/";
+    parent_->logMessage("["+p+"]: "+line);
+}
+
+
 void PrefixedProgressDisplayer::reset()
 {}
 

@@ -25,8 +25,10 @@
 #include "base/analysislibrary.h"
 #include "base/analysisthread.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
+#include "base/streamtoprogressdisplayer.h"
 #include "base/toolkitversion.h"
 #include "base/parameters.h"
+#include "base/cppextensions.h"
 
 #include <iostream>
 #include <fstream>
@@ -261,7 +263,6 @@ int main(int argc, char *argv[])
 
         xml_node<> *rootnode = doc.first_node("root");
 
-
         xml_node<> *analysisnamenode = rootnode->first_node("analysis");
         if (analysisnamenode)
         {
@@ -383,20 +384,30 @@ int main(int argc, char *argv[])
         std::cout<<"Applied Parameters for this run"<<std::endl;
         std::cout<<parameters;
         std::cout<<std::string(80, '=')+"\n\n";
+        std::cout<<std::flush;
 
         ResultSetPtr results;
         AnalysisPtr analysis;
         try
         {
-          analysis.reset( insight::Analysis::lookup(analysisName, parameters, workdir) );
           TextProgressDisplayer tpd;
           ProgressDisplayer* pd = &tpd;
+          std::unique_ptr<StreamToProgressDisplayer> redirCout, redirCerr;
+#ifdef HAVE_WT
+          if (server)
+          {
+            pd = server.get();
+            redirCout=std::make_unique<StreamToProgressDisplayer>(std::cout, *pd);
+//            redirCerr=std::make_unique<StreamToProgressDisplayer>(std::cerr, *pd);
+          }
+#endif
+
+          analysis.reset( insight::Analysis::lookup(analysisName, parameters, workdir, *pd) );
         
 #ifdef HAVE_WT
           if (server)
           {
             server->setAnalysis( analysis.get() );
-            pd = server.get();
           }
 #endif
 

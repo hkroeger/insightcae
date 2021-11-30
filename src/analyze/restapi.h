@@ -12,7 +12,6 @@
 #include "Wt/Json/Object.h"
 
 
-
 class AnalyzeRESTServer
 : public Wt::WServer,
   public Wt::WResource,
@@ -23,6 +22,7 @@ class AnalyzeRESTServer
 
   boost::mutex mx_;
   std::deque<insight::ProgressState> recordedStates_;
+  std::deque<std::string> logLines_;
 
   typedef
     boost::variant<
@@ -46,6 +46,7 @@ class AnalyzeRESTServer
 
   std::pair<double,Wt::Json::Object> nextStateInfo();
   Wt::Json::Object nextProgressInfo();
+  Wt::WString nextLogLine();
 
 public:
   AnalyzeRESTServer(
@@ -60,6 +61,7 @@ public:
   void setException(const insight::Exception& ex);
 
   void update( const insight::ProgressState& pi ) override;
+  void logMessage(const std::string& line) override;
   void setActionProgressValue(const std::string &path, double value) override;
   void setMessageText(const std::string &path, const std::string& message) override;
   void finishActionProgress(const std::string &path) override;

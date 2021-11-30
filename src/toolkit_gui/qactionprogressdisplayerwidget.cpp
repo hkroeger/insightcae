@@ -133,6 +133,12 @@ void QActionProgressDisplayerWidget::update(const ProgressState &/*pi*/)
 
 
 
+void QActionProgressDisplayerWidget::logMessage(const std::string &line)
+{}
+
+
+
+
 void QActionProgressDisplayerWidget::setActionProgressValue(const std::string &path, double value)
 {
   QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread

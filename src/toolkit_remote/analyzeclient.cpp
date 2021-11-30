@@ -209,6 +209,17 @@ void QueryStatusAction::handleHttpResponse(
             }
           }
 
+          Wt::Json::Array logLines = payload.get("logLines");
+          if (logLines.size()>0)
+          {
+            for (Wt::Json::Array::const_iterator i=logLines.begin(); i!=logLines.end(); i++)
+            {
+              cl_.progressDisplayer()->logMessage(
+                      i->toString()
+                    );
+            }
+          }
+
         }
 
         if (payload["errorOccurred"].toBool())

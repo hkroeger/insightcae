@@ -795,7 +795,7 @@ void OpenFOAMCase::runSolver
 
           if (analyzer.stopRun())
           {
-            std::ofstream f( (location/"wnowandstop").c_str() );
+            std::ofstream f( (location/"wnowandstop").string() );
             f<<"STOP"<<std::endl;
           }
         },

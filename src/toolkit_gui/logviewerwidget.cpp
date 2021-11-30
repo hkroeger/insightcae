@@ -28,12 +28,18 @@ LogViewerWidget::LogViewerWidget(QWidget* parent)
 
 
 void LogViewerWidget::update ( const insight::ProgressState& pi )
+{}
+
+
+
+
+void LogViewerWidget::logMessage(const std::string &line)
 {
     QMetaObject::invokeMethod(  // post into GUI thread as this method might be called from different thread
           qApp,
-          [this,pi]()
+          [this,line]()
           {
-              this->appendLogMessage(pi);
+              this->appendLine( QString::fromStdString(line) );
           }
     );
 }
@@ -61,11 +67,18 @@ void LogViewerWidget::finishActionProgress(const std::string &path)
 
 void LogViewerWidget::reset()
 {
+//    QMetaObject::invokeMethod(  // post into GUI thread as this method might be called from different thread
+//          qApp,
+//          [this]()
+//          {
+//              this->clearLog();
+//          }
+//    );
     QMetaObject::invokeMethod(  // post into GUI thread as this method might be called from different thread
           qApp,
           [this]()
           {
-              this->clearLog();
+              this->appendLine( QString(80, '#') );
           }
     );
 }

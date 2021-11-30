@@ -60,6 +60,8 @@ set(toolkit_SOURCES
     base/mountremote.cpp base/mountremote.h
     base/outputanalyzer.cpp base/outputanalyzer.h
     base/filecontainer.cpp base/filecontainer.h
+    base/streamredirector.h base/streamredirector.cpp
+    base/streamtoprogressdisplayer.h base/streamtoprogressdisplayer.cpp
     base/progressdisplayer.cpp base/progressdisplayer.h
     base/progressdisplayer/textprogressdisplayer.cpp base/progressdisplayer/textprogressdisplayer.h
     base/progressdisplayer/combinedprogressdisplayer.cpp base/progressdisplayer/combinedprogressdisplayer.h

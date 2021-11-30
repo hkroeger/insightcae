@@ -60,6 +60,7 @@ public:
     QActionProgressDisplayerWidget(QWidget* parent=nullptr);
 
     void update ( const ProgressState& pi ) override;
+    void logMessage(const std::string& line) override;
     void setActionProgressValue(const std::string& path, double value) override;
     void setMessageText(const std::string& path, const std::string& message) override;
     void finishActionProgress(const std::string& path) override;

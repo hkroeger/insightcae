@@ -344,6 +344,11 @@ void GraphProgressDisplayer::update(const insight::ProgressState& pi)
 
 
 
+void GraphProgressDisplayer::logMessage(const std::string &line)
+{}
+
+
+
 
 void GraphProgressDisplayer::setActionProgressValue(const std::string&, double)
 {}

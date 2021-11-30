@@ -55,6 +55,9 @@ void ConvergenceAnalysisDisplayer::update ( const ProgressState& pi )
     }
 }
 
+void ConvergenceAnalysisDisplayer::logMessage(const std::string &line)
+{}
+
 void ConvergenceAnalysisDisplayer::setActionProgressValue(const string &, double)
 {}
 

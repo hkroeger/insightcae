@@ -43,7 +43,7 @@
 #include "workbenchwindow.h"
 #include "graphprogressdisplayer.h"
 
-#include "qdebugstream.h"
+#include "iqdebugstream.h"
 #include "logviewerwidget.h"
 #include "remotedirselector.h"
 
@@ -115,7 +115,7 @@ protected:
   // ======== GUI widgets
   ParameterEditorWidget* peditor_;
   QTableView *sidtab_;
-  Q_DebugStream *cout_log_, *cerr_log_;
+  IQDebugStream *cout_log_, *cerr_log_;
   LogViewerWidget *log_;
 
   QProgressBar* progressbar_;

@@ -77,7 +77,23 @@ public:
 
     // ====================================================================================
     // ======== convergence state reporting
+
+    /**
+     * @brief update
+     * implementations must be safe to be called from different thread!
+     * @param pi
+     */
     virtual void update ( const ProgressState& pi ) =0;
+
+    // ====================================================================================
+    // ======== log message
+    /**
+     * @brief logMessage
+     * implementations must be safe to be called from different thread!
+     * @param line
+     */
+    virtual void logMessage(const std::string& line) =0;
+
 
     // ====================================================================================
     // ======== action progress reporting
@@ -92,10 +108,31 @@ public:
 
     // ====================================================================================
     // ======== action status reporting
+    /**
+     * @brief setActionProgressValue
+     * implementations must be safe to be called from different thread!
+     * @param path
+     * @param value
+     */
     virtual void setActionProgressValue(const std::string &path, double value) =0;
+    /**
+     * @brief setMessageText
+     * implementations must be safe to be called from different thread!
+     * @param path
+     * @param message
+     */
     virtual void setMessageText(const std::string &path, const std::string& message) =0;
+    /**
+     * @brief finishActionProgress
+     * implementations must be safe to be called from different thread!
+     * @param path
+     */
     virtual void finishActionProgress(const std::string &path) =0;
 
+    /**
+     * @brief reset
+     * implementations must be safe to be called from different thread!
+     */
     virtual void reset() =0;
     virtual bool stopRun() const;
 };
@@ -119,6 +156,7 @@ public:
   virtual ~ActionProgress();
 
   void update ( const ProgressState& pi ) override;
+  void logMessage(const std::string& line) override;
 
   void setActionProgressValue(const std::string &path, double value) override;
   void setMessageText(const std::string &path, const std::string& message) override;

@@ -43,7 +43,7 @@ set(toolkit_gui_SRCS
     iqremoteserverlistmodel.h
     iqremoteserverlistmodel.cpp
 
-    qdebugstream.cpp
+    iqdebugstream.cpp iqdebugstream.h
     qinsighterror.cpp
     email.cpp
     mimetypemanager.cpp
@@ -63,8 +63,7 @@ set(toolkit_gui_SRCS
     blockmesh_cylwedge_gui.cpp blockmesh_cylwedge_gui.h
     #blockmesh_cylwedgeortho_gui.cpp
     metatypes.cpp
-    remoteparaview.cpp
-    remoteparaview.h
+    remoteparaview.cpp remoteparaview.h
     analysisguilibrary.h analysisguilibrary.cpp
 
     qanalysisthread.cpp

@@ -102,7 +102,12 @@ void ActionProgress::finishActionProgress(const std::string &path)
 
 void ActionProgress::update(const ProgressState &pi)
 {
-  parentAction_.update(pi);
+    parentAction_.update(pi);
+}
+
+void ActionProgress::logMessage(const std::string &line)
+{
+    parentAction_.logMessage(line);
 }
 
 void ActionProgress::reset()

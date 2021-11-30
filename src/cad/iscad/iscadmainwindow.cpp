@@ -237,8 +237,8 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, bool nolog)
 
     if (!nolog)
     {
-      logger_=new Q_DebugStream(std::cout); // ceases to work with multithreaded bg parsing
-      connect(logger_, &Q_DebugStream::appendText,
+      logger_=new IQDebugStream(std::cout); // ceases to work with multithreaded bg parsing
+      connect(logger_, &IQDebugStream::appendText,
               log_, &QTextEdit::append);
 
     }

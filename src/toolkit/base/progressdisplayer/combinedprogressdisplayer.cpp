@@ -31,6 +31,14 @@ void CombinedProgressDisplayer::update ( const ProgressState& pi )
     }
 }
 
+void CombinedProgressDisplayer::logMessage(const std::string &line)
+{
+    for (auto* d: displayers_)
+    {
+        d->logMessage ( line );
+    }
+}
+
 void CombinedProgressDisplayer::setActionProgressValue(const string &path, double value)
 {
   for (auto* d: displayers_)

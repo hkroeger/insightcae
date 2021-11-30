@@ -33,7 +33,7 @@
 
 //#include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
-#include "qdebugstream.h"
+#include "iqdebugstream.h"
 #include "viewstate.h"
 #include "qmodeltree.h"
 #include "bgparsingthread.h"

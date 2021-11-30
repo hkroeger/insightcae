@@ -270,7 +270,7 @@ void SolverOutputAnalyzer::update(const std::string& line)
       // ignore errors
     }
 
-    curLog_ += line+"\n";
+//    curLog_ += line+"\n";
 
 }
 

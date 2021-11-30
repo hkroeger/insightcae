@@ -36,7 +36,7 @@
 
 //#include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
-#include "qdebugstream.h"
+#include "iqdebugstream.h"
 #include "viewstate.h"
 #include "qmodeltree.h"
 
@@ -61,7 +61,7 @@ class ISCADMainWindow
     Q_OBJECT
 
 protected:
-    Q_DebugStream* logger_;
+    IQDebugStream* logger_;
     QTextEdit* log_;
     
     QTreeView* fileTree_;

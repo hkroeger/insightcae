@@ -63,10 +63,14 @@ RemoteParaview::RemoteParaview(
 
     // launch local client
     std::vector<std::string> pvcArgs = {
-        "--title", caseLabel,
         str(boost::format("--server-url=cs://127.0.0.1:%d")
                 % portMapping_->localListenerPort(remotePort_) )
     };
+
+#ifndef WIN32
+    pvcArgs.insert( pvcArgs.begin(), { "--title", caseLabel } );
+#endif
+
     if (stateFile.empty())
     {
         pvcArgs.push_back(

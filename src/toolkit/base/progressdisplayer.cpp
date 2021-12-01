@@ -56,8 +56,11 @@ void ProgressDisplayer::stepTo(double i)
 
 void ProgressDisplayer::completed()
 {
-  stepTo(maxi_);
-  finishActionProgress(actionPath());
+    if (ci_<maxi_)
+    {
+      stepTo(maxi_);
+      finishActionProgress(actionPath());
+    }
 }
 
 void ProgressDisplayer::operator++()
@@ -97,7 +100,11 @@ void ActionProgress::setMessageText(const std::string &path, const std::string &
 
 void ActionProgress::finishActionProgress(const std::string &path)
 {
-  parentAction_.finishActionProgress(path);
+    if (!alreadyFinished_)
+    {
+        alreadyFinished_=true;
+        parentAction_.finishActionProgress(path);
+    }
 }
 
 void ActionProgress::update(const ProgressState &pi)
@@ -132,7 +139,8 @@ ActionProgress::ActionProgress
     double nSteps
 )
   : parentAction_(const_cast<ProgressDisplayer&>(parentAction)),
-    name_(name)
+    name_(name),
+    alreadyFinished_(false)
 {
   maxi_=nSteps;
 }

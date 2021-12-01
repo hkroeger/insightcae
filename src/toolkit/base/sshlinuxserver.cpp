@@ -139,16 +139,23 @@ string SSHLinuxServer::hostName() const
 
 
 std::pair<boost::filesystem::path,std::vector<std::string> >
-SSHLinuxServer::commandAndArgs(const std::string& command)
+SSHLinuxServer::commandAndArgs(const std::string& command) const
 {
-  std::string expr = "bash -lc '"+command+"'";
+  std::string expr //= "bash -lc '"+command+"'";
+          = command;
 
-  SSHCommand sc(hostName(), { expr });
+  SSHCommand ssh(hostName(), { expr });
 
-  insight::dbg() << sc.command() << " " << boost::join(sc.arguments(), " ") << std::endl;
+  {
+      auto& os = insight::dbg();
+      os << ssh.command() << " ";
+      for (const auto& a: ssh.arguments())
+          os << " \"" + a + "\"";
+      os << std::endl;
+  }
 
-  return { sc.command(),
-        sc.arguments() };
+  return { ssh.command(),
+        ssh.arguments() };
 }
 
 
@@ -162,7 +169,8 @@ void SSHLinuxServer::BackgroundJob::kill()
 {
   server_.executeCommand(
         boost::str(boost::format
-         ("kill %d") % remotePid_
+         ( "if ps -q %d >/dev/null; then kill %d; fi" )
+          % remotePid_ % remotePid_
         ),
         true
         );
@@ -175,11 +183,11 @@ RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(const std
 
   auto process = launchCommand(
         cmd+" & echo PID===$!===PID",
-#ifdef WIN32
+//#ifdef WIN32
         boost::process::std_out > is
-#else
-        boost::process::std_err > is
-#endif
+//#else
+//        boost::process::std_err > is
+//#endif
         , boost::process::std_in < boost::process::null
         );
 

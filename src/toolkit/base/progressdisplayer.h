@@ -147,6 +147,7 @@ class ActionProgress
 protected:
   ProgressDisplayer& parentAction_;
   std::string name_;
+  bool alreadyFinished_;
 
 
   std::string actionPath() const override;

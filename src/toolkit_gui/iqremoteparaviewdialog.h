@@ -10,23 +10,23 @@
 #include "base/remoteexecution.h"
 
 namespace Ui {
-class RemoteParaview;
+class IQRemoteParaviewDialog;
 }
 
-class TOOLKIT_GUI_EXPORT RemoteParaview : public QDialog
+class TOOLKIT_GUI_EXPORT IQRemoteParaviewDialog : public QDialog
 {
   Q_OBJECT
 
   insight::RemoteExecutionConfig rec_;
 
 public:
-  explicit RemoteParaview(
+  explicit IQRemoteParaviewDialog(
       const insight::RemoteExecutionConfig& rec,
       QWidget *parent = nullptr
       );
-  ~RemoteParaview();
+  ~IQRemoteParaviewDialog();
 
-  Ui::RemoteParaview *ui;
+  Ui::IQRemoteParaviewDialog *ui;
 };
 
 #endif // REMOTEPARAVIEW_H

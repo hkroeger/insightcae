@@ -1,4 +1,5 @@
 #include "linuxremoteserver.h"
+#include "base/tools.h"
 
 using namespace std;
 
@@ -128,6 +129,38 @@ std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteSubdirectories
   c->wait();
 
   return res;
+}
+
+
+
+int LinuxRemoteServer::findFreeRemotePort() const
+{
+    boost::process::ipstream out;
+
+    int ret = executeCommand(
+                "isPVFindPort.sh", false,
+                boost::process::std_out > out,
+                boost::process::std_in < boost::process::null
+                );
+
+    if (ret!=0)
+    {
+      throw insight::Exception(
+            str( boost::format("Failed to query remote server for free network port!") )
+            );
+    }
+
+    std::string outline;
+    getline(out, outline);
+    std::vector<std::string> parts;
+    boost::split(parts, outline, boost::is_any_of(" "));
+    if (parts.size()==2)
+    {
+      if (parts[0]=="PORT")
+        return to_number<int>(parts[1]);
+    }
+
+    throw insight::Exception("unexpected answer: \""+outline+"\"");
 }
 
 

@@ -2,22 +2,17 @@ project(toolkit_remote)
 
 
 set(toolkit_remote_SRCS
-    analyzeclient.cpp
-    analyzeclient.h
-    analyzeserverdetector.cpp
-    analyzeserverdetector.h
-    detectionhandler.cpp
-    detectionhandler.h
+    analyzeclient.cpp analyzeclient.h
+    analyzeserverdetector.cpp analyzeserverdetector.h
+    detectionhandler.cpp detectionhandler.h
+    remoteparaview.cpp remoteparaview.h
 )
 
 if (wt_FOUND)
     message(STATUS "Found wt")
 
-    file(GLOB_RECURSE toolkit_remote_HEADERS "*.h")
-
-
-    add_library(toolkit_remote SHARED ${toolkit_remote_SRCS} ${toolkit_remote_HEADERS})
-    add_PDL(toolkit_remote "${toolkit_remote_HEADERS}")
+    add_library(toolkit_remote SHARED ${toolkit_remote_SRCS})
+    add_PDL(toolkit_remote "${toolkit_remote_SRCS}")
 
     target_link_libraries(toolkit_remote
      toolkit

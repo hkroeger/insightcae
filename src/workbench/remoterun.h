@@ -47,6 +47,7 @@ class RemoteRun
   std::unique_ptr<insight::AnalyzeClient> ac_;
   insight::RemoteServer::BackgroundJobPtr analyzeProcess_;
   bool cancelled_;
+  insight::ActionProgress launchProgress_;
 
 
 protected:
@@ -90,6 +91,7 @@ public:
 
   ~RemoteRun();
 
+  inline insight::AnalyzeClient& analyzeClient() { return *ac_; }
 
 public Q_SLOTS:
   void onCancel() override;

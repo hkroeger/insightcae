@@ -21,7 +21,7 @@
 
 #include "base/qt5_helper.h"
 
-#include "remoteparaview.h"
+#include "iqremoteparaviewdialog.h"
 #include "remotesync.h"
 #include "base/sshlinuxserver.h"
 
@@ -450,7 +450,7 @@ void MainWindow::onStartRemoteParaview()
 {
   if (remote_)
   {
-    RemoteParaview dlg(remote_->exeConfig(), this);
+    IQRemoteParaviewDialog dlg(remote_->exeConfig(), this);
     dlg.exec();
   }
 }

@@ -94,12 +94,16 @@ public:
 class TemporaryFile
 {
   boost::filesystem::path tempFilePath_;
+  std::unique_ptr<std::ofstream> stream_;
 
   TemporaryFile(const TemporaryFile& other); // forbid copies
 
 public:
   TemporaryFile(const std::string& fileNameModel="%%%%%.dat", const boost::filesystem::path& baseDir=boost::filesystem::path());
   ~TemporaryFile();
+
+  std::ostream& stream();
+  void closeStream();
   const boost::filesystem::path& path() const;
 };
 

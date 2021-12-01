@@ -60,9 +60,12 @@ void RemoteServer::setRunning(bool isRunning)
   isRunning_=isRunning;
 }
 
-void RemoteServer::assertRunning()
+void RemoteServer::assertRunning() const
 {
-  insight::assertion(isRunning_, "the remote machine is not yet started!");
+  insight::assertion(
+              isRunning_,
+              "the remote machine is not yet started!"
+              );
 }
 
 RemoteServer::RemoteServer()

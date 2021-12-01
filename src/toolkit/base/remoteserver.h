@@ -20,7 +20,7 @@ class RemoteServer
 protected:
   bool isRunning() const;
   void setRunning(bool isRunning);
-  void assertRunning();
+  void assertRunning() const;
 
 public:
 
@@ -69,10 +69,11 @@ public:
   std::string serverLabel() const;
 
 
-  virtual std::pair<boost::filesystem::path,std::vector<std::string> > commandAndArgs(const std::string& command) =0;
+  virtual std::pair<boost::filesystem::path,std::vector<std::string> >
+  commandAndArgs(const std::string& command) const =0;
 
   template<typename ...Args>
-  int executeCommand(const std::string& command, bool throwOnFail, Args&&... addArgs)
+  int executeCommand(const std::string& command, bool throwOnFail, Args&&... addArgs) const
   {
     insight::CurrentExceptionContext ex("executing command \""+command+"\" on remote server");
     if (throwOnFail) assertRunning();
@@ -165,6 +166,8 @@ public:
     virtual int localListenerPort(int remoteListenerPort) const;
     virtual int remoteListenerPort(int localListenerPort) const;
   };
+
+  virtual int findFreeRemotePort() const =0;
 
   typedef std::shared_ptr<PortMapping> PortMappingPtr;
   virtual PortMappingPtr makePortsAccessible(

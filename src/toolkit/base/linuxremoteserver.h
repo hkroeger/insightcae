@@ -19,6 +19,7 @@ public:
   std::vector<boost::filesystem::path> listRemoteDirectory(const boost::filesystem::path& remoteDirectory) override;
   std::vector<boost::filesystem::path> listRemoteSubdirectories(const boost::filesystem::path& remoteDirectory) override;
 
+  int findFreeRemotePort() const override;
   bool hostIsAvailable() override;
 };
 

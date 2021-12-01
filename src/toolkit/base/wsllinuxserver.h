@@ -46,7 +46,8 @@ public:
   Config* serverConfig() const;
 
 //  int executeCommand(const std::string& command, bool throwOnFail) override;
-  std::pair<boost::filesystem::path,std::vector<std::string> > commandAndArgs(const std::string& command) override;
+  std::pair<boost::filesystem::path,std::vector<std::string> >
+  commandAndArgs(const std::string& command) const override;
 
   struct BackgroundJob : public RemoteServer::BackgroundJob
   {

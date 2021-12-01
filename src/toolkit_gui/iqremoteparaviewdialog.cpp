@@ -1,19 +1,19 @@
-#include "remoteparaview.h"
-#include "ui_remoteparaview.h"
+#include "iqremoteparaviewdialog.h"
+#include "ui_iqremoteparaviewdialog.h"
 
 #include <QSettings>
 #include <QProcess>
 #include <QMessageBox>
 #include <QFileDialog>
 
-RemoteParaview::RemoteParaview
+IQRemoteParaviewDialog::IQRemoteParaviewDialog
 (
     const insight::RemoteExecutionConfig& rec,
     QWidget *parent
 ) :
   QDialog(parent),
   rec_(rec),
-  ui(new Ui::RemoteParaview)
+  ui(new Ui::IQRemoteParaviewDialog)
 {
   QSettings settings("silentdynamics", "isofExecutionManager");
 
@@ -74,7 +74,7 @@ RemoteParaview::RemoteParaview
   );
 }
 
-RemoteParaview::~RemoteParaview()
+IQRemoteParaviewDialog::~IQRemoteParaviewDialog()
 {
   QSettings settings("silentdynamics", "isofExecutionManager");
   settings.setValue("remhost", ui->remhost->text());

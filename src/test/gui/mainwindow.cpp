@@ -36,7 +36,7 @@
 #include "remotesync.h"
 #include "base/remoteserverlist.h"
 #include "remotedirselector.h"
-#include "remoteparaview.h"
+#include "iqremoteparaviewdialog.h"
 
 #include "qoccviewwidget.h"
 

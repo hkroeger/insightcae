@@ -25,6 +25,7 @@
 #include "base/boost_include.h"
 #include "boost/asio.hpp"
 #include "base/exception.h"
+#include "base/cppextensions.h"
 
 #include "vtkSTLReader.h"
 #include "vtkSTLWriter.h"
@@ -283,6 +284,9 @@ TemporaryFile::TemporaryFile
 
 TemporaryFile::~TemporaryFile()
 {
+  if (stream_)
+      stream_.reset();
+
   if (!getenv("INSIGHT_KEEPTEMPORARYFILES"))
   {
     if (fs::exists(tempFilePath_))
@@ -291,6 +295,19 @@ TemporaryFile::~TemporaryFile()
     }
   }
 }
+
+std::ostream& TemporaryFile::stream()
+{
+    if (!stream_)
+        stream_=std::make_unique<std::ofstream>(path().string());
+    return *stream_;
+}
+
+void TemporaryFile::closeStream()
+{
+    stream_.reset();
+}
+
 
 const boost::filesystem::path& TemporaryFile::path() const
 {

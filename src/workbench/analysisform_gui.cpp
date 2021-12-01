@@ -9,7 +9,7 @@
 #include "openfoam/ofes.h"
 #include "base/mountremote.h"
 
-#include "remoteparaview.h"
+#include "iqremoteparaviewdialog.h"
 #include "remotedirselector.h"
 #include "of_clean_case.h"
 
@@ -153,7 +153,7 @@ void AnalysisForm::onStartPV()
   {
     if (rec->location().remoteDirExists())
     {
-      RemoteParaview dlg( rec->exeConfig(), this );
+      IQRemoteParaviewDialog dlg( rec->exeConfig(), this );
       dlg.exec();
     }
   }
@@ -200,23 +200,22 @@ void AnalysisForm::onCleanOFC()
 
 void AnalysisForm::onWnow()
 {
-#ifndef WIN32
-  if (isRunning())
-  {
-    fs::path exePath = localCaseDirectory();
-    std::unique_ptr<insight::MountRemote> rd;
-    if ( auto* rec = remoteExecutionConfiguration() )
+    if (isRunningLocally())
     {
-        rd.reset(new insight::MountRemote(rec->location()));
-        exePath = rd->mountpoint();
-    }
-
-    {
-      std::ofstream f( (exePath/"wnow").c_str() );
+      fs::path exePath = localCaseDirectory();
+      std::ofstream f( (exePath/"wnow").string() );
       f.close();
     }
-  }
-#endif
+    else if (isRunningRemotely())
+    {
+        if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get()))
+        {
+            rr->analyzeClient().wnow(
+                        [](insight::AnalyzeClientAction::ReportSuccessResult) {},
+                        []() {}
+                        );
+        }
+    }
 }
 
 
@@ -224,23 +223,22 @@ void AnalysisForm::onWnow()
 
 void AnalysisForm::onWnowAndStop()
 {
-#ifndef WIN32
-  if (isRunning())
-  {
-    fs::path exePath = localCaseDirectory();
-    std::unique_ptr<insight::MountRemote> rd;
-    if ( auto* rec = remoteExecutionConfiguration() )
+    if (isRunningLocally())
     {
-        rd.reset(new insight::MountRemote(rec->location()));
-        exePath = rd->mountpoint();
-    }
-
-    {
-      std::ofstream f( (exePath/"wnowandstop").c_str() );
+      fs::path exePath = localCaseDirectory();
+      std::ofstream f( (exePath/"wnowandstop").string() );
       f.close();
     }
-  }
-#endif
+    else if (isRunningRemotely())
+    {
+        if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get()))
+        {
+            rr->analyzeClient().wnowandstop(
+                        [](insight::AnalyzeClientAction::ReportSuccessResult) {},
+                        []() {}
+                        );
+        }
+    }
 }
 
 

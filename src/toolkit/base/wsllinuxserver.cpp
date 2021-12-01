@@ -99,7 +99,7 @@ WSLLinuxServer::Config *WSLLinuxServer::serverConfig() const
 
 
 std::pair<boost::filesystem::path,std::vector<std::string> >
-WSLLinuxServer::commandAndArgs(const std::string& command)
+WSLLinuxServer::commandAndArgs(const std::string& command) const
 {
   std::string windir("C:\\Windows");
   if (auto *wdv=getenv("WINDIR"))

@@ -60,7 +60,8 @@ RemoteRun::RemoteRun(AnalysisForm *af, insight::RemoteExecutionConfig& rec, bool
   : WorkbenchAction(af),
     resume_( resume ),
     remote_( rec ),
-    cancelled_(false)
+    cancelled_(false),
+    launchProgress_( af_->progressDisplayer_.forkNewAction(4, "Launching remote analysis") )
 {}
 
 
@@ -84,9 +85,14 @@ void RemoteRun::launch()
   );
 
   if (!resume_)
+  {
+      launchProgress_.message("Setting up the remote workspace...");
       ac_->ioService().post( std::bind(&RemoteRun::setupRemoteEnvironment, this) );
+  }
   else
+  {
       ac_->ioService().post( std::bind(&RemoteRun::monitor, this) );
+  }
 }
 
 
@@ -106,6 +112,10 @@ void RemoteRun::setupRemoteEnvironment()
 
         addUndoStep( std::bind(&RemoteRun::undoSetupRemoteEnvironment, this),
                      "setting up the execution environment" );
+
+        launchProgress_.stepTo(1);
+        launchProgress_.message("Launching remote execution server...");
+
         ac_->ioService().post( std::bind(&RemoteRun::launchRemoteExecutionServer, this) );
 
     } catch (...) { onError(std::current_exception()); }
@@ -150,6 +160,10 @@ void RemoteRun::launchRemoteExecutionServer()
 
         addUndoStep( std::bind(&RemoteRun::undoLaunchRemoteExecutionServer, this),
                      "launching the remote execution server" );
+
+        launchProgress_.stepTo(2);
+        launchProgress_.message("Establishing contact to remote execution server...");
+
         ac_->ioService().post( std::bind(&RemoteRun::waitForContact, this, 20) );
 
     } catch (...) { onError(std::current_exception()); }
@@ -207,6 +221,10 @@ void RemoteRun::waitForContact( int maxAttempts )
                     if (r.success)
                     {
                         // execute callback on success
+
+                        launchProgress_.stepTo(3);
+                        launchProgress_.message("Transmitting input data and starting analysis...");
+
                         ac_->ioService().post( std::bind( &RemoteRun::launchAnalysis, this ));
                     }
                     else
@@ -280,6 +298,11 @@ void RemoteRun::monitor()
 
         checkIfCancelled();
 
+
+        launchProgress_.stepTo(4);
+        launchProgress_.message("Monitoring remote run");
+
+
         ac_->queryStatus(
                     [this](insight::QueryStatusAction::Result qsr)
                     {
@@ -296,6 +319,8 @@ void RemoteRun::monitor()
                             }
                             else
                             {
+                                launchProgress_.completed();
+
                                 // schedule next status query
                                 ac_->ioService().schedule(
                                             std::chrono::milliseconds(1000),

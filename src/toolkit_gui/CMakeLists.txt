@@ -63,7 +63,7 @@ set(toolkit_gui_SRCS
     blockmesh_cylwedge_gui.cpp blockmesh_cylwedge_gui.h
     #blockmesh_cylwedgeortho_gui.cpp
     metatypes.cpp
-    remoteparaview.cpp remoteparaview.h
+    iqremoteparaviewdialog.cpp iqremoteparaviewdialog.h
     analysisguilibrary.h analysisguilibrary.cpp
 
     qanalysisthread.cpp
@@ -96,7 +96,7 @@ file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
 SET(toolkit_gui_FORMS
     of_clean_case.ui
     remotedirselector.ui
-    remoteparaview.ui
+    iqremoteparaviewdialog.ui
 )
 SET(toolkit_gui_RCCS toolkit_gui.qrc)
 

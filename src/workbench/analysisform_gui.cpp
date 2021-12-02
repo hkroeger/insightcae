@@ -144,7 +144,19 @@ void AnalysisForm::onAnalysisCancelled()
 }
 
 
-
+void AnalysisForm::cleanFinishedExternalProcesses()
+{
+    auto rps=externalProcesses_;
+    externalProcesses_.clear();
+    std::copy_if(
+        rps.begin(), rps.end(),
+        std::inserter(externalProcesses_, externalProcesses_.begin()),
+        [](std::shared_ptr<insight::ExternalProcess> rp)
+        {
+            return rp && rp->isRunning();
+        }
+    );
+}
 
 void AnalysisForm::onStartPV()
 {
@@ -157,28 +169,21 @@ void AnalysisForm::onStartPV()
 
       if (auto rp = dlg.remoteParaviewProcess())
       {
-          // clean up on this occasion
-          auto rps=remoteParaviewProcesses_;
-          remoteParaviewProcesses_.clear();
-          std::copy_if(
-              rps.begin(), rps.end(),
-              std::inserter(remoteParaviewProcesses_, remoteParaviewProcesses_.begin()),
-              [](std::shared_ptr<insight::RemoteParaview> rp)
-              {
-                  return rp && rp->isRunning();
-              }
-          );
-
-          // add this
-          remoteParaviewProcesses_.insert(rp);
+          cleanFinishedExternalProcesses(); // clean up on this occasion
+          externalProcesses_.insert(rp);
       }
     }
   }
   else
   {
-    ::system( boost::str( boost::format
-          ("cd %s; isPV.py &" ) % localCaseDirectory().string()
-     ).c_str() );
+      IQParaviewDialog dlg( localCaseDirectory(), this );
+      dlg.exec();
+
+      if (auto pv = dlg.paraviewProcess())
+      {
+          cleanFinishedExternalProcesses(); // clean up on this occasion
+          externalProcesses_.insert(pv);
+      }
   }
 }
 

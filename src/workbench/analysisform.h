@@ -59,6 +59,7 @@
 #include "iqremoteexecutionstate.h"
 #include "iqsupplementedinputdatamodel.h"
 #include "iqremoteparaviewdialog.h"
+#include "iqparaviewdialog.h"
 
 #include <set>
 
@@ -159,7 +160,8 @@ protected:
    */
   bool is_modified_;
 
-  std::set<std::shared_ptr<insight::RemoteParaview> > remoteParaviewProcesses_;
+  std::set<std::shared_ptr<insight::ExternalProcess> > externalProcesses_;
+  void cleanFinishedExternalProcesses();
 
   void connectLocalActions();
   void connectRemoteActions();

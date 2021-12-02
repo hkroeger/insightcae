@@ -44,35 +44,33 @@ set(toolkit_gui_SRCS
     iqremoteserverlistmodel.cpp
 
     iqdebugstream.cpp iqdebugstream.h
-    qinsighterror.cpp
-    email.cpp
-    mimetypemanager.cpp
-    helpwidget.cpp
-    of_clean_case.cpp
-    snappyhexmesh_gui.cpp
-    parametersetvisualizer.cpp
-    logviewerwidget.cpp
-    graphprogressdisplayer.cpp
-    progressrelay.cpp
-    insightcaeapplication.cpp
+    qinsighterror.cpp qinsighterror.h
+    email.cpp email.h
+    mimetypemanager.cpp mimetypemanager.h
+    helpwidget.cpp helpwidget.h
+    of_clean_case.cpp of_clean_case.h of_clean_case.ui
+    snappyhexmesh_gui.cpp snappyhexmesh_gui.h
+    parametersetvisualizer.cpp parametersetvisualizer.h
+    logviewerwidget.cpp logviewerwidget.h
+    graphprogressdisplayer.cpp graphprogressdisplayer.h
+    progressrelay.cpp progressrelay.h
+    insightcaeapplication.cpp insightcaeapplication.h
     iqremotefoldermodel.h iqremotefoldermodel.cpp
-    remotedirselector.cpp
-    remotesync.cpp
-    sdmdiarea.cpp
-    blockmesh_gui.cpp
+    remotedirselector.cpp remotedirselector.h remotedirselector.ui
+    remotesync.cpp remotesync.h
+    sdmdiarea.cpp sdmdiarea.h
+    blockmesh_gui.cpp blockmesh_gui.h
     blockmesh_cylwedge_gui.cpp blockmesh_cylwedge_gui.h
     #blockmesh_cylwedgeortho_gui.cpp
-    metatypes.cpp
-    iqremoteparaviewdialog.cpp iqremoteparaviewdialog.h
+    metatypes.cpp metatypes.h
+    iqparaviewdialog.h iqparaviewdialog.cpp iqparaviewdialog.ui
+    iqremoteparaviewdialog.cpp iqremoteparaviewdialog.h iqremoteparaviewdialog.ui
     analysisguilibrary.h analysisguilibrary.cpp
 
-    qanalysisthread.cpp
-    qanalysisthread.h
-    qactionprogressdisplayerwidget.cpp
-    qactionprogressdisplayerwidget.h
+    qanalysisthread.cpp qanalysisthread.h
+    qactionprogressdisplayerwidget.cpp qactionprogressdisplayerwidget.h
 
-    qresultsetmodel.cpp
-    qresultsetmodel.h
+    qresultsetmodel.cpp qresultsetmodel.h
     qresultelements/qcomment.cpp
     qresultelements/qcomment.h
     qresultelements/qimage.cpp
@@ -91,17 +89,12 @@ set(toolkit_gui_SRCS
     qresultelements/qresultsection.h
 )
 
-file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
 
-SET(toolkit_gui_FORMS
-    of_clean_case.ui
-    remotedirselector.ui
-    iqremoteparaviewdialog.ui
-)
+
 SET(toolkit_gui_RCCS toolkit_gui.qrc)
 
-add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_HEADERS} ${toolkit_gui_FORMS} ${toolkit_gui_RCCS})
-add_PDL(toolkit_gui "${toolkit_gui_HEADERS}")
+add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_RCCS})
+add_PDL(toolkit_gui "${toolkit_gui_SRCS}")
 
 # --export-all-symbols is not sufficient for signal/slots to work across DLLs
 include(GenerateExportHeader)

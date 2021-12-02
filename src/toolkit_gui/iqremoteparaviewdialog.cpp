@@ -6,6 +6,9 @@
 #include <QMessageBox>
 #include <QFileDialog>
 
+
+
+
 IQRemoteParaviewDialog::IQRemoteParaviewDialog
 (
     const insight::RemoteExecutionConfig& rec,
@@ -55,19 +58,12 @@ IQRemoteParaviewDialog::IQRemoteParaviewDialog
                           statefile.toStdString(),
                           rem_subdir.toStdString()
                           );
-
-              if (!QProcess::startDetached("isPVRemote.sh", args,
-                                           QString::fromStdString(rec_.localDir().string()) ))
-              {
-                QMessageBox::critical(
-                      this,
-                      "Failed to start",
-                      "Failed to start Paraview in directoy "+QString::fromStdString(rec_.localDir().string())
-                      );
-              }
            }
   );
 }
+
+
+
 
 IQRemoteParaviewDialog::~IQRemoteParaviewDialog()
 {
@@ -86,6 +82,8 @@ IQRemoteParaviewDialog::~IQRemoteParaviewDialog()
 
   delete ui;
 }
+
+
 
 
 std::shared_ptr<insight::RemoteParaview> IQRemoteParaviewDialog::remoteParaviewProcess()

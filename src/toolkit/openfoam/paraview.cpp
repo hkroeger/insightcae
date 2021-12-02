@@ -26,7 +26,7 @@ std::string caseLabel(const boost::filesystem::path &caseDirectory)
 std::ostream& Paraview::createLoadScript()
 {
     loadScript_=std::make_unique<TemporaryFile>(
-                "load-remote-PV-%%%%.py", caseDirectory_ );
+                "load-PV-%%%%.py", caseDirectory_ );
     auto &os = loadScript_->stream();
     os<<
          "from paraview.simple import *\n"

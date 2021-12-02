@@ -20,7 +20,7 @@
 
 #include "base/boost_include.h"
 #include "base/exception.h"
-#include "remoteparaview.h"
+#include "openfoam/paraview.h"
 
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -40,8 +40,13 @@ int main(int argc, char *argv[])
         desc.add_options()
                 ("help,h", "produce help message")
                 ("workdir,w", po::value<std::string>(), "execution directory")
-                ("remotesubdir,d", po::value<std::string>(), "subdirectory in remote case")
                 ("statefile,s", po::value<std::string>(), "state file")
+                ("batch,b", "batch mode: don't launch GUI, render all views")
+                ("parallel,p", "enforce parallel projection in batch rendering")
+                ("rescale,c", "automatically rescale all contour plots to data range (within each time step")
+                ("onlylatesttime,a", "only select the latest time step  (overrides --to and --from, if they are given)")
+                ("from,f", po::value<double>()->default_value(0), "initial time")
+                ("to,t", po::value<double>()->default_value(1e10), "final time")
                 ;
 
         po::positional_options_description p;
@@ -79,16 +84,16 @@ int main(int argc, char *argv[])
         if (vm.count("workdir"))
             dir=vm["workdir"].as<std::string>();
 
-        boost::filesystem::path rsd;
-        if (vm.count("remotesubdir"))
-            rsd=vm["remotesubdir"].as<std::string>();
-
         boost::filesystem::path sf;
         if (vm.count("statefile"))
             sf=vm["statefile"].as<std::string>();
 
-        RemoteExecutionConfig rec(dir);
-        RemoteParaview rp(rec, sf, rsd);
+        Paraview rp(
+           dir, sf,
+           vm.count("batch"), vm.count("parallel"),
+           vm.count("rescale"), vm.count("onlylatesttime"),
+           vm["from"].as<double>(), vm["to"].as<double>()
+           );
 
         rp.wait();
 

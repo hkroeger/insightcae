@@ -279,7 +279,9 @@ TemporaryFile::TemporaryFile
              /
              fileNameModel
              ) )
-{}
+{
+    dbg() << tempFilePath_ << std::endl;
+}
 
 
 TemporaryFile::~TemporaryFile()
@@ -291,6 +293,7 @@ TemporaryFile::~TemporaryFile()
   {
     if (fs::exists(tempFilePath_))
     {
+        dbg()<<"removing file "<<tempFilePath_<<std::endl;
       fs::remove(tempFilePath_);
     }
   }

@@ -44,7 +44,7 @@ RemoteParaview::RemoteParaview(
          "paraview.simple.LoadState('%s',"
                "LoadStateDataFileOptions='Search files under specified directory',"
                "DataDirectory='%s/system' )\n"
-         ) % stateFile.string() % dir.generic_path().string() )
+         ) % stateFile.generic_path().string() % dir.generic_path().string() )
          ;
         loadScript_->closeStream();
     }
@@ -85,6 +85,15 @@ RemoteParaview::RemoteParaview(
                         % loadScript_->path().string() )
                     );
     }
+
+    {
+        auto& os=dbg();
+        os<<"launching "<<boost::process::search_path("paraview");
+        for (const auto& a: pvcArgs)
+            os<<" \""<<a<<"\"";
+        os<<std::endl;
+    }
+
     localPVClient_ =
             std::make_unique<boost::process::child>(
                 boost::process::search_path("paraview"),

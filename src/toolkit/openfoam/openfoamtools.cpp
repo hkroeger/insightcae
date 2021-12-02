@@ -170,7 +170,7 @@ void setSet(
 
   job->runAndTransferOutput();
 
-  if (job->process->exit_code()!=0)
+  if (job->process().exit_code()!=0)
   {
     throw insight::Exception("setSet: command failed with nonzero return code.");
   }

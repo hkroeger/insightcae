@@ -16,7 +16,7 @@ FileWatcher::FileWatcher(
 {
   auto tailWorker = [filePath,processLine]() {
     try {
-    auto tailjob = forkExternalProcess("tail", {"-f", filePath.string()});
+    auto tailjob = Job::forkExternalProcess("tail", {"-f", filePath.string()});
 
     tailjob->ios_run_with_interruption(
           [&](const std::string& line)

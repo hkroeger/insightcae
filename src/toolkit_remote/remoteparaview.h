@@ -5,18 +5,37 @@
 #include "base/boost_include.h"
 #include "base/remoteexecution.h"
 #include "base/tools.h"
-
+#include "base/externalprocess.h"
+#include "openfoam/paraview.h"
 
 namespace insight {
 
-class RemoteParaview
-{
+boost::filesystem::path remotePath(
+        const RemoteExecutionConfig &rec,
+        const boost::filesystem::path& remoteSubDir = ""
+        );
 
+class RemotePVServer
+{
     int remotePort_;
     RemoteServer::PortMappingPtr portMapping_;
-    std::unique_ptr<TemporaryFile> loadScript_;
     RemoteServer::BackgroundJobPtr remotePVServer_;
-    std::unique_ptr<boost::process::child> localPVClient_;
+
+public:
+    RemotePVServer(
+            const RemoteExecutionConfig &rec,
+            const boost::filesystem::path& remoteSubDir = "" );
+    ~RemotePVServer();
+
+    int localListenerPort() const;
+};
+
+
+
+class RemoteParaview
+        : public RemotePVServer,
+          public Paraview
+{
 
 public:
     RemoteParaview(
@@ -24,10 +43,6 @@ public:
             const boost::filesystem::path& stateFile = "",
             const boost::filesystem::path& remoteSubDir = ""
             );
-
-    void wait();
-
-    ~RemoteParaview();
 };
 
 } // namespace insight

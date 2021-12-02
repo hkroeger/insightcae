@@ -9,7 +9,6 @@
 #include "openfoam/ofes.h"
 #include "base/mountremote.h"
 
-#include "iqremoteparaviewdialog.h"
 #include "remotedirselector.h"
 #include "of_clean_case.h"
 
@@ -155,6 +154,24 @@ void AnalysisForm::onStartPV()
     {
       IQRemoteParaviewDialog dlg( rec->exeConfig(), this );
       dlg.exec();
+
+      if (auto rp = dlg.remoteParaviewProcess())
+      {
+          // clean up on this occasion
+          auto rps=remoteParaviewProcesses_;
+          remoteParaviewProcesses_.clear();
+          std::copy_if(
+              rps.begin(), rps.end(),
+              std::inserter(remoteParaviewProcesses_, remoteParaviewProcesses_.begin()),
+              [](std::shared_ptr<insight::RemoteParaview> rp)
+              {
+                  return rp && rp->isRunning();
+              }
+          );
+
+          // add this
+          remoteParaviewProcesses_.insert(rp);
+      }
     }
   }
   else

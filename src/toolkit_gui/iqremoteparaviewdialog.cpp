@@ -23,7 +23,6 @@ IQRemoteParaviewDialog::IQRemoteParaviewDialog
   for (auto d: rds)
     ui->subdir->addItem( QString::fromStdString(d.string()) );
 
-  ui->remhost->setText( settings.value("remhost").toString() );
   ui->subdir->setCurrentText( settings.value("remsubdir").toString() );
 
   ui->statefile->clear();
@@ -49,17 +48,13 @@ IQRemoteParaviewDialog::IQRemoteParaviewDialog
               QStringList args;
 
               auto rem_subdir = ui->subdir->currentText();
-              auto rem_host = ui->remhost->text();
               auto statefile = ui->statefile->currentText();
 
-              if (!rem_subdir.isEmpty())
-                args << "-s" << rem_subdir;
-
-              if (!rem_host.isEmpty())
-                args << "-r" << rem_host;
-
-              if (!statefile.isEmpty())
-                args << "-t" << statefile;
+              rp_ = std::make_shared<insight::RemoteParaview>(
+                          rec_,
+                          statefile.toStdString(),
+                          rem_subdir.toStdString()
+                          );
 
               if (!QProcess::startDetached("isPVRemote.sh", args,
                                            QString::fromStdString(rec_.localDir().string()) ))
@@ -77,7 +72,6 @@ IQRemoteParaviewDialog::IQRemoteParaviewDialog
 IQRemoteParaviewDialog::~IQRemoteParaviewDialog()
 {
   QSettings settings("silentdynamics", "isofExecutionManager");
-  settings.setValue("remhost", ui->remhost->text());
   settings.setValue("remsubdir", ui->subdir->currentText());
 
   QString csf=ui->statefile->currentText();
@@ -91,4 +85,10 @@ IQRemoteParaviewDialog::~IQRemoteParaviewDialog()
   settings.setValue("statefile", csf);
 
   delete ui;
+}
+
+
+std::shared_ptr<insight::RemoteParaview> IQRemoteParaviewDialog::remoteParaviewProcess()
+{
+    return rp_;
 }

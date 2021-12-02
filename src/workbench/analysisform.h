@@ -58,6 +58,9 @@
 #include "iqcasedirectorystate.h"
 #include "iqremoteexecutionstate.h"
 #include "iqsupplementedinputdatamodel.h"
+#include "iqremoteparaviewdialog.h"
+
+#include <set>
 
 #ifdef WIN32
 #define WSL_DEFAULT
@@ -155,6 +158,8 @@ protected:
    * whether PS was modified since last save
    */
   bool is_modified_;
+
+  std::set<std::shared_ptr<insight::RemoteParaview> > remoteParaviewProcesses_;
 
   void connectLocalActions();
   void connectRemoteActions();

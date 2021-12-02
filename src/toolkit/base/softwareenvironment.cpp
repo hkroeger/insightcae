@@ -101,7 +101,7 @@ void SoftwareEnvironment::executeCommand
   std::vector<std::string> errout;
   job->runAndTransferOutput(output, &errout);
 
-  auto retcode = job->process->exit_code();
+  auto retcode = job->process().exit_code();
   if (retcode!=0)
   {
     throw insight::Exception(
@@ -197,7 +197,7 @@ JobPtr SoftwareEnvironment::forkCommand
 
   std::vector<std::string> args(argv.begin()+1, argv.end());
 
-  return forkExternalProcess(argv[0], args);
+  return Job::forkExternalProcess(argv[0], args);
 }
 
 }

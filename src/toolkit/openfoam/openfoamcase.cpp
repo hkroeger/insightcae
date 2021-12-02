@@ -808,9 +808,9 @@ void OpenFOAMCase::runSolver
         }
   );
 
-  job->process->wait();
+  job->wait();
 
-  if (job->process->exit_code()!=0)
+  if (job->process().exit_code()!=0)
       throw insight::Exception("OpenFOAMCase::runSolver(): external command execution failed with nonzero exit code!");
 }
 

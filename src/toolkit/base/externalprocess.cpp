@@ -10,6 +10,49 @@ namespace insight {
 
 
 
+ExternalProcess::ExternalProcess()
+{}
+
+
+ExternalProcess::ExternalProcess(std::unique_ptr<boost::process::child> process)
+    : process_(std::move(process))
+{}
+
+ExternalProcess::~ExternalProcess()
+{
+    if (isRunning())
+    {
+        process_->terminate();
+        wait();
+    }
+}
+
+
+
+void ExternalProcess::wait()
+{
+    if (process_)
+    {
+        process_->wait();
+    }
+}
+
+
+
+bool ExternalProcess::isRunning() const
+{
+    return process_ && process_->running();
+}
+
+const boost::process::child &ExternalProcess::process() const
+{
+    return *process_;
+}
+
+
+
+
+
 void Job::read_start_out()
 {
   boost::asio::async_read_until(
@@ -95,7 +138,7 @@ void Job::runAndTransferOutput
         }
   );
 
-  process->wait(); // exit code is not set correctly, if this is skipped
+  process_->wait(); // exit code is not set correctly, if this is skipped
 }
 
 
@@ -119,12 +162,12 @@ void Job::ios_run_with_interruption(
     }
     catch (const boost::thread_interrupted& i)
     {
-      process->terminate();
+      process_->terminate();
       throw i;
     }
 
     t.expires_from_now(std::chrono::seconds( 1 ));
-    if (process->running())
+    if (process_->running())
       t.async_wait(interruption_handler);
    };
   interruption_handler({});
@@ -133,14 +176,15 @@ void Job::ios_run_with_interruption(
 
 
 
-void forkExternalProcess
+
+void Job::forkExternalProcess
 (
     JobPtr job,
-    std::shared_ptr<boost::process::child> child
+    std::unique_ptr<boost::process::child> child
 )
 {
-  job->process = child;
-  if (!job->process->running())
+  job->process_ = std::move(child);
+  if (!job->process_->running())
   {
    throw insight::Exception(
                 "launching of external application as subprocess failed!\n"
@@ -148,7 +192,10 @@ void forkExternalProcess
   }
 }
 
-JobPtr forkExternalProcess
+
+
+
+JobPtr Job::forkExternalProcess
 (
     const std::string& cmd,
     std::vector<std::string> argv
@@ -158,7 +205,7 @@ JobPtr forkExternalProcess
   auto job = std::make_shared<Job>();
   forkExternalProcess(
         job,
-        std::make_shared<boost::process::child>(
+        std::make_unique<boost::process::child>(
           bp::search_path(cmd),
           bp::args( argv ),
           bp::std_in < job->in,
@@ -168,6 +215,7 @@ JobPtr forkExternalProcess
         );
   return job;
 }
+
 
 
 } // namespace insight

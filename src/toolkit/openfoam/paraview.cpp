@@ -1,470 +1,195 @@
 
 #include "openfoam/paraview.h"
-
-#include "openfoam/ofes.h"
-
-#include "boost/assign.hpp"
-#include "boost/algorithm/string.hpp"
-
-#include <cmath>
-
-
-using namespace std;
-using namespace boost;
-using namespace boost::assign;
-using namespace boost::filesystem;
+#include "base/cppextensions.h"
 
 namespace insight
 {
 
-
-namespace paraview
+std::string caseLabel(const boost::filesystem::path &caseDirectory)
 {
-
-
-
-
-std::string pvec(const arma::mat& v)
-{
-  return boost::str( boost::format("np.array([%g, %g, %g])") % v(0) % v(1) % v(2) );
-}
-
-
-
-defineType(PVScriptElement);
-defineDynamicClass(PVScriptElement);
-
-PVScriptElement::PVScriptElement(const Parameters &p, const std::vector<std::string>& objNames)
-  : objNames_(objNames), p_(p)
-{}
-
-PVScriptElement::~PVScriptElement()
-{}
-
-
-
-std::vector<boost::filesystem::path> PVScriptElement::createdFiles() const
-{
-  return std::vector<boost::filesystem::path>();
-}
-
-std::vector<std::string> PVScriptElement::createdObjects() const
-{
-  return objNames_;
+    std::string caseLabel;
+    auto cd = boost::filesystem::canonical(caseDirectory);
+    caseLabel = cd.filename().string();
+    for (int i=0; i<2; ++i)
+    {
+     cd=cd.parent_path();
+     dbg()<<"cd="<<cd<<endl;
+     if (cd.empty()) break;
+     caseLabel = cd.filename().string()+"_"+caseLabel;
+    }
+    return caseLabel;
 }
 
 
 
 
-defineType(CustomScriptElement);
-addToFactoryTable(PVScriptElement, CustomScriptElement);
-addToStaticFunctionTable(PVScriptElement, CustomScriptElement, defaultParameters);
-
-CustomScriptElement::CustomScriptElement(const ParameterSet& ps)
-  : PVScriptElement(ps, Parameters(ps).names), p_(ps)
-{}
-
-
-string CustomScriptElement::pythonCommands() const
+std::ostream& Paraview::createLoadScript()
 {
-  return p_.command;
+    loadScript_=std::make_unique<TemporaryFile>(
+                "load-remote-PV-%%%%.py", caseDirectory_ );
+    auto &os = loadScript_->stream();
+    os<<
+         "from paraview.simple import *\n"
+         //"_DisableFirstRenderCameraReset()\n"
+         ;
+    return os;
 }
 
 
 
 
-defineType(Arrows);
-addToFactoryTable(PVScriptElement, Arrows);
-addToStaticFunctionTable(PVScriptElement, Arrows, defaultParameters);
-
-Arrows::Arrows(const ParameterSet& ps)
-: PVScriptElement(ps, {Parameters(ps).name}), p_(ps)
-{}
-
-
-string Arrows::pythonCommands() const
+Paraview::Paraview(
+        const boost::filesystem::path &caseDirectory,
+        const boost::filesystem::path &stateFile,
+        bool batch,
+        bool parallelProjection,
+        bool rescale,
+        bool onlyLatestTime,
+        double fromTime, double toTime,
+        const std::vector<std::string> &additionalClientArgs,
+        const boost::filesystem::path &dataDirectory
+        )
+    : caseDirectory_( caseDirectory ),
+      dataDirectory_( dataDirectory.empty()?caseDirectory:dataDirectory )
 {
-  std::string pycmd =
-      p_.name+"_input=[]\n"
-      ;
-  for (const auto& a: p_.arrows)
-  {
-    arma::mat R = a.to - a.from;
-    double r=norm(R,2);
-    R/=r;
-    double denom=sqrt(1.-pow(R(2),2));
-    double beta = 180.*atan2( -R(2), denom ) / M_PI;
-    double asinarg = R(1) / denom;
-    double gamma;
-    if (asinarg<=-1.)
-      gamma=-90.;
-    else if (asinarg>=1.)
-      gamma=90.;
+    std::ostream& ls = createLoadScript();
+
+    if (stateFile.empty())
+    {
+        ls << str(boost::format(
+    "ofs=[OpenFOAMReader(FileName='%s/system/controlDict', SkipZeroTime=False)]\n"
+    "times=ofs[0].TimestepValues\n"
+    "print(times)\n"
+    ) % dataDirectory_.generic_path().string() );
+    }
     else
-      gamma = 180.*std::asin( asinarg )/M_PI;
-    std::cout<<"Arrows: "<<R(0)<<" "<<R(1)<<" "<<R(2)<<" "<<r<<" "<<denom<<" "<<beta<<" "<<gamma<<std::endl;
+    {
+        ls << str(boost::format(
+     "LoadState('%s',"
+           "LoadStateDataFileOptions='Search files under specified directory',"
+           "DataDirectory='%s/system')\n"
+     "ofs=list(filter(lambda s: 'OpenFOAMReader' in str(type(s)), "
+                     "GetSources().values()))\n"
+     "print(ofs)\n"
+     "alltimes=set()\n"
+     "for o in ofs: alltimes=set.union(alltimes,o.TimestepValues)\n"
+     "times=sorted(list(alltimes))\n"
+     "print(times)\n"
+    ) % stateFile.generic_path().string()
+      % dataDirectory_.generic_path().string() );
+    }
 
-    pycmd +=
-        p_.name+"_source = Arrow()\n"+
-        p_.name+"_t1 = Transform(Input="+p_.name+"_source)\n"+
-        p_.name+"_t1.Transform = 'Transform'\n"+
-        p_.name+"_t1.Transform.Scale = "+boost::str(boost::format("[%g, %g, %g]\n")%r%r%r)+
-        p_.name+"_t1.Transform.Rotate = "+boost::str(boost::format("[0.0, %g, %g]\n")%beta%gamma)+
-        p_.name+"_obj = Transform(Input="+p_.name+"_t1)\n"+
-        p_.name+"_obj.Transform = 'Transform'\n"+
-        p_.name+"_obj.Transform.Translate = "+boost::str(boost::format("[%g, %g, %g]\n")%a.from(0)%a.from(1)%a.from(2))+
-        p_.name+"_input.append("+p_.name+"_obj)\n"
+    ls <<
+    "AnimationScene1 = GetAnimationScene()\n";
+
+    if (batch)
+    {
+        ls <<
+        "ftimes=None\n"
+        "if (len(times)==0):\n"
+        " ftimes=[0]\n"
+        "else\n";
+        if (onlyLatestTime)
+        {
+            ls <<
+        " ftimes=[times[-1]]\n";
+        }
+        else
+        {
+            ls << str(boost::format(
+        " ftimes=filter(lambda t:   t>=%g and  t<=%g, times)\n"
+                          )       % fromTime % toTime );
+        }
+        ls <<
+        "for curtime in ftimes:\n"
+        "  AnimationScene1.AnimationTime = curtime\n";
+        if (parallelProjection)
+        {
+            ls <<
+        "  # bug in PV4.4: parallel projection is not restored from state file\n"
+        "  for view in GetRenderViews():\n"
+        "     view.CameraParallelProjection = 0\n"
+        "  RenderAllViews()\n"
+        "  for view in GetRenderViews():\n"
+        "     view.CameraParallelProjection = 1\n"
+            ;
+        }
+        else
+        {
+            ls <<
+        "  RenderAllViews()\n";
+        }
+        if (rescale)
+        {
+            ls <<
+        "  import math\n"
+        "  for view in GetRenderViews():\n"
+        "    reps = view.Representations\n"
+        "    for rep in reps:\n"
+        "     if hasattr(rep, 'Visibility') and rep.Visibility == 1 and hasattr(rep, 'MapScalars') and rep.MapScalars != '':\n"
+        "      input = rep.Input\n"
+        "      input.UpdatePipeline() #make sure range is up-to-date\n"
+        "      rep.RescaleTransferFunctionToDataRange(False)\n"
         ;
-  }
-
-  pycmd +=
-      p_.name+" = GroupDatasets(Input = "+p_.name+"_input)\n"
-      "displaySolid("+p_.name+", 1, "+pvec(p_.color)+")\n"
-      ;
-
-  return pycmd;
-}
-
-
-
-defineType(Cutplane);
-addToFactoryTable(PVScriptElement, Cutplane);
-addToStaticFunctionTable(PVScriptElement, Cutplane, defaultParameters);
-
-Cutplane::Cutplane(const ParameterSet& ps)
-: PVScriptElement(ps, {Parameters(ps).name}), p_(ps)
-{}
-
-
-string Cutplane::pythonCommands() const
-{
-  return
-      p_.name + " = planarSlice("+p_.dataset+", "+pvec(p_.p0)+","+pvec(p_.normal)+")\n"
-      "displayContour("+p_.name+", '"+p_.field+"', arrayType='CELL_DATA', barpos=[0.7,0.25], barorient=1)\n"
-      ;
-}
-
-
-
-
-defineType(Streamtracer);
-addToFactoryTable(PVScriptElement, Streamtracer);
-addToStaticFunctionTable(PVScriptElement, Streamtracer, defaultParameters);
-
-Streamtracer::Streamtracer(const ParameterSet& ps)
-: PVScriptElement(ps, {Parameters(ps).name}), p_(ps)
-{}
-
-
-string Streamtracer::pythonCommands() const
-{
-  std::string cmd;
-  cmd +=
-      p_.name+"=StreamTracer(Input="+p_.dataset+", "+
-              "Vectors=['"+p_.field+"'], "+
-              "MaximumStreamlineLength="+lexical_cast<string>(p_.maxLen)+")\n";
-
-  if (const auto* cloud = boost::get<Parameters::seed_cloud_type>(&p_.seed))
-  {
-    cmd+=
-       p_.name+".SeedType = 'Point Source'\n"+
-       p_.name+".SeedType.Center="+pvec(cloud->center)+"\n"+
-       p_.name+".SeedType.Radius="+lexical_cast<string>(cloud->radius)+"\n"+
-       p_.name+".SeedType.NumberOfPoints="+lexical_cast<string>(cloud->number)+"\n"
-       ;
-  }
-  return cmd;
-}
-
-
-
-
-
-
-defineType(PVScene);
-defineDynamicClass(PVScene);
-
-PVScene::PVScene(const Parameters& p)
-  : p_(p)
-{}
-
-PVScene::~PVScene()
-{}
-
-std::vector<std::string> PVScene::objectNames() const
-{
-  std::vector<std::string> objnames;
-  for (PVScriptElementPtr scn: p_.sceneElements)
-  {
-    auto sn=scn->createdObjects();
-    std::copy(sn.begin(), sn.end(), std::back_inserter(objnames));
-  }
-  return objnames;
-}
-
-
-std::string PVScene::sceneObjectsBoundingBoxCmd(const std::vector<std::string> &vn) const
-{
-  auto objnames = objectNames();
-  return
-      vn[0]+"="+vn[1]+"="+vn[2]+"=1e10\n"+
-      vn[3]+"="+vn[4]+"="+vn[5]+"=-1e10\n"+
-      "for o in ["+boost::algorithm::join(objnames, ",")+"]:\n"
-      " (xmin,xmax,ymin,ymax,zmin,zmax)=o.GetDataInformation().GetBounds()\n"
-      " "+vn[0]+"=min(xmin,"+vn[0]+")\n"
-      " "+vn[1]+"=min(ymin,"+vn[1]+")\n"
-      " "+vn[2]+"=min(zmin,"+vn[2]+")\n"
-      " "+vn[3]+"=max(xmax,"+vn[3]+")\n"
-      " "+vn[4]+"=max(ymax,"+vn[4]+")\n"
-      " "+vn[5]+"=max(zmax,"+vn[5]+")\n"
-      ;
-}
-
-string PVScene::pythonCommands() const
-{
-  std::string pvscript;
-
-  for (PVScriptElementPtr scn: p_.sceneElements)
-  {
-    pvscript += scn->pythonCommands();
-  }
-
-  auto ons=objectNames();
-  for (const auto& on: ons)
-  {
-    pvscript += "Show("+on+")\n";
-  }
-
-  return pvscript;
-}
-
-
-std::vector<boost::filesystem::path> PVScene::createdFiles() const
-{
-  return std::vector<boost::filesystem::path>({p_.imagename});
-}
-
-
-
-
-defineType(SingleView);
-addToFactoryTable(PVScene, SingleView);
-addToStaticFunctionTable(PVScene, SingleView, defaultParameters);
-
-SingleView::SingleView(const ParameterSet& ps)
-: PVScene(ps), p_(ps)
-{}
-
-
-string SingleView::pythonCommands() const
-{
-  arma::mat e_up = p_.e_up; e_up/=norm(e_up, 2);
-  arma::mat e_n = -p_.normal; e_n/=norm(e_n, 2);
-  arma::mat eq=arma::cross(e_up, e_n);
-  eq/=norm(eq,2);
-
-  std::string pycmd =
-      PVScene::pythonCommands()
-      +
-      sceneObjectsBoundingBoxCmd({"xmi", "ymi", "zmi", "xma", "yma", "zma"})
-      +
-      "L=np.array([xma-xmi,yma-ymi,zma-zmi])\n"
-      ;
-
-  if (const auto* detect = boost::get<Parameters::imageSize_detect_type>(&p_.imageSize))
-  {
-    pycmd +=
-      "Lh=abs(np.dot(L,"+pvec(eq)+"))\n"
-      "Lv=abs(np.dot(L,"+pvec(e_up)+"))\n"
+        }
+        ls <<
+        "  layouts=GetLayouts()\n"
+        "  for i,l in enumerate(sorted(layouts.keys(), key=lambda k: k[0])):\n"
+        "    fname='"<<caseLabel(caseDirectory_)<<"_layout%%02d'%%(i)\n"
         ;
-  }
-  else if (const auto* manual = boost::get<Parameters::imageSize_manual_type>(&p_.imageSize))
-  {
-    pycmd += boost::str(boost::format(
-      "Lh=abs(%g)\nLv=abs(%g)\n"
-    ) % manual->Lhoriz % manual->Lvert );
-  }
+        if (onlyLatestTime) ls <<
+        "    fname+='_latesttime.png'\n";
+        else ls <<
+        "    fname+='_t%%g.png'%%(curtime)\n";
+        ls <<
+        "    print('Writing', fname)\n"
+        "    SaveScreenshot(fname, layout=layouts[l], magnification=1, quality=100)\n"
+        ;
 
-  pycmd +=
-      "setCam("
-        + pvec(p_.lookAt-p_.normal) + ", "
-        + pvec(p_.lookAt) + ", "
-        + pvec(p_.e_up) + ", "
-        + "(Lh,Lv)"
-      +")\n"
-      "WriteImage('"+p_.imagename+".png')\n"
-  ;
-
-  return pycmd;
-}
-
-std::vector<boost::filesystem::path> SingleView::createdFiles() const
-{
-  return std::vector<boost::filesystem::path>
-      ({ p_.imagename+".png" })
-      ;
-}
-
-
-
-
-defineType(IsoView);
-addToFactoryTable(PVScene, IsoView);
-addToStaticFunctionTable(PVScene, IsoView, defaultParameters);
-
-IsoView::IsoView(const ParameterSet& ps)
-: PVScene(ps), p_(ps)
-{}
-
-
-string IsoView::pythonCommands() const
-{
-  arma::mat bbL = p_.bbmax - p_.bbmin;
-  std::cout<<"bbL="<<bbL<<std::endl;
-  arma::mat ctr = p_.bbmin + 0.5*bbL;
-
-  arma::mat ez = p_.e_up / arma::norm(p_.e_up, 2);
-  arma::mat ex = arma::cross(ez, arma::cross(p_.e_ax, ez));
-  ex /= arma::norm(ex, 2);
-  arma::mat ey = arma::cross(ez, ex);
-  ey /= arma::norm(ey, 2);
-
-  double
-      Lx = fabs(arma::dot(bbL, ex)),
-      Ly = fabs(arma::dot(bbL, ey)),
-      Lz = fabs(arma::dot(bbL, ez))
-           ;
-
-  return
-      PVScene::pythonCommands()
-      +
-      "setCam("
-        + pvec(ctr+ex*Lx*1.5) + ", "
-        + pvec(ctr) + ", "
-        + pvec(ez) + ", "
-        + str(format("(%g,%g)") % Ly % Lz)
-      +")\n"
-      "WriteImage('"+p_.imagename+"_front.png')\n"
-      +
-      "setCam("
-        + pvec(ctr+ez*Lz*1.5) + ", "
-        + pvec(ctr) + ", "
-        + pvec(-ey) + ", "
-        + str(format("(%g,%g)") % Lx % Ly)
-      +")\n"
-      "WriteImage('"+p_.imagename+"_top.png')\n"
-      +
-      "setCam("
-        + pvec(ctr+ey*Ly*1.5) + ", "
-        + pvec(ctr) + ", "
-        + pvec(ez) + ", "
-        + str(format("(%g,%g)") % Lx % Lz)
-      +")\n"
-      "WriteImage('"+p_.imagename+"_side.png')\n"
-      +
-      "setCam("
-        + pvec(ctr+ (ex*Lx +ey*Ly +ez*Lz)*1.5) + ", "
-        + pvec(ctr) + ", "
-        + pvec(ez) + ", "
-        + str(format("%g") % (0.5*sqrt(Lx*Lx+Ly*Ly+Lz*Lz)))
-      +")\n"
-      "WriteImage('"+p_.imagename+"_diag.png')\n"
-  ;
-}
-
-std::vector<boost::filesystem::path> IsoView::createdFiles() const
-{
-  return std::vector<boost::filesystem::path>({
-       p_.imagename+"_front.png",
-       p_.imagename+"_top.png",
-       p_.imagename+"_side.png",
-       p_.imagename+"_diag.png"
-      });
-}
-
-
-
-
-addToAnalysisFactoryTable(ParaviewVisualization);
-
-ParaviewVisualization::ParaviewVisualization(
-    const ParameterSet& ps,
-    const boost::filesystem::path& exepath,
-    ProgressDisplayer& progress )
-: Analysis("", "", ps, exepath, progress),
-  p_(ps)
-{
-}
-
-ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer&)
-{
-//  boost::mutex::scoped_lock lock(runPvPython_mtx);
-    setupExecutionEnvironment();
-
-    std::string pvscript=
-        "from Insight.Paraview import *\n"
-        "import numpy as np\n"+
-        OFCaseDatasetName() + " = loadOFCase('.')\n"
-        "prepareSnapshots()\n"
-    ;
-
-    for (PVScenePtr scn: p_.scenes)
+    }
+    else // not batch
     {
-        pvscript += scn->pythonCommands();
+        ls <<
+        "AnimationScene1.AnimationTime = times[-1]\n";
+    }
+    loadScript_->closeStream();
+
+    if (batch)
+    {
+        process_=std::make_unique<boost::process::child>(
+                    boost::process::search_path("pvbatch"),
+                    boost::process::args({
+                       "--use-offscreen-rendering",
+                       loadScript_->path().string()
+                                         })
+                    );
+    }
+    else
+    {
+        std::vector<std::string> pvargs={
+    #ifndef WIN32
+            "--title", caseLabel(caseDirectory_),
+    #endif
+            "--script="+loadScript_->path().string()
+        };
+
+        std::copy(additionalClientArgs.begin(), additionalClientArgs.end(),
+                  std::inserter(pvargs, pvargs.begin()) );
+
+        process_=std::make_unique<boost::process::child>(
+                    boost::process::search_path("paraview"),
+                    boost::process::args(pvargs)
+                    );
     }
 
-
-//    redi::opstream proc;
-    std::vector<string> args;
-    args.push_back("--force-offscreen-rendering");
-    std::string machine=""; // execute always on local machine
-    //ofc.forkCommand(proc, location, "pvpython", args);
-
-    path tempfile=absolute(unique_path("%%%%%%%%%.py"));
-    {
-      std::ofstream tf(tempfile.c_str());
-      tf << pvscript;
-      tf.close();
-    }
-    args.push_back(tempfile.string());
-    if (OFEs::list.size()==0)
-      throw insight::Exception("no OpenFOAM environment defined!");
-
-    OpenFOAMCase ofc( *OFEs::list.begin()->second );
-    ofc.executeCommand(executionPath(), "pvbatch-offscreen", args, nullptr, 0, &machine);
-
-//    if (!keepScript)
-    remove(tempfile);
-
-    ResultSetPtr results(new ResultSet(p_, "Paraview renderings", ""));
-
-    std::vector<boost::filesystem::path> files;
-    for (PVScenePtr scn: p_.scenes)
-    {
-        std::vector<boost::filesystem::path> af=scn->createdFiles();
-        std::copy(af.begin(), af.end(), std::back_inserter(files));
-    }
-
-    for (boost::filesystem::path f: files)
-    {
-      results->insert(f.filename().stem().string(),
-        std::unique_ptr<Image>(new Image
-        (
-        executionPath(), f,
-        f.filename().stem().string(), ""
-      )));
-    }
-
-    return results;
-}
-
-string ParaviewVisualization::OFCaseDatasetName()
-{
-  return "openfoam_case";
+    if (!process_->running())
+      throw insight::Exception("Failed to launch paraview!");
 }
 
 
-}
+
+
+
 
 
 

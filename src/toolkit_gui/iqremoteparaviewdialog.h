@@ -8,6 +8,7 @@
 
 #include "base/boost_include.h"
 #include "base/remoteexecution.h"
+#include "remoteparaview.h"
 
 namespace Ui {
 class IQRemoteParaviewDialog;
@@ -18,6 +19,7 @@ class TOOLKIT_GUI_EXPORT IQRemoteParaviewDialog : public QDialog
   Q_OBJECT
 
   insight::RemoteExecutionConfig rec_;
+  std::shared_ptr<insight::RemoteParaview> rp_;
 
 public:
   explicit IQRemoteParaviewDialog(
@@ -26,6 +28,9 @@ public:
       );
   ~IQRemoteParaviewDialog();
 
+  std::shared_ptr<insight::RemoteParaview> remoteParaviewProcess();
+
+private:
   Ui::IQRemoteParaviewDialog *ui;
 };
 

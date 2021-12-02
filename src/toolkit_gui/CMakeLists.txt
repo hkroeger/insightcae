@@ -109,7 +109,7 @@ generate_export_header(toolkit_gui)
 target_compile_definitions(toolkit_gui PRIVATE toolkit_gui_EXPORTS)
 
 target_link_libraries(toolkit_gui
- toolkit toolkit_cad insightcad_gui
+ toolkit toolkit_cad insightcad_gui toolkit_remote
  Qt5::Widgets Qt5::Charts
  ${Boost_LIBRARIES}
  )

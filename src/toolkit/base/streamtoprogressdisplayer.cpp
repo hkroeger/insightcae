@@ -10,7 +10,6 @@ StreamToProgressDisplayer::StreamToProgressDisplayer(std::ostream &os, ProgressD
 
 void StreamToProgressDisplayer::processLine(const std::string &line)
 {
-    std::cerr<<"process line:" <<line<<std::endl;
     pd_.logMessage( line );
 }
 

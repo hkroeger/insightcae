@@ -27,8 +27,17 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
 
       ui->lblRemoteDirectory->setEnabled(enabled);
       if (enabled)
-        ui->lblRemoteDirectory->setText(
-              QString::fromStdString( rlc_->remoteDir().string() ) );
+      {
+          if (rlc_->remoteDir().empty())
+          {
+              ui->lblRemoteDirectory->setText("temporary directory");
+          }
+          else
+          {
+              ui->lblRemoteDirectory->setText( "directory "+
+                  QString::fromStdString( rlc_->remoteDir().string() ) );
+          }
+      }
       else
         ui->lblRemoteDirectory->setText("(none)");
 

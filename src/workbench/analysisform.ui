@@ -88,7 +88,7 @@
            <bool>false</bool>
           </property>
           <property name="text">
-           <string>in directory</string>
+           <string>in</string>
           </property>
          </widget>
         </item>
@@ -229,8 +229,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>1450</width>
-              <height>851</height>
+              <width>1430</width>
+              <height>824</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_2">

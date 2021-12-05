@@ -46,7 +46,7 @@ class RemoteRun
   insight::RemoteExecutionConfig& remote_;
   std::unique_ptr<insight::AnalyzeClient> ac_;
   insight::RemoteServer::BackgroundJobPtr analyzeProcess_;
-  bool cancelled_;
+  bool cancelled_, disconnected_;
   insight::ActionProgress launchProgress_;
 
 
@@ -82,7 +82,7 @@ protected:
   // 8. cleanup remote
   void cleanupRemote();
 
-  void checkIfCancelled();
+  bool checkIfCancelled();
   void onErrorString(const std::string& errorMessage);
   void onError(std::exception_ptr ex);
 

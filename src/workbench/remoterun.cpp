@@ -60,7 +60,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, insight::RemoteExecutionConfig& rec, bool
   : WorkbenchAction(af),
     resume_( resume ),
     remote_( rec ),
-    cancelled_(false),
+    cancelled_(false), disconnected_(false),
     launchProgress_( af_->progressDisplayer_.forkNewAction(4, "Launching remote analysis") )
 {}
 
@@ -218,6 +218,7 @@ void RemoteRun::waitForContact( int maxAttempts )
 
         checkIfCancelled();
 
+
         ac_->queryStatus(
                 [this,scheduleNextAttempt](insight::QueryStatusAction::Result r)
                 {
@@ -253,6 +254,7 @@ void RemoteRun::launchAnalysis()
         insight::dbg()<<"packing parameter set"<<std::endl;
 
         checkIfCancelled();
+
 
         insight::ParameterSet p = af_->parameters();
         p.packExternalFiles(); // pack
@@ -300,7 +302,8 @@ void RemoteRun::monitor()
 
     try {
 
-        checkIfCancelled();
+        if (checkIfCancelled()) return;
+
 
 
         launchProgress_.stepTo(4);
@@ -348,7 +351,7 @@ void RemoteRun::fetchResults()
     insight::dbg()<<"query results"<<std::endl;
     try {
 
-        checkIfCancelled();
+        if (checkIfCancelled()) return;
 
         ac_->queryResults(
                     [this](insight::QueryResultsAction::Result qrs)
@@ -375,6 +378,7 @@ void RemoteRun::stopRemoteExecutionServer()
     try {
 
         checkIfCancelled();
+
 
         ac_->exit(
                     [this](insight::AnalyzeClientAction::ReportSuccessResult rs)
@@ -415,12 +419,13 @@ void RemoteRun::cleanupRemote()
 
 
 
-void RemoteRun::checkIfCancelled()
+bool RemoteRun::checkIfCancelled()
 {
     if (cancelled_)
     {
         throw insight::Exception("remote run cancelled");
     }
+    if (disconnected_) return true; else return false;
 }
 
 
@@ -453,6 +458,9 @@ std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, insight::RemoteEx
 
 RemoteRun::~RemoteRun()
 {
+    disconnected_=true;
+    ac_->httpClient().abort();
+    ac_->ioService().stop();
     af_->progressDisplayer_.reset();
 }
 
@@ -461,8 +469,8 @@ RemoteRun::~RemoteRun()
 
 void RemoteRun::onCancel()
 {
-    ac_->httpClient().abort();
     cancelled_=true;
+    ac_->httpClient().abort();
 }
 
 

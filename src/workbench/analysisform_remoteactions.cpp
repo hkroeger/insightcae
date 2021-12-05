@@ -55,26 +55,14 @@ void AnalysisForm::connectRemoteActions()
           {
             if (!isRunningRemotely())
             {
-               if (remoteExecutionConfiguration_)
-               {
-                 auto answer = QMessageBox::question(
-                       this, "Decision required",
-                       QString("The directory %1 on server %2 and its contents will be deleted!\nContinue?")
-                        .arg(QString::fromStdString(remoteExecutionConfiguration_->location().remoteDir().string()))
-                        .arg(QString::fromStdString( *(remoteExecutionConfiguration_->location().serverConfig()) ))
-                       );
-                 if (answer==QMessageBox::Yes)
-                 {
-                   remoteExecutionConfiguration_->cleanup(true);
-                   delete remoteExecutionConfiguration_;
-                 }
-              }
+                removeRemoteWorkspace();
             }
             else
             {
               QMessageBox::critical(
                     this, "Not possible",
-                    "There is currently a remote analysis running. Please terminate that first!");
+                    "There is currently a remote analysis running.\n"
+                    "Please terminate it first!");
             }
           }
   );
@@ -82,21 +70,7 @@ void AnalysisForm::connectRemoteActions()
 }
 
 
-IQRemoteExecutionState* AnalysisForm::remoteExecutionConfiguration()
-{
-#ifdef WSL_DEFAULT
-  if (isOpenFOAMAnalysis_ && !remoteExecutionConfiguration_ && !remoteExeConfigWasEdited_)
-  {
-    auto* af = const_cast<AnalysisForm*>(this);
-    af->remoteExecutionConfiguration_ =
-        IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
-          af,
-          insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*")
-          );
-  }
-#endif
-  return remoteExecutionConfiguration_;
-}
+
 
 
 void AnalysisForm::upload()

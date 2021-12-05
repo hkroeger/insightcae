@@ -40,6 +40,35 @@ class vtkCellArray;
 namespace insight
 {
 
+
+/**
+ * wrapper for calling virtual functions before destruction
+ */
+template <typename T>
+class DestructionGuard : public T
+{
+  std::function<void()> preDestruction_;
+
+public:
+  template<class ...Args>
+  DestructionGuard(Args&&... addArgs)
+   : T(std::forward<Args>(addArgs)...),
+     preDestruction_([](){})
+  {}
+
+  void setPreDestructionFunction(std::function<void()> preDestruction)
+  {
+      preDestruction_=preDestruction;
+  }
+
+  ~DestructionGuard()
+  {
+     preDestruction_();
+     // now T is destructed
+  }
+};
+
+
 bool directoryIsWritable( const boost::filesystem::path& directory );
 
 class GlobalTemporaryDirectory
@@ -77,8 +106,8 @@ class CaseDirectory
   bool isAutoCreated_;
 
 public:
-  CaseDirectory(const boost::filesystem::path& path, bool keep=true);
-  CaseDirectory(bool keep=true, const boost::filesystem::path& prefix="");
+  explicit CaseDirectory(const boost::filesystem::path& path);
+  explicit CaseDirectory(bool keep=true, const boost::filesystem::path& prefix="");
   ~CaseDirectory();
 
   void createDirectory();
@@ -86,7 +115,6 @@ public:
   bool isExistingAndWillBeRemoved() const;
   bool isExistingAndNotEmpty() const;
   bool keep() const;
-  void setKeep(bool keep);
 };
 
 

@@ -3,7 +3,7 @@
 #include "analysisform.h"
 #include "ui_analysisform.h"
 
-void IQCaseDirectoryState::setAFEnabledState(bool enabled)
+void IQCaseDirectoryState::updateGUI(bool enabled)
 {
   insight::dbg()<<"set IQCaseDirectoryState to enabled="
                 <<enabled<<std::endl;
@@ -19,30 +19,9 @@ void IQCaseDirectoryState::setAFEnabledState(bool enabled)
 
 
 
-
-IQCaseDirectoryState::IQCaseDirectoryState(AnalysisForm *af, const boost::filesystem::path& path, bool keep)
-  : insight::CaseDirectory(path, keep),
-    af_(af)
-{
-  setAFEnabledState(true);
-}
-
-
-
-
-IQCaseDirectoryState::IQCaseDirectoryState(AnalysisForm *af, bool keep, const boost::filesystem::path& prefix)
-  : insight::CaseDirectory(keep, prefix),
-    af_(af)
-{
-  setAFEnabledState(true);
-}
-
-
-
-
 IQCaseDirectoryState::~IQCaseDirectoryState()
 {
-  setAFEnabledState(false);
+  updateGUI(false);
 }
 
 

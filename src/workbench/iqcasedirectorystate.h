@@ -15,12 +15,17 @@ class IQCaseDirectoryState
     : public insight::CaseDirectory
 {
   AnalysisForm *af_;
-
-  void setAFEnabledState(bool enabled);
+  void updateGUI(bool enabled);
 
 public:
-  IQCaseDirectoryState(AnalysisForm *af, const boost::filesystem::path& path, bool keep=true);
-  IQCaseDirectoryState(AnalysisForm *af, bool keep=true, const boost::filesystem::path& prefix="");
+  template<class ...Args>
+  IQCaseDirectoryState(AnalysisForm *af, Args&&... addArgs)
+      : insight::CaseDirectory( std::forward<Args>(addArgs)... ),
+        af_(af)
+  {
+    updateGUI(true);
+  }
+
   ~IQCaseDirectoryState();
 
   operator QString() const;

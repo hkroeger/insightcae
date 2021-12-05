@@ -5,18 +5,12 @@
 
 #include <QObject>
 #include "base/remoteexecution.h"
+#include "base/cppextensions.h"
+#include "base/tools.h"
+
 
 class AnalysisForm;
 
-class IQRemoteExecutionState;
-
-template <typename T>
-class DestructionGuard : public T
-{
-  friend class IQRemoteExecutionState;
-public:
-  ~DestructionGuard();
-};
 
 /**
  * @brief The IQRemoteExecutionState class
@@ -28,7 +22,6 @@ public:
 class TOOLKIT_GUI_EXPORT IQRemoteExecutionState
 : public QObject
 {
-  template<typename T> friend class DestructionGuard;
 
 protected:
   virtual void updateGUI(bool enabled);
@@ -43,53 +36,23 @@ public:
    * @param af
    * @param remoteLocation
    */
-  template<typename DerivedClass>
+  template<typename DerivedClass, class ...Args>
   static IQRemoteExecutionState* New(
       QObject *parent,
-      const insight::RemoteLocation& remoteLocation )
+      Args&&... addArgs )
   {
-    auto *iqr = new DestructionGuard<DerivedClass>;
+    auto *iqr = new insight::DestructionGuard<DerivedClass>;
     iqr->setParent(parent);
-    iqr->rlc_.reset(new insight::RemoteLocation(remoteLocation));
-    iqr->updateGUI(true);
+    iqr->rlc_ = std::make_unique<insight::RemoteLocation>(
+                std::forward<Args>(addArgs)... );
+    dynamic_cast<IQRemoteExecutionState*>(iqr)->updateGUI(true);
+    iqr->setPreDestructionFunction(
+                std::bind(&IQRemoteExecutionState::updateGUI, iqr, false)
+                );
     return iqr;
   }
 
-  /**
-   * @brief QRemoteExecutionState
-   * read from config file
-   * @param af
-   * @param location
-   * @param localREConfigFile
-   */
-  template<typename DerivedClass>
-  static IQRemoteExecutionState* New(
-      QObject *parent,
-      const boost::filesystem::path& localDir,
-      const boost::filesystem::path& configFile )
-  {
-    auto *iqr = new DestructionGuard<DerivedClass>;
-    iqr->setParent(parent);
-    iqr->rlc_.reset(new insight::RemoteExecutionConfig(localDir, configFile));
-    iqr->updateGUI(true);
-    return iqr;
-  }
-
-  template<typename DerivedClass>
-  static IQRemoteExecutionState* New(
-      QObject *parent,
-      insight::RemoteServer::ConfigPtr rsc,
-      const boost::filesystem::path& remotePath = "" )
-  {
-    auto *iqr = new DestructionGuard<DerivedClass>;
-    iqr->setParent(parent);
-    iqr->rlc_.reset(new insight::RemoteLocation(rsc, remotePath));
-    iqr->updateGUI(true);
-    return iqr;
-  }
-
-//  virtual ~IQRemoteExecutionState();
-
+  bool remoteHostRunningAndDirectoryExisting() const;
   void commit(const boost::filesystem::path& location);
   bool isCommitted() const;
 
@@ -102,11 +65,6 @@ public:
 
 
 
-template <typename T>
-DestructionGuard<T>::~DestructionGuard()
-{
-  this->updateGUI(false);
-}
 
 
 #endif // IQREMOTEEXECUTIONSTATE_H

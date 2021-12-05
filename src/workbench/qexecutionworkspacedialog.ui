@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>QExecutionEnvironmentDialog</class>
- <widget class="QDialog" name="QExecutionEnvironmentDialog">
+ <class>QExecutionWorkspaceDialog</class>
+ <widget class="QDialog" name="QExecutionWorkspaceDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>790</width>
-    <height>208</height>
+    <width>636</width>
+    <height>230</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -152,7 +152,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>QExecutionEnvironmentDialog</receiver>
+   <receiver>QExecutionWorkspaceDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -168,7 +168,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>QExecutionEnvironmentDialog</receiver>
+   <receiver>QExecutionWorkspaceDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

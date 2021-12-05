@@ -63,6 +63,7 @@ int main(int argc, char** argv)
     ("version,r", "print version and exit")
     ("nolog,l", "put debug output to console instead of log window")
     ("libs", po::value< StringList >(), "Additional libraries with analysis modules to load")
+    ("new,n", po::value< std::string >(), "open a new analysis of this on startup")
     ("input-file,f", po::value< std::string >(), "Specifies input file.")
     ;
     
@@ -148,6 +149,12 @@ int main(int argc, char** argv)
           }
           window.openAnalysis( QString::fromStdString(boost::filesystem::absolute(fn).string()) );
       }
+
+      if (vm.count("new"))
+      {
+          window.newAnalysis( vm["new"].as<std::string>() );
+      }
+
       window.show();
 
       app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen

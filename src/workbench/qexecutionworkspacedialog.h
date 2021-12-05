@@ -7,10 +7,10 @@
 #include "base/remoteexecution.h"
 
 namespace Ui {
-class QExecutionEnvironmentDialog;
+class QExecutionWorkspaceDialog;
 }
 
-class QExecutionEnvironmentDialog
+class QExecutionWorkspaceDialog
     : public QDialog
 {
   Q_OBJECT
@@ -19,25 +19,28 @@ class QExecutionEnvironmentDialog
   QString lastValidLocalWorkDirSetting_;
   std::unique_ptr<insight::RemoteLocation> remoteLocation_;
 
+  bool isTemporaryLocalDirectorySelected() const;
+
+  bool isValidWorkingDir(const boost::filesystem::path& newDirPath) const;
+
   void resetServerName();
   void resetRemoteWorkingDir();
-  void setInvalidWorkingDir(bool changeLE=true);
-  bool checkAndUpdateWorkingDir(const QString& newDir, bool changeLE=true);
-  bool checkAndUpdateRemoteConfig(const QString& serverName, const QString& remoteDir);
+  void updateWorkingDir(const QString& newDir);
+  void checkAndUpdateRemoteConfig(const QString& serverName, const QString& remoteDir);
   void setRemoteConfigFromWorkingDir();
 
 public:
-  explicit QExecutionEnvironmentDialog(
+  explicit QExecutionWorkspaceDialog(
       const insight::CaseDirectory* localDirectory,
       const insight::RemoteLocation* remoteLocation,
       QWidget *parent = nullptr );
-  ~QExecutionEnvironmentDialog();
+  ~QExecutionWorkspaceDialog();
 
   boost::filesystem::path localDirectory() const;
   insight::RemoteLocation* remoteLocation() const;
 
 private:
-  Ui::QExecutionEnvironmentDialog *ui;
+  Ui::QExecutionWorkspaceDialog *ui;
 };
 
 #endif // QEXECUTIONENVIRONMENTDIALOG_H

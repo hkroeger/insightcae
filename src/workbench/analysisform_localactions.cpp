@@ -17,7 +17,6 @@
 
 #include <QMessageBox>
 #include <QFileDialog>
-#include "qexecutionenvironmentdialog.h"
 
 #include "localrun.h"
 
@@ -30,71 +29,15 @@ void AnalysisForm::connectLocalActions()
   // ====================================================================================
   // ======== edit working directory
 
-  connect(ui->btnSetExecutionEnvironment, &QPushButton::clicked, this,
-          [&]()
+  connect(ui->btnSetExecutionEnvironment, &QPushButton::clicked,
+          this, [&]()
           {
-            insight::RemoteLocation *rl = nullptr;
-            if (auto* rec = remoteExecutionConfiguration())
-              rl=&rec->location();
-
-            QExecutionEnvironmentDialog dlg(
-                  localCaseDirectory_.get(),
-                  rl,
-                  this );
-
-            if (dlg.exec() == QDialog::Accepted)
-            {
-              remoteExeConfigWasEdited_ = true;
-
-              if (remoteExecutionConfiguration_)
-                delete remoteExecutionConfiguration_;
-              localCaseDirectory_.reset();
-
-              auto lwd = dlg.localDirectory();
-
-              insight::dbg()<<"localDirectory="<<lwd<<std::endl;
-
-              if (lwd.empty())
-              {
-                localCaseDirectory_.reset(
-                      new IQCaseDirectoryState(
-                        this, boost::filesystem::path(), false) );
-              }
-              else
-              {
-                localCaseDirectory_.reset(
-                      new IQCaseDirectoryState(
-                        this, lwd ) );
-              }
-
-              if (localCaseDirectory_ && dlg.remoteLocation())
-              {
-                if (remoteExecutionConfiguration_)
-                  delete remoteExecutionConfiguration_;
-
-                remoteExecutionConfiguration_ =
-                      IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
-                        this,
-                        *dlg.remoteLocation() );
-              }
-            }
+              showSetupExecutionEnvironmentDialog();
           }
-  );
+          );
 
 }
 
-
-boost::filesystem::path AnalysisForm::localCaseDirectory() const
-{
-  if (!localCaseDirectory_)
-  {
-    const_cast<std::unique_ptr<IQCaseDirectoryState>&>
-        (localCaseDirectory_).reset(
-          new IQCaseDirectoryState(
-            const_cast<AnalysisForm*>(this), false ) );
-  }
-  return *localCaseDirectory_;
-}
 
 
 void AnalysisForm::startLocalRun()

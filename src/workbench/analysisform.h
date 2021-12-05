@@ -55,11 +55,11 @@
 #include "qresultsetmodel.h"
 #include "qactionprogressdisplayerwidget.h"
 
-#include "iqcasedirectorystate.h"
-#include "iqremoteexecutionstate.h"
+
 #include "iqsupplementedinputdatamodel.h"
 #include "iqremoteparaviewdialog.h"
 #include "iqparaviewdialog.h"
+#include "iqexecutionworkspace.h"
 
 #include <set>
 
@@ -79,21 +79,15 @@ class TaskSpoolerInterface;
 class SolverOutputAnalyzer;
 }
 
-class WorkbenchAction;
 
 
-class IQWorkbenchRemoteExecutionState
-    : public IQRemoteExecutionState
-{
-protected:
-  void updateGUI(bool enabled) override;
-};
 
 
 
 class AnalysisForm
 : public QMdiSubWindow,
-  public workbench::WidgetWithDynamicMenuEntries
+  public workbench::WidgetWithDynamicMenuEntries,
+  public IQExecutionWorkspace
 {
   Q_OBJECT
 
@@ -170,37 +164,14 @@ protected:
   void updateWindowTitle();
 
   bool checkAnalysisExecutionPreconditions();
-//  bool changeWorkingDirectory(const QString& wd);
-//  bool changeRemoteLocation(const QString& hostLabel, const QString& remoteDir);
-//  bool changeRemoteLocation(const insight::RemoteExecutionConfig* rec = nullptr);
-//  void applyDirectorySettings();
+
 
   // ====================================================================================
   // ======== current action objects
-  std::unique_ptr<IQCaseDirectoryState> localCaseDirectory_;
-  void resetLocalCaseDirectory(const boost::filesystem::path& lcd);
-  QPointer<IQRemoteExecutionState> remoteExecutionConfiguration_;
-  bool remoteExeConfigWasEdited_ = false;
 
 
   std::unique_ptr<WorkbenchAction> currentWorkbenchAction_;
 
-  // access functions
-
-  /**
-   * @brief localCaseDirectory
-   * Returns selected local working direcory. Creates the directory, if required.
-   * @return local case directory path
-   */
-  boost::filesystem::path localCaseDirectory() const;
-
-  /**
-   * @brief remoteExecutionConfiguration
-   *
-   * @return
-   * reference to remote config
-   */
-  IQRemoteExecutionState* remoteExecutionConfiguration();
 
   // ================================================================================
   // ================================================================================

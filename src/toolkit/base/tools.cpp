@@ -139,40 +139,16 @@ GlobalTemporaryDirectory::~GlobalTemporaryDirectory()
 
 
 
-CaseDirectory::CaseDirectory(const boost::filesystem::path& p, bool keep)
-  : boost::filesystem::path(p),
-    keep_(keep),
+CaseDirectory::CaseDirectory(const boost::filesystem::path& p)
+  : boost::filesystem::path( boost::filesystem::canonical(p) ),
+    keep_(true),
     isAutoCreated_(false)
 {
-  if (p.empty())
-  {
-    auto parentcasedir = absolute(boost::filesystem::current_path());
-
-    if (!directoryIsWritable(parentcasedir))
-    {
-      insight::dbg() << "directory is NOT writable: "<<parentcasedir<<std::endl;
-      parentcasedir=boost::filesystem::temp_directory_path();
-      insight::dbg() << "diverting to "<<parentcasedir<<std::endl;
-    }
-    else
-    {
-      insight::dbg() << "directory is writable: "<<parentcasedir<<std::endl;
-    }
-
-    boost::filesystem::path::operator=(
-          unique_path( parentcasedir / (timeCodePrefix() + "_analysis_%%%%") )
-          );
-    isAutoCreated_=true;
-    createDirectory();
-  }
-  else if (!p.empty() && !fs::exists(p))
-  {
-    boost::filesystem::path::operator=(absolute(p));
-    isAutoCreated_=true;
-    createDirectory();
-  }
-
+  insight::assertion( !p.empty(), "internal error: the case directory path must not be empty!");
+  insight::assertion( boost::filesystem::exists(p), "internal error: the case directory "+p.string()+" has to exist!");
 }
+
+
 
 
 CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
@@ -208,6 +184,9 @@ CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
   createDirectory();
 }
 
+
+
+
 CaseDirectory::~CaseDirectory()
 {
   if (!keep_)
@@ -217,9 +196,9 @@ CaseDirectory::~CaseDirectory()
     {
       remove_all(*this);
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
-      std::cerr<<e.what()<<std::endl;
+      insight::Warning(e.what());
     }
   }
 }
@@ -259,11 +238,6 @@ void CaseDirectory::createDirectory()
 bool CaseDirectory::keep() const
 {
   return keep_;
-}
-
-void CaseDirectory::setKeep(bool keep)
-{
-  keep_=keep;
 }
 
 

@@ -9,73 +9,24 @@ void IQRemoteExecutionState::updateGUI(bool /*enabled*/)
 
 
 
-IQRemoteExecutionState::IQRemoteExecutionState( /*QObject* p*/ )
-  : QObject(/*p*/nullptr)
+IQRemoteExecutionState::IQRemoteExecutionState()
+  : QObject(nullptr)
+{}
+
+
+bool IQRemoteExecutionState::remoteHostRunningAndDirectoryExisting() const
 {
+    return rlc_->isActive();
 }
-
-
-
-//IQRemoteExecutionState* IQRemoteExecutionState::New(
-//    QObject *af,
-//    const insight::RemoteLocation &remoteLocation )
-//{
-//  auto *iqr = new IQRemoteExecutionState(af);
-//  iqr->rlc_.reset(new insight::RemoteLocation(remoteLocation));
-//  iqr->updateGUI(true);
-//  return iqr;
-//}
-
-
-
-
-//IQRemoteExecutionState* IQRemoteExecutionState::New(
-//    QObject *af,
-//    const boost::filesystem::path& configFile
-//    )
-//{
-//  auto *iqr = new IQRemoteExecutionState(af);
-//  iqr->rlc_.reset(new insight::RemoteLocation(configFile));
-//  iqr->updateGUI(true);
-//  return iqr;
-//}
-
-
-
-
-//IQRemoteExecutionState* IQRemoteExecutionState::New(
-//    QObject *af,
-//    insight::RemoteServer::ConfigPtr rsc,
-//    const boost::filesystem::path& remotePath
-//    )
-//{
-//  auto *iqr = new IQRemoteExecutionState(af);
-//  iqr->rlc_.reset(new insight::RemoteLocation(rsc, remotePath));
-//  iqr->updateGUI(true);
-//  return iqr;
-//}
-
-
-
-
-//IQRemoteExecutionState::~IQRemoteExecutionState()
-//{
-//  updateGUI(false);
-//}
-
-
-
 
 void IQRemoteExecutionState::commit(const boost::filesystem::path &location)
 {
   if (!dynamic_cast<const insight::RemoteExecutionConfig*>(rlc_.get()))
   {
-    auto rl = std::move(rlc_);
-    rlc_.reset(
-        new insight::RemoteExecutionConfig(location, *rl)
-        );
-    rlc_->initialize();
-
+    auto rec = std::make_unique<insight::RemoteExecutionConfig>(location, *rlc_);
+    rec->initialize();
+    rec->writeConfig(); // re-write with temporary directory resolved.
+    rlc_ = std::move(rec);
     updateGUI(true);
   }
 }

@@ -13,6 +13,7 @@ set(workbench_SRCS
 
     iqcasedirectorystate.h
     iqcasedirectorystate.cpp
+    iqexecutionworkspace.h iqexecutionworkspace.cpp
 
     analysisform.cpp
     analysisform.h
@@ -34,11 +35,16 @@ set(workbench_SRCS
     #qsetupremotedialog.cpp
     #qsetupremotedialog.h
 
-    qexecutionenvironmentdialog.h
-    qexecutionenvironmentdialog.cpp
+    qexecutionworkspacedialog.h
+    qexecutionworkspacedialog.cpp
 
 )
-SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui qsetupremotedialog.ui qexecutionenvironmentdialog.ui)
+SET(workbench_FORMS
+    newanalysisdlg.ui
+    analysisform.ui
+    xml_display.ui
+    qsetupremotedialog.ui
+    qexecutionworkspacedialog.ui)
 SET(workbench_RCCS workbench.qrc)
 set(workbench_LIBS
     toolkit_gui

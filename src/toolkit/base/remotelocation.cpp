@@ -57,7 +57,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
 {
   CurrentExceptionContext ce("reading configuration for remote execution in  directory "+mf.parent_path().string()+" from file "+mf.string());
 
-  if (!boost::filesystem::exists(mf))
+  if ( !boost::filesystem::exists(mf) || boost::filesystem::is_directory(mf) )
   {
     throw insight::Exception("There is no remote execution configuration file present!");
   }
@@ -130,6 +130,8 @@ RemoteLocation::RemoteLocation(
     isTemporaryStorage_( isTemporaryStorage ),
     isValidated_(false)
 {
+    serverInstance_ = serverConfig_->getInstanceIfRunning();
+    validate();
 //  if (remoteDir_.empty())
 //  {
 //    autoCreateRemoteDir_=true;
@@ -203,7 +205,12 @@ void RemoteLocation::cleanup(bool forceRemoval)
   execRemoteCmd("tsp -K");
 
   if (isTemporaryStorage() || forceRemoval)
-    removeRemoteDir();
+      removeRemoteDir();
+}
+
+bool RemoteLocation::serverIsAvailable() const
+{
+    return server() && server()->hostIsAvailable();
 }
 
 
@@ -258,19 +265,9 @@ void RemoteLocation::initialize()
       autoCreateRemoteDir_=true;
       isTemporaryStorage_=true;
 
-//      serverInstance_ = serverConfig_->getInstanceIfRunning();
-
-//      if (serverInstance_)
-//      {
-        remoteDir_ = serverInstance_->getTemporaryDirectoryName(
+      remoteDir_ = serverInstance_->getTemporaryDirectoryName(
               serverConfig()->defaultDirectory_/"irXXXXXX" );
-//      }
-//      else
-//      {
-//        throw insight::Exception("remote instance is not running: cannot determine suitable temporary storage");
-//      }
     }
-
 
     if (autoCreateRemoteDir_)
     {
@@ -290,7 +287,7 @@ void RemoteLocation::initialize()
 void RemoteLocation::validate()
 {
   isValidated_=false;
-  if (serverInstance_ && !remoteDir_.empty())
+  if (server() && !remoteDir_.empty())
   {
     if (server()->hostIsAvailable())
     {

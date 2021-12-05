@@ -358,9 +358,8 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   if ( boost::filesystem::exists( reccfg ) )
   {
     remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
-          this,
-          location,
-          reccfg );
+          this, reccfg );
+    remote_->commit(location);
   }
 }
 
@@ -507,9 +506,9 @@ void AuxiliaryJob::run()
         handleOutputLine,
         handleOutputLine
   );
-  job_->process->wait();
+  job_->wait();
 
-  Q_EMIT completed(job_->process->exit_code());
+  Q_EMIT completed(job_->process().exit_code());
 }
 
 
@@ -526,7 +525,7 @@ void MainWindow::remoteWriteAndCopyBack(bool parallel)
 
   auto job=std::make_shared<insight::Job>();
 //  insight::SSHCommand sc(remote_->server(), { "bash -lc \""+insight::escapeShellSymbols(cmd.str())+"\"" });
-  insight::forkExternalProcess(
+  insight::Job::forkExternalProcess(
         job, remote_->exeConfig().server()->launchCommand(
           cmd.str(),
           boost::process::std_in < job->in,

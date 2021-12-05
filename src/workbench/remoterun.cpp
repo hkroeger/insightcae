@@ -129,7 +129,10 @@ void RemoteRun::undoSetupRemoteEnvironment()
     // undo: if needed: remove remote work dir again, shutdown remote machine
     try
     {
-        remote_.cleanup();
+        if (remote_.isTemporaryStorage())
+        {
+            remote_.cleanup();
+        }
     }
     catch (std::exception& e)
     {
@@ -264,6 +267,7 @@ void RemoteRun::launchAnalysis()
                     {
                         if (r.success)
                         {
+                            undoSteps_.clear();
                             ac_->ioService().post(std::bind(
                                                       &RemoteRun::monitor, this));
                         }
@@ -399,8 +403,11 @@ void RemoteRun::cleanupRemote()
 
         checkIfCancelled();
 
-        insight::dbg()<<"cleanup"<<std::endl;
-        remote_.cleanup();
+        if (remote_.isTemporaryStorage())
+        {
+            insight::dbg()<<"cleanup"<<std::endl;
+            remote_.cleanup();
+        }
 
     } catch (...) { onError(std::current_exception()); }
 }

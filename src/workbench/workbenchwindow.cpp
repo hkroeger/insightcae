@@ -40,7 +40,7 @@
 #include "rapidxml/rapidxml_print.hpp"
 
 #include "base/toolkitversion.h"
-
+#include "base/qt5_helper.h"
 
 
 void workbench::updateRecentFileActions()
@@ -85,7 +85,8 @@ workbench::workbench(bool logToConsole)
 
   QAction* a = new QAction("New...", this);
   a->setShortcut(Qt::ControlModifier + Qt::Key_N);
-  connect(a, &QAction::triggered, this, &workbench::newAnalysis );
+  connect(a, &QAction::triggered,
+          this, [&]() { newAnalysis(); } );
   analysisMenu->addAction( a );
 
   a = new QAction("Open...", this);
@@ -156,24 +157,26 @@ workbench::~workbench()
 
 
 
-void workbench::newAnalysis()
+void workbench::newAnalysis(std::string analysisType)
 {
-  newAnalysisDlg dlg(this);
-  if (dlg.exec() == QDialog::Accepted)
-  {
-    AnalysisForm *form;
-    std::string analysisName = dlg.getAnalysisName();
+    if (analysisType.empty())
+    {
+        newAnalysisDlg dlg(this);
+        if (dlg.exec() == QDialog::Accepted)
+        {
+            analysisType = dlg.getAnalysisName();
+        }
+    }
+
     try
     {
-      form = new AnalysisForm(mdiArea_, analysisName, logToConsole_);
+        AnalysisForm *form = new AnalysisForm(mdiArea_, analysisType, logToConsole_);
+        form->showMaximized();
     }
     catch (const std::exception& e)
     {
-      throw insight::Exception("Creation of an analysis of type \""+analysisName+"\" failed.\n"
-                               "Reason: "+e.what());
+        throw insight::Exception("Creation of an analysis of type \""+analysisType+"\" failed.\n"                                                                        "Reason: "+e.what());
     }
-    form->showMaximized();
-  }
 }
 
 

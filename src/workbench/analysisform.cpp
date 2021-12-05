@@ -65,54 +65,10 @@
 #include "remotedirselector.h"
 #include "base/wsllinuxserver.h"
 
+
+
+
 namespace fs = boost::filesystem;
-
-
-
-
-void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
-{
-  insight::dbg()<<"set IQWorkbenchRemoteExecutionState to enabled="
-                <<enabled<<std::endl;
-
-  if (auto af=dynamic_cast<AnalysisForm*>(parent()))
-  {
-      auto* ui = af->ui;
-
-      ui->lblHostName->setEnabled(enabled);
-      if (enabled)
-        ui->lblHostName->setText(
-              QString::fromStdString( rlc_->serverLabel() ) );
-      else
-        ui->lblHostName->setText("(none)");
-
-      ui->lblRemoteDirectory->setEnabled(enabled);
-      if (enabled)
-        ui->lblRemoteDirectory->setText(
-              QString::fromStdString( rlc_->remoteDir().string() ) );
-      else
-        ui->lblRemoteDirectory->setText("(none)");
-
-      if (std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(rlc_->serverConfig()))
-      {
-        ui->btnDisconnect->setEnabled(false);
-        ui->btnResume->setEnabled(false);
-      }
-      else
-      {
-        ui->btnDisconnect->setEnabled(enabled);
-        ui->btnResume->setEnabled(enabled);
-      }
-      ui->btnUpload->setEnabled(enabled);
-      ui->btnDownload->setEnabled(enabled);
-      ui->btnRemoveRemote->setEnabled(enabled);
-      ui->lblRemote_1->setEnabled(enabled);
-      ui->lblRemote_2->setEnabled(enabled);
-  }
-
-  insight::dbg()<<"IQWorkbenchRemoteExecutionState updated"<<std::endl;
-}
-
 
 
 
@@ -122,6 +78,7 @@ AnalysisForm::AnalysisForm(
     bool logToConsole
     )
 : QMdiSubWindow(parent),
+  IQExecutionWorkspace(this),
   analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
   pack_parameterset_(true),
@@ -542,9 +499,9 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
 //     parameters_.saveToFile(fn.toStdString(), analysis_->type());
     ist_file_=fn.toStdString();
 
-    if (!localCaseDirectory_)
+    if (!hasLocalWorkspace())
     {
-      resetLocalCaseDirectory(ist_file_.parent_path());
+      resetExecutionEnvironment(ist_file_.parent_path());
     }
 
     saveParameters(cancelled);
@@ -559,27 +516,7 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
 
 
 
-void AnalysisForm::resetLocalCaseDirectory(const boost::filesystem::path& lcd)
-{
-  localCaseDirectory_.reset(); // delete old one FIRST
-  localCaseDirectory_.reset(
-        new IQCaseDirectoryState(this, lcd, true) );
-  try
-  {
 
-    if (remoteExecutionConfiguration_)
-      delete remoteExecutionConfiguration_;
-
-    remoteExecutionConfiguration_ =
-        IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
-          this,
-          insight::RemoteExecutionConfig::defaultConfigFile(lcd) );
-  }
-  catch (std::exception& e)
-  {
-    insight::dbg()<<"resetLocalCaseDirectory: "<<e.what()<<std::endl;
-  }
-}
 
 
 
@@ -588,9 +525,9 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 {
   ist_file_=boost::filesystem::absolute(fp);
 
-  if (!localCaseDirectory_)
+  if (!hasLocalWorkspace())
   {
-    resetLocalCaseDirectory(ist_file_.parent_path());
+    resetExecutionEnvironment(ist_file_.parent_path());
   }
 
   insight::ParameterSet ps = parameters();
@@ -660,14 +597,19 @@ void AnalysisForm::onConfigModification()
   is_modified_=true;
 }
 
+
+
+
 void AnalysisForm::onUpdateSupplementedInputData(insight::supplementedInputDataBasePtr sid)
 {
   supplementedInputDataModel_.reset( sid->reportedSupplementQuantities() );
   if (sid->reportedSupplementQuantities().size())
     sidtab_->show();
   else
-    sidtab_->hide();
+      sidtab_->hide();
 }
+
+
 
 
 

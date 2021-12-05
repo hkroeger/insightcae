@@ -99,7 +99,8 @@ public:
     // ==================================openfoam==================================================
     // ======== query remote location
 
-//    bool serverIsUp() const;
+    bool serverIsAvailable() const;
+
     /**
      * @brief remoteDirExists
      * checks, if remote dir is existing

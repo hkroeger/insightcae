@@ -70,7 +70,7 @@ set(toolkit_gui_SRCS
     qanalysisthread.cpp qanalysisthread.h
     qactionprogressdisplayerwidget.cpp qactionprogressdisplayerwidget.h
 
-    qresultsetmodel.cpp qresultsetmodel.h
+    iqresultsetmodel.cpp iqresultsetmodel.h
     qresultelements/qcomment.cpp
     qresultelements/qcomment.h
     qresultelements/qimage.cpp

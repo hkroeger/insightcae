@@ -4,7 +4,7 @@ namespace insight {
 
 
 defineType(QChart);
-addToFactoryTable(QResultElement, QChart);
+addToFactoryTable(IQResultElement, QChart);
 
 
 QChart::QChart(QObject *parent, const QString &label, insight::ResultElementPtr rep)

@@ -4,7 +4,7 @@
 
 ResultViewWindow::ResultViewWindow(insight::ResultSetPtr results, QWidget *parent) :
   QDialog(parent),
-  resultsModel_(results),
+  resultsModel_(results, true),
   ui(new Ui::ResultViewWindow)
 {
   ui->setupUi(this);

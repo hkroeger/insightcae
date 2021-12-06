@@ -3,7 +3,7 @@
 
 #include <QDialog>
 
-#include "qresultsetmodel.h"
+#include "iqresultsetmodel.h"
 
 namespace Ui {
 class ResultViewWindow;
@@ -13,7 +13,7 @@ class ResultViewWindow : public QDialog
 {
   Q_OBJECT
 
-  insight::QResultSetModel resultsModel_;
+  insight::IQResultSetModel resultsModel_;
 
 public:
   explicit ResultViewWindow(insight::ResultSetPtr results, QWidget *parent = nullptr);

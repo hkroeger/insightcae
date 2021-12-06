@@ -52,7 +52,7 @@
 #include "remoterun.h"
 #endif
 
-#include "qresultsetmodel.h"
+#include "iqresultsetmodel.h"
 #include "qactionprogressdisplayerwidget.h"
 
 
@@ -106,7 +106,7 @@ protected:
   bool isOpenFOAMAnalysis_;
 
   insight::ResultSetPtr results_;
-  insight::QResultSetModel* resultsModel_;
+  insight::IQResultSetModel* resultsModel_;
   IQSupplementedInputDataModel supplementedInputDataModel_;
   
   // ====================================================================================

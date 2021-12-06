@@ -9,10 +9,10 @@
 namespace insight {
 
 defineType(QResultSection);
-addToFactoryTable(QResultElement, QResultSection);
+addToFactoryTable(IQResultElement, QResultSection);
 
 QResultSection::QResultSection(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-    : QResultElement(parent, label, rep)
+    : IQResultElement(parent, label, rep)
 {
 
 }
@@ -31,7 +31,7 @@ QVariant QResultSection::previewInformation(int role) const
 
 void QResultSection::createFullDisplay(QVBoxLayout* layout)
 {
-  QResultElement::createFullDisplay(layout);
+  IQResultElement::createFullDisplay(layout);
   te_=new QTextEdit;
   te_->setReadOnly(true);
   te_->setFrameShape(QFrame::NoFrame);
@@ -40,7 +40,7 @@ void QResultSection::createFullDisplay(QVBoxLayout* layout)
 
 void QResultSection::resetContents(int width, int height)
 {
-  QResultElement::resetContents(width, height);
+  IQResultElement::resetContents(width, height);
   auto sec = resultElementAs<insight::ResultSection>();
   te_->setHtml(QString::fromStdString( SimpleLatex(sec->introduction()).toHTML(width) ));
 }

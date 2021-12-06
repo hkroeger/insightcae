@@ -37,7 +37,7 @@ Q_SIGNALS:
 
 
 
-class TOOLKIT_GUI_EXPORT QResultElement
+class TOOLKIT_GUI_EXPORT IQResultElement
  : public QObject
 {
     Q_OBJECT
@@ -46,19 +46,21 @@ class TOOLKIT_GUI_EXPORT QResultElement
 
   QTextEdit *shortDesc_, *longDesc_;
 
+  Qt::CheckState checkState_;
+
 public:
     declareFactoryTable(
-        QResultElement,
+        IQResultElement,
         LIST(QObject* parent, const QString& label, insight::ResultElementPtr rep),
         LIST(parent, label, rep)
         );
 
 public:
-    declareType("QResultElement");
+    declareType("IQResultElement");
 
-    QResultElement(QObject* parent, const QString& label, insight::ResultElementPtr rep);
-    QResultElement* parentResultElement() const;
-    QList<QResultElement*> children_;
+    IQResultElement(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    IQResultElement* parentResultElement() const;
+    QList<IQResultElement*> children_;
 
     QString label_;
 
@@ -74,20 +76,23 @@ public:
     virtual QVariant previewInformation(int role) const =0;
     virtual void createFullDisplay(QVBoxLayout* layout);
     virtual void resetContents(int width, int height);
+
+    Qt::CheckState isChecked() const;
+    void setChecked( Qt::CheckState cs );
 };
 
 
 
 
-class TOOLKIT_GUI_EXPORT QRootResultElement
- : public QResultElement
+class TOOLKIT_GUI_EXPORT IQRootResultElement
+ : public IQResultElement
 {
     Q_OBJECT
 
 public:
-    declareType("QRootResultElement");
+    declareType("IQRootResultElement");
 
-    QRootResultElement(QObject* parent, const QString& label);
+    IQRootResultElement(QObject* parent, const QString& label);
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;
@@ -95,17 +100,17 @@ public:
 
 
 
-class TOOLKIT_GUI_EXPORT QStaticTextResultElement
- : public QResultElement
+class TOOLKIT_GUI_EXPORT IQStaticTextResultElement
+ : public IQResultElement
 {
     Q_OBJECT
 
     QString staticText_, staticDetailText_;
 
 public:
-    declareType("QStaticTextResultElement");
+    declareType("IQStaticTextResultElement");
 
-    QStaticTextResultElement(QObject* parent, const QString& label, const QString& staticText, const QString& staticDetailText);
+    IQStaticTextResultElement(QObject* parent, const QString& label, const QString& staticText, const QString& staticDetailText);
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;
@@ -113,17 +118,22 @@ public:
 
 
 
-class TOOLKIT_GUI_EXPORT QResultSetModel
+class TOOLKIT_GUI_EXPORT IQResultSetModel
         : public QAbstractItemModel
 {
     Q_OBJECT
 
-    void addResultElements(const ResultElementCollection& rec, QResultElement* parent);
-    QResultElement* root_;
+    void addResultElements(const ResultElementCollection& rec, IQResultElement* parent);
+    IQResultElement* root_;
+    bool selectableElements_;
+
+
+    void updateParentCheckState(const QModelIndex &idx);
+    void setChildrenCheckstate(const QModelIndex& idx, bool checked);
 
 public:
 
-    QResultSetModel(ResultSetPtr resultSet, QObject* parent=nullptr);
+    IQResultSetModel(ResultSetPtr resultSet, bool selectableElements=false, QObject* parent=nullptr);
 
     QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
     QModelIndex parent(const QModelIndex &index) const  override;
@@ -132,6 +142,8 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant headerData(int section, Qt::Orientation orient, int role) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 };
 
 void connectToCWithContentsDisplay(QTreeView* ToCView, QWidget* content);

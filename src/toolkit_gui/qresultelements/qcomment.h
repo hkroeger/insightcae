@@ -4,7 +4,7 @@
 #include "toolkit_gui_export.h"
 
 
-#include "qresultsetmodel.h"
+#include "iqresultsetmodel.h"
 
 class QTextEdit;
 
@@ -13,7 +13,7 @@ namespace insight
 
 
 class TOOLKIT_GUI_EXPORT QComment
-: public QResultElement
+: public IQResultElement
 {
     Q_OBJECT
 

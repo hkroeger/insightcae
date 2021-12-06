@@ -38,7 +38,7 @@
 #include "ui_analysisform.h"
 
 //#include "parameterwrapper.h"
-#include "qresultsetmodel.h"
+#include "iqresultsetmodel.h"
 
 #include <QMessageBox>
 #include <QFileDialog>

@@ -6,10 +6,10 @@
 namespace insight {
 
 defineType(QVectorResult);
-addToFactoryTable(QResultElement, QVectorResult);
+addToFactoryTable(IQResultElement, QVectorResult);
 
 QVectorResult::QVectorResult(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-: QResultElement(parent, label, rep)
+: IQResultElement(parent, label, rep)
 {
     auto res = resultElementAs<insight::VectorResult>();
     auto v=res->value();
@@ -28,7 +28,7 @@ QVariant QVectorResult::previewInformation(int role) const
 
 void QVectorResult::createFullDisplay(QVBoxLayout* layout)
 {
-  QResultElement::createFullDisplay(layout);
+  IQResultElement::createFullDisplay(layout);
   auto te_=new QLabel;
   te_->setText(v_);
   layout->addWidget(te_);

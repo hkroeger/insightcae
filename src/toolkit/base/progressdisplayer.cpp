@@ -42,24 +42,23 @@ ActionProgress ProgressDisplayer::forkNewAction(double nSteps, const std::string
 
 void ProgressDisplayer::stepUp(double steps)
 {
-  ci_+=steps;
-  insight::dbg()<<"stepUp: progress "<<ci_<<"/"<<maxi_<<std::endl;
-  setActionProgressValue(actionPath(), ci_/(maxi_+1));
+  stepTo(ci_+steps);
 }
 
 void ProgressDisplayer::stepTo(double i)
 {
-  ci_=i;
-  insight::dbg()<<"stepTo: progress "<<ci_<<"/"<<maxi_<<std::endl;
-  setActionProgressValue(actionPath(), ci_/(maxi_+1));
+    ci_=std::min(maxi_,i);
+    insight::dbg()<<"progress "<<ci_<<"/"<<maxi_<<std::endl;
+    setActionProgressValue(actionPath(), ci_/maxi_);
+    if (ci_ >= maxi_)
+        finishActionProgress(actionPath());
 }
 
 void ProgressDisplayer::completed()
 {
     if (ci_<maxi_)
     {
-      stepTo(maxi_);
-      finishActionProgress(actionPath());
+        stepTo(maxi_);
     }
 }
 
@@ -100,11 +99,7 @@ void ActionProgress::setMessageText(const std::string &path, const std::string &
 
 void ActionProgress::finishActionProgress(const std::string &path)
 {
-    if (!alreadyFinished_)
-    {
-        alreadyFinished_=true;
-        parentAction_.finishActionProgress(path);
-    }
+    parentAction_.finishActionProgress(path);
 }
 
 void ActionProgress::update(const ProgressState &pi)
@@ -139,8 +134,7 @@ ActionProgress::ActionProgress
     double nSteps
 )
   : parentAction_(const_cast<ProgressDisplayer&>(parentAction)),
-    name_(name),
-    alreadyFinished_(false)
+    name_(name)
 {
   maxi_=nSteps;
 }

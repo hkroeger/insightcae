@@ -4,12 +4,12 @@
 #include "toolkit_gui_export.h"
 
 
-#include "qresultsetmodel.h"
+#include "iqresultsetmodel.h"
 
 namespace insight {
 
 class TOOLKIT_GUI_EXPORT QAttributeResultTable
-  : public QResultElement
+  : public IQResultElement
 {
     Q_OBJECT
 

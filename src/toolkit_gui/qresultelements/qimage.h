@@ -4,7 +4,7 @@
 #include "toolkit_gui_export.h"
 
 
-#include "qresultsetmodel.h"
+#include "iqresultsetmodel.h"
 
 #include <QPixmap>
 
@@ -14,7 +14,7 @@ class QScrollArea;
 namespace insight {
 
 class TOOLKIT_GUI_EXPORT QImage
-: public QResultElement
+: public IQResultElement
 {
   Q_OBJECT
 

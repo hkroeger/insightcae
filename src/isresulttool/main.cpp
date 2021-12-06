@@ -517,7 +517,8 @@ int main(int argc, char *argv[])
           for (size_t i=0; i<results.size(); i++)
           {
             auto& cr=results[i];
-            auto w=new ResultViewWindow(cr);
+            auto w=new ResultViewWindow();
+            w->loadResults(cr);
             w->setWindowTitle(w->windowTitle()+" - "+QString::fromStdString(fns[i]));
             w->show();
           }

@@ -270,6 +270,52 @@ void IQResultSetModel::addResultElements(const ResultElementCollection &rec, IQR
 
 
 
+void IQResultSetModel::updateParentCheckState(const QModelIndex &idx)
+{
+    auto pidx=parent(idx);
+    if (pidx.isValid())
+    {
+        if (auto *e = dynamic_cast<IQResultElement*>(
+                    static_cast<QObject*>( pidx.internalPointer())))
+        {
+            int nChecked=0, nUnchecked=0, nPartChecked=0;
+            for (int row=0; row<rowCount(pidx); ++row)
+            {
+                auto cidx=index(row, 0, pidx);
+                if (auto *c = dynamic_cast<IQResultElement*>(
+                            static_cast<QObject*>( cidx.internalPointer())))
+                {
+                    switch(c->isChecked())
+                    {
+                    case Qt::Checked: nChecked++; break;
+                    case Qt::Unchecked: nUnchecked++; break;
+                    case Qt::PartiallyChecked: nPartChecked++; break;
+                    }
+                }
+            }
+
+            auto oldcs=e->isChecked();
+            Qt::CheckState newcs=oldcs;
+            if (nChecked>0 && nUnchecked==0 && nPartChecked==0)
+                newcs=Qt::Checked;
+            else if (nUnchecked>0 && nChecked==0 && nPartChecked==0)
+                newcs=Qt::Unchecked;
+            else
+                newcs=Qt::PartiallyChecked;
+            insight::dbg()<<oldcs<<" "<<nChecked<<" "<<nUnchecked<<" "<<nPartChecked<<" "<<newcs<<std::endl;
+            if (newcs!=oldcs)
+            {
+                e->setChecked(newcs);
+                emit dataChanged(pidx, pidx);
+                updateParentCheckState(pidx);
+            }
+        }
+    }
+}
+
+
+
+
 void IQResultSetModel::setChildrenCheckstate(const QModelIndex& idx, bool checked)
 {
     for (int row=0; row<rowCount(idx); ++row)
@@ -287,31 +333,10 @@ void IQResultSetModel::setChildrenCheckstate(const QModelIndex& idx, bool checke
 
 
 
-
-bool IQResultSetModel::setData(const QModelIndex &index, const QVariant &value, int role)
-{
-     if (role == Qt::CheckStateRole)
-     {
-         if (auto *e = dynamic_cast<IQResultElement*>(
-                     static_cast<QObject*>(index.internalPointer())))
-         {
-             e->setChecked( value.toBool()?Qt::Checked:Qt::Unchecked );
-             emit dataChanged(index, index);
-             setChildrenCheckstate( index, value.toBool() );
-             updateParentCheckState( index );
-             return true;
-         }
-     }
-
-     return false;
-}
-
-
-
-
 IQResultSetModel::IQResultSetModel(ResultSetPtr resultSet, bool selectableElements, QObject* parent)
   : QAbstractItemModel(parent),
-    selectableElements_(selectableElements)
+    selectableElements_(selectableElements),
+    orgResultSet_(resultSet)
 {
     root_=new IQRootResultElement(this, QString::fromStdString(resultSet->title()));
     addResultElements(*resultSet, root_);
@@ -439,48 +464,67 @@ Qt::ItemFlags IQResultSetModel::flags(const QModelIndex &index) const
     return flags;
 }
 
-void IQResultSetModel::updateParentCheckState(const QModelIndex &idx)
-{
-    auto pidx=parent(idx);
-    if (pidx.isValid())
-    {
-        if (auto *e = dynamic_cast<IQResultElement*>(
-                    static_cast<QObject*>( pidx.internalPointer())))
-        {
-            int nChecked=0, nUnchecked=0, nPartChecked=0;
-            for (int row=0; row<rowCount(pidx); ++row)
-            {
-                auto cidx=index(row, 0, pidx);
-                if (auto *c = dynamic_cast<IQResultElement*>(
-                            static_cast<QObject*>( cidx.internalPointer())))
-                {
-                    switch(c->isChecked())
-                    {
-                    case Qt::Checked: nChecked++; break;
-                    case Qt::Unchecked: nUnchecked++; break;
-                    case Qt::PartiallyChecked: nPartChecked++; break;
-                    }
-                }
-            }
 
-            auto oldcs=e->isChecked();
-            Qt::CheckState newcs=oldcs;
-            if (nChecked>0 && nUnchecked==0 && nPartChecked==0)
-                newcs=Qt::Checked;
-            else if (nUnchecked>0 && nChecked==0 && nPartChecked==0)
-                newcs=Qt::Unchecked;
-            else
-                newcs=Qt::PartiallyChecked;
-            insight::dbg()<<oldcs<<" "<<nChecked<<" "<<nUnchecked<<" "<<nPartChecked<<" "<<newcs<<std::endl;
-            if (newcs!=oldcs)
+
+
+bool IQResultSetModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+     if (role == Qt::CheckStateRole)
+     {
+         if (auto *e = dynamic_cast<IQResultElement*>(
+                     static_cast<QObject*>(index.internalPointer())))
+         {
+             e->setChecked( value.toBool()?Qt::Checked:Qt::Unchecked );
+             emit dataChanged(index, index);
+             setChildrenCheckstate( index, value.toBool() );
+             updateParentCheckState( index );
+             return true;
+         }
+     }
+
+     return false;
+}
+
+
+void IQResultSetModel::addChildren(const QModelIndex& pidx, ResultElementCollection* re) const
+{
+    for (int row=0; row<rowCount(pidx); ++row)
+    {
+        auto cidx = index(row, 0, pidx);
+        if (auto e = dynamic_cast<IQResultElement*>(
+                    static_cast<QObject*>(cidx.internalPointer())))
+        {
+            if (e->isChecked()==Qt::Checked || e->isChecked()==Qt::PartiallyChecked)
             {
-                e->setChecked(newcs);
-                emit dataChanged(pidx, pidx);
-                updateParentCheckState(pidx);
+                auto toBeInserted = e->resultElement()->clone();
+                if ( auto rec =
+                     dynamic_cast<insight::ResultElementCollection*>(toBeInserted.get()) )
+                {
+                    rec->clear();
+                    addChildren(cidx, rec);
+                }
+                re->insert( e->label_.toStdString(),  toBeInserted);
             }
         }
     }
 }
+
+ResultSetPtr IQResultSetModel::filteredResultSet() const
+{
+    std::string author = orgResultSet_->author();
+    std::string date = orgResultSet_->date();
+    auto fr = std::make_shared<ResultSet>(
+                orgResultSet_->parameters(),
+                orgResultSet_->title(),
+                orgResultSet_->subtitle(),
+                &author, &date
+                );
+    addChildren( index(0,0), fr.get() );
+    return fr;
+}
+
+
+
 
 
 

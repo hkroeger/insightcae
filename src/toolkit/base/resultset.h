@@ -113,6 +113,9 @@ public:
         return subtitle_;
     }
 
+    inline const std::string author() const { return author_; }
+    inline const std::string date() const { return date_; }
+
     void transfer ( const ResultSet& other );
     inline const ParameterSet& parameters() const
     {

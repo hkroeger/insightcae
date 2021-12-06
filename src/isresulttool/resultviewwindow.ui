@@ -1,49 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>ResultViewWindow</class>
- <widget class="QDialog" name="ResultViewWindow">
+ <widget class="QMainWindow" name="ResultViewWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1474</width>
-    <height>1000</height>
+    <width>1339</width>
+    <height>949</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>MainWindow</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="QSplitter" name="splitter">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <widget class="QTreeView" name="toc">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>1</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
+      <widget class="QTreeView" name="toc"/>
+      <widget class="QWidget" name="content" native="true"/>
      </widget>
-     <widget class="QWidget" name="content" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-        <horstretch>4</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="baseSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-     </widget>
-    </widget>
-   </item>
-  </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1339</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuResults">
+    <property name="title">
+     <string>Results</string>
+    </property>
+    <addaction name="actionLoad"/>
+    <addaction name="actionSaveAs"/>
+    <addaction name="actionRender"/>
+   </widget>
+   <addaction name="menuResults"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionLoad">
+   <property name="text">
+    <string>Load...</string>
+   </property>
+  </action>
+  <action name="actionSaveAs">
+   <property name="text">
+    <string>Save as...</string>
+   </property>
+  </action>
+  <action name="actionRender">
+   <property name="text">
+    <string>Render...</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

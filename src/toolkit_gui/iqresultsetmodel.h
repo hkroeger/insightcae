@@ -124,6 +124,7 @@ class TOOLKIT_GUI_EXPORT IQResultSetModel
     Q_OBJECT
 
     void addResultElements(const ResultElementCollection& rec, IQResultElement* parent);
+    ResultSetPtr orgResultSet_;
     IQResultElement* root_;
     bool selectableElements_;
 
@@ -144,6 +145,9 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+
+    void addChildren(const QModelIndex& pidx, insight::ResultElementCollection* re) const;
+    ResultSetPtr filteredResultSet() const;
 };
 
 void connectToCWithContentsDisplay(QTreeView* ToCView, QWidget* content);

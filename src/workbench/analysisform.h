@@ -234,6 +234,8 @@ public:
 
   void startLocalRun();
 
+  bool isOpenFOAMAnalysis() const;
+
 
 protected:
   void	closeEvent ( QCloseEvent * event ) override;

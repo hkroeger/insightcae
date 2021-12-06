@@ -99,3 +99,11 @@ void AnalysisForm::startLocalRun()
   currentWorkbenchAction_.reset(new LocalRun(this));
 }
 
+
+
+
+bool AnalysisForm::isOpenFOAMAnalysis() const
+{
+    return isOpenFOAMAnalysis_;
+}
+

@@ -39,7 +39,9 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
           }
       }
       else
-        ui->lblRemoteDirectory->setText("(none)");
+      {
+          ui->lblRemoteDirectory->setText("(none)");
+      }
 
       if (std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(rlc_->serverConfig()))
       {
@@ -104,17 +106,17 @@ boost::filesystem::path IQExecutionWorkspace::localCaseDirectory() const
 IQRemoteExecutionState* IQExecutionWorkspace::remoteExecutionConfiguration()
 {
 #ifdef WSL_DEFAULT
-  if (isOpenFOAMAnalysis_ && !remoteExecutionConfiguration_ && !remoteExeConfigWasEdited_)
+  if (af_->isOpenFOAMAnalysis()
+          && !remoteExecutionConfiguration_ && !remoteExeConfigWasEdited_ )
   {
-    auto* af = const_cast<AnalysisForm*>(this);
-    af->remoteExecutionConfiguration_ =
+    af_->remoteExecutionConfiguration_ =
         IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
-          af,
+          af_,
           insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*")
           );
-    if ( af->remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting()
-            && !af->localCaseDirectory_->empty() )
-        af->remoteExecutionConfiguration_->commit( af->localCaseDirectory() );
+    if ( af_->remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting()
+            && !af_->localCaseDirectory_->empty() )
+        af_->remoteExecutionConfiguration_->commit( af_->localCaseDirectory() );
 
   }
 #endif

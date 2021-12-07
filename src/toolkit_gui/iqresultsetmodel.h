@@ -100,6 +100,7 @@ public:
 
 
 
+
 class TOOLKIT_GUI_EXPORT IQStaticTextResultElement
  : public IQResultElement
 {
@@ -115,6 +116,7 @@ public:
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;
 };
+
 
 
 
@@ -148,9 +150,17 @@ public:
 
     void addChildren(const QModelIndex& pidx, insight::ResultElementCollection* re) const;
     ResultSetPtr filteredResultSet() const;
+
+    insight::ResultSetPtr resultSet() const;
 };
 
+
+
+
 void connectToCWithContentsDisplay(QTreeView* ToCView, QWidget* content);
+
+
+
 
 }
 

@@ -1096,7 +1096,18 @@ bool isNumber(const string &s)
   catch (const boost::bad_lexical_cast&)
   {
     return false;
-  }
+    }
+}
+
+
+
+
+path ensureFileExtension(const boost::filesystem::path &filePath, const std::string &extension)
+{
+    if (filePath.extension()!=extension)
+        return path(filePath).replace_extension(extension);
+    else
+        return filePath;
 }
 
 

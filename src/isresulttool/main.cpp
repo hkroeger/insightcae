@@ -168,24 +168,24 @@ int main(int argc, char *argv[])
     // Declare the supported options.
     po::options_description desc("Allowed options");
     desc.add_options()
-    ("help,h", "produce help message")
-    ("analysis,a", po::value< string >(), "analysis type name. Default is none. If not specified, the input parameter set will not be loaded.")
-    ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
-    ("list,l", "List contents of result file")
-    ("display,d", "Display each result file in separate window")
-    ("input-file,f", po::value< StringList >(),"Specifies input file(s).")
-    ("compareplot", po::value< string >(), "Compare plots. Specify path to plot. Append name of the curve with ':'.")
-    ("compareplotpoints", po::value< string >(),
-      "Compare points in plots. Specify path to plot. "
-      "Append name of the curve with ':' and finally the plot X value in round brackets."
-      "Optionally, append the name of a scalar result or parameter to be used as a x coordinate. "
-      "Multiple scalars may be plotted together: give list, separated by comma (without spaces). " )
-    ("comparescalar", po::value< string >(),
-      "Compare scalar values. Specify path of scalar in result archive. "
-      "Multiple scalars may be plotted together: give list, separated by comma (without spaces). "
-      "Put optional scale factor after variable name, separated by colon." )
-    ("sort,s", "sort entries in comparison")
-    ("render", "Render into PDF")
+        ("help,h", "produce help message")
+        ("analysis,a", po::value< string >(), "analysis type name. Default is none. If not specified, the input parameter set will not be loaded.")
+        ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
+        ("list,l", "List contents of result file")
+        ("display,d", "Display each result file in separate window")
+        ("input-file,f", po::value< StringList >(),"Specifies input file(s).")
+        ("compareplot", po::value< string >(), "Compare plots. Specify path to plot. Append name of the curve with ':'.")
+        ("compareplotpoints", po::value< string >(),
+          "Compare points in plots. Specify path to plot. "
+          "Append name of the curve with ':' and finally the plot X value in round brackets."
+          "Optionally, append the name of a scalar result or parameter to be used as a x coordinate. "
+          "Multiple scalars may be plotted together: give list, separated by comma (without spaces). " )
+        ("comparescalar", po::value< string >(),
+          "Compare scalar values. Specify path of scalar in result archive. "
+          "Multiple scalars may be plotted together: give list, separated by comma (without spaces). "
+          "Put optional scale factor after variable name, separated by colon." )
+        ("sort,s", "sort entries in comparison")
+        ("render", "Render into PDF")
     ;
 
     po::positional_options_description p;
@@ -199,12 +199,6 @@ int main(int argc, char *argv[])
     if (vm.count("help"))
     {
         cout << desc << endl;
-        exit(-1);
-    }
-
-    if (!vm.count("input-file"))
-    {
-        cout<<"input file has to be specified!"<<endl;
         exit(-1);
     }
 
@@ -230,7 +224,9 @@ int main(int argc, char *argv[])
 
 
 
-        std::vector<string> fns=vm["input-file"].as<StringList>();
+        std::vector<string> fns;
+        if (vm.count("input-file"))
+            fns=vm["input-file"].as<StringList>();
         std::vector<ResultSetPtr> results;
 
         std::string analysisName;
@@ -514,13 +510,21 @@ int main(int argc, char *argv[])
         {
           initializeQApp();
 
-          for (size_t i=0; i<results.size(); i++)
+          if (results.size()>0)
           {
-            auto& cr=results[i];
-            auto w=new ResultViewWindow();
-            w->loadResults(cr);
-            w->setWindowTitle(w->windowTitle()+" - "+QString::fromStdString(fns[i]));
-            w->show();
+              for (size_t i=0; i<results.size(); i++)
+              {
+                auto& cr=results[i];
+                auto w=new ResultViewWindow();
+                w->loadResults(cr);
+                w->setWindowTitle(w->windowTitle()+" - "+QString::fromStdString(fns[i]));
+                w->show();
+              }
+          }
+          else
+          {
+              auto w=new ResultViewWindow();
+              w->show();
           }
         }
 

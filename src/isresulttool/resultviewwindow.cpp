@@ -2,7 +2,7 @@
 #include "ui_resultviewwindow.h"
 
 #include <QFileDialog>
-
+#include <QCheckBox>
 
 
 ResultViewWindow::ResultViewWindow(QWidget *parent) :
@@ -29,18 +29,90 @@ ResultViewWindow::ResultViewWindow(QWidget *parent) :
   }
   );
 
+
+  connect(ui->actionSaveAs, &QAction::triggered, this,
+          [&]()
+  {
+      if (resultsModel_)
+      {
+
+          QFileDialog fd(this);
+          fd.setOption(QFileDialog::DontUseNativeDialog, true);
+          fd.setWindowTitle("Save Result Set");
+          QStringList filters;
+          filters << "InsightCAE Result Set (*.isr)";
+          fd.setNameFilters(filters);
+
+          QCheckBox* cb = new QCheckBox;
+          cb->setText("Only include the selected result elements");
+          QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
+          int last_row=fdl->rowCount(); // id of new row below
+          fdl->addWidget(cb, last_row, 0, 1, -1);
+
+          cb->setChecked(false);
+
+          if ( fd.exec() == QDialog::Accepted )
+          {
+            boost::filesystem::path outf =
+                    insight::ensureFileExtension(
+                        fd.selectedFiles()[0].toStdString(),
+                        ".isr"
+                    );
+
+            if (cb->isChecked())
+            {
+                resultsModel_->filteredResultSet()->saveToFile(outf);
+            }
+            else
+            {
+                resultsModel_->resultSet()->saveToFile(outf);
+            }
+          }
+      }
+  }
+  );
+
   connect(ui->actionRender, &QAction::triggered, this,
           [&]()
   {
       if (resultsModel_)
       {
-          auto rf = resultsModel_->filteredResultSet();
-          auto outf = QFileDialog::getSaveFileName(this, "Render Report", "", "PDF document (*.pdf)");
-          if (!outf.isEmpty())
-            rf->generatePDF(outf.toStdString());
+
+          QFileDialog fd(this);
+          fd.setOption(QFileDialog::DontUseNativeDialog, true);
+          fd.setWindowTitle("Render Report");
+          QStringList filters;
+          filters << "PDF document (*.pdf)";
+          fd.setNameFilters(filters);
+
+          QCheckBox* cb = new QCheckBox;
+          cb->setText("Only include the selected result elements");
+          QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
+          int last_row=fdl->rowCount(); // id of new row below
+          fdl->addWidget(cb, last_row, 0, 1, -1);
+
+          cb->setChecked(false);
+
+          if ( fd.exec() == QDialog::Accepted )
+          {
+            boost::filesystem::path outf =
+                    insight::ensureFileExtension(
+                        fd.selectedFiles()[0].toStdString(),
+                        ".pdf"
+                    );
+            if (cb->isChecked())
+            {
+                resultsModel_->filteredResultSet()->generatePDF(outf);
+            }
+            else
+            {
+                resultsModel_->resultSet()->generatePDF(outf);
+            }
+          }
       }
   }
   );
+
 }
 
 ResultViewWindow::~ResultViewWindow()

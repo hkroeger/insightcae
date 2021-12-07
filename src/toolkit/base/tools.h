@@ -96,6 +96,18 @@ public:
 };
 
 
+/**
+ * @brief ensureFileExtension
+ * adds an extension to the file name, if required
+ * @param filePath
+ * the file path to check
+ * @param extension
+ * the desired extension including the dot, e.g. ".ist"
+ * @return
+ */
+boost::filesystem::path ensureFileExtension(const boost::filesystem::path& filePath, const std::string& extension);
+
+
 std::string timeCodePrefix();
 
 

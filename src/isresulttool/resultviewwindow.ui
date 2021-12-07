@@ -61,6 +61,11 @@
     <string>Render...</string>
    </property>
   </action>
+  <action name="actionRender_filtered_report">
+   <property name="text">
+    <string>Render only selected elements...</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

@@ -526,6 +526,14 @@ ResultSetPtr IQResultSetModel::filteredResultSet() const
 
 
 
+ResultSetPtr IQResultSetModel::resultSet() const
+{
+    return orgResultSet_;
+}
+
+
+
+
 
 
 

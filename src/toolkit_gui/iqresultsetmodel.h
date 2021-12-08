@@ -3,8 +3,12 @@
 
 #include "toolkit_gui_export.h"
 
+#include <set>
 
 #include <QAbstractItemModel>
+#include <QSortFilterProxyModel>
+
+#include "base/resultsetfilter.h"
 
 class QVBoxLayout;
 class QTextEdit;
@@ -12,6 +16,9 @@ class QTreeView;
 
 #include "base/resultset.h"
 #include "base/factory.h"
+
+
+
 
 namespace insight
 {
@@ -118,22 +125,35 @@ public:
 };
 
 
+class IQResultSetModelBase
+{
+public:
+    virtual IQResultElement* getResultElement(const QModelIndex& idx) =0;
+};
 
 
 class TOOLKIT_GUI_EXPORT IQResultSetModel
-        : public QAbstractItemModel
+        : public QAbstractItemModel,
+          public IQResultSetModelBase
 {
     Q_OBJECT
 
-    void addResultElements(const ResultElementCollection& rec, IQResultElement* parent);
     ResultSetPtr orgResultSet_;
     IQResultElement* root_;
     bool selectableElements_;
 
 
+    void addResultElements(const ResultElementCollection& rec, IQResultElement* parent);
+
+    void setCheckState(const QModelIndex &idx, bool checked);
     void updateParentCheckState(const QModelIndex &idx);
     void setChildrenCheckstate(const QModelIndex& idx, bool checked);
-
+    void addUnselectedElementPaths(const QModelIndex& pidx,
+                                   ResultSetFilter& filter,
+                                   std::string parentPath ) const;
+    void unselectElements(const QModelIndex& pidx,
+                          const ResultSetFilter& filter,
+                          std::string parentPath );
 public:
 
     IQResultSetModel(ResultSetPtr resultSet, bool selectableElements=false, QObject* parent=nullptr);
@@ -148,10 +168,38 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
+    IQResultElement* getResultElement(const QModelIndex& idx) override;
+    std::string path(const QModelIndex& idx) const;
+
     void addChildren(const QModelIndex& pidx, insight::ResultElementCollection* re) const;
     ResultSetPtr filteredResultSet() const;
 
     insight::ResultSetPtr resultSet() const;
+
+    ResultSetFilter filter() const;
+    void resetFilter(const ResultSetFilter& filter);
+};
+
+
+
+
+class IQFilteredResultSetModel
+        : public QSortFilterProxyModel,
+          public IQResultSetModelBase
+{
+    Q_OBJECT
+
+    ResultSetFilter filter_;
+
+public:
+    IQFilteredResultSetModel(QObject *parent = 0);
+
+    IQResultElement* getResultElement(const QModelIndex& idx) override;
+
+    void resetFilter(const ResultSetFilter& filter);
+
+protected:
+    bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
 };
 
 

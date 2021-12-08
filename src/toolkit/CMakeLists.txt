@@ -91,6 +91,7 @@ set(toolkit_SOURCES
     base/resultelements/polarchartrenderer.cpp base/resultelements/polarchartrenderer.h
     base/resultelements/gnuplotpolarchartrenderer.cpp base/resultelements/gnuplotpolarchartrenderer.h
     base/resultelements/contourchart.cpp base/resultelements/contourchart.h
+    base/resultsetfilter.h base/resultsetfilter.cpp
     openfoam/ofenvironment.cpp openfoam/ofenvironment.h
     openfoam/ofes.cpp openfoam/ofes.h
     openfoam/blockmesh_templates.cpp openfoam/blockmesh_templates.h

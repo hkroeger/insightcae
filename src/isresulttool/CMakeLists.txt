@@ -9,17 +9,16 @@ find_package(Qt5Charts CONFIG REQUIRED)
 
 
 set(isresulttool_SOURCES
-    main.cpp
-    resultviewwindow.cpp
-    )
-SET(isresulttool_FORMS
-    resultviewwindow.ui
+    isresulttool.cpp
+    resultviewwindow.cpp resultviewwindow.h resultviewwindow.ui
+    iqaddfilterdialog.cpp iqaddfilterdialog.h iqaddfilterdialog.ui
+    iqselectresultelementsdialog.h iqselectresultelementsdialog.cpp iqselectresultelementsdialog.ui
     )
 SET(isresulttool_RCCS
     resultviewwindow.qrc
     )
 
-add_executable(isResultTool ${isresulttool_SOURCES} ${isresulttool_FORMS} ${isresulttool_RCCS})
+add_executable(isResultTool ${isresulttool_SOURCES} ${isresulttool_RCCS})
 target_link_libraries(isResultTool
     toolkit_gui
     Qt5::Widgets Qt5::Charts

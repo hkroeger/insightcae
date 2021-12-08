@@ -1,13 +1,20 @@
 #include "resultviewwindow.h"
 #include "ui_resultviewwindow.h"
+#include "iqaddfilterdialog.h"
 
 #include <QFileDialog>
 #include <QCheckBox>
+#include <QDebug>
+
+#include "base/cppextensions.h"
+
+#include "rapidxml/rapidxml_print.hpp"
 
 
 ResultViewWindow::ResultViewWindow(QWidget *parent) :
   QMainWindow(parent),
   resultsModel_(nullptr),
+  filterModel_(new IQResultSetFilterModel(this)),
   ui(new Ui::ResultViewWindow)
 {
   ui->setupUi(this);
@@ -15,119 +22,247 @@ ResultViewWindow::ResultViewWindow(QWidget *parent) :
   setWindowTitle("InsightCAE Result Set Viewer");
   setWindowIcon(QIcon(":/logo_insight_cae.png"));
 
-  insight::connectToCWithContentsDisplay(ui->toc, ui->content);
+  ui->filters->setModel(filterModel_);
+  insight::connectToCWithContentsDisplay(ui->filteredToC, ui->content);
+
+  connect(filterModel_, &QAbstractItemModel::dataChanged, this,
+          [this](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
+          {
+              filteredResultsModel_->resetFilter( filterModel_->filter() );
+          }
+  );
+  connect(filterModel_, &QAbstractItemModel::modelReset, this,
+          [this]()
+          {
+              filteredResultsModel_->resetFilter( filterModel_->filter() );
+              ui->btnDelete->setEnabled( false );
+          }
+  );
+
+  connect(ui->btnAdd, &QPushButton::clicked, this,
+          [this]()
+          {
+              IQAddFilterDialog dlg(resultsModel_->resultSet(), this);
+              if (dlg.exec() == QDialog::Accepted)
+              {
+                  auto f = filterModel_->filter();
+                  auto nf = dlg.filter();
+                  f.insert( nf.begin(), nf.end() );
+                  filterModel_->resetFilter(f);
+              }
+          }
+  );
+
+
+  connect(ui->btnDelete, &QPushButton::clicked, this,
+          [this]()
+          {
+              auto i = ui->filters->currentIndex();
+              if (i.isValid())
+              {
+                  filterModel_->removeRow(i.row(), i.parent());
+                  filteredResultsModel_->resetFilter(filterModel_->filter());
+              }
+          }
+  );
+
+  connect(ui->btnClear, &QPushButton::clicked, this,
+          [this]()
+          {
+              filterModel_->clear();
+          }
+  );
+
+  connect(ui->filters->selectionModel(), &QItemSelectionModel::currentChanged, this,
+          [this](const QModelIndex &current, const QModelIndex &previous)
+          {
+              ui->btnDelete->setEnabled( current.isValid() );
+          }
+  );
 
   connect(ui->actionLoad, &QAction::triggered, this,
           [&]()
-  {
-      auto f = QFileDialog::getOpenFileName(this, "Load result set", "", "InsightCAE Result Set (*.isr)");
-      if (!f.isEmpty())
-      {
-        auto r = insight::ResultSet::createFromFile(f.toStdString());
-        loadResults(r);
-      }
-  }
+          {
+              auto f = QFileDialog::getOpenFileName(
+                          this, "Load result set", "",
+                          "InsightCAE Result Set (*.isr)" );
+              if (!f.isEmpty())
+              {
+                auto r = insight::ResultSet::createFromFile(f.toStdString());
+                loadResults(r);
+              }
+          }
   );
 
 
   connect(ui->actionSaveAs, &QAction::triggered, this,
           [&]()
-  {
-      if (resultsModel_)
-      {
-
-          QFileDialog fd(this);
-          fd.setOption(QFileDialog::DontUseNativeDialog, true);
-          fd.setWindowTitle("Save Result Set");
-          QStringList filters;
-          filters << "InsightCAE Result Set (*.isr)";
-          fd.setNameFilters(filters);
-
-          QCheckBox* cb = new QCheckBox;
-          cb->setText("Only include the selected result elements");
-          QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
-          int last_row=fdl->rowCount(); // id of new row below
-          fdl->addWidget(cb, last_row, 0, 1, -1);
-
-          cb->setChecked(false);
-
-          if ( fd.exec() == QDialog::Accepted )
           {
-            boost::filesystem::path outf =
-                    insight::ensureFileExtension(
-                        fd.selectedFiles()[0].toStdString(),
-                        ".isr"
-                    );
+              if (resultsModel_)
+              {
 
-            if (cb->isChecked())
-            {
-                resultsModel_->filteredResultSet()->saveToFile(outf);
-            }
-            else
-            {
-                resultsModel_->resultSet()->saveToFile(outf);
-            }
+                  QFileDialog fd(this);
+                  fd.setOption(QFileDialog::DontUseNativeDialog, true);
+                  fd.setWindowTitle("Save Result Set");
+                  QStringList filters;
+                  filters << "InsightCAE Result Set (*.isr)";
+                  fd.setNameFilters(filters);
+
+                  QCheckBox* cb = new QCheckBox;
+                  cb->setText("Save filtered result set");
+                  QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
+                  int last_row=fdl->rowCount(); // id of new row below
+                  fdl->addWidget(cb, last_row, 0, 1, -1);
+
+                  cb->setChecked(true);
+
+                  if ( fd.exec() == QDialog::Accepted )
+                  {
+                    boost::filesystem::path outf =
+                            insight::ensureFileExtension(
+                                fd.selectedFiles()[0].toStdString(),
+                                ".isr"
+                            );
+
+                    if (cb->isChecked())
+                    {
+                        resultsModel_->filteredResultSet()->saveToFile(outf);
+                    }
+                    else
+                    {
+                        resultsModel_->resultSet()->saveToFile(outf);
+                    }
+                  }
+              }
           }
-      }
-  }
   );
 
   connect(ui->actionRender, &QAction::triggered, this,
           [&]()
-  {
-      if (resultsModel_)
-      {
-
-          QFileDialog fd(this);
-          fd.setOption(QFileDialog::DontUseNativeDialog, true);
-          fd.setWindowTitle("Render Report");
-          QStringList filters;
-          filters << "PDF document (*.pdf)";
-          fd.setNameFilters(filters);
-
-          QCheckBox* cb = new QCheckBox;
-          cb->setText("Only include the selected result elements");
-          QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
-          int last_row=fdl->rowCount(); // id of new row below
-          fdl->addWidget(cb, last_row, 0, 1, -1);
-
-          cb->setChecked(false);
-
-          if ( fd.exec() == QDialog::Accepted )
           {
-            boost::filesystem::path outf =
-                    insight::ensureFileExtension(
-                        fd.selectedFiles()[0].toStdString(),
-                        ".pdf"
-                    );
-            if (cb->isChecked())
-            {
-                resultsModel_->filteredResultSet()->generatePDF(outf);
-            }
-            else
-            {
-                resultsModel_->resultSet()->generatePDF(outf);
-            }
+              if (resultsModel_)
+              {
+
+                  QFileDialog fd(this);
+                  fd.setOption(QFileDialog::DontUseNativeDialog, true);
+                  fd.setWindowTitle("Render Report");
+                  QStringList filters;
+                  filters << "PDF document (*.pdf)";
+                  fd.setNameFilters(filters);
+
+                  QCheckBox* cb = new QCheckBox;
+                  cb->setText("Save filtered result set");
+                  QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
+                  int last_row=fdl->rowCount(); // id of new row below
+                  fdl->addWidget(cb, last_row, 0, 1, -1);
+
+                  cb->setChecked(true);
+
+                  if ( fd.exec() == QDialog::Accepted )
+                  {
+                    boost::filesystem::path outf =
+                            insight::ensureFileExtension(
+                                fd.selectedFiles()[0].toStdString(),
+                                ".pdf"
+                            );
+                    if (cb->isChecked())
+                    {
+                        resultsModel_->filteredResultSet()->generatePDF(outf);
+                    }
+                    else
+                    {
+                        resultsModel_->resultSet()->generatePDF(outf);
+                    }
+                  }
+              }
           }
+  );
+
+
+  connect(ui->actionLoad_filter, &QAction::triggered, this,
+          [&]()
+          {
+              auto inf = QFileDialog::getOpenFileName(
+                          this, "Select result filter file",
+                          "", "InsightCAE Result Set Filter (*.irf)");
+
+              if (!inf.isEmpty())
+              {
+                  insight::CurrentExceptionContext ex("reading result set filter from file "+inf.toStdString());
+
+                  std::string contents;
+                  insight::readFileIntoString(inf.toStdString(), contents);
+
+                  rapidxml::xml_document<> doc;
+                  doc.parse<0>(&contents[0]);
+
+                  rapidxml::xml_node<> *rootnode = doc.first_node("root");
+                  insight::ResultSetFilter rsf;
+                  rsf.readFromNode(doc, *rootnode);
+                  filterModel_->resetFilter(rsf);
+              }
+          }
+  );
+
+  connect(ui->actionSave_filter, &QAction::triggered, this,
+          [&]()
+  {
+      auto outf = QFileDialog::getSaveFileName(this, "Select result filter file",
+                                              "", "InsightCAE Result Set Filter (*.irf)");
+      if (!outf.isEmpty())
+      {
+          insight::CurrentExceptionContext ex("writing result set filter into file "+outf.toStdString());
+
+          auto outfn = insight::ensureFileExtension(outf.toStdString(), ".irf");
+
+        //   std::cout<<"Writing parameterset to file "<<file<<std::endl;
+
+
+          // prepare XML document
+          rapidxml::xml_document<> doc;
+          rapidxml::xml_node<>* decl = doc.allocate_node(rapidxml::node_declaration);
+          decl->append_attribute(doc.allocate_attribute("version", "1.0"));
+          decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
+          doc.append_node(decl);
+          rapidxml::xml_node<> *rootnode = doc.allocate_node(rapidxml::node_element, "root");
+          doc.append_node(rootnode);
+
+          filterModel_->filter().appendToNode(doc, *rootnode);
+
+          std::ofstream f(outfn.string());
+          f << doc << std::endl;
       }
   }
   );
 
 }
+
+
+
 
 ResultViewWindow::~ResultViewWindow()
 {
     delete ui;
 }
 
+
+
+
 void ResultViewWindow::loadResults(insight::ResultSetPtr results)
 {
-    auto oldrm=resultsModel_;
-    resultsModel_ = new insight::IQResultSetModel(results, true, this);
-    ui->toc->setModel(resultsModel_);
+    auto oldrm = resultsModel_;
+    auto foldrm = filteredResultsModel_;
+
+    resultsModel_ = new insight::IQResultSetModel(results, false, this);
+    filteredResultsModel_ = new insight::IQFilteredResultSetModel(this);
+    filteredResultsModel_->resetFilter( filterModel_->filter() );
+    filteredResultsModel_->setSourceModel(resultsModel_);
+    ui->filteredToC->setModel(filteredResultsModel_);
+
+    if (foldrm) delete foldrm;
     if (oldrm) delete oldrm;
 
-    ui->toc->expandAll();
-    ui->toc->resizeColumnToContents(0);
-    ui->toc->resizeColumnToContents(1);
+    ui->filteredToC->expandAll();
+    ui->filteredToC->resizeColumnToContents(0);
+    ui->filteredToC->resizeColumnToContents(1);
 }

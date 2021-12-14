@@ -434,7 +434,7 @@ QVariant IQResultSetModel::headerData(int section, Qt::Orientation orient, int r
     {
       int dc0=selectableElements_?1:0;
       if (section==0 && selectableElements_) return QVariant("Select");
-      else if (section == dc0+0) return QVariant("Result element");
+      else if (section == dc0+0) return QVariant("Result element label");
       else if (section == dc0+1) return QVariant("Summary");
     }
   }
@@ -455,11 +455,14 @@ QVariant IQResultSetModel::data(const QModelIndex &index, int role) const
               return QVariant( e->isChecked() );
           }
       }
-      if (role==Qt::DisplayRole)
+      int dc0=selectableElements_?1:0;
+      if (index.column()==dc0+0)
       {
-          int dc0=selectableElements_?1:0;
-          if (index.column()==dc0+0) return QVariant(e->label_);
-          else if (index.column()==dc0+1) return e->previewInformation(role);
+          if (role==Qt::DisplayRole) return QVariant(e->label_);
+      }
+      else if (index.column()==dc0+1)
+      {
+          return e->previewInformation(role);
       }
   }
 

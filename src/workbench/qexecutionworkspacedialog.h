@@ -4,6 +4,7 @@
 #include <QDialog>
 
 #include "base/tools.h"
+#include "base/casedirectory.h"
 #include "base/remoteexecution.h"
 
 namespace Ui {
@@ -19,14 +20,17 @@ class QExecutionWorkspaceDialog
   QString lastValidLocalWorkDirSetting_;
   std::unique_ptr<insight::RemoteLocation> remoteLocation_;
 
+  // checks
   bool isTemporaryLocalDirectorySelected() const;
-
   bool isValidWorkingDir(const boost::filesystem::path& newDirPath) const;
 
-  void resetServerName();
-  void resetRemoteWorkingDir();
-  void updateWorkingDir(const QString& newDir);
-  void checkAndUpdateRemoteConfig(const QString& serverName, const QString& remoteDir);
+  // display update
+  void displayCurrentServerName();
+  void displayCurrentRemoteWorkingDir();
+
+  // change configuration
+  void changeWorkingDirectory(const QString& newDir);
+  void checkAndChangeRemoteConfig(const QString& serverName, const QString& remoteDir);
   void setRemoteConfigFromWorkingDir();
 
 public:
@@ -36,6 +40,7 @@ public:
       QWidget *parent = nullptr );
   ~QExecutionWorkspaceDialog();
 
+  // query
   boost::filesystem::path localDirectory() const;
   insight::RemoteLocation* remoteLocation() const;
 

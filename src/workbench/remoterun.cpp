@@ -56,11 +56,11 @@ void UndoSteps::performUndo(std::exception_ptr undoReason, bool rethrow)
 
 
 
-RemoteRun::RemoteRun(AnalysisForm *af, insight::RemoteExecutionConfig& rec, bool resume)
+RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
   : WorkbenchAction(af),
     resume_( resume ),
-    remote_( rec ),
-    cancelled_(false), disconnected_(false),
+    remote_( af->remoteExecutionConfiguration() ),
+    killRequested_(false), disconnectRequested_(false),
     launchProgress_( af_->progressDisplayer_.forkNewAction(4, "Launching remote analysis") )
 {}
 
@@ -70,7 +70,7 @@ RemoteRun::RemoteRun(AnalysisForm *af, insight::RemoteExecutionConfig& rec, bool
 void RemoteRun::launch()
 {
 
-  portMappings_ = remote_.server()->makePortsAccessible(
+  portMappings_ = remote_->exeConfig().server()->makePortsAccessible(
       {8090},
       {}
   );
@@ -105,9 +105,9 @@ void RemoteRun::setupRemoteEnvironment()
 
         insight::dbg()<<"initialize remote location"<<std::endl;
 
-        remote_.initialize();
+        remote_->exeConfig().initialize();
 
-        if (!remote_.isActive())
+        if (!remote_->exeConfig().isActive())
             throw insight::Exception("Remote directory is invalid!");
 
         addUndoStep( std::bind(&RemoteRun::undoSetupRemoteEnvironment, this),
@@ -129,9 +129,9 @@ void RemoteRun::undoSetupRemoteEnvironment()
     // undo: if needed: remove remote work dir again, shutdown remote machine
     try
     {
-        if (remote_.isTemporaryStorage())
+        if (remote_->exeConfig().isTemporaryStorage())
         {
-            remote_.cleanup();
+            remote_->cleanup();
         }
     }
     catch (std::exception& e)
@@ -151,9 +151,9 @@ void RemoteRun::launchRemoteExecutionServer()
 
         insight::dbg()<<"launch execution server"<<std::endl;
 
-        auto rd = remote_.remoteDir();
+        auto rd = remote_->exeConfig().remoteDir();
 
-        analyzeProcess_ = remote_.server()->launchBackgroundProcess(
+        analyzeProcess_ = remote_->exeConfig().server()->launchBackgroundProcess(
                     "analyze "
                     " --savecfg param.ist"
                     " --workdir=\""+insight::toUnixPath(rd)+"\""
@@ -218,7 +218,6 @@ void RemoteRun::waitForContact( int maxAttempts )
 
         checkIfCancelled();
 
-
         ac_->queryStatus(
                 [this,scheduleNextAttempt](insight::QueryStatusAction::Result r)
                 {
@@ -255,7 +254,6 @@ void RemoteRun::launchAnalysis()
 
         checkIfCancelled();
 
-
         insight::ParameterSet p = af_->parameters();
         p.packExternalFiles(); // pack
 
@@ -269,7 +267,10 @@ void RemoteRun::launchAnalysis()
                     {
                         if (r.success)
                         {
-                            undoSteps_.clear();
+                            launchProgress_.stepTo(4);
+                            launchProgress_.message("Monitoring remote run");
+                            launchProgress_.completed();
+
                             ac_->ioService().post(std::bind(
                                                       &RemoteRun::monitor, this));
                         }
@@ -302,13 +303,9 @@ void RemoteRun::monitor()
 
     try {
 
-        if (checkIfCancelled()) return;
+        checkIfCancelled();
 
-
-
-        launchProgress_.stepTo(4);
-        launchProgress_.message("Monitoring remote run");
-
+        if (disconnectRequested_) return;
 
         ac_->queryStatus(
                     [this](insight::QueryStatusAction::Result qsr)
@@ -326,8 +323,6 @@ void RemoteRun::monitor()
                             }
                             else
                             {
-                                launchProgress_.completed();
-
                                 // schedule next status query
                                 ac_->ioService().schedule(
                                             std::chrono::milliseconds(1000),
@@ -351,7 +346,9 @@ void RemoteRun::fetchResults()
     insight::dbg()<<"query results"<<std::endl;
     try {
 
-        if (checkIfCancelled()) return;
+        checkIfCancelled();
+
+        if (disconnectRequested_) return;
 
         ac_->queryResults(
                     [this](insight::QueryResultsAction::Result qrs)
@@ -379,7 +376,6 @@ void RemoteRun::stopRemoteExecutionServer()
 
         checkIfCancelled();
 
-
         ac_->exit(
                     [this](insight::AnalyzeClientAction::ReportSuccessResult rs)
                     {
@@ -404,13 +400,10 @@ void RemoteRun::cleanupRemote()
 {
     try
     {
-
-        checkIfCancelled();
-
-        if (remote_.isTemporaryStorage())
+        if (remote_->exeConfig().isTemporaryStorage())
         {
             insight::dbg()<<"cleanup"<<std::endl;
-            remote_.cleanup();
+            remote_->cleanup();
         }
 
     } catch (...) { onError(std::current_exception()); }
@@ -419,13 +412,12 @@ void RemoteRun::cleanupRemote()
 
 
 
-bool RemoteRun::checkIfCancelled()
+void RemoteRun::checkIfCancelled()
 {
-    if (cancelled_)
+    if (killRequested_)
     {
         throw insight::Exception("remote run cancelled");
     }
-    if (disconnected_) return true; else return false;
 }
 
 
@@ -448,9 +440,9 @@ void RemoteRun::onError(std::exception_ptr ex)
 
 
 
-std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, insight::RemoteExecutionConfig& rec, bool resume)
+std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, bool resume)
 {
-    std::unique_ptr<RemoteRun> a(new RemoteRun(af, rec, resume));
+    std::unique_ptr<RemoteRun> a(new RemoteRun(af, resume));
     a->launch();
     return a;
 }
@@ -458,7 +450,7 @@ std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, insight::RemoteEx
 
 RemoteRun::~RemoteRun()
 {
-    disconnected_=true;
+    disconnectRequested_=true;
     ac_->httpClient().abort();
     ac_->ioService().stop();
     af_->progressDisplayer_.reset();
@@ -469,7 +461,7 @@ RemoteRun::~RemoteRun()
 
 void RemoteRun::onCancel()
 {
-    cancelled_=true;
+    killRequested_=true;
     ac_->httpClient().abort();
 }
 

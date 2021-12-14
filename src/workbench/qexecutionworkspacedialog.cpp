@@ -7,40 +7,15 @@
 
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QToolTip>
 #include "remotedirselector.h"
 
 
 
-void QExecutionWorkspaceDialog::resetServerName()
+
+bool QExecutionWorkspaceDialog::isTemporaryLocalDirectorySelected() const
 {
-  if (remoteLocation_)
-  {
-    auto serverName =
-        QString::fromStdString( remoteLocation_->serverLabel() );
-    if (!serverName.isEmpty())
-    {
-        ui->cbHost->blockSignals(true);
-      ui->cbHost->setCurrentIndex(
-          ui->cbHost->findText( serverName )
-          );
-      ui->cbHost->blockSignals(false);
-    }
-  }
-}
-
-
-
-
-void QExecutionWorkspaceDialog::resetRemoteWorkingDir()
-{
-  if (remoteLocation_)
-  {
-      ui->leRemoteDirectory->blockSignals(true);
-    ui->leRemoteDirectory->setText(
-          QString::fromStdString(
-            remoteLocation_->remoteDir().string() ) );
-    ui->leRemoteDirectory->blockSignals(false);
-  }
+    return ui->leLocalWorkingDirectory->text().isEmpty();
 }
 
 
@@ -60,10 +35,47 @@ bool QExecutionWorkspaceDialog::isValidWorkingDir(const boost::filesystem::path&
 }
 
 
-void QExecutionWorkspaceDialog::updateWorkingDir(const QString& newDir)
+
+void QExecutionWorkspaceDialog::displayCurrentServerName()
 {
-  auto newDirPath = newDir.toStdString();
-  insight::dbg()<<"new work dir:" <<newDir.toStdString()<<std::endl;
+    if (remoteLocation_)
+    {
+        auto serverName =
+                QString::fromStdString( remoteLocation_->serverLabel() );
+        if (!serverName.isEmpty())
+        {
+            ui->cbHost->blockSignals(true);
+            ui->cbHost->setCurrentIndex(
+                        ui->cbHost->findText( serverName )
+                        );
+            ui->cbHost->blockSignals(false);
+        }
+    }
+}
+
+
+
+
+void QExecutionWorkspaceDialog::displayCurrentRemoteWorkingDir()
+{
+    if (remoteLocation_)
+    {
+        ui->leRemoteDirectory->blockSignals(true);
+        ui->leRemoteDirectory->setText(
+                    QString::fromStdString(
+                        remoteLocation_->remoteDir().string() ) );
+        ui->leRemoteDirectory->blockSignals(false);
+    }
+}
+
+
+
+
+void QExecutionWorkspaceDialog::changeWorkingDirectory(const QString& newDir)
+{
+  boost::filesystem::path newDirPath = newDir.toStdString();
+
+  insight::dbg()<<"set new work dir:" <<newDir.toStdString()<<std::endl;
 
   if (!isValidWorkingDir(newDirPath))
   {
@@ -75,10 +87,10 @@ void QExecutionWorkspaceDialog::updateWorkingDir(const QString& newDir)
       return;
   }
 
-  if (newDir.isEmpty() && ui->gbPerformRemoteExecution->isChecked())
-  {
-      ui->gbPerformRemoteExecution->setChecked(false);
-  }
+//  if (newDir.isEmpty() && ui->gbPerformRemoteExecution->isChecked())
+//  {
+//      ui->gbPerformRemoteExecution->setChecked(false);
+//  }
 
   if (boost::filesystem::exists(newDirPath))
   {
@@ -92,7 +104,7 @@ void QExecutionWorkspaceDialog::updateWorkingDir(const QString& newDir)
 
 
 
-void QExecutionWorkspaceDialog::checkAndUpdateRemoteConfig(
+void QExecutionWorkspaceDialog::checkAndChangeRemoteConfig(
         const QString& serverName,
         const QString& newDir )
 {
@@ -156,8 +168,8 @@ void QExecutionWorkspaceDialog::setRemoteConfigFromWorkingDir()
       remoteLocation_ = std::move(rl);
 
       ui->gbPerformRemoteExecution->setChecked(true);
-      resetServerName();
-      resetRemoteWorkingDir();
+      displayCurrentServerName();
+      displayCurrentRemoteWorkingDir();
     }
     catch (...)
     {
@@ -202,7 +214,7 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
           {
             QString newDir=ui->leLocalWorkingDirectory->text();
             insight::dbg()<<"WD edit finished: "<<newDir.toStdString()<<std::endl;
-            updateWorkingDir(newDir);
+            changeWorkingDirectory(newDir);
           }
   );
 
@@ -211,13 +223,19 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
           {
             if (on && isTemporaryLocalDirectorySelected())
             {
-                auto answer = QMessageBox::question(
-                            this, "Invalid working directory",
-                            "When performing remote execution, "
-                            "the local working directory must not be temporary!\n"
-                            "Please select an existing working directory first!",
-                            QMessageBox::Ok );
-                ui->gbPerformRemoteExecution->setChecked(false);
+//                auto answer = QMessageBox::question(
+//                            this, "Invalid working directory",
+//                            "When performing remote execution, "
+//                            "the local working directory must not be temporary!\n"
+//                            "Please select an existing working directory first!",
+//                            QMessageBox::Ok );
+//                ui->gbPerformRemoteExecution->setChecked(false);
+
+                QString msg = "Please note: the local directory will be auto-created but not removed!";
+                ui->leLocalWorkingDirectory->setToolTip(msg);
+                QToolTip::showText(
+                            ui->leLocalWorkingDirectory->mapToGlobal(ui->leLocalWorkingDirectory->pos()),
+                            msg);
             }
           }
   );
@@ -225,7 +243,7 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
   connect(ui->cbHost, &QComboBox::currentTextChanged, this,
           [&](const QString &srv)
           {
-            checkAndUpdateRemoteConfig(
+            checkAndChangeRemoteConfig(
                   srv,
                   ui->leRemoteDirectory->text() );
           }
@@ -234,7 +252,7 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
   connect(ui->leRemoteDirectory, &QLineEdit::editingFinished, this,
           [&]()
           {
-            checkAndUpdateRemoteConfig(
+            checkAndChangeRemoteConfig(
                   ui->cbHost->currentText(),
                   ui->leRemoteDirectory->text() );
           }
@@ -251,7 +269,7 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
            if (!newDir.isEmpty())
            {
                ui->leLocalWorkingDirectory->setText(newDir);
-               updateWorkingDir(newDir);
+               changeWorkingDirectory(newDir);
            }
          }
   );
@@ -271,10 +289,10 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
                 {
                   auto dir=dlg.selectedRemoteDir().generic_path();
                   insight::dbg()<<dir<<std::endl;
-                  checkAndUpdateRemoteConfig(
+                  checkAndChangeRemoteConfig(
                         ui->cbHost->currentText(),
                         QString::fromStdString(dir.string()) );
-                  resetRemoteWorkingDir();
+                  displayCurrentRemoteWorkingDir();
                 }
               }
             }
@@ -357,7 +375,3 @@ QExecutionWorkspaceDialog::~QExecutionWorkspaceDialog()
     delete ui;
 }
 
-bool QExecutionWorkspaceDialog::isTemporaryLocalDirectorySelected() const
-{
-    return ui->leLocalWorkingDirectory->text().isEmpty();
-}

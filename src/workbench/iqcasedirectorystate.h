@@ -3,7 +3,7 @@
 
 #include <QString>
 
-#include "base/tools.h"
+#include "base/casedirectory.h"
 
 class AnalysisForm;
 

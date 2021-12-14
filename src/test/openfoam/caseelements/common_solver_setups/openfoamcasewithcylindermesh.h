@@ -4,6 +4,7 @@
 #include "../openfoamtestcase.h"
 
 #include "base/tools.h"
+#include "base/casedirectory.h"
 
 class OpenFOAMCaseWithCylinderMesh
         : public OpenFOAMTestCase

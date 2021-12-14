@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "base/tools.h"
+#include "base/casedirectory.h"
 
 #include "cpp/poppler-document.h"
 #include "cpp/poppler-page.h"

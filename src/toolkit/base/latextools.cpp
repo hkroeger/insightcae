@@ -28,6 +28,7 @@
 #include "base/exception.h"
 #include "boost/algorithm/string.hpp"
 #include "base/tools.h"
+#include "base/casedirectory.h"
 #include "boost/process.hpp"
 
 

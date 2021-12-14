@@ -1,6 +1,8 @@
 #ifndef IQEXECUTIONENVIRONMENT_H
 #define IQEXECUTIONENVIRONMENT_H
 
+#include "boost/none.hpp"
+
 #include <QPointer>
 
 #include "iqcasedirectorystate.h"
@@ -28,11 +30,14 @@ class IQExecutionWorkspace
     QPointer<IQRemoteExecutionState> remoteExecutionConfiguration_;
     bool remoteExeConfigWasEdited_ = false;
 
+    void setDefaultOpenFOAMRemoteWorkspace();
+
 public:
     IQExecutionWorkspace(AnalysisForm *af);
 
-    // access functions
+    void initializeToDefaults();
 
+    // access functions
     bool hasLocalWorkspace() const;
     bool hasRemoteWorkspace() const;
     bool hasActiveRemoteWorkspace() const;
@@ -61,7 +66,7 @@ public:
      */
     void resetExecutionEnvironment(
             const boost::filesystem::path& localDirectory,
-            insight::RemoteLocation* remoteLocation = nullptr
+            boost::variant<insight::RemoteLocation*,boost::blank> remoteLocation = boost::blank()
             );
 
     void showSetupExecutionEnvironmentDialog();

@@ -241,11 +241,7 @@ AnalysisForm::AnalysisForm(
 
     insight::connectToCWithContentsDisplay(ui->resultsToC, ui->resultElementDetails);
 
-#ifndef HAVE_WT
-    ui->gbExecuteOnRemoteHost->setChecked(false);
-    ui->gbExecuteOnRemoteHost->setEnabled(false);
-#endif
-
+    IQExecutionWorkspace::initializeToDefaults();
 }
 
 

@@ -111,25 +111,6 @@ boost::filesystem::path ensureFileExtension(const boost::filesystem::path& fileP
 std::string timeCodePrefix();
 
 
-class CaseDirectory
-    : public boost::filesystem::path
-{
-  bool keep_;
-  bool isAutoCreated_;
-
-public:
-  explicit CaseDirectory(const boost::filesystem::path& path);
-  explicit CaseDirectory(bool keep=true, const boost::filesystem::path& prefix="");
-  ~CaseDirectory();
-
-  void createDirectory();
-  bool isAutoCreated() const;
-  bool isExistingAndWillBeRemoved() const;
-  bool isExistingAndNotEmpty() const;
-  bool keep() const;
-};
-
-
 
 class TemporaryFile
 {

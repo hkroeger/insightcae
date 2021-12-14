@@ -26,6 +26,7 @@
 #endif
 #include "cadfeature.h"
 #include "base/tools.h"
+#include "base/casedirectory.h"
 
 #include <list>
 

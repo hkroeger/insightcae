@@ -9,12 +9,13 @@
 
 
 
+
 void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
 {
   insight::dbg()<<"set IQWorkbenchRemoteExecutionState to enabled="
                 <<enabled<<std::endl;
 
-  if (auto af=dynamic_cast<AnalysisForm*>(parent()))
+  if (auto af = dynamic_cast<AnalysisForm*>(parent()))
   {
       auto* ui = af->ui;
 
@@ -64,11 +65,52 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
 }
 
 
+void IQExecutionWorkspace::setDefaultOpenFOAMRemoteWorkspace()
+{
+#ifdef WSL_DEFAULT
+    af_->remoteExecutionConfiguration_ =
+            IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
+                af_,
+                insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*")
+                );
+#else
+    // for test purposes only
+    af_->remoteExecutionConfiguration_ =
+            IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
+                af_,
+                insight::remoteServers.findServer("localhost")
+                );
+#endif
+}
+
 
 
 IQExecutionWorkspace::IQExecutionWorkspace(AnalysisForm *af)
     : af_(af)
 {}
+
+
+
+
+void IQExecutionWorkspace::initializeToDefaults()
+{
+    if (af_->isOpenFOAMAnalysis()
+            && !remoteExecutionConfiguration_
+            && !remoteExeConfigWasEdited_ )
+    {
+
+        setDefaultOpenFOAMRemoteWorkspace();
+
+        if (remoteExecutionConfiguration_)
+        {
+            if ( af_->remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting()
+                 && !af_->localCaseDirectory_->empty() )
+                af_->remoteExecutionConfiguration_->commit( af_->localCaseDirectory() );
+        }
+    }
+}
+
+
 
 
 bool IQExecutionWorkspace::hasLocalWorkspace() const
@@ -77,15 +119,22 @@ bool IQExecutionWorkspace::hasLocalWorkspace() const
 }
 
 
+
+
 bool IQExecutionWorkspace::hasRemoteWorkspace() const
 {
     return remoteExecutionConfiguration_!=nullptr;
 }
 
+
+
+
 bool IQExecutionWorkspace::hasActiveRemoteWorkspace() const
 {
     return hasRemoteWorkspace() && remoteExecutionConfiguration_->isCommitted();
 }
+
+
 
 
 boost::filesystem::path IQExecutionWorkspace::localCaseDirectory() const
@@ -95,7 +144,7 @@ boost::filesystem::path IQExecutionWorkspace::localCaseDirectory() const
         const_cast<std::unique_ptr<IQCaseDirectoryState>&>
                 (localCaseDirectory_).reset(
                     new IQCaseDirectoryState(
-                        af_, false ) );
+                        af_, false, "analysis" ) );
     }
     return *localCaseDirectory_;
 }
@@ -105,21 +154,6 @@ boost::filesystem::path IQExecutionWorkspace::localCaseDirectory() const
 
 IQRemoteExecutionState* IQExecutionWorkspace::remoteExecutionConfiguration()
 {
-#ifdef WSL_DEFAULT
-  if (af_->isOpenFOAMAnalysis()
-          && !remoteExecutionConfiguration_ && !remoteExeConfigWasEdited_ )
-  {
-    af_->remoteExecutionConfiguration_ =
-        IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
-          af_,
-          insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*")
-          );
-    if ( af_->remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting()
-            && !af_->localCaseDirectory_->empty() )
-        af_->remoteExecutionConfiguration_->commit( af_->localCaseDirectory() );
-
-  }
-#endif
   return remoteExecutionConfiguration_;
 }
 
@@ -128,36 +162,35 @@ IQRemoteExecutionState* IQExecutionWorkspace::remoteExecutionConfiguration()
 
 void IQExecutionWorkspace::resetExecutionEnvironment(
         const boost::filesystem::path& lwd,
-        insight::RemoteLocation* newRemoteLocation )
+        boost::variant<insight::RemoteLocation*,boost::blank> newRemoteLocation )
 {
     bool lwd_changed=false;
-    if ( !localCaseDirectory_ ||
-         (boost::filesystem::canonical(*localCaseDirectory_)
-          != boost::filesystem::canonical(lwd))
+    if (
+            !localCaseDirectory_ // not yet set
+            ||
+            (boost::filesystem::canonical(*localCaseDirectory_)
+                != boost::filesystem::canonical(lwd)) // path changed
+            ||
+            ( lwd.empty() && localCaseDirectory_->isPersistent() ) // exchange dir for temp dir
          )
     {
         localCaseDirectory_.reset(); // delete old one FIRST
 
         insight::dbg()<<"new local directory set: "<<lwd<<std::endl;
-        if (lwd.empty())
-        {
-            localCaseDirectory_.reset(
-                        new IQCaseDirectoryState(
-                            af_, false, "analysis" ) );
-        }
-        else
+        if (!lwd.empty())
         {
             localCaseDirectory_.reset(
                         new IQCaseDirectoryState(
                             af_, lwd ) );
         }
-
         lwd_changed=true;
     }
 
     // check for present remote config in new WD
     std::unique_ptr<insight::RemoteLocation> presentRL;
-    if ( lwd_changed && localCaseDirectory_->keep() )
+    if ( lwd_changed
+         && localCaseDirectory_
+         && localCaseDirectory_->isPersistent() )
     {
         try
         {
@@ -173,33 +206,36 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
     }
 
     // if there is REC present in new WD and no RWD specified, use the present one
-    if ( !newRemoteLocation && presentRL )
+    if ( (newRemoteLocation.type() != typeid(boost::blank)) && presentRL )
     {
         newRemoteLocation = presentRL.get();
     }
 
 
-    if (newRemoteLocation)
+    if ( newRemoteLocation.type() == typeid(insight::RemoteLocation*) )
     {
         if (remoteExecutionConfiguration_)
             delete remoteExecutionConfiguration_;
 
+        if (auto *nrl = boost::get<insight::RemoteLocation*>(newRemoteLocation))
+        {
+    //        insight::assertion(
+    //                    localCaseDirectory_->isPersistent(),
+    //                    "internal error: "
+    //                    "remote execution with temporary local working directory is not allow!" );
 
-        insight::assertion(
-                    localCaseDirectory_->keep(),
-                    "internal error: "
-                    "remote execution with temporary local working directory is not allow!" );
+            remoteExecutionConfiguration_ =
+                    IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
+                        af_,
+                        *nrl );
 
-        remoteExecutionConfiguration_ =
-                IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
-                    af_,
-                    *newRemoteLocation );
-
-        // if the remote location is available, commit it already
-        if ( remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting() )
-            remoteExecutionConfiguration_->commit( localCaseDirectory() );
+            // if the remote location is ready available, commit it immediately
+            if (remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting())
+                remoteExecutionConfiguration_->commit( localCaseDirectory() );
+        }
     }
 }
+
 
 
 

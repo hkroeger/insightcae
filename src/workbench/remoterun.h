@@ -5,6 +5,7 @@
 
 #include "workbenchaction.h"
 #include "analyzeclient.h"
+#include "iqexecutionworkspace.h"
 #include "base/remoteexecution.h"
 
 #include "qanalysisthread.h"
@@ -43,15 +44,15 @@ class RemoteRun
 
   bool resume_;
   insight::RemoteServer::PortMappingPtr portMappings_;
-  insight::RemoteExecutionConfig& remote_;
+  IQRemoteExecutionState* remote_;
   std::unique_ptr<insight::AnalyzeClient> ac_;
   insight::RemoteServer::BackgroundJobPtr analyzeProcess_;
-  bool cancelled_, disconnected_;
+  bool killRequested_, disconnectRequested_;
   insight::ActionProgress launchProgress_;
 
 
 protected:
-  RemoteRun(AnalysisForm* af, insight::RemoteExecutionConfig& rec, bool resume=false);
+  RemoteRun(AnalysisForm* af, bool resume=false);
 
   void launch();
 
@@ -82,12 +83,12 @@ protected:
   // 8. cleanup remote
   void cleanupRemote();
 
-  bool checkIfCancelled();
+  void checkIfCancelled();
   void onErrorString(const std::string& errorMessage);
   void onError(std::exception_ptr ex);
 
 public:
-  static std::unique_ptr<RemoteRun> create(AnalysisForm* af, insight::RemoteExecutionConfig& rec, bool resume=false);
+  static std::unique_ptr<RemoteRun> create(AnalysisForm* af, bool resume=false);
 
   ~RemoteRun();
 

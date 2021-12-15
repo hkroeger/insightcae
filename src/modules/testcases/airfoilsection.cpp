@@ -41,7 +41,6 @@
 #include "base/vtkrendering.h"
 #include "vtkCutter.h"
 #include "vtkPlane.h"
-#include "vtkSurfaceVectors.h"
 #include "vtkMaskPoints.h"
 #include "vtkStreamTracer.h"
 #include "vtkDataSetMapper.h"

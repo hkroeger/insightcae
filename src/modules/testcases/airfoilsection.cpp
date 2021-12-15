@@ -38,6 +38,18 @@
 
 #include "openfoam/snappyhexmesh.h"
 
+#include "base/vtkrendering.h"
+#include "vtkCutter.h"
+#include "vtkPlane.h"
+#include "vtkSurfaceVectors.h"
+#include "vtkMaskPoints.h"
+#include "vtkStreamTracer.h"
+#include "vtkDataSetMapper.h"
+#include "vtkPointSource.h"
+#include "vtkPolyDataMapper.h"
+#include "vtkPolyDataNormals.h"
+#include "vtkArrayCalculator.h"
+
 #include "base/boost_include.h"
 
 using namespace std;
@@ -156,7 +168,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
   double delta=sp().c_/double(p().mesh.nc);
   
   double z0=0, h=delta;
-  std::map<int, Point> pts = {
+  std::map<int, insight::bmd::Point> pts = {
       {0, 	vec3(-(p().geometry.LinByc+0.5)*sp().c_,  -p().geometry.HByc*sp().c_, z0)},
       {1, 	vec3( (p().geometry.LoutByc+0.5)*sp().c_, -p().geometry.HByc*sp().c_, z0)},
       {2, 	vec3( (p().geometry.LoutByc+0.5)*sp().c_,  p().geometry.HByc*sp().c_, z0)},
@@ -358,7 +370,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
 {
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
   
-  arma::mat f_vs_iter=forces::readForces(cm, executionPath(), "foilForces");
+  arma::mat f_vs_iter = forces::readForces(cm, executionPath(), "foilForces");
   
   double Aref=1.*sp().c_, Re=sp().c_ * p().operation.vinf/p().fluid.nu;
   
@@ -397,57 +409,80 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
     "Convergence history of coefficients",
     "set y2tics;set y2label 'C_L/C_D'"
   );
-  
-  std::string init=
-      "cbi=loadOFCase('.')\n"
-      "prepareSnapshots()\n";
-    
-  std::string figname("foilflow"), fname(figname+".png");
-  runPvPython
-  (
-    cm, executionPath(), list_of<std::string>
-    (
-      init+
-"interior=extractInterior(cbi)\n"
-"# create a new 'Slice'\n"
-"slice1 = Slice(Input=interior)\n"
-"slice1.SliceType = 'Plane'\n"
-"slice1.SliceOffsetValues = [0.0]\n"
-"# Properties modified on slice1.SliceType\n"
-"slice1.SliceType.Origin = [0, 0, 0]\n"
-"slice1.SliceType.Normal = [0, 0, 1]\n"
 
-"surfaceVectors1 = SurfaceVectors(Input=slice1)\n"
-"surfaceVectors1.SelectInputVectors = ['POINTS', 'U']\n"
-"# create a new 'Mask Points'\n"
 
-"maskPoints1 = MaskPoints(Input=surfaceVectors1)\n"
-"# Properties modified on maskPoints1\n"
-"maskPoints1.MaximumNumberofPoints = 100\n"
-"maskPoints1.ProportionallyDistributeMaximumNumberOfPoints = 1\n"
-"maskPoints1.RandomSampling = 1\n"
-"# create a new 'Stream Tracer With Custom Source'\n"
-"streamTracerWithCustomSource1 = StreamTracerWithCustomSource(Input=surfaceVectors1,\n"
-" SeedSource=maskPoints1)\n"
-"streamTracerWithCustomSource1.Vectors = ['POINTS', 'U']\n"
-"streamTracerWithCustomSource1.MaximumStreamlineLength = 100\n"
+  {
+      OpenFOAMCaseScene scene( executionPath()/"system"/"controlDict" );
 
-"displayContour(slice1, 'p', arrayType='CELL_DATA', barpos=[0.8,0.25], barorient=1)\n"
-"Show(streamTracerWithCustomSource1)\n"
-"streamTracerWithCustomSource1Display = GetDisplayProperties(streamTracerWithCustomSource1, view=GetActiveView())\n"
-"ColorBy(streamTracerWithCustomSource1Display, None)\n"
-"setCam(["+lexical_cast<std::string>(0.5*sp().c_)+",0,1], ["+lexical_cast<std::string>(0.5*sp().c_)+",0,0], [0,1,0], "+lexical_cast<std::string>(sp().c_)+")\n"
-  
-	"WriteImage('"+fname+"')\n"
-    )
-  );
+      auto slice1=vtkSmartPointer<vtkCutter>::New();
+      slice1->SetInputData(scene.internalMesh());
+      auto slpl = vtkSmartPointer<vtkPlane>::New();
+      slpl->SetOrigin(0,0,0);
+      slpl->SetNormal(0,0,1);
+      slice1->SetCutFunction(slpl);
 
-  results->insert(figname,
-    std::unique_ptr<Image>(new Image
-    (
-    executionPath(), fname, 
-    str(format("Relative velocity (angle of attack %gdeg)") % p().geometry.alpha), ""
-  )));  
+      FieldSelection sl_field("p", FieldSupport::Point, -1);
+      auto sl_range=calcRange(sl_field, {}, {slice1});
+      auto sl_cm=createColorMap();
+      FieldColor sl_fc(sl_field, sl_cm, sl_range);
+
+      scene.addAlgo<vtkDataSetMapper>(slice1, sl_fc);
+      scene.addColorBar("Pressure\n[m^2/s^2]", sl_cm);
+
+//      auto normals = vtkSmartPointer<vtkPolyDataNormals>::New();
+//      normals->SetInputConnection(slice1->GetOutputPort());
+//      normals->SetComputeCellNormals(1);
+
+//      auto calculator1=vtkSmartPointer<vtkArrayCalculator>::New();
+//      calculator1->SetInputConnection(slice1->GetOutputPort());
+////      calculator1->AddVectorArrayName("Normals");
+//      calculator1->AddVectorArrayName("U");
+//      std::string expr("U-U_Z*kHat");
+//      calculator1->SetFunction(expr.c_str());
+//      calculator1->SetResultArrayName( "U" );
+//      calculator1->Update();
+
+      auto maskPoints = vtkSmartPointer<vtkMaskPoints>::New();
+      maskPoints->SetInputConnection(slice1->GetOutputPort());
+      maskPoints->SetMaximumNumberOfPoints(100);
+      maskPoints->SetProportionalMaximumNumberOfPoints(true);
+      maskPoints->SetRandomModeType(1);
+
+      auto st = vtkSmartPointer<vtkStreamTracer>::New();
+      st->SetInputConnection(/*surfaceVectors1*/slice1->GetOutputPort());
+      st->SetSourceConnection(maskPoints->GetOutputPort());
+      st->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "U");
+      st->SetMaximumPropagation( 100 );
+      st->Update();
+      scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.1,0.1,0.1));
+
+      auto camera = scene.activeCamera();
+      camera->ParallelProjectionOn();
+
+      auto viewctr=vec3(0.5*sp().c_, 0, 0);
+      camera->SetFocalPoint( toArray(viewctr) );
+
+      {
+          std::string figname="pressureStreamlines.png";
+
+          camera->SetViewUp( toArray(vec3(0,1,0)) );
+          camera->SetPosition( toArray(viewctr+vec3(0.5*sp().c_,0,1)) );
+
+          auto img = executionPath() / figname;
+          //      scene.fitAll();
+          scene.setParallelScale(std::pair<double,double>(2.*sp().c_, 2.*sp().c_));
+          scene.exportImage(img);
+
+          results->insert(img.filename().stem().string(),
+              std::unique_ptr<Image>(new Image
+              (
+                 executionPath(), img.filename(),
+                 str(format("Relative velocity (angle of attack %gdeg)") % p().geometry.alpha), ""
+                 )));
+      }
+  }
+
+
   
   return results;
 }

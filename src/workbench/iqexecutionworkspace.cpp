@@ -73,13 +73,13 @@ void IQExecutionWorkspace::setDefaultOpenFOAMRemoteWorkspace()
                 af_,
                 insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*")
                 );
-#else
-    // for test purposes only
-    af_->remoteExecutionConfiguration_ =
-            IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
-                af_,
-                insight::remoteServers.findServer("localhost")
-                );
+//#else
+//    // for test purposes only
+//    af_->remoteExecutionConfiguration_ =
+//            IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
+//                af_,
+//                insight::remoteServers.findServer("localhost")
+//                );
 #endif
 }
 

@@ -81,7 +81,6 @@ private Q_SLOTS:
 
 #ifdef WIN32
     void checkWSLVersion(bool reportSummary=false);
-    void updateWSLVersion( std::shared_ptr<insight::WSLLinuxServer> wsl );
 #endif
 
 private slots:

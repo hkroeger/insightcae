@@ -6,6 +6,7 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
+find_package(Qt5Network CONFIG REQUIRED)
 #find_package(Qt5Test CONFIG REQUIRED)
 
 set(toolkit_gui_SRCS 
@@ -67,6 +68,9 @@ set(toolkit_gui_SRCS
     iqparaviewdialog.h iqparaviewdialog.cpp iqparaviewdialog.ui
     iqremoteparaviewdialog.cpp iqremoteparaviewdialog.h iqremoteparaviewdialog.ui
     analysisguilibrary.h analysisguilibrary.cpp
+    wslinstallation.h wslinstallation.cpp
+
+    iqsetupwsldistributionwizard.h iqsetupwsldistributionwizard.cpp iqsetupwsldistributionwizard.ui
 
     qanalysisthread.cpp qanalysisthread.h
     qactionprogressdisplayerwidget.cpp qactionprogressdisplayerwidget.h
@@ -104,7 +108,7 @@ target_compile_definitions(toolkit_gui PRIVATE toolkit_gui_EXPORTS)
 
 target_link_libraries(toolkit_gui
  toolkit toolkit_cad insightcad_gui toolkit_remote
- Qt5::Widgets Qt5::Charts
+ Qt5::Widgets Qt5::Charts Qt5::Network
  ${Boost_LIBRARIES}
  )
 

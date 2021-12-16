@@ -1,10 +1,12 @@
 #include "iqselectremotehosttypedialog.h"
 #include "ui_iqselectremotehosttypedialog.h"
+#include "iqsetupwsldistributionwizard.h"
 
 #include "base/sshlinuxserver.h"
 #include "base/wsllinuxserver.h"
 
 #include <QPushButton>
+#include <QComboBox>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QInputDialog>
@@ -26,6 +28,12 @@ ServerSetup::~ServerSetup()
     w->deleteLater();
   }
   delete parent_->layout();
+}
+
+Ui::IQSelectRemoteHostTypeDialog *ServerSetup::dlgui()
+{
+    auto p = dynamic_cast<IQSelectRemoteHostTypeDialog*>(parent_);
+    return p->ui;
 }
 
 
@@ -80,32 +88,61 @@ WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, insight::RemoteServer::ConfigPtr i
   auto* vl = new QVBoxLayout(parent);
   parent->setLayout(vl);
 
+#ifdef WIN32
+  {
+      auto* btn=new QPushButton("Set up new WSL distribution...");
+      QObject::connect(btn, &QPushButton::clicked, btn,
+              [&]()
+              {
+                  IQSetupWSLDistributionWizard wizdlg;
+                  if (wizdlg.exec() == QDialog::Accepted)
+                  {
+                      dlgui()->leServerLabel->setText( wizdlg.distributionLabel() );
+                      leDistributionLabel_->setCurrentText( wizdlg.distributionLabel() );
+                      leBaseDir_->setText( wizdlg.baseDirectory() );
+                  }
+              }
+      );
+      vl->addWidget(btn);
+  }
+#endif
   {
     auto *l = new QHBoxLayout;
+
     l->addWidget(new QLabel("WSL distribution label:"));
-    leDistributionLabel_ = new QLineEdit;
+    leDistributionLabel_ = new QComboBox;
+
+    auto distros=insight::WSLLinuxServer::listWSLDistributions();
+    for (const auto& d: distros)
+    {
+        leDistributionLabel_->addItem(QString::fromStdString(d));
+    }
+
+    auto defdistro = insight::WSLLinuxServer::defaultWSLDistributionName();
+    int idef=-1;
+    auto itrdef=std::find(distros.begin(), distros.end(), defdistro);
+    if (itrdef!=distros.end())
+    {
+        idef=std::distance(distros.begin(), itrdef);
+        insight::dbg()<<"i def distro="<<idef<<std::endl;
+    }
+
+
+    leDistributionLabel_->setEditable(true);
     if (ini)
-      leDistributionLabel_->setText( QString::fromStdString(ini->distributionLabel_) );
+    {
+        leDistributionLabel_->setCurrentText( QString::fromStdString(ini->distributionLabel_) );
+    }
     else
-      leDistributionLabel_->setText( "insightcae-ubuntu-1804" );
+    {
+        if (idef>=0)
+        {
+            leDistributionLabel_->setCurrentIndex(idef);
+        }
+    }
+
     l->addWidget(leDistributionLabel_);
-//    auto* btn=new QPushButton("...");
-//    QObject::connect(btn, &QPushButton::clicked, btn,
-//            [&]()
-//            {
-//              bool ok=false;
-//              auto sf = QInputDialog::getText(
-//                    parent_,
-//                    "WSL distribution label",
-//                    "Please enter WSL distribution label:", QLineEdit::Normal,
-//                    "insightcae-ubuntu-1804", &ok);
-//              if (ok)
-//              {
-//                leDistributionLabel_->setText(sf);
-//              }
-//            }
-//    );
-//    l->addWidget(btn);
+
     vl->addLayout(l);
   }
 
@@ -127,7 +164,7 @@ insight::RemoteServer::ConfigPtr WSLLinuxSetup::result()
 {
   return std::make_shared<insight::WSLLinuxServer::Config>(
         leBaseDir_->text().toStdString(),
-        leDistributionLabel_->text().toStdString()
+        leDistributionLabel_->currentText().toStdString()
         );
 }
 

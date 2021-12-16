@@ -1,0 +1,531 @@
+#include <QDebug>
+#include <QMessageBox>
+#include <QPushButton>
+
+#include "iqsetupwsldistributionwizard.h"
+#include "ui_iqsetupwsldistributionwizard.h"
+
+#include "base/exception.h"
+#include "base/tools.h"
+#include "boost/regex.hpp"
+#include "base/wsllinuxserver.h"
+
+
+
+
+
+
+
+
+FileDownloader::FileDownloader(const QString &filename, QObject* parent)
+    : QObject(parent),
+      outfile_(filename)
+{
+    connect(&manager_, &QNetworkAccessManager::finished,
+            this, &FileDownloader::downloadFinished);        
+}
+
+
+
+
+void FileDownloader::start(const QUrl &url)
+{
+    if (!outfile_.open(QIODevice::WriteOnly))
+    {
+        Q_EMIT failed(
+                    QString("Could not open %1 for writing: %2")
+                    .arg(
+                        outfile_.fileName(),
+                        outfile_.errorString()
+                        )
+                    );
+        return;
+    }
+
+
+    QNetworkRequest request(url);
+    reply_ = manager_.get(request);
+
+    connect(reply_, &QNetworkReply::readyRead, reply_,
+            [&]()
+            {
+                outfile_.write( reply_->readAll() );
+            }
+    );
+
+#if QT_CONFIG(ssl)
+    connect(reply_, &QNetworkReply::sslErrors,
+            this, &FileDownloader::sslErrors);
+#endif
+
+    downloadTimer_.start();
+    connect(reply_, &QNetworkReply::downloadProgress,
+            this, &FileDownloader::downloadProgress);
+}
+
+
+
+
+void FileDownloader::connectProgressBar(QProgressBar* pb)
+{
+    connect(this, &FileDownloader::setProgressMax,
+            pb, &QProgressBar::setMaximum);
+    connect(this, &FileDownloader::setProgressCurrent,
+            pb, &QProgressBar::setValue);
+}
+
+void FileDownloader::connectLabel(QLabel *label)
+{
+    connect(this, &FileDownloader::setProgressMessage,
+            label, &QLabel::setText );
+}
+
+
+
+
+void FileDownloader::downloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+{
+    insight::dbg()<<"downloadProgress recv:"<<bytesReceived<<", total:"<<bytesTotal<<std::endl;
+    Q_EMIT setProgressMax(bytesTotal);
+    Q_EMIT setProgressCurrent(bytesReceived);
+
+    // calculate the download speed
+    double speed = bytesReceived * 1000.0 / downloadTimer_.elapsed();
+    QString unit;
+    if (speed < 1024) {
+        unit = "bytes/sec";
+    } else if (speed < 1024*1024) {
+        speed /= 1024;
+        unit = "kB/s";
+    } else {
+        speed /= 1024*1024;
+        unit = "MB/s";
+    }
+
+    Q_EMIT setProgressMessage(QString::fromLatin1("%1 %2")
+                           .arg(speed, 3, 'f', 1).arg(unit));
+}
+
+
+bool FileDownloader::isHttpRedirect(QNetworkReply *reply)
+{
+    insight::dbg()<<"isHttpRedirect"<<std::endl;
+    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    return statusCode == 301 || statusCode == 302 || statusCode == 303
+           || statusCode == 305 || statusCode == 307 || statusCode == 308;
+}
+
+
+
+void FileDownloader::sslErrors(const QList<QSslError> &sslErrors)
+{
+    insight::dbg()<<"sslErrors"<<std::endl;
+#if QT_CONFIG(ssl)
+    for (const QSslError &error : sslErrors)
+        fprintf(stderr, "SSL error: %s\n", qPrintable(error.errorString()));
+#else
+    Q_UNUSED(sslErrors);
+#endif
+}
+
+void FileDownloader::downloadFinished(QNetworkReply *reply)
+{
+    insight::dbg()<<"downloadFinished"<<std::endl;
+    QUrl url = reply->url();
+    if (reply->error())
+    {
+        Q_EMIT failed(
+                    QString("Download of %1 failed:\n%2")
+                    .arg(url.toEncoded(),
+                         reply->errorString())
+                    );
+    }
+    else
+    {
+        if (isHttpRedirect(reply))
+        {
+            Q_EMIT failed("Request was redirected");
+        }
+        else
+        {
+            outfile_.write(reply->readAll());
+            outfile_.close();
+
+            Q_EMIT setProgressMessage(
+                            QString("Download of %1 succeeded (saved to %2)")
+                            .arg(
+                                url.toEncoded(),
+                                outfile_.fileName())
+                            );
+
+            Q_EMIT finished(outfile_.fileName());
+            deleteLater();
+        }
+    }
+
+    reply->deleteLater();
+}
+
+
+
+WaitAnimation::WaitAnimation(const QString& baseMsg, QLabel* out)
+    : label_(out),
+      baseMsg_(baseMsg),
+      nDots_(0)
+{
+    insight::dbg()<<"WaitingAnimation"<<std::endl;
+    timer_.setInterval(1000);
+    connect(&timer_, &QTimer::timeout,
+            this, [&]()
+    {
+        ++nDots_;
+        label_->setText(baseMsg_ + QString(nDots_, '.'));
+        if (nDots_>15)
+            nDots_=0;
+    }
+    );
+    timer_.start();
+}
+
+WaitAnimation::~WaitAnimation()
+{
+    timer_.stop();
+    label_->setText(baseMsg_);
+}
+
+
+
+
+QString IQSetupWSLDistributionWizard::effectiveRepoURL() const
+{
+    QRegExp re("^(http|https):\\/\\/(.*@|)([^/]*)\\/(.*)$");
+    if (!re.exactMatch(ui->leRepoURL->text()))
+    {
+        return QString();
+    }
+
+    QString cred = re.cap(2);
+    if (!ui->leRepoUser->text().isEmpty())
+    {
+        cred = QString("%1:%2@").arg(
+                    ui->leRepoUser->text(),
+                    ui->leRepoPwd->text()
+                    );
+    }
+
+    return QString("%1://%2%3/%4").arg(
+                re.cap(1),
+                cred,
+                re.cap(3),
+                re.cap(4)
+                );
+}
+
+
+
+
+QProcess* IQSetupWSLDistributionWizard::launchSubprocess(
+        const QString& cmd,
+        const QStringList& args,
+        const QString& explainText,
+        std::function<void()> nextStep
+        )
+{
+    if (wanim_) wanim_->deleteLater();
+    wanim_ = new WaitAnimation( explainText, ui->statusText );
+
+    insight::dbg()<<"creating subprocess"<<std::endl;
+    QString cmbargs;
+    for (const auto& a: args) cmbargs+=" \""+a+"\"";
+    insight::dbg()<<cmd.toStdString()<<cmbargs.toStdString()<<std::endl;
+
+    auto proc = new QProcess(this);
+    proc->setProcessChannelMode(QProcess::MergedChannels);
+    connect(proc, &QProcess::readyRead, proc,
+            [this,proc]
+            {
+                ui->log->appendPlainText( proc->readAll() );
+            }
+    );
+    connect(proc,
+            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            proc,
+            [this,proc,nextStep](int exitCode, QProcess::ExitStatus exitStatus)
+            {
+                insight::dbg()<<"subprocess finished"<<std::endl;
+                if (wanim_) wanim_->deleteLater();
+
+                if (exitCode==0 && exitStatus==QProcess::NormalExit)
+                {
+                    QMetaObject::invokeMethod(
+                          qApp, nextStep );
+                }
+                else
+                {
+                    failed(
+                        "Creation of the WSL distribution failed!\n"
+                        "Please contact the support and provide a copy of the console log above!"
+                        );
+                }
+                proc->deleteLater();
+            }
+    );
+
+    insight::dbg()<<"launching subprocess"<<std::endl;
+    proc->start( cmd, args );
+
+    if (!proc->waitForStarted())
+    {
+        insight::dbg()<<"subprocess not started"<<std::endl;
+        failed(proc->errorString());
+        proc->deleteLater();
+    }
+    return proc;
+}
+
+
+
+
+void IQSetupWSLDistributionWizard::start()
+{
+    ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
+    ui->statusLabel->setEnabled(true);
+    ui->progress->setEnabled(true);
+    ui->statusText->setEnabled(true);
+    ui->log->setEnabled(true);
+
+    downloadWSLImage();
+    //configureWSLDistribution();
+}
+
+
+
+
+void IQSetupWSLDistributionWizard::downloadWSLImage()
+{
+    insight::dbg()<<"downloadWSLImage"<<std::endl;
+
+    auto fdl = new FileDownloader(
+                QString::fromStdString(
+                    insight::TemporaryFile("ubuntu-rootfs-%%%%.tgz")
+                    .path().string() ),
+                this
+                );
+    connect(fdl, &FileDownloader::failed,
+            this, &IQSetupWSLDistributionWizard::failed);
+
+    fdl->connectProgressBar(ui->progress);
+    fdl->connectLabel(ui->statusText);
+    connect(fdl, &FileDownloader::finished,
+            this, &IQSetupWSLDistributionWizard::createWSLDistribution);
+    fdl->start(QUrl("http://downloads.silentdynamics.de/thirdparty/ubuntu-18.04-server-cloudimg-amd64-wsl.rootfs.tar.gz"));
+}
+
+
+
+
+void IQSetupWSLDistributionWizard::createWSLDistribution(const QString& imagefile)
+{
+    insight::dbg()<<"createWSLDistribution "<<imagefile.toStdString()<<std::endl;
+    boost::filesystem::path targpath =
+            QStandardPaths::writableLocation( QStandardPaths::GenericDataLocation )
+            .toStdString();
+    targpath = targpath / distributionLabel().toStdString();
+
+    insight::dbg()<<targpath<<std::endl;
+
+    launchSubprocess(
+        wslexe_,
+        {  "--import",
+           distributionLabel(),
+           QString::fromStdString( targpath.string() ),
+           imagefile,
+           "--version", "1" },
+
+        "Importing the WSL backend distribution. This will take several minutes",
+
+        std::bind(&IQSetupWSLDistributionWizard::configureWSLDistribution, this)
+    );
+}
+
+
+
+
+void IQSetupWSLDistributionWizard::configureWSLDistribution()
+{
+    insight::dbg()<<"configureWSLDistribution"<<std::endl;
+
+    auto scriptfile = createSetupScript();
+
+    QFileInfo fn( scriptfile->fileName() );
+    launchSubprocess(
+        wslexe_,
+        { "-d", distributionLabel(),
+          "--cd", fn.path(),
+          "bash", "./"+fn.fileName() },
+
+        "Configuring the WSL backend distribution. This will take several minutes",
+
+        std::bind(&IQSetupWSLDistributionWizard::restartWSLDistribution, this)
+    );
+}
+
+
+
+
+void IQSetupWSLDistributionWizard::restartWSLDistribution()
+{
+    launchSubprocess(
+        wslexe_,
+        { "--shutdown" },
+
+        "Restarting WSL.",
+
+        std::bind(&IQSetupWSLDistributionWizard::completed, this)
+    );
+}
+
+
+
+
+void IQSetupWSLDistributionWizard::completed()
+{
+    QMessageBox::information(
+                this,
+                "Success!",
+                "The WSL distribution has been created\n"
+                "and the configuration data has been copied\n"
+                "into the corresponding input fields.\n\n"
+                "You may simply click on \"Ok\" now\n"
+                "to create a matching remote server entry!"
+                );
+    QDialog::accept();
+}
+
+
+
+void IQSetupWSLDistributionWizard::failed(const QString &errorMsg)
+{
+    QMessageBox::critical(
+                this, "Failed",
+                errorMsg);
+}
+
+
+
+
+QTemporaryFile* IQSetupWSLDistributionWizard::createSetupScript()
+{
+    if (ui->leWSLUser->text().isEmpty())
+    {
+        throw insight::Exception("WSL user name must not be empty!");
+    }
+    auto f = new QTemporaryFile("setupWSL-XXXX.sh", this);
+    if (f->open())
+    {
+        QString script =
+"#!/bin/bash\n"
+
+"UNAME="+ui->leWSLUser->text()+"\n"
+
+"apt-get update\n"
+"apt-get install -y ca-certificates sudo\n"
+"apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg\n"
+"add-apt-repository "+ effectiveRepoURL() +"\n"
+"apt-get update\n"
+"apt-get install -y "+ QString::fromStdString(insight::WSLLinuxServer::installationPackageName()) +"\n"
+
+"useradd -m $UNAME\n"
+"echo \"$UNAME      ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers\n"
+"sed -i \"1i source /opt/insightcae/bin/insight_setenv.sh\" /home/$UNAME/.bashrc\n"
+
+"if [ ! -d \""+baseDirectory()+"\"]; then\n"
+" mkdir \""+baseDirectory()+"\"\n"
+" chown $UNAME \""+baseDirectory()+"\"\n"
+"fi\n"
+
+"chsh -s /bin/bash $UNAME\n"
+
+"cat > /etc/wsl.conf << EOF\n"
+"[user]\n"
+"default=$UNAME\n"
+"EOF\n"
+              ;
+
+        qDebug() << script;
+
+        QTextStream out(f);
+        out << script;
+    }
+
+    return f;
+}
+
+
+
+IQSetupWSLDistributionWizard::IQSetupWSLDistributionWizard(QWidget *parent) :
+    QDialog(parent),
+    ui(new Ui::IQSetupWSLDistributionWizard)
+{
+    ui->setupUi(this);
+
+    auto defwsllabel=insight::WSLLinuxServer::defaultWSLDistributionName();
+    auto lbl=defwsllabel;
+    auto distros=insight::WSLLinuxServer::listWSLDistributions();
+    int maxatt=99;
+    for (int attmpt=1; attmpt<maxatt; ++attmpt)
+    {
+        if (std::find(distros.begin(), distros.end(), lbl)!=distros.end())
+        {
+            lbl=str(boost::format("%s_%d")%defwsllabel%attmpt);
+        }
+        else
+            break;
+    }
+    ui->leWSLLabel->setText(QString::fromStdString(lbl));
+
+    try
+    {
+        ui->leRepoURL->setText(
+                    QString::fromStdString(
+                        insight::WSLLinuxServer::defaultRepositoryURL()
+                        ) );
+    }
+    catch (const insight::Exception& ex)
+    {
+        ui->leRepoURL->setText(
+                        ex.what() );
+    }
+}
+
+
+
+
+IQSetupWSLDistributionWizard::~IQSetupWSLDistributionWizard()
+{
+    delete ui;
+}
+
+
+
+
+void IQSetupWSLDistributionWizard::accept()
+{
+    start();
+}
+
+
+
+
+QString IQSetupWSLDistributionWizard::distributionLabel() const
+{
+    return ui->leWSLLabel->text();
+}
+
+
+
+
+QString IQSetupWSLDistributionWizard::baseDirectory() const
+{
+    return QString("/home/"+ui->leWSLUser->text());
+}

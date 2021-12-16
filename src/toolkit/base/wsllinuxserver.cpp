@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <regex>
+#include <codecvt>
 
 #include "base/exception.h"
 #include "base/tools.h"
@@ -95,11 +96,7 @@ WSLLinuxServer::Config *WSLLinuxServer::serverConfig() const
 }
 
 
-
-
-
-std::pair<boost::filesystem::path,std::vector<std::string> >
-WSLLinuxServer::commandAndArgs(const std::string& command) const
+boost::filesystem::path WSLLinuxServer::WSLcommand()
 {
   std::string windir("C:\\Windows");
   if (auto *wdv=getenv("WINDIR"))
@@ -109,13 +106,18 @@ WSLLinuxServer::commandAndArgs(const std::string& command) const
   auto wsl =boost::filesystem::path(windir+"\\Sysnative\\wsl.exe"); // weird: system32 does not work...
 
   insight::dbg()<<"WSL executable: "<<wsl<<std::endl;
-  return {
-    wsl,
-    { "-d", serverConfig()->distributionLabel_, "--", "bash", "-lc", command }
-  };
+  return wsl;
 }
 
 
+std::pair<boost::filesystem::path,std::vector<std::string> >
+WSLLinuxServer::commandAndArgs(const std::string& command) const
+{
+    return {
+      WSLcommand(),
+      { "-d", serverConfig()->distributionLabel_, "--", "bash", "-lc", command }
+    };
+}
 
 
 WSLLinuxServer::BackgroundJob::BackgroundJob(
@@ -304,20 +306,123 @@ void WSLLinuxServer::syncToLocal
 }
 
 
+
+
+string WSLLinuxServer::defaultRepositoryURL(const ToolkitVersion &tv)
+{
+
+    if (tv.branch()=="master")
+    {
+        return "http://downloads.silentdynamics.de/ubuntu";
+    }
+    else if (tv.branch()=="next-release")
+    {
+        return "http://downloads.silentdynamics.de/ubuntu_dev";
+    }
+    else
+    {
+        std::string bn = tv.branch();
+        boost::regex re("^customer-(.*)$");
+        boost::smatch group;
+        if (boost::regex_search(bn, group, re))
+        {
+           return str(format
+                      ("https://rostock.kroegeronline.net/customers/%1")
+                        % group[1] );
+        }
+        else
+        {
+            throw insight::Exception("(could not be determined, please contact support)");
+        }
+    }
+}
+
+
+
+
+string WSLLinuxServer::installationPackageName(const ToolkitVersion &tv)
+{
+    std::string packageName="insightcae";
+
+    if ( tv.branch()=="next-release"
+         || tv.branch()=="master" )
+    {
+      packageName="insightcae-ce";
+    }
+
+    return packageName;
+}
+
+
+
+string WSLLinuxServer::defaultWSLDistributionName(const ToolkitVersion &tv)
+{
+    std::string wslname("insightcae-ubuntu-1804");
+
+    boost::regex re("^customer-(.*)$");
+    boost::smatch group;
+
+    if (boost::regex_search(tv.branch(), group, re))
+    {
+        wslname += "-"+group[1];
+    }
+
+    return wslname;
+}
+
+
+
+
+std::vector<std::string> WSLLinuxServer::listWSLDistributions()
+{
+    std::vector<std::string> distros;
+
+#ifdef WIN32
+    boost::process::wipstream out;
+
+    int ret = boost::process::system(
+                WSLcommand(),
+                boost::process::args({"--list", "--quiet"}),
+                boost::process::std_out > out,
+                boost::process::std_err > stderr,
+                boost::process::std_in < boost::process::null
+                );
+
+    if (ret==0)
+    {
+        using convert_type = std::codecvt_utf8<wchar_t>;
+        std::wstring_convert<convert_type, wchar_t> converter;
+        wstring wline;
+        while (getline(out, wline))
+        {
+            std::string line=converter.to_bytes( wline );
+            insight::dbg()<<line<<std::endl;
+            boost::trim(line);
+            if (!line.empty())
+            {
+                distros.push_back(line);
+            }
+        }
+    }
+    else
+    {
+        // WSL not activated?
+    }
+#endif
+
+    return distros;
+}
+
+
+
+
 std::mutex g_child_mutex;
 
 ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 {
   boost::process::ipstream out;
 
-  std::string packageName="insightcae";
-
-  if (ToolkitVersion::current().branch()=="next-release" || ToolkitVersion::current().branch()=="master")
-  {
-    packageName="insightcae-ce";
-  }
-
-  std::string cmd="LC_ALL=C sudo apt policy "+packageName;
+  std::string cmd="LC_ALL=C sudo apt policy "+installationPackageName();
 
   int ret = executeCommand(
       cmd, false,
@@ -360,7 +465,7 @@ void WSLLinuxServer::updateInstallation()
 {
   std::vector<std::string> cmds={
     "sudo apt update -y",
-    "sudo apt install -y insightcae"
+    "sudo apt install -y "+installationPackageName()
   };
 
   for (const auto& cmd: cmds)

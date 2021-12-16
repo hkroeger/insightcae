@@ -46,6 +46,8 @@ public:
   Config* serverConfig() const;
 
 //  int executeCommand(const std::string& command, bool throwOnFail) override;
+  static boost::filesystem::path WSLcommand();
+
   std::pair<boost::filesystem::path,std::vector<std::string> >
   commandAndArgs(const std::string& command) const override;
 
@@ -87,6 +89,12 @@ public:
                           std::function<void(int,const std::string&)>()
   ) override;
 
+
+  static std::string defaultRepositoryURL(const ToolkitVersion& tv = ToolkitVersion::current() );
+  static std::string installationPackageName(const ToolkitVersion& tv = ToolkitVersion::current() );
+  static std::string defaultWSLDistributionName(const ToolkitVersion& tv = ToolkitVersion::current() );
+
+  static std::vector<std::string> listWSLDistributions();
 
   ToolkitVersion checkInstalledVersion();
   void updateInstallation();

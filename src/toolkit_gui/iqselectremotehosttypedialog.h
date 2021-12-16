@@ -6,7 +6,14 @@
 
 #include <QDialog>
 #include <QLineEdit>
+#include <QComboBox>
 
+
+namespace Ui {
+class IQSelectRemoteHostTypeDialog;
+}
+
+class IQSelectRemoteHostTypeDialog;
 
 struct ServerSetup
 {
@@ -14,6 +21,7 @@ struct ServerSetup
   ServerSetup(QWidget* parent);
   virtual ~ServerSetup();
   virtual insight::RemoteServer::ConfigPtr result() =0;
+  Ui::IQSelectRemoteHostTypeDialog* dlgui();
 };
 
 
@@ -30,7 +38,8 @@ struct SSHLinuxSetup
 struct WSLLinuxSetup
     : public ServerSetup
 {
-  QLineEdit *leDistributionLabel_, *leBaseDir_;
+  QLineEdit *leBaseDir_;
+  QComboBox *leDistributionLabel_;
 
   WSLLinuxSetup(QWidget* parent, insight::RemoteServer::ConfigPtr initialcfg = insight::RemoteServer::ConfigPtr() );
 
@@ -38,12 +47,11 @@ struct WSLLinuxSetup
 };
 
 
-namespace Ui {
-class IQSelectRemoteHostTypeDialog;
-}
 
 class TOOLKIT_GUI_EXPORT IQSelectRemoteHostTypeDialog : public QDialog
 {
+  friend class ServerSetup;
+
   Q_OBJECT
 
   insight::RemoteServerList& remoteServers_;

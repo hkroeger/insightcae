@@ -15,8 +15,10 @@ public:
   RemoteServerList();
   RemoteServerList(const RemoteServerList& o);
 
+  boost::filesystem::path firstWritableLocation() const;
   void writeConfiguration(const boost::filesystem::path& file);
 
+  iterator findServerIterator(const std::string& serverLabel ) const;
   RemoteServer::ConfigPtr findServer(const std::string& serverLabel) const;
 
   template<class ServerType>

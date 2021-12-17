@@ -16,8 +16,8 @@ const int RST_SSHLINUX=0;
 const int RST_WSLLINUX=1;
 
 
-ServerSetup::ServerSetup(QWidget* parent)
-  : parent_(parent)
+ServerSetup::ServerSetup(QWidget* parent, IQSelectRemoteHostTypeDialog *dlg)
+  : parent_(parent), dlg_(dlg)
 {}
 
 
@@ -32,14 +32,13 @@ ServerSetup::~ServerSetup()
 
 Ui::IQSelectRemoteHostTypeDialog *ServerSetup::dlgui()
 {
-    auto p = dynamic_cast<IQSelectRemoteHostTypeDialog*>(parent_);
-    return p->ui;
+    return dlg_->ui;
 }
 
 
 
-SSHLinuxSetup::SSHLinuxSetup(QWidget *parent, insight::RemoteServer::ConfigPtr initialcfg)
-  : ServerSetup(parent)
+SSHLinuxSetup::SSHLinuxSetup(QWidget *parent, IQSelectRemoteHostTypeDialog *dlg, insight::RemoteServer::ConfigPtr initialcfg)
+  : ServerSetup(parent, dlg)
 {
   auto ini = std::dynamic_pointer_cast<insight::SSHLinuxServer::Config>(initialcfg);
 
@@ -80,8 +79,8 @@ insight::RemoteServer::ConfigPtr SSHLinuxSetup::result()
 
 
 
-WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, insight::RemoteServer::ConfigPtr initialcfg)
-  : ServerSetup(parent)
+WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, IQSelectRemoteHostTypeDialog *dlg, insight::RemoteServer::ConfigPtr initialcfg)
+  : ServerSetup(parent, dlg)
 {
   auto ini = std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(initialcfg);
 
@@ -97,9 +96,21 @@ WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, insight::RemoteServer::ConfigPtr i
                   IQSetupWSLDistributionWizard wizdlg;
                   if (wizdlg.exec() == QDialog::Accepted)
                   {
+                      insight::dbg()<<"accepted"<<std::endl;
                       dlgui()->leServerLabel->setText( wizdlg.distributionLabel() );
                       leDistributionLabel_->setCurrentText( wizdlg.distributionLabel() );
                       leBaseDir_->setText( wizdlg.baseDirectory() );
+
+                      insight::dbg()<<"information"<<std::endl;
+                      QMessageBox::information(
+                                  parent_,
+                                  "Success!",
+                                  "The WSL distribution has been created\n"
+                                  "and the configuration data has been copied\n"
+                                  "into the corresponding input fields.\n\n"
+                                  "You may simply click on \"Ok\" now\n"
+                                  "to create a matching remote server entry!"
+                                  );
                   }
               }
       );
@@ -197,10 +208,10 @@ IQSelectRemoteHostTypeDialog::IQSelectRemoteHostTypeDialog(
     switch(index)
     {
       case RST_SSHLINUX: // SSH Linux
-        setupControls_.reset(new SSHLinuxSetup(ui->gbServerSetup, result_));
+        setupControls_.reset(new SSHLinuxSetup(ui->gbServerSetup, this, result_));
         break;
       case RST_WSLLINUX: // WSL
-        setupControls_.reset(new WSLLinuxSetup(ui->gbServerSetup, result_));
+        setupControls_.reset(new WSLLinuxSetup(ui->gbServerSetup, this, result_));
         break;
     }
   };

@@ -80,42 +80,36 @@ IQRemoteServerEditDialog::~IQRemoteServerEditDialog()
 
 void IQRemoteServerEditDialog::accept()
 {
-  insight::SharedPathList paths;
-  for ( const bfs_path& p: paths )
+  auto serverlist = insight::remoteServers.firstWritableLocation();
+
+  if (!serverlist.empty())
   {
-      if ( exists(p) && is_directory ( p ) )
+      auto decision=QMessageBox::question(
+            this,
+            "Confirm writing",
+            QString(boost::filesystem::exists(serverlist) ?
+              "Do you want to overwrite" : "Do you want to create")
+            +" the file "+QString::fromStdString(serverlist.string())+"?",
+            QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+
+      if ( decision == QMessageBox::Yes )
       {
-        if ( insight::directoryIsWritable(p) )
-        {
-          bfs_path serverlist = bfs_path(p) / "remoteservers.list";
-
-          auto decision=QMessageBox::question(
-                this,
-                "Confirm writing",
-                QString(boost::filesystem::exists(serverlist) ?
-                  "Do you want to overwrite" : "Do you want to create")
-                +" the file "+QString::fromStdString(serverlist.string())+"?",
-                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-
-          if ( decision == QMessageBox::Yes )
-          {
-            insight::remoteServers = serverListModel_.remoteServers();
-            insight::remoteServers.writeConfiguration(serverlist);
-            QDialog::accept();
-            return;
-          }
-          else if ( decision == QMessageBox::Cancel )
-          {
-            return;
-          }
-        }
+        insight::remoteServers = serverListModel_.remoteServers();
+        insight::remoteServers.writeConfiguration(serverlist);
+        QDialog::accept();
+        return;
+      }
+      else if ( decision == QMessageBox::Cancel )
+      {
+        return;
       }
   }
 
   QMessageBox::critical(
         this,
         "Problem",
-        "No suitable file location for the editied server list was found or accepted",
+        "No suitable file location for the editied server list was found or accepted.\n"
+        "The configuration could not be saved.",
         QMessageBox::Ok
         );
 }

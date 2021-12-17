@@ -17,8 +17,9 @@ class IQSelectRemoteHostTypeDialog;
 
 struct ServerSetup
 {
+  IQSelectRemoteHostTypeDialog *dlg_;
   QWidget* parent_;
-  ServerSetup(QWidget* parent);
+  ServerSetup(QWidget* parent, IQSelectRemoteHostTypeDialog *dlg);
   virtual ~ServerSetup();
   virtual insight::RemoteServer::ConfigPtr result() =0;
   Ui::IQSelectRemoteHostTypeDialog* dlgui();
@@ -30,7 +31,7 @@ struct SSHLinuxSetup
 {
   QLineEdit *leHostName_, *leBaseDir_;
 
-  SSHLinuxSetup(QWidget* parent, insight::RemoteServer::ConfigPtr initialcfg = insight::RemoteServer::ConfigPtr() );
+  SSHLinuxSetup(QWidget* parent, IQSelectRemoteHostTypeDialog *dlg, insight::RemoteServer::ConfigPtr initialcfg = insight::RemoteServer::ConfigPtr() );
 
   insight::RemoteServer::ConfigPtr result() override;
 };
@@ -41,7 +42,7 @@ struct WSLLinuxSetup
   QLineEdit *leBaseDir_;
   QComboBox *leDistributionLabel_;
 
-  WSLLinuxSetup(QWidget* parent, insight::RemoteServer::ConfigPtr initialcfg = insight::RemoteServer::ConfigPtr() );
+  WSLLinuxSetup(QWidget* parent, IQSelectRemoteHostTypeDialog *dlg, insight::RemoteServer::ConfigPtr initialcfg = insight::RemoteServer::ConfigPtr() );
 
   insight::RemoteServer::ConfigPtr result() override;
 };

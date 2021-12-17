@@ -7,56 +7,12 @@
 #include <QProgressBar>
 #include <QLabel>
 
+#include "iqwaitanimation.h"
+
+
 namespace Ui {
 class IQSetupWSLDistributionWizard;
 }
-
-
-class FileDownloader : public QObject
-{
-    Q_OBJECT
-
-    QNetworkAccessManager manager_;
-    QNetworkReply * reply_;
-    QElapsedTimer downloadTimer_;
-    QFile outfile_;
-
-    static bool isHttpRedirect(QNetworkReply *reply);
-
-public:
-    FileDownloader(const QString &filename, QObject* parent=nullptr);
-    void start(const QUrl &url);
-
-    void connectProgressBar(QProgressBar* pb);
-    void connectLabel(QLabel* label);
-
-Q_SIGNALS:
-    void finished(const QString& filename);
-    void setProgressMax(qint64 max);
-    void setProgressCurrent(qint64 cp);
-    void setProgressMessage(const QString& msg);
-    void failed(const QString& errorMsg);
-
-private Q_SLOTS:
-    void downloadFinished(QNetworkReply *reply);
-    void sslErrors(const QList<QSslError> &errors);
-    void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-};
-
-
-class WaitAnimation : public QObject
-{
-    Q_OBJECT
-
-    QLabel* label_;
-    QString baseMsg_;
-    int nDots_;
-    QTimer timer_;
-
-public:
-    WaitAnimation(const QString& baseMsg, QLabel* out);
-    ~WaitAnimation();
-};
 
 
 
@@ -67,7 +23,7 @@ class IQSetupWSLDistributionWizard : public QDialog
 
     QString effectiveRepoURL() const;
 
-    QPointer<WaitAnimation> wanim_;
+    QPointer<IQWaitAnimation> wanim_;
 
     const QString wslexe_ = "c:\\windows\\sysnative\\wsl.exe";
 
@@ -102,5 +58,8 @@ public:
 private:
     Ui::IQSetupWSLDistributionWizard *ui;
 };
+
+
+
 
 #endif // IQSETUPWSLDISTRIBUTIONWIZARD_H

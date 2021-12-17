@@ -82,6 +82,40 @@ bool directoryIsWritable( const boost::filesystem::path& directoryToTest )
 }
 
 
+bool isInWritableDirectory( const boost::filesystem::path& ptt )
+{
+    insight::CurrentExceptionContext ex("checking, if "+ptt.string()+" is in a writable location");
+
+    namespace bf=boost::filesystem;
+
+    if ( bf::exists( ptt ) )
+    {
+        if (bf::is_directory(ptt))
+        {
+            return directoryIsWritable(ptt);
+        }
+        else
+        {
+            return isInWritableDirectory(ptt.parent_path());
+        }
+    }
+    else
+    {
+        auto pp=ptt.parent_path();
+        if (!pp.empty())
+        {
+            return isInWritableDirectory(pp);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    throw insight::Exception("Internal error: unhandled case");
+}
+
+
 
 std::unique_ptr<GlobalTemporaryDirectory> GlobalTemporaryDirectory::td_;
 
@@ -257,23 +291,26 @@ SharedPathList::SharedPathList()
 {
   CurrentExceptionContext ec("building list of shared paths");
 
-  char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR");
-  char *var_globalshareddir=getenv("INSIGHT_GLOBALSHAREDDIRS");
   
-  if (var_usershareddir) 
+  if (char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR"))
   {
     push_back(var_usershareddir);
   }
   else
   {
-    char *userdir=getenv("HOME");
-    if (userdir)
+    if (char *userdir = getenv(
+#ifdef WIN32
+                "USERPROFILE"
+#else
+                "HOME"
+#endif
+                ))
     {
       push_back( path(userdir)/".insight"/"share" );
     }
   }
   
-  if (var_globalshareddir) 
+  if (char *var_globalshareddir=getenv("INSIGHT_GLOBALSHAREDDIRS"))
   {
     std::vector<string> globals;
     split(globals, var_globalshareddir,

@@ -115,7 +115,8 @@ WSLLinuxServer::commandAndArgs(const std::string& command) const
 {
     return {
       WSLcommand(),
-      { "-d", serverConfig()->distributionLabel_, "--", "bash", "-lc", command }
+      { "-d", serverConfig()->distributionLabel_,
+        "--", "bash", "-lc", command }
     };
 }
 
@@ -461,7 +462,8 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 
 
 
-void WSLLinuxServer::updateInstallation()
+void WSLLinuxServer::updateInstallation(
+        std::function<void(const std::string&)> logCallback )
 {
   std::vector<std::string> cmds={
     "sudo apt update -y",
@@ -470,16 +472,32 @@ void WSLLinuxServer::updateInstallation()
 
   for (const auto& cmd: cmds)
   {
-    int ret = executeCommand(
-          cmd, false,
-          boost::process::std_out > stdout,
+    boost::process::ipstream os;
+
+    auto process =  launchCommand(
+          cmd,
+          boost::process::std_out > os,
           boost::process::std_err > stderr,
           boost::process::std_in < boost::process::null
           );
 
-    if (ret!=0)
+    if (!process->running())
     {
-      throw insight::Exception("Could not execute WSL update command (\""+cmd+"\")");
+     throw insight::Exception("could not launch WSL update command");
+    }
+
+    while (process->running())
+    {
+      std::string line;
+      if (getline(os, line))
+      {
+          logCallback(line);
+      }
+    }
+    process->wait();
+    if (process->exit_code()!=0)
+    {
+     throw insight::Exception("WSL update command failed");
     }
   }
 }

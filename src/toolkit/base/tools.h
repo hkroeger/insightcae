@@ -69,7 +69,83 @@ public:
 };
 
 
+
+
+template<typename StringType, typename StringIteratorType, typename AccessFunctionType>
+StringType findUnusedLabel(
+        StringIteratorType begin,
+        StringIteratorType end,
+        const StringType& desiredLabel,
+        AccessFunctionType accessFunction,
+        int maxAttempts=99
+        )
+{
+    CurrentExceptionContext ex("finding an unused label in a list of labels");
+
+    StringType lbl = desiredLabel;
+
+    for (int attempt=1; attempt<maxAttempts; ++attempt)
+    {
+        bool found=false;
+        for (auto it=begin; it!=end; ++it)
+        {
+            if ( accessFunction(it) == lbl )
+            {
+                found=true;
+                break;
+            }
+        }
+        if (found)
+        {
+            lbl = desiredLabel + "_" + boost::lexical_cast<StringType>(attempt);
+        }
+        else
+        {
+            return lbl;
+        }
+    }
+
+    throw insight::Exception(
+                str(boost::format("Could not find an unused label within %d attempts")
+                    % maxAttempts ) );
+}
+
+
+
+
+template<typename StringType, typename StringIteratorType>
+StringType findUnusedLabel(
+        StringIteratorType begin,
+        StringIteratorType end,
+        const StringType& desiredLabel,
+        int maxAttempts=99
+        )
+{
+    return findUnusedLabel(begin, end, desiredLabel,
+                           [](StringIteratorType it) -> StringType
+                           {
+                               return static_cast<const StringType&>(*it);
+                           },
+                           maxAttempts );
+}
+
+
+/**
+ * @brief directoryIsWritable
+ * checks, if a file can be created in the directory
+ * @param directory
+ * @return
+ */
 bool directoryIsWritable( const boost::filesystem::path& directory );
+
+/**
+ * @brief isInWritableDirectory
+ * checks, if the given directory is writable, or,
+ * if it does not exists, if the parent directory is writable
+ * @param pathToTest
+ * @return
+ */
+bool isInWritableDirectory( const boost::filesystem::path& pathToTest );
 
 class GlobalTemporaryDirectory
     : public boost::filesystem::path

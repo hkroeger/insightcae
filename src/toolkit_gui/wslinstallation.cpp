@@ -7,38 +7,23 @@
 
 #include <QMessageBox>
 #include <QPushButton>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPushButton>
+#include <QSpacerItem>
 
 namespace insight {
 
 
-void updateWSLVersion(
-        std::shared_ptr<insight::WSLLinuxServer> wsl,
-        QWidget *parent )
-{
-    std::thread t(
-        [parent,wsl]()
-        {
-            //          parent->statusBar()->showMessage("Update of WSL backend instance is running.");
-            wsl->updateInstallation();
-            QMetaObject::invokeMethod(
-                        qApp,
-                        [parent]
-                        {
-                            QMessageBox::information(
-                                parent,
-                                "WSL backend updated.",
-                                "The backend update finished without error." );
-                        }
-            );
-        }
-    );
-}
 
 
 
 void checkWSLVersions(bool reportSummary, QWidget *parent)
 {
   bool anythingChecked=false, anythingOutdated=false;
+
+  // ===============================================================================================
+  // ====== go through all defined remote servers and check them, if they are WSL remotes
 
   for (auto& rs: insight::remoteServers)
   {
@@ -66,7 +51,7 @@ void checkWSLVersions(bool reportSummary, QWidget *parent)
                   );
             if (answer==QMessageBox::Yes)
             {
-              updateWSLVersion( wsl, parent );
+              launchUpdateWSLVersion( wsl, parent );
             }
           }
         }
@@ -75,12 +60,22 @@ void checkWSLVersions(bool reportSummary, QWidget *parent)
           QMessageBox::warning(
                 parent,
                 "Inconsistent configuration",
-                "Installed backend version could not be checked.\n"+QString::fromStdString(ex.message())
+                "Installed backend version of WSL distribution:\n"
+                " "+QString::fromStdString(wslcfg->distributionLabel_)+"\n"
+                " (referenced in remote server \""+QString::fromStdString(*wslcfg)+"\")\n"
+                "could not be checked.\n"+
+                QString::fromStdString(ex.message())
                 );
         }
       }
     }
   }
+
+
+
+
+  // ===============================================================================================
+  // ====== there is no WSL backend yet
 
   if (!anythingChecked)
   {
@@ -106,23 +101,27 @@ void checkWSLVersions(bool reportSummary, QWidget *parent)
                     wizdlg.baseDirectory().toStdString(),
                     wizdlg.distributionLabel().toStdString()
                     );
+              auto lbl = insight::findUnusedLabel(
+                          insight::remoteServers.begin(),
+                          insight::remoteServers.end(),
+                          wizdlg.distributionLabel().toStdString(),
+                          [](insight::RemoteServerList::iterator it)
+                           -> std::string
+                          {
+                            return static_cast<std::string>(*(*it));
+                          }
+                          );
+              static_cast<std::string&>(*wslcfg) = lbl;
 
               insight::remoteServers.insert(wslcfg);
 
-              insight::SharedPathList paths;
-              for ( const bfs_path& p: paths )
+              auto serverlist = insight::remoteServers.firstWritableLocation();
+              if (serverlist.empty())
               {
-                  if ( exists(p) && is_directory ( p ) )
-                  {
-                    if ( insight::directoryIsWritable(p) )
-                    {
-                      bfs_path serverlist = bfs_path(p) / "remoteservers.list";
-
-                      insight::remoteServers.writeConfiguration(serverlist);
-                      break;
-                    }
-                  }
+                  throw insight::Exception("There is no writable location for the remoteservers.list file!\n"
+                                           "Please contact your system administrator or the support!");
               }
+              insight::remoteServers.writeConfiguration(serverlist);
           }
       }
       else if (qb.clickedButton()==selectBtn)
@@ -146,6 +145,99 @@ void checkWSLVersions(bool reportSummary, QWidget *parent)
   }
 }
 
+
+
+
+
+void launchUpdateWSLVersion(std::shared_ptr<WSLLinuxServer> wsl, QWidget *parent)
+{
+    auto *t = new UpdateWSLVersionThread( wsl, parent );
+    auto *pw = new UpdateWSLProgressDialog(parent);
+//    QObject::connect(
+//            t, QOverload<QObject*>::of(&QThread::destroyed), t,
+//            [pw](QObject*) { pw->close(); pw->deleteLater(); } );
+    QObject::connect(
+                t, &UpdateWSLVersionThread::logLine,
+                pw, &UpdateWSLProgressDialog::appendLogLine);
+    pw->show();
+    t->start();
+}
+
+
+
+UpdateWSLVersionThread::UpdateWSLVersionThread(
+        std::shared_ptr<WSLLinuxServer> wsl, QWidget *parent)
+    : wsl_(wsl),
+      parent_(parent)
+{
+    connect(this, &UpdateWSLVersionThread::finished,
+            this, &QObject::deleteLater);
+}
+
+
+
+void UpdateWSLVersionThread::run()
+{
+    try
+    {
+        //          parent->statusBar()->showMessage("Update of WSL backend instance is running.");
+        wsl_->updateInstallation(
+                    [this](const std::string& line)
+                    {
+                        Q_EMIT logLine(QString::fromStdString(line));
+                    }
+                    );
+
+        QMetaObject::invokeMethod(
+            qApp,
+            [this]
+            {
+                QMessageBox::information(
+                    parent_,
+                    "WSL backend updated",
+                    "The backend update finished without error." );
+            }
+        );
+    }
+    catch (const std::exception& ex)
+    {
+        QMetaObject::invokeMethod(
+            qApp,
+            [this,ex]
+            {
+                QMessageBox::critical(
+                    parent_,
+                    "WSL backend update failed",
+                    "The backend update failed.\n"
+                    "Reason:\n"
+                    +QString(ex.what()) );
+            }
+        );
+    }
+}
+
+
+
+UpdateWSLProgressDialog::UpdateWSLProgressDialog(QWidget *parent)
+{
+    auto vl = new QVBoxLayout;
+    setLayout(vl);
+
+    pte_=new QPlainTextEdit;
+    vl->addWidget(pte_);
+
+    auto hl=new QHBoxLayout;
+    auto sp=new QSpacerItem(1, 1, QSizePolicy::Expanding);
+    hl->addItem(sp);
+    auto btn=new QPushButton("Cancel");
+    hl->addWidget(btn);
+    vl->addLayout(hl);
+}
+
+void UpdateWSLProgressDialog::appendLogLine(const QString &line)
+{
+    pte_->appendPlainText(line);
+}
 
 
 

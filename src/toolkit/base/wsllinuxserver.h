@@ -97,7 +97,9 @@ public:
   static std::vector<std::string> listWSLDistributions();
 
   ToolkitVersion checkInstalledVersion();
-  void updateInstallation();
+  void updateInstallation(
+          std::function<void(const std::string&)> logCallback = [](const std::string&){}
+          );
 
 };
 

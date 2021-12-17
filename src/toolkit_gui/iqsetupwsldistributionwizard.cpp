@@ -3,6 +3,7 @@
 #include <QPushButton>
 
 #include "iqsetupwsldistributionwizard.h"
+#include "iqfiledownloader.h"
 #include "ui_iqsetupwsldistributionwizard.h"
 
 #include "base/exception.h"
@@ -10,188 +11,6 @@
 #include "boost/regex.hpp"
 #include "base/wsllinuxserver.h"
 
-
-
-
-
-
-
-
-FileDownloader::FileDownloader(const QString &filename, QObject* parent)
-    : QObject(parent),
-      outfile_(filename)
-{
-    connect(&manager_, &QNetworkAccessManager::finished,
-            this, &FileDownloader::downloadFinished);        
-}
-
-
-
-
-void FileDownloader::start(const QUrl &url)
-{
-    if (!outfile_.open(QIODevice::WriteOnly))
-    {
-        Q_EMIT failed(
-                    QString("Could not open %1 for writing: %2")
-                    .arg(
-                        outfile_.fileName(),
-                        outfile_.errorString()
-                        )
-                    );
-        return;
-    }
-
-
-    QNetworkRequest request(url);
-    reply_ = manager_.get(request);
-
-    connect(reply_, &QNetworkReply::readyRead, reply_,
-            [&]()
-            {
-                outfile_.write( reply_->readAll() );
-            }
-    );
-
-#if QT_CONFIG(ssl)
-    connect(reply_, &QNetworkReply::sslErrors,
-            this, &FileDownloader::sslErrors);
-#endif
-
-    downloadTimer_.start();
-    connect(reply_, &QNetworkReply::downloadProgress,
-            this, &FileDownloader::downloadProgress);
-}
-
-
-
-
-void FileDownloader::connectProgressBar(QProgressBar* pb)
-{
-    connect(this, &FileDownloader::setProgressMax,
-            pb, &QProgressBar::setMaximum);
-    connect(this, &FileDownloader::setProgressCurrent,
-            pb, &QProgressBar::setValue);
-}
-
-void FileDownloader::connectLabel(QLabel *label)
-{
-    connect(this, &FileDownloader::setProgressMessage,
-            label, &QLabel::setText );
-}
-
-
-
-
-void FileDownloader::downloadProgress(qint64 bytesReceived, qint64 bytesTotal)
-{
-    insight::dbg()<<"downloadProgress recv:"<<bytesReceived<<", total:"<<bytesTotal<<std::endl;
-    Q_EMIT setProgressMax(bytesTotal);
-    Q_EMIT setProgressCurrent(bytesReceived);
-
-    // calculate the download speed
-    double speed = bytesReceived * 1000.0 / downloadTimer_.elapsed();
-    QString unit;
-    if (speed < 1024) {
-        unit = "bytes/sec";
-    } else if (speed < 1024*1024) {
-        speed /= 1024;
-        unit = "kB/s";
-    } else {
-        speed /= 1024*1024;
-        unit = "MB/s";
-    }
-
-    Q_EMIT setProgressMessage(QString::fromLatin1("%1 %2")
-                           .arg(speed, 3, 'f', 1).arg(unit));
-}
-
-
-bool FileDownloader::isHttpRedirect(QNetworkReply *reply)
-{
-    insight::dbg()<<"isHttpRedirect"<<std::endl;
-    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    return statusCode == 301 || statusCode == 302 || statusCode == 303
-           || statusCode == 305 || statusCode == 307 || statusCode == 308;
-}
-
-
-
-void FileDownloader::sslErrors(const QList<QSslError> &sslErrors)
-{
-    insight::dbg()<<"sslErrors"<<std::endl;
-#if QT_CONFIG(ssl)
-    for (const QSslError &error : sslErrors)
-        fprintf(stderr, "SSL error: %s\n", qPrintable(error.errorString()));
-#else
-    Q_UNUSED(sslErrors);
-#endif
-}
-
-void FileDownloader::downloadFinished(QNetworkReply *reply)
-{
-    insight::dbg()<<"downloadFinished"<<std::endl;
-    QUrl url = reply->url();
-    if (reply->error())
-    {
-        Q_EMIT failed(
-                    QString("Download of %1 failed:\n%2")
-                    .arg(url.toEncoded(),
-                         reply->errorString())
-                    );
-    }
-    else
-    {
-        if (isHttpRedirect(reply))
-        {
-            Q_EMIT failed("Request was redirected");
-        }
-        else
-        {
-            outfile_.write(reply->readAll());
-            outfile_.close();
-
-            Q_EMIT setProgressMessage(
-                            QString("Download of %1 succeeded (saved to %2)")
-                            .arg(
-                                url.toEncoded(),
-                                outfile_.fileName())
-                            );
-
-            Q_EMIT finished(outfile_.fileName());
-            deleteLater();
-        }
-    }
-
-    reply->deleteLater();
-}
-
-
-
-WaitAnimation::WaitAnimation(const QString& baseMsg, QLabel* out)
-    : label_(out),
-      baseMsg_(baseMsg),
-      nDots_(0)
-{
-    insight::dbg()<<"WaitingAnimation"<<std::endl;
-    timer_.setInterval(1000);
-    connect(&timer_, &QTimer::timeout,
-            this, [&]()
-    {
-        ++nDots_;
-        label_->setText(baseMsg_ + QString(nDots_, '.'));
-        if (nDots_>15)
-            nDots_=0;
-    }
-    );
-    timer_.start();
-}
-
-WaitAnimation::~WaitAnimation()
-{
-    timer_.stop();
-    label_->setText(baseMsg_);
-}
 
 
 
@@ -232,7 +51,7 @@ QProcess* IQSetupWSLDistributionWizard::launchSubprocess(
         )
 {
     if (wanim_) wanim_->deleteLater();
-    wanim_ = new WaitAnimation( explainText, ui->statusText );
+    wanim_ = new IQWaitAnimation( explainText, ui->statusText );
 
     insight::dbg()<<"creating subprocess"<<std::endl;
     QString cmbargs;
@@ -295,7 +114,8 @@ void IQSetupWSLDistributionWizard::start()
     ui->log->setEnabled(true);
 
     downloadWSLImage();
-    //configureWSLDistribution();
+//    configureWSLDistribution();
+//    restartWSLDistribution();
 }
 
 
@@ -305,18 +125,18 @@ void IQSetupWSLDistributionWizard::downloadWSLImage()
 {
     insight::dbg()<<"downloadWSLImage"<<std::endl;
 
-    auto fdl = new FileDownloader(
+    auto fdl = new IQFileDownloader(
                 QString::fromStdString(
                     insight::TemporaryFile("ubuntu-rootfs-%%%%.tgz")
                     .path().string() ),
                 this
                 );
-    connect(fdl, &FileDownloader::failed,
+    connect(fdl, &IQFileDownloader::failed,
             this, &IQSetupWSLDistributionWizard::failed);
 
     fdl->connectProgressBar(ui->progress);
     fdl->connectLabel(ui->statusText);
-    connect(fdl, &FileDownloader::finished,
+    connect(fdl, &IQFileDownloader::finished,
             this, &IQSetupWSLDistributionWizard::createWSLDistribution);
     fdl->start(QUrl("http://downloads.silentdynamics.de/thirdparty/ubuntu-18.04-server-cloudimg-amd64-wsl.rootfs.tar.gz"));
 }
@@ -390,15 +210,6 @@ void IQSetupWSLDistributionWizard::restartWSLDistribution()
 
 void IQSetupWSLDistributionWizard::completed()
 {
-    QMessageBox::information(
-                this,
-                "Success!",
-                "The WSL distribution has been created\n"
-                "and the configuration data has been copied\n"
-                "into the corresponding input fields.\n\n"
-                "You may simply click on \"Ok\" now\n"
-                "to create a matching remote server entry!"
-                );
     QDialog::accept();
 }
 
@@ -469,19 +280,24 @@ IQSetupWSLDistributionWizard::IQSetupWSLDistributionWizard(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    auto defwsllabel=insight::WSLLinuxServer::defaultWSLDistributionName();
-    auto lbl=defwsllabel;
+//    auto defwsllabel=insight::WSLLinuxServer::defaultWSLDistributionName();
+//    auto lbl=defwsllabel;
+//    auto distros=insight::WSLLinuxServer::listWSLDistributions();
+//    int maxatt=99;
+//    for (int attmpt=1; attmpt<maxatt; ++attmpt)
+//    {
+//        if (std::find(distros.begin(), distros.end(), lbl)!=distros.end())
+//        {
+//            lbl=str(boost::format("%s_%d")%defwsllabel%attmpt);
+//        }
+//        else
+//            break;
+//    }
     auto distros=insight::WSLLinuxServer::listWSLDistributions();
-    int maxatt=99;
-    for (int attmpt=1; attmpt<maxatt; ++attmpt)
-    {
-        if (std::find(distros.begin(), distros.end(), lbl)!=distros.end())
-        {
-            lbl=str(boost::format("%s_%d")%defwsllabel%attmpt);
-        }
-        else
-            break;
-    }
+    auto lbl = insight::findUnusedLabel(
+                distros.begin(), distros.end(),
+                insight::WSLLinuxServer::defaultWSLDistributionName()
+                );
     ui->leWSLLabel->setText(QString::fromStdString(lbl));
 
     try

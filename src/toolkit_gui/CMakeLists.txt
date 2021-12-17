@@ -67,6 +67,8 @@ set(toolkit_gui_SRCS
     metatypes.cpp metatypes.h
     iqparaviewdialog.h iqparaviewdialog.cpp iqparaviewdialog.ui
     iqremoteparaviewdialog.cpp iqremoteparaviewdialog.h iqremoteparaviewdialog.ui
+    iqfiledownloader.h iqfiledownloader.cpp
+    iqwaitanimation.h iqwaitanimation.cpp
     analysisguilibrary.h analysisguilibrary.cpp
     wslinstallation.h wslinstallation.cpp
 

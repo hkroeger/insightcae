@@ -2,6 +2,8 @@
 
 #include "base/tools.h"
 
+#include <QFont>
+
 IQRemoteServerListModel::IQRemoteServerListModel(QObject *parent)
   : QAbstractItemModel(parent),
     remoteServers_(insight::remoteServers)
@@ -49,17 +51,58 @@ int IQRemoteServerListModel::columnCount(const QModelIndex &/*parent*/) const
 
 QVariant IQRemoteServerListModel::data(const QModelIndex &index, int role) const
 {
-  if (role==Qt::DisplayRole)
-  {
     if (index.isValid())
     {
-      auto i=remoteServers_.begin();
-      std::advance(i, index.row());
-      return QString::fromStdString( *(*i) );
-    }
-  }
+        auto i=remoteServers_.begin();
+        std::advance(i, index.row());
 
-  return QVariant();
+        if (role==Qt::DisplayRole)
+        {
+            return QString::fromStdString( *(*i) );
+        }
+        else if (role==Qt::FontRole)
+        {
+            QFont f;
+            if (auto ps = remoteServers_.getPreferredServer())
+            {
+                if (*i == ps)
+                    f.setBold(true);
+            }
+            return f;
+        }
+    }
+
+    return QVariant();
+}
+
+
+
+
+QModelIndex IQRemoteServerListModel::preferredServer() const
+{
+    if (auto rs = remoteServers_.getPreferredServer())
+    {
+        for ( auto i=remoteServers_.begin();
+              i!=remoteServers_.end();
+              ++i)
+        {
+            if (*i==rs)
+                return index(std::distance(remoteServers_.begin(), i), 0);
+        }
+    }
+
+    return QModelIndex();
+}
+
+void IQRemoteServerListModel::setPreferredServer(const QModelIndex& index)
+{
+    auto ch1=preferredServer();
+    auto ns=getRemoteServer(index);
+    remoteServers_.setPreferredServer(*(*ns));
+    auto ch2=preferredServer();
+
+    Q_EMIT dataChanged(ch1, ch1);
+    Q_EMIT dataChanged(ch2, ch2);
 }
 
 insight::RemoteServerList &IQRemoteServerListModel::remoteServers()

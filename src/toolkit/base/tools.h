@@ -234,6 +234,10 @@ public:
 };
 
 
+/**
+ * @brief The SharedPathList class
+ * contains the user directory first, the global path second
+ */
 class SharedPathList 
 : public std::vector<boost::filesystem::path>
 {

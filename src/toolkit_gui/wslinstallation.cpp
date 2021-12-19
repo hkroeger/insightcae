@@ -42,9 +42,11 @@ void checkWSLVersions(bool reportSummary, QWidget *parent)
             auto answer = QMessageBox::warning(
                   parent,
                   "Inconsistent configuration",
-                  "The backend package in the WSL environment is not of the same version as this GUI frontend.\n"
-                  "(GUI version: "+QString::fromStdString(insight::ToolkitVersion::current().toString())+","
-                  " WSL version: "+QString::fromStdString(wslVersion.toString())+")\n"
+                  "The installed InsightCAE package in the WSL distribution \""+QString::fromStdString(wslcfg->distributionLabel_)+"\"\n"
+                  "(referenced in remote server configuration \""+QString::fromStdString(*wslcfg)+"\")\n"
+                  "is not of the same version as this GUI frontend!\n\n"
+                  " GUI version: "+QString::fromStdString(insight::ToolkitVersion::current().toString())+"\n"
+                  " WSL version: "+QString::fromStdString(wslVersion.toString())+")\n\n"
                   "Please check the reason. If you recently updated the GUI package, please update the backend before executing analyses.\n"
                   "\nExecute the backend update now?",
                   QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel

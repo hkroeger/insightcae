@@ -44,6 +44,7 @@ RemoteLocation::RemoteLocation(const RemoteLocation& orec)
     remoteDir_(orec.remoteDir_),
     autoCreateRemoteDir_(orec.autoCreateRemoteDir_),
     isTemporaryStorage_(orec.isTemporaryStorage_),
+    port_(-1),
     isValidated_(orec.isValidated_)
 {}
 
@@ -53,6 +54,7 @@ RemoteLocation::RemoteLocation(const RemoteLocation& orec)
 RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
   : autoCreateRemoteDir_(false),
     isTemporaryStorage_(false),
+    port_(-1),
     isValidated_(false)
 {
   CurrentExceptionContext ce("reading configuration for remote execution in  directory "+mf.parent_path().string()+" from file "+mf.string());
@@ -104,6 +106,12 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
     if (auto rd = rootnode->first_attribute("directory"))
       remoteDir_ = rd->value();
 
+    if (auto p = rootnode->first_attribute("port"))
+    {
+      std::string v(p->value());
+      port_=boost::lexical_cast<int>(v);
+    }
+
     serverInstance_ = serverConfig_->getInstanceIfRunning();
 
     validate();
@@ -128,6 +136,7 @@ RemoteLocation::RemoteLocation(
     remoteDir_( remotePath ),
     autoCreateRemoteDir_( autoCreateRemoteDir ),
     isTemporaryStorage_( isTemporaryStorage ),
+    port_(-1),
     isValidated_(false)
 {
     serverInstance_ = serverConfig_->getInstanceIfRunning();
@@ -251,7 +260,7 @@ bool RemoteLocation::serverIsAvailable() const
 
 
 
-void RemoteLocation::initialize()
+void RemoteLocation::initialize(bool findFreeRemotePort)
 {
   if (!isValidated_)
   {
@@ -275,6 +284,11 @@ void RemoteLocation::initialize()
       {
         serverInstance_->createDirectory(remoteDir_);
       }
+    }
+
+    if (findFreeRemotePort)
+    {
+        port_=serverInstance_->findFreeRemotePort();
     }
   }
 
@@ -516,6 +530,11 @@ void RemoteLocation::writeConfigFile(
                                  )
                                );
 
+  rootnode->append_attribute(doc.allocate_attribute
+                               ("port",
+                                 doc.allocate_string(lexical_cast<string>(port_).c_str())
+                                 )
+                               );
   doc.append_node(rootnode);
 
   ofstream f(cfgf.string());
@@ -532,7 +551,12 @@ bool RemoteLocation::isActive() const
 
 bool RemoteLocation::isTemporaryStorage() const
 {
-  return isTemporaryStorage_;
+    return isTemporaryStorage_;
+}
+
+int RemoteLocation::port() const
+{
+    return port_;
 }
 
 

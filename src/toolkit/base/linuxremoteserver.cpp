@@ -140,6 +140,7 @@ int LinuxRemoteServer::findFreeRemotePort() const
     int ret = executeCommand(
                 "isPVFindPort.sh", false,
                 boost::process::std_out > out,
+                boost::process::std_err > stderr,
                 boost::process::std_in < boost::process::null
                 );
 

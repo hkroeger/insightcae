@@ -11,6 +11,8 @@ namespace insight {
 class RemoteServerList
     : public std::set<RemoteServer::ConfigPtr>
 {
+  RemoteServer::ConfigPtr preferredServer_;
+
 public:
   RemoteServerList();
   RemoteServerList(const RemoteServerList& o);
@@ -24,6 +26,11 @@ public:
   template<class ServerType>
   RemoteServer::ConfigPtr findFirstServerOfType(const std::string& serverLabelRegex) const
   {
+    if ( auto def = std::dynamic_pointer_cast<typename ServerType::Config>(preferredServer_) )
+    {
+        return def;
+    }
+
     boost::regex re(serverLabelRegex);
 
     auto i = std::find_if(
@@ -46,6 +53,9 @@ public:
       }
     return *i;
   }
+
+  void setPreferredServer(const std::string& label);
+  RemoteServer::ConfigPtr getPreferredServer() const;
 };
 
 

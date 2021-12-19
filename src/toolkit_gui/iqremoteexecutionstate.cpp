@@ -24,7 +24,7 @@ void IQRemoteExecutionState::commit(const boost::filesystem::path &location)
   if (!dynamic_cast<const insight::RemoteExecutionConfig*>(rlc_.get()))
   {
     auto rec = std::make_unique<insight::RemoteExecutionConfig>(location, *rlc_);
-    rec->initialize();
+    rec->initialize(true);
     rec->writeConfig(); // re-write with temporary directory resolved.
     rlc_ = std::move(rec);
     updateGUI(true);

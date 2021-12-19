@@ -52,7 +52,7 @@ protected:
     Columns columns_;
 
     Columns::iterator getColumn(const std::string& path, std::vector<std::string>& splitPath);
-    ProgressItem getOrCreateItem(const std::string& path);
+    ProgressItem getOrCreateItem(const std::string& path, bool forbidCreation=false);
     void deleteItem(const std::string& path);
 
 

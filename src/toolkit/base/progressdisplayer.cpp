@@ -48,10 +48,13 @@ void ProgressDisplayer::stepUp(double steps)
 void ProgressDisplayer::stepTo(double i)
 {
     ci_=std::min(maxi_,i);
-    insight::dbg()<<"progress "<<ci_<<"/"<<maxi_<<std::endl;
+    insight::dbg()<<actionPath()<<": progress "<<ci_<<"/"<<maxi_<<std::endl;
     setActionProgressValue(actionPath(), ci_/maxi_);
     if (ci_ >= maxi_)
+    {
+        insight::dbg()<<actionPath()<<": finish progress"<<std::endl;
         finishActionProgress(actionPath());
+    }
 }
 
 void ProgressDisplayer::completed()
@@ -74,7 +77,7 @@ void ProgressDisplayer::operator+=(double n)
 
 void ProgressDisplayer::message(const std::string &message)
 {
-  insight::dbg()<<message<<std::endl;
+  insight::dbg()<<actionPath()<<": "<<message<<std::endl;
   setMessageText(actionPath(), message);
 }
 
@@ -137,6 +140,7 @@ ActionProgress::ActionProgress
     name_(name)
 {
   maxi_=nSteps;
+  stepTo(0); // enforce creation of progress bar
 }
 
 

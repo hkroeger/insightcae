@@ -30,6 +30,9 @@ public:
 
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
+  QModelIndex preferredServer() const;
+  void setPreferredServer(const QModelIndex& index);
+
   insight::RemoteServerList& remoteServers();
 
   insight::RemoteServerList::iterator getRemoteServer(const QModelIndex &index);

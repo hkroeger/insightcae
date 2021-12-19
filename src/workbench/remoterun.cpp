@@ -71,7 +71,7 @@ void RemoteRun::launch()
 {
 
   portMappings_ = remote_->exeConfig().server()->makePortsAccessible(
-      {8090},
+      { remote_->exeConfig().port() },
       {}
   );
 
@@ -80,7 +80,8 @@ void RemoteRun::launch()
 
   ac_ = std::make_unique<insight::AnalyzeClient>(
       af_->analysisName_,
-      str(format("http://127.0.0.1:%d") % portMappings_->localListenerPort(8090) ),
+      str(format("http://127.0.0.1:%d")
+          % portMappings_->localListenerPort(remote_->exeConfig().port()) ),
       &af_->progressDisplayer_
   );
 
@@ -158,6 +159,9 @@ void RemoteRun::launchRemoteExecutionServer()
                     " --savecfg param.ist"
                     " --workdir=\""+insight::toUnixPath(rd)+"\""
                     " --server"
+                    +str(format(
+                    " --port %d"
+                             ) % remote_->exeConfig().port() )+
                     " >\""+insight::toUnixPath(rd/"analyze.log")+"\" 2>&1 </dev/null"
                     );
 

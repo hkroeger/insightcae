@@ -19,6 +19,7 @@ IQRemoteServerEditDialog::IQRemoteServerEditDialog(QWidget *parent) :
           {
             ui->btnEdit->setEnabled(current.isValid());
             ui->btnRemove->setEnabled(current.isValid());
+            ui->btnSetPreferred->setEnabled(current.isValid());
           }
   );
 
@@ -66,6 +67,17 @@ IQRemoteServerEditDialog::IQRemoteServerEditDialog(QWidget *parent) :
                 serverListModel_.removeRemoteServer(rsc);
               }
             }
+          }
+  );
+
+  connect(ui->btnSetPreferred, &QPushButton::clicked, this,
+          [&]()
+          {
+              auto index = ui->lwServers->currentIndex();
+              if (index.isValid())
+              {
+                  serverListModel_.setPreferredServer(index);
+              }
           }
   );
 

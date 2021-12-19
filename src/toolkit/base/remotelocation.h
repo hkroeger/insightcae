@@ -35,6 +35,12 @@ protected:
   boost::filesystem::path remoteDir_;
   bool autoCreateRemoteDir_, isTemporaryStorage_;
 
+  /**
+   * @brief port_
+   * store some associated port on remote host, required for analyze server
+   */
+  int port_;
+
   virtual void removeRemoteDir();
 
   bool isValidated_;
@@ -93,7 +99,7 @@ public:
     // ====================================================================================
     // ======== init /deinit
 
-    void initialize();
+    void initialize(bool findFreeRemotePort = false);
     virtual void cleanup(bool forceRemoval=false);
 
     // ==================================openfoam==================================================
@@ -188,6 +194,8 @@ public:
 
     bool isActive() const;
     bool isTemporaryStorage() const;
+
+    int port() const;
 };
 
 

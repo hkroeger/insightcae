@@ -9,7 +9,7 @@
 
 #include "rapidxml/rapidxml_print.hpp"
 
-
+#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 using namespace boost;
@@ -25,7 +25,7 @@ namespace insight {
 RemoteServerList::RemoteServerList()
 {
     SharedPathList paths;
-    for ( const bfs_path& p: paths )
+    for ( const bfs_path& p: boost::adaptors::reverse(paths) ) // reverse: start with global, then per-user to possibly overwrite global
     {
         if ( exists(p) && is_directory ( p ) )
         {
@@ -33,7 +33,7 @@ RemoteServerList::RemoteServerList()
 
             if ( exists(serverlist) )
             {
-
+                insight::dbg()<<"reading remote servers from "<<serverlist<<std::endl;
                 // read xml
                 string content;
                 readFileIntoString(serverlist, content);
@@ -78,6 +78,15 @@ RemoteServerList::RemoteServerList()
                     }
                 }
 
+                if (auto *prevSrvNode = rootnode->first_node("preferredServer"))
+                {
+                    if (auto *lbl = prevSrvNode->first_attribute("label"))
+                    {
+                        insight::dbg()<<"setting preferred server as "<<lbl->value()<<std::endl;
+                        setPreferredServer(lbl->value());
+                    }
+                }
+
             }
         }
     }
@@ -85,7 +94,8 @@ RemoteServerList::RemoteServerList()
 
 
 RemoteServerList::RemoteServerList(const RemoteServerList& o)
-  : std::set<std::shared_ptr<RemoteServer::Config> >(o)
+  : std::set<std::shared_ptr<RemoteServer::Config> >(o),
+    preferredServer_(o.preferredServer_)
 {
 }
 
@@ -127,6 +137,14 @@ void RemoteServerList::writeConfiguration(const boost::filesystem::path& file)
     rs->save(srvnode, doc);
     rootnode->append_node(srvnode);
   }
+  if (auto ps = getPreferredServer())
+  {
+    xml_node<> *prefSrvNode = doc.allocate_node(node_element, "preferredServer");
+    prefSrvNode->append_attribute(
+                doc.allocate_attribute("label",
+                  doc.allocate_string( (*ps).c_str() )));
+    rootnode->append_node(prefSrvNode);
+  }
 
   doc.append_node(rootnode);
 
@@ -159,6 +177,20 @@ std::shared_ptr<RemoteServer::Config> RemoteServerList::findServer(
       throw insight::Exception("Remote server \""+serverLabel+"\" not found in configuration!");
     }
   return *i;
+}
+
+
+
+void RemoteServerList::setPreferredServer(const std::string &label)
+{
+    preferredServer_ = findServer(label);
+}
+
+
+
+RemoteServer::ConfigPtr RemoteServerList::getPreferredServer() const
+{
+    return preferredServer_;
 }
 
 

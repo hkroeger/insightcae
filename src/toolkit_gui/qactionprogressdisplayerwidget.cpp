@@ -52,9 +52,10 @@ QActionProgressDisplayerWidget::getColumn(const string &path, std::vector<std::s
 
 
 
+
 QActionProgressDisplayerWidget::ProgressItem
 QActionProgressDisplayerWidget::getOrCreateItem
-(const std::string &path)
+(const std::string &path, bool forbidCreation)
 {
   vector<string> splitPath;
   Rows *c = &(getColumn(path, splitPath)->second);
@@ -64,6 +65,8 @@ QActionProgressDisplayerWidget::getOrCreateItem
     auto ir=c->items.find(r);
     if (ir==c->items.end())
     {
+      insight::assertion(!forbidCreation, "internal error: creation of progress bar inhibited!");
+
       qDebug()<<"adding progress bar "<<QString::fromStdString(path);
       ProgressItem pi;
 
@@ -162,9 +165,16 @@ void QActionProgressDisplayerWidget::setMessageText(const std::string &path, con
         qApp,
         [this,path,message]()
         {
-          insight::dbg()<<"setting text for "<<path<<" to "<<message<<std::endl;
-          auto i=getOrCreateItem(path);
-          i.p->setFormat( QString::fromStdString(message) );
+          try
+          {
+              insight::dbg()<<"setting text for "<<path<<" to "<<message<<std::endl;
+              auto i=getOrCreateItem(path, true);
+              i.p->setFormat( QString::fromStdString(message) );
+          }
+          catch (const insight::Exception& ex)
+          {
+              // ignore, progress bar was either not yet created or already removed
+          }
         },
         Qt::QueuedConnection
   );

@@ -231,7 +231,7 @@ QTemporaryFile* IQSetupWSLDistributionWizard::createSetupScript()
     {
         throw insight::Exception("WSL user name must not be empty!");
     }
-    auto f = new QTemporaryFile("setupWSL-XXXX.sh", this);
+    auto f = new QTemporaryFile(QDir::tempPath()+"/setupWSL-XXXXXX.sh", this);
     if (f->open())
     {
         QString script =
@@ -263,10 +263,12 @@ QTemporaryFile* IQSetupWSLDistributionWizard::createSetupScript()
 "EOF\n"
               ;
 
-        qDebug() << script;
+        insight::dbg() << script.toStdString() << std::endl;
 
         QTextStream out(f);
         out << script;
+        out.flush();
+        f->close();
     }
 
     return f;

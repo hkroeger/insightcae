@@ -5,6 +5,7 @@
 
 #include "base/tools.h"
 #include "base/casedirectory.h"
+#include "base/externalprograms.h"
 
 #include "cpp/poppler-document.h"
 #include "cpp/poppler-page.h"
@@ -16,6 +17,9 @@
 
 namespace insight
 {
+
+
+std::unique_ptr<gnuplotio::Gnuplot> make_Gnuplot();
 
 
 template<class Base>
@@ -58,14 +62,14 @@ public:
     {
       CurrentExceptionContext ex("executing gnuplot");
 
-      gnuplotio::Gnuplot gp;
+      auto gp = make_Gnuplot();
 
       std::string gpfname = (tmp/(bn+".tex")).generic_path().string();
-      gp<<"set terminal cairolatex pdf standalone color dash linewidth 3;";
-      gp<<"set output '" << gpfname << "';";
+      *gp<<"set terminal cairolatex pdf standalone color dash linewidth 3;";
+      *gp<<"set output '" << gpfname << "';";
       insight::dbg()<<gpfname<<std::endl;
 
-      gnuplotCommand(gp);
+      gnuplotCommand(*gp);
     }
 
     boost::process::system(

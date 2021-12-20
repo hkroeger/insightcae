@@ -71,6 +71,9 @@ set(toolkit_gui_SRCS
     iqwaitanimation.h iqwaitanimation.cpp
     analysisguilibrary.h analysisguilibrary.cpp
     wslinstallation.h wslinstallation.cpp
+    iqexternalprogramsmodel.h iqexternalprogramsmodel.cpp
+
+    iqconfigureexternalprogramsdialog.h iqconfigureexternalprogramsdialog.cpp iqconfigureexternalprogramsdialog.ui
 
     iqsetupwsldistributionwizard.h iqsetupwsldistributionwizard.cpp iqsetupwsldistributionwizard.ui
 

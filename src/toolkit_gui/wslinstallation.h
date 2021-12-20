@@ -12,7 +12,7 @@
 namespace insight {
 
 void checkWSLVersions(bool reportSummary, QWidget *parent=nullptr);
-
+void checkExternalPrograms(QWidget *parent=nullptr);
 
 void launchUpdateWSLVersion(
         std::shared_ptr<insight::WSLLinuxServer> wsl,

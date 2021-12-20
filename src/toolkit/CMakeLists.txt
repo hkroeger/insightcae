@@ -23,6 +23,7 @@ project(toolkit)
 set(toolkit_SOURCES
     base/global.cpp
     base/toolkitversion.cpp base/toolkitversion.h
+    base/externalprograms.h base/externalprograms.cpp
     base/supplementedinputdata.cpp base/supplementedinputdata.h
     base/analysis.cpp base/analysis.h
     base/analysislibrary.cpp base/analysislibrary.h
@@ -90,6 +91,7 @@ set(toolkit_SOURCES
     base/resultelements/chartrenderer.cpp base/resultelements/chartrenderer.h
     base/resultelements/polarchart.cpp base/resultelements/polarchart.h
     base/resultelements/polarchartrenderer.cpp base/resultelements/polarchartrenderer.h
+    base/resultelements/gnuplotchartrenderer.h base/resultelements/gnuplotchartrenderer.cpp
     base/resultelements/gnuplotpolarchartrenderer.cpp base/resultelements/gnuplotpolarchartrenderer.h
     base/resultelements/contourchart.cpp base/resultelements/contourchart.h
     base/resultsetfilter.h base/resultsetfilter.cpp

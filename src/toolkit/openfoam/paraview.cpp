@@ -1,6 +1,7 @@
 
 #include "openfoam/paraview.h"
 #include "base/cppextensions.h"
+#include "base/externalprograms.h"
 
 namespace insight
 {
@@ -177,7 +178,7 @@ Paraview::Paraview(
                   std::inserter(pvargs, pvargs.begin()) );
 
         process_=std::make_unique<boost::process::child>(
-                    boost::process::search_path("paraview"),
+                    ExternalPrograms::path("paraview"), //boost::process::search_path("paraview"),
                     boost::process::args(pvargs)
                     );
     }

@@ -79,9 +79,7 @@ private Q_SLOTS:
     void onOpenAnalysis();
     void openRecentFile();
 
-#ifdef WIN32
-    void checkWSLVersion(bool reportSummary=false);
-#endif
+    void checkInstallation(bool reportSummary=false);
 
 private slots:
     void onSubWindowActivated( QMdiSubWindow * window );

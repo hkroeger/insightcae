@@ -33,6 +33,7 @@
 #include "analysisform.h"
 #include "qinsighterror.h"
 #include "iqremoteservereditdialog.h"
+#include "iqconfigureexternalprogramsdialog.h"
 #include "qanalysisthread.h"
 
 #include <fstream>
@@ -52,7 +53,8 @@ void workbench::updateRecentFileActions()
 
   int numRecentFiles = std::min<int>(files.size(), recentFileActs_.size());
 
-  for (int i = 0; i < numRecentFiles; ++i) {
+  for (int i = 0; i < numRecentFiles; ++i)
+  {
       QString text = tr("&%1 %2")
           .arg(i + 1)
           .arg( QFileInfo(files[i]).fileName() )
@@ -119,6 +121,17 @@ workbench::workbench(bool logToConsole)
   );
   settingsMenu->addAction( a );
 
+  a = new QAction("Configure paths to external programs...", this);
+  connect(a, &QAction::triggered, this,
+          [&]()
+          {
+            IQConfigureExternalProgramsDialog dlg(this);
+            dlg.exec();
+          }
+  );
+  settingsMenu->addAction( a );
+
+
   QMenu *helpMenu = menuBar()->addMenu( "&Help" );
 
   QAction* ab = new QAction("About...", this);
@@ -139,11 +152,11 @@ workbench::workbench(bool logToConsole)
 
 #ifdef WIN32
   {
-    checkWSLVersion(false);
+    checkInstallation(false);
     QAction* be = new QAction("Check backend installation version...", this);
     helpMenu->addAction( be );
     connect(be, &QAction::triggered,
-            this, [&]() { checkWSLVersion(true); } );
+            this, [&]() { checkInstallation(true); } );
   }
 #endif
 }
@@ -201,12 +214,14 @@ void workbench::openRecentFile()
 
 
 
-#ifdef WIN32
-void workbench::checkWSLVersion(bool reportSummary)
+
+void workbench::checkInstallation(bool reportSummary)
 {
+    insight::checkExternalPrograms(this);
+#ifdef WIN32
     insight::checkWSLVersions(reportSummary, this);
-}
 #endif
+}
 
 
 

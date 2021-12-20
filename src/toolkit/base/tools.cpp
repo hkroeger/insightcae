@@ -26,6 +26,7 @@
 #include "boost/asio.hpp"
 #include "base/exception.h"
 #include "base/cppextensions.h"
+#include "base/externalprograms.h"
 
 #include "vtkSTLReader.h"
 #include "vtkSTLWriter.h"
@@ -234,9 +235,9 @@ SSHCommand::SSHCommand(const std::string& hostName, const std::vector<std::strin
 boost::filesystem::path SSHCommand::command() const
 {
 #if defined(WIN32)
-    return boost::process::search_path("plink");
+    return ExternalPrograms::path("plink"); //boost::process::search_path("plink");
 #else
-    return boost::process::search_path("ssh");
+    return ExternalPrograms::path("ssh"); //boost::process::search_path("ssh");
 #endif
 }
 
@@ -373,6 +374,21 @@ void SharedPathList::insertFileDirectoyIfNotPresent(const path& sp)
   {
     insertIfNotPresent(sp.parent_path());
   }
+}
+
+boost::filesystem::path SharedPathList::findFirstWritableLocation(
+        const boost::filesystem::path &subPath) const
+{
+    insight::SharedPathList paths;
+    for ( const bfs_path& p: paths )
+    {
+        insight::dbg()<<"checking, if "<<p.string()<<" is writable."<<std::endl;
+        if ( insight::isInWritableDirectory(p) )
+        {
+            return p / subPath;
+        }
+    }
+    return bfs_path();
 }
 
 

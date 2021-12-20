@@ -2,8 +2,10 @@
 
 #include "base/tools.h"
 #include "base/remoteserverlist.h"
+#include "base/externalprograms.h"
 #include "iqsetupwsldistributionwizard.h"
 #include "iqremoteservereditdialog.h"
+#include "iqconfigureexternalprogramsdialog.h"
 
 #include <QMessageBox>
 #include <QPushButton>
@@ -239,6 +241,29 @@ UpdateWSLProgressDialog::UpdateWSLProgressDialog(QWidget *parent)
 void UpdateWSLProgressDialog::appendLogLine(const QString &line)
 {
     pte_->appendPlainText(line);
+}
+
+void checkExternalPrograms(QWidget *parent)
+{
+    auto mp = insight::ExternalPrograms::globalInstance().missingPrograms();
+    if (mp.size()>0)
+    {
+        QString msg="The following external programs have not been found:\n";
+        for (const auto&p: mp)
+            msg+=QString::fromStdString(p)+"\n";
+        msg+="Do you want to select the paths to these executables now?";
+
+        auto answer=QMessageBox::question(
+                    parent,
+                    "Missing external programs",
+                    msg,
+                    QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if (answer==QMessageBox::Yes)
+        {
+            IQConfigureExternalProgramsDialog dlg(parent);
+            dlg.exec();
+        }
+    }
 }
 
 

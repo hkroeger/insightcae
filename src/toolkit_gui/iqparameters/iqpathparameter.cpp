@@ -10,6 +10,8 @@
 #include "iqpathparameter.h"
 #include "iqparametersetmodel.h"
 
+#include "base/externalprograms.h"
+
 defineType(IQPathParameter);
 addToFactoryTable(IQParameter, IQPathParameter);
 
@@ -109,11 +111,11 @@ QVBoxLayout* IQPathParameter::populateEditControls(IQParameterSetModel* model, c
     QString program;
     if ( (ext==".stl")||(ext==".stlb") )
     {
-      program="paraview";
+      program=QString::fromStdString( insight::ExternalPrograms::path("paraview").string() );
     }
     else if ( (ext==".stp")||(ext==".step")||(ext==".igs")||(ext==".iges")||(ext==".iscad")||(ext==".brep") )
     {
-      program="iscad";
+      program=QString::fromStdString( insight::ExternalPrograms::path("iscad").string() );
     }
 
     if (!program.isEmpty())

@@ -248,6 +248,8 @@ public:
   
   void insertIfNotPresent(const boost::filesystem::path& sp);
   void insertFileDirectoyIfNotPresent(const boost::filesystem::path& sp);
+  boost::filesystem::path findFirstWritableLocation(
+          const boost::filesystem::path& subPath ) const;
   
   static SharedPathList searchPathList;
 };

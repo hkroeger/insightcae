@@ -103,16 +103,8 @@ RemoteServerList::RemoteServerList(const RemoteServerList& o)
 
 filesystem::path RemoteServerList::firstWritableLocation() const
 {
-    insight::SharedPathList paths;
-    for ( const bfs_path& p: paths )
-    {
-        insight::dbg()<<"checking, if "<<p.string()<<" is writable."<<std::endl;
-        if ( insight::isInWritableDirectory(p) )
-        {
-            return p / "remoteservers.list";
-        }
-    }
-    return bfs_path();
+    return insight::SharedPathList()
+            .findFirstWritableLocation( "remoteservers.list" );
 }
 
 

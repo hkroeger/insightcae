@@ -496,6 +496,13 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnow")
         {
+
+          if (analysis_)
+          {
+              std::ofstream f( (analysis_->executionPath()/"wnow").string() );
+              f.close();
+          }
+
           response.setStatus(200);
           response.setMimeType("text/plain");
           response.out()<<"OK\n";
@@ -503,6 +510,12 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnowandstop")
         {
+          if (analysis_)
+          {
+              std::ofstream f( (analysis_->executionPath()/"wnowandstop").string() );
+              f.close();
+          }
+
           response.setStatus(200);
           response.setMimeType("text/plain");
           response.out()<<"OK\n";

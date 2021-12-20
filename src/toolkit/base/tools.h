@@ -86,6 +86,8 @@ StringType findUnusedLabel(
 
     for (int attempt=1; attempt<maxAttempts; ++attempt)
     {
+        insight::dbg()<<"attempt "<<attempt<<std::endl;
+
         bool found=false;
         for (auto it=begin; it!=end; ++it)
         {
@@ -97,10 +99,12 @@ StringType findUnusedLabel(
         }
         if (found)
         {
+            insight::dbg()<<"try lbl="<<lbl<<std::endl;
             lbl = desiredLabel + "_" + boost::lexical_cast<StringType>(attempt);
         }
         else
         {
+            insight::dbg()<<"return lbl="<<lbl<<std::endl;
             return lbl;
         }
     }
@@ -124,7 +128,7 @@ StringType findUnusedLabel(
     return findUnusedLabel(begin, end, desiredLabel,
                            [](StringIteratorType it) -> StringType
                            {
-                               return static_cast<const StringType&>(*it);
+                               return static_cast<StringType>(*it);
                            },
                            maxAttempts );
 }

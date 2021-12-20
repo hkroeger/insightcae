@@ -25,20 +25,17 @@ ToolkitVersion::ToolkitVersion(
 
 int ToolkitVersion::majorVersion() const
 {
-//    return INSIGHT_VERSION_MAJOR;
   return majorVersion_;
 }
 
 int ToolkitVersion::minorVersion() const
 {
-//    return INSIGHT_VERSION_MINOR;
   return minorVersion_;
 }
 
 
 std::string ToolkitVersion::patchVersion() const
 {
-//    return std::string( XSTR(INSIGHT_VERSION_PATCH) );
   return patchVersion_;
 }
 
@@ -51,7 +48,6 @@ string ToolkitVersion::branch() const
 
 std::string ToolkitVersion::patchInfo() const
 {
-//    return std::string( XSTR(INSIGHT_VERSION_PATCH) " (" XSTR(INSIGHT_BRANCH) ")" );
   return patchVersion() + " (" + branch_ + ")";
 }
 

@@ -328,7 +328,7 @@ string WSLLinuxServer::defaultRepositoryURL(const ToolkitVersion &tv)
         if (boost::regex_search(bn, group, re))
         {
            return str(format
-                      ("https://rostock.kroegeronline.net/customers/%1")
+                      ("https://rostock.kroegeronline.net/customers/%s")
                         % group[1] );
         }
         else
@@ -358,16 +358,18 @@ string WSLLinuxServer::installationPackageName(const ToolkitVersion &tv)
 
 string WSLLinuxServer::defaultWSLDistributionName(const ToolkitVersion &tv)
 {
+    insight::CurrentExceptionContext ex("building default WSL distribution label");
+
     std::string wslname("insightcae-ubuntu-1804");
 
     boost::regex re("^customer-(.*)$");
     boost::smatch group;
-
     if (boost::regex_search(tv.branch(), group, re))
     {
         wslname += "-"+group[1];
     }
 
+    insight::dbg()<<"default WSL name: "<<wslname<<std::endl;
     return wslname;
 }
 
@@ -397,10 +399,10 @@ std::vector<std::string> WSLLinuxServer::listWSLDistributions()
         while (getline(out, wline))
         {
             std::string line=converter.to_bytes( wline );
-            insight::dbg()<<line<<std::endl;
             boost::trim(line);
             if (!line.empty())
             {
+                insight::dbg()<<line<<std::endl;
                 distros.push_back(line);
             }
         }

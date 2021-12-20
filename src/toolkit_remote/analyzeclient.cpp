@@ -438,7 +438,11 @@ void AnalyzeClient::controlRequest(
         AnalyzeClientAction::ReportSuccessCallback onCompletion,
         AnalyzeClientAction::SimpleCallBack onTimeout )
 {
-  launchAction( std::make_shared<ControlRequestAction>( *this, action, onCompletion, onTimeout ) );
+  launchAction(
+              std::make_shared<ControlRequestAction>(
+                  *this, action,
+                  onCompletion,
+                  onTimeout ) );
 }
 
 
@@ -503,49 +507,6 @@ void AnalyzeClient::forgetRequest()
 }
 
 
-
-
-//void AnalyzeClient::waitForContact(
-//        AnalyzeClientAction::SimpleCallBack contactCallback,
-//        AnalyzeClientAction::SimpleCallBack noContactCallback,
-//        int maxAttempts )
-//{
-
-//    auto scheduleNextAttempt = [this,contactCallback,noContactCallback,maxAttempts]() {
-//        // schedule next attempt in 10 secs, if some remain
-//        if (maxAttempts>0)
-//        {
-//            ioService().schedule(
-//                    std::chrono::seconds(2),
-//                    std::bind( &AnalyzeClient::waitForContact, this,
-//                               contactCallback, noContactCallback,
-//                               maxAttempts-1 ) );
-//        }
-//        else
-//        {
-//            // cancel otherwise
-//            ioService().post( noContactCallback );
-//        }
-
-//    };
-
-//    queryStatus(
-//                [this,contactCallback,scheduleNextAttempt](QueryStatusAction::Result r)
-//                {
-//                    if (r.success)
-//                    {
-//                        // execute callback on success
-//                        ioService().post( contactCallback );
-//                    }
-//                    else
-//                    {
-//                        scheduleNextAttempt();
-//                    }
-//                },
-
-//                scheduleNextAttempt
-//    );
-//}
 
 
 

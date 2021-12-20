@@ -293,6 +293,7 @@ IQSetupWSLDistributionWizard::IQSetupWSLDistributionWizard(QWidget *parent) :
 //        else
 //            break;
 //    }
+
     auto distros=insight::WSLLinuxServer::listWSLDistributions();
     auto lbl = insight::findUnusedLabel(
                 distros.begin(), distros.end(),

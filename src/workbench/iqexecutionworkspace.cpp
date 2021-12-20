@@ -174,6 +174,11 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
             ( lwd.empty() && localCaseDirectory_->isPersistent() ) // exchange dir for temp dir
          )
     {
+        insight::dbg()
+                << "changing local workspace from " << (localCaseDirectory_?(localCaseDirectory_->string()):"(unset)")
+                << " to "
+                << lwd << std::endl;
+
         localCaseDirectory_.reset(); // delete old one FIRST
 
         insight::dbg()<<"new local directory set: "<<lwd<<std::endl;
@@ -192,6 +197,7 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
          && localCaseDirectory_
          && localCaseDirectory_->isPersistent() )
     {
+        insight::dbg()<<"checking for present remote config in "<<*localCaseDirectory_<<std::endl;
         try
         {
             presentRL = std::make_unique<insight::RemoteLocation>(
@@ -206,8 +212,9 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
     }
 
     // if there is REC present in new WD and no RWD specified, use the present one
-    if ( (newRemoteLocation.type() != typeid(boost::blank)) && presentRL )
+    if ( (newRemoteLocation.type() == typeid(boost::blank)) && presentRL )
     {
+        insight::dbg()<<"appling read remote cfg"<<std::endl;
         newRemoteLocation = presentRL.get();
     }
 

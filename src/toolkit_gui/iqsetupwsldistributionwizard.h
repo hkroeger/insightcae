@@ -36,15 +36,15 @@ class IQSetupWSLDistributionWizard : public QDialog
 
 private Q_SLOTS:
     void start();
-    void downloadWSLImage();
-    void createWSLDistribution(const QString& imagefile);
-    void configureWSLDistribution();
+//    void downloadWSLImage();
+    void createWSLDistribution();
+//    void configureWSLDistribution();
     void restartWSLDistribution();
     void completed();
 
     void failed(const QString& errorMsg);
 
-    QTemporaryFile* createSetupScript();
+//    QTemporaryFile* createSetupScript();
 
 public:
     explicit IQSetupWSLDistributionWizard(QWidget *parent = nullptr);

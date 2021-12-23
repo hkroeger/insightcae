@@ -1,7 +1,7 @@
 #ifndef IQWAITANIMATION_H
 #define IQWAITANIMATION_H
 
-#include <QLabel>
+#include <QProgressBar>
 #include <QTimer>
 
 
@@ -9,13 +9,12 @@ class IQWaitAnimation : public QObject
 {
     Q_OBJECT
 
-    QLabel* label_;
-    QString baseMsg_;
-    int nDots_;
+    QProgressBar* progressBar_;
     QTimer timer_;
+    int i_;
 
 public:
-    IQWaitAnimation(const QString& baseMsg, QLabel* out);
+    IQWaitAnimation(QProgressBar* out, int msecCycle);
     ~IQWaitAnimation();
 };
 

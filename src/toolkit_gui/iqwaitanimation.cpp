@@ -1,22 +1,22 @@
 #include "iqwaitanimation.h"
-
 #include "base/exception.h"
 
+const int nUpdatesPerCycle = 200;
 
-IQWaitAnimation::IQWaitAnimation(const QString& baseMsg, QLabel* out)
-    : label_(out),
-      baseMsg_(baseMsg),
-      nDots_(0)
+
+IQWaitAnimation::IQWaitAnimation(QProgressBar* pb, int msecCycle)
+    : progressBar_(pb),
+      i_(0)
 {
     insight::dbg()<<"WaitingAnimation"<<std::endl;
-    timer_.setInterval(1000);
+    progressBar_->setRange(0, nUpdatesPerCycle);
+    timer_.setInterval(msecCycle/nUpdatesPerCycle);
     connect(&timer_, &QTimer::timeout,
             this, [&]()
     {
-        ++nDots_;
-        label_->setText(baseMsg_ + QString(nDots_, '.'));
-        if (nDots_>15)
-            nDots_=0;
+        ++i_;
+        progressBar_->setValue(i_);
+        if (i_>nUpdatesPerCycle) i_=0;
     }
     );
     timer_.start();
@@ -28,6 +28,6 @@ IQWaitAnimation::IQWaitAnimation(const QString& baseMsg, QLabel* out)
 IQWaitAnimation::~IQWaitAnimation()
 {
     timer_.stop();
-    label_->setText(baseMsg_);
+    progressBar_->setValue(nUpdatesPerCycle);
 }
 

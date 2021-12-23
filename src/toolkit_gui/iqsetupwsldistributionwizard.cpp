@@ -15,30 +15,30 @@
 
 
 
-QString IQSetupWSLDistributionWizard::effectiveRepoURL() const
-{
-    QRegExp re("^(http|https):\\/\\/(.*@|)([^/]*)\\/(.*)$");
-    if (!re.exactMatch(ui->leRepoURL->text()))
-    {
-        return QString();
-    }
+//QString IQSetupWSLDistributionWizard::effectiveRepoURL() const
+//{
+//    QRegExp re("^(http|https):\\/\\/(.*@|)([^/]*)\\/(.*)$");
+//    if (!re.exactMatch(ui->leRepoURL->text()))
+//    {
+//        return QString();
+//    }
 
-    QString cred = re.cap(2);
-    if (!ui->leRepoUser->text().isEmpty())
-    {
-        cred = QString("%1:%2@").arg(
-                    ui->leRepoUser->text(),
-                    ui->leRepoPwd->text()
-                    );
-    }
+//    QString cred = re.cap(2);
+//    if (!ui->leRepoUser->text().isEmpty())
+//    {
+//        cred = QString("%1:%2@").arg(
+//                    ui->leRepoUser->text(),
+//                    ui->leRepoPwd->text()
+//                    );
+//    }
 
-    return QString("%1://%2%3/%4").arg(
-                re.cap(1),
-                cred,
-                re.cap(3),
-                re.cap(4)
-                );
-}
+//    return QString("%1://%2%3/%4").arg(
+//                re.cap(1),
+//                cred,
+//                re.cap(3),
+//                re.cap(4)
+//                );
+//}
 
 
 
@@ -51,7 +51,9 @@ QProcess* IQSetupWSLDistributionWizard::launchSubprocess(
         )
 {
     if (wanim_) wanim_->deleteLater();
-    wanim_ = new IQWaitAnimation( explainText, ui->statusText );
+
+    ui->statusText->setText(explainText);
+    wanim_ = new IQWaitAnimation( ui->progress, 600000 );
 
     insight::dbg()<<"creating subprocess"<<std::endl;
     QString cmbargs;
@@ -113,7 +115,8 @@ void IQSetupWSLDistributionWizard::start()
     ui->statusText->setEnabled(true);
     ui->log->setEnabled(true);
 
-    downloadWSLImage();
+//    downloadWSLImage();
+    createWSLDistribution();
 //    configureWSLDistribution();
 //    restartWSLDistribution();
 }
@@ -121,32 +124,39 @@ void IQSetupWSLDistributionWizard::start()
 
 
 
-void IQSetupWSLDistributionWizard::downloadWSLImage()
+//void IQSetupWSLDistributionWizard::downloadWSLImage()
+//{
+//    insight::dbg()<<"downloadWSLImage"<<std::endl;
+
+//    auto fdl = new IQFileDownloader(
+//                QString::fromStdString(
+//                    insight::TemporaryFile("ubuntu-rootfs-%%%%.tgz")
+//                    .path().string() ),
+//                this
+//                );
+//    connect(fdl, &IQFileDownloader::failed,
+//            this, &IQSetupWSLDistributionWizard::failed);
+
+//    fdl->connectProgressBar(ui->progress);
+//    fdl->connectLabel(ui->statusText);
+//    connect(fdl, &IQFileDownloader::finished,
+//            this, &IQSetupWSLDistributionWizard::createWSLDistribution);
+//    fdl->start(QUrl("http://downloads.silentdynamics.de/thirdparty/ubuntu-18.04-server-cloudimg-amd64-wsl.rootfs.tar.gz"));
+//}
+
+
+
+
+void IQSetupWSLDistributionWizard::createWSLDistribution()
 {
-    insight::dbg()<<"downloadWSLImage"<<std::endl;
+    insight::dbg()<<"createWSLDistribution"<<std::endl;
 
-    auto fdl = new IQFileDownloader(
-                QString::fromStdString(
-                    insight::TemporaryFile("ubuntu-rootfs-%%%%.tgz")
-                    .path().string() ),
-                this
-                );
-    connect(fdl, &IQFileDownloader::failed,
-            this, &IQSetupWSLDistributionWizard::failed);
+    auto imageFile =
+        insight::SharedPathList().getSharedFilePath(
+                boost::filesystem::path("wsl")/(distributionLabel().toStdString()+".tar.gz") );
 
-    fdl->connectProgressBar(ui->progress);
-    fdl->connectLabel(ui->statusText);
-    connect(fdl, &IQFileDownloader::finished,
-            this, &IQSetupWSLDistributionWizard::createWSLDistribution);
-    fdl->start(QUrl("http://downloads.silentdynamics.de/thirdparty/ubuntu-18.04-server-cloudimg-amd64-wsl.rootfs.tar.gz"));
-}
+    insight::dbg() << "image file = " << imageFile << std::endl;
 
-
-
-
-void IQSetupWSLDistributionWizard::createWSLDistribution(const QString& imagefile)
-{
-    insight::dbg()<<"createWSLDistribution "<<imagefile.toStdString()<<std::endl;
     boost::filesystem::path targpath =
             QStandardPaths::writableLocation( QStandardPaths::GenericDataLocation )
             .toStdString();
@@ -159,36 +169,36 @@ void IQSetupWSLDistributionWizard::createWSLDistribution(const QString& imagefil
         {  "--import",
            distributionLabel(),
            QString::fromStdString( targpath.string() ),
-           imagefile,
+           QString::fromStdString( imageFile.string() ),
            "--version", "1" },
 
         "Importing the WSL backend distribution. This will take several minutes",
 
-        std::bind(&IQSetupWSLDistributionWizard::configureWSLDistribution, this)
+        std::bind(&IQSetupWSLDistributionWizard::restartWSLDistribution /*configureWSLDistribution*/, this)
     );
 }
 
 
 
 
-void IQSetupWSLDistributionWizard::configureWSLDistribution()
-{
-    insight::dbg()<<"configureWSLDistribution"<<std::endl;
+//void IQSetupWSLDistributionWizard::configureWSLDistribution()
+//{
+//    insight::dbg()<<"configureWSLDistribution"<<std::endl;
 
-    auto scriptfile = createSetupScript();
+//    auto scriptfile = createSetupScript();
 
-    QFileInfo fn( scriptfile->fileName() );
-    launchSubprocess(
-        wslexe_,
-        { "-d", distributionLabel(),
-          "--cd", fn.path(),
-          "bash", "./"+fn.fileName() },
+//    QFileInfo fn( scriptfile->fileName() );
+//    launchSubprocess(
+//        wslexe_,
+//        { "-d", distributionLabel(),
+//          "--cd", fn.path(),
+//          "bash", "./"+fn.fileName() },
 
-        "Configuring the WSL backend distribution. This will take several minutes",
+//        "Configuring the WSL backend distribution. This will take several minutes",
 
-        std::bind(&IQSetupWSLDistributionWizard::restartWSLDistribution, this)
-    );
-}
+//        std::bind(&IQSetupWSLDistributionWizard::restartWSLDistribution, this)
+//    );
+//}
 
 
 
@@ -225,54 +235,54 @@ void IQSetupWSLDistributionWizard::failed(const QString &errorMsg)
 
 
 
-QTemporaryFile* IQSetupWSLDistributionWizard::createSetupScript()
-{
-    if (ui->leWSLUser->text().isEmpty())
-    {
-        throw insight::Exception("WSL user name must not be empty!");
-    }
-    auto f = new QTemporaryFile(QDir::tempPath()+"/setupWSL-XXXXXX.sh", this);
-    if (f->open())
-    {
-        QString script =
-"#!/bin/bash\n"
+//QTemporaryFile* IQSetupWSLDistributionWizard::createSetupScript()
+//{
+//    if (ui->leWSLUser->text().isEmpty())
+//    {
+//        throw insight::Exception("WSL user name must not be empty!");
+//    }
+//    auto f = new QTemporaryFile(QDir::tempPath()+"/setupWSL-XXXXXX.sh", this);
+//    if (f->open())
+//    {
+//        QString script =
+//"#!/bin/bash\n"
 
-"UNAME="+ui->leWSLUser->text()+"\n"
+//"UNAME="+ui->leWSLUser->text()+"\n"
 
-"apt-get update\n"
-"apt-get install -y ca-certificates sudo\n"
-"apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg\n"
-"add-apt-repository "+ effectiveRepoURL() +"\n"
-"apt-get update\n"
-"apt-get install -y "+ QString::fromStdString(insight::WSLLinuxServer::installationPackageName()) +"\n"
+//"apt-get update\n"
+//"apt-get install -y ca-certificates sudo\n"
+//"apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg\n"
+//"add-apt-repository "+ effectiveRepoURL() +"\n"
+//"apt-get update\n"
+//"apt-get install -y "+ QString::fromStdString(insight::WSLLinuxServer::installationPackageName()) +"\n"
 
-"useradd -m $UNAME\n"
-"echo \"$UNAME      ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers\n"
-"sed -i \"1i source /opt/insightcae/bin/insight_setenv.sh\" /home/$UNAME/.bashrc\n"
+//"useradd -m $UNAME\n"
+//"echo \"$UNAME      ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers\n"
+//"sed -i \"1i source /opt/insightcae/bin/insight_setenv.sh\" /home/$UNAME/.bashrc\n"
 
-"if [ ! -d \""+baseDirectory()+"\"]; then\n"
-" mkdir \""+baseDirectory()+"\"\n"
-" chown $UNAME \""+baseDirectory()+"\"\n"
-"fi\n"
+//"if [ ! -d \""+baseDirectory()+"\"]; then\n"
+//" mkdir \""+baseDirectory()+"\"\n"
+//" chown $UNAME \""+baseDirectory()+"\"\n"
+//"fi\n"
 
-"chsh -s /bin/bash $UNAME\n"
+//"chsh -s /bin/bash $UNAME\n"
 
-"cat > /etc/wsl.conf << EOF\n"
-"[user]\n"
-"default=$UNAME\n"
-"EOF\n"
-              ;
+//"cat > /etc/wsl.conf << EOF\n"
+//"[user]\n"
+//"default=$UNAME\n"
+//"EOF\n"
+//              ;
 
-        insight::dbg() << script.toStdString() << std::endl;
+//        insight::dbg() << script.toStdString() << std::endl;
 
-        QTextStream out(f);
-        out << script;
-        out.flush();
-        f->close();
-    }
+//        QTextStream out(f);
+//        out << script;
+//        out.flush();
+//        f->close();
+//    }
 
-    return f;
-}
+//    return f;
+//}
 
 
 
@@ -302,19 +312,6 @@ IQSetupWSLDistributionWizard::IQSetupWSLDistributionWizard(QWidget *parent) :
                 insight::WSLLinuxServer::defaultWSLDistributionName()
                 );
     ui->leWSLLabel->setText(QString::fromStdString(lbl));
-
-    try
-    {
-        ui->leRepoURL->setText(
-                    QString::fromStdString(
-                        insight::WSLLinuxServer::defaultRepositoryURL()
-                        ) );
-    }
-    catch (const insight::Exception& ex)
-    {
-        ui->leRepoURL->setText(
-                        ex.what() );
-    }
 }
 
 
@@ -346,5 +343,5 @@ QString IQSetupWSLDistributionWizard::distributionLabel() const
 
 QString IQSetupWSLDistributionWizard::baseDirectory() const
 {
-    return QString("/home/"+ui->leWSLUser->text());
+    return QString("/home/user");
 }

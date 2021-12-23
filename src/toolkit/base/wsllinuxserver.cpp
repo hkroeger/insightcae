@@ -425,7 +425,7 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 {
   boost::process::ipstream out;
 
-  std::string cmd="LC_ALL=C sudo apt policy "+installationPackageName();
+  std::string cmd="/usr/bin/insight_version.sh";
 
   int ret = executeCommand(
       cmd, false,
@@ -467,17 +467,11 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 void WSLLinuxServer::updateInstallation(
         std::function<void(const std::string&)> logCallback )
 {
-  std::vector<std::string> cmds={
-    "sudo apt update -y",
-    "sudo apt install -y "+installationPackageName()
-  };
 
-  for (const auto& cmd: cmds)
-  {
     boost::process::ipstream os;
 
     auto process =  launchCommand(
-          cmd,
+          "/usr/bin/insight_update.sh",
           boost::process::std_out > os,
           boost::process::std_err > stderr,
           boost::process::std_in < boost::process::null
@@ -501,7 +495,6 @@ void WSLLinuxServer::updateInstallation(
     {
      throw insight::Exception("WSL update command failed");
     }
-  }
 }
 
 

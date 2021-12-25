@@ -449,8 +449,9 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
         dbg()<<m[1]<<" "<<m[2]<<" "<<m[3]<<" "<<m[4]<<" "<<m[5]<<std::endl;
         int majorVersion = lexical_cast<int>(m[1]);
         int minorVersion = lexical_cast<int>(m[2]);
-        std::string patchVersion = m[3]+"-"+m[4];
-        return ToolkitVersion(majorVersion, minorVersion, patchVersion, "");
+        int patchVersion = lexical_cast<int>(m[3]);
+        std::string commit = m[4];
+        return ToolkitVersion(majorVersion, minorVersion, patchVersion, commit, "");
       }
     }
     throw insight::Exception("Could not parse version information.\nMaybe package is not installed?");

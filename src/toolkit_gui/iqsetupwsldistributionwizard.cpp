@@ -15,30 +15,30 @@
 
 
 
-//QString IQSetupWSLDistributionWizard::effectiveRepoURL() const
-//{
-//    QRegExp re("^(http|https):\\/\\/(.*@|)([^/]*)\\/(.*)$");
-//    if (!re.exactMatch(ui->leRepoURL->text()))
-//    {
-//        return QString();
-//    }
+QString IQSetupWSLDistributionWizard::effectiveRepoURL() const
+{
+    QRegExp re("^(http|https):\\/\\/(.*@|)([^/]*)\\/(.*)$");
+    if (!re.exactMatch(ui->leRepoURL->text()))
+    {
+        return QString();
+    }
 
-//    QString cred = re.cap(2);
-//    if (!ui->leRepoUser->text().isEmpty())
-//    {
-//        cred = QString("%1:%2@").arg(
-//                    ui->leRepoUser->text(),
-//                    ui->leRepoPwd->text()
-//                    );
-//    }
+    QString cred = re.cap(2);
+    if (!ui->leRepoUser->text().isEmpty())
+    {
+        cred = QString("%1:%2@").arg(
+                    ui->leRepoUser->text(),
+                    ui->leRepoPassword->text()
+                    );
+    }
 
-//    return QString("%1://%2%3/%4").arg(
-//                re.cap(1),
-//                cred,
-//                re.cap(3),
-//                re.cap(4)
-//                );
-//}
+    return QString("%1://%2%3/%4").arg(
+                re.cap(1),
+                cred,
+                re.cap(3),
+                re.cap(4)
+                );
+}
 
 
 
@@ -115,8 +115,8 @@ void IQSetupWSLDistributionWizard::start()
     ui->statusText->setEnabled(true);
     ui->log->setEnabled(true);
 
-//    downloadWSLImage();
-    createWSLDistribution();
+    downloadWSLImage();
+//    createWSLDistribution();
 //    configureWSLDistribution();
 //    restartWSLDistribution();
 }
@@ -124,36 +124,49 @@ void IQSetupWSLDistributionWizard::start()
 
 
 
-//void IQSetupWSLDistributionWizard::downloadWSLImage()
-//{
-//    insight::dbg()<<"downloadWSLImage"<<std::endl;
+void IQSetupWSLDistributionWizard::downloadWSLImage()
+{
+    insight::dbg()<<"downloadWSLImage"<<std::endl;
 
-//    auto fdl = new IQFileDownloader(
-//                QString::fromStdString(
-//                    insight::TemporaryFile("ubuntu-rootfs-%%%%.tgz")
-//                    .path().string() ),
-//                this
-//                );
-//    connect(fdl, &IQFileDownloader::failed,
-//            this, &IQSetupWSLDistributionWizard::failed);
+    auto fdl = new IQFileDownloader(
+                QString::fromStdString(
+                    insight::TemporaryFile("ubuntu-rootfs-%%%%.tgz")
+                    .path().string() ),
+                this,
+                1491116550
+                );
+    connect(fdl, &IQFileDownloader::failed,
+            this, &IQSetupWSLDistributionWizard::failed);
 
-//    fdl->connectProgressBar(ui->progress);
-//    fdl->connectLabel(ui->statusText);
-//    connect(fdl, &IQFileDownloader::finished,
-//            this, &IQSetupWSLDistributionWizard::createWSLDistribution);
-//    fdl->start(QUrl("http://downloads.silentdynamics.de/thirdparty/ubuntu-18.04-server-cloudimg-amd64-wsl.rootfs.tar.gz"));
-//}
+    fdl->connectProgressBar(ui->progress);
+    fdl->connectLabel(ui->statusText);
+    connect(fdl, &IQFileDownloader::finished,
+            this, &IQSetupWSLDistributionWizard::createWSLDistribution);
+
+    QString customerSuffix = ui->leRepoUser->text();
+    if (!customerSuffix.isEmpty()) customerSuffix="-"+customerSuffix;
+
+    auto tv = insight::ToolkitVersion::current();
+    fdl->start(QUrl(
+                   QString("%1/insightcae-ubuntu-1804%2-%3.%4.%5.tar.gz")
+                   .arg(effectiveRepoURL(),
+                        customerSuffix,
+                        QString::number(tv.majorVersion()),
+                        QString::number(tv.minorVersion()),
+                        QString::number(tv.patchVersion()) ) ));
+}
 
 
 
 
-void IQSetupWSLDistributionWizard::createWSLDistribution()
+void IQSetupWSLDistributionWizard::createWSLDistribution(const QString& imgf)
 {
     insight::dbg()<<"createWSLDistribution"<<std::endl;
 
-    auto imageFile =
-        insight::SharedPathList().getSharedFilePath(
-                boost::filesystem::path("wsl")/(distributionLabel().toStdString()+".tar.gz") );
+    boost::filesystem::path imageFile( imgf.toStdString() );
+//    auto imageFile =
+//        insight::SharedPathList().getSharedFilePath(
+//                boost::filesystem::path("wsl")/(distributionLabel().toStdString()+".tar.gz") );
 
     insight::dbg() << "image file = " << imageFile << std::endl;
 
@@ -292,26 +305,25 @@ IQSetupWSLDistributionWizard::IQSetupWSLDistributionWizard(QWidget *parent) :
 {
     ui->setupUi(this);
 
-//    auto defwsllabel=insight::WSLLinuxServer::defaultWSLDistributionName();
-//    auto lbl=defwsllabel;
-//    auto distros=insight::WSLLinuxServer::listWSLDistributions();
-//    int maxatt=99;
-//    for (int attmpt=1; attmpt<maxatt; ++attmpt)
-//    {
-//        if (std::find(distros.begin(), distros.end(), lbl)!=distros.end())
-//        {
-//            lbl=str(boost::format("%s_%d")%defwsllabel%attmpt);
-//        }
-//        else
-//            break;
-//    }
-
     auto distros=insight::WSLLinuxServer::listWSLDistributions();
     auto lbl = insight::findUnusedLabel(
                 distros.begin(), distros.end(),
                 insight::WSLLinuxServer::defaultWSLDistributionName()
                 );
     ui->leWSLLabel->setText(QString::fromStdString(lbl));
+
+    try
+    {
+        ui->leRepoURL->setText(
+                    QString::fromStdString(
+                        insight::WSLLinuxServer::defaultRepositoryURL()
+                        ) );
+    }
+    catch (const insight::Exception& ex)
+    {
+        ui->leRepoURL->setText(
+                    ex.what() );
+    }
 }
 
 

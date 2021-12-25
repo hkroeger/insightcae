@@ -4,9 +4,10 @@
 
 
 
-IQFileDownloader::IQFileDownloader(const QString &filename, QObject* parent)
+IQFileDownloader::IQFileDownloader(const QString &filename, QObject* parent, qint64 expectedBytes)
     : QObject(parent),
-      outfile_(filename)
+      outfile_(filename),
+      expectedBytes_(expectedBytes)
 {
     connect(&manager_, &QNetworkAccessManager::finished,
             this, &IQFileDownloader::downloadFinished);
@@ -76,7 +77,7 @@ void IQFileDownloader::connectLabel(QLabel *label)
 void IQFileDownloader::downloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 {
     insight::dbg()<<"downloadProgress recv:"<<bytesReceived<<", total:"<<bytesTotal<<std::endl;
-    Q_EMIT setProgressMax(bytesTotal);
+    Q_EMIT setProgressMax( std::max(bytesTotal, expectedBytes_) );
     Q_EMIT setProgressCurrent(bytesReceived);
 
     // calculate the download speed

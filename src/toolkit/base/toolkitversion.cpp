@@ -11,13 +11,14 @@ namespace insight {
 
 
 ToolkitVersion::ToolkitVersion(
-    int majorVersion, int minorVersion,
-    const std::string& patchVersion,
+    int majorVersion, int minorVersion, int patchVersion,
+    const std::string& commit,
     const std::string& branch
     )
   : majorVersion_(majorVersion),
     minorVersion_(minorVersion),
     patchVersion_(patchVersion),
+    commit_(commit),
     branch_(branch)
 {
 
@@ -34,9 +35,15 @@ int ToolkitVersion::minorVersion() const
 }
 
 
-std::string ToolkitVersion::patchVersion() const
+int ToolkitVersion::patchVersion() const
 {
   return patchVersion_;
+}
+
+
+string ToolkitVersion::commit() const
+{
+  return commit_;
 }
 
 
@@ -48,13 +55,13 @@ string ToolkitVersion::branch() const
 
 std::string ToolkitVersion::patchInfo() const
 {
-  return patchVersion() + " (" + branch_ + ")";
+  return str(format("%d-%s (%s)") % patchVersion() % commit_ % branch_ );
 }
 
 
 std::string insight::ToolkitVersion::toString() const
 {
-  return str( format("%d.%d.%s") % majorVersion() % minorVersion() % patchInfo() );
+  return str( format("%d.%d.%d-%s (%s)") % majorVersion() % minorVersion() % patchVersion() % commit() % branch() );
 }
 
 
@@ -72,11 +79,23 @@ insight::ToolkitVersion::operator std::string() const
 
 const ToolkitVersion& ToolkitVersion::current()
 {
-  static ToolkitVersion currentToolkitVersion(
-        INSIGHT_VERSION_MAJOR, INSIGHT_VERSION_MINOR,
-        XSTR(INSIGHT_VERSION_PATCH),
-        XSTR(INSIGHT_BRANCH) );
-  return currentToolkitVersion;
+    int pv=0;
+    std::string commit="";
+
+    std::string pvcommit = XSTR(INSIGHT_VERSION_PATCH);
+    std::vector<std::string> res;
+    boost::split(res, pvcommit, boost::is_any_of("-"));
+    if (res.size()==2)
+    {
+        pv=boost::lexical_cast<int>(res[0]);
+        commit=res[1];
+    }
+    static ToolkitVersion currentToolkitVersion(
+                INSIGHT_VERSION_MAJOR, INSIGHT_VERSION_MINOR,
+                pv, commit,
+                XSTR(INSIGHT_BRANCH) );
+
+    return currentToolkitVersion;
 }
 
 

@@ -15,11 +15,12 @@ class IQFileDownloader : public QObject
     QNetworkReply * reply_;
     QElapsedTimer downloadTimer_;
     QFile outfile_;
+    qint64 expectedBytes_;
 
     static bool isHttpRedirect(QNetworkReply *reply);
 
 public:
-    IQFileDownloader(const QString &filename, QObject* parent=nullptr);
+    IQFileDownloader(const QString &filename, QObject* parent=nullptr, qint64 expectedBytes=-1);
     void start(const QUrl &url);
 
     void connectProgressBar(QProgressBar* pb);

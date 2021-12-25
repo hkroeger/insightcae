@@ -472,7 +472,7 @@ void WSLLinuxServer::updateInstallation(
     boost::process::ipstream os;
 
     auto process =  launchCommand(
-          "/usr/bin/insight_update.sh",
+          "sudo /usr/bin/insight_update.sh",
           boost::process::std_out > os,
           boost::process::std_err > stderr,
           boost::process::std_in < boost::process::null

@@ -255,6 +255,7 @@ const insight::ParameterSet& AnalysisForm::parameters() const
 
 AnalysisForm::~AnalysisForm()
 {
+  prepareDeletion();
   currentWorkbenchAction_.reset();
   delete ui;
 }

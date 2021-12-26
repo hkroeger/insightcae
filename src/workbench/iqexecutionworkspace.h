@@ -31,6 +31,7 @@ class IQExecutionWorkspace
     bool remoteExeConfigWasEdited_ = false;
 
     void setDefaultOpenFOAMRemoteWorkspace();
+    void connectReinitializeToDefault();
 
 public:
     IQExecutionWorkspace(AnalysisForm *af);
@@ -72,6 +73,8 @@ public:
     void showSetupExecutionEnvironmentDialog();
 
     void removeRemoteWorkspace();
+
+    void prepareDeletion();
 };
 
 #endif // IQEXECUTIONENVIRONMENT_H

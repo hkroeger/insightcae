@@ -84,11 +84,23 @@ void IQExecutionWorkspace::setDefaultOpenFOAMRemoteWorkspace()
 }
 
 
+void IQExecutionWorkspace::connectReinitializeToDefault()
+{
+    QObject::connect(
+               remoteExecutionConfiguration_, &QObject::destroyed, remoteExecutionConfiguration_,
+                [this](QObject *obj)
+                {
+                    insight::dbg()<<"resetting to defaults"<<std::endl;
+                    initializeToDefaults();
+                }
+    );
+}
+
+
 
 IQExecutionWorkspace::IQExecutionWorkspace(AnalysisForm *af)
     : af_(af)
 {}
-
 
 
 
@@ -106,6 +118,8 @@ void IQExecutionWorkspace::initializeToDefaults()
             if ( af_->remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting()
                  && !af_->localCaseDirectory_->empty() )
                 af_->remoteExecutionConfiguration_->commit( af_->localCaseDirectory() );
+
+            connectReinitializeToDefault();
         }
     }
 }
@@ -222,7 +236,10 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
     if ( newRemoteLocation.type() == typeid(insight::RemoteLocation*) )
     {
         if (remoteExecutionConfiguration_)
+        {
+            QObject::disconnect(remoteExecutionConfiguration_, &QObject::destroyed, 0, 0);
             delete remoteExecutionConfiguration_;
+        }
 
         if (auto *nrl = boost::get<insight::RemoteLocation*>(newRemoteLocation))
         {
@@ -231,6 +248,7 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
     //                    "internal error: "
     //                    "remote execution with temporary local working directory is not allow!" );
 
+            insight::dbg()<<"setting new remote config"<<std::endl;
             remoteExecutionConfiguration_ =
                     IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
                         af_,
@@ -239,6 +257,8 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
             // if the remote location is ready available, commit it immediately
             if (remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting())
                 remoteExecutionConfiguration_->commit( localCaseDirectory() );
+
+            connectReinitializeToDefault();
         }
     }
 }
@@ -286,5 +306,18 @@ void IQExecutionWorkspace::removeRemoteWorkspace()
         remoteExecutionConfiguration_->cleanup(true);
         delete remoteExecutionConfiguration_;
       }
-   }
+    }
+}
+
+
+
+
+void IQExecutionWorkspace::prepareDeletion()
+{
+    if (remoteExecutionConfiguration_)
+    {
+        QObject::disconnect(
+                remoteExecutionConfiguration_, &QObject::destroyed,
+                0, 0);
+    }
 }

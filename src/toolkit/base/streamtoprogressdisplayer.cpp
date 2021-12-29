@@ -8,7 +8,7 @@ StreamToProgressDisplayer::StreamToProgressDisplayer(std::ostream &os, ProgressD
       pd_(pd)
 {}
 
-void StreamToProgressDisplayer::processLine(const std::string &line)
+void StreamToProgressDisplayer::processLine(std::string line)
 {
     pd_.logMessage( line );
 }

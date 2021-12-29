@@ -22,7 +22,7 @@
 #include "iqdebugstream.h"
 
 
-void IQDebugStream::processLine(const std::string &line)
+void IQDebugStream::processLine(std::string line)
 {
     Q_EMIT appendText( QString::fromStdString(line) );
 }

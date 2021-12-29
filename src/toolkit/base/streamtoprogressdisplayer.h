@@ -15,7 +15,7 @@ public:
     StreamToProgressDisplayer(std::ostream& os, ProgressDisplayer& pd);
 
 protected:
-    void processLine( const std::string& line) override;
+    void processLine( std::string line) override;
 };
 
 } // namespace insight

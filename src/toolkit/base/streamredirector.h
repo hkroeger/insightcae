@@ -26,7 +26,7 @@ protected:
     int_type overflow(int_type v) override;
     std::streamsize xsputn(const char *p, std::streamsize n) override;
 
-    virtual void processLine(const std::string& line) =0;
+    virtual void processLine(std::string line) =0;
 };
 
 } // namespace insight

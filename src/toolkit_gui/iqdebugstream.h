@@ -20,7 +20,7 @@ class TOOLKIT_GUI_EXPORT IQDebugStream
     Q_OBJECT
 
 protected:
-    void processLine(const std::string& line) override;
+    void processLine(std::string line) override;
 
 public:
     IQDebugStream(std::ostream &stream);

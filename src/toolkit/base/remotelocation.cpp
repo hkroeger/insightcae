@@ -264,7 +264,7 @@ void RemoteLocation::initialize(bool findFreeRemotePort)
 {
   if (!isValidated_)
   {
-    CurrentExceptionContext ex("initializing remote location");
+    CurrentExceptionContext ex( "initializing remote location" );
 
     if (!serverInstance_)
       serverInstance_ = serverConfig_->instance();
@@ -286,10 +286,14 @@ void RemoteLocation::initialize(bool findFreeRemotePort)
       }
     }
 
-    if (findFreeRemotePort)
-    {
-        port_=serverInstance_->findFreeRemotePort();
-    }
+
+  }
+
+  if ( findFreeRemotePort && (port_<0) )
+  {
+      CurrentExceptionContext ex( "detecting remote port" );
+      port_=serverInstance_->findFreeRemotePort();
+      insight::dbg()<<"port="<<port_<<std::endl;
   }
 
   validate();
@@ -556,6 +560,8 @@ bool RemoteLocation::isTemporaryStorage() const
 
 int RemoteLocation::port() const
 {
+    assertValid();
+
     return port_;
 }
 

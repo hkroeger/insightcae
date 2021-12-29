@@ -42,7 +42,7 @@ void RunSyncToLocal::run()
           Q_EMIT progressTextChanged(QString(progress_text.c_str()));
         }
       );
-  emit transferFinished();
+  Q_EMIT transferFinished();
 }
 
 }

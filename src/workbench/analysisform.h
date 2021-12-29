@@ -198,6 +198,8 @@ protected:
     return isRunningLocally() || isRunningRemotely();
   }
 
+  void downloadFromRemote( std::function<void()> completionCallback = [](){} );
+
 public:
   AnalysisForm(
       QWidget* parent,

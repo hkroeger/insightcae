@@ -181,6 +181,19 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="cbDownloadWhenFinished">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Download when finished</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="btnRemoveRemote">
           <property name="enabled">
            <bool>false</bool>

@@ -80,7 +80,10 @@ protected:
   // 7. stop remote server
   void stopRemoteExecutionServer();
 
-  // 8. cleanup remote
+  // 8. download
+  void download();
+
+  // 9. cleanup remote
   void cleanupRemote();
 
   void checkIfCancelled();

@@ -40,6 +40,7 @@ public:
 
     // access functions
     bool hasLocalWorkspace() const;
+    bool localWorkspaceIsTemporary() const;
     bool hasRemoteWorkspace() const;
     bool hasActiveRemoteWorkspace() const;
 

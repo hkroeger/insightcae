@@ -140,6 +140,11 @@ void AnalysisForm::resumeRemoteRun()
 
 void AnalysisForm::download()
 {
+    downloadFromRemote();
+}
+
+void AnalysisForm::downloadFromRemote(std::function<void()> completionCallback)
+{
   auto* rstl = new insight::RunSyncToLocal( remoteExecutionConfiguration()->exeConfig() );
 
   connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
@@ -159,6 +164,7 @@ void AnalysisForm::download()
           {
             progressbar_->setHidden(true);
             Q_EMIT statusMessage("Transfer from remote location to local directory finished");
+            completionCallback();
           }
   );
 

@@ -59,6 +59,19 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
       ui->btnRemoveRemote->setEnabled(enabled);
       ui->lblRemote_1->setEnabled(enabled);
       ui->lblRemote_2->setEnabled(enabled);
+
+      if ( enabled )
+      {
+          if (af->localWorkspaceIsTemporary() )
+          {
+              ui->cbDownloadWhenFinished->setChecked(false);
+          }
+          else
+          {
+              ui->cbDownloadWhenFinished->setChecked(true);
+          }
+      }
+      ui->cbDownloadWhenFinished->setEnabled(enabled);
   }
 
   insight::dbg()<<"IQWorkbenchRemoteExecutionState updated"<<std::endl;
@@ -130,6 +143,20 @@ void IQExecutionWorkspace::initializeToDefaults()
 bool IQExecutionWorkspace::hasLocalWorkspace() const
 {
     return localCaseDirectory_!=nullptr;
+}
+
+
+
+
+bool IQExecutionWorkspace::localWorkspaceIsTemporary() const
+{
+    if (
+      localCaseDirectory_
+      &&
+      localCaseDirectory_->isPersistent()
+    ) return false;
+
+    return true;
 }
 
 
@@ -243,10 +270,6 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
 
         if (auto *nrl = boost::get<insight::RemoteLocation*>(newRemoteLocation))
         {
-    //        insight::assertion(
-    //                    localCaseDirectory_->isPersistent(),
-    //                    "internal error: "
-    //                    "remote execution with temporary local working directory is not allow!" );
 
             insight::dbg()<<"setting new remote config"<<std::endl;
             remoteExecutionConfiguration_ =
@@ -261,6 +284,8 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
             connectReinitializeToDefault();
         }
     }
+
+
 }
 
 

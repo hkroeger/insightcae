@@ -387,7 +387,11 @@ void RemoteRun::stopRemoteExecutionServer()
                                        << (rs.success?"was":"was not")
                                        << " successful " <<std::endl;
 
-                        ac_->ioService().post( std::bind(&RemoteRun::cleanupRemote, this) );
+                        ac_->ioService().post(
+                                    af_->ui->cbDownloadWhenFinished->checkState()==Qt::Checked ?
+                                    std::bind(&RemoteRun::download, this) :
+                                    std::bind(&RemoteRun::cleanupRemote, this)
+                                    );
                     },
 
                     std::bind(&RemoteRun::onErrorString, this,
@@ -397,6 +401,14 @@ void RemoteRun::stopRemoteExecutionServer()
     } catch(...) { onError(std::current_exception()); }
 }
 
+
+
+void RemoteRun::download()
+{
+    af_->downloadFromRemote(
+                std::bind(&RemoteRun::cleanupRemote, this)
+                );
+}
 
 
 

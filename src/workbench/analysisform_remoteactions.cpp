@@ -160,7 +160,7 @@ void AnalysisForm::downloadFromRemote(std::function<void()> completionCallback)
           rstl, &QObject::deleteLater);
   connect(rstl, &insight::RunSyncToLocal::transferFinished,
           this,
-          [&]()
+          [this,completionCallback]()
           {
             progressbar_->setHidden(true);
             Q_EMIT statusMessage("Transfer from remote location to local directory finished");

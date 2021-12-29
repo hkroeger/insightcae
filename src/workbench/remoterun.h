@@ -50,6 +50,8 @@ class RemoteRun
   bool killRequested_, disconnectRequested_;
   insight::ActionProgress launchProgress_;
 
+  insight::ResultSetPtr results_;
+
 
 protected:
   RemoteRun(AnalysisForm* af, bool resume=false);
@@ -85,6 +87,9 @@ protected:
 
   // 9. cleanup remote
   void cleanupRemote();
+
+  // 10. finish
+  void finish();
 
   void checkIfCancelled();
   void onErrorString(const std::string& errorMessage);

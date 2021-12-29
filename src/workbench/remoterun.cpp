@@ -106,7 +106,7 @@ void RemoteRun::setupRemoteEnvironment()
 
         insight::dbg()<<"initialize remote location"<<std::endl;
 
-        remote_->exeConfig().initialize();
+        remote_->exeConfig().initialize(true);
 
         if (!remote_->exeConfig().isActive())
             throw insight::Exception("Remote directory is invalid!");
@@ -357,8 +357,7 @@ void RemoteRun::fetchResults()
         ac_->queryResults(
                     [this](insight::QueryResultsAction::Result qrs)
                     {
-                        insight::dbg()<<"emit finished"<<std::endl;
-                        Q_EMIT finished( qrs.results );
+                        results_=qrs.results;
 
                         ac_->ioService().post(
                                     std::bind(&RemoteRun::stopRemoteExecutionServer, this ) );
@@ -403,12 +402,19 @@ void RemoteRun::stopRemoteExecutionServer()
 
 
 
+
 void RemoteRun::download()
 {
     af_->downloadFromRemote(
-                std::bind(&RemoteRun::cleanupRemote, this)
+                [&]()
+                {
+                    ac_->ioService().post(
+                            std::bind(&RemoteRun::cleanupRemote, this)
+                            );
+                }
                 );
 }
+
 
 
 
@@ -422,7 +428,18 @@ void RemoteRun::cleanupRemote()
             remote_->cleanup();
         }
 
+        finish();
+
     } catch (...) { onError(std::current_exception()); }
+}
+
+
+
+
+void RemoteRun::finish()
+{
+    insight::dbg()<<"emit finished"<<std::endl;
+    Q_EMIT finished( results_ );
 }
 
 

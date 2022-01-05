@@ -83,6 +83,7 @@ int main(int argc, char *argv[])
       ("double,d", po::value<StringList>(), "double variable assignment")
       ("vector,v", po::value<StringList>(), "vector variable assignment")
       ("int,i", po::value<StringList>(), "int variable assignment")
+      ("set-array-size", po::value<StringList>(), "set size of array")
       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
       ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
       ("input-file,f", po::value< std::string >(),"Specifies input file.")
@@ -282,6 +283,23 @@ int main(int argc, char *argv[])
             {
               // 	ParameterSet to_merge;
               parameters.readFromFile(ist);
+            }
+        }
+
+        if (vm.count("set-array-size"))
+        {
+            StringList resizes=vm["set-array-size"].as<StringList>();
+            for (const string& s: resizes)
+            {
+                std::vector<std::string> pair;
+                boost::split(pair, s, boost::is_any_of(":"));
+                int ns=boost::lexical_cast<int>(pair[1]);
+                cout << "Resizing array '"<<pair[0]<<"' to "<<ns<<endl;
+                auto& ap = parameters.get<ArrayParameter>(pair[0]);
+                for (size_t i=ap.size(); i<ns; ++i)
+                {
+                    ap.appendEmpty();
+                }
             }
         }
 

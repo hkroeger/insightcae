@@ -64,9 +64,9 @@ bool identical<Face>::checkMatch(FeatureID feature) const
   
   for (int f: f_.data())
   {
-    TopoDS_Face e1=TopoDS::Face(model_->face(feature));
-    TopoDS_Face e2=TopoDS::Face(f_.model()->face(f));
-    match |= isEqual(e2, e1);
+    TopoDS_Face f1=TopoDS::Face(model_->face(feature));
+    TopoDS_Face f2=TopoDS::Face(f_.model()->face(f));
+    match |= isEqual(f2, f1);
   }
   
   return match;

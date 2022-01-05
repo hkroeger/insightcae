@@ -62,6 +62,7 @@
 #include "featurefilters/connected.h"
 #include "featurefilters/coincident.h"
 #include "featurefilters/identical.h"
+#include "featurefilters/ispartofface.h"
 #include "featurefilters/ispartofsolid.h"
 
 #include "featurefilters/boundaryedge.h"

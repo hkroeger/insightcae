@@ -187,6 +187,7 @@ public:
       auto lut = boost::fusion::get<1>(*c);
       auto rsel = boost::fusion::get<2>(*c);
 
+      mapper->SetInterpolateScalarsBeforeMapping(true);
       mapper->SetLookupTable(lut);
       mapper->ScalarVisibilityOn();
       switch (fs)

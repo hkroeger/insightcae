@@ -326,6 +326,7 @@ VTKOffscreenScene::VTKOffscreenScene()
   renderWindow_->AddRenderer(renderer_);
   renderWindow_->OffScreenRenderingOn();
   renderWindow_->SetSize(1920, 1440);
+  renderWindow_->SetMultiSamples(8);
   renderer_->SetBackground(1, 1, 1); // Background color white
 
   auto renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();

@@ -137,7 +137,7 @@ ProjectedOutline::ProjectedOutline(FeaturePtr source, DatumPtr target)
 
 void ProjectedOutline::build()
 {
-  if (source_->allFaces().size()==0)
+  if (source_->allFaces()->size()==0)
     setShape(makeOutlineProjectionEdges(*source_, *target_));
   else
     setShape(makeOutlineProjection(*source_, *target_));

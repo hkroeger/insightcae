@@ -275,7 +275,7 @@ void GmshCase::nameSolids(const std::string& name, const FeatureSet& solids)
 void GmshCase::addSingleNamedVertex(const std::string& vn, const arma::mat& p)
 {
   additionalPoints_++;
-  int id=part_->allVertices().data().size()+additionalPoints_;
+  int id=part_->allVertices()->data().size()+additionalPoints_;
   insertLinesBefore(endOfGeometryDefinition_, {
     str( format("Point(%d) = {%g, %g, %g, 999};")%id%p(0)%p(1)%(p(2)) ),
     str( format("Physical Point(\"%s\") = {%d};")%vn%id )

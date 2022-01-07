@@ -1085,37 +1085,37 @@ FeatureSetData Feature::allSolidsSet() const
   return fsd;
 }
 
-FeatureSet Feature::allVertices() const
+FeatureSetPtr Feature::allVertices() const
 {
-  FeatureSet f(shared_from_this(), Vertex);
-  f.setData(allVerticesSet());
+  auto f=std::make_shared<FeatureSet>(shared_from_this(), Vertex);
+  f->setData(allVerticesSet());
   return f;
 }
 
-FeatureSet Feature::allEdges() const
+FeatureSetPtr Feature::allEdges() const
 {
-  FeatureSet f(shared_from_this(), Edge);
-  f.setData(allEdgesSet());
+  auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
+  f->setData(allEdgesSet());
   return f;
 }
 
-FeatureSet Feature::allFaces() const
+FeatureSetPtr Feature::allFaces() const
 {
-  FeatureSet f(shared_from_this(), Edge);
-  f.setData(allFacesSet());
+  auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
+  f->setData(allFacesSet());
   return f;
 }
 
-FeatureSet Feature::allSolids() const
+FeatureSetPtr Feature::allSolids() const
 {
-  FeatureSet f(shared_from_this(), Solid);
-  f.setData(allSolidsSet());
+  auto f=std::make_shared<FeatureSet>(shared_from_this(), Solid);
+  f->setData(allSolidsSet());
   return f;
 }
 
 FeatureSetData Feature::query_vertices(FilterPtr f) const
 {
-  return query_vertices_subset(allVertices(), f);
+  return query_vertices_subset(*allVertices(), f);
 }
 
 FeatureSetData Feature::query_vertices(const string& queryexpr, const FeatureSetParserArgList& refs) const
@@ -1155,7 +1155,7 @@ FeatureSetData Feature::query_vertices_subset(const FeatureSetData& fs, const st
 FeatureSetData Feature::query_edges(FilterPtr f) const
 {
 //   Filter::Ptr f(filter.clone());
-  return query_edges_subset(allEdges(), f);
+  return query_edges_subset(*allEdges(), f);
 }
 
 FeatureSetData Feature::query_edges(const std::string& queryexpr, const FeatureSetParserArgList& refs) const
@@ -1192,7 +1192,7 @@ FeatureSetData Feature::query_edges_subset(const FeatureSetData& fs, const std::
 
 FeatureSetData Feature::query_faces(FilterPtr f) const
 {
-  return query_faces_subset(allFaces(), f);
+  return query_faces_subset(*allFaces(), f);
 }
 
 FeatureSetData Feature::query_faces(const string& queryexpr, const FeatureSetParserArgList& refs) const
@@ -1231,7 +1231,7 @@ FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, const std::
 
 FeatureSetData Feature::query_solids(FilterPtr f) const
 {
-  return query_solids_subset(allSolids(), f);
+  return query_solids_subset(*allSolids(), f);
 }
 
 FeatureSetData Feature::query_solids(const string& queryexpr, const FeatureSetParserArgList& refs) const

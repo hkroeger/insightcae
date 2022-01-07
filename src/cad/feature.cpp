@@ -331,7 +331,7 @@ std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
 
 FeatureSetPtr makeEdgeFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
 {
-  auto data=expression.empty() ? feat->allEdges().data() : feat->query_edges(expression, refs);
+  auto data=expression.empty() ? feat->allEdges()->data() : feat->query_edges(expression, refs);
   std::vector<FeatureID> data2;
   std::copy(data.begin(), data.end(), std::back_inserter(data2));
   return std::make_shared<FeatureSet>(
@@ -343,7 +343,7 @@ FeatureSetPtr makeEdgeFeatureSet( ConstFeaturePtr feat, const std::string& expre
 
 FeatureSetPtr makeFaceFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
 {
-  auto data=expression.empty() ? feat->allFaces().data() : feat->query_faces(expression, refs);
+  auto data=expression.empty() ? feat->allFaces()->data() : feat->query_faces(expression, refs);
   std::vector<FeatureID> data2;
   std::copy(data.begin(), data.end(), std::back_inserter(data2));
   return std::make_shared<FeatureSet>(
@@ -355,7 +355,7 @@ FeatureSetPtr makeFaceFeatureSet( ConstFeaturePtr feat, const std::string& expre
 
 FeatureSetPtr makeSolidFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
 {
-  auto data=expression.empty() ? feat->allSolids().data() : feat->query_solids(expression, refs);
+  auto data=expression.empty() ? feat->allSolids()->data() : feat->query_solids(expression, refs);
   std::vector<FeatureID> data2;
   std::copy(data.begin(), data.end(), std::back_inserter(data2));
   return std::make_shared<FeatureSet>(

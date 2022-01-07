@@ -98,15 +98,15 @@ void connected<Face>::initialize(ConstFeaturePtr m)
 {
   Filter::initialize(m);
 
-  if (model_ != f_.model())
+  if (model_ != f_->model())
     throw insight::Exception("Can only check connections within the same feature!");
 
-  NeighbourhoodExplorer nex(*f_.model());
+  NeighbourhoodExplorer nex(*f_->model());
 
-  for (const auto& sfi: f_.data())
+  for (const auto& sfi: f_->data())
   {
     cout<<"adding neighbours of face #"<<sfi<<endl;
-    nex.addNeighbours(f_.model()->face(sfi), selected_feats_);
+    nex.addNeighbours(f_->model()->face(sfi), selected_feats_);
   }
 }
 

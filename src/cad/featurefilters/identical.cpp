@@ -42,10 +42,10 @@ bool identical<Edge>::checkMatch(FeatureID feature) const
 {
   bool match=false;
   
-  for (int f: f_.data())
+  for (int f: f_->data())
   {
     TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
-    TopoDS_Edge e2=TopoDS::Edge(f_.model()->edge(f));
+    TopoDS_Edge e2=TopoDS::Edge(f_->model()->edge(f));
     match |= isEqual(e2, e1);
   }
   
@@ -62,10 +62,10 @@ bool identical<Face>::checkMatch(FeatureID feature) const
 {
   bool match=false;
   
-  for (int f: f_.data())
+  for (int f: f_->data())
   {
     TopoDS_Face f1=TopoDS::Face(model_->face(feature));
-    TopoDS_Face f2=TopoDS::Face(f_.model()->face(f));
+    TopoDS_Face f2=TopoDS::Face(f_->model()->face(f));
     match |= isEqual(f2, f1);
   }
   

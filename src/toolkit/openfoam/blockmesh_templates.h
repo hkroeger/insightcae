@@ -104,6 +104,8 @@ mesh = set
     innerPatchName = string "" "name of patch on inner circumferential surface"
     basePatchName = string "" "name of patch on base end"
     topPatchName = string "" "name of patch on top end"
+
+    cellZoneName = string "" "name of the zone into which all cells are to be included"
 }
 
 <<<PARAMETERSET

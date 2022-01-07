@@ -137,12 +137,10 @@ void blockMeshDict_Cylinder::create_bmd()
     double Lc=rCore();
     if (hollow) Lc=p_.geometry.d*0.5;
 
-    std::map<int, Point> pts;
-    pts = boost::assign::map_list_of
-          ( 1, 	0.5*p_.geometry.D*ey )
-          ( 0, 	/*::cos ( al/2. ) **/Lc*ey )
-          .convert_to_container<std::map<int, Point> >()
-          ;
+    std::map<int, Point> pts = {
+          { 1, 	0.5*p_.geometry.D*ey },
+          { 0, 	/*::cos ( al/2. ) **/Lc*ey }
+    };
     arma::mat vL=p_.geometry.L*ex;
 
 //     std::cout<<pts[0]<<pts[1]<<std::endl;
@@ -179,7 +177,8 @@ void blockMeshDict_Cylinder::create_bmd()
                                         p0+( r1*pts[0] )+vL, p0+( r2*pts[0] )+vL, p0+( r3*pts[0] )+vL, p0+( r0*pts[0] )+vL
                                     ),
                                     nu, nu, nx,
-                                    {1, 1, p_.mesh.gradax}
+                                    {1, 1, p_.mesh.gradax},
+                                    p_.mesh.cellZoneName
                                   )
                     );
         if ( base ) {
@@ -204,7 +203,8 @@ void blockMeshDict_Cylinder::create_bmd()
                                             p0+( r1*pts[0] )+vL, p0+( r0*pts[0] )+vL, p0+( r0*pts[1] )+vL, p0+( r1*pts[1] )+vL
                                         ),
                                         nu, nr, nx,
-                                        { 1,  1./p_.mesh.gradr, p_.mesh.gradax }
+                                        { 1,  1./p_.mesh.gradr, p_.mesh.gradax },
+                                        p_.mesh.cellZoneName
                                       )
                         );
             if ( base ) {

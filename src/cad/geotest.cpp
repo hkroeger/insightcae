@@ -49,6 +49,7 @@ std::vector<gp_Pnt> resampleEdgeUniform(const TopoDS_Edge& edge, double approxSe
   int nSegments;
 
   if (approxSegmentLength > 0){
+
     nSegments=ceil(length/approxSegmentLength);
     nSegments = max(minSegments, nSegments);
   } else {

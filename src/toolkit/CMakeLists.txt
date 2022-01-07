@@ -192,6 +192,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/boundaryconditions/velocityinletbc.cpp openfoam/caseelements/boundaryconditions/velocityinletbc.h
     openfoam/caseelements/boundaryconditions/exptdatainletbc.cpp openfoam/caseelements/boundaryconditions/exptdatainletbc.h
     openfoam/caseelements/boundaryconditions/compressibleinletbc.cpp openfoam/caseelements/boundaryconditions/compressibleinletbc.h
+    openfoam/caseelements/boundaryconditions/cyclicacmibc.h openfoam/caseelements/boundaryconditions/cyclicacmibc.cpp
     openfoam/caseelements/dynamicmesh/dynamicmesh.cpp openfoam/caseelements/dynamicmesh/dynamicmesh.h
     openfoam/caseelements/dynamicmesh/velocitytetfemmotionsolver.cpp openfoam/caseelements/dynamicmesh/velocitytetfemmotionsolver.h
     openfoam/caseelements/dynamicmesh/displacementfvmotionsolver.cpp openfoam/caseelements/dynamicmesh/displacementfvmotionsolver.h

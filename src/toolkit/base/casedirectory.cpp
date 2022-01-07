@@ -143,6 +143,11 @@ void CaseDirectory::makePersistent()
     keep_=true;
 }
 
+CaseDirectoryPtr CaseDirectory::makeTemporary(const boost::filesystem::path& prefix)
+{
+    return std::make_shared<CaseDirectory>(false, prefix);
+}
+
 
 
 

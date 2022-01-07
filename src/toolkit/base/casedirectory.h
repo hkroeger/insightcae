@@ -5,6 +5,10 @@
 
 namespace insight {
 
+class CaseDirectory;
+
+typedef std::shared_ptr<CaseDirectory> CaseDirectoryPtr;
+
 class CaseDirectory
     : public boost::filesystem::path
 {
@@ -22,6 +26,8 @@ public:
   bool isExistingAndNotEmpty() const;
   bool isPersistent() const;
   void makePersistent();
+
+  static CaseDirectoryPtr makeTemporary(const boost::filesystem::path& prefix="");
 };
 
 } // namespace insight

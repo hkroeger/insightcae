@@ -78,22 +78,21 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
 }
 
 
-void IQExecutionWorkspace::setDefaultOpenFOAMRemoteWorkspace()
+IQRemoteExecutionState* IQExecutionWorkspace::defaultOpenFOAMRemoteWorkspace()
 {
 #ifdef WSL_DEFAULT
-    af_->remoteExecutionConfiguration_ =
-            IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
+    return IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
                 af_,
                 insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*")
                 );
 //#else
 //    // for test purposes only
-//    af_->remoteExecutionConfiguration_ =
-//            IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
+//    return IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
 //                af_,
 //                insight::remoteServers.findServer("localhost")
 //                );
 #endif
+    return nullptr;
 }
 
 
@@ -120,17 +119,16 @@ IQExecutionWorkspace::IQExecutionWorkspace(AnalysisForm *af)
 void IQExecutionWorkspace::initializeToDefaults()
 {
     if (af_->isOpenFOAMAnalysis()
-            && !remoteExecutionConfiguration_
-            && !remoteExeConfigWasEdited_ )
+            && !remoteExecutionConfiguration_  )
     {
 
-        setDefaultOpenFOAMRemoteWorkspace();
-
-        if (remoteExecutionConfiguration_)
+        if ( (remoteExecutionConfiguration_ = defaultOpenFOAMRemoteWorkspace()) != nullptr )
         {
             if ( af_->remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting()
                  && !af_->localCaseDirectory_->empty() )
+            {
                 af_->remoteExecutionConfiguration_->commit( af_->localCaseDirectory() );
+            }
 
             connectReinitializeToDefault();
         }
@@ -264,6 +262,7 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
     {
         if (remoteExecutionConfiguration_)
         {
+            insight::dbg()<<"deleting old remote config"<<std::endl;
             QObject::disconnect(remoteExecutionConfiguration_, &QObject::destroyed, 0, 0);
             delete remoteExecutionConfiguration_;
         }
@@ -301,11 +300,16 @@ void IQExecutionWorkspace::showSetupExecutionEnvironmentDialog()
           localCaseDirectory_.get(),
           rl,
           af_ );
+#ifdef WIN32
+    if (af_->isOpenFOAMAnalysis())
+    {
+        dlg.lockRemoteExecution("Please note: the execution of OpenFOAM-based analyses is only possible"
+                                " in a WSL distribution or on a remote host and can therefore not be disabled.");
+    }
+#endif
 
     if (dlg.exec() == QDialog::Accepted)
     {
-      remoteExeConfigWasEdited_ = true;
-
       resetExecutionEnvironment(
                   dlg.localDirectory(),
                   dlg.remoteLocation()

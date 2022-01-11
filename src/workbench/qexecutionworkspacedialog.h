@@ -19,6 +19,7 @@ class QExecutionWorkspaceDialog
   QPalette defaultPal_;
   QString lastValidLocalWorkDirSetting_;
   std::unique_ptr<insight::RemoteLocation> remoteLocation_;
+  bool lockRemoteExecution_;
 
   // checks
   bool isTemporaryLocalDirectorySelected() const;
@@ -39,6 +40,8 @@ public:
       const insight::RemoteLocation* remoteLocation,
       QWidget *parent = nullptr );
   ~QExecutionWorkspaceDialog();
+
+  void lockRemoteExecution(const QString& reason);
 
   // query
   boost::filesystem::path localDirectory() const;

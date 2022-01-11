@@ -186,7 +186,8 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
     const insight::RemoteLocation* remoteLocation,
     QWidget *parent )
 : QDialog(parent),
-  ui(new Ui::QExecutionWorkspaceDialog)
+  ui(new Ui::QExecutionWorkspaceDialog),
+  lockRemoteExecution_(false)
 {
   ui->setupUi(this);
 
@@ -221,6 +222,12 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
   connect(ui->gbPerformRemoteExecution, &QGroupBox::toggled, this,
           [&](bool on)
           {
+            if (!on && lockRemoteExecution_)
+            {
+                ui->gbPerformRemoteExecution->setChecked(true);
+                return;
+            }
+
             if (on && isTemporaryLocalDirectorySelected())
             {
 //                auto answer = QMessageBox::question(
@@ -351,6 +358,13 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
 
 }
 
+
+void QExecutionWorkspaceDialog::lockRemoteExecution(const QString& reason)
+{
+    ui->gbPerformRemoteExecution->setChecked(true);
+    ui->gbPerformRemoteExecution->setToolTip(reason);
+    lockRemoteExecution_=true;
+}
 
 
 

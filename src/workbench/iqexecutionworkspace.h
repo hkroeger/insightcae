@@ -28,9 +28,8 @@ class IQExecutionWorkspace
 
     std::unique_ptr<IQCaseDirectoryState> localCaseDirectory_;
     QPointer<IQRemoteExecutionState> remoteExecutionConfiguration_;
-    bool remoteExeConfigWasEdited_ = false;
 
-    void setDefaultOpenFOAMRemoteWorkspace();
+    IQRemoteExecutionState* defaultOpenFOAMRemoteWorkspace();
     void connectReinitializeToDefault();
 
 public:

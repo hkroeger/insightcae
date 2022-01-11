@@ -5,8 +5,11 @@
 
 #include "base/tools.h"
 #include "base/casedirectory.h"
+#include "openfoam/blockmesh_templates.h"
 
-class OpenFOAMCaseWithCylinderMesh
+
+
+class OpenFOAMCaseWithMesh
         : public OpenFOAMTestCase
 {
 protected:
@@ -14,20 +17,52 @@ protected:
     CaseDirectory dir_;
 
 public:
-  OpenFOAMCaseWithCylinderMesh(const string& OFEname);
+  OpenFOAMCaseWithMesh(const string& OFEname);
 
   virtual void createInletBC(OFDictData::dict&);
   virtual void createOutletBC(OFDictData::dict&);
   virtual void createWallBC(OFDictData::dict&);
   virtual void createCaseElements();
 
-  virtual void createMesh();
+  virtual void createMesh() =0;
   virtual void createCase();
+
   void runTest() override;
 
   const boost::filesystem::path& dir() const;
 };
 
+
+
+
+
+class OpenFOAMCaseWithCylinderMesh
+        : public OpenFOAMCaseWithMesh
+{
+protected:
+    bmd::blockMeshDict_Cylinder::Parameters meshParameters_;
+
+public:
+  OpenFOAMCaseWithCylinderMesh(const string& OFEname);
+
+  virtual void createMesh();
+};
+
+
+
+
+
+class OpenFOAMCaseWithBoxMesh
+        : public OpenFOAMCaseWithMesh
+{
+protected:
+    bmd::blockMeshDict_Box::Parameters meshParameters_;
+
+public:
+  OpenFOAMCaseWithBoxMesh(const string& OFEname);
+
+  virtual void createMesh();
+};
 
 
 
@@ -42,7 +77,15 @@ public:
   void createCaseElements() override;
 };
 
+class SteadyCompressibleOpenFOAMCase
+ : public OpenFOAMCaseWithCylinderMesh
+{
 
+public:
+  SteadyCompressibleOpenFOAMCase(const string& OFEname);
+
+  void createCaseElements() override;
+};
 
 class SimpleFoamOpenFOAMCase
  : public OpenFOAMCaseWithCylinderMesh

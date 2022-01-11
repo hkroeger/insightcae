@@ -134,7 +134,11 @@ void blockMeshDict_Cylinder::create_bmd()
 
     double al = M_PI/2.;
 
-    double Lc=rCore();
+    double Lc=0.;
+    if (auto *og = boost::get<Parameters::mesh_type::topology_oGrid_type>(&p_.mesh.topology))
+    {
+        Lc=p_.geometry.D*og->core_fraction;
+    }
     if (hollow) Lc=p_.geometry.d*0.5;
 
     std::map<int, Point> pts = {
@@ -163,7 +167,7 @@ void blockMeshDict_Cylinder::create_bmd()
     }
 
     // core block
-    if (!hollow)
+    if (Lc>1e-10)
     {
         arma::mat r0=rotMatrix ( 0.5*al, ex );
         arma::mat r1=rotMatrix ( 1.5*al, ex );
@@ -235,34 +239,32 @@ void blockMeshDict_Cylinder::create_bmd()
         }
         else
         {
-          if (p_.mesh.smoothCore)
-          {
-            auto pstart = p0+r0*pts[0];
-            auto pend = p0+r1*pts[0];
+            if (auto *og = boost::get<Parameters::mesh_type::topology_oGrid_type>(&p_.mesh.topology))
+            {
+              if (og->smoothCore)
+              {
+                auto pstart = p0+r0*pts[0];
+                auto pend = p0+r1*pts[0];
 
-            auto pmid = p0+rmid*pts[0];
-            auto pmido = p0+rmid*pts[1];
-            arma::mat elo=pmid-pmido;
-            elo/=arma::norm(elo,2);
+                auto pmid = p0+rmid*pts[0];
+                auto pmido = p0+rmid*pts[1];
+                arma::mat elo=pmid-pmido;
+                elo/=arma::norm(elo,2);
 
-            double linfrac=0.2;
-            auto& e1 = this->addEdge(new SplineEdge(
-                            {pstart, //(1.-linfrac)*pstart + linfrac*pend,
-                             pmido + elo*(0.5*p_.geometry.D-Lc),
-                             /*linfrac*pstart+(1.-linfrac)*pend, */pend}));
-            this->addEdge(e1.transformed(arma::eye(3,3), vL));
-          }
+                double linfrac=0.2;
+                auto& e1 = this->addEdge(new SplineEdge(
+                                {pstart, //(1.-linfrac)*pstart + linfrac*pend,
+                                 pmido + elo*(0.5*p_.geometry.D-Lc),
+                                 /*linfrac*pstart+(1.-linfrac)*pend, */pend}));
+                this->addEdge(e1.transformed(arma::eye(3,3), vL));
+              }
+            }
         }
 
     }
 
 }
 
-
-double blockMeshDict_Cylinder::rCore() const
-{
-    return p_.geometry.D*p_.mesh.core_fraction;
-}
 
 
 

@@ -77,10 +77,9 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 
   if (p.geometry.d<1e-10)
   {
-    double Lc=p.geometry.D*p.mesh.core_fraction;
 
 
-    auto cyl=cad::Cylinder::create(
+    auto shape=cad::Cylinder::create(
                cad::matconst(p.geometry.p0),
                cad::matconst(ex * p.geometry.L),
                cad::scalarconst( p.geometry.D ),
@@ -88,15 +87,21 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
                false
                );
 
-    auto core=cad::Box::create(
-                cad::matconst(p.geometry.p0),
-                cad::matconst(ex * p.geometry.L),
-                cad::matconst(Lc*ey), cad::matconst(Lc*er),
-                cad::BoxCentering(false, true, true)
-                );
+    if (auto* og = boost::get<blockMeshDict_Cylinder::Parameters::mesh_type::topology_oGrid_type>(
+                &p.mesh.topology))
+    {
+        double Lc=p.geometry.D*og->core_fraction;
+        auto core=cad::Box::create(
+                    cad::matconst(p.geometry.p0),
+                    cad::matconst(ex * p.geometry.L),
+                    cad::matconst(Lc*ey), cad::matconst(Lc*er),
+                    cad::BoxCentering(false, true, true)
+                    );
+        shape = cad::Compound::create(cad::CompoundFeatureList({shape, core}));
+    }
 
     addFeature( label,
-                cad::Compound::create(cad::CompoundFeatureList({cyl, core})),
+                shape,
                 AIS_WireFrame
                 );
   }

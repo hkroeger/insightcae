@@ -96,7 +96,8 @@ void blockMeshDict_TubeMesh::create_bmd()
             cp.mesh.resolution=pmr;
 
             cp.mesh.gradr = p_.mesh.gradr;
-            cp.mesh.core_fraction = p_.mesh.core_fraction;
+            cp.mesh.topology = blockMeshDict_Cylinder::Parameters::mesh_type::topology_oGrid_type{
+                                    p_.mesh.core_fraction, true };
 
             cp.mesh.defaultPatchName = p_.mesh.defaultPatchName;
             cp.mesh.circumPatchName = p_.mesh.circumPatchName;

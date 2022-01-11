@@ -31,12 +31,19 @@ void ExptDataInletBC::addDataDict(OFdicts& dictionaries, const std::string& pref
   OFDictData::dictFile& Udict=dictionaries.lookupDict(prefix+"/0/"+fieldname);
   Udict.isSequential=true;
 
-  if (data.n_cols==1)
-    Udict["a"]=0.0;
-  else if (data.n_cols==3)
-    Udict["a"]=OFDictData::vector3(vec3(0,0,0));
+  if (OFversion()<170)
+  {
+      if (data.n_cols==1)
+          Udict["a"]=0.0;
+      else if (data.n_cols==3)
+          Udict["a"]=OFDictData::vector3(vec3(0,0,0));
+      else
+          throw insight::Exception("Unhandled number of components: "+boost::lexical_cast<std::string>(data.n_cols));
+  }
   else
-    throw insight::Exception("Unhandled number of components: "+boost::lexical_cast<std::string>(data.n_cols));
+  {
+      Udict.no_header=true;
+  }
 
   OFDictData::list vals;
   for (size_t r=0; r<data.n_rows; r++)
@@ -67,14 +74,18 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     arma::mat epsilon = arma::zeros ( np );
     size_t j=0;
     for ( const Parameters::data_default_type& pt: p.data ) {
-        ptdat.row ( j ) =pt.point;
-        velocity.row ( j ) =pt.velocity;
+        ptdat.row ( j ) =pt.point.t();
+        velocity.row ( j ) =pt.velocity.t();
         TKE ( j ) =pt.k;
         epsilon ( j ) =pt.epsilon;
         j++;
     }
 
     OFDictData::dictFile& ptsdict=dictionaries.lookupDict ( prefix+"/points" );
+    if (OFversion()>=170)
+    {
+        ptsdict.no_header=true;
+    }
     ptsdict.isSequential=true;
     OFDictData::list pts;
     for ( size_t r=0; r<ptdat.n_rows; r++ ) {

@@ -44,7 +44,7 @@ RemoteLocation::RemoteLocation(const RemoteLocation& orec)
     remoteDir_(orec.remoteDir_),
     autoCreateRemoteDir_(orec.autoCreateRemoteDir_),
     isTemporaryStorage_(orec.isTemporaryStorage_),
-    port_(-1),
+    port_(orec.port_),
     isValidated_(orec.isValidated_)
 {}
 
@@ -110,6 +110,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
     {
       std::string v(p->value());
       port_=boost::lexical_cast<int>(v);
+      insight::dbg()<<"read port="<<port_<<std::endl;
     }
 
     serverInstance_ = serverConfig_->getInstanceIfRunning();

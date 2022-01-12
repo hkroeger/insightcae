@@ -1,20 +1,5 @@
 #include "openfoamcasewithcylindermesh.h"
 
-#include "openfoam/openfoamtools.h"
-#include "openfoam/blockmesh_templates.h"
-#include "openfoam/caseelements/numerics/meshingnumerics.h"
-#include "openfoam/caseelements/boundaryconditions/velocityinletbc.h"
-#include "openfoam/caseelements/boundaryconditions/pressureoutletbc.h"
-#include "openfoam/caseelements/boundaryconditions/wallbc.h"
-#include "openfoam/caseelements/boundaryconditions/cyclicpairbc.h"
-
-#include "openfoam/caseelements/numerics/unsteadyincompressiblenumerics.h"
-#include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
-#include "openfoam/caseelements/numerics/steadycompressiblenumerics.h"
-#include "openfoam/caseelements/basic/singlephasetransportmodel.h"
-#include "openfoam/caseelements/turbulencemodels/komegasst_rasmodel.h"
-#include "openfoam/caseelements/thermophysicalcaseelements.h"
-#include "openfoam/openfoamtools.h"
 
 
 
@@ -159,59 +144,6 @@ void OpenFOAMCaseWithBoxMesh::createMesh()
 
 
 
-PimpleFoamOpenFOAMCase::PimpleFoamOpenFOAMCase(const string &OFEname)
-  : OpenFOAMCaseWithCylinderMesh(OFEname)
-{}
-
-
-
-void PimpleFoamOpenFOAMCase::createCaseElements()
-{
-  unsteadyIncompressibleNumerics::Parameters p;
-  p.pinternal=1e5;
-  p.deltaT=1e-3;
-  p.endTime=1e-3;
-
-  PIMPLESettings::Parameters ti;
-  CompressiblePIMPLESettings::Parameters::pressure_velocity_coupling_PIMPLE_type pimple;
-  pimple.max_nOuterCorrectors=1;
-  pimple.nCorrectors=1;
-  ti.pressure_velocity_coupling=pimple;
-  p.time_integration=ti;
-  insert(new unsteadyIncompressibleNumerics(*this, p));
-
-  insert(new singlePhaseTransportProperties(*this));
-
-  insert(new kOmegaSST_RASModel(*this));
-}
-
-
-
-
-
-
-
-SimpleFoamOpenFOAMCase::SimpleFoamOpenFOAMCase(const string &OFEname)
-  : OpenFOAMCaseWithCylinderMesh(OFEname)
-{}
-
-
-
-void SimpleFoamOpenFOAMCase::createCaseElements()
-{
-  steadyIncompressibleNumerics::Parameters p;
-  p.pinternal=1e5;
-  p.endTime=1;
-
-  insert(new steadyIncompressibleNumerics(*this, p));
-
-  insert(new singlePhaseTransportProperties(*this));
-
-  insert(new kOmegaSST_RASModel(*this));
-}
-
-
-
 
 
 SteadyCompressibleOpenFOAMCase::SteadyCompressibleOpenFOAMCase(const string &OFEname)
@@ -236,7 +168,7 @@ void SteadyCompressibleOpenFOAMCase::createCaseElements()
 
 
 CyclicPimpleFoamOpenFOAMCase::CyclicPimpleFoamOpenFOAMCase(const string &OFEname)
-  : PimpleFoamOpenFOAMCase(OFEname)
+  : PimpleFoamOpenFOAMCase<OpenFOAMCaseWithCylinderMesh>(OFEname)
 {}
 
 void CyclicPimpleFoamOpenFOAMCase::createMesh()

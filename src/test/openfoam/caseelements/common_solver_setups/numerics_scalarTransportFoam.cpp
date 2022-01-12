@@ -1,6 +1,6 @@
 #include "openfoamcasewithcylindermesh.h"
 
-#include "openfoam/caseelements/numerics/laplacianfoamnumerics.h"
+#include "openfoam/caseelements/numerics/scalartransportfoamnumerics.h"
 
 int main(int argc, char*argv[])
 {
@@ -10,10 +10,10 @@ int main(int argc, char*argv[])
 
         OpenFOAMCaseWithCylinderMesh cm(argv[1]);
 
-        laplacianFoamNumerics::Parameters p;
+        scalarTransportFoamNumerics::Parameters p;
         p.deltaT=1;
         p.endTime=1;
-        cm.insert(new laplacianFoamNumerics(cm, p));
+        cm.insert(new scalarTransportFoamNumerics(cm, p));
 
         cm.runTest();
     });

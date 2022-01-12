@@ -13,10 +13,10 @@ int main(int argc, char*argv[])
 
     insight::assertion(argc==2, "expected exactly one command line argument");
 
-    class Case : public SimpleFoamOpenFOAMCase
+    class Case : public SimpleFoamCylinderOpenFOAMCase
     {
     public:
-        Case(const std::string& ofe) : SimpleFoamOpenFOAMCase(ofe) {}
+        Case(const std::string& ofe) : SimpleFoamCylinderOpenFOAMCase(ofe) {}
 
         void createWallBC(OFDictData::dict& bd) override
         {

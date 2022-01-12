@@ -30,6 +30,7 @@ test_solver(numerics_unsteadyCompressible)
 test_solver(numerics_reactingFoam)
 test_solver(numerics_reactingParcelFoam)
 test_solver(numerics_magneticFoam)
+test_solver(numerics_scalarTransportFoam)
 
 ##
 ## Basic

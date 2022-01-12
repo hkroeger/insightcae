@@ -1,13 +1,43 @@
 #include "openfoamcasewithcylindermesh.h"
 
-int main(int /*argc*/, char*/*argv*/[])
+#include "openfoam/caseelements/numerics/unsteadycompressiblenumerics.h"
+
+using namespace insight;
+
+int main(int argc, char*argv[])
 {
-//    return executeTest([=](){
-//    OpenFOAMCaseWithCylinderMesh tc(argv[1]);
+  return executeTest([=](){
 
-//    tc.insert(new steadyIncompressibleNumerics(tc, p));
+      insight::assertion(argc==2, "expected exactly one command line argument");
 
-//    tc.runTest();
-//    });
-  return 0;
+      class Case : public OpenFOAMCaseWithCylinderMesh
+      {
+
+      public:
+        Case(const string& OFEname) : OpenFOAMCaseWithCylinderMesh(OFEname) {}
+
+        void createCaseElements() override
+        {
+            CompressiblePIMPLESettings::Parameters ti;
+            ti.pressure_velocity_coupling=
+                    CompressiblePIMPLESettings::Parameters::pressure_velocity_coupling_PIMPLE_type
+                    {1, 1, 1e-3, 1e-3, 0.2, 0.5, 0.5, 0.7, true};
+            ti.timestep_control=
+                    CompressiblePIMPLESettings::Parameters::timestep_control_fixed_type{};
+
+            unsteadyCompressibleNumerics::Parameters p;
+            p.time_integration=ti;
+            p.pinternal=1e5;
+            p.endTime=1;
+            p.deltaT=1.;
+            p.endTime=1.;
+
+            insert(new unsteadyCompressibleNumerics(*this, p) );
+            insert(new compressibleSinglePhaseThermophysicalProperties(*this));
+            insert(new kOmegaSST_RASModel(*this));
+        }
+      } tc(argv[1]);
+
+      tc.runTest();
+  });
 }

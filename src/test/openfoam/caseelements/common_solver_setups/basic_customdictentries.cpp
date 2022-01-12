@@ -10,16 +10,16 @@ int main(int argc, char*argv[])
 
     insight::assertion(argc==2, "expected exactly one command line argument");
 
-    class SimpleFoamOpenFOAMCase_mod : public SimpleFoamOpenFOAMCase
+    class Case : public SimpleFoamCylinderOpenFOAMCase
     {
     public:
-      SimpleFoamOpenFOAMCase_mod(const std::string& ofe)
-        : SimpleFoamOpenFOAMCase(ofe)
+      Case(const std::string& ofe)
+        : SimpleFoamCylinderOpenFOAMCase(ofe)
       {}
 
       void createCase() override
       {
-        SimpleFoamOpenFOAMCase::createCase();
+        SimpleFoamCylinderOpenFOAMCase::createCase();
 
         // needs to be added last since entries from other CEs shall be overwritten
         // (thus it needs to be added in an overwritten createCase method)

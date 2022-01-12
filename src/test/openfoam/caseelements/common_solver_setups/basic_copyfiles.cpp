@@ -15,11 +15,11 @@ int main(int argc, char*argv[])
 
     // case with a reference to some extra file
     class Case
-        : public SimpleFoamOpenFOAMCase
+        : public SimpleFoamCylinderOpenFOAMCase
     {
     public:
       Case(const std::string& ofe)
-        : SimpleFoamOpenFOAMCase(ofe)
+        : SimpleFoamCylinderOpenFOAMCase(ofe)
       {}
 
        std::shared_ptr<OFdicts> createDictionaries() const override

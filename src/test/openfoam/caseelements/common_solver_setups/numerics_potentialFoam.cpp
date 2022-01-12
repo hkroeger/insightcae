@@ -1,13 +1,30 @@
 #include "openfoamcasewithcylindermesh.h"
 
-int main(int /*argc*/, char*/*argv*/[])
+#include "openfoam/caseelements/numerics/potentialfoamnumerics.h"
+
+int main(int argc, char*argv[])
 {
-//    return executeTest([=](){
-//    OpenFOAMCaseWithCylinderMesh tc(argv[1]);
+    return executeTest([=](){
 
-//    tc.insert(new steadyIncompressibleNumerics(tc, p));
+        assertion( argc==2, "Exactly one command line arguments are required!");
 
-//    tc.runTest();
-//    });
-  return 0;
+        class Case : public OpenFOAMCaseWithCylinderMesh
+        {
+
+        public:
+            Case(const std::string& ofe) : OpenFOAMCaseWithCylinderMesh(ofe) {}
+
+            void createCaseElements() override
+            {
+                potentialFoamNumerics::Parameters p;
+                insert(new potentialFoamNumerics(*this, p));
+
+                addField("p", FieldInfo(scalarField, 	dimKinPressure, FieldValue({0}), volField ) );
+            }
+
+        } cm(argv[1]);
+
+
+        cm.runTest();
+    });
 }

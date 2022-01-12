@@ -167,7 +167,7 @@ void blockMeshDict_Cylinder::create_bmd()
     }
 
     // core block
-    if (Lc>1e-10)
+    if ( !hollow && (Lc>1e-10) )
     {
         arma::mat r0=rotMatrix ( 0.5*al, ex );
         arma::mat r1=rotMatrix ( 1.5*al, ex );

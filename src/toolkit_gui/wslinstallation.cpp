@@ -157,13 +157,29 @@ void launchUpdateWSLVersion(std::shared_ptr<WSLLinuxServer> wsl, QWidget *parent
 {
     auto *t = new UpdateWSLVersionThread( wsl, parent );
     auto *pw = new UpdateWSLProgressDialog(parent);
-//    QObject::connect(
-//            t, QOverload<QObject*>::of(&QThread::destroyed), t,
-//            [pw](QObject*) { pw->close(); pw->deleteLater(); } );
+
     QObject::connect(
                 t, &UpdateWSLVersionThread::logLine,
                 pw, &UpdateWSLProgressDialog::appendLogLine);
     pw->show();
+
+    QObject::connect(
+                t, &UpdateWSLVersionThread::finished,
+                [t,pw]()
+                {
+                    if (t->success())
+                    {
+                        QMetaObject::invokeMethod(
+                            qApp,
+                            std::bind(&UpdateWSLProgressDialog::close, pw)
+                        );
+                    }
+                    QMetaObject::invokeMethod(
+                        qApp,
+                        std::bind(&UpdateWSLProgressDialog::changeCloseBtnText, pw, "Close")
+                    );
+                }
+    );
     t->start();
 }
 
@@ -191,20 +207,11 @@ void UpdateWSLVersionThread::run()
                         Q_EMIT logLine(QString::fromStdString(line));
                     }
                     );
-
-        QMetaObject::invokeMethod(
-            qApp,
-            [this]
-            {
-                QMessageBox::information(
-                    parent_,
-                    "WSL backend updated",
-                    "The backend update finished without error." );
-            }
-        );
+        success_=true;
     }
     catch (const std::exception& ex)
     {
+        success_=false;
         QMetaObject::invokeMethod(
             qApp,
             [this,ex]
@@ -220,10 +227,18 @@ void UpdateWSLVersionThread::run()
     }
 }
 
+bool UpdateWSLVersionThread::success() const
+{
+    return success_;
+}
+
 
 
 UpdateWSLProgressDialog::UpdateWSLProgressDialog(QWidget *parent)
+    : QDialog(parent)
 {
+    setAttribute(Qt::WA_DeleteOnClose, true);
+
     auto vl = new QVBoxLayout;
     setLayout(vl);
 
@@ -233,14 +248,21 @@ UpdateWSLProgressDialog::UpdateWSLProgressDialog(QWidget *parent)
     auto hl=new QHBoxLayout;
     auto sp=new QSpacerItem(1, 1, QSizePolicy::Expanding);
     hl->addItem(sp);
-    auto btn=new QPushButton("Cancel");
-    hl->addWidget(btn);
+    btn_=new QPushButton("Cancel");
+    connect(btn_, &QPushButton::clicked,
+            this, &QDialog::close);
+    hl->addWidget(btn_);
     vl->addLayout(hl);
 }
 
 void UpdateWSLProgressDialog::appendLogLine(const QString &line)
 {
     pte_->appendPlainText(line);
+}
+
+void UpdateWSLProgressDialog::changeCloseBtnText(const QString& label)
+{
+    btn_->setText("Close");
 }
 
 void checkExternalPrograms(QWidget *parent)

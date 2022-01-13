@@ -261,6 +261,9 @@ private Q_SLOTS:
   void onCreateReport();
 
   void onStartPV();
+  void onStartPVLocal();
+  void onStartPVRemote();
+
   void onCleanOFC();
   void onWnow();
   void onWnowAndStop();

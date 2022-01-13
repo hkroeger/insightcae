@@ -53,7 +53,7 @@ public:
   }
 
   bool remoteHostRunningAndDirectoryExisting() const;
-  void commit(const boost::filesystem::path& location);
+  virtual void commit(const boost::filesystem::path& location);
   bool isCommitted() const;
 
   insight::RemoteLocation& location() const;

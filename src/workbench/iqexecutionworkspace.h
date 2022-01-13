@@ -6,20 +6,10 @@
 #include <QPointer>
 
 #include "iqcasedirectorystate.h"
-#include "iqremoteexecutionstate.h"
+#include "iqworkbenchremoteexecutionstate.h"
 
 class AnalysisForm;
 class WorkbenchAction;
-
-
-
-class IQWorkbenchRemoteExecutionState
-    : public IQRemoteExecutionState
-{
-protected:
-  void updateGUI(bool enabled) override;
-};
-
 
 
 class IQExecutionWorkspace

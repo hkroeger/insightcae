@@ -73,8 +73,11 @@ public:
     void openAnalysis(const QString& fn);
     void closeEvent(QCloseEvent *event);
     void readSettings();
+    void show();
+
 public Q_SLOTS:
     void newAnalysis(std::string analysisType = "");
+
 private Q_SLOTS:
     void onOpenAnalysis();
     void openRecentFile();

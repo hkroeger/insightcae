@@ -13,6 +13,7 @@ set(workbench_SRCS
 
     iqcasedirectorystate.h
     iqcasedirectorystate.cpp
+    iqworkbenchremoteexecutionstate.h iqworkbenchremoteexecutionstate.cpp
     iqexecutionworkspace.h iqexecutionworkspace.cpp
 
     analysisform.cpp

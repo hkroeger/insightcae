@@ -160,33 +160,50 @@ void AnalysisForm::cleanFinishedExternalProcesses()
 
 void AnalysisForm::onStartPV()
 {
+  bool launchRemote=false;
   if (auto* rec = remoteExecutionConfiguration())
   {
-    if (rec->location().remoteDirExists())
-    {
-      IQRemoteParaviewDialog dlg( rec->exeConfig(), this );
-      dlg.exec();
-
-      if (auto rp = dlg.remoteParaviewProcess())
-      {
-          cleanFinishedExternalProcesses(); // clean up on this occasion
-          externalProcesses_.insert(rp);
-      }
-    }
+      if (rec->isCommitted()) launchRemote=true;
   }
+
+  if (launchRemote)
+      onStartPVRemote();
   else
-  {
-      IQParaviewDialog dlg( localCaseDirectory(), this );
-      dlg.exec();
-
-      if (auto pv = dlg.paraviewProcess())
-      {
-          cleanFinishedExternalProcesses(); // clean up on this occasion
-          externalProcesses_.insert(pv);
-      }
-  }
+      onStartPVLocal();
 }
 
+
+
+void AnalysisForm::onStartPVLocal()
+{
+    IQParaviewDialog dlg( localCaseDirectory(), this );
+    dlg.exec();
+
+    if (auto pv = dlg.paraviewProcess())
+    {
+        cleanFinishedExternalProcesses(); // clean up on this occasion
+        externalProcesses_.insert(pv);
+    }
+}
+
+
+void AnalysisForm::onStartPVRemote()
+{
+    if (auto* rec = remoteExecutionConfiguration())
+    {
+        if (rec->location().remoteDirExists())
+        {
+            IQRemoteParaviewDialog dlg( rec->exeConfig(), this );
+            dlg.exec();
+
+            if (auto rp = dlg.remoteParaviewProcess())
+            {
+                cleanFinishedExternalProcesses(); // clean up on this occasion
+                externalProcesses_.insert(rp);
+            }
+        }
+    }
+}
 
 
 

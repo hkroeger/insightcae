@@ -151,13 +151,12 @@ workbench::workbench(bool logToConsole)
   readSettings();
 
 #ifdef WIN32
-  {
-    checkInstallation(false);
-    QAction* be = new QAction("Check backend installation version...", this);
-    helpMenu->addAction( be );
-    connect(be, &QAction::triggered,
-            this, [&]() { checkInstallation(true); } );
-  }
+    {
+        QAction* be = new QAction("Check backend installation version...", this);
+        helpMenu->addAction( be );
+        connect(be, &QAction::triggered,
+                this, [&]() { checkInstallation(true); } );
+    }
 #endif
 }
 
@@ -305,6 +304,14 @@ void workbench::readSettings()
     QSettings settings("silentdynamics", "workbench_main");
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
+}
+
+void workbench::show()
+{
+    QMainWindow::show();
+#ifdef WIN32
+    checkInstallation(false);
+#endif
 }
 
 

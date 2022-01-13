@@ -30,7 +30,7 @@ void unsteadyIncompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) 
 
   // ============ setup controlDict ================================
 
-  if (OFcase().findElements<dynamicMesh>().size()>0)
+  if ( (OFcase().findElements<dynamicMesh>().size()>0) && (OFversion()<600) )
    setApplicationName(dictionaries, "pimpleDyMFoam");
   else
    setApplicationName(dictionaries, "pimpleFoam");

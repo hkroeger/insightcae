@@ -70,7 +70,9 @@ void OpenFOAMCaseWithMesh::runTest()
 
   createCase();
 
+  modifyMeshOnDisk(dir_);
   createOnDisk(dir_);
+  modifyCaseOnDisk(dir_);
   executeCommand(dir_, readSolverName(dir_));
 }
 
@@ -92,6 +94,7 @@ OpenFOAMCaseWithCylinderMesh::OpenFOAMCaseWithCylinderMesh(const string &OFEname
     meshParameters_.mesh.topPatchName="outlet";
     meshParameters_.mesh.resolution =
             bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{9,0.5};
+    meshParameters_.mesh.cellZoneName="wholeDomain";
 }
 
 void OpenFOAMCaseWithCylinderMesh::createMesh()

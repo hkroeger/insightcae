@@ -136,7 +136,7 @@ class SimpleFoamOpenFOAMCase
 
 public:
   SimpleFoamOpenFOAMCase(const string& OFEname)
-      : OpenFOAMCaseWithCylinderMesh(OFEname)
+      : Base(OFEname)
   {}
 
 

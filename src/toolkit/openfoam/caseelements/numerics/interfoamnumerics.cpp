@@ -118,7 +118,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
          p_.cAlpha,
          p_.icAlpha,
 
-         1e-8,
+         1e-12,
          0.0,
          false,
          p_.alphaLimiterIter

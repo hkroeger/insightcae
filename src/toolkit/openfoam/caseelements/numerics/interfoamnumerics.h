@@ -12,7 +12,7 @@ OFDictData::dict stdMULESSolverSetup
 (
         double cAlpha,
         double icAlpha,
-        double tol=1e-8,
+        double tol=1e-12,
         double reltol=0.0,
         bool LTS=false,
         int nLimiterIter=15

@@ -43,7 +43,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
 
   if (OFversion()>=230)
-    solvers["\"alpha.*\""]=stdMULESSolverSetup(0.25, 0.1, 1e-8, 0.0, true);
+    solvers["\"alpha.*\""]=stdMULESSolverSetup(0.25, 0.1, 1e-12, 0.0, true);
 
 
   std::string solutionScheme("PIMPLE");

@@ -45,7 +45,7 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
 
-  OFDictData::dict alphasol = stdMULESSolverSetup(p_.cAlpha, p_.icAlpha, 1e-10, 0.0, false);
+  OFDictData::dict alphasol = stdMULESSolverSetup(p_.cAlpha, p_.icAlpha, 1e-12, 0.0, false);
   solvers["\"alpha.*\""]=alphasol;
 
 }

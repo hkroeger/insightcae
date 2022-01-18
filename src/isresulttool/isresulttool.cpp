@@ -25,6 +25,7 @@
 #include "base/analysislibrary.h"
 #include "base/resultset.h"
 #include "base/resultelements/chart.h"
+#include "base/table.h"
 
 #include <iostream>
 #include <fstream>
@@ -144,6 +145,56 @@ void plotCurves(
 
 
 
+void addCurveToPlot(ResultSetPtr results, const std::string& args)
+{
+    std::vector<std::string> p;
+    boost::split(p, args, boost::is_any_of(":"));
+
+    insight::assertion(p.size()>=5,
+                       "not enough parameters for add curve command");
+    insight::assertion(p.size()<=7,
+                       "too many parameters for add curve command");
+
+    auto path=p[0];
+    auto file=p[1];
+    auto label=p[2];
+    auto xcol=to_number<int>(p[3]);
+    auto ycol=to_number<int>(p[4]);
+    int idx=0;
+    std::string style="w p";
+    if (p.size()>=6)
+    {
+        idx=to_number<int>(p[5]);
+    }
+    if (p.size()>=7)
+    {
+        style=p[6];
+    }
+
+    auto& chart = results->get<Chart>(path);
+
+    insight::assertion(
+                boost::filesystem::exists(file),
+                "The specified chart data file "+file+" does not exist!" );
+
+    std::vector<insight::Table> ds;
+    {
+        std::ifstream f(file);
+        insight::Table(f).splitIntoDataSets( std::back_inserter(ds) );
+    }
+
+    insight::assertion(
+                ds.size()>idx,
+                str(format("the dataset index %d is outside the number of datasets in the specified chart data file (contains %d datasets)")
+                    % idx % ds.size())
+                );
+
+    arma::mat xy = ds[idx].xy(xcol, ycol);
+
+    chart.addCurve(PlotCurve(xy, label, style+" t '"+label+"'"));
+}
+
+
 
 
 
@@ -172,6 +223,15 @@ int main(int argc, char *argv[])
         ("analysis,a", po::value< string >(), "analysis type name. Default is none. If not specified, the input parameter set will not be loaded.")
         ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
         ("list,l", "List contents of result file")
+        ("add-curve", po::value< StringList >(),
+                      "Add curve to a plot (e.g. reference data). "
+                      "Specify (spearated by colons): "
+                      "the path to the plot in the result set, "
+                      "the file path to the text file containing the curve data to add, "
+                      "the label of the added curve, "
+                      "the x- and y-column in the data file (1 = first col), "
+                      "optionally the dataset index (0 = first dataset) and "
+                      "the plot style in gnuplot notation (e.g. 'with lines'; defaults to 'with points'; the 'title' statement is appended automatically).")
         ("display,d", "Display each result file in separate window")
         ("input-file,f", po::value< StringList >(),"Specifies input file(s).")
         ("compareplot", po::value< string >(), "Compare plots. Specify path to plot. Append name of the curve with ':'.")
@@ -192,9 +252,17 @@ int main(int argc, char *argv[])
     p.add("input-file", -1);
 
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
-              options(desc).positional(p).run(), vm);
-    po::notify(vm);
+    try
+    {
+        po::store(po::command_line_parser(argc, argv).
+                  options(desc).positional(p).run(), vm);
+        po::notify(vm);
+    }
+    catch (...)
+    {
+        cout << "Error in command line!" << endl << desc << endl;
+        exit(-1);
+    }
 
     if (vm.count("help"))
     {
@@ -255,6 +323,15 @@ int main(int argc, char *argv[])
             cout<<"Result file: "<<inpath<<endl<<endl;
             listContents(*results.back());
             cout<<endl<<std::string(80, '=')<<endl<<endl;
+          }
+
+          if (vm.count("add-curve"))
+          {
+              auto acs=vm["add-curve"].as<StringList>();
+              for (const auto& ac: acs)
+              {
+                  addCurveToPlot(results.back(), ac);
+              }
           }
 
           if (vm.count("render"))

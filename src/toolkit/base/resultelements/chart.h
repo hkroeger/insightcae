@@ -133,6 +133,7 @@ public:
     );
 
     const ChartData* chartData() const;
+    void addCurve(const PlotCurve& pc);
 
     virtual void generatePlotImage ( const boost::filesystem::path& imagepath ) const;
 

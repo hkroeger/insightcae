@@ -65,6 +65,7 @@ set(toolkit_SOURCES
     base/streamtoprogressdisplayer.h base/streamtoprogressdisplayer.cpp
     base/progressdisplayer.cpp base/progressdisplayer.h
     base/casedirectory.h base/casedirectory.cpp
+    base/table.h base/table.cpp
     base/progressdisplayer/textprogressdisplayer.cpp base/progressdisplayer/textprogressdisplayer.h
     base/progressdisplayer/combinedprogressdisplayer.cpp base/progressdisplayer/combinedprogressdisplayer.h
     base/progressdisplayer/prefixedprogressdisplayer.cpp base/progressdisplayer/prefixedprogressdisplayer.h

@@ -174,7 +174,12 @@ Chart::Chart
 
 const ChartData* Chart::chartData() const
 {
-  return this;
+    return this;
+}
+
+void Chart::addCurve(const PlotCurve &pc)
+{
+    plc_.push_back(pc);
 }
 
 

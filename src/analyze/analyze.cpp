@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
       ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
       ("input-file,f", po::value< std::string >(),"Specifies input file.")
+      ("output-file,o", po::value< std::string >(),"Specifies output file. May be a PDF report or an ISR InsightCAE XML result set.")
 #ifdef HAVE_WT
       ("server", "Start with REST API server. Keeps the application running after the analysis has finished. Once the result set is fetched via the REST API, the application exits.")
       ("listen", po::value<std::string>()->default_value("127.0.0.1"), "Server address")
@@ -238,12 +239,18 @@ int main(int argc, char *argv[])
           else
 #endif
           {
-            cout<<"input file has to be specified!"<<endl;
+            cerr<<"input file has to be specified!"<<endl;
             exit(-1);
           }
         }
         else
         {
+          if (vm.count("input-file")>1)
+          {
+              cerr<<"only one single input file has to be specified!"<<endl;
+              exit(-1);
+          }
+
           boost::filesystem::path fn = vm["input-file"].as<std::string>();
           inputFileParentPath = boost::filesystem::absolute(fn).parent_path();
           filestem = fn.stem().string();
@@ -474,21 +481,42 @@ int main(int argc, char *argv[])
           else
 #endif
           {
-            boost::filesystem::path resoutpath=analysis->executionPath()/ (filestem+".isr");
-            results->saveToFile( resoutpath );
-
-            boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
-            results->writeLatexFile( outpath );
-
-            if (!vm.count("skiplatex"))
+            if (!vm.count("output-file"))
             {
-                for (int i=0; i<2; i++)
+                boost::filesystem::path resoutpath=analysis->executionPath()/ (filestem+".isr");
+                results->saveToFile( resoutpath );
+
+                boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
+                results->writeLatexFile( outpath );
+
+                if (!vm.count("skiplatex"))
                 {
-                    if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % workdir.string() % outpath.string() ).c_str() ))
+                    for (int i=0; i<2; i++)
                     {
-                        Warning("TeX input file was written but could not execute pdflatex successfully.");
-                        break;
+                        if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % workdir.string() % outpath.string() ).c_str() ))
+                        {
+                            Warning("TeX input file was written but could not execute pdflatex successfully.");
+                            break;
+                        }
                     }
+                }
+            }
+            else
+            {
+                boost::filesystem::path outfile( vm["output-file"].as<std::string>() );
+
+                auto ext=boost::algorithm::to_lower_copy(outfile.extension().string());
+                if (ext==".isr")
+                {
+                    results->saveToFile(outfile);
+                }
+                else if (ext==".tex")
+                {
+                    results->writeLatexFile(outfile);
+                }
+                else if (ext==".pdf")
+                {
+                    results->generatePDF(outfile);
                 }
             }
           }

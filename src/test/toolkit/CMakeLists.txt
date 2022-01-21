@@ -15,6 +15,7 @@ add_toolkit_test(test_filecontainer)
 add_toolkit_test(test_toUnixPath)
 add_toolkit_test(test_remoteExecutionConfig)
 add_toolkit_test(test_warningbox)
+add_toolkit_test(test_integrate_trpz)
 
 
 add_subdirectory(analysis_parameterstudy)

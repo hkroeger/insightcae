@@ -323,15 +323,15 @@ double integrate(F f, double a, double b)
 /**
  * computes the definite integral over f from a to b numerically using trapez rule
  */
-template<class F>
-double integrate_trpz(F f, double a, double b, int n=20)
+template<class T, class F>
+T integrate_trpz(F f, double a, double b, int n=20)
 {
-  double res=0.;
+  T res=0.;
 
-  double dx=(b-a)/double(n-1);
+  double dx=(b-a)/double(n);
   for (int i=0; i<n; i++)
   {
-      double x = a+ dx*(double(i)+0.5);
+      double x = a + dx*(double(i)+0.5);
       res+=f(x)*dx;
   }
   return res;

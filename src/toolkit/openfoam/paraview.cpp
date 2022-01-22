@@ -89,7 +89,7 @@ Paraview::Paraview(
         "ftimes=None\n"
         "if (len(times)==0):\n"
         " ftimes=[0]\n"
-        "else\n";
+        "else:\n";
         if (onlyLatestTime)
         {
             ls <<
@@ -136,12 +136,12 @@ Paraview::Paraview(
         ls <<
         "  layouts=GetLayouts()\n"
         "  for i,l in enumerate(sorted(layouts.keys(), key=lambda k: k[0])):\n"
-        "    fname='"<<caseLabel(caseDirectory_)<<"_layout%%02d'%%(i)\n"
+        "    fname='"<<caseLabel(caseDirectory_)<<"_layout%02d'%(i)\n"
         ;
         if (onlyLatestTime) ls <<
         "    fname+='_latesttime.png'\n";
         else ls <<
-        "    fname+='_t%%g.png'%%(curtime)\n";
+        "    fname+='_t%g.png'%(curtime)\n";
         ls <<
         "    print('Writing', fname)\n"
         "    SaveScreenshot(fname, layout=layouts[l], magnification=1, quality=100)\n"

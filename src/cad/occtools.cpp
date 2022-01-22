@@ -40,13 +40,17 @@ gp_Trsf OFtransformToOCC(const arma::mat &translate, const arma::mat &rollPitchY
 
 OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
 {
-  arma::mat R(3,3);
+  scale_ = t.ScaleFactor();
+
+  arma::mat R = arma::zeros(3,3);
   for (int i=0;i<3;i++)
     for (int j=0;j<3;j++)
       R(i,j)=t.Value(i+1,j+1);
+  R*=1./scale_;
+//  std::cout<<R<<std::endl;
 
-  scale_ = t.ScaleFactor();
   rollPitchYaw_ = rotationMatrixToRollPitchYaw(R);
+//  std::cout<<Vector(t.TranslationPart())<<std::endl;
   translate_ = (1./scale_)*inv(R)*Vector(t.TranslationPart()).t();
 }
 

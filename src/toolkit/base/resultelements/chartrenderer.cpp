@@ -10,6 +10,8 @@
 #include "base/resultelements/matplotlibrenderer.h"
 #endif
 
+#include "base/exception.h"
+
 
 namespace insight
 {

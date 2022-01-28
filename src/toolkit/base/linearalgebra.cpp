@@ -810,7 +810,7 @@ arma::mat filterDuplicates(const arma::mat&m)
   }
   xy.resize(j, m.n_cols);
 
-  std::cout<<xy.row(0)<<std::endl<<xy.row(xy.n_rows-1)<<std::endl;
+  //std::cout<<xy.row(0)<<std::endl<<xy.row(xy.n_rows-1)<<std::endl;
 
   return xy;
 }

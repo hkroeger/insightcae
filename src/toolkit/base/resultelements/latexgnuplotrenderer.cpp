@@ -1,4 +1,4 @@
-#include "gnuplotchartrenderer.h"
+#include "latexgnuplotrenderer.h"
 
 #include "base/cppextensions.h"
 

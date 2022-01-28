@@ -92,8 +92,9 @@ set(toolkit_SOURCES
     base/resultelements/chartrenderer.cpp base/resultelements/chartrenderer.h
     base/resultelements/polarchart.cpp base/resultelements/polarchart.h
     base/resultelements/polarchartrenderer.cpp base/resultelements/polarchartrenderer.h
-    base/resultelements/gnuplotchartrenderer.h base/resultelements/gnuplotchartrenderer.cpp
+    base/resultelements/latexgnuplotrenderer.h base/resultelements/latexgnuplotrenderer.cpp
     base/resultelements/gnuplotpolarchartrenderer.cpp base/resultelements/gnuplotpolarchartrenderer.h
+    base/resultelements/fastgnuplotrenderer.h base/resultelements/fastgnuplotrenderer.cpp
     base/resultelements/contourchart.cpp base/resultelements/contourchart.h
     base/resultsetfilter.h base/resultsetfilter.cpp
     openfoam/ofenvironment.cpp openfoam/ofenvironment.h

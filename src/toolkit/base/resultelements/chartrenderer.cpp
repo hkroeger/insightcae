@@ -3,6 +3,8 @@
 #include "base/boost_include.h"
 
 #ifdef CHART_RENDERER_GNUPLOT
+#include "base/resultelements/latexgnuplotrenderer.h"
+#include "base/resultelements/fastgnuplotrenderer.h"
 #include "base/resultelements/gnuplotrenderer.h"
 #endif
 
@@ -39,7 +41,9 @@ std::unique_ptr<ChartRenderer> ChartRenderer::create(const ChartData *data)
 
 #ifdef CHART_RENDERER_GNUPLOT
   if (selectedRenderer=="gnuplot")
-    renderer.reset( new GnuplotRenderer(data) );
+    renderer.reset( new GnuplotRenderer<LaTeXGnuplotRenderer<ChartRenderer> >(data) );
+  else if (selectedRenderer=="fastgnuplot")
+    renderer.reset( new GnuplotRenderer<FastGnuplotRenderer<ChartRenderer> >(data) );
 #endif
 
 #if defined(CHART_RENDERER_MATPLOTLIB)

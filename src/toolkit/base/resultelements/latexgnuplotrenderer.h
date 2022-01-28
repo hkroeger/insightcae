@@ -23,7 +23,7 @@ std::unique_ptr<gnuplotio::Gnuplot> make_Gnuplot();
 
 
 template<class Base>
-class GnuplotRendererBase : public Base
+class LaTeXGnuplotRenderer : public Base
 {
 
 
@@ -36,7 +36,7 @@ protected:
 public:
 
   template<class ... Types>
-  GnuplotRendererBase(Types ... args)
+  LaTeXGnuplotRenderer(Types ... args)
     : Base(args...)
   {}
 

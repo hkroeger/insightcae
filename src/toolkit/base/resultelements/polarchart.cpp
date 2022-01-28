@@ -1,5 +1,6 @@
 #include "polarchart.h"
 
+#include "base/resultelements/fastgnuplotrenderer.h"
 #include "base/resultelements/gnuplotpolarchartrenderer.h"
 
 using namespace std;
@@ -43,8 +44,31 @@ PolarChart::PolarChart
 
 void PolarChart::generatePlotImage(const path &imagepath) const
 {
-  std::shared_ptr<PolarChartRenderer> renderer( new GnuplotPolarChartRenderer(chartData(), phi_unit_) );
+  std::shared_ptr<PolarChartRenderer> renderer;
 
+  std::string selectedRenderer="gnuplot";
+
+#if !defined(CHART_RENDERER_GNUPLOT) && defined(CHART_RENDERER_MATPLOTLIB)
+  selectedRenderer="matplotlib";
+#endif
+
+  if (const auto* rv=getenv("INSIGHT_CHARTRENDERER"))
+    selectedRenderer=rv;
+
+#ifdef CHART_RENDERER_GNUPLOT
+  if (selectedRenderer=="gnuplot")
+  {
+    renderer = std::make_shared<GnuplotPolarChartRenderer<LaTeXGnuplotRenderer<PolarChartRenderer> > >
+          (chartData(), phi_unit_);
+  }
+  else if (selectedRenderer=="fastgnuplot")
+  {
+      renderer = std::make_shared<GnuplotPolarChartRenderer<FastGnuplotRenderer<PolarChartRenderer> > >
+            (chartData(), phi_unit_);
+  }
+#else
+  throw insight::Exception("There is no polar chart renderer available!");
+#endif
   renderer->render(imagepath);
 }
 

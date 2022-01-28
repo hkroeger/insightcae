@@ -2,7 +2,7 @@
 
 #include "gnuplot-iostream.h"
 #include "base/resultelements/image.h"
-#include "base/resultelements/gnuplotchartrenderer.h"
+#include "base/resultelements/latexgnuplotrenderer.h"
 
 using namespace std;
 using namespace boost;

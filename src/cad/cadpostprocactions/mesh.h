@@ -88,6 +88,8 @@ public:
 };
 
 
+
+
 typedef boost::fusion::vector<
     insight::cad::GroupsDesc, //vertexGroups,
     insight::cad::GroupsDesc, //edgeGroups,
@@ -95,6 +97,9 @@ typedef boost::fusion::vector<
     insight::cad::GroupsDesc, //topFaceGroups,
     insight::cad::GroupsDesc //solidGroups,
   > ExtrudedGroupDefinitions;
+
+
+
 
 class ExtrudedMesh
 : public Mesh
@@ -104,7 +109,7 @@ protected:
   ScalarPtr h_, nLayers_;
   std::vector<std::pair<std::string, cad::FeatureSetPtr> > namedBottomFaces_, namedTopFaces_, namedLateralEdges_;
 
-  virtual void build();
+  void build() override;
 
 public:
   declareType("ExtrudedMesh");
@@ -120,11 +125,17 @@ public:
   );
 };
 
+
+
+
+
 typedef boost::fusion::vector5<FeaturePtr, std::string, ScalarPtr, boost::optional<boost::fusion::vector2<ScalarPtr, ScalarPtr> >, boost::optional<ScalarPtr> > GeometryDesc;
 typedef std::vector<GeometryDesc> GeometrysDesc;
 
 typedef boost::fusion::vector3<std::string, FeatureSetPtr, ScalarPtr> EdgeRefineDesc;
 typedef std::vector<EdgeRefineDesc> EdgeRefineDescs;
+
+
 
 
 class SnappyHexMesh 
@@ -157,6 +168,8 @@ public:
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
 };
+
+
 
 
 }

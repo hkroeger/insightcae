@@ -146,6 +146,7 @@ public:
      */
     virtual void saveToFile ( const boost::filesystem::path& file ) const;
     virtual void saveToStream( std::ostream& os ) const;
+    void saveAs( const boost::filesystem::path& file ) const;
 
     /**
      * read result set from xml file

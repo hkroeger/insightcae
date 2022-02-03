@@ -334,6 +334,31 @@ void ResultSet::saveToStream(ostream &os) const
 
 
 
+
+void ResultSet::saveAs(const boost::filesystem::path &outfile) const
+{
+    auto ext=boost::algorithm::to_lower_copy(outfile.extension().string());
+    if (ext==".isr")
+    {
+        saveToFile(outfile);
+    }
+    else if (ext==".tex")
+    {
+        writeLatexFile(outfile);
+    }
+    else if (ext==".pdf")
+    {
+        generatePDF(outfile);
+    }
+    else
+    {
+        throw insight::Exception("unrecognized file type: \""+outfile.string()+"\"");
+    }
+}
+
+
+
+
 std::string builtin_template=
     "\\documentclass[a4paper,10pt]{scrartcl}\n"
     "\\usepackage{hyperref}\n"

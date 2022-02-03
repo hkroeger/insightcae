@@ -158,13 +158,13 @@ void addCurveToPlot(ResultSetPtr results, const std::string& args)
     auto path=p[0];
     auto file=p[1];
     auto label=p[2];
-    auto xcol=to_number<int>(p[3]);
-    auto ycol=to_number<int>(p[4]);
+    auto xcol=toNumber<int>(p[3]);
+    auto ycol=toNumber<int>(p[4]);
     int idx=0;
     std::string style="w p";
     if (p.size()>=6)
     {
-        idx=to_number<int>(p[5]);
+        idx=toNumber<int>(p[5]);
     }
     if (p.size()>=7)
     {
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
         ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
         ("list,l", "List contents of result file")
         ("add-curve", po::value< StringList >(),
-                      "Add curve to a plot (e.g. reference data). "
+                      "Add curve to a plot (e.g. reference data). Will be applied to every result set that is loaded."
                       "Specify (spearated by colons): "
                       "the path to the plot in the result set, "
                       "the file path to the text file containing the curve data to add, "
@@ -232,6 +232,8 @@ int main(int argc, char *argv[])
                       "the x- and y-column in the data file (1 = first col), "
                       "optionally the dataset index (0 = first dataset) and "
                       "the plot style in gnuplot notation (e.g. 'with lines'; defaults to 'with points'; the 'title' statement is appended automatically).")
+        ("saveAs", po::value< string >(),
+                      "Save result set to specified file. Will be applied to every loaded set, so make only sense, if a single result set is loaded.")
         ("display,d", "Display each result file in separate window")
         ("input-file,f", po::value< StringList >(),"Specifies input file(s).")
         ("compareplot", po::value< string >(), "Compare plots. Specify path to plot. Append name of the curve with ':'.")
@@ -245,6 +247,14 @@ int main(int argc, char *argv[])
           "Multiple scalars may be plotted together: give list, separated by comma (without spaces). "
           "Put optional scale factor after variable name, separated by colon." )
         ("sort,s", "sort entries in comparison")
+        ("compose", po::value< string >(),
+                    "Create new result set. "
+                    "Specify, separated by colons: "
+                    " a) output file path (format will be selected by extension), "
+                    " b) new names, index and paths of result elements to "
+                    "copy from loaded dataset, separated by comma. "
+                    "(e.g. 0/ for the first result set)." )
+        ("title", po::value< string >(), "Set title of composed report. Ignored, if --compose is not specified.")
         ("render", "Render into PDF")
     ;
 
@@ -336,13 +346,62 @@ int main(int argc, char *argv[])
 
           if (vm.count("render"))
           {
-            someActionDone=true;
-            boost::filesystem::path outpath =
-                inpath.parent_path() / (inpath.filename().stem().string()+".pdf");
-            results.back()->generatePDF( outpath );
+              someActionDone=true;
+              boost::filesystem::path outpath =
+                      inpath.parent_path() / (inpath.filename().stem().string()+".pdf");
+              results.back()->generatePDF( outpath );
+          }
+
+          if (vm.count("saveAs"))
+          {
+              someActionDone=true;
+              results.back()->saveAs( vm["saveAs"].as<std::string>() );
           }
         }
 
+
+        if (vm.count("compose"))
+        {
+            someActionDone=true;
+
+            auto arglist=vm["compose"].as<std::string>();
+            std::vector<std::string> cargs;
+            boost::split(cargs, arglist, boost::is_any_of(":"));
+
+            insight::assertion(
+                        cargs.size()>=2,
+                        "insufficient number of arguments to compose: \""+arglist+"\"" );
+
+            std::string title="Composed Result";
+            if (vm.count("title"))
+            {
+                title=vm["title"].as<std::string>();
+            }
+            auto r = std::make_shared<ResultSet>(ParameterSet(), title, "");
+
+            auto i=cargs.begin();
+            i+=1;
+            for (; i!=cargs.end(); ++i)
+            {
+                std::vector<std::string> ccargs;
+                boost::split(ccargs, *i, boost::is_any_of(","));
+                insight::assertion(
+                            ccargs.size()==3,
+                            "expected tiple (index,result element path,target name), got \""
+                            +(*i)+"\"" );
+
+                auto idx = toNumber<int>(ccargs[0]);
+                insight::assertion(
+                            idx<results.size(),
+                            "index of result set out of range: \""+ccargs[0]+"\"" );
+                auto path = ccargs[1];
+
+                auto& rr = results[idx]->get<ResultElement>(path);
+                r->insert( ccargs[2], rr.clone() );
+            }
+
+            r->saveAs(cargs[0]);
+        }
 
 
         if (vm.count("comparescalar"))
@@ -366,7 +425,7 @@ int main(int argc, char *argv[])
             else if (ns.size()==2)
             {
               varnames[i]=ns[0];
-              sfs.push_back(to_number<double>(ns[1]));
+              sfs.push_back(toNumber<double>(ns[1]));
             }
             else
               throw insight::Exception("Invalid syntax: "+vm["comparescalar"].as<string>());
@@ -524,7 +583,7 @@ int main(int argc, char *argv[])
               throw insight::Exception("Expected curve name and x coordinate in the form \"<curveName>(<x-value>)\", got "+chart_curve[1]);
             }
             std::string chartName=chart_curve[0], curveName=m[1];
-            double xeval = insight::to_number<double>(m[2]);
+            double xeval = insight::toNumber<double>(m[2]);
 
             QString ylabel, xlabel = "Result set index";
             std::vector<double> x, y;

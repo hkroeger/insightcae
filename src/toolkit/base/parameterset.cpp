@@ -247,7 +247,7 @@ Parameter &ParameterSet::getParameter(std::string path)
         }
         else
         {
-          int i = to_number<int>(indexString);
+          int i = toNumber<int>(indexString);
 
           if ( (i<0) || (i>=ap->size()) )
             throw insight::Exception(

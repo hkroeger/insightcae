@@ -478,7 +478,7 @@ void RemoteLocation::syncToLocal
     files.erase(remove_if(files.begin(), files.end(),
                           [&](const bfs_path& f)
     {
-      try { to_number<double>(f.string()); return false; }
+      try { toNumber<double>(f.string()); return false; }
       catch (...) { return true; }
     }), files.end());
 

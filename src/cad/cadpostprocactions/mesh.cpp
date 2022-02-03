@@ -230,7 +230,6 @@ void ExtrudedMesh::build()
 
 
 
-
 defineType(SnappyHexMesh);
 
 size_t SnappyHexMesh::calcHash() const

@@ -273,10 +273,10 @@ void copyDirectoryRecursively(const boost::filesystem::path& sourceDir, const bo
 
 
 template<class T>
-T to_number(const std::string& s)
+T toNumber(const std::string& s)
 {
   try {
-    return boost::lexical_cast<T>(s);
+    return boost::lexical_cast<T>( boost::algorithm::trim_copy(s) );
   } catch (const boost::bad_lexical_cast& e) {
     throw insight::Exception("expected a number, got \""+s+"\"");
   }

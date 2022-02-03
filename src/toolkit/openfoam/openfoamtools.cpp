@@ -70,7 +70,7 @@ TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir, const 
               std::string fn=td.filename().string();
               try
               {
-                  double time = to_number<double>(fn);
+                  double time = toNumber<double>(fn);
                   if (!fta.empty())
                   {
                     if (exists(td/fta))
@@ -1583,7 +1583,7 @@ arma::mat matchValue(const std::string& vs)
   boost::regex re_vector ("^\\(([^ ]+) ([^ ]+) ([^ ]+)\\)$");
   try {
      arma::mat d;
-     d << to_number<double> ( vs ) ;
+     d << toNumber<double> ( vs ) ;
      return d;
   }
   catch (...)
@@ -1592,9 +1592,9 @@ arma::mat matchValue(const std::string& vs)
     if (!boost::regex_match ( vs, w, re_vector))
       throw insight::Exception("reported value of patch integral was neither scalar nor vector!");
     arma::mat d;
-    d << to_number<double> ( w[1] )
-      << to_number<double> ( w[2] )
-      << to_number<double> ( w[3] );
+    d << toNumber<double> ( w[1] )
+      << toNumber<double> ( w[2] )
+      << toNumber<double> ( w[3] );
     return d;
   }
   return arma::mat();
@@ -1666,7 +1666,7 @@ patchIntegrate::patchIntegrate
     {
       if ( boost::regex_match ( line, what, re_time ) )
         {
-           time=to_number<double> ( what[1] );
+           time=toNumber<double> ( what[1] );
           times.push_back ( time );
           if ( times.size()-areadata.size()>1 ) // area may be reported not for every time step
             {
@@ -1693,12 +1693,12 @@ patchIntegrate::patchIntegrate
       if ( boost::regex_match ( line, what, re_area ) )
         {
            cout<<what[1]<<" : "<<what[3]<<endl;
-           areadata.push_back ( to_number<double> ( what[3] ) );
+           areadata.push_back ( toNumber<double> ( what[3] ) );
         }
       if ( boost::regex_match ( line, what, re_area4 ) )
         {
           cout<<" Area : "<<what[1]<<endl;
-          areadata.push_back ( to_number<double> ( what[1] ) );
+          areadata.push_back ( toNumber<double> ( what[1] ) );
         }
     }
     if ( times.size()-areadata.size()==1 ) // area may not have been reported not for every time step
@@ -1763,16 +1763,16 @@ patchArea::patchArea(const OpenFOAMCase& cm, const boost::filesystem::path& loca
   {
     if ( boost::regex_match ( line, what, re_total ) )
       {
-        A_=to_number<double> ( what[1] );
+        A_=toNumber<double> ( what[1] );
         n_=vec3(
-              to_number<double> ( what[2] ),
-            to_number<double> ( what[3] ),
-            to_number<double> ( what[4] )
+              toNumber<double> ( what[2] ),
+            toNumber<double> ( what[3] ),
+            toNumber<double> ( what[4] )
             );
         ctr_=vec3(
-              to_number<double> ( what[5] ),
-            to_number<double> ( what[6] ),
-            to_number<double> ( what[7] )
+              toNumber<double> ( what[5] ),
+            toNumber<double> ( what[6] ),
+            toNumber<double> ( what[7] )
             );
         return;
       }
@@ -1822,7 +1822,7 @@ arma::mat readTextFile(std::istream& f)
 
       std::vector<double> vals;
       transform(strs.begin(), strs.end(), std::back_inserter(vals),
-                [](const std::string& s) { return insight::to_number<double>(s); });
+                [](const std::string& s) { return insight::toNumber<double>(s); });
 
       fd.push_back(vals);
     }
@@ -1885,7 +1885,7 @@ arma::mat readParaviewCSV(const boost::filesystem::path& file, std::map<std::str
     boost::split(cols, line, boost::is_any_of(","));
     for(size_t i=0; i<cols.size(); i++)
     {
-      data.push_back(to_number<double>(cols[i]));
+      data.push_back(toNumber<double>(cols[i]));
     }
   }
   
@@ -2148,12 +2148,12 @@ std::vector<MeshQualityInfo> getMeshQuality(const OpenFOAMCase& cm, const boost:
       {
         if (boost::regex_match(line, what, boost::regex("^ *Overall domain bounding box \\(([^ ]+) ([^ ]+) ([^ ]+)\\) \\(([^ ]+) ([^ ]+) ([^ ]+)\\)$")))
         {
-          curmq.bb_min=vec3( to_number<double>(what[1]), to_number<double>(what[2]), to_number<double>(what[3]) );
-          curmq.bb_max=vec3( to_number<double>(what[4]), to_number<double>(what[5]), to_number<double>(what[6]) );
+          curmq.bb_min=vec3( toNumber<double>(what[1]), toNumber<double>(what[2]), toNumber<double>(what[3]) );
+          curmq.bb_max=vec3( toNumber<double>(what[4]), toNumber<double>(what[5]), toNumber<double>(what[6]) );
         }
         if (boost::regex_match(line, what, boost::regex("^ *Max aspect ratio = ([^ ]+) .*$")))
         {
-          curmq.max_aspect_ratio=to_number<double>(what[1]);
+          curmq.max_aspect_ratio=toNumber<double>(what[1]);
         }
         if (boost::regex_match(line, what, boost::regex("^ *Minimum face area = *([^ ]+)\\. Maximum face area = *([^ ]+)\\..*$")))
         {
@@ -2171,25 +2171,25 @@ std::vector<MeshQualityInfo> getMeshQuality(const OpenFOAMCase& cm, const boost:
         }
         if (boost::regex_match(line, what, boost::regex("^ *Mesh non-orthogonality Max: ([^ ]+) average: ([^ ]+)$")))
         {
-          curmq.max_nonorth=to_number<double>(what[1]);
-          curmq.avg_nonorth=to_number<double>(what[2]);
+          curmq.max_nonorth=toNumber<double>(what[1]);
+          curmq.avg_nonorth=toNumber<double>(what[2]);
         }
         if (boost::regex_match(line, what, boost::regex("^.*Number of severely non-orthogonal \\(> ([^ ]+) degrees\\) faces: ([^ ]+)\\..*$")))
         {
-          curmq.n_severe_nonorth=to_number<double>(what[2]);
+          curmq.n_severe_nonorth=toNumber<double>(what[2]);
         }
         if (boost::regex_match(line, what, boost::regex("^.*Max skewness = ([^ ]+), ([^ ]+) highly skew faces.*$")))
         {
-          curmq.n_severe_skew=to_number<double>(what[2]);
-          curmq.max_skewness=to_number<double>(what[1]);
+          curmq.n_severe_skew=toNumber<double>(what[2]);
+          curmq.max_skewness=toNumber<double>(what[1]);
         }
         if (boost::regex_match(line, what, boost::regex("^.*Max skewness = ([^ ]+) OK.*$")))
         {
-          curmq.n_severe_nonorth=to_number<double>(what[1]);
+          curmq.n_severe_nonorth=toNumber<double>(what[1]);
         }
         if (boost::regex_match(line, what, boost::regex("^.*Error in face pyramids: ([^ ]+) faces are incorrectly oriented.*$")))
         {
-          curmq.n_neg_facepyr=to_number<double>(what[1]);
+          curmq.n_neg_facepyr=toNumber<double>(what[1]);
         }
         break;
       }
@@ -2374,8 +2374,8 @@ arma::mat projectedArea
     boost::match_results<std::string::const_iterator> what;
     if (boost::regex_match(line, what, re_area))
     {
-      t.push_back(to_number<double>(what[1]));
-      A.push_back(to_number<double>(what[2]));
+      t.push_back(toNumber<double>(what[1]));
+      A.push_back(toNumber<double>(what[2]));
     }
   }
   
@@ -2409,13 +2409,13 @@ arma::mat minPatchPressure
     if (boost::regex_match(line, what, re))
     {
       try {
-        t.push_back(to_number<double>(what[1]));
+        t.push_back(toNumber<double>(what[1]));
       } catch (const boost::bad_lexical_cast& e) {
         throw insight::Exception("expected a number, got \""+what[1]+"\"");
       }
 
       try {
-        minp.push_back(to_number<double>(what[2]));
+        minp.push_back(toNumber<double>(what[2]));
       } catch (const boost::bad_lexical_cast& e) {
         throw insight::Exception("expected a number, got \""+what[2]+"\"");
       }
@@ -2652,10 +2652,10 @@ std::pair<arma::mat, arma::mat> zoneExtrema
   {
     if (boost::regex_match(l, what, re_vec))
     {
-      double t=to_number<double>(what[1]);
+      double t=toNumber<double>(what[1]);
       arma::mat mir, mar;
-      mir<<t<<to_number<double>(what[3])<<to_number<double>(what[4])<<to_number<double>(what[5])<<endr;
-      mar<<t<<to_number<double>(what[6])<<to_number<double>(what[7])<<to_number<double>(what[8])<<endr;
+      mir<<t<<toNumber<double>(what[3])<<toNumber<double>(what[4])<<toNumber<double>(what[5])<<endr;
+      mar<<t<<toNumber<double>(what[6])<<toNumber<double>(what[7])<<toNumber<double>(what[8])<<endr;
       if (mi.n_rows==0) mi=mir; else mi=join_cols(mi, mir);
       if (ma.n_rows==0) ma=mar; else ma=join_cols(ma, mar);
     }
@@ -3586,7 +3586,7 @@ decompositionState::decompositionState(const boost::filesystem::path& casedir)
         }
         else
         {
-          double lt_decomp=to_number<double>(latestTime);
+          double lt_decomp=toNumber<double>(latestTime);
           if ( fabs(tdl.rbegin()->first - lt_decomp) < 1e-15 )
           {
             // same time step in recon and decomp

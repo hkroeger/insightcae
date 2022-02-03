@@ -918,7 +918,7 @@ int findRemoteFreePort(const std::string& SSHHostName)
   if (parts.size()==2)
   {
     if (parts[0]=="PORT")
-      return to_number<int>(parts[1]);
+      return toNumber<int>(parts[1]);
   }
 
   throw insight::Exception("unexpected answer: \""+outline+"\"");
@@ -1023,8 +1023,8 @@ void RSyncProgressAnalyzer::runAndParse(
       std::string rate=match[2];
       std::string eta=match[3];
 //        int i_file=to_number<int>(match[4]);
-      int i_to_chk=to_number<int>(match[5]);
-      int total_to_chk=to_number<int>(match[6]);
+      int i_to_chk=toNumber<int>(match[5]);
+      int total_to_chk=toNumber<int>(match[6]);
 
       double progress = total_to_chk==0? 1.0 : double(total_to_chk-i_to_chk) / double(total_to_chk);
 

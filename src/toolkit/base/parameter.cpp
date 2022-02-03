@@ -259,7 +259,7 @@ void stringToValue(const std::string& s, arma::mat& v)
   std::vector<double> vals;
   for (size_t i=0; i<cmpts.size(); i++)
   {
-    vals.push_back( to_number<double>(cmpts[i]) );
+    vals.push_back( toNumber<double>(cmpts[i]) );
   }
 
   v=arma::mat(vals.data(), vals.size(), 1);

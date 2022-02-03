@@ -220,7 +220,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                  double v=to_number<double>(pair[2]);
+                  double v=toNumber<double>(pair[2]);
                   parameters.getDouble(pair[1])=v;
               }
           }
@@ -245,7 +245,7 @@ int main ( int argc, char** argv )
             {
                 std::vector<std::string> pair;
                 insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                int v=to_number<int>(pair[2]);
+                int v=toNumber<int>(pair[2]);
                 parameters.getInt(pair[1])=v;
             }
         }

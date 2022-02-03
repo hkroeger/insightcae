@@ -158,7 +158,7 @@ int LinuxRemoteServer::findFreeRemotePort() const
     if (parts.size()==2)
     {
       if (parts[0]=="PORT")
-        return to_number<int>(parts[1]);
+        return toNumber<int>(parts[1]);
     }
 
     throw insight::Exception("unexpected answer: \""+outline+"\"");

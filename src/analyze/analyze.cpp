@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                double v=to_number<double>(pair[1]);
+                double v=toNumber<double>(pair[1]);
                 cout << "Setting double '"<<pair[0]<<"' = "<<v<<endl;
                 parameters.getDouble(pair[0])=v;
             }
@@ -503,21 +503,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                boost::filesystem::path outfile( vm["output-file"].as<std::string>() );
-
-                auto ext=boost::algorithm::to_lower_copy(outfile.extension().string());
-                if (ext==".isr")
-                {
-                    results->saveToFile(outfile);
-                }
-                else if (ext==".tex")
-                {
-                    results->writeLatexFile(outfile);
-                }
-                else if (ext==".pdf")
-                {
-                    results->generatePDF(outfile);
-                }
+                results->saveAs( vm["output-file"].as<std::string>() );
             }
           }
 

@@ -115,6 +115,11 @@ void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 
   currentWorkbenchAction_.reset();
 
+  if (resultsModel_)
+  {
+      ui->resultsToC->setModel(nullptr);
+      resultsModel_->deleteLater();
+  }
   resultsModel_=new insight::IQResultSetModel(results_, false, ui->resultsToC);
   ui->resultsToC->setModel(resultsModel_);
   ui->resultsToC->expandAll();

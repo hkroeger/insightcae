@@ -473,9 +473,9 @@ void RemoteRun::onError(std::exception_ptr ex)
 
 
 
-std::unique_ptr<RemoteRun> RemoteRun::create(AnalysisForm* af, bool resume)
+RemoteRun* RemoteRun::create(AnalysisForm* af, bool resume)
 {
-    std::unique_ptr<RemoteRun> a(new RemoteRun(af, resume));
+    auto *a = new RemoteRun(af, resume);
     a->launch();
     return a;
 }

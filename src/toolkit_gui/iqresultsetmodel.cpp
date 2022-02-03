@@ -101,13 +101,13 @@ void IQResultElement::createFullDisplay(QVBoxLayout* layout)
   }
 
 
-  auto ef=new ResizeEventNotifier(layout->parentWidget());
+  auto ef=new ResizeEventNotifier(this);
   layout->parentWidget()->installEventFilter(ef);
-  connect(ef, &ResizeEventNotifier::resized,
+  connect(ef, &ResizeEventNotifier::resized, this,
           [this](int w, int h)
-  {
-    this->resetContents(w, h);
-  }
+          {
+            this->resetContents(w, h);
+          }
   );
 }
 
@@ -656,6 +656,10 @@ void connectToCWithContentsDisplay(QTreeView* ToCView, QWidget* contentDisplayWi
         if (auto re = rm->getResultElement(i) )
         {
           qDeleteAll( contentDisplayWidget->children() );
+          if (auto *l = contentDisplayWidget->layout())
+          {
+              delete l;
+          }
 
           QVBoxLayout* layout=new QVBoxLayout(contentDisplayWidget);
           contentDisplayWidget->setLayout(layout);

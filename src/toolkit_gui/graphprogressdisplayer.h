@@ -80,7 +80,7 @@ protected:
   double ymin_=1e10, ymax_=-1e10, xmin_=1e10, xmax_=-1e10;
 
 public:
-  GraphProgressChart(bool logscale, QWidget* parent=nullptr);
+  GraphProgressChart(bool logscale, QWidget* parent);
   ~GraphProgressChart();
 
   virtual void update(double t, const std::string& name, double y_value);

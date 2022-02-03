@@ -116,7 +116,7 @@ void AnalysisForm::startRemoteRun()
 {
 #ifdef HAVE_WT
   remoteExecutionConfiguration()->commit( localCaseDirectory() );
-  currentWorkbenchAction_ = RemoteRun::create(this, false);
+  currentWorkbenchAction_.reset( RemoteRun::create(this, false) );
 #endif
 }
 
@@ -130,7 +130,7 @@ void AnalysisForm::resumeRemoteRun()
     throw insight::Exception("Internal error: there is an action running currently!");
 
   remoteExecutionConfiguration()->commit( localCaseDirectory() );
-  currentWorkbenchAction_ = RemoteRun::create(this, true);
+  currentWorkbenchAction_.reset( RemoteRun::create(this, true) );
 #endif
 }
 

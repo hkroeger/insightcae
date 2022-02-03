@@ -106,7 +106,7 @@ protected:
   bool isOpenFOAMAnalysis_;
 
   insight::ResultSetPtr results_;
-  insight::IQResultSetModel* resultsModel_;
+  QPointer<insight::IQResultSetModel> resultsModel_;
   IQSupplementedInputDataModel supplementedInputDataModel_;
   
   // ====================================================================================
@@ -170,7 +170,7 @@ protected:
   // ======== current action objects
 
 
-  std::unique_ptr<WorkbenchAction> currentWorkbenchAction_;
+  QScopedPointer<WorkbenchAction> currentWorkbenchAction_;
 
 
   // ================================================================================

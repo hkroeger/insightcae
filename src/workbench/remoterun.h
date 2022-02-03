@@ -96,7 +96,7 @@ protected:
   void onError(std::exception_ptr ex);
 
 public:
-  static std::unique_ptr<RemoteRun> create(AnalysisForm* af, bool resume=false);
+  static RemoteRun* create(AnalysisForm* af, bool resume=false);
 
   ~RemoteRun();
 

@@ -130,7 +130,11 @@ arma::mat Table::xy(size_t xcol, size_t ycol, EmptyFieldTreatment eft) const
             r(i, 1)=boost::lexical_cast<double>(yf);
         }
     }
-    r.shed_rows(arma::uvec(rowsToSkip));
+    //r.shed_rows(arma::uvec(rowsToSkip));
+    for (auto j=rowsToSkip.rbegin();j!=rowsToSkip.rend();++j)
+    {
+        r.shed_row(*j);
+    }
     return r;
 }
 

@@ -42,7 +42,7 @@ for cfgd in $INSIGHT_USERSHAREDDIR ${INSIGHT_GLOBALSHAREDDIRS/:/ }; do # in that
 done
 
 if [ ! $INSIGHT_GLOBALPYTHONMODULES ]; then
-    if which python >/dev/null 2>&1; then
+    if which python3 >/dev/null 2>&1; then
      export PYTHONPATH=$PYTHONPATH:$(python3 -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=False, prefix='${INSIGHT_INSTDIR}' ) )")
     fi
 fi

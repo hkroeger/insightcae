@@ -124,16 +124,16 @@ int main(int argc, char *argv[])
     
     forAll(U.boundaryField(), pi)
     {
-      const fvPatchVectorField& Up=U.boundaryField()[pi]; //UNIOF_BOUNDARY_NONCONST(U)[pi];
-      const labelList& fcs=Up.patch().faceCells();
-      forAll(fcs, fi)
-      {
-	label ci=fcs[fi];
-	vector deltaU=U[ci]-Up[fi];
-	deltaU *= ::pow(y[ci]/yblv, (1.0/7.0));
-	U[ci]=Up[fi]+deltaU;
-	mask[ci] = 1;
-      }
+        const fvPatchVectorField& Up=U.boundaryField()[pi]; //UNIOF_BOUNDARY_NONCONST(U)[pi];
+        const labelList& fcs=Up.patch().faceCells();
+        forAll(fcs, fi)
+        {
+            label ci=fcs[fi];
+            vector deltaU=U[ci]-Up[fi];
+            deltaU *= ::pow(y[ci]/yblv, (1.0/7.0));
+            U[ci]=Up[fi]+deltaU;
+            mask[ci] = 1;
+        }
     }
 
     Info<< "Writing U\n" << endl;
@@ -192,7 +192,8 @@ int main(int argc, char *argv[])
         volScalarField epsilon( turbulence->epsilon() );
         //volScalarField& epsilon = UNIOF_TMP_NONCONST(tepsilon);
         scalar ce0 = ::pow(Cmu, 0.75)/kappa;
-        epsilon = (1 - mask)*epsilon + mask*ce0*k*sqrt(k)/min(y, ybl);
+
+        epsilon = (1 - mask)*epsilon + max(min(epsilon), mask*ce0*k*sqrt(k)/min(y, ybl));
 
         // do not correct BC - wall functions will use non-updated k from
         // turbulence model
@@ -216,7 +217,8 @@ int main(int argc, char *argv[])
         {
             volScalarField omega(omegaHeader, mesh);
             dimensionedScalar k0("VSMALL", k.dimensions(), VSMALL);
-            omega = (1 - mask)*omega + mask*epsilon/(Cmu*k + k0);
+
+            omega = (1 - mask)*omega + max(min(omega), mask*epsilon/(Cmu*k + k0));
 
             // do not correct BC - wall functions will use non-updated k from
             // turbulence model
@@ -224,6 +226,7 @@ int main(int argc, char *argv[])
 
             Info<< "Writing omega\n" << endl;
             omega.write();
+
         }
 
         // Turbulence nuTilda

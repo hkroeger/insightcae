@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
         volScalarField nut( turbulence->nut() );
         //volScalarField& nut = UNIOF_TMP_NONCONST(tnut);
         volScalarField S(mag(dev(symm(fvc::grad(U)))));
-        nut = (1 - mask)*nut + mask*sqr(kappa*min(y, ybl))*::sqrt(2)*S;
+        nut = (1 - mask)*nut + max(min(nut), mask*sqr(kappa*min(y, ybl))*::sqrt(2)*S);
 
         // do not correct BC - wall functions will 'undo' manipulation above
         // by using nut from turbulence model
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
         //volScalarField& k = UNIOF_TMP_NONCONST(tk);
         
         scalar ck0 = ::pow(Cmu, 0.25)*kappa;
-        k = (1 - mask)*k + mask*sqr(nut/(ck0*min(y, ybl)));
+        k = (1 - mask)*k + max(min(k), mask*sqr(nut/(ck0*min(y, ybl))));
 
         // do not correct BC - operation may use inconsistent fields wrt these
         // local manipulations

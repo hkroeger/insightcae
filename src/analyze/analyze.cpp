@@ -288,8 +288,21 @@ int main(int argc, char *argv[])
             StringList ists=vm["merge"].as<StringList>();
             for (const string& ist: ists)
             {
-              // 	ParameterSet to_merge;
-              parameters.readFromFile(ist);
+                std::vector<std::string> cargs;
+                boost::split(cargs, ist, boost::is_any_of(":"));
+                if (cargs.size()==1)
+                {
+                  // 	ParameterSet to_merge;
+                  parameters.readFromFile(ist);
+                }
+                else if (cargs.size()==3)
+                {
+                    parameters.get<SubParameterSet>(cargs[2]).subsetRef().readFromFile(cargs[0], cargs[1]);
+                }
+                else
+                {
+                    throw insight::Exception("merge command needs either one or three arguments!\nGot:"+ist);
+                }
             }
         }
 

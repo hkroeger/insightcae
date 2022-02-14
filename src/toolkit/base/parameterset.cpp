@@ -549,7 +549,7 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string a
     f.close();
 }
 
-std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
+std::string ParameterSet::readFromFile(const boost::filesystem::path& file, const std::string& startAtSubnode)
 {
   CurrentExceptionContext ex("reading parameter set from file "+file.string());
 
@@ -566,6 +566,33 @@ std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
   if (analysisnamenode)
   {
     analysisName = analysisnamenode->first_attribute("name")->value();
+  }
+
+  if (!startAtSubnode.empty())
+  {
+      std::vector<std::string> path;
+      boost::split(path, startAtSubnode, boost::is_any_of("/"));
+      for (const auto& p: path)
+      {
+          std::map<std::string, xml_node<>*> nodes;
+          for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
+          {
+              nodes[ e->first_attribute("name")->value() ]=e;
+          }
+
+          auto e = nodes.find(p);
+          if (e==nodes.end())
+          {
+              std::ostringstream os;
+              for(auto& n: nodes) os<<" "<<n.first;
+              throw insight::Exception("Could not find node "+p+" (full path "+startAtSubnode+")!\n"
+                                       "Available:"+os.str());
+          }
+          else
+          {
+              rootnode=e->second;
+          }
+      }
   }
   
   readFromNode(doc, *rootnode, file.parent_path());

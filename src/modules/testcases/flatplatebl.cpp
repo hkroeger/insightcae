@@ -160,12 +160,26 @@ FlatPlateBL::FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& 
     "Flat Plate with Evolving Boundary Layer",
     ps, exepath
   ),
-  parameters_( new supplementedInputData(
+  parameters_( std::make_unique<supplementedInputData>(
                  std::make_unique<Parameters>(ps),
                  exepath, progress
                  ) )
 {}
 
+
+FlatPlateBL::FlatPlateBL(
+        std::unique_ptr<supplementedInputData> pPtr,
+        const boost::filesystem::path& exepath,
+        const std::string& name,
+        const std::string& description )
+    : OpenFOAMAnalysis
+      (
+        name,
+        description,
+        pPtr->p(), exepath
+      ),
+      parameters_( std::move(pPtr) )
+{}
 
 
 void FlatPlateBL::calcDerivedInputData(ProgressDisplayer& progress)

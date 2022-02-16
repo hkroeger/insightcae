@@ -1169,7 +1169,10 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
 
 
 
-ChannelCyclic::ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
+ChannelCyclic::ChannelCyclic(
+        const ParameterSet& ps,
+        const boost::filesystem::path& exepath,
+        ProgressDisplayer& progress )
 : ChannelBase(ps, exepath, progress)
 {
 }

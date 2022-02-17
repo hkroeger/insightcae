@@ -155,7 +155,6 @@ public:
 
     const Field<T>& operator()(scalar t) const
     {
-        Info<<"nu="<<needsUpdate(t)<<endl;
         if ( needsUpdate(t) )
         {
             auto * nc = const_cast<FixedSizeFieldDataProvider*>(this);

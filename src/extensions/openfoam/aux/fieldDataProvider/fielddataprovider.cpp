@@ -754,7 +754,6 @@ tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
 
     auto targ = vtkSmartPointer<vtkPolyData>::New();
     setPoints<vtkPolyData>(target, targ);
-    Info<<"targ: "<<target.size()<<" "<<int(targ->GetNumberOfPoints())<<" "<<int(targ->GetNumberOfCells())<<endl;
 
     // Gaussian kernel
     auto gaussianKernel = vtkSmartPointer<vtkGaussianKernel>::New();
@@ -768,7 +767,6 @@ tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
 
     ip->Update();
     auto out = ip->GetOutput();
-    Info<<"ou: "<<int(out->GetNumberOfPoints())<<" "<<int(out->GetNumberOfCells())<<endl;
     return VTKArrayToField<T>( out->GetPointData()->GetArray(fieldNames_[i].c_str()) );
 }
 

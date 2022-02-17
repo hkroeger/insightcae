@@ -25,11 +25,21 @@ void copyFieldToVTKArray(
         double t[pTraits<T>::nComponents];
         for (int k=0; k<pTraits<T>::nComponents; ++k)
         {
-            t[k]=d[k];
+            t[k]=component(d, k);
         }
         data->SetTuple(j, t);
     }
 }
+
+template<class T>
+void addFieldToVTK(const std::pair<std::string, const Field<T>&>& f, vtkDataSetAttributes* dsa)
+{
+    auto arr = vtkSmartPointer<vtkDoubleArray>::New();
+    arr->SetName(f.first.c_str());
+    copyFieldToVTKArray<T>(f.second, arr);
+    dsa->AddArray(arr);
+}
+
 
 template<class T>
 vtkDoubleArray* operator<<(vtkDoubleArray* data, const Field<T>& field)
@@ -141,6 +151,10 @@ void VTKMeshToOF(
         pointField& pts,
         faceList& faces );
 
+void OFPrimitivePatchToVTK(
+        const pointField& pts,
+        const faceList& faces,
+        vtkPolyData* ds );
 
 } // namespace Foam
 

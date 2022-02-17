@@ -27,6 +27,24 @@ void VTKMeshToOF(
     }
 }
 
+void OFPrimitivePatchToVTK(const pointField &pts, const faceList &faces, vtkPolyData *ds)
+{
+    setPoints<vtkPolyData>(pts, ds);
+
+    auto cells = vtkSmartPointer<vtkCellArray>::New();
+    forAll(faces, fi)
+    {
+        auto& f = faces[fi];
+
+        cells->InsertNextCell(f.size());
+        forAll(f, vi)
+        {
+            cells->InsertCellPoint(f[vi]);
+        }
+    }
+    ds->SetPolys(cells);
+}
+
 
 
 } // namespace Foam

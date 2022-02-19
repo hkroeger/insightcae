@@ -37,6 +37,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include "boost/format.hpp"
+#include "base/cppextensions.h"
 
 #include <QApplication>
 #include <QMainWindow>
@@ -60,6 +61,14 @@ void listContents(const ResultElementCollection& el, const std::string indent=""
     }
     else {
       cout<<indent<<rel.first<<" ("<<rel.second->type()<<")"<<endl;
+      if (const auto* chart = dynamic_cast<const Chart*>(rel.second.get()))
+      {
+          auto* cd=chart->chartData();
+          for (const auto& d: cd->plc_)
+          {
+              cout<<indent<<" - "<<d.plaintextlabel_<<std::endl;
+          }
+      }
     }
   }
 };
@@ -196,6 +205,28 @@ void addCurveToPlot(ResultSetPtr results, const std::string& args)
 
 
 
+double comparePlotCurves(
+        ResultSetPtr results,
+        const std::string& chartPath,
+        const std::string& curveA,
+        const std::string& curveB )
+{
+    double Q=0;
+
+    auto& c = results->get<Chart>(chartPath);
+    auto& cA = c.plotCurve(curveA).xy_;
+    Interpolator cB(c.plotCurve(curveB).xy_, true);
+    for (arma::uword i = 0; i<cA.n_rows; ++i)
+    {
+        arma::mat r = cA.row(i);
+        double x=r(0);
+        double y=r(1);
+        Q += pow( y - cB.y(x), 2);
+    }
+    return Q;
+}
+
+
 
 
 int main(int argc, char *argv[])
@@ -246,6 +277,16 @@ int main(int argc, char *argv[])
           "Compare scalar values. Specify path of scalar in result archive. "
           "Multiple scalars may be plotted together: give list, separated by comma (without spaces). "
           "Put optional scale factor after variable name, separated by colon." )
+        ("compareplotcurves", po::value< StringList >(),
+          "Sum the squared distances of all points in curve A to the Y value at the same X of curve B. "
+          "The distance measures of all subsequent \"compareplotcurve\" repetitions are summed. "
+          "Specify, separated by colons:"
+          " the result set id,"
+          " the path to the plot,"
+          " the label of curve A and"
+          " the label of curve B" )
+        ("compareplotcurveoutput", po::value< string >(),
+          "Output file for cumulated plot curve comparison. '-' for stdout.")
         ("sort,s", "sort entries in comparison")
         ("compose", po::value< string >(),
                     "Create new result set. "
@@ -359,6 +400,41 @@ int main(int argc, char *argv[])
           }
         }
 
+        if (vm.count("compareplotcurves"))
+        {
+            someActionDone=true;
+
+            double cumulatedDistance = 0;
+
+            auto cpcs = vm["compareplotcurves"].as<StringList>();
+            for (const auto& cpc: cpcs)
+            {
+                std::vector<std::string> cargs;
+                boost::split(cargs, cpc, boost::is_any_of(":"));
+
+                insight::assertion(
+                            cargs.size()==4,
+                            "insufficient number of arguments to compareplotcurves: \""+cpc+"\"" );
+
+                auto idx = toNumber<int>(cargs[0]);
+                insight::assertion(
+                            idx<results.size(),
+                            "index of result set out of range: \""+cargs[0]+"\"" );
+
+                cumulatedDistance += comparePlotCurves(results[idx], cargs[1], cargs[2], cargs[3]);
+            }
+
+            std::unique_ptr<std::ostream> osPtr;
+            std::ostream* os = &std::cout;
+            if (vm.count("compareplotcurveoutput"))
+            {
+                osPtr=std::make_unique<std::ofstream>(
+                            vm["compareplotcurveoutput"].as<std::string>()
+                        );
+                os=osPtr.get();
+            }
+            (*os) << cumulatedDistance << " Q" << std::endl;
+        }
 
         if (vm.count("compose"))
         {
@@ -378,6 +454,7 @@ int main(int argc, char *argv[])
                 title=vm["title"].as<std::string>();
             }
             auto r = std::make_shared<ResultSet>(ParameterSet(), title, "");
+            Ordering o;
 
             auto i=cargs.begin();
             i+=1;
@@ -397,7 +474,7 @@ int main(int argc, char *argv[])
                 auto path = ccargs[1];
 
                 auto& rr = results[idx]->get<ResultElement>(path);
-                r->insert( ccargs[2], rr.clone() );
+                r->insert( ccargs[2], rr.clone() ).setOrder(o.next());
             }
 
             r->saveAs(cargs[0]);

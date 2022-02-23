@@ -182,6 +182,28 @@ void Chart::addCurve(const PlotCurve &pc)
     plc_.push_back(pc);
 }
 
+const PlotCurve &Chart::plotCurve(const std::string &plainTextLabel) const
+{
+    auto i=std::find_if(
+                plc_.begin(), plc_.end(),
+                [&plainTextLabel](const PlotCurve& pc)
+                 { return pc.plaintextlabel_ == plainTextLabel; }
+    );
+
+    if (i==plc_.end())
+    {
+        std::string curveNames;
+        for (const auto& c: plc_)
+            curveNames+=" "+c.plaintextlabel_;
+        throw insight::Exception(
+                    "Curve "+plainTextLabel+" not found in chart data! "
+                    "Available curves: "+curveNames
+                    );
+    }
+
+    return *i;
+}
+
 
 
 

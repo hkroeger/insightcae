@@ -6,6 +6,7 @@ find_package(DXFlib)
 #find_package(GEOM)
 #find_package(dlib)
 
+FIND_PACKAGE(MED)
 
 set(insightcad_SOURCES 
   astbase.cpp
@@ -50,6 +51,7 @@ target_link_libraries(insightcad
  toolkit 
  ${OCC_LIBRARIES} # TKXSDRAW # don't include: leads to segfault on program exit!
  ${DXFLIB_LIBRARY} 
+ ${MED_LIBRARIES}
  #${GEOM_LIBRARIES}
  #${DLIB_LIBRARIES}
  )
@@ -64,6 +66,7 @@ target_include_directories(insightcad
   PUBLIC ${DXFLIB_INCLUDE_DIR}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  PUBLIC ${MED_INCLUDE_DIRS}
   )
 
 if (INSIGHT_DEVELOPMENT_FILES)

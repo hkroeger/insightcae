@@ -39,6 +39,7 @@
 
 #include "cadfeatures.h"
 #include "meshing.h"
+#include "cadpostprocactions/framemesh.h"
 
 
 using namespace std;
@@ -198,7 +199,23 @@ void ISCADParser::createPostProcExpressions()
                                 qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7
                             ))) ]
         |
-        
+
+        ( lit("frame") >> '(' >> r_path >> ')' >> lit("<<")
+          >> lit("L") >> '=' >> r_scalarExpression
+          >> ( r_solidmodel_expression >>
+               -( r_solidmodel_expression >> (r_scalarExpression|qi::attr(scalarconst(0.5))) )
+               ) % ','
+//          >> hold[
+//             ( lit("vertexGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')' | attr(GroupsDesc()) )
+//          >> ( lit("edgeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
+//             ]
+          >> ';' )
+        [ phx::bind(&Model::addPostprocActionUnnamed, model_,
+                    phx::construct<PostprocActionPtr>(new_<FrameMesh>(
+                                qi::_1, qi::_2, qi::_3/*, qi::_4*/
+                            ))) ]
+        |
+
         ( lit("snappyHexMesh") >> '(' >> r_path >> ',' >> r_identifier >> ')' >> lit("<<")
         
           >> lit("PiM") >> '=' >> r_vectorExpression

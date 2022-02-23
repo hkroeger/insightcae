@@ -178,6 +178,10 @@ void workbench::newAnalysis(std::string analysisType)
         {
             analysisType = dlg.getAnalysisName();
         }
+        else
+        {
+            return;
+        }
     }
 
     try

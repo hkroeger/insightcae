@@ -324,7 +324,7 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm, ProgressDisplay
 {
   CurrentExceptionContext ex("evaluating the results for case \""+executionPath().string()+"\"");
 
-  ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
+  auto results = std::make_shared<ResultSet>(parameters(), name_, "Result Report");
   results->introduction() = description_;
   
   if (!p_.eval.skipmeshquality)

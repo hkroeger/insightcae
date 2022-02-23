@@ -2,9 +2,11 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QLineEdit>
+#include <QFileDialog>
 
 #include "iqmatrixparameter.h"
 #include "iqparametersetmodel.h"
+#include "base/table.h"
 
 defineType(IQMatrixParameter);
 addToFactoryTable(IQParameter, IQMatrixParameter);
@@ -74,6 +76,27 @@ QVBoxLayout* IQMatrixParameter::populateEditControls(IQParameterSetModel* model,
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
+
+  connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
+          [lineEdit, editControlsContainer, applyFunction]()
+          {
+              QString fn = QFileDialog::getOpenFileName(
+                    editControlsContainer,
+                    "Select file",
+                    QString(),
+                    "CSV file (*.csv)" );
+              if (!fn.isEmpty())
+              {
+                  std::ifstream f(fn.toStdString());
+                  insight::Table tab(f);
+                  insight::assertion(
+                              tab.nCols()==2,
+                              str(boost::format("A table with 2 columns was expected! Got: %dx%d matrix.") % tab.nRows() % tab.nCols()) );
+                  lineEdit->setText(mat2Str(tab.xy(0, 1)));
+                  applyFunction();
+              }
+          }
+  );
 
   return layout;
 }

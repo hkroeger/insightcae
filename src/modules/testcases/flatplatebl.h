@@ -183,7 +183,16 @@ protected:
 public:
   declareType("Flat Plate Boundary Layer Test Case");
   
-  FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
+  FlatPlateBL(
+          const ParameterSet& ps,
+          const boost::filesystem::path& exepath,
+          ProgressDisplayer& progress );
+
+  FlatPlateBL(
+          std::unique_ptr<supplementedInputData> p,
+          const boost::filesystem::path& exepath,
+          const std::string& name,
+          const std::string& description );
 
   static std::string category() { return "Validation Cases"; }
   

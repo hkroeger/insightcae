@@ -41,5 +41,6 @@ makeProviders(nonuniformField);
 makeProviders(linearProfile);
 makeProviders(radialProfile);
 makeProviders(fittedProfile);
+makeProviders(vtkField);
 
 }

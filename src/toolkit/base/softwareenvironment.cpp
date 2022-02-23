@@ -109,7 +109,7 @@ void SoftwareEnvironment::executeCommand
              "Execution of external application \"%s\" failed with return code %d!\n")
               % finalcmd % retcode)
           + ( errout.size()>0 ?
-               ("Error output was:\n\n" + boost::join(errout, "\n")+"\n")
+               ("Error output was:\n " + boost::join(errout, "\n ")+"\n")
                :
                "There was no error output."
              )

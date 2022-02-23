@@ -221,6 +221,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/electromagneticscaseelements.cpp openfoam/caseelements/electromagneticscaseelements.h
     code_aster/caexportfile.cpp code_aster/caexportfile.h
     code_aster/codeasterrun.cpp code_aster/codeasterrun.h
+    code_aster/codeastermeshfile.h code_aster/codeastermeshfile.cpp
     code_aster/casolveroutputanalyzer.cpp code_aster/casolveroutputanalyzer.h
 )
 

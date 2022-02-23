@@ -48,6 +48,16 @@ ResultElement& ResultElementCollection::insert ( const string& key, const Result
 }
 
 
+void ResultElementCollection::copyFrom(const ResultElementCollection& other)
+{
+    for (const auto& oe: other)
+    {
+        insight::assertion( this->find(oe.first)==this->end(),
+                            "inserting the element "+oe.first+" from other result set would overwrite existing entry in current!" );
+        insert(oe.first, oe.second->clone());
+    }
+}
+
 void ResultElementCollection::writeLatexCodeOfElements
 (
     std::ostream& f,

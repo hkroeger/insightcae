@@ -29,6 +29,9 @@
 #include "vtkCellData.h"
 #include "vtkPolyData.h"
 
+#include "vtkDelaunay2D.h"
+#include "vtkLinearExtrusionFilter.h"
+
 using namespace std;
 
 namespace insight
@@ -325,6 +328,41 @@ void vtkModel2d::writeGeometryToLegacyFile(std::ostream& os) const
     os<<endl;
   }
 }
+
+
+
+
+ContourExtruder::ContourExtruder(const arma::mat &contour, const arma::mat& dir)
+{
+    auto inputpts = vtkSmartPointer<vtkPolyData>::New();
+    auto pts=vtkSmartPointer<vtkPoints>::New();
+    for (arma::uword i=0; i<contour.n_rows; ++i)
+    {
+        pts->InsertNextPoint( arma::mat(contour.row(i)).memptr() );
+    }
+    inputpts->SetPoints(pts);
+
+    auto surf = vtkSmartPointer<vtkDelaunay2D>::New();
+    surf->SetInputData(inputpts);
+
+    auto extr = vtkSmartPointer<vtkLinearExtrusionFilter>::New();
+    extr->SetInputConnection(surf->GetOutputPort());
+    extr->SetExtrusionTypeToVectorExtrusion();
+    extr->SetVector(dir.memptr());
+
+    extr->Update();
+
+    extrudedVolume_ = extr->GetOutput();
+}
+
+vtkSmartPointer<vtkPolyData> ContourExtruder::extrudedVolume() const
+{
+    return extrudedVolume_;
+}
+
+
+
+
 
 }
 

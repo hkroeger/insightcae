@@ -38,6 +38,7 @@
 #include "vtkCellArray.h"
 #include "vtkTransform.h"
 #include "vtkTransformPolyDataFilter.h"
+#include "vtkDataArray.h"
 
 
 using namespace std;
@@ -125,7 +126,7 @@ std::unique_ptr<GlobalTemporaryDirectory> GlobalTemporaryDirectory::td_;
 std::string timeCodePrefix()
 {
   ptime now = second_clock::universal_time();
-  static std::locale loc(std::cout.getloc(),
+  static std::locale loc(std::locale::classic(), //std::cout.getloc(),
                            new time_facet("%Y%m%d%H%M%S"));
   std::ostringstream ss;
   ss.imbue(loc);
@@ -477,7 +478,6 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
 LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
 {
     vtkCellArray* lines = pd->GetLines();
-//    std::cout<<"#lines="<<lines->GetNumberOfCells()<<std::endl;
 
     // find min element length
     double L=0.;
@@ -496,11 +496,6 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
                 double p1[3], p2[3];
                 pd->GetPoint(pt[0], p1);
                 pd->GetPoint(pt[1], p2);
-//                L=std::min
-//                (
-//                    L,
-//                    sqrt( pow(p1[0]-p2[0],2) + pow(p1[1]-p2[1],2) + pow(p1[2]-p2[2],2) )
-//                );
                 L+=sqrt( pow(p1[0]-p2[0],2) + pow(p1[1]-p2[1],2) + pow(p1[2]-p2[2],2) );
                 nL++;
             }
@@ -510,11 +505,10 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
 
 
     double tol=0.5*L;
-//    std::cout<<"tol="<<tol<<std::endl;
-
 
 
     // Extract connection info
+    //    std::cout<<"tol="<<tol<<std::endl;
     calcConnectionInfo(lines);
     printSummary(std::cout, pd);
 
@@ -553,7 +547,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
             vtkIdType li=i;
             if (li>lj) std::swap(li,lj);
             addLines[li]=lj;
-            std::cout<<"add line "<<li<<" => "<<lj<<std::endl;
+//            std::cout<<"add line "<<li<<" => "<<lj<<std::endl;
         }
     }
 
@@ -579,6 +573,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     double xyz[3];
 
     pd->GetPoint(cid, xyz);
+    pointIds_.push_back(cid);
     this->push_back(vec3(xyz[0], xyz[1], xyz[2]));
 
     do
@@ -607,9 +602,28 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
       }
 
       pd->GetPoint(cid, xyz);
+      pointIds_.push_back(cid);
       this->push_back(vec3(xyz[0], xyz[1], xyz[2]));
 
     } while (visitedCells.size()<cellPoints_.size());
+}
+
+const std::vector<vtkIdType>& LineMesh_to_OrderedPointTable::pointIds() const
+{
+    return pointIds_;
+}
+
+arma::mat LineMesh_to_OrderedPointTable::extractOrderedData(vtkDataArray* data) const
+{
+    arma::mat result = arma::zeros( pointIds().size(), data->GetNumberOfComponents() );
+    for(size_t i=0; i<pointIds().size(); ++i)
+    {
+        double pd[data->GetNumberOfComponents()];
+        data->GetTuple( pointIds()[i], pd );
+        for (int k=0;k<data->GetNumberOfComponents();++k)
+            result(i, k)=pd[k];
+    }
+    return result;
 }
 
 void LineMesh_to_OrderedPointTable::printSummary(std::ostream& os, vtkPolyData* pd) const
@@ -1059,6 +1073,35 @@ path ensureFileExtension(const boost::filesystem::path &filePath, const std::str
         return path(filePath).replace_extension(extension);
     else
         return filePath;
+}
+
+arma::mat computeOffsetContour(const arma::mat &pl, double thickness, const arma::mat &normals)
+{
+    arma::mat pl2 = arma::reverse(pl, 0);
+    arma::mat lp;
+    for (arma::uword i=0; i<pl2.n_rows; ++i)
+    {
+        auto p=pl2.row(i);
+        auto n=normals.row(i);
+
+        arma::mat t;
+        if (i>0)
+        {
+            t = p-lp;
+        }
+        else
+        {
+            t = pl2.row(i+1)-p;
+        }
+        lp = p;
+        t/=arma::norm(t,2);
+
+        arma::mat th = arma::cross(n, t);
+        std::cout<<p<<n<<t<<th<<std::endl;
+        th /= arma::norm(th,2);
+        pl2.row(i) += th * thickness;
+    }
+    return arma::join_vert(pl, pl2);
 }
 
 

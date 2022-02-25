@@ -30,8 +30,6 @@
 #include "globalMeshData.H"
 #include "globalIndex.H"
 
-#include "base/vtktools.h"
-
 #include <vector>
 #include "boost/lexical_cast.hpp"
 

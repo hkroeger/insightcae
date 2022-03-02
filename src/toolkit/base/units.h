@@ -45,15 +45,21 @@
 namespace boost { namespace units { namespace si {
 
 
+ typedef unit<specific_heat_capacity_dimension,si::system> specific_heat_capacity;
+ typedef unit<thermal_conductivity_dimension,si::system> thermal_conductivity;
+
+ BOOST_UNITS_STATIC_CONSTANT(joule_per_kilogram_kelvin,specific_heat_capacity);
+ BOOST_UNITS_STATIC_CONSTANT(watt_per_square_meter,thermal_conductivity);
+
  // some commonly used units and aliases
 
  static const auto millimeters = milli*meters;
  static const auto millimeter = milli*meter;
  static const auto mps = meter/second;
 
+ static const auto megapascal = mega*pascal;
+
  static const auto dimless = si::dimensionless();
-
-
 
  typedef metric::knot_base_unit::unit_type knot_unit;
  typedef quantity<knot_unit> knot_quantity;

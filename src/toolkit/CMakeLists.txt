@@ -79,6 +79,7 @@ set(toolkit_SOURCES
     base/parameters/simpledimensionedparameter.cpp base/parameters/simpledimensionedparameter.h
     base/parameters/subsetparameter.cpp base/parameters/subsetparameter.h
     base/parameters/selectablesubsetparameter.cpp base/parameters/selectablesubsetparameter.h
+    base/parameters/propertylibraryselectionparameter.h base/parameters/propertylibraryselectionparameter.cpp
     base/resultelements/fileresult.cpp base/resultelements/fileresult.h
     base/resultelements/image.cpp base/resultelements/image.h
     base/resultelements/numericalresult.cpp base/resultelements/numericalresult.h
@@ -97,6 +98,8 @@ set(toolkit_SOURCES
     base/resultelements/fastgnuplotrenderer.h base/resultelements/fastgnuplotrenderer.cpp
     base/resultelements/contourchart.cpp base/resultelements/contourchart.h
     base/resultsetfilter.h base/resultsetfilter.cpp
+    base/propertylibrary.h base/propertylibrary.cpp
+    base/materialslibrary.h base/materialslibrary.cpp
     openfoam/ofenvironment.cpp openfoam/ofenvironment.h
     openfoam/ofes.cpp openfoam/ofes.h
     openfoam/blockmesh_templates.cpp openfoam/blockmesh_templates.h
@@ -278,6 +281,8 @@ target_include_directories(toolkit
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
 
+
+install_shared_file2(base/materialLibrary.xml ".")
 
 add_library(toolkitHeaders INTERFACE)
 get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)

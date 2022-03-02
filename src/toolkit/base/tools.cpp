@@ -1106,5 +1106,21 @@ arma::mat computeOffsetContour(const arma::mat &pl, double thickness, const arma
 
 
 
+std::string getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName)
+{
+    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
+      return std::string(fn->value());
+    else
+      throw insight::Exception("node does not have mandatory attribute \""+attributeName+"\"!");
+}
+
+
+std::shared_ptr<std::string> getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName)
+{
+    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
+      return std::make_shared<std::string>(fn->value());
+    else
+      return std::shared_ptr<std::string>();
+}
 
 }

@@ -69,6 +69,7 @@ public:
 arma::mat vec1(double x);
 arma::mat vec2(double x, double y);
 arma::mat vec3(double x, double y, double z);
+arma::mat normalized(const arma::mat& vec);
 
 arma::mat tensor3(
   double xx, double xy, double xz,

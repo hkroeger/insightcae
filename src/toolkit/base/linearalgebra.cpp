@@ -110,6 +110,21 @@ mat vec3(double x, double y, double z)
   return v;
 }
 
+
+arma::mat normalized(const arma::mat &vec)
+{
+    double l = arma::norm(vec, 2);
+    if (l>SMALL)
+    {
+        return vec/l;
+    }
+    else
+    {
+        throw insight::Exception("attempt to normalize a null vector!");
+    }
+}
+
+
 arma::mat tensor3(
   double xx, double xy, double xz,
   double yx, double yy, double yz,
@@ -1079,5 +1094,6 @@ bool operator!=(const arma::mat &m1, const arma::mat &m2)
 
   return false;
 }
+
 
 }

@@ -20,6 +20,7 @@ set(pdl_SOURCES
     matrixparameterparser.cpp matrixparameterparser.h
     arrayparameterparser.cpp arrayparameterparser.h
     selectablesubsetparameterparser.cpp selectablesubsetparameterparser.h
+    propertylibraryselectionparameterparser.h propertylibraryselectionparameterparser.cpp
 )
 
 add_executable(pdl ${pdl_SOURCES})

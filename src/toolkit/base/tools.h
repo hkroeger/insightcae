@@ -36,6 +36,8 @@ class vtkCellArray;
 
 #include <boost/mpl/clear.hpp>
 
+#include "rapidxml/rapidxml.hpp"
+
 
 namespace insight
 {
@@ -495,6 +497,10 @@ int predictInsertionLocation(const Container& org_data, const KeyType& newKey)
   return predictSetInsertionLocation(org_keys, newKey);
 }
 
+
+
+std::string getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
+std::shared_ptr<std::string> getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
 
 
 }

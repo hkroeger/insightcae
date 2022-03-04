@@ -121,7 +121,8 @@ pointCloudFromCellData(
 template<class T>
 tmp<Field<T> >
 VTKArrayToField(
-        vtkDataArray* arr
+        vtkDataArray* arr,
+        std::vector<int> componentMap = std::vector<int>()
         )
 {
     if (arr->GetNumberOfComponents()!=pTraits<T>::nComponents)
@@ -129,6 +130,14 @@ VTKArrayToField(
         FatalErrorIn("VTKArrayToField")
                 << "incompatible number of components"
                 << abort(FatalError);
+    }
+
+    if (componentMap.empty())
+    {
+        for (int k=0; k<pTraits<T>::nComponents; ++k)
+        {
+            componentMap.push_back(k);
+        }
     }
 
     tmp<Field<T> > result(new Field<T>(arr->GetNumberOfTuples()));
@@ -139,7 +148,7 @@ VTKArrayToField(
             auto *src = arr->GetTuple(j);
             T& targ = UNIOF_TMP_NONCONST(result)[j];
 
-            setComponent(targ, k) = src[k];
+            setComponent(targ, componentMap[k]) = src[k];
         }
     }
     return result;

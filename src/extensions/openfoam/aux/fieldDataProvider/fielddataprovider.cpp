@@ -40,6 +40,9 @@
 #include "vtkPointData.h"
 #include "vtkCellCenters.h"
 #include "vtkPolyDataReader.h"
+#include "vtkGenericDataObjectReader.h"
+#include "vtkProbeFilter.h"
+#include "vtkDelaunay2D.h"
 
 #include "vtkconversion.h"
 
@@ -692,6 +695,15 @@ autoPtr<FieldDataProvider<T> > fittedProfile<T>::clone() const
 }
 
 
+template<class T>
+void vtkField<T>::setComponentMap(const word& n)
+{
+    componentOrderName_=n;
+    // default: no interchange
+    componentMap_.clear();
+    for (int k=0; k<pTraits<T>::nComponents; ++k)
+        componentMap_.push_back(k);
+}
 
 
 template<class T>
@@ -702,6 +714,21 @@ void vtkField<T>::appendInstant(Istream& is)
 
     is >> fn >> fld;
 
+    token order(is);
+    if (order.isWord() && order.wordToken()=="componentOrder" )
+    {
+        word orderType;
+        is >> orderType;
+
+        setComponentMap(orderType);
+    }
+    else
+    {
+        is.putBack(order);
+
+        setComponentMap();
+    }
+
     vtkFiles_.push_back(fn);
     fieldNames_.push_back(fld);
 }
@@ -711,7 +738,14 @@ void vtkField<T>::writeInstant(int i, Ostream& os) const
 {
     os << vtkFiles_[i]
        << token::SPACE
-       << fieldNames_[i] ;
+       << fieldNames_[i]
+          ;
+    if (!componentOrderName_.empty())
+    {
+        os << token::SPACE << "componentOrder"
+           << token::SPACE << componentOrderName_
+              ;
+    }
 }
 
 template<class T>
@@ -723,7 +757,8 @@ template<class T>
 vtkField<T>::vtkField(const vtkField<T>& o)
     : FieldDataProvider<T> (o),
       vtkFiles_(o.vtkFiles_),
-      fieldNames_(o.fieldNames_)
+      fieldNames_(o.fieldNames_),
+      componentMap_(o.componentMap_)
 {}
 
 
@@ -734,40 +769,52 @@ tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
     auto ii=data_.find(i);
     if (ii==data_.end())
     {
-        //auto r = vtkSmartPointer<vtkUnstructuredGridReader>::New();
         if (!exists(vtkFiles_[i]))
         {
             FatalErrorIn("vtkField<T>::atInstant")
                     << "file "<<vtkFiles_[i]<<" does not exist!"
                     <<abort(FatalError);
         }
-        auto r = vtkSmartPointer<vtkPolyDataReader>::New();
+
+        auto r = vtkSmartPointer<vtkGenericDataObjectReader>::New();
         r->SetFileName(vtkFiles_[i].c_str());
-        auto cc = vtkSmartPointer<vtkCellCenters>::New();
-        cc->SetInputConnection(r->GetOutputPort());
-
-        cc->Update();
-
-        data_[i] = cc->GetOutput();
+        r->Update();
+        data_[i] = r->GetOutput();
         ii=data_.find(i);
     }
+
 
     auto targ = vtkSmartPointer<vtkPolyData>::New();
     setPoints<vtkPolyData>(target, targ);
 
-    // Gaussian kernel
-    auto gaussianKernel = vtkSmartPointer<vtkGaussianKernel>::New();
-    gaussianKernel->SetSharpness(2.0);
-    gaussianKernel->SetRadius(12.0);
 
-    auto ip=vtkSmartPointer<vtkPointInterpolator>::New();
+    // Gaussian kernel
+//    auto gaussianKernel = vtkSmartPointer<vtkGaussianKernel>::New();
+//    gaussianKernel->SetSharpness(2.0);
+//    gaussianKernel->SetRadius(12.0);
+
+//    auto ip=vtkSmartPointer<vtkPointInterpolator>::New();
+    auto ip=vtkSmartPointer<vtkProbeFilter>::New();
     ip->SetInputData(targ);
     ip->SetSourceData(ii->second);
-    ip->SetKernel(gaussianKernel);
+//    ip->SetSpatialMatch(true);
+//    ip->DebugOn();
+//    ip->SetKernel(gaussianKernel);
+//    ip->SetNullPointsStrategyToClosestPoint();
 
     ip->Update();
+//    ip->Print(std::cout);
     auto out = ip->GetOutput();
-    return VTKArrayToField<T>( out->GetPointData()->GetArray(fieldNames_[i].c_str()) );
+    if (!out->GetPointData()->HasArray(fieldNames_[i].c_str()))
+    {
+        FatalErrorIn("vtkField<T>::atInstant")
+                << "file "<<vtkFiles_[i]<<" does not contain field "
+                << fieldNames_[i] <<"!"
+                <<abort(FatalError);
+    }
+    return VTKArrayToField<T>(
+                out->GetPointData()->GetArray(fieldNames_[i].c_str()),
+                componentMap_ );
 }
 
 template<class T>

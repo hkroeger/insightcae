@@ -164,6 +164,11 @@ public:
         }
         return value_;
     }
+
+    const FieldDataProvider<T>& fieldDataProvider() const
+    {
+        return *fdp_;
+    }
 };
 
 
@@ -317,9 +322,21 @@ template<class T>
 class vtkField
 : public FieldDataProvider<T>
 {
+public:
+    typedef std::vector<int> ComponentMap;
+
+    static const ComponentMap VTKSymmTensorMap, OpenFOAMSymmTensorMap;
+
+private:
   std::vector<fileName> vtkFiles_;
   std::vector<string> fieldNames_;
+  ComponentMap componentMap_;
+  word componentOrderName_;
+
+  void setComponentMap(const word& mapSelection = word());
+
   mutable std::map<int, vtkSmartPointer<vtkDataObject> > data_;
+  mutable std::map<long int, Field<T> > cache_;
 
   virtual void appendInstant(Istream& is);
   virtual void writeInstant(int i, Ostream& os) const;
@@ -335,6 +352,8 @@ public:
   virtual autoPtr<FieldDataProvider<T> > clone() const;
 };
 
+template<>
+void vtkField<symmTensor>::setComponentMap(const word& orderType);
 
 }
 

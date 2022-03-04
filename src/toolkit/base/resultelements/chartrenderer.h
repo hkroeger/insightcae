@@ -20,6 +20,8 @@ protected:
 
 public:
   ChartRenderer(const ChartData* data);
+  virtual ~ChartRenderer();
+
   virtual void render(const boost::filesystem::path& outimagepath) const =0;
 
   static std::unique_ptr<ChartRenderer> create(const ChartData* data);

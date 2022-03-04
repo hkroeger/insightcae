@@ -24,6 +24,9 @@ ChartRenderer::ChartRenderer(const ChartData *data)
 {}
 
 
+ChartRenderer::~ChartRenderer()
+{}
+
 
 std::unique_ptr<ChartRenderer> ChartRenderer::create(const ChartData *data)
 {

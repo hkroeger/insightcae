@@ -134,7 +134,7 @@ public:
 
     const ChartData* chartData() const;
     void addCurve(const PlotCurve& pc);
-
+    const PlotCurve& plotCurve(const std::string& plainTextLabel) const;
     virtual void generatePlotImage ( const boost::filesystem::path& imagepath ) const;
 
     void writeLatexHeaderCode ( std::ostream& f ) const override;

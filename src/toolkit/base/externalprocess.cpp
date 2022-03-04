@@ -130,9 +130,8 @@ void Job::runAndTransferOutput
           {
             stderrbuffer->push_back(line);
           }
-          else
+          else if (stdoutbuffer)
           {
-            if (stdoutbuffer)
               stdoutbuffer->push_back("[E] "+line);
           }
         }

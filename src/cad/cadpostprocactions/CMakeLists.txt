@@ -3,6 +3,7 @@ add_sources(insightcad_SOURCES
  export.cpp
  hydrostatics.cpp
  mesh.cpp
+ framemesh.cpp
  solidproperties.cpp
  pointdistance.cpp
 )

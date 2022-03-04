@@ -34,8 +34,26 @@
 
 // #define SIGN(x) ((x)<0.0?-1.0:1.0)
 
+namespace std
+{
+
+/**
+ * @brief operator <
+ * required for using amra::mat as key in STL containers
+ * @param v1
+ * @param v2
+ * @return
+ */
+bool operator<(const arma::mat& v1, const arma::mat& v2);
+
+}
+
 namespace insight 
 {
+
+extern const double SMALL;
+extern const double LSMALL;
+
 
 class GSLExceptionHandling
 {
@@ -51,6 +69,7 @@ public:
 arma::mat vec1(double x);
 arma::mat vec2(double x, double y);
 arma::mat vec3(double x, double y, double z);
+arma::mat normalized(const arma::mat& vec);
 
 arma::mat tensor3(
   double xx, double xy, double xz,
@@ -367,11 +386,6 @@ double integrate_indef(F f, double a=0)
 
   return result;
 }
-
-struct compareArmaMat 
-{
-  bool operator()(const arma::mat& v1, const arma::mat& v2) const;
-};
 
 struct CoordinateSystem
 {

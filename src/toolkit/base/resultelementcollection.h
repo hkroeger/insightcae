@@ -33,6 +33,13 @@ public:
      */
     ResultElement& insert ( const std::string& key, const ResultElement& elem );
 
+    /**
+     * @brief copyFrom
+     * insert clones of all result elements in another set
+     * @param other
+     */
+    void copyFrom(const ResultElementCollection& other);
+
     void writeLatexCodeOfElements ( std::ostream& f, const std::string&, int level, const boost::filesystem::path& outputfilepath ) const;
 
     template<class T>

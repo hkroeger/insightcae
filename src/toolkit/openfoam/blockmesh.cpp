@@ -29,73 +29,17 @@ using namespace std;
 using namespace boost::assign;
 using namespace arma;
 
-#define SMALL 1e-10
-
 
 namespace insight
 {
   
 namespace bmd
 {
-/*
-Point::Point()
-{
-  (*this) << 0.0 << endr << 0.0 << endr << 0.0 <<endr;
-}
-
-Point::Point(const mat& m)
-: mat(m)
-{
-}
-
-Point::Point(double x, double y, double z)
-{
-  (*this) << x << endr << y << endr << z <<endr;
-}*/
-/*
-    def __str__(self):
-        return "(%f %f %f)\n" % (self.x, self.y, self.z)
-
-    def bmdStr(self, pointOffsets):
-        return "(%f %f %f)\n" % (
-            self.x+pointOffsets[self][0], 
-            self.y+pointOffsets[self][1], 
-            self.z+pointOffsets[self][2])
-
-    def __hash__(self):
-        s=str(self)
-        return hash(s)
-
-    def __cmp__(self, other):
-        return cmp(hash(self), hash(other))
-*//*
-void Point::operator=(const arma::mat& m)
-{
-  mat::operator=(m);
-}*/
-
-bool compare(const Point& v1, const Point& v2)
-{
-  if ( fabs(v1(0) - v2(0))<SMALL )
-    {
-      if ( fabs(v1(1) - v2(1))<SMALL )
-        {
-          if (fabs(v1(2)-v2(2))<SMALL)
-          {
-              //return v1.instance_ < v2.instance_;
-              return false;
-          }
-          else return v1(2)<v2(2);
-        }
-      else return v1(1)<v2(1);
-    }
-  else return v1(0)<v2(0);
-}
 
 
 PointList P_4(const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
-  return list_of<Point>(p1)(p2)(p3)(p4);
+  return { p1, p2, p3, p4};
 }
 
 PointList P_4(const PointList& pts, int p1, int p2, int p3, int p4)
@@ -107,16 +51,16 @@ PointList P_4(const PointList& pts, int p1, int p2, int p3, int p4)
 PointList P_8(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
 	      const Point& p5, const Point& p6, const Point& p7, const Point& p8)
 {
-  return list_of<Point>(p1)(p2)(p3)(p4)(p5)(p6)(p7)(p8);
+  return {p1, p2, p3, p4, p5, p6, p7, p8};
 }
 
 PointList P_8_DZ(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
                  const arma::mat& dz0, const arma::mat& dz1)
 {
-  return list_of<Point>
-      (p1+dz0)(p2+dz0)(p3+dz0)(p4+dz0)
-      (p1+dz1)(p2+dz1)(p3+dz1)(p4+dz1)
-      ;
+  return {
+      p1+dz0, p2+dz0, p3+dz0, p4+dz0,
+      p1+dz1, p2+dz1, p3+dz1, p4+dz1
+      };
 }
 
 
@@ -143,7 +87,7 @@ Block::~Block()
 Block* Block::transformed(const arma::mat& tm, bool inv, const arma::mat trans) const
 {
   PointList p2;
-  std::cout<<"#corners="<<corners_.size()<<std::endl;
+  insight::dbg()<<"#corners="<<corners_.size()<<std::endl;
   for ( const Point& p: corners_ )
   {
     p2 += tm*p+trans;
@@ -417,11 +361,9 @@ transform2D::~transform2D()
 
 mat transform2D::mapped3D(const mat& p) const
 {
-//   cout<<"Mapped "<<p<<flush;
   mat p3=vec3(0., 0., 0.);
   p3[map_[0]]=dir_[0]*p[0];
   p3[map_[1]]=dir_[1]*p[1];
-//   cout<<" to "<<p3<<endl;
   return p3;
 }
   
@@ -1153,7 +1095,7 @@ blockMesh::blockMesh(OpenFOAMCase& c, const ParameterSet& ps)
   scaleFactor_(1.0),
   defaultPatchName_("defaultFaces"),
   defaultPatchType_("wall"),
-  allPoints_(compare)
+  allPoints_()
 {
 }
 

@@ -29,6 +29,8 @@
 
 #include "base/linearalgebra.h"
 
+#include "vtkSmartPointer.h"
+#include "vtkPolyData.h"
 
 class vtkPolyData;
 
@@ -127,6 +129,15 @@ public:
 typedef std::shared_ptr<vtkModel2d> vtkModel2dPtr;
 
 
+
+class ContourExtruder
+{
+    vtkSmartPointer<vtkPolyData> extrudedVolume_;
+
+public:
+    ContourExtruder(const arma::mat& contour, const arma::mat& dir);
+    vtkSmartPointer<vtkPolyData> extrudedVolume() const;
+};
 
 }
 

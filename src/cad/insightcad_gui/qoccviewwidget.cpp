@@ -720,7 +720,7 @@ void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* sele
         const insight::cad::Feature::RefPointsList& pts=sm.getDatumPoints();
 
         // reverse storage to detect collocated points
-        typedef std::map<arma::mat, std::string, insight::compareArmaMat> trpts;
+        typedef std::map<arma::mat, std::string> trpts;
         trpts rpts;
         for (const insight::cad::Feature::RefPointsList::value_type& p: pts)
         {

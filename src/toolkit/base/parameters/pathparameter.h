@@ -123,6 +123,13 @@ std::shared_ptr<PathParameter> make_filepath(const boost::filesystem::path& path
 
 std::shared_ptr<PathParameter> make_filepath(const FileContainer& fc);
 
+/**
+ * @brief make_filepath
+ * insert a vtkPolyData mesh as STL file
+ * @param pd
+ * @param originalFilePath
+ * @return
+ */
 std::shared_ptr<PathParameter> make_filepath(
     vtkSmartPointer<vtkPolyData> pd,
     const boost::filesystem::path& originalFilePath );

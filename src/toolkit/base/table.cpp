@@ -1,6 +1,7 @@
 #include "table.h"
 
 #include "base/boost_include.h"
+#include "base/tools.h"
 
 
 namespace insight {
@@ -126,8 +127,8 @@ arma::mat Table::xy(size_t xcol, size_t ycol, EmptyFieldTreatment eft) const
         }
         else
         {
-            r(i, 0)=boost::lexical_cast<double>(xf);
-            r(i, 1)=boost::lexical_cast<double>(yf);
+            r(i, 0)=insight::toNumber<double>(xf);
+            r(i, 1)=insight::toNumber<double>(yf);
         }
     }
     //r.shed_rows(arma::uvec(rowsToSkip));

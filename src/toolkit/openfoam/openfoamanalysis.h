@@ -64,7 +64,7 @@ mesh = set
 
 eval = set
 {
- reportdicts 	= 	bool 	true 	"Include dictionaries into report" *hidden
+ reportdicts 	= 	bool 	false 	"Include dictionaries into report" *hidden
  skipmeshquality 	= 	bool 	false 	"Check to exclude mesh check during evaluation" *hidden
 } "Parameters for evaluation after solver run"
 

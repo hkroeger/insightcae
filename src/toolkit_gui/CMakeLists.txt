@@ -31,6 +31,7 @@ set(toolkit_gui_SRCS
     iqparameters/iqselectablesubsetparameter.cpp
     iqparameters/iqdoublerangeparameter.cpp
     iqparameters/iqarrayelementparameter.cpp
+    iqparameters/iqpropertylibraryselectionparameter.h iqparameters/iqpropertylibraryselectionparameter.cpp
 
     iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
 

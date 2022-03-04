@@ -78,6 +78,7 @@ namespace boost { namespace units { namespace si {
  typedef quantity<angle_rad_unit> angle_rad_quantity;
  static const angle_rad_unit angle_rad;
 
+ static const auto kelvin_per_meter = si::kelvin/si::meter;
 
 
 
@@ -127,6 +128,8 @@ namespace boost { namespace units { namespace si {
  typedef quantity<length, double> Length;
  typedef matQuantity<length, arma::mat> LengthVector;
 
+ typedef quantity<time, double> Time;
+
  typedef quantity<area, double> Area;
 
  typedef quantity<velocity, double> Velocity;
@@ -138,6 +141,9 @@ namespace boost { namespace units { namespace si {
  typedef quantity<temperature, double> Temperature;
 
  typedef quantity<power, double> Power;
+
+ typedef quantity<decltype(kelvin_per_meter)::unit_type, double> TemperatureGradient;
+
 
 }}}
 

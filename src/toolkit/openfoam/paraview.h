@@ -19,6 +19,8 @@ class Paraview : public ExternalProcess
 
     std::ostream& createLoadScript();
 
+    std::string caseLabel_;
+
 public:
     Paraview(
             const boost::filesystem::path& caseDirectory,
@@ -29,7 +31,8 @@ public:
             bool onlyLatestTime=true,
             double fromTime=0, double toTime=1e10,
             const std::vector<std::string> &additionalClientArgs = {},
-            const boost::filesystem::path& dataDirectory = ""
+            const boost::filesystem::path& dataDirectory = "",
+            const std::string& caseLabel=""
             );
 };
 

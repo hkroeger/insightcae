@@ -6,21 +6,6 @@
 namespace insight
 {
 
-std::string caseLabel(const boost::filesystem::path &caseDirectory)
-{
-    std::string caseLabel;
-    auto cd = boost::filesystem::canonical(caseDirectory);
-    caseLabel = cd.filename().string();
-    for (int i=0; i<2; ++i)
-    {
-     cd=cd.parent_path();
-     dbg()<<"cd="<<cd<<endl;
-     if (cd.empty()) break;
-     caseLabel = cd.filename().string()+"_"+caseLabel;
-    }
-    return caseLabel;
-}
-
 
 
 
@@ -48,11 +33,28 @@ Paraview::Paraview(
         bool onlyLatestTime,
         double fromTime, double toTime,
         const std::vector<std::string> &additionalClientArgs,
-        const boost::filesystem::path &dataDirectory
+        const boost::filesystem::path &dataDirectory,
+        const std::string& caseLabel
         )
     : caseDirectory_( caseDirectory ),
-      dataDirectory_( dataDirectory.empty()?caseDirectory:dataDirectory )
+      dataDirectory_( dataDirectory.empty()?caseDirectory:dataDirectory ),
+      caseLabel_(caseLabel)
 {
+    auto cd = boost::filesystem::canonical(caseDirectory);
+
+    if (caseLabel_.empty())
+    {
+        caseLabel_ = cd.filename().string();
+        for (int i=0; i<2; ++i)
+        {
+         cd=cd.parent_path();
+         dbg()<<"cd="<<cd<<endl;
+         if (cd.empty()) break;
+         caseLabel_ = cd.filename().string()+"_"+caseLabel_;
+        }
+    }
+
+
     std::ostream& ls = createLoadScript();
 
     if (stateFile.empty())
@@ -73,7 +75,10 @@ Paraview::Paraview(
                      "GetSources().values()))\n"
      "print(ofs)\n"
      "alltimes=set()\n"
-     "for o in ofs: alltimes=set.union(alltimes,o.TimestepValues)\n"
+     "for o in list(GetSources().values()):\n"
+     " if hasattr(o, 'TimestepValues'):\n"
+     "  if not o in ofs: ExtendFileSeries(o)\n"
+     "  alltimes=set.union(alltimes,o.TimestepValues)\n"
      "times=sorted(list(alltimes))\n"
      "print(times)\n"
     ) % stateFile.generic_path().string()
@@ -136,7 +141,7 @@ Paraview::Paraview(
         ls <<
         "  layouts=GetLayouts()\n"
         "  for i,l in enumerate(sorted(layouts.keys(), key=lambda k: k[0])):\n"
-        "    fname='"<<caseLabel(caseDirectory_)<<"_layout%02d'%(i)\n"
+        "    fname='"<<caseLabel_<<"_layout%02d'%(i)\n"
         ;
         if (onlyLatestTime) ls <<
         "    fname+='_latesttime.png'\n";
@@ -169,7 +174,7 @@ Paraview::Paraview(
     {
         std::vector<std::string> pvargs={
     #ifndef WIN32
-            "--title", caseLabel(caseDirectory_),
+            "--title", caseLabel_,
     #endif
             "--script="+loadScript_->path().string()
         };

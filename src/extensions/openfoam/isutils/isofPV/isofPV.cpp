@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
                 ("onlylatesttime,a", "only select the latest time step  (overrides --to and --from, if they are given)")
                 ("from,f", po::value<double>()->default_value(0), "initial time")
                 ("to,t", po::value<double>()->default_value(1e10), "final time")
+                ("caselabel", po::value<std::string>(), "label of case. Create from directory name by default.")
                 ;
 
         po::positional_options_description p;
@@ -88,11 +89,19 @@ int main(int argc, char *argv[])
         if (vm.count("statefile"))
             sf=vm["statefile"].as<std::string>();
 
+        std::string caseLabel;
+        if (vm.count("caselabel"))
+        {
+            caseLabel=vm["caselabel"].as<std::string>();
+        }
+
         Paraview rp(
            dir, sf,
            vm.count("batch"), vm.count("parallel"),
            vm.count("rescale"), vm.count("onlylatesttime"),
-           vm["from"].as<double>(), vm["to"].as<double>()
+           vm["from"].as<double>(), vm["to"].as<double>(),
+           {}, "",
+           caseLabel
            );
 
         rp.wait();

@@ -131,6 +131,13 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     rbmc["restraints"]=rc;
 
     dynamicMeshDict[name+"Coeffs"]=rbmc;
+
+    if (p.moveMeshOuterCorrectors)
+    {
+        OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+        OFDictData::dict& PIMPLE=fvSolution.subDict("PIMPLE");
+        PIMPLE["moveMeshOuterCorrectors"]=true;
+    }
 }
 
 

@@ -58,6 +58,9 @@ implementation = selectablesubset {{
  }
 }} vanilla "Type of implementation to use."
 
+
+moveMeshOuterCorrectors = bool false "Whether the mesh motion is updated in every outer iteration within a time step. If set to false, mesh motion is updated only at the end of the time step."
+
 <<<PARAMETERSET
 */
 

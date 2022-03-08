@@ -8,6 +8,10 @@ find_package(DXFlib)
 
 FIND_PACKAGE(MED)
 
+if (MED_FOUND)
+    ADD_DEFINITIONS("-DHAVE_MED")
+endif()
+
 set(insightcad_SOURCES 
   astbase.cpp
   cadpostprocaction.cpp

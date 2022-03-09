@@ -124,6 +124,40 @@ void ResultElementCollection::writeLatexCodeOfElements
     }
 }
 
+std::set<string> ResultElementCollection::contents(bool onlyLeafs) const
+{
+    auto fullPath = [](const std::string& pp, const std::string& name)
+    {
+        return (pp.empty() ? "" : pp+"/") + name;
+    };
+
+    std::function<std::set<std::string>(const ResultElementCollection&, const std::string&)>
+            listContents
+            = [&](const ResultElementCollection& el, const std::string& parentPath) -> std::set<std::string>
+    {
+        std::set<std::string> result;
+        for (const auto& rel: el)
+        {
+          if (const auto* sub = dynamic_cast<const ResultElementCollection*>(rel.second.get()))
+          {
+            if (!onlyLeafs)
+                result.insert( fullPath(parentPath, rel.first) ) ;
+
+            auto subc = listContents( *sub, fullPath(parentPath, rel.first) );
+            std::copy(subc.begin(), subc.end(),
+                      std::inserter(result, result.begin()));
+          }
+          else
+          {
+              result.insert( fullPath(parentPath, rel.first) ) ;
+          }
+        }
+        return result;
+    };
+
+    return listContents(*this, "");
+}
+
 double ResultElementCollection::getScalar(const std::string& path) const
 {
     return this->get<NumericalResult<double> >(path).value();

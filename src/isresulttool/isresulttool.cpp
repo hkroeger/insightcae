@@ -297,6 +297,7 @@ int main(int argc, char *argv[])
                     "(e.g. 0/ for the first result set)." )
         ("title", po::value< string >(), "Set title of composed report. Ignored, if --compose is not specified.")
         ("render", "Render into PDF")
+        ("renderchart", po::value<StringList>(), "Render chart into bitmap file. Specify either path or regular expression.")
     ;
 
     po::positional_options_description p;
@@ -364,7 +365,8 @@ int main(int argc, char *argv[])
                               "input file "+inpath.string()+" does not exist!" );
 
           cout<<"Reading results file "<<inpath<<"..."<<flush;
-          results.push_back( ResultSet::createFromFile(boost::filesystem::path(fn), analysisName) );
+          auto result=ResultSet::createFromFile(boost::filesystem::path(fn), analysisName);
+          results.push_back( result );
           cout<<"done."<<endl;
 
           if (vm.count("list"))
@@ -372,7 +374,7 @@ int main(int argc, char *argv[])
             someActionDone=true;
             cout<<std::string(80, '=')<<endl<<endl;
             cout<<"Result file: "<<inpath<<endl<<endl;
-            listContents(*results.back());
+            listContents(*result);
             cout<<endl<<std::string(80, '=')<<endl<<endl;
           }
 
@@ -381,7 +383,7 @@ int main(int argc, char *argv[])
               auto acs=vm["add-curve"].as<StringList>();
               for (const auto& ac: acs)
               {
-                  addCurveToPlot(results.back(), ac);
+                  addCurveToPlot(result, ac);
               }
           }
 
@@ -390,13 +392,37 @@ int main(int argc, char *argv[])
               someActionDone=true;
               boost::filesystem::path outpath =
                       inpath.parent_path() / (inpath.filename().stem().string()+".pdf");
-              results.back()->generatePDF( outpath );
+              result->generatePDF( outpath );
+          }
+
+          if (vm.count("renderchart"))
+          {
+              someActionDone=true;
+              auto selcharts = vm["renderchart"].as<StringList>();
+              auto chartpaths = result->contentsOfType<Chart>(true);
+//              for(const auto& cl: chartpaths)
+//                  std::cout<<cl<<std::endl;
+              for( const auto& sc: selcharts)
+              {
+                  boost::regex re(sc);
+                  for (const auto& cp: chartpaths)
+                  {
+                      if (boost::regex_match(cp, re))
+                      {
+                          const auto& chart = result->get<Chart>(cp);
+                          boost::filesystem::path outFile =
+                                  inpath.filename().stem().string()+"_"+
+                                  boost::replace_all_copy(cp, "/", "_")+".png";
+                          chart.generatePlotImage(outFile);
+                      }
+                  }
+              }
           }
 
           if (vm.count("saveAs"))
           {
               someActionDone=true;
-              results.back()->saveAs( vm["saveAs"].as<std::string>() );
+              result->saveAs( vm["saveAs"].as<std::string>() );
           }
         }
 

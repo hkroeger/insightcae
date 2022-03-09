@@ -32,6 +32,7 @@
 #include <boost/units/systems/si/current.hpp>
 #include <boost/units/systems/si/resistance.hpp>
 #include <boost/units/systems/si/io.hpp>
+#include "boost/units/systems/si/pressure.hpp"
 #include "boost/units/systems/si/prefixes.hpp"
 #include <boost/units/base_units/metric/knot.hpp>
 #include <boost/units/base_units/metric/ton.hpp>

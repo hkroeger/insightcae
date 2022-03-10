@@ -18,7 +18,7 @@ Material::Material(rapidxml::xml_node<> &node)
             * si::kilogram_per_cubic_meter;
 
     youngsModulus_ = toNumber<double>(getMandatoryAttribute(node, "youngsModulus"))
-            *1e6 *si::pascal;
+            *1e6*si::pascals;
 
     poissonNumber_ = toNumber<double>(getMandatoryAttribute(node, "poissonNumber"));
 

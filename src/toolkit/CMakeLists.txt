@@ -40,6 +40,7 @@ set(toolkit_SOURCES
     base/resultelement.cpp base/resultelement.h
     base/resultelementcollection.cpp base/resultelementcollection.h
     base/resultset.cpp base/resultset.h
+    base/resultreporttemplates.h base/resultreporttemplates.cpp
     base/softwareenvironment.cpp base/softwareenvironment.h
     base/stltools.cpp base/stltools.h
     base/parameterset.cpp base/parameterset.h

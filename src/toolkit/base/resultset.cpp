@@ -20,6 +20,7 @@
 
 
 #include "resultset.h"
+#include "base/resultreporttemplates.h"
 
 #include "base/latextools.h"
 #include "base/tools.h"
@@ -359,21 +360,7 @@ void ResultSet::saveAs(const boost::filesystem::path &outfile) const
 
 
 
-std::string builtin_template=
-    "\\documentclass[a4paper,10pt]{scrartcl}\n"
-    "\\usepackage{hyperref}\n"
-    "\\usepackage{fancyhdr}\n"
-    "\\pagestyle{fancy}\n"
-    "###HEADER###\n"
-    "\\begin{document}\n"
-    "\\title{###TITLE###\\\\\n"
-    "\\vspace{0.5cm}\\normalsize{###SUBTITLE###}}\n"
-    "\\date{###DATE###}\n"
-    "\\author{###AUTHOR###}\n"
-    "\\maketitle\n"
-    "\\tableofcontents\n"
-    "###CONTENT###\n"
-    "\\end{document}\n";
+
 
 
 void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
@@ -399,17 +386,9 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 
     writeLatexCode ( content, "", 0, filepath.parent_path() );
 
-    std::unique_ptr<TemplateFile> reportTemplate;
-
-    std::string envvarname="INSIGHT_REPORT_TEMPLATE";
-    if ( char *TEMPL=getenv ( envvarname.c_str() ) )
-    {
-      reportTemplate.reset(new TemplateFile(fs::path(TEMPL)));
-    }
-    else
-    {
-      reportTemplate.reset(new TemplateFile(builtin_template));
-    }
+    auto reportTemplate = std::make_unique<TemplateFile>(
+                ResultReportTemplates::globalInstance().defaultTemplate()
+                );
 
     reportTemplate->replace("AUTHOR", author_ );
     reportTemplate->replace("DATE", date_ );

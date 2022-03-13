@@ -46,6 +46,10 @@ set(toolkit_gui_SRCS
     iqremoteserverlistmodel.h
     iqremoteserverlistmodel.cpp
 
+    iqaddfilterdialog.cpp iqaddfilterdialog.h iqaddfilterdialog.ui
+    iqselectresultelementsdialog.h iqselectresultelementsdialog.cpp iqselectresultelementsdialog.ui
+    iqresultsetdisplayerwidget.h iqresultsetdisplayerwidget.cpp iqresultsetdisplayerwidget.ui
+
     iqdebugstream.cpp iqdebugstream.h
     qinsighterror.cpp qinsighterror.h
     email.cpp email.h
@@ -75,6 +79,8 @@ set(toolkit_gui_SRCS
     iqexternalprogramsmodel.h iqexternalprogramsmodel.cpp
 
     iqconfigureexternalprogramsdialog.h iqconfigureexternalprogramsdialog.cpp iqconfigureexternalprogramsdialog.ui
+    iqreporttemplatesmodel.h iqreporttemplatesmodel.cpp
+    iqmanagereporttemplatesdialog.h iqmanagereporttemplatesdialog.cpp iqmanagereporttemplatesdialog.ui
 
     iqsetupwsldistributionwizard.h iqsetupwsldistributionwizard.cpp iqsetupwsldistributionwizard.ui
 

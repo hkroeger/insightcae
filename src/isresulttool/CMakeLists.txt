@@ -11,8 +11,6 @@ find_package(Qt5Charts CONFIG REQUIRED)
 set(isresulttool_SOURCES
     isresulttool.cpp
     resultviewwindow.cpp resultviewwindow.h resultviewwindow.ui
-    iqaddfilterdialog.cpp iqaddfilterdialog.h iqaddfilterdialog.ui
-    iqselectresultelementsdialog.h iqselectresultelementsdialog.cpp iqselectresultelementsdialog.ui
     )
 SET(isresulttool_RCCS
     resultviewwindow.qrc

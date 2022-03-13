@@ -60,6 +60,8 @@
 #include "iqremoteparaviewdialog.h"
 #include "iqparaviewdialog.h"
 #include "iqexecutionworkspace.h"
+#include "iqresultsetfiltermodel.h"
+#include "iqresultsetdisplayerwidget.h"
 
 #include <set>
 
@@ -86,7 +88,6 @@ class SolverOutputAnalyzer;
 
 class AnalysisForm
 : public QMdiSubWindow,
-  public workbench::WidgetWithDynamicMenuEntries,
   public IQExecutionWorkspace
 {
   Q_OBJECT
@@ -105,13 +106,16 @@ protected:
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
 
-  insight::ResultSetPtr results_;
-  QPointer<insight::IQResultSetModel> resultsModel_;
+//  insight::ResultSetPtr results_;
+//  QPointer<insight::IQResultSetModel> resultsModel_;
+//  insight::IQFilteredResultSetModel *filteredResultsModel_;
+//  IQResultSetFilterModel *filterModel_;
+  IQResultSetDisplayerWidget* resultsViewer_;
   IQSupplementedInputDataModel supplementedInputDataModel_;
   
   // ====================================================================================
   // ======== GUI widgets
-  ParameterEditorWidget* peditor_;
+  ParameterEditorWidget *peditor_;
   QTableView *sidtab_;
   IQDebugStream *cout_log_, *cerr_log_;
   LogViewerWidget *log_;
@@ -126,11 +130,7 @@ protected:
   // ======== control elements
   QPushButton *save_log_btn_, *send_log_btn_, *clear_log_btn_, *auto_scroll_down_btn_;
 
-  QMenu *menu_parameters_=nullptr, *menu_actions_=nullptr, *menu_results_=nullptr, *menu_tools_=nullptr, *menu_tools_of_=nullptr;
-  QAction *act_param_show_=nullptr, *act_save_=nullptr, *act_save_as_=nullptr, *act_pack_=nullptr, *act_merge_=nullptr;
-  QAction *act_run_=nullptr, *act_kill_=nullptr;
-  QAction *act_save_rpt_=nullptr;
-  QAction *act_tool_of_paraview_=nullptr, *act_tool_of_clean_=nullptr;
+  QPointer<QAction> act_save_, act_pack_;
 
 
   /**
@@ -214,8 +214,9 @@ public:
   // ================================================================================
   // ===== general logic
 
-  void insertMenu(QMenuBar* mainMenu) override;
-  void removeMenu() override;
+  WidgetWithDynamicMenuEntries* createMenus(QMenuBar* mainMenu);
+//  void insertMenu(QMenuBar* mainMenu) override;
+//  void removeMenu() override;
 
   void loadParameters(const boost::filesystem::path& fp);
   void saveParameters(bool *cancelled=nullptr);
@@ -258,7 +259,6 @@ private Q_SLOTS:
   void onAnalysisCancelled();
 
 
-  void onCreateReport();
 
   void onStartPV();
   void onStartPVLocal();

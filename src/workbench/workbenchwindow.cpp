@@ -34,6 +34,7 @@
 #include "qinsighterror.h"
 #include "iqremoteservereditdialog.h"
 #include "iqconfigureexternalprogramsdialog.h"
+#include "iqmanagereporttemplatesdialog.h"
 #include "qanalysisthread.h"
 
 #include <fstream>
@@ -43,6 +44,28 @@
 #include "base/toolkitversion.h"
 #include "base/qt5_helper.h"
 #include "wslinstallation.h"
+
+
+WidgetWithDynamicMenuEntries::WidgetWithDynamicMenuEntries(
+        QObject *parent,
+        const std::vector<QObject *> &dynamicGUIElements )
+    : QObject(parent),
+      dynamicGUIElements_(dynamicGUIElements)
+{
+    connect( parent, &QObject::destroyed,
+             this, &QObject::deleteLater );
+}
+
+WidgetWithDynamicMenuEntries::~WidgetWithDynamicMenuEntries()
+{
+    for (auto* e: dynamicGUIElements_)
+    {
+        delete e;
+    }
+}
+
+
+
 
 void workbench::updateRecentFileActions()
 {
@@ -126,6 +149,17 @@ workbench::workbench(bool logToConsole)
           [&]()
           {
             IQConfigureExternalProgramsDialog dlg(this);
+            dlg.exec();
+          }
+  );
+  settingsMenu->addAction( a );
+
+
+  a = new QAction("Manage report templates...", this);
+  connect(a, &QAction::triggered, this,
+          [&]()
+          {
+            IQManageReportTemplatesDialog dlg(this);
             dlg.exec();
           }
   );
@@ -324,14 +358,14 @@ void workbench::onSubWindowActivated( QMdiSubWindow * window )
     if (lastActive_)
     {
 //        qDebug()<<"remove menu";
-        lastActive_->removeMenu();
+        delete lastActive_;
     }
 
-    if (WidgetWithDynamicMenuEntries* newactive = dynamic_cast<WidgetWithDynamicMenuEntries*>(window))
+    if (auto* newactive = dynamic_cast<AnalysisForm*>(window))
     {
 //        qDebug()<<"insert menu";
-        newactive->insertMenu(menuBar());
-        lastActive_=newactive;
+//        newactive->insertMenu(menuBar());
+        lastActive_=newactive->createMenus(menuBar());
     }
     else
     {

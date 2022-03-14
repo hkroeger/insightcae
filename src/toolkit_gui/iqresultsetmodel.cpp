@@ -187,9 +187,10 @@ IQStaticTextResultElement::IQStaticTextResultElement
     QObject *parent,
     const QString &label,
     const QString &staticText,
-    const QString& staticDetailText
+    const QString& staticDetailText,
+    insight::ResultElementPtr rep
 )
-  : IQResultElement(parent, label, insight::ResultElementPtr()),
+  : IQResultElement(parent, label, rep),
     staticText_(staticText),
     staticDetailText_(staticDetailText)
 {}
@@ -253,7 +254,8 @@ void IQResultSetModel::addResultElements(const ResultElementCollection &rec, IQR
         curnode=new IQStaticTextResultElement(
               parent, label,
               "",
-              "(There is currently no viewer implemented for this result element.)"
+              "(There is currently no viewer implemented for this result element.)",
+              re.second
               //QString::fromStdString(e.what())
               );
       }

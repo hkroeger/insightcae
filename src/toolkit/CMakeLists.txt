@@ -23,6 +23,7 @@ project(toolkit)
 set(toolkit_SOURCES
     base/global.cpp
     base/toolkitversion.cpp base/toolkitversion.h
+    base/globalconfiguration.h base/globalconfiguration.cpp
     base/externalprograms.h base/externalprograms.cpp
     base/supplementedinputdata.cpp base/supplementedinputdata.h
     base/analysis.cpp base/analysis.h

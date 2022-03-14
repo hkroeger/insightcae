@@ -570,7 +570,10 @@ ResultSetPtr IQResultSetModel::resultSet() const
     return orgResultSet_;
 }
 
-
+bool IQResultSetModel::hasResults() const
+{
+    return bool(orgResultSet_);
+}
 
 void IQResultSetModel::addUnselectedElementPaths(
         const QModelIndex& pidx,

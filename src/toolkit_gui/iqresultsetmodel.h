@@ -175,6 +175,7 @@ public:
     ResultSetPtr filteredResultSet() const;
 
     insight::ResultSetPtr resultSet() const;
+    bool hasResults() const;
 
     ResultSetFilter filter() const;
     void resetFilter(const ResultSetFilter& filter);

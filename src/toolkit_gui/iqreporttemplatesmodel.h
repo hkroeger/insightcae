@@ -4,34 +4,39 @@
 #include <QAbstractItemModel>
 
 #include "base/resultreporttemplates.h"
+#include "iqglobalconfigurationmodel.h"
 
-class IQReportTemplatesModel : public QAbstractItemModel
-{
-    Q_OBJECT
+typedef
+    IQGlobalConfigurationWithDefaultModel<insight::ResultReportTemplates>
+    IQReportTemplatesModel;
 
-    insight::ResultReportTemplates templates_;
+//class IQReportTemplatesModel : public QAbstractItemModel
+//{
+////    Q_OBJECT
 
-public:
-    explicit IQReportTemplatesModel(QObject *parent = nullptr);
+//    insight::ResultReportTemplates templates_;
 
-    // Header:
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+//public:
+//    explicit IQReportTemplatesModel(QObject *parent = nullptr);
 
-    // Basic functionality:
-    QModelIndex index(int row, int column,
-                      const QModelIndex &parent = QModelIndex()) const override;
-    QModelIndex parent(const QModelIndex &index) const override;
+//    // Header:
+//    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+//    // Basic functionality:
+//    QModelIndex index(int row, int column,
+//                      const QModelIndex &parent = QModelIndex()) const override;
+//    QModelIndex parent(const QModelIndex &index) const override;
 
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+//    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+//    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
 
-    void addTemplate(const QString& filePath);
-    void setDefaultTemplate(const QModelIndex& index);
-    void removeTemplate(const QModelIndex& index);
+//    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
-private:
-};
+//    void addTemplate(const QString& filePath);
+//    void setDefaultTemplate(const QModelIndex& index);
+//    void removeTemplate(const QModelIndex& index);
+
+//private:
+//};
 
 #endif // IQREPORTTEMPLATESMODEL_H

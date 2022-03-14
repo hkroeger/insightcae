@@ -18,6 +18,8 @@ public:
     explicit IQManageReportTemplatesDialog(QWidget *parent = nullptr);
     ~IQManageReportTemplatesDialog();
 
+    void accept() override;
+
 private:
     Ui::IQManageReportTemplatesDialog *ui;
 };

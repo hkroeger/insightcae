@@ -117,7 +117,7 @@ void IQResultSetDisplayerWidget::loadResults(insight::ResultSetPtr results)
 
 bool IQResultSetDisplayerWidget::hasResults() const
 {
-    return bool(resultsModel_->resultSet());
+    return ((resultsModel_!=nullptr) && (resultsModel_->hasResults()));
 }
 
 

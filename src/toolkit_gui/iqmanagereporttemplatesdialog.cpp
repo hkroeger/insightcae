@@ -2,6 +2,7 @@
 #include "ui_iqmanagereporttemplatesdialog.h"
 
 #include <QFileDialog>
+#include <QMessageBox>
 
 IQManageReportTemplatesDialog::IQManageReportTemplatesDialog(QWidget *parent) :
     QDialog(parent),
@@ -20,7 +21,7 @@ IQManageReportTemplatesDialog::IQManageReportTemplatesDialog(QWidget *parent) :
     connect(ui->btnMakeDefaultTemplate, &QPushButton::clicked, this,
             [&]()
             {
-                rtm_.setDefaultTemplate( ui->lvTemplates->currentIndex() );
+                rtm_.setDefaultItem( ui->lvTemplates->currentIndex() );
             }
     );
 
@@ -35,7 +36,10 @@ IQManageReportTemplatesDialog::IQManageReportTemplatesDialog(QWidget *parent) :
                             );
                 if (!newpath.isEmpty())
                 {
-                    rtm_.addTemplate(newpath);
+                    boost::filesystem::path fp(newpath.toStdString());
+                    rtm_.addItem(
+                                insight::ResultReportTemplate(
+                                    fp.filename().stem().string(), fp, false ) );
                 }
             }
     );
@@ -43,12 +47,55 @@ IQManageReportTemplatesDialog::IQManageReportTemplatesDialog(QWidget *parent) :
     connect(ui->btnRemoveTemplate, &QPushButton::clicked, this,
             [&]()
             {
-                rtm_.removeTemplate( ui->lvTemplates->currentIndex() );
+                rtm_.removeItem( ui->lvTemplates->currentIndex() );
             }
     );
 }
+
+
+
 
 IQManageReportTemplatesDialog::~IQManageReportTemplatesDialog()
 {
     delete ui;
 }
+
+
+
+
+void IQManageReportTemplatesDialog::accept()
+{
+    auto listfile = insight::ResultReportTemplates::globalInstance().firstWritableLocation();
+
+    if (!listfile.empty())
+    {
+        auto decision=QMessageBox::question(
+              this,
+              "Confirm writing",
+              QString(boost::filesystem::exists(listfile) ?
+                "Do you want to overwrite" : "Do you want to create")
+              +" the file "+QString::fromStdString(listfile.string())+"?",
+              QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+
+        if ( decision == QMessageBox::Yes )
+        {
+            rtm_.configuration().writeConfiguration(listfile);
+            insight::ResultReportTemplates::globalInstance().reload();
+            QDialog::accept();
+            return;
+        }
+        else if ( decision == QMessageBox::Cancel )
+        {
+            return;
+        }
+    }
+
+    QMessageBox::critical(
+          this,
+          "Problem",
+          "No suitable file location for the editied report templates list was found or accepted.\n"
+          "The configuration could not be saved.",
+          QMessageBox::Ok
+          );
+}
+

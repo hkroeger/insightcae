@@ -387,7 +387,7 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
     writeLatexCode ( content, "", 0, filepath.parent_path() );
 
     auto reportTemplate = std::make_unique<TemplateFile>(
-                ResultReportTemplates::globalInstance().defaultTemplate()
+                ResultReportTemplates::globalInstance().defaultItem()
                 );
 
     reportTemplate->replace("AUTHOR", author_ );

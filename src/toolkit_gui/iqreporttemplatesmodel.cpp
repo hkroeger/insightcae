@@ -42,17 +42,11 @@ QModelIndex IQReportTemplatesModel::parent(const QModelIndex &index) const
 
 int IQReportTemplatesModel::rowCount(const QModelIndex &parent) const
 {
-    if (!parent.isValid())
-        return 0;
-
     return templates_.size();
 }
 
 int IQReportTemplatesModel::columnCount(const QModelIndex &parent) const
 {
-    if (!parent.isValid())
-        return 0;
-
     return 1;
 }
 
@@ -70,10 +64,10 @@ QVariant IQReportTemplatesModel::data(const QModelIndex &index, int role) const
                 case 0: return QString::fromStdString( i->first );
             }
         }
-        if ( role==Qt::DecorationRole &&
-                i==insight::ResultReportTemplates::globalInstance().defaultTemplateIterator() )
+        if ( role==Qt::FontRole &&
+                i==templates_.defaultTemplateIterator() )
         {
-            QFont font;
+            QFont font(QApplication::font());
             font.setBold(true);
             return font;
         }
@@ -100,9 +94,15 @@ void IQReportTemplatesModel::setDefaultTemplate(const QModelIndex &index)
 {
     if (index.isValid())
     {
+        auto iold = templates_.defaultTemplateIterator();
+        auto indexold = this->index( std::distance(templates_.cbegin(), iold), 0, QModelIndex());
+
         auto i=templates_.begin();
         std::advance(i, index.row());
         templates_.setDefaultTemplate(i->first);
+
+        Q_EMIT dataChanged(index, index);
+        Q_EMIT dataChanged(indexold, indexold);
     }
 }
 

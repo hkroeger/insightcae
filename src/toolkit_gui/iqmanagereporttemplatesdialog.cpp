@@ -12,6 +12,11 @@ IQManageReportTemplatesDialog::IQManageReportTemplatesDialog(QWidget *parent) :
     ui->lvTemplates->setModel(&rtm_);
     ui->lvTemplates->setAlternatingRowColors(true);
 
+    for (const auto&t: insight::ResultReportTemplates::globalInstance())
+    {
+        std::cout<<"TEMPLATE "<<t.first<<std::endl;
+    }
+
     connect(ui->btnMakeDefaultTemplate, &QPushButton::clicked, this,
             [&]()
             {

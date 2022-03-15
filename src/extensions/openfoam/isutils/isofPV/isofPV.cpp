@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
                 ("statefile,s", po::value<std::string>(), "state file")
                 ("batch,b", "batch mode: don't launch GUI, render all views")
                 ("parallel,p", "enforce parallel projection in batch rendering")
+                ("resetcamera,r", "reset camera of all views")
                 ("rescale,c", "automatically rescale all contour plots to data range (within each time step")
                 ("onlylatesttime,a", "only select the latest time step  (overrides --to and --from, if they are given)")
                 ("from,f", po::value<double>()->default_value(0), "initial time")
@@ -101,7 +102,8 @@ int main(int argc, char *argv[])
            vm.count("rescale"), vm.count("onlylatesttime"),
            vm["from"].as<double>(), vm["to"].as<double>(),
            {}, "",
-           caseLabel
+           caseLabel,
+           vm.count("resetcamera")
            );
 
         rp.wait();

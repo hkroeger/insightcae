@@ -34,7 +34,8 @@ Paraview::Paraview(
         double fromTime, double toTime,
         const std::vector<std::string> &additionalClientArgs,
         const boost::filesystem::path &dataDirectory,
-        const std::string& caseLabel
+        const std::string& caseLabel,
+        bool resetCamera
         )
     : caseDirectory_( caseDirectory ),
       dataDirectory_( dataDirectory.empty()?caseDirectory:dataDirectory ),
@@ -87,6 +88,13 @@ Paraview::Paraview(
 
     ls <<
     "AnimationScene1 = GetAnimationScene()\n";
+
+    if (resetCamera)
+    {
+        ls <<
+    "for view in GetRenderViews():\n"
+    "   view.ResetCamera()\n";
+    }
 
     if (batch)
     {

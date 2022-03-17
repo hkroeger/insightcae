@@ -1077,7 +1077,10 @@ path ensureFileExtension(const boost::filesystem::path &filePath, const std::str
 
 arma::mat computeOffsetContour(const arma::mat &pl, double thickness, const arma::mat &normals)
 {
-    arma::mat pl2 = arma::reverse(pl, 0);
+    arma::mat pl2 = arma::zeros(pl.n_rows, pl.n_cols); //not existing in older armadillo: arma::reverse(pl, 0);
+    for (arma::uword i=0; i<pl.n_rows; ++i)
+        pl2.row(i)=pl.row(pl.n_rows-1-i);
+
     arma::mat lp;
     for (arma::uword i=0; i<pl2.n_rows; ++i)
     {

@@ -32,7 +32,8 @@ public:
             double fromTime=0, double toTime=1e10,
             const std::vector<std::string> &additionalClientArgs = {},
             const boost::filesystem::path& dataDirectory = "",
-            const std::string& caseLabel=""
+            const std::string& caseLabel="",
+            bool resetCamera=false
             );
 };
 

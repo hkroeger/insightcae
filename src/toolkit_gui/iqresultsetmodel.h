@@ -118,7 +118,12 @@ class TOOLKIT_GUI_EXPORT IQStaticTextResultElement
 public:
     declareType("IQStaticTextResultElement");
 
-    IQStaticTextResultElement(QObject* parent, const QString& label, const QString& staticText, const QString& staticDetailText);
+    IQStaticTextResultElement(
+            QObject* parent,
+            const QString& label,
+            const QString& staticText,
+            const QString& staticDetailText,
+            insight::ResultElementPtr rep);
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;
@@ -175,6 +180,7 @@ public:
     ResultSetPtr filteredResultSet() const;
 
     insight::ResultSetPtr resultSet() const;
+    bool hasResults() const;
 
     ResultSetFilter filter() const;
     void resetFilter(const ResultSetFilter& filter);

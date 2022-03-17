@@ -23,6 +23,7 @@ project(toolkit)
 set(toolkit_SOURCES
     base/global.cpp
     base/toolkitversion.cpp base/toolkitversion.h
+    base/globalconfiguration.h base/globalconfiguration.cpp
     base/externalprograms.h base/externalprograms.cpp
     base/supplementedinputdata.cpp base/supplementedinputdata.h
     base/analysis.cpp base/analysis.h
@@ -40,6 +41,7 @@ set(toolkit_SOURCES
     base/resultelement.cpp base/resultelement.h
     base/resultelementcollection.cpp base/resultelementcollection.h
     base/resultset.cpp base/resultset.h
+    base/resultreporttemplates.h base/resultreporttemplates.cpp
     base/softwareenvironment.cpp base/softwareenvironment.h
     base/stltools.cpp base/stltools.h
     base/parameterset.cpp base/parameterset.h

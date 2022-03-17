@@ -10,7 +10,13 @@
 
 #include "cadfeatures/booleanintersection.h"
 #include "datum.h"
+#include "geotest.h"
 
+//#if defined(HAVE_MED)
+//#undef HAVE_MED
+//#endif
+
+#if defined(HAVE_MED)
 
 extern "C" {
 #include "med.h"
@@ -527,6 +533,18 @@ void splitEdge(
 }
 
 
+}
+}
+
+#endif
+
+
+
+
+
+namespace insight {
+namespace cad {
+
 defineType(FrameMesh);
 
 size_t FrameMesh::calcHash() const
@@ -536,6 +554,7 @@ size_t FrameMesh::calcHash() const
 
 void FrameMesh::build()
 {
+#if defined(HAVE_MED)
     typedef std::set<TopoDS_Edge> EdgeSet;
 
     EdgeSet modelEdges;
@@ -670,12 +689,20 @@ void FrameMesh::build()
             for (TopExp_Explorer ex(s, TopAbs_FACE); ex.More(); ex.Next())
             {
                 auto f=TopoDS::Face(ex.Current());
+                auto bnd = getBoundingBox(f, 1e-3); // enforce triangulation
                 auto loc=f.Location();
                 auto mesh = BRep_Tool::Triangulation(f,loc);
+                insight::assertion(
+                            !mesh.IsNull(),
+                            "shape has no triangulation!" );
 
                 std::cout<<"add mesh with nodes="<<mesh->NbNodes()<<" / faces="<<mesh->NbTriangles()<<std::endl;
                 triangulations.Append(mesh);
             }
+
+            insight::assertion(
+                        triangulations.Extent()>=1,
+                        "there are no triangulations!" );
 
             auto entireMesh = Poly::Catenate(triangulations);
             std::cout<<"full mesh with nodes="<<entireMesh->NbNodes()<<" / faces="<<entireMesh->NbTriangles()<<std::endl;
@@ -690,6 +717,9 @@ void FrameMesh::build()
     }
 
     mesh.write();
+#else
+    throw insight::Exception("InsightCAE has to be compiled with MED support to use the Frame Mesh export feature.");
+#endif
 }
 
 

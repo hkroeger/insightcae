@@ -1,6 +1,8 @@
 #ifndef IQSELECTRESULTELEMENTSDIALOG_H
 #define IQSELECTRESULTELEMENTSDIALOG_H
 
+#include "toolkit_gui_export.h"
+
 #include <QDialog>
 
 #include "base/resultset.h"
@@ -10,7 +12,7 @@ namespace Ui {
 class IQSelectResultElementsDialog;
 }
 
-class IQSelectResultElementsDialog : public QDialog
+class TOOLKIT_GUI_EXPORT IQSelectResultElementsDialog : public QDialog
 {
     Q_OBJECT
 

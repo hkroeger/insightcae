@@ -28,6 +28,7 @@
 #include <QMenuBar>
 #include <QAction>
 #include <QThread>
+#include <QPointer>
 
 #include "insightcaeapplication.h"
 #include "sdmdiarea.h"
@@ -36,6 +37,26 @@
 
 #include "base/wsllinuxserver.h"
 
+
+class WidgetWithDynamicMenuEntries
+        : public QObject
+{
+    Q_OBJECT
+
+    std::vector<QObject*> dynamicGUIElements_;
+
+public:
+    WidgetWithDynamicMenuEntries(QObject* parent, const std::vector<QObject*>& dynamicGUIElements = {});
+    ~WidgetWithDynamicMenuEntries();
+
+    template<class O>
+    O* add(O* obj)
+    {
+        dynamicGUIElements_.push_back(obj);
+        return obj;
+    }
+
+};
 
 
 class workbench
@@ -55,16 +76,7 @@ private:
 
 public:
 
-   class WidgetWithDynamicMenuEntries
-   {
-   protected:
-       QMenuBar* mainMenu_ =NULL;
-   public:
-       virtual void insertMenu(QMenuBar* mainMenu) { mainMenu_=mainMenu; }
-       virtual void removeMenu() { mainMenu_=NULL; }
-   };
-
-   WidgetWithDynamicMenuEntries *lastActive_ =0;
+   QPointer<WidgetWithDynamicMenuEntries> lastActive_;
 
 public:
     workbench(bool logToConsole=false);

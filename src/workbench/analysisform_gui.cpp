@@ -51,7 +51,7 @@ void AnalysisForm::updateWindowTitle()
 
 bool AnalysisForm::checkAnalysisExecutionPreconditions()
 {
-  if (results_)
+  if (resultsViewer_->hasResults())
   {
     QMessageBox msgBox;
     msgBox.setText("There is currently a result set in memory!");
@@ -62,7 +62,7 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
 
     if (msgBox.exec()==QMessageBox::Yes)
     {
-        results_.reset();
+        resultsViewer_->clear();
     }
     else
     {
@@ -111,20 +111,10 @@ void AnalysisForm::onKillAnalysis()
 
 void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
-  results_=results;
+  resultsViewer_->loadResults(results);
 
   currentWorkbenchAction_.reset();
 
-  if (resultsModel_)
-  {
-      ui->resultsToC->setModel(nullptr);
-      resultsModel_->deleteLater();
-  }
-  resultsModel_=new insight::IQResultSetModel(results_, false, ui->resultsToC);
-  ui->resultsToC->setModel(resultsModel_);
-  ui->resultsToC->expandAll();
-  ui->resultsToC->resizeColumnToContents(0);
-  ui->resultsToC->resizeColumnToContents(1);
 
   ui->tabWidget->setCurrentWidget(ui->outputTab);
 

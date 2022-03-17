@@ -136,16 +136,18 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="Euler";
 
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["grad("+alphaname_+")"]="localFaceLimited "+lqGradSchemeIfPossible()+" UBlendingFactor";
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+//  grad["grad("+alphaname_+")"]="localFaceLimited "+lqGradSchemeIfPossible()+" UBlendingFactor";
 
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   div["div(rho*phi,U)"]		= "Gauss linearUpwindV "+gradNameOrScheme(dictionaries, "grad(U)");
   div["div(rhoPhi,U)"]		= "Gauss linearUpwindV "+gradNameOrScheme(dictionaries, "grad(U)");
+
 //  div["div(phi,alpha)"]		= "Gauss vanLeer";
 //  div["div(phirb,alpha)"]	= "Gauss linear";
   div["div(phi,alpha)"]		= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(alpha)");
   div["div(phirb,alpha)"]	= "Gauss linear";
+
   div["div(phi,k)"]		= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(k)");
   div["div(phi,epsilon)"]	= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(epsilon)");
   div["div(phi,omega)"]		= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(omega)");

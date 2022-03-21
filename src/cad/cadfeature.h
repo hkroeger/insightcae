@@ -54,6 +54,9 @@
 
 namespace insight 
 {
+
+class PathParameter;
+
 namespace cad 
 {
   class Feature;
@@ -512,6 +515,19 @@ public:
 
 
 }
+
+/**
+ * @brief make_filepath
+ * insert a CAD feature mesh as STL file
+ * @param ft
+ * @param originalFilePath
+ * @return
+ */
+std::shared_ptr<PathParameter> make_filepath(
+        cad::FeaturePtr ft,
+        const boost::filesystem::path& originalFilePath);
+
+
 }
 
 #endif // INSIGHT_CAD_SOLIDMODEL_H

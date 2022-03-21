@@ -26,6 +26,7 @@
 #include "datum.h"
 #include "sketch.h"
 #include "cadfeatures/transform.h"
+#include "base/tools.h"
 
 #include <base/exception.h>
 #include "boost/foreach.hpp"
@@ -82,6 +83,7 @@
 
 #include "BRepBuilderAPI_Copy.hxx"
 
+#include "base/parameters/pathparameter.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -2763,8 +2765,28 @@ TopoDS_Wire SingleFaceFeature::asSingleClosedWire() const
 
 bool SingleVolumeFeature::isSingleVolume() const
 {
-  return true;
+    return true;
 }
 
+
 }
+
+
+std::shared_ptr<PathParameter> make_filepath(
+        cad::FeaturePtr ft,
+        const boost::filesystem::path &originalFilePath)
+{
+    TemporaryFile tf(
+                originalFilePath.filename().stem().string()
+                +"-%%%%%%"
+                +originalFilePath.extension().string()
+                );
+    ft->saveAs( tf.path() );
+    return std::make_shared<PathParameter>(
+          FileContainer(originalFilePath, tf),
+          "temporary file path" );
+}
+
+
+
 }

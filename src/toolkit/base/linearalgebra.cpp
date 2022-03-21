@@ -490,6 +490,23 @@ double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
 }
 
 
+
+double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max)
+{
+  struct Obj : public Objective1D
+  {
+    const std::function<double(double)>& model_;
+    Obj(const std::function<double(double)>& m) : model_(m) {}
+    double operator()(double x) const override
+    {
+      return model_(x);
+    }
+  } obj(model);
+  return nonlinearMinimize1D(obj, x_min, x_max);
+}
+
+
+
 ObjectiveND::~ObjectiveND()
 {}
 
@@ -700,6 +717,25 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
     }
 
     return arma::zeros(x0.n_elem)+DBL_MAX;
+}
+
+
+arma::mat nonlinearMinimizeND(
+        const std::function<double(const arma::mat&)>& model,
+        const arma::mat& x0, double tol, const arma::mat& steps)
+{
+    struct Obj : public ObjectiveND
+    {
+      int np_;
+      const std::function<double(const arma::mat&)>& model_;
+      Obj(int np, const std::function<double(const arma::mat&)>& m) : np_(np), model_(m) {}
+      double operator()(const arma::mat& x) const override
+      {
+        return model_(x);
+      }
+      int numP() const override { return np_; }
+    } obj(x0.n_elem, model);
+    return nonlinearMinimizeND(obj, x0, tol, steps);
 }
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)

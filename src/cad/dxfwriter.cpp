@@ -78,7 +78,7 @@ DXFWriter::DXFWriter
   const std::vector<LayerDefinition>& layers
 )
 : exportVersion_(DL_Codes::AC1015),
-  dw_( dxf_.out(file.c_str(), exportVersion_) )
+  dw_( dxf_.out(file.string().c_str(), exportVersion_) )
 {
   dxf_.writeHeader(*dw_);
   dw_->sectionEnd();

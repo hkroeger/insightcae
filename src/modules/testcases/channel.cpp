@@ -37,8 +37,8 @@
 #include "openfoam/caseelements/boundaryconditions/simplebc.h"
 #include "openfoam/caseelements/boundaryconditions/cyclicpairbc.h"
 #include "openfoam/caseelements/boundaryconditions/wallbc.h"
-#include "openfoam/caseelements/turbulencemodelcaseelements.h"
 #include "openfoam/caseelements/basic/pressuregradientsource.h"
+#include "openfoam/caseelements/basic/rasmodel.h"
 
 using namespace arma;
 using namespace std;
@@ -79,117 +79,76 @@ double ChannelBase::UmaxByUbulk(double Retau)
   return 1 + 2.64 * Retau/ChannelBase::Re(Retau);
 }
 
-
-ChannelBase::ChannelBase(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: OpenFOAMAnalysis
-  (
-    "Channel Flow Test Case",
-    "Rectangular domain with cyclic BCs on axial ends",
-    ps, exepath
-  ),
-  cycl_in_("cycl_half0"),
-  cycl_out_("cycl_half1"),
-  wall_up_("wall_upper"),
-  wall_lo_("wall_lower")
+ChannelBase::supplementedInputData::supplementedInputData(
+    std::unique_ptr<Parameters> pPtr,
+    const boost::filesystem::path &/*workDir*/,
+    ProgressDisplayer &progress)
+  : supplementedInputDataDerived<Parameters>( std::move(pPtr) ),
+    cycl_in_("cycl_half0"),
+    cycl_out_("cycl_half1"),
+    wall_up_("wall_upper"),
+    wall_lo_("wall_lower")
 {
-}
-
-ChannelBase::~ChannelBase()
-{
-
-}
-
-
-std::string ChannelBase::cyclPrefix() const
-{
-  boost::smatch m;
-  boost::regex_search(cycl_in_, m, boost::regex("(.*)_half[0,1]"));
-  std::string namePrefix=m[1];
-  return namePrefix;
-}
-
-
-
-
-void ChannelBase::calcDerivedInputData(ProgressDisplayer& progress)
-{
-  Parameters p(parameters_);
-  
-  PSDBL(parameters(), "geometry", H);
-  PSDBL(parameters(), "geometry", B);
-  PSDBL(parameters(), "geometry", L);
-  PSDBL(parameters(), "operation", Re_tau);
-
-  PSDBL(parameters(), "mesh", ypluswall);
-  PSDBL(parameters(), "mesh", layerratio);
-  PSDBL(parameters(), "mesh", dxplus);
-  PSDBL(parameters(), "mesh", dzplus);
-  PSINT(parameters(), "mesh", nh);
-  PSINT(parameters(), "mesh", nl);
-  PSBOOL(parameters(), "mesh", fixbuf);
-  
   // Physics
-  Re_=Re(Re_tau);
-  Ubulk_=Re_/Re_tau;
-  T_=L/Ubulk_;
-  nu_=1./Re_tau;
-  utau_=Re_tau*nu_/(0.5*H);
-  ywall_ = ypluswall/Re_tau;
-  
+  Re_ = Re(p().operation.Re_tau);
+  Ubulk_ = Re_ / p().operation.Re_tau;
+  T_ = p().geometry.L / Ubulk_;
+  nu_ = 1. / p().operation.Re_tau;
+  utau_ = p().operation.Re_tau*nu_ / (0.5*p().geometry.H);
+  ywall_ = p().mesh.ypluswall / p().operation.Re_tau;
+
   // grid
   //double Delta=L/double(nax);
-  nax_=std::max(1, int(L*Re_tau/dxplus));
-  
-  if (p.mesh.twod)
+  nax_=std::max(1, int(p().geometry.L * p().operation.Re_tau / p().mesh.dxplus));
+
+  if (p().mesh.twod)
     nb_=1;
   else
-    nb_=std::max(1, int(B*Re_tau/dzplus));
+    nb_=std::max(1, int( p().geometry.B * p().operation.Re_tau/p().mesh.dzplus));
 
-  hbuf_=0.0;  
-  nh_=std::max(1, nh/2);
-  
-  
-  
+  hbuf_=0.0;
+  nh_=std::max(1, p().mesh.nh/2);
+
+
+
   nhbuf_=0;
   gradl_=1.;
-  if (fixbuf>0)
+  if (p().mesh.fixbuf>0)
   {
     if (nh_-nhbuf_<=1)
       throw insight::Exception("Cannot fix cell height inside buffer layer: too few cells in vertical direction allowed! (min "+lexical_cast<string>(nhbuf_+1)+")");
 
-    nhbuf_=nl;
-    
-    gradl_=pow(layerratio, nl-1);
-    reportIntermediateParameter("gradl", gradl_, "near-wall layer block grading");
-    
-    hbuf_=bmd::GradingAnalyzer(gradl_).calc_L(ywall_, nl);
-    hbuf_=std::min(0.49*H, hbuf_);
-    reportIntermediateParameter("hbuf", hbuf_, "near-wall layer block height (clipped to 0.9*H)");
+    nhbuf_=p().mesh.nl;
+
+    gradl_=pow(p().mesh.layerratio, p().mesh.nl-1);
+
+    hbuf_=bmd::GradingAnalyzer(gradl_).calc_L(ywall_, p().mesh.nl);
+    hbuf_=std::min(0.49*p().geometry.H, hbuf_);
 
 //     double ypbuf=30.;
 //     hbuf_=ypbuf/Re_tau;
 //     nhbuf_=std::max(1.0, hbuf_/ywall_);
       //ywall_=hbuf_/double(nhbuf);
-    
+
   }
 
   gradh_=bmd::GradingAnalyzer
   (
-    bmd::GradingAnalyzer(gradl_).calc_delta1(ywall_), 
-    0.5*H-hbuf_, 
+    bmd::GradingAnalyzer(gradl_).calc_delta1(ywall_),
+    0.5*p().geometry.H-hbuf_,
     nh_-nhbuf_
   ).grad();
   //nh_=max(1, bmd::GradingAnalyzer(gradh_).calc_n(ywall_, H/2.));
-  
-  if (const Parameters::run_type::regime_steady_type *steady 
-	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
+
+  if (const auto *steady
+        = boost::get<Parameters::run_type::regime_steady_type>(&p().run.regime))
   {
     end_=steady->iter;
     avgStart_=0.98*end_;
     avg2Start_=end_;
-  } 
-  else if (const Parameters::run_type::regime_unsteady_type *unsteady 
-	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
+  }
+  else if (const auto *unsteady
+        = boost::get<Parameters::run_type::regime_unsteady_type>(&p().run.regime))
   {
     avgStart_=unsteady->inittime*T_;
     avg2Start_=avgStart_+unsteady->meantime*T_;
@@ -200,13 +159,15 @@ void ChannelBase::calcDerivedInputData(ProgressDisplayer& progress)
   probe_locations_.clear();
   for (int j=0; j<np; j++)
   {
-      probe_locations_.push_back(vec3( 
-        0., 
-        -0.5*p.geometry.H + 0.5*p.geometry.H*(1.-::cos(0.5*M_PI*double(j)/double(np-1))), 
+      probe_locations_.push_back(vec3(
+        0.,
+        -0.5*p().geometry.H + 0.5*p().geometry.H*(1.-::cos(0.5*M_PI*double(j)/double(np-1))),
         0.
       ));
   }
-  
+
+
+
   cout<<"Derived data:"<<endl
       <<"============================================="<<endl;
   cout<<"Reynolds number \tRe="<<Re_<<endl;
@@ -221,6 +182,43 @@ void ChannelBase::calcDerivedInputData(ProgressDisplayer& progress)
   cout<<"# cells spanwise \tnb="<<nb_<<endl;
   cout<<"# grading vertical \tgradh="<<gradh_<<endl;
   cout<<"============================================="<<endl;
+
+}
+
+
+ChannelBase::ChannelBase(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
+: OpenFOAMAnalysis
+  (
+    "Channel Flow Test Case",
+    "Rectangular domain with cyclic BCs on axial ends",
+    ps, exepath
+  ),
+  parameters_( new supplementedInputData(
+                 std::make_unique<Parameters>(ps),
+                 exepath, progress
+                 ) )
+{}
+
+ChannelBase::~ChannelBase()
+{}
+
+
+std::string ChannelBase::cyclPrefix() const
+{
+  boost::smatch m;
+  boost::regex_search(sp().cycl_in_, m, boost::regex("(.*)_half[0,1]"));
+  std::string namePrefix=m[1];
+  return namePrefix;
+}
+
+
+
+
+void ChannelBase::calcDerivedInputData(ProgressDisplayer& progress)
+{
+  OpenFOAMAnalysis::calcDerivedInputData(progress);
+  reportIntermediateParameter("gradl", sp().gradl_, "near-wall layer block grading");
+  reportIntermediateParameter("hbuf", sp().hbuf_, "near-wall layer block height (clipped to 0.9*H)");
 }
 
 
@@ -233,12 +231,7 @@ void ChannelBase::createMesh
 {  
   // create local variables from ParameterSet
   path dir = executionPath();
-  Parameters p(parameters_);
-  
-  PSDBL(parameters(), "geometry", H);
-  PSDBL(parameters(), "geometry", B);
-  PSDBL(parameters(), "geometry", L);
-//  PSDBL(parameters(), "operation", Re_tau);
+
   
   cm.insert(new MeshingNumerics(cm));
   
@@ -250,39 +243,37 @@ void ChannelBase::createMesh
   
 //  double al = M_PI/2.;
   
-  std::map<int, Point> pts;
-  pts = boost::assign::map_list_of   
-      (0, 	vec3(0.5*L, -0.5*H, -0.5*B))
-      (1, 	vec3(-0.5*L, -0.5*H, -0.5*B))
-      (2, 	vec3(-0.5*L, -0.5*H, 0.5*B))
-      (3, 	vec3(0.5*L, -0.5*H, 0.5*B))
-      .convert_to_container<std::map<int, Point> >()
-  ;
+  std::map<int, Point> pts = {
+      {0, 	vec3(0.5*p().geometry.L, -0.5*p().geometry.H, -0.5*p().geometry.B)},
+      {1, 	vec3(-0.5*p().geometry.L, -0.5*p().geometry.H, -0.5*p().geometry.B)},
+      {2, 	vec3(-0.5*p().geometry.L, -0.5*p().geometry.H, 0.5*p().geometry.B)},
+      {3, 	vec3(0.5*p().geometry.L, -0.5*p().geometry.H, 0.5*p().geometry.B)}
+  };
   arma::mat vHbuf=vec3(0, 0, 0);
-  arma::mat vH=vec3(0, H, 0);
+  arma::mat vH=vec3(0, p().geometry.H, 0);
   
   // create patches
-  Patch& cycl_in= 	bmd->addPatch(cycl_in_, new Patch());
-  Patch& cycl_out= 	bmd->addPatch(cycl_out_, new Patch());
+  Patch& cycl_in= 	bmd->addPatch(sp().cycl_in_, new Patch());
+  Patch& cycl_out= 	bmd->addPatch(sp().cycl_out_, new Patch());
   Patch cycl_side_0=Patch();
   Patch cycl_side_1=Patch();
   
   string side_type="cyclic";
-  if (p.mesh.twod) side_type="empty";
+  if (p().mesh.twod) side_type="empty";
   Patch& cycl_side= 	bmd->addPatch("cycl_side", new Patch(side_type));
   
-  Patch& wall_up= 	bmd->addPatch(wall_up_, new Patch("wall"));
+  Patch& wall_up= 	bmd->addPatch(sp().wall_up_, new Patch("wall"));
   wall_up.addFace(pts[0]+vH, pts[1]+vH, pts[2]+vH, pts[3]+vH);
-  Patch& wall_lo= 	bmd->addPatch(wall_lo_, new Patch("wall"));
+  Patch& wall_lo= 	bmd->addPatch(sp().wall_lo_, new Patch("wall"));
   wall_lo.addFace(pts[0], pts[1], pts[2], pts[3]);
   
-  int nh=nh_;
+  int nh=sp().nh_;
   
-  if (nhbuf_>0)
+  if (sp().nhbuf_>0)
   {
-    vHbuf=vec3(0, hbuf_, 0);
-    vH=vec3(0, H-2.*hbuf_, 0);
-    nh=nh_-nhbuf_;
+    vHbuf=vec3(0, sp().hbuf_, 0);
+    vH=vec3(0, p().geometry.H - 2.*sp().hbuf_, 0);
+    nh=sp().nh_-sp().nhbuf_;
     
     {
       Block& bl = bmd->addBlock
@@ -291,8 +282,8 @@ void ChannelBase::createMesh
 	  pts[0], pts[1], pts[2], pts[3],
 	  (pts[0])+vHbuf, (pts[1])+vHbuf, (pts[2])+vHbuf, (pts[3])+vHbuf
 	  ),
-	  nax_, nb_, nhbuf_,
-	  list_of<double>(1.)(1.)(gradl_)
+          sp().nax_, sp().nb_, sp().nhbuf_,
+          { 1., 1., sp().gradl_ }
 	)
       );
       cycl_out.addFace(bl.face("0473"));
@@ -308,8 +299,8 @@ void ChannelBase::createMesh
 	    (pts[0])+vH+vHbuf, (pts[1])+vH+vHbuf, (pts[2])+vH+vHbuf, (pts[3])+vH+vHbuf,
 	    (pts[0])+vH+2.*vHbuf, (pts[1])+vH+2.*vHbuf, (pts[2])+vH+2.*vHbuf, (pts[3])+vH+2.*vHbuf
 	  ),
-	  nax_, nb_, nhbuf_,
-	  list_of<double>(1.)(1.)(1./gradl_)
+          sp().nax_, sp().nb_, sp().nhbuf_,
+          { 1., 1., 1./sp().gradl_ }
 	)
       );
       cycl_out.addFace(bl.face("0473"));
@@ -327,8 +318,8 @@ void ChannelBase::createMesh
 	  pts[0]+vHbuf, pts[1]+vHbuf, pts[2]+vHbuf, pts[3]+vHbuf,
 	  (pts[0])+0.5*vH+vHbuf, (pts[1])+0.5*vH+vHbuf, (pts[2])+0.5*vH+vHbuf, (pts[3])+0.5*vH+vHbuf
 	),
-	nax_, nb_, nh,
-	list_of<double>(1.)(1.)(gradh_)
+        sp().nax_, sp().nb_, nh,
+        { 1., 1., sp().gradh_ }
       )
     );
     cycl_out.addFace(bl.face("0473"));
@@ -344,8 +335,8 @@ void ChannelBase::createMesh
 	  (pts[0])+0.5*vH+vHbuf, (pts[1])+0.5*vH+vHbuf, (pts[2])+0.5*vH+vHbuf, (pts[3])+0.5*vH+vHbuf,
 	  (pts[0])+vH+vHbuf, (pts[1])+vH+vHbuf, (pts[2])+vH+vHbuf, (pts[3])+vH+vHbuf
 	),
-	nax_, nb_, nh,
-	list_of<double>(1.)(1.)(1./gradh_)
+        sp().nax_, sp().nb_, nh,
+        { 1., 1., 1./sp().gradh_ }
       )
     );
     cycl_out.addFace(bl.face("0473"));
@@ -371,13 +362,6 @@ void ChannelBase::createCase
   OpenFOAMCase& cm, ProgressDisplayer& progress
 )
 {
-  Parameters p(parameters_);
-
-  // create local variables from ParameterSet
-  PSDBL(parameters(), "geometry", H);
-  PSDBL(parameters(), "geometry", B);
-  PSDBL(parameters(), "geometry", L);
-    
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
@@ -386,45 +370,45 @@ void ChannelBase::createCase
 //   cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
 //   ) );
   
-  if (Parameters::run_type::regime_steady_type *steady 
-	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
+  if (const auto *steady
+        = boost::get<Parameters::run_type::regime_steady_type>(&p().run.regime))
   {
     cm.insert(new steadyIncompressibleNumerics(cm, steadyIncompressibleNumerics::Parameters()
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
-      .set_Uinternal(vec3(Ubulk_,0,0))
-      .set_endTime(end_)
+      .set_Uinternal(vec3(sp().Ubulk_,0,0))
+      .set_endTime(sp().end_)
       .set_decompWeights(vec3(2,1,0))
-      .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
       .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::hierarchical)
     ));
   } 
-  else if (Parameters::run_type::regime_unsteady_type *unsteady 
-	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
+  else if (const auto *unsteady
+        = boost::get<Parameters::run_type::regime_unsteady_type>(&p().run.regime))
   {
     cm.insert( new unsteadyIncompressibleNumerics(cm, unsteadyIncompressibleNumerics::Parameters()
-      .set_LESfilteredConvection(p.run.filteredconvection)
+      .set_LESfilteredConvection(p().run.filteredconvection)
 //      .set_maxDeltaT(0.25*T_)
       .set_time_integration(PIMPLESettings::Parameters()
         .set_timestep_control(PIMPLESettings::Parameters::timestep_control_adjust_type(
           1,
-          0.25*T_
+          0.25*sp().T_
         ))
        )
-      .set_Uinternal(vec3(Ubulk_,0,0))
+      .set_Uinternal(vec3(sp().Ubulk_,0,0))
       .set_writeControl(FVNumerics::Parameters::writeControl_type::adjustableRunTime)
-      .set_writeInterval(0.25*T_)
-      .set_endTime( end_ )
+      .set_writeInterval(0.25*sp().T_)
+      .set_endTime( sp().end_ )
       .set_writeFormat(FVNumerics::Parameters::writeFormat_type::ascii)
-      .set_deltaT( double(L/nax_)/Ubulk_ ) // Co=1
+      .set_deltaT( double(p().geometry.L/sp().nax_)/sp().Ubulk_ ) // Co=1
       .set_decompWeights(vec3(2,1,0))
       .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::simple)
-      .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
     ));
   }
   
-  std::vector<std::string> fields_to_average = list_of("p")("U")("pressureForce")("viscousForce");
+  std::vector<std::string> fields_to_average = { "p", "U", "pressureForce", "viscousForce" };
   
-  if (p.operation.wscalar)
+  if (p().operation.wscalar)
   {
     cm.insert(new PassiveScalar(cm, PassiveScalar::Parameters()
         .set_fieldname("theta")
@@ -437,10 +421,10 @@ void ChannelBase::createCase
         map_list_of("theta", 0.0)
     )));
     
-    cm.insert(new WallBC(cm, wall_lo_, boundaryDict, WallBC::Parameters()
+    cm.insert(new WallBC(cm, sp().wall_lo_, boundaryDict, WallBC::Parameters()
      .set_phasefractions(temp_hi) 
     ));
-    cm.insert(new WallBC(cm, wall_up_, boundaryDict, WallBC::Parameters()
+    cm.insert(new WallBC(cm, sp().wall_up_, boundaryDict, WallBC::Parameters()
      .set_phasefractions(temp_lo) 
     ));
   }
@@ -451,50 +435,55 @@ void ChannelBase::createCase
 
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_fields(fields_to_average)
-    .set_timeStart(avgStart_)
+    .set_timeStart(sp().avgStart_)
     .set_name("zzzaveraging") // shall be last FO in list
   ));
   
-  if (p.run.eval2)
+  if (p().run.eval2)
   {
     cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
-      .set_R(0.5*H)
+      .set_R(0.5*p().geometry.H)
 //       .set_x(0.0) // middle x==0!
 //       .set_z(-0.49*B)
-      .set_p0(vec3(0., 0., -0.49*B))
-      .set_axSpan(0.5*L)
-      .set_tanSpan(0.45*B)
+      .set_p0(vec3(0., 0., -0.49*p().geometry.B))
+      .set_axSpan(0.5*p().geometry.L)
+      .set_tanSpan(0.45*p().geometry.B)
       .set_name("tpc_interior")
-      .set_timeStart( avg2Start_ )
+      .set_timeStart( sp().avg2Start_ )
     ));
   }
   
   {
-    std::vector<std::string> sample_fields = list_of<std::string>("p")("U");
+    std::vector<std::string> sample_fields = { "p", "U" };
     
-    if (p.operation.wscalar)
+    if (p().operation.wscalar)
     {
         sample_fields.push_back("theta");
     }
     
     cm.insert(new probes(cm, probes::Parameters()
     .set_fields( sample_fields )
-    .set_probeLocations(probe_locations_)
+    .set_probeLocations(sp().probe_locations_)
     .set_name("center_probes")
     .set_outputControl("timeStep")
     .set_outputInterval(10.0)
     ));
   }
   
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu_) ));
-  if (p.mesh.twod)
+  cm.insert(new singlePhaseTransportProperties(
+              cm,
+              singlePhaseTransportProperties::Parameters().set_nu(sp().nu_) ));
+
+  if (p().mesh.twod)
     cm.insert(new SimpleBC(cm, "cycl_side", boundaryDict, "empty") );
   else
     cm.insert(new CyclicPairBC(cm, "cycl_side", boundaryDict) );
   
-  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters().set_roughness_z0(p.operation.y0));
+  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters()
+                             .set_roughness_z0(p().operation.y0)
+                             );
   
-  insertTurbulenceModel(cm, parameters().get<SelectableSubsetParameter>("fluid/turbulenceModel"));
+  insertTurbulenceModel(cm, p().fluid.turbulenceModel);
 }
 
 
@@ -502,11 +491,9 @@ void ChannelBase::createCase
 
 void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
-  Parameters p(parameters_);
-  
   OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
-  if (p.mesh.twod) 
+  if (p().mesh.twod)
   {
     OFDictData::dict& fvSolution=dicts->lookupDict("system/fvSolution");
     OFDictData::dict& solvers=fvSolution.subDict("solvers");
@@ -528,15 +515,7 @@ void ChannelBase::evaluateAtSection(
   const std::string& vertical_probes_array_name
 )
 {
-  Parameters p(parameters_);
-
-  PSDBL(parameters(), "geometry", B);
-  PSDBL(parameters(), "geometry", H);
-  PSDBL(parameters(), "geometry", L);
-  PSDBL(parameters(), "operation", Re_tau);
-    
-  
-  double xByH= (x/L + 0.5)*L/H;
+  double xByH= (x/p().geometry.L + 0.5)*p().geometry.L/p().geometry.H;
   bool isfirstslice=false;
   if (xByH<=1e-3) isfirstslice=true;
 
@@ -559,8 +538,8 @@ void ChannelBase::evaluateAtSection(
       {
         arma::cube U_vs_t = probes::readProbes(cm, executionPath(), vertical_probes_array_name, "U");
         
-        arma::mat yp=arma::zeros(probe_locations_.size(),1);
-        for(size_t i=0; i<probe_locations_.size(); i++) yp(i)=Re_tau*(1.+probe_locations_[i](1));
+        arma::mat yp=arma::zeros(sp().probe_locations_.size(),1);
+        for(size_t i=0; i<sp().probe_locations_.size(); i++) yp(i)=p().operation.Re_tau*(1.+sp().probe_locations_[i](1));
         arma::uword npts=yp.n_elem;
         arma::uword ictr=npts-1;
         
@@ -568,7 +547,7 @@ void ChannelBase::evaluateAtSection(
         for(arma::uword i=0; i<3; i++)
         {
             arma::mat t_full=U_vs_t.slice(i).col(0);
-            arma::uvec valid_rows=arma::find(t_full>avgStart_);
+            arma::uvec valid_rows=arma::find(t_full>sp().avgStart_);
             t=t_full.rows(valid_rows);
             arma::mat U_full=U_vs_t.slice(i).cols(1, npts);
             U[i]=U_full.rows(valid_rows);
@@ -615,11 +594,11 @@ void ChannelBase::evaluateAtSection(
         ""
         );
             
-        if (p.operation.wscalar)
+        if (p().operation.wscalar)
         {
             arma::mat s_vs_t = probes::readProbes(cm, executionPath(), vertical_probes_array_name, "theta").slice(0);
             arma::mat t_full=s_vs_t.col(0);
-            arma::uvec valid_rows=arma::find(t_full>avgStart_);
+            arma::uvec valid_rows=arma::find(t_full>sp().avgStart_);
             arma::mat t=t_full.rows(valid_rows);
             arma::mat s_full=s_vs_t.cols(1,npts);
             arma::mat s=s_full.rows(valid_rows);
@@ -640,9 +619,9 @@ void ChannelBase::evaluateAtSection(
                 "$y^+$", "$\\langle u^{\\prime 2} \\rangle$",
                 {
                   PlotCurve( yp, s_var,            "svar_vs_yp",   "w l lt -1 lc 1 t '$\\langle \\vartheta^{\\prime 2}/\\vartheta_{max} \\rangle$'" ),
-                  PlotCurve( yp, s_flux[0]/utau_,  "sfluxx_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ),
-                  PlotCurve( yp, s_flux[1]/utau_,  "sfluxy_vs_yp", "w l lt -1 lc 4 t '$\\langle u^{\\prime}_y \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ),
-                  PlotCurve( yp, s_flux[2]/utau_,  "sfluxz_vs_yp", "w l lt -1 lc 6 t '$\\langle u^{\\prime}_z \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" )
+                  PlotCurve( yp, s_flux[0]/sp().utau_,  "sfluxx_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ),
+                  PlotCurve( yp, s_flux[1]/sp().utau_,  "sfluxy_vs_yp", "w l lt -1 lc 4 t '$\\langle u^{\\prime}_y \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ),
+                  PlotCurve( yp, s_flux[2]/sp().utau_,  "sfluxz_vs_yp", "w l lt -1 lc 6 t '$\\langle u^{\\prime}_z \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" )
                 },
                 ""
             );
@@ -657,23 +636,23 @@ void ChannelBase::evaluateAtSection(
     
   boost::ptr_vector<sampleOps::set> sets;
   
-  double delta_yp1=1./Re_tau;   
+  double delta_yp1=1./p().operation.Re_tau;
   
   double
     miny=delta_yp1,
-    maxy=0.5*H-delta_yp1;
+    maxy=0.5*p().geometry.H-delta_yp1;
     
   arma::mat pts = (miny + (maxy-miny)*cos(0.5*M_PI*(pow( linspace(0., 1., 101)-1.0, 2 )))) * vec3(0,1,0).t();
  
   pts.col(0)+=x;
-  pts.col(2)+=-0.49*B;
+  pts.col(2)+=-0.49*p().geometry.B;
  
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_points( pts )
     .set_dir1(vec3(1,0,0))
-    .set_dir2(vec3(0,0,0.98*B))
+    .set_dir2(vec3(0,0,0.98*p().geometry.B))
     .set_nd1(1)
-    .set_nd2(n_hom_avg)
+    .set_nd2(sp().n_hom_avg)
     .set_name("radial")
   ));
   sample(cm, executionPath(),
@@ -700,9 +679,9 @@ void ChannelBase::evaluateAtSection(
   {
     arma::uword c( cd[UMeanName_].col );
     
-    arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
-    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
-    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
+    arma::mat axial(join_rows(p().operation.Re_tau-p().operation.Re_tau*data.col(0), data.col(c)));
+    arma::mat wallnormal(join_rows(p().operation.Re_tau-p().operation.Re_tau*data.col(0), data.col(c+1)));
+    arma::mat spanwise(join_rows(p().operation.Re_tau-p().operation.Re_tau*data.col(0), data.col(c+2)));
     
     axial.save( (executionPath()/("umeanaxial_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
@@ -745,9 +724,9 @@ void ChannelBase::evaluateAtSection(
     arma::mat k=data.col(cd["k"].col);
     arma::mat omega=data.col(cd["omega"].col);
     
-    arma::mat ydelta=1.0-(data.col(0)+delta_yp1)/(0.5*H); //Re_tau-Re_tau*data.col(0);
-    arma::mat Lt1=(2./H)*sqrt(k)/(0.09*omega);
-    arma::mat Lt2=ydelta*0.5*H*0.41;
+    arma::mat ydelta=1.0-(data.col(0)+delta_yp1)/(0.5*p().geometry.H); //Re_tau-Re_tau*data.col(0);
+    arma::mat Lt1=(2./p().geometry.H)*sqrt(k)/(0.09*omega);
+    arma::mat Lt2=ydelta*0.5*p().geometry.H*0.41;
     //arma::mat Lt=arma::min(Lt1, Lt2);
     arma::mat Lt=Lt1;
     for (arma::uword i=0; i<Lt2.n_rows; i++) Lt(i)=min(Lt(i), Lt2(i));
@@ -883,7 +862,7 @@ void ChannelBase::evaluateAtSection(
         }
     
     
-    arma::mat yplus=Re_tau-Re_tau*data.col(0);
+    arma::mat yplus=p().operation.Re_tau-p().operation.Re_tau*data.col(0);
     
     arma::mat axial(		join_rows(yplus, Rxx)	);
     arma::mat wallnormal(	join_rows(yplus, Ryy)	);
@@ -959,9 +938,9 @@ void ChannelBase::evaluateAtSection(
      PlotCurve( refdata_K590, 	"TKEMKM590", "u 1:2 w l lt 3 dt 2 lc 1 t 'DNS ($Re_{\\tau}=590$, MKM)'" )
     });
 
-    arma::mat kres= 0.5*( Rxx + Ryy + Rzz ) / pow(utau_, 2);
+    arma::mat kres= 0.5*( Rxx + Ryy + Rzz ) / pow(sp().utau_, 2);
     {
-      arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*H)), kres));
+      arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*p().geometry.H)), kres));
 
       kplots.push_back(PlotCurve( Kp, 	"TKEresolved", "w l lt 1 dt 1 lc 2 t 'TKE (resolved)'" ));
       Kp.save( (executionPath()/("Kpresolved_vs_ydelta_"+title+".txt")).c_str(), arma::raw_ascii);
@@ -969,8 +948,8 @@ void ChannelBase::evaluateAtSection(
 
     if (cd.find("k")!=cd.end())
     {
-      arma::mat K=kres + data.col(ck)/pow(utau_, 2);
-      arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*H)), K));
+      arma::mat K=kres + data.col(ck)/pow(sp().utau_, 2);
+      arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*p().geometry.H)), K));
 
       kplots.push_back(PlotCurve( Kp, 	"TKE", "w l lt -1 lw 2 t 'TKE'" ));
       Kp.save( (executionPath()/("Kp_vs_ydelta_"+title+".txt")).c_str(), arma::raw_ascii);
@@ -991,11 +970,11 @@ void ChannelBase::evaluateAtSection(
       "cbi=loadOFCase('.')\n"
       "prepareSnapshots()\n";
       
-  if (!p.mesh.twod)
+  if (!p().mesh.twod)
   {
     std::string extractSliceCmd;
     if (isfirstslice)
-      extractSliceCmd="eb = extractPatches(cbi, '"+cycl_in_+"')\n";
+      extractSliceCmd="eb = extractPatches(cbi, '"+sp().cycl_in_+"')\n";
     else      
       extractSliceCmd="eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n";
     
@@ -1063,13 +1042,7 @@ void ChannelBase::evaluateAtSection(
 
 
 ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress)
-{
-  const ParameterSet& p=parameters_;
-//  PSDBL(p, "geometry", B);
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  
+{  
   RFieldName_="UPrime2Mean";
   UMeanName_="UMean";
   if ( const RASModel *rm = cm.get<RASModel>(".*") )
@@ -1093,7 +1066,8 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
     tpcs->evaluate
     (
       cm, executionPath(), results, 
-      "two-point correlation of velocity at different radii at x/H="+str(format("%g")%(0.5*L/H))
+      "two-point correlation of velocity at different radii at x/H="
+          +str( format("%g") % (0.5*p().geometry.L/p().geometry.H) )
     );
   }
 
@@ -1101,19 +1075,19 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
   {
     
   // Wall friction coefficient
-  arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
+  arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), sp().nax_);
   wallforce.col(0)-=wallforce.col(0)(0); // ensure start curve starts at x=0
     
   arma::mat Cf_vs_xp(join_rows(
-      wallforce.col(0)*Re_tau, 
-      wallforce.col(1)/(0.5*pow(Ubulk_,2))
+      wallforce.col(0)*p().operation.Re_tau,
+      wallforce.col(1)/(0.5*pow(sp().Ubulk_,2))
     ));
     Cf_vs_xp.save( (executionPath()/"Cf_vs_xp.txt").c_str(), arma::raw_ascii);
     
     arma::mat Cftheo_vs_xp=zeros(2,2);
     Cftheo_vs_xp(0,0)=Cf_vs_xp(0,0);
     Cftheo_vs_xp(1,0)=Cf_vs_xp(Cf_vs_xp.n_rows-1,0);
-    double Cftheo=pow(utau_,2)/(0.5*pow(Ubulk_,2));
+    double Cftheo=pow(sp().utau_,2)/(0.5*pow(sp().Ubulk_,2));
     Cftheo_vs_xp(0,1)=Cftheo;
     Cftheo_vs_xp(1,1)=Cftheo;
 
@@ -1195,8 +1169,11 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
 
 
 
-ChannelCyclic::ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: ChannelBase(ps, exepath)
+ChannelCyclic::ChannelCyclic(
+        const ParameterSet& ps,
+        const boost::filesystem::path& exepath,
+        ProgressDisplayer& progress )
+: ChannelBase(ps, exepath, progress)
 {
 }
 
@@ -1214,8 +1191,7 @@ void ChannelCyclic::createCase
 (
   OpenFOAMCase& cm, ProgressDisplayer& progress
 )
-{  
-  Parameters p(parameters_);
+{
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
@@ -1225,27 +1201,25 @@ void ChannelCyclic::createCase
   
   ChannelBase::createCase(cm, progress);
   
-  cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
-					    .set_Ubar(vec3(Ubulk_, 0, 0))
-		));
-
+  cm.insert(new PressureGradientSource(
+              cm,
+              PressureGradientSource::Parameters()
+              .set_Ubar(vec3(sp().Ubulk_, 0, 0))
+              ));
 }
+
 
 void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-  const ParameterSet& p=parameters_;
-
-  if (p.getBool("run/perturbU"))
+  if (p().run.perturbU)
   {
     if (!cm.outputTimesPresentOnDisk(executionPath()))
     {
-        PSDBL(p, "operation", Re_tau);
-
         cm.executeCommand(executionPath(), "perturbU", 
-                list_of<string>
-                (lexical_cast<string>(Re_tau))
-                ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
-                );
+                {
+                 { lexical_cast<string>(p().operation.Re_tau) },
+                 { "("+lexical_cast<string>(sp().Ubulk_)+" 0 0)" }
+                } );
     }
   }
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, progress);
@@ -1274,7 +1248,7 @@ void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts
   {
     controlDict["application"]="channelFoam";
   }
-  controlDict["endTime"] = end_;
+  controlDict["endTime"] = sp().end_;
 }
 
 addToAnalysisFactoryTable(ChannelCyclic);

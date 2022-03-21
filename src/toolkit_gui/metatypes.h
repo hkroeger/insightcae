@@ -1,6 +1,9 @@
 #ifndef METATYPES_H
 #define METATYPES_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QMetaType>
 
 #include "base/parameterset.h"
@@ -8,6 +11,7 @@
 #include "base/exception.h"
 #include "base/taskspoolerinterface.h"
 #include "base/progressdisplayer.h"
+#include "base/supplementedinputdata.h"
 
 #include <armadillo>
 
@@ -18,14 +22,15 @@ Q_DECLARE_METATYPE(insight::ProgressState);
 Q_DECLARE_METATYPE(insight::ProgressStatePtr);
 Q_DECLARE_METATYPE(insight::TaskSpoolerInterface::JobList);
 Q_DECLARE_METATYPE(arma::mat);
+Q_DECLARE_METATYPE(insight::supplementedInputDataBasePtr);
 
-class ISMetaTypeRegistrator
+class TOOLKIT_GUI_EXPORT ISMetaTypeRegistrator
 {
 public:
   ISMetaTypeRegistrator();
 };
 
-extern ISMetaTypeRegistrator ismetatyperegistrator;
+TOOLKIT_GUI_EXPORT extern ISMetaTypeRegistrator ismetatyperegistrator;
 
 
 #endif // METATYPES_H

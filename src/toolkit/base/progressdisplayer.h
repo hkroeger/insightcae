@@ -5,6 +5,7 @@
 #include <memory>
 #include <map>
 #include <vector>
+#include <string>
 
 
 namespace insight {
@@ -25,7 +26,11 @@ typedef
 
 
 
-
+/**
+ * @brief The ProgressState struct represents a change in progress of some action.
+ * It is marked by a single number (e.g. a time value) and can have some additional properties:
+ * a set of numbers (maybe residuals) and a log message.
+ */
 struct ProgressState
     : public std::pair<double, ProgressVariableList>
 {
@@ -73,13 +78,29 @@ public:
     // ====================================================================================
     // ======== convergence state reporting
 
+    /**
+     * @brief update
+     * implementations must be safe to be called from different thread!
+     * @param pi
+     */
     virtual void update ( const ProgressState& pi ) =0;
+
+    // ====================================================================================
+    // ======== log message
+    /**
+     * @brief logMessage
+     * implementations must be safe to be called from different thread!
+     * @param line
+     */
+    virtual void logMessage(const std::string& line) =0;
+
 
     // ====================================================================================
     // ======== action progress reporting
     ActionProgress forkNewAction(double nSteps, const std::string& name="Overall" );
     void stepUp(double steps=1);
     void stepTo(double i);
+    void completed();
     void operator++();
     void operator+=(double n);
     void message(const std::string& message);
@@ -87,10 +108,31 @@ public:
 
     // ====================================================================================
     // ======== action status reporting
+    /**
+     * @brief setActionProgressValue
+     * implementations must be safe to be called from different thread!
+     * @param path
+     * @param value
+     */
     virtual void setActionProgressValue(const std::string &path, double value) =0;
+    /**
+     * @brief setMessageText
+     * implementations must be safe to be called from different thread!
+     * @param path
+     * @param message
+     */
     virtual void setMessageText(const std::string &path, const std::string& message) =0;
+    /**
+     * @brief finishActionProgress
+     * implementations must be safe to be called from different thread!
+     * @param path
+     */
     virtual void finishActionProgress(const std::string &path) =0;
 
+    /**
+     * @brief reset
+     * implementations must be safe to be called from different thread!
+     */
     virtual void reset() =0;
     virtual bool stopRun() const;
 };
@@ -113,11 +155,13 @@ public:
   ActionProgress(const ProgressDisplayer& parentAction, std::string path, double nSteps);
   virtual ~ActionProgress();
 
+  void update ( const ProgressState& pi ) override;
+  void logMessage(const std::string& line) override;
+
   void setActionProgressValue(const std::string &path, double value) override;
   void setMessageText(const std::string &path, const std::string& message) override;
   void finishActionProgress(const std::string &path) override;
 
-  void update ( const ProgressState& pi ) override;
   void reset() override;
 };
 

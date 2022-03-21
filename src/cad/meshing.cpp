@@ -33,6 +33,33 @@ namespace fs=boost::filesystem;
 namespace insight {
 namespace cad {
 
+
+
+
+const std::map<std::string, int> GmshCase::algorithms2D =
+{
+  {"MeshAdapt", 1},
+  {"Automatic", 2},
+  {"Delaunay", 5},
+  {"Frontal-Delaunay", 6},
+  {"BAMG", 7},
+  {"DelQuad", 8}
+};
+
+
+
+
+const std::map<std::string, int> GmshCase::algorithms3D =
+{
+  {"Delaunay", 1},
+  {"Frontal", 4},
+  {"MMG3D", 7},
+  {"R-Tree", 9}
+};
+
+
+
+
 void GmshCase::insertLinesBefore(GmshCase::iterator i, const std::vector<string> &lines)
 {
   for (auto j=lines.begin(); j!=lines.end(); ++j)
@@ -45,16 +72,28 @@ GmshCase::GmshCase(
     insight::cad::ConstFeaturePtr part,
     const boost::filesystem::path& outputMeshFile,
     double Lmax, double Lmin,
-    const std::string& exeName,
     bool keepDir
     )
 : workDir_(keepDir),
   part_(part),
   additionalPoints_(0),
-  executableName_(exeName),
   outputMeshFile_(outputMeshFile),
-  mshFileVersion_(v41)
+  mshFileVersion_(v41),
+  algo2D_(1), algo3D_(4)
 {
+  setGlobalLminLmax(Lmin, Lmax);
+
+  // prefer gmsh from insightcae dependency package
+  executable_ = boost::process::search_path("gmshinsightcae");
+  if (executable_.empty())
+  {
+    executable_ = boost::process::search_path("gmsh");
+  }
+  if (executable_.empty())
+  {
+    throw insight::Exception("Could not find executable \"gmsh\" in PATH! Please check, if it is installed correctly,");
+  }
+
   push_back("SetFactory(\"OpenCASCADE\")");
   push_back("// Preamble");
   push_back("");
@@ -94,18 +133,26 @@ GmshCase::GmshCase(
   insertLinesBefore(endOfExternalGeometryMerging_, {
     "Merge \""+fs::absolute(geomFile).string()+"\""
                     });
-
-  insertLinesBefore(endOfMeshingOptions_, {
-    "Mesh.Algorithm = 1", /* 1=MeshAdapt, 2=Automatic, 5=Delaunay, 6=Frontal, 7=bamg, 8=delquad */
-    "Mesh.Algorithm3D = 4", /* 1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D, 9=R-tree */
-    "Mesh.CharacteristicLengthMin = "+lexical_cast<string>(Lmin),
-    "Mesh.CharacteristicLengthMax = "+lexical_cast<string>(Lmax),
-
-    "Mesh.Smoothing = 10",
-    "Mesh.SmoothNormals = 1",
-    "Mesh.Explode = 1"
-                    });
 }
+
+void GmshCase::setAlgorithm2D(int a)
+{
+  algo2D_=a;
+}
+
+
+void GmshCase::setAlgorithm3D(int a)
+{
+  algo3D_=a;
+}
+
+
+void GmshCase::setGlobalLminLmax(double Lmin, double Lmax)
+{
+  Lmin_=Lmin;
+  Lmax_=Lmax;
+}
+
 
 void GmshCase::setMSHFileVersion(GmshCase::MSHFileVersion v)
 {
@@ -228,7 +275,7 @@ void GmshCase::nameSolids(const std::string& name, const FeatureSet& solids)
 void GmshCase::addSingleNamedVertex(const std::string& vn, const arma::mat& p)
 {
   additionalPoints_++;
-  int id=part_->allVertices().data().size()+additionalPoints_;
+  int id=part_->allVertices()->data().size()+additionalPoints_;
   insertLinesBefore(endOfGeometryDefinition_, {
     str( format("Point(%d) = {%g, %g, %g, 999};")%id%p(0)%p(1)%(p(2)) ),
     str( format("Physical Point(\"%s\") = {%d};")%vn%id )
@@ -283,8 +330,53 @@ void GmshCase::setFaceEdgeLen(const std::string& fn, double L)
                     });
 }
 
+int GmshCase::outputType() const
+{
+  int otype=-1;
+
+  std::string ext=outputMeshFile_.extension().string();
+  if (ext==".stl") otype=27;
+  else if (ext==".msh") otype=1;
+  else if (ext==".unv") otype=2;
+  else if (ext==".med") otype=33;
+  else
+    insight::Warning("Mesh file extension "+ext+" is unrecognized!");
+  return otype;
+}
 
 
+
+
+void GmshCase::insertMeshingCommand()
+{
+  insertLinesBefore(endOfMeshingOptions_, {
+    "Mesh.Algorithm = "+lexical_cast<std::string>(algo2D_), /* 1=MeshAdapt, 2=Automatic, 5=Delaunay, 6=Frontal, 7=bamg, 8=delquad */
+    "Mesh.Algorithm3D = "+lexical_cast<std::string>(algo3D_), /* 1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D, 9=R-tree */
+    "Mesh.CharacteristicLengthMin = "+lexical_cast<string>(Lmin_),
+    "Mesh.CharacteristicLengthMax = "+lexical_cast<string>(Lmax_),
+
+    "Mesh.Smoothing = 10",
+    "Mesh.SmoothNormals = 1",
+    "Mesh.Explode = 1"
+  });
+
+
+  if (outputType()==27)
+  {
+    // STL surface mesh
+    insertLinesBefore(endOfMeshingActions_, {
+      "Mesh 2"
+    });
+  }
+  else
+  {
+    // volume mesh
+    insertLinesBefore(endOfMeshingActions_, {
+      "Mesh 3",
+      "Coherence Mesh"
+    });
+  }
+}
 
 void GmshCase::doMeshing()
 {
@@ -292,19 +384,16 @@ void GmshCase::doMeshing()
 
   std::string ext=outputMeshFile_.extension().string();
 
-  int otype=-1;
-  if (ext==".stl")
+  int otype = outputType();
+  if (otype==27)
   {
-    otype=27;
     insertLinesBefore(endOfMeshingOptions_, {
                         "Mesh.Binary=1"
                       });
     setMinimumCirclePoints(20);
   }
-  else if (ext==".msh")
+  else if (otype==1)
   {
-    otype=1;
-
     std::string versionOption;
     switch (mshFileVersion_)
     {
@@ -319,16 +408,17 @@ void GmshCase::doMeshing()
                         "Mesh.MshFileVersion="+versionOption
                       });
   }
-  else if (ext==".unv") otype=2;
-  else if (ext==".med") otype=33;
-  else
-    insight::Warning("Mesh file extension "+ext+" is unrecognized!");
 
   insertLinesBefore(endOfMeshingOptions_, {
                       "Mesh.Format="+lexical_cast<string>(otype)
                     });
 
+  insertMeshingCommand();
 
+  // insert write statement
+  insertLinesBefore(endOfMeshingActions_, {
+    "Save \""+fs::absolute(outputMeshFile_).string()+"\""
+  });
 
   // write file
   boost::filesystem::path inputFile = workDir_ / (outputMeshFile_.stem().string() + ".geo");
@@ -338,7 +428,6 @@ void GmshCase::doMeshing()
   }
 
 
-
   if (otype>=0)
   {
       
@@ -346,18 +435,13 @@ void GmshCase::doMeshing()
 
     std::vector<std::string> argv;
 
-    if (otype==27)
-        argv.push_back("-2");
-    else
-        argv.push_back("-3");
-
     argv.insert(argv.end(), {
                   "-v", "10",
                   fs::absolute(inputFile).string(),
-                  "-o", fs::absolute(outputMeshFile_).string()
+                  "-"
                 });
 
-    auto job = ee.forkCommand( executableName_, argv );
+    auto job = ee.forkCommand( executable_.string(), argv );
     job->runAndTransferOutput();
   } 
 }
@@ -384,15 +468,21 @@ SurfaceGmshCase::SurfaceGmshCase(
     const boost::filesystem::path& outputMeshFile,
     double Lmax, double Lmin,
     const std::string& name,
-    bool keepDir
+    bool keepDir,
+    bool recombineTris
     )
   : cad::GmshCase(part, outputMeshFile,
-                  Lmax, Lmin, "gmshinsightcae", keepDir)
+                  Lmax, Lmin, keepDir)
 {
+  if (recombineTris)
+  {
+    insertLinesBefore(endOfMeshingOptions_, {
+      "Mesh.RecombinationAlgorithm = 0",
+      "Mesh.RecombineAll = 1",
+    });
+  }
   insertLinesBefore(endOfMeshingOptions_, {
-    "Mesh.RecombinationAlgorithm = 0",
     "Mesh.SecondOrderIncomplete=1",
-    "Mesh.RecombineAll = 1",
     "Mesh.Optimize = 1",
     "Mesh.OptimizeNetgen = 1",
     "Physical Surface(\""+name+"\")=Surface{:}"
@@ -411,11 +501,15 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     const std::vector<NamedEntity>& namedBottomFaces,
     const std::vector<NamedEntity>& namedTopFaces,
     const std::vector<NamedEntity>& namedLateralEdges,
-    bool keepDir
+    double grading,
+    bool keepDir,
+    bool recombineTris
     )
   : cad::GmshCase(part, outputMeshFile,
-                  L, L, "gmshinsightcae", keepDir)
+                  L, L, keepDir),
+    grading_(grading)
 {
+  insight::assertion(grading_>0., "grading must be larger than zero!");
 
   for (const auto& nbf: namedBottomFaces)
   {
@@ -439,13 +533,17 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     }
   }
 
+  if (recombineTris)
+  {
+    insertLinesBefore(endOfMeshingOptions_, {
+      "Mesh.RecombinationAlgorithm = 0",
+      "Mesh.RecombineAll = 1",
+     });
+  }
 
   insertLinesBefore(endOfMeshingOptions_, {
-    "Mesh.RecombinationAlgorithm = 0",
     "Mesh.SecondOrderIncomplete=1",
-    "Mesh.RecombineAll = 1",
     "Mesh.Optimize = 1",
-
     "Physical Volume(\""+solidName+"\") = {}"
    });
 
@@ -473,21 +571,53 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
   // insert faces one by one
   auto faces=part->allFacesSet();
 
+  std::string layerSpecification;
+
+  if (fabs(1.-grading_)<1e-10)
+  {
+    layerSpecification =
+      str( format("Layers{%d}") % nLayers );
+  }
+  else
+  {
+    double g=pow(grading_, 1./double(nLayers-1));
+
+    arma::mat h = arma::ones(nLayers);
+    for (int i=1; i<nLayers; ++i)
+      h(i)=g*h(i-1);
+    h/=arma::as_scalar(sum(h));
+
+    arma::mat hcum = arma::zeros(nLayers);
+    hcum(0)=h(0);
+    for (int i=1; i<nLayers; ++i)
+    {
+      hcum(i)=hcum(i-1)+h(i);
+    }
+
+    std::string layerNum,layerHeight;
+    for (int i=0;i<nLayers;++i)
+    {
+      layerNum += "1";
+      layerHeight += boost::lexical_cast<std::string>( hcum(i) );
+      if (i<nLayers-1)
+      {
+        layerNum+=",";
+        layerHeight+=",";
+      }
+    }
+    layerSpecification="Layers{ {"+layerNum+"}, {"+layerHeight+"} }";
+  }
 
   for (FeatureID fi : faces)
   {
     std::string out=str(format("out%d")%fi);
 
     insertLinesBefore(endOfMeshingActions_, {
-      str(format(out+"[] = Extrude {0.,0.,%g} { Surface{%d}; Layers{%d}; Recombine; }")
-                        % h % fi % nLayers ),
+      str(format(out+"[] = Extrude {0.,0.,%g} { Surface{%d}; %s; Recombine; }")
+                        % h % fi % layerSpecification ),
       "Physical Volume(\""+solidName+"\") += "+out+"[1]"
     });
   }
-
-  insertLinesBefore(endOfMeshingActions_, {
-    "Coherence Mesh"
-  });
 
 
   for (FeatureID fi : faces)
@@ -517,7 +647,7 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
                         });
     }
 
-    for (int i=0; i<currentFaceEdges.size(); i++)
+    for (size_t i=0; i<currentFaceEdges.size(); i++)
     {
       auto eid = currentFaceEdges[i];
       auto nle = namedLateralEdges_.find(eid);

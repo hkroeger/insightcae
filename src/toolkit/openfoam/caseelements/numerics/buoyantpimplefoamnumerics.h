@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
 #include "openfoam/caseelements/numerics/pimplesettings.h"
+#include "buoyantpimplefoamnumerics__buoyantPimpleFoamNumerics__Parameters_headers.h"
 
 namespace insight {
 

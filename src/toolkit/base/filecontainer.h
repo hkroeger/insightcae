@@ -172,6 +172,8 @@ public:
 
   void replaceContentBuffer(std::shared_ptr<std::string> newContent);
 
+  size_t contentBufferSize() const;
+
   void clearPackedData();
 
 

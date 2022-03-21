@@ -5,6 +5,7 @@
 
 #include "base/exception.h"
 #include "base/tools.h"
+#include "base/remoteserverlist.h"
 
 #include "openfoam/openfoamcase.h"
 #include "openfoam/ofes.h"
@@ -12,12 +13,12 @@
 #include <boost/asio.hpp>
 #include <boost/process/async.hpp>
 
-#include "pstreams/pstream.h"
-
 #include <regex>
 #include "rapidxml/rapidxml_print.hpp"
 
 #include <signal.h>
+
+#include "sshlinuxserver.h"
 
 using namespace std;
 using namespace boost;
@@ -31,119 +32,92 @@ namespace insight
 
 
 
-bool hostAvailable(const string &host)
-{
-  int ret = bp::system(
-        bp::search_path("ssh"),
-        bp::args({ "-q", host, "exit" })
-        );
-
-  return (ret==0);
-}
 
 
-
-
-void RemoteLocation::runRsync
-(
-    const std::vector<std::string>& args,
-    std::function<void(int,const std::string&)> pf
-)
-{
-  bp::ipstream is;
-  bp::child c
-      (
-       bp::search_path("rsync"),
-       bp::args( args ),
-       bp::std_out > is
-      );
-
-  std::string line;
-  boost::regex pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*) \\(xfr#([0-9]+), to-chk=([0-9]+)/([0-9]+)\\)");
-  while (c.running() && std::getline(is, line) && !line.empty())
-  {
-    boost::smatch match;
-    if (boost::regex_search( line, match, pattern, boost::match_default ))
-    {
-      std::string percent=match[1];
-      std::string rate=match[2];
-      std::string eta=match[3];
-//        int i_file=to_number<int>(match[4]);
-      int i_to_chk=to_number<int>(match[5]);
-      int total_to_chk=to_number<int>(match[6]);
-
-      double progress = total_to_chk==0? 1.0 : double(total_to_chk-i_to_chk) / double(total_to_chk);
-
-      if (pf) pf(int(100.*progress), rate+", "+eta+" (current file: "+percent+")");
-    }
-  }
-
-  c.wait();
-}
 
 
 
 
 RemoteLocation::RemoteLocation(const RemoteLocation& orec)
-  : launchScript_(orec.launchScript_),
-    server_(orec.server_),
+  : serverConfig_(orec.serverConfig_),
+    serverInstance_(orec.serverInstance_),
     remoteDir_(orec.remoteDir_),
-    autoCreateRemoteDirRequired_(orec.autoCreateRemoteDirRequired_),
-    isValid_(orec.isValid_)
+    autoCreateRemoteDir_(orec.autoCreateRemoteDir_),
+    isTemporaryStorage_(orec.isTemporaryStorage_),
+    port_(orec.port_),
+    isValidated_(orec.isValidated_)
 {}
 
 
 
 
 RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
-  : autoCreateRemoteDirRequired_(false)
+  : autoCreateRemoteDir_(false),
+    isTemporaryStorage_(false),
+    port_(-1),
+    isValidated_(false)
 {
   CurrentExceptionContext ce("reading configuration for remote execution in  directory "+mf.parent_path().string()+" from file "+mf.string());
 
-  if (!boost::filesystem::exists(mf))
+  if ( !boost::filesystem::exists(mf) || boost::filesystem::is_directory(mf) )
   {
     throw insight::Exception("There is no remote execution configuration file present!");
   }
   else
   {
-    std::string line;
+    // read xml
+    string content;
+    readFileIntoString(mf, content);
+
+    using namespace rapidxml;
+    xml_document<> doc;
+    doc.parse<0>(&content[0]);
+
+    auto *rootnode = doc.first_node();
+    if (!rootnode || rootnode->name()!=string("remote") )
+      throw insight::Exception("No valid \"remote\" node found in XML!");
+
+    if (auto s = rootnode->first_attribute("server"))
     {
-      std::ifstream f(mf.c_str());
-      if (!getline(f, line))
-        throw insight::Exception("Could not read line from file "+mf.string());
-    }
-    std::vector<std::string> pair;
-    boost::split(pair, line, boost::is_any_of(":"));
-    if ( (!algorithm::starts_with(line, "<")) && pair.size()==2)
-    {
-      server_=pair[0];
-      remoteDir_=pair[1];
+      serverConfig_=remoteServers.findServer(std::string(s->value()));
+
     }
     else
+      throw insight::Exception("no server name was configured for remote location");
+
+    if (auto s = rootnode->first_attribute("temporary"))
     {
-      // read xml
-      string content;
-      readFileIntoString(mf, content);
-
-      using namespace rapidxml;
-      xml_document<> doc;
-      doc.parse<0>(&content[0]);
-
-      auto *rootnode = doc.first_node();
-      if (!rootnode || rootnode->name()!=string("remote") )
-        throw insight::Exception("No valid \"remote\" node found in XML!");
-
-      if (auto ls = rootnode->first_attribute("launchScript"))
-        launchScript_ = ls->value();
-      if (auto s = rootnode->first_attribute("server"))
-        server_ = s->value();
-      if (auto rd = rootnode->first_attribute("directory"))
-        remoteDir_ = rd->value();
+      std::string v(s->value());
+      boost::to_lower(v);
+      isTemporaryStorage_ = (v=="1")||(v=="yes")||(v=="on");
     }
+    else
+      insight::Warning("no temporary storage information configured for remote location. Assuming non-temporary storage.");
+
+    if (auto s = rootnode->first_attribute("autocreate"))
+    {
+      std::string v(s->value());
+      boost::to_lower(v);
+      autoCreateRemoteDir_ = (v=="1")||(v=="yes")||(v=="on");
+    }
+    else
+      insight::Warning("no auto-create storage flag configured for remote location. Assuming no auto creation.");
+
+    if (auto rd = rootnode->first_attribute("directory"))
+      remoteDir_ = rd->value();
+
+    if (auto p = rootnode->first_attribute("port"))
+    {
+      std::string v(p->value());
+      port_=boost::lexical_cast<int>(v);
+      insight::dbg()<<"read port="<<port_<<std::endl;
+    }
+
+    serverInstance_ = serverConfig_->getInstanceIfRunning();
 
     validate();
 
-    if (!isValid_)
+    if (!isValidated_)
     {
       throw insight::Exception("Remote execution configuration is invalid!");
     }
@@ -153,96 +127,73 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
 
 
 
-RemoteLocation::RemoteLocation(const RemoteServerInfo& rsi, const boost::filesystem::path& remotePath)
-  : launchScript_( rsi.hasLaunchScript_ ? rsi.server_ : "" ),
-    server_(rsi.hasLaunchScript_ ? "" : rsi.server_ ),
-    remoteDir_( rsi.defaultDir_ ),
-    autoCreateRemoteDirRequired_( remotePath.empty() )
-{
-  if (!remotePath.empty())
-  {
-    remoteDir_ = remotePath;
-  }
-  else
-  {
-    remoteDir_ = rsi.defaultDir_;
-  }
-
-  initialize();
-}
-
-
-
-
-RemoteLocation::~RemoteLocation()
-{
-  stopTunnels();
-}
-
-
-
-
-void RemoteLocation::createTunnels(
-    std::vector<boost::tuple<int, string, int> > remoteListenPorts,
-    std::vector<boost::tuple<int, string, int> > localListenPorts
+RemoteLocation::RemoteLocation(
+    RemoteServer::ConfigPtr rsc,
+    const boost::filesystem::path& remotePath,
+    bool autoCreateRemoteDir,
+    bool isTemporaryStorage
     )
+  : serverConfig_( rsc ),
+    remoteDir_( remotePath ),
+    autoCreateRemoteDir_( autoCreateRemoteDir ),
+    isTemporaryStorage_( isTemporaryStorage ),
+    port_(-1),
+    isValidated_(false)
 {
-  std::vector<std::string> args = { "-N" };
+    serverInstance_ = serverConfig_->getInstanceIfRunning();
+    validate();
+//  if (remoteDir_.empty())
+//  {
+//    autoCreateRemoteDir_=true;
+//    isTemporaryStorage_=true;
 
-  for (const auto& rlp: remoteListenPorts)
-  {
-    args.insert(
-          std::end(args),
-          {"-R", str(format("%d:%s:%d") % get<0>(rlp) % get<1>(rlp) % get<2>(rlp)) }
-    );
-  }
+//    serverInstance_ = serverConfig_->getInstanceIfRunning();
 
-  for (const auto& llp: localListenPorts)
-  {
-    args.insert(
-          std::end(args),
-          {"-L", str(format("%d:%s:%d") % get<0>(llp) % get<1>(llp) % get<2>(llp)) }
-    );
-  }
-
-  args.push_back( server() );
-
-  tunnelProcesses_.push_back(
-      bp::child
-      (
-       bp::search_path("ssh"),
-       bp::args( args )
-      )
-        );
+//    if (serverInstance_)
+//    {
+//      remoteDir_ = serverInstance_->getTemporaryDirectoryName(
+//            serverConfig()->defaultDirectory_/"irXXXXXX" );
+//    }
+//    else
+//    {
+//      throw insight::Exception("remote instance is not running: cannot determine suitable temporary storage");
+//    }
+//  }
 }
 
 
 
 
-void RemoteLocation::stopTunnels()
+RemoteServerPtr RemoteLocation::server() const
 {
-  size_t i=0;
-  for (auto& t: tunnelProcesses_)
-  {
-    i++;
-    cout << "Stopping tunnel instance "<<i<<"/"<<tunnelProcesses_.size()<<"..." << endl;
-    //try graceful exit
-    kill(t.id(), SIGTERM);
-    if (!t.wait_for( std::chrono::seconds(10) ))
-    {
-      t.terminate();
-    }
-
-  }
-  tunnelProcesses_.clear();
+  return serverInstance_;
 }
 
 
 
 
-const std::string& RemoteLocation::server() const
+RemoteServer::ConfigPtr RemoteLocation::serverConfig() const
 {
-  return server_;
+  return serverConfig_;
+}
+
+
+string RemoteLocation::serverLabel() const
+{
+  return *serverConfig();
+}
+
+
+string RemoteLocation::hostName() const
+{
+  if ( auto scfg =
+       std::dynamic_pointer_cast<SSHLinuxServer::Config>(
+         serverConfig()) )
+  {
+    return scfg->hostName_;
+  }
+
+  return std::string();
 }
 
 
@@ -256,93 +207,94 @@ const boost::filesystem::path& RemoteLocation::remoteDir() const
 
 
 
-void RemoteLocation::cleanup()
+void RemoteLocation::cleanup(bool forceRemoval)
 {
   CurrentExceptionContext ex("clean remote server");
   assertValid();
 
   execRemoteCmd("tsp -K");
 
-  removeRemoteDir();
-  disposeHost();
+  if (isTemporaryStorage() || forceRemoval)
+      removeRemoteDir();
+}
+
+bool RemoteLocation::serverIsAvailable() const
+{
+    return server() && server()->hostIsAvailable();
 }
 
 
 
 
-void RemoteLocation::launchHost()
+//void RemoteLocation::launchHost()
+//{
+//  if (!launchScript_.empty())
+//  {
+//    CurrentExceptionContext ce("executing launch script");
+
+//    bp::ipstream out;
+
+//    int ret = bp::system(
+//          bp::search_path("sh"),
+//          bp::args({ "-c",
+//                     collectIntoSingleCommand(launchScript_.string(), {"launch"})
+//                   }),
+//          bp::std_out > out
+//          );
+
+//    if (ret!=0)
+//    {
+//      throw insight::Exception(
+//            str( format("Failed to execute launch script %s for remote host!") % launchScript_)
+//            );
+//    }
+//    else
+//    {
+//      getline(out, server_);
+//    }
+//  }
+
+//  if (!serverIsUp())
+//    throw insight::Exception("Could not establish connection to server "+server_+"!");
+//}
+
+
+
+
+void RemoteLocation::initialize(bool findFreeRemotePort)
 {
-  if (!launchScript_.empty())
+  if (!isValidated_)
   {
-    CurrentExceptionContext ce("executing launch script");
+    CurrentExceptionContext ex( "initializing remote location" );
 
-    bp::ipstream out;
+    if (!serverInstance_)
+      serverInstance_ = serverConfig_->instance();
 
-    int ret = bp::system(
-          bp::search_path("sh"),
-          bp::args({ "-c",
-                     collectIntoSingleCommand(launchScript_.string(), {"launch"})
-                   }),
-          bp::std_out > out
-          );
-
-    if (ret!=0)
+    if (remoteDir_.empty())
     {
-      throw insight::Exception(
-            str( format("Failed to execute launch script %s for remote host!") % launchScript_)
-            );
+      autoCreateRemoteDir_=true;
+      isTemporaryStorage_=true;
+
+      remoteDir_ = serverInstance_->getTemporaryDirectoryName(
+              serverConfig()->defaultDirectory_/"irXXXXXX" );
     }
-    else
+
+    if (autoCreateRemoteDir_)
     {
-      getline(out, server_);
+      if (!remoteDirExists())
+      {
+        serverInstance_->createDirectory(remoteDir_);
+      }
     }
+
+
   }
 
-  if (!serverIsUp())
-    throw insight::Exception("Could not establish connection to server "+server_+"!");
-}
-
-
-
-
-void RemoteLocation::initialize()
-{
-  if (!serverIsUp()) launchHost();
-
-  if (autoCreateRemoteDirRequired_)
+  if ( findFreeRemotePort && (port_<0) )
   {
-    bp::ipstream out;
-
-    int ret = bp::system(
-          bp::search_path("ssh"),
-          bp::args({ server(),
-                     "mktemp", "-d", (remoteDir_/"irXXXXXX").string() }),
-          bp::std_out > out
-          );
-
-    if (ret==0)
-    {
-      string line;
-      getline(out, line);
-      remoteDir_=line;
-    }
-    else
-    {
-      throw insight::Exception("Could not auto-create remote directory!");
-    }
-  }
-  else if (!remoteDirExists())
-  {
-    int ret = bp::system(
-                bp::search_path("ssh"),
-                bp::args({
-                  server(),
-                  "mkdir -p \""+remoteDir().string()+"\""
-                })
-          );
-
-    if (ret!=0)
-      throw insight::Exception("Failed to create remote directory!");
+      CurrentExceptionContext ex( "detecting remote port" );
+      port_=serverInstance_->findFreeRemotePort();
+      insight::dbg()<<"port="<<port_<<std::endl;
   }
 
   validate();
@@ -353,13 +305,13 @@ void RemoteLocation::initialize()
 
 void RemoteLocation::validate()
 {
-  isValid_=false;
-  if (!server_.empty() && !remoteDir_.empty())
+  isValidated_=false;
+  if (server() && !remoteDir_.empty())
   {
-    if (serverIsUp())
+    if (server()->hostIsAvailable())
     {
       if (remoteDirExists())
-        isValid_=true;
+        isValidated_=true;
     }
   }
 }
@@ -371,66 +323,47 @@ void RemoteLocation::removeRemoteDir()
 {
   if (remoteDirExists())
   {
-    int ret = bp::system(
-                bp::search_path("ssh"),
-                bp::args({
-                  server(),
-                  "rm -rf \""+remoteDir().string()+"\""
-                })
-          );
-    if (ret!=0)
-      throw insight::Exception("Failed to remove remote directory!");
-
-    isValid_=false;
+    serverInstance_->removeDirectory( remoteDir_ );
+    isValidated_=false;
   }
 }
 
 
 
 
-void RemoteLocation::disposeHost()
-{
-  if (!launchScript_.empty())
-  {
-    CurrentExceptionContext ce("executing dispose script");
+//void RemoteLocation::disposeHost()
+//{
+//  if (!launchScript_.empty())
+//  {
+//    CurrentExceptionContext ce("executing dispose script");
 
-    int ret = bp::system(
-          bp::search_path("sh"),
-          bp::args({ "-c",
-                     collectIntoSingleCommand(launchScript_.string(), {"dispose", server()})
-                   })
-          );
+//    int ret = bp::system(
+//          bp::search_path("sh"),
+//          bp::args({ "-c",
+//                     collectIntoSingleCommand(launchScript_.string(), {"dispose", server()})
+//                   })
+//          );
 
-    if (ret!=0)
-    {
-      throw insight::Exception(
-            str( format("Failed to remote remote directory!") % launchScript_ )
-            );
-    }
+//    if (ret!=0)
+//    {
+//      throw insight::Exception(
+//            str( format("Failed to remote remote directory!") % launchScript_ )
+//            );
+//    }
 
-    isValid_=false;
-  }
-}
+//    isValid_=false;
+//  }
+//}
 
 
 
 
 void RemoteLocation::assertValid() const
 {
-  if (!isValid_)
+  if (!isValidated_)
     throw insight::Exception("Error: attempted communication with invalid remote location!");
 }
 
-
-
-
-bool RemoteLocation::serverIsUp() const
-{
-  if (!server_.empty())
-    return hostAvailable(server_);
-  else
-    return false;
-}
 
 
 
@@ -438,38 +371,9 @@ bool RemoteLocation::serverIsUp() const
 std::vector<bfs_path> RemoteLocation::remoteLS() const
 {
   CurrentExceptionContext ex("list remote directory contents");
-
   assertValid();
 
-  std::vector<bfs_path> res;
-
-  redi::ipstream p_in;
-
-  p_in.open("ssh", { "ssh", server(), "ls", remoteDir().string() } );
-
-  if (!p_in.is_open())
-  {
-    throw insight::Exception("RemoteExecutionConfig::remoteLS: Failed to launch directory listing subprocess!");
-  }
-
-  std::string line;
-  while (std::getline(p_in.out(), line))
-  {
-    cout<<line<<endl;
-    res.push_back(line);
-  }
-  while (std::getline(p_in.err(), line))
-  {
-    cerr<<"ERR: "<<line<<endl;
-  }
-  p_in.close();
-
-  if (p_in.rdbuf()->status()!=0)
-  {
-    throw insight::Exception("RemoteExecutionConfig::remoteLS: command failed with nonzero return code.");
-  }
-
-  return res;
+  return serverInstance_->listRemoteDirectory(remoteDir_);
 }
 
 
@@ -480,72 +384,40 @@ std::vector<bfs_path> RemoteLocation::remoteSubdirs() const
   CurrentExceptionContext ex("list remote subdirectories");
   assertValid();
 
-  std::vector<bfs_path> res;
-  bp::ipstream is;
-  std::shared_ptr<bp::child> c;
-
-  c.reset(new bp::child(
-            bp::search_path("ssh"),
-            bp::args({server(),
-                                  "find", remoteDir().string()+"/", // add slash for symbolic links
-                                  "-maxdepth", "1", "-type", "d", "-printf", "%P\\\\n"}),
-            bp::std_out > is
-            ));
-
-  if (!c->running())
-    throw insight::Exception("Could not execute remote dir list process!");
-
-  std::string line;
-  while (std::getline(is, line))
-  {
-    res.push_back(line);
-  }
-
-  c->wait();
-
-  return res;
+  return serverInstance_->listRemoteSubdirectories(remoteDir_);
 }
 
 
 
 
-int RemoteLocation::execRemoteCmd(const std::string& command, bool throwOnFail)
+std::string RemoteLocation::remoteSourceOFEnvStatement() const
 {
-  insight::CurrentExceptionContext ex("executing command on remote host: "+command);
-  assertValid();
-
-    std::ostringstream cmd;
-
-    cmd << "export TS_SOCKET="<<socket()<<";";
-
+  try
+  {
+     const OFEnvironment& cofe = OFEs::getCurrent();
+     return "source " + cofe.bashrc().filename().string() + ";";
+  }
+  catch (const std::exception& e)
+  {
     try
     {
-       const OFEnvironment& cofe = OFEs::getCurrent();
-       cmd << "source " << cofe.bashrc().filename() << ";";
+      const OFEnvironment& cofe = OFEs::getCurrentOrPreferred();
+
+      WarningDispatcher::getCurrent().issue(
+            "Could not detect currently loaded OpenFOAM environment. "
+            "Running remote command with default OpenFOAM environment loaded.");
+
+      return "source " + cofe.bashrc().filename().string() + ";";
     }
-    catch (const std::exception& e) {
-      warnings.issue("Could not detect currently loaded OpenFOAM environment. Running remote command without any OpenFOAM environment loaded.");
-       // ignore, don't load OF config remotely
-    }
-
-    cmd << "cd "<<remoteDir_<<" && (" << command << ")";
-
-    int ret = bp::system(
-                bp::search_path("ssh"),
-                bp::args({
-                   server(),
-                   "bash -lc \""+escapeShellSymbols(cmd.str())+"\""
-                })
-          );
-
-    cout<<"cmd string: >>>"<<cmd.str()<<"<<<"<<endl;
-
-    if ( throwOnFail && (ret != 0) )
+    catch (...)
     {
-        throw insight::Exception("Could not execute command on server "+server()+": \""+cmd.str()+"\"");
+      WarningDispatcher::getCurrent().issue(
+            "Could not detect any usable OpenFOAM environment. "
+            "Running remote command with no OpenFOAM environment loaded.");
     }
+  }
 
-    return ret;
+  return "";
 }
 
 
@@ -561,16 +433,10 @@ void RemoteLocation::putFile
   CurrentExceptionContext ex("put file "+localFile.string()+" to remote location");
   assertValid();
 
-  boost::filesystem::path lf=localFile, rf=remoteFileName;
-  //if (lf.is_relative()) lf=localDir_/lf;
+  boost::filesystem::path rf=remoteFileName;
   if (rf.is_relative()) rf=remoteDir_/rf;
-  std::vector<std::string> args=
-      {
-       lf.string(),
-       server_+":"+rf.string()
-      };
 
-  runRsync(args, pf);
+  server()->putFile(localFile, rf, pf);
 }
 
 
@@ -586,31 +452,7 @@ void RemoteLocation::syncToRemote
   CurrentExceptionContext ex("upload local directory "+localDir.string()+" to remote location");
   assertValid();
 
-    std::vector<std::string> args=
-        {
-         "-az",
-         "--delete",
-         "--info=progress",
-
-         "--exclude", "processor*",
-         "--exclude", "*.foam",
-         "--exclude", "postProcessing",
-         "--exclude", "*.socket",
-         "--exclude", "backup",
-         "--exclude", "archive",
-         "--exclude", "mnt_remote"
-        };
-
-    for (const auto& ex: exclude_pattern)
-    {
-      args.push_back("--exclude");
-      args.push_back(ex);
-    }
-
-    args.push_back(localDir.string()+"/");
-    args.push_back(server_+":"+remoteDir_.string());
-
-    runRsync(args, pf);
+  server()->syncToRemote(localDir, remoteDir_, exclude_pattern, pf);
 }
 
 
@@ -627,61 +469,34 @@ void RemoteLocation::syncToLocal
   CurrentExceptionContext ex("download remote files to local directory");
   assertValid();
 
-  std::vector<std::string> args;
+  std::vector<std::string> excl = exclude_pattern;
+  if (skipTimeSteps)
+  {
+    auto files = remoteLS();
 
-    args =
+    // remove non-numbers
+    files.erase(remove_if(files.begin(), files.end(),
+                          [&](const bfs_path& f)
     {
-      "-az",
-      "--info=progress",
-      "--exclude", "processor*",
-      "--exclude", "*.foam",
-      "--exclude", "*.socket",
-      "--exclude", "backup",
-      "--exclude", "archive",
-      "--exclude", "mnt_remote"
-    };
+      try { toNumber<double>(f.string()); return false; }
+      catch (...) { return true; }
+    }), files.end());
 
-
-    if (skipTimeSteps)
-      {
-        auto files = remoteLS();
-
-        // remove non-numbers
-        files.erase(remove_if(files.begin(), files.end(),
-                [&](const bfs_path& f)
-                {
-                  try { to_number<double>(f.c_str()); return false; }
-                  catch (...) { return true; }
-                }), files.end());
-
-        for (const auto& f: files)
-          {
-            args.push_back("--exclude");
-            args.push_back(f.c_str());
-          }
-      }
-
-    for (const auto& ex: exclude_pattern)
+    for (const auto& f: files)
     {
-      args.push_back("--exclude");
-      args.push_back(ex);
+      excl.push_back(f.string());
     }
+  }
 
-    args.push_back(server_+":"+remoteDir_.string()+"/");
-    args.push_back(localDir.string());
-
-    runRsync(args, pf);
+  server()->syncToLocal(localDir, remoteDir_, excl, pf);
 }
 
 
 
 
 void RemoteLocation::writeConfigFile(
-    const filesystem::path &cfgf,
-    const string &server,
-    const filesystem::path &remoteDir,
-    const filesystem::path &launchScript
-    )
+    const filesystem::path &cfgf
+    ) const
 {
   using namespace rapidxml;
 
@@ -692,35 +507,63 @@ void RemoteLocation::writeConfigFile(
   doc.append_node(decl);
   xml_node<> *rootnode = doc.allocate_node(node_element, "remote");
 
-  if (!launchScript.empty())
-    rootnode->append_attribute(doc.allocate_attribute
-                               ("launchScript",
-                                 doc.allocate_string(launchScript.c_str())
+
+  rootnode->append_attribute(doc.allocate_attribute
+                               ("server",
+                                 doc.allocate_string(serverConfig()->c_str())
                                  )
                                );
   rootnode->append_attribute(doc.allocate_attribute
-                               ("server",
-                                 doc.allocate_string(server.c_str())
+                               ("temporary",
+                                 doc.allocate_string(
+                                   isTemporaryStorage() ?
+                                    "yes" : "no"
+                                  )
+                                 )
+                               );
+  rootnode->append_attribute(doc.allocate_attribute
+                               ("autocreate",
+                                 doc.allocate_string(
+                                   autoCreateRemoteDir_ ?
+                                    "yes" : "no"
+                                  )
                                  )
                                );
   rootnode->append_attribute(doc.allocate_attribute
                                ("directory",
-                                 doc.allocate_string(remoteDir.c_str())
+                                 doc.allocate_string(remoteDir().string().c_str())
                                  )
                                );
 
+  rootnode->append_attribute(doc.allocate_attribute
+                               ("port",
+                                 doc.allocate_string(lexical_cast<string>(port_).c_str())
+                                 )
+                               );
   doc.append_node(rootnode);
 
-  ofstream f(cfgf.c_str());
+  ofstream f(cfgf.string());
   f << doc;
 }
 
 
 
 
-bool RemoteLocation::isValid() const
+bool RemoteLocation::isActive() const
 {
-  return isValid_;
+  return isValidated_;
+}
+
+bool RemoteLocation::isTemporaryStorage() const
+{
+    return isTemporaryStorage_;
+}
+
+int RemoteLocation::port() const
+{
+    assertValid();
+
+    return port_;
 }
 
 
@@ -730,18 +573,10 @@ bool RemoteLocation::remoteDirExists() const
 {
   CurrentExceptionContext ex("check, if remote location exists");
 
-  if (server_.empty() || remoteDir_.empty())
+  if (!serverInstance_ || remoteDir_.empty())
     return false;
 
-  int ret = bp::system(
-              bp::search_path("ssh"),
-              bp::args({server(), "cd", remoteDir().string()})
-        );
-
-  if (ret==0)
-    return true;
-  else
-    return false;
+  return serverInstance_->checkIfDirectoryExists(remoteDir_);
 }
 
 

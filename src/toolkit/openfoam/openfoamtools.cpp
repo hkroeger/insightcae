@@ -70,7 +70,7 @@ TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir, const 
               std::string fn=td.filename().string();
               try
               {
-                  double time = to_number<double>(fn);
+                  double time = toNumber<double>(fn);
                   if (!fta.empty())
                   {
                     if (exists(td/fta))
@@ -170,7 +170,7 @@ void setSet(
 
   job->runAndTransferOutput();
 
-  if (job->process->exit_code()!=0)
+  if (job->process().exit_code()!=0)
   {
     throw insight::Exception("setSet: command failed with nonzero return code.");
   }
@@ -190,7 +190,7 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   if (!exists(target))
     create_directories(target);
   
-  std::string cmd("ls "); cmd+=source.c_str();
+  std::string cmd("ls "); cmd+=source.string();
   ::system(cmd.c_str());
   
   std::vector<std::string> files=list_of<std::string>("boundary")("faces")("neighbour")("owner")("points");
@@ -218,7 +218,7 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
         copy_file(source/fname, target/fname);
       }
       else 
-        if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+        if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.string());
     }
   }
   else
@@ -255,7 +255,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   if (!exists(target))
     create_directories(target);
   
-  std::string cmd("ls "); cmd+=source.c_str();
+  std::string cmd("ls "); cmd+=source.string();
   ::system(cmd.c_str());
   
   {
@@ -289,7 +289,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
       readOpenFOAMBoundaryDict(bf, org_bnd);
     }
     else 
-      throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+      throw insight::Exception("Essential mesh file "+fname+" not present in "+source.string());
 
     OFDictData::dictFile new_bnd;
     for (const auto& b: org_bnd)
@@ -322,7 +322,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
     path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
     if (exists(source/gzname)) create_symlink_force_overwrite(source/gzname, target/gzname);
     else if (exists(source/fname)) create_symlink_force_overwrite(source/fname, target/fname);
-    else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+    else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.string());
   }
 }
 
@@ -365,12 +365,12 @@ fieldToCellOperator::fieldToCellOperator(Parameters const& p)
 void fieldToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["fieldName"]=p_.fieldName();
-  opdict["min"]=p_.min();
-  opdict["max"]=p_.max();
+  opdict["fieldName"]=p_.fieldName;
+  opdict["min"]=p_.min;
+  opdict["max"]=p_.max;
 
   OFDictData::list fve;
-  for (const FieldValueSpec& fvs: p_.fieldValues())
+  for (const auto& fvs: p_.fieldValues)
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -396,10 +396,10 @@ boxToCellOperator::boxToCellOperator(Parameters const& p )
 void boxToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["box"]=OFDictData::to_OF(p_.min()) + OFDictData::to_OF(p_.max());
+  opdict["box"]=OFDictData::to_OF(p_.min) + OFDictData::to_OF(p_.max);
 
   OFDictData::list fve;
-  for (const FieldValueSpec& fvs: p_.fieldValues())
+  for (const auto& fvs: p_.fieldValues)
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -425,10 +425,10 @@ cellToCellOperator::cellToCellOperator(Parameters const& p )
 void cellToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["set"]=p_.cellSet();
+  opdict["set"]=p_.cellSet;
 
   OFDictData::list fve;
-  for (const FieldValueSpec& fvs: p_.fieldValues())
+  for (const auto& fvs: p_.fieldValues)
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -447,7 +447,7 @@ setFieldOperator* cellToCellOperator::clone() const
 }
 
 void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-	       const std::vector<setFieldOps::FieldValueSpec>& defaultValues,
+               const setFieldOps::setFieldOperator::Parameters::fieldValues_type& defaultValues,
 	       const boost::ptr_vector<setFieldOps::setFieldOperator>& ops)
 {
   using namespace setFieldOps;
@@ -455,7 +455,7 @@ void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
   OFDictData::dictFile setFieldsDict;
   
   OFDictData::list& dvl = setFieldsDict.getList("defaultFieldValues");
-  for ( const FieldValueSpec& dv: defaultValues)
+  for ( const auto& dv: defaultValues)
   {
     dvl.push_back( dv );
   }
@@ -638,7 +638,7 @@ line::line(ParameterSet const& p )
 {
 }
 
-void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+void line::addIntoDictionary(const OpenFOAMCase& /*ofc*/, OFDictData::dict& sampleDict) const
 {
   OFDictData::list& l=sampleDict.getList("sets");
   
@@ -653,7 +653,7 @@ void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDi
 //   sd["end"]=OFDictData::vector3(p_.end());
 //   sd["nPoints"]=p_.np();
   OFDictData::list pl;
-  for (int i=0; i<p_.points.n_rows; i++)
+  for (arma::uword i=0; i<p_.points.n_rows; i++)
     pl.push_back(OFDictData::vector3(p_.points.row(i).t()));
   sd["points"]=pl;
   
@@ -724,7 +724,7 @@ arma::mat line::readSamples
     
     // join contents of all files in one time directory by column 
     // provide the mapping field<>column in coldescr
-    for (int i=0; i<files.size(); i++)
+    for (size_t i=0; i<files.size(); i++)
     {
       std::string fn=files[i];
       path fp=timedir/fn;
@@ -753,7 +753,7 @@ arma::mat line::readSamples
       }
       
       int ncmpt=(res.n_cols-1)/flnames.size(); // retrieve number of cols per field
-      for (int j=0; j<flnames.size(); j++)
+      for (size_t j=0; j<flnames.size(); j++)
       {
 	if (coldescr) 
 	{
@@ -780,7 +780,7 @@ arma::mat line::readSamples
     // compute expected length coordinates from prescribed sampling points => coords
     std::vector<double> d;
     d.push_back(0.0);
-    for (int k=1; k<p_.points.n_rows; k++)
+    for (arma::uword k=1; k<p_.points.n_rows; k++)
     {
       d.push_back( d[k-1] + norm( p_.points.row(k) - p_.points.row(k-1), 2) );
     }
@@ -860,8 +860,6 @@ circumferentialAveragedUniformLine::circumferentialAveragedUniformLine(Parameter
 
 void circumferentialAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
-  OFDictData::list& l=sampleDict.getList("sets");
-  
   for (const line& l: lines_)
   {
     l.addIntoDictionary(ofc, sampleDict);
@@ -909,7 +907,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 	  }
 	  else
 	  {
-	    for (int c=0; c<ci.ncmpt; c++)
+            for (size_t c=0; c<ci.ncmpt; c++)
 	      f<<" "+fn.first+"_"+lexical_cast<string>(c);
 	  }
 	  //cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
@@ -939,7 +937,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 	{
 	  // symmetric tensor
 	  int c0=ci.col;
-	  for (int j=0; j<datai.n_rows; j++)
+          for (arma::uword j=0; j<datai.n_rows; j++)
 	  {
 	    arma::mat t;
 	    t << datai(j,c0)   << datai(j,c0+1) << datai(j,c0+2) << endr
@@ -1224,19 +1222,21 @@ void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& 
     targetcase.executeCommand
     (
       target, "mergeMeshes", 
-      list_of<std::string>
-      (".")(".")
-      (src.parent_path().c_str()) (basename(src).c_str()) 
-      ("-noFunctionObjects")
+      {
+       ".", ".",
+       src.parent_path().string(), basename(src),
+       "-noFunctionObjects"
+      }
     );
   }
   else
     targetcase.executeCommand
     (
       target, "mergeMeshes", 
-      list_of<std::string>
-      (".")
-      (boost::filesystem::absolute(source).c_str()) 
+      {
+       ".",
+       boost::filesystem::absolute(source).string()
+      }
     );
 }
 
@@ -1272,10 +1272,11 @@ void mapFields
   }
 
   std::vector<string> args =
-    list_of<std::string>
-    (boost::filesystem::absolute(source).c_str())
-    ("-sourceTime")("latestTime")
-    ;
+    {
+     boost::filesystem::absolute(source).string(),
+     "-sourceTime", "latestTime"
+    };
+
   if (parallelTarget) 
     args.push_back("-parallelTarget");
   
@@ -1362,7 +1363,7 @@ void mapFields
 }
 
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones, bool is_parallel)
+void resetMeshToLatestTimestep(const OpenFOAMCase& /*c*/, const boost::filesystem::path& location, bool ignoremissing, bool include_zones, bool is_parallel)
 {
     if (!is_parallel)
     {
@@ -1552,7 +1553,7 @@ void runPvPython
 {
   boost::mutex::scoped_lock lock(runPvPython_mtx);
   
-  redi::opstream proc;  
+//  redi::opstream proc;
   std::vector<string> args;
   args.push_back("--force-offscreen-rendering");
   std::string machine=""; // execute always on local machine
@@ -1568,7 +1569,7 @@ void runPvPython
     }
     tf.close();
   }
-  args.push_back(tempfile.c_str());
+  args.push_back(tempfile.string());
   ofc.executeCommand(location, "pvbatch-offscreen", args, NULL, 0, &machine);
 
   if (!keepScript) remove(tempfile);
@@ -1582,7 +1583,7 @@ arma::mat matchValue(const std::string& vs)
   boost::regex re_vector ("^\\(([^ ]+) ([^ ]+) ([^ ]+)\\)$");
   try {
      arma::mat d;
-     d << to_number<double> ( vs ) ;
+     d << toNumber<double> ( vs ) ;
      return d;
   }
   catch (...)
@@ -1591,9 +1592,9 @@ arma::mat matchValue(const std::string& vs)
     if (!boost::regex_match ( vs, w, re_vector))
       throw insight::Exception("reported value of patch integral was neither scalar nor vector!");
     arma::mat d;
-    d << to_number<double> ( w[1] )
-      << to_number<double> ( w[2] )
-      << to_number<double> ( w[3] );
+    d << toNumber<double> ( w[1] )
+      << toNumber<double> ( w[2] )
+      << toNumber<double> ( w[3] );
     return d;
   }
   return arma::mat();
@@ -1665,7 +1666,7 @@ patchIntegrate::patchIntegrate
     {
       if ( boost::regex_match ( line, what, re_time ) )
         {
-           time=to_number<double> ( what[1] );
+           time=toNumber<double> ( what[1] );
           times.push_back ( time );
           if ( times.size()-areadata.size()>1 ) // area may be reported not for every time step
             {
@@ -1692,12 +1693,12 @@ patchIntegrate::patchIntegrate
       if ( boost::regex_match ( line, what, re_area ) )
         {
            cout<<what[1]<<" : "<<what[3]<<endl;
-           areadata.push_back ( to_number<double> ( what[3] ) );
+           areadata.push_back ( toNumber<double> ( what[3] ) );
         }
       if ( boost::regex_match ( line, what, re_area4 ) )
         {
           cout<<" Area : "<<what[1]<<endl;
-          areadata.push_back ( to_number<double> ( what[1] ) );
+          areadata.push_back ( toNumber<double> ( what[1] ) );
         }
     }
     if ( times.size()-areadata.size()==1 ) // area may not have been reported not for every time step
@@ -1714,7 +1715,7 @@ patchIntegrate::patchIntegrate
       {
         ncomp=data[0].n_cols;
         arma::mat res=zeros ( data.size(), 2+ncomp );
-        for ( int i=0; i<data.size(); i++ )
+        for ( size_t i=0; i<data.size(); i++ )
           {
             res ( i,0 ) =times[i];
             res ( i,1 ) =areadata[i];
@@ -1762,16 +1763,16 @@ patchArea::patchArea(const OpenFOAMCase& cm, const boost::filesystem::path& loca
   {
     if ( boost::regex_match ( line, what, re_total ) )
       {
-        A_=to_number<double> ( what[1] );
+        A_=toNumber<double> ( what[1] );
         n_=vec3(
-              to_number<double> ( what[2] ),
-            to_number<double> ( what[3] ),
-            to_number<double> ( what[4] )
+              toNumber<double> ( what[2] ),
+            toNumber<double> ( what[3] ),
+            toNumber<double> ( what[4] )
             );
         ctr_=vec3(
-              to_number<double> ( what[5] ),
-            to_number<double> ( what[6] ),
-            to_number<double> ( what[7] )
+              toNumber<double> ( what[5] ),
+            toNumber<double> ( what[6] ),
+            toNumber<double> ( what[7] )
             );
         return;
       }
@@ -1821,7 +1822,7 @@ arma::mat readTextFile(std::istream& f)
 
       std::vector<double> vals;
       transform(strs.begin(), strs.end(), std::back_inserter(vals),
-                [](const std::string& s) { return insight::to_number<double>(s); });
+                [](const std::string& s) { return insight::toNumber<double>(s); });
 
       fd.push_back(vals);
     }
@@ -1884,7 +1885,7 @@ arma::mat readParaviewCSV(const boost::filesystem::path& file, std::map<std::str
     boost::split(cols, line, boost::is_any_of(","));
     for(size_t i=0; i<cols.size(); i++)
     {
-      data.push_back(to_number<double>(cols[i]));
+      data.push_back(toNumber<double>(cols[i]));
     }
   }
   
@@ -2147,12 +2148,12 @@ std::vector<MeshQualityInfo> getMeshQuality(const OpenFOAMCase& cm, const boost:
       {
         if (boost::regex_match(line, what, boost::regex("^ *Overall domain bounding box \\(([^ ]+) ([^ ]+) ([^ ]+)\\) \\(([^ ]+) ([^ ]+) ([^ ]+)\\)$")))
         {
-          curmq.bb_min=vec3( to_number<double>(what[1]), to_number<double>(what[2]), to_number<double>(what[3]) );
-          curmq.bb_max=vec3( to_number<double>(what[4]), to_number<double>(what[5]), to_number<double>(what[6]) );
+          curmq.bb_min=vec3( toNumber<double>(what[1]), toNumber<double>(what[2]), toNumber<double>(what[3]) );
+          curmq.bb_max=vec3( toNumber<double>(what[4]), toNumber<double>(what[5]), toNumber<double>(what[6]) );
         }
         if (boost::regex_match(line, what, boost::regex("^ *Max aspect ratio = ([^ ]+) .*$")))
         {
-          curmq.max_aspect_ratio=to_number<double>(what[1]);
+          curmq.max_aspect_ratio=toNumber<double>(what[1]);
         }
         if (boost::regex_match(line, what, boost::regex("^ *Minimum face area = *([^ ]+)\\. Maximum face area = *([^ ]+)\\..*$")))
         {
@@ -2170,25 +2171,25 @@ std::vector<MeshQualityInfo> getMeshQuality(const OpenFOAMCase& cm, const boost:
         }
         if (boost::regex_match(line, what, boost::regex("^ *Mesh non-orthogonality Max: ([^ ]+) average: ([^ ]+)$")))
         {
-          curmq.max_nonorth=to_number<double>(what[1]);
-          curmq.avg_nonorth=to_number<double>(what[2]);
+          curmq.max_nonorth=toNumber<double>(what[1]);
+          curmq.avg_nonorth=toNumber<double>(what[2]);
         }
         if (boost::regex_match(line, what, boost::regex("^.*Number of severely non-orthogonal \\(> ([^ ]+) degrees\\) faces: ([^ ]+)\\..*$")))
         {
-          curmq.n_severe_nonorth=to_number<double>(what[2]);
+          curmq.n_severe_nonorth=toNumber<double>(what[2]);
         }
         if (boost::regex_match(line, what, boost::regex("^.*Max skewness = ([^ ]+), ([^ ]+) highly skew faces.*$")))
         {
-          curmq.n_severe_skew=to_number<double>(what[2]);
-          curmq.max_skewness=to_number<double>(what[1]);
+          curmq.n_severe_skew=toNumber<double>(what[2]);
+          curmq.max_skewness=toNumber<double>(what[1]);
         }
         if (boost::regex_match(line, what, boost::regex("^.*Max skewness = ([^ ]+) OK.*$")))
         {
-          curmq.n_severe_nonorth=to_number<double>(what[1]);
+          curmq.n_severe_nonorth=toNumber<double>(what[1]);
         }
         if (boost::regex_match(line, what, boost::regex("^.*Error in face pyramids: ([^ ]+) faces are incorrectly oriented.*$")))
         {
-          curmq.n_neg_facepyr=to_number<double>(what[1]);
+          curmq.n_neg_facepyr=toNumber<double>(what[1]);
         }
         break;
       }
@@ -2262,7 +2263,7 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
 
 void currentNumericalSettingsReport
 (
-  const OpenFOAMCase& cm, 
+  const OpenFOAMCase& /*cm*/,
   const boost::filesystem::path& location, 
   ResultSetPtr results
 )
@@ -2335,9 +2336,9 @@ arma::mat viscousForceProfile
   TimeDirectoryList tdl=listTimeDirectories(pref);
   path lastTimeDir=tdl.rbegin()->second;
   arma::mat vfm;
-  vfm.load( ( lastTimeDir/"walls_viscousForceMean.dat").c_str(), arma::raw_ascii);
+  vfm.load( ( lastTimeDir/"walls_viscousForceMean.dat").string(), arma::raw_ascii);
   arma::mat vf;
-  vf.load( (lastTimeDir/"walls_viscousForce.dat").c_str(), arma::raw_ascii);
+  vf.load( (lastTimeDir/"walls_viscousForce.dat").string(), arma::raw_ascii);
   
   return arma::mat(join_rows(vfm, vf.cols(1, vf.n_cols-1)));
 }
@@ -2373,8 +2374,8 @@ arma::mat projectedArea
     boost::match_results<std::string::const_iterator> what;
     if (boost::regex_match(line, what, re_area))
     {
-      t.push_back(to_number<double>(what[1]));
-      A.push_back(to_number<double>(what[2]));
+      t.push_back(toNumber<double>(what[1]));
+      A.push_back(toNumber<double>(what[2]));
     }
   }
   
@@ -2408,13 +2409,13 @@ arma::mat minPatchPressure
     if (boost::regex_match(line, what, re))
     {
       try {
-        t.push_back(to_number<double>(what[1]));
+        t.push_back(toNumber<double>(what[1]));
       } catch (const boost::bad_lexical_cast& e) {
         throw insight::Exception("expected a number, got \""+what[1]+"\"");
       }
 
       try {
-        minp.push_back(to_number<double>(what[2]));
+        minp.push_back(toNumber<double>(what[2]));
       } catch (const boost::bad_lexical_cast& e) {
         throw insight::Exception("expected a number, got \""+what[2]+"\"");
       }
@@ -2651,10 +2652,10 @@ std::pair<arma::mat, arma::mat> zoneExtrema
   {
     if (boost::regex_match(l, what, re_vec))
     {
-      double t=to_number<double>(what[1]);
+      double t=toNumber<double>(what[1]);
       arma::mat mir, mar;
-      mir<<t<<to_number<double>(what[3])<<to_number<double>(what[4])<<to_number<double>(what[5])<<endr;
-      mar<<t<<to_number<double>(what[6])<<to_number<double>(what[7])<<to_number<double>(what[8])<<endr;
+      mir<<t<<toNumber<double>(what[3])<<toNumber<double>(what[4])<<toNumber<double>(what[5])<<endr;
+      mar<<t<<toNumber<double>(what[6])<<toNumber<double>(what[7])<<toNumber<double>(what[8])<<endr;
       if (mi.n_rows==0) mi=mir; else mi=join_cols(mi, mir);
       if (ma.n_rows==0) ma=mar; else ma=join_cols(ma, mar);
     }
@@ -2701,7 +2702,7 @@ arma::mat interiorPressureFluctuationProfile
   TimeDirectoryList tdl=listTimeDirectories(pref);
   path lastTimeDir=tdl.rbegin()->second;
   arma::mat vfm;
-  vfm.load( ( lastTimeDir/"interior_pPrime2Mean.dat").c_str(), arma::raw_ascii);
+  vfm.load( ( lastTimeDir/"interior_pPrime2Mean.dat").string(), arma::raw_ascii);
   
   return vfm;
 }
@@ -2879,55 +2880,54 @@ std::vector<boost::filesystem::path> searchOFCasesBelow(const boost::filesystem:
 
 
 
-HomogeneousAveragedProfile::HomogeneousAveragedProfile(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: Analysis("Homogeneous Averaged Profile", "", ps, exepath)
-{
-  setParameters(ps);
-}
+HomogeneousAveragedProfile::HomogeneousAveragedProfile(
+    const ParameterSet& ps,
+    const boost::filesystem::path& exepath,
+    ProgressDisplayer& progress )
+: Analysis("Homogeneous Averaged Profile", "", ps, exepath, progress),
+  p_(ps)
+{}
 
 
-ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& displayer)
+ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*displayer*/)
 {
-  Parameters p(parameters_);
-//   setExecutionPath(p.casepath);
-  
-  OpenFOAMCase cm(OFEs::get(p.OFEname));
+  OpenFOAMCase cm(OFEs::get(p_.OFEname));
   
   arma::mat xs;
   
-  if ( Parameters::grading_type::none == p.grading )
+  if ( Parameters::grading_type::none == p_.grading )
   {
-    xs=linspace(0., 1., p.np);
+    xs=linspace(0., 1., p_.np);
   }
-  else if ( Parameters::grading_type::towardsEnd == p.grading )
+  else if ( Parameters::grading_type::towardsEnd == p_.grading )
   {
-    xs=cos(0.5*M_PI*(linspace(0., 1., p.np)-1.0));
+    xs=cos(0.5*M_PI*(linspace(0., 1., p_.np)-1.0));
   }
-  else if ( Parameters::grading_type::towardsStart == p.grading )
+  else if ( Parameters::grading_type::towardsStart == p_.grading )
   {
-    xs=1.0 - cos(0.5*M_PI*linspace(0., 1., p.np));
+    xs=1.0 - cos(0.5*M_PI*linspace(0., 1., p_.np));
   }
 
   
   arma::mat pts = arma::trans(
-     p.L * arma::trans(xs) 
+     p_.L * arma::trans(xs)
      + 
-     p.p0 * arma::ones(1,p.np)
+     p_.p0 * arma::ones(1,p_.np)
   );
   
   boost::ptr_vector<sampleOps::set> sets;
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_points( pts )
-    .set_dir1(p.homdir1)
-    .set_dir2(p.homdir2)
-    .set_nd1(p.n_homavg1)
-    .set_nd2(p.n_homavg2)
-    .set_name(p.profile_name)
+    .set_dir1(p_.homdir1)
+    .set_dir2(p_.homdir2)
+    .set_nd1(p_.n_homavg1)
+    .set_nd2(p_.n_homavg2)
+    .set_name(p_.profile_name)
   ));
 
-  auto casepath = p.casepath->filePath(executionPath());
+  auto casepath = p_.casepath->filePath(executionPath());
   
-  sample(cm, casepath, p.fields, sets);
+  sample(cm, casepath, p_.fields, sets);
       
   sampleOps::ColumnDescription cd;
   arma::mat data = dynamic_cast<sampleOps::linearAveragedPolyLine*>(&sets[0])
@@ -2937,7 +2937,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& displayer
   results->introduction() = description_;
   Ordering so;
   
-  for (const std::string& fieldname: p.fields)
+  for (const std::string& fieldname: p_.fields)
   {
     int c=cd[fieldname].col;
     int ncmpt=cd[fieldname].ncmpt;
@@ -3119,7 +3119,7 @@ bool checkIfAnyFileIsNewerOrNonexistent
 
 bool checkIfReconstructLatestTimestepNeeded
 (
-  const OpenFOAMCase& cm, 
+  const OpenFOAMCase& /*cm*/,
   const boost::filesystem::path& location
 )
 {
@@ -3369,15 +3369,27 @@ void OpenFOAMCaseDirs::packCase(const boost::filesystem::path& archive_file,Open
   std::string cmd;
   cmd+="cd "+location_.string()+";";
   cmd+="tar czf "+archive_file.string();
-  for (const auto& c: sysDirs_) cmd+=" "+make_relative(location_, c).string();
-  for (const auto& c: postDirs_) cmd+=" "+make_relative(location_, c).string();
+
+  std::vector<std::string> filesAndDirsToPack;
+  for (const auto& c: sysDirs_) filesAndDirsToPack.push_back(make_relative(location_, c).string());
+  for (const auto& c: postDirs_) filesAndDirsToPack.push_back(make_relative(location_, c).string());
 
   auto tds = timeDirs(td);
-  for (const auto& c: tds) cmd+=" "+make_relative(location_, c).string();
+  for (const auto& c: tds) filesAndDirsToPack.push_back(make_relative(location_, c).string());
 
-  if (::system(cmd.c_str()) != 0)
-    throw insight::Exception("Could not pack OpenFOAM case files.\n"
-                             "Command was \""+cmd+"\"");
+  if (filesAndDirsToPack.size()>0)
+  {
+
+    cmd+=" "+boost::join(filesAndDirsToPack, " " );
+
+    if (::system(cmd.c_str()) != 0)
+      throw insight::Exception("Could not pack OpenFOAM case files.\n"
+                               "Command was \""+cmd+"\"");
+  }
+  else
+  {
+    insight::Warning("There are no files or directories to pack. Nothing archived.");
+  }
 }
 
 void OpenFOAMCaseDirs::cleanCase
@@ -3403,7 +3415,7 @@ void OpenFOAMCaseDirs::cleanCase
 void VTKFieldToOpenFOAMField(const boost::filesystem::path& vtkfile, const std::string& fieldname, std::ostream& out)
 {
   vtkSmartPointer<vtkPolyDataReader> in = vtkPolyDataReader::New();
-  in->SetFileName(vtkfile.c_str());
+  in->SetFileName(vtkfile.string().c_str());
   in->ReadAllScalarsOn();
   in->ReadAllVectorsOn();
   in->ReadAllTensorsOn();
@@ -3574,7 +3586,7 @@ decompositionState::decompositionState(const boost::filesystem::path& casedir)
         }
         else
         {
-          double lt_decomp=to_number<double>(latestTime);
+          double lt_decomp=toNumber<double>(latestTime);
           if ( fabs(tdl.rbegin()->first - lt_decomp) < 1e-15 )
           {
             // same time step in recon and decomp

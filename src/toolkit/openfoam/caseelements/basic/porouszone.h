@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "porouszone__porousZone__Parameters_headers.h"
 
 namespace insight {
 

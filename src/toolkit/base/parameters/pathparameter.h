@@ -73,6 +73,8 @@ public:
       bool isNecessary=false,
       int order=0 );
 
+  bool isDifferent(const Parameter& p) const override;
+
   std::string latexRepresentation() const override;
   std::string plainTextRepresentation(int /*indent*/=0) const override;
 
@@ -121,6 +123,13 @@ std::shared_ptr<PathParameter> make_filepath(const boost::filesystem::path& path
 
 std::shared_ptr<PathParameter> make_filepath(const FileContainer& fc);
 
+/**
+ * @brief make_filepath
+ * insert a vtkPolyData mesh as STL file
+ * @param pd
+ * @param originalFilePath
+ * @return
+ */
 std::shared_ptr<PathParameter> make_filepath(
     vtkSmartPointer<vtkPolyData> pd,
     const boost::filesystem::path& originalFilePath );

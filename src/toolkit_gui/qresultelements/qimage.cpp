@@ -6,22 +6,38 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QScrollArea>
+#include <QFile>
 #include <QDebug>
 
 namespace insight {
 
 
 defineType(QImage);
-addToFactoryTable(QResultElement, QImage);
+addToFactoryTable(IQResultElement, QImage);
 
 
 QImage::QImage(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-    : QResultElement(parent, label, rep),
+    : IQResultElement(parent, label, rep),
       delta_w_(0)
 {
   if (auto im = resultElementAs<insight::Image>())
   {
-    setImage( QPixmap(QString::fromStdString(im->filePath().string())) );
+    QByteArray data;
+    {
+      // read from stream, because intermediate file will remain locked in windows
+      // and disable removal of temporary case directories
+      auto& f=im->stream();
+      char Buffer[128];
+      while (!f.eof())
+      {
+          int BytesIn= f.read(Buffer, sizeof(Buffer)).gcount();
+          data.append(Buffer, BytesIn);
+      }
+      insight::dbg()<<"closing image file"<<std::endl;
+    }
+    QPixmap pm;
+    pm.loadFromData(data);
+    setImage( pm );
   }
 }
 
@@ -45,7 +61,7 @@ QVariant QImage::previewInformation(int role) const
 
 void QImage::createFullDisplay(QVBoxLayout *layout)
 {
-  QResultElement::createFullDisplay(layout);
+  IQResultElement::createFullDisplay(layout);
 
   id_=new QLabel;
   id_->setFrameShape(QFrame::NoFrame);
@@ -69,7 +85,7 @@ void QImage::createFullDisplay(QVBoxLayout *layout)
 
 void QImage::resetContents(int width, int height)
 {
-  QResultElement::resetContents(width, height);
+  IQResultElement::resetContents(width, height);
 
   id_->setPixmap(image_.scaledToWidth(width-delta_w_));
   id_->adjustSize();

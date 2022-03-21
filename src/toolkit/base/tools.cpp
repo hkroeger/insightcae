@@ -25,6 +25,8 @@
 #include "base/boost_include.h"
 #include "boost/asio.hpp"
 #include "base/exception.h"
+#include "base/cppextensions.h"
+#include "base/externalprograms.h"
 
 #include "vtkSTLReader.h"
 #include "vtkSTLWriter.h"
@@ -36,6 +38,7 @@
 #include "vtkCellArray.h"
 #include "vtkTransform.h"
 #include "vtkTransformPolyDataFilter.h"
+#include "vtkDataArray.h"
 
 
 using namespace std;
@@ -49,6 +52,73 @@ namespace insight
 {
 
 
+bool directoryIsWritable( const boost::filesystem::path& directoryToTest )
+{
+  boost::filesystem::path directory = directoryToTest;
+
+  if (directory.empty())
+    directory=".";
+
+  insight::CurrentExceptionContext ex("checking write permissions of directory "+directory.string());
+
+  auto testp = boost::filesystem::unique_path( directory/"%%%%%.test" );
+  try
+  {
+
+    if (std::system( ("echo xx > \""+testp.string()+"\"").c_str() )!=0) return false;
+
+//    std::ofstream f(testp.string());
+//    if (!f.is_open()) return false;
+//    f.close();
+
+    if (!boost::filesystem::exists(testp)) return false;
+
+    boost::filesystem::remove(testp);
+
+    return true;
+  }
+  catch (...)
+  {
+    return false;
+  }
+}
+
+
+bool isInWritableDirectory( const boost::filesystem::path& ptt )
+{
+    insight::CurrentExceptionContext ex("checking, if "+ptt.string()+" is in a writable location");
+
+    namespace bf=boost::filesystem;
+
+    if ( bf::exists( ptt ) )
+    {
+        if (bf::is_directory(ptt))
+        {
+            return directoryIsWritable(ptt);
+        }
+        else
+        {
+            return isInWritableDirectory(ptt.parent_path());
+        }
+    }
+    else
+    {
+        auto pp=ptt.parent_path();
+        if (!pp.empty())
+        {
+            return isInWritableDirectory(pp);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    throw insight::Exception("Internal error: unhandled case");
+}
+
+
+
 std::unique_ptr<GlobalTemporaryDirectory> GlobalTemporaryDirectory::td_;
 
 
@@ -56,7 +126,7 @@ std::unique_ptr<GlobalTemporaryDirectory> GlobalTemporaryDirectory::td_;
 std::string timeCodePrefix()
 {
   ptime now = second_clock::universal_time();
-  static std::locale loc(std::cout.getloc(),
+  static std::locale loc(std::locale::classic(), //std::cout.getloc(),
                            new time_facet("%Y%m%d%H%M%S"));
   std::ostringstream ss;
   ss.imbue(loc);
@@ -105,97 +175,6 @@ GlobalTemporaryDirectory::~GlobalTemporaryDirectory()
 
 
 
-CaseDirectory::CaseDirectory(const boost::filesystem::path& p, bool keep)
-  : boost::filesystem::path(p),
-    keep_(keep),
-    isAutoCreated_(false)
-{
-  if (p.empty())
-  {
-    boost::filesystem::path::operator=(
-          absolute(unique_path(timeCodePrefix() + "_analysis_%%%%"))
-          );
-    isAutoCreated_=true;
-    createDirectory();
-  }
-  else if (!p.empty() && !fs::exists(p))
-  {
-    boost::filesystem::path::operator=(absolute(p));
-    isAutoCreated_=true;
-    createDirectory();
-  }
-
-}
-
-
-CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
-: keep_(keep),
-  isAutoCreated_(true)
-{
-  if (getenv("INSIGHT_KEEPTEMPCASEDIR"))
-    keep_=true;
-
-  path fn=prefix.filename();
-
-  boost::filesystem::path::operator=(
-        absolute(
-          unique_path(
-            prefix.parent_path()
-            /
-            (timeCodePrefix() + "_" + fn.string() + "_%%%%")
-           )
-          )
-        );
-
-  createDirectory();
-}
-
-CaseDirectory::~CaseDirectory()
-{
-  if (!keep_)
-    remove_all(*this);
-}
-
-bool CaseDirectory::isAutoCreated() const
-{
-  return isAutoCreated_;
-}
-
-bool CaseDirectory::isExistingAndWillBeRemoved() const
-{
-  return !keep_ && fs::exists(*this) && fs::is_directory(*this);
-}
-
-bool CaseDirectory::isExistingAndNotEmpty() const
-{
-  if (fs::exists(*this) && fs::is_directory(*this))
-  {
-    int n=0;
-    for (fs::directory_iterator di(*this);
-         di!=fs::directory_iterator(); ++di)
-      ++n;
-    return n>0;
-  }
-  return false;
-}
-
-void CaseDirectory::createDirectory()
-{
-  if (!fs::exists(*this))
-    create_directories(*this);
-}
-
-bool CaseDirectory::keep() const
-{
-  return keep_;
-}
-
-void CaseDirectory::setKeep(bool keep)
-{
-  keep_=keep;
-}
-
-
 
 
 TemporaryFile::TemporaryFile
@@ -208,19 +187,38 @@ TemporaryFile::TemporaryFile
              /
              fileNameModel
              ) )
-{}
+{
+    dbg() << tempFilePath_ << std::endl;
+}
 
 
 TemporaryFile::~TemporaryFile()
 {
+  if (stream_)
+      stream_.reset();
+
   if (!getenv("INSIGHT_KEEPTEMPORARYFILES"))
   {
     if (fs::exists(tempFilePath_))
     {
+        dbg()<<"removing file "<<tempFilePath_<<std::endl;
       fs::remove(tempFilePath_);
     }
   }
 }
+
+std::ostream& TemporaryFile::stream()
+{
+    if (!stream_)
+        stream_=std::make_unique<std::ofstream>(path().string());
+    return *stream_;
+}
+
+void TemporaryFile::closeStream()
+{
+    stream_.reset();
+}
+
 
 const boost::filesystem::path& TemporaryFile::path() const
 {
@@ -229,28 +227,101 @@ const boost::filesystem::path& TemporaryFile::path() const
 
 
 
+
+SSHCommand::SSHCommand(const std::string& hostName, const std::vector<std::string>& arguments)
+  : hostName_(hostName), args_(arguments)
+{
+}
+
+boost::filesystem::path SSHCommand::command() const
+{
+#if defined(WIN32)
+    return ExternalPrograms::path("plink"); //boost::process::search_path("plink");
+#else
+    return ExternalPrograms::path("ssh"); //boost::process::search_path("ssh");
+#endif
+}
+
+std::vector<std::string> SSHCommand::arguments() const
+{
+  std::vector<std::string> a(args_);
+#if defined(WIN32)
+  a.insert(a.begin(), { "-load", hostName_, "-no-antispoof", "-batch" });
+#else
+  a.insert(a.begin(), { hostName_ });
+#endif
+  return a;
+}
+
+
+
+
+RSYNCCommand::RSYNCCommand(const std::vector<std::string>& arguments)
+  : args_(arguments)
+{}
+
+boost::filesystem::path RSYNCCommand::command() const
+{
+#if defined(WIN32)
+    return boost::process::search_path("rsync.exe");
+#else
+    return boost::process::search_path("rsync");
+#endif
+}
+
+std::vector<std::string> RSYNCCommand::arguments() const
+{
+  std::vector<std::string> a(args_);
+
+#if defined(WIN32)
+  auto cygnative = boost::process::search_path("cygnative.exe");
+  auto plink = boost::process::search_path("plink.exe");
+  a.insert(a.begin(),
+           boost::str(boost::format("-e=\"%s %s -P %d\"")
+                      % cygnative.string() % plink.string() % 22 )
+  );
+#else
+  // keep args
+#endif
+  return a;
+}
+
+
+
+
 SharedPathList::SharedPathList()
 {
-  char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR");
-  char *var_globalshareddir=getenv("INSIGHT_GLOBALSHAREDDIRS");
+  CurrentExceptionContext ec("building list of shared paths");
+
   
-  if (var_usershareddir) 
+  if (char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR"))
   {
     push_back(var_usershareddir);
   }
   else
   {
-    char *userdir=getenv("HOME");
-    if (userdir)
+    if (char *userdir = getenv(
+#ifdef WIN32
+                "USERPROFILE"
+#else
+                "HOME"
+#endif
+                ))
     {
       push_back( path(userdir)/".insight"/"share" );
     }
   }
   
-  if (var_globalshareddir) 
+  if (char *var_globalshareddir=getenv("INSIGHT_GLOBALSHAREDDIRS"))
   {
     std::vector<string> globals;
-    split(globals, var_globalshareddir, is_any_of(":"));
+    split(globals, var_globalshareddir,
+#ifdef WIN32
+          is_any_of(";") // colon collides with drive letter in windows
+#else
+          is_any_of(":")
+#endif
+          );
     for (const string& s: globals) push_back(s);
   }
   else
@@ -275,7 +346,7 @@ path SharedPathList::getSharedFilePath(const path& file)
   // nothing found
   throw insight::Exception(
         std::string("Requested shared file ")
-         +file.c_str()
+         +file.string()
          +" not found either in global nor user shared directories"
         );
 }
@@ -304,6 +375,21 @@ void SharedPathList::insertFileDirectoyIfNotPresent(const path& sp)
   {
     insertIfNotPresent(sp.parent_path());
   }
+}
+
+boost::filesystem::path SharedPathList::findFirstWritableLocation(
+        const boost::filesystem::path &subPath) const
+{
+    insight::SharedPathList paths;
+    for ( const bfs_path& p: paths )
+    {
+        insight::dbg()<<"checking, if "<<p.string()<<" is writable."<<std::endl;
+        if ( insight::isInWritableDirectory(p) )
+        {
+            return p / subPath;
+        }
+    }
+    return bfs_path();
 }
 
 
@@ -359,7 +445,12 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
 
     lines->InitTraversal();
     vtkIdType npts=-1;
-    const vtkIdType *pt=nullptr;
+
+#if (VTK_MAJOR_VERSION>=8) && (VTK_MINOR_VERSION>2)
+    const
+#endif
+    vtkIdType *pt=nullptr;
+
     for (vtkIdType i=0; lines->GetNextCell(npts, pt); i++)
       {
 
@@ -387,7 +478,6 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
 LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
 {
     vtkCellArray* lines = pd->GetLines();
-//    std::cout<<"#lines="<<lines->GetNumberOfCells()<<std::endl;
 
     // find min element length
     double L=0.;
@@ -395,7 +485,10 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     {
         lines->InitTraversal();
         vtkIdType npts=-1;
-        const vtkIdType *pt=nullptr;
+#if (VTK_MAJOR_VERSION>=8) && (VTK_MINOR_VERSION>2)
+        const
+#endif
+        vtkIdType *pt=nullptr;
         for (int i=0; lines->GetNextCell(npts, pt); i++)
           {
             if (npts==2)
@@ -403,11 +496,6 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
                 double p1[3], p2[3];
                 pd->GetPoint(pt[0], p1);
                 pd->GetPoint(pt[1], p2);
-//                L=std::min
-//                (
-//                    L,
-//                    sqrt( pow(p1[0]-p2[0],2) + pow(p1[1]-p2[1],2) + pow(p1[2]-p2[2],2) )
-//                );
                 L+=sqrt( pow(p1[0]-p2[0],2) + pow(p1[1]-p2[1],2) + pow(p1[2]-p2[2],2) );
                 nL++;
             }
@@ -417,11 +505,10 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
 
 
     double tol=0.5*L;
-//    std::cout<<"tol="<<tol<<std::endl;
-
 
 
     // Extract connection info
+    //    std::cout<<"tol="<<tol<<std::endl;
     calcConnectionInfo(lines);
     printSummary(std::cout, pd);
 
@@ -460,7 +547,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
             vtkIdType li=i;
             if (li>lj) std::swap(li,lj);
             addLines[li]=lj;
-            std::cout<<"add line "<<li<<" => "<<lj<<std::endl;
+//            std::cout<<"add line "<<li<<" => "<<lj<<std::endl;
         }
     }
 
@@ -486,6 +573,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     double xyz[3];
 
     pd->GetPoint(cid, xyz);
+    pointIds_.push_back(cid);
     this->push_back(vec3(xyz[0], xyz[1], xyz[2]));
 
     do
@@ -514,9 +602,28 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
       }
 
       pd->GetPoint(cid, xyz);
+      pointIds_.push_back(cid);
       this->push_back(vec3(xyz[0], xyz[1], xyz[2]));
 
     } while (visitedCells.size()<cellPoints_.size());
+}
+
+const std::vector<vtkIdType>& LineMesh_to_OrderedPointTable::pointIds() const
+{
+    return pointIds_;
+}
+
+arma::mat LineMesh_to_OrderedPointTable::extractOrderedData(vtkDataArray* data) const
+{
+    arma::mat result = arma::zeros( pointIds().size(), data->GetNumberOfComponents() );
+    for(size_t i=0; i<pointIds().size(); ++i)
+    {
+        double pd[data->GetNumberOfComponents()];
+        data->GetTuple( pointIds()[i], pd );
+        for (int k=0;k<data->GetNumberOfComponents();++k)
+            result(i, k)=pd[k];
+    }
+    return result;
 }
 
 void LineMesh_to_OrderedPointTable::printSummary(std::ostream& os, vtkPolyData* pd) const
@@ -687,7 +794,7 @@ readSTL
     throw insight::Exception("file "+path.string()+" does not exist!");
 
   vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
-  stl->SetFileName(path.c_str());
+  stl->SetFileName(path.string().c_str());
 
   std::vector<vtkSmartPointer<vtkPolyDataAlgorithm> > imr;
   vtkSmartPointer<vtkPolyDataAlgorithm> i0=stl;
@@ -743,7 +850,7 @@ void writeSTL
 
   vtkSmartPointer<vtkSTLWriter> sw = vtkSmartPointer<vtkSTLWriter>::New();
   sw->SetInputConnection(stl->GetOutputPort());
-  sw->SetFileName(outfile.c_str());
+  sw->SetFileName(outfile.string().c_str());
   if (file_ext==".stlb")
   {
     sw->SetFileTypeToBinary();
@@ -797,6 +904,39 @@ int findFreePort()
   }
 }
 
+
+int findRemoteFreePort(const std::string& SSHHostName)
+{
+  CurrentExceptionContext ce("determining free port on "+SSHHostName);
+
+  boost::process::ipstream out;
+
+  SSHCommand sc(SSHHostName, {"bash", "-lc", "isPVFindPort.sh"});
+  int ret = boost::process::system(
+        sc.command(), boost::process::args(sc.arguments()),
+        boost::process::std_out > out,
+        boost::process::std_in < boost::process::null
+        );
+
+  if (ret!=0)
+  {
+    throw insight::Exception(
+          str( format("Failed to query host %s for free network port!") % SSHHostName)
+          );
+  }
+
+  std::string outline;
+  getline(out, outline);
+  std::vector<std::string> parts;
+  boost::split(parts, outline, is_any_of(" "));
+  if (parts.size()==2)
+  {
+    if (parts[0]=="PORT")
+      return toNumber<int>(parts[1]);
+  }
+
+  throw insight::Exception("unexpected answer: \""+outline+"\"");
+}
 
 
 void readStreamIntoString(istream &in, string &fileContent)
@@ -867,6 +1007,51 @@ MemoryInfo::MemoryInfo()
   memFree_=entries["MemFree:"].first * 1024;
 }
 
+
+
+
+RSyncProgressAnalyzer::RSyncProgressAnalyzer()
+{}
+
+
+
+
+void RSyncProgressAnalyzer::runAndParse(
+    boost::process::child& rsyncProcess,
+    std::function<void(int,const std::string&)> pf )
+{
+  if (!rsyncProcess.running())
+  {
+    throw insight::Exception("could not start rsync process!");
+  }
+
+  std::string line;
+  boost::regex pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*) \\(xfr#([0-9]+), to-chk=([0-9]+)/([0-9]+)\\)");
+  while (rsyncProcess.running() && std::getline(*this, line) && !line.empty())
+  {
+    insight::dbg()<<line<<std::endl;
+    boost::smatch match;
+    if (boost::regex_search( line, match, pattern, boost::match_default ))
+    {
+      std::string percent=match[1];
+      std::string rate=match[2];
+      std::string eta=match[3];
+//        int i_file=to_number<int>(match[4]);
+      int i_to_chk=toNumber<int>(match[5]);
+      int total_to_chk=toNumber<int>(match[6]);
+
+      double progress = total_to_chk==0? 1.0 : double(total_to_chk-i_to_chk) / double(total_to_chk);
+
+      if (pf) pf(int(100.*progress), rate+", "+eta+" (current file: "+percent+")");
+    }
+  }
+
+  rsyncProcess.wait();
+}
+
+
+
+
 bool isNumber(const string &s)
 {
   try {
@@ -876,10 +1061,69 @@ bool isNumber(const string &s)
   catch (const boost::bad_lexical_cast&)
   {
     return false;
-  }
+    }
 }
 
 
 
+
+path ensureFileExtension(const boost::filesystem::path &filePath, const std::string &extension)
+{
+    if (filePath.extension()!=extension)
+        return path(filePath).replace_extension(extension);
+    else
+        return filePath;
+}
+
+arma::mat computeOffsetContour(const arma::mat &pl, double thickness, const arma::mat &normals)
+{
+    arma::mat pl2 = arma::zeros(pl.n_rows, pl.n_cols); //not existing in older armadillo: arma::reverse(pl, 0);
+    for (arma::uword i=0; i<pl.n_rows; ++i)
+        pl2.row(i)=pl.row(pl.n_rows-1-i);
+
+    arma::mat lp;
+    for (arma::uword i=0; i<pl2.n_rows; ++i)
+    {
+        auto p=pl2.row(i);
+        auto n=normals.row(i);
+
+        arma::mat t;
+        if (i>0)
+        {
+            t = p-lp;
+        }
+        else
+        {
+            t = pl2.row(i+1)-p;
+        }
+        lp = p;
+        t/=arma::norm(t,2);
+
+        arma::mat th = arma::cross(n, t);
+        std::cout<<p<<n<<t<<th<<std::endl;
+        th /= arma::norm(th,2);
+        pl2.row(i) += th * thickness;
+    }
+    return arma::join_vert(pl, pl2);
+}
+
+
+
+std::string getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName)
+{
+    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
+      return std::string(fn->value());
+    else
+      throw insight::Exception("node does not have mandatory attribute \""+attributeName+"\"!");
+}
+
+
+std::shared_ptr<std::string> getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName)
+{
+    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
+      return std::make_shared<std::string>(fn->value());
+    else
+      return std::shared_ptr<std::string>();
+}
 
 }

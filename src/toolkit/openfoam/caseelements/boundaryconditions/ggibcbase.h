@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/boundarycondition.h"
 
+#include "ggibcbase__GGIBCBase__Parameters_headers.h"
+
 namespace insight {
 
 

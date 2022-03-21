@@ -10,6 +10,7 @@ add_sources(insightcad_SOURCES
   coincident.cpp
   identical.cpp
   ispartofsolid.cpp
+  ispartofface.cpp
 
   boundaryedge.cpp
   edgetopology.cpp

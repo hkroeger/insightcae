@@ -26,6 +26,7 @@ namespace insight
 namespace cad 
 {
   
+defineType(DrawingExport);
     
 size_t DrawingExport::calcHash() const
 {
@@ -203,11 +204,11 @@ void DrawingExport::build()
 
 
   
-Handle_AIS_InteractiveObject DrawingExport::createAISRepr() const
-{
-  checkForBuildDuringAccess();
-  return Handle_AIS_InteractiveObject(new AIS_Shape(shape_));
-}
+//Handle_AIS_InteractiveObject DrawingExport::createAISRepr() const
+//{
+//  checkForBuildDuringAccess();
+//  return Handle_AIS_InteractiveObject(new AIS_Shape(shape_));
+//}
 
 
 

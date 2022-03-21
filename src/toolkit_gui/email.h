@@ -6,6 +6,9 @@
 #ifndef EMAIL_H
 #define EMAIL_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QObject>
 
 #include "email_p.h"
@@ -17,7 +20,7 @@
   *
   * To use it, setup a Email object with the set* and add* methods and call openInDefaultProgram().
   */
-class Email : public QObject
+class TOOLKIT_GUI_EXPORT Email : public QObject
 {
     Q_OBJECT
 public:

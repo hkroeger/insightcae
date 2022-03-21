@@ -94,7 +94,7 @@ double LookupTableScalar::value() const
             double kv;
             try 
             {
-                kv=to_number<double>(cols[ik]);
+                kv=toNumber<double>(cols[ik]);
             }
             catch (...)
             {
@@ -115,7 +115,7 @@ double LookupTableScalar::value() const
                 double dv;
                 try 
                 {
-                    dv=to_number<double>(cols[id]);
+                    dv=toNumber<double>(cols[id]);
                 }
                 catch (...)
                 {

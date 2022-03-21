@@ -5,6 +5,7 @@
 #include "qactionprogressdisplayerwidget.h"
 
 #include "boost/algorithm/string.hpp"
+#include "base/exception.h"
 
 #include <iostream>
 #include <cmath>
@@ -15,7 +16,8 @@ using namespace boost;
 namespace insight {
 
 
-QActionProgressDisplayerWidget::Columns::iterator QActionProgressDisplayerWidget::getColumn(const string &path, std::vector<std::string>& splitPath)
+QActionProgressDisplayerWidget::Columns::iterator
+QActionProgressDisplayerWidget::getColumn(const string &path, std::vector<std::string>& splitPath)
 {
   string colname;
   std::vector<std::string> variant_path;
@@ -47,9 +49,13 @@ QActionProgressDisplayerWidget::Columns::iterator QActionProgressDisplayerWidget
   return ic;
 }
 
+
+
+
+
 QActionProgressDisplayerWidget::ProgressItem
 QActionProgressDisplayerWidget::getOrCreateItem
-(const std::string &path)
+(const std::string &path, bool forbidCreation)
 {
   vector<string> splitPath;
   Rows *c = &(getColumn(path, splitPath)->second);
@@ -59,6 +65,8 @@ QActionProgressDisplayerWidget::getOrCreateItem
     auto ir=c->items.find(r);
     if (ir==c->items.end())
     {
+      insight::assertion(!forbidCreation, "internal error: creation of progress bar inhibited!");
+
       qDebug()<<"adding progress bar "<<QString::fromStdString(path);
       ProgressItem pi;
 
@@ -77,6 +85,9 @@ QActionProgressDisplayerWidget::getOrCreateItem
 
   return c->items.at( splitPath.back() );
 }
+
+
+
 
 void QActionProgressDisplayerWidget::deleteItem(const string &path)
 {
@@ -105,6 +116,9 @@ void QActionProgressDisplayerWidget::deleteItem(const string &path)
 
 }
 
+
+
+
 QActionProgressDisplayerWidget::QActionProgressDisplayerWidget
 (QWidget *parent)
   : QWidget(parent)
@@ -114,13 +128,27 @@ QActionProgressDisplayerWidget::QActionProgressDisplayerWidget
 }
 
 
+
+
+void QActionProgressDisplayerWidget::update(const ProgressState &/*pi*/)
+{}
+
+
+
+
+void QActionProgressDisplayerWidget::logMessage(const std::string &line)
+{}
+
+
+
+
 void QActionProgressDisplayerWidget::setActionProgressValue(const std::string &path, double value)
 {
-  QMetaObject::invokeMethod(
+  QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
         qApp,
         [this,path,value]()
         {
-          qDebug()<<"setting value for "<<QString::fromStdString(path)<<" to "<<100.*value;
+          insight::dbg()<<"setting value for "<<path<<" to "<<100.*value<<std::endl;
           auto i=getOrCreateItem(path);
           i.p->setValue(std::round(100.*value));
         },
@@ -128,23 +156,36 @@ void QActionProgressDisplayerWidget::setActionProgressValue(const std::string &p
   );
 }
 
+
+
+
 void QActionProgressDisplayerWidget::setMessageText(const std::string &path, const std::string &message)
 {
-  QMetaObject::invokeMethod(
+  QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
         qApp,
         [this,path,message]()
         {
-          qDebug()<<"setting text for "<<QString::fromStdString(path)<<" to "<<QString::fromStdString(message);
-          auto i=getOrCreateItem(path);
-          i.p->setFormat( QString::fromStdString(message) );
+          try
+          {
+              insight::dbg()<<"setting text for "<<path<<" to "<<message<<std::endl;
+              auto i=getOrCreateItem(path, true);
+              i.p->setFormat( QString::fromStdString(message) );
+          }
+          catch (const insight::Exception& ex)
+          {
+              // ignore, progress bar was either not yet created or already removed
+          }
         },
         Qt::QueuedConnection
   );
 }
 
+
+
+
 void QActionProgressDisplayerWidget::finishActionProgress(const string &path)
 {
-  QMetaObject::invokeMethod(
+  QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
         qApp,
         [this,path]()
         {
@@ -155,6 +196,8 @@ void QActionProgressDisplayerWidget::finishActionProgress(const string &path)
 }
 
 
+
+
 void QActionProgressDisplayerWidget::reset()
 {
   for (auto& c: columns_)
@@ -163,7 +206,6 @@ void QActionProgressDisplayerWidget::reset()
 }
 
 
-void QActionProgressDisplayerWidget::update(const ProgressState &/*pi*/)
-{}
+
 
 } // namespace insight

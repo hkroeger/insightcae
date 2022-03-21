@@ -20,11 +20,13 @@
 
 
 #include "resultset.h"
+#include "base/resultreporttemplates.h"
 
 #include "base/latextools.h"
 #include "base/tools.h"
 #include "base/case.h"
 #include "base/analysis.h"
+#include "base/parameters/subsetparameter.h"
 
 #include <fstream>
 #include <algorithm>
@@ -51,25 +53,31 @@ addToFactoryTable ( ResultElement, ResultSet );
 
 
 
-ResultSet::ResultSet(const path &fileName, const std::string& analysisName)
+ResultSet::ResultSet(const std::string& analysisName)
   : ResultElement ( "", "", "" )
 {
   if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
-  readFrom(fileName);
 }
 
-ResultSet::ResultSet(istream &is, const std::string& analysisName)
-  : ResultElement ( "", "", "" )
+ResultSetPtr ResultSet::createFromFile( const boost::filesystem::path& fileName, const std::string& analysisName )
 {
-  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
-  readFrom(is);
+    auto r = std::make_shared<ResultSet>(analysisName);
+    r->readFromFile(fileName);
+    return r;
 }
 
-ResultSet::ResultSet(string &c, const std::string& analysisName)
-  : ResultElement ( "", "", "" )
+ResultSetPtr ResultSet::createFromStream( std::istream& is, const std::string& analysisName )
 {
-  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
-  readFrom(c);
+    auto r = std::make_shared<ResultSet>(analysisName);
+    r->readFromStream(is);
+    return r;
+}
+
+ResultSetPtr ResultSet::createFromString( const std::string& cont, const std::string& analysisName )
+{
+    auto r = std::make_shared<ResultSet>(analysisName);
+    r->readFromString(cont);
+    return r;
 }
 
 
@@ -222,25 +230,31 @@ void ResultSet::exportDataToFile ( const std::string& name, const boost::filesys
 }
 
 
-void ResultSet::readFrom ( const boost::filesystem::path& file )
+void ResultSet::readFromFile ( const boost::filesystem::path& file )
 {
-  std::ifstream is(file.c_str());
-  readFrom(is);
+  CurrentExceptionContext ex("reading results set from file "+file.string());
+  std::string contents;
+  readFileIntoString(file, contents);
+  readFromString(contents);
 }
 
-void ResultSet::readFrom ( std::istream& is )
+void ResultSet::readFromStream ( std::istream& is )
 {
+  CurrentExceptionContext ex("reading result set from input stream");
+
   std::string contents;
   readStreamIntoString(is, contents);
-//  istreambuf_iterator<char> fbegin(is), fend;
-//  std::string contents(fbegin, fend);
-  readFrom(contents);
+  readFromString(contents);
 }
 
-void ResultSet::readFrom ( std::string& contents )
+void ResultSet::readFromString ( const std::string& contents )
 {
+  CurrentExceptionContext ex("reading result set from content string");
+
+
+  char* startChar = const_cast<char*>(&contents[0]);
   xml_document<> doc;
-  doc.parse<0> ( &contents[0] );
+  doc.parse<0> ( startChar );
 
   xml_node<> *rootnode = doc.first_node ( "root" );
 
@@ -321,25 +335,38 @@ void ResultSet::saveToStream(ostream &os) const
 
 
 
-std::string builtin_template=
-    "\\documentclass[a4paper,10pt]{scrartcl}\n"
-    "\\usepackage{hyperref}\n"
-    "\\usepackage{fancyhdr}\n"
-    "\\pagestyle{fancy}\n"
-    "###HEADER###\n"
-    "\\begin{document}\n"
-    "\\title{###TITLE###\\\\\n"
-    "\\vspace{0.5cm}\\normalsize{###SUBTITLE###}}\n"
-    "\\date{###DATE###}\n"
-    "\\author{###AUTHOR###}\n"
-    "\\maketitle\n"
-    "\\tableofcontents\n"
-    "###CONTENT###\n"
-    "\\end{document}\n";
+
+void ResultSet::saveAs(const boost::filesystem::path &outfile) const
+{
+    auto ext=boost::algorithm::to_lower_copy(outfile.extension().string());
+    if (ext==".isr")
+    {
+        saveToFile(outfile);
+    }
+    else if (ext==".tex")
+    {
+        writeLatexFile(outfile);
+    }
+    else if (ext==".pdf")
+    {
+        generatePDF(outfile);
+    }
+    else
+    {
+        throw insight::Exception("unrecognized file type: \""+outfile.string()+"\"");
+    }
+}
+
+
+
+
+
 
 
 void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 {
+  CurrentExceptionContext ec("writing latex representation of result set into file "+file.string());
+
     path filepath ( absolute ( file ) );
 
     std::ostringstream header, content;
@@ -359,17 +386,9 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 
     writeLatexCode ( content, "", 0, filepath.parent_path() );
 
-    std::unique_ptr<TemplateFile> reportTemplate;
-
-    std::string envvarname="INSIGHT_REPORT_TEMPLATE";
-    if ( char *TEMPL=getenv ( envvarname.c_str() ) )
-    {
-      reportTemplate.reset(new TemplateFile(fs::path(TEMPL)));
-    }
-    else
-    {
-      reportTemplate.reset(new TemplateFile(builtin_template));
-    }
+    auto reportTemplate = std::make_unique<TemplateFile>(
+                ResultReportTemplates::globalInstance().defaultItem()
+                );
 
     reportTemplate->replace("AUTHOR", author_ );
     reportTemplate->replace("DATE", date_ );
@@ -402,7 +421,7 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
       }
   }
 
-  CaseDirectory gendir;
+  CaseDirectory gendir(false);
   boost::filesystem::path outpath = gendir / (stem+".tex");
   writeLatexFile( outpath );
 
@@ -436,8 +455,8 @@ ParameterSetPtr ResultSet::convertIntoParameterSet() const
 
 ParameterPtr ResultSet::convertIntoParameter() const
 {
-    ParameterPtr ps ( new SubsetParameter() );
-    static_cast<SubsetParameter*> ( ps.get() )->setParameterSet ( *convertIntoParameterSet() );
+    auto ps = std::make_shared<SubsetParameter>();
+    ps->subsetRef().extend ( convertIntoParameterSet()->entries() );
     return ps;
 }
 

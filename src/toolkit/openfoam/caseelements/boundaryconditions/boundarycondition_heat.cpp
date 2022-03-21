@@ -110,7 +110,7 @@ bool TemperatureGradientBC::addIntoFieldDictionary(const string& fieldname, cons
         tableData << "table (";
         for (const auto& d: ud->gradT_vs_t)
         {
-          tableData << " (" << d.t<<" "<<d.gradT<<")";
+          tableData << boost::str(boost::format(" (%e %e)") % d.t % d.gradT);
         }
         tableData << " )";
       }

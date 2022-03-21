@@ -20,12 +20,10 @@
 
 
 #include "exception.h"
-#include <execinfo.h>
 #include <sstream>
 #include <cstdlib>
+#include <thread>
 
-
-#include <execinfo.h> // for backtrace
 #include <dlfcn.h>    // for dladdr
 #include <cxxabi.h>   // for __cxa_demangle
 #include <cstdio>
@@ -33,6 +31,8 @@
 
 #include "boost/stacktrace.hpp"
 #include "boost/algorithm/string.hpp"
+
+#define DEBUG
 
 using namespace std;
 
@@ -46,7 +46,13 @@ std::ostream& operator<<(std::ostream& os, const Exception& ex)
 }
 
 
-std::string splitMessage(const std::string& message, std::size_t width, std::string begMark, string endMark, std::string whitespace)
+std::string splitMessage(
+    const std::string& message,
+    std::size_t width,
+    std::string begMark,
+    string endMark,
+    std::string whitespace
+    )
 {
 
   if (!begMark.empty())
@@ -54,6 +60,7 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
     width-=2;
     begMark+=" ";
   }
+
   if (!endMark.empty())
   {
     width-=2;
@@ -61,30 +68,63 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
   }
 
   std::string source(message);
+  std::vector<string> splittext;
 
-  std::size_t  currIndex = width - 1;
-  std::size_t  sizeToElim;
-  while ( currIndex < message.length() )
+  while ( source.length()>0 )
   {
-    currIndex = source.find_last_of(whitespace,currIndex + 1);
-    if (currIndex == std::string::npos)
-        break;
-    currIndex = source.find_last_not_of(whitespace,currIndex);
-    if (currIndex == std::string::npos)
-        break;
-    sizeToElim = source.find_first_not_of(whitespace,currIndex + 1) - currIndex - 1;
 
-    source.replace( currIndex + 1, sizeToElim , "\n");
-    currIndex += (width + 1); //due to the recently inserted "\n"
+    size_t i = string::npos;
+
+    std::vector<size_t> splitPoints;
+    do
+    {
+      size_t inl = source.find_first_of("\n", i==string::npos? 0 : i+1 );
+      i = source.find_first_of(whitespace, i==string::npos? 0 : i+1 );
+
+      if (i == string::npos)
+      {
+        i = source.length();
+      }
+      splitPoints.push_back(i);
+
+
+      if ( (inl != string::npos) && (i != string::npos) && (inl < i) )
+      {
+        i = inl;
+        splitPoints.back()=inl;
+        break;
+      }
+
+      if (i == string::npos)
+        break;
+
+    }
+    while ( (i<width) && (i<source.length()) );
+
+    // try to go back, if too wide
+    if (i>width)
+    {
+      if (splitPoints.size()>1)
+      {
+        i = *(++splitPoints.rbegin());
+      }
+    }
+
+    if (i>0)
+    {
+      splittext.push_back( source.substr(0, i) ); // without white space
+      source.erase(0, i+1); // remove including whitespace
+    }
+    else
+      break;
+
   }
 
-  std::vector<string> splittext;
-  boost::split(splittext, source, boost::is_any_of("\n"));
-
-  string result;
-  for (auto l: splittext)
+  std::string result;
+  for (const auto& l: splittext)
   {
-    result+=begMark+l;
+    result+=begMark;
+    result+=l;
     if (l.size()<width)
     {
       result+=string(width-l.size(), ' ');
@@ -99,11 +139,11 @@ std::string splitMessage(const std::string& message, std::size_t width, std::str
 void Exception::saveContext(bool strace)
 {
   std::vector<std::string> context_list;
-  exceptionContext.snapshot(context_list);
+  ExceptionContext::getCurrent().snapshot(context_list);
 
   if (context_list.size()>0)
   {
-    string context="\nThe error occurred";
+    string context="\nThe problem occurred";
     for (const std::string& c: context_list)
       {
         context+= "\nwhile "+c;
@@ -123,12 +163,14 @@ void Exception::saveContext(bool strace)
 
 Exception::Exception()
 {
+  dbg()<<"Unspecified exception created."<<std::endl;
   saveContext(true);
 }
 
 Exception::Exception(const std::string& msg, bool strace)
   : message_(msg)
 {
+  dbg()<<msg<<std::endl;
   saveContext(strace);
 }
 
@@ -136,7 +178,14 @@ Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> 
   : message_(msg),
     contextGeometry_(contextGeometry)
 {
+  dbg()<<msg<<std::endl;
   saveContext(strace);
+}
+
+Exception::Exception(const std::string& msg, const std::string& strace)
+  : message_(msg), strace_(strace)
+{
+  dbg()<<msg<<std::endl;
 }
 
 Exception::operator std::string() const
@@ -169,33 +218,85 @@ CurrentExceptionContext::CurrentExceptionContext(const std::string& desc, bool v
   {
     if (verbose)
     {
-      std::cout << desc << std::endl;
+      std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << desc << std::endl;
     }
   }
-  exceptionContext.push_back(this);
+  ExceptionContext::getCurrent().push_back(this);
 }
 
 
 CurrentExceptionContext::~CurrentExceptionContext()
 {
-  if (exceptionContext.back()==this)
-    exceptionContext.pop_back();
+  if (ExceptionContext::getCurrent().back()==this)
+    ExceptionContext::getCurrent().pop_back();
   else
     {
       std::cerr<<"Oops: CurrentExceptionContext destructor: expected to be last!"<<endl;
     }
+
+  if (getenv("INSIGHT_VERBOSE"))
+  {
+    std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<desc_ << std::endl;
+  }
 }
+
+std::string CurrentExceptionContext::contextDescription() const
+{
+  return desc_;
+}
+
+CurrentExceptionContext::operator std::string() const
+{
+  return desc_;
+}
+
+
+
+class NullBuffer : public std::streambuf
+{
+public:
+  int overflow(int c) { return c; }
+};
+
+
+std::ostream& dbg()
+{
+  static NullBuffer nullBuffer;
+  static std::ostream nullOstream(&nullBuffer);
+
+  if (getenv("INSIGHT_VERBOSE"))
+  {
+    std::cerr<<"[DBG, " << std::this_thread::get_id() <<"]: ";
+    return std::cerr;
+  }
+  else
+  {
+    return nullOstream;
+  }
+}
+
+
 
 void ExceptionContext::snapshot(std::vector<std::string>& context)
 {
   context.clear();
   for (const auto& i: *this)
     {
-      context.push_back(*i);
+      context.push_back( i->contextDescription() );
     }
 }
 
-thread_local ExceptionContext exceptionContext;
+////#if !(defined(WIN32)&&defined(DEBUG))
+//thread_local
+////#endif
+//ExceptionContext exceptionContext;
+
+ExceptionContext& ExceptionContext::getCurrent()
+{
+  static thread_local ExceptionContext thisThreadsExceptionContext;
+  return thisThreadsExceptionContext;
+}
+
 
 std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen)
 {
@@ -246,11 +347,14 @@ std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen)
 
 
 WarningDispatcher::WarningDispatcher()
+  : superDispatcher_(nullptr)
 {}
 
 void WarningDispatcher::setSuperDispatcher(WarningDispatcher *superDispatcher)
 {
+//#if !(defined(WIN32)&&defined(DEBUG))
   superDispatcher_=superDispatcher;
+//#endif
 }
 
 void WarningDispatcher::issue(const std::string& message)
@@ -300,28 +404,29 @@ size_t WarningDispatcher::nWarnings() const
 }
 
 
+////#if !(defined(WIN32)&&defined(DEBUG))
+//thread_local
+////#endif
+//WarningDispatcher thisThreadsWarnings;
 
-thread_local WarningDispatcher warnings;
+WarningDispatcher& WarningDispatcher::getCurrent()
+{
+  static thread_local WarningDispatcher thisThreadsWarnings;
+  return thisThreadsWarnings;
+}
 
 
 
 void Warning(const std::string& msg)
 {
-  warnings.issue( msg );
+  WarningDispatcher::getCurrent().issue( msg );
 }
 
 void UnhandledExceptionHandling::handler()
 {
-    void *trace_elems[20];
-    int trace_elem_count(backtrace( trace_elems, 20 ));
-    char **stack_syms(backtrace_symbols( trace_elems, trace_elem_count ));
-    for ( int i = 0 ; i < trace_elem_count ; ++i )
-    {
-        std::cout << stack_syms[i] << "\n";
-    }
-    free( stack_syms );
-
-    exit(1);
+  std::cerr<<"Unhandled exception occurred!"<<std::endl;
+  std::cerr << boost::stacktrace::stacktrace();
+  exit(1);
 }
 
 UnhandledExceptionHandling::UnhandledExceptionHandling()
@@ -335,6 +440,9 @@ UnhandledExceptionHandling::UnhandledExceptionHandling()
 
 void printException(const std::exception& e)
 {
+  std::ostringstream title;
+  title<<"*** ERROR ["<< std::this_thread::get_id() <<"] ***";
+
   if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
   {
 //    std::cerr << std::endl
@@ -342,8 +450,7 @@ void printException(const std::exception& e)
 //              << ie->message() << std::endl
 //                 ;
 
-    displayFramed("***ERROR***", ie->message(), '=', std::cerr);
-
+    displayFramed(title.str(), ie->message(), '=', std::cerr);
     if (getenv("INSIGHT_STACKTRACE"))
     {
       std::cerr << "Stack trace:" << std::endl
@@ -356,7 +463,7 @@ void printException(const std::exception& e)
 //              << "An error has occurred:" << std::endl
 //              << e.what() << std::endl
 //                 ;
-    displayFramed("***ERROR***", e.what(), '=', std::cerr);
+    displayFramed(title.str(), e.what(), '=', std::cerr);
   }
 }
 
@@ -382,6 +489,7 @@ UnsupportedFeature::UnsupportedFeature()
 UnsupportedFeature::UnsupportedFeature(const string &msg, bool strace)
   : Exception(msg, strace)
 {}
+
 
 
 

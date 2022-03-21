@@ -192,6 +192,8 @@ struct dict
   
   void write(std::ostream& os, int indentLevel=0) const;
 
+  std::vector<std::string> findKeys(const boost::regex& re) const;
+
 };
 
 struct dictFile

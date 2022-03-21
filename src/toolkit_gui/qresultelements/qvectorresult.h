@@ -1,11 +1,14 @@
 #ifndef INSIGHT_QVECTORRESULT_H
 #define INSIGHT_QVECTORRESULT_H
 
-#include "qresultsetmodel.h"
+#include "toolkit_gui_export.h"
+
+
+#include "iqresultsetmodel.h"
 
 namespace insight {
 
-class QVectorResult : public QResultElement
+class TOOLKIT_GUI_EXPORT QVectorResult : public IQResultElement
 {
     Q_OBJECT
 

@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "volumedrag__volumeDrag__Parameters_headers.h"
 
 namespace insight {
 

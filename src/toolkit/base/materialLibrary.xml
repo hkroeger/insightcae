@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+<entry label="S235JR"
+        density="7850" youngsModulus="212000" poissonNumber="0.3" specificHeatCapacity="470" heatConductivity="50"/>
+<entry label="S355J2_N"
+        density="7850" youngsModulus="212000" poissonNumber="0.3" specificHeatCapacity="461" heatConductivity="54"/>
+<entry label="C45"
+        density="7850" youngsModulus="212000" poissonNumber="0.3" specificHeatCapacity="460" heatConductivity="50"/>
+<entry label="GJS400_15"
+        density="7100" youngsModulus="212000" poissonNumber="0.3" specificHeatCapacity="515" heatConductivity="36.2"/>
+</root>

@@ -494,6 +494,21 @@ void dict::write(std::ostream& os, int indentLevel) const
   os << prec << "}\n";
 }
 
+
+std::vector<std::string> dict::findKeys(const boost::regex& re) const
+{
+  std::vector<std::string> result;
+  for (auto& pe: *this)
+  {
+    if (boost::regex_search(pe.first, re))
+    {
+      result.push_back(pe.first);
+    }
+  }
+  return result;
+}
+
+
 OFDictData::dictFile::dictFile()
 : className("dictionary"),
   dictVersion(2),

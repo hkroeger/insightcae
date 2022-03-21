@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "mirrormesh__mirrorMesh__Parameters_headers.h"
+
 namespace insight {
 
 

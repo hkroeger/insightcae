@@ -16,8 +16,8 @@ void RunSyncToRemote::run()
         {},
         [&](int progress, const std::string& progress_text)
         {
-          emit progressValueChanged(progress);
-          emit progressTextChanged(QString(progress_text.c_str()));
+          Q_EMIT progressValueChanged(progress);
+          Q_EMIT progressTextChanged(QString(progress_text.c_str()));
         }
       );
   emit transferFinished();
@@ -38,11 +38,11 @@ void RunSyncToLocal::run()
         {},
         [&](int progress, const std::string& progress_text)
         {
-          emit progressValueChanged(progress);
-          emit progressTextChanged(QString(progress_text.c_str()));
+          Q_EMIT progressValueChanged(progress);
+          Q_EMIT progressTextChanged(QString(progress_text.c_str()));
         }
       );
-  emit transferFinished();
+  Q_EMIT transferFinished();
 }
 
 }

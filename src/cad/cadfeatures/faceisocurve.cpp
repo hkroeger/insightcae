@@ -6,6 +6,7 @@
 
 #include "Adaptor3d_IsoCurve.hxx"
 #include "GeomAPI_Interpolate.hxx"
+#include "GeomAdaptor_HSurface.hxx"
 
 
 namespace qi = boost::spirit::qi;

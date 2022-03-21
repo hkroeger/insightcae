@@ -47,8 +47,10 @@ void FileResult::writeLatexHeaderCode ( std::ostream& ) const
 
 void FileResult::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path& /*outputfilepath*/ ) const
 {
+  std::string fn=boost::filesystem::absolute(originalFilePath_).string();
+  replace_all(fn , "\\", "/");
     f<<  "\\texttt{"
-       + SimpleLatex( boost::lexical_cast<std::string>(boost::filesystem::absolute(originalFilePath_)) ).toLaTeX()
+       + SimpleLatex( fn ).toLaTeX()
          + "}";
 }
 
@@ -61,6 +63,7 @@ path FileResult::filePath(path baseDirectory) const
 
   if (needsUnpack(up))
   {
+    insight::dbg()<<"unpack FileResult into "<<up<<std::endl;
     copyTo(up, true);
   }
 

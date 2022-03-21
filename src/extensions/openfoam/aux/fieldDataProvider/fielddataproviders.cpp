@@ -23,6 +23,30 @@
 namespace Foam
 {
 
+
+template<>
+void vtkField<symmTensor>::setComponentMap(const word& orderType)
+{
+    componentOrderName_=orderType;
+    if (orderType.empty() || orderType=="OpenFOAM")
+    {
+        componentMap_ = {0, 1, 2, 3, 4, 5};
+    }
+    else if (orderType=="VTK")
+    {
+        componentMap_ = {0, 3, 5, 1, 4, 2};
+    }
+    else
+    {
+        FatalErrorIn("void vtkField<symmTensor>::setComponentMap(const word& orderType)")
+                << "unrecognized component map "<<orderType<<endl
+                << "allowed: OpenFOAM or VTk"<<endl
+                <<abort(FatalError);
+    }
+}
+
+
+
 #define makeProviders(TT) \
 makeFieldDataProviderType(TT, scalar);\
 makeFieldDataProviderType(TT, vector);\
@@ -41,5 +65,6 @@ makeProviders(nonuniformField);
 makeProviders(linearProfile);
 makeProviders(radialProfile);
 makeProviders(fittedProfile);
+makeProviders(vtkField);
 
 }

@@ -8,6 +8,7 @@ ISCADMetaTypeRegistrator::ISCADMetaTypeRegistrator()
   qRegisterMetaType<insight::cad::DatumPtr>("insight::cad::DatumPtr");
   qRegisterMetaType<insight::cad::PostprocActionPtr>("insight::cad::PostprocActionPtr");
   qRegisterMetaType<insight::cad::VectorVariableType>("insight::cad::VectorVariableType");
+  qRegisterMetaType<Optional_AIS_DisplayMode>("boost::variant<boost::blank,AIS_DisplayMode>");
   qRegisterMetaType<QVector<int> >("QVector<int>");
   qRegisterMetaType<AIS_DisplayMode>("AIS_DisplayMode");
 }

@@ -1,31 +1,33 @@
 #include "patch.h"
 
+#include "openfoam/caseelements/boundarycondition.h"
+
 using namespace insight;
 using namespace boost;
 using namespace rapidxml;
 
 
-Patch::Patch(QListWidget*parent, const std::string& patch_name, ParameterSetDisplay* d)
-: CaseElementData(parent, "", d),
+Patch::Patch(const std::string& patch_name, insight::Multi_CAD_ParameterSet_Visualizer* mv, QObject* parent)
+: CaseElementData("", mv, parent),
   patch_name_(patch_name)
 {
-  updateText();
+//  updateText();
 }
 
 
-Patch::Patch(QListWidget*parent,
-             rapidxml::xml_document<>& doc,
+Patch::Patch(rapidxml::xml_document<>& doc,
              rapidxml::xml_node<>& node,
              boost::filesystem::path inputfilepath,
-             ParameterSetDisplay* d
+             insight::Multi_CAD_ParameterSet_Visualizer* mv,
+             QObject* parent
              )
-: CaseElementData(parent, "", d)
+: CaseElementData("", mv, parent)
 {
   auto patchnameattr=node.first_attribute ( "patchName" );
   insight::assertion(patchnameattr, "Patch name attribute missing!");
   patch_name_ = patchnameattr->value();
 
-  updateText();
+//  updateText();
 
   auto typenameattr=node.first_attribute ( "BCtype" );
   insight::assertion(typenameattr, "Patch type attribute missing!");
@@ -38,20 +40,24 @@ Patch::Patch(QListWidget*parent,
   }
 }
 
-void Patch::updateText()
+const ParameterSet Patch::defaultParameters() const
 {
-  if (type_name_.empty())
-    setText( QString::fromStdString(patch_name_) );
-  else
-    setText( QString::fromStdString(patch_name_+" ("+type_name_+")") );
+  return insight::BoundaryCondition::defaultParameters(type_name_);
 }
+
+//void Patch::updateText()
+//{
+//  if (type_name_.empty())
+//    setText( QString::fromStdString(patch_name_) );
+//  else
+//    setText( QString::fromStdString(patch_name_+" ("+type_name_+")") );
+//}
 
 void Patch::set_bc_type(const std::string& type_name)
 {
     type_name_=type_name;
-    updateText();
+//    updateText();
     curp_ = BoundaryCondition::defaultParameters(type_name_);
-    defp_ = curp_;
     if (type_name_!="")
     {
       try {
@@ -64,7 +70,7 @@ void Patch::set_bc_type(const std::string& type_name)
 void Patch::set_patch_name(const QString& newname)
 {
   patch_name_=newname.toStdString();
-  updateText();
+//  updateText();
 }
 
 bool Patch::insertElement(insight::OpenFOAMCase& c, insight::OFDictData::dict& boundaryDict) const
@@ -93,13 +99,18 @@ void Patch::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& 
 
 const QString DefaultPatch::defaultPatchName = "[Unassigned Patches]";
 
-DefaultPatch::DefaultPatch(QListWidget* parent, ParameterSetDisplay* d)
-  : Patch(parent, defaultPatchName.toStdString(), d)
+DefaultPatch::DefaultPatch(insight::Multi_CAD_ParameterSet_Visualizer* mv, QObject* parent)
+  : Patch(defaultPatchName.toStdString(), mv, parent)
 {
 }
 
-DefaultPatch::DefaultPatch(QListWidget*parent, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath, ParameterSetDisplay* d)
-: Patch(parent, doc, node, inputfilepath, d)
+DefaultPatch::DefaultPatch(
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node,
+    boost::filesystem::path inputfilepath,
+    insight::Multi_CAD_ParameterSet_Visualizer* mv,
+    QObject* parent )
+: Patch(doc, node, inputfilepath, mv, parent)
 {
 }
 

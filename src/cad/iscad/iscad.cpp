@@ -48,8 +48,6 @@ int main ( int argc, char** argv )
 {
   namespace po = boost::program_options;
 
-  typedef std::vector<std::string> StringList;
-
   // Declare the supported options.
   po::options_description desc ( "Allowed options" );
   desc.add_options()
@@ -98,7 +96,7 @@ int main ( int argc, char** argv )
 
   if ( vm.count ( "version" ) )
     {
-      cout << std::string(insight::ToolkitVersion::current) << endl;
+      cout << std::string(insight::ToolkitVersion::current()) << endl;
       exit ( 0 );
     }
 
@@ -167,7 +165,7 @@ int main ( int argc, char** argv )
       app.setSplashScreen(&splash);
       splash.showMessage ( "Wait..." );
 
-      ISCADMainWindow window ( 0, 0, vm.count ( "nolog" ) );
+      ISCADMainWindow window ( nullptr, vm.count ( "nolog" ) );
       
       bool dobgparsing = (vm.count ( "nobgparse" ) == 0);
       

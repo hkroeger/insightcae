@@ -38,9 +38,35 @@ std::string dt(int i)
 
 void MatplotlibRenderer::render(const boost::filesystem::path &outimagepath) const
 {
+    auto xlabel=boost::replace_all_copy(chartData_->xlabel_, "\\", "\\\\");
+    auto ylabel=boost::replace_all_copy(chartData_->ylabel_, "\\", "\\\\");
+    {
+    std::cout<<"import matplotlib.pyplot as plt;";
+    std::cout<<"plt.xlabel('"<<xlabel<<"');";
+    std::cout<<"plt.ylabel('"<<ylabel<<"');";
+    std::cout<<"plt.grid();";
+
+    int k=0;
+    for ( const PlotCurve& pc: chartData_->plc_ )
+    {
+      ++k;
+
+      int n=pc.xy_.n_rows;
+      std::cout<<"plt.plot([";
+      for (int i=0; i<n; i++) std::cout << (i>0?",":"") << pc.xy_(i,0);
+      std::cout<<"],[";
+      for (int i=0; i<n; i++) std::cout << (i>0?",":"") << pc.xy_(i,1);
+      std::cout<<"], '";
+      std::cout<<lc(pc.style_.color_<0?k:pc.style_.color_)<<dt(pc.style_.dashType_);
+      std::cout<<"');";
+    }
+    std::cout<<"plt.savefig('"<<outimagepath.string()<<"');";
+    std::cout<<endl;
+  }
 
   namespace bp = boost::process;
   bp::opstream in;
+
 
   bp::child c(
         bp::search_path("python3"),
@@ -49,8 +75,8 @@ void MatplotlibRenderer::render(const boost::filesystem::path &outimagepath) con
         );
 
   in<<"import matplotlib.pyplot as plt;";
-  in<<"plt.xlabel('"<<chartData_->xlabel_<<"');";
-  in<<"plt.ylabel('"<<chartData_->ylabel_<<"');";
+  in<<"plt.xlabel('"<<xlabel<<"');";
+  in<<"plt.ylabel('"<<ylabel<<"');";
   in<<"plt.grid();";
 
   int k=0;

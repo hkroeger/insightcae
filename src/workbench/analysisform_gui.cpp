@@ -7,8 +7,8 @@
 #include "base/remotelocation.h"
 #include "base/remoteexecution.h"
 #include "openfoam/ofes.h"
+#include "base/mountremote.h"
 
-#include "remoteparaview.h"
 #include "remotedirselector.h"
 #include "of_clean_case.h"
 
@@ -51,7 +51,7 @@ void AnalysisForm::updateWindowTitle()
 
 bool AnalysisForm::checkAnalysisExecutionPreconditions()
 {
-  if (results_)
+  if (resultsViewer_->hasResults())
   {
     QMessageBox msgBox;
     msgBox.setText("There is currently a result set in memory!");
@@ -62,8 +62,10 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
 
     if (msgBox.exec()==QMessageBox::Yes)
     {
-        results_.reset();
-    } else {
+        resultsViewer_->clear();
+    }
+    else
+    {
         return false;
     }
   }
@@ -83,14 +85,11 @@ void AnalysisForm::onRunAnalysis()
   if (!checkAnalysisExecutionPreconditions())
     return;
 
-  if (!ensureWorkingDirectoryExistence())
-    return;
-
-  if (ui->cbRemoteExecution->isChecked())
+  if (remoteExecutionConfiguration())
   {
     startRemoteRun();
   }
-  else if (!ui->cbRemoteExecution->isChecked())
+  else
   {
     startLocalRun();
   }
@@ -112,15 +111,10 @@ void AnalysisForm::onKillAnalysis()
 
 void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
-  results_=results;
+  resultsViewer_->loadResults(results);
 
   currentWorkbenchAction_.reset();
 
-  resultsModel_=new insight::QResultSetModel(results_, ui->resultsToC);
-  ui->resultsToC->setModel(resultsModel_);
-  ui->resultsToC->expandAll();
-  ui->resultsToC->resizeColumnToContents(0);
-  ui->resultsToC->resizeColumnToContents(1);
 
   ui->tabWidget->setCurrentWidget(ui->outputTab);
 
@@ -145,55 +139,94 @@ void AnalysisForm::onAnalysisCancelled()
 }
 
 
-
+void AnalysisForm::cleanFinishedExternalProcesses()
+{
+    auto rps=externalProcesses_;
+    externalProcesses_.clear();
+    std::copy_if(
+        rps.begin(), rps.end(),
+        std::inserter(externalProcesses_, externalProcesses_.begin()),
+        [](std::shared_ptr<insight::ExternalProcess> rp)
+        {
+            return rp && rp->isRunning();
+        }
+    );
+}
 
 void AnalysisForm::onStartPV()
 {
-  if (ui->cbRemoteExecution->isChecked() && remoteDirectory_ && caseDirectory_)
+  bool launchRemote=false;
+  if (auto* rec = remoteExecutionConfiguration())
   {
-    if (remoteDirectory_->remoteDirExists())
-    {
-      RemoteParaview dlg( *remoteDirectory_, this );
-      dlg.exec();
-    }
+      if (rec->isCommitted()) launchRemote=true;
   }
-  else if (!ui->cbRemoteExecution->isChecked() && caseDirectory_)
-  {
-    ::system( boost::str( boost::format
-          ("cd %s; isPV.py &" ) % caseDirectory_->string()
-     ).c_str() );
-  }
+
+  if (launchRemote)
+      onStartPVRemote();
+  else
+      onStartPVLocal();
 }
 
+
+
+void AnalysisForm::onStartPVLocal()
+{
+    IQParaviewDialog dlg( localCaseDirectory(), this );
+    dlg.exec();
+
+    if (auto pv = dlg.paraviewProcess())
+    {
+        cleanFinishedExternalProcesses(); // clean up on this occasion
+        externalProcesses_.insert(pv);
+    }
+}
+
+
+void AnalysisForm::onStartPVRemote()
+{
+    if (auto* rec = remoteExecutionConfiguration())
+    {
+        if (rec->location().remoteDirExists())
+        {
+            IQRemoteParaviewDialog dlg( rec->exeConfig(), this );
+            dlg.exec();
+
+            if (auto rp = dlg.remoteParaviewProcess())
+            {
+                cleanFinishedExternalProcesses(); // clean up on this occasion
+                externalProcesses_.insert(rp);
+            }
+        }
+    }
+}
 
 
 
 void AnalysisForm::onCleanOFC()
 {
-  if (caseDirectory_)
+#ifndef WIN32
+  const insight::OFEnvironment* ofc = nullptr;
+  if (parameters().contains("run/OFEname"))
   {
-    const insight::OFEnvironment* ofc = nullptr;
-    if (parameters_.contains("run/OFEname"))
-    {
-      std::string ofename=parameters_.getString("run/OFEname");
-      ofc=&(insight::OFEs::get(ofename));
-    }
-    else
-    {
-      ofc=&(insight::OFEs::getCurrentOrPreferred());
-    }
-
-    fs::path exePath = *caseDirectory_;
-    std::unique_ptr<insight::MountRemote> rd;
-    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_)
-    {
-        rd.reset(new insight::MountRemote(*remoteDirectory_));
-        exePath = rd->mountpoint();
-    }
-
-    OFCleanCaseDialog dlg(*ofc, exePath, this);
-    dlg.exec();
+    std::string ofename=parameters().getString("run/OFEname");
+    ofc=&(insight::OFEs::get(ofename));
   }
+  else
+  {
+    ofc=&(insight::OFEs::getCurrentOrPreferred());
+  }
+
+  fs::path exePath = localCaseDirectory();
+  std::unique_ptr<insight::MountRemote> rd;
+  if (auto* rec = remoteExecutionConfiguration())
+  {
+      rd.reset(new insight::MountRemote(rec->location()));
+      exePath = rd->mountpoint();
+  }
+
+  OFCleanCaseDialog dlg(*ofc, exePath, this);
+  dlg.exec();
+#endif
 }
 
 
@@ -201,21 +234,22 @@ void AnalysisForm::onCleanOFC()
 
 void AnalysisForm::onWnow()
 {
-  if (isRunning())
-  {
-    fs::path exePath = *caseDirectory_;
-    std::unique_ptr<insight::MountRemote> rd;
-    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_)
+    if (isRunningLocally())
     {
-        rd.reset(new insight::MountRemote(*remoteDirectory_));
-        exePath = rd->mountpoint();
-    }
-
-    {
-      std::ofstream f( (exePath/"wnow").c_str() );
+      fs::path exePath = localCaseDirectory();
+      std::ofstream f( (exePath/"wnow").string() );
       f.close();
     }
-  }
+    else if (isRunningRemotely())
+    {
+        if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get()))
+        {
+            rr->analyzeClient().wnow(
+                        [](insight::AnalyzeClientAction::ReportSuccessResult) {},
+                        []() {}
+                        );
+        }
+    }
 }
 
 
@@ -223,21 +257,22 @@ void AnalysisForm::onWnow()
 
 void AnalysisForm::onWnowAndStop()
 {
-  if (isRunning())
-  {
-    fs::path exePath = *caseDirectory_;
-    std::unique_ptr<insight::MountRemote> rd;
-    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_)
+    if (isRunningLocally())
     {
-        rd.reset(new insight::MountRemote(*remoteDirectory_));
-        exePath = rd->mountpoint();
-    }
-
-    {
-      std::ofstream f( (exePath/"wnowandstop").c_str() );
+      fs::path exePath = localCaseDirectory();
+      std::ofstream f( (exePath/"wnowandstop").string() );
       f.close();
     }
-  }
+    else if (isRunningRemotely())
+    {
+        if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.get()))
+        {
+            rr->analyzeClient().wnowandstop(
+                        [](insight::AnalyzeClientAction::ReportSuccessResult) {},
+                        []() {}
+                        );
+        }
+    }
 }
 
 
@@ -245,11 +280,11 @@ void AnalysisForm::onWnowAndStop()
 
 void AnalysisForm::onShell()
 {
-  if (caseDirectory_)
-  {
-    auto locDir = QString::fromStdString(caseDirectory_->string());
+  auto locDir = QString::fromStdString(localCaseDirectory().string());
 
-    if (ui->cbRemoteExecution->isChecked() && remoteDirectory_ && remoteDirectory_->remoteDirExists())
+  if ( auto* rec = remoteExecutionConfiguration() )
+  {
+    if (rec->location().remoteDirExists())
     {
       QStringList args;
       if ( !QProcess::startDetached("isRemoteShell.sh",
@@ -263,18 +298,18 @@ void AnalysisForm::onShell()
               );
       }
     }
-    else if (!ui->cbRemoteExecution->isChecked())
+  }
+  else
+  {
+    QStringList args;
+    args << "--working-directory" << locDir;
+    if (!QProcess::startDetached("mate-terminal", args, locDir ))
     {
-      QStringList args;
-      args << "--working-directory" << locDir;
-      if (!QProcess::startDetached("mate-terminal", args, locDir ))
-      {
-        QMessageBox::critical(
-              this,
-              "Failed to start",
-              "Failed to start mate-terminal in directoy "+locDir
-              );
-      }
+      QMessageBox::critical(
+            this,
+            "Failed to start",
+            "Failed to start mate-terminal in directoy "+locDir
+            );
     }
   }
 }

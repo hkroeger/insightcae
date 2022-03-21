@@ -36,9 +36,9 @@ def getProfile(owc, name):
     
     if xname=="J":
       if yname=="Kt":
-        return np.array(zip(Js, [owc.Kt(J, PbyD, AebyA0, z) for J in Js])).tolist()
+        return [[J, owc.Kt(J, PbyD, AebyA0, z)] for J in Js]
       if yname=="Kq":
-        return np.array(zip(Js, [owc.Kq(J, PbyD, AebyA0, z) for J in Js])).tolist()
+        return [[J, owc.Kq(J, PbyD, AebyA0, z)] for J in Js]
   elif len(cp)==3:
     AebyA0=float(cp[0])
     z=float(cp[1])
@@ -65,7 +65,7 @@ def getProfile(owc, name):
       result=[]
       for J in Js:
         PD=opt.fmin(eta, 1.0, (J,), disp=False)[0]
-        #print PD
+        print(PD)
         KDT=(J**4/owc.Kt(J, PD, AebyA0, z))**0.25
         if np.isnan(KDT): break
         result.append( [KDT, J] )
@@ -75,7 +75,7 @@ def getProfile(owc, name):
       result=[]
       for J in Js:
         PD=opt.fmin(eta, 1.0, (J,), disp=False)[0]
-        print PD
+        print(PD)
         KNP=(J**5/owc.Kq(J, PD, AebyA0, z))**(1./5.)
         if np.isnan(KNP): break
         result.append( [KNP, J] )

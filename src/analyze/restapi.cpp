@@ -10,6 +10,8 @@
 
 #include "boost/algorithm/string.hpp"
 
+#include "base/analysisthread.h"
+
 #include <csignal>
 
 using namespace std;
@@ -26,6 +28,7 @@ SignalChecker* currentSignalHandler = nullptr;
 
 class SignalChecker
 {
+#ifndef WIN32
   boost::condition_variable& cv_;
   boost::mutex& mx_;
   int& signal_;
@@ -35,21 +38,28 @@ class SignalChecker
     old_SIGINT_,
     old_SIGPIPE_,
     old_SIGTERM_;
+#endif
 
 public:
+
   void signalHandler(int signal)
   {
+#ifndef WIN32
     boost::mutex::scoped_lock lock(mx_);
     signal_=signal;
     cout<<"Got signal "<<signal<<endl;
     cv_.notify_all();
+#endif
   }
 
   SignalChecker(boost::condition_variable& cv, boost::mutex& mx, int& signal)
+#ifndef WIN32
     : cv_(cv),
       mx_(mx),
       signal_(signal)
+#endif
   {
+#ifndef WIN32
     if (currentSignalHandler)
       throw std::logic_error("Internal error: There is already another signal checker active!");
 
@@ -58,15 +68,18 @@ public:
     old_SIGINT_ = std::signal(SIGINT, globalSignalHandler);
     old_SIGPIPE_ = std::signal(SIGPIPE, globalSignalHandler);
     old_SIGTERM_ = std::signal(SIGTERM, globalSignalHandler);
+#endif
   }
 
   ~SignalChecker()
   {
+#ifndef WIN32
     // restore
     std::signal(SIGHUP, old_SIGHUP_);
     std::signal(SIGINT, old_SIGINT_);
     std::signal(SIGPIPE, old_SIGPIPE_);
     std::signal(SIGTERM, old_SIGTERM_);
+#endif
   }
 };
 
@@ -79,10 +92,9 @@ void globalSignalHandler(int sig)
 
 
 
-double AnalyzeRESTServer::nextStateInfo(
-    Json::Object &s
-    )
+std::pair<double,Json::Object> AnalyzeRESTServer::nextStateInfo()
 {
+  Json::Object s;
   auto& pi = recordedStates_.front();
   double t = pi.first; //copy (non-reference) for proper use as return value
   s["time"]=t;
@@ -95,14 +107,17 @@ double AnalyzeRESTServer::nextStateInfo(
   s["logMessage"]=Wt::WString(pi.logMessage_);
 
   recordedStates_.pop_front();
-  return t;
+
+  return std::make_pair(t, s);
 }
 
 
-void AnalyzeRESTServer::nextProgressInfo(
-    Json::Object &s
-    )
+
+
+Json::Object AnalyzeRESTServer::nextProgressInfo()
 {
+  Json::Object s;
+
   auto& pi = recordedProgressStates_.front();
 
   s["path"]=Wt::WString(pi.path);
@@ -120,10 +135,19 @@ void AnalyzeRESTServer::nextProgressInfo(
   }
 
   recordedProgressStates_.pop_front();
+
+  return s;
 }
 
 
 
+
+Wt::WString AnalyzeRESTServer::nextLogLine()
+{
+    auto s( Wt::WString(logLines_.front()) );
+    logLines_.pop_front();
+    return s;
+}
 
 
 
@@ -138,13 +162,17 @@ AnalyzeRESTServer::AnalyzeRESTServer(
 {
 
   auto addr = boost::str(boost::format(listenAddr+":%d") % port);
+  auto mmrs = boost::lexical_cast<string>(32 * 1024*1024);
+  auto mrs = boost::lexical_cast<string>(512 * 1024*1024*1024);
   const char *cargv[]={
     srvname.c_str(),
     "--docroot", ".",
-    "--http-listen", addr.c_str()
+    "--http-listen", addr.c_str(),
+    "--max-memory-request-size", mmrs.c_str(),
+    "--max-request-size", mrs.c_str()
   };
 
-  setServerConfiguration(5, const_cast<char**>(cargv) );
+  setServerConfiguration(9, const_cast<char**>(cargv) );
 
   addResource(this, std::string());
   addResource(this, "/next");
@@ -170,16 +198,13 @@ void AnalyzeRESTServer::setResults(insight::ResultSetPtr results)
   results_=results;
 }
 
-
-void AnalyzeRESTServer::update(
-    const insight::ProgressState& pi
-    )
+void AnalyzeRESTServer::setException(const insight::Exception &ex)
 {
-  TextProgressDisplayer::update(pi);
-  mx_.lock();
-  recordedStates_.push_back(pi);
-  mx_.unlock();
+  exception_=std::make_shared<insight::Exception>(ex);
 }
+
+
+
 
 void AnalyzeRESTServer::setActionProgressValue(const string &path, double value)
 {
@@ -189,6 +214,9 @@ void AnalyzeRESTServer::setActionProgressValue(const string &path, double value)
   mx_.unlock();
 }
 
+
+
+
 void AnalyzeRESTServer::setMessageText(const string &path, const string &message)
 {
   TextProgressDisplayer::setMessageText(path, message);
@@ -196,6 +224,9 @@ void AnalyzeRESTServer::setMessageText(const string &path, const string &message
   recordedProgressStates_.push_back( ProgressState{ path, message } );
   mx_.unlock();
 }
+
+
+
 
 void AnalyzeRESTServer::finishActionProgress(const string &path)
 {
@@ -206,10 +237,39 @@ void AnalyzeRESTServer::finishActionProgress(const string &path)
 }
 
 
+
+
+void AnalyzeRESTServer::update(
+        const insight::ProgressState& pi
+        )
+{
+    TextProgressDisplayer::update(pi);
+    mx_.lock();
+    recordedStates_.push_back(pi);
+    mx_.unlock();
+}
+
+
+
+
+void AnalyzeRESTServer::logMessage(const std::string &line)
+{
+    //TextProgressDisplayer::logMessage(line); // locks due to output to cout...
+    mx_.lock();
+    logLines_.push_back(line);
+    mx_.unlock();
+}
+
+
+
+
 bool AnalyzeRESTServer::hasInputFileReceived() const
 {
   return !inputFileContents_->empty();
 }
+
+
+
 
 bool AnalyzeRESTServer::waitForInputFile(std::string& inputFileContents)
 {
@@ -236,7 +296,7 @@ bool AnalyzeRESTServer::hasResultsDelivered() const
 bool AnalyzeRESTServer::waitForResultDelivery()
 {
   boost::mutex::scoped_lock lock(mx_);
-  int sig;
+  int sig=-1;
   SignalChecker sighld(wait_cv_, mx_, sig);
   while ( !hasResultsDelivered() && (sig==0) )
   {
@@ -247,6 +307,12 @@ bool AnalyzeRESTServer::waitForResultDelivery()
 
 void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Response &response)
 {
+  insight::dbg() << "incoming request" << std::endl;
+  insight::dbg() << request.path() << ", "
+                 << request.method() << ", "
+                 << request.contentType() << ", "
+                 << (request.tooLarge() ? "(size too large!)" : "(size ok)")
+                 << std::endl;
 
   response.addHeader("Server", "InsightCAE analyze");
 
@@ -265,12 +331,12 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
 
   if (request.method()=="GET")
   {
-    std::cerr<<"status or results request"<<std::endl;
+    insight::dbg()<<"status or results request"<<std::endl;
 
 
     //auto whichState = payload.get("whichState");
     std::string which = request.path();
-    cout<<"which="<<which<<endl;
+    insight::dbg()<<"which="<<which<<endl;
     enum StateSelection { Next, All, Latest, Results, ExePath } stateSelection = Next;
 //    if (!whichState.isNull())
     {
@@ -319,22 +385,19 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     }
     else
     {
-      Wt::Json::Object res, state, progressState;
-      Wt::Json::Array states, progressStates;
+      Wt::Json::Array states, progressStates, logLines;
 
       if (recordedStates_.size()>0)
       {
         if (stateSelection==Next)
         {
-          nextStateInfo(state);
-          states.push_back(state);
+          states.push_back( nextStateInfo().second );
         }
         else if (stateSelection==All)
         {
           while (recordedStates_.size()>0)
           {
-            nextStateInfo(state);
-            states.push_back(state);
+            states.push_back( nextStateInfo().second );
           }
         }
         else if (stateSelection==Latest)
@@ -346,22 +409,30 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
           }
           if (recordedStates_.size()>0)
           {
-            nextStateInfo(state);
-            states.push_back(state);
+            states.push_back( nextStateInfo().second );
           }
         }
       }
 
       while (recordedProgressStates_.size()>0)
       {
-        nextProgressInfo(progressState);
-        progressStates.push_back(progressState);
+        progressStates.push_back( nextProgressInfo() );
       }
 
+      while (logLines_.size()>0)
+      {
+        logLines.push_back( nextLogLine() );
+      }
+
+      Wt::Json::Object res;
       res["states"] = states;
+      res["logLines"] = logLines;
       res["progressStates"] = progressStates;
       res["inputFileReceived"] = hasInputFileReceived();
       res["resultsAvailable"] = results_ ? true : false;
+      res["errorOccurred"] = exception_ ? true : false;
+      res["errorMessage"] = exception_ ? exception_->what() : "";
+      res["errorStackTrace"] = exception_ ? exception_->strace().c_str() : "";
 
       response.setStatus(200);
       response.setMimeType("application/json");
@@ -372,13 +443,13 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
   }
   else if (request.method()=="POST")
   {
-    std::cerr<<"control request"<<std::endl;
+    insight::dbg()<<"control request"<<std::endl;
 
     if (request.contentType()=="application/xml")
     {
       // input file
-      istreambuf_iterator<char> fbegin(request.in()), fend;
-      std::copy(fbegin, fend, back_inserter(*inputFileContents_));
+      insight::readStreamIntoString(request.in(), *inputFileContents_);
+
 
       response.setStatus(200);
       response.setMimeType("text/plain");
@@ -425,6 +496,13 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnow")
         {
+
+          if (analysis_)
+          {
+              std::ofstream f( (analysis_->executionPath()/"wnow").string() );
+              f.close();
+          }
+
           response.setStatus(200);
           response.setMimeType("text/plain");
           response.out()<<"OK\n";
@@ -432,6 +510,12 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnowandstop")
         {
+          if (analysis_)
+          {
+              std::ofstream f( (analysis_->executionPath()/"wnowandstop").string() );
+              f.close();
+          }
+
           response.setStatus(200);
           response.setMimeType("text/plain");
           response.out()<<"OK\n";

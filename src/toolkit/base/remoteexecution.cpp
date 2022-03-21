@@ -11,8 +11,6 @@
 #include <boost/asio.hpp>
 #include <boost/process/async.hpp>
 
-#include "pstreams/pstream.h"
-
 #include <regex>
 #include "rapidxml/rapidxml_print.hpp"
 
@@ -36,7 +34,7 @@ namespace insight
 
 boost::filesystem::path RemoteLocation::socket() const
 {
-  return remoteDir()/"tsp.socket";
+  return (remoteDir()/"tsp.socket").generic_path();
 }
 
 
@@ -87,16 +85,6 @@ RemoteExecutionConfig::RemoteExecutionConfig(const RemoteExecutionConfig &o)
 
 
 RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location,
-                                             const RemoteLocation& rloc,
-                                             const bfs_path& localREConfigFile)
-  : RemoteLocation(rloc),
-    localREConfigFile_( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
-    localDir_(location)
-{
-}
-
-
-RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location,
                                              const bfs_path& localREConfigFile)
   : RemoteLocation( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
     localREConfigFile_( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
@@ -105,28 +93,36 @@ RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& loca
 }
 
 
-
-
-RemoteExecutionConfig::RemoteExecutionConfig(const RemoteServerInfo &rsi,
-                                             const filesystem::path &location,
-                                             const filesystem::path &remotePath,
-                                             const filesystem::path &localREConfigFile)
-  : RemoteLocation(rsi, remotePath),
+RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location,
+                                             const RemoteLocation& rloc,
+                                             const bfs_path& localREConfigFile)
+  : RemoteLocation(rloc),
+    localREConfigFile_( localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile ),
     localDir_(location)
 {
-  writeConfigFile(
-        localREConfigFile.empty() ? defaultConfigFile(location) : localREConfigFile,
-        server(),
-        remoteDir(),
-        rsi.hasLaunchScript_ ? rsi.server_ : ""
-                               );
+  writeConfig(localREConfigFile);
 }
 
 
 
+RemoteExecutionConfig::RemoteExecutionConfig(RemoteServer::ConfigPtr rsc,
+                                             const filesystem::path &location,
+                                             const filesystem::path &remotePath,
+                                             const filesystem::path &localREConfigFile)
+  : RemoteLocation(rsc, remotePath),
+    localDir_(location)
+{
+  writeConfig(localREConfigFile);
+}
 
-RemoteExecutionConfig::~RemoteExecutionConfig()
-{}
+
+void RemoteExecutionConfig::writeConfig(const boost::filesystem::path& localREConfigFile) const
+{
+  writeConfigFile(
+        localREConfigFile.empty() ? defaultConfigFile(localDir()) : localREConfigFile
+  );
+}
+
 
 
 
@@ -147,9 +143,9 @@ const boost::filesystem::path& RemoteExecutionConfig::metaFile() const
 
 
 
-void RemoteExecutionConfig::cleanup()
+void RemoteExecutionConfig::cleanup(bool forceRemoval)
 {
-  RemoteLocation::cleanup();
+  RemoteLocation::cleanup(forceRemoval);
   boost::filesystem::remove(metaFile());
 }
 

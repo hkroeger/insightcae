@@ -2,6 +2,7 @@
 #define INSIGHT_CAVITATINGFOAMNUMERICS_H
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
+#include "cavitatingfoamnumerics__cavitatingFoamNumerics__Parameters_headers.h"
 
 namespace insight {
 

@@ -30,7 +30,8 @@ int main(int /*argc*/, char*/*argv*/[])
     cout<<"check 1: "<<fp<<" "<<cmt1<<endl;
     checkFileContent(fp, content1);
 
-    sleep(1);
+    boost::this_thread::sleep_for( boost::chrono::seconds(1) );
+//    sleep(1);
 
     // access a second time
     fp=pp.filePath();

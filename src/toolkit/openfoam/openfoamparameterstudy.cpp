@@ -43,11 +43,12 @@ OpenFOAMParameterStudy<BaseAnalysis,var_params>::OpenFOAMParameterStudy
         const std::string& description, 
         const ParameterSet& ps,
         const boost::filesystem::path& exePath,
+        ProgressDisplayer& displayer,
         bool subcasesRemesh
 )
 : ParameterStudy<BaseAnalysis,var_params>
   (
-    name, description, ps, exePath
+    name, description, ps, exePath, displayer
   ),
   subcasesRemesh_(subcasesRemesh)
 {
@@ -95,8 +96,8 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
     {
 //     OpenFOAMAnalysis* base_case=static_cast<OpenFOAMAnalysis*>(baseAnalysis_.get());
 
-        PSSTR(p, "run", machine);
-        PSSTR(p, "run", OFEname);
+        auto machine = p.getString("run/machine");
+        auto OFEname = p.getString("run/OFEname");
 
         OFEnvironment ofe = OFEs::get(OFEname);
         ofe.setExecutionMachine(machine);

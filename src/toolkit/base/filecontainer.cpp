@@ -101,6 +101,11 @@ const std::string base64_padding[] = {"", "==","="};
 
 std::string base64_encode(const std::string& s)
 {
+  insight::CurrentExceptionContext ex(
+        boost::str(boost::format("performing base64 encode of buffer of size %d")
+                   % s.size() )
+        );
+
   namespace bai = boost::archive::iterators;
 
   std::stringstream os;
@@ -148,7 +153,9 @@ MD5HashPtr calcBufferHash(const std::string& buffer)
 }
 
 
-
+#ifdef WIN32
+#warning hash calculation routine not working
+#else
 MD5HashPtr calcFileHash(const boost::filesystem::path& filePath)
 {
   insight::CurrentExceptionContext ex("computing MD5 hash of file "+filePath.string());
@@ -159,7 +166,7 @@ MD5HashPtr calcFileHash(const boost::filesystem::path& filePath)
   unsigned long file_size;
   char* file_buffer;
 
-  file_descript = open(filePath.c_str(), O_RDONLY);
+  file_descript = open(filePath.string().c_str(), O_RDONLY);
   if(file_descript < 0) exit(-1);
 
   struct stat statbuf;
@@ -182,7 +189,7 @@ MD5HashPtr calcFileHash(const boost::filesystem::path& filePath)
 
   return hash;
 }
-
+#endif
 
 
 
@@ -302,7 +309,7 @@ FileContainer::FileContainer(const FileContainer& other)
 FileContainer::FileContainer(
     const boost::filesystem::path& originalFileName,
     std::shared_ptr<std::string> binary_content )
-  : originalFilePath_(originalFileName),
+  : originalFilePath_(originalFileName.generic_path()),
     file_content_(binary_content)
 
 {
@@ -315,7 +322,7 @@ FileContainer::FileContainer(
 FileContainer::FileContainer(
     const boost::filesystem::path &originalFileName,
     const TemporaryFile &tf )
-  : originalFilePath_(originalFileName)
+  : originalFilePath_(originalFileName.generic_path())
 {
   replaceContent(tf.path());
 }
@@ -326,7 +333,7 @@ FileContainer::FileContainer(
 FileContainer::FileContainer(
     const char *binaryFileContent, size_t size,
     const boost::filesystem::path &originalFileName )
-  : originalFilePath_(originalFileName),
+  : originalFilePath_(originalFileName.generic_path()),
     file_content_(new std::string(binaryFileContent, size))
 {
   clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
@@ -375,7 +382,7 @@ boost::filesystem::path FileContainer::fileName() const
 
 void FileContainer::setOriginalFilePath(const boost::filesystem::path &value)
 {
-  originalFilePath_=value;
+  originalFilePath_=value.generic_path();
   clearPackedData();
 }
 
@@ -390,7 +397,7 @@ std::istream& FileContainer::stream() const
   }
   else
   {
-    file_content_stream_.reset(new std::ifstream(originalFilePath_.c_str()));
+    file_content_stream_.reset(new std::ifstream(originalFilePath_.string()));
     if (! (*file_content_stream_) )
     {
       throw insight::Exception("Could not open file "+originalFilePath_.string()+" for reading!");
@@ -411,7 +418,6 @@ const char *FileContainer::binaryFileContent() const
 
 
 
-
 //bool FileContainer::isPacked() const
 //{
 //  return bool(file_content_);
@@ -423,8 +429,32 @@ const char *FileContainer::binaryFileContent() const
 //  replaceContent(originalFilePath_);
 //}
 
+
+timespec highres_last_write_time(const boost::filesystem::path& file)
+{
+  int file_descript = open(file.string().c_str(), O_RDONLY);
+
+  struct stat statbuf;
+  if(fstat(file_descript, &statbuf) < 0)
+    throw insight::Exception("Failed to get file attributes of file "+file.string());
+
+#ifdef WIN32
+#warning limited timestamp resolution in windows
+  timespec result;
+  result.tv_sec=statbuf.st_mtime;
+  result.tv_nsec=0;
+  return result;
+#else
+  return statbuf.st_mtim;
+#endif
+
+}
+
+
+
 bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
 {
+  insight::CurrentExceptionContext ex("checking, if file content needs to be unpacked into "+unpackPath.string());
   if (!originalFilePath_.empty())
   {
     bool needUnpack = false;
@@ -433,19 +463,19 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
     {
       if (!exists(unpackPath)) // unpack only, if not already done
       {
+        insight::dbg() << "needUnpack: target file does not exist"<< std::endl;
         needUnpack = true;
       }
       else
       {
         // only consider unpacking, if the data we have is newer than what is on disk
-        int file_descript = open(unpackPath.c_str(), O_RDONLY);
-        struct stat statbuf;
-        if(fstat(file_descript, &statbuf) < 0)
-          throw insight::Exception("Failed to get file attributes of file "+unpackPath.string());
-        auto last_write_time = statbuf.st_mtim;
+        auto lastWriteTime = highres_last_write_time(unpackPath);
 
-        if (last_write_time < fileContentTimestamp_)
+        if (lastWriteTime < fileContentTimestamp_)
         {
+            insight::dbg() << "needUnpack: target file time stamp is older than buffer time stamp"<< std::endl;
+            insight::dbg() << "  "<<lastWriteTime<<" < "<<fileContentTimestamp_<<std::endl;
+
 //          // check if the file on disk is actually different
 //          auto cmd5 = calcFileHash(unpackPath);
 //          if (*cmd5 != *fileContentHash_)
@@ -456,13 +486,17 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
       }
     }
 
+    insight::dbg() << "needUnpack = " << needUnpack << std::endl;
     return needUnpack;
   }
   else
   {
+    insight::dbg() << " original file path is empty" << std::endl;
+    insight::dbg() << "needUnpack = " << false << std::endl;
     return false;
   }
 }
+
 
 
 //void FileContainer::unpack(const boost::filesystem::path& basePath)
@@ -489,6 +523,11 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
 
 void FileContainer::copyTo(const boost::filesystem::path &filePath, bool createParentPath) const
 {
+  insight::CurrentExceptionContext ex(
+        boost::str(boost::format(
+            "writing file content into %d (create parent path %d)"
+        ) % filePath.string() % createParentPath ) );
+
   if (createParentPath)
   {
     if (!exists(filePath.parent_path()) )
@@ -521,15 +560,18 @@ void FileContainer::replaceContent(const boost::filesystem::path& filePath)
 {
   if (exists(filePath) && is_regular_file(filePath) )
   {
+    insight::CurrentExceptionContext ex("reading file "+filePath.string()+" content into buffer");
+
     // read raw file into buffer
     auto newContent = std::make_shared<std::string>();
 
-    std::ifstream in(filePath.c_str());
-    std::istreambuf_iterator<char> inputBegin(in), inputEnd;
-    std::back_insert_iterator<std::string> stringInsert(*newContent);
+//    std::ifstream in(filePath.string());
+//    std::istreambuf_iterator<char> inputBegin(in), inputEnd;
+//    std::back_insert_iterator<std::string> stringInsert(*newContent);
 
-    copy(inputBegin, inputEnd, stringInsert);
+//    copy(inputBegin, inputEnd, stringInsert);
 
+    readFileIntoString(filePath, *newContent);
     replaceContentBuffer(newContent);
   }
 }
@@ -537,9 +579,27 @@ void FileContainer::replaceContent(const boost::filesystem::path& filePath)
 
 void FileContainer::replaceContentBuffer(std::shared_ptr<std::string> newContent)
 {
+  std::string msg;
+  if (newContent)
+    msg = boost::str(boost::format(
+           "replacing content buffer with data of size %d"
+          ) % newContent->size() );
+  else
+    msg = "resetting content buffer";
+
+  insight::CurrentExceptionContext ex( msg );
   file_content_=newContent;
   clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
-//  fileContentHash_ = calcBufferHash(*file_content_);
+  //  fileContentHash_ = calcBufferHash(*file_content_);
+}
+
+size_t FileContainer::contentBufferSize() const
+{
+  if (file_content_)
+  {
+    return file_content_->size();
+  }
+  return 0;
 }
 
 
@@ -547,6 +607,7 @@ void FileContainer::replaceContentBuffer(std::shared_ptr<std::string> newContent
 
 void FileContainer::clearPackedData()
 {
+  insight::CurrentExceptionContext ex("clearing content buffer");
   file_content_.reset();
   fileContentTimestamp_={0,0};
 }
@@ -568,7 +629,7 @@ void FileContainer::appendToNode
   std::string relpath="";
   if (!originalFilePath_.empty())
   {
-    relpath=make_relative(inputfilepath, originalFilePath_).string();
+    relpath=make_relative(inputfilepath, originalFilePath_).generic_path().string();
   }
   node.append_attribute(doc.allocate_attribute
   (
@@ -595,9 +656,9 @@ void FileContainer::appendToNode
 
     char tail[3] = {0,0,0};
     size_t len=file_content_->size();
-    uint one_third_len = len/3;
-    uint len_rounded_down = one_third_len*3;
-    uint j = len_rounded_down + one_third_len;
+    unsigned int one_third_len = len/3;
+    unsigned int len_rounded_down = one_third_len*3;
+    unsigned int j = len_rounded_down + one_third_len;
     unsigned int base64length = ((4 * file_content_->size() / 3) + 3) & ~3;
 
     auto *xml_content = doc.allocate_string(0, base64length+1);
@@ -609,7 +670,7 @@ void FileContainer::appendToNode
 
     if (len_rounded_down != len)
     {
-        uint i=0;
+        unsigned int i=0;
         for(; i < len - len_rounded_down; ++i)
         {
             tail[i] = (*file_content_)[len_rounded_down+i];

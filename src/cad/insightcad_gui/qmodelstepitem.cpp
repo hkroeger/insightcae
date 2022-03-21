@@ -22,6 +22,7 @@
 #include <QMenu>
 #include <QAction>
 
+#include "base/exception.h"
 #include "base/qt5_helper.h"
 
 #ifndef Q_MOC_RUN
@@ -32,9 +33,13 @@
 #include "AIS_Point.hxx"
 #endif
 
+
+
 Handle_AIS_InteractiveObject QFeatureItem::createAIS(AIS_InteractiveContext&)
 {
-  Handle_AIS_InteractiveObject ais( smp_->buildVisualization() );
+  insight::CurrentExceptionContext ec("creating AIS representation of CAD feature");
+
+  Handle_AIS_InteractiveObject ais( new AIS_Shape(smp_->shape()) );
 
   Handle_Standard_Transient owner_container(new PointerTransient(this));
   ais->SetOwner(owner_container);
@@ -55,8 +60,7 @@ QFeatureItem::QFeatureItem
 : QDisplayableModelTreeItem(name, visible, is_component ? AIS_Shaded : AIS_WireFrame, parent),
   smp_(smp),
   is_component_(is_component)
-{
-}
+{}
 
 
 void QFeatureItem::exportShape()
@@ -162,7 +166,7 @@ void QFeatureItem::addSymbolsToSubmenu(const QString& name, QMenu *menu, insight
         });
       connect(a, &QAction::hovered,
               [=]() {
-        focus(i.second->buildVisualization());
+        focus(Handle_AIS_Shape(new AIS_Shape(i.second->shape())));
 //          contextMenu->setStyleSheet( "QMenu { background-color: rgba(0,0,0,0%); }" );
       });
 

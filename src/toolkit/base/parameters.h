@@ -22,6 +22,8 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
+#include "base/parameters/subsetparameter.h"
+#include "base/parameters/selectablesubsetparameter.h"
 #include "base/parameters/simpleparameter.h"
 #include "base/parameters/simpledimensionedparameter.h"
 #include "base/parameters/pathparameter.h"

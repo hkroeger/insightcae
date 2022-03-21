@@ -4,11 +4,15 @@
 #include <QMainWindow>
 #include <QThread>
 #include <QProgressBar>
+#include <QPointer>
 
+#ifndef NO_TERMWIDGET
 #include "qtermwidget/qtermwidget.h"
+#endif
 #include "base/boost_include.h"
 #include "base/remoteexecution.h"
 #include "openfoam/openfoamcase.h"
+#include "iqremoteexecutionstate.h"
 #include "remotedirselector.h"
 #include "remotesync.h"
 
@@ -36,6 +40,31 @@ Q_SIGNALS:
 };
 
 
+class AuxiliaryJob
+    : public QObject
+{
+  Q_OBJECT
+
+  insight::JobPtr job_;
+
+public:
+  AuxiliaryJob(insight::JobPtr job);
+
+  void run();
+
+Q_SIGNALS:
+  void outputLineReceived(const QString& line);
+  void completed(int returnValue);
+};
+
+
+
+class IQRXRemoteExecutionState
+    : public IQRemoteExecutionState
+{
+protected:
+  void updateGUI(bool enabled) override;
+};
 
 
 class MainWindow
@@ -43,9 +72,13 @@ class MainWindow
 {
   Q_OBJECT
 
-  std::unique_ptr<insight::RemoteExecutionConfig> remote_;
+  friend class IQRXRemoteExecutionState;
 
+  QPointer<IQRemoteExecutionState> remote_;
+
+#ifndef NO_TERMWIDGET
   QTermWidget *terminal_;
+#endif
 
   std::shared_ptr<insight::TaskSpoolerInterface> tsi_;
   std::shared_ptr<insight::OutputAnalyzer> soa_;
@@ -55,8 +88,10 @@ class MainWindow
 
   QProgressBar* progressbar_;
 
+  QThread auxJobThread_;
+
 protected:
-    void updateGUI();
+//    void updateGUI();
     void onStartTail();
 
 Q_SIGNALS:
@@ -70,8 +105,9 @@ public:
     void saveSettings();
     void readSettings();
 
+    void remoteWriteAndCopyBack(bool parallel);
+
 public Q_SLOTS:
-    void onSelectRemoteDir();
     void syncLocalToRemote();
     void syncRemoteToLocal();
 

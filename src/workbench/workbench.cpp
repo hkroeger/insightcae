@@ -18,249 +18,154 @@
  *
  */
 
-#include "workbench.h"
+#include <locale>
+#include <QLocale>
+#include <QDir>
+#include <QSplashScreen>
 
-#include <QLabel>
-#include <QMenu>
-#include <QMenuBar>
-#include <QAction>
-#include <QMessageBox>
-#include <QFileDialog>
-#include <QStatusBar>
-#include <QSettings>
-
-#include "newanalysisdlg.h"
-#include "analysisform.h"
+#include "insightcaeapplication.h"
+#include "base/analysislibrary.h"
+#include "base/boost_include.h"
+#include "base/toolkitversion.h"
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
+#include "workbenchwindow.h"
 #include "qinsighterror.h"
 
-#include <fstream>
-#include "rapidxml/rapidxml.hpp"
-#include "rapidxml/rapidxml_print.hpp"
+#include "base/analysis.h"
+#include "base/exception.h"
+#include "base/linearalgebra.h"
 
-#include "base/toolkitversion.h"
+#include <qthread.h>
+ 
+ 
+using namespace boost;
+using namespace std;
 
 
-void workbench::updateRecentFileActions()
+
+
+
+int main(int argc, char** argv)
 {
-  QSettings settings;
-  QStringList files;
-  if (settings.contains("recentFileList"))
-    files = settings.value("recentFileList").toStringList();
+    insight::UnhandledExceptionHandling ueh;
+    insight::GSLExceptionHandling gsl_errtreatment;
 
-  int numRecentFiles = std::min<int>(files.size(), recentFileActs_.size());
+    namespace po = boost::program_options;
 
-  for (int i = 0; i < numRecentFiles; ++i) {
-      QString text = tr("&%1 %2")
-          .arg(i + 1)
-          .arg( QFileInfo(files[i]).fileName() )
-          ;
-      recentFileActs_[i]->setText(text);
-      recentFileActs_[i]->setData(files[i]);
-      recentFileActs_[i]->setVisible(true);
-  }
-  for (size_t j = numRecentFiles; j < recentFileActs_.size(); ++j)
-      recentFileActs_[j]->setVisible(false);
+    typedef std::vector<std::string> StringList;
 
-  separatorAct_->setVisible(numRecentFiles > 0);
-}
+    // Declare the supported options.
+    po::options_description desc("Allowed options");
+    desc.add_options()
+    ("help", "produce help message")
+    ("version,r", "print version and exit")
+    ("nolog,l", "put debug output to console instead of log window")
+    ("libs", po::value< StringList >(), "Additional libraries with analysis modules to load")
+    ("new,n", po::value< std::string >(), "open a new analysis of this on startup")
+    ("input-file,f", po::value< std::string >(), "Specifies input file.")
+    ;
+    
+    po::positional_options_description p;
+    p.add("input-file", -1);
+    
+    auto displayHelp = [&]{
+      std::ostream &os = std::cout;
 
+      os << "Usage:" << std::endl;
+      os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
+      os << std::endl;
+      os << desc << endl;
+    };
 
-workbench::workbench(bool logToConsole)
-  : logToConsole_(logToConsole)
-{
-  setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
-  this->setWindowTitle("InsightCAE Workbench");
-
-  mdiArea_ = new SDMdiArea(this);
-  setCentralWidget( mdiArea_ );
-  connect(mdiArea_, &QMdiArea::subWindowActivated,
-          this, &workbench::onSubWindowActivated);
-
-  QMenu *analysisMenu = menuBar()->addMenu( "&Analysis" );
-
-  QAction* a = new QAction("New...", this);
-  a->setShortcut(Qt::ControlModifier + Qt::Key_N);
-  connect(a, &QAction::triggered, this, &workbench::newAnalysis );
-  analysisMenu->addAction( a );
-
-  a = new QAction("Open...", this);
-  a->setShortcut(Qt::ControlModifier + Qt::Key_O);
-  connect(a, &QAction::triggered, this, &workbench::onOpenAnalysis );
-  analysisMenu->addAction( a );
-
-  separatorAct_ = analysisMenu->addSeparator();
-  for (size_t i = 0; i < recentFileActs_.size(); ++i)
-  {
-      recentFileActs_[i] = new QAction(this);
-
-      recentFileActs_[i]->setVisible(false);
-      analysisMenu->addAction(recentFileActs_[i]);
-
-      connect(recentFileActs_[i], SIGNAL(triggered()),
-              this, SLOT(openRecentFile()));
-  }
-  updateRecentFileActions();
-
-  QMenu *helpMenu = menuBar()->addMenu( "&Help" );
-
-  QAction* ab = new QAction("About...", this);
-  helpMenu->addAction( ab );
-  connect(ab, &QAction::triggered,
-          [&]()
-          {
-            QMessageBox::information(
-                  this,
-                  "Workbench Information",
-                  "InsightCAE Analysis Workbench\n"
-                  "Version "+QString::fromStdString(insight::ToolkitVersion::current)+"\n"
-                  );
-          }
-  );
-
-  readSettings();
-}
-
-workbench::~workbench()
-{}
-
-void workbench::newAnalysis()
-{
-  newAnalysisDlg dlg(this);
-  if (dlg.exec() == QDialog::Accepted)
-  {
-    AnalysisForm *form;
-    std::string analysisName = dlg.getAnalysisName();
+    po::variables_map vm;
     try
     {
-      form = new AnalysisForm(mdiArea_, analysisName, boost::filesystem::path(), logToConsole_);
+      po::store(po::command_line_parser(argc, argv).
+                options(desc).positional(p).run(), vm);
+      po::notify(vm);
     }
-    catch (const std::exception& e)
+    catch (const po::error& e)
     {
-      throw insight::Exception("Creation of an analysis of type \""+analysisName+"\" failed.\n"
-                               "Reason: "+e.what());
+      std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+      displayHelp();
+      exit(-1);
     }
-    form->showMaximized();
-  }
-}
 
-void workbench::onOpenAnalysis()
-{
-  QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
-  if (!fn.isEmpty()) openAnalysis(fn);
-}
-
-
-void workbench::openRecentFile()
-{
-  QAction *action = qobject_cast<QAction *>(sender());
-  if (action)
-      openAnalysis(action->data().toString());
-}
-
-
-
-void workbench::openAnalysis(const QString& fn)
-{
-
-  QSettings settings;
-  QStringList files = settings.value("recentFileList").toStringList();
-  files.removeAll(fn);
-  files.prepend(fn);
-  while (files.size() > recentFileActs_.size())
-      files.removeLast();
-  settings.setValue("recentFileList", files);
-  updateRecentFileActions();
-
-  using namespace rapidxml;
-  
-  boost::filesystem::path fp(fn.toStdString());
-  
-  std::string contents;
-  insight::readFileIntoString(fp, contents);
-
-  xml_document<> doc;
-  doc.parse<0>(&contents[0]);
-  
-  xml_node<> *rootnode = doc.first_node("root");
-  
-  std::string analysisName;
-  xml_node<> *analysisnamenode = rootnode->first_node("analysis");
-  if (analysisnamenode)
-  {
-    analysisName = analysisnamenode->first_attribute("name")->value();
-  }
-  
-  AnalysisForm *form;
-  try
-  {
-    form = new AnalysisForm(mdiArea_,
-                            analysisName,
-                            boost::filesystem::path(fn.toStdString()).parent_path(),
-                            logToConsole_
-                            );
-  }
-  catch (const std::exception& e)
-  {
-    throw insight::Exception("Creation of an analysis of type \""+analysisName+"\" failed.\n"
-                             "Please check, if the analysis type entry in the parameter file is correct.\n"
-                             "Error information:\n"+e.what());
-  }
-  //form->parameters().readFromNode(doc, *rootnode, fp.parent_path());
-  form->loadParameters(fp);
-  Q_EMIT update();
-  form->showMaximized();
-}
-
-
-void workbench::closeEvent(QCloseEvent *event)
-{
-  QList<QMdiSubWindow*>	list = mdiArea_->subWindowList();
-
-  for (int i = 0; i < list.size (); i++)
-  {
-    if (!list[i]->close ())
+    if (vm.count("help"))
     {
-      event->ignore();
-      return;
+        displayHelp();
+        exit(0);
     }
-  }
 
-  if (event->isAccepted())
-  {
-    QSettings settings("silentdynamics", "workbench_main");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("windowState", saveState());
-    QMainWindow::closeEvent(event);
-  }
-}
-
-void workbench::readSettings()
-{
-    QSettings settings("silentdynamics", "workbench_main");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("windowState").toByteArray());
-}
-
-
-void workbench::onSubWindowActivated( QMdiSubWindow * window )
-{
-    if (lastActive_)
+    if (vm.count("version"))
     {
-//        qDebug()<<"remove menu";
-        lastActive_->removeMenu();
+        cout << std::string(insight::ToolkitVersion::current()) << endl;
+        exit(0);
     }
 
-    if (WidgetWithDynamicMenuEntries* newactive = dynamic_cast<WidgetWithDynamicMenuEntries*>(window))
+    if (vm.count("libs"))
     {
-//        qDebug()<<"insert menu";
-        newactive->insertMenu(menuBar());
-        lastActive_=newactive;
+        StringList libs=vm["libs"].as<StringList>();
+        for (const string& l: libs)
+        {
+            if (!boost::filesystem::exists(l))
+            {
+                std::cerr << std::endl 
+                    << "Error: library file does not exist: "<<l
+                    <<std::endl<<std::endl;
+                exit(-1);
+            }
+           insight::analysisLibraries.addLibrary(l);
+        }
     }
-    else
+
+    InsightCAEApplication app(argc, argv, "InsightCAE Workbench");
+
+    // After creation of application object!
+    std::locale::global(std::locale::classic());
+    QLocale::setDefault(QLocale::C);
+
+    QPixmap pixmap(":/resources/insight_workbench_splash.png");
+    QSplashScreen splash(pixmap, /*Qt::WindowStaysOnTopHint|*/Qt::SplashScreen);
+    splash.show();
+    QCoreApplication::processEvents();
+
+    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current()) + ", Wait...");
+    QCoreApplication::processEvents();
+
+    app.setSplashScreen(&splash);
+    workbench window(vm.count("nolog"));
+
+    try
     {
-//        qDebug()<<"removed last menu";
-        lastActive_=nullptr;
+      if (vm.count("input-file"))
+      {
+          boost::filesystem::path fn( vm["input-file"].as<std::string>() );
+          if (!boost::filesystem::exists(fn))
+          {
+              throw insight::Exception("Input file does not exist: "+fn.string());
+          }
+          window.openAnalysis( QString::fromStdString(boost::filesystem::absolute(fn).string()) );
+      }
+
+      if (vm.count("new"))
+      {
+          window.newAnalysis( vm["new"].as<std::string>() );
+      }
+
+      window.show();
+
+      app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
+
+      window.raise();
+
+      return app.exec();
     }
+    catch ( const std::exception& e)
+    {
+      displayException(e);
+    }
+
 }
-
-//#include "workbench.moc"

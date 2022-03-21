@@ -174,7 +174,7 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
           std::vector<double> fieldsNum;
           transform(
                 fields.begin(), fields.end(), std::back_inserter(fieldsNum),
-                [](const std::string& t) { return to_number<double>(t); }
+                [](const std::string& t) { return toNumber<double>(t); }
           );
 
           if (fieldsNum.size()<2)
@@ -259,6 +259,7 @@ outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, const Pa
 void outputFilterFunctionObject::addIntoControlDict(OFDictData::dict& controlDict) const
 {
   OFDictData::dict fod=functionObjectDict();
+  fod["region"]=p_.region;
   fod["enabled"]=true;
   if (OFversion()>=400)
     {
@@ -708,7 +709,8 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
 (
     const OpenFOAMCase& cm,
     const boost::filesystem::path& location,
-    const std::string& foName
+    const std::string& foName,
+    const std::string& regionName
 )
 {
   arma::mat result(0,2);
@@ -720,7 +722,10 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
   }
   else
   {
-    dir = location / "postProcessing" / foName;
+    dir = location / "postProcessing";
+    if (!regionName.empty())
+      dir = dir / regionName;
+    dir = dir / foName;
   }
   auto tdl = listTimeDirectories(dir);
   for(decltype(tdl)::const_reverse_iterator i = tdl.crbegin(); i!=tdl.crend(); i++)
@@ -942,7 +947,7 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations
 	std::vector<string> strs;
 	boost::split(strs, line, boost::is_any_of("\t"));
 	
-        t.push_back(to_number<double>(strs[0]));
+        t.push_back(toNumber<double>(strs[0]));
 	
 	if (strs.size()!=(nk+2))
 	  throw insight::Exception("Expected "
@@ -961,7 +966,7 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations
 	  
 	  for (int j=0; j<np; j++)
           {
-            profs[k-1].push_back(to_number<double>(pts[j]));
+            profs[k-1].push_back(toNumber<double>(pts[j]));
 	  }
 	}
       }
@@ -1103,7 +1108,7 @@ void readForcesLine(std::istream& f, int nc_expected, bool& skip, std::vector<do
   int k=0;
   for ( const string& e: strs )
   {
-    row[k++] = to_number<double> ( e );
+    row[k++] = toNumber<double> ( e );
   }
 
 }
@@ -1479,8 +1484,11 @@ double CorrelationFunctionModel::lengthScale() const
 
 addToAnalysisFactoryTable(ComputeLengthScale);
 
-ComputeLengthScale::ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath )
-  : Analysis("Length Scale", "Compute the length scale from autocorrelation functions", ps, exepath),
+ComputeLengthScale::ComputeLengthScale(
+    const ParameterSet& ps,
+    const boost::filesystem::path& exepath,
+    ProgressDisplayer& progress )
+  : Analysis("Length Scale", "Compute the length scale from autocorrelation functions", ps, exepath, progress),
     p_(ps)
 {
 }
@@ -1488,7 +1496,7 @@ ComputeLengthScale::ComputeLengthScale(const ParameterSet& ps, const boost::file
 ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer&)
 {
   setupExecutionEnvironment();
-  ResultSetPtr results(new ResultSet(parameters_, name_, description_));
+  ResultSetPtr results(new ResultSet(parameters(), name_, description_));
 
   CorrelationFunctionModel m;
   nonlinearRegression(p_.R_vs_x.col(1), p_.R_vs_x.col(0), m);

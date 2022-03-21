@@ -21,6 +21,8 @@
 #include "geotest.h"
 #include "base/exception.h"
 
+#include "BRepClass_FaceClassifier.hxx"
+
 #include <algorithm>
 
 using namespace std;
@@ -47,6 +49,7 @@ std::vector<gp_Pnt> resampleEdgeUniform(const TopoDS_Edge& edge, double approxSe
   int nSegments;
 
   if (approxSegmentLength > 0){
+
     nSegments=ceil(length/approxSegmentLength);
     nSegments = max(minSegments, nSegments);
   } else {
@@ -353,9 +356,11 @@ bool isPartOf(const TopoDS_Edge& big, const TopoDS_Edge& e, double tolerance, in
 bool isPartOf(const TopoDS_Face& big, const TopoDS_Vertex& p, double tolerance)
 {
     gp_Pnt pnt(BRep_Tool::Pnt(p));
-    gp_Pnt2d pnt2D(faceUV(big, pnt));
-    double d = faceAt(big, pnt2D).Coord().Subtracted(pnt.Coord()).SquareModulus();
-    return (d <= tolerance*tolerance);
+//    gp_Pnt2d pnt2D(faceUV(big, pnt));
+//    double d = faceAt(big, pnt2D).Coord().Subtracted(pnt.Coord()).SquareModulus();
+//    return (d <= tolerance*tolerance);
+    BRepClass_FaceClassifier fc(big, pnt, tolerance);
+    return (fc.State() == TopAbs_IN) || (fc.State() == TopAbs_ON);
 }
 
 bool isPartOf(const TopoDS_Face& big, const TopoDS_Edge& e, double tolerance, int nSamples)

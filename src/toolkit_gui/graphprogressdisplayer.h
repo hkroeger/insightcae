@@ -22,6 +22,9 @@
 #ifndef GRAPHPROGRESSDISPLAYER_H
 #define GRAPHPROGRESSDISPLAYER_H
 
+#include "toolkit_gui_export.h"
+
+
 #ifndef Q_MOC_RUN
 #include <base/analysis.h>
 #endif
@@ -38,13 +41,29 @@
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
 
-class GraphProgressChart
+class TOOLKIT_GUI_EXPORT GraphProgressChart
     : public QtCharts::QChartView
 {
   Q_OBJECT
 
 public:
-  typedef std::map<std::string, QtCharts::QLineSeries*> CurveList;
+  class LineSeriesData
+  {
+      const int maxRecent=100;
+
+      QtCharts::QLineSeries* crv;
+
+      QList<QPointF> values;
+
+  public:
+      LineSeriesData(const QString& name, QtCharts::QChart* chartData);
+      ~LineSeriesData();
+
+      void append(double x, double y);
+      void updateLineSeries(int maxResolution=1000);
+  };
+
+  typedef std::map<std::string, std::shared_ptr<LineSeriesData> > CurveList;
 
 protected:
   QtCharts::QChart* chartData_;
@@ -61,7 +80,7 @@ protected:
   double ymin_=1e10, ymax_=-1e10, xmin_=1e10, xmax_=-1e10;
 
 public:
-  GraphProgressChart(bool logscale, QWidget* parent=nullptr);
+  GraphProgressChart(bool logscale, QWidget* parent);
   ~GraphProgressChart();
 
   virtual void update(double t, const std::string& name, double y_value);
@@ -74,7 +93,7 @@ public slots:
 
 
 
-class GraphProgressDisplayer 
+class TOOLKIT_GUI_EXPORT GraphProgressDisplayer
 : public QTabWidget,
   public insight::ProgressDisplayer
 {
@@ -94,6 +113,7 @@ public:
   virtual void reset();
 
   void update(const insight::ProgressState& pi) override;
+  void logMessage(const std::string& line) override;
   void setActionProgressValue(const std::string& path, double value) override;
   void setMessageText(const std::string& path, const std::string& message) override;
   void finishActionProgress(const std::string& path) override;

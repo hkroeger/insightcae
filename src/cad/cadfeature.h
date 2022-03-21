@@ -378,10 +378,10 @@ public:
   FeatureSetData allFacesSet() const;
   FeatureSetData allSolidsSet() const;
 
-  FeatureSet allVertices() const;
-  FeatureSet allEdges() const;
-  FeatureSet allFaces() const;
-  FeatureSet allSolids() const;
+  FeatureSetPtr allVertices() const;
+  FeatureSetPtr allEdges() const;
+  FeatureSetPtr allFaces() const;
+  FeatureSetPtr allSolids() const;
   
   FeatureSetData query_vertices(FilterPtr filter) const;
   FeatureSetData query_vertices(const std::string& queryexpr, const FeatureSetParserArgList& refs=FeatureSetParserArgList()) const;
@@ -422,8 +422,6 @@ public:
   operator const TopoDS_Shape& () const;
   const TopoDS_Shape& shape() const;
 
-  virtual Handle_AIS_InteractiveObject buildVisualization() const;
-  
   View createView
   (
     const arma::mat p0,

@@ -34,17 +34,17 @@ class identical
 : public Filter
 {
 protected:
-    FeatureSet f_;
+    FeatureSetPtr f_;
 
 public:
     identical(FeaturePtr m)
-    : f_(m, T)
+        : f_(std::make_shared<FeatureSet>(m, T))
     {
         throw insight::Exception("coincident filter: not implemented!");
     }
 
     identical(FeatureSet f)
-    : f_(f)
+    : f_(std::make_shared<FeatureSet>(f))
     {}
 
     bool checkMatch(FeatureID feature) const
@@ -54,7 +54,7 @@ public:
 
     FilterPtr clone() const
     {
-        return FilterPtr(new identical(f_));
+        return FilterPtr(new identical(*f_));
     }
 
 };

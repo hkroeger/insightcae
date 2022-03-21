@@ -75,6 +75,8 @@ namespace cad {
 
 sharedModelLocations::sharedModelLocations()
 {
+  CurrentExceptionContext ec("building list of shared model locations");
+
   const char* e=getenv("ISCAD_MODEL_PATH");
   if (e)
   {

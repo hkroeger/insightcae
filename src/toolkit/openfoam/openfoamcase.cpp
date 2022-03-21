@@ -54,12 +54,16 @@ namespace insight
 
 
 
+
 OFDictData::dict OpenFOAMCase::diagonalSolverSetup() const
 {
   OFDictData::dict d;
   d["solver"]="diagonal";
   return d;
 }
+
+
+
 
 OFDictData::dict OpenFOAMCase::stdAsymmSolverSetup(double tol, double reltol, int minIter) const
 {
@@ -75,6 +79,9 @@ OFDictData::dict OpenFOAMCase::stdAsymmSolverSetup(double tol, double reltol, in
   return d;
 }
 
+
+
+
 OFDictData::dict OpenFOAMCase::stdSymmSolverSetup(double tol, double reltol, int maxIter) const
 {
   OFDictData::dict d;
@@ -85,6 +92,9 @@ OFDictData::dict OpenFOAMCase::stdSymmSolverSetup(double tol, double reltol, int
   d["maxIter"]=maxIter;
   return d;
 }
+
+
+
 
 OFDictData::dict OpenFOAMCase::GAMGSolverSetup(double tol, double reltol) const
 {
@@ -102,6 +112,9 @@ OFDictData::dict OpenFOAMCase::GAMGSolverSetup(double tol, double reltol) const
   d["mergeLevels"]=1;
   return d;
 }
+
+
+
 
 OFDictData::dict OpenFOAMCase::GAMGPCGSolverSetup(double tol, double reltol) const
 {
@@ -122,6 +135,9 @@ OFDictData::dict OpenFOAMCase::GAMGPCGSolverSetup(double tol, double reltol) con
   d["preconditioner"]=pd;
   return d;
 }
+
+
+
 
 OFDictData::dict OpenFOAMCase::smoothSolverSetup(double tol, double reltol, int minIter) const
 {
@@ -157,16 +173,24 @@ const OFDictData::dimensionSet dimDynViscosity = OFDictData::dimension(1, -1, -1
 const OFDictData::dimensionSet dimTemperature = OFDictData::dimension(0, 0, 0, 1, 0, 0, 0);
 const OFDictData::dimensionSet dimCurrent = OFDictData::dimension(0, 0, 0, 0, 0, 1, 0);
 
+
+
+
 bool OpenFOAMCase::isCompressible() const
 {
   return findUniqueElement<FVNumerics>().isCompressible();
 }
+
+
+
 
 bool OpenFOAMCase::hasCyclicBC() const
 {
   std::set<CyclicPairBC*> cyclics = const_cast<OpenFOAMCase*>(this)->findElements<CyclicPairBC>();
   return (cyclics.size()>0);
 }
+
+
 
 
 void OpenFOAMCase::modifyFilesOnDiskBeforeDictCreation ( const boost::filesystem::path& location ) const
@@ -181,6 +205,8 @@ void OpenFOAMCase::modifyFilesOnDiskBeforeDictCreation ( const boost::filesystem
     }
   }
 }
+
+
 
 
 std::string modifyPathForRegion(const std::string& orgPath, const std::string& regionName)
@@ -215,6 +241,9 @@ std::string modifyPathForRegion(const std::string& orgPath, const std::string& r
 
   return dpath.string();
 }
+
+
+
 
 std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {
@@ -273,6 +302,9 @@ std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
   return dictionaries;
 }
 
+
+
+
 void OpenFOAMCase::modifyMeshOnDisk(const boost::filesystem::path& location) const
 {
   for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
@@ -285,6 +317,8 @@ void OpenFOAMCase::modifyMeshOnDisk(const boost::filesystem::path& location) con
     }
   }
 }
+
+
 
 
 void OpenFOAMCase::modifyCaseOnDisk(const boost::filesystem::path& location) const
@@ -301,6 +335,8 @@ void OpenFOAMCase::modifyCaseOnDisk(const boost::filesystem::path& location) con
 }
 
 
+
+
 void OpenFOAMCase::createOnDisk
 (
     const boost::filesystem::path& location, 
@@ -314,6 +350,8 @@ void OpenFOAMCase::createOnDisk
   std::shared_ptr<OFdicts> dictionaries=createDictionaries();
   createOnDisk(location, dictionaries, restrictToFiles);
 }
+
+
 
 
 void OpenFOAMCase::createOnDisk
@@ -367,6 +405,8 @@ void OpenFOAMCase::createOnDisk
 }
 
 
+
+
 bool OpenFOAMCase::meshPresentOnDisk( const boost::filesystem::path& location ) const
 {
   path meshPath = location/"constant"/"polyMesh";
@@ -378,6 +418,9 @@ bool OpenFOAMCase::meshPresentOnDisk( const boost::filesystem::path& location ) 
     ( exists(meshPath/"owner") || exists(meshPath/"owner.gz") ) &&
     exists(meshPath/"boundary");
 }
+
+
+
 
 bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& location, bool checkpar ) const
 {
@@ -414,6 +457,9 @@ bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& loca
 //   return (timedirs.size()>1);
 }
 
+
+
+
 void OpenFOAMCase::removeProcessorDirectories( const boost::filesystem::path& location ) const
 {
   boost::regex re_pdn("^processor([0-9]+)$");
@@ -435,6 +481,8 @@ void OpenFOAMCase::removeProcessorDirectories( const boost::filesystem::path& lo
     }
   }  
 }
+
+
 
 
 void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesystem::path& file, bool skipOFE, bool skipBCs, const boost::filesystem::path& casepath)
@@ -518,6 +566,8 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
 }
 
 
+
+
 void OpenFOAMCase::loadFromFile(const boost::filesystem::path& filename, bool skipOFE, bool skipBCs, const boost::filesystem::path& casepath)
 {
     if (!boost::filesystem::exists(filename))
@@ -528,6 +578,8 @@ void OpenFOAMCase::loadFromFile(const boost::filesystem::path& filename, bool sk
     
     setFromXML(contents, filename, skipOFE, skipBCs, casepath);
 }
+
+
 
 
 std::vector< string > OpenFOAMCase::fieldNames() const
@@ -541,11 +593,17 @@ std::vector< string > OpenFOAMCase::fieldNames() const
   return fns;
 }
 
+
+
+
 bool OpenFOAMCase::hasField(const std::string& fname ) const
 {
   createFieldListIfRequired();
   return fields_.find ( fname ) != fields_.end();
 }
+
+
+
 
 bool OpenFOAMCase::hasPrghPressureField() const
 {
@@ -557,6 +615,9 @@ bool OpenFOAMCase::hasPrghPressureField() const
 
   return has;
 }
+
+
+
 
 void OpenFOAMCase::createFieldListIfRequired() const
 {
@@ -577,12 +638,18 @@ void OpenFOAMCase::createFieldListIfRequired() const
     }
 }
 
+
+
+
 OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
 : Case(),
   env_(env),
   requiredMapMethod_(directMapMethod)
 {
 }
+
+
+
 
 OpenFOAMCase::OpenFOAMCase(const OpenFOAMCase& other)
 : Case(other),
@@ -591,9 +658,15 @@ OpenFOAMCase::OpenFOAMCase(const OpenFOAMCase& other)
 {
 }
 
+
+
+
 OpenFOAMCase::~OpenFOAMCase()
 {
 }
+
+
+
 
 void OpenFOAMCase::addRegionCase(const std::string& regionName, std::shared_ptr<OpenFOAMCase> regionCase)
 {
@@ -605,6 +678,9 @@ void OpenFOAMCase::addRegionCase(const std::string& regionName, std::shared_ptr<
   regions_.emplace(regionName, regionCase);
 }
 
+
+
+
 void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
 {
     if (fieldListCompleted_)
@@ -612,6 +688,9 @@ void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
     
   fields_[name]=field;
 }
+
+
+
 
 boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::path& location, const std::string& regionName, const std::string& time) const
 {
@@ -622,6 +701,9 @@ boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::
     return basepath / time / regionName / "polyMesh" / "boundary";
 }
 
+
+
+
 void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName, const std::string& time) const
 {
   boost::filesystem::path dictpath = boundaryDictPath(location, regionName, time);
@@ -629,6 +711,8 @@ void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OF
   if (!readOpenFOAMBoundaryDict(f, boundaryDict))
       throw insight::Exception("Failed to parse boundary dict "+dictpath.string());
 }
+
+
 
 
 std::string OpenFOAMCase::cmdString
@@ -653,6 +737,9 @@ const
   return shellcmd;
 }
 
+
+
+
 void OpenFOAMCase::executeCommand
 (
   const boost::filesystem::path& location, 
@@ -672,6 +759,9 @@ void OpenFOAMCase::executeCommand
   
   env_.executeCommand( cmdString(location, execmd, argv), { }, output, ovr_machine );
 }
+
+
+
 
 void OpenFOAMCase::runSolver
 (
@@ -705,7 +795,7 @@ void OpenFOAMCase::runSolver
 
           if (analyzer.stopRun())
           {
-            std::ofstream f( (location/"wnowandstop").c_str() );
+            std::ofstream f( (location/"wnowandstop").string() );
             f<<"STOP"<<std::endl;
           }
         },
@@ -718,11 +808,14 @@ void OpenFOAMCase::runSolver
         }
   );
 
-  job->process->wait();
+  job->wait();
 
-  if (job->process->exit_code()!=0)
+  if (job->process().exit_code()!=0)
       throw insight::Exception("OpenFOAMCase::runSolver(): external command execution failed with nonzero exit code!");
 }
+
+
+
 
 std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& boundaryDict) const
 {
@@ -754,6 +847,8 @@ std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& bounda
 }
 
 
+
+
 JobPtr OpenFOAMCase::forkCommand
 (
     const boost::filesystem::path& location,
@@ -764,6 +859,8 @@ JobPtr OpenFOAMCase::forkCommand
 {
     return env_.forkCommand ( cmdString ( location, cmd, argv ), { }, ovr_machine );
 }
+
+
 
 
 void OpenFOAMCase::runBlockMesh
@@ -777,6 +874,9 @@ void OpenFOAMCase::runBlockMesh
   runSolver(location, bma, "blockMesh");
 }
 
+
+
+
 void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dict& boundaryDict, const ParameterSet& ps )
 {
     typedef std::set<std::string> StringSet;
@@ -786,6 +886,8 @@ void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dic
         insert ( BoundaryCondition::lookup ( bc_type, *this, *i, boundaryDict, ps ) );
     }
 }
+
+
 
 
 std::vector<boost::filesystem::path> OpenFOAMCase::functionObjectOutputDirectories
@@ -825,5 +927,8 @@ std::vector<boost::filesystem::path> OpenFOAMCase::functionObjectOutputDirectori
 
   return results;
 }
+
+
+
 
 }

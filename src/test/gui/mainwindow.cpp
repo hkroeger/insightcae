@@ -17,7 +17,7 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "parameterwrapper.h"
+//#include "parameterwrapper.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -36,11 +36,11 @@
 #include "remotesync.h"
 #include "base/remoteserverlist.h"
 #include "remotedirselector.h"
-#include "remoteparaview.h"
+#include "iqremoteparaviewdialog.h"
 
 #include "qoccviewwidget.h"
 
-#include "gas_dispersion.h"
+#include "numericalwindtunnel.h"
 
 MainWindow::MainWindow(QWidget *parent) :
   QMainWindow(parent),
@@ -48,9 +48,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
   ui->setupUi(this);
 
-   auto defaultParams = insight::Analysis::defaultParameters("GasDispersion");
+   auto defaultParams = insight::Analysis::defaultParameters("Numerical Wind Tunnel");
    parameters_ = defaultParams;
-  insight::AnalysisPtr a( insight::Analysis::lookup("GasDispersion", defaultParams, "") );
+  insight::AnalysisPtr a( insight::Analysis::lookup("Numerical Wind Tunnel", defaultParams, "") );
 //  insight::AnalysisPtr a( new insight::GasDispersion(defaultParams, "") );
 
   setCentralWidget(new QoccViewWidget(this));

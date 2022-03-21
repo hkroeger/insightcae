@@ -19,19 +19,19 @@ protected:
      * @brief f_
      * Seed faces, to which all result faces shall be connected topologically.
      */
-    FeatureSet f_;
+    FeatureSetPtr f_;
 
     std::set<FeatureID> selected_feats_;
 
 public:
     connected(FeaturePtr m)
-    : f_(m, T)
+        : f_(std::make_shared<FeatureSet>(m, T))
     {
         throw insight::Exception("coincident filter: not implemented!");
     }
 
     connected(FeatureSet f)
-    : f_(f)
+    : f_(std::make_shared<FeatureSet>(f))
     {}
 
     void initialize(ConstFeaturePtr m)
@@ -44,7 +44,7 @@ public:
 
     FilterPtr clone() const
     {
-        return FilterPtr(new connected(f_));
+        return FilterPtr(new connected(*f_));
     }
 
 };

@@ -9,6 +9,7 @@ StringParameterParser::Data::Data(const std::string& v, const std::string& d)
 void StringParameterParser::Data::cppAddHeader(std::set< std::string >& headers) const
 {
   headers.insert("<string>");
+  headers.insert("\"base/parameters/simpleparameter.h\"");
 }
 
 std::string StringParameterParser::Data::cppType(const std::string&) const

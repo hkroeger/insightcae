@@ -171,10 +171,12 @@ OFEs::OFEs()
    }
   }
 
+#if not defined(WIN32)
   if (this->size()==0)
   {
    insight::Warning("There are no OpenFOAM environments defined!");
   }
+#endif
 }
 
 

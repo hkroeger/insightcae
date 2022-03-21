@@ -21,6 +21,7 @@
 #define INSIGHT_FILETEMPLATE_H
 
 #include "base/analysis.h"
+#include "filetemplate__FileTemplate__Parameters_headers.h"
 
 namespace insight
 {
@@ -63,12 +64,15 @@ protected:
 #endif
    ;
     // derived data
+
+protected:
+  Parameters p_;
   
 public:
     declareType("FileTemplate");
-    FileTemplate(const ParameterSet& ps, const bfs_path& exedir);
+    FileTemplate(const ParameterSet& ps, const bfs_path& exedir, ProgressDisplayer& pd);
 
-    
+    ParameterSet parameters() const override;
     static std::string category() { return "Generic Analyses"; }
     
     ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;

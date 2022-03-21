@@ -36,7 +36,7 @@
 
 //#include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
-#include "qdebugstream.h"
+#include "iqdebugstream.h"
 #include "viewstate.h"
 #include "qmodeltree.h"
 
@@ -61,7 +61,7 @@ class ISCADMainWindow
     Q_OBJECT
 
 protected:
-    Q_DebugStream* logger_;
+    IQDebugStream* logger_;
     QTextEdit* log_;
     
     QTreeView* fileTree_;
@@ -133,7 +133,7 @@ public slots:
     void updateProgress(int step, int totalSteps);
 
 public:
-    ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0, bool nolog=false);
+    ISCADMainWindow(QWidget* parent = nullptr, bool nolog=false);
     ~ISCADMainWindow();
 
     ISCADModelEditor* insertEmptyModel(bool bgparsing=true);

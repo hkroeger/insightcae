@@ -28,6 +28,7 @@
 #include "base/exception.h"
 #include "boost/algorithm/string.hpp"
 #include "base/tools.h"
+#include "base/casedirectory.h"
 #include "boost/process.hpp"
 
 
@@ -263,10 +264,15 @@ struct FilesCache
 
 void runLatex(const std::string& formula_code, const boost::filesystem::path& output)
 {
+  insight::CurrentExceptionContext ex("rendering formula into PNG image");
+
+  insight::dbg()<<"formula code: "<<formula_code<<std::endl;
+
   CaseDirectory subdir(false, boost::filesystem::temp_directory_path()/"runLatex" );
+  insight::dbg()<<"subdir: "<<subdir<<std::endl;
 
   boost::filesystem::path tex_filename = subdir/"input.tex";
-  std::ofstream tex( tex_filename.c_str() );
+  std::ofstream tex( tex_filename.string() );
   tex<<
         "\\documentclass{article}\n"
         "\\pagestyle{empty}\n"
@@ -306,6 +312,8 @@ void runLatex(const std::string& formula_code, const boost::filesystem::path& ou
           tex_filename.replace_extension(".dvi").string()
          })
   );
+
+  insight::dbg()<<"tex file: "<<tex_filename<<", output file: "<<output<<std::endl;
 }
 
 struct FormulaRenderFilesCache
@@ -345,20 +353,27 @@ struct HTMLReplacements
   virtual void appendImage(double width, const std::string& imagename)
   {
     boost::filesystem::path fname = findSharedImageFile(imagename);
-    
-    reformatted_ += str(format("<img width=\"%d\" src=\"file://%s\">") % int( double(imageWidth_)*width ) % fname.string() );
+    std::string code =
+        str(format("<img width=\"%d\" src=\"file:///%s\">")
+            % int( double(imageWidth_)*width ) % fname.generic_path().string() );
+    insight::dbg()<<code<<std::endl;
+    reformatted_ += code;
   }
   
   virtual void appendInlineFormula(const std::string& latex_formula)
   {
     auto rff = formulaCache.renderLatexFormula(latex_formula);
-    reformatted_ += "<img src=\"file://"+rff.string()+"\">";
+    std::string code = "<img src=\"file:///"+rff.generic_path().string()+"\">";
+    insight::dbg()<<code<<std::endl;
+    reformatted_ += code;
   }
 
   virtual void appendDisplayFormula(const std::string& latex_formula)
   {
     auto rff = formulaCache.renderLatexFormula(latex_formula);
-    reformatted_ += "<br>\n  <img src=\"file://"+rff.string()+"\"><br>\n";
+    std::string code = "<br>\n  <img src=\"file:///"+rff.generic_path().string()+"\"><br>\n";
+    insight::dbg()<<code<<std::endl;
+    reformatted_ += code;
   }
 
   virtual void appendFormattedText(const std::string& text, Format)

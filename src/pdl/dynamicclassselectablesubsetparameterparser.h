@@ -19,7 +19,7 @@ struct DynamicClassSelectableSubsetParameterParser {
         void cppAddHeader ( std::set<std::string>&  ) const override;
         std::string cppType ( const std::string&  ) const override;
         std::string cppValueRep ( const std::string&, const std::string& thisscope  ) const override;
-        std::string cppParamType ( const std::string&  ) const;
+        std::string cppParamType ( const std::string&  ) const override;
 
         void cppWriteCreateStatement
         (

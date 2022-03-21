@@ -40,9 +40,10 @@ const string &ResultSection::introduction() const
 
 void ResultSection::writeLatexCode ( ostream& f, const string& name, int level, const path& outputfilepath ) const
 {
-    f << latex_subsection ( level ) << "{"<<SimpleLatex(sectionName_).toLaTeX()<<"}\n";
+    f << latex_subsection ( level )
+      << "{" << SimpleLatex(sectionName_).toLaTeX() << "}\n";
 //   f << "\\label{" << cleanSymbols(name) << "}" << std::endl;  // problem with underscores: "\_" as returned by cleanSymbols is wrong here
-    f << introduction_ << std::endl;
+    f << SimpleLatex(introduction_).toLaTeX() << std::endl;
 
     writeLatexCodeOfElements ( f, name, level, outputfilepath );
 }

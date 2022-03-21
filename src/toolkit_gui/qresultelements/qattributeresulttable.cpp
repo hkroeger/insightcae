@@ -8,11 +8,11 @@ namespace insight {
 
 
 defineType(QAttributeResultTable);
-addToFactoryTable(QResultElement, QAttributeResultTable);
+addToFactoryTable(IQResultElement, QAttributeResultTable);
 
 
 QAttributeResultTable::QAttributeResultTable(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-    : QResultElement(parent, label, rep)
+    : IQResultElement(parent, label, rep)
 {
 
 }
@@ -25,7 +25,7 @@ QVariant QAttributeResultTable::previewInformation(int) const
 void QAttributeResultTable::createFullDisplay(QVBoxLayout* layout)
 {
   auto res = resultElementAs<insight::AttributeTableResult>();
-  QResultElement::createFullDisplay(layout);
+  IQResultElement::createFullDisplay(layout);
 
   auto le_=new QTableWidget(res->names().size(), 2/*, this*/);
   le_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);

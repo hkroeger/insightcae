@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "wallheatflux__wallHeatFlux__Parameters_headers.h"
+
 namespace insight {
 
 class wallHeatFlux

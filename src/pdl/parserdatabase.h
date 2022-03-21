@@ -129,7 +129,12 @@ public:
     inline void setExpert() { isExpert=true; }
     inline void setNecessary() { isNecessary=true; }
 
-    ParserDataBase(const std::string& d, bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0);
+    ParserDataBase(
+            const std::string& d,
+            bool isHidden=false,
+            bool isExpert=false,
+            bool isNecessary=false,
+            int order=0 );
 
     virtual ~ParserDataBase();
 
@@ -210,6 +215,8 @@ typedef std::vector< ParameterSetEntry > ParameterSetData;
 
 
 
+typedef boost::fusion::vector4<boost::optional<std::string>, boost::optional<std::string>, bool, std::string, ParameterSetData> PDLParserResult;
+
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct PDLParserRuleset
@@ -226,7 +233,7 @@ struct PDLParserRuleset
 
     qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
 
-    qi::rule<Iterator, boost::fusion::vector2<std::string, ParameterSetData>(), Skipper> r_pdl_content;
+    qi::rule<Iterator, PDLParserResult(), Skipper> r_pdl_content;
 
     PDLParserRuleset();
 

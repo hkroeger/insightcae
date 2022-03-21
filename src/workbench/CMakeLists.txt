@@ -9,6 +9,13 @@ find_package(Qt5Widgets CONFIG REQUIRED)
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
 set(workbench_SRCS
+    workbench.cpp
+
+    iqcasedirectorystate.h
+    iqcasedirectorystate.cpp
+    iqworkbenchremoteexecutionstate.h iqworkbenchremoteexecutionstate.cpp
+    iqexecutionworkspace.h iqexecutionworkspace.cpp
+
     analysisform.cpp
     analysisform.h
     analysisform_gui.cpp
@@ -16,20 +23,29 @@ set(workbench_SRCS
     analysisform_remoteactions.cpp
     newanalysisdlg.cpp
     newanalysisdlg.h
-    workbench.cpp
-    workbench.h
-    main.cpp
+    workbenchwindow.cpp
+    workbenchwindow.h
 
     workbenchaction.cpp
     workbenchaction.h
     localrun.cpp
     localrun.h
+    #wslrun.h
+    #wslrun.cpp
 
-    qsetupremotedialog.cpp
-    qsetupremotedialog.h
+    #qsetupremotedialog.cpp
+    #qsetupremotedialog.h
+
+    qexecutionworkspacedialog.h
+    qexecutionworkspacedialog.cpp
 
 )
-SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui qsetupremotedialog.ui)
+SET(workbench_FORMS
+    newanalysisdlg.ui
+    analysisform.ui
+    xml_display.ui
+    qsetupremotedialog.ui
+    qexecutionworkspacedialog.ui)
 SET(workbench_RCCS workbench.qrc)
 set(workbench_LIBS
     toolkit_gui

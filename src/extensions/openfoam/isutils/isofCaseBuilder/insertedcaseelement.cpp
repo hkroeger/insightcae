@@ -1,25 +1,50 @@
 #include "insertedcaseelement.h"
 #include "parametereditorwidget.h"
 
-CaseElementData::CaseElementData(QListWidget* parent, const std::string& type_name, ParameterSetDisplay* d)
-  : QListWidgetItem(parent),
+
+
+
+CaseElementData::CaseElementData(
+    const std::string& type_name,
+    insight::Multi_CAD_ParameterSet_Visualizer* mv,
+    QObject *parent )
+
+  : QObject(parent),
     type_name_(type_name),
-    disp_(d)
-{
-  setText(QString::fromStdString(type_name_));
-}
+    mv_(mv)
+{}
+
+
+
 
 CaseElementData::~CaseElementData()
 {
-  if (disp_ && viz_)
+  if (mv_ && viz_)
   {
-    disp_->deregisterVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_) );
+    mv_->unregisterVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_).get() );
   }
 }
+
+
+
+
+const insight::ParameterSet CaseElementData::defaultParameters() const
+{
+  return insight::OpenFOAMCaseElement::defaultParameters(type_name_);
+}
+
+
+
 
 insight::ParameterSet_VisualizerPtr CaseElementData::visualizer()
 {
   return viz_;
+}
+
+
+insight::Multi_CAD_ParameterSet_Visualizer* CaseElementData::multiVisualizer() const
+{
+  return mv_;
 }
 
 void CaseElementData::updateVisualization()
@@ -30,20 +55,22 @@ void CaseElementData::updateVisualization()
   }
 }
 
+
+
+
 InsertedCaseElement::InsertedCaseElement(
-    QListWidget* parent,
     const std::string& type_name,
-    ParameterSetDisplay* d
+    insight::Multi_CAD_ParameterSet_Visualizer* mv,
+    QObject *parent
     )
-: CaseElementData(parent, type_name, d)
+: CaseElementData(type_name, mv, parent)
 {
-    curp_ = insight::OpenFOAMCaseElement::defaultParameters(type_name_);
-    defp_ = curp_;
+    curp_ = defaultParameters();
     if (type_name_!="")
     {
       try {
         viz_ = insight::OpenFOAMCaseElement::visualizer(type_name_);
-        disp_->registerVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_) );
+        mv_->registerVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_).get() );
       }
       catch (...)
       { /* skip, if there is no visualizer defined */ }
@@ -52,10 +79,14 @@ InsertedCaseElement::InsertedCaseElement(
 
 
 
+
 insight::OpenFOAMCaseElement* InsertedCaseElement::createElement(insight::OpenFOAMCase& c) const
 {
     return insight::OpenFOAMCaseElement::lookup(type_name_, c, curp_);
 }
+
+
+
 
 void InsertedCaseElement::insertElement(insight::OpenFOAMCase& c) const
 {

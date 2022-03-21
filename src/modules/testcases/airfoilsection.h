@@ -20,6 +20,7 @@
 #ifndef INSIGHT_AIRFOILSECTION_H
 #define INSIGHT_AIRFOILSECTION_H
 
+#include "base/supplementedinputdata.h"
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/openfoamparameterstudy.h"
 //#include "base/stltools.h"
@@ -91,6 +92,7 @@ fluid = set
 
  rho       = double 1.0 "[kg/m^3] Density of the fluid"
  nu        = double 1.5e-5 "[m^2/s] Viscosity of the fluid"
+ turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 
 } "Parameters of the fluid"
 
@@ -108,14 +110,30 @@ The maximum relative change between the last 15 average values needs to stay bel
 */  
 
 
-  std::string in_, out_, up_, down_, fb_, foil_;
-  arma::mat contour_;
-  double c_;
+  struct supplementedInputData : public supplementedInputDataDerived<Parameters>
+  {
+    supplementedInputData(
+        std::unique_ptr<Parameters> pPtr,
+        const boost::filesystem::path& workDir,
+        ProgressDisplayer& progress = consoleProgressDisplayer
+        );
+
+    std::string in_, out_, up_, down_, fb_, foil_;
+    arma::mat contour_;
+    double c_;
+  };
+
+#ifndef SWIG
+  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
+#endif
 
 public:
   declareType("Airfoil 2D");
   
-  AirfoilSection(const ParameterSet& ps, const boost::filesystem::path& exepath);
+  AirfoilSection(
+      const ParameterSet& ps,
+      const boost::filesystem::path& exepath,
+      ProgressDisplayer& progress );
 
   
   static std::string category() { return "Generic Analyses"; }
@@ -139,7 +157,10 @@ public:
     
     static std::string category() { return "Generic Analyses"; }
     
-    AirfoilSectionPolar(const ParameterSet& ps, const boost::filesystem::path& exepath);    
+    AirfoilSectionPolar(
+        const ParameterSet& ps,
+        const boost::filesystem::path& exepath,
+        ProgressDisplayer& progress );
     virtual void evaluateCombinedResults(ResultSetPtr& results);
 };
 

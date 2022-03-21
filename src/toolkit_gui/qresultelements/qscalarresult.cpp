@@ -6,10 +6,10 @@
 namespace insight {
 
 defineType(QScalarResult);
-addToFactoryTable(QResultElement, QScalarResult);
+addToFactoryTable(IQResultElement, QScalarResult);
 
 QScalarResult::QScalarResult(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-: QResultElement(parent, label, rep)
+: IQResultElement(parent, label, rep)
 {}
 
 
@@ -27,7 +27,7 @@ QVariant QScalarResult::previewInformation(int role) const
 
 void QScalarResult::createFullDisplay(QVBoxLayout* layout)
 {
-  QResultElement::createFullDisplay(layout);
+  IQResultElement::createFullDisplay(layout);
 
   auto res = resultElementAs<insight::ScalarResult>();
   auto te_=new QLabel;

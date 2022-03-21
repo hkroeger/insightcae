@@ -111,7 +111,7 @@ void CAEnvironment::runSolver(const filesystem::path &exportfile, CASolverOutput
        }
  );
 
- job->process->wait();
+ job->wait();
 
 
  std::string msg;
@@ -128,7 +128,7 @@ void CAEnvironment::runSolver(const filesystem::path &exportfile, CASolverOutput
  }
 
 
- if ( (job->process->exit_code()!=0) || (exceptions.size()>0) )
+ if ( (job->process().exit_code()!=0) || (exceptions.size()>0) )
      throw insight::Exception("CAEnvironment::runSolver(): solver run failed!"+msg);
 
 }

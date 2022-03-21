@@ -21,12 +21,13 @@
 
 #include "openfoam/caseelements/basic/decomposepardict.h"
 #include "openfoam/caseelements/turbulencemodel.h"
-#include "openfoam/caseelements/turbulencemodelcaseelements.h"
 #include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/ofes.h"
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
 #include "base/progressdisplayer/convergenceanalysisdisplayer.h"
 #include "base/progressdisplayer/prefixedprogressdisplayer.h"
+
+#include "openfoam/caseelements/basic/rasmodel.h"
 
 #include "openfoamtools.h"
 #include "openfoamanalysis.h"
@@ -44,36 +45,12 @@ namespace insight
 
 
 
-turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const OpenFOAMAnalysis::Parameters& params)
-{
-  CurrentExceptionContext ex("inserting turbulence model configuration into OpenFOAM case");
-
-  const OpenFOAMAnalysis::Parameters::fluid_type::turbulenceModel_type& tmp
-      = params.fluid.turbulenceModel;
-
-  turbulenceModel* model = turbulenceModel::lookup(tmp.selection, cm, tmp.parameters);
-
-  if (!model)
-    throw insight::Exception("Unrecognized RASModel selection: "+tmp.selection);
-
-  return cm.insert(model);
-}
-
-
-
-
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps)
 {
   CurrentExceptionContext ex("inserting turbulence model configuration into OpenFOAM case");
-
-  turbulenceModel* model = turbulenceModel::lookup(ps.selection(), cm, ps());
-  
-  if (!model) 
-    throw insight::Exception("Unrecognized RASModel selection: "+ps.selection());
-  
-  return cm.insert(model);
+  struct P { std::string selection; ParameterSet parameters; };
+  return insertTurbulenceModel(cm, P{ ps.selection(), ps() } );
 }
-
 
 
 
@@ -86,7 +63,8 @@ OpenFOAMAnalysis::OpenFOAMAnalysis
     const ParameterSet& ps,
     const boost::filesystem::path& exepath
 )
-: Analysis(name, description, ps, exepath)
+: Analysis(name, description, ps, exepath),
+  p_(ps)
 {}
 
 
@@ -146,23 +124,22 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdi
 {
   CurrentExceptionContext ex("applying custom options to OpenFOAM case configuration for case \""+executionPath().string()+"\"");
 
-  Parameters p(parameters_);
-  
+
   OFDictData::dict& dpd=dicts->lookupDict("system/decomposeParDict");
   if (dpd.find("numberOfSubdomains")!=dpd.end())
   {
     int cnp=boost::get<int>(dpd["numberOfSubdomains"]);
-    if (cnp!=p.run.np)
+    if (cnp!=p_.run.np)
     {
       insight::Warning
       (
         "decomposeParDict does not contain proper number of processors!\n"
-        +str(format("(%d != %d)\n") % cnp % p.run.np)
+        +str(format("(%d != %d)\n") % cnp % p_.run.np)
         +"It will be recreated but the directional preferences cannot be taken into account.\n"
 	"Correct this by setting the np parameter in FVNumerics during case creation properly."
       );
       decomposeParDict(cm, decomposeParDict::Parameters()
-                        .set_np(p.run.np)
+                        .set_np(p_.run.np)
                         .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::scotch)
                        ).addIntoDictionaries(*dicts);
     }
@@ -179,6 +156,12 @@ void OpenFOAMAnalysis::writeDictsToDisk(OpenFOAMCase& cm, std::shared_ptr<OFdict
 
 void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase&, ProgressDisplayer&)
 {}
+
+
+void OpenFOAMAnalysis::changeMapFromPath(const boost::filesystem::path &newMapFromPath)
+{
+  p_.run.mapFrom->setOriginalFilePath(newMapFromPath);
+}
 
 void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, ProgressDisplayer& parentAction, const boost::filesystem::path& mapFromPath, bool is_parallel)
 {
@@ -214,18 +197,16 @@ void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer& parentProgress, Op
 {
   CurrentExceptionContext ex("initializing solver run for case \""+executionPath().string()+"\"");
 
-  Parameters p(parameters_);
-    
   int np=readDecomposeParDict(executionPath());
   bool is_parallel = np>1;
 
   
   if (!cm.outputTimesPresentOnDisk(executionPath(), false))
   {
-    if ((cm.OFversion()>=230) && (p.run.mapFrom->isValid()))
+    if ((cm.OFversion()>=230) && (p_.run.mapFrom->isValid()))
     {
       // parallelTarget option is not present in OF2.3.x
-      mapFromOther(cm, parentProgress, p.run.mapFrom->filePath(executionPath()), false);
+      mapFromOther(cm, parentProgress, p_.run.mapFrom->filePath(executionPath()), false);
     }
   }
 
@@ -245,13 +226,13 @@ void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer& parentProgress, Op
   
   if (!cm.outputTimesPresentOnDisk(executionPath(), is_parallel))
   {
-    if ( (!(cm.OFversion()>=230)) && (p.run.mapFrom->isValid()) )
+    if ( (!(cm.OFversion()>=230)) && (p_.run.mapFrom->isValid()) )
     {
-      mapFromOther(cm, parentProgress, p.run.mapFrom->filePath(executionPath()), is_parallel);
+      mapFromOther(cm, parentProgress, p_.run.mapFrom->filePath(executionPath()), is_parallel);
     }
     else
     {
-      if (p.run.potentialinit)
+      if (p_.run.potentialinit)
       {
         parentProgress.message("Executing potentialFoam");
         runPotentialFoam(cm, executionPath(), np);
@@ -343,19 +324,16 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm, ProgressDisplay
 {
   CurrentExceptionContext ex("evaluating the results for case \""+executionPath().string()+"\"");
 
-
-  Parameters p(parameters_);
-  
-  ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
+  auto results = std::make_shared<ResultSet>(parameters(), name_, "Result Report");
   results->introduction() = description_;
   
-  if (!p.eval.skipmeshquality)
+  if (!p_.eval.skipmeshquality)
   {
     parentActionProgress.message("Generating mesh quality report");
     meshQualityReport(cm, executionPath(), results);
   }
   
-  if (parameters().getBool("eval/reportdicts"))
+  if (p_.eval.reportdicts)
   {
     parentActionProgress.message("Adding numerical settings to report");
     currentNumericalSettingsReport(cm, executionPath(), results);
@@ -380,15 +358,13 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer
 
   CurrentExceptionContext ex("creating OpenFOAM case in directory \""+dir.string()+"\"");
 
-    Parameters p(parameters_);
-
-    OFEnvironment ofe = OFEs::get(p.run.OFEname);
-    ofe.setExecutionMachine(p.run.machine);
+    OFEnvironment ofe = OFEs::get(p_.run.OFEname);
+    ofe.setExecutionMachine(p_.run.machine);
 
     parentActionProgress.message("Computing derived input quantities");
     calcDerivedInputData(parentActionProgress);
 
-    bool evaluateonly=p.run.evaluateonly;
+    bool evaluateonly=p_.run.evaluateonly;
     if (evaluateonly)
     {
       insight::Warning("Parameter \"run/evaluateonly\" is set.\nSKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!");
@@ -405,10 +381,10 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer
             if (!meshCase->meshPresentOnDisk(dir))
             {
                 meshcreated=true;
-                if (p.mesh.linkmesh->isValid())
+                if (p_.mesh.linkmesh->isValid())
                 {
                   parentActionProgress.message("Linking the mesh to OpenFOAM case in directory "+dir.string()+".");
-                  linkPolyMesh(p.mesh.linkmesh->filePath(executionPath())/"constant", dir/"constant", &ofe);
+                  linkPolyMesh(p_.mesh.linkmesh->filePath(executionPath())/"constant", dir/"constant", &ofe);
                 }
                 else
                 {
@@ -480,16 +456,14 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer& progress)
 {  
   CurrentExceptionContext ex("running OpenFOAM analysis");
 
-  Parameters p(parameters_);
-
-  auto ofprg = progress.forkNewAction( p.run.evaluateonly? 5 : 7 );
+  auto ofprg = progress.forkNewAction( p_.run.evaluateonly? 5 : 7 );
 
   ofprg.message("Creating execution environment");
   setupExecutionEnvironment();
   ++ofprg;
   
-  OFEnvironment ofe = OFEs::get(p.run.OFEname);
-  ofe.setExecutionMachine(p.run.machine);
+  OFEnvironment ofe = OFEs::get(p_.run.OFEname);
+  ofe.setExecutionMachine(p_.run.machine);
 
   ofprg.message("Preparing case creation");
   prepareCaseCreation(ofprg);
@@ -502,7 +476,7 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer& progress)
   
   path dir = executionPath();
   
-  if (!p.run.evaluateonly)
+  if (!p_.run.evaluateonly)
   {
     PrefixedProgressDisplayer iniprogdisp(
           &ofprg, "initrun",

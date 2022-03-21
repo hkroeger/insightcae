@@ -33,6 +33,13 @@ public:
      */
     ResultElement& insert ( const std::string& key, const ResultElement& elem );
 
+    /**
+     * @brief copyFrom
+     * insert clones of all result elements in another set
+     * @param other
+     */
+    void copyFrom(const ResultElementCollection& other);
+
     void writeLatexCodeOfElements ( std::ostream& f, const std::string&, int level, const boost::filesystem::path& outputfilepath ) const;
 
     template<class T>
@@ -42,6 +49,30 @@ public:
     const T& get ( const std::string& name ) const
     {
         return const_cast<ResultElementCollection&>(*this).get<T>(name);
+    }
+
+    /**
+     * @brief contents
+     * produces list of all direct and nested result element paths
+     * @return
+     */
+    std::set<std::string> contents(bool onlyLeafs=true) const;
+
+    template<class T>
+    std::set<std::string> contentsOfType(bool onlyLeafs=true) const
+    {
+        auto all = contents(onlyLeafs);
+        std::set<std::string> filtered;
+        std::copy_if(
+                    all.begin(), all.end(),
+                    std::inserter(filtered, filtered.begin()),
+                    [this](const std::string& path)
+        {
+            try { this->get<T>(path); return true; }
+            catch(...) { return false; }
+        }
+        );
+        return filtered;
     }
 
     double getScalar(const std::string& path) const;

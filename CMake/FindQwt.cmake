@@ -81,7 +81,7 @@
 
 
    find_library ( QWT_LIBRARY
-     NAMES qwt-qt5
+     NAMES qwt-qt5 qwt
      HINTS ENV LD_LIBRARY_PATH
    )
 

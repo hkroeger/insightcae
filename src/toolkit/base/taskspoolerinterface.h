@@ -2,7 +2,9 @@
 #define TASKSPOOLERINTERFACE_H
 
 #include "base/boost_include.h"
+#include "base/remoteserverlist.h"
 #include "boost/process.hpp"
+#include "boost/asio/io_service.hpp"
 
 
 namespace insight
@@ -11,7 +13,7 @@ namespace insight
 
 class TaskSpoolerInterface
 {
-  std::string remote_machine_;
+  RemoteServerPtr server_;
   boost::filesystem::path socket_;
   boost::process::environment env_;
 
@@ -50,7 +52,7 @@ public:
   };
 
 public:
-  TaskSpoolerInterface(const boost::filesystem::path& socket, const std::string& remote_machine="");
+  TaskSpoolerInterface(const boost::filesystem::path& socket, RemoteServerPtr server = RemoteServerPtr() );
   ~TaskSpoolerInterface();
 
   JobList jobs() const;

@@ -2,6 +2,7 @@
 #define INSIGHT_FANUMERICS_H
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
+#include "fanumerics__FaNumerics__Parameters_headers.h"
 
 namespace insight {
 

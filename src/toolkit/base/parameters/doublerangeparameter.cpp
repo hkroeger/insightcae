@@ -38,6 +38,28 @@ DoubleRangeParameter::DoubleRangeParameter(double defaultFrom, double defaultTo,
 DoubleRangeParameter::~DoubleRangeParameter()
 {}
 
+bool DoubleRangeParameter::isDifferent(const Parameter& p) const
+{
+  if (const auto *drp = dynamic_cast<const DoubleRangeParameter*>(&p))
+  {
+    if (drp->values().size() != values().size())
+      return true;
+
+    auto myi=values().begin(), oi=drp->values().begin();
+    for (size_t i=0; i<values().size(); ++i)
+    {
+      if (*myi != *oi)
+        return true;
+      ++myi;
+      ++oi;
+    }
+
+    return false;
+  }
+  else
+    return true;
+}
+
 std::string DoubleRangeParameter::latexRepresentation() const
 {
   std::ostringstream oss;

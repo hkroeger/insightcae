@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "passivescalar__PassiveScalar__Parameters_headers.h"
+
 namespace insight {
 
 class PassiveScalar

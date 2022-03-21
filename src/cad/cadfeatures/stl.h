@@ -81,7 +81,6 @@ public:
         TransformationSpecification transform
     );
 
-    virtual Handle_AIS_InteractiveObject buildVisualization() const;
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

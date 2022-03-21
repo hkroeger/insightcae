@@ -505,7 +505,7 @@
      <x>0</x>
      <y>0</y>
      <width>941</width>
-     <height>24</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuRemote">
@@ -513,6 +513,7 @@
      <string>Remote</string>
     </property>
     <addaction name="actionSet_local_directory"/>
+    <addaction name="actionSelect_remote_server"/>
     <addaction name="actionSelect_Remote_Directory"/>
    </widget>
    <widget class="QMenu" name="menuSync">
@@ -530,6 +531,9 @@
     <addaction name="actionCancel_queue"/>
     <addaction name="actionRemove_remote_directory"/>
     <addaction name="separator"/>
+    <addaction name="actionRemote_write_and_copy_to_local"/>
+    <addaction name="actionRemote_write_reconstruct_and_copy_to_local"/>
+    <addaction name="separator"/>
     <addaction name="actionStart_Paraview"/>
     <addaction name="actionStart_Remote_Paraview"/>
    </widget>
@@ -540,7 +544,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionSelect_Remote_Directory">
    <property name="text">
-    <string>Select Remote Directory...</string>
+    <string>Select remote directory...</string>
    </property>
   </action>
   <action name="action_syncLocalToRemote">
@@ -586,6 +590,21 @@
   <action name="actionStart_Remote_Paraview_in_Subdirectory">
    <property name="text">
     <string>Start Remote Paraview in Subdirectory...</string>
+   </property>
+  </action>
+  <action name="actionRemote_write_and_copy_to_local">
+   <property name="text">
+    <string>Remote write and copy to local</string>
+   </property>
+  </action>
+  <action name="actionRemote_write_reconstruct_and_copy_to_local">
+   <property name="text">
+    <string>Remote write, reconstruct and copy to local</string>
+   </property>
+  </action>
+  <action name="actionSelect_remote_server">
+   <property name="text">
+    <string>Select remote server...</string>
    </property>
   </action>
  </widget>

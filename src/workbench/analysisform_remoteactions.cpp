@@ -5,6 +5,7 @@
 #include "base/boost_include.h"
 #include "base/resultset.h"
 #include "base/remoteserverlist.h"
+#include "base/wsllinuxserver.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
@@ -31,101 +32,53 @@ namespace fs = boost::filesystem;
 
 void AnalysisForm::connectRemoteActions()
 {
-  connect(ui->btnSetupRemote, &QPushButton::clicked,
-          [&]()
-          {
-            if (!ensureWorkingDirectoryExistence()) return;
 
-            QSetupRemoteDialog dlg(ui->lblHostName->text(), ui->lblRemoteDirectory->text(), this);
-
-            auto btn=dlg.exec();
-
-            if (btn == QDialog::Accepted)
-            {
-              remoteDirectory_.reset();
-
-              auto rsi = lookupRemoteServerByLabel(dlg.hostName());
-
-              remoteDirectory_.reset(
-                    new QRemoteExecutionConfig(
-                      this,
-                      rsi,
-                      *caseDirectory_,
-                      dlg.remoteDirectory().toStdString()
-                      )
-                    );
-
-              ui->lblHostName->setText( QString::fromStdString(remoteDirectory_->server()) );
-              ui->lblRemoteDirectory->setText( QString::fromStdString(remoteDirectory_->remoteDir().string() ) );
-            }
-          }
-  );
-
-
-  connect(ui->leWorkingDirectory, &QLineEdit::editingFinished,
-          this, &AnalysisForm::checkForRemoteConfig);
-
-  connect(ui->btnDisconnect, &QPushButton::clicked,
+  connect(ui->btnDisconnect, &QPushButton::clicked, ui->btnDisconnect,
           [&]()
           {
             if (isRunningRemotely())
               currentWorkbenchAction_.reset();
-            if (remoteDirectory_)
-              remoteDirectory_.reset();
-          }
-  );
-
-  connect(ui->btnUpload, &QPushButton::clicked,
-          this, &AnalysisForm::upload );
-  connect(ui->btnDownload, &QPushButton::clicked,
-          this, &AnalysisForm::download );
-
-  connect(ui->btnRemoveRemote, &QPushButton::clicked,
-          []()
-          {
           }
   );
 
   connect(ui->btnResume, &QPushButton::clicked,
+          this, &AnalysisForm::resumeRemoteRun );
+
+  connect(ui->btnUpload, &QPushButton::clicked,
+          this, &AnalysisForm::upload );
+
+  connect(ui->btnDownload, &QPushButton::clicked,
+          this, &AnalysisForm::download );
+
+  connect(ui->btnRemoveRemote, &QPushButton::clicked, this,
           [&]()
           {
-            resumeRemoteRun();
+            if (!isRunningRemotely())
+            {
+                removeRemoteWorkspace();
+            }
+            else
+            {
+              QMessageBox::critical(
+                    this, "Not possible",
+                    "There is currently a remote analysis running.\n"
+                    "Please terminate it first!");
+            }
           }
   );
+
 }
 
-void AnalysisForm::checkForRemoteConfig()
-{
-  if ( caseDirectory_ )
-  {
-    if (remoteDirectory_)
-      remoteDirectory_.reset();
-
-    try
-    {
-
-      remoteDirectory_.reset(
-            new QRemoteExecutionConfig(
-              this,
-              *caseDirectory_
-              )
-            );
 
 
-      ui->lblHostName->setText( QString::fromStdString(remoteDirectory_->server()) );
-      ui->lblRemoteDirectory->setText( QString::fromStdString(remoteDirectory_->remoteDir().string() ) );
 
-    }
-    catch (const std::exception& e)
-    {
-      Q_EMIT statusMessage(e.what());
-    }
-  }
-}
 
 void AnalysisForm::upload()
 {
-  auto *rstr = new insight::RunSyncToRemote(*remoteDirectory_);
+
+  remoteExecutionConfiguration()->commit( localCaseDirectory() );
+
+  auto *rstr = new insight::RunSyncToRemote( remoteExecutionConfiguration()->exeConfig() );
 
   connect(rstr, &insight::RunSyncToRemote::progressValueChanged,
           progressbar_, &QProgressBar::setValue);
@@ -162,10 +115,11 @@ void AnalysisForm::upload()
 void AnalysisForm::startRemoteRun()
 {
 #ifdef HAVE_WT
-  Q_EMIT apply(); // apply all changes into parameter set
-  currentWorkbenchAction_.reset(new RemoteRun(this, false));
+  remoteExecutionConfiguration()->commit( localCaseDirectory() );
+  currentWorkbenchAction_.reset( RemoteRun::create(this, false) );
 #endif
 }
+
 
 
 
@@ -175,7 +129,8 @@ void AnalysisForm::resumeRemoteRun()
   if (currentWorkbenchAction_)
     throw insight::Exception("Internal error: there is an action running currently!");
 
-  currentWorkbenchAction_.reset(new RemoteRun(this, true));
+  remoteExecutionConfiguration()->commit( localCaseDirectory() );
+  currentWorkbenchAction_.reset( RemoteRun::create(this, true) );
 #endif
 }
 
@@ -185,12 +140,12 @@ void AnalysisForm::resumeRemoteRun()
 
 void AnalysisForm::download()
 {
-  if (!remoteDirectory_->remoteDirExists())
-  {
-    throw std::logic_error("The remote directory does not exist! Cannot download.");
-  }
+    downloadFromRemote();
+}
 
-  auto* rstl = new insight::RunSyncToLocal(*remoteDirectory_);
+void AnalysisForm::downloadFromRemote(std::function<void()> completionCallback)
+{
+  auto* rstl = new insight::RunSyncToLocal( remoteExecutionConfiguration()->exeConfig() );
 
   connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
           progressbar_, &QProgressBar::setValue);
@@ -205,10 +160,11 @@ void AnalysisForm::download()
           rstl, &QObject::deleteLater);
   connect(rstl, &insight::RunSyncToLocal::transferFinished,
           this,
-          [&]()
+          [this,completionCallback]()
           {
             progressbar_->setHidden(true);
             Q_EMIT statusMessage("Transfer from remote location to local directory finished");
+            completionCallback();
           }
   );
 

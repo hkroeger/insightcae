@@ -2,6 +2,7 @@
 
 #include "gnuplot-iostream.h"
 #include "base/resultelements/image.h"
+#include "base/resultelements/latexgnuplotrenderer.h"
 
 using namespace std;
 using namespace boost;
@@ -43,22 +44,22 @@ void addContourPlot
     //std::string chart_file_name_i=(workdir/(resultelementname+".ps")).string();
 
     {
-        Gnuplot gp;
+        auto gp=make_Gnuplot();
 
         //gp<<"set terminal postscript color;";
         //gp<<"set output '"<<chart_file_name_i<<"';";
-        gp<<"set terminal pngcairo; set termoption dash;";
-        gp<<"set output '"<<chart_file_name<<"';";
+        *gp<<"set terminal pngcairo; set termoption dash;";
+        *gp<<"set output '"<<chart_file_name<<"';";
 
-        gp<<addinit<<";";
-        gp<<"set xlabel '"<<xlabel<<"'; set ylabel '"<<ylabel<<"'; set grid; ";
-        gp<<"splot ";
+        *gp<<addinit<<";";
+        *gp<<"set xlabel '"<<xlabel<<"'; set ylabel '"<<ylabel<<"'; set grid; ";
+        *gp<<"splot ";
         for ( const PlotCurve& pc: plc ) {
-            gp<<"'-' "<<pc.plotcmd_;
+            *gp<<"'-' "<<pc.plotcmd_;
         }
-        gp<<endl;
+        *gp<<endl;
         for ( const PlotCurve& pc: plc ) {
-            gp.send ( pc.xy_ );
+            gp->send ( pc.xy_ );
         }
     }
     /*

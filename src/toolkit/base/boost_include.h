@@ -47,11 +47,17 @@
 #ifndef Q_MOC_RUN
 
 #include "boost/version.hpp"
-#if ( BOOST_VERSION < 105100 )
+
+#ifndef WIN32
 #define BOOST_NO_SCOPED_ENUMS
-#else
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #endif
+
+#ifdef WIN32
+#include "winsock2.h"
+#include "windows.h"
+#endif
+#include "boost/asio.hpp"
 
 #include "boost/filesystem.hpp"
 #include <boost/filesystem/path.hpp>

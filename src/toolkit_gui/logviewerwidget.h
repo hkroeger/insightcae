@@ -1,17 +1,25 @@
 #ifndef LOGVIEWERWIDGET_H
 #define LOGVIEWERWIDGET_H
 
+#include "toolkit_gui_export.h"
+#include "base/progressdisplayer.h"
+
 #include <QPlainTextEdit>
 
-namespace insight {
-class ProgressState;
-}
 
-class LogViewerWidget
-: public QPlainTextEdit
+class TOOLKIT_GUI_EXPORT LogViewerWidget
+: public QPlainTextEdit,
+  public insight::ProgressDisplayer
 {
 public:
   LogViewerWidget(QWidget* parent=nullptr);
+
+  void update ( const insight::ProgressState& pi ) override;
+  void logMessage(const std::string& line) override;
+  void setActionProgressValue(const std::string &path, double value) override;
+  void setMessageText(const std::string &path, const std::string& message) override;
+  void finishActionProgress(const std::string &path) override;
+  void reset() override;
 
 public Q_SLOTS:
   void appendLine(const QString& line);

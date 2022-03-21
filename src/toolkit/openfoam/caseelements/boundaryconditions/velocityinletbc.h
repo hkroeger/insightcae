@@ -7,6 +7,8 @@
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
 
+#include "velocityinletbc__VelocityInletBC__Parameters_headers.h"
+
 namespace insight {
 
 

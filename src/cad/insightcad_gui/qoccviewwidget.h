@@ -1,6 +1,8 @@
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
+#include "insightcad_gui_export.h"
+
 #include <memory>
 
 #include <QWidget>
@@ -12,10 +14,18 @@
 #include "V3d_Plane.hxx"
 #include "AIS_InteractiveContext.hxx"
 #include "AIS_Plane.hxx"
-#include "AIS_ViewController.hxx"
 #include "V3d_Coordinate.hxx"
 
+#include "viewwidgetaction.h"
+#include "navigationmanager.h"
+
+#if OCC_VERSION_MAJOR>=7
+#include "AIS_ViewController.hxx"
+
+
 class Aspect_GraphicCallbackStruct;
+#endif
+
 class QDisplayableModelTreeItem;
 class QModelTree;
 class QRubberBand;
@@ -34,13 +44,13 @@ class FeatureSet;
 #endif
 
 /** the key for multi selection */
-#define MULTISELECTIONKEY  Qt::ShiftModifier   
+//#define MULTISELECTIONKEY  Qt::ShiftModifier
 
 /** The key for shortcut ( use to activate dynamic rotation, panning ) */
 //#define CASCADESHORTCUTKEY Qt::ControlModifier 
-#define ZOOMSHORTCUTKEY Qt::ControlModifier 
-#define PANSHORTCUTKEY Qt::ShiftModifier 
-#define ROTATESHORTCUTKEY Qt::AltModifier
+//#define ZOOMSHORTCUTKEY Qt::ControlModifier
+//#define PANSHORTCUTKEY Qt::ShiftModifier
+//#define ROTATESHORTCUTKEY Qt::AltModifier
 
 /* For elastic bean selection */
 const double ValZWMin = 1;
@@ -48,48 +58,48 @@ const double ValZWMin = 1;
 
 
 
-class QoccViewWidget
-: public QWidget,
-  protected AIS_ViewController
+class INSIGHTCAD_GUI_EXPORT QoccViewWidget
+: public QWidget
+#if OCC_VERSION_MAJOR>=7
+  , protected AIS_ViewController
+#endif
 {
 
   Q_OBJECT
 
 private:
-  static Handle(OpenGl_GraphicDriver) aGraphicDriver;
-  static Handle(V3d_Viewer) createViewer
-  (
-      const Standard_ExtString ,
-      const Standard_CString ,
-      const Standard_Real theViewSize,
-      const V3d_TypeOfOrientation theViewProj,
-      const Standard_Boolean theComputedMode,
-      const Standard_Boolean theDefaultComputedMode
-  );
+  std::vector<Handle_V3d_Light> lights_;
+
+  void addLights();
+
+  std::shared_ptr<ViewWidgetAction> currentNavigationAction_;
+  std::shared_ptr<NavigationManager> navigationManager_;
+  std::shared_ptr<ViewWidgetAction> currentUserActivity_;
 
 public:
 
-  enum CurrentAction3d
-  {	
-    CurAction3d_Undefined,
-    CurAction3d_Nothing, 
-    CurAction3d_Picking,
-    CurAction3d_DynamicZooming,
-    CurAction3d_WindowZooming, 
-    CurAction3d_DynamicPanning,
-    CurAction3d_GlobalPanning, 
-    CurAction3d_DynamicRotation,
-  };
 
-  enum CurrentInteractionMode
-  {
-    CIM_Normal,
-    CIM_MeasurePoints,
-    CIM_InsertPointIDs,
-    CIM_InsertEdgeIDs,
-    CIM_InsertFaceIDs,
-    CIM_InsertSolidIDs
-  };
+//  enum CurrentAction3d
+//  {
+//    CurAction3d_Undefined,
+//    CurAction3d_Nothing,
+//    CurAction3d_Picking,
+//    CurAction3d_DynamicZooming,
+//    CurAction3d_WindowZooming,
+//    CurAction3d_DynamicPanning,
+//    CurAction3d_GlobalPanning,
+//    CurAction3d_DynamicRotation,
+//  };
+
+//  enum CurrentInteractionMode
+//  {
+//    CIM_Normal,
+//    CIM_MeasurePoints,
+//    CIM_InsertPointIDs,
+//    CIM_InsertEdgeIDs,
+//    CIM_InsertFaceIDs,
+//    CIM_InsertSolidIDs
+//  };
 
   struct FocusObject
   {
@@ -102,19 +112,11 @@ protected:
 
   std::shared_ptr<FocusObject> focussedObject;
 
-  void init();
-
 public:
 
-  QoccViewWidget
-    (
-     QWidget *parent,
-     Qt::WindowFlags wflags = 0
-    );
-  
+  QoccViewWidget(QWidget *parent = nullptr);
   ~QoccViewWidget();
-  
-//  void initializeOCC(/*const Handle_AIS_InteractiveContext& aContext = NULL*/);
+
 
   inline Handle_AIS_InteractiveContext&	getContext()
   { return myContext_; }
@@ -125,19 +127,14 @@ public:
   inline const Handle_V3d_View& getOccView()
   { return myView; }
 
-  //Overrides
-  QPaintEngine* paintEngine() const;
-  //QToolBar*	  myToolBar;
-
-
-//  void redraw( bool isPainting = false );
+  QPaintEngine* paintEngine() const override;
 
   QDisplayableModelTreeItem* getOwnerItem(Handle_AIS_InteractiveObject selected);
   QDisplayableModelTreeItem* getSelectedItem();
 
   void connectModelTree(QModelTree* mt) const;
 
-  virtual QSize	sizeHint() const;
+  QSize	sizeHint() const override;
 
 Q_SIGNALS:
 
@@ -159,14 +156,14 @@ protected Q_SLOTS:
 
 public Q_SLOTS:
   
-  void idle();
+//  void idle();
   void fitExtents();
   void fitAll();
-  void fitArea();
-  void zoom();
-  void pan();
-  void globalPan();
-  void rotation();
+//  void fitArea();
+//  void zoom();
+//  void pan();
+//  void globalPan();
+//  void rotation();
   void hiddenLineOn();
   void hiddenLineOff();
   void background();
@@ -214,27 +211,21 @@ public Q_SLOTS:
 
 protected: // methods
 
-  virtual void paintEvent        ( QPaintEvent* e );
-  virtual void resizeEvent       ( QResizeEvent* e );
-  virtual void mousePressEvent   ( QMouseEvent* e );
-  virtual void mouseReleaseEvent ( QMouseEvent* e );
-  virtual void mouseMoveEvent    ( QMouseEvent* e );
-  virtual void wheelEvent        ( QWheelEvent* e );
-  virtual void keyPressEvent     ( QKeyEvent* e );
-  virtual void keyReleaseEvent   ( QKeyEvent* e );
-  
-  virtual void leaveEvent	 ( QEvent * );
+  void paintEvent        ( QPaintEvent* e ) override;
+  void resizeEvent       ( QResizeEvent* e ) override;
+  void mousePressEvent   ( QMouseEvent* e ) override;
+  void mouseReleaseEvent ( QMouseEvent* e ) override;
+  void mouseMoveEvent    ( QMouseEvent* e ) override;
+  void wheelEvent        ( QWheelEvent* e ) override;
+  void keyPressEvent     ( QKeyEvent* e ) override;
+  void keyReleaseEvent   ( QKeyEvent* e ) override;
+  void leaveEvent	 ( QEvent * ) override;
 
   void displayContextMenu( const QPoint& p);
   
 private: // members
 
-#ifdef WNT
-  Handle_WNT_Window		myWindow;
-#else
-//  Handle_Xw_Window		myWindow;
-  Handle(Xw_Window)             hWnd;
-#endif // WNT
+  Handle(Aspect_Window)             hWnd;
   
   Handle_V3d_View                 myView;
   Handle_V3d_Viewer               myViewer;
@@ -246,9 +237,6 @@ private: // members
   Handle_Graphic3d_ClipPlane	clipPlane_;  
 #endif
 
-  bool                          myViewResized;
-  bool                          myViewInitialized;
-  CurrentAction3d               myMode;
   double                        myCurZoom;
   bool                          myGridSnap;
   AIS_StatusOfDetection		myDetection;
@@ -257,10 +245,7 @@ private: // members
                                 myV3dX,
                                 myV3dY,
                                 myV3dZ;
-  
-  QRubberBand*			myRubberBand;
-  QPoint			myStartPoint;
-  QPoint			myCurrentPoint;
+
   
   double			myPrecision;
   double			myViewPrecision;
@@ -271,7 +256,7 @@ private: // members
   
   bool                          showGrid;
 
-  CurrentInteractionMode        cimode_;
+//  CurrentInteractionMode        cimode_;
 
   // data for measure points
   std::shared_ptr<insight::cad::Vector> measpts_p1_, measpts_p2_;
@@ -303,10 +288,10 @@ private: // methods
      const bool multi = false 
      );
 
-  AIS_StatusOfPick inputEvent( const bool multi = false );
-  AIS_StatusOfDetection	moveEvent ( const QPoint point );
+//  AIS_StatusOfPick inputEvent( const bool multi = false );
+//  AIS_StatusOfDetection	moveEvent ( const QPoint point );
   
-  void setMode( const CurrentAction3d mode );
+//  void setMode( const CurrentAction3d mode );
     
   Standard_Real precision( Standard_Real aReal );
   Standard_Real viewPrecision( bool resized = false );

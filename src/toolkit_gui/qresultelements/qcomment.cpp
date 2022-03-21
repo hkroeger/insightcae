@@ -9,10 +9,10 @@ namespace insight
 {
 
 defineType(QComment);
-addToFactoryTable(QResultElement, QComment);
+addToFactoryTable(IQResultElement, QComment);
 
 QComment::QComment(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-    : QResultElement(parent, label, rep)
+    : IQResultElement(parent, label, rep)
 {
 
 }
@@ -39,7 +39,7 @@ QVariant QComment::previewInformation(int role) const
 
 void QComment::createFullDisplay(QVBoxLayout* layout)
 {
-  QResultElement::createFullDisplay(layout);
+  IQResultElement::createFullDisplay(layout);
   te_=new QTextEdit;
   te_->setReadOnly(true);
   te_->setFrameShape(QFrame::NoFrame);
@@ -48,7 +48,7 @@ void QComment::createFullDisplay(QVBoxLayout* layout)
 
 void QComment::resetContents(int width, int height)
 {
-  QResultElement::resetContents(width, height);
+  IQResultElement::resetContents(width, height);
   auto comment = resultElementAs<insight::Comment>();
   te_->setHtml(QString::fromStdString( SimpleLatex(comment->value()).toHTML(width) ));
 }

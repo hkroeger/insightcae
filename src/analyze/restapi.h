@@ -3,13 +3,13 @@
 
 #include "boost/thread.hpp"
 #include "base/analysis.h"
+#include "base/analysisthread.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
 
 #include <Wt/WServer.h>
 #include <Wt/WResource.h>
 
 #include "Wt/Json/Object.h"
-
 
 
 class AnalyzeRESTServer
@@ -22,6 +22,7 @@ class AnalyzeRESTServer
 
   boost::mutex mx_;
   std::deque<insight::ProgressState> recordedStates_;
+  std::deque<std::string> logLines_;
 
   typedef
     boost::variant<
@@ -37,13 +38,15 @@ class AnalyzeRESTServer
   };
   std::deque<ProgressState> recordedProgressStates_;
 
+  std::shared_ptr<insight::Exception> exception_;
   insight::ResultSetPtr results_;
   std::string* inputFileContents_;
 
   boost::condition_variable wait_cv_;
 
-  double nextStateInfo(Wt::Json::Object& ro);
-  void nextProgressInfo(Wt::Json::Object& ro);
+  std::pair<double,Wt::Json::Object> nextStateInfo();
+  Wt::Json::Object nextProgressInfo();
+  Wt::WString nextLogLine();
 
 public:
   AnalyzeRESTServer(
@@ -55,8 +58,10 @@ public:
   void setAnalysis(insight::Analysis* a);
   void setSolverThread(insight::AnalysisThread* at);
   void setResults(insight::ResultSetPtr results);
+  void setException(const insight::Exception& ex);
 
   void update( const insight::ProgressState& pi ) override;
+  void logMessage(const std::string& line) override;
   void setActionProgressValue(const std::string &path, double value) override;
   void setMessageText(const std::string &path, const std::string& message) override;
   void finishActionProgress(const std::string &path) override;

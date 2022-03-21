@@ -4,7 +4,7 @@
 
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
-
+#include "pimplesettings__PIMPLESettings__Parameters_headers.h"
 
 namespace insight
 {
@@ -59,7 +59,7 @@ pressure_velocity_coupling = selectablesubset {{
   residual_p = double 0.001 "target pressure residual"
   residual_U = double 0.001 "target velocity residual"
 
-  relaxation_p = double 0.8 "pressure relaxation factor"
+  relaxation_p = double 0.3 "pressure relaxation factor"
   relaxation_U = double 0.8 "velocity relaxation factor"
   relaxation_e = double 0.8 "energy relaxation factor"
   relaxation_turb = double 0.8 "turbulence quantity relaxation factor"

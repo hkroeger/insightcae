@@ -83,7 +83,7 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
     f.setPointSize(fs);
     QFontMetrics fm(f);
     sizehint_=QSize(
-          3*fm.width("abcdefghijklmnopqrstuvwxyz_-+*"),
+          3*fm.horizontalAdvance("abcdefghijklmnopqrstuvwxyz_-+*"),
           fm.height()
         );
 
@@ -124,7 +124,7 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
 
 ISCADModel::~ISCADModel()
 {
-//     bgparsethread_.stop();
+    bgparsethread_.quit();
     bgparsethread_.wait();
 }
 
@@ -250,7 +250,7 @@ void ISCADModel::onEditorSelectionChanged()
       insight::cad::FeaturePtr fp=syn_elem_dir_->findElement( textCursor().position() );
       if (fp)
       {
-        emit focus(fp->buildVisualization());
+        emit focus(Handle_AIS_Shape(new AIS_Shape(fp->shape())));
       }
       else
       {
@@ -355,17 +355,21 @@ void ISCADModel::populateClipPlaneMenu(QMenu* clipplanemenu, QoccViewWidget* vie
             {
                 QAction *act = new QAction( v.first.c_str(), this );
                 
-                QSignalMapper *signalMapper = new QSignalMapper(this);
-                signalMapper->setMapping( act, reinterpret_cast<QObject*>(d.get()) );
-                connect
-                    (
-                      signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
-                      viewer, &QoccViewWidget::onSetClipPlane
-                    );
+//                QSignalMapper *signalMapper = new QSignalMapper(this);
+//                signalMapper->setMapping( act, reinterpret_cast<QObject*>(d.get()) );
+//                connect
+//                    (
+//                      signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
+//                      viewer, &QoccViewWidget::onSetClipPlane
+//                    );
                 connect
                     (
                       act, &QAction::triggered,
-                      signalMapper, QOverload<>::of(&QSignalMapper::map)
+//                      signalMapper, QOverload<>::of(&QSignalMapper::map)
+                      [d,&viewer]()
+                      {
+                        viewer->onSetClipPlane(reinterpret_cast<QObject*>(d.get()));
+                      }
                     );
                 clipplanemenu->addAction(act);
                 
@@ -582,23 +586,33 @@ void ISCADModel::showEditorContextMenu(const QPoint& pt)
         insight::cad::FeaturePtr fp=syn_elem_dir_->findElement(po);
         if (fp)
         {
-            QSignalMapper *signalMapper = new QSignalMapper(this);
-            QAction *act=NULL;
+//            QSignalMapper *signalMapper = new QSignalMapper(this);
+            QAction *act=nullptr;
 
             insight::cad::Feature* fpp=fp.get();
+
+            std::function<void()> slotFunction;
             if (insight::cad::Sketch* sk=dynamic_cast<insight::cad::Sketch*>(fpp))
             {
                 act=new QAction("Edit Sketch...", this);
-                signalMapper->setMapping(act, reinterpret_cast<QObject*>(sk));
-                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
-                        this, &ISCADModel::editSketch);
+                slotFunction=[this,sk]()
+                {
+                  this->editSketch(reinterpret_cast<QObject*>(sk));
+                };
+//                signalMapper->setMapping(act, reinterpret_cast<QObject*>(sk));
+//                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
+//                        this, &ISCADModel::editSketch);
             }
             else if (insight::cad::ModelFeature* mo=dynamic_cast<insight::cad::ModelFeature*>(fpp))
             {
                 act=new QAction("Edit Model...", this);
-                signalMapper->setMapping(act, reinterpret_cast<QObject*>(mo));
-                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
-                        this, &ISCADModel::editModel);
+                slotFunction=[this,mo]()
+                {
+                  this->editSketch(reinterpret_cast<QObject*>(mo));
+                };
+//                signalMapper->setMapping(act, reinterpret_cast<QObject*>(mo));
+//                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
+//                        this, &ISCADModel::editModel);
             }
             else
             {
@@ -608,7 +622,8 @@ void ISCADModel::showEditorContextMenu(const QPoint& pt)
             if (act)
             {
                 connect(act, &QAction::triggered,
-                        signalMapper, QOverload<>::of(&QSignalMapper::map));
+                        /*signalMapper, QOverload<>::of(&QSignalMapper::map)*/
+                        slotFunction );
                 menu->addSeparator();
                 menu->addAction(act);
             }
@@ -791,15 +806,15 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 
     model_->connectModelTree(modeltree_);
 
-    connect(modeltree_, &QModelTree::show,
-            viewer_, &QoccViewWidget::onShow/*(QDisplayableModelTreeItem*)*/);
-    connect(modeltree_, &QModelTree::hide/*(QDisplayableModelTreeItem*)*/,
+    connect(modeltree_, &QModelTree::showItem,
+            viewer_, &QoccViewWidget::onShow);
+    connect(modeltree_, &QModelTree::hideItem,
             viewer_, &QoccViewWidget::onHide);
-    connect(modeltree_, &QModelTree::setDisplayMode/*(QDisplayableModelTreeItem*, AIS_DisplayMode)*/,
+    connect(modeltree_, &QModelTree::setDisplayMode,
             viewer_, &QoccViewWidget::onSetDisplayMode);
-    connect(modeltree_, &QModelTree::setColor/*(QDisplayableModelTreeItem*, Quantity_Color)*/,
+    connect(modeltree_, &QModelTree::setColor,
             viewer_, &QoccViewWidget::onSetColor);
-    connect(modeltree_, &QModelTree::setResolution/*(QDisplayableModelTreeItem*, double)*/,
+    connect(modeltree_, &QModelTree::setItemResolution,
             viewer_, &QoccViewWidget::onSetResolution);
 
     connect(modeltree_, &QModelTree::focus,
@@ -817,7 +832,7 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     connect(model_, &ISCADModel::updateTitle,
             this, &ISCADModelEditor::onUpdateTitle);
 
-    connect(viewer_, &QoccViewWidget::addEvaluationToModel/*(QString,insight::cad::PostprocActionPtr, bool)*/,
+    connect(viewer_, &QoccViewWidget::addEvaluationToModel,
             modeltree_, &QModelTree::onAddEvaluation);
 
     connect(viewer_, &QoccViewWidget::insertNotebookText,

@@ -51,6 +51,7 @@
 #include "MeshVS_ElementalColorPrsBuilder.hxx"
 #include "MeshVS_Drawer.hxx"
 #include "MeshVS_DrawerAttribute.hxx"
+#include "gp_Sphere.hxx"
 
 #include "base/tools.h"
 #include "base/boost_include.h"
@@ -161,12 +162,14 @@ void STL::build()
 
   if (!cache.contains(hash()))
   {
+    CurrentExceptionContext ex("reading STL geometry");
+
     vtkSmartPointer<vtkPolyData> pd;
 
     if (const auto* fname = boost::get<boost::filesystem::path>(&geometry_))
     {
       vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
-      stl->SetFileName(fname->c_str());
+      stl->SetFileName(fname->string().c_str());
       stl->Update();
       pd=stl->GetOutput();
     }
@@ -188,32 +191,50 @@ void STL::build()
     tri->Update();
 
     vtkPolyData *split_mesh = tri->GetOutput();
-    aSTLMesh_ =
-        new Poly_Triangulation
-        (
-          split_mesh->GetNumberOfPoints(),
-          split_mesh->GetNumberOfCells(),
-          Standard_False
-          );
 
-    for (vtkIdType i = 0; i < split_mesh->GetNumberOfPoints(); i++)
     {
-      double xyz[3];
-      split_mesh->GetPoint(i, xyz);
-      aSTLMesh_->ChangeNode (i+1) = gp_Pnt(xyz[0], xyz[1], xyz[2]);
-    }
+      CurrentExceptionContext ex("creating Poly_Triangulation");
 
-    for (vtkIdType i = 0; i < split_mesh->GetNumberOfCells(); i++)
-    {
-      vtkCell *c = split_mesh->GetCell(i);
-      insight::assertion( c->GetNumberOfPoints()==3, "STL mesh cell needs to have exactly 3 corners");
-      aSTLMesh_->ChangeTriangle (i + 1) =
-          Poly_Triangle
+      aSTLMesh_ =
+          new Poly_Triangulation
           (
-            c->GetPointId(0)+1,
-            c->GetPointId(1)+1,
-            c->GetPointId(2)+1
+            split_mesh->GetNumberOfPoints(),
+            split_mesh->GetNumberOfCells(),
+            Standard_False
             );
+
+      for (vtkIdType i = 0; i < split_mesh->GetNumberOfPoints(); i++)
+      {
+        double xyz[3];
+        split_mesh->GetPoint(i, xyz);
+        aSTLMesh_->
+#if OCC_VERSION_MAJOR<7
+            ChangeNodes().ChangeValue(i+1)
+#else
+            ChangeNode (i+1)
+#endif
+            = gp_Pnt(xyz[0], xyz[1], xyz[2]);
+      }
+
+      for (vtkIdType i = 0; i < split_mesh->GetNumberOfCells(); i++)
+      {
+        vtkCell *c = split_mesh->GetCell(i);
+        insight::assertion( c->GetNumberOfPoints()==3, "STL mesh cell needs to have exactly 3 corners");
+        aSTLMesh_->
+#if OCC_VERSION_MAJOR<7
+            ChangeTriangles().ChangeValue(i+1)
+#else
+            ChangeTriangle(i+1)
+#endif
+
+            =
+            Poly_Triangle
+            (
+              c->GetPointId(0)+1,
+              c->GetPointId(1)+1,
+              c->GetPointId(2)+1
+              );
+      }
     }
 
     // transform points, if required
@@ -228,22 +249,41 @@ void STL::build()
     }
     if (tr)
     {
+      CurrentExceptionContext ex("applying transformation");
+
       for (int i=1; i<=aSTLMesh_->NbNodes();i++)
       {
-        aSTLMesh_->ChangeNode(i).Transform(*tr);
+        aSTLMesh_->
+#if OCC_VERSION_MAJOR<7
+            ChangeNodes().ChangeValue(i)
+#else
+            ChangeNode(i)
+#endif
+            .Transform(*tr);
       }
     }
 
 
     // get bounding box
     Bnd_Box bb;
-    for (int i=1; i<=aSTLMesh_->NbNodes();i++)
     {
-      bb.Add(aSTLMesh_->Node(i));
+      CurrentExceptionContext ec("computing STL bounding box");
+      for (int i=1; i<=aSTLMesh_->NbNodes();i++)
+      {
+        bb.Add(aSTLMesh_->
+#if OCC_VERSION_MAJOR<7
+               Nodes().Value(i)
+#else
+               Node(i)
+#endif
+               );
+      }
     }
 
     if (!bb.IsVoid())
     {
+      CurrentExceptionContext ex("creating TopoDS_Shape");
+
       double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
       gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
 
@@ -258,6 +298,8 @@ void STL::build()
     }
     else
     {
+      CurrentExceptionContext ex("insert proxy geometry in place of empty STL");
+
       // just insert some non-void geometry
       setShape(BRepPrimAPI_MakeSphere(1).Shape());
     }
@@ -271,12 +313,6 @@ void STL::build()
   }
 }
 
-
-Handle_AIS_InteractiveObject STL::buildVisualization() const
-{
-  Handle_AIS_InteractiveObject as( new AIS_Shape(shape()) );
-  return as;
-}
 
 
 

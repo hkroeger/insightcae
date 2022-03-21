@@ -10,6 +10,8 @@ ISMetaTypeRegistrator::ISMetaTypeRegistrator()
   qRegisterMetaType<insight::TaskSpoolerInterface::JobList>("insight::TaskSpoolerInterface::JobList");
   qRegisterMetaType<arma::mat>("arma::mat");
   qRegisterMetaType<std::exception_ptr>("std::exception_ptr");
+  qRegisterMetaType<insight::supplementedInputDataBasePtr>("insight::supplementedInputDataBasePtr");
+
 }
 
 

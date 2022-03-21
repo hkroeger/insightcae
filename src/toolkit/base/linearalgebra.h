@@ -34,8 +34,26 @@
 
 // #define SIGN(x) ((x)<0.0?-1.0:1.0)
 
+namespace std
+{
+
+/**
+ * @brief operator <
+ * required for using amra::mat as key in STL containers
+ * @param v1
+ * @param v2
+ * @return
+ */
+bool operator<(const arma::mat& v1, const arma::mat& v2);
+
+}
+
 namespace insight 
 {
+
+extern const double SMALL;
+extern const double LSMALL;
+
 
 class GSLExceptionHandling
 {
@@ -51,6 +69,7 @@ public:
 arma::mat vec1(double x);
 arma::mat vec2(double x, double y);
 arma::mat vec3(double x, double y, double z);
+arma::mat normalized(const arma::mat& vec);
 
 arma::mat tensor3(
   double xx, double xy, double xz,
@@ -102,6 +121,8 @@ arma::mat vec3(const T& t)
   rt << t.X() <<arma::endr<< t.Y() <<arma::endr<< t.Z() << arma::endr;
   return rt;
 }
+
+bool operator!=(const arma::mat& m1, const arma::mat& m2);
 
 
 // ====================================================================================
@@ -193,7 +214,9 @@ public:
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 double nonlinearSolve1D(const std::function<double(double)>& model, double x_min, double x_max);
 double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max);
+double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max);
 arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol=1e-3, const arma::mat& steps = arma::mat());
+arma::mat nonlinearMinimizeND(const std::function<double(const arma::mat&)>& model, const arma::mat& x0, double tol=1e-3, const arma::mat& steps = arma::mat());
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
 
@@ -321,15 +344,15 @@ double integrate(F f, double a, double b)
 /**
  * computes the definite integral over f from a to b numerically using trapez rule
  */
-template<class F>
-double integrate_trpz(F f, double a, double b, int n=20)
+template<class T, class F>
+T integrate_trpz(F f, double a, double b, int n=20)
 {
-  double res=0.;
+  T res=0.;
 
-  double dx=(b-a)/double(n-1);
+  double dx=(b-a)/double(n);
   for (int i=0; i<n; i++)
   {
-      double x = a+ dx*(double(i)+0.5);
+      double x = a + dx*(double(i)+0.5);
       res+=f(x)*dx;
   }
   return res;
@@ -365,11 +388,6 @@ double integrate_indef(F f, double a=0)
 
   return result;
 }
-
-struct compareArmaMat 
-{
-  bool operator()(const arma::mat& v1, const arma::mat& v2) const;
-};
 
 struct CoordinateSystem
 {

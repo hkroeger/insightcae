@@ -3,6 +3,9 @@
 
 #include "openfoam/caseelements/basic/transportmodel.h"
 
+#include "singlephasetransportmodel__singlePhaseTransportProperties__Parameters_headers.h"
+
+
 namespace insight {
 
 

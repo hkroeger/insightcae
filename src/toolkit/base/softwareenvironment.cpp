@@ -101,7 +101,7 @@ void SoftwareEnvironment::executeCommand
   std::vector<std::string> errout;
   job->runAndTransferOutput(output, &errout);
 
-  auto retcode = job->process->exit_code();
+  auto retcode = job->process().exit_code();
   if (retcode!=0)
   {
     throw insight::Exception(
@@ -109,7 +109,7 @@ void SoftwareEnvironment::executeCommand
              "Execution of external application \"%s\" failed with return code %d!\n")
               % finalcmd % retcode)
           + ( errout.size()>0 ?
-               ("Error output was:\n\n" + boost::join(errout, "\n")+"\n")
+               ("Error output was:\n " + boost::join(errout, "\n ")+"\n")
                :
                "There was no error output."
              )
@@ -197,7 +197,7 @@ JobPtr SoftwareEnvironment::forkCommand
 
   std::vector<std::string> args(argv.begin()+1, argv.end());
 
-  return forkExternalProcess(argv[0], args);
+  return Job::forkExternalProcess(argv[0], args);
 }
 
 }

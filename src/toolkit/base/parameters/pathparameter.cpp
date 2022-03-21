@@ -51,11 +51,35 @@ PathParameter::PathParameter(
 {}
 
 
+bool PathParameter::isDifferent(const Parameter& p) const
+{
+  if (const auto *pp = dynamic_cast<const PathParameter*>(&p))
+  {
+    if (pp->originalFilePath()!=originalFilePath())
+      return true;
+
+    if (isPacked())
+    {
+      if (!pp->isPacked())
+        return true;
+
+      if (!(pp->contentModificationTime()==contentModificationTime()))
+        return true;
+
+      if (pp->contentBufferSize()!=contentBufferSize())
+        return true;
+    }
+
+    return false;
+  }
+  else
+    return true;
+}
 
 
 std::string PathParameter::latexRepresentation() const
 {
-    return SimpleLatex( valueToString ( originalFilePath_ ) ).toLaTeX();
+    return SimpleLatex( originalFilePath_.string() ).toLaTeX();
 }
 
 
@@ -63,7 +87,7 @@ std::string PathParameter::latexRepresentation() const
 
 std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 {
-  return SimpleLatex( valueToString ( originalFilePath_ ) ).toPlainText();
+  return SimpleLatex( originalFilePath_.string() ).toPlainText();
 }
 
 
@@ -143,6 +167,7 @@ rapidxml::xml_node<>* PathParameter::appendToNode
   boost::filesystem::path inputfilepath
 ) const
 {
+    insight::CurrentExceptionContext ex("appending path "+name+" to node "+node.name());
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 
@@ -306,7 +331,7 @@ rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, 
     child->append_attribute(doc.allocate_attribute
     (
       "value",
-      doc.allocate_string(originalFilePath_.c_str())
+      doc.allocate_string(originalFilePath_.string().c_str())
     ));
     return child;
 }

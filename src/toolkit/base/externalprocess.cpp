@@ -1,13 +1,55 @@
 #include "externalprocess.h"
 #include "base/exception.h"
 
-#include <boost/asio.hpp>
 #include <boost/process/async.hpp>
 #include <boost/asio/steady_timer.hpp>
 
 namespace bp = boost::process;
 
 namespace insight {
+
+
+
+ExternalProcess::ExternalProcess()
+{}
+
+
+ExternalProcess::ExternalProcess(std::unique_ptr<boost::process::child> process)
+    : process_(std::move(process))
+{}
+
+ExternalProcess::~ExternalProcess()
+{
+    if (isRunning())
+    {
+        process_->terminate();
+        wait();
+    }
+}
+
+
+
+void ExternalProcess::wait()
+{
+    if (process_)
+    {
+        process_->wait();
+    }
+}
+
+
+
+bool ExternalProcess::isRunning() const
+{
+    return process_ && process_->running();
+}
+
+const boost::process::child &ExternalProcess::process() const
+{
+    return *process_;
+}
+
+
 
 
 
@@ -69,34 +111,33 @@ Job::Job()
 
 void Job::runAndTransferOutput
 (
-    std::vector<std::string>* stdout,
-    std::vector<std::string>* stderr
+    std::vector<std::string>* stdoutbuffer,
+    std::vector<std::string>* stderrbuffer
 )
 {
 
   ios_run_with_interruption(
-        [stdout](const std::string& line)
+        [stdoutbuffer](const std::string& line)
         {
           std::cout<<line<<std::endl;
-          if (stdout) stdout->push_back(line);
+          if (stdoutbuffer) stdoutbuffer->push_back(line);
         },
-        [stdout,stderr](const std::string& line)
+        [stdoutbuffer,stderrbuffer](const std::string& line)
         {
           // mirror to console
           std::cout<<"[E] "<<line<<std::endl;
-          if (stderr)
+          if (stderrbuffer)
           {
-            stderr->push_back(line);
+            stderrbuffer->push_back(line);
           }
-          else
+          else if (stdoutbuffer)
           {
-            if (stdout)
-              stdout->push_back("[E] "+line);
+              stdoutbuffer->push_back("[E] "+line);
           }
         }
   );
 
-  process->wait(); // exit code is not set correctly, if this is skipped
+  process_->wait(); // exit code is not set correctly, if this is skipped
 }
 
 
@@ -120,12 +161,12 @@ void Job::ios_run_with_interruption(
     }
     catch (const boost::thread_interrupted& i)
     {
-      process->terminate();
+      process_->terminate();
       throw i;
     }
 
     t.expires_from_now(std::chrono::seconds( 1 ));
-    if (process->running())
+    if (process_->running())
       t.async_wait(interruption_handler);
    };
   interruption_handler({});
@@ -135,38 +176,45 @@ void Job::ios_run_with_interruption(
 
 
 
-JobPtr forkExternalProcess
+void Job::forkExternalProcess
+(
+    JobPtr job,
+    std::unique_ptr<boost::process::child> child
+)
+{
+  job->process_ = std::move(child);
+  if (!job->process_->running())
+  {
+   throw insight::Exception(
+                "launching of external application as subprocess failed!\n"
+             );
+  }
+}
+
+
+
+
+JobPtr Job::forkExternalProcess
 (
     const std::string& cmd,
     std::vector<std::string> argv
 )
 {
+  insight::CurrentExceptionContext ex("launch external command \""+cmd+"\"");
   auto job = std::make_shared<Job>();
-
-  job->process.reset(
-        new bp::child(
-           bp::search_path(cmd),
-           bp::args( argv ),
-           bp::std_in < job->in,
-           bp::std_out > job->out,
-           bp::std_err > job->err
+  forkExternalProcess(
+        job,
+        std::make_unique<boost::process::child>(
+          bp::search_path(cmd),
+          bp::args( argv ),
+          bp::std_in < job->in,
+          bp::std_out > job->out,
+          bp::std_err > job->err
           )
         );
-
-  if (!job->process->running())
-  {
-    //throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess!\n(Command was \""+dbgs.str()+"\")");
-    throw insight::Exception(
-              boost::str(boost::format(
-                 "Launching of external application \"%s\" as subprocess failed!\n")
-                  % cmd)
-              );
-  }
-
-  std::cout<<"Executing "<<cmd<<std::endl;
-
   return job;
 }
+
 
 
 } // namespace insight

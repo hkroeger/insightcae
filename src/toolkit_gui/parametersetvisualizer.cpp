@@ -1,3 +1,5 @@
+#include <QDebug>
+
 #include "parametersetvisualizer.h"
 #include "cadfeature.h"
 #include "qoccviewwidget.h"
@@ -8,89 +10,234 @@
 namespace insight
 {
 
-CAD_ParameterSet_Visualizer::UsageTracker::UsageTracker(QModelTree* mt)
-  : mt_(mt)
-{
-  mt->getFeatureNames(removedFeatures_);
-  mt->getDatumNames(removedDatums_);
-}
-
-
-void CAD_ParameterSet_Visualizer::UsageTracker::cleanupModelTree()
-{
-  for (const std::string& sn: removedFeatures_)
-  {
-    mt_->onRemoveFeature( QString::fromStdString(sn) );
-  }
-  for (const std::string& sn: removedDatums_)
-  {
-    mt_->onRemoveDatum( QString::fromStdString(sn) );
-  }
-}
 
 
 void CAD_ParameterSet_Visualizer::addDatum(const std::string& name, insight::cad::DatumPtr dat)
 {
-  auto i=ut_->removedDatums_.find(name);
-  ut_->mt_->onAddDatum(QString::fromStdString(name), dat);
-  if (i!=ut_->removedDatums_.end()) ut_->removedDatums_.erase(i);
+  CurrentExceptionContext ec("adding visualizer datum "+name);
+  Q_EMIT createdDatum(QString::fromStdString(name), dat);
 }
 
-void CAD_ParameterSet_Visualizer::addFeature(const std::string& name, insight::cad::FeaturePtr feat, DisplayStyle ds)
+void CAD_ParameterSet_Visualizer::addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds)
 {
-  auto i=ut_->removedFeatures_.find(name);
-  QString qname = QString::fromStdString(name);
-  ut_->mt_->onAddFeature
-      (
-        qname,
-        feat,
-        true
-      );
-  if (ds == Wireframe)
-  {
-    ut_->mt_->findFeature(qname, true)->wireframe();
-  }
-  if (i!=ut_->removedFeatures_.end()) ut_->removedFeatures_.erase(i);
+  CurrentExceptionContext ec("adding visualizer feature "+name);
+  Q_EMIT createdFeature( QString::fromStdString(name), feat, true, ds );
 }
 
 void CAD_ParameterSet_Visualizer::update(const ParameterSet& ps)
 {
+  CurrentExceptionContext ex("setting parameters for parameter set visualizer");
+
   ParameterSet_Visualizer::update(ps);
-  Q_EMIT GUINeedsUpdate();
+  Q_EMIT launchVisualizationCalculation();
 }
 
-void CAD_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void CAD_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  ut_=ut;
 }
 
 
-cad::FeaturePtr CAD_ParameterSet_Visualizer::feature(const std::string& name)
+
+CAD_ParameterSet_Visualizer::CAD_ParameterSet_Visualizer()
 {
-  if (auto* fi =
-      dynamic_cast<QFeatureItem*>(
-        ut_->mt_->findFeature(QString::fromStdString(name), true)
-        )
-      )
+  moveToThread(&asyncRebuildThread_);
+  asyncRebuildThread_.start();
+
+  connect(
+        this,
+        &CAD_ParameterSet_Visualizer::launchVisualizationCalculation,
+        this,
+        &CAD_ParameterSet_Visualizer::visualizeScheduledParameters );
+}
+
+CAD_ParameterSet_Visualizer::~CAD_ParameterSet_Visualizer()
+{
+  asyncRebuildThread_.quit();
+  dbg()<<"waiting for visualizer thread to finish..."<<std::endl;
+  asyncRebuildThread_.wait();
+}
+
+
+void CAD_ParameterSet_Visualizer::visualizeScheduledParameters()
+{
+  std::unique_lock<std::mutex> lck(vis_mtx_, std::defer_lock);
+
+  CurrentExceptionContext ex("computing visualization of scheduled parameter set");
+
+  if (lck.try_lock())
   {
-    return fi->solidmodelPtr();
+    if (selectScheduledParameters())
+    {
+      try
+      {
+        CurrentExceptionContext ex("recreate visualization elements");
+
+        Q_EMIT beginRebuild();
+
+        recreateVisualizationElements();
+
+        Q_EMIT finishedRebuild();
+
+        insight::cad::cache.printSummary(std::cout);
+      }
+      catch (insight::Exception& e)
+      {
+        cerr<<"Warning: could not rebuild visualization."
+              " Error was:"<<e
+           <<endl;
+      }
+
+      clearScheduledParameters();
+    }
+    Q_EMIT visualizationCalculationFinished();
   }
-  return cad::FeaturePtr();
+
 }
 
-void CAD_ParameterSet_Visualizer::replaceFeature(const std::string& name, insight::cad::FeaturePtr newModel)
+
+
+
+Multi_CAD_ParameterSet_Visualizer::Multi_CAD_ParameterSet_Visualizer()
+{}
+
+
+
+
+void Multi_CAD_ParameterSet_Visualizer::registerVisualizer(CAD_ParameterSet_Visualizer* vis)
 {
-  if (auto* fi =
-      dynamic_cast<QFeatureItem*>(
-        ut_->mt_->findFeature(QString::fromStdString(name), true)
-        )
-      )
+  CurrentExceptionContext ex("registering visualizer");
+
+  visualizers_.insert(vis);
+
+  disconnect(vis, &CAD_ParameterSet_Visualizer::launchVisualizationCalculation, 0, 0);
+
+  connect(
+        vis,
+        &CAD_ParameterSet_Visualizer::launchVisualizationCalculation,
+        this,
+        &CAD_ParameterSet_Visualizer::visualizeScheduledParameters );
+
+  connect(
+        vis,
+        &CAD_ParameterSet_Visualizer::visualizationCalculationFinished,
+        this,
+        &Multi_CAD_ParameterSet_Visualizer::onSubVisualizationCalculationFinished );
+
+
+//  connect(vis, &IQISCADModelContainer::beginRebuild,
+//          this, &IQISCADModelContainer::beginRebuild );
+
+  connect(vis, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelContainer::createdVariable),
+          this, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelContainer::createdVariable) );
+  connect(vis, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelContainer::createdVariable),
+          this, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelContainer::createdVariable) );
+  connect(vis, &IQISCADModelContainer::createdFeature,
+          this, &IQISCADModelContainer::createdFeature);
+  connect(vis, &IQISCADModelContainer::createdDatum,
+          this, &IQISCADModelContainer::createdDatum);
+  connect(vis, &IQISCADModelContainer::createdEvaluation,
+          this, &IQISCADModelContainer::createdEvaluation );
+
+  connect(vis, &IQISCADModelContainer::removedScalar,
+          this, &IQISCADModelContainer::removedScalar);
+  connect(vis, &IQISCADModelContainer::removedVector,
+          this, &IQISCADModelContainer::removedVector);
+  connect(vis, &IQISCADModelContainer::removedFeature,
+          this, &IQISCADModelContainer::removedFeature);
+  connect(vis, &IQISCADModelContainer::removedDatum,
+          this, &IQISCADModelContainer::removedDatum);
+  connect(vis, &IQISCADModelContainer::removedEvaluation,
+          this, &IQISCADModelContainer::removedEvaluation);
+
+//  connect(vis, &IQISCADModelContainer::finishedRebuild,
+//          this, &IQISCADModelContainer::removeNonRecreatedSymbols);
+}
+
+
+
+
+void Multi_CAD_ParameterSet_Visualizer::unregisterVisualizer(CAD_ParameterSet_Visualizer* vis)
+{
+  disconnect(vis, &CAD_ParameterSet_Visualizer::launchVisualizationCalculation, 0, 0);
+  disconnect(vis, &CAD_ParameterSet_Visualizer::visualizationCalculationFinished, 0, 0);
+
+  // reconnect internally
+  connect(
+        vis,
+        &CAD_ParameterSet_Visualizer::launchVisualizationCalculation,
+        vis,
+        &CAD_ParameterSet_Visualizer::visualizeScheduledParameters );
+
+  visualizers_.erase(vis);
+}
+
+int Multi_CAD_ParameterSet_Visualizer::size() const
+{
+  return visualizers_.size();
+}
+
+
+
+
+void Multi_CAD_ParameterSet_Visualizer::recreateVisualizationElements()
+{
+  CurrentExceptionContext ex("re-creating all visualization elements");
+
+  finishedVisualizers_.clear();
+
+  for (auto& vis: visualizers_)
   {
-    return fi->replaceFeature(newModel);
+    try
+    {
+      vis->currentParameters(); // might fail, because some visualizers did not yet received parameters
+    }
+    catch (insight::Exception& e)
+    {
+      continue;
+    }
+
+    vis->recreateVisualizationElements();
   }
-  else
+}
+
+bool Multi_CAD_ParameterSet_Visualizer::hasScheduledParameters() const
+{
+  bool any=false;
+  for (auto& vis: visualizers_)
   {
-    throw insight::Exception("There is no feature named "+name+", which could be replaced!");
+    any=any || vis->hasScheduledParameters();
+  }
+  return any;
+}
+
+
+bool Multi_CAD_ParameterSet_Visualizer::selectScheduledParameters()
+{
+  bool any=false;
+  for (auto& vis: visualizers_)
+  {
+    if (vis->hasScheduledParameters()) vis->clearScheduledParameters();
+    any=any || vis->selectScheduledParameters();
+  }
+  return any;
+}
+
+void Multi_CAD_ParameterSet_Visualizer::clearScheduledParameters()
+{
+//  for (auto& vis: visualizers_)
+//  {
+//    vis->clearScheduledParameters();
+//  }
+}
+
+
+void Multi_CAD_ParameterSet_Visualizer::onSubVisualizationCalculationFinished()
+{
+  finishedVisualizers_.insert(
+        qobject_cast<CAD_ParameterSet_Visualizer*>(sender()) );
+  if (finishedVisualizers_.size()==visualizers_.size())
+  {
+    Q_EMIT visualizationCalculationFinished();
   }
 }
 

@@ -19,9 +19,12 @@ protected:
 public:
     CombinedProgressDisplayer ( Ops op = AND );
 
+    void setOp(Ops op);
+
     void add ( ProgressDisplayer* );
 
     void update ( const ProgressState& pi ) override;
+    void logMessage(const std::string& line) override;
     void setActionProgressValue(const std::string& path, double value) override;
     void setMessageText(const std::string& path, const std::string& message) override;
     void finishActionProgress(const std::string& path) override;

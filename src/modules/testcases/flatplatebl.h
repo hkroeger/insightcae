@@ -63,6 +63,7 @@ operation=set
 fluid = set 
 {
   nu = double 1.8e-5 "[m^2/s] Viscosity of the fluid"
+  turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 } "Parameters of the fluid"
 
 run = set 
@@ -100,6 +101,18 @@ eval = set
 */
   
 protected:
+
+
+  struct supplementedInputData
+      : public supplementedInputDataDerived<Parameters>
+  {
+
+    supplementedInputData(
+        std::unique_ptr<Parameters> pPtr,
+        const boost::filesystem::path& workDir,
+        ProgressDisplayer& progress = consoleProgressDisplayer
+        );
+
 #ifndef SWIG
     const static std::vector<double> sec_locs_;
 #endif
@@ -156,20 +169,33 @@ protected:
     std::string in_, /*out_, top_*/out_top_, cycl_prefix_, approach_, trip_;
     inline std::string tripMaster() const { return trip_+"_master"; }
     inline std::string tripSlave() const { return trip_+"_slave"; }
-  
-  /**
-   * number of profiles for homogeneous averages
-   */
-  int n_hom_avg_=10;
+
+    /**
+     * number of profiles for homogeneous averages
+     */
+    int n_hom_avg_=10;
+  };
+
+#ifndef SWIG
+  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
+#endif
 
 public:
   declareType("Flat Plate Boundary Layer Test Case");
   
-  FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& exepath);
+  FlatPlateBL(
+          const ParameterSet& ps,
+          const boost::filesystem::path& exepath,
+          ProgressDisplayer& progress );
+
+  FlatPlateBL(
+          std::unique_ptr<supplementedInputData> p,
+          const boost::filesystem::path& exepath,
+          const std::string& name,
+          const std::string& description );
 
   static std::string category() { return "Validation Cases"; }
   
-  virtual void computeInitialLocation();
   virtual void calcDerivedInputData(ProgressDisplayer& progress);
   
   virtual void createInflowBC(OpenFOAMCase& cm, const OFDictData::dict& boundaryDict) const;
@@ -186,8 +212,7 @@ public:
     const FlatPlateBL::Parameters::eval_type::bc_extractsections_default_type* extract_section=NULL
   );  
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
-  
-  virtual Analysis* clone();
+
   
   /**
    * solves the function G(Alpha,D) numerically
@@ -227,6 +252,7 @@ public:
   
   static arma::mat integrateDelta123(const arma::mat& uByUinf_vs_y);
   static double searchDelta99(const arma::mat& uByUinf_vs_y);
+
 };
 
 }

@@ -53,14 +53,13 @@ void Image::writeLatexCode (
 {
   auto up=unpackFilePath(outputfilepath);
   if (needsUnpack(up))
-    copyTo(up);
+    copyTo(up, true);
 
-  //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
   f<<
       "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
-      << make_relative ( outputfilepath, up ).c_str() << "}\n"
+      << make_relative ( outputfilepath, up ).generic_path().string() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier"

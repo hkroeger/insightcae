@@ -13,7 +13,7 @@ set(guitest_SRCS
 set(guitest_LIBS
     toolkit_gui
     Qt5::Widgets
-    gas_dispersion
+    genericmodules
 )
 
 

@@ -9,6 +9,11 @@ enable_language (C)
 enable_language (CXX)
 enable_language (Fortran OPTIONAL)
 
+
+if(WIN32)
+ add_link_options(LINKER:--export-all-symbols)
+endif()
+
 enable_testing()
 
 if (DEFINED ENV{WM_PROJECT_VERSION})
@@ -18,8 +23,7 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 list(APPEND CMAKE_LIBRARY_PATH $ENV{INSIGHT_THIRDPARTYDIR}/lib)
 list(APPEND CMAKE_INCLUDE_PATH $ENV{INSIGHT_THIRDPARTYDIR}/include)
-#set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) # Relink needs to be avoided since it does not work for OF targets (multiple targets on a single file)
-#set(SKIP_BUILD_RPATH 1)
+
 
 OPTION(INSIGHT_BUILD_ADDONS "Build all present add-ons" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Install FreeCAD workbench" OFF)
@@ -35,8 +39,8 @@ OPTION(INSIGHT_BUILD_TESTS "Build all executables for testing" OFF)
 OPTION(INSIGHT_INSTALL_DESKTOP "Install MIME types and Desktop integration" ON)
 OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)
 
-set(INSIGHT_CHARTRENDERER "gnuplot" CACHE STRING "Select renderer for charts")
-set_property(CACHE INSIGHT_CHARTRENDERER PROPERTY STRINGS gnuplot matplotlib)
+OPTION(INSIGHT_GNUPLOT_CHARTRENDERER "Enable gnuplot for rendering charts" ON)
+OPTION(INSIGHT_MATPLOTLIB_CHARTRENDERER "Enable matplotlib for rendering charts" OFF)
 
 SET(INSIGHT_SUPERBUILD "" CACHE STRING "Path to superbuild (build directory). If set, use dependencies from that superbuild")
 
@@ -67,6 +71,8 @@ SET(INSIGHT_VERSION_MINOR "0")
 SET(INSIGHT_VERSION_PATCH "0")
 SET(INSIGHT_BRANCH "none")
 
+
+
 if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
     execute_process(
       COMMAND git describe
@@ -82,6 +88,15 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
        OUTPUT_VARIABLE INSIGHT_BRANCH
        OUTPUT_STRIP_TRAILING_WHITESPACE
      )
+     if (INSIGHT_BRANCH STREQUAL "HEAD")
+       execute_process(
+         COMMAND bash -c "basename $(git log -1 --pretty=%D|sed -e 's/,/\\n/g'|grep \"origin/\"|tail -n 1)"
+         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+         OUTPUT_VARIABLE INSIGHT_BRANCH
+         OUTPUT_STRIP_TRAILING_WHITESPACE
+       )
+     endif()
+     message(STATUS "InsightCAE git branch: ${INSIGHT_BRANCH}")
      message(STATUS "InsightCAE git describe: ${git-rev}")
      STRING(REGEX REPLACE
          "^([0-9]+)\\.([0-9]+)[-]*([^ ]+|)\$"
@@ -181,12 +196,15 @@ if (INSIGHT_BUILD_TOOLKIT)
 
     find_package(GSL REQUIRED)
 
-    find_package(PythonLibs REQUIRED)
+    find_package(PythonLibs)
+    if (NOT PYTHONLIBS_FOUND)
+        message(STATUS "No python libraries found - python analyses will be unavailable")
+    endif()
 
     # modifies Boost_LIBRARIES for some reason, put it first!
     find_package(wt)
 
-    find_package(Boost COMPONENTS
+    set(BOOST_COMPONENTS
         regex
         system
         filesystem
@@ -194,9 +212,13 @@ if (INSIGHT_BUILD_TOOLKIT)
         timer
         thread
         iostreams
-        python3
         program_options
-        REQUIRED
+        )
+    if (PYTHONLIBS_FOUND)
+        list(APPEND BOOST_COMPONENTS python3)
+    endif()
+
+    find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED
         )
 
     add_subdirectory(CMake/vtkTargets/vtkOffscreen)
@@ -743,6 +765,28 @@ macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(install_shared_file)
 
+
+macro(install_shared_file2 SHAREDFILE DSTLOCATION)
+    string(REGEX REPLACE "[,\.;/\\ ]" "_" NAME ${SHAREDFILE})
+    message(STATUS "auto target name ${NAME} from ${SHAREDFILE}")
+
+  file(GLOB COPY_FILES
+    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    ${SHAREDFILE})
+
+  get_filename_component(FNAME ${SHAREDFILE} NAME)
+  add_custom_target(${NAME} ALL
+    COMMENT "Copying file: ${SHAREDFILE}")
+
+  set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
+  set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${FNAME}")
+
+  add_custom_command(
+    TARGET ${NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+    )
+  install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+endmacro(install_shared_file2)
 
 
 

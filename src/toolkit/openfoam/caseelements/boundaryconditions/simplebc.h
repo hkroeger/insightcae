@@ -5,6 +5,8 @@
 
 #include "openfoam/caseelements/boundarycondition.h"
 
+#include "simplebc__SimpleBC__Parameters_headers.h"
+
 namespace insight {
 
 class OpenFOAMCase;

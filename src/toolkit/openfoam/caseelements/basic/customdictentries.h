@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "customdictentries__customDictEntries__Parameters_headers.h"
 
 namespace insight {
 

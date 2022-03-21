@@ -39,6 +39,7 @@
 #include "base/resultset.h"
 #include "base/progressdisplayer.h"
 #include "boost/variant.hpp"
+#include "boost/asio/deadline_timer.hpp"
 
 
 namespace insight
@@ -47,54 +48,193 @@ namespace insight
 
 
 
-///**
-// * @brief The TaskQueue class
-// * takes jobs, executes them one by one in the thread, from which dispatchJobs() was called
-// */
-//class TaskQueue
-//{
-//public:
-//  typedef std::function<void(void)> Job;
-
-//protected:
-//  std::mutex mx_;
-//  std::condition_variable cv_;
-//  std::queue<Job> jobQueue_;
+class AnalyzeClient;
 
 
-//public:
-//  void post(Job job);
-//  void dispatchJobs();
-//};
+
+
+class AnalyzeClientAction
+{
+public:
+
+    // success flag
+    struct ReportSuccessResult
+    {
+      bool success = false;
+    };
+    typedef std::function<void(ReportSuccessResult)> ReportSuccessCallback;
+    typedef std::function<void()> SimpleCallBack;
+
+protected:
+    AnalyzeClient& cl_;
+    boost::asio::deadline_timer deadline_;
+    SimpleCallBack timeoutCallback_;
+
+private:
+    Wt::Signals::Impl::Connection connection_;
+    bool isFinished_;
+
+    void setFinished();
+
+public:
+    /**
+     * @brief AnalyzeClientAction
+     * @param cl
+     * @param onTimeout
+     * Will be called in timeout event. Socket will be closed.
+     */
+    AnalyzeClientAction(AnalyzeClient& cl, SimpleCallBack onTimeout );
+    virtual ~AnalyzeClientAction();
+
+    virtual void start();
+    virtual void handleHttpResponse(
+            boost::system::error_code err,
+            const Wt::Http::Message& response );
+
+    inline bool isFinished() const { return isFinished_; };
+};
+
+
+
+
+class QueryStatusAction : public AnalyzeClientAction
+{
+public:
+
+    // success flag, progress state, results availability flag
+    struct Result : public ReportSuccessResult
+    {
+      bool resultsAreAvailable;
+      bool errorOccurred;
+      std::shared_ptr<insight::Exception> exception;
+    };
+    typedef std::function<void(Result)> Callback;
+
+private:
+    Callback callback_;
+
+public:
+    QueryStatusAction(
+            AnalyzeClient& cl,
+            Callback callback,
+            SimpleCallBack onTimeout );
+
+    void start() override;
+    void handleHttpResponse(
+                boost::system::error_code err,
+                const Wt::Http::Message& response ) override;
+};
+
+
+
+
+class ControlRequestAction : public AnalyzeClientAction
+{
+private:
+    const std::string& action_;
+    ReportSuccessCallback callback_;
+
+public:
+    ControlRequestAction(
+            AnalyzeClient& cl,
+            const std::string& action,
+            ReportSuccessCallback callback,
+            SimpleCallBack onTimeout );
+
+    void start() override;
+    void handleHttpResponse(
+                boost::system::error_code err,
+                const Wt::Http::Message& response ) override;
+};
+
+
+
+
+class LaunchAnalysisAction : public AnalyzeClientAction
+{
+private:
+    Wt::Http::Message msg_;
+    ReportSuccessCallback callback_;
+
+public:
+    LaunchAnalysisAction(
+            AnalyzeClient& cl,
+            const ParameterSet& input,
+            const boost::filesystem::path& parent_path,
+            const std::string& analysisName,
+            ReportSuccessCallback callback,
+            SimpleCallBack onTimeout );
+
+    void start() override;
+    void handleHttpResponse(
+                boost::system::error_code err,
+                const Wt::Http::Message& response ) override;
+};
+
+
+
+
+class QueryResultsAction : public AnalyzeClientAction
+{
+public:
+
+    // success flag, result data
+    struct Result : public ReportSuccessResult
+    {
+      ResultSetPtr results;
+    };
+    typedef std::function<void(Result)> Callback;
+
+private:
+    Callback callback_;
+
+public:
+    QueryResultsAction(
+            AnalyzeClient& cl,
+            Callback callback,
+            SimpleCallBack onTimeout );
+
+    void start() override;
+    void handleHttpResponse(
+                boost::system::error_code err,
+                const Wt::Http::Message& response ) override;
+};
+
+
+
+
+class QueryExepathAction : public AnalyzeClientAction
+{
+public:
+
+    // success flag, path
+    struct Result : public ReportSuccessResult
+    {
+      boost::filesystem::path exePath;
+    };
+    typedef std::function<void(Result)> Callback;
+
+private:
+    Callback callback_;
+
+public:
+    QueryExepathAction(
+            AnalyzeClient& cl,
+            Callback callback,
+            SimpleCallBack onTimeout );
+
+    void start() override;
+    void handleHttpResponse(
+                boost::system::error_code err,
+                const Wt::Http::Message& response ) override;
+};
+
 
 
 
 
 class AnalyzeClient
 {
-public:
-  typedef enum {
-    None,
-    SimpleRequest,
-    QueryStatus,
-    QueryResults,
-    QueryExepath
-  }
-  CurrentRequestType;
-
-  // success flag
-  typedef std::function<void(bool)> ReportSuccessCallback;
-
-  // success flag, progress state, results availability flag
-  typedef std::function<void(bool, bool)> QueryStatusCallback;
-
-  // success flag, result data
-  typedef std::function<void(bool, ResultSetPtr)> QueryResultsCallback;
-
-  // success flag, path
-  typedef std::function<void(bool, boost::filesystem::path)> QueryExepathCallback;
-
-  typedef std::function<void(std::exception_ptr)> ExceptionHandler;
 
 protected:
   std::string analysisName_;
@@ -103,61 +243,70 @@ protected:
   Wt::WIOService ioService_;
   Wt::Http::Client httpClient_;
 
-  mutable boost::mutex mx_;
-  std::atomic<CurrentRequestType> crq_;
-
-  boost::variant<
-    QueryExepathCallback,
-    ReportSuccessCallback,
-    QueryStatusCallback,
-    QueryResultsCallback
-  > currentCallback_;
-
-//  TaskQueue tq_;
-  ExceptionHandler exHdlr_;
+  std::shared_ptr<AnalyzeClientAction> currentAction_;
 
   insight::ProgressDisplayer* progressDisplayer_;
 
-  void controlRequest(const std::string& action, AnalyzeClient::ReportSuccessCallback onCompletion);
+  int timeout_ = 60*10;
 
-  void handleHttpResponse(boost::system::error_code err, const Wt::Http::Message& response);
+  void controlRequest( const std::string& action,
+                       AnalyzeClientAction::ReportSuccessCallback onCompletion,
+                       AnalyzeClientAction::SimpleCallBack onTimeout );
+
+  void launchAction( std::shared_ptr<AnalyzeClientAction> action );
 
 public:
   AnalyzeClient(
       const std::string analysisName,
       const std::string& url,
       insight::ProgressDisplayer* progressDisplayer_
-#ifndef SWIG
-      ,
-      ExceptionHandler exceptionHandler = [](std::exception_ptr)->void {}
-#endif
       );
   ~AnalyzeClient();
 
-  bool waitForContact(int maxAttempts=20);
+
+//  void waitForContact(AnalyzeClientAction::SimpleCallBack onContact,
+//                      AnalyzeClientAction::SimpleCallBack onNoContact,
+//                      int maxAttempts=20);
 
   bool isBusy() const;
   void forgetRequest();
 
-  void queryExepath( QueryExepathCallback onExepathAvailable );
+  void queryExepath(
+          QueryExepathAction::Callback onExepathAvailable,
+          AnalyzeClientAction::SimpleCallBack onTimeout );
 
   void launchAnalysis(
       const ParameterSet& input,
       const boost::filesystem::path& parent_path,
       const std::string& analysisName,
-      ReportSuccessCallback onCompletion
+      AnalyzeClientAction::ReportSuccessCallback onCompletion,
+      AnalyzeClientAction::SimpleCallBack onTimeout
       );
 
-  void queryStatus( QueryStatusCallback onStatusAvailable );
+  void queryStatus( QueryStatusAction::Callback onStatusAvailable,
+                    AnalyzeClientAction::SimpleCallBack onTimeout );
 
-  void kill( ReportSuccessCallback onCompletion );
-  void exit( ReportSuccessCallback onCompletion );
-  void wnow( ReportSuccessCallback onCompletion );
-  void wnowandstop( ReportSuccessCallback onCompletion );
+  void kill( AnalyzeClientAction::ReportSuccessCallback onCompletion,
+             AnalyzeClientAction::SimpleCallBack onTimeout );
 
-  void queryResults( QueryResultsCallback onResultsAvailable );
+  void exit( AnalyzeClientAction::ReportSuccessCallback onCompletion,
+             AnalyzeClientAction::SimpleCallBack onTimeout );
 
-};
+  void wnow( AnalyzeClientAction::ReportSuccessCallback onCompletion,
+             AnalyzeClientAction::SimpleCallBack onTimeout );
+
+  void wnowandstop( AnalyzeClientAction::ReportSuccessCallback onCompletion,
+                    AnalyzeClientAction::SimpleCallBack onTimeout );
+
+  void queryResults( QueryResultsAction::Callback onResultsAvailable,
+                     AnalyzeClientAction::SimpleCallBack onTimeout );
+
+  Wt::WIOService& ioService() { return ioService_; }
+  Wt::Http::Client& httpClient() { return httpClient_; }
+  std::string analysisName() const { return analysisName_; }
+  std::string url() const { return url_; }
+  insight::ProgressDisplayer* progressDisplayer() const { return progressDisplayer_; }
+  };
 
 
 

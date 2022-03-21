@@ -53,20 +53,16 @@ void isofCaseBuilderWindow::createCase
 (
     bool skipBCs,
     const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
-)
+    )
 {
   recreateOFCase ( ui->OFversion->currentText() );
 
   // insert case elements
-  for ( int i=0; i < ui->selected_elements->count(); i++ )
-    {
-      InsertedCaseElement* cur
-        = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
-      if ( cur )
-        {
-          cur->insertElement ( *ofc_ );
-        }
-    }
+  auto ces = caseConfigModel_->allCaseElements();
+  for ( const auto* cur : ces )
+  {
+    cur->insertElement ( *ofc_ );
+  }
 
   if (!restrictToFiles)
     ofc_->modifyFilesOnDiskBeforeDictCreation( casepath() );
@@ -75,13 +71,13 @@ void isofCaseBuilderWindow::createCase
 
   if (!boost::filesystem::exists(ofc_->boundaryDictPath(casepath())))
   {
-      if (!skipBCs)
-        QMessageBox::warning(this, "Warning", "No boundary dictionary present: skipping BC creation!");
+    if (!skipBCs)
+      QMessageBox::warning(this, "Warning", "No boundary dictionary present: skipping BC creation!");
 
-      skipBCs=true;
+    skipBCs=true;
   }
 
-  if ( ui->patch_list->count() <= 1 && dynamic_cast<DefaultPatch*>(ui->patch_list->item(0))->type_name().empty() )
+  if ( !BCConfigModel_->isValid() )
   {
     if (!skipBCs)
       QMessageBox::warning(this, "Warning", "No boundary patches have been configured: skipping BC creation!");
@@ -91,34 +87,33 @@ void isofCaseBuilderWindow::createCase
 
   insight::OFDictData::dict boundaryDict;
   if ( !skipBCs )
-    {
-      ofc_->parseBoundaryDict ( casepath(), boundaryDict );
+  {
+    ofc_->parseBoundaryDict ( casepath(), boundaryDict );
 
-      for ( int i=0; i < ui->patch_list->count(); i++ )
-        {
-          Patch* cur = dynamic_cast<Patch*> ( ui->patch_list->item ( i ) );
-          if ( cur )
-          {
- //           if ( boundaryDict.find(cur->patch_name()) != boundaryDict.end() )
-            {
-              cur->insertElement ( *ofc_, boundaryDict );
-            }
-          }
-        }
-    }
-  if ( ofc_->getUnhandledPatches ( boundaryDict ).size() > 0 )
+    auto allPatches = BCConfigModel_->allNamedPatches();
+    for ( const auto* cur : allPatches )
     {
-      throw insight::Exception ( "Incorrect case setup: There are unhandled patches. Continuing would result in an invalid boundary definition." );
+      cur->insertElement ( *ofc_, boundaryDict );
     }
+
+    BCConfigModel_->defaultPatch()->insertElement( *ofc_, boundaryDict );
+  }
+
+  if ( ofc_->getUnhandledPatches ( boundaryDict ).size() > 0 )
+  {
+    throw insight::Exception ( "Incorrect case setup: There are unhandled patches. Continuing would result in an invalid boundary definition." );
+  }
 
   ofc_->createOnDisk ( casepath(), restrictToFiles );
   if ( !restrictToFiles ) ofc_->modifyCaseOnDisk ( casepath() );
 }
 
 
+
+
 bool isofCaseBuilderWindow::checkIfCaseIsEmpty()
 {
-  if (ui->selected_elements->count() > 0)
+  if (caseConfigModel_->nCaseElements() > 0)
   {
     return true;
   }
@@ -128,6 +123,8 @@ bool isofCaseBuilderWindow::checkIfCaseIsEmpty()
     return false;
   }
 }
+
+
 
 
 void isofCaseBuilderWindow::onCreate()
@@ -155,6 +152,7 @@ void isofCaseBuilderWindow::onCreate()
      }
   }
 }
+
 
 
 
@@ -211,6 +209,8 @@ void createAndRunScript(const insight::OpenFOAMCase& ofc, const boost::filesyste
 
 //  boost::filesystem::remove(fn);
 }
+
+
 
 
 void isofCaseBuilderWindow::run(ExecutionStep begin_with, bool skipMonitor)
@@ -296,7 +296,7 @@ void isofCaseBuilderWindow::run(ExecutionStep begin_with, bool skipMonitor)
   }
   else
   {
-    insight::TaskSpoolerInterface tsi(ts_socket, "");
+    insight::TaskSpoolerInterface tsi(ts_socket);
     tsi.startTail(
           [&](const std::string& line)
           {

@@ -183,8 +183,8 @@ void ISCADMainWindow::onUpdateTabTitle(ISCADModelEditor* model, const boost::fil
     int i=modelTabs_->indexOf(model);
     if (i>=0)
     {
-        modelTabs_->setTabText(i, QString(isUnSaved?"*":"") + QString(filepath.filename().c_str()));
-        modelTabs_->setTabToolTip(i, QString(filepath.c_str()));
+        modelTabs_->setTabText(i, QString(isUnSaved?"*":"") + QString::fromStdString(filepath.filename().string()));
+        modelTabs_->setTabToolTip(i, QString::fromStdString(filepath.string()));
     }
 }
 
@@ -222,8 +222,8 @@ void ISCADMainWindow::onLoadModelFile(const boost::filesystem::path& modelfile)
 }
 
 
-ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool nolog)
-: QMainWindow(parent, flags),
+ISCADMainWindow::ISCADMainWindow(QWidget* parent, bool nolog)
+: QMainWindow(parent),
   lastTabIndex_(-1)
 {
     
@@ -237,8 +237,8 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
 
     if (!nolog)
     {
-      logger_=new Q_DebugStream(std::cout); // ceases to work with multithreaded bg parsing
-      connect(logger_, &Q_DebugStream::appendText,
+      logger_=new IQDebugStream(std::cout); // ceases to work with multithreaded bg parsing
+      connect(logger_, &IQDebugStream::appendText,
               log_, &QTextEdit::append);
 
     }
@@ -301,7 +301,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
                     this,
                     "ISCAD Information",
                     "InsightCAE CAD Script Editor\n"
-                    "Version "+QString::fromStdString(insight::ToolkitVersion::current)+"\n"
+                    "Version "+QString::fromStdString(insight::ToolkitVersion::current().toString())+"\n"
                     );
             }
     );
@@ -571,17 +571,20 @@ void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
     QFileInfo fi=fileModel_->fileInfo(fileTree_->currentIndex());
     
     a=new QAction("Create new file...", &myMenu);
-    mapper = new QSignalMapper(a) ;
-    connect(a, &QAction::triggered,
-            mapper, QOverload<>::of(&QSignalMapper::map)) ;
+
     QString dir;
     if (fi.isDir())
         dir=fi.absoluteFilePath();
     else
         dir=fi.absolutePath();
-    mapper->setMapping(a, dir);
-    connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mapped),
-            this, &ISCADMainWindow::onCreateNewModel);
+
+    connect(a, &QAction::triggered,
+            [this, dir]()
+            {
+              this->onCreateNewModel(dir);
+            }
+    );
+
     myMenu.addAction(a);
 
     if (!fi.isDir())
@@ -589,10 +592,12 @@ void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
         a=new QAction("Delete file "+fi.baseName(), &myMenu);
         mapper = new QSignalMapper(a) ;
         connect(a, &QAction::triggered,
-                mapper, QOverload<>::of(&QSignalMapper::map) );
-        mapper->setMapping(a, fi.absoluteFilePath());
-        connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mapped),
-                this, &ISCADMainWindow::onDeleteModel);
+                [this, fi]()
+                {
+                  this->onDeleteModel(fi.absoluteFilePath());
+                }
+                );
+
         myMenu.addAction(a);
     }
 

@@ -33,6 +33,10 @@
 
 #include "uniof.h"
 
+#include "vtkSmartPointer.h"
+#include "vtkUnstructuredGridReader.h"
+#include "vtkPointInterpolator.h"
+
 namespace Foam 
 {
 
@@ -52,7 +56,7 @@ protected:
 public:
   //- Runtime type information
   TypeName("FieldDataProvider");
-  
+
   //- Declare runtime constructor selection table
   declareRunTimeSelectionTable
   (
@@ -60,7 +64,7 @@ public:
       FieldDataProvider,
       Istream,
       (
-	  Istream& is
+        Istream& is
       ),
       (is)
   );
@@ -106,6 +110,66 @@ public:
 
 };
 
+
+template<class T, class PointProvider>
+class FixedSizeFieldDataProvider
+{
+    autoPtr<FieldDataProvider<T> > fdp_;
+    const PointProvider& pp_;
+    scalar lastUpdateTime_;
+    Field<T> value_;
+
+public:
+    typedef FieldDataProvider<T> input_type;
+
+    FixedSizeFieldDataProvider(
+            const FixedSizeFieldDataProvider& o )
+        : fdp_(o.fdp_->clone()),
+          pp_(o.pp_),
+          lastUpdateTime_(o.lastUpdateTime_),
+          value_( o.value_ )
+    {}
+
+    FixedSizeFieldDataProvider(
+            const FieldDataProvider<T>& fp,
+            const PointProvider& pp )
+        : fdp_(fp.clone()),
+          pp_(pp),
+          lastUpdateTime_(-GREAT),
+          value_( pp_.size(), pTraits<T>::zero )
+    {}
+
+    FixedSizeFieldDataProvider(
+            Istream& is,
+            const PointProvider& pp )
+        : fdp_(FieldDataProvider<T>::New(is)),
+          pp_(pp),
+          lastUpdateTime_(-GREAT),
+          value_( pp_.size(), pTraits<T>::zero )
+    {}
+
+    bool needsUpdate(scalar t) const
+    {
+        return lastUpdateTime_<t;
+    }
+
+    const Field<T>& operator()(scalar t) const
+    {
+        if ( needsUpdate(t) )
+        {
+            auto * nc = const_cast<FixedSizeFieldDataProvider*>(this);
+            nc->lastUpdateTime_ = t;
+            nc->value_ =
+                    (*fdp_)( t, this->pp_.faceCentres() );
+        }
+        return value_;
+    }
+
+    const FieldDataProvider<T>& fieldDataProvider() const
+    {
+        return *fdp_;
+    }
+};
 
 
 template<class T>
@@ -176,10 +240,7 @@ template<class T>
 class linearProfile
 : public FieldDataProvider<T>
 {
-//   point p0_;
-//   vector ep_, ex_, ez_;
   VectorSpaceBase base_;
-//   Map<label> cols_;
   std::vector<fileName> filenames_;
   mutable boost::ptr_map<int, insight::Interpolator> values_;
   
@@ -207,10 +268,7 @@ template<class T>
 class radialProfile
 : public FieldDataProvider<T>
 {
-//   point p0_;
-//   vector ep_, ex_, ez_;
   CylCoordVectorSpaceBase base_;
-//   Map<label> cols_;
   std::vector<fileName> filenames_;
   mutable boost::ptr_map<int, insight::Interpolator> values_;
   
@@ -258,6 +316,44 @@ public:
   virtual autoPtr<FieldDataProvider<T> > clone() const;
 };
 
+
+
+template<class T>
+class vtkField
+: public FieldDataProvider<T>
+{
+public:
+    typedef std::vector<int> ComponentMap;
+
+    static const ComponentMap VTKSymmTensorMap, OpenFOAMSymmTensorMap;
+
+private:
+  std::vector<fileName> vtkFiles_;
+  std::vector<string> fieldNames_;
+  ComponentMap componentMap_;
+  word componentOrderName_;
+
+  void setComponentMap(const word& mapSelection = word());
+
+  mutable std::map<int, vtkSmartPointer<vtkDataObject> > data_;
+  mutable std::map<long int, Field<T> > cache_;
+
+  virtual void appendInstant(Istream& is);
+  virtual void writeInstant(int i, Ostream& os) const;
+
+public:
+  //- Runtime type information
+  TypeName("vtkField");
+
+  vtkField(Istream& is);
+  vtkField(const vtkField<T>& o);
+
+  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
+  virtual autoPtr<FieldDataProvider<T> > clone() const;
+};
+
+template<>
+void vtkField<symmTensor>::setComponentMap(const word& orderType);
 
 }
 

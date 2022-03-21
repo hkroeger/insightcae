@@ -2,7 +2,7 @@ project(analyze)
 
 
 set(analyze_SOURCES
-    main.cpp
+    analyze.cpp
 )
 
 set(analyze_LIBS

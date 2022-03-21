@@ -34,6 +34,18 @@ namespace insight
 namespace bmd
 {
 
+class blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer
+ : public CAD_ParameterSet_Visualizer
+{
+public:
+    std::string blockMeshName_ = "blockMeshDict_CylWedgeOrtho";
+    typedef blockMeshDict_CylWedgeOrtho::Parameters Parameters;
+
+public:
+    void setBlockMeshName(const std::string& blockMeshName);
+    void recreateVisualizationElements() override;
+};
+
 
 ParameterSet_VisualizerPtr create_blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer()
 {
@@ -44,13 +56,18 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Cy
 
 
 
-
-
-void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut, const std::string& blockMeshName)
+void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::setBlockMeshName(const std::string& blockMeshName)
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  blockMeshName_=blockMeshName;
+}
 
-  Parameters p(ps_);
+void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements()
+{
+  CurrentExceptionContext ex("computed visualization of CylWedgeOrtho block mesh template");
+
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+
+  Parameters p(currentParameters());
 
   auto wsc =
       insight::cad::Import::create( p.geometry.wedge_spine_curve->filePath() );
@@ -168,16 +185,12 @@ void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationE
 //    wedge = cad::Compound::create(feats);
   }
 
-  addFeature( blockMeshName,
+  addFeature( blockMeshName_,
               wedge,
-              DisplayStyle::Wireframe
+              AIS_WireFrame
               );
 }
 
-void blockMeshDict_CylWedgeOrtho_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
-{
-  recreateVisualizationElements(ut, "blockMeshDict_CylWedgeOrtho");
-}
 
 }
 }

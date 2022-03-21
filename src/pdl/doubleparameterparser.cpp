@@ -7,6 +7,12 @@ DoubleParameterParser::Data::Data(double v, const std::string& d)
 : ParserDataBase(d), value(v)
 {}
 
+void DoubleParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
+{
+  headers.insert("\"base/parameters/simpleparameter.h\"");
+}
+
+
 std::string DoubleParameterParser::Data::cppType(const std::string&) const
 {
   return "double";

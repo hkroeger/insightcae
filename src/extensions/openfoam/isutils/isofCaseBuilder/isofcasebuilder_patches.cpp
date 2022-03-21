@@ -50,163 +50,143 @@ using namespace rapidxml;
 
 ParameterSet& isofCaseBuilderWindow::BCParameters(const std::string& patchName)
 {
-    QList<QListWidgetItem *>  items
-      = ui->patch_list->findItems(QString(patchName.c_str()), Qt::MatchStartsWith);
-    if (items.size()<1)
-        throw insight::Exception
-        (
-            "Error: patch \""+patchName+"\" was not found!"
-        );
-    if (items.size()>1)
-        throw insight::Exception
-        (
-            "Error: patch name \""+patchName+"\" matches multiple entries!"
-        );
-
-    Patch* cur = dynamic_cast<Patch*>(items[0]);
-    if (!cur)
-        throw insight::Exception
-        (
-            "Error: Requested patch \""+patchName+"\" has no valid configuration!"
-        );
-
-    return cur->parameters();
+  return BCConfigModel_->patchParametersRef(patchName);
 }
 
 
 
-void isofCaseBuilderWindow::onParseBF()
-{
-    insight::OFDictData::dict boundaryDict;
+//void isofCaseBuilderWindow::onParseBF()
+//{
+//    insight::OFDictData::dict boundaryDict;
 
-    ofc_->parseBoundaryDict(casepath(), boundaryDict);
-//    ui->patch_list->clear();
+//    ofc_->parseBoundaryDict(casepath(), boundaryDict);
+////    ui->patch_list->clear();
 
-    if (ui->patch_list->findItems(DefaultPatch::defaultPatchName, Qt::MatchStartsWith).size()==0)
-      new DefaultPatch(ui->patch_list, display_);
+//    if (ui->patch_list->findItems(DefaultPatch::defaultPatchName, Qt::MatchStartsWith).size()==0)
+//      new DefaultPatch(ui->patch_list, display_);
 
-    for (const OFDictData::dict::value_type& bde: boundaryDict)
-    {
-      QString pn(bde.first.c_str());
-      if (ui->patch_list->findItems(pn, Qt::MatchStartsWith).size()==0)
-      {
-        new Patch(ui->patch_list, bde.first, display_);
-      }
-    }
-}
-
-
+//    for (const OFDictData::dict::value_type& bde: boundaryDict)
+//    {
+//      QString pn(bde.first.c_str());
+//      if (ui->patch_list->findItems(pn, Qt::MatchStartsWith).size()==0)
+//      {
+//        new Patch(ui->patch_list, bde.first, display_);
+//      }
+//    }
+//}
 
 
 
 
-void isofCaseBuilderWindow::onPatchSelectionChanged()
-{
-    Patch* cur = dynamic_cast<Patch*>(ui->patch_list->currentItem());
-    if (cur)
-    {
-        if (bc_ped_)
-        {
-          last_bc_pe_state_ = bc_ped_->saveState();
-          bc_ped_->deleteLater();
-        }
-        bc_ped_ = new ParameterEditorWidget(cur->parameters(), cur->defaultParameters(), ui->bc_parameter_editor);
-        bc_pe_layout_->addWidget(bc_ped_);
-
-        if (!last_bc_pe_state_.isEmpty())
-        {
-          bc_ped_->restoreState(last_bc_pe_state_);
-        }
-    //     ui->parameter_editor->setCentralWidget(ped_);
-
-    //     ParameterSet emptyps;
-    //     numerics_.reset(insight::FVNumerics::lookup(num_name, FVNumericsParameters(*ofc_, emptyps)));
-    }
-}
 
 
+//void isofCaseBuilderWindow::onPatchSelectionChanged()
+//{
+//    Patch* selectedPatch = dynamic_cast<Patch*>(ui->patch_list->currentItem());
+//    if (selectedPatch)
+//    {
+//        if (bc_ped_)
+//        {
+//          last_bc_pe_state_ = bc_ped_->saveState();
+//          bc_ped_->deleteLater();
+//        }
+//        bc_ped_ = new ParameterEditorWidget(selectedPatch->parameters(), selectedPatch->defaultParameters(), ui->bc_parameter_editor);
+//        bc_pe_layout_->addWidget(bc_ped_);
 
-void isofCaseBuilderWindow::onAssignBC()
-{
-    QListWidgetItem *curbctype=ui->bc_element_list->currentItem();
-    Patch *curpatch = dynamic_cast<Patch*>(ui->patch_list->currentItem());
-    if (curbctype && curpatch)
-    {
-        std::string type_name = curbctype->text().toStdString();
-        curpatch->set_bc_type(type_name);
-        onPatchSelectionChanged();
-    }
-}
+//        if (!last_bc_pe_state_.isEmpty())
+//        {
+//          bc_ped_->restoreState(last_bc_pe_state_);
+//        }
+//    //     ui->parameter_editor->setCentralWidget(ped_);
+
+//    //     ParameterSet emptyps;
+//    //     numerics_.reset(insight::FVNumerics::lookup(num_name, FVNumericsParameters(*ofc_, emptyps)));
+//    }
+//}
 
 
 
-void isofCaseBuilderWindow::onAddPatchManually()
-{
-    QString pname = QInputDialog::getText(this, "Insert Patch", "Enter patch name:");
-    if (!pname.isEmpty())
-    {
-        new Patch(ui->patch_list, pname.toStdString(), display_);
-    }
-}
+//void isofCaseBuilderWindow::onAssignBC()
+//{
+//    QListWidgetItem *curbctype=ui->bc_element_list->currentItem();
+//    Patch *curpatch = dynamic_cast<Patch*>(ui->patch_list->currentItem());
+//    if (curbctype && curpatch)
+//    {
+//        std::string type_name = curbctype->text().toStdString();
+//        curpatch->set_bc_type(type_name);
+//        onPatchSelectionChanged();
+//    }
+//}
 
 
 
-
-void isofCaseBuilderWindow::onRemovePatch()
-{
-  auto* ci=ui->patch_list->currentItem();
-  Patch *curpatch = dynamic_cast<Patch*>(ci);
-  if (curpatch)
-  {
-    if (dynamic_cast<DefaultPatch*>(ci))
-    {
-      QMessageBox::critical(this, "Invalid operation", "The default patch entry cannot be removed!");
-    }
-    else
-    {
-      ui->patch_list->removeItemWidget(ci);
-      delete ci;
-    }
-  }
-}
+//void isofCaseBuilderWindow::onAddPatchManually()
+//{
+//    QString pname = QInputDialog::getText(this, "Insert Patch", "Enter patch name:");
+//    if (!pname.isEmpty())
+//    {
+//        new Patch(ui->patch_list, pname.toStdString(), display_);
+//    }
+//}
 
 
 
 
-void isofCaseBuilderWindow::onRenamePatch()
-{
-  auto* ci=ui->patch_list->currentItem();
-  Patch *curpatch = dynamic_cast<Patch*>(ci);
-  if (curpatch)
-  {
-    if (dynamic_cast<DefaultPatch*>(ci))
-    {
-      QMessageBox::critical(this, "Invalid operation", "The default patch entry cannot be renamed!");
-    }
-    else
-    {
-      QString pname = QInputDialog::getText
-                      (
-                        this,
-                        "Rename Patch",
-                        "Enter new patch name:",
-                        QLineEdit::Normal,
-                        QString::fromStdString(curpatch->patch_name())
-                        );
-
-      if (!pname.isEmpty())
-      {
-          curpatch->set_patch_name(pname);
-      }
-    }
-  }
-}
+//void isofCaseBuilderWindow::onRemovePatch()
+//{
+//  auto* ci=ui->patch_list->currentItem();
+//  Patch *curpatch = dynamic_cast<Patch*>(ci);
+//  if (curpatch)
+//  {
+//    if (dynamic_cast<DefaultPatch*>(ci))
+//    {
+//      QMessageBox::critical(this, "Invalid operation", "The default patch entry cannot be removed!");
+//    }
+//    else
+//    {
+//      ui->patch_list->removeItemWidget(ci);
+//      delete ci;
+//    }
+//  }
+//}
 
 
 
 
-void isofCaseBuilderWindow::onResetPatchDef()
-{
-  ui->patch_list->clear();
-  new DefaultPatch(ui->patch_list, display_);
-}
+//void isofCaseBuilderWindow::onRenamePatch()
+//{
+//  auto* ci=ui->patch_list->currentItem();
+//  Patch *curpatch = dynamic_cast<Patch*>(ci);
+//  if (curpatch)
+//  {
+//    if (dynamic_cast<DefaultPatch*>(ci))
+//    {
+//      QMessageBox::critical(this, "Invalid operation", "The default patch entry cannot be renamed!");
+//    }
+//    else
+//    {
+//      QString pname = QInputDialog::getText
+//                      (
+//                        this,
+//                        "Rename Patch",
+//                        "Enter new patch name:",
+//                        QLineEdit::Normal,
+//                        QString::fromStdString(curpatch->patch_name())
+//                        );
+
+//      if (!pname.isEmpty())
+//      {
+//          curpatch->set_patch_name(pname);
+//      }
+//    }
+//  }
+//}
+
+
+
+
+//void isofCaseBuilderWindow::onResetPatchDef()
+//{
+//  ui->patch_list->clear();
+//  new DefaultPatch(ui->patch_list, display_);
+//}

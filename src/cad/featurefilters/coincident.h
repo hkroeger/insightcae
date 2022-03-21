@@ -34,18 +34,18 @@ class coincident
 : public Filter
 {
 protected:
-    FeatureSet f_;
+    FeatureSetPtr f_;
     scalarQuantityComputerPtr tol_;
 
 public:
     coincident(FeaturePtr m, scalarQuantityComputerPtr tol = scalarQuantityComputerPtr(new constantQuantity<double>(1e-3) ) )
-    : f_(m, T), tol_(tol)
+        : f_(std::make_shared<FeatureSet>(m, T)), tol_(tol)
     {
         throw insight::Exception("coincident filter: not implemented!");
     }
 
     coincident(FeatureSet f, scalarQuantityComputerPtr tol = scalarQuantityComputerPtr(new constantQuantity<double>(1e-3) ) )
-    : f_(f), tol_(tol)
+    : f_(std::make_shared<FeatureSet>(f)), tol_(tol)
     {}
 
     bool checkMatch(FeatureID feature) const
@@ -55,7 +55,7 @@ public:
 
     FilterPtr clone() const
     {
-        return FilterPtr(new coincident(f_, tol_));
+        return FilterPtr(new coincident(*f_, tol_));
     }
 
 };

@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
 
+#include "scalartransportfoamnumerics__scalarTransportFoamNumerics__Parameters_headers.h"
+
 namespace insight {
 
 class scalarTransportFoamNumerics

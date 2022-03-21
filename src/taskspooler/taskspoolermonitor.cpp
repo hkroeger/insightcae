@@ -10,7 +10,10 @@
 
 TaskSpoolerMonitor::TaskSpoolerMonitor(const boost::filesystem::path& tsp_socket, const QString& remote_machine, QWidget *parent) :
   QWidget(parent),
-  insight::TaskSpoolerInterface (tsp_socket, remote_machine.toStdString()),
+  insight::TaskSpoolerInterface (
+    tsp_socket,
+    remote_machine.isEmpty() ? nullptr :
+    insight::remoteServers.findServer(remote_machine.toStdString())->getInstanceIfRunning() ),
   ui(new Ui::TaskSpoolerMonitor)
 {
   ui->setupUi(this);

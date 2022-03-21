@@ -25,6 +25,7 @@
 #include "boost/foreach.hpp"
 #endif
 
+#include <QRandomGenerator>
 #include <QCoreApplication>
 #include <QTimer>
 #include <QThread>
@@ -32,67 +33,74 @@
 #include <QtCharts/QLogValueAxis>
 #include <QtCharts/QValueAxis>
 
+
+
+
 using namespace insight;
 
-void GraphProgressChart::reset()
+
+
+
+auto* globalRanGen = QRandomGenerator::system();
+
+
+
+
+GraphProgressChart::LineSeriesData::LineSeriesData(const QString& name, QtCharts::QChart* chart)
 {
-  for ( CurveList::value_type& i: curve_)
-  {
-    i.second->deleteLater();
-  }
-  curve_.clear();
-  needsRedraw_=true;
-//  this->replot();
-}
-
-
-void GraphProgressChart::update(double iter, const std::string& name, double y_value)
-{
-  mutex_.lock();
-  setUpdatesEnabled(false);
-
-
-  QtCharts::QLineSeries* crv;
-  auto i = curve_.find(name);
-  if (i!=curve_.end())
-  {
-    crv=i->second;
-  }
-  else
-  {
     crv=new QtCharts::QLineSeries;
-    crv->setName(name.c_str());
-    crv->setPen(QPen(QColor(
-                         double(qrand())*255.0/double(RAND_MAX),
-                         double(qrand())*255.0/double(RAND_MAX),
-                         double(qrand())*255.0/double(RAND_MAX)
-                     ), 2.0));
-    chartData_->addSeries(crv);
-    crv->attachAxis(chartData_->axes(Qt::Vertical)[0]);
-    crv->attachAxis(chartData_->axes(Qt::Horizontal)[0]);
-    curve_[name]=crv;
-  }
 
-  if ( !logscale_ || (logscale_&&(y_value > 0.0)) ) // only add, if y>0. Plot gets unreadable otherwise
-  {
-      crv->append(iter, y_value);
-
-      xmin_=std::min(xmin_, iter);
-      xmax_=std::max(xmax_, iter);
-      ymin_=std::min(ymin_, y_value);
-      ymax_=std::max(ymax_, y_value);
-  }
-  if (crv->count() > maxCnt_)
-  {
-      crv->remove(0);
-  }
-  
-//  setAxisAutoScale(QwtPlot::yLeft);
-  needsRedraw_=true;
-  
-  setUpdatesEnabled(true);
-  mutex_.unlock();
+    crv->setName(name);
+    QColor c(
+            globalRanGen->generateDouble()*255.0,
+            globalRanGen->generateDouble()*255.0,
+            globalRanGen->generateDouble()*255.0 );
+    crv->setPen(QPen(c, 2.0));
+    chart->addSeries(crv);
+    crv->attachAxis(chart->axes(Qt::Vertical)[0]);
+    crv->attachAxis(chart->axes(Qt::Horizontal)[0]);
 }
+
+
+
+
+GraphProgressChart::LineSeriesData::~LineSeriesData()
+{
+    crv->deleteLater();
+}
+
+
+
+
+void GraphProgressChart::LineSeriesData::append(double x, double y)
+{
+    values.append(QPointF(x,y));
+}
+
+
+
+
+void GraphProgressChart::LineSeriesData::updateLineSeries(int maxResolution)
+{
+    QList<QPointF> ptDisplay;
+
+    int nv=values.size();
+    int i=0;
+    if (nv>maxRecent)
+    {
+        int nx = nv-1-maxRecent;
+        int spc = std::max<int>(1, floor(double(nx)/double(maxResolution-maxRecent)));
+        for (;i<nx;i+=spc)
+            ptDisplay.append(values.at(i));
+    }
+    for(;i<nv;++i)
+        ptDisplay.append(values.at(i));
+
+    crv->replace(ptDisplay);
+}
+
+
+
 
 GraphProgressChart::GraphProgressChart(bool logscale, QWidget* parent)
   : QtCharts::QChartView(parent),
@@ -119,16 +127,72 @@ GraphProgressChart::GraphProgressChart(bool logscale, QWidget* parent)
 
   chartData_->axes(Qt::Horizontal)[0]->setGridLineVisible(true);
   chartData_->axes(Qt::Vertical)[0]->setGridLineVisible(true);
-  
+
   QTimer *timer=new QTimer;
   connect(timer, &QTimer::timeout, this, &GraphProgressChart::checkForUpdate);
   timer->setInterval(1000);
   timer->start();
 }
 
+
+
+
 GraphProgressChart::~GraphProgressChart()
+{}
+
+
+
+
+void GraphProgressChart::update(double iter, const std::string& name, double y_value)
 {
+  mutex_.lock();
+  setUpdatesEnabled(false);
+
+
+  std::shared_ptr<LineSeriesData> crv;
+  auto i = curve_.find(name);
+  if (i!=curve_.end())
+  {
+    crv=i->second;
+  }
+  else
+  {
+    crv=std::make_shared<LineSeriesData>(QString::fromStdString(name), chartData_);
+    curve_[name]=crv;
+  }
+
+  if ( !logscale_ || ( logscale_ && (y_value > 0.0) ) ) // only add, if y>0. Plot gets unreadable otherwise
+  {
+      crv->append(iter, y_value);
+
+      xmin_=std::min(xmin_, iter);
+      xmax_=std::max(xmax_, iter);
+      ymin_=std::min(ymin_, y_value);
+      ymax_=std::max(ymax_, y_value);
+  }
+  
+//  setAxisAutoScale(QwtPlot::yLeft);
+  needsRedraw_=true;
+  
+  setUpdatesEnabled(true);
+  mutex_.unlock();
 }
+
+
+
+
+void GraphProgressChart::reset()
+{
+  for ( CurveList::value_type& i: curve_)
+  {
+    i.second.reset();
+  }
+  curve_.clear();
+  needsRedraw_=true;
+}
+
+
+
 
 void GraphProgressChart::checkForUpdate()
 {
@@ -136,7 +200,12 @@ void GraphProgressChart::checkForUpdate()
 
     if (needsRedraw_)
     {
-        needsRedraw_=false;        
+        needsRedraw_=false;
+
+        for (auto& sd: curve_)
+        {
+            sd.second->updateLineSeries(width());
+        }
 
         double xmin=xmin_, xmax=xmax_, ymin=ymin_, ymax=ymax_;
 
@@ -148,7 +217,7 @@ void GraphProgressChart::checkForUpdate()
 
         chartData_->axes(Qt::Horizontal)[0]->setRange(xmin, 1.05*xmax);
         double delta=fabs(ymax-ymin);
-        chartData_->axes(Qt::Vertical)[0]->setRange(ymin-0.05*delta, ymax+0.05*delta);
+        chartData_->axes(Qt::Vertical)[0]->setRange(ymin - (logscale_?0.0:0.05*delta), ymax+0.05*delta);
 
         repaint();
     }
@@ -159,21 +228,29 @@ void GraphProgressChart::checkForUpdate()
 
 
 
+void GraphProgressDisplayer::createChart(bool log, const std::string name)
+{
+  GraphProgressChart* c = new GraphProgressChart(log, this);
+  addTab(c, QString::fromStdString(name));
+  charts_[name] = c;
+}
+
+
+
 
 GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
 : QTabWidget(parent)
 {}
 
-GraphProgressDisplayer::~GraphProgressDisplayer()
-{
-}
 
-void GraphProgressDisplayer::createChart(bool log, const std::string name)
-{
-  GraphProgressChart* c=new GraphProgressChart(log, this);
-  addTab(c, QString::fromStdString(name));
-  charts_[name]=c;
-}
+
+
+GraphProgressDisplayer::~GraphProgressDisplayer()
+{}
+
+
+
+
 
 GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& name)
 {
@@ -210,9 +287,22 @@ GraphProgressChart* GraphProgressDisplayer::addChartIfNeeded(const std::string& 
 }
 
 
+
+
+void GraphProgressDisplayer::reset()
+{
+  for (auto& c: charts_)
+  {
+    c.second->deleteLater();
+  }
+  charts_.clear();
+}
+
+
+
 void GraphProgressDisplayer::update(const insight::ProgressState& pi)
 {
-  QMetaObject::invokeMethod(  // run in GUI thread as update might be called from different thread
+  QMetaObject::invokeMethod(  // post into GUI thread as this method might be called from different thread
         qApp,
         [this,pi]()
         {
@@ -252,15 +342,11 @@ void GraphProgressDisplayer::update(const insight::ProgressState& pi)
 }
 
 
-void GraphProgressDisplayer::reset()
-{
-  for (auto& c: charts_)
-  {
-//    c.second->reset();
-    c.second->deleteLater();
-  }
-  charts_.clear();
-}
+
+
+void GraphProgressDisplayer::logMessage(const std::string &line)
+{}
+
 
 
 
@@ -268,8 +354,12 @@ void GraphProgressDisplayer::setActionProgressValue(const std::string&, double)
 {}
 
 
+
+
 void GraphProgressDisplayer::setMessageText(const std::string&, const std::string&)
 {}
+
+
 
 
 void GraphProgressDisplayer::finishActionProgress(const std::string&)

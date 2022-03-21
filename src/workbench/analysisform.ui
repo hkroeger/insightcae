@@ -33,35 +33,25 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="leWorkingDirectory">
-          <property name="toolTip">
-           <string>Given path has to exist. If left empty: unique directory will be created.</string>
+         <widget class="QLabel" name="lblWorkingDirectory">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <property name="readOnly">
-           <bool>false</bool>
+          <property name="text">
+           <string>(unset)</string>
           </property>
-          <property name="placeholderText">
-           <string>(auto create)</string>
-          </property>
-          <property name="clearButtonEnabled">
-           <bool>true</bool>
+          <property name="textInteractionFlags">
+           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="btnSelectWorkingDirectory">
+         <widget class="QPushButton" name="btnSetExecutionEnvironment">
           <property name="text">
-           <string>...</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="cbRemoveWorkingDirectory">
-          <property name="text">
-           <string>remove after analysis is finished</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
+           <string>Setup...</string>
           </property>
          </widget>
         </item>
@@ -70,22 +60,12 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
-         <widget class="QPushButton" name="btnSetupRemote">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="text">
-           <string>Setup...</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="cbRemoteExecution">
+         <widget class="QLabel" name="lblRemote_1">
           <property name="enabled">
            <bool>false</bool>
           </property>
           <property name="text">
-           <string>Run on remote host:</string>
+           <string>Run on remote host</string>
           </property>
          </widget>
         </item>
@@ -97,10 +77,13 @@
           <property name="text">
            <string>(none)</string>
           </property>
+          <property name="textInteractionFlags">
+           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+          </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="lblRemote_2">
           <property name="enabled">
            <bool>false</bool>
           </property>
@@ -110,22 +93,21 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="lblRemoteDirectory">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-          <property name="placeholderText">
-           <string>(auto created directory)</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnResume">
+         <widget class="QLabel" name="lblRemoteDirectory">
           <property name="enabled">
            <bool>false</bool>
           </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
-           <string>Connect</string>
+           <string>(none)</string>
+          </property>
+          <property name="textInteractionFlags">
+           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
           </property>
          </widget>
         </item>
@@ -136,6 +118,16 @@
           </property>
           <property name="text">
            <string>Disconnect</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnResume">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Resume</string>
           </property>
          </widget>
         </item>
@@ -189,6 +181,19 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="cbDownloadWhenFinished">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Download when finished</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="btnRemoveRemote">
           <property name="enabled">
            <bool>false</bool>
@@ -214,7 +219,7 @@
         <attribute name="title">
          <string>Input</string>
         </attribute>
-        <layout class="QHBoxLayout" name="inputTabLayout"/>
+        <layout class="QVBoxLayout" name="inputTabLayout"/>
        </widget>
        <widget class="QWidget" name="runTab">
         <attribute name="title">
@@ -226,53 +231,7 @@
         <attribute name="title">
          <string>Output</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <widget class="QScrollArea" name="scrollArea_2">
-           <property name="widgetResizable">
-            <bool>true</bool>
-           </property>
-           <widget class="QWidget" name="outputContents">
-            <property name="geometry">
-             <rect>
-              <x>0</x>
-              <y>0</y>
-              <width>1434</width>
-              <height>831</height>
-             </rect>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_2">
-             <item>
-              <widget class="QSplitter" name="splitter">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <widget class="QTreeView" name="resultsToC">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                  <horstretch>1</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-               </widget>
-               <widget class="QGroupBox" name="resultElementDetails">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                  <horstretch>4</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="title">
-                 <string>Result element details</string>
-                </property>
-               </widget>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </widget>
-         </item>
-        </layout>
+        <layout class="QVBoxLayout" name="verticalLayout_3"/>
        </widget>
       </widget>
      </item>

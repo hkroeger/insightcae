@@ -8,7 +8,13 @@
 
 namespace insight {
 
-OFDictData::dict stdMULESSolverSetup(double cAlpha, double icAlpha, double tol, double reltol, bool LTS)
+OFDictData::dict stdMULESSolverSetup(
+    double cAlpha,
+    double icAlpha,
+    double tol,
+    double reltol,
+    bool LTS,
+    int nLimiterIter )
 {
   OFDictData::dict d;
 
@@ -18,7 +24,7 @@ OFDictData::dict stdMULESSolverSetup(double cAlpha, double icAlpha, double tol, 
   d["icAlpha"]=icAlpha;
 
   d["MULESCorr"]=true;
-  d["nLimiterIter"]=15;
+  d["nLimiterIter"]=nLimiterIter;
   d["alphaApplyPrevCorr"]=LTS;
 
   d["solver"]="smoothSolver";
@@ -64,7 +70,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   FVNumerics::addIntoDictionaries(dictionaries);
 
   // ============ setup controlDict ================================
-  if (OFversion()<06000 && OFcase().findElements<dynamicMesh>().size()>0)
+  if (OFversion()<600 && OFcase().findElements<dynamicMesh>().size()>0)
    setApplicationName(dictionaries, "interDyMFoam");
   else
    setApplicationName(dictionaries, "interFoam");
@@ -108,7 +114,15 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
 
   {
-   OFDictData::dict asd=stdMULESSolverSetup(p_.cAlpha, p_.icAlpha);
+   OFDictData::dict asd=stdMULESSolverSetup(
+         p_.cAlpha,
+         p_.icAlpha,
+
+         1e-12,
+         0.0,
+         false,
+         p_.alphaLimiterIter
+         );
    asd["nAlphaSubCycles"]=p_.alphaSubCycles;
    solvers["\"alpha.*\""]=asd;
   }
@@ -122,14 +136,18 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="Euler";
 
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["grad("+alphaname_+")"]="localFaceLimited "+lqGradSchemeIfPossible()+" UBlendingFactor";
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+//  grad["grad("+alphaname_+")"]="localFaceLimited "+lqGradSchemeIfPossible()+" UBlendingFactor";
 
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   div["div(rho*phi,U)"]		= "Gauss linearUpwindV "+gradNameOrScheme(dictionaries, "grad(U)");
   div["div(rhoPhi,U)"]		= "Gauss linearUpwindV "+gradNameOrScheme(dictionaries, "grad(U)");
-  div["div(phi,alpha)"]		= "Gauss vanLeer";
+
+//  div["div(phi,alpha)"]		= "Gauss vanLeer";
+//  div["div(phirb,alpha)"]	= "Gauss linear";
+  div["div(phi,alpha)"]		= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(alpha)");
   div["div(phirb,alpha)"]	= "Gauss linear";
+
   div["div(phi,k)"]		= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(k)");
   div["div(phi,epsilon)"]	= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(epsilon)");
   div["div(phi,omega)"]		= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(omega)");

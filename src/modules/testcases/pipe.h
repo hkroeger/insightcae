@@ -54,6 +54,7 @@ public:
     
 /*
 PARAMETERSET>>> PipeBase Parameters
+inherits OpenFOAMAnalysis::Parameters
 
 geometry = set {
  D = double 2.0 "[m] Diameter of the pipe"
@@ -71,7 +72,11 @@ mesh = set {
 operation = set {
  Re_tau = double 180 "[-] Friction-Velocity-Reynolds number"
 } "Definition of the operation point under consideration"
-      
+
+fluid = set {
+ turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
+} "Parameters of the fluid"
+
 run = set {
  perturbU = bool true "Whether to impose artifical perturbations on the initial velocity field"
 } "Execution parameters"
@@ -85,16 +90,31 @@ evaluation = set {
 <<<PARAMETERSET
 */
   
-protected:
-  std::string cycl_in_, cycl_out_;
-  double Lc_, rbuf_;
-  int nc_, nr_, ncir_, nax_, nrbuf_;
-  double nu_, gradr_, ywall_, Re_, Ubulk_, T_, utau_;
-  
+
+  struct supplementedInputData
+      : public supplementedInputDataDerived<Parameters>
+  {
+
+    supplementedInputData(
+        std::unique_ptr<Parameters> pPtr,
+        const boost::filesystem::path& workDir,
+        ProgressDisplayer& progress = consoleProgressDisplayer
+        );
+
+    std::string cycl_in_, cycl_out_;
+    double Lc_, rbuf_;
+    int nc_, nr_, ncir_, nax_, nrbuf_;
+    double nu_, gradr_, ywall_, Re_, Ubulk_, T_, utau_;
+  };
+
+#ifndef SWIG
+  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
+#endif
+
 public:
   declareType("Pipe Flow Test Case");
   
-  PipeBase(const ParameterSet& ps, const boost::filesystem::path& exepath);
+  PipeBase(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
   ~PipeBase();
 
   static std::string category() { return "Validation Cases"; }
@@ -136,7 +156,7 @@ public:
   );
 
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
-  
+
 };
 
 
@@ -148,7 +168,7 @@ class PipeCyclic
 public:
   declareType("Pipe Flow Test Case (Axial Cyclic)");
   
-  PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath);
+  PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
   
   virtual void createMesh
   (
@@ -168,40 +188,40 @@ public:
 
 
 
-class PipeInflow
-: public PipeBase
-{
+//class PipeInflow
+//: public PipeBase
+//{
   
-#ifndef SWIG
-  const static int ntpc_ = 4;
-  const static char* tpc_names_[ntpc_]; 
-  const static double tpc_xlocs_[ntpc_];
-#endif
+//#ifndef SWIG
+//  const static int ntpc_ = 4;
+//  const static char* tpc_names_[ntpc_];
+//  const static double tpc_xlocs_[ntpc_];
+//#endif
   
-public:
-  declareType("Pipe Flow Test Case (Inflow Generator)");
+//public:
+//  declareType("Pipe Flow Test Case (Inflow Generator)");
   
-  PipeInflow(const ParameterSet& ps, const boost::filesystem::path& exepath);
+//  PipeInflow(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
   
-  static ParameterSet defaultParameters();
-  static std::string category() { return "Validation Cases/Inflow Generator"; }
+//  static ParameterSet defaultParameters();
+//  static std::string category() { return "Validation Cases/Inflow Generator"; }
   
-  virtual void createMesh
-  (
-    OpenFOAMCase& cm, ProgressDisplayer& progress
-  );  
+//  virtual void createMesh
+//  (
+//    OpenFOAMCase& cm, ProgressDisplayer& progress
+//  );
   
-  virtual void createCase
-  (
-    OpenFOAMCase& cm, ProgressDisplayer& progress
-  );
+//  virtual void createCase
+//  (
+//    OpenFOAMCase& cm, ProgressDisplayer& progress
+//  );
 
-  ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
+//  ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
 
-  virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
-  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
+//  virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
+//  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
   
-};
+//};
 
 
 

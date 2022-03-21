@@ -24,7 +24,7 @@
 #ifndef Q_MOC_RUN
 #include "base/analysis.h"
 #include "base/resultset.h"
-#include "base/remoteexecution.h"
+
 #include "parametereditorwidget.h"
 #endif
 
@@ -35,12 +35,15 @@
 #include <QPushButton>
 #include <QPlainTextEdit>
 #include <QProgressBar>
+#include <QPointer>
+#include <QTableView>
+
 
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
-#include "workbench.h"
+#include "workbenchwindow.h"
 #include "graphprogressdisplayer.h"
 
-#include "qdebugstream.h"
+#include "iqdebugstream.h"
 #include "logviewerwidget.h"
 #include "remotedirselector.h"
 
@@ -49,8 +52,22 @@
 #include "remoterun.h"
 #endif
 
-#include "qresultsetmodel.h"
+#include "iqresultsetmodel.h"
 #include "qactionprogressdisplayerwidget.h"
+
+
+#include "iqsupplementedinputdatamodel.h"
+#include "iqremoteparaviewdialog.h"
+#include "iqparaviewdialog.h"
+#include "iqexecutionworkspace.h"
+#include "iqresultsetfiltermodel.h"
+#include "iqresultsetdisplayerwidget.h"
+
+#include <set>
+
+#ifdef WIN32
+#define WSL_DEFAULT
+#endif
 
 namespace Ui
 {
@@ -64,54 +81,23 @@ class TaskSpoolerInterface;
 class SolverOutputAnalyzer;
 }
 
-class WorkbenchAction;
-class AnalysisForm;
 
 
-class QCaseDirectory
-    : public insight::CaseDirectory
-{
-  AnalysisForm *af_;
 
-  void setAFEnabledState(bool enabled);
-
-public:
-  QCaseDirectory(AnalysisForm *af, const boost::filesystem::path& path, bool keep=true);
-  QCaseDirectory(AnalysisForm *af, bool keep=true, const boost::filesystem::path& prefix="");
-  ~QCaseDirectory();
-};
-
-class QRemoteExecutionConfig
-: public insight::RemoteExecutionConfig
-{
-  AnalysisForm *af_;
-
-  void setAFEnabledState(bool enabled);
-
-public:
-  QRemoteExecutionConfig(AnalysisForm *af,
-                         const boost::filesystem::path& location,
-                         const boost::filesystem::path& localREConfigFile = "");
-  QRemoteExecutionConfig(AnalysisForm *af,
-                         const insight::RemoteServerInfo& rsi,
-                         const boost::filesystem::path& location,
-                         const boost::filesystem::path& remotePath = "",
-                         const boost::filesystem::path& localREConfigFile = "");
-  ~QRemoteExecutionConfig();
-};
 
 
 class AnalysisForm
 : public QMdiSubWindow,
-  public workbench::WidgetWithDynamicMenuEntries
+  public IQExecutionWorkspace
 {
   Q_OBJECT
 
   friend class WorkbenchAction;
   friend class LocalRun;
   friend class RemoteRun;
-  friend class QCaseDirectory;
-  friend class QRemoteExecutionConfig;
+  friend class WSLRun;
+  friend class IQCaseDirectoryState;
+  friend class IQWorkbenchRemoteExecutionState;
   
 protected:
 
@@ -119,15 +105,19 @@ protected:
   // ======== Analysis-related members
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
-  insight::ParameterSet parameters_;
-  insight::ResultSetPtr results_;
-  insight::QResultSetModel* resultsModel_;
+
+//  insight::ResultSetPtr results_;
+//  QPointer<insight::IQResultSetModel> resultsModel_;
+//  insight::IQFilteredResultSetModel *filteredResultsModel_;
+//  IQResultSetFilterModel *filterModel_;
+  IQResultSetDisplayerWidget* resultsViewer_;
+  IQSupplementedInputDataModel supplementedInputDataModel_;
   
   // ====================================================================================
   // ======== GUI widgets
-//  QTreeWidgetItem* rtroot_;
-  ParameterEditorWidget* peditor_;
-  Q_DebugStream *cout_log_, *cerr_log_;
+  ParameterEditorWidget *peditor_;
+  QTableView *sidtab_;
+  IQDebugStream *cout_log_, *cerr_log_;
   LogViewerWidget *log_;
 
   QProgressBar* progressbar_;
@@ -140,11 +130,7 @@ protected:
   // ======== control elements
   QPushButton *save_log_btn_, *send_log_btn_, *clear_log_btn_, *auto_scroll_down_btn_;
 
-  QMenu *menu_parameters_=nullptr, *menu_actions_=nullptr, *menu_results_=nullptr, *menu_tools_=nullptr, *menu_tools_of_=nullptr;
-  QAction *act_param_show_=nullptr, *act_save_=nullptr, *act_save_as_=nullptr, *act_pack_=nullptr, *act_merge_=nullptr;
-  QAction *act_run_=nullptr, *act_kill_=nullptr;
-  QAction *act_save_rpt_=nullptr;
-  QAction *act_tool_of_paraview_=nullptr, *act_tool_of_clean_=nullptr;
+  QPointer<QAction> act_save_, act_pack_;
 
 
   /**
@@ -153,7 +139,10 @@ protected:
    */
   boost::filesystem::path ist_file_;
 
-  /**
+  /** if (checkAndUpdateWorkingDir(newDir, true))
+              lastValidLocalWorkDirSetting_=newDir;
+            else
+              ui->leL
    * @brief pack_parameterset_
    * store preference for pack/not packing the parameter set during saving
    */
@@ -165,27 +154,24 @@ protected:
    */
   bool is_modified_;
 
+  std::set<std::shared_ptr<insight::ExternalProcess> > externalProcesses_;
+  void cleanFinishedExternalProcesses();
+
   void connectLocalActions();
   void connectRemoteActions();
-
-  bool ensureWorkingDirectoryExistence();
 
   void updateSaveMenuLabel();
   void updateWindowTitle();
 
-  insight::RemoteServerInfo lookupRemoteServerByLabel(const QString& hostLabel) const;
-
   bool checkAnalysisExecutionPreconditions();
-//  bool changeWorkingDirectory(const QString& wd);
-//  bool changeRemoteLocation(const QString& hostLabel, const QString& remoteDir);
-//  bool changeRemoteLocation(const insight::RemoteExecutionConfig* rec = nullptr);
-//  void applyDirectorySettings();
+
 
   // ====================================================================================
   // ======== current action objects
-  std::unique_ptr<QCaseDirectory> caseDirectory_;
-  std::unique_ptr<QRemoteExecutionConfig> remoteDirectory_;
-  std::unique_ptr<WorkbenchAction> currentWorkbenchAction_;
+
+
+  QScopedPointer<WorkbenchAction> currentWorkbenchAction_;
+
 
   // ================================================================================
   // ================================================================================
@@ -212,23 +198,25 @@ protected:
     return isRunningLocally() || isRunningRemotely();
   }
 
+  void downloadFromRemote( std::function<void()> completionCallback = [](){} );
+
 public:
   AnalysisForm(
       QWidget* parent,
       const std::string& analysisName,
-      const boost::filesystem::path& workingDirectory = boost::filesystem::path(),
       bool logToConsole=false
       );
   ~AnalysisForm();
   
-  inline insight::ParameterSet& parameters() { return parameters_; }
+  const insight::ParameterSet& parameters() const;
   
   // ================================================================================
   // ================================================================================
   // ===== general logic
 
-  void insertMenu(QMenuBar* mainMenu) override;
-  void removeMenu() override;
+  WidgetWithDynamicMenuEntries* createMenus(QMenuBar* mainMenu);
+//  void insertMenu(QMenuBar* mainMenu) override;
+//  void removeMenu() override;
 
   void loadParameters(const boost::filesystem::path& fp);
   void saveParameters(bool *cancelled=nullptr);
@@ -241,7 +229,6 @@ public:
 
 
   void startRemoteRun();
-  void resumeRemoteRun();
 //  void disconnectFromRemoteRun();
 
   // ================================================================================
@@ -249,6 +236,8 @@ public:
   // ===== Local run logic
 
   void startLocalRun();
+
+  bool isOpenFOAMAnalysis() const;
 
 
 protected:
@@ -270,9 +259,11 @@ private Q_SLOTS:
   void onAnalysisCancelled();
 
 
-  void onCreateReport();
 
   void onStartPV();
+  void onStartPVLocal();
+  void onStartPVRemote();
+
   void onCleanOFC();
   void onWnow();
   void onWnowAndStop();
@@ -280,17 +271,17 @@ private Q_SLOTS:
 
   void upload();
   void download();
+  void resumeRemoteRun();
 
   void onShowParameterXML();
 
   void onConfigModification();
 
-private Q_SLOTS:
-  void workingDirectoryEdited(const QString& qnwd);
-  void checkForRemoteConfig();
+  void onUpdateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
+
 
 Q_SIGNALS:
-  void apply();
+//  void apply();
   void update();
   void statusMessage(const QString& message, int timeout=0);
   

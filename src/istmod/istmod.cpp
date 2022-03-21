@@ -22,7 +22,9 @@
 
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
+#include "base/analysislibrary.h"
 #include "base/tools.h"
+#include "base/parameters.h"
 
 #include <iostream>
 #include <fstream>
@@ -117,7 +119,7 @@ int main(int argc, char *argv[])
                     <<std::endl<<std::endl;
                 exit(-1);
             }
-            loader.addLibrary(l);
+            analysisLibraries.addLibrary(l);
         }
     }
 
@@ -177,7 +179,7 @@ int main(int argc, char *argv[])
             StringList ists=vm["merge"].as<StringList>();
             for (const string& ist: ists)
             {
-// 	ParameterSet to_merge;
+                // ParameterSet to_merge;
                 parameters.readFromFile(ist);
             }
         }
@@ -239,7 +241,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                double v=to_number<double>(pair[1]);
+                double v=toNumber<double>(pair[1]);
                 cout << "Setting double '"<<pair[0]<<"' = "<<v<<endl;
                 parameters.getDouble(pair[0])=v;
             }
@@ -266,7 +268,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                int v=to_number<int>(pair[1]);
+                int v=toNumber<int>(pair[1]);
                 cout << "Setting int '"<<pair[0]<<"' = "<<v<<endl;
                 parameters.getInt(pair[0])=v;
             }

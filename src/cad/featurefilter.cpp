@@ -436,7 +436,10 @@ struct EdgeFeatureFilterExprParser
 	|
 	( lit("isPartOfSolid") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidEdge>(*qi::_1)) ]
-	|
+    |
+    ( lit("isPartOfFace") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' )
+      [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfFaceEdge>(*qi::_1)) ]
+    |
 	( lit("isCoincident") >> '(' >> FeatureFilterExprParser<Iterator>::r_featureset 
                           >> ( ( ',' >> FeatureFilterExprParser<Iterator>::r_scalar_qty_expression ) | qi::attr(phx::construct<scalarQuantityComputer::Ptr>(new_<constantQuantity<double> >(1e-3))) ) 
                           >> ')' ) 
@@ -527,7 +530,10 @@ struct FaceFeatureFilterExprParser
 	|
 	( lit("isOtherSurface") ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
-	|
+    |
+    ( lit("isPartOfFace") > '(' > FeatureFilterExprParser<Iterator>::r_featureset  > ')')
+      [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfFaceFace>(*qi::_1)) ]
+    |
 	( lit("isPartOfSolid") > '(' > FeatureFilterExprParser<Iterator>::r_featureset  > ')') 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidFace>(*qi::_1)) ]
 	|

@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/boundaryconditions/ggibcbase.h"
 
+#include "mixingplaneggibc__MixingPlaneGGIBC__Parameters_headers.h"
+
 namespace insight {
 
 

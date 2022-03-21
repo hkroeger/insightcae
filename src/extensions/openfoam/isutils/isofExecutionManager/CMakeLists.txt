@@ -4,20 +4,27 @@ set(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-add_subdirectory(qtermwidget)
+set(isofExecutionManager_LIBS
+    ${Boost_LIBRARIES} Qt5::Widgets toolkit_gui
+)
+
+if (NOT WIN32)
+    add_subdirectory(qtermwidget)
+    list(APPEND isofExecutionManager_LIBS qtermwidget)
+else()
+    add_definitions(-DNO_TERMWIDGET)
+endif()
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 
 set(isofExecutionManager_SOURCES
-    main.cpp
+    isofexecutionmanager.cpp
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
 )
 
-set(isofExecutionManager_LIBS
-    ${Boost_LIBRARIES} Qt5::Widgets toolkit_gui
-)
+
 
 set(isofExecutionManager_RCCS
     isofexecutionmanager.qrc
@@ -25,7 +32,7 @@ set(isofExecutionManager_RCCS
 
 
 add_executable(isofExecutionManager ${isofExecutionManager_SOURCES} ${isofExecutionManager_RCCS})
-target_link_libraries(isofExecutionManager ${isofExecutionManager_LIBS} qtermwidget)
+target_link_libraries(isofExecutionManager ${isofExecutionManager_LIBS})
 target_include_directories(isofExecutionManager
   PUBLIC ${QT_INCLUDES}
   PUBLIC ${Boost_INCLUDE_DIR}

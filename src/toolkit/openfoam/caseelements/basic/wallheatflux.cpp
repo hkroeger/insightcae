@@ -26,6 +26,7 @@ void wallHeatFlux::addIntoDictionaries ( OFdicts& dictionaries ) const
   OFDictData::list p;
   std::copy(p_.patches.begin(), p_.patches.end(), std::back_inserter(p));
   fod["patches"]=p;
+  fod["writeControl"]="outputTime";
 
   if (const auto* qr = boost::get<Parameters::qr_field_type>(&p_.qr))
   {
@@ -64,8 +65,10 @@ std::map<std::string,arma::mat> wallHeatFlux::readWallHeatFlux(
     {
       arma::mat t_mi_ma_int=arma::zeros(4);
       std::string patchName;
-      std::istringstream(line) >> t_mi_ma_int(0) >> patchName >> t_mi_ma_int(1) >> t_mi_ma_int(2) >> t_mi_ma_int(3);
-      lineData[patchName].push_back(t_mi_ma_int);
+      std::istringstream is(line);
+      is >> t_mi_ma_int(0) >> patchName >> t_mi_ma_int(1) >> t_mi_ma_int(2) >> t_mi_ma_int(3);
+      if (!is.fail())
+        lineData[patchName].push_back(t_mi_ma_int);
     }
   }
 

@@ -48,11 +48,12 @@ public:
         const std::string& description, 
         const ParameterSet& ps,
         const boost::filesystem::path& exePath,
+        ProgressDisplayer& displayer = consoleProgressDisplayer,
         bool subcasesRemesh=false
     );
 
     virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
-    virtual ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
+    ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
 
     virtual void evaluateCombinedResults(ResultSetPtr& results);
 };

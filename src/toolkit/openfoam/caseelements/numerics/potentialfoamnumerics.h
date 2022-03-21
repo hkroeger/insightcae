@@ -3,6 +3,7 @@
 
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
+#include "potentialfoamnumerics__potentialFoamNumerics__Parameters_headers.h"
 
 namespace insight {
 

@@ -7,6 +7,12 @@ BoolParameterParser::Data::Data(bool v, const std::string& d)
 : ParserDataBase(d), value(v)
 {}
 
+void BoolParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
+{
+  headers.insert("\"base/parameters/simpleparameter.h\"");
+}
+
+
 std::string BoolParameterParser::Data::cppType(const std::string&) const
 {
   return "bool";

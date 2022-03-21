@@ -12,6 +12,12 @@ CombinedProgressDisplayer::CombinedProgressDisplayer ( CombinedProgressDisplayer
 {}
 
 
+void CombinedProgressDisplayer::setOp(Ops op)
+{
+    op_=op;
+}
+
+
 void CombinedProgressDisplayer::add ( ProgressDisplayer* d )
 {
     displayers_.push_back ( d );
@@ -22,6 +28,14 @@ void CombinedProgressDisplayer::update ( const ProgressState& pi )
     for (auto* d: displayers_)
     {
         d->update ( pi );
+    }
+}
+
+void CombinedProgressDisplayer::logMessage(const std::string &line)
+{
+    for (auto* d: displayers_)
+    {
+        d->logMessage ( line );
     }
 }
 

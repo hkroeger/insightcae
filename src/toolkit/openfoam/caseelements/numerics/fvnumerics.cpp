@@ -57,9 +57,25 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   {
       wfc="timeStep";
   }
+
   controlDict["writeControl"]=wfc;
 
-  controlDict["writeInterval"]=p_.writeInterval;
+
+  if (
+      p_.writeControl == Parameters::writeControl_type::runTime
+      ||
+      p_.writeControl == Parameters::writeControl_type::adjustableRunTime
+      ||
+      ( p_.writeControl == Parameters::writeControl_type::timeStep && p_.timeStep==1. )
+      )
+  {
+    controlDict["writeInterval"]=std::min(p_.writeInterval, p_.endTime);
+  }
+  else
+  {
+    controlDict["writeInterval"]=p_.writeInterval;
+  }
+
   controlDict["purgeWrite"]=p_.purgeWrite;
 
   std::string wfk("UNDEFINED");

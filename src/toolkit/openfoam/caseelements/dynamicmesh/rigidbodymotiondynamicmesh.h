@@ -2,6 +2,7 @@
 #define INSIGHT_RIGIDBODYMOTIONDYNAMICMESH_H
 
 #include "openfoam/caseelements/dynamicmesh/dynamicmesh.h"
+#include "rigidbodymotiondynamicmesh__rigidBodyMotionDynamicMesh__Parameters_headers.h"
 
 namespace insight {
 
@@ -56,6 +57,9 @@ implementation = selectablesubset {{
    rampDuration = double 1.0 "Duration of the initial force ramp"
  }
 }} vanilla "Type of implementation to use."
+
+
+moveMeshOuterCorrectors = bool false "Whether the mesh motion is updated in every outer iteration within a time step. If set to false, mesh motion is updated only at the end of the time step."
 
 <<<PARAMETERSET
 */

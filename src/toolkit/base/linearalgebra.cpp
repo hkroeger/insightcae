@@ -34,8 +34,38 @@
 using namespace arma;
 using namespace boost;
 
+namespace std
+{
+
+bool operator<(const arma::mat& v1, const arma::mat& v2)
+{
+    insight::assertion(v1.n_elem==3,
+                       "Internal error: comparison only defined for 3-vectors!");
+    insight::assertion(v2.n_elem==3,
+                       "Internal error: comparison only defined for 3-vectors!");
+
+    if ( fabs(v1(0) - v2(0))<insight::SMALL )
+    {
+        if ( fabs(v1(1) - v2(1))<insight::SMALL )
+        {
+            if (fabs(v1(2)-v2(2))<insight::SMALL)
+            {
+                return false;
+            }
+            else return v1(2)<v2(2);
+        }
+        else return v1(1)<v2(1);
+    }
+    else return v1(0)<v2(0);
+}
+
+}
+
 namespace insight
 {
+
+const double SMALL=1e-10;
+const double LSMALL=1e-6;
   
 void insight_gsl_error_handler
 (
@@ -79,6 +109,21 @@ mat vec3(double x, double y, double z)
   v << x <<endr << y << endr << z <<endr;
   return v;
 }
+
+
+arma::mat normalized(const arma::mat &vec)
+{
+    double l = arma::norm(vec, 2);
+    if (l>SMALL)
+    {
+        return vec/l;
+    }
+    else
+    {
+        throw insight::Exception("attempt to normalize a null vector!");
+    }
+}
+
 
 arma::mat tensor3(
   double xx, double xy, double xz,
@@ -445,6 +490,23 @@ double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
 }
 
 
+
+double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max)
+{
+  struct Obj : public Objective1D
+  {
+    const std::function<double(double)>& model_;
+    Obj(const std::function<double(double)>& m) : model_(m) {}
+    double operator()(double x) const override
+    {
+      return model_(x);
+    }
+  } obj(model);
+  return nonlinearMinimize1D(obj, x_min, x_max);
+}
+
+
+
 ObjectiveND::~ObjectiveND()
 {}
 
@@ -657,6 +719,25 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
     return arma::zeros(x0.n_elem)+DBL_MAX;
 }
 
+
+arma::mat nonlinearMinimizeND(
+        const std::function<double(const arma::mat&)>& model,
+        const arma::mat& x0, double tol, const arma::mat& steps)
+{
+    struct Obj : public ObjectiveND
+    {
+      int np_;
+      const std::function<double(const arma::mat&)>& model_;
+      Obj(int np, const std::function<double(const arma::mat&)>& m) : np_(np), model_(m) {}
+      double operator()(const arma::mat& x) const override
+      {
+        return model_(x);
+      }
+      int numP() const override { return np_; }
+    } obj(x0.n_elem, model);
+    return nonlinearMinimizeND(obj, x0, tol, steps);
+}
+
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)
 {
   std::ostringstream msg;
@@ -810,7 +891,7 @@ arma::mat filterDuplicates(const arma::mat&m)
   }
   xy.resize(j, m.n_cols);
 
-  std::cout<<xy.row(0)<<std::endl<<xy.row(xy.n_rows-1)<<std::endl;
+  //std::cout<<xy.row(0)<<std::endl<<xy.row(xy.n_rows-1)<<std::endl;
 
   return xy;
 }
@@ -1034,23 +1115,21 @@ arma::mat integrate(const Interpolator& ipol, double a, double b)
   return res;
 }
 
-#define SMALL 1e-10
-bool compareArmaMat::operator()(const arma::mat& v1, const arma::mat& v2) const
+
+bool operator!=(const arma::mat &m1, const arma::mat &m2)
 {
-  if ( fabs(v1(0) - v2(0))<SMALL )
+  if ( m1.n_rows!=m2.n_rows || m1.n_cols!=m2.n_cols )
+    return true;
+
+  bool isdiff=false;
+  for (arma::uword i=0; i<m2.n_rows; ++i)
+    for (arma::uword j=0; j<m2.n_cols; ++j)
     {
-      if ( fabs(v1(1) - v2(1))<SMALL )
-        {
-          if (fabs(v1(2)-v2(2))<SMALL)
-          {
-              //return v1.instance_ < v2.instance_;
-              return false;
-          }
-          else return v1(2)<v2(2);
-        }
-      else return v1(1)<v2(1);
+      if ( m1(i,j)!=m2(i,j) ) return true;
     }
-  else return v1(0)<v2(0);
+
+  return false;
 }
+
 
 }

@@ -60,105 +60,114 @@ void InternalPressureLoss::modifyDefaults(ParameterSet& p)
 }
 
 
-InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath)
+InternalPressureLoss::supplementedInputData::supplementedInputData(
+    std::unique_ptr<Parameters> pPtr,
+    const boost::filesystem::path &executionPath,
+    ProgressDisplayer &prg )
+  : supplementedInputDataDerived<Parameters>( std::move(pPtr) )
+{
+  auto& p=this->p();
+
+  inletstlfile_=executionPath/"constant"/"triSurface"/"inlet.stlb";
+  outletstlfile_=executionPath/"constant"/"triSurface"/"outlet.stlb";
+  wallstlfile_=executionPath/"constant"/"triSurface"/"walls.stlb";
+
+  // Analyze geometry
+  // Find:
+  // * Domain BB
+  // * Inlet hydraulic diam.
+
+
+  prg.message("Analyzing geometry...");
+  if ( const Parameters::geometry_STEP_type* geom_cad =
+       boost::get<Parameters::geometry_STEP_type>(&p.geometry) )
+    {
+      using namespace insight::cad;
+
+      if (!geom_cad->cadmodel->isValid())
+        throw insight::Exception("Geometry file does not exist: "+geom_cad->cadmodel->fileName().string());
+
+      FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
+      bb_=cadmodel->modelBndBox();
+
+      if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
+           boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
+        {
+          if (!io_extra->inlet_model->isValid())
+            throw insight::Exception("Geometry file does not exist: "+io_extra->inlet_model->fileName().string());
+          {
+            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
+            bb_.extend(inletmodel->modelBndBox());
+          }
+
+          if (!io_extra->outlet_model->isValid())
+            throw insight::Exception("Geometry file does not exist: "+io_extra->outlet_model->fileName().string());
+          {
+            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
+            bb_.extend(outletmodel->modelBndBox());
+          }
+        }
+    }
+  else if ( const Parameters::geometry_STL_type* geom_stl =
+            boost::get<Parameters::geometry_STL_type>(&p.geometry) )
+    {
+      if (!geom_stl->cadmodel->isValid())
+        throw insight::Exception("Geometry file does not exist: "+geom_stl->cadmodel->fileName().string());
+
+      bb_ = STLBndBox(readSTL(geom_stl->cadmodel->filePath()));
+
+      {
+        if (!geom_stl->inlet->isValid())
+          throw insight::Exception("Geometry file does not exist: "+geom_stl->inlet->fileName().string());
+
+        bb_.extend(STLBndBox(readSTL(geom_stl->inlet->filePath())));
+      }
+      {
+        if (!geom_stl->outlet->isValid())
+          throw insight::Exception("Geometry file does not exist: "+geom_stl->outlet->fileName().string());
+
+        bb_.extend(STLBndBox(readSTL(geom_stl->outlet->filePath())));
+      }
+    }
+
+  L_=bb_.col(1)-bb_.col(0);
+
+  if (L_(0)<1e-12)
+    throw insight::Exception("model size in x direction is zero!");
+  if (L_(1)<1e-12)
+    throw insight::Exception("model size in y direction is zero!");
+  if (L_(2)<1e-12)
+    throw insight::Exception("model size in z direction is zero!");
+
+  nx_=std::max(1, int(ceil(L_(0)/p.mesh.size)));
+  ny_=std::max(1, int(ceil(L_(1)/p.mesh.size)));
+  nz_=std::max(1, int(ceil(L_(2)/p.mesh.size)));
+}
+
+
+
+InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
 : OpenFOAMAnalysis
   (
     "Internal Pressure Loss",
     "Determination of internal pressure loss by CFD a simulation",
     ps, exepath
-  )
+  ),
+  parameters_(new supplementedInputData(std::make_unique<Parameters>(ps), exepath, pd))
   // default values for derived parameters
 {}
 
 
 
 
-void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& prg)
+void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& /*prg*/)
 {
-    insight::OpenFOAMAnalysis::calcDerivedInputData(prg);
-
-    Parameters p(parameters_);
-
-    inletstlfile_=executionPath()/"constant"/"triSurface"/"inlet.stlb";
-    outletstlfile_=executionPath()/"constant"/"triSurface"/"outlet.stlb";
-    wallstlfile_=executionPath()/"constant"/"triSurface"/"walls.stlb";
-
-    // Analyze geometry
-    // Find:
-    // * Domain BB
-    // * Inlet hydraulic diam.
-    
-
-    prg.message("Analyzing geometry...");
-    if ( const Parameters::geometry_STEP_type* geom_cad =
-         boost::get<Parameters::geometry_STEP_type>(&p.geometry) )
-      {
-        using namespace insight::cad;
-
-        if (!geom_cad->cadmodel->isValid())
-          throw insight::Exception("Geometry file does not exist: "+geom_cad->cadmodel->fileName().string());
-
-        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
-        bb_=cadmodel->modelBndBox();
-
-        if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
-             boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
-          {
-            if (!io_extra->inlet_model->isValid())
-              throw insight::Exception("Geometry file does not exist: "+io_extra->inlet_model->fileName().string());
-            {
-              FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
-              bb_.extend(inletmodel->modelBndBox());
-            }
-
-            if (!io_extra->outlet_model->isValid())
-              throw insight::Exception("Geometry file does not exist: "+io_extra->outlet_model->fileName().string());
-            {
-              FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
-              bb_.extend(outletmodel->modelBndBox());
-            }
-          }
-      }
-    else if ( const Parameters::geometry_STL_type* geom_stl =
-              boost::get<Parameters::geometry_STL_type>(&p.geometry) )
-      {
-        if (!geom_stl->cadmodel->isValid())
-          throw insight::Exception("Geometry file does not exist: "+geom_stl->cadmodel->fileName().string());
-
-        bb_ = STLBndBox(readSTL(geom_stl->cadmodel->filePath()));
-
-        {
-          if (!geom_stl->inlet->isValid())
-            throw insight::Exception("Geometry file does not exist: "+geom_stl->inlet->fileName().string());
-
-          bb_.extend(STLBndBox(readSTL(geom_stl->inlet->filePath())));
-        }
-        {
-          if (!geom_stl->outlet->isValid())
-            throw insight::Exception("Geometry file does not exist: "+geom_stl->outlet->fileName().string());
-
-          bb_.extend(STLBndBox(readSTL(geom_stl->outlet->filePath())));
-        }
-      }
-
-    L_=bb_.col(1)-bb_.col(0);
-    reportIntermediateParameter("Lx", L_(0), "model size in x direction", "m");
-    reportIntermediateParameter("Ly", L_(1), "model size in y direction", "m");
-    reportIntermediateParameter("Lz", L_(2), "model size in z direction", "m");
-
-    if (L_(0)<1e-12)
-      throw insight::Exception("model size in x direction is zero!");
-    if (L_(1)<1e-12)
-      throw insight::Exception("model size in y direction is zero!");
-    if (L_(2)<1e-12)
-      throw insight::Exception("model size in z direction is zero!");
-
-    nx_=std::max(1, int(ceil(L_(0)/p.mesh.size)));
-    ny_=std::max(1, int(ceil(L_(1)/p.mesh.size)));
-    nz_=std::max(1, int(ceil(L_(2)/p.mesh.size)));
-    reportIntermediateParameter("nx", nx_, "initial grid cell numbers in direction x");
-    reportIntermediateParameter("ny", ny_, "initial grid cell numbers in direction y");
-    reportIntermediateParameter("nz", nz_, "initial grid cell numbers in direction z");
+  reportIntermediateParameter("Lx", sp().L_(0), "model size in x direction", "m");
+  reportIntermediateParameter("Ly", sp().L_(1), "model size in y direction", "m");
+  reportIntermediateParameter("Lz", sp().L_(2), "model size in z direction", "m");
+  reportIntermediateParameter("nx", sp().nx_, "initial grid cell numbers in direction x");
+  reportIntermediateParameter("ny", sp().ny_, "initial grid cell numbers in direction y");
+  reportIntermediateParameter("nz", sp().nz_, "initial grid cell numbers in direction z");
 
 }
 
@@ -167,7 +176,7 @@ void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& prg)
 
 void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pp)
 {
-    Parameters p(parameters_);
+  auto& p=this->p();
 
     cm.insert(new MeshingNumerics(cm));
     cm.createOnDisk(executionPath());
@@ -177,16 +186,16 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
     bmd->setScaleFactor(p.geometryscale);
     bmd->setDefaultPatch("walls", "wall");
 
-    double eps=0.01*arma::min(bb_.col(1)-bb_.col(0));
+    double eps=0.01*arma::min(sp().bb_.col(1)-sp().bb_.col(0));
     std::map<int, bmd::Point> pt = boost::assign::map_list_of
-          (0, 	vec3(bb_(0,0)-eps, bb_(1,0)-eps, bb_(2,0)-eps))
-          (1, 	vec3(bb_(0,1)+eps, bb_(1,0)-eps, bb_(2,0)-eps))
-          (2, 	vec3(bb_(0,1)+eps, bb_(1,1)+eps, bb_(2,0)-eps))
-          (3, 	vec3(bb_(0,0)-eps, bb_(1,1)+eps, bb_(2,0)-eps))
-          (4, 	vec3(bb_(0,0)-eps, bb_(1,0)-eps, bb_(2,1)+eps))
-          (5, 	vec3(bb_(0,1)+eps, bb_(1,0)-eps, bb_(2,1)+eps))
-          (6, 	vec3(bb_(0,1)+eps, bb_(1,1)+eps, bb_(2,1)+eps))
-          (7, 	vec3(bb_(0,0)-eps, bb_(1,1)+eps, bb_(2,1)+eps))
+          (0, 	vec3(sp().bb_(0,0)-eps, sp().bb_(1,0)-eps, sp().bb_(2,0)-eps))
+          (1, 	vec3(sp().bb_(0,1)+eps, sp().bb_(1,0)-eps, sp().bb_(2,0)-eps))
+          (2, 	vec3(sp().bb_(0,1)+eps, sp().bb_(1,1)+eps, sp().bb_(2,0)-eps))
+          (3, 	vec3(sp().bb_(0,0)-eps, sp().bb_(1,1)+eps, sp().bb_(2,0)-eps))
+          (4, 	vec3(sp().bb_(0,0)-eps, sp().bb_(1,0)-eps, sp().bb_(2,1)+eps))
+          (5, 	vec3(sp().bb_(0,1)+eps, sp().bb_(1,0)-eps, sp().bb_(2,1)+eps))
+          (6, 	vec3(sp().bb_(0,1)+eps, sp().bb_(1,1)+eps, sp().bb_(2,1)+eps))
+          (7, 	vec3(sp().bb_(0,0)-eps, sp().bb_(1,1)+eps, sp().bb_(2,1)+eps))
           .convert_to_container<std::map<int, bmd::Point> >()
           ;
 
@@ -198,7 +207,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
 			  pt[0], pt[1], pt[2], pt[3],
 			  pt[4], pt[5], pt[6], pt[7]
 		      ),
-		      nx_, ny_, nz_
+                      sp().nx_, sp().ny_, sp().nz_
 		      )
 	);
     }
@@ -208,7 +217,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
     cm.runBlockMesh(executionPath(), nb, &pp);
 
 
-    create_directory(wallstlfile_.parent_path());
+    create_directory(sp().wallstlfile_.parent_path());
 
     if ( const Parameters::geometry_STEP_type* geom_cad =
          boost::get<Parameters::geometry_STEP_type>(&p.geometry) )
@@ -240,29 +249,29 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
               FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
               FeaturePtr walls(new Feature(fp));
 
-              walls->saveAs(wallstlfile_);
-              inlet->saveAs(inletstlfile_);
-              outlet->saveAs(outletstlfile_);
+              walls->saveAs(sp().wallstlfile_);
+              inlet->saveAs(sp().inletstlfile_);
+              outlet->saveAs(sp().outletstlfile_);
           }
         else if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
              boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
           {
 
-            cadmodel->saveAs(wallstlfile_);
+            cadmodel->saveAs(sp().wallstlfile_);
             FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
-            inletmodel->saveAs(inletstlfile_);
+            inletmodel->saveAs(sp().inletstlfile_);
             FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
-            outletmodel->saveAs(outletstlfile_);
+            outletmodel->saveAs(sp().outletstlfile_);
           }
       }
     else if ( const Parameters::geometry_STL_type* geom_stl = boost::get<Parameters::geometry_STL_type>(&p.geometry) )
       {
-        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->cadmodel->filePath().string(), wallstlfile_.string()});
-        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->inlet->filePath().string(), inletstlfile_.string()});
-        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->outlet->filePath().string(), outletstlfile_.string()});
+        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->cadmodel->filePath().string(), sp().wallstlfile_.string()});
+        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->inlet->filePath().string(), sp().inletstlfile_.string()});
+        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->outlet->filePath().string(), sp().outletstlfile_.string()});
       }
     
-    surfaceFeatureExtract(cm, executionPath(), wallstlfile_.filename().c_str());
+    surfaceFeatureExtract(cm, executionPath(), sp().wallstlfile_.filename().string());
     
     snappyHexMeshConfiguration::Parameters shm_cfg;
 
@@ -270,7 +279,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::ExplicitFeatureCurve(snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
       .set_level(p.mesh.maxLevel)
       .set_scale(s)
-      .set_fileName(make_filepath(executionPath()/"constant"/"triSurface"/(wallstlfile_.filename().stem().string()+".eMesh")))
+      .set_fileName(make_filepath(executionPath()/"constant"/"triSurface"/(sp().wallstlfile_.filename().stem().string()+".eMesh")))
     )));
 
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
@@ -280,7 +289,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
       .set_nLayers(p.mesh.nLayers)
       .set_scale(s)
 
-      .set_fileName(make_filepath(wallstlfile_))
+      .set_fileName(make_filepath(sp().wallstlfile_))
     )));
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
       .set_name("inlet")
@@ -289,7 +298,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
       .set_nLayers(0)
       .set_scale(s)
 
-      .set_fileName(make_filepath(inletstlfile_))
+      .set_fileName(make_filepath(sp().inletstlfile_))
     )));
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
       .set_name("outlet")
@@ -298,7 +307,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
       .set_nLayers(0)
       .set_scale(s)
 
-      .set_fileName(make_filepath(outletstlfile_))
+      .set_fileName(make_filepath(sp().outletstlfile_))
     )));
 
 
@@ -322,8 +331,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
 
 void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer&)
 {
-    Parameters p(parameters_);
-    
+  auto&p=this->p();
     // grid needs to be present
     patchArea inletprops(OpenFOAMCase(OFEs::get(p.run.OFEname)), executionPath(), "inlet");
 //    double Ain=inletprops.A_;
@@ -364,13 +372,14 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 
     cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters() );
     
-    insertTurbulenceModel(cm, p);
+    insertTurbulenceModel(cm, p.fluid.turbulenceModel);
 }
 
 
 ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& pp)
 {
-    Parameters p(parameters_);
+    auto&p=this->p();
+
     ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, pp);
 
     auto ap = pp.forkNewAction(8, "Evaluation");
@@ -407,13 +416,13 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       auto sl_cm=createColorMap();
       FieldColor sl_fc(sl_field, sl_cm, sl_range);
 
-      double Lmax=p.geometryscale*arma::as_scalar(arma::max(L_));
-      arma::mat ctr=p.geometryscale*( bb_.col(1) + bb_.col(0) )*0.5;
+      double Lmax=p.geometryscale*arma::as_scalar(arma::max(sp().L_));
+      arma::mat ctr=p.geometryscale*( sp().bb_.col(1) + sp().bb_.col(0) )*0.5;
 
       {
         auto seeds = vtkSmartPointer<vtkPointSource>::New();
         seeds->SetCenter(toArray(p.mesh.PiM *p.geometryscale));
-        seeds->SetRadius(0.5*arma::norm(L_,2));
+        seeds->SetRadius(0.5*arma::norm(sp().L_,2));
         seeds->SetDistributionToUniform();
         seeds->SetNumberOfPoints(500);
 
@@ -440,14 +449,14 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       {
         camera->SetViewUp( toArray(vec3(0,0,1)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(-L_[0],-L_[1],L_[2])) );
+        camera->SetPosition( toArray(ctr+10.*vec3(-sp().L_[0],-sp().L_[1],sp().L_[2])) );
 
         auto img = executionPath() / "streamLines_diag.png";
   //      scene.fitAll();
         double f=sqrt(2.);
         scene.setParallelScale(std::pair<double,double>(
-                                 std::max(f*L_[0], f*L_[1]),
-                                 std::max(f*L_[0], f*L_[2])
+                                 std::max(f*sp().L_[0], f*sp().L_[1]),
+                                 std::max(f*sp().L_[0], f*sp().L_[2])
                                  ));
         scene.exportImage(img);
         results->insert(img.filename().stem().string(),
@@ -466,14 +475,14 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       {
         camera->SetViewUp( toArray(vec3(0,0,1)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(-L_[0],-L_[1],L_[2])) );
+        camera->SetPosition( toArray(ctr+10.*vec3(-sp().L_[0],-sp().L_[1],sp().L_[2])) );
 
         auto img = executionPath() / "pressure_diag.png";
   //      scene.fitAll();
         double f=sqrt(2.);
         scene.setParallelScale(std::pair<double,double>(
-                                 std::max(f*L_[0], f*L_[1]),
-                                 std::max(f*L_[0], f*L_[2])
+                                 std::max(f*sp().L_[0], f*sp().L_[1]),
+                                 std::max(f*sp().L_[0], f*sp().L_[2])
                                  ));
         scene.exportImage(img);
         results->insert(img.filename().stem().string(),
@@ -487,10 +496,10 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       {
         camera->SetViewUp( toArray(vec3(0,0,1)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(L_[0],0,0)) );
+        camera->SetPosition( toArray(ctr+10.*vec3(sp().L_[0],0,0)) );
 
         auto img = executionPath() / "streamLines_front.png";
-        scene.setParallelScale(std::pair<double,double>( L_[1], L_[2]));
+        scene.setParallelScale(std::pair<double,double>( sp().L_[1], sp().L_[2]));
         scene.exportImage(img);
         results->insert(img.filename().stem().string(),
           std::unique_ptr<Image>(new Image
@@ -503,10 +512,10 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       {
         camera->SetViewUp( toArray(vec3(0,0,1)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(0,L_[1],0)) );
+        camera->SetPosition( toArray(ctr+10.*vec3(0,sp().L_[1],0)) );
 
         auto img = executionPath() / "streamLines_side.png";
-        scene.setParallelScale(std::pair<double,double>( L_[0], L_[2]));
+        scene.setParallelScale(std::pair<double,double>( sp().L_[0], sp().L_[2]));
         scene.exportImage(img);
         results->insert(img.filename().stem().string(),
           std::unique_ptr<Image>(new Image
@@ -519,10 +528,10 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       {
         camera->SetViewUp( toArray(vec3(0,-1,0)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(0,0,L_[2])) );
+        camera->SetPosition( toArray(ctr+10.*vec3(0,0,sp().L_[2])) );
 
         auto img = executionPath() / "streamLines_top.png";
-        scene.setParallelScale(std::pair<double,double>( L_[0], L_[1]));
+        scene.setParallelScale(std::pair<double,double>( sp().L_[0], sp().L_[1]));
         scene.exportImage(img);
         results->insert(img.filename().stem().string(),
           std::unique_ptr<Image>(new Image
@@ -547,11 +556,11 @@ ParameterSet_VisualizerPtr InternalPressureLoss_visualizer()
 addStandaloneFunctionToStaticFunctionTable(Analysis, InternalPressureLoss, visualizer, InternalPressureLoss_visualizer);
 
 
-void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
-  Parameters p(ps_);
+  Parameters p(currentParameters());
 
   try
   {

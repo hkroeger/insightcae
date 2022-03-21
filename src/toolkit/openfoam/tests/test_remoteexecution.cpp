@@ -78,7 +78,7 @@ void test_existing_directory(bool old_format)
 
 
 
-int test_auto_create()
+void test_auto_create()
 {
   auto d = fs::unique_path( fs::temp_directory_path() / "remoteexec-test-%%%%%%" );
   fs::create_directory(d);
@@ -87,9 +87,9 @@ int test_auto_create()
   try
   {
 
-    auto i=insight::remoteServers.find("localhost");
+    auto i=insight::remoteServers.findServer("localhost");
 
-    RemoteExecutionConfig ec(i->second, d);
+    RemoteExecutionConfig ec(i, d);
 
     try
     {
@@ -127,9 +127,9 @@ void test_start_disconnect(fs::path d)
   try
   {
 
-    auto i=insight::remoteServers.find("localhost");
+    auto i=insight::remoteServers.findServer("localhost");
 
-    RemoteExecutionConfig ec(i->second, d);
+    RemoteExecutionConfig ec(i, d);
 
     try
     {

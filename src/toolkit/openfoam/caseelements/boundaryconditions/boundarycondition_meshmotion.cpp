@@ -36,7 +36,7 @@ defineType(NoMeshMotion);
 addToFactoryTable(MeshMotionBC, NoMeshMotion);
 addToStaticFunctionTable(MeshMotionBC, NoMeshMotion, defaultParameters);
 
-NoMeshMotion::NoMeshMotion(const ParameterSet& ps)
+NoMeshMotion::NoMeshMotion(const ParameterSet& /*ps*/)
 {}
 
 bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
@@ -77,7 +77,7 @@ void CAFSIBC::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs").push_back( OFDictData::data("\"libFEMDisplacementBC.so\"") );
 }
 
-bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& /*fieldinfo*/, OFDictData::dict& BC) const
 {
   if (fieldname == "motionU")
   {
@@ -86,7 +86,7 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& f
   if ( (fieldname == "pointDisplacement") || (fieldname == "motionU") )
   {
     BC["type"]= OFDictData::data("FEMDisplacement");
-    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p_.FEMScratchDir->originalFilePath().c_str()+"\"");
+    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p_.FEMScratchDir->originalFilePath().string()+"\"");
     BC["pressureScale"]=  OFDictData::data(p_.pressureScale);
     BC["minPressure"]=  OFDictData::data(p_.clipPressure);
     BC["nSmoothIter"]=  OFDictData::data(4);

@@ -5,9 +5,13 @@
 #include <QTextStream>
 #include <QTemporaryFile>
 #include <QScrollBar>
+#include <QCoreApplication>
 
 #include "email.h"
 #include "base/progressdisplayer.h"
+
+
+
 
 LogViewerWidget::LogViewerWidget(QWidget* parent)
   : QPlainTextEdit(parent)
@@ -21,20 +25,90 @@ LogViewerWidget::LogViewerWidget(QWidget* parent)
 }
 
 
+
+
+void LogViewerWidget::update ( const insight::ProgressState& pi )
+{}
+
+
+
+
+void LogViewerWidget::logMessage(const std::string &line)
+{
+    QMetaObject::invokeMethod(  // post into GUI thread as this method might be called from different thread
+          qApp,
+          [this,line]()
+          {
+              this->appendLine( QString::fromStdString(line) );
+          }
+    );
+}
+
+
+
+
+void LogViewerWidget::setActionProgressValue(const std::string &path, double value)
+{}
+
+
+
+
+void LogViewerWidget::setMessageText(const std::string &path, const std::string& message)
+{}
+
+
+
+
+void LogViewerWidget::finishActionProgress(const std::string &path)
+{}
+
+
+
+
+void LogViewerWidget::reset()
+{
+//    QMetaObject::invokeMethod(  // post into GUI thread as this method might be called from different thread
+//          qApp,
+//          [this]()
+//          {
+//              this->clearLog();
+//          }
+//    );
+    QMetaObject::invokeMethod(  // post into GUI thread as this method might be called from different thread
+          qApp,
+          [this]()
+          {
+              this->appendLine( QString(80, '#') );
+          }
+    );
+}
+
+
+
+
 void LogViewerWidget::appendLine(const QString& line)
 {
   appendPlainText(line);
 }
+
+
+
 
 void LogViewerWidget::appendErrorLine(const QString &line)
 {
   appendHtml("<b>"+line+"</b>");
 }
 
+
+
+
 void LogViewerWidget::appendDimmedLine(const QString &line)
 {
   appendHtml("<font color=\"Gray\">"+line+"</font>");
 }
+
+
+
 
 void LogViewerWidget::appendLogMessage(const insight::ProgressState &ps)
 {
@@ -65,6 +139,9 @@ void LogViewerWidget::saveLog()
     }
 }
 
+
+
+
 void LogViewerWidget::sendLog()
 {
     QTemporaryFile f;
@@ -86,10 +163,15 @@ void LogViewerWidget::sendLog()
 }
 
 
+
+
 void LogViewerWidget::clearLog()
 {
   clear();
 }
+
+
+
 
 void LogViewerWidget::autoScrollLog()
 {

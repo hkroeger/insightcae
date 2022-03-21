@@ -1,5 +1,5 @@
 #include "progressdisplayer.h"
-
+#include "base/exception.h"
 
 
 namespace insight {
@@ -42,14 +42,27 @@ ActionProgress ProgressDisplayer::forkNewAction(double nSteps, const std::string
 
 void ProgressDisplayer::stepUp(double steps)
 {
-  ci_+=steps;
-  setActionProgressValue(actionPath(), ci_/(maxi_+1));
+  stepTo(ci_+steps);
 }
 
 void ProgressDisplayer::stepTo(double i)
 {
-  ci_=i;
-  setActionProgressValue(actionPath(), ci_/(maxi_+1));
+    ci_=std::min(maxi_,i);
+    insight::dbg()<<actionPath()<<": progress "<<ci_<<"/"<<maxi_<<std::endl;
+    setActionProgressValue(actionPath(), ci_/maxi_);
+    if (ci_ >= maxi_)
+    {
+        insight::dbg()<<actionPath()<<": finish progress"<<std::endl;
+        finishActionProgress(actionPath());
+    }
+}
+
+void ProgressDisplayer::completed()
+{
+    if (ci_<maxi_)
+    {
+        stepTo(maxi_);
+    }
 }
 
 void ProgressDisplayer::operator++()
@@ -64,6 +77,7 @@ void ProgressDisplayer::operator+=(double n)
 
 void ProgressDisplayer::message(const std::string &message)
 {
+  insight::dbg()<<actionPath()<<": "<<message<<std::endl;
   setMessageText(actionPath(), message);
 }
 
@@ -88,12 +102,17 @@ void ActionProgress::setMessageText(const std::string &path, const std::string &
 
 void ActionProgress::finishActionProgress(const std::string &path)
 {
-  parentAction_.finishActionProgress(path);
+    parentAction_.finishActionProgress(path);
 }
 
 void ActionProgress::update(const ProgressState &pi)
 {
-  parentAction_.update(pi);
+    parentAction_.update(pi);
+}
+
+void ActionProgress::logMessage(const std::string &line)
+{
+    parentAction_.logMessage(line);
 }
 
 void ActionProgress::reset()
@@ -121,6 +140,7 @@ ActionProgress::ActionProgress
     name_(name)
 {
   maxi_=nSteps;
+  stepTo(0); // enforce creation of progress bar
 }
 
 

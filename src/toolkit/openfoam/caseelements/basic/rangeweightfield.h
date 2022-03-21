@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "rangeweightfield__rangeWeightField__Parameters_headers.h"
+
 namespace insight {
 
 class rangeWeightField

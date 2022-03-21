@@ -1,12 +1,19 @@
 #ifndef INSIGHTCAEAPPLICATION_H
 #define INSIGHTCAEAPPLICATION_H
 
+#include "toolkit_gui_export.h"
+
+
+#ifdef QT_STATICPLUGIN
+#include <QtPlugin>
+Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
+#endif
 
 #include <QApplication>
 
 class QSplashScreen;
 
-class InsightCAEApplication
+class TOOLKIT_GUI_EXPORT InsightCAEApplication
 : public QApplication
 {
   Q_OBJECT

@@ -1,12 +1,7 @@
 #include "chart.h"
+#include "base/resultelements/chartrenderer.h"
 
 #include "base/tools.h"
-
-#ifdef CHART_RENDERER_GNUPLOT
-#include "base/resultelements/gnuplotrenderer.h"
-#elif defined(CHART_RENDERER_MATPLOTLIB)
-#include "base/resultelements/matplotlibrenderer.h"
-#endif
 
 using namespace std;
 using namespace boost;
@@ -179,7 +174,34 @@ Chart::Chart
 
 const ChartData* Chart::chartData() const
 {
-  return this;
+    return this;
+}
+
+void Chart::addCurve(const PlotCurve &pc)
+{
+    plc_.push_back(pc);
+}
+
+const PlotCurve &Chart::plotCurve(const std::string &plainTextLabel) const
+{
+    auto i=std::find_if(
+                plc_.begin(), plc_.end(),
+                [&plainTextLabel](const PlotCurve& pc)
+                 { return pc.plaintextlabel_ == plainTextLabel; }
+    );
+
+    if (i==plc_.end())
+    {
+        std::string curveNames;
+        for (const auto& c: plc_)
+            curveNames+=" "+c.plaintextlabel_;
+        throw insight::Exception(
+                    "Curve "+plainTextLabel+" not found in chart data! "
+                    "Available curves: "+curveNames
+                    );
+    }
+
+    return *i;
 }
 
 
@@ -188,15 +210,7 @@ const ChartData* Chart::chartData() const
 
 void Chart::generatePlotImage( const path& imagepath ) const
 {
-  std::shared_ptr<ChartRenderer> renderer;
-
-#ifdef CHART_RENDERER_GNUPLOT
-  renderer.reset( new GnuplotRenderer(chartData()) );
-#elif defined(CHART_RENDERER_MATPLOTLIB)
-  renderer.reset( new MatplotlibRenderer(chartData()) );
-#endif
-
-  renderer->render(imagepath);
+  ChartRenderer::create(chartData())->render(imagepath);
 }
 
 
@@ -217,7 +231,8 @@ void Chart::writeLatexCode ( std::ostream& f, const std::string& name, int , con
     f<<
      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
-     "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative ( outputfilepath, chart_file ).c_str() << "}\n"
+     "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
+        << make_relative ( outputfilepath, chart_file ).generic_path().string() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier";
@@ -235,8 +250,6 @@ void Chart::exportDataToFile ( const std::string& name, const boost::filesystem:
         }
 
         boost::filesystem::path fname ( outputdirectory/ ( name+"__"+suf+".xy" ) );
-
-        std::ofstream f ( fname.c_str() );
         pc.xy_.save ( fname.string(), arma::raw_ascii );
         curveID++;
     }

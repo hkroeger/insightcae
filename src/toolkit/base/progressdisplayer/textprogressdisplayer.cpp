@@ -28,6 +28,11 @@ void TextProgressDisplayer::update ( const ProgressState& pi )
     cout<<pi.logMessage_<<endl;
 }
 
+void TextProgressDisplayer::logMessage(const std::string &line)
+{
+    cout<<line<<std::endl;
+}
+
 void TextProgressDisplayer::setActionProgressValue(const string &path, double value)
 {
   cout << path << " progress: " << 100.*value << "%" << endl;

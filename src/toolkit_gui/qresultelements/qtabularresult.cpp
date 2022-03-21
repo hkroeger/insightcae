@@ -7,10 +7,10 @@
 namespace insight {
 
 defineType(QTabularResult);
-addToFactoryTable(QResultElement, QTabularResult);
+addToFactoryTable(IQResultElement, QTabularResult);
 
 QTabularResult::QTabularResult(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-: QResultElement(parent, label, rep)
+: IQResultElement(parent, label, rep)
 {
 }
 
@@ -23,7 +23,7 @@ QVariant QTabularResult::previewInformation(int) const
 
 void QTabularResult::createFullDisplay(QVBoxLayout* layout)
 {
-  QResultElement::createFullDisplay(layout);
+  IQResultElement::createFullDisplay(layout);
 
   auto resp=resultElementAs<TabularResult>();
   auto& res=*resp;

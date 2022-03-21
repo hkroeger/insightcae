@@ -23,6 +23,7 @@
 #define INSIGHT_BLOCKMESH_TEMPLATES_H
 
 #include "openfoam/blockmesh.h"
+#include "blockmesh_templates__blockMeshDict_Cylinder__Parameters_headers.h"
 
 namespace insight {
   
@@ -94,15 +95,25 @@ mesh = set
     gradr = double 1 "grading towards outer boundary"
     gradax = double 1 "grading towards top boundary"
 
-    core_fraction = double 0.33 "core block radius given as fraction of outer diameter"
+    topology = selectablesubset {{
 
-    smoothCore = bool false "use splines as boundaries of core block and attempt to create a uniform distance from core border to outer perimeter"
+     oGrid set {
+        core_fraction = double 0.33 "core block radius given as fraction of outer diameter"
+        smoothCore = bool false "use splines as boundaries of core block and attempt to create a uniform distance from core border to outer perimeter"
+     }
+
+     pieSlice set {
+     }
+
+    }} oGrid "Topology of the grid. Note: if a nonzero inner radius is nonzero, pieSlice is always used."
 
     defaultPatchName = string "walls" "name of patch where all patches with empty names are assigned to."
     circumPatchName = string "" "name of patch on outer circumferential surface"
     innerPatchName = string "" "name of patch on inner circumferential surface"
     basePatchName = string "" "name of patch on base end"
     topPatchName = string "" "name of patch on top end"
+
+    cellZoneName = string "" "name of the zone into which all cells are to be included"
 }
 
 <<<PARAMETERSET
@@ -117,8 +128,6 @@ public:
     blockMeshDict_Cylinder ( OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
 
     virtual void create_bmd();
-
-    double rCore() const;
 };
 
 

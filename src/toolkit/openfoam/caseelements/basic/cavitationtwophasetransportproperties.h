@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/basic/twophasetransportproperties.h"
 
+#include "cavitationtwophasetransportproperties__SchnerrSauer__Parameters_headers.h"
 
 namespace insight {
 

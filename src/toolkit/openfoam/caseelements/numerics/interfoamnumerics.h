@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
 #include "openfoam/caseelements/numerics/pimplesettings.h"
+#include "interfoamnumerics__interFoamNumerics__Parameters_headers.h"
 
 namespace insight {
 
@@ -11,9 +12,10 @@ OFDictData::dict stdMULESSolverSetup
 (
         double cAlpha,
         double icAlpha,
-        double tol=1e-8,
+        double tol=1e-12,
         double reltol=0.0,
-        bool LTS=false
+        bool LTS=false,
+        int nLimiterIter=15
 );
 
 
@@ -36,6 +38,7 @@ time_integration = includedset "insight::MultiphasePIMPLESettings::Parameters" "
 
 
 alphaSubCycles = int 1 "Number of alpha integration subcycles"
+alphaLimiterIter = int 15 "Number of alpha limiter iterations"
 
 cAlpha = double 0.25 "[-] Interface compression coefficient"
 icAlpha = double 0 "[-] Isotropic interface compression coefficient"

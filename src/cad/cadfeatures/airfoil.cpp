@@ -79,9 +79,6 @@ FeaturePtr Airfoil::create
     return FeaturePtr(new Airfoil(name, p0, ex, ez, c, t, r_EK, r_AK));
 }
 
-const double SMALL=1e-10;
-const double LSMALL=1e-6;
-
 
 
 

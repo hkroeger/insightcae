@@ -92,6 +92,10 @@ void Arc::build()
   crv->D1(crv->LastParameter(), p, v);
   refpoints_["p1"]=vec3(p);
   refvectors_["et1"]=vec3(v);
+
+  auto c = Handle_Geom_Circle::DownCast(crv->BasisCurve())->Circ();
+  refpoints_["center"]=vec3(c.Location());
+  refvalues_["D"]=c.Radius()*2.;
 }
 
 
@@ -232,6 +236,10 @@ void Arc3P::build()
   crv->D1(crv->LastParameter(), p, v);
   refpoints_["p1"]=vec3(p);
   refvectors_["et1"]=vec3(v);
+
+  auto c = Handle_Geom_Circle::DownCast(crv->BasisCurve())->Circ();
+  refpoints_["center"]=vec3(c.Location());
+  refvalues_["D"]=c.Radius()*2.;
 }
 
 

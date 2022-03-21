@@ -48,22 +48,22 @@
 #include "CDM_Document.hxx"
 // #include "MMgt_TShared.hxx"
 #include "TDocStd_Document.hxx"
-#include "XCAFApp_Application.hxx"
-#include "XCAFDoc.hxx"
-#include "XCAFDoc_DocumentTool.hxx"
-#include "XCAFDoc_ShapeTool.hxx"
-#include "XSControl_WorkSession.hxx"
-#include "XSControl_TransferReader.hxx"
-#include "XSControl_TransferWriter.hxx"
+//#include "XCAFApp_Application.hxx"
+//#include "XCAFDoc.hxx"
+//#include "XCAFDoc_DocumentTool.hxx"
+//#include "XCAFDoc_ShapeTool.hxx"
+//#include "XSControl_WorkSession.hxx"
+//#include "XSControl_TransferReader.hxx"
+//#include "XSControl_TransferWriter.hxx"
 #include "StepData_StepModel.hxx"
 #include "TDF_LabelSequence.hxx"
 #if (OCC_VERSION_MAJOR>=7)
 #else
 #include "Handle_StepRepr_RepresentationItem.hxx"
 #endif
-#include "STEPConstruct.hxx"
-#include "STEPCAFControl_Writer.hxx"
-#include "STEPCAFControl_Reader.hxx"
+//#include "STEPConstruct.hxx"
+//#include "STEPCAFControl_Writer.hxx"
+//#include "STEPCAFControl_Reader.hxx"
 #include "StepRepr_RepresentationItem.hxx"
 #include "StepShape_AdvancedFace.hxx"
 #include "APIHeaderSection_MakeHeader.hxx"
@@ -280,7 +280,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     {
         BRep_Builder bb;
         TopoDS_Shape s;
-        BRepTools::Read(s, filename.c_str(), bb);
+        BRepTools::Read(s, filename.string().c_str(), bb);
         setShape(s);
     }
     else if ( (ext==".igs") || (ext==".iges") )
@@ -294,7 +294,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 
         igesReader = IGESControl_Reader();
         igesReader.SetReadVisible( true );
-        igesReader.ReadFile(filename.c_str());
+        igesReader.ReadFile(filename.string().c_str());
         igesReader.PrintCheckLoad(false, IFSelect_ItemsByEntity);
 
         igesReader.TransferRoots();
@@ -309,7 +309,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 
           // import STEP
           STEPControl_Reader reader;
-          reader.ReadFile(filename.c_str());
+          reader.ReadFile(filename.string().c_str());
           reader.TransferRoots();
           cout<<"STEP transferred"<<endl;
 
@@ -435,8 +435,20 @@ size_t Feature::calcShapeHash() const
   size_t hash=0;
   
   boost::hash_combine(hash, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash, boost::hash<int>()(vmap_.Size()));
-  boost::hash_combine(hash, boost::hash<int>()(fmap_.Size()));
+  boost::hash_combine(hash, boost::hash<int>()(vmap_.
+#if OCC_VERSION_MAJOR<7
+                                               Extent()
+#else
+                                               Size()
+#endif
+                                               ));
+  boost::hash_combine(hash, boost::hash<int>()(fmap_.
+#if OCC_VERSION_MAJOR<7
+                                               Extent()
+#else
+                                               Size()
+#endif
+                                               ));
 
   FeatureSetData vset=allVerticesSet();
   for (const insight::cad::FeatureID& j: vset)
@@ -600,12 +612,14 @@ double Feature::mass(double density_ovr, double aw_ovr) const
   double aw=areaWeight();
   if (aw_ovr>=0.) aw=aw_ovr;
   
-//   std::cout<<rho<<" ("<<density_ovr<<")"<<std::endl;
+  dbg()<<"rho="<<rho<<" ("<<density_ovr<<")"<<std::endl;
   
   double mtot=rho*modelVolume() + aw*modelSurfaceArea();
-//   cout<<"Computed mass rho / V = "<<rho<<" / "<<modelVolume()
-//       <<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
-//       <<", m = "<<mtot<<endl;
+
+  dbg()<<"Computed mass rho / V = "<<rho<<" / "<<modelVolume()
+       <<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
+       <<", m = "<<mtot<<endl;
+
   return mtot;
 }
 
@@ -615,13 +629,16 @@ void Feature::checkForBuildDuringAccess() const
   {
     if (!valid())
       {
-        std::cout<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
+        dbg()<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
       }
     ASTBase::checkForBuildDuringAccess();
   }
   catch (const Standard_Failure& e)
   {
-    throw insight::cad::CADException(shared_from_this(), e.GetMessageString());
+    dbg()<<"exception during feature rebuild"<<std::endl;
+    throw insight::cad::CADException(
+          shared_from_this(),
+          e.GetMessageString() ? e.GetMessageString() : "(no error message)" );
   }
 }
 
@@ -1068,37 +1085,37 @@ FeatureSetData Feature::allSolidsSet() const
   return fsd;
 }
 
-FeatureSet Feature::allVertices() const
+FeatureSetPtr Feature::allVertices() const
 {
-  FeatureSet f(shared_from_this(), Vertex);
-  f.setData(allVerticesSet());
+  auto f=std::make_shared<FeatureSet>(shared_from_this(), Vertex);
+  f->setData(allVerticesSet());
   return f;
 }
 
-FeatureSet Feature::allEdges() const
+FeatureSetPtr Feature::allEdges() const
 {
-  FeatureSet f(shared_from_this(), Edge);
-  f.setData(allEdgesSet());
+  auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
+  f->setData(allEdgesSet());
   return f;
 }
 
-FeatureSet Feature::allFaces() const
+FeatureSetPtr Feature::allFaces() const
 {
-  FeatureSet f(shared_from_this(), Edge);
-  f.setData(allFacesSet());
+  auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
+  f->setData(allFacesSet());
   return f;
 }
 
-FeatureSet Feature::allSolids() const
+FeatureSetPtr Feature::allSolids() const
 {
-  FeatureSet f(shared_from_this(), Solid);
-  f.setData(allSolidsSet());
+  auto f=std::make_shared<FeatureSet>(shared_from_this(), Solid);
+  f->setData(allSolidsSet());
   return f;
 }
 
 FeatureSetData Feature::query_vertices(FilterPtr f) const
 {
-  return query_vertices_subset(allVertices(), f);
+  return query_vertices_subset(*allVertices(), f);
 }
 
 FeatureSetData Feature::query_vertices(const string& queryexpr, const FeatureSetParserArgList& refs) const
@@ -1138,7 +1155,7 @@ FeatureSetData Feature::query_vertices_subset(const FeatureSetData& fs, const st
 FeatureSetData Feature::query_edges(FilterPtr f) const
 {
 //   Filter::Ptr f(filter.clone());
-  return query_edges_subset(allEdges(), f);
+  return query_edges_subset(*allEdges(), f);
 }
 
 FeatureSetData Feature::query_edges(const std::string& queryexpr, const FeatureSetParserArgList& refs) const
@@ -1175,7 +1192,7 @@ FeatureSetData Feature::query_edges_subset(const FeatureSetData& fs, const std::
 
 FeatureSetData Feature::query_faces(FilterPtr f) const
 {
-  return query_faces_subset(allFaces(), f);
+  return query_faces_subset(*allFaces(), f);
 }
 
 FeatureSetData Feature::query_faces(const string& queryexpr, const FeatureSetParserArgList& refs) const
@@ -1214,7 +1231,7 @@ FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, const std::
 
 FeatureSetData Feature::query_solids(FilterPtr f) const
 {
-  return query_solids_subset(allSolids(), f);
+  return query_solids_subset(*allSolids(), f);
 }
 
 FeatureSetData Feature::query_solids(const string& queryexpr, const FeatureSetParserArgList& refs) const
@@ -1315,7 +1332,7 @@ void Feature::saveAs
 
   if (ext==".brep")
   {
-    BRepTools::Write(shape(), filename.c_str());
+    BRepTools::Write(shape(), filename.string().c_str());
   } 
 
 
@@ -1326,125 +1343,130 @@ void Feature::saveAs
     igesctrl.Init();
     IGESControl_Writer igeswriter;
     igeswriter.AddShape(shape());
-    igeswriter.Write(filename.c_str());
+    igeswriter.Write(filename.string().c_str());
   } 
 
 
   else if ( (ext==".stp") || (ext==".step") )
   {
-   IFSelect_ReturnStatus stat;
+
+   STEPControl_Writer sw;
+   sw.Transfer(shape(), STEPControl_AsIs);
+   sw.Write(filename.string().c_str());
+
+//   IFSelect_ReturnStatus stat;
    
-   // The various ways of reading a file are available here too :
-   // to read it by the reader, to take it from a WorkSession ...
-   Handle_TDocStd_Document aDoc;
-   {
-      Handle_XCAFApp_Application anApp = XCAFApp_Application::GetApplication();
-      anApp->NewDocument("MDTV-XCAF", aDoc);
-   }
+//   // The various ways of reading a file are available here too :
+//   // to read it by the reader, to take it from a WorkSession ...
+//   Handle_TDocStd_Document aDoc;
+//   {
+//      Handle_XCAFApp_Application anApp = XCAFApp_Application::GetApplication();
+//      anApp->NewDocument("MDTV-XCAF", aDoc);
+//   }
 
-   Standard_Boolean ok;
-   Handle_XCAFDoc_ShapeTool myAssembly = XCAFDoc_DocumentTool::ShapeTool(aDoc->Main());   
-   myAssembly->AddShape(shape());
+//   Standard_Boolean ok;
+//   Handle_XCAFDoc_ShapeTool myAssembly = XCAFDoc_DocumentTool::ShapeTool(aDoc->Main());
+//   myAssembly->AddShape(shape());
    
-   STEPControl_StepModelType mode = STEPControl_AsIs;
-   STEPCAFControl_Writer writer;
+//   STEPControl_StepModelType mode = STEPControl_AsIs;
+//   STEPCAFControl_Writer writer;
 
-   Interface_Static::SetCVal("write.step.schema", "AP214IS");
-   Interface_Static::SetCVal("write.step.product.name", "productInfo" );
+//   Interface_Static::SetCVal("write.step.schema", "AP214IS");
+//   Interface_Static::SetCVal("write.step.product.name", "productInfo" );
 
-   // configure STEP interface
-   writer.SetColorMode(Standard_True);
-   writer.SetLayerMode(Standard_True);
-   writer.SetNameMode (Standard_True);
+//   // configure STEP interface
+//   writer.SetColorMode(Standard_True);
+//   writer.SetLayerMode(Standard_True);
+//   writer.SetNameMode (Standard_True);
 
-   // Translating document (conversion) to STEP Writer
-   if ( !writer.Transfer ( aDoc, mode ) )
-   {
-      throw insight::Exception("The document cannot be translated or gives no result");
-   }
+//   // Translating document (conversion) to STEP Writer
+//   if ( !writer.Transfer ( aDoc, mode ) )
+//   {
+//      throw insight::Exception("The document cannot be translated or gives no result");
+//   }
 
-   ////// Begin Hack to associate names to Faces/Edges/Vertices /////
-   const Handle_XSControl_WorkSession& theSession = writer.Writer().WS();
-   const Handle_XSControl_TransferWriter& aTransferWriter = theSession->TransferWriter();
-   const Handle_Transfer_FinderProcess FP = aTransferWriter->FinderProcess();
+//   ////// Begin Hack to associate names to Faces/Edges/Vertices /////
+//   const Handle_XSControl_WorkSession& theSession = writer.Writer().WS();
+//   const Handle_XSControl_TransferWriter& aTransferWriter = theSession->TransferWriter();
+//   const Handle_Transfer_FinderProcess FP = aTransferWriter->FinderProcess();
    
-   typedef std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> > FSM;
+//   typedef std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> > FSM;
 
-   std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> > all_namedfeats = namedfeats;
+//   std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> > all_namedfeats = namedfeats;
 
-   for (const FeatureSetPtrMap::value_type& pfs: providedFeatureSets_)
-   {
-     const std::string& name = pfs.first;
-     const FeatureSetPtr& feat = pfs.second;
-     if ( feat->shape() == Face )
-       {
-         all_namedfeats.push_back( boost::fusion::vector2<std::string, FeatureSetPtr>(name, feat) );
-       }
-   }
+//   for (const FeatureSetPtrMap::value_type& pfs: providedFeatureSets_)
+//   {
+//     const std::string& name = pfs.first;
+//     const FeatureSetPtr& feat = pfs.second;
+//     if ( feat->shape() == Face )
+//       {
+//         all_namedfeats.push_back( boost::fusion::vector2<std::string, FeatureSetPtr>(name, feat) );
+//       }
+//   }
 
-   for (const FSM::value_type& fp: all_namedfeats)
-   {
-     std::string name = boost::fusion::get<0>(fp); // fp.first;
-     const FeatureSetPtr& fs = boost::fusion::get<1>(fp); //fp.second;
+//   for (const FSM::value_type& fp: all_namedfeats)
+//   {
+//     std::string name = boost::fusion::get<0>(fp); // fp.first;
+//     const FeatureSetPtr& fs = boost::fusion::get<1>(fp); //fp.second;
      
-     if ( fs->shape() == Face )
-     {
-       for (const FeatureID& id: fs->data())
-       {
-	 TopoDS_Face aFace = fs->model()->face(id);
-	 Handle_StepRepr_RepresentationItem r = STEPConstruct::FindEntity(FP, aFace);
-	 if (r.IsNull() == Standard_False)
-	 {
-	    // cast the StepRepr_RepresentationItem to a StepShape_AdvancedFace of the STEP Writer : variable "x"
-	    Handle_StepShape_AdvancedFace x = Handle_StepShape_AdvancedFace::DownCast(r);
-	    if (x.IsNull() == Standard_True)
-	    {
-	      throw insight::Exception
-	      (
-		"Failed to Down-cast StepRepr_RepresentationItem into "+ std::string(x->DynamicType()->Name())
-	      );
-	    }
+//     if ( fs->shape() == Face )
+//     {
+//       for (const FeatureID& id: fs->data())
+//       {
+//	 TopoDS_Face aFace = fs->model()->face(id);
+//	 Handle_StepRepr_RepresentationItem r = STEPConstruct::FindEntity(FP, aFace);
+//	 if (r.IsNull() == Standard_False)
+//	 {
+//	    // cast the StepRepr_RepresentationItem to a StepShape_AdvancedFace of the STEP Writer : variable "x"
+//	    Handle_StepShape_AdvancedFace x = Handle_StepShape_AdvancedFace::DownCast(r);
+//	    if (x.IsNull() == Standard_True)
+//	    {
+//	      throw insight::Exception
+//	      (
+//		"Failed to Down-cast StepRepr_RepresentationItem into "+ std::string(x->DynamicType()->Name())
+//	      );
+//	    }
 	    
-	    Handle(TCollection_HAsciiString) newid = new TCollection_HAsciiString(name.c_str());
-	    x->SetName(newid);
-	 #warning check, if already named?
-	 }
-	 else
-	 {
-	    insight::Warning
-	    (
-	      boost::str(boost::format("Feature set face#%d not found in model")%id)
-	    );
-	 }
-// 	 StepShape_SetName<Handle_StepShape_AdvancedFace> (r, reader, aFace, "My Face", i++);
-       }
-     } else
-     {
-       throw insight::Exception("Given feature set not consisting of faces: yet unsupported");
-     }
-   }
+//	    Handle(TCollection_HAsciiString) newid = new TCollection_HAsciiString(name.c_str());
+//	    x->SetName(newid);
+//	 #warning check, if already named?
+//	 }
+//	 else
+//	 {
+//	    insight::Warning
+//	    (
+//	      boost::str(boost::format("Feature set face#%d not found in model")%id)
+//	    );
+//	 }
+//// 	 StepShape_SetName<Handle_StepShape_AdvancedFace> (r, reader, aFace, "My Face", i++);
+//       }
+//     } else
+//     {
+//       throw insight::Exception("Given feature set not consisting of faces: yet unsupported");
+//     }
+//   }
    
-   // edit STEP header
-   APIHeaderSection_MakeHeader makeHeader(writer.ChangeWriter().Model());
+//   // edit STEP header
+//   APIHeaderSection_MakeHeader makeHeader(writer.ChangeWriter().Model());
 
-   Handle_TCollection_HAsciiString headerFileName = new TCollection_HAsciiString(filename.stem().c_str());
-//    Handle(TCollection_HAsciiString) headerAuthor      = new TCollection_HAsciiString("silentdynamics GmbH");
-   Handle_TCollection_HAsciiString headerOrganization = new TCollection_HAsciiString("silentdynamics GmbH");
-   Handle_TCollection_HAsciiString headerOriginatingSystem = new TCollection_HAsciiString("Insight CAD");
-   Handle_TCollection_HAsciiString fileDescription = new TCollection_HAsciiString("iscad model");
+//   Handle_TCollection_HAsciiString headerFileName = new TCollection_HAsciiString(filename.stem().string().c_str());
+////    Handle(TCollection_HAsciiString) headerAuthor      = new TCollection_HAsciiString("silentdynamics GmbH");
+//   Handle_TCollection_HAsciiString headerOrganization = new TCollection_HAsciiString("silentdynamics GmbH");
+//   Handle_TCollection_HAsciiString headerOriginatingSystem = new TCollection_HAsciiString("Insight CAD");
+//   Handle_TCollection_HAsciiString fileDescription = new TCollection_HAsciiString("iscad model");
 
-   makeHeader.SetName(headerFileName);
-//    makeHeader.SetAuthorValue (1, headerAuthor);
-   makeHeader.SetOrganizationValue (1, headerOrganization);
-   makeHeader.SetOriginatingSystem(headerOriginatingSystem);
-   makeHeader.SetDescriptionValue(1, fileDescription);
+//   makeHeader.SetName(headerFileName);
+////    makeHeader.SetAuthorValue (1, headerAuthor);
+//   makeHeader.SetOrganizationValue (1, headerOrganization);
+//   makeHeader.SetOriginatingSystem(headerOriginatingSystem);
+//   makeHeader.SetDescriptionValue(1, fileDescription);
 
-   // Writing the File (With names associated to Faces/Edges/Vertices)
-   ok=Standard_True;
-   stat = writer.Write(filename.string().c_str());
-   if (stat!=IFSelect_RetDone) ok = Standard_False;
+//   // Writing the File (With names associated to Faces/Edges/Vertices)
+//   ok=Standard_True;
+//   stat = writer.Write(filename.string().c_str());
+//   if (stat!=IFSelect_RetDone) ok = Standard_False;
    
-   if (!ok) throw insight::Exception("STEP export failed!");
+//   if (!ok) throw insight::Exception("STEP export failed!");
     
   } 
 
@@ -1459,7 +1481,7 @@ void Feature::saveAs
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
     stlwriter.SetCoefficient(5e-5);
 #endif
-    stlwriter.Write(shape(), filename.c_str());
+    stlwriter.Write(shape(), filename.string().c_str());
   }
   else
   {
@@ -1485,7 +1507,7 @@ void Feature::exportSTL(const boost::filesystem::path& filename, double abstol, 
   BRepMesh_IncrementalMesh binc(os, abstol);
 #endif
 
-  stlwriter.Write(os, filename.c_str());
+  stlwriter.Write(os, filename.string().c_str());
 }
 
 
@@ -1606,12 +1628,6 @@ const TopoDS_Shape& Feature::shape() const
     BRepMesh_IncrementalMesh aMesher(shape_, visresolution_->value());
   }
   return shape_;
-}
-
-
-Handle_AIS_InteractiveObject Feature::buildVisualization() const
-{
-    return Handle_AIS_InteractiveObject( new AIS_Shape(shape()) );
 }
 
 

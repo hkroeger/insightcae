@@ -7,6 +7,8 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
+#include "boundarycondition_multiphase__uniformPhases__Parameters_headers.h"
+
 
 namespace insight
 {

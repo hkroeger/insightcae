@@ -96,11 +96,11 @@ Datum::operator const gp_Ax3 () const
   return plane();
 }
 
-Handle_AIS_InteractiveObject Datum::createAISRepr(AIS_InteractiveContext&, const std::string& label, const gp_Trsf& tr) const
-{
-  throw insight::Exception("Not implemented: provide AIS_InteractiveObject presentation");
-  return NULL;
-}
+//Handle_AIS_InteractiveObject Datum::createAISRepr(AIS_InteractiveContext&, const std::string& label, const gp_Trsf& tr) const
+//{
+//  throw insight::Exception("Not implemented: provide AIS_InteractiveObject presentation");
+//  return NULL;
+//}
 
 void Datum::write(std::ostream& file) const
 {
@@ -176,13 +176,23 @@ gp_Ax3 TransformedDatum::plane() const
     return base_->plane().Transformed(tr_);
 }
 
-Handle_AIS_InteractiveObject TransformedDatum::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
+gp_Trsf TransformedDatum::trsf() const
 {
-    checkForBuildDuringAccess();
-    Handle_AIS_InteractiveObject ais ( base_->createAISRepr(context, label, tr_*tr) );
-    
-    return ais;
+  return tr_;
 }
+
+DatumPtr TransformedDatum::baseDatum() const
+{
+  return base_;
+}
+
+//Handle_AIS_InteractiveObject TransformedDatum::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
+//{
+//    checkForBuildDuringAccess();
+//    Handle_AIS_InteractiveObject ais ( base_->createAISRepr(context, label, tr_*tr) );
+    
+//    return ais;
+//}
 
 
 DatumPoint::DatumPoint()
@@ -195,20 +205,20 @@ gp_Pnt DatumPoint::point() const
   return p_;
 }
 
-Handle_AIS_InteractiveObject DatumPoint::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
-{
-  checkForBuildDuringAccess();
+//Handle_AIS_InteractiveObject DatumPoint::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
+//{
+//  checkForBuildDuringAccess();
 
-  return buildMultipleConnectedInteractive(context,
-  {
-    Handle_AIS_InteractiveObject(
-     new AIS_Shape( BRepBuilderAPI_MakeVertex(point().Transformed(tr)) )
-    ),
-    Handle_AIS_InteractiveObject(new InteractiveText(
-     boost::str(boost::format("PT:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
-    ))
-   });
-}
+//  return buildMultipleConnectedInteractive(context,
+//  {
+//    Handle_AIS_InteractiveObject(
+//     new AIS_Shape( BRepBuilderAPI_MakeVertex(point().Transformed(tr)) )
+//    ),
+//    Handle_AIS_InteractiveObject(new InteractiveText(
+//     boost::str(boost::format("PT:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
+//    ))
+//   });
+//}
 
 
 size_t ProvidedDatum::calcHash() const
@@ -256,11 +266,16 @@ gp_Ax3 ProvidedDatum::plane() const
   return dat_->plane();
 }
 
-Handle_AIS_InteractiveObject ProvidedDatum::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
+DatumPtr ProvidedDatum::baseDatum() const
 {
-    checkForBuildDuringAccess();
-    return dat_->createAISRepr(context, label, tr);
+  return dat_;
 }
+
+//Handle_AIS_InteractiveObject ProvidedDatum::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
+//{
+//    checkForBuildDuringAccess();
+//    return dat_->createAISRepr(context, label, tr);
+//}
 
 
 size_t ExplicitDatumPoint::calcHash() const
@@ -298,19 +313,19 @@ gp_Ax1 DatumAxis::axis() const
   return ax_;
 }
 
-Handle_AIS_InteractiveObject DatumAxis::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
-{
-  checkForBuildDuringAccess();
+//Handle_AIS_InteractiveObject DatumAxis::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
+//{
+//  checkForBuildDuringAccess();
 
-  return buildMultipleConnectedInteractive(context,
-  {
-   Handle_AIS_InteractiveObject(new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(axis().Transformed(tr))))),
-   Handle_AIS_InteractiveObject(new InteractiveText
-     (
-       boost::str(boost::format("AX:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
-     ))
-  });
-}
+//  return buildMultipleConnectedInteractive(context,
+//  {
+//   Handle_AIS_InteractiveObject(new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(axis().Transformed(tr))))),
+//   Handle_AIS_InteractiveObject(new InteractiveText
+//     (
+//       boost::str(boost::format("AX:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
+//     ))
+//  });
+//}
 
 
 size_t ExplicitDatumAxis::calcHash() const
@@ -348,26 +363,26 @@ gp_Ax3 DatumPlaneData::plane() const
   return cs_;
 }
 
-// DatumPlane::operator const Handle_AIS_InteractiveObject () const
-Handle_AIS_InteractiveObject DatumPlaneData::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
-{
-  checkForBuildDuringAccess();
+//// DatumPlane::operator const Handle_AIS_InteractiveObject () const
+//Handle_AIS_InteractiveObject DatumPlaneData::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
+//{
+//  checkForBuildDuringAccess();
 
-  auto plt = plane().Transformed(tr);
-  Handle_AIS_Plane aplane(new AIS_Plane(
-          Handle_Geom_Plane(new Geom_Plane(plt))
-  ));
-  aplane->SetCenter(plt.Location()); // will be displayed around origin otherwise
+//  auto plt = plane().Transformed(tr);
+//  Handle_AIS_Plane aplane(new AIS_Plane(
+//          Handle_Geom_Plane(new Geom_Plane(plt))
+//  ));
+//  aplane->SetCenter(plt.Location()); // will be displayed around origin otherwise
 
-  return buildMultipleConnectedInteractive(context,
-  {
-    aplane,
-    Handle_AIS_InteractiveObject(new InteractiveText
-     (
-       boost::str(boost::format("PL:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
-     ))
-  });
-}
+//  return buildMultipleConnectedInteractive(context,
+//  {
+//    aplane,
+//    Handle_AIS_InteractiveObject(new InteractiveText
+//     (
+//       boost::str(boost::format("PL:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
+//     ))
+//  });
+//}
 
 
 void DatumPlane::build()

@@ -18,33 +18,11 @@
  *
  */
 
-#include "base/analysis.h"
-#include "base/parameterstudy.h"
+#include "simple_analysis.h"
+
 
 namespace insight
 {
-
-    
-    
-    
-class SimpleAnalysis
-: public Analysis
-{
-public:
-#include "simple_analysis__SimpleAnalysis__Parameters.h"
-    
-/* 
-PARAMETERSET>>> SimpleAnalysis Parameters
-x = double 0 "x value"
-<<<PARAMETERSET
-*/
-
-public:
-    declareType("SimpleAnalysis");
-    SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath);
-    static std::string category() { return "Test"; }
-    ResultSetPtr operator()(ProgressDisplayer& p = consoleProgressDisplayer) override;
-};
 
 
 
@@ -53,8 +31,9 @@ addToAnalysisFactoryTable(SimpleAnalysis);
 
 
 
-SimpleAnalysis::SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: Analysis("Test", "", ps, exepath)
+SimpleAnalysis::SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
+: Analysis("Test", "", ps, exepath, pd),
+  p_(ps)
 {
 }
 
@@ -62,14 +41,13 @@ SimpleAnalysis::SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::
 
 
 
-ResultSetPtr SimpleAnalysis::operator()(ProgressDisplayer& pd)
+ResultSetPtr SimpleAnalysis::operator()(ProgressDisplayer& /*pd*/)
 {
-    Parameters p(parameters());
-    ResultSetPtr results( new ResultSet(parameters(), "Test", "") );
+    ResultSetPtr results( new ResultSet(p_, "Test", "") );
     
     results->insert("y", new ScalarResult( 
     
-        3*pow(p.x,2), 
+        3*pow(p_.x,2),
         
         "function value", "", ""));
     
@@ -86,8 +64,8 @@ class SimpleParameterStudy
 public:
     declareType("SimpleParameterStudy");
     
-    SimpleParameterStudy(const ParameterSet& ps, const boost::filesystem::path& exepath)
-    : ParameterStudy("Test", "", ps, exepath)
+    SimpleParameterStudy(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
+    : ParameterStudy("Test", "", ps, exepath, pd)
     {
     }
     

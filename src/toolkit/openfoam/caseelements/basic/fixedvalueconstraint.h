@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "fixedvalueconstraint__fixedValueConstraint__Parameters_headers.h"
 
 namespace insight {
 

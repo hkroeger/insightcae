@@ -18,13 +18,23 @@
  */
 
 #include "qevaluationitem.h"
+#include "postprocactionvisualizer.h"
 
 #include <QMenu>
 //#include "qoccviewercontext.h"
 
+using namespace insight::cad;
+
 Handle_AIS_InteractiveObject QEvaluationItem::createAIS(AIS_InteractiveContext&)
 {
-  return smp_->createAISRepr();
+  insight::CurrentExceptionContext ec("creating AIS representation of CAD feature");
+  try {
+    return postProcActionVisualizers.createAISRepr(smp_);
+  }
+  catch (Standard_Failure& e)
+  {
+    throw insight::Exception(e.GetMessageString()?e.GetMessageString():"(no error message)");
+  }
 }
 
 

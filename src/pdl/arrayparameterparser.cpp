@@ -9,6 +9,7 @@ ArrayParameterParser::Data::Data(ParserDataBase::Ptr v, size_t n, const std::str
 void ArrayParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
 {
   headers.insert("<vector>");
+  headers.insert("\"base/parameters/arrayparameter.h\"");
   value->cppAddHeader(headers);
 }
 

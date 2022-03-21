@@ -8,7 +8,7 @@
 
 #include "openfoam/fielddata.h"
 
-
+#include "boundarycondition_heat__FixedTemperatureBC__Parameters_headers.h"
 
 namespace insight
 {

@@ -34,14 +34,14 @@ MimeTypeManager::MimeTypeManager(const QString& filePath)
             continue;
 
         // Split the current entry and filter invalid entries
-        QStringList components = currentLine.split("\t", QString::SkipEmptyParts);
+        QStringList components = currentLine.split("\t", Qt::SkipEmptyParts);
         if (components.count() != 2) {
             qWarning() << "Invalid entry.";
             continue;
         }
 
         // Split multiple filename suffixes for every mimetype
-        QStringList endings = components.at(1).split(" ", QString::SkipEmptyParts);
+        QStringList endings = components.at(1).split(" ", Qt::SkipEmptyParts);
         QString mimeType = components.at(0);
 
         foreach (QString ending, endings) {

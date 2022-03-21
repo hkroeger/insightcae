@@ -34,7 +34,7 @@
 #include "dynamicclassparametersselectablesubsetparameterparser.h"
 #include "matrixparameterparser.h"
 #include "selectablesubsetparameterparser.h"
-
+#include "propertylibraryselectionparameterparser.h"
 
 
 
@@ -110,7 +110,12 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
      qi::lit("addTo_makeDefault") >> as_string[ lexeme [ "{" >> *~char_("}") >> "}" ] ] [qi::_val = qi::_1]
     ;
 
-  r_pdl_content =  (r_addcode | qi::attr(std::string())) >> r_parameterset;
+  r_pdl_content =
+         -( qi::lit("inherits") >> r_identifier )
+      >> -( qi::lit("description") >> r_string )
+      >> ( ( qi::lit("skipDefaultParametersMember") >> qi::attr(true) ) | qi::attr(false) )
+      >> (r_addcode | qi::attr(std::string()))
+      >> r_parameterset;
 
   
   //   BOOST_SPIRIT_DEBUG_NODE(r_identifier);
@@ -129,10 +134,9 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
 
 
 
-
 template <typename Iterator, typename Skipper>
 struct PDLParser
-    : qi::grammar< Iterator, boost::fusion::vector2<std::string, ParameterSetData>(), Skipper >
+    : qi::grammar< Iterator, PDLParserResult(), Skipper >
 {
 
   public:
@@ -158,7 +162,8 @@ struct PDLParser
     DynamicClassSelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     DynamicClassParametersSelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     MatrixParameterParser::insertrule<Iterator, Skipper>(rules);
-    
+    PropertyLibrarySelectionParameterParser::insertrule<Iterator, Skipper>(rules);
+
     rules.init();
 
     on_error<fail>( rules.r_pdl_content,
@@ -194,16 +199,6 @@ int main ( int argc, char *argv[] )
       PDLParser<std::string::iterator> parser;
       skip_grammar<std::string::iterator> skip;
 
-      std::string first_word, base_type_name="";
-      in>>first_word;
-      if ( first_word=="inherits" )
-      {
-        in>>base_type_name;
-      }
-      else
-      {
-        in.seekg ( 0, std::ios::beg );
-      }
 
       std::istreambuf_iterator<char> eos;
       std::string contents_raw ( std::istreambuf_iterator<char> ( in ), eos );
@@ -211,7 +206,7 @@ int main ( int argc, char *argv[] )
       std::string::iterator first=contents_raw.begin();
       std::string::iterator last=contents_raw.end();
 
-      boost::fusion::vector2<std::string, ParameterSetData> result_all;
+      PDLParserResult result_all;
       if (!qi::phrase_parse
           (
             first,
@@ -224,8 +219,20 @@ int main ( int argc, char *argv[] )
         throw PDLException("Parsing PDL "+inf.string()+" failed!");
       }
 
-      std::string& addTo_makeDefault = boost::fusion::get<0>(result_all);
-      ParameterSetData result = boost::fusion::get<1>(result_all);
+      std::string default_base_type_name="insight::ParametersBase";
+      std::string base_type_name=default_base_type_name;
+      auto inheritParam = boost::fusion::get<0>(result_all);
+      if (inheritParam) base_type_name=*inheritParam;
+
+      std::string description="";
+      auto descParam = boost::fusion::get<1>(result_all);
+      if (descParam) description=*descParam;
+
+      bool skipDefaultParamMember = boost::fusion::get<2>(result_all);
+
+      std::string addTo_makeDefault = boost::fusion::get<3>(result_all);
+
+      ParameterSetData result = boost::fusion::get<4>(result_all);
 
       {
         std::string bname=inf.stem().string();
@@ -241,6 +248,10 @@ int main ( int argc, char *argv[] )
         {
           std::ofstream f ( bname+"_headers.h" );
           std::set<std::string> headers;
+          if (base_type_name==default_base_type_name)
+          {
+            headers.insert("\"base/supplementedinputdata.h\"");
+          }
           for ( const ParameterSetEntry& pe: result )
           {
             pe.second->cppAddHeader ( headers );
@@ -286,13 +297,14 @@ int main ( int argc, char *argv[] )
           <<"}"<<endl
             ;
 
-          f<<"virtual ~"<<name<<"()"<<endl;
-          f<<"{}"<<endl;
+//          f<<"virtual ~"<<name<<"()"<<endl;
+//          f<<"{}"<<endl;
 
           //set into other ParameterSet
-          f<<"void set(insight::ParameterSet& p) const"<<endl
+//          f<<"virtual void set(insight::ParameterSet& p) const"<<endl
+          f<<"void set(insight::ParameterSet& p) const override"<<endl
           <<"{"<<endl;
-          if ( !base_type_name.empty() )
+          if ( !base_type_name.empty() && (base_type_name!=default_base_type_name) )
           {
             f<<" "<<base_type_name<<"::set(p);"<<endl;
           }
@@ -311,9 +323,10 @@ int main ( int argc, char *argv[] )
           f<<"}"<<endl;
 
           //from other ParameterSet into current static data
-          f<<"void get(const insight::ParameterSet& p)"<<endl
+//          f<<"virtual void get(const insight::ParameterSet& p)"<<endl
+          f<<"void get(const insight::ParameterSet& p) override"<<endl
           <<"{"<<endl;
-          if ( !base_type_name.empty() )
+          if ( !base_type_name.empty() && (base_type_name!=default_base_type_name) )
           {
             f<<" "<<base_type_name<<"::get(p);"<<endl;
           }
@@ -350,6 +363,7 @@ int main ( int argc, char *argv[] )
           {
             f<<" p="<<base_type_name<<"::makeDefault();"<<endl;
           }
+          f<<" p.setParameterSetDescription(\""<<description<<"\");"<<endl;
           for ( const ParameterSetEntry& pe: result )
           {
             pe.second->cppWriteInsertStatement
@@ -364,13 +378,18 @@ int main ( int argc, char *argv[] )
           f<<"return p;"<<endl<<"}"<<endl;
 
           // convert static data into a ParameterSet
-          f<<"virtual operator ParameterSet() const"<<endl;
+          f<<"operator ParameterSet() const override"<<endl;
           f<<"{ ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
+
+          // clone function
+          f<<"std::unique_ptr<ParametersBase> clone() const override"<<endl;
+          f<<"{ return std::make_unique<"<<name<<">(*this); }"<<endl;
 
           f<<"};"<<endl;
 
 
-          f << "static ParameterSet defaultParameters() { return Parameters::makeDefault(); }" << endl;
+          if (!skipDefaultParamMember)
+            f << "static ParameterSet defaultParameters() { return Parameters::makeDefault(); }" << endl;
         }
       }
     }

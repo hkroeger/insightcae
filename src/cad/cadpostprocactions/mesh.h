@@ -70,6 +70,7 @@ protected:
   void build() override;
 
 public:
+  declareType("Mesh");
   Mesh
   (
     const boost::filesystem::path& outpath,
@@ -82,9 +83,11 @@ public:
   );
   
 
-  Handle_AIS_InteractiveObject createAISRepr() const override;
+//  Handle_AIS_InteractiveObject createAISRepr() const override;
   void write(std::ostream& ) const override;
 };
+
+
 
 
 typedef boost::fusion::vector<
@@ -95,6 +98,9 @@ typedef boost::fusion::vector<
     insight::cad::GroupsDesc //solidGroups,
   > ExtrudedGroupDefinitions;
 
+
+
+
 class ExtrudedMesh
 : public Mesh
 {
@@ -103,9 +109,10 @@ protected:
   ScalarPtr h_, nLayers_;
   std::vector<std::pair<std::string, cad::FeatureSetPtr> > namedBottomFaces_, namedTopFaces_, namedLateralEdges_;
 
-  virtual void build();
+  void build() override;
 
 public:
+  declareType("ExtrudedMesh");
   ExtrudedMesh
   (
     const boost::filesystem::path& outpath,
@@ -118,11 +125,17 @@ public:
   );
 };
 
+
+
+
+
 typedef boost::fusion::vector5<FeaturePtr, std::string, ScalarPtr, boost::optional<boost::fusion::vector2<ScalarPtr, ScalarPtr> >, boost::optional<ScalarPtr> > GeometryDesc;
 typedef std::vector<GeometryDesc> GeometrysDesc;
 
 typedef boost::fusion::vector3<std::string, FeatureSetPtr, ScalarPtr> EdgeRefineDesc;
 typedef std::vector<EdgeRefineDesc> EdgeRefineDescs;
+
+
 
 
 class SnappyHexMesh 
@@ -139,6 +152,8 @@ class SnappyHexMesh
   virtual void build();
 
 public:
+  declareType("SnappyHexMesh");
+
   SnappyHexMesh
   (
     const boost::filesystem::path& outpath,
@@ -150,9 +165,11 @@ public:
   );
   
 
-  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
 };
+
+
 
 
 }

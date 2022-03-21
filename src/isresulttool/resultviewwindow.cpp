@@ -1,10 +1,19 @@
 #include "resultviewwindow.h"
 #include "ui_resultviewwindow.h"
+#include "iqaddfilterdialog.h"
+
+#include <QFileDialog>
+#include <QCheckBox>
+#include <QDebug>
+
+#include "base/cppextensions.h"
+
+#include "rapidxml/rapidxml_print.hpp"
 
 
-ResultViewWindow::ResultViewWindow(insight::ResultSetPtr results, QWidget *parent) :
-  QDialog(parent),
-  resultsModel_(results),
+ResultViewWindow::ResultViewWindow(QWidget *parent) :
+  QMainWindow(parent),
+  viewer_(new IQResultSetDisplayerWidget(this)),
   ui(new Ui::ResultViewWindow)
 {
   ui->setupUi(this);
@@ -12,15 +21,37 @@ ResultViewWindow::ResultViewWindow(insight::ResultSetPtr results, QWidget *paren
   setWindowTitle("InsightCAE Result Set Viewer");
   setWindowIcon(QIcon(":/logo_insight_cae.png"));
 
-  insight::connectToCWithContentsDisplay(ui->toc, ui->content);
+  setCentralWidget(viewer_);
 
-  ui->toc->setModel(&resultsModel_);
-  ui->toc->expandAll();
-  ui->toc->resizeColumnToContents(0);
-  ui->toc->resizeColumnToContents(1);
+
+  connect(ui->actionLoad, &QAction::triggered,
+          viewer_, &IQResultSetDisplayerWidget::loadResultSet );
+
+  connect(ui->actionSaveAs, &QAction::triggered,
+          viewer_, &IQResultSetDisplayerWidget::saveResultSetAs );
+
+  connect(ui->actionRender, &QAction::triggered,
+          viewer_, &IQResultSetDisplayerWidget::renderReport );
+
+  connect(ui->actionLoad_filter, &QAction::triggered,
+          viewer_, &IQResultSetDisplayerWidget::loadFilter );
+
+  connect(ui->actionSave_filter, &QAction::triggered,
+          viewer_, &IQResultSetDisplayerWidget::saveFilter );
 }
+
+
+
 
 ResultViewWindow::~ResultViewWindow()
 {
-  delete ui;
+    delete ui;
+}
+
+
+
+
+void ResultViewWindow::loadResults(insight::ResultSetPtr results)
+{
+    viewer_->loadResults(results);
 }

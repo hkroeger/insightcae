@@ -25,6 +25,8 @@
 #include "base/resultset.h"
 #include "base/analysis.h"
 
+#include "analysiscaseelements__outputFilterFunctionObject__Parameters_headers.h"
+
 namespace insight {
 
 
@@ -58,6 +60,7 @@ public:
 PARAMETERSET>>> outputFilterFunctionObject Parameters
 
 name = string "unnamed" "Name of the function object"
+region = string "region0" "name of the region, defaults to the value of polyMesh::defaultRegion"
 timeStart = double 0 "Time value, when the function object evaluation should start"
 outputControl = string "outputTime" "Output time control"
 outputInterval = double 1.0 "Time interval between outputs"
@@ -294,7 +297,8 @@ public:
     (
         const OpenFOAMCase& c,
         const boost::filesystem::path& location,
-        const std::string& foName
+        const std::string& foName,
+        const std::string& regionName = ""
     );
 };
 
@@ -612,9 +616,11 @@ protected:
 
 public:
   declareType("ComputeLengthScale");
-  ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath );
+  ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress );
 
   ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;
+
+  inline ParameterSet parameters() const override { return p_; }
 
   static std::string category() { return "General Postprocessing"; }
 };

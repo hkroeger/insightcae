@@ -14,7 +14,6 @@ endmacro()
 ## Numerics
 ##
 
-test_solver(numerics_meshing)
 test_solver(numerics_potentialFoam)
 test_solver(numerics_potentialFreeSurfaceFoam)
 test_solver(numerics_laplacianFoam)
@@ -22,7 +21,6 @@ test_solver(numerics_buoyantPimpleFoam no)
 createAllOpenFOAMTests(buoyantPimpleFoam_boussinesq testexe_buoyantPimpleFoam yes)
 test_solver(numerics_buoyantSimpleFoam)
 test_solver(numerics_interFoam)
-test_solver(numerics_MRFSimpleFoam)
 test_solver(numerics_steadyIncompressible)
 test_solver(numerics_unsteadyIncompressible)
 test_solver(numerics_steadyCompressible)
@@ -30,6 +28,7 @@ test_solver(numerics_unsteadyCompressible)
 test_solver(numerics_reactingFoam)
 test_solver(numerics_reactingParcelFoam)
 test_solver(numerics_magneticFoam)
+test_solver(numerics_scalarTransportFoam)
 
 ##
 ## Basic
@@ -61,8 +60,6 @@ test_solver(dymesh_velocitytetfemmotionsolver)
 ##
 ## Thermo
 ##
-test_solver(thermo_perfectGasSinglePhaseThermophysicalProperties)
-test_solver(thermo_compressibleSinglePhaseThermophysicalProperties)
 test_solver(thermo_detailedGasReactionThermodynamics)
 
 
@@ -111,7 +108,6 @@ test_solver(bc_ExternalWallBC)
 test_solver(bc_CAFSIBC)
 test_solver(bc_uniformPhases)
 test_solver(bc_uniformWallTiedPhases)
-test_solver(bc_uniformIntensityAndLengthScale)
 test_solver(bc_CompressibleInletBC)
 test_solver(bc_CyclicGGIBC)
 test_solver(bc_CyclicPairBC)

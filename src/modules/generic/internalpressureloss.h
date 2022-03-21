@@ -87,26 +87,43 @@ operation=set
 
 fluid=set
 {
+
   rho		= double 	998.0 		"[kg/m^3] Density of the fluid"
   nu		= double 	1e-6 		"[m^2/s] Viscosity of the fluid"
+  turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
+
 } "Parameters of the fluid"
 
 <<<PARAMETERSET
 */
 
-protected:
-    // derived data
+
+  struct supplementedInputData
+      : public supplementedInputDataDerived<Parameters>
+  {
+  public:
+    supplementedInputData(std::unique_ptr<Parameters> p,
+                          const boost::filesystem::path& workDir,
+                          ProgressDisplayer& progress = consoleProgressDisplayer );
+
     BoundingBox bb_;
     arma::mat L_;
-    
+
     int nx_, ny_, nz_;
-    
+
     boost::filesystem::path wallstlfile_, inletstlfile_, outletstlfile_;
-  
+
+  };
+
+#ifndef SWIG
+  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
+#endif
+
+
 public:
     declareType("Internal Pressure Loss");
 
-    InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath);
+    InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
 
     static std::string category() { return "Generic Analyses"; }
     
@@ -127,7 +144,7 @@ public:
     typedef InternalPressureLoss::Parameters Parameters;
 
 public:
-    void recreateVisualizationElements(UsageTracker* ut) override;
+    void recreateVisualizationElements() override;
 };
 
 }

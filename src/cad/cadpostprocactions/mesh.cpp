@@ -45,6 +45,7 @@ size_t Mesh::calcHash() const
   return h.getHash();
 }
 
+defineType(Mesh);
   
 Mesh::Mesh
 (
@@ -71,11 +72,11 @@ Mesh::Mesh
 {}
 
 
-Handle_AIS_InteractiveObject Mesh::createAISRepr() const
-{
-  checkForBuildDuringAccess();
-  return Handle_AIS_InteractiveObject();
-}
+//Handle_AIS_InteractiveObject Mesh::createAISRepr() const
+//{
+//  checkForBuildDuringAccess();
+//  return Handle_AIS_InteractiveObject();
+//}
 
 void Mesh::write(std::ostream& ) const
 {}
@@ -147,7 +148,7 @@ void Mesh::setupGmshCase(GmshCase& c)
 
 void Mesh::build()
 {
-  GmshCase c(model_, outpath_, Lmax_->value(), Lmin_->value(), "gmsh", keepTmpDir_);
+  GmshCase c(model_, outpath_, Lmax_->value(), Lmin_->value(), keepTmpDir_);
   setupGmshCase(c);
   c.doMeshing();
 }
@@ -156,7 +157,7 @@ void Mesh::build()
 
 
 
-
+defineType(ExtrudedMesh);
 
 ExtrudedMesh::ExtrudedMesh
 (
@@ -229,7 +230,7 @@ void ExtrudedMesh::build()
 
 
 
-
+defineType(SnappyHexMesh);
 
 size_t SnappyHexMesh::calcHash() const
 {
@@ -385,11 +386,11 @@ void SnappyHexMesh::build()
     );
 }
 
-Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr() const
-{
-  checkForBuildDuringAccess();
-  return Handle_AIS_InteractiveObject();
-}
+//Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr() const
+//{
+//  checkForBuildDuringAccess();
+//  return Handle_AIS_InteractiveObject();
+//}
 
 void SnappyHexMesh::write(std::ostream& ) const
 {

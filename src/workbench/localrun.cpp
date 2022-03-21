@@ -13,8 +13,8 @@ LocalRun::LocalRun(AnalysisForm *af)
     analysis_(
           insight::Analysis::lookup(
             af_->analysisName_,
-            af_->parameters_,
-            *(af_->caseDirectory_)
+            af_->parameters(),
+            af_->localCaseDirectory()
             )
           ),
     workerThread_(analysis_, &af->progressDisplayer_)
@@ -28,7 +28,10 @@ LocalRun::LocalRun(AnalysisForm *af)
 
 LocalRun::~LocalRun()
 {
+  workerThread_.interrupt();
   workerThread_.join();
+
+  af_->progressDisplayer_.reset();
 }
 
 

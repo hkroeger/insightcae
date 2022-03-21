@@ -32,6 +32,8 @@ void laplacianFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   solvers["T"]=isGAMGOk()?OFcase().GAMGPCGSolverSetup(1e-7, 0.0):OFcase().stdAsymmSolverSetup(1e-7, 0.0);
 
+  OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
+  SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
 
   // ============ setup fvSchemes ================================
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");

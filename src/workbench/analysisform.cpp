@@ -36,8 +36,9 @@
 
 #include "analysisform.h"
 #include "ui_analysisform.h"
-#include "parameterwrapper.h"
-#include "qresultsetmodel.h"
+
+//#include "parameterwrapper.h"
+#include "iqresultsetmodel.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -46,6 +47,13 @@
 #include <QStatusBar>
 #include <QSettings>
 #include <QProcess>
+#include <QCheckBox>
+#include <QProgressBar>
+#include <QStatusBar>
+#include <QMdiSubWindow>
+#include <QHeaderView>
+#include <QListView>
+
 #include "email.h"
 
 #include "ui_xml_display.h"
@@ -57,138 +65,40 @@
 #include "remotesync.h"
 #include "base/remoteserverlist.h"
 #include "remotedirselector.h"
+#include "base/wsllinuxserver.h"
+
+
 
 
 namespace fs = boost::filesystem;
-
-
-insight::RemoteServerInfo AnalysisForm::lookupRemoteServerByLabel(const QString& hostLabel) const
-{
-  auto i = insight::remoteServers.find( hostLabel.toStdString() );
-
-  if ( i == insight::remoteServers.end() )
-  {
-    throw std::logic_error("Can find remote server "+hostLabel.toStdString()+"!");
-  }
-
-  return i->second;
-}
-
-
-
-
-void QCaseDirectory::setAFEnabledState(bool enabled)
-{
-//  af_->ui->leWorkingDirectory->setEnabled(enabled);
-//  af_->ui->btnSelectWorkingDirectory->setEnabled(enabled);
-
-  af_->ui->btnParaview->setEnabled(enabled);
-  af_->ui->btnClean->setEnabled(enabled);
-  af_->ui->btnShell->setEnabled(enabled);
-
-//  af_->ui->btnWriteNow->setEnabled(enabled);
-//  af_->ui->btnWriteNowAndStop->setEnabled(enabled);
-}
-
-
-
-
-QCaseDirectory::QCaseDirectory(AnalysisForm *af, const boost::filesystem::path& path, bool keep)
-  : insight::CaseDirectory(path, keep),
-    af_(af)
-{
-  setAFEnabledState(true);
-}
-
-
-
-
-QCaseDirectory::QCaseDirectory(AnalysisForm *af, bool keep, const boost::filesystem::path& prefix)
-  : insight::CaseDirectory(keep, prefix),
-    af_(af)
-{
-  setAFEnabledState(true);
-}
-
-
-
-
-QCaseDirectory::~QCaseDirectory()
-{
-  setAFEnabledState(false);
-}
-
-
-
-
-void QRemoteExecutionConfig::setAFEnabledState(bool enabled)
-{
-  af_->ui->btnDisconnect->setEnabled(enabled);
-  af_->ui->btnResume->setEnabled(enabled);
-  af_->ui->btnUpload->setEnabled(enabled);
-  af_->ui->btnDownload->setEnabled(enabled);
-  af_->ui->btnRemoveRemote->setEnabled(enabled);
-  af_->ui->cbRemoteExecution->setEnabled(enabled);
-  af_->ui->lblHostName->setEnabled(enabled);
-  af_->ui->label->setEnabled(enabled);
-  af_->ui->lblRemoteDirectory->setEnabled(enabled);
-  if (!enabled) af_->ui->cbRemoteExecution->setChecked(false);
-}
-
-
-QRemoteExecutionConfig::QRemoteExecutionConfig(
-    AnalysisForm *af,
-    const boost::filesystem::path& location,
-    const boost::filesystem::path& localREConfigFile
-    )
-  : insight::RemoteExecutionConfig(location, localREConfigFile),
-    af_(af)
-{
-  setAFEnabledState(true);
-}
-
-
-QRemoteExecutionConfig::QRemoteExecutionConfig(
-    AnalysisForm *af,
-    const insight::RemoteServerInfo& rsi,
-    const boost::filesystem::path& location,
-    const boost::filesystem::path& remotePath,
-    const boost::filesystem::path& localREConfigFile
-    )
-  : insight::RemoteExecutionConfig(rsi, location, remotePath, localREConfigFile),
-    af_(af)
-{
-  setAFEnabledState(true);
-}
-
-QRemoteExecutionConfig::~QRemoteExecutionConfig()
-{
-  setAFEnabledState(false);
-}
-
-
 
 
 
 AnalysisForm::AnalysisForm(
     QWidget* parent,
     const std::string& analysisName,
-    const boost::filesystem::path& workingDirectory,
     bool logToConsole
     )
 : QMdiSubWindow(parent),
+  IQExecutionWorkspace(this),
   analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
   pack_parameterset_(true),
   is_modified_(false)
 {
+  setAttribute(Qt::WA_DeleteOnClose, true);
+
     // load default parameters
     auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
-    parameters_ = defaultParams;
 
+    try
     {
-      insight::AnalysisPtr a( insight::Analysis::lookup(analysisName_, defaultParams, "") );
-      isOpenFOAMAnalysis_ = bool( std::dynamic_pointer_cast<insight::OpenFOAMAnalysis>( a ) );
+      defaultParams.getString("run/OFEname"); // try to access
+      isOpenFOAMAnalysis_ = true;
+    }
+    catch (...)
+    {
+      isOpenFOAMAnalysis_ = false;
     }
 
     ui = new Ui::AnalysisForm;
@@ -213,14 +123,13 @@ AnalysisForm::AnalysisForm(
 
     graphProgress_=new GraphProgressDisplayer;
     actionProgress_=new insight::QActionProgressDisplayerWidget;
-    progressDisplayer_.add(graphProgress_);
-    progressDisplayer_.add(actionProgress_);
 
     QSplitter* spl=new QSplitter(Qt::Vertical);
     QWidget* lower = new QWidget;
     QHBoxLayout* hbl = new QHBoxLayout(lower);
     spl->addWidget(graphProgress_);
     spl->addWidget(lower);
+    spl->setSizes( {500, 500} );
     log_=new LogViewerWidget(spl);
     hbl->addWidget(log_);
 
@@ -245,13 +154,19 @@ AnalysisForm::AnalysisForm(
 
 //    ui->verticalLayout->addWidget(actionProgress_);
     
+    progressDisplayer_.setOp( insight::CombinedProgressDisplayer::OR );
+    progressDisplayer_.add(graphProgress_);
+    progressDisplayer_.add(actionProgress_);
+    progressDisplayer_.add(log_);
 
     if (!logToConsole)
     {
-      cout_log_ = new Q_DebugStream(std::cout);
-      connect(cout_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendDimmedLine);
-      cerr_log_ = new Q_DebugStream(std::cerr);
-      connect(cerr_log_, &Q_DebugStream::appendText, log_, &LogViewerWidget::appendErrorLine);
+      cout_log_ = new IQDebugStream(std::cout);
+      connect(cout_log_, &IQDebugStream::appendText,
+              log_, &LogViewerWidget::appendDimmedLine);
+      cerr_log_ = new IQDebugStream(std::cerr);
+      connect(cerr_log_, &IQDebugStream::appendText,
+              log_, &LogViewerWidget::appendErrorLine);
     }
 
     updateWindowTitle();
@@ -262,25 +177,46 @@ AnalysisForm::AnalysisForm(
     insight::ParameterSet_VisualizerPtr viz;
     insight::ParameterSet_ValidatorPtr vali;
 
-    try {
+    try
+    {
         viz = insight::Analysis::visualizer(analysisName_);
         viz ->setProgressDisplayer(&progressDisplayer_);
-    } catch (const std::exception& e)
+    }
+    catch (const std::exception& e)
     {
       /* ignore, if non-existent */
       std::cout<<"Info: no visualizer for \""<<analysisName_<<"\" available."<<std::endl;
     }
 
-    try {
+    try
+    {
         vali = insight::Analysis::validator(analysisName_);
-    } catch (const std::exception& e)
+    }
+    catch (const std::exception& e)
     { /* ignore, if non-existent */ }
 
-    peditor_=new ParameterEditorWidget(parameters_, defaultParams, ui->inputTab, viz, vali);
-    ui->inputTabLayout->addWidget(peditor_);
+    auto vsplit = new QSplitter;
+    vsplit->setOrientation(Qt::Vertical);
+    ui->inputTabLayout->addWidget(vsplit);
 
-    QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
-    QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
+    peditor_=new ParameterEditorWidget(/*parameters_*/defaultParams, defaultParams, ui->inputTab, viz, vali);
+    connect(
+          peditor_, &ParameterEditorWidget::updateSupplementedInputData,
+          this, &AnalysisForm::onUpdateSupplementedInputData
+          );
+    //ui->inputTabLayout->addWidget(peditor_);
+    vsplit->addWidget(peditor_);
+
+    sidtab_ = new QTableView;
+    sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    sidtab_->setAlternatingRowColors(true);
+    sidtab_->setModel(&supplementedInputDataModel_);
+    //ui->inputTabLayout->addWidget(sidtab_);
+    vsplit->addWidget(sidtab_);
+    sidtab_->hide();
+
+//    QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
+//    QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
 
     connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
             this, &AnalysisForm::onConfigModification);
@@ -305,79 +241,28 @@ AnalysisForm::AnalysisForm(
             sb, &QStatusBar::showMessage);
 
 
+    IQExecutionWorkspace::initializeToDefaults();
 
-//    connect(ui->gbExecuteOnRemoteHost, &QGroupBox::toggled,
-//            [&](bool checked)
-//            {
-//              if (checked && isRunningLocally())
-//              {
-//                auto answer= QMessageBox::critical(this,
-//                                      "Attention",
-//                                      "There is a local analysis running. It has to be terminated, before any remote analysis can be managed.\n"
-//                                      "You might consider to gracefully stop the simulation by triggering \"Write now+stop\" before switching to remote execution.\n"
-//                                      "\nKill local analysis?",
-//                                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
-//                                      QMessageBox::No);
-//                if (answer==QMessageBox::Yes)
-//                {
-//                  onKillAnalysis();
-//                }
-//                else
-//                {
-//                  ui->gbExecuteOnRemoteHost->setChecked(false);
-//                }
-//              }
-//              if (!checked && isRunningRemotely())
-//              {
-//                auto answer= QMessageBox::critical(this,
-//                                      "Attention",
-//                                      "There is a remote analysis running. It has to be disconnected, before any local analysis can be managed.\n"
-//                                      "The remote analysis will continue and you can reconnect at any time.\n"
-//                                      "\nDisconnect from remote analysis?",
-//                                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel,
-//                                      QMessageBox::Yes);
-//                if (answer==QMessageBox::Yes)
-//                {
-//                  disconnectFromRemoteRun();
-//                }
-//                else
-//                {
-//                  ui->gbExecuteOnRemoteHost->setChecked(true);
-//                }
-//              }
-//              if (!isRunning())
-//              {
-//                if (checked && !remoteDirectory_)
-//                {
-//                  changeRemoteLocation(ui->ddlExecutionHosts->currentText(), ui->leRemoteDirectory->text());
-//                }
-//                if (!checked && remoteDirectory_)
-//                {
-//                  remoteDirectory_.reset();
-//                }
-//              }
-//            }
-//    );
 
-    insight::connectToCWithContentsDisplay(ui->resultsToC, ui->resultElementDetails);
+    resultsViewer_=new IQResultSetDisplayerWidget(ui->outputTab);
+    auto rtl = new QVBoxLayout;
+    ui->outputTab->setLayout(rtl);
+    rtl->addWidget(resultsViewer_);
 
-#ifndef HAVE_WT
-    ui->gbExecuteOnRemoteHost->setChecked(false);
-    ui->gbExecuteOnRemoteHost->setEnabled(false);
-#endif
-
-    // set after installing textChanged signal handler
-    auto nwd=QString::fromStdString(workingDirectory.string());
-    ui->leWorkingDirectory->setText(nwd);
-    workingDirectoryEdited(nwd);
-    checkForRemoteConfig();
 }
 
+
+
+const insight::ParameterSet& AnalysisForm::parameters() const
+{
+  return peditor_->model()->getParameterSet();
+}
 
 
 
 AnalysisForm::~AnalysisForm()
 {
+  prepareDeletion();
   currentWorkbenchAction_.reset();
   delete ui;
 }
@@ -385,30 +270,33 @@ AnalysisForm::~AnalysisForm()
 
 
 
-
-void AnalysisForm::insertMenu(QMenuBar* mainMenu)
+WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(QMenuBar* mainMenu)
 {
-    workbench::WidgetWithDynamicMenuEntries::insertMenu(mainMenu);
+    auto *dm = new WidgetWithDynamicMenuEntries(this);
 
-    menu_parameters_=mainMenu_->addMenu("&Parameters");
+    auto menu_parameters = dm->add(mainMenu->addMenu("&Parameters"));
+    auto menu_actions = dm->add(mainMenu->addMenu("&Actions"));
+    auto menu_results = dm->add(mainMenu->addMenu("&Results"));
+    auto menu_tools = dm->add(mainMenu->addMenu("&Tools"));
 
-    if (!act_save_) act_save_=new QAction("&S", this);
-    //updateSaveMenuLabel();  // moved to below..
+    auto menu_tools_of = menu_tools->addMenu("&OpenFOAM");
+
+    act_save_=new QAction("&S", this);
     act_save_->setShortcut(Qt::CTRL + Qt::Key_S);
-    menu_parameters_->addAction( act_save_ );
+    menu_parameters->addAction( act_save_ );
     connect( act_save_, &QAction::triggered,
              this, &AnalysisForm::onSaveParameters );
 
-    if (!act_save_as_) act_save_as_=new QAction("&Save parameter set as...", this);
-    menu_parameters_->addAction( act_save_as_ );
+    auto act_save_as_=new QAction("&Save parameter set as...", this);
+    menu_parameters->addAction( act_save_as_ );
     connect( act_save_as_, &QAction::triggered,
              this, &AnalysisForm::onSaveParametersAs );
 
-    if (!act_pack_) act_pack_=new QAction("&Pack external files into parameter file", this);
+    act_pack_=new QAction("&Pack external files into parameter file", this);
     act_pack_->setCheckable(true);
 
-    menu_parameters_->addAction( act_pack_ );
-    connect( act_pack_, &QAction::triggered,
+    menu_parameters->addAction( act_pack_ );
+    connect( act_pack_, &QAction::triggered, act_pack_,
              [&]()
              {
                pack_parameterset_ = act_pack_->isChecked();
@@ -418,86 +306,69 @@ void AnalysisForm::insertMenu(QMenuBar* mainMenu)
 
     updateSaveMenuLabel();
 
-    if (!act_merge_) act_merge_=new QAction("&Merge other parameter set into current...", this);
-    menu_parameters_->addAction( act_merge_ );
+    auto act_merge_=new QAction("&Merge other parameter set into current...", this);
+    menu_parameters->addAction( act_merge_ );
     connect( act_merge_, &QAction::triggered, this, &AnalysisForm::onLoadParameters );
 
-    if (!act_param_show_) act_param_show_=new QAction("&Show in XML format", this);
-    menu_parameters_->addAction( act_param_show_ );
+    auto act_param_show_=new QAction("&Show in XML format", this);
+    menu_parameters->addAction( act_param_show_ );
     connect( act_param_show_, &QAction::triggered, this, &AnalysisForm::onShowParameterXML );
 
 
-    menu_actions_=mainMenu_->addMenu("&Actions");
 
-    if (!act_run_) act_run_=new QAction("&Run Analysis", this);
-    menu_actions_->addAction( act_run_ );
+    auto act_run_=new QAction("&Run Analysis", this);
+    menu_actions->addAction( act_run_ );
     connect( act_run_, &QAction::triggered, this, &AnalysisForm::onRunAnalysis );
-    if (!act_kill_) act_kill_=new QAction("&Stop Analysis", this);
-    menu_actions_->addAction( act_kill_ );
+    auto act_kill_=new QAction("&Stop Analysis", this);
+    menu_actions->addAction( act_kill_ );
     connect( act_kill_, &QAction::triggered, this, &AnalysisForm::onKillAnalysis );
 
-    menu_results_=mainMenu_->addMenu("&Results");
 
-    if (!act_save_rpt_) act_save_rpt_=new QAction("Create &report...", this);
-    menu_results_->addAction( act_save_rpt_ );
-    connect( act_save_rpt_, &QAction::triggered, this, &AnalysisForm::onCreateReport );
+    auto act_save_res=new QAction("&Save results...", this);
+    menu_results->addAction( act_save_res );
+    connect( act_save_res, &QAction::triggered,
+             resultsViewer_, &IQResultSetDisplayerWidget::saveResultSetAs );
 
-    menu_tools_=mainMenu_->addMenu("&Tools");
-    menu_tools_of_=menu_tools_->addMenu("&OpenFOAM");
-    if (!act_tool_of_paraview_) act_tool_of_paraview_=new QAction("Start ParaView in execution directory", this);
-    menu_tools_of_->addAction( act_tool_of_paraview_ );
-    connect( act_tool_of_paraview_, &QAction::triggered, this, &AnalysisForm::onStartPV );
-    if (!act_tool_of_clean_) act_tool_of_clean_=new QAction("Clean OpenFOAM case...", this);
-    menu_tools_of_->addAction( act_tool_of_clean_ );
-    connect( act_tool_of_clean_, &QAction::triggered, this, &AnalysisForm::onCleanOFC );
-}
+    auto act_save_rpt_=new QAction("Create &report...", this);
+    menu_results->addAction( act_save_rpt_ );
+    connect( act_save_rpt_, &QAction::triggered,
+             resultsViewer_, &IQResultSetDisplayerWidget::renderReport );
 
+    menu_results->addSeparator();
 
-
-
-void AnalysisForm::removeMenu()
-{
-    if (mainMenu_)
     {
-        menu_parameters_->removeAction(act_save_); act_save_->disconnect();
-        menu_parameters_->removeAction(act_save_as_); act_save_as_->disconnect();
-        menu_parameters_->removeAction(act_merge_); act_merge_->disconnect();
-        menu_parameters_->removeAction(act_param_show_); act_param_show_->disconnect();
-
-        menu_actions_->removeAction(act_run_); act_run_->disconnect();
-        menu_actions_->removeAction(act_kill_); act_kill_->disconnect();
-
-        menu_results_->removeAction(act_save_rpt_); act_save_rpt_->disconnect();
-
-        menu_tools_of_->removeAction(act_tool_of_paraview_); act_tool_of_paraview_->disconnect();
-        menu_tools_of_->removeAction(act_tool_of_clean_); act_tool_of_clean_->disconnect();
-
-        QAction *ma;
-        ma = menu_results_->menuAction();
-        ma->disconnect();
-        mainMenu_->removeAction(ma);
-        //menu_results_->deleteLater();
-
-        ma = menu_parameters_->menuAction();
-        ma->disconnect();
-        mainMenu_->removeAction(ma);
-        //menu_parameters_->deleteLater();
-
-        ma = menu_actions_->menuAction();
-        ma->disconnect();
-        mainMenu_->removeAction(ma);
-        //menu_actions_->deleteLater();
-
-        ma = menu_tools_of_->menuAction();
-        ma->disconnect();
-        menu_tools_->removeAction(ma);
-
-        ma = menu_tools_->menuAction();
-        ma->disconnect();
-        mainMenu_->removeAction(ma);
+        auto act=new QAction("&Load results into viewer...", this);
+        menu_results->addAction( act );
+        connect( act, &QAction::triggered,
+                 resultsViewer_, &IQResultSetDisplayerWidget::loadResultSet );
     }
-    workbench::WidgetWithDynamicMenuEntries::removeMenu();
+
+    menu_results->addSeparator();
+
+    {
+        auto act=new QAction("Load &filter...", this);
+        menu_results->addAction( act );
+        connect( act, &QAction::triggered,
+                 resultsViewer_, &IQResultSetDisplayerWidget::loadFilter );
+    }
+    {
+        auto act=new QAction("Sa&ve filter...", this);
+        menu_results->addAction( act );
+        connect( act, &QAction::triggered,
+                 resultsViewer_, &IQResultSetDisplayerWidget::saveFilter );
+    }
+
+    auto act_tool_of_paraview_=new QAction("Start ParaView in execution directory", this);
+    menu_tools_of->addAction( act_tool_of_paraview_ );
+    connect( act_tool_of_paraview_, &QAction::triggered, this, &AnalysisForm::onStartPV );
+    auto act_tool_of_clean_=new QAction("Clean OpenFOAM case...", this);
+    menu_tools_of->addAction( act_tool_of_clean_ );
+    connect( act_tool_of_clean_, &QAction::triggered, this, &AnalysisForm::onCleanOFC );
+
+    return dm;
 }
+
+
 
 
 
@@ -536,11 +407,6 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
       QMdiSubWindow::closeEvent(event);
     }
 
-    if (event->isAccepted())
-    {
-      removeMenu();
-    }
-
 }
 
 
@@ -562,16 +428,19 @@ void AnalysisForm::saveParameters(bool *cancelled)
   }
   else
   {
+    insight::ParameterSet p = parameters();
+
     if (pack_parameterset_)
     {
-      parameters_.packExternalFiles();
+      p.packExternalFiles();
     }
     else
     {
-      parameters_.removePackedData();
+      p.removePackedData();
     }
 
-    parameters_.saveToFile(ist_file_, analysisName_);
+    p.saveToFile(ist_file_, analysisName_);
+
     is_modified_=false;
     updateWindowTitle();
   }
@@ -615,6 +484,11 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
 //     parameters_.saveToFile(fn.toStdString(), analysis_->type());
     ist_file_=fn.toStdString();
 
+    if (!hasLocalWorkspace())
+    {
+      resetExecutionEnvironment(ist_file_.parent_path());
+    }
+
     saveParameters(cancelled);
 
     if (cancelled) *cancelled=false;
@@ -631,9 +505,18 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
 
 void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 {
-  ist_file_=fp;
-  parameters_.readFromFile(fp);
-  Q_EMIT update();
+  ist_file_=boost::filesystem::absolute(fp);
+
+  if (!hasLocalWorkspace())
+  {
+    resetExecutionEnvironment(ist_file_.parent_path());
+  }
+
+  insight::ParameterSet ps = parameters();
+  ps.readFromFile(ist_file_);
+  peditor_->model()->resetParameters(
+        ps,
+        insight::Analysis::defaultParameters(analysisName_) );
 }
 
 
@@ -674,7 +557,7 @@ void AnalysisForm::onShowParameterXML()
     Ui::XML_Display ui;
     ui.setupUi(widget);
 
-    Q_EMIT apply(); // apply all changes into parameter set
+//    Q_EMIT apply(); // apply all changes into parameter set
 
     boost::filesystem::path refPath = boost::filesystem::current_path();
     if (!ist_file_.empty())
@@ -682,7 +565,7 @@ void AnalysisForm::onShowParameterXML()
       refPath=ist_file_.parent_path();
     }
     std::ostringstream os;
-    parameters_.saveToStream(os, refPath, analysisName_);
+    parameters().saveToStream(os, refPath, analysisName_);
     ui.textDisplay->setText(QString::fromStdString(os.str()));
 
     widget->exec();
@@ -699,62 +582,18 @@ void AnalysisForm::onConfigModification()
 
 
 
-
-void AnalysisForm::onCreateReport()
+void AnalysisForm::onUpdateSupplementedInputData(insight::supplementedInputDataBasePtr sid)
 {
-  if (!results_.get())
-  {
-    QMessageBox::critical(this, "Error", "No results present!");
-    return;
-  }
-  
-  QString fn = QFileDialog::getSaveFileName
-  (
-      this, 
-    "Save Report",
-    QString(ist_file_.parent_path().c_str()),
-    "PDF file (*.pdf);;LaTeX file (*.tex);;InsightCAE result set (*.isr)"
-  );
-
-  if (!fn.isEmpty())
-  {
-    boost::filesystem::path outpath=fn.toStdString();
-    std::string ext=outpath.extension().string();
-
-    if (ext.empty())
-    {
-      QMessageBox::critical(
-            this,
-            "Error!",
-            "Please specify the file name with an extension!"
-            );
-      return;
-    }
-
-    if (boost::algorithm::to_lower_copy(ext)==".tex")
-      {
-        results_->writeLatexFile( outpath );
-      }
-    else if (boost::algorithm::to_lower_copy(ext)==".pdf")
-      {
-        results_->generatePDF( outpath );
-      }
-    else if (boost::algorithm::to_lower_copy(ext)==".isr")
-      {
-        results_->saveToFile ( outpath );
-      }
-    else
-      {
-        QMessageBox::critical(
-              this,
-              "Error!",
-              "Unknown file format: "+fn
-              );
-        return;
-      }
-
-    QMessageBox::information(this, "Done!", QString("The report has been created as\n")+outpath.c_str());
-  }
+  supplementedInputDataModel_.reset( sid->reportedSupplementQuantities() );
+  if (sid->reportedSupplementQuantities().size())
+    sidtab_->show();
+  else
+      sidtab_->hide();
 }
+
+
+
+
+
 
 

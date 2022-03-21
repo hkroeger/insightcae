@@ -1,11 +1,14 @@
 #ifndef INSIGHT_QSCALARRESULT_H
 #define INSIGHT_QSCALARRESULT_H
 
-#include "qresultsetmodel.h"
+#include "toolkit_gui_export.h"
+
+
+#include "iqresultsetmodel.h"
 
 namespace insight {
 
-class QScalarResult : public QResultElement
+class TOOLKIT_GUI_EXPORT QScalarResult : public IQResultElement
 {
     Q_OBJECT
 

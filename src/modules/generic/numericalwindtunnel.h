@@ -22,6 +22,7 @@
 
 #include "openfoam/openfoamanalysis.h"
 #include "parametersetvisualizer.h"
+#include "numericalwindtunnel__NumericalWindtunnel__Parameters_headers.h"
 
 #include "gp_Trsf.hxx"
 
@@ -52,7 +53,7 @@ geometry = set {
  forwarddir     = vector (1 0 0) "direction from rear to forward end in CAD geometry CS"
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
  
- objectfile     = path "object.stp" "Path to object geometry. May be STL, STEP or IGES." *necessary
+ objectfile     = path "" "Path to object geometry. May be STL, STEP or IGES." *necessary
  
 } "Geometrical properties of the domain"
       
@@ -109,21 +110,37 @@ fluid = set {
 
  rho            = double 1.0 "[kg/m^3] Density of the fluid"
  nu             = double 1.5e-5 "[m^2/s] Viscosity of the fluid"
+ turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
  
 } "Parameters of the fluid"
 
 <<<PARAMETERSET
 */
-  
-protected:
 
-  gp_Trsf cad_to_cfd_;
-  double Lref_, l_, w_, h_;
+  struct supplementedInputData
+      : public supplementedInputDataDerived<Parameters>
+  {
+  public:
+    supplementedInputData(std::unique_ptr<Parameters> p,
+                          const boost::filesystem::path& workDir,
+                          ProgressDisplayer& progress = consoleProgressDisplayer );
+
+    gp_Trsf cad_to_cfd_;
+    double Lupstream_;
+    double Ldownstream_;
+    double Lup_;
+    double Laside_;
+    double Lref_, l_, w_, h_;
+  };
+
+#ifndef SWIG
+  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
+#endif
   
 public:
   declareType("Numerical Wind Tunnel");
   
-  NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath);
+  NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
 
   static std::string category() { return "Generic Analyses"; }
   
@@ -131,7 +148,7 @@ public:
   
   void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
   void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
-  
+
   ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
 };
 
@@ -145,7 +162,7 @@ public:
     typedef NumericalWindtunnel::Parameters Parameters;
 
 public:
-    void recreateVisualizationElements(UsageTracker* ut) override;
+    void recreateVisualizationElements() override;
 };
 
 }

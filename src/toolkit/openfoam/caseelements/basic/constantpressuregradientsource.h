@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "constantpressuregradientsource__ConstantPressureGradientSource__Parameters_headers.h"
+
 namespace insight {
 
 class ConstantPressureGradientSource

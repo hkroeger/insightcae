@@ -25,13 +25,13 @@
 
 #include <fstream>
 #include <cstdlib>
-#include <dlfcn.h>
 
 #include "base/boost_include.h"
 #include "boost/function.hpp"
 #include "boost/thread.hpp"
+#include "boost/process.hpp"
 
-#include "base/progressdisplayer/prefixedprogressdisplayer.h"
+
 
 using namespace std;
 using namespace boost;
@@ -49,9 +49,10 @@ defineFactoryTable
   Analysis,
   LIST(
       const ParameterSet& ps,
-      const boost::filesystem::path& exePath
+      const boost::filesystem::path& exePath,
+      ProgressDisplayer& displayer
   ),
-  LIST(ps, exePath)
+  LIST(ps, exePath, displayer)
 );
 
 defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet);
@@ -108,10 +109,10 @@ void Analysis::setExecutionPath ( const boost::filesystem::path& exePath )
     executionPath_ =exePath;
 }
 
-void Analysis::setParameters ( const ParameterSet& p )
-{
-    parameters_ = p;
-}
+//void Analysis::setParameters ( const ParameterSet& p )
+//{
+//    parameters_ = p;
+//}
 
 path Analysis::executionPath() const
 {
@@ -130,14 +131,19 @@ path Analysis::createExecutionPathIfNonexistent()
   return executionPath();
 }
 
-Analysis::Analysis ( const std::string& name, const std::string& description, const ParameterSet& ps, const boost::filesystem::path& exePath )
+Analysis::Analysis (
+    const std::string& name,
+    const std::string& description,
+    const ParameterSet& /*ps*/,
+    const boost::filesystem::path& exePath,
+    ProgressDisplayer& /*displayer*/ )
 : name_ ( name ),
   description_ ( description ),
   executionPath_ ( exePath ),
   removeExecutionPath_(false),
   enforceExecutionPathRemovalBehaviour_(false)
 {
-  setParameters(ps);
+//  setParameters(ps);
   setExecutionPath(exePath);
 }
 
@@ -160,10 +166,10 @@ Analysis::~Analysis()
 }
 
 
-bool Analysis::checkParameters() const
-{
-    return true;
-}
+//bool Analysis::checkParameters() const
+//{
+//    return true;
+//}
 
 
 boost::filesystem::path Analysis::getSharedFilePath ( const boost::filesystem::path& file )
@@ -171,156 +177,13 @@ boost::filesystem::path Analysis::getSharedFilePath ( const boost::filesystem::p
     return sharedSearchPath_.getSharedFilePath ( file );
 }
 
-Analysis* Analysis::clone() const
-{
-    return this->lookup ( this->type(), parameters_, executionPath_ );
-}
+//Analysis* Analysis::clone() const
+//{
+//    return this->lookup ( this->type(), parameters_, executionPath_ );
+//}
 
 
 
-
-
-// ====================================================================================
-// ======== AnaylsisThread
-
-void AnalysisThread::launch(std::function<void(void)> action)
-{
-  thread_ = boost::thread(
-
-        [this,action](WarningDispatcher* globalWarning)
-        {
-          try
-          {
-            warnings.setSuperDispatcher(globalWarning);
-
-            action();
-
-          }
-          catch (...)
-          {
-            auto e = std::current_exception();
-            if (exceptionHandler_)
-              exceptionHandler_(e);
-            else
-              exception_ = e;
-          }
-        },
-
-        &warnings
-  );
-}
-
-AnalysisThread::AnalysisThread(
-    AnalysisPtr analysis,
-    ProgressDisplayer *pd,
-    std::function<void(void)> preAction,
-    std::function<void(void)> postAction,
-    std::function<void(std::exception_ptr)> exHdlr
-)
-  : exceptionHandler_(exHdlr)
-{
-  launch(
-        [this,analysis,pd,preAction,postAction]()
-        {
-          preAction();
-          results_ = (*analysis)( *pd );
-          postAction();
-        }
-  );
-}
-
-AnalysisThread::AnalysisThread
-(
-    std::function<void(void)> action,
-    std::function<void(std::exception_ptr)> exHdlr
-)
-  : exceptionHandler_(exHdlr)
-{
-  launch(
-        [action]()
-        {
-          action();
-        }
-  );
-}
-
-void AnalysisThread::interrupt()
-{
-  thread_.interrupt();
-}
-
-ResultSetPtr AnalysisThread::join()
-{
-  thread_.join();
-  if (exception_) std::rethrow_exception(exception_);
-  return results_;
-}
-
-
-
-
-
-
-
-
-
-
-
-AnalysisWorkerThread::AnalysisWorkerThread ( SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer )
-    :
-      displayer_(displayer),
-      queue_(queue),
-      mainThreadWarningDispatcher_(&warnings)
-{}
-
-
-
-
-void AnalysisWorkerThread::operator() ()
-{
-  warnings.setSuperDispatcher(mainThreadWarningDispatcher_);
-
-  try
-  {
-    while ( !queue_->isEmpty() )
-    {
-      AnalysisInstance ai = queue_->dequeue();
-
-      // run analysis and transfer results into given ResultSet object
-      PrefixedProgressDisplayer pd(displayer_, ai.name,
-                                   PrefixedProgressDisplayer::Prefixed,
-                                   PrefixedProgressDisplayer::ParallelPrefix);
-
-      try
-      {
-        auto& analysis= *(ai.analysis);
-        ai.results->transfer( *analysis(pd) ); // call operator() from analysis object
-      }
-      catch ( const std::exception& e )
-      {
-        ai.exception = std::current_exception();
-        warnings.issue(
-              "An exception has occurred while processing the instance "+ai.name+" of the parameter study."
-              "The analsis of this instance was not completed.\n"
-              "Reason: "+e.what()
-              );
-      }
-
-      // Make sure we can be interrupted at least between analyses
-      boost::this_thread::interruption_point();
-    }
-  }
-  catch ( const std::exception& e )
-  {
-    exception_=std::current_exception();
-  }
-}
-
-
-void AnalysisWorkerThread::rethrowIfNeeded() const
-{
-  if (exception_) std::rethrow_exception(exception_);
-}
 
 
 
@@ -365,82 +228,6 @@ void SynchronisedAnalysisQueue::cancelAll()
 //        boost::get<1> ( dequeue() )->cancel();
 //    }
 }
-
-
-
-
-
-// ====================================================================================
-// ======== AnalysisLibraryLoader
-
-
-AnalysisLibraryLoader::AnalysisLibraryLoader()
-{
-
-    SharedPathList paths;
-    for ( const path& p: paths )
-    {
-        if ( exists(p) && is_directory ( p ) )
-        {
-            path userconfigdir ( p );
-            userconfigdir /= "modules.d";
-
-            if ( exists(userconfigdir) )
-            {
-              if ( is_directory ( userconfigdir ) )
-              {
-                for (
-                     directory_iterator itr ( userconfigdir );
-                     itr != directory_iterator(); ++itr )
-                {
-                    if ( is_regular_file ( itr->status() ) )
-                    {
-                        if ( itr->path().extension() == ".module" )
-                        {
-                            std::ifstream f ( itr->path().c_str() );
-                            std::string type;
-                            path location;
-                            f>>type>>location;
-
-                            if ( type=="library" )
-                            {
-                                addLibrary(location);
-                            }
-                        }
-                    }
-                }
-              }
-            }
-        }
-        else
-        {
-            //cout<<"Not existing: "<<p<<endl;
-        }
-    }
-}
-
-AnalysisLibraryLoader::~AnalysisLibraryLoader()
-{
-//    for ( void *handle: handles_ ) {
-//        //dlclose(handle);
-//    }
-}
-
-void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
-{
-    void *handle = dlopen ( location.c_str(), RTLD_LAZY|RTLD_GLOBAL|RTLD_NODELETE );
-    if ( !handle ) 
-    {
-        std::cerr<<"Could not load module library "<<location<<"!\nReason: " << dlerror() << std::endl;
-    } else 
-    {
-        handles_.push_back ( handle );
-    }
-}
-
-
-AnalysisLibraryLoader loader;
-
 
 
 

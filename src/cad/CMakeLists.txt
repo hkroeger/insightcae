@@ -6,6 +6,11 @@ find_package(DXFlib)
 #find_package(GEOM)
 #find_package(dlib)
 
+FIND_PACKAGE(MED)
+
+if (MED_FOUND)
+    ADD_DEFINITIONS("-DHAVE_MED")
+endif()
 
 set(insightcad_SOURCES 
   astbase.cpp
@@ -49,11 +54,13 @@ add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad 
  toolkit 
  ${OCC_LIBRARIES} # TKXSDRAW # don't include: leads to segfault on program exit!
- ${OCC_OCAF_LIBRARIES} 
  ${DXFLIB_LIBRARY} 
+ ${MED_LIBRARIES}
  #${GEOM_LIBRARIES}
  #${DLIB_LIBRARIES}
  )
+include(GenerateExportHeader)
+generate_export_header(insightcad)
 
 ## PROFILING
 # set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
@@ -63,22 +70,31 @@ target_include_directories(insightcad
   PUBLIC ${DXFLIB_INCLUDE_DIR}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  PUBLIC ${MED_INCLUDE_DIRS}
   )
 
-install(
+if (INSIGHT_DEVELOPMENT_FILES)
+ install(
     TARGETS insightcad EXPORT insightcad_targets
     LIBRARY DESTINATION lib
     COMPONENT ${INSIGHT_INSTALL_COMPONENT}
     )
-export(EXPORT insightcad_targets
+ export(EXPORT insightcad_targets
   FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAECADTarget.cmake"
   NAMESPACE insight::
-)
-install(EXPORT insightcad_targets
+ )
+ install(EXPORT insightcad_targets
   FILE InsightCAECADTarget.cmake
   NAMESPACE insight::
   DESTINATION ${INSIGHT_ConfigPackageLocation}
-)
+ )
+else()
+ install(
+    TARGETS insightcad
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+endif()
 
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 

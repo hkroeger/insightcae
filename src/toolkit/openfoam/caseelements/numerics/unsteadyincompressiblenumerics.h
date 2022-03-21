@@ -4,6 +4,8 @@
 #include "openfoam/caseelements/numerics/fvnumerics.h"
 #include "openfoam/caseelements/numerics/pimplesettings.h"
 
+#include "unsteadyincompressiblenumerics__unsteadyIncompressibleNumerics__Parameters_headers.h"
+
 namespace insight {
 
 class unsteadyIncompressibleNumerics

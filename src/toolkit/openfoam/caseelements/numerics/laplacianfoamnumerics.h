@@ -2,6 +2,7 @@
 #define INSIGHT_LAPLACIANFOAMNUMERICS_H
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
+#include "laplacianfoamnumerics__laplacianFoamNumerics__Parameters_headers.h"
 
 namespace insight {
 
@@ -18,6 +19,8 @@ inherits FVNumerics::Parameters
 
 Tinternal = double 300.0 "[K] Initial temperature value in internal field"
 DT = double 1e-6 "[m^2/s] Constant diffivity"
+
+nNonOrthogonalCorrectors = int 0 "Number of correctors for non-orthogonality errors"
 
 <<<PARAMETERSET
 */

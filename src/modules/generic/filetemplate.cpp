@@ -30,15 +30,20 @@ namespace insight {
 
 addToAnalysisFactoryTable(FileTemplate);
 
-FileTemplate::FileTemplate(const ParameterSet& ps, const boost::filesystem::path& exedir)
-: Analysis("FileTemplate", "File template based analysis", ps, exedir)
+FileTemplate::FileTemplate(const ParameterSet& ps, const boost::filesystem::path& exedir, ProgressDisplayer& pd)
+: Analysis("FileTemplate", "File template based analysis", ps, exedir, pd),
+  p_(ps)
 {
+}
+
+ParameterSet FileTemplate::parameters() const
+{
+  return p_;
 }
 
 
 ResultSetPtr FileTemplate::operator()(ProgressDisplayer& displayer)
 {
-    Parameters p(parameters_);
     
     path dir = setupExecutionEnvironment();
     SoftwareEnvironment g;
@@ -46,7 +51,7 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer& displayer)
     // unpack files
     std::vector<std::string> filelist;
     g.executeCommand(
-      str(format("cd %s; tar vxzf %s") % absolute(dir).string() % absolute(p.template_archive->filePath(dir)).string() ),
+      str(format("cd %s; tar vxzf %s") % absolute(dir).string() % absolute(p_.template_archive->filePath(dir)).string() ),
       std::vector<std::string>(),
       &filelist
     );
@@ -55,7 +60,7 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer& displayer)
     
     // build replacement cmd for sed
     std::string replacecmd;
-    for (Parameters::numerical_default_type& ne: p.numerical)
+    for (Parameters::numerical_default_type& ne: p_.numerical)
     {
       if (replacecmd.size()>0) replacecmd+=";";
       
@@ -114,7 +119,7 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer& displayer)
     path resf=dir/ReservedFileNames[EVALRESULTS];
     if (boost::filesystem::exists(resf))
     {
-      results->readFrom(resf);
+      results->readFromFile(resf);
     }
     else
     {

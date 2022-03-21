@@ -22,6 +22,8 @@
 #ifndef INSIGHT_EXCEPTION_H
 #define INSIGHT_EXCEPTION_H
 
+#include "toolkit_export.h"
+
 #include <string>
 #include <iostream>
 #include <vector>
@@ -40,12 +42,16 @@ public:
   CurrentExceptionContext(const std::string& desc, bool verbose=true);
   ~CurrentExceptionContext();
 
-  inline operator std::string() const
-  {
-    return desc_;
-  }
+  std::string contextDescription() const;
+  operator std::string() const;
 
 };
+
+
+std::ostream& dbg();
+
+
+
 
 std::string splitMessage
 (
@@ -56,15 +62,27 @@ std::string splitMessage
     std::string whitespace = " \t\r"
 );
 
+
+
+
 class Exception;
   
+
+
+
 std::ostream& operator<<(std::ostream& os, const Exception& ex);
+
+
+
 
 namespace cad
 {
 class Feature;
 typedef std::shared_ptr<Feature> FeaturePtr;
 }
+
+
+
 
 class Exception
 : public std::exception
@@ -81,6 +99,7 @@ public:
   Exception();
   Exception(const std::string& msg, bool strace=true);
   Exception(const std::string& msg, const std::map<std::string, cad::FeaturePtr>& contextGeometry, bool strace=true);
+  Exception(const std::string& msg, const std::string& strace);
 
   inline std::string as_string() const { return static_cast<std::string>(*this); }
 
@@ -97,6 +116,7 @@ public:
 
 
 
+
 class UnsupportedFeature
     : public Exception
 {
@@ -105,6 +125,9 @@ public:
   UnsupportedFeature(const std::string& msg, bool strace=true);
 };
 
+
+
+
 void assertion(bool condition, const std::string& context_message);
 
 
@@ -112,14 +135,26 @@ std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5
 std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen=5);
 std::string vector_to_string(const arma::mat& vals, bool addMag=true);
 
+
+
+
 class ExceptionContext
 : public std::vector<CurrentExceptionContext*>
 {
 public:
   void snapshot(std::vector<std::string>& context);
+
+  static ExceptionContext& getCurrent();
 };
 
-extern thread_local ExceptionContext exceptionContext;
+
+
+
+//extern
+//#ifndef WIN32
+//thread_local
+//#endif
+//ExceptionContext exceptionContext;
 
 
 
@@ -142,10 +177,15 @@ public:
   const decltype(warnings_)& warnings() const;
   size_t nWarnings() const;
 
+  static WarningDispatcher& getCurrent();
 
 };
 
-extern thread_local WarningDispatcher warnings;
+//extern
+//#ifndef WIN32
+//thread_local
+//#endif
+//WarningDispatcher warnings;
 
 void displayFramed(const std::string& title, const std::string& msg, char titleChar = '=', std::ostream &os = std::cerr);
 

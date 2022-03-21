@@ -22,6 +22,7 @@
 #include <QInputDialog>
 #include <QColorDialog>
 
+#include "base/exception.h"
 #include "base/qt5_helper.h"
 #include "qmodeltree.h"
 
@@ -38,6 +39,11 @@
 
 boost::mt19937 boostRenGen;
 
+
+IQISCADModelContainer::IQISCADModelContainer(QObject* parent)
+  : QObject(parent)
+{}
+
 QModelTreeItem::QModelTreeItem
 (
   const QString& name,
@@ -47,7 +53,7 @@ QModelTreeItem::QModelTreeItem
   : QTreeWidgetItem ( parent ),
     name_ ( name )
 {
-    setText(COL_NAME, name_);
+  setText(COL_NAME, name_);
 }
 
 
@@ -58,12 +64,12 @@ QModelTree* QModelTreeItem::modelTree() const
 
 void QModelTreeItem::insertName()
 {
-  emit insertParserStatementAtCursor(name_);
+  Q_EMIT insertParserStatementAtCursor(name_);
 }
 
 void QModelTreeItem::jumpToName()
 {
-    emit(jumpTo(name_));
+  Q_EMIT jumpTo(name_);
 }
 
 
@@ -77,8 +83,8 @@ QDisplayableModelTreeItem::QDisplayableModelTreeItem
 : QModelTreeItem ( name, parent ),
   shadingMode_(dm)
 {
-    setCheckState(COL_VIS, visible ? Qt::Checked : Qt::Unchecked);
-    setRandomColor();
+  setCheckState(COL_VIS, visible ? Qt::Checked : Qt::Unchecked);
+  setRandomColor();
 }
 
 QDisplayableModelTreeItem::~QDisplayableModelTreeItem()
@@ -100,11 +106,26 @@ bool QDisplayableModelTreeItem::isHidden() const
 
 Handle_AIS_InteractiveObject QDisplayableModelTreeItem::ais(AIS_InteractiveContext& context)
 {
+  insight::CurrentExceptionContext ec("get AIS interactive object");
   if (ais_.IsNull())
-    {
-      ais_=createAIS(context);
-    }
+  {
+    ais_=createAIS(context);
+  }
   return ais_;
+}
+
+Handle_AIS_InteractiveObject QDisplayableModelTreeItem::existingAis() const
+{
+  insight::assertion( !ais_.IsNull(), "Internal error: The interactive representation is not existing yet!");
+  return ais_;
+}
+
+
+void QDisplayableModelTreeItem::setShadingMode(AIS_DisplayMode ds)
+{
+  shadingMode_=ds;
+//  if (isVisible())
+//    emit setDisplayMode(this, shadingMode_);
 }
 
 Quantity_Color QDisplayableModelTreeItem::color() const
@@ -142,11 +163,7 @@ void QDisplayableModelTreeItem::initDisplay()
 void QDisplayableModelTreeItem::show()
 {
   setCheckState(COL_VIS, Qt::Checked);
-//  if (ais_.IsNull())
-//    {
-//      ais_=createAIS(*getContext());
-//    }
-  emit show(this);
+  Q_EMIT showItem(this);
 }
 
 
@@ -155,7 +172,7 @@ void QDisplayableModelTreeItem::hide()
   setCheckState(COL_VIS, Qt::Unchecked);
   if (!ais_.IsNull())
     {
-      emit hide(this);
+      Q_EMIT hideItem(this);
     }
 }
 
@@ -163,14 +180,14 @@ void QDisplayableModelTreeItem::wireframe()
 {
   shadingMode_=AIS_WireFrame;
   if (isVisible())
-    emit setDisplayMode(this, AIS_WireFrame);
+    Q_EMIT setDisplayMode(this, AIS_WireFrame);
 }
 
 void QDisplayableModelTreeItem::shaded()
 {
   shadingMode_=AIS_Shaded;
   if (isVisible())
-    emit setDisplayMode(this, AIS_Shaded);
+    Q_EMIT setDisplayMode(this, AIS_Shaded);
 }
 
 void QDisplayableModelTreeItem::onlyThisShaded()
@@ -184,7 +201,7 @@ void QDisplayableModelTreeItem::onlyThisShaded()
 void QDisplayableModelTreeItem::randomizeColor()
 {
   setRandomColor();
-  emit setColor(this, color());
+  Q_EMIT setColor(this, color());
 }
 
 void QDisplayableModelTreeItem::chooseColor()
@@ -196,7 +213,7 @@ void QDisplayableModelTreeItem::chooseColor()
     r_=nc.red()/255.;
     g_=nc.green()/255.;
     b_=nc.blue()/255.;
-    emit setColor(this, color());
+    Q_EMIT setColor(this, color());
   }
 }
 
@@ -206,7 +223,7 @@ void QDisplayableModelTreeItem::setResolution()
   double res=QInputDialog::getDouble(treeWidget(), "Set Resolution", "Resolution:", 0.001, 1e-7, 0.1, 7, &ok);
   if (ok)
   {
-    emit setResolution(this, res);
+    Q_EMIT setItemResolution(this, res);
   }
 }
 
@@ -245,16 +262,16 @@ void QModelTree::replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QT
 
 void QModelTree::connectDisplayableItem(QDisplayableModelTreeItem* newf)
 {
-  connect(newf, QOverload<QDisplayableModelTreeItem*>::of(&QDisplayableModelTreeItem::show),
-          this, &QModelTree::show);
-  connect(newf, QOverload<QDisplayableModelTreeItem*>::of(&QDisplayableModelTreeItem::hide),
-          this, &QModelTree::hide);
+  connect(newf, &QDisplayableModelTreeItem::showItem,
+          this, &QModelTree::showItem);
+  connect(newf, &QDisplayableModelTreeItem::hideItem,
+          this, &QModelTree::hideItem);
   connect(newf, &QDisplayableModelTreeItem::setDisplayMode,
           this, &QModelTree::setDisplayMode);
   connect(newf, &QDisplayableModelTreeItem::setColor,
           this, &QModelTree::setColor);
-  connect(newf, QOverload<QDisplayableModelTreeItem*,double>::of(&QDisplayableModelTreeItem::setResolution),
-          this, &QModelTree::setResolution);
+  connect(newf, &QDisplayableModelTreeItem::setItemResolution,
+          this, &QModelTree::setItemResolution);
   connect(newf, &QDisplayableModelTreeItem::insertParserStatementAtCursor,
           this, &QModelTree::insertParserStatementAtCursor);
   connect(newf, &QDisplayableModelTreeItem::jumpTo,
@@ -376,6 +393,223 @@ QDisplayableModelTreeItem* QModelTree::findFeature(const QString& name, bool is_
   }
 }
 
+
+
+
+void QModelTree::storeSymbolSnapshot()
+{
+  SymbolsSnapshot sysn;
+  for (int i=0; i<scalars_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QScalarVariableItem*>(scalars_->child(i)))
+    {
+      sysn.scalars_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<points_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QVectorVariableItem*>(points_->child(i)))
+    {
+      sysn.points_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<directions_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QVectorVariableItem*>(directions_->child(i)))
+    {
+      sysn.directions_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<componentfeatures_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QFeatureItem*>(componentfeatures_->child(i)))
+    {
+      sysn.componentfeatures_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<features_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QFeatureItem*>(features_->child(i)))
+    {
+      sysn.features_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<datums_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QDatumItem*>(datums_->child(i)))
+    {
+      sysn.datums_.insert( mti->name() );
+    }
+  }
+  for (int i=0; i<postprocactions_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QEvaluationItem*>(postprocactions_->child(i)))
+    {
+      sysn.postprocactions_.insert( mti->name() );
+    }
+  }
+  symbolsSnapshot_=sysn;
+}
+
+
+
+
+void QModelTree::removeNonRecreatedSymbols()
+{
+  for (int i=0; i<scalars_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QScalarVariableItem*>(scalars_->child(i)))
+    {
+      if (symbolsSnapshot_.scalars_.find( mti->name() ) != symbolsSnapshot_.scalars_.end())
+      {
+        onRemoveScalar(mti->name());
+      }
+    }
+  }
+  for (int i=0; i<points_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QVectorVariableItem*>(points_->child(i)))
+    {
+      if (symbolsSnapshot_.points_.find( mti->name() ) != symbolsSnapshot_.points_.end())
+      {
+        onRemoveVector(mti->name(), insight::cad::VectorVariableType::Point );
+      }
+    }
+  }
+  for (int i=0; i<directions_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QVectorVariableItem*>(directions_->child(i)))
+    {
+      if (symbolsSnapshot_.directions_.find( mti->name() ) != symbolsSnapshot_.directions_.end())
+      {
+        onRemoveVector(mti->name(), insight::cad::VectorVariableType::Direction );
+      }
+    }
+  }
+  for (int i=0; i<componentfeatures_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QFeatureItem*>(componentfeatures_->child(i)))
+    {
+      if (symbolsSnapshot_.componentfeatures_.find( mti->name() ) != symbolsSnapshot_.componentfeatures_.end())
+      {
+        onRemoveFeature(mti->name());
+      }
+    }
+  }
+  for (int i=0; i<features_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QFeatureItem*>(features_->child(i)))
+    {
+      if (symbolsSnapshot_.features_.find( mti->name() ) != symbolsSnapshot_.features_.end())
+      {
+        onRemoveFeature(mti->name());
+      }
+    }
+  }
+  for (int i=0; i<datums_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QDatumItem*>(datums_->child(i)))
+    {
+      if (symbolsSnapshot_.datums_.find( mti->name() ) != symbolsSnapshot_.datums_.end())
+      {
+        onRemoveDatum(mti->name());
+      }
+    }
+  }
+  for (int i=0; i<postprocactions_->childCount(); i++)
+  {
+    if (auto *mti =dynamic_cast<QEvaluationItem*>(postprocactions_->child(i)))
+    {
+      if (symbolsSnapshot_.postprocactions_.find( mti->name() ) != symbolsSnapshot_.postprocactions_.end())
+      {
+        onRemoveEvaluation(mti->name());
+      }
+    }
+  }
+}
+
+
+void QModelTree::addCreatedScalarToSymbolSnapshot(const QString& name,insight::cad::ScalarPtr)
+{
+  symbolsSnapshot_.scalars_.erase(name);
+}
+
+void QModelTree::addCreatedVectorToSymbolSnapshot(const QString& name,insight::cad::VectorPtr,insight::cad::VectorVariableType t)
+{
+  if (t==insight::cad::VectorVariableType::Point)
+    symbolsSnapshot_.points_.erase(name);
+  else if (t==insight::cad::VectorVariableType::Direction)
+    symbolsSnapshot_.directions_.erase(name);
+}
+
+void QModelTree::addCreatedFeatureToSymbolSnapshot(const QString& name, insight::cad::FeaturePtr, bool is_component)
+{
+  if (is_component)
+    symbolsSnapshot_.componentfeatures_.erase(name);
+  else
+    symbolsSnapshot_.componentfeatures_.erase(name);
+}
+
+void QModelTree::addCreatedDatumToSymbolSnapshot(const QString& name, insight::cad::DatumPtr)
+{
+  symbolsSnapshot_.datums_.erase(name);
+}
+
+void QModelTree::addCreatedPostprocActionToSymbolSnapshot(const QString& name, insight::cad::PostprocActionPtr, bool)
+{
+  symbolsSnapshot_.postprocactions_.erase(name);
+}
+
+
+void QModelTree::connectModel(IQISCADModelContainer *model)
+{
+  connect(model, &IQISCADModelContainer::beginRebuild,
+          this, &QModelTree::storeSymbolSnapshot );
+  connect(model, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelContainer::createdVariable),
+          this, &QModelTree::onAddScalar);
+  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelContainer::createdVariable),
+          this, &QModelTree::onAddVector);
+  connect(model, &IQISCADModelContainer::createdFeature,
+          this, &QModelTree::onAddFeature);
+  connect(model, &IQISCADModelContainer::createdDatum,
+          this, &QModelTree::onAddDatum);
+  connect(model, &IQISCADModelContainer::createdEvaluation,
+          this, &QModelTree::onAddEvaluation );
+
+  connect(model, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelContainer::createdVariable),
+          this, &QModelTree::addCreatedScalarToSymbolSnapshot);
+  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelContainer::createdVariable),
+          this, &QModelTree::addCreatedVectorToSymbolSnapshot);
+  connect(model, &IQISCADModelContainer::createdFeature,
+          this, &QModelTree::addCreatedFeatureToSymbolSnapshot);
+  connect(model, &IQISCADModelContainer::createdDatum,
+          this, &QModelTree::addCreatedDatumToSymbolSnapshot);
+  connect(model, &IQISCADModelContainer::createdEvaluation,
+          this, &QModelTree::addCreatedPostprocActionToSymbolSnapshot);
+
+  connect(model, &IQISCADModelContainer::removedScalar,
+          this, &QModelTree::onRemoveScalar);
+  connect(model, &IQISCADModelContainer::removedVector,
+          this, &QModelTree::onRemoveVector);
+  connect(model, &IQISCADModelContainer::removedFeature,
+          this, &QModelTree::onRemoveFeature);
+  connect(model, &IQISCADModelContainer::removedDatum,
+          this, &QModelTree::onRemoveDatum);
+  connect(model, &IQISCADModelContainer::removedEvaluation,
+          this, &QModelTree::onRemoveEvaluation);
+
+  connect(model, &IQISCADModelContainer::finishedRebuild,
+          this, &QModelTree::removeNonRecreatedSymbols);
+
+}
+
+
+void QModelTree::disconnectModel(IQISCADModelContainer* model)
+{
+  this->disconnect(model, 0, this, 0);
+}
+
+
 void QModelTree::onAddScalar(const QString& name, insight::cad::ScalarPtr sv)
 {
   SignalBlocker b(this);
@@ -404,26 +638,50 @@ void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv, in
   newf->initDisplay();
 }
 
-void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component)
+void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component, boost::variant<boost::blank,AIS_DisplayMode> ds)
 {
+  insight::CurrentExceptionContext ex("adding feature "+name.toStdString()+" to model tree");
+
   QFeatureItem *newf, *old;
   QTreeWidgetItem* cat;
   {
     SignalBlocker b(this);
 
+    AIS_DisplayMode ads;
     if (is_component)
-      cat=componentfeatures_;
+      {
+        cat=componentfeatures_;
+        ads=AIS_Shaded;
+      }
     else
-      cat=features_;
+      {
+        cat=features_;
+        ads=AIS_WireFrame;
+      }
+
+    if (const auto* eds = boost::get<AIS_DisplayMode>(&ds)) //override
+      ads=*eds;
 
     old = findItem<QFeatureItem>(cat, name);
     newf = new QFeatureItem(name, smp, is_component, cat, is_component);
-    if (old) newf->copyDisplayProperties(old);
+    if (old)
+    {
+      insight::dbg()<<"copy display properties of old "<<name.toStdString()<<std::endl;
+      newf->copyDisplayProperties(old);
+    }
+    else
+    {
+      insight::dbg()<<"set display properties of "<<name.toStdString()<<" as "<<ads<<std::endl;
+      newf->setShadingMode(ads);
+    }
+
     connectDisplayableItem(newf);
     connect(newf, &QFeatureItem::addEvaluation,
             this, &QModelTree::onAddEvaluation);
   }
   replaceOrAdd(cat, newf, old);
+
+  insight::dbg()<<"initDisplay of "<<name.toStdString()<<std::endl;
   newf->initDisplay();
 }
 
@@ -444,6 +702,7 @@ void QModelTree::onAddDatum(const QString& name, insight::cad::DatumPtr smp)
 
 void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActionPtr smp, bool visible)
 {
+  insight::dbg()<<"start onAddEvaluation"<<std::endl;
   QEvaluationItem *old, *newf;
   {
     SignalBlocker b(this);
@@ -452,8 +711,11 @@ void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActi
     if (old) newf->copyDisplayProperties(old);
     connectDisplayableItem(newf);
   }
+  insight::dbg()<<"replaceOrAdd"<<std::endl;
   replaceOrAdd(postprocactions_, newf, old);
+  insight::dbg()<<"init display"<<std::endl;
   newf->initDisplay();
+  insight::dbg()<<"finish onAddEvaluation"<<std::endl;
 }
 
 
@@ -516,13 +778,13 @@ void QModelTree::onItemSelectionChanged()
   QTreeWidgetItem *item = currentItem();
   if (auto * m = dynamic_cast<QFeatureItem*>(item))
   {
-    emit focus(m->solidmodel().buildVisualization());
+    Q_EMIT focus(m->existingAis());
   }
 }
 
 void QModelTree::focusOutEvent(QFocusEvent */*event*/)
 {
-  emit unfocus();
+  Q_EMIT unfocus();
 }
 
 void QModelTree::getFeatureNames(std::set<std::string>& featnames) const

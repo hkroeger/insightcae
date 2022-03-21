@@ -33,6 +33,18 @@
 #endif
 #include "boost/filesystem.hpp"
 
+#include "vtkPolyData.h"
+#include "vtkPoints.h"
+#include "vtkDoubleArray.h"
+#include "vtkGaussianKernel.h"
+#include "vtkPointData.h"
+#include "vtkCellCenters.h"
+#include "vtkPolyDataReader.h"
+#include "vtkGenericDataObjectReader.h"
+#include "vtkProbeFilter.h"
+#include "vtkDelaunay2D.h"
+
+#include "vtkconversion.h"
 
 using namespace boost;
 using namespace insight;
@@ -43,44 +55,47 @@ namespace Foam
 template<class T>
 tmp<Field<T> > FieldDataProvider<T>::operator()(double time, const pointField& target) const
 {
-  tmp<Field<T> > res;
-  if ( (timeInstants_[0]>=time) || (timeInstants_.size()==1) )
-  {
-    res = atInstant(0, target);
-  }
-  else
-  {
-    if ( timeInstants_[timeInstants_.size()-1]<=time)
+    tmp<Field<T> > res;
+    if ( (timeInstants_[0]>=time) || (timeInstants_.size()==1) )
     {
-      res = atInstant(timeInstants_.size()-1, target);
+        res = atInstant(0, target);
     }
     else
     {
-      int ip;
-      for (ip=1; ip<timeInstants_.size(); ip++)
-      {
-	if (timeInstants_[ip]>=time) break;
-      }
-      scalar wi=time-timeInstants_[ip-1];
-      scalar wip=timeInstants_[ip]-time;
-      res = ( wip*atInstant(ip-1, target) + wi*atInstant(ip, target) ) / (wi+wip);
+        if ( timeInstants_[timeInstants_.size()-1]<=time)
+        {
+            res = atInstant(timeInstants_.size()-1, target);
+        }
+        else
+        {
+            int ip;
+            for (ip=1; ip<timeInstants_.size(); ip++)
+            {
+                if (timeInstants_[ip]>=time) break;
+            }
+            scalar wi=time-timeInstants_[ip-1];
+            scalar wip=timeInstants_[ip]-time;
+            res = ( wip*atInstant(ip-1, target) + wi*atInstant(ip, target) ) / (wi+wip);
+        }
     }
-  }
-  if (debug>1)
-  {
-    boost::filesystem::path fn=boost::filesystem::unique_path("./fielddataprovider-%%%%%%%%%.txt");
-    Info<<"Dumping fielddata into "<<fn.c_str()<<endl;
-    OFstream f(fn.c_str());
-    forAll(target,j)
+
+    if (debug>1)
     {
-      f<<target[j].x()<<" "<<target[j].y()<<" "<<target[j].z();
-      for (int k=0; k<pTraits<T>::nComponents; k++)
-	f<<" "<<component(res()[j], k);
-      f<<endl;
+        boost::filesystem::path fn=boost::filesystem::unique_path("./fielddataprovider-%%%%%%%%%.txt");
+        Info<<"Dumping fielddata into "<<fn.c_str()<<endl;
+        OFstream f(fn.c_str());
+        forAll(target,j)
+        {
+            f<<target[j].x()<<" "<<target[j].y()<<" "<<target[j].z();
+            for (int k=0; k<pTraits<T>::nComponents; k++)
+            {
+                f<<" "<<component(res()[j], k);
+            }
+            f<<endl;
+        }
     }
-  }
-//   Info<<"RETURN="<<res()<<endl;
-  return res;
+
+    return res;
 }
 
 template<class T>
@@ -138,57 +153,61 @@ FieldDataProvider<T>::~FieldDataProvider()
 template<class T>
 void FieldDataProvider<T>::read(Istream& is)
 {
-  token nexttoken(is);
-  
-  word timekey="steady";
-  if (!nexttoken.isWord())
-    is.putBack(nexttoken); // assume "steady"
-  else
-    timekey=nexttoken.wordToken();
+    token nexttoken(is);
+
+    word timekey="steady";
+    if (!nexttoken.isWord())
+    {
+        is.putBack(nexttoken); // assume "steady"
+    }
+    else
+    {
+        timekey=nexttoken.wordToken();
+    }
     
-  if (timekey=="steady")
-  {
-    timeInstants_.setSize(1);
-    timeInstants_[0]=0.0;
-    appendInstant(is);
-  }
-  else if (timekey=="unsteady")
-  {
-    DynamicList<scalar> times;
-    for (token t(is); t.good(); t=token(is))
+    if (timekey=="steady")
     {
-//       Info<<t<<endl;
-      if (t.isNumber())
-      {
-	times.append( t.number() );
-	appendInstant(is);
-	if (is.eof()) break;
-      }
-      else
-      {
-	FatalErrorIn("FieldDataProvider<T>::FieldDataProvider(Istream& is)")
-	  <<"expected time value, got "<<t<<"!"
-	  <<abort(FatalError);
-      }
+        timeInstants_.setSize(1);
+        timeInstants_[0]=0.0;
+        appendInstant(is);
     }
-    times.shrink();
-    if (times.size()<=0)
+    else if (timekey=="unsteady")
     {
-      FatalErrorIn("FieldDataProvider<T>::FieldDataProvider(Istream& is)")
-	<<"unsteady input specified but no time instants given!"
-	<<abort(FatalError);
+        DynamicList<scalar> times;
+        for (token t(is); t.good(); t=token(is))
+        {
+            //       Info<<t<<endl;
+            if (t.isNumber())
+            {
+                times.append( t.number() );
+                appendInstant(is);
+                if (is.eof()) break;
+            }
+            else
+            {
+                FatalErrorIn("FieldDataProvider<T>::FieldDataProvider(Istream& is)")
+                        <<"expected time value, got "<<t<<"!"
+                       <<abort(FatalError);
+            }
+        }
+        times.shrink();
+        if (times.size()<=0)
+        {
+            FatalErrorIn("FieldDataProvider<T>::FieldDataProvider(Istream& is)")
+                    <<"unsteady input specified but no time instants given!"
+                   <<abort(FatalError);
+        }
+        timeInstants_.transfer(times);
     }
-    timeInstants_.transfer(times);
-  }
-  else
-  {
-    FatalErrorIn("FieldDataProvider<T>::FieldDataProvider(Istream& is)")
-     << "unknown time series keyword: "<<timekey << endl
-     << "choices: steady unsteady" << endl
-     << abort(FatalError);
-  }
-  
-//   Info<<timeInstants_<<endl;
+    else
+    {
+        FatalErrorIn("FieldDataProvider<T>::FieldDataProvider(Istream& is)")
+                << "unknown time series keyword: "<<timekey << endl
+                << "choices: steady unsteady" << endl
+                << abort(FatalError);
+    }
+
+    //   Info<<timeInstants_<<endl;
 }
 
 template<class T>
@@ -251,6 +270,10 @@ void FieldDataProvider<T>::rmap
 }
 
 
+
+
+
+
 template<class T>  
 uniformField<T>::uniformField(Istream& is)
 : FieldDataProvider<T>(is)
@@ -306,6 +329,8 @@ autoPtr<FieldDataProvider<T> > uniformField<T>::clone() const
 
 
 
+
+
 template<class T>
 void nonuniformField<T>::appendInstant(Istream& is)
 {
@@ -351,7 +376,6 @@ nonuniformField<T>::nonuniformField(const Field<T>& uf)
 template<class T>
 tmp<Field<T> > nonuniformField<T>::atInstant(int i, const pointField& target) const
 {
-//   Info<<values_[i].size()<<" "<< target.size()<<" i ="<<i<<endl;
   tmp<Field<T> > res(new Field<T>(values_[i]));
   return res;
 }
@@ -385,13 +409,13 @@ void nonuniformField<T>::rmap
 {
     const nonuniformField<T>* oo = dynamic_cast<const nonuniformField<T>* >(&o);
     if (oo->values_.size() != values_.size())
+    {
         FatalErrorIn("nonuniformField<T>::rmap")
-                << "Incompatible number of time instants!"
-                   <<" other: "<<label(oo->values_.size())
-                   <<" current: "<<label(values_.size())
-                  <<endl
-                <<abort(FatalError);
-
+             << "Incompatible number of time instants!"
+             <<" other: "<<label(oo->values_.size())
+             <<" current: "<<label(values_.size())
+             << endl << abort(FatalError);
+    }
     for (size_t i=0; i<values_.size(); i++)
     {
         values_[i].rmap( oo->values_[i], m );
@@ -411,11 +435,6 @@ void linearProfile<T>::appendInstant(Istream& is)
   fileName fn;
   is >> fn;
   filenames_.push_back(fn);
-  
-//   arma::mat xy;
-//   fn.expand();
-//   xy.load(fn.c_str(), arma::raw_ascii);
-//   values_.push_back(new insight::Interpolator(xy, true) );
 }
 
 template<class T>
@@ -427,52 +446,38 @@ void linearProfile<T>::writeInstant(int i, Ostream& is) const
 template<class T>
 tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) const
 {
-  if (values_.find(idx)==values_.end())
-  {
-    fileName fn=filenames_[idx];
-    arma::mat xy;
-    fn.expand();
-    xy.load(fn.c_str(), arma::raw_ascii);
-    std::auto_ptr<insight::Interpolator> newipol(new insight::Interpolator(xy, true));
-    values_.insert(idx, newipol);
-  }
-  
-  tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
-  Field<T>& res=UNIOF_TMP_NONCONST(resPtr);
-
-//   vector ey = - (ex_ ^ ez_);
-//   tensor tt(ex_, ey, ez_);
-// //   Info<<ey<<tt<<endl;
-  
-
-  forAll(target, pi)
-  {
-    double t = base_.t(target[pi]);
-    
-    arma::mat q = (*values_.find(idx)->second)(t);
-    
-//     std::cout<<target[pi].x()<<" "<<target[pi].y()<<" "<<target[pi].z()<<" >> "<<t<<" >> "<<q<<std::endl;
-    
-//     Info<<cols_<<endl;
-//     std::cout<<q<<std::endl;
-    for (size_t c=0; c<q.n_elem; c++)
+    if (values_.find(idx)==values_.end())
     {
-//       if (cols_.found(c)) //(cmap[c]>=0) // if column is used
-//       {
-	setComponent( res[pi], /*cols_[c]*/ c ) = q(c);
-//       }
+        fileName fn=filenames_[idx];
+        arma::mat xy;
+        fn.expand();
+        xy.load(fn.c_str(), arma::raw_ascii);
+        std::auto_ptr<insight::Interpolator> newipol(new insight::Interpolator(xy, true));
+        values_.insert(idx, newipol);
     }
-    res[pi]=base_(res[pi]); //transform(tt, res[pi]);
-  }
-//    Info<<"res="<<res<<endl;
-  return resPtr;
+
+    tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
+    Field<T>& res=UNIOF_TMP_NONCONST(resPtr);
+
+    forAll(target, pi)
+    {
+        double t = base_.t(target[pi]);
+        arma::mat q = (*values_.find(idx)->second)(t);
+
+        for (size_t c=0; c<q.n_elem; c++)
+        {
+            setComponent( res[pi], c ) = q(c);
+        }
+        res[pi]=base_(res[pi]);
+    }
+
+    return resPtr;
 }
 
 template<class T>
 linearProfile<T>::linearProfile(const linearProfile<T>& o)
 : FieldDataProvider<T>(o),
-  base_(o.base_), //p0_(o.p0_), ep_(o.ep_), ex_(o.ex_), ez_(o.ez_),
-//   cols_(o.cols_),
+  base_(o.base_),
   filenames_(o.filenames_),
   values_(o.values_)
 {
@@ -482,7 +487,6 @@ template<class T>
 void linearProfile<T>::read(Istream& is)
 {
   base_.read(is);
-//   is >> cols_;
   FieldDataProvider<T>::read(is);
 }
   
@@ -490,7 +494,6 @@ template<class T>
 void linearProfile<T>::writeSup(Ostream& os) const
 {
   base_.writeSup(os);
-//   os << token::SPACE << cols_;
 }
   
 template<class T>
@@ -498,6 +501,8 @@ autoPtr<FieldDataProvider<T> > linearProfile<T>::clone() const
 {
   return autoPtr<FieldDataProvider<T> >(new linearProfile<T>(*this));
 }
+
+
 
 
 
@@ -514,12 +519,6 @@ void radialProfile<T>::appendInstant(Istream& is)
   fileName fn;
   is >> fn;
   filenames_.push_back(fn);
-  
-//   arma::mat xy;
-//   fn.expand();
-//   xy.load(fn.c_str(), arma::raw_ascii);
-//   
-//   values_.push_back(new insight::Interpolator(xy, true) );
 }
 
 template<class T>
@@ -531,58 +530,46 @@ void radialProfile<T>::writeInstant(int i, Ostream& is) const
 template<class T>
 tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) const
 {
-  if (values_.find(idx)==values_.end())
-  {
-    fileName fn=filenames_[idx];
-    arma::mat xy;
-    fn.expand();
-    xy.load(fn.c_str(), arma::raw_ascii);
-    std::auto_ptr<insight::Interpolator> newipol(new insight::Interpolator(xy, true));
-    values_.insert(idx, newipol);
-  }
-
-  tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
-  Field<T>& res=UNIOF_TMP_NONCONST(resPtr);
-  
-
-  forAll(target, pi)
-  {
-    double t = base_.t(target[pi]);
-    
-    arma::mat q = (*values_.find(idx)->second)(t);
-    
-//     std::cout<<target[pi].x()<<" "<<target[pi].y()<<" "<<target[pi].z()<<" >> "<<t<<" >> "<<q<<std::endl;
-    
-//     Info<<cols_<<endl;
-//     std::cout<<q<<std::endl;
-    for (size_t c=0; c<q.n_elem; c++)
+    if (values_.find(idx)==values_.end())
     {
-//       if (cols_.found(c)) //(cmap[c]>=0) // if column is used
-//       {
-	setComponent( res[pi], /*cols_[c]*/ c ) = q(c);
-//       }
+        fileName fn=filenames_[idx];
+        arma::mat xy;
+        fn.expand();
+        xy.load(fn.c_str(), arma::raw_ascii);
+        std::auto_ptr<insight::Interpolator> newipol(new insight::Interpolator(xy, true));
+        values_.insert(idx, newipol);
     }
-    res[pi]=base_(res[pi], target[pi]); //transform(tt, res[pi]);
-  }
-//    Info<<"res="<<res<<endl;
-  return resPtr;
+
+    tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
+    Field<T>& res = UNIOF_TMP_NONCONST(resPtr);
+
+
+    forAll(target, pi)
+    {
+        double t = base_.t(target[pi]);
+        arma::mat q = (*values_.find(idx)->second)(t);
+        for (size_t c=0; c<q.n_elem; c++)
+        {
+            setComponent( res[pi], c ) = q(c);
+        }
+        res[pi]=base_(res[pi], target[pi]);
+    }
+
+    return resPtr;
 }
 
 template<class T>
 radialProfile<T>::radialProfile(const radialProfile<T>& o)
 : FieldDataProvider<T>(o),
-  base_(o.base_), //p0_(o.p0_), ep_(o.ep_), ex_(o.ex_), ez_(o.ez_),
-//   cols_(o.cols_),
+  base_(o.base_),
   filenames_(o.filenames_),
   values_(o.values_)
-{
-}
+{}
 
 template<class T>
 void radialProfile<T>::read(Istream& is)
 {
   base_.read(is);
-//   is >> cols_;
   FieldDataProvider<T>::read(is);
 }
   
@@ -590,7 +577,6 @@ template<class T>
 void radialProfile<T>::writeSup(Ostream& os) const
 {
   base_.writeSup(os);
-//   os << token::SPACE << cols_;
 }
   
 template<class T>
@@ -602,54 +588,64 @@ autoPtr<FieldDataProvider<T> > radialProfile<T>::clone() const
 
 
 
+
+
+
 template<class T>  
 fittedProfile<T>::fittedProfile(Istream& is)
 : FieldDataProvider<T>(is)
-{
-}
+{}
 
 template<class T>
 void fittedProfile<T>::appendInstant(Istream& is)
 {
-  std::vector<arma::mat> ccoeffs;
-  for (int c=0; c<pTraits<T>::nComponents; c++)
-  {
-    token ct(is);
-    if (ct.pToken()!=token::BEGIN_SQR)
-      FatalErrorIn("appendInstant") << "Expected "<<token::BEGIN_SQR << abort(FatalError);
-    std::vector<double> coeff;
-    do
+    std::vector<arma::mat> ccoeffs;
+    for (int c=0; c<pTraits<T>::nComponents; c++)
     {
-      token nt(is);
-      if (!nt.isNumber())
-	FatalErrorIn("appendInstant") << "Expected number, got "<<nt<< abort(FatalError);
-      coeff.push_back(nt.number());
-      {
-	token nt2(is);
-	if (nt2.isPunctuation() && (nt2.pToken()==token::END_SQR))
-	  break;
-	else
-	  is.putBack(nt2);
-      }
-    } while (!is.eof());
-    
-    ccoeffs.push_back(arma::mat(coeff.data(), coeff.size(), 1));
-  }
-  
-  coeffs_.push_back(ccoeffs);
+        token ct(is);
+        if (ct.pToken()!=token::BEGIN_SQR)
+        {
+            FatalErrorIn("appendInstant") << "Expected "<<token::BEGIN_SQR << abort(FatalError);
+        }
+        std::vector<double> coeff;
+        do
+        {
+            token nt(is);
+            if (!nt.isNumber())
+            {
+                FatalErrorIn("appendInstant") << "Expected number, got "<<nt<< abort(FatalError);
+            }
+            coeff.push_back(nt.number());
+            {
+                token nt2(is);
+                if (nt2.isPunctuation() && (nt2.pToken()==token::END_SQR))
+                {
+                    break;
+                }
+                else
+                {
+                    is.putBack(nt2);
+                }
+            }
+        } while (!is.eof());
+
+        ccoeffs.push_back(arma::mat(coeff.data(), coeff.size(), 1));
+    }
+
+    coeffs_.push_back(ccoeffs);
 }
 
 template<class T>
 void fittedProfile<T>::writeInstant(int i, Ostream& is) const
 {
-  const std::vector<arma::mat>& ccoeffs=coeffs_[i];
-  BOOST_FOREACH(const arma::mat& c, ccoeffs)
-  {
-    is << token::BEGIN_SQR << token::SPACE;
-    for (unsigned int j=0; j<c.n_elem; j++)
-      is << c(j) << token::SPACE;
-    is << token::END_SQR << token::SPACE;
-  }
+    const std::vector<arma::mat>& ccoeffs=coeffs_[i];
+    for(const auto& c: ccoeffs)
+    {
+        is << token::BEGIN_SQR << token::SPACE;
+        for (unsigned int j=0; j<c.n_elem; j++)
+            is << c(j) << token::SPACE;
+        is << token::END_SQR << token::SPACE;
+    }
 }
 
 template<class T>
@@ -661,16 +657,13 @@ tmp<Field<T> > fittedProfile<T>::atInstant(int idx, const pointField& target) co
   forAll(target, pi)
   {
     double t = base_.t(target[pi]);
-    
     for (int c=0; c<pTraits<T>::nComponents; c++)
     {
       arma::mat coeff = coeffs_[idx][c];
       setComponent( res[pi], c )=evalPolynomial(t, coeff);
     }
-    
-    res[pi]=base_(res[pi]); //transform(tt, res[pi]);
+    res[pi]=base_(res[pi]);
   }
-//   Info<<"res="<<res<<endl;
   return resPtr;
 }
 
@@ -699,6 +692,135 @@ template<class T>
 autoPtr<FieldDataProvider<T> > fittedProfile<T>::clone() const
 {
   return autoPtr<FieldDataProvider<T> >(new fittedProfile<T>(*this));
+}
+
+
+template<class T>
+void vtkField<T>::setComponentMap(const word& n)
+{
+    componentOrderName_=n;
+    // default: no interchange
+    componentMap_.clear();
+    for (int k=0; k<pTraits<T>::nComponents; ++k)
+        componentMap_.push_back(k);
+}
+
+
+template<class T>
+void vtkField<T>::appendInstant(Istream& is)
+{
+    fileName fn;
+    string fld;
+
+    is >> fn >> fld;
+
+    token order(is);
+    if (order.isWord() && order.wordToken()=="componentOrder" )
+    {
+        word orderType;
+        is >> orderType;
+
+        setComponentMap(orderType);
+    }
+    else
+    {
+        is.putBack(order);
+
+        setComponentMap();
+    }
+
+    vtkFiles_.push_back(fn);
+    fieldNames_.push_back(fld);
+}
+
+template<class T>
+void vtkField<T>::writeInstant(int i, Ostream& os) const
+{
+    os << vtkFiles_[i]
+       << token::SPACE
+       << fieldNames_[i]
+          ;
+    if (!componentOrderName_.empty())
+    {
+        os << token::SPACE << "componentOrder"
+           << token::SPACE << componentOrderName_
+              ;
+    }
+}
+
+template<class T>
+vtkField<T>::vtkField(Istream& is)
+    : FieldDataProvider<T>(is)
+{}
+
+template<class T>
+vtkField<T>::vtkField(const vtkField<T>& o)
+    : FieldDataProvider<T> (o),
+      vtkFiles_(o.vtkFiles_),
+      fieldNames_(o.fieldNames_),
+      componentMap_(o.componentMap_)
+{}
+
+
+
+template<class T>
+tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
+{
+    auto ii=data_.find(i);
+    if (ii==data_.end())
+    {
+        if (!exists(vtkFiles_[i]))
+        {
+            FatalErrorIn("vtkField<T>::atInstant")
+                    << "file "<<vtkFiles_[i]<<" does not exist!"
+                    <<abort(FatalError);
+        }
+
+        auto r = vtkSmartPointer<vtkGenericDataObjectReader>::New();
+        r->SetFileName(vtkFiles_[i].c_str());
+        r->Update();
+        data_[i] = r->GetOutput();
+        ii=data_.find(i);
+    }
+
+
+    auto targ = vtkSmartPointer<vtkPolyData>::New();
+    setPoints<vtkPolyData>(target, targ);
+
+
+    // Gaussian kernel
+//    auto gaussianKernel = vtkSmartPointer<vtkGaussianKernel>::New();
+//    gaussianKernel->SetSharpness(2.0);
+//    gaussianKernel->SetRadius(12.0);
+
+//    auto ip=vtkSmartPointer<vtkPointInterpolator>::New();
+    auto ip=vtkSmartPointer<vtkProbeFilter>::New();
+    ip->SetInputData(targ);
+    ip->SetSourceData(ii->second);
+//    ip->SetSpatialMatch(true);
+//    ip->DebugOn();
+//    ip->SetKernel(gaussianKernel);
+//    ip->SetNullPointsStrategyToClosestPoint();
+
+    ip->Update();
+//    ip->Print(std::cout);
+    auto out = ip->GetOutput();
+    if (!out->GetPointData()->HasArray(fieldNames_[i].c_str()))
+    {
+        FatalErrorIn("vtkField<T>::atInstant")
+                << "file "<<vtkFiles_[i]<<" does not contain field "
+                << fieldNames_[i] <<"!"
+                <<abort(FatalError);
+    }
+    return VTKArrayToField<T>(
+                out->GetPointData()->GetArray(fieldNames_[i].c_str()),
+                componentMap_ );
+}
+
+template<class T>
+autoPtr<FieldDataProvider<T> > vtkField<T>::clone() const
+{
+    return autoPtr<FieldDataProvider<T> >(new vtkField<T>(*this));
 }
 
 }

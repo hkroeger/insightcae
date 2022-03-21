@@ -35,284 +35,442 @@ namespace insight
 
 
 
-//void TaskQueue::post(TaskQueue::Job job)
-//{
-//  std::unique_lock<std::mutex> lck(mx_);
-
-//  jobQueue_.push(job);
-
-//  lck.unlock();
-//  cv_.notify_all();
-
-//}
-
-
-//void TaskQueue::dispatchJobs()
-//{
-//  std::unique_lock<std::mutex> lck(mx_);
-
-//  while (true)
-//  {
-//    //Wait until we have jobs
-//    cv_.wait(lck, [this] {
-//        return (jobQueue_.size());
-//    });
-
-//    while (jobQueue_.size()>0)
-//    {
-//      auto op = std::move(jobQueue_.front());
-//      jobQueue_.pop();
-
-//      lck.unlock();
-//      op();
-//      lck.lock();
-
-//      boost::this_thread::interruption_point();
-//    }
-//  }
-//}
-
-
-
-
-
-void AnalyzeClient::controlRequest(const std::string &action, AnalyzeClient::ReportSuccessCallback onCompletion)
+void AnalyzeClientAction::setFinished()
 {
-  boost::lock_guard<boost::mutex> mxg(mx_);
+    isFinished_=true;
+    deadline_.cancel();
+    connection_.disconnect();
+}
 
-  if (crq_!=None)
-    throw insight::Exception("There is an unfinished request!");
 
-  crq_=SimpleRequest;
+AnalyzeClientAction::AnalyzeClientAction(
+        AnalyzeClient& cl,
+        SimpleCallBack onTimeout )
+    : cl_(cl),
+      isFinished_(false),
+      deadline_(cl_.ioService()),
+      timeoutCallback_(onTimeout)
+{
+    connection_ = cl_.httpClient().done().connect
+      (
+        std::bind(&AnalyzeClientAction::handleHttpResponse, this,
+                  std::placeholders::_1, std::placeholders::_2)
+        );
+}
 
-  currentCallback_=onCompletion;
 
-  Wt::Http::Message msg;
-  msg.setHeader("Content-Type", "application/json");
-  Wt::Json::Object payload;
-  payload["action"]=Wt::WString(action);
-  msg.addBodyText(Wt::Json::serialize(payload));
+AnalyzeClientAction::~AnalyzeClientAction()
+{}
 
-  if (!httpClient_.post(url_, msg))
-    throw insight::Exception("Could not launch control message!");
+
+void AnalyzeClientAction::start()
+{
+    deadline_.expires_from_now(
+                boost::posix_time::milliseconds(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        cl_.httpClient().timeout() ).count() )
+                 );
+    deadline_.async_wait(
+                [this](boost::system::error_code)
+                {
+                    timeoutCallback_();
+                });
+}
+
+
+void AnalyzeClientAction::handleHttpResponse(
+            boost::system::error_code err,
+            const Wt::Http::Message& response )
+{
+    setFinished();
+
+    bool success = (!err && response.status() == 200);
+
+    dbg() <<   "httpResponse err="<<err
+          << ", status="<<response.status()
+          << ", success="<<(success?"true":"false")
+          << std::endl;
+
+    if (success)
+    {
+        std::string body=response.body();
+        auto&ds=dbg();
+        ds << "body=";
+        if (body.size()<1024)
+            ds<<body;
+        else
+        {
+            ds<<body.substr(0, 512)<<"\n...\n"<<body.substr(body.size()-512, body.size());
+        }
+        ds<<std::endl;
+    }
+
 }
 
 
 
-void AnalyzeClient::handleHttpResponse(boost::system::error_code err, const Wt::Http::Message &response)
+
+
+QueryStatusAction::QueryStatusAction(
+        AnalyzeClient& cl,
+        QueryStatusAction::Callback queryStatusCallback,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
+    : AnalyzeClientAction(cl, onTimeout),
+      callback_(queryStatusCallback)
+{}
+
+
+void QueryStatusAction::start()
 {
+    if (!cl_.httpClient().get(cl_.url()+"/all"))
+        throw insight::Exception("Could not query status of remote analysis!");
+}
 
-  boost::lock_guard<boost::mutex> lock(mx_);
 
-  try
-  {
+void QueryStatusAction::handleHttpResponse(
+                boost::system::error_code err,
+                const Wt::Http::Message& response )
+{
+    AnalyzeClientAction::handleHttpResponse(err, response);
     bool success = (!err && response.status() == 200);
 
-    std::string body=response.body();
-    CurrentRequestType crq=crq_;
-    crq_=None;
+    bool resultsAvailable = false;
+    bool errorOccurred = false;
+    std::shared_ptr<insight::Exception> exception_;
 
-    std::cout<<"httpResponse err="<<err<<", crq="<<crq_
-             <<", status="<<response.status()
-             <<", success="<<success
-             <<", body="<<body.substr(0, std::min<size_t>(80,body.size()))
-             <<std::endl;
-
-    switch (crq)
+    if (success)
     {
+      const auto *ct = response.getHeader("Content-Type");
 
-      case SimpleRequest: {
-//          tq_.post(
-//                [=]()
-//                {
-                  boost::get<ReportSuccessCallback>(currentCallback_)(success);
-//                }
-//          );
-        }
-        break;
+      if (!ct)
+      {
+        throw insight::Exception("No content type specified in response!");
+      }
 
-      case QueryStatus: {
+      if (  (*ct)=="application/json" )
+      {
+        Wt::Json::Object payload;
+        Wt::Json::parse(response.body(), payload);
 
-//        ProgressStatePtrList pss;
-        bool resultsAvailable = false;
+        resultsAvailable = payload["resultsAvailable"].toBool();
 
-        if (success)
+        if (cl_.progressDisplayer())
         {
-          const auto *ct = response.getHeader("Content-Type");
 
-          if (!ct)
+          Wt::Json::Array states = payload.get("states");
+          if (states.size()>0)
           {
-            throw insight::Exception("No content type specified in response!");
-          }
-
-          if (  (*ct)=="application/json" )
-          {
-            Wt::Json::Object payload;
-            Wt::Json::parse(response.body(), payload);
-
-            resultsAvailable = payload["resultsAvailable"].toBool();
-
-            if (progressDisplayer_)
+            for (Wt::Json::Array::const_iterator i=states.begin(); i!=states.end(); i++)
             {
-              Wt::Json::Array states = payload.get("states");
-              if (states.size()>0)
+              Wt::Json::Object s=*i;
+
+              ProgressVariableList pvl;
+              if (!s.isNull("ProgressVariableList"))
               {
-                for (Wt::Json::Array::const_iterator i=states.begin(); i!=states.end(); i++)
+                Wt::Json::Object pvs = s.get("ProgressVariableList");
+                for (const auto& pv: pvs)
                 {
-                  Wt::Json::Object s=*i;
-
-                  ProgressVariableList pvl;
-                  if (!s.isNull("ProgressVariableList"))
-                  {
-                    Wt::Json::Object pvs = s.get("ProgressVariableList");
-                    for (const auto& pv: pvs)
-                    {
-                      pvl[pv.first]=pv.second.toNumber();
-                    }
-                  }
-
-                  progressDisplayer_->update(
-                        ProgressState(
-                          s.get("time").toNumber(),
-                          pvl,
-                          s.get("logMessage").toString()
-                          )
-                        );
+                  pvl[pv.first]=pv.second.toNumber();
                 }
               }
 
-              Wt::Json::Array progressStates = payload.get("progressStates");
-              if (progressStates.size()>0)
+              cl_.progressDisplayer()->update(
+                    ProgressState(
+                      s.get("time").toNumber(),
+                      pvl,
+                      s.get("logMessage").toString()
+                      )
+                    );
+            }
+          }
+
+          Wt::Json::Array progressStates = payload.get("progressStates");
+          if (progressStates.size()>0)
+          {
+            for (auto i=progressStates.begin();
+                 i!=progressStates.end(); i++)
+            {
+              Wt::Json::Object s=*i;
+              auto path = s.get("path").toString();
+              if (!s.isNull("double"))
               {
-                for (auto i=progressStates.begin();
-                     i!=progressStates.end(); i++)
-                {
-                  Wt::Json::Object s=*i;
-                  auto path = s.get("path").toString();
-                  if (!s.isNull("double"))
-                  {
-                    double value = s.get("double").toNumber();
-                    progressDisplayer_->setActionProgressValue(path, value);
-                  }
-                  else if (!s.isNull("text"))
-                  {
-                    string text = s.get("text").toString();
-                    progressDisplayer_->setMessageText(path, text);
-                  }
-                  else
-                  {
-                    progressDisplayer_->finishActionProgress(path);
-                  }
-                }
+                double value = s.get("double").toNumber();
+                cl_.progressDisplayer()->setActionProgressValue(path, value);
+              }
+              else if (!s.isNull("text"))
+              {
+                string text = s.get("text").toString();
+                cl_.progressDisplayer()->setMessageText(path, text);
+              }
+              else
+              {
+                cl_.progressDisplayer()->finishActionProgress(path);
               }
             }
           }
-          else
+
+          Wt::Json::Array logLines = payload.get("logLines");
+          if (logLines.size()>0)
           {
-            success=false;
+            for (Wt::Json::Array::const_iterator i=logLines.begin(); i!=logLines.end(); i++)
+            {
+              cl_.progressDisplayer()->logMessage(
+                      i->toString()
+                    );
+            }
           }
+
         }
 
-//        tq_.post( [=]()
-//        {
-          boost::get<QueryStatusCallback>(currentCallback_)(success, resultsAvailable);
-//        });
-
-      } break;
-
-      case QueryResults: {
-        ResultSetPtr r;
-
-        if (success)
+        if (payload["errorOccurred"].toBool())
         {
-          const auto *ct = response.getHeader("Content-Type");
-
-          if (!ct)
-            throw insight::Exception("No content type specified in response!");
-
-          if ( (*ct)=="application/xml")
-          {
-            auto body = response.body();
-            r.reset(new ResultSet(analysisName_, body));
-          }
+          errorOccurred=true;
+          exception_=std::make_shared<insight::Exception>(
+                std::string(payload.get("errorMessage").toString()),
+                std::string(payload.get("errorStackTrace").toString())
+                );
         }
 
-//        tq_.post( [=]()
-//        {
-          boost::get<QueryResultsCallback>(currentCallback_)(success, r);
-//        });
-
-      } break;
-
-      case QueryExepath: {
-        std::string exepath;
-
-        if (success)
-        {
-
-          const auto *ct = response.getHeader("Content-Type");
-
-          if (!ct)
-            throw insight::Exception("No content type specified in response!");
-
-          if ( (*ct)=="text/plain" )
-          {
-            exepath=response.body();
-          }
-          else
-          {
-            success=false;
-          }
-        }
-
-//        tq_.post( [=]()
-//        {
-          boost::get<QueryExepathCallback>(currentCallback_)(success, exepath);
-//        });
-
-      } break;
-
-      case None: {
-          insight::Warning("Internal error: got unexpected response.");
-        }
-        break;
-
+      }
+      else
+      {
+        success=false;
+      }
     }
-  }
-  catch (const std::exception&)
-  {
-    auto ex = std::current_exception();
-    if (exHdlr_)
-      exHdlr_(ex);
-    else
-      std::rethrow_exception(ex);
-  }
+
+    Result qsr;
+    qsr.success=success;
+    qsr.resultsAreAvailable=resultsAvailable;
+    qsr.errorOccurred=errorOccurred;
+    qsr.exception=exception_;
+
+    cl_.ioService().post( std::bind(callback_, qsr) );
 }
 
+
+
+
+
+ControlRequestAction::ControlRequestAction(
+        AnalyzeClient& cl,
+        const std::string& action,
+        ReportSuccessCallback callback,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
+    : AnalyzeClientAction(cl, onTimeout),
+      action_(action),
+      callback_(callback)
+{}
+
+
+void ControlRequestAction::start()
+{
+    Wt::Http::Message msg;
+    msg.setHeader("Content-Type", "application/json");
+    Wt::Json::Object payload;
+    payload["action"]=Wt::WString(action_);
+    msg.addBodyText(Wt::Json::serialize(payload));
+
+    if (!cl_.httpClient().post(cl_.url(), msg))
+      throw insight::Exception("Could not launch control message!");
+}
+
+
+void ControlRequestAction::handleHttpResponse(
+            boost::system::error_code err,
+            const Wt::Http::Message& response )
+{
+    AnalyzeClientAction::handleHttpResponse(err, response);
+
+    ReportSuccessResult rsr;
+    rsr.success = (!err && response.status() == 200);
+
+    cl_.ioService().post( std::bind(callback_, rsr) );
+}
+
+
+
+
+
+LaunchAnalysisAction::LaunchAnalysisAction(
+        AnalyzeClient& cl,
+        const ParameterSet& input,
+        const boost::filesystem::path& parent_path,
+        const std::string& analysisName,
+        ReportSuccessCallback callback,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
+    : AnalyzeClientAction(cl, onTimeout),
+      callback_(callback)
+{
+    CurrentExceptionContext ex("composing parameter set message to server");
+    msg_.setHeader("Content-Type", "application/xml");
+    std::ostringstream cs;
+    input.saveToStream(cs, parent_path, analysisName);
+    msg_.addBodyText(cs.str());
+}
+
+
+void LaunchAnalysisAction::start()
+{
+    if (!cl_.httpClient().post(cl_.url(), msg_))
+      throw insight::Exception("Could not launch remote analysis!");
+}
+
+
+void LaunchAnalysisAction::handleHttpResponse(
+            boost::system::error_code err,
+            const Wt::Http::Message& response )
+{
+    AnalyzeClientAction::handleHttpResponse(err, response);
+
+    ReportSuccessResult rsr;
+    rsr.success = (!err && response.status() == 200);
+
+    cl_.ioService().post( std::bind(callback_, rsr) );
+}
+
+
+
+
+
+QueryResultsAction::QueryResultsAction(
+        AnalyzeClient& cl,
+        Callback callback,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
+    : AnalyzeClientAction(cl, onTimeout),
+      callback_(callback)
+{}
+
+
+void QueryResultsAction::start()
+{
+    if (!cl_.httpClient().get(cl_.url()+"/results"))
+      throw insight::Exception("Could not query results of remote analysis!");
+}
+
+
+void QueryResultsAction::handleHttpResponse(
+            boost::system::error_code err,
+            const Wt::Http::Message& response )
+{
+    AnalyzeClientAction::handleHttpResponse(err, response);
+    bool success = (!err && response.status() == 200);
+
+    ResultSetPtr r;
+
+    if (success)
+    {
+      const auto *ct = response.getHeader("Content-Type");
+
+      if (!ct)
+        throw insight::Exception("No content type specified in response!");
+
+      if ( (*ct)=="application/xml")
+      {
+        r = ResultSet::createFromString( response.body(), cl_.analysisName() );
+      }
+    }
+
+    Result qrr;
+    qrr.success=success;
+    qrr.results=r;
+    cl_.ioService().post( std::bind(callback_, qrr) );
+}
+
+
+
+
+
+QueryExepathAction::QueryExepathAction(
+        AnalyzeClient& cl,
+        Callback callback,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
+    : AnalyzeClientAction(cl, onTimeout),
+      callback_(callback)
+{}
+
+
+void QueryExepathAction::start()
+{
+    if (!cl_.httpClient().get(cl_.url()+"/exepath"))
+      throw insight::Exception("Could not query execution path of remote analysis!");
+}
+
+
+void QueryExepathAction::handleHttpResponse(
+            boost::system::error_code err,
+            const Wt::Http::Message& response )
+{
+    AnalyzeClientAction::handleHttpResponse(err, response);
+    bool success = (!err && response.status() == 200);
+
+    std::string exepath;
+
+    if (success)
+    {
+
+      const auto *ct = response.getHeader("Content-Type");
+
+      if (!ct)
+        throw insight::Exception("No content type specified in response!");
+
+      if ( (*ct)=="text/plain" )
+      {
+        exepath=response.body();
+      }
+      else
+      {
+        success=false;
+      }
+    }
+
+    Result qer;
+    qer.success=success;
+    qer.exePath=exepath;
+    cl_.ioService().post( std::bind(callback_, qer) );
+}
+
+
+
+
+
+void AnalyzeClient::controlRequest(
+        const std::string &action,
+        AnalyzeClientAction::ReportSuccessCallback onCompletion,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
+{
+  launchAction(
+              std::make_shared<ControlRequestAction>(
+                  *this, action,
+                  onCompletion,
+                  onTimeout ) );
+}
+
+
+
+void AnalyzeClient::launchAction( std::shared_ptr<AnalyzeClientAction> action )
+{
+    if ( isBusy() )
+        throw insight::Exception( "internal error: there is already a transaction in progress" );
+
+    currentAction_ = action;
+    currentAction_->start();
+}
 
 
 
 AnalyzeClient::AnalyzeClient(
     const std::string analysisName,
     const std::string &url,
-    insight::ProgressDisplayer* progressDisplayer,
-    ExceptionHandler exceptionHandler
+    insight::ProgressDisplayer* progressDisplayer
     )
   : analysisName_(analysisName),
     url_(url),
     ioService_(),
     httpClient_(ioService_),
-    crq_(None),
-    progressDisplayer_(progressDisplayer),
-    exHdlr_(exceptionHandler)
+    progressDisplayer_(progressDisplayer)
 {
   httpClient_.setMaximumResponseSize(512*1024*1024);
-  httpClient_.setTimeout(std::chrono::seconds{24*3600});
-
-  httpClient_.done().connect
-      (
-        std::bind(&AnalyzeClient::handleHttpResponse, this, std::placeholders::_1, std::placeholders::_2)
-        );
+  httpClient_.setTimeout(std::chrono::seconds{15*60});
 
   ioService_.start();
 }
@@ -330,7 +488,14 @@ AnalyzeClient::~AnalyzeClient()
 
 bool AnalyzeClient::isBusy() const
 {
-  return ( crq_!=None );
+    if ( currentAction_ )
+    {
+        if (!currentAction_->isFinished())
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 
@@ -338,67 +503,20 @@ bool AnalyzeClient::isBusy() const
 
 void AnalyzeClient::forgetRequest()
 {
-  boost::lock_guard<boost::mutex> mxg(mx_);
-  crq_=None;
+  currentAction_.reset();
 }
 
 
 
 
-bool AnalyzeClient::waitForContact(int maxAttempts)
+
+
+void AnalyzeClient::queryExepath(
+        QueryExepathAction::Callback onExepathAvailable,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
 {
-  // wait for server to come up and respond
-  std::mutex m;
-  std::condition_variable cv;
-  bool contacted=false;
-  int attempts=0;
-
-  do
-  {
-    attempts++;
-
-    queryStatus(
-          [&](bool success, bool)
-          {
-            std::unique_lock<std::mutex> lck(m);
-            if (success)
-            {
-              contacted=true;
-            }
-            cv.notify_all();
-          }
-    );
-
-    {
-     std::unique_lock<std::mutex> lk(m);
-     cv.wait_for(lk, std::chrono::seconds(10) );
-    }
-
-    if (!contacted)
-    {
-      forgetRequest();
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(2000));
-    }
-  }
-  while( !(contacted || (attempts > maxAttempts)) );
-
-  return contacted;
-}
-
-
-
-
-void AnalyzeClient::queryExepath(AnalyzeClient::QueryExepathCallback onExepathAvailable)
-{
-  boost::lock_guard<boost::mutex> mxg(mx_);
-
-  if (crq_!=None)
-    throw insight::Exception("There is an unfinished request!");
-
-  crq_=QueryExepath;
-  currentCallback_=onExepathAvailable;
-  if (!httpClient_.get(url_+"/exepath"))
-    throw insight::Exception("Could not query execution path of remote analysis!");
+  launchAction( std::make_shared<QueryExepathAction>(
+                      *this, onExepathAvailable, onTimeout ) );
 }
 
 
@@ -408,81 +526,74 @@ void AnalyzeClient::launchAnalysis(
     const ParameterSet& input,
     const boost::filesystem::path& parent_path,
     const std::string& analysisName,
-    ReportSuccessCallback onCompletion
+    AnalyzeClientAction::ReportSuccessCallback onCompletion,
+    AnalyzeClientAction::SimpleCallBack onTimeout
     )
 {
-  boost::lock_guard<boost::mutex> mxg(mx_);
-
-  if (crq_!=None)
-    throw insight::Exception("There is an unfinished request!");
-
-  Wt::Http::Message msg;
-  msg.setHeader("Content-Type", "application/xml");
-  std::ostringstream cs;
-  input.saveToStream(cs, parent_path, analysisName);
-  msg.addBodyText(cs.str());
-
-  crq_=SimpleRequest;
-  currentCallback_=onCompletion;
-  if (!httpClient_.post(url_, msg))
-    throw insight::Exception("Could not launch remote analysis!");
+   launchAction( std::make_shared<LaunchAnalysisAction>(
+                     *this,
+                     input, parent_path, analysisName,
+                     onCompletion, onTimeout ) );
 }
 
 
 
 
-void AnalyzeClient::queryStatus(AnalyzeClient::QueryStatusCallback onStatusAvailable)
+void AnalyzeClient::queryStatus(
+        QueryStatusAction::Callback onStatusAvailable,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
 {
-  boost::lock_guard<boost::mutex> mxg(mx_);
-
-  if (crq_!=None)
-    throw insight::Exception("There is an unfinished request!");
-
-  crq_=QueryStatus;
-  currentCallback_=onStatusAvailable;
-  if (!httpClient_.get(url_+"/latest"))
-    throw insight::Exception("Could not query status of remote analysis!");
+    launchAction( std::make_shared<QueryStatusAction>(
+                      *this, onStatusAvailable, onTimeout ) );
 }
 
 
 
 
-void AnalyzeClient::kill(AnalyzeClient::ReportSuccessCallback onCompletion)
+void AnalyzeClient::kill(
+        AnalyzeClientAction::ReportSuccessCallback onCompletion,
+        AnalyzeClientAction::SimpleCallBack onTimeout)
 {
-  controlRequest("kill", onCompletion);
+  controlRequest("kill", onCompletion, onTimeout );
 }
 
-void AnalyzeClient::exit(AnalyzeClient::ReportSuccessCallback onCompletion)
+
+
+
+void AnalyzeClient::exit(
+        AnalyzeClientAction::ReportSuccessCallback onCompletion,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
 {
-  controlRequest("exit", onCompletion);
+  controlRequest("exit", onCompletion, onTimeout);
 }
 
-void AnalyzeClient::wnow(AnalyzeClient::ReportSuccessCallback onCompletion)
+
+
+
+void AnalyzeClient::wnow(
+        AnalyzeClientAction::ReportSuccessCallback onCompletion,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
 {
-  controlRequest("wnow", onCompletion);
+  controlRequest("wnow", onCompletion, onTimeout);
 }
 
-void AnalyzeClient::wnowandstop(AnalyzeClient::ReportSuccessCallback onCompletion)
+
+void AnalyzeClient::wnowandstop(
+        AnalyzeClientAction::ReportSuccessCallback onCompletion,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
 {
-  controlRequest("wnowandstop", onCompletion);
+  controlRequest("wnowandstop", onCompletion, onTimeout);
 }
 
 
-
-
-void AnalyzeClient::queryResults(AnalyzeClient::QueryResultsCallback onResultsAvailable)
+void AnalyzeClient::queryResults(
+        QueryResultsAction::Callback onResultsAvailable,
+        AnalyzeClientAction::SimpleCallBack onTimeout )
 {
-  boost::lock_guard<boost::mutex> mxg(mx_);
+  launchAction( std::make_shared<QueryResultsAction>(
+                    *this, onResultsAvailable, onTimeout ) );
 
-  if (crq_!=None)
-    throw insight::Exception("There is an unfinished request!");
-
-  crq_=QueryResults;
-  currentCallback_=onResultsAvailable;
-  if (!httpClient_.get(url_+"/results"))
-    throw insight::Exception("Could not query results of remote analysis!");
 }
-
 
 
 

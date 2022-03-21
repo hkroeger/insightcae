@@ -21,6 +21,9 @@
 #ifndef PARAMETEREDITORWIDGET_H
 #define PARAMETEREDITORWIDGET_H
 
+#include "toolkit_gui_export.h"
+
+
 #ifndef Q_MOC_RUN
 #include "base/parameterset.h"
 #endif
@@ -30,12 +33,15 @@
 #include "qmodeltree.h"
 #include "base/progressdisplayer.h"
 
+#include "iqparametersetmodel.h"
+
 #undef None
 #undef Bool
 #include <QWidget>
 #include <QSplitter>
-#include <QTreeWidget>
+//#include <QTreeWidget>
 #include <QThread>
+#include <QTreeView>
 
 #include <set>
 #include <memory>
@@ -43,37 +49,37 @@
 
 class VisualizerThread;
 
-class ParameterTreeWidget
-    : public QTreeWidget
-{
-public:
-  ParameterTreeWidget(QWidget* p);
-  void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-};
+//class ParameterTreeWidget
+//    : public QTreeWidget
+//{
+//public:
+//  ParameterTreeWidget(QWidget* p);
+//  void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+//};
 
 class ParameterSetDisplay;
 namespace insight {
 class CAD_ParameterSet_Visualizer;
 }
 
-class ParameterEditorWidget
+class TOOLKIT_GUI_EXPORT ParameterEditorWidget
 : public QSplitter
 {
     Q_OBJECT
     
 protected:
-    ParameterTreeWidget *ptree_;
+    QTreeView* parameterTreeView_;
     QWidget *inputContents_;
 
     ParameterSetDisplay* display_;
 
-    QTreeWidgetItem* root_;
-    
-    insight::ParameterSet& parameters_;
     insight::ParameterSet defaultParameters_;
+
+    IQParameterSetModel* model_;
 
     insight::ParameterSet_ValidatorPtr vali_;
     std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz_;
+
 
 public:
 
@@ -97,20 +103,17 @@ public:
         insight::ParameterSet_ValidatorPtr vali = insight::ParameterSet_ValidatorPtr(),
         ParameterSetDisplay* display = nullptr
     );
-    
-    void insertParameter(const QString& name, insight::Parameter& parameter, const insight::Parameter& defaultParameter);
-    void doUpdateVisualization();
+
     bool hasVisualizer() const;
+
+    inline IQParameterSetModel* model() const { return model_; }
     
 public Q_SLOTS:
-    void onApply();
-    void onUpdate();
     void onParameterSetChanged();
 
 Q_SIGNALS:
-    void apply();
-    void update();
     void parameterSetChanged();
+    void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
 };
 
 
@@ -120,7 +123,7 @@ Q_SIGNALS:
  * Represents a union of CAD 3D display and modeltree
  * has interface to display and update multiple parameter set visualizers
  */
-class ParameterSetDisplay
+class TOOLKIT_GUI_EXPORT ParameterSetDisplay
  : public QObject
 {
   Q_OBJECT
@@ -129,9 +132,8 @@ class ParameterSetDisplay
 
   QoccViewWidget* viewer_;
   QModelTree* modeltree_;
-  std::set<std::shared_ptr<insight::CAD_ParameterSet_Visualizer> > visualizers_;
 
-  VisualizerThread* vt_;
+  QThread visualizerThread_;
 
 public:
   ParameterSetDisplay
@@ -144,14 +146,8 @@ public:
   inline QoccViewWidget* viewer() { return viewer_; }
   inline QModelTree* modeltree() { return modeltree_; }
 
-  void registerVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz);
-  void deregisterVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz);
-
-public Q_SLOTS:
-  void onUpdateVisualization();
-
-private Q_SLOTS:
-  void visualizationUpdateFinished();
+  void connectVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz);
+  void disconnectVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz);
 
 };
 

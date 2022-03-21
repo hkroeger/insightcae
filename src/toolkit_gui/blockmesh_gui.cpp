@@ -30,11 +30,13 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Bo
 
 
 
-void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CurrentExceptionContext ex("computing visualization of blockMeshDict box template");
 
-  blockMeshDict_Box::Parameters p(ps_);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+
+  blockMeshDict_Box::Parameters p(currentParameters());
 
   arma::mat ey = arma::cross( p.geometry.ez, p.geometry.ex);
 
@@ -45,7 +47,7 @@ void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements(Us
                 cad::matconst(           ey * p.geometry.W),
                 cad::matconst(p.geometry.ez * p.geometry.H)
                 ),
-              DisplayStyle::Wireframe
+              AIS_WireFrame
               );
 }
 
@@ -61,11 +63,11 @@ ParameterSet_VisualizerPtr blockMeshDict_Cylinder_visualizer()
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Cylinder, visualizer, blockMeshDict_Cylinder_visualizer);
 
 
-void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
-  blockMeshDict_Cylinder::Parameters p(ps_);
+  blockMeshDict_Cylinder::Parameters p(currentParameters());
 
   arma::mat ex=p.geometry.ex;
   arma::mat er=p.geometry.er;
@@ -75,10 +77,9 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 
   if (p.geometry.d<1e-10)
   {
-    double Lc=p.geometry.D*p.mesh.core_fraction;
 
 
-    auto cyl=cad::Cylinder::create(
+    auto shape=cad::Cylinder::create(
                cad::matconst(p.geometry.p0),
                cad::matconst(ex * p.geometry.L),
                cad::scalarconst( p.geometry.D ),
@@ -86,16 +87,22 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
                false
                );
 
-    auto core=cad::Box::create(
-                cad::matconst(p.geometry.p0),
-                cad::matconst(ex * p.geometry.L),
-                cad::matconst(Lc*ey), cad::matconst(Lc*er),
-                cad::BoxCentering(false, true, true)
-                );
+    if (auto* og = boost::get<blockMeshDict_Cylinder::Parameters::mesh_type::topology_oGrid_type>(
+                &p.mesh.topology))
+    {
+        double Lc=p.geometry.D*og->core_fraction;
+        auto core=cad::Box::create(
+                    cad::matconst(p.geometry.p0),
+                    cad::matconst(ex * p.geometry.L),
+                    cad::matconst(Lc*ey), cad::matconst(Lc*er),
+                    cad::BoxCentering(false, true, true)
+                    );
+        shape = cad::Compound::create(cad::CompoundFeatureList({shape, core}));
+    }
 
     addFeature( label,
-                cad::Compound::create(cad::CompoundFeatureList({cyl, core})),
-                DisplayStyle::Wireframe
+                shape,
+                AIS_WireFrame
                 );
   }
   else
@@ -111,7 +118,7 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 
     addFeature( label,
                 cyl,
-                DisplayStyle::Wireframe
+                AIS_WireFrame
                 );
   }
 }
@@ -134,11 +141,11 @@ ParameterSet_VisualizerPtr blockMeshDict_Sphere_visualizer()
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Sphere, visualizer, blockMeshDict_Sphere_visualizer);
 
 
-void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements(UsageTracker* ut)
+void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements(ut);
+  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
 
-  blockMeshDict_Sphere::Parameters p(ps_);
+  blockMeshDict_Sphere::Parameters p(currentParameters());
 
   arma::mat ex=p.geometry.ex;
   arma::mat ez=p.geometry.ez;
@@ -158,7 +165,7 @@ void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements
 
   addFeature( "blockMeshDict_Sphere",
               cad::Compound::create(cad::CompoundFeatureList({sph, core})),
-              DisplayStyle::Wireframe
+              AIS_WireFrame
               );
 }
 

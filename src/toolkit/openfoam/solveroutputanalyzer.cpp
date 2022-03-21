@@ -73,15 +73,15 @@ void SolverOutputAnalyzer::update(const std::string& line)
         }
         else if ( boost::regex_search( line, match, courant_pattern, boost::match_default )  )
         {
-            last_courant_.reset(new CourantInfo({ to_number<double>(match[1]), to_number<double>(match[2]) }));
+            last_courant_.reset(new CourantInfo({ toNumber<double>(match[1]), toNumber<double>(match[2]) }));
         }
         else if ( boost::regex_search( line, match, if_courant_pattern, boost::match_default )  )
         {
-            last_if_courant_.reset(new CourantInfo({ to_number<double>(match[1]), to_number<double>(match[2]) }));
+            last_if_courant_.reset(new CourantInfo({ toNumber<double>(match[1]), toNumber<double>(match[2]) }));
         }
         else if ( boost::regex_search( line, match, dt_pattern, boost::match_default )  )
         {
-            last_dt_.reset(new double( to_number<double>(match[1])));
+            last_dt_.reset(new double( toNumber<double>(match[1])));
         }
         else if ( boost::regex_search( line, match, exec_time_pattern, boost::match_default )  )
         {
@@ -89,7 +89,7 @@ void SolverOutputAnalyzer::update(const std::string& line)
           {
             last_last_exec_time_info_ = last_exec_time_info_;
           }
-          last_exec_time_info_.reset(new ExecTimeInfo( { to_number<double>(match[1]), to_number<double>(match[2]) }));
+          last_exec_time_info_.reset(new ExecTimeInfo( { toNumber<double>(match[1]), toNumber<double>(match[2]) }));
         }
         else if ( boost::regex_search( line, match, rb_pattern, boost::match_default )  )
         {
@@ -98,9 +98,9 @@ void SolverOutputAnalyzer::update(const std::string& line)
         else if ( boost::regex_search( line, match, rb_cor_pattern, boost::match_default ) && !currbname_.empty() )
         {
           double
-              cx=to_number<double>(match[1]),
-              cy=to_number<double>(match[2]),
-              cz=to_number<double>(match[3]);
+              cx=toNumber<double>(match[1]),
+              cy=toNumber<double>(match[2]),
+              cz=toNumber<double>(match[3]);
           curProgVars_[pre_motion+currbname_+"/cx"]=cx;
           curProgVars_[pre_motion+currbname_+"/cy"]=cy;
           curProgVars_[pre_motion+currbname_+"/cz"]=cz;
@@ -108,18 +108,18 @@ void SolverOutputAnalyzer::update(const std::string& line)
         else if ( boost::regex_search( line, match, rb_ori_pattern, boost::match_default ) && !currbname_.empty() )
         {
           double
-              ox=std::asin(to_number<double>(match[8]))/SI::deg, // sin alpha in case of pure rot around x
-              oy=std::asin(to_number<double>(match[3]))/SI::deg, // sin alpha in case of pure rot around y
-              oz=std::asin(to_number<double>(match[4]))/SI::deg; // sin alpha in case of pure rot around z
+              ox=std::asin(toNumber<double>(match[8]))/SI::deg, // sin alpha in case of pure rot around x
+              oy=std::asin(toNumber<double>(match[3]))/SI::deg, // sin alpha in case of pure rot around y
+              oz=std::asin(toNumber<double>(match[4]))/SI::deg; // sin alpha in case of pure rot around z
           curProgVars_[pre_orient+currbname_+"/ox"]=ox;
           curProgVars_[pre_orient+currbname_+"/oy"]=oy;
           curProgVars_[pre_orient+currbname_+"/oz"]=oz;
         }
         else if ( boost::regex_search( line, match, p_pattern, boost::match_default ) && !curforcename_.empty()  )
         {
-            double px=to_number<double>(match[1]);
-            double py=to_number<double>(match[2]);
-            double pz=to_number<double>(match[3]);
+            double px=toNumber<double>(match[1]);
+            double py=toNumber<double>(match[2]);
+            double pz=toNumber<double>(match[3]);
             if (curforcesection_==1)
             {
                 // force
@@ -137,9 +137,9 @@ void SolverOutputAnalyzer::update(const std::string& line)
         }
         else if ( boost::regex_search( line, match, v_pattern, boost::match_default ) && !curforcename_.empty()  )
         {
-            double vx=to_number<double>(match[1]);
-            double vy=to_number<double>(match[2]);
-            double vz=to_number<double>(match[3]);
+            double vx=toNumber<double>(match[1]);
+            double vy=toNumber<double>(match[2]);
+            double vz=toNumber<double>(match[3]);
             if (curforcesection_==1)
             {
                 // force
@@ -226,7 +226,7 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
                 if (solverActionProgress_) solverActionProgress_->stepTo(curTime_);
             }
-            curTime_=to_number<double>(match[1]);
+            curTime_=toNumber<double>(match[1]);
 
             if (last_courant_)
             {
@@ -256,13 +256,13 @@ void SolverOutputAnalyzer::update(const std::string& line)
         }
         else if ( boost::regex_search( line, match, solver_pattern, boost::match_default ) )
         {
-            curProgVars_[pre_resi+match[2]] = to_number<double>(match[3]);
+            curProgVars_[pre_resi+match[2]] = toNumber<double>(match[3]);
         }
         else if ( boost::regex_search( line, match, cont_pattern, boost::match_default ) )
         {
-            curProgVars_[pre_conterr+"local"] = to_number<double>(match[1]);
-            curProgVars_[pre_conterr+"global"] = to_number<double>(match[2]);
-            curProgVars_[pre_conterr+"cumulative"] = to_number<double>(match[3]);
+            curProgVars_[pre_conterr+"local"] = toNumber<double>(match[1]);
+            curProgVars_[pre_conterr+"global"] = toNumber<double>(match[2]);
+            curProgVars_[pre_conterr+"cumulative"] = toNumber<double>(match[3]);
         }
     }
     catch (...)
@@ -270,7 +270,7 @@ void SolverOutputAnalyzer::update(const std::string& line)
       // ignore errors
     }
 
-    curLog_ += line+"\n";
+//    curLog_ += line+"\n";
 
 }
 

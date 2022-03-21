@@ -2,6 +2,7 @@
 #define INSIGHT_POTENTIALFREESURFACEFOAMNUMERICS_H
 
 #include "openfoam/caseelements/numerics/unsteadyincompressiblenumerics.h"
+#include "potentialfreesurfacefoamnumerics__potentialFreeSurfaceFoamNumerics__Parameters_headers.h"
 
 namespace insight {
 

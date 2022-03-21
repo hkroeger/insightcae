@@ -1,11 +1,18 @@
 #ifndef OcctWindow_H
 #define OcctWindow_H
 
+#include "insightcad_gui_export.h"
+
+#include <Standard_Version.hxx>
 #include <Aspect_Window.hxx>
 
+#if OCC_VERSION_MAJOR>=7
 #include <Standard_WarningsDisable.hxx>
+#endif
 #include <QWidget>
+#if OCC_VERSION_MAJOR>=7
 #include <Standard_WarningsRestore.hxx>
+#endif
 
 class OcctWindow;
 
@@ -29,63 +36,74 @@ class OcctWindow;
   of Aspect_Window interface at application level.
 */
 
-class OcctWindow : public Aspect_Window
+class INSIGHTCAD_GUI_EXPORT OcctWindow : public Aspect_Window
 {
-public:
-  
-  //! Constructor
-  OcctWindow( QWidget* theWidget, const Quantity_NameOfColor theBackColor = Quantity_NOC_MATRAGRAY );
 
-  virtual void Destroy();
+protected:
+  mutable Standard_Integer xLeft_;
+  mutable Standard_Integer yTop_;
+  mutable Standard_Integer xRight_;
+  mutable Standard_Integer yBottom_;
+  QWidget* widget_;
+
+
+  QRect widgetRect() const;
+
+public:
+
+  //! Constructor
+  OcctWindow( QWidget* widget, const Quantity_NameOfColor backColor = Quantity_NOC_MATRAGRAY );
+
+  void Destroy()
+#if OCC_VERSION_MAJOR<7
+  override
+#endif
+  ;
 
   //! Destructor
-  ~OcctWindow()
-  {
-    Destroy();
-  }
+  ~OcctWindow();
 
   //! Returns native Window handle
-  virtual Aspect_Drawable NativeHandle() const;
+  Aspect_Drawable NativeHandle() const override;
 
   //! Returns parent of native Window handle.
-  virtual Aspect_Drawable NativeParentHandle() const;
+  Aspect_Drawable NativeParentHandle() const override;
 
   //! Applies the resizing to the window <me>
-  virtual Aspect_TypeOfResize DoResize();
+  Aspect_TypeOfResize DoResize()
+#if OCC_VERSION_MAJOR<7
+  const
+#endif
+  override;
 
   //! Returns True if the window <me> is opened
   //! and False if the window is closed.
-  virtual Standard_Boolean IsMapped() const;
+  Standard_Boolean IsMapped() const override;
 
   //! Apply the mapping change to the window <me>
   //! and returns TRUE if the window is mapped at screen.
-  virtual Standard_Boolean DoMapping() const { return Standard_True; }
+  Standard_Boolean DoMapping() const override;
 
   //! Opens the window <me>.
-  virtual void Map() const;
-  
-  //! Closes the window <me>.
-  virtual void Unmap() const;
+  void Map() const override;
 
-  virtual void Position( Standard_Integer& theX1, Standard_Integer& theY1,
-                         Standard_Integer& theX2, Standard_Integer& theY2 ) const;
+  //! Closes the window <me>.
+  void Unmap() const override;
+
+  void Position( Standard_Integer& theX1, Standard_Integer& theY1,
+                 Standard_Integer& theX2, Standard_Integer& theY2 ) const override;
 
   //! Returns The Window RATIO equal to the physical
   //! WIDTH/HEIGHT dimensions.
-  virtual Standard_Real Ratio() const;
+  Standard_Real Ratio() const override;
 
-  virtual void Size( Standard_Integer& theWidth, Standard_Integer& theHeight ) const;
-  
-  virtual Aspect_FBConfig NativeFBConfig() const Standard_OVERRIDE { return NULL; }
+  void Size( Standard_Integer& theWidth, Standard_Integer& theHeight ) const override;
 
-  DEFINE_STANDARD_RTTIEXT(OcctWindow,Aspect_Window)
+#if OCC_VERSION_MAJOR>=7
+  Aspect_FBConfig NativeFBConfig() const override;
+#endif
 
-protected:
-  Standard_Integer myXLeft;
-  Standard_Integer myYTop;
-  Standard_Integer myXRight;
-  Standard_Integer myYBottom;
-  QWidget* myWidget;
+
 };
 
 

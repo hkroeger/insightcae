@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
 
+#include "simpledymfoamnumerics__simpleDyMFoamNumerics__Parameters_headers.h"
+
 namespace insight {
 
 class simpleDyMFoamNumerics

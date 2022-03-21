@@ -12,16 +12,16 @@ int main(int argc, char*argv[])
     insight::assertion(argc==2, "expected exactly one command line argument");
 
     class Case
-        : public SimpleFoamOpenFOAMCase
+        : public SimpleFoamCylinderOpenFOAMCase
     {
     public:
       Case(const std::string& ofe)
-        : SimpleFoamOpenFOAMCase(ofe)
+        : SimpleFoamCylinderOpenFOAMCase(ofe)
       {}
 
        void createMesh() override
        {
-         SimpleFoamOpenFOAMCase::createMesh();
+         SimpleFoamCylinderOpenFOAMCase::createMesh();
 
          setSet(*this, dir_, {
                   "cellSet allCells new boxToCell (-1e10 -1e10 -1e10) (1e10 1e10 1e10)"
@@ -31,7 +31,7 @@ int main(int argc, char*argv[])
 
        std::shared_ptr<OFdicts> createDictionaries() const override
        {
-         auto r=SimpleFoamOpenFOAMCase::createDictionaries();
+         auto r=SimpleFoamCylinderOpenFOAMCase::createDictionaries();
          r->lookupDict("system/controlDict").getStringRef("application")="porousSimpleFoam";
          return r;
        }

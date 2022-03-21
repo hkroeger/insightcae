@@ -31,9 +31,10 @@ namespace insight
 class PythonAnalysis
 : public Analysis
 {
-    const boost::filesystem::path& scriptfile_;
-    
 
+  ParameterSet parameters_;
+  const boost::filesystem::path& scriptfile_;
+    
 public:
     
   class PythonAnalysisFactory
@@ -51,7 +52,8 @@ public:
     virtual Analysis* operator() 
     (
       const ParameterSet& ps,
-      const boost::filesystem::path& exePath
+      const boost::filesystem::path& exePath,
+      ProgressDisplayer& progress = consoleProgressDisplayer
     ) const;
   
     ParameterSet defaultParameters() const;
@@ -63,7 +65,14 @@ public:
   static std::set<PythonAnalysisFactoryPtr> pythonAnalysisFactories_;
 
 public:
-    PythonAnalysis(const boost::filesystem::path& scriptfile, const ParameterSet& ps, const boost::filesystem::path& exePath );
+    PythonAnalysis(
+        const boost::filesystem::path& scriptfile,
+        const ParameterSet& ps,
+        const boost::filesystem::path& exePath,
+        ProgressDisplayer& progress = consoleProgressDisplayer );
+
+    inline ParameterSet parameters() const override { return parameters_; }
+
     virtual ResultSetPtr operator() ( ProgressDisplayer& displayer = consoleProgressDisplayer );
 };
 

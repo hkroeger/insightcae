@@ -24,17 +24,17 @@
 
 #include "base/analysis.h"
 
+#include "openfoam/openfoamcase.h"
 #include "openfoam/caseelements/turbulencemodel.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
 #include "base/progressdisplayer/convergenceanalysisdisplayer.h"
 
-
+#include "openfoamanalysis__OpenFOAMAnalysis__Parameters_headers.h"
 
 namespace insight {
 
 
 
-class OpenFOAMCase;
 class ConvergenceAnalysisDisplayer;
 
 
@@ -62,14 +62,9 @@ mesh = set
  linkmesh 	= 	path 	"" 	"If not empty, the mesh will not be generated, but a symbolic link to the polyMesh folder of the specified OpenFOAM case will be created." *hidden
 } "Properties of the computational mesh"
 
-fluid = set
-{
- turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
-} "Parameters of the fluid"
-
 eval = set
 {
- reportdicts 	= 	bool 	true 	"Include dictionaries into report" *hidden
+ reportdicts 	= 	bool 	false 	"Include dictionaries into report" *hidden
  skipmeshquality 	= 	bool 	false 	"Check to exclude mesh check during evaluation" *hidden
 } "Parameters for evaluation after solver run"
 
@@ -77,9 +72,11 @@ eval = set
 */
 
 protected:
-    ResultSetPtr derivedInputData_;
-    
-    std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
+  Parameters p_;
+
+  ResultSetPtr derivedInputData_;
+
+  std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
 
 public:
     OpenFOAMAnalysis
@@ -113,6 +110,7 @@ public:
      */
     virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
     
+    void changeMapFromPath(const boost::filesystem::path& newMapFromPath);
     virtual void mapFromOther(OpenFOAMCase& cm, ProgressDisplayer& progress, const boost::filesystem::path& mapFromPath, bool is_parallel);
     
     virtual void installConvergenceAnalysis(std::shared_ptr<ConvergenceAnalysisDisplayer> cc);
@@ -140,8 +138,19 @@ public:
     ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer ) override;
 };
 
+template<class P>
+turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const P& tmp )
+{
+  CurrentExceptionContext ex("inserting turbulence model configuration into OpenFOAM case");
 
-turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const OpenFOAMAnalysis::Parameters& params );
+  turbulenceModel* model = turbulenceModel::lookup(tmp.selection, cm, tmp.parameters);
+
+  if (!model)
+    throw insight::Exception("Unrecognized RASModel selection: "+tmp.selection);
+
+  return cm.insert(model);
+}
+
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps );
 
 }

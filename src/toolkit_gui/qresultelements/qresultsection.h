@@ -1,14 +1,17 @@
 #ifndef INSIGHT_QRESULTSECTION_H
 #define INSIGHT_QRESULTSECTION_H
 
-#include "qresultsetmodel.h"
+#include "toolkit_gui_export.h"
+
+
+#include "iqresultsetmodel.h"
 
 class QTextEdit;
 
 namespace insight {
 
-class QResultSection
-: public QResultElement
+class TOOLKIT_GUI_EXPORT QResultSection
+: public IQResultElement
 {
     Q_OBJECT
 

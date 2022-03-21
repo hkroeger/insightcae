@@ -21,6 +21,7 @@
 #define INSIGHT_CHANNEL_H
 
 #include "openfoam/openfoamanalysis.h"
+#include "channel__ChannelBase__Parameters_headers.h"
 
 namespace insight {
 
@@ -63,6 +64,7 @@ operation=set
 fluid = set 
 {
   nu = double 1.8e-5 "[m^2/s] Viscosity of the fluid"
+  turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 } "Parameters of the fluid"
 
 run = set 
@@ -108,97 +110,112 @@ public:
    */
   static double UmaxByUbulk(double Retau);
   
-  
-  /**
-   * number of profiles for homogeneous averages
-   */
-  const int n_hom_avg=10;
 
-protected:
-    /** 
+  struct supplementedInputData
+      : public supplementedInputDataDerived<Parameters>
+  {
+
+    supplementedInputData(
+        std::unique_ptr<Parameters> pPtr,
+        const boost::filesystem::path& workDir,
+        ProgressDisplayer& progress = consoleProgressDisplayer
+        );
+
+    /**
+     * number of profiles for homogeneous averages
+     */
+    const int n_hom_avg=10;
+
+    /**
      * patch names
      */
-  std::string cycl_in_, cycl_out_, wall_up_, wall_lo_;
+    std::string cycl_in_, cycl_out_, wall_up_, wall_lo_;
   
-  // Derived input data
-  /**
-   * Bulk velocity reynolds number
-   */
-  double Re_;
-  
-  /**
-   * friction velocity
-   */
-  double utau_;
-  
-  /**
-   * bulk velocity
-   */
-  double Ubulk_;
-  
-  /** 
-   * flow-through time
-   */
-  double T_;
-  
-  /**
-   * viscosity
-   */
-  double nu_;
-  
-  /**
-   * height of cell layer nearest to wall
-   */
-  double ywall_;
-  
-  double gradl_;
-  
-  /**
-   * number of cells along flow direction
-   */
-  int nax_;
-  
-  /**
-   * number of cells along span
-   */
-  int nb_;
-  
-  /**
-   * number of cells along half height
-   */
-  int nh_;
-  
-  /**
-   * number of cells along half height
-   */
-  int nhbuf_;
-  
-  /**
-   * grading towards wall
-   */
-  double gradh_;
-  
-  /**
-   * height of buffer layer
-   */
-  double hbuf_;
+    // Derived input data
+    /**
+     * Bulk velocity reynolds number
+     */
+    double Re_;
 
-  double avgStart_, avg2Start_, end_;  
-  
+    /**
+     * friction velocity
+     */
+    double utau_;
+
+    /**
+     * bulk velocity
+     */
+    double Ubulk_;
+
+    /**
+     * flow-through time
+     */
+    double T_;
+
+    /**
+     * viscosity
+     */
+    double nu_;
+
+    /**
+     * height of cell layer nearest to wall
+     */
+    double ywall_;
+
+    double gradl_;
+
+    /**
+     * number of cells along flow direction
+     */
+    int nax_;
+
+    /**
+     * number of cells along span
+     */
+    int nb_;
+
+    /**
+     * number of cells along half height
+     */
+    int nh_;
+
+    /**
+     * number of cells along half height
+     */
+    int nhbuf_;
+
+    /**
+     * grading towards wall
+     */
+    double gradh_;
+
+    /**
+     * height of buffer layer
+     */
+    double hbuf_;
+
+    double avgStart_, avg2Start_, end_;
+
+    /**
+     * locations of probe points. x=0
+     */
+    std::vector<arma::mat> probe_locations_;
+  };
+
+#ifndef SWIG
+  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
+#endif
+
+protected:
   /**
    * stored after check in evaluateResults of base class
    */
   std::string UMeanName_, RFieldName_;
-  
-  /**
-   * locations of probe points. x=0
-   */
-  std::vector<arma::mat> probe_locations_;
-  
+
 public:
   declareType("Channel Flow Test Case");
   
-  ChannelBase(const ParameterSet& ps, const boost::filesystem::path& exepath);
+  ChannelBase(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
   ~ChannelBase();
 
   static std::string category() { return "Validation Cases"; }
@@ -228,7 +245,7 @@ public:
   );
     
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& progress);
-  
+
 };
 
 
@@ -250,11 +267,14 @@ run = set {
 <<<PARAMETERSET
 */
 
+#ifndef SWIG
+  defineDerivedClassWithSupplementedInputData(Parameters, supplementedInputData)
+#endif
 
 public:
   declareType("Channel Flow Test Case (Axial Cyclic)");
   
-  ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath);
+  ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
 
 
   virtual void createMesh
@@ -269,7 +289,7 @@ public:
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
   virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
-  
+
 };
 
 

@@ -3,7 +3,7 @@
 
 
 #include "openfoam/caseelements/basic/decomposepardict.h"
-
+#include "meshingnumerics__MeshingNumerics__Parameters_headers.h"
 
 namespace insight {
 

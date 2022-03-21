@@ -26,6 +26,7 @@
 #endif
 #include "cadfeature.h"
 #include "base/tools.h"
+#include "base/casedirectory.h"
 
 #include <list>
 
@@ -37,7 +38,7 @@ class GmshCase;
 std::ostream& operator<<(std::ostream& os, GmshCase& gc);
 
 class GmshCase
-    : std::list<std::string>
+    : public std::list<std::string>
 {
   friend std::ostream& operator<<(std::ostream& os, GmshCase& gc);
 
@@ -48,12 +49,15 @@ public:
   {
     v10, v20, v22, v30, v40, v41
   };
-  
+
+  typedef std::map<std::string, int> AlgorithmList;
+  static const AlgorithmList algorithms2D, algorithms3D;
+
 private:
   CaseDirectory workDir_;
 
-protected:
-  iterator
+public:
+  GmshCase::iterator
     endOfPreamble_,
     endOfExternalGeometryMerging_,
       endOfNamedVerticesDefinition_,
@@ -64,23 +68,33 @@ protected:
     endOfMeshingOptions_,
     endOfMeshingActions_;
 
+protected:
   ConstFeaturePtr part_;
   
   int additionalPoints_;
 
-  std::string executableName_ = "gmsh";
+  boost::filesystem::path executable_;
 
   boost::filesystem::path outputMeshFile_;
   MSHFileVersion mshFileVersion_;
+
+  double Lmin_, Lmax_;
+  int algo2D_, algo3D_;
+
+  virtual void insertMeshingCommand();
   
 public:
   GmshCase(
       ConstFeaturePtr part,
       const boost::filesystem::path& outputMeshFile,
       double Lmax=500., double Lmin=0.1,
-      const std::string& exeName="gmsh",
+//      const std::string& exeName="gmsh",
       bool keepDir=false
       );
+
+  void setAlgorithm2D(int);
+  void setAlgorithm3D(int);
+  void setGlobalLminLmax(double Lmin, double Lmax);
 
   void setMSHFileVersion(MSHFileVersion v);
 
@@ -107,7 +121,9 @@ public:
   void setVertexLen(const std::string& vn, double L);
   void setEdgeLen(const std::string& en, double L);
   void setFaceEdgeLen(const std::string& fn, double L);
-  
+
+  int outputType() const;
+
   void doMeshing();
 };
   
@@ -122,7 +138,8 @@ public:
       const boost::filesystem::path& outputMeshFile,
       double Lmax, double Lmin,
       const std::string& name,
-      bool keepDir=false
+      bool keepDir=false,
+      bool recombineTris = true
       );
 };
 
@@ -138,6 +155,7 @@ public:
 
 protected:
   std::map<cad::FeatureID, std::string> namedBottomFaces_, namedTopFaces_, namedLateralEdges_;
+  double grading_;
 
 public:
   SheetExtrusionGmshCase(
@@ -148,7 +166,9 @@ public:
       const std::vector<NamedEntity>& namedBottomFaces,
       const std::vector<NamedEntity>& namedTopFaces,
       const std::vector<NamedEntity>& namedLateralEdges,
-      bool keepDir=false
+      double grading=1.,
+      bool keepDir=false,
+      bool recombineTris = true
       );
 };
 

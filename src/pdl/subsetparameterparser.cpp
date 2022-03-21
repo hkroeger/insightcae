@@ -9,6 +9,8 @@ SubsetParameterParser::Data::Data(const ParameterSetData& v, const std::string& 
 
 void SubsetParameterParser::Data::cppAddHeader(std::set< std::string >& headers) const
 {
+    headers.insert("\"base/parameters/subsetparameter.h\"");
+
     for (const ParameterSetEntry& pe: value)
     {
         pe.second->cppAddHeader(headers);

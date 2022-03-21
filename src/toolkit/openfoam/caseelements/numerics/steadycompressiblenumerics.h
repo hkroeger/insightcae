@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
 
+#include "steadycompressiblenumerics__steadyCompressibleNumerics__Parameters_headers.h"
+
 namespace insight {
 
 class steadyCompressibleNumerics

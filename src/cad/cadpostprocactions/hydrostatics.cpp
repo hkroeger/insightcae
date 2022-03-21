@@ -33,6 +33,8 @@ namespace insight
 namespace cad
 {
 
+defineType(Hydrostatics);
+
 size_t Hydrostatics::calcHash() const
 {
   ParameterListHash h;
@@ -108,45 +110,6 @@ void Hydrostatics::build()
   cout<<"GM="<<GM<<endl;
 }
 
-Handle_AIS_InteractiveObject Hydrostatics::createAISRepr() const
-{
-  checkForBuildDuringAccess();
-  
-  TopoDS_Edge cG = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(G_),gp_Dir(to_Vec(elat_))), 1));
-  Handle_AIS_Shape aisG = new AIS_Shape(cG);
-  TopoDS_Edge cB = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(B_),gp_Dir(to_Vec(elat_))), 1));
-  Handle_AIS_Shape aisB = new AIS_Shape(cB);
-  TopoDS_Edge cM = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(M_),gp_Dir(to_Vec(elat_))), 1));
-  Handle_AIS_Shape aisM = new AIS_Shape(cM);
-  
-  double d_gm=norm(G_-M_,2);
-
-  Handle_AIS_InteractiveObject aisDim (createLengthDimension(
-    BRepBuilderAPI_MakeVertex(to_Pnt(G_)), BRepBuilderAPI_MakeVertex(to_Pnt(M_)),
-    Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(G_), to_Vec(vec3(0,1,0))))),
-    d_gm, 
-    str(format("GM = %g")%d_gm).c_str()
-  ));
-  
-  Handle_AIS_InteractiveObject aisBLabel (createArrow(
-    cB, str(format("B: V_disp = %g") % V_)
-  ));
-  Handle_AIS_InteractiveObject aisGLabel (createArrow(
-    cG, str(format("G: m = %g") % m_)
-  ));
-
-#warning Needs context in older version
-  Handle_AIS_MultipleConnectedInteractive ais(new AIS_MultipleConnectedInteractive());
-
-  ais->Connect(aisG);
-  ais->Connect(aisB);
-  ais->Connect(aisM);
-  ais->Connect(aisDim);
-  ais->Connect(aisGLabel);
-  ais->Connect(aisBLabel);
-  
-  return ais;
-}
 
 void Hydrostatics::write(std::ostream& ) const
 {

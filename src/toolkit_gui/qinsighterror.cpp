@@ -14,7 +14,8 @@ void displayException(const std::exception& e)
     msgBox.setIcon(QMessageBox::Critical);
     msgBox.setText
         (
-          QString("An error has occurred:\n")+ie->as_string().c_str()
+          QString("An error has occurred:\n")
+          + QString::fromStdString(ie->as_string())
         );
 
     if (ie->strace()!="")

@@ -32,13 +32,16 @@ namespace cad
 class Hydrostatics 
 : public insight::cad::PostprocAction
 {
+
   FeaturePtr hullvolume_;
   FeaturePtr shipmodel_;
+
   VectorPtr psurf_;
   VectorPtr nsurf_;
   VectorPtr elong_;
   VectorPtr evert_;
     
+public:
   /**
    * lateral direction
    */
@@ -73,6 +76,8 @@ class Hydrostatics
   virtual void build();
 
 public:
+  declareType("Hydrostatics");
+
   Hydrostatics
   (
     FeaturePtr hullvolume, 
@@ -83,7 +88,7 @@ public:
     VectorPtr evert
   );
   
-  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+//  virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
 };
 

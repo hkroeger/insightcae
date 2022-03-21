@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "srfoption__SRFoption__Parameters_headers.h"
 
 namespace insight {
 

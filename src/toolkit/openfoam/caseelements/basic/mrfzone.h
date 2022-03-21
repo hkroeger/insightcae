@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "mrfzone__MRFZone__Parameters_headers.h"
+
 
 namespace insight {
 

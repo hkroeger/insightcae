@@ -5,6 +5,8 @@
 
 #include "openfoam/caseelements/numerics/pimplesettings.h"
 
+#include "unsteadycompressiblenumerics__unsteadyCompressibleNumerics__Parameters_headers.h"
+
 namespace insight {
 
 

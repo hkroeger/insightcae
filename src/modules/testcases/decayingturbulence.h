@@ -46,6 +46,7 @@ mesh = set {
 fluid = set 
 {
   nu = double 1.8e-5 "[m^2/s] Viscosity of the fluid"
+  turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 } "Parameters of the fluid"
    
 operation = set {

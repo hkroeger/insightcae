@@ -34,11 +34,14 @@
 #include "openfoam/caseelements/boundaryconditions/simplebc.h"
 #include "openfoam/caseelements/boundaryconditions/cyclicpairbc.h"
 #include "openfoam/caseelements/boundaryconditions/wallbc.h"
+#include "openfoam/caseelements/basic/rasmodel.h"
 #include "openfoam/caseelements/basic/singlephasetransportmodel.h"
-#include "openfoam/caseelements/turbulencemodelcaseelements.h"
 #include "openfoam/caseelements/analysiscaseelements.h"
 
+
+#ifdef HAS_REFDATA
 #include "refdata.h"
+#endif
 
 using namespace std;
 using namespace arma;
@@ -51,144 +54,95 @@ namespace insight
   
 addToAnalysisFactoryTable(FlatPlateBL);
 
-const std::vector<double> FlatPlateBL::sec_locs_ 
- = list_of (0.01)(0.05)(0.1)(0.2)(0.5)(0.7)(0.9);
+const std::vector<double> FlatPlateBL::supplementedInputData::sec_locs_
+ = { 0.01, 0.05, 0.1, 0.2, 0.5, 0.7, 0.9 };
   
 
-
-FlatPlateBL::FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& exepath)
-: OpenFOAMAnalysis
-  (
-    "Flat Plate Boundary Layer Test Case",
-    "Flat Plate with Evolving Boundary Layer",
-    ps, exepath
-  )
-{}
-
-
-void FlatPlateBL::computeInitialLocation()
+FlatPlateBL::supplementedInputData::supplementedInputData(
+    std::unique_ptr<Parameters> pPtr,
+    const boost::filesystem::path &/*workDir*/,
+    ProgressDisplayer &progress)
+  : supplementedInputDataDerived<Parameters>( std::move(pPtr) )
 {
-  Parameters p(parameters_);
-
-  Retheta0_= p.operation.Retheta0;
+  Retheta0_= p().operation.Retheta0;
   Rex_0_=Rex(Retheta0_);
 
-  uinf_= p.operation.uinf;
+  uinf_= p().operation.uinf;
 
   // estimate (turbulent) friction coefficient at initial location
   cf_0_=cf(Rex_0_);
   utau_0_=uinf_*sqrt(0.5*cf_0_);
-  
-  theta0_=Retheta0_*p.fluid.nu/uinf_;
-  delta99_0_=Redelta99(Rex_0_)*p.fluid.nu/uinf_;
-}
 
+  theta0_=Retheta0_*p().fluid.nu/uinf_;
+  delta99_0_=Redelta99(Rex_0_)*p().fluid.nu/uinf_;
 
-void FlatPlateBL::calcDerivedInputData(ProgressDisplayer& progress)
-{
-  insight::OpenFOAMAnalysis::calcDerivedInputData(progress);
-  Parameters p(parameters_);
 
   in_="inlet";
-//   out_="outlet";
-//   top_="top";
   out_top_="outlet_top";
   cycl_prefix_="cyclic";
   approach_="approach";
   trip_="trip";
-  
-  computeInitialLocation();
-  reportIntermediateParameter("uinf", uinf_, "free stream velocity", "m/s");
-  reportIntermediateParameter("Retheta0", Retheta0_, "Momentum thickness Reynolds number at the inlet", "");
-  reportIntermediateParameter("Rex_0", Rex_0_, "Reynolds number with turbulent running length at the inlet", "");
-  reportIntermediateParameter("cf_0", cf_0_, "Expected wall friction coefficient at the inlet");
-  reportIntermediateParameter("utau_0", utau_0_, "Friction velocity at the inlet", "m/s");
-  reportIntermediateParameter("theta_0", theta0_, "Momentum thickness at the inlet", "m");
-  reportIntermediateParameter("delta99_0", delta99_0_, "Boundary layer thickness at the inlet", "m");
-    
-  L_ = p.geometry.LbyDelta99 * delta99_0_;
-  reportIntermediateParameter("L", L_, "Domain length", "m");
-    
-  
-  Rex_e_=Rex_0_ + uinf_*L_/p.fluid.nu;
-  reportIntermediateParameter("Rex_e", Rex_e_, "Reynolds number with turbulent running length at the end of the domain", "");
+
+  L_ = p().geometry.LbyDelta99 * delta99_0_;
+
+  Rex_e_=Rex_0_ + uinf_*L_/p().fluid.nu;
 
   /**
    * compute estimated BL thicknesses
    */
-  double Retau_0=utau_0_*delta99_0_/p.fluid.nu;
-  reportIntermediateParameter("Retau_0", Retau_0, "Friction velocity Reynolds number at the tripping location");
+  double Retau_0=utau_0_*delta99_0_/p().fluid.nu;
 
 
-  double thetae=Redelta2(Rex_e_)*p.fluid.nu/uinf_;
-  reportIntermediateParameter("thetae", thetae, "Momentum thickness at the end of the plate", "m");
+  double thetae=Redelta2(Rex_e_)*p().fluid.nu/uinf_;
   double cf_e=cf(Rex_e_);
-  reportIntermediateParameter("cf_e", cf_e, "Expected wall friction coefficient at the end of the plate");
   double tau_e=cf_e*0.5*pow(uinf_,2);
-  reportIntermediateParameter("tau_e", tau_e, "Expected wall shear stress at the end of the plate", "$m^2/s^2$");
   double utau_e=sqrt(tau_e);
-  reportIntermediateParameter("utau_e", utau_e, "Friction velocity at the end of the plate", "m/s");
-  
 
-  ypfac_ref_=sqrt(cf_0_/2.)*uinf_/p.fluid.nu;
-  reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor (y+/y, computed from friction coefficient at the inlet)");
 
-  H_=p.geometry.HbyDelta99*delta99_0_;
-  reportIntermediateParameter("H", H_, "height of the domain");
-  reportIntermediateParameter("Hbytheta0", H_/theta0_, "height of the domain, divided by initial BL thickness");
+  ypfac_ref_=sqrt(cf_0_/2.)*uinf_/p().fluid.nu;
 
-  W_=p.geometry.WbyDelta99*delta99_0_;
-  reportIntermediateParameter("W", W_, "width of the domain");
-  reportIntermediateParameter("Wbytheta0", W_/theta0_, "width of the domain, divided by initial BL thickness");
+  H_=p().geometry.HbyDelta99*delta99_0_;
 
-  reportIntermediateParameter("Lbytheta0", L_/theta0_, "length of the domain, divided by initial BL thickness");
+  W_=p().geometry.WbyDelta99*delta99_0_;
 
-  deltaywall_ref_=p.mesh.yplus0/ypfac_ref_;
-  reportIntermediateParameter("deltaywall_ref", deltaywall_ref_, "near-wall grid spacing");
-  
-  gradl_=pow(p.mesh.layerratio, p.mesh.nl-1);
-  reportIntermediateParameter("gradl", gradl_, "near-wall layer block grading");
-  
-  y_final_=bmd::GradingAnalyzer(gradl_).calc_L(deltaywall_ref_, p.mesh.nl);
+  deltaywall_ref_=p().mesh.yplus0/ypfac_ref_;
+
+  gradl_=pow(p().mesh.layerratio, p().mesh.nl-1);
+
+  y_final_=bmd::GradingAnalyzer(gradl_).calc_L(deltaywall_ref_, p().mesh.nl);
   y_final_=std::min(0.9*H_, y_final_);
-  reportIntermediateParameter("y_final", y_final_, "near-wall layer block height (clipped to 0.9*H)");
-  
+
   gradh_=bmd::GradingAnalyzer
   (
-    bmd::GradingAnalyzer(gradl_).calc_delta1(deltaywall_ref_), 
-    H_-y_final_, 
-    p.mesh.nh-p.mesh.nl
+    bmd::GradingAnalyzer(gradl_).calc_delta1(deltaywall_ref_),
+    H_-y_final_,
+    p().mesh.nh-p().mesh.nl
   ).grad();
-  reportIntermediateParameter("gradh", gradh_, "required vertical grid stretching");
-  
-  double deltax=(p.mesh.dxplus0/ypfac_ref_);
-  reportIntermediateParameter("deltax", deltax, "axial grid spacing (at the end of the plate)");
 
-  
-  
+  double deltax=(p().mesh.dxplus0/ypfac_ref_);
+
+
+
   nax_=std::max(1, int(round(L_/deltax)));
-  reportIntermediateParameter("nax", nax_, "number of cells in axial direction along the plate");
 
 
-  if (p.mesh.twod)
+  if (p().mesh.twod)
     nlat_=1;
   else
-    nlat_=std::max(1, int(round(W_/(p.mesh.dzplus0/ypfac_ref_))));
-  reportIntermediateParameter("nlat", nlat_, "number of cells in lateral direction");
-  
+    nlat_=std::max(1, int(round(W_/(p().mesh.dzplus0/ypfac_ref_))));
+
   T_=L_/uinf_;
-  reportIntermediateParameter("T", T_, "flow-through time");
-  
+
 //   std::string regime = p.get<SelectableSubsetParameter>("run/regime").selection();
-  if (const Parameters::run_type::regime_steady_type *steady 
-	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
+  if (const auto *steady
+        = boost::get<Parameters::run_type::regime_steady_type>(&p().run.regime))
   {
     end_=steady->iter;
     avgStart_=0.98*end_;
     avg2Start_=end_;
-  } 
-  else if (const Parameters::run_type::regime_unsteady_type *unsteady 
-	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
+  }
+  else if (const auto *unsteady
+        = boost::get<Parameters::run_type::regime_unsteady_type>(&p().run.regime))
   {
     avgStart_=unsteady->inittime*T_;
     avg2Start_=avgStart_+unsteady->meantime*T_;
@@ -198,10 +152,66 @@ void FlatPlateBL::calcDerivedInputData(ProgressDisplayer& progress)
   n_hom_avg_=std::max(1, nlat_-2);
 }
 
+
+FlatPlateBL::FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
+: OpenFOAMAnalysis
+  (
+    "Flat Plate Boundary Layer Test Case",
+    "Flat Plate with Evolving Boundary Layer",
+    ps, exepath
+  ),
+  parameters_( std::make_unique<supplementedInputData>(
+                 std::make_unique<Parameters>(ps),
+                 exepath, progress
+                 ) )
+{}
+
+
+FlatPlateBL::FlatPlateBL(
+        std::unique_ptr<supplementedInputData> pPtr,
+        const boost::filesystem::path& exepath,
+        const std::string& name,
+        const std::string& description )
+    : OpenFOAMAnalysis
+      (
+        name,
+        description,
+        pPtr->p(), exepath
+      ),
+      parameters_( std::move(pPtr) )
+{}
+
+
+void FlatPlateBL::calcDerivedInputData(ProgressDisplayer& progress)
+{
+  insight::OpenFOAMAnalysis::calcDerivedInputData(progress);
+
+  reportIntermediateParameter("uinf",       sp().uinf_, "free stream velocity", "m/s");
+  reportIntermediateParameter("Retheta0",   sp().Retheta0_, "Momentum thickness Reynolds number at the inlet", "");
+  reportIntermediateParameter("Rex_0",      sp().Rex_0_, "Reynolds number with turbulent running length at the inlet", "");
+  reportIntermediateParameter("cf_0",       sp().cf_0_, "Expected wall friction coefficient at the inlet");
+  reportIntermediateParameter("utau_0",     sp().utau_0_, "Friction velocity at the inlet", "m/s");
+  reportIntermediateParameter("theta_0",    sp().theta0_, "Momentum thickness at the inlet", "m");
+  reportIntermediateParameter("delta99_0",  sp().delta99_0_, "Boundary layer thickness at the inlet", "m");
+  reportIntermediateParameter("L",          sp().L_, "Domain length", "m");
+  reportIntermediateParameter("Rex_e",      sp().Rex_e_, "Reynolds number with turbulent running length at the end of the domain", "");
+  reportIntermediateParameter("ypfac_ref",  sp().ypfac_ref_, "yplus factor (y+/y, computed from friction coefficient at the inlet)");
+  reportIntermediateParameter("H",          sp().H_, "height of the domain");
+  reportIntermediateParameter("Hbytheta0",  sp().H_/sp().theta0_, "height of the domain, divided by initial BL thickness");
+  reportIntermediateParameter("W",          sp().W_, "width of the domain");
+  reportIntermediateParameter("Wbytheta0",  sp().W_/sp().theta0_, "width of the domain, divided by initial BL thickness");
+  reportIntermediateParameter("Lbytheta0",  sp().L_/sp().theta0_, "length of the domain, divided by initial BL thickness");
+  reportIntermediateParameter("deltaywall_ref", sp().deltaywall_ref_, "near-wall grid spacing");
+  reportIntermediateParameter("gradl",      sp().gradl_, "near-wall layer block grading");
+  reportIntermediateParameter("y_final",    sp().y_final_, "near-wall layer block height (clipped to 0.9*H)");
+  reportIntermediateParameter("gradh",      sp().gradh_, "required vertical grid stretching");
+  reportIntermediateParameter("nax",        sp().nax_, "number of cells in axial direction along the plate");
+  reportIntermediateParameter("nlat",       sp().nlat_, "number of cells in lateral direction");
+  reportIntermediateParameter("T",          sp().T_, "flow-through time");
+}
+
 void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-  Parameters p(parameters_);
-  
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
@@ -210,31 +220,29 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
   bmd->setDefaultPatch("walls", "wall");
 
   
-  std::map<int, Point> pts;
-  pts = boost::assign::map_list_of   
-      (0, 	vec3(0, 0., 0))
-      (1, 	vec3(L_, 0., 0))
-      (10, 	vec3(0, y_final_, 0))
-      (11, 	vec3(L_, y_final_, 0))
-      (2, 	vec3(L_, H_, 0))
-      (3, 	vec3(0, H_, 0))
-      
-      .convert_to_container<std::map<int, Point> >()
+  std::map<int, Point> pts = {
+      {0, 	vec3( 0,        0.,               0)},
+      {1, 	vec3( sp().L_,  0.,               0)},
+      {10, 	vec3( 0,        sp().y_final_,    0)},
+      {11, 	vec3( sp().L_,  sp().y_final_,    0)},
+      {2, 	vec3( sp().L_,  sp().H_,          0)},
+      {3, 	vec3( 0,        sp().H_,          0)}
+      }
   ;
   
   // create patches
-  Patch& in= 	bmd->addPatch(in_, new Patch());
+  Patch& in= 	bmd->addPatch(sp().in_, new Patch());
 //  Patch& out= 	bmd->addPatch(out_, new Patch());
 //   Patch& top= 	bmd->addPatch(top_, new Patch(/*"symmetryPlane"*/));
-  Patch& out_top= 	bmd->addPatch(out_top_, new Patch());
+  Patch& out_top= 	bmd->addPatch(sp().out_top_, new Patch());
   Patch cycl_side_0=Patch();
   Patch cycl_side_1=Patch();
   
   std::string side_type="cyclic";
-  if (p.mesh.twod) side_type="empty";
-  Patch& cycl_side= 	bmd->addPatch(cycl_prefix_, new Patch(side_type));
+  if (p().mesh.twod) side_type="empty";
+  Patch& cycl_side= 	bmd->addPatch(sp().cycl_prefix_, new Patch(side_type));
   
-  arma::mat vH=vec3(0, 0, W_);
+  arma::mat vH=vec3(0, 0, sp().W_);
 
 #define PTS(a,b,c,d) \
   P_8(pts[a], pts[b], pts[c], pts[d], \
@@ -245,8 +253,8 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
     (  
       new Block(
         PTS(10,11,2,3),
-        nax_, p.mesh.nh-p.mesh.nl, nlat_,
-        list_of<double>(1)(gradh_)(1.)
+        sp().nax_, p().mesh.nh-p().mesh.nl, sp().nlat_,
+        { 1, sp().gradh_, 1. }
       )
     );
     
@@ -260,8 +268,8 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
     Block& bl = bmd->addBlock
     (  
       new Block(PTS(0,1,11,10),
-        nax_, p.mesh.nl, nlat_,
-        list_of<double>(1)(gradl_)(1.)
+        sp().nax_, p().mesh.nl, sp().nlat_,
+        { 1, sp().gradl_, 1. }
       )
     );
     
@@ -283,8 +291,6 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
 
 void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::dict& boundaryDict) const
 {
-  Parameters p(parameters_);
-
   {
     boost::filesystem::path inlet_velocity_profile_tabfile(  executionPath() / "inflow_velocity.dat");
     {
@@ -300,12 +306,12 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
                 //2.*eta - 2.*pow(eta,3) + pow(eta,4);
                 pow(eta, 1./7.);
                 
-            f<<(delta99_0_*eta)<<" "<<(uinf_*UByUinf)<<" 0.0 0.0"<<endl;
+            f<<(sp().delta99_0_*eta)<<" "<<(sp().uinf_*UByUinf)<<" 0.0 0.0"<<endl;
         }
 
-        if (H_>delta99_0_)
+        if (sp().H_>sp().delta99_0_)
         {
-            f<<H_<<" "<<uinf_<<" 0.0 0.0"<<endl;
+            f<<sp().H_<<" "<<sp().uinf_<<" 0.0 0.0"<<endl;
         }
     }
     
@@ -322,37 +328,36 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
       
     inflow_velocity.velocity.fielddata=umean_data;
     
-    cm.insert(new VelocityInletBC(cm, in_, boundaryDict, inflow_velocity));
+    cm.insert(new VelocityInletBC(cm, sp().in_, boundaryDict, inflow_velocity));
   }
 }
 
 void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-  Parameters p(parameters_);
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
   
 
-  if (Parameters::run_type::regime_steady_type *steady 
-	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
+  if (const auto *steady
+        = boost::get<Parameters::run_type::regime_steady_type>(&p().run.regime))
   {
     cm.insert(new steadyIncompressibleNumerics(cm, steadyIncompressibleNumerics::Parameters()
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
-      .set_Uinternal(vec3(uinf_,0,0))
-      .set_endTime(end_)
-      .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+      .set_Uinternal(vec3(sp().uinf_,0,0))
+      .set_endTime(sp().end_)
+      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
       .set_decompWeights(vec3(2,1,0))
       .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
     ));
   } 
-  else if (Parameters::run_type::regime_unsteady_type *unsteady 
-	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
+  else if (const auto *unsteady
+        = boost::get<Parameters::run_type::regime_unsteady_type>(&p().run.regime))
   {
     cm.insert( new unsteadyIncompressibleNumerics(cm, unsteadyIncompressibleNumerics::Parameters()
-      .set_LESfilteredConvection(p.run.filteredconvection)
-      .set_Uinternal(vec3(p.operation.uinf,0,0))
+      .set_LESfilteredConvection(p().run.filteredconvection)
+      .set_Uinternal(vec3(p().operation.uinf, 0, 0))
 //      .set_maxDeltaT(0.25*T_)
 
       .set_time_integration(
@@ -360,19 +365,19 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
           .set_momentumPredictor(true)
           .set_timestep_control(PIMPLESettings::Parameters::timestep_control_adjust_type(
                                   0.9, // maxCo
-                                  0.25*T_ // maxDeltaT
+                                  0.25*sp().T_ // maxDeltaT
                                 ) )
           .set_pressure_velocity_coupling(
                PIMPLESettings::Parameters::pressure_velocity_coupling_PISO_type()
           )
        )
-      .set_deltaT( 0.25 * L_/double(nax_) / uinf_ )
-      .set_endTime(end_)
+      .set_deltaT( 0.25 * sp().L_/double(sp().nax_) / sp().uinf_ )
+      .set_endTime(sp().end_)
 
       .set_writeControl(FVNumerics::Parameters::writeControl_type::adjustableRunTime)
-      .set_writeInterval(0.25*T_)
+      .set_writeInterval(0.25*sp().T_)
       .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
-      .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
       .set_decompWeights(vec3(2,1,0))
     ));
   }
@@ -383,7 +388,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
     .set_name("zzzaveraging") // shall be last FO in list
-    .set_timeStart(avgStart_)
+    .set_timeStart(sp().avgStart_)
   ));
   
 //   std::vector<arma::mat> plocs;
@@ -414,7 +419,10 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
 //   const SelectableSubsetParameter& tp = p.get<SelectableSubsetParameter>("mesh/tripping");
 //   if (tp.selection()=="drag")
   
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(p.fluid.nu) ));
+  cm.insert(new singlePhaseTransportProperties(
+              cm,
+              singlePhaseTransportProperties::Parameters().set_nu(p().fluid.nu)
+              ));
   
 //   cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
 //     .set_velocity(FieldData(vec3(uinf_,0,0)))
@@ -439,7 +447,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
 //     .set_pressure(0.0)
 //   ));
   
-  cm.insert(new PressureOutletBC(cm, out_top_, boundaryDict, PressureOutletBC::Parameters()
+  cm.insert(new PressureOutletBC(cm, sp().out_top_, boundaryDict, PressureOutletBC::Parameters()
     .set_behaviour( PressureOutletBC::Parameters::behaviour_uniform_type(
        FieldData::Parameters()
         .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(0.0)))
@@ -447,14 +455,14 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
     .set_prohibitInflow(false)
   ));
   
-  if (p.mesh.twod)
-    cm.insert(new SimpleBC(cm, cycl_prefix_, boundaryDict, "empty") );
+  if (p().mesh.twod)
+    cm.insert(new SimpleBC(cm, sp().cycl_prefix_, boundaryDict, "empty") );
   else
-    cm.insert(new CyclicPairBC(cm, cycl_prefix_, boundaryDict) );
+    cm.insert(new CyclicPairBC(cm, sp().cycl_prefix_, boundaryDict) );
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   
-  insertTurbulenceModel(cm, parameters().get<SelectableSubsetParameter>("fluid/turbulenceModel"));
+  insertTurbulenceModel(cm, p().fluid.turbulenceModel);
 }
 
 void FlatPlateBL::evaluateAtSection
@@ -467,10 +475,7 @@ void FlatPlateBL::evaluateAtSection
   const FlatPlateBL::Parameters::eval_type::bc_extractsections_default_type* extract_section
 )
 {
-  Parameters p(parameters_);
-
-
-  double xByL= x/L_;
+  double xByL= x/sp().L_;
   string prefix="section";
   if (extract_section)
     prefix=extract_section->name_prefix;
@@ -495,19 +500,19 @@ void FlatPlateBL::evaluateAtSection
   boost::ptr_vector<sampleOps::set> sets;
   
   double 
-    miny=0.99*deltaywall_ref_,
-    maxy=std::min(1.5*delta99_0_, H_-deltaywall_ref_);
+    miny=0.99*sp().deltaywall_ref_,
+    maxy=std::min(1.5*sp().delta99_0_, sp().H_ - sp().deltaywall_ref_);
     
   arma::mat pts=exp(linspace(log(miny), log(maxy), 101)) * vec3(0,1,0).t();
   pts.col(0)+=x;
-  pts.col(2)+=0.01*W_;
+  pts.col(2)+=0.01*sp().W_;
   
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_points( pts )
     .set_dir1(vec3(1,0,0))
-    .set_dir2(vec3(0,0,0.98*W_))
+    .set_dir2(vec3(0,0,0.98*sp().W_))
     .set_nd1(1)
-    .set_nd2(n_hom_avg_)
+    .set_nd2(sp().n_hom_avg_)
     .set_name("radial")
   ));
   
@@ -519,11 +524,11 @@ void FlatPlateBL::evaluateAtSection
   sampleOps::ColumnDescription cd;
   arma::mat data =
     sampleOps::findSet<sampleOps::linearAveragedPolyLine>(sets, "radial").readSamples(cm, executionPath(), &cd);
-  arma::mat y=data.col(0)+deltaywall_ref_;
+  arma::mat y=data.col(0)+sp().deltaywall_ref_;
 
-  double tauw=as_scalar(0.5*cfi(x)*uinf_*uinf_);
+  double tauw=as_scalar( 0.5*cfi(x) * pow(sp().uinf_,2) );
   double utau=sqrt(tauw);
-  double ypByy=utau/p.fluid.nu;
+  double ypByy=utau/p().fluid.nu;
   arma::mat yplus=y*ypByy;
     
   arma::uword cU=cd[UMeanName].col;
@@ -531,11 +536,11 @@ void FlatPlateBL::evaluateAtSection
   arma::mat upwallnormal(join_rows(yplus, data.col(cU+1)/utau));
   arma::mat upspanwise(join_rows(yplus, data.col(cU+2)/utau));
   
-  arma::mat uByUinf=join_rows(y, data.col(cU)/uinf_);
+  arma::mat uByUinf=join_rows(y, data.col(cU)/sp().uinf_);
   arma::mat delta123 = integrateDelta123( uByUinf );
   double delta99 = searchDelta99( uByUinf );
   
-  double Re_theta=uinf_*delta123(1)/p.fluid.nu;
+  double Re_theta=sp().uinf_*delta123(1)/p().fluid.nu;
 
   if (table)
   {
@@ -564,10 +569,10 @@ void FlatPlateBL::evaluateAtSection
       u.save( (
 	executionPath() /
 	str( format("umean_vs_y_%s_x%05.2f.txt") % extract_section->name_prefix % x )
-      ).c_str(), raw_ascii);
+      ).string(), raw_ascii);
     }
     
-    double maxU=1.1*uinf_;
+    double maxU=1.1*sp().uinf_;
     
     arma::mat delta1pc(delta123(0)*ones(2,2)*ypByy);
     delta1pc(0,1)=0.; delta1pc(1,1)=maxU;
@@ -604,7 +609,7 @@ void FlatPlateBL::evaluateAtSection
       str(format("Wall normal profiles of averaged velocities at x/L=%g (Re_theta=%g)") % xByL % Re_theta),
      
       str( format("set key top left reverse Left; set logscale x; set xrange [:%g]; set yrange [0:%g];") 
-		% (ypByy*std::max(theta0_, 10.*delta123(1))) 
+                % (ypByy*std::max(sp().theta0_, 10.*delta123(1)))
 		% (maxU/utau) 
 	 )
       
@@ -625,7 +630,7 @@ void FlatPlateBL::evaluateAtSection
       R_vs_y.save( (
 	executionPath() /
 	str( format("R_vs_y_%s_x%05.2f.txt") % extract_section->name_prefix % x )
-      ).c_str(), raw_ascii);
+      ).string(), raw_ascii);
     }
     
     double maxRp=1.1*as_scalar(arma::max(arma::max(R_vs_y.cols(1,6))))/pow(utau,2);
@@ -642,7 +647,7 @@ void FlatPlateBL::evaluateAtSection
       "Wall normal profiles of Reynolds stresses at x/L=" + str(format("%g")%xByL),
      
       str( format("set xrange [:%g]; set yrange [0:%g];") 
-		% (ypByy*std::max(theta0_, 10.*delta123(1))) 
+                % (ypByy*std::max(sp().theta0_, 10.*delta123(1)))
 		% (maxRp) 
 	 )
       
@@ -661,7 +666,7 @@ void FlatPlateBL::evaluateAtSection
       k_vs_y.save( (
 	executionPath() /
 	str( format("k_vs_y_%s_x%05.2f.txt") % extract_section->name_prefix % x )
-      ).c_str(), raw_ascii);
+      ).string(), raw_ascii);
     }
     
     addPlot
@@ -679,9 +684,6 @@ void FlatPlateBL::evaluateAtSection
 
 insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
-  Parameters p(parameters_);
-
-
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
   
   std::string RFieldName="UPrime2Mean";
@@ -708,7 +710,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
       cm, executionPath(), list_of<std::string>
       (
 	"cbi=loadOFCase('.')\n"
-	+str(format("L=%g\n")%L_)+
+        +str(format("L=%g\n") % sp().L_)+
 	"prepareSnapshots()\n"
 
 	"eb=extractPatches(cbi, '^(wall|approach|oldInternalFaces)')\n"
@@ -735,25 +737,31 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
   }
 
   // Wall friction coefficient
-  arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
+  arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), sp().nax_);
     
   arma::mat Cf_vs_x(join_rows(
       wallforce.col(0), 
-      wallforce.col(1)/(0.5*pow(uinf_,2))
+      wallforce.col(1)/(0.5*pow(sp().uinf_,2))
     ));
-  Cf_vs_x.save( (executionPath()/"Cf_vs_x.txt").c_str(), arma_ascii);
+  Cf_vs_x.save( (executionPath()/"Cf_vs_x.txt").string(), arma_ascii);
   Interpolator Cf_vs_x_i(Cf_vs_x);
 
+#ifdef HAS_REFDATA
   arma::mat Cfexp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/cf_vs_x");
-  Interpolator Cfexp_vs_x_i(Cfexp_vs_x);
+//  Interpolator Cfexp_vs_x_i(Cfexp_vs_x);
+#endif
+
   
   addPlot
   (
     results, executionPath(), "chartMeanWallFriction",
     "x [m]", "$\\langle C_f \\rangle$",
     {
-      PlotCurve(Cf_vs_x, "cfd", "w l lt 1 lc 2 lw 2 t 'CFD'"),
+      PlotCurve(Cf_vs_x, "cfd", "w l lt 1 lc 2 lw 2 t 'CFD'")
+#ifdef HAS_REFDATA
+          ,
       PlotCurve(Cfexp_vs_x, "ref", "w p lt 2 lc 2 t 'Wieghardt 1951 (u=17.8m/s)'")
+#endif
     },
     "Axial profile of wall friction coefficient"
   );    
@@ -774,13 +782,13 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
       "Boundary layer properties along the plate (not normalized)", "", ""
   )));
   
-  for (size_t i=0; i<sec_locs_.size(); i++)
+  for (size_t i=0; i<sp().sec_locs_.size(); i++)
   {
     evaluateAtSection
     (
       cm, 
       results, 
-      sec_locs_[i]*L_, 
+      sp().sec_locs_[i] * sp().L_,
       i, 
       Cf_vs_x_i, 
       UMeanName, 
@@ -788,7 +796,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
     );
   }
   
-  for (const auto& es: p.eval.bc_extractsections)
+  for (const auto& es: p().eval.bc_extractsections)
   {
     evaluateAtSection
     (
@@ -804,9 +812,11 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
   }
 
   {  
+#ifdef HAS_REFDATA
     arma::mat delta1exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta1_vs_x");
     arma::mat delta2exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta2_vs_x");
     arma::mat delta3exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta3_vs_x");
+#endif
     
     const insight::TabularResult& tabcoeffs=results->get<TabularResult>("tableCoefficients");
     const insight::TabularResult& tabvals=results->get<TabularResult>("tableValues");
@@ -817,13 +827,15 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
       results, executionPath(), "chartDelta",
       "x [m]", "$\\delta$ [m]",
       {
+#ifdef HAS_REFDATA
         PlotCurve(delta1exp_vs_x, "delta1ref", "w p lt 1 lc 1 t '$\\delta_1$ (Wieghardt 1951, u=17.8m/s)'"),
         PlotCurve(delta2exp_vs_x, "delta2ref", "w p lt 2 lc 3 t '$\\delta_2$ (Wieghardt 1951, u=17.8m/s)'"),
         PlotCurve(delta3exp_vs_x, "delta3ref", "w p lt 3 lc 4 t '$\\delta_3$ (Wieghardt 1951, u=17.8m/s)'"),
-	
-        PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta1"))), "delta1", "w l lt 1 lc 1 lw 2 t '$\\delta_1$'"),
-        PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta2"))), "delta2", "w l lt 1 lc 3 lw 2 t '$\\delta_2$'"),
-        PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta3"))), "delta3", "w l lt 1 lc 4 lw 2 t '$\\delta_3$'")
+#endif
+
+        PlotCurve(arma::mat(join_rows(sp().L_*ctd.col(0), tabvals.getColByName("delta1"))), "delta1", "w l lt 1 lc 1 lw 2 t '$\\delta_1$'"),
+        PlotCurve(arma::mat(join_rows(sp().L_*ctd.col(0), tabvals.getColByName("delta2"))), "delta2", "w l lt 1 lc 3 lw 2 t '$\\delta_2$'"),
+        PlotCurve(arma::mat(join_rows(sp().L_*ctd.col(0), tabvals.getColByName("delta3"))), "delta3", "w l lt 1 lc 4 lw 2 t '$\\delta_3$'")
       },
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"
@@ -831,8 +843,8 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
     
     arma::mat Re_theta=tabcoeffs.getColByName("$Re_\\theta$");
     arma::mat xL=tabcoeffs.getColByName("x/L");
-    arma::mat Rex=(Rex_0_ + uinf_*xL*L_/p.fluid.nu)/1e5;
-    Interpolator delta2exp_vs_x_i(delta2exp_vs_x);
+    arma::mat Rex=(sp().Rex_0_ + sp().uinf_ * xL * sp().L_ / p().fluid.nu)/1e5;
+//    Interpolator delta2exp_vs_x_i(delta2exp_vs_x);
     addPlot
     (
       results, executionPath(), "chartRetheta",
@@ -850,10 +862,10 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
       results, executionPath(), "chartDelta99",
       "x [m]", "$\\delta$ [m]",
       {
-        PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta1"), "delta1", "w l lt 1 lc 1 lw 2 t '$\\delta_1$'"),
-        PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta2"), "delta2", "w l lt 1 lc 3 lw 2 t '$\\delta_2$'"),
-        PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta3"), "delta3", "w l lt 1 lc 4 lw 2 t '$\\delta_3$'"),
-        PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta99"), "delta99", "w l lt 1 lc 5 lw 2 t '$\\delta_{99}$'")
+        PlotCurve(sp().L_*ctd.col(0), tabvals.getColByName("delta1"), "delta1", "w l lt 1 lc 1 lw 2 t '$\\delta_1$'"),
+        PlotCurve(sp().L_*ctd.col(0), tabvals.getColByName("delta2"), "delta2", "w l lt 1 lc 3 lw 2 t '$\\delta_2$'"),
+        PlotCurve(sp().L_*ctd.col(0), tabvals.getColByName("delta3"), "delta3", "w l lt 1 lc 4 lw 2 t '$\\delta_3$'"),
+        PlotCurve(sp().L_*ctd.col(0), tabvals.getColByName("delta99"), "delta99", "w l lt 1 lc 5 lw 2 t '$\\delta_{99}$'")
       },
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"
@@ -866,10 +878,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
   return results;
 }
 
-insight::Analysis* FlatPlateBL::clone()
-{
-  return new FlatPlateBL(parameters(), executionPath());
-}
+
 
 double FlatPlateBL::G(double Alpha, double D)
 {
@@ -1044,6 +1053,8 @@ double FlatPlateBL::searchDelta99(const arma::mat& uByUinf_vs_y)
   }
   return uByUinf_vs_y(std::min(i, arma::uword(uByUinf_vs_y.n_rows-1)),0);
 }
+
+
 
 
 }

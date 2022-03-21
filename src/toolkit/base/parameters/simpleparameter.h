@@ -50,6 +50,15 @@ public:
           value_ ( value )
     {}
 
+    bool isDifferent(const Parameter& p) const override
+    {
+      if (const auto *sp = dynamic_cast<const SimpleParameter<T,N>*>(&p))
+      {
+        return (value_!=(*sp)());
+      }
+      else
+        return true;
+    }
 
     virtual T& operator() ()
     {
@@ -79,6 +88,8 @@ public:
     rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath ) const override
     {
+        insight::CurrentExceptionContext ex("appending simple parameter "+name+" to node "+node.name());
+
         using namespace rapidxml;
         xml_node<>* child = Parameter::appendToNode ( name, doc, node, inputfilepath );
         child->append_attribute

@@ -1,6 +1,9 @@
 #ifndef INSIGHT_QACTIONPROGRESSDISPLAYERWIDGET_H
 #define INSIGHT_QACTIONPROGRESSDISPLAYERWIDGET_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QWidget>
 #include <QProgressBar>
 #include <QVBoxLayout>
@@ -12,7 +15,7 @@
 
 namespace insight {
 
-class QActionProgressDisplayerWidget
+class TOOLKIT_GUI_EXPORT QActionProgressDisplayerWidget
 : public QWidget,
   public insight::ProgressDisplayer
 {
@@ -49,7 +52,7 @@ protected:
     Columns columns_;
 
     Columns::iterator getColumn(const std::string& path, std::vector<std::string>& splitPath);
-    ProgressItem getOrCreateItem(const std::string& path);
+    ProgressItem getOrCreateItem(const std::string& path, bool forbidCreation=false);
     void deleteItem(const std::string& path);
 
 
@@ -57,6 +60,7 @@ public:
     QActionProgressDisplayerWidget(QWidget* parent=nullptr);
 
     void update ( const ProgressState& pi ) override;
+    void logMessage(const std::string& line) override;
     void setActionProgressValue(const std::string& path, double value) override;
     void setMessageText(const std::string& path, const std::string& message) override;
     void finishActionProgress(const std::string& path) override;

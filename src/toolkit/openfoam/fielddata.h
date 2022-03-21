@@ -2,8 +2,11 @@
 #define FIELDDATA_H
 
 #include "base/parameterset.h"
+#include "base/parameters.h"
 #include "base/resultset.h"
 #include "openfoam/openfoamdict.h"
+
+#include "fielddata__FieldData__Parameters_headers.h"
 
 namespace insight
 {

@@ -4,7 +4,7 @@
 
 #include "base/resultelements/chart.h"
 #include "base/resultelements/chartrenderer.h"
-#include "base/resultelements/gnuplotchartrenderer.h"
+#include "base/resultelements/latexgnuplotrenderer.h"
 #include "base/units.h"
 
 namespace insight {

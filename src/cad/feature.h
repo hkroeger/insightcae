@@ -35,7 +35,7 @@
 #include "base/linearalgebra.h"
 #include "occinclude.h"
 
-
+#ifndef WIN32
 namespace boost
 {
   
@@ -46,6 +46,7 @@ struct is_arithmetic<arma::mat>
 };
 
 }
+#endif
 
 namespace insight 
 {
@@ -174,6 +175,7 @@ public:
   FeatureSet(ConstFeaturePtr m, EntityType shape);
 
   FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id);
+  FeatureSet(ConstFeaturePtr m, EntityType shape, const FeatureSetData& ids);
   FeatureSet(ConstFeaturePtr m, EntityType shape, const std::vector<FeatureID>& ids);
 
   /**

@@ -27,7 +27,6 @@ public:
   WorkbenchAction(AnalysisForm* af);
   virtual ~WorkbenchAction();
 
-
 public Q_SLOTS:
   virtual void onCancel() =0;
 

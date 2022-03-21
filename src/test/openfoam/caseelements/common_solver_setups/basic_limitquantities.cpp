@@ -10,7 +10,7 @@ int main(int argc, char*argv[])
 
     insight::assertion(argc==2, "expected exactly one command line argument");
 
-    SimpleFoamOpenFOAMCase tc(argv[1]);
+    SimpleFoamCylinderOpenFOAMCase tc(argv[1]);
 
     limitQuantities::Parameters p;
 

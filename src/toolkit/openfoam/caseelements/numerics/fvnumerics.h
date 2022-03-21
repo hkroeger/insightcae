@@ -3,7 +3,7 @@
 
 
 #include "openfoam/caseelements/basic/decomposepardict.h"
-
+#include "fvnumerics__FVNumerics__Parameters_headers.h"
 
 namespace insight {
 

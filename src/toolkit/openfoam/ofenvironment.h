@@ -7,6 +7,9 @@
 
 namespace insight {
 
+
+
+
 class OFEnvironment
     : public SoftwareEnvironment
 {
@@ -19,8 +22,10 @@ public:
 
     virtual int version() const;
     virtual const boost::filesystem::path& bashrc() const;
-    //virtual int executeCommand(const std::vector<std::string>& args) const;
 };
+
+
+
 
 } // namespace insight
 

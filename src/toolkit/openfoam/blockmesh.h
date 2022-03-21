@@ -51,15 +51,8 @@ class blockMesh;
 typedef arma::mat Point;
 
 
-
-typedef bool (*Comp)(const Point& v1, const Point& v2);
-bool compare(const Point& v1, const Point& v2);
-
-
-
-
 typedef std::vector<Point> PointList;
-typedef std::map<Point, int, Comp> PointMap;
+typedef std::map<Point, int> PointMap;
 
 
 

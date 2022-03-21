@@ -1,10 +1,13 @@
 #ifndef HELPWIDGET_H
 #define HELPWIDGET_H
 
+#include "toolkit_gui_export.h"
+
+
 #include <QTextEdit>
 #include "base/latextools.h"
 
-class HelpWidget
+class TOOLKIT_GUI_EXPORT HelpWidget
 : public QTextEdit
 {
   insight::SimpleLatex content_;

@@ -20,6 +20,8 @@
 #ifndef QDATUMITEM_H
 #define QDATUMITEM_H
 
+#include "insightcad_gui_export.h"
+
 #include <QListWidgetItem>
 #include "qmodeltree.h"
 
@@ -30,7 +32,7 @@
 
 //class QoccViewerContext;
 
-class QDatumItem
+class INSIGHTCAD_GUI_EXPORT QDatumItem
 : public QDisplayableModelTreeItem
 {
   Q_OBJECT
@@ -38,7 +40,14 @@ class QDatumItem
   insight::cad::DatumPtr smp_;
     
 protected:
-  virtual Handle_AIS_InteractiveObject createAIS(AIS_InteractiveContext& context);
+  virtual Handle_AIS_InteractiveObject createAIS(
+      insight::cad::DatumPtr datum,
+      AIS_InteractiveContext& context,
+      const gp_Trsf& tr
+      );
+  Handle_AIS_InteractiveObject createAIS(
+        AIS_InteractiveContext& context
+        );
 
 public:
   QDatumItem(const QString& name, insight::cad::DatumPtr smp, QTreeWidgetItem* parent);

@@ -3,6 +3,8 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
+#include "gravity__gravity__Parameters_headers.h"
+
 namespace insight {
 
 class gravity
@@ -14,7 +16,10 @@ public:
 /*
 PARAMETERSET>>> gravity Parameters
 
-g = vector (0 0 -9.81) "Gravity acceleration"
+description
+"This case elements adds the information about the gravity acceleration vector to the OpenFOAM case."
+
+g = vector (0 0 -9.81) "[m/s^2] Gravity acceleration vector"
 
 <<<PARAMETERSET
 */

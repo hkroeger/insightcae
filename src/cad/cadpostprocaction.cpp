@@ -19,7 +19,15 @@
 
 #include "cadpostprocaction.h"
 
-void insight::cad::PostprocAction::execute()
+namespace insight {
+namespace cad {
+
+defineType(PostprocAction);
+
+void PostprocAction::execute()
 {
   if (!valid()) build();
+}
+
+}
 }

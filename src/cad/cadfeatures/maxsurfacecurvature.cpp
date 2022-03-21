@@ -5,6 +5,7 @@
 
 #include "Geom2d_BSplineCurve.hxx"
 #include "Geom2dAPI_Interpolate.hxx"
+#include "TColgp_HArray1OfPnt2d.hxx"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;

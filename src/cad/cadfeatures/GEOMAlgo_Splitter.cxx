@@ -40,6 +40,8 @@
 #include <TopTools_ListOfShape.hxx>
 
 #include <TopExp.hxx>
+#include "TopTools_ListIteratorOfListOfShape.hxx"
+#include "TopTools_IndexedMapOfShape.hxx"
 
 static 
   void TreatCompound(const TopoDS_Shape& aC, 
@@ -52,8 +54,16 @@ static
 GEOMAlgo_Splitter::GEOMAlgo_Splitter()
 :
   BOPAlgo_Builder(),
-  myTools(myAllocator),
-  myMapTools(100, myAllocator)
+  myTools(
+#if OCC_VERSION_MAJOR>=7
+    myAllocator
+#endif
+    ),
+  myMapTools(100
+#if OCC_VERSION_MAJOR>=7
+             , myAllocator
+#endif
+             )
 {
   myLimit=TopAbs_SHAPE;
   myLimitMode=0;
@@ -66,8 +76,16 @@ GEOMAlgo_Splitter::GEOMAlgo_Splitter
   (const Handle(NCollection_BaseAllocator)& theAllocator)
 :
   BOPAlgo_Builder(theAllocator),
-  myTools(myAllocator),
-  myMapTools(100, myAllocator)
+  myTools(
+#if OCC_VERSION_MAJOR>=7
+    myAllocator
+#endif
+    ),
+  myMapTools(100
+#if OCC_VERSION_MAJOR>=7
+    , myAllocator
+#endif
+             )
 {
   myLimit=TopAbs_SHAPE;
   myLimitMode=0;
@@ -153,16 +171,27 @@ void GEOMAlgo_Splitter::BuildResult(const TopAbs_ShapeEnum theType)
   TopTools_MapOfShape aM;
   TopTools_ListIteratorOfListOfShape aIt, aItIm;
   //
+#if OCC_VERSION_MAJOR<7
+  for (auto aIt=myArguments.cbegin(); aIt!=myArguments.cend(); ++aIt) {
+    const TopoDS_Shape& aS=*aIt;
+#else
   aIt.Initialize(myArguments);
   for (; aIt.More(); aIt.Next()) {
     const TopoDS_Shape& aS=aIt.Value();
+#endif
     aType=aS.ShapeType();
     if (aType==theType && !myMapTools.Contains(aS)) {
       if (myImages.IsBound(aS)) {
+#if OCC_VERSION_MAJOR<7
+        const auto& aLSIm=myImages.Find(aS);
+        for (auto aItIm=aLSIm.cbegin(); aItIm!=aLSIm.cend(); ++aItIm) {
+          const TopoDS_Shape& aSIm=*aItIm;
+#else
         const TopTools_ListOfShape& aLSIm=myImages.Find(aS);
         aItIm.Initialize(aLSIm);
         for (; aItIm.More(); aItIm.Next()) {
           const TopoDS_Shape& aSIm=aItIm.Value();
+#endif
           if (aM.Add(aSIm)) {
             aBB.Add(myShape, aSIm);
           }
@@ -206,9 +235,14 @@ void GEOMAlgo_Splitter::PostTreat()
       iLimit=(Standard_Integer)myLimit; 
       //
       // 1. Collect the shapes to process aLSP
+#if OCC_VERSION_MAJOR<7
+      for (auto aIt = myArguments.cbegin(); aIt!=myArguments.cend(); ++aIt) {
+        const TopoDS_Shape& aS=*aIt;
+#else
       aIt.Initialize(myArguments);
       for (; aIt.More(); aIt.Next()) {
         const TopoDS_Shape& aS=aIt.Value();
+#endif
         if (myMapTools.Contains(aS)) {
           continue;
         }
@@ -245,10 +279,16 @@ void GEOMAlgo_Splitter::PostTreat()
       for (; aIt.More(); aIt.Next()) {
         const TopoDS_Shape& aS=aIt.Value();
         if (myImages.IsBound(aS)) {
+#if OCC_VERSION_MAJOR<7
+          const auto& aLSIm=myImages.Find(aS);
+          for (auto aItIm=aLSIm.cbegin(); aItIm!=aLSIm.cend(); ++aItIm) {
+            const TopoDS_Shape& aSIm=*aItIm;
+#else
           const TopTools_ListOfShape& aLSIm=myImages.Find(aS);
           aItIm.Initialize(aLSIm);
           for (; aItIm.More(); aItIm.Next()) {
             const TopoDS_Shape& aSIm=aItIm.Value();
+#endif
             if (aM.Add(aSIm)) {
               if (!aMx.Contains(aSIm)) {
                 aBB.Add(aC, aSIm);

@@ -20,6 +20,8 @@
 #ifndef QMODELSTEPITEM_H
 #define QMODELSTEPITEM_H
 
+#include "insightcad_gui_export.h"
+
 #undef Bool
 
 #include <QThread>
@@ -40,7 +42,7 @@ class QFeatureItem;
 
 
 
-class QFeatureItem
+class INSIGHTCAD_GUI_EXPORT QFeatureItem
 : public QDisplayableModelTreeItem
 {
 //   friend class QFeatureItemAdder;

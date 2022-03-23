@@ -66,6 +66,8 @@ public:
   bool empty() const;
   
   static std::string LaTeXFromPlainText(const std::string& plainText);
+
+  bool operator!=(const SimpleLatex& o) const;
 };
 
 }

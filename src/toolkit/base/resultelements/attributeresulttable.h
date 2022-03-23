@@ -9,34 +9,45 @@ namespace insight {
 class AttributeTableResult
     : public ResultElement
 {
+    static SimpleLatex defaultLabelColumnTitle;
+    static SimpleLatex defaultValueColumnTitle;
 public:
-    typedef std::vector<std::string> AttributeNames;
+    typedef std::vector<SimpleLatex> AttributeNames;
     typedef boost::variant<int, double, std::string> AttributeValue;
     typedef std::vector<AttributeValue> AttributeValues;
 
 protected:
+    SimpleLatex labelColumnTitle_, valueColumnTitle_;
     AttributeNames names_;
     AttributeValues values_;
 
 public:
     declareType ( "AttributeTableResult" );
 
-    AttributeTableResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
+    AttributeTableResult (
+            const std::string& shortdesc,
+            const std::string& longdesc,
+            const std::string& unit,
+            const SimpleLatex& labelColumnTitle = defaultLabelColumnTitle,
+            const SimpleLatex& valueColumnTitle = defaultValueColumnTitle );
 
-    AttributeTableResult
-    (
-        AttributeNames names,
-        AttributeValues values,
-        const std::string& shortDesc,
-        const std::string& longDesc,
-        const std::string& unit
-    );
+    AttributeTableResult(
+            AttributeNames names,
+            AttributeValues values,
+            const std::string& shortDesc,
+            const std::string& longDesc,
+            const std::string& unit,
+            const SimpleLatex& labelColumnTitle = defaultLabelColumnTitle,
+            const SimpleLatex& valueColumnTitle = defaultValueColumnTitle );
 
     inline void setTableData ( AttributeNames names, AttributeValues values )
     {
         names_=names;
         values_=values;
     }
+
+    const SimpleLatex& labelColumnTitle() const;
+    const SimpleLatex& valueColumnTitle() const;
 
     inline const AttributeNames& names() const
     {

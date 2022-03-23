@@ -19,6 +19,8 @@
 
 #include "channel.h"
 
+#include <memory>
+
 #include "base/factory.h"
 #include "base/boost_include.h"
 
@@ -777,26 +779,13 @@ void ChannelBase::evaluateAtSection(
     )
     .setOrder(so.next());
 
-    section->insert
-    (
-     "regressionCoefficientsTubulentLengthScale_"+title,
-     std::unique_ptr<AttributeTableResult>
-     (
-       new AttributeTableResult
-       (
-         {
-          "c0",
-          "c1",
-          "c2",
-          "c3"
-         },
-	 list_of<AttributeTableResult::AttributeValue>
-	  (m.c0)(m.c1)(m.c2)(m.c3),
-	"Regression coefficients", "", ""
-	)
-     )
-    )
-    .setOrder(so.next());
+    section->insert(
+                "regressionCoefficientsTubulentLengthScale_"+title,
+                std::make_unique<AttributeTableResult>(
+                    AttributeTableResult::AttributeNames{ {"c0"}, {"c1"}, {"c2"}, {"c3"} },
+                    AttributeTableResult::AttributeValues{ m.c0, m.c1, m.c2, m.c3 },
+                    "Regression coefficients", "", "" )
+                ) .setOrder(so.next());
        
   }
 

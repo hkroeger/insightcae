@@ -23,8 +23,9 @@
 
 #include "toolkit_gui_export.h"
 
-
 #include "iqresultsetmodel.h"
+
+class QTableWidget;
 
 namespace insight {
 
@@ -33,12 +34,15 @@ class TOOLKIT_GUI_EXPORT QAttributeResultTable
 {
     Q_OBJECT
 
+    QTableWidget* tw_;
+
 public:
     declareType ( insight::AttributeTableResult::typeName_() );
     QAttributeResultTable(QObject* parent, const QString& label, insight::ResultElementPtr rep);
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;
+    void resetContents(int width, int height) override;
 };
 
 } // namespace insight

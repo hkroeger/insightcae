@@ -563,4 +563,15 @@ std::string SimpleLatex::LaTeXFromPlainText(const std::string&)
     throw insight::Exception("SimpleLatex::LaTeXFromPlainText: Not Implemented");
 }
 
+
+
+
+bool SimpleLatex::operator!=(const SimpleLatex &o) const
+{
+    return simpleLatex_code_!=o.simpleLatex_code_;
+}
+
+
+
+
 }

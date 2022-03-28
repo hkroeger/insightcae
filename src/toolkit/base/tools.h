@@ -430,6 +430,18 @@ void readFileIntoString
     std::string& fileContent
 );
 
+void writeStringIntoFile
+(
+    const std::string& fileContent,
+    const boost::filesystem::path& fileName
+);
+
+void writeStringIntoFile
+(
+    std::shared_ptr<std::string> fileContent,
+    const boost::filesystem::path& fileName
+);
+
 
 class TemplateFile
     : public std::string

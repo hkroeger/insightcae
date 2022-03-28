@@ -386,19 +386,19 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 
     writeLatexCode ( content, "", 0, filepath.parent_path() );
 
-    auto reportTemplate = std::make_unique<TemplateFile>(
-                ResultReportTemplates::globalInstance().defaultItem()
-                );
+    auto &reportTemplate = ResultReportTemplates::globalInstance().defaultItem();
+    auto reportInput = std::make_unique<TemplateFile>(reportTemplate);
 
-    reportTemplate->replace("AUTHOR", author_ );
-    reportTemplate->replace("DATE", date_ );
-    reportTemplate->replace("TITLE", title_ );
-    reportTemplate->replace("SUBTITLE", subtitle_ );
+    reportInput->replace("AUTHOR", author_ );
+    reportInput->replace("DATE", date_ );
+    reportInput->replace("TITLE", title_ );
+    reportInput->replace("SUBTITLE", subtitle_ );
 
-    reportTemplate->replace("HEADER", header.str() );
-    reportTemplate->replace("CONTENT", content.str() );
+    reportInput->replace("HEADER", header.str() );
+    reportInput->replace("CONTENT", content.str() );
 
-    reportTemplate->write(filepath);
+    reportInput->write(filepath);
+    reportTemplate.writeAdditionalFiles(filepath.parent_path());
 
     {
         path outdir ( filepath.parent_path() / ( "report_data_"+filepath.stem().string() ) );

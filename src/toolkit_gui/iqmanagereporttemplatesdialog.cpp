@@ -32,7 +32,7 @@ IQManageReportTemplatesDialog::IQManageReportTemplatesDialog(QWidget *parent) :
                             this,
                             "Please select report template file",
                             "",
-                            "Executables (*.tex)"
+                            "LaTeX report templates (*.tex);;Template package (*.irt)"
                             );
                 if (!newpath.isEmpty())
                 {

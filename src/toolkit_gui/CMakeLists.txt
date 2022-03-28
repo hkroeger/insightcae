@@ -80,7 +80,6 @@ set(toolkit_gui_SRCS
 
     iqconfigureexternalprogramsdialog.h iqconfigureexternalprogramsdialog.cpp iqconfigureexternalprogramsdialog.ui
     iqglobalconfigurationmodel.h
-    iqreporttemplatesmodel.h iqreporttemplatesmodel.cpp
     iqmanagereporttemplatesdialog.h iqmanagereporttemplatesdialog.cpp iqmanagereporttemplatesdialog.ui
 
     iqsetupwsldistributionwizard.h iqsetupwsldistributionwizard.cpp iqsetupwsldistributionwizard.ui

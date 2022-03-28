@@ -186,7 +186,9 @@ protected:
         {
             defaultLabel_=dfl->value();
             if (this->find(defaultLabel_)==this->end())
+            {
                 throw insight::Exception("The default label \""+defaultLabel_+"\" does not exist!");
+            }
         }
         else
         {

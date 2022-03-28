@@ -193,10 +193,16 @@ MD5HashPtr calcFileHash(const boost::filesystem::path& filePath)
 
 
 
+std::shared_ptr<std::string> base64_decode(const std::string& sourceBuffer)
+{
+    std::shared_ptr<std::string> targetBuffer;
+    base64_decode(sourceBuffer, targetBuffer);
+    return targetBuffer;
+}
+
+
 void
-base64_decode(
-    const char *src,
-    size_t size,
+base64_decode(const char *src, size_t size,
     std::shared_ptr<std::string>& targetBuffer  )
 {
 //  char *src = a->value();
@@ -234,7 +240,13 @@ base64_decode(
   }
 }
 
-
+void base64_decode(const std::string& sourceBuffer, std::shared_ptr<std::string>& targetBuffer)
+{
+    base64_decode(
+                sourceBuffer.c_str(),
+                sourceBuffer.size(),
+                targetBuffer );
+}
 
 
 bool operator<(const timespec& lhs, const timespec& rhs)
@@ -538,16 +550,17 @@ void FileContainer::copyTo(const boost::filesystem::path &filePath, bool createP
 
   if (file_content_)
   {
-    std::ofstream file( filePath.c_str(), std::ios::out | std::ios::binary);
-    if (file.good())
-    {
-        file.write(file_content_->c_str(), long(file_content_->size()) );
-        file.close();
-    }
-    else
-    {
-      throw insight::Exception("could not write to file "+filePath.string());
-    }
+      writeStringIntoFile(file_content_, filePath);
+//    std::ofstream file( filePath.c_str(), std::ios::out | std::ios::binary);
+//    if (file.good())
+//    {
+//        file.write(file_content_->c_str(), long(file_content_->size()) );
+//        file.close();
+//    }
+//    else
+//    {
+//      throw insight::Exception("could not write to file "+filePath.string());
+//    }
   }
   else
   {

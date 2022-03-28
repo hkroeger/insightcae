@@ -958,6 +958,34 @@ void readFileIntoString(const path &fileName, string &fileContent)
 }
 
 
+void writeStringIntoFile
+(
+    const std::string& fileContent,
+    const boost::filesystem::path& filePath
+)
+{
+    std::ofstream file( filePath.c_str(), std::ios::out | std::ios::binary);
+    if (file.good())
+    {
+        file.write(fileContent.c_str(), long(fileContent.size()) );
+        file.close();
+    }
+    else
+    {
+      throw insight::Exception("could not write to file "+filePath.string());
+    }
+}
+
+
+void writeStringIntoFile
+(
+    std::shared_ptr<std::string> fileContent,
+    const boost::filesystem::path& fileName
+)
+{
+   writeStringIntoFile(*fileContent, fileName);
+}
+
 
 TemplateFile::TemplateFile(const string &hardCodedTemplate)
   : std::string(hardCodedTemplate)

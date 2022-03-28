@@ -20,6 +20,7 @@
 
 project(toolkit)
 
+
 set(toolkit_SOURCES
     base/global.cpp
     base/toolkitversion.cpp base/toolkitversion.h
@@ -102,6 +103,7 @@ set(toolkit_SOURCES
     base/resultsetfilter.h base/resultsetfilter.cpp
     base/propertylibrary.h base/propertylibrary.cpp
     base/materialslibrary.h base/materialslibrary.cpp
+    base/zipfile.h base/zipfile.cpp
     openfoam/ofenvironment.cpp openfoam/ofenvironment.h
     openfoam/ofes.cpp openfoam/ofes.h
     openfoam/blockmesh_templates.cpp openfoam/blockmesh_templates.h
@@ -252,7 +254,7 @@ find_package(OpenSSL)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
-
+PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
@@ -260,6 +262,7 @@ set(toolkit_LINK_LIBS
     ${Boost_LIBRARIES}
     ${ARMADILLO_LIBRARY}
     PkgConfig::poppler-cpp
+    PkgConfig::minizip
     GSL::gsl GSL::gslcblas
     OpenSSL::SSL
     vtkHeaders

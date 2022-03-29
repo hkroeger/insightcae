@@ -21,6 +21,7 @@
 #include "addToRunTimeSelectionTable.H"
 #include "transform.H"
 #include "OFstream.H"
+#include "IFstream.H"
 
 #include "base/linearalgebra.h"
 #include "boost/foreach.hpp"
@@ -334,7 +335,18 @@ autoPtr<FieldDataProvider<T> > uniformField<T>::clone() const
 template<class T>
 void nonuniformField<T>::appendInstant(Istream& is)
 {
-  values_.push_back(new Field<T>(is));
+    token firstToken(is);
+    if (firstToken.isWord() && firstToken.wordToken()=="file")
+    {
+        fileName infname(is);
+        IFstream inf(infname);
+        values_.push_back(new Field<T>(inf));
+    }
+    else
+    {
+        is.putBack(firstToken);
+        values_.push_back(new Field<T>(is));
+    }
 }
 
 template<class T>

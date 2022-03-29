@@ -160,14 +160,14 @@ public:
             auto * nc = const_cast<FixedSizeFieldDataProvider*>(this);
             nc->lastUpdateTime_ = t;
             nc->value_ =
-                    (*fdp_)( t, this->pp_.faceCentres() );
+                    fdp_()( t, this->pp_.faceCentres() );
         }
         return value_;
     }
 
     const FieldDataProvider<T>& fieldDataProvider() const
     {
-        return *fdp_;
+        return fdp_();
     }
 };
 

@@ -260,7 +260,8 @@ if (INSIGHT_BUILD_OPENFOAM)
     find_package(OpenFOAM-dev)
     find_package(OpenFOAM-esi1806)
     find_package(OpenFOAM-esi1906)
-    
+    find_package(OpenFOAM-esi2112)
+
     create_script("insight.aliases.OpenFOAM"
 "${INSIGHT_OF_ALIASES}
 "
@@ -336,6 +337,9 @@ macro(version_list_OF)
     endif()
     if (OFesi1906_FOUND)
       list (APPEND OF_VERSIONS OFesi1906)
+    endif()
+    if (OFesi2112_FOUND)
+      list (APPEND OF_VERSIONS OFesi2112)
     endif()
   endif()
 endmacro(version_list_OF)
@@ -503,6 +507,15 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     endif()
     if (${_ofvers} STREQUAL "OFesi1906")
       setup_exe_target_OFesi1906(
+        ${PRJ_NAME}${_ofvers}
+        "${sources}"
+        "${PRJ_NAME}"
+        "${${PRJ_NAME}_INCLUDE_DIRS}"
+        "${${PRJ_NAME}_LIBRARIES}"
+      )
+    endif()
+    if (${_ofvers} STREQUAL "OFesi2112")
+      setup_exe_target_OFesi2112(
         ${PRJ_NAME}${_ofvers}
         "${sources}"
         "${PRJ_NAME}"
@@ -678,6 +691,15 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     endif()
     if (${_ofvers} STREQUAL "OFesi1906")
       setup_lib_target_OFesi1906(
+        ${PRJ_NAME}${_ofvers}
+        "${sources}"
+        "${PRJ_NAME}"
+        "${${PRJ_NAME}_INCLUDE_DIRS}"
+        "${${PRJ_NAME}_LIBRARIES}"
+      )
+    endif()
+    if (${_ofvers} STREQUAL "OFesi2112")
+      setup_lib_target_OFesi2112(
         ${PRJ_NAME}${_ofvers}
         "${sources}"
         "${PRJ_NAME}"

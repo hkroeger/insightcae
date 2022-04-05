@@ -144,7 +144,7 @@ public:
         }
 
         //- Return true if this scheme uses an explicit correction
-        virtual bool corrected() const
+        virtual bool corrected() const noexcept
         {
 #if (OF_VERSION<010700) //def OF16ext
 	    return !this->mesh().orthogonal();

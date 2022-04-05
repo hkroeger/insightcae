@@ -107,8 +107,7 @@ autoPtr<FieldDataProvider<T> > FieldDataProvider<T>::New
   word typekey;
   is >> typekey;
   
-  typename IstreamConstructorTable::iterator cstrIter =
-      IstreamConstructorTablePtr_->find(typekey);
+  auto cstrIter = IstreamConstructorTablePtr_->find(typekey);
   
   if (cstrIter == IstreamConstructorTablePtr_->end())
   {   

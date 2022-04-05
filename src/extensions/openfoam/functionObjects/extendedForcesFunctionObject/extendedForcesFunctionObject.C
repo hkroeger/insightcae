@@ -257,6 +257,8 @@ extendedForces::execute()
                 mesh.C().boundaryField()[patchI] -
       #if defined(OF_FORK_extend) //def OF16ext
                   CofR_
+      #elif (OF_VERSION>=060505)
+                  coordSysPtr_().origin()
       #else
                   coordSys_.origin()
       #endif

@@ -180,6 +180,7 @@ public:
 };
 
 
+
 class globalPatch
 : public UniPrimitivePatch<face, List, pointField>
 {
@@ -187,18 +188,19 @@ class globalPatch
   labelList procOfs_;
   label nfaces_;
 
+public:
   template
   <
       class Face,
       template<class> class FaceList,
       class PointField
   >
-  autoPtr<UniPrimitivePatch<Face, List, PointField> > createGlobalPatch(
-          const UniPrimitivePatch<Face, List, PointField>& patch,
+  static autoPtr<UniPrimitivePatch<face, List, pointField> > createGlobalPatch(
+          const UniPrimitivePatch<Face, FaceList, PointField>& patch,
           const polyMesh* mesh
           )
   {
-      autoPtr<UniPrimitivePatch<Face, List, PointField> > result;
+      autoPtr<UniPrimitivePatch<face, List, pointField> > result;
 
       if (mesh)
       {
@@ -272,7 +274,7 @@ class globalPatch
 
               result.reset
                       (
-                          new UniPrimitivePatch<Face, List, PointField>(globalFaces, globalPoints)
+                          new UniPrimitivePatch<face, List, pointField>(globalFaces, globalPoints)
                           );
 
               return result;
@@ -281,7 +283,7 @@ class globalPatch
 
       result.reset
               (
-                  new UniPrimitivePatch<Face, List, PointField>(patch.localFaces(), patch.localPoints())
+                  new UniPrimitivePatch<face, List, pointField>(patch.localFaces(), patch.localPoints())
                   );
       return result;
   }
@@ -290,9 +292,8 @@ public:
 
 
   globalPatch(
-          const UniPrimitivePatch<face, List, pointField>& patch,
-          const polyMesh* mesh )
-  : UniPrimitivePatch<face, List, pointField>(createGlobalPatch<face, List, pointField>(patch, mesh)()),
+          const UniPrimitivePatch<face, List, pointField>& patch )
+  : UniPrimitivePatch<face, List, pointField>(patch),
     procOfs_(Pstream::nProcs(), -1)
   {
     labelList nfaces(Pstream::nProcs());

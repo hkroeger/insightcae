@@ -35,23 +35,22 @@ License
 #include "fvCFD.H"
 #include "wallFvPatch.H"
 
-#include "base/boost_include.h"
+#include "boost/format.hpp"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
-    defineTypeNameAndDebug(extendedRigidBodyMeshMotion, 0);
 
-    addToRunTimeSelectionTable
-    (
-        motionSolver,
-        extendedRigidBodyMeshMotion,
-        dictionary
-    );
-}
+defineTypeNameAndDebug(extendedRigidBodyMeshMotion, 0);
 
-using namespace Foam;
+addToRunTimeSelectionTable
+(
+    motionSolver,
+    extendedRigidBodyMeshMotion,
+    dictionary
+);
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 autoPtr<Foam::extendedRigidBodyMeshMotion::directThrustForce> Foam::extendedRigidBodyMeshMotion::directThrustForce::New(Istream& is)
@@ -285,6 +284,21 @@ tmp<pointField> Foam::extendedRigidBodyMeshMotion::curMotionStatePoints() const
     
     return points0() + pointDisplacement_.primitiveField();
 }
+
+const PtrList<extendedRigidBodyMeshMotion::bodyMesh> &extendedRigidBodyMeshMotion::bodyMeshes() const
+{
+    return bodyMeshes_;
+}
+
+const RBD::rigidBodyMotion &extendedRigidBodyMeshMotion::model() const
+{
+    return model_;
+}
+
+const RBD::rigidBodyModelState &extendedRigidBodyMeshMotion::motionState() const
+{
+    return model_.state();
+}
        
        
 Foam::wordList filterPatchType(const Foam::fvMesh& mesh, const Foam::wordReList& patches, Foam::word filterTypeName, bool NOT=false)
@@ -312,8 +326,7 @@ Foam::wordList filterPatchType(const Foam::fvMesh& mesh, const Foam::wordReList&
     return result;
 }
 
-namespace Foam
-{
+
     
 class patchMomentumForce
 {
@@ -364,7 +377,6 @@ public:
 
 
 
-}
 
 void Foam::extendedRigidBodyMeshMotion::solve()
 {
@@ -433,14 +445,7 @@ void Foam::extendedRigidBodyMeshMotion::solve()
         if (Pstream::master())
         {
             filePtr_() << mesh().time().value();
-            forAll(model_.state().q(), i)
-            {
-                filePtr_()<<token::SPACE << model_.state().q()[i];
-            }
-            forAll(model_.state().qDot(), i)
-            {
-                filePtr_()<<token::SPACE << model_.state().qDot()[i];
-            }
+            writeLogLine(filePtr_());
             filePtr_()<<endl;
         }
         
@@ -662,6 +667,18 @@ bool Foam::extendedRigidBodyMeshMotion::writeObject
 #endif
 }
 
+void extendedRigidBodyMeshMotion::writeLogLine(Ostream &os) const
+{
+    forAll(model_.state().q(), i)
+    {
+        os<<token::SPACE << model_.state().q()[i];
+    }
+    forAll(model_.state().qDot(), i)
+    {
+        os<<token::SPACE << model_.state().qDot()[i];
+    }
+}
+
 
 bool Foam::extendedRigidBodyMeshMotion::read()
 {
@@ -677,5 +694,6 @@ bool Foam::extendedRigidBodyMeshMotion::read()
     }
 }
 
+}
 
 // ************************************************************************* //

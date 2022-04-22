@@ -15,6 +15,7 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS
+    ${Boost_system_LIBRARY}
 )
 
 set(OF_VERSIONS OFplus OFesi1806 OFesi1906 OFesi2112)

@@ -38,13 +38,16 @@ IQResultSetDisplayerWidget::IQResultSetDisplayerWidget(QWidget *parent) :
     connect(ui->btnAddFilter, &QPushButton::clicked, this,
             [this]()
             {
-                IQAddFilterDialog dlg(resultsModel_->resultSet(), this);
-                if (dlg.exec() == QDialog::Accepted)
+                if (resultsModel_->resultSet())
                 {
-                    auto f = filterModel_->filter();
-                    auto nf = dlg.filter();
-                    f.insert( nf.begin(), nf.end() );
-                    filterModel_->resetFilter(f);
+                    IQAddFilterDialog dlg(resultsModel_->resultSet(), this);
+                    if (dlg.exec() == QDialog::Accepted)
+                    {
+                        auto f = filterModel_->filter();
+                        auto nf = dlg.filter();
+                        f.insert( nf.begin(), nf.end() );
+                        filterModel_->resetFilter(f);
+                    }
                 }
             }
     );
@@ -121,14 +124,14 @@ bool IQResultSetDisplayerWidget::hasResults() const
 }
 
 
-void IQResultSetDisplayerWidget::loadResultSet()
+void IQResultSetDisplayerWidget::loadResultSet(const std::string& analysisName)
 {
     auto f = QFileDialog::getOpenFileName(
                 this, "Load result set", "",
                 "InsightCAE Result Set (*.isr)" );
     if (!f.isEmpty())
     {
-      auto r = insight::ResultSet::createFromFile(f.toStdString());
+      auto r = insight::ResultSet::createFromFile(f.toStdString(), analysisName);
       loadResults(r);
     }
 }
@@ -164,7 +167,7 @@ void IQResultSetDisplayerWidget::saveResultSetAs()
 
           if (cb->isChecked())
           {
-              resultsModel_->filteredResultSet()->saveToFile(outf);
+              filteredResultsModel_->filteredResultSet()->saveToFile(outf);
           }
           else
           {
@@ -203,7 +206,7 @@ void IQResultSetDisplayerWidget::renderReport()
                   );
           if (cb->isChecked())
           {
-              resultsModel_->filteredResultSet()->generatePDF(outf);
+              filteredResultsModel_->filteredResultSet()->generatePDF(outf);
           }
           else
           {

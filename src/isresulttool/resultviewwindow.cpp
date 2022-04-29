@@ -24,8 +24,8 @@ ResultViewWindow::ResultViewWindow(QWidget *parent) :
   setCentralWidget(viewer_);
 
 
-  connect(ui->actionLoad, &QAction::triggered,
-          viewer_, &IQResultSetDisplayerWidget::loadResultSet );
+  connect(ui->actionLoad, &QAction::triggered, viewer_,
+          [this]() { viewer_->loadResultSet(); } );
 
   connect(ui->actionSaveAs, &QAction::triggered,
           viewer_, &IQResultSetDisplayerWidget::saveResultSetAs );

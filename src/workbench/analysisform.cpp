@@ -245,9 +245,7 @@ AnalysisForm::AnalysisForm(
 
 
     resultsViewer_=new IQResultSetDisplayerWidget(ui->outputTab);
-    auto rtl = new QVBoxLayout;
-    ui->outputTab->setLayout(rtl);
-    rtl->addWidget(resultsViewer_);
+    ui->outputTab->layout()->addWidget(resultsViewer_);
 
 }
 
@@ -324,7 +322,16 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(QMenuBar* mainMenu)
     connect( act_kill_, &QAction::triggered, this, &AnalysisForm::onKillAnalysis );
 
 
-    auto act_save_res=new QAction("&Save results...", this);
+    {
+        auto act=new QAction("&Load results...", this);
+        menu_results->addAction( act );
+        connect( act, &QAction::triggered, resultsViewer_,
+                 [this]() { this->resultsViewer_->loadResultSet(analysisName_); } );
+    }
+
+    menu_results->addSeparator();
+
+    auto act_save_res=new QAction("&Save results as...", this);
     menu_results->addAction( act_save_res );
     connect( act_save_res, &QAction::triggered,
              resultsViewer_, &IQResultSetDisplayerWidget::saveResultSetAs );
@@ -334,14 +341,6 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(QMenuBar* mainMenu)
     connect( act_save_rpt_, &QAction::triggered,
              resultsViewer_, &IQResultSetDisplayerWidget::renderReport );
 
-    menu_results->addSeparator();
-
-    {
-        auto act=new QAction("&Load results into viewer...", this);
-        menu_results->addAction( act );
-        connect( act, &QAction::triggered,
-                 resultsViewer_, &IQResultSetDisplayerWidget::loadResultSet );
-    }
 
     menu_results->addSeparator();
 

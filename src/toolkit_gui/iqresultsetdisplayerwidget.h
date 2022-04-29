@@ -29,7 +29,7 @@ public:
     bool hasResults() const;
 
 public Q_SLOTS:
-    void loadResultSet();
+    void loadResultSet(const std::string& analysisName = std::string());
     void saveResultSetAs();
     void renderReport();
     void loadFilter();

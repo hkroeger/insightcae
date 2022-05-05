@@ -20,6 +20,20 @@
 #ifndef FOAM_FIELDDATAPROVIDER_H
 #define FOAM_FIELDDATAPROVIDER_H
 
+#include "vtkSmartPointer.h"
+#include "vtkUnstructuredGridReader.h"
+#include "vtkPointInterpolator.h"
+#include "vtkPolyData.h"
+#include "vtkPoints.h"
+#include "vtkDoubleArray.h"
+#include "vtkGaussianKernel.h"
+#include "vtkPointData.h"
+#include "vtkCellCenters.h"
+#include "vtkPolyDataReader.h"
+#include "vtkGenericDataObjectReader.h"
+#include "vtkProbeFilter.h"
+#include "vtkDelaunay2D.h"
+
 #include "fvCFD.H"
 
 #include "base/linearalgebra.h"
@@ -33,9 +47,7 @@
 
 #include "uniof.h"
 
-#include "vtkSmartPointer.h"
-#include "vtkUnstructuredGridReader.h"
-#include "vtkPointInterpolator.h"
+#include "vtkconversion.h"
 
 namespace Foam 
 {

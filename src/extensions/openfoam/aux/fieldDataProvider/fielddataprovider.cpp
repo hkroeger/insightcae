@@ -34,18 +34,6 @@
 #endif
 #include "boost/filesystem.hpp"
 
-#include "vtkPolyData.h"
-#include "vtkPoints.h"
-#include "vtkDoubleArray.h"
-#include "vtkGaussianKernel.h"
-#include "vtkPointData.h"
-#include "vtkCellCenters.h"
-#include "vtkPolyDataReader.h"
-#include "vtkGenericDataObjectReader.h"
-#include "vtkProbeFilter.h"
-#include "vtkDelaunay2D.h"
-
-#include "vtkconversion.h"
 
 using namespace boost;
 using namespace insight;

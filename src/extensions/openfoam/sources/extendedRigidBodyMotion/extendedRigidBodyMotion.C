@@ -290,7 +290,7 @@ const PtrList<extendedRigidBodyMeshMotion::bodyMesh> &extendedRigidBodyMeshMotio
     return bodyMeshes_;
 }
 
-const RBD::rigidBodyMotion &extendedRigidBodyMeshMotion::model() const
+const RBD::rigidBodyMotion& extendedRigidBodyMeshMotion::model() const
 {
     return model_;
 }
@@ -298,6 +298,18 @@ const RBD::rigidBodyMotion &extendedRigidBodyMeshMotion::model() const
 const RBD::rigidBodyModelState &extendedRigidBodyMeshMotion::motionState() const
 {
     return model_.state();
+}
+
+bool extendedRigidBodyMeshMotion::isBodyPatch(label patchID) const
+{
+    forAll(bodyMeshes(), bi)
+    {
+        for (const label patchi : bodyMeshes()[bi].patchSet_)
+        {
+            if (patchID==patchi) return true;
+        }
+    }
+    return false;
 }
        
        
@@ -453,10 +465,20 @@ void Foam::extendedRigidBodyMeshMotion::solve()
         curTimeIndex_ = this->db().time().timeIndex();
     }
 
-    if (db().foundObject<uniformDimensionedVectorField>("g"))
+    const objectRegistry& gobr =
+#if OF_VERSION<060505
+            db()
+#else
+            t
+#endif
+            ;
+    if (gobr.foundObject<uniformDimensionedVectorField>("g"))
     {
         model_.g() =
-            ramp*db().lookupObject<uniformDimensionedVectorField>("g").value();
+            ramp*gobr.lookupObject<uniformDimensionedVectorField>("g").value();
+    } else
+    {
+        WarningIn("solve") << "no gravity defined!" << endl;
     }
 
     if (test_)
@@ -636,14 +658,22 @@ void Foam::extendedRigidBodyMeshMotion::solve()
 
 bool Foam::extendedRigidBodyMeshMotion::writeObject
 (
-    IOstream::streamFormat fmt,
-    IOstream::versionNumber ver,
-    IOstream::compressionType cmp
+#if OF_VERSION>=060505
+            IOstreamOption streamOpt
+#else
+            IOstream::streamFormat fmt,
+            IOstream::versionNumber ver,
+            IOstream::compressionType cmp
+#endif
 #if OF_VERSION>=060000 //defined(OFesi1806)
     , const bool valid
 #endif
 ) const
 {
+#if OF_VERSION>=060505
+    streamOpt.format(IOstream::ASCII);
+#endif
+
     IOdictionary dict
     (
         IOobject
@@ -659,9 +689,16 @@ bool Foam::extendedRigidBodyMeshMotion::writeObject
     );
 
     model_.state().write(dict);
+
 #if OF_VERSION>=060000 //defined(OFesi1806)
     // Force ascii writing
-    return dict.regIOobject::writeObject(IOstream::ASCII, ver, cmp, valid);
+    return dict.regIOobject::writeObject(
+#if OF_VERSION>=060505
+                streamOpt,
+#else
+                IOstream::ASCII, ver, cmp,
+#endif
+                valid );
 #else
     return dict.regIOobject::write();
 #endif

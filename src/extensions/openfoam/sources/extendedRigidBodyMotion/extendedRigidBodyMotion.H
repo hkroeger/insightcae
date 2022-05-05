@@ -112,6 +112,8 @@ class extendedRigidBodyMeshMotion
 
         inline const pointScalarField& weight() const
         { return weight_; }
+
+        inline label bodyID() const { return bodyID_; }
     };
 
 
@@ -189,15 +191,21 @@ public:
         const RBD::rigidBodyMotion& model() const;
         const RBD::rigidBodyModelState& motionState() const;
 
+        bool isBodyPatch(label patchID) const;
+
         //- Solve for motion
         void solve() override;
 
         //- Write state using given format, version and compression
         bool writeObject
         (
+#if OF_VERSION>=060505
+            IOstreamOption streamOpt
+#else
             IOstream::streamFormat fmt,
             IOstream::versionNumber ver,
             IOstream::compressionType cmp
+#endif
 #if OF_VERSION>=060000 //defined(OFesi1806)
             , const bool valid
 #endif

@@ -176,8 +176,8 @@ public:
     IQResultElement* getResultElement(const QModelIndex& idx) override;
     std::string path(const QModelIndex& idx) const;
 
-    void addChildren(const QModelIndex& pidx, insight::ResultElementCollection* re) const;
-    ResultSetPtr filteredResultSet() const;
+//    void addChildren(const QModelIndex& pidx, insight::ResultElementCollection* re) const;
+//    ResultSetPtr filteredResultSet() const;
 
     insight::ResultSetPtr resultSet() const;
     bool hasResults() const;
@@ -203,6 +203,9 @@ public:
     IQResultElement* getResultElement(const QModelIndex& idx) override;
 
     void resetFilter(const ResultSetFilter& filter);
+
+    void addChildren(const QModelIndex& pidx, insight::ResultElementCollection* re) const;
+    ResultSetPtr filteredResultSet() const;
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;

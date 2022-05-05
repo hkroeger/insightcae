@@ -109,6 +109,9 @@ class extendedRigidBodyMeshMotion
             const label bodyID,
             const dictionary& dict
         );
+
+        inline const pointScalarField& weight() const
+        { return weight_; }
     };
 
 
@@ -178,15 +181,19 @@ public:
     // Member Functions
 
         //- Return point location obtained from the current motion field
-        virtual tmp<pointField> curPoints() const;
+        tmp<pointField> curPoints() const override;
 
         tmp<pointField> curMotionStatePoints() const;
 
+        const PtrList<bodyMesh>& bodyMeshes() const;
+        const RBD::rigidBodyMotion& model() const;
+        const RBD::rigidBodyModelState& motionState() const;
+
         //- Solve for motion
-        virtual void solve();
+        void solve() override;
 
         //- Write state using given format, version and compression
-        virtual bool writeObject
+        bool writeObject
         (
             IOstream::streamFormat fmt,
             IOstream::versionNumber ver,
@@ -194,10 +201,12 @@ public:
 #if OF_VERSION>=060000 //defined(OFesi1806)
             , const bool valid
 #endif
-        ) const;
+        ) const override;
+
+        virtual void writeLogLine(Ostream& os) const;
 
         //- Read dynamicMeshDict dictionary
-        virtual bool read();
+        bool read() override;
 };
 
 

@@ -527,42 +527,42 @@ std::string IQResultSetModel::path(const QModelIndex &idx) const
 
 
 
-void IQResultSetModel::addChildren(const QModelIndex& pidx, ResultElementCollection* re) const
-{
-    for (int row=0; row<rowCount(pidx); ++row)
-    {
-        auto cidx = index(row, 0, pidx);
-        if (auto e = dynamic_cast<IQResultElement*>(
-                    static_cast<QObject*>(cidx.internalPointer())))
-        {
-            if (e->isChecked()==Qt::Checked || e->isChecked()==Qt::PartiallyChecked)
-            {
-                auto toBeInserted = e->resultElement()->clone();
-                if ( auto rec =
-                     dynamic_cast<insight::ResultElementCollection*>(toBeInserted.get()) )
-                {
-                    rec->clear();
-                    addChildren(cidx, rec);
-                }
-                re->insert( e->label_.toStdString(),  toBeInserted);
-            }
-        }
-    }
-}
+//void IQResultSetModel::addChildren(const QModelIndex& pidx, ResultElementCollection* re) const
+//{
+//    for (int row=0; row<rowCount(pidx); ++row)
+//    {
+//        auto cidx = index(row, 0, pidx);
+//        if (auto e = dynamic_cast<IQResultElement*>(
+//                    static_cast<QObject*>(cidx.internalPointer())))
+//        {
+//            if (e->isChecked()==Qt::Checked || e->isChecked()==Qt::PartiallyChecked)
+//            {
+//                auto toBeInserted = e->resultElement()->clone();
+//                if ( auto rec =
+//                     dynamic_cast<insight::ResultElementCollection*>(toBeInserted.get()) )
+//                {
+//                    rec->clear();
+//                    addChildren(cidx, rec);
+//                }
+//                re->insert( e->label_.toStdString(),  toBeInserted);
+//            }
+//        }
+//    }
+//}
 
-ResultSetPtr IQResultSetModel::filteredResultSet() const
-{
-    std::string author = orgResultSet_->author();
-    std::string date = orgResultSet_->date();
-    auto fr = std::make_shared<ResultSet>(
-                orgResultSet_->parameters(),
-                orgResultSet_->title(),
-                orgResultSet_->subtitle(),
-                &author, &date
-                );
-    addChildren( index(0,0), fr.get() );
-    return fr;
-}
+//ResultSetPtr IQResultSetModel::filteredResultSet() const
+//{
+//    std::string author = orgResultSet_->author();
+//    std::string date = orgResultSet_->date();
+//    auto fr = std::make_shared<ResultSet>(
+//                orgResultSet_->parameters(),
+//                orgResultSet_->title(),
+//                orgResultSet_->subtitle(),
+//                &author, &date
+//                );
+//    addChildren( index(0,0), fr.get() );
+//    return fr;
+//}
 
 
 
@@ -711,6 +711,49 @@ void IQFilteredResultSetModel::resetFilter(const ResultSetFilter &filter)
 }
 
 
+void IQFilteredResultSetModel::addChildren(
+        const QModelIndex& pidx,
+        insight::ResultElementCollection* re) const
+{
+    for (int row=0; row<rowCount(pidx); ++row)
+    {
+        auto cidx = index(row, 0, pidx);
+        auto scidx = mapToSource(cidx);
+        if (auto e = dynamic_cast<IQResultElement*>(
+                    static_cast<QObject*>(scidx.internalPointer())))
+        {
+//            if (e->isChecked()==Qt::Checked || e->isChecked()==Qt::PartiallyChecked)
+            {
+                auto toBeInserted = e->resultElement()->clone();
+                if ( auto rec =
+                     dynamic_cast<insight::ResultElementCollection*>(toBeInserted.get()) )
+                {
+                    rec->clear();
+                    addChildren(cidx, rec);
+                }
+                re->insert( e->label_.toStdString(),  toBeInserted);
+            }
+        }
+    }
+}
+
+ResultSetPtr IQFilteredResultSetModel::filteredResultSet() const
+{
+    auto *orgResultModel =
+               dynamic_cast<IQResultSetModel*>(sourceModel());
+    auto orgResultSet = orgResultModel->resultSet();
+
+    std::string author = orgResultSet->author();
+    std::string date = orgResultSet->date();
+    auto fr = std::make_shared<ResultSet>(
+                orgResultSet->parameters(),
+                orgResultSet->title(),
+                orgResultSet->subtitle(),
+                &author, &date
+                );
+    addChildren( index(0,0), fr.get() );
+    return fr;
+}
 
 
 bool IQFilteredResultSetModel::filterAcceptsRow(

@@ -738,6 +738,17 @@ const
 }
 
 
+std::string mpirunCommand(int np)
+{
+    std::string execmd="mpirun -np "+lexical_cast<string>(np);
+
+    std::string envvarname="INSIGHT_ADDITIONAL_MPIRUN_ARGS";
+    if ( char *addargs=getenv ( envvarname.c_str() ) )
+    {
+        execmd += " "+std::string(addargs);
+    }
+    return execmd;
+}
 
 
 void OpenFOAMCase::executeCommand
@@ -753,7 +764,7 @@ void OpenFOAMCase::executeCommand
   string execmd=cmd;
   if (np>1)
   {
-    execmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    execmd = mpirunCommand(np)+" "+cmd;
     argv.push_back("-parallel");
   }
   
@@ -776,7 +787,7 @@ void OpenFOAMCase::runSolver
   std::vector<std::string> argv;
   if (np>1)
   {
-    execmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    execmd=mpirunCommand(np)+" "+cmd;
     argv.push_back("-parallel");
   }
   std::copy(addopts.begin(), addopts.end(), back_inserter(argv));

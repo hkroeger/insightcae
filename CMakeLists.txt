@@ -725,6 +725,17 @@ macro(setup_test_OF PRJ_NAME cmd)
   endforeach()
 endmacro()
 
+macro(add_test_OF TESTNAME cmd)
+    version_list_OF()
+    foreach (_ofvers ${OF_VERSIONS})
+     if (${_ofvers}_FOUND)
+      add_test(
+          NAME ${TESTNAME}${_ofvers}
+          COMMAND ${CMD} ${_ofvers} ${ARGN}
+      )
+     endif()
+    endforeach()
+endmacro()
 
 macro(casebuilder_test_OF TEST_NAME INPUT_FILE)
   version_list_OF()

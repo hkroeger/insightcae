@@ -362,10 +362,11 @@ void ResultSet::saveAs(const boost::filesystem::path &outfile) const
 
 
 
-
 void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 {
-  CurrentExceptionContext ec("writing latex representation of result set into file "+file.string());
+  CurrentExceptionContext ec(
+              "writing latex representation of result set into file "
+              + file.string() );
 
     path filepath ( absolute ( file ) );
 
@@ -386,8 +387,13 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 
     writeLatexCode ( content, "", 0, filepath.parent_path() );
 
-    auto &reportTemplate = ResultReportTemplates::globalInstance().defaultItem();
-    auto reportInput = std::make_unique<TemplateFile>(reportTemplate);
+    auto &reportTemplate =
+            ResultReportTemplates::globalInstance().defaultItem();
+
+
+    auto reportInput = std::make_unique<TemplateFile>(
+                static_cast<const std::string&>(reportTemplate) );
+
 
     reportInput->replace("AUTHOR", author_ );
     reportInput->replace("DATE", date_ );
@@ -397,11 +403,15 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
     reportInput->replace("HEADER", header.str() );
     reportInput->replace("CONTENT", content.str() );
 
+
     reportInput->write(filepath);
     reportTemplate.writeAdditionalFiles(filepath.parent_path());
 
     {
-        path outdir ( filepath.parent_path() / ( "report_data_"+filepath.stem().string() ) );
+        path outdir (
+                    filepath.parent_path() /
+                    ( "report_data_"+filepath.stem().string() )
+                    );
         create_directory ( outdir );
         for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
             i->second->exportDataToFile ( i->first, outdir );

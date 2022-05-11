@@ -18,7 +18,9 @@ struct ZipFileImpl
     unzFile handle;
     ZipFileImpl(const boost::filesystem::path& fp)
     {
-        handle = unzOpen64( reinterpret_cast<const void*>(fp.c_str()) );
+        handle = unzOpen64( reinterpret_cast<const void*>(
+                                fp.string().c_str()
+                                ) );
         if ( !handle )
         {
             throw std::logic_error( "Could not open ZIP file "+fp.string() );

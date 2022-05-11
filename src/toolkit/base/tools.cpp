@@ -1008,12 +1008,12 @@ void TemplateFile::replace(const string &keyword, const string &content)
 
 void TemplateFile::write(ostream &os) const
 {
-  os << (*this);
+  os.write(this->c_str(), long(this->size()) );
 }
 
 void TemplateFile::write(const path &outfile) const
 {
-  std::ofstream f(outfile.string());
+  std::ofstream f(outfile.string(), ios::binary);
   write(f);
 }
 

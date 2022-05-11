@@ -126,7 +126,6 @@ ResultReportTemplate::ResultReportTemplate(rapidxml::xml_node<> *e)
         if (!tn) throw insight::InvalidConfigurationItem();
         std::string::operator=(tn->value());
 
-
         for (xml_node<> *f = e->first_node(); f; f = f->next_sibling())
         {
             if (f->name()==std::string("additionalFile"))

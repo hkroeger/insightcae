@@ -131,7 +131,8 @@ public:
     (
         bool skipBCs = false,
         const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles =
-            std::shared_ptr<std::vector<boost::filesystem::path> >()
+            std::shared_ptr<std::vector<boost::filesystem::path> >(),
+        bool textMode = false
     );
 
     void run(ExecutionStep begin_with, bool skipMonitor=false);

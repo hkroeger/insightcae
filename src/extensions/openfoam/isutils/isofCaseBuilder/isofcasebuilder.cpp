@@ -272,7 +272,7 @@ int main ( int argc, char** argv )
           }
           else
           {
-            window.createCase( vm.count ( "skipbcs" ), restrictToFiles );
+            window.createCase( vm.count ( "skipbcs" ), restrictToFiles, true );
           }
         }
 

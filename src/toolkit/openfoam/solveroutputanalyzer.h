@@ -21,6 +21,7 @@ public:
 
 #ifndef SWIG
   const static std::string
+      pre_iter,
       pre_resi,
       pre_force,
       pre_conterr,
@@ -75,6 +76,8 @@ protected:
     boost::regex if_courant_pattern;
     boost::regex dt_pattern;
     boost::regex exec_time_pattern;
+
+    boost::regex pimple_iter_pattern;
 
 
 public:

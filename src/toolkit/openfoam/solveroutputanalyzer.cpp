@@ -16,6 +16,7 @@ namespace insight {
 
 
 
+const std::string SolverOutputAnalyzer::pre_iter="iteration/";
 const std::string SolverOutputAnalyzer::pre_resi="residual/";
 const std::string SolverOutputAnalyzer::pre_force="force/";
 const std::string SolverOutputAnalyzer::pre_moment="moment/";
@@ -50,7 +51,8 @@ SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pd, double endTime
   courant_pattern("^ *Courant Number mean: (.+) max: (.+)"),
   if_courant_pattern("^ *Interface Courant Number mean: (.+) max: (.+)"),
   dt_pattern(" *deltaT = (.+)"),
-  exec_time_pattern(" *ExecutionTime = (.+) s  ClockTime = (.+) s")
+  exec_time_pattern(" *ExecutionTime = (.+) s  ClockTime = (.+) s"),
+  pimple_iter_pattern("PIMPLE: .* (.+) iterations")
 {
   solverActionProgress_ = std::make_shared<ActionProgress>
       (
@@ -263,6 +265,10 @@ void SolverOutputAnalyzer::update(const std::string& line)
             curProgVars_[pre_conterr+"local"] = toNumber<double>(match[1]);
             curProgVars_[pre_conterr+"global"] = toNumber<double>(match[2]);
             curProgVars_[pre_conterr+"cumulative"] = toNumber<double>(match[3]);
+        }
+        else if ( boost::regex_search( line, match, pimple_iter_pattern, boost::match_default ) )
+        {
+            curProgVars_[pre_iter+"pimple_iter"] = toNumber<int>(match[1]);
         }
     }
     catch (...)

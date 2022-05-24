@@ -196,6 +196,8 @@ public:
         //- Solve for motion
         void solve() override;
 
+        virtual void populateRigidBodyMotionStateDict(dictionary& dict) const;
+
         //- Write state using given format, version and compression
         bool writeObject
         (

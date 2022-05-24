@@ -42,6 +42,8 @@ License
 namespace Foam
 {
 
+
+
 defineTypeNameAndDebug(extendedRigidBodyMeshMotion, 0);
 
 addToRunTimeSelectionTable
@@ -51,7 +53,13 @@ addToRunTimeSelectionTable
     dictionary
 );
 
+
+
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+
+
 
 autoPtr<Foam::extendedRigidBodyMeshMotion::directThrustForce> Foam::extendedRigidBodyMeshMotion::directThrustForce::New(Istream& is)
 {
@@ -67,15 +75,24 @@ autoPtr<Foam::extendedRigidBodyMeshMotion::directThrustForce> Foam::extendedRigi
     );
 }
 
+
+
+
 Foam::extendedRigidBodyMeshMotion::directThrustForce::directThrustForce(const point&p, const vector&d, scalar f)
 : PoA_(p), direction_(d), resistance_fraction_(f)
 {}
+
+
+
 
 autoPtr<Foam::extendedRigidBodyMeshMotion::directThrustForce>
 Foam::extendedRigidBodyMeshMotion::directThrustForce::clone() const
 {
   return autoPtr<Foam::extendedRigidBodyMeshMotion::directThrustForce>(new directThrustForce(PoA_, direction_, resistance_fraction_));
 }
+
+
+
 
 Foam::extendedRigidBodyMeshMotion::bodyMesh::bodyMesh
 (
@@ -112,6 +129,8 @@ Foam::extendedRigidBodyMeshMotion::bodyMesh::bodyMesh
         directThrustForces_=PtrList<directThrustForce>(dict.lookup("directThrustForces"));
     }
 }
+
+
 
 
 Foam::extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
@@ -236,19 +255,32 @@ Foam::extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
 }
 
 
+
+
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+
+
 
 Foam::extendedRigidBodyMeshMotion::~extendedRigidBodyMeshMotion()
 {}
 
 
+
+
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+
+
 
 Foam::tmp<Foam::pointField>
 Foam::extendedRigidBodyMeshMotion::curPoints() const
 {
     return points0() + pointDisplacement_.primitiveField();
 }
+
+
+
 
 tmp<pointField> Foam::extendedRigidBodyMeshMotion::curMotionStatePoints() const
 {
@@ -285,20 +317,32 @@ tmp<pointField> Foam::extendedRigidBodyMeshMotion::curMotionStatePoints() const
     return points0() + pointDisplacement_.primitiveField();
 }
 
+
+
+
 const PtrList<extendedRigidBodyMeshMotion::bodyMesh> &extendedRigidBodyMeshMotion::bodyMeshes() const
 {
     return bodyMeshes_;
 }
+
+
+
 
 const RBD::rigidBodyMotion& extendedRigidBodyMeshMotion::model() const
 {
     return model_;
 }
 
+
+
+
 const RBD::rigidBodyModelState &extendedRigidBodyMeshMotion::motionState() const
 {
     return model_.state();
 }
+
+
+
 
 bool extendedRigidBodyMeshMotion::isBodyPatch(label patchID) const
 {
@@ -312,7 +356,9 @@ bool extendedRigidBodyMeshMotion::isBodyPatch(label patchID) const
     return false;
 }
        
-       
+
+
+
 Foam::wordList filterPatchType(const Foam::fvMesh& mesh, const Foam::wordReList& patches, Foam::word filterTypeName, bool NOT=false)
 {
     Foam::labelHashSet patchids = mesh.boundaryMesh().patchSet(patches);
@@ -339,7 +385,8 @@ Foam::wordList filterPatchType(const Foam::fvMesh& mesh, const Foam::wordReList&
 }
 
 
-    
+
+
 class patchMomentumForce
 {
     vector F_, M_;
@@ -386,6 +433,7 @@ public:
     vector force() const { return F_; }
     vector moment() const { return M_; }
 };
+
 
 
 
@@ -553,22 +601,41 @@ void Foam::extendedRigidBodyMeshMotion::solve()
                 referenceSystemSpeed_*/
             );
 
+            auto transformedPoint = [&](const vector& v) {
+                return model_.transformPoints(bodyID, pointField(1, v))()[0];
+            };
+
+#warning assumes z upwards
+            auto yawedVector = [&](const vector& v) {
+                vector y=v ^ vector(0,0,1);
+                y/=mag(y);
+                return y^vector(0,0,1);
+            };
+
             // calculate direct forces
-            scalar R = f.forceEff() & body.globalMotionDirection_;
+            auto rotatedMotionDirection = yawedVector(transformedPoint(body.globalMotionDirection_));
+
+            scalar R = f.forceEff() & /*body.globalMotionDirection_*/ rotatedMotionDirection;
             vector dF=vector::zero, dM=vector::zero;
             forAll(body.directThrustForces_, j)
             {
                 const directThrustForce& df = body.directThrustForces_[j];
-                point cur_poa = model_.transformPoints(bodyID, pointField(1, df.PoA_))()[0];
-                point cur_poa_ofs = model_.transformPoints(bodyID, pointField(1, df.PoA_+df.direction_))()[0];
-                vector cur_dir = cur_poa_ofs - cur_poa; cur_dir/=mag(cur_dir);
-                point cur_ctr = model_.transformPoints(bodyID, pointField(1, model_.bodies()[bodyID].c()))()[0];
+//                point cur_poa = model_.transformPoints(bodyID, pointField(1, df.PoA_))()[0];
+//                point cur_poa_ofs = model_.transformPoints(bodyID, pointField(1, df.PoA_+df.direction_))()[0];
+//                vector cur_dir = cur_poa_ofs - cur_poa; cur_dir/=mag(cur_dir);
+//                point cur_ctr = model_.transformPoints(bodyID, pointField(1, model_.bodies()[bodyID].c()))()[0];
+
+                point cur_poa = transformedPoint( df.PoA_ );
+                vector cur_dir=transformedPoint( df.direction_ );
+                point cur_ctr = transformedPoint( model_.bodies()[bodyID].c() );
                 
-                Info<<"PoA : "<<df.PoA_<<cur_poa<<" "<<cur_poa_ofs<<endl;
-                Info<<"Dir : "<<cur_dir<<endl;
-                Info<<"Ctr : "<<model_.bodies()[bodyID].c()<<cur_ctr<<endl;
+                Info<<"Direct force "<<j<<":"<<endl;
+                Info<<" Motion direction : "<<body.globalMotionDirection_<<" => "<<rotatedMotionDirection<<endl;
+                Info<<" PoA : "<<df.PoA_<<" => "<<cur_poa<<endl;
+                Info<<" Dir : "<<df.direction_<<" => "<<cur_dir<<endl;
+                Info<<" Body Ctr : "<<model_.bodies()[bodyID].c()<<" => "<<cur_ctr<<endl;
                 
-                vector ddf = - (R * df.resistance_fraction_ / (df.direction_ & body.globalMotionDirection_)) * cur_dir; // scale force
+                vector ddf = - (R * df.resistance_fraction_ / (/*df.direction_ & body.globalMotionDirection_*/ cur_dir & rotatedMotionDirection )) * cur_dir; // scale force
                 vector ddm = ( cur_poa - cur_ctr ) ^ ddf;
                 dF+=ddf;
                 dM+=ddm;
@@ -656,6 +723,12 @@ void Foam::extendedRigidBodyMeshMotion::solve()
 }
 
 
+
+void Foam::extendedRigidBodyMeshMotion::populateRigidBodyMotionStateDict(dictionary& dict) const
+{
+    model_.state().write(dict);
+}
+
 bool Foam::extendedRigidBodyMeshMotion::writeObject
 (
 #if OF_VERSION>=060505
@@ -688,7 +761,7 @@ bool Foam::extendedRigidBodyMeshMotion::writeObject
         )
     );
 
-    model_.state().write(dict);
+    populateRigidBodyMotionStateDict(dict);
 
 #if OF_VERSION>=060000 //defined(OFesi1806)
     // Force ascii writing

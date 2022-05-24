@@ -32,24 +32,45 @@ void ReadAndSetFields
 (
     const fvMesh& mesh,
     const IOobjectList& objects,
-    vtkProbeFilter* ipf
+    vtkProbeFilter* ipf,
+    const HashTable<word, word>& fieldMatching
 )
 {
     // Objects of field type
-    IOobjectList fields(objects.lookupClass<GeoField>());
+    IOobjectList fields(objects.
+#if OF_VERSION>=060505
+                        lookupClass<GeoField>()
+#else
+                        lookupClass(GeoField::typeName)
+#endif
+                        );
 
     auto *validPts = ipf->GetValidPoints();
     auto *ipd = ipf->GetOutput();
     auto *ippd = ipd->GetPointData();
-    forAllConstIters(fields, fieldIter)
+#if OF_VERSION>=060505
+    forAllConstIters(
+#else
+    forAllConstIter(
+                IOobjectList,
+#endif
+                fields,
+                fieldIter )
     {
-        if (ippd->HasArray(fieldIter.val()->name().c_str()))
+        word targetName = fieldIter()->name();
+        word sourceName = targetName;
+        if (fieldMatching.found(targetName))
         {
-            auto *src = ippd->GetArray(fieldIter.val()->name().c_str());
+            sourceName = fieldMatching[targetName];
+        }
+
+        if (ippd->HasArray(sourceName.c_str()))
+        {
+            auto *src = ippd->GetArray(sourceName.c_str());
 
             if (src->GetNumberOfComponents()!=pTraits<typename GeoField::value_type>::nComponents)
             {
-                FatalErrorIn("SetFields") << "different number of components for field " << fieldIter.val()->name()
+                FatalErrorIn("SetFields") << "different number of components for field " << fieldIter()->name()
                                           <<": VTK:"<<label(src->GetNumberOfComponents())
                                          <<", OpenFOAM:"<<pTraits<typename GeoField::value_type>::nComponents
                                         << abort(FatalError);
@@ -57,11 +78,11 @@ void ReadAndSetFields
 
             GeoField fld(*fieldIter(), mesh);
 
-            Info<< "    Setting " << fld.name() << endl;
+            Info<< "    Setting " << fld.name() << " from " << sourceName << endl;
             for (vtkIdType i=0; i<validPts->GetNumberOfValues(); ++i)
             {
                 label cellI = validPts->GetValue(i);
-                copyValue<typename GeoField::value_type>(
+                copyValue(
                             src->GetTuple(cellI),
                             fld[cellI]
                             );
@@ -77,6 +98,7 @@ void ReadAndSetFields
 int main(int argc, char *argv[])
 {
   argList::validArgs.append("VTK file");
+  argList::validOptions.insert("fieldMatching", "map of extra corresponding source and target fields ( (<target field> <source field name>) ... )");
 
 # include "setRootCase.H"
 # include "createTime.H"
@@ -84,10 +106,20 @@ int main(int argc, char *argv[])
 
   string vtkFile(UNIOF_ADDARG(args, 0));
 
+  HashTable<word, word> fieldMatching;
+  if (UNIOF_OPTIONFOUND(args, "fieldMatching"))
+  {
+      fieldMatching = HashTable<word, word>(
+                  IStringStream(UNIOF_OPTION(args, "fieldMatching"))()
+                  );
+  }
+
+  Info << "Reading VTK data." << endl;
   auto r = vtkSmartPointer<vtkGenericDataObjectReader>::New();
   r->SetFileName(vtkFile.c_str());
   r->Update();
 
+  Info << "Performing interpolation." << endl;
   auto targ = vtkSmartPointer<vtkPolyData>::New();
   setPoints<vtkPolyData>(mesh.C().internalField(), targ);
 
@@ -104,12 +136,14 @@ int main(int argc, char *argv[])
 
   ip->Update();
 
+  Info << " Found correspondence for " << label(ip->GetValidPoints()->GetNumberOfValues()) << " out of " << mesh.C().internalField().size() << " cells." << endl;
+
   IOobjectList objects(mesh, runTime.timeName());
 
-  ReadAndSetFields<volScalarField>(mesh, objects, ip);
-  ReadAndSetFields<volVectorField>(mesh, objects, ip);
-  ReadAndSetFields<volSymmTensorField>(mesh, objects, ip);
-  ReadAndSetFields<volTensorField>(mesh, objects, ip);
+  ReadAndSetFields<volScalarField>(mesh, objects, ip, fieldMatching);
+  ReadAndSetFields<volVectorField>(mesh, objects, ip, fieldMatching);
+  ReadAndSetFields<volSymmTensorField>(mesh, objects, ip, fieldMatching);
+  ReadAndSetFields<volTensorField>(mesh, objects, ip, fieldMatching);
 
 
   return 0;

@@ -1,6 +1,8 @@
 #ifndef INSIGHT_SOLVEROUTPUTANALYZER_H
 #define INSIGHT_SOLVEROUTPUTANALYZER_H
 
+#include "boost/function.hpp"
+#include "base/factory.h"
 #include "base/outputanalyzer.h"
 #include "base/progressdisplayer.h"
 
@@ -12,6 +14,21 @@
 
 namespace insight {
 
+
+class OutputSectionReader
+{
+public:
+    declareStaticFunctionTableWithArgs(
+            createIfMatches,
+            std::shared_ptr<OutputSectionReader>,
+            LIST(const std::string&),
+            LIST(const std::string& line) );
+
+    declareType ( "OutputSectionReader" );
+
+    virtual bool parseNextLine(const std::string& line) =0;
+    virtual void addProgressVariables(std::map<std::string, double>& progVars) const =0;
+};
 
 
 class SolverOutputAnalyzer
@@ -78,6 +95,8 @@ protected:
     boost::regex exec_time_pattern;
 
     boost::regex pimple_iter_pattern;
+
+    std::shared_ptr<OutputSectionReader> currentOutputSectionReader_;
 
 
 public:

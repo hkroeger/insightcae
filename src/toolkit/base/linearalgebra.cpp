@@ -110,6 +110,17 @@ mat vec3(double x, double y, double z)
   return v;
 }
 
+mat vec3FromComponents(const double* c)
+{
+    return vec3(c[0], c[1], c[2]);
+}
+
+mat readVec3(std::istream& is)
+{
+    double c[3];
+    is >> c[0] >> c[1] >> c[2];
+    return vec3FromComponents(c);
+}
 
 arma::mat normalized(const arma::mat &vec)
 {

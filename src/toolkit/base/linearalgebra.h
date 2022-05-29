@@ -69,6 +69,8 @@ public:
 arma::mat vec1(double x);
 arma::mat vec2(double x, double y);
 arma::mat vec3(double x, double y, double z);
+arma::mat vec3FromComponents(const double* c);
+arma::mat readVec3(std::istream& is);
 arma::mat normalized(const arma::mat& vec);
 
 arma::mat tensor3(

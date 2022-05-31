@@ -37,6 +37,7 @@
 namespace std
 {
 
+extern double armaMatIdentityTolerance;
 /**
  * @brief operator <
  * required for using amra::mat as key in STL containers

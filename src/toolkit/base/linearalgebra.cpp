@@ -37,6 +37,8 @@ using namespace boost;
 namespace std
 {
 
+double armaMatIdentityTolerance = insight::SMALL;
+
 bool operator<(const arma::mat& v1, const arma::mat& v2)
 {
     insight::assertion(v1.n_elem==3,
@@ -44,11 +46,11 @@ bool operator<(const arma::mat& v1, const arma::mat& v2)
     insight::assertion(v2.n_elem==3,
                        "Internal error: comparison only defined for 3-vectors!");
 
-    if ( fabs(v1(0) - v2(0))<insight::SMALL )
+    if ( fabs(v1(0) - v2(0))<armaMatIdentityTolerance )
     {
-        if ( fabs(v1(1) - v2(1))<insight::SMALL )
+        if ( fabs(v1(1) - v2(1))<armaMatIdentityTolerance )
         {
-            if (fabs(v1(2)-v2(2))<insight::SMALL)
+            if (fabs(v1(2)-v2(2))<armaMatIdentityTolerance )
             {
                 return false;
             }

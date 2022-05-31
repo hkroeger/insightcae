@@ -70,6 +70,24 @@ OFDictData::list bmdEntry(const PointList& pts, const PointMap& allPoints);
 
 
 
+struct CS
+{
+    arma::mat et, eq, en;
+    CS(arma::mat et, const arma::mat& en);
+};
+
+
+class DiscreteCurve
+        : public std::vector<arma::mat>
+{
+public:
+    CS localCS(size_t i, arma::mat en) const;
+    void transform(std::function<arma::mat(const arma::mat&)> trsfFunc);
+    void transform(std::function<arma::mat(const arma::mat&, const CS&, size_t)> trsfFuncLocal, const arma::mat& en);
+    void interpolatedOffset(const arma::mat& ofsp0, const arma::mat& ofsp1, const arma::mat& en);
+};
+
+
 
 class Patch
 {
@@ -173,6 +191,8 @@ public:
   {
     return resolution_[0]*resolution_[1]*resolution_[2];
   }
+
+  const PointList& corners() const;
 
 };
 
@@ -285,6 +305,21 @@ public:
 
 
 
+class ProjectedEdge
+        : public Edge
+{
+    std::string geometryLabel_;
+public:
+  ProjectedEdge(const Point& c0, const Point& c1, const std::string& geometryLabel);
+
+  std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const override;
+
+  Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const override;
+  Edge* clone() const override;
+};
+
+
+
 
 class ArcEdge
 : public Edge
@@ -295,10 +330,10 @@ protected:
 public:
   ArcEdge(const Point& c0, const Point& c1, const Point& midpoint);
 
-  virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
+  std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const override;
 
-  virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const;
-  virtual Edge* clone() const;
+  Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const override;
+  Edge* clone() const override;
 };
 
 
@@ -354,40 +389,6 @@ public:
 
 
 
-/*
-class GenArcEdge
-: public ArcEdge
-{
-    def __init__(self, corners, R, axis, startPoint=array([0,0,0])):
-        from scipy.optimize.nonlin import broyden2
-        a=axis
-        a/=sqrt(dot(a,a))
-        def F(x):
-            M=array([x[0], x[1], x[2]])
-            r1=corners[0]-M
-            r2=corners[1]-M
-            cr=cross(r1, r2)
-            cr/=sqrt(dot(cr, cr))
-            return [
-                1.0-dot(a, cr),
-                sqrt(dot(r1, r1))-R,
-                sqrt(dot(r2, r2))-R
-                 ]
-        startPoint=array(
-            broyden2(F, list(startPoint), 20, verbose=True)
-            )
-        print corners, startPoint
-        bp=startPoint+axis*dot(axis, (corners[0]-startPoint))
-        r1=corners[0]-bp
-        r=sqrt(dot(r1, r1))
-        print R, r
-        mp0=0.5*((corners[0]-bp)+(corners[1]-bp))
-        mp0/=sqrt(dot(mp0,mp0))
-        bmdArcEdge.__init__(self, corners, bp+r*mp0)
-};
-*/
-
-
 
 
 class SplineEdge
@@ -406,25 +407,9 @@ public:
   virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const;
   virtual Edge* clone() const;
 
-  PointList allPoints() const;
+  bmd::DiscreteCurve allPoints() const;
 };
 
-/*
-def splineEdgeAlongCurve(curve, p0, p1, 
-                         start0=0.5, start1=0.5, 
-                         lim=False, fixed=False):
-    if not fixed:
-        t0=Curves.tNearP(curve, p0, start0, limited=lim)
-        t1=Curves.tNearP(curve, p1, start1, limited=lim)
-    else:
-        t0=start0
-        t1=start1
-    print "Generating spline on curve from param ", t0, " to ", t1
-    if (fabs(t0-t1)<1e-4):
-        raise Exception('start and end of spline are the same point')
-    allEdges.append(bmdSplineEdge([p0, p1], pointsInRange(curve, t0, t1)))
-    return t0, t1
-*/
 
 
 
@@ -440,68 +425,36 @@ public:
     void addFace(const Point& c0, const Point& c1);
 };
 
-/*
-class ArcEdge2D
+
+class Geometry
+        : public std::string
 {
-    def __init__(self, t2d, corners, midpoint):
-        self.t2d=t2d
-        self.corners=corners
-        self.midpoint=midpoint
+    boost::filesystem::path fileName_;
 
-    def register(self, bmd):
-        for c in self.corners:
-            bmd.addPoint(Point(self.t2d.fwd(c)))
-            bmd.addPoint(Point(self.t2d.rvs(c)))
+public:
+    Geometry(const std::string& label, const boost::filesystem::path& fileName)
+        : std::string(label),
+          fileName_(fileName)
+    {}
 
-    def bmdEntry(self, allPoints):
-        mp=self.t2d.fwd(self.midpoint)
-        s="arc %d %d (%f %f %f)\n" % (
-            allPoints[Point(self.t2d.fwd(self.corners[0]))], 
-            allPoints[Point(self.t2d.fwd(self.corners[1]))],
-            mp[0], mp[1], mp[2])
-        mp=self.t2d.rvs(self.midpoint)
-        s+="arc %d %d (%f %f %f)\n" % (
-            allPoints[Point(self.t2d.rvs(self.corners[0]))], 
-            allPoints[Point(self.t2d.rvs(self.corners[1]))],
-            mp[0], mp[1], mp[2])
-        return s
+    const boost::filesystem::path& fileName() const
+    {
+        return fileName_;
+    }
 };
 
-class SplineEdge2D
+
+class ProjectedFace
 {
-    def __init__(self, t2d, corners, intermediatepoints, 
-                 splinekeyword="GSLSpline"):
-        self.t2d=t2d
-        self.corners=corners
-        self.intermediatepoints=intermediatepoints
-        self.skey=splinekeyword
+    PointList face_;
+    std::string geometryLabel_;
 
-    def register(self, bmd):
-        for c in self.corners:
-            bmd.addPoint(Point(self.t2d.fwd(c)))
-            bmd.addPoint(Point(self.t2d.rvs(c)))
-            
-    def bmdEntry(self, allPoints):
-        s="%s %d %d\n(\n" % (
-            self.skey,
-            allPoints[Point(self.t2d.fwd(self.corners[0]))], 
-            allPoints[Point(self.t2d.fwd(self.corners[1]))])
-        for p in self.intermediatepoints:
-            s+="(%s)\n"%(" ".join(["%g"%c for c in self.t2d.fwd(p)]))
-        s+=")\n"
+public:
+    ProjectedFace(const PointList& pts, const std::string& geometryLabel);
 
-        s+="%s %d %d\n(\n" % (
-            self.skey,
-            allPoints[Point(self.t2d.rvs(self.corners[0]))], 
-            allPoints[Point(self.t2d.rvs(self.corners[1]))])
-        for p in self.intermediatepoints:
-            s+="(%s)\n"%(" ".join(["%g"%c for c in self.t2d.rvs(p)]))
-        s+=")\n"
-        
-        return s
+    const PointList& face() const;
+    const std::string& geometryLabel() const;
 };
-*/
-
 
 
 
@@ -519,6 +472,9 @@ protected:
   boost::ptr_vector<Block> allBlocks_;
   boost::ptr_vector<Edge> allEdges_;
   PatchMap allPatches_;
+  std::vector<Geometry> geometries_;
+  std::map<Point,std::string> projectedVertices_;
+  std::vector<ProjectedFace> projectedFaces_;
   
 public:
   blockMesh(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
@@ -527,7 +483,15 @@ public:
   
   void setScaleFactor(double sf);
   void setDefaultPatch(const std::string& name, std::string type="patch");
-  
+
+  void addGeometry(const Geometry& geo);
+  const std::vector<Geometry>& allGeometry() const;
+
+  void addProjectedVertex(const Point& pf, const std::string& geometryLabel);
+
+  void addProjectedFace(const ProjectedFace& pf);
+  const std::vector<ProjectedFace>& allProjectedFaces() const;
+
   inline const boost::ptr_vector<Block>& allBlocks() const { return allBlocks_; }
   inline const boost::ptr_vector<Edge>& allEdges() const { return allEdges_; }
   inline const PatchMap& allPatches() const { return allPatches_; }
@@ -558,6 +522,23 @@ public:
     std::string key(name);
     allPatches_.insert(key, patch); 
     return *patch; 
+  }
+
+  template<class EdgeType = Edge>
+  const EdgeType* edgeBetween(const Point& p1, const Point& p2) const
+  {
+      for (const auto& e: allEdges_)
+      {
+          if (e.connectsPoints(p1, p2))
+          {
+              auto *te = dynamic_cast<const EdgeType*>(&e);
+              insight::assertion(
+                          te!=nullptr,
+                          "edge not of assumed type!" );
+              return te;
+          }
+      }
+      return nullptr;
   }
 
   bool hasEdgeBetween(const Point& p1, const Point& p2) const;

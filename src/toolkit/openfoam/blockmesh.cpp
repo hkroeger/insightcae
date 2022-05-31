@@ -111,8 +111,15 @@ Block* Block::clone() const
     grading_,
     zone_,
     false
-  );
+          );
 }
+
+
+const PointList &Block::corners() const
+{
+    return corners_;
+}
+
 
 void Block::registerPoints(blockMesh& bmd) const
 {
@@ -202,89 +209,8 @@ void Block::swapGrad()
   
 }
 
-/*
- def register(self, bmd):
-     for c in self.corners:
-         bmd.addPoint(Point(c))
 
- def face(self, i):
-     if (i=='0321') or (i==0) or (i=='A') or (i=='a'):
-         return [self.corners[0], self.corners[3], 
-                 self.corners[2], self.corners[1]]
-     elif (i=='2376') or (i==1) or (i=='B') or (i=='b'):
-         return [self.corners[2], self.corners[3], 
-                 self.corners[7], self.corners[6]]
-     elif (i=='4567') or (i==2) or (i=='C') or (i=='c'):
-         return [self.corners[4], self.corners[5], 
-                 self.corners[6], self.corners[7]]
-     elif (i=='0154') or (i==3) or (i=='D') or (i=='d'):
-         return [self.corners[0], self.corners[1], 
-                 self.corners[5], self.corners[4]]
-     elif (i=='0473') or (i==4) or (i=='E') or (i=='e'):
-         return [self.corners[0], self.corners[4], 
-                 self.corners[7], self.corners[3]]
-     elif (i=='1265') or (i==5) or (i=='F') or (i=='f'):
-         return [self.corners[1], self.corners[2], 
-                 self.corners[6], self.corners[5]]
-     else:
-         raise RuntimeError('Unknown face of block: '+str(i))
-     
 
- def swapGrad(self):
-     try:
-         if len(self.grading[2])>0:
-             for i in range(0,len(self.grading[2])):
-                 self.grading[2][i]=1./self.grading[2][i]
-     except:
-         self.grading[2]=1./self.grading[2]
-
-     try:
-         if len(self.grading[0])==4:
-             tmp0=self.grading[0][0]
-             tmp1=self.grading[0][1]
-             self.grading[0][0]=self.grading[0][3]
-             self.grading[0][1]=self.grading[0][2]
-             self.grading[0][3]=tmp0
-             self.grading[0][2]=tmp1
-     except:
-         pass
-
-     try:
-         if len(self.grading[1])==4:
-             tmp0=self.grading[1][0]
-             tmp1=self.grading[1][1]
-             self.grading[1][0]=self.grading[1][3]
-             self.grading[1][1]=self.grading[1][2]
-             self.grading[1][3]=tmp0
-             self.grading[1][2]=tmp1
-     except:
-         pass
-
- def bmdEntry(self, allPoints):
-     s="hex ( "
-     #for c in self.corners:
-     ci=range(0, 8)
-     if (self.inv):
-         ci=[4, 5, 6, 7, 0, 1, 2, 3]
-     for i in ci:
-         s+=str(allPoints[Point(self.corners[i])])+" "
-     s+=") %s (%d %d %d) edgeGrading (" \
-         % (self.zone,
-            self.resolution[0], self.resolution[1], self.resolution[2]
-            )
-
-     for g in self.grading:
-         try:
-             if (len(g)==2):
-                 s+="%f %f %f %f "%(g[0], g[1], g[1], g[0])
-             elif (len(g)==4):
-                 s+="%f %f %f %f "%(g[0], g[1], g[2], g[3])
-         except:
-             for i in range(0,4):
-                 s+="%f "%g
-     s+=")\n"
-     return s
-*/
 std::vector<OFDictData::data>
 Block::bmdEntry(const PointMap& allPoints, int OFversion) const
 {
@@ -331,6 +257,109 @@ Block::bmdEntry(const PointMap& allPoints, int OFversion) const
 
   return retval;
 }
+
+
+
+
+CS::CS(arma::mat et0, const arma::mat& en0)
+{
+    et=et0/arma::norm(et0,2);
+
+    eq=arma::cross(en0, et);
+    eq/=arma::norm(eq,2);
+
+    en=arma::cross(et, eq);
+    en/=arma::norm(en,2);
+}
+
+
+
+
+CS DiscreteCurve::localCS(size_t i, arma::mat en) const
+{
+    insight::assertion(size()>2, "curve needs to be made up of at least three points!");
+    en/=arma::norm(en,2);
+    arma::mat et;
+    if (i==0)
+    {
+        et=(*this)[1]-(*this)[0];
+    }
+    else if (i==size()-1)
+    {
+        et=(*this)[size()-1]-(*this)[size()-2];
+    }
+    else
+    {
+        et=(*this)[i+1]-(*this)[i-1];
+    }
+    return CS(et, en);
+}
+
+
+void DiscreteCurve::transform(std::function<arma::mat(const arma::mat&)> trsfFunc)
+{
+    for (auto& p: *this)
+    {
+        p = trsfFunc(p);
+    }
+}
+
+
+void DiscreteCurve::transform(
+        std::function<arma::mat(const arma::mat&, const CS&, size_t)> trsfFuncLocal,
+        const arma::mat& en )
+{
+    std::vector<CS> lcs;
+    for (size_t i=0; i<size(); ++i)
+    {
+        lcs.push_back(localCS(i, en));
+    }
+    for (size_t i=0; i<size(); ++i)
+    {
+        (*this)[i]=trsfFuncLocal( (*this)[i], lcs[i], i );
+    }
+}
+
+void DiscreteCurve::interpolatedOffset(const arma::mat& ofsp0, const arma::mat& ofsp1, const arma::mat& en)
+{
+    std::vector<double> t{0};
+    for (size_t i=1; i<size(); ++i)
+    {
+        t.push_back(t[i-1] + arma::norm((*this)[i]-(*this)[i-1],2));
+    }
+    double tmax=t.back();
+    for (size_t i=0; i<size(); ++i)
+    {
+        t[i]/=tmax;
+    }
+
+    arma::mat ofsp0l, ofsp1l;
+    {
+        auto cs0 = localCS(0, en);
+        ofsp0l=vec3(
+                    arma::dot(cs0.et, ofsp0),
+                    arma::dot(cs0.eq, ofsp0),
+                    arma::dot(cs0.en, ofsp0)
+                    );
+    }
+    {
+        auto cs0 = localCS(size()-1, en);
+        ofsp1l=vec3(
+                    arma::dot(cs0.et, ofsp1),
+                    arma::dot(cs0.eq, ofsp1),
+                    arma::dot(cs0.en, ofsp1)
+                    );
+    }
+
+    transform( [&](const arma::mat& p, const CS& lcs, size_t i) -> arma::mat
+                {
+                    arma::mat lofs = ofsp0l*(1.-t[i]) + ofsp1l*t[i];
+                    return p + lcs.et*lofs[0] + lcs.eq*lofs[1] + lcs.en*lofs[2];
+                },
+                en
+    );
+}
+
 
 
 
@@ -459,16 +488,6 @@ Block2D::Block2D
   t2d_(t2d)
 	
 {
-  /*
-    bmdBlock.__init__(self, [
-	    t2d.rvs(corners[0]), t2d.rvs(corners[1]), 
-	    t2d.rvs(corners[2]), t2d.rvs(corners[3]),
-	    t2d.fwd(corners[0]), t2d.fwd(corners[1]), 
-	    t2d.fwd(corners[2]), t2d.fwd(corners[3])],
-		      [resolution[0], resolution[1], 1], 
-		      [grading[0], grading[1], 1], zone, inv
-		      )
-		      */
     t2d_.fwdPatch().addFace
     (
       t2d_.fwd(corners[3]),
@@ -509,6 +528,34 @@ void Edge::registerPoints(blockMesh& bmd) const
   bmd.addPoint(c0_);
   bmd.addPoint(c1_);
 }
+
+
+
+
+ProjectedEdge::ProjectedEdge(const Point& c0, const Point& c1, const std::string& geometryLabel)
+    : Edge(c0, c1),
+      geometryLabel_(geometryLabel)
+{}
+
+std::vector<OFDictData::data> ProjectedEdge::bmdEntry(const PointMap& allPoints, int OFversion) const
+{
+    return {
+        "project",
+        allPoints.find(c0_)->second, allPoints.find(c1_)->second,
+        "("+geometryLabel_+")"
+    };
+}
+
+Edge* ProjectedEdge::transformed(const arma::mat& tm, const arma::mat trans) const
+{
+    return new ProjectedEdge(tm*c0_+trans, tm*c1_+trans, geometryLabel_);
+}
+
+Edge* ProjectedEdge::clone() const
+{
+    return new ProjectedEdge(c0_, c1_, geometryLabel_);
+}
+
 
 ArcEdge::ArcEdge
 (
@@ -618,38 +665,7 @@ CircularEdge_Center::CircularEdge_Center
   midpoint_ = center + rm*radius;
 }
 
-/*
-class GenArcEdge
-: public ArcEdge
-{
-    def __init__(self, corners, R, axis, startPoint=array([0,0,0])):
-        from scipy.optimize.nonlin import broyden2
-        a=axis
-        a/=sqrt(dot(a,a))
-        def F(x):
-            M=array([x[0], x[1], x[2]])
-            r1=corners[0]-M
-            r2=corners[1]-M
-            cr=cross(r1, r2)
-            cr/=sqrt(dot(cr, cr))
-            return [
-                1.0-dot(a, cr),
-                sqrt(dot(r1, r1))-R,
-                sqrt(dot(r2, r2))-R
-                 ]
-        startPoint=array(
-            broyden2(F, list(startPoint), 20, verbose=True)
-            )
-        print corners, startPoint
-        bp=startPoint+axis*dot(axis, (corners[0]-startPoint))
-        r1=corners[0]-bp
-        r=sqrt(dot(r1, r1))
-        print R, r
-        mp0=0.5*((corners[0]-bp)+(corners[1]-bp))
-        mp0/=sqrt(dot(mp0,mp0))
-        bmdArcEdge.__init__(self, corners, bp+r*mp0)
-};
-*/
+
 
 SplineEdge::SplineEdge(const PointList& points, string splinekeyword)
 : Edge(points.front(), points.back()),
@@ -658,9 +674,9 @@ SplineEdge::SplineEdge(const PointList& points, string splinekeyword)
 {}
 
 
-PointList SplineEdge::allPoints() const
+bmd::DiscreteCurve SplineEdge::allPoints() const
 {
-  PointList ap;
+  bmd::DiscreteCurve ap;
   ap.push_back(c0_);
   copy(intermediatepoints_.begin(), intermediatepoints_.end(), std::back_inserter(ap));
   ap.push_back(c1_);
@@ -712,22 +728,7 @@ Edge* SplineEdge::clone() const
   return new SplineEdge(pts, splinekeyword_);
 }
 
-/*
-def splineEdgeAlongCurve(curve, p0, p1, 
-                         start0=0.5, start1=0.5, 
-                         lim=False, fixed=False):
-    if not fixed:
-        t0=Curves.tNearP(curve, p0, start0, limited=lim)
-        t1=Curves.tNearP(curve, p1, start1, limited=lim)
-    else:
-        t0=start0
-        t1=start1
-    print "Generating spline on curve from param ", t0, " to ", t1
-    if (fabs(t0-t1)<1e-4):
-        raise Exception('start and end of spline are the same point')
-    allEdges.append(bmdSplineEdge([p0, p1], pointsInRange(curve, t0, t1)))
-    return t0, t1
-*/
+
 
 
 
@@ -1028,67 +1029,24 @@ void Patch2D::addFace(const Point& c0, const Point& c1)
 }
 
 
-/*
-class ArcEdge2D
+
+ProjectedFace::ProjectedFace(const PointList& pts, const std::string& geometryLabel)
+    : face_(pts),
+      geometryLabel_(geometryLabel)
 {
-    def __init__(self, t2d, corners, midpoint):
-        self.t2d=t2d
-        self.corners=corners
-        self.midpoint=midpoint
+}
 
-    def register(self, bmd):
-        for c in self.corners:
-            bmd.addPoint(Point(self.t2d.fwd(c)))
-            bmd.addPoint(Point(self.t2d.rvs(c)))
-
-    def bmdEntry(self, allPoints):
-        mp=self.t2d.fwd(self.midpoint)
-        s="arc %d %d (%f %f %f)\n" % (
-            allPoints[Point(self.t2d.fwd(self.corners[0]))], 
-            allPoints[Point(self.t2d.fwd(self.corners[1]))],
-            mp[0], mp[1], mp[2])
-        mp=self.t2d.rvs(self.midpoint)
-        s+="arc %d %d (%f %f %f)\n" % (
-            allPoints[Point(self.t2d.rvs(self.corners[0]))], 
-            allPoints[Point(self.t2d.rvs(self.corners[1]))],
-            mp[0], mp[1], mp[2])
-        return s
-};
-
-class SplineEdge2D
+const PointList& ProjectedFace::face() const
 {
-    def __init__(self, t2d, corners, intermediatepoints, 
-                 splinekeyword="GSLSpline"):
-        self.t2d=t2d
-        self.corners=corners
-        self.intermediatepoints=intermediatepoints
-        self.skey=splinekeyword
+    return face_;
+}
 
-    def register(self, bmd):
-        for c in self.corners:
-            bmd.addPoint(Point(self.t2d.fwd(c)))
-            bmd.addPoint(Point(self.t2d.rvs(c)))
-            
-    def bmdEntry(self, allPoints):
-        s="%s %d %d\n(\n" % (
-            self.skey,
-            allPoints[Point(self.t2d.fwd(self.corners[0]))], 
-            allPoints[Point(self.t2d.fwd(self.corners[1]))])
-        for p in self.intermediatepoints:
-            s+="(%s)\n"%(" ".join(["%g"%c for c in self.t2d.fwd(p)]))
-        s+=")\n"
+const std::string& ProjectedFace::geometryLabel() const
+{
+    return geometryLabel_;
+}
 
-        s+="%s %d %d\n(\n" % (
-            self.skey,
-            allPoints[Point(self.t2d.rvs(self.corners[0]))], 
-            allPoints[Point(self.t2d.rvs(self.corners[1]))])
-        for p in self.intermediatepoints:
-            s+="(%s)\n"%(" ".join(["%g"%c for c in self.t2d.rvs(p)]))
-        s+=")\n"
-        
-        return s
-};
-*/
+
 
 blockMesh::blockMesh(OpenFOAMCase& c, const ParameterSet& ps)
 : OpenFOAMCaseElement(c, "blockMesh", ps),
@@ -1135,6 +1093,31 @@ void blockMesh::setDefaultPatch(const std::string& name, std::string type)
   defaultPatchType_=type;
 }
 
+void blockMesh::addGeometry(const Geometry& geo)
+{
+    geometries_.push_back(geo);
+}
+
+const std::vector<Geometry>& blockMesh::allGeometry() const
+{
+    return geometries_;
+}
+
+void blockMesh::addProjectedVertex(const Point& pf, const std::string& geometryLabel)
+{
+    projectedVertices_[pf]=geometryLabel;
+}
+
+void blockMesh::addProjectedFace(const ProjectedFace& pf)
+{
+    projectedFaces_.push_back(pf);
+}
+
+const std::vector<ProjectedFace>& blockMesh::allProjectedFaces() const
+{
+    return projectedFaces_;
+}
+
 void blockMesh::removePatch(const std::string& name)
 {
   std::string key(name);
@@ -1178,14 +1161,10 @@ Edge &blockMesh::addEdge(Edge *edge)
 }
 
 
+
 bool blockMesh::hasEdgeBetween(const Point& p1, const Point& p2) const
 {
-  for (const auto& e: allEdges_)
-    {
-      if (e.connectsPoints(p1, p2))
-        return true;
-    }
-  return false;
+  return edgeBetween(p1, p2)!=nullptr;
 }
 
 OFDictData::dict& blockMesh::getBlockMeshDict(insight::OFdicts& dictionaries) const
@@ -1215,11 +1194,23 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
   OFDictData::list vl;
   for (PointMap::const_iterator i=allPoints_.begin();
        i!=allPoints_.end(); i++)
-       {
-	 OFDictData::list cl;
-	 cl += i->first[0], i->first[1], i->first[2];
-	 vl.push_back( cl );
-       }
+  {
+      auto p = i->first;
+      OFDictData::list cl;
+      cl += p[0], p[1], p[2];
+
+      auto pv = projectedVertices_.find(p);
+      if (pv==projectedVertices_.end())
+      {
+          vl.push_back( cl );
+      }
+      else
+      {
+          vl.insert(vl.end(), {
+                    "project", cl, "("+pv->second+")"
+                    });
+      }
+  }
   blockMeshDict["vertices"]=vl;
   
   int n_cells=0;
@@ -1257,6 +1248,39 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
 
   OFDictData::list mppl;
   blockMeshDict["mergePatchPairs"]=mppl;
+
+  if (geometries_.size()>0)
+  {
+      OFDictData::dict gd;
+      for (const auto& geo: geometries_)
+      {
+          OFDictData::dict d;
+          d["type"]="triSurfaceMesh";
+          d["file"]="\""+geo.fileName().string()+"\"";
+          gd[geo]=d;
+      }
+      blockMeshDict["geometry"]=gd;
+  }
+
+  if (projectedFaces_.size()>0)
+  {
+      OFDictData::list fd;
+      for (const auto& pf: projectedFaces_)
+      {
+          const auto& f = pf.face();
+          fd.insert(fd.end(), {
+                        "project",
+                        OFDictData::list({
+                            pts.find(f[0])->second,
+                            pts.find(f[1])->second,
+                            pts.find(f[2])->second,
+                            pts.find(f[3])->second
+                        }),
+                        pf.geometryLabel()
+                    });
+      }
+      blockMeshDict["faces"]=fd;
+  }
 
 }
 

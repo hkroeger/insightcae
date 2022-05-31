@@ -147,7 +147,13 @@ gp_Pnt2d faceUV(const TopoDS_Face& f, const gp_Pnt& p)
 gp_Pnt2d faceUV(const Handle_Geom_Surface& f, const gp_Pnt& p)
 {
   ShapeAnalysis_Surface sas(f);
-  return sas.ValueOfUV(p, 1e-7);
+  auto uv = sas.ValueOfUV(p, 1e-7);
+  double u1, u2, v1, v2;
+  f->Bounds(u1, u2, v1, v2);
+  return gp_Pnt2d(
+              std::min(u2, std::max(u1, uv.X())),
+              std::min(v2, std::max(v1, uv.Y()))
+              );
 }
 
 std::vector<gp_XY> faceUV

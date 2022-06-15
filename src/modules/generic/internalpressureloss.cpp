@@ -25,6 +25,7 @@
 #include "openfoam/blockmesh.h"
 #include "openfoam/snappyhexmesh.h"
 #include "base/vtkrendering.h"
+#include "base/vtktransformation.h"
 
 #include "openfoam/caseelements/numerics/meshingnumerics.h"
 #include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"

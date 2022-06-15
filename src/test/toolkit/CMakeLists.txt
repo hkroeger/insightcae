@@ -17,6 +17,7 @@ add_toolkit_test(test_remoteExecutionConfig)
 add_toolkit_test(test_warningbox)
 add_toolkit_test(test_integrate_trpz)
 add_toolkit_test(test_zipfile)
-
+add_toolkit_test(test_overlappingintervals)
+add_toolkit_test(test_transformation)
 
 add_subdirectory(analysis_parameterstudy)

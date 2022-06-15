@@ -19,6 +19,7 @@
  */
 
 #include "openfoam/caseelements/analysiscaseelements.h"
+#include "base/intervals.h"
 
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
@@ -51,6 +52,101 @@ namespace insight
 
 
 
+class TabularInterval : public Interval
+{
+    arma::mat table_;
+public:
+    TabularInterval(const arma::mat& tab)
+        : Interval( tab(0,0), tab(tab.n_rows-1, 0) ),
+          table_(tab)
+    {}
+
+    arma::mat clippedTable() const
+    {
+        insight::assertion( !toBeIgnored(), "no data!" );
+        return arma::mat( table_.rows( table_.col(0)>A() && table_.col(0)<clippedB() ) );
+    }
+};
+
+
+
+
+std::map<std::string, arma::mat>
+readSingleTabularFile(
+        const boost::filesystem::path& ffp,
+        int groupByColumn,
+        const std::string& filterChars
+        )
+{
+    std::map<std::string, std::vector<std::vector<double> > > rows;
+
+
+    std::ifstream f( ffp.string() );
+    if (!f)
+      throw insight::Exception("Failed to open file "+ffp.string()+"!");
+
+    int lineNo=0;
+    std::string line;
+    while ( getline ( f, line ) )
+    {
+      lineNo++;
+      CurrentExceptionContext ex(str(format("reading line %d of file %s")%lineNo%ffp.string()));
+
+      trim(line);
+
+      if ( !starts_with ( line, "#" ) )
+      {
+        for (auto c: filterChars)
+          erase_all(line, std::string(1, c));
+        replace_all(line, "\t", " ");
+
+        // eliminate double spaces
+        string line_org;
+        do {
+          line_org=line;
+          replace_all(line, "  ", " ");
+        } while (line_org!=line);
+
+        std::vector<string> fields;
+        split(fields, line,  boost::is_any_of(" "));
+
+        std::string groupName="default";
+        if (groupByColumn>=0)
+        {
+          groupName=fields[groupByColumn];
+          fields.erase(fields.begin()+groupByColumn);
+        }
+
+        std::vector<double> fieldValues;
+        transform(
+              fields.begin(), fields.end(), std::back_inserter(fieldValues),
+              [](const std::string& t) { return toNumber<double>(t); }
+        );
+
+        if (fieldValues.size()<2)
+          throw insight::Exception("invalid data: expected at least two columns (time + 1 data), got: "+line);
+
+
+        rows[groupName].push_back(fieldValues);
+      }
+    }
+
+    std::map<std::string, arma::mat> result;
+    // convert into arma::mat's
+    for (const auto& rg: rows)
+    {
+        arma::mat m = arma::zeros(rg.second.size(), rg.second.front().size());
+        for (long int i=0; i<rg.second.size(); ++i)
+        {
+            m.row(i)=arma::mat(rg.second[i].data(), 1, rg.second[i].size());
+        }
+        result[rg.first]=m;
+    }
+    return result;
+}
+
+
+
 arma::mat readAndCombineTabularFiles
 (
     const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
@@ -61,6 +157,7 @@ arma::mat readAndCombineTabularFiles
   return readAndCombineGroupedTabularFiles(cm, caseLocation, FOName, fileNamePattern, -1, filterChars)
           .begin()->second;
 }
+
 
 
 
@@ -91,7 +188,8 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
   if (!exists(fp))
       throw insight::Exception("data path "+fp.string()+" of function object "+FOName+" does not exist!");
 
-  std::map<std::string, std::map<double, std::vector<double> > > rows; // out files are read earliest first: latest added row (last attempt) will survive
+//  std::map<std::string, std::map<double, std::vector<double> > > rows; // out files are read earliest first: latest added row (last attempt) will survive
+  std::map<std::string, OverlappingIntervals> intervals;
 
   // find all time directories
   auto tdl = listTimeDirectories ( fp );
@@ -135,94 +233,124 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
       }
       lastWriteTime=selectedCandidate->first;
 
-      std::ifstream f( ffp.string() );
-      if (!f)
-        throw insight::Exception("Failed to open file "+ffp.string()+"!");
-
-      int lineNo=0;
-      std::string line;
-      while ( getline ( f, line ) )
+      auto fileData = readSingleTabularFile(ffp, groupByColumn, filterChars);
+      for (const auto& rg: fileData)
       {
-        lineNo++;
-        CurrentExceptionContext ex(str(format("reading line %d of file %s")%lineNo%ffp.string()));
-
-        trim(line);
-
-        if ( !starts_with ( line, "#" ) )
-        {
-          for (auto c: filterChars)
-            erase_all(line, std::string(1, c));
-          replace_all(line, "\t", " ");
-
-          // eliminate double spaces
-          string line_org;
-          do {
-            line_org=line;
-            replace_all(line, "  ", " ");
-          } while (line_org!=line);
-
-          std::vector<string> fields;
-          split(fields, line,  boost::is_any_of(" "));
-
-          std::string groupName="default";
-          if (groupByColumn>=0)
-          {
-            groupName=fields[groupByColumn];
-            fields.erase(fields.begin()+groupByColumn);
-          }
-
-          std::vector<double> fieldsNum;
-          transform(
-                fields.begin(), fields.end(), std::back_inserter(fieldsNum),
-                [](const std::string& t) { return toNumber<double>(t); }
-          );
-
-          if (fieldsNum.size()<2)
-            throw insight::Exception("invalid data: expected at least two columns (time + 1 data), got: "+line);
-
-
-          rows[groupName][fieldsNum[0]] = fieldsNum;
-        }
+          intervals[rg.first].insert(
+                      lastWriteTime,
+                      std::make_shared<TabularInterval>(rg.second) );
       }
+
+//      std::ifstream f( ffp.string() );
+//      if (!f)
+//        throw insight::Exception("Failed to open file "+ffp.string()+"!");
+
+//      int lineNo=0;
+//      std::string line;
+//      while ( getline ( f, line ) )
+//      {
+//        lineNo++;
+//        CurrentExceptionContext ex(str(format("reading line %d of file %s")%lineNo%ffp.string()));
+
+//        trim(line);
+
+//        if ( !starts_with ( line, "#" ) )
+//        {
+//          for (auto c: filterChars)
+//            erase_all(line, std::string(1, c));
+//          replace_all(line, "\t", " ");
+
+//          // eliminate double spaces
+//          string line_org;
+//          do {
+//            line_org=line;
+//            replace_all(line, "  ", " ");
+//          } while (line_org!=line);
+
+//          std::vector<string> fields;
+//          split(fields, line,  boost::is_any_of(" "));
+
+//          std::string groupName="default";
+//          if (groupByColumn>=0)
+//          {
+//            groupName=fields[groupByColumn];
+//            fields.erase(fields.begin()+groupByColumn);
+//          }
+
+//          std::vector<double> fieldsNum;
+//          transform(
+//                fields.begin(), fields.end(), std::back_inserter(fieldsNum),
+//                [](const std::string& t) { return toNumber<double>(t); }
+//          );
+
+//          if (fieldsNum.size()<2)
+//            throw insight::Exception("invalid data: expected at least two columns (time + 1 data), got: "+line);
+
+
+//          rows[groupName][fieldsNum[0]] = fieldsNum;
+//        }
+//      }
     }
   }
 
-  std::map<std::string,arma::mat> rdata;
-
-  for (const auto& rg: rows)
+  for (auto& iv: intervals)
   {
-    const auto& crows=rg.second;
-
-    arma::mat data;
-
-    if (crows.size()>0)
-    {
-      size_t nf = crows.begin()->second.size();
-      data.resize(crows.size(), nf);
-
-      arma::uword k=0;
-      for (auto r=crows.begin(); r!=crows.end(); ++r)
-      {
-
-        if ( nf != r->second.size() )
-        {
-          throw insight::Exception(
-                str(format("Invalid data for time %g: expected %d data columns, got %d.")
-                    % r->first % nf % r->second.size()
-                    ));
-        }
-
-        for (arma::uword j=0; j<nf; j++)
-        {
-          data(k,j)=r->second[j];
-        }
-
-        ++k;
-      }
-    }
-
-    rdata[rg.first]=data;
+      iv.second.clipIntervals();
   }
+
+  std::map<std::string, arma::mat> rdata;
+
+  for (const auto& giv: intervals)
+  {
+      auto& rows=rdata[giv.first];
+      for (const auto& iv: giv.second.intervals())
+      {
+          const auto& tiv = dynamic_cast<const TabularInterval&>(*iv.second);
+          if (rows.n_rows==0)
+          {
+              rows=tiv.clippedTable();
+          }
+          else
+          {
+              rows=arma::join_cols(rows, tiv.clippedTable());
+          }
+      }
+  }
+
+//  for (const auto& rg: rows)
+//  {
+//    const auto& crows=rg.second;
+
+//    arma::mat data;
+
+//    if (crows.size()>0)
+//    {
+//      size_t nf = crows.begin()->second.size();
+//      data.resize(crows.size(), nf);
+
+//      arma::uword k=0;
+//      for (auto r=crows.begin(); r!=crows.end(); ++r)
+//      {
+
+//        if ( nf != r->second.size() )
+//        {
+//          throw insight::Exception(
+//                str(format("Invalid data for time %g: expected %d data columns, got %d.")
+//                    % r->first % nf % r->second.size()
+//                    ));
+//        }
+
+//        for (arma::uword j=0; j<nf; j++)
+//        {
+//          data(k,j)=r->second[j];
+//        }
+
+//        ++k;
+//      }
+//    }
+
+//    rdata[rg.first]=data;
+//  }
 
   return rdata;
 }

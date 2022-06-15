@@ -44,6 +44,7 @@
 
 #include "cadfeatures.h"
 #include "openfoam/blockmeshoutputanalyzer.h"
+#include "base/vtktransformation.h"
 
 using namespace arma;
 using namespace std;

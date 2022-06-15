@@ -36,6 +36,229 @@ namespace Foam
 {
 
 
+
+forceSource::forceSource(const word& lbl, bool autoRegister)
+    : lbl_(lbl)
+{
+    if (autoRegister)
+    {
+        forceSources::registry().registerSource(this);
+        registered_=true;
+    }
+    else
+    {
+        registered_=false;
+    }
+}
+
+
+forceSource::~forceSource()
+{
+    if (registered_)
+    {
+        forceSources::registry().unregisterSource(this);
+    }
+}
+
+const word &forceSource::faceSourceLabel() const
+{
+    return lbl_;
+}
+
+
+
+
+
+constantForceSource::constantForceSource(
+        const word& lbl,
+        const vector& F,
+        bool autoRegister )
+    : forceSource(lbl, autoRegister),
+      F_(F)
+{
+}
+
+vector constantForceSource::force() const
+{
+    return F_;
+}
+
+
+subtractedForceSource::subtractedForceSource(const word &lbl, forceSource *a, forceSource *b, bool autoRegister)
+    : forceSource(lbl, autoRegister),
+      a_(a), b_(b)
+{}
+
+Foam::vector subtractedForceSource::force() const
+{
+    return a_->force() - b_->force();
+}
+
+
+multipliedForceSource::multipliedForceSource(const word& lbl, scalar m, forceSource* f, bool autoRegister)
+    : forceSource(lbl, autoRegister),
+      multiplier_(m),
+      f_(f)
+{}
+
+vector multipliedForceSource::force() const
+{
+    return multiplier_ * f_->force();
+}
+
+
+forceSources::forceSources()
+{}
+
+void forceSources::registerSource(forceSource* fs)
+{
+    if (find(fs)==end())
+    {
+        insert(fs);
+    }
+    else
+    {
+        WarningIn("void forceSources::registerSource(forceSource* fs)")
+                << "attempt to register force source twice!"
+                << endl;
+    }
+}
+
+void forceSources::unregisterSource(forceSource *fs)
+{
+    if (find(fs)!=end())
+    {
+        erase(fs);
+    }
+    else
+    {
+        WarningIn("void forceSources::registerSource(forceSource* fs)")
+                << "attempt to unregister force which was not registered!"
+                << endl;
+    }
+}
+
+
+bool forceSources::exists(const word& lbl) const
+{
+    auto fi = std::find_if(
+                begin(), end(),
+                [&lbl](const value_type& i)
+                {
+                    return i->faceSourceLabel()==lbl;
+                }
+    );
+    return fi!=end();
+
+}
+
+forceSource* forceSources::get(const word& lbl) const
+{
+    auto fi = std::find_if(
+                begin(), end(),
+                [&lbl](const value_type& i)
+                {
+                    return i->faceSourceLabel()==lbl;
+                }
+    );
+    if (fi==end())
+    {
+
+        std::string entries="(";
+        for (const auto& e: *this)
+        {
+            entries+=" "+e->faceSourceLabel();
+        }
+        entries+=" )";
+
+        FatalErrorIn("forceSource* forceSources::get(const word& lbl) const")
+                <<"Did not found force source "<<lbl<<" in registry!"
+               << "Registered sources are :"<<entries
+               <<abort(FatalError);
+    }
+    return *fi;
+}
+
+forceSources& forceSources::registry()
+{
+    static forceSources reg;
+    return reg;
+}
+
+
+
+
+
+
+
+forceSource* forceSourceCombination::parseSource(Istream &is)
+{
+    token typeToken(is);
+    ASSERTION(typeToken.isWord(), "expected type identifier!");
+
+    if (typeToken.wordToken()=="constant")
+    {
+        vector value(is);
+        auto ns = std::make_shared<constantForceSource>( "", value, false);
+        intermediateSources_.push_back(ns);
+        return ns.get();
+    }
+    else if (typeToken.wordToken()=="lookup")
+    {
+        token name(is);
+        ASSERTION(name.isWord(), "expected name!");
+        return forceSources::registry().get(name.wordToken());
+    }
+    else
+    {
+        ERROR("unknown force type : "+typeToken.wordToken());
+        return nullptr;
+    }
+}
+
+forceSourceCombination::forceSourceCombination(Istream& is)
+{
+    auto* lastSource = parseSource(is);
+    while (!is.eof())
+    {
+        token operand(is);
+        ASSERTION(operand.isWord(), "expected operand!");
+        if (operand.wordToken()=="minus")
+        {
+            auto ns = std::make_shared<subtractedForceSource>(
+                        "",
+                        lastSource,
+                        parseSource(is),
+                        false
+                        );
+            intermediateSources_.push_back(ns);
+            lastSource = ns.get();
+        }
+        else if (operand.wordToken()=="multiplied")
+        {
+            auto ns = std::make_shared<multipliedForceSource>(
+                        "",
+                        readScalar(is),
+                        lastSource,
+                        false
+                        );
+            intermediateSources_.push_back(ns);
+            lastSource = ns.get();
+        }
+        else
+        {
+            ERROR("unknown operand: "+operand.wordToken());
+        }
+    }
+    value_=lastSource;
+}
+
+vector forceSourceCombination::force() const
+{
+    return value_->force();
+}
+
+
 void extendedForces::createFields()
 {
   const fvMesh& mesh = static_cast<const fvMesh&>(obr_);
@@ -97,6 +320,7 @@ extendedForces::extendedForces
     , readFields
 #endif
   ),
+  forceSource(name),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   createFields();
@@ -133,6 +357,7 @@ extendedForces::extendedForces
 	  , readFields
 #endif
 	),
+  forceSource(name),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   if (maskFieldName_!="")
@@ -155,6 +380,7 @@ extendedForces::extendedForces
     const coordinateSystem& coordSys
 )
 : forces(name, obr, patchSet, pName, UName, rhoName, rhoInf, pRef, coordSys),
+  forceSource(name),
   maskFieldName_("")
 {
   createFields();
@@ -387,9 +613,9 @@ extendedForces::write()
             << tab << pr_force_
             << tab << vi_force_;
     if (porosity_)
-        {
-            maskedForceFile_()  << tab << po_force_;
-        }
+    {
+        maskedForceFile_()  << tab << po_force_;
+    }
     maskedForceFile_()  << endl;
 
     maskedForceFile2_() << obr_.time().value()
@@ -397,9 +623,9 @@ extendedForces::write()
             << tab << pr_moment_
             << tab << vi_moment_;
     if (porosity_)
-        {
-            maskedForceFile2_()  << tab << po_moment_;
-        }
+    {
+        maskedForceFile2_()  << tab << po_moment_;
+    }
     maskedForceFile2_()  << endl;
 #else
     maskedForceFile_() << obr_.time().value() << tab << '('
@@ -419,6 +645,21 @@ extendedForces::write()
 #endif
 }
 
+
+
+vector extendedForces::force() const
+{
+#if OF_VERSION>=017000
+    return forceEff();
+#else
+    auto fm=calcForcesMoment();
+    return fm.first().first()+fm.first().second();
+#endif
+}
+
+
+
+
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 
 defineTypeNameAndDebug(extendedForces, 0);
@@ -426,8 +667,8 @@ addToRunTimeSelectionTable
 (
     functionObject,
     extendedForces,
-    dictionary
-);
+        dictionary
+        );
 
 #else
 

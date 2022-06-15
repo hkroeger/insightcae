@@ -23,16 +23,137 @@
 
 #include "forces.H" 
 
+#include <memory>
+#include <set>
+#include <vector>
+
+
 namespace Foam
 {
   
+
+
+
+class forceSource
+{
+protected:
+    word lbl_;
+    bool registered_;
+
+public:
+    forceSource(const word& lbl, bool autoRegister=true);
+    virtual ~forceSource();
+
+    const word& faceSourceLabel() const;
+    virtual vector force() const =0;
+};
+
+
+
+
+class constantForceSource
+        : public forceSource
+{
+protected:
+    vector F_;
+
+public:
+    constantForceSource(const word& lbl, const vector& F, bool autoRegister=true);
+
+    vector force() const override;
+};
+
+
+
+
+class subtractedForceSource
+        : public forceSource
+{
+protected:
+    forceSource *a_, *b_;
+
+public:
+    subtractedForceSource(const word& lbl, forceSource* a, forceSource* b, bool autoRegister=true);
+
+    vector force() const override;
+};
+
+
+
+
+class multipliedForceSource
+        : public forceSource
+{
+protected:
+    scalar multiplier_;
+    forceSource *f_;
+
+public:
+    multipliedForceSource(const word& lbl, scalar m, forceSource* f, bool autoRegister=true);
+
+    vector force() const override;
+};
+
+
+
+class forceSources
+        : private std::set<forceSource*>
+{
+
+    forceSources();
+
+public:
+    void registerSource(forceSource* fs);
+    void unregisterSource(forceSource* fs);
+    bool exists(const word& lbl) const;
+    forceSource* get(const word& lbl) const;
+
+    static forceSources& registry();
+};
+
+
+
+
+class forceSourceCombination
+{
+    std::vector<std::shared_ptr<forceSource> > intermediateSources_;
+    forceSource* value_;
+
+    forceSource* parseSource(Istream& is);
+
+public:
+    forceSourceCombination(Istream& is);
+    vector force() const;
+};
+
+//class ForceFunctionObjectSource
+//        : public ForceSource
+//{
+//#if OF_VERSION>=040000
+//    functionObjects::forces*
+//#else
+//    forces*
+//#endif
+//    f_;
+
+//    ForceFunctionObjectSource();
+
+//public:
+//    static std::shared_ptr<ForceFunctionObjectSource> create(
+//            const word& sourcelabel, const fvMesh& mesh, const word& forceFOname );
+
+//    vector force() const override;
+//};
+
+
+
 class extendedForces
 : public 
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
  functionObjects::
 #endif
- forces
-     
+   forces,
+  public forceSource
 {
 protected:
   
@@ -126,6 +247,8 @@ public:
     void 
 #endif
     write();
+
+    vector force() const override;
 };
 
 }

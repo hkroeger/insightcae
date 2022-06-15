@@ -70,6 +70,11 @@ public:
 arma::mat vec1(double x);
 arma::mat vec2(double x, double y);
 arma::mat vec3(double x, double y, double z);
+arma::mat vec3Zero();
+arma::mat vec3One();
+arma::mat vec3X(double x);
+arma::mat vec3Y(double y);
+arma::mat vec3Z(double z);
 arma::mat vec3FromComponents(const double* c);
 arma::mat readVec3(std::istream& is);
 arma::mat normalized(const arma::mat& vec);
@@ -152,7 +157,21 @@ std::string toStr(const arma::mat& v3);
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis=vec3(0,0,1), const arma::mat& p0 = vec3(0,0,0) );
 
+/**
+ * @brief rotationMatrixToRollPitchYaw
+ * @param R
+ * @return
+ * euler angles in degrees
+ */
 arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R);
+
+/**
+ * @brief rollPitchYawToRotationMatrix
+ * @param rollPitchYaw
+ * angles in degrees!
+ * @return
+ */
+arma::mat rollPitchYawToRotationMatrix(const arma::mat& rollPitchYaw);
 
 /**
  * Fits c_j in
@@ -216,8 +235,8 @@ public:
 
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 double nonlinearSolve1D(const std::function<double(double)>& model, double x_min, double x_max);
-double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max);
-double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max);
+double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max, double tol=1e-3);
+double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max, double tol=1e-3);
 arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol=1e-3, const arma::mat& steps = arma::mat());
 arma::mat nonlinearMinimizeND(const std::function<double(const arma::mat&)>& model, const arma::mat& x0, double tol=1e-3, const arma::mat& steps = arma::mat());
 

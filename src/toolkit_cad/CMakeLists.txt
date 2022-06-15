@@ -3,6 +3,7 @@ if (INSIGHT_BUILD_ISCAD)
 project(toolkit_cad)
 
 set(toolkit_cad_SRCS
+    cadexception.h cadexception.cpp
     blockmesh_curvedcylinder.cpp blockmesh_curvedcylinder.h
     blockmesh_cylwedgeortho.cpp blockmesh_cylwedgeortho.h
     blockmesh_tubemesh.cpp blockmesh_tubemesh.h

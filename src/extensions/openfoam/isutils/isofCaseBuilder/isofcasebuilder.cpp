@@ -28,7 +28,7 @@
 
 #ifndef Q_MOC_RUN
 #include "base/boost_include.h"
-#include "base/exception.h"
+#include "cadexception.h"
 #include "base/linearalgebra.h"
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -290,7 +290,7 @@ int main ( int argc, char** argv )
   {
     if (batch)
     {
-      insight::printException(e);
+      insight::printException_CAD(e);
     }
     else
     {

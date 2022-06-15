@@ -445,11 +445,6 @@ void printException(const std::exception& e)
 
   if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
   {
-//    std::cerr << std::endl
-//              << "An error has occurred:" << std::endl
-//              << ie->message() << std::endl
-//                 ;
-
     displayFramed(title.str(), ie->message(), '=', std::cerr);
     if (getenv("INSIGHT_STACKTRACE"))
     {
@@ -459,11 +454,7 @@ void printException(const std::exception& e)
   }
   else
   {
-//    std::cerr << std::endl
-//              << "An error has occurred:" << std::endl
-//              << e.what() << std::endl
-//                 ;
-    displayFramed(title.str(), e.what(), '=', std::cerr);
+      displayFramed(title.str(), e.what(), '=', std::cerr);
   }
 }
 

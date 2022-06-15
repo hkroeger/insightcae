@@ -138,18 +138,18 @@ public:
   ~VTKOffscreenScene();
 
   template<class Mapper, class Input>
-  void addAlgo(
+  vtkActor* addAlgo(
       Input input,
       ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0)),
       DatasetRepresentation repr = Surface
       )
   {
     input->Update();
-    addData<Mapper>(input->GetOutput(), colorspec, repr);
+    return addData<Mapper>(input->GetOutput(), colorspec, repr);
   }
 
   template<class Mapper, class Input>
-  void addData(
+  vtkActor* addData(
       Input input,
       ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0)),
       DatasetRepresentation repr = Surface
@@ -158,13 +158,13 @@ public:
     auto mapper = vtkSmartPointer<Mapper>::New();
     mapper->SetInputData(input);
 
-    addProperties<Mapper>(mapper, colorspec, input, repr);
+    return addProperties<Mapper>(mapper, colorspec, input, repr);
   }
 
   void addActor2D(vtkSmartPointer<vtkActor2D> actor);
 
   template<class Mapper>
-  void addProperties(
+  vtkActor* addProperties(
       vtkSmartPointer<Mapper>& mapper,
       ColorSpecification colorspec,
       vtkDataSet *ds,
@@ -228,6 +228,8 @@ public:
     actor->GetProperty()->SetRepresentation(repr);
 
     renderer_->AddActor(actor);
+
+    return actor;
   }
 
   vtkSmartPointer<vtkScalarBarActor> addColorBar(

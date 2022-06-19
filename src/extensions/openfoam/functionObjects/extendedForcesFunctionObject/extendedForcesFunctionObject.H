@@ -116,34 +116,20 @@ public:
 
 class forceSourceCombination
 {
+    std::string definition_;
     std::vector<std::shared_ptr<forceSource> > intermediateSources_;
     forceSource* value_;
 
+    void interpretDefinition();
     forceSource* parseSource(Istream& is);
 
 public:
-    forceSourceCombination(Istream& is);
+    forceSourceCombination();
+    forceSourceCombination(ITstream& is);
+    forceSourceCombination(forceSource* value);
     vector force() const;
 };
 
-//class ForceFunctionObjectSource
-//        : public ForceSource
-//{
-//#if OF_VERSION>=040000
-//    functionObjects::forces*
-//#else
-//    forces*
-//#endif
-//    f_;
-
-//    ForceFunctionObjectSource();
-
-//public:
-//    static std::shared_ptr<ForceFunctionObjectSource> create(
-//            const word& sourcelabel, const fvMesh& mesh, const word& forceFOname );
-
-//    vector force() const override;
-//};
 
 
 

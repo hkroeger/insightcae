@@ -164,8 +164,8 @@ extendedRigidBodyMeshMotion::directThrustForce::New(Istream& is)
         new Foam::extendedRigidBodyMeshMotion::directThrustForce
         (
             point(d.lookup("PoA")),
-            vector(d.lookup("localDirection")),
-            vector(d.lookup("verticalDirection")),
+            vector(d.lookupOrDefault<vector>("localDirection", vector::zero)),
+            vector(d.lookupOrDefault<vector>("verticalDirection", vector::zero)),
             forceSourceCombination(d.lookup("forceSource"))
         )
     );
@@ -700,6 +700,8 @@ void extendedRigidBodyMeshMotion::solve()
     // Store the motion state at the beginning of the time-step
     if (curTimeIndex_ != this->db().time().timeIndex())
     {
+        continueLogFile();
+
         model_.newTime();
         curTimeIndex_ = this->db().time().timeIndex();
     }
@@ -741,70 +743,12 @@ void extendedRigidBodyMeshMotion::solve()
     {
         Field<spatialVector> fx(model_.nBodies(), Zero);
 
-        const fvMesh& fvmesh = dynamic_cast<const fvMesh&>(mesh());
-        
         forAll(bodyMeshes_, bi)
         {
             const bodyMesh& body = bodyMeshes_[bi];
             const label bodyID = body.bodyID_;
 
-//            dictionary forcesDict;
-//            forcesDict.add("type",
-//                           functionObjects::forces::typeName );
-//            forcesDict.add("patches",
-//                           filterPatchType(
-//                               fvmesh,
-//                               bodyMeshes_[bi].patches_,
-//                               wallFvPatch::typeName ) );
-//            forcesDict.add("rhoInf", rhoInf_);
-//            forcesDict.add("rho", rhoName_);
-//            forcesDict.add("CofR", vector::zero);
-
-//            functionObjects::forces f("forces", db(), forcesDict);
-
              bodyMeshes_[bi].forcesFO().calcForcesMoment();
-
-//            Foam::tmp<Foam::volScalarField> rho;
-            
-//            {
-//                if (rhoName_ == "rhoInf")
-//                {
-//                    rho=tmp<volScalarField>
-//                    (
-//                        new volScalarField
-//                        (
-//                            IOobject
-//                            (
-//                                "rho",
-//                                fvmesh.time().timeName(),
-//                                fvmesh
-//                            ),
-//                            fvmesh,
-//                            dimensionedScalar("rho", dimDensity, rhoInf_)
-//                        )
-//                    );
-//                }
-//                else
-//                {
-//                    rho=tmp<volScalarField>(
-//                                new volScalarField(
-//                                    fvmesh.lookupObject<volScalarField>(
-//                                        rhoName_) ) );
-//                }
-//            }
-
-//            filterPatchType(
-//                        fvmesh,
-//                        bodyMeshes_[bi].patches_,
-//                        wallFvPatch::typeName,
-//                        true )
-//            patchMomentumForce pmf
-//            (
-//                fvmesh,
-//                ,
-//                rho/*,
-//                referenceSystemSpeed_*/
-//            );
 
             auto transformedPoint = [&](const vector& v) {
                 return model_.transformPoints(
@@ -813,47 +757,17 @@ void extendedRigidBodyMeshMotion::solve()
                             )()[0];
             };
 
-#warning assumes z upwards
-            auto yawedVector = [&](const vector& v) {
-                vector y=-v ^ vector(0,0,1);
-                y/=mag(y);
-                return y^vector(0,0,1);
-            };
-
             point orgCtr=model_.bodies()[bodyID].c();
             point curCtr = transformedPoint( orgCtr );
-            // calculate direct forces
-            auto rotatedMotionDirection =
-                    yawedVector(
-                        transformedPoint(body.globalMotionDirection_+orgCtr)-curCtr
-                        );
 
-            scalar R = body.forcesFO().forceEff() & rotatedMotionDirection;
             vector dF=vector::zero, dM=vector::zero;
             forAll(body.directThrustForces_, j)
             {
                 const directThrustForce& df = body.directThrustForces_[j];
 
-//                point cur_poa = transformedPoint( df.PoA_ );
-
-//                scalar F = mag(df.direction_);
-//                if (df.resistance_fraction_)
-//                    F = -R * (*df.resistance_fraction_);
-
-//                vector cur_dir=transformedPoint( df.direction_/F + df.PoA_ ) - cur_poa;
-
-//                vector ddf = (F / (cur_dir & rotatedMotionDirection )) * cur_dir; // scale force
-//                vector ddm = ( cur_poa - cur_ctr ) ^ ddf;
-
                 auto pf = df.PoAAndForce(transformedPoint);
                 vector ddf = pf.second;
                 vector ddm = ( pf.first - curCtr ) ^ ddf;
-
-                //                Info<<"Direct force "<<j<<":"<<endl;
-                //                Info<<" Motion direction : "<<body.globalMotionDirection_<<" => "<<rotatedMotionDirection<<endl;
-                //                Info<<" PoA : "<<df.PoA_<<" => "<<cur_poa<<endl;
-                //                Info<<" Dir : "<<df.direction_<<" => "<<cur_dir<<endl;
-                //                Info<<" Body Ctr : "<<ctr<<" => "<<cur_ctr<<endl;
 
                 Info << "Direct force " << j
                      << ": force = " << ddf << "(" << mag(ddf) << ")"
@@ -874,14 +788,14 @@ void extendedRigidBodyMeshMotion::solve()
             
             fx[bodyID] = spatialVector
             ( 
-                ramp*(body.forcesFO().momentEff() + /*pmf.moment()*/ pmM + dM),
-                ramp*(body.forcesFO().forceEff() + /*pmf.force()*/ pmF + dF)
+                ramp*(body.forcesFO().momentEff() + pmM + dM),
+                ramp*(body.forcesFO().forceEff() + pmF + dF)
             );
             
             // patch momentum force influence
             {
-                vector mfrac=1e2*cmptDivide(/*pmf.moment()*/pmM, body.forcesFO().momentEff());
-                vector ffrac=1e2*cmptDivide(/*pmf.force()*/pmF, body.forcesFO().forceEff());
+                vector mfrac=1e2*cmptDivide(pmM, body.forcesFO().momentEff());
+                vector ffrac=1e2*cmptDivide(pmF, body.forcesFO().forceEff());
                 Info
                     << boost::str(boost::format(
                                   "[%01d]: PMF %10s%10s%10s%10s%10s%10s\n" )
@@ -993,6 +907,46 @@ bool Foam::extendedRigidBodyMeshMotion::writeObject
 ) const
 {
 
+
+
+#if OF_VERSION>=060505
+    streamOpt.format(IOstream::ASCII);
+#endif
+
+    IOdictionary dict
+    (
+        IOobject
+        (
+            "rigidBodyMotionState",
+            mesh().time().timeName(),
+            "uniform",
+            mesh(),
+            IOobject::NO_READ,
+            IOobject::NO_WRITE,
+            false
+        )
+    );
+
+    populateRigidBodyMotionStateDict(dict);
+
+#if OF_VERSION>=060000 //defined(OFesi1806)
+    // Force ascii writing
+    return dict.regIOobject::writeObject(
+#if OF_VERSION>=060505
+                streamOpt,
+#else
+                IOstream::ASCII, ver, cmp,
+#endif
+                valid );
+#else
+    return dict.regIOobject::write();
+#endif
+}
+
+
+
+void extendedRigidBodyMeshMotion::continueLogFile() const
+{
     // Create the output file if not already created
     if (filePtr_.empty())
     {
@@ -1050,40 +1004,6 @@ bool Foam::extendedRigidBodyMeshMotion::writeObject
         writeLogLine(filePtr_());
         filePtr_()<<endl;
     }
-
-
-#if OF_VERSION>=060505
-    streamOpt.format(IOstream::ASCII);
-#endif
-
-    IOdictionary dict
-    (
-        IOobject
-        (
-            "rigidBodyMotionState",
-            mesh().time().timeName(),
-            "uniform",
-            mesh(),
-            IOobject::NO_READ,
-            IOobject::NO_WRITE,
-            false
-        )
-    );
-
-    populateRigidBodyMotionStateDict(dict);
-
-#if OF_VERSION>=060000 //defined(OFesi1806)
-    // Force ascii writing
-    return dict.regIOobject::writeObject(
-#if OF_VERSION>=060505
-                streamOpt,
-#else
-                IOstream::ASCII, ver, cmp,
-#endif
-                valid );
-#else
-    return dict.regIOobject::write();
-#endif
 }
 
 

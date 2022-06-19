@@ -303,6 +303,8 @@ public:
 #endif
         ) const override;
 
+        void continueLogFile() const;
+
         virtual void writeLogLine(Ostream& os) const;
 
         //- Read dynamicMeshDict dictionary

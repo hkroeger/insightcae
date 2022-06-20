@@ -34,6 +34,7 @@ License
 #include "fvMesh.H"
 #include "fvCFD.H"
 #include "wallFvPatch.H"
+#include "cartesianCS.H"
 
 #include "boost/format.hpp"
 
@@ -245,6 +246,7 @@ extendedRigidBodyMeshMotion::bodyMesh::bodyMesh
     const word& rhoName
 )
 :
+    coordinateSystemSource(name),
     name_(name),
     bodyID_(bodyID),
     patches_(wordReList(dict.lookup("patches"))),
@@ -451,6 +453,8 @@ extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
         }
     }
 
+
+    updateBodyMeshCoordinateSystems();
 }
 
 
@@ -700,10 +704,7 @@ void extendedRigidBodyMeshMotion::solve()
     // Store the motion state at the beginning of the time-step
     if (curTimeIndex_ != this->db().time().timeIndex())
     {
-        continueLogFile();
-
         model_.newTime();
-        curTimeIndex_ = this->db().time().timeIndex();
     }
 
     const objectRegistry& gobr =
@@ -848,6 +849,8 @@ void extendedRigidBodyMeshMotion::solve()
         }
     }
 
+    updateBodyMeshCoordinateSystems();
+
     // Update the displacements
     if (bodyMeshes_.size() == 1)
     {
@@ -877,10 +880,45 @@ void extendedRigidBodyMeshMotion::solve()
     (
         pointDisplacement_.mesh()
     ).constrainDisplacement(pointDisplacement_);
+
+    if (curTimeIndex_ != this->db().time().timeIndex())
+    {
+        continueLogFile();
+        curTimeIndex_ = this->db().time().timeIndex();
+    }
 }
 
 
+void extendedRigidBodyMeshMotion::updateBodyMeshCoordinateSystems()
+{
+    labelList bodyIDs(bodyMeshes_.size());
+    forAll(bodyIDs, bi)
+    {
+        label bodyID = bodyMeshes_[bi].bodyID_;
+        spatialTransform X(model_.X0(bodyID).inv() & model_.X00(bodyID));
+        bodyMeshes_[bi].updateCoordinateSystem(X);
+    }
+}
 
+
+void extendedRigidBodyMeshMotion::bodyMesh::updateCoordinateSystem(const spatialTransform& X)
+{
+    tensor Et=X.E().T();
+    currentCoordinateSystem_.reset(
+                new cartesianCS(
+                    name_, X.r(),  Et.z(), Et.x()
+                    )
+                );
+
+    Info<<"updated CS for body "<<name_<<": "<<endl
+       <<X<<endl
+      <<currentCoordinateSystem_()<<endl;
+}
+
+autoPtr<coordinateSystem> extendedRigidBodyMeshMotion::bodyMesh::getCoordinateSystem() const
+{
+    return currentCoordinateSystem_->clone();
+}
 
 void extendedRigidBodyMeshMotion::populateRigidBodyMotionStateDict(
         dictionary& dict

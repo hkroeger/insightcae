@@ -44,8 +44,11 @@ SourceFiles
 #include "displacementMotionSolver.H"
 #include "rigidBodyMotion.H"
 #include "OFstream.H"
+#include "cartesianCS.H"
 
 #include "extendedForcesFunctionObject.H"
+#include "forcesourcecombination.h"
+#include "globalcoordinatesystems.h"
 
 #include <memory>
 #include <functional>
@@ -150,6 +153,7 @@ public:
 
     //- Class containing the patches and point motion weighting for each body
     class bodyMesh
+            : public coordinateSystemSource
     {
         //- Name of the body
         const word name_;
@@ -178,6 +182,8 @@ public:
         vector globalMotionDirection_;
         PtrList<directThrustForce> directThrustForces_;
 
+        autoPtr<cartesianCS> currentCoordinateSystem_;
+
     public:
         PtrList<patchMomentumForce> patchMomentumForces_;
 
@@ -202,6 +208,10 @@ public:
         const extendedForces& forcesFO() const;
 
         inline directThrustForce& getDirectThrustForce(label i) { return directThrustForces_[i]; };
+
+        void updateCoordinateSystem(const spatialTransform& st);
+
+        autoPtr<coordinateSystem> getCoordinateSystem() const override;
     };
 
 
@@ -247,6 +257,7 @@ public:
         //- Disallow default bitwise assignment
         void operator=(const extendedRigidBodyMeshMotion&);
 
+        void updateBodyMeshCoordinateSystems();
 
 public:
 

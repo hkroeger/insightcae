@@ -27,6 +27,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <map>
 #include <armadillo>
 #include <memory>
 

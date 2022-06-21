@@ -48,7 +48,7 @@ add_subdirectory(cadfeatures)
 add_subdirectory(cadparameters)
 add_subdirectory(cadpostprocactions)
 add_subdirectory(docitems)
-
+add_subdirectory(test)
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad 

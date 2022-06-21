@@ -44,6 +44,14 @@ SourceFiles
 #include "displacementMotionSolver.H"
 #include "rigidBodyMotion.H"
 #include "OFstream.H"
+#include "cartesianCS.H"
+
+#include "extendedForcesFunctionObject.H"
+#include "forcesourcecombination.h"
+#include "globalcoordinatesystems.h"
+
+#include <memory>
+#include <functional>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -54,24 +62,98 @@ namespace Foam
                      Class extendedRigidBodyMeshMotion Declaration
 \*---------------------------------------------------------------------------*/
 
-class extendedRigidBodyMeshMotion
-:
-    public displacementMotionSolver
+
+class PIController
 {
-    class directThrustForce {
+    struct Update
+    {
+        scalar t, e, integral;
+    };
+
+    scalar Kp_, TN_;
+    scalar integral_;
+
+    std::shared_ptr<Update> lastUpdate_;
+
+public:
+    PIController(double Kp, double TN);
+
+
+    scalar u(scalar t, scalar e);
+
+    void restoreState(const dictionary& id);
+    void saveState(dictionary& od) const;
+};
+
+
+
+
+class extendedRigidBodyMeshMotion
+: public displacementMotionSolver
+{
+
+public:
+
+
+
+    class directThrustForce
+    {
     public:
         point PoA_;
-        vector direction_;
-        scalar resistance_fraction_;
+
+        /**
+         * @brief localDirection_
+         * if magnitude is >0, force source will be projected on this vector
+         * to yield actual force. The direction vector will be rotated with the body
+         * before the projection.
+         */
+        vector localDirection_;
+        vector verticalConstraint_;
+        forceSourceCombination fs_;
         
         static autoPtr<directThrustForce> New(Istream& is);
         
-        directThrustForce(const point&, const vector&, scalar);
+        directThrustForce(const point&, const vector&, const vector&, const forceSourceCombination& fs);
+
+        std::pair<point,vector> PoAAndForce(std::function<point(point)> transformedPoint) const;
+
         autoPtr<directThrustForce> clone() const;
     };
     
+
+
+
+    class patchMomentumForce
+            : public forceSource
+    {
+        const fvMesh& mesh_;
+        word patchName_;
+        scalar rhoInf_;
+        word rhoName_;
+
+        vector F_, M_;
+
+    public:
+        patchMomentumForce
+        (
+            const fvMesh& mesh,
+            const word& patchName,
+            scalar rhoInf,
+            const word &rhoName
+        );
+
+        void calcFM();
+
+        vector force() const override;
+        std::pair<vector,vector> forceAndMoment() const;
+    };
+
+
+
+
     //- Class containing the patches and point motion weighting for each body
     class bodyMesh
+            : public coordinateSystemSource
     {
         //- Name of the body
         const word name_;
@@ -94,11 +176,16 @@ class extendedRigidBodyMeshMotion
         //- Current interpolation weight
         //  (1 at patches and within di_, 0 at do_ and beyond)
         pointScalarField weight_;
+
+        autoPtr<extendedForces> forcesFO_;
         
         vector globalMotionDirection_;
         PtrList<directThrustForce> directThrustForces_;
 
+        autoPtr<cartesianCS> currentCoordinateSystem_;
+
     public:
+        PtrList<patchMomentumForce> patchMomentumForces_;
 
         friend class extendedRigidBodyMeshMotion;
 
@@ -107,13 +194,24 @@ class extendedRigidBodyMeshMotion
             const polyMesh& mesh,
             const word& name,
             const label bodyID,
-            const dictionary& dict
+            const dictionary& dict,
+            scalar rhoInf,
+            const word& rhoName
         );
 
         inline const pointScalarField& weight() const
         { return weight_; }
 
         inline label bodyID() const { return bodyID_; }
+
+        extendedForces& forcesFO();
+        const extendedForces& forcesFO() const;
+
+        inline directThrustForce& getDirectThrustForce(label i) { return directThrustForces_[i]; };
+
+        void updateCoordinateSystem(const spatialTransform& st);
+
+        autoPtr<coordinateSystem> getCoordinateSystem() const override;
     };
 
 
@@ -140,13 +238,13 @@ class extendedRigidBodyMeshMotion
         word rhoName_;
 
         //- Current time index (used for updating)
-        label curTimeIndex_;
+        label curTimeIndex_; // for RBD updating
         
         vector referenceSystemSpeed_;
 
         scalar rampDuration_;
         
-        autoPtr<OFstream> filePtr_;
+        mutable autoPtr<OFstream> filePtr_;
 
     // Private Member Functions
 
@@ -159,6 +257,7 @@ class extendedRigidBodyMeshMotion
         //- Disallow default bitwise assignment
         void operator=(const extendedRigidBodyMeshMotion&);
 
+        void updateBodyMeshCoordinateSystems();
 
 public:
 
@@ -187,11 +286,13 @@ public:
 
         tmp<pointField> curMotionStatePoints() const;
 
+        PtrList<bodyMesh>& bodyMeshes();
         const PtrList<bodyMesh>& bodyMeshes() const;
         const RBD::rigidBodyMotion& model() const;
         const RBD::rigidBodyModelState& motionState() const;
 
         bool isBodyPatch(label patchID) const;
+
 
         //- Solve for motion
         void solve() override;
@@ -212,6 +313,8 @@ public:
             , const bool valid
 #endif
         ) const override;
+
+        void continueLogFile() const;
 
         virtual void writeLogLine(Ostream& os) const;
 

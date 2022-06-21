@@ -286,6 +286,7 @@ public:
 
   virtual ~Feature();
   
+  static FeaturePtr CreateFromShape(const TopoDS_Shape& shape);
   static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
   static FeaturePtr CreateFromFeaturesSet(FeatureSetPtr shapes);
   

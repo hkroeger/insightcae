@@ -23,16 +23,21 @@
 
 #include "forces.H" 
 
+#include "forcesources.h"
+
 namespace Foam
 {
-  
+
+
+
+
 class extendedForces
 : public 
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
  functionObjects::
 #endif
- forces
-     
+   forces,
+  public forceSource
 {
 protected:
   
@@ -126,6 +131,8 @@ public:
     void 
 #endif
     write();
+
+    vector force() const override;
 };
 
 }

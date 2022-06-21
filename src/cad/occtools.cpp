@@ -27,6 +27,10 @@ namespace insight {
 namespace cad {
 
 
+gp_Trsf OFtransformToOCC(const insight::SpatialTransformation& trsf)
+{
+    return OFtransformToOCC(trsf.translate(), trsf.rollPitchYaw(), trsf.scale());
+}
 
 gp_Trsf OFtransformToOCC(const arma::mat &translate, const arma::mat &rollPitchYaw, double scale)
 {
@@ -49,27 +53,28 @@ OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
   R*=1./scale_;
 //  std::cout<<R<<std::endl;
 
-  rollPitchYaw_ = rotationMatrixToRollPitchYaw(R);
+//  rollPitchYaw_ = rotationMatrixToRollPitchYaw(R);
+  R_ = R;
 //  std::cout<<Vector(t.TranslationPart())<<std::endl;
   translate_ = (1./scale_)*inv(R)*Vector(t.TranslationPart()).t();
 }
 
 
 
-OCCtransformToVTK::OCCtransformToVTK(const gp_Trsf& t)
-  : OCCtransformToOF(t)
-{}
+//OCCtransformToVTK::OCCtransformToVTK(const gp_Trsf& t)
+//  : OCCtransformToOF(t)
+//{}
 
-vtkSmartPointer<vtkTransform> OCCtransformToVTK::operator()() const
-{
-  auto t = vtkSmartPointer<vtkTransform>::New();
-  t->Translate( translate()(0), translate()(1), translate()(2) );
-  t->RotateX( rollPitchYaw()(0) );
-  t->RotateY( rollPitchYaw()(1) );
-  t->RotateZ( rollPitchYaw()(2) );
-  t->Scale( scale(), scale(), scale() );
-  return t;
-}
+//vtkSmartPointer<vtkTransform> OCCtransformToVTK::operator()() const
+//{
+//  auto t = vtkSmartPointer<vtkTransform>::New();
+//  t->Translate( translate()(0), translate()(1), translate()(2) );
+//  t->RotateX( rollPitchYaw()(0) );
+//  t->RotateY( rollPitchYaw()(1) );
+//  t->RotateZ( rollPitchYaw()(2) );
+//  t->Scale( scale(), scale(), scale() );
+//  return t;
+//}
 
 
 }

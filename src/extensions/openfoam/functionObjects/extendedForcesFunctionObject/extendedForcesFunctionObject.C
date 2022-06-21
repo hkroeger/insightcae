@@ -32,49 +32,51 @@
 
 #include "uniof.h"
 
+#include <vector>
+
 namespace Foam
 {
+
+
+
+
+
 
 
 void extendedForces::createFields()
 {
   const fvMesh& mesh = static_cast<const fvMesh&>(obr_);
   
-  pressureForce_=&mesh.objectRegistry::store
-  (
-      new volVectorField
-      (
-	IOobject
-	(
-	  "pressureForce",
-	  mesh.time().timeName(),
-	  mesh,
-	  IOobject::NO_READ,
-	  IOobject::AUTO_WRITE
-	),
-       mesh,
-       dimensionedVector("pressureForce", dimPressure, vector::zero),
-       calculatedFvPatchField<vector>::typeName
-      )
-  );
-     
-  viscousForce_=&mesh.objectRegistry::store
-  (
-      new volVectorField
-      (
-	IOobject
-	(
-	  "viscousForce",
-	  mesh.time().timeName(),
-	  mesh,
-	  IOobject::NO_READ,
-	  IOobject::AUTO_WRITE
-	),
-       mesh,
-       dimensionedVector("viscousForce", dimPressure, vector::zero),
-       calculatedFvPatchField<vector>::typeName
-      )
-  );
+  for (auto& f: std::vector<std::pair<volVectorField*&, word> >(
+        { {pressureForce_, "pressureForce"}, {viscousForce_, "viscousForce"} } ) )
+  {
+      if (mesh.foundObject<volVectorField>(f.second))
+      {
+          Info<<"    retrieving field "<<f.second<<endl;
+          f.first = const_cast<volVectorField*>(&mesh.lookupObject<volVectorField>(f.second));
+      }
+      else
+      {
+          Info<<"    creating field "<<f.second<<endl;
+          f.first = &mesh.objectRegistry::store
+          (
+              new volVectorField
+              (
+               IOobject
+               (
+                 f.second,
+                 mesh.time().timeName(),
+                 mesh,
+                 IOobject::NO_READ,
+                 IOobject::AUTO_WRITE
+               ),
+               mesh,
+               dimensionedVector(f.second, dimPressure, vector::zero),
+               calculatedFvPatchField<vector>::typeName
+              )
+          );
+      }
+  }
 }
 
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
@@ -97,6 +99,7 @@ extendedForces::extendedForces
     , readFields
 #endif
   ),
+  forceSource(name),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   createFields();
@@ -133,6 +136,7 @@ extendedForces::extendedForces
 	  , readFields
 #endif
 	),
+  forceSource(name),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   if (maskFieldName_!="")
@@ -155,6 +159,7 @@ extendedForces::extendedForces
     const coordinateSystem& coordSys
 )
 : forces(name, obr, patchSet, pName, UName, rhoName, rhoInf, pRef, coordSys),
+  forceSource(name),
   maskFieldName_("")
 {
   createFields();
@@ -299,7 +304,6 @@ extendedForces::execute()
     Pstream::combineScatter(po_moment_);
     
     Info<<pr_force_<<vi_force_<<endl;
-
   }
   
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
@@ -387,9 +391,9 @@ extendedForces::write()
             << tab << pr_force_
             << tab << vi_force_;
     if (porosity_)
-        {
-            maskedForceFile_()  << tab << po_force_;
-        }
+    {
+        maskedForceFile_()  << tab << po_force_;
+    }
     maskedForceFile_()  << endl;
 
     maskedForceFile2_() << obr_.time().value()
@@ -397,9 +401,9 @@ extendedForces::write()
             << tab << pr_moment_
             << tab << vi_moment_;
     if (porosity_)
-        {
-            maskedForceFile2_()  << tab << po_moment_;
-        }
+    {
+        maskedForceFile2_()  << tab << po_moment_;
+    }
     maskedForceFile2_()  << endl;
 #else
     maskedForceFile_() << obr_.time().value() << tab << '('
@@ -419,6 +423,21 @@ extendedForces::write()
 #endif
 }
 
+
+
+vector extendedForces::force() const
+{
+#if OF_VERSION>=017000
+    return forceEff();
+#else
+    auto fm=calcForcesMoment();
+    return fm.first().first()+fm.first().second();
+#endif
+}
+
+
+
+
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 
 defineTypeNameAndDebug(extendedForces, 0);
@@ -426,8 +445,8 @@ addToRunTimeSelectionTable
 (
     functionObject,
     extendedForces,
-    dictionary
-);
+        dictionary
+        );
 
 #else
 

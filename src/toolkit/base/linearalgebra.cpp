@@ -212,6 +212,15 @@ arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R)
 }
 
 
+arma::mat rollPitchYawToRotationMatrix(const arma::mat& rollPitchYaw)
+{
+    return
+             rotMatrix(rollPitchYaw(2)*SI::deg, vec3(0,0,1))
+            *rotMatrix(rollPitchYaw(1)*SI::deg, vec3(0,1,0))
+            *rotMatrix(rollPitchYaw(0)*SI::deg, vec3(1,0,0))
+            ;
+}
+
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis, const arma::mat& p0 )
 {
     return p0 + rotMatrix(theta, axis)*(p-p0);
@@ -425,12 +434,12 @@ double nonlinearSolve1D(const std::function<double(double)>& model, double x_min
 double F_min_obj(const gsl_vector* x, void *param)
 {
   const Objective1D& model=*static_cast<Objective1D*>(param);
-  cout<<"ITER: X="<<x->data[0]<<" F="<<model(x->data[0])<<endl;
+//  cout<<"ITER: X="<<x->data[0]<<" F="<<model(x->data[0])<<endl;
   return model(x->data[0]);
 }
 
 
-double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
+double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max, double tol)
 {
   try
   {
@@ -469,7 +478,7 @@ double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
 	  break;
 
 	size = gsl_multimin_fminimizer_size (s);
-	status = gsl_multimin_test_size (size, 1e-3);
+    status = gsl_multimin_test_size (size, tol);
 
 // 	if (status == GSL_SUCCESS)
 // 	  {
@@ -504,7 +513,7 @@ double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
 
 
 
-double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max)
+double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max, double tol)
 {
   struct Obj : public Objective1D
   {
@@ -515,7 +524,7 @@ double nonlinearMinimize1D(const std::function<double(double)>& model, double x_
       return model_(x);
     }
   } obj(model);
-  return nonlinearMinimize1D(obj, x_min, x_max);
+  return nonlinearMinimize1D(obj, x_min, x_max, tol);
 }
 
 
@@ -1146,5 +1155,30 @@ bool operator!=(const arma::mat &m1, const arma::mat &m2)
   return false;
 }
 
+arma::mat vec3Zero()
+{
+    return vec3(0,0,0);
+}
+
+arma::mat vec3One()
+{
+    return vec3(1,1,1);
+}
+
+
+arma::mat vec3X(double x)
+{
+    return vec3(x, 0, 0);
+}
+
+arma::mat vec3Y(double y)
+{
+    return vec3(0, y, 0);
+}
+
+arma::mat vec3Z(double z)
+{
+    return vec3(0, 0, z);
+}
 
 }

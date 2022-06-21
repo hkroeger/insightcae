@@ -328,56 +328,8 @@ arma::mat computeOffsetContour(const arma::mat& polyLine, double thickness, cons
 
 
 
-class vtk_Transformer
-{
-public:
-  virtual ~vtk_Transformer();
-  virtual vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) =0;
-};
-
-class vtk_ChangeCS
-    : public vtk_Transformer
-{
-  arma::mat m_;
-public:
-  vtk_ChangeCS
-  (
-      arma::mat from_ex,
-      arma::mat from_ez,
-      arma::mat to_ex,
-      arma::mat to_ez
-  );
-
-  /**
-    * initialize from matrix 4x4 = 16 coefficients
-    */
-  vtk_ChangeCS
-  (
-      const double *coeffs
-  );
-
-  /**
-    * initialize from callback function
-    */
-  vtk_ChangeCS
-  (
-      std::function<double(int, int)> init_func,
-      int nrows=4, int idx_ofs=0
-  );
-
-  vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) override;
-};
-
-typedef vtk_Transformer* vtk_TransformerPtr;
-typedef std::vector<const vtk_Transformer*> vtk_TransformerList;
 
 
-vtkSmartPointer<vtkPolyDataAlgorithm>
-readSTL
-(
-  const boost::filesystem::path& path,
-  const vtk_TransformerList& trsf = vtk_TransformerList()
-);
 
 /**
   * return bounding box of model

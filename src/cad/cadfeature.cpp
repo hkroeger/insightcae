@@ -546,6 +546,12 @@ Feature::~Feature()
     cache.erase(h);
 }
 
+
+FeaturePtr Feature::CreateFromShape(const TopoDS_Shape& shape)
+{
+    return std::make_shared<Feature>(shape);
+}
+
 FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 {
   FeaturePtr f(new Feature());

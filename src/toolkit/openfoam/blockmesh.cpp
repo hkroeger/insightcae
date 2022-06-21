@@ -1179,108 +1179,115 @@ OFDictData::dict& blockMesh::getBlockMeshDict(insight::OFdicts& dictionaries) co
 
 void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
 {
-  PointMap pts(allPoints_);
-  numberVertices(pts);
-  
-  OFDictData::dict& blockMeshDict=getBlockMeshDict(dictionaries);
+    PointMap pts(allPoints_);
+    numberVertices(pts);
 
-  blockMeshDict["convertToMeters"]=scaleFactor_;
-  
-  OFDictData::dict def;
-  def["name"]=OFDictData::data(defaultPatchName_);
-  def["type"]=OFDictData::data(defaultPatchType_);
-  blockMeshDict["defaultPatch"]=def;
-  
-  OFDictData::list vl;
-  for (PointMap::const_iterator i=allPoints_.begin();
-       i!=allPoints_.end(); i++)
-  {
-      auto p = i->first;
-      OFDictData::list cl;
-      cl += p[0], p[1], p[2];
+    OFDictData::dict& blockMeshDict=getBlockMeshDict(dictionaries);
 
-      auto pv = projectedVertices_.find(p);
-      if (pv==projectedVertices_.end())
-      {
-          vl.push_back( cl );
-      }
-      else
-      {
-          vl.insert(vl.end(), {
-                    "project", cl, "("+pv->second+")"
-                    });
-      }
-  }
-  blockMeshDict["vertices"]=vl;
-  
-  int n_cells=0;
-  OFDictData::list bl;
-  for (boost::ptr_vector<Block>::const_iterator i=allBlocks_.begin();
-       i!=allBlocks_.end(); i++)
-       {
-	 n_cells+=i->nCells();
-	 std::vector<OFDictData::data> l = i->bmdEntry(pts, OFversion());
-	 bl.insert( bl.end(), l.begin(), l.end() );
-       }
-  blockMeshDict["blocks"]=bl;
-  cout<<"blockMeshDict will create "<<n_cells<<" cells."<<endl;
+    blockMeshDict["convertToMeters"]=scaleFactor_;
 
-  OFDictData::list el;
-  for (boost::ptr_vector<Edge>::const_iterator i=allEdges_.begin();
-       i!=allEdges_.end(); i++)
-       {
-	 std::vector<OFDictData::data> l = i->bmdEntry(pts, OFversion());
-	 el.insert( el.end(), l.begin(), l.end() );
-       }
-  blockMeshDict["edges"]=el;
+    OFDictData::dict def;
+    def["name"]=OFDictData::data(defaultPatchName_);
+    def["type"]=OFDictData::data(defaultPatchType_);
+    blockMeshDict["defaultPatch"]=def;
 
-  OFDictData::list pl;
-  for (boost::ptr_map<std::string, Patch>::const_iterator i=allPatches_.begin();
-       i!=allPatches_.end(); i++)
-       {
-	 std::vector<OFDictData::data> l = i->second->bmdEntry(pts, i->first, OFversion());
-	 pl.insert( pl.end(), l.begin(), l.end() );
-       }
-  if (OFversion()<210)
-    blockMeshDict["patches"]=pl;
-  else
-    blockMeshDict["boundary"]=pl;
+    OFDictData::list vl;
+    for (PointMap::const_iterator i=allPoints_.begin();
+         i!=allPoints_.end(); i++)
+    {
+        auto p = i->first;
+        OFDictData::list cl;
+        cl += p[0], p[1], p[2];
 
-  OFDictData::list mppl;
-  blockMeshDict["mergePatchPairs"]=mppl;
+        auto pv = projectedVertices_.find(p);
+        if (pv==projectedVertices_.end())
+        {
+            vl.push_back( cl );
+        }
+        else
+        {
+            vl.insert(vl.end(), {
+                          "project", cl, "("+pv->second+")"
+                      });
+        }
+    }
+    blockMeshDict["vertices"]=vl;
 
-  if (geometries_.size()>0)
-  {
-      OFDictData::dict gd;
-      for (const auto& geo: geometries_)
-      {
-          OFDictData::dict d;
-          d["type"]="triSurfaceMesh";
-          d["file"]="\""+geo.fileName().string()+"\"";
-          gd[geo]=d;
-      }
-      blockMeshDict["geometry"]=gd;
-  }
+    int n_cells=0;
+    OFDictData::list bl;
+    std::set<Point> blockCorners;
+    for (const auto& b : allBlocks_)
+    {
+        n_cells+=b.nCells();
+        std::vector<OFDictData::data> l = b.bmdEntry(pts, OFversion());
+        bl.insert( bl.end(), l.begin(), l.end() );
 
-  if (projectedFaces_.size()>0)
-  {
-      OFDictData::list fd;
-      for (const auto& pf: projectedFaces_)
-      {
-          const auto& f = pf.face();
-          fd.insert(fd.end(), {
-                        "project",
-                        OFDictData::list({
-                            pts.find(f[0])->second,
-                            pts.find(f[1])->second,
-                            pts.find(f[2])->second,
-                            pts.find(f[3])->second
-                        }),
-                        pf.geometryLabel()
-                    });
-      }
-      blockMeshDict["faces"]=fd;
-  }
+        auto c=b.corners();
+        std::copy(c.begin(), c.end(), std::inserter(blockCorners, blockCorners.begin()));
+    }
+    blockMeshDict["blocks"]=bl;
+    cout<<"blockMeshDict will create "<<n_cells<<" cells."<<endl;
+
+    OFDictData::list el;
+    for (const auto& e: allEdges_)
+    {
+        if ( blockCorners.find(e.c0())!=blockCorners.end()
+             &&
+             blockCorners.find(e.c1())!=blockCorners.end() )
+        {
+            std::vector<OFDictData::data> l = e.bmdEntry(pts, OFversion());
+            el.insert( el.end(), l.begin(), l.end() );
+        }
+    }
+    blockMeshDict["edges"]=el;
+
+    OFDictData::list pl;
+    for (boost::ptr_map<std::string, Patch>::const_iterator i=allPatches_.begin();
+         i!=allPatches_.end(); i++)
+    {
+        std::vector<OFDictData::data> l = i->second->bmdEntry(pts, i->first, OFversion());
+        pl.insert( pl.end(), l.begin(), l.end() );
+    }
+    if (OFversion()<210)
+        blockMeshDict["patches"]=pl;
+    else
+        blockMeshDict["boundary"]=pl;
+
+    OFDictData::list mppl;
+    blockMeshDict["mergePatchPairs"]=mppl;
+
+    if (geometries_.size()>0)
+    {
+        OFDictData::dict gd;
+        for (const auto& geo: geometries_)
+        {
+            OFDictData::dict d;
+            d["type"]="triSurfaceMesh";
+            d["file"]="\""+geo.fileName().string()+"\"";
+            gd[geo]=d;
+        }
+        blockMeshDict["geometry"]=gd;
+    }
+
+    if (projectedFaces_.size()>0)
+    {
+        OFDictData::list fd;
+        for (const auto& pf: projectedFaces_)
+        {
+            const auto& f = pf.face();
+            fd.insert(fd.end(), {
+                          "project",
+                          OFDictData::list({
+                              pts.find(f[0])->second,
+                              pts.find(f[1])->second,
+                              pts.find(f[2])->second,
+                              pts.find(f[3])->second
+                          }),
+                          pf.geometryLabel()
+                      });
+        }
+        blockMeshDict["faces"]=fd;
+    }
 
 }
 

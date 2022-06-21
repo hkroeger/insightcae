@@ -118,4 +118,12 @@
 #define UNIOF_LABELULIST labelUList
 #endif
 
+
+#define ASSERTION(condition, message) \
+{ if (!(condition)) \
+    FatalErrorIn("assertion") << message << abort(FatalError); }
+
+#define ERROR(message) \
+{ FatalErrorIn("error condition") << message << abort(FatalError); }
+
 #endif

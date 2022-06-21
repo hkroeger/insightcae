@@ -840,7 +840,9 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
         arma::mat selrows=data.rows( indices );
         if (selrows.n_rows==0) // nothing selected: take the closest row
         {
-            indices = arma::sort_index(arma::mat(pow(data.col(0) - 0.5*(from+to), 2)));
+            indices = arma::sort_index(
+                        arma::mat(pow(data.col(0) - 0.5*(from+to), 2))
+                        );
             selrows=data.row( indices(0) );
         }
 

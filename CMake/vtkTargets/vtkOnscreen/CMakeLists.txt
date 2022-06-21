@@ -24,6 +24,7 @@ if (NOT WIN32)
         IOImage
         IOXML
         ImagingCore
+        GUISupportQt
         RenderingOpenGL2
         RenderingAnnotation
          InteractionWidgets
@@ -52,6 +53,7 @@ else()
            vtkIOImage
            vtkIOXML
            vtkImagingCore
+           vtkGUISupportQt
            vtkRenderingOpenGL2
            vtkRenderingAnnotation
             vtkInteractionWidgets

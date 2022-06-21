@@ -6,13 +6,20 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
+find_package(VTK
+   COMPONENTS GUISupportQt
+   NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH
+   HINTS ${VTK_ONSCREEN_DIR}
+)
 
 set(insightcad_gui_SRCS 
  iscadmetatyperegistrator.cpp
  iscadmetatyperegistrator.h
 
- iqcadmodelcontainer.h
- iqcadmodelcontainer.cpp
+ iqcaditemmodel.h
+ iqcaditemmodel.cpp
+ iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
+ ivtkoccshape.h ivtkoccshape.cpp
 
  cadfeaturetransient.cpp
  cadfeaturetransient.h
@@ -65,6 +72,7 @@ target_link_libraries(insightcad_gui
   ${OCC_GUI_LIBRARIES}
   Qt5::Widgets
   ${DXFLIB_LIBRARIES}
+  ${VTK_LIBRARIES}
   )
 
 target_include_directories(insightcad_gui

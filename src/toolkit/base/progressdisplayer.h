@@ -170,4 +170,8 @@ public:
 
 } // namespace insight
 
+
+#include "base/progressdisplayer/textprogressdisplayer.h"
+
+
 #endif // INSIGHT_PROGRESSDISPLAYER_H

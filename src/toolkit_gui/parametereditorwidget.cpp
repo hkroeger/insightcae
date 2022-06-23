@@ -23,10 +23,11 @@
 #include <QPainter>
 #include <QVBoxLayout>
 
-#include "parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 #include "parametereditorwidget.h"
 
-
+#include "iqcadmodel3dviewer.h"
+#include "iqvtkparametersetdisplay.h"
 
 using namespace std;
 
@@ -36,7 +37,7 @@ ParameterEditorWidget::ParameterEditorWidget
   insight::ParameterSet& pset,
   const insight::ParameterSet& default_pset,
   QWidget *parent,
-  insight::ParameterSet_VisualizerPtr viz,
+  insight::ParameterSetVisualizerPtr viz,
   insight::ParameterSet_ValidatorPtr vali,
   ParameterSetDisplay* display
 )
@@ -45,7 +46,7 @@ ParameterEditorWidget::ParameterEditorWidget
   defaultParameters_(default_pset),
   model_(new IQParameterSetModel(pset, default_pset, this)),
   vali_(vali),
-  viz_(std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz))
+  viz_(std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz))
 {
 
   connect(model_, &IQParameterSetModel::parameterSetChanged,
@@ -102,7 +103,7 @@ ParameterEditorWidget::ParameterEditorWidget
   {
     // there is a visualization generator available
     connect(
-          viz_.get(), &insight::CAD_ParameterSet_Visualizer::updateSupplementedInputData,
+          viz_.get(), &insight::CADParameterSetVisualizer::updateSupplementedInputData,
           this, &ParameterEditorWidget::updateSupplementedInputData
           );
 
@@ -111,7 +112,7 @@ ParameterEditorWidget::ParameterEditorWidget
       // no existing displayer supplied; create one
       QWidget *w=new QWidget(this);
       QVBoxLayout *l=new QVBoxLayout(w);
-      QoccViewWidget *viewer=new QoccViewWidget(w/*, context->getContext()*/);
+      auto viewer=new CADViewer(w/*, context->getContext()*/);
       viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
       QLabel *hints=new QLabel(w);
       hints->setStyleSheet("font: 8pt;");
@@ -125,13 +126,15 @@ ParameterEditorWidget::ParameterEditorWidget
       w->setLayout(l);
       addWidget(w);
 
-      QModelTree* modeltree =new QModelTree(this);
+//      QModelTree* modeltree =new QModelTree(this);
+      auto modeltree = new QTreeView(this);
       addWidget(modeltree);
 
-      viewer->connectModelTree(modeltree);
+//      viewer->connectModelTree(modeltree);
 
       display_=new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree);
-      display_->connectVisualizer(viz_);
+      viz_->setModel(display_->model());
+      //display_->connectVisualizer(viz_);
     }
     else
     {
@@ -175,34 +178,6 @@ void ParameterEditorWidget::onParameterSetChanged()
   Q_EMIT parameterSetChanged();
 }
 
-
-
-ParameterSetDisplay::ParameterSetDisplay
-(
-    QObject* parent,
-    QoccViewWidget* viewer,
-    QModelTree* modeltree
-)
-  : QObject(parent),
-    viewer_(viewer),
-    modeltree_(modeltree)
-{}
-
-void ParameterSetDisplay::connectVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
-{
-  if (viz)
-  {
-    modeltree_->connectModel(viz.get());
-  }
-}
-
-void ParameterSetDisplay::disconnectVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
-{
-  if (viz)
-  {
-    modeltree_->disconnectModel(viz.get());
-  }
-}
 
 
 

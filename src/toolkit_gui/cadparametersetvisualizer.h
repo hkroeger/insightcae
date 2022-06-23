@@ -7,31 +7,39 @@
 #include <QObject>
 #include <QThread>
 
-#include "base/parameterset.h"
+#include "base/parametersetvisualizer.h"
 #include "base/supplementedinputdata.h"
 #include "cadtypes.h"
-#include "qmodeltree.h"
+#include "iqiscadmodelgenerator.h"
+
+#include "AIS_DisplayMode.hxx"
+
+
+class IQCADItemModel;
 
 
 namespace insight
 {
 
 
-class TOOLKIT_GUI_EXPORT CAD_ParameterSet_Visualizer
-: public IQISCADModelContainer,
-  public ParameterSet_Visualizer
+class TOOLKIT_GUI_EXPORT CADParameterSetVisualizer
+: public IQISCADModelGenerator,
+  public ParameterSetVisualizer
 {
 
   Q_OBJECT
 
   QThread asyncRebuildThread_;
   std::mutex vis_mtx_;
-
+  IQCADItemModel *model_;
 
 public:
 
-  CAD_ParameterSet_Visualizer();
-  ~CAD_ParameterSet_Visualizer();
+  CADParameterSetVisualizer();
+  ~CADParameterSetVisualizer();
+
+  void setModel(IQCADItemModel *model);
+  IQCADItemModel *model();
 
   virtual void addDatum(const std::string& name, insight::cad::DatumPtr dat);
   virtual void addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds = AIS_Shaded );
@@ -39,9 +47,6 @@ public:
   void update(const ParameterSet& ps) override;
 
   virtual void recreateVisualizationElements();
-
-//  cad::FeaturePtr feature(const std::string& name);
-//  void replaceFeature(const std::string& name, insight::cad::FeaturePtr newModel);
 
 public Q_SLOTS:
   void visualizeScheduledParameters();
@@ -55,23 +60,23 @@ Q_SIGNALS:
 
 
 
-class TOOLKIT_GUI_EXPORT Multi_CAD_ParameterSet_Visualizer
-: public CAD_ParameterSet_Visualizer
+class TOOLKIT_GUI_EXPORT MultiCADParameterSetVisualizer
+: public CADParameterSetVisualizer
 {
   Q_OBJECT
 
-  std::set<CAD_ParameterSet_Visualizer*> visualizers_;
-  mutable std::set<CAD_ParameterSet_Visualizer*> finishedVisualizers_;
+  std::set<CADParameterSetVisualizer*> visualizers_;
+  mutable std::set<CADParameterSetVisualizer*> finishedVisualizers_;
 
 public:
   bool hasScheduledParameters() const override;
   bool selectScheduledParameters() override;
   void clearScheduledParameters() override;
 
-  Multi_CAD_ParameterSet_Visualizer();
+  MultiCADParameterSetVisualizer();
 
-  void registerVisualizer(CAD_ParameterSet_Visualizer* vis);
-  void unregisterVisualizer(CAD_ParameterSet_Visualizer* vis);
+  void registerVisualizer(CADParameterSetVisualizer* vis);
+  void unregisterVisualizer(CADParameterSetVisualizer* vis);
   int size() const;
 
   void recreateVisualizationElements() override;

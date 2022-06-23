@@ -23,8 +23,8 @@
 #define INSIGHT_ANALYSIS_H
 
 #include "base/progressdisplayer.h"
-#include "base/parameterset.h"
 #include "base/parameters.h"
+#include "base/parameterset.h"
 #include "base/factory.h"
 #include "base/resultset.h"
 #include "base/analysisstepcontrol.h"
@@ -43,6 +43,7 @@ namespace insight
 {
 
 
+class ParameterSetVisualizer;
 
 
 #define addToAnalysisFactoryTable(DerivedClass) \
@@ -74,7 +75,7 @@ public:
     declareStaticFunctionTable(defaultParameters, ParameterSet);
     declareStaticFunctionTable(category, std::string);
     declareStaticFunctionTable(validator, ParameterSet_ValidatorPtr);
-    declareStaticFunctionTable(visualizer, ParameterSet_VisualizerPtr);
+    declareStaticFunctionTable(visualizer, std::shared_ptr<ParameterSetVisualizer>);
 
 protected:
     std::string name_;
@@ -94,7 +95,7 @@ public:
     static std::string category();
 
     static ParameterSet_ValidatorPtr validator();
-    static ParameterSet_VisualizerPtr visualizer();
+    static std::shared_ptr<ParameterSetVisualizer> visualizer();
 
     /**
      * create analysis from components.

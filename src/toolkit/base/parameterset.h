@@ -32,7 +32,7 @@
 #include "base/parameter.h"
 #include "base/parameters/arrayparameter.h"
 #include "base/progressdisplayer.h"
-#include "base/progressdisplayer/textprogressdisplayer.h"
+
 
 #include "boost/tuple/tuple.hpp"
 #include "boost/fusion/tuple.hpp"
@@ -191,12 +191,6 @@ public:
       }
   }
 
-//  /**
-//   * set selection of selectable subset parameter to typename of T and its dictionary to the parameters of p
-//   */
-//  template<class T>
-//  ParameterSet& setSelectableSubset(const std::string& key, const typename T::Parameters& p);
-
 
   virtual std::string latexRepresentation() const;
   virtual std::string plainTextRepresentation(int indent=0) const;
@@ -219,26 +213,7 @@ public:
 };
 
 
-//class AtomicParameterSet
-//{
-//  mutable boost::mutex mx_;
-//  ParameterSet ps_;
 
-//public:
-//  void operator=(const ParameterSet& ps);
-
-//  template<class StaticParameters>
-//  std::unique_ptr<StaticParameters> get() const
-//  {
-//    boost::mutex::scoped_lock lck(mx_);
-//    return std::unique_ptr<StaticParameters>(new StaticParameters(ps_));
-//  }
-
-//  operator ParameterSet&()
-//  {
-//    return ps_;
-//  }
-//};
 
 
 
@@ -249,24 +224,7 @@ std::ostream& operator<<(std::ostream& os, const ParameterSet& ps);
 
 typedef std::shared_ptr<ParameterSet> ParameterSetPtr;
 
-//#define PSINT(p, subdict, key) int key = p[subdict].getInt(#key);
-//#define PSDBL(p, subdict, key) double key = p[subdict].getDouble(#key);
-//#define PSSTR(p, subdict, key) std::string key = p[subdict].getString(#key);
-//#define PSBOOL(p, subdict, key) bool key = p[subdict].getBool(#key);
-//#define PSPATH(p, subdict, key) boost::filesystem::path key = p[subdict].getPath(#key);
 
-
-
-
-
-//template<class T>
-//ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const typename T::Parameters& p)
-//{
-//    SelectableSubsetParameter& ssp = this->get<SelectableSubsetParameter>(key);
-//    ssp.selection()=p.type();
-//    ssp().merge(p);
-//    return *this;
-//}
 
 
 
@@ -307,41 +265,6 @@ typedef std::shared_ptr<ParameterSet_Validator> ParameterSet_ValidatorPtr;
 
 
 
-
-class ParameterSet_Visualizer
-{
-
-  // not linked to CAD; don't use any non-forward definitions from CAD module
-private:
-    TextProgressDisplayer defaultProgressDisplayer_;
-    std::unique_ptr<ParameterSet> scheduledParameters_, visualizedParameters_;
-
-protected:
-    ProgressDisplayer* progress_;
-
-public:
-    virtual bool hasScheduledParameters() const;
-    virtual const ParameterSet& currentParameters() const;
-    virtual bool selectScheduledParameters();
-    virtual void clearScheduledParameters();
-
-    ParameterSet_Visualizer();
-    virtual ~ParameterSet_Visualizer();
-
-    /**
-     * @brief update
-     * @param ps
-     * updates the parameterset which is to visualize.
-     * This triggers recomputation of visualization features (from insight::cad) for several parameters.
-     */
-    virtual void update(const ParameterSet& ps);
-
-    virtual void setIcon(QIcon* icon);
-
-    void setProgressDisplayer(ProgressDisplayer* pd);
-};
-
-typedef std::shared_ptr<ParameterSet_Visualizer> ParameterSet_VisualizerPtr;
 
 
 

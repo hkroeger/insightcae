@@ -18,9 +18,9 @@ namespace insight
 {
 
 
-ParameterSet_VisualizerPtr snappyHexMeshConfiguration_visualizer()
+ParameterSetVisualizerPtr snappyHexMeshConfiguration_visualizer()
 {
-    return ParameterSet_VisualizerPtr( new snappyHexMeshConfiguration_ParameterSet_Visualizer );
+    return ParameterSetVisualizerPtr( new snappyHexMeshConfiguration_ParameterSet_Visualizer );
 }
 
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, snappyHexMeshConfiguration, visualizer, snappyHexMeshConfiguration_visualizer);
@@ -28,7 +28,7 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, snappyHexMeshCon
 
 void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   snappyHexMeshConfiguration::Parameters p(currentParameters());
 

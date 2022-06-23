@@ -112,8 +112,8 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
   ui->setupUi(this);
 
   ui->occview->connectModelTree(ui->modeltree);
-  display_=new ParameterSetDisplay(this, ui->occview, ui->modeltree);
-  multiViz_ = new insight::Multi_CAD_ParameterSet_Visualizer;
+  display_=new IQOCCParameterSetDisplaysplay(this, ui->occview, ui->modeltree);
+  multiViz_ = new insight::MultiCADParameterSetVisualizer;
   ui->modeltree->connectModel(multiViz_);
 
   availableBCsModel_=new AvailableBCsModel(this);

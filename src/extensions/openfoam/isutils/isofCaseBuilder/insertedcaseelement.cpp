@@ -6,7 +6,7 @@
 
 CaseElementData::CaseElementData(
     const std::string& type_name,
-    insight::Multi_CAD_ParameterSet_Visualizer* mv,
+    insight::MultiCADParameterSetVisualizer* mv,
     QObject *parent )
 
   : QObject(parent),
@@ -21,7 +21,7 @@ CaseElementData::~CaseElementData()
 {
   if (mv_ && viz_)
   {
-    mv_->unregisterVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_).get() );
+    mv_->unregisterVisualizer( std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz_).get() );
   }
 }
 
@@ -36,13 +36,13 @@ const insight::ParameterSet CaseElementData::defaultParameters() const
 
 
 
-insight::ParameterSet_VisualizerPtr CaseElementData::visualizer()
+insight::ParameterSetVisualizerPtr CaseElementData::visualizer()
 {
   return viz_;
 }
 
 
-insight::Multi_CAD_ParameterSet_Visualizer* CaseElementData::multiVisualizer() const
+insight::MultiCADParameterSetVisualizer* CaseElementData::multiVisualizer() const
 {
   return mv_;
 }
@@ -60,7 +60,7 @@ void CaseElementData::updateVisualization()
 
 InsertedCaseElement::InsertedCaseElement(
     const std::string& type_name,
-    insight::Multi_CAD_ParameterSet_Visualizer* mv,
+    insight::MultiCADParameterSetVisualizer* mv,
     QObject *parent
     )
 : CaseElementData(type_name, mv, parent)
@@ -70,7 +70,7 @@ InsertedCaseElement::InsertedCaseElement(
     {
       try {
         viz_ = insight::OpenFOAMCaseElement::visualizer(type_name_);
-        mv_->registerVisualizer( std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz_).get() );
+        mv_->registerVisualizer( std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz_).get() );
       }
       catch (...)
       { /* skip, if there is no visualizer defined */ }

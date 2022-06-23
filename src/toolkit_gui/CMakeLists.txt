@@ -11,6 +11,8 @@ find_package(Qt5Network CONFIG REQUIRED)
 
 set(toolkit_gui_SRCS 
     parametereditorwidget.cpp
+    iqoccparametersetdisplay.h iqoccparametersetdisplay.cpp
+    iqvtkparametersetdisplay.h iqvtkparametersetdisplay.cpp
 
     iqremoteexecutionstate.cpp
     iqremoteexecutionstate.h
@@ -57,7 +59,7 @@ set(toolkit_gui_SRCS
     helpwidget.cpp helpwidget.h
     of_clean_case.cpp of_clean_case.h of_clean_case.ui
     snappyhexmesh_gui.cpp snappyhexmesh_gui.h
-    parametersetvisualizer.cpp parametersetvisualizer.h
+    cadparametersetvisualizer.cpp cadparametersetvisualizer.h
     logviewerwidget.cpp logviewerwidget.h
     graphprogressdisplayer.cpp graphprogressdisplayer.h
     progressrelay.cpp progressrelay.h

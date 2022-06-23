@@ -123,7 +123,20 @@ public:
     const PostprocActionTable& 	postprocActionSymbols() const;
 
 
+    /**
+     * @brief addScalar
+     * add or replace existing
+     * @param name
+     * @param value
+     */
     void addScalar(const std::string& name, ScalarPtr value);
+
+    /**
+     * @brief addScalarIfNotPresent
+     * Only adds, if symbol is not present. Else it don't does nothing (not replace).
+     * @param name
+     * @param value
+     */
     void addScalarIfNotPresent(const std::string& name, ScalarPtr value);
     void addPoint(const std::string& name, VectorPtr value);
     void addPointIfNotPresent(const std::string& name, VectorPtr value);

@@ -549,9 +549,9 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 }
 
 
-ParameterSet_VisualizerPtr InternalPressureLoss_visualizer()
+ParameterSetVisualizerPtr InternalPressureLoss_visualizer()
 {
-    return ParameterSet_VisualizerPtr( new InternalPressureLoss_ParameterSet_Visualizer );
+    return ParameterSetVisualizerPtr( new InternalPressureLoss_ParameterSet_Visualizer );
 }
 
 addStandaloneFunctionToStaticFunctionTable(Analysis, InternalPressureLoss, visualizer, InternalPressureLoss_visualizer);

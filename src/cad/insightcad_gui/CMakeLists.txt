@@ -16,10 +16,14 @@ set(insightcad_gui_SRCS
  iscadmetatyperegistrator.cpp
  iscadmetatyperegistrator.h
 
+ iqiscadmodelgenerator.h iqiscadmodelgenerator.cpp
+ iqiscadmodelrebuilder.h iqiscadmodelrebuilder.cpp
+
  iqcaditemmodel.h
  iqcaditemmodel.cpp
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
  ivtkoccshape.h ivtkoccshape.cpp
+ iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
 
  cadfeaturetransient.cpp
  cadfeaturetransient.h

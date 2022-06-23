@@ -78,8 +78,8 @@ private:
 
     QoccViewWidget* viewer_;
     QModelTree* modeltree_;
-    ParameterSetDisplay* display_;
-    insight::Multi_CAD_ParameterSet_Visualizer* multiViz_;
+    IQOCCParameterSetDisplaysplay* display_;
+    insight::MultiCADParameterSetVisualizer* multiViz_;
 
     AvailableBCsModel* availableBCsModel_;
     AvailableCaseElementsModel* availableCaseElementsModel_;

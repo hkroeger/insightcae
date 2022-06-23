@@ -11,7 +11,7 @@ defineFactoryTable(OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterS
 defineStaticFunctionTable(OpenFOAMCaseElement, defaultParameters, ParameterSet);
 defineStaticFunctionTable(OpenFOAMCaseElement, category, std::string);
 defineStaticFunctionTable(OpenFOAMCaseElement, validator, ParameterSet_ValidatorPtr);
-defineStaticFunctionTable(OpenFOAMCaseElement, visualizer, ParameterSet_VisualizerPtr);
+defineStaticFunctionTable(OpenFOAMCaseElement, visualizer, std::shared_ptr<ParameterSetVisualizer>);
 
 
 
@@ -77,9 +77,9 @@ ParameterSet_ValidatorPtr OpenFOAMCaseElement::validator()
 
 
 
-ParameterSet_VisualizerPtr OpenFOAMCaseElement::visualizer()
+std::shared_ptr<ParameterSetVisualizer> OpenFOAMCaseElement::visualizer()
 {
-  return ParameterSet_VisualizerPtr();
+  return std::shared_ptr<ParameterSetVisualizer>();
 }
 
 

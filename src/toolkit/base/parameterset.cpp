@@ -602,11 +602,6 @@ std::string ParameterSet::readFromFile(const boost::filesystem::path& file, cons
 
 
 
-//void AtomicParameterSet::operator=(const ParameterSet& ps)
-//{
-//  boost::mutex::scoped_lock lck(mx_);
-//  ps_=ps;
-//}
 
 
 std::ostream& operator<<(std::ostream& os, const ParameterSet& ps)
@@ -655,71 +650,6 @@ const ParameterSet_Validator::ErrorList& ParameterSet_Validator::ParameterSet_Va
 
 
 
-
-
-bool ParameterSet_Visualizer::hasScheduledParameters() const
-{
-  return bool(scheduledParameters_);
-}
-
-const ParameterSet &ParameterSet_Visualizer::currentParameters() const
-{
-  if (visualizedParameters_)
-    return *visualizedParameters_;
-  else
-    throw insight::Exception("internal error: no parameters selected for visualization!");
-}
-
-bool ParameterSet_Visualizer::selectScheduledParameters()
-{
-  if (!visualizedParameters_)
-  {
-    if (scheduledParameters_)
-    {
-      CurrentExceptionContext ex("selecting new parameter set for next visualization");
-
-      visualizedParameters_ = std::move(scheduledParameters_);
-      return true;
-    }
-  }
-  dbg() << "no new parameter set selected for visualization" << std::endl;
-  return false;
-}
-
-void ParameterSet_Visualizer::clearScheduledParameters()
-{
-  CurrentExceptionContext ex("clearing parameter set for visualization");
-  visualizedParameters_.reset();
-}
-
-ParameterSet_Visualizer::ParameterSet_Visualizer()
-  : defaultProgressDisplayer_(),
-    progress_(&defaultProgressDisplayer_)
-{}
-
-ParameterSet_Visualizer::~ParameterSet_Visualizer()
-{}
-
-void ParameterSet_Visualizer::update(const ParameterSet& ps)
-{
-  CurrentExceptionContext ex("scheduling parameters for visualization");
-  scheduledParameters_.reset(new ParameterSet(ps));
-}
-
-
-
-
-void ParameterSet_Visualizer::setIcon(QIcon*)
-{
-}
-
-void ParameterSet_Visualizer::setProgressDisplayer(ProgressDisplayer* pd)
-{
-  if (pd!=nullptr)
-    progress_=pd;
-  else
-    progress_=&defaultProgressDisplayer_;
-}
 
 
 

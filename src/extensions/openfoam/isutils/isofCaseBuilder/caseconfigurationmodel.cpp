@@ -235,7 +235,7 @@ void CaseConfigurationModel::appendConfigurationToNode(
 void CaseConfigurationModel::readFromNode(
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<> *rootnode,
-    insight::Multi_CAD_ParameterSet_Visualizer* mv,
+    insight::MultiCADParameterSetVisualizer* mv,
     const boost::filesystem::path& fileParentPath )
 {
   clear();
@@ -260,7 +260,7 @@ void CaseConfigurationModel::readFromNode(
 ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
     const QModelIndex &index,
     QWidget *parentWidget,
-    ParameterSetDisplay *display )
+    IQOCCParameterSetDisplaysplay *display )
 {
   auto* ce = caseElementByIndex(index);
 

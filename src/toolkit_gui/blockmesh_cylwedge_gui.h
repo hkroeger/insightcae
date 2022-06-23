@@ -2,7 +2,7 @@
 #define BLOCKMESH_CYLWEDGE_GUI_H
 
 #include "blockmesh_cylwedge.h"
-#include "parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 
 
 namespace insight
@@ -14,7 +14,7 @@ namespace bmd
 
 
 class blockMeshDict_CylWedge_ParameterSet_Visualizer
- : public CAD_ParameterSet_Visualizer
+ : public CADParameterSetVisualizer
 {
 public:
     typedef blockMeshDict_CylWedge::Parameters Parameters;

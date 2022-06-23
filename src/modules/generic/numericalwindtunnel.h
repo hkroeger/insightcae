@@ -21,7 +21,7 @@
 #define INSIGHT_NUMERICALWINDTUNNEL_H
 
 #include "openfoam/openfoamanalysis.h"
-#include "parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 #include "numericalwindtunnel__NumericalWindtunnel__Parameters_headers.h"
 
 #include "gp_Trsf.hxx"

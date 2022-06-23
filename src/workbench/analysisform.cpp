@@ -69,7 +69,6 @@
 
 
 
-
 namespace fs = boost::filesystem;
 
 
@@ -174,7 +173,7 @@ AnalysisForm::AnalysisForm(
     connect(ui->btnKill, &QPushButton::clicked, this, &AnalysisForm::onKillAnalysis);
 
 
-    insight::ParameterSet_VisualizerPtr viz;
+    insight::ParameterSetVisualizerPtr viz;
     insight::ParameterSet_ValidatorPtr vali;
 
     try

@@ -96,7 +96,7 @@ AvailableCaseElementsModel::AvailableCaseElementsModel(QObject *parent)
 
       try
       {
-          insight::ParameterSet_VisualizerPtr viz
+          insight::ParameterSetVisualizerPtr viz
               = insight::OpenFOAMCaseElement::visualizer(elemName);
           viz->setIcon(&icon);
       }

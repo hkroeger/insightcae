@@ -90,12 +90,17 @@ private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
     void onModelAboutToBeReset();
     void onRowsAboutToBeInserted(const QModelIndex &parent, int start, int end);
+    void onRowsInserted(const QModelIndex &parent, int start, int end);
     void onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
 
+    void addChild(const QModelIndex& idx);
     void addSiblings(const QModelIndex& idx);
 
+Q_SIGNALS:
+    void contextMenuRequested(const QPoint &p, QModelIndex index);
+
 public:
-    IQCADModel3DViewer(int visibilityCol=0, int labelCol=1, int entityCol=3, QWidget* parent=nullptr);
+    IQCADModel3DViewer(QWidget* parent=nullptr, int visibilityCol=0, int labelCol=1, int entityCol=3);
 
     void setModel(QAbstractItemModel* model);
 

@@ -6,7 +6,7 @@
 #include "patch.h"
 
 class ParameterEditorWidget;
-class ParameterSetDisplay;
+class IQOCCParameterSetDisplaysplay;
 
 class BoundaryConfigurationModel : public QAbstractListModel
 {
@@ -51,13 +51,13 @@ public:
   void readFromNode(
       rapidxml::xml_document<>& doc,
       rapidxml::xml_node<> *rootnode,
-      insight::Multi_CAD_ParameterSet_Visualizer* mv,
+      insight::MultiCADParameterSetVisualizer* mv,
       const boost::filesystem::path& fileParentPath );
 
   ParameterEditorWidget* launchParameterEditor(
       const QModelIndex& index,
       QWidget* parentWidget,
-      ParameterSetDisplay* display );
+      IQOCCParameterSetDisplaysplay* display );
 };
 
 #endif // BOUNDARYCONFIGURATIONMODEL_H

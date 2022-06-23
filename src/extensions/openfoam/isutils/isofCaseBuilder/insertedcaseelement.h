@@ -14,7 +14,7 @@
 
 
 namespace insight {
-class Multi_CAD_ParameterSet_Visualizer;
+class MultiCADParameterSetVisualizer;
 }
 
 class CaseElementData : public QObject
@@ -25,13 +25,13 @@ protected:
   std::string type_name_;
   insight::ParameterSet curp_;
 
-  insight::Multi_CAD_ParameterSet_Visualizer* mv_;
-  insight::ParameterSet_VisualizerPtr viz_;
+  insight::MultiCADParameterSetVisualizer* mv_;
+  insight::ParameterSetVisualizerPtr viz_;
 
 public:
   CaseElementData(
       const std::string& type_name,
-      insight::Multi_CAD_ParameterSet_Visualizer* d,
+      insight::MultiCADParameterSetVisualizer* d,
       QObject* parent=nullptr );
 
   ~CaseElementData();
@@ -41,8 +41,8 @@ public:
   inline const insight::ParameterSet& parameters() const { return curp_; }
   inline const std::string& type_name() const { return type_name_; }
 
-  insight::ParameterSet_VisualizerPtr visualizer();
-  insight::Multi_CAD_ParameterSet_Visualizer* multiVisualizer() const;
+  insight::ParameterSetVisualizerPtr visualizer();
+  insight::MultiCADParameterSetVisualizer* multiVisualizer() const;
   void updateVisualization();
 };
 
@@ -55,7 +55,7 @@ class InsertedCaseElement
 public:
     InsertedCaseElement(
         const std::string& type_name,
-        insight::Multi_CAD_ParameterSet_Visualizer* d,
+        insight::MultiCADParameterSetVisualizer* d,
         QObject* parent=nullptr );
 
     insight::OpenFOAMCaseElement* createElement(insight::OpenFOAMCase& c) const;

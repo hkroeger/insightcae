@@ -171,6 +171,7 @@ void IQCADModel3DViewer::onDataChanged(
                 auto f = feat.value<insight::cad::FeaturePtr>();
                 auto i = displayedData_.find(f);
                 i->second.actor_->SetVisibility(vis);
+                this->renderWindow()->Render();
             }
             else if (feat.canConvert<insight::cad::DatumPtr>())
             {
@@ -178,6 +179,7 @@ void IQCADModel3DViewer::onDataChanged(
                 auto f = feat.value<insight::cad::DatumPtr>();
                 auto i = displayedData_.find(f);
                 i->second.actor_->SetVisibility(vis);
+                this->renderWindow()->Render();
             }
         }
     }
@@ -193,9 +195,37 @@ void IQCADModel3DViewer::onRowsAboutToBeInserted(const QModelIndex &parent, int 
     qDebug()<<"onRowsAboutToBeInserted"<<parent<<start<<end;
 }
 
+void IQCADModel3DViewer::onRowsInserted(const QModelIndex &parent, int start, int end)
+{
+    qDebug()<<"onRowsInserted"<<parent<<start<<end;
+    for (int r=start; r<=end; ++r)
+    {
+        addChild( model_->index(r, 1, parent) );
+    }
+}
+
 void IQCADModel3DViewer::onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
 {
-    qDebug()<<"onRowsAboutToBeRemoved"<<parent<<first<<last;
+    qDebug()<<"rowsInserted"<<parent<<first<<last;
+}
+
+
+void IQCADModel3DViewer::addChild(const QModelIndex& i)
+{
+    int r=i.row();
+    QModelIndex idx=i.parent();
+
+    bool vis = model_->data(model_->index(r, visibilityCol_, idx), Qt::CheckStateRole).toBool();
+    auto lbl = model_->data( i ).toString();
+    auto feat = model_->data( model_->index(r, entityCol_, idx) );
+    if (feat.canConvert<insight::cad::FeaturePtr>())
+    {
+        addFeature( lbl, feat.value<insight::cad::FeaturePtr>() ).actor_->SetVisibility(vis);
+    }
+    else if (feat.canConvert<insight::cad::DatumPtr>())
+    {
+        addDatum( lbl, feat.value<insight::cad::DatumPtr>() ).actor_->SetVisibility(vis);
+    }
 }
 
 void IQCADModel3DViewer::addSiblings(const QModelIndex& idx)
@@ -210,24 +240,16 @@ void IQCADModel3DViewer::addSiblings(const QModelIndex& idx)
         }
         else
         {
-            bool vis = model_->data(model_->index(r, visibilityCol_, idx), Qt::CheckStateRole).toBool();
-            auto lbl = model_->data( i ).toString();
-            auto feat = model_->data( model_->index(r, entityCol_, idx) );
-            if (feat.canConvert<insight::cad::FeaturePtr>())
-            {
-                addFeature( lbl, feat.value<insight::cad::FeaturePtr>() ).actor_->SetVisibility(vis);
-            }
-            else if (feat.canConvert<insight::cad::DatumPtr>())
-            {
-                addDatum( lbl, feat.value<insight::cad::DatumPtr>() ).actor_->SetVisibility(vis);
-            }
+            addChild(i);
         }
     }
 }
 
 
 
-IQCADModel3DViewer::IQCADModel3DViewer(int visibilityCol, int labelCol, int entityCol, QWidget* parent)
+IQCADModel3DViewer::IQCADModel3DViewer(
+        QWidget* parent,
+        int visibilityCol, int labelCol, int entityCol )
     : VTKWidget(parent),
       visibilityCol_(visibilityCol),
       labelCol_(labelCol),
@@ -265,6 +287,7 @@ void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
          disconnect(model_, &QAbstractItemModel::modelAboutToBeReset, 0, 0);
          disconnect(model_, &QAbstractItemModel::rowsAboutToBeInserted, 0, 0);
          disconnect(model_, &QAbstractItemModel::rowsAboutToBeRemoved, 0, 0);
+         disconnect(model_, &QAbstractItemModel::rowsInserted, 0, 0);
     }
 
     model_=model;
@@ -277,6 +300,8 @@ void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
             this, &IQCADModel3DViewer::onRowsAboutToBeInserted);
     connect(model, &QAbstractItemModel::rowsAboutToBeRemoved,
             this, &IQCADModel3DViewer::onRowsAboutToBeRemoved);
+    connect(model, &QAbstractItemModel::rowsInserted,
+            this, &IQCADModel3DViewer::onRowsInserted);
 
     addSiblings(QModelIndex());
 }

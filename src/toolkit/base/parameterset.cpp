@@ -505,6 +505,15 @@ void ParameterSet::removePackedData()
   }
 }
 
+void ParameterSet::unpackAllExternalFiles(const boost::filesystem::path& basePath)
+{
+    CurrentExceptionContext ex("unpacking external files from parameter set");
+    for (auto& p: *this)
+    {
+      p.second->unpack(basePath);
+    }
+}
+
 
 void ParameterSet::saveToStream(std::ostream& os, const boost::filesystem::path& parent_path, std::string analysisName ) const
 {

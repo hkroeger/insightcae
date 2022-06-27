@@ -114,7 +114,11 @@ void PathParameter::pack()
 void PathParameter::unpack(const boost::filesystem::path &basePath)
 {
   auto up = unpackFilePath(basePath);
-  if (needsUnpack(up)) copyTo(up, true);
+  if (needsUnpack(up))
+  {
+      std::cout<<"unpacking "<<originalFilePath_<<" to "<<up<<std::endl;
+      copyTo(up, true);
+  }
 //  FileContainer::unpack(basePath);
 }
 

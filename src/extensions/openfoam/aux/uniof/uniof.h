@@ -126,7 +126,7 @@
 #define ERROR(message) \
 { FatalErrorIn("error condition") << message << abort(FatalError); }
 
-#define UNIOF_CREATEPOSTPROCFILE(TIMEVAR, FONAME, FILENAME, STREAMPTRVAR) \
+#define UNIOF_CREATEPOSTPROCFILE(TIMEVAR, FONAME, FILENAME, STREAMPTRVAR, HEADER) \
 if (STREAMPTRVAR.empty()) \
 { \
     if (Pstream::master()) \
@@ -139,6 +139,7 @@ if (STREAMPTRVAR.empty()) \
         { outdir = (TIMEVAR).path()/"postProcessing"/(FONAME)/startTimeName; }\
         mkDir(outdir);\
         STREAMPTRVAR.reset(new OFstream(outdir/(FILENAME)));\
+        STREAMPTRVAR() << (HEADER) << endl;\
     }\
 }
 

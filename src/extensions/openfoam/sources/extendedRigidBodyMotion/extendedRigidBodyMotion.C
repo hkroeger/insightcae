@@ -305,11 +305,12 @@ std::pair<vector,vector> extendedRigidBodyMeshMotion::bodyMesh::calcForcesMoment
             if (!addForcesLog_(k))
             {
                 autoPtr<OFstream> f;
-                OStringStream logFName; logFName<<af.type()<<"_"<<k;
                 UNIOF_CREATEPOSTPROCFILE(
                             time,
-                            "rigidBodyMotion", logFName.str(),
-                            f);
+                            "rigidBodyMotion",
+                            str(boost::format("%s_%d")%af.type()%k),
+                            f,
+                            "# t Fx Fy Fz Mx My Mz" );
                 addForcesLog_.set(k, f);
             }
 
@@ -880,10 +881,7 @@ void extendedRigidBodyMeshMotion::updateBodyMeshCoordinateSystems()
     {
         label bodyID = bodyMeshes_[bi].bodyID_;
         spatialTransform X(model_.X0(bodyID).inv() & model_.X00(bodyID));
-        Info<<"updating CS for body "<<bodyMeshes_[bi].name_<<": "
-           <<X<<endl
-          <<model_.X0(bodyID)<<endl
-         <<model_.X00(bodyID)<<endl;
+
         bodyMeshes_[bi].updateCoordinateSystem(
                     X.transformPoint(point(0,0,0)),
                     (X&spatialVector(vector::zero, vector(0,0,1))).l(),
@@ -896,7 +894,6 @@ void extendedRigidBodyMeshMotion::updateBodyMeshCoordinateSystems()
 void extendedRigidBodyMeshMotion::bodyMesh::updateCoordinateSystem(
         const vector& p0, const vector& ez, const vector& ex )
 {
-//    tensor Et=X.inv().E().T();
     currentCoordinateSystem_.reset(
                 new cartesianCS(
                     name_, p0,  ez, ex
@@ -977,11 +974,14 @@ bool Foam::extendedRigidBodyMeshMotion::writeObject
 
 void extendedRigidBodyMeshMotion::continueLogFile() const
 {
+
+
     // Create the output file if not already created
     UNIOF_CREATEPOSTPROCFILE(
                 mesh().time(),
                 "rigidBodyMotion", "rigidBodyMotion.dat",
-                rbmLogFile_);
+                rbmLogFile_,
+                logFileHeaderLine() );
 
     // write position and rotation
     if (Pstream::master())
@@ -990,6 +990,23 @@ void extendedRigidBodyMeshMotion::continueLogFile() const
         writeLogLine(rbmLogFile_());
         rbmLogFile_()<<endl;
     }
+}
+
+std::string extendedRigidBodyMeshMotion::logFileHeaderLine() const
+{
+    OStringStream header;
+
+    header << "# t";
+    forAll(model_.state().q(), i)
+    {
+        header << " q" << i;
+    }
+    forAll(model_.state().qDot(), i)
+    {
+        header << " qDot" << i;
+    }
+
+    return header.str();
 }
 
 

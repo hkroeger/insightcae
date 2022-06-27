@@ -22,11 +22,14 @@ prescribedVelocity::prescribedVelocity
     const rigidBodyModel& model
 )
 :
+    forceSource(name),
     restraint(name, dict, model),
     velocitySet_(nullptr),
     oldForce_(0),
     error0_(0),
-    integral0_(0)
+    integral0_(0),
+    force_(0),
+    F_(vector::zero, vector::zero)
 {
     read(dict);
 }
@@ -37,15 +40,8 @@ prescribedVelocity::~prescribedVelocity()
 
 
 
-
-void prescribedVelocity::restrain
-(
-    scalarField& tau,
-    Field<spatialVector>& fx,
-    const rigidBodyModelState& state
-) const
+void prescribedVelocity::updateForce() const
 {
-
     // Adding rotation to a given body
     scalar velocity = model_.v(model_.master(bodyID_)).l() & direction_;
 
@@ -64,13 +60,14 @@ void prescribedVelocity::restrain
     scalar force = (p_*error + i_*integral + d_*derivative);
     force *= Inertia/dt;
 
-    force = relax_*force + (1- relax_)*oldForce_;
+    force_ = relax_*force + (1- relax_)*oldForce_;
+    F_ = model_.X0(bodyID_).T() & spatialVector(Zero, force_*direction_);
 
-//    if (model_.debug)
+    if (model_.debug)
     {
         Info<< " velocity  " << velocity << endl
             << " wanted " << velocitySet_->value(t) << endl
-            << " force " << force << endl
+            << " force " << force_ << endl
             << " inertia " << Inertia << endl
             << " error " << error << endl
             << " integral " << integral << endl
@@ -79,12 +76,25 @@ void prescribedVelocity::restrain
             << endl;
     }
 
-    // Accumulate the force for the restrained body
-    fx[bodyIndex_] += model_.X0(bodyID_).T() & spatialVector(Zero, force*direction_);
-
-    oldForce_ = force;
+    oldForce_ = force_;
     error0_ = error;
     integral0_ = integral;
+}
+
+
+
+
+void prescribedVelocity::restrain
+(
+    scalarField& tau,
+    Field<spatialVector>& fx,
+    const rigidBodyModelState& state
+) const
+{
+    updateForce();
+
+    // Accumulate the force for the restrained body
+    fx[bodyIndex_] += F_;
 }
 
 
@@ -125,6 +135,11 @@ void prescribedVelocity::write
     os << "d" << token::SPACE << d_ << token::END_STATEMENT << endl;
 
     velocitySet_->writeData(os);
+}
+
+vector prescribedVelocity::force() const
+{
+    return F_.l();
 }
 
 

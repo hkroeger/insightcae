@@ -3,14 +3,15 @@
 
 #include "rigidBodyRestraint.H"
 #include "Function1.H"
+#include "forcesources.h"
 
 namespace Foam {
 namespace RBD {
 namespace restraints {
 
 class prescribedVelocity
-:
-    public restraint
+      : public forceSource,
+        public restraint
 {
     // Private data
 
@@ -37,6 +38,9 @@ class prescribedVelocity
             mutable scalar i_;
 
             mutable scalar d_;
+
+        mutable scalar force_;
+        mutable spatialVector F_;
 public:
 
     //- Runtime type information
@@ -69,6 +73,8 @@ public:
 
     // Member Functions
 
+        void updateForce() const;
+
         //- Accumulate the retraint internal joint forces into the tau field and
         //  external forces into the fx field
         void restrain
@@ -83,6 +89,8 @@ public:
 
         //- Write
         void write(Ostream&) const override;
+
+        vector force() const override;
 };
 
 

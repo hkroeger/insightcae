@@ -139,7 +139,7 @@ if (STREAMPTRVAR.empty()) \
         { outdir = (TIMEVAR).path()/"postProcessing"/(FONAME)/startTimeName; }\
         mkDir(outdir);\
         STREAMPTRVAR.reset(new OFstream(outdir/(FILENAME)));\
-        STREAMPTRVAR() << (HEADER) << endl;\
+        if (HEADER) { (*HEADER)(STREAMPTRVAR()); STREAMPTRVAR()<<endl; }\
     }\
 }
 

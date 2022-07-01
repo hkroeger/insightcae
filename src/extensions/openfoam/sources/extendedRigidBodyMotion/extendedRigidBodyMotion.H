@@ -272,7 +272,7 @@ public:
 
         void continueLogFile() const;
 
-        virtual std::string logFileHeaderLine() const;
+        virtual void writeLogFileHeaderLine(Ostream& os) const;
         virtual void writeLogLine(Ostream& os) const;
 
         //- Read dynamicMeshDict dictionary

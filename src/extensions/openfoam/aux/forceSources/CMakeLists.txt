@@ -5,6 +5,7 @@ set(SRC
  constantforcesource.cpp
  subtractedforcesource.cpp
  multipliedforcesource.cpp
+ relaxedforcesource.cpp
  forcesourcecombination.cpp
 )
 

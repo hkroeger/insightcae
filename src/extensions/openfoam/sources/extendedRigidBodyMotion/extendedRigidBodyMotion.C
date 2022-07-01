@@ -216,7 +216,8 @@ extendedRigidBodyMeshMotion::bodyMesh::bodyMesh
     if (dict.found("directThrustForces"))
     {
         PtrList<extRBM::directForce> df(
-                    dict.lookup("directThrustForces") );
+                    dict.lookup("directThrustForces"),
+                    extRBM::directForceFactory(fvmesh.time()) );
         forAll(df, j)
         {
             additionalForces_.append(
@@ -305,12 +306,15 @@ std::pair<vector,vector> extendedRigidBodyMeshMotion::bodyMesh::calcForcesMoment
             if (!addForcesLog_(k))
             {
                 autoPtr<OFstream> f;
+                auto wh=[](Ostream& os)
+                {
+                    os<<"# t Fx Fy Fz Mx My Mz";
+                };
                 UNIOF_CREATEPOSTPROCFILE(
                             time,
                             "rigidBodyMotion",
                             str(boost::format("%s_%d")%af.type()%k),
-                            f,
-                            "# t Fx Fy Fz Mx My Mz" );
+                            f, &wh );
                 addForcesLog_.set(k, f);
             }
 
@@ -977,11 +981,14 @@ void extendedRigidBodyMeshMotion::continueLogFile() const
 
 
     // Create the output file if not already created
+    auto headerFunc = std::bind(
+                &extendedRigidBodyMeshMotion::writeLogFileHeaderLine,
+                this, std::placeholders::_1 );
     UNIOF_CREATEPOSTPROCFILE(
                 mesh().time(),
                 "rigidBodyMotion", "rigidBodyMotion.dat",
                 rbmLogFile_,
-                logFileHeaderLine() );
+                &headerFunc );
 
     // write position and rotation
     if (Pstream::master())
@@ -992,10 +999,8 @@ void extendedRigidBodyMeshMotion::continueLogFile() const
     }
 }
 
-std::string extendedRigidBodyMeshMotion::logFileHeaderLine() const
+void extendedRigidBodyMeshMotion::writeLogFileHeaderLine(Ostream& header) const
 {
-    OStringStream header;
-
     header << "# t";
     forAll(model_.state().q(), i)
     {
@@ -1005,8 +1010,6 @@ std::string extendedRigidBodyMeshMotion::logFileHeaderLine() const
     {
         header << " qDot" << i;
     }
-
-    return header.str();
 }
 
 

@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 
+#include "fvCFD.H"
 #include "ITstream.H"
 
 
@@ -16,13 +17,14 @@ class forceSourceCombination
     std::string definition_;
     std::vector<std::shared_ptr<forceSource> > intermediateSources_;
     forceSource* value_;
+    const Time* time_;
 
     void interpretDefinition();
     forceSource* parseSource(Istream& is);
 
 public:
     forceSourceCombination();
-    forceSourceCombination(ITstream& is);
+    forceSourceCombination(const Time& time, ITstream& is);
     forceSourceCombination(forceSource* value);
     vector force() const;
 };

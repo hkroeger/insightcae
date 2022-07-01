@@ -8,9 +8,11 @@ namespace Foam {
 namespace extRBM {
 
 
+directForceFactory::directForceFactory(const Time& time)
+    : time_(time)
+{}
 
-autoPtr<directForce>
-directForce::New(Istream& is)
+autoPtr<directForce> directForceFactory::operator()(Istream& is) const
 {
     dictionary d(is);
     autoPtr<directForce> df
@@ -20,13 +22,19 @@ directForce::New(Istream& is)
             point(d.lookup("PoA")),
             vector(d.lookupOrDefault<vector>("localDirection", vector::zero)),
             vector(d.lookupOrDefault<vector>("verticalDirection", vector::zero)),
-            forceSourceCombination(d.lookup("forceSource")),
+            forceSourceCombination(time_, d.lookup("forceSource")),
             d.lookupOrDefault<word>("coordinateSystemName", "global")
         )
     );
 
     return df;
 }
+
+//autoPtr<directForce>
+//directForce::New(Istream& is)
+//{
+
+//}
 
 
 defineTypeNameAndDebug(directForce, 0);

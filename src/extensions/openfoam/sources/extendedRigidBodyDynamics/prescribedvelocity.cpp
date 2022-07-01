@@ -139,7 +139,9 @@ void prescribedVelocity::write
 
 vector prescribedVelocity::force() const
 {
-    return F_.l();
+    vector F=F_.l();
+    reduce(F, maxMagSqrOp<vector>());
+    return F;
 }
 
 

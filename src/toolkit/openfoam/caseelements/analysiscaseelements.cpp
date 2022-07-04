@@ -63,8 +63,11 @@ public:
 
     arma::mat clippedTable() const
     {
+        CurrentExceptionContext ex(
+                    str(format("clipping table %g < t <%g") % A() % clippedB())
+                    );
         insight::assertion( !toBeIgnored(), "no data!" );
-        return arma::mat( table_.rows( table_.col(0)>A() && table_.col(0)<clippedB() ) );
+        return arma::mat( table_.rows( find(table_.col(0)>A() && table_.col(0)<clippedB()) ) );
     }
 };
 
@@ -140,6 +143,7 @@ readSingleTabularFile(
         {
             m.row(i)=arma::mat(rg.second[i].data(), 1, rg.second[i].size());
         }
+//        insight::dbg()<<rg.first<<":\n"<<m<<std::endl;
         result[rg.first]=m;
     }
     return result;

@@ -1,0 +1,41 @@
+
+t4=tan(40*deg);
+ang=15*deg;
+t2=tan(ang);
+
+Dn?=2.2;
+d=TableLookup(ScrewDIN7981Sheetmetal, d, Dn, d, nearest); 
+k?=TableLookup(ScrewDIN7981Sheetmetal, d, d, k); # kopfhoehe
+r?=TableLookup(ScrewDIN7981Sheetmetal, d, d, r); # kopfradius
+t?=TableLookup(ScrewDIN7972Sheetmetal, d, d, t); # schlitztiefe
+n?=TableLookup(ScrewDIN7972Sheetmetal, d, d, n); # schlitzbreite
+d2?=TableLookup(ScrewDIN7981Sheetmetal, d, d, d2); # kopfbreite
+dk?=TableLookup(ScrewDIN7981Sheetmetal, d, d, dkmin); # kerndurchmesser
+
+L?=10;
+
+head=
+Cylinder(O, ax k*EX, d2)
+&Sphere((k-r)*EX, 2*r)
+;
+
+di=dk;
+screw:
+(
+ Place(head, O, -EX, EZ)-Box(O, 2*d2*EY, n*EZ, t*EX, center xy)
+)
+|Fillet(
+ Chamfer(
+  Cylinder(O, ax L*EX, di)?edges('maximal(CoG.x)'), 
+ 0.45*di/t2, ang) ? edges('maximal(CoG.x,2)'), 0.25*L)
+;
+
+head_hole=
+  Cylinder(O, ax -10*L*EX, 1.4*d2)
+;
+
+tap_hole=
+head_hole|Cylinder(O, L*EX, di);
+
+through_hole=
+head_hole|Cylinder(O, L*EX, 1.1*d);

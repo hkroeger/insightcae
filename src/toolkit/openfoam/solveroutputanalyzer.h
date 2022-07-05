@@ -14,13 +14,16 @@
 
 namespace insight {
 
+class OutputSectionReader;
+
+typedef std::shared_ptr<OutputSectionReader> OutputSectionReaderPtr;
 
 class OutputSectionReader
 {
 public:
     declareStaticFunctionTableWithArgs(
             createIfMatches,
-            std::shared_ptr<OutputSectionReader>,
+            OutputSectionReaderPtr,
             LIST(const std::string&),
             LIST(const std::string& line) );
 

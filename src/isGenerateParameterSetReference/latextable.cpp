@@ -151,7 +151,16 @@ void generateLatexTable(
     }
     else if (const auto* subarr = dynamic_cast<const ArrayParameter*>(pptr))
     {
-
+        if (const auto* subp = dynamic_cast<const SubsetParameter*>(&subarr->defaultValue()))
+        {
+            generateLatexTable(
+                  doc,
+                  ppath_clean+"_element",
+                  "Parameters of array elements of "+ppath,
+                  subp->subset(),
+                  ppath,
+                  firstColWidthLimit, labelprefix);
+        }
     }
 
     if (lxlabel.length()>firstColWidthLimit)

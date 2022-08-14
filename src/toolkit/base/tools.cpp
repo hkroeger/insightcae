@@ -712,6 +712,19 @@ arma::mat PolyDataBndBox
 }
 
 
+arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2)
+{
+  arma::mat bbm;
+  bbm
+    << std::min(bb1(0,0),bb2(0,0)) << std::max(bb1(0,1),bb2(0,1)) << arma::endr
+    << std::min(bb1(1,0),bb2(1,0)) << std::max(bb1(1,1),bb2(1,1)) << arma::endr
+    << std::min(bb1(2,0),bb2(2,0)) << std::max(bb1(2,1),bb2(2,1)) << arma::endr;
+
+  std::cout<<bb1<<bb2<<bbm<<std::endl;
+  return bbm;
+}
+
+
 void writeSTL
 (
    vtkSmartPointer<vtkPolyDataAlgorithm> stl,

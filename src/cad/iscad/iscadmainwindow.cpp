@@ -45,7 +45,7 @@
 
  
 
-void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor* lme)
+void ISCADMainWindow::connectMenuToModel(IQISCADModelEditor* me, IQISCADModelEditor* lme)
 {
   for(auto a: act_) a.second->disconnect();
 
@@ -165,10 +165,10 @@ void ISCADMainWindow::activateModel(int tabindex)
 {
     if ( (tabindex>=0) && (tabindex!=lastTabIndex_) )
     {
-        ISCADModelEditor* lme=NULL;
-        if (lastTabIndex_>=0) lme=static_cast<ISCADModelEditor*>(modelTabs_->widget(lastTabIndex_));
+        IQISCADModelEditor* lme=NULL;
+        if (lastTabIndex_>=0) lme=static_cast<IQISCADModelEditor*>(modelTabs_->widget(lastTabIndex_));
 
-        connectMenuToModel(static_cast<ISCADModelEditor*>(modelTabs_->widget(tabindex)), lme);
+        connectMenuToModel(static_cast<IQISCADModelEditor*>(modelTabs_->widget(tabindex)), lme);
         lastTabIndex_=tabindex;
     }
 }
@@ -178,7 +178,7 @@ void ISCADMainWindow::activateModel(int tabindex)
 // }
 
 
-void ISCADMainWindow::onUpdateTabTitle(ISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved)
+void ISCADMainWindow::onUpdateTabTitle(IQISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved)
 {
     int i=modelTabs_->indexOf(model);
     if (i>=0)
@@ -204,7 +204,7 @@ void ISCADMainWindow::onUpdateClipPlaneMenu(int errorState)
 {
   if (errorState==0)
     {
-      if (ISCADModelEditor *me = static_cast<ISCADModelEditor*>(modelTabs_->currentWidget()))
+      if (IQISCADModelEditor *me = static_cast<IQISCADModelEditor*>(modelTabs_->currentWidget()))
       {
           me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
       }
@@ -479,9 +479,9 @@ void ISCADMainWindow::updateProgress(int step, int totalSteps)
 }
 
 
-ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
+IQISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
 {
-    ISCADModelEditor *me = new ISCADModelEditor();
+    IQISCADModelEditor *me = new IQISCADModelEditor();
 
     int idx = modelTabs_->addTab(me, "(unnamed)");
     modelTabs_->setCurrentIndex(idx);
@@ -493,23 +493,23 @@ ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
     connect(me->model(), &ISCADModel::statusProgress,
             this, &ISCADMainWindow::updateProgress);
 
-    connect(me, &ISCADModelEditor::updateTabTitle,
+    connect(me, &IQISCADModelEditor::updateTabTitle,
             this, &ISCADMainWindow::onUpdateTabTitle);
 
     return me;
 }
 
-ISCADModelEditor* ISCADMainWindow::insertModel(const boost::filesystem::path& file, bool bgparsing)
+IQISCADModelEditor* ISCADMainWindow::insertModel(const boost::filesystem::path& file, bool bgparsing)
 {
-    ISCADModelEditor* me = insertEmptyModel(bgparsing);
+    IQISCADModelEditor* me = insertEmptyModel(bgparsing);
     me->model()->loadFile(file);
     me->model()->unsetUnsavedState();
     return me;
 }
 
-ISCADModelEditor* ISCADMainWindow::insertModelScript(const std::string& contents, bool bgparsing)
+IQISCADModelEditor* ISCADMainWindow::insertModelScript(const std::string& contents, bool bgparsing)
 {
-    ISCADModelEditor* me = insertEmptyModel(bgparsing);
+    IQISCADModelEditor* me = insertEmptyModel(bgparsing);
     me->model()->setScript(contents);
     me->model()->unsetUnsavedState();
     return me;
@@ -532,7 +532,7 @@ void ISCADMainWindow::onCreateNewModel(const QString& directory)
     );
     if (fn!="")
     {
-        ISCADModelEditor *me=insertEmptyModel();
+        IQISCADModelEditor *me=insertEmptyModel();
         me->model()->setFilename(qPrintable(fn));
         me->model()->saveModel();
     }

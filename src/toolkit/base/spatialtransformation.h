@@ -144,6 +144,8 @@ public:
             const OpenFOAMCase& cm,
             const boost::filesystem::path& exepath,
             const boost::filesystem::path& geofile) const;
+
+    bool operator!=(const SpatialTransformation& o) const;
 };
 
 

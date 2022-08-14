@@ -138,7 +138,7 @@ public:
 
 
 class InternalPressureLoss_ParameterSet_Visualizer
- : public CAD_ParameterSet_Visualizer
+ : public CADParameterSetVisualizer
 {
 public:
     typedef InternalPressureLoss::Parameters Parameters;

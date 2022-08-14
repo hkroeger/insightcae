@@ -52,7 +52,7 @@
 
 
 class ISCADModel;
-class ISCADModelEditor;
+class IQISCADModelEditor;
 
 
 class ISCADMainWindow
@@ -111,7 +111,7 @@ protected:
     QProgressBar* progressbar_;
     QPushButton* bgparsestopbtn_;
 
-    void connectMenuToModel(ISCADModelEditor* model, ISCADModelEditor* lme=NULL);
+    void connectMenuToModel(IQISCADModelEditor* model, IQISCADModelEditor* lme=NULL);
         
 protected slots:
     void onFileClicked(const QModelIndex &index);
@@ -122,7 +122,7 @@ public slots:
     void loadModel();
     
     void activateModel(int tabindex);
-    void onUpdateTabTitle(ISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved);
+    void onUpdateTabTitle(IQISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved);
     void onCloseModel(int tabindex);
     void onUpdateClipPlaneMenu(int errorState=0);
     void onNewModel();
@@ -136,9 +136,9 @@ public:
     ISCADMainWindow(QWidget* parent = nullptr, bool nolog=false);
     ~ISCADMainWindow();
 
-    ISCADModelEditor* insertEmptyModel(bool bgparsing=true);
-    ISCADModelEditor* insertModel(const boost::filesystem::path& file, bool bgparsing=true);
-    ISCADModelEditor* insertModelScript(const std::string& contents, bool bgparsing=true);
+    IQISCADModelEditor* insertEmptyModel(bool bgparsing=true);
+    IQISCADModelEditor* insertModel(const boost::filesystem::path& file, bool bgparsing=true);
+    IQISCADModelEditor* insertModelScript(const std::string& contents, bool bgparsing=true);
     virtual void closeEvent(QCloseEvent *event);
     void readSettings();
 

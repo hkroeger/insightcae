@@ -15,6 +15,8 @@
 class QVBoxLayout;
 class IQParameterSetModel;
 
+QString mat2Str(const arma::mat& m);
+
 class TOOLKIT_GUI_EXPORT IQParameter
 : public QObject,
   public QList<IQParameter*>

@@ -699,14 +699,14 @@ void ISCADModel::onCancelRebuild()
     }
 }
 
-ISCADModelEditor::ISCADModelEditor(QWidget* parent)
+IQISCADModelEditor::IQISCADModelEditor(QWidget* parent)
 : QWidget(parent)
 {
     QHBoxLayout* layout = new QHBoxLayout(this);
     QSplitter *spl=new QSplitter(Qt::Horizontal);
     layout->addWidget(spl);
 
-    viewer_=new QoccViewWidget(this);
+    viewer_=new Model3DViewer(this);
     viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     spl->addWidget(viewer_);
     
@@ -747,7 +747,7 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     gb=new QGroupBox("Model Tree");
     gb->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     vbox = new QVBoxLayout;
-    modeltree_=new QModelTree(gb);
+    modeltree_=new QTreeView(gb);
     modeltree_->setMinimumHeight(20);
     vbox->addWidget(modeltree_);
     gb->setLayout(vbox);
@@ -800,7 +800,7 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
             model_, &ISCADModel::toggleSkipPostprocActions);
 
     connect(copybtn, &QPushButton::clicked,
-            this, &ISCADModelEditor::onCopyBtnClicked);
+            this, &IQISCADModelEditor::onCopyBtnClicked);
     connect(clearbtn, &QPushButton::clicked,
             notepad_, &QTextEdit::clear);
 
@@ -827,40 +827,40 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
             viewer_, &QoccViewWidget::onUnfocus);
 
     connect(modeltree_, &QModelTree::insertIntoNotebook,
-            this, &ISCADModelEditor::onInsertNotebookText);
+            this, &IQISCADModelEditor::onInsertNotebookText);
 
     connect(model_, &ISCADModel::updateTitle,
-            this, &ISCADModelEditor::onUpdateTitle);
+            this, &IQISCADModelEditor::onUpdateTitle);
 
     connect(viewer_, &QoccViewWidget::addEvaluationToModel,
             modeltree_, &QModelTree::onAddEvaluation);
 
     connect(viewer_, &QoccViewWidget::insertNotebookText,
-            this, &ISCADModelEditor::onInsertNotebookText);
+            this, &IQISCADModelEditor::onInsertNotebookText);
 }
 
 
 
-void ISCADModelEditor::onCopyBtnClicked()
+void IQISCADModelEditor::onCopyBtnClicked()
 {
   model_->textCursor().insertText(notepad_->toPlainText());
   notepad_->clear();
 }
 
 
-void ISCADModelEditor::onInsertNotebookText(const QString& text)
+void IQISCADModelEditor::onInsertNotebookText(const QString& text)
 {
   notepad_->insertPlainText(text);
 }
 
 
-void ISCADModelEditor::onUpdateTitle(const boost::filesystem::path& filepath, bool isUnsaved)
+void IQISCADModelEditor::onUpdateTitle(const boost::filesystem::path& filepath, bool isUnsaved)
 {
   emit updateTabTitle(this, filepath, isUnsaved);
 }
 
 
-void ISCADModelEditor::closeEvent(QCloseEvent *event)
+void IQISCADModelEditor::closeEvent(QCloseEvent *event)
 {
     QMessageBox::StandardButton resBtn = QMessageBox::Yes;
 

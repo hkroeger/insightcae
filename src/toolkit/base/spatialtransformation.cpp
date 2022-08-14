@@ -182,4 +182,15 @@ void SpatialTransformation::executeOFTransforms(
     }
 }
 
+bool SpatialTransformation::operator!=(const SpatialTransformation &o) const
+{
+    return
+            ( arma::norm(o.translate_-translate_,2)>SMALL)
+            ||
+            ( arma::norm(o.R_-R_,2)>SMALL )
+            ||
+            (fabs(o.scale_-scale_)>SMALL)
+            ;
+}
+
 } // namespace insight

@@ -82,6 +82,7 @@ public:
 };
 
 
+void writeVec3Constant(std::ostream&, const arma::mat& m);
 
 
 namespace qi = boost::spirit::qi;

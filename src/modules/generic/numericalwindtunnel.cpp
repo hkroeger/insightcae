@@ -848,7 +848,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 {
   CurrentExceptionContext ec("Creating visualization of numerical wind tunnel parameters");
 
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   try
   {

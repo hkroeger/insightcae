@@ -156,7 +156,7 @@ public:
 
 
 class NumericalWindtunnel_ParameterSet_Visualizer
- : public CAD_ParameterSet_Visualizer
+ : public CADParameterSetVisualizer
 {
 public:
     typedef NumericalWindtunnel::Parameters Parameters;

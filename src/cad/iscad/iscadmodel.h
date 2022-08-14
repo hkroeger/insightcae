@@ -37,6 +37,7 @@
 #include "viewstate.h"
 #include "qmodeltree.h"
 #include "bgparsingthread.h"
+#include "iqcadmodel3dviewer.h"
 
 #ifndef Q_MOC_RUN
 #include "pointertransient.h"
@@ -76,7 +77,7 @@ protected:
     bool unsaved_;
     bool doBgParsing_;
     
-    insight::cad::ModelPtr cur_model_;
+    std::shared_ptr<const insight::cad::Model> cur_model_;
     
     BGParsingThread bgparsethread_;
     
@@ -288,25 +289,29 @@ Q_SIGNALS:
  * a widget, which arranges all widgets, required for editing a model:
  * text editor, graphical window, model tree and buttons
  */
-class ISCADModelEditor
+class IQISCADModelEditor
 : public QWidget
 {
     Q_OBJECT
 
+public:
+    typedef IQCADModel3DViewer Model3DViewer;
+
 protected:
-//    QoccViewerContext* context_;
-    QoccViewWidget* viewer_;
-    QModelTree* modeltree_;
+//    QoccViewWidget* viewer_;
+//    QModelTree* modeltree_;
+    Model3DViewer* viewer_;
+    QTreeView* modeltree_;
     ISCADModel* model_;
     QTextEdit* notepad_;
 
 public:
-    ISCADModelEditor(QWidget* parent = 0);
+    IQISCADModelEditor(QWidget* parent = 0);
 
     inline ISCADModel* model() { return model_; }
-    inline QoccViewWidget* viewer() { return viewer_; }
+    inline Model3DViewer* viewer() { return viewer_; }
     inline QTextEdit* notepad() { return notepad_; }
-    inline QModelTree* modeltree() { return modeltree_; }
+    inline QTreeView* modeltree() { return modeltree_; }
 
 public Q_SLOTS:
     void onCopyBtnClicked();
@@ -317,7 +322,7 @@ protected:
     virtual void closeEvent(QCloseEvent *event);
 
 signals:
-    void updateTabTitle(ISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved);
+    void updateTabTitle(IQISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved);
 };
 
 

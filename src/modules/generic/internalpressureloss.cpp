@@ -559,7 +559,7 @@ addStandaloneFunctionToStaticFunctionTable(Analysis, InternalPressureLoss, visua
 
 void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   Parameters p(currentParameters());
 

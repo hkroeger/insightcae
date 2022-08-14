@@ -34,6 +34,7 @@ set(toolkit_gui_SRCS
     iqparameters/iqdoublerangeparameter.cpp
     iqparameters/iqarrayelementparameter.cpp
     iqparameters/iqpropertylibraryselectionparameter.h iqparameters/iqpropertylibraryselectionparameter.cpp
+    iqparameters/iqspatialtransformationparameter.h iqparameters/iqspatialtransformationparameter.cpp
 
     iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
 

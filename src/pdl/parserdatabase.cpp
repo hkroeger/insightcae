@@ -25,6 +25,17 @@ std::string extendtype(const std::string& pref, const std::string& app)
 }
 
 
+void writeVec3Constant(std::ostream & os, const arma::mat &m)
+{
+    os << "arma::mat({";
+    for (size_t i=0; i<m.n_elem; ++i)
+    {
+        if (i>0) os << ", ";
+        os << m(i);
+    }
+    os << "}).t()";
+}
+
 
 ParserDataBase::ParserDataBase(const std::string& d, bool h, bool e, bool n, int o)
 : description(d),
@@ -156,3 +167,5 @@ void ParserDataBase::cppWriteGetStatement
 {
     os<<staticname<<" = "<<varname<<"();"<<std::endl;
 }
+
+

@@ -9,6 +9,8 @@
 #include "base/tools.h"
 
 #include <QAbstractItemModel>
+#include <QDebug>
+#include <QApplication>
 
 
 class INSIGHTCAD_GUI_EXPORT IQCADItemModel
@@ -20,6 +22,7 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
 
   mutable std::map<insight::cad::DatumPtr, bool> datumVisibility_;
   mutable std::map<insight::cad::FeaturePtr, bool> featureVisibility_;
+  mutable std::map<vtkSmartPointer<vtkDataObject>, bool> datasetVisibility_;
 
 
 
@@ -31,7 +34,8 @@ public:
       datum = 3,
       feature = 4,
       postproc = 5,
-      numberOf =6
+      dataset = 6,
+      numberOf =7
   };
 
 private:
@@ -66,6 +70,7 @@ private:
       {
           // insert new
           auto newrow = insight::predictInsertionLocation(s, name);
+          qDebug()<<"addEntity"<<QString::fromStdString(name)<<newrow;
           beginInsertRows(index(esect, 0), newrow, newrow);
           modeladdfunc(name, value);
           endInsertRows();
@@ -73,20 +78,40 @@ private:
   }
 
   template<class E>
+  void removeEntity(
+          const std::string& name,
+          std::function<QModelIndex(const std::string&)> eidxfunc,
+          std::function<void(const std::string&)> modelremovefunc,
+          CADModelSection esect
+          )
+  {
+      auto idx = eidxfunc(name);
+      if (idx.isValid())
+      {
+          beginRemoveRows(index(esect, 0), idx.row(), idx.row());
+          modelremovefunc(name);
+          endRemoveRows();
+      }
+  }
+
+
+  template<class E>
   QModelIndex sectionIndex(
           const std::string& name,
-          std::function<std::map<std::string,E>(void)> efunc,
-          CADModelSection esect
+          std::function<std::map<std::string,E>(void)> getList,
+          CADModelSection entitySection
           ) const
   {
-      auto s=efunc();
-      auto si=s.find(name);
-      if (si==s.end())
+      auto list = getList();
+      auto si = list.find(name);
+      if (si == list.end())
+      {
           return QModelIndex();
+      }
       else
       {
-          auto row = std::distance(si, s.begin());
-          return index(row, 0, index(esect, 0) );
+          auto row = std::distance(list.begin(), si);
+          return index(row, 0, index(entitySection, 0) );
       }
   }
 
@@ -124,6 +149,7 @@ public:
   insight::cad::Model::DatumTableContents datums() const;
   insight::cad::Model::ModelstepTableContents modelsteps() const;
   insight::cad::Model::PostprocActionTableContents postprocActions() const;
+  const insight::cad::Model::DatasetTableContents& datasets() const;
 
   QModelIndex scalarIndex(const std::string& name) const;
   QModelIndex pointIndex(const std::string& name) const;
@@ -131,6 +157,7 @@ public:
   QModelIndex datumIndex(const std::string& name) const;
   QModelIndex modelstepIndex(const std::string& name) const;
   QModelIndex postprocActionIndex(const std::string& name) const;
+  QModelIndex datasetIndex(const std::string& name) const;
 
 
   /**
@@ -143,6 +170,7 @@ public:
   void addModelstep(const std::string& name, insight::cad::FeaturePtr value, const std::string& featureDescription = std::string() );
   void addComponent(const std::string& name, insight::cad::FeaturePtr value, const std::string& featureDescription = std::string() );
   void addPostprocAction(const std::string& name, insight::cad::PostprocActionPtr value);
+  void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value);
 
   void removeScalar(const std::string& name);
   void removePoint(const std::string& name);
@@ -150,6 +178,7 @@ public:
   void removeDatum(const std::string& name);
   void removeModelstep(const std::string& name );
   void removePostprocAction(const std::string& name);
+  void removeDataset(const std::string& name);
 };
 
 #endif // IQCADMODELCONTAINER_H

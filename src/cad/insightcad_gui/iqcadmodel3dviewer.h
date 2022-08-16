@@ -13,6 +13,7 @@
 #include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
 #include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkDataObject.h>
 
 #include <QAbstractItemModel>
 
@@ -64,7 +65,11 @@ class INSIGHTCAD_GUI_EXPORT IQCADModel3DViewer
         : public VTKWidget
 {
 public:
-    typedef boost::variant<insight::cad::DatumPtr,insight::cad::FeaturePtr> CADEntity;
+    typedef boost::variant<
+        insight::cad::DatumPtr,
+        insight::cad::FeaturePtr,
+        vtkSmartPointer<vtkDataObject>
+    > CADEntity;
 
 private:
     int visibilityCol_, labelCol_, entityCol_;
@@ -85,6 +90,7 @@ private:
 
     DisplayedEntity& addDatum(const QString& lbl, insight::cad::DatumPtr datum);
     DisplayedEntity& addFeature(const QString& lbl, insight::cad::FeaturePtr feat);
+    DisplayedEntity& addDataset(const QString& lbl, vtkSmartPointer<vtkDataObject> ds);
 
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);

@@ -28,6 +28,9 @@
 
 #include <boost/spirit/include/qi.hpp>
 
+#include <vtkSmartPointer.h>
+#include <vtkDataObject.h>
+
 #include <map>
 #include <string>
 
@@ -61,6 +64,7 @@ public:
     typedef std::map<std::string, FeatureSetPtr> 	FaceFeatureTableContents;
     typedef std::map<std::string, FeatureSetPtr> 	SolidFeatureTableContents;
     typedef std::map<std::string, PostprocActionPtr> 	PostprocActionTableContents;
+    typedef std::map<std::string, vtkSmartPointer<vtkDataObject> > 	DatasetTableContents;
 
     typedef boost::spirit::qi::symbols<char, ScalarPtr> 	ScalarTable;
     typedef boost::spirit::qi::symbols<char, VectorPtr> 	VectorTable;
@@ -74,6 +78,7 @@ public:
     typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	FaceFeatureTable;
     typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	SolidFeatureTable;
     typedef boost::spirit::qi::symbols<char, PostprocActionPtr> PostprocActionTable;
+    typedef DatasetTableContents                                DatasetTable;
 
 protected:
     std::string                 description_;
@@ -90,6 +95,7 @@ protected:
     SolidFeatureTable           solidFeatures_;
     ModelTable                  models_;
     PostprocActionTable         postprocActions_;
+    DatasetTable                datasets_;
 
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     boost::filesystem::path modelfile_;
@@ -121,6 +127,7 @@ public:
     const SolidFeatureTable& 	solidFeatureSymbols() const;
     const ModelTable& 	modelSymbols() const;
     const PostprocActionTable& 	postprocActionSymbols() const;
+    const DatasetTable& 	datasets() const;
 
 
     /**
@@ -149,6 +156,10 @@ public:
     void addComponent(const std::string& name, FeaturePtr value, const std::string& featureDescription = std::string() );
 
     void removeScalar(const std::string& name);
+    void removePoint(const std::string& name);
+    void removeDirection(const std::string& name);
+    void removeDatum(const std::string& name);
+    void removeModelstep(const std::string& name);
 
     void addVertexFeature(const std::string& name, FeatureSetPtr value);
     void addEdgeFeature(const std::string& name, FeatureSetPtr value);
@@ -157,6 +168,12 @@ public:
     void addModel(const std::string& name, ModelPtr value);
     void addPostprocAction(const std::string& name, PostprocActionPtr value);
     std::string addPostprocActionUnnamed(PostprocActionPtr value);
+
+    void removePostprocAction(const std::string& name);
+
+    void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value);
+
+    void removeDataset(const std::string& name);
 
     ScalarPtr lookupScalar(const std::string& name) const;
     VectorPtr lookupPoint(const std::string& name) const;

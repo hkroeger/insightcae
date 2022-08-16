@@ -15,6 +15,9 @@
 
 #include "cadtypes.h"
 
+#include <vtkSmartPointer.h>
+#include <vtkDataObject.h>
+
 class IQCADItemModel;
 class IQISCADModelGenerator;
 
@@ -25,7 +28,7 @@ struct SymbolsSnapshot
   std::set<std::string>
       scalars_, points_, directions_,
       features_,
-      datums_, postprocactions_;
+      datums_, postprocactions_, datasets_;
 };
 
 
@@ -60,6 +63,7 @@ public Q_SLOTS:
                           boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank() );
     void onAddDatum      (const QString& name, insight::cad::DatumPtr smp);
     void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp, bool visible=false);
+    void onAddDataset    (const QString& name, vtkSmartPointer<vtkDataObject> ds, bool visible=false);
 };
 
 #endif // IQISCADMODELREBUILDER_H

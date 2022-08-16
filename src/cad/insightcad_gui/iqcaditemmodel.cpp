@@ -52,8 +52,14 @@ QModelIndex IQCADItemModel::index(int row, int column, const QModelIndex &parent
                 return createIndex(row, column, quintptr(parent.row()));
             }
             break;
-        case CADModelSection::vectorVariable:
+        case CADModelSection::pointVariable:
             if (row>=0 && row<model_->points().size())
+            {
+                return createIndex(row, column, quintptr(parent.row()));
+            }
+            break;
+        case CADModelSection::vectorVariable:
+            if (row>=0 && row<model_->directions().size())
             {
                 return createIndex(row, column, quintptr(parent.row()));
             }
@@ -66,6 +72,18 @@ QModelIndex IQCADItemModel::index(int row, int column, const QModelIndex &parent
             break;
         case CADModelSection::feature:
             if (row>=0 && row<model_->modelsteps().size())
+            {
+                return createIndex(row, column, quintptr(parent.row()));
+            }
+            break;
+        case CADModelSection::postproc:
+            if (row>=0 && row<model_->postprocActions().size())
+            {
+                return createIndex(row, column, quintptr(parent.row()));
+            }
+            break;
+        case CADModelSection::dataset:
+            if (row>=0 && row<model_->datasets().size())
             {
                 return createIndex(row, column, quintptr(parent.row()));
             }
@@ -98,14 +116,23 @@ int IQCADItemModel::rowCount(const QModelIndex &parent) const
         case CADModelSection::scalarVariable:
             return model_->scalars().size();
             break;
-        case CADModelSection::vectorVariable:
+        case CADModelSection::pointVariable:
             return model_->points().size();
+            break;
+        case CADModelSection::vectorVariable:
+            return model_->directions().size();
             break;
         case CADModelSection::datum:
             return model_->datums().size();
             break;
         case CADModelSection::feature:
             return model_->modelsteps().size();
+            break;
+        case CADModelSection::postproc:
+            return model_->postprocActions().size();
+            break;
+        case CADModelSection::dataset:
+            return model_->datasets().size();
             break;
         }
     }
@@ -145,6 +172,9 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                 case CADModelSection::postproc:
                     return "Post Proc";
                     break;
+                case CADModelSection::dataset:
+                    return "Datasets";
+                    break;
                 }
             }
             else if (index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
@@ -153,7 +183,7 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                 {
                 case CADModelSection::scalarVariable:
                     {
-                        auto scalars = model_->scalars();
+                        auto scalars = model_->scalars();                        
                         auto i = scalars.begin();
                         std::advance(i, index.row());
 
@@ -252,6 +282,27 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         }
                     }
                     break;
+                case CADModelSection::dataset:
+                    {
+                        auto ds = model_->datasets();
+                        auto i = ds.begin();
+                        std::advance(i, index.row());
+                        if (index.column()==1)
+                        {
+                            return QString::fromStdString(i->first);
+                        }
+                        else if (index.column()==2)
+                        {
+                            return QString::fromStdString(i->second->GetClassName());
+                        }
+                        else if (index.column()==3)
+                        {
+                            QVariant r;
+                            r.setValue(i->second);
+                            return r;
+                        }
+                    }
+                    break;
                 }
             }
         }
@@ -282,6 +333,18 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                                 return Qt::CheckState( featureVisibility_[i->second]?Qt::Checked:Qt::Unchecked );
                             }
                         }
+                        break;
+                    case CADModelSection::dataset:
+                        {
+                            auto ds = model_->datasets();
+                            auto i = ds.begin();
+                            std::advance(i, index.row());
+                            if (index.column()==0)
+                            {
+                                return Qt::CheckState( datasetVisibility_[i->second]?Qt::Checked:Qt::Unchecked );
+                            }
+                        }
+                        break;
                 }
             }
 
@@ -304,6 +367,7 @@ Qt::ItemFlags IQCADItemModel::flags(const QModelIndex &index) const
     if ( index.column() == 0 && (
              index.internalId()==CADModelSection::datum
              || index.internalId()==CADModelSection::feature
+             || index.internalId()==CADModelSection::dataset
              ) )
     {
         flags |= Qt::ItemIsUserCheckable;
@@ -337,6 +401,16 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
                 auto i=features.begin();
                 std::advance(i, index.row());
                 featureVisibility_[i->second] =
+                        ( value.value<Qt::CheckState>()==Qt::Checked );
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.internalId()==CADModelSection::dataset)
+            {
+                auto ds = model_->datasets();
+                auto i=ds.begin();
+                std::advance(i, index.row());
+                datasetVisibility_[i->second] =
                         ( value.value<Qt::CheckState>()==Qt::Checked );
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
@@ -376,6 +450,11 @@ insight::cad::Model::ModelstepTableContents IQCADItemModel::modelsteps() const
 insight::cad::Model::PostprocActionTableContents IQCADItemModel::postprocActions() const
 {
     return model_->postprocActions();
+}
+
+const insight::cad::Model::DatasetTableContents &IQCADItemModel::datasets() const
+{
+    return model_->datasets();
 }
 
 QModelIndex IQCADItemModel::scalarIndex(const std::string& name) const
@@ -426,7 +505,13 @@ QModelIndex IQCADItemModel::postprocActionIndex(const std::string& name) const
                 CADModelSection::postproc);
 }
 
-
+QModelIndex IQCADItemModel::datasetIndex(const std::string& name) const
+{
+    return sectionIndex<vtkSmartPointer<vtkDataObject> >(
+                name,
+                std::bind(&insight::cad::Model::datasets, model_),
+                CADModelSection::dataset);
+}
 
 
 
@@ -514,38 +599,87 @@ void IQCADItemModel::addPostprocAction(
               std::bind(&insight::cad::Model::postprocActions, model_.get()),
               std::bind(&IQCADItemModel::postprocActionIndex, this, std::placeholders::_1),
               std::bind(&insight::cad::Model::addPostprocAction, model_.get(), std::placeholders::_1, std::placeholders::_2),
-              CADModelSection::postproc );
+                CADModelSection::postproc );
+}
+
+void IQCADItemModel::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> value)
+{
+    addEntity<vtkSmartPointer<vtkDataObject> >(
+              name, value,
+              std::bind(&insight::cad::Model::datasets, model_.get()),
+              std::bind(&IQCADItemModel::datasetIndex, this, std::placeholders::_1),
+              std::bind(&insight::cad::Model::addDataset, model_.get(), std::placeholders::_1, std::placeholders::_2),
+                CADModelSection::dataset );
 }
 
 
 
 void IQCADItemModel::removeScalar(const std::string& name)
 {
+    removeEntity<insight::cad::ScalarPtr>(
+              name,
+              std::bind(&IQCADItemModel::scalarIndex, this, std::placeholders::_1),
+              std::bind(&insight::cad::Model::removeScalar, model_.get(), std::placeholders::_1),
+              CADModelSection::scalarVariable );
 }
 
 
 void IQCADItemModel::removePoint(const std::string& name)
 {
+    removeEntity<insight::cad::VectorPtr>(
+              name,
+              std::bind(&IQCADItemModel::pointIndex, this, std::placeholders::_1),
+              std::bind(&insight::cad::Model::removePoint, model_.get(), std::placeholders::_1),
+              CADModelSection::pointVariable );
 }
 
 
 void IQCADItemModel::removeDirection(const std::string& name)
 {
+    removeEntity<insight::cad::VectorPtr>(
+              name,
+              std::bind(&IQCADItemModel::directionIndex, this, std::placeholders::_1),
+              std::bind(&insight::cad::Model::removeDirection, model_.get(), std::placeholders::_1),
+              CADModelSection::pointVariable );
 }
 
 
 void IQCADItemModel::removeDatum(const std::string& name)
 {
+    removeEntity<insight::cad::DatumPtr>(
+              name,
+              std::bind(&IQCADItemModel::datumIndex, this, std::placeholders::_1),
+              std::bind(&insight::cad::Model::removeDatum, model_.get(), std::placeholders::_1),
+              CADModelSection::datum );
 }
 
 
 void IQCADItemModel::removeModelstep(const std::string& name )
 {
+    removeEntity<insight::cad::FeaturePtr>(
+              name,
+              std::bind(&IQCADItemModel::modelstepIndex, this, std::placeholders::_1),
+              std::bind(
+                    &insight::cad::Model::removeModelstep,
+                    model_.get(), std::placeholders::_1 ),
+              CADModelSection::feature );
 }
 
 
 void IQCADItemModel::removePostprocAction(const std::string& name)
 {
+    removeEntity<insight::cad::PostprocActionPtr>(
+              name,
+              std::bind(&IQCADItemModel::postprocActionIndex, this, std::placeholders::_1),
+              std::bind(&insight::cad::Model::removePostprocAction, model_.get(), std::placeholders::_1),
+                CADModelSection::postproc );
 }
 
-
+void IQCADItemModel::removeDataset(const std::string& name)
+{
+    removeEntity<vtkSmartPointer<vtkDataObject> >(
+              name,
+              std::bind(&IQCADItemModel::datasetIndex, this, std::placeholders::_1),
+              std::bind(&insight::cad::Model::removeDataset, model_.get(), std::placeholders::_1),
+              CADModelSection::dataset );
+}

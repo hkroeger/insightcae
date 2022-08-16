@@ -223,6 +223,27 @@ void Model::removeScalar(const string& name)
   scalars_.remove(name);
 }
 
+void Model::removePoint(const std::string& name)
+{
+  points_.remove(name);
+}
+
+void Model::removeDirection(const std::string& name)
+{
+  directions_.remove(name);
+}
+
+void Model::removeDatum(const std::string& name)
+{
+  datums_.remove(name);
+}
+
+void Model::removeModelstep(const std::string& name)
+{
+  modelsteps_.remove(name);
+}
+
+
 
 void Model::addVertexFeature(const std::string& name, FeatureSetPtr value)
 {
@@ -271,6 +292,23 @@ std::string Model::addPostprocActionUnnamed(PostprocActionPtr value)
   postprocActions_.add(name, value);
   return name;
 }
+
+void Model::removePostprocAction(const std::string &name)
+{
+    postprocActions_.remove(name);
+}
+
+
+void Model::addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value)
+{
+    datasets_.emplace(name, value);
+}
+
+void Model::removeDataset(const std::string &name)
+{
+    datasets_.erase(name);
+}
+
 
 ScalarPtr Model::lookupScalar(const std::string& name) const
 {
@@ -371,6 +409,11 @@ const Model::FaceFeatureTable& 	Model::faceFeatureSymbols() const { return faceF
 const Model::SolidFeatureTable& 	Model::solidFeatureSymbols() const { return solidFeatures_; }
 const Model::ModelTable& 	Model::modelSymbols() const { return models_; }
 const Model::PostprocActionTable& 	Model::postprocActionSymbols() const { return postprocActions_; }
+
+const Model::DatasetTable &Model::datasets() const
+{
+    return datasets_;
+}
 
 
 

@@ -43,6 +43,7 @@ public:
 
   virtual void addDatum(const std::string& name, insight::cad::DatumPtr dat);
   virtual void addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds = AIS_Shaded );
+  virtual void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> ds);
 
   void update(const ParameterSet& ps) override;
 

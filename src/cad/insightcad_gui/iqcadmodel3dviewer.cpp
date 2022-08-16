@@ -7,6 +7,7 @@
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkDataSetMapper.h>
 #include <vtkOrientationMarkerWidget.h>
 #include <vtkPlaneSource.h>
 #include <vtkLineSource.h>
@@ -76,10 +77,6 @@ void PickInteractorStyle::OnLeftButtonDown()
   vtkInteractorStyleTrackballCamera::OnLeftButtonDown();
 }
 
-//  void OnKeyDown() override
-//  {
-//      this->GetInteractor()->
-//  }
 
 
 
@@ -135,7 +132,9 @@ IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addDatum(const QString&
 
 
 
-IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addFeature(const QString& lbl, insight::cad::FeaturePtr feat)
+IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addFeature(
+        const QString& lbl,
+        insight::cad::FeaturePtr feat )
 {
     vtkNew<ivtkOCCShape> shape;
     shape->SetShape( feat->shape() );
@@ -149,6 +148,21 @@ IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addFeature(const QStrin
     return displayedData_.insert({feat, de}).first->second;
 }
 
+
+
+IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addDataset(
+        const QString& lbl,
+        vtkSmartPointer<vtkDataObject> ds )
+{
+    DisplayedEntity de;
+    de.label_=lbl;
+    de.mapper_ = vtkSmartPointer<vtkDataSetMapper>::New();
+    de.mapper_->SetInputDataObject(ds);
+    de.actor_ = vtkSmartPointer<vtkActor>::New();
+    de.actor_->SetMapper(de.mapper_);
+    ren_->AddActor(de.actor_);
+    return displayedData_.insert({ds, de}).first->second;
+}
 
 
 
@@ -181,6 +195,14 @@ void IQCADModel3DViewer::onDataChanged(
                 i->second.actor_->SetVisibility(vis);
                 this->renderWindow()->Render();
             }
+            else if (feat.canConvert<vtkSmartPointer<vtkDataObject> >())
+            {
+                qDebug()<<"visibility dataset"<<lbl<<vis<<feat;
+                auto f = feat.value<vtkSmartPointer<vtkDataObject> >();
+                auto i = displayedData_.find(f);
+                i->second.actor_->SetVisibility(vis);
+                this->renderWindow()->Render();
+            }
         }
     }
 }
@@ -200,13 +222,13 @@ void IQCADModel3DViewer::onRowsInserted(const QModelIndex &parent, int start, in
     qDebug()<<"onRowsInserted"<<parent<<start<<end;
     for (int r=start; r<=end; ++r)
     {
-        addChild( model_->index(r, 1, parent) );
+        addChild( model_->index(r, labelCol_, parent) );
     }
 }
 
 void IQCADModel3DViewer::onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
 {
-    qDebug()<<"rowsInserted"<<parent<<first<<last;
+    qDebug()<<"onRowsAboutToBeRemoved"<<parent<<first<<last;
 }
 
 
@@ -218,6 +240,7 @@ void IQCADModel3DViewer::addChild(const QModelIndex& i)
     bool vis = model_->data(model_->index(r, visibilityCol_, idx), Qt::CheckStateRole).toBool();
     auto lbl = model_->data( i ).toString();
     auto feat = model_->data( model_->index(r, entityCol_, idx) );
+    qDebug()<<"add child"<<lbl<<r;
     if (feat.canConvert<insight::cad::FeaturePtr>())
     {
         addFeature( lbl, feat.value<insight::cad::FeaturePtr>() ).actor_->SetVisibility(vis);
@@ -225,6 +248,10 @@ void IQCADModel3DViewer::addChild(const QModelIndex& i)
     else if (feat.canConvert<insight::cad::DatumPtr>())
     {
         addDatum( lbl, feat.value<insight::cad::DatumPtr>() ).actor_->SetVisibility(vis);
+    }
+    else if (feat.canConvert<vtkSmartPointer<vtkDataObject> >())
+    {
+        addDataset( lbl, feat.value<vtkSmartPointer<vtkDataObject> >() ).actor_->SetVisibility(vis);
     }
 }
 
@@ -285,8 +312,8 @@ void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
     {
          disconnect(model_, &QAbstractItemModel::dataChanged, 0, 0);
          disconnect(model_, &QAbstractItemModel::modelAboutToBeReset, 0, 0);
-         disconnect(model_, &QAbstractItemModel::rowsAboutToBeInserted, 0, 0);
          disconnect(model_, &QAbstractItemModel::rowsAboutToBeRemoved, 0, 0);
+         disconnect(model_, &QAbstractItemModel::rowsAboutToBeInserted, 0, 0);
          disconnect(model_, &QAbstractItemModel::rowsInserted, 0, 0);
     }
 
@@ -294,12 +321,15 @@ void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
 
     connect(model, &QAbstractItemModel::dataChanged,
             this, &IQCADModel3DViewer::onDataChanged);
+
     connect(model, &QAbstractItemModel::modelAboutToBeReset,
             this, &IQCADModel3DViewer::onModelAboutToBeReset);
-    connect(model, &QAbstractItemModel::rowsAboutToBeInserted,
-            this, &IQCADModel3DViewer::onRowsAboutToBeInserted);
+
     connect(model, &QAbstractItemModel::rowsAboutToBeRemoved,
             this, &IQCADModel3DViewer::onRowsAboutToBeRemoved);
+
+    connect(model, &QAbstractItemModel::rowsAboutToBeInserted,
+            this, &IQCADModel3DViewer::onRowsAboutToBeInserted);
     connect(model, &QAbstractItemModel::rowsInserted,
             this, &IQCADModel3DViewer::onRowsInserted);
 

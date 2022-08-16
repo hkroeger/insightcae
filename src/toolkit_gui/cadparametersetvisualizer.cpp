@@ -25,6 +25,12 @@ void CADParameterSetVisualizer::addFeature(const std::string& name, insight::cad
   Q_EMIT createdFeature( QString::fromStdString(name), feat, true, ds );
 }
 
+void CADParameterSetVisualizer::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> ds)
+{
+  CurrentExceptionContext ec("adding visualizer dataset "+name);
+  Q_EMIT createdDataset( QString::fromStdString(name), ds, true );
+}
+
 void CADParameterSetVisualizer::update(const ParameterSet& ps)
 {
   CurrentExceptionContext ex("setting parameters for parameter set visualizer");

@@ -76,6 +76,7 @@ arma::mat vec3X(double x);
 arma::mat vec3Y(double y);
 arma::mat vec3Z(double z);
 arma::mat vec3FromComponents(const double* c);
+arma::mat vec3FromComponents(const float* c);
 arma::mat readVec3(std::istream& is);
 arma::mat normalized(const arma::mat& vec);
 

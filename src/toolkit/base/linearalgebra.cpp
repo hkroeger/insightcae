@@ -117,6 +117,11 @@ mat vec3FromComponents(const double* c)
     return vec3(c[0], c[1], c[2]);
 }
 
+arma::mat vec3FromComponents(const float *c)
+{
+    return vec3(c[0], c[1], c[2]);
+}
+
 mat readVec3(std::istream& is)
 {
     double c[3];

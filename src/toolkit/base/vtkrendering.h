@@ -50,7 +50,7 @@ vtkSmartPointer<vtkLookupTable> createColorMap(
 
 typedef std::pair<double, double> MinMax;
 
-typedef enum { Cell, Point } FieldSupport;
+typedef enum { Cell = 0, Point = 1 } FieldSupport;
 
 struct FieldSelection
    : public boost::fusion::tuple
@@ -116,18 +116,15 @@ public:
 };
 
 
-
+enum DatasetRepresentation
+{
+  Points = VTK_POINTS,
+  Wireframe = VTK_WIREFRAME,
+  Surface = VTK_SURFACE
+};
 
 class VTKOffscreenScene
 {
-
-public:
-  enum DatasetRepresentation
-  {
-    Points = VTK_POINTS,
-    Wireframe = VTK_WIREFRAME,
-    Surface = VTK_SURFACE
-  };
 
 protected:
   vtkSmartPointer<vtkRenderer> renderer_;

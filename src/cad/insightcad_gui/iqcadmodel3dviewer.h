@@ -14,6 +14,8 @@
 #include <vtkSmartPointer.h>
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkDataObject.h>
+#include "vtkImageMapper.h"
+#include "vtkImageActor.h"
 
 #include <QAbstractItemModel>
 
@@ -26,8 +28,11 @@
 
 
 
-class PickInteractorStyle : public vtkInteractorStyleTrackballCamera
+class PickInteractorStyle
+      : public QObject,
+        public vtkInteractorStyleTrackballCamera
 {
+    Q_OBJECT
 
     PickInteractorStyle();
 
@@ -40,11 +45,11 @@ public:
 
   void OnLeftButtonUp() override;
   void OnLeftButtonDown() override;
+  void OnRightButtonUp() override;
+  void OnRightButtonDown() override;
 
-//  void OnKeyDown() override
-//  {
-//      this->GetInteractor()->
-//  }
+Q_SIGNALS:
+  void contextMenuRequested(vtkActor* actor);
 
 };
 
@@ -64,6 +69,8 @@ VTKWidget;
 class INSIGHTCAD_GUI_EXPORT IQCADModel3DViewer
         : public VTKWidget
 {
+    Q_OBJECT
+
 public:
     typedef boost::variant<
         insight::cad::DatumPtr,
@@ -72,16 +79,14 @@ public:
     > CADEntity;
 
 private:
-    int visibilityCol_, labelCol_, entityCol_;
-
     vtkSmartPointer<vtkRenderer> ren_;
     QAbstractItemModel* model_;
 
     struct DisplayedEntity
     {
         QString label_;
-        vtkSmartPointer<vtkMapper> mapper_;
-        vtkSmartPointer<vtkActor> actor_;
+//        vtkSmartPointer<vtkMapper> mapper_;
+        vtkSmartPointer<vtkProp> actor_;
     };
 
     std::map<CADEntity, DisplayedEntity> displayedData_;
@@ -91,6 +96,11 @@ private:
     DisplayedEntity& addDatum(const QString& lbl, insight::cad::DatumPtr datum);
     DisplayedEntity& addFeature(const QString& lbl, insight::cad::FeaturePtr feat);
     DisplayedEntity& addDataset(const QString& lbl, vtkSmartPointer<vtkDataObject> ds);
+
+    void resetFeatureDisplayProps(const std::string& lbl, vtkActor* act);
+    void resetDatasetColor(const std::string& lbl, vtkActor* act, vtkDataSet* pds, vtkMapper* mapper);
+
+    QModelIndex modelIndex(const CADEntity& ce) const;
 
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
@@ -103,10 +113,10 @@ private Q_SLOT:
     void addSiblings(const QModelIndex& idx);
 
 Q_SIGNALS:
-    void contextMenuRequested(const QPoint &p, QModelIndex index);
+    void contextMenuRequested(const QModelIndex& index, const QPoint &globalPos);
 
 public:
-    IQCADModel3DViewer(QWidget* parent=nullptr, int visibilityCol=0, int labelCol=1, int entityCol=3);
+    IQCADModel3DViewer(QWidget* parent=nullptr);
 
     void setModel(QAbstractItemModel* model);
 

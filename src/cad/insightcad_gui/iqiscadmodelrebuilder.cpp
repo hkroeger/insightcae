@@ -187,11 +187,17 @@ void IQISCADModelRebuilder::connectGenerator(IQISCADModelGenerator *gen)
 
 
 
+std::mutex m;
+std::condition_variable cv;
+
 void IQISCADModelRebuilder::removeNonRecreatedSymbols()
 {
+    std::condition_variable cv;
+    std::mutex cv_m;
+
     QMetaObject::invokeMethod(
         qApp,
-        [this]()
+        [this,&cv]()
         {
             auto sysn = symbolsSnapshot_;
 
@@ -257,7 +263,12 @@ void IQISCADModelRebuilder::removeNonRecreatedSymbols()
                     model_->removeDataset(d.first);
                 }
             }
+
+            cv.notify_all();
         }
     );
+
+    std::unique_lock<std::mutex> lk(cv_m);
+    cv.wait( lk );
 }
 

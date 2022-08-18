@@ -7,6 +7,7 @@
 #include "cadmodel.h"
 
 #include "base/tools.h"
+#include "base/vtkrendering.h"
 
 #include <QAbstractItemModel>
 #include <QDebug>
@@ -21,8 +22,39 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
   insight::cad::ModelPtr model_;
 
   mutable std::map<insight::cad::DatumPtr, bool> datumVisibility_;
-  mutable std::map<insight::cad::FeaturePtr, bool> featureVisibility_;
-  mutable std::map<vtkSmartPointer<vtkDataObject>, bool> datasetVisibility_;
+
+  struct FeatureVisibility
+  {
+      bool visible = true;
+      double opacity = 1.;
+  };
+  mutable std::map<insight::cad::FeaturePtr, FeatureVisibility> featureVisibility_;
+
+  struct DatasetVisibility
+  {
+      bool visible = true;
+
+      /**
+       * @brief fieldName
+       * empty string: first field
+       */
+      std::string fieldName = "";
+
+      insight::FieldSupport fieldSupport = insight::Point;
+
+      insight::DatasetRepresentation representation = insight::Surface;
+
+      /**
+       * @brief fieldComponent
+       * -1 for mag
+       */
+      int fieldComponent = -1;
+
+      boost::optional<double> minVal;
+      boost::optional<double> maxVal;
+
+  };
+  mutable std::map<vtkSmartPointer<vtkDataObject>, DatasetVisibility> datasetVisibility_;
 
 
 
@@ -37,6 +69,19 @@ public:
       dataset = 6,
       numberOf =7
   };
+
+  static const int
+      visibilityCol=0,
+      labelCol=1,
+      valueCol=2,
+      datasetFieldNameCol = 3,
+      datasetPointCellCol = 4,
+      datasetComponentCol = 5,
+      datasetMinCol = 6,
+      datasetMaxCol = 7,
+      datasetRepresentationCol = 8,
+      entityOpacityCol = 3,
+      entityCol=99;
 
 private:
   template<class E>
@@ -179,6 +224,9 @@ public:
   void removeModelstep(const std::string& name );
   void removePostprocAction(const std::string& name);
   void removeDataset(const std::string& name);
+
+public Q_SLOTS:
+  void showContextMenu(const QModelIndex& idx, const QPoint &pos);
 };
 
 #endif // IQCADMODELCONTAINER_H

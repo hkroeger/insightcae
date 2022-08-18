@@ -1,5 +1,8 @@
 #include "iqcaditemmodel.h"
 
+#include <QMenu>
+#include <QInputDialog>
+
 IQCADItemModel::IQCADItemModel(insight::cad::ModelPtr m, QObject* parent)
   : QAbstractItemModel(parent)
 {
@@ -21,11 +24,11 @@ QVariant IQCADItemModel::headerData(int section, Qt::Orientation orientation, in
     {
       if (orientation==Qt::Horizontal)
       {
-        if (section == 0)
+        if (section == visibilityCol)
             return QVariant("Show");
-        else if (section == 1)
+        else if (section == labelCol)
             return QVariant("Name");
-        else if (section == 2)
+        else if (section == valueCol)
             return QVariant("Value");
       }
     }
@@ -141,7 +144,7 @@ int IQCADItemModel::rowCount(const QModelIndex &parent) const
 
 int IQCADItemModel::columnCount(const QModelIndex &parent) const
 {
-    return 4;
+    return 3;
 }
 
 QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
@@ -150,7 +153,7 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
     {
         if (role==Qt::DisplayRole)
         {
-            if (!index.parent().isValid() && index.column()==1)
+            if (!index.parent().isValid() && index.column()==labelCol)
             {
                 switch (index.row())
                 {
@@ -187,9 +190,9 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         auto i = scalars.begin();
                         std::advance(i, index.row());
 
-                        if (index.column()==1)
+                        if (index.column()==labelCol)
                             return QString::fromStdString(i->first);
-                        else if (index.column()==2)
+                        else if (index.column()==valueCol)
                             return QString::number(i->second->value());
                     }
                     break;
@@ -199,9 +202,9 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         auto i = points.begin();
                         std::advance(i, index.row());
 
-                        if (index.column()==1)
+                        if (index.column()==labelCol)
                             return QString::fromStdString(i->first);
-                        else if (index.column()==2)
+                        else if (index.column()==valueCol)
                         {
                             auto v=i->second->value();
                             return QString("[%1 %2 %3]").arg(v[0]).arg(v[1]).arg(v[2]);
@@ -214,9 +217,9 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         auto i = directions.begin();
                         std::advance(i, index.row());
 
-                        if (index.column()==1)
+                        if (index.column()==labelCol)
                             return QString::fromStdString(i->first);
-                        else if (index.column()==2)
+                        else if (index.column()==valueCol)
                         {
                             auto v=i->second->value();
                             return QString("[%1 %2 %3]").arg(v[0]).arg(v[1]).arg(v[2]);
@@ -228,11 +231,11 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         auto datums = model_->datums();
                         auto i = datums.begin();
                         std::advance(i, index.row());
-                        if (index.column()==1)
+                        if (index.column()==labelCol)
                         {
                             return QString::fromStdString(i->first);
                         }
-                        else if (index.column()==3)
+                        else if (index.column()==entityCol)
                         {
                             QVariant r;
                             r.setValue(i->second);
@@ -245,19 +248,23 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         auto features = model_->modelsteps();
                         auto i = features.begin();
                         std::advance(i, index.row());
-                        if (index.column()==1)
+                        if (index.column()==labelCol)
                         {
                             return QString::fromStdString(i->first);
                         }
-                        else if (index.column()==2)
+                        else if (index.column()==valueCol)
                         {
                             return QString::fromStdString(i->second->type());
                         }
-                        else if (index.column()==3)
+                        else if (index.column()==entityCol)
                         {
                             QVariant r;
                             r.setValue(i->second);
                             return r;
+                        }
+                        else if (index.column()==entityOpacityCol)
+                        {
+                            return featureVisibility_.find(i->second)->second.opacity;
                         }
                     }
                     break;
@@ -266,15 +273,15 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         auto postprocacts = model_->postprocActions();
                         auto i = postprocacts.begin();
                         std::advance(i, index.row());
-                        if (index.column()==1)
+                        if (index.column()==labelCol)
                         {
                             return QString::fromStdString(i->first);
                         }
-                        else if (index.column()==2)
+                        else if (index.column()==valueCol)
                         {
                             return QString::fromStdString(i->second->type());
                         }
-                        else if (index.column()==3)
+                        else if (index.column()==entityCol)
                         {
                             QVariant r;
                             r.setValue(i->second);
@@ -287,19 +294,52 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         auto ds = model_->datasets();
                         auto i = ds.begin();
                         std::advance(i, index.row());
-                        if (index.column()==1)
+                        if (index.column()==labelCol)
                         {
                             return QString::fromStdString(i->first);
                         }
-                        else if (index.column()==2)
+                        else if (index.column()==valueCol)
                         {
                             return QString::fromStdString(i->second->GetClassName());
                         }
-                        else if (index.column()==3)
+                        else if (index.column()==entityCol)
                         {
                             QVariant r;
                             r.setValue(i->second);
                             return r;
+                        }
+                        else if (index.column()==datasetFieldNameCol)
+                        {
+                            return QString::fromStdString(
+                                        datasetVisibility_[i->second].fieldName
+                                        );
+                        }
+                        else if (index.column()==datasetPointCellCol)
+                        {
+                            return int(
+                                        datasetVisibility_[i->second].fieldSupport
+                                        );
+                        }
+                        else if (index.column()==datasetComponentCol)
+                        {
+                            return int(
+                                        datasetVisibility_[i->second].fieldComponent
+                                        );
+                        }
+                        else if (index.column()==datasetMinCol)
+                        {
+                            auto mi = datasetVisibility_[i->second];
+                            if (mi.minVal) return double(*mi.minVal);
+                        }
+                        else if (index.column()==datasetMaxCol)
+                        {
+                            auto mi = datasetVisibility_[i->second];
+                            if (mi.maxVal) return double(*mi.maxVal);
+                        }
+                        else if (index.column()==datasetRepresentationCol)
+                        {
+                            auto mi = datasetVisibility_[i->second];
+                            return int(mi.representation);
                         }
                     }
                     break;
@@ -317,7 +357,7 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                             auto datums = model_->datums();
                             auto i = datums.begin();
                             std::advance(i, index.row());
-                            if (index.column()==0)
+                            if (index.column()==visibilityCol)
                             {
                                 return Qt::CheckState( datumVisibility_[i->second]?Qt::Checked:Qt::Unchecked );
                             }
@@ -328,9 +368,11 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                             auto features = model_->modelsteps();
                             auto i = features.begin();
                             std::advance(i, index.row());
-                            if (index.column()==0)
+                            if (index.column()==visibilityCol)
                             {
-                                return Qt::CheckState( featureVisibility_[i->second]?Qt::Checked:Qt::Unchecked );
+                                return Qt::CheckState(
+                                            featureVisibility_[i->second].visible?
+                                            Qt::Checked:Qt::Unchecked );
                             }
                         }
                         break;
@@ -339,9 +381,12 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                             auto ds = model_->datasets();
                             auto i = ds.begin();
                             std::advance(i, index.row());
-                            if (index.column()==0)
+                            if (index.column()==visibilityCol)
                             {
-                                return Qt::CheckState( datasetVisibility_[i->second]?Qt::Checked:Qt::Unchecked );
+                                return Qt::CheckState(
+                                            datasetVisibility_[i->second].visible?
+                                            Qt::Checked:Qt::Unchecked
+                                            );
                             }
                         }
                         break;
@@ -364,7 +409,7 @@ Qt::ItemFlags IQCADItemModel::flags(const QModelIndex &index) const
 
     Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
-    if ( index.column() == 0 && (
+    if ( index.column() == visibilityCol && (
              index.internalId()==CADModelSection::datum
              || index.internalId()==CADModelSection::feature
              || index.internalId()==CADModelSection::dataset
@@ -383,7 +428,7 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
 {
     if (role == Qt::CheckStateRole)
     {
-        if ( index.column() == 0 )
+        if ( index.column() == visibilityCol )
         {
             if (index.internalId()==CADModelSection::datum)
             {
@@ -400,7 +445,7 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
                 auto features = model_->modelsteps();
                 auto i=features.begin();
                 std::advance(i, index.row());
-                featureVisibility_[i->second] =
+                featureVisibility_[i->second].visible =
                         ( value.value<Qt::CheckState>()==Qt::Checked );
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
@@ -410,8 +455,88 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
                 auto ds = model_->datasets();
                 auto i=ds.begin();
                 std::advance(i, index.row());
-                datasetVisibility_[i->second] =
+                datasetVisibility_[i->second].visible =
                         ( value.value<Qt::CheckState>()==Qt::Checked );
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+        }
+    }
+    if (role == Qt::EditRole)
+    {
+        if (index.internalId()==CADModelSection::feature)
+        {
+            auto feat = model_->modelsteps();
+            auto i=feat.begin();
+            std::advance(i, index.row());
+
+            if (index.column()==entityOpacityCol)
+            {
+                featureVisibility_[i->second].opacity =
+                        value.toDouble();
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+        }
+        else if (index.internalId()==CADModelSection::dataset)
+        {
+            auto ds = model_->datasets();
+            auto i=ds.begin();
+            std::advance(i, index.row());
+
+            if (index.column()==datasetFieldNameCol)
+            {
+                datasetVisibility_[i->second].fieldName =
+                        value.toString().toStdString();
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.column()==datasetPointCellCol)
+            {
+                datasetVisibility_[i->second].fieldSupport =
+                        insight::FieldSupport(value.toInt());
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.column()==datasetComponentCol)
+            {
+                datasetVisibility_[i->second].fieldComponent =
+                        value.toInt();
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.column()==datasetMinCol)
+            {
+                auto& minVal=datasetVisibility_[i->second].minVal;
+                if (value.isValid())
+                {
+                    minVal = value.toDouble();
+                }
+                else
+                {
+                    minVal.reset();
+                }
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.column()==datasetMaxCol)
+            {
+                auto& maxVal=datasetVisibility_[i->second].maxVal;
+                if (value.isValid())
+                {
+                    maxVal = value.toDouble();
+                }
+                else
+                {
+                    maxVal.reset();
+                }
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.column()==datasetRepresentationCol)
+            {
+                auto& dv=datasetVisibility_[i->second];
+                dv.representation=insight::DatasetRepresentation(value.toInt());
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
@@ -604,6 +729,14 @@ void IQCADItemModel::addPostprocAction(
 
 void IQCADItemModel::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> value)
 {
+    // set *before* addEntity
+    auto&dvv = datasetVisibility_[value];
+    if (auto* ds=vtkDataSet::SafeDownCast(value))
+    {
+        if (ds->GetNumberOfCells()==0 && ds->GetNumberOfPoints()>0)
+            dvv.representation=insight::Points;
+    }
+
     addEntity<vtkSmartPointer<vtkDataObject> >(
               name, value,
               std::bind(&insight::cad::Model::datasets, model_.get()),
@@ -681,5 +814,132 @@ void IQCADItemModel::removeDataset(const std::string& name)
               name,
               std::bind(&IQCADItemModel::datasetIndex, this, std::placeholders::_1),
               std::bind(&insight::cad::Model::removeDataset, model_.get(), std::placeholders::_1),
-              CADModelSection::dataset );
+                CADModelSection::dataset );
+}
+
+
+
+void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
+{
+    QMenu cm;
+
+    QAction *a;
+
+    a=new QAction("Show", &cm);
+    connect(a, &QAction::triggered,
+            [this,idx]() {
+                QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
+                if (flags(visi)&Qt::ItemIsUserCheckable)
+                {
+                    setData(visi, Qt::Checked, Qt::CheckStateRole);
+                }
+            });
+    cm.addAction(a);
+
+    a=new QAction("Hide", &cm);
+    connect(a, &QAction::triggered,
+            [this,idx]() {
+                QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
+                if (flags(visi)&Qt::ItemIsUserCheckable)
+                {
+                    setData(visi, Qt::Unchecked, Qt::CheckStateRole);
+                }
+            });
+    cm.addAction(a);
+
+    if (idx.internalId()==CADModelSection::datum)
+    {
+//        auto datums = model_->datums();
+//        auto i=datums.begin();
+//        std::advance(i, index.row());
+//        datumVisibility_[i->second] =
+//                ( value.value<Qt::CheckState>()==Qt::Checked );
+//        Q_EMIT dataChanged(index, index, {role});
+//        return true;
+    }
+    else if (idx.internalId()==CADModelSection::feature)
+    {
+        a=new QAction("Set opacity...", &cm);
+        connect(a, &QAction::triggered, this,
+                [this,idx]() {
+                    bool ok=false;
+                    double val=QInputDialog::getDouble(nullptr, "opacity", "opacity", 1, 0, 1, 2, &ok);
+                    if (ok)
+                    {
+                        QModelIndex visi=index(idx.row(), IQCADItemModel::entityOpacityCol, idx.parent());
+                        setData(visi, val, Qt::EditRole);
+                    }
+                });
+        cm.addAction(a);
+    }
+    else if (idx.internalId()==CADModelSection::dataset)
+    {
+        a=new QAction("Set representation...", &cm);
+        connect(a, &QAction::triggered, this,
+                [this,idx]() {
+                    bool ok=false;
+                    auto n=QInputDialog::getItem(nullptr,
+                                                 "repr", "representation",
+                                                 {"Points", "Wireframe", "Surface"},
+                                                 2, false, &ok);
+                    if (ok)
+                    {
+                        int i;
+                        if (n=="Points")
+                            i=VTK_POINTS;
+                        else if (n=="Wireframe")
+                            i=VTK_WIREFRAME;
+                        else if (n=="Surface")
+                            i=VTK_SURFACE;
+
+                             QModelIndex visi=index(idx.row(), IQCADItemModel::datasetRepresentationCol, idx.parent());
+                             setData(visi, i, Qt::EditRole);
+                    }
+                });
+        cm.addAction(a);
+
+        a=new QAction("Auto scale set data range", &cm);
+        connect(a, &QAction::triggered, this,
+                [this,idx]() {
+                     QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMinCol, idx.parent());
+                     setData(visi, QVariant(), Qt::EditRole);
+                     visi=index(idx.row(), IQCADItemModel::datasetMaxCol, idx.parent());
+                     setData(visi, QVariant(), Qt::EditRole);
+                });
+        cm.addAction(a);
+        a=new QAction("Manual set data range minimum", &cm);
+        connect(a, &QAction::triggered, this,
+                [this,idx]() {
+                    bool ok=false;
+                    double val=QInputDialog::getDouble(nullptr, "minimum", "minimum", 0, -DBL_MAX, DBL_MAX, 1, &ok);
+                    if (ok)
+                    {
+                        QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMinCol, idx.parent());
+                        setData(visi, val, Qt::EditRole);
+                    }
+                });
+        cm.addAction(a);
+        a=new QAction("Manual set data range maximum", &cm);
+        connect(a, &QAction::triggered, this,
+                [this,idx]() {
+                    bool ok=false;
+                    double val=QInputDialog::getDouble(nullptr, "maximum", "maximum", 0, -DBL_MAX, DBL_MAX, 1, &ok);
+                    if (ok)
+                    {
+                        QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMaxCol, idx.parent());
+                        setData(visi, val, Qt::EditRole);
+                    }
+                });
+        cm.addAction(a);
+
+//        auto ds = model_->datasets();
+//        auto i=ds.begin();
+//        std::advance(i, index.row());
+//        datasetVisibility_[i->second] =
+//                ( value.value<Qt::CheckState>()==Qt::Checked );
+//        Q_EMIT dataChanged(index, index, {role});
+//        return true;
+    }
+
+    cm.exec(pos);
 }

@@ -17,12 +17,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "iscadsyntaxhighlighter.h"
+#include "iqiscadsyntaxhighlighter.h"
 
 
   
   
-ISCADSyntaxHighlighter::ISCADSyntaxHighlighter(QTextDocument* parent)
+IQISCADSyntaxHighlighter::IQISCADSyntaxHighlighter(QTextDocument* parent)
 : QSyntaxHighlighter(parent)
 {
   highlightingRules.resize(HighlightingRule_Index_Max);
@@ -69,7 +69,7 @@ ISCADSyntaxHighlighter::ISCADSyntaxHighlighter(QTextDocument* parent)
   }
 }
 
-void ISCADSyntaxHighlighter::setHighlightWord(const QString& word)
+void IQISCADSyntaxHighlighter::setHighlightWord(const QString& word)
 {
 //   qDebug()<<"setting highlight word = "<<word<<endl;
   
@@ -85,7 +85,7 @@ void ISCADSyntaxHighlighter::setHighlightWord(const QString& word)
 
 
 
-void ISCADSyntaxHighlighter::highlightBlock(const QString& text)
+void IQISCADSyntaxHighlighter::highlightBlock(const QString& text)
 {
     foreach (const HighlightingRule &rule, highlightingRules)
     {

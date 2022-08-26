@@ -23,13 +23,13 @@
 #include <QSyntaxHighlighter>
 #include <QTextDocument>
 
-class ISCADSyntaxHighlighter
+class IQISCADSyntaxHighlighter
 : public QSyntaxHighlighter
 {
     Q_OBJECT
 
 public:
-    ISCADSyntaxHighlighter(QTextDocument *parent = 0);
+    IQISCADSyntaxHighlighter(QTextDocument *parent = 0);
 
     void setHighlightWord(const QString& word);
     

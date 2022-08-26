@@ -18,6 +18,7 @@ set(insightcad_gui_SRCS
 
  iqiscadmodelgenerator.h iqiscadmodelgenerator.cpp
  iqiscadmodelrebuilder.h iqiscadmodelrebuilder.cpp
+ iqiscadscriptmodelgenerator.h iqiscadscriptmodelgenerator.cpp
 
  iqcaditemmodel.h
  iqcaditemmodel.cpp

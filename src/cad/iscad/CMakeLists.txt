@@ -4,15 +4,16 @@ project(iscad)
 
 set(iscad_SRCS 
     iscad.cpp
-    iscadmainwindow.cpp
-    iscadsyntaxhighlighter.cpp
-    iscadmodel.cpp
+    iqiscadmainwindow.cpp iqiscadmainwindow.h
+    iqiscadmodelwindow.h iqiscadmodelwindow.cpp
+    iqiscadmodelscriptedit.cpp iqiscadmodelscriptedit.h
+    iqiscadsyntaxhighlighter.cpp iqiscadsyntaxhighlighter.h
+    iqiscadbackgroundthread.cpp iqiscadbackgroundthread.h
 
-    modelcomponentselectordlg.cpp
-    insertfeaturedlg.cpp
-    loadmodeldialog.cpp
+    modelcomponentselectordlg.cpp modelcomponentselectordlg.h
+    insertfeaturedlg.cpp insertfeaturedlg.h
+    loadmodeldialog.cpp loadmodeldialog.h
 
-    bgparsingthread.cpp
 )
 
 set(iscad_FORMS

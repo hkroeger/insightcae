@@ -21,41 +21,21 @@
 #define INSIGHT_CAD_ISCADMAINWINDOW_H
 
 #include <QMainWindow>
-#include <QTimer>
-#include <QTreeView>
-#include <QFileSystemModel>
-#include <QTabWidget>
-#include <QProgressBar>
-#include <QAction>
-#include <QPushButton>
-#include <QSplitter>
-#include <QMenu>
-#include <QMenuBar>
-#include <QFileDialog>
-#include <QMessageBox>
-
-//#include "qoccviewercontext.h"
-#include "qoccviewwidget.h"
-#include "iqdebugstream.h"
-#include "viewstate.h"
-#include "qmodeltree.h"
-
-#ifndef Q_MOC_RUN
-#include "pointertransient.h"
-#include "cadfeaturetransient.h"
-#include "occinclude.h"
-#include "cadfeature.h"
-#include "parser.h"
-#include "sketch.h"
-#include "cadmodel.h"
-#endif
 
 
-class ISCADModel;
-class IQISCADModelEditor;
+namespace boost { namespace filesystem { class path; } }
+class IQISCADModelScriptEdit;
+class IQISCADModelWindow;
+class IQDebugStream;
+class QTextEdit;
+class QTreeView;
+class QFileSystemModel;
+class QMenu;
+class QProgressBar;
+class QPushButton;
 
 
-class ISCADMainWindow
+class IQISCADMainWindow
     : public QMainWindow
 {
     Q_OBJECT
@@ -111,7 +91,7 @@ protected:
     QProgressBar* progressbar_;
     QPushButton* bgparsestopbtn_;
 
-    void connectMenuToModel(IQISCADModelEditor* model, IQISCADModelEditor* lme=NULL);
+    void connectMenuToModel(IQISCADModelWindow* model, IQISCADModelWindow* lme=NULL);
         
 protected slots:
     void onFileClicked(const QModelIndex &index);
@@ -122,7 +102,7 @@ public slots:
     void loadModel();
     
     void activateModel(int tabindex);
-    void onUpdateTabTitle(IQISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved);
+    void onUpdateTabTitle(IQISCADModelWindow* model, const boost::filesystem::path& filepath, bool isUnSaved);
     void onCloseModel(int tabindex);
     void onUpdateClipPlaneMenu(int errorState=0);
     void onNewModel();
@@ -133,12 +113,12 @@ public slots:
     void updateProgress(int step, int totalSteps);
 
 public:
-    ISCADMainWindow(QWidget* parent = nullptr, bool nolog=false);
-    ~ISCADMainWindow();
+    IQISCADMainWindow(QWidget* parent = nullptr, bool nolog=false);
+    ~IQISCADMainWindow();
 
-    IQISCADModelEditor* insertEmptyModel(bool bgparsing=true);
-    IQISCADModelEditor* insertModel(const boost::filesystem::path& file, bool bgparsing=true);
-    IQISCADModelEditor* insertModelScript(const std::string& contents, bool bgparsing=true);
+    IQISCADModelWindow* insertEmptyModel(bool bgparsing=true);
+    IQISCADModelWindow* insertModel(const boost::filesystem::path& file, bool bgparsing=true);
+    IQISCADModelWindow* insertModelScript(const std::string& contents, bool bgparsing=true);
     virtual void closeEvent(QCloseEvent *event);
     void readSettings();
 

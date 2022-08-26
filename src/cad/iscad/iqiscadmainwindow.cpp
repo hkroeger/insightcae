@@ -17,22 +17,35 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "iscadmainwindow.h"
-#include "iscadmodel.h"
+#include "base/boost_include.h"
+
+#include "iqiscadmainwindow.h"
+#include "iqiscadmodelwindow.h"
+#include "iqiscadmodelscriptedit.h"
 
 #include "qmodeltree.h"
 #include "qmodelstepitem.h"
 #include "qvariableitem.h"
 #include "qdatumitem.h"
 #include "qevaluationitem.h"
-#include "iscadsyntaxhighlighter.h"
+#include "iqiscadsyntaxhighlighter.h"
 #include "occtools.h"
 
-#include "base/boost_include.h"
 
 #include <QSignalMapper>
 #include <QStatusBar>
 #include <QSettings>
+#include <QAction>
+#include <QPushButton>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QMenu>
+#include <QMenuBar>
+#include <QSplitter>
+#include <QFileSystemModel>
+#include <QProgressBar>
+
+#include "iqdebugstream.h"
 
 #include "cadfeatures/modelfeature.h"
 #include "modelcomponentselectordlg.h"
@@ -45,130 +58,130 @@
 
  
 
-void ISCADMainWindow::connectMenuToModel(IQISCADModelEditor* me, IQISCADModelEditor* lme)
+void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelWindow* lme)
 {
   for(auto a: act_) a.second->disconnect();
 
     if (lme!=NULL)
       {
-        disconnect(lme->model(), SIGNAL(modelUpdated(int)),
-                   this, SLOT(onUpdateClipPlaneMenu()));
-        disconnect(lme->model(), SIGNAL(openModel(const boost::filesystem::path&)),
-                   this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
+        disconnect( lme->modelEdit(), &IQISCADModelScriptEdit::modelUpdated,
+                    this, &IQISCADMainWindow::onUpdateClipPlaneMenu );
+        disconnect( lme->modelEdit(), &IQISCADModelScriptEdit::openModel,
+                    this, &IQISCADMainWindow::onLoadModelFile );
       }
 
-    bgparsestopbtn_->disconnect(SIGNAL(clicked()));
+    disconnect(bgparsestopbtn_, &QPushButton::clicked, 0, 0);
 
     if (me)
     {
         connect(act_[save], &QAction::triggered,
-                me->model(), &ISCADModel::saveModel);
+                me->modelEdit(), &IQISCADModelScriptEdit::saveModel);
         connect(act_[saveas], &QAction::triggered,
-                me->model(), &ISCADModel::saveModelAs);
+                me->modelEdit(), &IQISCADModelScriptEdit::saveModelAs);
         connect(act_[rebuild], &QAction::triggered,
-                me->model(), &ISCADModel::rebuildModel);
+                me->modelEdit(), &IQISCADModelScriptEdit::rebuildModel);
         connect(act_[rebuild_UTC], &QAction::triggered,
-                me->model(), &ISCADModel::rebuildModelUpToCursor);
+                me->modelEdit(), &IQISCADModelScriptEdit::rebuildModelUpToCursor);
         connect(act_[insert_section_comment], &QAction::triggered,
-                me->model(), &ISCADModel::insertSectionCommentAtCursor);
+                me->modelEdit(), &IQISCADModelScriptEdit::insertSectionCommentAtCursor);
         connect(act_[insert_feat], &QAction::triggered,
-                me->model(), &ISCADModel::insertFeatureAtCursor);
+                me->modelEdit(), &IQISCADModelScriptEdit::insertFeatureAtCursor);
         connect(act_[insert_import], &QAction::triggered,
-                me->model(), &ISCADModel::insertImportedModelAtCursor);
+                me->modelEdit(), &IQISCADModelScriptEdit::insertImportedModelAtCursor);
         connect(act_[insert_loadmodel], &QAction::triggered,
-                me->model(), &ISCADModel::insertLibraryModelAtCursor);
+                me->modelEdit(), &IQISCADModelScriptEdit::insertLibraryModelAtCursor);
         connect(act_[insert_component_name], &QAction::triggered,
-                me->model(), &ISCADModel::insertComponentNameAtCursor);
+                me->modelEdit(), &IQISCADModelScriptEdit::insertComponentNameAtCursor);
         connect(act_[clear_cache], &QAction::triggered,
-                me->model(), &ISCADModel::clearCache);
+                me->modelEdit(), &IQISCADModelScriptEdit::clearCache);
         connect(act_[editor_font_larger], &QAction::triggered,
-                me->model(), &ISCADModel::onIncreaseFontSize);
+                me->modelEdit(), &IQISCADModelScriptEdit::onIncreaseFontSize);
         connect(act_[editor_font_smaller], &QAction::triggered,
-                me->model(), &ISCADModel::onDecreaseFontSize);
+                me->modelEdit(), &IQISCADModelScriptEdit::onDecreaseFontSize);
 
 
-        connect(act_[fit_all], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::fitAll);
+//        connect(act_[fit_all], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::fitAll);
 
-        connect(act_[view_plusx], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::viewRight);
-        connect(act_[view_minusx], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::viewLeft);
-        connect(act_[view_plusy], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::viewBack);
-        connect(act_[view_minusy], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::viewFront);
-        connect(act_[view_plusz], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::viewTop);
-        connect(act_[view_minusz], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::viewBottom);
+//        connect(act_[view_plusx], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::viewRight);
+//        connect(act_[view_minusx], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::viewLeft);
+//        connect(act_[view_plusy], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::viewBack);
+//        connect(act_[view_minusy], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::viewFront);
+//        connect(act_[view_plusz], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::viewTop);
+//        connect(act_[view_minusz], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::viewBottom);
 
-        connect(act_[toggle_grid], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::toggleGrid);
-        connect(act_[toggle_clipxy], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::toggleClipXY);
-        connect(act_[toggle_clipyz], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::toggleClipYZ);
-        connect(act_[toggle_clipxz], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::toggleClipXZ);
-        connect(act_[background_color], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::background);
-        connect(act_[display_all_shaded], &QAction::triggered,
-                me->modeltree(), &QModelTree::allShaded);
-        connect(act_[display_all_wire], &QAction::triggered,
-                me->modeltree(), &QModelTree::allWireframe);
-        connect(act_[reset_shading], &QAction::triggered,
-                me->modeltree(), &QModelTree::resetViz);
+//        connect(act_[toggle_grid], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::toggleGrid);
+//        connect(act_[toggle_clipxy], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::toggleClipXY);
+//        connect(act_[toggle_clipyz], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::toggleClipYZ);
+//        connect(act_[toggle_clipxz], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::toggleClipXZ);
+//        connect(act_[background_color], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::background);
+//        connect(act_[display_all_shaded], &QAction::triggered,
+//                me->modeltree(), &QModelTree::allShaded);
+//        connect(act_[display_all_wire], &QAction::triggered,
+//                me->modeltree(), &QModelTree::allWireframe);
+//        connect(act_[reset_shading], &QAction::triggered,
+//                me->modeltree(), &QModelTree::resetViz);
 
-        connect(act_[measure_distance], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::onMeasureDistance);
+//        connect(act_[measure_distance], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::onMeasureDistance);
 
-        connect(act_[sel_pts], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::onSelectPoints);
+//        connect(act_[sel_pts], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::onSelectPoints);
 
-        connect(act_[sel_edgs], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::onSelectEdges);
+//        connect(act_[sel_edgs], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::onSelectEdges);
 
-        connect(act_[sel_faces], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::onSelectFaces);
+//        connect(act_[sel_faces], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::onSelectFaces);
 
-        connect(act_[sel_solids], &QAction::triggered,
-                me->viewer(), &QoccViewWidget::onSelectSolids);
+//        connect(act_[sel_solids], &QAction::triggered,
+//                me->viewer(), &QoccViewWidget::onSelectSolids);
 
-        me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
+//        me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
 
         connect(bgparsestopbtn_, &QPushButton::clicked,
-                me->model(), &ISCADModel::onCancelRebuild);
+                me->modelEdit(), &IQISCADModelScriptEdit::onCancelRebuild);
 
-        connect(me->model(), &ISCADModel::modelUpdated,
-                this, &ISCADMainWindow::onUpdateClipPlaneMenu);
+        connect(me->modelEdit(), &IQISCADModelScriptEdit::modelUpdated,
+                this, &IQISCADMainWindow::onUpdateClipPlaneMenu);
         
-        connect(me->model(), &ISCADModel::openModel,
-                this, &ISCADMainWindow::onLoadModelFile);
+        connect(me->modelEdit(), &IQISCADModelScriptEdit::openModel,
+                this, &IQISCADMainWindow::onLoadModelFile);
 
       }
 }
 
 
 
-void ISCADMainWindow::loadModel()
+void IQISCADMainWindow::loadModel()
 {
     QString fn=QFileDialog::getOpenFileName(this, "Select file", "", "ISCAD Model Files (*.iscad)");
     if (fn!="")
     {
-        insertModel(qPrintable(fn))->model()->unsetUnsavedState();
+        insertModel(qPrintable(fn))->modelEdit()->unsetUnsavedState();
     }
 }
 
 
-void ISCADMainWindow::activateModel(int tabindex)
+void IQISCADMainWindow::activateModel(int tabindex)
 {
     if ( (tabindex>=0) && (tabindex!=lastTabIndex_) )
     {
-        IQISCADModelEditor* lme=NULL;
-        if (lastTabIndex_>=0) lme=static_cast<IQISCADModelEditor*>(modelTabs_->widget(lastTabIndex_));
+        IQISCADModelWindow* lme=NULL;
+        if (lastTabIndex_>=0) lme=static_cast<IQISCADModelWindow*>(modelTabs_->widget(lastTabIndex_));
 
-        connectMenuToModel(static_cast<IQISCADModelEditor*>(modelTabs_->widget(tabindex)), lme);
+        connectMenuToModel(static_cast<IQISCADModelWindow*>(modelTabs_->widget(tabindex)), lme);
         lastTabIndex_=tabindex;
     }
 }
@@ -178,7 +191,7 @@ void ISCADMainWindow::activateModel(int tabindex)
 // }
 
 
-void ISCADMainWindow::onUpdateTabTitle(IQISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved)
+void IQISCADMainWindow::onUpdateTabTitle(IQISCADModelWindow* model, const boost::filesystem::path& filepath, bool isUnSaved)
 {
     int i=modelTabs_->indexOf(model);
     if (i>=0)
@@ -188,9 +201,9 @@ void ISCADMainWindow::onUpdateTabTitle(IQISCADModelEditor* model, const boost::f
     }
 }
 
-void ISCADMainWindow::onCloseModel(int tabindex)
+void IQISCADMainWindow::onCloseModel(int tabindex)
 {
-    ISCADModel *model = static_cast<ISCADModel*>(modelTabs_->widget(tabindex));
+    auto model = static_cast<IQISCADModelScriptEdit*>(modelTabs_->widget(tabindex));
     if (model)
     {
         QCloseEvent ev;
@@ -200,29 +213,30 @@ void ISCADMainWindow::onCloseModel(int tabindex)
     }
 }
 
-void ISCADMainWindow::onUpdateClipPlaneMenu(int errorState)
+void IQISCADMainWindow::onUpdateClipPlaneMenu(int errorState)
 {
   if (errorState==0)
     {
-      if (IQISCADModelEditor *me = static_cast<IQISCADModelEditor*>(modelTabs_->currentWidget()))
+      if (IQISCADModelWindow *me = static_cast<IQISCADModelWindow*>(modelTabs_->currentWidget()))
       {
-          me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
+//          me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
       }
     }
 }
 
-void ISCADMainWindow::onNewModel()
+void IQISCADMainWindow::onNewModel()
 {
   insertEmptyModel();
 }
 
-void ISCADMainWindow::onLoadModelFile(const boost::filesystem::path& modelfile)
+void IQISCADMainWindow::onLoadModelFile(const boost::filesystem::path& modelfile)
 {
     insertModel(modelfile);
 }
 
 
-ISCADMainWindow::ISCADMainWindow(QWidget* parent, bool nolog)
+
+IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
 : QMainWindow(parent),
   lastTabIndex_(-1)
 {
@@ -260,18 +274,18 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, bool nolog)
     fileTree_->expandAll();
     for (int i = 1; i < fileModel_->columnCount(); ++i)
         fileTree_->hideColumn(i);
-    connect(fileTree_, &QTreeView::doubleClicked, this, &ISCADMainWindow::onFileClicked);
+    connect(fileTree_, &QTreeView::doubleClicked, this, &IQISCADMainWindow::onFileClicked);
     fileTree_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(fileTree_, &QTreeView::customContextMenuRequested,
-            this, &ISCADMainWindow::onShowFileTreeContextMenu);
+            this, &IQISCADMainWindow::onShowFileTreeContextMenu);
     spl->addWidget(fileTree_);
     
     modelTabs_=new QTabWidget;
     modelTabs_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     modelTabs_->setTabsClosable(true);
     spl->addWidget(modelTabs_);
-    connect(modelTabs_, &QTabWidget::currentChanged, this, &ISCADMainWindow::activateModel);
-    connect(modelTabs_, &QTabWidget::tabCloseRequested, this, &ISCADMainWindow::onCloseModel);
+    connect(modelTabs_, &QTabWidget::currentChanged, this, &IQISCADMainWindow::activateModel);
+    connect(modelTabs_, &QTabWidget::tabCloseRequested, this, &IQISCADMainWindow::onCloseModel);
 
     spl->setStretchFactor(0,0);
     spl->setStretchFactor(1,1);
@@ -310,11 +324,11 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, bool nolog)
 
     act=new QAction(("&New"), this);
     fmenu->addAction(act);
-    connect(act, &QAction::triggered, this, &ISCADMainWindow::onNewModel);
+    connect(act, &QAction::triggered, this, &IQISCADMainWindow::onNewModel);
 
     act=new QAction(("&Load"), this);
     fmenu->addAction(act);
-    connect(act, &QAction::triggered, this, &ISCADMainWindow::loadModel);
+    connect(act, &QAction::triggered, this, &IQISCADMainWindow::loadModel);
 
     act_[save] = new QAction(("&Save"), this);
     act_[save]->setShortcut(Qt::ControlModifier + Qt::Key_S);
@@ -327,7 +341,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, bool nolog)
     act =new QAction(("&Quit"), this);
     act->setShortcut(Qt::AltModifier + Qt::Key_F4);
     fmenu->addAction(act);
-    connect(act, &QAction::triggered, this, &ISCADMainWindow::close);
+    connect(act, &QAction::triggered, this, &IQISCADMainWindow::close);
 
 
     act_[rebuild] = new QAction(("&Rebuild model"), this);
@@ -443,20 +457,20 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, bool nolog)
  
 }
 
-ISCADMainWindow::~ISCADMainWindow()
+IQISCADMainWindow::~IQISCADMainWindow()
 {
 }
 
 
 
 
-void ISCADMainWindow::closeEvent(QCloseEvent *event)
+void IQISCADMainWindow::closeEvent(QCloseEvent *event)
 {
     QMainWindow::closeEvent(event);
     
     for (int i=0; i<modelTabs_->count(); i++)
     {
-        ISCADModel *model = static_cast<ISCADModel*>( modelTabs_->widget(i) );
+        auto model = static_cast<IQISCADModelScriptEdit*>( modelTabs_->widget(i) );
         if (model) model->closeEvent(event);
     }
     
@@ -472,56 +486,56 @@ void ISCADMainWindow::closeEvent(QCloseEvent *event)
 
 
     
-void ISCADMainWindow::updateProgress(int step, int totalSteps)
+void IQISCADMainWindow::updateProgress(int step, int totalSteps)
 {
   progressbar_->setMaximum(totalSteps);
   progressbar_->setValue(step);
 }
 
 
-IQISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
+IQISCADModelWindow* IQISCADMainWindow::insertEmptyModel(bool bgparsing)
 {
-    IQISCADModelEditor *me = new IQISCADModelEditor();
+    auto *me = new IQISCADModelWindow();
 
     int idx = modelTabs_->addTab(me, "(unnamed)");
     modelTabs_->setCurrentIndex(idx);
     
-    connect(me->model(), &ISCADModel::displayStatusMessage,
+    connect(me->modelEdit(), &IQISCADModelScriptEdit::displayStatusMessage,
             statusBar(), &QStatusBar::showMessage);
-    connect(me->viewer(), &QoccViewWidget::sendStatus,
-            statusBar(), &QStatusBar::showMessage);
-    connect(me->model(), &ISCADModel::statusProgress,
-            this, &ISCADMainWindow::updateProgress);
+//    connect(me->viewer(), &QoccViewWidget::sendStatus,
+//            statusBar(), &QStatusBar::showMessage);
+    connect(me->modelEdit(), &IQISCADModelScriptEdit::statusProgress,
+            this, &IQISCADMainWindow::updateProgress);
 
-    connect(me, &IQISCADModelEditor::updateTabTitle,
-            this, &ISCADMainWindow::onUpdateTabTitle);
+    connect(me, &IQISCADModelWindow::updateTabTitle,
+            this, &IQISCADMainWindow::onUpdateTabTitle);
 
     return me;
 }
 
-IQISCADModelEditor* ISCADMainWindow::insertModel(const boost::filesystem::path& file, bool bgparsing)
+IQISCADModelWindow* IQISCADMainWindow::insertModel(const boost::filesystem::path& file, bool bgparsing)
 {
-    IQISCADModelEditor* me = insertEmptyModel(bgparsing);
-    me->model()->loadFile(file);
-    me->model()->unsetUnsavedState();
+    auto* me = insertEmptyModel(bgparsing);
+    me->modelEdit()->loadFile(file);
+    me->modelEdit()->unsetUnsavedState();
     return me;
 }
 
-IQISCADModelEditor* ISCADMainWindow::insertModelScript(const std::string& contents, bool bgparsing)
+IQISCADModelWindow* IQISCADMainWindow::insertModelScript(const std::string& contents, bool bgparsing)
 {
-    IQISCADModelEditor* me = insertEmptyModel(bgparsing);
-    me->model()->setScript(contents);
-    me->model()->unsetUnsavedState();
+    auto* me = insertEmptyModel(bgparsing);
+    me->modelEdit()->setScript(contents);
+    me->modelEdit()->unsetUnsavedState();
     return me;
 }
 
     
-void ISCADMainWindow::onFileClicked(const QModelIndex &index)
+void IQISCADMainWindow::onFileClicked(const QModelIndex &index)
 {
     insertModel( fileModel_->filePath(index).toStdString() );
 }
 
-void ISCADMainWindow::onCreateNewModel(const QString& directory)
+void IQISCADMainWindow::onCreateNewModel(const QString& directory)
 {
     QString fn=QFileDialog::getSaveFileName
     (
@@ -532,14 +546,14 @@ void ISCADMainWindow::onCreateNewModel(const QString& directory)
     );
     if (fn!="")
     {
-        IQISCADModelEditor *me=insertEmptyModel();
-        me->model()->setFilename(qPrintable(fn));
-        me->model()->saveModel();
+        IQISCADModelWindow *me=insertEmptyModel();
+        me->modelEdit()->setFilename(qPrintable(fn));
+        me->modelEdit()->saveModel();
     }
 }
 
 
-void ISCADMainWindow::onDeleteModel(const QString& filepath)
+void IQISCADMainWindow::onDeleteModel(const QString& filepath)
 {
     QFileInfo fi(filepath);
    
@@ -562,7 +576,7 @@ void ISCADMainWindow::onDeleteModel(const QString& filepath)
 }
 
 
-void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
+void IQISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
 {
     QMenu myMenu;
     QAction *a;

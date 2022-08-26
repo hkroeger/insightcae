@@ -20,66 +20,45 @@
 #ifndef INSIGHT_CAD_ISCADMODEL_H
 #define INSIGHT_CAD_ISCADMODEL_H
 
-#include <QMainWindow>
-#include <QTimer>
-#include <QTreeView>
-#include <QFileSystemModel>
-#include <QTabWidget>
-#include <QSplitter>
-#include <QMenu>
-#include <QMenuBar>
-#include <QFileDialog>
-#include <QMessageBox>
+#include <QTextEdit>
 
-//#include "qoccviewercontext.h"
-#include "qoccviewwidget.h"
-#include "iqdebugstream.h"
-#include "viewstate.h"
-#include "qmodeltree.h"
-#include "bgparsingthread.h"
-#include "iqcadmodel3dviewer.h"
+#include "base/boost_include.h"
+#include "iqiscadbackgroundthread.h"
+
 
 #ifndef Q_MOC_RUN
-#include "pointertransient.h"
-#include "cadfeaturetransient.h"
-#include "occinclude.h"
-#include "cadfeature.h"
 #include "parser.h"
-#include "sketch.h"
-#include "cadmodel.h"
 #endif
 
 
-
-
+class IQCADItemModel;
+class IQISCADSyntaxHighlighter;
 
 
 
 /**
  * the container for the CAD modeling data, is also the text editor widget
  */
-class ISCADModel
+class IQISCADModelScriptEdit
 : public QTextEdit
 {
     Q_OBJECT
     
-    friend class ISCADMainWindow;
+    friend class IQISCADMainWindow;
     
 protected:
     boost::filesystem::path filename_;
-    ISCADSyntaxHighlighter* highlighter_;
-
-//     std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
+    IQISCADSyntaxHighlighter* highlighter_;
 
     QTimer *bgparseTimer_;
     const int bgparseInterval=1000;
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     bool unsaved_;
     bool doBgParsing_;
+
+    IQCADItemModel* cur_model_;
     
-    std::shared_ptr<const insight::cad::Model> cur_model_;
-    
-    BGParsingThread bgparsethread_;
+    IQISCADBackgroundThread bgparsethread_;
     
     bool skipPostprocActions_;
 
@@ -100,8 +79,8 @@ protected:
 
     
 public:
-    ISCADModel(QWidget* parent = 0, bool dobgparsing=true);
-    ~ISCADModel();
+    IQISCADModelScriptEdit(QWidget* parent = 0, bool dobgparsing=true);
+    ~IQISCADModelScriptEdit();
     
     void loadFile(const boost::filesystem::path& file);
     void setScript(const std::string& contents);
@@ -109,16 +88,16 @@ public:
     /**
      * add all defined planes to the clip plane menu
      */
-    void populateClipPlaneMenu(QMenu* clipplanemenu, QoccViewWidget* v);
+//    void populateClipPlaneMenu(QMenu* clipplanemenu, QoccViewWidget* v);
 
-    void connectModelTree(QModelTree* mt) const;
+//    void connectModelTree(QModelTree* mt) const;
+    void setModel(IQCADItemModel* model);
 
     inline bool isUnsaved() const { return unsaved_; }
 
     virtual QSize sizeHint() const;
 
 public slots:
-    void onGraphicalSelectionChanged(QoccViewWidget* aView);
 
     /**
      * some text has been selected. Highlight all identical occurrences
@@ -285,45 +264,7 @@ Q_SIGNALS:
 
 
 
-/**
- * a widget, which arranges all widgets, required for editing a model:
- * text editor, graphical window, model tree and buttons
- */
-class IQISCADModelEditor
-: public QWidget
-{
-    Q_OBJECT
 
-public:
-    typedef IQCADModel3DViewer Model3DViewer;
-
-protected:
-//    QoccViewWidget* viewer_;
-//    QModelTree* modeltree_;
-    Model3DViewer* viewer_;
-    QTreeView* modeltree_;
-    ISCADModel* model_;
-    QTextEdit* notepad_;
-
-public:
-    IQISCADModelEditor(QWidget* parent = 0);
-
-    inline ISCADModel* model() { return model_; }
-    inline Model3DViewer* viewer() { return viewer_; }
-    inline QTextEdit* notepad() { return notepad_; }
-    inline QTreeView* modeltree() { return modeltree_; }
-
-public Q_SLOTS:
-    void onCopyBtnClicked();
-    void onUpdateTitle(const boost::filesystem::path& filepath, bool isUnSaved);
-    void onInsertNotebookText(const QString& text);
-
-protected:
-    virtual void closeEvent(QCloseEvent *event);
-
-signals:
-    void updateTabTitle(IQISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved);
-};
 
 
 #endif

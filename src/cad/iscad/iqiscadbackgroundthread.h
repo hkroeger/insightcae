@@ -26,64 +26,56 @@
 
 #ifndef Q_MOC_RUN
 #include "cadmodel.h"
-#include "cadtypes.h"
 #include "parser.h"
 #endif
 
-class ISCADSyntaxHighlighter;
-class ISCADMainWindow;
+
+#include "iqiscadscriptmodelgenerator.h"
+#include "iqiscadmodelrebuilder.h"
+
+
+class IQISCADSyntaxHighlighter;
+class IQISCADMainWindow;
 
 
 /**
  * the parsing and rebuilding processor.
  * To be started in a separate thread to keep GUI responsive
  */
-class BGParsingThread
+class IQISCADBackgroundThread
 : public QThread
 {
     Q_OBJECT
 
-public:
-    enum Action { Parse, Rebuild, Post };
 
 protected:
+    IQCADItemModel* model_;
     std::string script_;
-    Action action_;
+    IQISCADScriptModelGenerator::Task finalTask_;
     std::thread::id thread_id_;
 
 public:
-    insight::cad::ModelPtr last_rebuilt_model_, model_;
+//    insight::cad::ModelPtr last_rebuilt_model_, model_;
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
 
     /**
      * is created upon model construction
      */
-    BGParsingThread();
+    IQISCADBackgroundThread();
+
+    void setModel(IQCADItemModel* model);
 
     /**
      * restarts the actions
      */
-    void launch(const std::string& script, Action act = Parse);
+    void launch(const std::string& script, IQISCADScriptModelGenerator::Task executeUntilTask);
+
     virtual void run();
-    void extendActionToRebuild();
-    inline Action action() const { return action_; }
+
+    inline IQISCADScriptModelGenerator::Task finalTask() const { return finalTask_; }
     void cancelRebuild();
 
-signals:
-
-    void createdVariable    (const QString& sn, insight::cad::ScalarPtr sv);
-    void createdVariable    (const QString& sn, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
-    void createdFeature     (const QString& sn, insight::cad::FeaturePtr sm, bool is_component,
-                             boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank());
-    void createdDatum       (const QString& sn, insight::cad::DatumPtr dm);
-    void createdEvaluation  (const QString& sn, insight::cad::PostprocActionPtr em, bool visible);
-
-    void removedScalar      (const QString& sn);
-    void removedVector      (const QString& sn, insight::cad::VectorVariableType vt);
-    void removedFeature     (const QString& sn);
-    void removedDatum       (const QString& sn);
-    void removedEvaluation  (const QString& sn);
-
+Q_SIGNALS:
     void scriptError(long failpos, QString errorMsg, int range);
 
     void statusMessage(const QString& msg, double timeout=0);

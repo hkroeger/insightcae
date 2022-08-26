@@ -32,10 +32,11 @@ class CAExportFile
 {
   
 public:
-  std::string
-    MESS="mess",
-    RMED="rmed",
-    MMED="mmed"
+  static const std::string
+    MESS,
+    RMED,
+    MMED,
+    DAT
   ;
 
   struct FileInfo
@@ -81,6 +82,7 @@ public:
 
     void setNP(int np_omp=1, int np_mpi=1);
 
+    void addInputFile(const boost::filesystem::path& fn, int unit, const std::string& fileType=DAT);
     void setMessFile(const boost::filesystem::path& fn);
     void setRMedFile(const boost::filesystem::path& fn);
     void addMeshMedFile(const boost::filesystem::path& fn, int unit=-1);

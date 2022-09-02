@@ -184,16 +184,23 @@ void RemoteExecutionConfig::syncToLocal(
     const std::vector<string> &exclude_pattern,
     std::function<void (int, const string &)> progress_callback)
 {
-  RemoteLocation::syncToLocal(localDir_, skipTimeSteps, exclude_pattern, progress_callback);
+    RemoteLocation::syncToLocal(localDir_, skipTimeSteps, exclude_pattern, progress_callback);
 }
 
+
+
+
+boost::filesystem::path RemoteExecutionConfig::defaultConfigFileName()
+{
+    return "meta.foam";
+}
 
 
 
 
 boost::filesystem::path RemoteExecutionConfig::defaultConfigFile(const boost::filesystem::path& location)
 {
-  return location/"meta.foam";
+  return location/defaultConfigFileName();
 }
 
 

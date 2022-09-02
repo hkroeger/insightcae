@@ -61,7 +61,7 @@ public:
      * read settings of existing remote location from configuration file
      * @param mf
      */
-    RemoteLocation(const boost::filesystem::path& mf);
+    RemoteLocation(const boost::filesystem::path& mf, bool skipValidation=false);
 
     /**
      * @brief RemoteLocation

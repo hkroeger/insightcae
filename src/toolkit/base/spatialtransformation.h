@@ -36,6 +36,11 @@ class OpenFOAMCase;
 
 std::ostream& operator<<(std::ostream& os, const SpatialTransformation& st);
 
+
+/**
+ * @brief The SpatialTransformation class
+ * order translate >> rotate >> scale
+ */
 class SpatialTransformation
         : public vtk_Transformer
 {
@@ -69,6 +74,10 @@ public:
      * @param scale
      */
     SpatialTransformation(const arma::mat& translate, const arma::mat& rollPitchYaw=vec3(0,0,0), double scale=1.);
+
+    SpatialTransformation(vtkTransform* trsf);
+
+    void setIdentity();
 
     void setTranslation(const arma::mat& translate);
 

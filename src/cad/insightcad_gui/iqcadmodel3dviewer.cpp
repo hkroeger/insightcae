@@ -14,6 +14,7 @@
 #include <vtkProperty.h>
 #include <vtkNamedColors.h>
 #include <vtkPropPicker.h>
+#include <vtkCubeSource.h>
 #include "vtkImageMapper3D.h"
 #include "vtkImageData.h"
 #include "vtkPointData.h"
@@ -138,21 +139,35 @@ void PickInteractorStyle::OnRightButtonDown()
 
 
 
-void IQCADModel3DViewer::remove(std::map<CADEntity, DisplayedEntity>::iterator i)
+
+
+
+
+void IQCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
 {
-    ren_->RemoveActor(i->second.actor_);
-    displayedData_.erase(i);
+//    qDebug()<<"remove"<<pidx;
+    if (pidx.isValid())
+    {
+        auto i = displayedData_.find(pidx);
+        if (i!=displayedData_.end())
+        {
+            i->second.actor_->SetVisibility(false);
+            ren_->RemoveActor(i->second.actor_);
+            displayedData_.erase(i);
+        }
+    }
 }
 
 
 
 
-IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addDatum(const QString& lbl, insight::cad::DatumPtr datum)
+void IQCADModel3DViewer::addDatum(
+        const QPersistentModelIndex& pidx,
+        const QString& lbl,
+        insight::cad::DatumPtr datum )
 {
     vtkNew<vtkNamedColors> colors;
 
-    DisplayedEntity de;
-    de.label_=lbl;
     auto actor = vtkSmartPointer<vtkActor>::New();
     actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
     actor->GetProperty()->SetColor(colors->GetColor3d("lightBlue").GetData());
@@ -180,126 +195,142 @@ IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addDatum(const QString&
     }
 
     ren_->AddActor(actor);
-    de.actor_ = actor;
-    return displayedData_.insert({datum, de}).first->second;
+
+    displayedData_[pidx]={lbl, datum, actor};
 }
 
 
 
 
-IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addFeature(
+void IQCADModel3DViewer::addFeature(
+        const QPersistentModelIndex& pidx,
         const QString& lbl,
         insight::cad::FeaturePtr feat )
 {
     vtkNew<ivtkOCCShape> shape;
     shape->SetShape( feat->shape() );
-    DisplayedEntity de;
-    de.label_=lbl;
+
     auto actor = vtkSmartPointer<vtkActor>::New();
     actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
     actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
-    resetFeatureDisplayProps(lbl.toStdString(), actor);
+
     ren_->AddActor(actor);
-    de.actor_ = actor;
-    return displayedData_.insert({feat, de}).first->second;
+
+    displayedData_[pidx]={lbl, feat, actor};
+
+    resetFeatureDisplayProps(pidx);
 }
 
 
-void IQCADModel3DViewer::resetFeatureDisplayProps(const std::string& lbl, vtkActor* act)
+
+
+void IQCADModel3DViewer::resetFeatureDisplayProps(const QPersistentModelIndex& pidx)
 {
     if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
     {
-
-        auto idx = cadmodel->modelstepIndex(lbl);
-
-        auto opacity = cadmodel->data(
-                    cadmodel->index(idx.row(), IQCADItemModel::entityOpacityCol,
-                                    idx.parent()) ).toDouble();
-
-        act->GetProperty()->SetOpacity(opacity);
-    }
-}
-
-
-void IQCADModel3DViewer::resetDatasetColor(const std::string& lbl, vtkActor* act, vtkDataSet* pds, vtkMapper* mapper)
-{
-    if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
-    {
-
-        auto idx = cadmodel->datasetIndex(lbl);
-        auto fieldName = cadmodel->data(
-                    cadmodel->index(idx.row(), IQCADItemModel::datasetFieldNameCol,
-                                    idx.parent()) ).toString().toStdString();
-        auto pointCell = insight::FieldSupport(cadmodel->data(
-                    cadmodel->index(idx.row(), IQCADItemModel::datasetPointCellCol,
-                                    idx.parent()) ).toInt());
-        auto component = cadmodel->data(
-                    cadmodel->index(idx.row(), IQCADItemModel::datasetComponentCol,
-                                    idx.parent()) ).toInt();
-        auto minVal = cadmodel->data(
-                    cadmodel->index(idx.row(), IQCADItemModel::datasetMinCol,
-                                    idx.parent()) );
-        auto maxVal = cadmodel->data(
-                    cadmodel->index(idx.row(), IQCADItemModel::datasetMaxCol,
-                                    idx.parent()) );
-        auto repr = cadmodel->data(
-                    cadmodel->index(idx.row(), IQCADItemModel::datasetRepresentationCol,
-                                    idx.parent()) ).toInt();
-
-        act->GetProperty()->SetRepresentation(repr);
-
-        if (fieldName.empty())
+        QModelIndex idx(pidx);
+        if (auto act = vtkActor::SafeDownCast(displayedData_[pidx].actor_))
         {
-            if (pointCell==insight::Point)
-            {
-                if (auto *arr = pds->GetPointData()->GetArray(0))
-                {
-                    fieldName = arr->GetName();
-                }
-            }
-            else if (pointCell==insight::Cell)
-            {
-                if (auto *arr = pds->GetCellData()->GetArray(0))
-                {
-                    fieldName = arr->GetName();
-                }
-            }
-        }
+            auto opacity = idx.siblingAtColumn(IQCADItemModel::entityOpacityCol)
+                    .data().toDouble();
+            act->GetProperty()->SetOpacity(opacity);
 
-        if (!fieldName.empty())
-        {
-            double mima[2];
-            if (pointCell==insight::Point)
-            {
-                pds->GetPointData()->GetArray(fieldName.c_str())->GetRange(mima, component);
-            }
-            else if (pointCell==insight::Cell)
-            {
-                pds->GetCellData()->GetArray(fieldName.c_str())->GetRange(mima, component);
-            }
+            auto visible = idx.siblingAtColumn(IQCADItemModel::visibilityCol)
+                    .data(Qt::CheckStateRole).value<Qt::CheckState>() == Qt::Checked;
+            act->SetVisibility(visible);
 
-            if (minVal.isValid()) mima[0]=minVal.toDouble();
-            if (maxVal.isValid()) mima[1]=maxVal.toDouble();
-
-            std::cout<<mima[0]<<" -> "<<mima[1]<<std::endl;
-
-            mapper->SetInterpolateScalarsBeforeMapping(true);
-            mapper->SetLookupTable( insight::createColorMap() );
-            mapper->ScalarVisibilityOn();
-            mapper->SelectColorArray(fieldName.c_str());
-            mapper->SetScalarRange(mima[0], mima[1]);
+            auto color = idx.siblingAtColumn(IQCADItemModel::entityColorCol)
+                    .data().value<QColor>();
+            act->GetProperty()->SetColor(color.redF(), color.greenF(), color.blueF());
         }
     }
 }
 
 
 
-IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addDataset(
+
+void IQCADModel3DViewer::resetDatasetColor(
+        const QPersistentModelIndex& pidx )
+{
+    if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
+    {
+        auto de = displayedData_[pidx];
+
+        if (auto actor = vtkActor::SafeDownCast(de.actor_))
+        {
+            vtkMapper* mapper=actor->GetMapper();
+            vtkDataSet *pds = mapper->GetInput();
+
+            QModelIndex idx(pidx);
+
+            auto fieldName = idx.siblingAtColumn(IQCADItemModel::datasetFieldNameCol).data()
+                    .toString().toStdString();
+            auto pointCell = insight::FieldSupport(
+                        idx.siblingAtColumn(IQCADItemModel::datasetPointCellCol).data()
+                        .toInt() );
+            auto component = idx.siblingAtColumn(IQCADItemModel::datasetComponentCol).data()
+                    .toInt();
+            auto minVal = idx.siblingAtColumn(IQCADItemModel::datasetMinCol).data();
+            auto maxVal = idx.siblingAtColumn(IQCADItemModel::datasetMaxCol).data();
+            auto repr = idx.siblingAtColumn(IQCADItemModel::datasetRepresentationCol).data()
+                    .toInt();
+
+            actor->GetProperty()->SetRepresentation(repr);
+
+            if (fieldName.empty())
+            {
+                if (pointCell==insight::Point)
+                {
+                    if (auto *arr = pds->GetPointData()->GetArray(0))
+                    {
+                        fieldName = arr->GetName();
+                    }
+                }
+                else if (pointCell==insight::Cell)
+                {
+                    if (auto *arr = pds->GetCellData()->GetArray(0))
+                    {
+                        fieldName = arr->GetName();
+                    }
+                }
+            }
+
+            if (!fieldName.empty())
+            {
+                double mima[2];
+                if (pointCell==insight::Point)
+                {
+                    pds->GetPointData()->GetArray(fieldName.c_str())->GetRange(mima, component);
+                }
+                else if (pointCell==insight::Cell)
+                {
+                    pds->GetCellData()->GetArray(fieldName.c_str())->GetRange(mima, component);
+                }
+
+                if (minVal.isValid()) mima[0]=minVal.toDouble();
+                if (maxVal.isValid()) mima[1]=maxVal.toDouble();
+
+                std::cout<<mima[0]<<" -> "<<mima[1]<<std::endl;
+
+                mapper->SetInterpolateScalarsBeforeMapping(true);
+                mapper->SetLookupTable( insight::createColorMap() );
+                mapper->ScalarVisibilityOn();
+                mapper->SelectColorArray(fieldName.c_str());
+                mapper->SetScalarRange(mima[0], mima[1]);
+            }
+        }
+    }
+}
+
+
+
+
+void IQCADModel3DViewer::addDataset(
+        const QPersistentModelIndex& pidx,
         const QString& lbl,
         vtkSmartPointer<vtkDataObject> ds )
 {
-    DisplayedEntity de;
-    de.label_=lbl;
+    vtkProp *act;
 
     if (auto ids = vtkImageData::SafeDownCast(ds) )
     {
@@ -307,7 +338,7 @@ IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addDataset(
         auto mapper = actor->GetMapper();
         mapper->SetInputData(ids);
         ren_->AddActor(actor);
-        de.actor_ = actor;
+        act = actor;
     }
     else if (auto pds = vtkDataSet::SafeDownCast(ds) )
     {
@@ -316,9 +347,8 @@ IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addDataset(
         auto mapper=actor->GetMapper();
 
         mapper->SetInputDataObject(pds);
-        resetDatasetColor(lbl.toStdString(), actor, pds, mapper);
         ren_->AddActor(actor);
-        de.actor_ = actor;
+        act = actor;
     }
     else
     {
@@ -326,33 +356,38 @@ IQCADModel3DViewer::DisplayedEntity& IQCADModel3DViewer::addDataset(
         actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
         actor->GetMapper()->SetInputDataObject(ds);
         ren_->AddActor(actor);
-        de.actor_ = actor;
+        act = actor;
     }
-    return displayedData_.insert({ds, de}).first->second;
+
+    displayedData_[pidx]={lbl, ds, act};
+
+    resetDatasetColor(pidx);
 }
 
 
 
-QModelIndex IQCADModel3DViewer::modelIndex(const CADEntity &ce) const
-{
-    if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
-    {
-        auto di = displayedData_.find(ce);
-        if (boost::get<insight::cad::FeaturePtr>(&ce))
-        {
-            return cadmodel->modelstepIndex(di->second.label_.toStdString());
-        }
-        else if (boost::get<insight::cad::DatumPtr>(&ce))
-        {
-            return cadmodel->datumIndex(di->second.label_.toStdString());
-        }
-        else if (boost::get<vtkSmartPointer<vtkDataObject> >(&ce))
-        {
-            return cadmodel->datasetIndex(di->second.label_.toStdString());
-        }
-    }
-    return QModelIndex();
-}
+
+//QModelIndex IQCADModel3DViewer::modelIndex(const CADEntity &ce) const
+//{
+//    if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
+//    {
+//        auto di = displayedData_.find(ce);
+//        if (boost::get<insight::cad::FeaturePtr>(&ce))
+//        {
+//            return cadmodel->modelstepIndex(di->second.label_.toStdString());
+//        }
+//        else if (boost::get<insight::cad::DatumPtr>(&ce))
+//        {
+//            return cadmodel->datumIndex(di->second.label_.toStdString());
+//        }
+//        else if (boost::get<vtkSmartPointer<vtkDataObject> >(&ce))
+//        {
+//            return cadmodel->datasetIndex(di->second.label_.toStdString());
+//        }
+//    }
+//    return QModelIndex();
+//}
+
 
 
 
@@ -361,122 +396,134 @@ void IQCADModel3DViewer::onDataChanged(
         const QModelIndex &bottomRight,
         const QVector<int> &roles )
 {
-    qDebug()<<"onDataChanged"<<topLeft<<bottomRight<<roles;
+//    qDebug()<<"onDataChanged"<<topLeft<<bottomRight<<roles;
     if (roles.empty() || roles.indexOf(Qt::CheckStateRole)>=0 || roles.indexOf(Qt::EditRole)>=0)
     {
         for (int r=topLeft.row(); r<=bottomRight.row(); ++r)
         {
-            auto lbl = model_->data(model_->index(r, IQCADItemModel::labelCol, topLeft.parent())).toString();
-            auto feat = model_->data(model_->index(r, IQCADItemModel::entityCol, topLeft.parent()));
-            if (roles.indexOf(Qt::CheckStateRole)>=0)
+            auto idx = model_->index(r, 0, topLeft.parent());
+            QPersistentModelIndex pidx(idx);
+
+//            qDebug()<<idx<<pidx<<displayedData_.begin()->first;
+
+            auto lbl = idx.siblingAtColumn(IQCADItemModel::labelCol).data().toString();
+            auto feat = idx.siblingAtColumn(IQCADItemModel::entityCol).data();
+
+            auto colInRange = [&](int minCol, int maxCol=-1)
             {
-                auto vis = model_->data(model_->index(r, IQCADItemModel::visibilityCol, topLeft.parent()), Qt::CheckStateRole).toBool();
-                if (feat.canConvert<insight::cad::FeaturePtr>())
+                if (maxCol<0) maxCol=minCol;
+                return (topLeft.column() >= minCol)
+                        &&
+                       (bottomRight.column() <= maxCol);
+            };
+
+            if (roles.indexOf(Qt::EditRole)>=0 || roles.empty())
+            {
+                if (colInRange(IQCADItemModel::entityCol))
                 {
-                    qDebug()<<"visibility feat"<<lbl<<vis<<feat;
-                    auto f = feat.value<insight::cad::FeaturePtr>();
-                    auto i = displayedData_.find(f);
-                    i->second.actor_->SetVisibility(vis);
-                    this->renderWindow()->Render();
+                    // exchange feature
+                    remove( pidx );
+                    addChild(idx);
                 }
-                else if (feat.canConvert<insight::cad::DatumPtr>())
+                if ( feat.canConvert<insight::cad::FeaturePtr>()
+                     && colInRange(IQCADItemModel::entityColorCol,
+                                   IQCADItemModel::entityOpacityCol) )
                 {
-                    qDebug()<<"visibility datum"<<lbl<<vis<<feat;
-                    auto f = feat.value<insight::cad::DatumPtr>();
-                    auto i = displayedData_.find(f);
-                    i->second.actor_->SetVisibility(vis);
-                    this->renderWindow()->Render();
+                    resetFeatureDisplayProps(pidx);
                 }
-                else if (feat.canConvert<vtkSmartPointer<vtkDataObject> >())
+                if ( feat.canConvert<vtkSmartPointer<vtkDataObject> >()
+                     && colInRange(IQCADItemModel::datasetFieldNameCol,
+                                   IQCADItemModel::datasetRepresentationCol) )
                 {
-                    qDebug()<<"visibility dataset"<<lbl<<vis<<feat;
-                    auto f = feat.value<vtkSmartPointer<vtkDataObject> >();
-                    auto i = displayedData_.find(f);
-                    i->second.actor_->SetVisibility(vis);
-                    this->renderWindow()->Render();
+                    resetDatasetColor(pidx);
                 }
             }
-            if (roles.indexOf(Qt::EditRole)>=0)
+
+            if (roles.indexOf(Qt::CheckStateRole)>=0 || roles.empty())
             {
-                if (
-                        feat.canConvert<insight::cad::FeaturePtr>()
-                        && topLeft.column()>=IQCADItemModel::entityOpacityCol
-                        && bottomRight.column()<=IQCADItemModel::entityOpacityCol
-                    )
+                if (colInRange(IQCADItemModel::visibilityCol))
                 {
-                    auto f = feat.value<insight::cad::FeaturePtr>();
-                    auto i = displayedData_.find(f);
-                    if (auto actor = vtkActor::SafeDownCast(i->second.actor_))
-                    {
-                        resetFeatureDisplayProps(lbl.toStdString(), actor);
-                    }
-                }
-                else if (
-                        feat.canConvert<vtkSmartPointer<vtkDataObject> >()
-                        && bottomRight.column()>=IQCADItemModel::datasetFieldNameCol
-                        && topLeft.column()<=IQCADItemModel::datasetRepresentationCol
-                    )
-                {
-                    auto f = feat.value<vtkSmartPointer<vtkDataObject> >();
-                    auto i = displayedData_.find(f);
-                    if (auto actor = vtkActor::SafeDownCast(i->second.actor_))
-                    {
-                        auto mapper=actor->GetMapper();
-                        resetDatasetColor(lbl.toStdString(), actor, mapper->GetInput(), mapper);
-                    }
+                    bool vis = (idx.siblingAtColumn(IQCADItemModel::visibilityCol).data(Qt::CheckStateRole)
+                        .value<Qt::CheckState>() == Qt::Checked);
+                    displayedData_[pidx].actor_->SetVisibility(vis);
                 }
             }
+
         }
     }
 }
 
+
+
+
 void IQCADModel3DViewer::onModelAboutToBeReset()
 {
-    qDebug()<<"onModelAboutToBeReset";
+//    qDebug()<<"onModelAboutToBeReset";
 }
+
+
+
 
 void IQCADModel3DViewer::onRowsAboutToBeInserted(const QModelIndex &parent, int start, int end)
 {
-    qDebug()<<"onRowsAboutToBeInserted"<<parent<<start<<end;
+//    qDebug()<<"onRowsAboutToBeInserted"<<parent<<start<<end;
 }
+
+
+
 
 void IQCADModel3DViewer::onRowsInserted(const QModelIndex &parent, int start, int end)
 {
-    qDebug()<<"onRowsInserted"<<parent<<start<<end;
+//    qDebug()<<"onRowsInserted"<<parent<<start<<end;
     for (int r=start; r<=end; ++r)
     {
-        addChild( model_->index(r, IQCADItemModel::labelCol, parent) );
+        addChild( model_->index(r, 0, parent) );
     }
 }
+
+
+
 
 void IQCADModel3DViewer::onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
 {
-    qDebug()<<"onRowsAboutToBeRemoved"<<parent<<first<<last;
+//    qDebug()<<"onRowsAboutToBeRemoved"<<parent<<first<<last;
+    for (int r=first; r<=last; ++r)
+    {
+        remove( model_->index(r, 0, parent) );
+    }
 }
 
 
-void IQCADModel3DViewer::addChild(const QModelIndex& i)
-{
-    int r=i.row();
-    QModelIndex idx=i.parent();
 
-    bool vis = model_->data(model_->index(r, IQCADItemModel::visibilityCol, idx), Qt::CheckStateRole).toBool();
-    auto lbl = model_->data( i ).toString();
-    auto feat = model_->data( model_->index(r, IQCADItemModel::entityCol, idx) );
-    qDebug()<<"add child"<<lbl<<r;
+void IQCADModel3DViewer::onRowsRemoved(const QModelIndex &parent, int first, int last)
+{
+}
+
+
+void IQCADModel3DViewer::addChild(const QModelIndex& idx)
+{
+    QPersistentModelIndex i(idx);
+    auto lbl = idx.siblingAtColumn(IQCADItemModel::labelCol).data().toString();
+    auto feat = idx.siblingAtColumn(IQCADItemModel::entityCol).data();
+
+//    qDebug()<<"add child"<<lbl<<r;
     if (feat.canConvert<insight::cad::FeaturePtr>())
     {
-        addFeature( lbl, feat.value<insight::cad::FeaturePtr>() ).actor_->SetVisibility(vis);
+        addFeature( i, lbl, feat.value<insight::cad::FeaturePtr>() );
     }
     else if (feat.canConvert<insight::cad::DatumPtr>())
     {
-        addDatum( lbl, feat.value<insight::cad::DatumPtr>() ).actor_->SetVisibility(vis);
+        addDatum( i, lbl, feat.value<insight::cad::DatumPtr>() );
     }
     else if (feat.canConvert<vtkSmartPointer<vtkDataObject> >())
     {
-        addDataset( lbl, feat.value<vtkSmartPointer<vtkDataObject> >() ).actor_->SetVisibility(vis);
+        addDataset( i, lbl, feat.value<vtkSmartPointer<vtkDataObject> >() );
     }
 }
+
+
+
+
 
 void IQCADModel3DViewer::addSiblings(const QModelIndex& idx)
 {
@@ -494,6 +541,7 @@ void IQCADModel3DViewer::addSiblings(const QModelIndex& idx)
         }
     }
 }
+
 
 
 
@@ -519,6 +567,7 @@ IQCADModel3DViewer::IQCADModel3DViewer(
     widget->InteractiveOn();
 
     vtkNew<PickInteractorStyle> style;
+//    vtkNew<vtkInteractorStyleTrackballCamera> style;
     style->SetDefaultRenderer(ren_);
     renWin1->GetInteractor()->SetInteractorStyle(style);
 
@@ -532,16 +581,19 @@ IQCADModel3DViewer::IQCADModel3DViewer(
             auto i = std::find_if(
                         displayedData_.begin(),
                         displayedData_.end(),
-                        [actor](const std::pair<CADEntity,DisplayedEntity>& e)
+                        [actor](const DisplayedData::value_type& e)
                         { return (e.second.actor_==actor); }
             );
             if (i!=displayedData_.end())
             {
-                Q_EMIT contextMenuRequested(modelIndex(i->first), QCursor::pos());
+                Q_EMIT contextMenuRequested(i->first, QCursor::pos());
             }
         }
     );
 }
+
+
+
 
 void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
 {
@@ -565,6 +617,9 @@ void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
     connect(model, &QAbstractItemModel::rowsAboutToBeRemoved,
             this, &IQCADModel3DViewer::onRowsAboutToBeRemoved);
 
+    connect(model, &QAbstractItemModel::rowsRemoved,
+            this, &IQCADModel3DViewer::onRowsRemoved);
+
     connect(model, &QAbstractItemModel::rowsAboutToBeInserted,
             this, &IQCADModel3DViewer::onRowsAboutToBeInserted);
     connect(model, &QAbstractItemModel::rowsInserted,
@@ -573,8 +628,25 @@ void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
     addSiblings(QModelIndex());
 }
 
+
+
+
 QSize IQCADModel3DViewer::sizeHint() const
 {
     return QSize(1024,768);
 }
+
+
+
+
+//vtkActor *IQCADModel3DViewer::getActor(insight::cad::FeaturePtr geom)
+//{
+//    CADEntity e(geom);
+//    auto i=displayedData_.find(e);
+//    if (i!=displayedData_.end())
+//    {
+//        return vtkActor::SafeDownCast(i->second.actor_);
+//    }
+//    return nullptr;
+//}
 

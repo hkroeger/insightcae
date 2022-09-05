@@ -23,16 +23,42 @@ std::ostream& operator<<(std::ostream& os, const SpatialTransformation& st)
 }
 
 SpatialTransformation::SpatialTransformation()
-    : translate_(vec3(0,0,0)),
-      R_(rollPitchYawToRotationMatrix(vec3(0,0,0))),
-      scale_(1.)
-{}
+{
+    setIdentity();
+}
 
 SpatialTransformation::SpatialTransformation(const arma::mat& translate, const arma::mat& rollPitchYaw, double scale)
 {
     setTranslation(translate);
     setRollPitchYaw(rollPitchYaw);
     setScale(scale);
+}
+
+SpatialTransformation::SpatialTransformation(vtkTransform *t)
+{
+    double sfs[3], ra[3], tp[3];
+    t->GetScale(sfs);
+    insight::assertion(
+            pow(sfs[1]-sfs[0],2)+pow(sfs[2]-sfs[0],2)<SMALL,
+            str(boost::format("the vtkTransform cannot be converted in a SpatialTransformation because the scale factors for the different coordinate directions are not equal (got %g, %g, %g)")
+                %sfs[0]%sfs[1]%sfs[2])
+            );
+    t->GetOrientation(ra);
+    t->GetPosition(tp);
+
+    setIdentity();
+    setScale(sfs[0]);
+    appendTransformation(SpatialTransformation(vec3Zero(), vec3Y(ra[1])));
+    appendTransformation(SpatialTransformation(vec3Zero(), vec3X(ra[0])));
+    appendTransformation(SpatialTransformation(vec3Zero(), vec3Z(ra[2])));
+    appendTransformation(SpatialTransformation(vec3FromComponents(tp)));
+}
+
+void SpatialTransformation::setIdentity()
+{
+    setTranslation(vec3Zero());
+    setRollPitchYaw(vec3Zero());
+    setScale(1.);
 }
 
 void SpatialTransformation::setTranslation(const arma::mat& translate)

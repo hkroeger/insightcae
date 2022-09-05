@@ -30,9 +30,10 @@ struct SpatialTransformationParameterParser
       "spatialTransformation",
       typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
        new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-        ( "(" >> *qi::double_ >> ")" >>
-          "(" >> *qi::double_ >> ")" >>
-          qi::double_ >> ruleset.r_description_string )
+        ( "(" >> *qi::double_ >> ")" >> // translation
+          "(" >> *qi::double_ >> ")" >> // roll pitch yaw
+          qi::double_ >>                // scale factor
+          ruleset.r_description_string )
          [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(
             vec2mat_(qi::_1), vec2mat_(qi::_2), qi::_3, qi::_4 )) ]
       ))

@@ -123,6 +123,18 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
     modelTree_->setModel(model_);
     viewer_->setModel(model_);
 
+    modelTree_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(
+                modelTree_, &QTreeView::customContextMenuRequested, model_,
+                [this](const QPoint& pos)
+                {
+                    auto idx = modelTree_->indexAt(pos);
+                    model_->showContextMenu(idx, modelTree_->mapToGlobal(pos));
+                }
+    );
+    connect( viewer_, &IQCADModel3DViewer::contextMenuRequested,
+             model_, &IQCADItemModel::showContextMenu );
+
 #warning reimplement!
 //    connect(modeltree_, &QModelTree::showItem,
 //            viewer_, &QoccViewWidget::onShow);

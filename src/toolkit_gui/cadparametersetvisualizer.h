@@ -16,7 +16,7 @@
 
 
 class IQCADItemModel;
-
+class IQParameterSetModel;
 
 namespace insight
 {
@@ -32,6 +32,7 @@ class TOOLKIT_GUI_EXPORT CADParameterSetVisualizer
   QThread asyncRebuildThread_;
   std::mutex vis_mtx_;
   IQCADItemModel *model_;
+  IQParameterSetModel *psmodel_;
 
 public:
 
@@ -40,10 +41,15 @@ public:
 
   void setModel(IQCADItemModel *model);
   IQCADItemModel *model();
+  void setParameterSetModel(IQParameterSetModel* psm);
 
   virtual void addDatum(const std::string& name, insight::cad::DatumPtr dat);
   virtual void addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds = AIS_Shaded );
   virtual void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> ds);
+
+  void addGeometryToSpatialTransformationParameter(
+              const std::string& parameterPath,
+              insight::cad::FeaturePtr geom );
 
   void update(const ParameterSet& ps) override;
 

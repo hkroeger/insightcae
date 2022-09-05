@@ -85,7 +85,7 @@ AnalysisForm::AnalysisForm(
   pack_parameterset_(true),
   is_modified_(false)
 {
-  setAttribute(Qt::WA_DeleteOnClose, true);
+    setAttribute(Qt::WA_DeleteOnClose, true);
 
     // load default parameters
     auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
@@ -375,10 +375,13 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 {
     if (is_modified_)
     {
-      auto answer=QMessageBox::question(this, "Parameters unsaved",
-                                        "The current parameters have been modified without saving.\n"
-                                        "Do you wish to save them before closing?",
-                                        QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+
+      auto answer=QMessageBox::question(
+                  this, "Parameters unsaved",
+                  "The current parameters have been modified without saving.\n"
+                  "Do you wish to save them before closing?",
+                  QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel );
+
       if (answer==QMessageBox::Yes)
       {
         bool cancelled=false;
@@ -479,7 +482,6 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
     pack_parameterset_ = cb->isChecked();
     updateSaveMenuLabel();
 
-//     parameters_.saveToFile(fn.toStdString(), analysis_->type());
     ist_file_=fn.toStdString();
 
     if (!hasLocalWorkspace())
@@ -524,9 +526,12 @@ void AnalysisForm::onLoadParameters()
 {
   if (is_modified_)
   {
-    auto answer = QMessageBox::question(this, "Parameters unsaved", "The current parameter set is unsaved and will be overwritten.\n"
-                                                  "Do you wish to save them before continue?",
-                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+    auto answer = QMessageBox::question(
+                this, "Parameters unsaved",
+                "The current parameter set is unsaved and will be overwritten.\n"
+                "Do you wish to save them before continue?",
+                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+
     if (answer == QMessageBox::Yes)
     {
       onSaveParameters();
@@ -537,7 +542,11 @@ void AnalysisForm::onLoadParameters()
     }
   }
 
-  QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
+  QString fn = QFileDialog::getOpenFileName(
+              this, "Open Parameters",
+              QString(),
+              "Insight parameter sets (*.ist)" );
+
   if (!fn.isEmpty())
   {
     loadParameters(fn.toStdString());

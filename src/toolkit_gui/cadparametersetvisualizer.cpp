@@ -6,6 +6,7 @@
 #include "qmodelstepitem.h"
 
 #include "iqiscadmodelrebuilder.h"
+#include "iqparametersetmodel.h"
 
 
 namespace insight
@@ -31,6 +32,18 @@ void CADParameterSetVisualizer::addDataset(const std::string &name, vtkSmartPoin
   Q_EMIT createdDataset( QString::fromStdString(name), ds, true );
 }
 
+void CADParameterSetVisualizer::addGeometryToSpatialTransformationParameter(
+        const std::string &parameterPath,
+        cad::FeaturePtr geom )
+{
+    if (psmodel_)
+    {
+        psmodel_->addGeometryToSpatialTransformationParameter(
+                    QString::fromStdString(parameterPath),
+                    geom );
+    }
+}
+
 void CADParameterSetVisualizer::update(const ParameterSet& ps)
 {
   CurrentExceptionContext ex("setting parameters for parameter set visualizer");
@@ -46,6 +59,8 @@ void CADParameterSetVisualizer::recreateVisualizationElements()
 
 
 CADParameterSetVisualizer::CADParameterSetVisualizer()
+    : model_(nullptr),
+      psmodel_(nullptr)
 {
   moveToThread(&asyncRebuildThread_);
   asyncRebuildThread_.start();
@@ -72,6 +87,11 @@ void CADParameterSetVisualizer::setModel(IQCADItemModel *model)
 IQCADItemModel *CADParameterSetVisualizer::model()
 {
     return model_;
+}
+
+void CADParameterSetVisualizer::setParameterSetModel(IQParameterSetModel *psm)
+{
+    psmodel_=psm;
 }
 
 

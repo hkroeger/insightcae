@@ -23,6 +23,7 @@ set(insightcad_gui_SRCS
  iqcaditemmodel.h
  iqcaditemmodel.cpp
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
+ iqcadtransformationcommand.h iqcadtransformationcommand.cpp
  ivtkoccshape.h ivtkoccshape.cpp
  iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
 

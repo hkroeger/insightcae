@@ -30,13 +30,15 @@ QString IQPropertyLibrarySelectionParameter::valueText() const
 
 
 
-QVBoxLayout* IQPropertyLibrarySelectionParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQPropertyLibrarySelectionParameter::populateEditControls(
+        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
   const auto& p = static_cast<const insight::PropertyLibrarySelectionParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Selection:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto* selBox_=new QComboBox(editControlsContainer);

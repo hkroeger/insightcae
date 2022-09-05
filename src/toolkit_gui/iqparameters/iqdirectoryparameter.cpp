@@ -31,13 +31,15 @@ QString IQDirectoryParameter::valueText() const
 
 
 
-QVBoxLayout* IQDirectoryParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQDirectoryParameter::populateEditControls(
+        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
   const auto& p = dynamic_cast<const insight::DirectoryParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto *lineEdit=new QLineEdit(editControlsContainer);

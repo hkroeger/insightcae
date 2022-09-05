@@ -2,6 +2,23 @@
 
 #include <QMenu>
 #include <QInputDialog>
+#include <QColorDialog>
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/discrete_distribution.hpp>
+#include <boost/random/exponential_distribution.hpp>
+
+boost::mt19937 boostRanGen;
+
+IQCADItemModel::FeatureVisibility::FeatureVisibility()
+{
+    boost::random::exponential_distribution<> ed(2);
+    color.setRedF(      std::max(0., std::min(1., ed(boostRanGen))) );
+    color.setGreenF(    std::max(0., std::min(1., ed(boostRanGen))) );
+    color.setBlueF(     std::max(0., std::min(1., ed(boostRanGen))) );
+    opacity=1.;
+    visible=true;
+}
 
 IQCADItemModel::IQCADItemModel(insight::cad::ModelPtr m, QObject* parent)
   : QAbstractItemModel(parent)
@@ -99,7 +116,7 @@ QModelIndex IQCADItemModel::index(int row, int column, const QModelIndex &parent
 
 QModelIndex IQCADItemModel::parent(const QModelIndex &index) const
 {
-    if (index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
+    if (index.isValid() && index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
     {
         return createIndex(index.internalId(), 0, quintptr(INT_MAX));
     }
@@ -114,29 +131,32 @@ int IQCADItemModel::rowCount(const QModelIndex &parent) const
     }
     else if (!parent.parent().isValid())
     {
-        switch (parent.row())
+        if (parent.column()==0)
         {
-        case CADModelSection::scalarVariable:
-            return model_->scalars().size();
-            break;
-        case CADModelSection::pointVariable:
-            return model_->points().size();
-            break;
-        case CADModelSection::vectorVariable:
-            return model_->directions().size();
-            break;
-        case CADModelSection::datum:
-            return model_->datums().size();
-            break;
-        case CADModelSection::feature:
-            return model_->modelsteps().size();
-            break;
-        case CADModelSection::postproc:
-            return model_->postprocActions().size();
-            break;
-        case CADModelSection::dataset:
-            return model_->datasets().size();
-            break;
+            switch (parent.row())
+            {
+            case CADModelSection::scalarVariable:
+                return model_->scalars().size();
+                break;
+            case CADModelSection::pointVariable:
+                return model_->points().size();
+                break;
+            case CADModelSection::vectorVariable:
+                return model_->directions().size();
+                break;
+            case CADModelSection::datum:
+                return model_->datums().size();
+                break;
+            case CADModelSection::feature:
+                return model_->modelsteps().size();
+                break;
+            case CADModelSection::postproc:
+                return model_->postprocActions().size();
+                break;
+            case CADModelSection::dataset:
+                return model_->datasets().size();
+                break;
+            }
         }
     }
     return 0;
@@ -262,9 +282,13 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                             r.setValue(i->second);
                             return r;
                         }
+                        else if (index.column()==entityColorCol)
+                        {
+                            return featureVisibility_[i->first].color;
+                        }
                         else if (index.column()==entityOpacityCol)
                         {
-                            return featureVisibility_.find(i->second)->second.opacity;
+                            return featureVisibility_[i->first].opacity;
                         }
                     }
                     break;
@@ -311,34 +335,34 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         else if (index.column()==datasetFieldNameCol)
                         {
                             return QString::fromStdString(
-                                        datasetVisibility_[i->second].fieldName
+                                        datasetVisibility_[i->first].fieldName
                                         );
                         }
                         else if (index.column()==datasetPointCellCol)
                         {
                             return int(
-                                        datasetVisibility_[i->second].fieldSupport
+                                        datasetVisibility_[i->first].fieldSupport
                                         );
                         }
                         else if (index.column()==datasetComponentCol)
                         {
                             return int(
-                                        datasetVisibility_[i->second].fieldComponent
+                                        datasetVisibility_[i->first].fieldComponent
                                         );
                         }
                         else if (index.column()==datasetMinCol)
                         {
-                            auto mi = datasetVisibility_[i->second];
+                            auto mi = datasetVisibility_[i->first];
                             if (mi.minVal) return double(*mi.minVal);
                         }
                         else if (index.column()==datasetMaxCol)
                         {
-                            auto mi = datasetVisibility_[i->second];
+                            auto mi = datasetVisibility_[i->first];
                             if (mi.maxVal) return double(*mi.maxVal);
                         }
                         else if (index.column()==datasetRepresentationCol)
                         {
-                            auto mi = datasetVisibility_[i->second];
+                            auto mi = datasetVisibility_[i->first];
                             return int(mi.representation);
                         }
                     }
@@ -359,7 +383,8 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                             std::advance(i, index.row());
                             if (index.column()==visibilityCol)
                             {
-                                return Qt::CheckState( datumVisibility_[i->second]?Qt::Checked:Qt::Unchecked );
+                                return Qt::CheckState( datumVisibility_[i->first]?
+                                            Qt::Checked : Qt::Unchecked );
                             }
                         }
                         break;
@@ -371,7 +396,7 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                             if (index.column()==visibilityCol)
                             {
                                 return Qt::CheckState(
-                                            featureVisibility_[i->second].visible?
+                                            featureVisibility_[i->first].visible?
                                             Qt::Checked:Qt::Unchecked );
                             }
                         }
@@ -384,7 +409,7 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                             if (index.column()==visibilityCol)
                             {
                                 return Qt::CheckState(
-                                            datasetVisibility_[i->second].visible?
+                                            datasetVisibility_[i->first].visible?
                                             Qt::Checked:Qt::Unchecked
                                             );
                             }
@@ -435,7 +460,7 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
                 auto datums = model_->datums();
                 auto i=datums.begin();
                 std::advance(i, index.row());
-                datumVisibility_[i->second] =
+                datumVisibility_[i->first] =
                         ( value.value<Qt::CheckState>()==Qt::Checked );
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
@@ -445,7 +470,7 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
                 auto features = model_->modelsteps();
                 auto i=features.begin();
                 std::advance(i, index.row());
-                featureVisibility_[i->second].visible =
+                featureVisibility_[i->first].visible =
                         ( value.value<Qt::CheckState>()==Qt::Checked );
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
@@ -455,7 +480,7 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
                 auto ds = model_->datasets();
                 auto i=ds.begin();
                 std::advance(i, index.row());
-                datasetVisibility_[i->second].visible =
+                datasetVisibility_[i->first].visible =
                         ( value.value<Qt::CheckState>()==Qt::Checked );
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
@@ -470,9 +495,16 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
             auto i=feat.begin();
             std::advance(i, index.row());
 
-            if (index.column()==entityOpacityCol)
+            if (index.column()==entityColorCol)
             {
-                featureVisibility_[i->second].opacity =
+                featureVisibility_[i->first].color =
+                        value.value<QColor>();
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.column()==entityOpacityCol)
+            {
+                featureVisibility_[i->first].opacity =
                         value.toDouble();
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
@@ -486,28 +518,28 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
 
             if (index.column()==datasetFieldNameCol)
             {
-                datasetVisibility_[i->second].fieldName =
+                datasetVisibility_[i->first].fieldName =
                         value.toString().toStdString();
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
             else if (index.column()==datasetPointCellCol)
             {
-                datasetVisibility_[i->second].fieldSupport =
+                datasetVisibility_[i->first].fieldSupport =
                         insight::FieldSupport(value.toInt());
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
             else if (index.column()==datasetComponentCol)
             {
-                datasetVisibility_[i->second].fieldComponent =
+                datasetVisibility_[i->first].fieldComponent =
                         value.toInt();
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
             else if (index.column()==datasetMinCol)
             {
-                auto& minVal=datasetVisibility_[i->second].minVal;
+                auto& minVal=datasetVisibility_[i->first].minVal;
                 if (value.isValid())
                 {
                     minVal = value.toDouble();
@@ -521,7 +553,7 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
             }
             else if (index.column()==datasetMaxCol)
             {
-                auto& maxVal=datasetVisibility_[i->second].maxVal;
+                auto& maxVal=datasetVisibility_[i->first].maxVal;
                 if (value.isValid())
                 {
                     maxVal = value.toDouble();
@@ -535,7 +567,7 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
             }
             else if (index.column()==datasetRepresentationCol)
             {
-                auto& dv=datasetVisibility_[i->second];
+                auto& dv=datasetVisibility_[i->first];
                 dv.representation=insight::DatasetRepresentation(value.toInt());
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
@@ -730,7 +762,7 @@ void IQCADItemModel::addPostprocAction(
 void IQCADItemModel::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> value)
 {
     // set *before* addEntity
-    auto&dvv = datasetVisibility_[value];
+    auto&dvv = datasetVisibility_[name];
     if (auto* ds=vtkDataSet::SafeDownCast(value))
     {
         if (ds->GetNumberOfCells()==0 && ds->GetNumberOfPoints()>0)
@@ -868,6 +900,22 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
                     {
                         QModelIndex visi=index(idx.row(), IQCADItemModel::entityOpacityCol, idx.parent());
                         setData(visi, val, Qt::EditRole);
+                    }
+                });
+        cm.addAction(a);
+
+        a=new QAction("Set color...", &cm);
+        connect(a, &QAction::triggered, this,
+                [this,idx]() {
+                    bool ok=false;
+                    QModelIndex ci=index(idx.row(), IQCADItemModel::entityColorCol, idx.parent());
+                    auto val=QColorDialog::getColor(
+                                data(ci).value<QColor>(),
+                                nullptr,
+                                "Set Color");
+                    if (val.isValid())
+                    {
+                        setData(ci, val, Qt::EditRole);
                     }
                 });
         cm.addAction(a);

@@ -31,13 +31,15 @@ QString IQSelectableSubsetParameter::valueText() const
 
 
 
-QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(
+        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
   const auto&p = dynamic_cast<const insight::SelectableSubsetParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
   layout2->addWidget(new QLabel("Selection:", editControlsContainer));
   auto* selBox=new QComboBox(editControlsContainer);
   for ( auto& pair: p.items() )

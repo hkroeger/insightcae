@@ -32,16 +32,18 @@ QString IQDoubleRangeParameter::valueText() const
 
 
 
-QVBoxLayout* IQDoubleRangeParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQDoubleRangeParameter::populateEditControls(
+        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
   const auto& p =dynamic_cast<const insight::DoubleRangeParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
 
   QLabel *promptLabel = new QLabel("Selection:", editControlsContainer);
   layout->addWidget(promptLabel);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
   auto *listBox = new QListWidget(editControlsContainer);
 //  connect(lBox_, &QListWidget::destroyed, this, &DoubleRangeParameterWrapper::onDestruction);
   layout2->addWidget(listBox);

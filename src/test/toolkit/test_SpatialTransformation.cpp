@@ -1,6 +1,9 @@
 
 #include "base/exception.h"
 #include "base/spatialtransformation.h"
+#include "occtools.h"
+
+#include "vtkTransform.h"
 
 using namespace insight;
 
@@ -58,6 +61,38 @@ int main(int /*argc*/, char*/*argv*/[])
                             t3.trsfPt(p)
                             , 2)< SMALL,
                         "error in subsequent combined transformation" );
+        }
+
+
+        {
+            arma::mat p=vec3(1,2,3);
+
+            vtkNew<vtkTransform> t;
+            t->Translate(3,4,5);
+            t->RotateZ(10);
+            t->RotateX(20);
+            t->RotateY(30);
+            t->Scale(1.2,1.2,1.2);
+
+            arma::mat pdash_t=vec3Zero();
+            t->TransformPoint(p.memptr(), pdash_t.memptr());
+
+            SpatialTransformation t1(t);
+            arma::mat pdash_t1 = t1.trsfPt(p);
+
+            std::cout<<pdash_t.t()<<" <=> "<<pdash_t1.t()<<std::endl;
+            insight::assertion(
+                        arma::norm(pdash_t-pdash_t1)<SMALL,
+                        "error in conversion from vtk");
+
+            auto t2 = t1.toVTKTransform();
+            arma::mat pdash_t2=vec3Zero();
+            t2->TransformPoint(p.memptr(), pdash_t2.memptr());
+
+            std::cout<<pdash_t.t()<<" <=> "<<pdash_t2.t()<<std::endl;
+            insight::assertion(
+                        arma::norm(pdash_t-pdash_t2)<SMALL,
+                        "error in back conversion from SpatialTransform to vtk");
         }
 
    }

@@ -12,6 +12,7 @@
 #include <QAbstractItemModel>
 #include <QDebug>
 #include <QApplication>
+#include <QColor>
 
 
 class INSIGHTCAD_GUI_EXPORT IQCADItemModel
@@ -21,14 +22,17 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
 
   insight::cad::ModelPtr model_;
 
-  mutable std::map<insight::cad::DatumPtr, bool> datumVisibility_;
+  mutable std::map<std::string, bool> datumVisibility_;
 
   struct FeatureVisibility
   {
-      bool visible = true;
-      double opacity = 1.;
+      bool visible;
+      double opacity;
+      QColor color;
+
+      FeatureVisibility();
   };
-  mutable std::map<insight::cad::FeaturePtr, FeatureVisibility> featureVisibility_;
+  mutable std::map<std::string, FeatureVisibility> featureVisibility_;
 
   struct DatasetVisibility
   {
@@ -52,9 +56,8 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
 
       boost::optional<double> minVal;
       boost::optional<double> maxVal;
-
   };
-  mutable std::map<vtkSmartPointer<vtkDataObject>, DatasetVisibility> datasetVisibility_;
+  mutable std::map<std::string, DatasetVisibility> datasetVisibility_;
 
 
 
@@ -74,13 +77,16 @@ public:
       visibilityCol=0,
       labelCol=1,
       valueCol=2,
+
       datasetFieldNameCol = 3,
       datasetPointCellCol = 4,
       datasetComponentCol = 5,
       datasetMinCol = 6,
       datasetMaxCol = 7,
       datasetRepresentationCol = 8,
-      entityOpacityCol = 3,
+
+      entityColorCol = 3,
+      entityOpacityCol = 4,
       entityCol=99;
 
 private:
@@ -107,8 +113,10 @@ private:
           {
               // replace
               auto i = eidxfunc(name);
+              auto ie = index(i.row(), entityCol, i.parent());
+              qDebug()<<"replaceEntity"<<QString::fromStdString(name)<<i;
               modeladdfunc(name, value);
-              Q_EMIT dataChanged(i, i);
+              Q_EMIT dataChanged(ie, ie, {Qt::EditRole});
           }
       }
       else
@@ -133,6 +141,7 @@ private:
       auto idx = eidxfunc(name);
       if (idx.isValid())
       {
+          qDebug()<<"removeEntity"<<QString::fromStdString(name)<<idx.row();
           beginRemoveRows(index(esect, 0), idx.row(), idx.row());
           modelremovefunc(name);
           endRemoveRows();

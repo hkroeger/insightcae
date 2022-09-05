@@ -25,11 +25,16 @@
 #include <thread>
 
 
+
+
 IQISCADBackgroundThread::IQISCADBackgroundThread()
 : finalTask_(IQISCADScriptModelGenerator::Parse),
   model_(nullptr)
 {
 }
+
+
+
 
 void IQISCADBackgroundThread::setModel(IQCADItemModel *model)
 {
@@ -45,7 +50,6 @@ void IQISCADBackgroundThread::launch(const std::string& script, IQISCADScriptMod
     finalTask_=executeUntilTask;
     start();
 }
-
 
 
 
@@ -70,6 +74,8 @@ void IQISCADBackgroundThread::run()
 
     syn_elem_dir_ = mgen.generate(script_, finalTask_);
 }
+
+
 
 
 void IQISCADBackgroundThread::cancelRebuild()

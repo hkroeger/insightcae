@@ -155,6 +155,7 @@ void Model::build()
 
 void Model::addScalar(const std::string& name, ScalarPtr value)
 {
+  if (scalars_.find(name)) scalars_.remove(name);
   scalars_.add(name, value);
 }
 
@@ -166,6 +167,7 @@ void Model::addScalarIfNotPresent(const std::string& name, ScalarPtr value)
 
 void Model::addPoint(const std::string& name, VectorPtr value)
 {
+  if (points_.find(name)) points_.remove(name);
   points_.add(name, value);
 }
 
@@ -177,6 +179,7 @@ void Model::addPointIfNotPresent(const std::string& name, VectorPtr value)
 
 void Model::addDirection(const std::string& name, VectorPtr value)
 {
+  if (directions_.find(name)) directions_.remove(name);
   directions_.add(name, value);
 }
 
@@ -188,6 +191,7 @@ void Model::addDirectionIfNotPresent(const std::string& name, VectorPtr value)
 
 void Model::addDatum(const std::string& name, DatumPtr value)
 {
+  if (datums_.find(name)) datums_.remove(name);
   datums_.add(name, value);
 }
 
@@ -200,6 +204,7 @@ void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
 void Model::addModelstep(const std::string& name, FeaturePtr value, const std::string& /*featureDescription*/)
 {
   value->setFeatureSymbolName(name);
+  if (modelsteps_.find(name)) modelsteps_.remove(name);
   modelsteps_.add(name, value);
 }
 

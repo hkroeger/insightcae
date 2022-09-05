@@ -42,7 +42,6 @@ ParameterEditorWidget::ParameterEditorWidget
   ParameterSetDisplay* display
 )
 : QSplitter(Qt::Horizontal, parent),
-//  parameters_(pset),
   defaultParameters_(default_pset),
   model_(new IQParameterSetModel(pset, default_pset, this)),
   vali_(vali),
@@ -54,7 +53,7 @@ ParameterEditorWidget::ParameterEditorWidget
 
   {
     QWidget *w=new QWidget(this);
-    QVBoxLayout *l=new QVBoxLayout(w);
+    QVBoxLayout *l=new QVBoxLayout;
     w->setLayout(l);
 
     parameterTreeView_ = new QTreeView(w);
@@ -66,21 +65,15 @@ ParameterEditorWidget::ParameterEditorWidget
     parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
     l->addWidget(parameterTreeView_);
 
-    QObject::connect( parameterTreeView_, &QTreeView::clicked,
-             [=](const QModelIndex& index)
-             {
-               model_->IQParameterSetModel::handleClick(index, inputContents_);
-             }
-    );
 
     QObject::connect(
           parameterTreeView_, &QTreeView::customContextMenuRequested,
           [=](const QPoint& p)
-    {
-      model_->contextMenu( parameterTreeView_,
-                           parameterTreeView_->indexAt(p),
-                           p );
-    }
+          {
+            model_->contextMenu( parameterTreeView_,
+                                 parameterTreeView_->indexAt(p),
+                                 p );
+          }
     );
 
 
@@ -126,28 +119,32 @@ ParameterEditorWidget::ParameterEditorWidget
       w->setLayout(l);
       addWidget(w);
 
-//      QModelTree* modeltree =new QModelTree(this);
       auto modeltree = new QTreeView(this);
       addWidget(modeltree);
 
-//      viewer->connectModelTree(modeltree);
-
       display_=new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree);
-      viz_->setModel(display_->model());
-      //display_->connectVisualizer(viz_);
     }
     else
     {
       // use supplied displayer
       display_=display;
     }
-//    connect(this, &ParameterEditorWidget::parameterSetChanged,
-//            viz_.get(), &insight::CAD_ParameterSet_Visualizer::visualizeScheduledParameters);
+    viz_->setModel(display_->model());
+    viz_->setParameterSetModel(model_);
   }
   else
   {
     display_ = nullptr;
   }
+
+  QObject::connect( parameterTreeView_, &QTreeView::clicked,
+           [=](const QModelIndex& index)
+           {
+             model_->IQParameterSetModel::handleClick(
+                         index, inputContents_,
+                         display_ ? display_->viewer() : nullptr );
+           }
+  );
 
   {
     QList<int> l;

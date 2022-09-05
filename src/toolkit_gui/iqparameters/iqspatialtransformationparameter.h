@@ -7,7 +7,8 @@
 #include "base/parameters/spatialtransformationparameter.h"
 
 
-class TOOLKIT_GUI_EXPORT IQSpatialTransformationParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQSpatialTransformationParameter
+        : public IQParameter
 {
 public:
     declareType(insight::SpatialTransformationParameter::typeName_());
@@ -25,7 +26,8 @@ public:
     QVBoxLayout* populateEditControls(
             IQParameterSetModel* model,
             const QModelIndex &index,
-            QWidget* editControlsContainer ) override;
+            QWidget* editControlsContainer,
+            IQCADModel3DViewer *viewer ) override;
 
 };
 

@@ -52,17 +52,17 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
               auto datums=model_->datums();
               auto postprocActions=model_->postprocActions();
 
-              int is=0;
-              int istepmax=
-                      scalars.size()
-                      +points.size()
-                      +directions.size()
-                      +modelsteps.size()
-                      +datums.size()
-                      +( finalTask >= Post ? postprocActions.size() : 0 )
-                      -1;
+              int is = 0,
+                  istepmax=
+                        scalars.size()
+                      + points.size()
+                      + directions.size()
+                      + modelsteps.size()
+                      + datums.size()
+                      + ( finalTask >= Post ? postprocActions.size() : 0 )
+                      - 1;
 
-              for (insight::cad::Model::ScalarTableContents::value_type v: scalars)
+              for (const auto& v: scalars)
               {
                   Q_EMIT statusMessage("Building scalar "+QString::fromStdString(v.first));
 //                    v.second->value();
@@ -71,7 +71,7 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
                   Q_EMIT createdVariable(QString::fromStdString(v.first), v.second);
               }
 
-              for (auto p: points)
+              for (const auto& p: points)
               {
                   Q_EMIT statusMessage("Building point "+QString::fromStdString(p.first));
                   p.second->value(); // Trigger evaluation
@@ -81,7 +81,7 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
                               insight::cad::VectorVariableType::Point);
               }
 
-              for (auto d: directions)
+              for (const auto& d: directions)
               {
                   Q_EMIT statusMessage("Building vector "+QString::fromStdString(d.first));
                   d.second->value(); // Trigger evaluation
@@ -91,7 +91,7 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
                               insight::cad::VectorVariableType::Direction);
               }
 
-              for (insight::cad::Model::ModelstepTableContents::value_type v: modelsteps)
+              for (const auto& v: modelsteps)
               {
                   bool is_comp=false;
                   if (model_->components().find(v.first) != model_->components().end())
@@ -107,7 +107,7 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
                   Q_EMIT createdFeature(QString::fromStdString(v.first), v.second, is_comp);
               }
 
-              for (insight::cad::Model::DatumTableContents::value_type v: datums)
+              for (const auto& v: datums)
               {
                   Q_EMIT statusMessage("Building datum "+QString::fromStdString(v.first));
                   v.second->checkForBuildDuringAccess(); // Trigger rebuild
@@ -115,14 +115,13 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
                   Q_EMIT createdDatum(QString::fromStdString(v.first), v.second);
               }
 
-              for (insight::cad::Model::PostprocActionTableContents::value_type v: postprocActions)
+              for (const auto& v: postprocActions)
               {
                   Q_EMIT statusMessage("Building postproc action "+QString::fromStdString(v.first));
                   if (finalTask >= Post) v.second->checkForBuildDuringAccess(); // Trigger evaluation
                   Q_EMIT statusProgress(is++, istepmax);
                   Q_EMIT createdEvaluation(QString::fromStdString(v.first), v.second, false);
               }
-
 
               insight::cad::cache.printSummary(std::cout);
 

@@ -17,6 +17,7 @@
 #include "vtkImageMapper.h"
 #include "vtkImageActor.h"
 
+
 #include <QAbstractItemModel>
 
 #include "base/boost_include.h"
@@ -56,7 +57,6 @@ Q_SIGNALS:
 
 
 
-
 typedef
 #if VTK_MAJOR_VERSION>=8
 QVTKOpenGLWidget
@@ -85,22 +85,34 @@ private:
     struct DisplayedEntity
     {
         QString label_;
-//        vtkSmartPointer<vtkMapper> mapper_;
+        CADEntity ce_;
         vtkSmartPointer<vtkProp> actor_;
     };
 
-    std::map<CADEntity, DisplayedEntity> displayedData_;
+    typedef std::map<QPersistentModelIndex, DisplayedEntity> DisplayedData;
+    DisplayedData displayedData_;
 
-    void remove(std::map<CADEntity, DisplayedEntity>::iterator i);
+    void remove(const QPersistentModelIndex& pidx);
 
-    DisplayedEntity& addDatum(const QString& lbl, insight::cad::DatumPtr datum);
-    DisplayedEntity& addFeature(const QString& lbl, insight::cad::FeaturePtr feat);
-    DisplayedEntity& addDataset(const QString& lbl, vtkSmartPointer<vtkDataObject> ds);
+    void addDatum(
+            const QPersistentModelIndex& pidx,
+            const QString& lbl,
+            insight::cad::DatumPtr datum );
 
-    void resetFeatureDisplayProps(const std::string& lbl, vtkActor* act);
-    void resetDatasetColor(const std::string& lbl, vtkActor* act, vtkDataSet* pds, vtkMapper* mapper);
+    void addFeature(
+            const QPersistentModelIndex& pidx,
+            const QString& lbl,
+            insight::cad::FeaturePtr feat );
 
-    QModelIndex modelIndex(const CADEntity& ce) const;
+    void addDataset(
+            const QPersistentModelIndex& pidx,
+            const QString& lbl,
+            vtkSmartPointer<vtkDataObject> ds );
+
+    void resetFeatureDisplayProps(const QPersistentModelIndex& pidx);
+    void resetDatasetColor(const QPersistentModelIndex& pidx);
+
+//    QModelIndex modelIndex(const CADEntity& ce) const;
 
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
@@ -108,6 +120,7 @@ private Q_SLOT:
     void onRowsAboutToBeInserted(const QModelIndex &parent, int start, int end);
     void onRowsInserted(const QModelIndex &parent, int start, int end);
     void onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
+    void onRowsRemoved(const QModelIndex &parent, int first, int last);
 
     void addChild(const QModelIndex& idx);
     void addSiblings(const QModelIndex& idx);
@@ -122,6 +135,7 @@ public:
 
     QSize sizeHint() const override;
 
+//    vtkActor* getActor(insight::cad::FeaturePtr geom);
 };
 
 #endif // IQCADMODEL3DVIEWER_H

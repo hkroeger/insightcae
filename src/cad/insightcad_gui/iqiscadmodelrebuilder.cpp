@@ -171,9 +171,11 @@ void IQISCADModelRebuilder::storeSymbolSnapshot()
 
 void IQISCADModelRebuilder::connectGenerator(IQISCADModelGenerator *gen)
 {
-    connect(gen, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelGenerator::createdVariable),
+    connect(gen, QOverload<const QString&,insight::cad::ScalarPtr>::of(
+                &IQISCADModelGenerator::createdVariable),
             this, &IQISCADModelRebuilder::onAddScalar);
-    connect(gen, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelGenerator::createdVariable),
+    connect(gen, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(
+                &IQISCADModelGenerator::createdVariable),
             this, &IQISCADModelRebuilder::onAddVector);
     connect(gen, &IQISCADModelGenerator::createdFeature,
             this, &IQISCADModelRebuilder::onAddFeature);
@@ -182,7 +184,8 @@ void IQISCADModelRebuilder::connectGenerator(IQISCADModelGenerator *gen)
     connect(gen, &IQISCADModelGenerator::createdEvaluation,
             this, &IQISCADModelRebuilder::onAddEvaluation );
     connect(gen, &IQISCADModelGenerator::createdDataset,
-            this, &IQISCADModelRebuilder::onAddDataset );}
+            this, &IQISCADModelRebuilder::onAddDataset );
+}
 
 
 

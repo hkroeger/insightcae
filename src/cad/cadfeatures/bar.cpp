@@ -19,6 +19,7 @@
 
 #include "bar.h"
 #include "quad.h"
+#include "line.h"
 #include "transform.h"
 
 #include "base/boost_include.h"
@@ -143,6 +144,7 @@ void Bar::build()
         
         auto xsect=Transform::create_trsf(xsec_, tr.Inverted());
         providedSubshapes_["xsec"]=xsect;
+        providedSubshapes_["spine"]=Line::create(matconst(p0), matconst(p1));
         TopoDS_Shape xsecs = *xsect;
 
         //   BRepOffsetAPI_MakePipeShell p(spinew);

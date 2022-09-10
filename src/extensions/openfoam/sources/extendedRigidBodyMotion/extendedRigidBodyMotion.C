@@ -163,6 +163,7 @@ addToRunTimeSelectionTable
 
 extendedRigidBodyMeshMotion::bodyMesh::bodyMesh
 (
+    const RBD::rigidBodyMotion& model,
     const polyMesh& mesh,
     const word& name,
     const label bodyID,
@@ -172,6 +173,7 @@ extendedRigidBodyMeshMotion::bodyMesh::bodyMesh
 )
 :
     coordinateSystemSource(name),
+    model_(model),
     mesh_(mesh),
     name_(name),
     bodyID_(bodyID),
@@ -261,27 +263,30 @@ std::pair<vector,vector> extendedRigidBodyMeshMotion::bodyMesh::calcForcesMoment
         bool logForces
 )
 {
-    forcesFO_().calcForcesMoment();
+    forcesFO().calcForcesMoment(); // compute first; may be required in additional forces
+    Info << "hull force / moment = "<<forcesFO().forceEff()
+         << " / " << forcesFO().momentEff() << endl;
 
-    vector pmF=vector::zero, pmM=vector::zero;
+    vector tpF=vector::zero, tpM=vector::zero;
+
     forAll(additionalForces_, k)
     {
         const auto& af = additionalForces_[k];
 
         auto pFM=af.forceAndMoment();
 
-        pmF+=pFM.first;
-        pmM+=pFM.second;
+        tpF+=pFM.first;
+        tpM+=pFM.second;
 
         Info << af.type() << " [" << k << "]"
-             << ": force = " << pFM.first << "(" << mag(pFM.first) << ")"
-             << ", moment = " << pFM.second << "(" << mag(pFM.second) << ")"
+             << ": force = " << pFM.first << " (" << mag(pFM.first) << ")"
+             << ", moment = " << pFM.second << " (" << mag(pFM.second) << ")"
              << endl;
 
         // force influence
         {
-            vector mfrac=1e2*cmptDivide(pmM, forcesFO().momentEff());
-            vector ffrac=1e2*cmptDivide(pmF, forcesFO().forceEff());
+            vector mfrac=1e2*cmptDivide(tpM, stabilise(forcesFO().momentEff(), SMALL));
+            vector ffrac=1e2*cmptDivide(tpF, stabilise(forcesFO().forceEff(), SMALL));
             Info
                 << boost::str(boost::format(
                               "[%01d]: %3d %10s%10s%10s%10s%10s%10s\n" )
@@ -301,7 +306,9 @@ std::pair<vector,vector> extendedRigidBodyMeshMotion::bodyMesh::calcForcesMoment
             auto& time = dynamic_cast<const fvMesh&>(mesh_).time();
 
             if (addForcesLog_.size()!=additionalForces_.size())
+            {
                 addForcesLog_.resize(additionalForces_.size());
+            }
 
             if (!addForcesLog_(k))
             {
@@ -327,7 +334,7 @@ std::pair<vector,vector> extendedRigidBodyMeshMotion::bodyMesh::calcForcesMoment
     }
 
 
-    return {forcesFO().forceEff() + pmF, forcesFO().momentEff() + pmM};
+    return {forcesFO().forceEff() + tpF, forcesFO().momentEff() + tpM};
 }
 
 
@@ -404,6 +411,7 @@ extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
             (
                 new bodyMesh
                 (
+                    model_,
                     mesh, iter().keyword(),
                     bodyID, bodyDict,
                     rhoInf_, rhoName_
@@ -450,29 +458,6 @@ extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
             );
 
         pointConstraints::New(pMesh).constrain(scale);
-        //scale.write();
-
-//        const fvMesh& fvmesh = dynamic_cast<const fvMesh&>(mesh);
-//        auto pmfs=filterPatchType(
-//                    fvmesh,
-//                    bodyMeshes_[bi].patches_,
-//                    wallFvPatch::typeName,
-//                    true );
-
-//        bodyMeshes_[bi].patchMomentumForces_.resize(pmfs.size());
-//        forAll(pmfs, j)
-//        {
-//            bodyMeshes_[bi].patchMomentumForces_.set(
-//                        j,
-//                        new extRBM::patchMomentumForce
-//                        (
-//                            fvmesh,
-//                            pmfs[j],
-//                            rhoInf_,
-//                            rhoName_
-//                        )
-//                        );
-//        }
     }
 
 
@@ -507,7 +492,7 @@ extendedRigidBodyMeshMotion::curPoints() const
 
 
 
-tmp<pointField> extendedRigidBodyMeshMotion::curMotionStatePoints() const
+void extendedRigidBodyMeshMotion::resetPointsFromCurMotionState()
 {
     // Update the displacements
     if (bodyMeshes_.size() == 1)
@@ -538,8 +523,7 @@ tmp<pointField> extendedRigidBodyMeshMotion::curMotionStatePoints() const
     (
         pointDisplacement_.mesh()
     ).constrainDisplacement(pointDisplacement_);
-    
-    return points0() + pointDisplacement_.primitiveField();
+
 }
 
 
@@ -612,9 +596,7 @@ void extendedRigidBodyMeshMotion::solve()
     if (rampDuration_>0.)
     {
         double x=min(1.0, t.value()/rampDuration_);
-//         ramp=pow(x, 2);
         ramp=pow((0.5*(::sin((x-0.5)*M_PI)+1.0)), 1);
-//        Info<<"Force ramping factor = "<<ramp<<endl;
     }
 
     if (mesh().nPoints() != points0().size())
@@ -670,151 +652,21 @@ void extendedRigidBodyMeshMotion::solve()
     }
     else
     {
-//        Field<spatialVector> fx(model_.nBodies(), Zero);
-
-//        forAll(bodyMeshes_, bi)
-//        {
-//            const bodyMesh& body = bodyMeshes_[bi];
-//            const label bodyID = body.bodyID_;
-
-//            bodyMeshes_[bi].forcesFO().calcForcesMoment();
-
-//            auto transformedPoint = [&](const vector& v) {
-//                return model_.transformPoints(
-//                            bodyID,
-//                            pointField(1, v)
-//                            )()[0];
-//            };
-
-//            point orgCtr=model_.bodies()[bodyID].c();
-//            point curCtr = transformedPoint( orgCtr );
-
-//            vector dF=vector::zero, dM=vector::zero;
-//            if (directForcesLog_.size()!=body.directThrustForces_.size())
-//                directForcesLog_.resize(body.directThrustForces_.size());
-//            forAll(body.directThrustForces_, j)
-//            {
-//                const auto& df = body.directThrustForces_[j];
-
-//                auto pf = df.PoAAndForce(transformedPoint);
-//                vector ddf = pf.second;
-//                vector ddm = ( pf.first/* - curCtr*/ ) ^ ddf;
-
-//                Info << "Direct force " << j
-//                     << ": force = " << ddf << "(" << mag(ddf) << ")"
-//                     << ", moment = " << ddm << "(" << mag(ddm) << ")"
-//                     << endl;
-
-//                dF+=ddf;
-//                dM+=ddm;
-
-//                if (!directForcesLog_(j))
-//                {
-//                    autoPtr<OFstream> f;
-//                    OStringStream logFName; logFName<<"directForce_"<<j;
-//                    UNIOF_CREATEPOSTPROCFILE(
-//                                mesh().time(),
-//                                "rigidBodyMotion", logFName.str(),
-//                                f);
-//                    directForcesLog_.set(j, f);
-//                }
-//                directForcesLog_[j]
-//                        << mesh().time().value() << token::SPACE
-//                        << ddf.x() << token::SPACE << ddf.y() << token::SPACE << ddf.z() << token::SPACE
-//                        << ddm.x() << token::SPACE << ddm.y() << token::SPACE << ddm.z()
-//                        << endl;
-//            }
-
-//            vector pmF=vector::zero, pmM=vector::zero;
-//            if (patchMomentumForcesLog_.size()!=body.patchMomentumForces_.size())
-//                patchMomentumForcesLog_.resize(body.patchMomentumForces_.size());
-//            forAll(body.patchMomentumForces_, k)
-//            {
-//                auto pFM=body.patchMomentumForces_[k].forceAndMoment();
-
-//                Info << "Patch momentum force " << k
-//                     << ": force = " << pFM.first << "(" << mag(pFM.first) << ")"
-//                     << ", moment = " << pFM.second << "(" << mag(pFM.second) << ")"
-//                     << endl;
-
-//                pmF+=pFM.first;
-//                pmM+=pFM.second;
-
-//                if (!patchMomentumForcesLog_(k))
-//                {
-//                    autoPtr<OFstream> f;
-//                    OStringStream logFName; logFName<<"patchMomentumForce_"<<k;
-//                    UNIOF_CREATEPOSTPROCFILE(
-//                                mesh().time(),
-//                                "rigidBodyMotion", logFName.str(),
-//                                f);
-//                    patchMomentumForcesLog_.set(k, f);
-//                }
-//                patchMomentumForcesLog_[k]
-//                        << mesh().time().value() << token::SPACE
-//                        << pFM.first.x() << token::SPACE << pFM.first.y() << token::SPACE<< pFM.first.z() << token::SPACE
-//                        << pFM.second.x() << token::SPACE << pFM.second.y() << token::SPACE<< pFM.second.z()
-//                        << endl;
-//            }
-            
-//            fx[bodyID] = spatialVector
-//            (
-//                ramp*(/*body.forcesFO().momentEff() + pmM + dM*/ FM.second ), // angular (moment)
-//                ramp*(/*body.forcesFO().forceEff() + pmF + dF*/ FM.first ) // linear (force)
-//            );
-            
-//            // patch momentum force influence
-//            {
-//                vector mfrac=1e2*cmptDivide(pmM, body.forcesFO().momentEff());
-//                vector ffrac=1e2*cmptDivide(pmF, body.forcesFO().forceEff());
-//                Info
-//                    << boost::str(boost::format(
-//                                  "[%01d]: PMF %10s%10s%10s%10s%10s%10s\n" )
-//                                 % bodyID
-//                                 % "Fx/Fxhull" % "Fy/Fyhull" % "Fz/Fzhull"
-//                                 % "Mx/Mxhull" % "My/Myhull" % "Mz/Mzhull" ).c_str()
-//                    << boost::str(boost::format(
-//                                  "[%01d]:      %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%%\n" )
-//                                 % bodyID
-//                                 % ffrac.x() % ffrac.y() % ffrac.z()
-//                                 % mfrac.x() % mfrac.y() % mfrac.z() ).c_str()
-//                    ;
-//            }
-            
-//            // direct force influence
-//            {
-//                vector mfrac=1e2*cmptDivide(dM, body.forcesFO().momentEff());
-//                vector ffrac=1e2*cmptDivide(dF, body.forcesFO().forceEff());
-//                Info
-//                    << boost::str(boost::format(
-//                                   "[%01d]:  DF %10s%10s%10s%10s%10s%10s\n" )
-//                                  % bodyID
-//                                  % "Fx/Fxhull" % "Fy/Fyhull" % "Fz/Fzhull"
-//                                  % "Mx/Mxhull" % "My/Myhull" % "Mz/Mzhull" ).c_str()
-//                    << boost::str(boost::format(
-//                                   "[%01d]:      %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%%\n" )
-//                                  % bodyID
-//                                  % ffrac.x() % ffrac.y() % ffrac.z()
-//                                  % mfrac.x() % mfrac.y() % mfrac.z() ).c_str()
-//                    ;
-//            }
-
-
         Field<spatialVector> fx(model_.nBodies(), Zero);
 
         forAll(bodyMeshes_, bi)
         {
-            const bodyMesh& body = bodyMeshes_[bi];
+            bodyMesh& body = bodyMeshes_[bi];
             const label bodyID = body.bodyID_;
 
-            auto FM = bodyMeshes_[bi].calcForcesMoments(
+            auto FM = body.calcForcesMoments(
                         curTimeIndex_ != this->db().time().timeIndex()
                         );
 
-            fx[bodyID] = spatialVector
+            fx[bodyID] = ramp * spatialVector
             (
-                ramp* FM.second, // angular (moment)
-                ramp* FM.first  // linear (force)
+                FM.second, // angular (moment)
+                FM.first  // linear (force)
             );
         }
 
@@ -839,35 +691,7 @@ void extendedRigidBodyMeshMotion::solve()
 
     updateBodyMeshCoordinateSystems();
 
-    // Update the displacements
-    if (bodyMeshes_.size() == 1)
-    {
-        pointDisplacement_.primitiveFieldRef() = model_.transformPoints
-        (
-            bodyMeshes_[0].bodyID_,
-            bodyMeshes_[0].weight_,
-            points0()
-        ) - points0();
-    }
-    else
-    {
-        labelList bodyIDs(bodyMeshes_.size());
-        List<const scalarField*> weights(bodyMeshes_.size());
-        forAll(bodyIDs, bi)
-        {
-            bodyIDs[bi] = bodyMeshes_[bi].bodyID_;
-            weights[bi] = &bodyMeshes_[bi].weight_;
-        }
-
-        pointDisplacement_.primitiveFieldRef() =
-            model_.transformPoints(bodyIDs, weights, points0()) - points0();
-    }
-
-    // Displacement has changed. Update boundary conditions
-    pointConstraints::New
-    (
-        pointDisplacement_.mesh()
-    ).constrainDisplacement(pointDisplacement_);
+    resetPointsFromCurMotionState();
 
     if (curTimeIndex_ != this->db().time().timeIndex())
     {

@@ -40,6 +40,15 @@
 #include "vtkTransformPolyDataFilter.h"
 #include "vtkDataArray.h"
 
+#include "boost/archive/iterators/base64_from_binary.hpp"
+#include "boost/archive/iterators/binary_from_base64.hpp"
+#include <boost/algorithm/string.hpp>
+
+#include <boost/archive/iterators/base64_from_binary.hpp>
+#include <boost/archive/iterators/insert_linebreaks.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
+#include <boost/archive/iterators/ostream_iterator.hpp>
+#include <boost/archive/iterators/remove_whitespace.hpp>
 
 using namespace std;
 using namespace boost;
@@ -50,6 +59,108 @@ using namespace boost::posix_time;
 
 namespace insight
 {
+
+
+const std::string base64_padding[] = {"", "==","="};
+
+
+
+
+std::string base64_encode(const std::string& s)
+{
+  insight::CurrentExceptionContext ex(
+        boost::str(boost::format("performing base64 encode of buffer of size %d")
+                   % s.size() )
+        );
+
+  namespace bai = boost::archive::iterators;
+
+  std::stringstream os;
+
+  // convert binary values to base64 characters
+  typedef bai::base64_from_binary
+  // retrieve 6 bit integers from a sequence of 8 bit bytes
+  <bai::transform_width<const char *, 6, 8> > base64_enc; // compose all the above operations in to a new iterator
+
+  std::copy(base64_enc(s.c_str()), base64_enc(s.c_str() + s.size()),
+            std::ostream_iterator<char>(os));
+
+  os << base64_padding[s.size() % 3];
+  return os.str();
+}
+
+
+
+
+std::string
+base64_encode(
+    const boost::filesystem::path& f )
+{
+  std::string contents_raw;
+  readFileIntoString(f, contents_raw);
+  return base64_encode(contents_raw);
+}
+
+
+
+
+
+std::shared_ptr<std::string> base64_decode(const std::string& sourceBuffer)
+{
+    std::shared_ptr<std::string> targetBuffer;
+    base64_decode(sourceBuffer, targetBuffer);
+    return targetBuffer;
+}
+
+
+void
+base64_decode(const char *src, size_t size,
+    std::shared_ptr<std::string>& targetBuffer  )
+{
+//  char *src = a->value();
+//  size_t size = a->value_size();
+
+  if ((size>0) && src[size - 1] == '=')
+  {
+    --size;
+    if ((size>0) && src[size - 1] == '=')
+    {
+       --size;
+    }
+  }
+
+  if (size == 0)
+  {
+    if (targetBuffer) targetBuffer->clear();
+  }
+  else
+  {
+    using namespace boost::archive::iterators;
+
+    typedef
+      transform_width<
+       binary_from_base64<
+        remove_whitespace<
+         const char*
+        >
+       >,
+       8, 6
+      >
+      base64_dec;
+
+      targetBuffer.reset(new std::string( base64_dec(src), base64_dec(src + size) ));
+  }
+}
+
+void base64_decode(const std::string& sourceBuffer, std::shared_ptr<std::string>& targetBuffer)
+{
+    base64_decode(
+                sourceBuffer.c_str(),
+                sourceBuffer.size(),
+                targetBuffer );
+}
+
+
 
 
 bool directoryIsWritable( const boost::filesystem::path& directoryToTest )

@@ -127,6 +127,11 @@ forceSourceCombination::forceSourceCombination(forceSource *value)
       time_(nullptr)
 {}
 
+const forceSource *forceSourceCombination::get() const
+{
+    return value_;
+}
+
 
 vector forceSourceCombination::force() const
 {
@@ -136,6 +141,16 @@ vector forceSourceCombination::force() const
     }
     ASSERTION(value_!=nullptr, "attempt to use uninitialized force source combination!");
     return value_->force();
+}
+
+scalar forceSourceCombination::torque() const
+{
+    if ((value_==nullptr) && !definition_.empty())
+    {
+        const_cast<forceSourceCombination*>(this)->interpretDefinition();
+    }
+    ASSERTION(value_!=nullptr, "attempt to use uninitialized force source combination!");
+    return value_->torque();
 }
 
 

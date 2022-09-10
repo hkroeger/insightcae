@@ -30,11 +30,6 @@ autoPtr<directForce> directForceFactory::operator()(Istream& is) const
     return df;
 }
 
-//autoPtr<directForce>
-//directForce::New(Istream& is)
-//{
-
-//}
 
 
 defineTypeNameAndDebug(directForce, 0);
@@ -70,7 +65,7 @@ std::pair<vector,vector> directForce::forceAndMoment() const
 
     vector Forg=fs_.force(), F=Forg;
 
-    Info<<"before trs F= ^"<<Forg;
+    Info<<"before trs F= "<<Forg;
 
     scalar m=mag(localDirection_);
     if (m>SMALL)

@@ -42,6 +42,18 @@ class vtkCellArray;
 namespace insight
 {
 
+std::string base64_encode(const std::string& s);
+std::string base64_encode(const boost::filesystem::path& f);
+
+std::shared_ptr<std::string> base64_decode(const std::string& sourceBuffer);
+
+void base64_decode(
+        const char *sourceBuffer, size_t size,
+        std::shared_ptr<std::string>& targetBuffer );
+
+void base64_decode(
+        const std::string& sourceBuffer,
+        std::shared_ptr<std::string>& targetBuffer );
 
 /**
  * wrapper for calling virtual functions before destruction

@@ -102,6 +102,7 @@ public:
     class bodyMesh
             : public coordinateSystemSource
     {
+        const RBD::rigidBodyMotion& model_;
         const polyMesh& mesh_;
 
         //- Name of the body
@@ -143,6 +144,7 @@ public:
 
         bodyMesh
         (
+            const RBD::rigidBodyMotion& model,
             const polyMesh& mesh,
             const word& name,
             const label bodyID,
@@ -154,6 +156,7 @@ public:
         inline const pointScalarField& weight() const
         { return weight_; }
 
+        const RBD::rigidBodyMotion& model() const { return model_; }
         inline label bodyID() const { return bodyID_; }
 
         extendedForces& forcesFO();
@@ -240,7 +243,7 @@ public:
         //- Return point location obtained from the current motion field
         tmp<pointField> curPoints() const override;
 
-        tmp<pointField> curMotionStatePoints() const;
+        virtual void resetPointsFromCurMotionState();
 
         PtrList<bodyMesh>& bodyMeshes();
         const PtrList<bodyMesh>& bodyMeshes() const;

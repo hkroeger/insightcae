@@ -55,6 +55,13 @@ implementation = selectablesubset {{
  vanilla set { }
  extended set {
    rampDuration = double 1.0 "Duration of the initial force ramp"
+   directForces = array [ set {
+    PoA = vector (0 0 0) "point of attack"
+    forceSource = string "" "force source definition"
+    coordinateSystemName = string "global" ""
+    localDirection = vector ( 0 0 0 ) "local direction"
+    verticalDirection = vector ( 0 0 0 ) "vertical direction"
+   } ] *0 "additional forces"
  }
 }} vanilla "Type of implementation to use."
 

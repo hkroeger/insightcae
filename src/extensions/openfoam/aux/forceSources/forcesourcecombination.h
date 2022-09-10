@@ -26,7 +26,11 @@ public:
     forceSourceCombination();
     forceSourceCombination(const Time& time, ITstream& is);
     forceSourceCombination(forceSource* value);
+
+    const forceSource* get() const;
+
     vector force() const;
+    scalar torque() const;
 };
 
 } // namespace Foam

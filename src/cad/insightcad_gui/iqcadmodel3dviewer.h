@@ -12,50 +12,16 @@
 #endif
 #include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
-#include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkDataObject.h>
-#include "vtkImageMapper.h"
-#include "vtkImageActor.h"
 
 
 #include <QAbstractItemModel>
 
-#include "base/boost_include.h"
 
 #include "cadtypes.h"
 
 
-
-
-
-
-class PickInteractorStyle
-      : public QObject,
-        public vtkInteractorStyleTrackballCamera
-{
-    Q_OBJECT
-
-    PickInteractorStyle();
-
-    int lastClickPos[2];
-
-public:
-  static PickInteractorStyle* New();
-
-  vtkTypeMacro(PickInteractorStyle, vtkInteractorStyleTrackballCamera);
-
-  void OnLeftButtonUp() override;
-  void OnLeftButtonDown() override;
-  void OnRightButtonUp() override;
-  void OnRightButtonDown() override;
-
-Q_SIGNALS:
-  void contextMenuRequested(vtkActor* actor);
-
-};
-
-
-
+class vtkRenderWindowInteractor;
 
 typedef
 #if VTK_MAJOR_VERSION>=8
@@ -67,18 +33,20 @@ VTKWidget;
 
 
 class INSIGHTCAD_GUI_EXPORT IQCADModel3DViewer
-        : public VTKWidget
+        : public QWidget
 {
     Q_OBJECT
 
 public:
     typedef boost::variant<
+        insight::cad::VectorPtr,
         insight::cad::DatumPtr,
         insight::cad::FeaturePtr,
         vtkSmartPointer<vtkDataObject>
     > CADEntity;
 
 private:
+    VTKWidget vtkWidget_;
     vtkSmartPointer<vtkRenderer> ren_;
     QAbstractItemModel* model_;
 
@@ -93,6 +61,11 @@ private:
     DisplayedData displayedData_;
 
     void remove(const QPersistentModelIndex& pidx);
+
+    void addVertex(
+            const QPersistentModelIndex& pidx,
+            const QString& lbl,
+            insight::cad::VectorPtr point );
 
     void addDatum(
             const QPersistentModelIndex& pidx,
@@ -109,10 +82,10 @@ private:
             const QString& lbl,
             vtkSmartPointer<vtkDataObject> ds );
 
+    void resetVisibility(const QPersistentModelIndex& pidx);
     void resetFeatureDisplayProps(const QPersistentModelIndex& pidx);
     void resetDatasetColor(const QPersistentModelIndex& pidx);
 
-//    QModelIndex modelIndex(const CADEntity& ce) const;
 
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
@@ -132,6 +105,8 @@ public:
     IQCADModel3DViewer(QWidget* parent=nullptr);
 
     void setModel(QAbstractItemModel* model);
+
+    vtkRenderWindowInteractor* interactor() const;
 
     QSize sizeHint() const override;
 

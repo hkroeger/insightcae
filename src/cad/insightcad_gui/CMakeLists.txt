@@ -22,8 +22,11 @@ set(insightcad_gui_SRCS
 
  iqcaditemmodel.h
  iqcaditemmodel.cpp
+ iqpickinteractorstyle.h iqpickinteractorstyle.cpp
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
  iqcadtransformationcommand.h iqcadtransformationcommand.cpp
+ iqpointpickcommand.h iqpointpickcommand.cpp
+ iqvectordirectioncommand.h iqvectordirectioncommand.cpp
  ivtkoccshape.h ivtkoccshape.cpp
  iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
 
@@ -63,6 +66,8 @@ set(insightcad_gui_SRCS
  postprocactionvisualizers/hydrostaticsvisualizer.cpp
  postprocactionvisualizers/distancevisualizer.cpp
  postprocactionvisualizers/solidpropertiesvisualizer.cpp
+
+ insightcae_gui.qrc
 )
 
 

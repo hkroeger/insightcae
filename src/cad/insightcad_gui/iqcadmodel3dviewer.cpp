@@ -3,6 +3,10 @@
 #include "iscadmetatyperegistrator.h"
 
 #include <QDebug>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <QSpacerItem>
 
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
@@ -13,130 +17,20 @@
 #include <vtkLineSource.h>
 #include <vtkProperty.h>
 #include <vtkNamedColors.h>
-#include <vtkPropPicker.h>
+
 #include <vtkCubeSource.h>
-#include "vtkImageMapper3D.h"
 #include "vtkImageData.h"
+#include "vtkImageActor.h"
+#include "vtkImageMapper3D.h"
 #include "vtkPointData.h"
+#include "vtkPointSource.h"
+
 #include "ivtkoccshape.h"
+#include "iqpickinteractorstyle.h"
 
 #include "datum.h"
 
 #include "base/vtkrendering.h"
-
-
-vtkStandardNewMacro(PickInteractorStyle);
-
-
-PickInteractorStyle::PickInteractorStyle()
-    : vtkInteractorStyleTrackballCamera()
-{
-    lastClickPos[0]=lastClickPos[1]=0;
-}
-
-
-void PickInteractorStyle::OnLeftButtonUp()
-{
-
-  int clickPos[2];
-  this->GetInteractor()->GetEventPosition(clickPos[0], clickPos[1]);
-
-  if (clickPos[0]==lastClickPos[0] && clickPos[1]==lastClickPos[1])
-  {
-      // Pick from this location.
-      vtkNew<vtkPropPicker> picker;
-      picker->Pick(clickPos[0], clickPos[1], 0, this->GetDefaultRenderer());
-
-      double* pos = picker->GetPickPosition();
-      std::cout
-              << "Pick position (world coordinates) is: "
-              << pos[0] << " " << pos[1] << " " << pos[2]
-              << std::endl;
-
-      auto pickedActor = picker->GetActor();
-
-      if (pickedActor == nullptr)
-      {
-        std::cout << "No actor picked." << std::endl;
-
-        HighlightProp(nullptr);
-      }
-      else
-      {
-        auto pac=picker->GetActor();
-        std::cout << "Picked actor: " << pac << std::endl;
-
-        HighlightProp( picker->GetProp3D() );
-      }
-  }
-
-  vtkInteractorStyleTrackballCamera::OnLeftButtonUp();
-}
-
-
-void PickInteractorStyle::OnLeftButtonDown()
-{
-
-  this->GetInteractor()->GetEventPosition(
-              lastClickPos[0], lastClickPos[1] );
-
-  vtkInteractorStyleTrackballCamera::OnLeftButtonDown();
-}
-
-
-
-void PickInteractorStyle::OnRightButtonUp()
-{
-
-  int clickPos[2];
-  this->GetInteractor()->GetEventPosition(clickPos[0], clickPos[1]);
-
-  if (clickPos[0]==lastClickPos[0] && clickPos[1]==lastClickPos[1])
-  {
-      // Pick from this location.
-      vtkNew<vtkPropPicker> picker;
-      picker->Pick(clickPos[0], clickPos[1], 0, this->GetDefaultRenderer());
-
-      double* pos = picker->GetPickPosition();
-      std::cout
-              << "Pick position (world coordinates) is: "
-              << pos[0] << " " << pos[1] << " " << pos[2]
-              << std::endl;
-
-      auto pickedActor = picker->GetActor();
-
-      if (pickedActor == nullptr)
-      {
-        std::cout << "No actor picked." << std::endl;
-
-        HighlightProp(nullptr);
-      }
-      else
-      {
-        auto pac=picker->GetActor();
-        std::cout << "Picked actor RM: " << pac << std::endl;
-
-        Q_EMIT contextMenuRequested(pac);
-
-        HighlightProp( picker->GetProp3D() );
-      }
-  }
-
-  vtkInteractorStyleTrackballCamera::OnRightButtonUp();
-}
-
-
-void PickInteractorStyle::OnRightButtonDown()
-{
-
-  this->GetInteractor()->GetEventPosition(
-              lastClickPos[0], lastClickPos[1] );
-
-  vtkInteractorStyleTrackballCamera::OnRightButtonDown();
-}
-
-
-
 
 
 
@@ -145,7 +39,6 @@ void PickInteractorStyle::OnRightButtonDown()
 
 void IQCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
 {
-//    qDebug()<<"remove"<<pidx;
     if (pidx.isValid())
     {
         auto i = displayedData_.find(pidx);
@@ -158,6 +51,31 @@ void IQCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
     }
 }
 
+
+
+void IQCADModel3DViewer::addVertex(
+        const QPersistentModelIndex& pidx,
+        const QString& lbl,
+         insight::cad::VectorPtr loc )
+{
+    auto actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+
+    vtkNew<vtkPointSource> point;
+    auto p = loc->value();
+    point->SetCenter(p[0], p[1], p[2]);
+    point->SetNumberOfPoints(1);
+    point->SetRadius(0);
+    actor->GetMapper()->SetInputConnection(point->GetOutputPort());
+    auto prop=actor->GetProperty();
+    prop->SetRepresentationToPoints();
+    prop->SetPointSize(8);
+    prop->SetColor(1., 0, 0);
+
+    ren_->AddActor(actor);
+
+    displayedData_[pidx]={lbl, loc, actor};
+}
 
 
 
@@ -193,7 +111,19 @@ void IQCADModel3DViewer::addDatum(
         actor->GetProperty()->SetRepresentationToWireframe();
         actor->GetProperty()->SetLineStipplePattern(0xc003);
     }
-
+    else if (datum->providesPointReference())
+    {
+        vtkNew<vtkPointSource> point;
+        auto p1 = datum->point();
+        point->SetCenter(p1.X(), p1.Y(), p1.Z());
+        point->SetNumberOfPoints(1);
+        point->SetRadius(0);
+        actor->GetMapper()->SetInputConnection(point->GetOutputPort());
+        auto prop=actor->GetProperty();
+        prop->SetRepresentationToPoints();
+        prop->SetPointSize(8);
+        prop->SetColor(1., 0, 0);
+    }
     ren_->AddActor(actor);
 
     displayedData_[pidx]={lbl, datum, actor};
@@ -223,9 +153,28 @@ void IQCADModel3DViewer::addFeature(
 
 
 
+void IQCADModel3DViewer::resetVisibility(const QPersistentModelIndex &pidx)
+{
+    if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
+    {
+        QModelIndex idx(pidx);
+        if (auto act = vtkActor::SafeDownCast(displayedData_[pidx].actor_))
+        {
+            auto visible = idx.siblingAtColumn(IQCADItemModel::visibilityCol)
+                    .data(Qt::CheckStateRole).value<Qt::CheckState>() == Qt::Checked;
+            act->SetVisibility(visible);
+        }
+    }
+}
+
+
+
+
 
 void IQCADModel3DViewer::resetFeatureDisplayProps(const QPersistentModelIndex& pidx)
 {
+    resetVisibility(pidx);
+
     if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
     {
         QModelIndex idx(pidx);
@@ -234,10 +183,6 @@ void IQCADModel3DViewer::resetFeatureDisplayProps(const QPersistentModelIndex& p
             auto opacity = idx.siblingAtColumn(IQCADItemModel::entityOpacityCol)
                     .data().toDouble();
             act->GetProperty()->SetOpacity(opacity);
-
-            auto visible = idx.siblingAtColumn(IQCADItemModel::visibilityCol)
-                    .data(Qt::CheckStateRole).value<Qt::CheckState>() == Qt::Checked;
-            act->SetVisibility(visible);
 
             auto color = idx.siblingAtColumn(IQCADItemModel::entityColorCol)
                     .data().value<QColor>();
@@ -252,6 +197,8 @@ void IQCADModel3DViewer::resetFeatureDisplayProps(const QPersistentModelIndex& p
 void IQCADModel3DViewer::resetDatasetColor(
         const QPersistentModelIndex& pidx )
 {
+    resetVisibility(pidx);
+
     if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
     {
         auto de = displayedData_[pidx];
@@ -310,8 +257,6 @@ void IQCADModel3DViewer::resetDatasetColor(
                 if (minVal.isValid()) mima[0]=minVal.toDouble();
                 if (maxVal.isValid()) mima[1]=maxVal.toDouble();
 
-                std::cout<<mima[0]<<" -> "<<mima[1]<<std::endl;
-
                 mapper->SetInterpolateScalarsBeforeMapping(true);
                 mapper->SetLookupTable( insight::createColorMap() );
                 mapper->ScalarVisibilityOn();
@@ -363,30 +308,6 @@ void IQCADModel3DViewer::addDataset(
 
     resetDatasetColor(pidx);
 }
-
-
-
-
-//QModelIndex IQCADModel3DViewer::modelIndex(const CADEntity &ce) const
-//{
-//    if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
-//    {
-//        auto di = displayedData_.find(ce);
-//        if (boost::get<insight::cad::FeaturePtr>(&ce))
-//        {
-//            return cadmodel->modelstepIndex(di->second.label_.toStdString());
-//        }
-//        else if (boost::get<insight::cad::DatumPtr>(&ce))
-//        {
-//            return cadmodel->datumIndex(di->second.label_.toStdString());
-//        }
-//        else if (boost::get<vtkSmartPointer<vtkDataObject> >(&ce))
-//        {
-//            return cadmodel->datasetIndex(di->second.label_.toStdString());
-//        }
-//    }
-//    return QModelIndex();
-//}
 
 
 
@@ -443,9 +364,10 @@ void IQCADModel3DViewer::onDataChanged(
             {
                 if (colInRange(IQCADItemModel::visibilityCol))
                 {
-                    bool vis = (idx.siblingAtColumn(IQCADItemModel::visibilityCol).data(Qt::CheckStateRole)
-                        .value<Qt::CheckState>() == Qt::Checked);
-                    displayedData_[pidx].actor_->SetVisibility(vis);
+                    resetVisibility(pidx);
+//                    bool vis = (idx.siblingAtColumn(IQCADItemModel::visibilityCol).data(Qt::CheckStateRole)
+//                        .value<Qt::CheckState>() == Qt::Checked);
+//                    displayedData_[pidx].actor_->SetVisibility(vis);
                 }
             }
 
@@ -502,23 +424,28 @@ void IQCADModel3DViewer::onRowsRemoved(const QModelIndex &parent, int first, int
 
 void IQCADModel3DViewer::addChild(const QModelIndex& idx)
 {
-    QPersistentModelIndex i(idx);
+    QPersistentModelIndex pidx(idx);
     auto lbl = idx.siblingAtColumn(IQCADItemModel::labelCol).data().toString();
     auto feat = idx.siblingAtColumn(IQCADItemModel::entityCol).data();
 
-//    qDebug()<<"add child"<<lbl<<r;
-    if (feat.canConvert<insight::cad::FeaturePtr>())
+    if (feat.canConvert<insight::cad::VectorPtr>())
     {
-        addFeature( i, lbl, feat.value<insight::cad::FeaturePtr>() );
+        addVertex( pidx, lbl, feat.value<insight::cad::VectorPtr>() );
+    }
+    else if (feat.canConvert<insight::cad::FeaturePtr>())
+    {
+        addFeature( pidx, lbl, feat.value<insight::cad::FeaturePtr>() );
     }
     else if (feat.canConvert<insight::cad::DatumPtr>())
     {
-        addDatum( i, lbl, feat.value<insight::cad::DatumPtr>() );
+        addDatum( pidx, lbl, feat.value<insight::cad::DatumPtr>() );
     }
     else if (feat.canConvert<vtkSmartPointer<vtkDataObject> >())
     {
-        addDataset( i, lbl, feat.value<vtkSmartPointer<vtkDataObject> >() );
+        addDataset( pidx, lbl, feat.value<vtkSmartPointer<vtkDataObject> >() );
     }
+
+    resetVisibility(pidx);
 }
 
 
@@ -547,15 +474,87 @@ void IQCADModel3DViewer::addSiblings(const QModelIndex& idx)
 
 IQCADModel3DViewer::IQCADModel3DViewer(
         QWidget* parent )
-    : VTKWidget(parent),
+    : QWidget(parent),
+      vtkWidget_(this),
       model_(nullptr),
       ren_(decltype(ren_)::New())
 {
+    auto btnLayout=new QHBoxLayout;
+    auto lv = new QVBoxLayout;
+    lv->addLayout(btnLayout);
+    lv->addWidget(&vtkWidget_);
+    setLayout(lv);
+
+    auto fitBtn = new QPushButton(QPixmap(":/icons/icon_fit_all.svg"), "");
+    fitBtn->setIconSize(QSize(24,24));
+    btnLayout->addWidget(fitBtn);
+    connect(fitBtn, &QPushButton::clicked, this,
+            [&]() {
+        ren_->ResetCamera();
+    });
+
+    auto setCam = [this](double upx, double upy, double upz,
+                         double dx, double dy, double dz)
+    {
+        auto cam = ren_->GetActiveCamera();
+        arma::mat cp, fp;
+        cp=fp=insight::vec3Zero();
+        cam->GetPosition(cp.memptr());
+        cam->GetFocalPoint(fp.memptr());
+        double L=arma::norm(fp-cp,2);
+        cam->SetViewUp(upx,upy,upz);
+        cam->SetPosition( arma::mat(fp - insight::vec3(dx,dy,dz)*L).memptr() );
+    };
+
+    {
+        auto btn = new QPushButton(QPixmap(":/icons/icon_plusx.svg"), "");
+        btn->setIconSize(QSize(24,24));
+        btnLayout->addWidget(btn);
+        connect(btn, &QPushButton::clicked, this,
+                std::bind(setCam, 0,0,1, 1,0,0));
+    }
+    {
+        auto btn = new QPushButton(QPixmap(":/icons/icon_minusx.svg"), "");
+        btn->setIconSize(QSize(24,24));
+        btnLayout->addWidget(btn);
+        connect(btn, &QPushButton::clicked, this,
+                std::bind(setCam, 0,0,1, -1,0,0));
+    }
+    {
+        auto btn = new QPushButton(QPixmap(":/icons/icon_plusy.svg"), "");
+        btn->setIconSize(QSize(24,24));
+        btnLayout->addWidget(btn);
+        connect(btn, &QPushButton::clicked, this,
+                std::bind(setCam, 0,0,1, 0,1,0));
+    }
+    {
+        auto btn = new QPushButton(QPixmap(":/icons/icon_minusy.svg"), "");
+        btn->setIconSize(QSize(24,24));
+        btnLayout->addWidget(btn);
+        connect(btn, &QPushButton::clicked, this,
+                std::bind(setCam, 0,0,1, 0,-1,0));
+    }
+    {
+        auto btn = new QPushButton(QPixmap(":/icons/icon_plusz.svg"), "");
+        btn->setIconSize(QSize(24,24));
+        btnLayout->addWidget(btn);
+        connect(btn, &QPushButton::clicked, this,
+                std::bind(setCam, 0,1,0, 0,0,1));
+    }
+    {
+        auto btn = new QPushButton(QPixmap(":/icons/icon_minusz.svg"), "");
+        btn->setIconSize(QSize(24,24));
+        btnLayout->addWidget(btn);
+        connect(btn, &QPushButton::clicked, this,
+                std::bind(setCam, 0,1,0, 0,0,-1));
+    }
+
+    btnLayout->addItem(new QSpacerItem(1,1,QSizePolicy::Expanding));
     ren_->SetBackground(1., 1., 1.);
-    renderWindow()->AddRenderer(ren_);
+    vtkWidget_.renderWindow()->AddRenderer(ren_);
     auto axes = vtkSmartPointer<vtkAxesActor>::New();
 
-    auto renWin1 = renderWindow();
+    auto renWin1 = vtkWidget_.renderWindow();
 
     // Call vtkRenderWindowInteractor in orientation marker widgt
     auto widget = vtkOrientationMarkerWidget::New();
@@ -566,15 +565,9 @@ IQCADModel3DViewer::IQCADModel3DViewer(
     widget->SetEnabled( 1 );
     widget->InteractiveOn();
 
-    vtkNew<PickInteractorStyle> style;
-//    vtkNew<vtkInteractorStyleTrackballCamera> style;
-    style->SetDefaultRenderer(ren_);
-    renWin1->GetInteractor()->SetInteractorStyle(style);
-
-    ren_->ResetCamera();
-
+    vtkNew<IQPickInteractorStyle> style;
     connect(
-        style, &PickInteractorStyle::contextMenuRequested, this,
+        style, &IQPickInteractorStyle::contextMenuRequested, this,
         [this](vtkActor* actor)
         {
 
@@ -590,6 +583,14 @@ IQCADModel3DViewer::IQCADModel3DViewer(
             }
         }
     );
+//    vtkNew<vtkInteractorStyleTrackballCamera> style;
+    style->SetDefaultRenderer(ren_);
+    renWin1->GetInteractor()->SetInteractorStyle(style);
+
+    ren_->GetActiveCamera()->SetParallelProjection(true);
+
+    ren_->ResetCamera();
+
 }
 
 
@@ -626,6 +627,11 @@ void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
             this, &IQCADModel3DViewer::onRowsInserted);
 
     addSiblings(QModelIndex());
+}
+
+vtkRenderWindowInteractor *IQCADModel3DViewer::interactor() const
+{
+    return vtkWidget_.interactor();
 }
 
 

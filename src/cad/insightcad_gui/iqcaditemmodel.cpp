@@ -3,6 +3,7 @@
 #include <QMenu>
 #include <QInputDialog>
 #include <QColorDialog>
+#include <QFileDialog>
 
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/discrete_distribution.hpp>
@@ -229,6 +230,12 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                             auto v=i->second->value();
                             return QString("[%1 %2 %3]").arg(v[0]).arg(v[1]).arg(v[2]);
                         }
+                        else if (index.column()==entityCol)
+                        {
+                            QVariant r;
+                            r.setValue(i->second);
+                            return r;
+                        }
                     }
                     break;
                 case CADModelSection::vectorVariable:
@@ -243,6 +250,12 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         {
                             auto v=i->second->value();
                             return QString("[%1 %2 %3]").arg(v[0]).arg(v[1]).arg(v[2]);
+                        }
+                        else if (index.column()==entityCol)
+                        {
+                            QVariant r;
+                            r.setValue(i->second);
+                            return r;
                         }
                     }
                     break;
@@ -376,6 +389,30 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
             {
                 switch (index.internalId())
                 {
+                    case CADModelSection::pointVariable:
+                        {
+                            auto points = model_->points();
+                            auto i = points.begin();
+                            std::advance(i, index.row());
+                            if (index.column()==visibilityCol)
+                            {
+                                return Qt::CheckState( pointVisibility_[i->first]?
+                                            Qt::Checked : Qt::Unchecked );
+                            }
+                        }
+                        break;
+                    case CADModelSection::vectorVariable:
+                        {
+                            auto vectors = model_->directions();
+                            auto i = vectors.begin();
+                            std::advance(i, index.row());
+                            if (index.column()==visibilityCol)
+                            {
+                                return Qt::CheckState( vectorVisibility_[i->first]?
+                                            Qt::Checked : Qt::Unchecked );
+                            }
+                        }
+                    break;
                     case CADModelSection::datum:
                         {
                             auto datums = model_->datums();
@@ -435,7 +472,9 @@ Qt::ItemFlags IQCADItemModel::flags(const QModelIndex &index) const
     Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
     if ( index.column() == visibilityCol && (
-             index.internalId()==CADModelSection::datum
+                index.internalId()==CADModelSection::pointVariable
+             || index.internalId()==CADModelSection::vectorVariable
+             || index.internalId()==CADModelSection::datum
              || index.internalId()==CADModelSection::feature
              || index.internalId()==CADModelSection::dataset
              ) )
@@ -455,7 +494,27 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
     {
         if ( index.column() == visibilityCol )
         {
-            if (index.internalId()==CADModelSection::datum)
+            if (index.internalId()==CADModelSection::pointVariable)
+            {
+                auto points = model_->points();
+                auto i=points.begin();
+                std::advance(i, index.row());
+                pointVisibility_[i->first] =
+                        ( value.value<Qt::CheckState>()==Qt::Checked );
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.internalId()==CADModelSection::vectorVariable)
+            {
+                auto vectors = model_->directions();
+                auto i=vectors.begin();
+                std::advance(i, index.row());
+                vectorVisibility_[i->first] =
+                        ( value.value<Qt::CheckState>()==Qt::Checked );
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.internalId()==CADModelSection::datum)
             {
                 auto datums = model_->datums();
                 auto i=datums.begin();
@@ -857,136 +916,154 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
 
     QAction *a;
 
-    a=new QAction("Show", &cm);
-    connect(a, &QAction::triggered,
-            [this,idx]() {
-                QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
-                if (flags(visi)&Qt::ItemIsUserCheckable)
-                {
-                    setData(visi, Qt::Checked, Qt::CheckStateRole);
-                }
-            });
-    cm.addAction(a);
-
-    a=new QAction("Hide", &cm);
-    connect(a, &QAction::triggered,
-            [this,idx]() {
-                QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
-                if (flags(visi)&Qt::ItemIsUserCheckable)
-                {
-                    setData(visi, Qt::Unchecked, Qt::CheckStateRole);
-                }
-            });
-    cm.addAction(a);
-
-    if (idx.internalId()==CADModelSection::datum)
+    if (!idx.parent().isValid())
     {
-//        auto datums = model_->datums();
-//        auto i=datums.begin();
-//        std::advance(i, index.row());
-//        datumVisibility_[i->second] =
-//                ( value.value<Qt::CheckState>()==Qt::Checked );
-//        Q_EMIT dataChanged(index, index, {role});
-//        return true;
+        if (idx.row()==CADModelSection::feature)
+        {
+            a=new QAction("Import model...", &cm);
+            connect(a, &QAction::triggered,
+                    [this]() {
+                        auto fn = QFileDialog::getOpenFileName(
+                                    nullptr, "Select CAD model",
+                                    "", "STEP (*.stp);;IGES (*.igs)");
+                        if (!fn.isEmpty())
+                        {
+                            boost::filesystem::path fp(fn.toStdString());
+                            auto m = insight::cad::Feature::CreateFromFile(fp);
+                            this->addModelstep(
+                                        fp.filename().stem().string(),
+                                        m );
+                        }
+                    });
+            cm.addAction(a);
+        }
     }
-    else if (idx.internalId()==CADModelSection::feature)
+    else
     {
-        a=new QAction("Set opacity...", &cm);
-        connect(a, &QAction::triggered, this,
+        a=new QAction("Show", &cm);
+        connect(a, &QAction::triggered,
                 [this,idx]() {
-                    bool ok=false;
-                    double val=QInputDialog::getDouble(nullptr, "opacity", "opacity", 1, 0, 1, 2, &ok);
-                    if (ok)
+                    QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
+                    if (flags(visi)&Qt::ItemIsUserCheckable)
                     {
-                        QModelIndex visi=index(idx.row(), IQCADItemModel::entityOpacityCol, idx.parent());
-                        setData(visi, val, Qt::EditRole);
+                        setData(visi, Qt::Checked, Qt::CheckStateRole);
                     }
                 });
         cm.addAction(a);
 
-        a=new QAction("Set color...", &cm);
-        connect(a, &QAction::triggered, this,
+        a=new QAction("Hide", &cm);
+        connect(a, &QAction::triggered,
                 [this,idx]() {
-                    bool ok=false;
-                    QModelIndex ci=index(idx.row(), IQCADItemModel::entityColorCol, idx.parent());
-                    auto val=QColorDialog::getColor(
-                                data(ci).value<QColor>(),
-                                nullptr,
-                                "Set Color");
-                    if (val.isValid())
+                    QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
+                    if (flags(visi)&Qt::ItemIsUserCheckable)
                     {
-                        setData(ci, val, Qt::EditRole);
-                    }
-                });
-        cm.addAction(a);
-    }
-    else if (idx.internalId()==CADModelSection::dataset)
-    {
-        a=new QAction("Set representation...", &cm);
-        connect(a, &QAction::triggered, this,
-                [this,idx]() {
-                    bool ok=false;
-                    auto n=QInputDialog::getItem(nullptr,
-                                                 "repr", "representation",
-                                                 {"Points", "Wireframe", "Surface"},
-                                                 2, false, &ok);
-                    if (ok)
-                    {
-                        int i;
-                        if (n=="Points")
-                            i=VTK_POINTS;
-                        else if (n=="Wireframe")
-                            i=VTK_WIREFRAME;
-                        else if (n=="Surface")
-                            i=VTK_SURFACE;
-
-                             QModelIndex visi=index(idx.row(), IQCADItemModel::datasetRepresentationCol, idx.parent());
-                             setData(visi, i, Qt::EditRole);
+                        setData(visi, Qt::Unchecked, Qt::CheckStateRole);
                     }
                 });
         cm.addAction(a);
 
-        a=new QAction("Auto scale set data range", &cm);
-        connect(a, &QAction::triggered, this,
-                [this,idx]() {
-                     QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMinCol, idx.parent());
-                     setData(visi, QVariant(), Qt::EditRole);
-                     visi=index(idx.row(), IQCADItemModel::datasetMaxCol, idx.parent());
-                     setData(visi, QVariant(), Qt::EditRole);
-                });
-        cm.addAction(a);
-        a=new QAction("Manual set data range minimum", &cm);
-        connect(a, &QAction::triggered, this,
-                [this,idx]() {
-                    bool ok=false;
-                    double val=QInputDialog::getDouble(nullptr, "minimum", "minimum", 0, -DBL_MAX, DBL_MAX, 1, &ok);
-                    if (ok)
-                    {
-                        QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMinCol, idx.parent());
-                        setData(visi, val, Qt::EditRole);
-                    }
-                });
-        cm.addAction(a);
-        a=new QAction("Manual set data range maximum", &cm);
-        connect(a, &QAction::triggered, this,
-                [this,idx]() {
-                    bool ok=false;
-                    double val=QInputDialog::getDouble(nullptr, "maximum", "maximum", 0, -DBL_MAX, DBL_MAX, 1, &ok);
-                    if (ok)
-                    {
-                        QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMaxCol, idx.parent());
-                        setData(visi, val, Qt::EditRole);
-                    }
-                });
-        cm.addAction(a);
+        if (idx.internalId()==CADModelSection::datum)
+        {
+    //        auto datums = model_->datums();
+    //        auto i=datums.begin();
+    //        std::advance(i, index.row());
+    //        datumVisibility_[i->second] =
+    //                ( value.value<Qt::CheckState>()==Qt::Checked );
+    //        Q_EMIT dataChanged(index, index, {role});
+    //        return true;
+        }
+        else if (idx.internalId()==CADModelSection::feature)
+        {
+            a=new QAction("Set opacity...", &cm);
+            connect(a, &QAction::triggered, this,
+                    [this,idx]() {
+                        bool ok=false;
+                        double val=QInputDialog::getDouble(nullptr, "opacity", "opacity", 1, 0, 1, 2, &ok);
+                        if (ok)
+                        {
+                            QModelIndex visi=index(idx.row(), IQCADItemModel::entityOpacityCol, idx.parent());
+                            setData(visi, val, Qt::EditRole);
+                        }
+                    });
+            cm.addAction(a);
 
-//        auto ds = model_->datasets();
-//        auto i=ds.begin();
-//        std::advance(i, index.row());
-//        datasetVisibility_[i->second] =
-//                ( value.value<Qt::CheckState>()==Qt::Checked );
-//        Q_EMIT dataChanged(index, index, {role});
-//        return true;
+            a=new QAction("Set color...", &cm);
+            connect(a, &QAction::triggered, this,
+                    [this,idx]() {
+                        bool ok=false;
+                        QModelIndex ci=index(idx.row(), IQCADItemModel::entityColorCol, idx.parent());
+                        auto val=QColorDialog::getColor(
+                                    data(ci).value<QColor>(),
+                                    nullptr,
+                                    "Set Color");
+                        if (val.isValid())
+                        {
+                            setData(ci, val, Qt::EditRole);
+                        }
+                    });
+            cm.addAction(a);
+        }
+        else if (idx.internalId()==CADModelSection::dataset)
+        {
+            a=new QAction("Set representation...", &cm);
+            connect(a, &QAction::triggered, this,
+                    [this,idx]() {
+                        bool ok=false;
+                        auto n=QInputDialog::getItem(nullptr,
+                                                     "repr", "representation",
+                                                     {"Points", "Wireframe", "Surface"},
+                                                     2, false, &ok);
+                        if (ok)
+                        {
+                            int i;
+                            if (n=="Points")
+                                i=VTK_POINTS;
+                            else if (n=="Wireframe")
+                                i=VTK_WIREFRAME;
+                            else if (n=="Surface")
+                                i=VTK_SURFACE;
+
+                                 QModelIndex visi=index(idx.row(), IQCADItemModel::datasetRepresentationCol, idx.parent());
+                                 setData(visi, i, Qt::EditRole);
+                        }
+                    });
+            cm.addAction(a);
+
+            a=new QAction("Auto scale set data range", &cm);
+            connect(a, &QAction::triggered, this,
+                    [this,idx]() {
+                         QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMinCol, idx.parent());
+                         setData(visi, QVariant(), Qt::EditRole);
+                         visi=index(idx.row(), IQCADItemModel::datasetMaxCol, idx.parent());
+                         setData(visi, QVariant(), Qt::EditRole);
+                    });
+            cm.addAction(a);
+            a=new QAction("Manual set data range minimum", &cm);
+            connect(a, &QAction::triggered, this,
+                    [this,idx]() {
+                        bool ok=false;
+                        double val=QInputDialog::getDouble(nullptr, "minimum", "minimum", 0, -DBL_MAX, DBL_MAX, 1, &ok);
+                        if (ok)
+                        {
+                            QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMinCol, idx.parent());
+                            setData(visi, val, Qt::EditRole);
+                        }
+                    });
+            cm.addAction(a);
+            a=new QAction("Manual set data range maximum", &cm);
+            connect(a, &QAction::triggered, this,
+                    [this,idx]() {
+                        bool ok=false;
+                        double val=QInputDialog::getDouble(nullptr, "maximum", "maximum", 0, -DBL_MAX, DBL_MAX, 1, &ok);
+                        if (ok)
+                        {
+                            QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMaxCol, idx.parent());
+                            setData(visi, val, Qt::EditRole);
+                        }
+                    });
+            cm.addAction(a);
+
+        }
     }
 
     cm.exec(pos);

@@ -1,9 +1,7 @@
 #include <QDebug>
 
 #include "cadparametersetvisualizer.h"
-#include "cadfeature.h"
 #include "qmodeltree.h"
-#include "qmodelstepitem.h"
 
 #include "iqiscadmodelrebuilder.h"
 #include "iqparametersetmodel.h"
@@ -41,6 +39,18 @@ void CADParameterSetVisualizer::addGeometryToSpatialTransformationParameter(
         psmodel_->addGeometryToSpatialTransformationParameter(
                     QString::fromStdString(parameterPath),
                     geom );
+    }
+}
+
+void CADParameterSetVisualizer::addVectorBasePoint(
+        const std::string &parameterPath,
+        const arma::mat &pBase )
+{
+    if (psmodel_)
+    {
+        psmodel_->addVectorBasePoint(
+                    QString::fromStdString(parameterPath),
+                    pBase );
     }
 }
 

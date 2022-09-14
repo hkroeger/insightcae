@@ -102,7 +102,7 @@ int ivtkOCCShape::RequestData(
 
       for (vtkIdType i=0; i<tri->NbNodes(); ++i)
       {
-          points->InsertNextPoint( tri->Node(i+1).XYZ().GetData() );
+          points->InsertNextPoint( tri->Node(i+1).Transformed(L).XYZ().GetData() );
       }
       for (vtkIdType j=0; j<tri->NbTriangles(); ++j)
       {

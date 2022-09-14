@@ -407,6 +407,12 @@ public:
 
   void replace(const std::string& keyword, const std::string& content);
 
+  template<class T>
+  void replaceValue(const std::string& keyword, const T& content)
+  {
+      replace(keyword, boost::lexical_cast<std::string>(content));
+  }
+
   void write(std::ostream& os) const;
   void write(const boost::filesystem::path& outfile) const;
 };

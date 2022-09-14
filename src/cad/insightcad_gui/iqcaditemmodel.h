@@ -22,7 +22,10 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
 
   insight::cad::ModelPtr model_;
 
-  mutable std::map<std::string, bool> datumVisibility_;
+  mutable std::map<std::string, bool>
+        pointVisibility_,
+        vectorVisibility_,
+        datumVisibility_;
 
   struct FeatureVisibility
   {

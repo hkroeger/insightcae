@@ -20,10 +20,8 @@ IQCADTransformationCommand::IQCADTransformationCommand(
 {
   boxWidget_->SetInteractor( rwi );
   boxWidget_->AddObserver( vtkCommand::InteractionEvent, this );
-//  boxWidget_->AddObserver( vtkCommand::ExitEvent, this );
   boxWidget_->GetRepresentation()->SetPlaceFactor( 1.2 );
   boxWidget_->GetRepresentation()->PlaceWidget(actor_->GetBounds());
-//  boxWidget_->RotationEnabledOff();
   boxWidget_->On();
 
   rwi->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->AddActor(actor_);

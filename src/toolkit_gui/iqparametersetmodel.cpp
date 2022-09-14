@@ -373,6 +373,11 @@ void IQParameterSetModel::addGeometryToSpatialTransformationParameter(
     transformedGeometry_[parameterPath]=geom;
 }
 
+void IQParameterSetModel::addVectorBasePoint(const QString &parameterPath, const arma::mat &pBase)
+{
+    vectorBasePoints_[parameterPath]=pBase;
+}
+
 insight::cad::FeaturePtr IQParameterSetModel::getGeometryToSpatialTransformationParameter(
         const QString &parameterPath )
 {
@@ -382,6 +387,16 @@ insight::cad::FeaturePtr IQParameterSetModel::getGeometryToSpatialTransformation
         return i->second;
     }
     return insight::cad::FeaturePtr();
+}
+
+const arma::mat * const IQParameterSetModel::getVectorBasePoint(const QString &parameterPath)
+{
+    auto i = vectorBasePoints_.find(parameterPath);
+    if (i!=vectorBasePoints_.end())
+    {
+        return &i->second;
+    }
+    return nullptr;
 }
 
 

@@ -51,6 +51,9 @@ public:
               const std::string& parameterPath,
               insight::cad::FeaturePtr geom );
 
+  void addVectorBasePoint(
+          const std::string& parameterPath, const arma::mat& pBase );
+
   void update(const ParameterSet& ps) override;
 
   virtual void recreateVisualizationElements();

@@ -31,6 +31,13 @@ class TOOLKIT_GUI_EXPORT IQParameterSetModel
 
   mutable std::map<QString, insight::cad::FeaturePtr> transformedGeometry_;
 
+  /**
+   * @brief vectorBasePoints_
+   * if a vector parameter represents a direction, this map contains the base point.
+   * If there is no base point for a vector parameter, it treated as a point (location vector)
+   */
+  mutable std::map<QString, arma::mat> vectorBasePoints_;
+
   std::pair<QString, const insight::Parameter*> getParameterAndName(const QModelIndex& index) const;
 
   QList<IQParameter*> decorateSubdictContent(QObject*, const insight::ParameterSet&, int);
@@ -63,9 +70,13 @@ public:
 
   void addGeometryToSpatialTransformationParameter(
           const QString& parameterPath, insight::cad::FeaturePtr geom );
+  void addVectorBasePoint(
+          const QString& parameterPath, const arma::mat& pBase );
 
   insight::cad::FeaturePtr
   getGeometryToSpatialTransformationParameter(
+          const QString& parameterPath );
+  const arma::mat* const getVectorBasePoint(
           const QString& parameterPath );
 
 public Q_SLOTS:

@@ -69,7 +69,8 @@ public:
     SubfilePtr addObject(SubfilePtr obj);
 
     void write(std::ostream& os) const;
-    void write(const boost::filesystem::path& directory=".", int unit=20) const;
+    void write(const boost::filesystem::path& outfile) const;
+    void write(const boost::filesystem::path& directory, int unit) const;
 };
 
 

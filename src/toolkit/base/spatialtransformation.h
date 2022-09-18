@@ -4,6 +4,7 @@
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 
+#include <limits>
 #include "vtkSmartPointer.h"
 //#include "vtkTransform.h"
 //#include "vtkPolyDataAlgorithm.h"

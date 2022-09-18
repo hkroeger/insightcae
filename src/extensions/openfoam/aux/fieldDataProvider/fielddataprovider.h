@@ -20,6 +20,7 @@
 #ifndef FOAM_FIELDDATAPROVIDER_H
 #define FOAM_FIELDDATAPROVIDER_H
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkUnstructuredGridReader.h"
 #include "vtkPointInterpolator.h"

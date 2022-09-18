@@ -1,6 +1,7 @@
 #ifndef INSIGHT_VTKTRANSFORMATION_H
 #define INSIGHT_VTKTRANSFORMATION_H
 
+#include <limits>
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 #include "base/spatialtransformation.h"

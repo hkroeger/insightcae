@@ -23,6 +23,7 @@
 class vtkPolyData;
 class vtkCellArray;
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyDataAlgorithm.h"
 

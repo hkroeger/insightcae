@@ -235,6 +235,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/analysiscaseelements.cpp openfoam/caseelements/analysiscaseelements.h
     openfoam/caseelements/thermophysicalcaseelements.cpp openfoam/caseelements/thermophysicalcaseelements.h
     openfoam/caseelements/electromagneticscaseelements.cpp openfoam/caseelements/electromagneticscaseelements.h
+    openfoam/caseelements/options/enforcefarfieldvelocity.h openfoam/caseelements/options/enforcefarfieldvelocity.cpp
     code_aster/caexportfile.cpp code_aster/caexportfile.h
     code_aster/codeasterrun.cpp code_aster/codeasterrun.h
     code_aster/codeastermeshfile.h code_aster/codeastermeshfile.cpp

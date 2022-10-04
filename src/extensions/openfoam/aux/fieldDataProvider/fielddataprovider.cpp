@@ -24,6 +24,7 @@
 #include "IFstream.H"
 
 #include "base/linearalgebra.h"
+#include "base/vtktools.h"
 #include "boost/foreach.hpp"
 
 #include "boost/version.hpp"
@@ -33,6 +34,11 @@
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #endif
 #include "boost/filesystem.hpp"
+
+#include "vtkXMLMultiBlockDataReader.h"
+#include "vtkUnstructuredGrid.h"
+#include "vtkCompositeDataToUnstructuredGridFilter.h"
+#include "vtkCompositeDataSet.h"
 
 
 using namespace boost;
@@ -713,8 +719,12 @@ void vtkField<T>::appendInstant(Istream& is)
 
     is >> fn >> fld;
 
-    token order(is);
-    if (order.isWord() && order.wordToken()=="componentOrder" )
+    fn.expand();
+
+    autoPtr<token> order;
+    if (!is.eof()) order.reset(new token(is));
+
+    if (order.valid() && order->isWord() && order->wordToken()=="componentOrder" )
     {
         word orderType;
         is >> orderType;
@@ -723,7 +733,8 @@ void vtkField<T>::appendInstant(Istream& is)
     }
     else
     {
-        is.putBack(order);
+        if (order.valid())
+            is.putBack(order());
 
         setComponentMap();
     }
@@ -768,17 +779,28 @@ tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
     auto ii=data_.find(i);
     if (ii==data_.end())
     {
-        if (!exists(vtkFiles_[i]))
+        auto fn=vtkFiles_[i];
+        if (!exists(fn))
         {
             FatalErrorIn("vtkField<T>::atInstant")
                     << "file "<<vtkFiles_[i]<<" does not exist!"
                     <<abort(FatalError);
         }
 
-        auto r = vtkSmartPointer<vtkGenericDataObjectReader>::New();
-        r->SetFileName(vtkFiles_[i].c_str());
-        r->Update();
-        data_[i] = r->GetOutput();
+        if (fn.ext()=="vtm")
+        {
+            vtkNew<vtkXMLMultiBlockDataReader> r;
+            r->SetFileName(fn.c_str());
+            r->Update();
+            data_[i] = multiBlockDataSetToUnstructuredGrid(r->GetOutput());
+        }
+        else
+        {
+            auto r = vtkSmartPointer<vtkGenericDataObjectReader>::New();
+            r->SetFileName(fn.c_str());
+            r->Update();
+            data_[i] = r->GetOutput();
+        }
         ii=data_.find(i);
     }
 

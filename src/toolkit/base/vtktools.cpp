@@ -32,6 +32,14 @@
 #include "vtkDelaunay2D.h"
 #include "vtkLinearExtrusionFilter.h"
 
+#include "vtkDataSet.h"
+#include "vtkAppendFilter.h"
+#include "vtkCompositeDataSet.h"
+#include "vtkCompositeDataIterator.h"
+#include "vtkUnstructuredGrid.h"
+#include "vtkDataObjectTreeIterator.h"
+#include "vtkMultiBlockDataSet.h"
+
 using namespace std;
 
 namespace insight
@@ -432,6 +440,124 @@ bool checkNormalsOrientation(vtkPolyData* vpm, const arma::mat& pFar, bool modif
   }
 
   return toBeInverted;
+}
+
+
+vtkSmartPointer<vtkUnstructuredGrid> multiBlockDataSetToUnstructuredGrid(vtkDataObject *input)
+{
+    auto output = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+    bool MergePoints = true;
+    vtkIdType SubTreeCompositeIndex = 0;
+    double Tolerance = 0.;
+
+    auto AddDataSet = [](vtkDataSet* ds, vtkAppendFilter* appender)
+    {
+      vtkDataSet* clone = ds->NewInstance();
+      clone->ShallowCopy(ds);
+      appender->AddInputData(clone);
+      clone->Delete();
+    };
+
+    auto ExecuteSubTree = [](
+      vtkCompositeDataSet* curCD, vtkAppendFilter* appender)
+    {
+      vtkCompositeDataIterator* iter2 = curCD->NewIterator();
+      for (iter2->InitTraversal(); !iter2->IsDoneWithTraversal(); iter2->GoToNextItem())
+      {
+        vtkDataSet* curDS = vtkDataSet::SafeDownCast(iter2->GetCurrentDataObject());
+        if (curDS)
+        {
+          appender->AddInputData(curDS);
+        }
+      }
+      iter2->Delete();
+    };
+
+
+
+    vtkCompositeDataSet* cd = vtkCompositeDataSet::SafeDownCast(input);
+    vtkUnstructuredGrid* ug = vtkUnstructuredGrid::SafeDownCast(input);
+    vtkDataSet* ds = vtkDataSet::SafeDownCast(input);
+
+    if (ug)
+    {
+      output->ShallowCopy(ug);
+    }
+    else
+    {
+      vtkNew<vtkAppendFilter> appender;
+      appender->SetMergePoints(MergePoints ? 1 : 0);
+      if (MergePoints)
+      {
+        appender->SetTolerance(Tolerance);
+      }
+      if (ds)
+      {
+        AddDataSet(ds, appender);
+      }
+      else if (cd)
+      {
+        if (SubTreeCompositeIndex == 0)
+        {
+          ExecuteSubTree(cd, appender);
+        }
+        vtkDataObjectTreeIterator* iter = vtkDataObjectTreeIterator::SafeDownCast(cd->NewIterator());
+        if (!iter)
+        {
+          throw insight::Exception("Composite data is not a tree");
+        }
+        iter->VisitOnlyLeavesOff();
+        for (iter->InitTraversal();
+             !iter->IsDoneWithTraversal() && iter->GetCurrentFlatIndex() <= SubTreeCompositeIndex;
+             iter->GoToNextItem())
+        {
+          if (iter->GetCurrentFlatIndex() == SubTreeCompositeIndex)
+          {
+            vtkDataObject* curDO = iter->GetCurrentDataObject();
+            vtkCompositeDataSet* curCD = vtkCompositeDataSet::SafeDownCast(curDO);
+            vtkUnstructuredGrid* curUG = vtkUnstructuredGrid::SafeDownCast(curDO);
+            vtkDataSet* curDS = vtkUnstructuredGrid::SafeDownCast(curDO);
+            if (curUG)
+            {
+              output->ShallowCopy(curUG);
+              // NOTE: Not using the appender at all.
+            }
+            else if (curDS && curCD->GetNumberOfPoints() > 0)
+            {
+              AddDataSet(curDS, appender);
+            }
+            else if (curCD)
+            {
+              ExecuteSubTree(curCD, appender);
+            }
+            break;
+          }
+        }
+        iter->Delete();
+      }
+
+      if (appender->GetNumberOfInputConnections(0) > 0)
+      {
+        appender->Update();
+        output->ShallowCopy(appender->GetOutput());
+        // this will override field data the vtkAppendFilter passed from the first
+        // block. It seems like a reasonable approach, if global field data is
+        // present.
+        if (ds)
+        {
+          output->GetFieldData()->PassData(ds->GetFieldData());
+        }
+        else if (cd)
+        {
+          output->GetFieldData()->PassData(cd->GetFieldData());
+        }
+
+      }
+//          RemovePartialArrays(output);
+    }
+
+    return output;
 }
 
 }

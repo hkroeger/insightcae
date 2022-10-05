@@ -37,7 +37,6 @@
 
 #include "vtkXMLMultiBlockDataReader.h"
 #include "vtkUnstructuredGrid.h"
-#include "vtkCompositeDataToUnstructuredGridFilter.h"
 #include "vtkCompositeDataSet.h"
 
 

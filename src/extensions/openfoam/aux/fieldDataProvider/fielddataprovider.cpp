@@ -788,7 +788,7 @@ tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
 
         if (fn.ext()=="vtm")
         {
-            vtkNew<vtkXMLMultiBlockDataReader> r;
+            auto r = vtkSmartPointer<vtkXMLMultiBlockDataReader>::New();
             r->SetFileName(fn.c_str());
             r->Update();
             data_[i] = multiBlockDataSetToUnstructuredGrid(r->GetOutput());

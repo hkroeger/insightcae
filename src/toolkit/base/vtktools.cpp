@@ -356,7 +356,7 @@ ContourExtruder::ContourExtruder(const arma::mat &contour, const arma::mat& dir)
     auto extr = vtkSmartPointer<vtkLinearExtrusionFilter>::New();
     extr->SetInputConnection(surf->GetOutputPort());
     extr->SetExtrusionTypeToVectorExtrusion();
-    extr->SetVector(dir.memptr());
+    extr->SetVector(const_cast<double*>(dir.memptr()));
 
     extr->Update();
 
@@ -486,11 +486,13 @@ vtkSmartPointer<vtkUnstructuredGrid> multiBlockDataSetToUnstructuredGrid(vtkData
     }
     else
     {
-      vtkNew<vtkAppendFilter> appender;
+      auto appender = vtkSmartPointer<vtkAppendFilter>::New();
       appender->SetMergePoints(MergePoints ? 1 : 0);
       if (MergePoints)
       {
+#if VTK_MAJOR_VERSION>=8
         appender->SetTolerance(Tolerance);
+#endif
       }
       if (ds)
       {

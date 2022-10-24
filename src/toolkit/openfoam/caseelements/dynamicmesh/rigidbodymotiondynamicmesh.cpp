@@ -126,9 +126,29 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     }
     rbmc["bodies"]=bl;
 
-    OFDictData::dict rc;
-     // empty
-    rbmc["restraints"]=rc;
+    OFDictData::dict rcs;
+    for (const auto& rc: p.restraints)
+    {
+        if (const auto* pv =
+                boost::get<Parameters::restraints_default_prescribedVelocity_type>(&rc))
+        {
+            OFDictData::dict fsd;
+            fsd["type"]="prescribedVelocity";
+            fsd["body"]=pv->body;
+            fsd["velocity"]="table ( ( 0 "+
+                    boost::lexical_cast<std::string>(arma::norm(pv->velocity,2))
+                    +" ) )";
+            fsd["direction"]=OFDictData::vector3(
+                        pv->velocity
+                        / arma::norm(pv->velocity,2) );
+            fsd["relax"]=0.22;
+            fsd["p"]=0.1;
+            fsd["i"]=0.01;
+            fsd["d"]=0.;
+            rcs[pv->label]=fsd;
+        }
+    }
+    rbmc["restraints"]=rcs;
 
     dynamicMeshDict[name+"Coeffs"]=rbmc;
 

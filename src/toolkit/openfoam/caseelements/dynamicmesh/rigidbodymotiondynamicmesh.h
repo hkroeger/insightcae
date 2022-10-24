@@ -66,6 +66,14 @@ implementation = selectablesubset {{
 }} vanilla "Type of implementation to use."
 
 
+restraints = array [ selectablesubset {{
+ prescribedVelocity set {
+  label = string "fixSpeed" "unique label"
+  body = string "" "name of body which speed is to be fixed" *necessary
+  velocity = vector (1 0 0) "target velocity" *necessary
+ }
+}} prescribedVelocity "" ] *0 "restraint to apply"
+
 moveMeshOuterCorrectors = bool false "Whether the mesh motion is updated in every outer iteration within a time step. If set to false, mesh motion is updated only at the end of the time step."
 
 <<<PARAMETERSET

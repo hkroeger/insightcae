@@ -71,6 +71,7 @@ protected:
     QTreeView* parameterTreeView_;
     QWidget *inputContents_;
 
+    QTreeView *modeltree_;
     ParameterSetDisplay* display_;
 
     insight::ParameterSet_ValidatorPtr vali_;
@@ -106,6 +107,11 @@ public:
     
 public Q_SLOTS:
     void onParameterSetChanged();
+
+    void onCADModelDataChanged(
+            const QModelIndex &topLeft,
+            const QModelIndex &bottomRight,
+            const QVector<int> &roles );
 
 Q_SIGNALS:
     void parameterSetChanged();

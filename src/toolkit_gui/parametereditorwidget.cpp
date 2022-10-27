@@ -119,10 +119,14 @@ ParameterEditorWidget::ParameterEditorWidget
       w->setLayout(l);
       addWidget(w);
 
-      auto modeltree = new QTreeView(this);
-      addWidget(modeltree);
+      modeltree_ = new QTreeView(this);
+      display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree_);
 
-      display_=new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree);
+      // after ParameterSetDisplay constructor!
+      modeltree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+      connect(modeltree_->model(), &QAbstractItemModel::dataChanged,
+              this, &ParameterEditorWidget::onCADModelDataChanged );
+      addWidget(modeltree_);
     }
     else
     {
@@ -176,6 +180,32 @@ void ParameterEditorWidget::onParameterSetChanged()
 }
 
 
+
+void ParameterEditorWidget::onCADModelDataChanged
+(
+      const QModelIndex &topLeft,
+      const QModelIndex &bottomRight,
+      const QVector<int> &roles )
+{
+  qDebug()<<roles;
+
+  if (roles.contains(Qt::CheckStateRole))
+  {
+      disconnect(modeltree_->model(), &QAbstractItemModel::dataChanged,
+              this, &ParameterEditorWidget::onCADModelDataChanged );
+
+      auto checkstate = topLeft.data(Qt::CheckStateRole);
+      auto indices = modeltree_->selectionModel()->selectedIndexes();
+      for (const auto& idx: indices)
+      {
+          qDebug()<<"setting"<<idx<<"to"<<checkstate;
+          modeltree_->model()->setData(idx, checkstate, Qt::CheckStateRole);
+      }
+
+      connect(modeltree_->model(), &QAbstractItemModel::dataChanged,
+              this, &ParameterEditorWidget::onCADModelDataChanged );
+  }
+}
 
 
 

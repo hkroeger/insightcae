@@ -198,8 +198,14 @@ void ParameterEditorWidget::onCADModelDataChanged
       auto indices = modeltree_->selectionModel()->selectedIndexes();
       for (const auto& idx: indices)
       {
-          qDebug()<<"setting"<<idx<<"to"<<checkstate;
-          modeltree_->model()->setData(idx, checkstate, Qt::CheckStateRole);
+          if (idx.column()==topLeft.column())
+          {
+              qDebug()<<"setting"<<idx<<"to"<<checkstate;
+              modeltree_->model()->setData(
+                      idx,
+                      checkstate,
+                      Qt::CheckStateRole );
+          }
       }
 
       connect(modeltree_->model(), &QAbstractItemModel::dataChanged,

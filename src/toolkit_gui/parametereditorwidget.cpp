@@ -187,8 +187,6 @@ void ParameterEditorWidget::onCADModelDataChanged
       const QModelIndex &bottomRight,
       const QVector<int> &roles )
 {
-  qDebug()<<roles;
-
   if (roles.contains(Qt::CheckStateRole))
   {
       disconnect(modeltree_->model(), &QAbstractItemModel::dataChanged,
@@ -200,7 +198,6 @@ void ParameterEditorWidget::onCADModelDataChanged
       {
           if (idx.column()==topLeft.column())
           {
-              qDebug()<<"setting"<<idx<<"to"<<checkstate;
               modeltree_->model()->setData(
                       idx,
                       checkstate,

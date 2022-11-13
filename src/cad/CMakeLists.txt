@@ -38,6 +38,8 @@ set(insightcad_SOURCES
   occtools.cpp
   caddocitem.cpp
   cadtypes.cpp
+  polytriangulationelementiterator.h polytriangulationelementiterator.cpp
+  polytriangulationnodeiterator.h polytriangulationnodeiterator.cpp
 )
 
 set(INCLUDE_DIRS "")

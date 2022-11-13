@@ -159,11 +159,9 @@ void BooleanIntersection::build()
               }
               else
               {
-                  BRepAlgoAPI_Section intersector
-                  (
-                      *m1_,
-                      m2pl_->plane()
-                  );
+                  BRepAlgoAPI_Common intersector(
+                              *m1_,
+                              BRepBuilderAPI_MakeFace(m2pl_->plane()).Face() );
                   intersector.Build();
                   if (!intersector.IsDone())
                   {

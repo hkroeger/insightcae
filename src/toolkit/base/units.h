@@ -41,13 +41,16 @@
 
 #include "base/linearalgebra.h"
 
+namespace insight {
+namespace si = boost::units::si;
+}
 
 
 namespace boost { namespace units { namespace si {
 
 
- typedef unit<specific_heat_capacity_dimension,si::system> specific_heat_capacity;
- typedef unit<thermal_conductivity_dimension,si::system> thermal_conductivity;
+ typedef unit<specific_heat_capacity_dimension,system> specific_heat_capacity;
+ typedef unit<thermal_conductivity_dimension,system> thermal_conductivity;
 
  BOOST_UNITS_STATIC_CONSTANT(joule_per_kilogram_kelvin,specific_heat_capacity);
  BOOST_UNITS_STATIC_CONSTANT(watt_per_square_meter,thermal_conductivity);
@@ -59,7 +62,7 @@ namespace boost { namespace units { namespace si {
  static const auto millimeter = milli*meter;
  static const auto mps = meter/second;
 
- static const auto dimless = si::dimensionless();
+ static const auto dimless = dimensionless();
 
  typedef metric::knot_base_unit::unit_type knot_unit;
  typedef quantity<knot_unit> knot_quantity;
@@ -74,11 +77,11 @@ namespace boost { namespace units { namespace si {
  typedef quantity<angle_deg_unit> angle_deg_quantity;
  static const angle_deg_unit angle_deg;
 
- typedef si::plane_angle::unit_type angle_rad_unit;
+ typedef plane_angle::unit_type angle_rad_unit;
  typedef quantity<angle_rad_unit> angle_rad_quantity;
  static const angle_rad_unit angle_rad;
 
- static const auto kelvin_per_meter = si::kelvin/si::meter;
+ static const auto kelvin_per_meter = kelvin/meter;
 
 
 
@@ -147,7 +150,6 @@ namespace boost { namespace units { namespace si {
 
 }}}
 
-namespace si = boost::units::si;
 
 namespace SI
 {

@@ -395,7 +395,7 @@ int main ( int argc, char *argv[] )
     }
     catch( const std::exception& e )
     {
-      std::cerr << "Error in processing PDL " << e.what() << "\n" << std::endl;
+      std::cerr << "Error in processing PDL: " << e.what() << "\n" << std::endl;
       return -1;
     }
   }

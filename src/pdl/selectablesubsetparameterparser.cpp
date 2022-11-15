@@ -1,5 +1,6 @@
 #include "selectablesubsetparameterparser.h"
 #include "subsetparameterparser.h"
+#include "includedsubsetparameterparser.h"
 
 using namespace std;
 
@@ -54,6 +55,29 @@ std::string SelectableSubsetParameterParser::Data::cppParamType ( const std::str
     return "insight::SelectableSubsetParameter";
 }
 
+ParserDataBase* getSubset(ParserDataBase::Ptr e, bool* empty=nullptr)
+{
+    ParserDataBase* pdb = nullptr;
+
+    if (SubsetParameterParser::Data *pd =
+            dynamic_cast<SubsetParameterParser::Data*>(e.get())) // should be a set
+    {
+        pdb=pd;
+        if (empty) *empty = pd->value.size()==0;
+    }
+    else if (IncludedSubsetParameterParser::Data* pd =
+             dynamic_cast<IncludedSubsetParameterParser::Data*>(e.get()))
+    {
+        pdb=pd;
+        if (empty) *empty = false;
+    }
+
+    if (!pdb)
+        throw PDLException("selectablesubset should contain only sets!");
+
+    return pdb;
+}
+
 void SelectableSubsetParameterParser::Data::cppWriteCreateStatement
 (
     std::ostream& os,
@@ -67,9 +91,8 @@ void SelectableSubsetParameterParser::Data::cppWriteCreateStatement
     os<<"insight::SelectableSubsetParameter::SubsetList "<<name<<"_selection;"<<endl;
     for ( const SubsetData& sd: value ) {
         const std::string& sel_name=boost::fusion::get<0> ( sd );
-        SubsetParameterParser::Data* pd
-            = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
-        if (!pd) throw PDLException("selectablesubset should contain only sets!");
+
+        auto pd = getSubset( boost::fusion::get<1>(sd) );
 
         os<<"{"<<endl;
           pd->cppWriteCreateStatement
@@ -104,11 +127,12 @@ void SelectableSubsetParameterParser::Data::cppWriteSetStatement
 
         const std::string& sel_name=boost::fusion::get<0> ( sd );
 
-        SubsetParameterParser::Data* pd
-            = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
+//        SubsetParameterParser::Data* pd
+//            = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
 
-        if (!pd) throw PDLException("selectablesubset should contain only sets!");
-        bool emptyset = pd->value.size()==0;
+//        if (!pd) throw PDLException("selectablesubset should contain only sets!");
+        bool emptyset;
+        auto pd = getSubset( boost::fusion::get<1>(sd), &emptyset );
 
         std::string seliname=name+"_"+sel_name;
         os<<"if ( ";
@@ -143,11 +167,12 @@ void SelectableSubsetParameterParser::Data::cppWriteGetStatement
     for ( const SubsetData& sd: value ) {
         const std::string& sel_name=boost::fusion::get<0> ( sd );
 
-        SubsetParameterParser::Data* pd
-            = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
+//        SubsetParameterParser::Data* pd
+//            = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
 
-        if (!pd) throw PDLException("selectablesubset should contain only sets!");
-        bool emptyset = pd->value.size()==0;
+//        if (!pd) throw PDLException("selectablesubset should contain only sets!");
+        bool emptyset/* = pd->value.size()==0*/;
+        auto pd=getSubset( boost::fusion::get<1>(sd), &emptyset );
         std::string seliname=name+"_"+sel_name;
 
         os<<"if ( "<<varname<<".selection() == \""<<sel_name<<"\" ) {\n";

@@ -290,10 +290,10 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
   std::string force_fo_name("foilForces");
 
   cm.insert(new forces(cm, forces::Parameters()
-    .set_name(force_fo_name)
     .set_patches( {"\""+sp().foil_+".*\""} )
     .set_rhoInf(p().fluid.rho)
     .set_CofR(vec3(0,0,0))
+    .set_name(force_fo_name)
     ));  
 
   installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(

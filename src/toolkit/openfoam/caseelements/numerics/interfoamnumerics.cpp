@@ -5,6 +5,7 @@
 #include "openfoam/openfoamcase.h"
 
 #include "openfoam/caseelements/dynamicmesh/dynamicmesh.h"
+#include "openfoam/caseelements/numerics/oversetconfiguration.h"
 
 namespace insight {
 
@@ -49,6 +50,12 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 {
   OFcase().setRequiredMapMethod(OpenFOAMCase::cellVolumeWeightMapMethod);
 
+  if ( const auto * os =
+          boost::get<Parameters::overset_yes_type>(&p_.overset) )
+  {
+      overset_.reset(new OversetConfiguration(c, (*os)));
+  }
+
   alphaname_="alpha1";
   if (OFversion()>=230)
     alphaname_="alpha.phase1";
@@ -59,6 +66,8 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
   OFcase().addField("U", 	FieldInfo(vectorField, dimVelocity, FieldValue({p_.Uinternal(0),p_.Uinternal(1),p_.Uinternal(2)}), volField ) );
   OFcase().addField(pName_, 	FieldInfo(scalarField, dimPressure, FieldValue({p_.pinternal}), volField ) );
   OFcase().addField(alphaname_,	FieldInfo(scalarField, dimless,     FieldValue({p_.alphainternal}), volField ) );
+
+  if (overset_) overset_->addFields();
 }
 
 
@@ -186,6 +195,13 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //  fluxRequired["alpha"]="";
   fluxRequired["pcorr"]="";
   fluxRequired[alphaname_]="";
+
+
+  if (overset_)
+  {
+      setApplicationName(dictionaries, "overInterDyMFoam");
+      overset_->addIntoDictionaries(dictionaries, pName_, "phiHbyA");
+  }
 }
 
 

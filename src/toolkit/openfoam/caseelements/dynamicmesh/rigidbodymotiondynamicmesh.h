@@ -2,6 +2,7 @@
 #define INSIGHT_RIGIDBODYMOTIONDYNAMICMESH_H
 
 #include "openfoam/caseelements/dynamicmesh/dynamicmesh.h"
+#include "openfoam/caseelements/dynamicmesh/sixdofrigidbodymotionsolver.h"
 #include "rigidbodymotiondynamicmesh__rigidBodyMotionDynamicMesh__Parameters_headers.h"
 
 namespace insight {
@@ -14,65 +15,7 @@ public:
 /*
 PARAMETERSET>>> rigidBodyMotionDynamicMesh Parameters
 
-rho = selectablesubset {{
- field set {
-  fieldname = string "rho" "Density field name"
- }
- constant set {
-  rhoInf = double 1025.0 "Constant density value"
- }
-}} constant "Density source"
-
-
-bodies = array [
- set {
-   name = string "movingbody" "Name of the body"
-   centreOfMass = vector (0 0 0) "Location of CoG in global CS"
-   mass = double 1.0 "Mass of body"
-   Ixx = double 1.0 "Inertia Ixx"
-   Iyy = double 1.0 "Inertia Iyy"
-   Izz = double 1.0 "Inertia Izz"
-
-   patches = array [
-    string "bodysurface" "Names of patches comprising the surface of the body"
-   ] *1 "body surface patches"
-
-   innerDistance = double 1.0 "radius around body within which a solid body motion is performed."
-   outerDistance = double 2.0 "radius around body outside which the grid remains fixed."
-
-   translationConstraint = array [ selection (
-    Px Py Pz Pxyz ) Pxyz "Kind of translation constraint"
-   ] *1 "translation constraints"
-
-   rotationConstraint = array [ selection (
-    Rx Ry Rz Rxyz ) Rxyz "Kind of rotation constraint"
-   ] *1 "rotation constraints"
-
- } ] *1 "moving bodies"
-
-
-implementation = selectablesubset {{
- vanilla set { }
- extended set {
-   rampDuration = double 1.0 "Duration of the initial force ramp"
-   directForces = array [ set {
-    PoA = vector (0 0 0) "point of attack"
-    forceSource = string "" "force source definition"
-    coordinateSystemName = string "global" ""
-    localDirection = vector ( 0 0 0 ) "local direction"
-    verticalDirection = vector ( 0 0 0 ) "vertical direction"
-   } ] *0 "additional forces"
- }
-}} vanilla "Type of implementation to use."
-
-
-restraints = array [ selectablesubset {{
- prescribedVelocity set {
-  label = string "fixSpeed" "unique label"
-  body = string "" "name of body which speed is to be fixed" *necessary
-  velocity = vector (1 0 0) "target velocity" *necessary
- }
-}} prescribedVelocity "" ] *0 "restraint to apply"
+rigidBodyMotion = includedset "SixDOFRigidBodyMotionSolver::Parameters" "Parameters of the rigid body motion solver"
 
 moveMeshOuterCorrectors = bool false "Whether the mesh motion is updated in every outer iteration within a time step. If set to false, mesh motion is updated only at the end of the time step."
 

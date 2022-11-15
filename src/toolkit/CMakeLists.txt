@@ -131,8 +131,10 @@ set(toolkit_SOURCES
     openfoam/blockmeshoutputanalyzer.cpp openfoam/blockmeshoutputanalyzer.h
     openfoam/snappyhexmeshoutputanalyzer.cpp openfoam/snappyhexmeshoutputanalyzer.h
     openfoam/ofdicts.cpp openfoam/ofdicts.h
+    openfoam/setfields.h openfoam/setfields.cpp
     openfoam/caseelements/openfoamcaseelement.cpp openfoam/caseelements/openfoamcaseelement.h
     openfoam/caseelements/turbulencemodel.cpp openfoam/caseelements/turbulencemodel.h
+
     openfoam/caseelements/basic/thermodynamicmodel.cpp openfoam/caseelements/basic/thermodynamicmodel.h
     openfoam/caseelements/basic/rasmodel.cpp openfoam/caseelements/basic/rasmodel.h
     openfoam/caseelements/basic/lesmodel.cpp openfoam/caseelements/basic/lesmodel.h
@@ -161,6 +163,8 @@ set(toolkit_SOURCES
     openfoam/caseelements/basic/providefields.cpp openfoam/caseelements/basic/providefields.h
     openfoam/caseelements/basic/rangeweightfield.cpp openfoam/caseelements/basic/rangeweightfield.h
     openfoam/caseelements/basic/wallheatflux.cpp openfoam/caseelements/basic/wallheatflux.h
+
+    openfoam/caseelements/numerics/oversetconfiguration.cpp openfoam/caseelements/numerics/oversetconfiguration.h
     openfoam/caseelements/numerics/pimplesettings.cpp openfoam/caseelements/numerics/pimplesettings.h
     openfoam/caseelements/numerics/fvnumerics.cpp openfoam/caseelements/numerics/fvnumerics.h
     openfoam/caseelements/numerics/fanumerics.cpp openfoam/caseelements/numerics/fanumerics.h
@@ -186,6 +190,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/numerics/fsidisplacementextrapolationnumerics.cpp openfoam/caseelements/numerics/fsidisplacementextrapolationnumerics.h
     openfoam/caseelements/numerics/magneticfoamnumerics.cpp openfoam/caseelements/numerics/magneticfoamnumerics.h
     openfoam/caseelements/numerics/chtmultiregionnumerics.cpp openfoam/caseelements/numerics/chtmultiregionnumerics.h
+
     openfoam/caseelements/boundarycondition.cpp openfoam/caseelements/boundarycondition.h
     openfoam/caseelements/boundaryconditions/boundarycondition_heat.cpp openfoam/caseelements/boundaryconditions/boundarycondition_heat.h
     openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.cpp openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.h
@@ -211,11 +216,15 @@ set(toolkit_SOURCES
     openfoam/caseelements/boundaryconditions/exptdatainletbc.cpp openfoam/caseelements/boundaryconditions/exptdatainletbc.h
     openfoam/caseelements/boundaryconditions/compressibleinletbc.cpp openfoam/caseelements/boundaryconditions/compressibleinletbc.h
     openfoam/caseelements/boundaryconditions/cyclicacmibc.h openfoam/caseelements/boundaryconditions/cyclicacmibc.cpp
+
+    openfoam/caseelements/dynamicmesh/sixdofrigidbodymotionsolver.h openfoam/caseelements/dynamicmesh/sixdofrigidbodymotionsolver.cpp
     openfoam/caseelements/dynamicmesh/dynamicmesh.cpp openfoam/caseelements/dynamicmesh/dynamicmesh.h
     openfoam/caseelements/dynamicmesh/velocitytetfemmotionsolver.cpp openfoam/caseelements/dynamicmesh/velocitytetfemmotionsolver.h
     openfoam/caseelements/dynamicmesh/displacementfvmotionsolver.cpp openfoam/caseelements/dynamicmesh/displacementfvmotionsolver.h
     openfoam/caseelements/dynamicmesh/solidbodymotiondynamicmesh.cpp openfoam/caseelements/dynamicmesh/solidbodymotiondynamicmesh.h
     openfoam/caseelements/dynamicmesh/rigidbodymotiondynamicmesh.cpp openfoam/caseelements/dynamicmesh/rigidbodymotiondynamicmesh.h
+    openfoam/caseelements/dynamicmesh/dynamicoversetfvmesh.h openfoam/caseelements/dynamicmesh/dynamicoversetfvmesh.cpp
+
     openfoam/caseelements/turbulencemodels/laminar_rasmodel.cpp openfoam/caseelements/turbulencemodels/laminar_rasmodel.h
     openfoam/caseelements/turbulencemodels/smagorinsky_lesmodel.cpp openfoam/caseelements/turbulencemodels/smagorinsky_lesmodel.h
     openfoam/caseelements/turbulencemodels/oneeqeddy_lesmodel.cpp openfoam/caseelements/turbulencemodels/oneeqeddy_lesmodel.h

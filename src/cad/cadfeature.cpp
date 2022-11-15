@@ -280,8 +280,6 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     h.addParameter(filename);
     hash_=h.getHash();
 
-    cout<<"Reading "<<filename<<", hash="<<hash_<<endl;
-
     std::string ext=filename.extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 

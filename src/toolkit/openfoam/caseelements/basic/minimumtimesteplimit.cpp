@@ -24,13 +24,10 @@ void minimumTimestepLimit::addIntoDictionaries(OFdicts& dictionaries) const
   cd["mindt"]=mindtd;
   Fd["conditions"]=cd;
 
-  OFDictData::list fol;
-  fol.push_back("\"libutilityFunctionObjects.so\"");
-  Fd["functionObjectLibs"]=fol;
-
-
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.subDict("functions")["minimumTimestepLimit"]=Fd;
+
+  controlDict.getList("libs").insertNoDuplicate( "\"libutilityFunctionObjects.so\"" );
 }
 
 

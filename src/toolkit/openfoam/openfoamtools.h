@@ -31,7 +31,8 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
-#include "openfoamtools__setFieldOperator__Parameters_headers.h"
+#include "base/parameters/simpleparameter.h"
+#include "base/supplementedinputdata.h"
 
 #ifdef SWIG
 %template(TimeDirectoryList) std::map<double, boost::filesystem::path>;
@@ -74,129 +75,6 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
  * "to" is created, if nonexistent
  */
 void copyFields(const boost::filesystem::path& from, const boost::filesystem::path& to);
-
-#ifndef SWIG
-namespace setFieldOps
-{
-
-class setFieldOperator
-{
-public:
-#include "openfoamtools__setFieldOperator__Parameters.h"
-/*
-PARAMETERSET>>> setFieldOperator Parameters
-
-fieldValues = array [ string "" "field value specification" ]*0 "list of field value specifications"
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  setFieldOperator(Parameters const& p = Parameters() );
-  virtual ~setFieldOperator();
-  
-  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const =0;
-  
-  virtual setFieldOperator* clone() const =0;
-};
-
-
-class fieldToCellOperator
-: public setFieldOperator
-{
-public:
-#include "openfoamtools__fieldToCellOperator__Parameters.h"
-/*
-PARAMETERSET>>> fieldToCellOperator Parameters
-inherits setFieldOperator::Parameters
-
-fieldName = string "" "name of the field"
-min = double 0.0 "minimum value"
-max = double 1e10 "maximum value"
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  fieldToCellOperator(Parameters const& p = Parameters() );
-  
-  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
-  
-  setFieldOperator* clone() const;
-};
-
-class boxToCellOperator
-: public setFieldOperator
-{
-public:
-#include "openfoamtools__boxToCellOperator__Parameters.h"
-/*
-PARAMETERSET>>> boxToCellOperator Parameters
-inherits setFieldOperator::Parameters
-
-fieldName = string "" "name of the field"
-min = vector (-1e10 -1e10 -1e10) "minimum corner"
-max = vector (1e10 1e10 1e10) "maximum corner"
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  boxToCellOperator(Parameters const& p = Parameters() );
-  
-  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
-  
-  setFieldOperator* clone() const;
-};
-
-
-class cellToCellOperator
-: public setFieldOperator
-{
-public:
-#include "openfoamtools__cellToCellOperator__Parameters.h"
-/*
-PARAMETERSET>>> cellToCellOperator Parameters
-inherits setFieldOperator::Parameters
-
-cellSet = string "cellSet" "name of the cell set"
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  cellToCellOperator(Parameters const& p = Parameters() );
-
-  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
-
-  setFieldOperator* clone() const;
-};
-
-inline setFieldOperator* new_clone(const setFieldOperator& op)
-{
-  return op.clone();
-}
-
-}
-
-void setFields(const OpenFOAMCase& ofc, 
-	       const boost::filesystem::path& location, 
-               const setFieldOps::setFieldOperator::Parameters::fieldValues_type& defaultValues,
-	       const boost::ptr_vector<setFieldOps::setFieldOperator>& ops);
-
-#endif
 
 
 namespace createPatchOps

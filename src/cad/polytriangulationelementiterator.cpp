@@ -24,12 +24,20 @@ PolyTriangulationElementIterator::PolyTriangulationElementIterator(Handle_Poly_T
 
 const PolyTriangulationElementIterator::value_type& PolyTriangulationElementIterator::operator*() const
 {
+#if (OCC_VERSION_MAJOR>6)
     return pt_->Triangle(i_);
+#else
+    return pt_->Triangles().Value(i_);
+#endif
 }
 
 const PolyTriangulationElementIterator::value_type* PolyTriangulationElementIterator::operator->() const
 {
+#if (OCC_VERSION_MAJOR>6)
     return &pt_->Triangle(i_);
+#else
+    return &pt_->Triangles().Value(i_);
+#endif
 }
 
 PolyTriangulationElementIterator PolyTriangulationElementIterator::operator++(int)

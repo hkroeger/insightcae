@@ -28,13 +28,21 @@ PolyTriangulationNodeIterator::PolyTriangulationNodeIterator(
 const PolyTriangulationNodeIterator::value_type&
 PolyTriangulationNodeIterator::operator*() const
 {
+#if (OCC_VERSION_MAJOR>6)
     return pt_->Node(i_);
+#else
+    return pt_->Nodes().Value(i_);
+#endif
 }
 
 const PolyTriangulationNodeIterator::value_type*
 PolyTriangulationNodeIterator::operator->() const
 {
+#if (OCC_VERSION_MAJOR>6)
     return &pt_->Node(i_);
+#else
+    return &pt_->Nodes().Value(i_);
+#endif
 }
 
 PolyTriangulationNodeIterator PolyTriangulationNodeIterator::operator++(int)

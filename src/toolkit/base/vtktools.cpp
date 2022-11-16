@@ -490,7 +490,7 @@ vtkSmartPointer<vtkUnstructuredGrid> multiBlockDataSetToUnstructuredGrid(vtkData
       appender->SetMergePoints(MergePoints ? 1 : 0);
       if (MergePoints)
       {
-#if VTK_MAJOR_VERSION>=8
+#if (VTK_MAJOR_VERSION>8 || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=90) )
         appender->SetTolerance(Tolerance);
 #endif
       }

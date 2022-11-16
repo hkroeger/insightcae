@@ -377,7 +377,7 @@ void applyLocation(Poly_Triangulation& pt, const TopLoc_Location& loc)
 {
     for (int i=1; i<=pt.NbNodes(); ++i)
     {
-        pt.ChangeNode(i)=pt.Node(i).Transformed(loc);
+        pt.ChangeNodes().ChangeValue(i)=pt.Nodes().Value(i).Transformed(loc);
     }
 }
 

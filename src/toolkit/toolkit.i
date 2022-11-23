@@ -174,6 +174,8 @@ if len(liblist)==0:
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/ofdicts.h"
+#include "openfoam/setfields.h"
+#include "openfoam/createpatch.h"
 
 #include "code_aster/caexportfile.h"
 #include "code_aster/codeasterrun.h"

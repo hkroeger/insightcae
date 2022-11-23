@@ -132,6 +132,7 @@ set(toolkit_SOURCES
     openfoam/snappyhexmeshoutputanalyzer.cpp openfoam/snappyhexmeshoutputanalyzer.h
     openfoam/ofdicts.cpp openfoam/ofdicts.h
     openfoam/setfields.h openfoam/setfields.cpp
+    openfoam/createpatch.h openfoam/createpatch.cpp
     openfoam/caseelements/openfoamcaseelement.cpp openfoam/caseelements/openfoamcaseelement.h
     openfoam/caseelements/turbulencemodel.cpp openfoam/caseelements/turbulencemodel.h
 

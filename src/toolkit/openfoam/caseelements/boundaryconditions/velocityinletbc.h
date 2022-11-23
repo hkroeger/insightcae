@@ -42,6 +42,31 @@ rho = includedset "FieldData::Parameters" "Density at boundary"
 turbulence = dynamicclassconfig "turbulenceBC::turbulenceBC" default "uniformIntensityAndLengthScale" "Definition of the turbulence state at the boundary"
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
+VoFWave =selectablesubset {{
+
+ none set {}
+
+ enabled set {
+   waveType = selection (stokesFirst) stokesFirst
+   Tsoft = double 0 "ramp-up time"
+   depth = double 1 "depth of the wave"
+   period = double 10 "wave period"
+   direction = vector (1 0 0) "wave direction vector"
+   phi = double 0 "wave phase shift"
+   height = double 1 "wave height"
+
+   relaxationZone = selectablesubset {{
+
+    patchDist set {
+     width = double 1 "width of the relaxation zone"
+    }
+
+   }} patchDist ""
+ }
+
+}} custom ""
+
+
 <<<PARAMETERSET
 */
 
@@ -62,6 +87,9 @@ public:
     virtual void setField_p ( OFDictData::dict& BC, OFdicts& dictionaries, bool isPrgh  ) const;
     virtual void setField_U ( OFDictData::dict& BC, OFdicts& dictionaries ) const;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
+
+    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
 
 };
 

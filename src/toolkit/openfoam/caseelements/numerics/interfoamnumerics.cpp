@@ -58,7 +58,7 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 
   alphaname_="alpha1";
   if (OFversion()>=230)
-    alphaname_="alpha.phase1";
+    alphaname_="alpha."+p_.phase1Name;
 
   // create pressure field to enable mapping from single phase cases
   OFcase().addField("p", 	FieldInfo(scalarField, dimPressure, FieldValue({0.0}), 		volField ) );
@@ -69,6 +69,13 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 
   if (overset_) overset_->addFields();
 }
+
+
+std::pair<std::string,std::string> interFoamNumerics::phaseNames() const
+{
+    return { p_.phase1Name, p_.phase2Name };
+}
+
 
 
 //const double cAlpha=0.25; // use low compression by default, since split of interface at boundaries of refinement zones otherwise

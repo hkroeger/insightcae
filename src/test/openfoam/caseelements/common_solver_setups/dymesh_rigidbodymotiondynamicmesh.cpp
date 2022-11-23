@@ -44,6 +44,7 @@ int main(int argc, char*argv[])
            insert(new rigidBodyMotionDynamicMesh(
                       *this,
                       rigidBodyMotionDynamicMesh::Parameters()
+                      .set_rigidBodyMotion(rigidBodyMotionDynamicMesh::Parameters::rigidBodyMotion_type()
                       .set_bodies({
                                       {
                                           "body",
@@ -52,10 +53,11 @@ int main(int argc, char*argv[])
                                           100., 100., 100.,
                                           { "inner" },
                                           0.5, 1.,
-                                          { rigidBodyMotionDynamicMesh::Parameters::bodies_default_type::Pxyz },
+                                          { rigidBodyMotionDynamicMesh::Parameters::rigidBodyMotion_type::bodies_default_type::Pxyz },
                                           {}
                                       }
                                   })
+                          )
                       ));
         }
     };

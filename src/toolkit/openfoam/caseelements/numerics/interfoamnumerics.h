@@ -53,6 +53,9 @@ overset = selectablesubset {{
  no set {}
 }} no "Whether to configure an overset solver or not"
 
+phase1Name = string "phase1" "Name of the first phase (alpha=1)"
+phase2Name = string "phase2" "Name of the second phase (alpha=0)"
+
 <<<PARAMETERSET
 */
 
@@ -76,6 +79,8 @@ public:
     {
         return alphaname_;
     }
+
+    std::pair<std::string,std::string> phaseNames() const;
 };
 
 } // namespace insight

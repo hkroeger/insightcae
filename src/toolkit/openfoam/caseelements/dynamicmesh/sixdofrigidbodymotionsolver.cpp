@@ -14,12 +14,6 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
 {
     Parameters p(ps_);
 
-    if (const auto* impl = boost::get<Parameters::implementation_extended_type>(&p.implementation))
-    {
-      rbmc["rampDuration"]=impl->rampDuration;
-    }
-
-
     rbmc["report"]=true;
 
 
@@ -95,6 +89,8 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
     }
     rbmc["bodies"]=bl;
 
+
+
     OFDictData::dict rcs;
     for (const auto& rc: p.restraints)
     {
@@ -119,6 +115,32 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
     }
 
     rbmc["restraints"]=rcs;
+
+
+    // after bodies have been added
+    if (const auto* impl = boost::get<Parameters::implementation_extended_type>(&p.implementation))
+    {
+        insertExtendedMotionParameters(rbmc, p, *impl);
+    }
+    else if (const auto* impl = boost::get<Parameters::implementation_maneuvering_type>(&p.implementation))
+    {
+        insertExtendedMotionParameters(rbmc, p, *impl);
+
+        rbmc["relativeMovingBodies"]=OFDictData::list();
+
+        OFDictData::list rudders;
+        for (const auto& r: impl->rudders)
+        {
+            OFDictData::dict rd;
+            rd["cellZone"]=r.cellZone;
+            rd["origin"]=OFDictData::vector3(r.origin);
+            rd["axis"]=OFDictData::vector3(r.axis);
+            rd["maxRudderSpeed"]=r.maxRudderSpeed;
+            rudders.push_back(rd);
+        }
+        rbmc["rudders"]=rudders;
+    }
+
 }
 
 std::string SixDOFRigidBodyMotionSolver::motionSolverName() const
@@ -129,6 +151,10 @@ std::string SixDOFRigidBodyMotionSolver::motionSolverName() const
     if (boost::get<Parameters::implementation_extended_type>(&p.implementation))
     {
       name="extendedRigidBodyMotion";
+    }
+    else if (boost::get<Parameters::implementation_maneuvering_type>(&p.implementation))
+    {
+      name="maneuveringMotion";
     }
     return name;
 }

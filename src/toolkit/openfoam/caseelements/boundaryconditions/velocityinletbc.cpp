@@ -208,6 +208,10 @@ void VelocityInletBC::addIntoDictionaries(OFdicts &dicts) const
 
 
         wp[patchName_+"Coeffs"]=coeffs;
+
+        auto& controlDict = dicts.lookupDict("system/controlDict");
+        controlDict.getList("libs").insertNoDuplicate("\"libwaves2FoamPatchDistRelaxationShape.so\"");
+        controlDict.getList("libs").insertNoDuplicate("\"libwaves2Foam.so\"");
     }
 }
 
@@ -236,12 +240,13 @@ void VelocityInletBC::modifyCaseOnDisk(const OpenFOAMCase &cm, const boost::file
                     &w->relaxationZone ) )
         {
             relax["relaxationScheme"]="Spatial";
-            relax["relaxationShape"]="PatchDist";
+            relax["relaxationShape"]="PatchDist2";
             relax["beachType"]="Empty";
             relax["relaxationPatches"]=OFDictData::list({patchName_});
                 OFDictData::dict pdm;
                 pdm["method"]="meshWave";
             relax["patchDist"]=pdm;
+            relax["propagationDirection"]=OFDictData::vector3(normalized(w->direction));
             relax["width"]=rt->width;
         }
 

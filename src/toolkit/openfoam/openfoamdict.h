@@ -83,6 +83,12 @@ struct list
   list(std::initializer_list<OFDictData::data> ini);
 
   template<class T>
+  list(const std::vector<T>& ol)
+  {
+      std::copy(ol.begin(), ol.end(), std::back_inserter(*this));
+  }
+
+  template<class T>
   void assign(const std::vector<T>& vec)
   {
     resize(vec.size());

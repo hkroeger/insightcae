@@ -397,10 +397,12 @@ class SplineEdge
 protected:
   PointList intermediatepoints_;
   std::string splinekeyword_;
+  std::string geometryLabel_;
   
 public:
   SplineEdge(const PointList& points, 
-             std::string splinekeyword="simpleSpline");
+             const std::string& splinekeyword="simpleSpline",
+             const std::string& geometryLabel="");
 
   virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
 

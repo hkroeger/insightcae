@@ -1,5 +1,6 @@
 add_subdirectory(applyBL)
 add_subdirectory(binningProfile)
+add_subdirectory(blockMeshProjectedSplineEdge)
 add_subdirectory(convertPressure)
 add_subdirectory(correctAxisPoints)
 add_subdirectory(eMesh2VTK)

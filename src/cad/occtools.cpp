@@ -56,7 +56,7 @@ OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
 //  rollPitchYaw_ = rotationMatrixToRollPitchYaw(R);
   R_ = R;
 //  std::cout<<Vector(t.TranslationPart())<<std::endl;
-  translate_ = (1./scale_)*inv(R)*Vector(t.TranslationPart()).t();
+  translate_ = (1./scale_)*inv(R)*Vector(t.TranslationPart());
 }
 
 

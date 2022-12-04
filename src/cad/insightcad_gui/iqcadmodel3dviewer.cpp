@@ -17,6 +17,8 @@
 #include <vtkLineSource.h>
 #include <vtkProperty.h>
 #include <vtkNamedColors.h>
+#include "vtkArrowSource.h"
+#include "vtkTransformPolyDataFilter.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -44,8 +46,11 @@ void IQCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
         auto i = displayedData_.find(pidx);
         if (i!=displayedData_.end())
         {
-            i->second.actor_->SetVisibility(false);
-            ren_->RemoveActor(i->second.actor_);
+            if (i->second.actor_)
+            {
+                i->second.actor_->SetVisibility(false);
+                ren_->RemoveActor(i->second.actor_);
+            }
             displayedData_.erase(i);
         }
     }
@@ -101,15 +106,15 @@ void IQCADModel3DViewer::addDatum(
     }
     else if (datum->providesAxisReference())
     {
-        vtkNew<vtkLineSource> line;
         auto ax = datum->axis();
         gp_Pnt p1=ax.Location();
-        gp_Pnt p2=p1.Translated(ax.Direction());
-        line->SetPoint1(p1.X(), p1.Y(), p1.Z());
-        line->SetPoint2(p2.X(), p2.Y(), p2.Z());
-        actor->GetMapper()->SetInputConnection(line->GetOutputPort());
-        actor->GetProperty()->SetRepresentationToWireframe();
-        actor->GetProperty()->SetLineStipplePattern(0xc003);
+
+        auto arr = insight::createArrows(
+            {{
+                 insight::Vector(ax.Location()),
+                 insight::Vector(ax.Location().XYZ() + ax.Direction().XYZ())
+             }}, false);
+        actor->GetMapper()->SetInputDataObject(arr);
     }
     else if (datum->providesPointReference())
     {
@@ -137,6 +142,7 @@ void IQCADModel3DViewer::addFeature(
         const QString& lbl,
         insight::cad::FeaturePtr feat )
 {
+
     vtkNew<ivtkOCCShape> shape;
     shape->SetShape( feat->shape() );
 
@@ -157,9 +163,9 @@ void IQCADModel3DViewer::resetVisibility(const QPersistentModelIndex &pidx)
 {
     if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
     {
-        QModelIndex idx(pidx);
         if (auto act = vtkActor::SafeDownCast(displayedData_[pidx].actor_))
         {
+            QModelIndex idx(pidx);
             auto visible = idx.siblingAtColumn(IQCADItemModel::visibilityCol)
                     .data(Qt::CheckStateRole).value<Qt::CheckState>() == Qt::Checked;
             act->SetVisibility(visible);
@@ -177,9 +183,9 @@ void IQCADModel3DViewer::resetFeatureDisplayProps(const QPersistentModelIndex& p
 
     if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
     {
-        QModelIndex idx(pidx);
         if (auto act = vtkActor::SafeDownCast(displayedData_[pidx].actor_))
         {
+            QModelIndex idx(pidx);
             auto opacity = idx.siblingAtColumn(IQCADItemModel::entityOpacityCol)
                     .data().toDouble();
             act->GetProperty()->SetOpacity(opacity);
@@ -317,15 +323,12 @@ void IQCADModel3DViewer::onDataChanged(
         const QModelIndex &bottomRight,
         const QVector<int> &roles )
 {
-//    qDebug()<<"onDataChanged"<<topLeft<<bottomRight<<roles;
     if (roles.empty() || roles.indexOf(Qt::CheckStateRole)>=0 || roles.indexOf(Qt::EditRole)>=0)
     {
         for (int r=topLeft.row(); r<=bottomRight.row(); ++r)
         {
             auto idx = model_->index(r, 0, topLeft.parent());
             QPersistentModelIndex pidx(idx);
-
-//            qDebug()<<idx<<pidx<<displayedData_.begin()->first;
 
             auto lbl = idx.siblingAtColumn(IQCADItemModel::labelCol).data().toString();
             auto feat = idx.siblingAtColumn(IQCADItemModel::entityCol).data();
@@ -379,24 +382,19 @@ void IQCADModel3DViewer::onDataChanged(
 
 
 void IQCADModel3DViewer::onModelAboutToBeReset()
-{
-//    qDebug()<<"onModelAboutToBeReset";
-}
+{}
 
 
 
 
 void IQCADModel3DViewer::onRowsAboutToBeInserted(const QModelIndex &parent, int start, int end)
-{
-//    qDebug()<<"onRowsAboutToBeInserted"<<parent<<start<<end;
-}
+{}
 
 
 
 
 void IQCADModel3DViewer::onRowsInserted(const QModelIndex &parent, int start, int end)
 {
-//    qDebug()<<"onRowsInserted"<<parent<<start<<end;
     for (int r=start; r<=end; ++r)
     {
         addChild( model_->index(r, 0, parent) );
@@ -408,7 +406,6 @@ void IQCADModel3DViewer::onRowsInserted(const QModelIndex &parent, int start, in
 
 void IQCADModel3DViewer::onRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
 {
-//    qDebug()<<"onRowsAboutToBeRemoved"<<parent<<first<<last;
     for (int r=first; r<=last; ++r)
     {
         remove( model_->index(r, 0, parent) );
@@ -476,8 +473,8 @@ IQCADModel3DViewer::IQCADModel3DViewer(
         QWidget* parent )
     : QWidget(parent),
       vtkWidget_(this),
-      model_(nullptr),
-      ren_(decltype(ren_)::New())
+      ren_(decltype(ren_)::New()),
+      model_(nullptr)
 {
     auto btnLayout=new QHBoxLayout;
     auto lv = new QVBoxLayout;

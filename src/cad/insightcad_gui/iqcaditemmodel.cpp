@@ -925,7 +925,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
                     [this]() {
                         auto fn = QFileDialog::getOpenFileName(
                                     nullptr, "Select CAD model",
-                                    "", "STEP (*.stp);;IGES (*.igs)");
+                                    "", "STEP (*.stp *.step);;IGES (*.igs *.iges);;Triangulated Surface (*.stl *.stlb);;OpenCASCADE BRep (*.brep)");
                         if (!fn.isEmpty())
                         {
                             boost::filesystem::path fp(fn.toStdString());

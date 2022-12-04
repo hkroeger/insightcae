@@ -20,6 +20,8 @@
 
 #include "cadtypes.h"
 
+#include <unordered_map>
+
 
 class vtkRenderWindowInteractor;
 
@@ -57,7 +59,15 @@ private:
         vtkSmartPointer<vtkProp> actor_;
     };
 
-    typedef std::map<QPersistentModelIndex, DisplayedEntity> DisplayedData;
+    struct QPersistentModelIndexHash
+    {
+        uint operator()(const QPersistentModelIndex& idx) const
+        {
+            return qHash(idx);
+        }
+    };
+
+    typedef std::unordered_map<QPersistentModelIndex, DisplayedEntity, QPersistentModelIndexHash > DisplayedData;
     DisplayedData displayedData_;
 
     void remove(const QPersistentModelIndex& pidx);

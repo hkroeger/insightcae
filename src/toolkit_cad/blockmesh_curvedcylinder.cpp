@@ -62,11 +62,13 @@ CoordinateSystem blockMeshDict_CurvedCylinder::calc_end_CS() const
 
   arma::mat R = rotMatrix( std::acos(r0.Dot(r1)/r0.Modulus()/r1.Modulus()), vec3(c.Axis().Direction()) );
 
-  CoordinateSystem result;
-  result.origin=p_.geometry.p1;
-  result.ex=R*p_.geometry.ex;
+  CoordinateSystem result(
+              p_.geometry.p1,
+              R*p_.geometry.ex );
+
   result.ez=R*p_.geometry.er;
   result.ey=BlockMeshTemplate::correct_trihedron(result.ex, result.ez);
+
   return result;
 }
 

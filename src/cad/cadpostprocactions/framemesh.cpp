@@ -716,7 +716,7 @@ void FrameMesh::build()
         }
     }
 
-    mesh.write();
+    mesh.write(".", 20);
 #else
     throw insight::Exception("InsightCAE has to be compiled with MED support to use the Frame Mesh export feature.");
 #endif

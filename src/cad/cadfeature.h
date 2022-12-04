@@ -246,8 +246,6 @@ protected:
   ScalarPtr visresolution_;
   ScalarPtr density_;
   ScalarPtr areaWeight_;
-
-  size_t hash_;
   
   /**
    * symbol name of this feature in the defining model
@@ -374,6 +372,8 @@ public:
    * second col: max point
    */
   arma::mat modelBndBox(double deflection=-1) const;
+
+  std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(double deflection=-1) const;
   
   arma::mat faceNormal(FeatureID i) const;
 

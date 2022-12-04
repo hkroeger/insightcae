@@ -56,6 +56,9 @@ public:
 
     typedef std::shared_ptr<Subfile> ElementPtr;
 
+    typedef std::set<std::shared_ptr<CodeAsterMeshFile::Element const> > ElementSet;
+    typedef std::set<std::shared_ptr<CodeAsterMeshFile::Node const> > NodeSet;
+
 protected:
     std::vector<NodePtr> nodes_;
     std::vector<SubfilePtr> subfiles_;
@@ -118,7 +121,7 @@ protected:
 
 public:
     GROUP_MA( const std::string& groupName,
-              const std::set<std::shared_ptr<CodeAsterMeshFile::Element const> >& elements );
+              const CodeAsterMeshFile::ElementSet& elements );
 };
 
 
@@ -133,7 +136,7 @@ protected:
 
 public:
     GROUP_NO( const std::string& groupName,
-              const std::set<std::shared_ptr<CodeAsterMeshFile::Node const> >& nodes );
+              const CodeAsterMeshFile::NodeSet& nodes );
 };
 
 } // namespace insight

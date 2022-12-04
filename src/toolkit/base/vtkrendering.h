@@ -34,7 +34,8 @@ namespace insight
 
 
 vtkSmartPointer<vtkPolyData> createArrows(
-    std::vector<std::pair<arma::mat, arma::mat> > from_to
+        std::vector<std::pair<arma::mat, arma::mat> > from_to,
+        bool glyph2d=true
     );
 
 

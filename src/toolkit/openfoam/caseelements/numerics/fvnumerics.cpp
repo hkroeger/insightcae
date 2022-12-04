@@ -114,8 +114,6 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     wonow["type"]="writeData";
     wonow["fileName"]="\"wnow\"";
     wonow["fileNameAbort"]="\"wnowandstop\"";
-    wonow["outputControl"]="timeStep";
-    wonow["outputInterval"]=1;
     controlDict.subDict("functions")["writeData"]=wonow;
   }
   {

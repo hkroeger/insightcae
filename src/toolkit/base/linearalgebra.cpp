@@ -1186,4 +1186,46 @@ arma::mat vec3Z(double z)
     return vec3(0, 0, z);
 }
 
+
+CoordinateSystem::CoordinateSystem()
+    : origin(vec3Zero()),
+      ex(vec3X(1)), ey(vec3Y(1)), ez(vec3Z(1))
+{}
+
+CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x)
+    : origin(p0),
+      ex(x/arma::norm(x,2))
+{
+    arma::mat tz=vec3(0,0,1);
+    if ( fabs(arma::dot(tz,ex) - 1.) < SMALL )
+    {
+        tz=vec3(0,1,0);
+    }
+
+    ey=-arma::cross(ex,tz);
+    ey/=arma::norm(ey,2);
+
+    ez=arma::cross(ex,ey);
+    ez/=arma::norm(ez,2);
+}
+
+
+
+
+CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x, const arma::mat &z)
+    : origin(p0),
+      ex(x/arma::norm(x,2))
+{
+    if ( fabs(arma::dot(z,ex) - 1.) < SMALL )
+    {
+        throw insight::Exception("X and Z axis are colinear!");
+    }
+
+    ey=-arma::cross(ex,z);
+    ey/=arma::norm(ey,2);
+
+    ez=arma::cross(ex,ey);
+    ez/=arma::norm(ez,2);
+}
+
 }

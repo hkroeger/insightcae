@@ -110,7 +110,10 @@ template<class T>
 arma::mat vector(const T& t)
 {
   arma::mat rt;
-  rt << t.x() << t.y() << t.z() << arma::endr;
+  rt
+          << t.x() << arma::endr
+          << t.y() << arma::endr
+          << t.z() << arma::endr;
   return rt;
 }
 
@@ -119,7 +122,10 @@ template<class T>
 arma::mat Vector(const T& t)
 {
   arma::mat rt;
-  rt << t.X() << t.Y() << t.Z() << arma::endr;
+  rt
+          << t.X() << arma::endr
+          << t.Y() << arma::endr
+          << t.Z() << arma::endr;
   return rt;
 }
 
@@ -127,7 +133,10 @@ template<class T>
 arma::mat vec3(const T& t)
 {
   arma::mat rt;
-  rt << t.X() <<arma::endr<< t.Y() <<arma::endr<< t.Z() << arma::endr;
+  rt
+          << t.X() << arma::endr
+          << t.Y() << arma::endr
+          << t.Z() << arma::endr;
   return rt;
 }
 
@@ -415,6 +424,17 @@ double integrate_indef(F f, double a=0)
 struct CoordinateSystem
 {
   arma::mat origin, ex, ey, ez;
+
+  CoordinateSystem();
+
+  CoordinateSystem(
+          const arma::mat& p0,
+          const arma::mat& ex );
+
+  CoordinateSystem(
+          const arma::mat& p0,
+          const arma::mat& ex,
+          const arma::mat& ez );
 };
 //typedef std::map<arma::mat, int, CompMat> SortedMatMap;
 

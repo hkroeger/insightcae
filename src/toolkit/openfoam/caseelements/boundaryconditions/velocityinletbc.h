@@ -64,7 +64,7 @@ VoFWave =selectablesubset {{
    }} patchDist ""
  }
 
-}} custom ""
+}} none ""
 
 
 <<<PARAMETERSET

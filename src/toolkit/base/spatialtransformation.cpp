@@ -66,6 +66,11 @@ void SpatialTransformation::setTranslation(const arma::mat& translate)
     translate_=translate;
 }
 
+void SpatialTransformation::setRotationMatrix(const arma::mat &R)
+{
+    R_=R;
+}
+
 void SpatialTransformation::setRollPitchYaw(const arma::mat& rollPitchYaw)
 {
     R_=rollPitchYawToRotationMatrix(rollPitchYaw);

@@ -81,6 +81,8 @@ public:
 
     void setTranslation(const arma::mat& translate);
 
+    void setRotationMatrix(const arma::mat& R);
+
     /**
      * @brief setRollPitchYaw
      * @param rollPitchYaw

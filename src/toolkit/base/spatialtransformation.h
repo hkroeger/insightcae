@@ -145,6 +145,9 @@ public:
             const OpenFOAMCase& cm,
             const boost::filesystem::path& exepath,
             const boost::filesystem::path& geofile) const;
+
+    void invert();
+    SpatialTransformation inverted() const;
 };
 
 

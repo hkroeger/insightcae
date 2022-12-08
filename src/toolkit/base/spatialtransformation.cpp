@@ -182,4 +182,18 @@ void SpatialTransformation::executeOFTransforms(
     }
 }
 
+void SpatialTransformation::invert()
+{
+    translate_ = -scale()*rotationMatrix()*translate_;
+    scale_ = 1./scale();
+    R_ = arma::inv(R_);
+}
+
+SpatialTransformation SpatialTransformation::inverted() const
+{
+    SpatialTransformation st(*this);
+    st.invert();
+    return st;
+}
+
 } // namespace insight

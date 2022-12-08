@@ -28,14 +28,28 @@ RemotePVServer::RemotePVServer(
     portMapping_ = rec.server()->makePortsAccessible( { remotePort_ }, {} );
 
     // launch remote PV server
+
+    std::vector<std::string> launchInfo;
     remotePVServer_ =
             rec.server()->launchBackgroundProcess(
                 str(boost::format(
                     "cd \"%s\";"
                     "pvserver-offscreen --use-offscreen-rendering --server-port=%d"
                 ) % remotePath(rec, remoteSubDir).generic_path().string()
-                  % remotePort_ )
+                  % remotePort_ ),
+                {
+                    { boost::regex("Accepting connection\\(s\\): (.+):(.+)"), &launchInfo }
+                }
               );
+
+    insight::dbg()<<"remote output: "<<launchInfo[0]<<" host="<<launchInfo[1]<<" port="<<launchInfo[2]<<std::endl;
+
+    int actualRemotePort = boost::lexical_cast<int>(launchInfo[2]);
+    insight::assertion(
+                actualRemotePort==remotePort_,
+                boost::str(boost::format(
+                        "remote server listens on the wrong port (expected %d, got %d)")
+                         % remotePort_ % actualRemotePort ) );
 }
 
 

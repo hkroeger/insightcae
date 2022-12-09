@@ -1,10 +1,7 @@
 project(insightcad)
 
 find_package(OCC REQUIRED)
-#find_package(OpenGL)
 find_package(DXFlib)
-#find_package(GEOM)
-#find_package(dlib)
 
 FIND_PACKAGE(MED)
 
@@ -58,8 +55,6 @@ target_link_libraries(insightcad
  ${OCC_LIBRARIES} # TKXSDRAW # don't include: leads to segfault on program exit!
  ${DXFLIB_LIBRARY} 
  ${MED_LIBRARIES}
- #${GEOM_LIBRARIES}
- #${DLIB_LIBRARIES}
  )
 include(GenerateExportHeader)
 generate_export_header(insightcad)

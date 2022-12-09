@@ -148,12 +148,18 @@ namespace Foam {
 
 class UniFunctionObject : public Foam::functionObject
 {
+    autoPtr<dictionary> initialDict_;
+
 public:
-    UniFunctionObject(const word& name) : functionObject(name) {}
+    UniFunctionObject(const word& name, const dictionary& dict)
+        : functionObject(name)
+    {
+        initialDict_.reset(new dictionary(dict));
+    }
 
 public:
 #if (defined(OF_FORK_extend)) || (!defined(OF_FORK_extend) && OF_VERSION<040000)
-    bool start() override {}
+    bool start() override { return true; }
 #endif
 
 #if (defined(OF_FORK_extend))
@@ -165,14 +171,26 @@ public:
 #if (defined(OF_FORK_extend) && OF_VERSION>=010604) || (!defined(OF_FORK_extend) && OF_VERSION<040000)
     bool execute(bool forceWrite) override
     {
-        bool success = perform();
-        if (success && forceWrite) success = success && write();
-        return success;
+        bool ok=true;
+        if (initialDict_.valid())
+        {
+            ok = ok && read(initialDict_());
+            initialDict_.reset();
+        }
+        if (ok) ok = ok && perform();
+        if (ok && forceWrite) ok = ok && write();
+        return ok;
     }
 #else
     bool execute() override
     {
-        bool ok = perform();
+        bool ok=true;
+        if (initialDict_.valid())
+        {
+            ok = ok && read(initialDict_());
+            initialDict_.reset();
+        }
+        ok = perform();
         return ok;
     }
 #endif

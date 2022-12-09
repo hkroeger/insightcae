@@ -78,7 +78,7 @@ Foam::writeData::writeData
     const dictionary& dict
 )
 :
-  UniFunctionObject(name),
+  UniFunctionObject(name, dict),
     name_(name),
     obr_(obr),
     writeFile_("$FOAM_CASE/" + name),
@@ -154,7 +154,7 @@ bool Foam::writeData::perform()
 
 bool Foam::writeData::write()
 {
-   return false;
+   return true;
 }
 
 

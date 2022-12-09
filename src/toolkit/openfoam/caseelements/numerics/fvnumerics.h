@@ -49,6 +49,20 @@ deltaT = double 1.0 "Time step size. If the time step is selected to be adjustab
 
 endTime = double 1000.0 "Maximum end time of simulation"
 
+restartWrite = selectablesubset {{
+ none set {}
+ clockTime set {
+  clockTimeInterval = double 1200
+"[s] Regular wall-clock time interval after which additional restart output is created.
+The output is intended for restart only and can at a different interval than the usual output."
+  nKeep = int 2
+"Number of additional output times, which should be kept. After nKeep additional output were created,
+the next oldest is deleted, if it does not match a regular output time directory.
+It is recommended to keep more than one, because the last output might get corrupted,
+if the solver is killed during writing."
+ }
+}} none "Whether to write additional, regular output for restart."
+
 
 mapFieldsConfig = selectablesubset {{
  none set {}

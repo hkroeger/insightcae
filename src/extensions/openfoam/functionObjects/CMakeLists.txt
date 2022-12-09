@@ -2,6 +2,7 @@
 add_subdirectory(extendedForcesFunctionObject)
 add_subdirectory(provideFields)
 add_subdirectory(rangeWeightField)
+add_subdirectory(restartWrite)
 add_subdirectory(minPatchPressure)
 add_subdirectory(numericsFunctionObjects)
 add_subdirectory(scaledField)

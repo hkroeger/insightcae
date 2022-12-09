@@ -200,7 +200,7 @@ public:
     virtual bool hasCyclicBC() const;
 
     OFDictData::dict diagonalSolverSetup() const;
-    OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0) const;
+    OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0, const std::string& preCon="DILU") const;
     OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0, int maxIter=1000) const;
     OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0) const;
     OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0) const;

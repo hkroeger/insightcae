@@ -65,14 +65,14 @@ OFDictData::dict OpenFOAMCase::diagonalSolverSetup() const
 
 
 
-OFDictData::dict OpenFOAMCase::stdAsymmSolverSetup(double tol, double reltol, int minIter) const
+OFDictData::dict OpenFOAMCase::stdAsymmSolverSetup(double tol, double reltol, int minIter, const std::string& preCon) const
 {
   OFDictData::dict d;
   if (OFversion()<170)
     d["solver"]="BiCGStab";
   else
     d["solver"]="PBiCGStab";
-  d["preconditioner"]="DILU";
+  d["preconditioner"]=preCon;
   d["tolerance"]=tol;
   d["relTol"]=reltol;
   if (minIter) d["minIter"]=minIter;

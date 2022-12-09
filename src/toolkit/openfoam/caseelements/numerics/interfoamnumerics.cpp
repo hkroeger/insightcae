@@ -116,11 +116,19 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //    {
 //      solvers["pcorrFinal"]=stdSymmSolverSetup(1e-7, 0.01);
 //    }
+
     solvers[pName_+f.first]=
-        isGAMGOk()?
-          OFcase().GAMGPCGSolverSetup(1e-7, 0.01*f.second)
-        :
-          OFcase().stdSymmSolverSetup(1e-7, 0.01*f.second);
+            overset_ ?
+                OFcase().stdAsymmSolverSetup(1e-7, 0.01*f.second)
+              :
+                (
+                    isGAMGOk()?
+                        OFcase().GAMGPCGSolverSetup(1e-7, 0.01*f.second)
+                      :
+                        OFcase().stdSymmSolverSetup(1e-7, 0.01*f.second)
+                        );
+
+
 
     solvers["U"+f.first]=OFcase().smoothSolverSetup(1e-8, 0.1*f.second);
     solvers["k"+f.first]=OFcase().smoothSolverSetup(1e-8, 0.1*f.second);

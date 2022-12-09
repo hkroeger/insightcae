@@ -44,7 +44,7 @@ void laplacianFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   // ============ setup controlDict ================================
   OFDictData::dict& tp=dictionaries.lookupDict("constant/transportProperties");
-  tp["DT"]=p_.DT;
+  tp["DT"]=OFDictData::dimensionedData("DT", OFDictData::dimension(0, 2, -1), p_.DT);
 }
 
 

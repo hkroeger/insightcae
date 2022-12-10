@@ -39,6 +39,19 @@ set(insightcad_SOURCES
   polytriangulationnodeiterator.h polytriangulationnodeiterator.cpp
 )
 
+if (OCC_VERSION_MAJOR LESS 7)
+ list(APPEND insightcad_SOURCES
+  compat/BRepBndLib.cxx compat/BRepBndLib_1.cxx compat/BRepBndLib.hxx
+  compat/Bnd_OBB.cxx compat/Bnd_OBB.hxx compat/Bnd_Tools.hxx
+  compat/Bnd_Range.hxx compat/Bnd_Range.cxx
+  compat/BndLib_Add2dCurve.cxx  compat/BndLib_Add2dCurve.hxx
+  compat/BndLib_Add3dCurve.cxx  compat/BndLib_Add3dCurve.hxx
+  compat/BndLib_AddSurface.cxx  compat/BndLib_AddSurface.hxx
+  compat/BVH_BoxSet.hxx
+  compat/BVH_Traverse.hxx
+ )
+endif()
+
 set(INCLUDE_DIRS "")
 set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
 add_subdirectory(quantitycomputers)

@@ -83,7 +83,13 @@
 
 #include "BRepBuilderAPI_Copy.hxx"
 
+#if (OCC_VERSION_MAJOR<7)
+#include "compat/Bnd_OBB.hxx"
+#include "compat/BRepBndLib.hxx"
+#else
 #include "Bnd_OBB.hxx"
+#include "BRepBndLib.hxx"
+#endif
 
 #include "base/parameters/pathparameter.h"
 
@@ -1023,8 +1029,13 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
         BRepMesh_IncrementalMesh Inc(shape(), deflection);
     }
 
+#if (OCC_VERSION_MAJOR<7)
+    ISOCC::Bnd_OBB boundingBox;
+    ISOCC::BRepBndLib::AddOBB(shape(), boundingBox);
+#else
     Bnd_OBB boundingBox;
     BRepBndLib::AddOBB(shape(), boundingBox);
+#endif
 
     arma::mat x=arma::zeros(3,2);
     CoordinateSystem cs;
@@ -1036,7 +1047,10 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
                 << boundingBox.YHSize()
                 << boundingBox.ZHSize();
 
-        arma::uvec si = arma::reverse( arma::sort_index(sizes) );
+
+//        arma::uvec si = arma::reverse( arma::sort_index(sizes) );
+        arma::uvec si=arma::sort_index(sizes);
+        std::reverse(si.begin(), si.end());
 
         cs.origin = insight::Vector(boundingBox.Center());
 //        cs.ex = insight::Vector(boundingBox.XDirection());

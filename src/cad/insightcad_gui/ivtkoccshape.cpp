@@ -98,19 +98,20 @@ int ivtkOCCShape::RequestData(
         tri = BRep_Tool::Triangulation (small, L);
       }
 
-      long long i0=points->GetNumberOfPoints();
+      vtkIdType i0=points->GetNumberOfPoints();
 
       for (vtkIdType i=0; i<tri->NbNodes(); ++i)
       {
-          points->InsertNextPoint( tri->Node(i+1).Transformed(L).XYZ().GetData() );
+          points->InsertNextPoint( tri->Nodes().Value(i+1).Transformed(L).XYZ().GetData() );
       }
       for (vtkIdType j=0; j<tri->NbTriangles(); ++j)
       {
-          auto t = tri->Triangle(j+1);
-          polys->InsertNextCell({
-                   t.Value(1)+i0-1,
-                   t.Value(2)+i0-1,
-                   t.Value(3)+i0-1 });
+          auto t = tri->Triangles().Value(j+1);
+          vtkIdType c[3]={
+              t.Value(1)+i0-1,
+              t.Value(2)+i0-1,
+              t.Value(3)+i0-1 };
+          polys->InsertNextCell(3, c);
       }
   }
 

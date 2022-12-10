@@ -1,7 +1,8 @@
 #ifndef IVTKOCCSHAPE_H
 #define IVTKOCCSHAPE_H
 
-#include <vtkPolyDataAlgorithm.h>
+#include <limits>
+#include "vtkPolyDataAlgorithm.h"
 #include "TopoDS_Shape.hxx"
 
 

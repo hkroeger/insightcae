@@ -19,6 +19,7 @@
 #include <vtkNamedColors.h>
 #include "vtkArrowSource.h"
 #include "vtkTransformPolyDataFilter.h"
+#include "vtkRenderWindowInteractor.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -548,10 +549,10 @@ IQCADModel3DViewer::IQCADModel3DViewer(
 
     btnLayout->addItem(new QSpacerItem(1,1,QSizePolicy::Expanding));
     ren_->SetBackground(1., 1., 1.);
-    vtkWidget_.renderWindow()->AddRenderer(ren_);
+    vtkWidget_.GetRenderWindow()->AddRenderer(ren_);
     auto axes = vtkSmartPointer<vtkAxesActor>::New();
 
-    auto renWin1 = vtkWidget_.renderWindow();
+    auto renWin1 = vtkWidget_.GetRenderWindow();
 
     // Call vtkRenderWindowInteractor in orientation marker widgt
     auto widget = vtkOrientationMarkerWidget::New();
@@ -628,7 +629,7 @@ void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
 
 vtkRenderWindowInteractor *IQCADModel3DViewer::interactor() const
 {
-    return vtkWidget_.interactor();
+    return vtkWidget_.GetInteractor();
 }
 
 

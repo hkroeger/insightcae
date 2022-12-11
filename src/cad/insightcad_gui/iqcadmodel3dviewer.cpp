@@ -36,8 +36,10 @@
 #include "base/vtkrendering.h"
 
 
-
-
+#include <vtkAutoInit.h>
+VTK_MODULE_INIT(vtkRenderingOpenGL2); //if render backen is OpenGL2, it should changes to vtkRenderingOpenGL2
+VTK_MODULE_INIT(vtkInteractionStyle);
+VTK_MODULE_INIT(vtkRenderingFreeType);
 
 
 void IQCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
@@ -474,15 +476,24 @@ IQCADModel3DViewer::IQCADModel3DViewer(
         QWidget* parent )
     : QWidget(parent),
       vtkWidget_(this),
-      ren_(decltype(ren_)::New()),
-      model_(nullptr)
+      model_( nullptr )
 {
+    insight::dbg()<<"add renderer"<<std::endl;
+    insight::dbg()<<vtkWidget_.GetRenderWindow()<<std::endl;
+    ren_ = vtkSmartPointer<vtkRenderer>::New();
+    insight::dbg()<<ren_.GetPointer()<<std::endl;
+    vtkWidget_.GetRenderWindow()->AddRenderer(ren_);
+    insight::dbg()<<"set bg"<<std::endl;
+    ren_->SetBackground(1., 1., 1.);
+
+    insight::dbg()<<"layout"<<std::endl;
     auto btnLayout=new QHBoxLayout;
     auto lv = new QVBoxLayout;
     lv->addLayout(btnLayout);
     lv->addWidget(&vtkWidget_);
     setLayout(lv);
 
+    insight::dbg()<<"fit btn"<<std::endl;
     auto fitBtn = new QPushButton(QPixmap(":/icons/icon_fit_all.svg"), "");
     fitBtn->setIconSize(QSize(24,24));
     btnLayout->addWidget(fitBtn);
@@ -548,8 +559,6 @@ IQCADModel3DViewer::IQCADModel3DViewer(
     }
 
     btnLayout->addItem(new QSpacerItem(1,1,QSizePolicy::Expanding));
-    ren_->SetBackground(1., 1., 1.);
-    vtkWidget_.GetRenderWindow()->AddRenderer(ren_);
     auto axes = vtkSmartPointer<vtkAxesActor>::New();
 
     auto renWin1 = vtkWidget_.GetRenderWindow();
@@ -582,11 +591,14 @@ IQCADModel3DViewer::IQCADModel3DViewer(
         }
     );
 //    vtkNew<vtkInteractorStyleTrackballCamera> style;
+    insight::dbg()<<"set default renderer"<<std::endl;
     style->SetDefaultRenderer(ren_);
+    insight::dbg()<<"set interactor style"<<std::endl;
     renWin1->GetInteractor()->SetInteractorStyle(style);
 
     ren_->GetActiveCamera()->SetParallelProjection(true);
 
+    insight::dbg()<<"reset cam"<<std::endl;
     ren_->ResetCamera();
 
 }

@@ -47,6 +47,7 @@ ParameterEditorWidget::ParameterEditorWidget
   vali_(vali),
   viz_(std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz))
 {
+  insight::CurrentExceptionContext ex("creating parameter set editor");
 
   connect(model_, &IQParameterSetModel::parameterSetChanged,
           this, &ParameterEditorWidget::onParameterSetChanged );
@@ -94,6 +95,8 @@ ParameterEditorWidget::ParameterEditorWidget
 
   if (viz_)
   {
+    insight::CurrentExceptionContext ex("connecting visualizer");
+
     // there is a visualization generator available
     connect(
           viz_.get(), &insight::CADParameterSetVisualizer::updateSupplementedInputData,
@@ -102,24 +105,31 @@ ParameterEditorWidget::ParameterEditorWidget
 
     if (!display)
     {
+      insight::CurrentExceptionContext ex("building parameter set displayer");
       // no existing displayer supplied; create one
       QWidget *w=new QWidget(this);
       QVBoxLayout *l=new QVBoxLayout(w);
-      auto viewer=new CADViewer(w/*, context->getContext()*/);
-      viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-      QLabel *hints=new QLabel(w);
-      hints->setStyleSheet("font: 8pt;");
-      hints->setWordWrap(true);
-      hints->setText(
-            "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
-            "<b>Context Menu</b>: Right click on object or canvas."
-            );
-      l->addWidget(viewer);
-      l->addWidget(hints);
+      CADViewer *viewer=nullptr;
+      {
+          insight::CurrentExceptionContext ex("creating CAD viewer");
+          viewer=new CADViewer(w/*, context->getContext()*/);
+          viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+          QLabel *hints=new QLabel(w);
+          hints->setStyleSheet("font: 8pt;");
+          hints->setWordWrap(true);
+          hints->setText(
+                "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
+                "<b>Context Menu</b>: Right click on object or canvas."
+                );
+          l->addWidget(viewer);
+          l->addWidget(hints);
+      }
       w->setLayout(l);
       addWidget(w);
 
+      insight::dbg()<<"create model tree"<<std::endl;
       modeltree_ = new QTreeView(this);
+
       display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree_);
 
       // after ParameterSetDisplay constructor!

@@ -1,5 +1,6 @@
 #include "streamredirector.h"
 
+#include "base/exception.h"
 #include <vector>
 #include "boost/algorithm/string.hpp"
 
@@ -18,12 +19,13 @@ void StreamRedirector::processCurrentLine()
 StreamRedirector::StreamRedirector(std::ostream &streamToRedirect)
   : streamToRedirect_( streamToRedirect )
 {
-    oldBuffer_ = streamToRedirect.rdbuf();
-    streamToRedirect.rdbuf ( this );
+    insight::CurrentExceptionContext ex("set up stream redirect");
+    oldBuffer_ = streamToRedirect.rdbuf ( this );
 }
 
 StreamRedirector::~StreamRedirector()
 {
+    insight::CurrentExceptionContext ex("restore stream redirect");
     streamToRedirect_.rdbuf ( oldBuffer_ );
 }
 

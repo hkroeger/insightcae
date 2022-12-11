@@ -5,6 +5,7 @@
 
 
 #include "vtkVersionMacros.h"
+#include "vtkGenericOpenGLRenderWindow.h"
 #if VTK_MAJOR_VERSION>=8
 #include <QVTKOpenGLWidget.h>
 #else

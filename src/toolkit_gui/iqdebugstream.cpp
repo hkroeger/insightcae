@@ -21,6 +21,8 @@
 
 #include "iqdebugstream.h"
 
+#include "base/exception.h"
+
 
 void IQDebugStream::processLine(std::string line)
 {
@@ -36,6 +38,7 @@ IQDebugStream::IQDebugStream ( std::ostream &stream )
 
 void IQDebugStream::registerQDebugMessageHandler()
 {
+  insight::CurrentExceptionContext ex("register QDebug message handler");
   qInstallMessageHandler ( myQDebugMessageHandler );
 }
 

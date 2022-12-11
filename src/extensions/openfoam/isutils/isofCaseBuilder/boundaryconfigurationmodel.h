@@ -6,7 +6,7 @@
 #include "patch.h"
 
 class ParameterEditorWidget;
-class IQOCCParameterSetDisplaysplay;
+class IQVTKParameterSetDisplay;
 
 class BoundaryConfigurationModel : public QAbstractListModel
 {
@@ -57,7 +57,7 @@ public:
   ParameterEditorWidget* launchParameterEditor(
       const QModelIndex& index,
       QWidget* parentWidget,
-      IQOCCParameterSetDisplaysplay* display );
+      IQVTKParameterSetDisplay* display );
 };
 
 #endif // BOUNDARYCONFIGURATIONMODEL_H

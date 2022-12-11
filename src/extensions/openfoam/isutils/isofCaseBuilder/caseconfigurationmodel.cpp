@@ -260,7 +260,7 @@ void CaseConfigurationModel::readFromNode(
 ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
     const QModelIndex &index,
     QWidget *parentWidget,
-    IQOCCParameterSetDisplaysplay *display )
+    IQVTKParameterSetDisplay *display )
 {
   auto* ce = caseElementByIndex(index);
 

@@ -1,5 +1,6 @@
 #include "availablecaseelementsmodel.h"
 
+#include "base/parametersetvisualizer.h"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
 

@@ -8,6 +8,7 @@
 #include <string>
 
 #ifndef Q_MOC_RUN
+#include "base/parametersetvisualizer.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/caseelements/boundarycondition.h"
 #endif

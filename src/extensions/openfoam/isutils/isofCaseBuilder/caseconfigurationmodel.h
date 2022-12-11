@@ -11,7 +11,7 @@
 
 #include "rapidxml/rapidxml.hpp"
 
-class IQOCCParameterSetDisplaysplay;
+class IQVTKParameterSetDisplay;
 class ParameterEditorWidget;
 
 class CaseConfigurationModel : public QAbstractListModel
@@ -77,7 +77,7 @@ public:
   ParameterEditorWidget* launchParameterEditor(
       const QModelIndex& index,
       QWidget* parentWidget,
-      IQOCCParameterSetDisplaysplay* display );
+      IQVTKParameterSetDisplay* display );
 
 };
 

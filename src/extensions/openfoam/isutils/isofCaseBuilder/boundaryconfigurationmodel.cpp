@@ -343,7 +343,7 @@ void BoundaryConfigurationModel::readFromNode(
 ParameterEditorWidget* BoundaryConfigurationModel::launchParameterEditor(
     const QModelIndex &index,
     QWidget* parentWidget,
-    IQOCCParameterSetDisplaysplay* display
+    IQVTKParameterSetDisplay* display
     )
 {
   if (auto *pc = dynamic_cast<Patch*>(patchByIndex(index)))

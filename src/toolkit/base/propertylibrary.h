@@ -56,7 +56,7 @@ public:
 
         boost::filesystem::path subDirectory;
         if (subDir) subDirectory = *subDir;
-        auto fp =  SharedPathList().getSharedFilePath(
+        auto fp =  SharedPathList::global().getSharedFilePath(
                     subDirectory / (libraryName_+"Library.xml") );
 
         bool anythingRead=false;

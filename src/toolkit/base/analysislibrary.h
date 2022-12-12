@@ -42,20 +42,20 @@ public:
     AnalysisLibrary,
     AnalysisVisualizationLibrary
   };
+
 protected:
     std::vector<void*> handles_;
-
-public:
     AnalysisLibraryLoader(LoadableItem it = AnalysisLibrary);
+    static AnalysisLibraryLoader theAnalysisLibraries;
+public:
     ~AnalysisLibraryLoader();
 
     void addLibrary(const boost::filesystem::path& lib);
+
+    static AnalysisLibraryLoader& analysisLibraries();
 };
 
 
-
-
-extern AnalysisLibraryLoader analysisLibraries;
 
 
 

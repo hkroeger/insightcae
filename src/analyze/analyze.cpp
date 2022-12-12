@@ -20,6 +20,7 @@
 
 #include <boost/concept_check.hpp>
 
+#include "base/tools.h"
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
 #include "base/analysislibrary.h"
@@ -219,7 +220,7 @@ int main(int argc, char *argv[])
                         <<std::endl<<std::endl;
                     exit(-1);
                 }
-                analysisLibraries.addLibrary(l);
+                AnalysisLibraryLoader::analysisLibraries().addLibrary(l);
             }
         }
         

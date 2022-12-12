@@ -115,7 +115,8 @@ Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable&
     : modelfile_(modelfile),
       cost_(0.0)
 {
-    insight::SharedPathList::searchPathList.insertFileDirectoyIfNotPresent(modelfile_);
+#warning local extension of search path required
+    insight::SharedPathList::global().insertFileDirectoyIfNotPresent(modelfile_);
     defaultVariables();
     copyVariables(vars);
 }

@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
                   <<std::endl<<std::endl;
               exit(-1);
           }
-          insight::analysisLibraries.addLibrary(l);
+          insight::AnalysisLibraryLoader::analysisLibraries().addLibrary(l);
       }
   }
 

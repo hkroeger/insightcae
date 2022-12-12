@@ -19,13 +19,11 @@ void StreamRedirector::processCurrentLine()
 StreamRedirector::StreamRedirector(std::ostream &streamToRedirect)
   : streamToRedirect_( streamToRedirect )
 {
-    insight::CurrentExceptionContext ex("set up stream redirect");
     oldBuffer_ = streamToRedirect.rdbuf ( this );
 }
 
 StreamRedirector::~StreamRedirector()
 {
-    insight::CurrentExceptionContext ex("restore stream redirect");
     streamToRedirect_.rdbuf ( oldBuffer_ );
 }
 

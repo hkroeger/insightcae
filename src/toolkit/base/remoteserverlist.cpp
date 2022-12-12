@@ -24,7 +24,7 @@ namespace insight {
 
 RemoteServerList::RemoteServerList()
 {
-    SharedPathList paths;
+    auto paths = SharedPathList::global();
     for ( const bfs_path& p: boost::adaptors::reverse(paths) ) // reverse: start with global, then per-user to possibly overwrite global
     {
         if ( exists(p) && is_directory ( p ) )
@@ -103,7 +103,7 @@ RemoteServerList::RemoteServerList(const RemoteServerList& o)
 
 filesystem::path RemoteServerList::firstWritableLocation() const
 {
-    return insight::SharedPathList()
+    return insight::SharedPathList::global()
             .findFirstWritableLocation( "remoteservers.list" );
 }
 

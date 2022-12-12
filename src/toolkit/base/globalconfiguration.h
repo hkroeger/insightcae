@@ -44,7 +44,7 @@ protected:
 
     virtual void readConfiguration()
     {
-        SharedPathList paths;
+        auto paths = SharedPathList::global();
         for ( const bfs_path& p: boost::adaptors::reverse(paths) ) // reverse: start with global, then per-user to possibly overwrite global
         {
             if ( exists(p) && is_directory ( p ) )
@@ -120,7 +120,7 @@ public:
 
     boost::filesystem::path firstWritableLocation() const
     {
-        return insight::SharedPathList()
+        return insight::SharedPathList::global()
                 .findFirstWritableLocation( configFileName_ );
     }
 

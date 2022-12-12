@@ -77,10 +77,6 @@ std::shared_ptr<ParameterSetVisualizer> Analysis::visualizer()
 }
 
 
-void Analysis::extendSharedSearchPath ( const std::string& name )
-{
-    sharedSearchPath_.push_back ( path ( name ) );
-}
 
 
 boost::filesystem::path Analysis::setupExecutionEnvironment()
@@ -172,10 +168,6 @@ Analysis::~Analysis()
 //}
 
 
-boost::filesystem::path Analysis::getSharedFilePath ( const boost::filesystem::path& file )
-{
-    return sharedSearchPath_.getSharedFilePath ( file );
-}
 
 //Analysis* Analysis::clone() const
 //{

@@ -33,6 +33,7 @@
 #include "workbenchwindow.h"
 #include "qinsighterror.h"
 
+#include "base/tools.h"
 #include "base/analysis.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
@@ -117,7 +118,7 @@ int main(int argc, char** argv)
                     <<std::endl<<std::endl;
                 exit(-1);
             }
-           insight::analysisLibraries.addLibrary(l);
+           insight::AnalysisLibraryLoader::analysisLibraries().addLibrary(l);
         }
     }
 

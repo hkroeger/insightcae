@@ -85,7 +85,7 @@ sharedModelLocations::sharedModelLocations()
     std::copy(paths.begin(), paths.end(), back_inserter(*this));
   }
   {
-      for (const path& p: insight::SharedPathList::searchPathList)
+      for (const path& p: insight::SharedPathList::global())
       {
         if (boost::filesystem::is_directory(p/"iscad-library"))
           push_back(p/"iscad-library");

@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
                     <<std::endl<<std::endl;
                 exit(-1);
             }
-            analysisLibraries.addLibrary(l);
+            AnalysisLibraryLoader::analysisLibraries().addLibrary(l);
         }
     }
 

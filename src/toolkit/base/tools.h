@@ -260,17 +260,23 @@ public:
 class SharedPathList 
 : public std::vector<boost::filesystem::path>
 {
-public:
+
   SharedPathList();
-  virtual ~SharedPathList();
-  virtual boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
+
+public:
+  static SharedPathList& global();
+
+  boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
   
   void insertIfNotPresent(const boost::filesystem::path& sp);
+
   void insertFileDirectoyIfNotPresent(const boost::filesystem::path& sp);
+
+  void insertPathRelativeToCurrentExecutable(
+          const boost::filesystem::path& relPath );
+
   boost::filesystem::path findFirstWritableLocation(
           const boost::filesystem::path& subPath ) const;
-  
-  static SharedPathList searchPathList;
 };
 
 

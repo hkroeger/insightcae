@@ -77,6 +77,13 @@ public:
     declareStaticFunctionTable(validator, ParameterSet_ValidatorPtr);
     declareStaticFunctionTable(visualizer, std::shared_ptr<ParameterSetVisualizer>);
 
+    /**
+     * @brief analyses
+     * get the list of defined analyses
+     * @return
+     */
+    static std::set<std::string> availableAnalysisTypes();
+
 protected:
     std::string name_;
     std::string description_;
@@ -84,9 +91,6 @@ protected:
     bool removeExecutionPath_;
     bool enforceExecutionPathRemovalBehaviour_;
 
-    SharedPathList sharedSearchPath_;
-
-    void extendSharedSearchPath ( const std::string& name );
     void setExecutionPath ( const boost::filesystem::path& exePath );
 
 public:
@@ -158,8 +162,6 @@ public:
     virtual ParameterSet parameters() const =0;
 
     virtual ResultSetPtr operator() ( ProgressDisplayer& displayer = consoleProgressDisplayer ) =0;
-
-    virtual boost::filesystem::path getSharedFilePath ( const boost::filesystem::path& file );
 };
 
 

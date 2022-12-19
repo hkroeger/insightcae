@@ -72,7 +72,8 @@ int ivtkOCCShape::RequestData(
 
       double deflection=1e-3;
 
-      if (tri.IsNull()){
+      if (tri.IsNull())
+      {
         BRepTools::Clean(small);
         Bnd_Box box;
 //        BRep_Builder b;
@@ -98,20 +99,23 @@ int ivtkOCCShape::RequestData(
         tri = BRep_Tool::Triangulation (small, L);
       }
 
-      vtkIdType i0=points->GetNumberOfPoints();
+      if (!tri.IsNull())
+      {
+          vtkIdType i0=points->GetNumberOfPoints();
 
-      for (vtkIdType i=0; i<tri->NbNodes(); ++i)
-      {
-          points->InsertNextPoint( tri->Nodes().Value(i+1).Transformed(L).XYZ().GetData() );
-      }
-      for (vtkIdType j=0; j<tri->NbTriangles(); ++j)
-      {
-          auto t = tri->Triangles().Value(j+1);
-          vtkIdType c[3]={
-              t.Value(1)+i0-1,
-              t.Value(2)+i0-1,
-              t.Value(3)+i0-1 };
-          polys->InsertNextCell(3, c);
+          for (vtkIdType i=0; i<tri->NbNodes(); ++i)
+          {
+              points->InsertNextPoint( tri->Nodes().Value(i+1).Transformed(L).XYZ().GetData() );
+          }
+          for (vtkIdType j=0; j<tri->NbTriangles(); ++j)
+          {
+              auto t = tri->Triangles().Value(j+1);
+              vtkIdType c[3]={
+                  t.Value(1)+i0-1,
+                  t.Value(2)+i0-1,
+                  t.Value(3)+i0-1 };
+              polys->InsertNextCell(3, c);
+          }
       }
   }
 

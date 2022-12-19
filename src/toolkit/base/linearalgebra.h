@@ -109,7 +109,7 @@ template<class T>
 arma::mat vector(const T& t)
 {
   arma::mat rt;
-  rt << t.x() << t.y() << t.z() << arma::endr;
+  rt << t.x() <<arma::endr<< t.y() <<arma::endr<< t.z() << arma::endr;
   return rt;
 }
 
@@ -118,7 +118,7 @@ template<class T>
 arma::mat Vector(const T& t)
 {
   arma::mat rt;
-  rt << t.X() << t.Y() << t.Z() << arma::endr;
+  rt << t.X() <<arma::endr<< t.Y() <<arma::endr<< t.Z() << arma::endr;
   return rt;
 }
 

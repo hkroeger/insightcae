@@ -672,3 +672,4 @@ void c_swap_jobs()
     /* This will never be reached */
     return;
 }
+

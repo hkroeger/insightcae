@@ -73,7 +73,7 @@ static void s_send_version(int s)
     send_msg(s, &m);
 }
 
-static void sigterm_handler(int n)
+static void s_dump_joblist()
 {
     const char *dumpfilename;
     int fd;
@@ -82,7 +82,7 @@ static void sigterm_handler(int n)
     dumpfilename = getenv("TS_SAVELIST");
     if (dumpfilename != NULL)
     {
-        fd = open(dumpfilename, O_WRONLY | O_APPEND | O_CREAT, 0600);
+        fd = open(dumpfilename, O_WRONLY | O_CREAT, 0600);
         if (fd != -1)
         {
             joblist_dump(fd);
@@ -91,6 +91,11 @@ static void sigterm_handler(int n)
             warning("The TS_SAVELIST file \"%s\" cannot be opened",
                     dumpfilename);
     }
+}
+
+static void sigterm_handler(int n)
+{
+    s_dump_joblist();
 
     /* path will be initialized for sure, before installing the handler */
     unlink(path);
@@ -393,6 +398,7 @@ static enum Break
                 s_newjob_nok(index);
                 clean_after_client_disappeared(s, index);
             }
+            s_dump_joblist();
             break;
         case RUNJOB_OK:
             {
@@ -429,6 +435,9 @@ static enum Break
              * more related to the jobid, secially on remove_connection
              * when we receive the EOC. */
             client_cs[index].hasjob = 0;
+
+            s_dump_joblist();
+
             break;
         case CLEAR_FINISHED:
             s_clear_finished();
@@ -483,9 +492,11 @@ static enum Break
         case GET_STATE:
             s_send_state(s, m.u.jobid);
             break;
+
         case GET_VERSION:
             s_send_version(s);
             break;
+
         default:
             /* Command not supported */
             /* On unknown message, we close the client,

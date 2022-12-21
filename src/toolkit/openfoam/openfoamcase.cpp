@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include "base/exception.h"
+#include "base/shelltools.h"
 #include "base/analysis.h"
 #include "base/boost_include.h"
 #include "base/outputanalyzer.h"

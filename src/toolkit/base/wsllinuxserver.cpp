@@ -6,6 +6,7 @@
 
 #include "base/exception.h"
 #include "base/tools.h"
+#include "base/shelltools.h"
 #include "openfoam/openfoamcase.h"
 
 #include "rapidxml/rapidxml_print.hpp"

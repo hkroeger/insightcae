@@ -12,6 +12,8 @@
 #include <time.h>
 #include "main.h"
 
+#include "joblistdump_torun.h"
+
 /* The list will access them */
 int busy_slots = 0;
 int max_slots = 1;
@@ -1510,6 +1512,12 @@ void joblist_dump(int fd)
     write(fd, "# ", 2);
     write(fd, buffer, strlen(buffer));
 
+
+    buffer=joblistdump_envvars();
+    write(fd, buffer, strlen(buffer));
+    free(buffer);
+
+
     /* Show Finished jobs */
     p = first_finished_job;
     while(p != 0)
@@ -1527,7 +1535,7 @@ void joblist_dump(int fd)
     p = firstjob;
     while(p != 0)
     {
-        buffer = joblistdump_torun(p);
+        buffer = joblistdump_torun(p->command);
         write(fd,buffer,strlen(buffer));
         free(buffer);
         p = p->next;

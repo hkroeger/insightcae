@@ -19,9 +19,14 @@ set(tsp_SRC
     info.c
     env.c
     tail.c
+
+    joblistdump_torun.h joblistdump_torun.cpp
+    ../toolkit/base/shelltools.h ../toolkit/base/shelltools.cpp
 )
 
+find_package(Boost COMPONENTS filesystem REQUIRED)
 add_executable(tsp ${tsp_SRC})
+target_link_libraries(tsp Boost::filesystem)
 install(TARGETS tsp RUNTIME DESTINATION bin)
 
 if (INSIGHT_BUILD_WORKBENCH)

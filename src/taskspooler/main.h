@@ -4,6 +4,9 @@
 
     Please find the license in the provided COPYING file.
 */
+#ifndef TASKSPOOLER_MAIN_H
+#define TASKSPOOLER_MAIN_H
+
 enum
 {
     CMD_LEN=500,
@@ -302,7 +305,6 @@ void warning_msg(const struct msg *m, const char *str, ...);
 /* list.c */
 char * joblist_headers();
 char * joblist_line(const struct Job *p);
-char * joblistdump_torun(const struct Job *p);
 char * joblistdump_headers();
 
 /* print.c */
@@ -326,3 +328,5 @@ char * get_environment();
 
 /* tail.c */
 int tail_file(const char *fname, int last_lines);
+
+#endif

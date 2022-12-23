@@ -73,23 +73,33 @@ static void s_send_version(int s)
     send_msg(s, &m);
 }
 
-static void s_dump_joblist()
+void s_dump_joblist()
 {
     const char *dumpfilename;
     int fd;
 
-    /* Dump the job list if we should to */
     dumpfilename = getenv("TS_SAVELIST");
     if (dumpfilename != NULL)
     {
-        fd = open(dumpfilename, O_WRONLY | O_CREAT, 0600);
-        if (fd != -1)
+        if (has_pending_jobs())
         {
-            joblist_dump(fd);
-            close(fd);
-        } else
-            warning("The TS_SAVELIST file \"%s\" cannot be opened",
-                    dumpfilename);
+            /* Dump the job list if we should to */
+            fd = open(dumpfilename, O_WRONLY | O_CREAT, 0600);
+            if (fd != -1)
+            {
+                joblist_dump(fd);
+                close(fd);
+            } else
+                warning("The TS_SAVELIST file \"%s\" cannot be opened",
+                        dumpfilename);
+        }
+        else
+        {
+            if (access(dumpfilename, F_OK) == 0)
+            {
+                remove(dumpfilename);
+            }
+        }
     }
 }
 
@@ -398,7 +408,6 @@ static enum Break
                 s_newjob_nok(index);
                 clean_after_client_disappeared(s, index);
             }
-            s_dump_joblist();
             break;
         case RUNJOB_OK:
             {
@@ -429,15 +438,15 @@ static enum Break
             break;
         case ENDJOB:
             job_finished(&m.u.result, client_cs[index].jobid);
+
+            s_dump_joblist();
+
             /* For the dependencies */
             check_notify_list(client_cs[index].jobid);
             /* We don't want this connection to do anything
              * more related to the jobid, secially on remove_connection
              * when we receive the EOC. */
             client_cs[index].hasjob = 0;
-
-            s_dump_joblist();
-
             break;
         case CLEAR_FINISHED:
             s_clear_finished();
@@ -450,6 +459,7 @@ static enum Break
                 int went_ok;
                 /* Will update the jobid. If it's -1, will set the jobid found */
                 went_ok = s_remove_job(s, &m.u.jobid);
+
                 if (went_ok)
                 {
                     int i;
@@ -468,6 +478,8 @@ static enum Break
                         }
                     }
                 }
+
+                s_dump_joblist();
             }
             break;
         case WAITJOB:
@@ -522,6 +534,7 @@ static void s_runjob(int jobid, int index)
 
 static void s_newjob_ok(int index)
 {
+
     int s;
     struct msg m;
     
@@ -529,6 +542,8 @@ static void s_newjob_ok(int index)
         error("Run job of the client %i which doesn't have any job", index);
 
     s = client_cs[index].socket;
+
+    s_dump_joblist();
 
     m.type = NEWJOB_OK;
     m.u.jobid = client_cs[index].jobid;

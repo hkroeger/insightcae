@@ -8,6 +8,8 @@
 namespace insight
 {
 
+char* tocbuf(const std::string& line);
+
 
 std::string collectIntoSingleCommand(
         const std::string& cmd,

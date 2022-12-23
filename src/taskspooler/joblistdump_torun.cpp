@@ -15,26 +15,10 @@
 extern "C" void error(const char *str, ...);
 
 
-char* tocbuf(const std::string& line)
-{
-    char *cline = (char *) malloc(line.size()+1);
-    if (cline == nullptr)
-        error("Malloc for %i failed.\n", line.size()+1);
-    line.copy(cline, line.size());
-    cline[line.size()]='\0';
-
-    return cline;
-}
-
-
-
 char * joblistdump_torun(char *command)
 {
     std::string cmd(command);
-
-    return tocbuf(
-                "tsp \""+insight::escapeShellSymbols(cmd)+"\"\n"
-                );
+    return insight::tocbuf( "tsp "+cmd+"\n" );
 }
 
 
@@ -55,5 +39,5 @@ char * joblistdump_envvars()
         }
     }
 
-    return tocbuf(lines);
+    return insight::tocbuf(lines);
 }

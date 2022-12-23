@@ -21,6 +21,7 @@ set(tsp_SRC
     tail.c
 
     joblistdump_torun.h joblistdump_torun.cpp
+    build_command_string.h build_command_string.cpp
     ../toolkit/base/shelltools.h ../toolkit/base/shelltools.cpp
 )
 

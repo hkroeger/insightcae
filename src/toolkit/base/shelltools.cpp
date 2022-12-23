@@ -9,6 +9,17 @@ namespace insight
 {
 
 
+char* tocbuf(const std::string& line)
+{
+    char *buffer = (char *) malloc(line.size()+1);
+    if (buffer == nullptr)
+        throw std::runtime_error("Malloc failed.");
+    auto l = line.copy(buffer, line.size());
+    buffer[l]='\0';
+
+    return buffer;
+}
+
 std::string collectIntoSingleCommand( const std::string& cmd, const std::vector<std::string>& args )
 {
   std::string res = cmd;

@@ -465,6 +465,7 @@ int s_newjob(int s, struct msg *m)
     return p->jobid;
 }
 
+
 /* This assumes the jobid exists */
 void s_removejob(int jobid)
 {
@@ -937,6 +938,8 @@ void notify_errorlevel(struct Job *p)
     }
 }
 
+
+
 /* jobid is input/output. If the input is -1, it's changed to the jobid
  * removed */
 int s_remove_job(int s, int *jobid)
@@ -999,6 +1002,7 @@ int s_remove_job(int s, int *jobid)
         }
     }
 
+
     if (p == 0 || p->state == RUNNING || p == firstjob)
     {
         char tmp[50];
@@ -1010,6 +1014,7 @@ int s_remove_job(int s, int *jobid)
         return 0;
     }
 
+
     /* Return the jobid found */
     *jobid = p->jobid;
 
@@ -1017,7 +1022,7 @@ int s_remove_job(int s, int *jobid)
     p->state = FINISHED;
     p->result.errorlevel = -1;
     notify_errorlevel(p);
-        
+
     /* Notify the clients in wait_job */
     check_notify_list(m.u.jobid);
 
@@ -1033,6 +1038,7 @@ int s_remove_job(int s, int *jobid)
     pinfo_free(&p->info);
     free(p->label);
     free(p);
+
 
     m.type = REMOVEJOB_OK;
     send_msg(s, &m);
@@ -1496,6 +1502,11 @@ void dump_notifies_struct(FILE *out)
         dump_notify_struct(out, n);
         n = n->next;
     }
+}
+
+int has_pending_jobs()
+{
+    return (firstjob!=0);
 }
 
 void joblist_dump(int fd)

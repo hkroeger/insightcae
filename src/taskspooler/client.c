@@ -18,41 +18,41 @@ static void c_end_of_job(const struct Result *res);
 static void c_wait_job_send();
 static void c_wait_running_job_send();
 
-char *build_command_string()
-{
-    int size;
-    int i;
-    int num;
-    char **array;
-    char *commandstring;
+//char *build_command_string()
+//{
+//    int size;
+//    int i;
+//    int num;
+//    char **array;
+//    char *commandstring;
     
-    size = 0;
-    num = command_line.command.num;
-    array = command_line.command.array;
+//    size = 0;
+//    num = command_line.command.num;
+//    array = command_line.command.array;
 
-    /* Count bytes needed */
-    for (i = 0; i < num; ++i)
-    {
-        /* The '1' is for spaces, and at the last i,
-         * for the null character */
-        size = size + strlen(array[i]) + 1;
-    }
+//    /* Count bytes needed */
+//    for (i = 0; i < num; ++i)
+//    {
+//        /* The '1' is for spaces, and at the last i,
+//         * for the null character */
+//        size = size + strlen(array[i]) + 1;
+//    }
 
-    /* Alloc */
-    commandstring = (char *) malloc(size);
-    if(commandstring == NULL)
-        error("Error in malloc for commandstring");
+//    /* Alloc */
+//    commandstring = (char *) malloc(size);
+//    if(commandstring == NULL)
+//        error("Error in malloc for commandstring");
 
-    /* Build the command */
-    strcpy(commandstring, array[0]);
-    for (i = 1; i < num; ++i)
-    {
-        strcat(commandstring, " ");
-        strcat(commandstring, array[i]);
-    }
+//    /* Build the command */
+//    strcpy(commandstring, array[0]);
+//    for (i = 1; i < num; ++i)
+//    {
+//        strcat(commandstring, " ");
+//        strcat(commandstring, array[i]);
+//    }
 
-    return commandstring;
-}
+//    return commandstring;
+//}
 
 void c_new_job()
 {

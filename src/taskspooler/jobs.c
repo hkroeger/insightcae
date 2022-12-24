@@ -939,6 +939,8 @@ void notify_errorlevel(struct Job *p)
 }
 
 
+void s_dump_joblist();
+
 
 /* jobid is input/output. If the input is -1, it's changed to the jobid
  * removed */
@@ -1038,7 +1040,6 @@ int s_remove_job(int s, int *jobid)
     pinfo_free(&p->info);
     free(p->label);
     free(p);
-
 
     m.type = REMOVEJOB_OK;
     send_msg(s, &m);

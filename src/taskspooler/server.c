@@ -84,7 +84,7 @@ void s_dump_joblist()
         if (has_pending_jobs())
         {
             /* Dump the job list if we should to */
-            fd = open(dumpfilename, O_WRONLY | O_CREAT, 0600);
+            fd = open(dumpfilename, O_WRONLY | O_CREAT | O_TRUNC, 0600);
             if (fd != -1)
             {
                 joblist_dump(fd);

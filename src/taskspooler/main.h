@@ -4,6 +4,9 @@
 
     Please find the license in the provided COPYING file.
 */
+#ifndef TASKSPOOLER_MAIN_H
+#define TASKSPOOLER_MAIN_H
+
 enum
 {
     CMD_LEN=500,
@@ -112,6 +115,17 @@ enum Jobstate
     HOLDING_CLIENT
 };
 
+struct Result {
+    int errorlevel;
+    int died_by_signal;
+    int signal;
+    float user_ms;
+    float system_ms;
+    float real_ms;
+    int skipped;
+};
+
+
 struct msg
 {
     enum msg_types type;
@@ -135,15 +149,7 @@ struct msg
             int pid;
         } output;
         int jobid;
-        struct Result {
-            int errorlevel;
-            int died_by_signal;
-            int signal;
-            float user_ms;
-            float system_ms;
-            float real_ms;
-            int skipped;
-        } result;
+        struct Result result;
         int size;
         enum Jobstate state;
         struct {
@@ -242,6 +248,7 @@ void s_send_state(int s, int jobid);
 void s_swap_jobs(int s, int jobid1, int jobid2);
 void dump_jobs_struct(FILE *out);
 void dump_notifies_struct(FILE *out);
+int has_pending_jobs();
 void joblist_dump(int fd);
 const char * jstate2string(enum Jobstate s);
 void s_job_info(int s, int jobid);
@@ -302,7 +309,6 @@ void warning_msg(const struct msg *m, const char *str, ...);
 /* list.c */
 char * joblist_headers();
 char * joblist_line(const struct Job *p);
-char * joblistdump_torun(const struct Job *p);
 char * joblistdump_headers();
 
 /* print.c */
@@ -326,3 +332,5 @@ char * get_environment();
 
 /* tail.c */
 int tail_file(const char *fname, int last_lines);
+
+#endif

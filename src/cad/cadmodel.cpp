@@ -401,7 +401,12 @@ PostprocActionPtr Model::lookupPostprocActionSymbol(const std::string& name) con
   PostprocActionPtr *obj = const_cast<PostprocActionPtr*>(postprocActions_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup postprocessing action "+name);
-  return *obj;    
+  return *obj;
+}
+
+bool Model::isComponent(const std::string &name) const
+{
+    return components_.find(name)!=components_.end();
 }
 
 const Model::ScalarTable& 	Model::scalarSymbols() const { return scalars_; }

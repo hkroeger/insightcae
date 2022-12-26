@@ -78,7 +78,7 @@ void IQCADModel3DViewer::addVertex(
     auto prop=actor->GetProperty();
     prop->SetRepresentationToPoints();
     prop->SetPointSize(8);
-    prop->SetColor(1., 0, 0);
+    prop->SetColor(0, 0, 0);
 
     ren_->AddActor(actor);
 

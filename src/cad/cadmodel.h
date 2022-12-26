@@ -191,6 +191,8 @@ public:
     {
         return components_;
     }
+
+    bool isComponent(const std::string& name) const;
     
     const std::string description() const;
 

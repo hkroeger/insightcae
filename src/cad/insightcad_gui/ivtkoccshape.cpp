@@ -7,12 +7,15 @@
 #include "BRep_Tool.hxx"
 #include "TopExp_Explorer.hxx"
 #include "TopoDS.hxx"
+#include "TopoDS_Edge.hxx"
 #include "TopoDS_Face.hxx"
 #include "vtkCellArray.h"
 #include "BRepMesh_FastDiscret.hxx"
 #include "BRepMesh_IncrementalMesh.hxx"
 #include "BRepTools.hxx"
 #include "Bnd_Box.hxx"
+#include "GCPnts_QuasiUniformDeflection.hxx"
+#include "BRepAdaptor_Curve.hxx"
 
 
 vtkOStreamWrapper operator<<(vtkOStreamWrapper& os, const TopoDS_Shape& s)
@@ -61,7 +64,7 @@ int ivtkOCCShape::RequestData(
 
   vtkNew<vtkPolyData> polydata;
   vtkNew<vtkPoints> points;
-  vtkNew<vtkCellArray> polys;
+  vtkNew<vtkCellArray> polys, lines;
 
   for (TopExp_Explorer ex(Shape,TopAbs_FACE); ex.More(); ex.Next())
   {
@@ -118,9 +121,26 @@ int ivtkOCCShape::RequestData(
           }
       }
   }
+  double defl=0.001;
+  for (TopExp_Explorer ex(Shape, TopAbs_EDGE); ex.More(); ex.Next())
+  {
+      auto edge = TopoDS::Edge(ex.Current());
+      GCPnts_QuasiUniformDeflection algo(BRepAdaptor_Curve(edge), defl);
+      int np=algo.NbPoints();
+      vtkIdType pts[np];
+      vtkIdType i0=points->GetNumberOfPoints();
+      for (int i=0; i<np; ++i)
+      {
+          auto cp = algo.Value(i+1);
+          points->InsertNextPoint(cp.X(), cp.Y(), cp.Z());
+          pts[i]=i0+i;
+      }
+      lines->InsertNextCell(np, pts);
+  }
 
   polydata->SetPoints(points.GetPointer());
   polydata->SetPolys(polys.GetPointer());
+  polydata->SetLines(lines.GetPointer());
 
   //output = polydata.GetPointer(); //doesn't work
   output->ShallowCopy(polydata.GetPointer());

@@ -22,6 +22,7 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
 
   insight::cad::ModelPtr model_;
 
+
   mutable std::map<std::string, bool>
         pointVisibility_,
         vectorVisibility_,
@@ -32,6 +33,7 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
       bool visible;
       double opacity;
       QColor color;
+      insight::DatasetRepresentation representation;
 
       FeatureVisibility();
   };
@@ -90,6 +92,7 @@ public:
 
       entityColorCol = 3,
       entityOpacityCol = 4,
+      entityRepresentationCol = 5, // insight::DatasetRepresentation
       entityCol=99;
 
 private:

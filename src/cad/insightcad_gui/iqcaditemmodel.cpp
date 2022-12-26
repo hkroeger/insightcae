@@ -19,6 +19,7 @@ IQCADItemModel::FeatureVisibility::FeatureVisibility()
     color.setBlueF(     std::max(0., std::min(1., ed(boostRanGen))) );
     opacity=1.;
     visible=true;
+    representation = insight::Surface;
 }
 
 IQCADItemModel::IQCADItemModel(insight::cad::ModelPtr m, QObject* parent)
@@ -302,6 +303,11 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                         else if (index.column()==entityOpacityCol)
                         {
                             return featureVisibility_[i->first].opacity;
+                        }
+                        else if (index.column()==entityRepresentationCol)
+                        {
+                            auto mi = featureVisibility_[i->first];
+                            return int(mi.representation);
                         }
                     }
                     break;
@@ -605,6 +611,13 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
                         value.toDouble();
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
+            }
+            else if (index.column()==entityRepresentationCol)
+            {
+               featureVisibility_[i->first].representation =
+                       insight::DatasetRepresentation(value.toInt());
+               Q_EMIT dataChanged(index, index, {role});
+               return true;
             }
         }
         else if (index.internalId()==CADModelSection::dataset)
@@ -1012,6 +1025,22 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
         }
         else if (idx.internalId()==CADModelSection::feature)
         {
+            a=new QAction("Shaded", &cm);
+            connect(a, &QAction::triggered,
+                    [this,idx]() {
+                        QModelIndex featrepr=index(idx.row(), IQCADItemModel::entityRepresentationCol, idx.parent());
+                        setData(featrepr, insight::DatasetRepresentation::Surface, Qt::EditRole);
+                    });
+            cm.addAction(a);
+
+            a=new QAction("Wireframe", &cm);
+            connect(a, &QAction::triggered,
+                    [this,idx]() {
+                        QModelIndex featrepr=index(idx.row(), IQCADItemModel::entityRepresentationCol, idx.parent());
+                        setData(featrepr, insight::DatasetRepresentation::Wireframe, Qt::EditRole);
+                    });
+            cm.addAction(a);
+
             a=new QAction("Set opacity...", &cm);
             connect(a, &QAction::triggered, this,
                     [this,idx]() {

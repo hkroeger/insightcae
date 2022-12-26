@@ -9,6 +9,7 @@
 #include "TopoDS.hxx"
 #include "TopoDS_Edge.hxx"
 #include "TopoDS_Face.hxx"
+#include "TopoDS_Vertex.hxx"
 #include "vtkCellArray.h"
 #include "BRepMesh_FastDiscret.hxx"
 #include "BRepMesh_IncrementalMesh.hxx"
@@ -30,6 +31,8 @@ vtkOStreamWrapper operator<<(vtkOStreamWrapper& os, const TopoDS_Shape& s)
 vtkStandardNewMacro(ivtkOCCShape);
 
 ivtkOCCShape::ivtkOCCShape()
+    : Representation(insight::DatasetRepresentation::Surface),
+      MaxDeflection(1e-3)
 {
   this->SetNumberOfInputPorts(0);
   this->SetNumberOfOutputPorts(1);
@@ -64,83 +67,104 @@ int ivtkOCCShape::RequestData(
 
   vtkNew<vtkPolyData> polydata;
   vtkNew<vtkPoints> points;
-  vtkNew<vtkCellArray> polys, lines;
+  vtkNew<vtkCellArray> polys, lines, verts;
 
-  for (TopExp_Explorer ex(Shape,TopAbs_FACE); ex.More(); ex.Next())
+  if (Representation == insight::DatasetRepresentation::Surface)
   {
-      auto small = TopoDS::Face(ex.Current());
-
-      TopLoc_Location L;
-      auto tri = BRep_Tool::Triangulation (small, L);
-
-      double deflection=1e-3;
-
-      if (tri.IsNull())
+      for (TopExp_Explorer ex(Shape,TopAbs_FACE); ex.More(); ex.Next())
       {
-        BRepTools::Clean(small);
-        Bnd_Box box;
-//        BRep_Builder b;
-//        b.UpdateFace(small, tolerance);
-#if (OCC_VERSION_MAJOR>=7 && OCC_VERSION_MINOR>=4)
-        IMeshTools_Parameters p;
-        p.Angle=0.5;
-        p.Deflection=deflection;
-        p.Relative=false;
-        BRepMesh_IncrementalMesh  m(small, p);
-#else
-#if (OCC_VERSION_MAJOR>=7)
-        BRepMesh_FastDiscret::Parameters p;
-        p.Angle=0.5;
-        p.Deflection=deflection;
-        p.Relative=false;
-        BRepMesh_FastDiscret m(box, p);
-#else
-        BRepMesh_FastDiscret m(deflection, 0.5, box, true, true, false, false);
-#endif
-        m.Perform(small);
-#endif
-        tri = BRep_Tool::Triangulation (small, L);
-      }
+          auto small = TopoDS::Face(ex.Current());
 
-      if (!tri.IsNull())
-      {
-          vtkIdType i0=points->GetNumberOfPoints();
+          TopLoc_Location L;
+          auto tri = BRep_Tool::Triangulation (small, L);
 
-          for (vtkIdType i=0; i<tri->NbNodes(); ++i)
+          double deflection=1e-3;
+
+          if (tri.IsNull())
           {
-              points->InsertNextPoint( tri->Nodes().Value(i+1).Transformed(L).XYZ().GetData() );
+            BRepTools::Clean(small);
+            Bnd_Box box;
+    //        BRep_Builder b;
+    //        b.UpdateFace(small, tolerance);
+    #if (OCC_VERSION_MAJOR>=7 && OCC_VERSION_MINOR>=4)
+            IMeshTools_Parameters p;
+            p.Angle=0.5;
+            p.Deflection=deflection;
+            p.Relative=false;
+            BRepMesh_IncrementalMesh  m(small, p);
+    #else
+    #if (OCC_VERSION_MAJOR>=7)
+            BRepMesh_FastDiscret::Parameters p;
+            p.Angle=0.5;
+            p.Deflection=deflection;
+            p.Relative=false;
+            BRepMesh_FastDiscret m(box, p);
+    #else
+            BRepMesh_FastDiscret m(deflection, 0.5, box, true, true, false, false);
+    #endif
+            m.Perform(small);
+    #endif
+            tri = BRep_Tool::Triangulation (small, L);
           }
-          for (vtkIdType j=0; j<tri->NbTriangles(); ++j)
+
+          if (!tri.IsNull())
           {
-              auto t = tri->Triangles().Value(j+1);
-              vtkIdType c[3]={
-                  t.Value(1)+i0-1,
-                  t.Value(2)+i0-1,
-                  t.Value(3)+i0-1 };
-              polys->InsertNextCell(3, c);
+              vtkIdType i0=points->GetNumberOfPoints();
+
+              for (vtkIdType i=0; i<tri->NbNodes(); ++i)
+              {
+                  points->InsertNextPoint( tri->Nodes().Value(i+1).Transformed(L).XYZ().GetData() );
+              }
+              for (vtkIdType j=0; j<tri->NbTriangles(); ++j)
+              {
+                  auto t = tri->Triangles().Value(j+1);
+                  vtkIdType c[3]={
+                      t.Value(1)+i0-1,
+                      t.Value(2)+i0-1,
+                      t.Value(3)+i0-1 };
+                  polys->InsertNextCell(3, c);
+              }
           }
       }
   }
-  double defl=0.001;
-  for (TopExp_Explorer ex(Shape, TopAbs_EDGE); ex.More(); ex.Next())
+
+  if ( (polys->GetNumberOfCells()==0) // wireframe or edges only
+       &&
+       !(Representation==insight::DatasetRepresentation::Points) )
   {
-      auto edge = TopoDS::Edge(ex.Current());
-      GCPnts_QuasiUniformDeflection algo(BRepAdaptor_Curve(edge), defl);
-      int np=algo.NbPoints();
-      vtkIdType pts[np];
-      vtkIdType i0=points->GetNumberOfPoints();
-      for (int i=0; i<np; ++i)
+      for (TopExp_Explorer ex(Shape, TopAbs_EDGE); ex.More(); ex.Next())
       {
-          auto cp = algo.Value(i+1);
-          points->InsertNextPoint(cp.X(), cp.Y(), cp.Z());
-          pts[i]=i0+i;
+          auto edge = TopoDS::Edge(ex.Current());
+          GCPnts_QuasiUniformDeflection algo(BRepAdaptor_Curve(edge), MaxDeflection);
+          int np=algo.NbPoints();
+          vtkIdType pts[np];
+          vtkIdType i0=points->GetNumberOfPoints();
+          for (int i=0; i<np; ++i)
+          {
+              auto cp = algo.Value(i+1);
+              points->InsertNextPoint(cp.X(), cp.Y(), cp.Z());
+              pts[i]=i0+i;
+          }
+          lines->InsertNextCell(np, pts);
       }
-      lines->InsertNextCell(np, pts);
+  }
+
+  if (Representation==insight::DatasetRepresentation::Points)
+  {
+      for (TopExp_Explorer ex(Shape, TopAbs_VERTEX); ex.More(); ex.Next())
+      {
+          auto v = TopoDS::Vertex(ex.Current());
+          auto cp = BRep_Tool::Pnt(v);
+          vtkIdType i0 = points->GetNumberOfPoints();
+          verts->InsertNextCell(1, &i0 );
+          points->InsertNextPoint(cp.X(), cp.Y(), cp.Z());
+      }
   }
 
   polydata->SetPoints(points.GetPointer());
   polydata->SetPolys(polys.GetPointer());
   polydata->SetLines(lines.GetPointer());
+  polydata->SetVerts(verts.GetPointer());
 
   //output = polydata.GetPointer(); //doesn't work
   output->ShallowCopy(polydata.GetPointer());

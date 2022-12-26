@@ -146,6 +146,7 @@ void IQCADModel3DViewer::addFeature(
         insight::cad::FeaturePtr feat )
 {
 
+
     vtkNew<ivtkOCCShape> shape;
     shape->SetShape( feat->shape() );
 
@@ -189,6 +190,18 @@ void IQCADModel3DViewer::resetFeatureDisplayProps(const QPersistentModelIndex& p
         if (auto act = vtkActor::SafeDownCast(displayedData_[pidx].actor_))
         {
             QModelIndex idx(pidx);
+            if (auto *ivtkocc = ivtkOCCShape::SafeDownCast(act->GetMapper()->GetInputAlgorithm()))
+            {
+                if (pidx.isValid())
+                {
+                    auto repr=  insight::DatasetRepresentation(
+                            idx.siblingAtColumn(IQCADItemModel::entityRepresentationCol)
+                            .data().toInt() );
+                    std::cout<<"set repr="<<repr<<std::endl;
+                    ivtkocc->SetRepresentation(repr);
+                    ivtkocc->Update();
+                }
+            }
             auto opacity = idx.siblingAtColumn(IQCADItemModel::entityOpacityCol)
                     .data().toDouble();
             act->GetProperty()->SetOpacity(opacity);
@@ -354,7 +367,7 @@ void IQCADModel3DViewer::onDataChanged(
                 }
                 if ( feat.canConvert<insight::cad::FeaturePtr>()
                      && colInRange(IQCADItemModel::entityColorCol,
-                                   IQCADItemModel::entityOpacityCol) )
+                                   IQCADItemModel::entityRepresentationCol) )
                 {
                     resetFeatureDisplayProps(pidx);
                 }

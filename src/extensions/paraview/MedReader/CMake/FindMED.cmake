@@ -46,7 +46,6 @@ FIND_PATH(MED_INCLUDE_DIR med.h
   PATHS
   /usr/local/include
   /usr/include
-  /opt/insightcae/public/med-4.0.0/include
 )
 
 FIND_LIBRARY(MED_LIBRARY med
@@ -56,7 +55,6 @@ FIND_LIBRARY(MED_LIBRARY med
   PATHS
   /usr/local/lib
   /usr/lib
-  /opt/insightcae/public/med-4.0.0/lib
 )
 
 FIND_LIBRARY(MEDC_LIBRARY medC
@@ -66,7 +64,6 @@ FIND_LIBRARY(MEDC_LIBRARY medC
   PATHS
   /usr/local/lib
   /usr/lib
-  /opt/insightcae/public/med-4.0.0/lib
 )
 
 get_filename_component(MED_LIBRARY_DIR ${MEDC_LIBRARY} PATH)

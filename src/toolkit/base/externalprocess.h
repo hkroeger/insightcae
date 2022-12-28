@@ -60,7 +60,9 @@ public:
   void runAndTransferOutput
   (
       std::vector<std::string>* stdoutbuffer = nullptr,
-      std::vector<std::string>* stderrbuffer = nullptr
+      std::vector<std::string>* stderrbuffer = nullptr,
+      bool mirrorStdout = true,
+      bool mirrorStderr = true
   );
 
   void ios_run_with_interruption(

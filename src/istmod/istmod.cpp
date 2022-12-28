@@ -55,9 +55,9 @@ int main(int argc, char *argv[])
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help", "produce help message")
-    ("skiplatex,x", "skip execution of pdflatex")
-    ("workdir,w", po::value<std::string>(), "execution directory")
-    ("savecfg,c", po::value<std::string>()->required(), "save final configuration (including command line overrides) to this file")
+    ("unpackexternals,u", "unpack all included external files from ist file")
+    ("stripexternals,x", "strip included external files from ist file")
+    ("write,w", po::value<std::string>()->required(), "save final configuration (including command line overrides) to this file")
     ("bool,b", po::value<StringList>(), "boolean variable assignment")
     ("selection,l", po::value<StringList>(), "selection variable assignment")
     ("string,s", po::value<StringList>(), "string variable assignment")
@@ -67,12 +67,12 @@ int main(int argc, char *argv[])
     ("int,i", po::value<StringList>(), "int variable assignment")
     ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
     ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
-    ("input-file,f", po::value< StringList >()->required(),"Specifies input file.")
+    ("input-file,f", po::value<std::string>()->required(),"Specifies input file.")
     ;
 
     po::positional_options_description p;
     p.add("input-file", 1);
-    p.add("savecfg", 1);
+    p.add("write", 1);
 
     po::variables_map vm;
     try
@@ -95,15 +95,15 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    if (!vm.count("input-file"))
+    if (vm.count("input-file")!=1)
     {
-        cout<<"input file has to be specified!"<<endl;
+        cout<<"one single input file has to be specified!"<<endl;
         exit(-1);
     }
 
-    if (!vm.count("savecfg"))
+    if (vm.count("write")!=1)
     {
-        cout<<"output file has to be specified (--savecfg) !"<<endl;
+        cout<<"one single output file has to be specified (--write) !"<<endl;
         exit(-1);
     }
 
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 
     try
     {
-        std::string fn = vm["input-file"].as<StringList>()[0];
+        std::string fn = vm["input-file"].as<std::string>();
 
         if (!boost::filesystem::exists(fn))
         {
@@ -149,36 +149,30 @@ int main(int argc, char *argv[])
         {
             analysisName = analysisnamenode->first_attribute("name")->value();
         }
-        /*
-        insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_.find(analysisName);
-        if (i==insight::Analysis::factories_.end())
-          throw insight::Exception("Could not lookup analysis type "+analysisName);
 
-        AnalysisPtr analysis( (*i->second)( insight::NoParameters() ) );
-        */
-//         AnalysisPtr analysis ( insight::Analysis::lookup(analysisName) );
-//         analysis->setDefaults();
-
-        boost::filesystem::path exedir = boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path();
-        if (vm.count("workdir"))
-        {
-            exedir=boost::filesystem::absolute(vm["workdir"].as<std::string>());
-        }
-        std::string filestem = boost::filesystem::path(fn).stem().string();
-//        cout<< "Executing analysis in directory "<<exedir<<endl;
-//         analysis->setExecutionPath(dir);
-
-//         ParameterSet parameters = analysis->defaultParameters();
         ParameterSet parameters = insight::Analysis::defaultParameters(analysisName);
 
         parameters.readFromNode(doc, *rootnode,
                                 boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path() );
+
+        if (vm.count("unpackexternals"))
+        {
+            std::cout<<"Unpacking external files..."<<std::endl;
+            parameters.unpackAllExternalFiles(".");
+        }
+
+        if (vm.count("stripexternals"))
+        {
+            std::cout<<"Removing packed external files..."<<std::endl;
+            parameters.removePackedData();
+        }
 
         if (vm.count("merge"))
         {
             StringList ists=vm["merge"].as<StringList>();
             for (const string& ist: ists)
             {
+                std::cout<<"Merging..."<<ist <<std::endl;
                 // ParameterSet to_merge;
                 parameters.readFromFile(ist);
             }
@@ -274,9 +268,9 @@ int main(int argc, char *argv[])
             }
         }
 
-        boost::filesystem::path outfile = exedir/ vm["savecfg"].as<std::string>();
+        boost::filesystem::path outfile = vm["write"].as<std::string>();
         std::cout << "Saving modified input parameters to file "<<outfile<<std::endl;
-        parameters.saveToFile( outfile );
+        parameters.saveToFile( outfile, analysisName );
 
     }
     catch (insight::Exception e)

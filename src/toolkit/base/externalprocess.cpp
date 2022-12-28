@@ -112,23 +112,25 @@ Job::Job()
 void Job::runAndTransferOutput
 (
     std::vector<std::string>* stdoutbuffer,
-    std::vector<std::string>* stderrbuffer
+    std::vector<std::string>* stderrbuffer,
+    bool mirrorStdout,
+    bool mirrorStderr
 )
 {
 
   ios_run_with_interruption(
-        [stdoutbuffer](const std::string& line)
+        [stdoutbuffer,mirrorStdout](const std::string& line)
         {
-          std::cout<<line<<std::endl;
+          if (mirrorStdout) std::cout<<line<<std::endl;
           if (stdoutbuffer) stdoutbuffer->push_back(line);
         },
-        [stdoutbuffer,stderrbuffer](const std::string& line)
+        [stdoutbuffer,stderrbuffer,mirrorStderr](const std::string& line)
         {
           // mirror to console
-          std::cout<<"[E] "<<line<<std::endl;
+          if (mirrorStderr) std::cout<<"[E] "<<line<<std::endl;
           if (stderrbuffer)
           {
-            stderrbuffer->push_back(line);
+              stderrbuffer->push_back(line);
           }
           else if (stdoutbuffer)
           {

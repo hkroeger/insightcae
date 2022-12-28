@@ -104,7 +104,6 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs");
   controlDict.subDict("functions");
 
-  controlDict.getList("libs").insertNoDuplicate( "\"libwriteData.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"libconsistentCurveSampleSet.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );
@@ -114,10 +113,21 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     wonow["type"]="writeData";
     wonow["fileName"]="\"wnow\"";
     wonow["fileNameAbort"]="\"wnowandstop\"";
-    wonow["outputControl"]="timeStep";
-    wonow["outputInterval"]=1;
     controlDict.subDict("functions")["writeData"]=wonow;
+    controlDict.getList("libs").insertNoDuplicate( "\"libwriteData.so\"" );
   }
+
+  if (const auto* rwp =
+          boost::get<Parameters::restartWrite_clockTime_type>(&p_.restartWrite))
+  {
+      OFDictData::dict rw;
+      rw["type"]="restartWrite";
+      rw["clockTimeInterval"]=rwp->clockTimeInterval;
+      rw["nKeep"]=rwp->nKeep;
+      controlDict.subDict("functions")["restartWrite"]=rw;
+      controlDict.getList("libs").insertNoDuplicate( "\"librestartWrite.so\"" );
+  }
+
   {
     OFDictData::dict fqmc;
     fqmc["type"]="faceQualityMarker";

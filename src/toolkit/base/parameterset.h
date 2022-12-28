@@ -211,6 +211,7 @@ public:
 
   void packExternalFiles();
   void removePackedData();
+  void unpackAllExternalFiles(const boost::filesystem::path& basePath);
 
   virtual void saveToStream(std::ostream& os, const boost::filesystem::path& parentPath, std::string analysisName = std::string() ) const;
   void saveToFile ( const boost::filesystem::path& file, std::string analysisType = std::string() ) const;

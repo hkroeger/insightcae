@@ -1,6 +1,7 @@
 
 #include "fvCFD.H"
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkGenericDataObjectReader.h"
 #include "vtkProbeFilter.h"

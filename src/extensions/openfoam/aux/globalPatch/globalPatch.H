@@ -274,7 +274,8 @@ public:
 
               result.reset
                       (
-                          new UniPrimitivePatch<face, List, pointField>(globalFaces, globalPoints)
+                          new UniPrimitivePatch<face, List, pointField>(
+                              globalFaces, globalPoints )
                           );
 
               return result;
@@ -283,7 +284,8 @@ public:
 
       result.reset
               (
-                  new UniPrimitivePatch<face, List, pointField>(patch.localFaces(), patch.localPoints())
+                  new UniPrimitivePatch<face, List, pointField>(
+                      patch.localFaces(), patch.localPoints() )
                   );
       return result;
   }
@@ -292,12 +294,13 @@ public:
 
 
   globalPatch(
-          const UniPrimitivePatch<face, List, pointField>& patch )
+          const UniPrimitivePatch<face, List, pointField>& patch,
+          label localPatchSize )
   : UniPrimitivePatch<face, List, pointField>(patch),
     procOfs_(Pstream::nProcs(), -1)
   {
     labelList nfaces(Pstream::nProcs());
-    nfaces[Pstream::myProcNo()]=patch.size();
+    nfaces[Pstream::myProcNo()]=localPatchSize;
 
     Pstream::gatherList(nfaces);
     Pstream::scatterList(nfaces);

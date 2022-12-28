@@ -79,6 +79,8 @@ void extendedForces::createFields()
   }
 }
 
+
+
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 //- Construct for given objectRegistry and dictionary.
 //  Allow the possibility to load fields from files
@@ -87,7 +89,7 @@ extendedForces::extendedForces
     const word& name,
     const Time& time,
     const dictionary& dict
-#if OF_VERSION<060000 //not (defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<060000
     ,
     const bool readFields
     #endif
@@ -95,7 +97,7 @@ extendedForces::extendedForces
 : functionObjects::forces
   (
     name, time, dict
-#if OF_VERSION<060000 //not (defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<060000
     , readFields
 #endif
   ),
@@ -108,6 +110,8 @@ extendedForces::extendedForces
 }
 #endif
 
+
+
 //- Construct for given objectRegistry and dictionary.
 //  Allow the possibility to load fields from files
 extendedForces::extendedForces
@@ -119,7 +123,7 @@ extendedForces::extendedForces
     ,
     const bool loadFromFiles
     #endif
-    #if OF_VERSION>=010700 && OF_VERSION<=060000 //not (defined(OF16ext)||defined(OFdev)||defined(OFesi1806))
+    #if OF_VERSION>=010700 && OF_VERSION<=060000
     ,
     const bool readFields
     #endif
@@ -132,7 +136,7 @@ extendedForces::extendedForces
 #if OF_VERSION<040000 //not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
       , loadFromFiles
 #endif
-#if OF_VERSION>=010700 && OF_VERSION<=060000 //not (defined(OF16ext)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=010700 && OF_VERSION<=060000
 	  , readFields
 #endif
 	),
@@ -144,7 +148,9 @@ extendedForces::extendedForces
   createFields();
 }
 
-#if OF_VERSION>=010700 && OF_VERSION<040000 //!(defined(OF16ext)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+
+
+#if OF_VERSION>=010700 && OF_VERSION<040000
 //- Construct from components
 extendedForces::extendedForces
 (
@@ -166,12 +172,10 @@ extendedForces::extendedForces
 }
 #endif
 
-//- Destructor
-extendedForces::~extendedForces()
-{
-}
 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+
+
+#if OF_VERSION>=040000
 bool
 #else
 void 
@@ -186,7 +190,7 @@ extendedForces::execute()
   initialise();
 #endif
   
-#if OF_VERSION<040000 //not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<040000
   if (!active_)
   {
       return;
@@ -236,7 +240,7 @@ extendedForces::execute()
             = tdevRhoReff().boundaryField()[patchI];
 
         UNIOF_BOUNDARY_NONCONST(*pressureForce_)[patchI]
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
         =
 #else
         ==
@@ -246,7 +250,7 @@ extendedForces::execute()
         );
 
         UNIOF_BOUNDARY_NONCONST(*viscousForce_)[patchI]
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
         =
 #else
         ==
@@ -260,13 +264,13 @@ extendedForces::execute()
             vectorField Md
             (
                 mesh.C().boundaryField()[patchI] -
-      #if defined(OF_FORK_extend) //def OF16ext
+#if defined(OF_FORK_extend)
                   CofR_
-      #elif (OF_VERSION>=060505)
+#elif (OF_VERSION>=060505)
                   coordSysPtr_().origin()
-      #else
+#else
                   coordSys_.origin()
-      #endif
+#endif
             );
 
             vectorField fN
@@ -302,33 +306,36 @@ extendedForces::execute()
     Pstream::combineScatter(pr_moment_);
     Pstream::combineScatter(vi_moment_);
     Pstream::combineScatter(po_moment_);
-    
-    Info<<pr_force_<<vi_force_<<endl;
   }
   
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
   return true;
 #endif
 }
 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+
+
+#if OF_VERSION>=040000
 bool
 #else
 void 
 #endif 
 extendedForces::end()
 {
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
   return
 #endif    
   Foam::
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
   functionObjects::
 #endif    
   forces::end();
 }
 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+
+
+
+#if OF_VERSION>=040000
 bool
 #else
 void 
@@ -339,7 +346,7 @@ extendedForces::write()
 
   forces::write();
   
-#if OF_VERSION<040000 //not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<040000
   if (!active_)
   {
       return;
@@ -375,7 +382,7 @@ extendedForces::write()
             mkDir(outdir);
 
             // Open new file at start up
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
             maskedForceFile_.reset(new OFstream(outdir/"force.dat"));
             maskedForceFile2_.reset(new OFstream(outdir/"moment.dat"));
 #else
@@ -385,7 +392,7 @@ extendedForces::write()
     }
     
     if (Pstream::master()) {
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
     maskedForceFile_() << obr_.time().value()
             << tab << (pr_force_+vi_force_)
             << tab << pr_force_
@@ -418,7 +425,7 @@ extendedForces::write()
    }
   }
   
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
   return true;
 #endif
 }
@@ -438,7 +445,7 @@ vector extendedForces::force() const
 
 
 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
 
 defineTypeNameAndDebug(extendedForces, 0);
 addToRunTimeSelectionTable

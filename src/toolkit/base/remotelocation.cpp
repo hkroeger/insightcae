@@ -51,7 +51,7 @@ RemoteLocation::RemoteLocation(const RemoteLocation& orec)
 
 
 
-RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
+RemoteLocation::RemoteLocation(const boost::filesystem::path& mf, bool skipValidation)
   : autoCreateRemoteDir_(false),
     isTemporaryStorage_(false),
     port_(-1),
@@ -113,13 +113,16 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
       insight::dbg()<<"read port="<<port_<<std::endl;
     }
 
-    serverInstance_ = serverConfig_->getInstanceIfRunning();
-
-    validate();
-
-    if (!isValidated_)
+    if (!skipValidation)
     {
-      throw insight::Exception("Remote execution configuration is invalid!");
+        serverInstance_ = serverConfig_->getInstanceIfRunning();
+
+        validate();
+
+        if (!isValidated_)
+        {
+          throw insight::Exception("Remote execution configuration is invalid!");
+        }
     }
   }
 }

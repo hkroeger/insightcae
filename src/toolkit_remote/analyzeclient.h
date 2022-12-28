@@ -25,6 +25,7 @@
 #undef True
 #undef False
 #undef emit
+#include <stdexcept>
 #include "Wt/Json/Object.h"
 #include "Wt/Http/Client.h"
 #include "Wt/WIOService.h"

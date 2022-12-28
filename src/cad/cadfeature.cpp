@@ -273,7 +273,10 @@ std::mutex Feature::step_read_mutex_;
 
 void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 {
-    cout<<"Reading "<<filename<<endl;
+    ParameterListHash h;
+    h.addParameter(this->type());
+    h.addParameter(filename);
+    hash_=h.getHash();
 
     std::string ext=filename.extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);

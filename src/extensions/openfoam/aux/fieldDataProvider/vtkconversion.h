@@ -3,6 +3,7 @@
 
 #include "fvCFD.H"
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
 #include "vtkDoubleArray.h"

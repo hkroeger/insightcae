@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
   typedef std::vector<string> StringList;
 
-  StringList cmds, icmds, skip_dirs;
+  StringList cmds, icmds, skip_dirs, remoteServerFilter;
 
   // Declare the supported options.
   po::options_description desc("Allowed options");
@@ -80,6 +80,8 @@ int main(int argc, char *argv[])
       ("cancel,c", "cancel remote commands (remove all from queue)")
       ("clean,x", "remove the remote case directory from server")
       ("list-remote,D", "list remote directory contents")
+      ("locate-remote-configs,L", "locate and list existing remote configurations")
+      ("filter-remote-server,S", po::value<StringList>(&remoteServerFilter), "filter remote configuration list by server")
 #ifndef WIN32
       ("mount-remote,M", "mount the remote directory locally using sshfs (needs to be installed)")
       ("unmount-remote,U", "unmount the remote directory")
@@ -133,6 +135,41 @@ int main(int argc, char *argv[])
   if (vm.count("meta-file"))
   {
     mf=vm["meta-file"].as<std::string>();
+  }
+
+  if (vm.count("locate-remote-configs"))
+  {
+      auto mfn=insight::RemoteExecutionConfig::defaultConfigFileName();
+      if (!mf.empty()) mfn=mf.filename();
+      auto j = Job::forkExternalProcess(
+                  "locate",
+                  {"-e", mfn.string()});
+      std::vector<std::string> files;
+      j->runAndTransferOutput(&files, nullptr, false, true);
+      if (files.size())
+      {
+          std::cout<<"# local directory \t server label \t remote directory"<<std::endl;
+      }
+
+      for (const auto& fp: files)
+      {
+          auto localDir = boost::filesystem::path(fp).parent_path();
+          insight::RemoteLocation rl(fp, true);
+
+          auto serverLabel = rl.serverLabel();
+
+          bool filtered = false;
+
+          if ( remoteServerFilter.size()
+               &&
+               remoteServerFilter.end()==std::find(
+                   remoteServerFilter.begin(), remoteServerFilter.end(), serverLabel) )
+              filtered=true;
+
+          if (!filtered)
+            std::cout<<localDir.string()<<" \t "<<serverLabel<<" \t "<<rl.remoteDir().string()<<std::endl;
+      }
+      anything_done=true;
   }
 
   if (vm.count("create-remote-temp"))

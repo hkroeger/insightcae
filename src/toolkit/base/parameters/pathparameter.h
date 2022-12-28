@@ -24,6 +24,7 @@
 #include "base/filecontainer.h"
 #include "base/parameter.h"
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
 

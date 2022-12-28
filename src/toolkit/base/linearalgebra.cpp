@@ -175,7 +175,7 @@ mat rotMatrix( double theta, mat u )
 
 bool isRotationMatrix(const arma::mat &R)
 {
-  return arma::norm(R.t()*R - arma::eye(3,3), 2) < 1e-10;
+  return arma::norm(R.t()*R - arma::eye(3,3), 2) < 1e-6;
 }
 
 /**
@@ -187,9 +187,14 @@ bool isRotationMatrix(const arma::mat &R)
 */
 arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R)
 {
-  CurrentExceptionContext ex("compution euler angles from rotation matrix");
+  std::ostringstream os; os<<R;
+  CurrentExceptionContext ex("compution euler angles from rotation matrix ("+os.str()+")");
 
-  insight::assertion(isRotationMatrix(R), "the argument is not a rotation matrix");
+  insight::assertion(
+              isRotationMatrix(R),
+              str(format("the argument is not a rotation matrix, residual=%e")
+                  %(arma::norm(R.t()*R - arma::eye(3,3), 2)))
+              );
 
   double sy=sqrt(R(0,0) * R(0,0) +  R(1,0) * R(1,0) );
   bool singular = sy < 1e-10;

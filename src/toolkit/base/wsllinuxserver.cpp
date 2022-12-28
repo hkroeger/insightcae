@@ -6,6 +6,7 @@
 
 #include "base/exception.h"
 #include "base/tools.h"
+#include "base/shelltools.h"
 #include "openfoam/openfoamcase.h"
 
 #include "rapidxml/rapidxml_print.hpp"
@@ -144,14 +145,26 @@ void WSLLinuxServer::BackgroundJob::kill()
 
 
 
-RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(const std::string &cmd)
+RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(
+        const std::string &cmd,
+        const std::vector<ExpectedOutput>& pattern )
 {
-  auto process = launchCommand(cmd);
+//  boost::process::ipstream is;
+  auto process = launchCommand(
+              cmd/*,
+              boost::process::std_out > is,
+              boost::process::std_in < boost::process::null*/
+              );
 
-  if (!process->running())
-  {
-   throw insight::Exception("could not start background process");
-  }
+  insight::assertion(
+              process->running(),
+              "could not start background process");
+
+  insight::assertion(
+              pattern.size()==0,
+              "Not implemented: cannot look for pattern in WSL process");
+
+//  lookForPattern(is, pattern);
 
   return std::make_shared<BackgroundJob>(*this, std::move(process));
 }

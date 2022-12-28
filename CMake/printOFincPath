@@ -6,7 +6,10 @@ shift 1
 SKIPPATTERN=$1
 source $ARG_BRC
 FIRST=1
-for bd in "$FOAM_SRC" "$FOAM_APP"; do
+if [ -d $WM_PROJECT_DIR/modules ]; then
+ FOAM_MODULES=$WM_PROJECT_DIR/modules
+fi
+for bd in "$FOAM_SRC" "$FOAM_APP" $FOAM_MODULES; do
  for d in `find "$bd" -name "Make" -a -type d`; do 
   p="$(cd $d; cd ..; pwd)"
   SKIP=

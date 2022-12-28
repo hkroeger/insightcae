@@ -174,6 +174,8 @@ if len(liblist)==0:
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/ofdicts.h"
+#include "openfoam/setfields.h"
+#include "openfoam/createpatch.h"
 
 #include "code_aster/caexportfile.h"
 #include "code_aster/codeasterrun.h"
@@ -250,7 +252,12 @@ using namespace insight::createPatchOps;
 %include "openfoam/caseelements/boundarycondition.h"
 %include "openfoam/openfoamcase.h"
 %include "openfoam/openfoamdict.h"
+
 %include "openfoam/openfoamtools.h"
+namespace std {
+%template(PatchLayers) std::map<std::string, int>;
+}
+
 %include "openfoam/solveroutputanalyzer.h"
 %include "openfoam/caseelements/boundarycondition.h"
 %include "openfoam/caseelements/analysiscaseelements.h"

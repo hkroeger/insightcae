@@ -177,7 +177,9 @@ void SSHLinuxServer::BackgroundJob::kill()
 }
 
 
-RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(const std::string &cmd)
+RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(
+        const std::string &cmd,
+        const std::vector<ExpectedOutput>& eobd )
 {
   boost::process::ipstream is;
 
@@ -191,31 +193,24 @@ RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(const std
         , boost::process::std_in < boost::process::null
         );
 
-  if (!process->running())
-  {
-   throw insight::Exception("could not start background process");
-  }
+  insight::assertion(
+              process->running(),
+              "could not start background process");
 
-  boost::regex re("PID===([0-9]+)===PID");
-  int remotePid = -1;
-  int linesRead = 0;
-  while (remotePid<0 && linesRead<100 && process->running())
-  {
-    std::string line;
-    if (getline(is, line))
-    {
-      linesRead++;
-      boost::smatch res;
-      if (boost::regex_match(line, res, re))
-      {
-        remotePid=boost::lexical_cast<int>(res[1]);
-        std::cout<<"remote process PID = "<<remotePid<<std::endl;
-        break;
-      }
-    }
-  }
+  std::vector<std::string> pidMatch;
+
+  std::vector<ExpectedOutput> pats(eobd.begin(), eobd.end());
+  pats.push_back( { boost::regex("PID===([0-9]+)===PID"), &pidMatch } );
+  lookForPattern(is, pats);
+
+  std::cout<<pidMatch[1]<<std::endl;
+  int remotePid=boost::lexical_cast<int>(pidMatch[1]);
+
+  insight::dbg()<<"remote process PID = "<<remotePid<<std::endl;
+
   process->detach();
-  return std::make_shared<BackgroundJob>(*this, remotePid);
+
+  return std::make_shared<BackgroundJob>(*this, remotePid );
 }
 
 

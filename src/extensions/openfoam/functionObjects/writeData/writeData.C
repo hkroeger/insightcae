@@ -26,22 +26,24 @@ License
 #include "writeData.H"
 #include "dictionary.H"
 #include "error.H"
-#if defined(OF_FORK_extend) && OF_VERSION>010601 //(defined(Fx40)||defined(Fx41)||defined(Fx32))
-#include "foamTime.H"
-#else
-#include "Time.H"
-#endif
+
 #include "OSspecific.H"
 #include "PstreamReduceOps.H"
 
+#include "addToRunTimeSelectionTable.H"
+
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-#if OF_VERSION<040000 //not (defined(OFdev)||defined(OFplus)||defined(OFesi1806))
 namespace Foam
 {
 defineTypeNameAndDebug(writeData, 0);
+addToRunTimeSelectionTable
+(
+    functionObject,
+    writeData,
+    dictionary
+);
 }
-#endif
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -72,42 +74,23 @@ void Foam::writeData::removeFile() const
 Foam::writeData::writeData
 (
     const word& name,
-    const objectRegistry& obr,
-    const dictionary& dict,
-    const bool loadFromFiles
+    const Time& obr,
+    const dictionary& dict
 )
 :
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-    functionObject(name),
-#endif
+  UniFunctionObject(name, dict),
     name_(name),
     obr_(obr),
     writeFile_("$FOAM_CASE/" + name),
     abortFile_("$FOAM_CASE/" + name+"Abort")
-{
-    writeFile_.expand();
-    abortFile_.expand();
-    read(dict);
-
-    // remove any old files from previous runs
-    removeFile();
-}
-
-
-// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
-
-Foam::writeData::~writeData()
 {}
+
+
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-bool
-#else
-void 
-#endif
-Foam::writeData::read(const dictionary& dict)
+bool Foam::writeData::read(const dictionary& dict)
 {
     if (dict.readIfPresent("fileName", writeFile_))
     {
@@ -118,18 +101,12 @@ Foam::writeData::read(const dictionary& dict)
     {
         abortFile_.expand();
     }
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+
     return true;
-#endif
 }
 
 
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-bool
-#else
-void 
-#endif
-Foam::writeData::execute()
+bool Foam::writeData::perform()
 {
     bool write = isFile(writeFile_);
     reduce(write, orOp<bool>());
@@ -168,55 +145,16 @@ Foam::writeData::execute()
       const_cast<Time&>(obr_.time()).stopAt(Time::saWriteNow);
 #endif
     }
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
+
     return true;
-#endif    
-}
-
-void Foam::writeData::updateMesh(const mapPolyMesh& mpm)
-{
-}
-
-#if OF_VERSION<=020100 //defined(OF16ext) || defined(OF21x)
-void Foam::writeData::movePoints(const pointField& pf)
-#else
-void Foam::writeData::movePoints(const polyMesh& mesh)
-#endif
-{
 }
 
 
 
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-bool
-#else
-void 
-#endif
-Foam::writeData::end()
+
+bool Foam::writeData::write()
 {
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-    return false;
-#endif    //removeFile();
-}
-
-
-void Foam::writeData::timeSet()
-{
-    // Do nothing - only valid on execute
-}
-
-
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-bool
-#else
-void 
-#endif
-Foam::writeData::write()
-{
-    // Do nothing - only valid on execute
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-    return false;
-#endif
+   return true;
 }
 
 

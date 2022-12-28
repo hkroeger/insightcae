@@ -29,11 +29,13 @@
 
 #include "base/linearalgebra.h"
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
 
 class vtkPolyData;
-
+class vtkUnstructuredGrid;
+class vtkMultiBlockDataSet;
 
 namespace insight {
   
@@ -154,6 +156,10 @@ public:
  */
 bool checkNormalsOrientation(vtkPolyData* vpm, const arma::mat& pFar, bool modifyNormalsFields=false);
 
+
+vtkSmartPointer<vtkUnstructuredGrid>
+multiBlockDataSetToUnstructuredGrid(
+        vtkDataObject* mbds );
 
 
 }

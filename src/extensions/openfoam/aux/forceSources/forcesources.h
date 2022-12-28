@@ -27,6 +27,7 @@ public:
     forceSource(const word& lbl, bool autoRegister=true);
 
     virtual vector force() const =0;
+    virtual scalar torque() const;
 };
 
 

@@ -3,6 +3,7 @@
 #include "uniof.h"
 #include "multipliedforcesource.h"
 #include "subtractedforcesource.h"
+#include "relaxedforcesource.h"
 #include "constantforcesource.h"
 
 #include "OStringStream.H"
@@ -38,6 +39,18 @@ void forceSourceCombination::interpretDefinition()
             auto ns = std::make_shared<multipliedForceSource>(
                         "",
                         readScalar(is),
+                        lastSource,
+                        false
+                        );
+            intermediateSources_.push_back(ns);
+            lastSource = ns.get();
+        }
+        else if (operand.wordToken()=="relaxed")
+        {
+            ASSERTION(time_!=nullptr, "time object is unset!");
+            auto ns = std::make_shared<relaxedForceSource>(
+                        "", *time_,
+                        readScalar(is), vector(is),
                         lastSource,
                         false
                         );
@@ -84,14 +97,16 @@ forceSource* forceSourceCombination::parseSource(Istream &is)
 
 
 forceSourceCombination::forceSourceCombination()
-: value_(nullptr)
+: value_(nullptr),
+  time_(nullptr)
 {}
 
 
 
 
-forceSourceCombination::forceSourceCombination(ITstream& is)
-    : value_(nullptr)
+forceSourceCombination::forceSourceCombination(const Time& time, ITstream& is)
+    : value_(nullptr),
+      time_(&time)
 {
     OStringStream buf;
     unsigned i = 0;
@@ -108,8 +123,14 @@ forceSourceCombination::forceSourceCombination(ITstream& is)
 
 
 forceSourceCombination::forceSourceCombination(forceSource *value)
-    : value_(value)
+    : value_(value),
+      time_(nullptr)
 {}
+
+const forceSource *forceSourceCombination::get() const
+{
+    return value_;
+}
 
 
 vector forceSourceCombination::force() const
@@ -120,6 +141,16 @@ vector forceSourceCombination::force() const
     }
     ASSERTION(value_!=nullptr, "attempt to use uninitialized force source combination!");
     return value_->force();
+}
+
+scalar forceSourceCombination::torque() const
+{
+    if ((value_==nullptr) && !definition_.empty())
+    {
+        const_cast<forceSourceCombination*>(this)->interpretDefinition();
+    }
+    ASSERTION(value_!=nullptr, "attempt to use uninitialized force source combination!");
+    return value_->torque();
 }
 
 

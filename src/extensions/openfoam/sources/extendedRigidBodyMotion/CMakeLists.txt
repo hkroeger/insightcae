@@ -3,6 +3,9 @@ set(PRJ extendedRigidBodyMotion)
 
 set(SRC 
  extendedRigidBodyMotion.C
+ additionalforceandmoment.cpp
+ directforce.cpp
+ patchmomentumforce.cpp
 )
 
 set(OF_INCLUDE_DIRS

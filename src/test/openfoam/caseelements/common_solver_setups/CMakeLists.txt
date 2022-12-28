@@ -30,6 +30,8 @@ test_solver(numerics_reactingParcelFoam)
 test_solver(numerics_magneticFoam)
 test_solver(numerics_scalarTransportFoam)
 
+test_solver(numerics_restartwrite)
+
 ##
 ## Basic
 ##

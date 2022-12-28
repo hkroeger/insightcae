@@ -139,7 +139,9 @@ CAExportFile::CAExportFile(const boost::filesystem::path& commFile, std::string 
     t_max_(t_max),
     mem_max_(mem_max),
     version_(version),
-    commFile_(commFile)
+    commFile_(commFile),
+    np_omp_(1),
+    np_mpi_(1)
 {
   setMessFile(commFile.parent_path()/(commFile.filename().stem().string()+".mess.txt"));
   setRMedFile(commFile.parent_path()/(commFile.filename().stem().string()+".rmed"));

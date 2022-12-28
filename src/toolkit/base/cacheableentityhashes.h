@@ -8,6 +8,7 @@
 #include <boost/functional/hash.hpp>
 
 #undef AllValues
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
 

@@ -119,7 +119,17 @@ public:
   };
   typedef std::shared_ptr<BackgroundJob> BackgroundJobPtr;
 
-  virtual BackgroundJobPtr launchBackgroundProcess(const std::string& cmd) =0;
+  typedef std::pair<boost::regex, std::vector<std::string>*> ExpectedOutput;
+
+  static void lookForPattern(
+          std::istream& is,
+          const std::vector<ExpectedOutput>& expectedOutputBeforeDetach
+          );
+
+  virtual BackgroundJobPtr launchBackgroundProcess(
+          const std::string& cmd,
+          const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {}
+          ) =0;
 
 
 

@@ -63,8 +63,11 @@ public:
 
     arma::mat clippedTable() const
     {
+        CurrentExceptionContext ex(
+                    str(format("clipping table %g < t <%g") % A() % clippedB())
+                    );
         insight::assertion( !toBeIgnored(), "no data!" );
-        return arma::mat( table_.rows( table_.col(0)>A() && table_.col(0)<clippedB() ) );
+        return arma::mat( table_.rows( find(table_.col(0)>A() && table_.col(0)<clippedB()) ) );
     }
 };
 
@@ -140,6 +143,7 @@ readSingleTabularFile(
         {
             m.row(i)=arma::mat(rg.second[i].data(), 1, rg.second[i].size());
         }
+//        insight::dbg()<<rg.first<<":\n"<<m<<std::endl;
         result[rg.first]=m;
     }
     return result;
@@ -381,6 +385,11 @@ outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, const Pa
 {
 }
 
+std::vector<string> outputFilterFunctionObject::requiredLibraries() const
+{
+    return {};
+}
+
 
 
 
@@ -402,6 +411,12 @@ void outputFilterFunctionObject::addIntoControlDict(OFDictData::dict& controlDic
   fod["timeStart"]=p_.timeStart;
 
   controlDict.subDict("functions")[p_.name]=fod;
+
+  auto libs=requiredLibraries();
+  for (const auto& l: libs)
+  {
+      controlDict.getList("libs").insertNoDuplicate(l);
+  }
 }
 
 
@@ -1157,20 +1172,17 @@ defineType(forces);
 addToOpenFOAMCaseElementFactoryTable(forces);
 
 forces::forces(OpenFOAMCase& c,  const ParameterSet& ps)
-: OpenFOAMCaseElement(c, Parameters(ps).name+"forces", ps),
+: outputFilterFunctionObject(c, ps),
   p_(ps)
 {
 }
 
-void forces::addIntoDictionaries(OFdicts& dictionaries) const
+OFDictData::dict forces::functionObjectDict() const
 {
   OFDictData::dict fod;
   fod["type"]="forces";
-  OFDictData::list libl; libl.push_back("\"libforces.so\"");
-  fod["functionObjectLibs"]=libl;
+
   fod["log"]=true;
-  fod["outputControl"]=p_.outputControl;
-  fod["outputInterval"]=p_.outputInterval;
   
   OFDictData::list pl;
   for (const std::string& lo: p_.patches)
@@ -1194,8 +1206,12 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
   
   fod["CofR"]=OFDictData::vector3(p_.CofR);
   
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.subDict("functions")[p_.name]=fod;
+  return fod;
+}
+
+std::vector<string> forces::requiredLibraries() const
+{
+    return { "\"libforces.so\"" };
 }
 
 
@@ -1389,18 +1405,14 @@ addToOpenFOAMCaseElementFactoryTable(extendedForces);
 extendedForces::extendedForces(OpenFOAMCase& c, const ParameterSet& ps)
 : forces(c, ps),
   p_(ps)
-{
-}
+{}
 
-void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
+OFDictData::dict extendedForces::functionObjectDict() const
 {
   OFDictData::dict fod;
   fod["type"]="extendedForces";
-  OFDictData::list libl; libl.push_back("\"libextendedForcesFunctionObject.so\"");
-  fod["functionObjectLibs"]=libl;
+
   fod["log"]=true;
-  fod["outputControl"]=p_.outputControl;
-  fod["outputInterval"]=p_.outputInterval;
   
   OFDictData::list pl;
   for (const std::string& lo: p_.patches)
@@ -1420,9 +1432,12 @@ void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
       fod["maskField"]=p_.maskField;
   
   fod["CofR"]=OFDictData::vector3(p_.CofR);
-  
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.subDict("functions")[p_.name]=fod;
+  return fod;
+}
+
+std::vector<string> extendedForces::requiredLibraries() const
+{
+    return { "\"libextendedForcesFunctionObject.so\"" };
 }
 
   

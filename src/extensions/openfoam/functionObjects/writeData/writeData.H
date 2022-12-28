@@ -47,10 +47,14 @@ SourceFiles
 //~ 
 #include "NamedEnum.H"
 #include "pointField.H"
-
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 #include "functionObject.H"
+#if defined(OF_FORK_extend) && OF_VERSION>010601 //(defined(Fx40)||defined(Fx41)||defined(Fx32))
+#include "foamTime.H"
+#else
+#include "Time.H"
 #endif
+
+#include "uniof.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -68,9 +72,7 @@ class mapPolyMesh;
 \*---------------------------------------------------------------------------*/
 
 class writeData
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-: public functionObject
-#endif
+: public UniFunctionObject
 {
 private:
 
@@ -108,14 +110,9 @@ public:
         writeData
         (
             const word& name,
-            const objectRegistry&,
-            const dictionary&,
-            const bool loadFromFilesUnused = false
+            const Time&,
+            const dictionary&
         );
-
-
-    //- Destructor
-    virtual ~writeData();
 
 
     // Member Functions
@@ -127,54 +124,13 @@ public:
         }
 
         //- Read the dictionary settings
-        virtual 
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-	bool
-#else
-        void 
-#endif
-        read(const dictionary&);
+        bool read(const dictionary&) override;
+
+        //- Execute, check existence of abort file and take action 
+        bool perform() override;
 
         //- Execute, check existence of abort file and take action
-        virtual 
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-	bool
-#else
-        void 
-#endif
-        execute();
-
-        //- Execute at the final time-loop, used for cleanup
-        virtual 
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-	bool
-#else
-        void 
-#endif
-        end();
-
-        //- Called when time was set at the end of the Time::operator++
-        virtual void timeSet();
-
-        //- Execute, check existence of abort file and take action
-        virtual 
-#if OF_VERSION>=040000 //defined(OFdev)||defined(OFplus)||defined(OFesi1806)
-	bool
-#else
-        void 
-#endif
-        write();
-
-          //- Update for changes of mesh
-        virtual void updateMesh(const mapPolyMesh& mpm);
-
-        //- Update for changes of mesh
-#if OF_VERSION<=020100 //defined(OF16ext) || defined(OF21x)
-        virtual void movePoints(const pointField& pf);
-#else
-        virtual void movePoints(const polyMesh& mesh);
-#endif
-
+        bool write() override;
 };
 
 

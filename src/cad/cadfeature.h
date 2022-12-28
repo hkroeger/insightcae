@@ -246,8 +246,6 @@ protected:
   ScalarPtr visresolution_;
   ScalarPtr density_;
   ScalarPtr areaWeight_;
-
-  size_t hash_;
   
   /**
    * symbol name of this feature in the defining model

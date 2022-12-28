@@ -108,6 +108,7 @@ public:
     );
 
 
+    static boost::filesystem::path defaultConfigFileName();
     static boost::filesystem::path defaultConfigFile(const boost::filesystem::path& location);
     void writeConfig(const boost::filesystem::path& localREConfigFile = "") const;
 

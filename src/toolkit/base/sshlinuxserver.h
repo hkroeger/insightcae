@@ -63,7 +63,9 @@ public:
     void kill() override;
   };
 
-  BackgroundJobPtr launchBackgroundProcess(const std::string& cmd) override;
+  BackgroundJobPtr launchBackgroundProcess(
+          const std::string& cmd,
+          const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {} ) override;
 
   void putFile
   (

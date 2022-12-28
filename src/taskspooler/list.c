@@ -206,18 +206,4 @@ char * joblist_line(const struct Job *p)
     return line;
 }
 
-char * joblistdump_torun(const struct Job *p)
-{
-    int maxlen;
-    char * line;
 
-    maxlen = 10 + strlen(p->command) + 20; /* 20 is the margin for errors */
-
-    line = (char *) malloc(maxlen);
-    if (line == NULL)
-        error("Malloc for %i failed.\n", maxlen);
-
-    snprintf(line, maxlen, "ts %s\n", p->command);
-
-    return line;
-}

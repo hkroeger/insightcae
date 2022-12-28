@@ -441,6 +441,7 @@ int main(int argc, char **argv)
             printf("%i\n", command_line.jobid);
             fflush(stdout);
         }
+
         if (command_line.should_go_background)
         {
             go_background();
@@ -539,3 +540,5 @@ int main(int argc, char **argv)
 
     return errorlevel;
 }
+
+

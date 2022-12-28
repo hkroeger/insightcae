@@ -53,6 +53,7 @@ set(toolkit_SOURCES
     base/externalprocess.cpp base/externalprocess.h
     base/filewatcher.cpp base/filewatcher.h
     base/tools.cpp base/tools.h
+    base/shelltools.h base/shelltools.cpp
     base/latextools.cpp base/latextools.h
     base/linearalgebra.cpp base/linearalgebra.h
     base/resultelement.cpp base/resultelement.h

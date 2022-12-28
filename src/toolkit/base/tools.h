@@ -377,9 +377,6 @@ void writeSTL
 );
 
 
-std::string collectIntoSingleCommand( const std::string& cmd, const std::vector<std::string>& args = std::vector<std::string>() );
-std::string escapeShellSymbols(const std::string& expr);
-
 
 int findFreePort();
 int findRemoteFreePort(const std::string& SSHHostName);

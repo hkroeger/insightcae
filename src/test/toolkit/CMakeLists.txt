@@ -18,6 +18,10 @@ add_toolkit_test(test_warningbox)
 add_toolkit_test(test_integrate_trpz)
 add_toolkit_test(test_zipfile)
 add_toolkit_test(test_overlappingintervals)
+
 add_toolkit_test(test_SpatialTransformation)
+target_link_libraries(test_SpatialTransformation insightcad)
+
+add_toolkit_test(test_codeaster_coordinatesystems)
 
 add_subdirectory(analysis_parameterstudy)

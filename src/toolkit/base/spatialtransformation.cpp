@@ -34,6 +34,14 @@ SpatialTransformation::SpatialTransformation(const arma::mat& translate, const a
     setScale(scale);
 }
 
+SpatialTransformation::SpatialTransformation(const arma::mat &ex, const arma::mat &ey, const arma::mat &ez)
+{
+    setIdentity();
+    R_.col(0)=ex;
+    R_.col(1)=ey;
+    R_.col(2)=ez;
+}
+
 SpatialTransformation::SpatialTransformation(vtkTransform *t)
 {
     double sfs[3], ra[3], tp[3];

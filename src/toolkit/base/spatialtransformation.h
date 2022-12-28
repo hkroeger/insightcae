@@ -76,6 +76,8 @@ public:
      */
     SpatialTransformation(const arma::mat& translate, const arma::mat& rollPitchYaw=vec3(0,0,0), double scale=1.);
 
+    SpatialTransformation(const arma::mat& ex, const arma::mat& ey, const arma::mat& ez);
+
     SpatialTransformation(vtkTransform* trsf);
 
     void setIdentity();

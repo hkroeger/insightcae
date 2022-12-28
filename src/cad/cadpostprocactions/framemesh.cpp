@@ -16,6 +16,10 @@
 #include "polytriangulationnodeiterator.h"
 #include "polytriangulationelementiterator.h"
 
+#include "code_aster/coordinatesystems.h"
+
+#include "occtools.h"
+
 //#if defined(HAVE_MED)
 //#undef HAVE_MED
 //#endif
@@ -107,10 +111,11 @@ void writeMED(
             int n=0;
             for (auto pi=m.nodeIt; pi!=insight::OCC::PolyTriangulationNodeIterator(); ++pi)
             {
-                std::cout<<"x/y/z="<<pi->X()<<"/"<<pi->Y()<<"/"<<pi->Z()<<std::endl;
-                coord.push_back( pi->X() );
-                coord.push_back( pi->Y() );
-                coord.push_back( pi->Z() );
+                gp_Pnt p=*pi;
+                std::cout<<"x/y/z="<<p.X()<<"/"<<p.Y()<<"/"<<p.Z()<<std::endl;
+                coord.push_back( p.X() );
+                coord.push_back( p.Y() );
+                coord.push_back( p.Z() );
                 ++n;
             }
             nofs.push_back(n+nofs.back());
@@ -522,12 +527,14 @@ void FrameMesh::build()
                             )
                         );
 
-            gp_Trsf trsf;
-            trsf.SetTransformation(
-                        gp_Ax3(p, tan),
-                        gp_Ax3(gp::Origin(), gp::DZ())
-                        );
-            xsec=cad::Transform::create_trsf( xsec, trsf.Inverted() );
+//            gp_Trsf trsf;
+//            trsf.SetTransformation(
+//                        gp_Ax3(p, tan),
+//                        gp_Ax3(gp::Origin(), gp::DZ())
+//                        );
+            BeamLocalCS blcs(vec3(p), vec3(tan));
+            xsec=cad::Transform::create_trsf( xsec, /*trsf.Inverted()*/
+                                              cad::OFtransformToOCC(blcs.MACRCARAPOUTRE().inverted()) );
 
 
             Poly_ListOfTriangulation triangulations;
@@ -559,7 +566,7 @@ void FrameMesh::build()
             xsecmeshes.push_back(
                         {
                             str(boost::format("xsec_%d")%k),
-                            OCC::PolyTriangulationNodeIterator(entireMesh),
+                            OCC::PolyTriangulationNodeIterator(entireMesh, gp_XYZ(1,1,0)),
                             OCC::PolyTriangulationElementIterator(entireMesh)
                         });
 

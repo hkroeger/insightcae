@@ -246,10 +246,13 @@ set(toolkit_SOURCES
     openfoam/caseelements/thermophysicalcaseelements.cpp openfoam/caseelements/thermophysicalcaseelements.h
     openfoam/caseelements/electromagneticscaseelements.cpp openfoam/caseelements/electromagneticscaseelements.h
     openfoam/caseelements/options/enforcefarfieldvelocity.h openfoam/caseelements/options/enforcefarfieldvelocity.cpp
+
+
     code_aster/caexportfile.cpp code_aster/caexportfile.h
     code_aster/codeasterrun.cpp code_aster/codeasterrun.h
     code_aster/codeastermeshfile.h code_aster/codeastermeshfile.cpp
     code_aster/casolveroutputanalyzer.cpp code_aster/casolveroutputanalyzer.h
+    code_aster/coordinatesystems.h code_aster/coordinatesystems.cpp
 )
 
 if (INSIGHT_GNUPLOT_CHARTRENDERER)

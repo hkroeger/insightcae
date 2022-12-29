@@ -64,8 +64,8 @@ COPY async_pipe.hpp.patch /
 RUN winetricks -q dotnet45
 
 COPY mxe-master.tar.gz /
-RUN tar xzf mxe-master.tar.gz; rm mxe-master.tar.gz
-RUN chown ${USER}:${USER} -R /mxe
+RUN sudo tar xzf mxe-master.tar.gz; sudo rm mxe-master.tar.gz
+RUN sudo chown ${USER}:${USER} -R /mxe
 COPY build_mxe.sh  /
 RUN /build_mxe.sh
 RUN patch /mxe/usr/i686-w64-mingw32.shared/include/boost/process/detail/windows/async_pipe.hpp < /async_pipe.hpp.patch

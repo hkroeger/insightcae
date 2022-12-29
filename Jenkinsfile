@@ -53,9 +53,9 @@ pipeline {
    steps {
     sh './run.sh build'
     sh './run.sh TGZ'
-      archiveArtifacts artifacts: "${builddir}/*.tar.gz", fingerprint: true
+      archiveArtifacts artifacts: "insight-build/*.tar.gz", fingerprint: true
     sh './run.sh package'
-      archiveArtifacts artifacts: "${builddir}/*.deb, ${builddir}/*.rpm", fingerprint: true
+      archiveArtifacts artifacts: "insight-build/*.deb, insight-build/*.rpm", fingerprint: true
     }
   }
   
@@ -94,7 +94,7 @@ pipeline {
    steps {
     sh './mxe.sh build'
     sh './mxe.sh package'
-      archiveArtifacts artifacts: "${workdir}/insight-windows-build/InsightCAEInstaller*.exe", fingerprint: true
+      archiveArtifacts artifacts: "/insight-windows-build/InsightCAEInstaller*.exe", fingerprint: true
    }
   }
   

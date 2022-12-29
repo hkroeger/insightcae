@@ -1,0 +1,80 @@
+FROM ubuntu:20.04
+
+
+# change random output to trigger rebuild from here
+RUN echo abx
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get clean; rm -rf /var/lib/apt/lists/*; apt-get clean
+RUN apt-get update
+
+RUN apt-get --ignore-missing install -y build-essential fakeroot devscripts git cmake swig python libpython3-dev
+
+RUN apt-get --ignore-missing install -y \
+    autoconf \
+    automake \
+    autopoint \
+    bash \
+    bison \
+    bzip2 \
+    flex \
+    g++ \
+    g++-multilib \
+    gettext \
+    git \
+    gperf \
+    intltool \
+    libc6-dev-i386 \
+    libgdk-pixbuf2.0-dev \
+    libltdl-dev \
+    libssl-dev \
+    libtool-bin \
+    libxml-parser-perl \
+    lzip \
+    make \
+    openssl \
+    p7zip-full \
+    patch \
+    perl \
+    python \
+    ruby \
+    sed \
+    unzip \
+    wget \
+    xz-utils
+    
+
+RUN apt-get --ignore-missing install -y wine unzip winetricks
+RUN dpkg --add-architecture i386 ; apt-get update ; apt-get install -y wine32
+COPY wix311-binaries.zip /
+RUN mkdir /wix; cd /wix; unzip /wix311-binaries.zip
+    
+# === setup user
+ARG USER=docker
+ARG UID=1000
+ARG GID=1000
+ARG PW=docker
+RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${PW}" | chpasswd
+RUN apt-get install -y sudo
+RUN echo "${USER}      ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN mkdir /home/${USER}/.ssh
+COPY id_rsa_repo /home/${USER}/.ssh/id_rsa
+COPY id_rsa_repo.pub /home/${USER}/.ssh/id_rsa.pub
+COPY ssh_config /home/${USER}/.ssh/config
+RUN chown ${USER}:${USER} -R /home/${USER}/.ssh
+RUN chmod 0600 /home/${USER}/.ssh/config /home/${USER}/.ssh/id_rsa
+
+RUN mkdir /mxe; chown ${USER}:${USER} -R /mxe
+
+USER ${UID}:${GID}
+
+COPY async_pipe.hpp.patch /
+RUN winetricks -q dotnet45
+
+COPY build_mxe.sh  /
+RUN /build_mxe.sh
+RUN patch /mxe/usr/i686-w64-mingw32.shared/include/boost/process/detail/windows/async_pipe.hpp < /async_pipe.hpp.patch
+
+RUN sudo apt update
+RUN sudo apt install -y docker docker.io
+RUN sudo usermod -aG docker ${USER}
+

@@ -363,6 +363,9 @@ int vtkMedReader::RequestInformation(vtkInformation *request,
   return 1;
 }
 
+
+
+
 int vtkMedReader::RequestData(vtkInformation *request,
     vtkInformationVector **inputVector, vtkInformationVector *outputVector)
 {
@@ -395,6 +398,7 @@ int vtkMedReader::RequestData(vtkInformation *request,
       this->Internal->NumberOfPieces = 1;
       }
     }
+
   if (info->Has(vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER()))
     {
     this->Internal->CurrentPieceNumber=info->Get(
@@ -544,20 +548,25 @@ void vtkMedReader::InitializeParallelRead()
   while(meshfit != this->Internal->MedFiles.end())
     {
     vtkMedFile* meshfile = meshfit->second;
+    std::cout<<"init file : "<<meshfile->GetFileName()<<std::endl;
     meshfit++;
     med_idt pFileID = meshfile->GetMedDriver()->GetParallelFileId();
 
     for(int mid=0; mid<meshfile->GetNumberOfMesh(); mid++)
       {
       vtkMedMesh* mesh = meshfile->GetMesh(mid);
+      std::cout<<" init mesh : "<<mesh->GetDescription()<<std::endl;
       for(int gid=0; gid<mesh->GetNumberOfGridStep(); gid++)
         {
         vtkMedGrid* grid = mesh->GetGridStep(gid);
+        std::cout<<"  init grid : np = "<<grid->GetNumberOfPoints()<<std::endl;
         // read point family data and create EntityArrays
 
         for(int eid=0; eid < grid->GetNumberOfEntityArray(); eid++)
          {
           vtkMedEntityArray* array = grid->GetEntityArray(eid);
+          std::cout<<"   init array : "<<eid<<", type="<<array->GetEntity().GeometryType<<std::endl;
+
 
           // Next continue is to avoid to create filters for the
           // points, at the moment we charge the points in all nodes
@@ -602,27 +611,32 @@ void vtkMedReader::InitializeParallelRead()
   while(fieldfileit != this->Internal->MedFiles.end())
     {
     vtkMedFile* fieldfile = fieldfileit->second;
+    std::cout<<"init2 file : "<<fieldfile->GetFileName()<<std::endl;
     fieldfileit++;
     med_idt pFileID = fieldfile->GetMedDriver()->GetParallelFileId();
 
     for(int fid=0; fid<fieldfile->GetNumberOfField(); fid++)
       {
       vtkMedField* field = fieldfile->GetField(fid);
+      std::cout<<" init2 field : "<<field->GetName()<<std::endl;
 
       if (field->GetFieldType() == vtkMedField::CellField)
       {
       for(int sid = 0; sid< field->GetNumberOfFieldStep(); sid++)
         {
         vtkMedFieldStep* step = field->GetFieldStep(sid);
+        std::cout<<"  init2 step : "<<sid<<std::endl;
 
         for(int foeid = 0; foeid < step->GetNumberOfFieldOverEntity(); foeid++)
         // TODO : seul le premier pas de temps est dispo au debut
           {
           vtkMedFieldOverEntity* fieldOverEntity = step->GetFieldOverEntity(foeid);
+          std::cout<<"   init2 field over entity : "<<foeid<<std::endl;
 
           for(int fopid = 0; fopid < fieldOverEntity->GetNumberOfFieldOnProfile(); fopid++)
             {
             vtkMedFieldOnProfile* fop = fieldOverEntity->GetFieldOnProfile(fopid);
+            std::cout<<"    init2 FieldOnProfile : "<<fop->GetProfileName()<<std::endl;
             // Here implement the filters as before:
             // 1- Modify vtkMedFieldOnProfile to contain a filter
             // 2- Create the filters here only if they are on CELLs (use GetFieldType)

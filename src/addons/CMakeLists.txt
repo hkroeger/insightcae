@@ -11,4 +11,3 @@ FOREACH(child ${children})
   ENDIF()
 ENDFOREACH()
 
-SET(git-rev ${git-rev} PARENT_SCOPE)

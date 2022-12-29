@@ -57,15 +57,15 @@ RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${PW}" | chpasswd
 RUN apt-get install -y sudo
 RUN echo "${USER}      ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-RUN mkdir /mxe; chown ${USER}:${USER} -R /mxe
 
 USER ${UID}:${GID}
 
 COPY async_pipe.hpp.patch /
 RUN winetricks -q dotnet45
 
-COPY mxe-master.tar.gz /mxe
-RUN cd /mxe; tar xzf mxe-master.tar.gz; rm mxe-master.tar.gz
+COPY mxe-master.tar.gz /
+RUN tar xzf mxe-master.tar.gz; rm mxe-master.tar.gz
+RUN chown ${USER}:${USER} -R /mxe
 COPY build_mxe.sh  /
 RUN /build_mxe.sh
 RUN patch /mxe/usr/i686-w64-mingw32.shared/include/boost/process/detail/windows/async_pipe.hpp < /async_pipe.hpp.patch

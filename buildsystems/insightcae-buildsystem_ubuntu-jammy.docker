@@ -1,56 +1,22 @@
 FROM ubuntu:22.04
 
-# change random output to trigger rebuild from here
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get clean; rm -rf /var/lib/apt/lists/*; apt-get clean
-RUN apt-get update
+RUN apt-get clean; rm -rf /var/lib/apt/lists/*; apt-get clean; apt-get update; apt-get install -y locales ca-certificates tzdata; ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime; dpkg-reconfigure --frontend noninteractive tzdata
 
-RUN apt-get --ignore-missing install -y software-properties-common apt-utils
-RUN apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg
-#RUN add-apt-repository http://downloads.silentdynamics.de/ubuntu_dev
-#RUN apt-get update
+RUN apt-get clean; rm -rf /var/lib/apt/lists/*; apt-get clean; apt-get update; apt-get install --ignore-missing -y software-properties-common apt-utils
 
-# general build requirements
-RUN apt-get --ignore-missing install -y build-essential fakeroot devscripts git cmake swig python-is-python3 python-dev-is-python3 libpython3-dev
-RUN apt-get --ignore-missing install -y libsm-dev libfreetype6-dev libxmu-dev libxi-dev
-# for paraview build
-RUN apt-get --ignore-missing install -y gfortran
-# for freecad/gmsh build
-RUN apt-get --ignore-missing install -y libshiboken2-dev python3-pyside2.* pyside2-tools libcoin-runtime libcoin-dev libxerces-c3.2 libeigen3-dev libpyside2-dev libssl-dev tzdata
-
-RUN ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime
-RUN dpkg-reconfigure --frontend noninteractive tzdata
-RUN apt-get install -y libproj-dev
-
-#  self-created packages last; the largest first
-# change random output to trigger rebuild from here
-RUN apt-get install -y libscotch-dev libptscotch-dev libmetis-dev
-RUN apt-get install -y libopenmpi-dev
-RUN apt-get install -y tcl8.6-dev tk8.6-dev
-RUN apt-get install -y flex
-RUN apt-get install -y '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxkbcommon-dev libxkbcommon-x11-dev
-RUN apt-get install -y libosmesa6-dev
-RUN apt-get install -y libparmetis-dev
-RUN apt-get install -y libpoppler-cpp-dev
-RUN apt-get install -y patch grace tk libglu1-mesa libxcursor-dev  libopenblas-dev  libsuperlu-dev  python3-numpy
-RUN apt-get install -y xterm libhdf5-dev nedit bison
-RUN apt-get install -y rsync # OF install step
-RUN apt-get install -y libgmp-dev libmpfr-dev
-RUN apt-get clean; rm -rf /var/lib/apt/lists/*; apt-get clean
-RUN apt-get update
-RUN apt-get install -y clang
-
-RUN apt-get install -y locales # python in CA
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
+# general build requirements
+build-essential fakeroot devscripts git cmake swig python-is-python3 python-dev-is-python3 libpython3-dev libsm-dev libfreetype6-dev libxmu-dev libxi-dev gfortran  libshiboken2-dev python3-pyside2.* pyside2-tools libcoin-runtime libcoin-dev libxerces-c3.2 libeigen3-dev libpyside2-dev libssl-dev libproj-dev libscotch-dev libptscotch-dev libmetis-dev libopenmpi-dev tcl8.6-dev tk8.6-dev flex '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxkbcommon-dev libxkbcommon-x11-dev libosmesa6-dev libparmetis-dev libpoppler-cpp-dev patch grace tk libglu1-mesa libxcursor-dev  libopenblas-dev  libsuperlu-dev  python3-numpy xterm libhdf5-dev nedit bison rsync libgmp-dev libmpfr-dev clang libminizip-dev libminizip1 ninja-build
+
+RUN apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg; add-apt-repository http://downloads.silentdynamics.de/ubuntu_dev; apt-get update; apt-get install -y insightcae-dependencies
+
 RUN rm /bin; mkdir /bin; ln -s /usr/bin/* /bin # all in one command
 RUN rm /bin/bash; mv /usr/bin/bash /bin # wrong shebang in as_run otherwise
-RUN apt-get --no-install-recommends install -y ca-certificates
-RUN apt-get install -y libminizip-dev libminizip1 ninja-build
-RUN apt-get install -y insightcae-dependencies
 
 # === setup user
 ARG USER=docker

@@ -56,12 +56,6 @@ ARG PW=docker
 RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${PW}" | chpasswd
 RUN apt-get install -y sudo
 RUN echo "${USER}      ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-RUN mkdir /home/${USER}/.ssh
-COPY id_rsa_repo /home/${USER}/.ssh/id_rsa
-COPY id_rsa_repo.pub /home/${USER}/.ssh/id_rsa.pub
-COPY ssh_config /home/${USER}/.ssh/config
-RUN chown ${USER}:${USER} -R /home/${USER}/.ssh
-RUN chmod 0600 /home/${USER}/.ssh/config /home/${USER}/.ssh/id_rsa
 
 RUN mkdir /mxe; chown ${USER}:${USER} -R /mxe
 

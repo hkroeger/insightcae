@@ -20,7 +20,7 @@ CMAKE_OPTS+=(
 
 # inside linux cmake-binary dir:
 SUPERBUILD_SRC_PATH=/insight-src
-SRC_PATH=/opt/insight-build/insight/src
+SRC_PATH=/insight-src
 BUILD_PATH=/insight-windows-build
 #LINUX_BUILD_PATH=/opt/insight-build/insight/build
 

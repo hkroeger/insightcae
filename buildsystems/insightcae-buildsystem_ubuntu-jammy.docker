@@ -36,6 +36,8 @@ RUN apt-get install -y patch grace tk libglu1-mesa libxcursor-dev  libopenblas-d
 RUN apt-get install -y xterm libhdf5-dev nedit bison
 RUN apt-get install -y rsync # OF install step
 RUN apt-get install -y libgmp-dev libmpfr-dev
+RUN apt-get clean; rm -rf /var/lib/apt/lists/*; apt-get clean
+RUN apt-get update
 RUN apt-get install -y clang
 
 RUN apt-get install -y locales # python in CA

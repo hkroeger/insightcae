@@ -4,7 +4,7 @@ BRANCH=next-release
 TRACK_BRANCH=next-release
 
 DOCKERFILE="insightcae-buildsystem_ubuntu-jammy.docker"
-DO_WINDOWS_BUILD=1
+DO_WINDOWS_BUILD=0
 
 INSTALL_PREFIX=/opt/insightcae
 

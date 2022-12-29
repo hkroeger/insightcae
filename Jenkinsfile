@@ -53,9 +53,9 @@ pipeline {
    steps {
     sh './run.sh build'
     sh './run.sh TGZ'
-      archiveArtifacts artifacts: 'opt/insight-build/*.tar.gz', fingerprint: true
+      archiveArtifacts artifacts: "${builddir}/*.tar.gz", fingerprint: true
     sh './run.sh package'
-      archiveArtifacts artifacts: 'opt/insight-build/*.deb,opt/insight-build/*.rpm', fingerprint: true
+      archiveArtifacts artifacts: "${builddir}/*.deb, ${builddir}/*.rpm", fingerprint: true
     }
   }
   
@@ -94,7 +94,7 @@ pipeline {
    steps {
     sh './mxe.sh build'
     sh './mxe.sh package'
-      archiveArtifacts artifacts: 'insight-windows-build/InsightCAEInstaller*.exe', fingerprint: true
+      archiveArtifacts artifacts: "${workdir}/insight-windows-build/InsightCAEInstaller*.exe", fingerprint: true
    }
   }
   
@@ -117,7 +117,7 @@ pipeline {
   
   failure {
       node(null) {
-       archiveArtifacts artifacts: 'opt/insight-build/insight/stamp/insight-build.log', fingerprint: true
+       archiveArtifacts artifacts: " ${builddir}/insight/stamp/insight-build.log", fingerprint: true
       }
       
       mail to: 'hannes@kroegeronline.net',

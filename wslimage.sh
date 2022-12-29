@@ -10,7 +10,7 @@ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 source $SCRIPTPATH/setup_environment.sh
 
 BUILD_PATH=$SCRIPTPATH/insight-windows-build
-SUPERBUILD_BUILD_PATH=$SCRIPTPATH/opt/insight-build
+SUPERBUILD_BUILD_PATH=$SCRIPTPATH/insight-build
 
 WSLNAME=insightcae-ubuntu-1804
 if [ $BRANCH == "master" ]; then

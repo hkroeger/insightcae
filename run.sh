@@ -9,7 +9,7 @@ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 source $SCRIPTPATH/setup_environment.sh
 
 SRC_PATH=/insight-src
-BUILD_PATH=/opt/insight-build
+BUILD_PATH=$SRC_PATH/insight-build
 ACTION=$1
 
 CMAKE_OPTS+=(

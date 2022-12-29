@@ -11,6 +11,7 @@ node {
   user_id = sh(returnStdout: true, script: 'id -u').trim()
   group_id = sh(returnStdout: true, script: 'id -g').trim()
   workdir = pwd()
+  builddir = "${workdir}/insight-build"
 }
 
 pipeline {
@@ -32,12 +33,12 @@ pipeline {
   stage('Prepare') {
    agent any 
    steps {
-    sh 'mkdir -p opt/insight-build insight-windows-build mxe'
-    sh 'rm -vf opt/insight-build/insightcae*.deb'
-    sh 'rm -vf opt/insight-build/insightcae*.rpm'
-    sh 'rm -vf insight-windows-build/InsightCAEInstaller*'
-    sh 'rm -vf opt/insight-build/insightcae*.tar.gz'
-    sh 'if [ -e opt/insight-build/insight/src ]; then FILES=`find opt/insight-build/insight/src -iname *.i`; if [ -n "\\\$FILES" ]; then touch \\\$FILES; fi; fi'
+    sh "mkdir -p ${builddir} insight-windows-build mxe"
+    sh "rm -vf ${builddir}/insightcae*.deb"
+    sh "rm -vf ${builddir}/insightcae*.rpm"
+    sh "rm -vf insight-windows-build/InsightCAEInstaller*"
+    sh "rm -vf ${builddir}/insightcae*.tar.gz"
+    sh "FILES=`find ${workdir} -iname *.i`; if [ -n \"\\\$FILES\" ]; then touch \\\$FILES; fi"
   } }
 
   stage('Linux-Build') {
@@ -46,7 +47,7 @@ pipeline {
     filename "${linuxDockerfile}"
     dir "buildsystems"
     additionalBuildArgs  "--build-arg USER=${user_name} --build-arg UID=${user_id} --build-arg GID=${group_id}"
-    args "-v ${workdir}:/insight-src -v ${workdir}/opt:/opt"
+    args "-v ${workdir}:/insight-src"
    } }
         
    steps {
@@ -87,7 +88,7 @@ pipeline {
     filename 'insightcae-buildsystem_windows.docker'
     dir "buildsystems"
     additionalBuildArgs  "--build-arg USER=${user_name} --build-arg UID=${user_id} --build-arg GID=${group_id}"
-    args "-v ${workdir}:/insight-src -v ${workdir}/opt:/opt -v ${workdir}/insight-windows-build:/insight-windows-build"
+    args "-v ${workdir}:/insight-src -v ${workdir}/insight-windows-build:/insight-windows-build"
    } }
         
    steps {

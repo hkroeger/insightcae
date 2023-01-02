@@ -81,49 +81,63 @@ int vtkMedDriver::RestrictedOpen()
     return -1;
     }
 
-  if (this->OpenLevel <= 0)
-    {
+  std::string fn(this->MedFile->GetFileName());
+  if (
+          (fn.find(".hdf") != std::string::npos)
+       || (fn.find(".rmed") != std::string::npos)
+       || (fn.find(".med") != std::string::npos)
+     )
+  {
+      if (this->OpenLevel <= 0)
+        {
 
-    med_bool hdfok;
-    med_bool medok;
+        med_bool hdfok;
+        med_bool medok;
 
-    med_err conforme = MEDfileCompatibility(this->MedFile->GetFileName(),
-                                            &hdfok, &medok);
-    if (!hdfok)
-      {
-      vtkErrorMacro("The file " << this->MedFile->GetFileName()
-          << " is not a HDF5 file, aborting.");
+
+        med_err conforme = MEDfileCompatibility(this->MedFile->GetFileName(),
+                                                &hdfok, &medok);
+        if (!hdfok)
+          {
+          vtkErrorMacro("The file " << this->MedFile->GetFileName()
+              << " is not a HDF5 file, aborting.");
+          return -1;
+          }
+
+        if (!medok)
+          {
+          vtkErrorMacro("The file " << this->MedFile->GetFileName()
+              << " has not been written with the"
+              << " same version as the one currently used to read it, this may lead"
+              << " to errors. Please use the medimport tool.");
+          return -1;
+          }
+
+        if(conforme < 0)
+          {
+          vtkErrorMacro("The file " << this->MedFile->GetFileName()
+                        << " is not compatible, please import it to the new version using medimport.");
+          return -1;
+          }
+
+        this->FileId = MEDfileOpen(this->MedFile->GetFileName(), MED_ACC_RDONLY);
+        if (this->FileId < 0)
+          {
+          vtkDebugMacro("Error : unable to open file "
+                        << this->MedFile->GetFileName());
+          res = -2;
+          }
+        this->OpenLevel = 0;
+
+        } // OpenLevel
+      this->OpenLevel++;
+      this->ParallelFileId = -1;
+  }
+  else
+  {
+      vtkDebugMacro("Error : FileName has the wrong extension ");
       return -1;
-      }
-
-    if (!medok)
-      {
-      vtkErrorMacro("The file " << this->MedFile->GetFileName()
-          << " has not been written with the"
-          << " same version as the one currently used to read it, this may lead"
-          << " to errors. Please use the medimport tool.");
-      return -1;
-      }
-
-    if(conforme < 0)
-      {
-      vtkErrorMacro("The file " << this->MedFile->GetFileName()
-                    << " is not compatible, please import it to the new version using medimport.");
-      return -1;
-      }
-
-    this->FileId = MEDfileOpen(this->MedFile->GetFileName(), MED_ACC_RDONLY);
-    if (this->FileId < 0)
-      {
-      vtkDebugMacro("Error : unable to open file "
-                    << this->MedFile->GetFileName());
-      res = -2;
-      }
-    this->OpenLevel = 0;
-
-    } // OpenLevel
-  this->OpenLevel++;
-  this->ParallelFileId = -1;
+  }
   return res;
 }
 

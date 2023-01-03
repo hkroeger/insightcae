@@ -270,7 +270,6 @@ void Transform::build()
         
     }
 
-    providedSubshapes_["basefeat"]=m1_;
 
     setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());
 
@@ -279,6 +278,9 @@ void Transform::build()
                 *m1_, *trsf_, "",
                 { "scaleFactor", "translation", "rotationOrigin", "rotation" }
                 );
+
+    providedSubshapes_["basefeat"]=m1_; // overwrite existing basefeat, if there
+
     cache.insert(shared_from_this());
   }
   else

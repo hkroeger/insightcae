@@ -30,9 +30,21 @@ namespace cad {
 class Bar
 : public Feature
 {
-  
-  VectorPtr p0_;
-  VectorPtr p1_; 
+public:
+  typedef boost::variant<
+    FeaturePtr,
+    std::pair<VectorPtr,VectorPtr>
+  > EndPoints;
+
+  struct EndPointMod
+  {
+      ScalarPtr ext = cad::scalarconst(0.0);
+      ScalarPtr miterAngleVert = cad::scalarconst(0.0);
+      ScalarPtr miterAngleHorz = cad::scalarconst(0.0);
+  };
+
+private:
+  EndPoints endPts_;
   FeaturePtr xsec_;
   VectorPtr vert_;
   ScalarPtr ext0_;
@@ -56,7 +68,7 @@ class Bar
    */
   Bar
   (
-    VectorPtr p0, VectorPtr p1, 
+    EndPoints endPts,
     FeaturePtr xsec, VectorPtr vert,
     ScalarPtr ext0, ScalarPtr ext1,
     ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
@@ -65,7 +77,7 @@ class Bar
 
   Bar
   (
-    VectorPtr p0, VectorPtr p1, 
+    EndPoints endPts,
     FeaturePtr xsec, VectorPtr vert,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
@@ -77,7 +89,7 @@ public:
   Bar();
   
   static FeaturePtr create(
-    VectorPtr p0, VectorPtr p1, 
+    EndPoints endPts,
     FeaturePtr xsec, VectorPtr vert,
     ScalarPtr ext0, ScalarPtr ext1,
     ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
@@ -90,6 +102,14 @@ public:
     FeaturePtr xsec, VectorPtr vert,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
+  );
+
+  static FeaturePtr create_derived
+  (
+    FeaturePtr skel,
+    FeaturePtr xsec, VectorPtr vert,
+    const EndPointMod& ext_miterv_miterh0,
+    const EndPointMod& ext_miterv_miterh1
   );
 
   void operator=(const Bar& o);

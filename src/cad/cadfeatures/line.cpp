@@ -119,17 +119,21 @@ void Line::build()
 
 void Line::insertrule(parser::ISCADParser& ruleset) const
 {
+  static qi::rule<std::string::iterator, FeaturePtr(), parser::ISCADParser::skipper_type, qi::locals<VectorPtr> > lineExpr
+      = '(' > ruleset.r_vectorExpression[qi::_a=qi::_1] > ',' > (
+      ruleset.r_vectorExpression
+          [ qi::_val = phx::bind(&Line::create, qi::_a, qi::_1) ]
+      |
+      ( (qi::lit("dir")|qi::lit("direction")) > ruleset.r_vectorExpression )
+          [ qi::_val = phx::bind(&Line::create_dir, qi::_a, qi::_1) ]
+       ) > ')';
+
   ruleset.modelstepFunctionRules.add
   (
     "Line",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	[ qi::_val = phx::bind(&Line::create, qi::_1, qi::_2) ]
-    ||
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> (qi::lit("dir")|qi::lit("direction")) >> ruleset.r_vectorExpression >> ')' )
-         [ qi::_val = phx::bind(&Line::create_dir, qi::_1, qi::_2) ]
-    ))
+    typename parser::ISCADParser::ModelstepRulePtr(
+                  new typename parser::ISCADParser::ModelstepRule(
+                      lineExpr ) )
   );
 }
 

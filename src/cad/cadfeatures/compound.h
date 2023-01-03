@@ -31,7 +31,8 @@ namespace cad
     
     
 typedef std::vector<FeaturePtr> CompoundFeatureList;
-typedef std::map<std::string, FeaturePtr> CompoundFeatureMap;
+typedef std::map<std::string, FeaturePtr>  CompoundFeatureMap;
+typedef std::vector<boost::fusion::vector<std::string, FeaturePtr> > CompoundFeatureMapData;
 
 
 
@@ -54,6 +55,7 @@ public:
     
     static FeaturePtr create( const CompoundFeatureList& m1 );
     static FeaturePtr create_map( const CompoundFeatureMap& m1 );
+    static FeaturePtr create_named( const CompoundFeatureMapData& m1 );
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

@@ -91,8 +91,21 @@ FeaturePtr Compound::create_map( const CompoundFeatureMap& m1 )
     return FeaturePtr(new Compound(m1));
 }
 
+
+
     
-    
+FeaturePtr Compound::create_named( const CompoundFeatureMapData& m1 )
+{
+    CompoundFeatureMap items;
+    for (const auto& i: m1)
+    {
+        items.emplace( boost::fusion::get<0>(i), boost::fusion::get<1>(i) );
+    }
+    return FeaturePtr(new Compound(items));
+}
+
+
+
     
 void Compound::build()
 {
@@ -144,10 +157,14 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
     (
         "Compound",
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
-
-                    ( '(' >> ( ruleset.r_solidmodel_expression % ',' ) >> ')' )
-                    [ qi::_val = phx::bind(&Compound::create, qi::_1) ]
-
+                    '(' >
+                      (
+                          ( ruleset.r_solidmodel_expression % ',' ) [ qi::_val = phx::bind(&Compound::create, qi::_1) ]
+                        |
+                          ('{' > ( (ruleset.r_identifier > ':' > ruleset.r_solidmodel_expression) % ',' )
+                           [ qi::_val = phx::bind(&Compound::create_named, qi::_1) ] > '}')
+                      )
+                      > ')'
                 ))
     );
 }

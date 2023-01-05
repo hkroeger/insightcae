@@ -71,7 +71,36 @@ private:
     typedef std::unordered_map<QPersistentModelIndex, DisplayedEntity, QPersistentModelIndexHash > DisplayedData;
     DisplayedData displayedData_;
 
+
+
+    class HighlightItem
+    {
+        IQCADModel3DViewer* viewer_;
+
+        CADEntity entity_;
+        std::shared_ptr<DisplayedEntity> de_;
+        QPersistentModelIndex idx2highlight_;
+
+    public:
+        HighlightItem(
+                std::shared_ptr<DisplayedEntity> de,
+                QPersistentModelIndex idx2highlight,
+                IQCADModel3DViewer* viewer);
+        ~HighlightItem();
+
+        const CADEntity& entity() const;
+        QModelIndex index() const;
+
+    };
+    friend class HighlightItem;
+
+    mutable std::shared_ptr< HighlightItem > highlightedItem_;
+
+
+
     void remove(const QPersistentModelIndex& pidx);
+
+    vtkSmartPointer<vtkProp> createActor(CADEntity entity) const;
 
     void addVertex(
             const QPersistentModelIndex& pidx,
@@ -97,6 +126,7 @@ private:
     void resetFeatureDisplayProps(const QPersistentModelIndex& pidx);
     void resetDatasetColor(const QPersistentModelIndex& pidx);
 
+    void doHighlightItem( CADEntity item );
 
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
@@ -108,6 +138,10 @@ private Q_SLOT:
 
     void addChild(const QModelIndex& idx);
     void addSiblings(const QModelIndex& idx);
+
+public Q_SLOT:
+    void highlightItem( insight::cad::FeaturePtr feat );
+    void undoHighlightItem();
 
 Q_SIGNALS:
     void contextMenuRequested(const QModelIndex& index, const QPoint &globalPos);

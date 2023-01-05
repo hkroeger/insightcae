@@ -60,13 +60,136 @@ void IQCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
 }
 
 
+vtkSmartPointer<vtkProp> IQCADModel3DViewer::createActor(CADEntity entity) const
+{
+    if (const auto * vertex =
+            boost::get<insight::cad::VectorPtr>(&entity))
+    {
+        auto actor = vtkSmartPointer<vtkActor>::New();
+        actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+
+        vtkNew<vtkPointSource> point;
+        auto p = (*vertex)->value();
+        point->SetCenter(p[0], p[1], p[2]);
+        point->SetNumberOfPoints(1);
+        point->SetRadius(0);
+        actor->GetMapper()->SetInputConnection(point->GetOutputPort());
+        auto prop=actor->GetProperty();
+        prop->SetRepresentationToPoints();
+        prop->SetPointSize(8);
+        prop->SetColor(0, 0, 0);
+
+        return actor;
+    }
+    else if (const auto * datumPtr =
+             boost::get<insight::cad::DatumPtr>(&entity))
+    {
+        auto datum = *datumPtr;
+
+        vtkNew<vtkNamedColors> colors;
+
+        auto actor = vtkSmartPointer<vtkActor>::New();
+        actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+        actor->GetProperty()->SetColor(colors->GetColor3d("lightBlue").GetData());
+
+        if ( datum->providesPlanarReference())
+        {
+            vtkNew<vtkPlaneSource> plane;
+            auto pl = datum->plane();
+            plane->SetCenter(pl.Location().X(), pl.Location().Y(), pl.Location().Z());
+            plane->SetNormal(pl.Direction().X(), pl.Direction().Y(), pl.Direction().Z());
+            actor->GetMapper()->SetInputConnection(plane->GetOutputPort());
+            actor->GetProperty()->SetOpacity(0.33);
+        }
+        else if (datum->providesAxisReference())
+        {
+            auto ax = datum->axis();
+            gp_Pnt p1=ax.Location();
+
+            auto arr = insight::createArrows(
+                {{
+                     insight::Vector(ax.Location()),
+                     insight::Vector(ax.Location().XYZ() + ax.Direction().XYZ())
+                 }}, false);
+            actor->GetMapper()->SetInputDataObject(arr);
+        }
+        else if (datum->providesPointReference())
+        {
+            vtkNew<vtkPointSource> point;
+            auto p1 = datum->point();
+            point->SetCenter(p1.X(), p1.Y(), p1.Z());
+            point->SetNumberOfPoints(1);
+            point->SetRadius(0);
+            actor->GetMapper()->SetInputConnection(point->GetOutputPort());
+            auto prop=actor->GetProperty();
+            prop->SetRepresentationToPoints();
+            prop->SetPointSize(8);
+            prop->SetColor(1., 0, 0);
+        }
+
+        return actor;
+    }
+    else if (const auto *featurePtr =
+             boost::get<insight::cad::FeaturePtr>(&entity))
+    {
+        auto feat = *featurePtr;
+        vtkNew<ivtkOCCShape> shape;
+        shape->SetShape( feat->shape() );
+
+        auto actor = vtkSmartPointer<vtkActor>::New();
+        actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+        actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
+
+        return actor;
+    }
+    else if (const auto *dsPtr =
+             boost::get<vtkSmartPointer<vtkDataObject> >(&entity))
+    {
+        auto ds = *dsPtr;
+
+        vtkProp *actor;
+
+        if (auto ids = vtkImageData::SafeDownCast(ds) )
+        {
+            auto actor = vtkSmartPointer<vtkImageActor>::New();
+            auto mapper = actor->GetMapper();
+            mapper->SetInputData(ids);
+            ren_->AddActor(actor);
+            actor = actor;
+        }
+        else if (auto pds = vtkDataSet::SafeDownCast(ds) )
+        {
+            auto actor = vtkSmartPointer<vtkActor>::New();
+            actor->SetMapper( vtkSmartPointer<vtkDataSetMapper>::New() );
+            auto mapper=actor->GetMapper();
+
+            mapper->SetInputDataObject(pds);
+            ren_->AddActor(actor);
+            actor = actor;
+        }
+        else
+        {
+            auto actor = vtkSmartPointer<vtkActor>::New();
+            actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+            actor->GetMapper()->SetInputDataObject(ds);
+            ren_->AddActor(actor);
+            actor = actor;
+        }
+
+        return actor;
+    }
+
+    return nullptr;
+}
+
+
 
 void IQCADModel3DViewer::addVertex(
         const QPersistentModelIndex& pidx,
         const QString& lbl,
          insight::cad::VectorPtr loc )
 {
-    auto actor = vtkSmartPointer<vtkActor>::New();
+    /*auto actor = vtkSmartPointer<vtkActor>::New();
     actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
 
     vtkNew<vtkPointSource> point;
@@ -78,7 +201,9 @@ void IQCADModel3DViewer::addVertex(
     auto prop=actor->GetProperty();
     prop->SetRepresentationToPoints();
     prop->SetPointSize(8);
-    prop->SetColor(0, 0, 0);
+    prop->SetColor(0, 0, 0);*/
+
+    auto actor = createActor(loc);
 
     ren_->AddActor(actor);
 
@@ -92,46 +217,47 @@ void IQCADModel3DViewer::addDatum(
         const QString& lbl,
         insight::cad::DatumPtr datum )
 {
-    vtkNew<vtkNamedColors> colors;
+//    vtkNew<vtkNamedColors> colors;
 
-    auto actor = vtkSmartPointer<vtkActor>::New();
-    actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
-    actor->GetProperty()->SetColor(colors->GetColor3d("lightBlue").GetData());
+//    auto actor = vtkSmartPointer<vtkActor>::New();
+//    actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+//    actor->GetProperty()->SetColor(colors->GetColor3d("lightBlue").GetData());
 
-    if (datum->providesPlanarReference())
-    {
-        vtkNew<vtkPlaneSource> plane;
-        auto pl = datum->plane();
-        plane->SetCenter(pl.Location().X(), pl.Location().Y(), pl.Location().Z());
-        plane->SetNormal(pl.Direction().X(), pl.Direction().Y(), pl.Direction().Z());
-        actor->GetMapper()->SetInputConnection(plane->GetOutputPort());
-        actor->GetProperty()->SetOpacity(0.33);
-    }
-    else if (datum->providesAxisReference())
-    {
-        auto ax = datum->axis();
-        gp_Pnt p1=ax.Location();
+//    if (datum->providesPlanarReference())
+//    {
+//        vtkNew<vtkPlaneSource> plane;
+//        auto pl = datum->plane();
+//        plane->SetCenter(pl.Location().X(), pl.Location().Y(), pl.Location().Z());
+//        plane->SetNormal(pl.Direction().X(), pl.Direction().Y(), pl.Direction().Z());
+//        actor->GetMapper()->SetInputConnection(plane->GetOutputPort());
+//        actor->GetProperty()->SetOpacity(0.33);
+//    }
+//    else if (datum->providesAxisReference())
+//    {
+//        auto ax = datum->axis();
+//        gp_Pnt p1=ax.Location();
 
-        auto arr = insight::createArrows(
-            {{
-                 insight::Vector(ax.Location()),
-                 insight::Vector(ax.Location().XYZ() + ax.Direction().XYZ())
-             }}, false);
-        actor->GetMapper()->SetInputDataObject(arr);
-    }
-    else if (datum->providesPointReference())
-    {
-        vtkNew<vtkPointSource> point;
-        auto p1 = datum->point();
-        point->SetCenter(p1.X(), p1.Y(), p1.Z());
-        point->SetNumberOfPoints(1);
-        point->SetRadius(0);
-        actor->GetMapper()->SetInputConnection(point->GetOutputPort());
-        auto prop=actor->GetProperty();
-        prop->SetRepresentationToPoints();
-        prop->SetPointSize(8);
-        prop->SetColor(1., 0, 0);
-    }
+//        auto arr = insight::createArrows(
+//            {{
+//                 insight::Vector(ax.Location()),
+//                 insight::Vector(ax.Location().XYZ() + ax.Direction().XYZ())
+//             }}, false);
+//        actor->GetMapper()->SetInputDataObject(arr);
+//    }
+//    else if (datum->providesPointReference())
+//    {
+//        vtkNew<vtkPointSource> point;
+//        auto p1 = datum->point();
+//        point->SetCenter(p1.X(), p1.Y(), p1.Z());
+//        point->SetNumberOfPoints(1);
+//        point->SetRadius(0);
+//        actor->GetMapper()->SetInputConnection(point->GetOutputPort());
+//        auto prop=actor->GetProperty();
+//        prop->SetRepresentationToPoints();
+//        prop->SetPointSize(8);
+//        prop->SetColor(1., 0, 0);
+//    }
+    auto actor = createActor(datum);
     ren_->AddActor(actor);
 
     displayedData_[pidx]={lbl, datum, actor};
@@ -147,12 +273,14 @@ void IQCADModel3DViewer::addFeature(
 {
 
 
-    vtkNew<ivtkOCCShape> shape;
-    shape->SetShape( feat->shape() );
+//    vtkNew<ivtkOCCShape> shape;
+//    shape->SetShape( feat->shape() );
 
-    auto actor = vtkSmartPointer<vtkActor>::New();
-    actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
-    actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
+//    auto actor = vtkSmartPointer<vtkActor>::New();
+//    actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+//    actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
+
+    auto actor = createActor(feat);
 
     ren_->AddActor(actor);
 
@@ -297,34 +425,36 @@ void IQCADModel3DViewer::addDataset(
         const QString& lbl,
         vtkSmartPointer<vtkDataObject> ds )
 {
-    vtkProp *act;
+//    vtkProp *act;
 
-    if (auto ids = vtkImageData::SafeDownCast(ds) )
-    {
-        auto actor = vtkSmartPointer<vtkImageActor>::New();
-        auto mapper = actor->GetMapper();
-        mapper->SetInputData(ids);
-        ren_->AddActor(actor);
-        act = actor;
-    }
-    else if (auto pds = vtkDataSet::SafeDownCast(ds) )
-    {
-        auto actor = vtkSmartPointer<vtkActor>::New();
-        actor->SetMapper( vtkSmartPointer<vtkDataSetMapper>::New() );
-        auto mapper=actor->GetMapper();
+//    if (auto ids = vtkImageData::SafeDownCast(ds) )
+//    {
+//        auto actor = vtkSmartPointer<vtkImageActor>::New();
+//        auto mapper = actor->GetMapper();
+//        mapper->SetInputData(ids);
+//        ren_->AddActor(actor);
+//        act = actor;
+//    }
+//    else if (auto pds = vtkDataSet::SafeDownCast(ds) )
+//    {
+//        auto actor = vtkSmartPointer<vtkActor>::New();
+//        actor->SetMapper( vtkSmartPointer<vtkDataSetMapper>::New() );
+//        auto mapper=actor->GetMapper();
 
-        mapper->SetInputDataObject(pds);
-        ren_->AddActor(actor);
-        act = actor;
-    }
-    else
-    {
-        auto actor = vtkSmartPointer<vtkActor>::New();
-        actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
-        actor->GetMapper()->SetInputDataObject(ds);
-        ren_->AddActor(actor);
-        act = actor;
-    }
+//        mapper->SetInputDataObject(pds);
+//        ren_->AddActor(actor);
+//        act = actor;
+//    }
+//    else
+//    {
+//        auto actor = vtkSmartPointer<vtkActor>::New();
+//        actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+//        actor->GetMapper()->SetInputDataObject(ds);
+//        ren_->AddActor(actor);
+//        act = actor;
+//    }
+
+    auto act = createActor(ds);
 
     displayedData_[pidx]={lbl, ds, act};
 
@@ -483,6 +613,148 @@ void IQCADModel3DViewer::addSiblings(const QModelIndex& idx)
 }
 
 
+IQCADModel3DViewer::HighlightItem::HighlightItem(
+        std::shared_ptr<DisplayedEntity> de,
+        QPersistentModelIndex idx2highlight,
+        IQCADModel3DViewer* viewer )
+    : viewer_(viewer),
+      de_(de),
+      idx2highlight_(idx2highlight)
+{
+    for (auto& o: viewer_->displayedData_)
+    {
+        if ( auto act = vtkActor::SafeDownCast(o.second.actor_) )
+        {
+            if (o.first == idx2highlight_)
+            {
+                qDebug()<<"found item to highlight at"<<QModelIndex(o.first)<<endl;
+                act->GetProperty()->SetOpacity(1.);
+                act->GetProperty()->SetColor(1,0,0);
+                act->SetVisibility(true);
+            }
+            else
+            {
+                act->GetProperty()->SetOpacity(0.1);
+            }
+        }
+    }
+
+    if (de_)
+    {
+        qDebug()<<"add to display"<<endl;
+        viewer_->ren_->AddActor( de_->actor_ );
+    }
+}
+
+
+
+IQCADModel3DViewer::HighlightItem::~HighlightItem()
+{
+    for (auto& o: viewer_->displayedData_)
+    {
+        if (auto act = vtkActor::SafeDownCast(o.second.actor_))
+        {
+            if ( o.first == idx2highlight_)
+            {
+                // restore all display props
+                viewer_->resetFeatureDisplayProps(o.first);
+            }
+            else
+            {
+                qDebug()<<"restore opacity"<<endl;
+                // restore opacity
+                auto opacity = QModelIndex(o.first)
+                        .siblingAtColumn(IQCADItemModel::entityOpacityCol)
+                        .data()
+                        .toDouble();
+                act->GetProperty()->SetOpacity(opacity);
+            }
+        }
+    }
+
+    if (de_)
+    {
+        qDebug()<<"removing from display"<<endl;
+        viewer_->ren_->RemoveActor( de_->actor_ );
+    }
+
+}
+
+const IQCADModel3DViewer::CADEntity &IQCADModel3DViewer::HighlightItem::entity() const
+{
+    return entity_;
+}
+
+
+QModelIndex IQCADModel3DViewer::HighlightItem::index() const
+{
+    return QModelIndex(idx2highlight_);
+}
+
+
+void IQCADModel3DViewer::highlightItem(insight::cad::FeaturePtr feat)
+{
+    doHighlightItem(feat);
+}
+
+void IQCADModel3DViewer::doHighlightItem(CADEntity item)
+{
+    if (highlightedItem_
+            && highlightedItem_->entity()==item)
+        return;
+
+    highlightedItem_.reset(); // clear existing highlighting, if any
+
+
+    if (const auto* fPtr = boost::get<insight::cad::FeaturePtr>(&item))
+    {
+        auto feat = *fPtr;
+        auto name = QString::fromStdString(feat->featureSymbolName());
+        qDebug()<<"highlight feature" <<name;
+
+
+        auto idisp = std::find_if(
+                  displayedData_.begin(),
+                  displayedData_.end(),
+                  [item](const DisplayedData::value_type& dd)
+                    { return dd.second.ce_ == item; }
+        );
+
+        if (idisp!=displayedData_.end())
+        {
+            qDebug()<<name<<"already in display";
+            // already in display
+            highlightedItem_ = std::make_shared<HighlightItem>(
+                        nullptr, idisp->first, this );
+        }
+        else
+        {
+            // not in display, add temporarily
+            qDebug()<<name<<"not in display, adding temporarily"<<endl;
+
+            auto actor = createActor(feat);
+            highlightedItem_ = std::make_shared<HighlightItem>(
+                        std::shared_ptr<DisplayedEntity>(
+                            new DisplayedEntity{name, item, actor} ),
+                        QPersistentModelIndex(),
+                        this );
+        }
+    }
+
+    vtkWidget_.
+#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
+    renderWindow
+#else
+    GetRenderWindow
+#endif
+    ()->Render();
+}
+
+
+void IQCADModel3DViewer::undoHighlightItem()
+{
+    highlightedItem_.reset();
+}
 
 
 IQCADModel3DViewer::IQCADModel3DViewer(
@@ -491,12 +763,16 @@ IQCADModel3DViewer::IQCADModel3DViewer(
       vtkWidget_(this),
       model_( nullptr )
 {
-    insight::dbg()<<"add renderer"<<std::endl;
-    insight::dbg()<<vtkWidget_.GetRenderWindow()<<std::endl;
     ren_ = vtkSmartPointer<vtkRenderer>::New();
-    insight::dbg()<<ren_.GetPointer()<<std::endl;
-    vtkWidget_.GetRenderWindow()->AddRenderer(ren_);
-    insight::dbg()<<"set bg"<<std::endl;
+
+    vtkWidget_.
+#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
+    renderWindow
+#else
+    GetRenderWindow
+#endif
+    ()->AddRenderer(ren_);
+
     ren_->SetBackground(1., 1., 1.);
 
     insight::dbg()<<"layout"<<std::endl;
@@ -574,7 +850,13 @@ IQCADModel3DViewer::IQCADModel3DViewer(
     btnLayout->addItem(new QSpacerItem(1,1,QSizePolicy::Expanding));
     auto axes = vtkSmartPointer<vtkAxesActor>::New();
 
-    auto renWin1 = vtkWidget_.GetRenderWindow();
+    auto renWin1 = vtkWidget_.
+#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
+    renderWindow
+#else
+    GetRenderWindow
+#endif
+            ();
 
     // Call vtkRenderWindowInteractor in orientation marker widgt
     auto widget = vtkOrientationMarkerWidget::New();

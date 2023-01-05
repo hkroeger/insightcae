@@ -1,6 +1,5 @@
 #include "iqcaditemmodel.h"
 
-#include <QMenu>
 #include <QInputDialog>
 #include <QColorDialog>
 #include <QFileDialog>
@@ -961,6 +960,119 @@ void IQCADItemModel::removeDataset(const std::string& name)
 
 
 
+
+
+
+
+void IQCADItemModel::addSymbolsToSubmenu(
+        const QString& name,
+        QMenu *menu,
+        insight::cad::FeaturePtr feat,
+        bool *someSubMenu,
+        bool *someHoverDisplay )
+{
+  if (feat->getDatumScalars().size()>0)
+  {
+    if (someSubMenu) *someSubMenu=true;
+    QMenu *sm = new QMenu("Scalar Symbols");
+    menu->addMenu(sm);
+    for (auto i: feat->getDatumScalars())
+    {
+      QAction *a = new QAction(
+                  QString::fromStdString(
+                      boost::str(boost::format("%s to Notepad (= %g)") % i.first % i.second)
+                      ), menu );
+      sm->addAction(a);
+      connect(a, &QAction::triggered, this, [=]() {
+               Q_EMIT insertIntoNotebook( name+"$"+QString::fromStdString(i.first) );
+              } );
+    }
+  }
+  if (feat->getDatumPoints().size()>0)
+  {
+    if (someSubMenu) *someSubMenu=true;
+    QMenu *sm = new QMenu("Point Symbols");
+    menu->addMenu(sm);
+    for (auto i: feat->getDatumPoints())
+    {
+      QAction *a = new QAction( QString::fromStdString(
+              boost::str(boost::format("%s to Notepad (= [%g %g %g])")
+                         % i.first % i.second(0) % i.second(1) % i.second(2))
+              ), menu );
+      sm->addAction(a);
+      connect(a, &QAction::triggered, this, [=]() {
+          Q_EMIT insertIntoNotebook( name+"@"+QString::fromStdString(i.first) );
+        });
+//      connect(a, &QAction::hovered,
+//              [=]() {
+//        gp_Pnt p=to_Pnt(i.second);
+//        Handle_AIS_Point ip(new AIS_Point(
+//           Handle_Geom_Point(new Geom_CartesianPoint(p) )
+//                                             ));
+//        ip->SetMarker(Aspect_TOM_O_PLUS);
+//        ip->SetWidth(5);
+//        focus(ip);
+//      });
+      if (someHoverDisplay) *someHoverDisplay=true;
+    }
+  }
+  if (feat->getDatumVectors().size()>0)
+  {
+    if (someSubMenu) *someSubMenu=true;
+    QMenu *sm = new QMenu("Vector Symbols");
+    menu->addMenu(sm);
+    for (auto i: feat->getDatumVectors())
+    {
+      QAction *a = new QAction(
+                  QString::fromStdString(
+                      boost::str(boost::format("%s to Notepad (= [%g %g %g])") % i.first % i.second(0) % i.second(1) % i.second(2))
+                      ), menu );
+      sm->addAction(a);
+      connect(a, &QAction::triggered, this, [=]() {
+          Q_EMIT insertIntoNotebook( name+"^"+QString::fromStdString(i.first) );
+        });
+    }
+  }
+  if (feat->providedSubshapes().size()>0)
+  {
+    if (someSubMenu) *someSubMenu=true;
+    QMenu *sm = new QMenu("Subshapes");
+    menu->addMenu(sm);
+    for (auto i: feat->providedSubshapes())
+    {
+      QString subname=QString::fromStdString(i.first);
+
+      QAction *a = new QAction(
+            subname + " to Notepad",
+            menu );
+      sm->addAction(a);
+      connect(a, &QAction::triggered, this, [=]() {
+          Q_EMIT insertIntoNotebook( name+"."+QString::fromStdString(i.first) );
+        });
+      connect(a, &QAction::hovered, this, [=]() {
+        Q_EMIT highlightInView(i.second);
+//          contextMenu->setStyleSheet( "QMenu { background-color: rgba(0,0,0,0%); }" );
+      });
+
+      bool someEntries=false;
+      QMenu* submenu=new QMenu(QString::fromStdString(i.first));
+
+      addSymbolsToSubmenu(name+"."+subname, submenu, i.second, &someEntries);
+      if (someEntries)
+      {
+        sm->addMenu(submenu);
+      }
+      else
+      {
+        delete submenu;
+      }
+
+      if (someHoverDisplay) *someHoverDisplay=true;
+    }
+  }
+}
+
+
 void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
 {
     QMenu cm;
@@ -1069,6 +1181,14 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
                         }
                     });
             cm.addAction(a);
+
+            auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol)).value<insight::cad::FeaturePtr>();
+            bool someSubMenu=false, someHoverDisplay=false;
+            addSymbolsToSubmenu(
+                        QString::fromStdString(feat->featureSymbolName()),
+                        &cm, feat,
+                        &someSubMenu, &someHoverDisplay);
+
         }
         else if (idx.internalId()==CADModelSection::dataset)
         {

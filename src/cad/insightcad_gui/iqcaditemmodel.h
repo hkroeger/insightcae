@@ -13,6 +13,7 @@
 #include <QDebug>
 #include <QApplication>
 #include <QColor>
+#include <QMenu>
 
 
 class INSIGHTCAD_GUI_EXPORT IQCADItemModel
@@ -175,6 +176,12 @@ private:
       }
   }
 
+  void addSymbolsToSubmenu(
+          const QString& name,
+          QMenu *menu,
+          insight::cad::FeaturePtr feat,
+          bool *someSubMenu = nullptr,
+          bool *someHoverDisplay = nullptr );
 
 public:
   IQCADItemModel(insight::cad::ModelPtr model=insight::cad::ModelPtr(), QObject* parent=nullptr);
@@ -242,6 +249,10 @@ public:
 
 public Q_SLOTS:
   void showContextMenu(const QModelIndex& idx, const QPoint &pos);
+
+Q_SIGNALS:
+  void insertIntoNotebook(const QString& text);
+  void highlightInView(insight::cad::FeaturePtr feat);
 };
 
 #endif // IQCADMODELCONTAINER_H

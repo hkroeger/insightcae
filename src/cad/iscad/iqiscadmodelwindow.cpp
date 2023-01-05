@@ -135,6 +135,12 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
     connect( viewer_, &IQCADModel3DViewer::contextMenuRequested,
              model_, &IQCADItemModel::showContextMenu );
 
+
+    connect( model_, &IQCADItemModel::insertIntoNotebook,
+             notepad_, &QTextEdit::insertPlainText );
+    connect( model_, &IQCADItemModel::highlightInView,
+             viewer_, &Model3DViewer::highlightItem );
+
 #warning reimplement!
 //    connect(modeltree_, &QModelTree::showItem,
 //            viewer_, &QoccViewWidget::onShow);

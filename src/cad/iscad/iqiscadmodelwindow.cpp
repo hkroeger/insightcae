@@ -141,6 +141,11 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
     connect( model_, &IQCADItemModel::highlightInView,
              viewer_, &Model3DViewer::highlightItem );
 
+    connect( modelEdit_, &IQISCADModelScriptEdit::focus,
+             viewer_, &Model3DViewer::highlightItem );
+    connect( modelEdit_, &IQISCADModelScriptEdit::unfocus,
+             viewer_, &Model3DViewer::undoHighlightItem );
+
 #warning reimplement!
 //    connect(modeltree_, &QModelTree::showItem,
 //            viewer_, &QoccViewWidget::onShow);

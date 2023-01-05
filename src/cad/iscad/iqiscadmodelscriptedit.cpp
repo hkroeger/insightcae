@@ -257,7 +257,7 @@ void IQISCADModelScriptEdit::onEditorSelectionChanged()
       insight::cad::FeaturePtr fp=syn_elem_dir_->findElement( textCursor().position() );
       if (fp)
       {
-        emit focus(Handle_AIS_Shape(new AIS_Shape(fp->shape())));
+        emit focus(fp);
       }
       else
       {

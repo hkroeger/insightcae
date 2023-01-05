@@ -250,7 +250,7 @@ Q_SIGNALS:
      */
     void clearData();
 
-    void focus(Handle_AIS_InteractiveObject ais);
+    void focus(insight::cad::FeaturePtr feat);
     void unfocus();
 
 //     // insert new features

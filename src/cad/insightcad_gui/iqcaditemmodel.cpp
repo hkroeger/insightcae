@@ -1046,12 +1046,13 @@ void IQCADItemModel::addSymbolsToSubmenu(
             subname + " to Notepad",
             menu );
       sm->addAction(a);
+
       connect(a, &QAction::triggered, this, [=]() {
-          Q_EMIT insertIntoNotebook( name+"."+QString::fromStdString(i.first) );
-        });
+        Q_EMIT insertIntoNotebook( name+"."+QString::fromStdString(i.first) );
+      });
+
       connect(a, &QAction::hovered, this, [=]() {
         Q_EMIT highlightInView(i.second);
-//          contextMenu->setStyleSheet( "QMenu { background-color: rgba(0,0,0,0%); }" );
       });
 
       bool someEntries=false;
@@ -1188,7 +1189,11 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
                         QString::fromStdString(feat->featureSymbolName()),
                         &cm, feat,
                         &someSubMenu, &someHoverDisplay);
-
+            if (someHoverDisplay)
+            {
+              connect(&cm, &QMenu::aboutToHide,
+                    this, &IQCADItemModel::undoHighlightInView);
+            }
         }
         else if (idx.internalId()==CADModelSection::dataset)
         {

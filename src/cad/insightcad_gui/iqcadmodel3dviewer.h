@@ -151,7 +151,7 @@ public:
 
     void setModel(QAbstractItemModel* model);
 
-    vtkRenderWindowInteractor* interactor() const;
+    vtkRenderWindowInteractor* interactor();
 
     QSize sizeHint() const override;
 

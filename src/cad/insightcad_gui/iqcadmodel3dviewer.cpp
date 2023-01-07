@@ -627,7 +627,6 @@ IQCADModel3DViewer::HighlightItem::HighlightItem(
         {
             if (o.first == idx2highlight_)
             {
-                qDebug()<<"found item to highlight at"<<QModelIndex(o.first)<<endl;
                 act->GetProperty()->SetOpacity(1.);
                 act->GetProperty()->SetColor(1,0,0);
                 act->SetVisibility(true);
@@ -641,9 +640,21 @@ IQCADModel3DViewer::HighlightItem::HighlightItem(
 
     if (de_)
     {
-        qDebug()<<"add to display"<<endl;
+        if ( auto act = vtkActor::SafeDownCast(de_->actor_) )
+        {
+            act->GetProperty()->SetOpacity(1.);
+            act->GetProperty()->SetColor(1,0,0);
+        }
         viewer_->ren_->AddActor( de_->actor_ );
     }
+
+    viewer_->vtkWidget_.
+#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
+    renderWindow
+#else
+    GetRenderWindow
+#endif
+    ()->Render();
 }
 
 
@@ -661,7 +672,6 @@ IQCADModel3DViewer::HighlightItem::~HighlightItem()
             }
             else
             {
-                qDebug()<<"restore opacity"<<endl;
                 // restore opacity
                 auto opacity = QModelIndex(o.first)
                         .siblingAtColumn(IQCADItemModel::entityOpacityCol)
@@ -674,10 +684,16 @@ IQCADModel3DViewer::HighlightItem::~HighlightItem()
 
     if (de_)
     {
-        qDebug()<<"removing from display"<<endl;
         viewer_->ren_->RemoveActor( de_->actor_ );
     }
 
+    viewer_->vtkWidget_.
+#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
+    renderWindow
+#else
+    GetRenderWindow
+#endif
+    ()->Render();
 }
 
 const IQCADModel3DViewer::CADEntity &IQCADModel3DViewer::HighlightItem::entity() const
@@ -710,7 +726,6 @@ void IQCADModel3DViewer::doHighlightItem(CADEntity item)
     {
         auto feat = *fPtr;
         auto name = QString::fromStdString(feat->featureSymbolName());
-        qDebug()<<"highlight feature" <<name;
 
 
         auto idisp = std::find_if(
@@ -722,7 +737,6 @@ void IQCADModel3DViewer::doHighlightItem(CADEntity item)
 
         if (idisp!=displayedData_.end())
         {
-            qDebug()<<name<<"already in display";
             // already in display
             highlightedItem_ = std::make_shared<HighlightItem>(
                         nullptr, idisp->first, this );
@@ -730,8 +744,6 @@ void IQCADModel3DViewer::doHighlightItem(CADEntity item)
         else
         {
             // not in display, add temporarily
-            qDebug()<<name<<"not in display, adding temporarily"<<endl;
-
             auto actor = createActor(feat);
             highlightedItem_ = std::make_shared<HighlightItem>(
                         std::shared_ptr<DisplayedEntity>(
@@ -740,14 +752,6 @@ void IQCADModel3DViewer::doHighlightItem(CADEntity item)
                         this );
         }
     }
-
-    vtkWidget_.
-#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
-    renderWindow
-#else
-    GetRenderWindow
-#endif
-    ()->Render();
 }
 
 
@@ -934,7 +938,7 @@ void IQCADModel3DViewer::setModel(QAbstractItemModel* model)
     addSiblings(QModelIndex());
 }
 
-vtkRenderWindowInteractor *IQCADModel3DViewer::interactor() const
+vtkRenderWindowInteractor *IQCADModel3DViewer::interactor()
 {
     return vtkWidget_.GetInteractor();
 }

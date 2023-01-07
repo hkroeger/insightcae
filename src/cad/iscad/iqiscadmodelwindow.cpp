@@ -140,6 +140,8 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
              notepad_, &QTextEdit::insertPlainText );
     connect( model_, &IQCADItemModel::highlightInView,
              viewer_, &Model3DViewer::highlightItem );
+    connect( model_, &IQCADItemModel::undoHighlightInView,
+             viewer_, &Model3DViewer::undoHighlightItem );
 
     connect( modelEdit_, &IQISCADModelScriptEdit::focus,
              viewer_, &Model3DViewer::highlightItem );

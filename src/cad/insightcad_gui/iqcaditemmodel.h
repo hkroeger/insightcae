@@ -253,6 +253,7 @@ public Q_SLOTS:
 Q_SIGNALS:
   void insertIntoNotebook(const QString& text);
   void highlightInView(insight::cad::FeaturePtr feat);
+  void undoHighlightInView();
 };
 
 #endif // IQCADMODELCONTAINER_H

@@ -72,7 +72,6 @@ namespace boost { namespace units { namespace si {
  typedef quantity<metric_ton_unit> metric_ton_quantity;
  static const metric_ton_unit metric_ton;
 
-
  typedef degree::plane_angle::unit_type angle_deg_unit;
  typedef quantity<angle_deg_unit> angle_deg_quantity;
  static const angle_deg_unit angle_deg;
@@ -88,7 +87,8 @@ namespace boost { namespace units { namespace si {
  template<class Dimension, class Type, class Unit>
  Type toValue(const quantity<Dimension,Type>& q, const Unit& u)
  {
-   return ( static_cast<quantity<Unit, Type> >(q) / u).value();
+//   return ( static_cast<quantity<Unit, Type> >(q) / u).value();
+     return static_cast<quantity<si::dimensionless, Type> >( q / u ).value();
  }
 
 
@@ -104,6 +104,11 @@ namespace boost { namespace units { namespace si {
 
    matQuantity(const dimensioned_elem_type&x, const dimensioned_elem_type&y, const dimensioned_elem_type&z)
      : quantity<Unit,Type>(insight::vec3(toValue(x, Unit()), toValue(y, Unit()), toValue(z, Unit()))*Unit())
+   {}
+
+   template<class UnitMult>
+   matQuantity(const arma::mat& v, UnitMult unit)
+     : quantity<Unit,Type>(v*unit)
    {}
 
    template<class P1>
@@ -130,6 +135,8 @@ namespace boost { namespace units { namespace si {
 
  typedef quantity<length, double> Length;
  typedef matQuantity<length, arma::mat> LengthVector;
+
+ typedef quantity<mass, double> Mass;
 
  typedef quantity<time, double> Time;
 

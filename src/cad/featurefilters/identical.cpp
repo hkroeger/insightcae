@@ -58,14 +58,14 @@ template<> identical<Face>::identical(FeaturePtr m)
 }
 
 template<>
-bool identical<Face>::checkMatch(FeatureID feature) const
+bool identical<Face>::checkMatch(FeatureID i) const
 {
   bool match=false;
   
-  for (int f: f_->data())
+  for (int j: f_->data())
   {
-    TopoDS_Face f1=TopoDS::Face(model_->face(feature));
-    TopoDS_Face f2=TopoDS::Face(f_->model()->face(f));
+    TopoDS_Face f1 = TopoDS::Face( model_->face(i) );
+    TopoDS_Face f2 = TopoDS::Face( f_->model()->face(j) );
     match |= isEqual(f2, f1);
   }
   

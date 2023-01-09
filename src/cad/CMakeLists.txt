@@ -32,7 +32,10 @@ set(insightcad_SOURCES
   cadfeature.cpp 
   featurecache.cpp
   cadmodel.cpp
-  meshing.cpp 
+  meshing.h
+  meshing/gmshcase.h meshing/gmshcase.cpp
+  meshing/surfacegmshcase.h meshing/surfacegmshcase.cpp
+  meshing/sheetextrusiongmshcase.h meshing/sheetextrusiongmshcase.cpp
   featurefilter.cpp 
   feature.cpp
   occtools.cpp

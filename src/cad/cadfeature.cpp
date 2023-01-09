@@ -85,6 +85,8 @@
 
 #include "base/parameters/pathparameter.h"
 
+#include "featurefilters/same.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -1093,35 +1095,89 @@ FeatureSetData Feature::allSolidsSet() const
 //      std::inserter(fsd, fsd.begin()),
 //      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
 //  );
-  return fsd;
+   return fsd;
+}
+
+FeatureSetPtr Feature::allOf(EntityType et) const
+{
+    switch(et)
+    {
+    case Vertex:
+        return allVertices();
+    case Edge:
+        return allEdges();
+    case Face:
+        return allFaces();
+    case Solid:
+        return allSolids();
+    default:
+        throw insight::Exception("internal error: unhandled selection");
+    }
 }
 
 FeatureSetPtr Feature::allVertices() const
 {
-  auto f=std::make_shared<FeatureSet>(shared_from_this(), Vertex);
-  f->setData(allVerticesSet());
-  return f;
+    checkForBuildDuringAccess();
+    auto f=std::make_shared<FeatureSet>(shared_from_this(), Vertex);
+    f->setData(allVerticesSet());
+    return f;
 }
 
 FeatureSetPtr Feature::allEdges() const
 {
-  auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
-  f->setData(allEdgesSet());
-  return f;
+    checkForBuildDuringAccess();
+    auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
+    f->setData(allEdgesSet());
+    return f;
 }
 
 FeatureSetPtr Feature::allFaces() const
 {
-  auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
-  f->setData(allFacesSet());
-  return f;
+    checkForBuildDuringAccess();
+    auto f=std::make_shared<FeatureSet>(shared_from_this(), Face);
+    f->setData(allFacesSet());
+    return f;
 }
 
 FeatureSetPtr Feature::allSolids() const
 {
-  auto f=std::make_shared<FeatureSet>(shared_from_this(), Solid);
-  f->setData(allSolidsSet());
-  return f;
+    checkForBuildDuringAccess();
+    auto f=std::make_shared<FeatureSet>(shared_from_this(), Solid);
+    f->setData(allSolidsSet());
+    return f;
+}
+
+FeatureSetPtr Feature::find(FeatureSetPtr fs) const
+{
+    checkForBuildDuringAccess();
+    if ( *fs->model() == *this )
+    {
+        return fs;
+    }
+    else
+    {
+        switch (fs->shape())
+        {
+        case cad::Vertex:
+            return std::make_shared<FeatureSet>(
+                        shared_from_this(), cad::Vertex,
+                        query_vertices(std::make_shared<sameVertex>(*fs)));
+        case cad::Edge:
+            return std::make_shared<FeatureSet>(
+                        shared_from_this(), cad::Edge,
+                        query_edges(std::make_shared<sameEdge>(*fs)));
+        case cad::Face:
+            return std::make_shared<FeatureSet>(
+                        shared_from_this(), cad::Face,
+                        query_faces(std::make_shared<sameFace>(*fs)));
+        case cad::Solid:
+            return std::make_shared<FeatureSet>(
+                        shared_from_this(), cad::Solid,
+                        query_solids(std::make_shared<sameSolid>(*fs)));
+        default:
+            throw insight::Exception("internal error");
+        }
+    }
 }
 
 FeatureSetData Feature::query_vertices(FilterPtr f) const
@@ -2558,6 +2614,84 @@ void Feature::extractReferenceFeatures()
     refpoints_[ str(format("v%d")%i) ] = vertexLocation(i);
   }
 }
+
+const TopoDS_Face& Feature::face(FeatureID i) const
+{
+    checkForBuildDuringAccess();
+    insight::assertion(
+                i>=1 && i<=fmap_.Extent(),
+                str(format("face ID %d out of range (%d...%d)")
+                    % i % 1 % fmap_.Extent()) );
+    return TopoDS::Face(fmap_.FindKey(i));
+}
+
+const TopoDS_Edge& Feature::edge(FeatureID i) const
+{
+    checkForBuildDuringAccess();
+    insight::assertion(
+                i>=1 && i<=emap_.Extent(),
+                str(format("edge ID %d out of range (%d...%d)")
+                    % i % 1 % emap_.Extent()) );
+    return TopoDS::Edge(emap_.FindKey(i));
+}
+
+const TopoDS_Vertex& Feature::vertex(FeatureID i) const
+{
+    checkForBuildDuringAccess();
+    insight::assertion(
+                i>=1 && i<=vmap_.Extent(),
+                str(format("vertex ID %d out of range (%d...%d)")
+                    % i % 1 % vmap_.Extent()) );
+    return TopoDS::Vertex(vmap_.FindKey(i));
+}
+
+const TopoDS_Solid& Feature::subsolid(FeatureID i) const
+{
+    checkForBuildDuringAccess();
+    insight::assertion(
+                i>=1 && i<=somap_.Extent(),
+                str(format("solid ID %d out of range (%d...%d)")
+                    % i % 1 % somap_.Extent()) );
+    return TopoDS::Solid(somap_.FindKey(i));
+}
+
+
+FeatureID Feature::solidID(const TopoDS_Shape& f) const
+{
+    checkForBuildDuringAccess();
+    int i=somap_.FindIndex(f);
+    if (i==0)
+        throw insight::Exception("requested solid not indexed!");
+    return i;
+}
+
+FeatureID Feature::faceID(const TopoDS_Shape& f) const
+{
+    checkForBuildDuringAccess();
+    int i=fmap_.FindIndex(f);
+    if (i==0)
+        throw insight::Exception("requested face not indexed!");
+    return i;
+}
+
+FeatureID Feature::edgeID(const TopoDS_Shape& e) const
+{
+    checkForBuildDuringAccess();
+    int i=emap_.FindIndex(e);
+    if (i==0)
+        throw insight::Exception("requested edge not indexed!");
+    return i;
+}
+
+FeatureID Feature::vertexID(const TopoDS_Shape& v) const
+{
+    checkForBuildDuringAccess();
+    int i=vmap_.FindIndex(v);
+    if (i==0)
+        throw insight::Exception("requested vertex not indexed!");
+    return i;
+}
+
 
 void Feature::write(const filesystem::path& file) const
 {

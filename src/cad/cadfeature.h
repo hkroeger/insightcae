@@ -51,6 +51,7 @@
 
 #include "base/cacheableentityhashes.h"
 #include "featurecache.h"
+#include "subshapenumbering.h"
 
 namespace insight 
 {
@@ -231,10 +232,9 @@ private:
   
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
-  TopTools_IndexedMapOfShape
-//  FreelyIndexedMapOfShape
-   fmap_, emap_, vmap_, somap_, shmap_, wmap_;
-  
+  std::unique_ptr<SubshapeNumbering> idx_;
+
+
   SubfeatureMap providedSubshapes_;
   FeatureSetPtrMap providedFeatureSets_;
   DatumPtrMap providedDatums_;

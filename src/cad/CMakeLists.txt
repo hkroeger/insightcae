@@ -41,6 +41,7 @@ set(insightcad_SOURCES
   occtools.cpp
   caddocitem.cpp
   cadtypes.cpp
+  subshapenumbering.cpp subshapenumbering.h
   polytriangulationelementiterator.h polytriangulationelementiterator.cpp
   polytriangulationnodeiterator.h polytriangulationnodeiterator.cpp
 )

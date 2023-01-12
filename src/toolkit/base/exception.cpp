@@ -29,6 +29,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "stdarg.h"
+
 #include "boost/stacktrace.hpp"
 #include "boost/algorithm/string.hpp"
 
@@ -167,12 +169,26 @@ Exception::Exception()
   saveContext(true);
 }
 
-Exception::Exception(const std::string& msg, bool strace)
-  : message_(msg)
+Exception::Exception(std::string fmt, ...)
 {
-  dbg()<<msg<<std::endl;
-  saveContext(strace);
+    char str[5000];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(str, sizeof(str), fmt.c_str(), args);
+    va_end(args);
+    int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
+
+    message_=str;
+    dbg()<<message_<<std::endl;
+    saveContext(true);
 }
+
+//Exception::Exception(const std::string& msg)
+//  : message_(msg)
+//{
+//  dbg()<<msg<<std::endl;
+//  saveContext(true);
+//}
 
 Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> &contextGeometry, bool strace)
   : message_(msg),

@@ -131,7 +131,13 @@ bool restartWrite::perform()
     ;
 
     // check write
-    scalar now = time_.elapsedClockTime();
+    scalar now = 0;
+    if (Pstream::master())
+    {
+        now = time_.elapsedClockTime();
+    }
+    reduce(now, sumOp<scalar>());
+
     if ( now - lastWriteTime_ > clockTimeInterval_ )
     {
 

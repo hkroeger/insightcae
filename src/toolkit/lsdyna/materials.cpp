@@ -41,6 +41,8 @@ void MatRigid::write(std::ostream& os) const
        << int(translationBC_) << ", "
        << int(rotationBC_) << "\n";
 
+    os << "\n";
+
 }
 
 
@@ -94,6 +96,7 @@ void MatPlasticKinematic::write(std::ostream& os) const
        << toValue(yieldStress_, inputDeck().stressUnit()) <<", "
        << toValue(plasticSlope_, inputDeck().stressUnit()) <<", "
        << beta_ << "\n";
+    os << "\n";
 }
 
 

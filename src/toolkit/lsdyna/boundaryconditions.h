@@ -65,7 +65,7 @@ public:
             DOF dof,
             MotionType motionType,
             const Curve *curve,
-            double curveScaleY,
+            double curveScaleY = 1.,
             si::Time tStop = 1e30*si::seconds, si::Time tStart = 0
             );
 

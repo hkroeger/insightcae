@@ -71,7 +71,7 @@ void SectionShell::write(std::ostream& os) const
 {
     os << "*SECTION_SHELL\n";
     os << id() << ", " << int(elform_) << ", " << nip_ << "\n";
-    os << toValue(thickness_, inputDeck().lengthUnit());
+    os << toValue(thickness_, inputDeck().lengthUnit()) << "\n";
 }
 
 

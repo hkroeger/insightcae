@@ -351,7 +351,33 @@ ResultElementPtr Chart::clone() const
 insight::ResultElement& addPlot
 (
     std::shared_ptr<ResultElementCollection> results,
-    const boost::filesystem::path& ,
+    const boost::filesystem::path& workdir,
+    const std::string& resultelementname,
+    const std::string& xlabel,
+    const std::string& ylabel,
+    const PlotCurveList& plc,
+    const std::string& shortDescription,
+    const std::string& addinit,
+    const std::string& watermarktext
+)
+{
+    return addPlot
+    (
+        *results, workdir,
+        resultelementname,
+        xlabel, ylabel,
+        plc,
+        shortDescription, addinit, watermarktext
+    );
+}
+
+
+
+
+insight::ResultElement& addPlot
+(
+    ResultElementCollection& results,
+    const boost::filesystem::path& workdir,
     const std::string& resultelementname,
     const std::string& xlabel,
     const std::string& ylabel,
@@ -370,13 +396,15 @@ insight::ResultElement& addPlot
           ;
     }
 
-    return results->insert ( resultelementname,
-                             new Chart
-                             (
-                                 xlabel, ylabel, plc,
-                                 shortDescription, "",
-                                 precmd
-                               ) );
+    return results.insert (
+                resultelementname,
+                new Chart
+                (
+                    xlabel, ylabel, plc,
+                    shortDescription, "",
+                    precmd
+                    )
+                );
 }
 
 

@@ -21,61 +21,58 @@ Control_Units::Control_Units()
 
 void Control_Units::write(std::ostream &os) const
 {
-    os << "*CONTROL_UNITS\n";
-
+    std::string l, t, m;
     if (fabs(toValue(lengthUnit_, si::meter)-1.)<SMALL)
     {
-        os << "m";
+        l="m";
     }
     else if (fabs(toValue(lengthUnit_, si::millimeter)-1.)<SMALL)
     {
-        os << "mm";
+        l="mm";
     }
     else if (fabs(toValue(lengthUnit_, si::centi*si::meter)-1.)<SMALL)
     {
-        os << "cm";
+        l="cm";
     }
     else
         throw insight::Exception("Unsupported length unit!");
 
-    os << ", ";
-
     if (fabs(toValue(timeUnit_, si::seconds)-1.)<SMALL)
     {
-        os << "s";
+        t="s";
     }
     else if (fabs(toValue(timeUnit_, si::milli*si::second)-1.)<SMALL)
     {
-        os << "ms";
+        t="ms";
     }
     else if (fabs(toValue(timeUnit_, si::micro*si::second)-1.)<SMALL)
     {
-        os << "micro_s";
+        t="micro_s";
     }
     else
         throw insight::Exception("Unsupported time unit!");
 
-    os << ", ";
-
     if (fabs(toValue(massUnit_, si::kilogram)-1.)<SMALL)
     {
-        os << "kg";
+        m="kg";
     }
     else if (fabs(toValue(massUnit_, boost::units::cgs::gram)-1.)<SMALL)
     {
-        os << "g";
+        m="g";
     }
     else if (fabs(toValue(massUnit_, si::milli*boost::units::cgs::gram)-1.)<SMALL)
     {
-        os << "mg";
+        m="mg";
     }
     else if (fabs(toValue(massUnit_, si::metric_ton)-1.)<SMALL)
     {
-        os << "mtrc_ton";
+        m="mtrc_ton";
     }
     else
         throw insight::Exception("Unsupported mass unit!");
 
+    os << "*CONTROL_UNITS\n";
+    os << str(boost::format("%10s%10s%10s\n")%l%t%m);
     os << "\n";
 }
 
@@ -96,7 +93,7 @@ Control_Termination::Control_Termination(
 
 void Control_Termination::write(std::ostream& os) const
 {
-    os << "*CONTROL_TERMINATON\n"
+    os << "*CONTROL_TERMINATION\n"
 
        << toValue(endTime_, inputDeck().timeUnit()) << ",,,";
     if (const auto *err = boost::get<double>(&endEnergyError_))

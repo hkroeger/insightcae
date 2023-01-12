@@ -58,6 +58,7 @@ namespace boost { namespace units { namespace si {
  // some commonly used units and aliases
 
  static const auto megapascal = mega*pascals;
+ static const auto MPa = megapascal;
  static const auto millimeters = milli*meters;
  static const auto millimeter = milli*meter;
  static const auto mps = meter/second;

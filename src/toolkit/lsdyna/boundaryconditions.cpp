@@ -2,6 +2,7 @@
 
 #include "lsdyna/mesh.h"
 #include "lsdynainputdeck.h"
+#include "lsdyna/solution.h"
 
 namespace insight {
 namespace LSDynaInputCards {
@@ -31,6 +32,7 @@ void BoundaryPrescribedMotionRigid::write(std::ostream& os) const
        << part_->id() << ", "
        << int(dof_) <<", "
        << int(motionType_) << ", "
+       << curve_->id() << ", "
        << curveScaleY_ << ", "
        << 0 << ", "
        << toValue(tStop_, inputDeck().timeUnit()) << ", "

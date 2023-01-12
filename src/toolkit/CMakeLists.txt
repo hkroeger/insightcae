@@ -256,6 +256,8 @@ set(toolkit_SOURCES
     lsdyna/solution.h lsdyna/solution.cpp
     lsdyna/boundaryconditions.h lsdyna/boundaryconditions.cpp
     lsdyna/contact.h lsdyna/contact.cpp
+    lsdyna/radsoftwareenvironment.h lsdyna/radsoftwareenvironment.cpp
+    lsdyna/openradiossoutputanalyzer.h lsdyna/openradiossoutputanalyzer.cpp
 )
 
 if (INSIGHT_GNUPLOT_CHARTRENDERER)

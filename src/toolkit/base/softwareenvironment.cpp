@@ -84,7 +84,9 @@ void SoftwareEnvironment::executeCommand
   const std::string& cmd, 
   std::vector<std::string> argv,
   std::vector<std::string>* output,
-  std::string *ovr_machine
+  std::string *ovr_machine,
+  bool mirrorStdout,
+  bool mirrorStderr
 ) const
 {
   std::vector<std::string> cmds;
@@ -99,7 +101,9 @@ void SoftwareEnvironment::executeCommand
   JobPtr job = forkCommand(cmd, argv, ovr_machine);
 
   std::vector<std::string> errout;
-  job->runAndTransferOutput(output, &errout);
+  job->runAndTransferOutput(output, &errout,
+                            mirrorStdout,
+                            mirrorStderr);
 
   auto retcode = job->process().exit_code();
   if (retcode!=0)

@@ -36,6 +36,7 @@ void LSDynaInputDeck::write(std::ostream &os) const
     {
         os << *card;
     }
+    os << "*END\n";
 }
 
 

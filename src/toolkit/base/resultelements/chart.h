@@ -178,6 +178,18 @@ insight::ResultElement& addPlot
 );
 
 
+insight::ResultElement& addPlot
+(
+    ResultElementCollection& results,
+    const boost::filesystem::path& workdir,
+    const std::string& resultelementname,
+    const std::string& xlabel,
+    const std::string& ylabel,
+    const PlotCurveList& plc,
+    const std::string& shortDescription,
+    const std::string& addinit = "",
+    const std::string& watermarktext = ""
+);
 
 
 } // namespace insight

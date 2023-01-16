@@ -19,5 +19,7 @@ add_toolkit_test(test_integrate_trpz)
 add_toolkit_test(test_zipfile)
 add_toolkit_test(test_overlappingintervals)
 add_toolkit_test(test_transformation)
+add_toolkit_test(test_lsdynainputdeck)
+add_toolkit_test(test_units)
 
 add_subdirectory(analysis_parameterstudy)

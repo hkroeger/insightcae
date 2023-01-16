@@ -98,7 +98,7 @@ class Exception
   
 public:
   Exception();
-  Exception(const std::string& msg, bool strace=true);
+  Exception(std::string msgfmt, ...);
   Exception(const std::string& msg, const std::map<std::string, cad::FeaturePtr>& contextGeometry, bool strace=true);
   Exception(const std::string& msg, const std::string& strace);
 

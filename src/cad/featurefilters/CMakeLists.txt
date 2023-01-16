@@ -8,7 +8,8 @@ add_sources(insightcad_SOURCES
   
   connected.cpp
   coincident.cpp
-  identical.cpp
+  identical.cpp identical.h
+  same.cpp same.h
   ispartofsolid.cpp
   ispartofface.cpp
 

@@ -242,10 +242,22 @@ set(toolkit_SOURCES
     openfoam/caseelements/thermophysicalcaseelements.cpp openfoam/caseelements/thermophysicalcaseelements.h
     openfoam/caseelements/electromagneticscaseelements.cpp openfoam/caseelements/electromagneticscaseelements.h
     openfoam/caseelements/options/enforcefarfieldvelocity.h openfoam/caseelements/options/enforcefarfieldvelocity.cpp
+
     code_aster/caexportfile.cpp code_aster/caexportfile.h
     code_aster/codeasterrun.cpp code_aster/codeasterrun.h
     code_aster/codeastermeshfile.h code_aster/codeastermeshfile.cpp
     code_aster/casolveroutputanalyzer.cpp code_aster/casolveroutputanalyzer.h
+
+    lsdyna/lsdynainputdeck.h lsdyna/lsdynainputdeck.cpp
+    lsdyna/lsdynainputcard.h lsdyna/lsdynainputcard.cpp
+    lsdyna/control.h lsdyna/control.cpp
+    lsdyna/mesh.h lsdyna/mesh.cpp
+    lsdyna/materials.h lsdyna/materials.cpp
+    lsdyna/solution.h lsdyna/solution.cpp
+    lsdyna/boundaryconditions.h lsdyna/boundaryconditions.cpp
+    lsdyna/contact.h lsdyna/contact.cpp
+    lsdyna/radsoftwareenvironment.h lsdyna/radsoftwareenvironment.cpp
+    lsdyna/openradiossoutputanalyzer.h lsdyna/openradiossoutputanalyzer.cpp
 )
 
 if (INSIGHT_GNUPLOT_CHARTRENDERER)

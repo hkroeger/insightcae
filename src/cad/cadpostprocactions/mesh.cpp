@@ -19,6 +19,7 @@
 
 #include "mesh.h"
 
+#include "cadfeature.h"
 #include "meshing.h"
 
 #include "base/boost_include.h"

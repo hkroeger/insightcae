@@ -268,9 +268,11 @@ void  vtkMedFamilyOnEntityOnProfile::ComputeUsedPoints()
       this->UseAllPoints = true;
       return;
       }
-    // if there is no profile, the entity is on cell
+
+    // if there is no profile, the grid is structured, the entity is on cell
     // and there is at most 1 family on his entity, then all points are used
-    if(this->FamilyOnEntity->GetPointOrCell() == vtkMedUtilities::OnCell &&
+    if(vtkMedUnstructuredGrid::SafeDownCast(grid) == NULL &&
+       this->FamilyOnEntity->GetPointOrCell() == vtkMedUtilities::OnCell &&
        this->FamilyOnEntity->GetEntityArray()->GetNumberOfFamilyOnEntity() <= 1)
       {
       this->UseAllPoints = true;

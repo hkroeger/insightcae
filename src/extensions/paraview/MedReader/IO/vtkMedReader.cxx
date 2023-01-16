@@ -82,6 +82,8 @@
 #include <set>
 #include <algorithm>
 
+#undef DBGOUT
+
 using namespace std;
 
 struct VTKField
@@ -548,24 +550,32 @@ void vtkMedReader::InitializeParallelRead()
   while(meshfit != this->Internal->MedFiles.end())
     {
     vtkMedFile* meshfile = meshfit->second;
+#ifdef DBGOUT
     std::cout<<"init file : "<<meshfile->GetFileName()<<std::endl;
+#endif
     meshfit++;
     med_idt pFileID = meshfile->GetMedDriver()->GetParallelFileId();
 
     for(int mid=0; mid<meshfile->GetNumberOfMesh(); mid++)
       {
       vtkMedMesh* mesh = meshfile->GetMesh(mid);
+#ifdef DBGOUT
       std::cout<<" init mesh : "<<mesh->GetDescription()<<std::endl;
+#endif
       for(int gid=0; gid<mesh->GetNumberOfGridStep(); gid++)
         {
         vtkMedGrid* grid = mesh->GetGridStep(gid);
+#ifdef DBGOUT
         std::cout<<"  init grid : np = "<<grid->GetNumberOfPoints()<<std::endl;
+#endif
         // read point family data and create EntityArrays
 
         for(int eid=0; eid < grid->GetNumberOfEntityArray(); eid++)
          {
           vtkMedEntityArray* array = grid->GetEntityArray(eid);
+#ifdef DBGOUT
           std::cout<<"   init array : "<<eid<<", type="<<array->GetEntity().GeometryType<<std::endl;
+#endif
 
 
           // Next continue is to avoid to create filters for the
@@ -611,32 +621,27 @@ void vtkMedReader::InitializeParallelRead()
   while(fieldfileit != this->Internal->MedFiles.end())
     {
     vtkMedFile* fieldfile = fieldfileit->second;
-    std::cout<<"init2 file : "<<fieldfile->GetFileName()<<std::endl;
     fieldfileit++;
     med_idt pFileID = fieldfile->GetMedDriver()->GetParallelFileId();
 
     for(int fid=0; fid<fieldfile->GetNumberOfField(); fid++)
       {
       vtkMedField* field = fieldfile->GetField(fid);
-      std::cout<<" init2 field : "<<field->GetName()<<std::endl;
 
       if (field->GetFieldType() == vtkMedField::CellField)
       {
       for(int sid = 0; sid< field->GetNumberOfFieldStep(); sid++)
         {
         vtkMedFieldStep* step = field->GetFieldStep(sid);
-        std::cout<<"  init2 step : "<<sid<<std::endl;
 
         for(int foeid = 0; foeid < step->GetNumberOfFieldOverEntity(); foeid++)
         // TODO : seul le premier pas de temps est dispo au debut
           {
           vtkMedFieldOverEntity* fieldOverEntity = step->GetFieldOverEntity(foeid);
-          std::cout<<"   init2 field over entity : "<<foeid<<std::endl;
 
           for(int fopid = 0; fopid < fieldOverEntity->GetNumberOfFieldOnProfile(); fopid++)
             {
             vtkMedFieldOnProfile* fop = fieldOverEntity->GetFieldOnProfile(fopid);
-            std::cout<<"    init2 FieldOnProfile : "<<fop->GetProfileName()<<std::endl;
             // Here implement the filters as before:
             // 1- Modify vtkMedFieldOnProfile to contain a filter
             // 2- Create the filters here only if they are on CELLs (use GetFieldType)
@@ -680,33 +685,54 @@ void  vtkMedReader::LinkMedInfo()
     {
     vtkMedFile* fieldfile = fieldfileit->second;
     fieldfileit++;
+#ifdef DBGOUT
+    std::cout<<"fieldfile "<<fieldfile->GetFileName()<<", "<<fieldfile->GetComment()<<std::endl;
+#endif
 
     for(int fid=0; fid<fieldfile->GetNumberOfField(); fid++)
       {
       vtkMedField* field = fieldfile->GetField(fid);
+#ifdef DBGOUT
+      std::cout<<" field "<<field->GetName()<<std::endl;
+#endif
 
       for(int sid = 0; sid< field->GetNumberOfFieldStep(); sid++)
         {
         vtkMedFieldStep* step = field->GetFieldStep(sid);
+#ifdef DBGOUT
+        std::cout << "  step "<<sid<<std::endl;
+#endif
 
         for(int foeid = 0; foeid < step->GetNumberOfFieldOverEntity(); foeid++)
           {
           vtkMedFieldOverEntity* fieldOverEntity = step->GetFieldOverEntity(foeid);
+#ifdef DBGOUT
+          std::cout<<"   fieldOverEntity "<<foeid<<std::endl;
+#endif
 
           for(int fopid = 0; fopid < fieldOverEntity->GetNumberOfFieldOnProfile(); fopid++)
             {
             vtkMedFieldOnProfile* fop = fieldOverEntity->GetFieldOnProfile(fopid);
+#ifdef DBGOUT
+            std::cout<<"    fop '"<<fop->GetProfileName()<<"'"<<std::endl;
+#endif
 
             std::map<std::string, vtkSmartPointer<vtkMedFile> >::iterator
                 profilefileit = this->Internal->MedFiles.begin();
             while(profilefileit != this->Internal->MedFiles.end() && fop->GetProfile() == NULL)
               {
               vtkMedFile* profilefile = profilefileit->second;
+#ifdef DBGOUT
+              std::cout<<"     profilefile "<<profilefile->GetFileName()<<std::endl;
+#endif
               profilefileit++;
 
               for(int pid = 0; pid < profilefile->GetNumberOfProfile(); pid++)
                 {
                 vtkMedProfile *profile = profilefile->GetProfile(pid);
+#ifdef DBGOUT
+                std::cout<<"      profile "<<profile->GetName()<<" => "<<(strcmp(profile->GetName(), fop->GetProfileName())==0?"OK":"nope")<<std::endl;
+#endif
                 if(strcmp(profile->GetName(), fop->GetProfileName()) == 0)
                   {
                   fop->SetProfile(profile);
@@ -727,24 +753,39 @@ void  vtkMedReader::LinkMedInfo()
   while(meshfit != this->Internal->MedFiles.end())
     {
     vtkMedFile* meshfile = meshfit->second;
+#ifdef DBGOUT
+    std::cout<<"meshfile "<<meshfile->GetFileName()<<std::endl;
+#endif
     meshfit++;
 
     for(int mid=0; mid<meshfile->GetNumberOfMesh(); mid++)
       {
       vtkMedMesh* mesh = meshfile->GetMesh(mid);
+#ifdef DBGOUT
+      std::cout<<" mesh "<<mesh->GetName()<<std::endl;
+#endif
 
       for(int gid=0; gid<mesh->GetNumberOfGridStep(); gid++)
         {
         vtkMedGrid* grid = mesh->GetGridStep(gid);
+#ifdef DBGOUT
+        std::cout<<"  grid np="<<grid->GetNumberOfPoints()<<endl;
+#endif
         // read point family data and create EntityArrays
 
         for(int eid=0; eid < grid->GetNumberOfEntityArray(); eid++)
           {
           vtkMedEntityArray* array = grid->GetEntityArray(eid);
+#ifdef DBGOUT
+          std::cout<<"   array eid="<<eid<<" geometry name="<<array->GetEntity().GeometryName<<std::endl;
+#endif
 
           for(int fid=0; fid < array->GetNumberOfFamilyOnEntity(); fid++)
             {
             vtkMedFamilyOnEntity* foe = array->GetFamilyOnEntity(fid);
+#ifdef DBGOUT
+            std::cout<<"    foe family name="<<foe->GetFamily()->GetName()<<std::endl;
+#endif
             if(foe->GetFamilyOnEntityOnProfile((vtkMedProfile*)NULL) == NULL)
               {
               vtkMedFamilyOnEntityOnProfile* foep =
@@ -764,11 +805,17 @@ void  vtkMedReader::LinkMedInfo()
   while(fieldfileit != this->Internal->MedFiles.end())
     {
     vtkMedFile* fieldfile = fieldfileit->second;
+#ifdef DBGOUT
+    std::cout<<"fieldfile "<<fieldfile->GetFileName()<<std::endl;
+#endif
     fieldfileit++;
 
     for(int fieldid=0; fieldid < fieldfile->GetNumberOfField(); fieldid++)
       {
       vtkMedField* field = fieldfile->GetField(fieldid);
+#ifdef DBGOUT
+      std::cout<<" field "<<field->GetName()<<std::endl;
+#endif
 
       for(int fstepid=0; fstepid < field->GetNumberOfFieldStep(); fstepid++)
         {
@@ -776,16 +823,26 @@ void  vtkMedReader::LinkMedInfo()
 
         vtkMedComputeStep meshcs = step->GetMeshComputeStep();
 
+#ifdef DBGOUT
+        std::cout<<"  step meshcs.TimeOrFrequency="<<meshcs.TimeOrFrequency<<std::endl;
+#endif
+
         for(int foeid=0; foeid<step->GetNumberOfFieldOverEntity() ;foeid++)
           {
           vtkMedFieldOverEntity* fieldOverEntity = step->GetFieldOverEntity(foeid);
           const vtkMedEntity& fieldentity = fieldOverEntity->GetEntity();
+#ifdef DBGOUT
+          std::cout<<"   fieldOverEntity GeometryName='"<<fieldentity.GeometryName<<"'"<<std::endl;
+#endif
 
           for (int fopid = 0;
                fopid < fieldOverEntity->GetNumberOfFieldOnProfile(); fopid++)
             {
             vtkMedFieldOnProfile* fop =
                 fieldOverEntity->GetFieldOnProfile(fopid);
+#ifdef DBGOUT
+            std::cout<<"    fop ProfileName="<<fop->GetProfileName()<<std::endl;
+#endif
 
             std::map<std::string, vtkSmartPointer<vtkMedFile> >::iterator
                 meshfileit = this->Internal->MedFiles.begin();
@@ -794,12 +851,19 @@ void  vtkMedReader::LinkMedInfo()
               vtkMedFile* meshfile = meshfileit->second;
               meshfileit++;
 
+#ifdef DBGOUT
+              std::cout<<"     meshfile "<<meshfile->GetFileName()<<std::endl;
+#endif
+
               if(field->GetLocal() == 1 && (meshfile != fieldfile))
                 continue;
 
               for(int mid=0; mid<meshfile->GetNumberOfMesh(); mid++)
                 {
                 vtkMedMesh* mesh = meshfile->GetMesh(mid);
+#ifdef DBGOUT
+                std::cout<<"      mesh "<<mesh->GetName()<<std::endl;
+#endif
 
                 // the field must be on this mesh.
                 if(strcmp(mesh->GetName(),
@@ -823,6 +887,9 @@ void  vtkMedReader::LinkMedInfo()
                 for(int eid=0; eid < grid->GetNumberOfEntityArray(); eid++)
                   {
                   vtkMedEntityArray* array = grid->GetEntityArray(eid);
+#ifdef DBGOUT
+                  std::cout<<"       array "<<array->GetEntity().GeometryName<<std::endl;
+#endif
 
                   // if the support is on points,
                   // the field must also be on points
@@ -843,6 +910,10 @@ void  vtkMedReader::LinkMedInfo()
                   for(int fid = 0; fid < array->GetNumberOfFamilyOnEntity(); fid++)
                     {
                     vtkMedFamilyOnEntity* foe = array->GetFamilyOnEntity(fid);
+#ifdef DBGOUT
+                    std::cout<<"        foe "<<foe->GetFamily()->GetName()<<std::endl;
+#endif
+
                     if(foe->GetFamilyOnEntityOnProfile(fop->GetProfile()) == NULL)
                       {
                       vtkMedFamilyOnEntityOnProfile* foep =
@@ -850,8 +921,16 @@ void  vtkMedReader::LinkMedInfo()
                       foep->SetProfile(fop->GetProfile());
                       foep->SetFamilyOnEntity(foe);
                       foe->AddFamilyOnEntityOnProfile(foep);
+#ifdef DBGOUT
+                      std::cout<<"         foep profile="<<foep->GetProfile()->GetName()<<std::endl;
+#endif
                       foep->Delete();
                       }
+#ifdef DBGOUT
+                    else
+                        std::cout<<"         foep (none)"<<std::endl;
+#endif
+
                     // also add the family on entity with no profile.
                     if(foe->GetFamilyOnEntityOnProfile((vtkMedProfile*)NULL) == NULL)
                       {
@@ -860,8 +939,16 @@ void  vtkMedReader::LinkMedInfo()
                       foep->SetProfile(NULL);
                       foep->SetFamilyOnEntity(foe);
                       foe->AddFamilyOnEntityOnProfile(foep);
+#ifdef DBGOUT
+                      std::cout<<"         foep profile=null"<<std::endl;
+#endif
                       foep->Delete();
                       }
+#ifdef DBGOUT
+                    else
+                        std::cout<<"         foep (none)"<<std::endl;
+#endif
+
                     }//familyOnEntity
                   }//entityArray
                 }//mesh
@@ -878,22 +965,37 @@ void  vtkMedReader::LinkMedInfo()
     {
     vtkMedFile* fieldfile = fieldfileit->second;
     fieldfileit++;
+#ifdef DBGOUT
+    std::cout<<"fieldfile "<<fieldfile->GetFileName()<<std::endl;
+#endif
 
     for(int locid = 0; locid < fieldfile->GetNumberOfLocalization(); locid++)
       {
       vtkMedLocalization* loc = fieldfile->GetLocalization(locid);
+#ifdef DBGOUT
+      std::cout<<" loc "<<loc->GetName()<<" ip name="<<loc->GetInterpolationName()<<std::endl;
+#endif
 
       for(int fid = 0; fid < fieldfile->GetNumberOfField() &&
                     loc->GetInterpolation() == NULL; fid++)
         {
         vtkMedField* field = fieldfile->GetField(fid);
+#ifdef DBGOUT
+        std::cout<<"  field "<<field->GetName()<<std::endl;
+#endif
         for(int interpid = 0; interpid < field->GetNumberOfInterpolation();
         interpid++)
           {
           vtkMedInterpolation* interp = field->GetInterpolation(interpid);
+#ifdef DBGOUT
+          std::cout<<"   interp "<<interp->GetName()<<std::endl;
+#endif
           if(strcmp(loc->GetInterpolationName(),
                     interp->GetName()) == 0)
             {
+#ifdef DBGOUT
+              std::cout<<"    >> set"<<std::endl;
+#endif
             loc->SetInterpolation(interp);
             break;
             }
@@ -913,6 +1015,9 @@ void  vtkMedReader::LinkMedInfo()
       {
       vtkMedLocalization* loc = fieldfile->GetLocalization(locid);
       loc->BuildShapeFunction();
+#ifdef DBGOUT
+      std::cout<<"set shape fieldfile="<<fieldfile->GetFileName()<<" loc="<<loc->GetName()<<std::endl;
+#endif
       }
     }
 
@@ -941,6 +1046,9 @@ void  vtkMedReader::LinkMedInfo()
         if(strcmp(supportMesh->GetName(), structElem->GetName()) == 0 )
           {
           structElem->SetSupportMesh(supportMesh);
+#ifdef DBGOUT
+          std::cout<<"set support mesh"<<std::endl;
+#endif
           break;
           }
         }
@@ -975,6 +1083,9 @@ void  vtkMedReader::LinkMedInfo()
         if(strcmp(profile->GetName(), cstatt->GetProfileName()) == 0 )
           {
           cstatt->SetProfile(profile);
+#ifdef DBGOUT
+          std::cout<<"set profile"<<std::endl;
+#endif
           break;
           }
         }
@@ -1009,6 +1120,9 @@ void  vtkMedReader::LinkMedInfo()
           if(structelem->GetGeometryType() == array->GetEntity().GeometryType)
             {
             array->SetStructElement(structelem);
+#ifdef DBGOUT
+            std::cout<<"set struct elem"<<std::endl;
+#endif
             break;
             }
           }
@@ -1487,6 +1601,10 @@ void vtkMedReader::ClearSelections()
     for(int index=0; index < file->GetNumberOfField(); index++)
       {
       vtkMedField* field = file->GetField(index);
+#ifdef DBGOUT
+      std::cout<<index<<" "<<vtkMedUtilities::SimplifyName(
+                     field->GetName())<<" "<<field->GetName()<<" "<<field->GetFieldType()<<std::endl;
+#endif
       switch(field->GetFieldType())
         {
         case vtkMedField::PointField :
@@ -2199,6 +2317,10 @@ void vtkMedReader::MapFieldsOnSupport(vtkMedFamilyOnEntityOnProfile* foep,
     for(int fieldId=0; fieldId<file->GetNumberOfField(); fieldId++)
       {
       vtkMedField* field=file->GetField(fieldId);
+
+#ifdef DBGOUT
+      std::cout<<"field: name="<<field->GetName()<<" ncmpt="<<field->GetNumberOfComponent()<<std::endl;
+#endif
     
       if(strcmp(foep->GetFamilyOnEntity()->
                 GetParentGrid()->GetParentMesh()->GetName(),

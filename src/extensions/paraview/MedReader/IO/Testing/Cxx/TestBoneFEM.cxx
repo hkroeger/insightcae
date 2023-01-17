@@ -1,5 +1,4 @@
 
-#include "boost/filesystem.hpp"
 #include "vtkMedReader.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 #include "vtkSmartPointer.h"
@@ -140,10 +139,10 @@ int main(int argc, char *argv[])
         std::cerr<<"expected a single filename as command line argument!"<<std::endl;
         exit(1);
     }
-    boost::filesystem::path medfile(argv[1]);
+    std::string medfile(argv[1]);
 
     auto reader = vtkSmartPointer<vtkMedReader>::New();
-    reader->SetFileName(medfile.string().c_str());
+    reader->SetFileName(medfile.c_str());
 //    reader->SetPointFieldArrayStatus("result_DEPL", 1);
 //    reader->SetEntityStatus("CELL_TYPE/MED_CELL/HE8", 1);
 //    reader->SetEntityStatus("CELL_TYPE/MED_CELL/PE6", 1);

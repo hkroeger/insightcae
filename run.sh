@@ -25,8 +25,8 @@ git config --global user.email "hannes@kroegeronline.net"
 export PATH=/opt/insightcae/bin:$PATH
 export INSIGHT_THIRDPARTY_DIR=/opt/insightcae
 
-export MED3HOME=/opt/insightcae/public/med-4.0.0
-export HDF5_ROOT=/opt/insightcae/public/hdf5-1.10.3
+export MED3HOME=/opt/insightcae/code_aster/public/med-4.0.0
+export HDF5_ROOT=/opt/insightcae/code_aster/public/hdf5-1.10.3
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MED3HOME/lib
 

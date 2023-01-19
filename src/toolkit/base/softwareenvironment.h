@@ -64,7 +64,9 @@ public:
       const std::string& cmd, 
       std::vector<std::string> argv = std::vector<std::string>(),
       std::vector<std::string>* output = nullptr,
-      std::string *ovr_machine = nullptr
+      std::string *ovr_machine = nullptr,
+      bool mirrorStdout = true,
+      bool mirrorStderr = true
     ) const;
     
     JobPtr forkCommand

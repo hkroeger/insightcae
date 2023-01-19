@@ -1,7 +1,6 @@
 
 #include "base/exception.h"
 #include "base/spatialtransformation.h"
-#include "occtools.h"
 
 #include "vtkTransform.h"
 

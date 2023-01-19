@@ -130,16 +130,15 @@ void Compound::build()
 
       for ( const CompoundFeatureMap::value_type& c: components_ )
       {
-        std::string name=c.first;
         FeaturePtr p=c.second;
 
-        FeatureSetParserArgList args;
-        args.push_back(FeatureSetPtr(new FeatureSet(p, Face)));
-
-        FeatureSetPtr f(new FeatureSet(shared_from_this(), Face, "isIdentical(%0)", args));
-        providedFeatureSets_[name] = f;
-
-        std::cout<<"added: "<<name<<(*f)<<std::endl;
+        // delayed evaluation: will be evaluated upon first use
+        auto f = std::make_shared<FeatureSet>(
+                    shared_from_this(), Face,
+                    "isSame(%0)",
+                    FeatureSetParserArgList{ std::make_shared<FeatureSet>(p, Face) } );
+//        auto f = find( p->allFaces() ); // find not usable during rebuild!
+        providedFeatureSets_[c.first] = f;
       }
     }
     else

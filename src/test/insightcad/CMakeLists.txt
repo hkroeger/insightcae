@@ -9,3 +9,4 @@ endmacro()
 
 
 add_toolkit_test(test_OCCtransformToOF)
+add_toolkit_test(test_gmshLSDynaExport)

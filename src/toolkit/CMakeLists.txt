@@ -254,6 +254,17 @@ set(toolkit_SOURCES
     code_aster/codeastermeshfile.h code_aster/codeastermeshfile.cpp
     code_aster/casolveroutputanalyzer.cpp code_aster/casolveroutputanalyzer.h
     code_aster/coordinatesystems.h code_aster/coordinatesystems.cpp
+
+    lsdyna/lsdynainputdeck.h lsdyna/lsdynainputdeck.cpp
+    lsdyna/lsdynainputcard.h lsdyna/lsdynainputcard.cpp
+    lsdyna/control.h lsdyna/control.cpp
+    lsdyna/mesh.h lsdyna/mesh.cpp
+    lsdyna/materials.h lsdyna/materials.cpp
+    lsdyna/solution.h lsdyna/solution.cpp
+    lsdyna/boundaryconditions.h lsdyna/boundaryconditions.cpp
+    lsdyna/contact.h lsdyna/contact.cpp
+    lsdyna/radsoftwareenvironment.h lsdyna/radsoftwareenvironment.cpp
+    lsdyna/openradiossoutputanalyzer.h lsdyna/openradiossoutputanalyzer.cpp
 )
 
 if (INSIGHT_GNUPLOT_CHARTRENDERER)

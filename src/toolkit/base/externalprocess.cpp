@@ -44,6 +44,14 @@ bool ExternalProcess::isRunning() const
     return process_ && process_->running();
 }
 
+void ExternalProcess::terminate()
+{
+    if (process_)
+    {
+        process_->terminate();
+    }
+}
+
 const boost::process::child &ExternalProcess::process() const
 {
     return *process_;
@@ -173,6 +181,38 @@ void Job::ios_run_with_interruption(
    };
   interruption_handler({});
   ios.run();
+}
+
+
+
+void Job::ios_run_with_interruption(OutputAnalyzer *oa)
+{
+    ios_run_with_interruption(
+
+              [&](const std::string& line)
+              {
+                std::cout<<line<<std::endl; // mirror to console
+
+                if (oa)
+                {
+                    oa->update(line);
+                    if (oa->stopRun())
+                    {
+                      terminate();
+                    }
+                }
+              },
+
+              [&](const std::string& line)
+              {
+                // mirror to console
+                std::cout<<"[E] "<<line<<std::endl; // mirror to console
+                if (oa)
+                {
+                    oa->update("[E] "+line);
+                }
+              }
+        );
 }
 
 

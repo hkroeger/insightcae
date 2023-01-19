@@ -5,6 +5,7 @@
 #include "base/boost_include.h"
 #include "boost/process.hpp"
 #include "base/cppextensions.h"
+#include "base/outputanalyzer.h"
 
 
 
@@ -32,6 +33,7 @@ public:
 
     void wait();
     bool isRunning() const;
+    void terminate();
 
     const boost::process::child& process() const;
 };
@@ -69,7 +71,9 @@ public:
       std::function<void(const std::string& line)> processStdOut,
       std::function<void(const std::string& line)> processStdErr );
 
-
+  void ios_run_with_interruption(
+          OutputAnalyzer* oa = nullptr
+          );
   /**
    * @brief forkExternalProcess
    * @param job

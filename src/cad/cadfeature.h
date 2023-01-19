@@ -51,6 +51,7 @@
 
 #include "base/cacheableentityhashes.h"
 #include "featurecache.h"
+#include "subshapenumbering.h"
 
 namespace insight 
 {
@@ -231,10 +232,9 @@ private:
   
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
-  TopTools_IndexedMapOfShape
-//  FreelyIndexedMapOfShape
-   fmap_, emap_, vmap_, somap_, shmap_, wmap_;
-  
+  std::unique_ptr<SubshapeNumbering> idx_;
+
+
   SubfeatureMap providedSubshapes_;
   FeatureSetPtrMap providedFeatureSets_;
   DatumPtrMap providedDatums_;
@@ -321,15 +321,15 @@ public:
   void nameFeatures();
   void extractReferenceFeatures();
   
-  inline const TopoDS_Face& face(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Face(fmap_.FindKey(i)); }
-  inline const TopoDS_Edge& edge(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Edge(emap_.FindKey(i)); }
-  inline const TopoDS_Vertex& vertex(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Vertex(vmap_.FindKey(i)); }
-  inline const TopoDS_Solid& subsolid(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Solid(somap_.FindKey(i)); }
+  const TopoDS_Face& face(FeatureID i) const;
+  const TopoDS_Edge& edge(FeatureID i) const;
+  const TopoDS_Vertex& vertex(FeatureID i) const;
+  const TopoDS_Solid& subsolid(FeatureID i) const;
 
-  inline FeatureID solidID(const TopoDS_Shape& f) const { checkForBuildDuringAccess(); int i=somap_.FindIndex(f); if (i==0) throw insight::Exception("requested solid not indexed!"); return i; }
-  inline FeatureID faceID(const TopoDS_Shape& f) const { checkForBuildDuringAccess(); int i=fmap_.FindIndex(f); if (i==0) throw insight::Exception("requested face not indexed!"); return i; }
-  inline FeatureID edgeID(const TopoDS_Shape& e) const { checkForBuildDuringAccess(); int i=emap_.FindIndex(e); if (i==0) throw insight::Exception("requested edge not indexed!"); return i; }
-  inline FeatureID vertexID(const TopoDS_Shape& v) const { checkForBuildDuringAccess(); int i=vmap_.FindIndex(v); if (i==0) throw insight::Exception("requested vertex not indexed!"); return i; }
+  FeatureID solidID(const TopoDS_Shape& f) const;
+  FeatureID faceID(const TopoDS_Shape& f) const;
+  FeatureID edgeID(const TopoDS_Shape& e) const;
+  FeatureID vertexID(const TopoDS_Shape& v) const;
   
   GeomAbs_CurveType edgeType(FeatureID i) const;
   GeomAbs_SurfaceType faceType(FeatureID i) const;
@@ -380,10 +380,13 @@ public:
   FeatureSetData allFacesSet() const;
   FeatureSetData allSolidsSet() const;
 
+  FeatureSetPtr allOf(cad::EntityType et) const;
   FeatureSetPtr allVertices() const;
   FeatureSetPtr allEdges() const;
   FeatureSetPtr allFaces() const;
   FeatureSetPtr allSolids() const;
+
+  FeatureSetPtr find(FeatureSetPtr fs) const;
   
   FeatureSetData query_vertices(FilterPtr filter) const;
   FeatureSetData query_vertices(const std::string& queryexpr, const FeatureSetParserArgList& refs=FeatureSetParserArgList()) const;

@@ -11,6 +11,9 @@
 #include "fileOperation.H"
 #endif
 
+#include "Pstream.H"
+#include "PstreamReduceOps.H"
+
 #include "uniof.h"
 
 namespace Foam

@@ -401,7 +401,16 @@ void Bar::operator=(const Bar& o)
 
 void Bar::insertrule(parser::ISCADParser& ruleset) const
 {
-    static qi::rule<std::string::iterator, EndPointMod(), parser::ISCADParser::skipper_type> r_endpt =
+    typedef
+    qi::rule<
+            std::string::iterator,
+            EndPointMod(),
+            parser::ISCADParser::skipper_type
+            >
+
+            EndPtRule;
+
+    auto *r_endpt = new EndPtRule(
             *(
                 ( qi::lit("ext") > ruleset.r_scalarExpression
                    [ phx::bind(&EndPointMod::ext, qi::_val) = qi::_1 ])
@@ -411,7 +420,10 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
                 |
                 ( qi::lit("hmiter") > ruleset.r_scalarExpression
                   [ phx::bind(&EndPointMod::miterAngleHorz, qi::_val) = qi::_1 ] )
-            );
+            )
+    );
+    ruleset.addAdditionalRule(r_endpt);
+
 
     ruleset.modelstepFunctionRules.add
     (
@@ -441,8 +453,8 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
                     |
                     (
                             ruleset.r_solidmodel_expression > ','// 1
-                         > ( ( qi::lit("start") > r_endpt > ',' ) | qi::attr(EndPointMod()) )
-                         > ( ( qi::lit("end") > r_endpt > ',' ) | qi::attr(EndPointMod()) )
+                         > ( ( qi::lit("start") > *r_endpt > ',' ) | qi::attr(EndPointMod()) )
+                         > ( ( qi::lit("end") > *r_endpt > ',' ) | qi::attr(EndPointMod()) )
                          > ruleset.r_solidmodel_expression > ',' // 5
                          > ruleset.r_vectorExpression > ')' )
                      [ qi::_val = phx::bind(&Bar::create_derived,

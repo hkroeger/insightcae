@@ -409,7 +409,10 @@ bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* faill
         return false;
     }
     
-    std::ifstream f(fn.c_str());
+    std::ifstream f(fn.string());
+    insight::assertion(
+                f.good(),
+                "stream not good!");
     return parseISCADModelStream(f, m, failloc, sd, fn);
 }
 

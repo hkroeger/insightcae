@@ -63,6 +63,8 @@ public:
     virtual double mass ( double density_ovr=-1., double aw_ovr=-1. ) const;
     virtual arma::mat modelCoG ( double density_ovr=-1. ) const;
     virtual arma::mat modelInertia ( double density_ovr=-1. ) const;
+
+    Compound& operator=(const Compound& o);
 };
 
 

@@ -47,7 +47,8 @@ size_t Compound::calcHash() const
   h+=this->type();
   for (const CompoundFeatureMap::value_type& comp: components_)
   {
-    h+=comp.second;
+    h+=comp.first;
+    h+=*comp.second;
   }
   return h.getHash();
 }
@@ -99,7 +100,8 @@ FeaturePtr Compound::create_named( const CompoundFeatureMapData& m1 )
     CompoundFeatureMap items;
     for (const auto& i: m1)
     {
-        items.emplace( boost::fusion::get<0>(i), boost::fusion::get<1>(i) );
+        items[boost::fusion::get<0>(i)]
+                = boost::fusion::get<1>(i);
     }
     return FeaturePtr(new Compound(items));
 }
@@ -117,10 +119,10 @@ void Compound::build()
 
       for ( const CompoundFeatureMap::value_type& c: components_ )
       {
-          std::string name=c.first;
-          FeaturePtr p=c.second;
+          std::string name = c.first;
+          FeaturePtr p = c.second;
 
-          bb.Add ( result, *p );
+          bb.Add ( result, p->shape() );
           p->unsetLeaf();
 
           providedSubshapes_[c.first]=c.second;
@@ -136,8 +138,11 @@ void Compound::build()
         auto f = std::make_shared<FeatureSet>(
                     shared_from_this(), Face,
                     "isSame(%0)",
-                    FeatureSetParserArgList{ std::make_shared<FeatureSet>(p, Face) } );
+                    FeatureSetParserArgList{
+                        std::make_shared<FeatureSet>(p, Face)
+                    } );
 //        auto f = find( p->allFaces() ); // find not usable during rebuild!
+
         providedFeatureSets_[c.first] = f;
       }
     }
@@ -158,9 +163,12 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
                     '(' >
                       (
-                          ( ruleset.r_solidmodel_expression % ',' ) [ qi::_val = phx::bind(&Compound::create, qi::_1) ]
+                          ( ruleset.r_solidmodel_expression % ',' )
+                               [ qi::_val = phx::bind(&Compound::create, qi::_1) ]
                         |
-                          ('{' > ( (ruleset.r_identifier > ':' > ruleset.r_solidmodel_expression) % ',' )
+                          ('{' > (
+                            ( ruleset.r_identifier > ':' > ruleset.r_solidmodel_expression )
+                              % ',' )
                            [ qi::_val = phx::bind(&Compound::create_named, qi::_1) ] > '}')
                       )
                       > ')'
@@ -249,6 +257,13 @@ arma::mat Compound::modelInertia(double density_ovr) const
     if ( areaWeight_ /*&& (aw_ovr<0)*/ ) gaw=areaWeight_->value();
     Mass_CoG_Inertia mco=compoundProps(sfs, grho, gaw);
     return boost::fusion::at_c<2>(mco);
+}
+
+Compound &Compound::operator=(const Compound &o)
+{
+    components_ = o.components_;
+    Feature::operator=(o);
+    return *this;
 }
 
 

@@ -90,14 +90,14 @@ int ivtkOCCShape::RequestData(
             IMeshTools_Parameters p;
             p.Angle=0.5;
             p.Deflection=deflection;
-            p.Relative=false;
+            p.Relative=true;
             BRepMesh_IncrementalMesh  m(small, p);
     #else
     #if (OCC_VERSION_MAJOR>=7)
             BRepMesh_FastDiscret::Parameters p;
             p.Angle=0.5;
             p.Deflection=deflection;
-            p.Relative=false;
+            p.Relative=true;
             BRepMesh_FastDiscret m(box, p);
     #else
             BRepMesh_FastDiscret m(deflection, 0.5, box, true, true, false, false);

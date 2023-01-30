@@ -130,7 +130,8 @@ JobPtr SoftwareEnvironment::forkCommand
 (
   const std::string& cmd_exe,
   std::vector<std::string> cmd_argv,
-  std::string *ovr_machine
+  std::string *ovr_machine,
+  const boost::filesystem::path& cwd
 ) const
 {
   CurrentExceptionContext ex(
@@ -180,6 +181,12 @@ JobPtr SoftwareEnvironment::forkCommand
 
   // wrap into single command string
   std::string cmd = cmd_exe;
+
+  if (!cwd.empty())
+  {
+    cmd = "cd \""+boost::filesystem::absolute(cwd).string()+"\";" + cmd;
+  }
+
   if (char* cfgpath=getenv("INSIGHT_CONFIGSCRIPT"))
   {
       cmd = "source "+std::string(cfgpath)+";" + cmd;

@@ -102,8 +102,8 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
                 me->modelEdit(), &IQISCADModelScriptEdit::onDecreaseFontSize);
 
 
-//        connect(act_[fit_all], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::fitAll);
+        connect(act_[fit_all], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::fitAll);
 
         connect(act_[view_plusx], &QAction::triggered,
                 me->viewer(), &IQCADModel3DViewer::viewRight);

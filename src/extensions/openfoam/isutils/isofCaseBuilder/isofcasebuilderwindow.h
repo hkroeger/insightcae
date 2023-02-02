@@ -78,7 +78,7 @@ private:
     Ui::isofCaseBuilderWindow* ui;
     QHBoxLayout *pe_layout_, *bc_pe_layout_;
 
-    IQCADItemModel cadmodel_;
+    //IQCADItemModel cadmodel_;
     IQVTKParameterSetDisplay* display_;
     insight::MultiCADParameterSetVisualizer* multiViz_;
 

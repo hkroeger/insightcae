@@ -613,9 +613,10 @@ void createPrismLayers
   bool relativeSizes, 
   const PatchLayers& nLayers,
   double expRatio,
-  bool twodForExtrusion=false,
-  bool isalreadydecomposed=false,
-  bool keepdecomposedafterfinish=false
+  bool twodForExtrusion = false,
+  bool isalreadydecomposed = false,
+  bool keepdecomposedafterfinish = false,
+  ProgressDisplayer* progress = nullptr
 );
 
 arma::mat surfaceProjectLine

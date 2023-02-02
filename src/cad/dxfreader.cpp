@@ -28,6 +28,7 @@
 
 #include "TColStd_Array1OfInteger.hxx"
 #include "GC_MakeArcOfCircle.hxx"
+#include "ShapeAnalysis_FreeBounds.hxx"
 
 #include <chrono>
 
@@ -46,11 +47,11 @@ namespace cad {
 bool DXFReader::notFiltered()
 {
   DL_Attributes attr=getAttributes();
-
-  if (layername_=="")
-    return true;
-  else
-    return (attr.getLayer()==layername_);
+//  if (layername_=="")
+//    return true;
+//  else
+//    return (attr.getLayer()==layername_);
+  return boost::regex_match( attr.getLayer(), layerpattern_ );
 }
 
 std::string DXFReader::curLayerName()
@@ -58,8 +59,10 @@ std::string DXFReader::curLayerName()
   return getAttributes().getLayer();
 }
 
-DXFReader::DXFReader(const boost::filesystem::path& filename, const std::string& layername)
-: layername_(layername)
+DXFReader::DXFReader(
+        const boost::filesystem::path& filename,
+        const std::string& layerpattern )
+: layerpattern_(layerpattern)
 {
   std::unique_ptr<DL_Dxf> dxf(new DL_Dxf());
   if (!dxf->in(filename.string(), this))
@@ -74,6 +77,7 @@ DXFReader::~DXFReader()
 
 void DXFReader::addArc(const DL_ArcData &a)
 {
+  insight::dbg()<<"add arc, layer "<<getAttributes().getLayer()<<std::endl;
   if (notFiltered())
   {
     gp_Pnt cp(a.cx, a.cy, a.cz);
@@ -83,10 +87,13 @@ void DXFReader::addArc(const DL_ArcData &a)
     TopoDS_Edge e=BRepBuilderAPI_MakeEdge(c, p0, p1).Edge();
     ls_[curLayerName()].Append(e);
   }
+  else
+      insight::dbg()<<"=> filtered ("<<layerpattern_<<")"<<std::endl;
 }
 
 void DXFReader::addLine (const DL_LineData &l)
 {
+  insight::dbg()<<"add line, layer "<<getAttributes().getLayer()<<std::endl;
   if (notFiltered())
   {
     gp_Pnt p0(l.x1, l.y1, l.z1);
@@ -94,10 +101,13 @@ void DXFReader::addLine (const DL_LineData &l)
     TopoDS_Edge e=BRepBuilderAPI_MakeEdge(p0, p1).Edge();
     ls_[curLayerName()].Append(e);
   }
+  else
+      insight::dbg()<<"=> filtered ("<<layerpattern_<<")"<<std::endl;
 }
 
 void DXFReader::addPolyline(const DL_PolylineData &pl)
 {
+  insight::dbg()<<"add polyline, layer "<<getAttributes().getLayer()<<std::endl;
   if (notFiltered())
   {
     pl_.reset(new Polyline(*this, curLayerName()));
@@ -112,7 +122,10 @@ void DXFReader::addPolyline(const DL_PolylineData &pl)
     }
   }
   else
+  {
+    insight::dbg()<<"=> filtered ("<<layerpattern_<<")"<<std::endl;
     pl_.reset();
+  }
 }
 
 DXFReader::Polyline::Polyline(DXFReader& r, const std::string& layername)
@@ -184,6 +197,7 @@ void DXFReader::addVertexPolyLine(const DL_VertexData & pv, Polyline& pl)
 
 void DXFReader::addSpline(const DL_SplineData& sp)
 {
+  insight::dbg()<<"add spline, layer "<<getAttributes().getLayer()<<std::endl;
   if (notFiltered())
   {
     spl_deg_=sp.degree;
@@ -192,6 +206,8 @@ void DXFReader::addSpline(const DL_SplineData& sp)
     splp_.clear();
     splk_.clear();
   }
+  else
+      insight::dbg()<<"=> filtered ("<<layerpattern_<<")"<<std::endl;
 }
 
 void DXFReader::addKnot(const DL_KnotData& kd)
@@ -279,45 +295,81 @@ void DXFReader::buildSpline()
 
 
 
-TopoDS_Wire DXFReader::Wire(double tol, const std::string& layername) const
+Handle_TopTools_HSequenceOfShape DXFReader::Wires(double tol, const std::string& layername) const
 {
   pl_.reset(); // Finalize
 
-  std::map<std::string, TopTools_ListOfShape>::const_iterator ld;
-  if (layername_!="")
-    {
-      ld=ls_.find(layername_);
-    }
-  else
-    {
-      ld=ls_.find(layername);
-    }
+  Handle(TopTools_HSequenceOfShape) inEdges(new TopTools_HSequenceOfShape);
 
-  if (ld==ls_.end())
+  auto useEdgesFrom = [&](const TopTools_ListOfShape& ls)
+  {
+      for (auto i=ls.begin(); i!=ls.end(); ++i)
+      {
+          inEdges->Append(*i);
+      }
+  };
+
+  for (const auto& l: ls_)
+  {
+      if (layername.empty())
+      {
+          useEdgesFrom(l.second);
+      }
+      else
+      {
+          if (l.first==layername)
+          {
+              useEdgesFrom(l.second);
+          }
+      }
+  }
+
+//  std::map<std::string, TopTools_ListOfShape>::const_iterator ld;
+//  if (layername!="")
+//    {
+//      ld=ls_.find(layername_);
+//    }
+//  else
+//    {
+//      ld=ls_.find(layername);
+//    }
+
+  if (inEdges->Size()==0)
     throw insight::Exception("Could not retrieve data for layer!");
 
   ShapeFix_ShapeTolerance sft;
   for (
-    TopTools_ListIteratorOfListOfShape li(ld->second);
-    li.More(); li.Next()
+    auto li=inEdges->begin();
+    li!=inEdges->end(); ++li
   )
   {
-    sft.SetTolerance(const_cast<TopoDS_Shape&>(li.Value()), tol, TopAbs_VERTEX );
+    sft.SetTolerance(const_cast<TopoDS_Shape&>(*li), tol, TopAbs_VERTEX );
   }
 
-  BRepBuilderAPI_MakeWire wb;
-  wb.Add(ld->second);
-  return wb.Wire();
+  Handle(TopTools_HSequenceOfShape) outWires(new TopTools_HSequenceOfShape);
+
+  ShapeAnalysis_FreeBounds::ConnectEdgesToWires(inEdges, tol, false, outWires);
+//  BRepBuilderAPI_MakeWire wb;
+//  wb.Add(ld->second);
+//  return wb.Wire();
+
+  return outWires;
 }
 
-std::vector<std::string> DXFReader::layers() const
+std::vector<std::string> DXFReader::layers(const std::string& pattern) const
 {
-  std::vector<std::string> ll;
-  std::transform( ls_.begin(), ls_.end(),
-                  std::back_inserter( ll ),
-                  boost::bind(&std::map<std::string,TopTools_ListOfShape>::value_type::first,_1)
-                  );
-  return ll;
+    return layers(boost::regex(pattern));
+}
+
+std::vector<std::string> DXFReader::layers(const boost::regex &re) const
+{
+    std::vector<std::string> ll;
+    for (const auto& l: ls_)
+    {
+        if (boost::regex_match(l.first, re))
+            ll.push_back(l.first);
+    }
+    return ll;
 }
 
 

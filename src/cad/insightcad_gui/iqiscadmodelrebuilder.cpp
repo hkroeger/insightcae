@@ -78,16 +78,28 @@ void IQISCADModelRebuilder::onAddFeature(
 {
     if (is_component)
     {
+        insight::DatasetRepresentation dr = insight::Surface;
+        if (const auto* dm = boost::get<AIS_DisplayMode>(&ds))
+        {
+            if (*dm==AIS_WireFrame) dr=insight::Wireframe;
+        }
         QMetaObject::invokeMethod(
               qApp,
-              std::bind(&IQCADItemModel::addComponent, model_, name.toStdString(), smp, "")
+              std::bind(&IQCADItemModel::addComponent, model_,
+                        name.toStdString(), smp, "", dr)
         );
     }
     else
     {
+        insight::DatasetRepresentation dr = insight::Wireframe;
+        if (const auto* dm = boost::get<AIS_DisplayMode>(&ds))
+        {
+            if (*dm==AIS_Shaded) dr=insight::Surface;
+        }
         QMetaObject::invokeMethod(
               qApp,
-              std::bind(&IQCADItemModel::addModelstep, model_, name.toStdString(), smp, "")
+              std::bind(&IQCADItemModel::addModelstep, model_,
+                        name.toStdString(), smp, "", dr)
         );
     }
     symbolsSnapshot_.features_.erase(name.toStdString());

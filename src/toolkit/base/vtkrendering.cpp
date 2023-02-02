@@ -27,6 +27,7 @@
 #include "vtkRendererCollection.h"
 #include "vtkActor2DCollection.h"
 #include "vtkDataObjectTreeIterator.h"
+#include "vtkCleanPolyData.h"
 
 #include "vtkPointData.h"
 #include "vtkExtractBlock.h"
@@ -93,18 +94,20 @@ vtkSmartPointer<vtkPolyData> createArrows(
         a0->SetTipRadius(0.025);
         a0->SetTipLength(0.1);
         a0->SetShaftRadius(0.0075);
-        a0->Update();
 
         auto tf= vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-        tf->SetInputData(a0->GetOutput());
+        tf->SetInputConnection(a0->GetOutputPort());
         tf->SetTransform( st1.appended(st2).toVTKTransform() );
         tf->Update();
 
         af->AddInputData(tf->GetOutput());
     }
   }
-  af->Update();
-  return af->GetOutput();
+  auto cleanFilter = vtkSmartPointer<vtkCleanPolyData>::New();
+  cleanFilter->SetInputConnection(af->GetOutputPort());
+  cleanFilter->Update();
+
+  return cleanFilter->GetOutput();
 }
 
 

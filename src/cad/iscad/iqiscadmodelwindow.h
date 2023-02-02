@@ -7,7 +7,7 @@
 
 namespace boost { namespace filesystem { class path; } }
 class IQCADItemModel;
-class IQCADModel3DViewer;
+class IQVTKCADModel3DViewer;
 class IQISCADModelScriptEdit;
 
 /**
@@ -20,7 +20,7 @@ class IQISCADModelWindow
     Q_OBJECT
 
 public:
-    typedef IQCADModel3DViewer Model3DViewer;
+    typedef IQVTKCADModel3DViewer Model3DViewer;
 
 protected:
     IQCADItemModel* model_;
@@ -32,6 +32,7 @@ protected:
 public:
     IQISCADModelWindow(QWidget* parent = 0);
 
+    IQCADItemModel* model();
     IQISCADModelScriptEdit* modelEdit();
     QTreeView* modelTree();
     Model3DViewer* viewer();

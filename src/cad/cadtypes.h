@@ -43,6 +43,9 @@ namespace insight
 namespace cad 
 {
 
+
+
+
 class Scalar;
 class Vector;
 class ASTBase;
@@ -52,6 +55,9 @@ class FeatureSet;
 class Filter;
 class Model;
 class PostprocAction;
+
+
+
 
 typedef std::shared_ptr<Feature> FeaturePtr;
 typedef std::shared_ptr<Feature const> ConstFeaturePtr;
@@ -72,6 +78,9 @@ typedef std::shared_ptr<FeatureSet const> ConstFeatureSetPtr;
 typedef std::shared_ptr<Filter> FilterPtr;
 typedef std::shared_ptr<Filter const> ConstFilterPtr;
 
+
+
+
 typedef int FeatureID;
 typedef boost::variant<FeatureSetPtr,VectorPtr,ScalarPtr> FeatureSetParserArg;
 typedef std::vector<FeatureSetParserArg> FeatureSetParserArgList;
@@ -85,13 +94,27 @@ typedef boost::fusion::vector2<VectorPtr,VectorVariableType> VectorPtrAndType;
 typedef boost::variant<FeaturePtr, DatumPtr, VectorPtrAndType, ScalarPtr>  ModelVariable;
 typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVariableTable;
 
+
+
+
+enum EntityType { Vertex, Edge, Face, Solid };
+
+
+
+
 struct sharedModelLocations
     : public std::vector<boost::filesystem::path>
 {
   sharedModelLocations();
 };
 
+
+
+
 boost::filesystem::path sharedModelFilePath(const std::string& name);
+
+
+
 
 class OCCException
         : public insight::Exception
@@ -111,6 +134,8 @@ public:
 };
 
 
+
+
 class CADException
 : public OCCException
 {
@@ -120,6 +145,9 @@ public:
 
     inline ConstFeaturePtr feature() const { return errorfeat_; }
 };
+
+
+
 
 }
 }

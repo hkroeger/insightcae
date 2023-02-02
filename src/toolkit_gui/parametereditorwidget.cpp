@@ -26,7 +26,7 @@
 #include "cadparametersetvisualizer.h"
 #include "parametereditorwidget.h"
 
-#include "iqcadmodel3dviewer.h"
+#include "iqvtkcadmodel3dviewer.h"
 #include "iqvtkparametersetdisplay.h"
 
 using namespace std;

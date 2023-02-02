@@ -11,147 +11,93 @@
 
 
 
-const QPoint &InputReceiver::lastMouseLocation() const
+
+
+ToNotepadEmitter::ToNotepadEmitter()
+    : QObject(nullptr)
+{}
+
+ToNotepadEmitter::~ToNotepadEmitter()
+{}
+
+
+
+
+
+OCCViewWidgetRotation::OCCViewWidgetRotation(QoccViewWidget &viewWidget, const QPoint point)
+  : ViewWidgetAction<QoccViewWidget>(viewWidget)
 {
-  return lastMouseLocation_;
+  viewer().view().StartRotation(point.x(), point.y());
 }
 
-void InputReceiver::onLeftButtonDown  ( Qt::KeyboardModifiers, const QPoint )
-{}
-
-void InputReceiver::onMiddleButtonDown( Qt::KeyboardModifiers, const QPoint )
-{}
-
-void InputReceiver::onRightButtonDown ( Qt::KeyboardModifiers, const QPoint )
-{}
-
-void InputReceiver::onLeftButtonUp    ( Qt::KeyboardModifiers, const QPoint )
-{}
-
-void InputReceiver::onMiddleButtonUp  ( Qt::KeyboardModifiers, const QPoint )
-{}
-
-void InputReceiver::onRightButtonUp   ( Qt::KeyboardModifiers, const QPoint )
-{}
-
-void InputReceiver::onKeyPress ( Qt::KeyboardModifiers, int )
-{}
-
-void InputReceiver::onKeyRelease ( Qt::KeyboardModifiers, int )
-{}
-
-void InputReceiver::onMouseMove
+void OCCViewWidgetRotation::onMouseMove
   (
    Qt::MouseButtons,
-   Qt::KeyboardModifiers,
    const QPoint point,
    Qt::KeyboardModifiers
    )
 {
-  lastMouseLocation_=point;
-}
-
-
-void InputReceiver::onMouseWheel(double, double)
-{
+  viewer().view().Rotation( point.x(), point.y() );
 }
 
 
 
 
-
-
-ViewWidgetAction::ViewWidgetAction()
+OCCViewWidgetPanning::OCCViewWidgetPanning(QoccViewWidget &viewWidget, const QPoint point)
+  : ViewWidgetAction<QoccViewWidget>(viewWidget, point)
 {}
 
-ViewWidgetAction::~ViewWidgetAction()
+
+void OCCViewWidgetPanning::onMouseMove
+  (
+   Qt::MouseButtons btn,
+   const QPoint point,
+   Qt::KeyboardModifiers mods
+   )
+{
+  if (hasLastMouseLocation())
+  {
+    viewer().view().Pan( point.x() - lastMouseLocation().x(),
+               lastMouseLocation().y() - point.y() );
+  }
+  ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
+}
+
+
+
+
+OCCViewWidgetDynamicZooming::OCCViewWidgetDynamicZooming(QoccViewWidget &viewWidget, const QPoint point)
+  : ViewWidgetAction<QoccViewWidget>(viewWidget, point)
 {}
 
-void ViewWidgetAction::setFinished()
-{
-  finished_=true;
-}
 
-
-
-
-
-ViewWidgetRotation::ViewWidgetRotation(Handle_V3d_View view, const QPoint point)
-  : view_(view)
-{
-  view_->StartRotation(point.x(), point.y());
-}
-
-void ViewWidgetRotation::onMouseMove
+void OCCViewWidgetDynamicZooming::onMouseMove
   (
-   Qt::MouseButtons,
-   Qt::KeyboardModifiers,
+   Qt::MouseButtons btn,
    const QPoint point,
-   Qt::KeyboardModifiers
+   Qt::KeyboardModifiers mods
    )
 {
-  view_->Rotation( point.x(), point.y() );
+    if (hasLastMouseLocation())
+    {
+        viewer().view().Zoom( lastMouseLocation().x(), lastMouseLocation().y(),
+                              point.x(), point.y() );
+    }
+
+    ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
 }
 
 
 
 
-ViewWidgetPanning::ViewWidgetPanning(Handle_V3d_View view, const QPoint point)
-  : view_(view)
-{
-  startPoint_=point;
-}
+OCCViewWidgetWindowZooming::OCCViewWidgetWindowZooming(QoccViewWidget &viewWidget, const QPoint point, QRubberBand *rb)
+  : ViewWidgetAction<QoccViewWidget>(viewWidget, point), rb_(rb)
+{}
 
-
-void ViewWidgetPanning::onMouseMove
-  (
-   Qt::MouseButtons,
-   Qt::KeyboardModifiers,
-   const QPoint point,
-   Qt::KeyboardModifiers
-   )
-{
-  view_->Pan( point.x() - startPoint_.x(),
-               startPoint_.y() - point.y() );
-  startPoint_ = point;
-}
-
-
-
-
-ViewWidgetDynamicZooming::ViewWidgetDynamicZooming(Handle_V3d_View view, const QPoint point)
-  : view_(view)
-{
-  startPoint_=point;
-}
-
-
-void ViewWidgetDynamicZooming::onMouseMove
-  (
-   Qt::MouseButtons,
-   Qt::KeyboardModifiers,
-   const QPoint point,
-   Qt::KeyboardModifiers
-   )
-{
-  view_->Zoom( startPoint_.x(), startPoint_.y(),
-               point.x(), point.y() );
-  startPoint_ = point;
-}
-
-
-
-
-ViewWidgetWindowZooming::ViewWidgetWindowZooming(Handle_V3d_View view, const QPoint point, QRubberBand *rb)
-  : view_(view), rb_(rb)
-{
-  startPoint_=point;
-}
-
-ViewWidgetWindowZooming::~ViewWidgetWindowZooming()
+OCCViewWidgetWindowZooming::~OCCViewWidgetWindowZooming()
 {
   auto r=rb_->rect();
-  view_->WindowFitAll(
+  viewer().view().WindowFitAll(
         r.topLeft().x(),
         r.topLeft().y(),
         r.bottomRight().x(),
@@ -159,44 +105,46 @@ ViewWidgetWindowZooming::~ViewWidgetWindowZooming()
 }
 
 
-void ViewWidgetWindowZooming::onMouseMove
+void OCCViewWidgetWindowZooming::onMouseMove
   (
-   Qt::MouseButtons,
-   Qt::KeyboardModifiers,
+   Qt::MouseButtons btn,
    const QPoint point,
-   Qt::KeyboardModifiers
+   Qt::KeyboardModifiers mods
    )
 {
-  rb_->hide();
-  rb_->setGeometry ( QRect(startPoint_, point).normalized() );
-  rb_->show();
+    if (hasLastMouseLocation())
+    {
+      rb_->hide();
+      rb_->setGeometry ( QRect(lastMouseLocation(), point).normalized() );
+      rb_->show();
 
-  view_->Zoom( startPoint_.x(), startPoint_.y(),
-               point.x(), point.y() );
-  startPoint_ = point;
+      viewer().view().Zoom( lastMouseLocation().x(), lastMouseLocation().y(),
+                   point.x(), point.y() );
+    }
+
+    ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
 }
 
 
 
-
-ViewWidgetMeasurePoints::ViewWidgetMeasurePoints(QoccViewWidget *viewWidget)
-  : viewWidget_(viewWidget)
+OCCViewWidgetMeasurePoints::OCCViewWidgetMeasurePoints(QoccViewWidget &viewWidget)
+  : ViewWidgetAction<QoccViewWidget>(viewWidget)
 {
-  insight::cad::ActivateAll(viewWidget_->getContext(), TopAbs_VERTEX);
-  viewWidget_->sendStatus("Please select first point!");
+  insight::cad::ActivateAll(viewer().getContext(), TopAbs_VERTEX);
+  viewer().sendStatus("Please select first point!");
 }
 
-ViewWidgetMeasurePoints::~ViewWidgetMeasurePoints()
+OCCViewWidgetMeasurePoints::~OCCViewWidgetMeasurePoints()
 {
-  insight::cad::DeactivateAll(viewWidget_->getContext(), TopAbs_VERTEX);
+  insight::cad::DeactivateAll(viewer().getContext(), TopAbs_VERTEX);
 }
 
-void ViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/)
+void OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/)
 {
-  viewWidget_->getContext()->InitSelected();
-  if (viewWidget_->getContext()->MoreSelected())
+  viewer().getContext()->InitSelected();
+  if (viewer().getContext()->MoreSelected())
   {
-    TopoDS_Shape v = viewWidget_->getContext()->SelectedShape();
+    TopoDS_Shape v = viewer().getContext()->SelectedShape();
 
     gp_Pnt p =BRep_Tool::Pnt(TopoDS::Vertex(v));
     std::cout<< p.X() <<" "<<p.Y()<< " " << p.Z()<<std::endl;
@@ -204,14 +152,14 @@ void ViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, c
     if (!p1_)
       {
         p1_=insight::cad::matconst(insight::vec3(p));
-        viewWidget_->sendStatus("Please select second point!");
+        viewer().sendStatus("Please select second point!");
       }
     else if (!p2_)
       {
         p2_=insight::cad::matconst(insight::vec3(p));
-        viewWidget_->sendStatus("Measurement is created...");
+        viewer().sendStatus("Measurement is created...");
 
-        viewWidget_->addEvaluationToModel
+        viewer().addEvaluationToModel
             (
               "distance measurement",
               insight::cad::PostprocActionPtr
@@ -225,6 +173,7 @@ void ViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, c
       }
   }
 }
+
 
 
 

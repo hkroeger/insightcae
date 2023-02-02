@@ -34,7 +34,7 @@
         <widget class="QWidget" name="layoutWidget">
          <layout class="QVBoxLayout" name="verticalLayout_15">
           <item>
-           <widget class="IQCADModel3DViewer" name="cadview" native="true">
+           <widget class="IQVTKCADModel3DViewer" name="cadview" native="true">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
               <horstretch>0</horstretch>
@@ -708,9 +708,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>IQCADModel3DViewer</class>
+   <class>IQVTKCADModel3DViewer</class>
    <extends>QWidget</extends>
-   <header>iqcadmodel3dviewer.h</header>
+   <header>iqvtkcadmodel3dviewer.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

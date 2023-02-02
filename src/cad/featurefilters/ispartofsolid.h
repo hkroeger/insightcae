@@ -34,23 +34,30 @@ class isPartOfSolid
     : public Filter
 {
 protected:
-    TopoDS_Solid s_;
+    std::vector<TopoDS_Solid> s_;
 
 public:
-    isPartOfSolid(const TopoDS_Solid& s)
-    : s_(s)
+    isPartOfSolid(const std::vector<TopoDS_Solid>& s)
+        : s_(s)
     {
     }
 
     isPartOfSolid(FeaturePtr m)
-      : s_(TopoDS::Solid(m->shape()))
+      : s_({TopoDS::Solid(m->shape())})
     {
         throw insight::Exception("isPartOfSolid filter: not implemented!");
     }
 
     isPartOfSolid(FeatureSet f)
-        : s_(TopoDS::Solid(f.model()->shape()))
-    {}
+    {
+        insight::assertion(f.shape()==Solid, "expected set of solids");
+        for (auto& i: f.data())
+        {
+            TopoDS_Solid s=f.model()->subsolid(i);
+            BRepTools::Dump(s, std::cout);
+            s_.push_back(s);
+        }
+    }
 
     bool checkMatch(FeatureID) const
     {
@@ -65,9 +72,7 @@ public:
 };
 
 
-template<> isPartOfSolid<Edge>::isPartOfSolid(FeaturePtr m);
 template<> bool isPartOfSolid<Edge>::checkMatch(FeatureID feature) const;
-template<> isPartOfSolid<Face>::isPartOfSolid(FeaturePtr m);
 template<> bool isPartOfSolid<Face>::checkMatch(FeatureID feature) const;
 
 typedef isPartOfSolid<Edge> isPartOfSolidEdge;

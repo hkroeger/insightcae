@@ -20,8 +20,10 @@
 #include "base/boost_include.h"
 
 #include "iqiscadmainwindow.h"
+#include "iqvtkcadmodel3dviewer.h"
 #include "iqiscadmodelwindow.h"
 #include "iqiscadmodelscriptedit.h"
+#include "iqcaditemmodel.h"
 
 #include "qmodeltree.h"
 #include "qmodelstepitem.h"
@@ -103,27 +105,27 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
 //        connect(act_[fit_all], &QAction::triggered,
 //                me->viewer(), &QoccViewWidget::fitAll);
 
-//        connect(act_[view_plusx], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::viewRight);
-//        connect(act_[view_minusx], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::viewLeft);
-//        connect(act_[view_plusy], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::viewBack);
-//        connect(act_[view_minusy], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::viewFront);
-//        connect(act_[view_plusz], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::viewTop);
-//        connect(act_[view_minusz], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::viewBottom);
+        connect(act_[view_plusx], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::viewRight);
+        connect(act_[view_minusx], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::viewLeft);
+        connect(act_[view_plusy], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::viewBack);
+        connect(act_[view_minusy], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::viewFront);
+        connect(act_[view_plusz], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::viewTop);
+        connect(act_[view_minusz], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::viewBottom);
 
 //        connect(act_[toggle_grid], &QAction::triggered,
 //                me->viewer(), &QoccViewWidget::toggleGrid);
-//        connect(act_[toggle_clipxy], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::toggleClipXY);
-//        connect(act_[toggle_clipyz], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::toggleClipYZ);
-//        connect(act_[toggle_clipxz], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::toggleClipXZ);
+        connect(act_[toggle_clipxy], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::toggleClipXY);
+        connect(act_[toggle_clipyz], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::toggleClipYZ);
+        connect(act_[toggle_clipxz], &QAction::triggered,
+                me->viewer(), &IQCADModel3DViewer::toggleClipXZ);
 //        connect(act_[background_color], &QAction::triggered,
 //                me->viewer(), &QoccViewWidget::background);
 //        connect(act_[display_all_shaded], &QAction::triggered,
@@ -133,22 +135,22 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
 //        connect(act_[reset_shading], &QAction::triggered,
 //                me->modeltree(), &QModelTree::resetViz);
 
-//        connect(act_[measure_distance], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::onMeasureDistance);
+        connect(act_[measure_distance], &QAction::triggered,
+                me->viewer(), &IQISCADModelWindow::Model3DViewer::onMeasureDistance);
 
-//        connect(act_[sel_pts], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::onSelectPoints);
+        connect(act_[sel_pts], &QAction::triggered,
+                me->viewer(), &IQISCADModelWindow::Model3DViewer::onSelectPoints );
 
-//        connect(act_[sel_edgs], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::onSelectEdges);
+        connect(act_[sel_edgs], &QAction::triggered,
+                me->viewer(), &IQISCADModelWindow::Model3DViewer::onSelectEdges );
 
-//        connect(act_[sel_faces], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::onSelectFaces);
+        connect(act_[sel_faces], &QAction::triggered,
+                me->viewer(), &IQISCADModelWindow::Model3DViewer::onSelectFaces );
 
-//        connect(act_[sel_solids], &QAction::triggered,
-//                me->viewer(), &QoccViewWidget::onSelectSolids);
+        connect(act_[sel_solids], &QAction::triggered,
+                me->viewer(), &IQISCADModelWindow::Model3DViewer::onSelectSolids );
 
-//        me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
+        me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
 
         connect(bgparsestopbtn_, &QPushButton::clicked,
                 me->modelEdit(), &IQISCADModelScriptEdit::onCancelRebuild);
@@ -219,7 +221,7 @@ void IQISCADMainWindow::onUpdateClipPlaneMenu(int errorState)
     {
       if (IQISCADModelWindow *me = static_cast<IQISCADModelWindow*>(modelTabs_->currentWidget()))
       {
-//          me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
+          me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
       }
     }
 }

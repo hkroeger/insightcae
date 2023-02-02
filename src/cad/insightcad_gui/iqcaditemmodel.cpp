@@ -1,4 +1,6 @@
 #include "iqcaditemmodel.h"
+#include "iqcadmodel3dviewer.h"
+#include "datum.h"
 
 #include <QInputDialog>
 #include <QColorDialog>
@@ -826,8 +828,13 @@ void IQCADItemModel::addDatum(const std::string& name, insight::cad::DatumPtr va
 void IQCADItemModel::addModelstep(
         const std::string& name,
         insight::cad::FeaturePtr value,
-        const std::string& featureDescription )
+        const std::string& featureDescription,
+        insight::DatasetRepresentation dr )
 {
+    // set *before* addEntity
+    auto&dvv = featureVisibility_[name];
+    dvv.representation=dr;
+
     addEntity<insight::cad::FeaturePtr>(
               name, value,
               std::bind(&insight::cad::Model::modelsteps, model_.get()),
@@ -843,8 +850,13 @@ void IQCADItemModel::addModelstep(
 void IQCADItemModel::addComponent(
         const std::string& name,
         insight::cad::FeaturePtr value,
-        const std::string& featureDescription )
+        const std::string& featureDescription,
+        insight::DatasetRepresentation dr )
 {
+    // set *before* addEntity
+    auto&dvv = featureVisibility_[name];
+    dvv.representation=dr;
+
     addEntity<insight::cad::FeaturePtr>(
               name, value,
               std::bind(&insight::cad::Model::modelsteps, model_.get()),
@@ -956,6 +968,47 @@ void IQCADItemModel::removeDataset(const std::string& name)
               std::bind(&IQCADItemModel::datasetIndex, this, std::placeholders::_1),
               std::bind(&insight::cad::Model::removeDataset, model_.get(), std::placeholders::_1),
                 CADModelSection::dataset );
+}
+
+
+
+
+
+void IQCADItemModel::populateClipPlaneMenu(QMenu *clipplanemenu, IQCADModel3DViewer *viewer)
+{
+    clipplanemenu->clear();
+
+    if (model_)
+    {
+        int nAdded=0;
+        auto datums = model_->datums();
+        for (const auto& dat: datums)
+        {
+            insight::cad::DatumPtr datpl = dat.second;
+            if (datpl->providesPlanarReference())
+            {
+                QAction *act = new QAction( dat.first.c_str(), this );
+
+                connect
+                    (
+                      act, &QAction::triggered,
+                      std::bind(&IQCADModel3DViewer::toggleClipDatum, viewer, datpl.get())
+                    );
+                clipplanemenu->addAction(act);
+
+                nAdded++;
+            }
+        }
+
+        if (nAdded)
+        {
+            clipplanemenu->setEnabled(true);
+        }
+        else
+        {
+            clipplanemenu->setDisabled(true);
+        }
+    }
 }
 
 
@@ -1074,13 +1127,15 @@ void IQCADItemModel::addSymbolsToSubmenu(
 }
 
 
-void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
+
+
+void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, IQCADModel3DViewer* viewer)
 {
     QMenu cm;
 
     QAction *a;
 
-    if (!idx.parent().isValid())
+    if (!idx.parent().isValid()) // on top level node in tree view
     {
         if (idx.row()==CADModelSection::feature)
         {
@@ -1102,8 +1157,24 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
             cm.addAction(a);
         }
     }
-    else
+    else // on item
     {
+
+        if (idx.internalId()==CADModelSection::feature)
+        {
+            auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol)).value<insight::cad::FeaturePtr>();
+            auto name = QString::fromStdString(feat->featureSymbolName());
+            a=new QAction(name + ": Jump to Def.", &cm);
+            connect(a, &QAction::triggered,
+                    std::bind(&IQCADItemModel::jumpToDefinition, this, name) );
+            cm.addAction(a);
+
+            a=new QAction("Insert name", &cm);
+            connect(a, &QAction::triggered,
+                    std::bind(&IQCADItemModel::insertParserStatementAtCursor, this, name) );
+            cm.addAction(a);
+        }
+
         a=new QAction("Show", &cm);
         connect(a, &QAction::triggered,
                 [this,idx]() {
@@ -1125,6 +1196,96 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
                     }
                 });
         cm.addAction(a);
+
+        if (viewer)
+        {
+            cm.addSeparator();
+
+            a = new QAction(("Fit &all"), this);
+            cm.addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::fitAll );
+
+            QMenu* directionmenu=cm.addMenu("Standard views");
+            directionmenu->addAction( a = new QAction(("+X"), this) );
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::viewFront);
+            directionmenu->addAction( a = new QAction(("-X"), this) );
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::viewBack);
+
+            directionmenu->addAction( a = new QAction(("+Y"), this) );
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::viewRight);
+            directionmenu->addAction( a = new QAction(("-Y"), this) );
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::viewLeft);
+
+            directionmenu->addAction( a = new QAction(("+Z"), this) );
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::viewBottom);
+            directionmenu->addAction( a = new QAction(("-Z"), this) );
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::viewTop);
+
+
+
+            a = new QAction(("Toggle clip plane (&XY)"), this);
+            cm.addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::toggleClipXY);
+            a = new QAction(("Toggle clip plane (&YZ)"), this);
+            cm.addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::toggleClipYZ);
+            a = new QAction(("Toggle clip plane (X&Z)"), this);
+            cm.addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::toggleClipXZ);
+
+            QMenu *msmenu=cm.addMenu("Measure");
+
+            a=new QAction("Distance between points", this);
+            msmenu->addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::onMeasureDistance);
+
+            a=new QAction("Select vertices", this);
+            msmenu->addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::onSelectPoints);
+
+            a=new QAction("Select edges", this);
+            msmenu->addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::onSelectEdges);
+
+            a=new QAction("Select faces", this);
+            msmenu->addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::onSelectFaces);
+
+
+            a = new QAction(("Change background color..."), this);
+            cm.addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::selectBackgroundColor );
+
+            cm.addSeparator();
+
+            a = new QAction(("Only this shaded"), this);
+            cm.addAction(a);
+            connect(a, &QAction::triggered,
+                    std::bind(&IQCADModel3DViewer::onlyOneShaded, viewer,
+                              QPersistentModelIndex(idx) ) );
+
+            a = new QAction(("Reset shading"), this);
+            cm.addAction(a);
+            connect(a, &QAction::triggered,
+                    viewer, &IQCADModel3DViewer::resetRepresentations );
+        }
+
+        cm.addSeparator();        
 
         if (idx.internalId()==CADModelSection::datum)
         {
@@ -1183,7 +1344,9 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos)
                     });
             cm.addAction(a);
 
-            auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol)).value<insight::cad::FeaturePtr>();
+            auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol))
+                    .value<insight::cad::FeaturePtr>();
+
             bool someSubMenu=false, someHoverDisplay=false;
             addSymbolsToSubmenu(
                         QString::fromStdString(feat->featureSymbolName()),

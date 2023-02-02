@@ -5,13 +5,13 @@
 #include <QTreeView>
 
 #include "iqcaditemmodel.h"
-#include "iqcadmodel3dviewer.h"
+#include "iqvtkcadmodel3dviewer.h"
 
 class CADViewerWindow
         : public QMainWindow
 {
     IQCADItemModel itemModel_;
-    IQCADModel3DViewer *viewer_;
+    IQVTKCADModel3DViewer *viewer_;
     QTreeView *treeView_;
 
 public:

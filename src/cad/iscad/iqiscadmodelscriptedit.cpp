@@ -430,6 +430,10 @@ void IQISCADModelScriptEdit::onBgParseFinished()
 void IQISCADModelScriptEdit::setModel(IQCADItemModel* model)
 {
     cur_model_=model;
+    connect(cur_model_, &IQCADItemModel::jumpToDefinition,
+            this, &IQISCADModelScriptEdit::jumpTo);
+    connect(cur_model_, &IQCADItemModel::insertParserStatementAtCursor,
+            this, &IQISCADModelScriptEdit::insertTextAtCursor);
     bgparsethread_.setModel(model);
 }
 

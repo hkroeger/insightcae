@@ -28,107 +28,181 @@ class Aspect_GraphicCallbackStruct;
 
 class QoccViewWidget;
 
+class ToNotepadEmitter
+        : public QObject
+{
+    Q_OBJECT
+
+public:
+    ToNotepadEmitter();
+    virtual ~ToNotepadEmitter();
+
+Q_SIGNALS:
+    void appendToNotepad(const QString& text);
+};
+
+
+template<class Viewer>
 class InputReceiver
 {
+public:
+  typedef std::shared_ptr<InputReceiver> Ptr;
+
+private:
+  Viewer& viewer_;
+
 protected:
   /**
    * @brief currentPoint_
    * Track mouse location for use in key events.
    * Attention: invalid until first mouse event received!
    */
-  QPoint lastMouseLocation_;
+  std::unique_ptr<QPoint> lastMouseLocation_;
 
 public:
-  const QPoint& lastMouseLocation() const;
-  virtual void onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  virtual void onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point );
-  virtual void onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  virtual void onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  virtual void onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  virtual void onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  virtual void onKeyPress ( Qt::KeyboardModifiers modifiers, int key );
-  virtual void onKeyRelease ( Qt::KeyboardModifiers modifiers, int key );
+  InputReceiver(Viewer& viewer)
+  : viewer_(viewer)
+  {}
+
+  InputReceiver(Viewer& viewer, const QPoint& p)
+  : viewer_(viewer),
+    lastMouseLocation_(new QPoint(p))
+  {}
+
+  virtual ~InputReceiver()
+  {}
+
+  Viewer& viewer() const
+  {
+      return viewer_;
+  }
+
+  bool hasLastMouseLocation() const
+  {
+      return bool(lastMouseLocation_);
+  }
+
+  const QPoint& lastMouseLocation() const
+  {
+      insight::assertion(
+                  bool(lastMouseLocation_),
+                  "attempt to query mouse location before first input received!");
+      return *lastMouseLocation_;
+  }
+
+  virtual void onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {}
+
+  virtual void onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {}
+
+  virtual void onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {}
+
+  virtual void onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {}
+
+  virtual void onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {}
+
+  virtual void onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {}
+
+  virtual void onKeyPress ( Qt::KeyboardModifiers modifiers, int key )
+  {}
+
+  virtual void onKeyRelease ( Qt::KeyboardModifiers modifiers, int key )
+  {}
+
   virtual void onMouseMove
     (
      Qt::MouseButtons buttons,
-     Qt::KeyboardModifiers nFlags,
      const QPoint point,
      Qt::KeyboardModifiers curFlags
-     );
+     )
+  {
+    lastMouseLocation_.reset(new QPoint(point));
+  }
+
   virtual void onMouseWheel
     (
       double angleDeltaX,
       double angleDeltaY
-     );
+     )
+  {}
+
 };
 
 
 
-class ViewWidgetAction : public InputReceiver
+
+template<class Viewer>
+class ViewWidgetAction
+        : public InputReceiver<Viewer>
 {
+public:
+  typedef std::shared_ptr<ViewWidgetAction> Ptr;
+
+private:
   bool finished_ = false;
 
 protected:
-  virtual void setFinished();
+  virtual void setFinished()
+  {
+    finished_=true;
+  }
 
 public:
-  ViewWidgetAction();
-  virtual ~ViewWidgetAction();
+  ViewWidgetAction(Viewer& viewer)
+      : InputReceiver<Viewer>(viewer)
+  {}
+
+  ViewWidgetAction(Viewer& viewer, const QPoint& p)
+      : InputReceiver<Viewer>(viewer, p)
+  {}
 
   inline bool finished() const { return finished_; }
 };
 
-typedef std::shared_ptr<ViewWidgetAction> ViewWidgetActionPtr;
 
 
 
-class ViewWidgetRotation : public ViewWidgetAction
+class OCCViewWidgetRotation : public ViewWidgetAction<QoccViewWidget>
 {
-  Handle_V3d_View view_;
-
 public:
-  ViewWidgetRotation(Handle_V3d_View view, const QPoint point);
+  OCCViewWidgetRotation(QoccViewWidget &viewWidget, const QPoint point);
 
   void onMouseMove
     (
      Qt::MouseButtons buttons,
-     Qt::KeyboardModifiers nFlags,
      const QPoint point,
      Qt::KeyboardModifiers curFlags
      ) override;
 };
 
 
-class ViewWidgetPanning : public ViewWidgetAction
+class OCCViewWidgetPanning : public ViewWidgetAction<QoccViewWidget>
 {
-  Handle_V3d_View view_;
-  QPoint startPoint_;
-
 public:
-  ViewWidgetPanning(Handle_V3d_View view, const QPoint point);
+  OCCViewWidgetPanning(QoccViewWidget &viewWidget, const QPoint point);
 
   void onMouseMove
     (
      Qt::MouseButtons buttons,
-     Qt::KeyboardModifiers nFlags,
      const QPoint point,
      Qt::KeyboardModifiers curFlags
      ) override;
 };
 
 
-class ViewWidgetDynamicZooming : public ViewWidgetAction
+class OCCViewWidgetDynamicZooming : public ViewWidgetAction<QoccViewWidget>
 {
-  Handle_V3d_View view_;
-  QPoint startPoint_;
-
 public:
-  ViewWidgetDynamicZooming(Handle_V3d_View view, const QPoint point);
+  OCCViewWidgetDynamicZooming(QoccViewWidget &viewWidget, const QPoint point);
 
   void onMouseMove
     (
      Qt::MouseButtons buttons,
-     Qt::KeyboardModifiers nFlags,
      const QPoint point,
      Qt::KeyboardModifiers curFlags
      ) override;
@@ -136,20 +210,16 @@ public:
 
 
 
-class ViewWidgetWindowZooming : public ViewWidgetAction
+class OCCViewWidgetWindowZooming : public ViewWidgetAction<QoccViewWidget>
 {
-  Handle_V3d_View view_;
-  QPoint startPoint_;
   QRubberBand *rb_;
-
 public:
-  ViewWidgetWindowZooming(Handle_V3d_View view, const QPoint point, QRubberBand* rb);
-  ~ViewWidgetWindowZooming();
+  OCCViewWidgetWindowZooming(QoccViewWidget &viewWidget, const QPoint point, QRubberBand* rb);
+  ~OCCViewWidgetWindowZooming();
 
   void onMouseMove
     (
      Qt::MouseButtons buttons,
-     Qt::KeyboardModifiers nFlags,
      const QPoint point,
      Qt::KeyboardModifiers curFlags
      ) override;
@@ -158,16 +228,13 @@ public:
 
 
 
-
-
-class ViewWidgetMeasurePoints : public ViewWidgetAction
+class OCCViewWidgetMeasurePoints : public ViewWidgetAction<QoccViewWidget>
 {
-  QoccViewWidget *viewWidget_;
   std::shared_ptr<insight::cad::Vector> p1_, p2_;
 
 public:
-  ViewWidgetMeasurePoints(QoccViewWidget *viewWidget);
-  ~ViewWidgetMeasurePoints();
+  OCCViewWidgetMeasurePoints(QoccViewWidget &viewWidget);
+  ~OCCViewWidgetMeasurePoints();
 
   void onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 };

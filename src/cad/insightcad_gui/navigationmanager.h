@@ -7,14 +7,20 @@
 #include "viewwidgetaction.h"
 
 
-
-
-class NavigationManager : public InputReceiver
+template<class Viewer>
+class NavigationManager : public InputReceiver<Viewer>
 {
-  ViewWidgetActionPtr& currentAction_;
+public:
+  typedef std::shared_ptr<NavigationManager> Ptr;
+
+private:
+  typename InputReceiver<Viewer>::Ptr& currentAction_;
 
 protected:
-  bool actionInProgress();
+  bool actionInProgress()
+  {
+    return bool(currentAction_);
+  }
 
   template<class T>
   std::shared_ptr<T> currentAction()
@@ -22,35 +28,131 @@ protected:
     return std::dynamic_pointer_cast<T>(currentAction_);
   }
 
-  void setCurrentAction(ViewWidgetActionPtr newAct);
-  void stopCurrentAction();
+  void setCurrentAction(typename InputReceiver<Viewer>::Ptr newAct)
+  {
+    currentAction_.reset(); // delete first
+    currentAction_ = newAct;
+  }
 
-  QoccViewWidget* viewWidget_;
-  Handle_V3d_View& view_;
+  void stopCurrentAction()
+  {
+    currentAction_.reset();
+  }
+
+  void scaleUp()
+  {
+      this->viewer().setScale(
+                    this->viewer().getScale() * 1.1 ); // +10%
+  }
+
+  void scaleDown()
+  {
+      this->viewer().setScale(
+                    this->viewer().getScale() / 1.1 ); // -10%
+  }
 
 public:
-  NavigationManager(ViewWidgetActionPtr& currentAction, QoccViewWidget* viewWidget, Handle_V3d_View& view);
+  NavigationManager(
+          typename InputReceiver<Viewer>::Ptr& currentAction,
+          Viewer& viewer )
+  : InputReceiver<Viewer>(viewer),
+    currentAction_(currentAction)
+  {}
 
   void onMouseWheel
       (
         double angleDeltaX,
         double angleDeltaY
-       ) override;
+       ) override
+  {
+    if (angleDeltaY>0)
+    {
+        scaleUp();
+    }
+    else if (angleDeltaY<0)
+    {
+        scaleDown();
+    }
+  }
 
-  void onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-  void onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override;
+  void onLeftButtonDown  ( Qt::KeyboardModifiers modifiers, const QPoint point ) override
+  {
+    if ( this->viewer().pickAtCursor( modifiers&Qt::ControlModifier ) )
+    {
+      this->viewer().emitGraphicalSelectionChanged();
+    }
+  }
+
+  void onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override
+  {
+    if ( key==Qt::Key_Plus && (modifiers&Qt::ControlModifier) )
+    {
+        scaleUp();
+    }
+    else if (key==Qt::Key_Minus && (modifiers&Qt::ControlModifier))
+    {
+        scaleDown();
+    }
+  }
+
 };
 
 
 
-
-class TouchpadNavigationManager : public NavigationManager
+template<class Viewer, class Panning, class Rotation>
+class TouchpadNavigationManager
+        : public NavigationManager<Viewer>
 {
 
 public:
-  TouchpadNavigationManager(ViewWidgetActionPtr& currentAction, QoccViewWidget* viewWidget, Handle_V3d_View& view);
-  void onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override;
-  void onKeyRelease ( Qt::KeyboardModifiers modifiers, int key) override;
+  TouchpadNavigationManager(
+          typename InputReceiver<Viewer>::Ptr& currentAction,
+          Viewer& viewer )
+      : NavigationManager<Viewer>(currentAction, viewer)
+  {}
+
+  void onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override
+  {
+      if (modifiers & Qt::ShiftModifier)
+      {
+        if (!this->actionInProgress() && this->hasLastMouseLocation() )
+          this->setCurrentAction( std::make_shared<Panning>(
+                                this->viewer(), this->lastMouseLocation()) );
+      }
+      else if (modifiers & Qt::AltModifier)
+      {
+        if (!this->actionInProgress() && this->hasLastMouseLocation())
+          this->setCurrentAction( std::make_shared<Rotation>(
+                                this->viewer(), this->lastMouseLocation()) );
+      }
+      else if (key==Qt::Key_PageUp)
+      {
+        this->scaleUp();
+      }
+      else if (key==Qt::Key_PageDown)
+      {
+        this->scaleDown();
+      }
+
+      NavigationManager<Viewer>::onKeyPress(modifiers, key);
+  }
+
+  void onKeyRelease ( Qt::KeyboardModifiers modifiers, int key) override
+  {
+    if ( !(modifiers & Qt::ShiftModifier)
+         && this->template currentAction<Panning>() )
+    {
+      this->stopCurrentAction();
+    }
+    else if ( !(modifiers & Qt::AltModifier)
+         && this->template currentAction<Rotation>() )
+    {
+      this->stopCurrentAction();
+    }
+
+    NavigationManager<Viewer>::onKeyRelease(modifiers, key);
+  }
+
 };
 
 

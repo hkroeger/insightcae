@@ -16,6 +16,8 @@
 #include <QMenu>
 
 
+class IQCADModel3DViewer;
+
 class INSIGHTCAD_GUI_EXPORT IQCADItemModel
     : public QAbstractItemModel
 {
@@ -234,8 +236,14 @@ public:
   void addPoint(const std::string& name, insight::cad::VectorPtr value);
   void addDirection(const std::string& name, insight::cad::VectorPtr value);
   void addDatum(const std::string& name, insight::cad::DatumPtr value);
-  void addModelstep(const std::string& name, insight::cad::FeaturePtr value, const std::string& featureDescription = std::string() );
-  void addComponent(const std::string& name, insight::cad::FeaturePtr value, const std::string& featureDescription = std::string() );
+  void addModelstep(const std::string& name,
+                    insight::cad::FeaturePtr value,
+                    const std::string& featureDescription = std::string(),
+                    insight::DatasetRepresentation dr = insight::Wireframe );
+  void addComponent(const std::string& name,
+                    insight::cad::FeaturePtr value,
+                    const std::string& featureDescription = std::string(),
+                    insight::DatasetRepresentation dr = insight::Surface );
   void addPostprocAction(const std::string& name, insight::cad::PostprocActionPtr value);
   void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value);
 
@@ -247,13 +255,20 @@ public:
   void removePostprocAction(const std::string& name);
   void removeDataset(const std::string& name);
 
+  void populateClipPlaneMenu(QMenu* clipplanemenu, IQCADModel3DViewer* v);
+
 public Q_SLOTS:
-  void showContextMenu(const QModelIndex& idx, const QPoint &pos);
+  void showContextMenu(const QModelIndex& idx, const QPoint &pos, IQCADModel3DViewer* viewer);
 
 Q_SIGNALS:
   void insertIntoNotebook(const QString& text);
+
+  // no QModelIndex as parameter, since non-indexed shape may be highlighted
   void highlightInView(insight::cad::FeaturePtr feat);
   void undoHighlightInView();
+
+  void jumpToDefinition(const QString& name);
+  void insertParserStatementAtCursor(const QString& name);
 };
 
 #endif // IQCADMODELCONTAINER_H

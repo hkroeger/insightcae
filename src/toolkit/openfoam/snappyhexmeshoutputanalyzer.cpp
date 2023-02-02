@@ -115,9 +115,10 @@ void snappyHexMeshOutputAnalyzer::update(const std::string& line)
             extrudedFraction_=0;
             if (totalFaces_>0) extrudedFraction_=double(extrudedFaces_)/double(totalFaces_);
             if (bmp_)
-                bmp_->message(
-                            "Layer iter #"+layerIter+": illegal "+illegal+
-                            ", extruded "+match[1]+" out of "+match[2]+" ("+lexical_cast<string>(100.*extrudedFraction_)+"%"
+                bmp_->message(str(boost::format(
+                            "Layer iter #%d: %d illegal faces, extruded %s faces out of %d (%0.2g%%)")
+                             % layerIter % illegal % match[1] % match[2] % (100.*extrudedFraction_)
+                        )
                         );
 
         }

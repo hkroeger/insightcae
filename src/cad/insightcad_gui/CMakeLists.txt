@@ -9,7 +9,7 @@ find_package(Qt5Widgets CONFIG REQUIRED)
 
 find_package(VTK
    COMPONENTS
-   vtkGUISupportQt
+   vtkGUISupportQt vtkRenderingLabel
    NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH
    HINTS ${VTK_ONSCREEN_DIR}
 )
@@ -25,7 +25,18 @@ set(insightcad_gui_SRCS
  iqcaditemmodel.h
  iqcaditemmodel.cpp
  iqpickinteractorstyle.h iqpickinteractorstyle.cpp
+
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
+
+ iqvtkcadmodel3dviewerrotation.h iqvtkcadmodel3dviewerrotation.cpp
+ iqvtkcadmodel3dviewerpanning.h iqvtkcadmodel3dviewerpanning.cpp
+ iqvtkcadmodel3dviewer_highlightitem.cpp
+ iqvtkcadmodel3dviewer_subshapeselection.cpp
+ iqvtkcadmodel3dviewer_clippingplanes.cpp
+ iqvtkcadmodel3dviewermeasurepoints.h iqvtkcadmodel3dviewermeasurepoints.cpp
+ iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
+
+ iqvtkviewwidgetinsertids.h iqvtkviewwidgetinsertids.cpp
  iqcadtransformationcommand.h iqcadtransformationcommand.cpp
  iqpointpickcommand.h iqpointpickcommand.cpp
  iqvectordirectioncommand.h iqvectordirectioncommand.cpp

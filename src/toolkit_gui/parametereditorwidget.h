@@ -46,7 +46,7 @@
 
 
 class VisualizerThread;
-class IQCADModel3DViewer;
+class IQVTKCADModel3DViewer;
 class IQVTKParameterSetDisplay;
 
 namespace insight {
@@ -62,7 +62,7 @@ class TOOLKIT_GUI_EXPORT ParameterEditorWidget
 
 public:
     typedef IQVTKParameterSetDisplay ParameterSetDisplay;
-    typedef IQCADModel3DViewer CADViewer;
+    typedef IQVTKCADModel3DViewer CADViewer;
     
 protected:
     insight::ParameterSet defaultParameters_;

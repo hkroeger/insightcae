@@ -11,7 +11,7 @@
 
 #include "iqspatialtransformationparameter.h"
 #include "iqparametersetmodel.h"
-#include "iqcadmodel3dviewer.h"
+#include "iqvtkcadmodel3dviewer.h"
 #include "iqcadtransformationcommand.h"
 #include "ivtkoccshape.h"
 
@@ -144,10 +144,10 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
   connect(scaleLE, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
 
-  if (viewer)
+  if (auto *v = dynamic_cast<IQVTKCADModel3DViewer*>(viewer))
   {
     connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
-          [this,translateLE,model,viewer,setValuesToControls,apply]()
+          [this,translateLE,model,v,setValuesToControls,apply]()
           {
             if (insight::cad::FeaturePtr geom =
                     model->getGeometryToSpatialTransformationParameter(path()))
@@ -160,7 +160,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
                 actor->GetProperty()->SetOpacity(0.7);
                 actor->GetProperty()->SetColor(0.7, 0.3, 0.3);
 
-//                if (vtkActor* actor = viewer->getActor(geom))
+//                if (vtkActor* actor = v->getActor(geom))
                 const auto& p =
                         dynamic_cast<const insight::SpatialTransformationParameter&>(
                             parameter() );
@@ -169,7 +169,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
 
                   auto curMod =
                         new IQCADTransformationCommand(
-                              actor, viewer->interactor(),
+                              actor, v->interactor(),
                               tini );
 
                   connect( translateLE, &QObject::destroyed,

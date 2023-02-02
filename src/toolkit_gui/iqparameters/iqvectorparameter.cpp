@@ -6,7 +6,7 @@
 #include "iqvectorparameter.h"
 #include "iqparametersetmodel.h"
 
-#include "iqcadmodel3dviewer.h"
+#include "iqvtkcadmodel3dviewer.h"
 #include "iqpointpickcommand.h"
 #include "iqvectordirectioncommand.h"
 
@@ -72,10 +72,11 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
 
-  if (viewer)
+#warning need generalized implementation
+  if (auto *v = dynamic_cast<IQVTKCADModel3DViewer*>(viewer))
   {
     connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
-          [this,model,viewer,apply,lineEdit]()
+          [this,model,v,apply,lineEdit]()
           {
             const auto& p =
                     dynamic_cast<const insight::VectorParameter&>(
@@ -85,7 +86,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
             {
                 auto curMod =
                       new IQVectorDirectionCommand(
-                            viewer->interactor(),
+                            v->interactor(),
                             (*bp), p() );
 
                 connect( apply, &QPushButton::pressed,
@@ -105,7 +106,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
             {
               auto curMod =
                     new IQPointPickCommand(
-                          viewer->interactor(),
+                          v->interactor(),
                           p() );
 
               connect( apply, &QPushButton::pressed,

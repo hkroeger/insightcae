@@ -18,7 +18,9 @@ void CADParameterSetVisualizer::addDatum(const std::string& name, insight::cad::
   Q_EMIT createdDatum(QString::fromStdString(name), dat);
 }
 
-void CADParameterSetVisualizer::addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds)
+void CADParameterSetVisualizer::addFeature(const std::string& name,
+                                           insight::cad::FeaturePtr feat,
+                                           AIS_DisplayMode ds)
 {
   CurrentExceptionContext ec("adding visualizer feature "+name);
   Q_EMIT createdFeature( QString::fromStdString(name), feat, true, ds );

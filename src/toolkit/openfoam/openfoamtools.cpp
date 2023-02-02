@@ -2443,7 +2443,8 @@ void createPrismLayers
   double expRatio,
   bool twodForExtrusion,
   bool isalreadydecomposed,
-  bool keepdecomposedafterfinish
+  bool keepdecomposedafterfinish,
+  ProgressDisplayer* progress
 )
 {
     
@@ -2505,7 +2506,8 @@ void createPrismLayers
     shm_cfg,
     true,
     isalreadydecomposed,
-    keepdecomposedafterfinish
+    keepdecomposedafterfinish,
+    progress
   ); 
 }
 

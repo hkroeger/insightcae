@@ -365,7 +365,7 @@ arma::mat STLBndBox(
   * second col: max point
   */
 arma::mat PolyDataBndBox(
-  vtkSmartPointer<vtkPolyData> stl_data_Set
+  vtkSmartPointer<vtkDataSet> stl_data_Set
 );
 
 arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2);

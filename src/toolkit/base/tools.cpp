@@ -839,7 +839,7 @@ arma::mat STLBndBox
 
 arma::mat PolyDataBndBox
 (
-  vtkSmartPointer<vtkPolyData> in
+  vtkSmartPointer<vtkDataSet> in
 )
 {
   double bb[6];

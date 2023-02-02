@@ -9,7 +9,7 @@
 #include <QCloseEvent>
 
 #include "iqcaditemmodel.h"
-#include "iqcadmodel3dviewer.h"
+#include "iqvtkcadmodel3dviewer.h"
 #include "iqiscadmodelscriptedit.h"
 
 IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
@@ -122,18 +122,24 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
     modelEdit_->setModel(model_);
     modelTree_->setModel(model_);
     viewer_->setModel(model_);
+    viewer_->connectNotepad(notepad_);
 
     modelTree_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(
                 modelTree_, &QTreeView::customContextMenuRequested, model_,
                 [this](const QPoint& pos)
-                {
-                    auto idx = modelTree_->indexAt(pos);
-                    model_->showContextMenu(idx, modelTree_->mapToGlobal(pos));
-                }
+    {
+        auto idx = modelTree_->indexAt(pos);
+        model_->showContextMenu(idx, modelTree_->mapToGlobal(pos), viewer_);
+    }
     );
+
     connect( viewer_, &IQCADModel3DViewer::contextMenuRequested,
-             model_, &IQCADItemModel::showContextMenu );
+             [this](const QModelIndex& index, const QPoint &globalPos)
+    {
+        model_->showContextMenu(index, globalPos, viewer_);
+    }
+    );
 
 
     connect( model_, &IQCADItemModel::insertIntoNotebook,
@@ -179,7 +185,15 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
 //            modeltree_, &QModelTree::onAddEvaluation);
 
 //    connect(viewer_, &QoccViewWidget::insertNotebookText,
-//            this, &IQISCADModelEditor::onInsertNotebookText);
+    //            this, &IQISCADModelEditor::onInsertNotebookText);
+}
+
+
+
+
+IQCADItemModel *IQISCADModelWindow::model()
+{
+    return model_;
 }
 
 

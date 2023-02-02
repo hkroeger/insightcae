@@ -13,7 +13,7 @@ CADViewerWindow::CADViewerWindow()
       itemModel_(std::make_shared<insight::cad::Model>(boost::filesystem::path("testmodel.iscad")))
 {
 
-    viewer_=new IQCADModel3DViewer;
+    viewer_=new IQVTKCADModel3DViewer;
     treeView_=new QTreeView;
 
     auto l = new QSplitter(this);

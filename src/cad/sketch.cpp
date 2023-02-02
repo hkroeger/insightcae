@@ -145,7 +145,8 @@ void Sketch::build()
                 boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
             boost::filesystem::path macrofilename =
                 boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
-            layername="0";
+#warning behaviour in freecad has changed
+            //layername="0";
 
             {
 
@@ -234,19 +235,43 @@ void Sketch::build()
             }
         }
 
-        TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
-        providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
+//        TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
+//        providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
+        auto ws = DXFReader(filename, layername).Wires(tol_);
+        if (ws->Size()==1)
+        {
+            providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(ws->Value(1)));
+        }
+        else
+        {
+            for (int i=0; i<ws->Size(); ++i)
+            {
+                providedSubshapes_[
+                        str(format("OuterWire%d")%(i+1))]=
+                        FeaturePtr(new Feature(ws->Value(i+1)));
+            }
+        }
 
         gp_Trsf tr;
         gp_Ax3 ax=*pl_;
         tr.SetTransformation(ax);
 
-        BRepBuilderAPI_Transform btr(w, tr.Inverted(), true);
+        BRep_Builder bb;
+        TopoDS_Compound result;
+        bb.MakeCompound ( result );
+        for (auto w=ws->begin(); w!=ws->end(); ++w)
+        {
+            BRepBuilderAPI_Transform btr(*w, tr.Inverted(), true);
 
-        if (w.Closed())
-            setShape(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
-        else
-            setShape(TopoDS::Wire(btr.Shape()));
+            if (w->Closed())
+                bb.Add ( result, BRepBuilderAPI_MakeFace(
+                             gp_Pln(ax),
+                             TopoDS::Wire(btr.Shape())).Shape());
+            else
+                bb.Add ( result, TopoDS::Wire(btr.Shape()));
+        }
+
+        setShape(result);
 
         cache.insert(shared_from_this());
     }

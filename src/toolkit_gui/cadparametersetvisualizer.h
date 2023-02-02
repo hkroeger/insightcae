@@ -59,7 +59,7 @@ public:
   virtual void recreateVisualizationElements();
 
 public Q_SLOTS:
-  void visualizeScheduledParameters();
+  virtual void visualizeScheduledParameters();
 
 Q_SIGNALS:
   void launchVisualizationCalculation();
@@ -89,7 +89,7 @@ public:
   void unregisterVisualizer(CADParameterSetVisualizer* vis);
   int size() const;
 
-  void recreateVisualizationElements() override;
+  void visualizeScheduledParameters() override;
 
 
 public Q_SLOTS:

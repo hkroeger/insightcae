@@ -22,6 +22,7 @@ protected:
 
 public:
     virtual bool hasScheduledParameters() const;
+    virtual bool hasCurrentParameters() const;
     virtual const ParameterSet& currentParameters() const;
     virtual bool selectScheduledParameters();
     virtual void clearScheduledParameters();

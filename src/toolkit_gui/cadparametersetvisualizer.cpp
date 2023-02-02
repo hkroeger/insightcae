@@ -158,15 +158,17 @@ void MultiCADParameterSetVisualizer::registerVisualizer(CADParameterSetVisualize
 {
   CurrentExceptionContext ex("registering visualizer");
 
-  visualizers_.insert(vis);
+  disconnect(
+        vis, &CADParameterSetVisualizer::launchVisualizationCalculation,
+        0, 0 );
 
-  disconnect(vis, &CADParameterSetVisualizer::launchVisualizationCalculation, 0, 0);
+  visualizers_.insert(vis);
 
   connect(
         vis,
         &CADParameterSetVisualizer::launchVisualizationCalculation,
         this,
-        &CADParameterSetVisualizer::visualizeScheduledParameters );
+        &MultiCADParameterSetVisualizer::visualizeScheduledParameters );
 
   connect(
         vis,
@@ -214,7 +216,7 @@ int MultiCADParameterSetVisualizer::size() const
 
 
 
-void MultiCADParameterSetVisualizer::recreateVisualizationElements()
+void MultiCADParameterSetVisualizer::visualizeScheduledParameters()
 {
   CurrentExceptionContext ex("re-creating all visualization elements");
 
@@ -227,22 +229,22 @@ void MultiCADParameterSetVisualizer::recreateVisualizationElements()
   QList<IQISCADModelGenerator*> gens;
   for (auto& vis: visualizers_)
   {
-    try
-    {
-      vis->currentParameters(); // might fail, because some visualizers did not yet received parameters
-    }
-    catch (insight::Exception& e)
-    {
-      continue;
-    }
+    if (vis->hasCurrentParameters() && vis->hasScheduledParameters())
+        vis->clearScheduledParameters();
 
-    gens.append(vis);
+    vis->selectScheduledParameters();
+
+    if ( vis->hasCurrentParameters() )
+    {
+        gens.append(vis);
+    }
   }
 
   IQISCADModelRebuilder rb(model(), gens);
   for (auto& vis: visualizers_)
   {
-    vis->recreateVisualizationElements();
+    if (gens.contains(vis))
+        vis->recreateVisualizationElements();
   }
 }
 

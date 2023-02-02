@@ -11,6 +11,11 @@ bool ParameterSetVisualizer::hasScheduledParameters() const
   return bool(scheduledParameters_);
 }
 
+bool ParameterSetVisualizer::hasCurrentParameters() const
+{
+  return bool(visualizedParameters_);
+}
+
 const ParameterSet &ParameterSetVisualizer::currentParameters() const
 {
   if (visualizedParameters_)

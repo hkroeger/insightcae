@@ -122,10 +122,15 @@ void CodeAsterMeshFile::write(std::ostream &os) const
     os << "FIN" << endl;
 }
 
+void CodeAsterMeshFile::write(const boost::filesystem::path& outfile) const
+{
+    std::ofstream f( outfile.string() );
+    write(f);
+}
+
 void CodeAsterMeshFile::write(const boost::filesystem::path &directory, int unit) const
 {
-    std::ofstream f( (directory / str(format("fort.%d")%unit)).string() );
-    write(f);
+    write( directory / str(format("fort.%d")%unit) );
 }
 
 

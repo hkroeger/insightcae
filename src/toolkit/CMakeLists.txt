@@ -32,7 +32,23 @@ set(toolkit_SOURCES
     base/analysisthread.cpp base/analysisthread.h
     base/cacheableentity.cpp base/cacheableentity.h
     base/cacheableentityhashes.cpp base/cacheableentityhashes.h
+
     base/parameter.cpp base/parameter.h
+    base/parameters/simpleparameter.cpp base/parameters/simpleparameter.h
+    base/parameters/pathparameter.cpp base/parameters/pathparameter.h
+    base/parameters/selectionparameter.cpp base/parameters/selectionparameter.h
+    base/parameters/doublerangeparameter.cpp base/parameters/doublerangeparameter.h
+    base/parameters/arrayparameter.cpp base/parameters/arrayparameter.h
+    base/parameters/matrixparameter.cpp base/parameters/matrixparameter.h
+    base/parameters/simpledimensionedparameter.cpp base/parameters/simpledimensionedparameter.h
+    base/parameters/subsetparameter.cpp base/parameters/subsetparameter.h
+    base/parameters/selectablesubsetparameter.cpp base/parameters/selectablesubsetparameter.h
+    base/parameters/propertylibraryselectionparameter.h base/parameters/propertylibraryselectionparameter.cpp
+    base/parameters/spatialtransformationparameter.h base/parameters/spatialtransformationparameter.cpp
+
+    base/parameterset.cpp base/parameterset.h
+    base/parametersetvisualizer.h base/parametersetvisualizer.cpp
+
     base/exception.cpp base/exception.h
     base/externalprocess.cpp base/externalprocess.h
     base/filewatcher.cpp base/filewatcher.h
@@ -46,7 +62,6 @@ set(toolkit_SOURCES
     base/resultreporttemplates.h base/resultreporttemplates.cpp
     base/softwareenvironment.cpp base/softwareenvironment.h
     base/stltools.cpp base/stltools.h
-    base/parameterset.cpp base/parameterset.h
     base/analysisstepcontrol.cpp base/analysisstepcontrol.h
     base/plottools.cpp base/plottools.h
     base/vtktools.cpp base/vtktools.h
@@ -78,16 +93,6 @@ set(toolkit_SOURCES
     base/progressdisplayer/combinedprogressdisplayer.cpp base/progressdisplayer/combinedprogressdisplayer.h
     base/progressdisplayer/prefixedprogressdisplayer.cpp base/progressdisplayer/prefixedprogressdisplayer.h
     base/progressdisplayer/convergenceanalysisdisplayer.cpp base/progressdisplayer/convergenceanalysisdisplayer.h
-    base/parameters/simpleparameter.cpp base/parameters/simpleparameter.h
-    base/parameters/pathparameter.cpp base/parameters/pathparameter.h
-    base/parameters/selectionparameter.cpp base/parameters/selectionparameter.h
-    base/parameters/doublerangeparameter.cpp base/parameters/doublerangeparameter.h
-    base/parameters/arrayparameter.cpp base/parameters/arrayparameter.h
-    base/parameters/matrixparameter.cpp base/parameters/matrixparameter.h
-    base/parameters/simpledimensionedparameter.cpp base/parameters/simpledimensionedparameter.h
-    base/parameters/subsetparameter.cpp base/parameters/subsetparameter.h
-    base/parameters/selectablesubsetparameter.cpp base/parameters/selectablesubsetparameter.h
-    base/parameters/propertylibraryselectionparameter.h base/parameters/propertylibraryselectionparameter.cpp
     base/resultelements/fileresult.cpp base/resultelements/fileresult.h
     base/resultelements/image.cpp base/resultelements/image.h
     base/resultelements/numericalresult.cpp base/resultelements/numericalresult.h
@@ -243,10 +248,12 @@ set(toolkit_SOURCES
     openfoam/caseelements/electromagneticscaseelements.cpp openfoam/caseelements/electromagneticscaseelements.h
     openfoam/caseelements/options/enforcefarfieldvelocity.h openfoam/caseelements/options/enforcefarfieldvelocity.cpp
 
+
     code_aster/caexportfile.cpp code_aster/caexportfile.h
     code_aster/codeasterrun.cpp code_aster/codeasterrun.h
     code_aster/codeastermeshfile.h code_aster/codeastermeshfile.cpp
     code_aster/casolveroutputanalyzer.cpp code_aster/casolveroutputanalyzer.h
+    code_aster/coordinatesystems.h code_aster/coordinatesystems.cpp
 
     lsdyna/lsdynainputdeck.h lsdyna/lsdynainputdeck.cpp
     lsdyna/lsdynainputcard.h lsdyna/lsdynainputcard.cpp

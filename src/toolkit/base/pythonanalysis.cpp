@@ -200,7 +200,7 @@ ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer& )
 
 PythonAnalysisLoader::PythonAnalysisLoader()
 {
-    SharedPathList paths;
+    auto paths = SharedPathList::global();
     for ( const path& p: /*SharedPathList::searchPathList*/paths ) {
         if ( exists(p) && is_directory ( p ) ) {
 	  

@@ -36,14 +36,16 @@ QString IQPathParameter::valueText() const
 
 
 
-QVBoxLayout* IQPathParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQPathParameter::populateEditControls(
+        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
   const auto&p = dynamic_cast<const insight::PathParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
-  QHBoxLayout *layout3=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
+  QHBoxLayout *layout3=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto *lineEdit = new QLineEdit(editControlsContainer);

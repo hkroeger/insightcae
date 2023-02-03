@@ -58,7 +58,7 @@ defineFactoryTable
 defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet);
 defineStaticFunctionTable(Analysis, category, std::string);
 defineStaticFunctionTable(Analysis, validator, ParameterSet_ValidatorPtr);
-defineStaticFunctionTable(Analysis, visualizer, ParameterSet_VisualizerPtr);
+defineStaticFunctionTable(Analysis, visualizer, std::shared_ptr<ParameterSetVisualizer>);
 
 
 std::string Analysis::category()
@@ -71,16 +71,12 @@ ParameterSet_ValidatorPtr Analysis::validator()
     return ParameterSet_ValidatorPtr();
 }
 
-ParameterSet_VisualizerPtr Analysis::visualizer()
+std::shared_ptr<ParameterSetVisualizer> Analysis::visualizer()
 {
-    return ParameterSet_VisualizerPtr();
+    return std::shared_ptr<ParameterSetVisualizer>();
 }
 
 
-void Analysis::extendSharedSearchPath ( const std::string& name )
-{
-    sharedSearchPath_.push_back ( path ( name ) );
-}
 
 
 boost::filesystem::path Analysis::setupExecutionEnvironment()
@@ -172,10 +168,6 @@ Analysis::~Analysis()
 //}
 
 
-boost::filesystem::path Analysis::getSharedFilePath ( const boost::filesystem::path& file )
-{
-    return sharedSearchPath_.getSharedFilePath ( file );
-}
 
 //Analysis* Analysis::clone() const
 //{

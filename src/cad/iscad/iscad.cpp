@@ -26,7 +26,7 @@
 #include "base/exception.h"
 #include "base/toolkitversion.h"
 #include "insightcaeapplication.h"
-#include "iscadmainwindow.h"
+#include "iqiscadmainwindow.h"
 #include "qinsighterror.h"
 
 #ifndef Q_MOC_RUN
@@ -165,7 +165,7 @@ int main ( int argc, char** argv )
       app.setSplashScreen(&splash);
       splash.showMessage ( "Wait..." );
 
-      ISCADMainWindow window ( nullptr, vm.count ( "nolog" ) );
+      IQISCADMainWindow window ( nullptr, vm.count ( "nolog" ) );
       
       bool dobgparsing = (vm.count ( "nobgparse" ) == 0);
       

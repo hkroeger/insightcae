@@ -1132,7 +1132,7 @@ SpeciesData::SpeciesLibrary::SpeciesLibrary()
 {
   using namespace boost::filesystem;
 
-  SharedPathList paths;
+  auto paths = SharedPathList::global();
   for ( const path& sharedPath: paths )
   {
     if ( exists(sharedPath) && is_directory (sharedPath) )

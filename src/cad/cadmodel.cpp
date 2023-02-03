@@ -115,7 +115,8 @@ Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable&
     : modelfile_(modelfile),
       cost_(0.0)
 {
-    insight::SharedPathList::searchPathList.insertFileDirectoyIfNotPresent(modelfile_);
+#warning local extension of search path required
+    insight::SharedPathList::global().insertFileDirectoyIfNotPresent(modelfile_);
     defaultVariables();
     copyVariables(vars);
 }
@@ -155,6 +156,7 @@ void Model::build()
 
 void Model::addScalar(const std::string& name, ScalarPtr value)
 {
+  if (scalars_.find(name)) scalars_.remove(name);
   scalars_.add(name, value);
 }
 
@@ -166,6 +168,7 @@ void Model::addScalarIfNotPresent(const std::string& name, ScalarPtr value)
 
 void Model::addPoint(const std::string& name, VectorPtr value)
 {
+  if (points_.find(name)) points_.remove(name);
   points_.add(name, value);
 }
 
@@ -177,6 +180,7 @@ void Model::addPointIfNotPresent(const std::string& name, VectorPtr value)
 
 void Model::addDirection(const std::string& name, VectorPtr value)
 {
+  if (directions_.find(name)) directions_.remove(name);
   directions_.add(name, value);
 }
 
@@ -188,6 +192,7 @@ void Model::addDirectionIfNotPresent(const std::string& name, VectorPtr value)
 
 void Model::addDatum(const std::string& name, DatumPtr value)
 {
+  if (datums_.find(name)) datums_.remove(name);
   datums_.add(name, value);
 }
 
@@ -200,6 +205,7 @@ void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
 void Model::addModelstep(const std::string& name, FeaturePtr value, const std::string& /*featureDescription*/)
 {
   value->setFeatureSymbolName(name);
+  if (modelsteps_.find(name)) modelsteps_.remove(name);
   modelsteps_.add(name, value);
 }
 
@@ -222,6 +228,27 @@ void Model::removeScalar(const string& name)
 {
   scalars_.remove(name);
 }
+
+void Model::removePoint(const std::string& name)
+{
+  points_.remove(name);
+}
+
+void Model::removeDirection(const std::string& name)
+{
+  directions_.remove(name);
+}
+
+void Model::removeDatum(const std::string& name)
+{
+  datums_.remove(name);
+}
+
+void Model::removeModelstep(const std::string& name)
+{
+  modelsteps_.remove(name);
+}
+
 
 
 void Model::addVertexFeature(const std::string& name, FeatureSetPtr value)
@@ -271,6 +298,23 @@ std::string Model::addPostprocActionUnnamed(PostprocActionPtr value)
   postprocActions_.add(name, value);
   return name;
 }
+
+void Model::removePostprocAction(const std::string &name)
+{
+    postprocActions_.remove(name);
+}
+
+
+void Model::addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value)
+{
+    datasets_.emplace(name, value);
+}
+
+void Model::removeDataset(const std::string &name)
+{
+    datasets_.erase(name);
+}
+
 
 ScalarPtr Model::lookupScalar(const std::string& name) const
 {
@@ -357,7 +401,12 @@ PostprocActionPtr Model::lookupPostprocActionSymbol(const std::string& name) con
   PostprocActionPtr *obj = const_cast<PostprocActionPtr*>(postprocActions_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup postprocessing action "+name);
-  return *obj;    
+  return *obj;
+}
+
+bool Model::isComponent(const std::string &name) const
+{
+    return components_.find(name)!=components_.end();
 }
 
 const Model::ScalarTable& 	Model::scalarSymbols() const { return scalars_; }
@@ -371,6 +420,11 @@ const Model::FaceFeatureTable& 	Model::faceFeatureSymbols() const { return faceF
 const Model::SolidFeatureTable& 	Model::solidFeatureSymbols() const { return solidFeatures_; }
 const Model::ModelTable& 	Model::modelSymbols() const { return models_; }
 const Model::PostprocActionTable& 	Model::postprocActionSymbols() const { return postprocActions_; }
+
+const Model::DatasetTable &Model::datasets() const
+{
+    return datasets_;
+}
 
 
 

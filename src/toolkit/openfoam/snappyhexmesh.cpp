@@ -515,16 +515,16 @@ void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
   qualityCtrls["maxConcave"]=80.0;  
   qualityCtrls["minFlatness"]=0.01;  
   qualityCtrls["minVol"]=1e-13;  
-  qualityCtrls["minArea"]=-1.0;  
+  qualityCtrls["minArea"]=1e-30;
   qualityCtrls["minTwist"]=0.02;  
   qualityCtrls["minDeterminant"]=0.001;  
   qualityCtrls["minFaceWeight"]=0.05;  
   qualityCtrls["minVolRatio"]=0.01;  
-  qualityCtrls["minTriangleTwist"]=-1.0;  
+  qualityCtrls["minTriangleTwist"]=0.01;
   qualityCtrls["nSmoothScale"]=4;  
   qualityCtrls["errorReduction"]=0.75;  
 
-  qualityCtrls["minTetQuality"]=1e-40;  
+  qualityCtrls["minTetQuality"]=1e-15;
 }
 
 void setRelaxedQualityCtrls(OFDictData::dict& qualityCtrls)

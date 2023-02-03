@@ -404,7 +404,10 @@ SharedPathList::SharedPathList()
 {
   CurrentExceptionContext ec("building list of shared paths");
 
-  
+
+  insertPathRelativeToCurrentExecutable(
+              boost::filesystem::path("..")/"share"/"insight" );
+
   if (char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR"))
   {
     push_back(var_usershareddir);
@@ -441,9 +444,12 @@ SharedPathList::SharedPathList()
   }
 }
 
-SharedPathList::~SharedPathList()
+SharedPathList &SharedPathList::global()
 {
+    static SharedPathList spl;
+    return spl;
 }
+
 
 
 path SharedPathList::getSharedFilePath(const path& file)
@@ -467,12 +473,12 @@ void SharedPathList::insertIfNotPresent(const path& spr)
   path sp = boost::filesystem::absolute(spr);
   if (std::find(begin(), end(), sp) == end())
   {
-    std::cout<<"Extend search path: "<<sp.string()<<std::endl;
+    insight::dbg()<<"Extend search path: "<<sp.string()<<std::endl;
     push_back(sp);
   }
   else
   {
-    std::cout<<"Already included in search path: "<<sp.string()<<std::endl;
+    insight::dbg()<<"Already included in search path: "<<sp.string()<<std::endl;
   }
 }
 
@@ -486,6 +492,36 @@ void SharedPathList::insertFileDirectoyIfNotPresent(const path& sp)
   {
     insertIfNotPresent(sp.parent_path());
   }
+}
+
+void SharedPathList::insertPathRelativeToCurrentExecutable(
+        const boost::filesystem::path &relPath)
+{
+    using namespace boost::filesystem;
+#if defined(WIN32)
+    char buf[MAX_PATH];
+    GetModuleFileName(NULL, buf, MAX_PATH);
+    path exe(buf);
+    path dir=exe.parent_path() / relPath;
+    insight::dbg()<<exe<<" "<<dir<<std::endl;
+    insertIfNotPresent(dir);
+#else
+    path link("/proc/self/exe");
+    if (is_symlink(link))
+    {
+        insight::dbg()<<read_symlink(link)<<std::endl;
+        insertIfNotPresent(
+                    read_symlink(link).parent_path()
+                    / relPath );
+    }
+    else
+    {
+        insight::dbg() << "skipping addition of path <executable dir>/"+relPath.string()
+                          +" because operating system does not provide symlink in /proc/self/exe."
+                          +" Make sure, the variable INSIGHT_GLOBALSHAREDDIRS contains all the appropriate paths."
+                       <<std::endl;
+    }
+#endif
 }
 
 boost::filesystem::path SharedPathList::findFirstWritableLocation(
@@ -503,10 +539,6 @@ boost::filesystem::path SharedPathList::findFirstWritableLocation(
     return bfs_path();
 }
 
-
-
-
-SharedPathList SharedPathList::searchPathList;
 
 
 
@@ -807,7 +839,7 @@ arma::mat STLBndBox
 
 arma::mat PolyDataBndBox
 (
-  vtkSmartPointer<vtkPolyData> in
+  vtkSmartPointer<vtkDataSet> in
 )
 {
   double bb[6];

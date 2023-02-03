@@ -1,10 +1,7 @@
 project(insightcad)
 
 find_package(OCC REQUIRED)
-#find_package(OpenGL)
 find_package(DXFlib)
-#find_package(GEOM)
-#find_package(dlib)
 
 FIND_PACKAGE(MED)
 
@@ -46,6 +43,19 @@ set(insightcad_SOURCES
   polytriangulationnodeiterator.h polytriangulationnodeiterator.cpp
 )
 
+if (OCC_VERSION_MAJOR LESS 7)
+ list(APPEND insightcad_SOURCES
+  compat/BRepBndLib.cxx compat/BRepBndLib_1.cxx compat/BRepBndLib.hxx
+  compat/Bnd_OBB.cxx compat/Bnd_OBB.hxx compat/Bnd_Tools.hxx
+  compat/Bnd_Range.hxx compat/Bnd_Range.cxx
+  compat/BndLib_Add2dCurve.cxx  compat/BndLib_Add2dCurve.hxx
+  compat/BndLib_Add3dCurve.cxx  compat/BndLib_Add3dCurve.hxx
+  compat/BndLib_AddSurface.cxx  compat/BndLib_AddSurface.hxx
+  compat/BVH_BoxSet.hxx
+  compat/BVH_Traverse.hxx
+ )
+endif()
+
 set(INCLUDE_DIRS "")
 set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
 add_subdirectory(quantitycomputers)
@@ -54,7 +64,7 @@ add_subdirectory(cadfeatures)
 add_subdirectory(cadparameters)
 add_subdirectory(cadpostprocactions)
 add_subdirectory(docitems)
-
+add_subdirectory(test)
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad 
@@ -62,8 +72,6 @@ target_link_libraries(insightcad
  ${OCC_LIBRARIES} # TKXSDRAW # don't include: leads to segfault on program exit!
  ${DXFLIB_LIBRARY} 
  ${MED_LIBRARIES}
- #${GEOM_LIBRARIES}
- #${DLIB_LIBRARIES}
  )
 include(GenerateExportHeader)
 generate_export_header(insightcad)

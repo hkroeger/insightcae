@@ -85,7 +85,7 @@ sharedModelLocations::sharedModelLocations()
     std::copy(paths.begin(), paths.end(), back_inserter(*this));
   }
   {
-      for (const path& p: insight::SharedPathList::searchPathList)
+      for (const path& p: insight::SharedPathList::global())
       {
         if (boost::filesystem::is_directory(p/"iscad-library"))
           push_back(p/"iscad-library");
@@ -409,7 +409,10 @@ bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* faill
         return false;
     }
     
-    std::ifstream f(fn.c_str());
+    std::ifstream f(fn.string());
+    insight::assertion(
+                f.good(),
+                "stream not good!");
     return parseISCADModelStream(f, m, failloc, sd, fn);
 }
 

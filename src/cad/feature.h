@@ -55,7 +55,6 @@ namespace cad
   
 class Sketch;
 
-enum EntityType { Vertex, Edge, Face, Solid };
 
 
 

@@ -21,29 +21,32 @@ PolyTriangulationNodeIterator::PolyTriangulationNodeIterator()
 
 PolyTriangulationNodeIterator::PolyTriangulationNodeIterator(
         Handle_Poly_Triangulation pt,
+        gp_XYZ coordScale,
         Standard_Integer i )
-    : pt_(pt), i_(i)
+    : pt_(pt), i_(i),
+      coordScale_(coordScale)
 {}
 
-const PolyTriangulationNodeIterator::value_type&
+PolyTriangulationNodeIterator::value_type
 PolyTriangulationNodeIterator::operator*() const
 {
 #if (OCC_VERSION_MAJOR>6)
     return pt_->Node(i_);
 #else
-    return pt_->Nodes().Value(i_);
+    auto p = pt_->Nodes().Value(i_);
+    return gp_Pnt( p.X()*coordScale_.X(), p.Y()*coordScale_.Y(), p.Z()*coordScale_.Z() );
 #endif
 }
 
-const PolyTriangulationNodeIterator::value_type*
-PolyTriangulationNodeIterator::operator->() const
-{
-#if (OCC_VERSION_MAJOR>6)
-    return &pt_->Node(i_);
-#else
-    return &pt_->Nodes().Value(i_);
-#endif
-}
+//const PolyTriangulationNodeIterator::value_type*
+//PolyTriangulationNodeIterator::operator->() const
+//{
+//#if (OCC_VERSION_MAJOR>6)
+//    return &pt_->Node(i_);
+//#else
+//    return &pt_->Nodes().Value(i_);
+//#endif
+//}
 
 PolyTriangulationNodeIterator PolyTriangulationNodeIterator::operator++(int)
 {

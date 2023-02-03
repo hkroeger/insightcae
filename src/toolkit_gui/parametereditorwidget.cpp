@@ -23,10 +23,11 @@
 #include <QPainter>
 #include <QVBoxLayout>
 
-#include "parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 #include "parametereditorwidget.h"
 
-
+#include "iqvtkcadmodel3dviewer.h"
+#include "iqvtkparametersetdisplay.h"
 
 using namespace std;
 
@@ -36,24 +37,24 @@ ParameterEditorWidget::ParameterEditorWidget
   insight::ParameterSet& pset,
   const insight::ParameterSet& default_pset,
   QWidget *parent,
-  insight::ParameterSet_VisualizerPtr viz,
+  insight::ParameterSetVisualizerPtr viz,
   insight::ParameterSet_ValidatorPtr vali,
   ParameterSetDisplay* display
 )
 : QSplitter(Qt::Horizontal, parent),
-//  parameters_(pset),
   defaultParameters_(default_pset),
   model_(new IQParameterSetModel(pset, default_pset, this)),
   vali_(vali),
-  viz_(std::dynamic_pointer_cast<insight::CAD_ParameterSet_Visualizer>(viz))
+  viz_(std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz))
 {
+  insight::CurrentExceptionContext ex("creating parameter set editor");
 
   connect(model_, &IQParameterSetModel::parameterSetChanged,
           this, &ParameterEditorWidget::onParameterSetChanged );
 
   {
     QWidget *w=new QWidget(this);
-    QVBoxLayout *l=new QVBoxLayout(w);
+    QVBoxLayout *l=new QVBoxLayout;
     w->setLayout(l);
 
     parameterTreeView_ = new QTreeView(w);
@@ -65,21 +66,15 @@ ParameterEditorWidget::ParameterEditorWidget
     parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
     l->addWidget(parameterTreeView_);
 
-    QObject::connect( parameterTreeView_, &QTreeView::clicked,
-             [=](const QModelIndex& index)
-             {
-               model_->IQParameterSetModel::handleClick(index, inputContents_);
-             }
-    );
 
     QObject::connect(
           parameterTreeView_, &QTreeView::customContextMenuRequested,
           [=](const QPoint& p)
-    {
-      model_->contextMenu( parameterTreeView_,
-                           parameterTreeView_->indexAt(p),
-                           p );
-    }
+          {
+            model_->contextMenu( parameterTreeView_,
+                                 parameterTreeView_->indexAt(p),
+                                 p );
+          }
     );
 
 
@@ -100,51 +95,70 @@ ParameterEditorWidget::ParameterEditorWidget
 
   if (viz_)
   {
+    insight::CurrentExceptionContext ex("connecting visualizer");
+
     // there is a visualization generator available
     connect(
-          viz_.get(), &insight::CAD_ParameterSet_Visualizer::updateSupplementedInputData,
+          viz_.get(), &insight::CADParameterSetVisualizer::updateSupplementedInputData,
           this, &ParameterEditorWidget::updateSupplementedInputData
           );
 
     if (!display)
     {
+      insight::CurrentExceptionContext ex("building parameter set displayer");
       // no existing displayer supplied; create one
       QWidget *w=new QWidget(this);
       QVBoxLayout *l=new QVBoxLayout(w);
-      QoccViewWidget *viewer=new QoccViewWidget(w/*, context->getContext()*/);
-      viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-      QLabel *hints=new QLabel(w);
-      hints->setStyleSheet("font: 8pt;");
-      hints->setWordWrap(true);
-      hints->setText(
-            "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
-            "<b>Context Menu</b>: Right click on object or canvas."
-            );
-      l->addWidget(viewer);
-      l->addWidget(hints);
+      CADViewer *viewer=nullptr;
+      {
+          insight::CurrentExceptionContext ex("creating CAD viewer");
+          viewer=new CADViewer(w/*, context->getContext()*/);
+          viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+          QLabel *hints=new QLabel(w);
+          hints->setStyleSheet("font: 8pt;");
+          hints->setWordWrap(true);
+          hints->setText(
+                "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
+                "<b>Context Menu</b>: Right click on object or canvas."
+                );
+          l->addWidget(viewer);
+          l->addWidget(hints);
+      }
       w->setLayout(l);
       addWidget(w);
 
-      QModelTree* modeltree =new QModelTree(this);
-      addWidget(modeltree);
+      insight::dbg()<<"create model tree"<<std::endl;
+      modeltree_ = new QTreeView(this);
 
-      viewer->connectModelTree(modeltree);
+      display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree_);
 
-      display_=new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree);
-      display_->connectVisualizer(viz_);
+      // after ParameterSetDisplay constructor!
+      modeltree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+      connect(modeltree_->model(), &QAbstractItemModel::dataChanged,
+              this, &ParameterEditorWidget::onCADModelDataChanged );
+      addWidget(modeltree_);
     }
     else
     {
       // use supplied displayer
       display_=display;
     }
-//    connect(this, &ParameterEditorWidget::parameterSetChanged,
-//            viz_.get(), &insight::CAD_ParameterSet_Visualizer::visualizeScheduledParameters);
+    viz_->setModel(display_->model());
+    viz_->setParameterSetModel(model_);
   }
   else
   {
     display_ = nullptr;
   }
+
+  QObject::connect( parameterTreeView_, &QTreeView::clicked,
+           [=](const QModelIndex& index)
+           {
+             model_->IQParameterSetModel::handleClick(
+                         index, inputContents_,
+                         display_ ? display_->viewer() : nullptr );
+           }
+  );
 
   {
     QList<int> l;
@@ -177,33 +191,34 @@ void ParameterEditorWidget::onParameterSetChanged()
 
 
 
-ParameterSetDisplay::ParameterSetDisplay
+void ParameterEditorWidget::onCADModelDataChanged
 (
-    QObject* parent,
-    QoccViewWidget* viewer,
-    QModelTree* modeltree
-)
-  : QObject(parent),
-    viewer_(viewer),
-    modeltree_(modeltree)
-{}
-
-void ParameterSetDisplay::connectVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
+      const QModelIndex &topLeft,
+      const QModelIndex &bottomRight,
+      const QVector<int> &roles )
 {
-  if (viz)
+  if (roles.contains(Qt::CheckStateRole))
   {
-    modeltree_->connectModel(viz.get());
+      disconnect(modeltree_->model(), &QAbstractItemModel::dataChanged,
+              this, &ParameterEditorWidget::onCADModelDataChanged );
+
+      auto checkstate = topLeft.data(Qt::CheckStateRole);
+      auto indices = modeltree_->selectionModel()->selectedIndexes();
+      for (const auto& idx: indices)
+      {
+          if (idx.column()==topLeft.column())
+          {
+              modeltree_->model()->setData(
+                      idx,
+                      checkstate,
+                      Qt::CheckStateRole );
+          }
+      }
+
+      connect(modeltree_->model(), &QAbstractItemModel::dataChanged,
+              this, &ParameterEditorWidget::onCADModelDataChanged );
   }
 }
-
-void ParameterSetDisplay::disconnectVisualizer(std::shared_ptr<insight::CAD_ParameterSet_Visualizer> viz)
-{
-  if (viz)
-  {
-    modeltree_->disconnectModel(viz.get());
-  }
-}
-
 
 
 

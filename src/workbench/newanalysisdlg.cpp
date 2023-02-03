@@ -99,10 +99,9 @@ void newAnalysisDlg::fillAnalysisList()
   
   HierarchyLevel::iterator i=toplevel.addHierarchyLevel("Uncategorized");
 
-  for ( insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_->begin();
-        i != insight::Analysis::factories_->end(); i++ )
+  auto analyses = insight::Analysis::availableAnalysisTypes();
+  for ( const auto& analysisName: analyses )
     {
-      std::string analysisName = i->first;
 
       QStringList path =
           QString::fromStdString ( insight::Analysis::category ( analysisName ) )

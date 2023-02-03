@@ -24,7 +24,7 @@ protected:
 public:
     Patch(
         const std::string& patch_name,
-        insight::Multi_CAD_ParameterSet_Visualizer* mv,
+        insight::MultiCADParameterSetVisualizer* mv,
         QObject* parent=nullptr
         );
 
@@ -32,7 +32,7 @@ public:
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath,
-        insight::Multi_CAD_ParameterSet_Visualizer* mv,
+        insight::MultiCADParameterSetVisualizer* mv,
         QObject* parent=nullptr
         );
 
@@ -55,7 +55,7 @@ class DefaultPatch
 {
 public:
     DefaultPatch(
-        insight::Multi_CAD_ParameterSet_Visualizer* mv,
+        insight::MultiCADParameterSetVisualizer* mv,
         QObject* parent=nullptr
         );
 
@@ -63,7 +63,7 @@ public:
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath,
-        insight::Multi_CAD_ParameterSet_Visualizer* mv,
+        insight::MultiCADParameterSetVisualizer* mv,
         QObject* parent=nullptr
         );
 

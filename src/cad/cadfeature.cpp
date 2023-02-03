@@ -83,6 +83,14 @@
 
 #include "BRepBuilderAPI_Copy.hxx"
 
+#if (OCC_VERSION_MAJOR<7)
+#include "compat/Bnd_OBB.hxx"
+#include "compat/BRepBndLib.hxx"
+#else
+#include "Bnd_OBB.hxx"
+#include "BRepBndLib.hxx"
+#endif
+
 #include "base/parameters/pathparameter.h"
 
 #include "featurefilters/same.h"
@@ -319,10 +327,8 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
           STEPControl_Reader reader;
           reader.ReadFile(filename.string().c_str());
           reader.TransferRoots();
-          cout<<"STEP transferred"<<endl;
 
           res=reader.OneShape();
-          cout<<"=> one shape"<<endl;
         }
         // set shape
         setShape(res);
@@ -471,12 +477,17 @@ size_t Feature::calcShapeHash() const
   return hash;
 }
 
+
+
+
 size_t Feature::calcHash() const
 {
   ParameterListHash h;
   if (creashapes_) h+=*creashapes_;
   return h.getHash();
 }
+
+
 
 
 void Feature::updateVolProps() const
@@ -488,6 +499,9 @@ void Feature::updateVolProps() const
   }
 }
 
+
+
+
 void Feature::setShape(const TopoDS_Shape& shape)
 {
   volprops_.reset();
@@ -497,6 +511,8 @@ void Feature::setShape(const TopoDS_Shape& shape)
 }
 
 
+
+
 Feature::Feature()
 : isleaf_(true),
 //   density_(1.0),
@@ -504,6 +520,9 @@ Feature::Feature()
   featureSymbolName_("anonymous_"+type())
 {
 }
+
+
+
 
 Feature::Feature(const Feature& o)
 : ASTBase(o),
@@ -518,10 +537,11 @@ Feature::Feature(const Feature& o)
   setShape(o.shape_);
 }
 
+
+
+
 Feature::Feature(const TopoDS_Shape& shape)
 : isleaf_(true),
-//   density_(1.0),
-//   areaWeight_(0.0),
   featureSymbolName_("anonymousShape")
 {
   setShape(shape);
@@ -529,16 +549,7 @@ Feature::Feature(const TopoDS_Shape& shape)
   setValid();
 }
 
-// Feature::Feature(const boost::filesystem::path& filepath)
-// : isleaf_(true),
-// //   density_(1.0),
-// //   areaWeight_(0.0),
-//   hash_(0)
-// {
-//   loadShapeFromFile(filepath);
-//   setShapeHash();
-//   setValid();
-// }
+
 
 Feature::Feature(FeatureSetPtr creashapes)
 : creashapes_(creashapes),
@@ -868,6 +879,7 @@ arma::mat Feature::surfaceInertia(int axis) const
 
 double Feature::modelVolume() const
 {
+  checkForBuildDuringAccess();
   updateVolProps();
   return volprops_->Mass();
 //   TopoDS_Shape sh=shape();
@@ -920,7 +932,7 @@ double Feature::maxVertexDist(const arma::mat& p) const
   for (TopExp_Explorer ex(shape(), TopAbs_VERTEX); ex.More(); ex.Next())
   {
     TopoDS_Vertex v=TopoDS::Vertex(ex.Current());
-    arma::mat vp=insight::Vector(BRep_Tool::Pnt(v)).t();
+    arma::mat vp=insight::Vector(BRep_Tool::Pnt(v));
     maxdist=std::max(maxdist, norm(p-vp,2));
   }
   return maxdist;
@@ -938,7 +950,6 @@ double Feature::maxDist(const arma::mat& p) const
     Extrema_ExtFlag_MAX,
     Extrema_ExtAlgo_Tree
   );
-  std::cout<<"Nb="<<epf.NbExt()<<std::endl;
   if (!epf.IsDone())
     throw insight::Exception("determination of maximum distance to point failed!");
   double maxdistsq=0.;
@@ -987,23 +998,101 @@ arma::mat Feature::modelBndBox(double deflection) const
   {
     double g=boundingBox.GetGap();
     double x0, x1, y0, y1, z0, z1;
+
     boundingBox.Get
     (
-          x0, y0, z0,
-          x1, y1, z1
-  //    x(0,0), x(1,0), x(2,0),
-  //    x(0,1), x(1,1), x(2,1)
+      x0, y0, z0,
+      x1, y1, z1
     );
+
     x
-        << x0 << x1 << arma::endr
-        << y0 << y1 << arma::endr
-        << z0 << z1 << arma::endr
-           ;
+    << x0 << x1 << arma::endr
+    << y0 << y1 << arma::endr
+    << z0 << z1 << arma::endr;
+
     x.col(0)+=g;
     x.col(1)-=g;
   }
 
   return x;
+}
+
+std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double deflection) const
+{
+    checkForBuildDuringAccess();
+
+    if (deflection>0)
+    {
+        BRepMesh_IncrementalMesh Inc(shape(), deflection);
+    }
+
+#if (OCC_VERSION_MAJOR<7)
+    ISOCC::Bnd_OBB boundingBox;
+    ISOCC::BRepBndLib::AddOBB(shape(), boundingBox);
+#else
+    Bnd_OBB boundingBox;
+    BRepBndLib::AddOBB(shape(), boundingBox);
+#endif
+
+    arma::mat x=arma::zeros(3,2);
+    CoordinateSystem cs;
+
+    if (!boundingBox.IsVoid())
+    {
+        arma::mat sizes;
+        sizes   << boundingBox.XHSize()
+                << boundingBox.YHSize()
+                << boundingBox.ZHSize();
+
+
+//        arma::uvec si = arma::reverse( arma::sort_index(sizes) );
+        arma::uvec si=arma::sort_index(sizes);
+        std::reverse(si.begin(), si.end());
+
+        cs.origin = insight::Vector(boundingBox.Center());
+//        cs.ex = insight::Vector(boundingBox.XDirection());
+//        cs.ey = insight::Vector(boundingBox.YDirection());
+//        cs.ez = insight::Vector(boundingBox.ZDirection());
+
+        for (int i=0; i<3; ++i)
+        {
+            arma::mat dr;
+            double sz;
+
+            switch (si(i))
+            {
+            case 0:
+                dr=insight::Vector(boundingBox.XDirection());
+                sz=boundingBox.XHSize();
+                break;
+            case 1:
+                dr=insight::Vector(boundingBox.YDirection());
+                sz=boundingBox.YHSize();
+                break;
+            case 2:
+                dr=insight::Vector(boundingBox.ZDirection());
+                sz=boundingBox.ZHSize();
+                break;
+            };
+
+            switch (i)
+            {
+            case 0:
+                cs.ex=dr;
+                break;
+            case 1:
+                cs.ey=dr;
+                break;
+            case 2:
+                cs.ez=dr;
+                break;
+            };
+            x(i,0)=-sz;
+            x(i,1)=sz;
+        }
+    }
+
+    return {cs, x};
 }
 
 
@@ -1389,7 +1478,6 @@ void Feature::saveAs
 
   std::string ext=filename.extension().string();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-  cout<<filename<<" >> "<<ext<<endl;
 
 
   if (ext==".brep")
@@ -1594,8 +1682,6 @@ void Feature::exportEMesh
     TopoDS_Edge e=fs.model()->edge(fi);
     if (!BRep_Tool::Degenerated(e))
     {
-//       std::cout<<"feature "<<fi<<std::endl;
-//       BRepTools::Dump(e, std::cout);
       BRepAdaptor_Curve ac(e);
       GCPnts_QuasiUniformDeflection qud(ac, abstol);
 
@@ -1752,10 +1838,7 @@ Feature::View Feature::createView
             }
             xsecs->Append(cxsecs);
         }
-//         cout<<"Generated "<<j<<" cross-sections"<<endl;
         dispshape=dispshapes;
-// 	BRepTools::Write(dispshape, "dispshape.brep");
-// 	BRepTools::Write(xsecs, "xsecs.brep");
         result_view.crossSections = xsecs;
     }
 
@@ -1771,7 +1854,6 @@ Feature::View Feature::createView
         // extracting the result sets:
         Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
         HLRBRep_PolyHLRToShape shapes;
-//         std::cout<<"TolCoef="<<aHlrPolyAlgo->TolCoef()<<endl;
         if (visresolution_)
             aHlrPolyAlgo->TolCoef(visresolution_->value());
         aHlrPolyAlgo->Load(dispshape);
@@ -2274,7 +2356,6 @@ void Feature::write(std::ostream& f) const
     std::ostringstream bufs;
     BRepTools::Write(shape(), bufs);
     std::string buf=bufs.str();
-//     cout<<buf<<endl;
     f<<buf.size()<<endl;
     f<<buf<<endl;
   }
@@ -2334,13 +2415,11 @@ Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& fea
   
   int i=-1;
   for (const FeaturePtr& f: feats)
-  { i++;
-    
-//     std::cout<<density_ovr<<", "<<aw_ovr<<std::endl;
+  {
+      i++;
     mcs[i]=f->mass(density_ovr, aw_ovr);
     cogs[i]=f->modelCoG(density_ovr);
-    
-//     std::cout<<"m="<<mc<<", cog="<<f->modelCoG()<<std::endl;
+
     m += mcs[i];
     cog += cogs[i]*mcs[i];
   }
@@ -2361,8 +2440,7 @@ Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& fea
     
     inertia += f->modelInertia(density_ovr) + mcs[i]*dt.t()*dt;
   }
-  
-//   std::cout<<"compound props: m="<<m<<", cog="<<cog<<std::endl;
+
   return Mass_CoG_Inertia(m, cog, inertia);
 }
 

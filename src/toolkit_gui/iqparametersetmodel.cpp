@@ -89,7 +89,10 @@ int IQParameterSetModel::rowCount(const QModelIndex &parent) const
   }
   else if (const auto* p=static_cast<IQParameter*>(parent.internalPointer()))
   {
-    s=p->nChildParameters();
+      if (parent.column()==0)
+      {
+          s=p->nChildParameters(); // only first column has children
+      }
   }
 //  qDebug()<<parent<<"has rows = "<<s;
   return s;
@@ -117,6 +120,8 @@ QModelIndex IQParameterSetModel::index(int row, int column, const QModelIndex &p
     }
   }
 
+//  qDebug()<<"index r="<<row<<", c="<<column<<", p="<<parent<<" = "<<i;
+
   return i;
 }
 
@@ -127,7 +132,7 @@ QModelIndex IQParameterSetModel::parent(const QModelIndex &index) const
 {
   QModelIndex i;
 
-  if (index.isValid())
+  if ( index.isValid() )
   {
     if (auto* p=static_cast<IQParameter*>(index.internalPointer()))
     {
@@ -142,12 +147,12 @@ QModelIndex IQParameterSetModel::parent(const QModelIndex &index) const
         {
           parentRow = rootParameters_.indexOf(pp);
         }
-        i = createIndex(parentRow, index.column(), pp);
+        i = createIndex(parentRow, 0, pp);
       }
     }
   }
 
-//  qDebug()<<"parent of "<<index<<": "<<i;
+//  qDebug()<<"parent of "<<index<<" = "<<i;
 
   return i;
 }
@@ -361,10 +366,46 @@ QModelIndex IQParameterSetModel::indexFromPath(const QList<int> &p) const
   return ii;
 }
 
+void IQParameterSetModel::addGeometryToSpatialTransformationParameter(
+        const QString &parameterPath,
+        insight::cad::FeaturePtr geom )
+{
+    transformedGeometry_[parameterPath]=geom;
+}
+
+void IQParameterSetModel::addVectorBasePoint(const QString &parameterPath, const arma::mat &pBase)
+{
+    vectorBasePoints_[parameterPath]=pBase;
+}
+
+insight::cad::FeaturePtr IQParameterSetModel::getGeometryToSpatialTransformationParameter(
+        const QString &parameterPath )
+{
+    auto i = transformedGeometry_.find(parameterPath);
+    if (i!=transformedGeometry_.end())
+    {
+        return i->second;
+    }
+    return insight::cad::FeaturePtr();
+}
+
+const arma::mat * const IQParameterSetModel::getVectorBasePoint(const QString &parameterPath)
+{
+    auto i = vectorBasePoints_.find(parameterPath);
+    if (i!=vectorBasePoints_.end())
+    {
+        return &i->second;
+    }
+    return nullptr;
+}
 
 
 
-void IQParameterSetModel::handleClick(const QModelIndex &index, QWidget* editControlsContainer)
+
+void IQParameterSetModel::handleClick(
+        const QModelIndex &index,
+        QWidget* editControlsContainer,
+        IQCADModel3DViewer *vri )
 {
   if (index.isValid())
   {
@@ -386,7 +427,7 @@ void IQParameterSetModel::handleClick(const QModelIndex &index, QWidget* editCon
       }
 
       // create new controls
-      p->populateEditControls(this, index, editControlsContainer);
+      p->populateEditControls(this, index, editControlsContainer, vri);
     }
   }
 }

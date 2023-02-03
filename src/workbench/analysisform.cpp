@@ -69,7 +69,6 @@
 
 
 
-
 namespace fs = boost::filesystem;
 
 
@@ -86,7 +85,9 @@ AnalysisForm::AnalysisForm(
   pack_parameterset_(true),
   is_modified_(false)
 {
-  setAttribute(Qt::WA_DeleteOnClose, true);
+    insight::CurrentExceptionContext ex("creating analysis form for analysis "+analysisName);
+
+    setAttribute(Qt::WA_DeleteOnClose, true);
 
     // load default parameters
     auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
@@ -103,24 +104,30 @@ AnalysisForm::AnalysisForm(
 
     ui = new Ui::AnalysisForm;
     QWidget* iw=new QWidget(this);
-    ui->setupUi(iw);
-    setWidget(iw);
+    {
+        insight::CurrentExceptionContext ex("setup user interface");
+        ui->setupUi(iw);
+        setWidget(iw);
+    }
 
     if (isOpenFOAMAnalysis_)
     {
-      ui->btnParaview->setEnabled(true);
-      connect( ui->btnParaview, &QPushButton::clicked, this, &AnalysisForm::onStartPV );
-      ui->btnClean->setEnabled(true);
-      connect( ui->btnClean, &QPushButton::clicked, this, &AnalysisForm::onCleanOFC );
-      ui->btnWriteNow->setEnabled(true);
-      connect( ui->btnWriteNow, &QPushButton::clicked, this, &AnalysisForm::onWnow );
-      ui->btnWriteNowAndStop->setEnabled(true);
-      connect( ui->btnWriteNowAndStop, &QPushButton::clicked, this, &AnalysisForm::onWnowAndStop );
+        insight::CurrentExceptionContext ex("enable OpenFOAM controls");
+
+        ui->btnParaview->setEnabled(true);
+        connect( ui->btnParaview, &QPushButton::clicked, this, &AnalysisForm::onStartPV );
+        ui->btnClean->setEnabled(true);
+        connect( ui->btnClean, &QPushButton::clicked, this, &AnalysisForm::onCleanOFC );
+        ui->btnWriteNow->setEnabled(true);
+        connect( ui->btnWriteNow, &QPushButton::clicked, this, &AnalysisForm::onWnow );
+        ui->btnWriteNowAndStop->setEnabled(true);
+        connect( ui->btnWriteNowAndStop, &QPushButton::clicked, this, &AnalysisForm::onWnowAndStop );
     }
 
     connect( ui->btnShell, &QPushButton::clicked,
              this, &AnalysisForm::onShell);
 
+    insight::dbg()<<"graphprogressdisplayer"<<std::endl;
     graphProgress_=new GraphProgressDisplayer;
     actionProgress_=new insight::QActionProgressDisplayerWidget;
 
@@ -130,9 +137,11 @@ AnalysisForm::AnalysisForm(
     spl->addWidget(graphProgress_);
     spl->addWidget(lower);
     spl->setSizes( {500, 500} );
+    insight::dbg()<<"log viewer"<<std::endl;
     log_=new LogViewerWidget(spl);
     hbl->addWidget(log_);
 
+    insight::dbg()<<"more buttons"<<std::endl;
     QVBoxLayout* vbl=new QVBoxLayout;
     hbl->addLayout(vbl);
     save_log_btn_=new QPushButton("Save...");
@@ -161,6 +170,8 @@ AnalysisForm::AnalysisForm(
 
     if (!logToConsole)
     {
+        insight::CurrentExceptionContext ex("redirect console");
+
       cout_log_ = new IQDebugStream(std::cout);
       connect(cout_log_, &IQDebugStream::appendText,
               log_, &LogViewerWidget::appendDimmedLine);
@@ -169,16 +180,18 @@ AnalysisForm::AnalysisForm(
               log_, &LogViewerWidget::appendErrorLine);
     }
 
+    insight::dbg()<<"update title"<<std::endl;
     updateWindowTitle();
     connect(ui->btnRun, &QPushButton::clicked, this, &AnalysisForm::onRunAnalysis);
     connect(ui->btnKill, &QPushButton::clicked, this, &AnalysisForm::onKillAnalysis);
 
 
-    insight::ParameterSet_VisualizerPtr viz;
+    insight::ParameterSetVisualizerPtr viz;
     insight::ParameterSet_ValidatorPtr vali;
 
     try
     {
+        insight::CurrentExceptionContext ex("create parameter set visualizer");
         viz = insight::Analysis::visualizer(analysisName_);
         viz ->setProgressDisplayer(&progressDisplayer_);
     }
@@ -199,13 +212,16 @@ AnalysisForm::AnalysisForm(
     vsplit->setOrientation(Qt::Vertical);
     ui->inputTabLayout->addWidget(vsplit);
 
-    peditor_=new ParameterEditorWidget(/*parameters_*/defaultParams, defaultParams, ui->inputTab, viz, vali);
-    connect(
-          peditor_, &ParameterEditorWidget::updateSupplementedInputData,
-          this, &AnalysisForm::onUpdateSupplementedInputData
-          );
-    //ui->inputTabLayout->addWidget(peditor_);
-    vsplit->addWidget(peditor_);
+    {
+        insight::CurrentExceptionContext ex("create parameter set editor");
+        peditor_=new ParameterEditorWidget(/*parameters_*/defaultParams, defaultParams, ui->inputTab, viz, vali);
+        connect(
+              peditor_, &ParameterEditorWidget::updateSupplementedInputData,
+              this, &AnalysisForm::onUpdateSupplementedInputData
+              );
+        //ui->inputTabLayout->addWidget(peditor_);
+        vsplit->addWidget(peditor_);
+    }
 
     sidtab_ = new QTableView;
     sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -244,8 +260,11 @@ AnalysisForm::AnalysisForm(
     IQExecutionWorkspace::initializeToDefaults();
 
 
-    resultsViewer_=new IQResultSetDisplayerWidget(ui->outputTab);
-    ui->outputTab->layout()->addWidget(resultsViewer_);
+    {
+        insight::CurrentExceptionContext ex("create result viewer");
+        resultsViewer_=new IQResultSetDisplayerWidget(ui->outputTab);
+        ui->outputTab->layout()->addWidget(resultsViewer_);
+    }
 
 }
 
@@ -270,6 +289,8 @@ AnalysisForm::~AnalysisForm()
 
 WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(QMenuBar* mainMenu)
 {
+    insight::CurrentExceptionContext ex("create menus");
+
     auto *dm = new WidgetWithDynamicMenuEntries(this);
 
     auto menu_parameters = dm->add(mainMenu->addMenu("&Parameters"));
@@ -376,10 +397,13 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 {
     if (is_modified_)
     {
-      auto answer=QMessageBox::question(this, "Parameters unsaved",
-                                        "The current parameters have been modified without saving.\n"
-                                        "Do you wish to save them before closing?",
-                                        QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+
+      auto answer=QMessageBox::question(
+                  this, "Parameters unsaved",
+                  "The current parameters have been modified without saving.\n"
+                  "Do you wish to save them before closing?",
+                  QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel );
+
       if (answer==QMessageBox::Yes)
       {
         bool cancelled=false;
@@ -480,7 +504,6 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
     pack_parameterset_ = cb->isChecked();
     updateSaveMenuLabel();
 
-//     parameters_.saveToFile(fn.toStdString(), analysis_->type());
     ist_file_=fn.toStdString();
 
     if (!hasLocalWorkspace())
@@ -525,9 +548,12 @@ void AnalysisForm::onLoadParameters()
 {
   if (is_modified_)
   {
-    auto answer = QMessageBox::question(this, "Parameters unsaved", "The current parameter set is unsaved and will be overwritten.\n"
-                                                  "Do you wish to save them before continue?",
-                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+    auto answer = QMessageBox::question(
+                this, "Parameters unsaved",
+                "The current parameter set is unsaved and will be overwritten.\n"
+                "Do you wish to save them before continue?",
+                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+
     if (answer == QMessageBox::Yes)
     {
       onSaveParameters();
@@ -538,7 +564,11 @@ void AnalysisForm::onLoadParameters()
     }
   }
 
-  QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
+  QString fn = QFileDialog::getOpenFileName(
+              this, "Open Parameters",
+              QString(),
+              "Insight parameter sets (*.ist)" );
+
   if (!fn.isEmpty())
   {
     loadParameters(fn.toStdString());

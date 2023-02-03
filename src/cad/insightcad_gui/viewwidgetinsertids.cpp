@@ -84,7 +84,7 @@ insight::cad::FeatureID ViewWidgetInsertPointIDs::getId(const insight::cad::Feat
   return feat.vertexID(s);
 }
 
-ViewWidgetInsertPointIDs::ViewWidgetInsertPointIDs(QoccViewWidget *viewWidget)
+ViewWidgetInsertPointIDs::ViewWidgetInsertPointIDs(QoccViewWidget &viewWidget)
   : ViewWidgetInsertIDs<TopAbs_VERTEX, insight::cad::Vertex, vertexFunctionName, vertexFeatSelCmdName>(viewWidget)
 {}
 
@@ -98,7 +98,7 @@ insight::cad::FeatureID ViewWidgetInsertEdgeIDs::getId(const insight::cad::Featu
   return feat.edgeID(s);
 }
 
-ViewWidgetInsertEdgeIDs::ViewWidgetInsertEdgeIDs(QoccViewWidget *viewWidget)
+ViewWidgetInsertEdgeIDs::ViewWidgetInsertEdgeIDs(QoccViewWidget &viewWidget)
   : ViewWidgetInsertIDs<TopAbs_EDGE, insight::cad::Edge, edgeFunctionName, edgeFeatSelCmdName>(viewWidget)
 {}
 
@@ -112,7 +112,7 @@ insight::cad::FeatureID ViewWidgetInsertFaceIDs::getId(const insight::cad::Featu
   return feat.faceID(s);
 }
 
-ViewWidgetInsertFaceIDs::ViewWidgetInsertFaceIDs(QoccViewWidget *viewWidget)
+ViewWidgetInsertFaceIDs::ViewWidgetInsertFaceIDs(QoccViewWidget &viewWidget)
   : ViewWidgetInsertIDs<TopAbs_FACE, insight::cad::Face, faceFunctionName, faceFeatSelCmdName>(viewWidget)
 {}
 
@@ -127,6 +127,6 @@ insight::cad::FeatureID ViewWidgetInsertSolidIDs::getId(const insight::cad::Feat
   return feat.solidID(s);
 }
 
-ViewWidgetInsertSolidIDs::ViewWidgetInsertSolidIDs(QoccViewWidget *viewWidget)
+ViewWidgetInsertSolidIDs::ViewWidgetInsertSolidIDs(QoccViewWidget &viewWidget)
   : ViewWidgetInsertIDs<TopAbs_SOLID, insight::cad::Solid, solidFunctionName, solidFeatSelCmdName>(viewWidget)
 {}

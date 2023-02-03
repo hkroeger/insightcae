@@ -10,6 +10,21 @@
 
 #include "base/exception.h"
 
+QString mat2Str(const arma::mat& m)
+{
+  std::ostringstream oss;
+  for (arma::uword i=0; i<m.n_rows; i++)
+  {
+    for (arma::uword j=0; j<m.n_cols; j++)
+    {
+      oss<<m(i,j);
+      if (j!=m.n_cols-1) oss<<" ";
+    }
+    if (i!=m.n_rows-1) oss<<";";
+  }
+  return QString(oss.str().c_str());
+}
+
 
 defineType(IQParameter);
 defineFactoryTable
@@ -33,7 +48,11 @@ IQParameter* IQParameter::create(QObject *parent, const QString &name, insight::
 
 
 
-IQParameter::IQParameter(QObject *parent, const QString &name, insight::Parameter &parameter, const insight::ParameterSet &defaultParameterSet)
+IQParameter::IQParameter(
+        QObject *parent,
+        const QString &name,
+        insight::Parameter &parameter,
+        const insight::ParameterSet &defaultParameterSet )
   : QObject(parent),
     name_(name),
     parameter_(parameter),
@@ -165,9 +184,13 @@ void IQParameter::populateContextMenu(IQParameterSetModel* model, const QModelIn
 }
 
 
-QVBoxLayout* IQParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQParameter::populateEditControls(
+        IQParameterSetModel* model,
+        const QModelIndex &index,
+        QWidget* editControlsContainer,
+        IQCADModel3DViewer *)
 {
-  QVBoxLayout *layout=new QVBoxLayout(editControlsContainer);
+  QVBoxLayout *layout=new QVBoxLayout;
 
   QLabel *nameLabel = new QLabel(name(), editControlsContainer);
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);

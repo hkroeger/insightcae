@@ -72,10 +72,11 @@ arma::mat vec2(double x, double y);
 arma::mat vec3(double x, double y, double z);
 arma::mat vec3Zero();
 arma::mat vec3One();
-arma::mat vec3X(double x);
-arma::mat vec3Y(double y);
-arma::mat vec3Z(double z);
+arma::mat vec3X(double x = 1);
+arma::mat vec3Y(double y = 1);
+arma::mat vec3Z(double z = 1);
 arma::mat vec3FromComponents(const double* c);
+arma::mat vec3FromComponents(const float* c);
 arma::mat readVec3(std::istream& is);
 arma::mat normalized(const arma::mat& vec);
 
@@ -109,7 +110,10 @@ template<class T>
 arma::mat vector(const T& t)
 {
   arma::mat rt;
-  rt << t.x() <<arma::endr<< t.y() <<arma::endr<< t.z() << arma::endr;
+  rt
+          << t.x() << arma::endr
+          << t.y() << arma::endr
+          << t.z() << arma::endr;
   return rt;
 }
 
@@ -118,7 +122,10 @@ template<class T>
 arma::mat Vector(const T& t)
 {
   arma::mat rt;
-  rt << t.X() <<arma::endr<< t.Y() <<arma::endr<< t.Z() << arma::endr;
+  rt
+          << t.X() << arma::endr
+          << t.Y() << arma::endr
+          << t.Z() << arma::endr;
   return rt;
 }
 
@@ -126,7 +133,10 @@ template<class T>
 arma::mat vec3(const T& t)
 {
   arma::mat rt;
-  rt << t.X() <<arma::endr<< t.Y() <<arma::endr<< t.Z() << arma::endr;
+  rt
+          << t.X() << arma::endr
+          << t.Y() << arma::endr
+          << t.Z() << arma::endr;
   return rt;
 }
 
@@ -414,6 +424,17 @@ double integrate_indef(F f, double a=0)
 struct CoordinateSystem
 {
   arma::mat origin, ex, ey, ez;
+
+  CoordinateSystem();
+
+  CoordinateSystem(
+          const arma::mat& p0,
+          const arma::mat& ex );
+
+  CoordinateSystem(
+          const arma::mat& p0,
+          const arma::mat& ex,
+          const arma::mat& ez );
 };
 //typedef std::map<arma::mat, int, CompMat> SortedMatMap;
 

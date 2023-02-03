@@ -25,13 +25,15 @@ QString IQDoubleParameter::valueText() const
   return QString::number( dynamic_cast<const insight::DoubleParameter&>(parameter())() );
 }
 
-QVBoxLayout* IQDoubleParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQDoubleParameter::populateEditControls(
+        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
   const auto& p = dynamic_cast<const insight::DoubleParameter&>(parameter());
 
-  auto layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto lineEdit=new QLineEdit(editControlsContainer);

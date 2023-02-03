@@ -32,39 +32,34 @@ namespace cad
 {
 
 
-template<> isPartOfSolid<Edge>::isPartOfSolid(FeaturePtr m)
-: s_(TopoDS::Solid(*m))
-{
-}
 
 template<>
 bool isPartOfSolid<Edge>::checkMatch(FeatureID feature) const
 {
-  bool match=false;
-  
-  TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
-  match |= isPartOf(s_, e1);
-  
-  return match;
+    bool match=false;
+
+    TopoDS_Edge e1=model_->edge(feature);
+    for (const auto& s: s_)
+    {
+        match |= isPartOf(s, e1);
+    }
+
+    return match;
 }
 
-template<> isPartOfSolid<Face>::isPartOfSolid(FeaturePtr m)
-: s_(TopoDS::Solid(*m))
-{
-}
 
 template<>
 bool isPartOfSolid<Face>::checkMatch(FeatureID feature) const
 {
-  bool match=false;
-  
-//   for (int f: f_)
-  {
-    TopoDS_Face e1=TopoDS::Face(model_->face(feature));
-    match |= isPartOf(s_, e1);
-  }
-  
-  return match;
+    bool match=false;
+
+    TopoDS_Face f=model_->face(feature);
+    for (const auto& s: s_)
+    {
+        match |= isPartOf(s, f);
+    }
+
+    return match;
 }
 
 

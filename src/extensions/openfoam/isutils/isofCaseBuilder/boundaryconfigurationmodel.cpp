@@ -317,7 +317,7 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
 void BoundaryConfigurationModel::readFromNode(
     rapidxml::xml_document<> &doc,
     rapidxml::xml_node<> *BCnode,
-    insight::Multi_CAD_ParameterSet_Visualizer *mv,
+    insight::MultiCADParameterSetVisualizer *mv,
     const boost::filesystem::path &fileParentPath)
 {
   clear();
@@ -343,7 +343,7 @@ void BoundaryConfigurationModel::readFromNode(
 ParameterEditorWidget* BoundaryConfigurationModel::launchParameterEditor(
     const QModelIndex &index,
     QWidget* parentWidget,
-    ParameterSetDisplay* display
+    IQVTKParameterSetDisplay* display
     )
 {
   if (auto *pc = dynamic_cast<Patch*>(patchByIndex(index)))

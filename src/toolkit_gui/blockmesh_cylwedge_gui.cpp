@@ -37,9 +37,9 @@ namespace bmd
 
 
 
-ParameterSet_VisualizerPtr blockMeshDict_CylWedge_visualizer()
+ParameterSetVisualizerPtr blockMeshDict_CylWedge_visualizer()
 {
-    return ParameterSet_VisualizerPtr( new blockMeshDict_CylWedge_ParameterSet_Visualizer );
+    return ParameterSetVisualizerPtr( new blockMeshDict_CylWedge_ParameterSet_Visualizer );
 }
 
 
@@ -59,7 +59,7 @@ void blockMeshDict_CylWedge_ParameterSet_Visualizer::setBlockMeshName(const std:
 
 void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   auto spp = std::make_shared<blockMeshDict_CylWedge::supplementedInputData>(
         std::make_unique<blockMeshDict_CylWedge::Parameters>(currentParameters()),

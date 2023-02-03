@@ -260,17 +260,23 @@ public:
 class SharedPathList 
 : public std::vector<boost::filesystem::path>
 {
-public:
+
   SharedPathList();
-  virtual ~SharedPathList();
-  virtual boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
+
+public:
+  static SharedPathList& global();
+
+  boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
   
   void insertIfNotPresent(const boost::filesystem::path& sp);
+
   void insertFileDirectoyIfNotPresent(const boost::filesystem::path& sp);
+
+  void insertPathRelativeToCurrentExecutable(
+          const boost::filesystem::path& relPath );
+
   boost::filesystem::path findFirstWritableLocation(
           const boost::filesystem::path& subPath ) const;
-  
-  static SharedPathList searchPathList;
 };
 
 
@@ -359,7 +365,7 @@ arma::mat STLBndBox(
   * second col: max point
   */
 arma::mat PolyDataBndBox(
-  vtkSmartPointer<vtkPolyData> stl_data_Set
+  vtkSmartPointer<vtkDataSet> stl_data_Set
 );
 
 arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2);
@@ -416,6 +422,12 @@ public:
   TemplateFile(const boost::filesystem::path& in);
 
   void replace(const std::string& keyword, const std::string& content);
+
+  template<class T>
+  void replaceValue(const std::string& keyword, const T& content)
+  {
+      replace(keyword, boost::lexical_cast<std::string>(content));
+  }
 
   void write(std::ostream& os) const;
   void write(const boost::filesystem::path& outfile) const;

@@ -71,7 +71,7 @@ void coincidentProjectedEdge::firstPass(FeatureID feature)
       arma::mat mypts=arma::zeros<arma::mat>(3,qud.NbPoints());
       for (int j=1; j<=qud.NbPoints(); j++)
       {
-	arma::mat p=insight::Vector(qud.Value(j)).t();
+    arma::mat p=insight::Vector(qud.Value(j));
 	mypts.col(j-1)=p;
       }
       
@@ -113,7 +113,7 @@ bool coincidentProjectedEdge::checkMatch(FeatureID feature) const
 
     for (int j=1; j<=qud.NbPoints(); j++)
     {
-      arma::mat p=insight::Vector(qud.Value(j)).t();
+      arma::mat p=insight::Vector(qud.Value(j));
 
       arma::mat d=samplePts_ - p*arma::ones<arma::mat>(1,samplePts_.n_cols);
       arma::mat ds=arma::sqrt( d.row(0)%d.row(0) + d.row(1)%d.row(1) + d.row(2)%d.row(2) );

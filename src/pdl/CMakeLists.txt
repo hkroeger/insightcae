@@ -21,6 +21,7 @@ set(pdl_SOURCES
     arrayparameterparser.cpp arrayparameterparser.h
     selectablesubsetparameterparser.cpp selectablesubsetparameterparser.h
     propertylibraryselectionparameterparser.h propertylibraryselectionparameterparser.cpp
+    spatialtransformationparameterparser.h spatialtransformationparameterparser.cpp
 )
 
 add_executable(pdl ${pdl_SOURCES})

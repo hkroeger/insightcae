@@ -42,8 +42,8 @@ double edgeRadialLen::evaluate(FeatureID ei)
   arma::mat ax=ax_->evaluate(ei);
   arma::mat p0=p0_->evaluate(ei);
   
-  arma::mat p1=(insight::Vector(BRep_Tool::Pnt(TopExp::FirstVertex(model_->edge(ei))))).t()-p0;
-  arma::mat p2=(insight::Vector(BRep_Tool::Pnt(TopExp::LastVertex(model_->edge(ei))))).t()-p0;
+  arma::mat p1=(insight::Vector(BRep_Tool::Pnt(TopExp::FirstVertex(model_->edge(ei)))))-p0;
+  arma::mat p2=(insight::Vector(BRep_Tool::Pnt(TopExp::LastVertex(model_->edge(ei)))))-p0;
   
   p1-=ax*(dot(ax, p1));
   p2-=ax*(dot(ax, p2));

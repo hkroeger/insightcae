@@ -7,12 +7,41 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 
+find_package(VTK
+   COMPONENTS
+   vtkGUISupportQt vtkRenderingLabel
+   NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH
+   HINTS ${VTK_ONSCREEN_DIR}
+)
+
 set(insightcad_gui_SRCS 
  iscadmetatyperegistrator.cpp
  iscadmetatyperegistrator.h
 
- iqcadmodelcontainer.h
- iqcadmodelcontainer.cpp
+ iqiscadmodelgenerator.h iqiscadmodelgenerator.cpp
+ iqiscadmodelrebuilder.h iqiscadmodelrebuilder.cpp
+ iqiscadscriptmodelgenerator.h iqiscadscriptmodelgenerator.cpp
+
+ iqcaditemmodel.h
+ iqcaditemmodel.cpp
+ iqpickinteractorstyle.h iqpickinteractorstyle.cpp
+
+ iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
+
+ iqvtkcadmodel3dviewerrotation.h iqvtkcadmodel3dviewerrotation.cpp
+ iqvtkcadmodel3dviewerpanning.h iqvtkcadmodel3dviewerpanning.cpp
+ iqvtkcadmodel3dviewer_highlightitem.cpp
+ iqvtkcadmodel3dviewer_subshapeselection.cpp
+ iqvtkcadmodel3dviewer_clippingplanes.cpp
+ iqvtkcadmodel3dviewermeasurepoints.h iqvtkcadmodel3dviewermeasurepoints.cpp
+ iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
+
+ iqvtkviewwidgetinsertids.h iqvtkviewwidgetinsertids.cpp
+ iqcadtransformationcommand.h iqcadtransformationcommand.cpp
+ iqpointpickcommand.h iqpointpickcommand.cpp
+ iqvectordirectioncommand.h iqvectordirectioncommand.cpp
+ ivtkoccshape.h ivtkoccshape.cpp
+ iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
 
  cadfeaturetransient.cpp
  cadfeaturetransient.h
@@ -50,6 +79,8 @@ set(insightcad_gui_SRCS
  postprocactionvisualizers/hydrostaticsvisualizer.cpp
  postprocactionvisualizers/distancevisualizer.cpp
  postprocactionvisualizers/solidpropertiesvisualizer.cpp
+
+ insightcae_gui.qrc
 )
 
 
@@ -65,6 +96,7 @@ target_link_libraries(insightcad_gui
   ${OCC_GUI_LIBRARIES}
   Qt5::Widgets
   ${DXFLIB_LIBRARIES}
+  ${VTK_LIBRARIES}
   )
 
 target_include_directories(insightcad_gui

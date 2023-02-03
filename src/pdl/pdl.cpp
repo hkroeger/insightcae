@@ -35,6 +35,7 @@
 #include "matrixparameterparser.h"
 #include "selectablesubsetparameterparser.h"
 #include "propertylibraryselectionparameterparser.h"
+#include "spatialtransformationparameterparser.h"
 
 
 
@@ -163,6 +164,7 @@ struct PDLParser
     DynamicClassParametersSelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     MatrixParameterParser::insertrule<Iterator, Skipper>(rules);
     PropertyLibrarySelectionParameterParser::insertrule<Iterator, Skipper>(rules);
+    SpatialTransformationParameterParser::insertrule<Iterator, Skipper>(rules);
 
     rules.init();
 

@@ -16,30 +16,30 @@ template<
     const char* selectionName,
     const char* featSelCmdName
     >
-class ViewWidgetInsertIDs : public ViewWidgetAction
+class ViewWidgetInsertIDs
+        : public ViewWidgetAction<QoccViewWidget>
 {
 protected:
-  QoccViewWidget *viewWidget_;
   std::shared_ptr<insight::cad::FeatureSet> selection_;
 
   virtual insight::cad::FeatureID getId(const insight::cad::Feature& feat, const TopoDS_Shape& s) =0;
 
 public:
-  ViewWidgetInsertIDs(QoccViewWidget *viewWidget)
-    : viewWidget_(viewWidget)
+  ViewWidgetInsertIDs(QoccViewWidget &viewWidget)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget)
   {
-    insight::cad::ActivateAll(viewWidget_->getContext(), shapeEnum);
-    viewWidget_->sendStatus("Please select "+QString(selectionName)+" and finish with right click!");
+    insight::cad::ActivateAll(viewer().getContext(), shapeEnum);
+    viewer().sendStatus("Please select "+QString(selectionName)+" and finish with right click!");
   }
 
   ~ViewWidgetInsertIDs()
   {
-    insight::cad::DeactivateAll(viewWidget_->getContext(), shapeEnum);
+    insight::cad::DeactivateAll(viewer().getContext(), shapeEnum);
   }
 
   void onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override
   {
-    auto context = viewWidget_->getContext();
+    auto context = viewer().getContext();
 
     context->InitSelected();
     if (context->MoreSelected())
@@ -49,7 +49,7 @@ public:
         {
           if (QFeatureItem *parent =
               dynamic_cast<QFeatureItem*>(
-                viewWidget_->getOwnerItem(context->SelectedInteractive()) ) )
+                viewer().getOwnerItem(context->SelectedInteractive()) ) )
             {
               // restrict further selection to current shape
               insight::cad::DeactivateAll( context, shapeEnum );
@@ -60,7 +60,7 @@ public:
 
               insight::cad::FeatureID id = getId(parent->solidmodel(), v); //parent->solidmodel().vertexID(v);
               selection_->add(id);
-              viewWidget_->sendStatus( QString::fromStdString(
+              viewer().sendStatus( QString::fromStdString(
                     boost::str(boost::format(
                                  "Selected %s %d. Select next %s, end with right click."
                     ) % selectionName % id % selectionName ) ) );
@@ -70,7 +70,7 @@ public:
         {
           insight::cad::FeatureID id = getId(*selection_->model(), v); //selection_->model()->vertexID(v);
           selection_->add(id);
-          viewWidget_->sendStatus( QString::fromStdString(
+          viewer().sendStatus( QString::fromStdString(
                 boost::str(boost::format(
                              "Selected %s %d. Select next %s, end with right click."
                 ) % selectionName % id % selectionName ) ) );
@@ -90,7 +90,7 @@ public:
         if (j++ < selection_->size()-1) text+=",";
       }
     text+=")\n";
-    viewWidget_->insertNotebookText(text);
+    viewer().insertNotebookText(text);
 
     setFinished();
   }
@@ -108,7 +108,7 @@ protected:
   insight::cad::FeatureID getId(const insight::cad::Feature& feat, const TopoDS_Shape& s);
 
 public:
-  ViewWidgetInsertPointIDs(QoccViewWidget *viewWidget);
+  ViewWidgetInsertPointIDs(QoccViewWidget &viewWidget);
 };
 
 
@@ -123,7 +123,7 @@ protected:
   insight::cad::FeatureID getId(const insight::cad::Feature& feat, const TopoDS_Shape& s);
 
 public:
-  ViewWidgetInsertEdgeIDs(QoccViewWidget *viewWidget);
+  ViewWidgetInsertEdgeIDs(QoccViewWidget &viewWidget);
 };
 
 
@@ -138,7 +138,7 @@ protected:
   insight::cad::FeatureID getId(const insight::cad::Feature& feat, const TopoDS_Shape& s);
 
 public:
-  ViewWidgetInsertFaceIDs(QoccViewWidget *viewWidget);
+  ViewWidgetInsertFaceIDs(QoccViewWidget &viewWidget);
 };
 
 
@@ -153,7 +153,7 @@ protected:
   insight::cad::FeatureID getId(const insight::cad::Feature& feat, const TopoDS_Shape& s);
 
 public:
-  ViewWidgetInsertSolidIDs(QoccViewWidget *viewWidget);
+  ViewWidgetInsertSolidIDs(QoccViewWidget &viewWidget);
 };
 
 #endif // VIEWWIDGETINSERTIDS_H

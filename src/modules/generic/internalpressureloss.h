@@ -21,7 +21,7 @@
 #define INSIGHT_INTERNALPRESSURELOSS_H
 
 #include "openfoam/openfoamanalysis.h"
-#include "parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 #include "openfoam/openfoamtools.h"
 
 namespace insight
@@ -138,7 +138,7 @@ public:
 
 
 class InternalPressureLoss_ParameterSet_Visualizer
- : public CAD_ParameterSet_Visualizer
+ : public CADParameterSetVisualizer
 {
 public:
     typedef InternalPressureLoss::Parameters Parameters;

@@ -246,7 +246,6 @@ void VelocityInletBC::modifyCaseOnDisk(const OpenFOAMCase &cm, const boost::file
                 OFDictData::dict pdm;
                 pdm["method"]="meshWave";
             relax["patchDist"]=pdm;
-
             relax["width"]=rt->width;
         }
 

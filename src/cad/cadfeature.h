@@ -372,6 +372,8 @@ public:
    * second col: max point
    */
   arma::mat modelBndBox(double deflection=-1) const;
+
+  std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(double deflection=-1) const;
   
   arma::mat faceNormal(FeatureID i) const;
 

@@ -72,9 +72,9 @@ private:
 
   void addLights();
 
-  std::shared_ptr<ViewWidgetAction> currentNavigationAction_;
-  std::shared_ptr<NavigationManager> navigationManager_;
-  std::shared_ptr<ViewWidgetAction> currentUserActivity_;
+  InputReceiver<QoccViewWidget>::Ptr currentNavigationAction_;
+  NavigationManager<QoccViewWidget>::Ptr navigationManager_;
+  ViewWidgetAction<QoccViewWidget>::Ptr currentUserActivity_;
 
 public:
 
@@ -121,10 +121,13 @@ public:
   inline Handle_AIS_InteractiveContext&	getContext()
   { return myContext_; }
 
-  inline const Handle_V3d_View& getView()
+  inline const Handle_V3d_View& getView() const
   { return myView; }
 
-  inline const Handle_V3d_View& getOccView()
+  inline V3d_View& view()
+  { return *myView; }
+
+  inline const Handle_V3d_View& getOccView() const
   { return myView; }
 
   QPaintEngine* paintEngine() const override;
@@ -209,6 +212,37 @@ public Q_SLOTS:
   void doUnfocus(bool newFocusIntended = false);
   void onFocus(Handle_AIS_InteractiveObject di);
 
+  inline double getScale() const { return getView()->Scale(); }
+  inline void setScale(double s) { view().SetScale(s); }
+  inline bool pickAtCursor(bool extendSelection)
+  {
+      AIS_StatusOfPick picked = AIS_SOP_NothingSelected;
+      if (extendSelection)
+      {
+        picked = getContext()->ShiftSelect(
+    #if (OCC_VERSION_MAJOR>=7)
+                      true
+    #endif
+              );
+      }
+      else
+      {
+        picked = getContext()->Select(
+    #if (OCC_VERSION_MAJOR>=7)
+                      true
+    #endif
+              );
+      }
+      return picked != AIS_SOP_NothingSelected;
+  }
+
+  inline void emitGraphicalSelectionChanged()
+  {
+      Q_EMIT graphicalSelectionChanged(
+                  getSelectedItem(),
+                  this );
+  }
+
 protected: // methods
 
   void paintEvent        ( QPaintEvent* e ) override;
@@ -222,7 +256,8 @@ protected: // methods
   void leaveEvent	 ( QEvent * ) override;
 
   void displayContextMenu( const QPoint& p);
-  
+
+
 private: // members
 
   Handle(Aspect_Window)             hWnd;
@@ -250,7 +285,6 @@ private: // members
   double			myPrecision;
   double			myViewPrecision;
   bool                          myMapIsValid;
-  Qt::KeyboardModifiers		myKeyboardFlags;
   Qt::MouseButton		myButtonFlags;
   QCursor			myCrossCursor;
   

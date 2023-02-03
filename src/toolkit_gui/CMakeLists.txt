@@ -11,27 +11,29 @@ find_package(Qt5Network CONFIG REQUIRED)
 
 set(toolkit_gui_SRCS 
     parametereditorwidget.cpp
+    iqoccparametersetdisplay.h iqoccparametersetdisplay.cpp
+    iqvtkparametersetdisplay.h iqvtkparametersetdisplay.cpp
 
-    iqremoteexecutionstate.cpp
-    iqremoteexecutionstate.h
+    iqremoteexecutionstate.h iqremoteexecutionstate.cpp
 
-    iqparametersetmodel.cpp
+    iqparametersetmodel.h iqparametersetmodel.cpp
     iqresultsetfiltermodel.h iqresultsetfiltermodel.cpp
-    iqparameter.cpp
-    iqparameters/iqintparameter.cpp
-    iqparameters/iqdoubleparameter.cpp
-    iqparameters/iqvectorparameter.cpp
-    iqparameters/iqstringparameter.cpp
-    iqparameters/iqboolparameter.cpp
-    iqparameters/iqpathparameter.cpp
-    iqparameters/iqmatrixparameter.cpp
-    iqparameters/iqdirectoryparameter.cpp
-    iqparameters/iqselectionparameter.cpp
-    iqparameters/iqarrayparameter.cpp
-    iqparameters/iqselectablesubsetparameter.cpp
-    iqparameters/iqdoublerangeparameter.cpp
-    iqparameters/iqarrayelementparameter.cpp
-    iqparameters/iqpropertylibraryselectionparameter.h iqparameters/iqpropertylibraryselectionparameter.cpp
+    iqparameter.cpp iqparameter.h
+    iqparameters/iqintparameter.cpp iqparameters/iqintparameter.h
+    iqparameters/iqdoubleparameter.cpp iqparameters/iqdoubleparameter.h
+    iqparameters/iqvectorparameter.cpp iqparameters/iqvectorparameter.h
+    iqparameters/iqstringparameter.cpp iqparameters/iqstringparameter.h
+    iqparameters/iqboolparameter.cpp iqparameters/iqboolparameter.h
+    iqparameters/iqpathparameter.cpp iqparameters/iqpathparameter.h
+    iqparameters/iqmatrixparameter.cpp iqparameters/iqmatrixparameter.h
+    iqparameters/iqdirectoryparameter.cpp iqparameters/iqdirectoryparameter.h
+    iqparameters/iqselectionparameter.cpp iqparameters/iqselectionparameter.h
+    iqparameters/iqarrayparameter.cpp iqparameters/iqarrayparameter.h
+    iqparameters/iqselectablesubsetparameter.cpp iqparameters/iqselectablesubsetparameter.h
+    iqparameters/iqdoublerangeparameter.cpp iqparameters/iqdoublerangeparameter.h
+    iqparameters/iqarrayelementparameter.cpp iqparameters/iqarrayelementparameter.h
+    iqparameters/iqpropertylibraryselectionparameter.cpp iqparameters/iqpropertylibraryselectionparameter.h
+    iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
 
     iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
 
@@ -57,7 +59,7 @@ set(toolkit_gui_SRCS
     helpwidget.cpp helpwidget.h
     of_clean_case.cpp of_clean_case.h of_clean_case.ui
     snappyhexmesh_gui.cpp snappyhexmesh_gui.h
-    parametersetvisualizer.cpp parametersetvisualizer.h
+    cadparametersetvisualizer.cpp cadparametersetvisualizer.h
     logviewerwidget.cpp logviewerwidget.h
     graphprogressdisplayer.cpp graphprogressdisplayer.h
     progressrelay.cpp progressrelay.h

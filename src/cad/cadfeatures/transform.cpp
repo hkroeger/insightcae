@@ -109,8 +109,6 @@ Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
   m1_(m1), trsf_(new gp_Trsf)
 {
   *trsf_=trsf;
-//  std::cout<<"TRSF:"<<std::endl;
-//  trsf_->DumpJson(std::cout);
 }
 
 
@@ -161,10 +159,16 @@ FeaturePtr Transform::create_copy(FeaturePtr m1, FeaturePtr other)
     return FeaturePtr(new Transform(m1, other));    
 }
 
+
+
+
 FeaturePtr Transform::create_trsf ( FeaturePtr m1, const gp_Trsf& trsf )
 {
   return FeaturePtr(new Transform(m1, trsf));
 }
+
+
+
 
 gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
 {
@@ -194,6 +198,9 @@ gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
     return tr2.Multiplied(tr1).Multiplied(tr0);
   }
 }
+
+
+
 
 void Transform::build()
 {
@@ -263,12 +270,17 @@ void Transform::build()
         
     }
 
+
     setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());
 
     // Transform all ref points and ref vectors
-    copyDatumsTransformed(*m1_, *trsf_, "", 
-                          boost::assign::list_of("scaleFactor")("translation")("rotationOrigin")("rotation")
-                         );
+    copyDatumsTransformed(
+                *m1_, *trsf_, "",
+                { "scaleFactor", "translation", "rotationOrigin", "rotation" }
+                );
+
+    providedSubshapes_["basefeat"]=m1_; // overwrite existing basefeat, if there
+
     cache.insert(shared_from_this());
   }
   else

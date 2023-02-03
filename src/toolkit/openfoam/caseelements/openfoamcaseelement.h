@@ -29,6 +29,7 @@ namespace insight {
 
 class OpenFOAMCase;
 class OFdicts;
+class ParameterSetVisualizer;
 
 namespace OFDictData { class dict; }
 
@@ -48,7 +49,7 @@ public:
     declareStaticFunctionTable ( defaultParameters, ParameterSet );
     declareStaticFunctionTable ( category, std::string );
     declareStaticFunctionTable (validator, ParameterSet_ValidatorPtr);
-    declareStaticFunctionTable (visualizer, ParameterSet_VisualizerPtr);
+    declareStaticFunctionTable (visualizer, std::shared_ptr<ParameterSetVisualizer>);
     declareType ( "OpenFOAMCaseElement" );
 
     OpenFOAMCaseElement ( OpenFOAMCase& c, const std::string& name, const ParameterSet& ps );
@@ -68,7 +69,7 @@ public:
 
     static std::string category();
     static ParameterSet_ValidatorPtr validator();
-    static ParameterSet_VisualizerPtr visualizer();
+    static std::shared_ptr<ParameterSetVisualizer> visualizer();
     static bool isInConflict(const CaseElement& other);
 
 

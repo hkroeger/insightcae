@@ -33,6 +33,8 @@
 #include "openfoam/openfoamtools.h"
 #endif
 
+#include "iqcaditemmodel.h"
+#include "iqvtkparametersetdisplay.h"
 #include "parametereditorwidget.h"
 #include "insertedcaseelement.h"
 #include "patch.h"
@@ -76,10 +78,9 @@ private:
     Ui::isofCaseBuilderWindow* ui;
     QHBoxLayout *pe_layout_, *bc_pe_layout_;
 
-    QoccViewWidget* viewer_;
-    QModelTree* modeltree_;
-    ParameterSetDisplay* display_;
-    insight::Multi_CAD_ParameterSet_Visualizer* multiViz_;
+    //IQCADItemModel cadmodel_;
+    IQVTKParameterSetDisplay* display_;
+    insight::MultiCADParameterSetVisualizer* multiViz_;
 
     AvailableBCsModel* availableBCsModel_;
     AvailableCaseElementsModel* availableCaseElementsModel_;

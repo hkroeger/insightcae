@@ -17,6 +17,7 @@
 #include "iqselectionparameter.h"
 #include "iqselectablesubsetparameter.h"
 #include "iqdoublerangeparameter.h"
+#include "iqspatialtransformationparameter.h"
 
 #include "iqparametersetmodel.h"
 
@@ -59,6 +60,7 @@ createIQArrayElement(IQMatrixParameter, "matrix");
 createIQArrayElement(IQSelectionParameter, "selection");
 createIQArrayElement(IQSelectableSubsetParameter, "selectableSubset");
 createIQArrayElement(IQDoubleRangeParameter, "doubleRange");
+createIQArrayElement(IQSpatialTransformationParameter, "spatialTransformation");
 
 
 IQParameter *IQArrayElementParameterBase::create(QObject *parent, const QString &name, insight::Parameter &p, const insight::ParameterSet &defaultParameterSet)

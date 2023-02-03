@@ -193,6 +193,12 @@ struct ISCADParser
     void createFeatureExpressions();
     void createDatumExpressions();
     void createSelectionExpressions();
+
+    template<class Rule>
+    inline void addAdditionalRule(Rule *addrule)
+    {
+        additionalrules_.push_back(new AddRuleContainer<Rule>(addrule));
+    }
 };
 
 }

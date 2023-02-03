@@ -31,6 +31,10 @@
 
 SET(MED3HOME $ENV{MED3HOME} CACHE PATH "Path to the med install dir")
 
+if (NOT MED3HOME AND MED_DIR)
+    set(MED3HOME ${MED_DIR})
+endif()
+
 IF(NOT MED3HOME)
   FIND_PROGRAM(MDUMP mdump)
   IF(MDUMP)

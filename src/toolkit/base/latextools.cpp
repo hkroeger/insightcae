@@ -86,7 +86,7 @@ boost::filesystem::path cleanLatexImageFileName(const boost::filesystem::path& s
 
 boost::filesystem::path findSharedImageFile(const std::string& file)
 {
-  insight::SharedPathList& spl = insight::SharedPathList::searchPathList;
+  auto spl = SharedPathList::global();
   boost::filesystem::path p = file;
   try 
   { 

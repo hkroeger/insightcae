@@ -14,6 +14,9 @@
 
 class QVBoxLayout;
 class IQParameterSetModel;
+class IQCADModel3DViewer;
+
+QString mat2Str(const arma::mat& m);
 
 class TOOLKIT_GUI_EXPORT IQParameter
 : public QObject,
@@ -66,7 +69,11 @@ public:
   QVariant textFont() const;
 
   virtual void populateContextMenu(IQParameterSetModel* model, const QModelIndex &index, QMenu* m);
-  virtual QVBoxLayout* populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer);
+  virtual QVBoxLayout* populateEditControls(
+          IQParameterSetModel* model,
+          const QModelIndex &index,
+          QWidget* editControlsContainer,
+          IQCADModel3DViewer *viewer );
 
   const insight::Parameter& parameter() const;
 };

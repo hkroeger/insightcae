@@ -16,11 +16,14 @@
 #include "polytriangulationnodeiterator.h"
 #include "polytriangulationelementiterator.h"
 
+#include "code_aster/coordinatesystems.h"
+
+#include "occtools.h"
+
 //#if defined(HAVE_MED)
 //#undef HAVE_MED
 //#endif
 
-#if defined(HAVE_MED)
 
 extern "C" {
 #include "med.h"
@@ -107,10 +110,11 @@ void writeMED(
             int n=0;
             for (auto pi=m.nodeIt; pi!=insight::OCC::PolyTriangulationNodeIterator(); ++pi)
             {
-                std::cout<<"x/y/z="<<pi->X()<<"/"<<pi->Y()<<"/"<<pi->Z()<<std::endl;
-                coord.push_back( pi->X() );
-                coord.push_back( pi->Y() );
-                coord.push_back( pi->Z() );
+                gp_Pnt p=*pi;
+                std::cout<<"x/y/z="<<p.X()<<"/"<<p.Y()<<"/"<<p.Z()<<std::endl;
+                coord.push_back( p.X() );
+                coord.push_back( p.Y() );
+                coord.push_back( p.Z() );
                 ++n;
             }
             nofs.push_back(n+nofs.back());
@@ -228,28 +232,7 @@ namespace cad {
 
 
 
-class FindIntersections
-{
-public:
-    typedef std::pair<gp_Pnt, double> IntersectionLocation;
-    typedef std::set<IntersectionLocation> IntersectionLocations;
 
-private:
-    IntersectionLocations intersectionsOnE1_, intersectionsOnE2_;
-public:
-    FindIntersections(const TopoDS_Edge& e1, const TopoDS_Edge& e2);
-
-    const IntersectionLocations& intersectionsOnE1()
-    { return intersectionsOnE1_; }
-
-    const IntersectionLocations& intersectionsOnE2()
-    { return intersectionsOnE2_; }
-
-    static bool isOnEndpoint(const gp_Pnt& p, const TopoDS_Edge& e);
-
-    static void append(const IntersectionLocations& newIts,
-                       IntersectionLocations& its);
-};
 
 
 
@@ -312,17 +295,10 @@ void FindIntersections::append(
 
 
 
-void splitEdge(
-        const TopoDS_Edge& e,
-        const FindIntersections::IntersectionLocations& spl,
-        std::set<TopoDS_Edge>& result
-        );
 
-
-void splitEdge(
+void FrameMesh::splitEdge(
         const TopoDS_Edge& e,
-        const FindIntersections::IntersectionLocations& spl,
-        std::set<TopoDS_Edge>& result
+        const FindIntersections::IntersectionLocations& spl
         )
 {
     if (spl.size())
@@ -348,29 +324,24 @@ void splitEdge(
         for ( auto fp=splt.begin(); fp!=(--splt.end()); ++fp)
         {
             auto np=fp; ++np;
-            result.insert(
-                        BRepBuilderAPI_MakeEdge(crv, *fp, *np)
-                        .Edge() );
+            auto newEdge = BRepBuilderAPI_MakeEdge(crv, *fp, *np).Edge();
+            meshEdges.insert( newEdge );
+
+            auto i = crossSectionModels.find(e);
+            if ( i!=crossSectionModels.end() )
+            {
+                auto xsec=i->second;
+                crossSectionModels[newEdge]=xsec;
+            }
         }
     }
     else
     {
-        result.insert(e);
+        meshEdges.insert(e);
     }
 }
 
 
-}
-}
-
-#endif
-
-
-
-
-
-namespace insight {
-namespace cad {
 
 
 void applyLocation(Poly_Triangulation& pt, const TopLoc_Location& loc)
@@ -391,28 +362,40 @@ size_t FrameMesh::calcHash() const
 void FrameMesh::build()
 {
 #if defined(HAVE_MED)
-    typedef std::set<TopoDS_Edge> EdgeSet;
 
-    EdgeSet modelEdges;
-    std::map<TopoDS_Edge, std::pair<cad::FeaturePtr,double> > crossSectionModels;
+    modelEdges.clear();
+    meshEdges.clear();
+    crossSectionModels.clear();
+
     // unify all into compound
     {
         for (auto& e: edges_)
         {
-            TopoDS_Shape s = boost::fusion::get<0>(e)->shape();
-            for ( TopExp_Explorer ex(s, TopAbs_EDGE);
-                  ex.More(); ex.Next() )
-            {
-                auto edg = TopoDS::Edge(ex.Current());
-                modelEdges.insert(edg);
-                if (boost::fusion::get<1>(e))
-                {
-                    crossSectionModels[edg]=std::make_pair(
-                            boost::fusion::get<0>(*boost::fusion::get<1>(e)),
-                            boost::fusion::get<1>(*boost::fusion::get<1>(e))->value()
-                            );
-                }
-            }
+//            TopoDS_Shape s = boost::fusion::get<0>(e)->shape();
+//            for ( TopExp_Explorer ex(s, TopAbs_EDGE);
+//                  ex.More(); ex.Next() )
+//            {
+//                auto edg = TopoDS::Edge(ex.Current());
+//                modelEdges.insert(edg);
+//                if (boost::fusion::get<1>(e))
+//                {
+//                    crossSectionModels[edg]=std::make_pair(
+//                            boost::fusion::get<0>(*boost::fusion::get<1>(e)),
+//                            boost::fusion::get<1>(*boost::fusion::get<1>(e))->value()
+//                            );
+//                }
+//            }
+            auto feat = boost::fusion::get<0>(e);
+            arma::mat p0 = feat->getDatumPoint("p0");
+            arma::mat p1 = feat->getDatumPoint("p1");
+
+            TopoDS_Edge edg = BRepBuilderAPI_MakeEdge(
+                        to_Pnt(p0), to_Pnt(p1) );
+
+            modelEdges.insert(edg);
+
+            crossSectionModels[edg] =
+                    std::make_pair( feat, 0.5 );
         }
     }
 
@@ -451,29 +434,12 @@ void FrameMesh::build()
     }
 
     // break edges
-    EdgeSet meshEdges;
+
     for (auto& e: modelEdges)
     {
-        splitEdge(e, intersections[e], meshEdges);
+        splitEdge(e, intersections[e]);
     }
 
-//    {
-//        BRep_Builder bb;
-//        TopoDS_Compound result;
-//        bb.MakeCompound ( result );
-//        for (const auto& e: meshEdges)
-//        {
-//            bb.Add ( result, e );
-//        }
-//        BRepTools::Write(result, "broken.brep");
-//    }
-//    {
-//        BRep_Builder bb;
-//        TopoDS_Compound result;
-//        bb.MakeCompound ( result );
-//        bb.Add ( result, model_->shape() );
-//        BRepTools::Write(result, "unbroken.brep");
-//    }
 
     // do meshing
     CodeAsterMeshFile mesh;
@@ -498,10 +464,12 @@ void FrameMesh::build()
     for (const auto& e: meshEdges)
     {
         auto i=crossSectionModels.find(e);
+        std::cout<<e<<" >> "<<(i!=crossSectionModels.end())<<std::endl;
         if (i!=crossSectionModels.end())
         {
             cad::FeaturePtr xsecf = i->second.first;
             double x = i->second.second;
+
             insight::assertion(
                         ( (x>=0.0) && (x<=1.0) ),
                         "the coordinate along the edge has to be between 0 and 1!" );
@@ -522,12 +490,14 @@ void FrameMesh::build()
                             )
                         );
 
-            gp_Trsf trsf;
-            trsf.SetTransformation(
-                        gp_Ax3(p, tan),
-                        gp_Ax3(gp::Origin(), gp::DZ())
+
+            BeamLocalCS blcs(vec3(p), vec3(tan));
+            xsec = cad::Transform::create_trsf(
+                        xsec,
+                        cad::OFtransformToOCC(
+                            blcs.MACRCARAPOUTRE().inverted()
+                            )
                         );
-            xsec=cad::Transform::create_trsf( xsec, trsf.Inverted() );
 
 
             Poly_ListOfTriangulation triangulations;
@@ -545,7 +515,9 @@ void FrameMesh::build()
                             !mesh.IsNull(),
                             "shape has no triangulation!" );
 
-                std::cout<<"add mesh with nodes="<<mesh->NbNodes()<<" / faces="<<mesh->NbTriangles()<<std::endl;
+                std::cout<<"add mesh with nodes="
+                        << mesh->NbNodes()<<" / faces="
+                        << mesh->NbTriangles()<<std::endl;
                 triangulations.Append(mesh);
             }
 
@@ -554,12 +526,14 @@ void FrameMesh::build()
                         "there are no triangulations!" );
 
             auto entireMesh = Poly::Catenate(triangulations);
-            std::cout<<"full mesh with nodes="<<entireMesh->NbNodes()<<" / faces="<<entireMesh->NbTriangles()<<std::endl;
+            std::cout<<"full mesh with nodes="
+                    << entireMesh->NbNodes()<<" / faces="
+                    << entireMesh->NbTriangles()<<std::endl;
 
             xsecmeshes.push_back(
                         {
                             str(boost::format("xsec_%d")%k),
-                            OCC::PolyTriangulationNodeIterator(entireMesh),
+                            OCC::PolyTriangulationNodeIterator(entireMesh, gp_XYZ(1,1,0)),
                             OCC::PolyTriangulationElementIterator(entireMesh)
                         });
 
@@ -567,9 +541,10 @@ void FrameMesh::build()
         }
     }
 
+
     writeMED("test.med", "xsecs", xsecmeshes);
 
-    mesh.write();
+    mesh.write(".", 20);
 #else
     throw insight::Exception("InsightCAE has to be compiled with MED support to use the Frame Mesh export feature.");
 #endif

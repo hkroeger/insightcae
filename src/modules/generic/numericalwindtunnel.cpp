@@ -836,9 +836,9 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
 
 
-ParameterSet_VisualizerPtr NumericalWindtunnel_visualizer()
+ParameterSetVisualizerPtr NumericalWindtunnel_visualizer()
 {
-    return ParameterSet_VisualizerPtr( new NumericalWindtunnel_ParameterSet_Visualizer );
+    return ParameterSetVisualizerPtr( new NumericalWindtunnel_ParameterSet_Visualizer );
 }
 
 addStandaloneFunctionToStaticFunctionTable(Analysis, NumericalWindtunnel, visualizer, NumericalWindtunnel_visualizer);
@@ -848,7 +848,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 {
   CurrentExceptionContext ec("Creating visualization of numerical wind tunnel parameters");
 
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   try
   {

@@ -22,13 +22,13 @@ class PolyTriangulationNodeIterator
 
     Handle_Poly_Triangulation pt_;
     Standard_Integer i_;
+    gp_XYZ coordScale_;
 
 public:
     PolyTriangulationNodeIterator();
-    PolyTriangulationNodeIterator(Handle_Poly_Triangulation pt, Standard_Integer i=1);
+    PolyTriangulationNodeIterator(Handle_Poly_Triangulation pt, gp_XYZ coordScale=gp_XYZ(1,1,1), Standard_Integer i=1);
 
-    const value_type& operator*() const;
-    const value_type* operator->() const;
+    value_type operator*() const;
 
     PolyTriangulationNodeIterator operator++(int);
     PolyTriangulationNodeIterator& operator++();

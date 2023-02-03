@@ -111,12 +111,14 @@ QoccViewWidget::QoccViewWidget(QWidget *parent)
   : QWidget(parent),
     currentNavigationAction_(nullptr),
     navigationManager_(
-      std::make_shared<TouchpadNavigationManager>(currentNavigationAction_, this, myView) ),
+      std::make_shared<
+        TouchpadNavigationManager<
+         QoccViewWidget, OCCViewWidgetPanning, OCCViewWidgetRotation
+        > >(currentNavigationAction_, *this) ),
     myGridSnap          ( Standard_False ),
     myDetection         ( AIS_SOD_Nothing ),
     myPrecision		( 0.0001 ),
     myViewPrecision     ( 0.0 ),
-    myKeyboardFlags     ( Qt::NoModifier ),
     myButtonFlags	( Qt::NoButton ),
     showGrid            ( false )/*,
     cimode_             ( CIM_Normal )*/
@@ -446,11 +448,11 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
       insight::dbg()<<"Failed moveTo"<<std::endl;
     }
 
-    navigationManager_->onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
+    navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
     if (currentNavigationAction_)
-      currentNavigationAction_->onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
+      currentNavigationAction_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
     if (currentUserActivity_)
-      currentUserActivity_->onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
+      currentUserActivity_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
 
     if (currentUserActivity_ && currentUserActivity_->finished())
       currentUserActivity_.reset();
@@ -1383,7 +1385,7 @@ void QoccViewWidget::onSetClipPlane(QObject* qdatum)
 
 void QoccViewWidget::onMeasureDistance()
 {
-  currentUserActivity_= std::make_shared<ViewWidgetMeasurePoints>(this);
+  currentUserActivity_= std::make_shared<OCCViewWidgetMeasurePoints>(*this);
 }
 
 
@@ -1391,7 +1393,7 @@ void QoccViewWidget::onMeasureDistance()
 
 void QoccViewWidget::onSelectPoints()
 {
-  currentUserActivity_= std::make_shared<ViewWidgetInsertPointIDs>(this);
+  currentUserActivity_= std::make_shared<ViewWidgetInsertPointIDs>(*this);
 }
 
 
@@ -1399,7 +1401,7 @@ void QoccViewWidget::onSelectPoints()
 
 void QoccViewWidget::onSelectEdges()
 {
-  currentUserActivity_= std::make_shared<ViewWidgetInsertEdgeIDs>(this);
+  currentUserActivity_= std::make_shared<ViewWidgetInsertEdgeIDs>(*this);
 }
 
 
@@ -1407,7 +1409,7 @@ void QoccViewWidget::onSelectEdges()
 
 void QoccViewWidget::onSelectFaces()
 {
-  currentUserActivity_= std::make_shared<ViewWidgetInsertFaceIDs>(this);
+  currentUserActivity_= std::make_shared<ViewWidgetInsertFaceIDs>(*this);
 }
 
 
@@ -1415,7 +1417,7 @@ void QoccViewWidget::onSelectFaces()
 
 void QoccViewWidget::onSelectSolids()
 {
-  currentUserActivity_= std::make_shared<ViewWidgetInsertSolidIDs>(this);
+  currentUserActivity_= std::make_shared<ViewWidgetInsertSolidIDs>(*this);
 }
 
 

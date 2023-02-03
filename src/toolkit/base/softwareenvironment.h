@@ -73,7 +73,8 @@ public:
     (
         const std::string& cmd,
         std::vector<std::string> argv = std::vector<std::string>(),
-        std::string *ovr_machine = nullptr
+        std::string *ovr_machine = nullptr,
+        const boost::filesystem::path& cwd = boost::filesystem::path()
     ) const;
     
 };

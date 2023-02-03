@@ -764,7 +764,7 @@ Feature& Feature::operator=(const Feature& o)
 
     idx_.reset(new SubshapeNumbering(*o.idx_));
     setValid();
-    shape_=o.shape_;
+    shape_ = o.shape_;
   }
   return *this;
 }

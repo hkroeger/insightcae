@@ -16,7 +16,8 @@ boost::filesystem::path RADSoftwareEnvironment::preprocessLSDynaInput(
                     "-i", caseFile.string(),
                     "-np", boost::lexical_cast<std::string>(np),
                     "-nt", "1"
-                } );
+                },
+                nullptr, caseFile.parent_path() );
 
     job->ios_run_with_interruption(oa);
     job->wait();
@@ -50,7 +51,8 @@ void RADSoftwareEnvironment::runSolver(
                 "engine_linux64_gf",
                 {
                     "-i", radFile.string()
-                } );
+                },
+                nullptr, radFile.parent_path() );
     }
     else
     {
@@ -61,7 +63,8 @@ void RADSoftwareEnvironment::runSolver(
                     "engine_linux64_gf_ompi",
                     "-i", radFile.string(),
                     "-nt", "1"
-                } );
+                },
+                nullptr, radFile.parent_path() );
     }
 
     job->ios_run_with_interruption(oa);

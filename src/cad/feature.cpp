@@ -246,6 +246,7 @@ void FeatureSet::build()
 
 size_t FeatureSet::size() const
 {
+  checkForBuildDuringAccess();
   return data().size();
 }
 

@@ -4,6 +4,7 @@ project(iscad)
 
 set(iscad_SRCS 
     iscad.cpp
+    
     iqiscadmainwindow.cpp iqiscadmainwindow.h
     iqiscadmodelwindow.h iqiscadmodelwindow.cpp
     iqiscadmodelscriptedit.cpp iqiscadmodelscriptedit.h
@@ -13,7 +14,6 @@ set(iscad_SRCS
     modelcomponentselectordlg.cpp modelcomponentselectordlg.h
     insertfeaturedlg.cpp insertfeaturedlg.h
     loadmodeldialog.cpp loadmodeldialog.h
-
 )
 
 set(iscad_FORMS

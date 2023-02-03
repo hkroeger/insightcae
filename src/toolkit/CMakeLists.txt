@@ -124,6 +124,25 @@ set(toolkit_SOURCES
     openfoam/openfoamdict.cpp openfoam/openfoamdict.h
     openfoam/openfoamboundarydict.cpp openfoam/openfoamboundarydict.h
     openfoam/openfoamtools.cpp openfoam/openfoamtools.h
+    openfoam/blockmesh/arcedge.cpp openfoam/blockmesh/arcedge.h
+    openfoam/blockmesh/block2d.cpp openfoam/blockmesh/block2d.h
+    openfoam/blockmesh/block.cpp openfoam/blockmesh/block.h
+    openfoam/blockmesh/circularedge_center.cpp openfoam/blockmesh/circularedge_center.h
+    openfoam/blockmesh/circularedge.cpp openfoam/blockmesh/circularedge.h
+    openfoam/blockmesh/discretecurve.cpp openfoam/blockmesh/discretecurve.h
+    openfoam/blockmesh/edge.cpp openfoam/blockmesh/edge.h
+    openfoam/blockmesh/ellipseedge.cpp openfoam/blockmesh/ellipseedge.h
+    openfoam/blockmesh/geometry.cpp openfoam/blockmesh/geometry.h
+    openfoam/blockmesh/gradinganalyzer.cpp openfoam/blockmesh/gradinganalyzer.h
+    openfoam/blockmesh/patch2d.cpp openfoam/blockmesh/patch2d.h
+    openfoam/blockmesh/patch.cpp openfoam/blockmesh/patch.h
+    openfoam/blockmesh/plane2d.cpp openfoam/blockmesh/plane2d.h
+    openfoam/blockmesh/point.cpp openfoam/blockmesh/point.h
+    openfoam/blockmesh/projectededge.cpp openfoam/blockmesh/projectededge.h
+    openfoam/blockmesh/projectedface.cpp openfoam/blockmesh/projectedface.h
+    openfoam/blockmesh/splineedge.cpp openfoam/blockmesh/splineedge.h
+    openfoam/blockmesh/transform2d.cpp openfoam/blockmesh/transform2d.h
+    openfoam/blockmesh/wedge2d.cpp openfoam/blockmesh/wedge2d.h
     openfoam/blockmesh.cpp openfoam/blockmesh.h
     openfoam/fielddata.cpp openfoam/fielddata.h
     openfoam/paraview.cpp openfoam/paraview.h

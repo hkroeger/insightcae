@@ -116,6 +116,12 @@ double GradingAnalyzer::calc_L(double delta0, int n) const
   return delta0 * (pow(r, n)-1.) / (r-1.);
 }
 
+double GradingAnalyzer::calc_delta0(double L, int n) const
+{
+  double r=pow(grad_, 1./(n-1.));
+  return L / ((pow(r, n)-1.) / (r-1.));
+}
+
 double GradingAnalyzer::calc_delta1(double delta0) const
 {
   return delta0*grad_;

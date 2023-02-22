@@ -2,7 +2,6 @@
 #define QT_CLEAN_NAMESPACE         /* avoid definition of INT32 and INT8 */
 #endif
 
-
 #include <QApplication>
 #include <QPainter>
 #include <QMenu>

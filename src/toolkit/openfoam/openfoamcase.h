@@ -51,7 +51,7 @@ public:
 protected:
     OFEnvironment env_;
     FieldList fields_;
-    bool fieldListCompleted_ = false;
+    bool fieldListCompleted_;
     MapMethod requiredMapMethod_;
 
     std::map<std::string, std::shared_ptr<OpenFOAMCase> > regions_;

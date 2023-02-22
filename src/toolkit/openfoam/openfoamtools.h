@@ -723,6 +723,27 @@ bool checkIfReconstructLatestTimestepNeeded
 typedef std::vector<arma::mat> EMeshPtsList;
 typedef std::vector<EMeshPtsList> EMeshPtsListList;
 
+
+class eMesh
+{
+protected:
+    std::vector<arma::mat> points_;
+    std::vector<std::pair<int, int> > edges_;
+
+public:
+    eMesh();
+    eMesh(const EMeshPtsList& pts);
+    eMesh(const EMeshPtsListList& pts);
+    int nPoints() const;
+    int nEdges() const;
+    void write(std::ostream& os) const;
+    void write(const boost::filesystem::path& filename) const;
+};
+
+#ifndef SWIG
+std::ostream &operator<<(std::ostream& os, const eMesh& emesh);
+#endif
+
 void exportEMesh(const EMeshPtsList& pts, const boost::filesystem::path& filename);
 void exportEMesh(const EMeshPtsListList& pts, const boost::filesystem::path& filename);
 

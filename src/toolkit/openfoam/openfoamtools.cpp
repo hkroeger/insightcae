@@ -2905,75 +2905,160 @@ bool checkIfReconstructLatestTimestepNeeded
 }
 
 
+eMesh::eMesh()
+{}
+
+eMesh::eMesh(const EMeshPtsList &pts)
+{
+    for (int i=0; i<pts.size(); ++i)
+    {
+        points_.push_back(pts[i]);
+        if (i>0) edges_.push_back({i-1, i});
+    }
+}
+
+eMesh::eMesh(const EMeshPtsListList &pts)
+{
+
+    for (const EMeshPtsList& points: pts)
+    {
+      for (const arma::mat& p: points)
+      {
+        points_.push_back(p);
+      }
+    }
+
+    int ofs=0;
+    for (const EMeshPtsList& points: pts)
+    {
+      for (size_t i=1; i<points.size(); i++)
+      {
+        edges_.push_back({ofs+i-1, ofs+i});
+      }
+      ofs+=points.size();
+    }
+}
+
+int eMesh::nPoints() const
+{
+    return points_.size();
+}
+
+int eMesh::nEdges() const
+{
+    return edges_.size();
+}
+
+void eMesh::write(std::ostream &f) const
+{
+    f<<"FoamFile {"<<endl
+     <<" version     2.0;"<<endl
+     <<" format      ascii;"<<endl
+     <<" class       featureEdgeMesh;"<<endl
+     <<" location    \"\";"<<endl
+     <<" object      \"export.eMesh\";"<<endl
+     <<"}"<<endl;
+
+    f<<points_.size()<<endl
+     <<"("<<endl;
+    for (const arma::mat& p: points_)
+    {
+      f<<OFDictData::to_OF(p)<<endl;
+    }
+    f<<")"<<endl;
+
+    f<<edges_.size()<<endl
+     <<"("<<endl;
+    for (const auto&e: edges_)
+    {
+      f<<"("<<e.first<<" "<<e.second<<")"<<endl;
+    }
+    f<<")"<<endl;
+}
+
+void eMesh::write(const boost::filesystem::path& filename) const
+{
+    std::ofstream f(filename.string());
+    write(f);
+}
+
+std::ostream &operator<<(std::ostream& os, const eMesh& emesh)
+{
+    emesh.write(os);
+    return os;
+}
+
 
 void exportEMesh(const EMeshPtsList &points, const boost::filesystem::path& filename)
 {
-  std::ofstream f(filename.c_str());
-  f<<"FoamFile {"<<endl
-   <<" version     2.0;"<<endl
-   <<" format      ascii;"<<endl
-   <<" class       featureEdgeMesh;"<<endl
-   <<" location    \"\";"<<endl
-   <<" object      "<<filename.filename().string()<<";"<<endl
-   <<"}"<<endl;
+    eMesh(points).write(filename);
 
-  f<<points.size()<<endl
-   <<"("<<endl;
-  for (const arma::mat& p: points)
-  {
-    f<<OFDictData::to_OF(p)<<endl;
-  }
-  f<<")"<<endl;
+//  f<<"FoamFile {"<<endl
+//   <<" version     2.0;"<<endl
+//   <<" format      ascii;"<<endl
+//   <<" class       featureEdgeMesh;"<<endl
+//   <<" location    \"\";"<<endl
+//   <<" object      "<<filename.filename().string()<<";"<<endl
+//   <<"}"<<endl;
 
-  f<<(points.size()-1)<<endl
-   <<"("<<endl;
-  for (size_t i=1; i<points.size(); i++)
-  {
-    f<<"("<<(i-1)<<" "<<i<<")"<<endl;
-  }
-  f<<")"<<endl;
+//  f<<points.size()<<endl
+//   <<"("<<endl;
+//  for (const arma::mat& p: points)
+//  {
+//    f<<OFDictData::to_OF(p)<<endl;
+//  }
+//  f<<")"<<endl;
+
+//  f<<(points.size()-1)<<endl
+//   <<"("<<endl;
+//  for (size_t i=1; i<points.size(); i++)
+//  {
+//    f<<"("<<(i-1)<<" "<<i<<")"<<endl;
+//  }
+//  f<<")"<<endl;
 }
 
 
 void exportEMesh(const std::vector<EMeshPtsList>& pts, const boost::filesystem::path& filename)
 {
-  std::ofstream f(filename.c_str());
-  f<<"FoamFile {"<<endl
-   <<" version     2.0;"<<endl
-   <<" format      ascii;"<<endl
-   <<" class       featureEdgeMesh;"<<endl
-   <<" location    \"\";"<<endl
-   <<" object      "<<filename.filename().string()<<";"<<endl
-   <<"}"<<endl;
+    eMesh(pts).write(filename);
 
-  int npts=0;
-  for (const EMeshPtsList& points: pts)
-  {
-    npts+=points.size();
-  }
-  f<<npts<<endl
-   <<"("<<endl;
-  for (const EMeshPtsList& points: pts)
-  {
-    for (const arma::mat& p: points)
-    {
-      f<<OFDictData::to_OF(p)<<endl;
-    }
-  }
-  f<<")"<<endl;
+//  f<<"FoamFile {"<<endl
+//   <<" version     2.0;"<<endl
+//   <<" format      ascii;"<<endl
+//   <<" class       featureEdgeMesh;"<<endl
+//   <<" location    \"\";"<<endl
+//   <<" object      "<<filename.filename().string()<<";"<<endl
+//   <<"}"<<endl;
 
-  f<<(npts-pts.size())<<endl
-   <<"("<<endl;
-  int ofs=0;
-  for (const EMeshPtsList& points: pts)
-  {
-    for (size_t i=1; i<points.size(); i++)
-    {
-      f<<"("<<(ofs+i-1)<<" "<<(ofs+i)<<")"<<endl;
-    }
-    ofs+=points.size();
-  }
-  f<<")"<<endl;
+//  int npts=0;
+//  for (const EMeshPtsList& points: pts)
+//  {
+//    npts+=points.size();
+//  }
+//  f<<npts<<endl
+//   <<"("<<endl;
+//  for (const EMeshPtsList& points: pts)
+//  {
+//    for (const arma::mat& p: points)
+//    {
+//      f<<OFDictData::to_OF(p)<<endl;
+//    }
+//  }
+//  f<<")"<<endl;
+
+//  f<<(npts-pts.size())<<endl
+//   <<"("<<endl;
+//  int ofs=0;
+//  for (const EMeshPtsList& points: pts)
+//  {
+//    for (size_t i=1; i<points.size(); i++)
+//    {
+//      f<<"("<<(ofs+i-1)<<" "<<(ofs+i)<<")"<<endl;
+//    }
+//    ofs+=points.size();
+//  }
+//  f<<")"<<endl;
 }
 
 
@@ -3390,7 +3475,9 @@ void BoundingBox::extend(const arma::mat& bb2)
 
 void BoundingBox::operator=(const arma::mat& bb)
 {
-  arma::mat::operator=(bb);
+    arma::mat::operator=(bb);
 }
+
+
 
 }

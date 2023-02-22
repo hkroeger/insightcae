@@ -22,6 +22,7 @@
 #include "base/linearalgebra.h"
 #include "base/units.h"
 
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -56,7 +57,7 @@ OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
 //  rollPitchYaw_ = rotationMatrixToRollPitchYaw(R);
   R_ = R;
 //  std::cout<<Vector(t.TranslationPart())<<std::endl;
-  translate_ = (1./scale_)*inv(R)*Vector(t.TranslationPart());
+  translate_ = (1./scale_)*inv(R)*insight::Vector(t.TranslationPart());
 }
 
 
@@ -75,6 +76,7 @@ OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
 //  t->Scale( scale(), scale(), scale() );
 //  return t;
 //}
+
 
 
 }

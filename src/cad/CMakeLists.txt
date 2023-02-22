@@ -41,6 +41,7 @@ set(insightcad_SOURCES
   subshapenumbering.cpp subshapenumbering.h
   polytriangulationelementiterator.h polytriangulationelementiterator.cpp
   polytriangulationnodeiterator.h polytriangulationnodeiterator.cpp
+  cademesh.h cademesh.cpp
 )
 
 if (OCC_VERSION_MAJOR LESS 7)

@@ -17,9 +17,8 @@ class phaseChangeModel
 {
 
 public:
-    declareFactoryTable ( phaseChangeModel, LIST(const ParameterSet& p), LIST(p) );
-    declareStaticFunctionTable ( defaultParameters, ParameterSet );
     declareType ( "phaseChangeModel" );
+    declareDynamicClass(phaseChangeModel);
 
     virtual ~phaseChangeModel();
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const =0;
@@ -51,7 +50,7 @@ public:
     declareType ( "SchnerrSauer" );
     SchnerrSauer ( const ParameterSet& p );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-
+    ParameterSet getParameters() const override { return Parameters::makeDefault(); }
 };
 
 
@@ -67,22 +66,20 @@ class cavitationTwoPhaseTransportProperties
 {
 
 public:
-static void modifyDefaults(ParameterSet& ps);
 #include "cavitationtwophasetransportproperties__cavitationTwoPhaseTransportProperties__Parameters.h"
 /*
 PARAMETERSET>>> cavitationTwoPhaseTransportProperties Parameters
 inherits twoPhaseTransportProperties::Parameters
-addTo_makeDefault { modifyDefaults(p); }
 
 psat = double 2300.0 "Saturation pressure"
 
-model = selectablesubset {{ dummy set { } }} dummy "Cavitation model"
+model = dynamicclassconfig "insight::phaseChangeModels::phaseChangeModel" default "SchnerrSauer" "Cavitation model"
 
 <<<PARAMETERSET
 */
 
 protected:
-    ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
+    Parameters p_;
 
 public:
     declareType ( "cavitationTwoPhaseTransportProperties" );

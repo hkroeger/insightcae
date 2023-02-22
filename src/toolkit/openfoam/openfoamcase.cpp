@@ -645,6 +645,7 @@ void OpenFOAMCase::createFieldListIfRequired() const
 OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
 : Case(),
   env_(env),
+  fieldListCompleted_(false),
   requiredMapMethod_(directMapMethod)
 {
 }
@@ -655,6 +656,7 @@ OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
 OpenFOAMCase::OpenFOAMCase(const OpenFOAMCase& other)
 : Case(other),
   env_(other.env_),
+  fieldListCompleted_(false),
   requiredMapMethod_(other.requiredMapMethod_)
 {
 }

@@ -3102,17 +3102,29 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
   directory_iterator end_itr; // default construction yields past-the-end
   const boost::regex filter( "processor[0-9]+" );
   for ( directory_iterator i( location ); i != end_itr; i++ )
+  {
+      if ( is_directory(i->status()) )
       {
-          if ( is_directory(i->status()) )
-          {
-              std::string fn=i->path().filename().string();
-              boost::smatch what;
-              if ( boost::regex_match( i->path().filename().string(), what, filter ) )
-                {
-                  procDirs_.insert(i->path());
-                }
-          }
+          std::string fn=i->path().filename().string();
+          boost::smatch what;
+          if ( boost::regex_match( i->path().filename().string(), what, filter ) )
+            {
+              procDirs_.insert(i->path());
+            }
       }
+  }
+
+  // get a list of every time directory processor dirs
+  // also include potentially inconsistent dirs
+  for (const auto& proc: procDirs_)
+  {
+      auto ptds = listTimeDirectories(proc);
+      for (const auto& ptd: ptds)
+      {
+          procTimeDirs_.insert(ptd.second.filename());
+      }
+  }
+
 }
 
 std::set<boost::filesystem::path> OpenFOAMCaseDirs::timeDirs( OpenFOAMCaseDirs::TimeDirOpt td )
@@ -3150,13 +3162,36 @@ std::set<boost::filesystem::path> OpenFOAMCaseDirs::timeDirs( OpenFOAMCaseDirs::
   return tds;
 }
 
+
+std::set<boost::filesystem::path> OpenFOAMCaseDirs::timeDirContent(
+        const boost::filesystem::path& td )
+{
+    std::set<boost::filesystem::path> tdc;
+
+    for (const auto& f : recursive_directory_iterator(td))
+    {
+        tdc.insert(make_relative(td,f));
+    }
+    return tdc;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::set<boost::filesystem::path>& paths)
+{
+    for (const auto& p: paths)
+    {
+        os << " "<<p.string();
+    }
+    return os;
+}
+
 std::set<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs
 (
     OpenFOAMCaseDirs::TimeDirOpt td,
     bool cleanProc,
     bool cleanTimes,
     bool cleanPost,
-    bool cleanSys
+    bool cleanSys,
+    bool cleanInconsistentParallelTimes
 )
 {
   std::set<boost::filesystem::path> all_cands;
@@ -3172,6 +3207,53 @@ std::set<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs
   }
 
   if (cleanProc) std::copy( procDirs_.begin(), procDirs_.end(), std::inserter(all_cands, all_cands.begin()) );
+
+  if (cleanInconsistentParallelTimes)
+  {
+      std::set<boost::filesystem::path> inconsistentParTimes;
+
+      auto j0=procDirs_.begin();
+      for (const auto& ptd: procTimeDirs_)
+      {
+          if (!boost::filesystem::exists((*j0)/ptd))
+          {
+            inconsistentParTimes.insert(ptd);
+          }
+          else
+          {
+              auto tdc1 = timeDirContent((*j0)/ptd);
+              for (auto j=++procDirs_.begin(); j!=procDirs_.end(); ++j)
+              {
+                  if (!boost::filesystem::exists((*j)/ptd))
+                  {
+                    inconsistentParTimes.insert(ptd);
+                    break;
+                  }
+                  else
+                  {
+                      auto tdc2=timeDirContent((*j)/ptd);
+                      if ( tdc2 != tdc1 )
+                      {
+                        inconsistentParTimes.insert(ptd);
+                        break;
+                      }
+                  }
+              }
+          }
+      }
+
+      for (const auto& ptd: inconsistentParTimes)
+      {
+          for (const auto& pd: procDirs_)
+          {
+              auto dn = pd/ptd;
+              if (boost::filesystem::exists(dn))
+              {
+                  all_cands.insert(dn);
+              }
+          }
+      }
+  }
 
   return all_cands;
 }
@@ -3210,11 +3292,12 @@ void OpenFOAMCaseDirs::cleanCase
     bool cleanProc,
     bool cleanTimes,
     bool cleanPost,
-    bool cleanSys
+    bool cleanSys,
+    bool cleanInconsistentParallelTimes
 )
 {
 
-  auto cands = caseFilesAndDirs(td, cleanProc, cleanTimes, cleanPost, cleanSys);
+  auto cands = caseFilesAndDirs(td, cleanProc, cleanTimes, cleanPost, cleanSys, cleanInconsistentParallelTimes);
 
   for (const auto& c: cands)
   {

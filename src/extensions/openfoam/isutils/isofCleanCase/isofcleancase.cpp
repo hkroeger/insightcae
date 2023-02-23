@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
     ("clean-proc,r", "clean processor directories")
     ("clean-all,c", "clean all time steps, postprocessing data, processor directories and constant+system folder")
     ("keep-first-time,0", "keep first time directory")
+    ("clean-inconsistent-parallel-times,i", "remove inconsistent parallel time directories")
     ("dry-run,d", "don't delete anything, just priint the files and directories to be deleted")
     ;
 
@@ -145,21 +146,43 @@ int main(int argc, char *argv[])
           cto=insight::OpenFOAMCaseDirs::TimeDirOpt::ExceptFirst;
         }
 
+        bool dryrun=(vm.count("dry-run")>0);
         bool cleanproc=(vm.count("clean-proc")>0)||(vm.count("clean-all")>0);
         bool cleantimes=(vm.count("clean-timesteps")>0)||(vm.count("clean-all")>0);
         bool cleanpost=(vm.count("clean-post")>0)||(vm.count("clean-all")>0);
         bool cleanall=(vm.count("clean-all")>0);
+        bool cleaninsconsistentpartimes=(vm.count("clean-inconsistent-parallel-times")>0);
 
-        if (cleanproc||cleantimes||cleanpost||cleanall)
+        if (cleanproc||cleantimes||cleanpost||cleanall||cleaninsconsistentpartimes)
         {
-          cf.cleanCase
+          if (dryrun)
+          {
+              auto cands=cf.caseFilesAndDirs
+                 (
+                   cto,
+                   cleanproc,
+                   cleantimes,
+                   cleanpost,
+                   cleanall,
+                   cleaninsconsistentpartimes
+                 );
+              for (const auto& c: cands)
+              {
+                  std::cout<<c<<std::endl;
+              }
+          }
+          else
+          {
+           cf.cleanCase
               (
                 cto,
                 cleanproc,
                 cleantimes,
                 cleanpost,
-                cleanall
+                cleanall,
+                cleaninsconsistentpartimes
               );
+          }
         }
         else if (!pack)
         {

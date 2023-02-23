@@ -748,12 +748,15 @@ void exportEMesh(const EMeshPtsList& pts, const boost::filesystem::path& filenam
 void exportEMesh(const EMeshPtsListList& pts, const boost::filesystem::path& filename);
 
 
+std::ostream& operator<<(std::ostream& os, const std::set<boost::filesystem::path>& paths);
+
 class OpenFOAMCaseDirs
 {
 
   boost::filesystem::path location_;
   std::set<boost::filesystem::path> sysDirs_, postDirs_, procDirs_;
   std::vector<boost::filesystem::path> timeDirs_;
+  std::set<boost::filesystem::path> procTimeDirs_;
 
 public:
   enum TimeDirOpt { All, OnlyFirst, OnlyLast, OnlyFirstAndLast, ExceptFirst };
@@ -767,13 +770,18 @@ public:
 
   std::set<boost::filesystem::path> timeDirs( TimeDirOpt td = TimeDirOpt::All );
 
+  static std::set<boost::filesystem::path> timeDirContent(
+          const boost::filesystem::path& td );
+
+
   std::set<boost::filesystem::path> caseFilesAndDirs
   (
       TimeDirOpt td = TimeDirOpt::All,
-      bool cleanProc=true,
-      bool cleanTimes=true,
-      bool cleanPost=true,
-      bool cleanSys=true
+      bool cleanProc = true,
+      bool cleanTimes = true,
+      bool cleanPost = true,
+      bool cleanSys = true,
+      bool cleanInconsistentParallelTimes = false
   );
 
   void packCase(const boost::filesystem::path& archive_file, TimeDirOpt td = TimeDirOpt::All);
@@ -789,7 +797,8 @@ public:
       bool cleanProc=true,
       bool cleanTimes=true,
       bool cleanPost=true,
-      bool cleanSys=true
+      bool cleanSys=true,
+      bool cleanInconsistentParallelTimes = false
   );
 };
 

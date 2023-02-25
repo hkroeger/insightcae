@@ -129,7 +129,7 @@ public:
 
 
 
-void assertion(bool condition, const std::string& context_message);
+void assertion(bool condition, std::string context_message, ...);
 
 
 //std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5);

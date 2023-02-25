@@ -330,7 +330,7 @@ Handle_TopTools_HSequenceOfShape DXFReader::Wires(double tol, const std::string&
 //    }
 
   if (inEdges->Size()==0)
-    throw insight::Exception("Could not retrieve data for layer \""+layername+"\"!");
+    throw insight::Exception("Could not retrieve data for layer \"%s\"!", layername);
 
   ShapeFix_ShapeTolerance sft;
   for (

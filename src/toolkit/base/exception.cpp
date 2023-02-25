@@ -220,10 +220,21 @@ const std::map<string, cad::FeaturePtr> &Exception::contextGeometry() const
   return contextGeometry_;
 }
 
-void assertion(bool condition, const std::string& context_message)
+void assertion(bool condition, std::string fmt, ...)
 {
   if (!condition)
-    throw insight::Exception("Internal error: condition violated: "+context_message);
+  {
+      char str[5000];
+      va_list args;
+      va_start(args, fmt);
+      vsnprintf(str, sizeof(str), fmt.c_str(), args);
+      va_end(args);
+      int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
+
+      throw insight::Exception(
+                  std::string("Internal error: condition violated: ")
+                  + str );
+  }
 }
 
 

@@ -54,7 +54,7 @@ size_t Line::calcHash() const
 
 
 Line::Line()
-: Feature()
+: SingleEdgeFeature()
 {
 }
 
@@ -64,7 +64,17 @@ Line::Line()
 Line::Line(VectorPtr p0, VectorPtr p1, bool second_is_dir)
 : p0_(p0), p1_(p1),
   second_is_dir_(second_is_dir)
+{}
+
+
+VectorPtr Line::start() const
 {
+    return p0_;
+}
+
+VectorPtr Line::end() const
+{
+    return p1_;
 }
 
 
@@ -163,27 +173,6 @@ FeatureCmdInfoList Line::ruleDocumentation() const
             "Creates a line between point p0 and p1."
         )
     );
-}
-
-
-
-bool Line::isSingleEdge() const
-{
-    return true;
-}
-
-
-bool Line::isSingleCloseWire() const
-{
-  return false;
-}
-
-
-
-
-bool Line::isSingleOpenWire() const
-{
-  return true;
 }
 
 

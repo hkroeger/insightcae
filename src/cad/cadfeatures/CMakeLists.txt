@@ -1,5 +1,6 @@
 add_sources(insightcad_SOURCES 
  derivedfeature.cpp
+ singleedgefeature.cpp
  arc.cpp
  airfoil.cpp
  bar.cpp

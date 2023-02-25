@@ -228,13 +228,13 @@ void assertion(bool condition, const std::string& context_message)
 
 
 CurrentExceptionContext::CurrentExceptionContext(const std::string& desc, bool verbose)
-: desc_(desc)
+    : std::string(desc)
 {
   if (getenv("INSIGHT_VERBOSE"))
   {
     if (verbose)
     {
-      std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << desc << std::endl;
+      std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << contextDescription() << std::endl;
     }
   }
   ExceptionContext::getCurrent().push_back(this);
@@ -252,19 +252,15 @@ CurrentExceptionContext::~CurrentExceptionContext()
 
   if (getenv("INSIGHT_VERBOSE"))
   {
-    std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<desc_ << std::endl;
+    std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<contextDescription() << std::endl;
   }
 }
 
 std::string CurrentExceptionContext::contextDescription() const
 {
-  return desc_;
+  return *this;
 }
 
-CurrentExceptionContext::operator std::string() const
-{
-  return desc_;
-}
 
 
 

@@ -44,19 +44,14 @@ namespace phx   = boost::phoenix;
 namespace insight {
 namespace cad {
 
-bool DXFReader::notFiltered()
-{
-  DL_Attributes attr=getAttributes();
-//  if (layername_=="")
-//    return true;
-//  else
-//    return (attr.getLayer()==layername_);
-  return boost::regex_match( attr.getLayer(), layerpattern_ );
-}
-
 std::string DXFReader::curLayerName()
 {
   return getAttributes().getLayer();
+}
+
+bool DXFReader::notFiltered()
+{
+  return boost::regex_match( curLayerName(), layerpattern_ );
 }
 
 DXFReader::DXFReader(
@@ -335,7 +330,7 @@ Handle_TopTools_HSequenceOfShape DXFReader::Wires(double tol, const std::string&
 //    }
 
   if (inEdges->Size()==0)
-    throw insight::Exception("Could not retrieve data for layer!");
+    throw insight::Exception("Could not retrieve data for layer \""+layername+"\"!");
 
   ShapeFix_ShapeTolerance sft;
   for (

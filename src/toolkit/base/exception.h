@@ -36,15 +36,14 @@ namespace insight {
 
 
 class CurrentExceptionContext
+        : public std::string
 {
-  std::string desc_;
 
 public:
   CurrentExceptionContext(const std::string& desc, bool verbose=true);
   ~CurrentExceptionContext();
 
   std::string contextDescription() const;
-  operator std::string() const;
 
 };
 

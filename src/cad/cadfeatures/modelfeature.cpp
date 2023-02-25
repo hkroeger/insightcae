@@ -194,6 +194,7 @@ FeaturePtr ModelFeature::create_model(ModelPtr model)
 
 void ModelFeature::build()
 {
+    insight::CurrentExceptionContext ex("building model "+featureSymbolName());
     ExecTimer t("ModelFeature::build() ["+featureSymbolName()+"]");
 
     if (!cache.contains(hash()))
@@ -202,9 +203,11 @@ void ModelFeature::build()
         {
           if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
           {
+            ex += " from file \""+fp->string()+"\"";
             model_.reset(new Model(*fp, vars_));
           } else if (std::string* mn = boost::get<std::string>(&modelinput_))
           {
+            ex += " named "+*mn;
             model_.reset(new Model(*mn, vars_));
           } else
           {

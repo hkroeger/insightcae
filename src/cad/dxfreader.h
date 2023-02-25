@@ -43,8 +43,8 @@ protected:
   std::vector<gp_Pnt> splp_;
   std::vector<double> splk_;
 
-  bool notFiltered();
   std::string curLayerName();
+  bool notFiltered();
 
 public:
   /**
@@ -69,7 +69,10 @@ public:
   virtual void addControlPoint(const DL_ControlPointData&);
   void buildSpline();
 
-  Handle_TopTools_HSequenceOfShape Wires(double tol=Precision::Confusion(), const std::string& layername="") const;
+  Handle_TopTools_HSequenceOfShape Wires(
+          double tol=Precision::Confusion(),
+          const std::string& layername=std::string() ) const;
+
   std::vector<std::string> layers(const std::string& pattern = ".*") const;
   std::vector<std::string> layers(const boost::regex& pattern) const;
 };

@@ -440,5 +440,190 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
+
+
+
+
+
+
+
+
+SketchPoint::SketchPoint(DatumPtr planei, const arma::mat &p3)
+    : plane_(planei),
+      x_(0), y_(0)
+{
+    auto plane=plane_->plane();
+    gp_Trsf pl;
+    pl.SetTransformation(plane); // from global to plane
+    auto pp = toVec<gp_Pnt>(p3).Transformed(pl);
+    insight::assertion(
+                fabs(pp.Z())<SMALL,
+                "point (%g, %g, %g) not in plane with p=(%g, %g, %g) and n=(%g, %g, %g)!\n"
+                "(local coordinates = (%g, %g, %g))",
+                p3(0), p3(1), p3(2),
+                plane.Location().X(), plane.Location().Y(), plane.Location().Z(),
+                plane.Direction().X(), plane.Direction().Y(), plane.Direction().Z(),
+                pp.X(), pp.Y(), pp.Z() );
+    x_=pp.X();
+    y_=pp.Y();
+}
+
+SketchPoint::SketchPoint(DatumPtr plane, double x, double y)
+    : plane_(plane),
+      x_(x), y_(y)
+{}
+
+void SketchPoint::setCoords2D(double x, double y)
+{
+    x_=x;
+    y_=y;
+}
+
+arma::mat SketchPoint::value() const
+{
+    auto pl=plane_->plane();
+    return vec3(
+        pl.Location()
+            .Translated(pl.XDirection().XYZ()*x_)
+            .Translated(pl.YDirection().XYZ()*y_)
+                );
+}
+
+int SketchPoint::nDoF() const
+{
+    return 2;
+}
+
+
+double SketchPoint::getDoFValue(unsigned int iDoF) const
+{
+    insight::assertion(
+                iDoF<nDoF(),
+                "invalid DoF index: %d", iDoF );
+    switch (iDoF)
+    {
+        case 0: return x_;
+        case 1: return x_;
+    }
+    return NAN;
+}
+
+
+void SketchPoint::setDoFValue(unsigned int iDoF, double value)
+{
+    insight::assertion(
+                iDoF<nDoF(),
+                "invalid DoF index: %d", iDoF );
+    switch (iDoF)
+    {
+        case 0: x_=value;
+        case 1: x_=value;
+    }
+}
+
+
+
+
+
+
+
+defineType(ConstrainedSketch);
+//addToFactoryTable(Feature, ConstrainedSketch);
+
+
+size_t ConstrainedSketch::calcHash() const
+{
+  ParameterListHash p;
+  p+=*pl_;
+  return p.getHash();
+}
+
+
+
+ConstrainedSketch::ConstrainedSketch()
+: Feature()
+{}
+
+
+
+ConstrainedSketch::ConstrainedSketch
+(
+  DatumPtr pl
+)
+: pl_(pl)
+{}
+
+
+
+
+FeaturePtr ConstrainedSketch::create( DatumPtr pl )
+{
+    return FeaturePtr(new ConstrainedSketch(pl));
+}
+
+
+const DatumPtr& ConstrainedSketch::plane() const
+{
+    return pl_;
+}
+
+
+std::set<std::shared_ptr<ConstrainedSketchGeometry> >&
+ConstrainedSketch::geometry()
+{
+    return geometry_;
+}
+
+void ConstrainedSketch::operator=(const ConstrainedSketch &o)
+{
+    Feature::operator=(o);
+    pl_=o.pl_;
+    geometry_=o.geometry_;
+}
+
+
+
+
+void ConstrainedSketch::build()
+{
+    ExecTimer t("ConstrainedSketch::build() ["+featureSymbolName()+"]");
+
+    if (!cache.contains(hash()))
+    {
+        if (!pl_->providesPlanarReference())
+            throw insight::Exception("Sketch: Planar reference required!");
+
+        BRep_Builder bb;
+        TopoDS_Compound result;
+        bb.MakeCompound ( result );
+
+        for ( auto& sg: geometry_ )
+        {
+            if ( auto f = std::dynamic_pointer_cast<Feature>(sg) )
+            {
+                bb.Add ( result, f->shape() );
+            }
+        }
+
+        setShape(result);
+
+        cache.insert(shared_from_this());
+    }
+    else
+    {
+        this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
+    }
+}
+
+
+
+
+
+
+
+
+
+
 }
 }

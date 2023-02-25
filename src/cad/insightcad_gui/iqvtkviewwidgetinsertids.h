@@ -39,8 +39,7 @@ public:
 
   void onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override
   {
-      int p[] = {point.x(), point.y()};
-      IQVTKCADModel3DViewer::PickedItem clickedItem = viewer().findPicked(p);
+      IQVTKCADModel3DViewer::ItemAtCursor clickedItem = viewer().findUnderCursorAt(point);
 
       if ( const auto *ci =
            boost::get<IQVTKCADModel3DViewer::DisplayedSubshapeData::const_iterator>(&clickedItem) )
@@ -75,17 +74,20 @@ public:
                 icmd!=featureSelCmds.end(),
                 "unhandled selection" );
 
-    QString text = QString::fromStdString(
-          selection_->model()->featureSymbolName() + "?" + icmd->second.cmdName + "=("
-          );
-    int j=0;
-    for (insight::cad::FeatureID i: selection_->data())
-      {
-        text+=QString::number( i );
-        if (j++ < selection_->size()-1) text+=",";
-      }
-    text+=")";
-    Q_EMIT appendToNotepad(text);
+    if (selection_)
+    {
+        QString text = QString::fromStdString(
+              selection_->model()->featureSymbolName() + "?" + icmd->second.cmdName + "=("
+              );
+        int j=0;
+        for (insight::cad::FeatureID i: selection_->data())
+          {
+            text+=QString::number( i );
+            if (j++ < selection_->size()-1) text+=",";
+          }
+        text+=")";
+        Q_EMIT appendToNotepad(text);
+    }
 
     setFinished();
   }

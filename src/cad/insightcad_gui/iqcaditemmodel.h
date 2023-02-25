@@ -260,6 +260,10 @@ public:
 public Q_SLOTS:
   void showContextMenu(const QModelIndex& idx, const QPoint &pos, IQCADModel3DViewer* viewer);
 
+  void addPlane();
+  void addImportedFeature();
+  void addImportedSketch(insight::cad::DatumPtr plane);
+
 Q_SIGNALS:
   void insertIntoNotebook(const QString& text);
 

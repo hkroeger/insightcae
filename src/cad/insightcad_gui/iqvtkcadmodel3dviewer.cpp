@@ -6,7 +6,8 @@
 
 #include "iqvtkcadmodel3dviewerrotation.h"
 #include "iqvtkcadmodel3dviewerpanning.h"
-#include "iqvtkcadmodel3dviewermeasurepoints.h"
+#include "iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h"
+#include "iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
 
 #include <QDebug>
 #include <QHBoxLayout>
@@ -17,6 +18,7 @@
 #include <QWheelEvent>
 #include <QKeyEvent>
 #include <QTextEdit>
+#include <QInputDialog>
 
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
@@ -31,6 +33,7 @@
 #include "vtkTransformPolyDataFilter.h"
 #include "vtkRenderWindowInteractor.h"
 #include "vtkPropPicker.h"
+#include "vtkCellPicker.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -64,6 +67,148 @@ IQVTKCADModel3DViewer::QPersistentModelIndexHash::operator()
 }
 
 
+
+
+
+void IQVTKCADModel3DViewer::highlightActor(vtkActor *actor)
+{
+    actorHighlight_.reset();
+    if (auto* pdm = vtkPolyDataMapper::SafeDownCast(actor->GetMapper()))
+    {
+        if (pdm->GetInput()->GetNumberOfPolys()>0)
+        {
+            actorHighlight_.reset(
+                new SilhouetteHighlighter(
+                    *this, pdm
+                ));
+        }
+        else if (pdm->GetInput()->GetNumberOfLines()>0
+                 || pdm->GetInput()->GetNumberOfStrips()>0)
+        {
+            actorHighlight_.reset(
+                new LinewidthHighlighter(
+                    *this, actor
+                ));
+        }
+        else if (pdm->GetInput()->GetNumberOfPoints()>0)
+        {
+            actorHighlight_.reset(
+                new PointSizeHighlighter(
+                    *this, actor
+                ));
+        }
+    }
+}
+
+
+
+
+void ConstrainedSketchEditor::add(insight::cad::ConstrainedSketchGeometryPtr sg)
+{
+    std::vector<vtkSmartPointer<vtkProp> > acs;
+    if (auto feat = std::dynamic_pointer_cast<insight::cad::Feature>(sg))
+    {
+        acs=viewer_.createActor(feat);
+    }
+    else if (auto pt = std::dynamic_pointer_cast<insight::cad::Vector>(sg))
+    {
+        acs=viewer_.createActor(pt);
+    }
+
+    ActorSet as;
+    for (auto& a: acs)
+    {
+        vtkSmartPointer<vtkActor> aa = vtkActor::SafeDownCast(a);
+        aa->GetProperty()->SetColor(1, 0, 0);
+        aa->GetProperty()->SetLineWidth(2);
+        viewer_.renderer()->AddActor(aa);
+        as.insert(aa);
+    }
+    sketchGeometryActors_.emplace(sg, as);
+}
+
+void ConstrainedSketchEditor::remove(insight::cad::ConstrainedSketchGeometryPtr sg)
+{
+    auto i=sketchGeometryActors_.find(sg);
+    if (i!=sketchGeometryActors_.end())
+    {
+       ActorSet actors = i->second;
+       sketchGeometryActors_.erase(i);
+       for(auto &a: actors)
+       {
+           viewer_.renderer()->RemoveActor(a);
+       }
+    }
+}
+
+ConstrainedSketchEditor::ConstrainedSketchEditor(
+        IQVTKCADModel3DViewer& viewer,
+        insight::cad::ConstrainedSketchPtr sketch
+)
+    : ViewerState(viewer),
+      insight::cad::ConstrainedSketchPtr(sketch)
+{
+    updateActors();
+}
+
+
+
+ConstrainedSketchEditor::~ConstrainedSketchEditor()
+{
+    // copy because "remove" invalidates for-loop
+    std::set<insight::cad::ConstrainedSketchGeometryPtr> sgs;
+
+    std::transform(sketchGeometryActors_.begin(), sketchGeometryActors_.end(),
+        std::inserter(sgs, sgs.end()),
+        [](const SketchGeometryActorMap::value_type& v){ return v.first; } );
+
+    for (const auto& sg: sgs)
+    {
+        remove(sg);
+    }
+}
+
+insight::cad::ConstrainedSketchGeometryPtr
+ConstrainedSketchEditor::findSketchElementOfActor
+    (vtkActor *actor) const
+{
+    for (const auto& sga: sketchGeometryActors_)
+    {
+        for (const auto& a: sga.second)
+        {
+            if (actor==a)
+            {
+                return sga.first;
+            }
+        }
+    }
+    return nullptr;
+}
+
+
+void ConstrainedSketchEditor::updateActors()
+{
+
+  for (const auto& g: (*this)->geometry())
+  {
+      auto i=sketchGeometryActors_.find(g);
+      if (i!=sketchGeometryActors_.end())
+      {
+          remove(g);
+      }
+      add(g);
+  }
+
+  for (const auto& sga: sketchGeometryActors_)
+  {
+      auto g=sga.first;
+      auto i=this->get()->geometry().find(g);
+      if (i==this->get()->geometry().end())
+      {
+        remove(g);
+      }
+  }
+}
 
 
 
@@ -233,7 +378,7 @@ vtkSmartPointer<vtkProp> IQVTKCADModel3DViewer::createSubshapeActor(SubshapeData
 
         auto prop=actor->GetProperty();
         prop->SetRepresentationToSurface();
-        prop->SetPointSize(8);
+        prop->SetPointSize(6);
         prop->SetColor(1, 0, 0);
 
         return actor;
@@ -758,7 +903,7 @@ void IQVTKCADModel3DViewer::doHighlightItem(CADEntity item)
         {
             // already in display
             highlightedItem_ = std::make_shared<HighlightItem>(
-                        nullptr, idisp->first, this );
+                        nullptr, idisp->first, *this );
         }
         else
         {
@@ -768,7 +913,7 @@ void IQVTKCADModel3DViewer::doHighlightItem(CADEntity item)
                         std::shared_ptr<DisplayedEntity>(
                             new DisplayedEntity{name, item, {actor}} ),
                         QPersistentModelIndex(),
-                        this );
+                        *this );
         }
     }
 }
@@ -983,6 +1128,8 @@ IQVTKCADModel3DViewer::~IQVTKCADModel3DViewer()
 {
     clipping_.reset();
     highlightedItem_.reset();
+    actorHighlight_.reset();
+    displayedSketch_.reset();
 }
 
 
@@ -1079,24 +1226,24 @@ void IQVTKCADModel3DViewer::deactivateSubshapeSelectionAll()
 }
 
 
-boost::variant<
-    boost::blank,
-    IQVTKCADModel3DViewer::DisplayedSubshapeData::const_iterator,
-    IQVTKCADModel3DViewer::DisplayedData::const_iterator
-> IQVTKCADModel3DViewer::findPicked(int clickPos[]) const
+
+vtkActor *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) const
 {
     // Pick from this location.
-    insight::dbg()<<"click pos = "<<clickPos[0]<<" "<<clickPos[1]<<std::endl;
-    vtkNew<vtkPointPicker> picker;
-    picker->Pick(clickPos[0], size().height()-clickPos[1]-1, 0, ren_);
+    insight::dbg()<<"click pos = "<<clickPos.x()<<" "<<clickPos.y()<<std::endl;
 
-    double* pos = picker->GetPickPosition();
-    insight::dbg()
-            << "Pick position (world coordinates) is: "
-            << pos[0] << " " << pos[1] << " " << pos[2]
-            << std::endl;
+//    auto picker = vtkSmartPointer<vtkPointPicker>::New();
+    auto picker = vtkSmartPointer<vtkCellPicker>::New();
+    picker->Pick(clickPos.x(), size().height()-clickPos.y()-1, 0, ren_);
 
-    if (auto pickedActor = picker->GetActor())
+    return picker->GetActor();
+}
+
+
+IQVTKCADModel3DViewer::ItemAtCursor
+IQVTKCADModel3DViewer::findUnderCursorAt(const QPoint& clickPos) const
+{
+    if (auto* pickedActor = findActorUnderCursorAt(clickPos))
     {
         insight::dbg()<<" picked actor = "<<pickedActor<<std::endl;
 
@@ -1178,6 +1325,49 @@ void IQVTKCADModel3DViewer::resetRepresentations()
         resetDisplayProps(de.first);
     }
 }
+
+
+void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
+{
+
+    // free sketch name
+    auto feats = cadmodel()->modelsteps();
+    auto lbl = insight::findUnusedLabel(
+                feats.begin(), feats.end(),
+                std::string("sketch"),
+                [](decltype(feats)::const_iterator i)
+                 -> std::string
+                    {
+                      return i->first;
+                    }
+                );
+
+    auto name = QInputDialog::getText(
+                this, "Create sketch", "Name of the sketch",
+                QLineEdit::Normal, QString::fromStdString(lbl)
+                );
+
+    if (!name.isEmpty())
+    {
+        auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
+                    insight::cad::ConstrainedSketch::create(plane));
+        displayedSketch_.reset(new ConstrainedSketchEditor(*this, sk));
+
+        auto dl = std::make_shared<IQVTKCADModel3DViewerDrawLine>(*this, sk);
+        connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::updateActors,
+                displayedSketch_.get(), &ConstrainedSketchEditor::updateActors );
+        connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::finished, dl.get(),
+                [this,name,sk]()
+                {
+                    displayedSketch_.reset();
+                    cadmodel()->addModelstep(name.toStdString(), sk);
+                }
+        );
+
+        currentUserActivity_=dl;
+    }
+}
+
 
 QSize IQVTKCADModel3DViewer::sizeHint() const
 {
@@ -1344,6 +1534,16 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
 
 void IQVTKCADModel3DViewer::mouseMoveEvent    ( QMouseEvent* e )
 {
+
+    if (auto* ac = findActorUnderCursorAt(e->pos()))
+    {
+        highlightActor(ac);
+    }
+    else
+    {
+        actorHighlight_.reset();
+    }
+
     navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
     if (currentNavigationAction_)
       currentNavigationAction_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );

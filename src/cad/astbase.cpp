@@ -65,7 +65,13 @@ bool ASTBase::valid() const
 
 bool ASTBase::building() const
 {
-  return building_;
+    return building_;
+}
+
+void ASTBase::invalidate()
+{
+    valid_=false;
+    hash_=0;
 }
 
 void ASTBase::checkForBuildDuringAccess() const

@@ -32,8 +32,12 @@
 
 #include "base/boost_include.h"
 
+#include "cadfeatures/line.h"
+
 namespace insight {
 namespace cad {
+
+
 
 typedef std::vector<boost::fusion::vector2<std::string, ScalarPtr> > SketchVarList;
 
@@ -84,6 +88,74 @@ public:
   
   const boost::filesystem::path& fn() const { return fn_; }
 };
+
+
+
+
+class SketchPoint
+: public insight::cad::Vector,
+  public ConstrainedSketchGeometry
+{
+
+  DatumPtr plane_;
+  double x_, y_;
+
+public:
+  SketchPoint(DatumPtr plane, const arma::mat& p3);
+  SketchPoint(DatumPtr plane, double x, double y);
+  void setCoords2D(double x, double y);
+  arma::mat value() const override;
+
+  int nDoF() const override;
+  double getDoFValue(unsigned int iDoF) const override;
+  void setDoFValue(unsigned int iDoF, double value) override;
+};
+
+
+typedef std::shared_ptr<SketchPoint> SketchPointPtr;
+
+
+
+class SketchConstraint
+{
+public:
+    virtual int nQ() const =0;
+    virtual double getQ(unsigned int iQ) const =0;
+};
+
+typedef
+    std::shared_ptr<SketchConstraint>
+    SketchConstraintPtr;
+
+
+
+class ConstrainedSketch
+: public Feature
+{
+  DatumPtr pl_;
+  std::set<ConstrainedSketchGeometryPtr> geometry_;
+  std::set<SketchConstraintPtr> constraints_;
+
+  ConstrainedSketch( DatumPtr pl );
+
+  virtual size_t calcHash() const;
+  virtual void build();
+
+public:
+  declareType("ConstrainedSketch");
+  ConstrainedSketch();
+
+  static FeaturePtr create(DatumPtr pl);
+
+  const DatumPtr& plane() const;
+  std::set<ConstrainedSketchGeometryPtr>& geometry();
+
+  void operator=(const ConstrainedSketch& o);
+
+};
+
+typedef std::shared_ptr<ConstrainedSketch> ConstrainedSketchPtr;
+
 
 }
 }

@@ -8,12 +8,12 @@
 IQVTKCADModel3DViewer::HighlightItem::HighlightItem(
         std::shared_ptr<DisplayedEntity> de,
         QPersistentModelIndex idx2highlight,
-        IQVTKCADModel3DViewer* viewer )
-    : viewer_(viewer),
+        IQVTKCADModel3DViewer& viewer )
+    : ViewerState(viewer),
       de_(de),
       idx2highlight_(idx2highlight)
 {
-    for (auto& o: viewer_->displayedData_)
+    for (auto& o: viewer_.displayedData_)
     {
         for (const auto& actor: o.second.actors_)
         {
@@ -42,11 +42,11 @@ IQVTKCADModel3DViewer::HighlightItem::HighlightItem(
                 act->GetProperty()->SetOpacity(1.);
                 act->GetProperty()->SetColor(1,0,0);
             }
-            viewer_->ren_->AddActor( /*de_->actor_ */ actor);
+            viewer_.renderer()->AddActor( /*de_->actor_ */ actor);
         }
     }
 
-    viewer_->scheduleRedraw();
+    viewer_.scheduleRedraw();
 }
 
 
@@ -54,7 +54,7 @@ IQVTKCADModel3DViewer::HighlightItem::HighlightItem(
 
 IQVTKCADModel3DViewer::HighlightItem::~HighlightItem()
 {
-    for (auto& o: viewer_->displayedData_)
+    for (auto& o: viewer_.displayedData_)
     {
         for (const auto& actor: o.second.actors_)
         {
@@ -63,7 +63,7 @@ IQVTKCADModel3DViewer::HighlightItem::~HighlightItem()
                 if ( o.first == idx2highlight_)
                 {
                     // restore all display props
-                    viewer_->resetDisplayProps(o.first);
+                    viewer_.resetDisplayProps(o.first);
                 }
                 else
                 {
@@ -82,11 +82,11 @@ IQVTKCADModel3DViewer::HighlightItem::~HighlightItem()
     {
         for (const auto& actor: de_->actors_)
         {
-            viewer_->ren_->RemoveActor( /*de_->actor_*/actor );
+            viewer_.renderer()->RemoveActor( /*de_->actor_*/actor );
         }
     }
 
-    viewer_->scheduleRedraw();
+    viewer_.scheduleRedraw();
 }
 
 

@@ -7,7 +7,7 @@
 #include <QAbstractItemModel>
 #include <QTextEdit>
 
-
+#include "iqcaditemmodel.h"
 
 
 class INSIGHTCAD_GUI_EXPORT IQCADModel3DViewer
@@ -22,6 +22,7 @@ public:
 
     virtual void setModel(QAbstractItemModel* model);
     QAbstractItemModel* model() const;
+    IQCADItemModel* cadmodel() const;
 
     virtual void connectNotepad(QTextEdit *notepad) const;
 
@@ -63,6 +64,8 @@ public Q_SLOT:
 
     virtual void onlyOneShaded(QPersistentModelIndex idx) =0;
     virtual void resetRepresentations() =0;
+
+    virtual void doSketchOnPlane(insight::cad::DatumPtr plane) =0;
 
 Q_SIGNALS:
     void appendToNotepad(const QString& text);

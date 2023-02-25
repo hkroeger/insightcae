@@ -3,6 +3,7 @@ if (INSIGHT_BUILD_ISCAD)
 project(insightcad_gui)
 
 set(CMAKE_AUTOMOC ON)
+SET(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
@@ -18,12 +19,17 @@ set(insightcad_gui_SRCS
  iscadmetatyperegistrator.cpp
  iscadmetatyperegistrator.h
 
+ dialogs/defineplanedialog.h dialogs/defineplanedialog.cpp dialogs/defineplanedialog.ui
+
  iqiscadmodelgenerator.h iqiscadmodelgenerator.cpp
  iqiscadmodelrebuilder.h iqiscadmodelrebuilder.cpp
  iqiscadscriptmodelgenerator.h iqiscadscriptmodelgenerator.cpp
 
  iqcaditemmodel.h
  iqcaditemmodel.cpp
+ iqcaditemmodel_contextmenu.cpp
+ iqcaditemmodel_featurecreation.cpp
+
  iqpickinteractorstyle.h iqpickinteractorstyle.cpp
 
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
@@ -33,8 +39,11 @@ set(insightcad_gui_SRCS
  iqvtkcadmodel3dviewer_highlightitem.cpp
  iqvtkcadmodel3dviewer_subshapeselection.cpp
  iqvtkcadmodel3dviewer_clippingplanes.cpp
- iqvtkcadmodel3dviewermeasurepoints.h iqvtkcadmodel3dviewermeasurepoints.cpp
  iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
+
+ iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h
+ iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.cpp
+ iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.cpp
 
  iqvtkviewwidgetinsertids.h iqvtkviewwidgetinsertids.cpp
  iqcadtransformationcommand.h iqcadtransformationcommand.cpp

@@ -20,6 +20,11 @@ QAbstractItemModel *IQCADModel3DViewer::model() const
     return model_;
 }
 
+IQCADItemModel *IQCADModel3DViewer::cadmodel() const
+{
+    return dynamic_cast<IQCADItemModel*>(model_);
+}
+
 void IQCADModel3DViewer::connectNotepad(QTextEdit *notepad) const
 {
     connect(

@@ -121,6 +121,7 @@ FeaturePtr Sketch::create
 
 void Sketch::build()
 {
+    insight::CurrentExceptionContext ex("building sketch "+featureSymbolName());
     ExecTimer t("Sketch::build() ["+featureSymbolName()+"]");
     
     if (!cache.contains(hash()))
@@ -237,7 +238,7 @@ void Sketch::build()
 
 //        TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
 //        providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
-        auto ws = DXFReader(filename, layername).Wires(tol_);
+        auto ws = DXFReader(filename, ".*").Wires(tol_);
         if (ws->Size()==1)
         {
             providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(ws->Value(1)));

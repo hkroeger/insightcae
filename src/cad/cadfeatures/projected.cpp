@@ -73,19 +73,29 @@ FeaturePtr Projected::create ( FeaturePtr source, FeaturePtr target, VectorPtr d
 
 void Projected::build()
 {
-  TopoDS_Wire ow=BRepTools::OuterWire(TopoDS::Face(source_->shape()));
+    TopoDS_Shape ow;
+    if (TopExp_Explorer(source_->shape(), TopAbs_FACE).More())
+    {
+        // face
+        ow=BRepTools::OuterWire(TopoDS::Face(source_->shape()));
+    }
+    else
+    {
+        // face
+        ow=source_->shape();
+    }
 
-  BRepProj_Projection proj(ow, target_->shape(), to_Vec(dir_->value()));
-  
-     TopTools_ListOfShape ee;
-     TopoDS_Shape projs = proj.Shape();
+    BRepProj_Projection proj(ow, target_->shape(), to_Vec(dir_->value()));
+
+    TopTools_ListOfShape ee;
+    TopoDS_Shape projs = proj.Shape();
     for (TopExp_Explorer ex(projs, TopAbs_EDGE); ex.More(); ex.Next())
     {
         ee.Append ( TopoDS::Edge(ex.Current()) );
     }
     BRepBuilderAPI_MakeWire wb;
-    wb.Add ( ee ); 
-  
+    wb.Add ( ee );
+
     ShapeFix_Wire wf;
     wf.Load(wb.Wire());
     wf.Perform();

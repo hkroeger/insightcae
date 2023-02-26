@@ -178,8 +178,8 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
 //    connect(modeltree_, &QModelTree::insertIntoNotebook,
 //            this, &IQISCADModelEditor::onInsertNotebookText);
 
-//    connect(model_, &ISCADModel::updateTitle,
-//            this, &IQISCADModelEditor::onUpdateTitle);
+    connect(modelEdit_, &IQISCADModelScriptEdit::updateTitle,
+            this, &IQISCADModelWindow::onUpdateTitle);
 
 //    connect(viewer_, &QoccViewWidget::addEvaluationToModel,
 //            modeltree_, &QModelTree::onAddEvaluation);

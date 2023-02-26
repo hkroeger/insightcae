@@ -51,14 +51,16 @@ void IQVTKCADModel3DViewerPanning::pan(int x, int y)
         this->ComputeWorldToDisplay(viewFocus[0], viewFocus[1], viewFocus[2], viewFocus);
         focalDepth = viewFocus[2];
 
+        auto p1=viewer().widgetCoordsToVTK(QPoint(x,y));
         this->ComputeDisplayToWorld(
-                    x, viewer().size().height() - y, focalDepth, newPickPoint);
+                    p1.x(), p1.y(), focalDepth, newPickPoint);
 
         // Has to recalc old mouse point since the viewport has moved,
         // so can't move it outside the loop
 
+        auto p2=viewer().widgetCoordsToVTK(lastMouseLocation());
         this->ComputeDisplayToWorld(
-                    lastMouseLocation().x(), viewer().size().height() - lastMouseLocation().y(), focalDepth, oldPickPoint);
+                    p2.x(), p2.y(), focalDepth, oldPickPoint);
 
         // Camera motion is reversed
 

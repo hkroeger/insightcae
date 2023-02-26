@@ -40,6 +40,7 @@
 #include "vtkImageActor.h"
 #include "vtkImageMapper3D.h"
 #include "vtkPointData.h"
+#include "vtkPropPicker.h"
 #include "vtkPointSource.h"
 #include "vtkPointPicker.h"
 
@@ -1229,13 +1230,19 @@ void IQVTKCADModel3DViewer::deactivateSubshapeSelectionAll()
 
 vtkActor *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) const
 {
+    auto p = widgetCoordsToVTK(clickPos);
+
     // Pick from this location.
-    insight::dbg()<<"click pos = "<<clickPos.x()<<" "<<clickPos.y()<<std::endl;
+    insight::dbg()
+            << "click pos = "
+            << clickPos.x()<<" "<<clickPos.y()
+            << " ("<<p.x()<<" "<<p.y()<<")"
+            << std::endl;
 
 //    auto picker = vtkSmartPointer<vtkPointPicker>::New();
-    auto picker = vtkSmartPointer<vtkCellPicker>::New();
-    picker->Pick(clickPos.x(), size().height()-clickPos.y()-1, 0, ren_);
-
+//    auto picker = vtkSmartPointer<vtkCellPicker>::New();
+    auto picker = vtkSmartPointer<vtkPropPicker>::New();
+    picker->Pick(p.x(), p.y(), 0, ren_);
     return picker->GetActor();
 }
 
@@ -1374,6 +1381,22 @@ QSize IQVTKCADModel3DViewer::sizeHint() const
     return QSize(1024,768);
 }
 
+static const double DevicePixelRatioTolerance = 1e-5;
+
+QPointF IQVTKCADModel3DViewer::widgetCoordsToVTK(const QPoint &widgetCoords) const
+{
+    auto pw = vtkWidget_.mapFromParent(widgetCoords);
+    double DevicePixelRatio=vtkWidget_.devicePixelRatioF();
+    QPoint p(
+        static_cast<int>(pw.x() * DevicePixelRatio + DevicePixelRatioTolerance),
+        static_cast<int>(pw.y() * DevicePixelRatio + DevicePixelRatioTolerance)
+        );
+    return QPointF(
+                p.x(),
+                vtkWidget_.size().height()-p.y()-1
+                );
+}
+
 
 double IQVTKCADModel3DViewer::getScale() const
 {
@@ -1490,11 +1513,11 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
             currentUserActivity_->onRightButtonUp( e->modifiers(), e->pos() );
         else
         {
-            vtkNew<vtkPropPicker> picker;
-            picker->Pick(e->pos().x(), size().height() -  e->pos().y(),
-                         0, ren_ );
+//            vtkNew<vtkPropPicker> picker;
+//            picker->Pick(e->pos().x(), size().height() -  e->pos().y(),
+//                         0, ren_ );
 
-            auto pickedActor = picker->GetActor();
+            auto pickedActor = findActorUnderCursorAt(e->pos());
 
             if (pickedActor != nullptr)
             {

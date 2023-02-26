@@ -385,6 +385,7 @@ private:
     QTimer redrawTimer_;
     void scheduleRedraw();
 
+
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
     void onModelAboutToBeReset();
@@ -404,6 +405,7 @@ public:
     void setModel(QAbstractItemModel* model) override;
 
     QSize sizeHint() const override;
+    QPointF widgetCoordsToVTK(const QPoint& widgetCoords) const;
 
 public:
     void highlightItem( insight::cad::FeaturePtr feat ) override;

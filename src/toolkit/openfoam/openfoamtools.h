@@ -747,8 +747,9 @@ std::ostream &operator<<(std::ostream& os, const eMesh& emesh);
 void exportEMesh(const EMeshPtsList& pts, const boost::filesystem::path& filename);
 void exportEMesh(const EMeshPtsListList& pts, const boost::filesystem::path& filename);
 
-
+#ifndef SWIG
 std::ostream& operator<<(std::ostream& os, const std::set<boost::filesystem::path>& paths);
+#endif
 
 class OpenFOAMCaseDirs
 {

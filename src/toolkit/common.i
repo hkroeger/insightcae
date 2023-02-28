@@ -17,6 +17,25 @@
 %shared_ptr(insight::ResultElement);
 %shared_ptr(insight::ResultElementCollection);
 %shared_ptr(insight::ResultSet);
+%shared_ptr(insight::PlotField);
+%shared_ptr(insight::PolarContourChart);
+
+%typemap(in) boost::optional<double> %{
+    if($input == Py_None)
+        $1 = boost::optional<double>();
+    else
+        $1 = boost::optional<double>(PyFloat_AsDouble($input));
+%}
+
+%typemap(out) boost::optional<double> %{
+    if($1)
+        $result = PyFloat_FromDouble(*$1);
+    else
+    {
+        $result = Py_None;
+        Py_INCREF(Py_None);
+    }
+%}
 
 %typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) insight::ParameterSet::EntryList&
 {

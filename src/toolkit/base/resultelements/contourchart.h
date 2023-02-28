@@ -59,13 +59,15 @@ class PolarContourChart
     boost::optional<double> zClipMin_;
     boost::optional<double> zClipMax_;
 
+
 public:
     declareType ( "PolarContourChart" );
 
     PolarContourChart(
             const std::string& shortdesc,
             const std::string& longdesc,
-            const std::string& unit);
+            const std::string& unit
+            );
 
     PolarContourChart
     (

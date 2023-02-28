@@ -29,8 +29,10 @@
 #include "gsl/gsl_multimin.h"
 #include "gsl/gsl_integration.h"
 
-#include "boost/shared_ptr.hpp"
+#include "boost/optional.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
+
+#include "base/exception.h"
 
 // #define SIGN(x) ((x)<0.0?-1.0:1.0)
 
@@ -62,6 +64,17 @@ class GSLExceptionHandling
 public:
   GSLExceptionHandling();
   ~GSLExceptionHandling();
+};
+
+class GSLException : public Exception
+{
+    int gsl_errno_;
+public:
+    GSLException(
+            const char * reason, const char * file,
+            int line, int gsl_errno );
+
+    int gsl_errno() const;
 };
 
 // ====================================================================================
@@ -285,6 +298,15 @@ public:
    * integrate column col fromx=a to x=b
    */
   double integrate(double a, double b, int col=0) const;
+
+  /**
+   * solve for x at given y-value
+   */
+  double solve(
+          double y, int col=0,
+          boost::optional<double> a=boost::optional<double>(),
+          boost::optional<double> b=boost::optional<double>() ) const;
+
   /**
    * returns a single y-value from column col
    */

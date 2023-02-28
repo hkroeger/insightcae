@@ -106,6 +106,7 @@ public:
   operator std::string() const;
 
   inline const std::string& message() const { return message_; }
+  inline std::string& messageRef() { return message_; }
   inline const std::string& strace() const { return strace_; }
 
   const char* what() const noexcept override;

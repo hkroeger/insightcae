@@ -19,6 +19,7 @@ template<class Base>
 class GnuplotRenderer
     : public Base
 {
+  const ChartData* chartData_;
 
   void gnuplotCommand(gnuplotio::Gnuplot& gp) const override
   {
@@ -66,7 +67,8 @@ class GnuplotRenderer
 
 public:
   GnuplotRenderer(const ChartData* data)
-  : Base(data)
+  : Base(),
+    chartData_(data)
   {}
 };
 

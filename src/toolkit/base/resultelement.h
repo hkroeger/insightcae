@@ -76,7 +76,7 @@ public:
     inline void setOrder ( double o ) { order_=o; }
     inline double order() const { return order_; }
 
-    virtual void writeLatexHeaderCode ( std::ostream& f ) const;
+    virtual void insertLatexHeaderCode ( std::set<std::string>& headerCode ) const;
     virtual void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const;
     virtual void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const;
 

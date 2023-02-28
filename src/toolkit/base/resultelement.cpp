@@ -85,9 +85,8 @@ const SimpleLatex& ResultElement::unit() const
 }
 
 
-void ResultElement::writeLatexHeaderCode ( std::ostream& ) const
-{
-}
+void ResultElement::insertLatexHeaderCode ( std::set<std::string>& ) const
+{}
 
 void ResultElement::writeLatexCode ( ostream& , const std::string& , int , const boost::filesystem::path&  ) const
 {

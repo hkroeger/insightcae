@@ -69,7 +69,7 @@ public:
     }
 
     virtual void writeGnuplotData ( std::ostream& f ) const;
-    void writeLatexHeaderCode ( std::ostream& f ) const override;
+    void insertLatexHeaderCode ( std::set<std::string>& f ) const override;
     void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 

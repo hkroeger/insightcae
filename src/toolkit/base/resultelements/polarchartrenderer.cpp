@@ -6,8 +6,8 @@ namespace insight {
 
 
 
-PolarChartRenderer::PolarChartRenderer(const ChartData *data, double phi_unit)
-  : ChartRenderer(data),
+PolarChartRenderer::PolarChartRenderer(double phi_unit)
+  : ChartRenderer(),
     phi_unit_(phi_unit)
 {}
 

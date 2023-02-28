@@ -14,7 +14,7 @@ protected:
   double phi_unit_;
 
 public:
-  PolarChartRenderer(const ChartData* data, double phi_unit);
+  PolarChartRenderer(double phi_unit);
 };
 
 

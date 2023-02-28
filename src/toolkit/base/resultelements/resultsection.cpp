@@ -48,10 +48,11 @@ void ResultSection::writeLatexCode ( ostream& f, const string& name, int level, 
     writeLatexCodeOfElements ( f, name, level, outputfilepath );
 }
 
-void ResultSection::writeLatexHeaderCode ( ostream& f ) const
+void ResultSection::insertLatexHeaderCode ( std::set<std::string>& hc ) const
 {
-    for ( const value_type& i: *this ) {
-        i.second->writeLatexHeaderCode ( f );
+    for ( const value_type& i: *this )
+    {
+        i.second->insertLatexHeaderCode ( hc );
     }
 }
 

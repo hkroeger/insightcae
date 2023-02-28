@@ -62,24 +62,26 @@ bool DoubleRangeParameter::isDifferent(const Parameter& p) const
 
 std::string DoubleRangeParameter::latexRepresentation() const
 {
-  std::ostringstream oss;
-  oss << *values_.begin();
-  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
-  {
-    oss<<"; "<<*i;
-  }
-  return oss.str();
+  return toStringList(values_, "%g", "; ");
+
+//  std::ostringstream oss;
+//  oss << *values_.begin();
+//  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
+//  {
+//    oss<<"; "<<*i;
+//  }
+//  return oss.str();
 }
 
 std::string DoubleRangeParameter::plainTextRepresentation(int indent) const
 {
-  std::ostringstream oss;
-  oss << *values_.begin();
-  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
-  {
-    oss<<"; "<<*i;
-  }
-  return std::string(indent, ' ') + oss.str() + '\n';
+//  std::ostringstream oss;
+//  oss << *values_.begin();
+//  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
+//  {
+//    oss<<"; "<<*i;
+//  }
+  return std::string(indent, ' ') + toStringList(values_, "%g", "; ") /*oss.str()*/ + '\n';
 }
 
 DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
@@ -94,16 +96,16 @@ rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 
-    std::ostringstream oss;
-    oss << *values_.begin();
-    for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
-    {
-      oss<<" "<<*i;
-    }
+//    std::ostringstream oss;
+//    oss << *values_.begin();
+//    for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
+//    {
+//      oss<<" "<<*i;
+//    }
     child->append_attribute(doc.allocate_attribute
     (
       "values",
-      doc.allocate_string(oss.str().c_str())
+      doc.allocate_string( /*oss.str()*/toStringList(values_, "%g", " ").c_str() )
     ));
     return child;
 }

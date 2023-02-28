@@ -137,7 +137,7 @@ public:
     const PlotCurve& plotCurve(const std::string& plainTextLabel) const;
     virtual void generatePlotImage ( const boost::filesystem::path& imagepath ) const;
 
-    void writeLatexHeaderCode ( std::ostream& f ) const override;
+    void insertLatexHeaderCode ( std::set<std::string>& f ) const override;
     void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 

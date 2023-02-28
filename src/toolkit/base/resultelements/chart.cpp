@@ -214,10 +214,10 @@ void Chart::generatePlotImage( const path& imagepath ) const
 }
 
 
-void Chart::writeLatexHeaderCode(std::ostream& f) const
+void Chart::insertLatexHeaderCode(std::set<std::string>& h) const
 {
-  f<<"\\usepackage{graphicx}\n";
-  f<<"\\usepackage{placeins}\n";
+  h.insert("\\usepackage{graphicx}");
+  h.insert("\\usepackage{placeins}");
 }
 
 

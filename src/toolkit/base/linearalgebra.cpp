@@ -72,12 +72,15 @@ const double LSMALL=1e-6;
 void insight_gsl_error_handler
 (
  const char* reason,
- const char*,
- int,
- int
+ const char* file,
+ int line,
+ int gsl_errno
 )
 {
-  throw insight::Exception("Error in GSL subroutine: "+std::string(reason));
+  throw insight::GSLException(
+                reason, file,
+                line, gsl_errno
+                );
 }
 
 GSLExceptionHandling::GSLExceptionHandling()
@@ -90,6 +93,20 @@ GSLExceptionHandling::~GSLExceptionHandling()
   gsl_set_error_handler(oldHandler_);
 }
 
+
+
+GSLException::GSLException(const char *reason, const char *file, int line, int gsl_errno)
+    : insight::Exception(
+          "Error in GSL subroutine: %s (errno %d)",
+          reason, gsl_errno
+          ),
+      gsl_errno_(gsl_errno)
+{}
+
+int GSLException::gsl_errno() const
+{
+    return gsl_errno_;
+}
 
 mat vec1(double x)
 {
@@ -389,8 +406,16 @@ double F_obj(double x, void *param)
   return model(x);
 }
 
+
+
+
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
 {
+  insight::CurrentExceptionContext ex(
+              str(format("solving for root between x_min=%g and x_max=%g")
+                  % x_min % x_max )
+              );
+
   int i, times, status;
   gsl_function f;
   gsl_root_fsolver *workspace_f;
@@ -399,32 +424,47 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
  
   workspace_f = gsl_root_fsolver_alloc(gsl_root_fsolver_bisection);
 
-  f.function = &F_obj;
-  f.params = const_cast<void *>(static_cast<const void*>(&model));
-
-  x_l = x_min;
-  x_r = x_max;
-
-  gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
-
-  for(times = 0; times < 100; times++)
+  try
   {
-      status = gsl_root_fsolver_iterate(workspace_f);
 
-      x_l = gsl_root_fsolver_x_lower(workspace_f);
-      x_r = gsl_root_fsolver_x_upper(workspace_f);
+      f.function = &F_obj;
+      f.params = const_cast<void *>(static_cast<const void*>(&model));
 
-      status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
-      if(status != GSL_CONTINUE)
+      x_l = x_min;
+      x_r = x_max;
+
+      gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
+
+
+      for(times = 0; times < 100; times++)
       {
-	  break;
-      }
-  }
+          status = gsl_root_fsolver_iterate(workspace_f);
 
-  gsl_root_fsolver_free(workspace_f);
+          x_l = gsl_root_fsolver_x_lower(workspace_f);
+          x_r = gsl_root_fsolver_x_upper(workspace_f);
+
+          status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
+          if(status != GSL_CONTINUE)
+          {
+            break;
+          }
+      }
+
+      gsl_root_fsolver_free(workspace_f);
+  }
+  catch (GSLException& ex)
+  {
+      gsl_root_fsolver_free(workspace_f);
+      ex.messageRef() +=
+              str(format("\ny(x_min)=%g, y(x_max)=%g, y(0.5*(x_min+x_max))=%g")
+                  % model(x_min) % model(x_max) % model(0.5*(x_min+x_max)) );
+      throw ex;
+  }
 
   return x_l;
 }
+
+
 
 
 double nonlinearSolve1D(const std::function<double(double)>& model, double x_min, double x_max)
@@ -1016,6 +1056,26 @@ double Interpolator::integrate(double a, double b, int col) const
   return gsl_spline_eval_integ( &(spline[col]), a, b, &(*acc) );
 }
 
+
+
+double Interpolator::solve(
+        double yTarget, int col,
+        boost::optional<double> av,
+        boost::optional<double> bv ) const
+{
+    double a = firstX();
+    double b = lastX();
+    if (av) a=*av;
+    if (bv) b=*bv;
+
+    return nonlinearSolve1D(
+                [&](double x) -> double { return y(x, col) - yTarget; },
+                a, b
+            );
+}
+
+
+
 double Interpolator::y(double x, int col, OutOfBounds* outOfBounds) const
 {
   if (col>=spline.size())
@@ -1232,5 +1292,7 @@ CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x, cons
     ez=arma::cross(ex,ey);
     ez/=arma::norm(ez,2);
 }
+
+
 
 }

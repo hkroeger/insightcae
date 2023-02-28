@@ -42,8 +42,7 @@ FileResult::FileResult
   }
 }
 
-void FileResult::writeLatexHeaderCode ( std::ostream& ) const
-{}
+
 
 void FileResult::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path& /*outputfilepath*/ ) const
 {

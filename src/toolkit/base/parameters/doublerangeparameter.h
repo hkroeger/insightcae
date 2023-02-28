@@ -30,6 +30,19 @@ namespace insight
 {
 
 
+template<class Container>
+std::string toStringList(const Container& vals, const std::string& fmt, const std::string& sep = "; " )
+{
+    std::vector<std::string> strVals;
+    std::transform(
+                vals.begin(), vals.end(),
+                std::back_inserter(strVals),
+                [&fmt](const typename Container::value_type& v) { return str(boost::format(fmt)%v); }
+    );
+    return boost::join(strVals, sep);
+}
+
+
 
 class DoubleRangeParameter
     : public Parameter

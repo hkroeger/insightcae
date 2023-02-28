@@ -131,11 +131,11 @@ ResultElementPtr TabularResult::clone() const
 }
 
 
-void TabularResult::writeLatexHeaderCode ( ostream& f ) const
+void TabularResult::insertLatexHeaderCode ( std::set<std::string>& hc ) const
 {
-    insight::ResultElement::writeLatexHeaderCode ( f );
-    f<<"\\usepackage{longtable}\n";
-    f<<"\\usepackage{placeins}\n";
+    insight::ResultElement::insertLatexHeaderCode ( hc );
+    hc.insert("\\usepackage{longtable}");
+    hc.insert("\\usepackage{placeins}");
 }
 
 

@@ -160,10 +160,11 @@ void ResultSet::transfer ( const ResultSet& other )
 }
 
 
-void ResultSet::writeLatexHeaderCode ( std::ostream& f ) const
+void ResultSet::insertLatexHeaderCode ( std::set<std::string>& hc ) const
 {
-    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
-        i->second->writeLatexHeaderCode ( f );
+    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ )
+    {
+        i->second->insertLatexHeaderCode(hc);
     }
 }
 
@@ -383,7 +384,13 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
           "\\renewlist{enumerate}{enumerate}{10}\n"
 
           ;
-    writeLatexHeaderCode ( header );
+
+    std::set<std::string> headerCode;
+    insertLatexHeaderCode ( headerCode );
+    for (const auto& hc: headerCode)
+    {
+        header << hc << std::endl;
+    }
 
     writeLatexCode ( content, "", 0, filepath.parent_path() );
 

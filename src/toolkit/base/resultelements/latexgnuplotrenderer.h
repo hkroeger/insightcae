@@ -28,7 +28,6 @@ class LaTeXGnuplotRenderer : public Base
 
 
 protected:
-
   virtual void gnuplotCommand(gnuplotio::Gnuplot&) const =0;
 
 
@@ -65,7 +64,12 @@ public:
       auto gp = make_Gnuplot();
 
       std::string gpfname = (tmp/(bn+".tex")).generic_path().string();
-      *gp<<"set terminal cairolatex pdf standalone color dash linewidth 3;";
+
+      double w=15.;
+      *gp<<str(format(
+          "set terminal cairolatex pdf standalone color dash linewidth 3 size %gcm,%gcm;")
+               % w % (w*this->canvasSizeRatio())
+               );
       *gp<<"set output '" << gpfname << "';";
       insight::dbg()<<gpfname<<std::endl;
 

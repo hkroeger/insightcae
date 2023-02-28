@@ -16,10 +16,10 @@ struct ChartData;
 class ChartRenderer
 {
 protected:
-  const ChartData* chartData_;
+  virtual double canvasSizeRatio() const;
 
 public:
-  ChartRenderer(const ChartData* data);
+  ChartRenderer();
   virtual ~ChartRenderer();
 
   virtual void render(const boost::filesystem::path& outimagepath) const =0;

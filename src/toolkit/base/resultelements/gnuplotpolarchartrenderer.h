@@ -11,13 +11,15 @@ template<class Base>
 class GnuplotPolarChartRenderer
     : public Base
 {
+  const ChartData* chartData_;
 
   void gnuplotCommand(gnuplotio::Gnuplot& gp) const override
   {
    gp<<this->chartData_->addinit_<<";";
    gp<<"unset border;"
        " set polar;"
-       " set grid polar 60.*pi/180.;"
+       " set theta counterclockwise bottom;"
+       " set grid polar 45.*pi/180.;"
        " set trange [0:2.*pi];"
        " set key rmargin;"
        " set size square;"
@@ -30,13 +32,17 @@ class GnuplotPolarChartRenderer
     rmax=std::max(rmax, pc.xy().col(1).max());
    }
 
-   gp<<"set_label(x, text) = sprintf(\"set label '%s' at ("<<rmax<<"*1.05*cos(%f)), ("<<rmax<<"*1.05*sin(%f)) center\", text, x, x);"
+   gp<<"set_label(x, text) = sprintf(\"set label '%s' at polar (%f), ("<<rmax<<") center\", text, x);"
     <<"eval set_label(0, \"$0^\\\\circ$\");"
-   <<"eval set_label(60.*pi/180., \"$60^\\\\circ$\");"
-   <<"eval set_label(120.*pi/180., \"$120^\\\\circ$\");"
-   <<"eval set_label(180.*pi/180., \"$180^\\\\circ$\");"
-   <<"eval set_label(240.*pi/180., \"$240^\\\\circ$\");"
-   <<"eval set_label(300.*pi/180., \"$300^\\\\circ$\");";
+    <<"eval set_label(45.*pi/180., \"$45^\\\\circ$\");"
+    //<<"eval set_label(90.*pi/180., \"$90^\\\\circ$\");"
+    <<"eval set_label(135.*pi/180., \"$135^\\\\circ$\");"
+    <<"eval set_label(180.*pi/180., \"$180^\\\\circ$\");"
+    <<"eval set_label(225.*pi/180., \"$225^\\\\circ$\");"
+    <<"eval set_label(270.*pi/180., \"$270^\\\\circ$\");"
+    <<"eval set_label(315.*pi/180., \"$315^\\\\circ$\");"
+    <<"set rlabel '"<<this->chartData_->ylabel_<<"';"
+      ;
 
    //gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; ";
 
@@ -85,7 +91,8 @@ class GnuplotPolarChartRenderer
 
 public:
   GnuplotPolarChartRenderer(const ChartData* data, double phi_unit)
-      : Base(data, phi_unit)
+      : Base(phi_unit),
+        chartData_(data)
   {}
 };
 

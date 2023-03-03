@@ -77,6 +77,7 @@ public:
   (
       const boost::filesystem::path& localDir,
       const boost::filesystem::path& remoteDir,
+      bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
                           std::function<void(int,const std::string&)>()
@@ -86,6 +87,7 @@ public:
   (
       const boost::filesystem::path& localDir,
       const boost::filesystem::path& remoteDir,
+      bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
                           std::function<void(int,const std::string&)>()

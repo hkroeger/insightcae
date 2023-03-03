@@ -244,6 +244,7 @@ void WSLLinuxServer::syncToRemote
 (
     const boost::filesystem::path& localDir,
     const boost::filesystem::path& remoteDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -257,7 +258,7 @@ void WSLLinuxServer::syncToRemote
          "--delete",
          "--info=progress",
 
-         "--exclude", "processor*",
+//         "--exclude", "processor*",
          "--exclude", "*.foam",
          "--exclude", "postProcessing",
          "--exclude", "*.socket",
@@ -265,6 +266,12 @@ void WSLLinuxServer::syncToRemote
          "--exclude", "archive",
          "--exclude", "mnt_remote"
         };
+
+    if (!includeProcessorDirectories)
+    {
+        args.push_back("--exclude");
+        args.push_back("processor*");
+    }
 
     for (const auto& ex: exclude_pattern)
     {
@@ -285,6 +292,7 @@ void WSLLinuxServer::syncToLocal
 (
     const boost::filesystem::path& localDir,
     const boost::filesystem::path& remoteDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -298,7 +306,7 @@ void WSLLinuxServer::syncToLocal
     {
       "-az",
       "--info=progress",
-      "--exclude", "processor*",
+//      "--exclude", "processor*",
       "--exclude", "*.foam",
       "--exclude", "*.socket",
       "--exclude", "backup",
@@ -306,6 +314,11 @@ void WSLLinuxServer::syncToLocal
       "--exclude", "mnt_remote"
     };
 
+    if (!includeProcessorDirectories)
+    {
+        args.push_back("--exclude");
+        args.push_back("processor*");
+    }
 
     for (const auto& ex: exclude_pattern)
     {

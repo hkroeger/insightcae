@@ -290,8 +290,36 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
     }
   );
 
-  connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
-  connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
+  connect(ui->action_syncLocalToRemote, &QAction::triggered, this,
+          std::bind(&MainWindow::syncLocalToRemote, this, false) );
+  connect(ui->action_syncRemoteToLocal, &QAction::triggered, this,
+          std::bind(&MainWindow::syncRemoteToLocal, this, false) );
+
+  connect(ui->action_syncLocalToRemote_includeprocessor, &QAction::triggered, this,
+          std::bind(&MainWindow::syncLocalToRemote, this, true) );
+  connect(ui->action_syncRemoteToLocal_includeprocessor, &QAction::triggered, this,
+          std::bind(&MainWindow::syncRemoteToLocal, this, true) );
+
+
+  setBWLimit(-1);
+  connect(ui->action_setbwlimit, &QAction::triggered, this,
+          [&]()
+          {
+              if (remote_)
+              {
+                  bool ok=false;
+                  int newlimit = QInputDialog::getInt(
+                              this,
+                              "Bandwidth limit",
+                              "Enter bandwidth limit (kB/s)",
+                              11000, -1,
+                              2147483647, 1000,
+                              &ok);
+                  if (ok) setBWLimit(newlimit);
+              }
+          }
+  );
+
   connect(ui->sync_to_remote, &QPushButton::clicked, this, &MainWindow::syncLocalToRemote);
   connect(ui->sync_to_local, &QPushButton::clicked, this, &MainWindow::syncRemoteToLocal);
   connect(ui->actionRemote_write_and_copy_to_local, &QAction::triggered,
@@ -349,8 +377,6 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(refreshTimer_, &QTimer::timeout, this, &MainWindow::onRefreshJobList);
   refreshTimer_->start(5000);
 
-  readSettings(); 
-
   progressbar_=new QProgressBar(this);
   statusBar()->addPermanentWidget(progressbar_);
 
@@ -361,6 +387,9 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
           this, reccfg );
     remote_->commit(location);
   }
+
+  readSettings(); // after remote location is set
+
 }
 
 
@@ -383,11 +412,13 @@ MainWindow::~MainWindow()
 
 
 
-void MainWindow::syncLocalToRemote()
+void MainWindow::syncLocalToRemote(bool includeProcDirs)
 {
   if (remote_)
   {
-    auto *rstr = new insight::RunSyncToRemote(remote_->exeConfig());
+    auto *rstr = new insight::RunSyncToRemote(
+                remote_->exeConfig(),
+                includeProcDirs );
 
     connect(rstr, &insight::RunSyncToRemote::progressValueChanged, progressbar_, &QProgressBar::setValue);
     connect(rstr, &insight::RunSyncToRemote::progressTextChanged,
@@ -411,11 +442,13 @@ void MainWindow::syncLocalToRemote()
 
 
 
-void MainWindow::syncRemoteToLocal()
+void MainWindow::syncRemoteToLocal(bool includeProcDirs)
 {
   if (remote_)
   {
-    auto* rstl = new insight::RunSyncToLocal(remote_->exeConfig());
+    auto* rstl = new insight::RunSyncToLocal(
+                remote_->exeConfig(),
+                includeProcDirs);
 
     connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
             progressbar_, &QProgressBar::setValue);
@@ -435,6 +468,36 @@ void MainWindow::syncRemoteToLocal()
     rstl->start();
   }
 }
+
+
+
+
+void MainWindow::setBWLimit(int bwlimit)
+{
+    QString label = "Set bandwidth limit";
+
+    if (remote_)
+    {
+        auto srv = remote_->exeConfig().server();
+        srv->setTransferBandWidthLimit(bwlimit);
+
+        if (bwlimit>0)
+        {
+            label = QString("%1 (%2)")
+                .arg(label)
+                .arg(bwlimit);
+        }
+        else
+        {
+            label = label+" (unlimited)";
+        }
+    }
+
+    ui->action_setbwlimit->setText(label);
+}
+
+
+
 
 void MainWindow::onStartParaview()
 {
@@ -474,6 +537,13 @@ void MainWindow::saveSettings()
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
     settings.setValue("vsplitter", ui->v_splitter->saveState());
+    if (remote_)
+    {
+        settings.setValue(
+                    "bwlimit",
+                    remote_->exeConfig().server()
+                    ->transferBandWidthLimit() );
+    }
 }
 
 
@@ -483,6 +553,13 @@ void MainWindow::readSettings()
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
     ui->v_splitter->restoreState(settings.value("vsplitter").toByteArray());
+    if (remote_)
+    {
+        remote_->exeConfig().server()
+                ->setTransferBandWidthLimit(
+                    settings.value("bwlimit").toInt()
+                    );
+    }
 }
 
 
@@ -540,7 +617,7 @@ void MainWindow::remoteWriteAndCopyBack(bool parallel)
            [this,aj](int rv) {
             if (rv==0)
             {
-              this->syncRemoteToLocal();
+              this->syncRemoteToLocal(false);
             }
             aj->deleteLater();
            });

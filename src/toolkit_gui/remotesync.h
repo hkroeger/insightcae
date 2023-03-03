@@ -16,11 +16,12 @@ class TOOLKIT_GUI_EXPORT RunSyncToRemote : public QThread
   Q_OBJECT
 
   insight::RemoteExecutionConfig& rec_;
+  bool includeProcDirs_;
 
   void run() override;
 
 public:
-  RunSyncToRemote(insight::RemoteExecutionConfig& rec);
+  RunSyncToRemote(insight::RemoteExecutionConfig& rec, bool includeProcDirs);
 
 Q_SIGNALS:
   void progressValueChanged(int progress);
@@ -36,11 +37,12 @@ class TOOLKIT_GUI_EXPORT RunSyncToLocal : public QThread
   Q_OBJECT
 
   insight::RemoteExecutionConfig& rec_;
+  bool includeProcDirs_;
 
   void run() override;
 
 public:
-  RunSyncToLocal(insight::RemoteExecutionConfig& rec);
+  RunSyncToLocal(insight::RemoteExecutionConfig& rec, bool includeProcDirs);
 
 Q_SIGNALS:
   void progressValueChanged(int progress);

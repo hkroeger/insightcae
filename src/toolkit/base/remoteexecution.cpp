@@ -169,22 +169,31 @@ void RemoteExecutionConfig::putFile
 
 
 void RemoteExecutionConfig::syncToRemote(
+    bool includeProcessorDirectories,
     const std::vector<string> &exclude_pattern,
     std::function<void (int, const string &)> progress_callback
     )
 {
-  RemoteLocation::syncToRemote(localDir_, exclude_pattern, progress_callback);
+  RemoteLocation::syncToRemote(
+              localDir_,
+              includeProcessorDirectories,
+              exclude_pattern, progress_callback );
 }
 
 
 
 
 void RemoteExecutionConfig::syncToLocal(
+    bool includeProcessorDirectories,
     bool skipTimeSteps,
     const std::vector<string> &exclude_pattern,
     std::function<void (int, const string &)> progress_callback)
 {
-    RemoteLocation::syncToLocal(localDir_, skipTimeSteps, exclude_pattern, progress_callback);
+    RemoteLocation::syncToLocal(
+                localDir_,
+                includeProcessorDirectories,
+                skipTimeSteps,
+                exclude_pattern, progress_callback);
 }
 
 

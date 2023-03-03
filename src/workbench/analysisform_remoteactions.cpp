@@ -98,7 +98,7 @@ void AnalysisForm::upload()
 
   remoteExecutionConfiguration()->commit( localCaseDirectory() );
 
-  auto *rstr = new insight::RunSyncToRemote( remoteExecutionConfiguration()->exeConfig() );
+  auto *rstr = new insight::RunSyncToRemote( remoteExecutionConfiguration()->exeConfig(), false );
 
   connect(rstr, &insight::RunSyncToRemote::progressValueChanged,
           progressbar_, &QProgressBar::setValue);
@@ -165,7 +165,7 @@ void AnalysisForm::download()
 
 void AnalysisForm::downloadFromRemote(std::function<void()> completionCallback)
 {
-  auto* rstl = new insight::RunSyncToLocal( remoteExecutionConfiguration()->exeConfig() );
+  auto* rstl = new insight::RunSyncToLocal( remoteExecutionConfiguration()->exeConfig(), false );
 
   connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
           progressbar_, &QProgressBar::setValue);

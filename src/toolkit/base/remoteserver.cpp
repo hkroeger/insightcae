@@ -133,6 +133,16 @@ void RemoteServer::lookForPattern(
 
 
 
+void RemoteServer::setTransferBandWidthLimit(int kBPerSecond)
+{}
+
+int RemoteServer::transferBandWidthLimit() const
+{
+    return -1;
+}
+
+
+
 
 void RemoteServer::launch()
 {

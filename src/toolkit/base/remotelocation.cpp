@@ -448,6 +448,7 @@ void RemoteLocation::putFile
 void RemoteLocation::syncToRemote
 (
     const boost::filesystem::path& localDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -455,7 +456,9 @@ void RemoteLocation::syncToRemote
   CurrentExceptionContext ex("upload local directory "+localDir.string()+" to remote location");
   assertValid();
 
-  server()->syncToRemote(localDir, remoteDir_, exclude_pattern, pf);
+  server()->syncToRemote(localDir, remoteDir_,
+                         includeProcessorDirectories,
+                         exclude_pattern, pf);
 }
 
 
@@ -464,6 +467,7 @@ void RemoteLocation::syncToRemote
 void RemoteLocation::syncToLocal
 (
     const boost::filesystem::path& localDir,
+    bool includeProcessorDirectories,
     bool skipTimeSteps,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
@@ -491,7 +495,10 @@ void RemoteLocation::syncToLocal
     }
   }
 
-  server()->syncToLocal(localDir, remoteDir_, excl, pf);
+  server()->syncToLocal(
+              localDir, remoteDir_,
+              includeProcessorDirectories,
+              excl, pf);
 }
 
 

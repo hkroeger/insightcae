@@ -5,14 +5,15 @@
 namespace insight {
 
 
-RunSyncToRemote::RunSyncToRemote(insight::RemoteExecutionConfig& rec)
-  : rec_(rec)
+RunSyncToRemote::RunSyncToRemote(insight::RemoteExecutionConfig& rec, bool includeProcDirs)
+  : rec_(rec), includeProcDirs_(includeProcDirs)
 {}
 
 void RunSyncToRemote::run()
 {
   rec_.syncToRemote
       (
+        includeProcDirs_,
         {},
         [&](int progress, const std::string& progress_text)
         {
@@ -26,14 +27,15 @@ void RunSyncToRemote::run()
 
 
 
-RunSyncToLocal::RunSyncToLocal(insight::RemoteExecutionConfig& rec)
-  : rec_(rec)
+RunSyncToLocal::RunSyncToLocal(insight::RemoteExecutionConfig& rec, bool includeProcDirs)
+  : rec_(rec), includeProcDirs_(includeProcDirs)
 {}
 
 void RunSyncToLocal::run()
 {
   rec_.syncToLocal
       (
+        includeProcDirs_,
         false,
         {},
         [&](int progress, const std::string& progress_text)

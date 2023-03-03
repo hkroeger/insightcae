@@ -114,6 +114,7 @@ void SSHLinuxServer::runRsync
 
 
 SSHLinuxServer::SSHLinuxServer(ConfigPtr serverConfig)
+    : bwlimit_(-1)
 {
   serverConfig_=serverConfig;
 }
@@ -237,12 +238,21 @@ void SSHLinuxServer::putFile
 }
 
 
+void SSHLinuxServer::setTransferBandWidthLimit(int kBPerSecond)
+{
+    bwlimit_=kBPerSecond;
+}
 
+int SSHLinuxServer::transferBandWidthLimit() const
+{
+    return bwlimit_;
+}
 
 void SSHLinuxServer::syncToRemote
 (
     const boost::filesystem::path& localDir,
     const boost::filesystem::path& remoteDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -256,7 +266,6 @@ void SSHLinuxServer::syncToRemote
          "--delete",
          "--info=progress",
 
-         "--exclude", "processor*",
          "--exclude", "*.foam",
          "--exclude", "postProcessing",
          "--exclude", "*.socket",
@@ -265,10 +274,23 @@ void SSHLinuxServer::syncToRemote
          "--exclude", "mnt_remote"
         };
 
+    if (!includeProcessorDirectories)
+    {
+        args.push_back("--exclude");
+        args.push_back("processor*");
+    }
+
     for (const auto& ex: exclude_pattern)
     {
       args.push_back("--exclude");
       args.push_back(ex);
+    }
+
+    if (bwlimit_>0)
+    {
+        args.push_back(
+                    str(format("--bwlimit=%d")
+                        % bwlimit_ ));
     }
 
     args.push_back(localDir.string()+"/");
@@ -284,6 +306,7 @@ void SSHLinuxServer::syncToLocal
 (
     const boost::filesystem::path& localDir,
     const boost::filesystem::path& remoteDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -297,7 +320,7 @@ void SSHLinuxServer::syncToLocal
     {
       "-az",
       "--info=progress",
-      "--exclude", "processor*",
+      //"--exclude", "processor*",
       "--exclude", "*.foam",
       "--exclude", "*.socket",
       "--exclude", "backup",
@@ -305,10 +328,23 @@ void SSHLinuxServer::syncToLocal
       "--exclude", "mnt_remote"
     };
 
+    if (!includeProcessorDirectories)
+    {
+        args.push_back("--exclude");
+        args.push_back("processor*");
+    }
+
     for (const auto& ex: exclude_pattern)
     {
       args.push_back("--exclude");
       args.push_back(ex);
+    }
+
+    if (bwlimit_>0)
+    {
+        args.push_back(
+                    str(format("--bwlimit=%d")
+                        % bwlimit_ ));
     }
 
     args.push_back(hostName()+":"+toUnixPath(remoteDir)+"/");

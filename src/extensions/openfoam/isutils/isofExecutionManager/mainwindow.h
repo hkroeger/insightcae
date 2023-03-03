@@ -107,10 +107,11 @@ public:
 
     void remoteWriteAndCopyBack(bool parallel);
 
-public Q_SLOTS:
-    void syncLocalToRemote();
-    void syncRemoteToLocal();
+    void syncLocalToRemote(bool includeProcDirs);
+    void syncRemoteToLocal(bool includeProcDirs);
+    void setBWLimit(int bwlimit);
 
+public Q_SLOTS:
     void onStartParaview();
     void onStartRemoteParaview();
     void onClearProgressCharts();

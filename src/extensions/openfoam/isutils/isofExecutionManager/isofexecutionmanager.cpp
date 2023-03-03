@@ -42,6 +42,35 @@ using namespace insight;
 using namespace boost;
 namespace bf = boost::filesystem;
 
+void printProgress(int progress_percent, const string & msg)
+{
+    double progress = double(progress_percent)/100.;
+    int barWidth = 20, totalWidth=80;
+
+    std::cout << "[";
+    int pos =  barWidth * progress;
+    for (int i = 0; i < barWidth; ++i)
+    {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+    std::cout << "]";
+    std::cout << str(format(" %3d%% ") % progress_percent);
+
+    std::string fixedMsg(
+                std::max(0, totalWidth-barWidth-2-5),
+                ' ' );
+    for (int i=0; i<fixedMsg.size(); ++i)
+    {
+        if (i<msg.size())  fixedMsg[i]=msg[i];
+    }
+    std::cout<<fixedMsg;
+
+    std::cout<<"\r";
+    std::cout.flush();
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -82,6 +111,7 @@ int main(int argc, char *argv[])
       ("list-remote,D", "list remote directory contents")
       ("locate-remote-configs,L", "locate and list existing remote configurations")
       ("filter-remote-server,S", po::value<StringList>(&remoteServerFilter), "filter remote configuration list by server")
+      ("bwlimit", po::value<int>()->default_value(-1), "transfer bandwidth limitin kB/s; -1 means no limit")
 #ifndef WIN32
       ("mount-remote,M", "mount the remote directory locally using sshfs (needs to be installed)")
       ("unmount-remote,U", "unmount the remote directory")
@@ -212,6 +242,10 @@ int main(int argc, char *argv[])
     if (re && re->isActive())
     {
 
+      re->server()
+              ->setTransferBandWidthLimit(
+                  vm["bwlimit"].as<int>() );
+
       if(vm.count("list-remote"))
       {
         auto files=re->remoteLS();
@@ -242,7 +276,12 @@ int main(int argc, char *argv[])
 
       if (vm.count("sync-remote"))
       {
-        re->syncToRemote(skip_dirs);
+        re->syncToRemote(
+                    include_processor,
+                    skip_dirs,
+                    printProgress );
+        std::cout<<endl;
+
         anything_done=true;
       }
 
@@ -278,7 +317,13 @@ int main(int argc, char *argv[])
 
       if(vm.count("sync-local"))
       {
-        re->syncToLocal( (vm.count("skip-timesteps")>0), skip_dirs );
+        re->syncToLocal(
+                    include_processor,
+                    (vm.count("skip-timesteps")>0),
+                    skip_dirs,
+                    printProgress );
+        std::cout<<endl;
+
         anything_done=true;
       }
 

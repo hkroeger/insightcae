@@ -42,6 +42,7 @@ set(insightcad_SOURCES
   polytriangulationelementiterator.h polytriangulationelementiterator.cpp
   polytriangulationnodeiterator.h polytriangulationnodeiterator.cpp
   cademesh.h cademesh.cpp
+  ivtkoccshape.h ivtkoccshape.cpp
 )
 
 if (OCC_VERSION_MAJOR LESS 7)

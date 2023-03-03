@@ -40,7 +40,6 @@ set(insightcad_gui_SRCS
  iqcadtransformationcommand.h iqcadtransformationcommand.cpp
  iqpointpickcommand.h iqpointpickcommand.cpp
  iqvectordirectioncommand.h iqvectordirectioncommand.cpp
- ivtkoccshape.h ivtkoccshape.cpp
  iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
 
  cadfeaturetransient.cpp

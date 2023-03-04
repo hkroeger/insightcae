@@ -118,12 +118,14 @@ void Pipe::build()
     double p1=w.LastParameter();
 
 
-    TopoDS_Shape xsec=BRepTools::OuterWire(TopoDS::Face(xsec_->shape()));
+    TopoDS_Shape xsec=/*BRepTools::OuterWire(*/TopoDS::Face(xsec_->shape())/*)*/;
 
     gp_Trsf tr;
 
     if (!orient_)
+    {
         tr.SetTranslation(w.Value(p0).XYZ());
+    }
     else
     {
         gp_Pnt v0;
@@ -131,29 +133,34 @@ void Pipe::build()
         w.D1(p0, v0, vp0);
         vp0.Normalize();
 
-        gp_Trsf tr1;
-        tr1.SetTransformation
+        gp_Dir ex(1,0,0);
+        if (ex.IsParallel(vp0, SMALL))
+            ex=gp_Dir(0,1,0);
+
+//        gp_Trsf tr1;
+        tr/*1*/.SetTransformation
         (
-            gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(1,0,0)),
-            gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(vp0))
+                    gp_Ax3(w.Value(p0).XYZ()/*gp_Pnt(0,0,0)*/, gp_Dir(vp0), ex),
+            gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(1,0,0))
         );
-        xsec=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(xsec), tr1).Shape();
+//        xsec=BRepBuilderAPI_Transform(xsec, tr1).Shape();
 
-        tr.SetTranslationPart(v0.XYZ());
+//        tr.SetTranslationPart(v0.XYZ());
     }
-    TopoDS_Shape xsecs=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(xsec), tr).Shape();
 
-    BRepOffsetAPI_MakePipeShell p(spinew);
-    p.SetTransitionMode(BRepBuilderAPI_RightCorner);
-    p.Add(xsecs);
+    TopoDS_Shape xsecs=BRepBuilderAPI_Transform(xsec, tr).Shape();
+
+    BRepOffsetAPI_MakePipe/*Shell*/ p(spinew, xsecs);
+//    p.SetTransitionMode(BRepBuilderAPI_RightCorner);
+//    p.Add(xsecs);
     
-    if (fixed_binormal_)
-    {
-        p.SetMode(gp_Dir(to_Vec(fixed_binormal_->value())));
-    }
+//    if (fixed_binormal_)
+//    {
+//        p.SetMode(gp_Dir(to_Vec(fixed_binormal_->value())));
+//    }
     
     p.Build();
-    p.MakeSolid();
+//    p.MakeSolid();
     
     providedSubshapes_["frontFace"]=FeaturePtr(new Feature(p.FirstShape()));
     providedSubshapes_["backFace"]=FeaturePtr(new Feature(p.LastShape()));

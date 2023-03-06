@@ -449,25 +449,25 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-SketchPoint::SketchPoint(DatumPtr planei, const arma::mat &p3)
-    : plane_(planei),
-      x_(0), y_(0)
-{
-    auto plane=plane_->plane();
-    gp_Trsf pl;
-    pl.SetTransformation(plane); // from global to plane
-    auto pp = toVec<gp_Pnt>(p3).Transformed(pl);
-    insight::assertion(
-                fabs(pp.Z())<SMALL,
-                "point (%g, %g, %g) not in plane with p=(%g, %g, %g) and n=(%g, %g, %g)!\n"
-                "(local coordinates = (%g, %g, %g))",
-                p3(0), p3(1), p3(2),
-                plane.Location().X(), plane.Location().Y(), plane.Location().Z(),
-                plane.Direction().X(), plane.Direction().Y(), plane.Direction().Z(),
-                pp.X(), pp.Y(), pp.Z() );
-    x_=pp.X();
-    y_=pp.Y();
-}
+//SketchPoint::SketchPoint(DatumPtr planei, const arma::mat &p3)
+//    : plane_(planei),
+//      x_(0), y_(0)
+//{
+//    auto plane=plane_->plane();
+//    gp_Trsf pl;
+//    pl.SetTransformation(plane); // from global to plane
+//    auto pp = toVec<gp_Pnt>(p3).Transformed(pl);
+//    insight::assertion(
+//                fabs(pp.Z())<SMALL,
+//                "point (%g, %g, %g) not in plane with p=(%g, %g, %g) and n=(%g, %g, %g)!\n"
+//                "(local coordinates = (%g, %g, %g))",
+//                p3(0), p3(1), p3(2),
+//                plane.Location().X(), plane.Location().Y(), plane.Location().Z(),
+//                plane.Direction().X(), plane.Direction().Y(), plane.Direction().Z(),
+//                pp.X(), pp.Y(), pp.Z() );
+//    x_=pp.X();
+//    y_=pp.Y();
+//}
 
 SketchPoint::SketchPoint(DatumPtr plane, double x, double y)
     : plane_(plane),
@@ -504,7 +504,7 @@ double SketchPoint::getDoFValue(unsigned int iDoF) const
     switch (iDoF)
     {
         case 0: return x_;
-        case 1: return x_;
+        case 1: return y_;
     }
     return NAN;
 }
@@ -518,7 +518,7 @@ void SketchPoint::setDoFValue(unsigned int iDoF, double value)
     switch (iDoF)
     {
         case 0: x_=value;
-        case 1: x_=value;
+        case 1: y_=value;
     }
 }
 
@@ -580,6 +580,60 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
     Feature::operator=(o);
     pl_=o.pl_;
     geometry_=o.geometry_;
+}
+
+void ConstrainedSketch::resolveConstraints()
+{
+    std::vector<std::pair<insight::cad::ConstrainedSketchGeometry*, int> > dofs;
+    for (auto& e: geometry())
+    {
+        for (int i=0; i<e->nDoF(); ++i)
+        {
+            dofs.push_back({e.get(), i});
+        }
+    }
+
+    arma::mat x0=arma::zeros(dofs.size());
+    for (int i=0; i<dofs.size(); ++i)
+    {
+        x0(i)=dofs[i].first->getDoFValue(dofs[i].second);
+    }
+    std::cout<<"x0="<<x0<<std::endl;
+
+    auto setX = [&](const arma::mat& x)
+    {
+        for (int i=0; i<dofs.size(); ++i)
+        {
+            dofs[i].first->setDoFValue(dofs[i].second, x(i));
+        }
+        for (auto& se: geometry())
+        {
+            if ( auto e = std::dynamic_pointer_cast<ASTBase>(se) )
+            {
+                e->invalidate();
+            }
+        }
+    };
+
+    arma::mat xsol = nonlinearMinimizeND(
+                [&](const arma::mat& x) -> double
+                {
+                    setX(x);
+                    double Q=0;
+                    for (auto& e: geometry())
+                    {
+                        for (int i=0;i<e->nConstraints();++i)
+                        {
+                            Q+=pow(e->getConstraintError(i), 2);
+                        }
+                    }
+                    std::cout<<"Q="<<Q<<std::endl;
+                    return Q;
+                },
+                x0
+    );
+
+    setX(xsol);
 }
 
 

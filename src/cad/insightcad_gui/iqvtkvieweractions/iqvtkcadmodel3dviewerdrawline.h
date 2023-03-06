@@ -18,10 +18,15 @@ class IQVTKCADModel3DViewerPlanePointBasedAction
 protected:
     insight::cad::ConstrainedSketchPtr sketch_;
 
-    arma::mat pointInPlane(const QPoint& screenPos) const;
+    arma::mat pointInPlane3D(const arma::mat& pip2d) const;
+    arma::mat pointInPlane3D(const QPoint& screenPos) const;
+    arma::mat pointInPlane2D(const QPoint& screenPos) const;
+    arma::mat pointInPlane2D(const arma::mat& pip3d) const;
 
     insight::cad::SketchPointPtr
-    sketchPointAtCursor( const QPoint& cp ) const;
+    sketchPointAtCursor(
+            const QPoint& cp,
+            boost::optional<arma::mat> forcedLocation = boost::optional<arma::mat>() ) const;
 
 Q_SIGNALS:
     void updateActors();
@@ -38,9 +43,14 @@ public:
 class IQVTKCADModel3DViewerDrawLine
         : public IQVTKCADModel3DViewerPlanePointBasedAction
 {
+  Q_OBJECT
 
   insight::cad::SketchPointPtr p1_, p2_;
+  boost::optional<arma::mat> modifiedP2_;
   vtkSmartPointer<vtkActor> previewLine_;
+
+  insight::cad::Line* prevLine_;
+
 
 public:
     IQVTKCADModel3DViewerDrawLine(
@@ -57,6 +67,9 @@ public:
 
     void onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
     void onRightButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+
+Q_SIGNALS:
+    void lineAdded(insight::cad::Line* addedLine, insight::cad::Line* previouslyAddedLine);
 };
 
 #endif // IQVTKCADMODEL3DVIEWERDRAWLINE_H

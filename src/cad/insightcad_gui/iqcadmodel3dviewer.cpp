@@ -6,7 +6,8 @@
 
 
 IQCADModel3DViewer::IQCADModel3DViewer(QWidget *parent)
-    : QWidget(parent),
+    : /*QWidget(parent),*/
+      QMainWindow(parent, Qt::Widget), // flag important
       model_(nullptr)
 {}
 

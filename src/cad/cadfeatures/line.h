@@ -21,13 +21,14 @@
 #define INSIGHT_CAD_LINE_H
 
 #include "singleedgefeature.h"
+#include "constrainedsketchgeometry.h"
 
 namespace insight {
 namespace cad {
+    
+    
 
-    
-    
-    
+
 class Line
     : public SingleEdgeFeature,
       public ConstrainedSketchGeometry
@@ -37,8 +38,6 @@ class Line
 
     Line ( VectorPtr p0, VectorPtr p1, bool second_is_dir=false );
 
-    VectorPtr start() const override;
-    VectorPtr end() const override;
 
     size_t calcHash() const override;
     void build() override;
@@ -50,9 +49,11 @@ public:
     static FeaturePtr create ( VectorPtr p0, VectorPtr p1 );
     static FeaturePtr create_dir ( VectorPtr p0, VectorPtr dir );
 
-
     void insertrule ( parser::ISCADParser& ruleset ) const override;
     FeatureCmdInfoList ruleDocumentation() const override;
+
+    VectorPtr start() const override;
+    VectorPtr end() const override;
 };
 
 

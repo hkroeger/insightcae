@@ -5,7 +5,8 @@ add_sources(insightcad_SOURCES
  mesh.cpp
  framemesh.cpp
  solidproperties.cpp
- pointdistance.cpp
+ pointdistance.h pointdistance.cpp
+ angle.h angle.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

@@ -41,6 +41,9 @@ set(insightcad_gui_SRCS
  iqvtkcadmodel3dviewer_clippingplanes.cpp
  iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
 
+ iqvtkviewerstate.h iqvtkviewerstate.cpp
+ iqvtkconstrainedsketcheditor.h iqvtkconstrainedsketcheditor.cpp
+
  iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h
  iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.cpp
  iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.cpp
@@ -86,6 +89,7 @@ set(insightcad_gui_SRCS
  postprocactionvisualizer.h postprocactionvisualizer.cpp
  postprocactionvisualizers/hydrostaticsvisualizer.cpp
  postprocactionvisualizers/distancevisualizer.cpp
+ postprocactionvisualizers/anglevisualizer.cpp
  postprocactionvisualizers/solidpropertiesvisualizer.cpp
 
  insightcae_gui.qrc

@@ -7,6 +7,8 @@
 
 #include "occguitools.h"
 
+#include "vtkGlyphSource2D.h"
+#include "vtkNamedColors.h"
 #include "vtkTextProperty.h"
 #include "vtkStringArray.h"
 #include "vtkLabelPlacementMapper.h"
@@ -17,6 +19,7 @@
 #include "vtkTransform.h"
 #include "vtkGlyph3D.h"
 #include "vtkDoubleArray.h"
+#include "vtkPolyLine.h"
 
 using namespace boost;
 
@@ -80,66 +83,105 @@ PostProcActionVisualizers::VTKActorList Distance_createVTKRepr(PostprocActionPtr
 
     arma::mat p1=h->p1_->value();
     arma::mat p2=h->p2_->value();
+    arma::mat dir=p2-p1;
+    double L=arma::norm(dir,2);
+    dir/=L;
+
+    arma::mat n=arma::cross(dir, vec3(0,0,1));
+    if (arma::norm(n,2)<SMALL)
+        n=arma::cross(dir, vec3(0,1,0));
+
+    // offset a bit
+    arma::mat ofs = n*0.025*L;
+
     arma::mat pmid = 0.5*(p1+p2);
-    double L=arma::norm(p2-p1,2);
 
-    auto a0 = vtkSmartPointer<vtkArrowSource>::New();
-    //auto tf= vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-    auto gl = vtkSmartPointer<vtkGlyph3D>::New();
-    auto gd = vtkSmartPointer<vtkPolyData>::New();
-    auto gdpts = vtkSmartPointer<vtkPoints>::New();
-    gdpts->SetNumberOfPoints(1);
-    gdpts->SetPoint(0, pmid.memptr());
-    auto gddirs = vtkSmartPointer<vtkDoubleArray>::New();
-    gddirs->SetNumberOfTuples(1);
-    gddirs->SetNumberOfComponents(3);
-    arma::mat d1(p1-pmid);
-    gddirs->SetTypedTuple(0, d1.memptr());
-    gddirs->SetName("dir");
-{
+//    auto a0 = vtkSmartPointer<vtkGlyphSource2D>::New();
+//    a0->SetGlyphTypeToArrow();
+//    a0->SetCenter(0.4,0,0);
+//    a0->FilledOff();
+//    a0->SetScale(1);
 
-    a0->SetShaftResolution(4);
-    a0->SetTipResolution(4);
-//    a0->SetTipRadius(0.025);
+    vtkNew<vtkPolyData> a0;
+    {
+    // Create a vtkPoints object and store the points in it
+    vtkNew<vtkPoints> points;
+    points->InsertNextPoint(0,0,0);
+    points->InsertNextPoint(0.95,0,0);
+    points->InsertNextPoint(0.95, 0.01, 0);
+    points->InsertNextPoint(1,0,0);
+    points->InsertNextPoint(0.95, -0.01, 0);
+    points->InsertNextPoint(0.95,0,0);
+
+    vtkNew<vtkPolyLine> polyLine;
+    polyLine->GetPointIds()->SetNumberOfIds(points->GetNumberOfPoints());
+    for (unsigned int i = 0; i < points->GetNumberOfPoints(); i++)
+    {
+      polyLine->GetPointIds()->SetId(i, i);
+    }
+
+    // Create a cell array to store the lines in and add the lines to it
+    vtkNew<vtkCellArray> cells;
+    cells->InsertNextCell(polyLine);
+
+    // Create a polydata to store everything in
+
+    // Add the points to the dataset
+    a0->SetPoints(points);
+
+    // Add the lines to the dataset
+    a0->SetLines(cells);
+    }
+
+//    auto a0 = vtkSmartPointer<vtkArrowSource>::New();
+//    a0->SetShaftResolution(8);
+//    a0->SetTipResolution(8);
+//    a0->SetTipRadius(0.01);
 //    a0->SetTipLength(0.1);
-//    a0->SetShaftRadius(0.0075);
-    a0->Update();
+//    a0->SetShaftRadius(0.005);
 
+    //auto tf= vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+    auto gdpts = vtkSmartPointer<vtkPoints>::New();
+    gdpts->SetNumberOfPoints(2);
+
+    auto gddirs = vtkSmartPointer<vtkDoubleArray>::New();
+    gddirs->SetNumberOfComponents(3);
+    gddirs->SetNumberOfTuples(2);
+    gddirs->SetName("dir");
+
+    // set data
+    gdpts->SetPoint(0, arma::mat(pmid+ofs).memptr());
+    gddirs->SetTypedTuple(
+                0, arma::mat(p1-pmid).memptr() );
+
+    gdpts->SetPoint(1, arma::mat(pmid+ofs).memptr());
+    gddirs->SetTypedTuple(
+                1, arma::mat(p2-pmid).memptr() );
+
+    auto gd = vtkSmartPointer<vtkPolyData>::New();
     gd->SetPoints(gdpts);
     gd->GetPointData()->AddArray(gddirs);
+    gd->GetPointData()->SetActiveVectors("dir");
 
-    gl->SetInputData(gd);
-    gl->SetSourceConnection(a0->GetOutputPort());
-    gl->SetScaleModeToScaleByScalar();
-    gl->SetScaleFactor(1);
+
+    auto gl = vtkSmartPointer<vtkGlyph3D>::New();
+    gl->SetInputData(gd); //data
+    gl->SetSourceData(a0); //arrow
+    gl->SetVectorModeToUseVector();
+    gl->SetScaleModeToScaleByVector();
     gl->SetInputArrayToProcess(
-          0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "dir");
+          1, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "dir");
 
-//    tf->SetInputConnection(a0->GetOutputPort());
-//    auto t= vtkSmartPointer<vtkTransform>::New();
-//    t->Scale(1e3, 1e3, 1e3);
-//    tf->SetTransform(t);
-    //tf->SetTransform( st1.appended(st2).toVTKTransform() );
 
-}
-    /*
-    auto arr = createArrows(
-                { {pmid, p1},
-                  {pmid, p2} },
-                false );
-    insight::dbg()<<arr->GetNumberOfCells()<<" "<<arr->GetNumberOfPoints()<<std::endl;
-    for (int i=0; i<arr->GetNumberOfPoints(); ++i)
-    {
-        double p[3];
-        arr->GetPoint(i, p);
-        insight::dbg()<<p[0]<<" "<<p[1]<<" "<<p[2]<<std::endl;
-    }*/
+
+
     auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     //mapper->SetInputData(arr);
     mapper->SetInputConnection(gl->GetOutputPort());
+    mapper->Update();
     auto arrAct = vtkSmartPointer<vtkActor>::New();
     arrAct->SetMapper( mapper );
-    arrAct->GetProperty()->SetColor(0.5,0.5,0.5);
+    arrAct->GetProperty()->SetColor(0.5, 0.5, 0.5);
 
     auto points = vtkSmartPointer<vtkPoints>::New();
     points->SetNumberOfPoints(3);
@@ -182,13 +224,31 @@ PostProcActionVisualizers::VTKActorList Distance_createVTKRepr(PostprocActionPtr
     auto lblActor = vtkSmartPointer<vtkActor2D>::New();
     lblActor->SetMapper(lblMap);
 
-    return { arrAct/*, lblActor*/ };
+//    auto arr = createArrows(
+//                { {pmid, p1},
+//                  {pmid, p2} },
+//                false );
+//    insight::dbg()<<arr->GetNumberOfCells()<<" "<<arr->GetNumberOfPoints()<<std::endl;
+//    for (int i=0; i<arr->GetNumberOfPoints(); ++i)
+//    {
+//        double p[3];
+//        arr->GetPoint(i, p);
+//        insight::dbg()<<p[0]<<" "<<p[1]<<" "<<p[2]<<std::endl;
+//    }
+
+    return { lblActor, arrAct };
 }
 
 
 addStandaloneFunctionToStaticFunctionTable(
     PostProcActionVisualizers,
     Distance,
+    createVTKReprByTypeName,
+    Distance_createVTKRepr
+    );
+addStandaloneFunctionToStaticFunctionTable(
+    PostProcActionVisualizers,
+    DistanceConstraint,
     createVTKReprByTypeName,
     Distance_createVTKRepr
     );

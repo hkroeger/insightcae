@@ -6,22 +6,9 @@
 #include "cadfeature.h"
 
 
-
 namespace insight {
 namespace cad {
 
-
-class ConstrainedSketchGeometry
-{
-public:
-    virtual int nDoF() const;
-    virtual double getDoFValue(unsigned int iDoF) const;
-    virtual void setDoFValue(unsigned int iDoF, double value);
-};
-
-typedef
-    std::shared_ptr<ConstrainedSketchGeometry>
-    ConstrainedSketchGeometryPtr;
 
 
 class SingleEdgeFeature

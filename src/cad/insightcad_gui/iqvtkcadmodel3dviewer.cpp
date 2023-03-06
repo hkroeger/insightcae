@@ -104,113 +104,6 @@ void IQVTKCADModel3DViewer::highlightActor(vtkActor *actor)
 
 
 
-void ConstrainedSketchEditor::add(insight::cad::ConstrainedSketchGeometryPtr sg)
-{
-    std::vector<vtkSmartPointer<vtkProp> > acs;
-    if (auto feat = std::dynamic_pointer_cast<insight::cad::Feature>(sg))
-    {
-        acs=viewer_.createActor(feat);
-    }
-    else if (auto pt = std::dynamic_pointer_cast<insight::cad::Vector>(sg))
-    {
-        acs=viewer_.createActor(pt);
-    }
-
-    ActorSet as;
-    for (auto& a: acs)
-    {
-        vtkSmartPointer<vtkActor> aa = vtkActor::SafeDownCast(a);
-        aa->GetProperty()->SetColor(1, 0, 0);
-        aa->GetProperty()->SetLineWidth(2);
-        viewer_.renderer()->AddActor(aa);
-        as.insert(aa);
-    }
-    sketchGeometryActors_.emplace(sg, as);
-}
-
-void ConstrainedSketchEditor::remove(insight::cad::ConstrainedSketchGeometryPtr sg)
-{
-    auto i=sketchGeometryActors_.find(sg);
-    if (i!=sketchGeometryActors_.end())
-    {
-       ActorSet actors = i->second;
-       sketchGeometryActors_.erase(i);
-       for(auto &a: actors)
-       {
-           viewer_.renderer()->RemoveActor(a);
-       }
-    }
-}
-
-ConstrainedSketchEditor::ConstrainedSketchEditor(
-        IQVTKCADModel3DViewer& viewer,
-        insight::cad::ConstrainedSketchPtr sketch
-)
-    : ViewerState(viewer),
-      insight::cad::ConstrainedSketchPtr(sketch)
-{
-    updateActors();
-}
-
-
-
-ConstrainedSketchEditor::~ConstrainedSketchEditor()
-{
-    // copy because "remove" invalidates for-loop
-    std::set<insight::cad::ConstrainedSketchGeometryPtr> sgs;
-
-    std::transform(sketchGeometryActors_.begin(), sketchGeometryActors_.end(),
-        std::inserter(sgs, sgs.end()),
-        [](const SketchGeometryActorMap::value_type& v){ return v.first; } );
-
-    for (const auto& sg: sgs)
-    {
-        remove(sg);
-    }
-}
-
-insight::cad::ConstrainedSketchGeometryPtr
-ConstrainedSketchEditor::findSketchElementOfActor
-    (vtkActor *actor) const
-{
-    for (const auto& sga: sketchGeometryActors_)
-    {
-        for (const auto& a: sga.second)
-        {
-            if (actor==a)
-            {
-                return sga.first;
-            }
-        }
-    }
-    return nullptr;
-}
-
-
-void ConstrainedSketchEditor::updateActors()
-{
-
-  for (const auto& g: (*this)->geometry())
-  {
-      auto i=sketchGeometryActors_.find(g);
-      if (i!=sketchGeometryActors_.end())
-      {
-          remove(g);
-      }
-      add(g);
-  }
-
-  for (const auto& sga: sketchGeometryActors_)
-  {
-      auto g=sga.first;
-      auto i=this->get()->geometry().find(g);
-      if (i==this->get()->geometry().end())
-      {
-        remove(g);
-      }
-  }
-}
-
 
 
 void IQVTKCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
@@ -503,13 +396,18 @@ void IQVTKCADModel3DViewer::resetVisibility(const QPersistentModelIndex &pidx)
 {
     if (auto *cadmodel = dynamic_cast<IQCADItemModel*>(model_))
     {
+        QModelIndex idx(pidx);
+        auto visible = idx.siblingAtColumn(IQCADItemModel::visibilityCol)
+                .data(Qt::CheckStateRole).value<Qt::CheckState>() == Qt::Checked;
+
         for (const auto& actor: displayedData_[pidx].actors_)
         {
-            if (auto act = vtkActor::SafeDownCast(/*displayedData_[pidx].actor_*/actor))
+            if (auto act = vtkActor::SafeDownCast(actor))
             {
-                QModelIndex idx(pidx);
-                auto visible = idx.siblingAtColumn(IQCADItemModel::visibilityCol)
-                        .data(Qt::CheckStateRole).value<Qt::CheckState>() == Qt::Checked;
+                act->SetVisibility(visible);
+            }
+            else if (auto act = vtkActor2D::SafeDownCast(actor))
+            {
                 act->SetVisibility(visible);
             }
         }
@@ -963,6 +861,8 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
           > >(currentNavigationAction_, *this) ),
       viewState_(*this)
 {
+    setCentralWidget(&vtkWidget_);
+
     setMouseTracking( true );
     setFocusPolicy(Qt::StrongFocus);
 
@@ -978,83 +878,38 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
 
     ren_->SetBackground(1., 1., 1.);
 
-    insight::dbg()<<"layout"<<std::endl;
-    auto btnLayout=new QHBoxLayout;
-    auto lv = new QVBoxLayout;
-    lv->addLayout(btnLayout);
-    lv->addWidget(&vtkWidget_);
-    setLayout(lv);
 
-    insight::dbg()<<"fit btn"<<std::endl;
-    auto fitBtn = new QPushButton(QPixmap(":/icons/icon_fit_all.svg"), "");
-    fitBtn->setIconSize(QSize(24,24));
-    btnLayout->addWidget(fitBtn);
-    connect(fitBtn, &QPushButton::clicked,
-            this, &IQCADModel3DViewer::fitAll );
+    auto btntb = this->addToolBar("View setup");
 
-//    auto setCam = [this](double upx, double upy, double upz,
-//                         double dx, double dy, double dz)
-//    {
-//        auto cam = ren_->GetActiveCamera();
-//        arma::mat cp, fp;
-//        cp=fp=insight::vec3Zero();
-//        cam->GetPosition(cp.memptr());
-//        cam->GetFocalPoint(fp.memptr());
-//        double L=arma::norm(fp-cp,2);
-//        cam->SetViewUp(upx,upy,upz);
-//        cam->SetPosition( arma::mat(fp - insight::vec3(dx,dy,dz)*L).memptr() );
-//    };
+    btntb->addAction(
+                QPixmap(":/icons/icon_fit_all.svg"), "Fit all",
+                this, &IQCADModel3DViewer::fitAll);
 
-    {
-        auto btn = new QPushButton(QPixmap(":/icons/icon_plusx.svg"), "");
-        btn->setIconSize(QSize(24,24));
-        btnLayout->addWidget(btn);
-        connect(btn, &QPushButton::clicked,
+    btntb->addAction(
+                QPixmap(":/icons/icon_plusx.svg"), "+X",
                 this, &IQCADModel3DViewer::viewFront );
-//                std::bind(setCam, 0,0,1, 1,0,0));
-    }
-    {
-        auto btn = new QPushButton(QPixmap(":/icons/icon_minusx.svg"), "");
-        btn->setIconSize(QSize(24,24));
-        btnLayout->addWidget(btn);
-        connect(btn, &QPushButton::clicked,
-                this, &IQCADModel3DViewer::viewBack );
-//                std::bind(setCam, 0,0,1, -1,0,0));
-    }
-    {
-        auto btn = new QPushButton(QPixmap(":/icons/icon_plusy.svg"), "");
-        btn->setIconSize(QSize(24,24));
-        btnLayout->addWidget(btn);
-        connect(btn, &QPushButton::clicked,
-                this, &IQCADModel3DViewer::viewRight );
-//                std::bind(setCam, 0,0,1, 0,1,0));
-    }
-    {
-        auto btn = new QPushButton(QPixmap(":/icons/icon_minusy.svg"), "");
-        btn->setIconSize(QSize(24,24));
-        btnLayout->addWidget(btn);
-        connect(btn, &QPushButton::clicked,
-                this, &IQCADModel3DViewer::viewLeft );
-//                std::bind(setCam, 0,0,1, 0,-1,0));
-    }
-    {
-        auto btn = new QPushButton(QPixmap(":/icons/icon_plusz.svg"), "");
-        btn->setIconSize(QSize(24,24));
-        btnLayout->addWidget(btn);
-        connect(btn, &QPushButton::clicked,
-                this, &IQCADModel3DViewer::viewBottom );
-//                std::bind(setCam, 0,1,0, 0,0,1));
-    }
-    {
-        auto btn = new QPushButton(QPixmap(":/icons/icon_minusz.svg"), "");
-        btn->setIconSize(QSize(24,24));
-        btnLayout->addWidget(btn);
-        connect(btn, &QPushButton::clicked,
-                this, &IQCADModel3DViewer::viewTop );
-//                std::bind(setCam, 0,1,0, 0,0,-1));
-    }
 
-    btnLayout->addItem(new QSpacerItem(1,1,QSizePolicy::Expanding));
+    btntb->addAction(
+                QPixmap(":/icons/icon_minusx.svg"), "-X",
+                this, &IQCADModel3DViewer::viewBack );
+
+    btntb->addAction(
+                QPixmap(":/icons/icon_plusy.svg"), "+Y",
+                this, &IQCADModel3DViewer::viewRight );
+
+    btntb->addAction(
+                QPixmap(":/icons/icon_minusy.svg"), "-Y",
+                this, &IQCADModel3DViewer::viewLeft );
+
+    btntb->addAction(
+                QPixmap(":/icons/icon_plusz.svg"), "+Z",
+                this, &IQCADModel3DViewer::viewBottom );
+
+    btntb->addAction(
+                QPixmap(":/icons/icon_minusz.svg"), "-Z",
+                this, &IQCADModel3DViewer::viewTop );
+
+
     auto axes = vtkSmartPointer<vtkAxesActor>::New();
 
     auto renWin1 = vtkWidget_.
@@ -1130,7 +985,7 @@ IQVTKCADModel3DViewer::~IQVTKCADModel3DViewer()
     clipping_.reset();
     highlightedItem_.reset();
     actorHighlight_.reset();
-    displayedSketch_.reset();
+//    displayedSketch_.reset();
 }
 
 
@@ -1233,11 +1088,11 @@ vtkActor *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) 
     auto p = widgetCoordsToVTK(clickPos);
 
     // Pick from this location.
-    insight::dbg()
-            << "click pos = "
-            << clickPos.x()<<" "<<clickPos.y()
-            << " ("<<p.x()<<" "<<p.y()<<")"
-            << std::endl;
+//    insight::dbg()
+//            << "click pos = "
+//            << clickPos.x()<<" "<<clickPos.y()
+//            << " ("<<p.x()<<" "<<p.y()<<")"
+//            << std::endl;
 
 //    auto picker = vtkSmartPointer<vtkPointPicker>::New();
 //    auto picker = vtkSmartPointer<vtkCellPicker>::New();
@@ -1358,20 +1213,20 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
     {
         auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
                     insight::cad::ConstrainedSketch::create(plane));
-        displayedSketch_.reset(new ConstrainedSketchEditor(*this, sk));
 
-        auto dl = std::make_shared<IQVTKCADModel3DViewerDrawLine>(*this, sk);
-        connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::updateActors,
-                displayedSketch_.get(), &ConstrainedSketchEditor::updateActors );
-        connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::finished, dl.get(),
+        std::unique_ptr<IQVTKConstrainedSketchEditor> ske(
+                    new IQVTKConstrainedSketchEditor(*this, sk));
+
+
+        connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),
                 [this,name,sk]()
                 {
-                    displayedSketch_.reset();
+                    currentUserActivity_.reset();
                     cadmodel()->addModelstep(name.toStdString(), sk);
                 }
         );
 
-        currentUserActivity_=dl;
+        currentUserActivity_=std::move(ske);
     }
 }
 

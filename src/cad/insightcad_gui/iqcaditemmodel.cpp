@@ -456,6 +456,19 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                             }
                         }
                         break;
+                    case CADModelSection::postproc:
+                        {
+                            auto ppa = model_->postprocActions();
+                            auto i = ppa.begin();
+                            std::advance(i, index.row());
+                            if (index.column()==visibilityCol)
+                            {
+                                return Qt::CheckState(
+                                            postprocVisibility_[i->first]?
+                                            Qt::Checked:Qt::Unchecked
+                                            );
+                            }
+                        }
                     case CADModelSection::dataset:
                         {
                             auto ds = model_->datasets();
@@ -517,6 +530,7 @@ Qt::ItemFlags IQCADItemModel::flags(const QModelIndex &index) const
              || index.internalId()==CADModelSection::vectorVariable
              || index.internalId()==CADModelSection::datum
              || index.internalId()==CADModelSection::feature
+             || index.internalId()==CADModelSection::postproc
              || index.internalId()==CADModelSection::dataset
              ) )
     {
@@ -571,6 +585,16 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
                 auto i=features.begin();
                 std::advance(i, index.row());
                 featureVisibility_[i->first].visible =
+                        ( value.value<Qt::CheckState>()==Qt::Checked );
+                Q_EMIT dataChanged(index, index, {role});
+                return true;
+            }
+            else if (index.internalId()==CADModelSection::postproc)
+            {
+                auto ppa = model_->postprocActions();
+                auto i=ppa.begin();
+                std::advance(i, index.row());
+                postprocVisibility_[i->first] =
                         ( value.value<Qt::CheckState>()==Qt::Checked );
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
@@ -868,6 +892,10 @@ void IQCADItemModel::addPostprocAction(
         const std::string& name,
         insight::cad::PostprocActionPtr value )
 {
+    if (postprocVisibility_.find(name)==postprocVisibility_.end())
+    {
+        postprocVisibility_[name]=true;
+    }
     addEntity<insight::cad::PostprocActionPtr>(
               name, value,
               std::bind(&insight::cad::Model::postprocActions, model_.get()),

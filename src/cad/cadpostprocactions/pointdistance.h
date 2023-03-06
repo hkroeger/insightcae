@@ -24,6 +24,7 @@
 #include "cadtypes.h"
 #include "cadparameters.h"
 #include "cadpostprocaction.h"
+#include "constrainedsketchgeometry.h"
 
 namespace insight {
 namespace cad {
@@ -33,7 +34,7 @@ class Distance
 {
 
 
-  virtual size_t calcHash() const;
+  size_t calcHash() const override;
 
 public:
   VectorPtr p1_, p2_;
@@ -44,12 +45,33 @@ public:
 
   Distance(VectorPtr p1, VectorPtr p2);
 
-  virtual void build();
+  void build() override;
 
-  virtual void write(std::ostream&) const;
+  void write(std::ostream&) const override;
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+
 };
 
+
+
+class DistanceConstraint
+: public Distance,
+  public ConstrainedSketchGeometry
+{
+    ScalarPtr targetValue_;
+
+    size_t calcHash() const override;
+
+public:
+    declareType("DistanceConstraint");
+
+    DistanceConstraint(VectorPtr p1, VectorPtr p2, ScalarPtr targetValue);
+
+    ScalarPtr targetValue();
+
+    int nConstraints() const override;
+    double getConstraintError(unsigned int iConstraint) const override;
+};
 
 }
 }

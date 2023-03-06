@@ -23,7 +23,8 @@ set(insightcad_SOURCES
   parser_scalarexpressions.cpp
   parser_vectorexpressions.cpp
   datum.cpp 
-  sketch.cpp 
+  constrainedsketchgeometry.h constrainedsketchgeometry.cpp
+  sketch.h sketch.cpp
   geotest.cpp 
   cadparameter.cpp
   cadfeature.cpp 

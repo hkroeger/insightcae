@@ -4,6 +4,8 @@
 
 #include "insightcad_gui_export.h"
 #include "iqcadmodel3dviewer.h"
+#include "iqvtkviewerstate.h"
+#include "iqvtkconstrainedsketcheditor.h"
 
 #include "vtkVersionMacros.h"
 #include "vtkGenericOpenGLRenderWindow.h"
@@ -43,69 +45,6 @@ QVTKOpenGLWidget
 QVTKWidget
 #endif
 VTKWidget;
-
-
-class IQVTKCADModel3DViewer;
-
-class ViewerState
-{
-protected:
-    IQVTKCADModel3DViewer& viewer_;
-
-public:
-    ViewerState(IQVTKCADModel3DViewer& viewer)
-        : viewer_(viewer)
-    {}
-
-    virtual ~ViewerState()
-    {}
-
-    IQVTKCADModel3DViewer& viewer() const
-    {
-        return viewer_;
-    }
-};
-
-
-
-
-class ConstrainedSketchEditor
-      : public QObject,
-        public ViewerState,
-        public insight::cad::ConstrainedSketchPtr
-{
-    Q_OBJECT
-
-public:
-    typedef
-        std::set<vtkSmartPointer<vtkActor> >
-        ActorSet;
-
-private:
-    typedef
-        std::map<
-            insight::cad::ConstrainedSketchGeometryPtr,
-            ActorSet >
-        SketchGeometryActorMap;
-
-    SketchGeometryActorMap sketchGeometryActors_;
-
-    void add(insight::cad::ConstrainedSketchGeometryPtr);
-    void remove(insight::cad::ConstrainedSketchGeometryPtr);
-
-public:
-    ConstrainedSketchEditor(
-            IQVTKCADModel3DViewer& viewer,
-            insight::cad::ConstrainedSketchPtr sketch
-            );
-    ~ConstrainedSketchEditor();
-
-    insight::cad::ConstrainedSketchGeometryPtr
-        findSketchElementOfActor(vtkActor *actor) const;
-
-public Q_SLOTS:
-    void updateActors();
-};
 
 
 
@@ -219,7 +158,7 @@ private:
 
 
 #warning should be better named "expose"
-    class HighlightItem : public ViewerState
+    class HighlightItem : public IQVTKViewerState
     {
 
         CADEntity entity_;
@@ -242,14 +181,14 @@ private:
     mutable std::shared_ptr< HighlightItem > highlightedItem_;
 
 
-    class SilhouetteHighlighter : public ViewerState
+    class SilhouetteHighlighter : public IQVTKViewerState
     {
         vtkSmartPointer<vtkPolyDataSilhouette> silhouette_;
         vtkSmartPointer<vtkActor> silhouetteActor_;
 
     public:
         SilhouetteHighlighter(IQVTKCADModel3DViewer& viewer, vtkPolyDataMapper* mapperToHighlight)
-            : ViewerState(viewer)
+            : IQVTKViewerState(viewer)
         {
             auto* id = mapperToHighlight->GetInput();
             if (id->GetNumberOfCells()>0)
@@ -282,7 +221,7 @@ private:
     };
     friend class SilhouetteHighlighter;
 
-    class LinewidthHighlighter : public ViewerState
+    class LinewidthHighlighter : public IQVTKViewerState
     {
         vtkSmartPointer<vtkActor> actor_;
         double oldColor_[3];
@@ -290,7 +229,7 @@ private:
 
     public:
         LinewidthHighlighter(IQVTKCADModel3DViewer& viewer, vtkActor* actorToHighlight)
-            : ViewerState(viewer), actor_(actorToHighlight)
+            : IQVTKViewerState(viewer), actor_(actorToHighlight)
         {
             oldLineWidth_=actor_->GetProperty()->GetLineWidth();
             actor_->GetProperty()->GetColor(oldColor_);
@@ -313,7 +252,7 @@ private:
     friend class LinewidthHighlighter;
 
 
-    class PointSizeHighlighter : public ViewerState
+    class PointSizeHighlighter : public IQVTKViewerState
     {
         vtkSmartPointer<vtkActor> actor_;
         double oldColor_[3];
@@ -321,7 +260,7 @@ private:
 
     public:
         PointSizeHighlighter(IQVTKCADModel3DViewer& viewer, vtkActor* actorToHighlight)
-            : ViewerState(viewer), actor_(actorToHighlight)
+            : IQVTKViewerState(viewer), actor_(actorToHighlight)
         {
             oldPointSize_=actor_->GetProperty()->GetPointSize();
             actor_->GetProperty()->GetColor(oldColor_);
@@ -343,17 +282,17 @@ private:
     };
     friend class LinewidthHighlighter;
 
-    std::unique_ptr<ViewerState> actorHighlight_;
+    std::unique_ptr<IQVTKViewerState> actorHighlight_;
 
     void highlightActor(vtkActor* actor);
 
 
 
 
-    friend class ConstrainedSketchEditor;
+    friend class IQVTKConstrainedSketchEditor;
     friend class IQVTKCADModel3DViewerPlanePointBasedAction;
 
-    std::unique_ptr<ConstrainedSketchEditor> displayedSketch_;
+//    std::unique_ptr<IQVTKConstrainedSketchEditor> displayedSketch_;
 
 
 

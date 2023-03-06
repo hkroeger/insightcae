@@ -29,6 +29,7 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
   mutable std::map<std::string, bool>
         pointVisibility_,
         vectorVisibility_,
+        postprocVisibility_,
         datumVisibility_;
 
   struct FeatureVisibility

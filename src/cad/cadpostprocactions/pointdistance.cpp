@@ -61,5 +61,44 @@ void insight::cad::Distance::write(ostream&) const
 
 
 
+defineType(DistanceConstraint);
+
+size_t DistanceConstraint::calcHash() const
+{
+    ParameterListHash h;
+    h+=p1_->value();
+    h+=p2_->value();
+    h+=targetValue_->value();
+    return h.getHash();
+}
+
+
+DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2, ScalarPtr targetValue)
+    : Distance(p1, p2),
+      targetValue_(targetValue)
+{}
+
+ScalarPtr DistanceConstraint::targetValue()
+{
+    return targetValue_;
+}
+
+
+int DistanceConstraint::nConstraints() const
+{
+    return 1;
+}
+
+double DistanceConstraint::getConstraintError(unsigned int iConstraint) const
+{
+    insight::assertion(
+                iConstraint==0,
+                "invalid constraint id" );
+    checkForBuildDuringAccess();
+    return distance_ - targetValue_->value();
+}
+
+
+
 }
 }

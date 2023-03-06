@@ -101,7 +101,6 @@ class SketchPoint
   double x_, y_;
 
 public:
-  SketchPoint(DatumPtr plane, const arma::mat& p3);
   SketchPoint(DatumPtr plane, double x, double y);
   void setCoords2D(double x, double y);
   arma::mat value() const override;
@@ -151,6 +150,9 @@ public:
   std::set<ConstrainedSketchGeometryPtr>& geometry();
 
   void operator=(const ConstrainedSketch& o);
+
+
+  void resolveConstraints();
 
 };
 

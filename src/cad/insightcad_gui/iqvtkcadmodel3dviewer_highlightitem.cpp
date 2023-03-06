@@ -9,7 +9,7 @@ IQVTKCADModel3DViewer::HighlightItem::HighlightItem(
         std::shared_ptr<DisplayedEntity> de,
         QPersistentModelIndex idx2highlight,
         IQVTKCADModel3DViewer& viewer )
-    : ViewerState(viewer),
+    : IQVTKViewerState(viewer),
       de_(de),
       idx2highlight_(idx2highlight)
 {

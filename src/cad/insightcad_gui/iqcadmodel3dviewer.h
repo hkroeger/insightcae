@@ -6,12 +6,13 @@
 
 #include <QAbstractItemModel>
 #include <QTextEdit>
+#include <QMainWindow>
 
 #include "iqcaditemmodel.h"
 
 
 class INSIGHTCAD_GUI_EXPORT IQCADModel3DViewer
-        : public QWidget
+        : public QMainWindow //for toolbars to work //QWidget
 {
     Q_OBJECT
 protected:

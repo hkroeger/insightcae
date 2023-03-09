@@ -64,9 +64,8 @@ if the solver is killed during writing."
 }} none "Whether to write additional, regular output for restart."
 
 
-mapFieldsConfig = selectablesubset {{
- none set {}
- map set {
+mapFields = set {
+
   patchMap = array [ set {
      targetPatch = string "lid" "Name of patch in target mesh"
      sourcePatch = string "movingWall" "Name of patch in source mesh"
@@ -75,8 +74,8 @@ mapFieldsConfig = selectablesubset {{
   cuttingPatches = array [
     string "fixedWalls" "Name of patch in target mesh"
   ] *0 "Patches whose values shall be interpolated from source interior"
- }
-}} map "Mapfield configuration"
+
+} "Mapfield configuration"
 
 <<<PARAMETERSET
 */
@@ -88,6 +87,8 @@ protected:
 public:
     FVNumerics ( OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+
+    Parameters& parameters();
 
     virtual bool isCompressible() const =0;
     virtual bool isLES() const;

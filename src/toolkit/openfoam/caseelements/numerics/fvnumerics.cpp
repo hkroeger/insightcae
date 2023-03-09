@@ -182,12 +182,11 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     wd2["method"]="meshWave";
   }
 
-  if ( const auto* map = boost::get<Parameters::mapFieldsConfig_map_type>(&p_.mapFieldsConfig) )
   {
     OFDictData::dict& mfd=dictionaries.lookupDict("system/mapFieldsDict");
 
     OFDictData::list patchMapPairs;
-    for (const auto& i: map->patchMap)
+    for (const auto& i: p_.mapFields.patchMap)
     {
       patchMapPairs.push_back(i.targetPatch);
       patchMapPairs.push_back(i.sourcePatch);
@@ -195,12 +194,19 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     mfd["patchMap"]=patchMapPairs;
 
     OFDictData::list cuttingPatches;
-    std::copy(map->cuttingPatches.begin(), map->cuttingPatches.end(), std::back_inserter(cuttingPatches));
+    std::copy(p_.mapFields.cuttingPatches.begin(),
+              p_.mapFields.cuttingPatches.end(),
+              std::back_inserter(cuttingPatches));
     mfd["cuttingPatches"]=cuttingPatches;
   }
 
 
   decomposeParDict::addIntoDictionaries(dictionaries);
+}
+
+FVNumerics::Parameters &FVNumerics::parameters()
+{
+    return p_;
 }
 
 

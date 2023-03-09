@@ -1178,9 +1178,9 @@ void runPotentialFoam
   controlDict["timeFormat"]="general";
   controlDict["timePrecision"]=6;
   controlDict["runTimeModifiable"]=true;
-  OFDictData::list l;
-  l.push_back("\"libextendedFixedValueBC.so\"");
-  controlDict.getList("libs")=l;
+//  OFDictData::list l;
+//  l.push_back("\"libextendedFixedValueBC.so\"");
+//  controlDict.getList("libs")=l;
   //controlDict.subDict("functions");
   
   OFDictData::dictFile fvSolution;
@@ -2433,6 +2433,70 @@ arma::mat interiorPressureFluctuationProfile
 }
 
 
+std::set<string> readPatchNameList(const OpenFOAMCase& cm, const boost::filesystem::path &caseLocation, bool parallel)
+{
+    std::set<std::string> plist;
+    boost::regex procDir("^processor.*");
+    boost::regex toSkip("^procBoundary.*");
+
+    auto insertPatches = [&](const OFDictData::dict& boundaryDict)
+    {
+        for (const auto& e: boundaryDict)
+        {
+            if (!boost::regex_match(e.first, toSkip))
+                plist.insert(e.first);
+        }
+    };
+
+    if (parallel)
+    {
+        for (boost::filesystem::directory_iterator i(caseLocation);
+             i!=boost::filesystem::directory_iterator(); ++i)
+        {
+            if (boost::regex_match(i->path().filename().string(), procDir))
+            {
+                OFDictData::dict boundaryDict;
+                cm.parseBoundaryDict(i->path(), boundaryDict);
+                insertPatches(boundaryDict);
+            }
+        }
+    }
+    else
+    {
+        OFDictData::dict boundaryDict;
+        cm.parseBoundaryDict(caseLocation, boundaryDict);
+        insertPatches(boundaryDict);
+    }
+    return plist;
+}
+
+
+PatchLayers::PatchLayers()
+{}
+
+
+PatchLayers::PatchLayers(const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation, bool parallel)
+{
+    auto patches = readPatchNameList(cm, caseLocation, parallel);
+    for (const auto& p: patches)
+    {
+        insert({p, 0});
+        std::cout<<"dir="<<caseLocation<<", patch="<<p<<std::endl;
+    }
+}
+
+void PatchLayers::setByPattern(const std::string& regex_pattern, int nLayers)
+{
+    boost::regex pattern(regex_pattern);
+
+    for (auto& pi: *this)
+    {
+        if (boost::regex_match(pi.first, pattern))
+            (*this)[pi.first]=nLayers;
+    }
+}
+
+
 void createPrismLayers
 (
   const OpenFOAMCase& cm,
@@ -2476,6 +2540,7 @@ void createPrismLayers
   else
   {
       shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::relaxed;
+//      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::standard;
 //     setRelaxedQualityCtrls(*qualityCtrls);
 //     (*qualityCtrls)["maxConcave"]=180.0; //85.0;  
 //     (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
@@ -3560,6 +3625,8 @@ void BoundingBox::operator=(const arma::mat& bb)
 {
     arma::mat::operator=(bb);
 }
+
+
 
 
 

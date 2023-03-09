@@ -254,9 +254,9 @@ using namespace insight::createPatchOps;
 %include "openfoam/openfoamdict.h"
 
 %include "openfoam/openfoamtools.h"
-namespace std {
-%template(PatchLayers) std::map<std::string, int>;
-}
+//namespace std {
+//%template(PatchLayers) std::map<std::string, int>;
+//}
 
 %include "openfoam/solveroutputanalyzer.h"
 %include "openfoam/caseelements/boundarycondition.h"

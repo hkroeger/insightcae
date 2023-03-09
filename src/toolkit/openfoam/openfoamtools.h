@@ -603,7 +603,17 @@ arma::mat interiorPressureFluctuationProfile
 );
 
 
-typedef std::map<std::string, int> PatchLayers;
+std::vector<std::string> readPatchNameList(const boost::filesystem::path& caseLocation, bool parallel);
+
+class PatchLayers
+        : public std::map<std::string, int>
+{
+public:
+    PatchLayers();
+    PatchLayers(const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation, bool parallel);
+
+    void setByPattern(const std::string& regex_pattern, int nLayers);
+};
 
 void createPrismLayers
 (

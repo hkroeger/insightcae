@@ -201,6 +201,9 @@ void FieldData::setDirichletBC(OFDictData::dict& BC, OFdicts& dictionaries) cons
   {
     BC["type"]=OFDictData::data("extendedFixedValue");
     BC["source"]=sourceEntry(dictionaries);
+
+    auto& controlDict = dictionaries.lookupDict("system/controlDict");
+    controlDict.getList("libs").insertNoDuplicate("\"libextendedFixedValueBC.so\"");
   }
 }
 

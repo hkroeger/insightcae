@@ -17,8 +17,8 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS
-    uniof toolkit vtkOffscreen
+    uniof vtkHeaders toolkitHeaders
 )
 
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
-#linkToolkit_OF_ShLib( ${PRJ} )
+#linkToolkit_OF_ShLib(${PRJ})

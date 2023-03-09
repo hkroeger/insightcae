@@ -95,8 +95,8 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
       return;
   }
 
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.getList("libs").insertNoDuplicate( OFDictData::data("\"libextendedFixedValueBC.so\"") );
+//  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+//  controlDict.getList("libs").insertNoDuplicate( OFDictData::data("\"libextendedFixedValueBC.so\"") );
 
   addIntoFieldDictionaries(dictionaries);
 

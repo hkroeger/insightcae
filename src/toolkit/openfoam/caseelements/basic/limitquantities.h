@@ -54,7 +54,7 @@ public:
     limitQuantities ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    Parameters& parametersRef();
+    limitQuantities::Parameters& parametersRef();
 
     static std::string category() { return "Tweaks"; }
 };

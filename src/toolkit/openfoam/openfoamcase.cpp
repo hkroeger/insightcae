@@ -707,7 +707,11 @@ boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::
 
 
 
-void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName, const std::string& time) const
+void OpenFOAMCase::parseBoundaryDict(
+        const boost::filesystem::path& location,
+        OFDictData::dict& boundaryDict,
+        const std::string& regionName,
+        const std::string& time ) const
 {
   boost::filesystem::path dictpath = boundaryDictPath(location, regionName, time);
   std::ifstream f(dictpath.c_str());

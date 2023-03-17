@@ -27,14 +27,14 @@ limitTemperature = selectablesubset {{
   min = double 0 "lower limit of temperature to enforce"
   max = double 1e10 "upper limit of temperature to enforce"
  }
-}} limit "Type of temperature limit"
+}} none "Type of temperature limit"
 
 limitVelocity = selectablesubset {{
  none set {}
  limit set {
   max = double 1e10 "upper limit of velocity magnitude"
  }
-}} limit "Type of temperature limit"
+}} none "Type of temperature limit"
 
 limitFields = array [ set {
  fieldName = string "p_rgh" "Name of field to limit"
@@ -53,6 +53,8 @@ public:
     declareType ( "limitQuantities" );
     limitQuantities ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+
+    Parameters& parametersRef();
 
     static std::string category() { return "Tweaks"; }
 };

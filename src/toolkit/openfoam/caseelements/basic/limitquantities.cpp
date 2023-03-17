@@ -86,6 +86,11 @@ void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
 
 }
 
+limitQuantities::Parameters &limitQuantities::parametersRef()
+{
+    return p_;
+}
+
 
 
 } // namespace insight

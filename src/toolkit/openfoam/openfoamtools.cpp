@@ -2433,7 +2433,13 @@ arma::mat interiorPressureFluctuationProfile
 }
 
 
-std::set<string> readPatchNameList(const OpenFOAMCase& cm, const boost::filesystem::path &caseLocation, bool parallel)
+std::set<string>
+readPatchNameList(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path &caseLocation,
+        bool parallel,
+        const std::string& regionName,
+        const std::string& time )
 {
     std::set<std::string> plist;
     boost::regex procDir("^processor.*");
@@ -2456,7 +2462,7 @@ std::set<string> readPatchNameList(const OpenFOAMCase& cm, const boost::filesyst
             if (boost::regex_match(i->path().filename().string(), procDir))
             {
                 OFDictData::dict boundaryDict;
-                cm.parseBoundaryDict(i->path(), boundaryDict);
+                cm.parseBoundaryDict(i->path(), boundaryDict, regionName, time);
                 insertPatches(boundaryDict);
             }
         }
@@ -2464,7 +2470,7 @@ std::set<string> readPatchNameList(const OpenFOAMCase& cm, const boost::filesyst
     else
     {
         OFDictData::dict boundaryDict;
-        cm.parseBoundaryDict(caseLocation, boundaryDict);
+        cm.parseBoundaryDict(caseLocation, boundaryDict, regionName, time);
         insertPatches(boundaryDict);
     }
     return plist;
@@ -2475,7 +2481,12 @@ PatchLayers::PatchLayers()
 {}
 
 
-PatchLayers::PatchLayers(const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation, bool parallel)
+PatchLayers::PatchLayers(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path& caseLocation,
+        bool parallel,
+        const std::string& regionName,
+        const std::string& time )
 {
     auto patches = readPatchNameList(cm, caseLocation, parallel);
     for (const auto& p: patches)

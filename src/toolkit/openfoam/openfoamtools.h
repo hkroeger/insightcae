@@ -603,14 +603,24 @@ arma::mat interiorPressureFluctuationProfile
 );
 
 
-std::vector<std::string> readPatchNameList(const boost::filesystem::path& caseLocation, bool parallel);
+std::set<std::string> readPatchNameList(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path& caseLocation,
+        bool parallel,
+        const std::string& regionName = std::string(),
+        const std::string& time = "constant");
 
 class PatchLayers
         : public std::map<std::string, int>
 {
 public:
     PatchLayers();
-    PatchLayers(const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation, bool parallel);
+    PatchLayers(
+            const OpenFOAMCase& cm,
+            const boost::filesystem::path& caseLocation,
+            bool parallel,
+            const std::string& regionName = std::string(),
+            const std::string& time = "constant" );
 
     void setByPattern(const std::string& regex_pattern, int nLayers);
 };

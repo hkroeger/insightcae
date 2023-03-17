@@ -414,7 +414,7 @@ void Vt102Emulation::processWindowAttributeChange()
   }
 
   QString newValue;
-  newValue.reserve(tokenBufferPos-i-2);
+  newValue.resize(tokenBufferPos-i-2);
   for (int j = 0; j < tokenBufferPos-i-2; j++)
     newValue[j] = tokenBuffer[i+1+j];
 

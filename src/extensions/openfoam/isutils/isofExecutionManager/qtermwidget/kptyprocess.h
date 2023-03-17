@@ -90,6 +90,8 @@ public:
      */
     ~KPtyProcess() override;
 
+    void killChildren();
+
     /**
      * Set to which channels the PTY should be assigned.
      *

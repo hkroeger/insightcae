@@ -115,25 +115,12 @@ typedef std::shared_ptr<SketchPoint> SketchPointPtr;
 
 
 
-class SketchConstraint
-{
-public:
-    virtual int nQ() const =0;
-    virtual double getQ(unsigned int iQ) const =0;
-};
-
-typedef
-    std::shared_ptr<SketchConstraint>
-    SketchConstraintPtr;
-
-
 
 class ConstrainedSketch
 : public Feature
 {
   DatumPtr pl_;
   std::set<ConstrainedSketchGeometryPtr> geometry_;
-  std::set<SketchConstraintPtr> constraints_;
 
   ConstrainedSketch( DatumPtr pl );
 

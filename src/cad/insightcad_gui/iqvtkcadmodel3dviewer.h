@@ -391,6 +391,7 @@ public:
     void resetRepresentations() override;
 
     void doSketchOnPlane(insight::cad::DatumPtr plane) override;
+    void editSketch(const std::string& name, insight::cad::ConstrainedSketchPtr sk) override;
 
 protected:
     void mousePressEvent(QMouseEvent* e) override;

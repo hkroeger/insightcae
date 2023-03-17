@@ -536,6 +536,8 @@ size_t ConstrainedSketch::calcHash() const
 {
   ParameterListHash p;
   p+=*pl_;
+  for (const auto& se: geometry_)
+      p+=se->hash();
   return p.getHash();
 }
 

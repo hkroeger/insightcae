@@ -709,6 +709,11 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
     return false;
 }
 
+const insight::cad::ModelPtr IQCADItemModel::model() const
+{
+    return model_;
+}
+
 
 insight::cad::Model::ScalarTableContents IQCADItemModel::scalars() const
 {
@@ -862,7 +867,26 @@ void IQCADItemModel::addModelstep(
               std::bind(
                     &insight::cad::Model::addModelstep,
                     model_.get(), std::placeholders::_1, std::placeholders::_2, std::string() ),
-              CADModelSection::feature );
+                CADModelSection::feature );
+}
+
+
+void IQCADItemModel::setStaticModelStep(const std::string &name, bool isStatic)
+{
+    if (isStatic)
+    {
+        staticFeatures_.insert(name);
+    }
+    else
+    {
+        auto sf = staticFeatures_.find(name);
+        if (sf!=staticFeatures_.end()) staticFeatures_.erase(sf);
+    }
+}
+
+bool IQCADItemModel::isStaticModelStep(const std::string &name)
+{
+    return staticFeatures_.find(name)!=staticFeatures_.end();
 }
 
 

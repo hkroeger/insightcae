@@ -39,10 +39,6 @@ IQVTKCADModel3DViewerPlanePointBasedAction::pointInPlane3D(
 {
     auto *renderer = viewer().renderer();
     auto v = viewer().widgetCoordsToVTK(screenPos);
-//    double vx=screenPos.x();
-//    double vy=viewer().size().height()-screenPos.y();
-
-    insight::dbg()<<"vx="<<v.x()<<", vy="<<v.y()<<std::endl;
 
     arma::mat p0=vec3(sketch_->plane()->plane().Location());
     arma::mat n=vec3(sketch_->plane()->plane().Direction());
@@ -51,7 +47,6 @@ IQVTKCADModel3DViewerPlanePointBasedAction::pointInPlane3D(
     renderer->SetDisplayPoint(v.x(), v.y(), 0.0);
     renderer->DisplayToWorld();
     renderer->GetWorldPoint(l0.memptr());
-    insight::dbg()<<"lx="<<l0(0)<<", ly="<<l0(1)<<", lz="<<l0(2)<<std::endl;
 
     arma::mat camPos, camFocal;
     camPos=camFocal=vec3Zero();

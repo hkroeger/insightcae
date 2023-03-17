@@ -229,6 +229,7 @@ void IQVTKConstrainedSketchEditor::onLeftButtonUp    ( Qt::KeyboardModifiers nFl
                         if (ok)
                         {
                             cs->setValue(v);
+                            solve();
                         }
                     }
                     else
@@ -257,6 +258,7 @@ void IQVTKConstrainedSketchEditor::onLeftButtonUp    ( Qt::KeyboardModifiers nFl
                         if (ok)
                         {
                             cs->setValue(v*SI::deg);
+                            solve();
                         }
                     }
                     else
@@ -354,4 +356,6 @@ void IQVTKConstrainedSketchEditor::updateActors()
         remove(g);
       }
   }
+
+  viewer().scheduleRedraw();
 }

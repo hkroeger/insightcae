@@ -15,6 +15,8 @@ public:
 
     virtual int nConstraints() const;
     virtual double getConstraintError(unsigned int iConstraint) const;
+
+    virtual size_t hash() const;
 };
 
 typedef

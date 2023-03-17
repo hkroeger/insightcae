@@ -25,7 +25,6 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
 
   insight::cad::ModelPtr model_;
 
-
   mutable std::map<std::string, bool>
         pointVisibility_,
         vectorVisibility_,
@@ -68,7 +67,8 @@ class INSIGHTCAD_GUI_EXPORT IQCADItemModel
   };
   mutable std::map<std::string, DatasetVisibility> datasetVisibility_;
 
-
+  std::set<std::string>
+    staticFeatures_;
 
 public:
   enum CADModelSection {
@@ -114,16 +114,17 @@ private:
       auto ss = s.find(name);
       if (ss!=s.end())
       {
+          auto i = eidxfunc(name);
+          auto ie = index(i.row(), entityCol, i.parent());
           if (ss->second==value)
           {
               // is present and the same
-              return;
+              qDebug()<<"trigger entity update"<<QString::fromStdString(name)<<i;
+              Q_EMIT dataChanged(ie, ie, {Qt::EditRole});
           }
           else
           {
               // replace
-              auto i = eidxfunc(name);
-              auto ie = index(i.row(), entityCol, i.parent());
               qDebug()<<"replaceEntity"<<QString::fromStdString(name)<<i;
               modeladdfunc(name, value);
               Q_EMIT dataChanged(ie, ie, {Qt::EditRole});
@@ -210,6 +211,8 @@ public:
   bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
 
+  const insight::cad::ModelPtr model() const;
+
   /**
    * read access functions
    */
@@ -241,6 +244,8 @@ public:
                     insight::cad::FeaturePtr value,
                     const std::string& featureDescription = std::string(),
                     insight::DatasetRepresentation dr = insight::Wireframe );
+  void setStaticModelStep(const std::string& name, bool isStatic);
+  bool isStaticModelStep(const std::string& name);
   void addComponent(const std::string& name,
                     insight::cad::FeaturePtr value,
                     const std::string& featureDescription = std::string(),

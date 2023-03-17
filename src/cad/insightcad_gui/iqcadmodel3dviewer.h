@@ -9,6 +9,7 @@
 #include <QMainWindow>
 
 #include "iqcaditemmodel.h"
+#include "sketch.h"
 
 
 class INSIGHTCAD_GUI_EXPORT IQCADModel3DViewer
@@ -67,6 +68,7 @@ public Q_SLOT:
     virtual void resetRepresentations() =0;
 
     virtual void doSketchOnPlane(insight::cad::DatumPtr plane) =0;
+    virtual void editSketch(const std::string& name, insight::cad::ConstrainedSketchPtr sketch) =0;
 
 Q_SIGNALS:
     void appendToNotepad(const QString& text);

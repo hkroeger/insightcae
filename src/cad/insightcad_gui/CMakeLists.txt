@@ -86,6 +86,7 @@ set(insightcad_gui_SRCS
  qmodeltree.cpp
  qmodeltree.h
 
+
  postprocactionvisualizer.h postprocactionvisualizer.cpp
  postprocactionvisualizers/hydrostaticsvisualizer.cpp
  postprocactionvisualizers/distancevisualizer.cpp

@@ -246,7 +246,8 @@ void IQISCADModelRebuilder::removeNonRecreatedSymbols()
             auto modelsteps = model_->modelsteps();
             for (const auto& m: modelsteps)
             {
-                if (sysn.features_.find(m.first)!=sysn.features_.end())
+                if (sysn.features_.find(m.first)!=sysn.features_.end()
+                        && !model_->isStaticModelStep(m.first) )
                 {
                     model_->removeModelstep(m.first);
                 }

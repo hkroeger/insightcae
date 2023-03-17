@@ -3,6 +3,7 @@
 #include "iqcadmodel3dviewer.h"
 
 #include "datum.h"
+#include "iqvtkcadmodel3dviewer.h"
 
 #include <QInputDialog>
 #include <QColorDialog>
@@ -54,6 +55,17 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
             connect(a, &QAction::triggered,
                     std::bind(&IQCADItemModel::insertParserStatementAtCursor, this, name) );
             cm.addAction(a);
+
+            if (viewer)
+            {
+                if (auto psk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(feat))
+                {
+                    a=new QAction("Edit sketch...", &cm);
+                    connect(a, &QAction::triggered,
+                            std::bind(&IQCADModel3DViewer::editSketch, viewer, name.toStdString(), psk) );
+                    cm.addAction(a);
+                }
+            }
         }
 
         a=new QAction("Show", &cm);

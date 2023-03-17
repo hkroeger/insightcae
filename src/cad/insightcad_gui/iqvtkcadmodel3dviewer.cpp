@@ -199,7 +199,7 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
              boost::get<insight::cad::FeaturePtr>(&entity))
     {
         auto feat = *featurePtr;
-        vtkNew<ivtkOCCShape> shape;
+        auto shape = vtkSmartPointer<ivtkOCCShape>::New();
         shape->SetShape( feat->shape() );
 
         auto actor = vtkSmartPointer<vtkActor>::New();
@@ -440,7 +440,6 @@ void IQVTKCADModel3DViewer::resetDisplayProps(const QPersistentModelIndex& pidx)
                             auto repr=  insight::DatasetRepresentation(
                                     idx.siblingAtColumn(IQCADItemModel::entityRepresentationCol)
                                     .data().toInt() );
-                            std::cout<<"set repr="<<repr<<std::endl;
                             ivtkocc->SetRepresentation(repr);
                             ivtkocc->Update();
                         }
@@ -1213,22 +1212,30 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
     {
         auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
                     insight::cad::ConstrainedSketch::create(plane));
-
-        std::unique_ptr<IQVTKConstrainedSketchEditor> ske(
-                    new IQVTKConstrainedSketchEditor(*this, sk));
-
-
-        connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),
-                [this,name,sk]()
-                {
-                    currentUserActivity_.reset();
-                    cadmodel()->addModelstep(name.toStdString(), sk);
-                }
-        );
-
-        currentUserActivity_=std::move(ske);
+        editSketch(name.toStdString(), sk);
     }
 }
+
+
+
+void IQVTKCADModel3DViewer::editSketch(const std::string& name, insight::cad::ConstrainedSketchPtr psk)
+{
+    std::unique_ptr<IQVTKConstrainedSketchEditor> ske(
+                new IQVTKConstrainedSketchEditor(*this, psk));
+
+
+    connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),
+            [this,name,psk]()
+            {
+                currentUserActivity_.reset();
+                cadmodel()->addModelstep(name, psk);
+                cadmodel()->setStaticModelStep(name, true);
+            }
+    );
+
+    currentUserActivity_=std::move(ske);
+}
+
 
 
 QSize IQVTKCADModel3DViewer::sizeHint() const

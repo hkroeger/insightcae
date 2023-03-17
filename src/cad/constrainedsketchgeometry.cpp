@@ -2,6 +2,7 @@
 
 #include "base/exception.h"
 
+#include "boost/functional/hash.hpp"
 
 namespace insight {
 namespace cad {
@@ -33,6 +34,14 @@ double ConstrainedSketchGeometry::getConstraintError(unsigned int iConstraint) c
 {
     throw insight::Exception("invalid constraint index: %d", iConstraint);
     return NAN;
+}
+
+size_t ConstrainedSketchGeometry::hash() const
+{
+    size_t h=0;
+    for (int i=0; i<nDoF(); ++i)
+        boost::hash_combine( h, boost::hash<double>()(getDoFValue(i)) );
+    return h;
 }
 
 

@@ -196,7 +196,7 @@ void MainWindow::updateOutputAnalzer(QString line)
 
 bool isFixedPitch(const QFont &font) {
    const QFontInfo fi(font);
-   qDebug() << fi.family() << fi.fixedPitch();
+//   qDebug() << fi.family() << fi.fixedPitch();
    return fi.fixedPitch();
 }
 
@@ -212,10 +212,19 @@ QFont getMonospaceFont() {
   return font;
 }
 
+
+
+//void myMessageHandler(QtMsgType, const QMessageLogContext &, const QString &msg)
+//{
+//    qDebug()<<msg;
+//}
+
 MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent) :
   QMainWindow(parent),
   ui(new Ui::MainWindow)
 {
+//     qInstallMessageHandler(&myMessageHandler);
+
   ui->setupUi(this);
 
   ui->localDir->setText( QString::fromStdString(boost::filesystem::absolute(location).string()) );

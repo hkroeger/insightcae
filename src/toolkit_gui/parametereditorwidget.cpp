@@ -107,25 +107,27 @@ ParameterEditorWidget::ParameterEditorWidget
     {
       insight::CurrentExceptionContext ex("building parameter set displayer");
       // no existing displayer supplied; create one
-      QWidget *w=new QWidget(this);
-      QVBoxLayout *l=new QVBoxLayout(w);
+//      QWidget *w=new QWidget(this);
+//      QVBoxLayout *l=new QVBoxLayout(w);
       CADViewer *viewer=nullptr;
       {
           insight::CurrentExceptionContext ex("creating CAD viewer");
-          viewer=new CADViewer(w/*, context->getContext()*/);
-          viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-          QLabel *hints=new QLabel(w);
-          hints->setStyleSheet("font: 8pt;");
-          hints->setWordWrap(true);
-          hints->setText(
-                "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
-                "<b>Context Menu</b>: Right click on object or canvas."
-                );
-          l->addWidget(viewer);
-          l->addWidget(hints);
+          viewer=new CADViewer;
+          viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+          addWidget(viewer);
+//          QLabel *hints=new QLabel(w);
+//          hints->setStyleSheet("font: 8pt;");
+//          hints->setWordWrap(true);
+//          hints->setText(
+//                "<b>Rotate</b>: Alt + Mouse Move, <b>Pan</b>: Shift + Mouse Move, <b>Zoom</b>: Ctrl + Mouse Move or Mouse Wheel, "
+//                "<b>Context Menu</b>: Right click on object or canvas."
+//                );
+//          l->addWidget(viewer);
+//          l->addWidget(hints);
       }
-      w->setLayout(l);
-      addWidget(w);
+//      w->setLayout(l);
+//      addWidget(w);
 
       insight::dbg()<<"create model tree"<<std::endl;
       modeltree_ = new QTreeView(this);

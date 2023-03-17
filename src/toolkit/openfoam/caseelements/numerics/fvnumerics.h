@@ -51,6 +51,7 @@ endTime = double 1000.0 "Maximum end time of simulation"
 
 restartWrite = selectablesubset {{
  none set {}
+
  clockTime set {
   clockTimeInterval = double 1200
 "[s] Regular wall-clock time interval after which additional restart output is created.
@@ -61,7 +62,8 @@ the next oldest is deleted, if it does not match a regular output time directory
 It is recommended to keep more than one, because the last output might get corrupted,
 if the solver is killed during writing."
  }
-}} none "Whether to write additional, regular output for restart."
+
+}} clockTime "Whether to write additional, regular output for restart."
 
 
 mapFields = set {

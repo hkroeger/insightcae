@@ -1,7 +1,7 @@
 #ifndef IQISCADSCRIPTMODELGENERATOR_H
 #define IQISCADSCRIPTMODELGENERATOR_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 #include "iqiscadmodelgenerator.h"
 
 #ifndef Q_MOC_RUN
@@ -9,7 +9,7 @@
 #endif
 
 
-class INSIGHTCAD_GUI_EXPORT IQISCADScriptModelGenerator
+class TOOLKIT_GUI_EXPORT IQISCADScriptModelGenerator
         : public IQISCADModelGenerator
 {
     Q_OBJECT

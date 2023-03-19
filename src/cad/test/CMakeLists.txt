@@ -18,7 +18,7 @@ if(INSIGHT_BUILD_TESTS)
 
     target_link_libraries(cadviewertest
       Qt5::Widgets
-      toolkit_gui insightcad_gui
+      toolkit_gui
       )
     linkToolkitVtk(cadviewertest Onscreen)
 

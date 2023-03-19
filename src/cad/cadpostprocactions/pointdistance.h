@@ -56,7 +56,7 @@ public:
 
 class DistanceConstraint
 : public Distance,
-  public ConstrainedSketchGeometry
+  public ConstrainedSketchEntity
 {
     ScalarPtr targetValue_;
 

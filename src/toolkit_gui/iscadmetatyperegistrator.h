@@ -1,7 +1,7 @@
 #ifndef ISCADMETATYPEREGISTRATOR_H
 #define ISCADMETATYPEREGISTRATOR_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
 #include <QMetaType>
 #include <QVector>
@@ -28,13 +28,13 @@ Q_DECLARE_METATYPE(Optional_AIS_DisplayMode)
 Q_DECLARE_METATYPE(QVector<int>)
 Q_DECLARE_METATYPE(AIS_DisplayMode)
 
-class INSIGHTCAD_GUI_EXPORT ISCADMetaTypeRegistrator
+class TOOLKIT_GUI_EXPORT ISCADMetaTypeRegistrator
 {
 public:
   ISCADMetaTypeRegistrator();
 };
 
-INSIGHTCAD_GUI_EXPORT extern ISCADMetaTypeRegistrator iscadmetatyperegistrator;
+TOOLKIT_GUI_EXPORT extern ISCADMetaTypeRegistrator iscadmetatyperegistrator;
 
 
 

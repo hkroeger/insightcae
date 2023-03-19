@@ -1,7 +1,7 @@
 #ifndef IQPOINTPICKCOMMAND_H
 #define IQPOINTPICKCOMMAND_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
 #include <armadillo>
 #include <QObject>
@@ -12,7 +12,7 @@
 
 class vtkRenderWindowInteractor;
 
-class INSIGHTCAD_GUI_EXPORT IQPointPickCommand
+class TOOLKIT_GUI_EXPORT IQPointPickCommand
         : public QObject,
           public vtkCommand
 {

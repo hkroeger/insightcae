@@ -1,7 +1,7 @@
 #ifndef IQCADMODELCONTAINER_H
 #define IQCADMODELCONTAINER_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 #include "iscadmetatyperegistrator.h"
 
 #include "cadmodel.h"
@@ -18,7 +18,7 @@
 
 class IQCADModel3DViewer;
 
-class INSIGHTCAD_GUI_EXPORT IQCADItemModel
+class TOOLKIT_GUI_EXPORT IQCADItemModel
     : public QAbstractItemModel
 {
   Q_OBJECT

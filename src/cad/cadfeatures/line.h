@@ -31,7 +31,7 @@ namespace cad {
 
 class Line
     : public SingleEdgeFeature,
-      public ConstrainedSketchGeometry
+      public ConstrainedSketchEntity
 {
     VectorPtr p0_, p1_;
     bool second_is_dir_;

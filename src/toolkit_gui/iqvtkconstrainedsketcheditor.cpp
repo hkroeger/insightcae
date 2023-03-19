@@ -3,16 +3,64 @@
 #include "iqvtkcadmodel3dviewer.h"
 
 #include "vtkProperty.h"
+#include "vtkSphereSource.h"
 
 #include "iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
 #include "cadpostprocactions/pointdistance.h"
 #include "cadpostprocactions/angle.h"
 
+#include "parametereditorwidget.h"
+
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QFormLayout>
+#include <QDoubleValidator>
 
 
-void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchGeometryPtr sg)
+IQVTKFixedPoint::IQVTKFixedPoint(
+        insight::cad::SketchPointPtr p  )
+    : p_(p)
+{
+    auto c=p->coords2D();
+    x_=c(0);
+    y_=c(1);
+}
+
+std::vector<vtkSmartPointer<vtkProp> > IQVTKFixedPoint::createActor() const
+{
+    auto sph = vtkSmartPointer<vtkSphereSource>::New();
+    sph->SetCenter( p_->value().memptr() );
+#warning need a sketch order of scene size
+    sph->SetRadius(0.1);
+
+    auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    //mapper->SetInputData(arr);
+    mapper->SetInputConnection(sph->GetOutputPort());
+    mapper->Update();
+
+    auto act = vtkSmartPointer<vtkActor>::New();
+    act->SetMapper( mapper );
+
+    return {act};
+}
+
+int IQVTKFixedPoint::nConstraints() const
+{
+    return 1;
+}
+
+double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
+{
+    insight::assertion(
+                iConstraint==0,
+                "invalid constraint id: %d", iConstraint );
+    auto p = p_->coords2D();
+    return pow(p(0)-x_,2), pow(p(1)-y_,2);
+}
+
+
+
+void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchEntityPtr sg)
 {
     double color[3]={1,0,0};
     double lw=2;
@@ -32,6 +80,10 @@ void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchGeometryPt
         color[1]=color[2]=0.3;
         lw=0.5;
     }
+    else if (auto soe = std::dynamic_pointer_cast<IQVTKConstrainedSketchEntity>(sg)) // e.g. constrains etc.
+    {
+        acs=soe->createActor();
+    }
     ActorSet as;
     for (auto& a: acs)
     {
@@ -49,7 +101,7 @@ void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchGeometryPt
 
 
 
-void IQVTKConstrainedSketchEditor::remove(insight::cad::ConstrainedSketchGeometryPtr sg)
+void IQVTKConstrainedSketchEditor::remove(insight::cad::ConstrainedSketchEntityPtr sg)
 {
     auto i=sketchGeometryActors_.find(sg);
     if (i!=sketchGeometryActors_.end())
@@ -62,6 +114,62 @@ void IQVTKConstrainedSketchEditor::remove(insight::cad::ConstrainedSketchGeometr
        }
     }
 }
+
+
+void IQVTKConstrainedSketchEditor::SketchEntitySelection::highlight(
+        std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity )
+{
+#warning implement find
+//    auto i=std::find(
+//                editor_.sketchGeometryActors_.begin(),
+//                editor_.sketchGeometryActors_.end(),
+//                entity);
+//    if (i!=editor_.sketchGeometryActors_.end())
+//    {
+//        ActorSet actors = i->second;
+//        for(auto &a: actors)
+//        {
+//            if (auto aa = vtkActor::SafeDownCast(a))
+//            {
+//                aa->GetProperty()->SetColor(0,0,1);
+//            }
+//        }
+//    }
+}
+
+void IQVTKConstrainedSketchEditor::SketchEntitySelection::unhighlight(
+        std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity)
+{
+#warning implement me
+}
+
+IQVTKConstrainedSketchEditor::SketchEntitySelection::SketchEntitySelection
+( IQVTKConstrainedSketchEditor &editor )
+    : editor_(editor)
+{
+
+//    auto pe = new ParameterEditorWidget();
+//    toolBox_->addItem(this, "Sketch");
+}
+
+
+IQVTKConstrainedSketchEditor::SketchEntitySelection::~SketchEntitySelection()
+{
+    for (auto& e: *this)
+    {
+        unhighlight(e);
+    }
+}
+
+
+void IQVTKConstrainedSketchEditor::SketchEntitySelection::addAndHighlight(
+        insight::cad::ConstrainedSketchEntityPtr entity)
+{
+    this->push_back(entity);
+    highlight(entity);
+}
+
+
 
 void IQVTKConstrainedSketchEditor::drawLine()
 {
@@ -129,7 +237,37 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         this, &IQVTKConstrainedSketchEditor::finished);
     toolBar_->show();
 
+
     updateActors();
+
+    // this editor is its own property widget
+
+    toolBoxWidget_ = new QDockWidget("Properties", this);
+    this->viewer().addDockWidget(Qt::RightDockWidgetArea, toolBoxWidget_);
+    toolBox_ = new QToolBox(toolBoxWidget_);
+    toolBoxWidget_->setWidget(toolBox_);
+
+    auto l = new QFormLayout;
+
+    auto  toledit = new QLineEdit;
+    toledit->setValidator(new QDoubleValidator);
+    toledit->setText(QString::number((*this)->solverTolerance()));
+    connect(toledit, &QLineEdit::textChanged, this,
+            [this](const QString& txt)
+            {
+                double newtol = txt.toDouble();
+                if ( fabs(newtol-(*this)->solverTolerance()) > insight::SMALL)
+                {
+                    (*this)->setSolverTolerance(newtol);
+                    solve();
+                }
+            }
+    );
+
+    l->addRow("Solver tolerance", toledit);
+    setLayout(l);
+
+    toolBox_->addItem(this, "Sketch");
 }
 
 
@@ -139,9 +277,11 @@ IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
 {
     toolBar_->hide();
     toolBar_->deleteLater();
+    toolBoxWidget_->hide();
+    toolBoxWidget_->deleteLater();
 
     // copy because "remove" invalidates for-loop
-    std::set<insight::cad::ConstrainedSketchGeometryPtr> sgs;
+    std::set<insight::cad::ConstrainedSketchEntityPtr> sgs;
 
     std::transform(sketchGeometryActors_.begin(), sketchGeometryActors_.end(),
         std::inserter(sgs, sgs.end()),
@@ -156,7 +296,7 @@ IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
 
 
 
-insight::cad::ConstrainedSketchGeometryPtr
+insight::cad::ConstrainedSketchEntityPtr
 IQVTKConstrainedSketchEditor::findSketchElementOfActor
     (vtkActor *actor) const
 {
@@ -176,6 +316,28 @@ IQVTKConstrainedSketchEditor::findSketchElementOfActor
 
 void IQVTKConstrainedSketchEditor::onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point )
 {
+    if (auto act =
+            viewer().findActorUnderCursorAt(point))
+    {
+        if (auto sg =
+                this->findSketchElementOfActor(act))
+        {
+            if (!currentSelection_)
+            {
+                currentSelection_ =
+                        std::make_shared<SketchEntitySelection>(
+                            *this);
+            }
+            currentSelection_->addAndHighlight(sg);
+        }
+        else
+        {
+            if (currentSelection_)
+            {
+                currentSelection_.reset();
+            }
+        }
+    }
     if (currentAction_)
         currentAction_->onLeftButtonDown( nFlags, point );
     if (currentAction_ && currentAction_->finished())
@@ -203,75 +365,75 @@ void IQVTKConstrainedSketchEditor::onLeftButtonUp    ( Qt::KeyboardModifiers nFl
 {
     if (currentAction_)
         currentAction_->onLeftButtonUp( nFlags, point );
-    else
-    {
-        if (auto act =
-                viewer().findActorUnderCursorAt(point))
-        {
-            if (auto sg =
-                    this->findSketchElementOfActor(act))
-            {
-                if (auto dc =
-                        std::dynamic_pointer_cast
-                         <insight::cad::DistanceConstraint>(sg))
-                {
-                    if (auto cs =
-                            std::dynamic_pointer_cast<insight::cad::ConstantScalar>(
-                                dc->targetValue() ) )
-                    {
-                        bool ok;
-                        double v = QInputDialog::getDouble(
-                                    &viewer(),
-                                    "Modify distance constraint",
-                                    "Enter distance constraint value",
-                                    cs->value(),
-                                    0, DBL_MAX, 6, &ok);
-                        if (ok)
-                        {
-                            cs->setValue(v);
-                            solve();
-                        }
-                    }
-                    else
-                    {
-                        QMessageBox::critical(
-                                    &viewer(),
-                                    "Cannot modify constraint",
-                                    "The selected constraint cannot be modified!" );
-                    }
-                }
-                else if (auto dc =
-                        std::dynamic_pointer_cast
-                         <insight::cad::AngleConstraint>(sg))
-                {
-                    if (auto cs =
-                            std::dynamic_pointer_cast<insight::cad::ConstantScalar>(
-                                dc->targetValue() ) )
-                    {
-                        bool ok;
-                        double v = QInputDialog::getDouble(
-                                    &viewer(),
-                                    "Modify angle constraint",
-                                    "Enter angle constraint value [deg]",
-                                    cs->value()/SI::deg,
-                                    0, DBL_MAX, 6, &ok);
-                        if (ok)
-                        {
-                            cs->setValue(v*SI::deg);
-                            solve();
-                        }
-                    }
-                    else
-                    {
-                        QMessageBox::critical(
-                                    &viewer(),
-                                    "Cannot modify constraint",
-                                    "The selected constraint cannot be modified!" );
-                    }
-                }
-            }
-        }
-    }
+//    else
+//    {
+//        if (auto act =
+//                viewer().findActorUnderCursorAt(point))
+//        {
+//            if (auto sg =
+//                    this->findSketchElementOfActor(act))
+//            {
+//                if (auto dc =
+//                        std::dynamic_pointer_cast
+//                         <insight::cad::DistanceConstraint>(sg))
+//                {
+//                    if (auto cs =
+//                            std::dynamic_pointer_cast<insight::cad::ConstantScalar>(
+//                                dc->targetValue() ) )
+//                    {
+//                        bool ok;
+//                        double v = QInputDialog::getDouble(
+//                                    &viewer(),
+//                                    "Modify distance constraint",
+//                                    "Enter distance constraint value",
+//                                    cs->value(),
+//                                    0, DBL_MAX, 6, &ok);
+//                        if (ok)
+//                        {
+//                            cs->setValue(v);
+//                            solve();
+//                        }
+//                    }
+//                    else
+//                    {
+//                        QMessageBox::critical(
+//                                    &viewer(),
+//                                    "Cannot modify constraint",
+//                                    "The selected constraint cannot be modified!" );
+//                    }
+//                }
+//                else if (auto dc =
+//                        std::dynamic_pointer_cast
+//                         <insight::cad::AngleConstraint>(sg))
+//                {
+//                    if (auto cs =
+//                            std::dynamic_pointer_cast<insight::cad::ConstantScalar>(
+//                                dc->targetValue() ) )
+//                    {
+//                        bool ok;
+//                        double v = QInputDialog::getDouble(
+//                                    &viewer(),
+//                                    "Modify angle constraint",
+//                                    "Enter angle constraint value [deg]",
+//                                    cs->value()/SI::deg,
+//                                    0, DBL_MAX, 6, &ok);
+//                        if (ok)
+//                        {
+//                            cs->setValue(v*SI::deg);
+//                            solve();
+//                        }
+//                    }
+//                    else
+//                    {
+//                        QMessageBox::critical(
+//                                    &viewer(),
+//                                    "Cannot modify constraint",
+//                                    "The selected constraint cannot be modified!" );
+//                    }
+//                }
+//            }
+//        }
+//    }
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
 }

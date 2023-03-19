@@ -2,7 +2,7 @@
 #define IQVTKCADMODEL3DVIEWER_H
 
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 #include "iqcadmodel3dviewer.h"
 #include "iqvtkviewerstate.h"
 #include "iqvtkconstrainedsketcheditor.h"
@@ -49,7 +49,7 @@ VTKWidget;
 
 
 
-class INSIGHTCAD_GUI_EXPORT IQVTKCADModel3DViewer
+class TOOLKIT_GUI_EXPORT IQVTKCADModel3DViewer
         : public IQCADModel3DViewer
 {
     Q_OBJECT
@@ -394,6 +394,7 @@ public:
     void editSketch(const std::string& name, insight::cad::ConstrainedSketchPtr sk) override;
 
 protected:
+    void mouseDoubleClickEvent(QMouseEvent* e) override;
     void mousePressEvent(QMouseEvent* e) override;
     void mouseReleaseEvent(QMouseEvent* e) override;
     void mouseMoveEvent(QMouseEvent* e) override;

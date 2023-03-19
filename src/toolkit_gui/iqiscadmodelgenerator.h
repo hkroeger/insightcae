@@ -1,7 +1,7 @@
 #ifndef IQISCADMODELGENERATOR_H
 #define IQISCADMODELGENERATOR_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
 #include <QObject>
 
@@ -14,7 +14,7 @@
 
 #include "AIS_DisplayMode.hxx"
 
-class INSIGHTCAD_GUI_EXPORT IQISCADModelGenerator
+class TOOLKIT_GUI_EXPORT IQISCADModelGenerator
     : public QObject
 {
   Q_OBJECT

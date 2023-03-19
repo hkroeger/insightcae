@@ -480,6 +480,11 @@ void SketchPoint::setCoords2D(double x, double y)
     y_=y;
 }
 
+arma::mat SketchPoint::coords2D() const
+{
+    return vec2(x_, y_);
+}
+
 arma::mat SketchPoint::value() const
 {
     auto pl=plane_->plane();
@@ -544,7 +549,8 @@ size_t ConstrainedSketch::calcHash() const
 
 
 ConstrainedSketch::ConstrainedSketch()
-: Feature()
+: Feature(),
+  solverTolerance_(1e-6)
 {}
 
 
@@ -553,7 +559,8 @@ ConstrainedSketch::ConstrainedSketch
 (
   DatumPtr pl
 )
-: pl_(pl)
+: pl_(pl),
+  solverTolerance_(1e-6)
 {}
 
 
@@ -571,7 +578,7 @@ const DatumPtr& ConstrainedSketch::plane() const
 }
 
 
-std::set<std::shared_ptr<ConstrainedSketchGeometry> >&
+std::set<std::shared_ptr<ConstrainedSketchEntity> >&
 ConstrainedSketch::geometry()
 {
     return geometry_;
@@ -584,9 +591,19 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
     geometry_=o.geometry_;
 }
 
+double ConstrainedSketch::solverTolerance() const
+{
+    return solverTolerance_;
+}
+
+void ConstrainedSketch::setSolverTolerance(double tol)
+{
+    solverTolerance_=tol;
+}
+
 void ConstrainedSketch::resolveConstraints()
 {
-    std::vector<std::pair<insight::cad::ConstrainedSketchGeometry*, int> > dofs;
+    std::vector<std::pair<insight::cad::ConstrainedSketchEntity*, int> > dofs;
     for (auto& e: geometry())
     {
         for (int i=0; i<e->nDoF(); ++i)
@@ -632,7 +649,7 @@ void ConstrainedSketch::resolveConstraints()
                     std::cout<<"Q="<<Q<<std::endl;
                     return Q;
                 },
-                x0
+                x0, solverTolerance_
     );
 
     setX(xsol);

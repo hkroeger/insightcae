@@ -1,7 +1,7 @@
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
 #include <memory>
 
@@ -58,7 +58,7 @@ const double ValZWMin = 1;
 
 
 
-class INSIGHTCAD_GUI_EXPORT QoccViewWidget
+class TOOLKIT_GUI_EXPORT QoccViewWidget
 : public QWidget
 #if OCC_VERSION_MAJOR>=7
   , protected AIS_ViewController

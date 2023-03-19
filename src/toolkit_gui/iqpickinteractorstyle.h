@@ -1,13 +1,13 @@
 #ifndef IQPICKINTERACTORSTYLE_H
 #define IQPICKINTERACTORSTYLE_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
 #include <QObject>
 
 #include <vtkInteractorStyleTrackballCamera.h>
 
-class INSIGHTCAD_GUI_EXPORT IQPickInteractorStyle
+class TOOLKIT_GUI_EXPORT IQPickInteractorStyle
       : public QObject,
         public vtkInteractorStyleTrackballCamera
 {

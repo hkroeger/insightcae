@@ -43,7 +43,7 @@ public:
 
 class AngleConstraint
 : public Angle,
-  public ConstrainedSketchGeometry
+  public ConstrainedSketchEntity
 {
     ScalarPtr targetValue_;
 

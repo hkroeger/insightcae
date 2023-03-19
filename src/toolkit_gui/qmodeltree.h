@@ -20,7 +20,7 @@
 #ifndef INSIGHT_QMODELTREE_H
 #define INSIGHT_QMODELTREE_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -50,7 +50,7 @@ class IQISCADModelGenerator;
 
 
 
-class INSIGHTCAD_GUI_EXPORT QModelTreeItem
+class TOOLKIT_GUI_EXPORT QModelTreeItem
 : public QObject,
   public QTreeWidgetItem
 {
@@ -85,7 +85,7 @@ public Q_SLOTS:
 
 
 
-class INSIGHTCAD_GUI_EXPORT QDisplayableModelTreeItem
+class TOOLKIT_GUI_EXPORT QDisplayableModelTreeItem
 : public QModelTreeItem
 {
     Q_OBJECT
@@ -149,7 +149,7 @@ Q_SIGNALS:
 
 
 
-class INSIGHTCAD_GUI_EXPORT QModelTree
+class TOOLKIT_GUI_EXPORT QModelTree
 : public QTreeWidget
 {
     Q_OBJECT

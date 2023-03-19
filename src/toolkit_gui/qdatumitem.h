@@ -17,43 +17,47 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef INSIGHT_CAD_POINTERTRANSIENT_H
-#define INSIGHT_CAD_POINTERTRANSIENT_H
+#ifndef QDATUMITEM_H
+#define QDATUMITEM_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
-#include "Standard_Version.hxx"
-#include "Standard_OStream.hxx"
-#if (OCC_VERSION_MAJOR<7)
-#include "Standard_Transient.hxx"
-#include "Standard_Transient_proto.hxx"
-#else
-#include "Standard_Transient.hxx"
+#include <QListWidgetItem>
+#include "qmodeltree.h"
+
+#ifndef Q_MOC_RUN
+#include "occinclude.h"
+#include "cadfeature.h"
 #endif
 
-#include <Standard_DefineHandle.hxx>
+//class QoccViewerContext;
 
-class QObject;
-
-class INSIGHTCAD_GUI_EXPORT PointerTransient
-: public Standard_Transient
+class TOOLKIT_GUI_EXPORT QDatumItem
+: public QDisplayableModelTreeItem
 {
-protected:
-  QObject* mi_;
+  Q_OBJECT
   
-public:
-  PointerTransient();
-  PointerTransient(const PointerTransient& o);
-  PointerTransient(QObject* mi);
-  ~PointerTransient();
-  
-  void operator=(QObject* mi);
-  QObject* getPointer();
+  insight::cad::DatumPtr smp_;
     
-  DEFINE_STANDARD_RTTI(PointerTransient);
+protected:
+  virtual Handle_AIS_InteractiveObject createAIS(
+      insight::cad::DatumPtr datum,
+      AIS_InteractiveContext& context,
+      const gp_Trsf& tr
+      );
+  Handle_AIS_InteractiveObject createAIS(
+        AIS_InteractiveContext& context
+        );
 
+public:
+  QDatumItem(const QString& name, insight::cad::DatumPtr smp, QTreeWidgetItem* parent);
+  
+  inline insight::cad::DatumPtr datum() const { return smp_; }
+
+public slots:
+  void showContextMenu(const QPoint& gpos);
+  
 };
 
-DEFINE_STANDARD_HANDLE(PointerTransient, Standard_Transient)
 
-#endif // INSIGHT_CAD_POINTERTRANSIENT_H
+#endif // QDATUMITEM_H

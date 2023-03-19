@@ -6,7 +6,7 @@ find_package(Qt5Test CONFIG REQUIRED)
 
 add_executable(test_IQCADItemModel test_IQCADItemModel.cpp)
 target_link_libraries(test_IQCADItemModel
- insightcad insightcad_gui
+ insightcad toolkit_gui
  Qt5::Test
  )
 linkToolkitVtk(test_IQCADItemModel Offscreen)

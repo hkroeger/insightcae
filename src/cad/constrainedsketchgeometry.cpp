@@ -9,34 +9,34 @@ namespace cad {
 
 
 
-int ConstrainedSketchGeometry::nDoF() const
+int ConstrainedSketchEntity::nDoF() const
 {
     return 0;
 }
 
-double ConstrainedSketchGeometry::getDoFValue(unsigned int iDoF) const
+double ConstrainedSketchEntity::getDoFValue(unsigned int iDoF) const
 {
     throw insight::Exception("invalid DoF index: %d", iDoF);
     return NAN;
 }
 
-void ConstrainedSketchGeometry::setDoFValue(unsigned int iDoF, double value)
+void ConstrainedSketchEntity::setDoFValue(unsigned int iDoF, double value)
 {
     throw insight::Exception("invalid DoF index: %d", iDoF);
 }
 
-int ConstrainedSketchGeometry::nConstraints() const
+int ConstrainedSketchEntity::nConstraints() const
 {
     return 0;
 }
 
-double ConstrainedSketchGeometry::getConstraintError(unsigned int iConstraint) const
+double ConstrainedSketchEntity::getConstraintError(unsigned int iConstraint) const
 {
     throw insight::Exception("invalid constraint index: %d", iConstraint);
     return NAN;
 }
 
-size_t ConstrainedSketchGeometry::hash() const
+size_t ConstrainedSketchEntity::hash() const
 {
     size_t h=0;
     for (int i=0; i<nDoF(); ++i)
@@ -44,6 +44,26 @@ size_t ConstrainedSketchGeometry::hash() const
     return h;
 }
 
+
+insight::ParameterSet& ConstrainedSketchEntity::parameters()
+{
+    return parameters_;
+}
+
+const insight::ParameterSet& ConstrainedSketchEntity::defaultParameters() const
+{
+    return defaultParameters_;
+}
+
+void ConstrainedSketchEntity::changeDefaultParameters(const insight::ParameterSet& ps)
+{
+    defaultParameters_=ps;
+    ParameterSet oldps=parameters_;
+    parameters_=defaultParameters_;
+
+#warning copy values from old; merge is not the right function
+    //parameters_.merge(oldps);
+}
 
 
 

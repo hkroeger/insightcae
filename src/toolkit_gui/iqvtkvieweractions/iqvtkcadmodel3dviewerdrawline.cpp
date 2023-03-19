@@ -139,6 +139,7 @@ IQVTKCADModel3DViewerPlanePointBasedAction
         p2 = *forcedLocation;
     else
         p2 = pointInPlane2D(cp);
+
     return std::make_shared<SketchPoint>(
                 sketch_->plane(),
                 p2(0), p2(1) );
@@ -249,7 +250,11 @@ void IQVTKCADModel3DViewerDrawLine::onLeftButtonUp(
 
         sketch_->geometry().insert(
                  std::dynamic_pointer_cast
-                    <ConstrainedSketchGeometry>( p1_ ) );
+                    <ConstrainedSketchEntity>( p1_ ) );
+
+        sketch_->geometry().insert(
+                 std::make_shared
+                    <IQVTKFixedPoint>( p1_ ) ); // fix first point
         sketch_->invalidate();
         Q_EMIT updateActors();
     }
@@ -259,7 +264,7 @@ void IQVTKCADModel3DViewerDrawLine::onLeftButtonUp(
 
         sketch_->geometry().insert(
                  std::dynamic_pointer_cast
-                    <ConstrainedSketchGeometry>( p2_ ) );
+                    <ConstrainedSketchEntity>( p2_ ) );
 
         auto line = std::dynamic_pointer_cast<insight::cad::Line>(
                     Line::create(p1_, p2_) );

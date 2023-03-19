@@ -17,36 +17,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef QEVALUATIONITEM_H
-#define QEVALUATIONITEM_H
+#ifndef VIEWSTATE_H
+#define VIEWSTATE_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
-#include <QListWidgetItem>
-#include "qmodeltree.h"
-
-#ifndef Q_MOC_RUN
-#include "occinclude.h"
-// #include "cadtypes.h"
-#include "cadfeature.h"
-#endif
-//class QoccViewerContext;
-
-class INSIGHTCAD_GUI_EXPORT QEvaluationItem
-: public QDisplayableModelTreeItem
+struct TOOLKIT_GUI_EXPORT ViewState
 {
-  insight::cad::PostprocActionPtr smp_;
-
-protected:
-  virtual Handle_AIS_InteractiveObject createAIS(AIS_InteractiveContext& context);
-
-public:
-  QEvaluationItem(const QString& name, insight::cad::PostprocActionPtr smp, QTreeWidgetItem* parent, bool visible=false);
- 
-public slots:
-  void showContextMenu(const QPoint& gpos);
+  int shading;
+  bool visible;
+  double r, g, b;
   
+  ViewState(int shad=1);
+  void randomizeColor();
 };
 
-
-#endif // QEVALUATIONITEM_H
+#endif // VIEWSTATE_H

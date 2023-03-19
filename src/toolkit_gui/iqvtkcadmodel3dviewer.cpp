@@ -1238,6 +1238,8 @@ void IQVTKCADModel3DViewer::editSketch(const std::string& name, insight::cad::Co
 
 
 
+
+
 QSize IQVTKCADModel3DViewer::sizeHint() const
 {
     return QSize(1024,768);
@@ -1319,6 +1321,21 @@ void IQVTKCADModel3DViewer::setBackgroundColor(QColor c)
 }
 
 
+void IQVTKCADModel3DViewer::mouseDoubleClickEvent(QMouseEvent *e)
+{
+    if ( e->button() & Qt::LeftButton )
+    {
+        navigationManager_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+        if (currentNavigationAction_)
+            currentNavigationAction_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+        if (currentUserActivity_)
+            currentUserActivity_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+    }
+
+    if (currentUserActivity_ && currentUserActivity_->finished())
+        currentUserActivity_.reset();
+
+}
 
 void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
 {

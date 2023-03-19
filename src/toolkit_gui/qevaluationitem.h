@@ -17,47 +17,36 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef QDATUMITEM_H
-#define QDATUMITEM_H
+#ifndef QEVALUATIONITEM_H
+#define QEVALUATIONITEM_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
 #include <QListWidgetItem>
 #include "qmodeltree.h"
 
 #ifndef Q_MOC_RUN
 #include "occinclude.h"
+// #include "cadtypes.h"
 #include "cadfeature.h"
 #endif
-
 //class QoccViewerContext;
 
-class INSIGHTCAD_GUI_EXPORT QDatumItem
+class TOOLKIT_GUI_EXPORT QEvaluationItem
 : public QDisplayableModelTreeItem
 {
-  Q_OBJECT
-  
-  insight::cad::DatumPtr smp_;
-    
+  insight::cad::PostprocActionPtr smp_;
+
 protected:
-  virtual Handle_AIS_InteractiveObject createAIS(
-      insight::cad::DatumPtr datum,
-      AIS_InteractiveContext& context,
-      const gp_Trsf& tr
-      );
-  Handle_AIS_InteractiveObject createAIS(
-        AIS_InteractiveContext& context
-        );
+  virtual Handle_AIS_InteractiveObject createAIS(AIS_InteractiveContext& context);
 
 public:
-  QDatumItem(const QString& name, insight::cad::DatumPtr smp, QTreeWidgetItem* parent);
-  
-  inline insight::cad::DatumPtr datum() const { return smp_; }
-
+  QEvaluationItem(const QString& name, insight::cad::PostprocActionPtr smp, QTreeWidgetItem* parent, bool visible=false);
+ 
 public slots:
   void showContextMenu(const QPoint& gpos);
   
 };
 
 
-#endif // QDATUMITEM_H
+#endif // QEVALUATIONITEM_H

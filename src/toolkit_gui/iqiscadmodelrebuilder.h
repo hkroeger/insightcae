@@ -1,7 +1,7 @@
 #ifndef IQISCADMODELREBUILDER_H
 #define IQISCADMODELREBUILDER_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
 #include <set>
 #include <string>
@@ -34,7 +34,7 @@ struct SymbolsSnapshot
 
 
 
-class INSIGHTCAD_GUI_EXPORT IQISCADModelRebuilder
+class TOOLKIT_GUI_EXPORT IQISCADModelRebuilder
         : public QObject
 {
     Q_OBJECT

@@ -1,7 +1,7 @@
 #ifndef IQCADMODEL3DVIEWER_H
 #define IQCADMODEL3DVIEWER_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 #include "cadtypes.h"
 
 #include <QAbstractItemModel>
@@ -12,7 +12,7 @@
 #include "sketch.h"
 
 
-class INSIGHTCAD_GUI_EXPORT IQCADModel3DViewer
+class TOOLKIT_GUI_EXPORT IQCADModel3DViewer
         : public QMainWindow //for toolbars to work //QWidget
 {
     Q_OBJECT

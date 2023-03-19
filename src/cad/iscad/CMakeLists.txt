@@ -39,7 +39,7 @@ add_executable(iscad ${iscad_SRCS} ${iscad_FORMS} ${iscad_RCCS})
 
 target_link_libraries(iscad
   Qt5::Widgets
-  toolkit_gui insightcad_gui
+  toolkit_gui
   #${OPENGL_LIBRARIES}
   ${Boost_LIBRARIES}
   ${DXFLIB_LIBRARIES}

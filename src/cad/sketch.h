@@ -94,7 +94,7 @@ public:
 
 class SketchPoint
 : public insight::cad::Vector,
-  public ConstrainedSketchGeometry
+  public ConstrainedSketchEntity
 {
 
   DatumPtr plane_;
@@ -103,6 +103,7 @@ class SketchPoint
 public:
   SketchPoint(DatumPtr plane, double x, double y);
   void setCoords2D(double x, double y);
+  arma::mat coords2D() const;
   arma::mat value() const override;
 
   int nDoF() const override;
@@ -120,7 +121,8 @@ class ConstrainedSketch
 : public Feature
 {
   DatumPtr pl_;
-  std::set<ConstrainedSketchGeometryPtr> geometry_;
+  std::set<ConstrainedSketchEntityPtr> geometry_;
+  double solverTolerance_;
 
   ConstrainedSketch( DatumPtr pl );
 
@@ -134,10 +136,12 @@ public:
   static FeaturePtr create(DatumPtr pl);
 
   const DatumPtr& plane() const;
-  std::set<ConstrainedSketchGeometryPtr>& geometry();
+  std::set<ConstrainedSketchEntityPtr>& geometry();
 
   void operator=(const ConstrainedSketch& o);
 
+  double solverTolerance() const;
+  void setSolverTolerance(double tol);
 
   void resolveConstraints();
 

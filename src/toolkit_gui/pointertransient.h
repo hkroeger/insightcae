@@ -17,19 +17,43 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef VIEWSTATE_H
-#define VIEWSTATE_H
+#ifndef INSIGHT_CAD_POINTERTRANSIENT_H
+#define INSIGHT_CAD_POINTERTRANSIENT_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
-struct INSIGHTCAD_GUI_EXPORT ViewState
+#include "Standard_Version.hxx"
+#include "Standard_OStream.hxx"
+#if (OCC_VERSION_MAJOR<7)
+#include "Standard_Transient.hxx"
+#include "Standard_Transient_proto.hxx"
+#else
+#include "Standard_Transient.hxx"
+#endif
+
+#include <Standard_DefineHandle.hxx>
+
+class QObject;
+
+class TOOLKIT_GUI_EXPORT PointerTransient
+: public Standard_Transient
 {
-  int shading;
-  bool visible;
-  double r, g, b;
+protected:
+  QObject* mi_;
   
-  ViewState(int shad=1);
-  void randomizeColor();
+public:
+  PointerTransient();
+  PointerTransient(const PointerTransient& o);
+  PointerTransient(QObject* mi);
+  ~PointerTransient();
+  
+  void operator=(QObject* mi);
+  QObject* getPointer();
+    
+  DEFINE_STANDARD_RTTI(PointerTransient);
+
 };
 
-#endif // VIEWSTATE_H
+DEFINE_STANDARD_HANDLE(PointerTransient, Standard_Transient)
+
+#endif // INSIGHT_CAD_POINTERTRANSIENT_H

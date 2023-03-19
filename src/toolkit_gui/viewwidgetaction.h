@@ -1,7 +1,7 @@
 #ifndef VIEWWIDGETACTION_H
 #define VIEWWIDGETACTION_H
 
-#include "insightcad_gui_export.h"
+#include "toolkit_gui_export.h"
 
 
 #include "cadtypes.h"
@@ -89,6 +89,9 @@ public:
                   "attempt to query mouse location before first input received!");
       return *lastMouseLocation_;
   }
+
+  virtual void onLeftButtonDoubleClick  ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {}
 
   virtual void onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {}

@@ -27,7 +27,7 @@
 #include "vtkMultiBlockDataSet.h"
 #include "vtkCompositeDataGeometryFilter.h"
 
-
+#include "boost/property_tree/ptree.hpp"
 
 
 namespace insight
@@ -45,7 +45,8 @@ extern const std::vector<double> colorMapData_SD;
 
 vtkSmartPointer<vtkLookupTable> createColorMap(
         const std::vector<double>& cb = colorMapData_SD,
-        int nc=32
+        int nc=32,
+        bool logscale = false
         );
 
 
@@ -106,7 +107,13 @@ MinMax calcRange(
 class MultiBlockDataSetExtractor
 {
   vtkMultiBlockDataSet* mbds_;
+//  struct Node {
+//      vtkDataObject* node;
+//      int flatIndex;
+//  };
+//  boost::property_tree::basic_ptree<std::string,Node> tree_;
   std::map<vtkDataObject*,int> flatIndices_;
+
 
 
 public:
@@ -114,7 +121,10 @@ public:
 
   std::set<int> flatIndices(const std::vector<std::string>& groupNamePatterns) const;
 
-  static std::set<vtkDataObject*> findObjectsBelowGroup(const std::string& name_pattern, vtkDataObject* input);
+  void findObjectsBelowNode(
+          std::vector<std::string> name_pattern,
+          vtkDataObject* input,
+          std::set<int>& res) const;
 };
 
 
@@ -269,8 +279,7 @@ public:
 
 
 class OpenFOAMCaseScene
-  : public VTKOffscreenScene,
-    public vtkSmartPointer<vtkOpenFOAMReader>
+  : public VTKOffscreenScene
 {
   vtkSmartPointer<vtkOpenFOAMReader> ofcase_;
   std::map<std::string,int> patches_;
@@ -293,7 +302,7 @@ public:
 
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(int blockIdx) const;
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::string& name) const;
-  vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::vector<int>& blockIdxs) const;
+  vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::set<int>& blockIdxs) const;
 };
 
 

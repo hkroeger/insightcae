@@ -28,6 +28,7 @@
 #include "vtkActor2DCollection.h"
 #include "vtkDataObjectTreeIterator.h"
 #include "vtkCleanPolyData.h"
+#include "vtkLogLookupTable.h"
 
 #include "vtkPointData.h"
 #include "vtkExtractBlock.h"
@@ -125,7 +126,8 @@ const std::vector<double> colorMapData_SD = {
 
 vtkSmartPointer<vtkLookupTable> createColorMap(
         const std::vector<double>& cb,
-        int nc
+        int nc,
+        bool logscale
         )
 {
     auto gen = vtkSmartPointer<vtkDiscretizableColorTransferFunction>::New();
@@ -140,9 +142,19 @@ vtkSmartPointer<vtkLookupTable> createColorMap(
         gen->AddRGBPoint(cb[j], cb[j+1], cb[j+2], cb[j+3]);
     }
     gen->SetNumberOfValues(nc);
+    gen->SetUseLogScale(logscale);
     gen->Build();
 
-    auto lut = vtkSmartPointer<vtkLookupTable>::New();
+    vtkSmartPointer<vtkLookupTable> lut;
+    if (logscale)
+    {
+        lut = vtkSmartPointer<vtkLogLookupTable>::New();
+        lut->SetScaleToLog10();
+    }
+    else
+    {
+        lut = vtkSmartPointer<vtkLookupTable>::New();
+    }
     lut->SetNumberOfTableValues(nc);
     for (int i=0; i<nc; i++)
     {
@@ -150,6 +162,7 @@ vtkSmartPointer<vtkLookupTable> createColorMap(
         gen->GetColor( double(i)/double(nc-1), rgb);
         lut->SetTableValue(i, rgb[0], rgb[1], rgb[2]);
     }
+
     lut->Build();
 
     return lut;
@@ -163,6 +176,8 @@ MinMax calcRange(
     const std::vector<vtkAlgorithm*> algorithms
     )
 {
+    insight::CurrentExceptionContext ex("determining range of field "+fsel.fieldName());
+
     auto fieldname = boost::fusion::get<0>(fsel);
     auto fs = boost::fusion::get<1>(fsel);
     auto cmpt = boost::fusion::get<2>(fsel);
@@ -172,15 +187,23 @@ MinMax calcRange(
     auto evaluate = [&](vtkDataSet* ds)
     {
         double mima[2] = {0,1};
+        vtkDataArray *arr;
         switch (fs)
         {
           case Point:
-            ds->GetPointData()->GetArray(fieldname.c_str())->GetRange(mima, cmpt); // cmpt==-1 => L2 norm
+            arr=ds->GetPointData()->GetArray(fieldname.c_str());
+            insight::assertion(
+                        arr!=nullptr,
+                        "could not lookup point field "+fieldname );
             break;
           case Cell:
-            ds->GetCellData()->GetArray(fieldname.c_str())->GetRange(mima, cmpt);
+            arr=ds->GetCellData()->GetArray(fieldname.c_str()); //->GetRange(mima, cmpt);
+            insight::assertion(
+                        arr!=nullptr,
+                        "could not lookup cell field "+fieldname );
             break;
         }
+        arr->GetRange(mima, cmpt); // cmpt==-1 => L2 norm
         mm.first=std::min(mm.first, mima[0]);
         mm.second=std::max(mm.second, mima[1]);
     };
@@ -202,40 +225,64 @@ MinMax calcRange(
 
 
 
-std::set<vtkDataObject*> MultiBlockDataSetExtractor::findObjectsBelowGroup(const std::string& name_pattern, vtkDataObject* input)
+void
+MultiBlockDataSetExtractor::findObjectsBelowNode(
+        std::vector<std::string> name_pattern,
+        vtkDataObject* input,
+        std::set<int>& res) const
 {
-  insight::CurrentExceptionContext ex("searching for groups with names matching \""+name_pattern+"\"");
-
-  std::set<vtkDataObject*> res;
+  insight::CurrentExceptionContext ex("searching for groups with names matching \""+name_pattern.front()+"\"");
 
   vtkMultiBlockDataSet *mbds=vtkMultiBlockDataSet::SafeDownCast(input);
   insight::assertion(mbds!=nullptr, "valid vtkMultiBlockDataset expected!");
 
-  boost::regex pattern(name_pattern);
-  vtkSmartPointer<vtkDataObjectTreeIterator> iter = mbds->NewTreeIterator();
+  boost::regex repat(name_pattern.front());
+
+  auto iter = mbds->NewTreeIterator();
   iter->VisitOnlyLeavesOff();
   iter->TraverseSubTreeOff();
-
-  for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+  for ( iter->InitTraversal();
+       !iter->IsDoneWithTraversal();
+        iter->GoToNextItem() )
   {
-    std::string name(iter->GetCurrentMetaData()->Get(vtkCompositeDataSet::NAME()));
+    std::string name(
+                iter->GetCurrentMetaData()->Get(
+                    vtkCompositeDataSet::NAME() ) );
 
-//    iter->Print(std::cout);
-//    iter->GetCurrentMetaData()->Print(std::cout);
+    if (boost::regex_match(name, repat))
+    {
+        auto sub = vtkMultiBlockDataSet::SafeDownCast(iter->GetCurrentDataObject());
 
-    auto j=iter->GetCurrentDataObject();
-    if (boost::regex_match(name, pattern))
-    {
-      std::cout<<name<<" matches "<<name_pattern<<" ("<<j<<")"<<std::endl;
-      res.insert(j);
-    }
-    else
-    {
-      std::cout<<name<<" not matching "<<name_pattern<<" ("<<j<<")"<<std::endl;
+        if (name_pattern.size()>1)
+        {
+            insight::assertion(
+                        sub!=nullptr,
+                        "node "+name+" (selected by pattern \""+name_pattern.front()+"\") was not a vtkMultiBlockDataSet!" );
+            findObjectsBelowNode(
+                        std::vector<std::string>(name_pattern.begin()+1, name_pattern.end()),
+                        sub, res);
+        }
+        else
+        {
+            if (sub) // add all childs
+            {
+                auto k = sub->NewTreeIterator();
+                k->VisitOnlyLeavesOff();
+                k->TraverseSubTreeOn();
+                for ( k->InitTraversal();
+                     !k->IsDoneWithTraversal();
+                      k->GoToNextItem() )
+                {
+                    res.insert(flatIndices_.at(k->GetCurrentDataObject()));
+                }
+            }
+            else // add leaf itself
+            {
+                res.insert(flatIndices_.at(iter->GetCurrentDataObject()));
+            }
+        }
     }
   }
-
-  return res;
 }
 
 
@@ -247,7 +294,10 @@ MultiBlockDataSetExtractor::MultiBlockDataSetExtractor(vtkMultiBlockDataSet* mbd
 
   insight::assertion(mbds_!=nullptr, "a non-null pointer to the MultiBlockDataSet is expected!");
 
-  vtkSmartPointer<vtkDataObjectTreeIterator> iter = mbds_->NewTreeIterator();
+  // traverse over all leafs to get flat index
+  // GetCurrentFlatIndex() only return the right value,
+  // if the loop is over the entire structure
+  auto iter = mbds_->NewTreeIterator();
   iter->VisitOnlyLeavesOff();
   iter->SkipEmptyNodesOff();
 
@@ -255,7 +305,6 @@ MultiBlockDataSetExtractor::MultiBlockDataSetExtractor(vtkMultiBlockDataSet* mbd
   {
     auto o=iter->GetCurrentDataObject();
     auto j=iter->GetCurrentFlatIndex();
-    std::cout<<j<<" "<<iter->GetCurrentMetaData()->Get(vtkCompositeDataSet::NAME())<<std::endl;
     flatIndices_[o]=j;
   }
 }
@@ -265,40 +314,15 @@ MultiBlockDataSetExtractor::MultiBlockDataSetExtractor(vtkMultiBlockDataSet* mbd
 
 std::set<int> MultiBlockDataSetExtractor::flatIndices(const std::vector<std::string>& groupNamePatterns) const
 {
-  auto i = groupNamePatterns.begin();
+  insight::CurrentExceptionContext ex("determining block indices for pattern ["+boost::join(groupNamePatterns, ", ")+"]");
 
-  auto gi = findObjectsBelowGroup(*i, mbds_); // top level
-
-  if (i!=groupNamePatterns.end())
-  {
-    for ( ++i; i!=groupNamePatterns.end() ; ++i) // get one level down
-    {
-      std::cout<<"level = "<<*i<<std::endl;
-      std::set<vtkDataObject*> ngi;
-      for (auto j: gi)
-      {
-        auto r=findObjectsBelowGroup(*i, j);
-        ngi.insert(r.begin(), r.end());
-      }
-      gi=ngi;
-    }
-  }
+  insight::assertion(
+              groupNamePatterns.size()>0,
+              "specify at least one input element" );
 
   std::set<int> res;
-  for(auto j: gi) // get all leaf objects below found groups
-  {
-    vtkSmartPointer<vtkDataObjectTreeIterator> iter =
-        vtkMultiBlockDataSet::SafeDownCast(j)->NewTreeIterator();
-    iter->VisitOnlyLeavesOn();
-    std::cout<<"final index = ";
-    for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
-    {
-      int fi=flatIndices_.at(iter->GetCurrentDataObject());
-      std::cout<<fi<<" ";
-      res.insert(fi);
-    }
-    std::cout<<std::endl;
-  }
+  findObjectsBelowNode(groupNamePatterns, mbds_, res);
+
   return res;
 }
 
@@ -662,18 +686,18 @@ vtkSmartPointer<vtkOpenFOAMReader> OpenFOAMCaseScene::ofcase() const
 
 vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(const std::string& name) const
 {
-  std::vector<int> blkIdx;
+  std::set<int> blkIdx;
   if (patches_.find(name)!=patches_.end())
   {
     int i=patches_.at(name);
-    blkIdx.push_back(i);
+    blkIdx.insert(i);
   }
   else
   {
     auto names = matchingPatchNames(name);
     for (const auto& pn: names)
     {
-      blkIdx.push_back(patches_.at(pn));
+      blkIdx.insert(patches_.at(pn));
     }
     if (blkIdx.size()==0)
       throw insight::Exception(
@@ -685,11 +709,15 @@ vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(
 
 vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(int blockIdx) const
 {
-  return extractBlock(std::vector<int>({blockIdx}));
+  return extractBlock(std::set<int>({blockIdx}));
 }
 
-vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(const std::vector<int>& blockIdxs) const
+vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(const std::set<int>& blockIdxs) const
 {
+    insight::assertion(
+                blockIdxs.size()>0,
+                "no block indices to extract were provided!" );
+
   auto eb = vtkSmartPointer<vtkExtractBlock>::New();
   eb->SetInputConnection(ofcase_->GetOutputPort());
   for (int i: blockIdxs) eb->AddIndex( i );

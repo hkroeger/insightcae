@@ -156,7 +156,7 @@ void TabularResult::writeLatexCode ( std::ostream& f, const std::string& , int ,
   {
     f<<
      "\\begin{longtable}{";
-    for (int c: cols) {
+    for (int c=0; c<cols.size(); ++c) {
         f<<"c";
     }
     f<<"}\n";

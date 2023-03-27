@@ -1061,7 +1061,12 @@ void IQVTKCADModel3DViewer::activateSelectionAll(insight::cad::EntityType subsha
         if (auto* featPtr =
                 boost::get<insight::cad::FeaturePtr>(&disp.second.ce_))
         {
-            activateSelection(*featPtr, subshapeType);
+            bool anythingVisible=false;
+            for (const auto& act: disp.second.actors_)
+                anythingVisible = anythingVisible || act->GetVisibility();
+
+            if (anythingVisible)
+                activateSelection(*featPtr, subshapeType);
         }
     }
 }

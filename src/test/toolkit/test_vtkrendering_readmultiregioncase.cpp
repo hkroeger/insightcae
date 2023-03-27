@@ -39,20 +39,41 @@ int main(int argc, char*argv[])
         exb->Update();
         exb->PrintSelf(std::cout, vtkIndent());
 
-        FieldSelection ws("T", FieldSupport::Point, -1);
-        auto ws_range = calcRange(ws, {}, {exb});
-
-        FieldColor ws_color(ws, createColorMap(), ws_range);
-        scene.addAlgo<vtkDataSetMapper>(exb, ws_color);
-        scene.addColorBar(ws.fieldName(), ws_color.lookupTable(), 0.1, 0.1, true);
 
         auto camera = scene.activeCamera();
         camera->ParallelProjectionOn();
         camera->SetFocalPoint( toArray(vec3(0, 0, 0)) );
         camera->SetViewUp( toArray(vec3(0, 1, 0)) );
         camera->SetPosition( toArray(vec3(0, 0, 10)) );
-        scene.fitAll();
 
+        {
+            FieldSelection ws("T", FieldSupport::Point, -1);
+            auto ws_range = calcRange(ws, {}, {exb});
+
+            FieldColor ws_color(ws, createColorMap(), ws_range);
+            scene.addAlgo<vtkDataSetMapper>(exb, ws_color);
+            scene.addColorBar(ws.fieldName(), ws_color.lookupTable(), 0.1, 0.1, true);
+
+            scene.fitAll();
+
+            std::string name="temperature", fname=name+".png";
+            scene.exportImage(boost::filesystem::temp_directory_path() / fname);
+        }
+
+        scene.clearScene();
+
+        {
+            FieldSelection ws("U", FieldSupport::Point, -1);
+            auto ws_range = calcRange(ws, {}, {exb});
+
+            FieldColor ws_color(ws, createColorMap(colorMapData_SD, 32, true),
+                                insight::MinMax{1e-6, ws_range.second});
+            scene.addAlgo<vtkDataSetMapper>(exb, ws_color);
+            scene.addColorBar(ws.fieldName(), ws_color.lookupTable(), 0.1, 0.1, true);
+
+            std::string name="velocity", fname=name+".png";
+            scene.exportImage(boost::filesystem::temp_directory_path() / fname);
+        }
     }
     catch (const std::exception& e)
     {

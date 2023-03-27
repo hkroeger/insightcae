@@ -23,7 +23,8 @@ public:
 
     virtual size_t hash() const;
 
-    insight::ParameterSet& parameters();
+    const insight::ParameterSet& parameters() const;
+    insight::ParameterSet& parametersRef();
     const insight::ParameterSet& defaultParameters() const;
     void changeDefaultParameters(const insight::ParameterSet&);
 };

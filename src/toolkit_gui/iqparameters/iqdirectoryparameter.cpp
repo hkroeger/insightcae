@@ -78,7 +78,6 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
   connect(apply, &QPushButton::pressed, applyFunction);
   layout->addWidget(apply);
 
-  layout->addStretch();
 
   return layout;
 }

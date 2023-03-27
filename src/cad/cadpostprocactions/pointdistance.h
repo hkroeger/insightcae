@@ -58,16 +58,15 @@ class DistanceConstraint
 : public Distance,
   public ConstrainedSketchEntity
 {
-    ScalarPtr targetValue_;
 
     size_t calcHash() const override;
 
 public:
     declareType("DistanceConstraint");
 
-    DistanceConstraint(VectorPtr p1, VectorPtr p2, ScalarPtr targetValue);
+    DistanceConstraint(VectorPtr p1, VectorPtr p2, double targetValue);
 
-    ScalarPtr targetValue();
+    double targetValue() const;
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;

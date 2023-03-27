@@ -8,6 +8,7 @@
 #include "iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
 #include "cadpostprocactions/pointdistance.h"
 #include "cadpostprocactions/angle.h"
+#include "base/parameters/simpleparameter.h"
 
 #include "parametereditorwidget.h"
 
@@ -22,8 +23,12 @@ IQVTKFixedPoint::IQVTKFixedPoint(
     : p_(p)
 {
     auto c=p->coords2D();
-    x_=c(0);
-    y_=c(1);
+    changeDefaultParameters(
+                insight::ParameterSet({
+                                 {"x", new insight::DoubleParameter(c(0), "x location")},
+                                 {"y", new insight::DoubleParameter(c(1), "y location")}
+                             })
+                );
 }
 
 std::vector<vtkSmartPointer<vtkProp> > IQVTKFixedPoint::createActor() const
@@ -31,7 +36,7 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKFixedPoint::createActor() const
     auto sph = vtkSmartPointer<vtkSphereSource>::New();
     sph->SetCenter( p_->value().memptr() );
 #warning need a sketch order of scene size
-    sph->SetRadius(0.1);
+    sph->SetRadius(0.025);
 
     auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     //mapper->SetInputData(arr);
@@ -55,7 +60,9 @@ double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
                 iConstraint==0,
                 "invalid constraint id: %d", iConstraint );
     auto p = p_->coords2D();
-    return pow(p(0)-x_,2), pow(p(1)-y_,2);
+    double x=parameters().getDouble("x");
+    double y=parameters().getDouble("y");
+    return pow(p(0)-x,2), pow(p(1)-y,2);
 }
 
 
@@ -119,45 +126,77 @@ void IQVTKConstrainedSketchEditor::remove(insight::cad::ConstrainedSketchEntityP
 void IQVTKConstrainedSketchEditor::SketchEntitySelection::highlight(
         std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity )
 {
-#warning implement find
-//    auto i=std::find(
-//                editor_.sketchGeometryActors_.begin(),
-//                editor_.sketchGeometryActors_.end(),
-//                entity);
-//    if (i!=editor_.sketchGeometryActors_.end())
-//    {
-//        ActorSet actors = i->second;
-//        for(auto &a: actors)
-//        {
-//            if (auto aa = vtkActor::SafeDownCast(a))
-//            {
-//                aa->GetProperty()->SetColor(0,0,1);
-//            }
-//        }
-//    }
+    auto i=std::find_if(
+                editor_.sketchGeometryActors_.begin(),
+                editor_.sketchGeometryActors_.end(),
+                [&entity]( const decltype(editor_.sketchGeometryActors_)::value_type& p2 )
+        {
+            return !entity.owner_before(p2.first) && !p2.first.owner_before(entity);
+        }
+    );
+
+    editor_.viewer().actorHighlight_.reset();
+    if (i!=editor_.sketchGeometryActors_.end())
+    {
+        mapped_type restoreProps;
+        ActorSet actors = i->second;
+        for(auto &a: actors)
+        {
+            if (auto aa = vtkActor::SafeDownCast(a))
+            {
+                decltype(restoreProps)::mapped_type prop;
+                aa->GetProperty()->GetColor(prop.oldColor);
+                aa->GetProperty()->SetColor(0,0,1);
+                restoreProps[aa]=prop;
+            }
+        }
+        insert({entity, restoreProps});
+    }
 }
 
 void IQVTKConstrainedSketchEditor::SketchEntitySelection::unhighlight(
         std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity)
 {
-#warning implement me
+    auto i = find(entity);
+    if (i!=end())
+    {
+        auto restoreProp=i->second;
+        for (auto& rp: restoreProp)
+        {
+            if (auto aa = vtkActor::SafeDownCast(rp.first))
+            {
+                aa->GetProperty()->SetColor(rp.second.oldColor);
+            }
+        }
+        erase(i);
+    }
 }
 
 IQVTKConstrainedSketchEditor::SketchEntitySelection::SketchEntitySelection
 ( IQVTKConstrainedSketchEditor &editor )
     : editor_(editor)
 {
+    pe_ = new ParameterEditorWidget(editor_.toolBox_);
+    tbi_=editor_.toolBox_->addItem(pe_, "Selection properties");
+    editor_.toolBox_->setCurrentIndex(tbi_);
 
-//    auto pe = new ParameterEditorWidget();
-//    toolBox_->addItem(this, "Sketch");
+    connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
+            [this]()
+            {
+                auto e = begin()->first.lock();
+                e->parametersRef() = pe_->model()->getParameterSet();
+            }
+    );
+
 }
 
 
 IQVTKConstrainedSketchEditor::SketchEntitySelection::~SketchEntitySelection()
 {
-    for (auto& e: *this)
+    editor_.toolBox_->removeItem(tbi_);
+    for (iterator i=begin(); i!=end(); i=begin())
     {
-        unhighlight(e);
+        unhighlight(i->first);
     }
 }
 
@@ -165,8 +204,14 @@ IQVTKConstrainedSketchEditor::SketchEntitySelection::~SketchEntitySelection()
 void IQVTKConstrainedSketchEditor::SketchEntitySelection::addAndHighlight(
         insight::cad::ConstrainedSketchEntityPtr entity)
 {
-    this->push_back(entity);
+    pe_->resetParameterSet(entity->parametersRef(), entity->defaultParameters());
     highlight(entity);
+}
+
+bool IQVTKConstrainedSketchEditor::SketchEntitySelection::isInSelection(
+        const insight::cad::ConstrainedSketchEntityPtr &entity)
+{
+    return find(entity)!=end();
 }
 
 
@@ -181,22 +226,23 @@ void IQVTKConstrainedSketchEditor::drawLine()
     connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::lineAdded, dl.get(),
             [this](insight::cad::Line* line, insight::cad::Line* prevLine)
             {
+                line->changeDefaultParameters(defaultGeometryParameters_);
+
                 double curLen = arma::norm( line->start()->value() - line->end()->value(), 2);
 
                 auto lc = std::make_shared<insight::cad::DistanceConstraint>(
                         line->start(), line->end(),
-                            insight::cad::scalarconst(curLen) );
+                            curLen );
                 (*this)->geometry().insert(lc);
 
                 if (prevLine)
                 {
                     auto ac = std::make_shared<insight::cad::AngleConstraint>(
                             prevLine->start(), line->end(), line->start(),
-                                insight::cad::scalarconst(
-                                    insight::cad::Angle::calculate(
+                                insight::cad::Angle::calculate(
                                         prevLine->start()->value(),
                                         line->end()->value(),
-                                        line->start()->value() ) ) );
+                                        line->start()->value() ) );
                     (*this)->geometry().insert(ac);
                 }
 
@@ -223,10 +269,12 @@ void IQVTKConstrainedSketchEditor::solve()
 
 IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         IQVTKCADModel3DViewer& viewer,
-        insight::cad::ConstrainedSketchPtr sketch
+        insight::cad::ConstrainedSketchPtr sketch,
+        const insight::ParameterSet& defaultGeometryParameters
 )
     : ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),
-      insight::cad::ConstrainedSketchPtr(sketch)
+      insight::cad::ConstrainedSketchPtr(sketch),
+      defaultGeometryParameters_(defaultGeometryParameters)
 {
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawline.svg"), "Line",
@@ -279,6 +327,7 @@ IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
     toolBar_->deleteLater();
     toolBoxWidget_->hide();
     toolBoxWidget_->deleteLater();
+    currentSelection_.reset();
 
     // copy because "remove" invalidates for-loop
     std::set<insight::cad::ConstrainedSketchEntityPtr> sgs;
@@ -322,22 +371,30 @@ void IQVTKConstrainedSketchEditor::onLeftButtonDown  ( Qt::KeyboardModifiers nFl
         if (auto sg =
                 this->findSketchElementOfActor(act))
         {
+            if (currentSelection_ && !currentSelection_->isInSelection(sg))
+            {
+                currentSelection_.reset();
+            }
+
             if (!currentSelection_)
             {
                 currentSelection_ =
                         std::make_shared<SketchEntitySelection>(
                             *this);
             }
+
             currentSelection_->addAndHighlight(sg);
         }
         else
         {
-            if (currentSelection_)
-            {
-                currentSelection_.reset();
-            }
+            currentSelection_.reset();
         }
     }
+    else
+    {
+        currentSelection_.reset();
+    }
+
     if (currentAction_)
         currentAction_->onLeftButtonDown( nFlags, point );
     if (currentAction_ && currentAction_->finished())

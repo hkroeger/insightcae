@@ -22,6 +22,7 @@
 #include "vtkPolyDataSilhouette.h"
 #include "vtkPolyDataMapper.h"
 #include "vtkProperty.h"
+#include "vtkImageActor.h"
 
 #include <QAbstractItemModel>
 #include <QTimer>
@@ -147,14 +148,13 @@ public:
 
 private:
     VTKWidget vtkWidget_;
-    vtkSmartPointer<vtkRenderer> ren_;
+    vtkSmartPointer<vtkRenderer> ren_, backgroundRen_;
 
     DisplayedData displayedData_;
 
     std::unique_ptr<SubshapeSelection> currentSubshapeSelection_;
 
     ViewState viewState_;
-
 
 
 #warning should be better named "expose"
@@ -324,6 +324,20 @@ private:
     QTimer redrawTimer_;
     void scheduleRedraw();
 
+    class BackgroundImage : public IQVTKViewerState
+    {
+        vtkSmartPointer<vtkImageActor> imageActor_;
+
+    public:
+        BackgroundImage(
+                const boost::filesystem::path& fp,
+                IQVTKCADModel3DViewer& viewer );
+
+        ~BackgroundImage();
+    };
+    friend class BackgroundImage;
+
+    std::unique_ptr<BackgroundImage> backgroundImage_;
 
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
@@ -340,6 +354,9 @@ private Q_SLOT:
 public:
     IQVTKCADModel3DViewer(QWidget* parent=nullptr);
     ~IQVTKCADModel3DViewer();
+
+    void setBackgroundImage(const boost::filesystem::path& imageFile);
+    vtkRenderWindow* renWin();
 
     void setModel(QAbstractItemModel* model) override;
 
@@ -391,7 +408,10 @@ public:
     void resetRepresentations() override;
 
     void doSketchOnPlane(insight::cad::DatumPtr plane) override;
-    void editSketch(const std::string& name, insight::cad::ConstrainedSketchPtr sk) override;
+    void editSketch(
+            const std::string& name,
+            insight::cad::ConstrainedSketchPtr sk,
+            const insight::ParameterSet& defaultGeometryParameters ) override;
 
 protected:
     void mouseDoubleClickEvent(QMouseEvent* e) override;

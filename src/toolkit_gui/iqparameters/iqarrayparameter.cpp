@@ -98,7 +98,6 @@ QVBoxLayout* IQArrayParameter::populateEditControls(
   );
 
   layout->addLayout(layout2);
-  layout->addStretch();
 
   return layout;
 }

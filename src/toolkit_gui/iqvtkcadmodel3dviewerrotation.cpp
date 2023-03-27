@@ -14,7 +14,7 @@ void IQVTKCADModel3DViewerRotation::rotate(int x, int y)
         int dx = x - lastMouseLocation().x();
         int dy = lastMouseLocation().y() - y;
 
-        int* size = viewer().renderer()->GetRenderWindow()->GetSize();
+        int* size = viewer().renWin()->GetSize();
 
         double delta_elevation = -20.0 / size[1];
         double delta_azimuth = -20.0 / size[0];

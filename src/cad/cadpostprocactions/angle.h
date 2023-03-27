@@ -45,16 +45,15 @@ class AngleConstraint
 : public Angle,
   public ConstrainedSketchEntity
 {
-    ScalarPtr targetValue_;
 
     size_t calcHash() const override;
 
 public:
     declareType("AngleConstraint");
 
-    AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, ScalarPtr targetValue);
+    AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, double targetValue);
 
-    ScalarPtr targetValue();
+    double targetValue() const;
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;

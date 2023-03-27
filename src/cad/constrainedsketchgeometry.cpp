@@ -44,8 +44,13 @@ size_t ConstrainedSketchEntity::hash() const
     return h;
 }
 
+const insight::ParameterSet& ConstrainedSketchEntity::parameters() const
+{
+    return parameters_;
+}
 
-insight::ParameterSet& ConstrainedSketchEntity::parameters()
+
+insight::ParameterSet& ConstrainedSketchEntity::parametersRef()
 {
     return parameters_;
 }

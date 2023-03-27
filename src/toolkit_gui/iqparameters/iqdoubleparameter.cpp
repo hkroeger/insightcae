@@ -48,7 +48,6 @@ QVBoxLayout* IQDoubleParameter::populateEditControls(
   QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
   layout->addWidget(apply);
 
-  layout->addStretch();
 
   auto applyFunction = [=]()
   {

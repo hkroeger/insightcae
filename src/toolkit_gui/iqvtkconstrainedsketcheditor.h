@@ -18,6 +18,7 @@
 #include "viewwidgetaction.h"
 
 class IQVTKCADModel3DViewer;
+class ParameterEditorWidget;
 
 
 class IQVTKConstrainedSketchEntity
@@ -33,7 +34,6 @@ class IQVTKFixedPoint
 {
 
     insight::cad::SketchPointPtr p_;
-    double x_, y_;
 
 public:
     IQVTKFixedPoint(
@@ -70,17 +70,27 @@ private:
     void add(insight::cad::ConstrainedSketchEntityPtr);
     void remove(insight::cad::ConstrainedSketchEntityPtr);
 
+    insight::ParameterSet defaultGeometryParameters_;
+
     QToolBar *toolBar_;
     QDockWidget *toolBoxWidget_;
     QToolBox *toolBox_;
 
     ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr currentAction_;
 
-    class SketchEntitySelection
-     : public std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
+    struct SketchEntitySelectionViewPropsToRestore
     {
-        QToolBox *toolBox_;
+        double oldColor[3];
+    };
+    class SketchEntitySelection
+     : public std::map<
+            std::weak_ptr<insight::cad::ConstrainedSketchEntity>,
+            std::map<vtkProp*, SketchEntitySelectionViewPropsToRestore>,
+            std::owner_less<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > >
+    {
         IQVTKConstrainedSketchEditor& editor_;
+        ParameterEditorWidget* pe_;
+        int tbi_;
 
         void highlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
         void unhighlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
@@ -89,6 +99,7 @@ private:
         SketchEntitySelection(IQVTKConstrainedSketchEditor& editor);
         ~SketchEntitySelection();
         void addAndHighlight(insight::cad::ConstrainedSketchEntityPtr entity);
+        bool isInSelection(const insight::cad::ConstrainedSketchEntityPtr& entity);
     };
     friend class SketchEntitySelection;
 
@@ -101,7 +112,8 @@ private Q_SLOTS:
 public:
     IQVTKConstrainedSketchEditor(
             IQVTKCADModel3DViewer& viewer,
-            insight::cad::ConstrainedSketchPtr sketch
+            insight::cad::ConstrainedSketchPtr sketch,
+            const insight::ParameterSet& defaultGeometryParameters
             );
     ~IQVTKConstrainedSketchEditor();
 

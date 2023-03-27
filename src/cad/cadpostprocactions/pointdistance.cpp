@@ -25,6 +25,8 @@
 #include "Prs3d_TextAspect.hxx"
 #include "occtools.h"
 
+#include "base/parameters/simpleparameter.h"
+
 using namespace std;
 using namespace boost;
 
@@ -61,6 +63,9 @@ void insight::cad::Distance::write(ostream&) const
 
 
 
+
+
+
 defineType(DistanceConstraint);
 
 size_t DistanceConstraint::calcHash() const
@@ -68,19 +73,24 @@ size_t DistanceConstraint::calcHash() const
     ParameterListHash h;
     h+=p1_->value();
     h+=p2_->value();
-    h+=targetValue_->value();
+    h+=targetValue();
     return h.getHash();
 }
 
 
-DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2, ScalarPtr targetValue)
-    : Distance(p1, p2),
-      targetValue_(targetValue)
-{}
-
-ScalarPtr DistanceConstraint::targetValue()
+DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2, double targetValue)
+    : Distance(p1, p2)
 {
-    return targetValue_;
+    changeDefaultParameters(
+                ParameterSet({
+                                 {"distance", new DoubleParameter(targetValue, "target value")}
+                             })
+                );
+}
+
+double DistanceConstraint::targetValue() const
+{
+    return parameters().getDouble("distance");
 }
 
 
@@ -95,7 +105,7 @@ double DistanceConstraint::getConstraintError(unsigned int iConstraint) const
                 iConstraint==0,
                 "invalid constraint id" );
     checkForBuildDuringAccess();
-    return distance_ - targetValue_->value();
+    return distance_ - targetValue();
 }
 
 

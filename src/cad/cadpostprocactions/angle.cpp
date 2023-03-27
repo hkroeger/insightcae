@@ -2,6 +2,9 @@
 #include "cadfeature.h"
 #include "base/units.h"
 
+#include "base/parameterset.h"
+#include "base/parameters/simpleparameter.h"
+
 namespace insight {
 namespace cad {
 
@@ -72,20 +75,25 @@ size_t AngleConstraint::calcHash() const
     h+=p1_->value();
     h+=p2_->value();
     h+=pCtr_->value();
-    h+=targetValue_->value();
+    h+=targetValue();
     return h.getHash();
 }
 
 
-AngleConstraint::AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, ScalarPtr targetValue)
-    : Angle(p1, p2, pCtr),
-      targetValue_(targetValue)
-{}
-
-
-ScalarPtr AngleConstraint::targetValue()
+AngleConstraint::AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, double targetValue)
+    : Angle(p1, p2, pCtr)
 {
-    return targetValue_;
+    changeDefaultParameters(
+                ParameterSet({
+                                 {"angle", new DoubleParameter(targetValue/SI::deg, "[deg] target value")}
+                             })
+                );
+}
+
+
+double AngleConstraint::targetValue() const
+{
+    return parameters().getDouble("angle")*SI::deg;
 }
 
 
@@ -100,7 +108,7 @@ double AngleConstraint::getConstraintError(unsigned int iConstraint) const
                 iConstraint==0,
                 "invalid constraint id" );
     checkForBuildDuringAccess();
-    return angle_ - targetValue_->value();
+    return angle_ - targetValue();
 }
 
 

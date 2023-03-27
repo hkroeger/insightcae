@@ -19,6 +19,7 @@
 #include <QKeyEvent>
 #include <QTextEdit>
 #include <QInputDialog>
+#include <QFileDialog>
 
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
@@ -34,6 +35,8 @@
 #include "vtkRenderWindowInteractor.h"
 #include "vtkPropPicker.h"
 #include "vtkCellPicker.h"
+#include "vtkImageReader2Factory.h"
+#include "vtkImageReader2.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -341,7 +344,7 @@ void IQVTKCADModel3DViewer::addModelEntity(
         resetDisplayProps(pidx);
         viewState_.resetCameraIfAllow();
     }
-    ren_->GetRenderWindow()->Render();
+    scheduleRedraw();
 }
 
 //void IQVTKCADModel3DViewer::addVertex(
@@ -680,6 +683,73 @@ void IQVTKCADModel3DViewer::addSiblings(const QModelIndex& idx)
 }
 
 
+IQVTKCADModel3DViewer::BackgroundImage::BackgroundImage(
+        const boost::filesystem::path& imageFile,
+        IQVTKCADModel3DViewer& v )
+    : IQVTKViewerState(v)
+{
+    insight::assertion(
+                boost::filesystem::exists(imageFile),
+                "image file has to exist!" );
+
+    auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
+    vtkSmartPointer<vtkImageReader2> imageReader;
+    auto ir=readerFactory->CreateImageReader2(imageFile.string().c_str());
+
+    insight::assertion(
+                ir!=nullptr,
+                "could not create reader for file "+imageFile.string() );
+
+    imageReader.TakeReference(ir);
+    imageReader->SetFileName(imageFile.string().c_str());
+    imageReader->Update();
+    auto imageData = imageReader->GetOutput();
+    imageActor_ = vtkSmartPointer<vtkImageActor>::New();
+    imageActor_->SetInputData(imageData);
+    viewer().backgroundRen_->AddActor(imageActor_);
+
+    viewer().renWin()->Render();
+
+    double origin[3];
+    double spacing[3];
+    int extent[6];
+    imageData->GetOrigin(origin);
+    imageData->GetSpacing(spacing);
+    imageData->GetExtent(extent);
+
+    vtkCamera* camera = viewer().backgroundRen_->GetActiveCamera();
+    camera->ParallelProjectionOn();
+
+    double xc = origin[0] + 0.5 * (extent[0] + extent[1]) * spacing[0];
+    double yc = origin[1] + 0.5 * (extent[2] + extent[3]) * spacing[1];
+    // double xd = (extent[1] - extent[0] + 1)*spacing[0];
+    double yd = (extent[3] - extent[2] + 1) * spacing[1];
+    double d = camera->GetDistance();
+    camera->SetParallelScale(0.5 * yd);
+    camera->SetFocalPoint(xc, yc, 0.0);
+    camera->SetPosition(xc, yc, d);
+
+    viewer().scheduleRedraw();
+}
+
+IQVTKCADModel3DViewer::BackgroundImage::~BackgroundImage()
+{
+    viewer().backgroundRen_->RemoveActor( imageActor_ );
+    viewer().scheduleRedraw();
+}
+
+
+void IQVTKCADModel3DViewer::setBackgroundImage(const boost::filesystem::path &imageFile)
+{
+    backgroundImage_.reset();
+
+    if (!imageFile.empty())
+    {
+        backgroundImage_.reset(new BackgroundImage(imageFile, *this));
+    }
+}
+
+
 
 
 void IQVTKCADModel3DViewer::onMeasureDistance()
@@ -849,6 +919,17 @@ void IQVTKCADModel3DViewer::undoHighlightItem()
 }
 
 
+vtkRenderWindow* IQVTKCADModel3DViewer::renWin()
+{
+    return vtkWidget_.
+#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
+    renderWindow
+#else
+    GetRenderWindow
+#endif
+    ();
+}
+
 IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
         QWidget* parent )
     : IQCADModel3DViewer(parent),
@@ -865,17 +946,18 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     setMouseTracking( true );
     setFocusPolicy(Qt::StrongFocus);
 
+    backgroundRen_ = vtkSmartPointer<vtkRenderer>::New();
+    backgroundRen_->SetLayer(0);
+    backgroundRen_->InteractiveOff();
     ren_ = vtkSmartPointer<vtkRenderer>::New();
+    ren_->SetLayer(1);
 
-    vtkWidget_.
-#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
-    renderWindow
-#else
-    GetRenderWindow
-#endif
-    ()->AddRenderer(ren_);
+    renWin()->SetNumberOfLayers(2);
+    renWin()->AddRenderer(backgroundRen_);
+    renWin()->AddRenderer(ren_);
 
-    ren_->SetBackground(1., 1., 1.);
+    backgroundRen_->SetBackground(1., 1., 1.);
+//    ren_->SetBackground(1., 1., 1.);
 
 
     auto btntb = this->addToolBar("View setup");
@@ -908,22 +990,31 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
                 QPixmap(":/icons/icon_minusz.svg"), "-Z",
                 this, &IQCADModel3DViewer::viewTop );
 
+    btntb->addAction(
+                "BG",
+                [this]() {
+                    auto fn = QFileDialog::getOpenFileName(this, "Select background image file");
+                    if (!fn.isEmpty())
+                    {
+                        setBackgroundImage(fn.toStdString());
+                    }
+                }
+    );
+    btntb->addAction(
+                "CLBG",
+                [this]() {
+                    setBackgroundImage(boost::filesystem::path());
+                }
+    );
+
 
     auto axes = vtkSmartPointer<vtkAxesActor>::New();
-
-    auto renWin1 = vtkWidget_.
-#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
-    renderWindow
-#else
-    GetRenderWindow
-#endif
-            ();
 
     // Call vtkRenderWindowInteractor in orientation marker widgt
     auto widget = vtkOrientationMarkerWidget::New();
     widget->SetOutlineColor( 0.9300, 0.5700, 0.1300 );
     widget->SetOrientationMarker( axes );
-    widget->SetInteractor( renWin1->GetInteractor() );
+    widget->SetInteractor( renWin()->GetInteractor() );
     widget->SetViewport( 0.0, 0.0, 0.3, 0.3 );
     widget->SetEnabled( 1 );
     widget->InteractiveOn();
@@ -965,14 +1056,7 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
         &redrawTimer_, &QTimer::timeout,
         [this]()
         {
-//            ren_->GetRenderWindow()->Render();
-            vtkWidget_.
-#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
-            renderWindow
-#else
-            GetRenderWindow
-#endif
-            ()->Render();
+            renWin()->Render();
         }
     );
 }
@@ -984,6 +1068,7 @@ IQVTKCADModel3DViewer::~IQVTKCADModel3DViewer()
     clipping_.reset();
     highlightedItem_.reset();
     actorHighlight_.reset();
+    backgroundImage_.reset();
 //    displayedSketch_.reset();
 }
 
@@ -1029,7 +1114,13 @@ void IQVTKCADModel3DViewer::setModel(QAbstractItemModel* model)
 
 vtkRenderWindowInteractor* IQVTKCADModel3DViewer::interactor()
 {
-    return vtkWidget_.GetInteractor();
+    return vtkWidget_.
+#if (VTK_MAJOR_VERSION>8) || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=3)
+        interactor
+#else
+        GetInteractor
+#endif
+        ();
 }
 
 
@@ -1212,16 +1303,19 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
     {
         auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
                     insight::cad::ConstrainedSketch::create(plane));
-        editSketch(name.toStdString(), sk);
+        editSketch(name.toStdString(), sk, insight::ParameterSet());
     }
 }
 
 
 
-void IQVTKCADModel3DViewer::editSketch(const std::string& name, insight::cad::ConstrainedSketchPtr psk)
+void IQVTKCADModel3DViewer::editSketch(
+        const std::string& name,
+        insight::cad::ConstrainedSketchPtr psk,
+        const insight::ParameterSet& defaultGeometryParameters )
 {
     std::unique_ptr<IQVTKConstrainedSketchEditor> ske(
-                new IQVTKConstrainedSketchEditor(*this, psk));
+                new IQVTKConstrainedSketchEditor(*this, psk, defaultGeometryParameters));
 
 
     connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),

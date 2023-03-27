@@ -6,6 +6,7 @@
 
 #include <QObject>
 #include <QThread>
+#include <QIcon>
 
 #include "base/parametersetvisualizer.h"
 #include "base/supplementedinputdata.h"
@@ -17,6 +18,7 @@
 
 class IQCADItemModel;
 class IQParameterSetModel;
+class IQCADModel3DViewer;
 
 namespace insight
 {
@@ -57,6 +59,20 @@ public:
   void update(const ParameterSet& ps) override;
 
   virtual void recreateVisualizationElements();
+
+  struct GUIAction
+  {
+      QIcon icon;
+      QString label, tooltip;
+      std::function<void(void)> action;
+  };
+  typedef std::vector<GUIAction> GUIActionList;
+
+  virtual GUIActionList createGUIActions(
+          const std::string& parameterPath,
+          IQParameterSetModel* psm,
+          QObject* parent,
+          IQCADModel3DViewer* viewer);
 
 public Q_SLOTS:
   virtual void visualizeScheduledParameters();

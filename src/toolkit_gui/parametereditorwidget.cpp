@@ -306,30 +306,36 @@ bool ParameterEditorWidget::hasVisualizer() const
 }
 
 
+void ParameterEditorWidget::clearParameterSet()
+{
+  if (model_)
+  {
+    parameterTreeView_->setModel(nullptr);
+    disconnect(model_, &IQParameterSetModel::parameterSetChanged, this, 0);
+    model_->deleteLater();
+    model_=nullptr;
+  }
+}
+
+
 void ParameterEditorWidget::resetParameterSet(
         insight::ParameterSet& pset,
         const insight::ParameterSet& default_pset
         )
 {
-    if (model_)
-    {
-        parameterTreeView_->setModel(nullptr);
-        disconnect(model_, &IQParameterSetModel::parameterSetChanged, this, 0);
-        model_->deleteLater();
-        model_=nullptr;
-    }
+  clearParameterSet();
 
-    model_ = new IQParameterSetModel(pset, default_pset, this);
-    defaultParameters_=default_pset;
+  model_ = new IQParameterSetModel(pset, default_pset, this);
+  defaultParameters_=default_pset;
 
-    connect(model_, &IQParameterSetModel::parameterSetChanged,
-            this, &ParameterEditorWidget::onParameterSetChanged );
+  connect(model_, &IQParameterSetModel::parameterSetChanged,
+          this, &ParameterEditorWidget::onParameterSetChanged );
 
-    parameterTreeView_->setModel(model_);
-    if (viz_)
-    {
-        viz_->setParameterSetModel(model_);
-    }
+  parameterTreeView_->setModel(model_);
+  if (viz_)
+  {
+    viz_->setParameterSetModel(model_);
+  }
 }
 
 

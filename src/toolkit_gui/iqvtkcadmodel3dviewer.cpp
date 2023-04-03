@@ -74,34 +74,39 @@ IQVTKCADModel3DViewer::QPersistentModelIndexHash::operator()
 
 
 
-void IQVTKCADModel3DViewer::highlightActor(vtkActor *actor)
+void IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
 {
     actorHighlight_.reset();
-    if (auto* pdm = vtkPolyDataMapper::SafeDownCast(actor->GetMapper()))
+    vtkPolyDataMapper* pdm=nullptr;
+    if (auto actor = vtkActor::SafeDownCast(prop))
     {
-        if (pdm->GetInput()->GetNumberOfPolys()>0)
+        if (auto* pdm = vtkPolyDataMapper::SafeDownCast(actor->GetMapper()))
         {
-            actorHighlight_.reset(
-                new SilhouetteHighlighter(
-                    *this, pdm
-                ));
-        }
-        else if (pdm->GetInput()->GetNumberOfLines()>0
-                 || pdm->GetInput()->GetNumberOfStrips()>0)
-        {
-            actorHighlight_.reset(
-                new LinewidthHighlighter(
-                    *this, actor
-                ));
-        }
-        else if (pdm->GetInput()->GetNumberOfPoints()>0)
-        {
-            actorHighlight_.reset(
-                new PointSizeHighlighter(
-                    *this, actor
-                ));
+            if (pdm->GetInput()->GetNumberOfPolys()>0)
+            {
+                actorHighlight_.reset(
+                    new SilhouetteHighlighter(
+                        *this, pdm
+                    ));
+            }
+            else if (pdm->GetInput()->GetNumberOfLines()>0
+                     || pdm->GetInput()->GetNumberOfStrips()>0)
+            {
+                actorHighlight_.reset(
+                    new LinewidthHighlighter(
+                        *this, actor
+                    ));
+            }
+            else if (pdm->GetInput()->GetNumberOfPoints()>0)
+            {
+                actorHighlight_.reset(
+                    new PointSizeHighlighter(
+                        *this, actor
+                    ));
+            }
         }
     }
+#warning need highlighting for 2D actors as well
 }
 
 
@@ -1173,7 +1178,7 @@ void IQVTKCADModel3DViewer::deactivateSubshapeSelectionAll()
 
 
 
-vtkActor *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) const
+vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) const
 {
     auto p = widgetCoordsToVTK(clickPos);
 
@@ -1188,7 +1193,12 @@ vtkActor *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) 
 //    auto picker = vtkSmartPointer<vtkCellPicker>::New();
     auto picker = vtkSmartPointer<vtkPropPicker>::New();
     picker->Pick(p.x(), p.y(), 0, ren_);
-    return picker->GetActor();
+
+    auto act2 = picker->GetActor2D();
+    if (act2) return act2;
+
+    auto act3 = picker->GetActor();
+    return act3;
 }
 
 

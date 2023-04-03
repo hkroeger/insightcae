@@ -284,7 +284,7 @@ private:
 
     std::unique_ptr<IQVTKViewerState> actorHighlight_;
 
-    void highlightActor(vtkActor* actor);
+    void highlightActor(vtkProp* actor);
 
 
 
@@ -394,7 +394,7 @@ public:
     void activateSelectionAll(insight::cad::EntityType subshapeType);
     void deactivateSubshapeSelectionAll();
 
-    vtkActor* findActorUnderCursorAt(const QPoint& clickPos) const;
+    vtkProp* findActorUnderCursorAt(const QPoint& clickPos) const;
 
     typedef boost::variant<
         boost::blank,

@@ -29,6 +29,9 @@ public:
 };
 
 
+
+
+
 class IQVTKFixedPoint
         : public IQVTKConstrainedSketchEntity
 {
@@ -44,6 +47,38 @@ public:
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
 };
+
+
+class IQVTKHorizontalConstraint
+    : public IQVTKConstrainedSketchEntity
+{
+    std::shared_ptr<insight::cad::Line const> line_;
+
+public:
+    IQVTKHorizontalConstraint(std::shared_ptr<insight::cad::Line const> line);
+
+    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
+
+    int nConstraints() const override;
+    double getConstraintError(unsigned int iConstraint) const override;
+};
+
+
+class IQVTKVerticalConstraint
+    : public IQVTKConstrainedSketchEntity
+{
+    std::shared_ptr<insight::cad::Line const> line_;
+public:
+    IQVTKVerticalConstraint(std::shared_ptr<insight::cad::Line const> line);
+
+    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
+
+    int nConstraints() const override;
+    double getConstraintError(unsigned int iConstraint) const override;
+};
+
+
+
 
 
 class TOOLKIT_GUI_EXPORT IQVTKConstrainedSketchEditor
@@ -88,6 +123,7 @@ private:
             std::map<vtkProp*, SketchEntitySelectionViewPropsToRestore>,
             std::owner_less<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > >
     {
+        insight::ParameterSet commonParameters_, defaultCommonParameters_;
         IQVTKConstrainedSketchEditor& editor_;
         ParameterEditorWidget* pe_;
         int tbi_;
@@ -118,7 +154,7 @@ public:
     ~IQVTKConstrainedSketchEditor();
 
     insight::cad::ConstrainedSketchEntityPtr
-        findSketchElementOfActor(vtkActor *actor) const;
+        findSketchElementOfActor(vtkProp *actor) const;
 
 
     void onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;

@@ -113,6 +113,7 @@ public:
 
     bool hasVisualizer() const;
 
+    void clearParameterSet();
     void resetParameterSet(
             insight::ParameterSet& pset,
             const insight::ParameterSet& default_pset

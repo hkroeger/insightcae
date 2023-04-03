@@ -113,7 +113,16 @@ public:
    * insert values from other, overwrite where possible.
    * return a non-const reference to this PS to anable call chains like PS.merge().merge()...
    */
-  ParameterSet& merge ( const ParameterSet& other );
+  ParameterSet& merge ( const ParameterSet& other, bool allowInsertion=true );
+
+  /**
+   * @brief intersection
+   * construct a ParameterSet which contains only elements
+   * that are present both in this set and "other"
+   * @param other
+   * @return a new ParameterSet with the common elements
+   */
+  ParameterSet intersection(const ParameterSet& other) const;
 
   insight::Parameter& getParameter( std::string path );
 

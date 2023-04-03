@@ -148,7 +148,7 @@ void ParameterSet::extend(const EntryList& entries)
   }
 }
 
-ParameterSet& ParameterSet::merge(const ParameterSet& p)
+ParameterSet& ParameterSet::merge(const ParameterSet& p, bool allowInsertion )
 {
   EntryList entries=p.entries();
   for ( const ParameterSet::SingleEntry& i: entries )
@@ -161,24 +161,68 @@ ParameterSet& ParameterSet::merge(const ParameterSet& p)
       {
         // merging subdict
         SubParameterSet *myp = dynamic_cast<SubParameterSet*>( this->find(key)->second.get() );
-        myp->subsetRef().merge(p->subset());
-	delete p;
+        myp->subsetRef().merge(p->subset(), allowInsertion);
+        delete p;
       }
       else
       {
         // replacing
-	replace(key, boost::get<1>(i)); // take ownership of objects in given list!
+        replace(key, boost::get<1>(i)); // take ownership of objects in given list!
       }
     }
     else 
     {
-      // inserting
-      insert( value_type(key, std::unique_ptr<Parameter>(boost::get<1>(i))) ); // take ownership of objects in given list!
+      if (allowInsertion)
+      {
+          // inserting
+          insert( value_type(key, std::unique_ptr<Parameter>(boost::get<1>(i))) ); // take ownership of objects in given list!
+      }
     }
   }
 
   return *this;
 }
+
+
+
+ParameterSet ParameterSet::intersection(const ParameterSet &other) const
+{
+  EntryList entries;
+  for ( const ParameterSet::SingleEntry& i: other.entries() )
+  {
+    std::string otherkey = boost::get<0>(i);
+    Parameter *otherParameter = boost::get<1>(i);
+
+    if (this->contains(otherkey)
+        &&
+        this->get<Parameter>(otherkey).type()==otherParameter->type() )
+    {
+      auto *myp = this->find(otherkey)->second.get();
+
+      if (auto *op =
+          dynamic_cast<SubParameterSet*>( otherParameter ))
+      {
+        // intersect subdict
+        auto *mysd = dynamic_cast<SubParameterSet*>( myp );
+
+        auto*newp=myp->clone();
+        auto *newsd = dynamic_cast<SubParameterSet*>(newp);
+        newsd->subsetRef()= mysd->subset().intersection(op->subset());
+
+        entries.push_back({ otherkey, newp });
+      }
+      else
+      {
+        // replacing
+        entries.push_back({ otherkey, myp->clone() });
+      }
+    }
+  }
+
+  return ParameterSet(entries);
+}
+
+
 
 
 std::string splitOffFirstParameter(std::string& path, int& nRemaining)

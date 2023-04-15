@@ -25,6 +25,240 @@ int SubshapeNumbering::getMaxTag(int dim) const
   return _maxTag[dim + 2];
 }
 
+const TopoDS_Vertex& SubshapeNumbering::vertexByTag(int tag) const
+{
+  if(_tagVertex.IsBound(tag))
+  {
+      return TopoDS::Vertex(_tagVertex.Find(tag));
+  }
+  else
+  {
+      std::cout<<"vertices=";
+      for (auto i=_tagVertex.begin(); i!=_tagVertex.end(); ++i)
+      {
+          std::cout<<" "<<i.Iterator().Key();
+      }
+      std::cout<<std::endl;
+      throw insight::Exception("no vertex with tag %d!", tag);
+  }
+}
+
+const TopoDS_Edge &SubshapeNumbering::edgeByTag(int tag) const
+{
+  if(_tagEdge.IsBound(tag))
+  {
+      return TopoDS::Edge(_tagEdge.Find(tag));
+  }
+  else
+  {
+      throw insight::Exception("no edge with tag %d!", tag);
+  }
+}
+
+const TopoDS_Wire &SubshapeNumbering::wireByTag(int tag) const
+{
+  if(_tagWire.IsBound(tag))
+  {
+      return TopoDS::Wire(_tagWire.Find(tag));
+  }
+  else
+  {
+      throw insight::Exception("no vertex with tag %d!", tag);
+  }
+}
+
+const TopoDS_Face &SubshapeNumbering::faceByTag(int tag) const
+{
+  if(_tagFace.IsBound(tag))
+  {
+      return TopoDS::Face(_tagFace.Find(tag));
+  }
+  else
+  {
+      throw insight::Exception("no face with tag %d!", tag);
+  }
+}
+
+const TopoDS_Shell &SubshapeNumbering::shellByTag(int tag) const
+{
+  if(_tagShell.IsBound(tag))
+  {
+      return TopoDS::Shell(_tagShell.Find(tag));
+  }
+  else
+  {
+      throw insight::Exception("no shell with tag %d!", tag);
+  }
+}
+
+const TopoDS_Solid &SubshapeNumbering::solidByTag(int tag) const
+{
+  if(_tagSolid.IsBound(tag))
+  {
+      return TopoDS::Solid(_tagSolid.Find(tag));
+  }
+  else
+  {
+      throw insight::Exception("no solid with tag %d!", tag);
+  }
+}
+
+int SubshapeNumbering::tagOfVertex(const TopoDS_Vertex &vertex) const
+{
+  if(_vertexTag.IsBound(vertex))
+  {
+    return _vertexTag.Find(vertex);
+  }
+  else
+  {
+    throw insight::Exception("no tag for vertex!");
+    return -1;
+  }
+}
+
+int SubshapeNumbering::tagOfEdge(const TopoDS_Edge &edge) const
+{
+  if(_edgeTag.IsBound(edge))
+  {
+    return _edgeTag.Find(edge);
+  }
+  else
+  {
+    throw insight::Exception("no tag for edge!");
+    return -1;
+  }
+}
+
+int SubshapeNumbering::tagOfWire(const TopoDS_Wire &wire) const
+{
+  if(_wireTag.IsBound(wire))
+  {
+    return _wireTag.Find(wire);
+  }
+  else
+  {
+    throw insight::Exception("no tag for wire!");
+    return -1;
+  }
+}
+
+int SubshapeNumbering::tagOfFace(const TopoDS_Face &face) const
+{
+  if(_faceTag.IsBound(face))
+  {
+    return _faceTag.Find(face);
+  }
+  else
+  {
+    throw insight::Exception("no tag for face!");
+    return -1;
+  }
+}
+
+int SubshapeNumbering::tagOfShell(const TopoDS_Shell &shell) const
+{
+  if(_shellTag.IsBound(shell))
+  {
+    return _shellTag.Find(shell);
+  }
+  else
+  {
+    throw insight::Exception("no tag for shell!");
+    return -1;
+  }
+}
+
+int SubshapeNumbering::tagOfSolid(const TopoDS_Solid &solid) const
+{
+  if(_solidTag.IsBound(solid))
+  {
+    return _solidTag.Find(solid);
+  }
+  else
+  {
+    throw insight::Exception("no tag for solid!");
+    return -1;
+  }
+}
+
+void SubshapeNumbering::insertAllVertexTags(std::set<int> &set) const
+{
+  for (auto i = _tagVertex.begin(); i!=_tagVertex.end(); ++i)
+  {
+    set.insert(i.Iterator().Key());
+  }
+}
+
+void SubshapeNumbering::insertAllEdgeTags(std::set<int> &set) const
+{
+  for (auto i = _tagEdge.begin(); i!=_tagEdge.end(); ++i)
+  {
+    set.insert(i.Iterator().Key());
+  }
+}
+
+void SubshapeNumbering::insertAllWireTags(std::set<int> &set) const
+{
+  for (auto i = _tagWire.begin(); i!=_tagWire.end(); ++i)
+  {
+    set.insert(i.Iterator().Key());
+  }
+}
+
+void SubshapeNumbering::insertAllFaceTags(std::set<int> &set) const
+{
+  for (auto i = _tagFace.begin(); i!=_tagFace.end(); ++i)
+  {
+    set.insert(i.Iterator().Key());
+  }
+}
+
+void SubshapeNumbering::insertAllShellTags(std::set<int> &set) const
+{
+  for (auto i = _tagShell.begin(); i!=_tagShell.end(); ++i)
+  {
+    set.insert(i.Iterator().Key());
+  }
+}
+
+void SubshapeNumbering::insertAllSolidTags(std::set<int> &set) const
+{
+  for (auto i = _tagSolid.begin(); i!=_tagSolid.end(); ++i)
+  {
+    set.insert(i.Iterator().Key());
+  }
+}
+
+int SubshapeNumbering::nVertexTags() const
+{
+  return _tagVertex.Size();
+}
+
+int SubshapeNumbering::nEdgeTags() const
+{
+  return _tagEdge.Size();
+}
+
+int SubshapeNumbering::nWireTags() const
+{
+  return _tagWire.Size();
+}
+
+int SubshapeNumbering::nFaceTags() const
+{
+  return _tagFace.Size();
+}
+
+int SubshapeNumbering::nShellTags() const
+{
+  return _tagShell.Size();
+}
+
+int SubshapeNumbering::nSolidTags() const
+{
+  return _tagSolid.Size();
+}
+
 void SubshapeNumbering::bind(const TopoDS_Vertex &vertex, int tag, bool recursive)
 {
   if(vertex.IsNull()) return;
@@ -386,13 +620,22 @@ void SubshapeNumbering::_addShapeToMaps(const TopoDS_Shape &shape)
 
 SubshapeNumbering::SubshapeNumbering(const TopoDS_Shape& shape)
 {
-    bool highestDimOnly=false;
+
+//  void OCC_Internals::_multiBind(const TopoDS_Shape &shape, int tag,
+//                                 std::vector<std::pair<int, int> > &outDimTags,
+//                                 bool highestDimOnly, bool recursive,
+//                                 bool returnNewOnly)
+
+    for(int i = 0; i < 6; i++) _maxTag[i] = 0;
+
+    int tag=-1;
     std::vector<std::pair<int, int> > outDimTags;
-    std::string format="brep";
+    bool highestDimOnly=false;
     bool recursive=true;
     bool returnNewOnly = false;
 
-    int tag=-1;
+    std::string format="brep";
+
     {
         TopExp_Explorer exp0;
         int count = 0;

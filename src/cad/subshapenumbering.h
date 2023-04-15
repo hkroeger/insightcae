@@ -12,10 +12,12 @@
 #include "TopoDS_Solid.hxx"
 #include "TopoDS_Shell.hxx"
 
+#include <set>
+
 namespace insight {
 namespace cad {
 
-struct SubshapeNumbering
+class SubshapeNumbering
 {
     TopTools_IndexedMapOfShape _fmap, _emap, _vmap, _somap, _shmap, _wmap;
 
@@ -47,6 +49,35 @@ public:
     SubshapeNumbering(const TopoDS_Shape& shape);
 
     int getMaxTag(int dim) const;
+
+    const TopoDS_Vertex& vertexByTag(int tag) const;
+    const TopoDS_Edge& edgeByTag(int tag) const;
+    const TopoDS_Wire& wireByTag(int tag) const;
+    const TopoDS_Face& faceByTag(int tag) const;
+    const TopoDS_Shell& shellByTag(int tag) const;
+    const TopoDS_Solid& solidByTag(int tag) const;
+
+    int tagOfVertex(const TopoDS_Vertex& vertex) const;
+    int tagOfEdge(const TopoDS_Edge& edge) const;
+    int tagOfWire(const TopoDS_Wire& wire) const;
+    int tagOfFace(const TopoDS_Face& face) const;
+    int tagOfShell(const TopoDS_Shell& shell) const;
+    int tagOfSolid(const TopoDS_Solid& solid) const;
+
+    void insertAllVertexTags(std::set<int>& set) const;
+    void insertAllEdgeTags(std::set<int>& set) const;
+    void insertAllWireTags(std::set<int>& set) const;
+    void insertAllFaceTags(std::set<int>& set) const;
+    void insertAllShellTags(std::set<int>& set) const;
+    void insertAllSolidTags(std::set<int>& set) const;
+
+    int nVertexTags() const;
+    int nEdgeTags() const;
+    int nWireTags() const;
+    int nFaceTags() const;
+    int nShellTags() const;
+    int nSolidTags() const;
+
 };
 
 } // namespace cad

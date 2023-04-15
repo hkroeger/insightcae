@@ -449,20 +449,8 @@ size_t Feature::calcShapeHash() const
   size_t hash=0;
   
   boost::hash_combine(hash, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash, boost::hash<int>()(idx_->_vmap.
-#if OCC_VERSION_MAJOR<7
-                                               Extent()
-#else
-                                               Size()
-#endif
-                                               ));
-  boost::hash_combine(hash, boost::hash<int>()(idx_->_fmap.
-#if OCC_VERSION_MAJOR<7
-                                               Extent()
-#else
-                                               Size()
-#endif
-                                               ));
+  boost::hash_combine(hash, boost::hash<int>()(idx_->nVertexTags()));
+  boost::hash_combine(hash, boost::hash<int>()(idx_->nFaceTags()));
 
   FeatureSetData vset=allVerticesSet();
   for (const insight::cad::FeatureID& j: vset)
@@ -506,6 +494,7 @@ void Feature::setShape(const TopoDS_Shape& shape)
 {
   volprops_.reset();
   shape_=shape;
+  BRepTools::Clean(shape_);
   nameFeatures();
   setValid();
 }
@@ -1114,10 +1103,11 @@ FeatureSetData Feature::allVerticesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-   fsd.insert(
-     boost::counting_iterator<int>( 1 ),
-     boost::counting_iterator<int>( idx_->_vmap.Extent()+1 )
-   );
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ),
+//     boost::counting_iterator<int>( idx_->_vmap.Extent()+1 )
+//   );
+  idx_->insertAllVertexTags(fsd);
 //  std::transform
 //  (
 //      vmap_.begin(),
@@ -1132,10 +1122,11 @@ FeatureSetData Feature::allEdgesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-   fsd.insert(
-     boost::counting_iterator<int>( 1 ),
-     boost::counting_iterator<int>( idx_->_emap.Extent()+1 )
-   );
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ),
+//     boost::counting_iterator<int>( idx_->_emap.Extent()+1 )
+//   );
+  idx_->insertAllEdgeTags(fsd);
 //  std::transform
 //  (
 //      emap_.begin(),
@@ -1150,10 +1141,11 @@ FeatureSetData Feature::allFacesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-   fsd.insert(
-     boost::counting_iterator<int>( 1 ),
-     boost::counting_iterator<int>( idx_->_fmap.Extent()+1 )
-   );
+  idx_->insertAllFaceTags(fsd);
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ),
+//     boost::counting_iterator<int>( idx_->_fmap.Extent()+1 )
+//   );
 //  std::transform
 //  (
 //      fmap_.begin(),
@@ -1167,11 +1159,12 @@ FeatureSetData Feature::allFacesSet() const
 FeatureSetData Feature::allSolidsSet() const
 {
   checkForBuildDuringAccess();
-  FeatureSetData fsd;  
-   fsd.insert(
-     boost::counting_iterator<int>( 1 ),
-     boost::counting_iterator<int>( idx_->_somap.Extent()+1 )
-   );
+  FeatureSetData fsd;
+  idx_->insertAllSolidTags(fsd);
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ),
+//     boost::counting_iterator<int>( idx_->_somap.Extent()+1 )
+//   );
 //  std::transform
 //  (
 //      somap_.begin(),
@@ -1421,8 +1414,8 @@ FeatureSet Feature::verticesOfEdge(const FeatureID& e) const
 {
   FeatureSet vertices(shared_from_this(), Vertex);
   FeatureSetData fsd;
-  fsd.insert(idx_->_vmap.FindIndex(TopExp::FirstVertex(edge(e))));
-  fsd.insert(idx_->_vmap.FindIndex(TopExp::LastVertex(edge(e))));
+  fsd.insert(idx_->/*_vmap.FindIndex*/tagOfVertex(TopExp::FirstVertex(edge(e))));
+  fsd.insert(idx_->/*_vmap.FindIndex*/tagOfVertex(TopExp::LastVertex(edge(e))));
   vertices.setData(fsd);
   return vertices;
 }
@@ -1446,7 +1439,7 @@ FeatureSet Feature::verticesOfFace(const FeatureID& f) const
   FeatureSetData fsd;
   for (TopExp_Explorer ex(face(f), TopAbs_VERTEX); ex.More(); ex.Next())
   {
-    fsd.insert(idx_->_vmap.FindIndex(TopoDS::Vertex(ex.Current())));
+    fsd.insert(idx_->/*_vmap.FindIndex*/tagOfVertex(TopoDS::Vertex(ex.Current())));
   }
   vertices.setData(fsd);
   return vertices;
@@ -2253,11 +2246,9 @@ void Feature::extractReferenceFeatures()
 {
   ///////////////////////////////////////////////////////////////////////////////
   /////////////// save reference points
-
-   for (int i=1; i<=idx_->_vmap.Extent(); i++)
-//  for (const FreelyIndexedMapOfShape::value_type& j: vmap_)
+  auto allptidx=allVerticesSet();
+  for (int i: allptidx)
   {
-//     int i=j.first;
     refpoints_[ str(format("v%d")%i) ] = vertexLocation(i);
   }
 }
@@ -2265,78 +2256,86 @@ void Feature::extractReferenceFeatures()
 const TopoDS_Face& Feature::face(FeatureID i) const
 {
     checkForBuildDuringAccess();
-    insight::assertion(
-                i>=1 && i<=idx_->_fmap.Extent(),
-                str(format("face ID %d out of range (%d...%d)")
-                    % i % 1 % idx_->_fmap.Extent()) );
-    return TopoDS::Face(idx_->_fmap.FindKey(i));
+//    insight::assertion(
+//                i>=1 && i<=idx_->_fmap.Extent(),
+//                str(format("face ID %d out of range (%d...%d)")
+//                    % i % 1 % idx_->_fmap.Extent()) );
+//    return TopoDS::Face(idx_->_fmap.FindKey(i));
+    return idx_->faceByTag(i);
 }
 
 const TopoDS_Edge& Feature::edge(FeatureID i) const
 {
     checkForBuildDuringAccess();
-    insight::assertion(
-                i>=1 && i<=idx_->_emap.Extent(),
-                str(format("edge ID %d out of range (%d...%d)")
-                    % i % 1 % idx_->_emap.Extent()) );
-    return TopoDS::Edge(idx_->_emap.FindKey(i));
+//    insight::assertion(
+//                i>=1 && i<=idx_->_emap.Extent(),
+//                str(format("edge ID %d out of range (%d...%d)")
+//                    % i % 1 % idx_->_emap.Extent()) );
+//    return TopoDS::Edge(idx_->_emap.FindKey(i));
+    return idx_->edgeByTag(i);
 }
 
 const TopoDS_Vertex& Feature::vertex(FeatureID i) const
 {
     checkForBuildDuringAccess();
-    insight::assertion(
-                i>=1 && i<=idx_->_vmap.Extent(),
-                str(format("vertex ID %d out of range (%d...%d)")
-                    % i % 1 % idx_->_vmap.Extent()) );
-    return TopoDS::Vertex(idx_->_vmap.FindKey(i));
+//    insight::assertion(
+//                i>=1 && i<=idx_->_vmap.Extent(),
+//                str(format("vertex ID %d out of range (%d...%d)")
+//                    % i % 1 % idx_->_vmap.Extent()) );
+//    return TopoDS::Vertex(idx_->_vmap.FindKey(i));
+    return idx_->vertexByTag(i);
 }
 
 const TopoDS_Solid& Feature::subsolid(FeatureID i) const
 {
     checkForBuildDuringAccess();
-    insight::assertion(
-                i>=1 && i<=idx_->_somap.Extent(),
-                str(format("solid ID %d out of range (%d...%d)")
-                    % i % 1 % idx_->_somap.Extent()) );
-    return TopoDS::Solid(idx_->_somap.FindKey(i));
+//    insight::assertion(
+//                i>=1 && i<=idx_->_somap.Extent(),
+//                str(format("solid ID %d out of range (%d...%d)")
+//                    % i % 1 % idx_->_somap.Extent()) );
+//    return TopoDS::Solid(idx_->_somap.FindKey(i));
+    return idx_->solidByTag(i);
 }
 
 
 FeatureID Feature::solidID(const TopoDS_Shape& f) const
 {
     checkForBuildDuringAccess();
-    int i=idx_->_somap.FindIndex(f);
-    if (i==0)
-        throw insight::Exception("requested solid not indexed!");
-    return i;
+//    int i=idx_->_somap.FindIndex(f);
+//    if (i==0)
+//        throw insight::Exception("requested solid not indexed!");
+//    return i;
+    return idx_->tagOfSolid(TopoDS::Solid(f));
 }
 
 FeatureID Feature::faceID(const TopoDS_Shape& f) const
 {
     checkForBuildDuringAccess();
-    int i=idx_->_fmap.FindIndex(f);
-    if (i==0)
-        throw insight::Exception("requested face not indexed!");
-    return i;
+//    int i=idx_->_fmap.FindIndex(f);
+//    if (i==0)
+//        throw insight::Exception("requested face not indexed!");
+//    return i;
+    return idx_->tagOfFace(TopoDS::Face(f));
 }
 
 FeatureID Feature::edgeID(const TopoDS_Shape& e) const
 {
     checkForBuildDuringAccess();
-    int i=idx_->_emap.FindIndex(e);
-    if (i==0)
-        throw insight::Exception("requested edge not indexed!");
-    return i;
+//    int i=idx_->_emap.FindIndex(e);
+//    if (i==0)
+//        throw insight::Exception("requested edge not indexed!");
+//    return i;
+    return idx_->tagOfEdge(TopoDS::Edge(e));
 }
 
 FeatureID Feature::vertexID(const TopoDS_Shape& v) const
 {
     checkForBuildDuringAccess();
-    int i=idx_->_vmap.FindIndex(v);
-    if (i==0)
-        throw insight::Exception("requested vertex not indexed!");
-    return i;
+//    int i=idx_->_vmap.FindIndex(v);
+//    if (i==0)
+//        throw insight::Exception("requested vertex not indexed!");
+//    return i;
+    return idx_->tagOfVertex(TopoDS::Vertex(v));
 }
 
 

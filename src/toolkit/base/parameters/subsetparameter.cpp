@@ -134,5 +134,17 @@ const ParameterSet &SubsetParameter::subset() const
   return *this;
 }
 
+void SubsetParameter::merge(const SubParameterSet &other, bool allowInsertion)
+{
+  this->ParameterSet::merge(other.subset(), allowInsertion);
+}
+
+Parameter *SubsetParameter::intersection(const SubParameterSet &other) const
+{
+  return new SubsetParameter(
+        this->ParameterSet::intersection(other.subset()),
+      description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+}
+
 
 }

@@ -148,20 +148,19 @@ void ParameterSet::extend(const EntryList& entries)
   }
 }
 
-ParameterSet& ParameterSet::merge(const ParameterSet& p, bool allowInsertion )
+ParameterSet& ParameterSet::merge(const ParameterSet& other, bool allowInsertion )
 {
-  EntryList entries=p.entries();
+  EntryList entries=other.entries();
   for ( const ParameterSet::SingleEntry& i: entries )
   {
     std::string key(boost::get<0>(i));
-    SubParameterSet *p = dynamic_cast<SubParameterSet*>( boost::get<1>(i) );
     if (this->contains(key))
     {
-      if (p)
+      if (auto *p = dynamic_cast<SubParameterSet*>( boost::get<1>(i) ))
       {
         // merging subdict
         SubParameterSet *myp = dynamic_cast<SubParameterSet*>( this->find(key)->second.get() );
-        myp->subsetRef().merge(p->subset(), allowInsertion);
+        myp->merge(*p, allowInsertion);
         delete p;
       }
       else
@@ -205,11 +204,7 @@ ParameterSet ParameterSet::intersection(const ParameterSet &other) const
         // intersect subdict
         auto *mysd = dynamic_cast<SubParameterSet*>( myp );
 
-        auto*newp=myp->clone();
-        auto *newsd = dynamic_cast<SubParameterSet*>(newp);
-        newsd->subsetRef()= mysd->subset().intersection(op->subset());
-
-        entries.push_back({ otherkey, newp });
+        entries.push_back({ otherkey, mysd->intersection(*op) });
       }
       else
       {

@@ -68,6 +68,9 @@ public:
 
   ParameterSet& subsetRef();
   virtual const ParameterSet& subset() const =0;
+
+  virtual void merge(const SubParameterSet& other, bool allowInsertion) =0;
+  virtual Parameter* intersection(const SubParameterSet& other) const =0;
 };
 
 

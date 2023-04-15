@@ -111,6 +111,8 @@ public:
   void reset(const Parameter& p) override;
 
   const ParameterSet& subset() const override;
+  void merge(const SubParameterSet& other, bool allowInsertion) override;
+  Parameter* intersection(const SubParameterSet& other) const override;
 };
 
 } // namespace insight

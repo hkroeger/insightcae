@@ -109,6 +109,7 @@ public:
   int nDoF() const override;
   double getDoFValue(unsigned int iDoF) const override;
   void setDoFValue(unsigned int iDoF, double value) override;
+  void scaleSketch(double scaleFactor) override;
 };
 
 

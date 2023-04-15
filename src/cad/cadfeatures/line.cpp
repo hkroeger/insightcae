@@ -77,6 +77,9 @@ VectorPtr Line::end() const
     return p1_;
 }
 
+void Line::scaleSketch(double scaleFactor)
+{}
+
 
 
 FeaturePtr Line::create ( VectorPtr p0, VectorPtr p1 )

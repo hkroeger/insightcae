@@ -54,6 +54,8 @@ public:
 
     VectorPtr start() const override;
     VectorPtr end() const override;
+
+    void scaleSketch(double scaleFactor) override;
 };
 
 

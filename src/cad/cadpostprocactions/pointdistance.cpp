@@ -108,6 +108,11 @@ double DistanceConstraint::getConstraintError(unsigned int iConstraint) const
     return distance_ - targetValue();
 }
 
+void DistanceConstraint::scaleSketch(double scaleFactor)
+{
+    parametersRef().get<DoubleParameter>("distance")() *= scaleFactor;
+}
+
 
 
 }

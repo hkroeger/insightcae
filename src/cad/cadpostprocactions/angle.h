@@ -57,6 +57,7 @@ public:
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
+    void scaleSketch(double scaleFactor) override;
 };
 
 

@@ -96,6 +96,12 @@ double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
     return pow(p(0)-x,2), pow(p(1)-y,2);
 }
 
+void IQVTKFixedPoint::scaleSketch(double scaleFactor)
+{
+    parametersRef().get<insight::DoubleParameter>("x")() *= scaleFactor;
+    parametersRef().get<insight::DoubleParameter>("y")() *= scaleFactor;
+}
+
 
 
 
@@ -146,6 +152,9 @@ double IQVTKHorizontalConstraint::getConstraintError(unsigned int iConstraint) c
     arma::mat ex = line_->getDatumVectors().at("ex");
     return 1.-fabs(arma::dot(insight::vec3(1,0,0), ex));
 }
+
+void IQVTKHorizontalConstraint::scaleSketch(double scaleFactor)
+{}
 
 
 
@@ -198,7 +207,54 @@ double IQVTKVerticalConstraint::getConstraintError(unsigned int iConstraint) con
     return 1.-fabs(arma::dot(insight::vec3(0,1,0), ex));
 }
 
+void IQVTKVerticalConstraint::scaleSketch(double scaleFactor)
+{}
 
+
+
+
+
+
+IQVTKPointOnCurveConstraint::IQVTKPointOnCurveConstraint(
+    std::shared_ptr<insight::cad::SketchPoint const> p,
+    std::shared_ptr<insight::cad::Feature const> curve )
+  : p_(p),
+    curve_(curve)
+{}
+
+std::vector<vtkSmartPointer<vtkProp> > IQVTKPointOnCurveConstraint::createActor() const
+{
+    auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
+    caption->SetCaption("F");
+    caption->SetAttachmentPoint(
+        arma::mat(p_->value()).memptr()
+        );
+    caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
+    caption->GetCaptionTextProperty()->SetColor(0,0,0);
+    caption->GetCaptionTextProperty()->SetFontSize(10);
+    caption->GetCaptionTextProperty()->SetFrame(false);
+    caption->GetCaptionTextProperty()->SetShadow(false);
+
+    return {caption};
+}
+
+int IQVTKPointOnCurveConstraint::nConstraints() const
+{
+    return 1;
+}
+
+double IQVTKPointOnCurveConstraint::getConstraintError(unsigned int iConstraint) const
+{
+    insight::assertion(
+        iConstraint==0,
+        "invalid constraint index");
+
+    return curve_->minDist(p_->value());
+}
+
+void IQVTKPointOnCurveConstraint::scaleSketch(double scaleFactor)
+{
+}
 
 
 
@@ -206,8 +262,7 @@ double IQVTKVerticalConstraint::getConstraintError(unsigned int iConstraint) con
 
 void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchEntityPtr sg)
 {
-    double color[3]={1,0,0};
-    double lw=2;
+    auto setapp = setActorAppearance_;
     std::vector<vtkSmartPointer<vtkProp> > acs;
     if (auto feat = std::dynamic_pointer_cast<insight::cad::Feature>(sg))
     {
@@ -220,9 +275,11 @@ void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchEntityPtr 
     else if (auto pa = std::dynamic_pointer_cast<insight::cad::PostprocAction>(sg)) // dimensions etc.
     {
         acs=viewer().createActor(pa);
-        color[0]=0.7;
-        color[1]=color[2]=0.3;
-        lw=0.5;
+        setapp=[](const insight::ParameterSet& p, vtkProperty* prop)
+            {
+                prop->SetColor(0.7, 0.3, 0.3);
+                prop->SetLineWidth(0.5);
+            };
     }
     else if (auto soe = std::dynamic_pointer_cast<IQVTKConstrainedSketchEntity>(sg)) // e.g. constrains etc.
     {
@@ -233,8 +290,7 @@ void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchEntityPtr 
     {
         if (vtkSmartPointer<vtkActor> aa = vtkActor::SafeDownCast(a))
         {
-            aa->GetProperty()->SetColor(color);
-            aa->GetProperty()->SetLineWidth(lw);
+            setapp(sg->parameters(), aa->GetProperty());
         }
         if (auto follower=vtkFollower::SafeDownCast(a))
         {
@@ -440,11 +496,14 @@ void IQVTKConstrainedSketchEditor::solve()
 IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         IQVTKCADModel3DViewer& viewer,
         insight::cad::ConstrainedSketchPtr sketch,
-        const insight::ParameterSet& defaultGeometryParameters
+        const insight::ParameterSet& defaultGeometryParameters,
+        IQCADModel3DViewer::SetSketchEntityAppearanceCallback sseac
 )
     : ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),
       insight::cad::ConstrainedSketchPtr(sketch),
+      setActorAppearance_(sseac),
       defaultGeometryParameters_(defaultGeometryParameters)
+
 {
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawline.svg"), "Line",
@@ -453,6 +512,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         this, &IQVTKConstrainedSketchEditor::solve);
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_finish.svg"), "Finish",
                         this, &IQVTKConstrainedSketchEditor::finished);
+
     toolBar_->addAction("H",
     [&]()
     {
@@ -472,23 +532,75 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         }
     });
     toolBar_->addAction("V",
+    [&]()
+    {
+        if (currentSelection_)
+        {
+            for (auto sele: *currentSelection_)
+            {
+                auto sg = sele.first.lock();
+                if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
+                {
+                    auto lc = std::make_shared<IQVTKVerticalConstraint>( l );
+                    (*this)->geometry().insert(lc);
+                    (*this)->invalidate();
+                    this->updateActors();
+                }
+            }
+        }
+    });
+
+    toolBar_->addAction("F",
+    [&]()
+    {
+        if (currentSelection_)
+        {
+            insight::cad::FeaturePtr curve;
+            insight::cad::SketchPointPtr pt;
+
+            for (auto sele: *currentSelection_)
+            {
+                auto sg = sele.first.lock();
+                if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
+                {
+                    curve=l;
+                }
+                else if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                {
+                    pt=p;
+                }
+
+                if (pt && curve)
+                {
+                    auto lc = std::make_shared<IQVTKPointOnCurveConstraint>( pt, curve );
+                    (*this)->geometry().insert(lc);
+                    (*this)->invalidate();
+                    this->updateActors();
+                }
+            }
+        }
+    });
+
+    toolBar_->addAction("Scale",
                         [&]()
                         {
-                            if (currentSelection_)
+                            bool ok;
+                            double sf=QInputDialog::getDouble(
+                                this,
+                                "Scale Sketch",
+                                "Enter scale factor:", 1.,
+                                -DBL_MAX, DBL_MAX, -1, &ok);
+                            if (ok)
                             {
-                                for (auto sele: *currentSelection_)
+                                for (auto& geom: (*this)->geometry())
                                 {
-                                    auto sg = sele.first.lock();
-                                    if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
-                                    {
-                                        auto lc = std::make_shared<IQVTKVerticalConstraint>( l );
-                                        (*this)->geometry().insert(lc);
-                                        (*this)->invalidate();
-                                        this->updateActors();
-                                    }
+                                    geom->scaleSketch(sf);
                                 }
+                                (*this)->invalidate();
+                                this->updateActors();
                             }
-                        });    toolBar_->show();
+                        });
+    toolBar_->show();
 
 
     updateActors();

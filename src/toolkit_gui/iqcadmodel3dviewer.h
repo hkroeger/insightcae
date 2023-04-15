@@ -15,6 +15,11 @@
 class TOOLKIT_GUI_EXPORT IQCADModel3DViewer
         : public QMainWindow //for toolbars to work //QWidget
 {
+public:
+    typedef std::function<void(const insight::ParameterSet& seps, vtkProperty* actprops)>
+        SetSketchEntityAppearanceCallback;
+
+private:
     Q_OBJECT
 protected:
     QAbstractItemModel* model_;
@@ -71,7 +76,8 @@ public Q_SLOT:
     virtual void editSketch(
             const std::string& name,
             insight::cad::ConstrainedSketchPtr sketch,
-            const insight::ParameterSet& defaultGeometryParameters ) =0;
+            const insight::ParameterSet& defaultGeometryParameters,
+            SetSketchEntityAppearanceCallback saac ) =0;
 
 Q_SIGNALS:
     void appendToNotepad(const QString& text);

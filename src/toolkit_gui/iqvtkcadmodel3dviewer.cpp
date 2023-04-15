@@ -1313,19 +1313,28 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
     {
         auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
                     insight::cad::ConstrainedSketch::create(plane));
-        editSketch(name.toStdString(), sk, insight::ParameterSet());
+        editSketch(name.toStdString(), sk, insight::ParameterSet(),
+                   [](const insight::ParameterSet&, vtkProperty* actprops)
+                   {
+                       actprops->SetColor(1,0,0);
+                       actprops->SetLineWidth(2);
+                   });
     }
 }
 
 
 
 void IQVTKCADModel3DViewer::editSketch(
-        const std::string& name,
-        insight::cad::ConstrainedSketchPtr psk,
-        const insight::ParameterSet& defaultGeometryParameters )
+    const std::string& name,
+    insight::cad::ConstrainedSketchPtr psk,
+    const insight::ParameterSet& defaultGeometryParameters,
+    SetSketchEntityAppearanceCallback saac)
 {
     std::unique_ptr<IQVTKConstrainedSketchEditor> ske(
-                new IQVTKConstrainedSketchEditor(*this, psk, defaultGeometryParameters));
+                new IQVTKConstrainedSketchEditor(
+            *this,
+            psk,
+            defaultGeometryParameters, saac));
 
 
     connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),

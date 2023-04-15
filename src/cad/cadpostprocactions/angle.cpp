@@ -111,6 +111,9 @@ double AngleConstraint::getConstraintError(unsigned int iConstraint) const
     return angle_ - targetValue();
 }
 
+void AngleConstraint::scaleSketch(double scaleFactor)
+{}
+
 
 
 

@@ -21,6 +21,8 @@ public:
     virtual int nConstraints() const;
     virtual double getConstraintError(unsigned int iConstraint) const;
 
+    virtual void scaleSketch(double scaleFactor) =0;
+
     virtual size_t hash() const;
 
     const insight::ParameterSet& parameters() const;

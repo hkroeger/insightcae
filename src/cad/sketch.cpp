@@ -524,7 +524,13 @@ void SketchPoint::setDoFValue(unsigned int iDoF, double value)
     {
         case 0: x_=value;
         case 1: y_=value;
-    }
+        }
+}
+
+void SketchPoint::scaleSketch(double scaleFactor)
+{
+        x_*=scaleFactor;
+        y_*=scaleFactor;
 }
 
 

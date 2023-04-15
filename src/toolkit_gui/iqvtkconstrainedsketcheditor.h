@@ -16,8 +16,8 @@
 #include "sketch.h"
 //#include "iqvtkviewerstate.h"
 #include "viewwidgetaction.h"
+#include "iqvtkcadmodel3dviewer.h"
 
-class IQVTKCADModel3DViewer;
 class ParameterEditorWidget;
 
 
@@ -46,6 +46,8 @@ public:
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
+
+    void scaleSketch(double scaleFactor) override;
 };
 
 
@@ -61,6 +63,7 @@ public:
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
+    void scaleSketch(double scaleFactor) override;
 };
 
 
@@ -75,9 +78,26 @@ public:
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
+    void scaleSketch(double scaleFactor) override;
 };
 
 
+class IQVTKPointOnCurveConstraint
+    : public IQVTKConstrainedSketchEntity
+{
+    std::shared_ptr<insight::cad::SketchPoint const> p_;
+    std::shared_ptr<insight::cad::Feature const> curve_;
+public:
+    IQVTKPointOnCurveConstraint(
+        std::shared_ptr<insight::cad::SketchPoint const> p_,
+        std::shared_ptr<insight::cad::Feature const> curve_ );
+
+    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
+
+    int nConstraints() const override;
+    double getConstraintError(unsigned int iConstraint) const override;
+    void scaleSketch(double scaleFactor) override;
+};
 
 
 
@@ -93,12 +113,16 @@ public:
         std::set<vtkSmartPointer<vtkProp> >
         ActorSet;
 
+
+
 private:
     typedef
         std::map<
             insight::cad::ConstrainedSketchEntityPtr,
             ActorSet >
         SketchGeometryActorMap;
+
+    IQCADModel3DViewer::SetSketchEntityAppearanceCallback setActorAppearance_;
 
     SketchGeometryActorMap sketchGeometryActors_;
 
@@ -149,7 +173,8 @@ public:
     IQVTKConstrainedSketchEditor(
             IQVTKCADModel3DViewer& viewer,
             insight::cad::ConstrainedSketchPtr sketch,
-            const insight::ParameterSet& defaultGeometryParameters
+            const insight::ParameterSet& defaultGeometryParameters,
+            IQCADModel3DViewer::SetSketchEntityAppearanceCallback setActorAppearance
             );
     ~IQVTKConstrainedSketchEditor();
 

@@ -62,7 +62,15 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                 {
                     a=new QAction("Edit sketch...", &cm);
                     connect(a, &QAction::triggered,
-                            std::bind(&IQCADModel3DViewer::editSketch, viewer, name.toStdString(), psk, insight::ParameterSet()) );
+                            std::bind(
+                                &IQCADModel3DViewer::editSketch,
+                                viewer, name.toStdString(), psk,
+                                insight::ParameterSet(),
+                                [](const insight::ParameterSet&, vtkProperty* actprops)
+                                {
+                                    actprops->SetColor(1,0,0);
+                                    actprops->SetLineWidth(2);
+                                }) );
                     cm.addAction(a);
                 }
             }

@@ -17,7 +17,7 @@ IQVTKCADModel3DViewerMeasurePoints::~IQVTKCADModel3DViewerMeasurePoints()
     viewer().deactivateSubshapeSelectionAll();
 }
 
-void IQVTKCADModel3DViewerMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint point)
+bool IQVTKCADModel3DViewerMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint point)
 {
     auto clickedItem = viewer().findUnderCursorAt(point);
 
@@ -56,6 +56,10 @@ void IQVTKCADModel3DViewerMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*
 
                 setFinished();
             }
+
+            return true;
         }
     }
+
+    return false;
 }

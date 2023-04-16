@@ -182,15 +182,15 @@ public:
         findSketchElementOfActor(vtkProp *actor) const;
 
 
-    void onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-    void onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-    void onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-    void onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-    void onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-    void onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 
-    void onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override;
-    void onKeyRelease ( Qt::KeyboardModifiers modifiers, int key ) override;
+    bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override;
+    bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key ) override;
 
     void onMouseMove
       (

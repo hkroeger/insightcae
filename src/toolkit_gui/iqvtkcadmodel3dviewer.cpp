@@ -1330,23 +1330,26 @@ void IQVTKCADModel3DViewer::editSketch(
     const insight::ParameterSet& defaultGeometryParameters,
     SetSketchEntityAppearanceCallback saac)
 {
-    std::unique_ptr<IQVTKConstrainedSketchEditor> ske(
-                new IQVTKConstrainedSketchEditor(
-            *this,
-            psk,
-            defaultGeometryParameters, saac));
+    if (!currentUserActivity_)
+    {
+        std::unique_ptr<IQVTKConstrainedSketchEditor> ske(
+                    new IQVTKConstrainedSketchEditor(
+                *this,
+                psk,
+                defaultGeometryParameters, saac));
 
 
-    connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),
-            [this,name,psk]()
-            {
-                currentUserActivity_.reset();
-                cadmodel()->addModelstep(name, psk);
-                cadmodel()->setStaticModelStep(name, true);
-            }
-    );
+        connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),
+                [this,name,psk]()
+                {
+                    currentUserActivity_.reset();
+                    cadmodel()->addModelstep(name, psk);
+                    cadmodel()->setStaticModelStep(name, true);
+                }
+        );
 
-    currentUserActivity_=std::move(ske);
+        currentUserActivity_=std::move(ske);
+    }
 }
 
 
@@ -1438,11 +1441,11 @@ void IQVTKCADModel3DViewer::mouseDoubleClickEvent(QMouseEvent *e)
 {
     if ( e->button() & Qt::LeftButton )
     {
-        navigationManager_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-            currentNavigationAction_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-            currentUserActivity_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+        bool ret=navigationManager_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+        if (!ret && currentNavigationAction_)
+            ret=currentNavigationAction_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+        if (!ret && currentUserActivity_)
+            ret=currentUserActivity_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
     }
 
     if (currentUserActivity_ && currentUserActivity_->finished())
@@ -1454,27 +1457,27 @@ void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
 {
     if ( e->button() & Qt::LeftButton )
     {
-        navigationManager_->onLeftButtonDown( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-            currentNavigationAction_->onLeftButtonDown( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-            currentUserActivity_->onLeftButtonDown( e->modifiers(), e->pos() );
+        bool ret=navigationManager_->onLeftButtonDown( e->modifiers(), e->pos() );
+        if (!ret && currentNavigationAction_)
+            ret=currentNavigationAction_->onLeftButtonDown( e->modifiers(), e->pos() );
+        if (!ret && currentUserActivity_)
+            ret=currentUserActivity_->onLeftButtonDown( e->modifiers(), e->pos() );
     }
     else if ( e->button() & Qt::RightButton )
     {
-        navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-            currentNavigationAction_->onRightButtonDown( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-            currentUserActivity_->onRightButtonDown( e->modifiers(), e->pos() );
+        bool ret=navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
+        if (!ret && currentNavigationAction_)
+            ret=currentNavigationAction_->onRightButtonDown( e->modifiers(), e->pos() );
+        if (!ret && currentUserActivity_)
+            ret=currentUserActivity_->onRightButtonDown( e->modifiers(), e->pos() );
     }
     else if ( e->button() & Qt::MidButton )
     {
-        navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-            currentNavigationAction_->onMiddleButtonDown( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-            currentUserActivity_->onMiddleButtonDown( e->modifiers(), e->pos() );
+        bool ret=navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
+        if (!ret && currentNavigationAction_)
+            ret=currentNavigationAction_->onMiddleButtonDown( e->modifiers(), e->pos() );
+        if (!ret && currentUserActivity_)
+            ret=currentUserActivity_->onMiddleButtonDown( e->modifiers(), e->pos() );
     }
 
     if (currentUserActivity_ && currentUserActivity_->finished())
@@ -1490,25 +1493,21 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
 {
     if ( e->button() & Qt::LeftButton )
     {
-        navigationManager_->onLeftButtonUp( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-            currentNavigationAction_->onLeftButtonUp( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-            currentUserActivity_->onLeftButtonUp( e->modifiers(), e->pos() );
+        bool ret=navigationManager_->onLeftButtonUp( e->modifiers(), e->pos() );
+        if (!ret && currentNavigationAction_)
+            ret=currentNavigationAction_->onLeftButtonUp( e->modifiers(), e->pos() );
+        if (!ret && currentUserActivity_)
+            ret=currentUserActivity_->onLeftButtonUp( e->modifiers(), e->pos() );
     }
     else if ( e->button() & Qt::RightButton )
     {
-        navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-            currentNavigationAction_->onRightButtonUp( e->modifiers(), e->pos() );
-        else if (currentUserActivity_)
-            currentUserActivity_->onRightButtonUp( e->modifiers(), e->pos() );
-        else
+        bool ret=navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
+        if (!ret && currentNavigationAction_)
+            ret=currentNavigationAction_->onRightButtonUp( e->modifiers(), e->pos() );
+        if (!ret && currentUserActivity_)
+            ret=currentUserActivity_->onRightButtonUp( e->modifiers(), e->pos() );
+        if (!ret)
         {
-//            vtkNew<vtkPropPicker> picker;
-//            picker->Pick(e->pos().x(), size().height() -  e->pos().y(),
-//                         0, ren_ );
-
             auto pickedActor = findActorUnderCursorAt(e->pos());
 
             if (pickedActor != nullptr)
@@ -1517,7 +1516,6 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
                             displayedData_.begin(),
                             displayedData_.end(),
                             [pickedActor](const DisplayedData::value_type& e)
-//                            { return (e.second.actor_==pickedActor); }
                             { return std::find(e.second.actors_.begin(),
                                                e.second.actors_.end(), pickedActor)
                                                 !=e.second.actors_.end(); }
@@ -1533,11 +1531,11 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
     }
     else if ( e->button() & Qt::MidButton )
     {
-        navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-            currentNavigationAction_->onMiddleButtonUp( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-            currentUserActivity_->onMiddleButtonUp( e->modifiers(), e->pos() );
+        bool ret=navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
+        if (!ret && currentNavigationAction_)
+            ret=currentNavigationAction_->onMiddleButtonUp( e->modifiers(), e->pos() );
+        if (!ret && currentUserActivity_)
+            ret=currentUserActivity_->onMiddleButtonUp( e->modifiers(), e->pos() );
     }
 
     if (currentUserActivity_ && currentUserActivity_->finished())
@@ -1597,18 +1595,18 @@ void IQVTKCADModel3DViewer::keyPressEvent     ( QKeyEvent* e )
       currentUserActivity_.reset();
     }
 
-    navigationManager_->onKeyPress(e->modifiers(), e->key());
+    bool ret=navigationManager_->onKeyPress(e->modifiers(), e->key());
 
-    if (currentNavigationAction_)
-      currentNavigationAction_->onKeyPress(e->modifiers(), e->key());
+    if (!ret && currentNavigationAction_)
+      ret=currentNavigationAction_->onKeyPress(e->modifiers(), e->key());
 
-    if (currentUserActivity_)
-      currentUserActivity_->onKeyPress(e->modifiers(), e->key());
+    if (!ret && currentUserActivity_)
+      ret=currentUserActivity_->onKeyPress(e->modifiers(), e->key());
 
     if (currentUserActivity_ && currentUserActivity_->finished())
       currentUserActivity_.reset();
 
-    QWidget::keyPressEvent(e);
+    if (!ret) QWidget::keyPressEvent(e);
 }
 
 
@@ -1618,18 +1616,18 @@ void IQVTKCADModel3DViewer::keyReleaseEvent   ( QKeyEvent* e )
 {
     insight::dbg()<<"key release event"<<std::endl;
 
-    navigationManager_->onKeyRelease(e->modifiers(), e->key());
+    bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());
 
-    if (currentNavigationAction_)
-      currentNavigationAction_->onKeyRelease(e->modifiers(), e->key());
+    if (!ret && currentNavigationAction_)
+      ret=currentNavigationAction_->onKeyRelease(e->modifiers(), e->key());
 
-    if (currentUserActivity_)
-      currentUserActivity_->onKeyRelease(e->modifiers(), e->key());
+    if (!ret && currentUserActivity_)
+      ret=currentUserActivity_->onKeyRelease(e->modifiers(), e->key());
 
     if (currentUserActivity_ && currentUserActivity_->finished())
       currentUserActivity_.reset();
 
-    QWidget::keyReleaseEvent(e);
+    if (!ret) QWidget::keyReleaseEvent(e);
 }
 
 

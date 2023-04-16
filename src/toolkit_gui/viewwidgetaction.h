@@ -90,32 +90,50 @@ public:
       return *lastMouseLocation_;
   }
 
-  virtual void onLeftButtonDoubleClick  ( Qt::KeyboardModifiers nFlags, const QPoint point )
-  {}
+  virtual bool onLeftButtonDoubleClick  ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {
+      return false;
+  }
 
-  virtual void onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point )
-  {}
+  virtual bool onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {
+      return false;
+  }
 
-  virtual void onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
-  {}
+  virtual bool onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {
+      return false;
+  }
 
-  virtual void onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point )
-  {}
+  virtual bool onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {
+      return false;
+  }
 
-  virtual void onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point )
-  {}
+  virtual bool onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {
+      return false;
+  }
 
-  virtual void onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point )
-  {}
+  virtual bool onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {
+      return false;
+  }
 
-  virtual void onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point )
-  {}
+  virtual bool onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  {
+      return false;
+  }
 
-  virtual void onKeyPress ( Qt::KeyboardModifiers modifiers, int key )
-  {}
+  virtual bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key )
+  {
+      return false;
+  }
 
-  virtual void onKeyRelease ( Qt::KeyboardModifiers modifiers, int key )
-  {}
+  virtual bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key )
+  {
+      return false;
+  }
 
   virtual void onMouseMove
     (
@@ -124,7 +142,7 @@ public:
      Qt::KeyboardModifiers curFlags
      )
   {
-    lastMouseLocation_.reset(new QPoint(point));
+      lastMouseLocation_.reset(new QPoint(point));
   }
 
   virtual void onMouseWheel
@@ -132,7 +150,8 @@ public:
       double angleDeltaX,
       double angleDeltaY
      )
-  {}
+  {
+  }
 
 };
 
@@ -239,7 +258,7 @@ public:
   OCCViewWidgetMeasurePoints(QoccViewWidget &viewWidget);
   ~OCCViewWidgetMeasurePoints();
 
-  void onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 };
 
 

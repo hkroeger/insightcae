@@ -37,7 +37,7 @@ public:
     insight::cad::DeactivateAll(viewer().getContext(), shapeEnum);
   }
 
-  void onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override
+  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override
   {
     auto context = viewer().getContext();
 
@@ -75,10 +75,13 @@ public:
                              "Selected %s %d. Select next %s, end with right click."
                 ) % selectionName % id % selectionName ) ) );
         }
+        return true;
     }
+
+    return false;
   }
 
-  void onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override
+  bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override
   {
     QString text = QString::fromStdString(
           selection_->model()->featureSymbolName() + "?" + featSelCmdName + "=("
@@ -93,6 +96,8 @@ public:
     viewer().insertNotebookText(text);
 
     setFinished();
+
+    return true;
   }
 };
 

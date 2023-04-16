@@ -23,10 +23,7 @@ protected:
     arma::mat pointInPlane2D(const QPoint& screenPos) const;
     arma::mat pointInPlane2D(const arma::mat& pip3d) const;
 
-    insight::cad::SketchPointPtr
-    sketchPointAtCursor(
-            const QPoint& cp,
-            boost::optional<arma::mat> forcedLocation = boost::optional<arma::mat>() ) const;
+    insight::cad::SketchPointPtr existingSketchPointAt( const QPoint& cp ) const;
 
 Q_SIGNALS:
     void updateActors();
@@ -46,11 +43,26 @@ class IQVTKCADModel3DViewerDrawLine
   Q_OBJECT
 
   insight::cad::SketchPointPtr p1_, p2_;
-  boost::optional<arma::mat> modifiedP2_;
   vtkSmartPointer<vtkActor> previewLine_;
 
   insight::cad::Line* prevLine_;
 
+  struct CandidatePoint
+  {
+      insight::cad::SketchPointPtr sketchPoint;
+      bool isAnExistingPoint;
+      bool isOnCurve;
+  };
+
+  /**
+   * @brief pcand_
+   * left click might change viewport geometry due to modification of property panel
+   * determine candidate already during mouse move and use it as displayed
+   */
+  std::unique_ptr<CandidatePoint> pcand_;
+
+  CandidatePoint updatePCand(
+      const QPoint& point ) const;
 
 public:
     IQVTKCADModel3DViewerDrawLine(
@@ -65,11 +77,14 @@ public:
        Qt::KeyboardModifiers curFlags
        ) override;
 
-    void onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-    void onRightButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onLeftButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 
 Q_SIGNALS:
-    void lineAdded(insight::cad::Line* addedLine, insight::cad::Line* previouslyAddedLine);
+    void lineAdded(
+        insight::cad::Line* addedLine,
+        insight::cad::Line* previouslyAddedLine,
+        bool targetPointIsExisting );
 };
 
 #endif // IQVTKCADMODEL3DVIEWERDRAWLINE_H

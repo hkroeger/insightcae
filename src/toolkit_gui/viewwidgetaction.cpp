@@ -139,7 +139,7 @@ OCCViewWidgetMeasurePoints::~OCCViewWidgetMeasurePoints()
   insight::cad::DeactivateAll(viewer().getContext(), TopAbs_VERTEX);
 }
 
-void OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/)
+bool OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/)
 {
   viewer().getContext()->InitSelected();
   if (viewer().getContext()->MoreSelected())
@@ -153,6 +153,7 @@ void OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/
       {
         p1_=insight::cad::matconst(insight::vec3(p));
         viewer().sendStatus("Please select second point!");
+        return true;
       }
     else if (!p2_)
       {
@@ -170,6 +171,7 @@ void OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/
             );
 
         setFinished();
+        return true;
       }
   }
 }

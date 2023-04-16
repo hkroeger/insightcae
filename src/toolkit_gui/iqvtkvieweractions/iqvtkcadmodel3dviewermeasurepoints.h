@@ -14,7 +14,7 @@ public:
   IQVTKCADModel3DViewerMeasurePoints(IQVTKCADModel3DViewer &viewWidget);
   ~IQVTKCADModel3DViewerMeasurePoints();
 
-  void onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 };
 
 

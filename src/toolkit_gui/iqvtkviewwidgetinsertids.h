@@ -37,7 +37,7 @@ public:
       viewer().deactivateSubshapeSelectionAll();
   }
 
-  void onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override
+  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override
   {
       IQVTKCADModel3DViewer::ItemAtCursor clickedItem = viewer().findUnderCursorAt(point);
 
@@ -62,11 +62,15 @@ public:
 //                    boost::str(boost::format(
 //                                 "Selected %s %d. Select next %s, end with right click."
 //                    ) % selectionName % id % selectionName ) ) );
+
+              return true;
           }
       }
+
+      return false;
   }
 
-  void onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override
+  bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override
   {
     auto icmd = featureSelCmds.find(shapeType);
 
@@ -90,6 +94,8 @@ public:
     }
 
     setFinished();
+
+    return true;
   }
 };
 

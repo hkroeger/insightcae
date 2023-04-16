@@ -75,24 +75,29 @@ public:
     }
   }
 
-  void onLeftButtonDown  ( Qt::KeyboardModifiers modifiers, const QPoint point ) override
+  bool onLeftButtonDown  ( Qt::KeyboardModifiers modifiers, const QPoint point ) override
   {
     if ( this->viewer().pickAtCursor( modifiers&Qt::ControlModifier ) )
     {
       this->viewer().emitGraphicalSelectionChanged();
+      return true;
     }
+    return false;
   }
 
-  void onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override
+  bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override
   {
     if ( key==Qt::Key_Plus && (modifiers&Qt::ControlModifier) )
     {
-        scaleUp();
+      scaleUp();
+      return true;
     }
     else if (key==Qt::Key_Minus && (modifiers&Qt::ControlModifier))
     {
-        scaleDown();
+      scaleDown();
+      return true;
     }
+    return false;
   }
 
 };
@@ -111,46 +116,56 @@ public:
       : NavigationManager<Viewer>(currentAction, viewer)
   {}
 
-  void onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override
+  bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override
   {
       if (modifiers & Qt::ShiftModifier)
       {
         if (!this->actionInProgress() && this->hasLastMouseLocation() )
+        {
           this->setCurrentAction( std::make_shared<Panning>(
                                 this->viewer(), this->lastMouseLocation()) );
+            return true;
+        }
       }
       else if (modifiers & Qt::AltModifier)
       {
         if (!this->actionInProgress() && this->hasLastMouseLocation())
+        {
           this->setCurrentAction( std::make_shared<Rotation>(
                                 this->viewer(), this->lastMouseLocation()) );
+            return true;
+        }
       }
       else if (key==Qt::Key_PageUp)
       {
         this->scaleUp();
+        return true;
       }
       else if (key==Qt::Key_PageDown)
       {
         this->scaleDown();
+        return true;
       }
 
-      NavigationManager<Viewer>::onKeyPress(modifiers, key);
+      return NavigationManager<Viewer>::onKeyPress(modifiers, key);
   }
 
-  void onKeyRelease ( Qt::KeyboardModifiers modifiers, int key) override
+  bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key) override
   {
     if ( !(modifiers & Qt::ShiftModifier)
          && this->template currentAction<Panning>() )
     {
       this->stopCurrentAction();
+        return true;
     }
     else if ( !(modifiers & Qt::AltModifier)
          && this->template currentAction<Rotation>() )
     {
       this->stopCurrentAction();
+        return true;
     }
 
-    NavigationManager<Viewer>::onKeyRelease(modifiers, key);
+    return NavigationManager<Viewer>::onKeyRelease(modifiers, key);
   }
 
 };

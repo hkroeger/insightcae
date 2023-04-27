@@ -73,16 +73,16 @@ int ivtkOCCShape::RequestData(
   {
       for (TopExp_Explorer ex(Shape,TopAbs_FACE); ex.More(); ex.Next())
       {
-          auto small = TopoDS::Face(ex.Current());
+          auto face = TopoDS::Face(ex.Current());
 
           TopLoc_Location L;
-          auto tri = BRep_Tool::Triangulation (small, L);
+          auto tri = BRep_Tool::Triangulation (face, L);
 
           double deflection=1e-3;
 
           if (tri.IsNull())
           {
-            BRepTools::Clean(small);
+            BRepTools::Clean(face);
             Bnd_Box box;
     //        BRep_Builder b;
     //        b.UpdateFace(small, tolerance);
@@ -91,7 +91,7 @@ int ivtkOCCShape::RequestData(
             p.Angle=0.5;
             p.Deflection=deflection;
             p.Relative=true;
-            BRepMesh_IncrementalMesh  m(small, p);
+            BRepMesh_IncrementalMesh  m(face, p);
     #else
     #if (OCC_VERSION_MAJOR>=7)
             BRepMesh_FastDiscret::Parameters p;
@@ -104,7 +104,7 @@ int ivtkOCCShape::RequestData(
     #endif
             m.Perform(small);
     #endif
-            tri = BRep_Tool::Triangulation (small, L);
+            tri = BRep_Tool::Triangulation (face, L);
           }
 
           if (!tri.IsNull())

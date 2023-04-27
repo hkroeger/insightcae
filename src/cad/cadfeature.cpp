@@ -494,7 +494,6 @@ void Feature::setShape(const TopoDS_Shape& shape)
 {
   volprops_.reset();
   shape_=shape;
-  BRepTools::Clean(shape_);
   nameFeatures();
   setValid();
 }

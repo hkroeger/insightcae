@@ -10,6 +10,11 @@ endif()
 if(HDF_DIR)
     list(APPEND ADDARGS "-DHDF5_ROOT=${HDF_DIR}")
 endif()
+if (PYTHON_LIBRARY)
+    cmake_path(GET PYTHON_LIBRARY PARENT_PATH PYROOT)
+    cmake_path(GET PYROOT PARENT_PATH PYROOT) # two dirs up
+    list(APPEND ADDARGS "-DPython3_ROOT_DIR=${PYROOT}")
+endif()
 if (INSIGHT_BUILD_MEDREADER)
 
     include(ExternalProject)
@@ -20,7 +25,7 @@ if (INSIGHT_BUILD_MEDREADER)
 
         CMAKE_ARGS
          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-         -DVTK_DIR=${VTK_ONSCREEN_DIR}
+         -DVTK_DIR=${VTvi K_ONSCREEN_DIR}
          -DParaView_DIR=${VTK_ONSCREEN_DIR}/..
          -DLIBRARY_NAME_SUFFIX=pvis
          ${ADDARGS}

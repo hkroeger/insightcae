@@ -25,7 +25,7 @@ if (INSIGHT_BUILD_MEDREADER)
 
         CMAKE_ARGS
          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-         -DVTK_DIR=${VTvi K_ONSCREEN_DIR}
+         -DVTK_DIR=${VTK_ONSCREEN_DIR}
          -DParaView_DIR=${VTK_ONSCREEN_DIR}/..
          -DLIBRARY_NAME_SUFFIX=pvis
          ${ADDARGS}

@@ -36,8 +36,9 @@ namespace cad {
     
     
 defineType(Place);
-addToFactoryTable(Feature, Place);
-
+//addToFactoryTable(Feature, Place);
+addToStaticFunctionTable(Feature, Place, insertrule);
+addToStaticFunctionTable(Feature, Place, ruleDocumentation);
 
 size_t Place::calcHash() const
 {
@@ -59,9 +60,6 @@ size_t Place::calcHash() const
 }
 
 
-
-Place::Place(): DerivedFeature()
-{}
 
 
 
@@ -90,26 +88,6 @@ Place::Place(FeaturePtr m, FeaturePtr other)
 : DerivedFeature(m), m_(m), other_(other)
 {}
 
-
-
-
-FeaturePtr Place::create(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez)
-{
-    return FeaturePtr(new Place(m, p0, ex, ez));
-}
-
-
-FeaturePtr Place::create_refpt(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez, VectorPtr refpt)
-{
-    return FeaturePtr(new Place(m, p0, ex, ez, refpt));
-}
-
-
-
-FeaturePtr Place::create_other(FeaturePtr m, FeaturePtr other)
-{
-    return FeaturePtr(new Place(m, other));
-}
 
 
 
@@ -155,18 +133,18 @@ void Place::build()
  
   setShape(BRepBuilderAPI_Transform(m_->shape(), *trsf_).Shape());
   
-  copyDatumsTransformed( *m_, *trsf_, "", boost::assign::list_of("origin")("ex")("ez") );
+  copyDatumsTransformed( *m_, *trsf_, "", {"origin", "ex", "ez"} );
 }
 
 
 
 
-void Place::insertrule(parser::ISCADParser& ruleset) const
+void Place::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Place",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' 
        >> ruleset.r_solidmodel_expression >> ',' 
@@ -174,26 +152,29 @@ void Place::insertrule(parser::ISCADParser& ruleset) const
        >> ruleset.r_vectorExpression >> ',' 
        >> ruleset.r_vectorExpression >>
       ( ( ',' >> ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
-       >> ')' ) 
-      [ qi::_val = phx::bind(&Place::create_refpt, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+       >> ')' )
+       [ qi::_val = phx::bind(
+                       &Place::create<FeaturePtr, VectorPtr, VectorPtr, VectorPtr, VectorPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
     |
     ( '(' 
        >> ruleset.r_solidmodel_expression >> ',' 
        >> ruleset.r_solidmodel_expression 
-       >> ')' ) 
-      [ qi::_val = phx::bind(&Place::create_other, qi::_1, qi::_2) ]
+       >> ')' )
+         [ qi::_val = phx::bind(
+                       &Place::create<FeaturePtr, FeaturePtr>,
+                       qi::_1, qi::_2) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Place::ruleDocumentation() const
+FeatureCmdInfoList Place::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Place",
@@ -202,7 +183,7 @@ FeatureCmdInfoList Place::ruleDocumentation() const
             "Optionally, the point refpt is made coincident with p0 instead of the origin."
             " Alternatively, the placement is copied from another Place-feature other_place."
         )
-    );
+    };
 }
 
 

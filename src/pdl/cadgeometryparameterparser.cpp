@@ -1,8 +1,11 @@
 #include "cadgeometryparameterparser.h"
 
 
-CADGeometryParameterParser::Data::Data(const std::string& featureLabel, const std::string& d)
-: ParserDataBase(d), featureLabel_(featureLabel)
+CADGeometryParameterParser::Data::Data(
+    const std::string& featureLabel,
+    const std::string& script,
+    const std::string& d)
+    : ParserDataBase(d), featureLabel_(featureLabel), script_(script)
 {}
 
 void CADGeometryParameterParser::Data::cppAddHeader(std::set< std::string >& headers) const
@@ -23,7 +26,7 @@ std::string CADGeometryParameterParser::Data::cppParamType(const std::string& ) 
 
 std::string CADGeometryParameterParser::Data::cppValueRep(const std::string& name, const std::string& thisscope) const
 {
-  return "\""+featureLabel_+"\"";
+  return "\""+featureLabel_+"\", \""+ script_ + "\"";
 }
 
 std::string CADGeometryParameterParser::Data::cppConstructorParameters(const std::string &name,
@@ -31,14 +34,14 @@ std::string CADGeometryParameterParser::Data::cppConstructorParameters(const std
 {
   return cppType(name)+"(new "
     + cppParamType(name)
-    +"( \""
-      + featureLabel_ + "\", \""
-      + description + "\", "
+    +"( \"" + featureLabel_ + "\", "
+       "\"" + script_ + "\", "
+       "\"" + description + "\", "
       + (isHidden?"true":"false")+","
       + (isExpert?"true":"false")+","
       + (isNecessary?"true":"false")+","
       +boost::lexical_cast<std::string>(order)
-       +"))";
+    +"))";
 }
 
 

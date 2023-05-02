@@ -37,19 +37,16 @@ class Partition
   
   Partition(FeaturePtr m1, FeaturePtr m2);
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
 public:
   declareType("Partition");
+
+  CREATE_FUNCTION(Partition);
   
-  Partition();
-  static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
-  
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual FeatureCmdInfoList ruleDocumentation() const;
-  
+  static void insertrule(parser::ISCADParser& ruleset);
+  static FeatureCmdInfoList ruleDocumentation();
 };
 
 }

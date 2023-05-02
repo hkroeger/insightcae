@@ -70,7 +70,8 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                                 {
                                     actprops->SetColor(1,0,0);
                                     actprops->SetLineWidth(2);
-                                }) );
+                                },
+                                [](){}) );
                     cm.addAction(a);
                 }
             }

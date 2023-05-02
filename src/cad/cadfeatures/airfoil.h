@@ -111,18 +111,14 @@ class Airfoil
 
 public:
     declareType ( "Airfoil" );
-    Airfoil ();
 
-    static FeaturePtr create 
-    ( 
-        const std::string& name, VectorPtr p0, VectorPtr ex, VectorPtr ez, ScalarPtr c, ScalarPtr t, ScalarPtr r_EK, ScalarPtr r_AK
-    );
+    CREATE_FUNCTION(Airfoil);
 
     operator const TopoDS_Face& () const;
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;
 
+    static void insertrule ( parser::ISCADParser& ruleset );
 };
 
 

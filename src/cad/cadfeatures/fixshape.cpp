@@ -36,7 +36,10 @@ namespace cad {
 
 
 defineType(FixShape);
-addToFactoryTable(Feature, FixShape);
+//addToFactoryTable(Feature, FixShape);
+addToStaticFunctionTable(Feature, FixShape, insertrule);
+addToStaticFunctionTable(Feature, FixShape, ruleDocumentation);
+
 
 
 size_t FixShape::calcHash() const
@@ -48,9 +51,6 @@ size_t FixShape::calcHash() const
 }
 
 
-FixShape::FixShape ()
-{}
-
 
 
 
@@ -59,16 +59,6 @@ FixShape::FixShape ( FeaturePtr in )
 {
 }
 
-
-
-
-
-
-
-FeaturePtr FixShape::create ( FeaturePtr in )
-{
-    return FeaturePtr(new FixShape(in));
-}
 
 
 
@@ -95,7 +85,7 @@ FixShape::operator const TopoDS_Shape& () const
 
 
 
-void FixShape::insertrule ( parser::ISCADParser& ruleset ) const
+void FixShape::insertrule ( parser::ISCADParser& ruleset )
 {
     ruleset.modelstepFunctionRules.add
     (
@@ -103,7 +93,9 @@ void FixShape::insertrule ( parser::ISCADParser& ruleset ) const
         typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
 
                     ( '(' >> ruleset.r_solidmodel_expression >> ')' )
-                    [ qi::_val = phx::bind(&FixShape::create, qi::_1) ]
+                    [ qi::_val = phx::bind(
+                         &FixShape::create<FeaturePtr>,
+                         qi::_1) ]
 
                 ) )
     );
@@ -112,10 +104,9 @@ void FixShape::insertrule ( parser::ISCADParser& ruleset ) const
 
 
 
-FeatureCmdInfoList FixShape::ruleDocumentation() const
+FeatureCmdInfoList FixShape::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "FixShape",
@@ -124,7 +115,7 @@ FeatureCmdInfoList FixShape::ruleDocumentation() const
 
             "Runs some repair operations on output shape of feature in."
         )
-    );
+    };
 }
 
 

@@ -41,15 +41,14 @@ protected:
 
 public:
     declareType("Circle");
-    Circle();
 
-    static FeaturePtr create(VectorPtr p0, VectorPtr n, ScalarPtr D);
+    CREATE_FUNCTION(Circle);
 
     operator const TopoDS_Face& () const;
 
 
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule(parser::ISCADParser& ruleset);
+    static FeatureCmdInfoList ruleDocumentation();
     
 };
 

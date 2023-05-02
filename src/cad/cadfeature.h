@@ -190,7 +190,7 @@ class Feature
   static std::mutex step_read_mutex_;
   
 public:
-  declareFactoryTableNoArgs(Feature); 
+//  declareFactoryTableNoArgs(Feature);
 
   
 //   typedef std::shared_ptr<Feature> Ptr;
@@ -274,26 +274,39 @@ protected:
   
   virtual void build();
 
-public:
-  declareType("Feature");
-  
   Feature();
   Feature(const Feature& o);
   Feature(const TopoDS_Shape& shape);
-//   Feature(const boost::filesystem::path& filepath);
+  //   Feature(const boost::filesystem::path& filepath);
   Feature(FeatureSetPtr creashapes);
+
+public:
+  declareType("Feature");
+
+  declareStaticFunctionTableWithArgs(
+      insertrule,
+      void,
+      LIST(parser::ISCADParser&),
+      LIST(parser::ISCADParser& ruleset));
+
+  declareStaticFunctionTable(
+    ruleDocumentation,
+    FeatureCmdInfoList );
 
   virtual ~Feature();
   
-  static FeaturePtr CreateFromShape(const TopoDS_Shape& shape);
-  static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
-  static FeaturePtr CreateFromFeaturesSet(FeatureSetPtr shapes);
-  
+//  static FeaturePtr CreateFromShape(const TopoDS_Shape& shape);
+//  static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
+//  static FeaturePtr CreateFromFeaturesSet(FeatureSetPtr shapes);
+  static FeaturePtr create(const boost::filesystem::path& filepath);
+  CREATE_FUNCTION(Feature);
+
   inline bool isleaf() const { return isleaf_; }
   inline void unsetLeaf() const { isleaf_=false; }
     
   void setFeatureSymbolName( const std::string& name);
-  const std::string& featureSymbolName() const;
+  bool isAnonymous() const;
+  std::string featureSymbolName() const;
   
   virtual void setVisResolution( ScalarPtr r );
   virtual void setDensity(ScalarPtr rho);
@@ -442,8 +455,6 @@ public:
   
   friend std::ostream& operator<<(std::ostream& os, const Feature& m);
 
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual FeatureCmdInfoList ruleDocumentation() const;
   
   virtual bool isSingleEdge() const;
   virtual bool isSingleOpenWire() const;
@@ -480,6 +491,20 @@ public:
    */
   virtual bool isTransformationFeature() const;
   virtual gp_Trsf transformation() const;
+
+
+  static void insertrule(parser::ISCADParser& ruleset);
+  static FeatureCmdInfoList ruleDocumentation();
+
+
+  /**
+   * @brief generateScriptCommand
+   * This API needs is conceptually incomplete.
+   * currently only used to save constrained sketch scripts without external dependencies
+   * everything else is unsupported.
+   * @return
+   */
+  virtual std::string generateScriptCommand() const;
 };
 
 

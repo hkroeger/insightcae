@@ -39,8 +39,9 @@ namespace cad {
     
 
 defineType(Pipe);
-addToFactoryTable(Feature, Pipe);
-
+//addToFactoryTable(Feature, Pipe);
+addToStaticFunctionTable(Feature, Pipe, insertrule);
+addToStaticFunctionTable(Feature, Pipe, ruleDocumentation);
 
 size_t Pipe::calcHash() const
 {
@@ -56,22 +57,12 @@ size_t Pipe::calcHash() const
 
 
 
-Pipe::Pipe(): Feature()
-{}
-
-
 
 
 Pipe::Pipe(FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal, bool orient, bool reapprox_spine)
     : spine_(spine), xsec_(xsec), orient_(orient), reapprox_spine_(reapprox_spine), fixed_binormal_(fixed_binormal)
 {}
 
-
-
-FeaturePtr Pipe::create(FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal, bool orient, bool reapprox_spine)
-{
-    return FeaturePtr(new Pipe(spine, xsec, fixed_binormal, orient, reapprox_spine));
-}
 
 
 
@@ -162,8 +153,8 @@ void Pipe::build()
     p.Build();
 //    p.MakeSolid();
     
-    providedSubshapes_["frontFace"]=FeaturePtr(new Feature(p.FirstShape()));
-    providedSubshapes_["backFace"]=FeaturePtr(new Feature(p.LastShape()));
+    providedSubshapes_["frontFace"]=Feature::create(p.FirstShape());
+    providedSubshapes_["backFace"]=Feature::create(p.LastShape());
     
     TopoDS_Shape res=p.Shape();
     ShapeFix_Shape sfs(res);
@@ -174,12 +165,12 @@ void Pipe::build()
 
 
 
-void Pipe::insertrule(parser::ISCADParser& ruleset) const
+void Pipe::insertrule(parser::ISCADParser& ruleset)
 {
     ruleset.modelstepFunctionRules.add
     (
         "Pipe",
-        typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                     ( '(' >> ruleset.r_solidmodel_expression >> ','
                       >> ruleset.r_solidmodel_expression
@@ -187,19 +178,20 @@ void Pipe::insertrule(parser::ISCADParser& ruleset) const
                       >> ( ( ',' >> qi::lit("orient") >> qi::attr(true) ) | qi::attr(false) ) 
                       >> ( ( ',' >> qi::lit("reapprox") >> qi::attr(true) ) | qi::attr(false) ) 
                       >> ')' )
-                    [ qi::_val = phx::bind(&Pipe::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+                    [ qi::_val = phx::bind(
+                         &Pipe::create<FeaturePtr, FeaturePtr, VectorPtr, bool, bool>,
+                         qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
 
-                ))
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList Pipe::ruleDocumentation() const
+FeatureCmdInfoList Pipe::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Pipe",
@@ -210,7 +202,7 @@ FeatureCmdInfoList Pipe::ruleDocumentation() const
             " By default, the section is not rotated. If keyword reorient is given, the z-axis of the section is aligned with the tangent of the spine."
             " The keyword reapprox triggers an reapproximation of the spine wire into a single b-spline curve (experimental)."
         )
-    );
+    };
 }
 
 

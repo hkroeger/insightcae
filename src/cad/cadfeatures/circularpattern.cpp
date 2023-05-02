@@ -35,8 +35,9 @@ namespace cad {
     
     
 defineType(CircularPattern);
-addToFactoryTable(Feature, CircularPattern);
-
+//addToFactoryTable(Feature, CircularPattern);
+addToStaticFunctionTable(Feature, CircularPattern, insertrule);
+addToStaticFunctionTable(Feature, CircularPattern, ruleDocumentation);
 
 
 size_t CircularPattern::calcHash() const
@@ -60,10 +61,6 @@ size_t CircularPattern::calcHash() const
 }
 
 
-CircularPattern::CircularPattern(): Compound()
-{}
-
-
 
   
 CircularPattern::CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center, const std::string& filterrule)
@@ -84,21 +81,6 @@ CircularPattern::CircularPattern(FeaturePtr m1, FeaturePtr otherpat)
 {
 }
 
-
-
-
-FeaturePtr CircularPattern::create(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center, const std::string& filterrule)
-{
-    return FeaturePtr(new CircularPattern(m1, p0, axis, n, center, filterrule));
-}
-
-
-
-
-FeaturePtr CircularPattern::create_other(FeaturePtr m1, FeaturePtr otherpat)
-{
-    return FeaturePtr(new CircularPattern(m1, otherpat));
-}
 
 
 
@@ -169,13 +151,13 @@ void CircularPattern::build()
             tr.SetRotation(ax, phi0+delta_phi*double(i));
             
             components_[str( format("component%d") % (j+1) )] =
-                Transform::create_trsf(m1_, tr);
+                Transform::create(m1_, tr);
                 
             j++;
 
             for (const auto& pss: sf)
             {
-              subshapeCompoundFeatures[pss.first].push_back(Transform::create_trsf ( m1_->subshape(pss.first), tr ));
+              subshapeCompoundFeatures[pss.first].push_back(Transform::create( m1_->subshape(pss.first), tr ));
             }
         }
     }
@@ -191,7 +173,7 @@ void CircularPattern::build()
 }
 
 
-void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
+void CircularPattern::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -207,13 +189,17 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
         >> ( ( ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) ) 
         >> ( ( ',' >> qi::lit("not") >> ruleset.r_string ) | qi::attr(std::string()) ) 
         >> ')' 
-      ) [ qi::_val = phx::bind(&CircularPattern::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6) ]
+      ) [ qi::_val = phx::bind(
+                          &CircularPattern::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr, bool, const std::string&>,
+                          qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6) ]
       |
       (
       '(' >> 
           ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression 
         >> ')' 
-      ) [ qi::_val = phx::bind(&CircularPattern::create_other, qi::_1, qi::_2) ]
+      ) [ qi::_val = phx::bind(
+                          &CircularPattern::create<FeaturePtr, FeaturePtr>,
+                          qi::_1, qi::_2) ]
     ))
   );
 }
@@ -221,10 +207,9 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList CircularPattern::ruleDocumentation() const
+FeatureCmdInfoList CircularPattern::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "CircularPattern",
@@ -237,7 +222,7 @@ FeatureCmdInfoList CircularPattern::ruleDocumentation() const
             " If the keyword centered is given, the pattern is created symmetrically in both directions of rotation (The total number of elements is kept)."
             " Alternatively, the settings can be copied from an existing CircularPattern-feature other_pattern."
         )
-    );
+    };
 }
 
 

@@ -173,6 +173,8 @@ public:
 
   void generateScript(std::ostream& os) const;
 
+  std::string generateScriptCommand() const override;
+
 };
 
 typedef std::shared_ptr<ConstrainedSketch> ConstrainedSketchPtr;

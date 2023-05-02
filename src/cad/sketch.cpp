@@ -47,7 +47,7 @@ namespace cad {
 
 
 defineType(Sketch);
-addToFactoryTable(Feature, Sketch);
+//addToFactoryTable(Feature, Sketch);
 
 size_t Sketch::calcHash() const
 {
@@ -243,7 +243,7 @@ void Sketch::build()
         auto ws = DXFReader(filename, ".*").Wires(tol_);
         if (ws->Size()==1)
         {
-            providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(ws->Value(1)));
+            providedSubshapes_["OuterWire"]=Feature::create(ws->Value(1));
         }
         else
         {
@@ -251,7 +251,7 @@ void Sketch::build()
             {
                 providedSubshapes_[
                         str(format("OuterWire%d")%(i+1))]=
-                        FeaturePtr(new Feature(ws->Value(i+1)));
+                        Feature::create(ws->Value(i+1));
             }
         }
 
@@ -644,13 +644,6 @@ std::shared_ptr<ConstrainedSketch> ConstrainedSketch::create(DatumPtr pl, istrea
       success,
       "parsing of constrained sketch script was not successful!" );
 
-  std::cout<<"ToC: ";
-  for (const auto& j: grammar.labeledEntities)
-  {
-      std::cout<<", "<<j.first;
-  }
-  std::cout<<std::endl;
-
   return sk;
 }
 
@@ -798,6 +791,17 @@ void ConstrainedSketch::generateScript(ostream &os) const
     }
 
     sb.write(os);
+}
+
+
+
+std::string ConstrainedSketch::generateScriptCommand() const
+{
+    std::ostringstream os;
+    os << type() << '(';
+    generateScript(os);
+    os << ')';
+    return os.str();
 }
 
 

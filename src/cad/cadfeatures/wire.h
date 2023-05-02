@@ -36,22 +36,18 @@ class Wire
     Wire ( FeatureSetPtr edges );
     Wire ( const std::vector<FeaturePtr>& edges );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Wire" );
-    Wire ();
+    CREATE_FUNCTION(Wire);
 
-    static FeaturePtr create ( FeatureSetPtr edges );
-    static FeaturePtr create_feats ( const std::vector<FeaturePtr>& edges );
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
-
-    virtual bool isSingleClosedWire() const;
-    virtual bool isSingleOpenWire() const;
+    bool isSingleClosedWire() const override;
+    bool isSingleOpenWire() const override;
 };
 
 

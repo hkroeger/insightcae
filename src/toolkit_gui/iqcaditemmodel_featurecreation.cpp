@@ -39,7 +39,7 @@ void IQCADItemModel::addImportedFeature()
     if (!fn.isEmpty())
     {
         boost::filesystem::path fp(fn.toStdString());
-        auto m = cad::Feature::CreateFromFile(fp);
+        auto m = cad::Feature::create(fp);
         this->addModelstep(
                     fp.filename().stem().string(),
                     m );

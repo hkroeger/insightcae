@@ -79,7 +79,7 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
   {
 
 
-    auto shape=cad::Cylinder::create(
+    cad::FeaturePtr shape=cad::Cylinder::create(
                cad::matconst(p.geometry.p0),
                cad::matconst(ex * p.geometry.L),
                cad::scalarconst( p.geometry.D ),
@@ -107,7 +107,7 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
   }
   else
   {
-    auto cyl=cad::Cylinder::create_hollow(
+    auto cyl=cad::Cylinder::create(
                cad::matconst(p.geometry.p0),
                cad::matconst(ex * p.geometry.L),
                cad::scalarconst( p.geometry.D ),

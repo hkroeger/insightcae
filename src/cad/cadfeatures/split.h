@@ -31,15 +31,16 @@ class Split
   FeaturePtr source_;
   FeaturePtr target_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
   
+  Split(FeaturePtr source, FeaturePtr target);
+
 public:
   declareType("Split");
-  Split();
-  Split(FeaturePtr source, FeaturePtr target);
+  CREATE_FUNCTION(Split);
   
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 }

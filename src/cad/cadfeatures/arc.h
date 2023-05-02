@@ -45,12 +45,11 @@ class Arc
 
 public:
     declareType ( "Arc" );
-    Arc ();
-    
-    static FeaturePtr create ( VectorPtr p0, VectorPtr p0tang, VectorPtr p1 );
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    CREATE_FUNCTION(Arc);
+
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
     virtual bool isSingleEdge() const;
     virtual bool isSingleCloseWire() const;
@@ -75,12 +74,11 @@ class Arc3P
 
 public:
     declareType ( "Arc3P" );
-    Arc3P ();
     
-    static FeaturePtr create ( VectorPtr p0, VectorPtr pm, VectorPtr p1 );
+    CREATE_FUNCTION(Arc3P);
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
     virtual bool isSingleEdge() const;
     virtual bool isSingleCloseWire() const;

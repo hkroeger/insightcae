@@ -35,7 +35,11 @@ namespace cad {
     
     
 defineType(Wire);
-addToFactoryTable(Feature, Wire);
+//addToFactoryTable(Feature, Wire);
+addToStaticFunctionTable(Feature, Wire, insertrule);
+addToStaticFunctionTable(Feature, Wire, ruleDocumentation);
+
+
 
 
 size_t Wire::calcHash() const
@@ -56,8 +60,6 @@ size_t Wire::calcHash() const
 
 
 
-Wire::Wire(): Feature()
-{}
 
 
 
@@ -72,16 +74,6 @@ Wire::Wire(const std::vector<FeaturePtr>& edges)
 {
 }
 
-
-FeaturePtr Wire::create(FeatureSetPtr edges)
-{
-  return FeaturePtr(new Wire(edges));
-}
-
-FeaturePtr Wire::create_feats(const std::vector<FeaturePtr>& edges)
-{
-  return FeaturePtr(new Wire(edges));
-}
 
 
 
@@ -122,38 +114,41 @@ void Wire::build()
 
 
 
-void Wire::insertrule(parser::ISCADParser& ruleset) const
+void Wire::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Wire",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     '(' > (
         ( ruleset.r_edgeFeaturesExpression )
-          [ qi::_val = phx::bind(&Wire::create, qi::_1) ]
+          [ qi::_val = phx::bind(
+                             &Wire::create<FeatureSetPtr>,
+                             qi::_1) ]
         |
         ( ruleset.r_modelstep % ',' )
-            [ qi::_val = phx::bind(&Wire::create_feats, qi::_1) ]
+            [ qi::_val = phx::bind(
+                             &Wire::create<const std::vector<FeaturePtr>&>,
+                             qi::_1) ]
      ) > ')'
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Wire::ruleDocumentation() const
+FeatureCmdInfoList Wire::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Wire",
             "( <edgeSelection> )",
             "Creates a wire from a number of edges."
         )
-    );
+    };
 }
 
 

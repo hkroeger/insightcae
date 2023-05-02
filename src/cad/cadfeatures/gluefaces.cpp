@@ -40,7 +40,11 @@ namespace cad {
 
 
 defineType(GlueFaces);
-addToFactoryTable(Feature, GlueFaces);
+//addToFactoryTable(Feature, GlueFaces);
+addToStaticFunctionTable(Feature, GlueFaces, insertrule);
+//addToStaticFunctionTable(Feature, GlueFaces, ruleDocumentation);
+
+
 
 size_t GlueFaces::calcHash() const
 {
@@ -51,14 +55,12 @@ size_t GlueFaces::calcHash() const
   return h.getHash();
 }
 
-GlueFaces::GlueFaces()
-{}
-
 
 GlueFaces::GlueFaces(FeaturePtr feat, ScalarPtr tol)
 : feat_(feat), tol_(tol)
 {
 }
+
 
 void GlueFaces::build()
 {
@@ -76,19 +78,23 @@ void GlueFaces::build()
   setShape( ggl.Shape() );
 }
 
-void GlueFaces::insertrule(parser::ISCADParser& ruleset) const
+
+
+void GlueFaces::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
-    "GlueFaces",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    "GlueFaces",
+     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_solidmodel_expression 
 	  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) 
       >> ')' )
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<GlueFaces>(qi::_1, qi::_2)) ]
+      [ qi::_val = phx::bind(
+                       &GlueFaces::create<FeaturePtr, ScalarPtr>,
+                       qi::_1, qi::_2) ]
       
-    ))
+    )
   );
 }
 

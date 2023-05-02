@@ -43,30 +43,26 @@ class Place
 
     std::shared_ptr<gp_Trsf> trsf_;
 
+    Place ( FeaturePtr m, const gp_Ax2& cs );
     Place ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez, VectorPtr refpt = VectorPtr() );
     Place ( FeaturePtr m, FeaturePtr other );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Place" );
-    Place ();
-    Place ( FeaturePtr m, const gp_Ax2& cs );
 
-    static FeaturePtr create ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez );
-    static FeaturePtr create_refpt ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez, VectorPtr refpt );
-    static FeaturePtr create_other ( FeaturePtr m, FeaturePtr other );
+    CREATE_FUNCTION(Place);
 
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
-
-    virtual bool isTransformationFeature() const
+    bool isTransformationFeature() const override
     {
         return true;
     }
-    virtual gp_Trsf transformation() const;
+    gp_Trsf transformation() const override;
 };
 
 

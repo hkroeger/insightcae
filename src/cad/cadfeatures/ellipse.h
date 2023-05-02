@@ -45,12 +45,11 @@ class Ellipse
 
 public:
     declareType ( "Ellipse" );
-    Ellipse ();
-    
-    static FeaturePtr create ( VectorPtr p0, VectorPtr axmaj, VectorPtr axmin );
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    CREATE_FUNCTION(Ellipse);
+
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
 //     virtual bool isSingleEdge() const;
 //     virtual bool isSingleCloseWire() const;

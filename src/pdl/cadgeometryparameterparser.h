@@ -9,9 +9,9 @@ struct CADGeometryParameterParser
   struct Data
   : public ParserDataBase
   {
-    std::string featureLabel_;
+    std::string featureLabel_, script_;
 
-    Data(const std::string& featlabel, const std::string& d);
+    Data(const std::string& featlabel, const std::string& script, const std::string& d);
 
     void cppAddHeader(std::set< std::string >& headers) const override;
 
@@ -53,8 +53,8 @@ struct CADGeometryParameterParser
       "cadgeometry",
       typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
        new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-        ( ruleset.r_string >> ruleset.r_description_string )
-        [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2)) ]
+        ( ruleset.r_string >> ruleset.r_string >> ruleset.r_description_string )
+                        [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3)) ]
       ))
     );
   }

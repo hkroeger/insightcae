@@ -412,7 +412,8 @@ public:
             const std::string& name,
             insight::cad::ConstrainedSketchPtr sk,
             const insight::ParameterSet& defaultGeometryParameters,
-            SetSketchEntityAppearanceCallback saac  ) override;
+            SetSketchEntityAppearanceCallback saac,
+            SketchCompletionCallback scc ) override;
 
 protected:
     void mouseDoubleClickEvent(QMouseEvent* e) override;

@@ -37,8 +37,9 @@ namespace cad {
     
     
 defineType(Box);
-addToFactoryTable(Feature, Box);
-
+//addToFactoryTable(Feature, Box);
+addToStaticFunctionTable(Feature, Box, insertrule);
+addToStaticFunctionTable(Feature, Box, ruleDocumentation);
 
 size_t Box::calcHash() const
 {
@@ -53,10 +54,6 @@ size_t Box::calcHash() const
   h+=boost::fusion::at_c<2>(center_);
   return h.getHash();
 }
-
-
-Box::Box()
-{}
 
 
 
@@ -74,18 +71,6 @@ Box::Box
 }
 
 
-
-FeaturePtr Box::create
-(
-    VectorPtr p0,
-    VectorPtr L1,
-    VectorPtr L2,
-    VectorPtr L3,
-    BoxCentering center
-)
-{
-    return FeaturePtr(new Box(p0, L1, L2, L3, center));
-}
 
 
 
@@ -148,7 +133,7 @@ void Box::build()
 
 
 
-void Box::insertrule(parser::ISCADParser& ruleset) const
+void Box::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -173,7 +158,9 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
             ( qi::attr(false) >> qi::attr(false) >> qi::attr(false) )
           )
         >> ')' ) 
-      [ qi::_val = phx::bind(&Box::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+      [ qi::_val = phx::bind(
+                       &Box::create<VectorPtr, VectorPtr, VectorPtr, VectorPtr, BoxCentering>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       
     ))
   );
@@ -181,7 +168,7 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList Box::ruleDocumentation() const
+FeatureCmdInfoList Box::ruleDocumentation()
 {
     return boost::assign::list_of
     (

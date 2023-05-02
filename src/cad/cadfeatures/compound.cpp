@@ -38,7 +38,9 @@ namespace cad
     
     
 defineType(Compound);
-addToFactoryTable(Feature, Compound);
+//addToFactoryTable(Feature, Compound);
+addToStaticFunctionTable(Feature, Compound, insertrule);
+addToStaticFunctionTable(Feature, Compound, ruleDocumentation);
 
 
 size_t Compound::calcHash() const
@@ -54,8 +56,9 @@ size_t Compound::calcHash() const
 }
 
 
+
 Compound::Compound()
-: Feature()
+    : Feature()
 {}
 
 
@@ -79,23 +82,9 @@ Compound::Compound(const CompoundFeatureMap& m1)
 
 
 
-FeaturePtr Compound::create( const CompoundFeatureList& m1 )
-{
-    return FeaturePtr(new Compound(m1));
-}
-
-
-
-
-FeaturePtr Compound::create_map( const CompoundFeatureMap& m1 )
-{
-    return FeaturePtr(new Compound(m1));
-}
-
-
 
     
-FeaturePtr Compound::create_named( const CompoundFeatureMapData& m1 )
+std::shared_ptr<Compound> Compound::create_named( const CompoundFeatureMapData& m1 )
 {
     CompoundFeatureMap items;
     for (const auto& i: m1)
@@ -103,7 +92,7 @@ FeaturePtr Compound::create_named( const CompoundFeatureMapData& m1 )
         items[boost::fusion::get<0>(i)]
                 = boost::fusion::get<1>(i);
     }
-    return FeaturePtr(new Compound(items));
+    return Compound::create(items);
 }
 
 
@@ -155,16 +144,16 @@ void Compound::build()
 
 
 
-void Compound::insertrule(parser::ISCADParser& ruleset) const
+void Compound::insertrule(parser::ISCADParser& ruleset)
 {
     ruleset.modelstepFunctionRules.add
     (
         "Compound",
-        typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
                     '(' >
                       (
                           ( ruleset.r_solidmodel_expression % ',' )
-                               [ qi::_val = phx::bind(&Compound::create, qi::_1) ]
+                           [ qi::_val = phx::bind(&Compound::create<const CompoundFeatureList&>, qi::_1) ]
                         |
                           ('{' > (
                             ( ruleset.r_identifier > ':' > ruleset.r_solidmodel_expression )
@@ -172,17 +161,16 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
                            [ qi::_val = phx::bind(&Compound::create_named, qi::_1) ] > '}')
                       )
                       > ')'
-                ))
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList Compound::ruleDocumentation() const
+FeatureCmdInfoList Compound::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Compound",
@@ -191,7 +179,7 @@ FeatureCmdInfoList Compound::ruleDocumentation() const
          
             "Creates a compound (assembly) of multiple features c0 to cn"
         )
-    );
+    };
 }
 
 

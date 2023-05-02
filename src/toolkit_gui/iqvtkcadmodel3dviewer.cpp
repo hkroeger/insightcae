@@ -1318,7 +1318,9 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
                    {
                        actprops->SetColor(1,0,0);
                        actprops->SetLineWidth(2);
-                   });
+                   },
+                   []() {}
+            );
     }
 }
 
@@ -1328,7 +1330,8 @@ void IQVTKCADModel3DViewer::editSketch(
     const std::string& name,
     insight::cad::ConstrainedSketchPtr psk,
     const insight::ParameterSet& defaultGeometryParameters,
-    SetSketchEntityAppearanceCallback saac)
+    SetSketchEntityAppearanceCallback saac,
+    SketchCompletionCallback scc )
 {
     if (!currentUserActivity_)
     {
@@ -1340,11 +1343,12 @@ void IQVTKCADModel3DViewer::editSketch(
 
 
         connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),
-                [this,name,psk]()
+                [this,name,psk,scc]()
                 {
                     currentUserActivity_.reset();
                     cadmodel()->addModelstep(name, psk);
                     cadmodel()->setStaticModelStep(name, true);
+                    if (scc) scc();
                 }
         );
 

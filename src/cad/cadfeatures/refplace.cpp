@@ -43,8 +43,9 @@ namespace cad {
     
 
 defineType(RefPlace);
-addToFactoryTable(Feature, RefPlace);
-
+//addToFactoryTable(Feature, RefPlace);
+addToStaticFunctionTable(Feature, RefPlace, insertrule);
+addToStaticFunctionTable(Feature, RefPlace, ruleDocumentation);
 
 
 const double dist_scale=1e-3;
@@ -244,9 +245,6 @@ size_t RefPlace::calcHash() const
 }
 
 
-RefPlace::RefPlace(): DerivedFeature()
-{}
-
 
 
 
@@ -267,19 +265,6 @@ RefPlace::RefPlace(FeaturePtr m, ConditionList conditions)
 
 
 
-
-FeaturePtr RefPlace::create_fix ( FeaturePtr m, const gp_Ax2& cs )
-{
-    return FeaturePtr(new RefPlace(m, cs));
-}
-
-
-
-
-FeaturePtr RefPlace::create ( FeaturePtr m, ConditionList conditions )
-{
-    return FeaturePtr(new RefPlace(m, conditions));
-}
 
 
 
@@ -398,7 +383,7 @@ void RefPlace::build()
 
 
 
-void RefPlace::insertrule(parser::ISCADParser& ruleset) const
+void RefPlace::insertrule(parser::ISCADParser& ruleset)
 {
 
     typedef qi::rule<std::string::iterator, ConditionPtr(), insight::cad::parser::skip_grammar > ConditionRule;
@@ -448,7 +433,9 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
                     ( '(' >> ruleset.r_solidmodel_expression >>
                       ',' >> r_condition % ','  >>
                       ')' )
-                    [ qi::_val = phx::bind(&RefPlace::create, qi::_1, qi::_2) ]
+                    [ qi::_val = phx::bind(
+                         &RefPlace::create<FeaturePtr, ConditionList>,
+                         qi::_1, qi::_2) ]
 
                 ))
     );
@@ -457,10 +444,9 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList RefPlace::ruleDocumentation() const
+FeatureCmdInfoList RefPlace::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "RefPlace",
@@ -475,7 +461,7 @@ FeatureCmdInfoList RefPlace::ruleDocumentation() const
             " - <vector> inplane <datum>\n"
             " - <vector> onaxis <datum>\n"
         )
-    );
+    };
 }
 
 

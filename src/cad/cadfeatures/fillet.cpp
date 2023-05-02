@@ -34,8 +34,9 @@ namespace cad {
     
     
 defineType(Fillet);
-addToFactoryTable(Feature, Fillet);
-
+//addToFactoryTable(Feature, Fillet);
+addToStaticFunctionTable(Feature, Fillet, insertrule);
+addToStaticFunctionTable(Feature, Fillet, ruleDocumentation);
 
 size_t Fillet::calcHash() const
 {
@@ -46,11 +47,6 @@ size_t Fillet::calcHash() const
 }
 
 
-Fillet::Fillet(): DerivedFeature()
-{}
-
-  
-  
   
   
 Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)
@@ -59,11 +55,6 @@ Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)
 
 
 
-
-FeaturePtr Fillet::create(FeatureSetPtr edges, ScalarPtr r)
-{
-    return FeaturePtr(new Fillet(edges, r));
-}
 
 
 
@@ -89,7 +80,7 @@ void Fillet::build()
   * Fillet(<edge feature set: edges>, <scalar: radius>) : feature
   * ~~~~
   */
-void Fillet::insertrule(parser::ISCADParser& ruleset) const
+void Fillet::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -97,7 +88,9 @@ void Fillet::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-      [ qi::_val = phx::bind(&Fillet::create, qi::_1, qi::_2) ]
+      [ qi::_val = phx::bind(
+                         &Fillet::create<FeatureSetPtr, ScalarPtr>,
+                         qi::_1, qi::_2) ]
       
     ))
   );
@@ -106,10 +99,9 @@ void Fillet::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList Fillet::ruleDocumentation() const
+FeatureCmdInfoList Fillet::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Fillet",
@@ -118,7 +110,7 @@ FeatureCmdInfoList Fillet::ruleDocumentation() const
          
             "Creates fillets at selected edges of a solid. All edges in the selection set edges are rounded with width r."
         )
-    );
+    };
 }
 
 

@@ -35,7 +35,10 @@ namespace cad {
 
 
 defineType(ProjectedOutline);
-addToFactoryTable(Feature, ProjectedOutline);
+//addToFactoryTable(Feature, ProjectedOutline);
+addToStaticFunctionTable(Feature, ProjectedOutline, insertrule);
+//addToStaticFunctionTable(Feature, ProjectedOutline, ruleDocumentation);
+
 
 size_t ProjectedOutline::calcHash() const
 {
@@ -46,9 +49,6 @@ size_t ProjectedOutline::calcHash() const
   return h.getHash();
 }
 
-
-ProjectedOutline::ProjectedOutline(): Feature()
-{}
 
 
 TopoDS_Shape makeOutlineProjection
@@ -143,17 +143,18 @@ void ProjectedOutline::build()
     setShape(makeOutlineProjection(*source_, *target_));
 }
 
-void ProjectedOutline::insertrule(parser::ISCADParser& ruleset) const
+void ProjectedOutline::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "ProjectedOutline",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<ProjectedOutline>(qi::_1, qi::_2)) ]
-      
-    ))
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' )
+                  [ qi::_val = phx::bind(
+                       &ProjectedOutline::create<FeaturePtr, DatumPtr>,
+                       qi::_1, qi::_2) ]
+    )
   );
 }
 

@@ -33,15 +33,16 @@ class Shoulder
   ScalarPtr d_;
   ScalarPtr Dmax_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
   
+  Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax);
+
 public:
   declareType("Shoulder");
-  Shoulder();
-  Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax);
+  CREATE_FUNCTION(Shoulder);
   
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 }

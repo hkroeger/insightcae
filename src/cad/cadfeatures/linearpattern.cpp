@@ -35,8 +35,9 @@ namespace cad {
     
     
 defineType(LinearPattern);
-addToFactoryTable(Feature, LinearPattern);
-
+//addToFactoryTable(Feature, LinearPattern);
+addToStaticFunctionTable(Feature, LinearPattern, insertrule);
+addToStaticFunctionTable(Feature, LinearPattern, ruleDocumentation);
 
 size_t LinearPattern::calcHash() const
 {
@@ -56,10 +57,6 @@ size_t LinearPattern::calcHash() const
 }
 
 
-LinearPattern::LinearPattern(): Compound()
-{}
-
-
 
   
 LinearPattern::LinearPattern(FeaturePtr m1, VectorPtr axis, ScalarPtr n)
@@ -71,18 +68,6 @@ LinearPattern::LinearPattern(FeaturePtr m1, FeaturePtr otherpat)
 : m1_(m1), otherpat_(otherpat)
 {}
 
-
-
-FeaturePtr LinearPattern::create ( FeaturePtr m1, VectorPtr axis, ScalarPtr n )
-{
-    return FeaturePtr(new LinearPattern(m1, axis, n));
-}
-
-
-FeaturePtr LinearPattern::create_other(FeaturePtr m1, FeaturePtr otherpat)
-{
-    return FeaturePtr(new LinearPattern(m1, otherpat));
-}
 
 
 
@@ -120,12 +105,12 @@ void LinearPattern::build()
         tr.SetTranslation ( ax*delta_x*double ( i ) );
 //     bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
 
-        components_[str ( format ( "component%d" ) % ( j+1 ) )] = Transform::create_trsf ( m1_, tr );
+        components_[str ( format ( "component%d" ) % ( j+1 ) )] = Transform::create ( m1_, tr );
         j++;
 
         for (const auto& pss: sf)
         {
-          subshapeCompoundFeatures[pss.first].push_back(Transform::create_trsf ( m1_->subshape(pss.first), tr ));
+          subshapeCompoundFeatures[pss.first].push_back(Transform::create ( m1_->subshape(pss.first), tr ));
         }
     }
 
@@ -148,7 +133,7 @@ void LinearPattern::build()
 
 
 
-void LinearPattern::insertrule(parser::ISCADParser& ruleset) const
+void LinearPattern::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -158,13 +143,17 @@ void LinearPattern::insertrule(parser::ISCADParser& ruleset) const
     ( '(' >> ruleset.r_solidmodel_expression >> 
       ',' >> ruleset.r_vectorExpression >> 
       ',' >> ruleset.r_scalarExpression >> ')' ) 
-      [ qi::_val = phx::bind(&LinearPattern::create, qi::_1, qi::_2, qi::_3) ]
+      [ qi::_val = phx::bind(
+                         &LinearPattern::create<FeaturePtr, VectorPtr, ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3) ]
     |
     (
      '(' >>
        ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression
       >> ')'
-    ) [ qi::_val = phx::bind(&LinearPattern::create_other, qi::_1, qi::_2) ]
+    ) [ qi::_val = phx::bind(
+                          &LinearPattern::create<FeaturePtr, FeaturePtr>,
+                          qi::_1, qi::_2) ]
 
     ))
   );
@@ -173,10 +162,9 @@ void LinearPattern::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList LinearPattern::ruleDocumentation() const
+FeatureCmdInfoList LinearPattern::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "LinearPattern",
@@ -187,7 +175,7 @@ FeatureCmdInfoList LinearPattern::ruleDocumentation() const
             " The copies of the base feature are shifted in increments of delta_l."
             " The number of copies is n."
         )
-    );
+    };
 }
 
 

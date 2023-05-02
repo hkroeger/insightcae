@@ -42,8 +42,9 @@ namespace cad {
     
 
 defineType(Thicken);
-addToFactoryTable(Feature, Thicken);
-
+//addToFactoryTable(Feature, Thicken);
+addToStaticFunctionTable(Feature, Thicken, insertrule);
+addToStaticFunctionTable(Feature, Thicken, ruleDocumentation);
 
 
 size_t Thicken::calcHash() const
@@ -58,9 +59,6 @@ size_t Thicken::calcHash() const
 
 
 
-Thicken::Thicken(): Feature()
-{}
-
 
 
 
@@ -69,12 +67,6 @@ Thicken::Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
 {}
 
 
-
-
-FeaturePtr Thicken::create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol )
-{
-    return FeaturePtr(new Thicken(shell, thickness, tol));
-}
 
 
 
@@ -126,38 +118,39 @@ void Thicken::build()
 
 
 
-void Thicken::insertrule(parser::ISCADParser& ruleset) const
+void Thicken::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Thicken",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' 
         >> ruleset.r_solidmodel_expression >> ',' 
         >> ruleset.r_scalarExpression 
         >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst ( Precision::Confusion() )) )
         >> ')' ) 
-      [ qi::_val = phx::bind(&Thicken::create, qi::_1, qi::_2, qi::_3) ]
+      [ qi::_val = phx::bind(
+                       &Thicken::create<FeaturePtr, ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Thicken::ruleDocumentation() const
+FeatureCmdInfoList Thicken::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Thicken",
             "( <feature:base>, <scalar:t> )",
             "Creates a solid from a shell feature by adding thickness t."
         )
-    );
+    };
 }
 
 

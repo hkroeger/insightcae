@@ -1,82 +1,82 @@
 add_sources(insightcad_SOURCES 
- derivedfeature.cpp
- singleedgefeature.cpp
- arc.cpp
- airfoil.cpp
- bar.cpp
- booleanintersection.cpp
- booleansubtract.cpp
- booleanunion.cpp
- boundedflatface.cpp
- box.cpp
- chamfer.cpp
- circle.cpp
- clipwire.cpp
- circularpattern.cpp
- compound.cpp
- cutaway.cpp
- cutup.cpp
- cylinder.cpp
- cone.cpp
- torus.cpp
- extrusion.cpp
- ellipse.cpp
- fillet.cpp
- fillingface.cpp
- fixshape.cpp
- faceisocurve.cpp
- gluefaces.cpp
- importsolidmodel.cpp
- linearpattern.cpp
- line.cpp
- mirror.cpp
- pipe.cpp
- place.cpp
- projected.cpp
- projectedoutline.cpp
- quad.cpp
- regpoly.cpp
- revolution.cpp
- ring.cpp
- rotatedhelicalsweep.cpp
- shoulder.cpp
- sphere.cpp
- splinecurve.cpp
- splinesurface.cpp
- split.cpp
- spring.cpp
- sinewave.cpp
- helix.cpp
- spiral.cpp
- stitchedcompound.cpp
- stitchedshell.cpp
- stitchedsolid.cpp
- stringer.cpp
+ derivedfeature.cpp derivedfeature.h
+ singleedgefeature.cpp singleedgefeature.h
+ arc.cpp arc.h
+ airfoil.cpp airfoil.h
+ bar.cpp bar.h
+ booleanintersection.cpp booleanintersection.h
+ booleansubtract.cpp booleansubtract.h
+ booleanunion.cpp booleanunion.h
+ boundedflatface.cpp boundedflatface.h
+ box.cpp box.h
+ chamfer.cpp chamfer.h
+ circle.cpp circle.h
+ clipwire.cpp clipwire.h
+ circularpattern.cpp circularpattern.h
+ compound.cpp compound.h
+ cutaway.cpp cutaway.h
+ cutup.cpp cutup.h
+ cylinder.cpp cylinder.h
+ cone.cpp cone.h
+ torus.cpp torus.h
+ extrusion.cpp extrusion.h
+ ellipse.cpp ellipse.h
+ fillet.cpp fillet.h
+ fillingface.cpp fillingface.h
+ fixshape.cpp fixshape.h
+ faceisocurve.cpp faceisocurve.h
+ gluefaces.cpp gluefaces.h
+ importsolidmodel.cpp importsolidmodel.h
+ linearpattern.cpp linearpattern.h
+ line.cpp line.h
+ mirror.cpp mirror.h
+ pipe.cpp pipe.h
+ place.cpp place.h
+ projected.cpp projected.h
+ projectedoutline.cpp projectedoutline.h
+ quad.cpp quad.h
+ regpoly.cpp regpoly.h
+ revolution.cpp revolution.h
+ ring.cpp ring.h
+ rotatedhelicalsweep.cpp rotatedhelicalsweep.h
+ shoulder.cpp shoulder.h
+ sphere.cpp sphere.h
+ splinecurve.cpp splinecurve.h
+ splinesurface.cpp splinesurface.h
+ split.cpp split.h
+ spring.cpp spring.h
+ sinewave.cpp sinewave.h
+ helix.cpp helix.h
+ spiral.cpp spiral.h
+ stitchedcompound.cpp stitchedcompound.h
+ stitchedshell.cpp stitchedshell.h
+ stitchedsolid.cpp stitchedsolid.h
+ stringer.cpp stringer.h
 
- stl.cpp
+ stl.cpp stl.h
 
- sweep.cpp
- thicken.cpp
- transform.cpp
- tri.cpp
- tongue.cpp
- wire.cpp
- wirefillet.cpp
- modelfeature.cpp
- maxsurfacecurvature.cpp
- subfeature.cpp
- nacafourdigit.cpp
- coil.cpp
- freecadmodel.cpp
- pyramid.cpp
- closedpolyline.cpp
- loop.cpp
- gear.cpp
- curvepattern.cpp
- refplace.cpp
- exploded.cpp
- partition.cpp
- offset.cpp
+ sweep.cpp sweep.h
+ thicken.cpp thicken.h
+ transform.cpp transform.h
+ tri.cpp tri.h
+ tongue.cpp tongue.h
+ wire.cpp wire.h
+ wirefillet.cpp wirefillet.h
+ modelfeature.cpp modelfeature.h
+ maxsurfacecurvature.cpp maxsurfacecurvature.h
+ subfeature.cpp subfeature.h
+ nacafourdigit.cpp nacafourdigit.h
+ coil.cpp  coil.h
+ freecadmodel.cpp freecadmodel.h
+ pyramid.cpp pyramid.h
+ closedpolyline.cpp closedpolyline.h
+ loop.cpp loop.h
+ gear.cpp gear.h
+ curvepattern.cpp curvepattern.h
+ refplace.cpp refplace.h
+ exploded.cpp exploded.h
+ partition.cpp partition.h
+ offset.cpp offset.h
  
   GEOMAlgo_Splitter.cxx
   

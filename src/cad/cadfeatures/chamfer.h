@@ -40,13 +40,11 @@ protected:
 
 public:
     declareType("Chamfer");
-    Chamfer();
 
-    static FeaturePtr create(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle);
+    CREATE_FUNCTION(Chamfer);
 
-
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule(parser::ISCADParser& ruleset);
+    static FeatureCmdInfoList ruleDocumentation();
 
 };
 

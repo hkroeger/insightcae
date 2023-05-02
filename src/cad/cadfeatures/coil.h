@@ -90,22 +90,10 @@ class CoilPath
 public:
     declareType ( "CoilPath" );
 
-    CoilPath ();
-    static FeaturePtr create
-    (
-        ScalarPtr l,
-        ScalarPtr dcore,
-        ScalarPtr n,
-        ScalarPtr d,
-        ScalarPtr R,
-        ScalarPtr rmin,
-        ScalarPtr nl = scalarconst(1),
-        ScalarPtr dr = ScalarPtr()
-    );
+    CREATE_FUNCTION(CoilPath);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;    
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
     
     virtual bool isSingleEdge() const;
     virtual bool isSingleCloseWire() const;
@@ -140,22 +128,24 @@ class Coil
     virtual size_t calcHash() const;
     virtual void build();
 
+    Coil
+        (
+            VectorPtr p0,
+            VectorPtr b,
+            VectorPtr l,
+            ScalarPtr r,
+            ScalarPtr d,
+            ScalarPtr nv,
+            ScalarPtr nr
+            );
+
 public:
     declareType ( "Coil" );
-    Coil ();
-    Coil
-    (
-        VectorPtr p0,
-        VectorPtr b,
-        VectorPtr l,
-        ScalarPtr r,
-        ScalarPtr d,
-        ScalarPtr nv,
-        ScalarPtr nr
-    );
 
+    CREATE_FUNCTION(Coil);
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+
     virtual bool isSingleEdge() const
     {
         return true;

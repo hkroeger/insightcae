@@ -464,7 +464,7 @@ void FrameMesh::build()
     for (const auto& e: meshEdges)
     {
         auto i=crossSectionModels.find(e);
-        std::cout<<e<<" >> "<<(i!=crossSectionModels.end())<<std::endl;
+//        std::cout<<e<<" >> "<<(i!=crossSectionModels.end())<<std::endl;
         if (i!=crossSectionModels.end())
         {
             cad::FeaturePtr xsecf = i->second.first;
@@ -482,7 +482,7 @@ void FrameMesh::build()
             gp_Vec tan;
             crv->D1(t, p, tan);
 
-            auto xsec = cad::BooleanIntersection::create_plane(
+            FeaturePtr xsec = cad::BooleanIntersection::create(
                         xsecf,
                         std::make_shared<cad::DatumPlane>(
                             cad::matconst(insight::Vector(p)),
@@ -492,7 +492,7 @@ void FrameMesh::build()
 
 
             BeamLocalCS blcs(vec3(p), vec3(tan));
-            xsec = cad::Transform::create_trsf(
+            xsec = cad::Transform::create(
                         xsec,
                         cad::OFtransformToOCC(
                             blcs.MACRCARAPOUTRE().inverted()

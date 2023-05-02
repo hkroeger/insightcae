@@ -36,7 +36,10 @@ namespace cad {
 
 
 defineType(StitchedSolid);
-addToFactoryTable(Feature, StitchedSolid);
+//addToFactoryTable(Feature, StitchedSolid);
+addToStaticFunctionTable(Feature, StitchedSolid, insertrule);
+addToStaticFunctionTable(Feature, StitchedSolid, ruleDocumentation);
+
 
 size_t StitchedSolid::calcHash() const
 {
@@ -50,9 +53,6 @@ size_t StitchedSolid::calcHash() const
   return h.getHash();
 }
 
-
-StitchedSolid::StitchedSolid()
-{}
 
 
 StitchedSolid::StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol)
@@ -95,25 +95,26 @@ void StitchedSolid::build()
   setShape(solidmaker.Solid());
 }
 
-void StitchedSolid::insertrule(parser::ISCADParser& ruleset) const
+void StitchedSolid::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "StitchedSolid",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> (ruleset.r_solidmodel_expression % ',') 
 	  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) >> ')' )
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<StitchedSolid>(qi::_1, qi::_2)) ]
+      [ qi::_val = phx::bind(
+                       &StitchedSolid::create<const std::vector<FeaturePtr>&, ScalarPtr>,
+                       qi::_1, qi::_2) ]
       
-    ))
+    )
   );
 }
 
-FeatureCmdInfoList StitchedSolid::ruleDocumentation() const
+FeatureCmdInfoList StitchedSolid::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "StitchedSolid",
@@ -122,7 +123,7 @@ FeatureCmdInfoList StitchedSolid::ruleDocumentation() const
 
             "Create stitched solid from all faces of the provided features."
         )
-    );
+    };
 }
 
 }

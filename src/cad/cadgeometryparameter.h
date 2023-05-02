@@ -10,8 +10,12 @@ class CADGeometryParameter
         : public Parameter
 {
 protected:
-    insight::cad::ModelPtr cadmodel_;
-    std::string featureLabel_;
+//    insight::cad::ModelPtr cadmodel_;
+    std::string featureLabel_, script_;
+
+    mutable insight::cad::FeaturePtr CADGeometry_;
+
+    void resetCADGeometry() const;
 
 public:
     declareType ( "cadgeometry" );
@@ -25,6 +29,7 @@ public:
 
     CADGeometryParameter (
         const std::string& featureLabel,
+        const std::string& script,
         const std::string& description,
         bool isHidden=false,
         bool isExpert=false,
@@ -34,7 +39,11 @@ public:
 
     const std::string& featureLabel() const;
     void setFeatureLabel(const std::string& label);
-    void setCADModel(insight::cad::ModelPtr cadmodel);
+
+    const std::string& script() const;
+    void setScript(const std::string& script);
+
+//    void setCADModel(insight::cad::ModelPtr cadmodel);
     cad::FeaturePtr featureGeometry() const;
 
     std::string latexRepresentation() const override;

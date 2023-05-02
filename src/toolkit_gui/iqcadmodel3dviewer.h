@@ -18,7 +18,8 @@ class TOOLKIT_GUI_EXPORT IQCADModel3DViewer
 public:
     typedef std::function<void(const insight::ParameterSet& seps, vtkProperty* actprops)>
         SetSketchEntityAppearanceCallback;
-
+    typedef std::function<void()>
+        SketchCompletionCallback;
 private:
     Q_OBJECT
 protected:
@@ -77,7 +78,8 @@ public Q_SLOT:
             const std::string& name,
             insight::cad::ConstrainedSketchPtr sketch,
             const insight::ParameterSet& defaultGeometryParameters,
-            SetSketchEntityAppearanceCallback saac ) =0;
+            SetSketchEntityAppearanceCallback saac,
+            SketchCompletionCallback scc ) =0;
 
 Q_SIGNALS:
     void appendToNotepad(const QString& text);

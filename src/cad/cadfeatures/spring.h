@@ -33,16 +33,16 @@ class Spring
   ScalarPtr d_;
   ScalarPtr winds_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
   
+  Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
+
 public:
   declareType("Spring");
-  Spring();
-  Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
+  CREATE_FUNCTION(Spring);
   
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 }

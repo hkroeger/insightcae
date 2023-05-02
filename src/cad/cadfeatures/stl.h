@@ -64,27 +64,16 @@ private:
 
 protected:
     Handle_Poly_Triangulation aSTLMesh_;
-    virtual size_t calcHash() const;
-    virtual void build();
+
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType("STL");
-    STL();
+    CREATE_FUNCTION(STL);
 
-    static FeaturePtr create
-    (
-        GeometrySpecification geometry
-    );
-    static FeaturePtr create_trsf
-    (
-        GeometrySpecification geometry,
-        TransformationSpecification transform
-    );
-
-
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
-
+    static void insertrule(parser::ISCADParser& ruleset);
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

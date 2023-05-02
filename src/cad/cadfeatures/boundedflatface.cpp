@@ -39,8 +39,9 @@ namespace cad {
     
     
 defineType(BoundedFlatFace);
-addToFactoryTable(Feature, BoundedFlatFace);
-
+//addToFactoryTable(Feature, BoundedFlatFace);
+addToStaticFunctionTable(Feature, BoundedFlatFace, insertrule);
+addToStaticFunctionTable(Feature, BoundedFlatFace, ruleDocumentation);
 
 size_t BoundedFlatFace::calcHash() const
 {
@@ -50,9 +51,6 @@ size_t BoundedFlatFace::calcHash() const
   return h.getHash();
 }
 
-
-BoundedFlatFace::BoundedFlatFace()
-{}
 
 
 
@@ -69,21 +67,6 @@ BoundedFlatFace::BoundedFlatFace(const std::vector<FeatureSetPtr>& edges)
 {}
 
 
-
-
-FeaturePtr BoundedFlatFace::create(const std::vector<FeaturePtr>& edges)
-{
-    return FeaturePtr(new BoundedFlatFace(edges));
-}
-
-
-
-FeaturePtr BoundedFlatFace::create_set(const std::vector<FeatureSetPtr>& edges)
-{
-    return FeaturePtr(new BoundedFlatFace(edges));
-}
- 
- 
  
  
 void BoundedFlatFace::build()
@@ -222,18 +205,18 @@ BoundedFlatFace::operator const TopoDS_Face& () const
   * BoundedFlatFace( [<edge feature expression>, ...] ) : feature
   * ~~~~
   */
-void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset) const
+void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "BoundedFlatFace",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
     ( '(' >> ( ruleset.r_solidmodel_expression % ',' ) >> ')' )
-	[ qi::_val = phx::bind(&BoundedFlatFace::create, qi::_1) ]
+                  [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeaturePtr>&>, qi::_1) ]
     |
     ( '(' >> ( ruleset.r_edgeFeaturesExpression % ',' ) >> ')' )
-	[ qi::_val = phx::bind(&BoundedFlatFace::create_set, qi::_1) ]
+                  [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeatureSetPtr>&>, qi::_1) ]
       
     ))
   );
@@ -241,10 +224,9 @@ void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList BoundedFlatFace::ruleDocumentation() const
+FeatureCmdInfoList BoundedFlatFace::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "BoundedFlatFace",
@@ -253,7 +235,7 @@ FeatureCmdInfoList BoundedFlatFace::ruleDocumentation() const
          
             "Creates a flat face from a number of edges. Edges are taken from one or more features or from one or more edge selection sets."
         )
-    );
+  };
 }
 
 

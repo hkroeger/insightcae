@@ -35,8 +35,9 @@ namespace cad {
     
     
 defineType(SplineSurface);
-addToFactoryTable(Feature, SplineSurface);
-
+//addToFactoryTable(Feature, SplineSurface);
+addToStaticFunctionTable(Feature, SplineSurface, insertrule);
+addToStaticFunctionTable(Feature, SplineSurface, ruleDocumentation);
 
 size_t SplineSurface::calcHash() const
 {
@@ -54,22 +55,11 @@ size_t SplineSurface::calcHash() const
 
 
 
-SplineSurface::SplineSurface()
-{}
-
-
-
 
 SplineSurface::SplineSurface(const std::vector< std::vector<VectorPtr> >& pts)
 : pts_(pts)
 {}
 
-
-
-FeaturePtr SplineSurface::create ( const std::vector<std::vector<VectorPtr> >& pts )
-{
-    return FeaturePtr(new SplineSurface(pts));
-}
 
 
 
@@ -110,36 +100,37 @@ SplineSurface::operator const TopoDS_Face& () const
 
 
 
-void SplineSurface::insertrule(parser::ISCADParser& ruleset) const
+void SplineSurface::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "SplineSurface",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> 
 	  ( ( '(' >> ( ruleset.r_vectorExpression % ',' ) >> ')' ) % ',' )
 	  >> ')' ) 
-	[ qi::_val = phx::bind(&SplineSurface::create, qi::_1) ]
+    [ qi::_val = phx::bind(
+                       &SplineSurface::create<const std::vector< std::vector<VectorPtr> >&>,
+                       qi::_1) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList SplineSurface::ruleDocumentation() const
+FeatureCmdInfoList SplineSurface::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "SplineSurface",
             "( (<vector:p11>, ..., <vector:p1n>), ...., (<vector:pm1>, ..., <vector:pmn>) )",
             "Creates an spline surface through all the given points. Note that all rows need to have the same number of columns."
         )
-    );
+    };
 }
 
 

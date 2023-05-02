@@ -53,15 +53,10 @@ InsertFeatureDlg::InsertFeatureDlg(QWidget* parent)
     featureCmdHelp_ = new QTextEdit(this);
     ui->featureCmdHelp_layout->addWidget(featureCmdHelp_);
     
-    for 
-    (
-        insight::cad::Feature::FactoryTable::const_iterator i = insight::cad::Feature::factories_->begin();
-        i != insight::cad::Feature::factories_->end(); 
-        i++
-    )
+    for
+    (const auto& rd: *insight::cad::Feature::ruleDocumentationFunctions_)
     {
-        insight::cad::FeaturePtr sm(i->second->operator()());
-        insight::cad::FeatureCmdInfoList infos = sm->ruleDocumentation();
+        insight::cad::FeatureCmdInfoList infos = rd.second();
         for (const insight::cad::FeatureCmdInfo& info: infos)
         {
             new Entry(info, ui->featureCmdList);

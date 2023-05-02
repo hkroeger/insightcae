@@ -43,19 +43,19 @@ class BooleanIntersection
 
 public:
   declareType("BooleanIntersection");
-  BooleanIntersection();
+
+  CREATE_FUNCTION(BooleanIntersection);
+//  static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
+//  static FeaturePtr create_plane(FeaturePtr m1, DatumPtr m2pl);
   
-  static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
-  static FeaturePtr create_plane(FeaturePtr m1, DatumPtr m2pl);
   
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual FeatureCmdInfoList ruleDocumentation() const;
+  static void insertrule(parser::ISCADParser& ruleset);
+  static FeatureCmdInfoList ruleDocumentation();
   
   void operator=(const BooleanIntersection& o);
 };
 
-FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2);
+std::shared_ptr<BooleanIntersection> operator&(FeaturePtr m1, FeaturePtr m2);
 
 }
 }

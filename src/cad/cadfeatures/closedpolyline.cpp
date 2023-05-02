@@ -35,7 +35,10 @@ namespace cad {
     
     
 defineType(ClosedPolyline);
-addToFactoryTable(Feature, ClosedPolyline);
+//addToFactoryTable(Feature, ClosedPolyline);
+addToStaticFunctionTable(Feature, ClosedPolyline, insertrule);
+addToStaticFunctionTable(Feature, ClosedPolyline, ruleDocumentation);
+
 
 
 size_t ClosedPolyline::calcHash() const
@@ -50,24 +53,13 @@ size_t ClosedPolyline::calcHash() const
 }
 
 
-ClosedPolyline::ClosedPolyline()
-{}
 
 
-
-
-ClosedPolyline::ClosedPolyline(std::vector<VectorPtr> pts)
+ClosedPolyline::ClosedPolyline(const std::vector<VectorPtr>& pts)
 : pts_(pts)
 {
 }
 
-
-
-
-FeaturePtr ClosedPolyline::create(std::vector<VectorPtr> pts)
-{
-    return FeaturePtr(new ClosedPolyline(pts));
-}
 
 
 
@@ -87,7 +79,7 @@ void ClosedPolyline::build()
         w.Add(BRepBuilderAPI_MakeEdge(p0, p1));
     }
 
-    providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w.Wire()));
+    providedSubshapes_["OuterWire"]=Feature::create(w.Wire());
 
     setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
@@ -95,7 +87,7 @@ void ClosedPolyline::build()
 
 
 
-void ClosedPolyline::insertrule(parser::ISCADParser& ruleset) const
+void ClosedPolyline::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -103,7 +95,9 @@ void ClosedPolyline::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_vectorExpression%',' >> ')' ) 
-	[ qi::_val = phx::bind(&ClosedPolyline::create, qi::_1) ]
+    [ qi::_val = phx::bind(
+                         &ClosedPolyline::create<const std::vector<VectorPtr>&>,
+                         qi::_1) ]
       
     ))
   );
@@ -112,10 +106,9 @@ void ClosedPolyline::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList ClosedPolyline::ruleDocumentation() const
+FeatureCmdInfoList ClosedPolyline::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "ClosedPolyline",
@@ -124,7 +117,7 @@ FeatureCmdInfoList ClosedPolyline::ruleDocumentation() const
          
             "Creates a closed polyline from the given list of points p0 to pn."
         )
-    );
+  };
 }
 
 

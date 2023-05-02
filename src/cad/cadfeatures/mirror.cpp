@@ -35,7 +35,10 @@ namespace cad {
     
 
 defineType(Mirror);
-addToFactoryTable(Feature, Mirror);
+//addToFactoryTable(Feature, Mirror);
+addToStaticFunctionTable(Feature, Mirror, insertrule);
+addToStaticFunctionTable(Feature, Mirror, ruleDocumentation);
+
 
 
 size_t Mirror::calcHash() const
@@ -56,9 +59,6 @@ size_t Mirror::calcHash() const
 
 
 
-Mirror::Mirror(): DerivedFeature()
-{}
-
 
 
 
@@ -74,20 +74,6 @@ Mirror::Mirror(FeaturePtr m1, Mirror::Shortcut s)
 {}
 
 
-
-
-FeaturePtr Mirror::create ( FeaturePtr m1, DatumPtr pl )
-{
-    return FeaturePtr(new Mirror(m1, pl));
-}
-
-
-
-
-FeaturePtr Mirror::create_short ( FeaturePtr m1, Mirror::Shortcut s )
-{
-    return FeaturePtr(new Mirror(m1, s));
-}
 
 
 
@@ -120,15 +106,15 @@ void Mirror::build()
 
 
 
-void Mirror::insertrule(parser::ISCADParser& ruleset) const
+void Mirror::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Mirror",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' ) 
-      [ qi::_val = phx::bind(&Mirror::create, qi::_1, qi::_2) ]
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' )
+       [ qi::_val = phx::bind(&Mirror::create<FeaturePtr, DatumPtr>, qi::_1, qi::_2) ]
       
     ))
   );
@@ -137,8 +123,8 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     "FlipY",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
-      [ qi::_val = phx::bind(&Mirror::create_short, qi::_1, FlipY) ]
+    ( '(' >> ruleset.r_solidmodel_expression >> ')' )
+      [ qi::_val = phx::bind(&Mirror::create<FeaturePtr, Mirror::Shortcut>, qi::_1, FlipY) ]
       
     ))
   );
@@ -148,7 +134,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
-      [ qi::_val = phx::bind(&Mirror::create_short, qi::_1, FlipX) ]
+      [ qi::_val = phx::bind(&Mirror::create<FeaturePtr, Mirror::Shortcut>, qi::_1, FlipX) ]
       
     ))
   );
@@ -158,7 +144,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
-      [ qi::_val = phx::bind(&Mirror::create_short, qi::_1, FlipXY) ]
+      [ qi::_val = phx::bind(&Mirror::create<FeaturePtr, Mirror::Shortcut>, qi::_1, FlipXY) ]
       
     ))
   );
@@ -167,42 +153,34 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList Mirror::ruleDocumentation() const
+FeatureCmdInfoList Mirror::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Mirror",
             "( <feature:base>, <datum:plane> )",
             "Mirrors the base feature base over the given datum plane."
-        )
-    )
-    (
+        ),
         FeatureCmdInfo
         (
             "FlipX",
             "( <feature> )",
             "Mirrors the base feature over the YZ plane."
-        )
-    )
-    (
+        ),
         FeatureCmdInfo
         (
             "FlipY",
             "( <feature> )",
             "Mirrors the base feature over the XZ plane."
-        )
-    )
-    (
+        ),
         FeatureCmdInfo
         (
             "FlipXY",
             "( <feature> )",
             "Mirrors the base feature over the diagonal plane with n=[1,1,0]."
         )
-    )
-    ;
+    };
 }
 
 

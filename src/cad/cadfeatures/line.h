@@ -43,20 +43,16 @@ class Line
 
 public:
     declareType ( "Line" );
-    Line ();
 
-    //static FeaturePtr create ( VectorPtr p0, VectorPtr p1 );
     CREATE_FUNCTION(Line);
-
-    static FeaturePtr create_dir ( VectorPtr p0, VectorPtr dir );
-
-    void insertrule ( parser::ISCADParser& ruleset ) const override;
-    FeatureCmdInfoList ruleDocumentation() const override;
 
     VectorPtr start() const override;
     VectorPtr end() const override;
 
     void scaleSketch(double scaleFactor) override;
+
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
     void generateScriptCommand(
         ConstrainedSketchScriptBuffer& script,

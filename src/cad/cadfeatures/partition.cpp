@@ -40,8 +40,9 @@ namespace cad
     
     
 defineType(Partition);
-addToFactoryTable(Feature, Partition);
-
+//addToFactoryTable(Feature, Partition);
+addToStaticFunctionTable(Feature, Partition, insertrule);
+addToStaticFunctionTable(Feature, Partition, ruleDocumentation);
 
 size_t Partition::calcHash() const
 {
@@ -54,10 +55,6 @@ size_t Partition::calcHash() const
 
 
 
-Partition::Partition()
-: DerivedFeature()
-{}
-
 
 
 
@@ -67,13 +64,6 @@ Partition::Partition(FeaturePtr m1, FeaturePtr m2)
   m2_(m2)
 {}
 
-
-
-
-FeaturePtr Partition::create(FeaturePtr m1, FeaturePtr m2)
-{
-    return FeaturePtr(new Partition(m1, m2));
-}
 
 
 
@@ -100,27 +90,28 @@ void Partition::build()
 
 
 
-void Partition::insertrule(parser::ISCADParser& ruleset) const
+void Partition::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Partition",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
-	[ qi::_val = phx::bind(&Partition::create, qi::_1, qi::_2) ]
+    [ qi::_val = phx::bind(
+                       &Partition::create<FeaturePtr, FeaturePtr>,
+                       qi::_1, qi::_2) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Partition::ruleDocumentation() const
+FeatureCmdInfoList Partition::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Partition",
@@ -129,7 +120,7 @@ FeatureCmdInfoList Partition::ruleDocumentation() const
          
             "Partionates of the base feature by the tool feature."
         )
-    );
+    };
 }
 
 

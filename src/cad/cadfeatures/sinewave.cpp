@@ -40,8 +40,9 @@ namespace cad {
 
 
 defineType(SineWave);
-addToFactoryTable(Feature, SineWave);
-
+//addToFactoryTable(Feature, SineWave);
+addToStaticFunctionTable(Feature, SineWave, insertrule);
+addToStaticFunctionTable(Feature, SineWave, ruleDocumentation);
 
 
 size_t SineWave::calcHash() const
@@ -55,9 +56,6 @@ size_t SineWave::calcHash() const
 
 
 
-SineWave::SineWave(): Feature()
-{}
-
 
 
 
@@ -66,12 +64,6 @@ SineWave::SineWave(ScalarPtr l, ScalarPtr A )
 {}
 
 
-
-
-FeaturePtr SineWave::create(ScalarPtr l, ScalarPtr A )
-{
-    return FeaturePtr(new SineWave(l, A));
-}
 
 
 
@@ -100,7 +92,7 @@ void SineWave::build()
 
 
 
-void SineWave::insertrule(parser::ISCADParser& ruleset) const
+void SineWave::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -108,7 +100,9 @@ void SineWave::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
     ( '(' > ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
-        [ qi::_val = phx::bind(&SineWave::create, qi::_1, qi::_2 ) ]
+        [ qi::_val = phx::bind(
+                         &SineWave::create<ScalarPtr, ScalarPtr>,
+                         qi::_1, qi::_2 ) ]
 
     ))
   );
@@ -117,17 +111,16 @@ void SineWave::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList SineWave::ruleDocumentation() const
+FeatureCmdInfoList SineWave::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "SineWave",
             "( <scalar:l>, <scalar:A> )",
             "Creates a sine curve (single period) with wave length l and amplitude A."
         )
-    );
+    };
 }
 
 

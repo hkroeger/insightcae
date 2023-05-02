@@ -34,7 +34,10 @@ namespace cad {
 
 
 defineType(Shoulder);
-addToFactoryTable(Feature, Shoulder);
+//addToFactoryTable(Feature, Shoulder);
+addToStaticFunctionTable(Feature, Shoulder, insertrule);
+//addToStaticFunctionTable(Feature, Shoulder, ruleDocumentation);
+
 
 size_t Shoulder::calcHash() const
 {
@@ -46,9 +49,6 @@ size_t Shoulder::calcHash() const
   h+=Dmax_->value();
   return h.getHash();
 }
-
-Shoulder::Shoulder()
-{}
 
 
 Shoulder::Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax)
@@ -84,18 +84,20 @@ void Shoulder::build()
   ); // semi-infinite prism
 }
 
-void Shoulder::insertrule(parser::ISCADParser& ruleset) const
+void Shoulder::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Shoulder",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> 
-			    ',' >> ruleset.r_scalarExpression >> ((',' >> ruleset.r_scalarExpression)|qi::attr(scalarconst(1e6))) >> ')' )
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Shoulder>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+                ',' >> ruleset.r_scalarExpression >> ((',' >> ruleset.r_scalarExpression)|qi::attr(scalarconst(1e6))) >> ')' )
+                  [ qi::_val = phx::bind(
+                       &Shoulder::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4) ]
       
-    ))
+    )
   );
 }
 

@@ -40,7 +40,9 @@ namespace cad
     
     
 defineType(Line);
-addToFactoryTable(Feature, Line);
+//addToFactoryTable(Feature, Line);
+addToStaticFunctionTable(Feature, Line, insertrule);
+addToStaticFunctionTable(Feature, Line, ruleDocumentation);
 
 addToStaticFunctionTable(ConstrainedSketchEntity, Line, addParserRule);
 
@@ -54,13 +56,6 @@ size_t Line::calcHash() const
   h+=second_is_dir_;
   return h.getHash();
 }
-
-
-Line::Line()
-: SingleEdgeFeature()
-{
-}
-
 
 
 
@@ -126,12 +121,6 @@ void Line::addParserRule(ConstrainedSketchGrammar &ruleset)
 
 
 
-FeaturePtr Line::create_dir ( VectorPtr p0, VectorPtr p1 )
-{
-    return FeaturePtr(new Line(p0, p1, true));
-}
-
-
 
 void Line::build()
 {
@@ -169,7 +158,8 @@ void Line::build()
 
 
 
-void Line::insertrule(parser::ISCADParser& ruleset) const
+
+void Line::insertrule(parser::ISCADParser& ruleset)
 {
   typedef
     qi::rule<
@@ -187,7 +177,7 @@ void Line::insertrule(parser::ISCADParser& ruleset) const
               [ qi::_val = phx::bind(&Line::create<VectorPtr, VectorPtr, bool>, qi::_a, qi::_1, false) ]
       |
       ( (qi::lit("dir")|qi::lit("direction")) > ruleset.r_vectorExpression )
-          [ qi::_val = phx::bind(&Line::create_dir, qi::_a, qi::_1) ]
+              [ qi::_val = phx::bind(&Line::create<VectorPtr, VectorPtr, bool>, qi::_a, qi::_1, true) ]
        ) > ')'
   );
   ruleset.addAdditionalRule(rule);
@@ -202,10 +192,9 @@ void Line::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList Line::ruleDocumentation() const
+FeatureCmdInfoList Line::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Line",
@@ -214,7 +203,7 @@ FeatureCmdInfoList Line::ruleDocumentation() const
          
             "Creates a line between point p0 and p1."
         )
-    );
+    };
 }
 
 

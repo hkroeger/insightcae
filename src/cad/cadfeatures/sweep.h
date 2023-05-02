@@ -37,18 +37,15 @@ class Sweep
 
     Sweep ( const std::vector<FeaturePtr>& secs );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Sweep" );
-    Sweep ();
+    CREATE_FUNCTION(Sweep);
 
-    static FeaturePtr create ( const std::vector<FeaturePtr>& secs );
-
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

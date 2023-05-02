@@ -35,20 +35,17 @@ class SplineSurface
 
     SplineSurface ( const std::vector<std::vector<VectorPtr> >& pts );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "SplineSurface" );
-    SplineSurface ();
-
-    static FeaturePtr create ( const std::vector<std::vector<VectorPtr> >& pts );
+    CREATE_FUNCTION(SplineSurface);
 
     operator const TopoDS_Face& () const;
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

@@ -34,22 +34,19 @@ class SplineCurve
     std::vector<VectorPtr> pts_;
     VectorPtr tan0_, tan1_;
 
-    SplineCurve ( const std::vector<VectorPtr>& pts, VectorPtr tan0, VectorPtr tan1 );
+    SplineCurve ( const std::vector<VectorPtr>& pts, VectorPtr tan0 = VectorPtr(), VectorPtr tan1 = VectorPtr() );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "SplineCurve" );
-    SplineCurve ();
+    CREATE_FUNCTION(SplineCurve);
 
-    static FeaturePtr create ( const std::vector<VectorPtr>& pts, VectorPtr tan0 = VectorPtr(), VectorPtr tan1 = VectorPtr() );
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
-
-    virtual bool isSingleEdge() const
+    bool isSingleEdge() const override
     {
         return true;
     };

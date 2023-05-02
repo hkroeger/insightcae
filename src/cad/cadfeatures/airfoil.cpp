@@ -37,7 +37,7 @@ namespace cad {
     
 
 defineType(Airfoil);
-addToFactoryTable(Feature, Airfoil);
+//addToFactoryTable(Feature, Airfoil);
 
 
 size_t Airfoil::calcHash() const
@@ -55,9 +55,6 @@ size_t Airfoil::calcHash() const
   return h.getHash();
 }
 
-Airfoil::Airfoil()
-{}
-
 
 
 
@@ -67,17 +64,6 @@ Airfoil::Airfoil
 )
 : name_(name), p0_(p0), ez_(ez), ex_(ex), c_(c), t_(t), r_EK_(r_EK), r_AK_(r_AK)
 {}
-
-
-
-
-FeaturePtr Airfoil::create
-(
-    const std::string& name, VectorPtr p0, VectorPtr ex, VectorPtr ez, ScalarPtr c, ScalarPtr t, ScalarPtr r_EK, ScalarPtr r_AK
-)
-{
-    return FeaturePtr(new Airfoil(name, p0, ex, ez, c, t, r_EK, r_AK));
-}
 
 
 
@@ -735,7 +721,7 @@ void Airfoil::build()
     throw insight::Exception("Failed to generate planar face!");
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-  providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w.Wire()));
+  providedSubshapes_["OuterWire"]=Feature::create(w.Wire());
   
   refvalues_["L"]=L;
   
@@ -757,12 +743,12 @@ Airfoil::operator const TopoDS_Face& () const
 
 
 
-void Airfoil::insertrule(parser::ISCADParser& ruleset) const
+void Airfoil::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
-    "Airfoil",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    "Airfoil",
+          std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '('  >> ruleset.r_string >> ',' 
            >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression
@@ -771,9 +757,10 @@ void Airfoil::insertrule(parser::ISCADParser& ruleset) const
            >> ( (',' >> qi::lit("r_EK") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
            >> ( (',' >> qi::lit("r_AK") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
            >> ')' ) 
-	[ qi::_val = phx::bind(&Airfoil::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8) ]
-      
-    ))
+    [ qi::_val = phx::bind(
+                       &Airfoil::create<const std::string&, VectorPtr, VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8) ]
+    )
   );
 }
 

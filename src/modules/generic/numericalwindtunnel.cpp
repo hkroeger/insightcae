@@ -120,8 +120,8 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
   {
     boost::mutex::scoped_lock lock(mtx);
 
-    auto obj = cad::Transform::create_trsf(
-          cad::Feature::CreateFromFile(p().geometry.objectfile->filePath()), rot);
+    auto obj = cad::Transform::create(
+          cad::Feature::create(p().geometry.objectfile->filePath()), rot);
     bb = p().geometryscale * obj->modelBndBox(bbdefl);
   }
 
@@ -390,8 +390,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   {
     boost::mutex::scoped_lock lock(mtx);
 
-    auto obj = cad::Transform::create_trsf(
-          cad::Feature::CreateFromFile(p().geometry.objectfile->filePath()),
+    auto obj = cad::Transform::create(
+          cad::Feature::create(p().geometry.objectfile->filePath()),
           sp().cad_to_cfd_
           );
     obj->saveAs(objectSTLFile);
@@ -866,12 +866,12 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
     if (geom_file_ext==".stl" || geom_file_ext==".stlb")
     {
-      org_geom = cad::STL::create_trsf(p.geometry.objectfile->filePath(), sp.cad_to_cfd_);
+      org_geom = cad::STL::create(p.geometry.objectfile->filePath(), sp.cad_to_cfd_);
     }
     else
     {
-      org_geom = cad::Transform::create_trsf(
-                   cad::Feature::CreateFromFile(p.geometry.objectfile->filePath()),
+      org_geom = cad::Transform::create(
+                   cad::Feature::create(p.geometry.objectfile->filePath()),
                    sp.cad_to_cfd_
                    );
     }

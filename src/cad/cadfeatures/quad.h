@@ -45,20 +45,20 @@ class Quad
 
     Quad ( VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t = ScalarPtr(), QuadCentering center=QuadCentering ( false, false ) );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Quad" );
-    Quad ();
-    static FeaturePtr create ( VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t = ScalarPtr(), QuadCentering center=QuadCentering ( false, false ) );
+
+    CREATE_FUNCTION(Quad);
+
     operator const TopoDS_Face& () const;
 
     void operator= ( const Quad& o );
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

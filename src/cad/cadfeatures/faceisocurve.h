@@ -29,13 +29,11 @@ private:
 
 public:
     declareType ( "FaceIsoCurve" );
-    FaceIsoCurve ();
 
-    static FeaturePtr create ( FeatureSetPtr faces, UV coord, ScalarPtr iso_value );
+    CREATE_FUNCTION(FaceIsoCurve);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
 };
 

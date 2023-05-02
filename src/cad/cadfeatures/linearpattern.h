@@ -43,18 +43,16 @@ class LinearPattern
     LinearPattern ( FeaturePtr m1, VectorPtr axis, ScalarPtr n );
     LinearPattern ( FeaturePtr m1, FeaturePtr otherpat );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "LinearPattern" );
-    LinearPattern ();
 
-    static FeaturePtr create ( FeaturePtr m1, VectorPtr axis, ScalarPtr n );
-    static FeaturePtr create_other(FeaturePtr m1, FeaturePtr otherpat);
+    CREATE_FUNCTION(LinearPattern);
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

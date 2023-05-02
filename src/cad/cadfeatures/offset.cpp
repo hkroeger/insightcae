@@ -42,7 +42,9 @@ namespace cad {
 
 
 defineType(Offset);
-addToFactoryTable(Feature, Offset);
+//addToFactoryTable(Feature, Offset);
+addToStaticFunctionTable(Feature, Offset, insertrule);
+addToStaticFunctionTable(Feature, Offset, ruleDocumentation);
 
 
 
@@ -58,9 +60,6 @@ size_t Offset::calcHash() const
 
 
 
-Offset::Offset(): Feature()
-{}
-
 
 
 
@@ -69,12 +68,6 @@ Offset::Offset(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
 {}
 
 
-
-
-FeaturePtr Offset::create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol )
-{
-    return FeaturePtr(new Offset(shell, thickness, tol));
-}
 
 
 
@@ -117,38 +110,39 @@ void Offset::build()
 
 
 
-void Offset::insertrule(parser::ISCADParser& ruleset) const
+void Offset::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Offset",
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '('
         >> ruleset.r_solidmodel_expression >> ','
         >> ruleset.r_scalarExpression
         >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst ( Precision::Confusion() )) )
         >> ')' )
-      [ qi::_val = phx::bind(&Offset::create, qi::_1, qi::_2, qi::_3) ]
+      [ qi::_val = phx::bind(
+                       &Offset::create<FeaturePtr, ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3) ]
 
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Offset::ruleDocumentation() const
+FeatureCmdInfoList Offset::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Offset",
             "( <feature:base>, <scalar:t> )",
             "Creates an offset surface from a shell feature by displacing the surfaces in normal direction by distance t."
         )
-    );
+    };
 }
 
 

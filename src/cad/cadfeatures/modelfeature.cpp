@@ -41,8 +41,9 @@ namespace cad
     
     
 defineType(ModelFeature);
-addToFactoryTable(Feature, ModelFeature);
-
+//addToFactoryTable(Feature, ModelFeature);
+addToStaticFunctionTable(Feature, ModelFeature, insertrule);
+addToStaticFunctionTable(Feature, ModelFeature, ruleDocumentation);
 
 
 
@@ -135,10 +136,6 @@ size_t ModelFeature::calcHash() const
 }
 
 
-ModelFeature::ModelFeature()
-: Compound()
-{}
-
 
 
 
@@ -161,35 +158,6 @@ ModelFeature::ModelFeature(ModelPtr model)
 {}
 
 
-
-FeaturePtr ModelFeature::create(const std::string& modelname, const ModelVariableTable& vars)
-{
-    return FeaturePtr
-           (
-               new ModelFeature
-               (
-                   modelname, vars
-               )
-           );
-}
-
-
-FeaturePtr ModelFeature::create_file(const boost::filesystem::path& modelfile, const ModelVariableTable& vars)
-{
-    return FeaturePtr
-           (
-               new ModelFeature
-               (
-                   modelfile, vars
-               )
-           );
-}
-
-
-FeaturePtr ModelFeature::create_model(ModelPtr model)
-{
-  return FeaturePtr(new ModelFeature(model));
-}
 
 
 void ModelFeature::build()
@@ -297,7 +265,7 @@ void ModelFeature::executeEditor()
 
 
 
-void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
+void ModelFeature::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -313,7 +281,9 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
                       ('=' >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Point) )|
                       (qi::lit("!=") >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Direction) )|
                       ('=' >> ruleset.r_scalarExpression) ) ) ) >> ')' )
-	[ qi::_val = phx::bind(&ModelFeature::create, qi::_1, qi::_2) ]
+    [ qi::_val = phx::bind(
+                           &ModelFeature::create<const std::string&, const ModelVariableTable&>,
+                           qi::_1, qi::_2) ]
 	|
 	( ruleset.r_path >> 
           *(',' >> (ruleset.r_identifier >> (
@@ -321,7 +291,9 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
                       ('=' >> ruleset.r_datumExpression)|
                       (qi::lit("!=") >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Direction) )|
                       ('=' >> ruleset.r_scalarExpression) ) ) ) >> ')' )
-	[ qi::_val = phx::bind(&ModelFeature::create_file, qi::_1, qi::_2) ]
+    [ qi::_val = phx::bind(
+                           &ModelFeature::create<const boost::filesystem::path&, const ModelVariableTable&>,
+                           qi::_1, qi::_2) ]
       )
     ))
   );
@@ -330,10 +302,9 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList ModelFeature::ruleDocumentation() const
+FeatureCmdInfoList ModelFeature::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "loadmodel",
@@ -342,7 +313,7 @@ FeatureCmdInfoList ModelFeature::ruleDocumentation() const
             " The file is searched first in the directory of the current model and then throughout the shared file search path."
             " An arbitrary number of parameters are passed from the current model into the submodel."
         )
-    );
+    };
 }
 
 

@@ -44,13 +44,11 @@ class Extrusion
 
 public:
     declareType ( "Extrusion" );
-    Extrusion ();
 
-    static FeaturePtr create ( FeaturePtr sk, VectorPtr L, bool centered=false );
+    CREATE_FUNCTION(Extrusion);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

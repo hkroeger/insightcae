@@ -40,13 +40,11 @@ protected:
 
 public:
     declareType("ClipWire");
-    ClipWire();
 
-    static FeaturePtr create(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
+    CREATE_FUNCTION(ClipWire);
 
-
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule(parser::ISCADParser& ruleset);
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

@@ -35,8 +35,9 @@ namespace cad {
     
     
 defineType(Sphere);
-addToFactoryTable(Feature, Sphere);
-
+//addToFactoryTable(Feature, Sphere);
+addToStaticFunctionTable(Feature, Sphere, insertrule);
+addToStaticFunctionTable(Feature, Sphere, ruleDocumentation);
 
 size_t Sphere::calcHash() const
 {
@@ -48,9 +49,6 @@ size_t Sphere::calcHash() const
 }
 
 
-Sphere::Sphere()
-{}
-
 
 
   
@@ -59,11 +57,6 @@ Sphere::Sphere(VectorPtr p, ScalarPtr D)
 {}
 
 
-
-FeaturePtr Sphere::create ( VectorPtr p, ScalarPtr D )
-{
-    return FeaturePtr(new Sphere(p, D));
-}
 
 
 
@@ -83,7 +76,7 @@ void Sphere::build()
 
 
 
-void Sphere::insertrule(parser::ISCADParser& ruleset) const
+void Sphere::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -91,7 +84,9 @@ void Sphere::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-	[ qi::_val = phx::bind(&Sphere::create, qi::_1, qi::_2) ]
+    [ qi::_val = phx::bind(
+                       &Sphere::create<VectorPtr, ScalarPtr>,
+                       qi::_1, qi::_2) ]
       
     ))
   );
@@ -100,17 +95,16 @@ void Sphere::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList Sphere::ruleDocumentation() const
+FeatureCmdInfoList Sphere::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Sphere",
             "( <vector:p0>, <scalar:D> )",
             "Creates a sphere around point p0 with diameter D."
         )
-    );
+    };
 }
 
 

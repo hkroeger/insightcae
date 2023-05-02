@@ -45,14 +45,11 @@ class Cutaway
 
 public:
     declareType ( "Cutaway" );
-    Cutaway ();
 
-    static FeaturePtr create ( FeaturePtr model, VectorPtr p0, VectorPtr n );
-    static FeaturePtr create_plane ( FeaturePtr model, ConstDatumPtr pl, bool inverted );
+    CREATE_FUNCTION(Cutaway);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

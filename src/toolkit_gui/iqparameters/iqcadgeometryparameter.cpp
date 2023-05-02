@@ -54,16 +54,18 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
   QHBoxLayout *layout3=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
-  auto *lineEdit = new QLineEdit(editControlsContainer);
-//  connect(le_, &QLineEdit::destroyed, this, &PathParameterWrapper::onDestruction);
-  lineEdit->setText(QString::fromStdString(p.featureLabel()));
-  layout2->addWidget(lineEdit);
+
+  auto *leFeatureLabel = new QLineEdit(editControlsContainer);
+  leFeatureLabel->setText(QString::fromStdString(p.featureLabel()));
+  layout2->addWidget(leFeatureLabel);
+
+  auto *teScript = new QTextEdit(editControlsContainer);
+  teScript->setText(QString::fromStdString(p.script()));
+  layout2->addWidget(teScript);
+
   auto *dlgBtn_=new QPushButton("...", editControlsContainer);
   layout3->addWidget(dlgBtn_);
-//  auto *openBtn_=new QPushButton("Open", editControlsContainer);
-//  layout3->addWidget(openBtn_);
-//  auto *saveBtn=new QPushButton("Save...", editControlsContainer);
-//  layout3->addWidget(saveBtn);
+
   layout->addLayout(layout2);
   layout->addLayout(layout3);
 
@@ -74,21 +76,22 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
   auto applyFunction = [=]()
   {
     auto&p = dynamic_cast<insight::CADGeometryParameter&>(model->parameterRef(index));
-    p.setCADModel( viewer->cadmodel()->model() );
-    p.setFeatureLabel( lineEdit->text().toStdString() );
+//    p.setCADModel( viewer->cadmodel()->model() );
+    p.setFeatureLabel( leFeatureLabel->text().toStdString() );
+    p.setScript( teScript->document()->toRawText().toStdString() );
     model->notifyParameterChange(index);
   };
 
-  connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
+  connect(leFeatureLabel, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
 
 
 
-  connect(lineEdit, &QLineEdit::textChanged, [=]()
+  connect(leFeatureLabel, &QLineEdit::textChanged, [=]()
   {
-    lineEdit->setToolTip
+    leFeatureLabel->setToolTip
     (
-      QString("(Evaluates to \"")+boost::filesystem::absolute(lineEdit->text().toStdString()).string().c_str()+"\")"
+      QString("(Evaluates to \"")+boost::filesystem::absolute(leFeatureLabel->text().toStdString()).string().c_str()+"\")"
     );
   }
   );
@@ -109,13 +112,19 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
             auto itemLbl = QInputDialog::getItem(
                       editControlsContainer,
                       "Select feature",
-                      lineEdit->text(),
-                      items, items.indexOf(lineEdit->text()),
+                      leFeatureLabel->text(),
+                      items, items.indexOf(leFeatureLabel->text()),
                       false, &ok);
             if (ok)
             {
-              lineEdit->setText(itemLbl);
-              applyFunction();
+                auto symbolName = itemLbl.toStdString();
+                auto selfeat = viewer->cadmodel()->model()->modelsteps().at(symbolName);
+                leFeatureLabel->setText(itemLbl);
+                teScript->setPlainText( QString::fromStdString(
+                    symbolName+": "+
+                    selfeat->generateScriptCommand()
+                    ) );
+                applyFunction();
             }
           }
   );

@@ -48,16 +48,24 @@ class AngleConstraint
 
     size_t calcHash() const override;
 
+    AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, double targetValue);
+
 public:
     declareType("AngleConstraint");
 
-    AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, double targetValue);
+    CREATE_FUNCTION(AngleConstraint);
 
     double targetValue() const;
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
     void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(ConstrainedSketchGrammar& ruleset);
 };
 
 

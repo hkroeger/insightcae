@@ -23,7 +23,7 @@ protected:
     arma::mat pointInPlane2D(const QPoint& screenPos) const;
     arma::mat pointInPlane2D(const arma::mat& pip3d) const;
 
-    insight::cad::SketchPointPtr existingSketchPointAt( const QPoint& cp ) const;
+    insight::cad::SketchPointPtr existingSketchPointAt( const QPoint& cp, insight::cad::ConstrainedSketchEntityPtr& sg ) const;
 
 Q_SIGNALS:
     void updateActors();
@@ -47,19 +47,21 @@ class IQVTKCADModel3DViewerDrawLine
 
   insight::cad::Line* prevLine_;
 
+public:
   struct CandidatePoint
   {
       insight::cad::SketchPointPtr sketchPoint;
       bool isAnExistingPoint;
-      bool isOnCurve;
+      insight::cad::FeaturePtr onFeature;
   };
 
+private:
   /**
    * @brief pcand_
    * left click might change viewport geometry due to modification of property panel
    * determine candidate already during mouse move and use it as displayed
    */
-  std::unique_ptr<CandidatePoint> pcand_;
+  std::unique_ptr<CandidatePoint> p1cand_, pcand_;
 
   CandidatePoint updatePCand(
       const QPoint& point ) const;
@@ -81,10 +83,14 @@ public:
     bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 
 Q_SIGNALS:
+    void endPointSelected(
+        CandidatePoint* addPoint,
+        insight::cad::SketchPointPtr previousPoint
+        );
     void lineAdded(
         insight::cad::Line* addedLine,
         insight::cad::Line* previouslyAddedLine,
-        bool targetPointIsExisting );
+        CandidatePoint* p1, CandidatePoint* p2 );
 };
 
 #endif // IQVTKCADMODEL3DVIEWERDRAWLINE_H

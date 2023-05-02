@@ -794,7 +794,7 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 
 arma::mat nonlinearMinimizeND(
         const std::function<double(const arma::mat&)>& model,
-        const arma::mat& x0, double tol, const arma::mat& steps)
+        const arma::mat& x0, double tol, const arma::mat& steps, int nMaxIter)
 {
     struct Obj : public ObjectiveND
     {
@@ -807,6 +807,7 @@ arma::mat nonlinearMinimizeND(
       }
       int numP() const override { return np_; }
     } obj(x0.n_elem, model);
+    obj.maxiter=nMaxIter;
     return nonlinearMinimizeND(obj, x0, tol, steps);
 }
 

@@ -101,6 +101,8 @@ class SketchPoint
   double x_, y_;
 
 public:
+  declareType("SketchPoint");
+
   SketchPoint(DatumPtr plane, double x, double y);
   void setCoords2D(double x, double y);
   arma::mat coords2D() const;
@@ -110,11 +112,28 @@ public:
   double getDoFValue(unsigned int iDoF) const override;
   void setDoFValue(unsigned int iDoF, double value) override;
   void scaleSketch(double scaleFactor) override;
+
+  void generateScriptCommand(
+      ConstrainedSketchScriptBuffer& script,
+      const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+  static void addParserRule(ConstrainedSketchGrammar& ruleset);
 };
 
 
 typedef std::shared_ptr<SketchPoint> SketchPointPtr;
 
+
+
+class ConstrainedSketchScriptBuffer
+{
+  std::set<int> entitiesPresent_;
+  std::vector<std::string> script_;
+
+public:
+  void insertCommandFor(int entityLabel, const std::string& cmd);
+  void write(std::ostream& os);
+};
 
 
 
@@ -134,10 +153,16 @@ public:
   declareType("ConstrainedSketch");
   ConstrainedSketch();
 
-  static FeaturePtr create(DatumPtr pl);
+  static std::shared_ptr<ConstrainedSketch> create(DatumPtr pl);
+  static std::shared_ptr<ConstrainedSketch> create( DatumPtr pl, std::istream& is );
 
   const DatumPtr& plane() const;
   std::set<ConstrainedSketchEntityPtr>& geometry();
+  const std::set<ConstrainedSketchEntityPtr>& geometry() const;
+
+  std::set<ConstrainedSketchEntityPtr> filterGeometryByParameters(
+      std::function<bool(const ParameterSet& geomPS)> filterFunction
+      );
 
   void operator=(const ConstrainedSketch& o);
 
@@ -145,6 +170,8 @@ public:
   void setSolverTolerance(double tol);
 
   void resolveConstraints();
+
+  void generateScript(std::ostream& os) const;
 
 };
 

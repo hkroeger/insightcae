@@ -175,6 +175,7 @@ public:
     int getMaxIndex() const;
 };
 
+
  
 /**
  * Base class of all CAD modelling features

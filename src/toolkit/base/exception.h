@@ -38,6 +38,7 @@ namespace insight {
 class CurrentExceptionContext
         : public std::string
 {
+    bool verbose_;
 
 public:
   CurrentExceptionContext(const std::string& desc, bool verbose=true);

@@ -106,7 +106,7 @@ IQVTKCADModel3DViewerPlanePointBasedAction::pointInPlane2D(const arma::mat &p3) 
 
 SketchPointPtr
 IQVTKCADModel3DViewerPlanePointBasedAction
-::existingSketchPointAt( const QPoint& cp ) const
+::existingSketchPointAt( const QPoint& cp, insight::cad::ConstrainedSketchEntityPtr& sg ) const
 {
     if (auto act =
         viewer().findActorUnderCursorAt(cp))
@@ -115,8 +115,8 @@ IQVTKCADModel3DViewerPlanePointBasedAction
             std::dynamic_pointer_cast<IQVTKConstrainedSketchEditor>(
                 viewer().currentUserActivity_))
         {
-            if (auto sg =
-                se->findSketchElementOfActor(act))
+            if ( (sg =
+                 se->findSketchElementOfActor(act)) )
             {
                 if (auto sp =
                     std::dynamic_pointer_cast
@@ -150,8 +150,15 @@ IQVTKCADModel3DViewerPlanePointBasedAction
 IQVTKCADModel3DViewerDrawLine::CandidatePoint
 IQVTKCADModel3DViewerDrawLine::updatePCand(const QPoint& point) const
 {
-    CandidatePoint pc{nullptr, false, false};
-    pc.sketchPoint = existingSketchPointAt(point);
+    CandidatePoint pc{nullptr, false, nullptr};
+
+    insight::cad::ConstrainedSketchEntityPtr selse;
+    pc.sketchPoint = existingSketchPointAt(point, selse);
+
+    if (!pc.sketchPoint && selse)
+    {
+        pc.onFeature = std::dynamic_pointer_cast<insight::cad::Feature>(selse);
+    }
 
     if (!pc.sketchPoint)
     {
@@ -282,14 +289,12 @@ bool IQVTKCADModel3DViewerDrawLine::onLeftButtonDown(
             sketch_->geometry().insert(
                  std::dynamic_pointer_cast
                     <ConstrainedSketchEntity>( p1_ ) );
-
-            sketch_->geometry().insert(
-                     std::make_shared
-                        <IQVTKFixedPoint>( p1_ ) ); // fix first point
         }
+        Q_EMIT endPointSelected(pcand_.get(), nullptr);
 
         sketch_->invalidate();
         Q_EMIT updateActors();
+        p1cand_=std::move(pcand_);
         return true;
     }
     else if (!p2_)
@@ -302,13 +307,14 @@ bool IQVTKCADModel3DViewerDrawLine::onLeftButtonDown(
                  std::dynamic_pointer_cast
                     <ConstrainedSketchEntity>( p2_ ) );
         }
+        Q_EMIT endPointSelected(pcand_.get(), p1_);
 
         auto line = std::dynamic_pointer_cast<insight::cad::Line>(
                     Line::create(p1_, p2_) );
         sketch_->geometry().insert(line);
         sketch_->invalidate();
 
-        Q_EMIT lineAdded(line.get(), prevLine_, pcand_->isAnExistingPoint);
+        Q_EMIT lineAdded(line.get(), prevLine_, pcand_.get(), p1cand_.get() );
 
         prevLine_=line.get();
 
@@ -316,6 +322,7 @@ bool IQVTKCADModel3DViewerDrawLine::onLeftButtonDown(
 
         // continue with next line
         p1_=p2_;
+        p1cand_=std::move(pcand_);
         p2_.reset();
         return true;
     }

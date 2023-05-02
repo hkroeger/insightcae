@@ -61,16 +61,24 @@ class DistanceConstraint
 
     size_t calcHash() const override;
 
+    DistanceConstraint(VectorPtr p1, VectorPtr p2, double targetValue);
+
 public:
     declareType("DistanceConstraint");
 
-    DistanceConstraint(VectorPtr p1, VectorPtr p2, double targetValue);
+    CREATE_FUNCTION(DistanceConstraint);
 
     double targetValue() const;
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
     void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(ConstrainedSketchGrammar& ruleset);
 };
 
 }

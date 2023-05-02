@@ -31,7 +31,6 @@ public:
 
 
 
-
 class IQVTKFixedPoint
         : public IQVTKConstrainedSketchEntity
 {
@@ -48,6 +47,10 @@ public:
     double getConstraintError(unsigned int iConstraint) const override;
 
     void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        insight::cad::ConstrainedSketchScriptBuffer& script,
+        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
 };
 
 
@@ -64,6 +67,10 @@ public:
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
     void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        insight::cad::ConstrainedSketchScriptBuffer& script,
+        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
 };
 
 
@@ -79,6 +86,10 @@ public:
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
     void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        insight::cad::ConstrainedSketchScriptBuffer& script,
+        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
 };
 
 
@@ -97,6 +108,10 @@ public:
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
     void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        insight::cad::ConstrainedSketchScriptBuffer& script,
+        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
 };
 
 

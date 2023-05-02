@@ -26,6 +26,7 @@
 #include "occtools.h"
 
 #include "base/parameters/simpleparameter.h"
+#include "sketch.h"
 
 using namespace std;
 using namespace boost;
@@ -53,9 +54,10 @@ void insight::cad::Distance::build()
   arma::mat p1=p1_->value();
   arma::mat p2=p2_->value();
 
-  cout<<"######### Distance Report ###########################################"<<endl;
   distance_=arma::norm(p2-p1,2);
-  cout<<"distance="<<distance_<<endl;
+
+//  cout<<"######### Distance Report ###########################################"<<endl;
+//  cout<<"distance="<<distance_<<endl;
 }
 
 void insight::cad::Distance::write(ostream&) const
@@ -67,6 +69,7 @@ void insight::cad::Distance::write(ostream&) const
 
 
 defineType(DistanceConstraint);
+addToStaticFunctionTable(ConstrainedSketchEntity, DistanceConstraint, addParserRule);
 
 size_t DistanceConstraint::calcHash() const
 {
@@ -113,7 +116,45 @@ void DistanceConstraint::scaleSketch(double scaleFactor)
     parametersRef().get<DoubleParameter>("distance")() *= scaleFactor;
 }
 
+void DistanceConstraint::generateScriptCommand(
+    ConstrainedSketchScriptBuffer &script,
+    const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
+{
+    int myLabel=entityLabels.at(this);
+    script.insertCommandFor(
+        myLabel,
+        type() + "( "
+            + lexical_cast<std::string>(myLabel) + ", "
+            + pointSpec(p1_, script, entityLabels)
+            + ", "
+            + pointSpec(p2_, script, entityLabels)
+            + parameterString()
+            + ")"
+        );
+}
 
+void DistanceConstraint::addParserRule(ConstrainedSketchGrammar &ruleset)
+{
+    namespace qi=boost::spirit::qi;
+    namespace phx=boost::phoenix;
+    ruleset.entityRules.add
+        (
+            typeName,
+            ( '('
+             > qi::int_ > ','
+             > ruleset.r_point > ','
+             > ruleset.r_point
+             > ruleset.r_parameters >
+             ')'
+             )
+                [ qi::_val = phx::bind(
+                     &DistanceConstraint::create<VectorPtr, VectorPtr, double>, qi::_2, qi::_3, 1.0),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
+                 phx::insert(
+                     phx::ref(ruleset.labeledEntities),
+                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
+            );
+}
 
 }
 }

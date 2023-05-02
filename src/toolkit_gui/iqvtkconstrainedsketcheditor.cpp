@@ -102,6 +102,11 @@ void IQVTKFixedPoint::scaleSketch(double scaleFactor)
     parametersRef().get<insight::DoubleParameter>("y")() *= scaleFactor;
 }
 
+void IQVTKFixedPoint::generateScriptCommand(insight::cad::ConstrainedSketchScriptBuffer &script, const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
+{
+
+}
+
 
 
 
@@ -155,6 +160,11 @@ double IQVTKHorizontalConstraint::getConstraintError(unsigned int iConstraint) c
 
 void IQVTKHorizontalConstraint::scaleSketch(double scaleFactor)
 {}
+
+void IQVTKHorizontalConstraint::generateScriptCommand(insight::cad::ConstrainedSketchScriptBuffer &script, const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
+{
+
+}
 
 
 
@@ -210,6 +220,11 @@ double IQVTKVerticalConstraint::getConstraintError(unsigned int iConstraint) con
 void IQVTKVerticalConstraint::scaleSketch(double scaleFactor)
 {}
 
+void IQVTKVerticalConstraint::generateScriptCommand(insight::cad::ConstrainedSketchScriptBuffer &script, const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
+{
+
+}
+
 
 
 
@@ -254,6 +269,11 @@ double IQVTKPointOnCurveConstraint::getConstraintError(unsigned int iConstraint)
 
 void IQVTKPointOnCurveConstraint::scaleSketch(double scaleFactor)
 {
+}
+
+void IQVTKPointOnCurveConstraint::generateScriptCommand(insight::cad::ConstrainedSketchScriptBuffer &script, const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
+{
+
 }
 
 
@@ -452,44 +472,83 @@ void IQVTKConstrainedSketchEditor::drawLine()
     connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::updateActors,
             this, &IQVTKConstrainedSketchEditor::updateActors );
 
+    connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::endPointSelected, dl.get(),
+
+            [this]( IQVTKCADModel3DViewerDrawLine::CandidatePoint* addPoint,
+                    insight::cad::SketchPointPtr previousPoint )
+            {
+                if (addPoint->onFeature)
+                {
+                    (*this)->geometry().insert(
+                        std::make_shared
+                        <IQVTKPointOnCurveConstraint>( addPoint->sketchPoint, addPoint->onFeature ) ); // fix to curve
+
+                    if (!previousPoint)
+                    {
+                        // for first point on line: add distance constraint to beginning of line
+                        if (auto online = std::dynamic_pointer_cast<insight::cad::Line>(addPoint->onFeature))
+                        {
+                            double curLen = arma::norm( online->start()->value() - addPoint->sketchPoint->value(), 2);
+                            auto lc = insight::cad::DistanceConstraint::create(
+                                online->start(), addPoint->sketchPoint,
+                                curLen );
+                            (*this)->geometry().insert(lc);
+                        }
+                    }
+                }
+                else if ( !addPoint->isAnExistingPoint && !previousPoint ) // is first point?
+                {
+                    (*this)->geometry().insert(
+                        std::make_shared
+                        <IQVTKFixedPoint>( addPoint->sketchPoint ) ); // fix first point
+                }
+            }
+    );
     connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::lineAdded, dl.get(),
+
             [this]( insight::cad::Line* line,
                     insight::cad::Line* prevLine,
-                    bool targetPointIsExisting )
+                    IQVTKCADModel3DViewerDrawLine::CandidatePoint* p2,
+                    IQVTKCADModel3DViewerDrawLine::CandidatePoint* p1 )
             {
                 line->changeDefaultParameters(defaultGeometryParameters_);
 
-                if (!targetPointIsExisting)
+                if (!p2->isAnExistingPoint)
                 {
                     double curLen = arma::norm( line->start()->value() - line->end()->value(), 2);
 
-                    auto lc = std::make_shared<insight::cad::DistanceConstraint>(
+                    auto lc = insight::cad::DistanceConstraint::create(
                             line->start(), line->end(),
                                 curLen );
                     (*this)->geometry().insert(lc);
 
-                    if (prevLine)
+                    if (!p1->isAnExistingPoint && !p2->isAnExistingPoint
+                        && !p1->onFeature && !p2->onFeature)
                     {
-                        auto ac = std::make_shared<insight::cad::AngleConstraint>(
-                                prevLine->start(), line->end(), line->start(),
-                                    insight::cad::Angle::calculate(
-                                            prevLine->start()->value(),
-                                            line->end()->value(),
-                                            line->start()->value() ) );
-                        (*this)->geometry().insert(ac);
-                    }
-                    else
-                    {
-                        auto p1=std::make_shared<insight::cad::AddedVector>(
-                                    line->start(),
-                                    insight::cad::vec3const(1,0,0) );
-                        auto ac = std::make_shared<insight::cad::AngleConstraint>(
-                            p1, line->end(), line->start(),
-                            insight::cad::Angle::calculate(
-                                p1->value(),
-                                line->end()->value(),
-                                line->start()->value() ) );
-                        (*this)->geometry().insert(ac);
+                        // add angle constraint
+                        if (prevLine)
+                        {
+                            auto ac = insight::cad::AngleConstraint::create(
+                                    prevLine->start(), line->end(), line->start(),
+                                        insight::cad::Angle::calculate(
+                                                prevLine->start()->value(),
+                                                line->end()->value(),
+                                                line->start()->value() ) );
+                            (*this)->geometry().insert(ac);
+                        }
+                        else
+                        {
+                            auto p1=std::make_shared<insight::cad::AddedVector>(
+                                        line->start(),
+                                        insight::cad::vec3const(1,0,0) );
+                            auto ac = insight::cad::AngleConstraint::create(
+                                p1, line->end(), line->start(),
+                                insight::cad::Angle::calculate(
+                                    p1->value(),
+                                    line->end()->value(),
+                                    line->start()->value() ) );
+                            (*this)->geometry().insert(ac);
+                        }
                     }
 
 

@@ -25,6 +25,7 @@ set(insightcad_SOURCES
   datum.cpp 
   constrainedsketchgeometry.h constrainedsketchgeometry.cpp
   sketch.h sketch.cpp
+  constrainedsketchgrammar.h constrainedsketchgrammar.cpp
   geotest.cpp 
   cadparameter.cpp
   cadfeature.cpp 

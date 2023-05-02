@@ -5,6 +5,8 @@
 #include "base/parameterset.h"
 #include "base/parameters/simpleparameter.h"
 
+#include "sketch.h"
+
 namespace insight {
 namespace cad {
 
@@ -56,8 +58,8 @@ void Angle::build()
                 p2_->value(),
                 pCtr_->value() );
 
-    cout<<"######### Angle Report ###########################################"<<endl;
-    cout<<"angle="<<angle_/SI::deg<<"deg"<<endl;
+//    cout<<"######### Angle Report ###########################################"<<endl;
+//    cout<<"angle="<<angle_/SI::deg<<"deg"<<endl;
 }
 
 void Angle::write(ostream&) const
@@ -68,6 +70,7 @@ void Angle::write(ostream&) const
 
 
 defineType(AngleConstraint);
+addToStaticFunctionTable(ConstrainedSketchEntity, AngleConstraint, addParserRule);
 
 size_t AngleConstraint::calcHash() const
 {
@@ -113,6 +116,50 @@ double AngleConstraint::getConstraintError(unsigned int iConstraint) const
 
 void AngleConstraint::scaleSketch(double scaleFactor)
 {}
+
+void AngleConstraint::generateScriptCommand(
+    ConstrainedSketchScriptBuffer &script,
+    const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
+{
+    int myLabel=entityLabels.at(this);
+    script.insertCommandFor(
+        myLabel,
+        type() + "( "
+            + boost::lexical_cast<std::string>(myLabel) + ", "
+            + pointSpec(p1_, script, entityLabels)
+            + ", "
+            + pointSpec(p2_, script, entityLabels)
+            + ", "
+            + pointSpec(pCtr_, script, entityLabels)
+            + parameterString()
+            + ")"
+        );
+}
+
+
+void AngleConstraint::addParserRule(ConstrainedSketchGrammar &ruleset)
+{
+    namespace qi = boost::spirit::qi;
+    namespace phx = boost::phoenix;
+    ruleset.entityRules.add
+        (
+            typeName,
+            ( '('
+             > qi::int_ > ','
+             > ruleset.r_point > ','
+             > ruleset.r_point > ','
+             > ruleset.r_point
+             > ruleset.r_parameters >
+             ')'
+             )
+                [ qi::_val = phx::bind(
+                     &AngleConstraint::create<VectorPtr, VectorPtr, VectorPtr, double>, qi::_2, qi::_3, qi::_4, 1.0),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_5, "."),
+                 phx::insert(
+                     phx::ref(ruleset.labeledEntities),
+                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
+            );
+}
 
 
 

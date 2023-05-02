@@ -31,9 +31,10 @@ namespace cad {
 class Wire
     : public Feature
 {
-    FeatureSetPtr edges_;
+    boost::variant<FeatureSetPtr, std::vector<FeaturePtr> > edges_;
 
     Wire ( FeatureSetPtr edges );
+    Wire ( const std::vector<FeaturePtr>& edges );
 
     virtual size_t calcHash() const;
     virtual void build();
@@ -43,6 +44,7 @@ public:
     Wire ();
 
     static FeaturePtr create ( FeatureSetPtr edges );
+    static FeaturePtr create_feats ( const std::vector<FeaturePtr>& edges );
 
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;

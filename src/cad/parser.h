@@ -89,6 +89,24 @@ struct skip_grammar
   skip_grammar();
 };
 
+template <typename T>
+struct make_shared_f
+{
+  template <typename... A> struct result
+  { typedef std::shared_ptr<T> type; };
+
+  template <typename... A>
+  typename result<A...>::type operator()(A&&... a) const
+  {
+      return std::make_shared<T>(std::forward<A>(a)...);
+  }
+};
+
+template <typename T>
+using make_shared_ = boost::phoenix::function<make_shared_f<T> >;
+
+
+
 
 template<typename Iterator>
 struct CurrentPos 

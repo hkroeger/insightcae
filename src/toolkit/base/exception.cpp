@@ -239,11 +239,12 @@ void assertion(bool condition, std::string fmt, ...)
 
 
 CurrentExceptionContext::CurrentExceptionContext(const std::string& desc, bool verbose)
-    : std::string(desc)
+    : std::string(desc),
+    verbose_(verbose)
 {
   if (getenv("INSIGHT_VERBOSE"))
   {
-    if (verbose)
+    if (verbose_)
     {
       std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << contextDescription() << std::endl;
     }
@@ -263,7 +264,10 @@ CurrentExceptionContext::~CurrentExceptionContext()
 
   if (getenv("INSIGHT_VERBOSE"))
   {
-    std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<contextDescription() << std::endl;
+      if (verbose_)
+      {
+        std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<contextDescription() << std::endl;
+      }
   }
 }
 

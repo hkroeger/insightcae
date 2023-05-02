@@ -255,7 +255,7 @@ Parameter &ParameterSet::getParameter(std::string path)
   int nRemaining=-1;
   std::string parameterName = splitOffFirstParameter(path, nRemaining);
 
-  insight::CurrentExceptionContext ex("looking up parameter "+parameterName);
+  insight::CurrentExceptionContext ex("looking up parameter "+parameterName, false);
 
   auto parameter = find(parameterName);
 
@@ -596,6 +596,15 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string a
     f << std::flush;
     f.close();
 }
+
+
+void ParameterSet::saveToString(std::string &s, const boost::filesystem::path& file, std::string analysisType) const
+{
+    std::ostringstream os(s, std::ios_base::ate);
+    saveToStream(os, file.parent_path(), analysisType);
+    s = os.str();
+}
+
 
 std::string ParameterSet::readFromFile(const boost::filesystem::path& file, const std::string& startAtSubnode)
 {

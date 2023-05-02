@@ -22,6 +22,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
+#include "sketch.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -40,6 +42,7 @@ namespace cad
 defineType(Line);
 addToFactoryTable(Feature, Line);
 
+addToStaticFunctionTable(ConstrainedSketchEntity, Line, addParserRule);
 
 
 size_t Line::calcHash() const
@@ -82,10 +85,46 @@ void Line::scaleSketch(double scaleFactor)
 
 
 
-FeaturePtr Line::create ( VectorPtr p0, VectorPtr p1 )
+void Line::generateScriptCommand(
+    ConstrainedSketchScriptBuffer &script,
+    const std::map<const ConstrainedSketchEntity*, int> &entityLabels ) const
 {
-    return FeaturePtr(new Line(p0, p1, false));
+    int myLabel=entityLabels.at(this);
+    script.insertCommandFor(
+        myLabel,
+        type() + "("
+            + lexical_cast<std::string>(myLabel)+", "
+            + pointSpec(p0_, script, entityLabels)
+            + ", "
+            + pointSpec(p1_, script, entityLabels)
+            + parameterString()
+            + ")"
+        );
 }
+
+void Line::addParserRule(ConstrainedSketchGrammar &ruleset)
+{
+    namespace qi=boost::spirit::qi;
+    ruleset.entityRules.add
+        (
+            typeName,
+            ( '('
+             > qi::int_ > ','
+             > ruleset.r_point > ','
+             > ruleset.r_point
+             > ruleset.r_parameters >
+             ')'
+            )
+                [ qi::_val = phx::bind(
+                     &Line::create<VectorPtr, VectorPtr, bool>, qi::_2, qi::_3, false),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
+                 phx::insert(
+                     phx::ref(ruleset.labeledEntities),
+                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
+            );
+}
+
+
 
 FeaturePtr Line::create_dir ( VectorPtr p0, VectorPtr p1 )
 {
@@ -145,7 +184,7 @@ void Line::insertrule(parser::ISCADParser& ruleset) const
   auto *rule = new LineRule(
       '(' > ruleset.r_vectorExpression[qi::_a=qi::_1] > ',' > (
       ruleset.r_vectorExpression
-          [ qi::_val = phx::bind(&Line::create, qi::_a, qi::_1) ]
+              [ qi::_val = phx::bind(&Line::create<VectorPtr, VectorPtr, bool>, qi::_a, qi::_1, false) ]
       |
       ( (qi::lit("dir")|qi::lit("direction")) > ruleset.r_vectorExpression )
           [ qi::_val = phx::bind(&Line::create_dir, qi::_a, qi::_1) ]

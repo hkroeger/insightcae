@@ -282,6 +282,15 @@ static struct add##specT##To##baseT##Name##FunctionTable \
     { return std::shared_ptr<baseT>( lookup(ssp.selection(), ssp()) ); } \
     defineStaticFunctionTable(baseT, defaultParameters, ParameterSet)
 
+
+#define CREATE_FUNCTION(DerivedClass) \
+template <typename... T> \
+    static std::shared_ptr<DerivedClass> create(T /*&&*/...args) \
+{ \
+        DerivedClass *ptr = new DerivedClass(::std::forward<T>(args)...); \
+        return std::shared_ptr<DerivedClass>(ptr); \
+}
+
 }
 
 #endif // INSIGHT_FACTORY_H

@@ -31,6 +31,8 @@
 
 #include <chrono>
 
+#include "constrainedsketchgrammar.h"
+
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::algorithm;
@@ -469,6 +471,10 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
 //    y_=pp.Y();
 //}
 
+
+defineType(SketchPoint);
+addToStaticFunctionTable(ConstrainedSketchEntity, SketchPoint, addParserRule);
+
 SketchPoint::SketchPoint(DatumPtr plane, double x, double y)
     : plane_(plane),
       x_(x), y_(y)
@@ -533,6 +539,42 @@ void SketchPoint::scaleSketch(double scaleFactor)
         y_*=scaleFactor;
 }
 
+void SketchPoint::generateScriptCommand(
+    ConstrainedSketchScriptBuffer &script,
+    const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
+{
+    int myLabel=entityLabels.at(this);
+    auto v = coords2D();
+    script.insertCommandFor(
+        myLabel,
+        type() + "( "
+         + lexical_cast<std::string>(myLabel) + ", "
+         + str(boost::format("%g, %g")%v(0)%v(1))
+         + parameterString()
+         + ")"
+        );
+}
+
+void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset)
+{
+    namespace qi=boost::spirit::qi;
+    ruleset.entityRules.add
+        (
+            typeName,
+            ( '('
+                > qi::int_ > ','
+                > qi::double_ > ',' > qi::double_
+                > ruleset.r_parameters >
+               ')' )
+               [ qi::_val = parser::make_shared_<SketchPoint>()(ruleset.sketch->plane(), qi::_2, qi::_3),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
+                 phx::insert(
+                     phx::ref(ruleset.labeledEntities),
+                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val) ),
+                 std::cout << qi::_1 ]
+        );
+}
+
 
 
 
@@ -561,10 +603,7 @@ ConstrainedSketch::ConstrainedSketch()
 
 
 
-ConstrainedSketch::ConstrainedSketch
-(
-  DatumPtr pl
-)
+ConstrainedSketch::ConstrainedSketch(DatumPtr pl)
 : pl_(pl),
   solverTolerance_(1e-6)
 {}
@@ -572,9 +611,47 @@ ConstrainedSketch::ConstrainedSketch
 
 
 
-FeaturePtr ConstrainedSketch::create( DatumPtr pl )
+std::shared_ptr<ConstrainedSketch> ConstrainedSketch::create( DatumPtr pl )
 {
-    return FeaturePtr(new ConstrainedSketch(pl));
+  return std::shared_ptr<ConstrainedSketch>(new ConstrainedSketch(pl));
+}
+
+
+std::shared_ptr<ConstrainedSketch> ConstrainedSketch::create(DatumPtr pl, istream &in)
+{
+  auto sk = ConstrainedSketch::create(pl);
+
+  in >> std::noskipws;
+
+  // use stream iterators to copy the stream to a string
+  std::istream_iterator<char> it(in);
+  std::istream_iterator<char> end;
+  std::string contents_raw(it, end);
+
+  std::string::iterator orgbegin,
+      first=contents_raw.begin(),
+      last=contents_raw.end();
+
+  parser::skip_grammar skip;
+
+  ConstrainedSketchGrammar grammar(sk);
+  bool success = boost::spirit::qi::phrase_parse(
+      first,  last,
+      grammar, skip
+      );
+
+  insight::assertion(
+      success,
+      "parsing of constrained sketch script was not successful!" );
+
+  std::cout<<"ToC: ";
+  for (const auto& j: grammar.labeledEntities)
+  {
+      std::cout<<", "<<j.first;
+  }
+  std::cout<<std::endl;
+
+  return sk;
 }
 
 
@@ -588,6 +665,24 @@ std::set<std::shared_ptr<ConstrainedSketchEntity> >&
 ConstrainedSketch::geometry()
 {
     return geometry_;
+}
+
+const std::set<ConstrainedSketchEntityPtr> &ConstrainedSketch::geometry() const
+{
+    return geometry_;
+}
+
+std::set<ConstrainedSketchEntityPtr> ConstrainedSketch::filterGeometryByParameters(
+    std::function<bool (const ParameterSet &)> filterFunction )
+{
+    std::set<ConstrainedSketchEntityPtr> ret;
+    std::copy_if(
+        geometry().begin(), geometry().end(),
+        std::inserter(ret, ret.begin()),
+        [&](const ConstrainedSketchEntityPtr& e)
+            { return filterFunction(e->parameters()); }
+    );
+    return ret;
 }
 
 void ConstrainedSketch::operator=(const ConstrainedSketch &o)
@@ -652,13 +747,57 @@ void ConstrainedSketch::resolveConstraints()
                             Q+=pow(e->getConstraintError(i), 2);
                         }
                     }
-                    std::cout<<"Q="<<Q<<std::endl;
+                    insight::dbg()<<"Q="<<Q<<std::endl;
                     return Q;
                 },
-                x0, solverTolerance_
+        x0, solverTolerance_, arma::mat(), 1000
     );
 
     setX(xsol);
+}
+
+
+
+void ConstrainedSketchScriptBuffer::insertCommandFor(int entityLabel, const std::string &cmd)
+{
+    if (entitiesPresent_.find(entityLabel)
+          == entitiesPresent_.end())
+    {
+        script_.push_back(cmd);
+        entitiesPresent_.insert(entityLabel);
+    }
+}
+
+void ConstrainedSketchScriptBuffer::write(ostream &os)
+{
+    for (auto sl=script_.begin(); sl!=script_.end(); ++sl)
+    {
+        os<<*sl;
+        if ( script_.end() - sl > 1 )
+            os << ",";
+        os<<std::endl;
+    }
+}
+
+
+
+void ConstrainedSketch::generateScript(ostream &os) const
+{
+    std::map<const ConstrainedSketchEntity*, int> entityLabels;
+
+    int i=0;
+    for (const auto& se: geometry())
+    {
+        entityLabels[se.get()]=i++;
+    }
+
+    ConstrainedSketchScriptBuffer sb;
+    for (const auto& se: geometry())
+    {
+        se->generateScriptCommand(sb, entityLabels);
+    }
+
+    sb.write(os);
 }
 
 
@@ -694,6 +833,8 @@ void ConstrainedSketch::build()
         this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
     }
 }
+
+
 
 
 

@@ -221,6 +221,7 @@ public:
 
   virtual void saveToStream(std::ostream& os, const boost::filesystem::path& parentPath, std::string analysisName = std::string() ) const;
   void saveToFile ( const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
+  void saveToString ( std::string& s, const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
   virtual std::string readFromFile ( const boost::filesystem::path& file, const std::string& startAtSubnode="" );
 
 };

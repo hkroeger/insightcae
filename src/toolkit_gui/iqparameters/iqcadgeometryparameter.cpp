@@ -50,23 +50,22 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
 
   auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout;
-  QHBoxLayout *layout3=new QHBoxLayout;
-  QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
-  layout2->addWidget(promptLabel);
 
+  QHBoxLayout *layout2=new QHBoxLayout;
+  QLabel *promptLabel = new QLabel("Feature label:", editControlsContainer);
+  layout2->addWidget(promptLabel);
   auto *leFeatureLabel = new QLineEdit(editControlsContainer);
   leFeatureLabel->setText(QString::fromStdString(p.featureLabel()));
   layout2->addWidget(leFeatureLabel);
+  layout->addLayout(layout2);
 
   auto *teScript = new QTextEdit(editControlsContainer);
   teScript->setText(QString::fromStdString(p.script()));
-  layout2->addWidget(teScript);
+  layout->addWidget(teScript);
 
+  QHBoxLayout *layout3=new QHBoxLayout;
   auto *dlgBtn_=new QPushButton("...", editControlsContainer);
   layout3->addWidget(dlgBtn_);
-
-  layout->addLayout(layout2);
   layout->addLayout(layout3);
 
   QPushButton* apply=new QPushButton("&Apply", editControlsContainer);

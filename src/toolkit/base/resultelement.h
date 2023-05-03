@@ -73,7 +73,7 @@ public:
    */
   const SimpleLatex& unit() const;
 
-    inline void setOrder ( double o ) { order_=o; }
+  inline ResultElement& setOrder ( double o ) { order_=o; return *this; }
     inline double order() const { return order_; }
 
     virtual void insertLatexHeaderCode ( std::set<std::string>& headerCode ) const;

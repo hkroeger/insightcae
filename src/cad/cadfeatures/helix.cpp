@@ -32,7 +32,9 @@ namespace cad {
 
 
 defineType(Helix);
-addToFactoryTable(Feature, Helix);
+//addToFactoryTable(Feature, Helix);
+addToStaticFunctionTable(Feature, Helix, insertrule);
+//addToStaticFunctionTable(Feature, Helix, ruleDocumentation);
 
 size_t Helix::calcHash() const
 {
@@ -47,16 +49,13 @@ size_t Helix::calcHash() const
 
 
 
-Helix::Helix()
-: Feature()
-{
-}
 
 
 Helix::Helix(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds)
 : p0_(p0), p1_(p1), d_(d), winds_(winds)
 {
 }
+
 
 void Helix::build()
 {
@@ -88,7 +87,7 @@ void Helix::build()
   setShape(ec);
 }
 
-void Helix::insertrule(parser::ISCADParser& ruleset) const
+void Helix::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -97,8 +96,10 @@ void Helix::insertrule(parser::ISCADParser& ruleset) const
       ( '(' >> ruleset.r_vectorExpression >> ',' 
 	    >> ruleset.r_vectorExpression >> ',' 
 	    >> ruleset.r_scalarExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Helix>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+        >> ruleset.r_scalarExpression >> ')' )
+                  [ qi::_val = phx::bind(
+                       &Helix::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4) ]
     ))
   );
 }

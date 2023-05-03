@@ -38,8 +38,9 @@ namespace cad
     
     
 defineType(BooleanSubtract);
-addToFactoryTable(Feature, BooleanSubtract);
-
+//addToFactoryTable(Feature, BooleanSubtract);
+addToStaticFunctionTable(Feature, BooleanSubtract, insertrule);
+addToStaticFunctionTable(Feature, BooleanSubtract, ruleDocumentation);
 
 size_t BooleanSubtract::calcHash() const
 {
@@ -50,10 +51,6 @@ size_t BooleanSubtract::calcHash() const
   return h.getHash();
 }
 
-
-BooleanSubtract::BooleanSubtract()
-: DerivedFeature()
-{}
 
 
 
@@ -67,12 +64,6 @@ BooleanSubtract::BooleanSubtract(FeaturePtr m1, FeaturePtr m2)
 }
 
 
-
-
-FeaturePtr BooleanSubtract::create(FeaturePtr m1, FeaturePtr m2)
-{
-    return FeaturePtr(new BooleanSubtract(m1, m2));
-}
 
 
 
@@ -137,7 +128,7 @@ FeaturePtr operator-(FeaturePtr m1, FeaturePtr m2)
   * ( <feature expression: feat1> - <feature expression: feat2> ) : feature
   * ~~~~
   */
-void BooleanSubtract::insertrule(parser::ISCADParser& ruleset) const
+void BooleanSubtract::insertrule(parser::ISCADParser& ruleset)
 {
 //   ruleset.modelstepFunctionRules.add
 //   (
@@ -153,9 +144,9 @@ void BooleanSubtract::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList BooleanSubtract::ruleDocumentation() const
+FeatureCmdInfoList BooleanSubtract::ruleDocumentation()
 {
-    return FeatureCmdInfoList();
+  return {};
 }
 
 

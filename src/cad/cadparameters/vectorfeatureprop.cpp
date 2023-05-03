@@ -187,6 +187,32 @@ arma::mat insight::cad::DatumDir::value() const
 
 
 
+insight::cad::XsecCurveCurve::XsecCurveCurve(ConstFeaturePtr c1, ConstFeaturePtr c2)
+    : c1_(c1), c2_(c2)
+{}
+
+
+
+arma::mat insight::cad::XsecCurveCurve::value() const
+{
+    TopoDS_Edge e1=TopoDS::Edge(c1_->shape());
+    TopoDS_Edge e2=TopoDS::Edge(c2_->shape());
+
+    BRepExtrema_DistShapeShape dss(e1, e2);
+    if (dss.NbSolution()!=1)
+        throw insight::Exception("Exactly one intersection was expected! Got %d.", dss.NbSolution());
+
+    int s=1;
+    auto p1=dss.PointOnShape1(s);
+    auto p2=dss.PointOnShape2(s);
+
+    if ( p1.Distance(p2) > Precision::Confusion() )
+        throw insight::Exception("no intersection was found!");
+
+    return vec3(p1);
+}
+
+
 
 insight::cad::DatumPlaneNormal::DatumPlaneNormal(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
@@ -283,3 +309,4 @@ arma::mat insight::cad::SurfaceInertiaAxis::value() const
 {
   return model_->surfaceInertia(axis_);
 }
+

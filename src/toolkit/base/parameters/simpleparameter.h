@@ -85,7 +85,10 @@ public:
         return new SimpleParameter<T, N> ( value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_ );
     }
 
-    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+    rapidxml::xml_node<>* appendToNode (
+            const std::string& name,
+            rapidxml::xml_document<>& doc,
+            rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath ) const override
     {
         insight::CurrentExceptionContext ex("appending simple parameter "+name+" to node "+node.name());

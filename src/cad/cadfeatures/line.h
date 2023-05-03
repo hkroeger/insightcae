@@ -20,39 +20,45 @@
 #ifndef INSIGHT_CAD_LINE_H
 #define INSIGHT_CAD_LINE_H
 
-#include "cadfeature.h"
+#include "singleedgefeature.h"
+#include "constrainedsketchgeometry.h"
 
 namespace insight {
 namespace cad {
+    
+    
 
-    
-    
-    
+
 class Line
-    : public Feature
+    : public SingleEdgeFeature,
+      public ConstrainedSketchEntity
 {
     VectorPtr p0_, p1_;
     bool second_is_dir_;
 
     Line ( VectorPtr p0, VectorPtr p1, bool second_is_dir=false );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Line" );
-    Line ();
 
-    static FeaturePtr create ( VectorPtr p0, VectorPtr p1 );
-    static FeaturePtr create_dir ( VectorPtr p0, VectorPtr dir );
+    CREATE_FUNCTION(Line);
 
+    VectorPtr start() const override;
+    VectorPtr end() const override;
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    void scaleSketch(double scaleFactor) override;
 
-    virtual bool isSingleEdge() const;
-    virtual bool isSingleCloseWire() const;
-    virtual bool isSingleOpenWire() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
+
+    void generateScriptCommand(
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(ConstrainedSketchGrammar& ruleset);
 };
 
 

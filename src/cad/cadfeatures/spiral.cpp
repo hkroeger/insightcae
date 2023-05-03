@@ -36,7 +36,10 @@ namespace cad {
 
 
 defineType(Spiral);
-addToFactoryTable(Feature, Spiral);
+//addToFactoryTable(Feature, Spiral);
+addToStaticFunctionTable(Feature, Spiral, insertrule);
+//addToStaticFunctionTable(Feature, Spiral, ruleDocumentation);
+
 
 size_t Spiral::calcHash() const
 {
@@ -52,10 +55,6 @@ size_t Spiral::calcHash() const
 
 
 
-Spiral::Spiral()
-: Feature()
-{
-}
 
 
 Spiral::Spiral(VectorPtr p0, VectorPtr axis, ScalarPtr n, ScalarPtr a, ScalarPtr P)
@@ -90,19 +89,21 @@ void Spiral::build()
     setShape ( BRepBuilderAPI_MakeEdge ( crv, crv->FirstParameter(), crv->LastParameter() ) );
 }
 
-void Spiral::insertrule(parser::ISCADParser& ruleset) const
+void Spiral::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Spiral",
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
       ( '(' >> ruleset.r_vectorExpression >> ','
             >> ruleset.r_vectorExpression >> ','
             >> ruleset.r_scalarExpression >> ','
             >> ruleset.r_scalarExpression
             >> (( ',' >> ruleset.r_scalarExpression)|qi::attr(scalarconst(0.0))) >> ')' )
-        [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Spiral>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
-    ))
+                    [ qi::_val = phx::bind(
+                         &Spiral::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+    )
   );
 }
 

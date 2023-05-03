@@ -48,14 +48,11 @@ class Cylinder
 
 public:
     declareType ( "Cylinder" );
-    Cylinder ( );
 
-    static FeaturePtr create ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered );
-    static FeaturePtr create_hollow ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );
+    CREATE_FUNCTION(Cylinder);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

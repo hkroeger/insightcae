@@ -37,8 +37,9 @@ namespace cad {
     
     
 defineType(Torus);
-addToFactoryTable(Feature, Torus);
-
+//addToFactoryTable(Feature, Torus);
+addToStaticFunctionTable(Feature, Torus, insertrule);
+addToStaticFunctionTable(Feature, Torus, ruleDocumentation);
 
 
 size_t Torus::calcHash() const
@@ -53,8 +54,6 @@ size_t Torus::calcHash() const
 
 
 
-Torus::Torus()
-{}
 
 
 
@@ -66,10 +65,6 @@ Torus::Torus(VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d)
 
 
 
-FeaturePtr Torus::create ( VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d )
-{
-    return FeaturePtr(new Torus(p0, axisTimesD, d));
-}
 
 
 
@@ -102,38 +97,39 @@ void Torus::build()
 
 
 
-void Torus::insertrule(parser::ISCADParser& ruleset) const
+void Torus::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Torus",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' 
       >> ruleset.r_vectorExpression >> ',' 
       >> ruleset.r_vectorExpression >> ',' 
       >> ruleset.r_scalarExpression 
       >> ')' ) 
-     [ qi::_val = phx::bind(&Torus::create, qi::_1, qi::_2, qi::_3) ]
+     [ qi::_val = phx::bind(
+                         &Torus::create<VectorPtr, VectorPtr, ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Torus::ruleDocumentation() const
+FeatureCmdInfoList Torus::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Torus",
             "( <vector:p0>, <vector:axisTimesD>, <scala:d> )",
             "Creates a torus around center point p0. The axis is specified by the direction of axisTimesD and the torus diameter by its magnitude. The tube diameter is d."
         )
-    );
+    };
 }
 
 

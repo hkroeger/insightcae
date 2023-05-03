@@ -13,7 +13,6 @@ void PathParameterParser::Data::cppAddHeader(std::set< std::string >& headers) c
 
 std::string PathParameterParser::Data::cppType(const std::string&) const
 {
-//  return "boost::filesystem::path";
   return "std::shared_ptr<insight::PathParameter>";
 }
 

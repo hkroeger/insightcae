@@ -16,18 +16,15 @@ class WireFillet
 
     WireFillet ( FeatureSetPtr vertices, ScalarPtr r );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "WireFillet" );
-    WireFillet ();
+    CREATE_FUNCTION(WireFillet);
 
-    static FeaturePtr create ( FeatureSetPtr vertices, ScalarPtr r );
-
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

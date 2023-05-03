@@ -216,16 +216,26 @@ ResultElementPtr ParameterStudy<BaseAnalysis,var_params>::table
   std::string longDescription,
   const std::string& varp,
   const std::vector<std::string>& res,
-  const std::vector<std::string>* headers
+  const std::vector<std::string>* headers,
+  TableInputType tit
 ) const
 {
   TabularResult::Table tab;
   for( const AnalysisInstance& ai: queue_.processed() )
   {
-    double x = ai.analysis->parameters().getDouble(varp);
-    
     std::vector<double> row;
+
+    double x;
+    if (tit == DoubleInputParameter)
+    {
+        x = ai.analysis->parameters().getDouble(varp);
+    }
+    else if (tit == ScalarResultElement)
+    {
+        x = ai.results->getScalar(varp);
+    }
     row.push_back(x);
+
     for( const std::string& ren: res)
     {
       row.push_back( dynamic_cast<ScalarResult*>(ai.results->at(ren).get())->value() );

@@ -21,8 +21,9 @@ namespace cad {
 
 
 defineType(MaxSurfaceCurvature);
-addToFactoryTable(Feature, MaxSurfaceCurvature);
-
+//addToFactoryTable(Feature, MaxSurfaceCurvature);
+addToStaticFunctionTable(Feature, MaxSurfaceCurvature, insertrule);
+addToStaticFunctionTable(Feature, MaxSurfaceCurvature, ruleDocumentation);
 
 size_t MaxSurfaceCurvature::calcHash() const
 {
@@ -31,10 +32,6 @@ size_t MaxSurfaceCurvature::calcHash() const
   h+=*faces_;
   return h.getHash();
 }
-
-
-MaxSurfaceCurvature::MaxSurfaceCurvature()
-{}
 
 
 
@@ -308,12 +305,6 @@ MaxSurfaceCurvature::MaxSurfaceCurvature(FeatureSetPtr faces)
 
 
 
-FeaturePtr MaxSurfaceCurvature::create(FeatureSetPtr faces)
-{
-    return FeaturePtr(new MaxSurfaceCurvature(faces));
-}
-
-
 
 MaxSurfaceCurvature::operator const TopoDS_Edge& () const
 {
@@ -323,27 +314,28 @@ MaxSurfaceCurvature::operator const TopoDS_Edge& () const
 
 
 
-void MaxSurfaceCurvature::insertrule(parser::ISCADParser& ruleset) const
+void MaxSurfaceCurvature::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "MaxSurfaceCurvature",
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_faceFeaturesExpression >> ')' )
-        [ qi::_val = phx::bind(&MaxSurfaceCurvature::create, qi::_1) ]
+        [ qi::_val = phx::bind(
+                       &MaxSurfaceCurvature::create<FeatureSetPtr>,
+                       qi::_1) ]
 
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList MaxSurfaceCurvature::ruleDocumentation() const
+FeatureCmdInfoList MaxSurfaceCurvature::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "MaxSurfaceCurvature",
@@ -352,7 +344,7 @@ FeatureCmdInfoList MaxSurfaceCurvature::ruleDocumentation() const
 
             "Computes the maximum curvature line on a surface originating from the point of maximum curvature in the selected faces. Returns a compound."
         )
-    );
+    };
 }
 
 

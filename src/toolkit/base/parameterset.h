@@ -68,6 +68,9 @@ public:
 
   ParameterSet& subsetRef();
   virtual const ParameterSet& subset() const =0;
+
+  virtual void merge(const SubParameterSet& other, bool allowInsertion) =0;
+  virtual Parameter* intersection(const SubParameterSet& other) const =0;
 };
 
 
@@ -113,7 +116,16 @@ public:
    * insert values from other, overwrite where possible.
    * return a non-const reference to this PS to anable call chains like PS.merge().merge()...
    */
-  ParameterSet& merge ( const ParameterSet& other );
+  ParameterSet& merge ( const ParameterSet& other, bool allowInsertion=true );
+
+  /**
+   * @brief intersection
+   * construct a ParameterSet which contains only elements
+   * that are present both in this set and "other"
+   * @param other
+   * @return a new ParameterSet with the common elements
+   */
+  ParameterSet intersection(const ParameterSet& other) const;
 
   insight::Parameter& getParameter( std::string path );
 
@@ -209,6 +221,7 @@ public:
 
   virtual void saveToStream(std::ostream& os, const boost::filesystem::path& parentPath, std::string analysisName = std::string() ) const;
   void saveToFile ( const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
+  void saveToString ( std::string& s, const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
   virtual std::string readFromFile ( const boost::filesystem::path& file, const std::string& startAtSubnode="" );
 
 };

@@ -37,8 +37,9 @@ namespace cad {
     
     
 defineType(CurvePattern);
-addToFactoryTable(Feature, CurvePattern);
-
+//addToFactoryTable(Feature, CurvePattern);
+addToStaticFunctionTable(Feature, CurvePattern, insertrule);
+addToStaticFunctionTable(Feature, CurvePattern, ruleDocumentation);
 
 size_t CurvePattern::calcHash() const
 {
@@ -52,9 +53,6 @@ size_t CurvePattern::calcHash() const
 }
 
 
-CurvePattern::CurvePattern(): Compound()
-{}
-
 
   
   
@@ -63,13 +61,6 @@ CurvePattern::CurvePattern(FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, Sca
 {
 }
 
-
-
-
-FeaturePtr CurvePattern::create ( FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n )
-{
-    return FeaturePtr(new CurvePattern(m1, curve, delta, n));
-}
 
 
 
@@ -124,7 +115,7 @@ void CurvePattern::build()
         tr.SetTransformation ( gp_Ax3 ( p, tan, side ) );
         tr.Invert();
 
-        components_[str ( format ( "component%d" ) % ( j+1 ) )] = Transform::create_trsf( m1_, tr );
+        components_[str ( format ( "component%d" ) % ( j+1 ) )] = Transform::create( m1_, tr );
         j++;
     }
 
@@ -137,7 +128,7 @@ void CurvePattern::build()
 
 
 
-void CurvePattern::insertrule(parser::ISCADParser& ruleset) const
+void CurvePattern::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -148,7 +139,9 @@ void CurvePattern::insertrule(parser::ISCADParser& ruleset) const
       ',' >> ruleset.r_solidmodel_expression >> 
       ',' >> ruleset.r_scalarExpression >> 
       ',' >> ruleset.r_scalarExpression >> ')' ) 
-      [ qi::_val = phx::bind(&CurvePattern::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
+      [ qi::_val = phx::bind(
+                         &CurvePattern::create<FeaturePtr, FeaturePtr, ScalarPtr, ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3, qi::_4) ]
       
     ))
   );
@@ -157,10 +150,9 @@ void CurvePattern::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList CurvePattern::ruleDocumentation() const
+FeatureCmdInfoList CurvePattern::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "CurvePattern",
@@ -170,7 +162,7 @@ FeatureCmdInfoList CurvePattern::ruleDocumentation() const
             "Copies the bease feature base into a linear pattern along a curve feature (curve)."
             " The distance between subsequent copies is delta and n copies are created."
         )
-    );
+  };
 }
 
 

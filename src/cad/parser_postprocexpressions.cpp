@@ -28,6 +28,7 @@
 #include "datum.h"
 #include "sketch.h"
 #include "cadpostprocactions.h"
+#include "cadpostprocactions/angle.h"
 
 #include "base/analysis.h"
 #include "parser.h"
@@ -249,6 +250,20 @@ void ISCADParser::createPostProcExpressions()
           >> ')' >> lit("<<") >> '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ')' >> ';' ) // (1) hull and (2) ship
         [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
                     phx::construct<PostprocActionPtr>(new_<Hydrostatics>(qi::_6, qi::_7, qi::_2, qi::_3, qi::_4, qi::_5)))
+        ]
+
+        |
+        ( lit("Distance") >> '(' >> r_identifier >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' >> ';' )
+        [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
+                    phx::construct<PostprocActionPtr>(new_<Distance>(qi::_2, qi::_3)))
+        ]
+        |
+        ( lit("Angle") >> '(' >> r_identifier >> ','
+                              >> r_vectorExpression >> ','
+                              >> r_vectorExpression >> ','
+                              >> r_vectorExpression >> ')' >> ';' )
+        [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
+                    phx::construct<PostprocActionPtr>(new_<Angle>(qi::_2, qi::_3, qi::_4)))
         ]
         ;
     r_postproc.name("postprocessing statement");

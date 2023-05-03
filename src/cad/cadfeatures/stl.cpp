@@ -81,7 +81,10 @@ namespace cad {
 
 
 defineType(STL);
-addToFactoryTable(Feature, STL);
+//addToFactoryTable(Feature, STL);
+addToStaticFunctionTable(Feature, STL, insertrule);
+addToStaticFunctionTable(Feature, STL, ruleDocumentation);
+
 
 
 size_t STL::calcHash() const
@@ -112,8 +115,6 @@ size_t STL::calcHash() const
 }
 
 
-STL::STL()
-{}
 
 
 
@@ -133,24 +134,6 @@ STL::STL(GeometrySpecification geometry,
 
 
 
-
-FeaturePtr STL::create
-(
-    GeometrySpecification geometry
-)
-{
-  return FeaturePtr(new STL(geometry));
-}
-
-
-
-
-FeaturePtr STL::create_trsf(
-    GeometrySpecification geometry,
-    TransformationSpecification transform )
-{
-  return FeaturePtr(new STL(geometry,transform));
-}
 
 
 
@@ -316,25 +299,30 @@ void STL::build()
 
 
 
-void STL::insertrule(parser::ISCADParser& ruleset) const
+void STL::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
       (
         "STL",
-        typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
-           ( '(' >> ruleset.r_path >> ')' ) [ qi::_val = phx::bind(&STL::create, qi::_1) ]
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
+           ( '(' >> ruleset.r_path >> ')' )
+                  [ qi::_val = phx::bind(
+                       &STL::create<GeometrySpecification>,
+                       qi::_1) ]
             |
-           ( '(' >> ruleset.r_path >> ',' >> ruleset.r_solidmodel_expression >> ')' ) [ qi::_val = phx::bind(&STL::create_trsf, qi::_1, qi::_2) ]
-          ))
+           ( '(' >> ruleset.r_path >> ',' >> ruleset.r_solidmodel_expression >> ')' )
+                  [ qi::_val = phx::bind(
+                       &STL::create<GeometrySpecification, TransformationSpecification>,
+                       qi::_1, qi::_2) ]
+          )
       );
 }
 
 
 
-FeatureCmdInfoList STL::ruleDocumentation() const
+FeatureCmdInfoList STL::ruleDocumentation()
 {
-  return boost::assign::list_of
-      (
+  return {
         FeatureCmdInfo
         (
           "STL",
@@ -344,7 +332,7 @@ FeatureCmdInfoList STL::ruleDocumentation() const
           "Import a triangulated surface for display. The result can only be used for display, no operations can be performed on it."
           "Transformations can be reused from other transform features. The name of another transformed feature can be provided optionally."
           )
-        );
+        };
 }
 
 

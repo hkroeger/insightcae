@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>icon_fit_all.svg</file>
+        <file>icon_plusx.svg</file>
+        <file>icon_plusz.svg</file>
+        <file>icon_plusy.svg</file>
+        <file>icon_minusz.svg</file>
+        <file>icon_minusy.svg</file>
+        <file>icon_minusx.svg</file>
+        <file>icon_sketch_finish.svg</file>
+        <file>icon_sketch_drawline.svg</file>
+        <file>icon_sketch_solve.svg</file>
+    </qresource>
+    <qresource prefix="/"/>
+</RCC>

@@ -70,7 +70,6 @@ QVBoxLayout* IQPropertyLibrarySelectionParameter::populateEditControls(
   );
   layout->addWidget(apply);
 
-  layout->addStretch();
 
   return layout;
 }

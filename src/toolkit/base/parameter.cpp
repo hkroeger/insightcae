@@ -120,8 +120,11 @@ bool Parameter::isDifferent(const Parameter &) const
 int Parameter::order() const { return order_; }
 
 
-rapidxml::xml_node<>* Parameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path) const
+rapidxml::xml_node<>* Parameter::appendToNode(
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path ) const
 {
     using namespace rapidxml;
     xml_node<>* child = doc.allocate_node(node_element, doc.allocate_string(this->type().c_str()));

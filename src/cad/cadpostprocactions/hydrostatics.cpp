@@ -81,7 +81,7 @@ void Hydrostatics::build()
   // write surface for debug
   TopoDS_Shape issh=static_cast<const TopoDS_Shape&>(*csf);
   
-  std::cout<<issh<<std::endl;
+//  std::cout<<issh<<std::endl;
   
   TopExp_Explorer ex(issh, TopAbs_FACE);
   TopoDS_Face f=TopoDS::Face(ex.Current());

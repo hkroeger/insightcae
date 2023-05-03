@@ -236,4 +236,71 @@ const ParameterSet& SelectableSubsetParameter::subset() const
   return (*this)();
 }
 
+void SelectableSubsetParameter::merge(
+    const SubParameterSet &othersps,
+    bool allowInsertion)
+{
+  auto &other=
+      dynamic_cast<const SelectableSubsetParameter&>(othersps);
+  for ( auto& it: other.value_)
+  {
+    auto myit = this->value_.find(it.first);
+    if (myit ==value_.end())
+    {
+      if (allowInsertion)
+      {
+          this->value_.insert(
+              {
+               it.first,
+                  std::unique_ptr<ParameterSet>(
+                    it.second->cloneParameterSet()
+                      )
+              });
+      }
+    }
+    else
+    {
+      myit->second->merge(*it.second, allowInsertion);
+    }
+  }
+  if (this->value_.find(other.selection_)!=value_.end())
+  {
+    this->selection_ = other.selection_;
+  }
+}
+
+Parameter *SelectableSubsetParameter::intersection(const SubParameterSet &othersps) const
+{
+  auto *np=new SelectableSubsetParameter(
+      description_.simpleLatex(),
+      isHidden_, isExpert_, isNecessary_, order_);
+
+  auto &other=
+      dynamic_cast<const SelectableSubsetParameter&>(othersps);
+  for ( auto& it: other.value_)
+  {
+    auto myit = this->value_.find(it.first);
+    if (myit !=value_.end())
+    {
+      np->value_.insert({
+          it.first,
+          std::unique_ptr<ParameterSet>(
+              myit->second->intersection(*it.second).cloneParameterSet()
+              )
+          });
+    }
+  }
+
+  np->selection_ = np->value_.begin()->first;
+  if (
+      other.selection_==selection_
+      &&
+      np->value_.find(other.selection_)!=np->value_.end())
+  {
+    np->selection_ = other.selection_;
+  }
+
+  return np;
+}
+
 } // namespace insight

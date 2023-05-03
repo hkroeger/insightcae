@@ -178,6 +178,9 @@ void ISCADParser::createVectorExpressions()
         ( lit("circcenter") >> '(' >> r_edgeFeaturesExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<CircleEdgeCenterCoords>(qi::_1)) ]
         |
+        ( lit("xsec_cc") >> '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ')' )
+        [ _val = construct<VectorPtr>(new_<XsecCurveCurve>(qi::_1, qi::_2)) ]
+        |
         ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" )
         [ _val = phx::construct<VectorPtr>(phx::new_<VectorFromComponents>(qi::_1, qi::_2, qi::_3)) ]
         //| ( r_vectorExpression >> '\'') [ _val = trans_(qi::_1) ]

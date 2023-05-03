@@ -23,7 +23,9 @@ set(insightcad_SOURCES
   parser_scalarexpressions.cpp
   parser_vectorexpressions.cpp
   datum.cpp 
-  sketch.cpp 
+  constrainedsketchgeometry.h constrainedsketchgeometry.cpp
+  sketch.h sketch.cpp
+  constrainedsketchgrammar.h constrainedsketchgrammar.cpp
   geotest.cpp 
   cadparameter.cpp
   cadfeature.cpp 
@@ -43,6 +45,7 @@ set(insightcad_SOURCES
   polytriangulationnodeiterator.h polytriangulationnodeiterator.cpp
   cademesh.h cademesh.cpp
   ivtkoccshape.h ivtkoccshape.cpp
+  cadgeometryparameter.h cadgeometryparameter.cpp
 )
 
 if (OCC_VERSION_MAJOR LESS 7)
@@ -116,5 +119,4 @@ install(TARGETS insightcad LIBRARY DESTINATION lib)
 
 add_pybindings(cad "cad.i" insightcad)
 
-add_subdirectory(insightcad_gui)
 add_subdirectory(iscad)

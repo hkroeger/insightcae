@@ -35,17 +35,18 @@ class Spiral
   ScalarPtr a_; // spiral factor
   ScalarPtr P_; // pitch
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
+
+  Spiral(VectorPtr p0, VectorPtr axis, ScalarPtr n, ScalarPtr a, ScalarPtr P);
 
 public:
   declareType("Spiral");
-  Spiral();
-  Spiral(VectorPtr p0, VectorPtr axis, ScalarPtr n, ScalarPtr a, ScalarPtr P);
+  CREATE_FUNCTION(Spiral);
 
+  static void insertrule(parser::ISCADParser& ruleset);
 
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual bool isSingleEdge() const { return true; }
+  bool isSingleEdge() const override { return true; }
 };
 
 }

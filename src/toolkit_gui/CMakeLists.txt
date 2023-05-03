@@ -8,8 +8,95 @@ find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 find_package(Qt5Network CONFIG REQUIRED)
 #find_package(Qt5Test CONFIG REQUIRED)
+find_package(OCC REQUIRED)
+find_package(VTK
+   COMPONENTS
+   vtkGUISupportQt vtkRenderingLabel
+   NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH
+   HINTS ${VTK_ONSCREEN_DIR}
+)
 
 set(toolkit_gui_SRCS 
+
+ iscadmetatyperegistrator.cpp
+ iscadmetatyperegistrator.h
+
+ dialogs/defineplanedialog.h dialogs/defineplanedialog.cpp dialogs/defineplanedialog.ui
+
+ iqiscadmodelgenerator.h iqiscadmodelgenerator.cpp
+ iqiscadmodelrebuilder.h iqiscadmodelrebuilder.cpp
+ iqiscadscriptmodelgenerator.h iqiscadscriptmodelgenerator.cpp
+
+ iqcaditemmodel.h
+ iqcaditemmodel.cpp
+ iqcaditemmodel_contextmenu.cpp
+ iqcaditemmodel_featurecreation.cpp
+
+ iqpickinteractorstyle.h iqpickinteractorstyle.cpp
+
+ iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
+
+ iqvtkcadmodel3dviewerrotation.h iqvtkcadmodel3dviewerrotation.cpp
+ iqvtkcadmodel3dviewerpanning.h iqvtkcadmodel3dviewerpanning.cpp
+ iqvtkcadmodel3dviewer_highlightitem.cpp
+ iqvtkcadmodel3dviewer_subshapeselection.cpp
+ iqvtkcadmodel3dviewer_clippingplanes.cpp
+ iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
+
+ iqvtkviewerstate.h iqvtkviewerstate.cpp
+ iqvtkconstrainedsketcheditor.h iqvtkconstrainedsketcheditor.cpp
+
+ iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h
+ iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.cpp
+ iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.cpp
+
+ iqvtkviewwidgetinsertids.h iqvtkviewwidgetinsertids.cpp
+ iqcadtransformationcommand.h iqcadtransformationcommand.cpp
+ iqpointpickcommand.h iqpointpickcommand.cpp
+ iqvectordirectioncommand.h iqvectordirectioncommand.cpp
+ iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
+
+ cadfeaturetransient.cpp
+ cadfeaturetransient.h
+ pointertransient.cpp
+ pointertransient.h
+# qoccviewercontext.cpp
+# qoccviewercontext.h
+ occtwindow.cpp
+ occtwindow.h
+ occguitools.h occguitools.cpp
+ viewwidgetaction.h
+ viewwidgetaction.cpp
+ viewwidgetinsertids.h
+ viewwidgetinsertids.cpp
+ navigationmanager.h
+ navigationmanager.cpp
+ qoccviewwidget.cpp
+ qoccviewwidget.h
+ viewstate.cpp
+ viewstate.h
+
+ qvariableitem.cpp
+ qvariableitem.h
+ qmodelstepitem.cpp
+ qmodelstepitem.h
+ qdatumitem.cpp
+ qdatumitem.h
+ qevaluationitem.cpp
+ qevaluationitem.h
+
+ qmodeltree.cpp
+ qmodeltree.h
+
+
+ postprocactionvisualizer.h postprocactionvisualizer.cpp
+ postprocactionvisualizers/hydrostaticsvisualizer.cpp
+ postprocactionvisualizers/distancevisualizer.cpp
+ postprocactionvisualizers/anglevisualizer.cpp
+ postprocactionvisualizers/solidpropertiesvisualizer.cpp
+
+ insightcae_gui.qrc
+
     parametereditorwidget.cpp
     iqoccparametersetdisplay.h iqoccparametersetdisplay.cpp
     iqvtkparametersetdisplay.h iqvtkparametersetdisplay.cpp
@@ -34,6 +121,7 @@ set(toolkit_gui_SRCS
     iqparameters/iqarrayelementparameter.cpp iqparameters/iqarrayelementparameter.h
     iqparameters/iqpropertylibraryselectionparameter.cpp iqparameters/iqpropertylibraryselectionparameter.h
     iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
+    iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
 
     iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
 
@@ -121,10 +209,13 @@ generate_export_header(toolkit_gui)
 target_compile_definitions(toolkit_gui PRIVATE toolkit_gui_EXPORTS)
 
 target_link_libraries(toolkit_gui
- toolkit toolkit_cad insightcad_gui toolkit_remote
+ toolkit toolkit_cad insightcad toolkit_remote
  Qt5::Widgets Qt5::Charts Qt5::Network
  ${Boost_LIBRARIES}
- )
+ ${OCC_GUI_LIBRARIES}
+ ${DXFLIB_LIBRARIES}
+ ${VTK_LIBRARIES}
+)
 
 target_include_directories(toolkit_gui
   PUBLIC ${QT_INCLUDES}

@@ -44,16 +44,16 @@ class SpurGear
 
 public:
     declareType ( "SpurGear" );
-    SpurGear ();
 
-    static FeaturePtr create ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
+    CREATE_FUNCTION(SpurGear);
 
     operator const TopoDS_Face& () const;
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
+
+
 
 
 class BevelGear
@@ -71,15 +71,13 @@ class BevelGear
 
 public:
     declareType ( "BevelGear" );
-    BevelGear ();
 
-    static FeaturePtr create ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
+    CREATE_FUNCTION(BevelGear);
 
     operator const TopoDS_Face& () const;
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 }

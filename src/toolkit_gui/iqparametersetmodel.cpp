@@ -1,9 +1,12 @@
 #include <QDebug>
 #include <QLayout>
+#include <QPushButton>
 
 #include "iqparametersetmodel.h"
 #include "iqparameter.h"
 #include "iqparameters/iqarrayelementparameter.h"
+
+#include "cadparametersetvisualizer.h"
 
 
 std::pair<QString, const insight::Parameter *>
@@ -350,6 +353,28 @@ QList<int> IQParameterSetModel::pathFromIndex(const QModelIndex &i) const
   return p;
 }
 
+QModelIndex IQParameterSetModel::indexFromParameterPath(const std::string &pp) const
+{
+    std::vector<std::string> splitPath;
+    boost::split(splitPath, pp, boost::is_any_of("/"));
+
+    QModelIndex ii;
+    QList<IQParameter*> paramList=rootParameters_;
+    for (int si=0; si<splitPath.size(); ++si)
+    {
+        for (int j=0; j<paramList.size(); ++j)
+        {
+            if (paramList[j]->name().toStdString() == splitPath[si])
+            {
+                paramList=*paramList[j];
+                ii=index(j, 0, ii);
+                break;
+            }
+        }
+    }
+    return ii;
+}
+
 
 
 
@@ -405,7 +430,8 @@ const arma::mat * const IQParameterSetModel::getVectorBasePoint(const QString &p
 void IQParameterSetModel::handleClick(
         const QModelIndex &index,
         QWidget* editControlsContainer,
-        IQCADModel3DViewer *vri )
+        IQCADModel3DViewer *vri,
+        insight::CADParameterSetVisualizer *viz )
 {
   if (index.isValid())
   {
@@ -427,8 +453,36 @@ void IQParameterSetModel::handleClick(
       }
 
       // create new controls
-      p->populateEditControls(this, index, editControlsContainer, vri);
+      auto l = p->populateEditControls(this, index, editControlsContainer, vri);
+
+
+      if (viz)
+      {
+          auto cmdl=new QHBoxLayout;
+          auto acts = viz->createGUIActions(p->path().toStdString(), this, editControlsContainer, vri);
+          for (auto& act: acts)
+          {
+              auto btn = new QPushButton(act.icon, act.label);
+              connect(btn, &QPushButton::clicked, btn,
+                      act.action);
+              cmdl->addWidget(btn);
+          }
+          l->addLayout(cmdl);
+      }
+
+      l->addStretch();
     }
   }
 }
 
+
+IQParameterSetModel::ParameterEditor::ParameterEditor(IQParameterSetModel& psm, const std::string &parameterPath)
+    : model_(psm),
+      index_( psm.indexFromParameterPath(parameterPath) ),
+      parameter( psm.parameterRef(index_) )
+{}
+
+IQParameterSetModel::ParameterEditor::~ParameterEditor()
+{
+    model_.notifyParameterChange(index_);
+}

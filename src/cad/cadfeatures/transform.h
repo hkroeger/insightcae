@@ -51,27 +51,18 @@ class Transform
     Transform ( FeaturePtr m1, FeaturePtr other );
     Transform ( FeaturePtr m1, const gp_Trsf& trsf );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Transform" );
+    CREATE_FUNCTION(Transform);
 
-    Transform ();
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
-    static FeaturePtr create ( FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf );
-    static FeaturePtr create_rotate ( FeaturePtr m1, VectorPtr rot, VectorPtr rotorg );
-    static FeaturePtr create_translate ( FeaturePtr m1, VectorPtr trans );
-    static FeaturePtr create_scale ( FeaturePtr m1, ScalarPtr scale );
-    static FeaturePtr create_copy ( FeaturePtr m1, FeaturePtr other );
-    static FeaturePtr create_trsf ( FeaturePtr m1, const gp_Trsf& trsf );
-
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
-
-    virtual bool isTransformationFeature() const;
-    virtual gp_Trsf transformation() const;
+    bool isTransformationFeature() const override;
+    gp_Trsf transformation() const override;
 
     static gp_Trsf calcTrsfFromOtherTransformFeature(FeaturePtr other);
 };

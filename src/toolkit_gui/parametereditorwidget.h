@@ -80,6 +80,14 @@ protected:
 
 public:
 
+    ParameterEditorWidget
+    (
+        QWidget* parent,
+        insight::ParameterSetVisualizerPtr viz = insight::ParameterSetVisualizerPtr(),
+        insight::ParameterSet_ValidatorPtr vali = insight::ParameterSet_ValidatorPtr(),
+        ParameterSetDisplay* display = nullptr
+    );
+
     /**
      * @brief ParameterEditorWidget
      * create editor widget and connect with existing CAD display
@@ -101,7 +109,15 @@ public:
         ParameterSetDisplay* display = nullptr
     );
 
+
+
     bool hasVisualizer() const;
+
+    void clearParameterSet();
+    void resetParameterSet(
+            insight::ParameterSet& pset,
+            const insight::ParameterSet& default_pset
+            );
 
     inline IQParameterSetModel* model() const { return model_; }
     

@@ -86,17 +86,10 @@ private:
 
 public:
   declareType("Bar");
-  Bar();
-  
-  static FeaturePtr create(
-    EndPoints endPts,
-    FeaturePtr xsec, VectorPtr vert,
-    ScalarPtr ext0, ScalarPtr ext1,
-    ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
-    ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
-  );
 
-  static FeaturePtr create_condensed
+  CREATE_FUNCTION(Bar);
+
+  static std::shared_ptr<Bar> create_condensed
   (
     VectorPtr p0, VectorPtr p1, 
     FeaturePtr xsec, VectorPtr vert,
@@ -104,7 +97,7 @@ public:
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
   );
 
-  static FeaturePtr create_derived
+  static std::shared_ptr<Bar> create_derived
   (
     FeaturePtr skel,
     FeaturePtr xsec, VectorPtr vert,
@@ -114,9 +107,9 @@ public:
 
   void operator=(const Bar& o);
 
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual FeatureCmdInfoList ruleDocumentation() const;
-  
+  static void insertrule(parser::ISCADParser& ruleset);
+  static FeatureCmdInfoList ruleDocumentation();
+
 };
 
 

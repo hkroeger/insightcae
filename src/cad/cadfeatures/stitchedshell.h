@@ -32,16 +32,17 @@ class StitchedShell
   FeatureSetPtr faces_;
   ScalarPtr tol_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
   
+  StitchedShell(FeatureSetPtr faces, ScalarPtr tol=scalarconst(1e-3) );
+
 public:
   declareType("StitchedShell");
-  StitchedShell();
-  StitchedShell(FeatureSetPtr faces, ScalarPtr tol=scalarconst(1e-3) );
+  CREATE_FUNCTION(StitchedShell);
   
-  virtual FeatureCmdInfoList ruleDocumentation() const;
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  static FeatureCmdInfoList ruleDocumentation();
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 }

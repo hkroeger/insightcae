@@ -69,6 +69,13 @@ void CADParameterSetVisualizer::recreateVisualizationElements()
 }
 
 
+CADParameterSetVisualizer::GUIActionList CADParameterSetVisualizer::createGUIActions(
+        const std::string&, IQParameterSetModel*, QObject *, IQCADModel3DViewer* )
+{
+    return {};
+}
+
+
 
 CADParameterSetVisualizer::CADParameterSetVisualizer()
     : model_(nullptr),

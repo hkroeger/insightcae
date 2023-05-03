@@ -15,6 +15,10 @@ class IQSelectableSubsetParameter;
 class IQCADModel3DViewer;
 template<class IQBaseParameter, const char* N> class IQArrayElementParameter;
 
+namespace insight {
+class CADParameterSetVisualizer;
+}
+
 class TOOLKIT_GUI_EXPORT IQParameterSetModel
     : public QAbstractItemModel
 {
@@ -59,6 +63,16 @@ public:
 
   void contextMenu(QWidget* pw, const QModelIndex& index, const QPoint& p);
 
+  class ParameterEditor
+  {
+      IQParameterSetModel& model_;
+      const QModelIndex index_;
+  public:
+      insight::Parameter& parameter;
+      ParameterEditor(IQParameterSetModel& psm, const std::string& parameterPath);
+      ~ParameterEditor();
+  };
+  friend class ParameterContext;
 
   const insight::ParameterSet& getParameterSet() const;
 
@@ -66,6 +80,7 @@ public:
   void notifyParameterChange(const QModelIndex &index);
 
   QList<int> pathFromIndex(const QModelIndex& i) const;
+  QModelIndex indexFromParameterPath(const std::string& pp) const;
   QModelIndex indexFromPath(const QList<int>& p) const;
 
   void addGeometryToSpatialTransformationParameter(
@@ -82,7 +97,9 @@ public:
 public Q_SLOTS:
   void clearParameters();
   void resetParameters(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps);
-  void handleClick(const QModelIndex &index, QWidget* editControlsContainer, IQCADModel3DViewer *vri=nullptr);
+  void handleClick(const QModelIndex &index, QWidget* editControlsContainer,
+                   IQCADModel3DViewer *vri=nullptr,
+                   insight::CADParameterSetVisualizer *viz = nullptr);
 
  Q_SIGNALS:
   void parameterSetChanged();

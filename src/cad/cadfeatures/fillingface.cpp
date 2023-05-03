@@ -34,7 +34,10 @@ namespace cad {
     
 
 defineType(FillingFace);
-addToFactoryTable(Feature, FillingFace);
+//addToFactoryTable(Feature, FillingFace);
+addToStaticFunctionTable(Feature, FillingFace, insertrule);
+addToStaticFunctionTable(Feature, FillingFace, ruleDocumentation);
+
 
 
 size_t FillingFace::calcHash() const
@@ -55,9 +58,6 @@ size_t FillingFace::calcHash() const
 }
 
 
-FillingFace::FillingFace ()
-{}
-
 
 
 
@@ -73,21 +73,6 @@ FillingFace::FillingFace ( FeatureSetPtr es1, FeatureSetPtr es2 )
     : es1_ ( es1 ), es2_ ( es2 )
 {}
 
-
-
-
-FeaturePtr FillingFace::create ( FeaturePtr e1, FeaturePtr e2 )
-{
-    return FeaturePtr(new FillingFace(e1, e2));
-}
-
-
-
-
-FeaturePtr FillingFace::create_set ( FeatureSetPtr es1, FeatureSetPtr es2 )
-{
-    return FeaturePtr(new FillingFace(es1, es2));
-}
 
 
 
@@ -166,30 +151,33 @@ FillingFace::operator const TopoDS_Face& () const
 
 
 
-void FillingFace::insertrule ( parser::ISCADParser& ruleset ) const
+void FillingFace::insertrule ( parser::ISCADParser& ruleset )
 {
     ruleset.modelstepFunctionRules.add
     (
         "FillingFace",
-        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                     ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
-                    [ qi::_val = phx::bind(&FillingFace::create, qi::_1, qi::_2 ) ]
+                    [ qi::_val = phx::bind(
+                         &FillingFace::create<FeaturePtr, FeaturePtr>,
+                         qi::_1, qi::_2 ) ]
                     |
                     ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_edgeFeaturesExpression >> ')' )
-                    [ qi::_val = phx::bind(&FillingFace::create_set, qi::_1, qi::_2 ) ]
+                    [ qi::_val = phx::bind(
+                         &FillingFace::create<FeatureSetPtr, FeatureSetPtr>,
+                         qi::_1, qi::_2 ) ]
 
-                ) )
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList FillingFace::ruleDocumentation() const
+FeatureCmdInfoList FillingFace::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "FillingFace",
@@ -198,7 +186,7 @@ FeatureCmdInfoList FillingFace::ruleDocumentation() const
          
             "Creates an interpolated surface between two edges. The two edges e0 and e1 can be given either as edge features or edge selection sets."
         )
-    );
+    };
 }
 
 

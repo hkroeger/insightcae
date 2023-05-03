@@ -14,8 +14,8 @@ class Tongue
   VectorPtr direction_, insidePt_;
   ScalarPtr t_, w_, ovl_, delta_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
   Tongue(
       FeaturePtr spine,
@@ -29,21 +29,10 @@ class Tongue
 
 public:
   declareType("Tongue");
-  Tongue();
+  CREATE_FUNCTION(Tongue);
 
-  static FeaturePtr create(
-      FeaturePtr spine,
-      VectorPtr direction,
-      VectorPtr insidePt,
-      ScalarPtr t,
-      ScalarPtr w,
-      ScalarPtr ovl,
-      ScalarPtr delta
-  );
-
-
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual FeatureCmdInfoList ruleDocumentation() const;
+  static void insertrule(parser::ISCADParser& ruleset);
+  static FeatureCmdInfoList ruleDocumentation();
 };
 
 } // namespace cad

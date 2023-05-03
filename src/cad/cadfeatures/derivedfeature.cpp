@@ -38,15 +38,11 @@ namespace cad
 defineType(DerivedFeature);
 
 
-DerivedFeature::DerivedFeature()
-: Feature()
-{}
 
 DerivedFeature::DerivedFeature(ConstFeaturePtr basefeat)
 : basefeat_(basefeat)
-{
+{}
 
-}
 
 double DerivedFeature::density() const 
 { 

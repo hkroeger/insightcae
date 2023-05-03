@@ -12,7 +12,10 @@ namespace insight {
 namespace cad {
 
 defineType(Tongue);
-addToFactoryTable(Feature, Tongue);
+//addToFactoryTable(Feature, Tongue);
+addToStaticFunctionTable(Feature, Tongue, insertrule);
+addToStaticFunctionTable(Feature, Tongue, ruleDocumentation);
+
 
 size_t Tongue::calcHash() const
 {
@@ -26,6 +29,8 @@ size_t Tongue::calcHash() const
   h+=delta_->value();
   return h.getHash();
 }
+
+
 
 void Tongue::build()
 {
@@ -107,31 +112,15 @@ Tongue::Tongue(
 }
 
 
-Tongue::Tongue()
-{
-}
-
-FeaturePtr Tongue::create(
-    FeaturePtr spine,
-    VectorPtr direction,
-    VectorPtr insidePt,
-    ScalarPtr t,
-    ScalarPtr w,
-    ScalarPtr ovl,
-    ScalarPtr delta
-)
-{
-   return FeaturePtr(new Tongue(spine, direction, insidePt, t, w, ovl, delta));
-}
 
 
-void Tongue::insertrule(parser::ISCADParser& ruleset) const
+
+void Tongue::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
       "Tongue",
-      typename parser::ISCADParser::ModelstepRulePtr(
-          new typename parser::ISCADParser::ModelstepRule(
+      std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                   ( '('
                     >> ruleset.r_solidmodel_expression >> ',' // 1
@@ -142,20 +131,21 @@ void Tongue::insertrule(parser::ISCADParser& ruleset) const
                     >> ruleset.r_scalarExpression >> ',' // 6
                     >> ruleset.r_scalarExpression // 7
                     >> ')' )
-                  [ qi::_val = phx::bind(&Tongue::create,
+                  [ qi::_val = phx::bind(
+                           &Tongue::create<FeaturePtr, VectorPtr, VectorPtr,
+                                       ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
                                    qi::_1, qi::_2,
                                    qi::_3, qi::_4, qi::_5,
                                    qi::_6, qi::_7
                                ) ]
 
-              ))
+              )
   );
 }
 
-FeatureCmdInfoList Tongue::ruleDocumentation() const
+FeatureCmdInfoList Tongue::ruleDocumentation()
 {
-  return boost::assign::list_of
-  (
+  return {
       FeatureCmdInfo
       (
           "Tongue",
@@ -164,7 +154,7 @@ FeatureCmdInfoList Tongue::ruleDocumentation() const
 
           "Creates a tongue extension along a section curve between two surface parts."
       )
-  );
+  };
 }
 
 } // namespace cad

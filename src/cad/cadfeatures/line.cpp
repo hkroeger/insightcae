@@ -22,6 +22,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
+#include "sketch.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -38,8 +40,11 @@ namespace cad
     
     
 defineType(Line);
-addToFactoryTable(Feature, Line);
+//addToFactoryTable(Feature, Line);
+addToStaticFunctionTable(Feature, Line, insertrule);
+addToStaticFunctionTable(Feature, Line, ruleDocumentation);
 
+addToStaticFunctionTable(ConstrainedSketchEntity, Line, addParserRule);
 
 
 size_t Line::calcHash() const
@@ -53,31 +58,67 @@ size_t Line::calcHash() const
 }
 
 
-Line::Line()
-: Feature()
-{
-}
-
-
-
 
 Line::Line(VectorPtr p0, VectorPtr p1, bool second_is_dir)
 : p0_(p0), p1_(p1),
   second_is_dir_(second_is_dir)
+{}
+
+
+VectorPtr Line::start() const
 {
+    return p0_;
 }
 
-
-
-FeaturePtr Line::create ( VectorPtr p0, VectorPtr p1 )
+VectorPtr Line::end() const
 {
-    return FeaturePtr(new Line(p0, p1, false));
+    return p1_;
 }
 
-FeaturePtr Line::create_dir ( VectorPtr p0, VectorPtr p1 )
+void Line::scaleSketch(double scaleFactor)
+{}
+
+
+
+void Line::generateScriptCommand(
+    ConstrainedSketchScriptBuffer &script,
+    const std::map<const ConstrainedSketchEntity*, int> &entityLabels ) const
 {
-    return FeaturePtr(new Line(p0, p1, true));
+    int myLabel=entityLabels.at(this);
+    script.insertCommandFor(
+        myLabel,
+        type() + "("
+            + lexical_cast<std::string>(myLabel)+", "
+            + pointSpec(p0_, script, entityLabels)
+            + ", "
+            + pointSpec(p1_, script, entityLabels)
+            + parameterString()
+            + ")"
+        );
 }
+
+void Line::addParserRule(ConstrainedSketchGrammar &ruleset)
+{
+    namespace qi=boost::spirit::qi;
+    ruleset.entityRules.add
+        (
+            typeName,
+            ( '('
+             > qi::int_ > ','
+             > ruleset.r_point > ','
+             > ruleset.r_point
+             > ruleset.r_parameters >
+             ')'
+            )
+                [ qi::_val = phx::bind(
+                     &Line::create<VectorPtr, VectorPtr, bool>, qi::_2, qi::_3, false),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
+                 phx::insert(
+                     phx::ref(ruleset.labeledEntities),
+                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
+            );
+}
+
 
 
 
@@ -117,7 +158,8 @@ void Line::build()
 
 
 
-void Line::insertrule(parser::ISCADParser& ruleset) const
+
+void Line::insertrule(parser::ISCADParser& ruleset)
 {
   typedef
     qi::rule<
@@ -132,10 +174,10 @@ void Line::insertrule(parser::ISCADParser& ruleset) const
   auto *rule = new LineRule(
       '(' > ruleset.r_vectorExpression[qi::_a=qi::_1] > ',' > (
       ruleset.r_vectorExpression
-          [ qi::_val = phx::bind(&Line::create, qi::_a, qi::_1) ]
+              [ qi::_val = phx::bind(&Line::create<VectorPtr, VectorPtr, bool>, qi::_a, qi::_1, false) ]
       |
       ( (qi::lit("dir")|qi::lit("direction")) > ruleset.r_vectorExpression )
-          [ qi::_val = phx::bind(&Line::create_dir, qi::_a, qi::_1) ]
+              [ qi::_val = phx::bind(&Line::create<VectorPtr, VectorPtr, bool>, qi::_a, qi::_1, true) ]
        ) > ')'
   );
   ruleset.addAdditionalRule(rule);
@@ -150,10 +192,9 @@ void Line::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList Line::ruleDocumentation() const
+FeatureCmdInfoList Line::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Line",
@@ -162,28 +203,7 @@ FeatureCmdInfoList Line::ruleDocumentation() const
          
             "Creates a line between point p0 and p1."
         )
-    );
-}
-
-
-
-bool Line::isSingleEdge() const
-{
-    return true;
-}
-
-
-bool Line::isSingleCloseWire() const
-{
-  return false;
-}
-
-
-
-
-bool Line::isSingleOpenWire() const
-{
-  return true;
+    };
 }
 
 

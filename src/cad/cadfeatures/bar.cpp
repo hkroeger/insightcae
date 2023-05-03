@@ -46,7 +46,7 @@ namespace cad {
 
   
 defineType(Bar);
-addToFactoryTable(Feature, Bar);
+//addToFactoryTable(Feature, Bar);
 
 
 size_t Bar::calcHash() const
@@ -163,7 +163,7 @@ void Bar::build()
             )
         );
         
-        auto xsect=Transform::create_trsf(xsec_, tr.Inverted());
+        auto xsect=Transform::create(xsec_, tr.Inverted());
         providedSubshapes_["xsec"]=xsect;
         providedSubshapes_["spine"]=Line::create(matconst(p0), matconst(p1));
         TopoDS_Shape xsecs = *xsect;
@@ -224,11 +224,6 @@ void Bar::build()
 
 
 
-Bar::Bar()
-: Feature()
-{}
-
-
 
 
 Bar::Bar
@@ -275,32 +270,11 @@ Bar::Bar
 
 
 
-FeaturePtr Bar::create
-(
-    EndPoints endPts,
-    FeaturePtr xsec, VectorPtr vert,
-    ScalarPtr ext0, ScalarPtr ext1,
-    ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
-    ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
-)
-{
-    return FeaturePtr
-           (
-               new Bar
-               (
-                   endPts,
-                   xsec, vert,
-                   ext0, ext1,
-                   miterangle0_vert, miterangle1_vert,
-                   miterangle0_hor, miterangle1_hor
-               )
-           );
-}
 
 
 
 
-FeaturePtr Bar::create_condensed
+std::shared_ptr<Bar> Bar::create_condensed
 (
     VectorPtr p0, VectorPtr p1,
     FeaturePtr xsec, VectorPtr vert,
@@ -308,9 +282,7 @@ FeaturePtr Bar::create_condensed
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
 )
 {
-    return FeaturePtr
-           (
-               new Bar
+    return std::shared_ptr<Bar>( new Bar
                (
                    std::make_pair(p0, p1),
                    xsec, vert,
@@ -321,7 +293,7 @@ FeaturePtr Bar::create_condensed
 }
 
 
-FeaturePtr Bar::create_derived
+std::shared_ptr<Bar> Bar::create_derived
 (
     FeaturePtr skel,
     FeaturePtr xsec, VectorPtr vert,
@@ -329,9 +301,7 @@ FeaturePtr Bar::create_derived
     const EndPointMod& epm1
 )
 {
-    return FeaturePtr
-           (
-               new Bar
+    return std::shared_ptr<Bar>( new Bar
                (
                    skel,
                    xsec, vert,
@@ -342,8 +312,10 @@ FeaturePtr Bar::create_derived
                    boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>
                     {epm1.ext, epm1.miterAngleVert, epm1.miterAngleHorz}
                )
-           );
+            );
 }
+
+
 
 void Bar::operator=(const Bar& o)
 {
@@ -398,8 +370,11 @@ void Bar::operator=(const Bar& o)
  * * "L": length of the bar axis
  */
 
+addToStaticFunctionTable(Feature, Bar, insertrule);
+addToStaticFunctionTable(Feature, Bar, ruleDocumentation);
 
-void Bar::insertrule(parser::ISCADParser& ruleset) const
+
+void Bar::insertrule(parser::ISCADParser& ruleset)
 {
     typedef
     qi::rule<
@@ -466,10 +441,9 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
     );
 }
 
-FeatureCmdInfoList Bar::ruleDocumentation() const
+FeatureCmdInfoList Bar::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Bar",
@@ -487,7 +461,7 @@ FeatureCmdInfoList Bar::ruleDocumentation() const
             "The end points can optionally be shifted along the bar axis by offsets ext0 and ext1."
             " Furthermore, the bar ends can be mitered around the vertical axis (vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1)."
         )
-    );
+    };
 }
 
 

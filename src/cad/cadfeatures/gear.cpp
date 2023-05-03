@@ -412,8 +412,9 @@ public:
 
     
 defineType(SpurGear);
-addToFactoryTable(Feature, SpurGear);
-
+//addToFactoryTable(Feature, SpurGear);
+addToStaticFunctionTable(Feature, SpurGear, insertrule);
+addToStaticFunctionTable(Feature, SpurGear, ruleDocumentation);
 
 size_t SpurGear::calcHash() const
 {
@@ -425,10 +426,6 @@ size_t SpurGear::calcHash() const
   h+=clearance_->value();
   return h.getHash();
 }
-
-
-SpurGear::SpurGear()
-{}
 
 
 
@@ -449,13 +446,6 @@ SpurGear::operator const TopoDS_Face& () const
 
 
 
-FeaturePtr SpurGear::create(ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance)
-{
-    return FeaturePtr(new SpurGear(m, z, t, clearance));
-}
-
-
-
 
 void SpurGear::build()
 {
@@ -467,7 +457,7 @@ void SpurGear::build()
     refvalues_["thick_angle"] = g.half_thick_angle*2.;
     
     providedSubshapes_["pitch_circle"]=Circle::create( vec3const(0,0,0), vec3const(0,0,1), scalarconst(g.pitch_diameter));
-    providedSubshapes_["tooth"].reset( new Feature( g.gear_shape_.tooth_ ) );
+    providedSubshapes_["tooth"]=Feature::create( g.gear_shape_.tooth_ );
     
     setShape( g );
 
@@ -476,7 +466,7 @@ void SpurGear::build()
 
 
 
-void SpurGear::insertrule(parser::ISCADParser& ruleset) const
+void SpurGear::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -489,7 +479,9 @@ void SpurGear::insertrule(parser::ISCADParser& ruleset) const
       >> ( ( ',' >> ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
       >> ')'
     ) 
-	[ qi::_val = phx::bind(&SpurGear::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
+    [ qi::_val = phx::bind(
+                         &SpurGear::create<ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3, qi::_4) ]
       
     ))
   );
@@ -498,10 +490,9 @@ void SpurGear::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList SpurGear::ruleDocumentation() const
+FeatureCmdInfoList SpurGear::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "SpurGear",
@@ -511,7 +502,7 @@ FeatureCmdInfoList SpurGear::ruleDocumentation() const
             "Creates a spur gear with thickness t."
             " The diameter follows from module m and tooth number z. Optionally, the clearance (as a fraction of module) can be specified. If not specified, 0.2 is used."
         )
-    );
+    };
 }
    
    
@@ -958,7 +949,10 @@ public:
 
     
 defineType(BevelGear);
-addToFactoryTable(Feature, BevelGear);
+//addToFactoryTable(Feature, BevelGear);
+addToStaticFunctionTable(Feature, BevelGear, insertrule);
+addToStaticFunctionTable(Feature, BevelGear, ruleDocumentation);
+
 
 
 size_t BevelGear::calcHash() const
@@ -972,10 +966,6 @@ size_t BevelGear::calcHash() const
   return h.getHash();
 }
 
-
-
-BevelGear::BevelGear()
-{}
 
 
 
@@ -996,12 +986,6 @@ BevelGear::operator const TopoDS_Face& () const
 
 
 
-FeaturePtr BevelGear::create(ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance)
-{
-    return FeaturePtr(new BevelGear(m, z, t, clearance));
-}
-
-
 
 
 void BevelGear::build()
@@ -1020,12 +1004,12 @@ void BevelGear::build()
 
 
 
-void BevelGear::insertrule(parser::ISCADParser& ruleset) const
+void BevelGear::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
-    "BevelGear",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    "BevelGear",
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_scalarExpression >> ',' 
       >> ruleset.r_scalarExpression >> ',' 
@@ -1033,19 +1017,20 @@ void BevelGear::insertrule(parser::ISCADParser& ruleset) const
       >> ( ( ',' >> ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
       >> ')'
     ) 
-	[ qi::_val = phx::bind(&BevelGear::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
+    [ qi::_val = phx::bind(
+                         &BevelGear::create<ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3, qi::_4) ]
       
-    ))
+    )
   );
 }
    
 
 
 
-FeatureCmdInfoList BevelGear::ruleDocumentation() const
+FeatureCmdInfoList BevelGear::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "BevelGear",
@@ -1055,7 +1040,7 @@ FeatureCmdInfoList BevelGear::ruleDocumentation() const
             "Creates a spur gear with thickness t."
             " The diameter follows from module m and tooth number z. Optionally, the clearance (as a fraction of module) can be specified. If not specified, 0.2 is used."
         )
-    );
+    };
 }
    
    

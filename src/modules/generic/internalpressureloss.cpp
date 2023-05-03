@@ -88,7 +88,7 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
       if (!geom_cad->cadmodel->isValid())
         throw insight::Exception("Geometry file does not exist: "+geom_cad->cadmodel->fileName().string());
 
-      FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
+      FeaturePtr cadmodel = Feature::create(geom_cad->cadmodel->filePath());
       bb_=cadmodel->modelBndBox();
 
       if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
@@ -97,14 +97,14 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
           if (!io_extra->inlet_model->isValid())
             throw insight::Exception("Geometry file does not exist: "+io_extra->inlet_model->fileName().string());
           {
-            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
+            FeaturePtr inletmodel = Feature::create(io_extra->inlet_model->filePath());
             bb_.extend(inletmodel->modelBndBox());
           }
 
           if (!io_extra->outlet_model->isValid())
             throw insight::Exception("Geometry file does not exist: "+io_extra->outlet_model->fileName().string());
           {
-            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
+            FeaturePtr outletmodel = Feature::create(io_extra->outlet_model->filePath());
             bb_.extend(outletmodel->modelBndBox());
           }
         }
@@ -225,7 +225,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
       {
         using namespace insight::cad;
 
-        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
+        FeaturePtr cadmodel = Feature::create(geom_cad->cadmodel->filePath());
 
         if ( const Parameters::geometry_STEP_type::inout_named_surfaces_type* io_name =
              boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
@@ -248,7 +248,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
               args.push_back(cadmodel->providedFeatureSet("face_"+io_name->inlet_name));
               args.push_back(cadmodel->providedFeatureSet("face_"+io_name->outlet_name));
               FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
-              FeaturePtr walls(new Feature(fp));
+              FeaturePtr walls = Feature::create(fp);
 
               walls->saveAs(sp().wallstlfile_);
               inlet->saveAs(sp().inletstlfile_);
@@ -259,9 +259,9 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
           {
 
             cadmodel->saveAs(sp().wallstlfile_);
-            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
+            FeaturePtr inletmodel = Feature::create(io_extra->inlet_model->filePath());
             inletmodel->saveAs(sp().inletstlfile_);
-            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
+            FeaturePtr outletmodel = Feature::create(io_extra->outlet_model->filePath());
             outletmodel->saveAs(sp().outletstlfile_);
           }
       }
@@ -572,7 +572,7 @@ void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements
 
         if (geom_cad->cadmodel->isValid())
         {
-          FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
+          FeaturePtr cadmodel = Feature::create(geom_cad->cadmodel->filePath());
 
           if ( const Parameters::geometry_STEP_type::inout_named_surfaces_type* io_name =
                boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
@@ -595,7 +595,7 @@ void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements
                 args.push_back(cadmodel->providedFeatureSet("face_"+io_name->inlet_name));
                 args.push_back(cadmodel->providedFeatureSet("face_"+io_name->outlet_name));
                 FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
-                FeaturePtr walls(new Feature(fp));
+                FeaturePtr walls= Feature::create(fp);
 
                 addFeature("walls", walls);
                 addFeature("inlet", inlet);
@@ -607,12 +607,12 @@ void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements
               addFeature("walls", cadmodel);
               if (io_extra->inlet_model->isValid())
               {
-                FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
+                FeaturePtr inletmodel = Feature::create(io_extra->inlet_model->filePath());
                 addFeature("inlet", inletmodel);
               }
               if (io_extra->outlet_model->isValid())
               {
-                FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
+                FeaturePtr outletmodel = Feature::create(io_extra->outlet_model->filePath());
                 addFeature("outlet", outletmodel);
               }
             }

@@ -24,6 +24,7 @@
 #include "cadtypes.h"
 #include "cadparameters.h"
 #include "cadpostprocaction.h"
+#include "constrainedsketchgeometry.h"
 
 namespace insight {
 namespace cad {
@@ -33,7 +34,7 @@ class Distance
 {
 
 
-  virtual size_t calcHash() const;
+  size_t calcHash() const override;
 
 public:
   VectorPtr p1_, p2_;
@@ -44,12 +45,41 @@ public:
 
   Distance(VectorPtr p1, VectorPtr p2);
 
-  virtual void build();
+  void build() override;
 
-  virtual void write(std::ostream&) const;
+  void write(std::ostream&) const override;
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+
 };
 
+
+
+class DistanceConstraint
+: public Distance,
+  public ConstrainedSketchEntity
+{
+
+    size_t calcHash() const override;
+
+    DistanceConstraint(VectorPtr p1, VectorPtr p2, double targetValue);
+
+public:
+    declareType("DistanceConstraint");
+
+    CREATE_FUNCTION(DistanceConstraint);
+
+    double targetValue() const;
+
+    int nConstraints() const override;
+    double getConstraintError(unsigned int iConstraint) const override;
+    void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(ConstrainedSketchGrammar& ruleset);
+};
 
 }
 }

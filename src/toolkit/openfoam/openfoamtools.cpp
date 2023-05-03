@@ -2213,7 +2213,10 @@ void extrude2DMesh
     wc["axisPt"]=OFDictData::vector3(vec3(0,0,0));
     wc["axis"]=OFDictData::vector3(vec3(-1,0,0));
     wc["angle"]=5.0;
-    extrDict["wedgeCoeffs"]=wc;
+    if (cm.OFversion()>=600)
+        extrDict["sectorCoeffs"]=wc;
+    else
+        extrDict["wedgeCoeffs"]=wc;
   }
   else
   {

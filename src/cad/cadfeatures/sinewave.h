@@ -35,20 +35,18 @@ class SineWave
 
     SineWave ( ScalarPtr l, ScalarPtr A );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "SineWave" );
-    SineWave ();
 
-    static FeaturePtr create ( ScalarPtr l, ScalarPtr A );
+    CREATE_FUNCTION(SineWave);
 
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
-
-    virtual bool isSingleEdge() const
+    bool isSingleEdge() const override
     {
         return true;
     };

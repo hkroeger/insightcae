@@ -36,6 +36,7 @@
 #include "selectablesubsetparameterparser.h"
 #include "propertylibraryselectionparameterparser.h"
 #include "spatialtransformationparameterparser.h"
+#include "cadgeometryparameterparser.h"
 
 
 
@@ -165,6 +166,7 @@ struct PDLParser
     MatrixParameterParser::insertrule<Iterator, Skipper>(rules);
     PropertyLibrarySelectionParameterParser::insertrule<Iterator, Skipper>(rules);
     SpatialTransformationParameterParser::insertrule<Iterator, Skipper>(rules);
+    CADGeometryParameterParser::insertrule<Iterator, Skipper>(rules);
 
     rules.init();
 

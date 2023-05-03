@@ -40,8 +40,9 @@ namespace cad {
     
     
 defineType(SplineCurve);
-addToFactoryTable(Feature, SplineCurve);
-
+//addToFactoryTable(Feature, SplineCurve);
+addToStaticFunctionTable(Feature, SplineCurve, insertrule);
+addToStaticFunctionTable(Feature, SplineCurve, ruleDocumentation);
 
 
 size_t SplineCurve::calcHash() const
@@ -59,9 +60,6 @@ size_t SplineCurve::calcHash() const
 
 
 
-SplineCurve::SplineCurve(): Feature()
-{}
-
 
 
 
@@ -71,11 +69,6 @@ SplineCurve::SplineCurve(const std::vector<VectorPtr>& pts, VectorPtr tan0, Vect
 
 
 
-
-FeaturePtr SplineCurve::create(const std::vector<VectorPtr>& pts, VectorPtr tan0, VectorPtr tan1)
-{
-    return FeaturePtr(new SplineCurve(pts, tan0, tan1));
-}
 
 
 
@@ -103,37 +96,38 @@ void SplineCurve::build()
 
 
 
-void SplineCurve::insertrule(parser::ISCADParser& ruleset) const
+void SplineCurve::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "SplineCurve",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' 
         > ruleset.r_vectorExpression % ',' 
         >> ( (',' >> qi::lit("der") >> ruleset.r_vectorExpression >> ruleset.r_vectorExpression ) | ( qi::attr(VectorPtr()) >> qi::attr(VectorPtr()) ) ) 
         >> ')' ) 
-	[ qi::_val = phx::bind(&SplineCurve::create, qi::_1, phx::at_c<0>(qi::_2), phx::at_c<1>(qi::_2) ) ]
+    [ qi::_val = phx::bind(
+                         &SplineCurve::create<const std::vector<VectorPtr>&, VectorPtr, VectorPtr>,
+                         qi::_1, phx::at_c<0>(qi::_2), phx::at_c<1>(qi::_2) ) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList SplineCurve::ruleDocumentation() const
+FeatureCmdInfoList SplineCurve::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "SplineCurve",
             "( <vector:p0>, ..., <vector:pn> )",
             "Creates a spline curve through all given points p0 to pn."
         )
-    );
+    };
 }
 
 

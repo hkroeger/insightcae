@@ -38,7 +38,10 @@ namespace cad {
 
 
 defineType(Quad);
-addToFactoryTable(Feature, Quad);
+//addToFactoryTable(Feature, Quad);
+addToStaticFunctionTable(Feature, Quad, insertrule);
+addToStaticFunctionTable(Feature, Quad, ruleDocumentation);
+
 
 
 size_t Quad::calcHash() const
@@ -56,10 +59,6 @@ size_t Quad::calcHash() const
 
 
 
-Quad::Quad()
-{}
-
-
 
 
 Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering center)
@@ -67,18 +66,6 @@ Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering ce
 {}
 
 
-
-
-FeaturePtr Quad::create(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering center)
-{
-    return FeaturePtr
-           (
-               new Quad
-               (
-                   p0, L, W, t, center
-               )
-           );
-}
 
 
 
@@ -146,7 +133,7 @@ void Quad::build()
               matconst(insight::Vector(p2)),
               matconst(insight::Vector(p4))
         );
-        providedSubshapes_["OuterWire"]=FeaturePtr ( new Feature ( w.Wire() ) );
+        providedSubshapes_["OuterWire"]=Feature::create( w.Wire() );
 
         TopoDS_Shape s = BRepBuilderAPI_MakeFace ( w.Wire() );
         
@@ -208,12 +195,12 @@ Quad::operator const TopoDS_Face& () const
 
 
 
-void Quad::insertrule(parser::ISCADParser& ruleset) const
+void Quad::insertrule(parser::ISCADParser& ruleset)
 {
     ruleset.modelstepFunctionRules.add
     (
         "Quad",
-        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                     ( '(' >> ruleset.r_vectorExpression
                       >> ',' >> ruleset.r_vectorExpression
@@ -231,19 +218,20 @@ void Quad::insertrule(parser::ISCADParser& ruleset) const
                            ( qi::attr ( false ) >> qi::attr ( false ) )
                          )
                       >> ')' )
-                    [ qi::_val = phx::bind ( &Quad::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
+                    [ qi::_val = phx::bind (
+                       &Quad::create<VectorPtr, VectorPtr, VectorPtr, ScalarPtr, QuadCentering>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
 
-                ) )
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList Quad::ruleDocumentation() const
+FeatureCmdInfoList Quad::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Quad",
@@ -251,7 +239,7 @@ FeatureCmdInfoList Quad::ruleDocumentation() const
             "Creates a quad face. The quad is located at point p0 and direction and edge lengths are defined by the vector Lx, Ly.\n"
             "Optionally, the edges are centered around p0. Either all directions (option centered) or only selected directions (option center [x][y] where x,y is associated with L1, L2 respectively)."
         )
-    );
+    };
 }
 
 

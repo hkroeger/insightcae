@@ -41,14 +41,11 @@ class BooleanUnion
 
 public:
     declareType("BooleanUnion");
-    BooleanUnion();
 
-    static FeaturePtr create_single(FeaturePtr m1);
-    static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
+    CREATE_FUNCTION(BooleanUnion);
 
-
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule(parser::ISCADParser& ruleset);
+    static FeatureCmdInfoList ruleDocumentation();
     
     void operator=(const BooleanUnion& o);
 

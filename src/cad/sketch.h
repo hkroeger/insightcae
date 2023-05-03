@@ -32,8 +32,12 @@
 
 #include "base/boost_include.h"
 
+#include "cadfeatures/line.h"
+
 namespace insight {
 namespace cad {
+
+
 
 typedef std::vector<boost::fusion::vector2<std::string, ScalarPtr> > SketchVarList;
 
@@ -84,6 +88,97 @@ public:
   
   const boost::filesystem::path& fn() const { return fn_; }
 };
+
+
+
+
+class SketchPoint
+: public insight::cad::Vector,
+  public ConstrainedSketchEntity
+{
+
+  DatumPtr plane_;
+  double x_, y_;
+
+public:
+  declareType("SketchPoint");
+
+  SketchPoint(DatumPtr plane, double x, double y);
+  void setCoords2D(double x, double y);
+  arma::mat coords2D() const;
+  arma::mat value() const override;
+
+  int nDoF() const override;
+  double getDoFValue(unsigned int iDoF) const override;
+  void setDoFValue(unsigned int iDoF, double value) override;
+  void scaleSketch(double scaleFactor) override;
+
+  void generateScriptCommand(
+      ConstrainedSketchScriptBuffer& script,
+      const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+  static void addParserRule(ConstrainedSketchGrammar& ruleset);
+};
+
+
+typedef std::shared_ptr<SketchPoint> SketchPointPtr;
+
+
+
+class ConstrainedSketchScriptBuffer
+{
+  std::set<int> entitiesPresent_;
+  std::vector<std::string> script_;
+
+public:
+  void insertCommandFor(int entityLabel, const std::string& cmd);
+  void write(std::ostream& os);
+};
+
+
+
+class ConstrainedSketch
+: public Feature
+{
+  DatumPtr pl_;
+  std::set<ConstrainedSketchEntityPtr> geometry_;
+  double solverTolerance_;
+
+  ConstrainedSketch( DatumPtr pl );
+
+  virtual size_t calcHash() const;
+  virtual void build();
+
+public:
+  declareType("ConstrainedSketch");
+  ConstrainedSketch();
+
+  static std::shared_ptr<ConstrainedSketch> create(DatumPtr pl);
+  static std::shared_ptr<ConstrainedSketch> create( DatumPtr pl, std::istream& is );
+
+  const DatumPtr& plane() const;
+  std::set<ConstrainedSketchEntityPtr>& geometry();
+  const std::set<ConstrainedSketchEntityPtr>& geometry() const;
+
+  std::set<ConstrainedSketchEntityPtr> filterGeometryByParameters(
+      std::function<bool(const ParameterSet& geomPS)> filterFunction
+      );
+
+  void operator=(const ConstrainedSketch& o);
+
+  double solverTolerance() const;
+  void setSolverTolerance(double tol);
+
+  void resolveConstraints();
+
+  void generateScript(std::ostream& os) const;
+
+  std::string generateScriptCommand() const override;
+
+};
+
+typedef std::shared_ptr<ConstrainedSketch> ConstrainedSketchPtr;
+
 
 }
 }

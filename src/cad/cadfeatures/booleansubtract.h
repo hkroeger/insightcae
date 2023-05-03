@@ -41,13 +41,11 @@ class BooleanSubtract
 
 public:
   declareType("BooleanSubtract");
+
+  CREATE_FUNCTION(BooleanSubtract);
   
-  BooleanSubtract();
-  static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
-  
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual FeatureCmdInfoList ruleDocumentation() const;
+  static void insertrule(parser::ISCADParser& ruleset);
+  static FeatureCmdInfoList ruleDocumentation();
   
   void operator=(const BooleanSubtract& o);
   

@@ -108,8 +108,8 @@ namespace boost
 
 std::size_t hash<TopoDS_Shape>::operator()(const TopoDS_Shape& shape) const
 {
-  insight::cad::Feature m(shape);  
-  return m.hash();
+    auto m = insight::cad::Feature::create(shape);
+    return m->hash();
 }
 
 
@@ -275,9 +275,20 @@ int FreelyIndexedMapOfShape::getMaxIndex() const
     
 
 defineType(Feature);
-defineFactoryTableNoArgs(Feature);
-addToFactoryTable(Feature, Feature);
+//defineFactoryTableNoArgs(Feature);
+//addToFactoryTable(Feature, Feature);
 
+defineStaticFunctionTableWithArgs(
+    Feature,
+    insertrule,
+    void,
+    LIST(insight::cad::parser::ISCADParser& ruleset),
+    LIST(ruleset) );
+
+defineStaticFunctionTable(
+    Feature,
+    ruleDocumentation,
+    FeatureCmdInfoList );
 
 std::mutex Feature::step_read_mutex_;
 
@@ -505,7 +516,7 @@ Feature::Feature()
 : isleaf_(true),
 //   density_(1.0),
 //   areaWeight_(0.0),
-  featureSymbolName_("anonymous_"+type())
+  featureSymbolName_()
 {
 }
 
@@ -530,7 +541,7 @@ Feature::Feature(const Feature& o)
 
 Feature::Feature(const TopoDS_Shape& shape)
 : isleaf_(true),
-  featureSymbolName_("anonymousShape")
+  featureSymbolName_()
 {
   setShape(shape);
   hash_=calcShapeHash();
@@ -541,7 +552,7 @@ Feature::Feature(const TopoDS_Shape& shape)
 
 Feature::Feature(FeatureSetPtr creashapes)
 : creashapes_(creashapes),
-  featureSymbolName_("subshapesOf_"+creashapes->model()->featureSymbolName())
+  featureSymbolName_(/*"subshapesOf_"+creashapes->model()->featureSymbolName()*/)
 {}
 
 Feature::~Feature()
@@ -552,12 +563,7 @@ Feature::~Feature()
 }
 
 
-FeaturePtr Feature::CreateFromShape(const TopoDS_Shape& shape)
-{
-    return std::make_shared<Feature>(shape);
-}
-
-FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
+FeaturePtr Feature::create(const boost::filesystem::path& filepath)
 {
   FeaturePtr f(new Feature());
   f->loadShapeFromFile(filepath);
@@ -567,19 +573,22 @@ FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
   return f;
 }
 
-FeaturePtr Feature::CreateFromFeaturesSet(FeatureSetPtr shapes)
-{
-  return std::make_shared<Feature>(shapes);
-}
 
 void Feature::setFeatureSymbolName( const std::string& name)
 {
-    featureSymbolName_ = name;
+  featureSymbolName_ = name;
 }
 
-const std::string& Feature::featureSymbolName() const
+bool Feature::isAnonymous() const
 {
-    return featureSymbolName_;
+  return featureSymbolName_.empty();
+}
+
+std::string Feature::featureSymbolName() const
+{
+    return isAnonymous() ?
+            ("anonymous_"+type()) :
+             featureSymbolName_;
 }
 
 
@@ -1920,39 +1929,7 @@ Feature::View Feature::createView
 
 }
 
-void Feature::insertrule(parser::ISCADParser& ruleset) const
-{
-  ruleset.modelstepFunctionRules.add
-  (
-    "asModel",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Feature>(qi::_1)) ]
-      
-    ))
-  );
-}
-
-FeatureCmdInfoList Feature::ruleDocumentation() const
-{
-    if (type() == Feature::typeName)
-    {
-        return boost::assign::list_of
-        (
-            FeatureCmdInfo
-            (
-                "asModel",
-                "( <verticesSelection>|<edgesSelection>|<facesSelection>|<solidSelection> )",
-                "Creates a new feature from selected entities of an existing feature."
-            )
-        );
-    }
-    else
-    {
-        return FeatureCmdInfoList();
-    }
-}
 
 bool Feature::isSingleEdge() const
 {
@@ -2137,7 +2114,7 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
         {
             if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
                 throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-            providedSubshapes_[prefix+sf.first]=Transform::create_trsf(sf.second, trsf);
+            providedSubshapes_[prefix+sf.first]=Transform::create(sf.second, trsf);
         }
     }
     for (const DatumPtrMap::value_type& df: m1.providedDatums())
@@ -2401,6 +2378,52 @@ gp_Trsf Feature::transformation() const
 {
   throw insight::Exception("not implemented");
   return gp_Trsf();
+}
+
+/*
+CREATE_FUNCTION();
+static
+ override
+addToStaticFunctionTable(Feature, , insertrule);
+addToStaticFunctionTable(Feature, , ruleDocumentation);
+std::make_shared<parser::ISCADParser::ModelstepRule>(
+*/
+
+#warning circumvent
+//addToStaticFunctionTable(Feature, Feature, insertrule);
+
+void Feature::insertrule(parser::ISCADParser& ruleset)
+{
+  ruleset.modelstepFunctionRules.add
+      (
+          "asModel",
+          std::make_shared<parser::ISCADParser::ModelstepRule>(
+
+              ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' )
+                  [ qi::_val = phx::bind(Feature::create<FeatureSetPtr>, qi::_1) ]
+
+              )
+          );
+}
+
+#warning circumvent
+//addToStaticFunctionTable(Feature, Feature, ruleDocumentation);
+
+FeatureCmdInfoList Feature::ruleDocumentation()
+{
+  return {
+    FeatureCmdInfo
+    (
+        "asModel",
+        "( <verticesSelection>|<edgesSelection>|<facesSelection>|<solidSelection> )",
+        "Creates a new feature from selected entities of an existing feature."
+    )
+  };
+}
+
+string Feature::generateScriptCommand() const
+{
+  return std::string();
 }
 
 Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)

@@ -45,16 +45,13 @@ class FillingFace
 
 public:
     declareType ( "FillingFace" );
-    FillingFace ();
 
-    static FeaturePtr create ( FeaturePtr e1, FeaturePtr e2 );
-    static FeaturePtr create_set ( FeatureSetPtr es1, FeatureSetPtr es2 );
+    CREATE_FUNCTION(FillingFace);
 
     operator const TopoDS_Face& () const;
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

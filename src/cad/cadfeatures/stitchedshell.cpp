@@ -35,7 +35,10 @@ namespace cad {
 
 
 defineType(StitchedShell);
-addToFactoryTable(Feature, StitchedShell);
+//addToFactoryTable(Feature, StitchedShell);
+addToStaticFunctionTable(Feature, StitchedShell, insertrule);
+addToStaticFunctionTable(Feature, StitchedShell, ruleDocumentation);
+
 
 size_t StitchedShell::calcHash() const
 {
@@ -46,9 +49,6 @@ size_t StitchedShell::calcHash() const
   return h.getHash();
 }
 
-StitchedShell::StitchedShell()
-: Feature()
-{}
 
 StitchedShell::StitchedShell(FeatureSetPtr faces, ScalarPtr tol)
 :faces_(faces), tol_(tol)
@@ -76,24 +76,25 @@ void StitchedShell::build()
   setShape(sew.SewedShape());
 }
 
-void StitchedShell::insertrule(parser::ISCADParser& ruleset) const
+void StitchedShell::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "StitchedShell",
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_faceFeaturesExpression  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) >> ')' )
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<StitchedShell>(qi::_1, qi::_2)) ]
+                  [ qi::_val = phx::bind(
+                       &StitchedShell::create<FeatureSetPtr, ScalarPtr>,
+                       qi::_1, qi::_2) ]
       
-    ))
+    )
   );
 }
 
-FeatureCmdInfoList StitchedShell::ruleDocumentation() const
+FeatureCmdInfoList StitchedShell::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "StitchedShell",
@@ -102,7 +103,7 @@ FeatureCmdInfoList StitchedShell::ruleDocumentation() const
 
             "Create stitched shell from selected faces."
         )
-    );
+    };
 }
 
 }

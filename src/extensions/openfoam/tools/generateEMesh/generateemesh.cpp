@@ -30,8 +30,8 @@ int main(int argc, char* argv[])
 
     Info<< "Reading geometry from " << inFileName << " ..." << endl;
     auto feat =
-           insight::cad::Feature::CreateFromFile(
-               inFileName );
+           insight::cad::Feature::create(
+            boost::filesystem::path(inFileName) );
     auto bb=feat->modelBndBox();
     Info<<"bounding box:"<<nl
         <<" min ("<<bb(0,0)<<" "<<bb(1,0)<<" "<<bb(2,0)<<")"<<nl

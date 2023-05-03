@@ -32,7 +32,11 @@ namespace cad {
 
 
 defineType(Ring);
-addToFactoryTable(Feature, Ring);
+//addToFactoryTable(Feature, Ring);
+addToStaticFunctionTable(Feature, Ring, insertrule);
+//addToStaticFunctionTable(Feature, Ring, ruleDocumentation);
+
+
 
 size_t Ring::calcHash() const
 {
@@ -45,13 +49,12 @@ size_t Ring::calcHash() const
   return h.getHash();
 }
 
-Ring::Ring()
-{}
 
 
 Ring::Ring(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di)
 : p1_(p1), p2_(p2), Da_(Da), Di_(Di)
 {}
+
 
 void Ring::build()
 {
@@ -86,17 +89,19 @@ void Ring::build()
   );
 }
 
-void Ring::insertrule(parser::ISCADParser& ruleset) const
+void Ring::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Ring",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-	  [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Ring>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+        [ qi::_val = phx::bind(
+                       &Ring::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4) ]
       
-    ))
+    )
   );
 }
  

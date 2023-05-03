@@ -31,16 +31,17 @@ class StitchedSolid
   std::vector<FeaturePtr> faces_;
   ScalarPtr tol_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
+
+  StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol=scalarconst(1e-3));
   
 public:
   declareType("StitchedSolid");
-  StitchedSolid();
-  StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol=scalarconst(1e-3));
+  CREATE_FUNCTION(StitchedSolid);
   
-  virtual FeatureCmdInfoList ruleDocumentation() const;
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  static FeatureCmdInfoList ruleDocumentation();
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 }

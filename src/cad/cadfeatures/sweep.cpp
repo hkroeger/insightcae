@@ -39,7 +39,9 @@ namespace cad {
     
     
 defineType(Sweep);
-addToFactoryTable(Feature, Sweep);
+//addToFactoryTable(Feature, Sweep);
+addToStaticFunctionTable(Feature, Sweep, insertrule);
+addToStaticFunctionTable(Feature, Sweep, ruleDocumentation);
 
 
 size_t Sweep::calcHash() const
@@ -55,10 +57,6 @@ size_t Sweep::calcHash() const
 
 
 
-Sweep::Sweep(): Feature()
-{}
-
-
 
 
 Sweep::Sweep(const std::vector<FeaturePtr>& secs)
@@ -66,12 +64,6 @@ Sweep::Sweep(const std::vector<FeaturePtr>& secs)
 {}
 
 
-
-
-FeaturePtr Sweep::create ( const std::vector<FeaturePtr>& secs )
-{
-    return FeaturePtr(new Sweep(secs));
-}
 
 
 
@@ -124,34 +116,35 @@ void Sweep::build()
 
 
 
-void Sweep::insertrule(parser::ISCADParser& ruleset) const
+void Sweep::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Sweep",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> (ruleset.r_solidmodel_expression % ',' ) >> ')' ) 
-      [ qi::_val = phx::bind(&Sweep::create, qi::_1) ]
+      [ qi::_val = phx::bind(
+                         &Sweep::create<const std::vector<FeaturePtr>&>,
+                         qi::_1) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Sweep::ruleDocumentation() const
+FeatureCmdInfoList Sweep::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Sweep",
             "( <feature:xsec0>, ..., <feature:xsecn> )",
             "Interpolates a solid through the planar sections xsec0 to xsecn."
         )
-    );
+    };
 }
 
 

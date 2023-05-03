@@ -31,6 +31,8 @@
 
 #include <chrono>
 
+#include "constrainedsketchgrammar.h"
+
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::algorithm;
@@ -45,7 +47,7 @@ namespace cad {
 
 
 defineType(Sketch);
-addToFactoryTable(Feature, Sketch);
+//addToFactoryTable(Feature, Sketch);
 
 size_t Sketch::calcHash() const
 {
@@ -241,7 +243,7 @@ void Sketch::build()
         auto ws = DXFReader(filename, ".*").Wires(tol_);
         if (ws->Size()==1)
         {
-            providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(ws->Value(1)));
+            providedSubshapes_["OuterWire"]=Feature::create(ws->Value(1));
         }
         else
         {
@@ -249,7 +251,7 @@ void Sketch::build()
             {
                 providedSubshapes_[
                         str(format("OuterWire%d")%(i+1))]=
-                        FeaturePtr(new Feature(ws->Value(i+1)));
+                        Feature::create(ws->Value(i+1));
             }
         }
 
@@ -439,6 +441,413 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
     ))
   );
 }
+
+
+
+
+
+
+
+
+
+
+//SketchPoint::SketchPoint(DatumPtr planei, const arma::mat &p3)
+//    : plane_(planei),
+//      x_(0), y_(0)
+//{
+//    auto plane=plane_->plane();
+//    gp_Trsf pl;
+//    pl.SetTransformation(plane); // from global to plane
+//    auto pp = toVec<gp_Pnt>(p3).Transformed(pl);
+//    insight::assertion(
+//                fabs(pp.Z())<SMALL,
+//                "point (%g, %g, %g) not in plane with p=(%g, %g, %g) and n=(%g, %g, %g)!\n"
+//                "(local coordinates = (%g, %g, %g))",
+//                p3(0), p3(1), p3(2),
+//                plane.Location().X(), plane.Location().Y(), plane.Location().Z(),
+//                plane.Direction().X(), plane.Direction().Y(), plane.Direction().Z(),
+//                pp.X(), pp.Y(), pp.Z() );
+//    x_=pp.X();
+//    y_=pp.Y();
+//}
+
+
+defineType(SketchPoint);
+addToStaticFunctionTable(ConstrainedSketchEntity, SketchPoint, addParserRule);
+
+SketchPoint::SketchPoint(DatumPtr plane, double x, double y)
+    : plane_(plane),
+      x_(x), y_(y)
+{}
+
+void SketchPoint::setCoords2D(double x, double y)
+{
+    x_=x;
+    y_=y;
+}
+
+arma::mat SketchPoint::coords2D() const
+{
+    return vec2(x_, y_);
+}
+
+arma::mat SketchPoint::value() const
+{
+    auto pl=plane_->plane();
+    return vec3(
+        pl.Location()
+            .Translated(pl.XDirection().XYZ()*x_)
+            .Translated(pl.YDirection().XYZ()*y_)
+                );
+}
+
+int SketchPoint::nDoF() const
+{
+    return 2;
+}
+
+
+double SketchPoint::getDoFValue(unsigned int iDoF) const
+{
+    insight::assertion(
+                iDoF<nDoF(),
+                "invalid DoF index: %d", iDoF );
+    switch (iDoF)
+    {
+        case 0: return x_;
+        case 1: return y_;
+    }
+    return NAN;
+}
+
+
+void SketchPoint::setDoFValue(unsigned int iDoF, double value)
+{
+    insight::assertion(
+                iDoF<nDoF(),
+                "invalid DoF index: %d", iDoF );
+    switch (iDoF)
+    {
+        case 0: x_=value;
+        case 1: y_=value;
+        }
+}
+
+void SketchPoint::scaleSketch(double scaleFactor)
+{
+        x_*=scaleFactor;
+        y_*=scaleFactor;
+}
+
+void SketchPoint::generateScriptCommand(
+    ConstrainedSketchScriptBuffer &script,
+    const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
+{
+    int myLabel=entityLabels.at(this);
+    auto v = coords2D();
+    script.insertCommandFor(
+        myLabel,
+        type() + "( "
+         + lexical_cast<std::string>(myLabel) + ", "
+         + str(boost::format("%g, %g")%v(0)%v(1))
+         + parameterString()
+         + ")"
+        );
+}
+
+void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset)
+{
+    namespace qi=boost::spirit::qi;
+    ruleset.entityRules.add
+        (
+            typeName,
+            ( '('
+                > qi::int_ > ','
+                > qi::double_ > ',' > qi::double_
+                > ruleset.r_parameters >
+               ')' )
+               [ qi::_val = parser::make_shared_<SketchPoint>()(ruleset.sketch->plane(), qi::_2, qi::_3),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
+                 phx::insert(
+                     phx::ref(ruleset.labeledEntities),
+                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val) ),
+                 std::cout << qi::_1 ]
+        );
+}
+
+
+
+
+
+
+
+defineType(ConstrainedSketch);
+//addToFactoryTable(Feature, ConstrainedSketch);
+
+
+size_t ConstrainedSketch::calcHash() const
+{
+  ParameterListHash p;
+  p+=*pl_;
+  for (const auto& se: geometry_)
+      p+=se->hash();
+  return p.getHash();
+}
+
+
+
+ConstrainedSketch::ConstrainedSketch()
+: Feature(),
+  solverTolerance_(1e-6)
+{}
+
+
+
+ConstrainedSketch::ConstrainedSketch(DatumPtr pl)
+: pl_(pl),
+  solverTolerance_(1e-6)
+{}
+
+
+
+
+std::shared_ptr<ConstrainedSketch> ConstrainedSketch::create( DatumPtr pl )
+{
+  return std::shared_ptr<ConstrainedSketch>(new ConstrainedSketch(pl));
+}
+
+
+std::shared_ptr<ConstrainedSketch> ConstrainedSketch::create(DatumPtr pl, istream &in)
+{
+  auto sk = ConstrainedSketch::create(pl);
+
+  in >> std::noskipws;
+
+  // use stream iterators to copy the stream to a string
+  std::istream_iterator<char> it(in);
+  std::istream_iterator<char> end;
+  std::string contents_raw(it, end);
+
+  std::string::iterator orgbegin,
+      first=contents_raw.begin(),
+      last=contents_raw.end();
+
+  parser::skip_grammar skip;
+
+  ConstrainedSketchGrammar grammar(sk);
+  bool success = boost::spirit::qi::phrase_parse(
+      first,  last,
+      grammar, skip
+      );
+
+  insight::assertion(
+      success,
+      "parsing of constrained sketch script was not successful!" );
+
+  return sk;
+}
+
+
+const DatumPtr& ConstrainedSketch::plane() const
+{
+    return pl_;
+}
+
+
+std::set<std::shared_ptr<ConstrainedSketchEntity> >&
+ConstrainedSketch::geometry()
+{
+    return geometry_;
+}
+
+const std::set<ConstrainedSketchEntityPtr> &ConstrainedSketch::geometry() const
+{
+    return geometry_;
+}
+
+std::set<ConstrainedSketchEntityPtr> ConstrainedSketch::filterGeometryByParameters(
+    std::function<bool (const ParameterSet &)> filterFunction )
+{
+    std::set<ConstrainedSketchEntityPtr> ret;
+    std::copy_if(
+        geometry().begin(), geometry().end(),
+        std::inserter(ret, ret.begin()),
+        [&](const ConstrainedSketchEntityPtr& e)
+            { return filterFunction(e->parameters()); }
+    );
+    return ret;
+}
+
+void ConstrainedSketch::operator=(const ConstrainedSketch &o)
+{
+    Feature::operator=(o);
+    pl_=o.pl_;
+    geometry_=o.geometry_;
+}
+
+double ConstrainedSketch::solverTolerance() const
+{
+    return solverTolerance_;
+}
+
+void ConstrainedSketch::setSolverTolerance(double tol)
+{
+    solverTolerance_=tol;
+}
+
+void ConstrainedSketch::resolveConstraints()
+{
+    std::vector<std::pair<insight::cad::ConstrainedSketchEntity*, int> > dofs;
+    for (auto& e: geometry())
+    {
+        for (int i=0; i<e->nDoF(); ++i)
+        {
+            dofs.push_back({e.get(), i});
+        }
+    }
+
+    arma::mat x0=arma::zeros(dofs.size());
+    for (int i=0; i<dofs.size(); ++i)
+    {
+        x0(i)=dofs[i].first->getDoFValue(dofs[i].second);
+    }
+    std::cout<<"x0="<<x0<<std::endl;
+
+    auto setX = [&](const arma::mat& x)
+    {
+        for (int i=0; i<dofs.size(); ++i)
+        {
+            dofs[i].first->setDoFValue(dofs[i].second, x(i));
+        }
+        for (auto& se: geometry())
+        {
+            if ( auto e = std::dynamic_pointer_cast<ASTBase>(se) )
+            {
+                e->invalidate();
+            }
+        }
+    };
+
+    arma::mat xsol = nonlinearMinimizeND(
+                [&](const arma::mat& x) -> double
+                {
+                    setX(x);
+                    double Q=0;
+                    for (auto& e: geometry())
+                    {
+                        for (int i=0;i<e->nConstraints();++i)
+                        {
+                            Q+=pow(e->getConstraintError(i), 2);
+                        }
+                    }
+                    insight::dbg()<<"Q="<<Q<<std::endl;
+                    return Q;
+                },
+        x0, solverTolerance_, arma::mat(), 1000
+    );
+
+    setX(xsol);
+}
+
+
+
+void ConstrainedSketchScriptBuffer::insertCommandFor(int entityLabel, const std::string &cmd)
+{
+    if (entitiesPresent_.find(entityLabel)
+          == entitiesPresent_.end())
+    {
+        script_.push_back(cmd);
+        entitiesPresent_.insert(entityLabel);
+    }
+}
+
+void ConstrainedSketchScriptBuffer::write(ostream &os)
+{
+    for (auto sl=script_.begin(); sl!=script_.end(); ++sl)
+    {
+        os<<*sl;
+        if ( script_.end() - sl > 1 )
+            os << ",";
+        os<<std::endl;
+    }
+}
+
+
+
+void ConstrainedSketch::generateScript(ostream &os) const
+{
+    std::map<const ConstrainedSketchEntity*, int> entityLabels;
+
+    int i=0;
+    for (const auto& se: geometry())
+    {
+        entityLabels[se.get()]=i++;
+    }
+
+    ConstrainedSketchScriptBuffer sb;
+    for (const auto& se: geometry())
+    {
+        se->generateScriptCommand(sb, entityLabels);
+    }
+
+    sb.write(os);
+}
+
+
+
+std::string ConstrainedSketch::generateScriptCommand() const
+{
+    std::ostringstream os;
+    os << type() << '(';
+    generateScript(os);
+    os << ')';
+    return os.str();
+}
+
+
+
+
+void ConstrainedSketch::build()
+{
+    ExecTimer t("ConstrainedSketch::build() ["+featureSymbolName()+"]");
+
+    if (!cache.contains(hash()))
+    {
+        if (!pl_->providesPlanarReference())
+            throw insight::Exception("Sketch: Planar reference required!");
+
+        BRep_Builder bb;
+        TopoDS_Compound result;
+        bb.MakeCompound ( result );
+
+        for ( auto& sg: geometry_ )
+        {
+            if ( auto f = std::dynamic_pointer_cast<Feature>(sg) )
+            {
+                bb.Add ( result, f->shape() );
+            }
+        }
+
+        setShape(result);
+
+        cache.insert(shared_from_this());
+    }
+    else
+    {
+        this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 
 }
 }

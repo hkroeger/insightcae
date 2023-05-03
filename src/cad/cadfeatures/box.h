@@ -51,19 +51,11 @@ protected:
 
 public:
     declareType("Box");
-    Box();
 
-    static FeaturePtr create
-    (
-        VectorPtr p0,
-        VectorPtr L1,
-        VectorPtr L2,
-        VectorPtr L3,
-        BoxCentering center=BoxCentering(false, false, false)
-    );
+    CREATE_FUNCTION(Box);
 
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule(parser::ISCADParser& ruleset);
+    static FeatureCmdInfoList ruleDocumentation();
 
 };
 

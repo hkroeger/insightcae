@@ -38,7 +38,10 @@ namespace cad
     
     
 defineType(FreeCADModel);
-addToFactoryTable(Feature, FreeCADModel);
+//addToFactoryTable(Feature, FreeCADModel);
+addToStaticFunctionTable(Feature, FreeCADModel, insertrule);
+addToStaticFunctionTable(Feature, FreeCADModel, ruleDocumentation);
+
 
 
 size_t FreeCADModel::calcHash() const
@@ -57,9 +60,6 @@ size_t FreeCADModel::calcHash() const
 
 
 
-FreeCADModel::FreeCADModel()
-{
-}
 
 
 
@@ -76,13 +76,6 @@ FreeCADModel::FreeCADModel
 {
 }
 
-
-
-
-FeaturePtr FreeCADModel::create ( const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars )
-{
-    return FeaturePtr(new FreeCADModel(filename, solidname, vars));
-}
 
 
 
@@ -157,31 +150,34 @@ void FreeCADModel::build()
 
 
 
-void FreeCADModel::insertrule ( parser::ISCADParser& ruleset ) const
+void FreeCADModel::insertrule ( parser::ISCADParser& ruleset )
 {
     ruleset.modelstepFunctionRules.add
     (
         "FreeCADModel",
-        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                     ( '(' 
                       >> ruleset.r_path >> ','
                       >> ruleset.r_string
                       >> ( ( ',' >> ( ( ruleset.r_identifier % '.' ) >> '=' >> ruleset.r_scalarExpression ) % ',' ) | qi::attr ( FreeCADModelVarList() ) )
                       >> ')' )
-                    [ qi::_val = phx::bind(&FreeCADModel::create, qi::_1, qi::_2, qi::_3 ) ]
+                    [ qi::_val = phx::bind(
+                         &FreeCADModel::create<const boost::filesystem::path&,
+                                               const std::string&,
+                                               FreeCADModelVarList>,
+                         qi::_1, qi::_2, qi::_3 ) ]
 
-                ) )
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList FreeCADModel::ruleDocumentation() const
+FeatureCmdInfoList FreeCADModel::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "FreeCADModel",
@@ -190,7 +186,7 @@ FeatureCmdInfoList FreeCADModel::ruleDocumentation() const
          
             "Rebuild a model in FreeCAD and imports the result. An arbitrary number of parameter/value pairs can be passed into FreeCAD."
         )
-    );
+    };
 }
 
 

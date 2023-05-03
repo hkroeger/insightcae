@@ -54,34 +54,21 @@ class NacaFourDigit
         ScalarPtr clipte=scalarconst(0)
     );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Naca4" );
-    NacaFourDigit ();
 
-    static FeaturePtr create 
-    ( 
-        const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez, 
-        ScalarPtr tofs=scalarconst(0),
-        ScalarPtr clipte=scalarconst(0) 
-    );
-    static FeaturePtr create_values
-    (
-        ScalarPtr tc, ScalarPtr m, ScalarPtr p,
-        VectorPtr p0, VectorPtr ex, VectorPtr ez,
-        ScalarPtr tofs=scalarconst(0),
-        ScalarPtr clipte=scalarconst(0)
-    );
+    CREATE_FUNCTION(NacaFourDigit);
 
     void calcProfile(double xc, double tc, double m, double p, double& t, double& yc, double& dycdx) const;
 
     operator const TopoDS_Face& () const;
 
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

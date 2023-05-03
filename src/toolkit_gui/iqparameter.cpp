@@ -4,11 +4,15 @@
 
 #include <QVBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 
 #include "helpwidget.h"
 #include "iqparameter.h"
 
 #include "base/exception.h"
+
+#include "cadparametersetvisualizer.h"
+
 
 QString mat2Str(const arma::mat& m)
 {
@@ -188,7 +192,7 @@ QVBoxLayout* IQParameter::populateEditControls(
         IQParameterSetModel* model,
         const QModelIndex &index,
         QWidget* editControlsContainer,
-        IQCADModel3DViewer *)
+        IQCADModel3DViewer * )
 {
   QVBoxLayout *layout=new QVBoxLayout;
 

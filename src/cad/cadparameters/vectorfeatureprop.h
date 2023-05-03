@@ -109,6 +109,16 @@ public:
 };
 
 
+class XsecCurveCurve
+: public insight::cad::Vector
+{
+  ConstFeaturePtr c1_, c2_;
+
+public:
+  XsecCurveCurve(ConstFeaturePtr c1, ConstFeaturePtr c2);
+  virtual arma::mat value() const;
+};
+
 
 
 class DatumPlaneNormal

@@ -41,8 +41,9 @@ namespace cad
     
     
 defineType(BooleanIntersection);
-addToFactoryTable(Feature, BooleanIntersection);
-
+//addToFactoryTable(Feature, BooleanIntersection);
+addToStaticFunctionTable(Feature, BooleanIntersection, insertrule);
+addToStaticFunctionTable(Feature, BooleanIntersection, ruleDocumentation);
 
 size_t BooleanIntersection::calcHash() const
 {
@@ -55,9 +56,6 @@ size_t BooleanIntersection::calcHash() const
 }
 
 
-BooleanIntersection::BooleanIntersection()
-    : DerivedFeature()
-{}
 
 
 
@@ -81,21 +79,6 @@ BooleanIntersection::BooleanIntersection(FeaturePtr m1, DatumPtr m2pl)
     setFeatureSymbolName( "("+m1->featureSymbolName()+" & datum)" );
 }
 
-
-
-
-FeaturePtr BooleanIntersection::create(FeaturePtr m1, FeaturePtr m2)
-{
-    return FeaturePtr(new BooleanIntersection(m1, m2));
-}
-
-
-
-
-FeaturePtr BooleanIntersection::create_plane(FeaturePtr m1, DatumPtr m2pl)
-{
-    return FeaturePtr(new BooleanIntersection(m1, m2pl));
-}
 
 
 
@@ -197,7 +180,7 @@ void BooleanIntersection::operator=(const BooleanIntersection& o)
 }
 
 
-FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2)
+std::shared_ptr<BooleanIntersection> operator&(FeaturePtr m1, FeaturePtr m2)
 {
     return BooleanIntersection::create(m1, m2);
 }
@@ -213,7 +196,7 @@ FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2)
   * ( <feature expression: feat1> & <feature expression: feat2> ) : feature
   * ~~~~
   */
-void BooleanIntersection::insertrule(parser::ISCADParser& ruleset) const
+void BooleanIntersection::insertrule(parser::ISCADParser& ruleset)
 {
 //   ruleset.modelstepFunctionRules.add
 //   (
@@ -229,7 +212,7 @@ void BooleanIntersection::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList BooleanIntersection::ruleDocumentation() const
+FeatureCmdInfoList BooleanIntersection::ruleDocumentation()
 {
     return FeatureCmdInfoList();
 }

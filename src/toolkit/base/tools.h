@@ -293,7 +293,7 @@ public:
 void copyDirectoryRecursively(const boost::filesystem::path& sourceDir, const boost::filesystem::path& destinationDir);
 
 
-template<class T>
+template<class T = double>
 T toNumber(const std::string& s)
 {
   try {

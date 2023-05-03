@@ -36,7 +36,10 @@ namespace cad {
     
     
 defineType(Extrusion);
-addToFactoryTable(Feature, Extrusion);
+//addToFactoryTable(Feature, Extrusion);
+addToStaticFunctionTable(Feature, Extrusion, insertrule);
+addToStaticFunctionTable(Feature, Extrusion, ruleDocumentation);
+
 
 
 size_t Extrusion::calcHash() const
@@ -50,10 +53,6 @@ size_t Extrusion::calcHash() const
 }
 
 
-Extrusion::Extrusion(): Feature()
-{}
-
-
 
 
 Extrusion::Extrusion(FeaturePtr sk, VectorPtr L, bool centered)
@@ -64,13 +63,6 @@ Extrusion::Extrusion(FeaturePtr sk, VectorPtr L, bool centered)
 
 
 
-FeaturePtr Extrusion::create(FeaturePtr sk, VectorPtr L, bool centered)
-{
-    return FeaturePtr(new Extrusion(sk, L, centered));
-}
-
-
-
 
 void Extrusion::build()
 {
@@ -78,8 +70,8 @@ void Extrusion::build()
 
     if ( !centered_ ) {
         BRepPrimAPI_MakePrism mkp ( sk_->shape(), to_Vec ( L_->value() ) );
-        providedSubshapes_["frontFace"]=FeaturePtr ( new Feature ( mkp.FirstShape() ) );
-        providedSubshapes_["backFace"]=FeaturePtr ( new Feature ( mkp.LastShape() ) );
+        providedSubshapes_["frontFace"]=Feature::create ( mkp.FirstShape() );
+        providedSubshapes_["backFace"]=Feature::create ( mkp.LastShape() );
         setShape ( mkp.Shape() );
     } else {
         gp_Trsf trsf;
@@ -89,8 +81,8 @@ void Extrusion::build()
             BRepBuilderAPI_Transform ( sk_->shape(), trsf ).Shape(),
             to_Vec ( L_->value() )
         );
-        providedSubshapes_["frontFace"]=FeaturePtr ( new Feature ( mkp.FirstShape() ) );
-        providedSubshapes_["backFace"]=FeaturePtr ( new Feature ( mkp.LastShape() ) );
+        providedSubshapes_["frontFace"]=Feature::create ( mkp.FirstShape() );
+        providedSubshapes_["backFace"]=Feature::create ( mkp.LastShape() );
         setShape ( mkp.Shape() );
     }
 
@@ -101,29 +93,30 @@ void Extrusion::build()
 
 
 
-void Extrusion::insertrule(parser::ISCADParser& ruleset) const
+void Extrusion::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
-    "Extrusion",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    "Extrusion",
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression
       >> ( (  ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) ) 
       >> ')' )
-      [ qi::_val = phx::bind(&Extrusion::create, qi::_1, qi::_2, qi::_3) ]
+      [ qi::_val = phx::bind(
+                         &Extrusion::create<FeaturePtr, VectorPtr, bool>,
+                         qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Extrusion::ruleDocumentation() const
+FeatureCmdInfoList Extrusion::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Extrusion",
@@ -133,7 +126,7 @@ FeatureCmdInfoList Extrusion::ruleDocumentation() const
             "Creates an extrusion of the planar feature sec. The direction and length of the extrusion is given by the vector L."
             " If the keyword centered is given, the extrusion is centered around the base feature."
         )
-    );
+    };
 }
 
 

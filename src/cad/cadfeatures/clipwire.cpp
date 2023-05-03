@@ -39,8 +39,9 @@ namespace cad {
     
 
 defineType(ClipWire);
-addToFactoryTable(Feature, ClipWire);
-
+//addToFactoryTable(Feature, ClipWire);
+addToStaticFunctionTable(Feature, ClipWire, insertrule);
+addToStaticFunctionTable(Feature, ClipWire, ruleDocumentation);
 
 size_t ClipWire::calcHash() const
 {
@@ -52,9 +53,6 @@ size_t ClipWire::calcHash() const
 }
 
 
-ClipWire::ClipWire()
-{
-}
 
 
 
@@ -66,12 +64,6 @@ ClipWire::ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le)
 }
 
 
-
-
-FeaturePtr ClipWire::create(FeaturePtr wire, ScalarPtr ls, ScalarPtr le)
-{
-    return FeaturePtr(new ClipWire(wire, ls, le));
-}
 
 
 
@@ -191,26 +183,27 @@ void ClipWire::build()
 
 
 
-void ClipWire::insertrule(parser::ISCADParser& ruleset) const
+void ClipWire::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "ClipWire",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-	[ qi::_val = phx::bind(&ClipWire::create, qi::_1, qi::_2, qi::_3) ]
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+                    [ qi::_val = phx::bind(
+                         &ClipWire::create<FeaturePtr, ScalarPtr, ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
-FeatureCmdInfoList ClipWire::ruleDocumentation() const
+FeatureCmdInfoList ClipWire::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "ClipWire",
@@ -219,7 +212,7 @@ FeatureCmdInfoList ClipWire::ruleDocumentation() const
          
             "Modifies an open wire feature by clipping its ends. From the beginning, a segment of length Ls is removed and from the end a segment of length Le."
         )
-    );
+  };
 }
 
 

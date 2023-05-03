@@ -148,37 +148,76 @@ void ParameterSet::extend(const EntryList& entries)
   }
 }
 
-ParameterSet& ParameterSet::merge(const ParameterSet& p)
+ParameterSet& ParameterSet::merge(const ParameterSet& other, bool allowInsertion )
 {
-  EntryList entries=p.entries();
+  EntryList entries=other.entries();
   for ( const ParameterSet::SingleEntry& i: entries )
   {
     std::string key(boost::get<0>(i));
-    SubParameterSet *p = dynamic_cast<SubParameterSet*>( boost::get<1>(i) );
     if (this->contains(key))
     {
-      if (p)
+      if (auto *p = dynamic_cast<SubParameterSet*>( boost::get<1>(i) ))
       {
         // merging subdict
         SubParameterSet *myp = dynamic_cast<SubParameterSet*>( this->find(key)->second.get() );
-        myp->subsetRef().merge(p->subset());
-	delete p;
+        myp->merge(*p, allowInsertion);
+        delete p;
       }
       else
       {
         // replacing
-	replace(key, boost::get<1>(i)); // take ownership of objects in given list!
+        replace(key, boost::get<1>(i)); // take ownership of objects in given list!
       }
     }
     else 
     {
-      // inserting
-      insert( value_type(key, std::unique_ptr<Parameter>(boost::get<1>(i))) ); // take ownership of objects in given list!
+      if (allowInsertion)
+      {
+          // inserting
+          insert( value_type(key, std::unique_ptr<Parameter>(boost::get<1>(i))) ); // take ownership of objects in given list!
+      }
     }
   }
 
   return *this;
 }
+
+
+
+ParameterSet ParameterSet::intersection(const ParameterSet &other) const
+{
+  EntryList entries;
+  for ( const ParameterSet::SingleEntry& i: other.entries() )
+  {
+    std::string otherkey = boost::get<0>(i);
+    Parameter *otherParameter = boost::get<1>(i);
+
+    if (this->contains(otherkey)
+        &&
+        this->get<Parameter>(otherkey).type()==otherParameter->type() )
+    {
+      auto *myp = this->find(otherkey)->second.get();
+
+      if (auto *op =
+          dynamic_cast<SubParameterSet*>( otherParameter ))
+      {
+        // intersect subdict
+        auto *mysd = dynamic_cast<SubParameterSet*>( myp );
+
+        entries.push_back({ otherkey, mysd->intersection(*op) });
+      }
+      else
+      {
+        // replacing
+        entries.push_back({ otherkey, myp->clone() });
+      }
+    }
+  }
+
+  return ParameterSet(entries);
+}
+
+
 
 
 std::string splitOffFirstParameter(std::string& path, int& nRemaining)
@@ -216,7 +255,7 @@ Parameter &ParameterSet::getParameter(std::string path)
   int nRemaining=-1;
   std::string parameterName = splitOffFirstParameter(path, nRemaining);
 
-  insight::CurrentExceptionContext ex("looking up parameter "+parameterName);
+  insight::CurrentExceptionContext ex("looking up parameter "+parameterName, false);
 
   auto parameter = find(parameterName);
 
@@ -557,6 +596,15 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string a
     f << std::flush;
     f.close();
 }
+
+
+void ParameterSet::saveToString(std::string &s, const boost::filesystem::path& file, std::string analysisType) const
+{
+    std::ostringstream os(s, std::ios_base::ate);
+    saveToStream(os, file.parent_path(), analysisType);
+    s = os.str();
+}
+
 
 std::string ParameterSet::readFromFile(const boost::filesystem::path& file, const std::string& startAtSubnode)
 {

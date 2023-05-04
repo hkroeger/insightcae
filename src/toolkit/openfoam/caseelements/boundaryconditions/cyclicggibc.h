@@ -22,7 +22,7 @@ inherits GGIBCBase::Parameters
 separationOffset = vector (0 0 0) "Translational transformation from this patch to the opposite one."
 rotationCentre = vector (0 0 0) "Origin of rotation axis"
 rotationAxis = vector (0 0 1) "Direction of rotation axis"
-rotationAngle = double 0.0 "[rad] Angle of rotation"
+rotationAngle = double 0.0 "[deg] Angle of rotation"
 
 <<<PARAMETERSET
 */

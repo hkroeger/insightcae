@@ -51,7 +51,8 @@ public:
       pre_courant,
       pre_exectime,
       pre_simspeed,
-      pre_deltat;
+      pre_deltat,
+      pre_minmax;
 #endif
 
   struct CourantInfo { double mean, max; };
@@ -69,7 +70,7 @@ protected:
     std::string curforcename_;
     int curforcesection_;
     arma::mat curforcevalue_;
-    std::string currbname_;
+    std::string currbname_, curRegion_, pre_region;
 
     std::shared_ptr<CourantInfo> last_courant_, last_if_courant_;
     std::shared_ptr<double> last_dt_;
@@ -97,7 +98,7 @@ protected:
     boost::regex dt_pattern;
     boost::regex exec_time_pattern;
 
-    boost::regex pimple_iter_pattern;
+    boost::regex pimple_iter_pattern, region_pattern, minMax_pattern;
 
     std::shared_ptr<OutputSectionReader> currentOutputSectionReader_;
 

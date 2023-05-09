@@ -34,6 +34,7 @@ const std::string SolverOutputAnalyzer::pre_courant="courant_no/";
 const std::string SolverOutputAnalyzer::pre_exectime="exec_time/";
 const std::string SolverOutputAnalyzer::pre_simspeed="sim_speed/";
 const std::string SolverOutputAnalyzer::pre_deltat="delta_t/";
+const std::string SolverOutputAnalyzer::pre_minmax="minmax/";
 
 
 
@@ -137,7 +138,9 @@ SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pd, double endTime
   if_courant_pattern("^ *Interface Courant Number mean: (.+) max: (.+)"),
   dt_pattern(" *deltaT = (.+)"),
   exec_time_pattern(" *ExecutionTime = (.+) s  ClockTime = (.+) s"),
-  pimple_iter_pattern("PIMPLE: .* (.+) iterations")
+  pimple_iter_pattern("PIMPLE: .* (.+) iterations"),
+  region_pattern("^Solving for (.+) region (.+)"),
+  minMax_pattern("^Min/max (.+):(.+) (.+)")
 {
   solverActionProgress_ = std::make_shared<ActionProgress>
       (
@@ -161,6 +164,11 @@ void SolverOutputAnalyzer::update(const std::string& line)
                 currentOutputSectionReader_->addProgressVariables(curProgVars_);
                 currentOutputSectionReader_.reset();
             }
+        }
+        else if ( boost::regex_search( line, match, region_pattern, boost::match_default ) )
+        {
+            curRegion_=match[2];
+            pre_region=curRegion_+"/";
         }
         else if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) && !curforcename_.empty() )
         {
@@ -325,13 +333,13 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
             if (last_courant_)
             {
-              curProgVars_[pre_courant+"mean"]=last_courant_->mean;
-              curProgVars_[pre_courant+"max"]=last_courant_->max;
+              curProgVars_[pre_region+pre_courant+"mean"]=last_courant_->mean;
+              curProgVars_[pre_region+pre_courant+"max"]=last_courant_->max;
             }
             if (last_if_courant_)
             {
-              curProgVars_[pre_courant+"interface_mean"]=last_if_courant_->mean;
-              curProgVars_[pre_courant+"interface_max"]=last_if_courant_->max;
+              curProgVars_[pre_region+pre_courant+"interface_mean"]=last_if_courant_->mean;
+              curProgVars_[pre_region+pre_courant+"interface_max"]=last_if_courant_->max;
             }
             if (last_dt_)
             {
@@ -349,19 +357,28 @@ void SolverOutputAnalyzer::update(const std::string& line)
             }
 
         }
+        else if ( boost::regex_search( line, match, minMax_pattern, boost::match_default ) )
+        {
+            std::string pre_qty=match[1]+"/";
+            double
+                minval=toNumber<double>(match[2]),
+                maxval=toNumber<double>(match[3]);
+            curProgVars_[pre_region+pre_minmax+pre_qty+"min"]=minval;
+            curProgVars_[pre_region+pre_minmax+pre_qty+"max"]=maxval;
+        }
         else if ( boost::regex_search( line, match, solver_pattern, boost::match_default ) )
         {
-            curProgVars_[pre_resi+match[2]] = toNumber<double>(match[3]);
+            curProgVars_[pre_region+pre_resi+match[2]] = toNumber<double>(match[3]);
         }
         else if ( boost::regex_search( line, match, cont_pattern, boost::match_default ) )
         {
-            curProgVars_[pre_conterr+"local"] = toNumber<double>(match[1]);
-            curProgVars_[pre_conterr+"global"] = toNumber<double>(match[2]);
-            curProgVars_[pre_conterr+"cumulative"] = toNumber<double>(match[3]);
+            curProgVars_[pre_region+pre_conterr+"local"] = toNumber<double>(match[1]);
+            curProgVars_[pre_region+pre_conterr+"global"] = toNumber<double>(match[2]);
+            curProgVars_[pre_region+pre_conterr+"cumulative"] = toNumber<double>(match[3]);
         }
         else if ( boost::regex_search( line, match, pimple_iter_pattern, boost::match_default ) )
         {
-            curProgVars_[pre_iter+"pimple_iter"] = toNumber<int>(match[1]);
+            curProgVars_[pre_region+pre_iter+"pimple_iter"] = toNumber<int>(match[1]);
         }
         else
         {

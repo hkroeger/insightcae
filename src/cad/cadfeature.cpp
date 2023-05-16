@@ -1107,6 +1107,20 @@ arma::mat Feature::faceNormal(FeatureID i) const
   return insight::vec3( vec.X(), vec.Y(), vec.Z() );  
 }
 
+arma::mat Feature::averageFaceNormal() const
+{
+  auto af = allFacesSet();
+  insight::assertion(
+      af.size()>=1,
+      "there are no faces whose normals could be averaged." );
+  arma::mat n=vec3Zero();
+  for (const auto& i: af)
+  {
+        n+=faceNormal(i);
+  }
+  return n/double(af.size());
+}
+
 FeatureSetData Feature::allVerticesSet() const
 {
   checkForBuildDuringAccess();

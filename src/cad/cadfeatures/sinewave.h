@@ -21,6 +21,7 @@
 #define SINEWAVE_H
 
 #include "cadfeature.h"
+#include "cadfeatures/singleedgefeature.h"
 
 namespace insight {
 namespace cad {
@@ -29,7 +30,7 @@ namespace cad {
 
 
 class SineWave
-    : public Feature
+    : public SingleEdgeFeature
 {
     ScalarPtr l_, A_;
 

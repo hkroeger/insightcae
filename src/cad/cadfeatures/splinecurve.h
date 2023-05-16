@@ -21,6 +21,8 @@
 #define INSIGHT_CAD_SPLINECURVE_H
 
 #include "cadfeature.h"
+#include "cadfeatures/singleedgefeature.h"
+
 
 namespace insight {
 namespace cad {
@@ -29,7 +31,7 @@ namespace cad {
     
     
 class SplineCurve
-    : public Feature
+    : public SingleEdgeFeature
 {
     std::vector<VectorPtr> pts_;
     VectorPtr tan0_, tan1_;
@@ -45,6 +47,9 @@ public:
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
+
+    VectorPtr start() const override;
+    VectorPtr end() const override;
 
     bool isSingleEdge() const override
     {

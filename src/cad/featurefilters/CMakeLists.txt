@@ -17,6 +17,7 @@ add_sources(insightcad_SOURCES
   edgetopology.cpp
   #secant.cpp
   coincidentprojectededge.cpp
+  edgeconnectingvertices.cpp edgeconnectingvertices.h
   
   facetopology.cpp
   faceadjacenttoedges.cpp

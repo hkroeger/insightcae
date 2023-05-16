@@ -109,6 +109,11 @@ void Datum::write(std::ostream& file) const
   file<<providesPlanarReference_<<endl;
 }
 
+string Datum::generateScriptCommand() const
+{
+  throw insight::Exception("not implemented");
+}
+
 void Datum::checkForBuildDuringAccess() const
 {
   if (hash_==0)

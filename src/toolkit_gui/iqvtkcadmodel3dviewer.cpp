@@ -20,6 +20,7 @@
 #include <QTextEdit>
 #include <QInputDialog>
 #include <QFileDialog>
+#include <QMessageBox>
 
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
@@ -755,6 +756,23 @@ void IQVTKCADModel3DViewer::addSiblings(const QModelIndex& idx)
     }
 }
 
+void IQVTKCADModel3DViewer::closeEvent(QCloseEvent *ev)
+{
+    if (currentUserActivity_)
+    {
+        auto answer= QMessageBox::question(this,
+            "User activity in progress",
+            "There is a user activity in progress!\nAny data will be lost.\nReally proceed?");
+        if (answer!=QMessageBox::StandardButton::Yes)
+        {
+            ev->ignore();
+            return;
+        }
+    }
+
+    ev->accept();
+}
+
 
 IQVTKCADModel3DViewer::BackgroundImage::BackgroundImage(
         const boost::filesystem::path& imageFile,
@@ -1394,13 +1412,16 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
     {
         auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
                     insight::cad::ConstrainedSketch::create(plane));
-        editSketch(name.toStdString(), sk, insight::ParameterSet(),
+        editSketch(sk, insight::ParameterSet(),
                    [](const insight::ParameterSet&, vtkProperty* actprops)
                    {
                        actprops->SetColor(1,0,0);
                        actprops->SetLineWidth(2);
                    },
-                   []() {}
+                   [this,name,sk]() {
+                        cadmodel()->addModelstep(name.toStdString(), sk);
+                        cadmodel()->setStaticModelStep(name.toStdString(), true);
+                    }
             );
     }
 }
@@ -1408,7 +1429,6 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
 
 
 void IQVTKCADModel3DViewer::editSketch(
-    const std::string& name,
     insight::cad::ConstrainedSketchPtr psk,
     const insight::ParameterSet& defaultGeometryParameters,
     SetSketchEntityAppearanceCallback saac,
@@ -1424,12 +1444,10 @@ void IQVTKCADModel3DViewer::editSketch(
 
 
         connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),
-                [this,name,psk,scc]()
+                [this,psk,scc]()
                 {
-                    currentUserActivity_.reset();
-                    cadmodel()->addModelstep(name, psk);
-                    cadmodel()->setStaticModelStep(name, true);
                     if (scc) scc();
+                    currentUserActivity_.reset();
                 }
         );
 

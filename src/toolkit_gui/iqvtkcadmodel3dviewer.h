@@ -358,6 +358,8 @@ private Q_SLOT:
     void addChild(const QModelIndex& idx);
     void addSiblings(const QModelIndex& idx);
 
+public:
+    void closeEvent(QCloseEvent *ev) override;
 
 public:
     IQVTKCADModel3DViewer(QWidget* parent=nullptr);
@@ -422,7 +424,6 @@ public:
 
     void doSketchOnPlane(insight::cad::DatumPtr plane) override;
     void editSketch(
-            const std::string& name,
             insight::cad::ConstrainedSketchPtr sk,
             const insight::ParameterSet& defaultGeometryParameters,
             SetSketchEntityAppearanceCallback saac,

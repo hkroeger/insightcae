@@ -72,6 +72,7 @@ protected:
     QWidget *inputContents_;
 
     QTreeView *modeltree_;
+    CADViewer *viewer_;
     ParameterSetDisplay* display_;
 
     insight::ParameterSet_ValidatorPtr vali_;
@@ -120,6 +121,8 @@ public:
             );
 
     inline IQParameterSetModel* model() const { return model_; }
+
+    CADViewer *viewer() const;
     
 public Q_SLOTS:
     void onParameterSetChanged();

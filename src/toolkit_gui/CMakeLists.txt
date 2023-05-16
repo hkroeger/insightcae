@@ -123,6 +123,7 @@ set(toolkit_gui_SRCS
     iqparameters/iqpropertylibraryselectionparameter.cpp iqparameters/iqpropertylibraryselectionparameter.h
     iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
     iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
+    iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 
     iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
 

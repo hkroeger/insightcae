@@ -111,7 +111,7 @@ double AngleConstraint::getConstraintError(unsigned int iConstraint) const
                 iConstraint==0,
                 "invalid constraint id" );
     checkForBuildDuringAccess();
-    return angle_ - targetValue();
+    return (angle_ - targetValue())/(2.*M_PI);
 }
 
 void AngleConstraint::scaleSketch(double scaleFactor)
@@ -137,7 +137,7 @@ void AngleConstraint::generateScriptCommand(
 }
 
 
-void AngleConstraint::addParserRule(ConstrainedSketchGrammar &ruleset)
+void AngleConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction)
 {
     namespace qi = boost::spirit::qi;
     namespace phx = boost::phoenix;

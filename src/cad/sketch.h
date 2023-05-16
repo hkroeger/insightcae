@@ -59,21 +59,13 @@ class Sketch
     double tol=Precision::Confusion() 
   );
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
 public:
   declareType("Sketch");
-  Sketch();
-  
-  static FeaturePtr create
-  (
-    DatumPtr pl, 
-    const boost::filesystem::path& filename, 
-    const std::string& layername="0", 
-    const SketchVarList& vars = SketchVarList(), 
-    double tol=Precision::Confusion() 
-  );
+  CREATE_FUNCTION(Sketch);
+
   
   void operator=(const Sketch& o);
   
@@ -82,9 +74,10 @@ public:
   
 //   virtual bool isSingleCloseWire() const;
 //   virtual TopoDS_Wire asSingleClosedWire() const;
-  virtual bool isSingleFace() const;
+  bool isSingleFace() const override;
   operator const TopoDS_Face& () const;
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+
+  static void insertrule(parser::ISCADParser& ruleset);
   
   const boost::filesystem::path& fn() const { return fn_; }
 };
@@ -117,7 +110,7 @@ public:
       ConstrainedSketchScriptBuffer& script,
       const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
-  static void addParserRule(ConstrainedSketchGrammar& ruleset);
+  static void addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf);
 };
 
 
@@ -137,6 +130,8 @@ public:
 
 
 
+
+
 class ConstrainedSketch
 : public Feature
 {
@@ -146,17 +141,20 @@ class ConstrainedSketch
 
   ConstrainedSketch( DatumPtr pl );
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
 public:
   declareType("ConstrainedSketch");
-  ConstrainedSketch();
 
-  static std::shared_ptr<ConstrainedSketch> create(DatumPtr pl);
-  static std::shared_ptr<ConstrainedSketch> create( DatumPtr pl, std::istream& is );
+  CREATE_FUNCTION(ConstrainedSketch);
+  static std::shared_ptr<ConstrainedSketch> createFromStream(
+      DatumPtr pl,
+      std::istream& is,
+      const ParameterSet& geomPS = insight::ParameterSet() );
 
   const DatumPtr& plane() const;
+
   std::set<ConstrainedSketchEntityPtr>& geometry();
   const std::set<ConstrainedSketchEntityPtr>& geometry() const;
 
@@ -170,6 +168,8 @@ public:
   void setSolverTolerance(double tol);
 
   void resolveConstraints();
+
+  static void insertrule(parser::ISCADParser& ruleset);
 
   void generateScript(std::ostream& os) const;
 

@@ -424,60 +424,81 @@ iscadParserException::iscadParserException(const std::string& reason, int from_p
 {
 }
 
-bool parseISCADModelStream ( std::istream& in, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd,
-                             const boost::filesystem::path& filenameinfo )
-{
 
+bool parseISCADModel
+(
+    const std::string& script,
+    Model* m,
+    int* failloc,
+    parser::SyntaxElementDirectoryPtr* sd,
+    const boost::filesystem::path& filenameinfo
+)
+{
+    std::string raw_contents(script);
+
+    std::string::iterator orgbegin,
+        first=raw_contents.begin(),
+        last=raw_contents.end();
+
+    orgbegin=first;
+
+    bool r = false;
+    try
+    {
+
+        ISCADParser parser ( m, filenameinfo );
+        skip_grammar skip;
+
+        //   std::cout<<"Parsing started."<<std::endl;
+        parser.current_pos.setStartPos ( first );
+        r = qi::phrase_parse (
+            first,
+            last,
+            parser,
+            skip
+            );
+        //   std::cout<<"Parsing finished."<<std::endl;
+
+        if ( first != last ) // fail if we did not get a full match
+        {
+            if ( failloc ) *failloc=int ( first-orgbegin );
+            return false;
+        }
+        else
+        {
+            if ( sd )
+            {
+          *sd = parser.syntax_element_locations;
+            }
+        }
+    }
+    catch ( const qi::expectation_failure<std::string::iterator>& e )
+    {
+        std::ostringstream os;
+        os << e.what_;
+        throw iscadParserException(os.str(), int(e.first-orgbegin), int(e.last-orgbegin));
+    }
+    return r;
+}
+
+
+
+bool parseISCADModelStream (
+    std::istream& in,
+    Model* m,
+    int* failloc,
+    parser::SyntaxElementDirectoryPtr* sd,
+    const boost::filesystem::path& filenameinfo
+)
+{
   in >> std::noskipws;
 
 // use stream iterators to copy the stream to a string
   std::istream_iterator<char> it(in);
   std::istream_iterator<char> end;
   std::string contents_raw(it, end);
-  
-  std::string::iterator orgbegin,
-      first=contents_raw.begin(),
-      last=contents_raw.end();
 
-  orgbegin=first;
-
-  bool r = false;
-  try
-    {
-
-      ISCADParser parser ( m, filenameinfo );
-      skip_grammar skip;
-
-//   std::cout<<"Parsing started."<<std::endl;
-      parser.current_pos.setStartPos ( first );
-      r = qi::phrase_parse (
-                 first,
-                 last,
-                 parser,
-                 skip
-               );
-//   std::cout<<"Parsing finished."<<std::endl;
-
-      if ( first != last ) // fail if we did not get a full match
-        {
-          if ( failloc ) *failloc=int ( first-orgbegin );
-          return false;
-        }
-      else
-        {
-          if ( sd )
-            {
-              *sd = parser.syntax_element_locations;
-            }
-        }
-    }
-  catch ( const qi::expectation_failure<std::string::iterator>& e )
-    {
-        std::ostringstream os;
-        os << e.what_;
-        throw iscadParserException(os.str(), int(e.first-orgbegin), int(e.last-orgbegin));
-    }
-  return r;
+  return parseISCADModel(contents_raw, m, failloc, sd, filenameinfo);
 }
 
 

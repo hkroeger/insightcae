@@ -58,7 +58,7 @@ public:
         ConstrainedSketchScriptBuffer& script,
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
-    static void addParserRule(ConstrainedSketchGrammar& ruleset);
+    static void addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf);
 };
 
 

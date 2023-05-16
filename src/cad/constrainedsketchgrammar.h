@@ -3,12 +3,16 @@
 
 
 #include <memory>
+#include <functional>
 
 #include "parser.h"
 
 
 
 namespace insight {
+
+class ParameterSet;
+
 namespace cad {
 
 
@@ -35,7 +39,8 @@ public:
     boost::spirit::qi::rule<std::string::iterator, std::shared_ptr<ConstrainedSketchEntity>(), insight::cad::parser::skip_grammar, boost::spirit::qi::locals<ParserRule> > r_entity;
     boost::spirit::qi::rule<std::string::iterator, insight::cad::parser::skip_grammar> r_sketch;
 
-    ConstrainedSketchGrammar(std::shared_ptr<ConstrainedSketch> sk);
+    ConstrainedSketchGrammar(std::shared_ptr<ConstrainedSketch> sk,
+                             std::function<insight::ParameterSet(void)> mdpf);
 };
 
 }

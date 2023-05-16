@@ -93,7 +93,7 @@ double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
     auto p = p_->coords2D();
     double x=parameters().getDouble("x");
     double y=parameters().getDouble("y");
-    return pow(p(0)-x,2), pow(p(1)-y,2);
+    return pow(p(0)-x,2), pow(p(1)-y, 2);
 }
 
 void IQVTKFixedPoint::scaleSketch(double scaleFactor)
@@ -154,7 +154,8 @@ int IQVTKHorizontalConstraint::nConstraints() const
 
 double IQVTKHorizontalConstraint::getConstraintError(unsigned int iConstraint) const
 {
-    arma::mat ex = line_->getDatumVectors().at("ex");
+    arma::mat ex = insight::normalized(
+        line_->getDatumVectors().at("ex") );
     return 1.-fabs(arma::dot(insight::vec3(1,0,0), ex));
 }
 
@@ -213,7 +214,8 @@ int IQVTKVerticalConstraint::nConstraints() const
 
 double IQVTKVerticalConstraint::getConstraintError(unsigned int iConstraint) const
 {
-    arma::mat ex = line_->getDatumVectors().at("ex");
+    arma::mat ex = insight::normalized(
+        line_->getDatumVectors().at("ex") );
     return 1.-fabs(arma::dot(insight::vec3(0,1,0), ex));
 }
 

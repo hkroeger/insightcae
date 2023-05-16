@@ -1,6 +1,7 @@
 #include "cadgeometryparameter.h"
 
 #include "cadmodel.h"
+#include "parser.h"
 #include "base/rapidxml.h"
 
 namespace insight {
@@ -16,7 +17,15 @@ addToFactoryTable(Parameter, CADGeometryParameter);
 
 void CADGeometryParameter::resetCADGeometry() const
 {
+    if (! (script().empty() || featureLabel().empty()) )
+    {
+        std::string modelscript( featureLabel()+": "+script()+";\n" );
 
+        insight::cad::ModelPtr model(new insight::cad::Model); // std::make_shared causes crash!!??
+
+        int success = insight::cad::parseISCADModel(modelscript, model.get());
+        CADGeometry_ = model->modelsteps().at(featureLabel());
+    }
 }
 
 CADGeometryParameter::CADGeometryParameter(

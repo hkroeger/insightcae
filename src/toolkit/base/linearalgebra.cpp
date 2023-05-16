@@ -1294,6 +1294,20 @@ CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x, cons
     ez/=arma::norm(ez,2);
 }
 
+double stabilize(double value, double nonZeroThreshold)
+{
+    // 1 or -1, not 0
+    double sign = 1.0;
+    if (value<0.0) sign=-1.0;
+
+    double m = std::fabs(value);
+    if (m<nonZeroThreshold)
+    {
+        m=nonZeroThreshold;
+    }
+    return sign*m;
+}
+
 
 
 }

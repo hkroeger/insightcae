@@ -221,6 +221,17 @@ struct ISCADParser
 
 }
 
+
+bool parseISCADModel
+(
+    const std::string& script,
+    Model* m,
+    int* failloc=NULL,
+    parser::SyntaxElementDirectoryPtr* sd=NULL,
+    const boost::filesystem::path& filenameinfo=""
+);
+
+
 bool parseISCADModelStream
 (
     std::istream& in, 

@@ -108,7 +108,7 @@ double DistanceConstraint::getConstraintError(unsigned int iConstraint) const
                 iConstraint==0,
                 "invalid constraint id" );
     checkForBuildDuringAccess();
-    return distance_ - targetValue();
+    return (distance_ - targetValue()) / stabilize(targetValue(), SMALL);
 }
 
 void DistanceConstraint::scaleSketch(double scaleFactor)
@@ -133,7 +133,7 @@ void DistanceConstraint::generateScriptCommand(
         );
 }
 
-void DistanceConstraint::addParserRule(ConstrainedSketchGrammar &ruleset)
+void DistanceConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction)
 {
     namespace qi=boost::spirit::qi;
     namespace phx=boost::phoenix;

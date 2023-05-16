@@ -68,6 +68,7 @@
 #include "base/wsllinuxserver.h"
 
 
+#include "iqvtkcadmodel3dviewer.h"
 
 namespace fs = boost::filesystem;
 
@@ -418,16 +419,21 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
     if (event->isAccepted())
     {
-      QSettings settings("silentdynamics", "workbench");
+      peditor_->viewer()->closeEvent(event);
 
-      if (peditor_->hasVisualizer())
-        settings.setValue("parameterEditor_wViz", peditor_->saveState());
-      else
-        settings.setValue("parameterEditor_woViz", peditor_->saveState());
+      if (event->isAccepted())
+      {
+          QSettings settings("silentdynamics", "workbench");
 
-      settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
+          if (peditor_->hasVisualizer())
+            settings.setValue("parameterEditor_wViz", peditor_->saveState());
+          else
+            settings.setValue("parameterEditor_woViz", peditor_->saveState());
 
-      QMdiSubWindow::closeEvent(event);
+          settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
+
+          QMdiSubWindow::closeEvent(event);
+      }
     }
 
 }

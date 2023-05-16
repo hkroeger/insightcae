@@ -460,6 +460,10 @@ struct CoordinateSystem
 };
 //typedef std::map<arma::mat, int, CompMat> SortedMatMap;
 
+
+double stabilize(double value, double nonZeroThreshold);
+
+
 }
 
 #endif // INSIGHT_LINEARALGEBRA_H

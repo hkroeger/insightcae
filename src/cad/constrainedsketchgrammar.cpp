@@ -35,7 +35,9 @@ using lookupEntity_ = boost::phoenix::function<lookupEntity_f<T> >;
 
 
 
-ConstrainedSketchGrammar::ConstrainedSketchGrammar(std::shared_ptr<ConstrainedSketch> sk)
+ConstrainedSketchGrammar::ConstrainedSketchGrammar(
+    std::shared_ptr<ConstrainedSketch> sk,
+    MakeDefaultGeometryParametersFunction mdpf )
     : ConstrainedSketchGrammar::base_type(r_sketch),
       sketch(sk)
 {
@@ -63,7 +65,7 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(std::shared_ptr<ConstrainedSk
 
     for (const auto& apr : *ConstrainedSketchEntity::addParserRuleFunctions_)
     {
-        apr.second(*this);
+        apr.second(*this, mdpf);
     }
 
     r_entity =

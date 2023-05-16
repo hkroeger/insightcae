@@ -34,9 +34,10 @@ class Extrusion
     : public Feature
 {
     FeaturePtr sk_;
-    VectorPtr L_;
+    boost::variant<VectorPtr,ScalarPtr> L_;
     bool centered_;
 
+    Extrusion ( FeaturePtr sk, ScalarPtr L, bool centered=false );
     Extrusion ( FeaturePtr sk, VectorPtr L, bool centered=false );
 
     virtual size_t calcHash() const;

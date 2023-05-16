@@ -2,6 +2,10 @@
 
 using namespace std;
 
+
+defineType(DynamicClassSelectableSubsetParameterParser);
+addToStaticFunctionTable(ParserDataBase, DynamicClassSelectableSubsetParameterParser, insertrule);
+
 DynamicClassSelectableSubsetParameterParser::Data::Data ( const std::string& base,  const std::string& default_sel, const std::string& d )
     : ParserDataBase ( d ), base_type( base ), default_sel_(default_sel)
 {}

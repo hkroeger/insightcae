@@ -1,3 +1,6 @@
+#ifndef INSIGHT_FACTORY_H
+#define INSIGHT_FACTORY_H
+
 /*
  * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
@@ -19,13 +22,9 @@
  */
 
 
-#ifndef INSIGHT_FACTORY_H
-#define INSIGHT_FACTORY_H
-
-//#include "boost/ptr_container/ptr_map.hpp"
-
-#include "boost/foreach.hpp"
-
+/*
+ * MUST BE HEADER ONLY! (used in PDL without linking toolkit lib!)
+ */
 
 namespace insight {
 
@@ -107,10 +106,10 @@ static std::vector<std::string> factoryToC()
   if (factories_) { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
    if (i==baseT::factories_->end()) \
-    throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
+    throw std::runtime_error("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
    return (*i->second)( parList ); \
   } \
-  else throw insight::Exception("Factory table of type \"" #baseT "\" is empty!" ); \
+  else throw std::runtime_error("Factory table of type \"" #baseT "\" is empty!" ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
  { \
@@ -133,10 +132,10 @@ static std::vector<std::string> factoryToC()
    if (factories_) { \
     baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
     if (i==baseT::factories_->end()) \
-     throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
+     throw std::runtime_error("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
     return (*i->second)(); \
    } \
-   else throw insight::Exception("Factory table of type \"" #baseT "\" is empty!" ); \
+   else throw std::runtime_error("Factory table of type \"" #baseT "\" is empty!" ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
  { \
@@ -205,10 +204,10 @@ static struct add##specT##To##baseT##FactoryTable \
    if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
   if (i==baseT::Name##Functions_->end()) \
-    throw insight::Exception("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
+    throw std::runtime_error("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
   return i->second(); \
   } else  {\
-    throw insight::Exception("Static function table of type \"" #baseT "\" is empty!"); \
+    throw std::runtime_error("Static function table of type \"" #baseT "\" is empty!"); \
   }\
  } \
  baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr
@@ -220,10 +219,10 @@ static struct add##specT##To##baseT##FactoryTable \
    if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
   if (i==baseT::Name##Functions_->end()) \
-    throw insight::Exception("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
+    throw std::runtime_error("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
   return i->second(parList); \
   } else  {\
-    throw insight::Exception("Static function table of type \"" #baseT "\" is empty!"); \
+    throw std::runtime_error("Static function table of type \"" #baseT "\" is empty!"); \
   }\
  } \
  baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr

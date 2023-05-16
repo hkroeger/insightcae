@@ -2,6 +2,12 @@
 
 using namespace std;
 
+
+
+defineType(SubsetParameterParser);
+addToStaticFunctionTable(ParserDataBase, SubsetParameterParser, insertrule);
+
+
 SubsetParameterParser::Data::Data(const ParameterSetData& v, const std::string& d)
     : ParserDataBase(d), value(v)
 {

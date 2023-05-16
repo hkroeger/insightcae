@@ -2,6 +2,10 @@
 
 using namespace std;
 
+defineType(VectorParameterParser);
+addToStaticFunctionTable(ParserDataBase, VectorParameterParser, insertrule);
+
+
 VectorParameterParser::Data::Data(const arma::mat& v, const std::string& d)
 : ParserDataBase(d), value(v)
 {}

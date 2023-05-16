@@ -22,21 +22,23 @@ struct SpatialTransformationParameterParser
     std::string cppValueRep(const std::string&, const std::string& thisscope) const override;
   };
 
-  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  declareType("spatialTransformation");
+
+  inline static void insertrule(PDLParserRuleset& ruleset)
   {
     ruleset.parameterDataRules.add
     (
-      "spatialTransformation",
-      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
-       new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+      typeName,
+      std::make_shared<PDLParserRuleset::ParameterDataRule>(
+
         ( "(" >> *qi::double_ >> ")" >> // translation
           "(" >> *qi::double_ >> ")" >> // roll pitch yaw
           qi::double_ >>                // scale factor
           ruleset.r_description_string )
          [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(
             vec2mat_(qi::_1), vec2mat_(qi::_2), qi::_3, qi::_4 )) ]
-      ))
+
+      )
     );
   }
 };

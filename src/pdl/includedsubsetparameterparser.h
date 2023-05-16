@@ -64,26 +64,28 @@ struct IncludedSubsetParameterParser
 
     };
 
-    template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-    inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+    declareType("includedset");
+
+    inline static void insertrule(PDLParserRuleset& ruleset)
     {
         ruleset.parameterDataRules.add
         (
-            "includedset",
-            typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
-                      new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-                        (ruleset.r_string >> ruleset.r_description_string >>
-                         (
-                           (qi::lit("modifyDefaults") >> '{' >>
-                            *(
-                              ruleset.r_identifier >> ruleset.r_path
-                                >> '=' >> ruleset.r_up_to_semicolon
-                             )
-                           >> '}')
-                           |qi::attr(Data::DefaultValueModifications())
-                          ) )
-                        [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3)) ]
-                    ))
+            typeName,
+            std::make_shared<PDLParserRuleset::ParameterDataRule>(
+
+                (ruleset.r_string >> ruleset.r_description_string >>
+                 (
+                   (qi::lit("modifyDefaults") >> '{' >>
+                    *(
+                      ruleset.r_identifier >> ruleset.r_path
+                        >> '=' >> ruleset.r_up_to_semicolon
+                     )
+                   >> '}')
+                   |qi::attr(Data::DefaultValueModifications())
+                  ) )
+                [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3)) ]
+
+            )
         );
     }
 };

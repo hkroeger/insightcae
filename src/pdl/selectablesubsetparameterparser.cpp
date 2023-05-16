@@ -4,6 +4,10 @@
 
 using namespace std;
 
+defineType(SelectableSubsetParameterParser);
+addToStaticFunctionTable(ParserDataBase, SelectableSubsetParameterParser, insertrule);
+
+
 SelectableSubsetParameterParser::Data::Data ( const SubsetListData& v, const std::string& ds, const std::string& d )
     : ParserDataBase ( d ), default_sel ( ds ), value ( v )
 {}

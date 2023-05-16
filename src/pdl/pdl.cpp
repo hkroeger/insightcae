@@ -19,25 +19,7 @@
  */
 
 
-#include "boolparameterparser.h"
-#include "doubleparameterparser.h"
-#include "vectorparameterparser.h"
-#include "stringparameterparser.h"
-#include "pathparameterparser.h"
-#include "intparameterparser.h"
-#include "subsetparameterparser.h"
-#include "includedsubsetparameterparser.h"
-#include "selectionparameterparser.h"
-#include "arrayparameterparser.h"
-#include "doublerangeparameterparser.h"
-#include "dynamicclassselectablesubsetparameterparser.h"
-#include "dynamicclassparametersselectablesubsetparameterparser.h"
-#include "matrixparameterparser.h"
-#include "selectablesubsetparameterparser.h"
-#include "propertylibraryselectionparameterparser.h"
-#include "spatialtransformationparameterparser.h"
-#include "cadgeometryparameterparser.h"
-
+#include "parserdatabase.h"
 
 
 /**
@@ -49,10 +31,6 @@
 
 
 
-
-
-
-
 using namespace std;
 using namespace qi;
 using namespace phx;
@@ -60,9 +38,8 @@ using namespace boost;
 
 
 
-template <typename Iterator>
-skip_grammar<Iterator>::skip_grammar() 
-  : skip_grammar::base_type(skip, "PL/0")
+skip_grammar::skip_grammar()
+    : skip_grammar::base_type(skip, "PL/0")
 {
   skip
       =   boost::spirit::ascii::space
@@ -80,8 +57,7 @@ skip_grammar<Iterator>::skip_grammar()
  */
 
 
-template <typename Iterator, typename Skipper>
-PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
+PDLParserRuleset::PDLParserRuleset()
 {  
   r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
   r_description_string = (r_string | attr(""));
@@ -95,14 +71,7 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
                   > -( qi::lit("*hidden") [ phx::bind(&ParserDataBase::setHidden, *qi::_val) ] )
       ;
   
-  //   parameterDataRules.add
-  //   (
-  //     "include",
-  //     typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-  //       ( "(" >> r_string >> ")" >> ruleset.r_description_string )
-  //       [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(phx::construct<arma::mat>(qi::_1), qi::_2)) ]
-  //     ))
-  //   );
+
 
   r_parametersetentry = r_identifier >> '=' > r_parameterdata;
 
@@ -119,11 +88,7 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
       >> (r_addcode | qi::attr(std::string()))
       >> r_parameterset;
 
-  
-  //   BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-  //   BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
-  //   BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
-  //   BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
+
 }
 /**
  * \addtogroup PDL
@@ -136,48 +101,33 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
 
 
 
-template <typename Iterator, typename Skipper>
 struct PDLParser
-    : qi::grammar< Iterator, PDLParserResult(), Skipper >
+    : qi::grammar< PDLParserRuleset::Iterator, PDLParserResult(), PDLParserRuleset::Skipper >
 {
 
   public:
   
-  PDLParserRuleset<Iterator,Skipper> rules;
+  PDLParserRuleset rules;
 
   PDLParser()
-  : PDLParser::base_type(rules.r_pdl_content)
+      : PDLParser::base_type(rules.r_pdl_content)
   {
-    BoolParameterParser::insertrule<Iterator, Skipper>(rules);
-    DoubleParameterParser::insertrule<Iterator, Skipper>(rules);
-    dimensionedScalarParameterParser::insertrule<Iterator, Skipper>(rules);
-    VectorParameterParser::insertrule<Iterator, Skipper>(rules);
-    StringParameterParser::insertrule<Iterator, Skipper>(rules);
-    PathParameterParser::insertrule<Iterator, Skipper>(rules);
-    IntParameterParser::insertrule<Iterator, Skipper>(rules);
-    SubsetParameterParser::insertrule<Iterator, Skipper>(rules);
-    IncludedSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
-    SelectionParameterParser::insertrule<Iterator, Skipper>(rules);
-    ArrayParameterParser::insertrule<Iterator, Skipper>(rules);
-    DoubleRangeParameterParser::insertrule<Iterator, Skipper>(rules);
-    SelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
-    DynamicClassSelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
-    DynamicClassParametersSelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
-    MatrixParameterParser::insertrule<Iterator, Skipper>(rules);
-    PropertyLibrarySelectionParameterParser::insertrule<Iterator, Skipper>(rules);
-    SpatialTransformationParameterParser::insertrule<Iterator, Skipper>(rules);
-    CADGeometryParameterParser::insertrule<Iterator, Skipper>(rules);
 
-    rules.init();
+      for (const auto& r: *ParserDataBase::insertruleFunctions_)
+      {
+          r.second(rules);
+      }
 
-    on_error<fail>( rules.r_pdl_content,
-                   phx::ref(std::cout)
-                   << "Error! Expecting "
-                   << qi::_4
-                   << " here: '"
-                   << phx::construct<std::string>(qi::_3, qi::_2)
-                   << "'\n"
-                   );
+      rules.init();
+
+      on_error<fail>( rules.r_pdl_content,
+                     phx::ref(std::cout)
+                         << "Error! Expecting "
+                         << qi::_4
+                         << " here: '"
+                         << phx::construct<std::string>(qi::_3, qi::_2)
+                         << "'\n"
+                     );
   }
 
 };
@@ -200,8 +150,8 @@ int main ( int argc, char *argv[] )
         exit ( -1 );
       }
 
-      PDLParser<std::string::iterator> parser;
-      skip_grammar<std::string::iterator> skip;
+      PDLParser parser;
+      skip_grammar skip;
 
 
       std::istreambuf_iterator<char> eos;

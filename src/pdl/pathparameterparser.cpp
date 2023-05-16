@@ -1,5 +1,7 @@
 #include "pathparameterparser.h"
 
+defineType(PathParameterParser);
+addToStaticFunctionTable(ParserDataBase, PathParameterParser, insertrule);
 
 PathParameterParser::Data::Data(const boost::filesystem::path& v, const std::string& d)
 : ParserDataBase(d), value(v)

@@ -21,17 +21,19 @@ struct DoubleParameterParser
     std::string cppValueRep(const std::string&, const std::string& thisscope) const override;
   };
 
-  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  declareType("double");
+
+  inline static void insertrule(PDLParserRuleset& ruleset)
   {
     ruleset.parameterDataRules.add
     (
-      "double",
-      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
-       new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+      typeName,
+      std::make_shared<PDLParserRuleset::ParameterDataRule>(
+
         ( qi::double_ >> ruleset.r_description_string )
          [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2)) ]
-      ))
+
+      )
     );
   }
 };
@@ -59,17 +61,19 @@ struct dimensionedScalarParameterParser
     ) const override;
   };
 
-  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  declareType("dimensionedScalar");
+
+  inline static void insertrule(PDLParserRuleset& ruleset)
   {
     ruleset.parameterDataRules.add
     (
-      "dimensionedScalar",
-      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
-       new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+      typeName,
+      std::make_shared<PDLParserRuleset::ParameterDataRule>(
+
         ( ruleset.r_identifier >> ruleset.r_identifier >> qi::double_ >> ruleset.r_description_string )
          [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
-      ))
+
+      )
     );
   }
 };

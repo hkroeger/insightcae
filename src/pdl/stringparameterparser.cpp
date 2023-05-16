@@ -2,6 +2,10 @@
 
 using namespace std;
 
+defineType(StringParameterParser);
+addToStaticFunctionTable(ParserDataBase, StringParameterParser, insertrule);
+
+
 StringParameterParser::Data::Data(const std::string& v, const std::string& d)
 : ParserDataBase(d), value(v)
 {}

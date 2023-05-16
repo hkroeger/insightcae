@@ -20,6 +20,11 @@
 #include "fillingface.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
+#include "featurefilters/edgeconnectingvertices.h"
+#include "cadfeatures/singleedgefeature.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -79,65 +84,102 @@ FillingFace::FillingFace ( FeatureSetPtr es1, FeatureSetPtr es2 )
 
 void FillingFace::build()
 {
-    if ( e1_ && e2_ ) {
-        TopoDS_Edge ee1, ee2;
-        bool ok=true;
-        if ( e1_->isSingleEdge() ) {
-            ee1=e1_->asSingleEdge();
-        } else {
-            ok=false;
-        }
-        if ( e2_->isSingleEdge() ) {
-            ee2=e2_->asSingleEdge();
-        } else {
-            ok=false;
-        }
+  TopoDS_Edge ee1, ee2;
 
-        if ( !ok ) {
-            throw insight::Exception ( "Invalid edge given!" );
-        }
+  if ( e1_ && e2_ )
+  {
+      bool ok=true;
+      if ( e1_->isSingleEdge() )
+      {
+          ee1=e1_->asSingleEdge();
+      }
+      else
+      {
+          ok=false;
+      }
+      if ( e2_->isSingleEdge() )
+      {
+          ee2=e2_->asSingleEdge();
+      }
+      else
+      {
+          ok=false;
+      }
 
-        TopoDS_Face f;
-        try {
-            f=BRepFill::Face ( ee1, ee2 );
-        } catch ( ... ) {
-            throw insight::Exception ( "Failed to generate face!" );
-        }
+      if ( !ok )
+      {
+          throw insight::Exception ( "Invalid edge given!" );
+      }
+  }
+  else if ( es1_ && es2_ )
+  {
+      TopoDS_Edge ee1, ee2;
+      if ( es1_->size() !=1 )
+      {
+          throw insight::Exception ( "first feature set has to contain only 1 edge!" );
+      }
+      else
+      {
+          ee1=es1_->model()->edge ( *es1_->data().begin() );
+      }
 
-        ShapeFix_Face FixShape;
-        FixShape.Init ( f );
-        FixShape.Perform();
+      if ( es2_->size() !=1 )
+      {
+          throw insight::Exception ( "second feature set has to contain only 1 edge!" );
+      }
+      else
+      {
+          ee2=es2_->model()->edge ( *es2_->data().begin() );
+      }
+  }
+  else
+  {
+      throw insight::Exception ( "Improper specification of edges for FillingFace!" );
+  }
 
-        setShape ( FixShape.Face() );
-    } else if ( es1_ && es2_ ) {
-        TopoDS_Edge ee1, ee2;
-        if ( es1_->size() !=1 ) {
-            throw insight::Exception ( "first feature set has to contain only 1 edge!" );
-        } else {
-            ee1=es1_->model()->edge ( *es1_->data().begin() );
-        }
+  TopoDS_Face f;
+  try
+  {
+      f=BRepFill::Face ( ee1, ee2 );
+  }
+  catch ( ... )
+  {
+      throw insight::Exception ( "Failed to generate face!" );
+  }
 
-        if ( es2_->size() !=1 ) {
-            throw insight::Exception ( "second feature set has to contain only 1 edge!" );
-        } else {
-            ee2=es2_->model()->edge ( *es2_->data().begin() );
-        }
+  ShapeFix_Face FixShape;
+  FixShape.Init ( f );
+  FixShape.Perform();
 
-        TopoDS_Face f;
-        try {
-            f=BRepFill::Face ( ee1, ee2 );
-        } catch ( ... ) {
-            throw insight::Exception ( "Failed to generate face!" );
-        }
+  setShape ( FixShape.Face() );
 
-        ShapeFix_Face FixShape;
-        FixShape.Init ( f );
-        FixShape.Perform();
+  auto va1 = vertexID(TopExp::FirstVertex(ee1));
+  auto vb1 = vertexID(TopExp::LastVertex(ee1));
+  auto va2 = vertexID(TopExp::FirstVertex(ee2));
+  auto vb2 = vertexID(TopExp::LastVertex(ee2));
 
-        setShape ( FixShape.Face() );
-    } else {
-        throw insight::Exception ( "Improper specification of edges for FillingFace!" );
-    }
+  providedSubshapes_.insert(
+      {
+          "tan1",
+          cad::SingleEdgeFeature::create(
+              std::make_shared<FeatureSet>(
+                  shared_from_this(),
+                  EntityType::Edge,
+                  query_edges(
+                      std::make_shared<EdgeConnectingVertices>(
+                          va1, va2))))
+      });
+  providedSubshapes_.insert(
+      {
+          "tan2",
+          cad::SingleEdgeFeature::create(
+              std::make_shared<FeatureSet>(
+                  shared_from_this(),
+                  EntityType::Edge,
+                  query_edges(
+                      std::make_shared<EdgeConnectingVertices>(
+                          vb1, vb2))))
+      });
 }
 
 

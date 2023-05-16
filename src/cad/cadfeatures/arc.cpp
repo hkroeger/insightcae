@@ -80,18 +80,14 @@ size_t Arc::calcHash() const
 
 void Arc::build()
 {
-  Handle_Geom_TrimmedCurve crv=GC_MakeArcOfCircle(to_Pnt(*p0_), to_Vec(*p0tang_), to_Pnt(*p1_));
+  Handle_Geom_TrimmedCurve crv =
+      GC_MakeArcOfCircle(
+      to_Pnt(*p0_),
+      to_Vec(*p0tang_),
+      to_Pnt(*p1_) );
+
   setShape(BRepBuilderAPI_MakeEdge(crv));
   
-  gp_Pnt p;
-  gp_Vec v;
-  crv->D1(crv->FirstParameter(), p, v);
-  refpoints_["p0"]=vec3(p);
-  refvectors_["et0"]=vec3(v);
-  crv->D1(crv->LastParameter(), p, v);
-  refpoints_["p1"]=vec3(p);
-  refvectors_["et1"]=vec3(v);
-
   auto c = Handle_Geom_Circle::DownCast(crv->BasisCurve())->Circ();
   refpoints_["center"]=vec3(c.Location());
   refvalues_["D"]=c.Radius()*2.;
@@ -102,8 +98,7 @@ void Arc::build()
 
 Arc::Arc(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
 : p0_(p0), p0tang_(p0tang), p1_(p1)
-{
-}
+{}
 
 
 
@@ -167,19 +162,7 @@ FeatureCmdInfoList Arc::ruleDocumentation()
 }
 
 
-bool Arc::isSingleEdge() const
-{
-    return true;
-}
 
-
-
-
-
-bool Arc::isSingleCloseWire() const
-{
-  return false;
-}
 
 
 
@@ -217,15 +200,6 @@ void Arc3P::build()
   Handle_Geom_TrimmedCurve crv=GC_MakeArcOfCircle(to_Pnt(*p0_), to_Pnt(*p1_), to_Pnt(*pm_));
   
   setShape(BRepBuilderAPI_MakeEdge(crv));
-  
-  gp_Pnt p;
-  gp_Vec v;
-  crv->D1(crv->FirstParameter(), p, v);
-  refpoints_["p0"]=vec3(p);
-  refvectors_["et0"]=vec3(v);
-  crv->D1(crv->LastParameter(), p, v);
-  refpoints_["p1"]=vec3(p);
-  refvectors_["et1"]=vec3(v);
 
   auto c = Handle_Geom_Circle::DownCast(crv->BasisCurve())->Circ();
   refpoints_["center"]=vec3(c.Location());
@@ -237,8 +211,7 @@ void Arc3P::build()
 
 Arc3P::Arc3P(VectorPtr p0, VectorPtr pm, VectorPtr p1)
 : p0_(p0), pm_(pm), p1_(p1)
-{
-}
+{}
 
 
 
@@ -276,19 +249,6 @@ FeatureCmdInfoList Arc3P::ruleDocumentation()
   };
 }
 
-
-
-bool Arc3P::isSingleEdge() const
-{
-    return true;
-}
-
-
-
-bool Arc3P::isSingleCloseWire() const
-{
-  return false;
-}
 
 
 

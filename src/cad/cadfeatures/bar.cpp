@@ -24,6 +24,9 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
+#include "cadfeatures/singleedgefeature.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -93,8 +96,16 @@ void Bar::build()
         else if (const auto* feat =
                  boost::get<FeaturePtr>(&endPts_))
         {
-            p0 = (*feat)->getDatumPoint("p0");
-            p1 = (*feat)->getDatumPoint("p1");
+            if (auto sef = std::dynamic_pointer_cast<SingleEdgeFeature>(*feat))
+            {
+                p0 = sef->start()->value();
+                p1 = sef->end()->value();
+            }
+            else
+            {
+                p0 = (*feat)->getDatumPoint("p0");
+                p1 = (*feat)->getDatumPoint("p1");
+            }
         }
         refpoints_["p0"]=p0;
         refpoints_["p1"]=p1;

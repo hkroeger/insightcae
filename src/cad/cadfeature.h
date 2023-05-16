@@ -254,7 +254,7 @@ protected:
   std::string featureSymbolName_;
   
   void updateVolProps() const;
-  void setShape(const TopoDS_Shape& shape);
+  virtual void setShape(const TopoDS_Shape& shape);
   
   /**
    * @brief calcShapeHash
@@ -390,6 +390,7 @@ public:
   std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(double deflection=-1) const;
   
   arma::mat faceNormal(FeatureID i) const;
+  arma::mat averageFaceNormal() const;
 
   FeatureSetData allVerticesSet() const;
   FeatureSetData allEdgesSet() const;

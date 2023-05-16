@@ -138,8 +138,8 @@ void Line::build()
     dir=std::make_shared<SubtractedVector>(p1_, p0_);
   }
 
-  refpoints_["p0"]=p0;
-  refpoints_["p1"]=p1;
+//  refpoints_["p0"]=p0;
+//  refpoints_["p1"]=p1;
 //   refvalues_["L"]=arma::norm(p1-p0, 2);
   refvectors_["ex"]=(p1 - p0)/arma::norm(p1 - p0, 2);
 

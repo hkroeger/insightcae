@@ -120,8 +120,9 @@ FeatureCmdInfoList SineWave::ruleDocumentation()
             "( <scalar:l>, <scalar:A> )",
             "Creates a sine curve (single period) with wave length l and amplitude A."
         )
-    };
+  };
 }
+
 
 
 

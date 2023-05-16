@@ -80,7 +80,7 @@ void SplineCurve::build()
     for ( int j=0; j<pts_.size(); j++ ) {
         arma::mat pi=pts_[j]->value();
         pts_col->SetValue ( j+1, to_Pnt ( pi ) );
-        refpoints_[str(format("p%d")%j)]=pi;
+        refpoints_[str(format("p%02d")%j)]=pi;
     }
 //     GeomAPI_PointsToBSpline splbuilder ( pts_col );
     GeomAPI_Interpolate splbuilder ( pts_col, false, 1e-6 );
@@ -127,7 +127,17 @@ FeatureCmdInfoList SplineCurve::ruleDocumentation()
             "( <vector:p0>, ..., <vector:pn> )",
             "Creates a spline curve through all given points p0 to pn."
         )
-    };
+  };
+}
+
+VectorPtr SplineCurve::start() const
+{
+  return pts_.front();
+}
+
+VectorPtr SplineCurve::end() const
+{
+  return pts_.back();
 }
 
 

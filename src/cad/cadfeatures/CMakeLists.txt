@@ -36,6 +36,7 @@ add_sources(insightcad_SOURCES
  projectedoutline.cpp projectedoutline.h
  quad.cpp quad.h
  regpoly.cpp regpoly.h
+ polygon.cpp polygon.h
  revolution.cpp revolution.h
  ring.cpp ring.h
  rotatedhelicalsweep.cpp rotatedhelicalsweep.h

@@ -47,11 +47,27 @@ size_t Extrusion::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*sk_;
-  h+=L_->value();
+
+  if (const auto* Lvec = boost::get<VectorPtr>(&L_))
+  {
+      h+=(*Lvec)->value();
+  }
+  else if (const auto* Lsc = boost::get<ScalarPtr>(&L_))
+  {
+      h+=(*Lsc)->value();
+  }
+
   h+=centered_;
   return h.getHash();
 }
 
+
+
+
+Extrusion::Extrusion(FeaturePtr sk, ScalarPtr L, bool centered)
+    : sk_(sk), L_(L), centered_(centered)
+{
+}
 
 
 
@@ -68,18 +84,31 @@ void Extrusion::build()
 {
     ExecTimer t("Extrusion::build() ["+featureSymbolName()+"]");
 
-    if ( !centered_ ) {
-        BRepPrimAPI_MakePrism mkp ( sk_->shape(), to_Vec ( L_->value() ) );
+    arma::mat L;
+    if (const auto* Lvec = boost::get<VectorPtr>(&L_))
+    {
+      L=(*Lvec)->value();
+    }
+    else if (const auto* Lsc = boost::get<ScalarPtr>(&L_))
+    {
+      L = sk_->averageFaceNormal()*(*Lsc)->value();
+    }
+
+    if ( !centered_ )
+    {
+        BRepPrimAPI_MakePrism mkp ( sk_->shape(), to_Vec(L ) );
         providedSubshapes_["frontFace"]=Feature::create ( mkp.FirstShape() );
         providedSubshapes_["backFace"]=Feature::create ( mkp.LastShape() );
         setShape ( mkp.Shape() );
-    } else {
+    }
+    else
+    {
         gp_Trsf trsf;
-        trsf.SetTranslation ( to_Vec ( -0.5*L_->value() ) );
+        trsf.SetTranslation ( to_Vec(-0.5*L) );
         BRepPrimAPI_MakePrism mkp
         (
             BRepBuilderAPI_Transform ( sk_->shape(), trsf ).Shape(),
-            to_Vec ( L_->value() )
+            to_Vec(L)
         );
         providedSubshapes_["frontFace"]=Feature::create ( mkp.FirstShape() );
         providedSubshapes_["backFace"]=Feature::create ( mkp.LastShape() );
@@ -106,7 +135,14 @@ void Extrusion::insertrule(parser::ISCADParser& ruleset)
       [ qi::_val = phx::bind(
                          &Extrusion::create<FeaturePtr, VectorPtr, bool>,
                          qi::_1, qi::_2, qi::_3) ]
-      
+    |
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression
+      >> ( (  ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) )
+      >> ')' )
+      [ qi::_val = phx::bind(
+                         &Extrusion::create<FeaturePtr, ScalarPtr, bool>,
+                         qi::_1, qi::_2, qi::_3) ]
+
     )
   );
 }

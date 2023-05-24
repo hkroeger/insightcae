@@ -839,8 +839,13 @@ void IQCADItemModel::addDirection(const std::string& name, insight::cad::VectorP
 }
 
 
-void IQCADItemModel::addDatum(const std::string& name, insight::cad::DatumPtr value)
+void IQCADItemModel::addDatum(const std::string& name, insight::cad::DatumPtr value, bool initialVisibility)
 {
+    if (datumVisibility_.find(name)==datumVisibility_.end())
+    {
+        auto&dvv = datumVisibility_[name];
+        dvv=initialVisibility;
+    }
     addEntity<insight::cad::DatumPtr>(
               name, value,
               std::bind(&insight::cad::Model::datums, model_.get()),

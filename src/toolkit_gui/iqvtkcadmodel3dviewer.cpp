@@ -46,6 +46,7 @@
 #include "vtkPropPicker.h"
 #include "vtkPointSource.h"
 #include "vtkPointPicker.h"
+#include "vtkOpenGLPolyDataMapper.h"
 
 #include "ivtkoccshape.h"
 #include "iqpickinteractorstyle.h"
@@ -53,6 +54,7 @@
 
 
 #include "base/vtkrendering.h"
+#include "iqvtkkeepfixedsizecallback.h"
 
 
 #include <vtkAutoInit.h>
@@ -172,20 +174,41 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
             auto pl = datum->plane();
             plane->SetCenter(pl.Location().X(), pl.Location().Y(), pl.Location().Z());
             plane->SetNormal(pl.Direction().X(), pl.Direction().Y(), pl.Direction().Z());
-            actor->GetMapper()->SetInputConnection(plane->GetOutputPort());
+
+            auto ks = vtkSmartPointer<IQVTKKeepFixedSize>::New();
+            ks->SetViewer(this);
+            ks->SetInputConnection(plane->GetOutputPort());
+            this->ren_->AddObserver(vtkCommand::AnyEvent, ks);
+
+            actor->GetMapper()->SetInputConnection(ks->GetOutputPort());
             actor->GetProperty()->SetOpacity(0.33);
         }
         else if (datum->providesAxisReference())
         {
             auto ax = datum->axis();
-            gp_Pnt p1=ax.Location();
+            auto p1 = insight::vec3(ax.Location());
+            auto dir = insight::normalized(insight::vec3(ax.Direction()));
 
-            auto arr = insight::createArrows(
+            arma::mat from = p1-dir;
+            arma::mat to = p1+dir;
+
+            auto l = vtkSmartPointer<vtkLineSource>::New(); /*insight::createArrows(
                 {{
                      insight::Vector(ax.Location()),
                      insight::Vector(ax.Location().XYZ() + ax.Direction().XYZ())
-                 }}, false);
-            actor->GetMapper()->SetInputDataObject(arr);
+                 }}, true);*/
+
+            l->SetPoint1( insight::toArray(from) );
+            l->SetPoint2( insight::toArray(to) );
+
+            auto ks = vtkSmartPointer<IQVTKKeepFixedSize>::New();
+            ks->SetViewer(this);
+            ks->SetInputConnection(l->GetOutputPort());
+            this->ren_->AddObserver(vtkCommand::AnyEvent, ks);
+
+            actor->GetMapper()->SetInputConnection(ks->GetOutputPort());
+            auto prop=actor->GetProperty();
+            prop->SetLineWidth(2);
         }
         else if (datum->providesPointReference())
         {
@@ -759,8 +782,7 @@ void IQVTKCADModel3DViewer::setBackgroundImage(const boost::filesystem::path &im
 
 void IQVTKCADModel3DViewer::onMeasureDistance()
 {
-    auto md = std::make_shared<IQVTKCADModel3DViewerMeasurePoints>(*this);
-    currentUserActivity_= md;
+    launchUserActivity( std::make_shared<IQVTKCADModel3DViewerMeasurePoints>(*this), true );
 }
 
 
@@ -771,7 +793,7 @@ void IQVTKCADModel3DViewer::onSelectPoints()
     auto md = std::make_shared<IQVTKViewWidgetInsertPointIDs>(*this);
     connect(md.get(), &ToNotepadEmitter::appendToNotepad,
             this, &IQVTKCADModel3DViewer::appendToNotepad );
-    currentUserActivity_= md;
+    launchUserActivity(md, true);
 }
 
 
@@ -782,7 +804,7 @@ void IQVTKCADModel3DViewer::onSelectEdges()
     auto md = std::make_shared<IQVTKViewWidgetInsertEdgeIDs>(*this);
     connect(md.get(), &ToNotepadEmitter::appendToNotepad,
             this, &IQVTKCADModel3DViewer::appendToNotepad );
-    currentUserActivity_= md;
+    launchUserActivity(md, true);
 }
 
 
@@ -793,7 +815,7 @@ void IQVTKCADModel3DViewer::onSelectFaces()
     auto md = std::make_shared<IQVTKViewWidgetInsertFaceIDs>(*this);
     connect(md.get(), &ToNotepadEmitter::appendToNotepad,
             this, &IQVTKCADModel3DViewer::appendToNotepad );
-    currentUserActivity_= md;
+    launchUserActivity(md, true);
 }
 
 
@@ -804,7 +826,7 @@ void IQVTKCADModel3DViewer::onSelectSolids()
     auto md = std::make_shared<IQVTKViewWidgetInsertSolidIDs>(*this);
     connect(md.get(), &ToNotepadEmitter::appendToNotepad,
             this, &IQVTKCADModel3DViewer::appendToNotepad );
-    currentUserActivity_= md;
+    launchUserActivity(md, true);
 }
 
 
@@ -1378,7 +1400,26 @@ QPointF IQVTKCADModel3DViewer::widgetCoordsToVTK(const QPoint &widgetCoords) con
     return QPointF(
                 p.x(),
                 vtkWidget_.size().height()-p.y()-1
-                );
+        );
+}
+
+
+
+bool IQVTKCADModel3DViewer::launchUserActivity(
+    ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force )
+{
+    if (force)
+    {
+        currentUserActivity_.reset();
+    }
+
+    if (!currentUserActivity_)
+    {
+        currentUserActivity_=activity;
+        return true;
+    }
+    else
+        return false;
 }
 
 

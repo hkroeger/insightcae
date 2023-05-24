@@ -363,6 +363,8 @@ public:
     QSize sizeHint() const override;
     QPointF widgetCoordsToVTK(const QPoint& widgetCoords) const;
 
+    bool launchUserActivity(ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force=true);
+
 public:
     void highlightItem( insight::cad::FeaturePtr feat ) override;
     void undoHighlightItem() override;

@@ -239,7 +239,7 @@ public:
   void addScalar(const std::string& name, insight::cad::ScalarPtr value);
   void addPoint(const std::string& name, insight::cad::VectorPtr value);
   void addDirection(const std::string& name, insight::cad::VectorPtr value);
-  void addDatum(const std::string& name, insight::cad::DatumPtr value);
+  void addDatum(const std::string& name, insight::cad::DatumPtr value, bool initialVisibility=false);
   void addModelstep(const std::string& name,
                     insight::cad::FeaturePtr value,
                     const std::string& featureDescription = std::string(),

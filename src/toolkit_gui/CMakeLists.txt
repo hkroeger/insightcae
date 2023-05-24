@@ -49,12 +49,13 @@ set(toolkit_gui_SRCS
  iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h
  iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.cpp
  iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.cpp
+ iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.cpp
 
  iqvtkviewwidgetinsertids.h iqvtkviewwidgetinsertids.cpp
  iqcadtransformationcommand.h iqcadtransformationcommand.cpp
- iqpointpickcommand.h iqpointpickcommand.cpp
  iqvectordirectioncommand.h iqvectordirectioncommand.cpp
  iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
+ iqvtkkeepfixedsizecallback.h iqvtkkeepfixedsizecallback.cpp
 
  cadfeaturetransient.cpp
  cadfeaturetransient.h

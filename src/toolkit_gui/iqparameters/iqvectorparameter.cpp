@@ -7,8 +7,8 @@
 #include "iqparametersetmodel.h"
 
 #include "iqvtkcadmodel3dviewer.h"
-#include "iqpointpickcommand.h"
 #include "iqvectordirectioncommand.h"
+#include "iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h"
 
 defineType(IQVectorParameter);
 addToFactoryTable(IQParameter, IQVectorParameter);
@@ -75,7 +75,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
   if (auto *v = dynamic_cast<IQVTKCADModel3DViewer*>(viewer))
   {
     connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
-          [this,model,v,apply,lineEdit]()
+          [this,model,v,apply,applyFunction,lineEdit]()
           {
             const auto& p =
                     dynamic_cast<const insight::VectorParameter&>(
@@ -103,24 +103,17 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
             }
             else
             {
-              auto curMod =
-                    new IQPointPickCommand(
-                          v->interactor(),
-                          p() );
-
-              connect( apply, &QPushButton::pressed,
-                       curMod, &QObject::deleteLater );
-
-              connect( curMod, &IQPointPickCommand::dataChanged, curMod,
-                       [this,curMod,lineEdit]()
-                       {
-                         lineEdit->setText(
-                                     QString::fromStdString(
-                                         insight::valueToString(
-                                             curMod->getPickedPosition()
-                                             ) ) );
-                         curMod->deleteLater();
-                       } );
+              auto ppc = std::make_shared<IQVTKCADModel3DViewerPickPoint>(*v);
+              connect(ppc.get(), &IQVTKCADModel3DViewerPickPoint::pickedPoint,
+                        [lineEdit,applyFunction](const arma::mat& p)
+                        {
+                          lineEdit->setText(
+                              QString::fromStdString(
+                                  insight::valueToString(p) ) );
+                          applyFunction();
+                        }
+                      );
+              v->launchUserActivity(ppc);
             }
           }
     );

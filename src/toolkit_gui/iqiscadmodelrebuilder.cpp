@@ -110,11 +110,12 @@ void IQISCADModelRebuilder::onAddFeature(
 
 void IQISCADModelRebuilder::onAddDatum(
         const QString& name,
-        insight::cad::DatumPtr smp )
+        insight::cad::DatumPtr smp,
+        bool initialVisibility )
 {
     QMetaObject::invokeMethod(
           qApp,
-          std::bind(&IQCADItemModel::addDatum, model_, name.toStdString(), smp)
+          std::bind(&IQCADItemModel::addDatum, model_, name.toStdString(), smp, initialVisibility)
     );
     symbolsSnapshot_.datums_.erase(name.toStdString());
 }

@@ -12,10 +12,10 @@ namespace insight
 
 
 
-void CADParameterSetVisualizer::addDatum(const std::string& name, insight::cad::DatumPtr dat)
+void CADParameterSetVisualizer::addDatum(const std::string& name, insight::cad::DatumPtr dat, bool initialVisibility)
 {
   CurrentExceptionContext ec("adding visualizer datum "+name);
-  Q_EMIT createdDatum(QString::fromStdString(name), dat);
+  Q_EMIT createdDatum(QString::fromStdString(name), dat, initialVisibility);
 }
 
 void CADParameterSetVisualizer::addFeature(const std::string& name,

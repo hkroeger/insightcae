@@ -50,7 +50,7 @@ if (INSIGHT_BUILD_MEDREADER)
     )
 
     install(DIRECTORY ${CMAKE_BINARY_DIR}/medreader-onscreen/ DESTINATION "." USE_SOURCE_PERMISSIONS)
-    install(DIRECTORY ${CMAKE_BINARY_DIR}/medreader-offscreen/ DESTINATION "paraview-offscreen" USE_SOURCE_PERMISSIONS)
+    install(DIRECTORY ${CMAKE_BINARY_DIR}/medreader-offscreen/ DESTINATION "paraview/paraview-offscreen" USE_SOURCE_PERMISSIONS)
 
     # librarys and include paths are added in
     # vtkOnscreen/vtkOffscreen CMake includes

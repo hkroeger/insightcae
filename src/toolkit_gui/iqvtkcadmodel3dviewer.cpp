@@ -56,7 +56,7 @@
 
 #include "base/vtkrendering.h"
 #include "iqvtkkeepfixedsizecallback.h"
-
+#include "base/cppextensions.h"
 
 #include <vtkAutoInit.h>
 VTK_MODULE_INIT(vtkRenderingOpenGL2); //if render backen is OpenGL2, it should changes to vtkRenderingOpenGL2
@@ -1290,14 +1290,29 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) c
 
 //    auto picker = vtkSmartPointer<vtkPointPicker>::New();
 //    auto picker = vtkSmartPointer<vtkCellPicker>::New();
-    auto picker = vtkSmartPointer<vtkPropPicker>::New();
-    picker->Pick(p.x(), p.y(), 0, ren_);
+    auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
+    picker2d->Pick(p.x(), p.y(), 0, ren_);
 
-    auto act2 = picker->GetActor2D();
-    if (act2) return act2;
+    auto act2 = picker2d->GetActor2D();
+    if (act2)
+    {
+        return act2;
+    }
+    else
+    {
+        auto picker3d = vtkSmartPointer<vtkPicker>::New();
+        picker3d->SetTolerance(1e-4);
+        picker3d->Pick(p.x(), p.y(), 0, ren_);
+        auto pi = picker3d->GetActors();
+        std::cout<<"# under cursors = "<<pi->GetNumberOfItems()<<std::endl;
+        if (pi->GetNumberOfItems()>0)
+        {
+            pi->InitTraversal();
+            return pi->GetNextProp();
+        }
+    }
 
-    auto act3 = picker->GetActor();
-    return act3;
+    return nullptr;
 }
 
 
@@ -1436,11 +1451,11 @@ void IQVTKCADModel3DViewer::editSketch(
 {
     if (!currentUserActivity_)
     {
-        std::unique_ptr<IQVTKConstrainedSketchEditor> ske(
-                    new IQVTKConstrainedSketchEditor(
-                *this,
-                psk,
-                defaultGeometryParameters, saac));
+        auto ske = std::make_unique<IQVTKConstrainedSketchEditor>(
+            *this,
+            psk,
+            defaultGeometryParameters,
+            saac );
 
 
         connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),

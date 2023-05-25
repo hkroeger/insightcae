@@ -17,7 +17,7 @@ addToFactoryTable(Parameter, CADSketchParameter);
 
 void CADSketchParameter::resetCADGeometry() const
 {
-    if (! script().empty() )
+    if (!script().empty())
     {
         std::istringstream is(script());
 
@@ -28,6 +28,10 @@ void CADSketchParameter::resetCADGeometry() const
             is,
             makeDefaultGeometryParameters()
             );
+    }
+    else
+    {
+        CADGeometry_.reset();
     }
 }
 

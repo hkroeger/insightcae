@@ -22,7 +22,9 @@ typedef
     std::shared_ptr<ConstrainedSketchEntity>
         ConstrainedSketchEntityPtr;
 
+
 typedef std::function<insight::ParameterSet(void)> MakeDefaultGeometryParametersFunction;
+
 
 class ConstrainedSketchEntity
 {

@@ -78,6 +78,8 @@ public:
 
     SpatialTransformation(const arma::mat& ex, const arma::mat& ey, const arma::mat& ez);
 
+    SpatialTransformation(double scale);
+
     SpatialTransformation(vtkTransform* trsf);
 
     void setIdentity();

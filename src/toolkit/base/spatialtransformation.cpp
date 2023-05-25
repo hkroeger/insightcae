@@ -34,7 +34,13 @@ SpatialTransformation::SpatialTransformation(const arma::mat& translate, const a
     setScale(scale);
 }
 
-SpatialTransformation::SpatialTransformation(const arma::mat &ex, const arma::mat &ey, const arma::mat &ez)
+SpatialTransformation::SpatialTransformation(double scale)
+{
+    setIdentity();
+    setScale(scale);
+}
+
+SpatialTransformation::SpatialTransformation(const arma::mat& ex, const arma::mat& ey, const arma::mat& ez)
 {
     setIdentity();
     R_.col(0)=ex;

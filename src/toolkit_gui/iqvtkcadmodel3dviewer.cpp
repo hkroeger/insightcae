@@ -63,7 +63,7 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 VTK_MODULE_INIT(vtkRenderingFreeType);
 
 
-
+using namespace insight;
 
 uint
 IQVTKCADModel3DViewer::QPersistentModelIndexHash::operator()
@@ -74,6 +74,47 @@ IQVTKCADModel3DViewer::QPersistentModelIndexHash::operator()
 
 
 
+
+
+void IQVTKCADModel3DViewer::recomputeSceneBounds() const
+{
+    double
+        xmin=DBL_MAX, xmax=-DBL_MAX,
+        ymin=DBL_MAX, ymax=-DBL_MIN,
+        zmin=DBL_MAX, zmax=-DBL_MAX;
+
+    bool some=false;
+    for (const auto& disp: displayedData_)
+    {
+        if (boost::get<insight::cad::FeaturePtr>(&disp.second.ce_))
+        {
+            for (const auto& act: disp.second.actors_)
+            {
+                if (const auto* b = act->GetBounds())
+                {
+                    some=true;
+                    xmin=std::min(xmin, b[0]);
+                    xmax=std::max(xmax, b[1]);
+
+                    ymin=std::min(ymin, b[2]);
+                    ymax=std::max(ymax, b[3]);
+
+                    zmin=std::min(zmin, b[4]);
+                    zmax=std::max(zmax, b[5]);
+                }
+            }
+        }
+    }
+    if (some)
+    {
+        sceneBounds_.xmin=xmin;
+        sceneBounds_.xmax=xmax;
+        sceneBounds_.ymin=ymin;
+        sceneBounds_.ymax=ymax;
+        sceneBounds_.zmin=zmin;
+        sceneBounds_.zmax=zmax;
+    }
+}
 
 
 void IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
@@ -130,6 +171,7 @@ void IQVTKCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
                 ren_->RemoveActor(/*i->second.actor_*/actor);
             }
             displayedData_.erase(i);
+            recomputeSceneBounds();
         }
     }
     scheduleRedraw();
@@ -172,11 +214,14 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
         {
             vtkNew<vtkPlaneSource> plane;
             auto pl = datum->plane();
-            plane->SetCenter(pl.Location().X(), pl.Location().Y(), pl.Location().Z());
-            plane->SetNormal(pl.Direction().X(), pl.Direction().Y(), pl.Direction().Z());
+
+            plane->SetCenter(toArray(vec3(pl.Location())));
+            plane->SetNormal(toArray(vec3(pl.Direction())));
+
 
             auto ks = vtkSmartPointer<IQVTKKeepFixedSize>::New();
             ks->SetViewer(this);
+            ks->SetPRef(vec3(pl.Location()));
             ks->SetInputConnection(plane->GetOutputPort());
             this->ren_->AddObserver(vtkCommand::AnyEvent, ks);
 
@@ -186,23 +231,20 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
         else if (datum->providesAxisReference())
         {
             auto ax = datum->axis();
-            auto p1 = insight::vec3(ax.Location());
-            auto dir = insight::normalized(insight::vec3(ax.Direction()));
+            auto p1 = vec3(ax.Location());
+            auto dir = normalized(vec3(ax.Direction()));
 
-            arma::mat from = p1-dir;
-            arma::mat to = p1+dir;
+            arma::mat from = p1 - 0.5*dir;
+            arma::mat to = p1 + 0.5*dir;
 
-            auto l = vtkSmartPointer<vtkLineSource>::New(); /*insight::createArrows(
-                {{
-                     insight::Vector(ax.Location()),
-                     insight::Vector(ax.Location().XYZ() + ax.Direction().XYZ())
-                 }}, true);*/
+            auto l = vtkSmartPointer<vtkLineSource>::New();
 
-            l->SetPoint1( insight::toArray(from) );
-            l->SetPoint2( insight::toArray(to) );
+            l->SetPoint1( toArray(from) );
+            l->SetPoint2( toArray(to) );
 
             auto ks = vtkSmartPointer<IQVTKKeepFixedSize>::New();
             ks->SetViewer(this);
+            ks->SetPRef(p1);
             ks->SetInputConnection(l->GetOutputPort());
             this->ren_->AddObserver(vtkCommand::AnyEvent, ks);
 
@@ -249,14 +291,14 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
     {
         auto ds = *dsPtr;
 
-        vtkProp *actor = nullptr;
+        vtkSmartPointer<vtkProp> actor;
 
         if (auto ids = vtkImageData::SafeDownCast(ds) )
         {
             auto act = vtkSmartPointer<vtkImageActor>::New();
             auto mapper = act->GetMapper();
             mapper->SetInputData(ids);
-            ren_->AddActor(act);
+//            ren_->AddActor(act);
             actor = act;
         }
         else if (auto pds = vtkDataSet::SafeDownCast(ds) )
@@ -266,7 +308,7 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
             auto mapper=act->GetMapper();
 
             mapper->SetInputDataObject(pds);
-            ren_->AddActor(act);
+//            ren_->AddActor(act);
             actor = act;
         }
         else
@@ -274,7 +316,7 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
             auto act = vtkSmartPointer<vtkActor>::New();
             act->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
             act->GetMapper()->SetInputDataObject(ds);
-            ren_->AddActor(act);
+//            ren_->AddActor(act);
             actor = act;
         }
 
@@ -367,8 +409,11 @@ void IQVTKCADModel3DViewer::addModelEntity(
     if (actors.size())
     {
         for (const auto& a: actors)
+        {
             ren_->AddActor(a);
+        }
         displayedData_[pidx]={lbl, entity, actors};
+        recomputeSceneBounds();
         resetDisplayProps(pidx);
         viewState_.resetCameraIfAllow();
     }
@@ -782,7 +827,9 @@ void IQVTKCADModel3DViewer::setBackgroundImage(const boost::filesystem::path &im
 
 void IQVTKCADModel3DViewer::onMeasureDistance()
 {
-    launchUserActivity( std::make_shared<IQVTKCADModel3DViewerMeasurePoints>(*this), true );
+    launchUserActivity(
+        std::make_shared<IQVTKCADModel3DViewerMeasurePoints>(*this),
+        true );
 }
 
 
@@ -1033,7 +1080,14 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
                     setBackgroundImage(boost::filesystem::path());
                 }
     );
-
+    btntb->addAction(
+        "PP/CP",
+        [this]() {
+            ren_->GetActiveCamera()->SetParallelProjection(
+                !ren_->GetActiveCamera()->GetParallelProjection()
+                );
+        }
+        );
 
     auto axes = vtkSmartPointer<vtkAxesActor>::New();
 
@@ -1154,6 +1208,11 @@ vtkRenderWindowInteractor* IQVTKCADModel3DViewer::interactor()
 
 
 vtkRenderer* IQVTKCADModel3DViewer::renderer()
+{
+    return ren_;
+}
+
+const vtkRenderer *IQVTKCADModel3DViewer::renderer() const
 {
     return ren_;
 }
@@ -1420,6 +1479,11 @@ bool IQVTKCADModel3DViewer::launchUserActivity(
     }
     else
         return false;
+}
+
+const IQVTKCADModel3DViewer::Bounds &IQVTKCADModel3DViewer::sceneBounds() const
+{
+    return sceneBounds_;
 }
 
 
@@ -1718,3 +1782,7 @@ void IQVTKCADModel3DViewer::ViewState::resetCameraIfAllow()
         store();
     }
 }
+
+IQVTKCADModel3DViewer::Bounds::Bounds()
+    : xmin(0), xmax(0), ymin(0), ymax(0), zmin(0), zmax(0)
+{}

@@ -78,6 +78,7 @@ public:
         std::vector<vtkSmartPointer<vtkProp> > actors_;
     };
 
+
     typedef std::unordered_map<
         QPersistentModelIndex,
         DisplayedEntity,
@@ -155,6 +156,13 @@ private:
     std::unique_ptr<SubshapeSelection> currentSubshapeSelection_;
 
     ViewState viewState_;
+
+    mutable struct Bounds {
+        double xmin, xmax, ymin, ymax, zmin, zmax;
+        Bounds();
+    } sceneBounds_;
+
+    void recomputeSceneBounds() const;
 
 
 #warning should be better named "expose"
@@ -365,6 +373,8 @@ public:
 
     bool launchUserActivity(ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force=true);
 
+    const Bounds& sceneBounds() const;
+
 public:
     void highlightItem( insight::cad::FeaturePtr feat ) override;
     void undoHighlightItem() override;
@@ -391,6 +401,7 @@ public:
 
     vtkRenderWindowInteractor* interactor();
     vtkRenderer* renderer();
+    vtkRenderer const* renderer() const;
 
     void activateSelection(insight::cad::FeaturePtr feat, insight::cad::EntityType subshapeType);
     void activateSelectionAll(insight::cad::EntityType subshapeType);

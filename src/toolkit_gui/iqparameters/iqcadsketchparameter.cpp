@@ -73,14 +73,15 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
     auto editFunction = [=]()
     {
-        auto&p = dynamic_cast<insight::CADSketchParameter&>(model->parameterRef(index));
+        auto&p = dynamic_cast<insight::CADSketchParameter&>(
+            model->parameterRef(index));
 
-        auto plane = viewer->cadmodel()->datums().find("XY")->second;
+        std::shared_ptr<insight::cad::ConstrainedSketch> sk =
+            p.featureGeometry();
 
-        std::shared_ptr<insight::cad::ConstrainedSketch> sk;
-
-        if (!(sk = p.featureGeometry()))
+        if (!(sk ))
         {
+            auto plane = viewer->cadmodel()->datums().find("XY")->second;
             if (p.script().empty())
             {
                 sk =  insight::cad::ConstrainedSketch::create(plane);
@@ -129,10 +130,14 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
                     actprops->SetLineWidth(2);
                 }
             },
-            [&tp,sk]() {
+            [&tp,sk,teScript,model,index]()
+            {
                 std::ostringstream os;
                 sk->generateScript(os);
                 tp.setScript(os.str());
+                teScript->document()->setPlainText(
+                    QString::fromStdString(tp.script()) );
+                model->notifyParameterChange(index);
             }
             );
     };

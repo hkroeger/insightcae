@@ -14,6 +14,7 @@
 #include <QDockWidget>
 
 #include "sketch.h"
+#include "selectionlogic.h"
 //#include "iqvtkviewerstate.h"
 #include "viewwidgetaction.h"
 #include "iqvtkcadmodel3dviewer.h"
@@ -115,10 +116,91 @@ public:
 };
 
 
+//struct SketchEntitySelectionViewPropsToRestore
+//{
+//    double oldColor[3];
+//};
+
+class IQVTKConstrainedSketchEditor;
+
+
+//class SketchEntitySelection
+//    : public QObject,
+//      public std::map<
+//          std::weak_ptr<insight::cad::ConstrainedSketchEntity>,
+//          std::map<vtkProp*, SketchEntitySelectionViewPropsToRestore>,
+//          std::owner_less<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > >
+//{
+//    Q_OBJECT
+
+//    insight::ParameterSet commonParameters_, defaultCommonParameters_;
+//    IQVTKConstrainedSketchEditor& editor_;
+//    ParameterEditorWidget* pe_;
+//    int tbi_;
+
+//    void highlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
+//    void unhighlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
+
+//public:
+//    SketchEntitySelection(IQVTKConstrainedSketchEditor& editor);
+//    ~SketchEntitySelection();
+
+//    void addToSelection(insight::cad::ConstrainedSketchEntityPtr entity);
+//    bool isInSelection(const insight::cad::ConstrainedSketchEntityPtr& entity);
+//};
+
+
+
+struct SelectedSketchEntityWrapper
+{
+    std::weak_ptr<insight::cad::ConstrainedSketchEntity> sketchEntity_;
+    std::weak_ptr<IQVTKViewerState> highlight_;
+};
+
+
+
+class SketchEntityMultiSelection
+    : public QObject,
+      public std::map<
+          std::weak_ptr<insight::cad::ConstrainedSketchEntity>,
+          std::set<std::weak_ptr<IQVTKViewerState>,
+                   std::owner_less<std::weak_ptr<IQVTKViewerState> > >,
+          std::owner_less<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > >
+{
+    Q_OBJECT
+
+    insight::ParameterSet commonParameters_, defaultCommonParameters_;
+    IQVTKConstrainedSketchEditor& editor_;
+    ParameterEditorWidget* pe_;
+    int tbi_;
+
+//    void highlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
+//    void unhighlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
+
+public:
+    SketchEntityMultiSelection(IQVTKConstrainedSketchEditor& editor);
+    ~SketchEntityMultiSelection();
+
+    void addToSelection(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
+    bool isInSelection(const insight::cad::ConstrainedSketchEntity* entity);
+};
+
+
+typedef
+    SelectionLogic<
+        ViewWidgetAction<IQVTKCADModel3DViewer>,
+        IQVTKCADModel3DViewer,
+        insight::cad::ConstrainedSketchEntity,
+        SelectedSketchEntityWrapper,
+        SketchEntityMultiSelection>
+    IQVTKConstrainedSketchEditorSelectionLogic;
+
+
+
 
 class TOOLKIT_GUI_EXPORT IQVTKConstrainedSketchEditor
       : public QWidget, //QObject,
-        public ViewWidgetAction<IQVTKCADModel3DViewer>, //IQVTKViewerState,
+        public IQVTKConstrainedSketchEditorSelectionLogic, // ViewWidgetAction<IQVTKCADModel3DViewer> //IQVTKViewerState,
         public insight::cad::ConstrainedSketchPtr
 {
     Q_OBJECT
@@ -127,7 +209,6 @@ public:
     typedef
         std::set<vtkSmartPointer<vtkProp> >
         ActorSet;
-
 
 
 private:
@@ -152,33 +233,19 @@ private:
 
     ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr currentAction_;
 
-    struct SketchEntitySelectionViewPropsToRestore
-    {
-        double oldColor[3];
-    };
-    class SketchEntitySelection
-     : public std::map<
-            std::weak_ptr<insight::cad::ConstrainedSketchEntity>,
-            std::map<vtkProp*, SketchEntitySelectionViewPropsToRestore>,
-            std::owner_less<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > >
-    {
-        insight::ParameterSet commonParameters_, defaultCommonParameters_;
-        IQVTKConstrainedSketchEditor& editor_;
-        ParameterEditorWidget* pe_;
-        int tbi_;
+    friend class SketchEntityMultiSelection;
 
-        void highlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
-        void unhighlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
+    std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
+    findEntitiesUnderCursor(const QPoint& point) const override;
 
-    public:
-        SketchEntitySelection(IQVTKConstrainedSketchEditor& editor);
-        ~SketchEntitySelection();
-        void addAndHighlight(insight::cad::ConstrainedSketchEntityPtr entity);
-        bool isInSelection(const insight::cad::ConstrainedSketchEntityPtr& entity);
-    };
-    friend class SketchEntitySelection;
+    IQVTKCADModel3DViewer::HighlightingHandleSet highlightEntity(
+        std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity
+        ) const override;
+    void unhighlightEntity(
+        IQVTKCADModel3DViewer::HighlightingHandleSet highlighters
+        ) const override;
 
-    std::shared_ptr<SketchEntitySelection> currentSelection_;
+//    std::shared_ptr<SketchEntitySelection> currentSelection_;
 
 private Q_SLOTS:
     void drawLine();

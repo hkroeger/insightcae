@@ -8,6 +8,7 @@
 #include "iqvtkcadmodel3dviewerpanning.h"
 #include "iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h"
 #include "iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqvtkconstrainedsketcheditor.h"
 
 #include <QDebug>
 #include <QHBoxLayout>
@@ -21,6 +22,7 @@
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QToolBar>
 
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
@@ -118,9 +120,10 @@ void IQVTKCADModel3DViewer::recomputeSceneBounds() const
 }
 
 
-void IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
+std::weak_ptr<IQVTKViewerState>
+IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
 {
-    actorHighlight_.reset();
+    std::shared_ptr<IQVTKViewerState> actorHighlight;
     vtkPolyDataMapper* pdm=nullptr;
     if (auto actor = vtkActor::SafeDownCast(prop))
     {
@@ -128,7 +131,7 @@ void IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
         {
             if (pdm->GetInput()->GetNumberOfPolys()>0)
             {
-                actorHighlight_.reset(
+                actorHighlight.reset(
                     new SilhouetteHighlighter(
                         *this, pdm
                     ));
@@ -136,21 +139,54 @@ void IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
             else if (pdm->GetInput()->GetNumberOfLines()>0
                      || pdm->GetInput()->GetNumberOfStrips()>0)
             {
-                actorHighlight_.reset(
+                actorHighlight.reset(
                     new LinewidthHighlighter(
                         *this, actor
                     ));
             }
             else if (pdm->GetInput()->GetNumberOfPoints()>0)
             {
-                actorHighlight_.reset(
+                actorHighlight.reset(
                     new PointSizeHighlighter(
                         *this, actor
                     ));
             }
         }
-    }
 #warning need highlighting for 2D actors as well
+    }
+
+    highlightedActors_.insert(actorHighlight);
+    return actorHighlight;
+}
+
+IQVTKCADModel3DViewer::HighlightingHandleSet
+IQVTKCADModel3DViewer::highlightActors(std::set<vtkProp *> actor)
+{
+    HighlightingHandleSet ret;
+    for (auto& a: actor)
+    {
+        ret.insert(highlightActor(a));
+    }
+    return ret;
+}
+
+void IQVTKCADModel3DViewer::unhighlightActor(
+    HighlightingHandle highlighter)
+{
+    auto i = highlightedActors_.find(highlighter.lock());
+    if (i!=highlightedActors_.end())
+    {
+        highlightedActors_.erase(i);
+    }
+}
+
+void IQVTKCADModel3DViewer::unhighlightActors(
+    HighlightingHandleSet highlighters)
+{
+    for (auto& hl: highlighters)
+    {
+        unhighlightActor(hl);
+    }
 }
 
 
@@ -1166,7 +1202,7 @@ IQVTKCADModel3DViewer::~IQVTKCADModel3DViewer()
 {
     clipping_.reset();
     highlightedItem_.reset();
-    actorHighlight_.reset();
+    highlightedActors_.clear();
     backgroundImage_.reset();
 //    displayedSketch_.reset();
 }
@@ -1313,6 +1349,39 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) c
     }
 
     return nullptr;
+}
+
+
+
+std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const QPoint &clickPos) const
+{
+    std::vector<vtkProp *> aa;
+
+    auto p = widgetCoordsToVTK(clickPos);
+
+    auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
+    picker2d->Pick(p.x(), p.y(), 0, ren_);
+
+    auto act2 = picker2d->GetActor2D();
+    if (act2)
+    {
+        aa.push_back(act2);
+    }
+    else
+    {
+        auto picker3d = vtkSmartPointer<vtkPicker>::New();
+        picker3d->SetTolerance(1e-4);
+        picker3d->Pick(p.x(), p.y(), 0, ren_);
+        auto pi = picker3d->GetActors();
+        std::cout<<"# under cursors = "<<pi->GetNumberOfItems()<<std::endl;
+        pi->InitTraversal();
+        while (auto *p= pi->GetNextProp())
+        {
+            aa.push_back(p);
+        }
+    }
+
+    return aa;
 }
 
 
@@ -1690,14 +1759,14 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
 void IQVTKCADModel3DViewer::mouseMoveEvent    ( QMouseEvent* e )
 {
 
-    if (auto* ac = findActorUnderCursorAt(e->pos()))
-    {
-        highlightActor(ac);
-    }
-    else
-    {
-        actorHighlight_.reset();
-    }
+//    if (auto* ac = findActorUnderCursorAt(e->pos()))
+//    {
+//        highlightActor(ac);
+//    }
+//    else
+//    {
+//        actorHighlight_.reset();
+//    }
 
     navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
     if (currentNavigationAction_)

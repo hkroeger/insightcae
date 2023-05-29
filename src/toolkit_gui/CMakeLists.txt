@@ -72,6 +72,7 @@ set(toolkit_gui_SRCS
  viewwidgetinsertids.cpp
  navigationmanager.h
  navigationmanager.cpp
+ selectionlogic.h
  qoccviewwidget.cpp
  qoccviewwidget.h
  viewstate.cpp

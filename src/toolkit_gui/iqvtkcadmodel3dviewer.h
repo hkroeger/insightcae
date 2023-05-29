@@ -5,7 +5,7 @@
 #include "toolkit_gui_export.h"
 #include "iqcadmodel3dviewer.h"
 #include "iqvtkviewerstate.h"
-#include "iqvtkconstrainedsketcheditor.h"
+//#include "iqvtkconstrainedsketcheditor.h"
 
 #include "vtkVersionMacros.h"
 #include "vtkGenericOpenGLRenderWindow.h"
@@ -166,6 +166,12 @@ private:
 
 
 #warning should be better named "expose"
+
+    /**
+     * @brief The HighlightItem class
+     * displays a single feature exposed in red
+     * and makes all others transparent
+     */
     class HighlightItem : public IQVTKViewerState
     {
 
@@ -188,6 +194,11 @@ private:
 
     mutable std::shared_ptr< HighlightItem > highlightedItem_;
 
+
+    /*
+     * highlighting => make thick frame or something to
+     * indicate that object is selected
+     */
 
     class SilhouetteHighlighter : public IQVTKViewerState
     {
@@ -290,10 +301,7 @@ private:
     };
     friend class LinewidthHighlighter;
 
-    std::unique_ptr<IQVTKViewerState> actorHighlight_;
-
-    void highlightActor(vtkProp* actor);
-
+    std::set<std::shared_ptr<IQVTKViewerState> > highlightedActors_;
 
 
 
@@ -365,6 +373,15 @@ public:
     IQVTKCADModel3DViewer(QWidget* parent=nullptr);
     ~IQVTKCADModel3DViewer();
 
+    typedef std::weak_ptr<IQVTKViewerState> HighlightingHandle;
+    typedef std::set<
+        HighlightingHandle,
+        std::owner_less<HighlightingHandle> > HighlightingHandleSet;
+    HighlightingHandle highlightActor(vtkProp* actor);
+    HighlightingHandleSet highlightActors(std::set<vtkProp*> actor);
+    void unhighlightActor(HighlightingHandle highlighter);
+    void unhighlightActors(HighlightingHandleSet highlighters);
+
     void setBackgroundImage(const boost::filesystem::path& imageFile);
     vtkRenderWindow* renWin();
 
@@ -410,6 +427,7 @@ public:
     void deactivateSubshapeSelectionAll();
 
     vtkProp* findActorUnderCursorAt(const QPoint& clickPos) const;
+    std::vector<vtkProp*> findAllActorsUnderCursorAt(const QPoint& clickPos) const;
 
     typedef boost::variant<
         boost::blank,

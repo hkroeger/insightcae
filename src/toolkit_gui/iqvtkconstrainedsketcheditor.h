@@ -19,136 +19,9 @@
 #include "viewwidgetaction.h"
 #include "iqvtkcadmodel3dviewer.h"
 
+
 class ParameterEditorWidget;
-
-
-class IQVTKConstrainedSketchEntity
-        : public insight::cad::ConstrainedSketchEntity
-{
-public:
-    virtual std::vector<vtkSmartPointer<vtkProp> > createActor() const =0;
-};
-
-
-
-
-class IQVTKFixedPoint
-        : public IQVTKConstrainedSketchEntity
-{
-
-    insight::cad::SketchPointPtr p_;
-
-public:
-    IQVTKFixedPoint(
-            insight::cad::SketchPointPtr p  );
-
-    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
-
-    int nConstraints() const override;
-    double getConstraintError(unsigned int iConstraint) const override;
-
-    void scaleSketch(double scaleFactor) override;
-
-    void generateScriptCommand(
-        insight::cad::ConstrainedSketchScriptBuffer& script,
-        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
-};
-
-
-class IQVTKHorizontalConstraint
-    : public IQVTKConstrainedSketchEntity
-{
-    std::shared_ptr<insight::cad::Line const> line_;
-
-public:
-    IQVTKHorizontalConstraint(std::shared_ptr<insight::cad::Line const> line);
-
-    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
-
-    int nConstraints() const override;
-    double getConstraintError(unsigned int iConstraint) const override;
-    void scaleSketch(double scaleFactor) override;
-
-    void generateScriptCommand(
-        insight::cad::ConstrainedSketchScriptBuffer& script,
-        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
-};
-
-
-class IQVTKVerticalConstraint
-    : public IQVTKConstrainedSketchEntity
-{
-    std::shared_ptr<insight::cad::Line const> line_;
-public:
-    IQVTKVerticalConstraint(std::shared_ptr<insight::cad::Line const> line);
-
-    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
-
-    int nConstraints() const override;
-    double getConstraintError(unsigned int iConstraint) const override;
-    void scaleSketch(double scaleFactor) override;
-
-    void generateScriptCommand(
-        insight::cad::ConstrainedSketchScriptBuffer& script,
-        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
-};
-
-
-class IQVTKPointOnCurveConstraint
-    : public IQVTKConstrainedSketchEntity
-{
-    std::shared_ptr<insight::cad::SketchPoint const> p_;
-    std::shared_ptr<insight::cad::Feature const> curve_;
-public:
-    IQVTKPointOnCurveConstraint(
-        std::shared_ptr<insight::cad::SketchPoint const> p_,
-        std::shared_ptr<insight::cad::Feature const> curve_ );
-
-    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
-
-    int nConstraints() const override;
-    double getConstraintError(unsigned int iConstraint) const override;
-    void scaleSketch(double scaleFactor) override;
-
-    void generateScriptCommand(
-        insight::cad::ConstrainedSketchScriptBuffer& script,
-        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
-};
-
-
-//struct SketchEntitySelectionViewPropsToRestore
-//{
-//    double oldColor[3];
-//};
-
 class IQVTKConstrainedSketchEditor;
-
-
-//class SketchEntitySelection
-//    : public QObject,
-//      public std::map<
-//          std::weak_ptr<insight::cad::ConstrainedSketchEntity>,
-//          std::map<vtkProp*, SketchEntitySelectionViewPropsToRestore>,
-//          std::owner_less<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > >
-//{
-//    Q_OBJECT
-
-//    insight::ParameterSet commonParameters_, defaultCommonParameters_;
-//    IQVTKConstrainedSketchEditor& editor_;
-//    ParameterEditorWidget* pe_;
-//    int tbi_;
-
-//    void highlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
-//    void unhighlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
-
-//public:
-//    SketchEntitySelection(IQVTKConstrainedSketchEditor& editor);
-//    ~SketchEntitySelection();
-
-//    void addToSelection(insight::cad::ConstrainedSketchEntityPtr entity);
-//    bool isInSelection(const insight::cad::ConstrainedSketchEntityPtr& entity);
-//};
-
 
 
 struct SelectedSketchEntityWrapper
@@ -173,9 +46,6 @@ class SketchEntityMultiSelection
     IQVTKConstrainedSketchEditor& editor_;
     ParameterEditorWidget* pe_;
     int tbi_;
-
-//    void highlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
-//    void unhighlight(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
 
 public:
     SketchEntityMultiSelection(IQVTKConstrainedSketchEditor& editor);

@@ -37,6 +37,16 @@ void writeVec3Constant(std::ostream & os, const arma::mat &m)
 }
 
 
+
+defineType(ParserDataBase);
+defineStaticFunctionTableWithArgs(
+    ParserDataBase,
+    insertrule, void,
+    LIST(PDLParserRuleset& ruleset),
+    LIST(ruleset)
+    );
+
+
 ParserDataBase::ParserDataBase(const std::string& d, bool h, bool e, bool n, int o)
 : description(d),
   isHidden(h), isExpert(e), isNecessary(n), order(o)

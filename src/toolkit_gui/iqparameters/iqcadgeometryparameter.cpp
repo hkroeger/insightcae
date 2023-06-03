@@ -60,7 +60,7 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
   layout->addLayout(layout2);
 
   auto *teScript = new QTextEdit(editControlsContainer);
-  teScript->setText(QString::fromStdString(p.script()));
+  teScript->document()->setPlainText(QString::fromStdString(p.script()));
   layout->addWidget(teScript);
 
   QHBoxLayout *layout3=new QHBoxLayout;
@@ -77,7 +77,7 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
     auto&p = dynamic_cast<insight::CADGeometryParameter&>(model->parameterRef(index));
 //    p.setCADModel( viewer->cadmodel()->model() );
     p.setFeatureLabel( leFeatureLabel->text().toStdString() );
-    p.setScript( teScript->document()->toRawText().toStdString() );
+    p.setScript( teScript->document()->toPlainText().toStdString() );
     model->notifyParameterChange(index);
   };
 

@@ -23,6 +23,7 @@ set(pdl_SOURCES
     propertylibraryselectionparameterparser.h propertylibraryselectionparameterparser.cpp
     spatialtransformationparameterparser.h spatialtransformationparameterparser.cpp
     cadgeometryparameterparser.h cadgeometryparameterparser.cpp
+    cadsketchparameterparser.h cadsketchparameterparser.cpp
 )
 
 add_executable(pdl ${pdl_SOURCES})

@@ -67,6 +67,15 @@ public:
 
   virtual void write(std::ostream& file) const;
   
+  /**
+   * @brief generateScriptCommand
+   * This API needs is conceptually incomplete.
+   * currently only used to save constrained sketch scripts without external dependencies
+   * everything else is unsupported.
+   * @return
+   */
+  virtual std::string generateScriptCommand() const;
+
   virtual void checkForBuildDuringAccess() const;
 };
 
@@ -252,6 +261,7 @@ public:
   
 
   virtual void write(std::ostream& file) const;
+
 };
 
 

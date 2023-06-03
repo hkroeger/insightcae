@@ -3,6 +3,11 @@
 
 using namespace std;
 
+
+defineType(SelectionParameterParser);
+addToStaticFunctionTable(ParserDataBase, SelectionParameterParser, insertrule);
+
+
 SelectionParameterParser::Data::Data(const std::vector<std::string>& sels, const std::string& sel, const std::string& d)
   : ParserDataBase(d), selections(sels), selection(sel)
 {}

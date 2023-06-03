@@ -107,19 +107,19 @@ ParameterEditorWidget::ParameterEditorWidget
       insight::CurrentExceptionContext ex("building parameter set displayer");
 
       // no existing displayer supplied; create one
-      CADViewer *viewer=nullptr;
+      viewer_=nullptr;
       {
           insight::CurrentExceptionContext ex("creating CAD viewer");
-          viewer=new CADViewer;
-          viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+          viewer_=new CADViewer;
+          viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-          addWidget(viewer);
+          addWidget(viewer_);
       }
 
       insight::dbg()<<"create model tree"<<std::endl;
       modeltree_ = new QTreeView(this);
 
-      display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree_);
+      display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer_, modeltree_);
 
       // after ParameterSetDisplay constructor!
       modeltree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -336,6 +336,11 @@ void ParameterEditorWidget::resetParameterSet(
   {
     viz_->setParameterSetModel(model_);
   }
+}
+
+ParameterEditorWidget::CADViewer *ParameterEditorWidget::viewer() const
+{
+  return viewer_;
 }
 
 

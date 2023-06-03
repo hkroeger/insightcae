@@ -1,6 +1,10 @@
 #include "cadgeometryparameterparser.h"
 
 
+defineType(CADGeometryParameterParser);
+addToStaticFunctionTable(ParserDataBase, CADGeometryParameterParser, insertrule);
+
+
 CADGeometryParameterParser::Data::Data(
     const std::string& featureLabel,
     const std::string& script,

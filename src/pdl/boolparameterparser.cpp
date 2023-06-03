@@ -2,6 +2,19 @@
 
 using namespace std;
 
+/*
+declareType();
+
+typeName
+
+std::make_shared<PDLParserRuleset::ParameterDataRule>
+
+defineType();
+addToStaticFunctionTable(ParserDataBase, , insertrule);
+*/
+
+defineType(BoolParameterParser);
+addToStaticFunctionTable(ParserDataBase, BoolParameterParser, insertrule);
 
 BoolParameterParser::Data::Data(bool v, const std::string& d)
 : ParserDataBase(d), value(v)

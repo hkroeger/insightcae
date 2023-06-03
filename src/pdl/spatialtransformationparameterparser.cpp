@@ -2,6 +2,10 @@
 
 using namespace std;
 
+defineType(SpatialTransformationParameterParser);
+addToStaticFunctionTable(ParserDataBase, SpatialTransformationParameterParser, insertrule);
+
+
 SpatialTransformationParameterParser::Data::Data(
         const arma::mat& t, const arma::mat& r, double s, const std::string& d )
 : ParserDataBase(d), trans(t), rpy(r), scale(s)

@@ -2,6 +2,8 @@
 
 using namespace std;
 
+defineType(IncludedSubsetParameterParser);
+addToStaticFunctionTable(ParserDataBase, IncludedSubsetParameterParser, insertrule);
 
 IncludedSubsetParameterParser::Data::Data(const std::string& v, const std::string& d, const DefaultValueModifications& defmod)
     : ParserDataBase(d), value(v), default_value_modifications(defmod)

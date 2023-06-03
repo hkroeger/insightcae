@@ -2,6 +2,9 @@
 
 using namespace std;
 
+defineType(DoubleRangeParameterParser);
+addToStaticFunctionTable(ParserDataBase, DoubleRangeParameterParser, insertrule);
+
 DoubleRangeParameterParser::Data::Data(const std::vector<double>& v, const std::string& d)
 : ParserDataBase(d), value(v)
 {}

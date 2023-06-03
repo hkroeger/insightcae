@@ -3,6 +3,10 @@
 
 using namespace std;
 
+defineType(PropertyLibrarySelectionParameterParser);
+addToStaticFunctionTable(ParserDataBase, PropertyLibrarySelectionParameterParser, insertrule);
+
+
 PropertyLibrarySelectionParameterParser::Data::Data(const std::string& libname, const std::string& sel, const std::string& d)
   : ParserDataBase(d), libraryName(libname), selection(sel)
 {}

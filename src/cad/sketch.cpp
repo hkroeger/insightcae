@@ -33,6 +33,8 @@
 
 #include "constrainedsketchgrammar.h"
 
+#include "parser.h"
+
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::algorithm;
@@ -48,6 +50,8 @@ namespace cad {
 
 defineType(Sketch);
 //addToFactoryTable(Feature, Sketch);
+addToStaticFunctionTable(Feature, Sketch, insertrule);
+//addToStaticFunctionTable(Feature, Sketch, ruleDocumentation);
 
 size_t Sketch::calcHash() const
 {
@@ -74,9 +78,6 @@ size_t Sketch::calcHash() const
 }
 
 
-Sketch::Sketch()
-: Feature()
-{}
 
 
 Sketch::Sketch
@@ -97,26 +98,6 @@ Sketch::Sketch
 
 
 
-
-FeaturePtr Sketch::create
-(
-    DatumPtr pl,
-    const boost::filesystem::path& fn,
-    const std::string& ln,
-    const SketchVarList& vars,
-    double tol
-)
-{
-    return FeaturePtr
-           (
-               new Sketch
-               (
-                   pl, fn,
-                   ln, vars,
-                   tol
-               )
-           );
-}
 
 
 
@@ -423,7 +404,7 @@ bool Sketch::isSingleFace() const
 }
 
 
-void Sketch::insertrule(parser::ISCADParser& ruleset) const
+void Sketch::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -436,7 +417,11 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
 	  > ( ( ',' >> (ruleset.r_identifier > '=' > ruleset.r_scalarExpression )% ',' ) | qi::attr(SketchVarList()) )
 	  > ( ( ',' >> qi::double_ ) | qi::attr(1e-3) ) > 
       ')' ) 
-	[ qi::_val = phx::bind(&Sketch::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+    [ qi::_val = phx::bind(
+                       &Sketch::create<DatumPtr,const boost::filesystem::path&,
+                                       const std::string&, const SketchVarList&,
+                                       double>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       
     ))
   );
@@ -474,6 +459,7 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
 
 defineType(SketchPoint);
 addToStaticFunctionTable(ConstrainedSketchEntity, SketchPoint, addParserRule);
+
 
 SketchPoint::SketchPoint(DatumPtr plane, double x, double y)
     : plane_(plane),
@@ -555,7 +541,7 @@ void SketchPoint::generateScriptCommand(
         );
 }
 
-void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset)
+void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction)
 {
     namespace qi=boost::spirit::qi;
     ruleset.entityRules.add
@@ -583,7 +569,8 @@ void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset)
 
 defineType(ConstrainedSketch);
 //addToFactoryTable(Feature, ConstrainedSketch);
-
+addToStaticFunctionTable(Feature, ConstrainedSketch, insertrule);
+//addToStaticFunctionTable(Feature, ConstrainedSketch, ruleDocumentation);
 
 size_t ConstrainedSketch::calcHash() const
 {
@@ -596,11 +583,6 @@ size_t ConstrainedSketch::calcHash() const
 
 
 
-ConstrainedSketch::ConstrainedSketch()
-: Feature(),
-  solverTolerance_(1e-6)
-{}
-
 
 
 ConstrainedSketch::ConstrainedSketch(DatumPtr pl)
@@ -611,13 +593,10 @@ ConstrainedSketch::ConstrainedSketch(DatumPtr pl)
 
 
 
-std::shared_ptr<ConstrainedSketch> ConstrainedSketch::create( DatumPtr pl )
-{
-  return std::shared_ptr<ConstrainedSketch>(new ConstrainedSketch(pl));
-}
 
 
-std::shared_ptr<ConstrainedSketch> ConstrainedSketch::create(DatumPtr pl, istream &in)
+std::shared_ptr<ConstrainedSketch> ConstrainedSketch::createFromStream(
+    DatumPtr pl, istream &in, const ParameterSet& geomPS )
 {
   auto sk = ConstrainedSketch::create(pl);
 
@@ -628,13 +607,15 @@ std::shared_ptr<ConstrainedSketch> ConstrainedSketch::create(DatumPtr pl, istrea
   std::istream_iterator<char> end;
   std::string contents_raw(it, end);
 
+  insight::dbg()<<contents_raw<<std::endl;
+
   std::string::iterator orgbegin,
       first=contents_raw.begin(),
       last=contents_raw.end();
 
   parser::skip_grammar skip;
 
-  ConstrainedSketchGrammar grammar(sk);
+  ConstrainedSketchGrammar grammar(sk, [&geomPS]() ->insight::ParameterSet { return geomPS; });
   bool success = boost::spirit::qi::phrase_parse(
       first,  last,
       grammar, skip
@@ -773,6 +754,36 @@ void ConstrainedSketchScriptBuffer::write(ostream &os)
 }
 
 
+void ConstrainedSketch::insertrule(parser::ISCADParser& ruleset)
+{
+    typedef
+        qi::rule<
+            std::string::iterator,
+            FeaturePtr(),
+            parser::ISCADParser::skipper_type,
+            qi::locals<std::shared_ptr<ConstrainedSketch>, std::shared_ptr<ConstrainedSketchGrammar> >
+            >
+        ConstrainedSketchRule;
+
+    auto noParams = []() { return insight::ParameterSet(); };
+
+    auto *rule = new ConstrainedSketchRule(
+                '(' > ruleset.r_datumExpression
+                  [ qi::_a = phx::bind(&ConstrainedSketch::create<DatumPtr>, qi::_1),
+                       qi::_b = parser::make_shared_<ConstrainedSketchGrammar>()(qi::_a, std::bind(noParams)),
+                    qi::_val = qi::_a ]
+                   > ',' > qi::lazy(phx::bind(&ConstrainedSketchGrammar::r_sketch, qi::_b))
+                   > ')'
+        );
+    ruleset.addAdditionalRule(rule);
+
+    ruleset.modelstepFunctionRules.add
+        (
+            "ConstrainedSketch",
+            std::make_shared<parser::ISCADParser::ModelstepRule>(*rule)
+        );
+}
+
 
 void ConstrainedSketch::generateScript(ostream &os) const
 {
@@ -798,7 +809,7 @@ void ConstrainedSketch::generateScript(ostream &os) const
 std::string ConstrainedSketch::generateScriptCommand() const
 {
     std::ostringstream os;
-    os << type() << '(';
+    os << type() << "(XY,\n";
     generateScript(os);
     os << ')';
     return os.str();

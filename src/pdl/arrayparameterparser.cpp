@@ -2,6 +2,12 @@
 
 using namespace std;
 
+
+defineType(ArrayParameterParser);
+addToStaticFunctionTable(ParserDataBase, ArrayParameterParser, insertrule);
+
+
+
 ArrayParameterParser::Data::Data(ParserDataBase::Ptr v, size_t n, const std::string& d)
 : ParserDataBase(d), value(v), num(n)
 {}

@@ -111,9 +111,9 @@ void ISCADParser::createFeatureExpressions()
     r_modelstepFunction.name("feature function");
 
     r_modelstepSymbol =
-         current_pos.current_pos >>
-          model_->modelstepSymbols()
-          >> current_pos.current_pos
+        current_pos.current_pos
+        >> model_->modelstepSymbols() >>
+        current_pos.current_pos
         ;
     r_modelstepSymbol.name("feature symbol");
 

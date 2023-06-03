@@ -22,6 +22,10 @@ typedef
     std::shared_ptr<ConstrainedSketchEntity>
         ConstrainedSketchEntityPtr;
 
+
+typedef std::function<insight::ParameterSet(void)> MakeDefaultGeometryParametersFunction;
+
+
 class ConstrainedSketchEntity
 {
     insight::ParameterSet parameters_, defaultParameters_;
@@ -32,8 +36,8 @@ public:
     declareStaticFunctionTableWithArgs(
         addParserRule,
         void,
-        LIST(ConstrainedSketchGrammar&),
-        LIST(ConstrainedSketchGrammar& ruleset));
+        LIST(ConstrainedSketchGrammar&, MakeDefaultGeometryParametersFunction),
+        LIST(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf));
 
     virtual int nDoF() const;
     virtual double getDoFValue(unsigned int iDoF) const;

@@ -44,6 +44,11 @@ set(toolkit_gui_SRCS
  iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
 
  iqvtkviewerstate.h iqvtkviewerstate.cpp
+ iqvtkconstrainedsketchentity.h
+ iqvtkfixedpoint.h iqvtkfixedpoint.cpp
+ iqvtkhorizontalconstraint.h iqvtkhorizontalconstraint.cpp
+ iqvtkverticalconstraint.h iqvtkverticalconstraint.cpp
+ iqvtkpointoncurveconstraint.h iqvtkpointoncurveconstraint.cpp
  iqvtkconstrainedsketcheditor.h iqvtkconstrainedsketcheditor.cpp
 
  iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h
@@ -72,6 +77,7 @@ set(toolkit_gui_SRCS
  viewwidgetinsertids.cpp
  navigationmanager.h
  navigationmanager.cpp
+ selectionlogic.h
  qoccviewwidget.cpp
  qoccviewwidget.h
  viewstate.cpp
@@ -123,6 +129,7 @@ set(toolkit_gui_SRCS
     iqparameters/iqpropertylibraryselectionparameter.cpp iqparameters/iqpropertylibraryselectionparameter.h
     iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
     iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
+    iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 
     iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
 

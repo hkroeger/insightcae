@@ -2,6 +2,10 @@
 
 using namespace std;
 
+defineType(MatrixParameterParser);
+addToStaticFunctionTable(ParserDataBase, MatrixParameterParser, insertrule);
+
+
 MatrixParameterParser::Data::Data(arma::uword r, arma::uword c, const std::string& d)
 : ParserDataBase(d), value(arma::zeros(r,c))
 {}

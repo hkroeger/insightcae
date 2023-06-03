@@ -64,14 +64,18 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                     connect(a, &QAction::triggered,
                             std::bind(
                                 &IQCADModel3DViewer::editSketch,
-                                viewer, name.toStdString(), psk,
+                                viewer, psk,
                                 insight::ParameterSet(),
                                 [](const insight::ParameterSet&, vtkProperty* actprops)
                                 {
                                     actprops->SetColor(1,0,0);
                                     actprops->SetLineWidth(2);
                                 },
-                                [](){}) );
+                                [this,psk,name](){
+                                  // on finish
+                                    addModelstep(name.toStdString(), psk);
+                                    setStaticModelStep(name.toStdString(), true);
+                                }) );
                     cm.addAction(a);
                 }
             }

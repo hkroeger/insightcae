@@ -23,276 +23,32 @@
 #include <QFormLayout>
 #include <QDoubleValidator>
 
+#include "iqvtkfixedpoint.h"
+#include "iqvtkhorizontalconstraint.h"
+#include "iqvtkverticalconstraint.h"
+#include "iqvtkpointoncurveconstraint.h"
 
 
 
 
-IQVTKFixedPoint::IQVTKFixedPoint(
-        insight::cad::SketchPointPtr p  )
-    : p_(p)
-{
-    auto c=p->coords2D();
-    changeDefaultParameters(
-                insight::ParameterSet({
-                                 {"x", new insight::DoubleParameter(c(0), "x location")},
-                                 {"y", new insight::DoubleParameter(c(1), "y location")}
-                             })
-                );
-}
-
-std::vector<vtkSmartPointer<vtkProp> > IQVTKFixedPoint::createActor() const
-{
-//    auto sph = vtkSmartPointer<vtkSphereSource>::New();
-//    sph->SetCenter( p_->value().memptr() );
-//#warning need a sketch order of scene size
-//    sph->SetRadius(0.025);
-
-//    auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-//    //mapper->SetInputData(arr);
-//    mapper->SetInputConnection(sph->GetOutputPort());
-//    mapper->Update();
-
-//    auto act = vtkSmartPointer<vtkActor>::New();
-//    act->SetMapper( mapper );
-
-//    return {act};
-
-//    auto text = vtkSmartPointer<vtkVectorText>::New();
-//    text->SetText("X");
-//    auto mapper=vtkSmartPointer<vtkPolyDataMapper>::New();
-//    mapper->SetInputConnection(text->GetOutputPort());
-//    auto follower=vtkSmartPointer<vtkFollower>::New();
-//    follower->SetMapper(mapper);
-//    follower->SetScale(0.1);
-//    follower->AddPosition( p_->value().memptr() );
-//    return {follower};
-
-
-    auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("X");
-    caption->SetAttachmentPoint(p_->value().memptr());
-    caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
-    caption->GetCaptionTextProperty()->SetColor(0,0,0);
-    caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->SetFrame(false);
-    caption->GetCaptionTextProperty()->SetShadow(false);
-
-    return {caption};
-}
-
-int IQVTKFixedPoint::nConstraints() const
-{
-    return 1;
-}
-
-double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
-{
-    insight::assertion(
-                iConstraint==0,
-                "invalid constraint id: %d", iConstraint );
-    auto p = p_->coords2D();
-    double x=parameters().getDouble("x");
-    double y=parameters().getDouble("y");
-    return pow(p(0)-x,2), pow(p(1)-y,2);
-}
-
-void IQVTKFixedPoint::scaleSketch(double scaleFactor)
-{
-    parametersRef().get<insight::DoubleParameter>("x")() *= scaleFactor;
-    parametersRef().get<insight::DoubleParameter>("y")() *= scaleFactor;
-}
-
-void IQVTKFixedPoint::generateScriptCommand(insight::cad::ConstrainedSketchScriptBuffer &script, const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
-{
-
-}
-
-
-
-
-
-
-IQVTKHorizontalConstraint::IQVTKHorizontalConstraint(
-    std::shared_ptr<insight::cad::Line const> line )
-    : line_(line)
-{}
-
-
-std::vector<vtkSmartPointer<vtkProp> > IQVTKHorizontalConstraint::createActor() const
-{
-//    auto text = vtkSmartPointer<vtkVectorText>::New();
-//    text->SetText("H");
-//    auto mapper=vtkSmartPointer<vtkPolyDataMapper>::New();
-//    mapper->SetInputConnection(text->GetOutputPort());
-//    auto follower=vtkSmartPointer<vtkFollower>::New();
-//    follower->SetMapper(mapper);
-//    follower->AddPosition( arma::mat(0.5*
-//       (line_->getDatumPoint("p0")+line_->getDatumPoint("p1")))
-//                              .memptr()
-//    );
-//    return {follower};
-
-    auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("H");
-    caption->SetAttachmentPoint(
-        arma::mat(0.5*
-                  (line_->getDatumPoint("p0")+line_->getDatumPoint("p1")))
-            .memptr());
-    caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
-    caption->GetCaptionTextProperty()->SetColor(0,0,0);
-    caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->SetFrame(false);
-    caption->GetCaptionTextProperty()->SetShadow(false);
-
-    return {caption};
-}
-
-int IQVTKHorizontalConstraint::nConstraints() const
-{
-    return 1;
-}
-
-double IQVTKHorizontalConstraint::getConstraintError(unsigned int iConstraint) const
-{
-    arma::mat ex = line_->getDatumVectors().at("ex");
-    return 1.-fabs(arma::dot(insight::vec3(1,0,0), ex));
-}
-
-void IQVTKHorizontalConstraint::scaleSketch(double scaleFactor)
-{}
-
-void IQVTKHorizontalConstraint::generateScriptCommand(insight::cad::ConstrainedSketchScriptBuffer &script, const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
-{
-
-}
-
-
-
-
-
-
-
-IQVTKVerticalConstraint::IQVTKVerticalConstraint(
-    std::shared_ptr<insight::cad::Line const> line )
-    : line_(line)
-{}
-
-std::vector<vtkSmartPointer<vtkProp> > IQVTKVerticalConstraint::createActor() const
-{
-//    auto text = vtkSmartPointer<vtkVectorText>::New();
-//    text->SetText("V");
-//    auto mapper=vtkSmartPointer<vtkPolyDataMapper>::New();
-//    mapper->SetInputConnection(text->GetOutputPort());
-//    auto follower=vtkSmartPointer<vtkFollower>::New();
-//    follower->SetMapper(mapper);
-//    follower->AddPosition( arma::mat(0.5*
-//                                    (line_->getDatumPoint("p0")+line_->getDatumPoint("p1")))
-//                              .memptr()
-//                          );
-//    return {follower};
-
-    auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("V");
-    caption->SetAttachmentPoint(
-        arma::mat(0.5*
-                  (line_->getDatumPoint("p0")+line_->getDatumPoint("p1")))
-            .memptr());
-    caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
-    caption->GetCaptionTextProperty()->SetColor(0,0,0);
-    caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->SetFrame(false);
-    caption->GetCaptionTextProperty()->SetShadow(false);
-
-    return {caption};
-
-}
-int IQVTKVerticalConstraint::nConstraints() const
-{
-    return 1;
-}
-
-double IQVTKVerticalConstraint::getConstraintError(unsigned int iConstraint) const
-{
-    arma::mat ex = line_->getDatumVectors().at("ex");
-    return 1.-fabs(arma::dot(insight::vec3(0,1,0), ex));
-}
-
-void IQVTKVerticalConstraint::scaleSketch(double scaleFactor)
-{}
-
-void IQVTKVerticalConstraint::generateScriptCommand(insight::cad::ConstrainedSketchScriptBuffer &script, const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
-{
-
-}
-
-
-
-
-
-
-IQVTKPointOnCurveConstraint::IQVTKPointOnCurveConstraint(
-    std::shared_ptr<insight::cad::SketchPoint const> p,
-    std::shared_ptr<insight::cad::Feature const> curve )
-  : p_(p),
-    curve_(curve)
-{}
-
-std::vector<vtkSmartPointer<vtkProp> > IQVTKPointOnCurveConstraint::createActor() const
-{
-    auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("F");
-    caption->SetAttachmentPoint(
-        arma::mat(p_->value()).memptr()
-        );
-    caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
-    caption->GetCaptionTextProperty()->SetColor(0,0,0);
-    caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->SetFrame(false);
-    caption->GetCaptionTextProperty()->SetShadow(false);
-
-    return {caption};
-}
-
-int IQVTKPointOnCurveConstraint::nConstraints() const
-{
-    return 1;
-}
-
-double IQVTKPointOnCurveConstraint::getConstraintError(unsigned int iConstraint) const
-{
-    insight::assertion(
-        iConstraint==0,
-        "invalid constraint index");
-
-    return curve_->minDist(p_->value());
-}
-
-void IQVTKPointOnCurveConstraint::scaleSketch(double scaleFactor)
-{
-}
-
-void IQVTKPointOnCurveConstraint::generateScriptCommand(insight::cad::ConstrainedSketchScriptBuffer &script, const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
-{
-
-}
-
-
-
-
-
-void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchEntityPtr sg)
+void IQVTKConstrainedSketchEditor::add(
+    insight::cad::ConstrainedSketchEntityPtr sg)
 {
     auto setapp = setActorAppearance_;
     std::vector<vtkSmartPointer<vtkProp> > acs;
-    if (auto feat = std::dynamic_pointer_cast<insight::cad::Feature>(sg))
+    if (auto feat = std::dynamic_pointer_cast<
+            insight::cad::Feature>(sg))
     {
         acs=viewer().createActor(feat);
     }
-    else if (auto pt = std::dynamic_pointer_cast<insight::cad::Vector>(sg))
+    else if (auto pt = std::dynamic_pointer_cast<
+                   insight::cad::Vector>(sg))
     {
         acs=viewer().createActor(pt);
     }
-    else if (auto pa = std::dynamic_pointer_cast<insight::cad::PostprocAction>(sg)) // dimensions etc.
+    else if (auto pa = std::dynamic_pointer_cast<
+                   insight::cad::PostprocAction>(sg))
+    // dimensions etc.
     {
         acs=viewer().createActor(pa);
         setapp=[](const insight::ParameterSet& p, vtkProperty* prop)
@@ -301,7 +57,9 @@ void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchEntityPtr 
                 prop->SetLineWidth(0.5);
             };
     }
-    else if (auto soe = std::dynamic_pointer_cast<IQVTKConstrainedSketchEntity>(sg)) // e.g. constrains etc.
+    else if (auto soe = std::dynamic_pointer_cast<
+                   IQVTKConstrainedSketchEntity>(sg))
+    // e.g. constrains etc.
     {
         acs=soe->createActor();
     }
@@ -314,7 +72,8 @@ void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchEntityPtr 
         }
         if (auto follower=vtkFollower::SafeDownCast(a))
         {
-            follower->SetCamera(viewer().renderer()->GetActiveCamera());
+            follower->SetCamera(
+                viewer().renderer()->GetActiveCamera());
         }
         viewer().renderer()->AddActor(a);
         as.insert(a);
@@ -325,7 +84,8 @@ void IQVTKConstrainedSketchEditor::add(insight::cad::ConstrainedSketchEntityPtr 
 
 
 
-void IQVTKConstrainedSketchEditor::remove(insight::cad::ConstrainedSketchEntityPtr sg)
+void IQVTKConstrainedSketchEditor::remove(
+    insight::cad::ConstrainedSketchEntityPtr sg)
 {
     auto i=sketchGeometryActors_.find(sg);
     if (i!=sketchGeometryActors_.end())
@@ -339,57 +99,57 @@ void IQVTKConstrainedSketchEditor::remove(insight::cad::ConstrainedSketchEntityP
     }
 }
 
-
-void IQVTKConstrainedSketchEditor::SketchEntitySelection::highlight(
-        std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity )
+std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
+IQVTKConstrainedSketchEditor::findEntitiesUnderCursor(
+    const QPoint& point) const
 {
-    auto i=std::find_if(
-                editor_.sketchGeometryActors_.begin(),
-                editor_.sketchGeometryActors_.end(),
-                [&entity]( const decltype(editor_.sketchGeometryActors_)::value_type& p2 )
-        {
-            return !entity.owner_before(p2.first) && !p2.first.owner_before(entity);
-        }
-    );
-
-    editor_.viewer().actorHighlight_.reset();
-    if (i!=editor_.sketchGeometryActors_.end())
+    std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > ret;
+    auto aa = viewer().findAllActorsUnderCursorAt(point);
+    for (auto& a: aa)
     {
-        mapped_type restoreProps;
-        ActorSet actors = i->second;
-        for(auto &a: actors)
+        if (auto sg =
+                this->findSketchElementOfActor(a))
         {
-            if (auto aa = vtkActor::SafeDownCast(a))
-            {
-                decltype(restoreProps)::mapped_type prop;
-                aa->GetProperty()->GetColor(prop.oldColor);
-                aa->GetProperty()->SetColor(0,0,1);
-                restoreProps[aa]=prop;
-            }
+           ret.push_back(sg);
         }
-        insert({entity, restoreProps});
     }
+    return ret;
 }
 
-void IQVTKConstrainedSketchEditor::SketchEntitySelection::unhighlight(
-        std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity)
+
+
+
+IQVTKCADModel3DViewer::HighlightingHandleSet
+IQVTKConstrainedSketchEditor::highlightEntity(
+    std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity
+    ) const
 {
-    auto i = find(entity);
-    if (i!=end())
-    {
-        auto restoreProp=i->second;
-        for (auto& rp: restoreProp)
-        {
-            if (auto aa = vtkActor::SafeDownCast(rp.first))
-            {
-                aa->GetProperty()->SetColor(rp.second.oldColor);
-            }
-        }
-        erase(i);
-    }
+    auto lentity=entity.lock();
+    auto sg = sketchGeometryActors_.at(lentity);
+    std::set<vtkProp*> props;
+    std::copy(
+        sg.begin(), sg.end(),
+        std::inserter(props, props.begin())
+        );
+    return viewer().highlightActors(props);
 }
 
-IQVTKConstrainedSketchEditor::SketchEntitySelection::SketchEntitySelection
+
+
+
+void
+IQVTKConstrainedSketchEditor::unhighlightEntity(
+    IQVTKCADModel3DViewer::HighlightingHandleSet highlighters
+    ) const
+{
+    viewer().unhighlightActors(highlighters);
+}
+
+
+
+
+
+SketchEntityMultiSelection::SketchEntityMultiSelection
 ( IQVTKConstrainedSketchEditor &editor )
     : editor_(editor)
 {
@@ -414,53 +174,89 @@ IQVTKConstrainedSketchEditor::SketchEntitySelection::SketchEntitySelection
 }
 
 
-IQVTKConstrainedSketchEditor::SketchEntitySelection::~SketchEntitySelection()
+SketchEntityMultiSelection::~SketchEntityMultiSelection()
 {
     editor_.toolBox_->removeItem(tbi_);
     for (iterator i=begin(); i!=end(); i=begin())
     {
         if (!i->first.expired())
         {
-            unhighlight(i->first);
+           for (auto& hl: i->second)
+           {
+               if (!hl.expired())
+               {
+                   editor_.viewer().unhighlightActor(hl);
+               }
+           }
         }
+        erase(i);
     }
 }
 
 
-void IQVTKConstrainedSketchEditor::SketchEntitySelection::addAndHighlight(
-        insight::cad::ConstrainedSketchEntityPtr entity)
+void SketchEntityMultiSelection::addToSelection(
+    std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity)
 {
-    if (!isInSelection(entity)) // don't add multiple times
+    if (!isInSelection(entity.lock().get())) // don't add multiple times
     {
-        highlight(entity);
 
-        if (size()==1)
-        {
-            commonParameters_=
-                entity->parameters();
-            defaultCommonParameters_=
-                entity->defaultParameters();
-        }
-        else if (size()>1)
-        {
-            commonParameters_=
-                commonParameters_.intersection(entity->parameters());
-            defaultCommonParameters_=
-                defaultCommonParameters_.intersection(entity->defaultParameters());
-        }
+        auto i=std::find_if(
+                    editor_.sketchGeometryActors_.begin(),
+                    editor_.sketchGeometryActors_.end(),
+                    [&entity]( const decltype(editor_.sketchGeometryActors_)::value_type& p2 )
+            {
+                return
+                    !entity.owner_before(p2.first)
+                 && !p2.first.owner_before(entity);
+            }
+        );
 
-        if (size()>0)
+        if (i!=editor_.sketchGeometryActors_.end())
         {
-            pe_->clearParameterSet();
-            pe_->resetParameterSet(commonParameters_, defaultCommonParameters_);
+            mapped_type hl;
+            auto actors = i->second;
+            for(auto &a: actors)
+            {
+                hl.insert(editor_.viewer().highlightActor(a));
+            }
+            insert({entity, hl});
+
+            auto lentity=entity.lock();
+
+            if (size()==1)
+            {
+                commonParameters_=
+                    lentity->parameters();
+                defaultCommonParameters_=
+                    lentity->defaultParameters();
+            }
+            else if (size()>1)
+            {
+                commonParameters_=
+                    commonParameters_.intersection(lentity->parameters());
+                defaultCommonParameters_=
+                    defaultCommonParameters_.intersection(lentity->defaultParameters());
+            }
+
+            if (size()>0)
+            {
+                pe_->clearParameterSet();
+                pe_->resetParameterSet(commonParameters_, defaultCommonParameters_);
+            }
         }
     }
 }
 
-bool IQVTKConstrainedSketchEditor::SketchEntitySelection::isInSelection(
-        const insight::cad::ConstrainedSketchEntityPtr &entity)
+bool SketchEntityMultiSelection::isInSelection(
+    const insight::cad::ConstrainedSketchEntity* entity)
 {
-    return find(entity)!=end();
+    for (auto& sel: *this)
+    {
+        if (sel.first.lock().get()==entity)
+            return true;
+    }
+
+    return false;
 }
 
 
@@ -579,7 +375,11 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         const insight::ParameterSet& defaultGeometryParameters,
         IQCADModel3DViewer::SetSketchEntityAppearanceCallback sseac
 )
-    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),
+    : /*ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),*/
+      IQVTKConstrainedSketchEditorSelectionLogic(
+        viewer,
+        [this]()
+        { return std::make_shared<SketchEntityMultiSelection>(*this); }),
       insight::cad::ConstrainedSketchPtr(sketch),
       setActorAppearance_(sseac),
       defaultGeometryParameters_(defaultGeometryParameters)
@@ -760,7 +560,9 @@ IQVTKConstrainedSketchEditor::findSketchElementOfActor
 }
 
 
-bool IQVTKConstrainedSketchEditor::onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point )
+bool IQVTKConstrainedSketchEditor::onLeftButtonDown  (
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
 {
     bool ret=false;
 
@@ -770,36 +572,40 @@ bool IQVTKConstrainedSketchEditor::onLeftButtonDown  ( Qt::KeyboardModifiers nFl
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
 
-    if (!ret)
-    {
-        if (auto act =
-                viewer().findActorUnderCursorAt(point))
-        {
-            if (auto sg =
-                    this->findSketchElementOfActor(act))
-            {
-                if (!currentSelection_)
-                {
-                    currentSelection_ =
-                            std::make_shared<SketchEntitySelection>(
-                                *this);
-                }
-                currentSelection_->addAndHighlight(sg);
-                ret=true;
-            }
-            else
-            {
-                currentSelection_.reset();
-                ret=true;
+//    if (!ret)
+//    {
+//        if (auto act =
+//                viewer().findActorUnderCursorAt(point))
+//        {
+//            if (auto sg =
+//                    this->findSketchElementOfActor(act))
+//            {
+//                if (!currentSelection_)
+//                {
+//                    currentSelection_ =
+//                            std::make_shared<SketchEntitySelection>(
+//                                *this);
+//                }
+//                currentSelection_->addAndHighlight(sg);
+//                ret=true;
+//            }
+//            else
+//            {
+//                currentSelection_.reset();
+//                ret=true;
 
-            }
-        }
-        else
-        {
-            currentSelection_.reset();
-            ret=true;
-        }
-    }
+//            }
+//        }
+//        else
+//        {
+//            currentSelection_.reset();
+//            ret=true;
+//        }
+//    }
+
+    if (!ret)
+        ret=IQVTKConstrainedSketchEditorSelectionLogic::
+            onLeftButtonDown(nFlags, point);
 
     return ret;
 }
@@ -831,6 +637,10 @@ bool IQVTKConstrainedSketchEditor::onLeftButtonUp    ( Qt::KeyboardModifiers nFl
         ret=currentAction_->onLeftButtonUp( nFlags, point );
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
+    if (!ret)
+        ret=IQVTKConstrainedSketchEditorSelectionLogic::
+            onLeftButtonUp(nFlags, point);
+
     return ret;
 }
 
@@ -854,13 +664,17 @@ bool IQVTKConstrainedSketchEditor::onRightButtonUp   ( Qt::KeyboardModifiers nFl
     return ret;
 }
 
-bool IQVTKConstrainedSketchEditor::onKeyPress ( Qt::KeyboardModifiers modifiers, int key )
+bool IQVTKConstrainedSketchEditor::onKeyPress (
+    Qt::KeyboardModifiers modifiers, int key )
 {
     bool ret=false;
     if (currentAction_)
         ret=currentAction_->onKeyPress( modifiers, key );
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
+    if (!ret)
+        ret=IQVTKConstrainedSketchEditorSelectionLogic::
+            onKeyPress(modifiers, key);
     return ret;
 }
 

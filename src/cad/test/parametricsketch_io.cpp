@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
                 vec3const(0,0,0), vec3const(0,0,1) );
 
             std::ifstream f(scriptFile.string());
-            auto sk = ConstrainedSketch::create(pl, f);
+            auto sk = ConstrainedSketch::createFromStream(pl, f);
 
             std::cout<<sk->geometry().size()<<std::endl;
             nRetrieved = sk->geometry().size();

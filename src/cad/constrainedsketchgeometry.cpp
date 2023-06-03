@@ -21,8 +21,8 @@ defineStaticFunctionTableWithArgs(
     ConstrainedSketchEntity,
     addParserRule,
     void,
-    LIST(ConstrainedSketchGrammar& ruleset),
-    LIST(ruleset) );
+    LIST(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf),
+    LIST(ruleset, mdpf) );
 
 
 int ConstrainedSketchEntity::nDoF() const

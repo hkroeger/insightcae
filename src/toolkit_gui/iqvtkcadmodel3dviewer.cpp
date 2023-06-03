@@ -8,6 +8,7 @@
 #include "iqvtkcadmodel3dviewerpanning.h"
 #include "iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h"
 #include "iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqvtkconstrainedsketcheditor.h"
 
 #include <QDebug>
 #include <QHBoxLayout>
@@ -20,6 +21,8 @@
 #include <QTextEdit>
 #include <QInputDialog>
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QToolBar>
 
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
@@ -55,7 +58,7 @@
 
 #include "base/vtkrendering.h"
 #include "iqvtkkeepfixedsizecallback.h"
-
+#include "base/cppextensions.h"
 
 #include <vtkAutoInit.h>
 VTK_MODULE_INIT(vtkRenderingOpenGL2); //if render backen is OpenGL2, it should changes to vtkRenderingOpenGL2
@@ -117,9 +120,10 @@ void IQVTKCADModel3DViewer::recomputeSceneBounds() const
 }
 
 
-void IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
+std::weak_ptr<IQVTKViewerState>
+IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
 {
-    actorHighlight_.reset();
+    std::shared_ptr<IQVTKViewerState> actorHighlight;
     vtkPolyDataMapper* pdm=nullptr;
     if (auto actor = vtkActor::SafeDownCast(prop))
     {
@@ -127,7 +131,7 @@ void IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
         {
             if (pdm->GetInput()->GetNumberOfPolys()>0)
             {
-                actorHighlight_.reset(
+                actorHighlight.reset(
                     new SilhouetteHighlighter(
                         *this, pdm
                     ));
@@ -135,21 +139,54 @@ void IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
             else if (pdm->GetInput()->GetNumberOfLines()>0
                      || pdm->GetInput()->GetNumberOfStrips()>0)
             {
-                actorHighlight_.reset(
+                actorHighlight.reset(
                     new LinewidthHighlighter(
                         *this, actor
                     ));
             }
             else if (pdm->GetInput()->GetNumberOfPoints()>0)
             {
-                actorHighlight_.reset(
+                actorHighlight.reset(
                     new PointSizeHighlighter(
                         *this, actor
                     ));
             }
         }
-    }
 #warning need highlighting for 2D actors as well
+    }
+
+    highlightedActors_.insert(actorHighlight);
+    return actorHighlight;
+}
+
+IQVTKCADModel3DViewer::HighlightingHandleSet
+IQVTKCADModel3DViewer::highlightActors(std::set<vtkProp *> actor)
+{
+    HighlightingHandleSet ret;
+    for (auto& a: actor)
+    {
+        ret.insert(highlightActor(a));
+    }
+    return ret;
+}
+
+void IQVTKCADModel3DViewer::unhighlightActor(
+    HighlightingHandle highlighter)
+{
+    auto i = highlightedActors_.find(highlighter.lock());
+    if (i!=highlightedActors_.end())
+    {
+        highlightedActors_.erase(i);
+    }
+}
+
+void IQVTKCADModel3DViewer::unhighlightActors(
+    HighlightingHandleSet highlighters)
+{
+    for (auto& hl: highlighters)
+    {
+        unhighlightActor(hl);
+    }
 }
 
 
@@ -755,6 +792,23 @@ void IQVTKCADModel3DViewer::addSiblings(const QModelIndex& idx)
     }
 }
 
+void IQVTKCADModel3DViewer::closeEvent(QCloseEvent *ev)
+{
+    if (currentUserActivity_)
+    {
+        auto answer= QMessageBox::question(this,
+            "User activity in progress",
+            "There is a user activity in progress!\nAny data will be lost.\nReally proceed?");
+        if (answer!=QMessageBox::StandardButton::Yes)
+        {
+            ev->ignore();
+            return;
+        }
+    }
+
+    ev->accept();
+}
+
 
 IQVTKCADModel3DViewer::BackgroundImage::BackgroundImage(
         const boost::filesystem::path& imageFile,
@@ -1148,7 +1202,7 @@ IQVTKCADModel3DViewer::~IQVTKCADModel3DViewer()
 {
     clipping_.reset();
     highlightedItem_.reset();
-    actorHighlight_.reset();
+    highlightedActors_.clear();
     backgroundImage_.reset();
 //    displayedSketch_.reset();
 }
@@ -1272,14 +1326,60 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) c
 
 //    auto picker = vtkSmartPointer<vtkPointPicker>::New();
 //    auto picker = vtkSmartPointer<vtkCellPicker>::New();
-    auto picker = vtkSmartPointer<vtkPropPicker>::New();
-    picker->Pick(p.x(), p.y(), 0, ren_);
+    auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
+    picker2d->Pick(p.x(), p.y(), 0, ren_);
 
-    auto act2 = picker->GetActor2D();
-    if (act2) return act2;
+    auto act2 = picker2d->GetActor2D();
+    if (act2)
+    {
+        return act2;
+    }
+    else
+    {
+        auto picker3d = vtkSmartPointer<vtkPicker>::New();
+        picker3d->SetTolerance(1e-4);
+        picker3d->Pick(p.x(), p.y(), 0, ren_);
+        auto pi = picker3d->GetActors();
+        std::cout<<"# under cursors = "<<pi->GetNumberOfItems()<<std::endl;
+        if (pi->GetNumberOfItems()>0)
+        {
+            pi->InitTraversal();
+            return pi->GetNextProp();
+        }
+    }
 
-    auto act3 = picker->GetActor();
-    return act3;
+    return nullptr;
+}
+
+
+
+std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const QPoint &clickPos) const
+{
+    std::vector<vtkProp *> aa;
+
+    auto p = widgetCoordsToVTK(clickPos);
+
+    auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
+    picker2d->Pick(p.x(), p.y(), 0, ren_);
+    if (auto act2 = picker2d->GetActor2D())
+    {
+        aa.push_back(act2);
+    }
+
+    // take a closer look with other pick engine
+    // which can detect multiple overlapping actors
+    auto picker3d = vtkSmartPointer<vtkPicker>::New();
+//    picker3d->SetTolerance(1e-4);
+    picker3d->Pick(p.x(), p.y(), 0, ren_);
+    auto pi = picker3d->GetActors();
+    std::cout<<"# under cursors = "<<pi->GetNumberOfItems()<<std::endl;
+    pi->InitTraversal();
+    while (auto *p= pi->GetNextProp())
+    {
+        aa.push_back(p);
+    }
+
+    return aa;
 }
 
 
@@ -1394,13 +1494,16 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
     {
         auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
                     insight::cad::ConstrainedSketch::create(plane));
-        editSketch(name.toStdString(), sk, insight::ParameterSet(),
+        editSketch(sk, insight::ParameterSet(),
                    [](const insight::ParameterSet&, vtkProperty* actprops)
                    {
                        actprops->SetColor(1,0,0);
                        actprops->SetLineWidth(2);
                    },
-                   []() {}
+                   [this,name,sk]() {
+                        cadmodel()->addModelstep(name.toStdString(), sk);
+                        cadmodel()->setStaticModelStep(name.toStdString(), true);
+                    }
             );
     }
 }
@@ -1408,7 +1511,6 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
 
 
 void IQVTKCADModel3DViewer::editSketch(
-    const std::string& name,
     insight::cad::ConstrainedSketchPtr psk,
     const insight::ParameterSet& defaultGeometryParameters,
     SetSketchEntityAppearanceCallback saac,
@@ -1416,20 +1518,18 @@ void IQVTKCADModel3DViewer::editSketch(
 {
     if (!currentUserActivity_)
     {
-        std::unique_ptr<IQVTKConstrainedSketchEditor> ske(
-                    new IQVTKConstrainedSketchEditor(
-                *this,
-                psk,
-                defaultGeometryParameters, saac));
+        auto ske = std::make_unique<IQVTKConstrainedSketchEditor>(
+            *this,
+            psk,
+            defaultGeometryParameters,
+            saac );
 
 
         connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),
-                [this,name,psk,scc]()
+                [this,psk,scc]()
                 {
-                    currentUserActivity_.reset();
-                    cadmodel()->addModelstep(name, psk);
-                    cadmodel()->setStaticModelStep(name, true);
                     if (scc) scc();
+                    currentUserActivity_.reset();
                 }
         );
 
@@ -1657,14 +1757,14 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
 void IQVTKCADModel3DViewer::mouseMoveEvent    ( QMouseEvent* e )
 {
 
-    if (auto* ac = findActorUnderCursorAt(e->pos()))
-    {
-        highlightActor(ac);
-    }
-    else
-    {
-        actorHighlight_.reset();
-    }
+//    if (auto* ac = findActorUnderCursorAt(e->pos()))
+//    {
+//        highlightActor(ac);
+//    }
+//    else
+//    {
+//        actorHighlight_.reset();
+//    }
 
     navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
     if (currentNavigationAction_)

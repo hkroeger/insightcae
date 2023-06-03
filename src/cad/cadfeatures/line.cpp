@@ -97,7 +97,7 @@ void Line::generateScriptCommand(
         );
 }
 
-void Line::addParserRule(ConstrainedSketchGrammar &ruleset)
+void Line::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction mdpf)
 {
     namespace qi=boost::spirit::qi;
     ruleset.entityRules.add
@@ -112,6 +112,7 @@ void Line::addParserRule(ConstrainedSketchGrammar &ruleset)
             )
                 [ qi::_val = phx::bind(
                      &Line::create<VectorPtr, VectorPtr, bool>, qi::_2, qi::_3, false),
+             phx::bind(&ConstrainedSketchEntity::changeDefaultParameters, qi::_val, mdpf()),
                  phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
                  phx::insert(
                      phx::ref(ruleset.labeledEntities),

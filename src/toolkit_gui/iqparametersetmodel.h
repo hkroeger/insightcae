@@ -32,6 +32,7 @@ class TOOLKIT_GUI_EXPORT IQParameterSetModel
 
   insight::ParameterSet parameterSet_, defaultParameterSet_;
   QList<IQParameter*> rootParameters_;
+  std::string analysisName_;
 
   mutable std::map<QString, insight::cad::FeaturePtr> transformedGeometry_;
 
@@ -93,6 +94,9 @@ public:
           const QString& parameterPath );
   const arma::mat* const getVectorBasePoint(
           const QString& parameterPath );
+
+  void setAnalysisName(const std::string& analysisName);
+  const std::string& getAnalysisName() const;
 
 public Q_SLOTS:
   void clearParameters();

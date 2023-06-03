@@ -404,7 +404,7 @@ class patchIntegrate
 public:
   patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
 		    const std::string& fieldName, const std::string& patchName,
-		    const std::vector<std::string>& addopts=boost::assign::list_of<std::string>("-latestTime")
+            const std::vector<std::string>& addopts = { "-latestTime" }
 		);
 
   /**

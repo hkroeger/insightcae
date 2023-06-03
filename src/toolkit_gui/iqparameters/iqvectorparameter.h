@@ -3,7 +3,7 @@
 
 #include "toolkit_gui_export.h"
 
-
+#include <QLineEdit>
 #include <iqparameter.h>
 
 #include "base/parameters/simpleparameter.h"
@@ -12,6 +12,8 @@ class TOOLKIT_GUI_EXPORT IQVectorParameter : public IQParameter
 {
 public:
   declareType(insight::VectorParameter::typeName_());
+
+    QLineEdit* lineEdit;
 
   IQVectorParameter
   (
@@ -26,6 +28,11 @@ public:
   QVBoxLayout* populateEditControls(
           IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
           IQCADModel3DViewer *viewer) override;
+
+  void applyProposition(
+      IQParameterSetModel* model, const QModelIndex &index,
+      const insight::ParameterSet& propositions,
+      const std::string& selectProposition ) override;
 
 };
 

@@ -76,6 +76,11 @@ public:
           IQCADModel3DViewer *viewer );
 
   const insight::Parameter& parameter() const;
+
+  virtual void applyProposition(
+      IQParameterSetModel* model, const QModelIndex &index,
+      const insight::ParameterSet& propositions,
+      const std::string& selectProposition );
 };
 
 

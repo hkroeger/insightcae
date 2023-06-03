@@ -5,13 +5,17 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QListWidget>
 
 #include "helpwidget.h"
 #include "iqparameter.h"
 
 #include "base/exception.h"
+#include "base/analysis.h"
+#include "base/analysisparameterpropositions.h"
 
 #include "cadparametersetvisualizer.h"
+#include "iqparametersetmodel.h"
 
 
 QString mat2Str(const arma::mat& m)
@@ -204,6 +208,36 @@ QVBoxLayout* IQParameter::populateEditControls(
     new HelpWidget( editControlsContainer, parameter().description() );
   layout->addWidget(shortDescLabel);
 
+  if (!model->getAnalysisName().empty())
+  {
+    auto propositions =
+        insight::AnalysisParameterPropositions::getCombinedPropositionsForParameter(
+            model->getAnalysisName(),
+            path().toStdString(),
+            model->getParameterSet()
+        );
+    if (propositions.size()>0)
+    {
+        auto *proplist = new QListWidget;
+        layout->addWidget(new QLabel("Proposed values:"));
+        for (auto& pp: propositions)
+        {
+          proplist->addItem(QString::fromStdString(
+                pp.first+": "+pp.second->plainTextRepresentation()
+              ));
+        }
+        connect(proplist, &QListWidget::itemDoubleClicked, proplist,
+                [this,propositions,model,index](QListWidgetItem *item)
+                {
+                    auto label = item->text().split(":").at(0);
+                    this->applyProposition(model, index, propositions, label.toStdString());
+                }
+                );
+        layout->addWidget(proplist);
+    }
+  }
+
+
   editControlsContainer->setLayout(layout);
 
   return layout;
@@ -212,6 +246,14 @@ QVBoxLayout* IQParameter::populateEditControls(
 const insight::Parameter& IQParameter::parameter() const
 {
   return parameter_;
+}
+
+void IQParameter::applyProposition(
+    IQParameterSetModel* model, const QModelIndex &index,
+    const insight::ParameterSet &propositions,
+    const std::string &selectProposition )
+{
+#warning does nothing yet, should be abstract
 }
 
 

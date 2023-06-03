@@ -59,6 +59,10 @@ defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet);
 defineStaticFunctionTable(Analysis, category, std::string);
 defineStaticFunctionTable(Analysis, validator, ParameterSet_ValidatorPtr);
 defineStaticFunctionTable(Analysis, visualizer, std::shared_ptr<ParameterSetVisualizer>);
+defineStaticFunctionTableWithArgs(Analysis, getPropositionsForParameter, ParameterSet,
+                                  LIST(const std::string& parameterPath, const ParameterSet& currentParameterValues),
+                                  LIST(parameterPath, currentParameterValues)
+                                  );
 
 
 std::string Analysis::category()
@@ -75,6 +79,15 @@ std::shared_ptr<ParameterSetVisualizer> Analysis::visualizer()
 {
     return std::shared_ptr<ParameterSetVisualizer>();
 }
+
+ParameterSet Analysis::getPropositionsForParameter(
+    const std::string &parameterPath,
+    const ParameterSet &currentParameterValues )
+{
+    return ParameterSet();
+}
+
+
 
 
 

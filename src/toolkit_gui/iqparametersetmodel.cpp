@@ -424,6 +424,16 @@ const arma::mat * const IQParameterSetModel::getVectorBasePoint(const QString &p
     return nullptr;
 }
 
+void IQParameterSetModel::setAnalysisName(const std::string &analysisName)
+{
+    analysisName_=analysisName;
+}
+
+const std::string &IQParameterSetModel::getAnalysisName() const
+{
+    return analysisName_;
+}
+
 
 
 

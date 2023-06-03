@@ -44,6 +44,11 @@ set(toolkit_gui_SRCS
  iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
 
  iqvtkviewerstate.h iqvtkviewerstate.cpp
+ iqvtkconstrainedsketchentity.h
+ iqvtkfixedpoint.h iqvtkfixedpoint.cpp
+ iqvtkhorizontalconstraint.h iqvtkhorizontalconstraint.cpp
+ iqvtkverticalconstraint.h iqvtkverticalconstraint.cpp
+ iqvtkpointoncurveconstraint.h iqvtkpointoncurveconstraint.cpp
  iqvtkconstrainedsketcheditor.h iqvtkconstrainedsketcheditor.cpp
 
  iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h

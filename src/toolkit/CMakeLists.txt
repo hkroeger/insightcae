@@ -30,6 +30,8 @@ set(toolkit_SOURCES
     base/supplementedinputdata.cpp base/supplementedinputdata.h
     base/analysis.cpp base/analysis.h
     base/analysislibrary.cpp base/analysislibrary.h
+    base/analysisparameterpropositions.h base/analysisparameterpropositions.cpp
+
     base/analysisthread.cpp base/analysisthread.h
     base/cacheableentity.cpp base/cacheableentity.h
     base/cacheableentityhashes.cpp base/cacheableentityhashes.h

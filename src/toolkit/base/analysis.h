@@ -76,6 +76,10 @@ public:
     declareStaticFunctionTable(category, std::string);
     declareStaticFunctionTable(validator, ParameterSet_ValidatorPtr);
     declareStaticFunctionTable(visualizer, std::shared_ptr<ParameterSetVisualizer>);
+    declareStaticFunctionTableWithArgs(getPropositionsForParameter, ParameterSet,
+                                       LIST(const std::string&, const ParameterSet&),
+                                       LIST(const std::string& parameterPath, const ParameterSet& currentParameterValues)
+                                       );
 
     /**
      * @brief analyses
@@ -100,6 +104,24 @@ public:
 
     static ParameterSet_ValidatorPtr validator();
     static std::shared_ptr<ParameterSetVisualizer> visualizer();
+
+    /**
+     * @brief getPropositionsForParameter
+     * return proposed values for a selected parameter in the parameter set
+     * @param parameterPath
+     * path of the parameter in the set, for which propositions are to be returned
+     * @param currentParameterValues
+     * the current values of all the parameters in the set
+     * @return
+     * a parameterset which contains only entries with type of the parameter in question.
+     * Each entry represents a proposed value and the name of the parameter the label of
+     * the proposed value.
+     * An empty set means there are no propositions.
+     */
+    static ParameterSet getPropositionsForParameter(
+        const std::string& parameterPath,
+        const ParameterSet& currentParameterValues );
+
 
     /**
      * create analysis from components.

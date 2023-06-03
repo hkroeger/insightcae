@@ -43,7 +43,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
   QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
-  auto *lineEdit=new QLineEdit(editControlsContainer);
+  lineEdit=new QLineEdit(editControlsContainer);
 
   lineEdit->setText( QString::fromStdString(insight::valueToString(p())) );
 
@@ -75,7 +75,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
   if (auto *v = dynamic_cast<IQVTKCADModel3DViewer*>(viewer))
   {
     connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
-          [this,model,v,apply,applyFunction,lineEdit]()
+          [this,model,v,apply,applyFunction]()
           {
             const auto& p =
                     dynamic_cast<const insight::VectorParameter&>(
@@ -92,7 +92,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
                          curMod, &QObject::deleteLater );
 
                 connect( curMod, &IQVectorDirectionCommand::dataChanged, curMod,
-                         [this,curMod,lineEdit]()
+                         [this,curMod]()
                          {
                            lineEdit->setText(
                                        QString::fromStdString(
@@ -105,7 +105,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
             {
               auto ppc = std::make_shared<IQVTKCADModel3DViewerPickPoint>(*v);
               connect(ppc.get(), &IQVTKCADModel3DViewerPickPoint::pickedPoint,
-                        [lineEdit,applyFunction](const arma::mat& p)
+                        [this,applyFunction](const arma::mat& p)
                         {
                           lineEdit->setText(
                               QString::fromStdString(
@@ -120,4 +120,16 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
   }
 
   return layout;
+}
+
+void IQVectorParameter::applyProposition(
+    IQParameterSetModel* model, const QModelIndex &index,
+    const insight::ParameterSet &propositions,
+    const std::string &selectedProposition)
+{
+  const auto& pp=propositions.get<insight::VectorParameter>(selectedProposition);
+  auto& p= dynamic_cast<insight::VectorParameter&>(model->parameterRef(index));
+  p.reset(pp);
+  lineEdit->setText( QString::fromStdString(insight::valueToString(p())) );
+  model->notifyParameterChange(index);
 }

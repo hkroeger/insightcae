@@ -43,7 +43,8 @@ done
 
 if [ ! $INSIGHT_GLOBALPYTHONMODULES ]; then
     if which python3 >/dev/null 2>&1; then
-     export PYTHONPATH=$PYTHONPATH:$(python3 -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=False, prefix='${INSIGHT_INSTDIR}' ) )")
+     export INSIGHT_PYTHONPATH=$(python3 -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=False, prefix='${INSIGHT_INSTDIR}' ) )")
+     export PYTHONPATH=$PYTHONPATH:${INSIGHT_PYTHONPATH}
     fi
 fi
 

@@ -223,6 +223,7 @@ AnalysisForm::AnalysisForm(
         //ui->inputTabLayout->addWidget(peditor_);
         vsplit->addWidget(peditor_);
     }
+    peditor_->model()->setAnalysisName(analysisName_);
 
     sidtab_ = new QTableView;
     sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);

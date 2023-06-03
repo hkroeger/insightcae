@@ -1361,24 +1361,22 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
 
     auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
     picker2d->Pick(p.x(), p.y(), 0, ren_);
-
-    auto act2 = picker2d->GetActor2D();
-    if (act2)
+    if (auto act2 = picker2d->GetActor2D())
     {
         aa.push_back(act2);
     }
-    else
+
+    // take a closer look with other pick engine
+    // which can detect multiple overlapping actors
+    auto picker3d = vtkSmartPointer<vtkPicker>::New();
+//    picker3d->SetTolerance(1e-4);
+    picker3d->Pick(p.x(), p.y(), 0, ren_);
+    auto pi = picker3d->GetActors();
+    std::cout<<"# under cursors = "<<pi->GetNumberOfItems()<<std::endl;
+    pi->InitTraversal();
+    while (auto *p= pi->GetNextProp())
     {
-        auto picker3d = vtkSmartPointer<vtkPicker>::New();
-        picker3d->SetTolerance(1e-4);
-        picker3d->Pick(p.x(), p.y(), 0, ren_);
-        auto pi = picker3d->GetActors();
-        std::cout<<"# under cursors = "<<pi->GetNumberOfItems()<<std::endl;
-        pi->InitTraversal();
-        while (auto *p= pi->GetNextProp())
-        {
-            aa.push_back(p);
-        }
+        aa.push_back(p);
     }
 
     return aa;

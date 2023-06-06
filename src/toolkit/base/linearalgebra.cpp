@@ -27,6 +27,7 @@
 #include "boost/format.hpp"
 #include "base/exception.h"
 #include "base/units.h"
+#include "base/cppextensions.h"
 
 // #include "minpack.h"
 // #include <dlib/optimization.h>
@@ -1309,5 +1310,22 @@ double stabilize(double value, double nonZeroThreshold)
 }
 
 
+
+}
+
+namespace std
+{
+
+std::size_t hash<arma::mat>::operator()
+    (const arma::mat& v) const
+{
+    std::hash<double> dh;
+    size_t h=0;
+    for (arma::uword i=0; i<v.n_elem; i++)
+    {
+        std::hash_combine(h, dh(v(i)));
+    }
+    return h;
+}
 
 }

@@ -23,5 +23,6 @@ add_toolkit_test(test_SpatialTransformation)
 add_toolkit_test(test_lsdynainputdeck)
 add_toolkit_test(test_units)
 add_toolkit_test(test_vtkrendering_readmultiregioncase ${CMAKE_CURRENT_SOURCE_DIR})
+add_toolkit_test(test_cacheableentity ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(analysis_parameterstudy)

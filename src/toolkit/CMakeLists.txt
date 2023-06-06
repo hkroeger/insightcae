@@ -23,6 +23,7 @@ project(toolkit)
 
 set(toolkit_SOURCES
     base/global.cpp
+    base/boost_include.cpp
     base/rapidxml.h base/rapidxml.cpp
     base/toolkitversion.cpp base/toolkitversion.h
     base/globalconfiguration.h base/globalconfiguration.cpp

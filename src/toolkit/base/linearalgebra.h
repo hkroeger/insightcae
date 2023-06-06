@@ -466,4 +466,15 @@ double stabilize(double value, double nonZeroThreshold);
 
 }
 
+
+namespace std
+{
+
+template<> struct hash<arma::mat>
+{
+  std::size_t operator()(const arma::mat& v) const;
+};
+
+}
+
 #endif // INSIGHT_LINEARALGEBRA_H

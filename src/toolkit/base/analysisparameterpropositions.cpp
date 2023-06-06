@@ -140,8 +140,16 @@ struct SharedLibraryFunction
 
 AnalysisParameterPropositions::AnalysisParameterPropositions()
 {
-    auto fp =  SharedPathList::global().getSharedFilePath(
-        "parameterPropositionSources.xml" );
+    boost::filesystem::path fp;
+    try
+    {
+        fp =  SharedPathList::global().getSharedFilePath(
+            "parameterPropositionSources.xml" );
+    }
+    catch (...)
+    {
+        return;
+    }
 
     CurrentExceptionContext ex("reading external parameter proposition sources from "+fp.string());
 
@@ -239,8 +247,18 @@ ParameterSet AnalysisParameterPropositions::getCombinedPropositionsForParameter(
     const std::string &parameterPath,
     const ParameterSet &currentParameterValues )
 {
-    ParameterSet props = Analysis::getPropositionsForParameter(
-        analysisName, parameterPath, currentParameterValues);
+    ParameterSet props;
+
+    try
+    {
+        auto hardCodedProps = Analysis::getPropositionsForParameter(
+            analysisName, parameterPath, currentParameterValues);
+        props.extend(hardCodedProps.entries());
+    }
+    catch (...)
+    {
+        // ignore
+    }
 
     if (!instance)
         instance.reset(new AnalysisParameterPropositions);

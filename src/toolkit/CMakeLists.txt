@@ -178,6 +178,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/basic/transportmodel.cpp openfoam/caseelements/basic/transportmodel.h
     openfoam/caseelements/basic/singlephasetransportmodel.cpp openfoam/caseelements/basic/singlephasetransportmodel.h
     openfoam/caseelements/basic/twophasetransportproperties.cpp openfoam/caseelements/basic/twophasetransportproperties.h
+    openfoam/caseelements/basic/compressibletwophasethermophysicalproperties.h openfoam/caseelements/basic/compressibletwophasethermophysicalproperties.cpp
     openfoam/caseelements/basic/cavitationtwophasetransportproperties.cpp openfoam/caseelements/basic/cavitationtwophasetransportproperties.h
     openfoam/caseelements/basic/porouszone.cpp openfoam/caseelements/basic/porouszone.h
     openfoam/caseelements/basic/limitquantities.cpp openfoam/caseelements/basic/limitquantities.h
@@ -205,6 +206,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/numerics/simpledymfoamnumerics.cpp openfoam/caseelements/numerics/simpledymfoamnumerics.h
     openfoam/caseelements/numerics/cavitatingfoamnumerics.cpp openfoam/caseelements/numerics/cavitatingfoamnumerics.h
     openfoam/caseelements/numerics/interfoamnumerics.cpp openfoam/caseelements/numerics/interfoamnumerics.h
+    openfoam/caseelements/numerics/compressibleinterfoamnumerics.h openfoam/caseelements/numerics/compressibleinterfoamnumerics.cpp
     openfoam/caseelements/numerics/ltsinterfoamnumerics.cpp openfoam/caseelements/numerics/ltsinterfoamnumerics.h
     openfoam/caseelements/numerics/interphasechangefoamnumerics.cpp openfoam/caseelements/numerics/interphasechangefoamnumerics.h
     openfoam/caseelements/numerics/reactingfoamnumerics.cpp openfoam/caseelements/numerics/reactingfoamnumerics.h

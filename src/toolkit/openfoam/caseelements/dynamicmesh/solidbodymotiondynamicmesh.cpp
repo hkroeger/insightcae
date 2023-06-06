@@ -31,7 +31,7 @@ void solidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
 
     sbc["cellZone"]=p.zonename;
 
-    if ( Parameters::motion_rotation_type* rp = boost::get<Parameters::motion_rotation_type>(&p.motion) )
+    if ( auto* rp = boost::get<Parameters::motion_rotation_type>(&p.motion) )
     {
         sbc["solidBodyMotionFunction"]="rotatingMotion";
         OFDictData::dict rmc;
@@ -40,7 +40,14 @@ void solidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
         rmc["omega"]=2.*M_PI*rp->rpm/60.;
         sbc["rotatingMotionCoeffs"]=rmc;
     }
-    else if ( Parameters::motion_oscillatingRotating_type* ro = boost::get<Parameters::motion_oscillatingRotating_type>(&p.motion) )
+    else if ( auto* tr = boost::get<Parameters::motion_translation_type>(&p.motion) )
+    {
+        sbc["solidBodyMotionFunction"]="linearMotion";
+        OFDictData::dict rmc;
+        rmc["velocity"]=OFDictData::vector3(tr->velocity);
+        sbc["linearMotionCoeffs"]=rmc;
+    }
+    else if ( auto* ro = boost::get<Parameters::motion_oscillatingRotating_type>(&p.motion) )
     {
         sbc["solidBodyMotionFunction"]="oscillatingRotatingMotion";
         OFDictData::dict rmc;

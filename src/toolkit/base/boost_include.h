@@ -116,4 +116,17 @@ boost::filesystem::path
 }
 }
 
+namespace std
+{
+
+template<> struct hash<boost::filesystem::path>
+{
+    std::size_t operator()(const boost::filesystem::path& fn) const;
+};
+
+
+}
+
+
+
 #endif

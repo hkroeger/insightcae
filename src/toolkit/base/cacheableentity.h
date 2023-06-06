@@ -4,11 +4,13 @@
 #include <iostream>
 #include <memory>
 #include <map>
+#include <deque>
 #include <type_traits>
 
 
 
 #include "base/boost_include.h"
+#include "base/cppextensions.h"
 #include "boost/enable_shared_from_this.hpp"
 #include <boost/preprocessor.hpp>
 #include "base/cacheableentityhashes.h"
@@ -171,5 +173,109 @@ public: \
   INSIGHT_CACHEABLEENTITY_ELEM_GETOUTPUT_FUNCTIONS(elements)
 
 
+namespace insight
+{
+
+
+template<typename T>
+size_t HashCombine(const T& first)
+{
+  return std::hash<T>()(first);
+}
+
+template<typename T, typename... Args>
+size_t HashCombine(const T& first, Args... args)
+{
+  size_t seed = std::hash<T>()(first);
+  std::hash_combine(seed, HashCombine(args...));
+  return seed;
+}
+
+size_t computeObjectSize(double v);
+
+
+template <typename Ret, typename... Args>
+class Cached
+{
+public:
+  typedef std::function<Ret(Args...)> CalculationFunction;
+  struct CacheEntry
+  {
+        size_t argumentHash_;
+        size_t memSize_;
+        Ret value_;
+  };
+  typedef std::deque<CacheEntry> Cache;
+
+private:
+  CalculationFunction calculationFunction_;
+
+  static Cache& cache()
+  {
+        static Cache theCache;
+        return theCache;
+  }
+
+  static size_t maxCacheSize_;
+
+  static size_t cacheSize()
+  {
+      size_t s=0;
+      for (const auto& ce: cache())
+      {
+          s+=ce.memSize_;
+      }
+      return s;
+  }
+
+public:
+  Cached(std::function<Ret(Args...)> cf, size_t maxCacheSize=0)
+      : calculationFunction_(cf)
+  {
+      if (maxCacheSize>0)
+      {
+          maxCacheSize_=maxCacheSize;
+      }
+  }
+
+  Ret operator()(Args... a)
+  {
+      size_t hash = HashCombine(a...);
+
+      auto iexisting = std::find_if(
+          cache().begin(), cache().end(),
+          [&](const CacheEntry& ce) { return hash==ce.argumentHash_; } );
+
+      if (iexisting != cache().end())
+      {
+          std::cout<<"return from cache, nentries="<<cache().size()<<", size="<<cacheSize()<<endl;
+          // return existing value from cache
+          return iexisting->value_;
+      }
+
+      // if cache has grown too large, remove some entries first
+      while ( (cacheSize()>maxCacheSize_) && (cache().size()>0))
+      {
+          std::cout<<"removing element from cache, before removal: nentries="<<cache().size()<<", size="<<cacheSize()<<endl;
+          cache().pop_front();
+      }
+
+      // not in cache => compute value now
+      auto result = calculationFunction_(a...);
+      std::cout<<"adding element to cache, before addition: nentries="<<cache().size()<<", size="<<cacheSize()<<endl;
+      cache().push_back(
+          CacheEntry{hash, computeObjectSize(result), result}
+          );
+      return result;
+  }
+
+};
+
+
+template <typename Ret, typename... Args>
+size_t Cached<Ret, Args...>::maxCacheSize_ = 16*1024*1024; // 16MB
+
+
+}
 
 #endif // INSIGHT_CACHEABLEENTITY_H

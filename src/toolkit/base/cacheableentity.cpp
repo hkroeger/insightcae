@@ -48,6 +48,13 @@ size_t CacheableEntity::getHash() const
 
 
 
+size_t computeObjectSize(double v)
+{
+  return sizeof(v);
+}
+
+
+
 } // namespace insight
 
 

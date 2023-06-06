@@ -1,6 +1,5 @@
 #include "cacheableentityhashes.h"
-
-
+#include "base/linearalgebra.h"
 
 namespace boost {
 
@@ -8,13 +7,7 @@ namespace boost {
 std::size_t hash<arma::mat>::operator()
   (const arma::mat& v) const
 {
-  std::hash<double> dh;
-  size_t h=0;
-  for (arma::uword i=0; i<v.n_elem; i++)
-  {
-    boost::hash_combine(h, dh(v(i)));
-  }
-  return h;
+    return std::hash<arma::mat>()(v);
 }
 
 
@@ -22,14 +15,7 @@ std::size_t hash<arma::mat>::operator()
 std::size_t hash<boost::filesystem::path>::operator()
   (const boost::filesystem::path& fn) const
 {
-  size_t h=0;
-  // build from file path string and last write time (latter only if file exists)
-  boost::hash_combine(h, fn.string());
-  if (boost::filesystem::exists(fn))
-  {
-    boost::hash_combine(h, boost::filesystem::last_write_time(fn));
-  }
-  return h;
+    return std::hash<boost::filesystem::path>()(fn);
 }
 
 std::size_t hash<vtkSmartPointer<vtkPolyData> >::operator()

@@ -402,10 +402,14 @@ void runPvPython
 class patchIntegrate
 {
 public:
-  patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
-		    const std::string& fieldName, const std::string& patchName,
-            const std::vector<std::string>& addopts = { "-latestTime" }
-		);
+  patchIntegrate(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path& location,
+        const std::string& fieldName,
+        const std::string& patchNamePattern,
+        const std::string& regionName = std::string(),
+        const std::vector<std::string>& addopts = {"-latestTime"}
+        );
 
   /**
    * @brief t_

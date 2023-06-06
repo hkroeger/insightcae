@@ -1327,18 +1327,19 @@ arma::mat matchValue(const std::string& vs)
 
 patchIntegrate::patchIntegrate
 (
-  const OpenFOAMCase& cm, 
-  const boost::filesystem::path& location,
-  const std::string& fieldName, 
-  const std::string& patchNamePattern,
-  const std::vector<std::string>& addopts
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location,
+    const std::string& fieldName,
+    const std::string& patchNamePattern,
+    const std::string& regionName,
+    const std::vector<std::string>& addopts
 )
 {
   boost::regex pat ( patchNamePattern );
 
   // get all patch name candidates
   OFDictData::dict boundaryDict;
-  cm.parseBoundaryDict ( location, boundaryDict );
+  cm.parseBoundaryDict ( location, boundaryDict, regionName );
 
   std::vector<std::string> patches;
   for ( const OFDictData::dict::value_type& de: boundaryDict )
@@ -1356,6 +1357,12 @@ patchIntegrate::patchIntegrate
   {
     std::vector<std::string> opts;
     copy ( addopts.begin(), addopts.end(), back_inserter ( opts ) );
+
+    if (!regionName.empty())
+    {
+        opts.push_back("-region");
+        opts.push_back ( regionName );
+    }
 
     std::vector<std::string> output;
     if (cm.OFversion()<400)

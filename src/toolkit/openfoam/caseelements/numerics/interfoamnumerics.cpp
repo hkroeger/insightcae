@@ -61,7 +61,7 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
     alphaname_="alpha."+p_.phase1Name;
 
   // create pressure field to enable mapping from single phase cases
-  OFcase().addField("p", 	FieldInfo(scalarField, dimPressure, FieldValue({0.0}), 		volField ) );
+  OFcase().addField("p", 	FieldInfo(scalarField, dimPressure, FieldValue({p_.pinternal}), 		volField ) );
 
   OFcase().addField("U", 	FieldInfo(vectorField, dimVelocity, FieldValue({p_.Uinternal(0),p_.Uinternal(1),p_.Uinternal(2)}), volField ) );
   OFcase().addField(pName_, 	FieldInfo(scalarField, dimPressure, FieldValue({p_.pinternal}), volField ) );

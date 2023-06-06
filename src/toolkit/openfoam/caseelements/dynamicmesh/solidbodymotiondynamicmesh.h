@@ -27,6 +27,11 @@ motion = selectablesubset
   rpm = double 1000 "rotation rate"
  }
 
+ translation
+ set {
+  velocity = vector (1 0 0) "motion velocity"
+ }
+
  oscillatingRotating
  set {
   origin = vector (0 0 0) "origin point"

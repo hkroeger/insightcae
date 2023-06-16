@@ -105,7 +105,7 @@ public:
 
   int outputType() const;
 
-  void doMeshing();
+  void doMeshing(int nthread = 1);
 };
 
 

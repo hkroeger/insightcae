@@ -91,6 +91,7 @@ void Arc::build()
   auto c = Handle_Geom_Circle::DownCast(crv->BasisCurve())->Circ();
   refpoints_["center"]=vec3(c.Location());
   refvalues_["D"]=c.Radius()*2.;
+  refvectors_["normal"]=vec3(c.Axis().Direction());
 }
 
 
@@ -204,6 +205,7 @@ void Arc3P::build()
   auto c = Handle_Geom_Circle::DownCast(crv->BasisCurve())->Circ();
   refpoints_["center"]=vec3(c.Location());
   refvalues_["D"]=c.Radius()*2.;
+  refvectors_["normal"]=vec3(c.Axis().Direction());
 }
 
 

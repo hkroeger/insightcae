@@ -451,7 +451,7 @@ void GmshCase::insertMeshingCommand()
   }
 }
 
-void GmshCase::doMeshing()
+void GmshCase::doMeshing(int nthread)
 {
 
 
@@ -510,6 +510,7 @@ void GmshCase::doMeshing()
 
     argv.insert(argv.end(), {
                   "-v", "10",
+                  "-nt", boost::lexical_cast<std::string>(nthread),
                   boost::filesystem::absolute(inputFile).string(),
                   "-"
                 });

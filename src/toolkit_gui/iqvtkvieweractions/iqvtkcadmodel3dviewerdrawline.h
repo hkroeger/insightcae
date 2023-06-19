@@ -3,7 +3,8 @@
 
 #include "viewwidgetaction.h"
 
-#include "sketch.h"
+#include "constrainedsketch.h"
+#include "cadfeatures/line.h"
 
 #include "vtkActor.h"
 

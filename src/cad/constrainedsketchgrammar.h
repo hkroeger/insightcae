@@ -21,7 +21,7 @@ class ConstrainedSketchEntity;
 class ConstrainedSketchGeometry;
 
 struct ConstrainedSketchGrammar
- :  boost::spirit::qi::grammar<std::string::iterator, parser::skip_grammar>
+ :  public boost::spirit::qi::grammar<std::string::iterator, parser::skip_grammar>
 {
 public:
     typedef
@@ -41,6 +41,22 @@ public:
 
     ConstrainedSketchGrammar(std::shared_ptr<ConstrainedSketch> sk,
                              std::function<insight::ParameterSet(void)> mdpf);
+
+    template<class T>
+    std::shared_ptr<T> lookupEntity(int i ) const
+    {
+        auto iter = labeledEntities.find(i);
+        insight::assertion(
+            iter!=labeledEntities.end(),
+            "could not lookup sketch entity %d", i);
+        auto targ = std::dynamic_pointer_cast<T>(iter->second);
+        insight::assertion(
+            bool(targ),
+            "sketch entity %d is of unexpected type!", // Expected a %s, got a %s",
+            i//, T::typeName.c_str(), iter->second->type().c_str()
+            );
+        return targ;
+    }
 };
 
 }

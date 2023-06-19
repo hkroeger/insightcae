@@ -1035,9 +1035,9 @@ IQVTKCADModel3DViewer::findDisplayedItem(
 }
 
 
-void IQVTKCADModel3DViewer::scheduleRedraw()
+void IQVTKCADModel3DViewer::scheduleRedraw(int millisec)
 {
-    redrawTimer_.start(100);
+    redrawTimer_.start(millisec);
 }
 
 

@@ -22,7 +22,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
-#include "sketch.h"
+#include "constrainedsketch.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -110,14 +110,46 @@ void Line::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryP
              > ruleset.r_parameters >
              ')'
             )
-                [ qi::_val = phx::bind(
+            [ std::cout<<"reading "<<typeName<<" "<<qi::_1<<std::endl,
+             qi::_val = phx::bind(
                      &Line::create<VectorPtr, VectorPtr, bool>, qi::_2, qi::_3, false),
              phx::bind(&ConstrainedSketchEntity::changeDefaultParameters, qi::_val, mdpf()),
                  phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
                  phx::insert(
                      phx::ref(ruleset.labeledEntities),
                      phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
-            );
+        );
+}
+
+
+
+std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > Line::dependencies() const
+{
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > ret;
+
+    if (auto sp1=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p0_))
+        ret.insert(sp1);
+    if (auto sp2=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_))
+        ret.insert(sp2);
+
+    return ret;
+}
+
+void Line::replaceDependency(
+    const std::weak_ptr<ConstrainedSketchEntity> &entity,
+    const std::shared_ptr<ConstrainedSketchEntity> &newEntity )
+{
+    if (auto p = std::dynamic_pointer_cast<Vector>(newEntity))
+    {
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p0_) == entity )
+        {
+            p0_ = p;
+        }
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity )
+        {
+            p1_ = p;
+        }
+    }
 }
 
 

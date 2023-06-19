@@ -1,6 +1,6 @@
 #include "cadsketchparameter.h"
 
-#include "sketch.h"
+#include "constrainedsketch.h"
 #include "datum.h"
 #include "base/rapidxml.h"
 

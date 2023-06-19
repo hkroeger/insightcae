@@ -26,7 +26,7 @@
 #include "occtools.h"
 
 #include "base/parameters/simpleparameter.h"
-#include "sketch.h"
+#include "constrainedsketch.h"
 
 using namespace std;
 using namespace boost;
@@ -55,9 +55,6 @@ void insight::cad::Distance::build()
   arma::mat p2=p2_->value();
 
   distance_=arma::norm(p2-p1,2);
-
-//  cout<<"######### Distance Report ###########################################"<<endl;
-//  cout<<"distance="<<distance_<<endl;
 }
 
 void insight::cad::Distance::write(ostream&) const
@@ -108,7 +105,7 @@ double DistanceConstraint::getConstraintError(unsigned int iConstraint) const
                 iConstraint==0,
                 "invalid constraint id" );
     checkForBuildDuringAccess();
-    return (distance_ - targetValue()) / stabilize(targetValue(), SMALL);
+    return (distance_ - targetValue()) /*/ stabilize(targetValue(), SMALL)*/;
 }
 
 void DistanceConstraint::scaleSketch(double scaleFactor)
@@ -154,6 +151,35 @@ void DistanceConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDe
                      phx::ref(ruleset.labeledEntities),
                      phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
             );
+}
+
+std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > DistanceConstraint::dependencies() const
+{
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > ret;
+
+    if (auto sp1=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_))
+        ret.insert(sp1);
+    if (auto sp2=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p2_))
+        ret.insert(sp2);
+
+    return ret;
+}
+
+void DistanceConstraint::replaceDependency(
+    const std::weak_ptr<ConstrainedSketchEntity> &entity,
+    const std::shared_ptr<ConstrainedSketchEntity> &newEntity )
+{
+    if (auto p = std::dynamic_pointer_cast<Vector>(newEntity))
+    {
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity)
+        {
+            p1_ = p;
+        }
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p2_) == entity)
+        {
+            p2_ = p;
+        }
+    }
 }
 
 }

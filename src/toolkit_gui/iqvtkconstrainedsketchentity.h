@@ -6,6 +6,8 @@
 
 #include "vtkProp.h"
 
+#include <constrainedsketchgeometry.h>
+
 class IQVTKConstrainedSketchEntity
     : public insight::cad::ConstrainedSketchEntity
 {

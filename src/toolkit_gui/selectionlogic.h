@@ -137,6 +137,12 @@ public:
     {
         if (nextSelectionCandidates_)
         {
+            if (!(nFlags&Qt::ShiftModifier))
+            {
+                std::cout<<"no shift: clear sel"<<std::endl;
+                currentSelection_.reset();
+            }
+
             // apply sel candidate
             if (!currentSelection_)
             {

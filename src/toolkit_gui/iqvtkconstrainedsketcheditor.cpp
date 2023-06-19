@@ -22,13 +22,14 @@
 #include <QMessageBox>
 #include <QFormLayout>
 #include <QDoubleValidator>
+#include <QComboBox>
 
 #include "iqvtkfixedpoint.h"
 #include "iqvtkhorizontalconstraint.h"
 #include "iqvtkverticalconstraint.h"
 #include "iqvtkpointoncurveconstraint.h"
 
-
+#include "base/qt5_helper.h"
 
 
 void IQVTKConstrainedSketchEditor::add(
@@ -265,8 +266,8 @@ void IQVTKConstrainedSketchEditor::drawLine()
 {
     auto dl = std::make_shared<IQVTKCADModel3DViewerDrawLine>(viewer(), *this);
 
-    connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::updateActors,
-            this, &IQVTKConstrainedSketchEditor::updateActors );
+    connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::updateActors, dl.get(),
+            [this]() { updateActors(); } );
 
     connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::endPointSelected, dl.get(),
 
@@ -276,8 +277,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
                 if (addPoint->onFeature)
                 {
                     (*this)->geometry().insert(
-                        std::make_shared
-                        <IQVTKPointOnCurveConstraint>( addPoint->sketchPoint, addPoint->onFeature ) ); // fix to curve
+                        IQVTKPointOnCurveConstraint::create( addPoint->sketchPoint, addPoint->onFeature ) ); // fix to curve
 
                     if (!previousPoint)
                     {
@@ -295,8 +295,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
                 else if ( !addPoint->isAnExistingPoint && !previousPoint ) // is first point?
                 {
                     (*this)->geometry().insert(
-                        std::make_shared
-                        <IQVTKFixedPoint>( addPoint->sketchPoint ) ); // fix first point
+                        IQVTKFixedPoint::create( addPoint->sketchPoint ) ); // fix first point
                 }
             }
     );
@@ -362,7 +361,12 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
 void IQVTKConstrainedSketchEditor::solve()
 {
-    (*this)->resolveConstraints();
+    (*this)->resolveConstraints(
+        [&]()
+        {
+            this->updateActors(0);
+        }
+        );
     this->updateActors();
 }
 
@@ -403,7 +407,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 auto sg = sele.first.lock();
                 if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
                 {
-                    auto lc = std::make_shared<IQVTKHorizontalConstraint>( l );
+                    auto lc = IQVTKHorizontalConstraint::create( l );
                     (*this)->geometry().insert(lc);
                     (*this)->invalidate();
                     this->updateActors();
@@ -421,8 +425,33 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 auto sg = sele.first.lock();
                 if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
                 {
-                    auto lc = std::make_shared<IQVTKVerticalConstraint>( l );
+                    auto lc = IQVTKVerticalConstraint::create( l );
                     (*this)->geometry().insert(lc);
+                    (*this)->invalidate();
+                    this->updateActors();
+                }
+            }
+        }
+    });
+
+    toolBar_->addAction("X",
+    [&]()
+    {
+        if (currentSelection_)
+        {
+            insight::cad::SketchPointPtr pt;
+
+            for (auto sele: *currentSelection_)
+            {
+                insight::assertion(
+                    currentSelection_->size()==1,
+                    "exactly one entity should be selected!");
+
+                auto sg = sele.first.lock();
+                if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                {
+                    auto c = IQVTKFixedPoint::create( p );
+                    (*this)->geometry().insert(c);
                     (*this)->invalidate();
                     this->updateActors();
                 }
@@ -452,12 +481,43 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
                 if (pt && curve)
                 {
-                    auto lc = std::make_shared<IQVTKPointOnCurveConstraint>( pt, curve );
+                    auto lc = IQVTKPointOnCurveConstraint::create( pt, curve );
                     (*this)->geometry().insert(lc);
                     (*this)->invalidate();
                     this->updateActors();
                 }
             }
+        }
+    });
+
+    toolBar_->addAction("Merge",
+    [&]()
+    {
+        if (currentSelection_)
+        {
+            insight::assertion(
+                currentSelection_->size()==2,
+                "Exactly two points have to be selected!");
+
+            auto p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
+                            currentSelection_->begin()
+                                ->first.lock());
+            insight::assertion(
+                bool(p1), "one entity is not a point!");
+
+            auto p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
+                (++currentSelection_->begin())
+                    ->first.lock());
+            insight::assertion(
+                bool(p2), "one entity is not a point!");
+
+            for (auto& e: (*this)->geometry())
+            {
+                e->replaceDependency(p1, p2);
+            }
+            (*this)->geometry().erase(p1);
+            (*this)->invalidate();
+            this->updateActors();
         }
     });
 
@@ -508,8 +568,22 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 }
             }
     );
-
     l->addRow("Solver tolerance", toledit);
+
+    auto  solType = new QComboBox;
+    solType->addItems({"Multidimensional Root Finder", "Multidimensional Minimizer"}); // order must match enum IDs
+    solType->setEditable(false);
+    solType->setCurrentIndex((*this)->solverType());
+    connect(solType, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+            [this](int ci)
+            {
+                (*this)->setSolverType(insight::cad::ConstrainedSketch::SolverType(ci));
+                solve();
+            }
+            );
+    l->addRow("Solver type", solType);
+
+
     setLayout(l);
 
     toolBox_->addItem(this, "Sketch");
@@ -572,40 +646,11 @@ bool IQVTKConstrainedSketchEditor::onLeftButtonDown  (
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
 
-//    if (!ret)
-//    {
-//        if (auto act =
-//                viewer().findActorUnderCursorAt(point))
-//        {
-//            if (auto sg =
-//                    this->findSketchElementOfActor(act))
-//            {
-//                if (!currentSelection_)
-//                {
-//                    currentSelection_ =
-//                            std::make_shared<SketchEntitySelection>(
-//                                *this);
-//                }
-//                currentSelection_->addAndHighlight(sg);
-//                ret=true;
-//            }
-//            else
-//            {
-//                currentSelection_.reset();
-//                ret=true;
-
-//            }
-//        }
-//        else
-//        {
-//            currentSelection_.reset();
-//            ret=true;
-//        }
-//    }
-
     if (!ret)
+    {
         ret=IQVTKConstrainedSketchEditorSelectionLogic::
             onLeftButtonDown(nFlags, point);
+    }
 
     return ret;
 }
@@ -613,20 +658,32 @@ bool IQVTKConstrainedSketchEditor::onLeftButtonDown  (
 bool IQVTKConstrainedSketchEditor::onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
 {
     bool ret=false;
+
     if (currentAction_)
         ret=currentAction_->onMiddleButtonDown( nFlags, point );
+
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
+
     return ret;
 }
 
 bool IQVTKConstrainedSketchEditor::onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point )
 {
     bool ret=false;
+
     if (currentAction_)
         ret=currentAction_->onRightButtonDown( nFlags, point );
+
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
+
+    if (!ret)
+    {
+        ret=IQVTKConstrainedSketchEditorSelectionLogic::
+            onLeftButtonDown(nFlags, point);
+    }
+
     return ret;
 }
 
@@ -647,20 +704,26 @@ bool IQVTKConstrainedSketchEditor::onLeftButtonUp    ( Qt::KeyboardModifiers nFl
 bool IQVTKConstrainedSketchEditor::onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point )
 {
     bool ret=false;
+
     if (currentAction_)
         ret=currentAction_->onMiddleButtonUp( nFlags, point );
+
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
+
     return ret;
 }
 
 bool IQVTKConstrainedSketchEditor::onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point )
 {
     bool ret=false;
+
     if (currentAction_)
         ret=currentAction_->onRightButtonUp( nFlags, point );
+
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
+
     return ret;
 }
 
@@ -668,15 +731,45 @@ bool IQVTKConstrainedSketchEditor::onKeyPress (
     Qt::KeyboardModifiers modifiers, int key )
 {
     bool ret=false;
+
     if (currentAction_)
         ret=currentAction_->onKeyPress( modifiers, key );
+
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
+
     if (!ret)
         ret=IQVTKConstrainedSketchEditorSelectionLogic::
             onKeyPress(modifiers, key);
+
     return ret;
 }
+
+
+
+
+void IQVTKConstrainedSketchEditor::deleteEntity(std::weak_ptr<insight::cad::ConstrainedSketchEntity> td)
+{
+
+    // check if the entity to be deleted is a dependency of any other sketchentity
+    std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > tbd;
+    for (auto& e: (*this)->geometry())
+    {
+        if (e->dependsOn(td))
+            tbd.insert(e);
+    }
+    for (auto& e: tbd)
+    {
+        deleteEntity(e);
+    }
+
+    auto gptr=td.lock();
+    remove(gptr);
+    (*this)->geometry().erase(gptr);
+}
+
+
+
 
 bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifiers, int key )
 {
@@ -696,9 +789,7 @@ bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifier
             currentSelection_.reset();
             for (auto& td: tbd)
             {
-                auto gptr=td.lock();
-                remove(gptr);
-                (*this)->geometry().erase(gptr);
+                deleteEntity(td);
             }
             ret=true;
         }
@@ -733,7 +824,7 @@ void IQVTKConstrainedSketchEditor::onMouseWheel
 }
 
 
-void IQVTKConstrainedSketchEditor::updateActors()
+void IQVTKConstrainedSketchEditor::updateActors(int update_msec)
 {
 
   for (const auto& g: (*this)->geometry())
@@ -756,5 +847,5 @@ void IQVTKConstrainedSketchEditor::updateActors()
       }
   }
 
-  viewer().scheduleRedraw();
+  viewer().scheduleRedraw(update_msec);
 }

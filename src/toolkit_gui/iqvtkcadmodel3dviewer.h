@@ -338,7 +338,7 @@ private:
             DisplayedData::const_iterator* it=nullptr ) const;
 
     QTimer redrawTimer_;
-    void scheduleRedraw();
+    void scheduleRedraw(int millisec=100);
 
     class BackgroundImage : public IQVTKViewerState
     {

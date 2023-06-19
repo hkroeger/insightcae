@@ -8,9 +8,14 @@
 class IQVTKVerticalConstraint
     : public IQVTKConstrainedSketchEntity
 {
-    std::shared_ptr<insight::cad::Line const> line_;
+    std::shared_ptr<insight::cad::Line> line_;
+
+    IQVTKVerticalConstraint(std::shared_ptr<insight::cad::Line> line);
+
 public:
-    IQVTKVerticalConstraint(std::shared_ptr<insight::cad::Line const> line);
+    declareType("VerticalConstraint");
+
+    CREATE_FUNCTION(IQVTKVerticalConstraint);
 
     std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 
@@ -21,6 +26,16 @@ public:
     void generateScriptCommand(
         insight::cad::ConstrainedSketchScriptBuffer& script,
         const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(
+        insight::cad::ConstrainedSketchGrammar& ruleset,
+        insight::cad::MakeDefaultGeometryParametersFunction mdpf );
+
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
+
+    void replaceDependency(
+        const std::weak_ptr<ConstrainedSketchEntity>& entity,
+        const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 };
 
 #endif // IQVTKVERTICALCONSTRAINT_H

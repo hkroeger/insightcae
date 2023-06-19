@@ -132,6 +132,13 @@ std::string ConstrainedSketchEntity::parameterString() const
 }
 
 
+bool ConstrainedSketchEntity::dependsOn(const std::weak_ptr<ConstrainedSketchEntity> &entity) const
+{
+    auto deps = dependencies();
+    return ( deps.find(entity) != deps.end() );
+}
+
+
 
 
 

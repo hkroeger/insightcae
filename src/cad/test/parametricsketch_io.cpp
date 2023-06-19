@@ -1,7 +1,8 @@
 
 #include "base/exception.h"
 #include "datum.h"
-#include "sketch.h"
+#include "constrainedsketch.h"
+#include "cadfeatures/line.h"
 #include "cadpostprocactions/pointdistance.h"
 #include "cadpostprocactions/angle.h"
 

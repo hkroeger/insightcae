@@ -18,10 +18,15 @@ RUN apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_
 RUN rm /bin; mkdir /bin; ln -s /usr/bin/* /bin # all in one command
 RUN rm /bin/bash; mv /usr/bin/bash /bin # wrong shebang in as_run otherwise
 
+RUN apt-get install -y wget
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-x86_64.sh
+RUN sh cmake-3.22.1-Linux-x86_64.sh --skip-license --prefix=/usr
+RUN rm cmake-3.22.1-Linux-x86_64.sh
+
 # === setup user
 ARG USER=docker
 ARG UID=1000
 ARG GID=1000
 ARG PW=docker
 RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${PW}" | chpasswd
-USER ${UID}:${GID}
+USER ${UID}:${GID} 

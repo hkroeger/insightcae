@@ -166,6 +166,17 @@ public:
     }
 
 
+    bool hasSelectionCandidate() const
+    {
+        return bool(nextSelectionCandidates_)
+               && (nextSelectionCandidates_->size()>0);
+    }
+
+
+    std::weak_ptr<SelectedEntity> currentSelectionCandidate() const
+    {
+        return nextSelectionCandidates_->selected();
+    }
 };
 
 #endif // SELECTIONLOGIC_H

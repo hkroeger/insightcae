@@ -19,89 +19,6 @@ using namespace insight::cad;
 
 
 
-arma::mat IQVTKCADModel3DViewerPlanePointBasedAction::pointInPlane3D(const arma::mat &pip2d) const
-{
-    insight::assertion(
-                pip2d.n_elem==2,
-                "expected 2D vector, got %d", pip2d.n_elem );
-
-    auto plane=sketch_->plane()->plane();
-    gp_Trsf pl;
-    pl.SetTransformation(plane); // from global to plane
-    gp_Pnt p2(pip2d(0), pip2d(1), 0);
-    auto pp = p2.Transformed(pl.Inverted());
-    return vec3(pp);
-}
-
-arma::mat
-IQVTKCADModel3DViewerPlanePointBasedAction::pointInPlane3D(
-        const QPoint &screenPos ) const
-{
-    auto *renderer = viewer().renderer();
-    auto v = viewer().widgetCoordsToVTK(screenPos);
-
-    arma::mat p0=vec3(sketch_->plane()->plane().Location());
-    arma::mat n=vec3(sketch_->plane()->plane().Direction());
-
-    arma::mat l0=vec3Zero();
-    renderer->SetDisplayPoint(v.x(), v.y(), 0.0);
-    renderer->DisplayToWorld();
-    renderer->GetWorldPoint(l0.memptr());
-
-    arma::mat camPos, camFocal;
-    camPos=camFocal=vec3Zero();
-    renderer->GetActiveCamera()->GetPosition(camPos.memptr());
-    renderer->GetActiveCamera()->GetFocalPoint(camFocal.memptr());
-    arma::mat l = normalized(camFocal-camPos);
-
-    double nom=arma::dot((p0-l0),n);
-    insight::assertion(
-                fabs(nom)>SMALL,
-                "no single intersection" );
-
-    double denom=arma::dot(l,n);
-    insight::assertion(
-                fabs(denom)>SMALL,
-                "no intersection" );
-
-    double d=nom/denom;
-
-    return l0+l*d;
-}
-
-
-
-
-arma::mat
-IQVTKCADModel3DViewerPlanePointBasedAction::pointInPlane2D(const QPoint &screenPos) const
-{
-    return pointInPlane2D(pointInPlane3D(screenPos));
-}
-
-
-
-
-arma::mat
-IQVTKCADModel3DViewerPlanePointBasedAction::pointInPlane2D(const arma::mat &p3) const
-{
-    insight::assertion(
-                p3.n_elem==3,
-                "expected 3D vector, got %d", p3.n_elem );
-
-    auto plane=sketch_->plane()->plane();
-    gp_Trsf pl;
-    pl.SetTransformation(plane); // from global to plane
-    auto pp = toVec<gp_Pnt>(p3).Transformed(pl);
-    insight::assertion(
-                fabs(pp.Z())<SMALL,
-                "point (%g, %g, %g) not in plane with p=(%g, %g, %g) and n=(%g, %g, %g)!\n"
-                "(local coordinates = (%g, %g, %g))",
-                p3(0), p3(1), p3(2),
-                plane.Location().X(), plane.Location().Y(), plane.Location().Z(),
-                plane.Direction().X(), plane.Direction().Y(), plane.Direction().Z(),
-                pp.X(), pp.Y(), pp.Z() );
-    return vec2( pp.X(), pp.Y() );
-}
 
 
 SketchPointPtr
@@ -162,15 +79,15 @@ IQVTKCADModel3DViewerDrawLine::updatePCand(const QPoint& point) const
 
     if (!pc.sketchPoint)
     {
-        arma::mat pip=pointInPlane3D(point);
+        arma::mat pip=viewer().pointInPlane3D(sketch_->plane()->plane(), point);
 
         if (p1_ && !p2_)
         {
             if (!pc.sketchPoint) // not over existing point
             {
 
-                arma::mat p21=pointInPlane2D(p1_->value());
-                arma::mat p22=pointInPlane2D(pip);
+                arma::mat p21=viewer().pointInPlane2D(sketch_->plane()->plane(), p1_->value());
+                arma::mat p22=viewer().pointInPlane2D(sketch_->plane()->plane(), pip);
 
                 arma::mat l = p22 - p21;
                 double angle = atan2(l(1), l(0));
@@ -180,7 +97,10 @@ IQVTKCADModel3DViewerDrawLine::updatePCand(const QPoint& point) const
                 {
                     if (fabs(angle-a)<angleCatch)
                     {
-                        pip=pointInPlane3D( p21+vec2(cos(a), sin(a))*arma::norm(l,2) );
+                        pip=viewer().pointInPlane3D(
+                            sketch_->plane()->plane(),
+                            p21+vec2(cos(a),
+                            sin(a))*arma::norm(l,2) );
                         break;
                     }
                 }
@@ -188,7 +108,7 @@ IQVTKCADModel3DViewerDrawLine::updatePCand(const QPoint& point) const
             }
         }
 
-        auto p2=pointInPlane2D(pip);
+        auto p2=viewer().pointInPlane2D(sketch_->plane()->plane(), pip);
         pc.sketchPoint = std::make_shared<SketchPoint>(
             sketch_->plane(),
             p2(0), p2(1) );

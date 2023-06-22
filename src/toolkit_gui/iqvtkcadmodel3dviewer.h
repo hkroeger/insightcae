@@ -437,6 +437,11 @@ public:
 
     ItemAtCursor findUnderCursorAt(const QPoint& clickPos) const;
 
+    arma::mat pointInPlane3D(const gp_Ax3& plane, const arma::mat& pip2d) const;
+    arma::mat pointInPlane3D(const gp_Ax3& plane, const QPoint& screenPos) const;
+    arma::mat pointInPlane2D(const gp_Ax3& plane, const QPoint& screenPos) const;
+    arma::mat pointInPlane2D(const gp_Ax3& plane, const arma::mat& pip3d) const;
+
     void onlyOneShaded(QPersistentModelIndex idx) override;
     void resetRepresentations() override;
 

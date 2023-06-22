@@ -45,13 +45,13 @@ int SketchPoint::nDoF() const
 
 double SketchPoint::getDoFValue(unsigned int iDoF) const
 {
-    insight::assertion(
-        iDoF<nDoF(),
-        "invalid DoF index: %d", iDoF );
     switch (iDoF)
     {
-    case 0: return x_;
-    case 1: return y_;
+    case 0: return x_; break;
+    case 1: return y_; break;
+    default:
+        throw insight::Exception(
+            "invalid DoF index: %d", iDoF );
     }
     return NAN;
 }
@@ -59,13 +59,14 @@ double SketchPoint::getDoFValue(unsigned int iDoF) const
 
 void SketchPoint::setDoFValue(unsigned int iDoF, double value)
 {
-    insight::assertion(
-        iDoF<nDoF(),
-        "invalid DoF index: %d", iDoF );
     switch (iDoF)
     {
-    case 0: x_=value;
-    case 1: y_=value;
+    case 0: x_=value; break;
+    case 1: y_=value; break;
+    default:
+        throw insight::Exception(
+            "invalid DoF index: %d", iDoF );
+
     }
 }
 

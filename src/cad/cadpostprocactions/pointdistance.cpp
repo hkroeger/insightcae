@@ -82,10 +82,10 @@ DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2, double target
     : Distance(p1, p2)
 {
     changeDefaultParameters(
-                ParameterSet({
-                                 {"distance", new DoubleParameter(targetValue, "target value")}
-                             })
-                );
+        ParameterSet({
+                      {"distance", new DoubleParameter(targetValue, "target value")}
+        })
+        );
 }
 
 double DistanceConstraint::targetValue() const
@@ -105,7 +105,7 @@ double DistanceConstraint::getConstraintError(unsigned int iConstraint) const
                 iConstraint==0,
                 "invalid constraint id" );
     checkForBuildDuringAccess();
-    return (distance_ - targetValue()) /*/ stabilize(targetValue(), SMALL)*/;
+    return (distance_ - targetValue());
 }
 
 void DistanceConstraint::scaleSketch(double scaleFactor)

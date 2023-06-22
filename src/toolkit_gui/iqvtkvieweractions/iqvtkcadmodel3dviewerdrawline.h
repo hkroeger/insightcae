@@ -19,12 +19,8 @@ class IQVTKCADModel3DViewerPlanePointBasedAction
 protected:
     insight::cad::ConstrainedSketchPtr sketch_;
 
-    arma::mat pointInPlane3D(const arma::mat& pip2d) const;
-    arma::mat pointInPlane3D(const QPoint& screenPos) const;
-    arma::mat pointInPlane2D(const QPoint& screenPos) const;
-    arma::mat pointInPlane2D(const arma::mat& pip3d) const;
-
-    insight::cad::SketchPointPtr existingSketchPointAt( const QPoint& cp, insight::cad::ConstrainedSketchEntityPtr& sg ) const;
+    insight::cad::SketchPointPtr existingSketchPointAt(
+        const QPoint& cp, insight::cad::ConstrainedSketchEntityPtr& sg ) const;
 
 Q_SIGNALS:
     void updateActors();

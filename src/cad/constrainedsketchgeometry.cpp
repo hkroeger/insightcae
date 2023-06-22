@@ -98,6 +98,7 @@ void ConstrainedSketchEntity::parseParameterSet(const std::string &s, const boos
         xml_node<> *rootnode = doc.first_node("root");
 
         parameters_.readFromNode(doc, *rootnode, inputFileParentPath );
+        std::cout<<parameters_<<std::endl;
     }
 }
 

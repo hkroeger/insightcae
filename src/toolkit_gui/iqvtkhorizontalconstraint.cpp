@@ -8,6 +8,7 @@
 #include "vtkTextProperty.h"
 
 
+using namespace insight::cad;
 
 
 defineType(IQVTKHorizontalConstraint);
@@ -45,9 +46,14 @@ int IQVTKHorizontalConstraint::nConstraints() const
 double IQVTKHorizontalConstraint::getConstraintError(
     unsigned int iConstraint) const
 {
-    arma::mat ex = insight::normalized(
-        line_->getDatumVectors().at("ex") );
-    return 1.-fabs(arma::dot(insight::vec3(1,0,0), ex));
+    auto p0 = std::dynamic_pointer_cast<SketchPoint>(line_->start());
+    auto p1 = std::dynamic_pointer_cast<SketchPoint>(line_->end());
+    insight::assertion(bool(p0), "only lines with sketch end points are allowed!");
+    insight::assertion(bool(p1), "only lines with sketch end points are allowed!");
+    arma::mat p02 = p0->coords2D();
+    arma::mat p12 = p1->coords2D();
+    arma::mat d2=p12-p02;
+    return d2(1);
 }
 
 void IQVTKHorizontalConstraint::scaleSketch(double scaleFactor)

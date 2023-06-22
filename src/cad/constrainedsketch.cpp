@@ -174,8 +174,11 @@ int f_adapter (const gsl_vector * x, void * p, gsl_vector * y)
 {
     auto F = *reinterpret_cast<std::function<arma::mat(const arma::mat&)>*>(p);
 
-    arma::mat my = F( vec(x) );
-    std::cout<<"my="<<my.t()<<std::endl;
+    arma::mat vx = vec(x);
+
+    insight::dbg()<<"x="<<vx.t()<<std::endl;
+
+    arma::mat my = F( vx );
 
     gsl_vector_set (my, y);
 
@@ -211,11 +214,12 @@ arma::mat nonlinearSolveND(
     s = gsl_multiroot_fsolver_alloc (T, n);
     gsl_multiroot_fsolver_set (s, &f, x);
 
-    gsl_vector_set_all (s->dx, 0.001);
+    gsl_vector_set_all (s->dx, 0.1);
     //    print_state (iter, s);
 
     do
     {
+        std::cout<<"iter="<<iter<<std::endl;
         gsl_vector_memcpy(olditer_p, s->x);
 
         iter++;
@@ -230,15 +234,15 @@ arma::mat nonlinearSolveND(
             gsl_multiroot_test_residual (s->f, tol);
 
 
-        // relax
-        for (int i=0; i<n; i++)
-        {
-            gsl_vector_set(s->x, i,
-                           relax * gsl_vector_get(s->x, i)
-                               +
-                               (1.-relax) * gsl_vector_get(olditer_p, i)
-                           );
-        }
+//        // relax
+//        for (int i=0; i<n; i++)
+//        {
+//            gsl_vector_set(s->x, i,
+//                           relax * gsl_vector_get(s->x, i)
+//                               +
+//                               (1.-relax) * gsl_vector_get(olditer_p, i)
+//                           );
+//        }
 
         if (perIterationCallback)
             perIterationCallback();
@@ -247,12 +251,13 @@ arma::mat nonlinearSolveND(
 
     printf ("status = %s\n", gsl_strerror (status));
 
+    arma::mat result=arma::zeros(n);
+    for (int i=0;i<n;++i)
+        result(i)=gsl_vector_get(s->x,i);
+
     gsl_multiroot_fsolver_free (s);
     gsl_vector_free (x);
 
-    arma::mat result=arma::zeros(n);
-    for (int i=0;i<n;++i)
-        result(i)=gsl_vector_get(x,i);
     return result;
 }
 
@@ -262,34 +267,37 @@ void ConstrainedSketch::resolveConstraints(
     std::function<void(void)> perIterationCallback
     )
 {
-    std::vector<std::pair<insight::cad::ConstrainedSketchEntity*, int> > dofs;
-    int nCond=0, nDof=0;
+    struct LocalIndexMapping { insight::cad::ConstrainedSketchEntity* entity; int iLocal; };
+    std::vector<LocalIndexMapping> dofs, constrs;
+
     for (auto& e: geometry())
     {
         for (int i=0; i<e->nDoF(); ++i)
         {
             dofs.push_back({e.get(), i});
         }
-        nCond+=e->nConstraints();
-        nDof+=e->nDoF();
+        for (int i=0; i<e->nConstraints(); ++i)
+        {
+            constrs.push_back({e.get(), i});
+        }
     }
 
-    insight::assertion(nCond==nDof,
-                       "Cannot solve: number of contraints (%d) not equal to number of DoF (%d)!",
-                       nCond, nDof);
 
-    arma::mat x0=arma::zeros(nDof);
-    for (int i=0; i<nDof; ++i)
+    arma::mat x0 = arma::zeros(dofs.size());
+    for (int i=0; i<dofs.size(); ++i)
     {
-        x0(i)=dofs[i].first->getDoFValue(dofs[i].second);
+        auto& dm=dofs[i];
+        x0(i)=dm.entity->getDoFValue(dm.iLocal);
     }
-    std::cout<<"x0="<<x0<<std::endl;
+    std::cout<<"x0="<<x0.t()<<std::endl;
 
     auto setX = [&](const arma::mat& x)
     {
-        for (int i=0; i<nDof; ++i)
+        for (int i=0; i<dofs.size(); ++i)
         {
-            dofs[i].first->setDoFValue(dofs[i].second, x(i));
+            auto& dm=dofs[i];
+            insight::dbg()<<"set "<<dm.entity->type()<<", "<<dm.iLocal<<"="<<x(i)<<std::endl;
+            dm.entity->setDoFValue(dm.iLocal, x(i));
         }
         for (auto& se: geometry())
         {
@@ -310,39 +318,42 @@ void ConstrainedSketch::resolveConstraints(
             {
                 setX(x);
                 double Q=0;
-                for (auto& e: geometry())
+                for (int i=0;i<constrs.size();++i)
                 {
-                    for (int i=0;i<e->nConstraints();++i)
-                    {
-                        Q+=pow(e->getConstraintError(i), 2);
-                    }
+                    auto& constr = constrs[i];
+                    Q+=pow(constr.entity->getConstraintError(constr.iLocal), 2);
                 }
                 insight::dbg()<<"Q="<<Q<<std::endl;
                 return Q;
             },
             x0, solverTolerance_, arma::mat(), 10000,
-            0.9
+            0.1
             );
     }
     break;
 
     case rootND:
     {
+        insight::assertion(constrs.size()==dofs.size(),
+                           "Cannot solve: number of contraints (%d) not equal to number of DoF (%d)!",
+                           constrs.size(), dofs.size());
+
         xsol = nonlinearSolveND(
             [&](const arma::mat& x) -> arma::mat
             {
+
                 setX(x);
+
                 if (perIterationCallback)
                     perIterationCallback();
-                arma::mat Qs=arma::zeros(nCond);
 
-                size_t k=0;
-                for (auto& e: geometry())
+                arma::mat Qs=arma::zeros(constrs.size());
+
+                for (int i=0;i<constrs.size();++i)
                 {
-                    for (int i=0;i<e->nConstraints();++i)
-                    {
-                        Qs(k++)=e->getConstraintError(i);
-                    }
+                    auto& constr=constrs[i];
+                    Qs(i)=constr.entity->getConstraintError(constr.iLocal);
+                    insight::dbg()<<"get "<<constr.entity->type()<<", "<<constr.iLocal<<"="<<Qs(i)<<std::endl;
                 }
                 insight::dbg()<<"Q="<<Qs.t()<<std::endl;
                 return Qs;

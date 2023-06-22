@@ -48,14 +48,16 @@ double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
     switch (iConstraint)
     {
     case 0:
-        return parameters().getDouble("x");
+        return p(0)-parameters().getDouble("x");
     case 1:
-        return parameters().getDouble("y");
+        return p(1)-parameters().getDouble("y");
     };
 
     throw insight::Exception(
         "invalid constraint id: %d", iConstraint
         );
+
+    return std::nan("NAN");
 }
 
 void IQVTKFixedPoint::scaleSketch(double scaleFactor)

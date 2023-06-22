@@ -30,6 +30,7 @@
 #include "iqvtkpointoncurveconstraint.h"
 
 #include "base/qt5_helper.h"
+#include "datum.h"
 
 
 void IQVTKConstrainedSketchEditor::add(
@@ -798,18 +799,45 @@ bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifier
     return ret;
 }
 
+
+
+
 void IQVTKConstrainedSketchEditor::onMouseMove
-  (
+(
    Qt::MouseButtons buttons,
    const QPoint point,
    Qt::KeyboardModifiers curFlags
-   )
+)
 {
     if (currentAction_)
         currentAction_->onMouseMove( buttons, point, curFlags );
+
+    if (this->hasSelectionCandidate())
+    {
+        if (auto sp =
+            std::dynamic_pointer_cast<insight::cad::SketchPoint>(
+                currentSelectionCandidate().lock() ) )
+        {
+            arma::mat pip=viewer().pointInPlane3D(
+                (*this)->plane()->plane(), point );
+
+            arma::mat p2=viewer().pointInPlane2D(
+                (*this)->plane()->plane(), pip );
+
+            sp->setCoords2D(p2(0), p2(1));
+
+            (*this)->invalidate();
+            (*this).updateActors();
+//            viewer().scheduleRedraw();
+        }
+    }
+
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
 }
+
+
+
 
 void IQVTKConstrainedSketchEditor::onMouseWheel
   (
@@ -822,6 +850,8 @@ void IQVTKConstrainedSketchEditor::onMouseWheel
     if (currentAction_ && currentAction_->finished())
         currentAction_.reset();
 }
+
+
 
 
 void IQVTKConstrainedSketchEditor::updateActors(int update_msec)

@@ -29,16 +29,25 @@ class ConstrainedSketch
     : public Feature
 {
 public:
-    enum SolverType {
+    enum SolverType
+    {
         rootND =0,
         minimumND =1
+    };
+
+    struct SolverSettings
+    {
+        SolverType solver_;
+        double tolerance_;
+        double relax_;
+        int maxIter_;
     };
 
 private:
     DatumPtr pl_;
     std::set<ConstrainedSketchEntityPtr> geometry_;
-    double solverTolerance_;
-    SolverType solverType_;
+
+    SolverSettings solverSettings_;
 
     ConstrainedSketch( DatumPtr pl );
 
@@ -65,13 +74,12 @@ public:
 
     void operator=(const ConstrainedSketch& o);
 
-    double solverTolerance() const;
-    void setSolverTolerance(double tol);
+    const SolverSettings& solverSettings() const;
+    void changeSolverSettings(const SolverSettings& ss);
 
-    SolverType solverType() const;
-    void setSolverType(SolverType t);
-
-    void resolveConstraints(std::function<void(void)> perIterationCallback = std::function<void(void)>() );
+    void resolveConstraints(
+        std::function<void(void)> perIterationCallback = std::function<void(void)>(),
+        ProgressDisplayer& progress = consoleProgressDisplayer );
 
     static void insertrule(parser::ISCADParser& ruleset);
 

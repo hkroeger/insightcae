@@ -88,6 +88,19 @@ DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2, double target
         );
 }
 
+
+DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2)
+    : Distance(p1, p2)
+{
+    changeDefaultParameters(
+        ParameterSet({
+                      {"distance", new DoubleParameter(arma::norm(p2->value()-p1->value(), 2), "target value")}
+        })
+        );
+}
+
+
+
 double DistanceConstraint::targetValue() const
 {
     return parameters().getDouble("distance");

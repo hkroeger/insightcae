@@ -49,6 +49,7 @@ class AngleConstraint
     size_t calcHash() const override;
 
     AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, double targetValue);
+    AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr);
 
 public:
     declareType("AngleConstraint");

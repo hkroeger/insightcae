@@ -97,6 +97,21 @@ AngleConstraint::AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, dou
             );
 }
 
+AngleConstraint::AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr)
+    : Angle(p1, p2, pCtr)
+{
+    changeDefaultParameters(
+        ParameterSet({
+            {"angle", new DoubleParameter(
+                calculate(
+                    p1_->value(),
+                    p2_->value(),
+                    pCtr_->value() )/SI::deg,
+                    "[deg] target value")}
+        })
+    );
+}
+
 
 double AngleConstraint::targetValue() const
 {

@@ -63,6 +63,7 @@ class DistanceConstraint
     size_t calcHash() const override;
 
     DistanceConstraint(VectorPtr p1, VectorPtr p2, double targetValue);
+    DistanceConstraint(VectorPtr p1, VectorPtr p2);
 
 public:
     declareType("DistanceConstraint");

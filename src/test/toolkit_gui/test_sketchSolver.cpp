@@ -26,10 +26,10 @@ int main(int, char*argv[])
         "HorizontalConstraint( 3, 30),\n"
         "SketchPoint( 4, 115.425, -112.892),\n"
         "SketchPoint( 18, 121.313, -8.05673),\n"
-        "DistanceConstraint( 5, 18, 0, parameters <?xml version=\"1.0\" encoding=\"utf-8\"?><root><double name=\"distance\" value=\"12.894297144428871\"/></root>),\n"
+        "DistanceConstraint( 5, 18, 0, parameters <?xml version=\"1.0\" encoding=\"utf-8\"?><root><double name=\"distance\" value=\"7\"/></root>),\n"
         "DistanceConstraint( 6, 0, 36, parameters <?xml version=\"1.0\" encoding=\"utf-8\"?><root><double name=\"distance\" value=\"10\"/></root>),\n"
         "Line(8, 18, 4),\n"
-        "FixedPoint( 9, 11, parameters <?xml version=\"1.0\" encoding=\"utf-8\"?><root><double name=\"x\" value=\"-3.23\"/><double name=\"y\" value=\"7.84\"/></root>),\n"
+        "FixedPoint( 9, 11, parameters <?xml version=\"1.0\" encoding=\"utf-8\"?><root><double name=\"x\" value=\"0\"/><double name=\"y\" value=\"0\"/></root>),\n"
         "SketchPoint( 29, 46.4936, -2.85018),\n"
         "DistanceConstraint( 12, 10, 29, parameters <?xml version=\"1.0\" encoding=\"utf-8\"?><root><double name=\"distance\" value=\"7\"/></root>),\n"
         "Line(13, 10, 29),\n"
@@ -59,8 +59,11 @@ int main(int, char*argv[])
             );
         auto csk = ConstrainedSketch::createFromStream(pl, is);
 
-        csk->setSolverType(ConstrainedSketch::rootND);
-        csk->setSolverTolerance(1e-10);
+        auto ss = csk->solverSettings();
+        ss.solver_=ConstrainedSketch::rootND;
+        ss.tolerance_=1e-12;
+        csk->changeSolverSettings(ss);
+
         csk->resolveConstraints();
 
         std::cout<<"solution=\n======================\n"<<std::endl;

@@ -398,149 +398,213 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_finish.svg"), "Finish",
                         this, &IQVTKConstrainedSketchEditor::finished);
 
-    toolBar_->addAction("H",
-    [&]()
-    {
-        if (currentSelection_)
+    toolBar_->addAction(
+        "H",
+        [&]()
         {
-            for (auto sele: *currentSelection_)
+            if (currentSelection_)
             {
-                auto sg = sele.first.lock();
-                if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
+                for (auto sele: *currentSelection_)
                 {
-                    auto lc = IQVTKHorizontalConstraint::create( l );
-                    (*this)->geometry().insert(lc);
-                    (*this)->invalidate();
-                    this->updateActors();
+                    auto sg = sele.first.lock();
+                    if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
+                    {
+                        auto lc = IQVTKHorizontalConstraint::create( l );
+                        (*this)->geometry().insert(lc);
+                        (*this)->invalidate();
+                        this->updateActors();
+                    }
                 }
             }
         }
-    });
-    toolBar_->addAction("V",
-    [&]()
-    {
-        if (currentSelection_)
+    );
+    toolBar_->addAction(
+        "V",
+        [&]()
         {
-            for (auto sele: *currentSelection_)
+            if (currentSelection_)
             {
-                auto sg = sele.first.lock();
-                if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
+                for (auto sele: *currentSelection_)
                 {
-                    auto lc = IQVTKVerticalConstraint::create( l );
-                    (*this)->geometry().insert(lc);
-                    (*this)->invalidate();
-                    this->updateActors();
+                    auto sg = sele.first.lock();
+                    if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
+                    {
+                        auto lc = IQVTKVerticalConstraint::create( l );
+                        (*this)->geometry().insert(lc);
+                        (*this)->invalidate();
+                        this->updateActors();
+                    }
                 }
             }
         }
-    });
+    );
 
-    toolBar_->addAction("X",
-    [&]()
-    {
-        if (currentSelection_)
+    toolBar_->addAction(
+        "X",
+        [&]()
         {
-            insight::cad::SketchPointPtr pt;
+            if (currentSelection_)
+            {
+                insight::cad::SketchPointPtr pt;
 
-            for (auto sele: *currentSelection_)
+                for (auto sele: *currentSelection_)
+                {
+                    insight::assertion(
+                        currentSelection_->size()==1,
+                        "exactly one entity should be selected!");
+
+                    auto sg = sele.first.lock();
+                    if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                    {
+                        auto c = IQVTKFixedPoint::create( p );
+                        (*this)->geometry().insert(c);
+                        (*this)->invalidate();
+                        this->updateActors();
+                    }
+                }
+            }
+        }
+    );
+
+    toolBar_->addAction(
+        QPixmap(":/icons/icon_pointoncurve.svg"), "Point on curve",
+        [&]()
+        {
+            if (currentSelection_)
+            {
+                insight::cad::FeaturePtr curve;
+                insight::cad::SketchPointPtr pt;
+
+                for (auto sele: *currentSelection_)
+                {
+                    auto sg = sele.first.lock();
+                    if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
+                    {
+                        curve=l;
+                    }
+                    else if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                    {
+                        pt=p;
+                    }
+
+                    if (pt && curve)
+                    {
+                        auto lc = IQVTKPointOnCurveConstraint::create( pt, curve );
+                        (*this)->geometry().insert(lc);
+                        (*this)->invalidate();
+                        this->updateActors();
+                    }
+                }
+            }
+        }
+    );
+
+    toolBar_->addAction(
+        QPixmap(":/icons/icon_distance.svg"), "Distance",
+        [&]()
+        {
+            if (currentSelection_)
+            {
+                insight::cad::SketchPointPtr p1, p2;
+
+                if (currentSelection_->size()==2)
+                {
+                    auto si=currentSelection_->begin();
+                    p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(    si ->first.lock() );
+                    p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>( (++si)->first.lock() );
+                }
+
+                insight::assertion(
+                    bool(p1)&&bool(p2),
+                    "Please select exactly two sketch points!");
+
+                auto dc = insight::cad::DistanceConstraint::create( p1, p2 );
+                (*this)->geometry().insert(dc);
+                (*this)->invalidate();
+                this->updateActors();
+            }
+        }
+        );
+
+//    toolBar_->addAction(QPixmap(":/icons/icon_angle.svg"), "Angle",
+//                        [&]()
+//                        {
+//                            if (currentSelection_)
+//                            {
+//                                insight::cad::SketchPointPtr p1, p2, p3;
+
+//                                if (currentSelection_->size()==2)
+//                                {
+//                                    auto si=currentSelection_->begin();
+//                                    p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(    si ->first.lock() );
+//                                    p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>( (++si)->first.lock() );
+//                                }
+
+//                                insight::assertion(
+//                                    bool(p1)&&bool(p2),
+//                                    "Please select exactly two sketch points!");
+
+//                                auto dc = insight::cad::DistanceConstraint::create( p1, p2 );
+//                                (*this)->geometry().insert(dc);
+//                                (*this)->invalidate();
+//                                this->updateActors();
+//                            }
+//                        });
+
+    toolBar_->addAction(
+        QPixmap(":/icons/icon_mergepoints.svg"), "Merge points",
+        [&]()
+        {
+            if (currentSelection_)
             {
                 insight::assertion(
-                    currentSelection_->size()==1,
-                    "exactly one entity should be selected!");
+                    currentSelection_->size()==2,
+                    "Exactly two points have to be selected!");
 
-                auto sg = sele.first.lock();
-                if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                auto p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
+                                currentSelection_->begin()
+                                    ->first.lock());
+                insight::assertion(
+                    bool(p1), "one entity is not a point!");
+
+                auto p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
+                    (++currentSelection_->begin())
+                        ->first.lock());
+                insight::assertion(
+                    bool(p2), "one entity is not a point!");
+
+                for (auto& e: (*this)->geometry())
                 {
-                    auto c = IQVTKFixedPoint::create( p );
-                    (*this)->geometry().insert(c);
-                    (*this)->invalidate();
-                    this->updateActors();
+                    e->replaceDependency(p1, p2);
                 }
+                (*this)->geometry().erase(p1);
+                (*this)->invalidate();
+                this->updateActors();
             }
         }
-    });
+    );
 
-    toolBar_->addAction("F",
-    [&]()
-    {
-        if (currentSelection_)
+    toolBar_->addAction(
+        "Scale",
+        [&]()
         {
-            insight::cad::FeaturePtr curve;
-            insight::cad::SketchPointPtr pt;
-
-            for (auto sele: *currentSelection_)
+            bool ok;
+            double sf=QInputDialog::getDouble(
+                this,
+                "Scale Sketch",
+                "Enter scale factor:", 1.,
+                -DBL_MAX, DBL_MAX, -1, &ok);
+            if (ok)
             {
-                auto sg = sele.first.lock();
-                if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
+                for (auto& geom: (*this)->geometry())
                 {
-                    curve=l;
+                    geom->scaleSketch(sf);
                 }
-                else if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
-                {
-                    pt=p;
-                }
-
-                if (pt && curve)
-                {
-                    auto lc = IQVTKPointOnCurveConstraint::create( pt, curve );
-                    (*this)->geometry().insert(lc);
-                    (*this)->invalidate();
-                    this->updateActors();
-                }
+                (*this)->invalidate();
+                this->updateActors();
             }
         }
-    });
-
-    toolBar_->addAction("Merge",
-    [&]()
-    {
-        if (currentSelection_)
-        {
-            insight::assertion(
-                currentSelection_->size()==2,
-                "Exactly two points have to be selected!");
-
-            auto p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
-                            currentSelection_->begin()
-                                ->first.lock());
-            insight::assertion(
-                bool(p1), "one entity is not a point!");
-
-            auto p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
-                (++currentSelection_->begin())
-                    ->first.lock());
-            insight::assertion(
-                bool(p2), "one entity is not a point!");
-
-            for (auto& e: (*this)->geometry())
-            {
-                e->replaceDependency(p1, p2);
-            }
-            (*this)->geometry().erase(p1);
-            (*this)->invalidate();
-            this->updateActors();
-        }
-    });
-
-    toolBar_->addAction("Scale",
-                        [&]()
-                        {
-                            bool ok;
-                            double sf=QInputDialog::getDouble(
-                                this,
-                                "Scale Sketch",
-                                "Enter scale factor:", 1.,
-                                -DBL_MAX, DBL_MAX, -1, &ok);
-                            if (ok)
-                            {
-                                for (auto& geom: (*this)->geometry())
-                                {
-                                    geom->scaleSketch(sf);
-                                }
-                                (*this)->invalidate();
-                                this->updateActors();
-                            }
-                        });
+    );
     toolBar_->show();
 
 
@@ -555,35 +619,83 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     auto l = new QFormLayout;
 
-    auto  toledit = new QLineEdit;
-    toledit->setValidator(new QDoubleValidator);
-    toledit->setText(QString::number((*this)->solverTolerance()));
-    connect(toledit, &QLineEdit::textChanged, this,
-            [this](const QString& txt)
-            {
-                double newtol = txt.toDouble();
-                if ( fabs(newtol-(*this)->solverTolerance()) > insight::SMALL)
+    {
+        auto  solType = new QComboBox;
+        solType->addItems({"Multidimensional Root Finder", "Multidimensional Minimizer"}); // order must match enum IDs
+        solType->setEditable(false);
+        solType->setCurrentIndex((*this)->solverSettings().solver_);
+        connect(solType, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                [this](int ci)
                 {
-                    (*this)->setSolverTolerance(newtol);
-                    solve();
+                    auto newsol=insight::cad::ConstrainedSketch::SolverType(ci);
+                    auto css=(*this)->solverSettings();
+                    if (newsol!=css.solver_)
+                    {
+                        css.solver_=newsol;
+                        (*this)->changeSolverSettings(css);
+                        solve();
+                    }
                 }
-            }
-    );
-    l->addRow("Solver tolerance", toledit);
-
-    auto  solType = new QComboBox;
-    solType->addItems({"Multidimensional Root Finder", "Multidimensional Minimizer"}); // order must match enum IDs
-    solType->setEditable(false);
-    solType->setCurrentIndex((*this)->solverType());
-    connect(solType, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-            [this](int ci)
-            {
-                (*this)->setSolverType(insight::cad::ConstrainedSketch::SolverType(ci));
-                solve();
-            }
-            );
-    l->addRow("Solver type", solType);
-
+                );
+        l->addRow("Solver type", solType);
+    }
+    {
+        auto  toledit = new QLineEdit;
+        toledit->setValidator(new QDoubleValidator);
+        toledit->setText(QString::number((*this)->solverSettings().tolerance_));
+        connect(toledit, &QLineEdit::textChanged, this,
+                [this](const QString& txt)
+                {
+                    double newtol = txt.toDouble();
+                    auto css=(*this)->solverSettings();
+                    if ( fabs(newtol-css.tolerance_) > insight::SMALL)
+                    {
+                        css.tolerance_=newtol;
+                        (*this)->changeSolverSettings(css);
+                        solve();
+                    }
+                }
+        );
+        l->addRow("Solver tolerance", toledit);
+    }
+    {
+        auto  relaxedit = new QLineEdit;
+        relaxedit->setValidator(new QDoubleValidator);
+        relaxedit->setText(QString::number((*this)->solverSettings().relax_));
+        connect(relaxedit, &QLineEdit::textChanged, this,
+                [this](const QString& txt)
+                {
+                    double newrelax = txt.toDouble();
+                    auto css=(*this)->solverSettings();
+                    if ( fabs(newrelax-css.relax_) > insight::SMALL)
+                    {
+                        css.relax_=newrelax;
+                        (*this)->changeSolverSettings(css);
+                        solve();
+                    }
+                }
+                );
+        l->addRow("Solver relaxation", relaxedit);
+    }
+    {
+        auto  maxiteredit = new QLineEdit;
+        maxiteredit->setValidator(new QIntValidator(1,INT_MAX));
+        maxiteredit->setText(QString::number((*this)->solverSettings().maxIter_));
+        connect(maxiteredit, &QLineEdit::textChanged, this,
+                [this](const QString& txt)
+                {
+                    double newmaxiter = txt.toInt();
+                    auto css=(*this)->solverSettings();
+                    if ( abs(newmaxiter-css.maxIter_) > 0)
+                    {
+                        css.maxIter_=newmaxiter;
+                        (*this)->changeSolverSettings(css);
+                        solve();
+                    }
+                }
+                );
+        l->addRow("max. iterations", maxiteredit);
+    }
 
     setLayout(l);
 

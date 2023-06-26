@@ -52,7 +52,7 @@ double IQVTKHorizontalConstraint::getConstraintError(
     insight::assertion(bool(p1), "only lines with sketch end points are allowed!");
     arma::mat p02 = p0->coords2D();
     arma::mat p12 = p1->coords2D();
-    arma::mat d2=p12-p02;
+    arma::mat d2 = p12-p02;
     return d2(1);
 }
 

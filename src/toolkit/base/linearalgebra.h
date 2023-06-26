@@ -256,6 +256,9 @@ public:
   virtual int numP() const =0;
 };
 
+arma::mat vec(const gsl_vector * x);
+void gsl_vector_set(const arma::mat& x, gsl_vector * xo);
+
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 double nonlinearSolve1D(const std::function<double(double)>& model, double x_min, double x_max);
 double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max, double tol=1e-3);
@@ -268,6 +271,12 @@ arma::mat nonlinearMinimizeND(
 arma::mat nonlinearMinimizeND(
     const std::function<double(const arma::mat&)>& model, const arma::mat& x0,
     double tol=1e-3, const arma::mat& steps = arma::mat(), int nMaxIter=10000, double relax=1.0 );
+
+arma::mat nonlinearSolveND(
+    std::function<arma::mat(const arma::mat& x)> obj,
+    const arma::mat& x0,
+    double tol=1e-3, int nMaxIter=10000, double relax=1.0,
+    std::function<void(void)> perIterationCallback = std::function<void(void)>() );
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
 

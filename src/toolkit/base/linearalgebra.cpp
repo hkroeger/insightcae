@@ -32,6 +32,10 @@
 // #include "minpack.h"
 // #include <dlib/optimization.h>
 
+
+#include "gsl/gsl_multiroots.h"
+
+
 using namespace arma;
 using namespace boost;
 
@@ -663,7 +667,6 @@ arma::mat nonlinearMinimizeND(
 
             size = gsl_multimin_fminimizer_size (s);
             status = gsl_multimin_test_size (size, tol);
-//            std::cerr<<"i="<<iter<<": F="<<s->fval<<std::endl;
 
             // relax
             for (int i=0; i<model.numP(); i++)
@@ -686,16 +689,19 @@ arma::mat nonlinearMinimizeND(
         
         gsl_vector_free(p);
         gsl_vector_free(ss);
-//         gsl_vector_free(olditer_p);
+        gsl_vector_free(olditer_p);
         gsl_multimin_fminimizer_free (s);
 
-        return res; //model.computeQuality(y, x);
+        return res;
     }
     catch (const std::exception& e)
     {
         std::ostringstream os;
         os<<"x0=["<<x0.t()<<"]";
-        throw insight::Exception("nonlinearMinimizeND(): Exception occurred during regression.\nSupplied data: "+os.str()+"\n"+e.what());
+        throw insight::Exception(
+            "nonlinearMinimizeND(): Exception occurred during regression.\n"
+            "Supplied data: "+os.str()+"\n"+e.what()
+            );
     }
 
     return arma::zeros(x0.n_elem)+DBL_MAX;
@@ -726,6 +732,127 @@ arma::mat nonlinearMinimizeND(
 }
 
 
+
+arma::mat vec(const gsl_vector * x)
+{
+    arma::mat r = arma::zeros(x->size);
+    for (size_t i=0; i<x->size; ++i)
+    {
+      r(i) = gsl_vector_get(x, i);
+
+      insight::assertion(
+          !std::isnan(r(i)),
+          "NaN at element %d", i);
+    }
+    return r;
+}
+
+void gsl_vector_set(const arma::mat& x, gsl_vector * xo)
+{
+    insight::assertion(
+        xo->size == x.n_elem,
+        "gsl_vector must be initialized to the same size as input vector (expected %d, got %d)",
+        x.n_elem, xo->size);
+
+    for (int i=0; i<x.n_elem; ++i)
+    {
+      insight::assertion(
+          !std::isnan(x(i)),
+          "nan in input vector at %d", i);
+      gsl_vector_set (xo, i, x(i));
+    }
+}
+
+
+int f_adapter (const gsl_vector * x, void * p, gsl_vector * y)
+{
+    auto F = *reinterpret_cast<std::function<arma::mat(const arma::mat&)>*>(p);
+
+    arma::mat vx = vec(x);
+
+    insight::dbg()<<"x="<<vx.t()<<std::endl;
+
+    arma::mat my = F( vx );
+
+    gsl_vector_set (my, y);
+
+    return GSL_SUCCESS;
+}
+
+
+arma::mat nonlinearSolveND(
+    std::function<arma::mat(const arma::mat& x)> obj,
+    const arma::mat& x0,
+    double tol, int nMaxIter, double relax,
+    std::function<void(void)> perIterationCallback
+    )
+{
+    const gsl_multiroot_fsolver_type *T;
+    gsl_multiroot_fsolver *s;
+
+    int status;
+    size_t n = x0.n_elem;
+    size_t i, iter = 0;
+
+    gsl_multiroot_function f = {&f_adapter, n, &obj};
+
+    gsl_vector *x = gsl_vector_alloc (n);
+    gsl_vector * olditer_p = gsl_vector_alloc (n);
+    for (int i=0; i<n; ++i)
+      gsl_vector_set (x, i, x0(i));
+
+    //T = gsl_multiroot_fsolver_hybrids;
+    T = gsl_multiroot_fsolver_hybrid;
+    s = gsl_multiroot_fsolver_alloc (T, n);
+    gsl_multiroot_fsolver_set (s, &f, x);
+
+    gsl_vector_set_all (s->dx, 0.1);
+    //    print_state (iter, s);
+
+    do
+    {
+      std::cout<<"iter="<<iter<<std::endl;
+      gsl_vector_memcpy(olditer_p, s->x);
+
+      iter++;
+      status = gsl_multiroot_fsolver_iterate (s);
+
+      //      print_state (iter, s);
+
+      if (status)   /* check if solver is stuck */
+        break;
+
+      status =
+          gsl_multiroot_test_residual (s->f, tol);
+
+
+      // relax
+      for (int i=0; i<n; i++)
+      {
+          gsl_vector_set(
+            s->x, i,
+          relax * gsl_vector_get(s->x, i)
+             +
+          (1.-relax) * gsl_vector_get(olditer_p, i)
+         );
+      }
+
+      if (perIterationCallback)
+        perIterationCallback();
+    }
+    while (status == GSL_CONTINUE && iter < nMaxIter);
+
+    printf ("status = %s\n", gsl_strerror (status));
+
+    arma::mat result=arma::zeros(n);
+    for (int i=0;i<n;++i)
+      result(i)=gsl_vector_get(s->x,i);
+
+    gsl_multiroot_fsolver_free (s);
+    gsl_vector_free (x);
+
+    return result;
+}
 
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)

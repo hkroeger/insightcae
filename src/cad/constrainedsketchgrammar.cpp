@@ -1,7 +1,6 @@
 #include "constrainedsketchgrammar.h"
+#include "constrainedsketch.h"
 
-
-#include "sketch.h"
 
 namespace insight {
 namespace cad {

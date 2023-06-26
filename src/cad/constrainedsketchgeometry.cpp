@@ -98,6 +98,7 @@ void ConstrainedSketchEntity::parseParameterSet(const std::string &s, const boos
         xml_node<> *rootnode = doc.first_node("root");
 
         parameters_.readFromNode(doc, *rootnode, inputFileParentPath );
+        std::cout<<parameters_<<std::endl;
     }
 }
 
@@ -129,6 +130,13 @@ std::string ConstrainedSketchEntity::parameterString() const
         parameters_.saveToString(s, boost::filesystem::current_path()/"outfile");
     }
     return s;
+}
+
+
+bool ConstrainedSketchEntity::dependsOn(const std::weak_ptr<ConstrainedSketchEntity> &entity) const
+{
+    auto deps = dependencies();
+    return ( deps.find(entity) != deps.end() );
 }
 
 

@@ -59,6 +59,7 @@
 #include "base/vtkrendering.h"
 #include "iqvtkkeepfixedsizecallback.h"
 #include "base/cppextensions.h"
+#include "iqvtkviewer.h"
 
 #include <vtkAutoInit.h>
 VTK_MODULE_INIT(vtkRenderingOpenGL2); //if render backen is OpenGL2, it should changes to vtkRenderingOpenGL2
@@ -543,7 +544,7 @@ void IQVTKCADModel3DViewer::resetDisplayProps(const QPersistentModelIndex& pidx)
         {
             for (const auto& actor: dd.actors_)
             {
-                if (auto act = vtkActor::SafeDownCast(/*displayedData_[pidx].actor_*/actor))
+                if (auto act = vtkActor::SafeDownCast(actor))
                 {
                     QModelIndex idx(pidx);
                     if (auto *ivtkocc = ivtkOCCShape::SafeDownCast(act->GetMapper()->GetInputAlgorithm()))
@@ -833,35 +834,69 @@ IQVTKCADModel3DViewer::BackgroundImage::BackgroundImage(
     auto imageData = imageReader->GetOutput();
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
     imageActor_->SetInputData(imageData);
-    viewer().backgroundRen_->AddActor(imageActor_);
 
-    viewer().renWin()->Render();
+    QMessageBox questionBox;
+    questionBox.setWindowTitle("Image display");
+    questionBox.setText("Shall the image be a static background or dynamic rotatable/zoomable?");
+    auto* pButtonStatic = questionBox.addButton("Static", QMessageBox::YesRole);
+    auto* pButtonDynamic = questionBox.addButton("Dynamic", QMessageBox::NoRole);
+    auto* pButtonCancel = questionBox.addButton(QMessageBox::StandardButton::Cancel);
 
-    double origin[3];
-    double spacing[3];
-    int extent[6];
-    imageData->GetOrigin(origin);
-    imageData->GetSpacing(spacing);
-    imageData->GetExtent(extent);
+    questionBox.exec();
 
-    vtkCamera* camera = viewer().backgroundRen_->GetActiveCamera();
-    camera->ParallelProjectionOn();
+    auto answer = questionBox.clickedButton();
 
-    double xc = origin[0] + 0.5 * (extent[0] + extent[1]) * spacing[0];
-    double yc = origin[1] + 0.5 * (extent[2] + extent[3]) * spacing[1];
-    // double xd = (extent[1] - extent[0] + 1)*spacing[0];
-    double yd = (extent[3] - extent[2] + 1) * spacing[1];
-    double d = camera->GetDistance();
-    camera->SetParallelScale(0.5 * yd);
-    camera->SetFocalPoint(xc, yc, 0.0);
-    camera->SetPosition(xc, yc, d);
+    if (answer==pButtonStatic)
+    {
+        usedRenderer_ = viewer().backgroundRen_;
+        usedRenderer_->AddActor(imageActor_);
 
-    viewer().scheduleRedraw();
+        viewer().renWin()->Render();
+
+        IQImageReferencePointSelectorWindow::setupCameraForImage(
+            imageData, usedRenderer_->GetActiveCamera());
+
+//        double origin[3];
+//        double spacing[3];
+//        int extent[6];
+//        imageData->GetOrigin(origin);
+//        imageData->GetSpacing(spacing);
+//        imageData->GetExtent(extent);
+
+//        vtkCamera* camera = usedRenderer_->GetActiveCamera();
+//        camera->ParallelProjectionOn();
+
+//        double xc = origin[0] + 0.5 * (extent[0] + extent[1]) * spacing[0];
+//        double yc = origin[1] + 0.5 * (extent[2] + extent[3]) * spacing[1];
+//        // double xd = (extent[1] - extent[0] + 1)*spacing[0];
+//        double yd = (extent[3] - extent[2] + 1) * spacing[1];
+//        double d = camera->GetDistance();
+//        camera->SetParallelScale(0.5 * yd);
+//        camera->SetFocalPoint(xc, yc, 0.0);
+//        camera->SetPosition(xc, yc, d);
+
+        viewer().scheduleRedraw();
+    }
+    else if (answer==pButtonDynamic)
+    {
+        IQImageReferencePointSelectorWindow selw(imageActor_, &viewer());
+//        selw.setWindowModality(Qt::ApplicationModal);
+//        selw.show();
+
+        double scale=selw.L_ / arma::norm(*selw.p3_ - *selw.p2_,2);
+        imageActor_->SetScale( scale );
+        arma::mat newPosition(-1.*scale* *(selw.p1_) );
+        imageActor_->SetPosition( newPosition.memptr() );
+
+        usedRenderer_=viewer().renderer();
+        usedRenderer_->AddActor(imageActor_);
+        viewer().scheduleRedraw();
+    }
 }
 
 IQVTKCADModel3DViewer::BackgroundImage::~BackgroundImage()
 {
-    viewer().backgroundRen_->RemoveActor( imageActor_ );
+    usedRenderer_->RemoveActor( imageActor_ );
     viewer().scheduleRedraw();
 }
 
@@ -1035,9 +1070,9 @@ IQVTKCADModel3DViewer::findDisplayedItem(
 }
 
 
-void IQVTKCADModel3DViewer::scheduleRedraw()
+void IQVTKCADModel3DViewer::scheduleRedraw(int millisec)
 {
-    redrawTimer_.start(100);
+    redrawTimer_.start(millisec);
 }
 
 
@@ -1424,6 +1459,99 @@ IQVTKCADModel3DViewer::findUnderCursorAt(const QPoint& clickPos) const
     return boost::blank();
 }
 
+
+
+
+arma::mat
+IQVTKCADModel3DViewer::pointInPlane2D(const gp_Ax3& plane, const arma::mat &p3) const
+{
+    insight::assertion(
+        p3.n_elem==3,
+        "expected 3D vector, got %d", p3.n_elem );
+
+    gp_Trsf pl;
+    pl.SetTransformation(plane); // from global to plane
+    auto pp = toVec<gp_Pnt>(p3).Transformed(pl);
+    insight::assertion(
+        fabs(pp.Z())<SMALL,
+        "point (%g, %g, %g) not in plane with p=(%g, %g, %g) and n=(%g, %g, %g)!\n"
+        "(local coordinates = (%g, %g, %g))",
+        p3(0), p3(1), p3(2),
+        plane.Location().X(), plane.Location().Y(), plane.Location().Z(),
+        plane.Direction().X(), plane.Direction().Y(), plane.Direction().Z(),
+        pp.X(), pp.Y(), pp.Z() );
+    return vec2( pp.X(), pp.Y() );
+}
+
+
+
+
+arma::mat IQVTKCADModel3DViewer::pointInPlane3D(const gp_Ax3& plane, const arma::mat &pip2d) const
+{
+    insight::assertion(
+        pip2d.n_elem==2,
+        "expected 2D vector, got %d", pip2d.n_elem );
+
+    gp_Trsf pl;
+    pl.SetTransformation(plane); // from global to plane
+    gp_Pnt p2(pip2d(0), pip2d(1), 0);
+    auto pp = p2.Transformed(pl.Inverted());
+    return vec3(pp);
+}
+
+
+
+
+arma::mat
+IQVTKCADModel3DViewer::pointInPlane3D(
+    const gp_Ax3& plane,
+    const QPoint &screenPos ) const
+{
+    auto *renderer = const_cast<IQVTKCADModel3DViewer*>(this)->renderer();
+    auto v = widgetCoordsToVTK(screenPos);
+
+    arma::mat p0=vec3(plane.Location());
+    arma::mat n=vec3(plane.Direction());
+
+    arma::mat l0=vec3Zero();
+    renderer->SetDisplayPoint(v.x(), v.y(), 0.0);
+    renderer->DisplayToWorld();
+    renderer->GetWorldPoint(l0.memptr());
+
+    arma::mat camPos, camFocal;
+    camPos=camFocal=vec3Zero();
+    renderer->GetActiveCamera()->GetPosition(camPos.memptr());
+    renderer->GetActiveCamera()->GetFocalPoint(camFocal.memptr());
+    arma::mat l = normalized(camFocal-camPos);
+
+    double nom=arma::dot((p0-l0),n);
+    insight::assertion(
+        fabs(nom)>SMALL,
+        "no single intersection" );
+
+    double denom=arma::dot(l,n);
+    insight::assertion(
+        fabs(denom)>SMALL,
+        "no intersection" );
+
+    double d=nom/denom;
+
+    return l0+l*d;
+}
+
+
+
+
+arma::mat
+IQVTKCADModel3DViewer::pointInPlane2D(const gp_Ax3& plane, const QPoint &screenPos) const
+{
+    return pointInPlane2D(plane, pointInPlane3D(plane, screenPos));
+}
+
+
+
+
+
 void IQVTKCADModel3DViewer::onlyOneShaded(QPersistentModelIndex pidx)
 {
     auto setRepr = [&](const DisplayedEntity& de, insight::DatasetRepresentation r)
@@ -1460,6 +1588,9 @@ void IQVTKCADModel3DViewer::onlyOneShaded(QPersistentModelIndex pidx)
 
     scheduleRedraw();
 }
+
+
+
 
 void IQVTKCADModel3DViewer::resetRepresentations()
 {

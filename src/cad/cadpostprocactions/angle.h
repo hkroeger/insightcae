@@ -49,6 +49,7 @@ class AngleConstraint
     size_t calcHash() const override;
 
     AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, double targetValue);
+    AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr);
 
 public:
     declareType("AngleConstraint");
@@ -66,6 +67,12 @@ public:
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
     static void addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf);
+
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
+
+    void replaceDependency(
+        const std::weak_ptr<ConstrainedSketchEntity>& entity,
+        const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 };
 
 

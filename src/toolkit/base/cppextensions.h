@@ -54,6 +54,7 @@ struct hash<std::vector<E> >
 
 
 
+
 #if __cplusplus <= 201103L
 
 template<typename T, typename... Args>
@@ -64,7 +65,38 @@ std::unique_ptr<T> make_unique(Args&&... args)
 
 #endif
 
+// https://stackoverflow.com/a/51591178
+template<class T>
+bool operator==(const std::shared_ptr<T> &lhs, const std::weak_ptr<T> &rhs)
+{
+    return !lhs.owner_before(rhs) && !rhs.owner_before(lhs);
+}
+
+template<class T>
+class comparable_weak_ptr : public std::weak_ptr<T>
+{
+public:
+    template<class ...Args>
+    comparable_weak_ptr(Args&&... addArgs)
+        : std::weak_ptr<T>(std::forward<Args>(addArgs)...)
+    {}
+
+    // https://stackoverflow.com/a/51591178
+    bool operator==(const std::shared_ptr<T>& lhs) const
+    {
+        return !lhs.owner_before(*this) && !this->owner_before(lhs);
+    }
+
+    bool operator<(const std::weak_ptr<T>& rhs) const
+    {
+        return std::owner_less<std::weak_ptr<T> >()(*this, rhs);
+    }
+
+};
 
 }
+
+
+
 
 #endif // CPPEXTENSIONS_H

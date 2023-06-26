@@ -7,6 +7,8 @@
 
 #include "base/parameters.h"
 
+defineType(IQVTKFixedPoint);
+
 IQVTKFixedPoint::IQVTKFixedPoint(
     insight::cad::SketchPointPtr p  )
     : p_(p)
@@ -37,18 +39,25 @@ IQVTKFixedPoint::createActor() const
 
 int IQVTKFixedPoint::nConstraints() const
 {
-    return 1;
+    return 2;
 }
 
 double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
 {
-    insight::assertion(
-        iConstraint==0,
-        "invalid constraint id: %d", iConstraint );
     auto p = p_->coords2D();
-    double x=parameters().getDouble("x");
-    double y=parameters().getDouble("y");
-    return pow(p(0)-x,2), pow(p(1)-y, 2);
+    switch (iConstraint)
+    {
+    case 0:
+        return p(0)-parameters().getDouble("x");
+    case 1:
+        return p(1)-parameters().getDouble("y");
+    };
+
+    throw insight::Exception(
+        "invalid constraint id: %d", iConstraint
+        );
+
+    return std::nan("NAN");
 }
 
 void IQVTKFixedPoint::scaleSketch(double scaleFactor)
@@ -62,5 +71,62 @@ void IQVTKFixedPoint::generateScriptCommand(
     const std::map<const ConstrainedSketchEntity *, int> &entityLabels
     ) const
 {
+    int myLabel=entityLabels.at(this);
 
+    script.insertCommandFor(
+        myLabel,
+        type() + "( "
+            + boost::lexical_cast<std::string>(myLabel) + ", "
+            + pointSpec(p_, script, entityLabels)
+            + parameterString()
+            + ")"
+        );
+}
+
+namespace insight { namespace cad {
+addToStaticFunctionTable(ConstrainedSketchEntity, IQVTKFixedPoint, addParserRule);
+}}
+
+void IQVTKFixedPoint::addParserRule(
+    insight::cad::ConstrainedSketchGrammar &ruleset,
+    insight::cad::MakeDefaultGeometryParametersFunction )
+{
+    using namespace insight::cad;
+    namespace qi=boost::spirit::qi;
+    namespace phx=boost::phoenix;
+    ruleset.entityRules.add
+        (
+            typeName,
+            ( '('
+             > qi::int_ > ','
+             > qi::int_
+             > ruleset.r_parameters >
+             ')' )
+                [
+                 qi::_val = phx::bind(
+                     &IQVTKFixedPoint::create<insight::cad::SketchPointPtr>,
+                     phx::bind(&insight::cad::ConstrainedSketchGrammar::lookupEntity<insight::cad::SketchPoint>, phx::ref(ruleset), qi::_2) ),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_3, "."),
+                 phx::insert(
+                     phx::ref(ruleset.labeledEntities),
+                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
+            );
+}
+
+std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > IQVTKFixedPoint::dependencies() const
+{
+    return { p_ };
+}
+
+void IQVTKFixedPoint::replaceDependency(
+    const std::weak_ptr<ConstrainedSketchEntity> &entity,
+    const std::shared_ptr<ConstrainedSketchEntity> &newEntity )
+{
+    if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(newEntity))
+    {
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p_) == entity)
+        {
+            p_ = p;
+        }
+    }
 }

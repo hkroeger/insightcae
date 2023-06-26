@@ -13,7 +13,7 @@
 #include <QToolBox>
 #include <QDockWidget>
 
-#include "sketch.h"
+#include "constrainedsketch.h"
 #include "selectionlogic.h"
 //#include "iqvtkviewerstate.h"
 #include "viewwidgetaction.h"
@@ -133,6 +133,8 @@ public:
     insight::cad::ConstrainedSketchEntityPtr
         findSketchElementOfActor(vtkProp *actor) const;
 
+    void deleteEntity(std::weak_ptr<insight::cad::ConstrainedSketchEntity> td);
+
 
     bool onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
     bool onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
@@ -159,7 +161,7 @@ public:
 
 
 public Q_SLOTS:
-    void updateActors();
+    void updateActors(int update_msec=100);
 
 Q_SIGNALS:
     void finished();

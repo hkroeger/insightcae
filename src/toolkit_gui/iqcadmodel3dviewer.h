@@ -9,7 +9,7 @@
 #include <QMainWindow>
 
 #include "iqcaditemmodel.h"
-#include "sketch.h"
+#include "constrainedsketch.h"
 
 
 class TOOLKIT_GUI_EXPORT IQCADModel3DViewer

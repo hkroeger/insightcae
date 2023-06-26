@@ -1,3 +1,5 @@
+
+#include "base/cppextensions.h"
 #include "angle.h"
 #include "cadfeature.h"
 #include "base/units.h"
@@ -5,7 +7,7 @@
 #include "base/parameterset.h"
 #include "base/parameters/simpleparameter.h"
 
-#include "sketch.h"
+#include "constrainedsketch.h"
 
 namespace insight {
 namespace cad {
@@ -34,13 +36,18 @@ double Angle::calculate(
         arma::mat pCtr
         )
 {
-    arma::mat d1=p1-pCtr;
-    arma::mat d2=p2-pCtr;
+    arma::mat d1 = p1 - pCtr;
+    arma::mat d2 = p2 - pCtr;
+
+    if ( (arma::norm(d1, 2)<SMALL) || (arma::norm(d2, 2)<SMALL) ) // might appear during sketch resolution
+    {
+        return 100.*M_PI;
+    }
 
     arma::mat n=arma::cross(d1, d2);
     if (arma::norm(n,2)<SMALL)
     {
-        return 0.0;
+        return 0.;
     }
     else
     {
@@ -57,9 +64,6 @@ void Angle::build()
                 p1_->value(),
                 p2_->value(),
                 pCtr_->value() );
-
-//    cout<<"######### Angle Report ###########################################"<<endl;
-//    cout<<"angle="<<angle_/SI::deg<<"deg"<<endl;
 }
 
 void Angle::write(ostream&) const
@@ -88,9 +92,24 @@ AngleConstraint::AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, dou
 {
     changeDefaultParameters(
                 ParameterSet({
-                                 {"angle", new DoubleParameter(targetValue/SI::deg, "[deg] target value")}
-                             })
-                );
+                    {"angle", new DoubleParameter(targetValue/SI::deg, "[deg] target value")}
+                })
+            );
+}
+
+AngleConstraint::AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr)
+    : Angle(p1, p2, pCtr)
+{
+    changeDefaultParameters(
+        ParameterSet({
+            {"angle", new DoubleParameter(
+                calculate(
+                    p1_->value(),
+                    p2_->value(),
+                    pCtr_->value() )/SI::deg,
+                    "[deg] target value")}
+        })
+    );
 }
 
 
@@ -111,7 +130,7 @@ double AngleConstraint::getConstraintError(unsigned int iConstraint) const
                 iConstraint==0,
                 "invalid constraint id" );
     checkForBuildDuringAccess();
-    return (angle_ - targetValue())/(2.*M_PI);
+    return (angle_ - targetValue())/M_PI;
 }
 
 void AngleConstraint::scaleSketch(double scaleFactor)
@@ -158,7 +177,42 @@ void AngleConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefau
                  phx::insert(
                      phx::ref(ruleset.labeledEntities),
                      phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
-            );
+        );
+}
+
+std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > AngleConstraint::dependencies() const
+{
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > ret;
+
+    if (auto sp1=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_))
+        ret.insert(sp1);
+    if (auto sp2=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p2_))
+        ret.insert(sp2);
+    if (auto spCtr=std::dynamic_pointer_cast<ConstrainedSketchEntity>(pCtr_))
+        ret.insert(spCtr);
+
+    return ret;
+}
+
+void AngleConstraint::replaceDependency(
+    const std::weak_ptr<ConstrainedSketchEntity> &entity,
+    const std::shared_ptr<ConstrainedSketchEntity> &newEntity)
+{
+    if (auto p = std::dynamic_pointer_cast<Vector>(newEntity))
+    {
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity)
+        {
+            p1_ = p;
+        }
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p2_) == entity)
+        {
+            p2_ = p;
+        }
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(pCtr_) == entity)
+        {
+            pCtr_ = p;
+        }
+    }
 }
 
 

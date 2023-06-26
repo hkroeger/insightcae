@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include "base/cppextensions.h"
 
 #include "base/parameterset.h"
 #include "cadtypes.h"
@@ -66,6 +67,12 @@ public:
     virtual void generateScriptCommand(
         ConstrainedSketchScriptBuffer& script,
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const =0;
+
+    virtual std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const =0;
+    bool dependsOn(const std::weak_ptr<ConstrainedSketchEntity>& entity) const;
+    virtual void replaceDependency(
+        const std::weak_ptr<ConstrainedSketchEntity>& entity,
+        const std::shared_ptr<ConstrainedSketchEntity>& newEntity) =0;
 
 };
 

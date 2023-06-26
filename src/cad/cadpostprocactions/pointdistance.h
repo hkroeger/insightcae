@@ -21,6 +21,7 @@
 #ifndef INSIGHT_CAD_DISTANCEPP_H
 #define INSIGHT_CAD_DISTANCEPP_H
 
+#include "base/cppextensions.h"
 #include "cadtypes.h"
 #include "cadparameters.h"
 #include "cadpostprocaction.h"
@@ -62,6 +63,7 @@ class DistanceConstraint
     size_t calcHash() const override;
 
     DistanceConstraint(VectorPtr p1, VectorPtr p2, double targetValue);
+    DistanceConstraint(VectorPtr p1, VectorPtr p2);
 
 public:
     declareType("DistanceConstraint");
@@ -79,6 +81,11 @@ public:
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
     static void addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf);
+
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
+    void replaceDependency(
+        const std::weak_ptr<ConstrainedSketchEntity>& entity,
+        const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 };
 
 }

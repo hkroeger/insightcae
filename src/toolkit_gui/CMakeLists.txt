@@ -18,6 +18,8 @@ find_package(VTK
 
 set(toolkit_gui_SRCS 
 
+ iqvtkviewer.h iqvtkviewer.cpp
+
  iscadmetatyperegistrator.cpp
  iscadmetatyperegistrator.h
 

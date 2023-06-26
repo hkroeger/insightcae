@@ -59,6 +59,7 @@
 #include "base/vtkrendering.h"
 #include "iqvtkkeepfixedsizecallback.h"
 #include "base/cppextensions.h"
+#include "iqvtkviewer.h"
 
 #include <vtkAutoInit.h>
 VTK_MODULE_INIT(vtkRenderingOpenGL2); //if render backen is OpenGL2, it should changes to vtkRenderingOpenGL2
@@ -543,7 +544,7 @@ void IQVTKCADModel3DViewer::resetDisplayProps(const QPersistentModelIndex& pidx)
         {
             for (const auto& actor: dd.actors_)
             {
-                if (auto act = vtkActor::SafeDownCast(/*displayedData_[pidx].actor_*/actor))
+                if (auto act = vtkActor::SafeDownCast(actor))
                 {
                     QModelIndex idx(pidx);
                     if (auto *ivtkocc = ivtkOCCShape::SafeDownCast(act->GetMapper()->GetInputAlgorithm()))
@@ -833,35 +834,69 @@ IQVTKCADModel3DViewer::BackgroundImage::BackgroundImage(
     auto imageData = imageReader->GetOutput();
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
     imageActor_->SetInputData(imageData);
-    viewer().backgroundRen_->AddActor(imageActor_);
 
-    viewer().renWin()->Render();
+    QMessageBox questionBox;
+    questionBox.setWindowTitle("Image display");
+    questionBox.setText("Shall the image be a static background or dynamic rotatable/zoomable?");
+    auto* pButtonStatic = questionBox.addButton("Static", QMessageBox::YesRole);
+    auto* pButtonDynamic = questionBox.addButton("Dynamic", QMessageBox::NoRole);
+    auto* pButtonCancel = questionBox.addButton(QMessageBox::StandardButton::Cancel);
 
-    double origin[3];
-    double spacing[3];
-    int extent[6];
-    imageData->GetOrigin(origin);
-    imageData->GetSpacing(spacing);
-    imageData->GetExtent(extent);
+    questionBox.exec();
 
-    vtkCamera* camera = viewer().backgroundRen_->GetActiveCamera();
-    camera->ParallelProjectionOn();
+    auto answer = questionBox.clickedButton();
 
-    double xc = origin[0] + 0.5 * (extent[0] + extent[1]) * spacing[0];
-    double yc = origin[1] + 0.5 * (extent[2] + extent[3]) * spacing[1];
-    // double xd = (extent[1] - extent[0] + 1)*spacing[0];
-    double yd = (extent[3] - extent[2] + 1) * spacing[1];
-    double d = camera->GetDistance();
-    camera->SetParallelScale(0.5 * yd);
-    camera->SetFocalPoint(xc, yc, 0.0);
-    camera->SetPosition(xc, yc, d);
+    if (answer==pButtonStatic)
+    {
+        usedRenderer_ = viewer().backgroundRen_;
+        usedRenderer_->AddActor(imageActor_);
 
-    viewer().scheduleRedraw();
+        viewer().renWin()->Render();
+
+        IQImageReferencePointSelectorWindow::setupCameraForImage(
+            imageData, usedRenderer_->GetActiveCamera());
+
+//        double origin[3];
+//        double spacing[3];
+//        int extent[6];
+//        imageData->GetOrigin(origin);
+//        imageData->GetSpacing(spacing);
+//        imageData->GetExtent(extent);
+
+//        vtkCamera* camera = usedRenderer_->GetActiveCamera();
+//        camera->ParallelProjectionOn();
+
+//        double xc = origin[0] + 0.5 * (extent[0] + extent[1]) * spacing[0];
+//        double yc = origin[1] + 0.5 * (extent[2] + extent[3]) * spacing[1];
+//        // double xd = (extent[1] - extent[0] + 1)*spacing[0];
+//        double yd = (extent[3] - extent[2] + 1) * spacing[1];
+//        double d = camera->GetDistance();
+//        camera->SetParallelScale(0.5 * yd);
+//        camera->SetFocalPoint(xc, yc, 0.0);
+//        camera->SetPosition(xc, yc, d);
+
+        viewer().scheduleRedraw();
+    }
+    else if (answer==pButtonDynamic)
+    {
+        IQImageReferencePointSelectorWindow selw(imageActor_, &viewer());
+//        selw.setWindowModality(Qt::ApplicationModal);
+//        selw.show();
+
+        double scale=selw.L_ / arma::norm(*selw.p3_ - *selw.p2_,2);
+        imageActor_->SetScale( scale );
+        arma::mat newPosition(-1.*scale* *(selw.p1_) );
+        imageActor_->SetPosition( newPosition.memptr() );
+
+        usedRenderer_=viewer().renderer();
+        usedRenderer_->AddActor(imageActor_);
+        viewer().scheduleRedraw();
+    }
 }
 
 IQVTKCADModel3DViewer::BackgroundImage::~BackgroundImage()
 {
-    viewer().backgroundRen_->RemoveActor( imageActor_ );
+    usedRenderer_->RemoveActor( imageActor_ );
     viewer().scheduleRedraw();
 }
 

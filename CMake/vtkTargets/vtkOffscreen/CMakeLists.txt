@@ -22,6 +22,7 @@ else()
             FiltersExtraction
             FiltersPoints
             FiltersFlowPaths
+            FiltersVerdict
             CommonCore
             CommonDataModel
             CommonMisc

@@ -14,6 +14,7 @@ if (NOT WIN32)
         FiltersExtraction
         FiltersPoints
         FiltersFlowPaths
+        FiltersVerdict
         CommonCore
         CommonDataModel
         CommonMisc
@@ -43,6 +44,7 @@ else()
            vtkFiltersExtraction
            vtkFiltersPoints
            vtkFiltersFlowPaths
+           vtkFiltersVerdict
            vtkCommonCore
            vtkCommonDataModel
            vtkCommonMisc

@@ -119,6 +119,19 @@ arma::mat insight::cad::RotatedVector::value() const
   return rotMatrix(ang_->value(), ax_->value()) * v_->value();
 }
 
+
+
+
+insight::cad::NormalizedVector::NormalizedVector(VectorPtr v)
+    : v_(v)
+{}
+
+arma::mat insight::cad::NormalizedVector::value() const
+{
+  return insight::normalized(v_->value());
+}
+
+
 insight::cad::Mechanism_CrankDrive::Mechanism_CrankDrive(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax)
 : L_(L), c2_(c2), r2_(r2), p1_(p1), eax_(eax)
 {

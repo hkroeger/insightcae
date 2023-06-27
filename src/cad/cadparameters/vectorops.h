@@ -121,6 +121,16 @@ public:
 };
 
 
+class NormalizedVector
+    : public insight::cad::Vector
+{
+  VectorPtr v_;
+public:
+  NormalizedVector(VectorPtr v);
+  virtual arma::mat value() const;
+};
+
+
 class Mechanism_CrankDrive
 : public insight::cad::Vector
 {

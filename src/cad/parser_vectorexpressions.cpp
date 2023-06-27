@@ -183,7 +183,9 @@ void ISCADParser::createVectorExpressions()
         |
         ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" )
         [ _val = phx::construct<VectorPtr>(phx::new_<VectorFromComponents>(qi::_1, qi::_2, qi::_3)) ]
-        //| ( r_vectorExpression >> '\'') [ _val = trans_(qi::_1) ]
+        |
+        ( lit("normalized") >> "(" >> r_vectorExpression >> ")" )
+        [ _val = phx::construct<VectorPtr>(phx::new_<NormalizedVector>(qi::_1)) ]
         |
         ( '(' >> r_vectorExpression >> ')' )
         [_val = qi::_1]

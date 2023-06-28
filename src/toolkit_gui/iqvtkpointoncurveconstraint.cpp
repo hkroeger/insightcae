@@ -44,7 +44,22 @@ double IQVTKPointOnCurveConstraint::getConstraintError(unsigned int iConstraint)
         iConstraint==0,
         "invalid constraint index");
 
-    return curve_->minDist(p_->value());
+    if (auto line = std::dynamic_pointer_cast<insight::cad::Line>(curve_))
+    {
+        arma::mat a = line->start()->value();
+        arma::mat b = insight::normalized(line->end()->value() - a);
+        arma::mat p = p_->value();
+        double nom=arma::norm( arma::cross(p-a, b), 2 );
+        double denom=arma::norm(b, 2);
+        if (fabs(denom)<insight::SMALL)
+            return DBL_MAX;
+        else
+            return nom/denom;
+    }
+    else
+    {
+        return curve_->minDist(p_->value());
+    }
 }
 
 void IQVTKPointOnCurveConstraint::scaleSketch(double scaleFactor)
@@ -106,7 +121,8 @@ void IQVTKPointOnCurveConstraint::addParserRule(
             );
 }
 
-std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > IQVTKPointOnCurveConstraint::dependencies() const
+std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> >
+IQVTKPointOnCurveConstraint::dependencies() const
 {
     std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > ret
         { p_ };

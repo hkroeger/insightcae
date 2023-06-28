@@ -35,7 +35,7 @@ size_t ConstrainedSketch::calcHash() const
 
 ConstrainedSketch::ConstrainedSketch(DatumPtr pl)
     : pl_(pl),
-    solverSettings_({rootND, 1e-20, 0.9, 1000})
+    solverSettings_({rootND, 1e-20, 1., 1000})
 {}
 
 
@@ -141,10 +141,12 @@ void ConstrainedSketch::resolveConstraints(
         for (int i=0; i<e->nDoF(); ++i)
         {
             dofs.push_back({e.get(), i});
+            insight::dbg()<<"DoF "<<(dofs.size()-1)<<" => "<<e->type()<<std::endl;
         }
         for (int i=0; i<e->nConstraints(); ++i)
         {
             constrs.push_back({e.get(), i});
+            insight::dbg()<<"constr "<<(constrs.size()-1)<<" => "<<e->type()<<std::endl;
         }
     }
 

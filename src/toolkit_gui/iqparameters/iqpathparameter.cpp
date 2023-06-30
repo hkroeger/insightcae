@@ -89,10 +89,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
   connect(dlgBtn_, &QPushButton::clicked, [=]()
   {
-    QString fn = QFileDialog::getOpenFileName(
-          editControlsContainer,
-          "Select file",
-          lineEdit->text());
+    QString fn = showSelectPathDialog(editControlsContainer, lineEdit->text());
     if (!fn.isEmpty())
     {
       lineEdit->setText(fn);
@@ -159,4 +156,12 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
 
   return layout;
+}
+
+QString IQPathParameter::showSelectPathDialog(QWidget* parent, const QString& startPath) const
+{
+  return QFileDialog::getOpenFileName(
+      parent,
+      "Select file",
+      startPath);
 }

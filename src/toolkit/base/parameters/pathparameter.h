@@ -167,6 +167,7 @@ public:
                                 boost::filesystem::path inputfilepath ) override;
 
     Parameter* clone() const override;
+    DirectoryParameter* cloneDirectoryParameter() const;
     void reset(const Parameter& p) override;
 };
 

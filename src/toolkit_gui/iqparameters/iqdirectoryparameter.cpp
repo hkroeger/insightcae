@@ -62,9 +62,9 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
 
   connect(dlgBtn_, &QPushButton::clicked, [=]()
   {
-    QString fn = QFileDialog::getOpenFileName(
+    QString fn = QFileDialog::getExistingDirectory(
           editControlsContainer,
-          "Select file",
+          "Select directory",
           lineEdit->text());
     if (!fn.isEmpty())
     {

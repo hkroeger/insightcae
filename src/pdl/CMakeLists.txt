@@ -12,6 +12,7 @@ set(pdl_SOURCES
     doublerangeparameterparser.cpp doublerangeparameterparser.h
     stringparameterparser.cpp stringparameterparser.h
     pathparameterparser.cpp pathparameterparser.h
+    directoryparameterparser.h directoryparameterparser.cpp
     selectionparameterparser.cpp selectionparameterparser.h
     dynamicclassselectablesubsetparameterparser.cpp dynamicclassselectablesubsetparameterparser.h
     dynamicclassparametersselectablesubsetparameterparser.cpp dynamicclassparametersselectablesubsetparameterparser.h

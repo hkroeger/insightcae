@@ -27,6 +27,9 @@ public:
           IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
           IQCADModel3DViewer *viewer) override;
 
+  virtual QString showSelectPathDialog(QWidget* parent, const QString& startPath) const;
+
 };
+
 
 #endif // IQPATHPARAMETER_H

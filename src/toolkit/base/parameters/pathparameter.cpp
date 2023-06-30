@@ -369,6 +369,11 @@ void DirectoryParameter::readFromNode
 
 Parameter* DirectoryParameter::clone() const
 {
+  return cloneDirectoryParameter();
+}
+
+DirectoryParameter *DirectoryParameter::cloneDirectoryParameter() const
+{
   return new DirectoryParameter(originalFilePath_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
 }
 

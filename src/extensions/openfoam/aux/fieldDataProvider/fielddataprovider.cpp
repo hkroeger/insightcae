@@ -807,23 +807,12 @@ tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
     auto targ = vtkSmartPointer<vtkPolyData>::New();
     setPoints<vtkPolyData>(target, targ);
 
-
-    // Gaussian kernel
-//    auto gaussianKernel = vtkSmartPointer<vtkGaussianKernel>::New();
-//    gaussianKernel->SetSharpness(2.0);
-//    gaussianKernel->SetRadius(12.0);
-
-//    auto ip=vtkSmartPointer<vtkPointInterpolator>::New();
     auto ip=vtkSmartPointer<vtkProbeFilter>::New();
     ip->SetInputData(targ);
     ip->SetSourceData(ii->second);
-//    ip->SetSpatialMatch(true);
-//    ip->DebugOn();
-//    ip->SetKernel(gaussianKernel);
-//    ip->SetNullPointsStrategyToClosestPoint();
 
     ip->Update();
-//    ip->Print(std::cout);
+
     auto out = ip->GetOutput();
     if (!out->GetPointData()->HasArray(fieldNames_[i].c_str()))
     {

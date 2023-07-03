@@ -79,4 +79,6 @@ target_include_directories(workbench
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+setup_gettext(workbench workbench ${workbench_SRCS})
+
 install(TARGETS workbench RUNTIME DESTINATION bin)

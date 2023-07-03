@@ -21,6 +21,10 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -113,8 +117,8 @@ FeatureCmdInfoList Circle::ruleDocumentation()
             "Circle",
          
             "( <vector:p0>, <vector:n>, <scalar:D> )",
-            
-            "Creates a circular face. The circle is centered at p0, the axis vector is n and the diameter D."
+
+          _("Creates a circular face. The circle is centered at p0, the axis vector is n and the diameter D.")
         )
   };
 }

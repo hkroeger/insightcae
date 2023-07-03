@@ -19,6 +19,7 @@
 
 #include "torus.h"
 #include "base/boost_include.h"
+#include "base/translations.h"
 
 #include "BRepPrimAPI_MakeTorus.hxx"
 
@@ -127,7 +128,7 @@ FeatureCmdInfoList Torus::ruleDocumentation()
         (
             "Torus",
             "( <vector:p0>, <vector:axisTimesD>, <scala:d> )",
-            "Creates a torus around center point p0. The axis is specified by the direction of axisTimesD and the torus diameter by its magnitude. The tube diameter is d."
+          _("Creates a torus around center point p0. The axis is specified by the direction of axisTimesD and the torus diameter by its magnitude. The tube diameter is d.")
         )
     };
 }

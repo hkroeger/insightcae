@@ -21,9 +21,11 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 // #include "BRepOffsetAPI_MakeThickSolid.hxx"
 #include "BRepOffset_MakeOffset.hxx"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -140,7 +142,7 @@ FeatureCmdInfoList Offset::ruleDocumentation()
         (
             "Offset",
             "( <feature:base>, <scalar:t> )",
-            "Creates an offset surface from a shell feature by displacing the surfaces in normal direction by distance t."
+          _("Creates an offset surface from a shell feature by displacing the surfaces in normal direction by distance t.")
         )
     };
 }

@@ -20,6 +20,9 @@
 #include "wire.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -146,7 +149,7 @@ FeatureCmdInfoList Wire::ruleDocumentation()
         (
             "Wire",
             "( <edgeSelection> )",
-            "Creates a wire from a number of edges."
+          _("Creates a wire from a number of edges.")
         )
     };
 }

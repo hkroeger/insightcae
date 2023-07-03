@@ -19,6 +19,8 @@
 
 #include "arc.h"
 #include "base/boost_include.h"
+#include "base/translations.h"
+
 #include <boost/spirit/include/qi.hpp>
 
 #ifndef Q_MOC_RUN
@@ -157,7 +159,7 @@ FeatureCmdInfoList Arc::ruleDocumentation()
         (
             "Arc",
             "( <vector:p0>, <vector:et0>, <vector:p1> )",
-            "Creates an arc between point p0 and p1. At point p0, the arc is tangent to vector et0."
+          _("Creates an arc between point p0 and p1. At point p0, the arc is tangent to vector et0.")
         )
   };
 }
@@ -246,7 +248,7 @@ FeatureCmdInfoList Arc3P::ruleDocumentation()
         (
             "Arc3P",
             "( <vector:p0>, <vector:pm>, <vector:p1> )",
-            "Creates an arc between point p0 and p1 through intermediate point pm."
+          _("Creates an arc between point p0 and p1 through intermediate point pm.")
         )
   };
 }

@@ -20,6 +20,8 @@
 #include "freecadmodel.h"
 #include "base/boost_include.h"
 #include "base/tools.h"
+#include "base/translations.h"
+
 
 using namespace boost;
 using namespace boost::filesystem;
@@ -104,7 +106,7 @@ void FreeCADModel::build()
         for ( FreeCADModelVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++ ) {
             std::vector<std::string> vpath=boost::fusion::at_c<0> ( *it );
             if ( vpath.size() ==0 ) {
-                throw insight::Exception ( "Internal error: zero length of parameter path!" );
+                throw insight::Exception ( _("Internal error: zero length of parameter path!") );
             }
 
             double vval=boost::fusion::at_c<1> ( *it )->value();
@@ -139,7 +141,9 @@ void FreeCADModel::build()
 //     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
     std::cout<<"CMD=\""<<cmd<<"\""<<std::endl;
     if ( ::system ( cmd.c_str() ) || !boost::filesystem::exists ( filename ) ) {
-        throw insight::Exception ( "Conversion of FreeCAD file "+infilename.string()+" into BREP "+filename.string()+" failed!" );
+        throw insight::Exception (
+            _("Conversion of FreeCAD file %s into BREP %s failed!"),
+            infilename.string().c_str(), filename.string().c_str() );
     }
     boost::filesystem::remove ( macrofilename );
 
@@ -183,8 +187,8 @@ FeatureCmdInfoList FreeCADModel::ruleDocumentation()
             "FreeCADModel",
          
             "( <path:filename>, <string:solidname> [, <identifier>[.<identifier>] = <scalar:value>, ... ] )",
-         
-            "Rebuild a model in FreeCAD and imports the result. An arbitrary number of parameter/value pairs can be passed into FreeCAD."
+
+            _("Rebuild a model in FreeCAD and imports the result. An arbitrary number of parameter/value pairs can be passed into FreeCAD.")
         )
     };
 }

@@ -22,6 +22,7 @@
 #include "ui_newanalysisdlg.h"
 
 #include "base/analysis.h"
+#include "base/translations.h"
 
 // #include <QListWidget>
 // #include <QListWidgetItem>
@@ -40,7 +41,7 @@ newAnalysisDlg::newAnalysisDlg(QWidget* parent)
   ui=new Ui::newAnalysisDlg();
   ui->setupUi(this);
 
-  this->setWindowTitle("Create New Analysis");
+  this->setWindowTitle(_("Create New Analysis"));
   
   connect(this->ui->buttonBox, &QDialogButtonBox::accepted, this, &newAnalysisDlg::accept);
   connect(this->ui->buttonBox, &QDialogButtonBox::rejected, this, &newAnalysisDlg::reject);
@@ -93,11 +94,11 @@ public:
 
 void newAnalysisDlg::fillAnalysisList()
 {
-  QTreeWidgetItem *topitem = new QTreeWidgetItem ( ui->treeWidget, QStringList() << "Available Analyses" );
+  QTreeWidgetItem *topitem = new QTreeWidgetItem ( ui->treeWidget, QStringList() << _("Available Analyses") );
   { QFont f=topitem->font(0); f.setBold(true); f.setPointSize(f.pointSize()+2); topitem->setFont(0, f); }
   HierarchyLevel toplevel ( topitem );
   
-  HierarchyLevel::iterator i=toplevel.addHierarchyLevel("Uncategorized");
+  HierarchyLevel::iterator i=toplevel.addHierarchyLevel(_("Uncategorized"));
 
   auto analyses = insight::Analysis::availableAnalysisTypes();
   for ( const auto& analysisName: analyses )

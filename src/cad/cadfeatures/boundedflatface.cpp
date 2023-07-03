@@ -21,6 +21,7 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 
 #include "BRepOffsetAPI_MakeFilling.hxx"
@@ -105,9 +106,10 @@ void BoundedFlatFace::build()
         }
 
         if (n_ok==0)
-            throw insight::Exception("No valid edge given!");
+            throw insight::Exception(_("No valid edge given!"));
         if (n_nok>0)
-            insight::Warning(str(format("Only %d out of %d given edges were valid!") % n_ok % (n_ok+n_nok)));
+            insight::Warning(str(format(_("Only %d out of %d given edges were valid!"))
+                                 % n_ok % (n_ok+n_nok)));
 
     }
     else if
@@ -157,7 +159,7 @@ void BoundedFlatFace::build()
 
      BRepBuilderAPI_MakeFace fb2(BRep_Tool::Surface(f), w.Wire());
      if (!fb2.IsDone())
-        throw insight::Exception("Failed to generate planar face!");
+      throw insight::Exception(_("Failed to generate planar face!"));
      else
        res=fb2.Face();
     }
@@ -232,8 +234,8 @@ FeatureCmdInfoList BoundedFlatFace::ruleDocumentation()
             "BoundedFlatFace",
          
             " (<feature> [, ..., <feature>] ) | (<edgesSelection> [, ..., <edgesSelection>])",
-         
-            "Creates a flat face from a number of edges. Edges are taken from one or more features or from one or more edge selection sets."
+
+          _("Creates a flat face from a number of edges. Edges are taken from one or more features or from one or more edge selection sets.")
         )
   };
 }

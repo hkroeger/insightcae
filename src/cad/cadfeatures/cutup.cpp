@@ -6,6 +6,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -64,7 +65,7 @@ void CutUp::build()
     auto bb = model_->modelBndBox();
     auto n = n_->value();
     double ln=arma::norm(n, 2);
-    insight::assertion(fabs(ln)>1e-10, "normal vector must not be zero");
+    insight::assertion(fabs(ln)>1e-10, _("normal vector must not be zero"));
     n/=ln;
 
     arma::mat Ldiag = bb.col(1)-bb.col(0);
@@ -162,8 +163,8 @@ FeatureCmdInfoList CutUp::ruleDocumentation()
 
             "( <feature:base>, <vector:n>, <scalar:t>, <vector:p0> [, ..., <vector:pn>] )",
 
-            "Cuts up the base feature into several pieces with planar cuts at p0 to pn with normal n and cut thickness t."
-            " The result pieces are stored in subshapes of name \"cut_<int:i>\"."
+            _("Cuts up the base feature into several pieces with planar cuts at p0 to pn with normal n and cut thickness t."
+            " The result pieces are stored in subshapes of name \"cut_<int:i>\".")
         )
     };
 }

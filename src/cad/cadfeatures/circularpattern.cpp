@@ -21,6 +21,9 @@
 #include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -142,7 +145,9 @@ void CircularPattern::build()
         }
         catch (...)
         {
-            throw insight::Exception("CircularPattern: invalid filter expression! (was '"+filterrule_+"')");
+            throw insight::Exception(
+                _("CircularPattern: invalid filter expression! (was '%s')"),
+                filterrule_.c_str());
         }
 
         if (ok)
@@ -216,11 +221,11 @@ FeatureCmdInfoList CircularPattern::ruleDocumentation()
          
             "( <feature:base>, ( <vector:p0>, <vector:deltaphi>, <scalar:n> [, centered] ) | <feature:other_pattern> )",
          
-            "Copies the bease feature base into a circular pattern."
+            _("Copies the bease feature base into a circular pattern."
             " The copies are rotated around the axis which goes through the point p0 and has the direction of deltaphi."
             " The angular step between successive copies is given by the length of deltaphi and the number of copies is n."
             " If the keyword centered is given, the pattern is created symmetrically in both directions of rotation (The total number of elements is kept)."
-            " Alternatively, the settings can be copied from an existing CircularPattern-feature other_pattern."
+            " Alternatively, the settings can be copied from an existing CircularPattern-feature other_pattern.")
         )
     };
 }

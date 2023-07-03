@@ -46,6 +46,8 @@ target_link_libraries(iscad
   )
 linkToolkitVtk(iscad Onscreen)
 
+setup_gettext(iscad iscad ${iscad_SRCS})
+
 target_include_directories(iscad
   PUBLIC ${QT_INCLUDES}
   PUBLIC ${Boost_INCLUDE_DIR}

@@ -23,6 +23,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -82,15 +83,15 @@ void StitchedSolid::build()
   BRepCheck_Shell acheck(sshell);
   
     if (acheck.Closed(Standard_False) != BRepCheck_NoError)
-    throw insight::Exception("Could not create a closed shell (B)!");
+    throw insight::Exception(_("Could not create a closed shell (B)!"));
 
   if (acheck.Orientation(Standard_False) != BRepCheck_NoError)
-    throw insight::Exception("Orientation Error!");
+    throw insight::Exception(_("Orientation Error!"));
   
   BRepBuilderAPI_MakeSolid solidmaker(sshell);
   
   if (!solidmaker.IsDone())
-    throw insight::Exception("Creation of solid failed!");
+    throw insight::Exception(_("Creation of solid failed!"));
 
   setShape(solidmaker.Solid());
 }
@@ -121,7 +122,7 @@ FeatureCmdInfoList StitchedSolid::ruleDocumentation()
 
             "( <feature:f1> [, <feature:f2> [, ...] ] [, <scalar:tol> | 0.001 ] )",
 
-            "Create stitched solid from all faces of the provided features."
+          _("Create stitched solid from all faces of the provided features.")
         )
     };
 }

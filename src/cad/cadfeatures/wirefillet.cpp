@@ -20,6 +20,8 @@
 #include "wirefillet.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -204,7 +206,7 @@ FeatureCmdInfoList WireFillet::ruleDocumentation()
 
             "( <vertexSelection:vertices>, <scalar:r> )",
 
-            "Creates fillets at selected vertices of a wire. All vertices in the selection set vertices are rounded with width r."
+          _("Creates fillets at selected vertices of a wire. All vertices in the selection set vertices are rounded with width r.")
         )
     };
 }

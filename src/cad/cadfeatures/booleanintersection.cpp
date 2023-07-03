@@ -22,6 +22,7 @@
 #include "base/boost_include.h"
 #include "base/tools.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #include "datum.h"
 
@@ -98,7 +99,7 @@ void BooleanIntersection::build()
                   throw CADException
                   (
                       shared_from_this(),
-                      "Could not perform intersection operation."
+                      _("Could not perform intersection operation.")
                   );
               }
               setShape(intersector.Shape());
@@ -111,7 +112,8 @@ void BooleanIntersection::build()
           if (m2pl_)
           {
               if (!m2pl_->providesPlanarReference())
-                  throw CADException(shared_from_this(), "intersection: given reference does not provide planar reference!");
+                  throw CADException(shared_from_this(),
+                                     _("intersection: given reference does not provide planar reference!"));
 
               if (m1_->isSingleWire() || m1_->isSingleEdge())
               {
@@ -129,7 +131,8 @@ void BooleanIntersection::build()
 
                       // For debugging only
                       if (!intersection.IsDone() )
-                          throw CADException(shared_from_this(), "intersection: edge intersection not successful!");
+                          throw CADException(shared_from_this(),
+                                             _("intersection: edge intersection not successful!"));
 
                       // Get intersection curve
                       for (int j=1; j<=intersection.NbPoints(); j++)
@@ -151,7 +154,7 @@ void BooleanIntersection::build()
                       throw CADException
                       (
                           shared_from_this(),
-                          "could not perform shape/plane intersection operation."
+                          _("could not perform shape/plane intersection operation.")
                       );
                   }
                   TopoDS_Shape isecsh = intersector.Shape();
@@ -161,7 +164,8 @@ void BooleanIntersection::build()
               m1_->unsetLeaf();
           }
           else
-              throw CADException(shared_from_this(), "intersection: tool object undefined!");
+              throw CADException(shared_from_this(),
+                                 _("intersection: tool object undefined!") );
       }
     }
     else

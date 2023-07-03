@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include "base/tools.h"
 #include "datum.h"
+#include "base/translations.h"
 
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
@@ -186,10 +187,10 @@ FeatureCmdInfoList Cylinder::ruleDocumentation()
          
             "( <vector:p0>, [ax] <vector:p1_or_axis>, <scalar:Da> [, <scalar:Di] [, centered] )",
          
-            "Creates a cylinder based on point p0. The cylinder extends up to point p1_or_axis or, if the keyword ax is given, along the length vector p1_or_axis."
+            _("Creates a cylinder based on point p0. The cylinder extends up to point p1_or_axis or, if the keyword ax is given, along the length vector p1_or_axis."
             " The outer diameter of the cylinder is Da."
             " If an inner diameter Di is given, a hollow cylinder is created."
-            " The cylinder is centered with respect to p0, if the keyword centered is supplied."
+              " The cylinder is centered with respect to p0, if the keyword centered is supplied.")
         )
     };
 }

@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -159,8 +160,8 @@ FeatureCmdInfoList Extrusion::ruleDocumentation()
          
             "( <feature:sec>, <vector:L> [, centered] )",
          
-            "Creates an extrusion of the planar feature sec. The direction and length of the extrusion is given by the vector L."
-            " If the keyword centered is given, the extrusion is centered around the base feature."
+            _("Creates an extrusion of the planar feature sec. The direction and length of the extrusion is given by the vector L."
+            " If the keyword centered is given, the extrusion is centered around the base feature.")
         )
     };
 }

@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -97,7 +98,7 @@ void BooleanUnion::build()
                 throw CADException
                 (
                     shared_from_this(),
-                    "could not perform fuse operation."
+                    _("could not perform fuse operation.")
                 );
             }
             setShape(fuser.Shape());
@@ -131,7 +132,7 @@ void BooleanUnion::build()
                     throw CADException
                     (
                         shared_from_this(),
-                        "could not perform merge operation."
+                        _("could not perform merge operation.")
                     );
                 }                
                 res=fuser.Shape();
@@ -141,7 +142,7 @@ void BooleanUnion::build()
     } 
     else
     {
-        throw CADException(shared_from_this(), "no valid base feature for fuse operation provided.");
+        throw CADException(shared_from_this(), _("no valid base feature for fuse operation provided."));
     }
 }
 
@@ -187,8 +188,8 @@ FeatureCmdInfoList BooleanUnion::ruleDocumentation()
             "MergeSolids",
          
             "( <feature> )",
-         
-            "Creates a boolean union of all (possibly intersecting) volumes of the given feature."
+
+          _("Creates a boolean union of all (possibly intersecting) volumes of the given feature.")
         )
   };
 }

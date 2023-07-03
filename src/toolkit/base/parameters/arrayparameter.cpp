@@ -1,5 +1,5 @@
 #include "arrayparameter.h"
-
+#include "base/translations.h"
 
 
 namespace insight
@@ -222,7 +222,7 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
     insight::Warning(
           boost::str(
             boost::format(
-             "No xml node found with type '%s' and name '%s', default value '%s' is used."
+                _("No xml node found with type '%s' and name '%s', default value '%s' is used.")
              ) % type() % name % plainTextRepresentation()
            )
         );
@@ -256,7 +256,7 @@ void ArrayParameter::reset(const Parameter& p)
       value_.push_back( ParameterPtr(v->clone()) );
   }
   else
-    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+    throw insight::Exception(_("Tried to set a %s from a different type (%s)!"), type().c_str(), p.type().c_str());
 }
 
 

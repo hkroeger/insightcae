@@ -23,6 +23,8 @@
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
 
 #include "Geom_TrimmedCurve.hxx"
 #include "GC_MakeSegment.hxx"
@@ -110,7 +112,7 @@ Handle_Geom_TrimmedCurve MakeArc_Projected ( gp_Pnt p1, gp_Vec n1, gp_Pnt p2, do
 
     if (!ipts.IsDone())
     {
-        throw insight::Exception("Discretization of arc failed!");
+        throw insight::Exception(_("Discretization of arc failed!"));
     }
 
     TColgp_Array1OfPnt pts ( 1, ipts.NbPoints() );
@@ -145,41 +147,41 @@ void CoilPath::build()
     // some sanity checks
     double l=l_->value();
     if ( l<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative coil length (L=%g) is invalid!" ) %l ) );
+            throw insight::Exception ( str ( format ( _("Negative coil length (L=%g) is invalid!") ) %l ) );
     }
     
     double dcore=dcore_->value();
     if ( dcore<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative coil core width (dcore=%g) is invalid!" ) %dcore ) );
+            throw insight::Exception ( str ( format ( _("Negative coil core width (dcore=%g) is invalid!") ) %dcore ) );
     }
     
     double d=d_->value();
     if ( d<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative conductor distance (d=%g) is invalid!" ) %d ) );
+            throw insight::Exception ( str ( format ( _("Negative conductor distance (d=%g) is invalid!") ) %d ) );
     }
     
     double nrd=n_->value();
     if ( fabs ( nrd-round ( nrd ) ) > 0 ) {
-        throw insight::Exception ( str ( format ( "number of turn has to be integer! (n=%g)" ) %nrd ) );
+            throw insight::Exception ( str ( format ( _("number of turn has to be integer! (n=%g)") ) %nrd ) );
     }
     int nr=int ( nrd );
     
     double R=R_->value();
     if ( R<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative yoke radius radius (R=%g) is invalid!" ) %R ) );
+            throw insight::Exception ( str ( format ( _("Negative yoke radius radius (R=%g) is invalid!") ) %R ) );
     }
     
     double rmin=rmin_->value();
     if ( rmin<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative coil bending radius (rmin=%g) is invalid!" ) %rmin ) );
+            throw insight::Exception ( str ( format ( _("Negative coil bending radius (rmin=%g) is invalid!") ) %rmin ) );
     }
     if ( (dcore - 2*rmin)<0 ) {
-        throw insight::Exception ( str ( format ( "Core width must be larger than 2x coil bending radius (dcore=%g, rmin=%g)!" ) %dcore % rmin ) );
+            throw insight::Exception ( str ( format ( _("Core width must be larger than 2x coil bending radius (dcore=%g, rmin=%g)!") ) %dcore % rmin ) );
     }
         
     double nld=nl_->value();
     if ( fabs ( nld-round ( nld ) ) > 0 ) {
-        throw insight::Exception ( str ( format ( "number of layers has to be integer! (n=%g)" ) %nld ) );
+            throw insight::Exception ( str ( format ( _("number of layers has to be integer! (n=%g)") ) %nld ) );
     }
     int nl=int ( nld );
     
@@ -187,7 +189,7 @@ void CoilPath::build()
     if (nl>1)
     {
         if ( !dr_ ) {
-            throw insight::Exception ( str ( format ( "Multiple layers were requested (nl=%d) but radial spacing is undefined!" ) %nl ) );
+                throw insight::Exception ( str ( format ( _("Multiple layers were requested (nl=%d) but radial spacing is undefined!") ) %nl ) );
         }       
         else
         {
@@ -302,8 +304,8 @@ FeatureCmdInfoList CoilPath::ruleDocumentation()
          
             "( <scalar:l>, <scalar:dcore>, <scalar:nr>, <scalar:d>, <scalar:R>, <scalar:rmin>, <scalar:nl>, <scalar:dr> )",
          
-            "Creates a wire which represents the path of a coil in an electric motor. The straight part of the windings has length l, the core width is dcore, the number of turns nr and the wire distance (approx. equal to wire diameter) is d. The coil is wound on a yoke of radius R. The smallest bending radius is rmin. Multiple radial layers are activated by giving a value for nl. Radial spacing between layers is then dr.\n\n"
-            "The motor axis is along EZ while the radial direction is EX."
+            _("Creates a wire which represents the path of a coil in an electric motor. The straight part of the windings has length l, the core width is dcore, the number of turns nr and the wire distance (approx. equal to wire diameter) is d. The coil is wound on a yoke of radius R. The smallest bending radius is rmin. Multiple radial layers are activated by giving a value for nl. Radial spacing between layers is then dr.\n\n"
+              "The motor axis is along EZ while the radial direction is EX.")
         )
     };
 }

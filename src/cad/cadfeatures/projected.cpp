@@ -20,6 +20,9 @@
 #include "projected.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -124,7 +127,7 @@ FeatureCmdInfoList Projected::ruleDocumentation()
         (
             "Projected",
             "( <feature:base>, <feature:target>, <vector:dir> )",
-            "Projects the feature base onto the feature target. The direction has to be prescribed by vector dir."
+          _("Projects the feature base onto the feature target. The direction has to be prescribed by vector dir.")
         )
     };
 }

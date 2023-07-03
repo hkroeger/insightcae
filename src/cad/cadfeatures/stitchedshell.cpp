@@ -22,6 +22,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -101,7 +102,7 @@ FeatureCmdInfoList StitchedShell::ruleDocumentation()
 
             "( <faceSelection> [ <scalar:tol> | 0.001 ] )",
 
-            "Create stitched shell from selected faces."
+          _("Create stitched shell from selected faces.")
         )
     };
 }

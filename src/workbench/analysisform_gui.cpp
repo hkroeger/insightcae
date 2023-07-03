@@ -26,6 +26,7 @@
 
 #include "base/remotelocation.h"
 #include "base/remoteexecution.h"
+#include "base/translations.h"
 #include "openfoam/ofes.h"
 #include "base/mountremote.h"
 
@@ -38,8 +39,8 @@ void AnalysisForm::updateSaveMenuLabel()
 {
   if (act_save_)
   {
-    QString packed = pack_parameterset_ ? " (packed)" : "";
-    act_save_->setText("&Save parameter set"+packed);
+        QString packed = pack_parameterset_ ? (QString(" ")+_("(packed)")) : "";
+      act_save_->setText(_("&Save parameter set")+packed);
   }
   if (act_pack_)
   {
@@ -74,8 +75,10 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
   if (resultsViewer_->hasResults())
   {
     QMessageBox msgBox;
-    msgBox.setText("There is currently a result set in memory!");
-    msgBox.setInformativeText("If you continue, the results will be deleted and the execution directory on disk will be removed (only if it was created). Continue?");
+    msgBox.setText(_("There is currently a result set in memory!"));
+    msgBox.setInformativeText(
+        _("If you continue, the results will be deleted and "
+          "the execution directory on disk will be removed (only if it was created). Continue?"));
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
     msgBox.setDefaultButton(QMessageBox::Cancel);
 
@@ -100,7 +103,7 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
 void AnalysisForm::onRunAnalysis()
 {
   if (currentWorkbenchAction_)
-    throw insight::Exception("Internal error: there is an action running currently!");
+    throw insight::Exception(_("Internal error: there is an action running currently!"));
 
   if (!checkAnalysisExecutionPreconditions())
     return;
@@ -121,7 +124,7 @@ void AnalysisForm::onRunAnalysis()
 void AnalysisForm::onKillAnalysis()
 {
   if (!currentWorkbenchAction_)
-    throw insight::Exception("Internal error: there is no action running currently!");
+    throw insight::Exception(_("Internal error: there is no action running currently!"));
 
   currentWorkbenchAction_->onCancel();
 }
@@ -139,7 +142,9 @@ void AnalysisForm::onResultReady(insight::ResultSetPtr results)
   ui->tabWidget->setCurrentWidget(ui->outputTab);
 
 
-  QMessageBox::information(this, "Finished!", "The analysis has finished");
+  QMessageBox::information(
+      this, _("Finished!"),
+      _("The analysis has finished") );
 
 }
 
@@ -155,7 +160,9 @@ void AnalysisForm::onAnalysisError(std::__exception_ptr::exception_ptr e)
 void AnalysisForm::onAnalysisCancelled()
 {
   currentWorkbenchAction_.reset();
-  QMessageBox::information(this, "Stopped!", "The analysis has been interrupted upon user request!");
+  QMessageBox::information(
+      this, _("Stopped!"),
+      _("The analysis has been interrupted upon user request!"));
 }
 
 
@@ -312,9 +319,8 @@ void AnalysisForm::onShell()
            )
       {
         QMessageBox::critical(
-              this,
-              "Failed to start",
-              "Failed to start remote shell in directoy "+locDir
+                    this, _("Failed to start"),
+                    QString(_("Failed to start remote shell in directory %1")).arg(locDir)
               );
       }
     }
@@ -326,10 +332,9 @@ void AnalysisForm::onShell()
     if (!QProcess::startDetached("mate-terminal", args, locDir ))
     {
       QMessageBox::critical(
-            this,
-            "Failed to start",
-            "Failed to start mate-terminal in directoy "+locDir
-            );
+          this, _("Failed to start"),
+          QString(_("Failed to start mate-terminal in directory %1")).arg(locDir)
+          );
     }
   }
 }

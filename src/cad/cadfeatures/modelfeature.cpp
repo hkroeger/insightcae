@@ -25,6 +25,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
+#include "base/translations.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -53,7 +55,7 @@ void ModelFeature::copyModelDatums()
   for (decltype(scalars)::value_type const& v: scalars)
   {
     if (refvalues_.find(v.first)!=refvalues_.end())
-      throw insight::Exception("datum value "+v.first+" already present!");
+          throw insight::Exception(_("datum value %s already present!"), v.first.c_str());
     refvalues_[v.first]=v.second->value();
   }
 
@@ -61,7 +63,7 @@ void ModelFeature::copyModelDatums()
   for (decltype(points)::value_type const& p: points)
   {
     if (refpoints_.find(p.first)!=refpoints_.end())
-      throw insight::Exception("datum point "+p.first+" already present!");
+          throw insight::Exception(_("datum point %s already present!"), p.first.c_str());
     refpoints_[p.first]=p.second->value();
   }
 
@@ -69,7 +71,7 @@ void ModelFeature::copyModelDatums()
   for (decltype(directions)::value_type const& p: directions)
   {
     if (refvectors_.find(p.first)!=refvectors_.end())
-      throw insight::Exception("datum direction "+p.first+" already present!");
+          throw insight::Exception(_("datum direction %s already present!"), p.first.c_str());
     refvectors_[p.first]=p.second->value();
   }
 
@@ -77,7 +79,7 @@ void ModelFeature::copyModelDatums()
   for (decltype(datums)::value_type const& d: datums)
   {
     if (providedDatums_.find(d.first)!=providedDatums_.end())
-      throw insight::Exception("datum "+d.first+" already present!");
+          throw insight::Exception(_("datum %s already present!"), d.first.c_str());
 
     providedDatums_[d.first]=d.second;
   }
@@ -162,7 +164,7 @@ ModelFeature::ModelFeature(ModelPtr model)
 
 void ModelFeature::build()
 {
-    insight::CurrentExceptionContext ex("building model "+featureSymbolName());
+    insight::CurrentExceptionContext ex(_("building model %s"), featureSymbolName().c_str());
     ExecTimer t("ModelFeature::build() ["+featureSymbolName()+"]");
 
     if (!cache.contains(hash()))
@@ -179,7 +181,7 @@ void ModelFeature::build()
             model_.reset(new Model(*mn, vars_));
           } else
           {
-            throw insight::Exception("ModelFeature: Model input unspecified!");
+            throw insight::Exception(_("ModelFeature: Model input unspecified!"));
           }
         }
 
@@ -231,7 +233,7 @@ std::string ModelFeature::modelname() const
     } 
     else
     {
-      throw insight::Exception("ModelFeature: Model input unspecified!");
+      throw insight::Exception(_("ModelFeature: Model input unspecified!"));
       return std::string();
     }
 }
@@ -249,7 +251,7 @@ boost::filesystem::path ModelFeature::modelfile() const
     } 
     else
     {
-      throw insight::Exception("ModelFeature: Model input unspecified!");
+      throw insight::Exception(_("ModelFeature: Model input unspecified!"));
       return boost::filesystem::path();
     }
 }
@@ -309,9 +311,9 @@ FeatureCmdInfoList ModelFeature::ruleDocumentation()
         (
             "loadmodel",
             "( <identifier:modelname> [, <identifier> = <feature>|<datum>|<vector>|<scalar> ] )",
-            "Imports a submodel. It is read from the file modelname.iscad."
+            _("Imports a submodel. It is read from the file modelname.iscad."
             " The file is searched first in the directory of the current model and then throughout the shared file search path."
-            " An arbitrary number of parameters are passed from the current model into the submodel."
+            " An arbitrary number of parameters are passed from the current model into the submodel.")
         )
     };
 }

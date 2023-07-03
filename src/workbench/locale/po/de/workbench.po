@@ -1,0 +1,543 @@
+# German translations for workbench package.
+# Copyright (C) 2023 hkroeger
+# This file is distributed under the same license as the workbench package.
+# Hannes Kröger <EMAIL@ADDRESS>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: workbench \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-07-03 11:55+0200\n"
+"PO-Revision-Date: 2023-07-02 22:36+0200\n"
+"Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
+"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: workbench.cpp:56 workbench.cpp:73
+msgid "Specifies input file."
+msgstr "Eingabedatei angeben"
+
+#: workbench.cpp:66
+msgid "Allowed options"
+msgstr "Zulässige Optionen"
+
+#: workbench.cpp:68
+msgid "produce help message"
+msgstr "Hilfe anzeigen"
+
+#: workbench.cpp:69
+msgid "print version and exit"
+msgstr "Version anzeigen und beenden"
+
+#: workbench.cpp:70
+msgid "put debug output to console instead of log window"
+msgstr "Debug-Ausgabe auf der Konsole anzeigen anstatt im Log-Fenster"
+
+#: workbench.cpp:71
+msgid "Additional libraries with analysis modules to load"
+msgstr "Weitere Bibliotheken mit Analysen, die geladen werden sollen"
+
+#: workbench.cpp:72
+msgid "open a new analysis of this on startup"
+msgstr "Nach dem Start eine neue Analyse des angegebenen Typs erzeugen"
+
+#: workbench.cpp:82
+msgid "Usage:"
+msgstr "Benutzung:"
+
+#: workbench.cpp:97
+msgid "Could not parse command line"
+msgstr "Konnte die Kommandozeile nicht auswerten"
+
+#: workbench.cpp:122
+msgid "Error: library file does not exist"
+msgstr "Fehler: die Bibliothek existiert nicht"
+
+#: workbench.cpp:141
+msgid "Wait"
+msgstr "Warten"
+
+#: workbench.cpp:154
+#, c-format
+msgid "Input file does not exist: %s"
+msgstr "Eingabedatei existiert nicht: %s"
+
+#: iqworkbenchremoteexecutionstate.cpp:19
+msgid "launch in local location"
+msgstr ""
+
+#: iqworkbenchremoteexecutionstate.cpp:23
+msgid "launch in remote workspace"
+msgstr ""
+
+#: iqworkbenchremoteexecutionstate.cpp:53
+#: iqworkbenchremoteexecutionstate.cpp:71
+msgid "(none)"
+msgstr ""
+
+#: iqworkbenchremoteexecutionstate.cpp:60
+msgid "temporary directory"
+msgstr ""
+
+#: iqworkbenchremoteexecutionstate.cpp:65
+msgid "directory %1"
+msgstr ""
+
+#: analysisform.cpp:90
+#, c-format
+msgid "creating analysis form for analysis %s"
+msgstr ""
+
+#: analysisform.cpp:110
+msgid "setup user interface"
+msgstr ""
+
+#: analysisform.cpp:117
+msgid "enable OpenFOAM controls"
+msgstr ""
+
+#: analysisform.cpp:147
+msgid "Save..."
+msgstr ""
+
+#: analysisform.cpp:148
+msgid "Email..."
+msgstr ""
+
+#: analysisform.cpp:149
+msgid "Clear"
+msgstr ""
+
+#: analysisform.cpp:150
+msgid "Auto Scroll"
+msgstr ""
+
+#: analysisform.cpp:173
+msgid "redirect console"
+msgstr ""
+
+#: analysisform.cpp:194
+msgid "create parameter set visualizer"
+msgstr ""
+
+#: analysisform.cpp:202
+msgid "Info: no visualizer available for analysis of type"
+msgstr ""
+
+#: analysisform.cpp:218
+msgid "create parameter set editor"
+msgstr ""
+
+#: analysisform.cpp:264
+msgid "create result viewer"
+msgstr ""
+
+#: analysisform.cpp:292
+msgid "create menus"
+msgstr ""
+
+#: analysisform.cpp:296
+msgid "&Parameters"
+msgstr ""
+
+#: analysisform.cpp:297
+msgid "&Actions"
+msgstr ""
+
+#: analysisform.cpp:298
+msgid "&Results"
+msgstr ""
+
+#: analysisform.cpp:299
+msgid "&Tools"
+msgstr ""
+
+#: analysisform.cpp:309
+msgid "&Save parameter set as..."
+msgstr ""
+
+#: analysisform.cpp:314
+msgid "&Pack external files into parameter file"
+msgstr ""
+
+#: analysisform.cpp:328
+msgid "&Merge other parameter set into current..."
+msgstr ""
+
+#: analysisform.cpp:332
+msgid "&Show in XML format"
+msgstr ""
+
+#: analysisform.cpp:338
+#, fuzzy
+msgid "&Run Analysis"
+msgstr "&Analyse"
+
+#: analysisform.cpp:341
+#, fuzzy
+msgid "&Stop Analysis"
+msgstr "&Analyse"
+
+#: analysisform.cpp:347
+msgid "&Load results..."
+msgstr ""
+
+#: analysisform.cpp:355
+msgid "&Save results as..."
+msgstr ""
+
+#: analysisform.cpp:360
+msgid "Create &report..."
+msgstr ""
+
+#: analysisform.cpp:369
+msgid "Load &filter..."
+msgstr ""
+
+#: analysisform.cpp:375
+msgid "Sa&ve filter..."
+msgstr ""
+
+#: analysisform.cpp:381
+msgid "Start ParaView in execution directory"
+msgstr ""
+
+#: analysisform.cpp:384
+msgid "Clean OpenFOAM case..."
+msgstr ""
+
+#: analysisform.cpp:402 analysisform.cpp:557
+msgid "Parameters unsaved"
+msgstr ""
+
+#: analysisform.cpp:403
+msgid ""
+"The current parameters have been modified without saving.\n"
+"Do you wish to save them before closing?"
+msgstr ""
+
+#: analysisform.cpp:493
+msgid "Save Parameters"
+msgstr ""
+
+#: analysisform.cpp:495 analysisform.cpp:575 workbenchwindow.cpp:242
+msgid "Insight parameter sets (*.ist)"
+msgstr ""
+
+#: analysisform.cpp:499
+msgid "Pack: embed externally referenced files into parameterset"
+msgstr ""
+
+#: analysisform.cpp:558
+msgid ""
+"The current parameter set is unsaved and will be overwritten.\n"
+"Do you wish to save them before continue?"
+msgstr ""
+
+#: analysisform.cpp:573 workbenchwindow.cpp:241
+msgid "Open Parameters"
+msgstr ""
+
+#: analysisform_gui.cpp:42
+msgid "(packed)"
+msgstr ""
+
+#: analysisform_gui.cpp:43
+msgid "&Save parameter set"
+msgstr ""
+
+#: analysisform_gui.cpp:78
+msgid "There is currently a result set in memory!"
+msgstr ""
+
+#: analysisform_gui.cpp:80
+msgid ""
+"If you continue, the results will be deleted and the execution directory on "
+"disk will be removed (only if it was created). Continue?"
+msgstr ""
+
+#: analysisform_gui.cpp:106 analysisform_remoteactions.cpp:152
+msgid "Internal error: there is an action running currently!"
+msgstr ""
+
+#: analysisform_gui.cpp:127
+msgid "Internal error: there is no action running currently!"
+msgstr ""
+
+#: analysisform_gui.cpp:146
+msgid "Finished!"
+msgstr ""
+
+#: analysisform_gui.cpp:147
+msgid "The analysis has finished"
+msgstr ""
+
+#: analysisform_gui.cpp:164
+msgid "Stopped!"
+msgstr ""
+
+#: analysisform_gui.cpp:165
+msgid "The analysis has been interrupted upon user request!"
+msgstr ""
+
+#: analysisform_gui.cpp:322 analysisform_gui.cpp:335
+msgid "Failed to start"
+msgstr ""
+
+#: analysisform_gui.cpp:323
+msgid "Failed to start remote shell in directory %1"
+msgstr ""
+
+#: analysisform_gui.cpp:336
+msgid "Failed to start mate-terminal in directory %1"
+msgstr ""
+
+#: analysisform_localactions.cpp:75
+msgid ""
+"There is already an OpenFOAM case present in the execution directory \"%1\"!"
+msgstr ""
+
+#: analysisform_localactions.cpp:78
+msgid ""
+"Depending on the state of the data, the behaviour will be as follows:"
+"<br><ul><li>the mesh exists (\"constant/polyMesh/\") and a time directory "
+"exists (e.g. \"0/\"): the solver will be restarted,</li><li>only the mesh "
+"exists (\"constant/polyMesh/\"): mesh creation will be skipped but the "
+"dictionaries will be recreated</li></ul><br>If you are unsure about the "
+"validity of the case data, please consider to click on \"Cancel\" and clean "
+"the case directory first (click on clean button on the right)."
+"<br><br>Continue?"
+msgstr ""
+
+#: analysisform_localactions.cpp:105
+msgid ""
+"You have selected to run the evaluation only but there is no valid OpenFOAM "
+"case present in the execution directory \"%1\"!"
+msgstr ""
+
+#: analysisform_localactions.cpp:108
+msgid ""
+"The subsequent step is likely to fail.<br>Are you sure, that you want to "
+"continue?"
+msgstr ""
+
+#: analysisform_remoteactions.cpp:85
+msgid "Not possible"
+msgstr ""
+
+#: analysisform_remoteactions.cpp:86
+msgid ""
+"There is currently a remote analysis running.\n"
+"Please terminate it first!"
+msgstr ""
+
+#: analysisform_remoteactions.cpp:119
+msgid "Transfer to remote location finished"
+msgstr ""
+
+#: analysisform_remoteactions.cpp:126
+msgid "Transfer to remote location started"
+msgstr ""
+
+#: analysisform_remoteactions.cpp:188
+msgid "Transfer from remote location to local directory finished"
+msgstr ""
+
+#: analysisform_remoteactions.cpp:194
+msgid "Transfer from remote location to local directory started"
+msgstr ""
+
+#: newanalysisdlg.cpp:44
+msgid "Create New Analysis"
+msgstr ""
+
+#: newanalysisdlg.cpp:97
+msgid "Available Analyses"
+msgstr ""
+
+#: newanalysisdlg.cpp:101
+msgid "Uncategorized"
+msgstr ""
+
+#: workbenchwindow.cpp:110
+msgid "&Analysis"
+msgstr "&Analyse"
+
+#: workbenchwindow.cpp:112
+msgid "New..."
+msgstr "Neu..."
+
+#: workbenchwindow.cpp:118
+msgid "Open..."
+msgstr "Öffnen..."
+
+#: workbenchwindow.cpp:136
+msgid "&Settings"
+msgstr ""
+
+#: workbenchwindow.cpp:138
+msgid "Remote servers..."
+msgstr ""
+
+#: workbenchwindow.cpp:148
+msgid "Configure paths to external programs..."
+msgstr ""
+
+#: workbenchwindow.cpp:159
+msgid "Manage report templates..."
+msgstr ""
+
+#: workbenchwindow.cpp:170
+msgid "&Help"
+msgstr ""
+
+#: workbenchwindow.cpp:172
+msgid "About..."
+msgstr ""
+
+#: workbenchwindow.cpp:179
+msgid "Workbench Information"
+msgstr ""
+
+#: workbenchwindow.cpp:180
+msgid ""
+"InsightCAE Analysis Workbench\n"
+"Version %1\n"
+msgstr ""
+
+#: workbenchwindow.cpp:191
+msgid "Check backend installation version..."
+msgstr ""
+
+#: workbenchwindow.cpp:230
+#, c-format
+msgid ""
+"Creation of an analysis of type \"%s\" failed.\n"
+"Reason: %s"
+msgstr ""
+
+#: workbenchwindow.cpp:313
+#, c-format
+msgid ""
+"Creation of an analysis of type \"%s\" failed.\n"
+"Please check, if the analysis type entry in the parameter file is correct.\n"
+"Error information: %s\n"
+msgstr ""
+
+#: qexecutionworkspacedialog.cpp:84
+msgid "Invalid Working Directory"
+msgstr ""
+
+#: qexecutionworkspacedialog.cpp:85
+msgid ""
+"The selected working directory \"%1\" is invalid.\n"
+"Please enter a valid working directory!"
+msgstr ""
+
+#: qexecutionworkspacedialog.cpp:130
+msgid "The remote directory is invalid!"
+msgstr ""
+
+#: qexecutionworkspacedialog.cpp:136
+msgid "Verified."
+msgstr ""
+
+#: qexecutionworkspacedialog.cpp:143
+msgid ""
+"The remote directory cannot be checked because the server is unreachable "
+"yet!\n"
+"Please make sure that it is existing!"
+msgstr ""
+
+#: qexecutionworkspacedialog.cpp:277
+msgid "Please select working directory"
+msgstr ""
+
+#: remoterun.cpp:67
+msgid "Launching remote analysis"
+msgstr ""
+
+#: remoterun.cpp:93
+msgid "Setting up the remote workspace..."
+msgstr ""
+
+#: remoterun.cpp:115
+msgid "Remote directory is invalid!"
+msgstr ""
+
+#: remoterun.cpp:118
+msgid "setting up the execution environment"
+msgstr ""
+
+#: remoterun.cpp:121
+msgid "Launching remote execution server..."
+msgstr ""
+
+#: remoterun.cpp:143 remoterun.cpp:194
+#, c-format
+msgid "Could not clean remote location! Reason: %s"
+msgstr ""
+
+#: remoterun.cpp:172
+msgid "launching the remote execution server"
+msgstr ""
+
+#: remoterun.cpp:175
+msgid "Establishing contact to remote execution server..."
+msgstr ""
+
+#: remoterun.cpp:217
+msgid "Could not contact analysis server after launching it!"
+msgstr ""
+
+#: remoterun.cpp:236
+msgid "Transmitting input data and starting analysis..."
+msgstr ""
+
+#: remoterun.cpp:278
+msgid "Monitoring remote run"
+msgstr ""
+
+#: remoterun.cpp:288
+msgid "Failed to start analysis on remote server!"
+msgstr ""
+
+#: remoterun.cpp:297
+msgid "No response after starting analysis on remote server!"
+msgstr ""
+
+#: remoterun.cpp:342
+msgid "timeout in quering status of analysis server"
+msgstr ""
+
+#: remoterun.cpp:369
+msgid "timeout while fetching results"
+msgstr ""
+
+#: remoterun.cpp:388
+msgid "stop server"
+msgstr ""
+
+#: remoterun.cpp:389
+msgid "was"
+msgstr ""
+
+#: remoterun.cpp:389
+msgid "was not"
+msgstr ""
+
+#: remoterun.cpp:390
+msgid "successful"
+msgstr ""
+
+#: remoterun.cpp:400
+msgid "timeout while stopping remote analysis server"
+msgstr ""
+
+#: remoterun.cpp:455
+msgid "remote run cancelled"
+msgstr ""

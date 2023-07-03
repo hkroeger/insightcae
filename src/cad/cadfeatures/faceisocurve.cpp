@@ -3,6 +3,7 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #include "Adaptor3d_IsoCurve.hxx"
 #include "GeomAPI_Interpolate.hxx"
@@ -61,7 +62,7 @@ void FaceIsoCurve::build()
 
   for (const auto i_f: faces_->data())
   {
-    cout<<"Generating iso curve on facce #"<<i_f<<endl;
+      insight::dbg()<<"Generating iso curve on facce #"<<i_f<<endl;
 
     TopoDS_Face aFace = faces_->model()->face(i_f);
 
@@ -127,7 +128,7 @@ FeatureCmdInfoList FaceIsoCurve::ruleDocumentation()
 
             "( <faceSelection>, u|v, <scalar:isovalue> )",
 
-            "Creates a curve in all selected faces along a constant parameter value."
+          _("Creates a curve in all selected faces along a constant parameter value.")
         )
     };
 }

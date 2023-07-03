@@ -60,6 +60,7 @@
 #include "transform.h"
 
 #include "base/units.h"
+#include "base/translations.h"
 
 #include "vtkSTLReader.h"
 #include "vtkPolyDataNormals.h"
@@ -145,7 +146,7 @@ void STL::build()
 
   if (!cache.contains(hash()))
   {
-    CurrentExceptionContext ex("reading STL geometry");
+    CurrentExceptionContext ex(_("reading STL geometry"));
 
     vtkSmartPointer<vtkPolyData> pd;
 
@@ -176,7 +177,7 @@ void STL::build()
     vtkPolyData *split_mesh = tri->GetOutput();
 
     {
-      CurrentExceptionContext ex("creating Poly_Triangulation");
+      CurrentExceptionContext ex(_("creating Poly_Triangulation"));
 
       aSTLMesh_ =
           new Poly_Triangulation
@@ -202,7 +203,7 @@ void STL::build()
       for (vtkIdType i = 0; i < split_mesh->GetNumberOfCells(); i++)
       {
         vtkCell *c = split_mesh->GetCell(i);
-        insight::assertion( c->GetNumberOfPoints()==3, "STL mesh cell needs to have exactly 3 corners");
+        insight::assertion( c->GetNumberOfPoints()==3, _("STL mesh cell needs to have exactly 3 corners"));
         aSTLMesh_->
 #if OCC_VERSION_MAJOR<7
             ChangeTriangles().ChangeValue(i+1)
@@ -232,7 +233,7 @@ void STL::build()
     }
     if (tr)
     {
-      CurrentExceptionContext ex("applying transformation");
+      CurrentExceptionContext ex(_("applying transformation"));
 
       for (int i=1; i<=aSTLMesh_->NbNodes();i++)
       {
@@ -250,7 +251,7 @@ void STL::build()
     // get bounding box
     Bnd_Box bb;
     {
-      CurrentExceptionContext ec("computing STL bounding box");
+      CurrentExceptionContext ec(_("computing STL bounding box"));
       for (int i=1; i<=aSTLMesh_->NbNodes();i++)
       {
         bb.Add(aSTLMesh_->
@@ -265,7 +266,7 @@ void STL::build()
 
     if (!bb.IsVoid())
     {
-      CurrentExceptionContext ex("creating TopoDS_Shape");
+      CurrentExceptionContext ex(_("creating TopoDS_Shape"));
 
       double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
       gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
@@ -281,7 +282,7 @@ void STL::build()
     }
     else
     {
-      CurrentExceptionContext ex("insert proxy geometry in place of empty STL");
+      CurrentExceptionContext ex(_("insert proxy geometry in place of empty STL"));
 
       // just insert some non-void geometry
       setShape(BRepPrimAPI_MakeSphere(1).Shape());
@@ -329,8 +330,8 @@ FeatureCmdInfoList STL::ruleDocumentation()
 
           "( <path:filename> [, <feature:other transform feature> ] )",
 
-          "Import a triangulated surface for display. The result can only be used for display, no operations can be performed on it."
-          "Transformations can be reused from other transform features. The name of another transformed feature can be provided optionally."
+          _("Import a triangulated surface for display. The result can only be used for display, no operations can be performed on it."
+            "Transformations can be reused from other transform features. The name of another transformed feature can be provided optionally.")
           )
         };
 }

@@ -10,6 +10,7 @@ if (MED_FOUND)
 endif()
 
 set(insightcad_SOURCES 
+  translations.cpp
   astbase.cpp
   cadpostprocaction.cpp
   dxfwriter.cpp 
@@ -81,6 +82,9 @@ target_link_libraries(insightcad
  ${DXFLIB_LIBRARY} 
  ${MED_LIBRARIES}
  )
+
+setup_gettext(insightcad insightcad ${insightcad_SOURCES})
+
 include(GenerateExportHeader)
 generate_export_header(insightcad)
 

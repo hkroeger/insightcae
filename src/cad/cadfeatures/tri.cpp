@@ -20,6 +20,9 @@
 #include "tri.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -123,7 +126,7 @@ FeatureCmdInfoList Tri::ruleDocumentation()
         (
             "Tri",
             "( <vector:p0>, <vector:L1>, <vector:L2> )",
-            "Creates a triangle face from point p0 and spanned by vectors L1 and L2."
+          _("Creates a triangle face from point p0 and spanned by vectors L1 and L2.")
         )
     };
 }

@@ -21,6 +21,7 @@
 #include "compound.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -176,8 +177,8 @@ FeatureCmdInfoList Compound::ruleDocumentation()
             "Compound",
          
             "( <feature:c0> [, <feature:c1>, ..., <feature:cn> ] )",
-         
-            "Creates a compound (assembly) of multiple features c0 to cn"
+
+            _("Creates a compound (assembly) of multiple features c0 to cn")
         )
     };
 }

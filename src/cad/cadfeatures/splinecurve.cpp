@@ -21,9 +21,11 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include <boost/phoenix/fusion.hpp>
+#include "base/translations.h"
 
 #include "TColgp_HArray1OfPnt.hxx"
 #include "GeomAPI_Interpolate.hxx"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -125,7 +127,7 @@ FeatureCmdInfoList SplineCurve::ruleDocumentation()
         (
             "SplineCurve",
             "( <vector:p0>, ..., <vector:pn> )",
-            "Creates a spline curve through all given points p0 to pn."
+          _("Creates a spline curve through all given points p0 to pn.")
         )
   };
 }

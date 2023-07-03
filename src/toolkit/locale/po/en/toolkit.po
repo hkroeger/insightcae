@@ -1,0 +1,30 @@
+# English translations for toolkit package.
+# Copyright (C) 2023 hkroeger
+# This file is distributed under the same license as the toolkit package.
+# Hannes Kröger <EMAIL@ADDRESS>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: toolkit \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-07-03 11:39+0200\n"
+"PO-Revision-Date: 2023-07-02 13:33+0200\n"
+"Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: base/parameters/arrayparameter.cpp:225
+#, c-format
+msgid ""
+"No xml node found with type '%s' and name '%s', default value '%s' is used."
+msgstr ""
+"No xml node found with type '%s' and name '%s', default value '%s' is used."
+
+#: base/parameters/arrayparameter.cpp:259
+#, c-format
+msgid "Tried to set a %s from a different type (%s)!"
+msgstr "Tried to set a %s from a different type (%s)!"

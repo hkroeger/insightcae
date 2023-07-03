@@ -21,6 +21,7 @@
 #include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #include "constrainedsketch.h"
 
@@ -110,7 +111,7 @@ void Line::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryP
              > ruleset.r_parameters >
              ')'
             )
-            [ std::cout<<"reading "<<typeName<<" "<<qi::_1<<std::endl,
+            [ //std::cout<<"reading "<<typeName<<" "<<qi::_1<<std::endl,
              qi::_val = phx::bind(
                      &Line::create<VectorPtr, VectorPtr, bool>, qi::_2, qi::_3, false),
              phx::bind(&ConstrainedSketchEntity::changeDefaultParameters, qi::_val, mdpf()),
@@ -233,8 +234,8 @@ FeatureCmdInfoList Line::ruleDocumentation()
             "Line",
          
             "( <vector:p0>, <vector:p1> )",
-         
-            "Creates a line between point p0 and p1."
+
+          _("Creates a line between point p0 and p1.")
         )
     };
 }

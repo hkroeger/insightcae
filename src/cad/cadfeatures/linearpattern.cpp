@@ -21,6 +21,9 @@
 #include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -171,9 +174,9 @@ FeatureCmdInfoList LinearPattern::ruleDocumentation()
          
             "( <feature:base>, <vector:delta_l>, <scalar:n> )",
          
-            "Copies the bease feature base into a linear pattern."
+            _("Copies the bease feature base into a linear pattern."
             " The copies of the base feature are shifted in increments of delta_l."
-            " The number of copies is n."
+            " The number of copies is n.")
         )
     };
 }

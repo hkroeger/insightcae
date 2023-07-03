@@ -20,6 +20,8 @@
 #include "sphere.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -102,7 +104,7 @@ FeatureCmdInfoList Sphere::ruleDocumentation()
         (
             "Sphere",
             "( <vector:p0>, <scalar:D> )",
-            "Creates a sphere around point p0 with diameter D."
+          _("Creates a sphere around point p0 with diameter D.")
         )
     };
 }

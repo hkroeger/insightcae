@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 #include "BOPAlgo_Builder.hxx"
 
@@ -117,8 +118,8 @@ FeatureCmdInfoList Partition::ruleDocumentation()
             "Partition",
          
             " (<base feature>, <tool feature>] )",
-         
-            "Partionates of the base feature by the tool feature."
+
+          _("Partionates of the base feature by the tool feature.")
         )
     };
 }

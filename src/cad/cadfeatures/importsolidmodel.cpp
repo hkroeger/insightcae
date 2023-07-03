@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -79,7 +80,7 @@ void Import::build()
       fp=sharedModelFilePath(filepath_.string());
       if (!boost::filesystem::exists(fp))
       {
-        throw insight::Exception("File not found: "+filepath_.string());
+          throw insight::Exception(_("File not found: %s"), filepath_.string().c_str());
       }
     }
     loadShapeFromFile(fp);
@@ -136,8 +137,8 @@ FeatureCmdInfoList Import::ruleDocumentation()
             "import",
          
             "( <path> )",
-         
-            "Imports a feature from a file. The format is recognized from the filename extension. Supported formats are IGS, STP, BREP."
+
+          _("Imports a feature from a file. The format is recognized from the filename extension. Supported formats are IGS, STP, BREP.")
         )
     };
 }

@@ -18,9 +18,11 @@
  */
 
 #include "nacafourdigit.h"
-
+#include "base/translations.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -130,7 +132,7 @@ void NacaFourDigit::build()
   {
       if (code_.size()!=4)
       {
-        throw insight::Exception("Invalid NACA code! (was "+code_+")");
+        throw insight::Exception(_("Invalid NACA code! (was %s)"), code_.c_str());
       }
       else
       {
@@ -229,7 +231,7 @@ void NacaFourDigit::build()
     
   BRepBuilderAPI_MakeFace fb(w.Wire(), true);
   if (!fb.IsDone())
-    throw insight::Exception("Failed to generate planar face!");
+      throw insight::Exception(_("Failed to generate planar face!"));
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
   providedSubshapes_["OuterWire"]=Feature::create(w.Wire());
@@ -296,9 +298,9 @@ FeatureCmdInfoList NacaFourDigit::ruleDocumentation()
         (
             "Naca4",
             "( <string:code>, <vector:p0>, <vector:L>, <vector:ez> )",
-            "Creates an airfoil section from the NACA four digit series. The four digit code is passed as a string."
+            _("Creates an airfoil section from the NACA four digit series. The four digit code is passed as a string."
             " The leading edge is positioned at point p0. Length and direction of the chord line are specified by vector L."
-            " The normal direction of the foil section, i.e. spanwise direction of the wing, is given by vector ez."
+            " The normal direction of the foil section, i.e. spanwise direction of the wing, is given by vector ez.")
         )
     };
 }

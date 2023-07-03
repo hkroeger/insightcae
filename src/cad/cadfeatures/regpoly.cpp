@@ -20,6 +20,9 @@
 #include "regpoly.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -125,12 +128,12 @@ FeatureCmdInfoList RegPoly::ruleDocumentation()
         (
             "RegPoly",
             "( <vector:p0>, <vector:n>, <scalar:ne>, <scalar:a> [, <vector:ez>] )",
-            "Creates a regular polygon."
+            _("Creates a regular polygon."
             " Center of the polygon is at point p0."
             " Normal vector is n."
             " The number of edges is ne."
             " Radius of the outer circle is a."
-            " The direction from p0 to the first edge center is ez."
+            " The direction from p0 to the first edge center is ez.")
         )
     };
 }

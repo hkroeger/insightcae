@@ -57,6 +57,7 @@
 
 #include "base/qt5_helper.h"
 #include "base/toolkitversion.h"
+#include "base/translations.h"
 
  
 
@@ -168,7 +169,10 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
 
 void IQISCADMainWindow::loadModel()
 {
-    QString fn=QFileDialog::getOpenFileName(this, "Select file", "", "ISCAD Model Files (*.iscad)");
+    QString fn=QFileDialog::getOpenFileName(
+          this, _("Select file"),
+          "",
+          _("ISCAD Model Files (*.iscad)"));
     if (fn!="")
     {
         insertModel(qPrintable(fn))->modelEdit()->unsetUnsavedState();
@@ -296,17 +300,17 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
     spl0->setStretchFactor(1, 0);
 
     progressbar_=new QProgressBar;
-    bgparsestopbtn_=new QPushButton("STOP");
+    bgparsestopbtn_=new QPushButton(_("STOP"));
     statusBar()->addPermanentWidget(progressbar_);
     statusBar()->addPermanentWidget(bgparsestopbtn_);
 
-    QMenu *fmenu = menuBar()->addMenu("&File");
-    QMenu *mmenu = menuBar()->addMenu("&Model");
-    QMenu *vmenu = menuBar()->addMenu("&View");
-    QMenu *emenu = menuBar()->addMenu("&Editor");
-    QMenu *msmenu = menuBar()->addMenu("M&easure");
-    QMenu *selmenu = menuBar()->addMenu("&Selection");
-    QMenu *helpmenu = menuBar()->addMenu("&Help");
+    QMenu *fmenu = menuBar()->addMenu(_("&File"));
+    QMenu *mmenu = menuBar()->addMenu(_("&Model"));
+    QMenu *vmenu = menuBar()->addMenu(_("&View"));
+    QMenu *emenu = menuBar()->addMenu(_("&Editor"));
+    QMenu *msmenu = menuBar()->addMenu(_("M&easure"));
+    QMenu *selmenu = menuBar()->addMenu(_("&Selection"));
+    QMenu *helpmenu = menuBar()->addMenu(_("&Help"));
 
     QAction* ab = new QAction("About...", this);
     helpmenu->addAction( ab );
@@ -315,78 +319,78 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
             {
               QMessageBox::information(
                     this,
-                    "ISCAD Information",
-                    "InsightCAE CAD Script Editor\n"
-                    "Version "+QString::fromStdString(insight::ToolkitVersion::current().toString())+"\n"
+                    _("ISCAD Information"),
+                    QString(_("InsightCAE CAD Script Editor\n"
+                      "Version %1\n")).arg(QString::fromStdString(insight::ToolkitVersion::current().toString()))
                     );
             }
     );
 
     QAction *act;
 
-    act=new QAction(("&New"), this);
+    act=new QAction(_("&New"), this);
     fmenu->addAction(act);
     connect(act, &QAction::triggered, this, &IQISCADMainWindow::onNewModel);
 
-    act=new QAction(("&Load"), this);
+    act=new QAction(_("&Load"), this);
     fmenu->addAction(act);
     connect(act, &QAction::triggered, this, &IQISCADMainWindow::loadModel);
 
-    act_[save] = new QAction(("&Save"), this);
+    act_[save] = new QAction(_("&Save"), this);
     act_[save]->setShortcut(Qt::ControlModifier + Qt::Key_S);
     fmenu->addAction(act_[save]);
 
-    act_[saveas] = new QAction(("&Save as..."), this);
+    act_[saveas] = new QAction(_("&Save as..."), this);
     fmenu->addAction(act_[saveas]);
 
     fmenu->addSeparator();
-    act =new QAction(("&Quit"), this);
+    act =new QAction(_("&Quit"), this);
     act->setShortcut(Qt::AltModifier + Qt::Key_F4);
     fmenu->addAction(act);
     connect(act, &QAction::triggered, this, &IQISCADMainWindow::close);
 
 
-    act_[rebuild] = new QAction(("&Rebuild model"), this);
+    act_[rebuild] = new QAction(_("&Rebuild model"), this);
     act_[rebuild]->setShortcut(Qt::ControlModifier + Qt::Key_Return);
     mmenu->addAction(act_[rebuild]);
 
-    act_[rebuild_UTC] = new QAction(("&Rebuild model up to cursor"), this);
+    act_[rebuild_UTC] = new QAction(_("&Rebuild model up to cursor"), this);
     act_[rebuild_UTC]->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Return);
     mmenu->addAction(act_[rebuild_UTC]);
 
     mmenu->addSeparator();
     
-    act_[insert_feat] = new QAction(("Insert &feature..."), this);
+    act_[insert_feat] = new QAction(_("Insert &feature..."), this);
     act_[insert_feat]->setShortcut(Qt::ControlModifier + Qt::Key_F);
     mmenu->addAction(act_[insert_feat]);
 
-    act_[insert_import] = new QAction(("Insert &imported STEP, IGES, BREP..."), this);
+    act_[insert_import] = new QAction(_("Insert &imported STEP, IGES, BREP..."), this);
     act_[insert_import]->setShortcut(Qt::ControlModifier + Qt::Key_M);
     mmenu->addAction(act_[insert_import]);
 
-    act_[insert_loadmodel] = new QAction(("Insert &model from library..."), this);
+    act_[insert_loadmodel] = new QAction(_("Insert &model from library..."), this);
     act_[insert_loadmodel]->setShortcut(Qt::ControlModifier + Qt::Key_L);
     mmenu->addAction(act_[insert_loadmodel]);
 
-    act_[insert_component_name] = new QAction(("Inspect model &symbols..."), this);
+    act_[insert_component_name] = new QAction(_("Inspect model &symbols..."), this);
     act_[insert_component_name]->setShortcut(Qt::ControlModifier + Qt::Key_I);
     mmenu->addAction(act_[insert_component_name]);
 
     
-    act_[insert_section_comment] = new QAction(("Insert comment: new section..."), this);
+    act_[insert_section_comment] = new QAction(_("Insert comment: new section..."), this);
     act_[insert_section_comment]->setShortcut(Qt::AltModifier + Qt::Key_S);
     mmenu->addAction(act_[insert_section_comment]);
 
     mmenu->addSeparator();
 
-    act_[clear_cache] = new QAction(("C&lear cache"), this);
+    act_[clear_cache] = new QAction(_("C&lear cache"), this);
     mmenu->addAction(act_[clear_cache]);
 
-    act_[fit_all] = new QAction(("Fit &all"), this);
+    act_[fit_all] = new QAction(_("Fit &all"), this);
     act_[fit_all]->setShortcut(Qt::ControlModifier + Qt::Key_A);
     vmenu->addAction(act_[fit_all]);
 
-    QMenu* directionmenu=vmenu->addMenu("Standard views");
+    QMenu* directionmenu=vmenu->addMenu(_("Standard views"));
     directionmenu->addAction( act_[view_plusx] = new QAction(("+X"), this) );
     act_[view_plusx]->setShortcut(Qt::ControlModifier + Qt::Key_X);
     directionmenu->addAction( act_[view_minusx] = new QAction(("-X"), this) );
@@ -402,52 +406,52 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
     directionmenu->addAction( act_[view_minusz] = new QAction(("-Z"), this) );
     act_[view_minusz]->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Z);
 
-    act_[toggle_grid] = new QAction(("Toggle &grid"), this);
+    act_[toggle_grid] = new QAction(_("Toggle &grid"), this);
     vmenu->addAction(act_[toggle_grid]);
     
-    act_[toggle_clipxy] = new QAction(("Toggle clip plane (&XY)"), this);
+    act_[toggle_clipxy] = new QAction(_("Toggle clip plane (&XY)"), this);
     vmenu->addAction(act_[toggle_clipxy]);
-    act_[toggle_clipyz] = new QAction(("Toggle clip plane (&YZ)"), this);
+    act_[toggle_clipyz] = new QAction(_("Toggle clip plane (&YZ)"), this);
     vmenu->addAction(act_[toggle_clipyz]);
-    act_[toggle_clipxz] = new QAction(("Toggle clip plane (X&Z)"), this);
+    act_[toggle_clipxz] = new QAction(_("Toggle clip plane (X&Z)"), this);
     vmenu->addAction(act_[toggle_clipxz]);
     
-    clipplanemenu_=vmenu->addMenu("Clip at datum plane");
+    clipplanemenu_=vmenu->addMenu(_("Clip at datum plane"));
     clipplanemenu_->setDisabled(true);
     
-    act_[background_color] = new QAction(("Change background color..."), this);
+    act_[background_color] = new QAction(_("Change background color..."), this);
     vmenu->addAction(act_[background_color]);
-    act_[display_all_shaded] = new QAction(("Display all &shaded"), this);
+    act_[display_all_shaded] = new QAction(_("Display all &shaded"), this);
     vmenu->addAction(act_[display_all_shaded]);
-    act_[display_all_wire] = new QAction(("Display all &wireframe"), this);
+    act_[display_all_wire] = new QAction(_("Display all &wireframe"), this);
     vmenu->addAction(act_[display_all_wire]);
-    act_[reset_shading] = new QAction(("&Reset shading and visibility"), this);
+    act_[reset_shading] = new QAction(_("&Reset shading and visibility"), this);
 //     act->setShortcut(Qt::ControlModifier + Qt::Key_A);
     vmenu->addAction(act_[reset_shading]);
 
 
-    act_[measure_distance]=new QAction("Distance between points", this);
+    act_[measure_distance]=new QAction(_("Distance between points"), this);
     act_[measure_distance]->setShortcut(Qt::ControlModifier + Qt::Key_D);
     msmenu->addAction(act_[measure_distance]);
 
-    act_[sel_pts]=new QAction("Select vertices", this);
+    act_[sel_pts]=new QAction(_("Select vertices"), this);
     selmenu->addAction(act_[sel_pts]);
 
-    act_[sel_edgs]=new QAction("Select edges", this);
+    act_[sel_edgs]=new QAction(_("Select edges"), this);
     selmenu->addAction(act_[sel_edgs]);
 
-    act_[sel_faces]=new QAction("Select faces", this);
+    act_[sel_faces]=new QAction(_("Select faces"), this);
     selmenu->addAction(act_[sel_faces]);
 
-    act_[sel_solids]=new QAction("Select solids", this);
+    act_[sel_solids]=new QAction(_("Select solids"), this);
     selmenu->addAction(act_[sel_solids]);
 
 
-    act_[editor_font_larger]=new QAction("&Increase font size", this);
+    act_[editor_font_larger]=new QAction(_("&Increase font size"), this);
     act_[editor_font_larger]->setShortcut(Qt::ControlModifier + Qt::Key_Plus);
     emenu->addAction(act_[editor_font_larger]);
 
-    act_[editor_font_smaller]=new QAction("&Decrease font size", this);
+    act_[editor_font_smaller]=new QAction(_("&Decrease font size"), this);
     act_[editor_font_smaller]->setShortcut(Qt::ControlModifier + Qt::Key_Minus);
     emenu->addAction(act_[editor_font_smaller]);
 
@@ -499,7 +503,7 @@ IQISCADModelWindow* IQISCADMainWindow::insertEmptyModel(bool bgparsing)
 {
     auto *me = new IQISCADModelWindow();
 
-    int idx = modelTabs_->addTab(me, "(unnamed)");
+  int idx = modelTabs_->addTab(me, QString("(")+_("unnamed")+")");
     modelTabs_->setCurrentIndex(idx);
     
     connect(me->modelEdit(), &IQISCADModelScriptEdit::displayStatusMessage,
@@ -541,10 +545,10 @@ void IQISCADMainWindow::onCreateNewModel(const QString& directory)
 {
     QString fn=QFileDialog::getSaveFileName
     (
-        this, 
-        "Select file", 
-        directory, 
-        "ISCAD Model Files (*.iscad)"
+        this,
+        _("Select file"),
+        directory,
+        _("ISCAD Model Files (*.iscad)")
     );
     if (fn!="")
     {
@@ -566,7 +570,7 @@ void IQISCADMainWindow::onDeleteModel(const QString& filepath)
         (
             this,
             "ISCAD",
-            QString("Really delete file ")+fi.baseName()+"?\n",
+            QString(_("Really delete file %1?\n")).arg(fi.baseName()),
             QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
             QMessageBox::No
         );
@@ -586,7 +590,7 @@ void IQISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
     
     QFileInfo fi=fileModel_->fileInfo(fileTree_->currentIndex());
     
-    a=new QAction("Create new file...", &myMenu);
+    a=new QAction(_("Create new file..."), &myMenu);
 
     QString dir;
     if (fi.isDir())
@@ -605,7 +609,7 @@ void IQISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
 
     if (!fi.isDir())
     {
-        a=new QAction("Delete file "+fi.baseName(), &myMenu);
+        a=new QAction(QString(_("Delete file %1")).arg(fi.baseName()), &myMenu);
         mapper = new QSignalMapper(a) ;
         connect(a, &QAction::triggered,
                 [this, fi]()

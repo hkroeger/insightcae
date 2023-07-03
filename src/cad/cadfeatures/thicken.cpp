@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 // #include "BRepOffsetAPI_MakeThickSolid.hxx"
 #include "BRepOffset_MakeOffset.hxx"
@@ -148,7 +149,7 @@ FeatureCmdInfoList Thicken::ruleDocumentation()
         (
             "Thicken",
             "( <feature:base>, <scalar:t> )",
-            "Creates a solid from a shell feature by adding thickness t."
+          _("Creates a solid from a shell feature by adding thickness t.")
         )
     };
 }

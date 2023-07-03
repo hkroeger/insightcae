@@ -22,6 +22,9 @@
 #include "BRepOffsetAPI_NormalProjection.hxx"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -58,7 +61,7 @@ TopoDS_Shape makeOutlineProjection
 )
 {
   if (!target.providesPlanarReference())
-    throw insight::Exception("Error: Wrong parameter. ProjectedOutline needs a planar reference!");
+      throw insight::Exception(_("Error: Wrong parameter. ProjectedOutline needs a planar reference!"));
   
   gp_Ax3 pln=target;
   
@@ -96,10 +99,10 @@ TopoDS_Shape makeOutlineProjectionEdges
 )
 {
   if (!target.providesPlanarReference())
-    throw insight::Exception("Error: Wrong parameter. ProjectedOutline needs a planar reference!");
+      throw insight::Exception(_("Error: Wrong parameter. ProjectedOutline needs a planar reference!"));
   
   gp_Ax3 pln=target;
-  cout<<"pl"<<endl;
+
   TopoDS_Face face=BRepBuilderAPI_MakeFace(gp_Pln(pln));
   gp_Trsf trsf;
   trsf.SetTransformation(

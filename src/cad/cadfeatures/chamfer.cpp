@@ -19,7 +19,11 @@
 
 #include "chamfer.h"
 #include "base/boost_include.h"
+#include "base/translations.h"
+
 #include <boost/spirit/include/qi.hpp>
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -114,8 +118,8 @@ FeatureCmdInfoList Chamfer::ruleDocumentation()
             "Chamfer",
          
             "( <edgeSelection:edges>, <scalar:l> )",
-         
-            "Creates chamfers at selected edges of a solid. All edges in the selection set edges are chamfered with width l."
+
+            _("Creates chamfers at selected edges of a solid. All edges in the selection set edges are chamfered with width l.")
         )
     };
 }

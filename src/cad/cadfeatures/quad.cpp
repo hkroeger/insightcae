@@ -22,6 +22,7 @@
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
+#include "base/translations.h"
 
 #include <boost/spirit/include/qi.hpp>
 
@@ -97,9 +98,11 @@ void Quad::build()
         refvectors_["W"]=W_->value();
         
         if (L<1e-10)
-            throw insight::Exception(str(format("Invalid parameter: Length of quad needs to be larger than 0 (is %g)!")%L));
+            throw insight::Exception(str(format(
+                _("Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"))%L));
         if (W<1e-10)
-            throw insight::Exception(str(format("Invalid parameter: Width of quad needs to be larger than 0 (is %g)!")%W));
+            throw insight::Exception(str(format(
+                _("Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"))%W));
         
         gp_Pnt
             p1 ( to_Pnt ( p0_->value() ) );
@@ -144,9 +147,11 @@ void Quad::build()
             refvalues_["t"]=t;
             
             if (t<1e-10)
-                throw insight::Exception(str(format("Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!")%t));
+                throw insight::Exception(str(format(
+                    _("Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"))%t));
             if (t>maxt)
-                throw insight::Exception(str(format("Invalid parameter: Wall thickness of quad is larger than half width or half height (%g > %g)!")%t%maxt));
+                throw insight::Exception(str(format(
+                    _("Invalid parameter: Wall thickness of quad is larger than half width or half height (%g > %g)!"))%t%maxt));
             
             gp_Pnt
                 p1 ( to_Pnt ( p0_->value() ) );
@@ -236,8 +241,8 @@ FeatureCmdInfoList Quad::ruleDocumentation()
         (
             "Quad",
             "( <vector:p0>, <vector:Lx>, <vector:Ly> [, <thickness>] [, centered | (center [x][y]) ] )",
-            "Creates a quad face. The quad is located at point p0 and direction and edge lengths are defined by the vector Lx, Ly.\n"
-            "Optionally, the edges are centered around p0. Either all directions (option centered) or only selected directions (option center [x][y] where x,y is associated with L1, L2 respectively)."
+            _("Creates a quad face. The quad is located at point p0 and direction and edge lengths are defined by the vector Lx, Ly.\n"
+              "Optionally, the edges are centered around p0. Either all directions (option centered) or only selected directions (option center [x][y] where x,y is associated with L1, L2 respectively).")
         )
     };
 }

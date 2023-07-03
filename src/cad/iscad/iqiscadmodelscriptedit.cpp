@@ -47,6 +47,7 @@
 
 #include "base/tools.h"
 //#include "base/qt5_helper.h"
+#include "base/translations.h"
 
 #include "cadfeatures/modelfeature.h"
 #include "sketch.h"
@@ -158,7 +159,10 @@ bool IQISCADModelScriptEdit::saveModel()
 
 bool IQISCADModelScriptEdit::saveModelAs()
 {
-    QString fn=QFileDialog::getSaveFileName(this, "Select location", "", "ISCAD Model Files (*.iscad)");
+    QString fn=QFileDialog::getSaveFileName(
+        this, _("Select location"),
+        "",
+        _("ISCAD Model Files (*.iscad)") );
     if (fn!="")
     {
         setFilename(qPrintable(fn));
@@ -203,7 +207,10 @@ void IQISCADModelScriptEdit::loadFile(const boost::filesystem::path& file)
 {
     if (!boost::filesystem::exists(file))
     {
-        QMessageBox::critical(this, "File error", ("The file "+file.string()+" does not exists!").c_str());
+        QMessageBox::critical(
+            this, _("File error"),
+            QString(_("The file %1 does not exists!")).arg(QString::fromStdString(file.string()))
+            );
         return;
     }
 
@@ -311,7 +318,7 @@ void IQISCADModelScriptEdit::doBgParse()
     {
         if (!bgparsethread_.isRunning())
         {
-            emit displayStatusMessage("Background model parsing in progress...");
+            emit displayStatusMessage(_("Background model parsing in progress..."));
             bgparsethread_.launch(
                         toPlainText().toStdString(),
                         IQISCADScriptModelGenerator::Parse
@@ -503,7 +510,11 @@ void IQISCADModelScriptEdit::insertFeatureAtCursor()
 
 void IQISCADModelScriptEdit::insertImportedModelAtCursor()
 {
-  auto fn = QFileDialog::getOpenFileName(this, "Please select file", "", "STEP model (*.step *.stp);;IGES model (*.igs *.iges);;BREP model (*.brep)");
+  auto fn = QFileDialog::getOpenFileName(
+        this, _("Please select file"), "",
+        QString("%1 (*.step *.stp);;%2 (*.igs *.iges);;%3 (*.brep)")
+            .arg(_("STEP model")).arg(_("IGES model")).arg(_("BREP model"))
+        );
   if (!fn.isEmpty())
   {
     textCursor().insertText(QString("import(\"%1\")").arg(fn));
@@ -571,7 +582,8 @@ void IQISCADModelScriptEdit::rebuildModel(bool upToCursor)
     }
     else
     {
-        emit displayStatusMessage("Background model parsing in progress, rebuild is currently disabled!...");
+        emit displayStatusMessage(
+            _("Background model parsing in progress, rebuild is currently disabled!"));
     }
 }
 
@@ -609,7 +621,7 @@ void IQISCADModelScriptEdit::showEditorContextMenu(const QPoint& pt)
             std::function<void()> slotFunction;
             if (insight::cad::Sketch* sk=dynamic_cast<insight::cad::Sketch*>(fpp))
             {
-                act=new QAction("Edit Sketch...", this);
+                act=new QAction(_("Edit Sketch..."), this);
                 slotFunction=[this,sk]()
                 {
                   this->editSketch(reinterpret_cast<QObject*>(sk));
@@ -620,7 +632,7 @@ void IQISCADModelScriptEdit::showEditorContextMenu(const QPoint& pt)
             }
             else if (insight::cad::ModelFeature* mo=dynamic_cast<insight::cad::ModelFeature*>(fpp))
             {
-                act=new QAction("Edit Model...", this);
+                act=new QAction(_("Edit Model..."), this);
                 slotFunction=[this,mo]()
                 {
                   this->editSketch(reinterpret_cast<QObject*>(mo));
@@ -680,7 +692,7 @@ void IQISCADModelScriptEdit::onScriptError(long failpos, QString errorMsg, int r
 {
   if (failpos>=0)
     {
-      std::cout<<"moving cursor to "<<failpos<<" (l "<<range<<")"<<std::endl;
+      insight::dbg()<<"moving cursor to "<<failpos<<" (l "<<range<<")"<<std::endl;
       QTextCursor tmpCursor = textCursor();
       tmpCursor.setPosition(failpos);
       tmpCursor.setPosition(failpos+range, QTextCursor::KeepAnchor);
@@ -688,20 +700,20 @@ void IQISCADModelScriptEdit::onScriptError(long failpos, QString errorMsg, int r
     }
   else
     {
-      std::cout<<"no error location info"<<std::endl;
+      insight::dbg()<<"no error location info"<<std::endl;
     }
 
   if (bgparsethread_.finalTask()
           < IQISCADScriptModelGenerator::Rebuild)
     {
-      emit displayStatusMessage("Script error: "+errorMsg);
+      emit displayStatusMessage(QString(_("Script error"))+": "+errorMsg);
     }
   else
     {
       QMessageBox::critical
           (
             this,
-            "Script Error",
+          _("Script Error"),
             errorMsg
           );
     }

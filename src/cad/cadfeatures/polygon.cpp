@@ -1,6 +1,9 @@
 #include "polygon.h"
 
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace phx   = boost::phoenix;
 
@@ -96,7 +99,7 @@ FeatureCmdInfoList Polygon::ruleDocumentation()
         (
             "Polygon",
             "( <vertex list> )",
-            "Creates a polygon wire from a number of corners, connected by straight edges."
+            _("Creates a polygon wire from a number of corners, connected by straight edges.")
             )
     };
 }

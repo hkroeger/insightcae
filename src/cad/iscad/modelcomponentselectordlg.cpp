@@ -108,7 +108,7 @@ void addModelsteps
             curnode->setFont(1, f);
         }
         
-        std::cerr<<"adding "<<ms.first<<std::endl;
+        insight::dbg()<<"adding "<<ms.first<<std::endl;
         std::set<std::string> components;
         if ( insight::cad::ModelFeature* mf = dynamic_cast<insight::cad::ModelFeature*>(fp.get()) )
         {
@@ -126,7 +126,7 @@ ModelComponentSelectorDlg::ModelComponentSelectorDlg(const insight::cad::ModelPt
     
     for (const insight::cad::Model::ModelstepTableContents::value_type& ms: m->modelsteps())
     {
-        std::cerr<<"adding "<<ms.first<<std::endl;
+        insight::dbg()<<"adding "<<ms.first<<std::endl;
         QStringList sl; sl << ms.first.c_str() <<  ms.first.c_str();
         QTreeWidgetItem *curnode = new QTreeWidgetItem(ui->component_tree, sl);
         if (m->components().find(ms.first)!=m->components().end())

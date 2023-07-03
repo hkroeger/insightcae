@@ -3,6 +3,7 @@
 #include "analysisform.h"
 #include "ui_analysisform.h"
 
+#include "base/translations.h"
 
 
 
@@ -15,11 +16,11 @@ void IQWorkbenchRemoteExecutionState::toggleRemoteGUIElements(bool remoteEnabled
         if (remoteEnabled)
         {
             auto *m = new QMenu(af->ui->btnParaview);
-            auto *a = new QAction("launch in local location");
+            auto *a = new QAction(_("launch in local location"));
             m->addAction(a);
             connect(a, &QAction::triggered, af, &AnalysisForm::onStartPVLocal );
 
-            a=new QAction("launch in remote workspace");
+            a=new QAction(_("launch in remote workspace"));
             m->addAction(a);
             connect(a, &QAction::triggered, af, &AnalysisForm::onStartPVRemote );
 
@@ -49,24 +50,25 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
         ui->lblHostName->setText(
               QString::fromStdString( rlc_->serverLabel() ) );
       else
-        ui->lblHostName->setText("(none)");
+        ui->lblHostName->setText(_("(none)"));
 
       ui->lblRemoteDirectory->setEnabled(enabled);
       if (enabled)
       {
           if (rlc_->remoteDir().empty())
           {
-              ui->lblRemoteDirectory->setText("temporary directory");
+            ui->lblRemoteDirectory->setText(_("temporary directory"));
           }
           else
           {
-              ui->lblRemoteDirectory->setText( "directory "+
-                  QString::fromStdString( rlc_->remoteDir().string() ) );
+            ui->lblRemoteDirectory->setText(
+                QString(_("directory %1")).arg(
+                    QString::fromStdString( rlc_->remoteDir().string() ) ) );
           }
       }
       else
       {
-          ui->lblRemoteDirectory->setText("(none)");
+          ui->lblRemoteDirectory->setText(_("(none)"));
       }
 
       if (std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(rlc_->serverConfig()))

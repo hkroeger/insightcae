@@ -23,6 +23,7 @@
 #include "transform.h"
 
 #include "base/boost_include.h"
+#include "base/translations.h"
 #include <boost/spirit/include/qi.hpp>
 
 #include "cadfeatures/singleedgefeature.h"
@@ -111,7 +112,7 @@ void Bar::build()
         refpoints_["p1"]=p1;
 
         if (norm(vert_->value(),2)<1e-10)
-            throw insight::Exception("Bar: length of vertical direction is zero!");
+            throw insight::Exception(_("Bar: length of vertical direction is zero!"));
         arma::mat v=vert_->value() / norm(vert_->value(),2);
         /*
               if (!xsec_->isSingleFace() || xsec_->isSingleWire() || xsec_->isSingleEdge())
@@ -120,13 +121,13 @@ void Bar::build()
         arma::mat baraxis=p1-p0;
         double lba=norm(baraxis,2);
         if (lba<1e-10)
-            throw insight::Exception("Bar: invalid definition of bar end points!");
+            throw insight::Exception(_("Bar: invalid definition of bar end points!"));
         baraxis/=lba;
 
         p0 += -baraxis*(*ext0_);
         p1 +=  baraxis*(*ext1_);
         double L=norm(p1-p0, 2);
-        insight::assertion(L>1e-10, "the bar length must not be zero!");
+        insight::assertion(L>1e-10, _("the bar length must not be zero!"));
 
         refpoints_["start"]=p0;
         refpoints_["end"]=p1;
@@ -150,7 +151,7 @@ void Bar::build()
 
         double lex=norm(ex, 2);
         if (lex<1e-10)
-            throw insight::Exception("Bar: invalid definition of vertical direction!");
+            throw insight::Exception(_("Bar: invalid definition of vertical direction!"));
         ex/=lex;
 
         arma::mat ey=arma::cross(baraxis, ex);
@@ -463,14 +464,14 @@ FeatureCmdInfoList Bar::ruleDocumentation()
             "<vector:p1> [ext <scalar:ext1>] [vmiter <scalar:vmiter1>] [hmiter <scalar:hmiter1>],\n"
             "<feature:xsec>, <vector:up> )",
          
-            "This command creates a straight extruded volume from a planar section."
+            _("This command creates a straight extruded volume from a planar section."
             "\n"
             "The location of the bar is specified by its start point p0 and end point p1."
             " Also needed is a face feature xsec defining the cross section."
             " For orienting the cross section an upward direction up has to be given."
             "\n"
             "The end points can optionally be shifted along the bar axis by offsets ext0 and ext1."
-            " Furthermore, the bar ends can be mitered around the vertical axis (vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1)."
+              " Furthermore, the bar ends can be mitered around the vertical axis (vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1).")
         )
     };
 }

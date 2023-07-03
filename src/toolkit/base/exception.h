@@ -38,10 +38,13 @@ namespace insight {
 class CurrentExceptionContext
         : public std::string
 {
-    bool verbose_;
+    int verbosityLevel_;
+
+    void start(const char* msg);
 
 public:
-  CurrentExceptionContext(const std::string& desc, bool verbose=true);
+  CurrentExceptionContext(int verbosityLevel, std::string msgfmt, ...);
+  CurrentExceptionContext(std::string msgfmt, ...);
   ~CurrentExceptionContext();
 
   std::string contextDescription() const;
@@ -219,7 +222,7 @@ public:
 void displayFramed(const std::string& title, const std::string& msg, char titleChar = '=', std::ostream &os = std::cerr);
 
 
-void Warning(const std::string& msg);
+void Warning(std::string msgfmt, ...);
 
 
 class UnhandledExceptionHandling

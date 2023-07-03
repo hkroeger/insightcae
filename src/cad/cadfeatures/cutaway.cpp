@@ -25,6 +25,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -97,7 +98,7 @@ void Cutaway::build()
 
       if ( pl_ ) {
           if ( !pl_->providesPlanarReference() ) {
-              throw insight::Exception ( "Cutaway: Given datum does not provide a planar reference!" );
+              throw insight::Exception ( _("Cutaway: Given datum does not provide a planar reference!") );
             }
           gp_Ax3 pl=pl_->plane();
 
@@ -108,7 +109,7 @@ void Cutaway::build()
             }
         } else {
           if ( ( !p0_ ) || ( !n_ ) ) {
-              throw insight::Exception ( "Cutaway: origin and normal direction undefined!" );
+              throw insight::Exception ( _("Cutaway: origin and normal direction undefined!") );
             }
           p0=p0_->value();
           n=n_->value();
@@ -149,13 +150,13 @@ void Cutaway::build()
               model_, Feature::create( TopoDS::Face ( q->shape() ) )
               );
       } catch ( ... ) {
-        insight::Warning ( "Could not create cutting surface!" );
+        insight::Warning ( _("Could not create cutting surface!") );
       }
 
       try {
         this->setShape ( BRepAlgoAPI_Cut ( model_->shape(), airspace ) );
       } catch ( ... ) {
-        throw insight::Exception ( "Could not create cut!" );
+        throw insight::Exception ( _("Could not create cut!") );
       }
 
     }
@@ -214,8 +215,8 @@ FeatureCmdInfoList Cutaway::ruleDocumentation()
          
             "( <feature:base>, ( <vector:p0>, <vector:n> ) | ( <datum:plane> [, inverted] ) )",
          
-            "Removes a halfspace from a feature. The halfspace is either specified by a point p0 and the normal vector n or by a datum plane."
-            " In the latter case, the removal side of plane can be toggled by giving the option inverted."
+            _("Removes a halfspace from a feature. The halfspace is either specified by a point p0 and the normal vector n or by a datum plane."
+            " In the latter case, the removal side of plane can be toggled by giving the option inverted.")
         )
     };
 }

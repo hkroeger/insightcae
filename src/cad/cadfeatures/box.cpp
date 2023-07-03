@@ -21,6 +21,7 @@
 #include "base/tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -179,8 +180,10 @@ FeatureCmdInfoList Box::ruleDocumentation()
             "( <vector:p0>, <vector:L1>, <vector:L2>, <vector:L3>\n"
             "[, centered | ( center [x][y][z] ) ] )",
          
-            "Creates a box volume. The box is located at point p0 and direction and edge lengths are defined by the vector L1, L2, L3.\n"
-            "Optionally, the edges are centered around p0. Either all directions (option centered) or only selected directions (option center [x][y][z] where x,y,z is associated with L1, L2, and L3 respectively)."
+            _("Creates a box volume. The box is located at point p0 and edge directions and lengths are defined by the vectors L1, L2, L3.\n"
+            "By default, p0 is a corner and the other corners are found by translating p0 along combinations of L1, L2, L3."
+            " Optionally, the edges are centered around p0."
+            " Either all directions (option centered) or only selected directions (option center [x][y][z] where x,y,z is associated with L1, L2, and L3 respectively).")
         )
     );
 }

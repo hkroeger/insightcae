@@ -22,6 +22,7 @@
 #include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -73,7 +74,7 @@ void CurvePattern::build()
 
     if ( !curve_->isSingleWire() ) 
     {
-        throw insight::Exception ( "curve feature does not represent a single wire!" );
+        throw insight::Exception ( _("curve feature does not represent a single wire!") );
     }
 
     TopoDS_Wire w = curve_->asSingleWire();
@@ -83,7 +84,10 @@ void CurvePattern::build()
 
     if ( part.NbPoints() <n ) 
     {
-        throw insight::Exception ( boost::str ( boost::format ( "Could not divide curve into enough segments (request was %d, possible is %d)!" ) % n % part.NbPoints() ) );
+        throw insight::Exception(
+            str ( boost::format (
+                    _("Could not divide curve into enough segments (request was %d, possible is %d)!")
+                    ) % n % part.NbPoints() ) );
     }
 
 
@@ -159,8 +163,8 @@ FeatureCmdInfoList CurvePattern::ruleDocumentation()
          
             "( <feature:base>, <feature:curve>, <scalar:delta>, <scalar:n> )",
          
-            "Copies the bease feature base into a linear pattern along a curve feature (curve)."
-            " The distance between subsequent copies is delta and n copies are created."
+            _("Copies the bease feature base into a linear pattern along a curve feature (curve)."
+            " The distance between subsequent copies is delta and n copies are created.")
         )
   };
 }

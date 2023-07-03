@@ -4,6 +4,9 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -173,7 +176,7 @@ FeatureCmdInfoList Stringer::ruleDocumentation()
 
           "( <feature:spine>, <vector:n>, <scalar:t>, scalar:w> [, ext0 <scalar:ext0> ] [, ext1 <scalar:ext1> ] )",
 
-          "Creates a stringer along a curve or a wire on a surface."
+          _("Creates a stringer along a curve or a wire on a surface.")
       )
   };
 }

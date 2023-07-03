@@ -28,6 +28,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "GeomAPI_Interpolate.hxx"
 #include "TColgp_HArray1OfPnt.hxx"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -178,7 +179,7 @@ public:
 
         BRepBuilderAPI_MakeFace fb(w.Wire(), true);
         if (!fb.IsDone())
-            throw insight::Exception("Failed to generate planar face!");
+            throw insight::Exception(_("Failed to generate planar face!"));
         
         TopoDS_Face::operator=( fb.Face() );
     }
@@ -320,7 +321,9 @@ public:
         if (number_of_teeth < zg)
             insight::Warning
             (
-                boost::str(boost::format("number of teeth (%g) is lower than the minimum number of teeth (%g)!")%number_of_teeth%zg)
+                boost::str(boost::format(
+                               _("number of teeth (%g) is lower than the minimum number of teeth (%g)!")
+                               )%number_of_teeth%zg)
             );
 
         TopoDS_Shape s1=BRepPrimAPI_MakePrism
@@ -499,8 +502,8 @@ FeatureCmdInfoList SpurGear::ruleDocumentation()
          
             "( <scalar:m>, <scalar:z>, <scalar:t>[, <scalar:clearance>] )",
          
-            "Creates a spur gear with thickness t."
-            " The diameter follows from module m and tooth number z. Optionally, the clearance (as a fraction of module) can be specified. If not specified, 0.2 is used."
+            _("Creates a spur gear with thickness t."
+            " The diameter follows from module m and tooth number z. Optionally, the clearance (as a fraction of module) can be specified. If not specified, 0.2 is used.")
         )
     };
 }

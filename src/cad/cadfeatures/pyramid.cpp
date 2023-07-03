@@ -20,6 +20,7 @@
 #include "pyramid.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -98,7 +99,7 @@ void Pyramid::build()
     BRepBuilderAPI_MakeSolid solidmaker ( sshell );
 
     if ( !solidmaker.IsDone() ) {
-        throw insight::Exception ( "Creation of solid failed!" );
+        throw insight::Exception ( _("Creation of solid failed!") );
     }
 
     setShape ( solidmaker.Solid() );
@@ -133,7 +134,7 @@ FeatureCmdInfoList Pyramid::ruleDocumentation()
         (
             "Pyramid",
             "( <feature:base>, <vector:ptip> )",
-            "Creates a pyramid from the planar base feature and the tip point ptip."
+          _("Creates a pyramid from the planar base feature and the tip point ptip.")
         )
     };
 }

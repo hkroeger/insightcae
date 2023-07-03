@@ -21,6 +21,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -326,14 +328,14 @@ FeatureCmdInfoList Transform::ruleDocumentation()
         (
             "Transform",
             "( <feature:base>, <vector:trans>, <vector:rot> [, <scalar:scale>] )",
-            "Transforms the base feature by translating it by vector trans and rotates it around vector rot (magnitude gives angle, axis goes through global origin)."
-            " Optionally scale the base feature by scale factor scale."
+            _("Transforms the base feature by translating it by vector trans and rotates it around vector rot (magnitude gives angle, axis goes through global origin)."
+            " Optionally scale the base feature by scale factor scale.")
         ),
         FeatureCmdInfo
         (
             "Rotate",
             "( <feature:base>, <vector:rot>, <vector:origin> )",
-            "Rotates the base feature around vector rot (magnitude gives angle), the axis goes through point origin."
+          _("Rotates the base feature around vector rot (magnitude gives angle), the axis goes through point origin.")
         )
   };
 }

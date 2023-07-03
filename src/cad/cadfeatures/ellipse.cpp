@@ -20,6 +20,7 @@
 #include "ellipse.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #ifndef Q_MOC_RUN
 #include "boost/spirit/include/qi.hpp"
@@ -136,8 +137,8 @@ FeatureCmdInfoList Ellipse::ruleDocumentation()
         (
             "Ellipse",
             "( <vector:p0>, <vector:axmaj>, <vector:axmin> )",
-            "Creates an ellipse around point p0. The major axis has length and direction of axmaj. The minor axis length is that of axmin. "
-            "Its direction is corrected to be orthogonal to axmaj."
+            _("Creates an ellipse around point p0. The major axis has length and direction of axmaj. The minor axis length is that of axmin. "
+            "Its direction is corrected to be orthogonal to axmaj.")
         )
     };
 }

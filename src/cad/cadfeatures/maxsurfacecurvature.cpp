@@ -2,6 +2,7 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #include "Geom2d_BSplineCurve.hxx"
 #include "Geom2dAPI_Interpolate.hxx"
@@ -263,7 +264,7 @@ void MaxSurfaceCurvature::build()
 
     if (pts.size()>1)
     {
-      cout<<"Performing interpolation over "<<pts.size()<<" points"<<endl;
+      insight::dbg()<<"Performing interpolation over "<<pts.size()<<" points"<<endl;
 
       Handle_TColgp_HArray1OfPnt2d pts2(new TColgp_HArray1OfPnt2d(1, pts.size()));
       for (size_t i=0; i<pts.size(); i++) pts2->SetValue(i+1, pts[i]);
@@ -271,22 +272,22 @@ void MaxSurfaceCurvature::build()
       ip.Perform();
       if (!ip.IsDone())
       {
-        throw insight::Exception("Building 2D spline failed!");
+        throw insight::Exception(_("Building 2D spline failed!"));
       }
 
-      cout<<"edge"<<endl;
+//      cout<<"edge"<<endl;
       TopoDS_Edge ec = BRepBuilderAPI_MakeEdge(ip.Curve(), obj.surf).Edge();
       BRepLib::BuildCurve3d(ec);
     //  Handle_Geom_Curve crv;
     //  setShape(BRepBuilderAPI_MakeEdge(crv));
 
-      cout<<"done"<<endl;
+//      cout<<"done"<<endl;
 
       bb.Add(res, ec);
     }
     else
     {
-      cout<<"not a sufficient number of points for interpolation (only "<<pts.size()<<")"<<endl;
+      insight::dbg()<<"not a sufficient number of points for interpolation (only "<<pts.size()<<")"<<endl;
     }
   }
 
@@ -342,7 +343,7 @@ FeatureCmdInfoList MaxSurfaceCurvature::ruleDocumentation()
 
             "( <faceSelection> )",
 
-            "Computes the maximum curvature line on a surface originating from the point of maximum curvature in the selected faces. Returns a compound."
+          _("Computes the maximum curvature line on a surface originating from the point of maximum curvature in the selected faces. Returns a compound.")
         )
     };
 }

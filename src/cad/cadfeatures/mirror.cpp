@@ -21,6 +21,9 @@
 #include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -83,7 +86,7 @@ void Mirror::build()
 
     if ( pl_ ) {
         if ( !pl_->providesPlanarReference() ) {
-            throw insight::Exception ( "Mirror: planar reference required!" );
+          throw insight::Exception ( _("Mirror: planar reference required!") );
         }
 
         tr_.SetMirror ( static_cast<gp_Ax3> ( *pl_ ).Ax2() );
@@ -160,25 +163,25 @@ FeatureCmdInfoList Mirror::ruleDocumentation()
         (
             "Mirror",
             "( <feature:base>, <datum:plane> )",
-            "Mirrors the base feature base over the given datum plane."
+          _("Mirrors the base feature base over the given datum plane.")
         ),
         FeatureCmdInfo
         (
             "FlipX",
             "( <feature> )",
-            "Mirrors the base feature over the YZ plane."
+          _("Mirrors the base feature over the YZ plane.")
         ),
         FeatureCmdInfo
         (
             "FlipY",
             "( <feature> )",
-            "Mirrors the base feature over the XZ plane."
+          _("Mirrors the base feature over the XZ plane.")
         ),
         FeatureCmdInfo
         (
             "FlipXY",
             "( <feature> )",
-            "Mirrors the base feature over the diagonal plane with n=[1,1,0]."
+          _("Mirrors the base feature over the diagonal plane with n=[1,1,0].")
         )
     };
 }

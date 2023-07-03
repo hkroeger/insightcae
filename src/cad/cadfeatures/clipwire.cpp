@@ -24,6 +24,8 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -72,7 +74,7 @@ void ClipWire::build()
 {
     if (!m1_->isSingleOpenWire())
     {
-        throw insight::Exception("Given feature is not a wire! ClipWire can only operate on wires.");
+      throw insight::Exception(_("Given feature is not a wire! ClipWire can only operate on wires."));
     }
 
     TopoDS_Wire w = m1_->asSingleOpenWire();
@@ -209,8 +211,8 @@ FeatureCmdInfoList ClipWire::ruleDocumentation()
             "ClipWire",
          
             "( <feature:wire>, <scalar:Ls>, <scalar:Le> )",
-         
-            "Modifies an open wire feature by clipping its ends. From the beginning, a segment of length Ls is removed and from the end a segment of length Le."
+
+          _("Modifies an open wire feature by clipping its ends. From the beginning, a segment of length Ls is removed and from the end a segment of length Le.")
         )
   };
 }

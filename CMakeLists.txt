@@ -254,7 +254,34 @@ if (INSIGHT_BUILD_OPENFOAM)
 endif()
 
 
+find_package(Intl REQUIRED)
 
+include("CMake/Gettext_helpers.cmake")
+
+macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
+    set(GETTEXT_TARGET "${TARGET_NAME}-gettext")
+    set(GETTEXT_OUTPUT_DIR "locale")
+    set(GETTEXT_LANGUAGES "en" "de")
+
+    target_compile_definitions(${TARGET_NAME} PRIVATE "GETTEXT_DOMAIN=\"${GETTEXT_DOMAIN}\"")
+    target_compile_definitions(${TARGET_NAME} PRIVATE "GETTEXT_OUTPUT_DIR=\"${GETTEXT_OUTPUT_DIR}\"")
+
+    CONFIGURE_GETTEXT(
+     DOMAIN ${GETTEXT_DOMAIN}
+     TARGET_NAME ${GETTEXT_TARGET}
+     SOURCES ${ARGN}
+     POTFILE_DESTINATION ${GETTEXT_OUTPUT_DIR}
+     XGETTEXT_ARGS
+      "--keyword=_"
+      "--add-comments=TRANSLATORS:"
+      "--package-name=${GETTEXT_DOMAIN}"
+      "--package-version=${PROJECT_VERSION}"
+      "--copyright-holder=hkroeger"
+     LANGUAGES ${GETTEXT_LANGUAGES}
+     BUILD_DESTINATION ${CMAKE_BINARY_DIR}/share/insight/${GETTEXT_OUTPUT_DIR}
+     ALL
+    )
+endmacro()
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   FIND_PACKAGE(SWIG REQUIRED)

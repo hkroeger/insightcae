@@ -2,6 +2,9 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -152,7 +155,7 @@ FeatureCmdInfoList Tongue::ruleDocumentation()
 
           "( <feature:spine>, <vector:direction>, <vector:insidePt>, <scalar:t>, scalar:w>, <scalar:overlap>, <scalar:delta> )",
 
-          "Creates a tongue extension along a section curve between two surface parts."
+          _("Creates a tongue extension along a section curve between two surface parts.")
       )
   };
 }

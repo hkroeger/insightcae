@@ -238,20 +238,45 @@ void assertion(bool condition, std::string fmt, ...)
 }
 
 
-CurrentExceptionContext::CurrentExceptionContext(const std::string& desc, bool verbose)
-    : std::string(desc),
-    verbose_(verbose)
+CurrentExceptionContext::CurrentExceptionContext(int verbosityLevel, std::string msgFmt, ...)
+  : verbosityLevel_(verbosityLevel)
 {
-  if (getenv("INSIGHT_VERBOSE"))
+  char s[5000];
+  va_list args;
+  va_start(args, msgFmt);
+  vsnprintf(s, sizeof(s), msgFmt.c_str(), args);
+  va_end(args);
+  int l = strlen(s); if(s[l-1] == '\n') s[l-1] = '\0';
+
+  start(s);
+}
+
+CurrentExceptionContext::CurrentExceptionContext(std::string msgFmt, ...)
+    : verbosityLevel_(1)
+{
+  char s[5000];
+  va_list args;
+  va_start(args, msgFmt);
+  vsnprintf(s, sizeof(s), msgFmt.c_str(), args);
+  va_end(args);
+  int l = strlen(s); if(s[l-1] == '\n') s[l-1] = '\0';
+
+  start(s);
+}
+
+void CurrentExceptionContext::start(const char* msg)
+{
+  this->std::string::operator=(msg);
+
+  if (const char* iv = getenv("INSIGHT_VERBOSE"))
   {
-    if (verbose_)
-    {
-      std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << contextDescription() << std::endl;
-    }
+      if (atoi(iv)>=verbosityLevel_)
+      {
+        std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << contextDescription() << std::endl;
+      }
   }
   ExceptionContext::getCurrent().push_back(this);
 }
-
 
 CurrentExceptionContext::~CurrentExceptionContext()
 {
@@ -262,14 +287,15 @@ CurrentExceptionContext::~CurrentExceptionContext()
       std::cerr<<"Oops: CurrentExceptionContext destructor: expected to be last!"<<endl;
     }
 
-  if (getenv("INSIGHT_VERBOSE"))
+  if (const char* iv = getenv("INSIGHT_VERBOSE"))
   {
-      if (verbose_)
+      if (atoi(iv)>=verbosityLevel_)
       {
         std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<contextDescription() << std::endl;
       }
   }
 }
+
 
 std::string CurrentExceptionContext::contextDescription() const
 {
@@ -424,8 +450,15 @@ WarningDispatcher& WarningDispatcher::getCurrent()
 
 
 
-void Warning(const std::string& msg)
+void Warning(std::string msgFmt, ...)
 {
+  char msg[5000];
+  va_list args;
+  va_start(args, msgFmt);
+  vsnprintf(msg, sizeof(msg), msgFmt.c_str(), args);
+  va_end(args);
+  int l = strlen(msg); if(msg[l-1] == '\n') msg[l-1] = '\0';
+
   WarningDispatcher::getCurrent().issue( msg );
 }
 

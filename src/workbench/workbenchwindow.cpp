@@ -43,6 +43,7 @@
 
 #include "base/toolkitversion.h"
 #include "base/qt5_helper.h"
+#include "base/translations.h"
 #include "wslinstallation.h"
 
 
@@ -106,15 +107,15 @@ workbench::workbench(bool logToConsole)
   connect(mdiArea_, &QMdiArea::subWindowActivated,
           this, &workbench::onSubWindowActivated);
 
-  QMenu *analysisMenu = menuBar()->addMenu( "&Analysis" );
+  QMenu *analysisMenu = menuBar()->addMenu( _("&Analysis") );
 
-  QAction* a = new QAction("New...", this);
+  QAction* a = new QAction( _("New..."), this);
   a->setShortcut(Qt::ControlModifier + Qt::Key_N);
   connect(a, &QAction::triggered,
           this, [&]() { newAnalysis(); } );
   analysisMenu->addAction( a );
 
-  a = new QAction("Open...", this);
+  a = new QAction(_("Open..."), this);
   a->setShortcut(Qt::ControlModifier + Qt::Key_O);
   connect(a, &QAction::triggered, this, &workbench::onOpenAnalysis );
   analysisMenu->addAction( a );
@@ -132,9 +133,9 @@ workbench::workbench(bool logToConsole)
   }
   updateRecentFileActions();
 
-  QMenu *settingsMenu = menuBar()->addMenu( "&Settings" );
+  QMenu *settingsMenu = menuBar()->addMenu( _("&Settings") );
 
-  a = new QAction("Remote servers...", this);
+  a = new QAction(_("Remote servers..."), this);
   connect(a, &QAction::triggered, this,
           [&]()
           {
@@ -144,7 +145,7 @@ workbench::workbench(bool logToConsole)
   );
   settingsMenu->addAction( a );
 
-  a = new QAction("Configure paths to external programs...", this);
+  a = new QAction(_("Configure paths to external programs..."), this);
   connect(a, &QAction::triggered, this,
           [&]()
           {
@@ -155,7 +156,7 @@ workbench::workbench(bool logToConsole)
   settingsMenu->addAction( a );
 
 
-  a = new QAction("Manage report templates...", this);
+  a = new QAction(_("Manage report templates..."), this);
   connect(a, &QAction::triggered, this,
           [&]()
           {
@@ -166,18 +167,19 @@ workbench::workbench(bool logToConsole)
   settingsMenu->addAction( a );
 
 
-  QMenu *helpMenu = menuBar()->addMenu( "&Help" );
+  QMenu *helpMenu = menuBar()->addMenu( _("&Help") );
 
-  QAction* ab = new QAction("About...", this);
+  QAction* ab = new QAction(_("About..."), this);
   helpMenu->addAction( ab );
   connect(ab, &QAction::triggered,
           [&]()
           {
             QMessageBox::information(
                   this,
-                  "Workbench Information",
-                  "InsightCAE Analysis Workbench\n"
-                  "Version "+QString::fromStdString(insight::ToolkitVersion::current().toString())+"\n"
+          _("Workbench Information"),
+            QString(_("InsightCAE Analysis Workbench\n"
+                    "Version %1\n"))
+              .arg(QString::fromStdString(insight::ToolkitVersion::current().toString()))
                   );
           }
   );
@@ -186,7 +188,7 @@ workbench::workbench(bool logToConsole)
 
 #ifdef WIN32
     {
-        QAction* be = new QAction("Check backend installation version...", this);
+      QAction* be = new QAction(_("Check backend installation version..."), this);
         helpMenu->addAction( be );
         connect(be, &QAction::triggered,
                 this, [&]() { checkInstallation(true); } );
@@ -225,7 +227,8 @@ void workbench::newAnalysis(std::string analysisType)
     }
     catch (const std::exception& e)
     {
-        throw insight::Exception("Creation of an analysis of type \""+analysisType+"\" failed.\n"                                                                        "Reason: "+e.what());
+        throw insight::Exception(_("Creation of an analysis of type \"%s\" failed.\n"
+                                   "Reason: %s"), analysisType.c_str(), e.what());
     }
 }
 
@@ -234,7 +237,9 @@ void workbench::newAnalysis(std::string analysisType)
 
 void workbench::onOpenAnalysis()
 {
-  QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
+  QString fn = QFileDialog::getOpenFileName(
+        this, _("Open Parameters"), QString(),
+        _("Insight parameter sets (*.ist)") );
   if (!fn.isEmpty()) openAnalysis(fn);
 }
 
@@ -304,9 +309,10 @@ void workbench::openAnalysis(const QString& fn)
   }
   catch (const std::exception& e)
   {
-    throw insight::Exception("Creation of an analysis of type \""+analysisName+"\" failed.\n"
-                             "Please check, if the analysis type entry in the parameter file is correct.\n"
-                             "Error information:\n"+e.what());
+    throw insight::Exception(
+        _("Creation of an analysis of type \"%s\" failed.\n"
+          "Please check, if the analysis type entry in the parameter file is correct.\n"
+          "Error information: %s\n"), analysisName.c_str(), e.what());
   }
   //form->parameters().readFromNode(doc, *rootnode, fp.parent_path());
   form->loadParameters(fp);

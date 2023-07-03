@@ -22,6 +22,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "gp_Quaternion.hxx"
 #include "base/tools.h"
+#include "base/translations.h"
 
 //#include <dlib/optimization.h>
 
@@ -451,7 +452,7 @@ FeatureCmdInfoList RefPlace::ruleDocumentation()
         (
             "RefPlace",
             "( <feature:base>, [ <placement condition>, ...] )",
-            "Places the feature base by solving a set of placement conditions numerically (experimental).\n"
+            _("Places the feature base by solving a set of placement conditions numerically (experimental).\n"
             "Available placement conditions are:\n"
             " - <vector> == <vector> (same point coordinates or vector components)\n"
             " - <vector> parallel <vector> (same vector orientation))\n"
@@ -459,7 +460,7 @@ FeatureCmdInfoList RefPlace::ruleDocumentation()
             " - <datum> inclined <datum> <scalar>\n"
             " - <datum> coaxial <datum> [inverted]\n"
             " - <vector> inplane <datum>\n"
-            " - <vector> onaxis <datum>\n"
+              " - <vector> onaxis <datum>\n")
         )
     };
 }

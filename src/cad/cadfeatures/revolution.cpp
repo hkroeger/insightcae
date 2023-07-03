@@ -20,6 +20,8 @@
 #include "revolution.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -125,9 +127,9 @@ FeatureCmdInfoList Revolution::ruleDocumentation()
         (
             "Revolution",
             "( <feature:xsec>, <vector:p0>, <vector:axis>, <scalar:angle> [, centered] )",
-            "Creates a revolution of the planar feature xsec."
+            _("Creates a revolution of the planar feature xsec."
             " The rotation axis is specified by origin point p0 and the direction vector axis."
-            " Revolution angle is specified as angle. By giving the keyword centered, the revolution is created symmetrically around the base feature."
+              " Revolution angle is specified as angle. By giving the keyword centered, the revolution is created symmetrically around the base feature.")
         )
     };
 }

@@ -22,6 +22,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "datum.h"
+#include "base/translations.h"
+
 
 #include <limits.h>
 
@@ -106,7 +108,7 @@ void Exploded::build()
     if (components_.size()>0)
     {
       if (!axis_->providesAxisReference())
-	throw insight::Exception("Exploded: datum does not provide axis reference!");
+      throw insight::Exception(_("Exploded: datum does not provide axis reference!"));
       
       gp_Ax1 ax=axis_->axis();
       arma::mat p0=vec3(ax.Location()), dir=vec3(ax.Direction());
@@ -206,8 +208,8 @@ FeatureCmdInfoList Exploded::ruleDocumentation()
             "Exploded",
          
             "( <datum:refaxis>, <feature:c0> [, ..., <feature:cn> ] )",
-         
-            "Creates an exploded state from the supplied list of features. The components are translated along the direction of refaxis."
+
+            _("Creates an exploded state from the supplied list of features. The components are translated along the direction of refaxis.")
         )
     };
 }

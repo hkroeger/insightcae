@@ -31,6 +31,8 @@
 #include "openfoam/openfoamanalysis.h"
 #endif
 
+#include "base/translations.h"
+
 
 #include "openfoam/solveroutputanalyzer.h"
 #include "remotesync.h"
@@ -80,9 +82,9 @@ void AnalysisForm::connectRemoteActions()
             else
             {
               QMessageBox::critical(
-                    this, "Not possible",
-                    "There is currently a remote analysis running.\n"
-                    "Please terminate it first!");
+                    this, _("Not possible"),
+                    _("There is currently a remote analysis running.\n"
+                      "Please terminate it first!") );
             }
           }
   );
@@ -114,14 +116,14 @@ void AnalysisForm::upload()
           [&]()
           {
             progressbar_->setHidden(true);
-            Q_EMIT statusMessage("Transfer to remote location finished");
+      Q_EMIT statusMessage(_("Transfer to remote location finished"));
           }
   );
   connect(rstr, &insight::RunSyncToRemote::transferFinished,
           rstr, &QObject::deleteLater);
 
   progressbar_->setHidden(false);
-  Q_EMIT statusMessage("Transfer to remote location started");
+  Q_EMIT statusMessage(_("Transfer to remote location started"));
 
   rstr->start();
   rstr->wait();
@@ -147,7 +149,7 @@ void AnalysisForm::resumeRemoteRun()
 {
 #ifdef HAVE_WT
   if (currentWorkbenchAction_)
-    throw insight::Exception("Internal error: there is an action running currently!");
+      throw insight::Exception(_("Internal error: there is an action running currently!"));
 
   remoteExecutionConfiguration()->commit( localCaseDirectory() );
   currentWorkbenchAction_.reset( RemoteRun::create(this, true) );
@@ -183,13 +185,13 @@ void AnalysisForm::downloadFromRemote(std::function<void()> completionCallback)
           [this,completionCallback]()
           {
             progressbar_->setHidden(true);
-            Q_EMIT statusMessage("Transfer from remote location to local directory finished");
+      Q_EMIT statusMessage(_("Transfer from remote location to local directory finished"));
             completionCallback();
           }
   );
 
   progressbar_->setHidden(false);
-  Q_EMIT statusMessage("Transfer from remote location to local directory started");
+  Q_EMIT statusMessage(_("Transfer from remote location to local directory started"));
 
   rstl->start();
   rstl->wait();

@@ -3,6 +3,8 @@
 
 #include "cadtypes.h"
 
+#include "base/translations.h"
+
 using namespace insight;
 using namespace insight::cad;
 namespace fs=boost::filesystem;
@@ -161,7 +163,7 @@ QVariant AvailableModelsModel::headerData(int section, Qt::Orientation orient, i
     if (orient==Qt::Horizontal)
     {
       if (section==0)
-        return QString("Model");
+        return QString(_("Model"));
     }
   }
 

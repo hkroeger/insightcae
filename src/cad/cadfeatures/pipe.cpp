@@ -20,6 +20,7 @@
 #include "BRepAdaptor_HCompCurve.hxx"
 #include "Approx_Curve3d.hxx"
 #include "pipe.h"
+#include "base/translations.h"
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -81,11 +82,12 @@ void Pipe::build()
     }
     else
     {
-        throw insight::Exception("spine feature has to provide a single edge or a singly connected wire!");  // not working for wires created from feature edge selection
+        throw insight::Exception(
+            _("spine feature has to provide a single edge or a singly connected wire!"));  // not working for wires created from feature edge selection
     }
     
     if (!xsec_->isSingleFace() || xsec_->isSingleWire() || xsec_->isSingleEdge())
-        throw insight::Exception("xsec feature has to provide a face or wire!");
+        throw insight::Exception(_("xsec feature has to provide a face or wire!"));
 
 
     if (reapprox_spine_)
@@ -100,7 +102,7 @@ void Pipe::build()
         }
         else
         {
-            throw insight::Exception("Pipe: reapproximation of spine failed!");
+            throw insight::Exception(_("Pipe: reapproximation of spine failed!"));
         }
     }
 
@@ -196,11 +198,11 @@ FeatureCmdInfoList Pipe::ruleDocumentation()
         (
             "Pipe",
             "( <feature:spine>, <feature:xsec> [, fixedbinormal <vector>] [, orient] [, reapprox] )",
-            "Sweeps the planar section xsec along the curve feature spine."
+            _("Sweeps the planar section xsec along the curve feature spine."
             " The xsec is expected at global origin [0,0,0] and is moved to the beginning of the spine."
             " By fixing the binormal direction using keyword fixedbinormal and a fixed direction, problems with erratic twisting of the section on spiral paths can be avoided."
             " By default, the section is not rotated. If keyword reorient is given, the z-axis of the section is aligned with the tangent of the spine."
-            " The keyword reapprox triggers an reapproximation of the spine wire into a single b-spline curve (experimental)."
+              " The keyword reapprox triggers an reapproximation of the spine wire into a single b-spline curve (experimental).")
         )
     };
 }

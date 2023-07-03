@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -718,7 +719,7 @@ void Airfoil::build()
     
   BRepBuilderAPI_MakeFace fb(w.Wire(), true);
   if (!fb.IsDone())
-    throw insight::Exception("Failed to generate planar face!");
+    throw insight::Exception(_("Failed to generate planar face!"));
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
   providedSubshapes_["OuterWire"]=Feature::create(w.Wire());
@@ -775,10 +776,10 @@ FeatureCmdInfoList Airfoil::ruleDocumentation() const
         (
             "Airfoil",
             "( <string:name>, <vector:p0>, <vector:L>, <vector:ez>, <scalar:c>, <scalar:t> [, r_EK <scalar:rEK>] [, <scalar:rAK> ])",
-            "Creates an airfoil section with specified camber c and thickness t. The camber and thickness distribution are selected by the name argument."
+            _("Creates an airfoil section with specified camber c and thickness t. The camber and thickness distribution are selected by the name argument."
             "Optionally, minimum leading and trailing edge radii can be enforced."
             " The leading edge is positioned at point p0. Length and direction of the chord line are specified by vector L."
-            " The normal direction of the foil section, i.e. spanwise direction of the wing, is given by vector ez."
+            " The normal direction of the foil section, i.e. spanwise direction of the wing, is given by vector ez.")
         )
     );
 }

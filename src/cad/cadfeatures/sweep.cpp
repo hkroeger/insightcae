@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -73,7 +74,7 @@ void Sweep::build()
     ExecTimer t("Sweep::build() ["+featureSymbolName()+"]");
     
     if ( secs_.size() <2 ) {
-        throw insight::Exception ( "Insufficient number of sections given!" );
+      throw insight::Exception ( _("Insufficient number of sections given!") );
     }
 
     bool create_solid=false;
@@ -105,7 +106,7 @@ void Sweep::build()
 //      cursec=BRepTools::OuterWire(TopoDS::Shell(cs));
 //     }
         else {
-            throw insight::Exception ( "Incompatible section shape for Sweep!" );
+            throw insight::Exception ( _("Incompatible section shape for Sweep!") );
         }
         sb.AddWire ( cursec );
     }
@@ -142,7 +143,7 @@ FeatureCmdInfoList Sweep::ruleDocumentation()
         (
             "Sweep",
             "( <feature:xsec0>, ..., <feature:xsecn> )",
-            "Interpolates a solid through the planar sections xsec0 to xsecn."
+          _("Interpolates a solid through the planar sections xsec0 to xsecn.")
         )
     };
 }

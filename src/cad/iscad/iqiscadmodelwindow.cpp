@@ -12,6 +12,8 @@
 #include "iqvtkcadmodel3dviewer.h"
 #include "iqiscadmodelscriptedit.h"
 
+#include "base/translations.h"
+
 IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
 : QWidget(parent),
   model_(new IQCADItemModel(insight::cad::ModelPtr(), this))
@@ -34,31 +36,31 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
     QVBoxLayout *vbox;
 
 
-    gb=new QGroupBox("Controls");
+    gb=new QGroupBox(_("Controls"));
     gb->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
     vbox = new QVBoxLayout;
     QWidget*shw=new QWidget;
     QHBoxLayout *shbox = new QHBoxLayout;
-    QPushButton *rebuildBtn=new QPushButton("Rebuild", gb);
-    QPushButton *rebuildBtnUTC=new QPushButton("Rbld to Cursor", gb);
+    QPushButton *rebuildBtn=new QPushButton(_("Rebuild"), gb);
+    QPushButton *rebuildBtnUTC=new QPushButton(_("Rbld to Cursor"), gb);
     shbox->addWidget(rebuildBtn);
     shbox->addWidget(rebuildBtnUTC);
     shw->setLayout(shbox);
     vbox->addWidget(shw);
 
-    QCheckBox *toggleBgParse=new QCheckBox("Do BG parsing", gb);
+    QCheckBox *toggleBgParse=new QCheckBox(_("Do BG parsing"), gb);
     toggleBgParse->setCheckState( Qt::Checked );
     vbox->addWidget(toggleBgParse);
 
-    QCheckBox *toggleSkipPostprocActions=new QCheckBox("Skip Postproc Actions", gb);
+    QCheckBox *toggleSkipPostprocActions=new QCheckBox(_("Skip Postproc Actions"), gb);
     toggleSkipPostprocActions->setCheckState( Qt::Checked );
     vbox->addWidget(toggleSkipPostprocActions);
 
     gb->setLayout(vbox);
     spl2->addWidget(gb);
 
-    gb=new QGroupBox("Model Tree");
+    gb=new QGroupBox(_("Model Tree"));
     gb->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     vbox = new QVBoxLayout;
     modelTree_=new QTreeView(gb);
@@ -67,15 +69,15 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
     gb->setLayout(vbox);
     spl2->addWidget(gb);
 
-    gb=new QGroupBox("Notepad");
+    gb=new QGroupBox(_("Notepad"));
     vbox = new QVBoxLayout;
     notepad_=new QTextEdit;
 
     vbox->addWidget(notepad_);
     QHBoxLayout *ll=new QHBoxLayout;
-    QPushButton* copybtn=new QPushButton("<< Copy to cursor <<");
+    QPushButton* copybtn=new QPushButton(_("<< Copy to cursor <<"));
     ll->addWidget(copybtn);
-    QPushButton* clearbtn=new QPushButton("Clear");
+    QPushButton* clearbtn=new QPushButton(_("Clear"));
     ll->addWidget(clearbtn);
     vbox->addLayout(ll);
     gb->setLayout(vbox);
@@ -256,7 +258,7 @@ void IQISCADModelWindow::closeEvent(QCloseEvent *event)
             (
                 this,
                 "ISCAD",
-                tr("The editor content is not saved.\nSave now?\n"),
+                _("The editor content is not saved.\nSave now?\n"),
                 QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
                 QMessageBox::No
             );

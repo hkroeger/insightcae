@@ -19,6 +19,7 @@
 
 #include "fixshape.h"
 #include "base/boost_include.h"
+#include "base/translations.h"
 
 #include <boost/spirit/include/qi.hpp>
 
@@ -113,7 +114,7 @@ FeatureCmdInfoList FixShape::ruleDocumentation()
 
             "( <feature:in> )",
 
-            "Runs some repair operations on output shape of feature in."
+            _("Runs some repair operations on output shape of feature in.")
         )
     };
 }

@@ -22,6 +22,7 @@ project(toolkit)
 
 
 set(toolkit_SOURCES
+    base/translations.h base/translations.cpp
     base/global.cpp
     base/boost_include.cpp
     base/rapidxml.h base/rapidxml.cpp
@@ -316,10 +317,12 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
 PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
 
+
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
 set(toolkit_LINK_LIBS
     ${Boost_LIBRARIES}
+    ${Intl_LIBRARY}
     ${ARMADILLO_LIBRARY}
     PkgConfig::poppler-cpp
     PkgConfig::minizip
@@ -341,11 +344,13 @@ target_compile_definitions(toolkit PRIVATE toolkit_EXPORTS)
 target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
+  PUBLIC ${Intl_INCLUDE_DIRS}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
 
+setup_gettext(toolkit toolkit ${toolkit_SOURCES})
 
 install_shared_file2(base/materialLibrary.xml ".")
 

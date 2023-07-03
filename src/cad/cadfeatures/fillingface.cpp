@@ -20,6 +20,7 @@
 #include "fillingface.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #include "featurefilters/edgeconnectingvertices.h"
 #include "cadfeatures/singleedgefeature.h"
@@ -108,7 +109,7 @@ void FillingFace::build()
 
       if ( !ok )
       {
-          throw insight::Exception ( "Invalid edge given!" );
+          throw insight::Exception ( _("Invalid edge given!") );
       }
   }
   else if ( es1_ && es2_ )
@@ -116,7 +117,7 @@ void FillingFace::build()
       TopoDS_Edge ee1, ee2;
       if ( es1_->size() !=1 )
       {
-          throw insight::Exception ( "first feature set has to contain only 1 edge!" );
+          throw insight::Exception ( _("first feature set has to contain only 1 edge!") );
       }
       else
       {
@@ -125,7 +126,7 @@ void FillingFace::build()
 
       if ( es2_->size() !=1 )
       {
-          throw insight::Exception ( "second feature set has to contain only 1 edge!" );
+          throw insight::Exception ( _("second feature set has to contain only 1 edge!") );
       }
       else
       {
@@ -134,7 +135,7 @@ void FillingFace::build()
   }
   else
   {
-      throw insight::Exception ( "Improper specification of edges for FillingFace!" );
+      throw insight::Exception ( _("Improper specification of edges for FillingFace!") );
   }
 
   TopoDS_Face f;
@@ -144,7 +145,7 @@ void FillingFace::build()
   }
   catch ( ... )
   {
-      throw insight::Exception ( "Failed to generate face!" );
+      throw insight::Exception ( _("Failed to generate face!") );
   }
 
   ShapeFix_Face FixShape;
@@ -225,8 +226,8 @@ FeatureCmdInfoList FillingFace::ruleDocumentation()
             "FillingFace",
          
             "( (<feature:e0>, <feature:e1>) | (<edgeSelection:e0>, <edgeSelection:e1) )",
-         
-            "Creates an interpolated surface between two edges. The two edges e0 and e1 can be given either as edge features or edge selection sets."
+
+            _("Creates an interpolated surface between two edges. The two edges e0 and e1 can be given either as edge features or edge selection sets.")
         )
     };
 }

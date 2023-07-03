@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include <boost/phoenix/fusion.hpp>
+#include "base/translations.h"
 
 #include "TColgp_HArray1OfPnt.hxx"
 #include "GeomAPI_Interpolate.hxx"
@@ -118,7 +119,7 @@ FeatureCmdInfoList SineWave::ruleDocumentation()
         (
             "SineWave",
             "( <scalar:l>, <scalar:A> )",
-            "Creates a sine curve (single period) with wave length l and amplitude A."
+          _("Creates a sine curve (single period) with wave length l and amplitude A.")
         )
   };
 }

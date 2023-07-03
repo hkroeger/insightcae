@@ -19,6 +19,7 @@
 
 #include "cone.h"
 #include "base/boost_include.h"
+#include "base/translations.h"
 
 #include "BRepPrimAPI_MakeCone.hxx"
 
@@ -122,8 +123,8 @@ FeatureCmdInfoList Cone::ruleDocumentation()
             "Cone",
          
             "( <vector:p0>, <vector:p1>, <scalar:D0>, <scalar:D1> )",
-         
-            "Creates a cone between point p0 and p1. At point p0, the diameter is D0 and at p1 it is D1."
+
+          _("Creates a cone between point p0 and p1. At point p0, the diameter is D0 and at p1 it is D1.")
         )
     };
 }

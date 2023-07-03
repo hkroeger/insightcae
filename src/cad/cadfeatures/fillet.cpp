@@ -20,6 +20,9 @@
 #include "fillet.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -107,8 +110,8 @@ FeatureCmdInfoList Fillet::ruleDocumentation()
             "Fillet",
          
             "( <edgesSelection:edges>, <scalar:r> )",
-         
-            "Creates fillets at selected edges of a solid. All edges in the selection set edges are rounded with width r."
+
+          _("Creates fillets at selected edges of a solid. All edges in the selection set edges are rounded with width r.")
         )
     };
 }

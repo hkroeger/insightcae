@@ -279,6 +279,8 @@ macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
       "--copyright-holder=hkroeger"
      LANGUAGES ${GETTEXT_LANGUAGES}
      BUILD_DESTINATION ${CMAKE_BINARY_DIR}/share/insight/${GETTEXT_OUTPUT_DIR}
+     INSTALL_DESTINATION share/insight/${GETTEXT_OUTPUT_DIR}
+     INSTALL_COMPONENT ${INSIGHT_INSTALL_COMPONENT}
      ALL
     )
 endmacro()

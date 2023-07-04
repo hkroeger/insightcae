@@ -53,8 +53,6 @@ int main(int argc, char** argv)
 {
     GettextInit gti(GETTEXT_DOMAIN, GETTEXT_OUTPUT_DIR, GettextInit::Application);
 
-    std::cout<< _("Specifies input file.") <<std::endl;
-
     insight::UnhandledExceptionHandling ueh;
     insight::GSLExceptionHandling gsl_errtreatment;
 
@@ -130,8 +128,7 @@ int main(int argc, char** argv)
     InsightCAEApplication app(argc, argv, "InsightCAE Workbench");
 
     // After creation of application object!
-//    std::locale::global(std::locale::classic());
-//    QLocale::setDefault(QLocale::C);
+    gti.resetLocale();
 
     QPixmap pixmap(":/resources/insight_workbench_splash.png");
     QSplashScreen splash(pixmap, /*Qt::WindowStaysOnTopHint|*/Qt::SplashScreen);

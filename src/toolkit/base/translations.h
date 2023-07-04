@@ -17,6 +17,8 @@ public:
     };
 
     GettextInit(const char* domain, const char* directory, InitType it);
+
+    void resetLocale();
 };
 
 #endif // TRANSLATIONS_H

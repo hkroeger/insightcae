@@ -28,5 +28,6 @@ endif()
 add_executable(analyze ${analyze_SOURCES})
 target_link_libraries(analyze ${analyze_LIBS})
 linkToolkitVtk(analyze Offscreen)
+setup_gettext(analyze analyze ${analyze_SOURCES})
 
 install(TARGETS analyze RUNTIME DESTINATION bin)

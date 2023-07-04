@@ -30,6 +30,7 @@
 #include "base/toolkitversion.h"
 #include "base/parameters.h"
 #include "base/cppextensions.h"
+#include "base/translations.h"
 
 #include <iostream>
 #include <fstream>
@@ -61,6 +62,8 @@ using namespace boost;
 
 int main(int argc, char *argv[])
 {
+    GettextInit gti(GETTEXT_DOMAIN, GETTEXT_OUTPUT_DIR, GettextInit::Application);
+
     insight::UnhandledExceptionHandling ueh;
     insight::GSLExceptionHandling gsl_errtreatment;
 
@@ -70,30 +73,30 @@ int main(int argc, char *argv[])
     typedef std::vector<string> StringList;
 
     // Declare the supported options.
-    po::options_description desc("Allowed options");
+    po::options_description desc(_("Allowed options"));
     desc.add_options()
-      ("help", "produce help message")
-      ("skiplatex,x", "skip execution of pdflatex")
-      ("version,r", "print version and exit")
-      ("workdir,w", po::value<std::string>(), "execution directory")
-      ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
-      ("bool,b", po::value<StringList>(), "boolean variable assignment")
-      ("selection,l", po::value<StringList>(), "selection variable assignment")
-      ("string,s", po::value<StringList>(), "string variable assignment")
-      ("path,p", po::value<StringList>(), "path variable assignment")
-      ("double,d", po::value<StringList>(), "double variable assignment")
-      ("vector,v", po::value<StringList>(), "vector variable assignment")
-      ("int,i", po::value<StringList>(), "int variable assignment")
-      ("set-array-size", po::value<StringList>(), "set size of array")
-      ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
-      ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
-      ("input-file,f", po::value< std::string >(),"Specifies input file.")
-      ("output-file,o", po::value< std::string >(),"Specifies output file. May be a PDF report or an ISR InsightCAE XML result set.")
+      ("help,h", _("produce help message"))
+      ("skiplatex,x", _("skip execution of pdflatex"))
+      ("version,r", _("print version and exit"))
+      ("workdir,w", po::value<std::string>(), _("execution directory"))
+      ("savecfg,c", po::value<std::string>(), _("save final configuration (including command line overrides) to this file"))
+      ("bool,b", po::value<StringList>(), _("boolean variable assignment"))
+      ("selection,l", po::value<StringList>(), _("selection variable assignment"))
+      ("string,s", po::value<StringList>(), _("string variable assignment"))
+      ("path,p", po::value<StringList>(), _("path variable assignment"))
+      ("double,d", po::value<StringList>(), _("double variable assignment"))
+      ("vector,v", po::value<StringList>(), _("vector variable assignment"))
+      ("int,i", po::value<StringList>(), _("int variable assignment"))
+      ("set-array-size", po::value<StringList>(), _("set size of array"))
+      ("merge,m", po::value<StringList>(), _("additional input file to merge into analysis parameters before variable assignments"))
+      ("libs", po::value< StringList >(), _("Additional libraries with analysis modules to load"))
+      ("input-file,f", po::value< std::string >(),_("Specifies input file."))
+      ("output-file,o", po::value< std::string >(),_("Specifies output file. May be a PDF report or an ISR InsightCAE XML result set."))
 #ifdef HAVE_WT
-      ("server", "Start with REST API server. Keeps the application running after the analysis has finished. Once the result set is fetched via the REST API, the application exits.")
-      ("listen", po::value<std::string>()->default_value("127.0.0.1"), "Server address")
-      ("port", po::value<int>()->default_value(8090), "Server port")
-      ("broadcastport", po::value<int>()->default_value(8090), "Broadcast listen port")
+      ("server", _("Start with REST API server. Keeps the application running after the analysis has finished. Once the result set is fetched via the REST API, the application exits."))
+      ("listen", po::value<std::string>()->default_value("127.0.0.1"), _("Server address"))
+      ("port", po::value<int>()->default_value(8090), _("Server port"))
+      ("broadcastport", po::value<int>()->default_value(8090), _("Broadcast listen port"))
 #endif
     ;
 
@@ -103,8 +106,8 @@ int main(int argc, char *argv[])
     auto displayHelp = [&]{
       std::ostream &os = std::cout;
 
-      os << "Usage:" << std::endl;
-      os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
+      os << _("Usage:") << std::endl;
+      os << "  " << boost::filesystem::path(argv[0]).filename().string() << " ["<<_("options")<<"] " << p.name_for_position(0) << std::endl;
       os << std::endl;
       os << desc << endl;
     };
@@ -124,7 +127,7 @@ int main(int argc, char *argv[])
     }
     catch (const po::error& e)
     {
-      std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+      std::cerr << std::endl << _("Could not parse command line")<<": "<< e.what() << std::endl<<std::endl;
       displayHelp();
       exit(-1);
     }
@@ -160,14 +163,16 @@ int main(int argc, char *argv[])
       {
         std::cerr
             << "\n"
-            << "There have been "<<WarningDispatcher::getCurrent().nWarnings()<<" warnings.\n"
-            << "Please review:\n";
+            << boost::str(boost::format(
+                           _("There have been %d warnings."))
+                            % WarningDispatcher::getCurrent().nWarnings() )<<"\n"
+            << _("Please review")<<":\n";
 
         int i=0;
         for (const auto& w: WarningDispatcher::getCurrent().warnings())
         {
-          std::cerr<<"\n** Warning "<<(++i)<<":\n";
-          displayFramed("Warning", w.what(), '-', std::cout);
+            std::cerr<<"\n** "<<_("Warning")<<" "<<(++i)<<":\n";
+            displayFramed(_("Warning"), w.what(), '-', std::cout);
         }
       }
     };
@@ -191,7 +196,7 @@ int main(int argc, char *argv[])
 
         if (!server->start())
         {
-          std::cerr << "Could not start web server!" << std::endl;
+            std::cerr << _("Could not start web server!") << std::endl;
         }
 
 //// disable for now. not working inside WSL
@@ -216,7 +221,7 @@ int main(int argc, char *argv[])
                 if (!boost::filesystem::exists(l))
                 {
                     std::cerr << std::endl
-                        << "Error: library file does not exist: "<<l
+                              << _("Error: library file does not exist: ")<<l
                         <<std::endl<<std::endl;
                     exit(-1);
                 }
@@ -231,16 +236,17 @@ int main(int argc, char *argv[])
 #ifdef HAVE_WT
           if (server)
           {
-            cout<<"Running in server mode without explicitly specified input file: waiting for input transmission"<<endl;
+            cout<<_("Running in server mode without explicitly specified input file: "
+                          "waiting for input transmission")<<endl;
             if (!server->waitForInputFile(contents))
             {
-              throw insight::Exception("Received interruption!");
+                throw insight::Exception(_("Received interruption!"));
             }
           }
           else
 #endif
           {
-            cerr<<"input file has to be specified!"<<endl;
+            cerr<<_("input file has to be specified!")<<endl;
             exit(-1);
           }
         }
@@ -248,8 +254,8 @@ int main(int argc, char *argv[])
         {
           if (vm.count("input-file")>1)
           {
-              cerr<<"only one single input file has to be specified!"<<endl;
-              exit(-1);
+            cerr<<_("only one single input file has to be specified!")<<endl;
+            exit(-1);
           }
 
           boost::filesystem::path fn = vm["input-file"].as<std::string>();
@@ -259,7 +265,7 @@ int main(int argc, char *argv[])
           if (!boost::filesystem::exists(fn))
           {
               std::cerr << std::endl
-                  << "Error: input file does not exist: "<<fn
+                      << _("Error: input file does not exist")<<": "<<fn
                   <<std::endl<<std::endl;
               exit(-1);
           }
@@ -278,7 +284,7 @@ int main(int argc, char *argv[])
             analysisName = analysisnamenode->first_attribute("name")->value();
         }
 
-        cout<< "Executing analysis in directory "<<workdir<<endl;
+        cout<< _("Executing analysis in directory")<<" "<<workdir<<endl;
 
         ParameterSet parameters = insight::Analysis::defaultParameters(analysisName);
         
@@ -302,7 +308,7 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    throw insight::Exception("merge command needs either one or three arguments!\nGot:"+ist);
+                    throw insight::Exception(_("merge command needs either one or three arguments!\nGot: %s"), ist.c_str());
                 }
             }
         }
@@ -315,7 +321,9 @@ int main(int argc, char *argv[])
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
                 int ns=boost::lexical_cast<int>(pair[1]);
-                cout << "Resizing array '"<<pair[0]<<"' to "<<ns<<endl;
+                cout << boost::str(boost::format(
+                                       _("Resizing array '%s' to %d")
+                                       ) % pair[0] % ns )<<endl;
                 auto& ap = parameters.get<ArrayParameter>(pair[0]);
                 for (size_t i=ap.size(); i<ns; ++i)
                 {
@@ -332,7 +340,9 @@ int main(int argc, char *argv[])
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
                 bool v=boost::lexical_cast<bool>(pair[1]);
-                cout << "Setting boolean '"<<pair[0]<<"' = "<<v<<endl;
+                cout << boost::str(boost::format(
+                                       _("Setting boolean '%s' = %d")
+                                       )% pair[0] % v) <<endl;
                 parameters.getBool(pair[0])=v;
             }
         }
@@ -344,7 +354,9 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                cout << "Setting string '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
+                cout << boost::str(boost::format(
+                                       _("Setting string '%s' = \"%s\"")
+                                       ) % pair[0] % pair[1]) <<endl;
                 parameters.getString(pair[0])=pair[1];
             }
         }
@@ -356,7 +368,9 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                cout << "Setting selection '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
+                cout << boost::str(boost::format(
+                                       _("Setting selection '%s' = \"%s\"")
+                                       ) % pair[0] % pair[1]) <<endl;
                 parameters.get<SelectionParameter>(pair[0]).setSelection(pair[1]);
             }
         }
@@ -368,7 +382,9 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                cout << "Setting path '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
+                cout << boost::str(boost::format(
+                                       _("Setting path '%s' = \"%s\"")
+                                       ) % pair[0] % pair[1]) <<endl;
                 //parameters.getPath(pair[0])=pair[1];
                 parameters.setOriginalFileName(pair[0], pair[1]);
             }
@@ -382,7 +398,9 @@ int main(int argc, char *argv[])
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
                 double v=toNumber<double>(pair[1]);
-                cout << "Setting double '"<<pair[0]<<"' = "<<v<<endl;
+                cout << boost::str(boost::format(
+                                       _("Setting double '%s' = %g")
+                                       ) % pair[0] % v) << endl;
                 parameters.getDouble(pair[0])=v;
             }
         }
@@ -396,7 +414,9 @@ int main(int argc, char *argv[])
                 boost::split(pair, s, boost::is_any_of(":"));
                 arma::mat v;
                 stringToValue(pair[1], v);
-                cout << "Setting vector '"<<pair[0]<<"' = "<<v<<endl;
+                cout << boost::str(boost::format(
+                                        _("Setting vector '%s' = [%g %g %g]")
+                                       ) % pair[0] % v(0) % v(1) % v(2)) <<endl;
                 parameters.getVector(pair[0])=v;
             }
         }
@@ -409,7 +429,9 @@ int main(int argc, char *argv[])
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
                 int v=boost::lexical_cast<int>(pair[1]);
-                cout << "Setting int '"<<pair[0]<<"' = "<<v<<endl;
+                cout << boost::str(boost::format(
+                                       _("Setting int '%s'= %d")
+                                       ) % pair[0] % v) <<endl;
                 parameters.getInt(pair[0])=v;
             }
         }
@@ -420,7 +442,7 @@ int main(int argc, char *argv[])
         }
 
         std::cout<<std::string(80, '=')+'\n';
-        std::cout<<"Applied Parameters for this run"<<std::endl;
+        std::cout<<_("Applied Parameters for this run")<<std::endl;
         std::cout<<parameters;
         std::cout<<std::string(80, '=')+"\n\n";
         std::cout<<std::flush;
@@ -509,7 +531,7 @@ int main(int argc, char *argv[])
                     {
                         if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % workdir.string() % outpath.string() ).c_str() ))
                         {
-                            Warning("TeX input file was written but could not execute pdflatex successfully.");
+                            Warning(_("TeX input file was written but could not execute pdflatex successfully."));
                             break;
                         }
                     }
@@ -522,14 +544,14 @@ int main(int argc, char *argv[])
           }
 
           std::cout
-                  << "#### ANALYSIS FINISHED SUCCESSFULLY. ####"
-                  <<std::endl;
+              << "#### "<<_("ANALYSIS FINISHED SUCCESSFULLY.")<<" ####"
+              <<std::endl;
         }
         else
         {
           std::cerr
-                  << "#### ANALYSIS STOPPED WITHOUT RESULTS. ####"
-                  <<std::endl;
+              << "#### "<<_("ANALYSIS STOPPED WITHOUT RESULTS.")<<" ####"
+              <<std::endl;
         }
 
 #ifdef HAVE_WT
@@ -543,7 +565,7 @@ int main(int argc, char *argv[])
     {
       summarizeWarnings();
 
-      std::cerr<<"*** The analysis was stopped due to this error:\n\n";
+      std::cerr<<"*** "<<_("The analysis was stopped due to this error:")<<"\n\n";
       printException(e);
       return -1;
     }

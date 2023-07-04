@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: workbench \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-03 13:34+0200\n"
+"POT-Creation-Date: 2023-07-04 22:23+0200\n"
 "PO-Revision-Date: 2023-07-02 22:36+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -17,51 +17,51 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: workbench.cpp:56 workbench.cpp:73
-msgid "Specifies input file."
-msgstr "Eingabedatei angeben"
-
-#: workbench.cpp:66
+#: workbench.cpp:64
 msgid "Allowed options"
 msgstr "Zulässige Optionen"
 
-#: workbench.cpp:68
+#: workbench.cpp:66
 msgid "produce help message"
 msgstr "Hilfe anzeigen"
 
-#: workbench.cpp:69
+#: workbench.cpp:67
 msgid "print version and exit"
 msgstr "Version anzeigen und beenden"
 
-#: workbench.cpp:70
+#: workbench.cpp:68
 msgid "put debug output to console instead of log window"
 msgstr "Debug-Ausgabe auf der Konsole anzeigen anstatt im Log-Fenster"
 
-#: workbench.cpp:71
+#: workbench.cpp:69
 msgid "Additional libraries with analysis modules to load"
 msgstr "Weitere Bibliotheken mit Analysen, die geladen werden sollen"
 
-#: workbench.cpp:72
+#: workbench.cpp:70
 msgid "open a new analysis of this on startup"
 msgstr "Nach dem Start eine neue Analyse des angegebenen Typs erzeugen"
 
-#: workbench.cpp:82
+#: workbench.cpp:71
+msgid "Specifies input file."
+msgstr "Eingabedatei angeben"
+
+#: workbench.cpp:80
 msgid "Usage:"
 msgstr "Benutzung:"
 
-#: workbench.cpp:97
+#: workbench.cpp:95
 msgid "Could not parse command line"
 msgstr "Konnte die Kommandozeile nicht auswerten"
 
-#: workbench.cpp:122
+#: workbench.cpp:120
 msgid "Error: library file does not exist"
 msgstr "Fehler: die Bibliothek existiert nicht"
 
-#: workbench.cpp:141
+#: workbench.cpp:138
 msgid "Wait"
 msgstr "Warten"
 
-#: workbench.cpp:154
+#: workbench.cpp:151
 #, c-format
 msgid "Input file does not exist: %s"
 msgstr "Eingabedatei existiert nicht: %s"

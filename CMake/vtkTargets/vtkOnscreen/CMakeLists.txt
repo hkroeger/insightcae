@@ -24,6 +24,7 @@ if (NOT WIN32)
         IOExport
         IOImage
         IOXML
+        IOParallel
         ImagingCore
         GUISupportQt
         RenderingOpenGL2
@@ -54,6 +55,7 @@ else()
            vtkIOExport
            vtkIOImage
            vtkIOXML
+           IOParallel
            vtkImagingCore
            vtkGUISupportQt
            vtkRenderingOpenGL2

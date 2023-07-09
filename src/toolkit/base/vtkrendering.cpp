@@ -29,6 +29,7 @@
 #include "vtkDataObjectTreeIterator.h"
 #include "vtkCleanPolyData.h"
 #include "vtkLogLookupTable.h"
+#include "vtkLogger.h"
 
 #include "vtkPointData.h"
 #include "vtkExtractBlock.h"
@@ -40,9 +41,15 @@
 #include "vtkAxesActor.h"
 #include "vtkRenderWindowInteractor.h"
 #include "vtkLightKit.h"
+#include "vtkDummyController.h"
+#include "vtkMultiProcessController.h"
+#include "vtkExecutive.h"
+#include "vtkStreamingDemandDrivenPipeline.h"
+#include "vtkInformationVector.h"
 
 #include "base/exception.h"
 #include "base/spatialtransformation.h"
+#include "base/translations.h"
 
 void vtkRenderingOpenGL2_AutoInit_Construct();
 void vtkRenderingFreeType_AutoInit_Construct();
@@ -558,15 +565,52 @@ void VTKOffscreenScene::removeActor2D(vtkActor2D *act)
 
 
 
-
-
-
-OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath)
-  : VTKOffscreenScene(),
-    ofcase_(vtkSmartPointer<vtkOpenFOAMReader>::New())
+class ModifiedPOpenFOAMReader : public vtkPOpenFOAMReader
 {
+  ModifiedPOpenFOAMReader()
+      : vtkPOpenFOAMReader()
+  {}
+
+public:
+  static ModifiedPOpenFOAMReader* New();
+
+//    int UpdateTimeStep(
+//      double time, int piece = -1, int numPieces = 1, int ghostLevels = 0,
+//      const int extents[6] = nullptr) override
+//    {
+//      for (int r=0; r<Readers->GetNumberOfItems(); ++r)
+//      {
+//          if (reader = vtkOpenFOAMReaderPrivate::SafeDownCast(this->Readers->GetItemAsObject(i)))
+//            reader->UpdateTimeStep(time, piece, numPieces, ghostLevels, extents);
+//      }
+//      return vtkPOpenFOAMReader::UpdateTimeStep(time, piece, numPieces, ghostLevels, extents);
+//    }
+};
+
+vtkStandardNewMacro(ModifiedPOpenFOAMReader);
+
+OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np)
+  : VTKOffscreenScene()
+{
+  auto controller =
+#if VTK_MODULE_ENABLE_VTK_ParallelMPI
+    vtkSmartPointer<vtkMPIController>
+#else
+    vtkSmartPointer<vtkDummyController>
+#endif
+      ::New();
+  controller->Initialize(nullptr, nullptr);
+  int rank = controller->GetLocalProcessId();
+  vtkLogger::SetThreadName("rank=" + std::to_string(rank));
+  vtkMultiProcessController::SetGlobalController(controller);
+
+  ofcase_ = /*decltype(ofcase_)*/vtkSmartPointer<ModifiedPOpenFOAMReader>::New();
   ofcase_->SetFileName( casepath.string().c_str() );
   ofcase_->SetSkipZeroTime(false);
+  ofcase_->SetCaseType(
+      np > 1 ?
+          vtkPOpenFOAMReader::DECOMPOSED_CASE :
+          vtkPOpenFOAMReader::RECONSTRUCTED_CASE );
   ofcase_->Update();
 
   ofcase_->CreateCellToPointOn();
@@ -576,15 +620,20 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath)
   ofcase_->EnableAllPointArrays();
   ofcase_->EnableAllPatchArrays();
 
-  times_ = ofcase_->GetTimeValues();
+  auto execInfo = ofcase_->GetExecutive()->GetOutputInformation(0);
+  int nt = execInfo->Length(vtkStreamingDemandDrivenPipeline::TIME_STEPS());
+//  times_ = ofcase_->GetTimeValues();
+  times_.resize(nt);
+  execInfo->Get(vtkStreamingDemandDrivenPipeline::TIME_STEPS(), &times_[0]);
+
   cout<<"VTK OpenFOAM Reader: available times = (";
-  for (int i=0; i<times_->GetNumberOfTuples(); i++)
+  for (int i=0; i<times_.size(); i++)
   {
-    cout<<" "<<times_->GetTuple1(i)<<":"<<i<<endl;
+    cout<<" "<<times_[i]<<":"<<i<<endl;
   }
   cout<<" )"<<endl;
 
-  setTimeIndex( times_->GetNumberOfTuples()-1 );
+  setTimeValue( times_.back() );
 
   for (int i=0; i<ofcase_->GetNumberOfPatchArrays(); i++)
   {
@@ -593,21 +642,42 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath)
 
 }
 
-vtkDoubleArray *OpenFOAMCaseScene::times() const
+const std::vector<double>& OpenFOAMCaseScene::times() const
 {
   return times_;
 }
 
-void OpenFOAMCaseScene::setTimeValue(double t)
+double OpenFOAMCaseScene::setTimeValue(double t)
 {
-  ofcase_->SetTimeValue( t );
+  auto ti = std::lower_bound(times_.begin(), times_.end(), t);
+  insight::assertion(
+      ti!=times_.end(),
+      _("no lower bound found for t=%g!"), t );
+
+//  ofcase_->SetTimeValue( t );
+  auto execInfos = ofcase_->GetExecutive()->GetOutputInformation();
+  double tact = *ti;
+  std::cerr<<"tact="<<tact<<std::endl;
+  ofcase_->UpdateInformation();
+  for (int i=0; i<execInfos->GetNumberOfInformationObjects(); ++i)
+  {
+    std::cout<<"set "<<i<<std::endl;
+    execInfos->GetInformationObject(i)->Set(
+      vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), tact );
+  }
+  ofcase_->SetTimeValue(tact);
+  ofcase_->UpdateTimeStep(tact);
+
   ofcase_->Modified();
-  ofcase_->Update();
+//  ofcase_->Update();
+
+  return tact;
 }
+
 
 void OpenFOAMCaseScene::setTimeIndex(vtkIdType timeId)
 {
-  setTimeValue( times_->GetTuple1(timeId) );
+  setTimeValue( times_[timeId] );
 }
 
 vtkUnstructuredGrid* OpenFOAMCaseScene::internalMesh() const
@@ -665,6 +735,20 @@ vtkPolyData* OpenFOAMCaseScene::patch(const std::string& name) const
   return nullptr;
 }
 
+vtkSmartPointer<vtkAlgorithm> OpenFOAMCaseScene::patchesAlgo(const std::string& namePattern) const
+{
+  auto names = matchingPatchNames(namePattern);
+
+  auto af = vtkSmartPointer<vtkAppendPolyData>::New();
+  for (const auto& pn: names)
+  {
+    af->AddInputData(patch(pn));
+  }
+
+  return af;
+}
+
+
 vtkSmartPointer<vtkPolyData> OpenFOAMCaseScene::patches(const std::string& namePattern) const
 {
   auto names = matchingPatchNames(namePattern);
@@ -679,7 +763,7 @@ vtkSmartPointer<vtkPolyData> OpenFOAMCaseScene::patches(const std::string& nameP
   return af->GetOutput();
 }
 
-vtkSmartPointer<vtkOpenFOAMReader> OpenFOAMCaseScene::ofcase() const
+vtkSmartPointer<vtkPOpenFOAMReader> OpenFOAMCaseScene::ofcase() const
 {
   return ofcase_;
 }

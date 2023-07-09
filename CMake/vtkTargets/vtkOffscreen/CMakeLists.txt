@@ -32,6 +32,7 @@ else()
             IOExport
             IOImage
             IOXML
+            IOParallel
             ImagingCore
             RenderingOpenGL2
             RenderingAnnotation

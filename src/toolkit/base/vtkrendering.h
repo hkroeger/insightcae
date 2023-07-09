@@ -23,6 +23,7 @@
 #include "vtkPointData.h"
 #include "vtkAlgorithm.h"
 #include "vtkOpenFOAMReader.h"
+#include "vtkPOpenFOAMReader.h"
 #include "vtkUnstructuredGrid.h"
 #include "vtkMultiBlockDataSet.h"
 #include "vtkCompositeDataGeometryFilter.h"
@@ -153,8 +154,12 @@ public:
       DatasetRepresentation repr = Surface
       )
   {
-    input->Update();
-    return addData<Mapper>(input->GetOutput(), colorspec, repr);
+//    input->Update();
+//    return addData<Mapper>(input->GetOutput(), colorspec, repr);
+      auto mapper = vtkSmartPointer<Mapper>::New();
+      mapper->SetInputConnection(input->GetOutputPort());
+
+      return addProperties<Mapper>(mapper, colorspec, /*input,*/ repr);
   }
 
   template<class Mapper, class Input>
@@ -167,7 +172,7 @@ public:
     auto mapper = vtkSmartPointer<Mapper>::New();
     mapper->SetInputData(input);
 
-    return addProperties<Mapper>(mapper, colorspec, input, repr);
+    return addProperties<Mapper>(mapper, colorspec, /*input,*/ repr);
   }
 
   void addActor2D(vtkSmartPointer<vtkActor2D> actor);
@@ -176,7 +181,7 @@ public:
   vtkActor* addProperties(
       vtkSmartPointer<Mapper>& mapper,
       ColorSpecification colorspec,
-      vtkDataSet *ds,
+//      vtkDataSet *ds,
       DatasetRepresentation repr = Surface
       )
   {
@@ -226,7 +231,10 @@ public:
       }
       else
       {
-          mm=calcRange(fsel, {ds}, {});
+          insight::assertion(
+               mapper->GetInput()!=nullptr,
+              "expected dataset input!");
+          mm=calcRange(fsel, { mapper->GetInput() }, {});
       }
       mapper->SetScalarRange(mm.first, mm.second);
 
@@ -281,23 +289,33 @@ public:
 class OpenFOAMCaseScene
   : public VTKOffscreenScene
 {
-  vtkSmartPointer<vtkOpenFOAMReader> ofcase_;
+  vtkSmartPointer<vtkPOpenFOAMReader> ofcase_;
   std::map<std::string,int> patches_;
-  vtkSmartPointer<vtkDoubleArray> times_;
+  std::vector<double> times_;
 
 public:
-  OpenFOAMCaseScene(const boost::filesystem::path& casepath);
+  OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np=1);
 
-  vtkDoubleArray* times() const;
-  void setTimeValue(double t);
+  const std::vector<double>& times() const;
+
+  /**
+   * @brief setTimeValue
+   * @param t
+   * desired time value
+   * @return
+   * returns the actually set value. That shall be the closest time step available.
+   */
+  double setTimeValue(double t);
+
   void setTimeIndex(vtkIdType timeId);
 
-  vtkSmartPointer<vtkOpenFOAMReader> ofcase() const;
+  vtkSmartPointer<vtkPOpenFOAMReader> ofcase() const;
   vtkUnstructuredGrid* internalMesh() const;
 
   std::vector<std::string> matchingPatchNames(const std::string& patchNamePattern) const;
 
   vtkPolyData* patch(const std::string& name) const;
+  vtkSmartPointer<vtkAlgorithm> patchesAlgo(const std::string& namePattern) const;
   vtkSmartPointer<vtkPolyData> patches(const std::string& namePattern) const;
 
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(int blockIdx) const;

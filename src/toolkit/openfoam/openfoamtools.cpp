@@ -1948,44 +1948,44 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
     results->insert
     (
      "Mesh quality at time "+mq.time,
-     std::unique_ptr<AttributeTableResult>
+     std::make_unique<AttributeTableResult>
      (
-       new AttributeTableResult
-       (
-	 list_of<string>
-	  ("Number of cells")
-	  ("thereof hexahedra")
-	  ("prisms")
-	  ("tetrahedra")
-	  ("polyhedra")
-	  
-	  ("Number of mesh regions")
-	  
-	  ("Domain extent (X)")
-	  ("Domain extent (Y)")
-	  ("Domain extent (Z)")
-	  
-	  ("Max. aspect ratio")
-	  ("Min. face area")
-	  ("Min. cell volume")
-	  
-	  ("Max. non-orthogonality")
-	  ("Avg. non-orthogonality")
-	  ("Max. skewness")
-	  
-	  ("No. of severely non-orthogonal faces")
-	  ("No. of negative face pyramids")
-	  ("No. of severely skew faces"),
+        AttributeTableResult::AttributeNames{
+          {"Number of cells"},
+          {"thereof hexahedra"},
+          {"prisms"},
+          {"tetrahedra"},
+          {"polyhedra"},
 
-	 list_of<AttributeTableResult::AttributeValue>
-	  (mq.ncells)(mq.nhex)(mq.nprism)(mq.ntet)(mq.npoly)
-	  (mq.nmeshregions)
-	  (mq.bb_max(0)-mq.bb_min(0))(mq.bb_max(1)-mq.bb_min(1))(mq.bb_max(2)-mq.bb_min(2))
-	  (mq.max_aspect_ratio)(mq.min_faceA)(mq.min_cellV)
-	  (mq.max_nonorth)(mq.avg_nonorth)(mq.max_skewness)
-	  (mq.n_severe_nonorth)(mq.n_neg_facepyr)(mq.n_severe_skew),
-	"Mesh Quality", "", ""
-	)
+          {"Number of mesh regions"},
+
+          {"Domain extent (X)"},
+          {"Domain extent (Y)"},
+          {"Domain extent (Z)"},
+
+          {"Max. aspect ratio"},
+          {"Min. face area"},
+          {"Min. cell volume"},
+
+          {"Max. non-orthogonality"},
+          {"Avg. non-orthogonality"},
+          {"Max. skewness"},
+
+          {"No. of severely non-orthogonal faces"},
+          {"No. of negative face pyramids"},
+          {"No. of severely skew faces"}
+        },
+
+        AttributeTableResult::AttributeValues{
+          mq.ncells, mq.nhex, mq.nprism, mq.ntet, mq.npoly,
+          mq.nmeshregions,
+          mq.bb_max(0)-mq.bb_min(0), mq.bb_max(1)-mq.bb_min(1), mq.bb_max(2)-mq.bb_min(2),
+          mq.max_aspect_ratio, mq.min_faceA, mq.min_cellV,
+          mq.max_nonorth, mq.avg_nonorth, mq.max_skewness,
+          mq.n_severe_nonorth, mq.n_neg_facepyr, mq.n_severe_skew
+        },
+
+        "Mesh Quality", "", ""
      )
     ).setOrder(0);
   }
@@ -2930,65 +2930,151 @@ bool checkIfAnyFileIsNewerOrNonexistent
     return anynewerornonexistent;
 }
 
+
+ParallelTimeDirectories::ParallelTimeDirectories(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location
+    )
+{
+    serTimes_ = listTimeDirectories(location);
+
+    auto proc0 = location/"processor0";
+    if (boost::filesystem::exists(proc0)
+        && boost::filesystem::is_directory(proc0))
+    {
+        proc0Times_=listTimeDirectories(proc0);
+    }
+}
+
+
+
+
+bool ParallelTimeDirectories::proc0TimeDirNeedsReconst(
+    const boost::filesystem::path& ptdpath ) const
+{
+    // search for identical time directory *name*
+    auto iser=std::find_if(
+        serTimes_.begin(), serTimes_.end(),
+        [&](const TimeDirectoryList::value_type& td)
+        {
+            return boost::filesystem::basename(ptdpath)
+                == boost::filesystem::basename(td.second);
+        }
+    );
+
+    if (iser==serTimes_.end())
+    {
+        // no matching serial time dir present
+        return true;
+    }
+    else
+    {
+        // its there, but up-to-date?
+        return checkIfAnyFileIsNewerOrNonexistent(ptdpath, iser->second, true);
+    }
+
+    return false;
+}
+
+
+
+
+std::set<boost::filesystem::path> ParallelTimeDirectories::newParallelTimes() const
+{
+    std::set<boost::filesystem::path> result;
+
+    for (const auto& ptd: proc0Times_)
+    {
+        if (proc0TimeDirNeedsReconst(ptd.second))
+        {
+            // no matching serial time dir present
+            result.insert(boost::filesystem::basename(ptd.second));
+        }
+    }
+
+    return result;
+}
+
+
+
+
+bool ParallelTimeDirectories::latestTimeNeedsReconst() const
+{
+    if (proc0Times_.size())
+    {
+        auto lproc = (--proc0Times_.end());
+        return proc0TimeDirNeedsReconst(lproc->second);
+    }
+    else
+        return false;
+}
+
+
+
 bool checkIfReconstructLatestTimestepNeeded
 (
-  const OpenFOAMCase& /*cm*/,
+  const OpenFOAMCase& cm,
   const boost::filesystem::path& location
 )
 {
-  using namespace boost::filesystem;
-  
-  path proc0 = location/"processor0";
-  if (!exists(proc0)) 
-  {
-      std::cout<<"No processor directories in case "<<location.string()<<" => no reconstruct possible"<<std::endl;
-      return false; // no reconst, if no processor directories exist
-  }
-  
-  // find last timestep in proc*0
-  TimeDirectoryList tdl = listTimeDirectories( proc0 );  
-  boost::filesystem::path proc0latestTimeDir = tdl.rbegin()->second;
-  
-  if (tdl.size()==0) 
-  {
-      std::cout<<"No time directories in procesor0 => no reconstruct possible"<<std::endl;
-      return false; // no reconst, if not time dirs in proc dirs
-  }
+    return ParallelTimeDirectories(cm, location)
+        .latestTimeNeedsReconst();
 
-  path timedirname = proc0latestTimeDir.filename();
-  path latestTimeDir = location/timedirname;
+//  using namespace boost::filesystem;
   
-  if (!exists(latestTimeDir)) 
-  {
-      std::cout<<"Latest time directory "<<timedirname.string()<<" in procesor0 not existing in case "<<location.string()<<" => reconstruct required"<<std::endl;
-      return true; // reconst needed, if latest time is only existing in proc dir
-  }
-  else
-  {
-      // time dir exists also in case; check if files in proc dir are newer
+//  path proc0 = location/"processor0";
+//  if (!exists(proc0))
+//  {
+//      std::cout<<"No processor directories in case "<<location.string()<<" => no reconstruct possible"<<std::endl;
+//      return false; // no reconst, if no processor directories exist
+//  }
+  
+//  // find last timestep in proc*0
+//  TimeDirectoryList tdl = listTimeDirectories( proc0 );
+//  boost::filesystem::path proc0latestTimeDir = tdl.rbegin()->second;
+  
+//  if (tdl.size()==0)
+//  {
+//      std::cout<<"No time directories in procesor0 => no reconstruct possible"<<std::endl;
+//      return false; // no reconst, if not time dirs in proc dirs
+//  }
+
+//  path timedirname = proc0latestTimeDir.filename();
+//  path latestTimeDir = location/timedirname;
+  
+//  if (!exists(latestTimeDir))
+//  {
+//      std::cout<<"Latest time directory "<<timedirname.string()<<" in procesor0 not existing in case "<<location.string()<<" => reconstruct required"<<std::endl;
+//      return true; // reconst needed, if latest time is only existing in proc dir
+//  }
+//  else
+//  {
+//      // time dir exists also in case; check if files in proc dir are newer
       
-      if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir, latestTimeDir, false))
-      {
-          std::cout<<"There are newer or non-existing field files in case time dir => reconstruct required"<<std::endl;          
-          return true;
-      }
+//      if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir, latestTimeDir, false))
+//      {
+//          std::cout<<"There are newer or non-existing field files in case time dir => reconstruct required"<<std::endl;
+//          return true;
+//      }
       
-      if (exists(proc0latestTimeDir/"polyMesh"))
-      {
-          if (!exists(latestTimeDir/"polyMesh"))
-          {
-            std::cout<<"polyMesh folder in case time dir not existing => reconstruct required"<<std::endl;          
-            return true;              
-          }
-          else if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir/"polyMesh", latestTimeDir/"polyMesh", false))
-          {
-            std::cout<<"There are newer or non-existing files in polyMesh folder => reconstruct required"<<std::endl;          
-            return true;
-          }
-      }
-  }
-  return false;
+//      if (exists(proc0latestTimeDir/"polyMesh"))
+//      {
+//          if (!exists(latestTimeDir/"polyMesh"))
+//          {
+//            std::cout<<"polyMesh folder in case time dir not existing => reconstruct required"<<std::endl;
+//            return true;
+//          }
+//          else if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir/"polyMesh", latestTimeDir/"polyMesh", false))
+//          {
+//            std::cout<<"There are newer or non-existing files in polyMesh folder => reconstruct required"<<std::endl;
+//            return true;
+//          }
+//      }
+//  }
+//  return false;
 }
+
+
 
 
 eMesh::eMesh()

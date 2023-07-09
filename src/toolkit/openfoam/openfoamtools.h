@@ -738,11 +738,46 @@ bool checkIfAnyFileIsNewerOrNonexistent
     bool recursive=true
 );
 
+
+
+class ParallelTimeDirectories
+{
+  TimeDirectoryList serTimes_;
+  TimeDirectoryList proc0Times_;
+
+public:
+  ParallelTimeDirectories(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path& location
+        );
+
+   bool proc0TimeDirNeedsReconst(const boost::filesystem::path& ptdname) const;
+
+    /**
+   * @brief newParallelTimes
+   * @return
+   * parallel time directories, which are newer
+   * or not present in serial and need reconstruction
+   */
+  std::set<boost::filesystem::path>
+  newParallelTimes() const;
+
+  /**
+   * @brief latestTimeNeedsReconst
+   * @return
+   * check, if latest time step needs reconstruction
+   */
+  bool latestTimeNeedsReconst() const;
+
+};
+
 bool checkIfReconstructLatestTimestepNeeded
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location
 );
+
+
 
 typedef std::vector<arma::mat> EMeshPtsList;
 typedef std::vector<EMeshPtsList> EMeshPtsListList;

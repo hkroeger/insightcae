@@ -1,0 +1,1481 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1806                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : v1806-17db0a5e0ee7
+Arch   : "LSB;label=32;scalar=64"
+Exec   : reconstructPar
+Date   : Jul 09 2023
+Time   : 12:09:40
+Host   : "helios"
+PID    : 18211
+I/O    : uncollated
+Case   : /home/hannes/Projekte/insight/src/test/toolkit/tutorial_mixerVesselAMI2D
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+
+
+Reconstructing fields for mesh region0
+
+Time = 0.1
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 0.2
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 0.3
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 0.4
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 0.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 0.6
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 0.7
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 0.8
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 0.9
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.1
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.2
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.3
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.4
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.6
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.7
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.8
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.9
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.1
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.2
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.3
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.4
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.6
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.7
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.8
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.9
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.1
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.2
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.3
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.4
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.6
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.7
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.8
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.9
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.1
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.2
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.3
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.4
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.6
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.7
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.8
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.9
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        p
+
+    Reconstructing volVectorFields
+
+        U
+
+    Reconstructing surfaceScalarFields
+
+        phi
+        meshPhi
+
+    Reconstructing surfaceVectorFields
+
+        Uf
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+
+End
+

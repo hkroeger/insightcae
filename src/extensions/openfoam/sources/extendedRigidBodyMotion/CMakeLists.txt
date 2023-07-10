@@ -27,4 +27,4 @@ setup_lib_target_OF(${PRJ}
     "${OF_INCLUDE_DIRS}" "${OF_LIBS}"
     "${INCLUDE_DIRS}" "${LIBS}"
     "extendedForcesFunctionObject;forceSources;globalCoordinateSystems")
-linkToolkit_OF_ShLib( ${PRJ} )
+

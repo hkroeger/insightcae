@@ -15,6 +15,7 @@ set(OF_LIBS
 )
 
 set(INCLUDE_DIRS 
+    ${Boost_INCLUDE_DIR}
 )
 
 set(LIBS

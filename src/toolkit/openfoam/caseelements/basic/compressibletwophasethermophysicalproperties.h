@@ -19,6 +19,8 @@ phases = array [
      includedset "insight::SpeciesData::Parameters"
     ] *2 "Definitions of the phases"
 
+energyType = selection (sensibleInternalEnthalpy sensibleInternalEnergy) sensibleInternalEnthalpy ""
+
 sigma = double 0.07 "Surface tension"
 
 pMin = double 0 "[Pa] minimum pressure"

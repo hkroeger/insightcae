@@ -412,6 +412,35 @@ std::string SpeciesData::thermoType() const
   return "";
 }
 
+string SpeciesData::equationOfStateType() const
+{
+  if (boost::get<Parameters::properties_custom_type::equationOfState_perfectGas_type>(
+          &p_.equationOfState))
+  {
+    return "perfectGas";
+  }
+  else if (boost::get<Parameters::properties_custom_type::equationOfState_perfectFluid_type>(
+          &p_.equationOfState))
+  {
+    return "perfectFluid";
+  }
+  else if (boost::get<Parameters::properties_custom_type::equationOfState_adiabaticPerfectFluid_type>(
+               &p_.equationOfState))
+  {
+    return "adiabaticPerfectFluid";
+  }
+  else if (boost::get<Parameters::properties_custom_type::equationOfState_rPolynomial_type>(
+               &p_.equationOfState))
+  {
+    return "rPolynomial";
+  }
+  else
+  {
+    throw insight::Exception("Unhandled equationOfState type!");
+  }
+  return "";
+}
+
 void SpeciesData::insertSpecieEntries(OFDictData::dict& d) const
 {
   OFDictData::dict specie;
@@ -484,6 +513,48 @@ void SpeciesData::insertTransportEntries(OFDictData::dict& d) const
 }
 
 
+void SpeciesData::insertEquationOfStateEntries(
+    OFDictData::dict &d ) const
+{
+  if (boost::get<Parameters::properties_custom_type::equationOfState_perfectGas_type>(
+          &p_.equationOfState))
+  {
+  }
+  else if (const auto * pf =
+             boost::get<Parameters::properties_custom_type::equationOfState_perfectFluid_type>(
+               &p_.equationOfState))
+  {
+    OFDictData::dict eos;
+    eos["R"]=pf->R;
+    eos["rho0"]=pf->rho0;
+    d["equationOfState"]=eos;
+  }
+  else if (const auto * apf =
+           boost::get<Parameters::properties_custom_type::equationOfState_adiabaticPerfectFluid_type>(
+               &p_.equationOfState))
+  {
+    OFDictData::dict eos;
+    eos["p0"]=apf->p0;
+    eos["rho0"]=apf->rho0;
+    eos["B"]=apf->B;
+    eos["gamma"]=apf->gamma;
+    d["equationOfState"]=eos;
+  }
+  else if (const auto * rp =
+           boost::get<Parameters::properties_custom_type::equationOfState_rPolynomial_type>(
+               &p_.equationOfState))
+  {
+    OFDictData::dict eos;
+    eos["C"]=OFDictData::list(rp->C);
+    d["equationOfState"]=eos;
+  }
+  else
+  {
+    throw insight::Exception("Unhandled equationOfState type!");
+  }
+}
+
+
 void SpeciesData::insertElementsEntries(OFDictData::dict& d) const
 {
   OFDictData::dict elements;
@@ -492,6 +563,20 @@ void SpeciesData::insertElementsEntries(OFDictData::dict& d) const
     elements[e.element]=e.number;
   }
   d["elements"]=elements;
+}
+
+
+
+SpeciesData::Parameters::properties_custom_type
+SpeciesData::specieFromLibrary(const std::string &name)
+{
+  auto i = speciesLibrary_.find(name);
+
+  insight::assertion(
+      i != speciesLibrary_.end(),
+      "specie %s not found in library!", name.c_str());
+
+  return i->second;
 }
 
 

@@ -143,6 +143,30 @@ properties = selectablesubset {{
     }} constant "Transport properties"
 
 
+    equationOfState = selectablesubset {{
+
+      perfectGas set {}
+
+      perfectFluid set {
+        R = double 3000 ""
+        rho0 = double 1027 ""
+      }
+
+      // from https://www.cfd-online.com/Forums/openfoam-solving/228725-how-use-tait-equaton-state-compressibleinterfoam.html
+      adiabaticPerfectFluid set {
+        rho0 = double 1025 ""
+        p0 = double 1e5 ""
+        gamma = double 7.15 ""
+        B = double 0.304913e8 ""
+      }
+
+      rPolynomial set {
+        C = array [ double 1 "" ] *0 "Polynomial coefficients"
+      }
+
+    }} perfectGas "Equation of state type"
+
+
 
     elements = array [ set {
      element = string "N" "Name of the element"
@@ -159,10 +183,10 @@ properties = selectablesubset {{
 protected:
 //  Parameters p_;
   std::string name_;
-  Parameters::properties_custom_type p_;
+  SpeciesData::Parameters::properties_custom_type p_;
 
   static struct SpeciesLibrary
-      : public std::map<std::string, Parameters::properties_custom_type>
+      : public std::map<std::string, SpeciesData::Parameters::properties_custom_type>
   {
     declareFactoryTable(SpeciesLibrary, LIST(const ParameterSet& ps = ParameterSet() ), LIST(ps));
 
@@ -181,11 +205,15 @@ public:
 
   std::string transportType() const;
   std::string thermoType() const;
+  std::string equationOfStateType() const;
 
   void insertSpecieEntries(OFDictData::dict& d) const;
   void insertThermodynamicsEntries(OFDictData::dict& d) const;
   void insertTransportEntries(OFDictData::dict& d) const;
+  void insertEquationOfStateEntries(OFDictData::dict& d) const;
   void insertElementsEntries(OFDictData::dict& d) const;
+
+  static SpeciesData::Parameters::properties_custom_type specieFromLibrary(const std::string& name);
 
   std::pair<double,double> temperatureLimits() const;
 };

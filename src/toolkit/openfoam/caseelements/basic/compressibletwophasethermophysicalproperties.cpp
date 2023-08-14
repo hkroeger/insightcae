@@ -38,6 +38,42 @@ void compressibleTwoPhaseThermophysicalProperties::addIntoDictionaries ( OFdicts
     thermophysicalProperties["phases"]=phasesList;
     thermophysicalProperties["pMin"]=p_.pMin;
     thermophysicalProperties["sigma"]=p_.sigma;
+
+    for (const auto& p: p_.phases)
+    {
+        SpeciesData sd(p);
+
+        OFDictData::dict& td=
+            dictionaries.lookupDict("constant/thermophysicalProperties."+p.name);
+
+        OFDictData::dict tt;
+        tt["type"]="heRhoThermo";
+        tt["mixture"]="pureMixture";
+        tt["transport"]=sd.transportType();
+        tt["thermo"]=sd.thermoType();
+        switch (p_.energyType)
+        {
+        case Parameters::energyType_type::sensibleInternalEnthalpy:
+            tt["energy"]="sensibleInternalEnthalpy";
+            break;
+        case Parameters::energyType_type::sensibleInternalEnergy:
+            tt["energy"]="sensibleInternalEnergy";
+            break;
+        default:
+            throw insight::Exception("unhandled selection!");
+        }
+        tt["equationOfState"]=sd.equationOfStateType();
+        tt["specie"]="specie";
+        td["thermoType"]=tt;
+
+        OFDictData::dict tsd;
+        sd.insertSpecieEntries(tsd);
+        sd.insertThermodynamicsEntries(tsd);
+        sd.insertEquationOfStateEntries(tsd);
+        sd.insertTransportEntries(tsd);
+        sd.insertElementsEntries(tsd);
+        td["mixture"]=tsd;
+    }
 }
 
 

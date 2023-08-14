@@ -207,11 +207,40 @@ void VelocityInletBC::addIntoDictionaries(OFdicts &dicts) const
         coeffs["height"]=w->height;
 
 
-        wp[patchName_+"Coeffs"]=coeffs;
+        FieldData Uf(p.velocity);
+        if (Uf.maxValueMag()>SMALL)
+        {
+            throw insight::Exception("waves + convection velocity is not supported!");
+//            arma::mat U;
+//            if (!Uf.isAConstantValue(U))
+//                throw insight::Exception("only constant uniform values are supported!");
+
+//            OFDictData::dict fcs;
+//            fcs["Tsoft"]=0;
+//            fcs["U"]= OFDictData::to_OF(U);
+//            fcs["waveType"]="potentialCurrent";
+
+//            wp[patchName_+"FlowCoeffs"]=fcs;
+
+//            wp[patchName_+"WavesCoeffs"]=coeffs;
+
+//            OFDictData::dict combinedCoeffs;
+//            combinedCoeffs["waveType"]="combinedWaves";
+//            combinedCoeffs["combinedWaveNames"]=
+//                OFDictData::list{
+//                    patchName_+"Flow", patchName_+"Waves"};
+
+//            wp[patchName_+"Coeffs"]=combinedCoeffs;
+//            wp["wind"]= OFDictData::to_OF(U);
+        }
+        else
+        {
+            wp[patchName_+"Coeffs"]=coeffs;
+        }
 
         auto& controlDict = dicts.lookupDict("system/controlDict");
-        controlDict.getList("libs").insertNoDuplicate("\"libwaves2FoamPatchDistRelaxationShape.so\"");
         controlDict.getList("libs").insertNoDuplicate("\"libwaves2Foam.so\"");
+        controlDict.getList("libs").insertNoDuplicate("\"libwaves2FoamPatchDistRelaxationShape.so\"");
     }
 }
 
@@ -228,7 +257,7 @@ void VelocityInletBC::modifyCaseOnDisk(const OpenFOAMCase &cm, const boost::file
     {
         cm.executeCommand(location, "setWaveParameters");
 
-        // modify generated dict, because subdicts in the wd.input would cause errors
+        // modify generated dict, because subdicts in the waveProperties.input would cause errors
         auto wpdpath=location/"constant"/"waveProperties";
         OFDictData::dictFile wpd;
         readOpenFOAMDict(wpdpath, wpd);

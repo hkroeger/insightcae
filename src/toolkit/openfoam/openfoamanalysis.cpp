@@ -33,6 +33,7 @@
 #include "openfoamanalysis.h"
 
 #include "base/boost_include.h"
+#include "base/translations.h"
 
 using namespace boost;
 using namespace boost::assign;
@@ -322,7 +323,7 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm, ProgressDisplayer& pa
 
 ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress)
 {
-  CurrentExceptionContext ex("evaluating the results for case \""+executionPath().string()+"\"");
+  CurrentExceptionContext ex( _("evaluating the results for case \"%s\""), executionPath().string().c_str() );
 
   auto results = std::make_shared<ResultSet>(parameters(), name_, "Result Report");
   results->introduction() = description_;

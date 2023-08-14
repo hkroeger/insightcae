@@ -60,6 +60,7 @@ if len(liblist)==0:
 #include "base/remoteserverlist.h"
 #include "base/remotelocation.h"
 #include "base/remoteexecution.h"
+#include "base/spatialtransformation.h"
 
 #include "openfoam/blockmesh_templates.h"
 #include "openfoam/openfoamdict.h"
@@ -248,6 +249,7 @@ using namespace insight::createPatchOps;
 %include "base/tools.h"
 %include "base/remotelocation.h"
 %include "base/remoteexecution.h"
+%include "base/spatialtransformation.h"
 
 %include "openfoam/caseelements/boundarycondition.h"
 %include "openfoam/openfoamcase.h"

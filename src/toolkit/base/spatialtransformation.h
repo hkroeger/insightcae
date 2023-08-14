@@ -35,7 +35,9 @@ typedef std::vector<const vtk_Transformer*> vtk_TransformerList;
 class SpatialTransformation;
 class OpenFOAMCase;
 
+#ifndef SWIG
 std::ostream& operator<<(std::ostream& os, const SpatialTransformation& st);
+#endif
 
 
 /**
@@ -45,7 +47,9 @@ std::ostream& operator<<(std::ostream& os, const SpatialTransformation& st);
 class SpatialTransformation
         : public vtk_Transformer
 {
+#ifndef SWIG
     friend std::ostream& operator<<(std::ostream& os, const SpatialTransformation& st);
+#endif
 
 protected:
     // apply in this order:

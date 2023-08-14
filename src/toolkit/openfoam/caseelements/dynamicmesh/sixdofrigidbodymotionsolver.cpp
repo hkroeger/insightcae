@@ -47,27 +47,18 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
       bc["transform"]="(1 0 0 0 1 0 0 0 1) (0 0 0)";
 
       OFDictData::list jl;
-      for (const Parameters::bodies_default_type::translationConstraint_default_type& tc:
-                    body.translationConstraint)
+      for (const Parameters::bodies_default_type::joints_default_type& tc:
+                    body.joints)
       {
         std::string code;
-        if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Px) code="Px";
-        else if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Py) code="Py";
-        else if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Pz) code="Pz";
-        else if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Pxyz) code="Pxyz";
-        else throw insight::Exception("internal error: unhandled value!");
-        OFDictData::dict d;
-         d["type"]=code;
-        jl.push_back(d);
-      }
-      for (const Parameters::bodies_default_type::rotationConstraint_default_type& rc:
-                    body.rotationConstraint)
-      {
-        std::string code;
-        if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Rx) code="Rx";
-        else if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Ry) code="Ry";
-        else if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Rz) code="Rz";
-        else if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Rxyz) code="Rxyz";
+        if (tc==Parameters::bodies_default_type::joints_default_type::Px) code="Px";
+        else if (tc==Parameters::bodies_default_type::joints_default_type::Py) code="Py";
+        else if (tc==Parameters::bodies_default_type::joints_default_type::Pz) code="Pz";
+        else if (tc==Parameters::bodies_default_type::joints_default_type::Pxyz) code="Pxyz";
+        else if (tc==Parameters::bodies_default_type::joints_default_type::Rx) code="Rx";
+        else if (tc==Parameters::bodies_default_type::joints_default_type::Ry) code="Ry";
+        else if (tc==Parameters::bodies_default_type::joints_default_type::Rz) code="Rz";
+        else if (tc==Parameters::bodies_default_type::joints_default_type::Rxyz) code="Rxyz";
         else throw insight::Exception("internal error: unhandled value!");
         OFDictData::dict d;
          d["type"]=code;

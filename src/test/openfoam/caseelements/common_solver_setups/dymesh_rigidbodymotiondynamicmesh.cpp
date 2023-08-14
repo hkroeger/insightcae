@@ -53,8 +53,7 @@ int main(int argc, char*argv[])
                                           100., 100., 100.,
                                           { "inner" },
                                           0.5, 1.,
-                                          { rigidBodyMotionDynamicMesh::Parameters::rigidBodyMotion_type::bodies_default_type::Pxyz },
-                                          {}
+                                          { rigidBodyMotionDynamicMesh::Parameters::rigidBodyMotion_type::bodies_default_type::Pxyz }
                                       }
                                   })
                           )

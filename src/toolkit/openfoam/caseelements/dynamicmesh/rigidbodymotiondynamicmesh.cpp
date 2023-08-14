@@ -39,14 +39,23 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     SixDOFRigidBodyMotionSolver rbms(p.rigidBodyMotion);
     std::string name = rbms.motionSolverName();
 
-    OFDictData::dict rbmc;
-    rbms.addIntoDict(rbmc);
-    dynamicMeshDict[name+"Coeffs"]=rbmc;
+    if (OFversion()<=650)
+    {
+        OFDictData::dict rbmc;
+        rbms.addIntoDict(rbmc);
+        dynamicMeshDict[name+"Coeffs"]=rbmc;
+        dynamicMeshDict["solver"]=name;
+    }
+    else
+    {
+        rbms.addIntoDict(dynamicMeshDict);
+        dynamicMeshDict["motionSolver"]=name;
+    }
 
-    dynamicMeshDict["solver"]=name;
 
     OFDictData::list libl;
     libl.push_back("\"lib"+name+".so\"");
+    libl.push_back("\"libextendedRigidBodyDynamics.so\"");
     dynamicMeshDict["motionSolverLibs"]=libl;
 
 

@@ -42,13 +42,10 @@ bodies = array [
    innerDistance = double 1.0 "radius around body within which a solid body motion is performed."
    outerDistance = double 2.0 "radius around body outside which the grid remains fixed."
 
-   translationConstraint = array [ selection (
-    Px Py Pz Pxyz ) Pxyz "Kind of translation constraint"
-   ] *1 "translation constraints"
-
-   rotationConstraint = array [ selection (
-    Rx Ry Rz Rxyz ) Rxyz "Kind of rotation constraint"
-   ] *1 "rotation constraints"
+   joints = array [ selection (
+    Px Py Pz Pxyz Rx Ry Rz Rxyz
+   ) Pz "Kind of joints"
+   ] *1 "joints"
 
  } ] *1 "moving bodies"
 

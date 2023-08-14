@@ -32,8 +32,8 @@ void compressibleInterFoamNumerics::addIntoDictionaries ( OFdicts& dictionaries 
     div["div(rhoPhi,T)"]		= "Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(T)");
     div["div(rhoPhi,K)"]		= "Gauss upwind";
 
-    div["div(phi,thermo:rho.phase1)"]   = "Gauss upwind";
-    div["div(phi,thermo:rho.phase2)"]	= "Gauss upwind";
+    div["div(phi,thermo:rho."+phaseNames().first+")"]   = "Gauss upwind";
+    div["div(phi,thermo:rho."+phaseNames().second+")"]	= "Gauss upwind";
     div["div(phi,p)"]                   = "Gauss upwind";
     div["div((phi+meshPhi),p)"]         = "Gauss upwind";
 

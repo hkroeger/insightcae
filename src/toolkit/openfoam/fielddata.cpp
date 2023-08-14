@@ -101,7 +101,8 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 {
     std::ostringstream os;
 
-    if (const Parameters::fielddata_uniformSteady_type *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) ) //(type=="uniform")
+    if (const Parameters::fielddata_uniformSteady_type *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) ) //(type=="uniform")
     {
         os <<" uniform unsteady 0.0 " << OFDictData::to_OF(fd->value);
     }
@@ -390,6 +391,17 @@ void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::files
         }
     }
 
+}
+
+bool FieldData::isAConstantValue(arma::mat &value) const
+{
+    if (const Parameters::fielddata_uniformSteady_type *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) ) //(type=="uniform")
+    {
+        value = fd->value;
+        return true;
+    }
+    return false;
 }
 
 }

@@ -862,8 +862,12 @@ void IQCADItemModel::addModelstep(
         insight::DatasetRepresentation dr )
 {
     // set *before* addEntity
-    auto&dvv = featureVisibility_[name];
-    dvv.representation=dr;
+    if (featureVisibility_.find(name)==featureVisibility_.end())
+    {
+        auto&dvv = featureVisibility_[name];
+        dvv.representation=dr;
+        dvv.visible=false;
+    }
 
     addEntity<insight::cad::FeaturePtr>(
               name, value,
@@ -903,8 +907,12 @@ void IQCADItemModel::addComponent(
         insight::DatasetRepresentation dr )
 {
     // set *before* addEntity
-    auto&dvv = featureVisibility_[name];
-    dvv.representation=dr;
+    if (featureVisibility_.find(name)==featureVisibility_.end())
+    {
+        auto &dvv = featureVisibility_[name];
+        dvv.representation=dr;
+        dvv.visible=true;
+    }
 
     addEntity<insight::cad::FeaturePtr>(
               name, value,
@@ -935,12 +943,15 @@ void IQCADItemModel::addPostprocAction(
 
 void IQCADItemModel::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> value)
 {
-    // set *before* addEntity
-    auto&dvv = datasetVisibility_[name];
-    if (auto* ds=vtkDataSet::SafeDownCast(value))
+    if (datasetVisibility_.find(name)==datasetVisibility_.end())
     {
-        if (ds->GetNumberOfCells()==0 && ds->GetNumberOfPoints()>0)
-            dvv.representation=insight::Points;
+        // set *before* addEntity
+        auto&dvv = datasetVisibility_[name];
+        if (auto* ds=vtkDataSet::SafeDownCast(value))
+        {
+            if (ds->GetNumberOfCells()==0 && ds->GetNumberOfPoints()>0)
+                dvv.representation=insight::Points;
+        }
     }
 
     addEntity<vtkSmartPointer<vtkDataObject> >(

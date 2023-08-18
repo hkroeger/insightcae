@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-04 22:29+0200\n"
+"POT-Creation-Date: 2023-08-14 23:34+0200\n"
 "PO-Revision-Date: 2023-07-02 13:33+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -28,3 +28,13 @@ msgstr ""
 #, c-format
 msgid "Tried to set a %s from a different type (%s)!"
 msgstr "Tried to set a %s from a different type (%s)!"
+
+#: base/vtkrendering.cpp:655
+#, c-format
+msgid "no lower bound found for t=%g!"
+msgstr ""
+
+#: openfoam/openfoamanalysis.cpp:326
+#, c-format
+msgid "evaluating the results for case \"%s\""
+msgstr ""

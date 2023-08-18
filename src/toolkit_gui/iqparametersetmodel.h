@@ -60,6 +60,12 @@ public:
   QModelIndex	index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
   QModelIndex	parent(const QModelIndex &index) const override;
 
+  Qt::ItemFlags flags(const QModelIndex &index) const override;
+  Qt::DropActions supportedDropActions() const override;
+  QStringList mimeTypes() const override;
+  QMimeData * mimeData(const QModelIndexList & indexes) const override;
+  bool dropMimeData(const QMimeData * data, Qt::DropAction action, int row, int column, const QModelIndex & parent) override;
+
   QVariant	data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
   void contextMenu(QWidget* pw, const QModelIndex& index, const QPoint& p);
@@ -75,14 +81,29 @@ public:
   };
   friend class ParameterContext;
 
+  // access functions
+  QList<int> pathFromIndex(const QModelIndex& i) const;
+  QModelIndex indexFromParameterPath(const std::string& pp) const;
+  QModelIndex indexFromPath(const QList<int>& p) const;
+
   const insight::ParameterSet& getParameterSet() const;
+
+  // edit functions
+  bool removeRows(int row, int count, const QModelIndex & parent = QModelIndex()) override;
 
   insight::Parameter& parameterRef(const QModelIndex &index);
   void notifyParameterChange(const QModelIndex &index);
 
-  QList<int> pathFromIndex(const QModelIndex& i) const;
-  QModelIndex indexFromParameterPath(const std::string& pp) const;
-  QModelIndex indexFromPath(const QList<int>& p) const;
+  void appendArrayElement(const QModelIndex &index, const insight::Parameter& elem);
+  /**
+   * @brief insertArrayElement
+   * @param index
+   * index of array element before which shall be inserted or parent array (appended in this case)
+   * @param elem
+   */
+  void insertArrayElement(const QModelIndex &index, const insight::Parameter& elem);
+  void removeArrayElement(const QModelIndex &index);
+
 
   void addGeometryToSpatialTransformationParameter(
           const QString& parameterPath, insight::cad::FeaturePtr geom );

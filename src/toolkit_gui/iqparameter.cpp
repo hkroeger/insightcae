@@ -243,7 +243,14 @@ QVBoxLayout* IQParameter::populateEditControls(
   return layout;
 }
 
+
 const insight::Parameter& IQParameter::parameter() const
+{
+  return parameter_;
+}
+
+
+insight::Parameter &IQParameter::parameterRef()
 {
   return parameter_;
 }

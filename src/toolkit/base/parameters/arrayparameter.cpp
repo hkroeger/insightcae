@@ -53,6 +53,60 @@ bool ArrayParameter::isDifferent(const Parameter& p) const
 }
 
 
+
+void ArrayParameter::setDefaultValue ( const Parameter& defP )
+{
+  defaultValue_.reset ( defP.clone() );
+}
+
+
+const Parameter& ArrayParameter::defaultValue() const
+{
+  return *defaultValue_;
+}
+
+
+int ArrayParameter::defaultSize() const
+{
+  return defaultSize_;
+}
+
+
+void ArrayParameter::eraseValue ( int i )
+{
+  value_.erase ( value_.begin()+i );
+}
+
+
+void ArrayParameter::appendValue ( const Parameter& np )
+{
+  value_.push_back ( ParameterPtr( np.clone() ) );
+}
+
+
+void ArrayParameter::insertValue ( int i, const Parameter& np )
+{
+  value_.insert( value_.begin()+i, ParameterPtr( np.clone() ) );
+}
+
+
+void ArrayParameter::appendEmpty()
+{
+  value_.push_back ( ParameterPtr( defaultValue_->clone() ) );
+}
+
+
+Parameter& ArrayParameter::operator[] ( int i )
+{
+  return elementRef(i);
+}
+
+
+const Parameter& ArrayParameter::operator[] ( int i ) const
+{
+  return element(i);
+}
+
 const Parameter& ArrayParameter::element(int i) const
 {
   return *(value_[i]);
@@ -67,7 +121,10 @@ int ArrayParameter::size() const
 }
 
 
-
+void ArrayParameter::clear()
+{
+    value_.clear();
+}
 
 std::string ArrayParameter::latexRepresentation() const
 {

@@ -16,8 +16,7 @@ find_package(VTK
    HINTS ${VTK_ONSCREEN_DIR}
 )
 
-set(toolkit_gui_SRCS 
-
+set(toolkit_gui_SRCS
  iqvtkviewer.h iqvtkviewer.cpp
 
  iscadmetatyperegistrator.cpp

@@ -1169,4 +1169,18 @@ std::shared_ptr<std::string> getOptionalAttribute(rapidxml::xml_node<> &node, co
       return std::shared_ptr<std::string>();
 }
 
+boost::filesystem::path ensureDefaultFileExtension(
+    const boost::filesystem::path &pth,
+    const std::string &defaultExtension )
+{
+    if (!pth.has_extension())
+    {
+      boost::filesystem::path res(pth);
+      res.replace_extension(defaultExtension);
+      return res;
+    }
+    else
+      return pth;
+}
+
 }

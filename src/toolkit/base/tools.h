@@ -490,6 +490,17 @@ int predictInsertionLocation(const Container& org_data, const KeyType& newKey)
 std::string getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
 std::shared_ptr<std::string> getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
 
+/**
+ * @brief ensureDefaultFileExtension
+ * @param path
+ * @param defaultExtension
+ * add this extension, if the supplied path has none. May or may not start with a dot.
+ * @return
+ */
+boost::filesystem::path
+ensureDefaultFileExtension(
+    const boost::filesystem::path& path,
+    const std::string& defaultExtension );
 
 }
 

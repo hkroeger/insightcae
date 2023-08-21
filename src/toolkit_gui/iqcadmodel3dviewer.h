@@ -11,6 +11,8 @@
 #include "iqcaditemmodel.h"
 #include "constrainedsketch.h"
 
+class QItemSelectionModel;
+
 
 class TOOLKIT_GUI_EXPORT IQCADModel3DViewer
         : public QMainWindow //for toolbars to work //QWidget
@@ -41,6 +43,8 @@ public:
     virtual void emitGraphicalSelectionChanged() =0;
 
     virtual QColor getBackgroundColor() const =0;
+
+    virtual void setSelectionModel(QItemSelectionModel *selmodel);
 
 public Q_SLOT:
     virtual void highlightItem( insight::cad::FeaturePtr feat ) =0;

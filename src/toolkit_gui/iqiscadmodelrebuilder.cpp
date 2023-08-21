@@ -74,7 +74,8 @@ void IQISCADModelRebuilder::onAddFeature(
         const QString& name,
         insight::cad::FeaturePtr smp,
         bool is_component,
-        boost::variant<boost::blank,AIS_DisplayMode> ds )
+        boost::variant<boost::blank,AIS_DisplayMode> ds,
+        QColor color )
 {
     if (is_component)
     {
@@ -86,7 +87,7 @@ void IQISCADModelRebuilder::onAddFeature(
         QMetaObject::invokeMethod(
               qApp,
               std::bind(&IQCADItemModel::addComponent, model_,
-                        name.toStdString(), smp, "", dr)
+                        name.toStdString(), smp, "", dr, color)
         );
     }
     else
@@ -99,7 +100,7 @@ void IQISCADModelRebuilder::onAddFeature(
         QMetaObject::invokeMethod(
               qApp,
               std::bind(&IQCADItemModel::addModelstep, model_,
-                        name.toStdString(), smp, "", dr)
+                        name.toStdString(), smp, "", dr, color)
         );
     }
     symbolsSnapshot_.features_.erase(name.toStdString());

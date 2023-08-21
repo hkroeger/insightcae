@@ -8,6 +8,7 @@
 
 #include <QObject>
 #include <QList>
+#include <QColor>
 
 #include "AIS_DisplayMode.hxx"
 
@@ -60,7 +61,8 @@ public Q_SLOTS:
     void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
     void onAddVector     (const QString& name, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
     void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component,
-                          boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank() );
+                          boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank(),
+                          QColor color = QColor() );
     void onAddDatum      (const QString& name, insight::cad::DatumPtr smp, bool initialVisibility=false);
     void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp, bool visible=false);
     void onAddDataset    (const QString& name, vtkSmartPointer<vtkDataObject> ds, bool visible=false);

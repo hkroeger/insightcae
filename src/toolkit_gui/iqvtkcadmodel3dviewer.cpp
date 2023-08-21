@@ -156,7 +156,7 @@ IQVTKCADModel3DViewer::highlightActor(vtkProp *prop)
 #warning need highlighting for 2D actors as well
     }
 
-    highlightedActors_.insert(actorHighlight);
+    highlightedActors_.insert({prop, actorHighlight});
     return actorHighlight;
 }
 
@@ -171,14 +171,37 @@ IQVTKCADModel3DViewer::highlightActors(std::set<vtkProp *> actor)
     return ret;
 }
 
-void IQVTKCADModel3DViewer::unhighlightActor(
-    HighlightingHandle highlighter)
+void IQVTKCADModel3DViewer::unhighlightActor(HighlightedActors::const_iterator i)
 {
-    auto i = highlightedActors_.find(highlighter.lock());
     if (i!=highlightedActors_.end())
     {
         highlightedActors_.erase(i);
     }
+}
+
+void IQVTKCADModel3DViewer::unhighlightActor(vtkProp *actor)
+{
+    unhighlightActor(
+        std::find_if(
+            highlightedActors_.begin(),
+            highlightedActors_.end(),
+            [&](const HighlightedActors::value_type& j)
+            { return actor==j.first; }
+            )
+    );
+}
+
+
+void IQVTKCADModel3DViewer::unhighlightActor(HighlightingHandle highlighter)
+{
+    unhighlightActor(
+        std::find_if(
+            highlightedActors_.begin(),
+            highlightedActors_.end(),
+            [&](const HighlightedActors::value_type& j)
+                { return highlighter.lock()==j.second; }
+        )
+    );
 }
 
 void IQVTKCADModel3DViewer::unhighlightActors(
@@ -189,6 +212,8 @@ void IQVTKCADModel3DViewer::unhighlightActors(
         unhighlightActor(hl);
     }
 }
+
+
 
 
 
@@ -361,6 +386,17 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
         return {actor};
     }
 
+    return {};
+}
+
+
+std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::findActorsOf(const QPersistentModelIndex& pidx) const
+{
+    auto i = displayedData_.find(pidx);
+    if (i!=displayedData_.end())
+    {
+        return i->second.actors_;
+    }
     return {};
 }
 
@@ -1102,7 +1138,9 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
           TouchpadNavigationManager<
            IQVTKCADModel3DViewer, IQVTKCADModel3DViewerPanning, IQVTKCADModel3DViewerRotation
           > >(currentNavigationAction_, *this) ),
-      viewState_(*this)
+      viewState_(*this),
+    defaultSelectionModel_(nullptr),
+    customSelectionModel_(nullptr)
 {
     setCentralWidget(&vtkWidget_);
 
@@ -1276,6 +1314,10 @@ void IQVTKCADModel3DViewer::setModel(QAbstractItemModel* model)
             this, &IQVTKCADModel3DViewer::onRowsInserted);
 
     addSiblings(QModelIndex());
+
+    setSelectionModel(new QItemSelectionModel(model));
+    defaultSelectionModel_=customSelectionModel_;
+    customSelectionModel_=nullptr;
 }
 
 
@@ -1457,6 +1499,55 @@ IQVTKCADModel3DViewer::findUnderCursorAt(const QPoint& clickPos) const
 
 
     return boost::blank();
+}
+
+
+void IQVTKCADModel3DViewer::setSelectionModel(QItemSelectionModel *selmodel)
+{
+    if (defaultSelectionModel_)
+        defaultSelectionModel_->deleteLater();
+
+    customSelectionModel_=selmodel;
+
+//    connect(customSelectionModel_, &QItemSelectionModel::selectionChanged, customSelectionModel_,
+//        [this](const QItemSelection &selected, const QItemSelection &deselected)
+//        {
+//            for (const auto& i: selected.indexes())
+//            {
+//                auto acts = findActorsOf(i);
+//                for (const auto& a: acts)
+//                {
+//                    highlightActor(a);
+//                }
+//            }
+//            for (const auto& i: deselected.indexes())
+//            {
+//                auto acts = findActorsOf(i);
+//                for (const auto& a: acts)
+//                {
+//                    unhighlightActor(a);
+//                }
+//            }
+//        }
+//    );
+
+    connect(customSelectionModel_, &QItemSelectionModel::currentChanged, customSelectionModel_,
+        [this](const QModelIndex &current, const QModelIndex &previous)
+        {
+            if (current.isValid())
+            {
+                auto cdd = displayedData_.find(current.siblingAtColumn(0));
+                if (cdd!=displayedData_.end())
+                {
+                    doHighlightItem(cdd->second.ce_);
+                }
+                else
+                {
+                    highlightedItem_.reset();
+                }
+            }
+        }
+    );
 }
 
 

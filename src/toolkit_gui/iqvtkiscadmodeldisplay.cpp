@@ -1,5 +1,7 @@
 #include "iqvtkiscadmodeldisplay.h"
 
+#include <QItemSelectionModel>
+
 
 IQVTKISCADModelDisplay::IQVTKISCADModelDisplay
 (
@@ -31,6 +33,10 @@ IQVTKISCADModelDisplay::IQVTKISCADModelDisplay
              {
                 model_->showContextMenu(index, globalPos, viewer_);
              } );
+
+    auto selmodel = new QItemSelectionModel(model_);
+    viewer_->setSelectionModel(selmodel);
+    modeltree_->setSelectionModel(selmodel);
 }
 
 IQVTKISCADModelDisplay::~IQVTKISCADModelDisplay()

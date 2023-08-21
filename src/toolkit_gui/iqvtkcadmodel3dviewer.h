@@ -26,6 +26,7 @@
 
 #include <QAbstractItemModel>
 #include <QTimer>
+#include <QItemSelectionModel>
 
 
 #include "cadtypes.h"
@@ -301,7 +302,8 @@ private:
     };
     friend class LinewidthHighlighter;
 
-    std::set<std::shared_ptr<IQVTKViewerState> > highlightedActors_;
+    typedef std::set< std::pair<vtkProp*, std::shared_ptr<IQVTKViewerState> > > HighlightedActors;
+    HighlightedActors highlightedActors_;
 
 
 
@@ -315,6 +317,10 @@ private:
     void remove(const QPersistentModelIndex& pidx);
 
     std::vector<vtkSmartPointer<vtkProp> > createActor(CADEntity entity) const;
+
+    std::vector<vtkSmartPointer<vtkProp> > findActorsOf(const QPersistentModelIndex& pidx) const;
+//    std::vector<vtkSmartPointer<vtkProp> > findActorsOf(CADEntity entity) const;
+
     vtkSmartPointer<vtkProp> createSubshapeActor(
             SubshapeData sd ) const;
 
@@ -356,6 +362,8 @@ private:
 
     std::unique_ptr<BackgroundImage> backgroundImage_;
 
+    QItemSelectionModel *defaultSelectionModel_, *customSelectionModel_;
+
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
     void onModelAboutToBeReset();
@@ -380,6 +388,8 @@ public:
         std::owner_less<HighlightingHandle> > HighlightingHandleSet;
     HighlightingHandle highlightActor(vtkProp* actor);
     HighlightingHandleSet highlightActors(std::set<vtkProp*> actor);
+    void unhighlightActor(HighlightedActors::const_iterator toBeRemoved);
+    void unhighlightActor(vtkProp* actor);
     void unhighlightActor(HighlightingHandle highlighter);
     void unhighlightActors(HighlightingHandleSet highlighters);
 
@@ -437,6 +447,8 @@ public:
     > ItemAtCursor;
 
     ItemAtCursor findUnderCursorAt(const QPoint& clickPos) const;
+
+    void setSelectionModel(QItemSelectionModel *selmodel) override;
 
 #warning unify with iqvtkviewer
     arma::mat pointInPlane3D(const gp_Ax3& plane, const arma::mat& pip2d) const;

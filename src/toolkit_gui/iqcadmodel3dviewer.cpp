@@ -30,7 +30,12 @@ void IQCADModel3DViewer::connectNotepad(QTextEdit *notepad) const
 {
     connect(
        this, &IQCADModel3DViewer::appendToNotepad,
-       notepad, &QTextEdit::append );
+        notepad, &QTextEdit::append );
+}
+
+
+void IQCADModel3DViewer::setSelectionModel(QItemSelectionModel *selmodel)
+{
 }
 
 

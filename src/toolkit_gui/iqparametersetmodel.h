@@ -45,10 +45,10 @@ class TOOLKIT_GUI_EXPORT IQParameterSetModel
 
   std::pair<QString, const insight::Parameter*> getParameterAndName(const QModelIndex& index) const;
 
-  QList<IQParameter*> decorateSubdictContent(QObject*, const insight::ParameterSet&, int);
-  IQParameter* decorateArrayElement(QObject* parent, int i, insight::Parameter& cp, int level);
-  QList<IQParameter*> decorateArrayContent(QObject*, insight::ArrayParameterBase&, int);
-  void decorateChildren(QObject* parent, insight::Parameter* p, int level);
+  QList<IQParameter*> decorateSubdictContent(QObject*, const insight::ParameterSet&/*, int*/);
+  IQParameter* decorateArrayElement(QObject* parent, int i, insight::Parameter& cp/*, int level*/);
+  QList<IQParameter*> decorateArrayContent(QObject*, insight::ArrayParameterBase&/*, int*/);
+  void decorateChildren(QObject* parent, insight::Parameter* p/*, int level*/);
 
 public:
   IQParameterSetModel(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps, QObject* parent=nullptr);
@@ -92,7 +92,13 @@ public:
   bool removeRows(int row, int count, const QModelIndex & parent = QModelIndex()) override;
 
   insight::Parameter& parameterRef(const QModelIndex &index);
-  void notifyParameterChange(const QModelIndex &index);
+
+  /**
+   * @brief notifyParameterChange
+   * update parameter and redecorate all children, if necessary
+   * @param index
+   */
+  void notifyParameterChange(const QModelIndex &index, bool redecorateChildren=false);
 
   void appendArrayElement(const QModelIndex &index, const insight::Parameter& elem);
   /**

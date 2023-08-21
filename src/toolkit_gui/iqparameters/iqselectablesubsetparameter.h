@@ -27,6 +27,8 @@ public:
           IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
           IQCADModel3DViewer *viewer) override;
 
+  void populateContextMenu(IQParameterSetModel* model, const QModelIndex &index, QMenu* m) override;
+
 };
 
 #endif // IQSELECTABLESUBSETPARAMETER_H

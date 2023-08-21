@@ -510,6 +510,25 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
             }
             return font;
         }
+        else if (role == Qt::BackgroundRole)
+        {
+            QVariant bgcol;
+            if (index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
+            {
+                switch (index.internalId())
+                {
+                    case CADModelSection::feature:
+                    {
+                        auto features = model_->modelsteps();
+                        auto i = features.begin();
+                        std::advance(i, index.row());
+                        return featureVisibility_[i->first].color;
+                    }
+                    break;
+                }
+            }
+            return bgcol;
+        }
     }
 
     return QVariant();

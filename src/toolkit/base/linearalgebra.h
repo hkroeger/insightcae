@@ -68,12 +68,15 @@ public:
 
 class GSLException : public Exception
 {
-    int gsl_errno_;
+  std::string gsl_reason_;
+  int gsl_errno_;
+
 public:
     GSLException(
             const char * reason, const char * file,
             int line, int gsl_errno );
 
+    const std::string& gsl_reason() const { return gsl_reason_; }
     int gsl_errno() const;
 };
 

@@ -105,6 +105,7 @@ GSLException::GSLException(const char *reason, const char *file, int line, int g
           "Error in GSL subroutine: %s (errno %d)",
           reason, gsl_errno
           ),
+      gsl_reason_(reason),
       gsl_errno_(gsl_errno)
 {}
 
@@ -1047,11 +1048,24 @@ void Interpolator::initialize(const arma::mat& xy_us, bool force_linear)
         first_=xy.row(0);
         last_=xy.row(xy.n_rows-1);
     }
+    catch (const insight::GSLException& gex)
+    {
+        std::ostringstream os;
+        os<<xy_us;
+        throw insight::Exception(
+            "Interpolator::Interpolator(): Failed to initialize interpolator.\n"
+            "Supplied data:\n"+os.str()+"\n"
+            "Reason: "+gex.gsl_reason()
+            );
+    }
     catch (...)
     {
         std::ostringstream os;
         os<<xy_us;
-        throw insight::Exception("Interpolator::Interpolator(): Failed to initialize interpolator.\nSupplied data: "+os.str());
+        throw insight::Exception(
+            "Interpolator::Interpolator(): Failed to initialize interpolator.\n"
+            "Supplied data:\n"+os.str()
+            );
     }
 }
 

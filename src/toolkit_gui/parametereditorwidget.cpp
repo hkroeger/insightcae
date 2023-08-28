@@ -63,6 +63,8 @@ ParameterEditorWidget::ParameterEditorWidget
     parameterTreeView_->resizeColumnToContents(0);
     parameterTreeView_->resizeColumnToContents(1);
     parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
+    parameterTreeView_->setDragDropMode(QAbstractItemView::DragDrop);
+    parameterTreeView_->setDefaultDropAction(Qt::MoveAction);
     l->addWidget(parameterTreeView_);
 
 

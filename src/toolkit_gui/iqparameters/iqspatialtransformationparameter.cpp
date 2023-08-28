@@ -45,7 +45,30 @@ QString IQSpatialTransformationParameter::valueText() const
   if (p().isIdentityTransform())
       return QString("identity");
   else
-      return QString("(transform)");
+  {
+      arma::mat tr=p().translate();
+      bool trZero = arma::norm(tr, 2)<insight::SMALL;
+      arma::mat rpy=p().rollPitchYaw();
+
+      QStringList shortDescActions;
+
+      if (!trZero)
+          shortDescActions<<QString("+[%1 %2 %3]").arg(tr(0)).arg(tr(1)).arg(tr(2));
+
+      if (fabs(rpy(0))>insight::SMALL)
+          shortDescActions<<QString("Roll %1°").arg(tr(0));
+
+      if (fabs(rpy(1))>insight::SMALL)
+          shortDescActions<<QString("Pitch %1°").arg(tr(1));
+
+      if (fabs(rpy(2))>insight::SMALL)
+          shortDescActions<<QString("Yaw %1°]").arg(tr(2));
+
+      if (fabs(p().scale()-1.)>insight::SMALL)
+          shortDescActions<<QString("*%1").arg(p().scale());
+
+      return shortDescActions.join(" > ");
+  }
 }
 
 

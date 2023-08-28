@@ -20,10 +20,11 @@ void CADParameterSetVisualizer::addDatum(const std::string& name, insight::cad::
 
 void CADParameterSetVisualizer::addFeature(const std::string& name,
                                            insight::cad::FeaturePtr feat,
-                                           AIS_DisplayMode ds)
+                                           AIS_DisplayMode ds,
+                                           QColor color)
 {
   CurrentExceptionContext ec("adding visualizer feature "+name);
-  Q_EMIT createdFeature( QString::fromStdString(name), feat, true, ds );
+  Q_EMIT createdFeature( QString::fromStdString(name), feat, true, ds, color );
 }
 
 void CADParameterSetVisualizer::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> ds)

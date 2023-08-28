@@ -510,6 +510,25 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
             }
             return font;
         }
+        else if (role == Qt::BackgroundRole)
+        {
+            QVariant bgcol;
+            if (index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
+            {
+                switch (index.internalId())
+                {
+                    case CADModelSection::feature:
+                    {
+                        auto features = model_->modelsteps();
+                        auto i = features.begin();
+                        std::advance(i, index.row());
+                        return featureVisibility_[i->first].color;
+                    }
+                    break;
+                }
+            }
+            return bgcol;
+        }
     }
 
     return QVariant();
@@ -859,7 +878,8 @@ void IQCADItemModel::addModelstep(
         const std::string& name,
         insight::cad::FeaturePtr value,
         const std::string& featureDescription,
-        insight::DatasetRepresentation dr )
+        insight::DatasetRepresentation dr,
+        QColor color )
 {
     // set *before* addEntity
     if (featureVisibility_.find(name)==featureVisibility_.end())
@@ -867,6 +887,7 @@ void IQCADItemModel::addModelstep(
         auto&dvv = featureVisibility_[name];
         dvv.representation=dr;
         dvv.visible=false;
+        if (color.isValid()) dvv.color=color;
     }
 
     addEntity<insight::cad::FeaturePtr>(
@@ -904,7 +925,8 @@ void IQCADItemModel::addComponent(
         const std::string& name,
         insight::cad::FeaturePtr value,
         const std::string& featureDescription,
-        insight::DatasetRepresentation dr )
+        insight::DatasetRepresentation dr,
+        QColor color )
 {
     // set *before* addEntity
     if (featureVisibility_.find(name)==featureVisibility_.end())
@@ -912,6 +934,7 @@ void IQCADItemModel::addComponent(
         auto &dvv = featureVisibility_[name];
         dvv.representation=dr;
         dvv.visible=true;
+        if (color.isValid()) dvv.color=color;
     }
 
     addEntity<insight::cad::FeaturePtr>(

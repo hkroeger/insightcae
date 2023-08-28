@@ -58,8 +58,8 @@ QVBoxLayout* IQArrayParameter::populateEditControls(
     iqap->append( model->decorateArrayElement(
           iqap,
           i,
-          p[i],
-          0 ) );
+          p[i]/*,
+          0*/ ) );
     model->endInsertRows();
 
     rindex = model->indexFromPath(mp);

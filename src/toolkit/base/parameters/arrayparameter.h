@@ -50,48 +50,21 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
-    //inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
-    inline void setDefaultValue ( const Parameter& defP )
-    {
-        defaultValue_.reset ( defP.clone() );
-    }
-    inline const Parameter& defaultValue() const
-    {
-      return *defaultValue_;
-    }
-    inline int defaultSize() const
-    {
-      return defaultSize_;
-    }
-    inline void eraseValue ( int i )
-    {
-        value_.erase ( value_.begin()+i );
-    }
-    inline void appendValue ( const Parameter& np )
-    {
-        value_.push_back ( ParameterPtr( np.clone() ) );
-    }
-    inline void appendEmpty()
-    {
-        value_.push_back ( ParameterPtr( defaultValue_->clone() ) );
-    }
-    inline Parameter& operator[] ( int i )
-    {
-        return elementRef(i);
-    }
-    inline const Parameter& operator[] ( int i ) const
-    {
-        return element(i);
-    }
+    void setDefaultValue ( const Parameter& defP );
+    const Parameter& defaultValue() const;
+    int defaultSize() const;
+    void eraseValue ( int i );
+    void appendValue ( const Parameter& np );
+    void insertValue ( int i, const Parameter& np );
+    void appendEmpty();
+    Parameter& operator[] ( int i );
+    const Parameter& operator[] ( int i ) const;
 
     const Parameter& element(int i) const override;
 
     int size() const override;
 
-    inline void clear()
-    {
-        value_.clear();
-    }
+    void clear();
 
     std::string latexRepresentation() const override;
     std::string plainTextRepresentation(int indent=0) const override;

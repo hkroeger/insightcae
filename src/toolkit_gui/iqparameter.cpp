@@ -187,9 +187,11 @@ QVariant IQParameter::textFont() const
   return QVariant();
 }
 
-void IQParameter::populateContextMenu(IQParameterSetModel* model, const QModelIndex &index, QMenu*)
-{
-}
+void IQParameter::populateContextMenu(
+    IQParameterSetModel* model,
+    const QModelIndex &index,
+    QMenu* /*cm*/)
+{}
 
 
 QVBoxLayout* IQParameter::populateEditControls(
@@ -243,7 +245,14 @@ QVBoxLayout* IQParameter::populateEditControls(
   return layout;
 }
 
+
 const insight::Parameter& IQParameter::parameter() const
+{
+  return parameter_;
+}
+
+
+insight::Parameter &IQParameter::parameterRef()
 {
   return parameter_;
 }

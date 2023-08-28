@@ -92,35 +92,36 @@ void IQArrayElementParameter<IQBaseParameter, N>::populateContextMenu(IQParamete
   auto row = index.row();
 
   QObject::connect(removeAction, &QAction::triggered, iqp,
-          [model,mp,row,iqp]()
+          [model,mp,row]()
           {
             auto parentIndex = model->indexFromPath(mp);
             Q_ASSERT(parentIndex.isValid());
+            model->removeArrayElement(model->index(row, 0, parentIndex));
 
-            auto &parentParameter = dynamic_cast<insight::ArrayParameter&>(model->parameterRef(parentIndex));
+//            auto &parentParameter = dynamic_cast<insight::ArrayParameter&>(model->parameterRef(parentIndex));
 
-            model->beginRemoveRows(parentIndex, row, row);
+//            model->beginRemoveRows(parentIndex, row, row);
 
-            iqp->deleteLater();
+//            iqp->deleteLater();
 
-            auto *aiqp = static_cast<IQParameter*>(parentIndex.internalPointer());
-            aiqp->erase(aiqp->begin()+row);
+//            auto *aiqp = static_cast<IQParameter*>(parentIndex.internalPointer());
+//            aiqp->erase(aiqp->begin()+row);
 
-            model->endRemoveRows();
+//            model->endRemoveRows();
 
 
-            parentParameter.eraseValue(row);
+//            parentParameter.eraseValue(row);
 
-            parentIndex = model->indexFromPath(mp);
-            Q_ASSERT(parentIndex.isValid());
-            model->notifyParameterChange(parentIndex);
+//            parentIndex = model->indexFromPath(mp);
+//            Q_ASSERT(parentIndex.isValid());
+//            model->notifyParameterChange(parentIndex);
 
-            // change name for all subsequent parameters
-            for (int i=row; i<aiqp->size(); ++i)
-            {
-              (*aiqp)[i]->setName(QString("%1").arg(i));
-              model->notifyParameterChange( model->index(i, 1, parentIndex) );
-            }
+//            // change name for all subsequent parameters
+//            for (int i=row; i<aiqp->size(); ++i)
+//            {
+//              (*aiqp)[i]->setName(QString("%1").arg(i));
+//              model->notifyParameterChange( model->index(i, 1, parentIndex) );
+//            }
           }
   );
 }

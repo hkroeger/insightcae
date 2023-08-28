@@ -243,13 +243,15 @@ public:
   void addModelstep(const std::string& name,
                     insight::cad::FeaturePtr value,
                     const std::string& featureDescription = std::string(),
-                    insight::DatasetRepresentation dr = insight::Wireframe );
+                    insight::DatasetRepresentation dr = insight::Wireframe,
+                    QColor color = QColor() );
   void setStaticModelStep(const std::string& name, bool isStatic);
   bool isStaticModelStep(const std::string& name);
   void addComponent(const std::string& name,
                     insight::cad::FeaturePtr value,
                     const std::string& featureDescription = std::string(),
-                    insight::DatasetRepresentation dr = insight::Surface );
+                    insight::DatasetRepresentation dr = insight::Surface,
+                    QColor color = QColor() );
   void addPostprocAction(const std::string& name, insight::cad::PostprocActionPtr value);
   void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value);
 

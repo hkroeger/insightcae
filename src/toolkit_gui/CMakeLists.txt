@@ -16,7 +16,9 @@ find_package(VTK
    HINTS ${VTK_ONSCREEN_DIR}
 )
 
-set(toolkit_gui_SRCS 
+set(toolkit_gui_SRCS
+
+ iqgroupingitemmodel.h iqgroupingitemmodel.cpp
 
  iqvtkviewer.h iqvtkviewer.cpp
 
@@ -115,6 +117,7 @@ set(toolkit_gui_SRCS
     iqparametersetmodel.h iqparametersetmodel.cpp
     iqresultsetfiltermodel.h iqresultsetfiltermodel.cpp
     iqparameter.cpp iqparameter.h
+    iqparameters/iqsubsetparameter.h iqparameters/iqsubsetparameter.cpp
     iqparameters/iqintparameter.cpp iqparameters/iqintparameter.h
     iqparameters/iqdoubleparameter.cpp iqparameters/iqdoubleparameter.h
     iqparameters/iqvectorparameter.cpp iqparameters/iqvectorparameter.h

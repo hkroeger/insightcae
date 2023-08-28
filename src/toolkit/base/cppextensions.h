@@ -94,6 +94,14 @@ public:
 
 };
 
+
+
+template<typename T, typename... Args>
+std::shared_ptr<T> make_shared_aggr(Args&&... args)
+{
+    return std::make_shared<T>(T{ std::forward<Args>(args)... });
+}
+
 }
 
 

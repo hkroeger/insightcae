@@ -17,6 +17,9 @@ find_package(VTK
 )
 
 set(toolkit_gui_SRCS
+
+ iqgroupingitemmodel.h iqgroupingitemmodel.cpp
+
  iqvtkviewer.h iqvtkviewer.cpp
 
  iscadmetatyperegistrator.cpp

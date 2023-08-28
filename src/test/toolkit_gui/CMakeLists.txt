@@ -13,6 +13,16 @@ linkToolkitVtk(test_IQParameterSetModel Offscreen)
 add_test(NAME test_IQParameterSetModel COMMAND test_IQParameterSetModel)
 
 
+add_executable(test_IQGroupingItemModel test_IQGroupingItemModel.cpp)
+target_link_libraries(test_IQGroupingItemModel
+ insightcad toolkit_gui
+ Qt5::Test
+ )
+linkToolkitVtk(test_IQGroupingItemModel Onscreen)
+add_test(NAME test_IQGroupingItemModel COMMAND test_IQGroupingItemModel nogui)
+
+
+
 add_executable(test_sketchSolver test_sketchSolver.cpp)
 target_link_libraries(test_sketchSolver toolkit_gui)
 linkToolkitVtk(test_sketchSolver Offscreen)

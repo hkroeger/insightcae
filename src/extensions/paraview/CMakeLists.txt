@@ -59,4 +59,6 @@ if (INSIGHT_BUILD_MEDREADER)
 
 endif()
 
+add_subdirectory(vtk2key)
+
 

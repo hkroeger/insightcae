@@ -47,6 +47,13 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 #include "vtkInformationVector.h"
 
+#include "vtkAppendFilter.h"
+#include "vtkCompositeDataSet.h"
+#include "vtkFieldData.h"
+#include "vtkObjectFactory.h"
+#include "vtkUnstructuredGrid.h"
+#include "vtkMultiProcessStream.h"
+
 #include "base/exception.h"
 #include "base/spatialtransformation.h"
 #include "base/translations.h"
@@ -54,6 +61,552 @@
 void vtkRenderingOpenGL2_AutoInit_Construct();
 void vtkRenderingFreeType_AutoInit_Construct();
 void vtkInteractionStyle_AutoInit_Construct();
+
+
+
+inline bool vtkSkipAttributeType(int attr)
+{
+    return (attr == vtkDataObject::POINT_THEN_CELL);
+}
+
+inline void vtkShallowCopy(vtkDataObject* output, vtkDataObject* input)
+{
+    vtkCompositeDataSet* cdout = vtkCompositeDataSet::SafeDownCast(output);
+    if (cdout == NULL)
+    {
+        output->ShallowCopy(input);
+        return;
+    }
+
+    // We can't use vtkCompositeDataSet::ShallowCopy() since that simply passes
+    // the leaf datasets without actually shallowcopying them. That doesn't work
+    // in our case since we will be modifying the datasets in the output.
+    vtkCompositeDataSet* cdin = vtkCompositeDataSet::SafeDownCast(input);
+    cdout->CopyStructure(cdin);
+    vtkSmartPointer<vtkCompositeDataIterator> initer;
+    initer.TakeReference(cdin->NewIterator());
+    for (initer->InitTraversal(); !initer->IsDoneWithTraversal(); initer->GoToNextItem())
+    {
+        vtkDataObject* in = initer->GetCurrentDataObject();
+        vtkDataObject* clone = in->NewInstance();
+        clone->ShallowCopy(in);
+        cdout->SetDataSet(initer, clone);
+        clone->FastDelete();
+    }
+}
+
+vtkStandardNewMacro(vtkCleanArrays);
+//vtkCxxSetObjectMacro(vtkCleanArrays, Controller, vtkMultiProcessController);
+//----------------------------------------------------------------------------
+vtkCleanArrays::vtkCleanArrays()
+{
+    this->FillPartialArrays = false;
+//    this->Controller = 0;
+//    this->SetController(vtkMultiProcessController::GetGlobalController());
+}
+
+//----------------------------------------------------------------------------
+vtkCleanArrays::~vtkCleanArrays()
+{
+//    this->SetController(0);
+}
+
+//****************************************************************************
+class vtkCleanArrays::vtkArrayData
+{
+public:
+    std::string Name;
+    int NumberOfComponents;
+    int Type;
+    vtkArrayData()
+    {
+        this->NumberOfComponents = 0;
+        this->Type = 0;
+    }
+    vtkArrayData(const vtkArrayData& other)
+    {
+        this->Name = other.Name;
+        this->NumberOfComponents = other.NumberOfComponents;
+        this->Type = other.Type;
+    }
+
+    bool operator<(const vtkArrayData& b) const
+    {
+        if (this->Name != b.Name)
+        {
+            return this->Name < b.Name;
+        }
+        if (this->NumberOfComponents != b.NumberOfComponents)
+        {
+            return this->NumberOfComponents < b.NumberOfComponents;
+        }
+        return this->Type < b.Type;
+    }
+
+    void Set(vtkAbstractArray* array)
+    {
+        this->Name = array->GetName();
+        this->NumberOfComponents = array->GetNumberOfComponents();
+        this->Type = array->GetDataType();
+    }
+
+    vtkAbstractArray* NewArray(vtkIdType numTuples) const
+    {
+        vtkAbstractArray* array = vtkAbstractArray::CreateArray(this->Type);
+        if (array)
+        {
+            array->SetName(this->Name.c_str());
+            array->SetNumberOfComponents(this->NumberOfComponents);
+            array->SetNumberOfTuples(numTuples);
+            vtkDataArray* data_array = vtkDataArray::SafeDownCast(array);
+            for (int cc = 0; data_array && cc < this->NumberOfComponents; cc++)
+            {
+                data_array->FillComponent(cc, 0.0);
+            }
+        }
+        return array;
+    }
+};
+
+class vtkCleanArrays::vtkArraySet : public std::set<vtkCleanArrays::vtkArrayData>
+{
+    int Valid;
+
+public:
+    vtkArraySet()
+        : Valid(0)
+    {
+    }
+    bool IsValid() const { return this->Valid != 0; }
+    void MarkValid() { this->Valid = 1; }
+
+    void Intersection(const vtkArraySet& other)
+    {
+        if (this->Valid && other.Valid)
+        {
+            vtkCleanArrays::vtkArraySet setC;
+            std::set_intersection(
+                this->begin(), this->end(), other.begin(), other.end(), std::inserter(setC, setC.begin()));
+            setC.MarkValid();
+            this->swap(setC);
+        }
+        else if (other.Valid)
+        {
+            *this = other;
+        }
+    }
+    void Union(const vtkArraySet& other)
+    {
+        if (this->Valid && other.Valid)
+        {
+            vtkCleanArrays::vtkArraySet setC;
+            std::set_union(
+                this->begin(), this->end(), other.begin(), other.end(), std::inserter(setC, setC.begin()));
+            setC.MarkValid();
+            this->swap(setC);
+        }
+        else if (other.Valid)
+        {
+            *this = other;
+        }
+    }
+
+    // Fill up \c this with arrays from \c dsa
+    void Initialize(vtkFieldData* dsa)
+    {
+        this->Valid = true;
+        int numArrays = dsa->GetNumberOfArrays();
+        if (dsa->GetNumberOfTuples() == 0)
+        {
+            numArrays = 0;
+        }
+        for (int cc = 0; cc < numArrays; cc++)
+        {
+            vtkAbstractArray* array = dsa->GetAbstractArray(cc);
+            if (array && array->GetName())
+            {
+                vtkCleanArrays::vtkArrayData mda;
+                mda.Set(array);
+                this->insert(mda);
+            }
+        }
+    }
+
+    // Remove arrays from \c dsa not present in \c this.
+    void UpdateFieldData(vtkFieldData* dsa) const
+    {
+        if (this->Valid == 0)
+        {
+            return;
+        }
+        vtkArraySet myself = (*this);
+        int numArrays = dsa->GetNumberOfArrays();
+        for (int cc = numArrays - 1; cc >= 0; cc--)
+        {
+            vtkAbstractArray* array = dsa->GetAbstractArray(cc);
+            if (array && array->GetName())
+            {
+                vtkCleanArrays::vtkArrayData mda;
+                mda.Set(array);
+                if (myself.find(mda) == myself.end())
+                {
+                    // cout << "Removing: " << array->GetName() << endl;
+                    dsa->RemoveArray(array->GetName());
+                }
+                else
+                {
+                    myself.erase(mda);
+                }
+            }
+        }
+        // Now fill any missing arrays.
+        for (iterator iter = myself.begin(); iter != myself.end(); ++iter)
+        {
+            vtkAbstractArray* array = iter->NewArray(dsa->GetNumberOfTuples());
+            if (array)
+            {
+                dsa->AddArray(array);
+                array->Delete();
+            }
+        }
+    }
+
+    void Save(vtkMultiProcessStream& stream)
+    {
+        stream.Reset();
+        stream << this->Valid;
+        stream << static_cast<unsigned int>(this->size());
+        vtkCleanArrays::vtkArraySet::iterator iter;
+        for (iter = this->begin(); iter != this->end(); ++iter)
+        {
+            stream << iter->Name << iter->NumberOfComponents << iter->Type;
+        }
+    }
+
+    void Load(vtkMultiProcessStream& stream)
+    {
+        this->clear();
+        unsigned int numvalues;
+        stream >> this->Valid;
+        stream >> numvalues;
+        for (unsigned int cc = 0; cc < numvalues; cc++)
+        {
+            vtkCleanArrays::vtkArrayData mda;
+            stream >> mda.Name >> mda.NumberOfComponents >> mda.Type;
+            this->insert(mda);
+        }
+    }
+    void Print()
+    {
+        vtkCleanArrays::vtkArraySet::iterator iter;
+        cout << "Valid: " << this->Valid << endl;
+        for (iter = this->begin(); iter != this->end(); ++iter)
+        {
+            cout << iter->Name << ", " << iter->NumberOfComponents << ", " << iter->Type << endl;
+        }
+        cout << "-----------------------------------" << endl << endl;
+    }
+};
+
+//----------------------------------------------------------------------------
+static void IntersectStreams(vtkMultiProcessStream& A, vtkMultiProcessStream& B)
+{
+    vtkCleanArrays::vtkArraySet setA;
+    vtkCleanArrays::vtkArraySet setB;
+    setA.Load(A);
+    setB.Load(B);
+    setA.Intersection(setB);
+    B.Reset();
+    setA.Save(B);
+}
+
+//----------------------------------------------------------------------------
+static void UnionStreams(vtkMultiProcessStream& A, vtkMultiProcessStream& B)
+{
+    vtkCleanArrays::vtkArraySet setA;
+    vtkCleanArrays::vtkArraySet setB;
+    setA.Load(A);
+    setB.Load(B);
+    setA.Union(setB);
+    B.Reset();
+    setA.Save(B);
+}
+
+//----------------------------------------------------------------------------
+int vtkCleanArrays::RequestData(
+    vtkInformation*, vtkInformationVector** inputVector, vtkInformationVector* outputVector)
+{
+    vtkDataObject* inputDO = vtkDataObject::GetData(inputVector[0], 0);
+    vtkDataObject* outputDO = vtkDataObject::GetData(outputVector, 0);
+    vtkShallowCopy(outputDO, inputDO);
+    vtkCompositeDataSet* outputCD = vtkCompositeDataSet::SafeDownCast(outputDO);
+
+//    vtkMultiProcessController* controller = this->Controller;
+//    if ((!controller || controller->GetNumberOfProcesses() <= 1) && outputCD == NULL)
+//    {
+//        // Nothing to do since not running in parallel or on composite datasets.
+//        return 1;
+//    }
+
+    // Build the array sets for all attribute types across all blocks (if any).
+    vtkCleanArrays::vtkArraySet arraySets[vtkDataObject::NUMBER_OF_ATTRIBUTE_TYPES];
+    if (outputCD)
+    {
+        vtkSmartPointer<vtkCompositeDataIterator> iter;
+        iter.TakeReference(outputCD->NewIterator());
+        for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+        {
+            vtkDataObject* dobj = iter->GetCurrentDataObject();
+            for (int attr = 0; attr < vtkDataObject::NUMBER_OF_ATTRIBUTE_TYPES; attr++)
+            {
+                if (vtkSkipAttributeType(attr))
+                {
+                    continue;
+                }
+                if (dobj->GetNumberOfElements(attr) > 0)
+                {
+                    vtkCleanArrays::vtkArraySet myset;
+                    myset.Initialize(dobj->GetAttributesAsFieldData(attr));
+                    if (this->FillPartialArrays)
+                    {
+                        arraySets[attr].Union(myset);
+                    }
+                    else
+                    {
+                        arraySets[attr].Intersection(myset);
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        for (int attr = 0; attr < vtkDataObject::NUMBER_OF_ATTRIBUTE_TYPES; attr++)
+        {
+            if (vtkSkipAttributeType(attr))
+            {
+                continue;
+            }
+            if (outputDO->GetNumberOfElements(attr) > 0)
+            {
+                arraySets[attr].Initialize(outputDO->GetAttributesAsFieldData(attr));
+            }
+        }
+    }
+
+//    if (controller && controller->GetNumberOfProcesses() > 1)
+//    {
+//        for (int attr = 0; attr < vtkDataObject::NUMBER_OF_ATTRIBUTE_TYPES; attr++)
+//        {
+//            if (vtkSkipAttributeType(attr))
+//            {
+//                continue;
+//            }
+//            vtkMultiProcessStream mstream;
+//            arraySets[attr].Save(mstream);
+//            vtkMultiProcessControllerHelper::ReduceToAll(controller, mstream,
+//                                                         this->FillPartialArrays ? ::UnionStreams : ::IntersectStreams, 1278392 + attr);
+//            arraySets[attr].Load(mstream);
+//        }
+//    }
+
+    if (outputCD)
+    {
+        vtkSmartPointer<vtkCompositeDataIterator> iter;
+        iter.TakeReference(outputCD->NewIterator());
+        for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+        {
+            vtkDataObject* dobj = iter->GetCurrentDataObject();
+            for (int attr = 0; attr < vtkDataObject::NUMBER_OF_ATTRIBUTE_TYPES; attr++)
+            {
+                if (vtkSkipAttributeType(attr))
+                {
+                    continue;
+                }
+                arraySets[attr].UpdateFieldData(dobj->GetAttributesAsFieldData(attr));
+            }
+        }
+    }
+    else
+    {
+        for (int attr = 0; attr < vtkDataObject::NUMBER_OF_ATTRIBUTE_TYPES; attr++)
+        {
+            if (vtkSkipAttributeType(attr))
+            {
+                continue;
+            }
+            arraySets[attr].UpdateFieldData(outputDO->GetAttributesAsFieldData(attr));
+        }
+    }
+    return 1;
+}
+
+//----------------------------------------------------------------------------
+void vtkCleanArrays::PrintSelf(ostream& os, vtkIndent indent)
+{
+    this->Superclass::PrintSelf(os, indent);
+    os << indent << "FillPartialArrays: " << this->FillPartialArrays << endl;
+    os << indent << "Controller: " << this->Controller << endl;
+}
+
+
+vtkStandardNewMacro(vtkCompositeDataToUnstructuredGridFilter);
+//----------------------------------------------------------------------------
+vtkCompositeDataToUnstructuredGridFilter::vtkCompositeDataToUnstructuredGridFilter()
+{
+    this->SubTreeCompositeIndex = 0;
+    this->MergePoints = true;
+    this->Tolerance = 0.;
+}
+
+//----------------------------------------------------------------------------
+vtkCompositeDataToUnstructuredGridFilter::~vtkCompositeDataToUnstructuredGridFilter()
+{
+}
+
+int vtkCompositeDataToUnstructuredGridFilter::RequestData(vtkInformation* vtkNotUsed(request),
+                                                          vtkInformationVector** inputVector, vtkInformationVector* outputVector)
+{
+    vtkCompositeDataSet* cd = vtkCompositeDataSet::GetData(inputVector[0], 0);
+    vtkUnstructuredGrid* ug = vtkUnstructuredGrid::GetData(inputVector[0], 0);
+    vtkDataSet* ds = vtkDataSet::GetData(inputVector[0], 0);
+    vtkUnstructuredGrid* output = vtkUnstructuredGrid::GetData(outputVector, 0);
+
+    if (ug)
+    {
+        output->ShallowCopy(ug);
+        return 1;
+    }
+
+    vtkNew<vtkAppendFilter> appender;
+    appender->SetMergePoints(this->MergePoints ? 1 : 0);
+    if (this->MergePoints)
+    {
+        appender->SetTolerance(this->Tolerance);
+    }
+    if (ds)
+    {
+        this->AddDataSet(ds, appender);
+    }
+    else if (cd)
+    {
+        if (this->SubTreeCompositeIndex == 0)
+        {
+            this->ExecuteSubTree(cd, appender);
+        }
+        vtkDataObjectTreeIterator* iter = vtkDataObjectTreeIterator::SafeDownCast(cd->NewIterator());
+        if (!iter)
+        {
+            vtkErrorMacro("Composite data is not a tree");
+            return 0;
+        }
+        iter->VisitOnlyLeavesOff();
+        for (iter->InitTraversal();
+             !iter->IsDoneWithTraversal() && iter->GetCurrentFlatIndex() <= this->SubTreeCompositeIndex;
+             iter->GoToNextItem())
+        {
+            if (iter->GetCurrentFlatIndex() == this->SubTreeCompositeIndex)
+            {
+                vtkDataObject* curDO = iter->GetCurrentDataObject();
+                vtkCompositeDataSet* curCD = vtkCompositeDataSet::SafeDownCast(curDO);
+                vtkUnstructuredGrid* curUG = vtkUnstructuredGrid::SafeDownCast(curDO);
+                vtkDataSet* curDS = vtkUnstructuredGrid::SafeDownCast(curDO);
+                if (curUG)
+                {
+                    output->ShallowCopy(curUG);
+                    // NOTE: Not using the appender at all.
+                }
+                else if (curDS && curCD->GetNumberOfPoints() > 0)
+                {
+                    this->AddDataSet(curDS, appender);
+                }
+                else if (curCD)
+                {
+                    this->ExecuteSubTree(curCD, appender);
+                }
+                break;
+            }
+        }
+        iter->Delete();
+    }
+
+    if (appender->GetNumberOfInputConnections(0) > 0)
+    {
+        appender->Update();
+        output->ShallowCopy(appender->GetOutput());
+        // this will override field data the vtkAppendFilter passed from the first
+        // block. It seems like a reasonable approach, if global field data is
+        // present.
+        if (ds)
+        {
+            output->GetFieldData()->PassData(ds->GetFieldData());
+        }
+        else if (cd)
+        {
+            output->GetFieldData()->PassData(cd->GetFieldData());
+        }
+    }
+
+    this->RemovePartialArrays(output);
+    return 1;
+}
+
+//----------------------------------------------------------------------------
+void vtkCompositeDataToUnstructuredGridFilter::ExecuteSubTree(
+    vtkCompositeDataSet* curCD, vtkAppendFilter* appender)
+{
+    vtkCompositeDataIterator* iter2 = curCD->NewIterator();
+    for (iter2->InitTraversal(); !iter2->IsDoneWithTraversal(); iter2->GoToNextItem())
+    {
+        vtkDataSet* curDS = vtkDataSet::SafeDownCast(iter2->GetCurrentDataObject());
+        if (curDS)
+        {
+            appender->AddInputData(curDS);
+        }
+    }
+    iter2->Delete();
+}
+
+//----------------------------------------------------------------------------
+void vtkCompositeDataToUnstructuredGridFilter::AddDataSet(vtkDataSet* ds, vtkAppendFilter* appender)
+{
+    vtkDataSet* clone = ds->NewInstance();
+    clone->ShallowCopy(ds);
+    appender->AddInputData(clone);
+    clone->Delete();
+}
+
+//----------------------------------------------------------------------------
+int vtkCompositeDataToUnstructuredGridFilter::FillInputPortInformation(
+    int vtkNotUsed(port), vtkInformation* info)
+{
+    info->Remove(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE());
+    info->Append(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkCompositeDataSet");
+    info->Append(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkDataSet");
+    return 1;
+}
+
+//----------------------------------------------------------------------------
+void vtkCompositeDataToUnstructuredGridFilter::RemovePartialArrays(vtkUnstructuredGrid* data)
+{
+    vtkUnstructuredGrid* clone = vtkUnstructuredGrid::New();
+    clone->ShallowCopy(data);
+    auto cleaner = vtkCleanArrays::New();
+    cleaner->SetInputData(clone);
+    cleaner->Update();
+    data->ShallowCopy(cleaner->GetOutput());
+    cleaner->Delete();
+    clone->Delete();
+}
+
+//----------------------------------------------------------------------------
+void vtkCompositeDataToUnstructuredGridFilter::PrintSelf(ostream& os, vtkIndent indent)
+{
+    this->Superclass::PrintSelf(os, indent);
+    os << indent << "SubTreeCompositeIndex: " << this->SubTreeCompositeIndex << endl;
+    os << indent << "MergePoints: " << this->MergePoints << endl;
+    os << indent << "Tolerance: " << this->Tolerance << endl;
+}
 
 using namespace std;
 using namespace boost;
@@ -193,6 +746,7 @@ MinMax calcRange(
 
     auto evaluate = [&](vtkDataSet* ds)
     {
+//        ds->Print(std::cout);
         double mima[2] = {0,1};
         vtkDataArray *arr;
         switch (fs)
@@ -224,6 +778,12 @@ MinMax calcRange(
         a->Update();
         if (auto * d = vtkDataSet::SafeDownCast(a->GetOutputDataObject(0)))
             evaluate(d);
+        else if (auto * cd = vtkCompositeDataSet::SafeDownCast(a->GetOutputDataObject(0)))
+        {
+            auto i=cd->NewIterator();
+            for (i->InitTraversal(); !i->IsDoneWithTraversal(); i->GoToNextItem())
+                evaluate( vtkDataSet::SafeDownCast(cd->GetDataSet(i)) );
+        }
 //        else
 //            throw insight::Exception("invalid input algorithm provided (does not return vtkDataSet)");
     }
@@ -448,10 +1008,25 @@ void VTKOffscreenScene::exportImage(const boost::filesystem::path& pngfile)
 }
 
 
+
+
 vtkCamera* VTKOffscreenScene::activeCamera()
 {
   return renderer_->GetActiveCamera();
 }
+
+
+
+
+void VTKOffscreenScene::setupActiveCamera(const View &view)
+{
+  auto camera = activeCamera();
+  camera->SetFocalPoint( toArray(view.focalPoint()) );
+  camera->SetViewUp( toArray(view.upwardDirection()) );
+  camera->SetPosition( toArray(view.cameraLocation()) );
+}
+
+
 
 
 void VTKOffscreenScene::setParallelScale(
@@ -505,31 +1080,23 @@ void VTKOffscreenScene::fitAll(double mult)
       0.5*(bnds[5]+bnds[4])
       );
 
-  cout<<"fitAll:"<<endl;
-  cout<<"L="<<L<<", ctr="<<ctr<<endl;
-
   arma::mat p, fp, ey;
   p=fp=ey=vec3(0,0,0);
   activeCamera()->GetPosition(p.memptr());
   activeCamera()->GetFocalPoint(fp.memptr());
   activeCamera()->GetViewUp(ey.memptr());
-  cout<<"camera: pos="<<p<<", focus="<<fp<<", up="<<ey<<endl;
   arma::mat n=p-fp; n/=norm(n,2);
   ey/=norm(ey,2);
   arma::mat ex=-arma::cross(n,ey); ex/=norm(ex,2);
   ey = arma::cross(n, ex);
-  cout<<"n="<<n<<", ex="<<ex<<", ey="<<ey<<endl;
-
 
   arma::mat diff=ctr-p; diff-=dot(diff,n)*n;
   arma::mat np=p+diff, nfp=fp+diff;
   activeCamera()->SetPosition( np.memptr() );
   activeCamera()->SetFocalPoint( nfp.memptr() );
-  cout<<"set camera to pos="<<np<<", focus="<<nfp<<endl;
 
   double w= fabs(arma::dot(vec3(L[0],0,0), ex))+fabs(arma::dot(vec3(0,L[1],0), ex))+fabs(arma::dot(vec3(0,0,L[2]), ex));
   double h= fabs(arma::dot(vec3(L[0],0,0), ey))+fabs(arma::dot(vec3(0,L[1],0), ey))+fabs(arma::dot(vec3(0,0,L[2]), ey));
-  cout<<"calculated w="<<w<<", h="<<h<<endl;
 
   setParallelScale(std::pair<double,double>(mult*w, mult*h));
 }
@@ -604,21 +1171,33 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, in
   vtkLogger::SetThreadName("rank=" + std::to_string(rank));
   vtkMultiProcessController::SetGlobalController(controller);
 
-  ofcase_ = /*decltype(ofcase_)*/vtkSmartPointer<ModifiedPOpenFOAMReader>::New();
+  ofcase_ = vtkSmartPointer<ModifiedPOpenFOAMReader>::New();
   ofcase_->SetFileName( casepath.string().c_str() );
-  ofcase_->SetSkipZeroTime(false);
-  ofcase_->SetCaseType(
-      np > 1 ?
-          vtkPOpenFOAMReader::DECOMPOSED_CASE :
-          vtkPOpenFOAMReader::RECONSTRUCTED_CASE );
   ofcase_->Update();
 
+  //ofcase_->SetSkipZeroTime(false);
+//  ofcase_->SetCaseType(
+//      np > 1 ?
+//          vtkPOpenFOAMReader::DECOMPOSED_CASE :
+//          vtkPOpenFOAMReader::RECONSTRUCTED_CASE );
+
+  ofcase_->SetUse64BitLabels(false);
+  ofcase_->SetUse64BitFloats(true);
+
   ofcase_->CreateCellToPointOn();
-  ofcase_->ReadZonesOn();
-  ofcase_->DecomposePolyhedraOn();
+  ofcase_->AddDimensionsToArrayNamesOff();
+
+  ofcase_->EnableAllPatchArrays();
   ofcase_->EnableAllCellArrays();
   ofcase_->EnableAllPointArrays();
-  ofcase_->EnableAllPatchArrays();
+  ofcase_->EnableAllLagrangianArrays();
+
+  ofcase_->CacheMeshOn();
+  ofcase_->DecomposePolyhedraOn();
+  ofcase_->ListTimeStepsByControlDictOff();
+  ofcase_->ReadZonesOff();
+
+  ofcase_->Update();
 
   auto execInfo = ofcase_->GetExecutive()->GetOutputInformation(0);
   int nt = execInfo->Length(vtkStreamingDemandDrivenPipeline::TIME_STEPS());
@@ -639,7 +1218,11 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, in
   {
     patches_[ofcase_->GetPatchArrayName(i)]=i;
   }
+}
 
+vtkMultiBlockDataSet* OpenFOAMCaseScene::GetOutput()
+{
+  return ofcase_->GetOutput();
 }
 
 const std::vector<double>& OpenFOAMCaseScene::times() const
@@ -654,7 +1237,6 @@ double OpenFOAMCaseScene::setTimeValue(double t)
       ti!=times_.end(),
       _("no lower bound found for t=%g!"), t );
 
-//  ofcase_->SetTimeValue( t );
   auto execInfos = ofcase_->GetExecutive()->GetOutputInformation();
   double tact = *ti;
   std::cerr<<"tact="<<tact<<std::endl;
@@ -669,7 +1251,7 @@ double OpenFOAMCaseScene::setTimeValue(double t)
   ofcase_->UpdateTimeStep(tact);
 
   ofcase_->Modified();
-//  ofcase_->Update();
+  ofcase_->Update();
 
   return tact;
 }
@@ -680,20 +1262,27 @@ void OpenFOAMCaseScene::setTimeIndex(vtkIdType timeId)
   setTimeValue( times_[timeId] );
 }
 
-vtkUnstructuredGrid* OpenFOAMCaseScene::internalMesh() const
-{
-  auto oo=ofcase_->GetOutput();
-  for (vtkIdType i=0; i<oo->GetNumberOfBlocks(); i++)
-  {
-    auto md=oo->GetMetaData(i);
-    if ( std::string(md->Get(vtkCompositeDataSet::NAME()))=="internalMesh" )
-    {
-      return vtkUnstructuredGrid::SafeDownCast(oo->GetBlock(i));
-    }
-  }
 
-  return nullptr;
+vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMCaseScene::internalMeshFilter() const
+{
+  auto internal = extractBlocks(
+      MultiBlockDataSetExtractor(ofcase_->GetOutput()).flatIndices(
+          {"internalMesh"} ));
+
+  auto af = vtkSmartPointer<vtkCompositeDataToUnstructuredGridFilter>::New();
+  af->AddInputConnection(internal->GetOutputPort());
+  return af;
 }
+
+
+
+vtkSmartPointer<vtkUnstructuredGrid> OpenFOAMCaseScene::internalMesh() const
+{
+  auto af = internalMeshFilter();
+  af->Update();
+  return af->GetOutput();
+}
+
 
 std::vector<std::string> OpenFOAMCaseScene::matchingPatchNames(const std::string& patchNamePattern) const
 {
@@ -735,32 +1324,23 @@ vtkPolyData* OpenFOAMCaseScene::patch(const std::string& name) const
   return nullptr;
 }
 
-vtkSmartPointer<vtkAlgorithm> OpenFOAMCaseScene::patchesAlgo(const std::string& namePattern) const
+vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMCaseScene::patchesFilter(const std::string& namePattern) const
 {
-  auto names = matchingPatchNames(namePattern);
+  auto patches = extractBlock(
+      MultiBlockDataSetExtractor(ofcase_->GetOutput()).flatIndices(
+          { "Patches", namePattern } ));
 
-  auto af = vtkSmartPointer<vtkAppendPolyData>::New();
-  for (const auto& pn: names)
-  {
-    af->AddInputData(patch(pn));
-  }
-
-  return af;
+  auto pf = vtkSmartPointer<vtkCompositeDataToUnstructuredGridFilter>::New();
+  pf->AddInputConnection(patches->GetOutputPort());
+  return pf;
 }
 
 
-vtkSmartPointer<vtkPolyData> OpenFOAMCaseScene::patches(const std::string& namePattern) const
+vtkSmartPointer<vtkUnstructuredGrid> OpenFOAMCaseScene::patches(const std::string& namePattern) const
 {
-  auto names = matchingPatchNames(namePattern);
-
-  auto af = vtkSmartPointer<vtkAppendPolyData>::New();
-  for (const auto& pn: names)
-  {
-    af->AddInputData(patch(pn));
-  }
-  af->Update();
-
-  return af->GetOutput();
+  auto pf = patchesFilter(namePattern);
+  pf->Update();
+  return pf->GetOutput();
 }
 
 vtkSmartPointer<vtkPOpenFOAMReader> OpenFOAMCaseScene::ofcase() const
@@ -796,17 +1376,25 @@ vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(
   return extractBlock(std::set<int>({blockIdx}));
 }
 
-vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(const std::set<int>& blockIdxs) const
+vtkSmartPointer<vtkMultiBlockDataSetAlgorithm> OpenFOAMCaseScene::extractBlocks(const std::set<int>& blockIdxs) const
 {
-    insight::assertion(
-                blockIdxs.size()>0,
-                "no block indices to extract were provided!" );
+  insight::assertion(
+      blockIdxs.size()>0,
+      "no block indices to extract were provided!" );
 
   auto eb = vtkSmartPointer<vtkExtractBlock>::New();
   eb->SetInputConnection(ofcase_->GetOutputPort());
-  for (int i: blockIdxs) eb->AddIndex( i );
+  for (int i: blockIdxs)
+  {
+    eb->AddIndex( i );
+  }
+  return eb;
+}
+
+vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(const std::set<int>& blockIdxs) const
+{
   auto eb2 = vtkSmartPointer<vtkCompositeDataGeometryFilter>::New();
-  eb2->SetInputConnection(eb->GetOutputPort());
+  eb2->SetInputConnection(extractBlocks(blockIdxs)->GetOutputPort());
   return eb2;
 }
 

@@ -31,6 +31,137 @@
 #include "boost/property_tree/ptree.hpp"
 
 
+#include "vtkUnstructuredGridAlgorithm.h"
+
+#include "vtkPassInputTypeAlgorithm.h"
+
+class vtkCompositeDataSet;
+class vtkAppendFilter;
+class vtkMultiProcessController;
+
+class vtkCleanArrays : public vtkPassInputTypeAlgorithm
+{
+public:
+    static vtkCleanArrays* New();
+    vtkTypeMacro(vtkCleanArrays, vtkPassInputTypeAlgorithm);
+    void PrintSelf(ostream& os, vtkIndent indent) override;
+
+//    //@{
+//    /**
+//   * The user can set the controller used for inter-process communication. By
+//   * default set to the global communicator.
+//   */
+//    void SetController(vtkMultiProcessController* controller);
+//    vtkGetObjectMacro(Controller, vtkMultiProcessController);
+//    //@}
+
+    //@{
+    /**
+   * When set to true (false by default), 0 filled array will be added for
+   * missing arrays on this process (instead of removing partial arrays).
+   */
+    vtkSetMacro(FillPartialArrays, bool);
+    vtkGetMacro(FillPartialArrays, bool);
+    vtkBooleanMacro(FillPartialArrays, bool);
+    //@}
+
+protected:
+    vtkCleanArrays();
+    ~vtkCleanArrays() override;
+
+    int RequestData(vtkInformation* request, vtkInformationVector** inputVector,
+                    vtkInformationVector* outputVector) override;
+
+    vtkMultiProcessController* Controller;
+
+    bool FillPartialArrays;
+
+private:
+    vtkCleanArrays(const vtkCleanArrays&) = delete;
+    void operator=(const vtkCleanArrays&) = delete;
+
+public:
+    class vtkArrayData;
+    class vtkArraySet;
+};
+
+/**
+ * @brief The vtkCompositeDataToUnstructuredGridFilter class
+ * copied here from PVVTKExtensionsMisc, because PVExtensions
+ * are not available in MXE cross compiler (only plain VTK)
+ */
+class vtkCompositeDataToUnstructuredGridFilter
+    : public vtkUnstructuredGridAlgorithm
+{
+public:
+    static vtkCompositeDataToUnstructuredGridFilter* New();
+    vtkTypeMacro(vtkCompositeDataToUnstructuredGridFilter, vtkUnstructuredGridAlgorithm);
+    void PrintSelf(ostream& os, vtkIndent indent) override;
+
+    //@{
+    /**
+   * Get/Set the composite index of the subtree to be merged. By default set to
+   * 0 i.e. root, hence entire input composite dataset is merged.
+   */
+    vtkSetMacro(SubTreeCompositeIndex, unsigned int);
+    vtkGetMacro(SubTreeCompositeIndex, unsigned int);
+    //@}
+
+    //@{
+    /**
+   * Turn on/off merging of coincidental points.  Frontend to
+   * vtkAppendFilter::MergePoints. Default is on.
+   */
+    vtkSetMacro(MergePoints, bool);
+    vtkGetMacro(MergePoints, bool);
+    vtkBooleanMacro(MergePoints, bool);
+    //@}
+
+    //@{
+    /**
+   * Get/Set the tolerance to use to find coincident points when `MergePoints`
+   * is `true`. Default is 0.0.
+   *
+   * This is simply passed on to the internal vtkAppendFilter::vtkLocator used to merge points.
+   * @sa `vtkLocator::SetTolerance`.
+   */
+    vtkSetClampMacro(Tolerance, double, 0.0, VTK_DOUBLE_MAX);
+    vtkGetMacro(Tolerance, double);
+    //@}
+
+protected:
+    vtkCompositeDataToUnstructuredGridFilter();
+    ~vtkCompositeDataToUnstructuredGridFilter() override;
+
+    /**
+   * This is called by the superclass.
+   * This is the method you should override.
+   */
+    int RequestData(vtkInformation* request, vtkInformationVector** inputVector,
+                    vtkInformationVector* outputVector) override;
+
+    int FillInputPortInformation(int port, vtkInformation* info) override;
+
+    /**
+   * Remove point/cell arrays not present on all processes.
+   */
+    void RemovePartialArrays(vtkUnstructuredGrid* data);
+
+    void AddDataSet(vtkDataSet* ds, vtkAppendFilter* appender);
+
+    void ExecuteSubTree(vtkCompositeDataSet* cd, vtkAppendFilter* output);
+    unsigned int SubTreeCompositeIndex;
+    bool MergePoints;
+    double Tolerance;
+
+private:
+    vtkCompositeDataToUnstructuredGridFilter(
+        const vtkCompositeDataToUnstructuredGridFilter&) = delete;
+    void operator=(const vtkCompositeDataToUnstructuredGridFilter&) = delete;
+};
+
+
+
 namespace insight
 {
 
@@ -263,6 +394,8 @@ public:
   void exportImage(const boost::filesystem::path& pngfile);
 
   vtkCamera* activeCamera();
+  void setupActiveCamera(const insight::View& view);
+
 
   void setParallelScale(
       boost::variant<
@@ -296,6 +429,8 @@ class OpenFOAMCaseScene
 public:
   OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np=1);
 
+  vtkMultiBlockDataSet* GetOutput();
+
   const std::vector<double>& times() const;
 
   /**
@@ -310,16 +445,18 @@ public:
   void setTimeIndex(vtkIdType timeId);
 
   vtkSmartPointer<vtkPOpenFOAMReader> ofcase() const;
-  vtkUnstructuredGrid* internalMesh() const;
+  vtkSmartPointer<vtkUnstructuredGridAlgorithm> internalMeshFilter() const;
+  vtkSmartPointer<vtkUnstructuredGrid> internalMesh() const;
 
   std::vector<std::string> matchingPatchNames(const std::string& patchNamePattern) const;
 
   vtkPolyData* patch(const std::string& name) const;
-  vtkSmartPointer<vtkAlgorithm> patchesAlgo(const std::string& namePattern) const;
-  vtkSmartPointer<vtkPolyData> patches(const std::string& namePattern) const;
+  vtkSmartPointer<vtkUnstructuredGridAlgorithm> patchesFilter(const std::string& namePattern) const;
+  vtkSmartPointer<vtkUnstructuredGrid> patches(const std::string& namePattern) const;
 
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(int blockIdx) const;
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::string& name) const;
+  vtkSmartPointer<vtkMultiBlockDataSetAlgorithm> extractBlocks(const std::set<int>& blockIdxs) const;
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::set<int>& blockIdxs) const;
 };
 

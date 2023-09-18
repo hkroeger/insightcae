@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "BRepOffsetAPI_MakeFilling.hxx"
 
 #include "featurefilters/edgeconnectingvertices.h"
 #include "cadfeatures/singleedgefeature.h"
@@ -50,16 +51,27 @@ size_t FillingFace::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  if (e1_ && e2_)
-    {
-      h+=*e1_;
-      h+=*e2_;
-    }
-  else
-    {
-      h+=*es1_;
-      h+=*es2_;
-    }
+
+  if (const auto* e1 = boost::get<FeaturePtr>(&e1_))
+  {
+      h+=*(*e1);
+  }
+  else if (const auto* es1 = boost::get<FeatureSetPtr>(&e1_))
+  {
+      h+=*(*es1);
+  }
+
+  if (const auto* e2 = boost::get<FeaturePtr>(&e2_))
+  {
+      h+=*(*e2);
+  }
+  else if (const auto* es2 = boost::get<FeatureSetPtr>(&e2_))
+  {
+      h+=*(*es2);
+  }
+
+  h+=inverted_;
+
   return h.getHash();
 }
 
@@ -67,17 +79,10 @@ size_t FillingFace::calcHash() const
 
 
 
-FillingFace::FillingFace ( FeaturePtr e1, FeaturePtr e2 )
-    : e1_ ( e1 ), e2_ ( e2 )
+FillingFace::FillingFace ( EdgeInput e1, EdgeInput e2, bool inverted )
+    : e1_ ( e1 ), e2_ ( e2 ), inverted_(inverted)
 {
 }
-
-
-
-
-FillingFace::FillingFace ( FeatureSetPtr es1, FeatureSetPtr es2 )
-    : es1_ ( es1 ), es2_ ( es2 )
-{}
 
 
 
@@ -87,66 +92,84 @@ void FillingFace::build()
 {
   TopoDS_Edge ee1, ee2;
 
-  if ( e1_ && e2_ )
+  bool ok=true;
+  if (const auto* e1 = boost::get<FeaturePtr>(&e1_))
   {
-      bool ok=true;
-      if ( e1_->isSingleEdge() )
+      if ( (*e1)->isSingleEdge() )
       {
-          ee1=e1_->asSingleEdge();
+          ee1=(*e1)->asSingleEdge();
       }
       else
       {
-          ok=false;
-      }
-      if ( e2_->isSingleEdge() )
-      {
-          ee2=e2_->asSingleEdge();
-      }
-      else
-      {
-          ok=false;
-      }
-
-      if ( !ok )
-      {
-          throw insight::Exception ( _("Invalid edge given!") );
+          throw insight::Exception ( _("first edge feature is not a single edge!") );
       }
   }
-  else if ( es1_ && es2_ )
+  else if (const auto* es1 = boost::get<FeatureSetPtr>(&e1_))
   {
-      TopoDS_Edge ee1, ee2;
-      if ( es1_->size() !=1 )
+      if ( (*es1)->size() !=1 )
       {
           throw insight::Exception ( _("first feature set has to contain only 1 edge!") );
       }
       else
       {
-          ee1=es1_->model()->edge ( *es1_->data().begin() );
+          ee1=(*es1)->model()->edge ( *(*es1)->data().begin() );
       }
+  }
+  else
+  {
+      throw insight::Exception ( "internal error" );
+  }
 
-      if ( es2_->size() !=1 )
+  if (const auto* e2 = boost::get<FeaturePtr>(&e2_))
+  {
+      if ( (*e2)->isSingleEdge() )
+      {
+          ee2=(*e2)->asSingleEdge();
+      }
+      else
+      {
+          throw insight::Exception ( _("second edge feature is not a single edge!") );
+      }
+  }
+  else if (const auto* es2 = boost::get<FeatureSetPtr>(&e2_))
+  {
+      if ( (*es2)->size() !=1 )
       {
           throw insight::Exception ( _("second feature set has to contain only 1 edge!") );
       }
       else
       {
-          ee2=es2_->model()->edge ( *es2_->data().begin() );
+          ee2=(*es2)->model()->edge ( *(*es2)->data().begin() );
       }
   }
   else
   {
-      throw insight::Exception ( _("Improper specification of edges for FillingFace!") );
+      throw insight::Exception ( "internal error" );
+  }
+
+  if (inverted_)
+  {
+      ee2.Reverse();
   }
 
   TopoDS_Face f;
   try
   {
-      f=BRepFill::Face ( ee1, ee2 );
+//      f=BRepFill::Face ( ee1, ee2 );
+      BRepOffsetAPI_MakeFilling fsb;
+      fsb.Add(ee1, GeomAbs_C0);
+      fsb.Add(BRepBuilderAPI_MakeEdge(TopExp::LastVertex(ee1), TopExp::LastVertex(ee2)), GeomAbs_C0);
+      fsb.Add(ee2, GeomAbs_C0);
+      fsb.Add(BRepBuilderAPI_MakeEdge(TopExp::FirstVertex(ee2), TopExp::FirstVertex(ee1)), GeomAbs_C0);
+      fsb.Build();
+      f=TopoDS::Face(fsb.Shape());
   }
   catch ( ... )
   {
       throw insight::Exception ( _("Failed to generate face!") );
   }
+
+//  setShape(f);
 
   ShapeFix_Face FixShape;
   FixShape.Init ( f );
@@ -154,32 +177,32 @@ void FillingFace::build()
 
   setShape ( FixShape.Face() );
 
-  auto va1 = vertexID(TopExp::FirstVertex(ee1));
-  auto vb1 = vertexID(TopExp::LastVertex(ee1));
-  auto va2 = vertexID(TopExp::FirstVertex(ee2));
-  auto vb2 = vertexID(TopExp::LastVertex(ee2));
+//  auto va1 = vertexID(TopExp::FirstVertex(ee1));
+//  auto vb1 = vertexID(TopExp::LastVertex(ee1));
+//  auto va2 = vertexID(TopExp::FirstVertex(ee2));
+//  auto vb2 = vertexID(TopExp::LastVertex(ee2));
 
   providedSubshapes_.insert(
       {
           "tan1",
-          cad::SingleEdgeFeature::create(
+          cad::SingleEdgeFeature::create(ee1/*
               std::make_shared<FeatureSet>(
                   shared_from_this(),
                   EntityType::Edge,
                   query_edges(
                       std::make_shared<EdgeConnectingVertices>(
-                          va1, va2))))
+                          va1, va2)))*/)
       });
   providedSubshapes_.insert(
       {
           "tan2",
-          cad::SingleEdgeFeature::create(
+          cad::SingleEdgeFeature::create(ee2/*
               std::make_shared<FeatureSet>(
                   shared_from_this(),
                   EntityType::Edge,
                   query_edges(
                       std::make_shared<EdgeConnectingVertices>(
-                          vb1, vb2))))
+                          vb1, vb2)))*/)
       });
 }
 
@@ -200,18 +223,16 @@ void FillingFace::insertrule ( parser::ISCADParser& ruleset )
     (
         "FillingFace",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-                    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
-                    [ qi::_val = phx::bind(
-                         &FillingFace::create<FeaturePtr, FeaturePtr>,
-                         qi::_1, qi::_2 ) ]
-                    |
-                    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_edgeFeaturesExpression >> ')' )
-                    [ qi::_val = phx::bind(
-                         &FillingFace::create<FeatureSetPtr, FeatureSetPtr>,
-                         qi::_1, qi::_2 ) ]
-
-                )
+           ( '('
+             > (ruleset.r_edgeFeaturesExpression|ruleset.r_solidmodel_expression) // FS first, because might start with solidmodel expr
+             > ','
+             > (ruleset.r_edgeFeaturesExpression|ruleset.r_solidmodel_expression)
+             > ( ( ',' > qi::lit("inverted") > qi::attr(true) | qi::attr(false) ) )
+             > ')' )
+            [ qi::_val = phx::bind(
+                    &FillingFace::create<EdgeInput, EdgeInput, bool>,
+                     qi::_1, qi::_2, qi::_3 ) ]
+            )
     );
 }
 
@@ -225,7 +246,7 @@ FeatureCmdInfoList FillingFace::ruleDocumentation()
         (
             "FillingFace",
          
-            "( (<feature:e0>, <feature:e1>) | (<edgeSelection:e0>, <edgeSelection:e1) )",
+            "( <feature:e0>|<edgeSelection:e0>, <feature:e1>|<edgeSelection:e1 [, inverted] )",
 
             _("Creates an interpolated surface between two edges. The two edges e0 and e1 can be given either as edge features or edge selection sets.")
         )

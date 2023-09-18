@@ -41,15 +41,12 @@ ParameterEditorWidget::ParameterEditorWidget
   ParameterSetDisplay* display
 )
 : QSplitter(Qt::Horizontal, parent),
-//  defaultParameters_(default_pset),
-  model_(/*new IQParameterSetModel(pset, default_pset, this)*/ nullptr),
+  model_(nullptr),
   vali_(vali),
   viz_(std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz))
 {
   insight::CurrentExceptionContext ex("creating parameter set editor");
 
-//  connect(model_, &IQParameterSetModel::parameterSetChanged,
-//          this, &ParameterEditorWidget::onParameterSetChanged );
 
   {
     QWidget *w=new QWidget(this);
@@ -57,7 +54,6 @@ ParameterEditorWidget::ParameterEditorWidget
     w->setLayout(l);
 
     parameterTreeView_ = new QTreeView(w);
-//    parameterTreeView_->setModel(model_);
     parameterTreeView_->setAlternatingRowColors(true);
     parameterTreeView_->expandAll();
     parameterTreeView_->resizeColumnToContents(0);
@@ -65,6 +61,7 @@ ParameterEditorWidget::ParameterEditorWidget
     parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
     parameterTreeView_->setDragDropMode(QAbstractItemView::DragDrop);
     parameterTreeView_->setDefaultDropAction(Qt::MoveAction);
+
     l->addWidget(parameterTreeView_);
 
 

@@ -68,6 +68,8 @@ public:
 
   QVariant	data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
+  void copy(const QModelIndexList & indexes) const;
+  void paste(const QModelIndexList & indexes);
   void contextMenu(QWidget* pw, const QModelIndex& index, const QPoint& p);
 
   class ParameterEditor

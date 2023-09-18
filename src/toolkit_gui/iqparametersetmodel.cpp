@@ -2,6 +2,8 @@
 #include <QLayout>
 #include <QPushButton>
 #include <QMimeData>
+#include <QApplication>
+#include <QClipboard>
 
 #include "iqparametersetmodel.h"
 #include "iqparameter.h"
@@ -175,16 +177,16 @@ Qt::ItemFlags IQParameterSetModel::flags(const QModelIndex &index) const
 
   auto flags=QAbstractItemModel::flags(index);
 
-  auto *iqp=static_cast<IQParameter*>(index.internalPointer());
-  if (dynamic_cast<IQArrayElementParameterBase*>(iqp))
-  {
+//  auto *iqp=static_cast<IQParameter*>(index.internalPointer());
+//  if (dynamic_cast<IQArrayElementParameterBase*>(iqp))
+//  {
     flags |= Qt::ItemIsDragEnabled;
-  }
+//  }
 
-  if (dynamic_cast<IQArrayParameter*>(iqp))
-  {
+//  if (dynamic_cast<IQArrayParameter*>(iqp))
+//  {
     flags |= Qt::ItemIsDropEnabled;
-  }
+//  }
 
   return flags;
 }
@@ -205,8 +207,6 @@ QStringList IQParameterSetModel::mimeTypes() const
 QMimeData *IQParameterSetModel::mimeData(const QModelIndexList &indexes) const
 {
   auto* mimeData = new QMimeData();
-
-  qDebug()<<indexes;
 
   std::ostringstream os;
   using namespace rapidxml;
@@ -245,42 +245,60 @@ bool IQParameterSetModel::dropMimeData(
     int row, int column,
     const QModelIndex &parent )
 {
-  qDebug()<<QString::fromStdString(data->data("application/xml").toStdString());
-  qDebug()<<action<<" r="<<row<<" c="<<column<<" p="<<parent;
-
   if (action == Qt::IgnoreAction)
-    return true;
-  else if (action == Qt::MoveAction)
   {
-    auto *iqp=static_cast<IQParameter*>(parent.internalPointer());
-    Q_ASSERT(iqp!=nullptr);
+    return true;
+  }
+  else if (action == Qt::MoveAction || action == Qt::CopyAction)
+  {
 
+    // parse, what we got
     std::string contents(data->data("application/xml").toStdString());
-
     using namespace rapidxml;
     xml_document<> doc;
     doc.parse<0>(&contents[0]);
-
     xml_node<> *rootnode = doc.first_node("root");
 
-    std::vector<insight::ParameterPtr> args;
+    std::string allTypesEqual(rootnode->first_node()->name());
+    int nArgs = 0;
     for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
     {
-      std::string type(e->name());
-
-      args.push_back( insight::ParameterPtr(
-          insight::Parameter::lookup(type, "") ) );
-
-      args.back()->readFromNode(
-          e->first_attribute("name")->value(),
-          doc,
-          *rootnode,
-          "");
+        std::string type(e->name());
+        nArgs++;
+        if (type!=allTypesEqual) allTypesEqual="";
     }
 
-    auto row=parent.row();
-    if (auto *iqap = dynamic_cast<IQArrayParameter*>(iqp))
+    IQArrayParameter *iqap = nullptr;
+    insight::ArrayParameter *iap = nullptr;
+    if (auto *iqp=static_cast<IQParameter*>(parent.internalPointer()))
     {
+        if ((iqap = dynamic_cast<IQArrayParameter*>(iqp)))
+        {
+            iap = dynamic_cast<insight::ArrayParameter*>(
+                &iqap->parameterRef());
+        }
+    }
+
+    if (iqap && allTypesEqual==iap->defaultValue().type())
+    {
+        // Parent is Array and all given parameters are of the same and child type of array? -> inserted/append children
+        std::vector<insight::ParameterPtr> args;
+        for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
+        {
+            insight::ParameterPtr np(
+                iap->defaultValue().clone() );
+
+            np->readFromNode(
+                e->first_attribute("name")->value(),
+                doc,
+                *rootnode,
+                ""
+                );
+
+            args.push_back(np);
+        }
+
+        auto row=parent.row();
         if (row<0) // append
         {
             for (auto& arg: args)
@@ -297,6 +315,28 @@ bool IQParameterSetModel::dropMimeData(
             {
                 insertArrayElement(parent, *arg);
             }
+            return true;
+        }
+    }
+    else if (nArgs==1)
+    {
+        // expect a single given item of same type as indexed parameter
+        auto targetIndex = index(row, column, parent);
+        if (!targetIndex.isValid())
+            targetIndex=parent;
+
+        auto *iqp=static_cast<IQParameter*>(targetIndex.internalPointer());
+        if (allTypesEqual==iqp->parameter().type())
+        {
+            insight::ParameterPtr np(iqp->parameter().clone());
+            np->readFromNode(
+                    rootnode->first_node()->first_attribute("name")->value(),
+                    doc,
+                    *rootnode,
+                    ""
+                );
+            iqp->parameterRef().reset(*np);
+            notifyParameterChange(targetIndex, true);
             return true;
         }
     }
@@ -344,6 +384,34 @@ QVariant IQParameterSetModel::data(const QModelIndex &index, int role) const
 
 
 
+void IQParameterSetModel::copy(const QModelIndexList &indexes) const
+{
+  QMimeData *mimeData = this->mimeData(indexes);
+  qApp->clipboard()->setMimeData(mimeData);
+}
+
+
+
+
+void IQParameterSetModel::paste(const QModelIndexList &indexes)
+{
+  insight::assertion(indexes.size()==1, "only single paste op supported");
+
+  const QMimeData *mimeData = qApp->clipboard()->mimeData();
+
+  auto index=indexes.first();
+
+  if (canDropMimeData(mimeData, Qt::CopyAction,
+                      index.row(), 0, index.parent()))
+  {
+    dropMimeData(mimeData, Qt::CopyAction,
+                 index.row(), 0, index.parent());
+  }
+}
+
+
+
+
 void IQParameterSetModel::contextMenu(QWidget *pw, const QModelIndex& index, const QPoint &p)
 {
   if (index.isValid())
@@ -352,6 +420,29 @@ void IQParameterSetModel::contextMenu(QWidget *pw, const QModelIndex& index, con
     {
       QMenu ctxMenu;
       iqp->populateContextMenu(this, index, &ctxMenu);
+
+      // copy/paste
+      QAction *a;
+
+      ctxMenu.addSeparator();
+      a=new QAction("&Copy");
+      connect(a, &QAction::triggered, a,
+              [this,index]() { copy({index.siblingAtColumn(0)}); }
+      );
+      ctxMenu.addAction(a);
+      a=new QAction("&Paste");
+      if (qApp->clipboard()->mimeData()->formats().contains("application/xml"))
+      {
+       connect(a, &QAction::triggered, a,
+                  [this,index]() { paste({index.siblingAtColumn(0)}); }
+              );
+      }
+      else
+      {
+       a->setDisabled(true);
+      }
+      ctxMenu.addAction(a);
+
       ctxMenu.exec(pw->mapToGlobal(p));
     }
   }
@@ -517,6 +608,16 @@ void IQParameterSetModel::notifyParameterChange(const QModelIndex &index, bool r
           // repopulate
           beginInsertRows(index, 0, subset.size()-1);
           decorateSubdictContent(iqp, subset/*, 0*/);
+          endInsertRows();
+        }
+      }
+      else if (auto* param = dynamic_cast<insight::ArrayParameter*>(&(parameterRef(index))))
+      {
+        if (param->size())
+        {
+          // repopulate
+          beginInsertRows(index, 0, param->size()-1);
+          decorateArrayContent(iqp, *param);
           endInsertRows();
         }
       }

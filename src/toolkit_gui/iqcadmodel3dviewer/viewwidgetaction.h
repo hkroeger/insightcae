@@ -6,6 +6,7 @@
 
 #include "cadtypes.h"
 #include "feature.h"
+#include "boost/signals2.hpp"
 
 
 #include <memory>
@@ -48,8 +49,12 @@ class InputReceiver
 public:
   typedef std::shared_ptr<InputReceiver> Ptr;
 
+  boost::signals2::signal<void()> aboutToBeDestroyed;
+
 private:
   Viewer& viewer_;
+
+  std::set<InputReceiver*> childReceivers_;
 
 protected:
   /**
@@ -70,7 +75,26 @@ public:
   {}
 
   virtual ~InputReceiver()
-  {}
+  {
+      aboutToBeDestroyed();
+  }
+
+  void registerChildReceiver(InputReceiver* recv)
+  {
+      recv->aboutToBeDestroyed.connect(
+          [this,recv]()
+          {
+              childReceivers_.erase(recv);
+          }
+          );
+      childReceivers_.insert(recv);
+  }
+
+  void removeChildReceiver(InputReceiver* recv)
+  {
+      childReceivers_.erase(recv);
+  }
+
 
   Viewer& viewer() const
   {
@@ -92,46 +116,82 @@ public:
 
   virtual bool onLeftButtonDoubleClick  ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
+      for (auto&c: childReceivers_)
+      {
+          if (c->onLeftButtonDoubleClick(nFlags, point)) return true;
+      }
       return false;
   }
 
   virtual bool onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
+      for (auto&c: childReceivers_)
+      {
+          if (c->onLeftButtonDown(nFlags, point)) return true;
+      }
       return false;
   }
 
   virtual bool onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
+      for (auto&c: childReceivers_)
+      {
+          if (c->onMiddleButtonDown(nFlags, point)) return true;
+      }
       return false;
   }
 
   virtual bool onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
+      for (auto&c: childReceivers_)
+      {
+          if (c->onRightButtonDown(nFlags, point)) return true;
+      }
       return false;
   }
 
   virtual bool onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
+      for (auto&c: childReceivers_)
+      {
+          if (c->onLeftButtonUp(nFlags, point)) return true;
+      }
       return false;
   }
 
   virtual bool onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
+      for (auto&c: childReceivers_)
+      {
+          if (c->onMiddleButtonUp(nFlags, point)) return true;
+      }
       return false;
   }
 
   virtual bool onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
+      for (auto&c: childReceivers_)
+      {
+          if (c->onRightButtonUp(nFlags, point)) return true;
+      }
       return false;
   }
 
   virtual bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key )
   {
+      for (auto&c: childReceivers_)
+      {
+          if (c->onKeyPress(modifiers, key)) return true;
+      }
       return false;
   }
 
   virtual bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key )
   {
+      for (auto&c: childReceivers_)
+      {
+          if (c->onKeyRelease(modifiers, key)) return true;
+      }
       return false;
   }
 
@@ -142,6 +202,10 @@ public:
      Qt::KeyboardModifiers curFlags
      )
   {
+      for (auto&c: childReceivers_)
+      {
+          c->onMouseMove(buttons, point, curFlags);
+      }
       lastMouseLocation_.reset(new QPoint(point));
   }
 
@@ -151,6 +215,18 @@ public:
       double angleDeltaY
      )
   {
+      for (auto&c: childReceivers_)
+      {
+          c->onMouseWheel(angleDeltaX, angleDeltaY);
+      }
+  }
+
+  virtual void onMouseLeavesViewer()
+  {
+      for (auto&c: childReceivers_)
+      {
+          c->onMouseLeavesViewer();
+      }
   }
 
 };
@@ -160,18 +236,40 @@ public:
 
 template<class Viewer>
 class ViewWidgetAction
-        : public InputReceiver<Viewer>
+  : public InputReceiver<Viewer>
 {
+
 public:
   typedef std::shared_ptr<ViewWidgetAction> Ptr;
 
+    boost::signals2::signal<void()> actionIsFinished;
+
 private:
-  bool finished_ = false;
+//  bool finished_ = false;
+  Ptr childAction_;
 
 protected:
-  virtual void setFinished()
+  virtual void finishAction()
   {
-    finished_=true;
+      actionIsFinished(); //finished_=true;
+  }
+
+  void launchChildAction(Ptr childAction)
+  {
+      if (childAction_)
+          childAction_.reset();
+
+      childAction_=childAction;
+      InputReceiver<Viewer>::registerChildReceiver(
+          childAction_.get() );
+
+      childAction_->actionIsFinished.connect(
+          [this]()
+          {
+              InputReceiver<Viewer>::removeChildReceiver(
+                  childAction_.get() );
+              childAction_.reset();
+          });
   }
 
 public:
@@ -183,7 +281,8 @@ public:
       : InputReceiver<Viewer>(viewer, p)
   {}
 
-  inline bool finished() const { return finished_; }
+//  inline bool finished() const { return finished_; }
+
 };
 
 

@@ -25,7 +25,7 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
-#include "viewstate.h"
+#include "iqcadmodel3dviewer/viewstate.h"
 //#include "qoccviewercontext.h"
 #include "iscadmetatyperegistrator.h"
 #include "boost/variant.hpp"

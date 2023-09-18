@@ -2,6 +2,22 @@
 #include "iqvtkcadmodel3dviewer.h"
 #include "cadfeature.h"
 
+bool IQVTKCADModel3DViewer::SubshapeData::operator==(const SubshapeData &o) const
+{
+    return o.subshapeType_==subshapeType_
+            && o.feat==feat
+            && o.id_==id_;
+}
+
+
+bool IQVTKCADModel3DViewer::SubshapeData::operator<(const SubshapeData &o) const
+{
+    return
+        std::tie(subshapeType_, feat, id_)
+               <
+        std::tie(o.subshapeType_, o.feat, o.id_);
+}
+
 
 IQVTKCADModel3DViewer::SubshapeSelection::SubshapeSelection(
         IQVTKCADModel3DViewer& viewer )

@@ -4,6 +4,13 @@
 
 #include <QColorDialog>
 
+uint
+IQCADModel3DViewer::QPersistentModelIndexHash::operator()
+    ( const QPersistentModelIndex& idx ) const
+{
+    return qHash(idx);
+}
+
 
 IQCADModel3DViewer::IQCADModel3DViewer(QWidget *parent)
     : /*QWidget(parent),*/
@@ -38,7 +45,17 @@ void IQCADModel3DViewer::setSelectionModel(QItemSelectionModel *selmodel)
 {
 }
 
+bool IQCADModel3DViewer::onLeftButtonDown(
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point ) {return false;}
 
+bool IQCADModel3DViewer::onKeyPress(
+    Qt::KeyboardModifiers modifiers,
+    int key ) {return false;}
+
+bool IQCADModel3DViewer::onLeftButtonUp(
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point ) {return false;}
 
 void IQCADModel3DViewer::toggleClipXY()
 {

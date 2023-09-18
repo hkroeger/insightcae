@@ -1,7 +1,7 @@
 #ifndef IQCADMODEL3DVIEWERMEASUREPOINTS_H
 #define IQCADMODEL3DVIEWERMEASUREPOINTS_H
 
-#include "viewwidgetaction.h"
+#include "iqcadmodel3dviewer/viewwidgetaction.h"
 
 class IQVTKCADModel3DViewer;
 
@@ -13,8 +13,6 @@ class IQVTKCADModel3DViewerMeasurePoints
 public:
   IQVTKCADModel3DViewerMeasurePoints(IQVTKCADModel3DViewer &viewWidget);
   ~IQVTKCADModel3DViewerMeasurePoints();
-
-  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 };
 
 

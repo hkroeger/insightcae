@@ -1,7 +1,7 @@
 #ifndef IQVTKCADMODEL3DVIEWERDRAWLINE_H
 #define IQVTKCADMODEL3DVIEWERDRAWLINE_H
 
-#include "viewwidgetaction.h"
+#include "iqcadmodel3dviewer/viewwidgetaction.h"
 
 #include "constrainedsketch.h"
 #include "cadfeatures/line.h"

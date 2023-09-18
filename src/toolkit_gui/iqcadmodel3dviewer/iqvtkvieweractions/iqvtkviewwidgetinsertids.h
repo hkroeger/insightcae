@@ -2,9 +2,10 @@
 #define IQVTKVIEWWIDGETINSERTIDS_H
 
 #include "cadfeature.h"
-#include "viewwidgetaction.h"
 #include "iqvtkcadmodel3dviewer.h"
+#include "iqcadmodel3dviewer/viewwidgetaction.h"
 
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h"
 
 struct FeatureSelCmd {
     std::string functionName, cmdName;
@@ -30,6 +31,28 @@ public:
   {
     viewer().activateSelectionAll(shapeType);
     //viewer().sendStatus("Please select "+QString(selectionName)+" and finish with right click!");
+
+    auto sel = std::make_shared<IQVTKSelectSubshape>(viewer());
+    sel->entitySelected.connect(
+        [this](IQVTKCADModel3DViewer::SubshapeData sd)
+        {
+            if (sd.subshapeType_ == insight::cad::Edge)
+            {
+                if (!selection_)
+                {
+                    // restrict further selection to current shape
+                    viewer().deactivateSubshapeSelectionAll();
+                    viewer().activateSelection( sd.feat, shapeType );
+
+                    selection_.reset(new insight::cad::FeatureSet(sd.feat, shapeType));
+                }
+
+                selection_->add(sd.id_);
+            }
+        }
+    );
+
+    launchChildAction(sel);
   }
 
   ~IQVTKViewWidgetInsertIDs()
@@ -37,49 +60,17 @@ public:
       viewer().deactivateSubshapeSelectionAll();
   }
 
-  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override
-  {
-      IQVTKCADModel3DViewer::ItemAtCursor clickedItem = viewer().findUnderCursorAt(point);
-
-      if ( const auto *ci =
-           boost::get<IQVTKCADModel3DViewer::DisplayedSubshapeData::const_iterator>(&clickedItem) )
-      {
-          auto sd = (*ci)->second;
-          if (sd.subshapeType_ == shapeType)
-          {
-              if (!selection_)
-              {
-                  // restrict further selection to current shape
-                  viewer().deactivateSubshapeSelectionAll();
-                  viewer().activateSelection( sd.feat, shapeType );
-
-                  selection_.reset(new insight::cad::FeatureSet(sd.feat, shapeType));
-              }
-
-              selection_->add(sd.id_);
-
-//              viewer().sendStatus( QString::fromStdString(
-//                    boost::str(boost::format(
-//                                 "Selected %s %d. Select next %s, end with right click."
-//                    ) % selectionName % id % selectionName ) ) );
-
-              return true;
-          }
-      }
-
-      return false;
-  }
 
   bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override
   {
-    auto icmd = featureSelCmds.find(shapeType);
-
-    insight::assertion(
-                icmd!=featureSelCmds.end(),
-                "unhandled selection" );
-
     if (selection_)
     {
+        auto icmd = featureSelCmds.find(shapeType);
+
+        insight::assertion(
+              icmd!=featureSelCmds.end(),
+              "unhandled selection" );
+
         QString text = QString::fromStdString(
               selection_->model()->featureSymbolName() + "?" + icmd->second.cmdName + "=("
               );
@@ -92,8 +83,8 @@ public:
         text+=")";
         Q_EMIT appendToNotepad(text);
     }
-
-    setFinished();
+    
+    finishAction();
 
     return true;
   }

@@ -94,8 +94,8 @@ public:
       }
     text+=")\n";
     viewer().insertNotebookText(text);
-
-    setFinished();
+    
+    finishAction();
 
     return true;
   }

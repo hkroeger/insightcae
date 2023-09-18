@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: workbench \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-04 22:23+0200\n"
+"POT-Creation-Date: 2023-09-08 15:08+0200\n"
 "PO-Revision-Date: 2023-07-02 22:36+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -92,151 +92,147 @@ msgstr ""
 msgid "creating analysis form for analysis %s"
 msgstr ""
 
-#: analysisform.cpp:110
+#: analysisform.cpp:102
 msgid "setup user interface"
 msgstr ""
 
-#: analysisform.cpp:117
+#: analysisform.cpp:109
 msgid "enable OpenFOAM controls"
 msgstr ""
 
-#: analysisform.cpp:147
+#: analysisform.cpp:139
 msgid "Save..."
 msgstr ""
 
-#: analysisform.cpp:148
+#: analysisform.cpp:140
 msgid "Email..."
 msgstr ""
 
-#: analysisform.cpp:149
+#: analysisform.cpp:141
 msgid "Clear"
 msgstr ""
 
-#: analysisform.cpp:150
+#: analysisform.cpp:142
 msgid "Auto Scroll"
 msgstr ""
 
-#: analysisform.cpp:173
+#: analysisform.cpp:165
 msgid "redirect console"
 msgstr ""
 
-#: analysisform.cpp:194
+#: analysisform.cpp:186
 msgid "create parameter set visualizer"
 msgstr ""
 
-#: analysisform.cpp:202
-msgid "Info: no visualizer available for analysis of type"
-msgstr ""
-
-#: analysisform.cpp:218
+#: analysisform.cpp:201
 msgid "create parameter set editor"
 msgstr ""
 
-#: analysisform.cpp:264
+#: analysisform.cpp:247
 msgid "create result viewer"
 msgstr ""
 
-#: analysisform.cpp:292
+#: analysisform.cpp:275
 msgid "create menus"
 msgstr ""
 
-#: analysisform.cpp:296
+#: analysisform.cpp:279
 msgid "&Parameters"
 msgstr ""
 
-#: analysisform.cpp:297
+#: analysisform.cpp:280
 msgid "&Actions"
 msgstr ""
 
-#: analysisform.cpp:298
+#: analysisform.cpp:281
 msgid "&Results"
 msgstr ""
 
-#: analysisform.cpp:299
+#: analysisform.cpp:282
 msgid "&Tools"
 msgstr ""
 
-#: analysisform.cpp:309
+#: analysisform.cpp:292
 msgid "&Save parameter set as..."
 msgstr ""
 
-#: analysisform.cpp:314
+#: analysisform.cpp:297
 msgid "&Pack external files into parameter file"
 msgstr ""
 
-#: analysisform.cpp:328
+#: analysisform.cpp:311
 msgid "&Merge other parameter set into current..."
 msgstr ""
 
-#: analysisform.cpp:332
+#: analysisform.cpp:315
 msgid "&Show in XML format"
 msgstr ""
 
-#: analysisform.cpp:338
+#: analysisform.cpp:321
 msgid "&Run Analysis"
 msgstr ""
 
-#: analysisform.cpp:341
+#: analysisform.cpp:324
 msgid "&Stop Analysis"
 msgstr ""
 
-#: analysisform.cpp:347
+#: analysisform.cpp:330
 msgid "&Load results..."
 msgstr ""
 
-#: analysisform.cpp:355
+#: analysisform.cpp:338
 msgid "&Save results as..."
 msgstr ""
 
-#: analysisform.cpp:360
+#: analysisform.cpp:343
 msgid "Create &report..."
 msgstr ""
 
-#: analysisform.cpp:369
+#: analysisform.cpp:352
 msgid "Load &filter..."
 msgstr ""
 
-#: analysisform.cpp:375
+#: analysisform.cpp:358
 msgid "Sa&ve filter..."
 msgstr ""
 
-#: analysisform.cpp:381
+#: analysisform.cpp:364
 msgid "Start ParaView in execution directory"
 msgstr ""
 
-#: analysisform.cpp:384
+#: analysisform.cpp:367
 msgid "Clean OpenFOAM case..."
 msgstr ""
 
-#: analysisform.cpp:402 analysisform.cpp:557
+#: analysisform.cpp:385 analysisform.cpp:540
 msgid "Parameters unsaved"
 msgstr ""
 
-#: analysisform.cpp:403
+#: analysisform.cpp:386
 msgid ""
 "The current parameters have been modified without saving.\n"
 "Do you wish to save them before closing?"
 msgstr ""
 
-#: analysisform.cpp:493
+#: analysisform.cpp:476
 msgid "Save Parameters"
 msgstr ""
 
-#: analysisform.cpp:495 analysisform.cpp:575 workbenchwindow.cpp:242
+#: analysisform.cpp:478 analysisform.cpp:558 workbenchwindow.cpp:242
 msgid "Insight parameter sets (*.ist)"
 msgstr ""
 
-#: analysisform.cpp:499
+#: analysisform.cpp:482
 msgid "Pack: embed externally referenced files into parameterset"
 msgstr ""
 
-#: analysisform.cpp:558
+#: analysisform.cpp:541
 msgid ""
 "The current parameter set is unsaved and will be overwritten.\n"
 "Do you wish to save them before continue?"
 msgstr ""
 
-#: analysisform.cpp:573 workbenchwindow.cpp:241
+#: analysisform.cpp:556 workbenchwindow.cpp:241
 msgid "Open Parameters"
 msgstr ""
 

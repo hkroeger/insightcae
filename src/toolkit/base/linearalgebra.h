@@ -461,6 +461,9 @@ double integrate_indef(F f, double a=0)
   return result;
 }
 
+
+
+
 struct CoordinateSystem
 {
   arma::mat origin, ex, ey, ez;
@@ -476,7 +479,36 @@ struct CoordinateSystem
           const arma::mat& ex,
           const arma::mat& ez );
 };
-//typedef std::map<arma::mat, int, CompMat> SortedMatMap;
+
+
+
+
+/**
+ * @brief The View class
+ * Represents the orientation of a view.
+ */
+struct View : public CoordinateSystem
+{
+  double cameraDistance;
+  std::string title;
+
+  View(
+      const arma::mat& ctr,
+      const arma::mat& cameraOffset,
+      const arma::mat& up,
+      const std::string& title );
+
+  inline arma::mat cameraLocation() const { return origin - cameraDistance*ex; }
+  inline arma::mat focalPoint() const { return origin; }
+  inline arma::mat upwardDirection() const { return ez; }
+};
+
+
+
+std::map<std::string, View>
+generateStandardViews(
+    const CoordinateSystem& objectOrientation,
+    double cameraDistance );
 
 
 double stabilize(double value, double nonZeroThreshold);

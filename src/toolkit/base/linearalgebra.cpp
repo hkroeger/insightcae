@@ -1352,6 +1352,49 @@ CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x, cons
     ez/=arma::norm(ez,2);
 }
 
+
+
+View::View(
+    const arma::mat &ctr,
+    const arma::mat &cameraOffset,
+    const arma::mat &up,
+    const std::string &t )
+: CoordinateSystem(ctr, cameraOffset, up),
+  cameraDistance(arma::norm(cameraOffset, 2)),
+  title(t)
+{}
+
+
+
+
+std::map<std::string, View>
+generateStandardViews(
+    const CoordinateSystem &o,
+    double camOfs )
+{
+    return
+    {
+     {"left",   View(o.origin,  o.ey*camOfs, o.ez, "View from left side") },
+     {"right",  View(o.origin, -o.ey*camOfs, o.ez, "View from right side") },
+     {"above",  View(o.origin,  o.ez*camOfs, -o.ey, "View from above") },
+     {"below",  View(o.origin, -o.ez*camOfs, o.ey, "View from below") },
+     {"front",  View(o.origin,  o.ex*camOfs, o.ez, "View from forward") },
+     {"aft",    View(o.origin, -o.ex*camOfs, o.ez, "View from aft") },
+     {"diag1",  View(o.origin, normalized(  o.ey   +o.ex   +o.ez  )*camOfs, o.ez, "Diagonal view 1: From forward, left, above") },
+     {"diag2",  View(o.origin, normalized( -o.ey   +o.ex   +o.ez  )*camOfs, o.ez, "Diagonal view 2: From forward, right, above") },
+     {"diag3",  View(o.origin, normalized(  o.ey   +o.ex   -o.ez  )*camOfs, o.ez, "Diagonal view 3: From forward, left, below") },
+     {"diag4",  View(o.origin, normalized( -o.ey   +o.ex   -o.ez  )*camOfs, o.ez, "Diagonal view 4: From forward, right, below") },
+     {"diag5",  View(o.origin, normalized(  o.ey   -o.ex   +o.ez  )*camOfs, o.ez, "Diagonal view 5: From aft, left, above") },
+     {"diag6",  View(o.origin, normalized( -o.ey   -o.ex   +o.ez  )*camOfs, o.ez, "Diagonal view 6: From aft, right, above") },
+     {"diag7",  View(o.origin, normalized(  o.ey   -o.ex   -o.ez  )*camOfs, o.ez, "Diagonal view 7: From aft, left, below") },
+     {"diag8",  View(o.origin, normalized( -o.ey   -o.ex   -o.ez  )*camOfs, o.ez, "Diagonal view 8: From aft, right, below") }
+    };
+
+}
+
+
+
+
 double stabilize(double value, double nonZeroThreshold)
 {
     // 1 or -1, not 0
@@ -1384,5 +1427,6 @@ std::size_t hash<arma::mat>::operator()
     }
     return h;
 }
+
 
 }

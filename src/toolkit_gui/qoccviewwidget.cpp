@@ -64,7 +64,7 @@
 
 #include "qoccviewwidget.h"
 
-#include "viewwidgetinsertids.h"
+#include "iqcadmodel3dviewer/viewwidgetinsertids.h"
 
 
 using namespace std;
@@ -108,12 +108,11 @@ void QoccViewWidget::addLights()
 
 QoccViewWidget::QoccViewWidget(QWidget *parent)
   : QWidget(parent),
-    currentNavigationAction_(nullptr),
     navigationManager_(
       std::make_shared<
         TouchpadNavigationManager<
          QoccViewWidget, OCCViewWidgetPanning, OCCViewWidgetRotation
-        > >(currentNavigationAction_, *this) ),
+        > >(*this) ),
     myGridSnap          ( Standard_False ),
     myDetection         ( AIS_SOD_Nothing ),
     myPrecision		( 0.0001 ),
@@ -309,30 +308,22 @@ void QoccViewWidget::mousePressEvent( QMouseEvent* e )
     if ( e->button() & Qt::LeftButton )
       {
         navigationManager_->onLeftButtonDown( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-          currentNavigationAction_->onLeftButtonDown( e->modifiers(), e->pos() );
         if (currentUserActivity_)
           currentUserActivity_->onLeftButtonDown( e->modifiers(), e->pos() );
       }
     else if ( e->button() & Qt::RightButton )
       {
         navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-          currentNavigationAction_->onRightButtonDown( e->modifiers(), e->pos() );
         if (currentUserActivity_)
           currentUserActivity_->onRightButtonDown( e->modifiers(), e->pos() );
       }
     else if ( e->button() & Qt::MidButton )
       {
         navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-          currentNavigationAction_->onMiddleButtonDown( e->modifiers(), e->pos() );
         if (currentUserActivity_)
           currentUserActivity_->onMiddleButtonDown( e->modifiers(), e->pos() );
       }
 
-    if (currentUserActivity_ && currentUserActivity_->finished())
-      currentUserActivity_.reset();
   }
   else
     e->ignore();
@@ -350,17 +341,13 @@ void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
     if ( e->button() & Qt::LeftButton )
       {
         navigationManager_->onLeftButtonUp( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-          currentNavigationAction_->onLeftButtonUp( e->modifiers(), e->pos() );
         if (currentUserActivity_)
           currentUserActivity_->onLeftButtonUp( e->modifiers(), e->pos() );
       }
     else if ( e->button() & Qt::RightButton )
       {
         navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-          currentNavigationAction_->onRightButtonUp( e->modifiers(), e->pos() );
-        else if (currentUserActivity_)
+        if (currentUserActivity_)
           currentUserActivity_->onRightButtonUp( e->modifiers(), e->pos() );
         else
         {
@@ -370,14 +357,10 @@ void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
     else if ( e->button() & Qt::MidButton )
       {
         navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
-        if (currentNavigationAction_)
-          currentNavigationAction_->onMiddleButtonUp( e->modifiers(), e->pos() );
         if (currentUserActivity_)
           currentUserActivity_->onMiddleButtonUp( e->modifiers(), e->pos() );
       }
 
-    if (currentUserActivity_ && currentUserActivity_->finished())
-      currentUserActivity_.reset();
   }
   else
     e->ignore();
@@ -448,13 +431,8 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
     }
 
     navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
-    if (currentNavigationAction_)
-      currentNavigationAction_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
     if (currentUserActivity_)
       currentUserActivity_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
-
-    if (currentUserActivity_ && currentUserActivity_->finished())
-      currentUserActivity_.reset();
 
   }
   else
@@ -607,14 +585,8 @@ void QoccViewWidget::wheelEvent ( QWheelEvent* e )
 //	}
 //      myView->SetScale( currentScale );
       navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
-      if (currentNavigationAction_)
-        currentNavigationAction_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
       if (currentUserActivity_)
         currentUserActivity_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
-
-      if (currentUserActivity_ && currentUserActivity_->finished())
-        currentUserActivity_.reset();
-
     }
   else
     {
@@ -646,21 +618,14 @@ void QoccViewWidget::keyPressEvent(QKeyEvent* e)
 
   if (e->key() == Qt::Key_Escape)
   {
-    currentNavigationAction_.reset();
     currentUserActivity_.reset();
   }
 
 
   navigationManager_->onKeyPress(e->modifiers(), e->key());
 
-  if (currentNavigationAction_)
-    currentNavigationAction_->onKeyPress(e->modifiers(), e->key());
-
   if (currentUserActivity_)
     currentUserActivity_->onKeyPress(e->modifiers(), e->key());
-
-  if (currentUserActivity_ && currentUserActivity_->finished())
-    currentUserActivity_.reset();
 
   QWidget::keyPressEvent(e);
 }
@@ -688,14 +653,8 @@ void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
 //      QWidget::keyReleaseEvent(e);
   navigationManager_->onKeyRelease(e->modifiers(), e->key());
 
-  if (currentNavigationAction_)
-    currentNavigationAction_->onKeyRelease(e->modifiers(), e->key());
-
   if (currentUserActivity_)
     currentUserActivity_->onKeyRelease(e->modifiers(), e->key());
-
-  if (currentUserActivity_ && currentUserActivity_->finished())
-    currentUserActivity_.reset();
 
   QWidget::keyReleaseEvent(e);
 }
@@ -1384,7 +1343,12 @@ void QoccViewWidget::onSetClipPlane(QObject* qdatum)
 
 void QoccViewWidget::onMeasureDistance()
 {
-  currentUserActivity_= std::make_shared<OCCViewWidgetMeasurePoints>(*this);
+    currentUserActivity_= std::make_shared<OCCViewWidgetMeasurePoints>(*this);
+}
+
+void QoccViewWidget::onMeasureDiameter()
+{
+
 }
 
 

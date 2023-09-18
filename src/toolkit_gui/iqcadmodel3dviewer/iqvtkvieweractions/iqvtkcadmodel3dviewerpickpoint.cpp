@@ -30,8 +30,8 @@ bool IQVTKCADModel3DViewerPickPoint::onLeftButtonDown(Qt::KeyboardModifiers nFla
     arma::mat pt = insight::vec3Zero();
     picker->GetPickPosition(pt.memptr());
     Q_EMIT pickedPoint(pt);
-
-    setFinished();
+    
+    finishAction();
 
     return true;
 }

@@ -30,7 +30,7 @@ IQVTKCADModel3DViewerPlanePointBasedAction
     {
         if (auto se =
             std::dynamic_pointer_cast<IQVTKConstrainedSketchEditor>(
-                viewer().currentUserActivity_))
+                viewer().currentAction_))
         {
             if ( (sg =
                  se->findSketchElementOfActor(act)) )
@@ -257,7 +257,7 @@ bool IQVTKCADModel3DViewerDrawLine::onRightButtonDown(
         Qt::KeyboardModifiers nFlags,
         const QPoint point )
 {
-    setFinished();
+    finishAction();
     Q_EMIT finished();
     return true;
 }

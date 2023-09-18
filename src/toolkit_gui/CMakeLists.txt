@@ -38,29 +38,36 @@ set(toolkit_gui_SRCS
 
  iqpickinteractorstyle.h iqpickinteractorstyle.cpp
 
+ qoccviewwidget.h qoccviewwidget.cpp
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
-
- iqvtkcadmodel3dviewerrotation.h iqvtkcadmodel3dviewerrotation.cpp
- iqvtkcadmodel3dviewerpanning.h iqvtkcadmodel3dviewerpanning.cpp
- iqvtkcadmodel3dviewer_highlightitem.cpp
- iqvtkcadmodel3dviewer_subshapeselection.cpp
- iqvtkcadmodel3dviewer_clippingplanes.cpp
  iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
 
- iqvtkviewerstate.h iqvtkviewerstate.cpp
- iqvtkconstrainedsketchentity.h
- iqvtkfixedpoint.h iqvtkfixedpoint.cpp
- iqvtkhorizontalconstraint.h iqvtkhorizontalconstraint.cpp
- iqvtkverticalconstraint.h iqvtkverticalconstraint.cpp
- iqvtkpointoncurveconstraint.h iqvtkpointoncurveconstraint.cpp
+ iqcadmodel3dviewer/iqvtkviewerstate.h iqcadmodel3dviewer/iqvtkviewerstate.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewer_highlightitem.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewer_subshapeselection.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewer_clippingplanes.cpp
+ iqcadmodel3dviewer/viewwidgetaction.h iqcadmodel3dviewer/viewwidgetaction.cpp
+ iqcadmodel3dviewer/viewwidgetinsertids.h iqcadmodel3dviewer/viewwidgetinsertids.cpp
+ iqcadmodel3dviewer/navigationmanager.h iqcadmodel3dviewer/navigationmanager.cpp
+ iqcadmodel3dviewer/selectionlogic.h
+ iqcadmodel3dviewer/viewstate.h iqcadmodel3dviewer/viewstate.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.cpp
+
  iqvtkconstrainedsketcheditor.h iqvtkconstrainedsketcheditor.cpp
+ iqvtkconstrainedsketcheditor/iqvtkconstrainedsketchentity.h
+ iqvtkconstrainedsketcheditor/iqvtkfixedpoint.h iqvtkconstrainedsketcheditor/iqvtkfixedpoint.cpp
+ iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.h iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.cpp
+ iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.h iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.cpp
+ iqvtkconstrainedsketcheditor/iqvtkpointoncurveconstraint.h iqvtkconstrainedsketcheditor/iqvtkpointoncurveconstraint.cpp
 
- iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h
- iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.cpp
- iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.cpp
- iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.cpp
 
- iqvtkviewwidgetinsertids.h iqvtkviewwidgetinsertids.cpp
  iqcadtransformationcommand.h iqcadtransformationcommand.cpp
  iqvectordirectioncommand.h iqvectordirectioncommand.cpp
  iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
@@ -75,17 +82,7 @@ set(toolkit_gui_SRCS
  occtwindow.cpp
  occtwindow.h
  occguitools.h occguitools.cpp
- viewwidgetaction.h
- viewwidgetaction.cpp
- viewwidgetinsertids.h
- viewwidgetinsertids.cpp
- navigationmanager.h
- navigationmanager.cpp
- selectionlogic.h
- qoccviewwidget.cpp
- qoccviewwidget.h
- viewstate.cpp
- viewstate.h
+
 
  qvariableitem.cpp
  qvariableitem.h

@@ -8,13 +8,14 @@
 
 
 template<class Viewer>
-class NavigationManager : public InputReceiver<Viewer>
+class NavigationManager
+    : public InputReceiver<Viewer>
 {
 public:
   typedef std::shared_ptr<NavigationManager> Ptr;
 
 private:
-  typename InputReceiver<Viewer>::Ptr& currentAction_;
+  typename InputReceiver<Viewer>::Ptr currentAction_;
 
 protected:
   bool actionInProgress()
@@ -32,10 +33,12 @@ protected:
   {
     currentAction_.reset(); // delete first
     currentAction_ = newAct;
+    this->registerChildReceiver(currentAction_.get());
   }
 
   void stopCurrentAction()
   {
+    this->removeChildReceiver(currentAction_.get());
     currentAction_.reset();
   }
 
@@ -52,11 +55,8 @@ protected:
   }
 
 public:
-  NavigationManager(
-          typename InputReceiver<Viewer>::Ptr& currentAction,
-          Viewer& viewer )
-  : InputReceiver<Viewer>(viewer),
-    currentAction_(currentAction)
+  NavigationManager( Viewer& viewer )
+  : InputReceiver<Viewer>(viewer)
   {}
 
   void onMouseWheel
@@ -73,20 +73,25 @@ public:
     {
         scaleDown();
     }
+    InputReceiver<Viewer>::onMouseWheel(angleDeltaX, angleDeltaY);
   }
 
-  bool onLeftButtonDown  ( Qt::KeyboardModifiers modifiers, const QPoint point ) override
+  bool onLeftButtonDown( Qt::KeyboardModifiers modifiers, const QPoint point ) override
   {
     if ( this->viewer().pickAtCursor( modifiers&Qt::ControlModifier ) )
     {
       this->viewer().emitGraphicalSelectionChanged();
       return true;
     }
-    return false;
+    return InputReceiver<Viewer>::onLeftButtonDown(modifiers, point);
   }
 
-  bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override
+  bool onKeyPress( Qt::KeyboardModifiers modifiers, int key ) override
   {
+    if (key == Qt::Key_Escape)
+    {
+      currentAction_.reset();
+    }
     if ( key==Qt::Key_Plus && (modifiers&Qt::ControlModifier) )
     {
       scaleUp();
@@ -97,7 +102,7 @@ public:
       scaleDown();
       return true;
     }
-    return false;
+    return InputReceiver<Viewer>::onKeyPress(modifiers, key);
   }
 
 };
@@ -111,9 +116,8 @@ class TouchpadNavigationManager
 
 public:
   TouchpadNavigationManager(
-          typename InputReceiver<Viewer>::Ptr& currentAction,
           Viewer& viewer )
-      : NavigationManager<Viewer>(currentAction, viewer)
+      : NavigationManager<Viewer>(viewer)
   {}
 
   bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override

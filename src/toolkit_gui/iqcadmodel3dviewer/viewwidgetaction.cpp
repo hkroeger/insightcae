@@ -169,15 +169,10 @@ bool OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/
               ),
               true
             );
-
-        setFinished();
+        
+        finishAction();
         return true;
       }
   }
 }
-
-
-
-
-
 

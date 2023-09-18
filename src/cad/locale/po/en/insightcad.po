@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-03 13:38+0200\n"
+"POT-Creation-Date: 2023-09-12 10:52+0200\n"
 "PO-Revision-Date: 2023-07-02 22:50+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -271,27 +271,27 @@ msgid ""
 "edges are rounded with width r."
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:112
-msgid "Invalid edge given!"
+#: cadfeatures/fillingface.cpp:104
+msgid "first edge feature is not a single edge!"
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:120
+#: cadfeatures/fillingface.cpp:111
 msgid "first feature set has to contain only 1 edge!"
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:129
-msgid "second feature set has to contain only 1 edge!"
+#: cadfeatures/fillingface.cpp:131
+msgid "second edge feature is not a single edge!"
 msgstr ""
 
 #: cadfeatures/fillingface.cpp:138
-msgid "Improper specification of edges for FillingFace!"
+msgid "second feature set has to contain only 1 edge!"
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:148
+#: cadfeatures/fillingface.cpp:169
 msgid "Failed to generate face!"
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:230
+#: cadfeatures/fillingface.cpp:251
 msgid ""
 "Creates an interpolated surface between two edges. The two edges e0 and e1 "
 "can be given either as edge features or edge selection sets."

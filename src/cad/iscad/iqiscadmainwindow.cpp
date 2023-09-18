@@ -139,6 +139,9 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
         connect(act_[measure_distance], &QAction::triggered,
                 me->viewer(), &IQISCADModelWindow::Model3DViewer::onMeasureDistance);
 
+        connect(act_[measure_diameter], &QAction::triggered,
+                me->viewer(), &IQISCADModelWindow::Model3DViewer::onMeasureDiameter);
+
         connect(act_[sel_pts], &QAction::triggered,
                 me->viewer(), &IQISCADModelWindow::Model3DViewer::onSelectPoints );
 
@@ -433,6 +436,9 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
     act_[measure_distance]=new QAction(_("Distance between points"), this);
     act_[measure_distance]->setShortcut(Qt::ControlModifier + Qt::Key_D);
     msmenu->addAction(act_[measure_distance]);
+
+    act_[measure_diameter]=new QAction(_("Curve diameter and center point"), this);
+    msmenu->addAction(act_[measure_diameter]);
 
     act_[sel_pts]=new QAction(_("Select vertices"), this);
     selmenu->addAction(act_[sel_pts]);

@@ -11,7 +11,7 @@
 #include "vtkTextProperty.h"
 #include "vtkCaptionActor2D.h"
 
-#include "iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
 #include "cadpostprocactions/pointdistance.h"
 #include "cadpostprocactions/angle.h"
 #include "base/parameters/simpleparameter.h"
@@ -24,10 +24,10 @@
 #include <QDoubleValidator>
 #include <QComboBox>
 
-#include "iqvtkfixedpoint.h"
-#include "iqvtkhorizontalconstraint.h"
-#include "iqvtkverticalconstraint.h"
-#include "iqvtkpointoncurveconstraint.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkfixedpoint.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkpointoncurveconstraint.h"
 
 #include "base/qt5_helper.h"
 #include "datum.h"
@@ -123,7 +123,8 @@ IQVTKConstrainedSketchEditor::findEntitiesUnderCursor(
 
 IQVTKCADModel3DViewer::HighlightingHandleSet
 IQVTKConstrainedSketchEditor::highlightEntity(
-    std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity
+    std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity,
+    QColor hicol
     ) const
 {
     auto lentity=entity.lock();
@@ -133,19 +134,9 @@ IQVTKConstrainedSketchEditor::highlightEntity(
         sg.begin(), sg.end(),
         std::inserter(props, props.begin())
         );
-    return viewer().highlightActors(props);
+    return viewer().highlightActors(props, hicol);
 }
 
-
-
-
-void
-IQVTKConstrainedSketchEditor::unhighlightEntity(
-    IQVTKCADModel3DViewer::HighlightingHandleSet highlighters
-    ) const
-{
-    viewer().unhighlightActors(highlighters);
-}
 
 
 
@@ -176,27 +167,17 @@ SketchEntityMultiSelection::SketchEntityMultiSelection
 }
 
 
+
+
 SketchEntityMultiSelection::~SketchEntityMultiSelection()
 {
     editor_.toolBox_->removeItem(tbi_);
-    for (iterator i=begin(); i!=end(); i=begin())
-    {
-        if (!i->first.expired())
-        {
-           for (auto& hl: i->second)
-           {
-               if (!hl.expired())
-               {
-                   editor_.viewer().unhighlightActor(hl);
-               }
-           }
-        }
-        erase(i);
-    }
 }
 
 
-void SketchEntityMultiSelection::addToSelection(
+
+
+void SketchEntityMultiSelection::insert(
     std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity)
 {
     if (!isInSelection(entity.lock().get())) // don't add multiple times
@@ -221,7 +202,7 @@ void SketchEntityMultiSelection::addToSelection(
             {
                 hl.insert(editor_.viewer().highlightActor(a));
             }
-            insert({entity, hl});
+            SketchEntityMultiSelectionMap::insert({entity, hl});
 
             auto lentity=entity.lock();
 
@@ -248,6 +229,17 @@ void SketchEntityMultiSelection::addToSelection(
         }
     }
 }
+
+
+
+
+void SketchEntityMultiSelection::erase(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity)
+{
+    SketchEntityMultiSelectionMap::erase(entity);
+}
+
+
+
 
 bool SketchEntityMultiSelection::isInSelection(
     const insight::cad::ConstrainedSketchEntity* entity)
@@ -354,7 +346,8 @@ void IQVTKConstrainedSketchEditor::drawLine()
             }
     );
 
-    currentAction_=dl;
+//    currentAction_=dl;
+    launchChildAction(dl);
 }
 
 
@@ -382,14 +375,16 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 )
     : /*ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),*/
       IQVTKConstrainedSketchEditorSelectionLogic(
-        viewer,
         [this]()
-        { return std::make_shared<SketchEntityMultiSelection>(*this); }),
+        { return std::make_shared<SketchEntityMultiSelection>(*this); },
+        viewer ),
       insight::cad::ConstrainedSketchPtr(sketch),
       setActorAppearance_(sseac),
       defaultGeometryParameters_(defaultGeometryParameters)
 
 {
+    toggleHoveringSelectionPreview(true);
+
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawline.svg"), "Line",
                         this, &IQVTKConstrainedSketchEditor::drawLine);
@@ -402,9 +397,9 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         "H",
         [&]()
         {
-            if (currentSelection_)
+            if (somethingSelected())
             {
-                for (auto sele: *currentSelection_)
+                for (auto &sele: currentSelection())
                 {
                     auto sg = sele.first.lock();
                     if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
@@ -422,9 +417,9 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         "V",
         [&]()
         {
-            if (currentSelection_)
+            if (somethingSelected())
             {
-                for (auto sele: *currentSelection_)
+                for (auto &sele: currentSelection())
                 {
                     auto sg = sele.first.lock();
                     if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
@@ -443,14 +438,14 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         "X",
         [&]()
         {
-            if (currentSelection_)
+            if (somethingSelected())
             {
                 insight::cad::SketchPointPtr pt;
 
-                for (auto sele: *currentSelection_)
+                for (auto &sele: currentSelection())
                 {
                     insight::assertion(
-                        currentSelection_->size()==1,
+                        currentSelection().size()==1,
                         "exactly one entity should be selected!");
 
                     auto sg = sele.first.lock();
@@ -470,12 +465,12 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         QPixmap(":/icons/icon_pointoncurve.svg"), "Point on curve",
         [&]()
         {
-            if (currentSelection_)
+            if (somethingSelected())
             {
                 insight::cad::FeaturePtr curve;
                 insight::cad::SketchPointPtr pt;
 
-                for (auto sele: *currentSelection_)
+                for (auto &sele: currentSelection())
                 {
                     auto sg = sele.first.lock();
                     if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
@@ -503,13 +498,13 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         QPixmap(":/icons/icon_distance.svg"), "Distance",
         [&]()
         {
-            if (currentSelection_)
+            if (somethingSelected())
             {
                 insight::cad::SketchPointPtr p1, p2;
 
-                if (currentSelection_->size()==2)
+                if (currentSelection().size()==2)
                 {
-                    auto si=currentSelection_->begin();
+                    auto si=currentSelection().begin();
                     p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(    si ->first.lock() );
                     p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>( (++si)->first.lock() );
                 }
@@ -555,20 +550,20 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         QPixmap(":/icons/icon_mergepoints.svg"), "Merge points",
         [&]()
         {
-            if (currentSelection_)
+            if (somethingSelected())
             {
                 insight::assertion(
-                    currentSelection_->size()==2,
+                    currentSelection().size()==2,
                     "Exactly two points have to be selected!");
 
                 auto p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
-                                currentSelection_->begin()
+                                currentSelection().begin()
                                     ->first.lock());
                 insight::assertion(
                     bool(p1), "one entity is not a point!");
 
                 auto p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
-                    (++currentSelection_->begin())
+                    (++currentSelection().begin())
                         ->first.lock());
                 insight::assertion(
                     bool(p2), "one entity is not a point!");
@@ -711,7 +706,7 @@ IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
     toolBar_->deleteLater();
     toolBoxWidget_->hide();
     toolBoxWidget_->deleteLater();
-    currentSelection_.reset();
+//    currentSelection_.reset();
 
     // copy because "remove" invalidates for-loop
     std::set<insight::cad::ConstrainedSketchEntityPtr> sgs;
@@ -747,116 +742,116 @@ IQVTKConstrainedSketchEditor::findSketchElementOfActor
 }
 
 
-bool IQVTKConstrainedSketchEditor::onLeftButtonDown  (
-    Qt::KeyboardModifiers nFlags,
-    const QPoint point )
-{
-    bool ret=false;
+//bool IQVTKConstrainedSketchEditor::onLeftButtonDown  (
+//    Qt::KeyboardModifiers nFlags,
+//    const QPoint point )
+//{
+//    bool ret=false;
 
-    if (!ret && currentAction_)
-        ret=currentAction_->onLeftButtonDown( nFlags, point );
+//    if (!ret && currentAction_)
+//        ret=currentAction_->onLeftButtonDown( nFlags, point );
 
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
+//    if (currentAction_ && currentAction_->finished())
+//        currentAction_.reset();
 
-    if (!ret)
-    {
-        ret=IQVTKConstrainedSketchEditorSelectionLogic::
-            onLeftButtonDown(nFlags, point);
-    }
+//    if (!ret)
+//    {
+//        ret=IQVTKConstrainedSketchEditorSelectionLogic::
+//            onLeftButtonDown(nFlags, point);
+//    }
 
-    return ret;
-}
+//    return ret;
+//}
 
-bool IQVTKConstrainedSketchEditor::onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
-{
-    bool ret=false;
+//bool IQVTKConstrainedSketchEditor::onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
+//{
+//    bool ret=false;
 
-    if (currentAction_)
-        ret=currentAction_->onMiddleButtonDown( nFlags, point );
+//    if (currentAction_)
+//        ret=currentAction_->onMiddleButtonDown( nFlags, point );
 
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
+//    if (currentAction_ && currentAction_->finished())
+//        currentAction_.reset();
 
-    return ret;
-}
+//    return ret;
+//}
 
-bool IQVTKConstrainedSketchEditor::onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point )
-{
-    bool ret=false;
+//bool IQVTKConstrainedSketchEditor::onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point )
+//{
+//    bool ret=false;
 
-    if (currentAction_)
-        ret=currentAction_->onRightButtonDown( nFlags, point );
+//    if (currentAction_)
+//        ret=currentAction_->onRightButtonDown( nFlags, point );
 
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
+//    if (currentAction_ && currentAction_->finished())
+//        currentAction_.reset();
 
-    if (!ret)
-    {
-        ret=IQVTKConstrainedSketchEditorSelectionLogic::
-            onLeftButtonDown(nFlags, point);
-    }
+//    if (!ret)
+//    {
+//        ret=IQVTKConstrainedSketchEditorSelectionLogic::
+//            onLeftButtonDown(nFlags, point);
+//    }
 
-    return ret;
-}
+//    return ret;
+//}
 
-bool IQVTKConstrainedSketchEditor::onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point )
-{
-    bool ret=false;
-    if (currentAction_)
-        ret=currentAction_->onLeftButtonUp( nFlags, point );
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
-    if (!ret)
-        ret=IQVTKConstrainedSketchEditorSelectionLogic::
-            onLeftButtonUp(nFlags, point);
+//bool IQVTKConstrainedSketchEditor::onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point )
+//{
+//    bool ret=false;
+//    if (currentAction_)
+//        ret=currentAction_->onLeftButtonUp( nFlags, point );
+//    if (currentAction_ && currentAction_->finished())
+//        currentAction_.reset();
+//    if (!ret)
+//        ret=IQVTKConstrainedSketchEditorSelectionLogic::
+//            onLeftButtonUp(nFlags, point);
 
-    return ret;
-}
+//    return ret;
+//}
 
-bool IQVTKConstrainedSketchEditor::onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point )
-{
-    bool ret=false;
+//bool IQVTKConstrainedSketchEditor::onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point )
+//{
+//    bool ret=false;
 
-    if (currentAction_)
-        ret=currentAction_->onMiddleButtonUp( nFlags, point );
+//    if (currentAction_)
+//        ret=currentAction_->onMiddleButtonUp( nFlags, point );
 
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
+//    if (currentAction_ && currentAction_->finished())
+//        currentAction_.reset();
 
-    return ret;
-}
+//    return ret;
+//}
 
-bool IQVTKConstrainedSketchEditor::onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point )
-{
-    bool ret=false;
+//bool IQVTKConstrainedSketchEditor::onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point )
+//{
+//    bool ret=false;
 
-    if (currentAction_)
-        ret=currentAction_->onRightButtonUp( nFlags, point );
+//    if (currentAction_)
+//        ret=currentAction_->onRightButtonUp( nFlags, point );
 
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
+//    if (currentAction_ && currentAction_->finished())
+//        currentAction_.reset();
 
-    return ret;
-}
+//    return ret;
+//}
 
-bool IQVTKConstrainedSketchEditor::onKeyPress (
-    Qt::KeyboardModifiers modifiers, int key )
-{
-    bool ret=false;
+//bool IQVTKConstrainedSketchEditor::onKeyPress (
+//    Qt::KeyboardModifiers modifiers, int key )
+//{
+//    bool ret=false;
 
-    if (currentAction_)
-        ret=currentAction_->onKeyPress( modifiers, key );
+//    if (currentAction_)
+//        ret=currentAction_->onKeyPress( modifiers, key );
 
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
+//    if (currentAction_ && currentAction_->finished())
+//        currentAction_.reset();
 
-    if (!ret)
-        ret=IQVTKConstrainedSketchEditorSelectionLogic::
-            onKeyPress(modifiers, key);
+//    if (!ret)
+//        ret=IQVTKConstrainedSketchEditorSelectionLogic::
+//            onKeyPress(modifiers, key);
 
-    return ret;
-}
+//    return ret;
+//}
 
 
 
@@ -886,20 +881,22 @@ void IQVTKConstrainedSketchEditor::deleteEntity(std::weak_ptr<insight::cad::Cons
 
 bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifiers, int key )
 {
-    bool ret=false;
-    if (currentAction_)
-        ret=currentAction_->onKeyRelease( modifiers, key );
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
+//    bool ret=false;
+//    if (currentAction_)
+//        ret=currentAction_->onKeyRelease( modifiers, key );
+//    if (currentAction_ && currentAction_->finished())
+//        currentAction_.reset();
+    bool ret=IQVTKConstrainedSketchEditorSelectionLogic
+        ::onKeyRelease(modifiers, key);
 
     if (!ret && (key == Qt::Key_Delete) )
     {
-        if (currentSelection_ && currentSelection_->size()>0)
+        if (somethingSelected() && currentSelection().size()>0)
         {
             std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > tbd;
-            for (auto& s: *currentSelection_)
+            for (auto& s: currentSelection())
                 tbd.push_back(s.first);
-            currentSelection_.reset();
+            clearSelection();
             for (auto& td: tbd)
             {
                 deleteEntity(td);
@@ -921,8 +918,8 @@ void IQVTKConstrainedSketchEditor::onMouseMove
    Qt::KeyboardModifiers curFlags
 )
 {
-    if (currentAction_)
-        currentAction_->onMouseMove( buttons, point, curFlags );
+    IQVTKConstrainedSketchEditorSelectionLogic
+        ::onMouseMove(buttons, point, curFlags);
 
     if (this->hasSelectionCandidate())
     {
@@ -944,24 +941,22 @@ void IQVTKConstrainedSketchEditor::onMouseMove
         }
     }
 
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
 }
 
 
 
 
-void IQVTKConstrainedSketchEditor::onMouseWheel
-  (
-    double angleDeltaX,
-    double angleDeltaY
-   )
-{
-    if (currentAction_)
-        currentAction_->onMouseWheel( angleDeltaX, angleDeltaY );
-    if (currentAction_ && currentAction_->finished())
-        currentAction_.reset();
-}
+//void IQVTKConstrainedSketchEditor::onMouseWheel
+//  (
+//    double angleDeltaX,
+//    double angleDeltaY
+//   )
+//{
+//    if (currentAction_)
+//        currentAction_->onMouseWheel( angleDeltaX, angleDeltaY );
+//    if (currentAction_ && currentAction_->finished())
+//        currentAction_.reset();
+//}
 
 
 

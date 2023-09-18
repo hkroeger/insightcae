@@ -7,7 +7,8 @@
 class IQVTKCADModel3DViewer;
 
 
-class IQVTKCADModel3DViewerPanning : public ViewWidgetAction<IQVTKCADModel3DViewer>
+class IQVTKCADModel3DViewerPanning
+    : public ViewWidgetAction<IQVTKCADModel3DViewer>
 {
 
     void ComputeWorldToDisplay(

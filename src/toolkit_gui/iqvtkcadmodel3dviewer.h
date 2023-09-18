@@ -4,8 +4,10 @@
 
 #include "toolkit_gui_export.h"
 #include "iqcadmodel3dviewer.h"
-#include "iqvtkviewerstate.h"
-//#include "iqvtkconstrainedsketcheditor.h"
+#include "iqcadmodel3dviewer/iqvtkviewerstate.h"
+#include "iqcadmodel3dviewer/selectionlogic.h"
+#include "iqcadmodel3dviewer/viewwidgetaction.h"
+#include "iqcadmodel3dviewer/navigationmanager.h"
 
 #include "vtkVersionMacros.h"
 #include "vtkGenericOpenGLRenderWindow.h"
@@ -16,6 +18,7 @@
 #endif
 #include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
+#include <vtkWeakPointer.h>
 #include <vtkDataObject.h>
 #include <vtkPlaneCollection.h>
 #include "vtkMatrix4x4.h"
@@ -30,8 +33,6 @@
 
 
 #include "cadtypes.h"
-#include "viewwidgetaction.h"
-#include "navigationmanager.h"
 #include "sketch.h"
 
 #include <unordered_map>
@@ -39,6 +40,8 @@
 
 class QTextEdit;
 class vtkRenderWindowInteractor;
+class IQVTKSelectCADEntity;
+class IQVTKSelectSubshape;
 
 typedef
 #if VTK_MAJOR_VERSION>=8
@@ -49,6 +52,16 @@ QVTKWidget
 VTKWidget;
 
 
+class MyVTKWidget : public VTKWidget
+{
+    Q_OBJECT
+
+public:
+    MyVTKWidget(QWidget* parent);
+    void leaveEvent(QEvent *event) override;
+Q_SIGNALS:
+    void mouseLeavesViewer();
+};
 
 
 class TOOLKIT_GUI_EXPORT IQVTKCADModel3DViewer
@@ -58,19 +71,8 @@ class TOOLKIT_GUI_EXPORT IQVTKCADModel3DViewer
 
 public:
 
-    struct QPersistentModelIndexHash
-    {
-        uint operator()(const QPersistentModelIndex& idx) const;
-    };
-
-    typedef boost::variant<
-        insight::cad::VectorPtr,
-        insight::cad::DatumPtr,
-        insight::cad::FeaturePtr,
-        insight::cad::PostprocActionPtr,
-        vtkSmartPointer<vtkDataObject>
-    > CADEntity;
-
+    friend class IQVTKSelectCADEntity;
+    friend class IQVTKSelectSubshape;
 
     struct DisplayedEntity
     {
@@ -85,10 +87,19 @@ public:
         DisplayedEntity,
         QPersistentModelIndexHash > DisplayedData;
 
+    typedef std::shared_ptr<IQVTKViewerState> HighlightingHandle;
+    typedef std::set<
+        HighlightingHandle,
+        std::owner_less<HighlightingHandle> > HighlightingHandleSet;
+
+
     struct SubshapeData {
         insight::cad::FeaturePtr feat;
         insight::cad::EntityType subshapeType_;
         insight::cad::FeatureID id_;
+
+        bool operator==(const SubshapeData& o) const;
+        bool operator<(const SubshapeData& o) const;
     };
 
     typedef std::map<
@@ -149,7 +160,7 @@ public:
 
 
 private:
-    VTKWidget vtkWidget_;
+    /*VTKWidget*/MyVTKWidget vtkWidget_;
     vtkSmartPointer<vtkRenderer> ren_, backgroundRen_;
 
     DisplayedData displayedData_;
@@ -184,7 +195,8 @@ private:
         HighlightItem(
                 std::shared_ptr<DisplayedEntity> de,
                 QPersistentModelIndex idx2highlight,
-                IQVTKCADModel3DViewer& viewer);
+                IQVTKCADModel3DViewer& viewer,
+                QColor hicol = QColorConstants::Red );
         ~HighlightItem();
 
         const CADEntity& entity() const;
@@ -207,37 +219,11 @@ private:
         vtkSmartPointer<vtkActor> silhouetteActor_;
 
     public:
-        SilhouetteHighlighter(IQVTKCADModel3DViewer& viewer, vtkPolyDataMapper* mapperToHighlight)
-            : IQVTKViewerState(viewer)
-        {
-            auto* id = mapperToHighlight->GetInput();
-            if (id->GetNumberOfCells()>0)
-            {
-                silhouette_ = vtkSmartPointer<vtkPolyDataSilhouette>::New();
-                silhouette_->SetCamera(viewer_.renderer()->GetActiveCamera());
-
-                // Create mapper and actor for silhouette
-                auto silhouetteMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-                silhouetteMapper->SetInputConnection(silhouette_->GetOutputPort());
-
-                silhouetteActor_ = vtkSmartPointer<vtkActor>::New();
-                silhouetteActor_->SetMapper(silhouetteMapper);
-                silhouetteActor_->GetProperty()->SetColor(0.5, 0.5, 0.5);
-                silhouetteActor_->GetProperty()->SetLineWidth(2);
-
-                silhouette_->SetInputData(id);
-                viewer_.renderer()->AddActor(silhouetteActor_);
-            }
-            else if (id->GetNumberOfLines()>0)
-            {
-            }
-        }
-
-        ~SilhouetteHighlighter()
-        {
-            viewer_.renderer()->RemoveActor(silhouetteActor_);
-        }
-
+        SilhouetteHighlighter(
+            IQVTKCADModel3DViewer& viewer,
+            vtkPolyDataMapper* mapperToHighlight,
+            QColor hicol = QColorConstants::Red );
+        ~SilhouetteHighlighter();
     };
     friend class SilhouetteHighlighter;
 
@@ -248,26 +234,11 @@ private:
         float oldLineWidth_;
 
     public:
-        LinewidthHighlighter(IQVTKCADModel3DViewer& viewer, vtkActor* actorToHighlight)
-            : IQVTKViewerState(viewer), actor_(actorToHighlight)
-        {
-            oldLineWidth_=actor_->GetProperty()->GetLineWidth();
-            actor_->GetProperty()->GetColor(oldColor_);
-
-            actor_->GetProperty()->SetLineWidth(oldLineWidth_+2);
-            actor_->GetProperty()->SetColor(0.5, 0.5, 0.5);
-
-            viewer_.scheduleRedraw();
-        }
-
-        ~LinewidthHighlighter()
-        {
-            actor_->GetProperty()->SetLineWidth(oldLineWidth_);
-            actor_->GetProperty()->SetColor(oldColor_);
-
-            viewer_.scheduleRedraw();
-        }
-
+        LinewidthHighlighter(
+            IQVTKCADModel3DViewer& viewer,
+            vtkActor* actorToHighlight,
+            QColor hicol = QColorConstants::Red );
+        ~LinewidthHighlighter();
     };
     friend class LinewidthHighlighter;
 
@@ -279,39 +250,17 @@ private:
         float oldPointSize_;
 
     public:
-        PointSizeHighlighter(IQVTKCADModel3DViewer& viewer, vtkActor* actorToHighlight)
-            : IQVTKViewerState(viewer), actor_(actorToHighlight)
-        {
-            oldPointSize_=actor_->GetProperty()->GetPointSize();
-            actor_->GetProperty()->GetColor(oldColor_);
-
-            actor_->GetProperty()->SetPointSize(oldPointSize_+2);
-            actor_->GetProperty()->SetColor(0.5, 0.5, 0.5);
-
-            viewer_.scheduleRedraw();
-        }
-
-        ~PointSizeHighlighter()
-        {
-            actor_->GetProperty()->SetPointSize(oldPointSize_);
-            actor_->GetProperty()->SetColor(oldColor_);
-
-            viewer_.scheduleRedraw();
-        }
-
+        PointSizeHighlighter(
+            IQVTKCADModel3DViewer& viewer,
+            vtkActor* actorToHighlight,
+            QColor hicol = QColorConstants::Red );
+        ~PointSizeHighlighter();
     };
     friend class LinewidthHighlighter;
-
-    typedef std::set< std::pair<vtkProp*, std::shared_ptr<IQVTKViewerState> > > HighlightedActors;
-    HighlightedActors highlightedActors_;
-
 
 
     friend class IQVTKConstrainedSketchEditor;
     friend class IQVTKCADModel3DViewerPlanePointBasedAction;
-
-//    std::unique_ptr<IQVTKConstrainedSketchEditor> displayedSketch_;
-
 
 
     void remove(const QPersistentModelIndex& pidx);
@@ -319,7 +268,6 @@ private:
     std::vector<vtkSmartPointer<vtkProp> > createActor(CADEntity entity) const;
 
     std::vector<vtkSmartPointer<vtkProp> > findActorsOf(const QPersistentModelIndex& pidx) const;
-//    std::vector<vtkSmartPointer<vtkProp> > findActorsOf(CADEntity entity) const;
 
     vtkSmartPointer<vtkProp> createSubshapeActor(
             SubshapeData sd ) const;
@@ -335,9 +283,8 @@ private:
     void doHighlightItem( CADEntity item );
 
 
-    InputReceiver<IQVTKCADModel3DViewer>::Ptr currentNavigationAction_;
     NavigationManager<IQVTKCADModel3DViewer>::Ptr navigationManager_;
-    ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr currentUserActivity_;
+    ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr currentAction_;
 
     const DisplayedEntity* findDisplayedItem(
             const CADEntity& item,
@@ -364,6 +311,8 @@ private:
 
     QItemSelectionModel *defaultSelectionModel_, *customSelectionModel_;
 
+    std::set<vtkProp*> actorsExcludedFromPicking_;
+
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
     void onModelAboutToBeReset();
@@ -375,6 +324,9 @@ private Q_SLOT:
     void addChild(const QModelIndex& idx);
     void addSiblings(const QModelIndex& idx);
 
+Q_SIGNALS:
+    void contextMenuClick(QPoint pGlob);
+
 public:
     void closeEvent(QCloseEvent *ev) override;
 
@@ -382,16 +334,9 @@ public:
     IQVTKCADModel3DViewer(QWidget* parent=nullptr);
     ~IQVTKCADModel3DViewer();
 
-    typedef std::weak_ptr<IQVTKViewerState> HighlightingHandle;
-    typedef std::set<
-        HighlightingHandle,
-        std::owner_less<HighlightingHandle> > HighlightingHandleSet;
-    HighlightingHandle highlightActor(vtkProp* actor);
-    HighlightingHandleSet highlightActors(std::set<vtkProp*> actor);
-    void unhighlightActor(HighlightedActors::const_iterator toBeRemoved);
-    void unhighlightActor(vtkProp* actor);
-    void unhighlightActor(HighlightingHandle highlighter);
-    void unhighlightActors(HighlightingHandleSet highlighters);
+
+    HighlightingHandle highlightActor(vtkProp* actor, QColor hicol = QColorConstants::Red);
+    HighlightingHandleSet highlightActors(std::set<vtkProp*> actor, QColor hicol = QColorConstants::Red);
 
     void setBackgroundImage(const boost::filesystem::path& imageFile);
     vtkRenderWindow* renWin();
@@ -401,7 +346,9 @@ public:
     QSize sizeHint() const override;
     QPointF widgetCoordsToVTK(const QPoint& widgetCoords) const;
 
-    bool launchUserActivity(ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force=true);
+    void setDefaultAction();
+    bool isDefaultAction();
+    bool launchAction(ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force=true);
 
     const Bounds& sceneBounds() const;
 
@@ -410,6 +357,7 @@ public:
     void undoHighlightItem() override;
 
     void onMeasureDistance() override;
+    void onMeasureDiameter() override;
     void onSelectPoints() override;
     void onSelectEdges() override;
     void onSelectFaces() override;

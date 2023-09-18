@@ -16,8 +16,8 @@
 #include "AIS_Plane.hxx"
 #include "V3d_Coordinate.hxx"
 
-#include "viewwidgetaction.h"
-#include "navigationmanager.h"
+#include "iqcadmodel3dviewer/viewwidgetaction.h"
+#include "iqcadmodel3dviewer/navigationmanager.h"
 
 #if OCC_VERSION_MAJOR>=7
 #include "AIS_ViewController.hxx"
@@ -72,7 +72,7 @@ private:
 
   void addLights();
 
-  InputReceiver<QoccViewWidget>::Ptr currentNavigationAction_;
+//  InputReceiver<QoccViewWidget>::Ptr currentNavigationAction_;
   NavigationManager<QoccViewWidget>::Ptr navigationManager_;
   ViewWidgetAction<QoccViewWidget>::Ptr currentUserActivity_;
 
@@ -203,6 +203,7 @@ public Q_SLOTS:
   void onSetClipPlane(QObject* datumplane);
 
   void onMeasureDistance();
+  void onMeasureDiameter();
   void onSelectPoints();
   void onSelectEdges();
   void onSelectFaces();

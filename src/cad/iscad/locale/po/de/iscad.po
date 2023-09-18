@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: iscad\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-03 13:38+0200\n"
+"POT-Creation-Date: 2023-09-11 11:53+0200\n"
 "PO-Revision-Date: 2023-07-03 12:28+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -70,52 +70,52 @@ msgstr "Konnte ISCAD-Skript nicht auswerten!"
 msgid "Please wait"
 msgstr "Bitte warten"
 
-#: iqiscadmainwindow.cpp:173 iqiscadmainwindow.cpp:549
+#: iqiscadmainwindow.cpp:176 iqiscadmainwindow.cpp:555
 msgid "Select file"
 msgstr "Datei auswählen"
 
-#: iqiscadmainwindow.cpp:175 iqiscadmainwindow.cpp:551
+#: iqiscadmainwindow.cpp:178 iqiscadmainwindow.cpp:557
 #: iqiscadmodelscriptedit.cpp:165
 msgid "ISCAD Model Files (*.iscad)"
 msgstr "ISCAD Modelldatei (*.iscad)"
 
-#: iqiscadmainwindow.cpp:303
+#: iqiscadmainwindow.cpp:306
 msgid "STOP"
 msgstr "STOP"
 
-#: iqiscadmainwindow.cpp:307
+#: iqiscadmainwindow.cpp:310
 msgid "&File"
 msgstr "&Datei"
 
-#: iqiscadmainwindow.cpp:308
+#: iqiscadmainwindow.cpp:311
 msgid "&Model"
 msgstr "&Modell"
 
-#: iqiscadmainwindow.cpp:309
+#: iqiscadmainwindow.cpp:312
 msgid "&View"
 msgstr "&Ansicht"
 
-#: iqiscadmainwindow.cpp:310
+#: iqiscadmainwindow.cpp:313
 msgid "&Editor"
 msgstr "&Editor"
 
-#: iqiscadmainwindow.cpp:311
+#: iqiscadmainwindow.cpp:314
 msgid "M&easure"
 msgstr "M&essen"
 
-#: iqiscadmainwindow.cpp:312
+#: iqiscadmainwindow.cpp:315
 msgid "&Selection"
 msgstr "Au&swahl"
 
-#: iqiscadmainwindow.cpp:313
+#: iqiscadmainwindow.cpp:316
 msgid "&Help"
 msgstr "&Hilfe"
 
-#: iqiscadmainwindow.cpp:322
+#: iqiscadmainwindow.cpp:325
 msgid "ISCAD Information"
 msgstr "ISCAD Information"
 
-#: iqiscadmainwindow.cpp:323
+#: iqiscadmainwindow.cpp:326
 msgid ""
 "InsightCAE CAD Script Editor\n"
 "Version %1\n"
@@ -123,143 +123,147 @@ msgstr ""
 "InsightCAE CAD-Skript-Editor\n"
 "Version %1\n"
 
-#: iqiscadmainwindow.cpp:331
+#: iqiscadmainwindow.cpp:334
 msgid "&New"
 msgstr "&Neu"
 
-#: iqiscadmainwindow.cpp:335
+#: iqiscadmainwindow.cpp:338
 msgid "&Load"
 msgstr "Ö&ffnen"
 
-#: iqiscadmainwindow.cpp:339
+#: iqiscadmainwindow.cpp:342
 msgid "&Save"
 msgstr "&Speichern"
 
-#: iqiscadmainwindow.cpp:343
+#: iqiscadmainwindow.cpp:346
 msgid "&Save as..."
 msgstr "Speichern &als..."
 
-#: iqiscadmainwindow.cpp:347
+#: iqiscadmainwindow.cpp:350
 msgid "&Quit"
 msgstr "&Beenden"
 
-#: iqiscadmainwindow.cpp:353
+#: iqiscadmainwindow.cpp:356
 msgid "&Rebuild model"
 msgstr "Neu &aufbauen"
 
-#: iqiscadmainwindow.cpp:357
+#: iqiscadmainwindow.cpp:360
 msgid "&Rebuild model up to cursor"
 msgstr "Neu aufbauen bis zum Cursor"
 
-#: iqiscadmainwindow.cpp:363
+#: iqiscadmainwindow.cpp:366
 msgid "Insert &feature..."
 msgstr "&Feature einfügen..."
 
-#: iqiscadmainwindow.cpp:367
+#: iqiscadmainwindow.cpp:370
 msgid "Insert &imported STEP, IGES, BREP..."
 msgstr "Import-Befehl für STEP, IGES, BREP einfügen..."
 
-#: iqiscadmainwindow.cpp:371
+#: iqiscadmainwindow.cpp:374
 msgid "Insert &model from library..."
 msgstr "Modell aus Bibliothek einfügen..."
 
-#: iqiscadmainwindow.cpp:375
+#: iqiscadmainwindow.cpp:378
 msgid "Inspect model &symbols..."
 msgstr "Symbole des Modells inspizieren..."
 
-#: iqiscadmainwindow.cpp:380
+#: iqiscadmainwindow.cpp:383
 msgid "Insert comment: new section..."
 msgstr "Kommentar einfügen: neuer Abschnitt..."
 
-#: iqiscadmainwindow.cpp:386
+#: iqiscadmainwindow.cpp:389
 msgid "C&lear cache"
 msgstr "Zwischenspeicher &löschen"
 
-#: iqiscadmainwindow.cpp:389
+#: iqiscadmainwindow.cpp:392
 msgid "Fit &all"
 msgstr "&Alles einpassen"
 
-#: iqiscadmainwindow.cpp:393
+#: iqiscadmainwindow.cpp:396
 msgid "Standard views"
 msgstr "Standardansichten"
 
-#: iqiscadmainwindow.cpp:409
+#: iqiscadmainwindow.cpp:412
 msgid "Toggle &grid"
 msgstr "Gitter umschalten"
 
-#: iqiscadmainwindow.cpp:412
+#: iqiscadmainwindow.cpp:415
 msgid "Toggle clip plane (&XY)"
 msgstr "Schnittebene umschalten (&XY)"
 
-#: iqiscadmainwindow.cpp:414
+#: iqiscadmainwindow.cpp:417
 msgid "Toggle clip plane (&YZ)"
 msgstr "Schnittebene umschalten (&YZ)"
 
-#: iqiscadmainwindow.cpp:416
+#: iqiscadmainwindow.cpp:419
 msgid "Toggle clip plane (X&Z)"
 msgstr "Schnittebene umschalten (X&Z)"
 
-#: iqiscadmainwindow.cpp:419
+#: iqiscadmainwindow.cpp:422
 msgid "Clip at datum plane"
 msgstr "Mit Bezugsebene schneiden"
 
-#: iqiscadmainwindow.cpp:422
+#: iqiscadmainwindow.cpp:425
 msgid "Change background color..."
 msgstr "Hintergrundfarbe ändern..."
 
-#: iqiscadmainwindow.cpp:424
+#: iqiscadmainwindow.cpp:427
 msgid "Display all &shaded"
 msgstr "Alles schattiert anzeigen"
 
-#: iqiscadmainwindow.cpp:426
+#: iqiscadmainwindow.cpp:429
 msgid "Display all &wireframe"
 msgstr "Alles als Drahtgitter anzeigen"
 
-#: iqiscadmainwindow.cpp:428
+#: iqiscadmainwindow.cpp:431
 msgid "&Reset shading and visibility"
 msgstr "Schattierung und Sichtbarkeit zu&rücksetzen"
 
-#: iqiscadmainwindow.cpp:433
+#: iqiscadmainwindow.cpp:436
 msgid "Distance between points"
 msgstr "Abstand zwischen Punkten"
 
-#: iqiscadmainwindow.cpp:437
+#: iqiscadmainwindow.cpp:440
+msgid "Curve diameter and center point"
+msgstr ""
+
+#: iqiscadmainwindow.cpp:443
 msgid "Select vertices"
 msgstr "Punkte auswählen"
 
-#: iqiscadmainwindow.cpp:440
+#: iqiscadmainwindow.cpp:446
 msgid "Select edges"
 msgstr "Kanten auswählen"
 
-#: iqiscadmainwindow.cpp:443
+#: iqiscadmainwindow.cpp:449
 msgid "Select faces"
 msgstr "Flächen auswählen"
 
-#: iqiscadmainwindow.cpp:446
+#: iqiscadmainwindow.cpp:452
 msgid "Select solids"
 msgstr "Volumen auswählen"
 
-#: iqiscadmainwindow.cpp:450
+#: iqiscadmainwindow.cpp:456
 msgid "&Increase font size"
 msgstr "Schr&ift vergrößern"
 
-#: iqiscadmainwindow.cpp:454
+#: iqiscadmainwindow.cpp:460
 msgid "&Decrease font size"
 msgstr "Schrift ver&kleinern"
 
-#: iqiscadmainwindow.cpp:506
+#: iqiscadmainwindow.cpp:512
 msgid "unnamed"
 msgstr "unbenannt"
 
-#: iqiscadmainwindow.cpp:573
+#: iqiscadmainwindow.cpp:579
 msgid "Really delete file %1?\n"
 msgstr "Wirklich die Datei %1 löschen?\n"
 
-#: iqiscadmainwindow.cpp:593
+#: iqiscadmainwindow.cpp:599
 msgid "Create new file..."
 msgstr "Neue Datei erzeugen..."
 
-#: iqiscadmainwindow.cpp:612
+#: iqiscadmainwindow.cpp:618
 msgid "Delete file %1"
 msgstr "Datei %1 löschen"
 

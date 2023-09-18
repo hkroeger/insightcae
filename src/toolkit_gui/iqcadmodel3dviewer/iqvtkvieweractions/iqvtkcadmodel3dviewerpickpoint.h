@@ -1,7 +1,7 @@
 #ifndef IQVTKCADMODEL3DVIEWERPICKPOINT_H
 #define IQVTKCADMODEL3DVIEWERPICKPOINT_H
 
-#include "viewwidgetaction.h"
+#include "iqcadmodel3dviewer/viewwidgetaction.h"
 
 class IQVTKCADModel3DViewer;
 

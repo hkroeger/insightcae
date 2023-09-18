@@ -235,8 +235,19 @@ void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer& parentProgress, Op
     {
       if (p_.run.potentialinit)
       {
-        parentProgress.message("Executing potentialFoam");
-        runPotentialFoam(cm, executionPath(), np);
+        if (p_.run.mapFrom->isValid())
+        {
+            parentProgress.message("case in "+executionPath().string()+": solution was mapped from other case, skipping potentialFoam.");
+            insight::Warning(
+                "A potentialFoam initialization was configured although a solution was mapped from another case.\n"
+                "The potentialFoam run was skipped in order not to destroy the mapped solution!"
+                );
+        }
+        else
+        {
+            parentProgress.message("Executing potentialFoam");
+            runPotentialFoam(cm, executionPath(), np);
+        }
       }
     }
   }

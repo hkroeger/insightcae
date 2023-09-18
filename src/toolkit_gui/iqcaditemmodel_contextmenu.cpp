@@ -279,6 +279,27 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
               connect(&cm, &QMenu::aboutToHide,
                     this, &IQCADItemModel::undoHighlightInView);
             }
+
+            a=new QAction("Export...", &cm);
+            connect(a, &QAction::triggered, this,
+                    [this,idx,viewer]() {
+                        bool ok=false;
+                        auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol))
+                                        .value<insight::cad::FeaturePtr>();
+                        auto fn=QFileDialog::getSaveFileName(
+                                viewer,
+                                "Export file name",
+                                "",
+                                "BREP file (*.brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
+                                );
+                        if (!fn.isEmpty())
+                        {
+                            feat->saveAs(
+                                insight::ensureDefaultFileExtension(
+                                    fn.toStdString(), ".stp") );
+                        }
+                    });
+            cm.addAction(a);
         }
         else if (idx.internalId()==CADModelSection::dataset)
         {

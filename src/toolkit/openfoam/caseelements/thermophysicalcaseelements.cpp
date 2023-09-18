@@ -1277,11 +1277,10 @@ SpeciesData::SpeciesLibrary::SpeciesLibrary()
                     int i=0;
                     for (const auto& e: l)
                     {
-                      try {
-                        thdata.coeffs_lo(i)=boost::get<double>(e);
-                      } catch (...) {
-                        thdata.coeffs_lo(i)=boost::get<int>(e);
-                      }
+                      if (auto *v = boost::get<double>(&e))
+                            thdata.coeffs_lo(i)=*v;
+                      else
+                            thdata.coeffs_lo(i)=boost::get<int>(e);
                       i++;
                     }
                   }
@@ -1291,11 +1290,10 @@ SpeciesData::SpeciesLibrary::SpeciesLibrary()
                     int i=0;
                     for (const auto& e: h)
                     {
-                      try {
-                        thdata.coeffs_hi(i)=boost::get<double>(e);
-                      } catch (...) {
+                      if (auto *v = boost::get<double>(&e))
+                        thdata.coeffs_hi(i)=*v;
+                      else
                         thdata.coeffs_hi(i)=boost::get<int>(e);
-                      }
                       i++;
                     }
                   }

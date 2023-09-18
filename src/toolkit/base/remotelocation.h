@@ -49,6 +49,8 @@ protected:
   void assertValid() const;
 
 public:
+
+  static bool remoteLocationConfigIsValid( const boost::filesystem::path& mf );
     /**
      * @brief RemoteLocation
      * copies configuration from another remote location container

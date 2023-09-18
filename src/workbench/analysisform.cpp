@@ -93,16 +93,8 @@ AnalysisForm::AnalysisForm(
 
     // load default parameters
     auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
+    isOpenFOAMAnalysis_ = defaultParams.hasParameter("run/OFEname");
 
-    try
-    {
-      defaultParams.getString("run/OFEname"); // try to access
-      isOpenFOAMAnalysis_ = true;
-    }
-    catch (...)
-    {
-      isOpenFOAMAnalysis_ = false;
-    }
 
     ui = new Ui::AnalysisForm;
     QWidget* iw=new QWidget(this);
@@ -189,26 +181,17 @@ AnalysisForm::AnalysisForm(
     insight::ParameterSetVisualizerPtr viz;
     insight::ParameterSet_ValidatorPtr vali;
 
-    try
+    if (insight::Analysis::has_visualizer(analysisName_))
     {
       insight::CurrentExceptionContext ex(_("create parameter set visualizer"));
         viz = insight::Analysis::visualizer(analysisName_);
         viz ->setProgressDisplayer(&progressDisplayer_);
     }
-    catch (const std::exception& e)
-    {
-      /* ignore, if non-existent */
-        std::cout
-            << _("Info: no visualizer available for analysis of type")
-            <<" \""<<analysisName_<<"\"."<<std::endl;
-    }
 
-    try
+    if (insight::Analysis::has_validator(analysisName_))
     {
         vali = insight::Analysis::validator(analysisName_);
     }
-    catch (const std::exception& e)
-    { /* ignore, if non-existent */ }
 
     auto vsplit = new QSplitter;
     vsplit->setOrientation(Qt::Vertical);

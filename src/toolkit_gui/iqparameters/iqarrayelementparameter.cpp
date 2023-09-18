@@ -65,12 +65,13 @@ createIQArrayElement(IQSpatialTransformationParameter, "spatialTransformation");
 
 IQParameter *IQArrayElementParameterBase::create(QObject *parent, const QString &name, insight::Parameter &p, const insight::ParameterSet &defaultParameterSet)
 {
-  try {
+  if (IQArrayElementParameterBase::has_factory(p.type()))
+  {
     return dynamic_cast<IQParameter*>(
         IQArrayElementParameterBase::lookup(p.type(), parent, name, p, defaultParameterSet)
         );
   }
-  catch (...)
+  else
   {
     return dynamic_cast<IQParameter*>(
         new IQParameterArrayElement(parent, name, p, defaultParameterSet)

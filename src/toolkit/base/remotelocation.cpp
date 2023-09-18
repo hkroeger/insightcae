@@ -50,6 +50,16 @@ RemoteLocation::RemoteLocation(const RemoteLocation& orec)
 
 
 
+bool RemoteLocation::remoteLocationConfigIsValid(const boost::filesystem::path &mf)
+{
+    if ( !boost::filesystem::exists(mf) || boost::filesystem::is_directory(mf) )
+    {
+        return false;
+    }
+    else
+        return true;
+}
+
 
 RemoteLocation::RemoteLocation(const boost::filesystem::path& mf, bool skipValidation)
   : autoCreateRemoteDir_(false),
@@ -59,7 +69,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf, bool skipValid
 {
   CurrentExceptionContext ce("reading configuration for remote execution in  directory "+mf.parent_path().string()+" from file "+mf.string());
 
-  if ( !boost::filesystem::exists(mf) || boost::filesystem::is_directory(mf) )
+  if ( !remoteLocationConfigIsValid(mf) )
   {
     throw insight::Exception("There is no remote execution configuration file present!");
   }

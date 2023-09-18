@@ -8,7 +8,7 @@
 
 #include "iqvtkcadmodel3dviewer.h"
 #include "iqvectordirectioncommand.h"
-#include "iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h"
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h"
 
 defineType(IQVectorParameter);
 addToFactoryTable(IQParameter, IQVectorParameter);
@@ -113,7 +113,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
                           applyFunction();
                         }
                       );
-              v->launchUserActivity(ppc);
+              v->launchAction(ppc);
             }
           }
     );

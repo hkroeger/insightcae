@@ -127,6 +127,7 @@ public:
    */
   ParameterSet intersection(const ParameterSet& other) const;
 
+  bool hasParameter( std::string path ) const;
   insight::Parameter& getParameter( std::string path );
 
   template<class T>

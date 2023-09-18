@@ -68,6 +68,7 @@ namespace insight {
  };\
  typedef std::map<std::string, Factory* > FactoryTable; \
  static FactoryTable* factories_; \
+ static bool has_factory(const std::string& key); \
  static baseT* lookup(const std::string& key, argList); \
  static std::vector<std::string> factoryToC()
 
@@ -94,6 +95,7 @@ public:\
 };\
 typedef std::map<std::string, Factory* > FactoryTable; \
 static FactoryTable* factories_; \
+static bool has_factory(const std::string& key); \
 static baseT* lookup(const std::string& key); \
 static std::vector<std::string> factoryToC()
 
@@ -101,6 +103,14 @@ static std::vector<std::string> factoryToC()
 
 #define defineFactoryTable(baseT, argList, parList) \
  baseT::Factory::~Factory() {} \
+ bool baseT::has_factory(const std::string& key) \
+ {\
+  if (factories_) { \
+   auto i = baseT::factories_->find(key); \
+   return (i!=baseT::factories_->end()); \
+  }\
+  return false;\
+ }\
  baseT* baseT::lookup(const std::string& key , argList) \
  { \
   if (factories_) { \
@@ -127,6 +137,14 @@ static std::vector<std::string> factoryToC()
  
 #define defineFactoryTableNoArgs(baseT) \
  baseT::Factory::~Factory() {} \
+ bool baseT::has_factory(const std::string& key) \
+ {\
+   if (factories_) { \
+    auto i = baseT::factories_->find(key); \
+    return (i!=baseT::factories_->end()); \
+   }\
+   return false;\
+ }\
  baseT* baseT::lookup(const std::string& key) \
  { \
    if (factories_) { \
@@ -188,17 +206,28 @@ static struct add##specT##To##baseT##FactoryTable \
  typedef boost::function0<ReturnT> Name##Ptr; \
  typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
  static Name##FunctionTable* Name##Functions_; \
+ static bool has_##Name(const std::string& key); \
  static ReturnT Name(const std::string& key)
  
 #define declareStaticFunctionTableWithArgs(Name, ReturnT, argTypeList, argList) \
  typedef boost::function<ReturnT(argTypeList)> Name##Ptr; \
  typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
  static Name##FunctionTable* Name##Functions_; \
+ static bool has_##Name(const std::string& key); \
  static ReturnT Name(const std::string& key, argList)
 
  
 
 #define defineStaticFunctionTable(baseT, Name, ReturnT) \
+ bool baseT::has_##Name(const std::string& key) \
+ { \
+  if (baseT::Name##Functions_) { \
+      auto i = baseT::Name##Functions_->find(key); \
+      if (i!=baseT::Name##Functions_->end()) \
+       return true; \
+  } \
+  return false; \
+ } \
  ReturnT baseT::Name(const std::string& key) \
  { \
    if (baseT::Name##Functions_) { \
@@ -214,6 +243,15 @@ static struct add##specT##To##baseT##FactoryTable \
  
  
 #define defineStaticFunctionTableWithArgs(baseT, Name, ReturnT, argList, parList) \
+ bool baseT::has_##Name(const std::string& key) \
+ { \
+        if (baseT::Name##Functions_) { \
+            auto i = baseT::Name##Functions_->find(key); \
+            if (i!=baseT::Name##Functions_->end()) \
+            return true; \
+    } \
+        return false; \
+ } \
  ReturnT baseT::Name(const std::string& key, argList) \
  { \
    if (baseT::Name##Functions_) { \

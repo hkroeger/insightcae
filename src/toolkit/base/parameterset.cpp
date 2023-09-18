@@ -220,6 +220,9 @@ ParameterSet ParameterSet::intersection(const ParameterSet &other) const
 
 
 
+
+
+
 std::string splitOffFirstParameter(std::string& path, int& nRemaining)
 {
   using namespace boost;
@@ -245,6 +248,77 @@ std::string splitOffFirstParameter(std::string& path, int& nRemaining)
   }
 }
 
+
+
+
+bool ParameterSet::hasParameter(std::string path) const
+{
+  using namespace boost;
+  using namespace boost::algorithm;
+
+  int nRemaining=-1;
+  std::string parameterName = splitOffFirstParameter(path, nRemaining);
+
+  insight::CurrentExceptionContext ex("checking existence of parameter "+parameterName, false);
+
+  auto parameter = find(parameterName);
+
+  if (parameter == end())
+  {
+    return false;
+  }
+
+  if (nRemaining == 0)
+  {
+    return true;
+  }
+  else
+  {
+    SubParameterSet* sps = nullptr;
+
+    if (! (sps = dynamic_cast<insight::SubParameterSet*>(parameter->second.get())))
+    {
+      if (auto* ap = dynamic_cast<insight::ArrayParameter*>(parameter->second.get()))
+      {
+        std::string indexString = splitOffFirstParameter(path, nRemaining);
+
+        insight::Parameter* arrayElement=nullptr;
+
+        if (indexString=="default")
+        {
+            arrayElement=&const_cast<Parameter&>(ap->defaultValue());
+        }
+        else
+        {
+            int i = toNumber<int>(indexString);
+
+            if ( (i<0) || (i>=ap->size()) )
+                return false;
+
+            arrayElement = &(*ap)[i];
+        }
+
+        if (nRemaining==0)
+        {
+            return true;
+        }
+        else // nRemaining >0
+        {
+            sps = dynamic_cast<SubParameterSet*>(arrayElement);
+        }
+      }
+    }
+
+    if (sps)
+    {
+      return sps->subsetRef().hasParameter(path);
+    }
+    else
+    {
+      return false;
+    }
+  }
+}
 
 
 Parameter &ParameterSet::getParameter(std::string path)

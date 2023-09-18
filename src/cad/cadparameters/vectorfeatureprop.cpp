@@ -82,61 +82,72 @@ arma::mat insight::cad::SinglePointCoords::value() const
 
 
 insight::cad::CircleEdgeCenterCoords::CircleEdgeCenterCoords(insight::cad::ConstFeatureSetPtr pfs)
-: pfs_(pfs)
+    : pfs_(pfs)
 {}
+
+
+
+void insight::cad::CircleEdgeCenterCoords::compute(arma::mat &pc, double &D, arma::mat& ex) const
+{
+  if (!(pfs_->size()==1))
+    throw insight::Exception("edge feature set must not contain more than one edge for coordinate extraction!");
+
+  FeatureID i=*(pfs_->data().begin());
+
+  double c0, c1;
+  Handle_Geom_Curve curve(BRep_Tool::Curve(pfs_->model()->edge(i), c0, c1));
+  GeomAdaptor_Curve adapt(curve);
+
+  gp_Pnt p0;
+  gp_Circ icyl;
+  if (adapt.GetType()==GeomAbs_Circle)
+  {
+    icyl=adapt.Circle();
+  }
+  else if (adapt.GetType()==GeomAbs_BSplineCurve)
+  {
+    double u0=adapt.FirstParameter();
+    double u1=0.9*adapt.LastParameter();
+    double um=0.5*(u0+u1);
+    gp_Pnt p1=adapt.Value(u0), p2=adapt.Value(um), p3=adapt.Value(u1);
+    icyl = gce_MakeCirc(p1, p2, p3);
+    double Lref=std::max( std::max(p1.Distance(p2), p2.Distance(p3)), p1.Distance(p3) );
+
+    // check
+    GeomAPI_ExtremaCurveCurve ec(
+        curve,
+        Handle_Geom_Curve(new Geom_Circle(icyl))
+        );
+
+    double max_dist=0.0;
+    for (int i=1; i<=ec.NbExtrema(); i++)
+    {
+        max_dist=std::max(ec.Distance(i), max_dist);
+    }
+    if (max_dist>0.1*Lref)
+    {
+        throw insight::Exception(boost::str(boost::format
+                                            ("selected edge is a BSplineCurve and possibly not circular! (max. distance=%g)") % max_dist
+                                            ));
+    }
+  }
+  else
+    throw insight::Exception("selected edge is not a circle or BSplineCurve! (instead is of type "+boost::lexical_cast<std::string>(adapt.GetType())+")");
+
+  pc=vec3(icyl.Location());
+  D=icyl.Radius()*2.;
+  ex=normalized(vec3(icyl.Axis().Direction()));
+}
 
 
 
 
 arma::mat insight::cad::CircleEdgeCenterCoords::value() const
 {
-  if (!(pfs_->size()==1))
-    throw insight::Exception("edge feature set must not contain more than one edge for coordinate extraction!");
-  
-  FeatureID i=*(pfs_->data().begin());
-  
-  double c0, c1;
-  Handle_Geom_Curve curve(BRep_Tool::Curve(pfs_->model()->edge(i), c0, c1));
-  GeomAdaptor_Curve adapt(curve);
-
-  gp_Pnt p0;
-  if (adapt.GetType()==GeomAbs_Circle)
-  {
-    gp_Circ icyl=adapt.Circle();
-    p0=icyl.Location();
-  } else if (adapt.GetType()==GeomAbs_BSplineCurve)
-  {
-    double u0=adapt.FirstParameter();
-    double u1=0.9*adapt.LastParameter();
-    double um=0.5*(u0+u1);
-    gp_Pnt p1=adapt.Value(u0), p2=adapt.Value(um), p3=adapt.Value(u1);
-    gp_Circ ic = gce_MakeCirc(p1, p2, p3);
-    double Lref=std::max( std::max(p1.Distance(p2), p2.Distance(p3)), p1.Distance(p3) );
-
-    // check
-    GeomAPI_ExtremaCurveCurve ec(
-          curve,
-          Handle_Geom_Curve(new Geom_Circle(ic))
-          );
-
-    double max_dist=0.0;
-    for (int i=1; i<=ec.NbExtrema(); i++)
-    {
-      max_dist=std::max(ec.Distance(i), max_dist);
-    }
-    if (max_dist>0.1*Lref)
-    {
-      throw insight::Exception(boost::str(boost::format
-         ("selected edge is a BSplineCurve and possibly not circular! (max. distance=%g)") % max_dist
-       ));
-    }
-
-    p0=ic.Location();
-  }
-  else
-    throw insight::Exception("selected edge is not a circle or BSplineCurve! (instead is of type "+boost::lexical_cast<std::string>(adapt.GetType())+")");
-
-  return vec3(p0.X(), p0.Y(), p0.Z());
+  arma::mat pc, ex;
+  double D;
+  compute(pc, D, ex);
+  return pc;
 }
 
 

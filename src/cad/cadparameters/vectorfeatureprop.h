@@ -79,7 +79,8 @@ class CircleEdgeCenterCoords
   
 public:
   CircleEdgeCenterCoords(ConstFeatureSetPtr pfs);
-  virtual arma::mat value() const;
+  void compute(arma::mat& pc, double& D, arma::mat& ex) const;
+  arma::mat value() const override;
 };
 
 

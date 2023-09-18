@@ -77,6 +77,7 @@ protected:
       display_all_wire,
       reset_shading,
       measure_distance,
+      measure_diameter,
       sel_pts,
       sel_edgs,
       sel_faces,

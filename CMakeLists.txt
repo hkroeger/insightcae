@@ -772,87 +772,93 @@ endmacro()
 
 
 macro(install_script NAME SCRIPTFILE)
+
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     ${SCRIPTFILE})
-    
-  add_custom_target(${NAME} ALL
-    COMMENT "Copying file: ${SCRIPTFILE}")
-
   set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SCRIPTFILE}")
   set(DST "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SCRIPTFILE}")
 
   add_custom_command(
-    TARGET ${NAME}
+    MAIN_DEPENDENCY ${SRC}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+    OUTPUT ${DST}
     )
   install(PROGRAMS ${SCRIPTFILE} ${SRC} DESTINATION bin COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+
+  add_library(${NAME} INTERFACE ${DST})
+
 endmacro(install_script)
 
 
 
 
 macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
+
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     ${SHAREDFILE})
-    
   get_filename_component(FNAME ${SHAREDFILE} NAME)
-  add_custom_target(${NAME} ALL
-    COMMENT "Copying file: ${SHAREDFILE}")
-
   set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
   set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${FNAME}")
 
   add_custom_command(
-    TARGET ${NAME}
+    MAIN_DEPENDENCY ${SRC}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
-    )
+    OUTPUT ${DST}
+  )
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+
+  add_library(${NAME} INTERFACE ${DST})
+
 endmacro(install_shared_file)
 
 
 macro(install_shared_file2 SHAREDFILE DSTLOCATION)
-    string(REGEX REPLACE "[,\.;/\\ ]" "_" NAME ${SHAREDFILE})
-    message(STATUS "auto target name ${NAME} from ${SHAREDFILE}")
 
+  string(REGEX REPLACE "[,\.;/\\ ]" "_" NAME ${SHAREDFILE})
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     ${SHAREDFILE})
-
   get_filename_component(FNAME ${SHAREDFILE} NAME)
-  add_custom_target(${NAME} ALL
-    COMMENT "Copying file: ${SHAREDFILE}")
-
   set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
   set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${FNAME}")
 
   add_custom_command(
-    TARGET ${NAME}
+    MAIN_DEPENDENCY ${SRC}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
-    )
+    OUTPUT ${DST}
+  )
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+
+  add_library(${NAME} INTERFACE ${DST})
+
 endmacro(install_shared_file2)
 
 
 
 macro(install_shared_directory NAME SHAREDDIR DSTLOCATION)
+
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDDIR}
     ${SHAREDDIR}/*)
 
-  add_custom_target(${NAME} ALL
-    COMMENT "Copying directory: ${SHAREDDIR}")
+  SET(DSTS "")
   foreach(file ${COPY_FILES})
    set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDDIR}/${file}")
    set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${file}")
 
    add_custom_command(
-     TARGET ${NAME}
+     MAIN_DEPENDENCY ${SRC}
      COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+     OUTPUT ${DST}
      )
+   LIST(APPEND DSTS ${DST})
    install(FILES ${SHAREDDIR}/${file} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   endforeach()
+
+  add_library(${NAME} INTERFACE ${DSTS})
+
 endmacro(install_shared_directory)
 
 
@@ -931,26 +937,24 @@ endmacro()
 
 
 macro(install_package_script PACKAGENAME)
+
+  set(DSTS "")
   foreach (_src ${ARGN})
 
     STRING(REPLACE "/" "_" TARGNAME ${PACKAGENAME}_${_src})
     STRING(REPLACE "." "_" TARGNAME ${TARGNAME})
-
     file(GLOB COPY_FILES
       RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
       ${_src})
-
-    add_custom_target(${TARGNAME} ALL
-      COMMENT "Copying file: ${_src}")
-
     set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
     set(DST "${INSIGHT_PYTHON_PATH}/Insight/${PACKAGENAME}/${_src}")
 
-#     message(STATUS "target name: ${TARGNAME}")
     add_custom_command(
-      TARGET ${TARGNAME}
+      MAIN_DEPENDENCY ${SRC}
       COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
-      )
+      OUTPUT ${DST}
+    )
+    LIST(APPEND DSTS ${DST})
 
     get_filename_component(DST_DIR ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight/${PACKAGENAME}/${_src} DIRECTORY)
     install(
@@ -959,6 +963,9 @@ macro(install_package_script PACKAGENAME)
       COMPONENT ${INSIGHT_INSTALL_COMPONENT}
       )
   endforeach()
+
+  add_library(${PACKAGENAME}_files INTERFACE ${DSTS})
+
 endmacro(install_package_script)
 
 

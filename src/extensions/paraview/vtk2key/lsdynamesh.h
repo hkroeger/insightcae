@@ -94,7 +94,8 @@ public:
         std::ostream& os, int& ei,
         const std::vector<TargetElement>& cellList,
         const std::set<int>& parts2Skip,
-        const std::string& nodeIdListSeperator=", ") const
+        const std::string& nodeIdListSeperator=", ",
+        std::map<int,std::set<int> >* elementIDsPerPartId = nullptr ) const
     {
         for (const auto& c: cellList)
         {
@@ -107,6 +108,9 @@ public:
                 if (c.n.size()==3)
                     nodeIds.push_back(nodeIds.back());
                 auto nodeIdList = boost::join(nodeIds, ", ");
+
+                if (elementIDsPerPartId)
+                    (*elementIDsPerPartId)[c.part_id].insert(ei);
 
                 os <<(ei++) << ", " << c.part_id;
                 os << nodeIdListSeperator << nodeIdList << "\n";
@@ -122,7 +126,8 @@ public:
 
     void write(
         std::ostream& of,
-        const std::set<int>& parts2Skip ) const;
+        const std::set<int>& parts2Skip,
+        const std::set<int>& parts2ElementGroup ) const;
 
     void printStatistics(std::ostream& os) const;
 };

@@ -213,6 +213,7 @@ int main(int argc, char *argv[])
 
         tmesh.printStatistics(std::cout);
 
+        std::set<int> parts2ElementGroup;
         for ( const auto& arg: vm["part2set"].as<StringList>())
         {
             std::vector<std::string> partId_setId;
@@ -222,12 +223,13 @@ int main(int argc, char *argv[])
             int partId=toNumber<int>(partId_setId[0]);
             int setId=toNumber<int>(partId_setId[1]);
 
+            parts2ElementGroup.insert(partId);
             tmesh.findNodesOfPart( tmesh.nodeSet(setId), partId );
         }
 
 
         std::ofstream of(outfn.string());
-        tmesh.write(of, tbSkipped);
+        tmesh.write(of, tbSkipped, parts2ElementGroup);
     }
     catch (std::exception& ex)
     {

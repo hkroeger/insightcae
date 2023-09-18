@@ -11,16 +11,15 @@ const std::array<int, 4> LSDynaMesh::tetNodeMapping = { 0, 1, 2, 3 };
 
 
 
-
-void LSDynaMesh::IdSet::writeIds(std::ostream& os, int cols) const
+void writeList(std::ostream& os, const std::set<int>& data, int cols)
 {
-    auto i = begin();
+    auto i = data.begin();
     for (int c=0; ; ++c)
     {
-        if (i==end()) break;
+        if (i==data.end()) break;
         os<<*i;
         ++i;
-        if ( (c>=cols-1) || (i==end()) )
+        if ( (c>=cols-1) || (i==data.end()) )
         {
             c=-1;
             os<<"\n";
@@ -28,6 +27,13 @@ void LSDynaMesh::IdSet::writeIds(std::ostream& os, int cols) const
         else
             os<<", ";
     }
+}
+
+
+
+void LSDynaMesh::IdSet::writeIds(std::ostream& os, int cols) const
+{
+    writeList(os, *this, cols);
 }
 
 
@@ -51,6 +57,9 @@ void LSDynaMesh::findNodesOfPart(std::set<int>& nodeSet, int part_id) const
             nodeSet.insert(e.n.begin(), e.n.end());
     }
 }
+
+
+
 
 LSDynaMesh::IdSet& LSDynaMesh::nodeSet(int setId)
 {
@@ -84,7 +93,8 @@ vtkIdType LSDynaMesh::maxNodeId() const
 
 void LSDynaMesh::write(
     std::ostream& of,
-    const std::set<int>& parts2Skip ) const
+    const std::set<int>& parts2Skip,
+    const std::set<int>& parts2ElementGroup ) const
 {
     of<<"*NODE\n";
     for (const auto& n: nodes_)
@@ -92,11 +102,13 @@ void LSDynaMesh::write(
         of<<n.first<<", "<<n.second[0]<<", "<<n.second[1]<<", "<<n.second[2]<<"\n";
     }
 
+    std::map<int,std::set<int> > shellIDsPerPart;
+
     int ei=1;
     {
         std::ostringstream os;
-        writeElementList(os, ei, tris_, parts2Skip, ", ");
-        writeElementList(os, ei, quads_, parts2Skip, ", ");
+        writeElementList(os, ei, tris_, parts2Skip, ", ", &shellIDsPerPart);
+        writeElementList(os, ei, quads_, parts2Skip, ", ", &shellIDsPerPart);
 
         if (!os.str().empty())
         {
@@ -120,7 +132,19 @@ void LSDynaMesh::write(
         of<<"*SET_NODE\n"<<ns.first<<"\n";
         ns.second.writeIds(of);
     }
+    for (const auto& ns: shellIDsPerPart)
+    {
+        if (parts2ElementGroup.count(ns.first)>0)
+        {
+            of<<"*SET_SHELL\n"<<ns.first<<"\n";
+            writeList(of, ns.second, 8);
+        }
+    }
+
+    of << "*COMMENT\n";
 }
+
+
 
 void LSDynaMesh::printStatistics(ostream &os) const
 {

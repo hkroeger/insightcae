@@ -19,6 +19,9 @@ IQCADItemModel::FeatureVisibility::FeatureVisibility()
     representation = insight::Surface;
 }
 
+
+
+
 IQCADItemModel::IQCADItemModel(insight::cad::ModelPtr m, QObject* parent)
   : QAbstractItemModel(parent)
 {
@@ -30,8 +33,13 @@ IQCADItemModel::IQCADItemModel(insight::cad::ModelPtr m, QObject* parent)
     model_->checkForBuildDuringAccess();
 }
 
+
+
+
 IQCADItemModel::~IQCADItemModel()
 {}
+
+
 
 
 QVariant IQCADItemModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -50,6 +58,9 @@ QVariant IQCADItemModel::headerData(int section, Qt::Orientation orientation, in
     }
     return QVariant();
 }
+
+
+
 
 QModelIndex IQCADItemModel::index(int row, int column, const QModelIndex &parent) const
 {
@@ -113,6 +124,9 @@ QModelIndex IQCADItemModel::index(int row, int column, const QModelIndex &parent
     return QModelIndex();
 }
 
+
+
+
 QModelIndex IQCADItemModel::parent(const QModelIndex &index) const
 {
     if (index.isValid() && index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
@@ -121,6 +135,9 @@ QModelIndex IQCADItemModel::parent(const QModelIndex &index) const
     }
     return QModelIndex();
 }
+
+
+
 
 int IQCADItemModel::rowCount(const QModelIndex &parent) const
 {
@@ -161,10 +178,16 @@ int IQCADItemModel::rowCount(const QModelIndex &parent) const
     return 0;
 }
 
+
+
+
 int IQCADItemModel::columnCount(const QModelIndex &parent) const
 {
     return 3;
 }
+
+
+
 
 QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
 {
@@ -728,10 +751,15 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
     return false;
 }
 
+
+
+
 const insight::cad::ModelPtr IQCADItemModel::model() const
 {
     return model_;
 }
+
+
 
 
 insight::cad::Model::ScalarTableContents IQCADItemModel::scalars() const
@@ -739,35 +767,56 @@ insight::cad::Model::ScalarTableContents IQCADItemModel::scalars() const
     return model_->scalars();
 }
 
+
+
+
 insight::cad::Model::VectorTableContents IQCADItemModel::points() const
 {
     return model_->points();
 }
+
+
+
 
 insight::cad::Model::VectorTableContents IQCADItemModel::directions() const
 {
     return model_->directions();
 }
 
+
+
+
 insight::cad::Model::DatumTableContents IQCADItemModel::datums() const
 {
     return model_->datums();
 }
+
+
+
 
 insight::cad::Model::ModelstepTableContents IQCADItemModel::modelsteps() const
 {
     return model_->modelsteps();
 }
 
+
+
+
 insight::cad::Model::PostprocActionTableContents IQCADItemModel::postprocActions() const
 {
     return model_->postprocActions();
 }
 
+
+
+
 const insight::cad::Model::DatasetTableContents &IQCADItemModel::datasets() const
 {
     return model_->datasets();
 }
+
+
+
 
 QModelIndex IQCADItemModel::scalarIndex(const std::string& name) const
 {
@@ -777,6 +826,9 @@ QModelIndex IQCADItemModel::scalarIndex(const std::string& name) const
                 CADModelSection::scalarVariable);
 }
 
+
+
+
 QModelIndex IQCADItemModel::pointIndex(const std::string& name) const
 {
     return sectionIndex<insight::cad::VectorPtr>(
@@ -784,6 +836,9 @@ QModelIndex IQCADItemModel::pointIndex(const std::string& name) const
                 std::bind(&insight::cad::Model::points, model_),
                 CADModelSection::pointVariable);
 }
+
+
+
 
 QModelIndex IQCADItemModel::directionIndex(const std::string& name) const
 {
@@ -793,6 +848,9 @@ QModelIndex IQCADItemModel::directionIndex(const std::string& name) const
                 CADModelSection::vectorVariable);
 }
 
+
+
+
 QModelIndex IQCADItemModel::datumIndex(const std::string& name) const
 {
     return sectionIndex<insight::cad::DatumPtr>(
@@ -800,6 +858,9 @@ QModelIndex IQCADItemModel::datumIndex(const std::string& name) const
                 std::bind(&insight::cad::Model::datums, model_),
                 CADModelSection::datum);
 }
+
+
+
 
 QModelIndex IQCADItemModel::modelstepIndex(const std::string& name) const
 {
@@ -809,6 +870,9 @@ QModelIndex IQCADItemModel::modelstepIndex(const std::string& name) const
                 CADModelSection::feature);
 }
 
+
+
+
 QModelIndex IQCADItemModel::postprocActionIndex(const std::string& name) const
 {
     return sectionIndex<insight::cad::PostprocActionPtr>(
@@ -817,6 +881,9 @@ QModelIndex IQCADItemModel::postprocActionIndex(const std::string& name) const
                 CADModelSection::postproc);
 }
 
+
+
+
 QModelIndex IQCADItemModel::datasetIndex(const std::string& name) const
 {
     return sectionIndex<vtkSmartPointer<vtkDataObject> >(
@@ -824,6 +891,7 @@ QModelIndex IQCADItemModel::datasetIndex(const std::string& name) const
                 std::bind(&insight::cad::Model::datasets, model_),
                 CADModelSection::dataset);
 }
+
 
 
 
@@ -837,6 +905,9 @@ void IQCADItemModel::addScalar(const std::string& name, insight::cad::ScalarPtr 
               CADModelSection::scalarVariable );
 }
 
+
+
+
 void IQCADItemModel::addPoint(const std::string& name, insight::cad::VectorPtr value)
 {
     addEntity<insight::cad::VectorPtr>(
@@ -847,6 +918,9 @@ void IQCADItemModel::addPoint(const std::string& name, insight::cad::VectorPtr v
               CADModelSection::pointVariable );
 }
 
+
+
+
 void IQCADItemModel::addDirection(const std::string& name, insight::cad::VectorPtr value)
 {
     addEntity<insight::cad::VectorPtr>(
@@ -856,6 +930,8 @@ void IQCADItemModel::addDirection(const std::string& name, insight::cad::VectorP
               std::bind(&insight::cad::Model::addDirection, model_.get(), std::placeholders::_1, std::placeholders::_2),
               CADModelSection::pointVariable );
 }
+
+
 
 
 void IQCADItemModel::addDatum(const std::string& name, insight::cad::DatumPtr value, bool initialVisibility)
@@ -872,6 +948,8 @@ void IQCADItemModel::addDatum(const std::string& name, insight::cad::DatumPtr va
               std::bind(&insight::cad::Model::addDatum, model_.get(), std::placeholders::_1, std::placeholders::_2),
               CADModelSection::datum );
 }
+
+
 
 
 void IQCADItemModel::addModelstep(
@@ -901,6 +979,8 @@ void IQCADItemModel::addModelstep(
 }
 
 
+
+
 void IQCADItemModel::setStaticModelStep(const std::string &name, bool isStatic)
 {
     if (isStatic)
@@ -914,10 +994,14 @@ void IQCADItemModel::setStaticModelStep(const std::string &name, bool isStatic)
     }
 }
 
+
+
+
 bool IQCADItemModel::isStaticModelStep(const std::string &name)
 {
     return staticFeatures_.find(name)!=staticFeatures_.end();
 }
+
 
 
 
@@ -948,6 +1032,8 @@ void IQCADItemModel::addComponent(
 }
 
 
+
+
 void IQCADItemModel::addPostprocAction(
         const std::string& name,
         insight::cad::PostprocActionPtr value )
@@ -963,6 +1049,9 @@ void IQCADItemModel::addPostprocAction(
               std::bind(&insight::cad::Model::addPostprocAction, model_.get(), std::placeholders::_1, std::placeholders::_2),
                 CADModelSection::postproc );
 }
+
+
+
 
 void IQCADItemModel::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> value)
 {
@@ -987,6 +1076,7 @@ void IQCADItemModel::addDataset(const std::string &name, vtkSmartPointer<vtkData
 
 
 
+
 void IQCADItemModel::removeScalar(const std::string& name)
 {
     removeEntity<insight::cad::ScalarPtr>(
@@ -995,6 +1085,8 @@ void IQCADItemModel::removeScalar(const std::string& name)
               std::bind(&insight::cad::Model::removeScalar, model_.get(), std::placeholders::_1),
               CADModelSection::scalarVariable );
 }
+
+
 
 
 void IQCADItemModel::removePoint(const std::string& name)
@@ -1007,6 +1099,8 @@ void IQCADItemModel::removePoint(const std::string& name)
 }
 
 
+
+
 void IQCADItemModel::removeDirection(const std::string& name)
 {
     removeEntity<insight::cad::VectorPtr>(
@@ -1017,6 +1111,8 @@ void IQCADItemModel::removeDirection(const std::string& name)
 }
 
 
+
+
 void IQCADItemModel::removeDatum(const std::string& name)
 {
     removeEntity<insight::cad::DatumPtr>(
@@ -1025,6 +1121,8 @@ void IQCADItemModel::removeDatum(const std::string& name)
               std::bind(&insight::cad::Model::removeDatum, model_.get(), std::placeholders::_1),
               CADModelSection::datum );
 }
+
+
 
 
 void IQCADItemModel::removeModelstep(const std::string& name )
@@ -1039,6 +1137,8 @@ void IQCADItemModel::removeModelstep(const std::string& name )
 }
 
 
+
+
 void IQCADItemModel::removePostprocAction(const std::string& name)
 {
     removeEntity<insight::cad::PostprocActionPtr>(
@@ -1047,6 +1147,9 @@ void IQCADItemModel::removePostprocAction(const std::string& name)
               std::bind(&insight::cad::Model::removePostprocAction, model_.get(), std::placeholders::_1),
                 CADModelSection::postproc );
 }
+
+
+
 
 void IQCADItemModel::removeDataset(const std::string& name)
 {

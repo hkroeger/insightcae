@@ -69,6 +69,14 @@ IQVTKSelectCADEntity::IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer)
 
 
 
+IQVTKSelectCADEntity::~IQVTKSelectCADEntity()
+{
+    delete toolBar_;
+}
+
+
+
+
 
 std::vector<IQVTKCADModel3DViewer::SubshapeData>
 IQVTKSelectSubshape::findEntitiesUnderCursor(const QPoint &point) const
@@ -112,4 +120,9 @@ IQVTKSelectSubshape::IQVTKSelectSubshape(IQVTKCADModel3DViewer &viewer)
     : IQVTKCADModel3DViewerSubshapeSelectionLogic(
         []() { return std::make_shared<MultiSelectionContainer>(); },
         viewer )
+{}
+
+
+
+IQVTKSelectSubshape::~IQVTKSelectSubshape()
 {}

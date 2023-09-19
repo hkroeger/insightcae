@@ -2,6 +2,7 @@
 #define IQVTKCADMODEL3DVIEWERDRAWLINE_H
 
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h"
 
 #include "constrainedsketch.h"
 #include "cadfeatures/line.h"
@@ -10,27 +11,27 @@
 
 class IQVTKCADModel3DViewer;
 
+
+
+
 class IQVTKCADModel3DViewerPlanePointBasedAction
-        : public QObject,
-        public ViewWidgetAction<IQVTKCADModel3DViewer>
+      : public IQVTKSelectConstrainedSketchEntity
 {
-    Q_OBJECT
 
 protected:
-    insight::cad::ConstrainedSketchPtr sketch_;
-
-    insight::cad::SketchPointPtr existingSketchPointAt(
-        const QPoint& cp, insight::cad::ConstrainedSketchEntityPtr& sg ) const;
-
-Q_SIGNALS:
-    void updateActors();
-    void finished();
+    boost::signals2::signal<void(insight::cad::SketchPointPtr)> existingPointSelected;
+    boost::signals2::signal<void(insight::cad::SketchPointPtr)> newPointCreated;
 
 public:
     IQVTKCADModel3DViewerPlanePointBasedAction(
-            IQVTKCADModel3DViewer &viewWidget,
-            insight::cad::ConstrainedSketchPtr sketch );
+            IQVTKConstrainedSketchEditor &editor );
+
+    bool onLeftButtonDown(
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 };
+
+
 
 
 
@@ -39,18 +40,20 @@ class IQVTKCADModel3DViewerDrawLine
 {
   Q_OBJECT
 
-  insight::cad::SketchPointPtr p1_, p2_;
-  vtkSmartPointer<vtkActor> previewLine_;
-
-  insight::cad::Line* prevLine_;
 
 public:
-  struct CandidatePoint
+  struct EndPointProperty
   {
-      insight::cad::SketchPointPtr sketchPoint;
+      insight::cad::SketchPointPtr p;
       bool isAnExistingPoint;
       insight::cad::FeaturePtr onFeature;
   };
+
+private:
+  std::shared_ptr<EndPointProperty> p1_, p2_;
+  vtkSmartPointer<vtkActor> previewLine_;
+
+  insight::cad::Line* prevLine_;
 
 private:
   /**
@@ -58,15 +61,19 @@ private:
    * left click might change viewport geometry due to modification of property panel
    * determine candidate already during mouse move and use it as displayed
    */
-  std::unique_ptr<CandidatePoint> p1cand_, pcand_;
 
-  CandidatePoint updatePCand(
-      const QPoint& point ) const;
+
+  void updatePreviewLine(const arma::mat& point3d);
+
+  insight::cad::SketchPointPtr applyWizards(const QPoint screenPoint) const;
+  insight::cad::SketchPointPtr applyWizards(const arma::mat& pip3d) const;
+
+  void setP1(insight::cad::SketchPointPtr p1, bool isExistingPoint);
+  void setP2(insight::cad::SketchPointPtr p2, bool isExistingPoint);
 
 public:
     IQVTKCADModel3DViewerDrawLine(
-            IQVTKCADModel3DViewer &viewWidget,
-            insight::cad::ConstrainedSketchPtr sketch );
+            IQVTKConstrainedSketchEditor &editor );
     ~IQVTKCADModel3DViewerDrawLine();
 
     void onMouseMove
@@ -76,18 +83,20 @@ public:
        Qt::KeyboardModifiers curFlags
        ) override;
 
-    bool onLeftButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
     bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 
 Q_SIGNALS:
+    void updateActors();
     void endPointSelected(
-        CandidatePoint* addPoint,
+        EndPointProperty*  addedPoint,
         insight::cad::SketchPointPtr previousPoint
         );
     void lineAdded(
         insight::cad::Line* addedLine,
         insight::cad::Line* previouslyAddedLine,
-        CandidatePoint* p1, CandidatePoint* p2 );
+        EndPointProperty* p2,
+        EndPointProperty* p1
+        );
 };
 
 #endif // IQVTKCADMODEL3DVIEWERDRAWLINE_H

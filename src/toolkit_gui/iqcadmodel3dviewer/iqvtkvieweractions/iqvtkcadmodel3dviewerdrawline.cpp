@@ -19,119 +19,178 @@ using namespace insight::cad;
 
 
 
-
-
-SketchPointPtr
-IQVTKCADModel3DViewerPlanePointBasedAction
-::existingSketchPointAt( const QPoint& cp, insight::cad::ConstrainedSketchEntityPtr& sg ) const
-{
-    if (auto act =
-        viewer().findActorUnderCursorAt(cp))
-    {
-        if (auto se =
-            std::dynamic_pointer_cast<IQVTKConstrainedSketchEditor>(
-                viewer().currentAction_))
-        {
-            if ( (sg =
-                 se->findSketchElementOfActor(act)) )
-            {
-                if (auto sp =
-                    std::dynamic_pointer_cast
-                    <SketchPoint>(sg))
-                {
-                    insight::dbg()<<"picked existing point"<<std::endl;
-                    return sp;
-                }
-            }
-        }
-    }
-
-    return nullptr;
-}
-
-
-
-
 IQVTKCADModel3DViewerPlanePointBasedAction
 ::IQVTKCADModel3DViewerPlanePointBasedAction(
-        IQVTKCADModel3DViewer &viewWidget,
-        insight::cad::ConstrainedSketchPtr sketch )
-    : ViewWidgetAction<IQVTKCADModel3DViewer>(
-          viewWidget),
-      sketch_(sketch)
-{}
-
-
-
-
-IQVTKCADModel3DViewerDrawLine::CandidatePoint
-IQVTKCADModel3DViewerDrawLine::updatePCand(const QPoint& point) const
+        IQVTKConstrainedSketchEditor &editor )
+    : IQVTKSelectConstrainedSketchEntity( editor )
 {
-    CandidatePoint pc{nullptr, false, nullptr};
-
-    insight::cad::ConstrainedSketchEntityPtr selse;
-    pc.sketchPoint = existingSketchPointAt(point, selse);
-
-    if (!pc.sketchPoint && selse)
-    {
-        pc.onFeature = std::dynamic_pointer_cast<insight::cad::Feature>(selse);
-    }
-
-    if (!pc.sketchPoint)
-    {
-        arma::mat pip=viewer().pointInPlane3D(sketch_->plane()->plane(), point);
-
-        if (p1_ && !p2_)
+    setSelectionFilter(
+        [](std::weak_ptr<insight::cad::ConstrainedSketchEntity> se)
         {
-            if (!pc.sketchPoint) // not over existing point
+            return bool(std::dynamic_pointer_cast<insight::cad::SketchPoint>(se.lock()));
+        }
+    );
+
+    toggleHoveringSelectionPreview(true);
+
+    entitySelected.connect(
+        [this](std::weak_ptr<insight::cad::ConstrainedSketchEntity> e)
+        {
+            insight::dbg()<<"picked existing point"<<std::endl;
+            existingPointSelected(
+                std::dynamic_pointer_cast<insight::cad::SketchPoint>(e.lock()));
+        }
+    );
+}
+
+
+
+
+bool IQVTKCADModel3DViewerPlanePointBasedAction::onLeftButtonDown(
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
+{
+    auto ret = IQVTKSelectConstrainedSketchEntity::onLeftButtonDown(nFlags, point);
+    if (!ret)
+    {
+        insight::dbg()<<"picked new point position"<<std::endl;
+
+        auto p2=viewer().pointInPlane2D(
+            sketch().plane()->plane(),
+                viewer().pointInPlane3D(
+                    sketch().plane()->plane(), point) );
+
+        newPointCreated(
+            std::make_shared<SketchPoint>(
+                sketch().plane(), p2(0), p2(1) ) );
+    }
+    return ret;
+}
+
+
+
+
+
+void IQVTKCADModel3DViewerDrawLine::updatePreviewLine(const arma::mat& pip3d)
+{
+    // update preview line
+    if (p1_ && !p2_)
+    {
+        if (!previewLine_)
+        {
+            // create line
+            auto l = vtkSmartPointer<vtkLineSource>::New();
+            l->SetPoint1(p1_->p->value().memptr());
+            l->SetPoint2(pip3d.memptr());
+
+            previewLine_ = vtkSmartPointer<vtkActor>::New();
+            previewLine_->SetMapper(vtkSmartPointer<vtkPolyDataMapper>::New());
+            previewLine_->GetMapper()->SetInputConnection(l->GetOutputPort());
+            previewLine_->GetProperty()->SetColor(1, 0, 0);
+            previewLine_->GetProperty()->SetLineWidth(2);
+            viewer().renderer()->AddActor(previewLine_);
+        }
+        else
+        {
+            // update line
+            if (auto*line = vtkLineSource::SafeDownCast(
+                    previewLine_->GetMapper()->GetInputAlgorithm()))
             {
+                line->SetPoint1(p1_->p->value().memptr());
+                line->SetPoint2(pip3d.memptr());
+                previewLine_->GetMapper()->Update();
+            }
+        }
+    }
+}
 
-                arma::mat p21=viewer().pointInPlane2D(sketch_->plane()->plane(), p1_->value());
-                arma::mat p22=viewer().pointInPlane2D(sketch_->plane()->plane(), pip);
 
-                arma::mat l = p22 - p21;
-                double angle = atan2(l(1), l(0));
 
-                const double angleGrid=22.5*SI::deg, angleCatch=5.*SI::deg;
-                for (double a=-180.*SI::deg; a<180.*SI::deg; a+=angleGrid)
-                {
-                    if (fabs(angle-a)<angleCatch)
-                    {
-                        pip=viewer().pointInPlane3D(
-                            sketch_->plane()->plane(),
-                            p21+vec2(cos(a),
-                            sin(a))*arma::norm(l,2) );
-                        break;
-                    }
-                }
 
+insight::cad::SketchPointPtr
+IQVTKCADModel3DViewerDrawLine::applyWizards(const QPoint screenPoint) const
+{
+    return applyWizards(viewer().pointInPlane3D(
+        sketch().plane()->plane(), screenPoint) );
+}
+
+
+
+
+insight::cad::SketchPointPtr
+IQVTKCADModel3DViewerDrawLine::applyWizards(const arma::mat& pip3d) const
+{
+    arma::mat pip=pip3d;
+    arma::mat p22=viewer().pointInPlane2D(sketch().plane()->plane(), pip);
+
+    if (p1_)
+    {
+        arma::mat p21=viewer().pointInPlane2D(sketch().plane()->plane(), p1_->p->value());
+
+        arma::mat l = p22 - p21;
+        double angle = atan2(l(1), l(0));
+
+        const double angleGrid=22.5*SI::deg, angleCatch=5.*SI::deg;
+        for (double a=-180.*SI::deg; a<180.*SI::deg; a+=angleGrid)
+        {
+            if (fabs(angle-a)<angleCatch)
+            {
+                pip=viewer().pointInPlane3D(
+                    sketch().plane()->plane(),
+                    p21+vec2(cos(a),
+                    sin(a))*arma::norm(l,2) );
+                break;
             }
         }
 
-        auto p2=viewer().pointInPlane2D(sketch_->plane()->plane(), pip);
-        pc.sketchPoint = std::make_shared<SketchPoint>(
-            sketch_->plane(),
-            p2(0), p2(1) );
-    }
-    else
-    {
-        pc.isAnExistingPoint=true;
+        p22=viewer().pointInPlane2D(sketch().plane()->plane(), pip);
     }
 
-    return pc;
+    return std::make_shared<SketchPoint>(
+            sketch().plane(),
+            p22(0), p22(1) );
 }
+
 
 
 
 IQVTKCADModel3DViewerDrawLine
 ::IQVTKCADModel3DViewerDrawLine(
-        IQVTKCADModel3DViewer &viewWidget,
-        insight::cad::ConstrainedSketchPtr sketch )
-    : IQVTKCADModel3DViewerPlanePointBasedAction(
-          viewWidget, sketch),
+        IQVTKConstrainedSketchEditor &editor )
+    : IQVTKCADModel3DViewerPlanePointBasedAction(editor),
       previewLine_(nullptr),
       prevLine_(nullptr)
-{}
+{
+    existingPointSelected.connect(
+        [this](SketchPointPtr p)
+        {
+            if (!p1_)
+                setP1(p, true);
+            else
+                setP2(p, true);
+        }
+    );
+
+    newPointCreated.connect(
+        [this](SketchPointPtr p)
+        {
+            if (!p1_)
+                setP1( applyWizards(p->value()), false);
+            else
+                setP2( applyWizards(p->value()), false);
+        }
+    );
+
+    newPreviewEntity.connect(
+        [this](std::weak_ptr<insight::cad::ConstrainedSketchEntity> pP)
+        {
+            if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(pP.lock()))
+            {
+                updatePreviewLine(p->value());
+            }
+        }
+    );
+}
 
 
 
@@ -153,104 +212,64 @@ void IQVTKCADModel3DViewerDrawLine::onMouseMove(
         const QPoint point,
         Qt::KeyboardModifiers curFlags )
 {
-    // find candidate point for next click
-    pcand_.reset(new CandidatePoint(updatePCand(point)));
+    updatePreviewLine(applyWizards(point)->value());
 
-    // update preview line
-    if (p1_ && !p2_)
-    {
-        if (!previewLine_)
-        {
-            // create line
-            auto l = vtkSmartPointer<vtkLineSource>::New();
-            l->SetPoint1(p1_->value().memptr());
-            l->SetPoint2(pcand_->sketchPoint->value().memptr());
-
-            previewLine_ = vtkSmartPointer<vtkActor>::New();
-            previewLine_->SetMapper(vtkSmartPointer<vtkPolyDataMapper>::New());
-            previewLine_->GetMapper()->SetInputConnection(l->GetOutputPort());
-            previewLine_->GetProperty()->SetColor(1, 0, 0);
-            previewLine_->GetProperty()->SetLineWidth(2);
-            viewer().renderer()->AddActor(previewLine_);
-        }
-        else
-        {
-            // update line
-            if (auto*line = vtkLineSource::SafeDownCast(
-                previewLine_->GetMapper()->GetInputAlgorithm()))
-            {
-                line->SetPoint1(p1_->value().memptr());
-                line->SetPoint2(pcand_->sketchPoint->value().memptr());
-                previewLine_->GetMapper()->Update();
-            }
-        }
-    }
+    IQVTKCADModel3DViewerPlanePointBasedAction
+        ::onMouseMove(buttons, point, curFlags);
 }
 
 
 
 
-
-bool IQVTKCADModel3DViewerDrawLine::onLeftButtonDown(
-        Qt::KeyboardModifiers nFlags,
-        const QPoint point )
+void IQVTKCADModel3DViewerDrawLine::setP1(SketchPointPtr p, bool isExistingPoint)
 {
+    p1_=std::make_shared_aggr<EndPointProperty>(p, isExistingPoint, nullptr);
 
-    // should have been set during mouse move. if not, do now
-    if (!pcand_)
-        pcand_.reset(new CandidatePoint(updatePCand(point)));
-
-    if (!p1_)
+    if ( !isExistingPoint )
     {
-        p1_=pcand_->sketchPoint;
-
-        if ( !pcand_->isAnExistingPoint )
-        {
-            sketch_->geometry().insert(
-                 std::dynamic_pointer_cast
-                    <ConstrainedSketchEntity>( p1_ ) );
-        }
-        Q_EMIT endPointSelected(pcand_.get(), nullptr);
-
-        sketch_->invalidate();
-        Q_EMIT updateActors();
-        p1cand_=std::move(pcand_);
-        return true;
+        sketch().geometry().insert(
+            std::dynamic_pointer_cast
+            <ConstrainedSketchEntity>( p1_->p ) );
     }
-    else if (!p2_)
-    {
-        p2_ = pcand_->sketchPoint;
+    Q_EMIT endPointSelected(p1_.get(), nullptr);
 
-        if (!pcand_->isAnExistingPoint)
-        {
-            sketch_->geometry().insert(
-                 std::dynamic_pointer_cast
-                    <ConstrainedSketchEntity>( p2_ ) );
-        }
-        Q_EMIT endPointSelected(pcand_.get(), p1_);
-
-        auto line = std::dynamic_pointer_cast<insight::cad::Line>(
-                    Line::create(p1_, p2_) );
-        sketch_->geometry().insert(line);
-        sketch_->invalidate();
-
-        Q_EMIT lineAdded(line.get(), prevLine_, pcand_.get(), p1cand_.get() );
-
-        prevLine_=line.get();
-
-        Q_EMIT updateActors();
-
-        // continue with next line
-        p1_=p2_;
-        p1cand_=std::move(pcand_);
-        p2_.reset();
-        return true;
-    }
-
-    pcand_.reset();
-
-    return false;
+    sketch().invalidate();
+    Q_EMIT updateActors();
 }
+
+
+
+
+void IQVTKCADModel3DViewerDrawLine::setP2(SketchPointPtr p, bool isExistingPoint)
+{
+    p2_ = std::make_shared_aggr<EndPointProperty>(p, isExistingPoint, nullptr);
+
+    if (!isExistingPoint)
+    {
+        sketch().geometry().insert(
+            std::dynamic_pointer_cast
+            <ConstrainedSketchEntity>( p2_->p ) );
+    }
+    Q_EMIT endPointSelected(p2_.get(), p1_->p);
+
+    auto line = std::dynamic_pointer_cast<insight::cad::Line>(
+        Line::create(p1_->p, p2_->p) );
+
+    sketch().geometry().insert(line);
+    sketch().invalidate();
+
+    Q_EMIT lineAdded(line.get(), prevLine_, p2_.get(), p1_.get() );
+
+    prevLine_=line.get();
+
+    Q_EMIT updateActors();
+
+    // continue with next line
+    p1_=p2_;
+    p2_.reset();
+}
+
+
 
 
 bool IQVTKCADModel3DViewerDrawLine::onRightButtonDown(
@@ -258,6 +277,5 @@ bool IQVTKCADModel3DViewerDrawLine::onRightButtonDown(
         const QPoint point )
 {
     finishAction();
-    Q_EMIT finished();
     return true;
 }

@@ -245,7 +245,6 @@ public:
     boost::signals2::signal<void()> actionIsFinished;
 
 private:
-//  bool finished_ = false;
   Ptr childAction_;
 
 protected:
@@ -260,16 +259,34 @@ protected:
           childAction_.reset();
 
       childAction_=childAction;
-      InputReceiver<Viewer>::registerChildReceiver(
-          childAction_.get() );
+      auto cPtr = childAction.get();
+
+      InputReceiver<Viewer>::registerChildReceiver( cPtr );
 
       childAction_->actionIsFinished.connect(
-          [this]()
+          [this,cPtr]()
           {
               InputReceiver<Viewer>::removeChildReceiver(
-                  childAction_.get() );
-              childAction_.reset();
+                  cPtr );
+
+              // might have been reset by some other signal handler already...
+              if (childAction_.get()==cPtr)
+              {
+                childAction_.reset();
+              }
           });
+  }
+
+  template<class A>
+  bool isRunning() const
+  {
+      return bool(std::dynamic_pointer_cast<A>(childAction_));
+  }
+
+  template<class A>
+  A* runningAction() const
+  {
+      return std::dynamic_pointer_cast<A>(childAction_).get();
   }
 
 public:
@@ -280,8 +297,6 @@ public:
   ViewWidgetAction(Viewer& viewer, const QPoint& p)
       : InputReceiver<Viewer>(viewer, p)
   {}
-
-//  inline bool finished() const { return finished_; }
 
 };
 

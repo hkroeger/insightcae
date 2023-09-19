@@ -29,8 +29,9 @@ public:
 
     typedef _SelectedEntity SelectedEntity;
     typedef _MultiSelectionContainer MultiSelectionContainer;
+    typedef std::function<bool(SelectedEntity)> SelectionFilterFunction;
 
-    boost::signals2::signal<void(SelectedEntity)> entitySelected;
+    boost::signals2::signal<void(SelectedEntity)> entitySelected, newPreviewEntity;
 
     QColor candidateColor = QColorConstants::Blue;
     QColor selectionColor = QColorConstants::Red;
@@ -46,7 +47,8 @@ public:
     public:
         SelectionCandidates(
             SelectionLogic& sl,
-            const std::vector<SelectedEntity>& cands )
+            const std::vector<SelectedEntity>& cands
+            )
             : sl_(sl),
               std::vector<SelectedEntity>(
                   cands.begin(), cands.end()),
@@ -86,6 +88,24 @@ private:
     virtual std::vector<SelectedEntity>
     findEntitiesUnderCursor(const QPoint& point) const =0;
 
+    std::vector<SelectedEntity>
+    findEntitiesUnderCursorFiltered(const QPoint& point)
+    {
+        auto se = findEntitiesUnderCursor(point);
+
+        if (selectionFilter_)
+        {
+            auto seRaw(se);
+            se.clear();
+            std::copy_if(
+                seRaw.begin(), seRaw.end(),
+                std::back_inserter(se),
+                selectionFilter_ );
+        }
+
+        return se;
+    }
+
 
     virtual HighlightingHandle highlightEntity(
         SelectedEntity entity,
@@ -105,6 +125,8 @@ private:
 
     std::map<SelectedEntity, HighlightingHandle,SelectedEntityCompare> highlights_;
 
+    SelectionFilterFunction selectionFilter_;
+
 public:
     template<class ...Args>
     SelectionLogic(
@@ -114,6 +136,11 @@ public:
           multiSelectionContainerFactory_(mscf),
           doPreviewSelection_(false)
     {}
+
+    void setSelectionFilter(SelectionFilterFunction sff)
+    {
+        selectionFilter_=sff;
+    }
 
     ~SelectionLogic()
     {
@@ -139,7 +166,8 @@ public:
         Qt::KeyboardModifiers nFlags,
         const QPoint point ) override
     {
-        auto selectedEntities = findEntitiesUnderCursor(point);
+        auto selectedEntities = findEntitiesUnderCursorFiltered(point);
+
         if (selectedEntities.size()>0)
         {
             previewHighlight_ = boost::blank();
@@ -148,6 +176,7 @@ public:
                 (*this, selectedEntities);
             return true;
         }
+
         return Base::onLeftButtonDown(nFlags, point);
     }
 
@@ -160,7 +189,7 @@ public:
     {
         if (!nextSelectionCandidates_ && doPreviewSelection_)
         {
-            auto euc = findEntitiesUnderCursor(point);
+            auto euc = findEntitiesUnderCursorFiltered(point);
             if (euc.size()>0)
             {
                 if (auto *ph = boost::get<PreviewHighlight>(&previewHighlight_))
@@ -174,6 +203,7 @@ public:
                     }
                 }
                 previewHighlight_ = std::make_pair(euc[0], highlightEntity(euc[0], candidateColor));
+                newPreviewEntity(euc[0]);
                 return;
             }
         }

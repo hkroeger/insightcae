@@ -55,13 +55,18 @@ class IQGroupingItemModel
     QAbstractItemModel *sourceModel_;
     int labelCol_;
 
-    Node rootNode_;
+    Node *rootNode_;
     std::map<QPersistentModelIndex, Node*> nodeMap_;
 
     void decorateSourceNode(const QModelIndex& sourceIndex, Node* parent);
 
+    void loopOverMappedChildren(
+        Node *n, int column,
+        std::function<void(QModelIndex)> body ) const;
+
 public:
     explicit IQGroupingItemModel(QObject *parent = nullptr);
+    ~IQGroupingItemModel();
 
     void setGroupColumn(int labelColumn);
 

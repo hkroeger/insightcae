@@ -180,9 +180,15 @@ IQGroupingItemModel::IQGroupingItemModel(QObject *parent)
     : //QAbstractProxyModel{parent},
     QAbstractItemModel(parent),
     sourceModel_(nullptr),
-    labelCol_(0),
-    rootNode_(this, nullptr, "")
-{}
+    labelCol_(0)
+{
+    rootNode_ = new Node(this, nullptr, "");
+}
+
+IQGroupingItemModel::~IQGroupingItemModel()
+{
+    delete rootNode_;
+}
 
 void IQGroupingItemModel::setGroupColumn(int labelColumn)
 {
@@ -197,21 +203,19 @@ QAbstractItemModel *IQGroupingItemModel::sourceModel() const
 
 void IQGroupingItemModel::setSourceModel(QAbstractItemModel *sm)
 {
-    rootNode_.children.clear();
+    rootNode_->children.clear();
 
-//    QAbstractProxyModel::setSourceModel(sourceModel);
     sourceModel_=sm;
 
     int n=sm->rowCount();
     for (int i=0; i<n; ++i)
     {
-        decorateSourceNode(sm->index(i, 0), &rootNode_);
+        decorateSourceNode(sm->index(i, 0), rootNode_);
     }
 
     connect(sm, &QAbstractItemModel::rowsInserted, this,
             [&](const QModelIndex &sourceParent, int first, int last)
             {
-                qDebug()<<"sp="<<sourceParent;
                 auto psi=mapFromSource(sourceParent);
                 if (!psi.isValid())
                 {
@@ -254,31 +258,15 @@ QModelIndex IQGroupingItemModel::mapToSource(const QModelIndex &proxyIndex) cons
 
 
 
-//QModelIndex IQGroupingItemModel::mapFromSource(const QModelIndex &sourceIndex) const
-//{
-//    return QModelIndex();
-//}
-
-
-
-//QModelIndex IQGroupingItemModel::mapToSource(const QModelIndex &proxyIndex) const
-//{
-//    if (auto *n=static_cast<Node*>(proxyIndex.internalPointer()))
-//    {
-//        return n->sourceIndex(proxyIndex.column());
-//    }
-//    return QModelIndex();
-//}
-
 
 QModelIndex IQGroupingItemModel::index(int row, int column, const QModelIndex &parent) const
 {
     if (!parent.isValid())
     {
         // top node
-        if (row>=0 && row < rootNode_.children.size())
+        if (row>=0 && row < rootNode_->children.size())
         {
-            return createIndex(row, column, rootNode_.children.at(row));
+            return createIndex(row, column, rootNode_->children.at(row));
         }
     }
     else if (auto* p = static_cast<Node*>(parent.internalPointer()))
@@ -314,7 +302,7 @@ int IQGroupingItemModel::rowCount(const QModelIndex &parent) const
 {
     if (!parent.isValid())
     {
-        return rootNode_.children.size();
+        return rootNode_->children.size();
     }
     else if (auto *n=static_cast<Node*>(parent.internalPointer()))
     {
@@ -367,10 +355,49 @@ QVariant IQGroupingItemModel::data(const QModelIndex &index, int role) const
             {
                 return n->label;
             }
+            if (role == Qt::CheckStateRole)
+            {
+                int nChecked=0, nUnchecked=0;
+                loopOverMappedChildren(
+                    n, index.column(),
+                    [&](QModelIndex sourceIndex)
+                    {
+                        auto d=sourceModel()->data(
+                            sourceIndex, role );
+                        if (d.canConvert<Qt::CheckState>())
+                        {
+                            auto cst = d.value<Qt::CheckState>();
+                            if (cst==Qt::Checked) nChecked++;
+                            if (cst==Qt::Unchecked) nUnchecked++;
+                        }
+                    }
+                );
+
+                if (nChecked==0 && nUnchecked>0) return Qt::Unchecked;
+                if (nChecked>0 && nUnchecked==0) return Qt::Checked;
+                if (nChecked>0 && nUnchecked>0) return Qt::PartiallyChecked;
+            }
         }
     }
     return QVariant();
 }
+
+
+
+void IQGroupingItemModel::loopOverMappedChildren(
+    Node *n, int column,
+    std::function<void(QModelIndex)> body ) const
+{
+    for (auto& c: n->children)
+    {
+        if (c->isMappedToSource())
+        {
+            body(c->sourceIndex( column ) );
+        }
+        loopOverMappedChildren(c, column, body);
+    }
+}
+
 
 Qt::ItemFlags IQGroupingItemModel::flags(const QModelIndex &index) const
 {
@@ -382,18 +409,63 @@ Qt::ItemFlags IQGroupingItemModel::flags(const QModelIndex &index) const
     if (auto *n=static_cast<Node*>(index.internalPointer()))
     {
         if (n->isMappedToSource())
-            return sourceModel()->flags(n->sourceIndex(index.column()));
+        {
+            return sourceModel()->flags(
+                n->sourceIndex(index.column()));
+        }
+        else
+        {
+            auto flags=QAbstractItemModel::flags(index);
+            // loop through children
+            bool someChildIsCheckable=false;
+            loopOverMappedChildren(
+                n, index.column(),
+                [&](QModelIndex sourceIndex)
+                {
+                    auto f = sourceModel()->flags(sourceIndex);
+                    if (f&Qt::ItemIsUserCheckable)
+                    {
+                        someChildIsCheckable=true;
+                    }
+                }
+            );
+            if (someChildIsCheckable)
+            {
+                flags|=Qt::ItemIsUserCheckable;
+            }
+            return flags;
+        }
     }
 
     return QAbstractItemModel::flags(index);
 }
+
+
+
 
 bool IQGroupingItemModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if (auto *n=static_cast<Node*>(index.internalPointer()))
     {
         if (n->isMappedToSource())
+        {
             return sourceModel()->setData(n->sourceIndex(index.column()), value, role);
+        }
+        else if (role == Qt::CheckStateRole)
+        {
+            if (value.canConvert<Qt::CheckState>())
+            {
+                auto ncs = value.value<Qt::CheckState>();
+
+                loopOverMappedChildren(
+                    n, index.column(),
+                    [&](QModelIndex srcIdx)
+                    {
+                        sourceModel()->setData(srcIdx, ncs, role);
+                    }
+                );
+            }
+        }
     }
     return false;
 }

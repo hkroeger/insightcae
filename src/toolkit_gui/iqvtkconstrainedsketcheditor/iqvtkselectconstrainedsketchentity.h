@@ -15,20 +15,18 @@ class IQVTKConstrainedSketchEditor;
 
 
 typedef
-    std::map<
+    std::set<
         std::weak_ptr<insight::cad::ConstrainedSketchEntity>,
-        std::set<std::weak_ptr<IQVTKViewerState>,
-                 std::owner_less<std::weak_ptr<IQVTKViewerState> > >,
         std::owner_less<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > >
 
-            SketchEntityMultiSelectionMap;
+        SketchEntityMultiSelectionSet;
 
 
 
 
 class SketchEntityMultiSelection
     : public QObject,
-      public SketchEntityMultiSelectionMap
+      public SketchEntityMultiSelectionSet
 {
     Q_OBJECT
 
@@ -37,13 +35,15 @@ class SketchEntityMultiSelection
     ParameterEditorWidget* pe_;
     int tbi_;
 
+    void showParameterEditor();
+    void removeParameterEditor();
+
 public:
     SketchEntityMultiSelection(IQVTKConstrainedSketchEditor& editor);
     ~SketchEntityMultiSelection();
 
     void insert(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
     void erase(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity);
-    bool isInSelection(const insight::cad::ConstrainedSketchEntity* entity);
 };
 
 

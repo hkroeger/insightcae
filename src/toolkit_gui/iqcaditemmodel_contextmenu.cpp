@@ -68,7 +68,11 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                                 insight::ParameterSet(),
                                 [](const insight::ParameterSet&, vtkProperty* actprops)
                                 {
-                                    actprops->SetColor(1,0,0);
+                                    auto sec = QColorConstants::DarkCyan;
+                                    actprops->SetColor(
+                                        sec.redF(),
+                                        sec.greenF(),
+                                        sec.blueF() );
                                     actprops->SetLineWidth(2);
                                 },
                                 [this,psk,name](){

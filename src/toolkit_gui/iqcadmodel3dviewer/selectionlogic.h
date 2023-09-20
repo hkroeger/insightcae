@@ -59,7 +59,7 @@ public:
                 this->size()>0,
                 "selection candidate list must not be empty!");
 
-                temporaryHighlighting_ = sl_.highlightEntity( selected(), sl_.candidateColor );
+            temporaryHighlighting_ = sl_.highlightEntity( selected(true), sl_.candidateColor );
         }
 
         ~SelectionCandidates()
@@ -73,12 +73,16 @@ public:
             if (selectedCandidate_>=this->size())
                 selectedCandidate_=0;
 
-            temporaryHighlighting_ = boost::blank();
-            temporaryHighlighting_ = sl_.highlightEntity( selected(), sl_.candidateColor );
+            temporaryHighlighting_ = sl_.highlightEntity( selected(true), sl_.candidateColor );
         }
 
-        SelectedEntity selected() const
+        SelectedEntity selected(bool clearTempHighlighting) const
         {
+            if (clearTempHighlighting)
+            {
+                const_cast<SelectionCandidates*>(this)
+                    ->temporaryHighlighting_ = boost::blank();
+            }
             return this->operator[](selectedCandidate_);
         }
     };
@@ -93,6 +97,22 @@ private:
     {
         auto se = findEntitiesUnderCursor(point);
 
+        // remove already selected entities
+        if (currentSelection_)
+        {
+            auto seRaw(se);
+            se.clear();
+            std::copy_if(
+                seRaw.begin(), seRaw.end(),
+                std::back_inserter(se),
+                [this](SelectedEntity e)
+                {
+                    return (currentSelection_->count(e)<1);
+                }
+            );
+        }
+
+        // apply filter
         if (selectionFilter_)
         {
             auto seRaw(se);
@@ -123,7 +143,7 @@ private:
     bool doPreviewSelection_;
     boost::variant<boost::blank, PreviewHighlight> previewHighlight_;
 
-    std::map<SelectedEntity, HighlightingHandle,SelectedEntityCompare> highlights_;
+    std::map<SelectedEntity, HighlightingHandle, SelectedEntityCompare> highlights_;
 
     SelectionFilterFunction selectionFilter_;
 
@@ -166,52 +186,24 @@ public:
         Qt::KeyboardModifiers nFlags,
         const QPoint point ) override
     {
-        auto selectedEntities = findEntitiesUnderCursorFiltered(point);
-
-        if (selectedEntities.size()>0)
+        if (!nextSelectionCandidates_)
         {
-            previewHighlight_ = boost::blank();
-            nextSelectionCandidates_=
-                std::make_shared<SelectionCandidates>
-                (*this, selectedEntities);
-            return true;
+            auto selectedEntities = findEntitiesUnderCursorFiltered(point);
+
+            if (selectedEntities.size()>0)
+            {
+                previewHighlight_ = boost::blank();
+                nextSelectionCandidates_=
+                    std::make_shared<SelectionCandidates>
+                    (*this, selectedEntities);
+                return true;
+            }
         }
 
         return Base::onLeftButtonDown(nFlags, point);
     }
 
 
-    void onMouseMove(
-            Qt::MouseButtons buttons,
-            const QPoint point,
-            Qt::KeyboardModifiers curFlags
-        ) override
-    {
-        if (!nextSelectionCandidates_ && doPreviewSelection_)
-        {
-            auto euc = findEntitiesUnderCursorFiltered(point);
-            if (euc.size()>0)
-            {
-                if (auto *ph = boost::get<PreviewHighlight>(&previewHighlight_))
-                {
-                    if ( !SelectedEntityCompare()(ph->first, euc[0])
-                         &&
-                         !SelectedEntityCompare()(euc[0], ph->first) )
-                    {
-                        // nothing to do
-                        return;
-                    }
-                }
-                previewHighlight_ = std::make_pair(euc[0], highlightEntity(euc[0], candidateColor));
-                newPreviewEntity(euc[0]);
-                return;
-            }
-        }
-
-        previewHighlight_ = boost::blank();
-
-        Base::onMouseMove(buttons, point, curFlags);
-    }
 
     bool onKeyPress(
         Qt::KeyboardModifiers modifiers,
@@ -249,14 +241,15 @@ public:
                     multiSelectionContainerFactory_();
             }
 
-            auto selcand = nextSelectionCandidates_->selected();
+            auto selcand = nextSelectionCandidates_->selected(true);
             nextSelectionCandidates_.reset();
 
             if (currentSelection_->count(selcand)<1)
             {
-
                 currentSelection_->insert(selcand);
-                highlights_[selcand]=highlightEntity(selcand, selectionColor);
+
+                if (highlights_.count(selcand)<1)
+                    highlights_[selcand]=highlightEntity(selcand, selectionColor);
 
                 entitySelected(selcand); // last, because current obj might be deleted
             }
@@ -274,6 +267,55 @@ public:
         }
         return Base::onLeftButtonUp(nFlags, point);
     }
+
+
+
+
+    void onMouseMove(
+            Qt::MouseButtons buttons,
+            const QPoint point,
+            Qt::KeyboardModifiers curFlags
+        ) override
+    {
+        if (!(buttons&Qt::LeftButton)
+            && !nextSelectionCandidates_
+            && doPreviewSelection_
+            )
+        {
+            auto euc = findEntitiesUnderCursorFiltered(point);
+            if (euc.size()>0)
+            {
+                if (auto *ph = boost::get<PreviewHighlight>(&previewHighlight_))
+                {
+                    if ( !SelectedEntityCompare()(ph->first, euc[0])
+                         &&
+                         !SelectedEntityCompare()(euc[0], ph->first) )
+                    {
+                        // already in preview highlight, nothing to do
+                        return;
+                    }
+                }
+
+                previewHighlight_ = boost::blank();
+                previewHighlight_ = std::make_pair(euc[0], highlightEntity(euc[0], candidateColor));
+
+                newPreviewEntity(euc[0]);
+
+                return;
+            }
+        }
+
+        previewHighlight_ = boost::blank();
+
+        Base::onMouseMove(buttons, point, curFlags);
+    }
+
+
+
+
+
+
+
 
     void onMouseLeavesViewer() override
     {
@@ -305,7 +347,7 @@ public:
 
     SelectedEntity currentSelectionCandidate() const
     {
-        return nextSelectionCandidates_->selected();
+        return nextSelectionCandidates_->selected(false);
     }
 
     bool somethingSelected() const

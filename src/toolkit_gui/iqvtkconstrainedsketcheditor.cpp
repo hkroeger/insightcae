@@ -290,7 +290,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 {
                     for (auto &sele: selact->currentSelection())
                     {
-                        auto sg = sele.first.lock();
+                        auto sg = sele.lock();
                         if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
                         {
                             auto lc = IQVTKHorizontalConstraint::create( l );
@@ -313,7 +313,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 {
                     for (auto &sele: selact->currentSelection())
                     {
-                        auto sg = sele.first.lock();
+                        auto sg = sele.lock();
                         if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
                         {
                             auto lc = IQVTKVerticalConstraint::create( l );
@@ -343,7 +343,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             selact->currentSelection().size()==1,
                             "exactly one entity should be selected!");
 
-                        auto sg = sele.first.lock();
+                        auto sg = sele.lock();
                         if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
                         {
                             auto c = IQVTKFixedPoint::create( p );
@@ -370,7 +370,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
                     for (auto &sele: selact->currentSelection())
                     {
-                        auto sg = sele.first.lock();
+                        auto sg = sele.lock();
                         if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
                         {
                             curve=l;
@@ -406,8 +406,8 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                     if (selact->currentSelection().size()==2)
                     {
                         auto si=selact->currentSelection().begin();
-                        p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(    si ->first.lock() );
-                        p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>( (++si)->first.lock() );
+                        p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(    si ->lock() );
+                        p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>( (++si)->lock() );
                     }
 
                     insight::assertion(
@@ -438,13 +438,13 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
                     auto p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
                                     selact->currentSelection().begin()
-                                        ->first.lock());
+                                        ->lock());
                     insight::assertion(
                         bool(p1), "one entity is not a point!");
 
                     auto p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(
                         (++selact->currentSelection().begin())
-                            ->first.lock());
+                            ->lock());
                     insight::assertion(
                         bool(p2), "one entity is not a point!");
 
@@ -661,7 +661,7 @@ bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifier
             {
                 std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > tbd;
                 for (auto& s: selact->currentSelection())
-                    tbd.push_back(s.first);
+                    tbd.push_back(s);
                 selact->clearSelection();
                 for (auto& td: tbd)
                 {

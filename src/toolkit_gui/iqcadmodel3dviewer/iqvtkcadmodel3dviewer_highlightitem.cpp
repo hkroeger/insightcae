@@ -166,7 +166,6 @@ IQVTKCADModel3DViewer::LinewidthHighlighter::LinewidthHighlighter(
     QColor hicol )
     : IQVTKViewerState(viewer), actor_(actorToHighlight)
 {
-    insight::dbg()<<"LinewidthHighlighter created"<<std::endl;
 
     oldLineWidth_=actor_->GetProperty()->GetLineWidth();
     actor_->GetProperty()->GetColor(oldColor_);
@@ -175,6 +174,8 @@ IQVTKCADModel3DViewer::LinewidthHighlighter::LinewidthHighlighter(
     actor_->GetProperty()->SetColor(
         hicol.redF(), hicol.greenF(), hicol.blueF() );
 
+    insight::dbg()<<"LinewidthHighlighter created lw="<<(oldLineWidth_+2)<<" for actor "<<actor_<<std::endl;
+
     viewer_.scheduleRedraw();
 }
 
@@ -182,9 +183,10 @@ IQVTKCADModel3DViewer::LinewidthHighlighter::~LinewidthHighlighter()
 {
     actor_->GetProperty()->SetLineWidth(oldLineWidth_);
     actor_->GetProperty()->SetColor(oldColor_);
+
     viewer_.scheduleRedraw();
 
-    insight::dbg()<<"LinewidthHighlighter removed"<<std::endl;
+    insight::dbg()<<"LinewidthHighlighter removed, restore lw="<<oldLineWidth_<<" for actor "<<actor_<<std::endl;
 }
 
 

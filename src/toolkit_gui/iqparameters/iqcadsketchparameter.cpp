@@ -110,23 +110,39 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
                     auto &selp = seps.get<insight::SelectableSubsetParameter>("type");
                     if (selp.selection()=="wall")
                     {
-                        actprops->SetColor(0,0,0);
+                        auto c = QColorConstants::Black;
+                        actprops->SetColor(
+                            c.redF(),
+                            c.greenF(),
+                            c.blueF() );
                         actprops->SetLineWidth(3);
                     }
                     else if (selp.selection()=="window")
                     {
-                        actprops->SetColor(1,1,0);
+                        auto c = QColorConstants::DarkYellow;
+                        actprops->SetColor(
+                            c.redF(),
+                            c.greenF(),
+                            c.blueF() );
                         actprops->SetLineWidth(4);
                     }
                     else if (selp.selection()=="door")
                     {
-                        actprops->SetColor(0,1,0);
+                        auto c = QColorConstants::DarkMagenta;
+                        actprops->SetColor(
+                            c.redF(),
+                            c.greenF(),
+                            c.blueF() );
                         actprops->SetLineWidth(4);
                     }
                 }
                 else
                 {
-                    actprops->SetColor(1,0,0);
+                    auto c = QColorConstants::DarkCyan;
+                    actprops->SetColor(
+                        c.redF(),
+                        c.greenF(),
+                        c.blueF() );
                     actprops->SetLineWidth(2);
                 }
             },

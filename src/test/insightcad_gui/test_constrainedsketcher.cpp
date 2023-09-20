@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
             m.model()->lookupDatum("XY")
         );
 
+
     QObject::connect(ska, &QAction::triggered, ska,
         [&]()
         {
@@ -47,7 +48,11 @@ int main(int argc, char *argv[])
                 insight::ParameterSet(),
                 [](const insight::ParameterSet&, vtkProperty* actprops)
                 {
-                    actprops->SetColor(1,0,0);
+                    auto sec = QColorConstants::DarkCyan;
+                    actprops->SetColor(
+                        sec.redF(),
+                        sec.greenF(),
+                        sec.blueF() );
                     actprops->SetLineWidth(2);
                 },
                 [](){

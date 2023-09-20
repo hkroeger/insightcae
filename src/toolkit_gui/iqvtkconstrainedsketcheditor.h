@@ -30,6 +30,8 @@ public:
         std::set<vtkSmartPointer<vtkProp> >
         ActorSet;
 
+    friend class SketchEntityMultiSelection;
+    friend class IQVTKSelectConstrainedSketchEntity;
 
 private:
     typedef
@@ -42,9 +44,6 @@ private:
 
     SketchGeometryActorMap sketchGeometryActors_;
 
-    void add(insight::cad::ConstrainedSketchEntityPtr);
-    void remove(insight::cad::ConstrainedSketchEntityPtr);
-
     insight::ParameterSet defaultGeometryParameters_;
 
     QToolBar *toolBar_;
@@ -52,16 +51,8 @@ private:
     QToolBox *toolBox_;
 
 
-    friend class SketchEntityMultiSelection;
-    friend class IQVTKSelectConstrainedSketchEntity;
-
-//    std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
-//    findEntitiesUnderCursor(const QPoint& point) const;
-
-//    IQVTKCADModel3DViewer::HighlightingHandleSet highlightEntity(
-//        std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity,
-//        QColor hicol
-//        ) const;
+    void add(insight::cad::ConstrainedSketchEntityPtr);
+    void remove(insight::cad::ConstrainedSketchEntityPtr);
 
     bool defaultSelectionActionRunning();
 

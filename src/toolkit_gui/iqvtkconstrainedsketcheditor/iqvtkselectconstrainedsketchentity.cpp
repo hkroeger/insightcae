@@ -5,14 +5,17 @@
 
 #include <QVBoxLayout>
 
-SketchEntityMultiSelection::SketchEntityMultiSelection
-    ( IQVTKConstrainedSketchEditor &editor )
-    : editor_(editor)
+
+
+
+void SketchEntityMultiSelection::showParameterEditor()
 {
     auto spe = new QWidget;
+    tbi_=editor_.toolBox_->addItem(spe, "Selection properties");
+    editor_.toolBox_->setCurrentIndex(tbi_);
+
     auto lo = new QVBoxLayout;
     spe->setLayout(lo);
-    tbi_=editor_.toolBox_->addItem(spe, "Selection properties");
 
     auto tree=new QTreeView;
     lo->addWidget(tree);
@@ -20,14 +23,13 @@ SketchEntityMultiSelection::SketchEntityMultiSelection
     lo->addWidget(editControls);
     pe_ = new ParameterEditorWidget(spe, tree, editControls);
 
-    editor_.toolBox_->setCurrentIndex(tbi_);
 
     connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
             [this]()
             {
                 for (auto& ee: *this)
                 {
-                    auto e = ee.first.lock();
+                    auto e = ee.lock();
                     e->parametersRef().merge(
                         pe_->model()->getParameterSet(),
                         false
@@ -35,7 +37,27 @@ SketchEntityMultiSelection::SketchEntityMultiSelection
                 }
             }
             );
+}
 
+void SketchEntityMultiSelection::removeParameterEditor()
+{
+    if (pe_)
+    {
+        editor_.toolBox_->removeItem(tbi_);
+        pe_=nullptr;
+        tbi_=-1;
+    }
+}
+
+
+
+
+SketchEntityMultiSelection::SketchEntityMultiSelection
+    ( IQVTKConstrainedSketchEditor &editor )
+: editor_(editor),
+  pe_(nullptr),
+  tbi_(-1)
+{
 }
 
 
@@ -43,7 +65,7 @@ SketchEntityMultiSelection::SketchEntityMultiSelection
 
 SketchEntityMultiSelection::~SketchEntityMultiSelection()
 {
-    editor_.toolBox_->removeItem(tbi_);
+    removeParameterEditor();
 }
 
 
@@ -52,29 +74,16 @@ SketchEntityMultiSelection::~SketchEntityMultiSelection()
 void SketchEntityMultiSelection::insert(
     std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity)
 {
-    if (!isInSelection(entity.lock().get())) // don't add multiple times
+    if (count(entity)<1) // don't add multiple times
     {
 
-        auto i=std::find_if(
-            editor_.sketchGeometryActors_.begin(),
-            editor_.sketchGeometryActors_.end(),
-            [&entity]( const decltype(editor_.sketchGeometryActors_)::value_type& p2 )
-            {
-                return
-                    !entity.owner_before(p2.first)
-                    && !p2.first.owner_before(entity);
-            }
-            );
+        auto i = editor_.sketchGeometryActors_.find(
+            entity.lock() );
 
         if (i!=editor_.sketchGeometryActors_.end())
         {
-            mapped_type hl;
-            auto actors = i->second;
-            for(auto &a: actors)
-            {
-                hl.insert(editor_.viewer().highlightActor(a));
-            }
-            SketchEntityMultiSelectionMap::insert({entity, hl});
+
+            SketchEntityMultiSelectionSet::insert(entity);
 
             auto lentity=entity.lock();
 
@@ -93,10 +102,15 @@ void SketchEntityMultiSelection::insert(
                     defaultCommonParameters_.intersection(lentity->defaultParameters());
             }
 
-            if (size()>0)
+            if ( size()>0 && commonParameters_.size()>0 )
             {
+                if (!pe_) showParameterEditor();
                 pe_->clearParameterSet();
                 pe_->resetParameterSet(commonParameters_, defaultCommonParameters_);
+            }
+            else
+            {
+                removeParameterEditor();
             }
         }
     }
@@ -107,23 +121,10 @@ void SketchEntityMultiSelection::insert(
 
 void SketchEntityMultiSelection::erase(std::weak_ptr<insight::cad::ConstrainedSketchEntity> entity)
 {
-    SketchEntityMultiSelectionMap::erase(entity);
+    SketchEntityMultiSelectionSet::erase(entity);
 }
 
 
-
-
-bool SketchEntityMultiSelection::isInSelection(
-    const insight::cad::ConstrainedSketchEntity* entity)
-{
-    for (auto& sel: *this)
-    {
-        if (sel.first.lock().get()==entity)
-            return true;
-    }
-
-    return false;
-}
 
 
 std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >

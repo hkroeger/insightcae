@@ -52,7 +52,7 @@ public:
 };
 
 
-std::ostream& dbg();
+std::ostream& dbg(int verbosityLevel = 1);
 
 
 

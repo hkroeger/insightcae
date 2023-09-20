@@ -645,13 +645,16 @@ double Feature::mass(double density_ovr, double aw_ovr) const
   return mtot;
 }
 
+
+
+
 void Feature::checkForBuildDuringAccess() const
 {
   try
   {
     if (!valid())
       {
-        dbg()<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
+        dbg(2)<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
       }
     ASTBase::checkForBuildDuringAccess();
   }
@@ -663,6 +666,9 @@ void Feature::checkForBuildDuringAccess() const
           e.GetMessageString() ? e.GetMessageString() : "(no error message)" );
   }
 }
+
+
+
 
 void Feature::build()
 {

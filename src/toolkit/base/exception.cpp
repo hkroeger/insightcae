@@ -312,20 +312,22 @@ public:
 };
 
 
-std::ostream& dbg()
+std::ostream& dbg(int verbosityLevel)
 {
   static NullBuffer nullBuffer;
   static std::ostream nullOstream(&nullBuffer);
 
   if (getenv("INSIGHT_VERBOSE"))
   {
-    std::cerr<<"[DBG, " << std::this_thread::get_id() <<"]: ";
-    return std::cerr;
+      int vl = atoi(getenv("INSIGHT_VERBOSE"));
+      if (vl>=verbosityLevel)
+      {
+        std::cerr<<"[DBG, " << std::this_thread::get_id() <<"]: ";
+        return std::cerr;
+      }
   }
-  else
-  {
-    return nullOstream;
-  }
+
+  return nullOstream;
 }
 
 

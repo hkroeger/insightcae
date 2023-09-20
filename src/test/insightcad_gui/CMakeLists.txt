@@ -11,3 +11,12 @@ target_link_libraries(test_IQCADItemModel
  )
 linkToolkitVtk(test_IQCADItemModel Offscreen)
 add_test(NAME test_IQCADItemModel COMMAND test_IQCADItemModel)
+
+
+add_executable(test_constrainedsketcher test_constrainedsketcher.cpp)
+target_link_libraries(test_constrainedsketcher
+ insightcad toolkit_gui
+ Qt5::Test
+ )
+linkToolkitVtk(test_constrainedsketcher Onscreen)
+#add_test(NAME test_IQCADItemModel COMMAND test_IQCADItemModel)

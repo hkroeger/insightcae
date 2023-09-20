@@ -184,7 +184,7 @@ void WSLLinuxServer::runRsync
 
   boost::process::ipstream is;
 
-  std::string joinedArgs="rsync";
+  std::string joinedArgs="rsync --info=progress";
   for (const auto& a: args)
   {
     joinedArgs+=" "+escapeShellSymbols(a);
@@ -256,7 +256,6 @@ void WSLLinuxServer::syncToRemote
         {
          "-az",
          "--delete",
-         "--info=progress",
 
 //         "--exclude", "processor*",
          "--exclude", "*.foam",
@@ -305,7 +304,6 @@ void WSLLinuxServer::syncToLocal
     args =
     {
       "-az",
-      "--info=progress",
 //      "--exclude", "processor*",
       "--exclude", "*.foam",
       "--exclude", "*.socket",

@@ -94,11 +94,14 @@ void SSHLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_documen
 
 void SSHLinuxServer::runRsync
 (
-    const std::vector<std::string>& args,
+    const std::vector<std::string>& uargs,
     std::function<void(int,const std::string&)> pf
 )
 {
   assertRunning();
+
+  std::vector<std::string> args(uargs);
+  args.insert(args.begin(), "--info=progress");
 
   RSyncProgressAnalyzer rpa;
   boost::process::child c
@@ -264,7 +267,6 @@ void SSHLinuxServer::syncToRemote
         {
          "-az",
          "--delete",
-         "--info=progress",
 
          "--exclude", "*.foam",
          "--exclude", "postProcessing",
@@ -319,7 +321,6 @@ void SSHLinuxServer::syncToLocal
     args =
     {
       "-az",
-      "--info=progress",
       //"--exclude", "processor*",
       "--exclude", "*.foam",
       "--exclude", "*.socket",

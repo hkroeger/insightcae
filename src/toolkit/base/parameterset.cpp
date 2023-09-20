@@ -329,7 +329,7 @@ Parameter &ParameterSet::getParameter(std::string path)
   int nRemaining=-1;
   std::string parameterName = splitOffFirstParameter(path, nRemaining);
 
-  insight::CurrentExceptionContext ex("looking up parameter "+parameterName, false);
+  insight::CurrentExceptionContext ex(4, "looking up parameter "+parameterName);
 
   auto parameter = find(parameterName);
 

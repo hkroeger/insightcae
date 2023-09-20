@@ -3,14 +3,23 @@
 #include "iqvtkconstrainedsketcheditor.h"
 #include "parametereditorwidget.h"
 
-
+#include <QVBoxLayout>
 
 SketchEntityMultiSelection::SketchEntityMultiSelection
     ( IQVTKConstrainedSketchEditor &editor )
     : editor_(editor)
 {
-    pe_ = new ParameterEditorWidget(editor_.toolBox_);
-    tbi_=editor_.toolBox_->addItem(pe_, "Selection properties");
+    auto spe = new QWidget;
+    auto lo = new QVBoxLayout;
+    spe->setLayout(lo);
+    tbi_=editor_.toolBox_->addItem(spe, "Selection properties");
+
+    auto tree=new QTreeView;
+    lo->addWidget(tree);
+    auto editControls = new QWidget;
+    lo->addWidget(editControls);
+    pe_ = new ParameterEditorWidget(spe, tree, editControls);
+
     editor_.toolBox_->setCurrentIndex(tbi_);
 
     connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,

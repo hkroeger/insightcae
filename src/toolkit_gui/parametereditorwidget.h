@@ -78,6 +78,9 @@ protected:
     insight::ParameterSet_ValidatorPtr vali_;
     std::shared_ptr<insight::CADParameterSetVisualizer> viz_;
 
+    void setup(
+        ParameterSetDisplay* display
+        );
 
 public:
 
@@ -87,6 +90,13 @@ public:
         insight::ParameterSetVisualizerPtr viz = insight::ParameterSetVisualizerPtr(),
         insight::ParameterSet_ValidatorPtr vali = insight::ParameterSet_ValidatorPtr(),
         ParameterSetDisplay* display = nullptr
+    );
+
+    ParameterEditorWidget
+    (
+        QWidget* parent,
+        QTreeView* parameterTreeView,
+        QWidget* contentEditorFrame
     );
 
     /**

@@ -33,6 +33,80 @@ using namespace std;
 
 
 
+
+void ParameterEditorWidget::setup(ParameterSetDisplay* display)
+{
+    insight::CurrentExceptionContext ex("creating parameter set editor");
+
+    parameterTreeView_->setAlternatingRowColors(true);
+    parameterTreeView_->expandAll();
+    parameterTreeView_->resizeColumnToContents(0);
+    parameterTreeView_->resizeColumnToContents(1);
+    parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
+    parameterTreeView_->setDragDropMode(QAbstractItemView::DragDrop);
+    parameterTreeView_->setDefaultDropAction(Qt::MoveAction);
+
+
+
+    QObject::connect(
+        parameterTreeView_, &QTreeView::customContextMenuRequested,
+        [this](const QPoint& p)
+        {
+            model_->contextMenu( parameterTreeView_,
+                                parameterTreeView_->indexAt(p),
+                                p );
+        }
+    );
+
+
+    if (viz_)
+    {
+        insight::CurrentExceptionContext ex("connecting visualizer");
+
+        // there is a visualization generator available
+        connect(
+            viz_.get(), &insight::CADParameterSetVisualizer::updateSupplementedInputData,
+            this, &ParameterEditorWidget::updateSupplementedInputData
+            );
+
+        if (!display)
+        {
+            insight::CurrentExceptionContext ex("building parameter set displayer");
+
+            display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer_, modeltree_);
+
+            // after ParameterSetDisplay constructor!
+            modeltree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+            connect(modeltree_->model(), &QAbstractItemModel::dataChanged,
+                    this, &ParameterEditorWidget::onCADModelDataChanged );
+        }
+        else
+        {
+            // use supplied displayer
+            display_=display;
+        }
+        viz_->setModel(display_->model());
+    }
+    else
+    {
+        display_ = nullptr;
+    }
+
+    QObject::connect( parameterTreeView_, &QTreeView::clicked, parameterTreeView_,
+                     [this](const QModelIndex& index)
+                     {
+                         model_->IQParameterSetModel::handleClick(
+                             index, inputContents_,
+                             display_ ? display_->viewer() : nullptr,
+                             viz_.get() );
+                     }
+                     );
+
+}
+
+
+
+
 ParameterEditorWidget::ParameterEditorWidget
 (
   QWidget *parent,
@@ -45,123 +119,73 @@ ParameterEditorWidget::ParameterEditorWidget
   vali_(vali),
   viz_(std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz))
 {
-  insight::CurrentExceptionContext ex("creating parameter set editor");
 
-
-  {
     QWidget *w=new QWidget(this);
     QVBoxLayout *l=new QVBoxLayout;
     w->setLayout(l);
 
     parameterTreeView_ = new QTreeView(w);
-    parameterTreeView_->setAlternatingRowColors(true);
-    parameterTreeView_->expandAll();
-    parameterTreeView_->resizeColumnToContents(0);
-    parameterTreeView_->resizeColumnToContents(1);
-    parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
-    parameterTreeView_->setDragDropMode(QAbstractItemView::DragDrop);
-    parameterTreeView_->setDefaultDropAction(Qt::MoveAction);
-
     l->addWidget(parameterTreeView_);
-
-
-    QObject::connect(
-          parameterTreeView_, &QTreeView::customContextMenuRequested,
-          [this](const QPoint& p)
-          {
-            model_->contextMenu( parameterTreeView_,
-                                 parameterTreeView_->indexAt(p),
-                                 p );
-          }
-    );
-
-
 
     QLabel *hints=new QLabel(w);
     hints->setStyleSheet("font: 8pt;");
     hints->setText(
-          "Please edit the parameters in the list above.\n"
-          "Yellow background: need to revised for each case.\n"
-          "Light gray: can usually be left on default values."
-          );
+        "Please edit the parameters in the list above.\n"
+        "Yellow background: need to revised for each case.\n"
+        "Light gray: can usually be left on default values."
+        );
     l->addWidget(hints);
     addWidget(w);
-  }
 
-  inputContents_=new QWidget(this);
-  addWidget(inputContents_);
+    inputContents_=new QWidget(this);
+    addWidget(inputContents_);
 
-  if (viz_)
-  {
-    insight::CurrentExceptionContext ex("connecting visualizer");
 
-    // there is a visualization generator available
-    connect(
-          viz_.get(), &insight::CADParameterSetVisualizer::updateSupplementedInputData,
-          this, &ParameterEditorWidget::updateSupplementedInputData
-          );
-
-    if (!display)
+    // no existing displayer supplied; create one
+    viewer_=nullptr;
     {
-      insight::CurrentExceptionContext ex("building parameter set displayer");
+        insight::CurrentExceptionContext ex("creating CAD viewer");
+        viewer_=new CADViewer;
+        viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-      // no existing displayer supplied; create one
-      viewer_=nullptr;
-      {
-          insight::CurrentExceptionContext ex("creating CAD viewer");
-          viewer_=new CADViewer;
-          viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-          addWidget(viewer_);
-      }
-
-      insight::dbg()<<"create model tree"<<std::endl;
-      modeltree_ = new QTreeView(this);
-
-      display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer_, modeltree_);
-
-      // after ParameterSetDisplay constructor!
-      modeltree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
-      connect(modeltree_->model(), &QAbstractItemModel::dataChanged,
-              this, &ParameterEditorWidget::onCADModelDataChanged );
-      addWidget(modeltree_);
+        addWidget(viewer_);
     }
-    else
+
+    insight::dbg()<<"create model tree"<<std::endl;
+    modeltree_ = new QTreeView(this);
+    addWidget(modeltree_);
+
     {
-      // use supplied displayer
-      display_=display;
+        QList<int> l;
+        l << 3300 << 6600;
+        if (viz_ && !display_)
+        {
+            l.append(6600);
+            l.append(0);
+        }
+        setSizes(l);
     }
-    viz_->setModel(display_->model());
-//    viz_->setParameterSetModel(model_);
-  }
-  else
-  {
-    display_ = nullptr;
-  }
 
-  QObject::connect( parameterTreeView_, &QTreeView::clicked, parameterTreeView_,
-           [this](const QModelIndex& index)
-           {
-             model_->IQParameterSetModel::handleClick(
-                         index, inputContents_,
-                         display_ ? display_->viewer() : nullptr,
-                         viz_.get() );
-           }
-  );
-
-  {
-    QList<int> l;
-    l << 3300 << 6600;
-    if (viz_ && !display_)
-    {
-      l.append(6600);
-      l.append(0);
-    }
-    setSizes(l);
-  }
-
+    setup(display);
 }
 
+
+
+ParameterEditorWidget::ParameterEditorWidget
+(
+    QWidget *parent,
+    QTreeView* parameterTreeView,
+    QWidget* contentEditorFrame
+)
+    : QSplitter(Qt::Horizontal, parent),
+    model_(nullptr),
+    vali_(nullptr),
+    viz_(nullptr),
+    parameterTreeView_(parameterTreeView),
+    inputContents_(contentEditorFrame)
+{
+    setup(nullptr);
+}
 
 
 ParameterEditorWidget::ParameterEditorWidget

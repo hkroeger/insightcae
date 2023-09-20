@@ -53,16 +53,15 @@ bool IQVTKCADModel3DViewerPlanePointBasedAction::onLeftButtonDown(
     auto ret = IQVTKSelectConstrainedSketchEntity::onLeftButtonDown(nFlags, point);
     if (!ret)
     {
-        insight::dbg()<<"picked new point position"<<std::endl;
-
         auto p2=viewer().pointInPlane2D(
             sketch().plane()->plane(),
                 viewer().pointInPlane3D(
                     sketch().plane()->plane(), point) );
-
         newPointCreated(
             std::make_shared<SketchPoint>(
                 sketch().plane(), p2(0), p2(1) ) );
+
+        return true;
     }
     return ret;
 }

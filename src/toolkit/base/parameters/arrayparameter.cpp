@@ -217,7 +217,10 @@ void ArrayParameter::clearPackedData()
 
 
 
-rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+rapidxml::xml_node<>* ArrayParameter::appendToNode(
+    const std::string& name,
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath) const
 {
   insight::CurrentExceptionContext ex("appending array "+name+" to node "+node.name());
@@ -234,7 +237,7 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapi
 
 
 
-void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
@@ -250,13 +253,13 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
       std::string name(e->first_attribute("name")->value());
       if (name=="default")
       {
-        defaultValue_->readFromNode( name, doc, *child, inputfilepath );
+        defaultValue_->readFromNode( name, *child, inputfilepath );
       }
       else
       {
         int i=boost::lexical_cast<int>(name);
         ParameterPtr p(defaultValue_->clone());
-        p->readFromNode( name, doc, *child, inputfilepath );
+        p->readFromNode( name, *child, inputfilepath );
 
         readvalues.push_back( decltype(readvalues)::value_type(i, p) );
       }

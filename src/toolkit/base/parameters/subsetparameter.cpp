@@ -98,7 +98,6 @@ rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rap
 
 void SubsetParameter::readFromNode(
     const std::string& name,
-    rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
 {
@@ -106,7 +105,7 @@ void SubsetParameter::readFromNode(
   xml_node<>* child = findNode(node, name, type());
   if (child)
   {
-    ParameterSet::readFromNode(doc, *child, inputfilepath);
+    ParameterSet::readFromNode(*child, inputfilepath);
   }
   else
   {

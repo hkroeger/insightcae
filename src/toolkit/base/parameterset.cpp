@@ -590,13 +590,12 @@ void ParameterSet::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_nod
 }
 
 void ParameterSet::readFromNode(
-    rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
 {
   for( iterator i=begin(); i!= end(); i++)
   {
-    i->second->readFromNode(i->first, doc, node, inputfilepath);
+    i->second->readFromNode(i->first, node, inputfilepath);
   }
 }
 
@@ -726,7 +725,7 @@ std::string ParameterSet::readFromFile(const boost::filesystem::path& file, cons
       }
   }
   
-  readFromNode(doc, *rootnode, file.parent_path());
+  readFromNode(*rootnode, file.parent_path());
   
   return analysisName;
 }

@@ -4,7 +4,7 @@ namespace insight {
 
 defineType ( PropertyLibrarySelectionParameter );
 
-PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter (
+PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
         const std::string& description,
         bool isHidden,
         bool isExpert,
@@ -15,7 +15,22 @@ PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter (
 {
 }
 
-PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter (
+PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
+    const PropertyLibraryBase& lib,
+    const std::string& description,
+    bool isHidden,
+    bool isExpert,
+    bool isNecessary,
+    int order )
+    : StringParameter ( "", description, isHidden, isExpert, isNecessary, order ),
+    propertyLibrary_ ( &lib )
+{
+    auto el = propertyLibrary_->entryList();
+    if (el.size()>0)
+        setSelection(el.front());
+}
+
+PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
         const std::string& value,
         const PropertyLibraryBase& lib,
         const std::string& description,
@@ -26,10 +41,7 @@ PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter (
     : StringParameter ( value, description, isHidden, isExpert, isNecessary, order ),
       propertyLibrary_ ( &lib )
 {
-    insight::assertion(
-                contains(value),
-                "property library does not contain selection "+value+"!\n"
-                " Available values are: "+boost::join(items(), " ") );
+    setSelection(value);
 }
 
 
@@ -57,6 +69,32 @@ bool PropertyLibrarySelectionParameter::contains(const std::string &value) const
     return ( std::find(l.begin(), l.end(), value) != l.end() );
 }
 
+
+void PropertyLibrarySelectionParameter::setSelection ( const std::string& sel )
+{
+    insight::assertion(
+        contains(sel),
+        "property library does not contain selection "+sel+"!\n"
+        " Available values are: "+boost::join(items(), " ") );
+
+    value_=sel;
+}
+
+const std::string& PropertyLibrarySelectionParameter::selection() const
+{
+    return value_;
+}
+
+void PropertyLibrarySelectionParameter::readFromNode(
+    const std::string &name,
+    rapidxml::xml_node<> &node,
+    boost::filesystem::path p )
+{
+    StringParameter::readFromNode(name, node, p);
+    insight::assertion(
+        contains(value_),
+        "invalid selection %s read from input data", value_.c_str() );
+}
 
 
 Parameter* PropertyLibrarySelectionParameter::clone() const

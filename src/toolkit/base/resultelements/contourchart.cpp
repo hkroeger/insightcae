@@ -275,11 +275,10 @@ rapidxml::xml_node<>* PolarContourChart::appendToNode
 void PolarContourChart::readFromNode
     (
         const std::string& name,
-        rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node
     )
 {
-    readBaseAttributesFromNode(name, doc, node);
+    readBaseAttributesFromNode(name, node);
     rlabel_=node.first_attribute("rlabel")->value();
     rmax_=toNumber<double>(node.first_attribute("rmax")->value());
     cblabel_=node.first_attribute("cblabel")->value();

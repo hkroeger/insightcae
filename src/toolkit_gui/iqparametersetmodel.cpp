@@ -290,7 +290,6 @@ bool IQParameterSetModel::dropMimeData(
 
             np->readFromNode(
                 e->first_attribute("name")->value(),
-                doc,
                 *rootnode,
                 ""
                 );
@@ -331,7 +330,6 @@ bool IQParameterSetModel::dropMimeData(
             insight::ParameterPtr np(iqp->parameter().clone());
             np->readFromNode(
                     rootnode->first_node()->first_attribute("name")->value(),
-                    doc,
                     *rootnode,
                     ""
                 );

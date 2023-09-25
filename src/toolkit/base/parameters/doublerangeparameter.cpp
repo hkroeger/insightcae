@@ -113,7 +113,6 @@ rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name
 void DoubleRangeParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_document<>&,
     rapidxml::xml_node<>& node,
     boost::filesystem::path
 )

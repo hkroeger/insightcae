@@ -18,7 +18,6 @@ public:
     bool matchesRegex(const std::string& path) const;
 
     void readFromNode (
-            rapidxml::xml_document<>& doc,
             rapidxml::xml_node<>& node );
 
     /**

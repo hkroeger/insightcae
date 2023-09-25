@@ -168,7 +168,7 @@ void IQSelectableSubsetParameter::populateContextMenu(
 
 
                            // store parameters
-                           iqp.readFromNode(iq->name().toStdString(), doc, *rootnode, "");
+                           iqp.readFromNode(iq->name().toStdString(), *rootnode, "");
 
                            model->notifyParameterChange(index, true);
                        }

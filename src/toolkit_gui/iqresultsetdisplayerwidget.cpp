@@ -235,7 +235,7 @@ void IQResultSetDisplayerWidget::loadFilter()
 
         rapidxml::xml_node<> *rootnode = doc.first_node("root");
         insight::ResultSetFilter rsf;
-        rsf.readFromNode(doc, *rootnode);
+        rsf.readFromNode(*rootnode);
         filterModel_->resetFilter(rsf);
     }
 }

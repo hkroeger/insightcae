@@ -123,9 +123,9 @@ ResultSet::ResultSet ( const std::string& shortdesc, const std::string& longdesc
   : ResultSet( ParameterSet(), shortdesc, longdesc )
 {}
 
-void ResultSet::readFromNode ( const std::string&, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node )
+void ResultSet::readFromNode ( const std::string&, rapidxml::xml_node<>& node )
 {
-  ResultElementCollection::readElementsFromNode(doc, node);
+  ResultElementCollection::readElementsFromNode(node);
 }
 
 
@@ -260,7 +260,7 @@ void ResultSet::readFromString ( const std::string& contents )
   xml_node<> *rootnode = doc.first_node ( "root" );
 
   auto *pn = rootnode->first_node("parameters");
-  p_.readFromNode( doc, *pn, "/" );
+  p_.readFromNode( *pn, "/" );
 
   auto *rn = rootnode->first_node("results");
   title_=rn->first_attribute("title")->value();
@@ -268,7 +268,7 @@ void ResultSet::readFromString ( const std::string& contents )
   date_=rn->first_attribute("date")->value();
   author_=rn->first_attribute("author")->value();
   introduction_=rn->first_attribute("introduction")->value();
-  ResultElementCollection::readElementsFromNode ( doc, *rn );
+  ResultElementCollection::readElementsFromNode ( *rn );
 }
 
 

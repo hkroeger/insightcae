@@ -95,8 +95,10 @@ public:
 
     rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath ) const override;
-    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath ) override;
+    void readFromNode (
+        const std::string& name,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path inputfilepath ) override;
 
     Parameter* clone() const override;
     void reset(const Parameter& p) override;

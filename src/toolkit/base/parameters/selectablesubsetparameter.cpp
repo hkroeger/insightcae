@@ -165,7 +165,6 @@ rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string&
 void SelectableSubsetParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
 {
@@ -180,7 +179,7 @@ void SelectableSubsetParameter::readFromNode
     if (value_.find(selection_)==value_.end())
       throw insight::Exception("Invalid selection key during read of selectableSubset "+name);
 
-    operator()().readFromNode(doc, *child, inputfilepath);
+    operator()().readFromNode(*child, inputfilepath);
   }
   else
   {

@@ -152,8 +152,9 @@ int main(int argc, char *argv[])
 
         ParameterSet parameters = insight::Analysis::defaultParameters(analysisName);
 
-        parameters.readFromNode(doc, *rootnode,
-                                boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path() );
+        parameters.readFromNode(
+            *rootnode,
+            boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path() );
 
         if (vm.count("unpackexternals"))
         {

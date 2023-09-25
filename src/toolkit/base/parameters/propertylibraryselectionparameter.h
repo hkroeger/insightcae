@@ -43,6 +43,14 @@ public:
             bool isNecessary=false, int order=0 );
 
     PropertyLibrarySelectionParameter (
+        const PropertyLibraryBase& lib,
+        const std::string& description,
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
+
+    PropertyLibrarySelectionParameter (
             const std::string& value,
             const PropertyLibraryBase& lib,
             const std::string& description,
@@ -56,16 +64,15 @@ public:
     std::vector<std::string> items() const;
     bool contains(const std::string& value) const;
 
-    inline void setSelection ( const std::string& sel )
-    {
-        value_=sel;
-    }
+    void setSelection ( const std::string& sel );
+    const std::string& selection() const;
 
-    inline const std::string& selection() const
-    {
-        return value_;
-    }
 
+    void readFromNode(
+        const std::string& name,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path
+    ) override;
 
     Parameter* clone() const override;
     void reset(const Parameter& p) override;

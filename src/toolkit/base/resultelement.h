@@ -93,7 +93,6 @@ public:
     void readBaseAttributesFromNode
         (
             const std::string& name,
-            rapidxml::xml_document<>& doc,
             rapidxml::xml_node<>& node
         );
     /**
@@ -102,7 +101,6 @@ public:
     virtual void readFromNode
     (
         const std::string& name,
-        rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node
     );
 

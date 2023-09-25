@@ -99,7 +99,6 @@ public:
     void readFromNode
         (
             const std::string& name,
-            rapidxml::xml_document<>& doc,
             rapidxml::xml_node<>& node
         ) override;
 

@@ -313,9 +313,9 @@ rapidxml::xml_node<>* Chart::appendToNode
     return child;
 }
 
-void Chart::readFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
+void Chart::readFromNode(const string &name, rapidxml::xml_node<> &node)
 {
-  readBaseAttributesFromNode(name, doc, node);
+  readBaseAttributesFromNode(name, node);
   xlabel_=node.first_attribute("xlabel")->value();
   ylabel_=node.first_attribute("ylabel")->value();
   addinit_=node.first_attribute("addinit")->value();

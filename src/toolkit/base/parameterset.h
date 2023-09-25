@@ -212,7 +212,7 @@ public:
 
   virtual void appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
                               boost::filesystem::path inputfilepath ) const;
-  virtual void readFromNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+  virtual void readFromNode ( rapidxml::xml_node<>& node,
                               boost::filesystem::path inputfilepath );
 
 

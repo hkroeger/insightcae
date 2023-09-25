@@ -85,7 +85,7 @@ public:
     /**
      * restore the result elements from the given node
      */
-    virtual void readElementsFromNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node );
+    virtual void readElementsFromNode ( rapidxml::xml_node<>& node );
 
 };
 

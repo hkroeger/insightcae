@@ -125,7 +125,6 @@ rapidxml::xml_node<>* CADSketchParameter::appendToNode
 void CADSketchParameter::readFromNode
     (
         const std::string& name,
-        rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath
         )

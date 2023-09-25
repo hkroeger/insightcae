@@ -86,7 +86,6 @@ rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, 
 void SelectionParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_document<>&,
     rapidxml::xml_node<>& node,
     boost::filesystem::path
 )

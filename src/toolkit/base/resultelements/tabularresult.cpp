@@ -222,9 +222,9 @@ xml_node< char >* TabularResult::appendToNode ( const string& name, xml_document
     return child;
 }
 
-void TabularResult::readFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
+void TabularResult::readFromNode(const string &name, rapidxml::xml_node<> &node)
 {
-  readBaseAttributesFromNode(name, doc, node);
+  readBaseAttributesFromNode(name, node);
 
   auto* heads = node.first_node("headings");
   for (xml_node<> *e = heads->first_node(); e; e = e->next_sibling())

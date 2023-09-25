@@ -607,7 +607,6 @@ void FileContainer::appendToNode
 
 void FileContainer::readFromNode
 (
-  rapidxml::xml_document<> &doc,
   rapidxml::xml_node<>& node,
   boost::filesystem::path inputfilepath,
   const std::string& fileNameAttribName,
@@ -615,7 +614,7 @@ void FileContainer::readFromNode
 )
 {
   using namespace rapidxml;
-  boost::filesystem::path abspath(node.first_attribute(doc.allocate_string(fileNameAttribName.c_str()))->value());
+  boost::filesystem::path abspath(node.first_attribute(fileNameAttribName.c_str())->value());
 
   if (!abspath.empty())
   {
@@ -633,7 +632,7 @@ void FileContainer::readFromNode
 
   originalFilePath_=abspath;
 
-  if (auto* a = node.first_attribute(doc.allocate_string(contentAttribName.c_str())))
+  if (auto* a = node.first_attribute(contentAttribName.c_str()))
   {
     base64_decode(a->value(), a->value_size(), file_content_);
     clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);

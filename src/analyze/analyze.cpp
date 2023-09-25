@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
 
         ParameterSet parameters = insight::Analysis::defaultParameters(analysisName);
         
-        parameters.readFromNode(doc, *rootnode, inputFileParentPath );
+        parameters.readFromNode( *rootnode, inputFileParentPath );
 
         if (vm.count("merge"))
         {

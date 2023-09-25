@@ -108,7 +108,6 @@ rapidxml::xml_node< char >* MatrixParameter::appendToNode
 void MatrixParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_document< char >&,
     rapidxml::xml_node< char >& node,
     boost::filesystem::path
 )

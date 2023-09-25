@@ -250,7 +250,7 @@ void CaseConfigurationModel::readFromNode(
     auto* ice = new InsertedCaseElement(
           type_name, mv
           );
-    ice->parameters().readFromNode(doc, *e, fileParentPath);
+    ice->parameters().readFromNode(*e, fileParentPath);
 
     addCaseElement( ice );
   }

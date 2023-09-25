@@ -36,7 +36,7 @@ Patch::Patch(rapidxml::xml_document<>& doc,
   if (type_name_!="")
   {
       set_bc_type(type_name_);
-      curp_.readFromNode(doc, node, inputfilepath);
+      curp_.readFromNode(node, inputfilepath);
   }
 }
 

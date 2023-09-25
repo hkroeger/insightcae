@@ -69,12 +69,12 @@ void ResultSection::exportDataToFile ( const string& name, const path& outputdir
     }
 }
 
-void ResultSection::readFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
+void ResultSection::readFromNode(const string &name, rapidxml::xml_node<> &node)
 {
-  readBaseAttributesFromNode(name, doc, node);
+  readBaseAttributesFromNode(name, node);
   sectionName_=node.first_attribute("sectionName")->value();
   introduction_=node.first_attribute("introduction")->value();
-  ResultElementCollection::readElementsFromNode(doc, node);
+  ResultElementCollection::readElementsFromNode(node);
 }
 
 xml_node< char >* ResultSection::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const

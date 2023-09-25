@@ -98,10 +98,11 @@ void AttributeTableResult::exportDataToFile ( const string& name, const path& ou
 
 
 
-void AttributeTableResult::readFromNode(const string &name, rapidxml::xml_document<> &doc,
-                                        rapidxml::xml_node<> &node)
+void AttributeTableResult::readFromNode(
+    const string &name,
+    rapidxml::xml_node<> &node )
 {
-  readBaseAttributesFromNode(name, doc, node);
+  readBaseAttributesFromNode(name, node);
   if (auto *vct = node.first_attribute("valueColumnTitle"))
   {
       valueColumnTitle_=SimpleLatex(vct->value());

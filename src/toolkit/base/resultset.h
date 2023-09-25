@@ -91,7 +91,7 @@ public:
     /**
      * restore the result elements from the given node
      */
-    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node ) override;
+    void readFromNode ( const std::string& name, rapidxml::xml_node<>& node ) override;
     /* =======================================================================================================*/
     /* =======================================================================================================*/
     /* =======================================================================================================*/

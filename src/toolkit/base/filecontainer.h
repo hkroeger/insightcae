@@ -180,7 +180,6 @@ public:
       const std::string& contentAttribName = "content" ) const;
 
   void readFromNode (
-      rapidxml::xml_document<> &doc,
       rapidxml::xml_node<>& node,
       boost::filesystem::path inputfilepath,
       const std::string& fileNameAttribName = "value",

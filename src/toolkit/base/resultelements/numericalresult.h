@@ -67,11 +67,10 @@ public:
     void readFromNode
     (
         const std::string& name,
-        rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node
     ) override
     {
-       readBaseAttributesFromNode(name, doc, node);
+       readBaseAttributesFromNode(name, node);
        using namespace rapidxml;
 //      xml_node<>* child = findNode ( node, name, type() );
 //      if ( child ) {

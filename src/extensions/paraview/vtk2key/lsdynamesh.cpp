@@ -58,12 +58,35 @@ void LSDynaMesh::findNodesOfPart(std::set<int>& nodeSet, int part_id) const
     }
 }
 
+void LSDynaMesh::findShellsOfPart(std::set<int> &shellSet, int part_id) const
+{
+    insight::assertion(
+        elementsAreNumbered,
+        "Elements must have been numbered!" );
+
+    for (const auto& e: tris_)
+    {
+        if (e.part_id==part_id)
+            shellSet.insert(e.idx);
+    }
+    for (const auto& e: quads_)
+    {
+        if (e.part_id==part_id)
+            shellSet.insert(e.idx);
+    }
+}
+
 
 
 
 LSDynaMesh::IdSet& LSDynaMesh::nodeSet(int setId)
 {
     return nodeSets_[setId];
+}
+
+LSDynaMesh::IdSet &LSDynaMesh::shellSet(int setId)
+{
+    return shellSets_[setId];
 }
 
 
@@ -91,10 +114,84 @@ vtkIdType LSDynaMesh::maxNodeId() const
         return (--nodes_.end())->first;
 }
 
+
+void LSDynaMesh::numberElements(
+    const std::set<int>& parts2Skip
+    )
+{
+    int ei=1;
+    numberElements(ei, tris_, parts2Skip);
+    numberElements(ei, quads_, parts2Skip);
+    numberElements(ei, tets_, parts2Skip);
+    elementsAreNumbered=true;
+}
+
+int LSDynaMesh::maxElementIdx() const
+{
+    insight::assertion(
+        elementsAreNumbered,
+        "Elements must have been numbered!" );
+
+    auto le = std::find_if
+    (
+        tets_.rbegin(), tets_.rend(),
+        [](const decltype(tets_)::value_type& e)
+        {
+            return e.idx>=0;
+        }
+    );
+    if (le!=tets_.rend())
+    {
+        return le->idx;
+    }
+    else
+    {
+        auto le = std::find_if
+            (
+                quads_.rbegin(), quads_.rend(),
+                [](const decltype(quads_)::value_type& e)
+                {
+                    return e.idx>=0;
+                }
+                );
+        if (le!=quads_.rend())
+        {
+            return le->idx;
+        }
+        else
+        {
+            auto le = std::find_if
+                (
+                    tris_.rbegin(), tris_.rend(),
+                    [](const decltype(tris_)::value_type& e)
+                    {
+                        return e.idx>=0;
+                    }
+                    );
+            if (le!=tris_.rend())
+            {
+                return le->idx;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+    }
+}
+
+void LSDynaMesh::getCellCenters(vtkPoints *ctrs) const
+{
+    ctrs->SetNumberOfPoints(maxElementIdx());
+    insertElementCenters(ctrs, tris_);
+    insertElementCenters(ctrs, quads_);
+    insertElementCenters(ctrs, tets_);
+}
+
+
+
 void LSDynaMesh::write(
-    std::ostream& of,
-    const std::set<int>& parts2Skip,
-    const std::set<int>& parts2ElementGroup ) const
+    std::ostream& of ) const
 {
     of<<"*NODE\n";
     for (const auto& n: nodes_)
@@ -102,13 +199,11 @@ void LSDynaMesh::write(
         of<<n.first<<", "<<n.second[0]<<", "<<n.second[1]<<", "<<n.second[2]<<"\n";
     }
 
-    std::map<int,std::set<int> > shellIDsPerPart;
-
     int ei=1;
     {
         std::ostringstream os;
-        writeElementList(os, ei, tris_, parts2Skip, ", ", &shellIDsPerPart);
-        writeElementList(os, ei, quads_, parts2Skip, ", ", &shellIDsPerPart);
+        writeElementList(os, tris_, ", ");
+        writeElementList(os, quads_, ", ");
 
         if (!os.str().empty())
         {
@@ -119,7 +214,7 @@ void LSDynaMesh::write(
 
     {
         std::ostringstream os;
-        writeElementList(os, ei, tets_, parts2Skip, "\n");
+        writeElementList(os, tets_, "\n");
         if (!os.str().empty())
         {
             of<<"*ELEMENT_SOLID\n";
@@ -129,15 +224,19 @@ void LSDynaMesh::write(
 
     for (const auto& ns: nodeSets_)
     {
-        of<<"*SET_NODE\n"<<ns.first<<"\n";
-        ns.second.writeIds(of);
-    }
-    for (const auto& ns: shellIDsPerPart)
-    {
-        if (parts2ElementGroup.count(ns.first)>0)
+        if (ns.second.size())
         {
-            of<<"*SET_SHELL\n"<<ns.first<<"\n";
-            writeList(of, ns.second, 8);
+            of<<"*SET_NODE\n"<<ns.first<<"\n";
+            ns.second.writeIds(of);
+        }
+    }
+
+    for (const auto& ss: shellSets_)
+    {
+        if (ss.second.size())
+        {
+            of<<"*SET_SHELL\n"<<ss.first<<"\n";
+            writeList(of, ss.second, 8);
         }
     }
 

@@ -32,6 +32,10 @@
 
 #include "vtkGenericDataObjectReader.h"
 #include "vtkCellData.h"
+#include "vtkSTLReader.h"
+#include "vtkSelectEnclosedPoints.h"
+#include "vtkPointData.h"
+
 
 using namespace insight;
 
@@ -57,6 +61,7 @@ int main(int argc, char *argv[])
             ("help,h", _("produce help message"))
             ("version,r", _("print version and exit"))
             ("part2set,p", po::value< StringList >(), _("<part id:set id>. part id to be converted to set (both a node set and a shell/solid set will be created)."))
+            ("stl2set,s", po::value< StringList >(), _("<STl file path:set id>. elements and nodes inside given STL will be added to set (both a node set and a shell/solid set will be created)."))
             ("skip", po::value< StringList >(), _("A list (comma separated) of parts to be skipped when writing output"))
             ("input-file,f", po::value< StringList >(), _("Specifies input file and the part ID for all its elements (separated yby colon)"))
             ("output-file,o", po::value< std::string >(), _("Specifies output file."))
@@ -113,6 +118,31 @@ int main(int argc, char *argv[])
         {
             cerr << _("exactly one output file name has to be given!") << endl;
             exit(-1);
+        }
+
+        std::map<int,std::pair<vtkSmartPointer<vtkPolyData>,int> > stl2Group;
+        for ( const auto& arg: vm["stl2set"].as<StringList>())
+        {
+            std::vector<std::string> path_setId_maskPartId;
+            boost::split(path_setId_maskPartId, arg, boost::is_any_of(":"));
+            insight::assertion(path_setId_maskPartId.size()>=2 && path_setId_maskPartId.size()<=3,
+                               "expected 'path:setId[:maskId]', got %s", arg.c_str());
+
+            boost::filesystem::path stlfn(path_setId_maskPartId[0]);
+            int setId=toNumber<int>(path_setId_maskPartId[1]);
+            int maskPartId = -1;
+            if (path_setId_maskPartId.size()>2)
+                maskPartId=toNumber<int>(path_setId_maskPartId[2]);
+
+            insight::assertion(
+                boost::filesystem::exists(stlfn),
+                "STL file %s does not exist!", stlfn.c_str() );
+
+            auto sr=vtkSmartPointer<vtkSTLReader>::New();
+            sr->SetFileName(stlfn.string().c_str());
+            sr->Update();
+
+            stl2Group[setId]=std::make_pair(sr->GetOutput(), maskPartId);
         }
 
         boost::filesystem::path outfn( vm["output-file"].as<std::string>() );
@@ -211,9 +241,8 @@ int main(int argc, char *argv[])
 
         }
 
-        tmesh.printStatistics(std::cout);
+        tmesh.numberElements(tbSkipped);
 
-        std::set<int> parts2ElementGroup;
         for ( const auto& arg: vm["part2set"].as<StringList>())
         {
             std::vector<std::string> partId_setId;
@@ -223,13 +252,54 @@ int main(int argc, char *argv[])
             int partId=toNumber<int>(partId_setId[0]);
             int setId=toNumber<int>(partId_setId[1]);
 
-            parts2ElementGroup.insert(partId);
             tmesh.findNodesOfPart( tmesh.nodeSet(setId), partId );
+            tmesh.findShellsOfPart( tmesh.shellSet(setId), partId );
         }
 
+        if (stl2Group.size())
+        {
+            auto ctrs = vtkSmartPointer<vtkPoints>::New();
+            tmesh.getCellCenters(ctrs);
+            auto ctrpd = vtkSmartPointer<vtkPolyData>::New();
+            ctrpd->SetPoints(ctrs);
+
+
+            for ( const auto& setid_stl: stl2Group)
+            {
+#warning need to distinguish shells and vol elems
+                auto& set = tmesh.shellSet(setid_stl.first);
+                LSDynaMesh::IdSet *maskElementSet=nullptr;
+                if (setid_stl.second.second>=0)
+                    maskElementSet=&tmesh.shellSet(setid_stl.second.second);
+
+                auto sep = vtkSmartPointer<vtkSelectEnclosedPoints>::New();
+                sep->SetInputData(ctrpd);
+                sep->SetSurfaceData(setid_stl.second.first);
+                sep->Update();
+
+                auto sp = sep->GetOutput()->GetPointData()->GetArray("SelectedPoints");
+                for (vtkIdType i=0; i<sp->GetNumberOfTuples(); ++i)
+                {
+                    if (sp->GetTuple1(i))
+                    {
+                        // is inside
+                        int elemId=i+1;
+
+                        if (maskElementSet)
+                        {
+                            // only add, if is in masking set
+                            if (maskElementSet->count(elemId)<1) continue;
+                        }
+                        set.insert(elemId);
+                    }
+                }
+            }
+        }
+
+        tmesh.printStatistics(std::cout);
 
         std::ofstream of(outfn.string());
-        tmesh.write(of, tbSkipped, parts2ElementGroup);
+        tmesh.write(of);
     }
     catch (std::exception& ex)
     {

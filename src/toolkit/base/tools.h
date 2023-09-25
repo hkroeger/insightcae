@@ -266,7 +266,7 @@ class SharedPathList
 public:
   static SharedPathList& global();
 
-  boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
+  boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file, bool* found=nullptr);
   
   void insertIfNotPresent(const boost::filesystem::path& sp);
 

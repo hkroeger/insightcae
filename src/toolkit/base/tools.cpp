@@ -452,8 +452,9 @@ SharedPathList &SharedPathList::global()
 
 
 
-path SharedPathList::getSharedFilePath(const path& file)
+path SharedPathList::getSharedFilePath(const path& file, bool* foundPtr)
 {
+  if (foundPtr) *foundPtr=true;
   BOOST_REVERSE_FOREACH( const path& p, *this)
   {
     if (exists(p/file)) 
@@ -461,11 +462,19 @@ path SharedPathList::getSharedFilePath(const path& file)
   }
   
   // nothing found
-  throw insight::Exception(
+  if (foundPtr)
+  {
+    *foundPtr=false;
+    return boost::filesystem::path();
+  }
+  else
+  {
+    throw insight::Exception(
         std::string("Requested shared file ")
          +file.string()
          +" not found either in global nor user shared directories"
         );
+  }
 }
 
 void SharedPathList::insertIfNotPresent(const path& spr)

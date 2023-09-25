@@ -140,17 +140,21 @@ void SelectableSubsetParameterParser::Data::cppWriteSetStatement
 
         std::string seliname=name+"_"+sel_name;
         os<<"if ( ";
-         if (!emptyset) os <<"const "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) )<<"* "<<seliname<<"_static = ";
+        if (!emptyset)
+        {
+            //os <<"const "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) )<<"* "<<seliname<<"_static = ";
+            os <<"const auto* "<<seliname<<"_static = ";
+        }
          os << "boost::get< "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) ) <<" >(&"<< staticname <<")"
          ") {\n";
 
-         os
-            <<varname<<".selection() = \""<<sel_name<<"\";\n";
-         if (!emptyset) {
-              os <<
-              "ParameterSet& "<<seliname<<"_param = "<<varname<<"();\n";
-              pd->cppWriteSetStatement ( os, seliname, seliname+"_param", "(*"+seliname+"_static)", thisscope );
-           }
+         os <<varname<<".selection() = \""<<sel_name<<"\";\n";
+         if (!emptyset)
+         {
+            os <<
+                "ParameterSet& "<<seliname<<"_param = "<<varname<<"();\n";
+            pd->cppWriteSetStatement ( os, seliname, seliname+"_param", "(*"+seliname+"_static)", thisscope );
+         }
         os<<"}"<<endl;
     }
     os<<"}"<<endl;

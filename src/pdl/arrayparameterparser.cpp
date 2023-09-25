@@ -88,9 +88,11 @@ void ArrayParameterParser::Data::cppWriteSetStatement
   os<<"{"<<endl;
   os<<varname<<".appendEmpty();"<<endl;
 
-  os<<value->cppParamType(name+"_default")<<"& "<<varname
+//  os<<value->cppParamType(name+"_default")<<"& "<<varname
+  os<<"auto& "<<varname
     <<"_cur = dynamic_cast< "<< value->cppParamType(name+"_default") <<"& >("<<varname<<"[k]);"<<endl;
-  os<<"const "<<extendtype(thisscope, value->cppTypeName(name+"_default"))<<"& "<<varname<<"_cur_static = "<<staticname<<"[k];"<<endl;
+//  os<<"const "<<extendtype(thisscope, value->cppTypeName(name+"_default"))<<"& "<<varname<<"_cur_static = "<<staticname<<"[k];"<<endl;
+  os<<"const auto& "<<varname<<"_cur_static = "<<staticname<<"[k];"<<endl;
 
   value->cppWriteSetStatement(os, name+"_default", name+"_cur", name+"_cur_static", thisscope);
 
@@ -109,9 +111,11 @@ void ArrayParameterParser::Data::cppWriteGetStatement
   os<<staticname<<".resize("<<varname<<".size());"<<endl;
   os<<"for(int k=0; k<"<<varname<<".size(); k++)"<<endl;
   os<<"{"<<endl;
-  os<<"const "<<value->cppParamType(name+"_default")<<"& "<<varname
+  //os<<"const "<<value->cppParamType(name+"_default")<<"& "<<varname
+  os<<"const auto& "<<varname
     <<"_cur = dynamic_cast<const "<< value->cppParamType(name+"_default") <<"& >("<<varname<<"[k]);"<<endl;
-  os<<extendtype(thisscope, value->cppTypeName(name+"_default"))<<"& "<<varname<<"_cur_static = "<<staticname<<"[k];"<<endl;
+//  os<<extendtype(thisscope, value->cppTypeName(name+"_default"))<<"& "<<varname<<"_cur_static = "<<staticname<<"[k];"<<endl;
+  os<<"auto& "<<varname<<"_cur_static = "<<staticname<<"[k];"<<endl;
 
   value->cppWriteGetStatement(os, name+"_default", name+"_cur", name+"_cur_static", thisscope);
 

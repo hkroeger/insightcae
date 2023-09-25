@@ -82,7 +82,8 @@ PDLParserRuleset::PDLParserRuleset()
     ;
 
   r_pdl_content =
-         -( qi::lit("inherits") >> r_identifier )
+         -( as_string[ lexeme [ "<" >> *~char_(">") >> ">" ] ] )
+      >> -( qi::lit("inherits") >> r_identifier )
       >> -( qi::lit("description") >> r_string )
       >> ( ( qi::lit("skipDefaultParametersMember") >> qi::attr(true) ) | qi::attr(false) )
       >> (r_addcode | qi::attr(std::string()))
@@ -173,20 +174,25 @@ int main ( int argc, char *argv[] )
         throw PDLException("Parsing PDL "+inf.string()+" failed!");
       }
 
+
+      std::string templateArgs="";
+      auto templateArgsP = boost::fusion::get<0>(result_all);
+      if (templateArgsP) templateArgs=*templateArgsP;
+
       std::string default_base_type_name="insight::ParametersBase";
       std::string base_type_name=default_base_type_name;
-      auto inheritParam = boost::fusion::get<0>(result_all);
+      auto inheritParam = boost::fusion::get<1>(result_all);
       if (inheritParam) base_type_name=*inheritParam;
 
       std::string description="";
-      auto descParam = boost::fusion::get<1>(result_all);
+      auto descParam = boost::fusion::get<2>(result_all);
       if (descParam) description=*descParam;
 
-      bool skipDefaultParamMember = boost::fusion::get<2>(result_all);
+      bool skipDefaultParamMember = boost::fusion::get<3>(result_all);
 
-      std::string addTo_makeDefault = boost::fusion::get<3>(result_all);
+      std::string addTo_makeDefault = boost::fusion::get<4>(result_all);
 
-      ParameterSetData result = boost::fusion::get<4>(result_all);
+      ParameterSetData result = boost::fusion::get<5>(result_all);
 
       {
         std::string bname=inf.stem().string();
@@ -217,6 +223,9 @@ int main ( int argc, char *argv[] )
         }
         {
           std::ofstream f ( bname+".h" );
+
+          if (!templateArgs.empty())
+            f<<"template<"<<templateArgs<<">\n";
 
           f<<"struct "<<name<<endl;
           if ( !base_type_name.empty() )
@@ -251,11 +260,7 @@ int main ( int argc, char *argv[] )
           <<"}"<<endl
             ;
 
-//          f<<"virtual ~"<<name<<"()"<<endl;
-//          f<<"{}"<<endl;
-
           //set into other ParameterSet
-//          f<<"virtual void set(insight::ParameterSet& p) const"<<endl
           f<<"void set(insight::ParameterSet& p) const override"<<endl
           <<"{"<<endl;
           if ( !base_type_name.empty() && (base_type_name!=default_base_type_name) )
@@ -266,8 +271,10 @@ int main ( int argc, char *argv[] )
           {
             std::string subname=pe.first;
             f<<"{"<<endl;
-            f<<pe.second->cppParamType ( subname ) <<"& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
-            f<<"const "<<pe.second->cppTypeName ( subname ) <<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
+//            f<<pe.second->cppParamType ( subname ) <<"& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
+            f<<"auto& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
+//            f<<"const "<<pe.second->cppTypeName ( subname ) <<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
+            f<<"const auto& "<<subname<<"_static = this->"<<subname<<";"<<endl;
             pe.second->cppWriteSetStatement
                 (
                   f, subname, subname, subname+"_static", ""
@@ -288,8 +295,10 @@ int main ( int argc, char *argv[] )
           {
             std::string subname=pe.first;
             f<<"{"<<endl;
-            f<<"const "<<pe.second->cppParamType ( subname ) <<"& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
-            f<<pe.second->cppTypeName ( subname ) <<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
+//            f<<"const "<<pe.second->cppParamType ( subname ) <<"& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
+//            f<<pe.second->cppTypeName ( subname ) <<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
+            f<<"const auto& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
+            f<<"auto& "<<subname<<"_static = this->"<<subname<<";"<<endl;
             pe.second->cppWriteGetStatement
                 (
                   f, subname, subname, subname+"_static", ""
@@ -312,7 +321,7 @@ int main ( int argc, char *argv[] )
 
           // create a ParameterSet with default values set
           f<<"static ParameterSet makeDefault() {"<<endl;
-          f<<"ParameterSet p;"<<endl;
+          f<<"insight::ParameterSet p;"<<endl;
           if ( !base_type_name.empty() )
           {
             f<<" p="<<base_type_name<<"::makeDefault();"<<endl;
@@ -333,17 +342,17 @@ int main ( int argc, char *argv[] )
 
           // convert static data into a ParameterSet
           f<<"operator ParameterSet() const override"<<endl;
-          f<<"{ ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
+          f<<"{ insight::ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
 
           // clone function
-          f<<"std::unique_ptr<ParametersBase> clone() const override"<<endl;
+          f<<"std::unique_ptr<insight::ParametersBase> clone() const override"<<endl;
           f<<"{ return std::make_unique<"<<name<<">(*this); }"<<endl;
 
           f<<"};"<<endl;
 
 
           if (!skipDefaultParamMember)
-            f << "static ParameterSet defaultParameters() { return Parameters::makeDefault(); }" << endl;
+            f << "static insight::ParameterSet defaultParameters() { return "<<name<<"::makeDefault(); }" << endl;
         }
       }
     }

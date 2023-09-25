@@ -165,10 +165,12 @@ void SubsetParameterParser::Data::cppWriteSetStatement
     {
         std::string subname=pe.first;
         os<<"{\n";
-        os<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
-        os<<"const "
-          <<extendtype(myscope, pe.second->cppTypeName(subname))
-          <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n";
+//        os<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
+//        os<<"const "
+//          <<extendtype(myscope, pe.second->cppTypeName(subname))
+//          <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n";
+        os<<"auto& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
+        os<<"const auto& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n";
         pe.second->cppWriteSetStatement
         (
             os, subname, subname, subname+"_static", myscope
@@ -191,9 +193,11 @@ void SubsetParameterParser::Data::cppWriteGetStatement
     {
         std::string subname=pe.first;
         os<<"{"<<endl;
-        os<<"const "<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
-        os<<extendtype(myscope, pe.second->cppTypeName(subname))
-          <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n"<<endl;
+//        os<<"const "<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
+//        os<<extendtype(myscope, pe.second->cppTypeName(subname))
+//          <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n"<<endl;
+        os<<"const auto& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
+        os<<"auto& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n"<<endl;
         pe.second->cppWriteGetStatement
         (
             os, subname, subname, subname+"_static", myscope

@@ -44,7 +44,7 @@ public:
     PropertyLibrary(const std::string& libraryName = "")
         : PropertyLibraryBase(libraryName)
     {
-        CurrentExceptionContext ex("reading property library "+libraryName_);
+        CurrentExceptionContext ex("reading property library %s", libraryName_.c_str());
 
         if (libraryName_.empty())
         {
@@ -56,64 +56,84 @@ public:
 
         boost::filesystem::path subDirectory;
         if (subDir) subDirectory = *subDir;
+
+        auto sp=subDirectory / (libraryName_+"Library.xml");
+
+        bool found;
         auto fp =  SharedPathList::global().getSharedFilePath(
-                    subDirectory / (libraryName_+"Library.xml") );
+                    sp, &found );
 
-        bool anythingRead=false;
 
-        // read xml
-        std::string content;
-        readFileIntoString(fp, content);
-
-        using namespace rapidxml;
-        xml_document<> doc;
-
-        try
+        if (!found)
         {
-          doc.parse<0>(&content[0]);
-        }
-        catch (...)
-        {
-          throw insight::Exception("Failed to parse XML from file "+fp.string());
-        }
-
-        if (auto *rootnode = doc.first_node("root"))
-        {
-          for (xml_node<> *e = rootnode->first_node(); e; e = e->next_sibling())
-          {
-            std::string nodeName(e->name());
-            if (nodeName=="entry")
-            {
-                if (auto *l=e->first_attribute("label"))
-                {
-                    std::string label(l->value());
-
-                    if (this->find(label) != this->end())
-                    {
-                        insight::Warning(
-                                    "Replacing previously read entry "+label
-                                    + " in library "+libraryName_
-                                    + " with that from "+fp.string() );
-                    }
-
-                    this->insert(std::make_pair(label, std::make_shared<value_type>(*e)));
-
-                    anythingRead=true;
-                }
-                else
-                {
-                    insight::Warning("Malformed entry node in "+fp.string()+": no label attribute!");
-                }
-            }
-            else
-              insight::Warning("Ignoring unrecognized XML node \""+nodeName+"\" in file "+fp.string());
-          }
+            insight::Warning(
+                "Shared library database file %s not found!"
+                " Please check your installation!"
+                " Library remains empty.",
+                sp.string().c_str() );
         }
         else
-          throw insight::Exception("No valid \"pads\" node found in file \""+fp.string()+"\"!");
+        {
+            CurrentExceptionContext ex("reading property library file %s", sp.string().c_str());
 
-        if (!anythingRead)
-          insight::Warning("Could not any read valid data from "+fp.string());
+            bool anythingRead=false;
+
+            // read xml
+            std::string content;
+            readFileIntoString(fp, content);
+
+            using namespace rapidxml;
+            xml_document<> doc;
+
+            try
+            {
+              doc.parse<0>(&content[0]);
+            }
+            catch (...)
+            {
+              throw insight::Exception("Failed to parse XML from file "+fp.string());
+            }
+
+            if (auto *rootnode = doc.first_node("root"))
+            {
+              for (xml_node<> *e = rootnode->first_node(); e; e = e->next_sibling())
+              {
+                std::string nodeName(e->name());
+                if (nodeName=="entry")
+                {
+                    if (auto *l=e->first_attribute("label"))
+                    {
+                        std::string label(l->value());
+                        insight::CurrentExceptionContext ex("reading library entry "+label);
+
+                        if (this->find(label) != this->end())
+                        {
+                            insight::Warning(
+                                        "Replacing previously read entry "+label
+                                        + " in library "+libraryName_
+                                        + " with that from "+fp.string() );
+                        }
+
+                        this->insert(std::make_pair(label, std::make_shared<value_type>(*e)));
+
+                        anythingRead=true;
+                    }
+                    else
+                    {
+                        insight::Warning("Malformed entry node in "+fp.string()+": no label attribute!");
+                    }
+                }
+                else
+                  insight::Warning("Ignoring unrecognized XML node \""+nodeName+"\" in file "+fp.string());
+              }
+            }
+            else
+              throw insight::Exception("No valid \"pads\" node found in file \""+fp.string()+"\"!");
+
+            if (!anythingRead)
+              insight::Warning("Could not any read valid data from "+fp.string());
+        }
+
     }
 
 public:

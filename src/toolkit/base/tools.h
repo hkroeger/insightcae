@@ -32,6 +32,7 @@ class vtkCellArray;
 #include "boost/process.hpp"
 #include "boost/process/args.hpp"
 #include "base/linearalgebra.h"
+#include "base/outputanalyzer.h"
 
 #include <istream>
 
@@ -441,12 +442,16 @@ struct MemoryInfo
 };
 
 
-class RSyncProgressAnalyzer
-    : public boost::process::ipstream
+class RSyncOutputAnalyzer
+    : public OutputAnalyzer
 {
+  std::function<void(int,const std::string&)> progressFunction_;
+  boost::regex pattern;
+
 public:
-  RSyncProgressAnalyzer();
-  void runAndParse(boost::process::child& rsyncProcess, std::function<void(int,const std::string&)> progressFunction);
+  RSyncOutputAnalyzer(std::function<void(int,const std::string&)> progressFunction);
+//  void runAndParse(boost::process::child& rsyncProcess, std::function<void(int,const std::string&)> progressFunction);
+  void update(const std::string& line) override;
 };
 
 

@@ -5,6 +5,7 @@
 #include <QThread>
 #include <QProgressBar>
 #include <QPointer>
+#include <QHBoxLayout>
 
 #ifndef NO_TERMWIDGET
 #include "qtermwidget/qtermwidget.h"
@@ -86,7 +87,8 @@ class MainWindow
   QTimer *refreshTimer_;
   JobListBuilder* jbl_thread_ = nullptr;
 
-  QProgressBar* progressbar_;
+//  QHBoxLayout* statusBarLayout_;
+//  QProgressBar* progressbar_;
 
   QThread auxJobThread_;
 
@@ -108,7 +110,7 @@ public:
     void remoteWriteAndCopyBack(bool parallel);
 
     void syncLocalToRemote(bool includeProcDirs);
-    void syncRemoteToLocal(bool includeProcDirs);
+    void syncRemoteToLocal(bool includeProcDirs, int autoRestartSeconds=-1);
     void setBWLimit(int bwlimit);
 
 public Q_SLOTS:

@@ -164,10 +164,10 @@ void setSet(
 
   for (const std::string& line: cmds)
   {
-    job->in << line << endl;
+        job->input() << line << endl;
   }
-  job->in << "quit" << endl;
-  job->in.pipe().close();
+  job->input() << "quit" << endl;
+  job->closeInput();
 
   job->runAndTransferOutput();
 

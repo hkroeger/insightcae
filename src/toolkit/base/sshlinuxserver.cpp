@@ -29,25 +29,7 @@ SSHLinuxServer::Config::Config(rapidxml::xml_node<> *e)
      )
 {
   auto* ha = e->first_attribute("host");
-//  auto* lsaa = e->first_attribute("launchScript");
-//  if (ha && lsaa)
-//  {
-//    throw insight::Exception("Invalid configuration of remote server "+label+": either host name or launch script must be specified!");
-//  }
-//  else if (ha)
-  {
-    hostName_=ha->value();
-//    s.hasLaunchScript_=false;
-//    (*this)[label]=s;
-//    anything_read=true;
-  }
-//  else if (lsaa)
-//  {
-//    s.server_=lsaa->value();
-//    s.hasLaunchScript_=true;
-//    (*this)[label]=s;
-//    anything_read=true;
-//  }
+  hostName_=ha->value();
 }
 
 std::shared_ptr<RemoteServer> SSHLinuxServer::Config::getInstanceIfRunning()
@@ -101,16 +83,20 @@ void SSHLinuxServer::runRsync
   assertRunning();
 
   std::vector<std::string> args(uargs);
-  args.insert(args.begin(), "--info=progress");
+  args.insert(args.begin(), "--info=progress2");
 
-  RSyncProgressAnalyzer rpa;
-  boost::process::child c
-      (
-       boost::process::search_path("rsync"),
-       boost::process::args( args ),
-       boost::process::std_out > rpa
-      );
-  rpa.runAndParse(c, pf);
+  RSyncOutputAnalyzer rpa(pf);
+  auto job = std::make_shared<Job>("rsync", args);
+  job->ios_run_with_interruption(&rpa);
+  job->wait();
+//  RSyncProgressAnalyzer rpa;
+//  boost::process::child c
+//      (
+//       boost::process::search_path("rsync"),
+//       boost::process::args( args ),
+//       boost::process::std_out > rpa
+//      );
+//  rpa.runAndParse(c, pf);
 }
 
 

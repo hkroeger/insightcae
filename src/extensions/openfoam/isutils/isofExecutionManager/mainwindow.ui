@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>941</width>
+    <width>1015</width>
     <height>1449</height>
    </rect>
   </property>
@@ -504,7 +504,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>941</width>
+     <width>1015</width>
      <height>25</height>
     </rect>
    </property>
@@ -522,9 +522,11 @@
     </property>
     <addaction name="action_syncLocalToRemote"/>
     <addaction name="action_syncRemoteToLocal"/>
+    <addaction name="actionRemote_Local_restart_periodically"/>
     <addaction name="separator"/>
     <addaction name="action_syncLocalToRemote_includeprocessor"/>
     <addaction name="action_syncRemoteToLocal_includeprocessor"/>
+    <addaction name="actionRemote_Local_incl_proc_dirs_restart_periodically"/>
     <addaction name="separator"/>
     <addaction name="action_setbwlimit"/>
    </widget>
@@ -625,6 +627,16 @@
   <action name="action_setbwlimit">
    <property name="text">
     <string>bwlimit</string>
+   </property>
+  </action>
+  <action name="actionRemote_Local_restart_periodically">
+   <property name="text">
+    <string>Remote =&gt; Local, restart periodically...</string>
+   </property>
+  </action>
+  <action name="actionRemote_Local_incl_proc_dirs_restart_periodically">
+   <property name="text">
+    <string>Remote =&gt; Local (incl. proc. dirs), restart periodically...</string>
    </property>
   </action>
  </widget>

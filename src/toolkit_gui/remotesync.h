@@ -11,17 +11,22 @@
 namespace insight {
 
 
-class TOOLKIT_GUI_EXPORT RunSyncToRemote : public QThread
+class TOOLKIT_GUI_EXPORT RunSyncToRemote
+: public QObject,
+  public boost::thread
 {
   Q_OBJECT
 
   insight::RemoteExecutionConfig& rec_;
   bool includeProcDirs_;
 
-  void run() override;
+//  void run() override;
 
 public:
   RunSyncToRemote(insight::RemoteExecutionConfig& rec, bool includeProcDirs);
+
+  void start();
+  void wait();
 
 Q_SIGNALS:
   void progressValueChanged(int progress);
@@ -32,17 +37,22 @@ Q_SIGNALS:
 
 
 
-class TOOLKIT_GUI_EXPORT RunSyncToLocal : public QThread
+class TOOLKIT_GUI_EXPORT RunSyncToLocal
+: public QObject,
+  public boost::thread
 {
   Q_OBJECT
 
   insight::RemoteExecutionConfig& rec_;
   bool includeProcDirs_;
 
-  void run() override;
+//  void run() override;
 
 public:
   RunSyncToLocal(insight::RemoteExecutionConfig& rec, bool includeProcDirs);
+
+  void start();
+  void wait();
 
 Q_SIGNALS:
   void progressValueChanged(int progress);

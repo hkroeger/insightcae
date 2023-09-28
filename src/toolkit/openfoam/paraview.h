@@ -12,7 +12,7 @@
 namespace insight
 {
 
-class Paraview : public ExternalProcess
+class Paraview : public Job
 {
     const boost::filesystem::path& caseDirectory_, dataDirectory_;
     std::unique_ptr<TemporaryFile> loadScript_;

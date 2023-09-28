@@ -173,7 +173,7 @@ void AnalysisForm::cleanFinishedExternalProcesses()
     std::copy_if(
         rps.begin(), rps.end(),
         std::inserter(externalProcesses_, externalProcesses_.begin()),
-        [](std::shared_ptr<insight::ExternalProcess> rp)
+        [](insight::JobPtr rp)
         {
             return rp && rp->isRunning();
         }

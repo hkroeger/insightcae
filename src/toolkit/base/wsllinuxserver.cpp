@@ -191,21 +191,11 @@ void WSLLinuxServer::runRsync
   }
   auto ca = commandAndArgs(joinedArgs);
 
-  insight::dbg() << ca.first << " " << boost::join(ca.second, " ") << std::endl;
-
   RSyncOutputAnalyzer rpa(pf);
   auto job = std::make_shared<Job>(ca);
   job->ios_run_with_interruption(&rpa);
   job->wait();
 
-//  boost::process::child c
-//  (
-//   ca.first, boost::process::args(ca.second),
-//   boost::process::std_out > rpa,
-//   boost::process::std_err > stderr,
-//   boost::process::std_in < boost::process::null
-//  );
-//  rpa.runAndParse(c, pf);
 }
 
 

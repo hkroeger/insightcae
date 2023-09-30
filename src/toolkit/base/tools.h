@@ -450,7 +450,6 @@ class RSyncOutputAnalyzer
 
 public:
   RSyncOutputAnalyzer(std::function<void(int,const std::string&)> progressFunction);
-//  void runAndParse(boost::process::child& rsyncProcess, std::function<void(int,const std::string&)> progressFunction);
   void update(const std::string& line) override;
 };
 

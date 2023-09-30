@@ -2938,6 +2938,21 @@ ParallelTimeDirectories::ParallelTimeDirectories(
 {
     serTimes_ = listTimeDirectories(location);
 
+    directory_iterator end_itr; // default construction yields past-the-end
+    const boost::regex filter( "processor[0-9]+" );
+    for ( directory_iterator i( location ); i != end_itr; i++ )
+    {
+        if ( is_directory(i->status()) )
+        {
+            std::string fn=i->path().filename().string();
+            boost::smatch what;
+            if ( boost::regex_match( i->path().filename().string(), what, filter ) )
+            {
+                procDirs_.insert(i->path());
+            }
+        }
+    }
+
     auto proc0 = location/"processor0";
     if (boost::filesystem::exists(proc0)
         && boost::filesystem::is_directory(proc0))
@@ -2979,7 +2994,7 @@ bool ParallelTimeDirectories::proc0TimeDirNeedsReconst(
 
 
 
-std::set<boost::filesystem::path> ParallelTimeDirectories::newParallelTimes() const
+std::set<boost::filesystem::path> ParallelTimeDirectories::newParallelTimes(bool filterOutInconsistent) const
 {
     std::set<boost::filesystem::path> result;
 
@@ -2987,8 +3002,13 @@ std::set<boost::filesystem::path> ParallelTimeDirectories::newParallelTimes() co
     {
         if (proc0TimeDirNeedsReconst(ptd.second))
         {
-            // no matching serial time dir present
-            result.insert(boost::filesystem::basename(ptd.second));
+            if ( !filterOutInconsistent
+                 ||
+                 (filterOutInconsistent && !isParallelTimeDirInconsistent(ptd.second.filename())) )
+            {
+                // no matching serial time dir present
+                result.insert(ptd.second.filename());
+            }
         }
     }
 
@@ -3007,6 +3027,36 @@ bool ParallelTimeDirectories::latestTimeNeedsReconst() const
     }
     else
         return false;
+}
+
+bool ParallelTimeDirectories::isParallelTimeDirInconsistent(
+    const boost::filesystem::path &ptd ) const
+{
+    auto j0=procDirs_.begin();
+    if (!boost::filesystem::exists((*j0)/ptd))
+    {
+        return true;
+    }
+    else
+    {
+        auto tdc1 = OpenFOAMCaseDirs::timeDirContent((*j0)/ptd);
+        for (auto j=++procDirs_.begin(); j!=procDirs_.end(); ++j)
+        {
+            if (!boost::filesystem::exists((*j)/ptd))
+            {
+                return true;
+            }
+            else
+            {
+                auto tdc2=OpenFOAMCaseDirs::timeDirContent((*j)/ptd);
+                if ( tdc2 != tdc1 )
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 

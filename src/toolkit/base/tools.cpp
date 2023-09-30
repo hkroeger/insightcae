@@ -1062,61 +1062,15 @@ MemoryInfo::MemoryInfo()
 
 
 
-//RSyncProgressAnalyzer::RSyncProgressAnalyzer()
-//{}
+
 RSyncOutputAnalyzer::RSyncOutputAnalyzer(std::function<void(int,const std::string&)> progressFunction)
     : progressFunction_(progressFunction),
       pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*)")
 {}
 
-//RSyncRunner::RSyncRunner(
-//    const std::pair<boost::filesystem::path,std::vector<std::string> >& ca
-//    )
-//{
-//  std::pair<boost::filesystem::path,std::vector<std::string> > commandAndArgs(ca);
-//  commandAndArgs.second.insert(commandAndArgs.second.begin(), "--info=progress2");
-
-//  auto job = std::make_shared<Job>(commandAndArgs);
-//}
-
-
-//std::istream& safeGetline(std::istream& is, std::string& t)
-//{
-//  t.clear();
-
-//  // The characters in the stream are read one-by-one using a std::streambuf.
-//  // That is faster than reading them one-by-one using the std::istream.
-//  // Code that uses streambuf this way must be guarded by a sentry object.
-//  // The sentry object performs various tasks,
-//  // such as thread synchronization and updating the stream state.
-
-//  std::istream::sentry se(is, true);
-//  std::streambuf* sb = is.rdbuf();
-
-//  for(;;) {
-//    int c = sb->sbumpc();
-//    switch (c) {
-//    case '\n':
-//      return is;
-//    case '\r':
-//      if(sb->sgetc() == '\n')
-//                sb->sbumpc();
-//      return is;
-//    case std::streambuf::traits_type::eof():
-//      // Also handle the case when the last line has no line ending
-//      if(t.empty())
-//                is.setstate(std::ios::eofbit);
-//      return is;
-//    default:
-//      t += (char)c;
-//    }
-//  }
-//}
-
 
 void RSyncOutputAnalyzer::update(const std::string& line)
 {
-    insight::dbg()<<line<<std::endl;
     boost::smatch match;
     if (boost::regex_search( line, match, pattern, boost::match_default ))
     {
@@ -1128,75 +1082,16 @@ void RSyncOutputAnalyzer::update(const std::string& line)
       //      int i_to_chk=toNumber<int>(match[6]);
       //      int total_to_chk=toNumber<int>(match[7]);
 
-      //      double progress = total_to_chk==0? 1.0 : double(total_to_chk-i_to_chk) / double(total_to_chk);
-
-      insight::dbg()
-          << percent
-          << " "
-          //          << str(boost::format("%s, %s (current file #%d / %d)") % rate % elapsed % i_file % total_to_chk)
-          << str(boost::format("%s, %s") % rate % elapsed )
-          << std::endl;
-
       if (progressFunction_)
       {
                 progressFunction_(
-                    percent/*int(100.*progress)*/,
-                    //            str(boost::format("%s, %s (current file #%d / %d)") % rate % elapsed % i_file % total_to_chk)
+                    percent,
                     str(boost::format("%s, %s") % rate % elapsed)
                     );
       }
     }
 }
 
-
-//void RSyncProgressAnalyzer::runAndParse(
-//    boost::process::child& rsyncProcess,
-//    std::function<void(int,const std::string&)> pf )
-//{
-//  if (!rsyncProcess.running())
-//  {
-//    throw insight::Exception("could not start rsync process!");
-//  }
-
-//  std::string line;
-//  //boost::regex pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*) \\(xfr#([0-9]+), (..)-chk=([0-9]+)/([0-9]+)\\)");
-//  boost::regex pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*)");
-//  while (rsyncProcess.running() && std::getline(*this, line) && !line.empty())
-//  {
-//    insight::dbg()<<line<<std::endl;
-//    boost::smatch match;
-//    if (boost::regex_search( line, match, pattern, boost::match_default ))
-//    {
-//      int percent=toNumber<int>(match[1]);
-//      std::string rate=match[2];
-//      std::string elapsed=match[3];
-////      int i_file=toNumber<int>(match[4]);
-////      std::string ir_or_to(match[5]);
-////      int i_to_chk=toNumber<int>(match[6]);
-////      int total_to_chk=toNumber<int>(match[7]);
-
-//      //      double progress = total_to_chk==0? 1.0 : double(total_to_chk-i_to_chk) / double(total_to_chk);
-
-//      insight::dbg()
-//          << percent
-//          << " "
-////          << str(boost::format("%s, %s (current file #%d / %d)") % rate % elapsed % i_file % total_to_chk)
-//          << str(boost::format("%s, %s") % rate % elapsed )
-//          << std::endl;
-
-//      if (pf)
-//      {
-//        pf(
-//            percent/*int(100.*progress)*/,
-////            str(boost::format("%s, %s (current file #%d / %d)") % rate % elapsed % i_file % total_to_chk)
-//            str(boost::format("%s, %s") % rate % elapsed)
-//            );
-//      }
-//    }
-//  }
-
-//  rsyncProcess.wait();
-//}
 
 
 

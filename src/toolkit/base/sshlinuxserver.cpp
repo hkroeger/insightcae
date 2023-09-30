@@ -89,14 +89,7 @@ void SSHLinuxServer::runRsync
   auto job = std::make_shared<Job>("rsync", args);
   job->ios_run_with_interruption(&rpa);
   job->wait();
-//  RSyncProgressAnalyzer rpa;
-//  boost::process::child c
-//      (
-//       boost::process::search_path("rsync"),
-//       boost::process::args( args ),
-//       boost::process::std_out > rpa
-//      );
-//  rpa.runAndParse(c, pf);
+
 }
 
 

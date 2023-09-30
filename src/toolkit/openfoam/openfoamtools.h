@@ -744,6 +744,7 @@ class ParallelTimeDirectories
 {
   TimeDirectoryList serTimes_;
   TimeDirectoryList proc0Times_;
+  std::set<boost::filesystem::path> procDirs_;
 
 public:
   ParallelTimeDirectories(
@@ -760,7 +761,7 @@ public:
    * or not present in serial and need reconstruction
    */
   std::set<boost::filesystem::path>
-  newParallelTimes() const;
+  newParallelTimes(bool filterOutInconsistent=false) const;
 
   /**
    * @brief latestTimeNeedsReconst
@@ -768,6 +769,8 @@ public:
    * check, if latest time step needs reconstruction
    */
   bool latestTimeNeedsReconst() const;
+
+  bool isParallelTimeDirInconsistent(const boost::filesystem::path& timeDirName) const;
 
 };
 

@@ -99,6 +99,8 @@ int main(int argc, char *argv[])
       ("force-create-remote-temp,f", "force creation, if config exists already.")
       ("sync-remote,r", "sync current case to remote location")
       ("sync-local,l", "sync from remote location to current case")
+      ("sync-local-repeat", po::value<int>(), "sync from remote location to current case, restart transfer periodically after given number of seconds")
+      ("reconst-new", "reconstruct time directories which are yet unreconstructed")
       ("skip-timesteps,t", "exclude time steps while syncing to local directory\nBeware: during a subsequent sync-to-remote, the skipped time steps will be deleted!")
       ("skip-dir,s", po::value<StringList>(&skip_dirs), "exclude local directory during sync to remote")
       ("include-processor-dirs,p", "if this flag is set, processor directories will be tranferred as well")
@@ -324,6 +326,63 @@ int main(int argc, char *argv[])
                     printProgress );
         std::cout<<endl;
 
+        anything_done=true;
+      }
+
+      auto reconstNew = [&]()
+      {
+          OpenFOAMCase cm;
+          ParallelTimeDirectories ptd(cm, location);
+          auto rtds = ptd.newParallelTimes(true);
+          rtds.erase(boost::filesystem::path("0"));
+
+          std::vector<std::string> tdbns;
+          std::transform(rtds.begin(), rtds.end(), std::back_inserter(tdbns),
+                         [&](const decltype(rtds)::value_type& path)
+                         {
+                             return path.string();
+                         }
+                         );
+
+          if (rtds.size())
+          {
+              cm.executeCommand(
+                  location,
+                  "reconstructPar",
+                  { "-time", boost::join(tdbns, ",") }
+                  );
+          }
+      };
+
+      if(vm.count("sync-local-repeat"))
+      {
+        int secs=vm["sync-local-repeat"].as<int>();
+
+        while (true)
+        {
+            re->syncToLocal(
+                include_processor,
+                (vm.count("skip-timesteps")>0),
+                skip_dirs,
+                printProgress );
+            std::cout<<endl;
+
+            if (vm.count("reconst-new"))
+            {
+                std::cout<<"Reconstructing newly appeared time directories..."<<std::endl;
+                reconstNew();
+            }
+
+            std::cout<<"Waiting "<<secs<<" seconds before restarting transfer..."<<std::endl;
+            sleep(secs);
+        }
+
+        anything_done=true;
+      }
+
+      if (vm.count("reconst-new"))
+      {
+        reconstNew();
         anything_done=true;
       }
 

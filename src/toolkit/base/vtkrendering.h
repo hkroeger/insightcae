@@ -23,7 +23,7 @@
 #include "vtkPointData.h"
 #include "vtkAlgorithm.h"
 #include "vtkOpenFOAMReader.h"
-#include "vtkPOpenFOAMReader.h"
+//#include "vtkPOpenFOAMReader.h"
 #include "vtkUnstructuredGrid.h"
 #include "vtkMultiBlockDataSet.h"
 #include "vtkCompositeDataGeometryFilter.h"
@@ -422,7 +422,7 @@ public:
 class OpenFOAMCaseScene
   : public VTKOffscreenScene
 {
-  vtkSmartPointer<vtkPOpenFOAMReader> ofcase_;
+  vtkSmartPointer<vtkOpenFOAMReader> ofcase_;
   std::map<std::string,int> patches_;
   std::vector<double> times_;
 
@@ -444,7 +444,7 @@ public:
 
   void setTimeIndex(vtkIdType timeId);
 
-  vtkSmartPointer<vtkPOpenFOAMReader> ofcase() const;
+  vtkSmartPointer<vtkOpenFOAMReader> ofcase() const;
   vtkSmartPointer<vtkUnstructuredGridAlgorithm> internalMeshFilter() const;
   vtkSmartPointer<vtkUnstructuredGrid> internalMesh() const;
 

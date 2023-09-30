@@ -32,7 +32,7 @@ else()
             IOExport
             IOImage
             IOXML
-            IOParallel
+            #IOParallel # not available in mxe
             ImagingCore
             RenderingOpenGL2
             RenderingAnnotation

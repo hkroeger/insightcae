@@ -1132,29 +1132,29 @@ void VTKOffscreenScene::removeActor2D(vtkActor2D *act)
 
 
 
-class ModifiedPOpenFOAMReader : public vtkPOpenFOAMReader
-{
-  ModifiedPOpenFOAMReader()
-      : vtkPOpenFOAMReader()
-  {}
+//class ModifiedPOpenFOAMReader : public vtkPOpenFOAMReader
+//{
+//  ModifiedPOpenFOAMReader()
+//      : vtkPOpenFOAMReader()
+//  {}
 
-public:
-  static ModifiedPOpenFOAMReader* New();
+//public:
+//  static ModifiedPOpenFOAMReader* New();
 
-//    int UpdateTimeStep(
-//      double time, int piece = -1, int numPieces = 1, int ghostLevels = 0,
-//      const int extents[6] = nullptr) override
-//    {
-//      for (int r=0; r<Readers->GetNumberOfItems(); ++r)
-//      {
-//          if (reader = vtkOpenFOAMReaderPrivate::SafeDownCast(this->Readers->GetItemAsObject(i)))
-//            reader->UpdateTimeStep(time, piece, numPieces, ghostLevels, extents);
-//      }
-//      return vtkPOpenFOAMReader::UpdateTimeStep(time, piece, numPieces, ghostLevels, extents);
-//    }
-};
+////    int UpdateTimeStep(
+////      double time, int piece = -1, int numPieces = 1, int ghostLevels = 0,
+////      const int extents[6] = nullptr) override
+////    {
+////      for (int r=0; r<Readers->GetNumberOfItems(); ++r)
+////      {
+////          if (reader = vtkOpenFOAMReaderPrivate::SafeDownCast(this->Readers->GetItemAsObject(i)))
+////            reader->UpdateTimeStep(time, piece, numPieces, ghostLevels, extents);
+////      }
+////      return vtkPOpenFOAMReader::UpdateTimeStep(time, piece, numPieces, ghostLevels, extents);
+////    }
+//};
 
-vtkStandardNewMacro(ModifiedPOpenFOAMReader);
+//vtkStandardNewMacro(ModifiedPOpenFOAMReader);
 
 OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np)
   : VTKOffscreenScene()
@@ -1171,7 +1171,7 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, in
   vtkLogger::SetThreadName("rank=" + std::to_string(rank));
   vtkMultiProcessController::SetGlobalController(controller);
 
-  ofcase_ = vtkSmartPointer<ModifiedPOpenFOAMReader>::New();
+  ofcase_ = vtkSmartPointer<vtkOpenFOAMReader>::New();
   ofcase_->SetFileName( casepath.string().c_str() );
   ofcase_->Update();
 
@@ -1343,7 +1343,7 @@ vtkSmartPointer<vtkUnstructuredGrid> OpenFOAMCaseScene::patches(const std::strin
   return pf->GetOutput();
 }
 
-vtkSmartPointer<vtkPOpenFOAMReader> OpenFOAMCaseScene::ofcase() const
+vtkSmartPointer<vtkOpenFOAMReader> OpenFOAMCaseScene::ofcase() const
 {
   return ofcase_;
 }

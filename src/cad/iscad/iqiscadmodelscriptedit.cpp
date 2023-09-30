@@ -452,16 +452,16 @@ QSize IQISCADModelScriptEdit::sizeHint() const
 
 
 
-void IQISCADModelScriptEdit::editSketch(QObject* sk_ptr)
+void IQISCADModelScriptEdit::editSketch(QObject* skPtr)
 {
-    insight::cad::Sketch* sk = reinterpret_cast<insight::cad::Sketch*>(sk_ptr);
+    auto sk = reinterpret_cast<insight::cad::Sketch*>(skPtr);
     sk->executeEditor();
 }
 
 
-void IQISCADModelScriptEdit::editModel(QObject* sk_ptr)
+void IQISCADModelScriptEdit::editModel(QObject* mPtr)
 {
-    insight::cad::ModelFeature* sk = reinterpret_cast<insight::cad::ModelFeature*>(sk_ptr);
+    auto sk = reinterpret_cast<insight::cad::ModelFeature*>(mPtr);
     emit openModel(sk->modelfile());
 }
 
@@ -635,7 +635,7 @@ void IQISCADModelScriptEdit::showEditorContextMenu(const QPoint& pt)
                 act=new QAction(_("Edit Model..."), this);
                 slotFunction=[this,mo]()
                 {
-                  this->editSketch(reinterpret_cast<QObject*>(mo));
+                   this->editModel(reinterpret_cast<QObject*>(mo));
                 };
 //                signalMapper->setMapping(act, reinterpret_cast<QObject*>(mo));
 //                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),

@@ -115,12 +115,15 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
                   Q_EMIT createdDatum(QString::fromStdString(v.first), v.second);
               }
 
-              for (const auto& v: postprocActions)
+              if (finalTask >= Post)
               {
-                  Q_EMIT statusMessage("Building postproc action "+QString::fromStdString(v.first));
-                  if (finalTask >= Post) v.second->checkForBuildDuringAccess(); // Trigger evaluation
-                  Q_EMIT statusProgress(is++, istepmax);
-                  Q_EMIT createdEvaluation(QString::fromStdString(v.first), v.second, false);
+                  for (const auto& v: postprocActions)
+                  {
+                      Q_EMIT statusMessage("Building postproc action "+QString::fromStdString(v.first));
+                       v.second->checkForBuildDuringAccess(); // Trigger evaluation
+                      Q_EMIT statusProgress(is++, istepmax);
+                      Q_EMIT createdEvaluation(QString::fromStdString(v.first), v.second, false);
+                  }
               }
 
               insight::cad::cache.printSummary(std::cout);

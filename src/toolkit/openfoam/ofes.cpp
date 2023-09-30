@@ -74,7 +74,7 @@ std::string OFEs::currentOrPreferredOFE()
   }
   catch (const std::exception& /*e*/)
   {
-    return "OFesi1806";
+    return "OFesi2112";
   }
 }
 

@@ -58,17 +58,16 @@ PostProcActionVisualizers::createAISRepr(PostprocActionPtr ppa)
 PostProcActionVisualizers::VTKActorList
 PostProcActionVisualizers::createVTKRepr( PostprocActionPtr ppa )
 {
-    try
-    {
-      ppa->checkForBuildDuringAccess();
-      return createVTKReprByTypeName(ppa->type(), ppa);
-    }
-    catch (insight::Exception& e)
-    {
-      insight::Warning(e);
-    }
+  ppa->checkForBuildDuringAccess();
 
+  if (has_createVTKReprByTypeName(ppa->type()))
+  {
+    return createVTKReprByTypeName(ppa->type(), ppa);
+  }
+  else
+  {
     return PostProcActionVisualizers::createVTKReprByTypeName(ppa);
+  }
 }
 
 PostProcActionVisualizers postProcActionVisualizers;

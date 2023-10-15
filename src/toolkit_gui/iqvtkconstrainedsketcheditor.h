@@ -70,6 +70,8 @@ public:
             );
     ~IQVTKConstrainedSketchEditor();
 
+    void start() override;
+
     insight::cad::ConstrainedSketchEntityPtr
         findSketchElementOfActor(vtkProp *actor) const;
 

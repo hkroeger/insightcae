@@ -27,8 +27,11 @@ ToNotepadEmitter::~ToNotepadEmitter()
 OCCViewWidgetRotation::OCCViewWidgetRotation(QoccViewWidget &viewWidget, const QPoint point)
   : ViewWidgetAction<QoccViewWidget>(viewWidget)
 {
-  viewer().view().StartRotation(point.x(), point.y());
+    viewer().view().StartRotation(point.x(), point.y());
 }
+
+void OCCViewWidgetRotation::start()
+{}
 
 void OCCViewWidgetRotation::onMouseMove
   (
@@ -44,7 +47,10 @@ void OCCViewWidgetRotation::onMouseMove
 
 
 OCCViewWidgetPanning::OCCViewWidgetPanning(QoccViewWidget &viewWidget, const QPoint point)
-  : ViewWidgetAction<QoccViewWidget>(viewWidget, point)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, point)
+{}
+
+void OCCViewWidgetPanning::start()
 {}
 
 
@@ -67,7 +73,10 @@ void OCCViewWidgetPanning::onMouseMove
 
 
 OCCViewWidgetDynamicZooming::OCCViewWidgetDynamicZooming(QoccViewWidget &viewWidget, const QPoint point)
-  : ViewWidgetAction<QoccViewWidget>(viewWidget, point)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, point)
+{}
+
+void OCCViewWidgetDynamicZooming::start()
 {}
 
 
@@ -101,8 +110,11 @@ OCCViewWidgetWindowZooming::~OCCViewWidgetWindowZooming()
         r.topLeft().x(),
         r.topLeft().y(),
         r.bottomRight().x(),
-        r.bottomRight().y() );
+      r.bottomRight().y() );
 }
+
+void OCCViewWidgetWindowZooming::start()
+{}
 
 
 void OCCViewWidgetWindowZooming::onMouseMove
@@ -129,14 +141,17 @@ void OCCViewWidgetWindowZooming::onMouseMove
 
 OCCViewWidgetMeasurePoints::OCCViewWidgetMeasurePoints(QoccViewWidget &viewWidget)
   : ViewWidgetAction<QoccViewWidget>(viewWidget)
-{
-  insight::cad::ActivateAll(viewer().getContext(), TopAbs_VERTEX);
-  viewer().sendStatus("Please select first point!");
-}
+{}
 
 OCCViewWidgetMeasurePoints::~OCCViewWidgetMeasurePoints()
 {
   insight::cad::DeactivateAll(viewer().getContext(), TopAbs_VERTEX);
+}
+
+void OCCViewWidgetMeasurePoints::start()
+{
+  insight::cad::ActivateAll(viewer().getContext(), TopAbs_VERTEX);
+  userPrompt("Please select first point!");
 }
 
 bool OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/)
@@ -152,13 +167,13 @@ bool OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/
     if (!p1_)
       {
         p1_=insight::cad::matconst(insight::vec3(p));
-        viewer().sendStatus("Please select second point!");
+        userPrompt("Please select second point!");
         return true;
       }
     else if (!p2_)
       {
         p2_=insight::cad::matconst(insight::vec3(p));
-        viewer().sendStatus("Measurement is created...");
+        userPrompt("Measurement is created...");
 
         viewer().addEvaluationToModel
             (

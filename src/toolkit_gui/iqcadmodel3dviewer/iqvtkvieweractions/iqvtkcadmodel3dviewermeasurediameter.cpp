@@ -10,6 +10,14 @@
 
 IQVTKCADModel3DViewerMeasureDiameter::IQVTKCADModel3DViewerMeasureDiameter(IQVTKCADModel3DViewer &viewWidget)
     : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget)
+{}
+
+IQVTKCADModel3DViewerMeasureDiameter::~IQVTKCADModel3DViewerMeasureDiameter()
+{
+    viewer().deactivateSubshapeSelectionAll();
+}
+
+void IQVTKCADModel3DViewerMeasureDiameter::start()
 {
     viewer().activateSelectionAll(insight::cad::Edge);
     //viewer().sendStatus("Please select first point!");
@@ -40,9 +48,4 @@ IQVTKCADModel3DViewerMeasureDiameter::IQVTKCADModel3DViewerMeasureDiameter(IQVTK
         );
 
     launchChildAction(sel);
-}
-
-IQVTKCADModel3DViewerMeasureDiameter::~IQVTKCADModel3DViewerMeasureDiameter()
-{
-    viewer().deactivateSubshapeSelectionAll();
 }

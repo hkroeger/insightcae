@@ -270,7 +270,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
       defaultGeometryParameters_(defaultGeometryParameters)
 
 {
-    launchDefaultSelectionAction();
 
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawline.svg"), "Line",
@@ -484,8 +483,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     toolBar_->show();
 
 
-    updateActors();
-
     // this editor is its own property widget
 
     toolBoxWidget_ = new QDockWidget("Properties", this);
@@ -599,6 +596,14 @@ IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
     {
         remove(sg);
     }
+}
+
+
+
+void IQVTKConstrainedSketchEditor::start()
+{
+    launchDefaultSelectionAction();
+    updateActors();
 }
 
 

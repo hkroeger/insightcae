@@ -9,6 +9,7 @@
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h"
 #include "iqvtkconstrainedsketcheditor.h"
 
 #include <QDebug>
@@ -24,6 +25,8 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QToolBar>
+#include <QToolButton>
+#include <QStatusBar>
 
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
@@ -87,6 +90,152 @@ void MyVTKWidget::leaveEvent(QEvent *event)
     VTKWidget::leaveEvent(event);
     Q_EMIT mouseLeavesViewer();
 }
+
+
+
+
+
+IQVTKCADModel3DViewer &BackgroundImage::viewer()
+{
+    return dynamic_cast<IQVTKCADModel3DViewer&>(*parent());
+}
+
+BackgroundImage::BackgroundImage(
+    const boost::filesystem::path& imageFile,
+    IQVTKCADModel3DViewer& v )
+    : QObject(&v),
+    label_(QString::fromStdString(imageFile.filename().string()))
+{
+    insight::assertion(
+        boost::filesystem::exists(imageFile),
+        "image file has to exist!" );
+
+    auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
+    vtkSmartPointer<vtkImageReader2> imageReader;
+    auto ir=readerFactory->CreateImageReader2(imageFile.string().c_str());
+
+    insight::assertion(
+        ir!=nullptr,
+        "could not create reader for file "+imageFile.string() );
+
+    imageReader.TakeReference(ir);
+    imageReader->SetFileName(imageFile.string().c_str());
+    imageReader->Update();
+    auto imageData = imageReader->GetOutput();
+    imageActor_ = vtkSmartPointer<vtkImageActor>::New();
+    imageActor_->SetInputData(imageData);
+
+    QMessageBox questionBox;
+    questionBox.setWindowTitle("Image display");
+    questionBox.setText("Shall the image be a static background or dynamic rotatable/zoomable?");
+    auto* pButtonStatic = questionBox.addButton("Static", QMessageBox::YesRole);
+    auto* pButtonDynamic = questionBox.addButton("Dynamic", QMessageBox::NoRole);
+    auto* pButtonCancel = questionBox.addButton(QMessageBox::StandardButton::Cancel);
+
+    questionBox.exec();
+
+    auto answer = questionBox.clickedButton();
+
+    if (answer==pButtonStatic)
+    {
+        usedRenderer_ = viewer().backgroundRen_;
+        usedRenderer_->AddActor(imageActor_);
+
+        viewer().renWin()->Render();
+
+        IQImageReferencePointSelectorWindow::setupCameraForImage(
+            imageData, usedRenderer_->GetActiveCamera());
+
+        //        double origin[3];
+        //        double spacing[3];
+        //        int extent[6];
+        //        imageData->GetOrigin(origin);
+        //        imageData->GetSpacing(spacing);
+        //        imageData->GetExtent(extent);
+
+        //        vtkCamera* camera = usedRenderer_->GetActiveCamera();
+        //        camera->ParallelProjectionOn();
+
+        //        double xc = origin[0] + 0.5 * (extent[0] + extent[1]) * spacing[0];
+        //        double yc = origin[1] + 0.5 * (extent[2] + extent[3]) * spacing[1];
+        //        // double xd = (extent[1] - extent[0] + 1)*spacing[0];
+        //        double yd = (extent[3] - extent[2] + 1) * spacing[1];
+        //        double d = camera->GetDistance();
+        //        camera->SetParallelScale(0.5 * yd);
+        //        camera->SetFocalPoint(xc, yc, 0.0);
+        //        camera->SetPosition(xc, yc, d);
+
+        viewer().scheduleRedraw();
+    }
+    else if (answer==pButtonDynamic)
+    {
+        //        IQImageReferencePointSelectorWindow selw(imageActor_, &viewer());
+        //        selw.setWindowModality(Qt::ApplicationModal);
+        //        selw.show();
+
+        //        double scale=selw.L_ / arma::norm(*selw.p3_ - *selw.p2_,2);
+        //        imageActor_->SetScale( scale );
+        //        arma::mat newPosition(-1.*scale* *(selw.p1_) );
+        //        imageActor_->SetPosition( newPosition.memptr() );
+
+        imageActor_->SetScale( 1 );
+        imageActor_->SetPosition( 0, 0, 0 );
+
+        usedRenderer_=viewer().renderer();
+        usedRenderer_->AddActor(imageActor_);
+        viewer().scheduleRedraw();
+
+        auto obia=std::make_shared<IQVTKOrientBackgroundImage>(viewer(), imageActor_);
+        obia->orientationSelected.connect(
+            [this](OrientationSpec os)
+            {
+                arma::mat D=os.xy2_-os.xy1_;
+                arma::mat d=os.p2_-os.pCtr_;
+                double scale =
+                    arma::norm(D,2)
+                    /
+                    arma::norm(d,2);
+
+                double ang=atan2(D[1], D[0]);
+                double ang2=atan2(d[1], d[0]);
+                imageActor_->SetOrientation(0, 0, (ang-ang2)*180./M_PI);
+
+                arma::mat R = rotMatrix(ang-ang2);
+
+                imageActor_->SetScale( scale );
+
+                arma::mat newPosition( -scale*R*os.pCtr_ +os.xy1_ );
+                imageActor_->SetPosition( newPosition.memptr() );
+
+                imageActor_->SetOpacity(0.8); // can't pick if opacity is lower than 1
+            }
+            );
+
+        viewer().launchAction(
+            obia,
+            true );
+    }
+}
+
+BackgroundImage::~BackgroundImage()
+{
+    usedRenderer_->RemoveActor( imageActor_ );
+    viewer().scheduleRedraw();
+}
+
+QString BackgroundImage::label() const
+{
+    return label_;
+}
+
+void BackgroundImage::toggleVisibility(bool show)
+{
+    imageActor_->SetVisibility(show);
+    viewer().scheduleRedraw();
+}
+
+
+
 
 
 
@@ -813,106 +962,6 @@ void IQVTKCADModel3DViewer::closeEvent(QCloseEvent *ev)
 }
 
 
-IQVTKCADModel3DViewer::BackgroundImage::BackgroundImage(
-        const boost::filesystem::path& imageFile,
-        IQVTKCADModel3DViewer& v )
-    : IQVTKViewerState(v)
-{
-    insight::assertion(
-                boost::filesystem::exists(imageFile),
-                "image file has to exist!" );
-
-    auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
-    vtkSmartPointer<vtkImageReader2> imageReader;
-    auto ir=readerFactory->CreateImageReader2(imageFile.string().c_str());
-
-    insight::assertion(
-                ir!=nullptr,
-                "could not create reader for file "+imageFile.string() );
-
-    imageReader.TakeReference(ir);
-    imageReader->SetFileName(imageFile.string().c_str());
-    imageReader->Update();
-    auto imageData = imageReader->GetOutput();
-    imageActor_ = vtkSmartPointer<vtkImageActor>::New();
-    imageActor_->SetInputData(imageData);
-
-    QMessageBox questionBox;
-    questionBox.setWindowTitle("Image display");
-    questionBox.setText("Shall the image be a static background or dynamic rotatable/zoomable?");
-    auto* pButtonStatic = questionBox.addButton("Static", QMessageBox::YesRole);
-    auto* pButtonDynamic = questionBox.addButton("Dynamic", QMessageBox::NoRole);
-    auto* pButtonCancel = questionBox.addButton(QMessageBox::StandardButton::Cancel);
-
-    questionBox.exec();
-
-    auto answer = questionBox.clickedButton();
-
-    if (answer==pButtonStatic)
-    {
-        usedRenderer_ = viewer().backgroundRen_;
-        usedRenderer_->AddActor(imageActor_);
-
-        viewer().renWin()->Render();
-
-        IQImageReferencePointSelectorWindow::setupCameraForImage(
-            imageData, usedRenderer_->GetActiveCamera());
-
-//        double origin[3];
-//        double spacing[3];
-//        int extent[6];
-//        imageData->GetOrigin(origin);
-//        imageData->GetSpacing(spacing);
-//        imageData->GetExtent(extent);
-
-//        vtkCamera* camera = usedRenderer_->GetActiveCamera();
-//        camera->ParallelProjectionOn();
-
-//        double xc = origin[0] + 0.5 * (extent[0] + extent[1]) * spacing[0];
-//        double yc = origin[1] + 0.5 * (extent[2] + extent[3]) * spacing[1];
-//        // double xd = (extent[1] - extent[0] + 1)*spacing[0];
-//        double yd = (extent[3] - extent[2] + 1) * spacing[1];
-//        double d = camera->GetDistance();
-//        camera->SetParallelScale(0.5 * yd);
-//        camera->SetFocalPoint(xc, yc, 0.0);
-//        camera->SetPosition(xc, yc, d);
-
-        viewer().scheduleRedraw();
-    }
-    else if (answer==pButtonDynamic)
-    {
-        IQImageReferencePointSelectorWindow selw(imageActor_, &viewer());
-//        selw.setWindowModality(Qt::ApplicationModal);
-//        selw.show();
-
-        double scale=selw.L_ / arma::norm(*selw.p3_ - *selw.p2_,2);
-        imageActor_->SetScale( scale );
-        arma::mat newPosition(-1.*scale* *(selw.p1_) );
-        imageActor_->SetPosition( newPosition.memptr() );
-
-        usedRenderer_=viewer().renderer();
-        usedRenderer_->AddActor(imageActor_);
-        viewer().scheduleRedraw();
-    }
-}
-
-IQVTKCADModel3DViewer::BackgroundImage::~BackgroundImage()
-{
-    usedRenderer_->RemoveActor( imageActor_ );
-    viewer().scheduleRedraw();
-}
-
-
-void IQVTKCADModel3DViewer::setBackgroundImage(const boost::filesystem::path &imageFile)
-{
-    backgroundImage_.reset();
-
-    if (!imageFile.empty())
-    {
-        backgroundImage_.reset(new BackgroundImage(imageFile, *this));
-    }
-}
-
 
 
 
@@ -1144,7 +1193,6 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     renWin()->AddRenderer(ren_);
 
     backgroundRen_->SetBackground(1., 1., 1.);
-//    ren_->SetBackground(1., 1., 1.);
 
 
     auto btntb = this->addToolBar("View setup");
@@ -1177,22 +1225,48 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
                 QPixmap(":/icons/icon_minusz.svg"), "-Z",
                 this, &IQCADModel3DViewer::viewTop );
 
-    btntb->addAction(
-                "BG",
-                [this]() {
-                    auto fn = QFileDialog::getOpenFileName(this, "Select background image file");
-                    if (!fn.isEmpty())
-                    {
-                        setBackgroundImage(fn.toStdString());
-                    }
-                }
+    auto clBGAction = btntb->addAction("CLBG");
+    auto *clBGBtn=
+        dynamic_cast<QToolButton*>(btntb->widgetForAction(clBGAction));
+
+    auto addBGAction = btntb->addAction("BG");
+    auto *addBGBtn=
+        dynamic_cast<QToolButton*>(btntb->widgetForAction(addBGAction));
+
+    connect(addBGAction, &QAction::triggered, addBGAction,
+    [this,clBGBtn,addBGBtn]() {
+        auto fn = QFileDialog::getOpenFileName(this, "Select background image file");
+        if (!fn.isEmpty())
+        {
+            auto bgi = new BackgroundImage(fn.toStdString(), *this);
+            backgroundImages_.push_back(bgi);
+
+            auto remAct = new QAction("Remove "+bgi->label(), bgi);
+            connect(remAct, &QAction::triggered, remAct,
+                    std::bind(&QList<BackgroundImage*>::removeOne, &backgroundImages_, bgi) );
+            connect(remAct, &QAction::triggered, bgi, &QObject::deleteLater);
+            clBGBtn->addAction(remAct);
+
+            auto showHideAct = new QAction(bgi->label(), bgi);
+            showHideAct->setCheckable(true);
+            connect(
+                showHideAct, &QAction::toggled,
+                bgi, &BackgroundImage::toggleVisibility );
+            addBGBtn->addAction(showHideAct);
+
+            showHideAct->setChecked(true);
+        }
+    }
     );
-    btntb->addAction(
-                "CLBG",
-                [this]() {
-                    setBackgroundImage(boost::filesystem::path());
-                }
+    connect(clBGAction, &QAction::triggered, clBGAction,
+        [this]()
+        {
+            for (auto bgi: backgroundImages_) delete bgi;
+            backgroundImages_.clear();
+        }
     );
+
+
     btntb->addAction(
         "PP/CP",
         [this]() {
@@ -1261,11 +1335,16 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
 
 IQVTKCADModel3DViewer::~IQVTKCADModel3DViewer()
 {
+    // delete some stuff so that their destructors
+    // still have access to viewer before actual viewer is destroyed
     clipping_.reset();
     highlightedItem_.reset();
-//    highlightedActors_.clear();
-    backgroundImage_.reset();
-//    displayedSketch_.reset();
+    navigationManager_.reset();
+    currentAction_.reset();
+    for(auto bg: backgroundImages_)
+    {
+        delete bg;
+    }
 }
 
 
@@ -1859,7 +1938,12 @@ bool IQVTKCADModel3DViewer::launchAction(
     {
         currentAction_=activity;
         currentAction_->actionIsFinished.connect(
-            std::bind(&IQVTKCADModel3DViewer::setDefaultAction, this) );
+            std::bind(&IQVTKCADModel3DViewer::setDefaultAction, this) );        
+        currentAction_->userPrompt.connect(
+            std::bind(&QStatusBar::showMessage, statusBar(), std::placeholders::_1, 0) );
+
+        currentAction_->start();
+
         return true;
     }
     else

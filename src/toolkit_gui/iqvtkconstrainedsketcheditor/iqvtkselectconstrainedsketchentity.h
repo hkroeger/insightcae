@@ -83,6 +83,8 @@ public:
     IQVTKSelectConstrainedSketchEntity(IQVTKConstrainedSketchEditor& editor);
     ~IQVTKSelectConstrainedSketchEntity();
 
+    void start() override;
+
     IQVTKConstrainedSketchEditor& editor() const;
     insight::cad::ConstrainedSketch& sketch() const;
 };

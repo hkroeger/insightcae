@@ -243,6 +243,7 @@ public:
   typedef std::shared_ptr<ViewWidgetAction> Ptr;
 
     boost::signals2::signal<void()> actionIsFinished;
+    boost::signals2::signal<void(const QString&)> userPrompt;
 
 private:
   Ptr childAction_;
@@ -298,6 +299,7 @@ public:
       : InputReceiver<Viewer>(viewer, p)
   {}
 
+  virtual void start() =0;
 };
 
 
@@ -307,6 +309,8 @@ class OCCViewWidgetRotation : public ViewWidgetAction<QoccViewWidget>
 {
 public:
   OCCViewWidgetRotation(QoccViewWidget &viewWidget, const QPoint point);
+
+  void start() override;
 
   void onMouseMove
     (
@@ -322,6 +326,8 @@ class OCCViewWidgetPanning : public ViewWidgetAction<QoccViewWidget>
 public:
   OCCViewWidgetPanning(QoccViewWidget &viewWidget, const QPoint point);
 
+  void start() override;
+
   void onMouseMove
     (
      Qt::MouseButtons buttons,
@@ -335,6 +341,8 @@ class OCCViewWidgetDynamicZooming : public ViewWidgetAction<QoccViewWidget>
 {
 public:
   OCCViewWidgetDynamicZooming(QoccViewWidget &viewWidget, const QPoint point);
+
+  void start() override;
 
   void onMouseMove
     (
@@ -352,6 +360,8 @@ class OCCViewWidgetWindowZooming : public ViewWidgetAction<QoccViewWidget>
 public:
   OCCViewWidgetWindowZooming(QoccViewWidget &viewWidget, const QPoint point, QRubberBand* rb);
   ~OCCViewWidgetWindowZooming();
+
+  void start() override;
 
   void onMouseMove
     (
@@ -371,6 +381,8 @@ class OCCViewWidgetMeasurePoints : public ViewWidgetAction<QoccViewWidget>
 public:
   OCCViewWidgetMeasurePoints(QoccViewWidget &viewWidget);
   ~OCCViewWidgetMeasurePoints();
+
+  void start() override;
 
   bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 };

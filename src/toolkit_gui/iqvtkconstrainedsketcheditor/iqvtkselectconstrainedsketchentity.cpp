@@ -181,6 +181,9 @@ IQVTKSelectConstrainedSketchEntity::IQVTKSelectConstrainedSketchEntity(
 IQVTKSelectConstrainedSketchEntity::~IQVTKSelectConstrainedSketchEntity()
 {}
 
+void IQVTKSelectConstrainedSketchEntity::start()
+{}
+
 
 IQVTKConstrainedSketchEditor &IQVTKSelectConstrainedSketchEntity::editor() const
 {

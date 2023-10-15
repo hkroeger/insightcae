@@ -41,6 +41,8 @@ class TOOLKIT_GUI_EXPORT IQVTKSelectCADEntity
 public:
     IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer);
     ~IQVTKSelectCADEntity();
+
+    void start() override;
 };
 
 
@@ -75,6 +77,8 @@ class TOOLKIT_GUI_EXPORT IQVTKSelectSubshape
 public:
     IQVTKSelectSubshape(IQVTKCADModel3DViewer& viewer);
     ~IQVTKSelectSubshape();
+
+    void start() override;
 };
 
 

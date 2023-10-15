@@ -47,7 +47,10 @@ void IQVTKCADModel3DViewerRotation::rotate(int x, int y)
 IQVTKCADModel3DViewerRotation::IQVTKCADModel3DViewerRotation(
         IQVTKCADModel3DViewer &viewWidget,
         const QPoint point)
-: ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, point)
+    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, point)
+{}
+
+void IQVTKCADModel3DViewerRotation::start()
 {}
 
 

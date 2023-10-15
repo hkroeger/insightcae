@@ -22,6 +22,8 @@ class IQVTKCADModel3DViewerPanning
 public:
   IQVTKCADModel3DViewerPanning(IQVTKCADModel3DViewer &viewWidget, const QPoint point);
 
+  void start() override;
+
   void onMouseMove
     (
      Qt::MouseButtons buttons,

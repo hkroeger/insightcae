@@ -1344,6 +1344,7 @@ void QoccViewWidget::onSetClipPlane(QObject* qdatum)
 void QoccViewWidget::onMeasureDistance()
 {
     currentUserActivity_= std::make_shared<OCCViewWidgetMeasurePoints>(*this);
+    currentUserActivity_->start();
 }
 
 void QoccViewWidget::onMeasureDiameter()
@@ -1357,6 +1358,7 @@ void QoccViewWidget::onMeasureDiameter()
 void QoccViewWidget::onSelectPoints()
 {
   currentUserActivity_= std::make_shared<ViewWidgetInsertPointIDs>(*this);
+  currentUserActivity_->start();
 }
 
 
@@ -1365,6 +1367,7 @@ void QoccViewWidget::onSelectPoints()
 void QoccViewWidget::onSelectEdges()
 {
   currentUserActivity_= std::make_shared<ViewWidgetInsertEdgeIDs>(*this);
+  currentUserActivity_->start();
 }
 
 
@@ -1373,6 +1376,7 @@ void QoccViewWidget::onSelectEdges()
 void QoccViewWidget::onSelectFaces()
 {
   currentUserActivity_= std::make_shared<ViewWidgetInsertFaceIDs>(*this);
+  currentUserActivity_->start();
 }
 
 
@@ -1381,6 +1385,7 @@ void QoccViewWidget::onSelectFaces()
 void QoccViewWidget::onSelectSolids()
 {
   currentUserActivity_= std::make_shared<ViewWidgetInsertSolidIDs>(*this);
+  currentUserActivity_->start();
 }
 
 

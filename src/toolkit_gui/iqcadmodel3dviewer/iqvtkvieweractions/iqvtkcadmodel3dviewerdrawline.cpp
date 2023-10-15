@@ -203,6 +203,9 @@ IQVTKCADModel3DViewerDrawLine::~IQVTKCADModel3DViewerDrawLine()
     }
 }
 
+void IQVTKCADModel3DViewerDrawLine::start()
+{}
+
 
 
 

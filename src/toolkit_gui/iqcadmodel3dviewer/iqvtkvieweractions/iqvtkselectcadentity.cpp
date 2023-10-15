@@ -53,6 +53,17 @@ IQVTKSelectCADEntity::IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer)
     : IQVTKCADModel3DViewerSelectionLogic(
         []() { return std::make_shared<MultiSelectionContainer>(); },
         viewer )
+{}
+
+
+
+
+IQVTKSelectCADEntity::~IQVTKSelectCADEntity()
+{
+    delete toolBar_;
+}
+
+void IQVTKSelectCADEntity::start()
 {
     toolBar_ = this->viewer().addToolBar("Selection");
     auto selt = new QCheckBox("Preview selection");
@@ -62,16 +73,8 @@ IQVTKSelectCADEntity::IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer)
             {
                 toggleHoveringSelectionPreview(checked);
             }
-    );
+            );
     toolBar_->addWidget(selt);
-}
-
-
-
-
-IQVTKSelectCADEntity::~IQVTKSelectCADEntity()
-{
-    delete toolBar_;
 }
 
 
@@ -125,4 +128,8 @@ IQVTKSelectSubshape::IQVTKSelectSubshape(IQVTKCADModel3DViewer &viewer)
 
 
 IQVTKSelectSubshape::~IQVTKSelectSubshape()
+{}
+
+
+void IQVTKSelectSubshape::start()
 {}

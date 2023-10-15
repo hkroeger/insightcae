@@ -76,6 +76,8 @@ public:
             IQVTKConstrainedSketchEditor &editor );
     ~IQVTKCADModel3DViewerDrawLine();
 
+    void start() override;
+
     void onMouseMove
       (
        Qt::MouseButtons buttons,

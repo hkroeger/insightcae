@@ -27,14 +27,17 @@ protected:
 public:
   ViewWidgetInsertIDs(QoccViewWidget &viewWidget)
     : ViewWidgetAction<QoccViewWidget>(viewWidget)
-  {
-    insight::cad::ActivateAll(viewer().getContext(), shapeEnum);
-    viewer().sendStatus("Please select "+QString(selectionName)+" and finish with right click!");
-  }
+  {}
 
   ~ViewWidgetInsertIDs()
   {
     insight::cad::DeactivateAll(viewer().getContext(), shapeEnum);
+  }
+
+  void start() override
+  {
+    insight::cad::ActivateAll(viewer().getContext(), shapeEnum);
+    userPrompt("Please select "+QString(selectionName)+" and finish with right click!");
   }
 
   bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override

@@ -17,6 +17,8 @@ public:
 
     ~IQVTKCADModel3DViewerPickPoint();
 
+    void start() override;
+
     bool onLeftButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 
 Q_SIGNALS:

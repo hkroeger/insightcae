@@ -13,6 +13,8 @@ class IQVTKCADModel3DViewerMeasureDiameter
 public:
     IQVTKCADModel3DViewerMeasureDiameter(IQVTKCADModel3DViewer &viewWidget);
     ~IQVTKCADModel3DViewerMeasureDiameter();
+
+    void start() override;
 };
 
 #endif // IQVTKCADMODEL3DVIEWERMEASUREDIAMETER_H

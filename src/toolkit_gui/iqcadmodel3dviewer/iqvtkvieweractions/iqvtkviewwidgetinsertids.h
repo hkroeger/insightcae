@@ -28,36 +28,39 @@ protected:
 public:
   IQVTKViewWidgetInsertIDs(IQVTKCADModel3DViewer &viewWidget)
     : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget)
-  {
-    viewer().activateSelectionAll(shapeType);
-    //viewer().sendStatus("Please select "+QString(selectionName)+" and finish with right click!");
-
-    auto sel = std::make_shared<IQVTKSelectSubshape>(viewer());
-    sel->entitySelected.connect(
-        [this](IQVTKCADModel3DViewer::SubshapeData sd)
-        {
-            if (sd.subshapeType_ == insight::cad::Edge)
-            {
-                if (!selection_)
-                {
-                    // restrict further selection to current shape
-                    viewer().deactivateSubshapeSelectionAll();
-                    viewer().activateSelection( sd.feat, shapeType );
-
-                    selection_.reset(new insight::cad::FeatureSet(sd.feat, shapeType));
-                }
-
-                selection_->add(sd.id_);
-            }
-        }
-    );
-
-    launchChildAction(sel);
-  }
+  {  }
 
   ~IQVTKViewWidgetInsertIDs()
   {
       viewer().deactivateSubshapeSelectionAll();
+  }
+
+  void start() override
+  {
+      viewer().activateSelectionAll(shapeType);
+      //viewer().sendStatus("Please select "+QString(selectionName)+" and finish with right click!");
+
+      auto sel = std::make_shared<IQVTKSelectSubshape>(viewer());
+      sel->entitySelected.connect(
+          [this](IQVTKCADModel3DViewer::SubshapeData sd)
+          {
+              if (sd.subshapeType_ == insight::cad::Edge)
+              {
+                  if (!selection_)
+                  {
+                      // restrict further selection to current shape
+                      viewer().deactivateSubshapeSelectionAll();
+                      viewer().activateSelection( sd.feat, shapeType );
+
+                      selection_.reset(new insight::cad::FeatureSet(sd.feat, shapeType));
+                  }
+
+                  selection_->add(sd.id_);
+              }
+          }
+          );
+
+      launchChildAction(sel);
   }
 
 

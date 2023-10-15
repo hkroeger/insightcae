@@ -17,6 +17,8 @@ class IQVTKCADModel3DViewerRotation : public ViewWidgetAction<IQVTKCADModel3DVie
 public:
   IQVTKCADModel3DViewerRotation(IQVTKCADModel3DViewer &viewWidget, const QPoint point);
 
+  void start() override;
+
   void onMouseMove
     (
      Qt::MouseButtons buttons,

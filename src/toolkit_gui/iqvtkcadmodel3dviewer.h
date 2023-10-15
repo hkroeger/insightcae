@@ -42,6 +42,7 @@ class QTextEdit;
 class vtkRenderWindowInteractor;
 class IQVTKSelectCADEntity;
 class IQVTKSelectSubshape;
+class IQVTKCADModel3DViewer;
 
 typedef
 #if VTK_MAJOR_VERSION>=8
@@ -61,6 +62,32 @@ public:
     void leaveEvent(QEvent *event) override;
 Q_SIGNALS:
     void mouseLeavesViewer();
+};
+
+
+
+class BackgroundImage
+    : public QObject
+{
+    Q_OBJECT
+
+    QString label_;
+    vtkSmartPointer<vtkImageActor> imageActor_;
+    vtkRenderer *usedRenderer_;
+
+    IQVTKCADModel3DViewer& viewer();
+
+public:
+    BackgroundImage(
+        const boost::filesystem::path& fp,
+        IQVTKCADModel3DViewer& viewer );
+
+    ~BackgroundImage();
+
+    QString label() const;
+
+public Q_SLOTS:
+    void toggleVisibility(bool show);
 };
 
 
@@ -293,21 +320,8 @@ private:
     QTimer redrawTimer_;
     void scheduleRedraw(int millisec=100);
 
-    class BackgroundImage : public IQVTKViewerState
-    {
-        vtkSmartPointer<vtkImageActor> imageActor_;
-        vtkRenderer *usedRenderer_;
-
-    public:
-        BackgroundImage(
-                const boost::filesystem::path& fp,
-                IQVTKCADModel3DViewer& viewer );
-
-        ~BackgroundImage();
-    };
     friend class BackgroundImage;
-
-    std::unique_ptr<BackgroundImage> backgroundImage_;
+    QList<BackgroundImage*> backgroundImages_;
 
     QItemSelectionModel *defaultSelectionModel_, *customSelectionModel_;
 
@@ -338,7 +352,6 @@ public:
     HighlightingHandle highlightActor(vtkProp* actor, QColor hicol = QColorConstants::Red);
     HighlightingHandleSet highlightActors(std::set<vtkProp*> actor, QColor hicol = QColorConstants::Red);
 
-    void setBackgroundImage(const boost::filesystem::path& imageFile);
     vtkRenderWindow* renWin();
 
     void setModel(QAbstractItemModel* model) override;

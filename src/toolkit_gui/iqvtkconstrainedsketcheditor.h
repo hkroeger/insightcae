@@ -50,6 +50,8 @@ private:
     QDockWidget *toolBoxWidget_;
     QToolBox *toolBox_;
 
+    std::unique_ptr<IQVTKCADModel3DViewer::ExposeItem> transparency_;
+
 
     void add(insight::cad::ConstrainedSketchEntityPtr);
     void remove(insight::cad::ConstrainedSketchEntityPtr);
@@ -89,8 +91,6 @@ public:
 public Q_SLOTS:
     void updateActors(int update_msec=100);
 
-Q_SIGNALS:
-    void finished();
 };
 
 

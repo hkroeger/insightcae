@@ -1065,19 +1065,28 @@ void IQVTKCADModel3DViewer::view(
     scheduleRedraw();
 }
 
-void IQVTKCADModel3DViewer::highlightItem(insight::cad::FeaturePtr feat)
+void IQVTKCADModel3DViewer::exposeItem(insight::cad::FeaturePtr feat)
 {
-    doHighlightItem(feat);
+    if (feat)
+    {
+        doExposeItem(feat);
+    }
+    else
+    {
+        exposedItem_.reset();
+        exposedItem_ = std::make_shared<ExposeItem>(
+            nullptr, QModelIndex(), *this );
+    }
 }
 
 
-void IQVTKCADModel3DViewer::doHighlightItem(CADEntity item)
+void IQVTKCADModel3DViewer::doExposeItem(CADEntity item)
 {
-    if (highlightedItem_
-            && highlightedItem_->entity()==item)
+    if (exposedItem_
+        && exposedItem_->entity()==item)
         return;
 
-    highlightedItem_.reset(); // clear existing highlighting, if any
+    exposedItem_.reset(); // clear existing highlighting, if any
 
 
     if (const auto* fPtr = boost::get<insight::cad::FeaturePtr>(&item))
@@ -1092,14 +1101,14 @@ void IQVTKCADModel3DViewer::doHighlightItem(CADEntity item)
         if (idisp!=displayedData_.end())
         {
             // already in display
-            highlightedItem_ = std::make_shared<HighlightItem>(
+            exposedItem_ = std::make_shared<ExposeItem>(
                         nullptr, idisp->first, *this );
         }
         else
         {
             // not in display, add temporarily
             auto actor = createActor(feat);
-            highlightedItem_ = std::make_shared<HighlightItem>(
+            exposedItem_ = std::make_shared<ExposeItem>(
                         std::shared_ptr<DisplayedEntity>(
                             new DisplayedEntity{name, item, {actor}} ),
                         QPersistentModelIndex(),
@@ -1138,9 +1147,9 @@ void IQVTKCADModel3DViewer::scheduleRedraw(int millisec)
 
 
 
-void IQVTKCADModel3DViewer::undoHighlightItem()
+void IQVTKCADModel3DViewer::undoExposeItem()
 {
-    highlightedItem_.reset();
+    exposedItem_.reset();
 }
 
 
@@ -1338,7 +1347,7 @@ IQVTKCADModel3DViewer::~IQVTKCADModel3DViewer()
     // delete some stuff so that their destructors
     // still have access to viewer before actual viewer is destroyed
     clipping_.reset();
-    highlightedItem_.reset();
+    exposedItem_.reset();
     navigationManager_.reset();
     currentAction_.reset();
     for(auto bg: backgroundImages_)
@@ -1625,11 +1634,11 @@ void IQVTKCADModel3DViewer::setSelectionModel(QItemSelectionModel *selmodel)
                 auto cdd = displayedData_.find(current.siblingAtColumn(0));
                 if (cdd!=displayedData_.end())
                 {
-                    doHighlightItem(cdd->second.ce_);
+                    doExposeItem(cdd->second.ce_);
                 }
                 else
                 {
-                    highlightedItem_.reset();
+                    exposedItem_.reset();
                 }
             }
         }
@@ -1833,16 +1842,12 @@ void IQVTKCADModel3DViewer::editSketch(
             saac );
 
 
-        connect(ske.get(), &IQVTKConstrainedSketchEditor::finished, ske.get(),
-                [this,psk,scc]()
-                {
-                    if (scc) scc();
-                    setDefaultAction();
-                }
-        );
+        if (scc)
+        {
+            ske->actionIsFinished.connect(scc);
+        }
 
         launchAction(std::move(ske));
-//        currentUserActivity_=std::move(ske);
     }
 }
 

@@ -147,14 +147,14 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
     connect( model_, &IQCADItemModel::insertIntoNotebook,
              notepad_, &QTextEdit::insertPlainText );
     connect( model_, &IQCADItemModel::highlightInView,
-             viewer_, &Model3DViewer::highlightItem );
+            viewer_, &Model3DViewer::exposeItem );
     connect( model_, &IQCADItemModel::undoHighlightInView,
-             viewer_, &Model3DViewer::undoHighlightItem );
+            viewer_, &Model3DViewer::undoExposeItem );
 
     connect( modelEdit_, &IQISCADModelScriptEdit::focus,
-             viewer_, &Model3DViewer::highlightItem );
+            viewer_, &Model3DViewer::exposeItem );
     connect( modelEdit_, &IQISCADModelScriptEdit::unfocus,
-             viewer_, &Model3DViewer::undoHighlightItem );
+            viewer_, &Model3DViewer::undoExposeItem );
 
 #warning reimplement!
 //    connect(modeltree_, &QModelTree::showItem,

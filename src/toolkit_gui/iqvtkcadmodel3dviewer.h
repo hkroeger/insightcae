@@ -204,14 +204,12 @@ private:
     void recomputeSceneBounds() const;
 
 
-#warning should be better named "expose"
-
     /**
      * @brief The HighlightItem class
      * displays a single feature exposed in red
      * and makes all others transparent
      */
-    class HighlightItem : public IQVTKViewerState
+    class ExposeItem : public IQVTKViewerState
     {
 
         CADEntity entity_;
@@ -219,20 +217,20 @@ private:
         QPersistentModelIndex idx2highlight_;
 
     public:
-        HighlightItem(
+        ExposeItem(
                 std::shared_ptr<DisplayedEntity> de,
                 QPersistentModelIndex idx2highlight,
                 IQVTKCADModel3DViewer& viewer,
                 QColor hicol = QColorConstants::Red );
-        ~HighlightItem();
+        ~ExposeItem();
 
         const CADEntity& entity() const;
         QModelIndex index() const;
 
     };
-    friend class HighlightItem;
+    friend class ExposeItem;
 
-    mutable std::shared_ptr< HighlightItem > highlightedItem_;
+    mutable std::shared_ptr< ExposeItem > exposedItem_;
 
 
     /*
@@ -307,7 +305,7 @@ private:
     void resetVisibility(const QPersistentModelIndex& pidx);
     void resetDisplayProps(const QPersistentModelIndex& pidx);
 
-    void doHighlightItem( CADEntity item );
+    void doExposeItem( CADEntity item );
 
 
     NavigationManager<IQVTKCADModel3DViewer>::Ptr navigationManager_;
@@ -366,8 +364,8 @@ public:
     const Bounds& sceneBounds() const;
 
 public:
-    void highlightItem( insight::cad::FeaturePtr feat ) override;
-    void undoHighlightItem() override;
+    void exposeItem( insight::cad::FeaturePtr feat ) override;
+    void undoExposeItem() override;
 
     void onMeasureDistance() override;
     void onMeasureDiameter() override;

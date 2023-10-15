@@ -5,7 +5,7 @@
 #include "vtkProperty.h"
 
 
-IQVTKCADModel3DViewer::HighlightItem::HighlightItem(
+IQVTKCADModel3DViewer::ExposeItem::ExposeItem(
         std::shared_ptr<DisplayedEntity> de,
         QPersistentModelIndex idx2highlight,
         IQVTKCADModel3DViewer& viewer,
@@ -56,7 +56,7 @@ IQVTKCADModel3DViewer::HighlightItem::HighlightItem(
 
 
 
-IQVTKCADModel3DViewer::HighlightItem::~HighlightItem()
+IQVTKCADModel3DViewer::ExposeItem::~ExposeItem()
 {
     for (auto& o: viewer_.displayedData_)
     {
@@ -96,7 +96,7 @@ IQVTKCADModel3DViewer::HighlightItem::~HighlightItem()
 
 
 
-const IQVTKCADModel3DViewer::CADEntity &IQVTKCADModel3DViewer::HighlightItem::entity() const
+const IQVTKCADModel3DViewer::CADEntity &IQVTKCADModel3DViewer::ExposeItem::entity() const
 {
     return entity_;
 }
@@ -104,7 +104,7 @@ const IQVTKCADModel3DViewer::CADEntity &IQVTKCADModel3DViewer::HighlightItem::en
 
 
 
-QModelIndex IQVTKCADModel3DViewer::HighlightItem::index() const
+QModelIndex IQVTKCADModel3DViewer::ExposeItem::index() const
 {
     return QModelIndex(idx2highlight_);
 }

@@ -94,12 +94,12 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
             }
         }
 
-        IQParameterSetModel::ParameterEditor pc(*model, path().toStdString());
-        auto& tp = dynamic_cast<insight::CADSketchParameter&>(pc.parameter);
+        auto pc = std::make_shared<IQParameterSetModel::ParameterEditor>(*model, path().toStdString());
 
         viewer->editSketch(
             sk,
             p.defaultGeometryParameters(),
+
 #warning replace!!
             [](
                 const insight::ParameterSet& seps,
@@ -146,15 +146,18 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
                     actprops->SetLineWidth(2);
                 }
             },
-            [&tp,sk,teScript,model,index]()
+
+            [pc,sk,teScript,model,index]()
             {
                 std::ostringstream os;
                 sk->generateScript(os);
+                auto& tp = dynamic_cast<insight::CADSketchParameter&>(pc->parameter);
                 tp.setScript(os.str());
                 teScript->document()->setPlainText(
                     QString::fromStdString(tp.script()) );
                 model->notifyParameterChange(index);
             }
+
             );
     };
     connect(edit, &QPushButton::pressed, editFunction);

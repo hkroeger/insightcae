@@ -74,8 +74,8 @@ public:
     virtual void setSelectionModel(QItemSelectionModel *selmodel);
 
 public Q_SLOT:
-    virtual void highlightItem( insight::cad::FeaturePtr feat ) =0;
-    virtual void undoHighlightItem() =0;
+    virtual void exposeItem( insight::cad::FeaturePtr feat ) =0;
+    virtual void undoExposeItem() =0;
 
     virtual bool onLeftButtonDown(
         Qt::KeyboardModifiers nFlags,

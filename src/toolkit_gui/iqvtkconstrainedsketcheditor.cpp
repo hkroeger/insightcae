@@ -261,10 +261,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         IQCADModel3DViewer::SetSketchEntityAppearanceCallback sseac
 )
     : ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),
-//      IQVTKConstrainedSketchEditorSelectionLogic(
-//        [this]()
-//        { return std::make_shared<SketchEntityMultiSelection>(*this); },
-//        viewer ),
       insight::cad::ConstrainedSketchPtr(sketch),
       setActorAppearance_(sseac),
       defaultGeometryParameters_(defaultGeometryParameters)
@@ -272,12 +268,15 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 {
 
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
+
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawline.svg"), "Line",
                         this, &IQVTKConstrainedSketchEditor::drawLine);
+
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_solve.svg"), "Solve",
                         this, &IQVTKConstrainedSketchEditor::solve);
+
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_finish.svg"), "Finish",
-                        this, &IQVTKConstrainedSketchEditor::finished);
+                        std::bind(&IQVTKConstrainedSketchEditor::finishAction, this) );
 
     toolBar_->addAction(
         "H",
@@ -602,6 +601,10 @@ IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
 
 void IQVTKConstrainedSketchEditor::start()
 {
+    transparency_.reset(
+        new IQVTKCADModel3DViewer::ExposeItem(
+            nullptr, QModelIndex(), viewer() )
+        );
     launchDefaultSelectionAction();
     updateActors();
 }

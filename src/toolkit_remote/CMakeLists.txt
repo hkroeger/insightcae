@@ -46,8 +46,6 @@ if (wt_FOUND)
     endif()
 
 
-    add_subdirectory(tests)
-
 else()
     message(STATUS "Did not found wt, disabling toolkit remote interface lib.")
 endif()

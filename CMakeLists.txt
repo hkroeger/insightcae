@@ -738,13 +738,13 @@ macro(setup_test_OF PRJ_NAME cmd)
   endforeach()
 endmacro()
 
-macro(add_test_OF TESTNAME cmd)
+macro(add_test_OF TESTNAME CMD)
     version_list_OF()
     foreach (_ofvers ${OF_VERSIONS})
      if (${_ofvers}_FOUND)
       add_test(
           NAME ${TESTNAME}${_ofvers}
-          COMMAND ${CMD} ${_ofvers} ${ARGN}
+          COMMAND bash -lc "source ${${_ofvers}_ISCFG_BASHRC};${CMD} ${_ofvers} ${ARGN}"
       )
      endif()
     endforeach()
@@ -978,7 +978,7 @@ endmacro(install_package_script)
 
 add_subdirectory(src)
 add_subdirectory(share)
-
+add_subdirectory(test)
 
 
 

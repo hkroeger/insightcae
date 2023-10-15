@@ -32,6 +32,12 @@ void potentialFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
 
+  if (OFversion()<170)
+  {
+      OFDictData::dict& PF=fvSolution.subDict("SIMPLE");
+      PF["nNonOrthogonalCorrectors"]=10;
+  }
+
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   solvers["p"]=isGAMGOk() ? OFcase().GAMGPCGSolverSetup(1e-7, 0.01):OFcase().stdSymmSolverSetup(1e-7, 0.01);
 
@@ -47,6 +53,7 @@ void potentialFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["default"]          = "none";
   div["div(phi,U)"]       = "bounded Gauss linear";
   div["div(div(phi,U))"]  = "Gauss linear";
+
 }
 
 bool potentialFoamNumerics::isCompressible() const

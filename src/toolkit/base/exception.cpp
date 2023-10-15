@@ -32,6 +32,7 @@
 #include "stdarg.h"
 
 #include "boost/stacktrace.hpp"
+#include "boost/format.hpp"
 #include "boost/algorithm/string.hpp"
 
 #define DEBUG
@@ -206,13 +207,19 @@ Exception::Exception(const std::string& msg, const std::string& strace)
 
 Exception::operator std::string() const
 {
-  return message_;
+  return message();
+}
+
+string Exception::message() const
+{
+   return message_;
 }
 
 
 const char* Exception::what() const noexcept
 {
-  return message_.c_str();
+   whatMessage_=message();
+   return whatMessage_.c_str();
 }
 
 const std::map<string, cad::FeaturePtr> &Exception::contextGeometry() const
@@ -516,12 +523,54 @@ string vector_to_string(const arma::mat &vals, bool addMag)
   return os.str();
 }
 
+
+
+
+ExternalProcessFailed::ExternalProcessFailed()
+    : retcode_(0)
+{}
+
+ExternalProcessFailed::ExternalProcessFailed(
+    int retcode,
+    const std::string &exename,
+    const std::string &errout )
+
+  : Exception(
+        str(boost::format(
+                "Execution of external application \"%s\" failed with return code %d!\n")
+            % exename % retcode),
+        true),
+    retcode_(retcode),
+    exename_(exename),
+    errout_(errout)
+{}
+
+
+string ExternalProcessFailed::message() const
+{
+  return Exception::message()
+         + ( errout_.size()>0 ?
+                ( "Error output was:\n " + errout_ + "\n" )
+                               :
+                ( "There was no error output." )
+            );
+}
+
+const string &ExternalProcessFailed::exeName() const
+{
+  return exename_;
+}
+
+
+
+
 UnsupportedFeature::UnsupportedFeature()
 {}
 
 UnsupportedFeature::UnsupportedFeature(const string &msg, bool strace)
-  : Exception(msg, strace)
+    : Exception(msg, strace)
 {}
+
 
 
 

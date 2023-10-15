@@ -9,7 +9,6 @@ IF(INSIGHT_BUILD_TOOLKIT)
   add_subdirectory(isGenerateParameterSetReference)
 ENDIF()
 
-add_subdirectory(test)
 add_subdirectory(refdata)
 add_subdirectory(etc)
 add_subdirectory(taskspooler)

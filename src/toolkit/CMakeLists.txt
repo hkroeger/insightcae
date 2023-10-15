@@ -526,6 +526,4 @@ ENDIF()
 add_pybindings(toolkit "toolkit.i" toolkit)
 
 
-add_subdirectory(openfoam/tests)
-
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SWIG_RUNTIME} DESTINATION include/toolkit)

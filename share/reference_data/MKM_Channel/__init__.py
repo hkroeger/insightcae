@@ -73,17 +73,17 @@ def getProfile(name):
       xcol=1
       fname="chan%s/profiles/chan%s.reystress"%(Retau, Retau)
       if yname=="Ruu":
-	ycol=2
+          ycol=2
       if yname=="Rvv":
-	ycol=3
+          ycol=3
       if yname=="Rww":
-	ycol=4
+          ycol=4
       if yname=="Ruv" or yname=="Rvu":
-	ycol=5
+          ycol=5
       if yname=="Ruw" or yname=="Rwu":
-	ycol=6
+          ycol=6
       if yname=="Rvw" or yname=="Rwv":
-	ycol=7
+          ycol=7
 	
   elif xname.startswith("xp@"):
     yp=xname.split('@')[1]
@@ -99,13 +99,13 @@ def getProfile(name):
     else:
       fname="chan%s/correlations/chan%s.xcorr.%s"%(Retau, Retau, yp)
       if yname=="Ruu":
-	ycol=2
+          ycol=2
       if yname=="Rvv":
-	ycol=3
+          ycol=3
       if yname=="Rww":
-	ycol=4
+          ycol=4
       if yname=="Rpp":
-	ycol=5
+          ycol=5
 	
   elif xname.startswith("zp@"):
     yp=xname.split('@')[1]
@@ -121,13 +121,13 @@ def getProfile(name):
     else:
       fname="chan%s/correlations/chan%s.zcorr.%s"%(Retau, Retau, yp)
       if yname=="Ruu":
-	ycol=2
+          ycol=2
       if yname=="Rvv":
-	ycol=3
+          ycol=3
       if yname=="Rww":
-	ycol=4
+          ycol=4
       if yname=="Rpp":
-	ycol=5
+          ycol=5
   
   data=np.array([[0.0,0.0],[1.0,0.0]])
   if not xcol is None and not ycol is None:

@@ -108,16 +108,11 @@ void SoftwareEnvironment::executeCommand
   auto retcode = job->process().exit_code();
   if (retcode!=0)
   {
-    throw insight::Exception(
-          boost::str(boost::format(
-             "Execution of external application \"%s\" failed with return code %d!\n")
-              % finalcmd % retcode)
-          + ( errout.size()>0 ?
-               ("Error output was:\n " + boost::join(errout, "\n ")+"\n")
-               :
-               "There was no error output."
-             )
-          );
+    throw insight::ExternalProcessFailed(
+        retcode,
+        finalcmd,
+        boost::join(errout, "\n ")
+    );
   }
   
   //return p_in.rdbuf()->status();

@@ -98,6 +98,8 @@ class Exception
   std::map<std::string, cad::FeaturePtr> contextGeometry_;
 
   void saveContext(bool strace);
+
+  mutable std::string whatMessage_;
   
 public:
   Exception();
@@ -105,12 +107,12 @@ public:
   Exception(const std::string& msg, const std::map<std::string, cad::FeaturePtr>& contextGeometry, bool strace=true);
   Exception(const std::string& msg, const std::string& strace);
 
-  inline std::string as_string() const { return static_cast<std::string>(*this); }
 
-  operator std::string() const;
-
-  inline const std::string& message() const { return message_; }
+  virtual std::string message() const;
   inline std::string& messageRef() { return message_; }
+
+  inline std::string as_string() const { return static_cast<std::string>(*this); }
+  operator std::string() const;
   inline const std::string& strace() const { return strace_; }
 
   const char* what() const noexcept override;
@@ -120,6 +122,19 @@ public:
 };
 
 
+class ExternalProcessFailed
+    : public Exception
+{
+  int retcode_;
+  std::string exename_, errout_;
+
+public:
+  ExternalProcessFailed();
+  ExternalProcessFailed(int retcode, const std::string& exename, const std::string& errout);
+
+  std::string message() const override;
+  const std::string& exeName() const;
+};
 
 
 class UnsupportedFeature

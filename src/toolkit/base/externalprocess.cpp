@@ -162,7 +162,15 @@ void Job::wait()
 {
   if (process_)
   {
-        process_->wait();
+        try
+        {
+            process_->wait();
+        }
+        catch (boost::process::process_error& err)
+        {
+            // continue and avoid unhandled "waitpid failed: no child process" exception
+            // in case of segfaulted child process
+        }
   }
 }
 
@@ -227,7 +235,7 @@ void Job::runAndTransferOutput
         }
   );
 
-  process_->wait(); // exit code is not set correctly, if this is skipped
+  wait(); // exit code is not set correctly, if this is skipped
 }
 
 

@@ -803,6 +803,7 @@ void OpenFOAMCase::runSolver
 
   auto job = env_.forkCommand( cmdString(location, execmd, argv) );
 
+  std::vector<std::string> errout;
 
   job->ios_run_with_interruption(
 
@@ -823,13 +824,16 @@ void OpenFOAMCase::runSolver
           // mirror to console
           cout<<"[E] "<<line<<endl; // mirror to console
           analyzer.update("[E] "+line);
+          errout.push_back(line);
         }
   );
 
   job->wait();
 
-  if (job->process().exit_code()!=0)
-      throw insight::Exception("OpenFOAMCase::runSolver(): external command execution failed with nonzero exit code!");
+  int retcode=job->process().exit_code();
+  if (retcode!=0)
+      throw insight::ExternalProcessFailed
+        (retcode, cmd, boost::join(errout, "\n "));
 }
 
 

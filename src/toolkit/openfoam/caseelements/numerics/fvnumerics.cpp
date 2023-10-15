@@ -162,7 +162,14 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
 
   // potentialFoam
-  laplacian["laplacian(1,Phi)"]="Gauss linear limited 0.66";
+  if (OFversion()<170)
+  {
+    laplacian["laplacian(1,p)"]="Gauss linear limited 0.66";
+  }
+  else
+  {
+    laplacian["laplacian(1,Phi)"]="Gauss linear limited 0.66";
+  }
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="linear";

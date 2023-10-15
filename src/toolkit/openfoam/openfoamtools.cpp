@@ -169,11 +169,14 @@ void setSet(
   job->input() << "quit" << endl;
   job->closeInput();
 
-  job->runAndTransferOutput();
+  std::vector<std::string> errout;
+  job->runAndTransferOutput(nullptr, &errout);
 
-  if (job->process().exit_code()!=0)
+  int retcode=job->process().exit_code();
+  if (retcode!=0)
   {
-    throw insight::Exception("setSet: command failed with nonzero return code.");
+    throw insight::ExternalProcessFailed(
+            retcode, "setSet", boost::join(errout, "\n ") );
   }
 }
 

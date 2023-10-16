@@ -58,7 +58,7 @@ QVBoxLayout* IQMatrixParameter::populateEditControls(
   auto applyFunction = [=]()
   {
     auto&p = dynamic_cast<insight::MatrixParameter&>(model->parameterRef(index));
-    p()=arma::mat(lineEdit->text().toStdString());
+    p.set(arma::mat(lineEdit->text().toStdString()));
     model->notifyParameterChange(index);
   };
 

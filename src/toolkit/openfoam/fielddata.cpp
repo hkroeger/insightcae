@@ -353,7 +353,7 @@ Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::stri
 
   {
     ParameterSet& us = *(opts->items().at("uniformSteady"));
-    us.get<VectorParameter>("value")() = def_val;
+    us.get<VectorParameter>("value").set( def_val );
   }
 
   return p.release();

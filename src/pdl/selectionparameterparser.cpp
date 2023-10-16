@@ -76,7 +76,7 @@ void SelectionParameterParser::Data::cppWriteSetStatement(
     const std::string&
 ) const
 {
-  os<<varname<<"() = int("<< staticname <<");"<<endl;
+  os<<varname<<".set( int("<< staticname <<") );"<<endl;
 }
 
 void SelectionParameterParser::Data::cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,

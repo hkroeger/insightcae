@@ -173,6 +173,7 @@ void SpatialTransformationParameter::readFromNode (
             insight::assertion(scaleAttr, "No attribute \"scale\" present in "+name+"!");
             stringToValue ( scaleAttr->value(), scale_ );
         }
+        valueChanged();
     }
     else
     {
@@ -205,6 +206,7 @@ void SpatialTransformationParameter::reset(const Parameter& p)
     {
       Parameter::reset(p);
       SpatialTransformation::operator=(*op);
+      valueChanged();
     }
     else
       throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");

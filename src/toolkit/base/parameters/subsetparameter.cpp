@@ -136,6 +136,7 @@ const ParameterSet &SubsetParameter::subset() const
 void SubsetParameter::merge(const SubParameterSet &other, bool allowInsertion)
 {
   this->ParameterSet::merge(other.subset(), allowInsertion);
+  valueChanged();
 }
 
 Parameter *SubsetParameter::intersection(const SubParameterSet &other) const

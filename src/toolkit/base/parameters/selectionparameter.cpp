@@ -50,11 +50,25 @@ bool SelectionParameter::isDifferent(const Parameter& p) const
     return true;
 }
 
+void SelectionParameter::resetItems(const ItemList &newItems)
+{
+  items_=newItems;
+  value_=0;
+  valueChanged();
+}
+
 
 const SelectionParameter::ItemList& SelectionParameter::items() const
 {
   return items_;
 }
+
+void SelectionParameter::setSelection ( const std::string& sel )
+{
+  value_=selection_id ( sel );
+  valueChanged();
+}
+
 
 std::string SelectionParameter::latexRepresentation() const
 {
@@ -113,6 +127,7 @@ void SelectionParameter::readFromNode
         throw insight::Exception("Invalid selection value ("+key+") in parameter "+name);
       }
     }
+    valueChanged();
   }
   else
   {
@@ -140,6 +155,7 @@ void SelectionParameter::reset(const Parameter& p)
   {
     IntParameter::reset(p);
     items_ = op->items_;
+    valueChanged();
   }
   else
     throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");

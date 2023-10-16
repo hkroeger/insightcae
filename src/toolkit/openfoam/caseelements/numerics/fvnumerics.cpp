@@ -211,7 +211,14 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   decomposeParDict::addIntoDictionaries(dictionaries);
 }
 
-FVNumerics::Parameters &FVNumerics::parameters()
+
+const FVNumerics::Parameters &FVNumerics::parameters() const
+{
+  return p_;
+}
+
+
+FVNumerics::Parameters &FVNumerics::parametersRef()
 {
     return p_;
 }

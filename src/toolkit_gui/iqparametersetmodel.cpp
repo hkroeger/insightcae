@@ -466,19 +466,19 @@ void IQParameterSetModel::clearParameters()
 
 
 
-void IQParameterSetModel::decorateChildren(QObject* parent, insight::Parameter* p/*, int level*/)
+void IQParameterSetModel::decorateChildren(QObject* parent, insight::Parameter* p)
 {
   if (const auto* sdp = dynamic_cast<insight::SubParameterSet*>(p))
   {
-    decorateSubdictContent(parent, sdp->subset()/*, level+1*/);
+    decorateSubdictContent(parent, sdp->subset());
   }
   else if (auto* ap = dynamic_cast<insight::ArrayParameterBase*>(p))
   {
-    decorateArrayContent(parent, *ap/*, level+1*/);
+    decorateArrayContent(parent, *ap);
   }
 }
 
-QList<IQParameter*> IQParameterSetModel::decorateSubdictContent(QObject* parent, const insight::ParameterSet& ps/*, int level*/)
+QList<IQParameter*> IQParameterSetModel::decorateSubdictContent(QObject* parent, const insight::ParameterSet& ps)
 {
   QList<IQParameter*> children;
   for (const auto& p: ps)
@@ -487,7 +487,7 @@ QList<IQParameter*> IQParameterSetModel::decorateSubdictContent(QObject* parent,
     auto name=QString::fromStdString(p.first);
     auto iqp = IQParameter::create(parent, name, cp, defaultParameterSet_);
 
-    decorateChildren(iqp, &cp/*, level*/);
+    decorateChildren(iqp, &cp);
     children.append(iqp);
   }
   if (IQParameter* ciqp = dynamic_cast<IQParameter*>(parent))
@@ -497,21 +497,21 @@ QList<IQParameter*> IQParameterSetModel::decorateSubdictContent(QObject* parent,
   return children;
 };
 
-IQParameter* IQParameterSetModel::decorateArrayElement(QObject* parent, int i, insight::Parameter& cp/*, int level*/)
+IQParameter* IQParameterSetModel::decorateArrayElement(QObject* parent, int i, insight::Parameter& cp)
 {
   auto name=QString("%1").arg(i);
   auto iqp = IQArrayElementParameterBase::create(parent, name, cp, defaultParameterSet_);
 
-  decorateChildren(iqp, &cp/*, level*/);
+  decorateChildren(iqp, &cp);
   return iqp;
 }
 
-QList<IQParameter*> IQParameterSetModel::decorateArrayContent(QObject* parent, insight::ArrayParameterBase& ap/*, int level*/)
+QList<IQParameter*> IQParameterSetModel::decorateArrayContent(QObject* parent, insight::ArrayParameterBase& ap)
 {
   QList<IQParameter*> children;
   for (int i=0; i<ap.size(); ++i)
   {
-    auto iqp=decorateArrayElement(parent, i, ap.elementRef(i)/*, level*/);
+    auto iqp=decorateArrayElement(parent, i, ap.elementRef(i));
     children.append(iqp);
   }
   if (IQParameter* ciqp = dynamic_cast<IQParameter*>(parent))
@@ -533,7 +533,7 @@ void IQParameterSetModel::resetParameters(const insight::ParameterSet &ps, const
   // create decorators that store parent relationship
 
   beginInsertRows(QModelIndex(), 0, parameterSet_.size()-1);
-  rootParameters_=decorateSubdictContent(this, parameterSet_/*, 0*/);
+  rootParameters_=decorateSubdictContent(this, parameterSet_);
   endInsertRows();
 }
 

@@ -8,7 +8,7 @@ namespace insight {
 
 class SpatialTransformationParameter
         : public Parameter,
-          public SpatialTransformation
+          private SpatialTransformation
 {
 public:
     declareType ( "spatialTransformation" );
@@ -29,9 +29,10 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
-    SpatialTransformation& operator() ()
+    void set(const SpatialTransformation& nv)
     {
-        return *this;
+        SpatialTransformation::operator=(nv);
+        valueChanged();
     }
 
     const SpatialTransformation& operator() () const

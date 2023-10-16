@@ -63,9 +63,11 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto& p = dynamic_cast<insight::VectorParameter&>(model->parameterRef(index));
-    insight::stringToValue(lineEdit->text().toStdString(), p());
-    model->notifyParameterChange(index);
+      auto& p = dynamic_cast<insight::VectorParameter&>(model->parameterRef(index));
+      arma::mat v;
+      insight::stringToValue(lineEdit->text().toStdString(), v);
+      p.set(v);
+      model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);

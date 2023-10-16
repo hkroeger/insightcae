@@ -222,15 +222,15 @@ void SpeciesData::modifyDefaults(ParameterSet &ps)
 
   if (speciesLibrary_.size()>0)
   {
-    sl.items().clear();
-
+    SelectionParameter::ItemList ni;
     std::transform(speciesLibrary_.begin(), speciesLibrary_.end(),
-                   std::back_inserter(sl.items()),
+                   std::back_inserter(ni),
                    [](const SpeciesLibrary::value_type& sle)
                     {
                       return sle.first;
                     }
     );
+    sl.resetItems(ni);
   }
 
 }

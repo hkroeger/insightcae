@@ -396,35 +396,35 @@ Parameter &ParameterSet::getParameter(std::string path)
 }
 
 
-int& ParameterSet::getInt ( const std::string& name )
-{
-  return this->get<IntParameter> ( name ) ();
-}
+//int& ParameterSet::getInt ( const std::string& name )
+//{
+//  return this->get<IntParameter> ( name ) ();
+//}
 
-double& ParameterSet::getDouble ( const std::string& name )
-{
-  return this->get<DoubleParameter> ( name ) ();
-}
+//double& ParameterSet::getDouble ( const std::string& name )
+//{
+//  return this->get<DoubleParameter> ( name ) ();
+//}
 
-bool& ParameterSet::getBool ( const std::string& name )
-{
-  return this->get<BoolParameter> ( name ) ();
-}
+//bool& ParameterSet::getBool ( const std::string& name )
+//{
+//  return this->get<BoolParameter> ( name ) ();
+//}
 
-std::string& ParameterSet::getString ( const std::string& name )
-{
-  return this->get<StringParameter> ( name ) ();
-}
+//std::string& ParameterSet::getString ( const std::string& name )
+//{
+//  return this->get<StringParameter> ( name ) ();
+//}
 
-arma::mat& ParameterSet::getVector ( const std::string& name )
-{
-  return this->get<VectorParameter> ( name ) ();
-}
+//arma::mat& ParameterSet::getVector ( const std::string& name )
+//{
+//  return this->get<VectorParameter> ( name ) ();
+//}
 
-arma::mat& ParameterSet::getMatrix ( const std::string& name )
-{
-  return this->get<MatrixParameter> ( name ) ();
-}
+//arma::mat& ParameterSet::getMatrix ( const std::string& name )
+//{
+//  return this->get<MatrixParameter> ( name ) ();
+//}
 
 std::istream& ParameterSet::getFileStream ( const std::string& name )
 {
@@ -433,37 +433,37 @@ std::istream& ParameterSet::getFileStream ( const std::string& name )
 
 ParameterSet& ParameterSet::setInt ( const std::string& name, int v )
 {
-  this->get<IntParameter> ( name ) () = v;
+  this->get<IntParameter> ( name ).set( v );
   return *this;
 }
 
 ParameterSet& ParameterSet::setDouble ( const std::string& name, double v )
 {
-  this->get<DoubleParameter> ( name ) () = v;
+  this->get<DoubleParameter> ( name ).set( v );
   return *this;
 }
 
 ParameterSet& ParameterSet::setBool ( const std::string& name, bool v )
 {
-  this->get<BoolParameter> ( name ) () = v;
+  this->get<BoolParameter> ( name ).set( v );
   return *this;
 }
 
 ParameterSet& ParameterSet::setString ( const std::string& name, const std::string& v )
 {
-  this->get<StringParameter> ( name ) () = v;
+  this->get<StringParameter> ( name ).set( v );
   return *this;
 }
 
 ParameterSet& ParameterSet::setVector ( const std::string& name, const arma::mat& v )
 {
-  this->get<VectorParameter> ( name ) () = v;
+  this->get<VectorParameter> ( name ).set( v );
   return *this;
 }
 
 ParameterSet& ParameterSet::setMatrix ( const std::string& name, const arma::mat& m )
 {
-  this->get<MatrixParameter> ( name ) () = m;
+  this->get<MatrixParameter> ( name ).set( m );
   return *this;
 }
 

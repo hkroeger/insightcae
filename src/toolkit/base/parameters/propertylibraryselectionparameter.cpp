@@ -77,7 +77,7 @@ void PropertyLibrarySelectionParameter::setSelection ( const std::string& sel )
         "property library does not contain selection "+sel+"!\n"
         " Available values are: "+boost::join(items(), " ") );
 
-    value_=sel;
+    StringParameter::set(sel);
 }
 
 const std::string& PropertyLibrarySelectionParameter::selection() const
@@ -123,8 +123,8 @@ void PropertyLibrarySelectionParameter::reset(const Parameter& p)
 {
     if (const auto* op = dynamic_cast<const PropertyLibrarySelectionParameter*>(&p))
     {
-      StringParameter::reset(p);
       propertyLibrary_ = op->propertyLibrary_;
+      StringParameter::reset(p);
     }
     else
       throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");

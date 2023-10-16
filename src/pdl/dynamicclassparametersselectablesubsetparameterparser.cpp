@@ -55,9 +55,9 @@ void DynamicClassParametersSelectableSubsetParameterParser::Data::cppWriteCreate
         "}";
 
     if (default_sel_==std::string())
-         os<<name<<"->selection() = "<<base_type<<"::factories_->begin()->first;\n";
+         os<<name<<"->setSelection("<<base_type<<"::factories_->begin()->first);\n";
     else
-         os<<name<<"->selection() = \""<<default_sel_<<"\";\n";
+         os<<name<<"->setSelection(\""<<default_sel_<<"\");\n";
     os << "}"
     ;
 }
@@ -72,7 +72,7 @@ void DynamicClassParametersSelectableSubsetParameterParser::Data::cppWriteSetSta
 ) const
 {
     os<<"{\n"
-        <<varname<<".selection()="<<staticname<<".selection;\n"
+        <<varname<<".setSelection("<<staticname<<".selection);\n"
         <<varname<<"() = " << staticname<<".parameters;\n"
         "}\n"<<endl;
 }

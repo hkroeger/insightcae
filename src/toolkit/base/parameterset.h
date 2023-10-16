@@ -158,12 +158,12 @@ public:
     return ( i!=end() );
   }
 
-  int& getInt ( const std::string& name );
-  double& getDouble ( const std::string& name );
-  bool& getBool ( const std::string& name );
-  std::string& getString ( const std::string& name );
-  arma::mat& getVector ( const std::string& name );
-  arma::mat& getMatrix ( const std::string& name );
+//  int& getInt ( const std::string& name );
+//  double& getDouble ( const std::string& name );
+//  bool& getBool ( const std::string& name );
+//  std::string& getString ( const std::string& name );
+//  arma::mat& getVector ( const std::string& name );
+//  arma::mat& getMatrix ( const std::string& name );
   std::istream& getFileStream ( const std::string& name );
 
   ParameterSet& setInt ( const std::string& name, int v );

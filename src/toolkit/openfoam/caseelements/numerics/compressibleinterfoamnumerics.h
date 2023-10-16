@@ -16,7 +16,7 @@ public:
     /*
 PARAMETERSET>>> compressibleInterFoamNumerics Parameters
 inherits interFoamNumerics::Parameters
-addTo_makeDefault { p.getDouble("pinternal")=1e5; }
+addTo_makeDefault { p.setDouble("pinternal", 1e5); }
 
 Tinternal = double 300.0 "Internal pressure field value"
 

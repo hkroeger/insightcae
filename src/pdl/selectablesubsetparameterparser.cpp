@@ -148,7 +148,7 @@ void SelectableSubsetParameterParser::Data::cppWriteSetStatement
          os << "boost::get< "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) ) <<" >(&"<< staticname <<")"
          ") {\n";
 
-         os <<varname<<".selection() = \""<<sel_name<<"\";\n";
+         os <<varname<<".setSelection(\""<<sel_name<<"\");\n";
          if (!emptyset)
          {
             os <<

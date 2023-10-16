@@ -53,7 +53,7 @@ void DoubleRangeParameterParser::Data::cppWriteSetStatement
     const std::string&
 ) const
 {
-    os<<varname<<".values() = "<<staticname<<";"<<endl;
+    os<<varname<<".resetValues("<<staticname<<");"<<endl;
 }
 
 void DoubleRangeParameterParser::Data::cppWriteGetStatement

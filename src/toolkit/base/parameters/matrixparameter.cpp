@@ -32,9 +32,10 @@ bool MatrixParameter::isDifferent(const Parameter& p) const
     return true;
 }
 
-arma::mat& MatrixParameter::operator()()
+void MatrixParameter::set(const arma::mat& nv)
 {
-  return value_;
+  value_=nv;
+  valueChanged();
 }
 
 const arma::mat& MatrixParameter::operator()() const
@@ -119,6 +120,7 @@ void MatrixParameter::readFromNode
     std::string value_str=child->value();
     std::istringstream iss(value_str);
     value_.load(iss, arma::raw_ascii);
+    valueChanged();
   }
   else
   {
@@ -145,6 +147,7 @@ void MatrixParameter::reset(const Parameter& p)
   {
     Parameter::reset(p);
     value_ = op->value_;
+    valueChanged();
   }
   else
     throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");

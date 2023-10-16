@@ -44,7 +44,7 @@ void DynamicClassSelectableSubsetParameterParser::Data::cppWriteCreateStatement
          "std::unique_ptr< "<<cppParamType ( name ) <<" > "<<name<<";"
          "{"
          <<name<<".reset(new "<<cppParamType ( name ) <<"(\""<<description<<"\")); "
-        "for ("<<base_type<<"::FactoryTable::const_iterator i = "<<base_type<<"::factories_->begin();"
+        "for (auto i = "<<base_type<<"::factories_->begin();"
             "i != "<<base_type<<"::factories_->end(); i++)"
         "{"
             "ParameterSet defp = "<<base_type<<"::defaultParameters(i->first);"
@@ -52,9 +52,9 @@ void DynamicClassSelectableSubsetParameterParser::Data::cppWriteCreateStatement
         "}";
 
     if (default_sel_==std::string())
-         os<<name<<"->selection() = "<<base_type<<"::factories_->begin()->first;";
+         os<<name<<"->setSelection("<<base_type<<"::factories_->begin()->first);";
     else
-         os<<name<<"->selection() = \""<<default_sel_<<"\";";
+         os<<name<<"->setSelection(\""<<default_sel_<<"\");";
 
     os << "}"
     ;
@@ -70,7 +70,7 @@ void DynamicClassSelectableSubsetParameterParser::Data::cppWriteSetStatement
 ) const
 {
     os<<"{"
-          <<varname<<".selection()="<<staticname<<"->type();"
+          <<varname<<".setSelection("<<staticname<<"->type());"
           <<varname<<"()="<<staticname<<"->getParameters();"
         "}"<<endl;
 }

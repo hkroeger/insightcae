@@ -75,24 +75,28 @@ int ArrayParameter::defaultSize() const
 void ArrayParameter::eraseValue ( int i )
 {
   value_.erase ( value_.begin()+i );
+  valueChanged();
 }
 
 
 void ArrayParameter::appendValue ( const Parameter& np )
 {
   value_.push_back ( ParameterPtr( np.clone() ) );
+  valueChanged();
 }
 
 
 void ArrayParameter::insertValue ( int i, const Parameter& np )
 {
   value_.insert( value_.begin()+i, ParameterPtr( np.clone() ) );
+  valueChanged();
 }
 
 
 void ArrayParameter::appendEmpty()
 {
   value_.push_back ( ParameterPtr( defaultValue_->clone() ) );
+  valueChanged();
 }
 
 
@@ -124,6 +128,7 @@ int ArrayParameter::size() const
 void ArrayParameter::clear()
 {
     value_.clear();
+    valueChanged();
 }
 
 std::string ArrayParameter::latexRepresentation() const
@@ -276,6 +281,8 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>&
     {
         value_.push_back(v.second);
     }
+
+    valueChanged();
   }
   else
   {
@@ -314,6 +321,7 @@ void ArrayParameter::reset(const Parameter& p)
     value_.clear();
     for (const auto& v: op->value_)
       value_.push_back( ParameterPtr(v->clone()) );
+    valueChanged();
   }
   else
     throw insight::Exception(_("Tried to set a %s from a different type (%s)!"), type().c_str(), p.type().c_str());

@@ -107,7 +107,7 @@ QVBoxLayout* IQDoubleRangeParameter::populateEditControls(
   connect(clearbtn, &QPushButton::clicked, [=]()
   {
     auto&p = dynamic_cast<insight::DoubleRangeParameter&>(model->parameterRef(index));
-    p.values().clear();
+    p.clear();
     rebuildList(p);
     model->notifyParameterChange(index);
   }

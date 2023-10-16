@@ -25,6 +25,7 @@
 #include "base/parameterset.h"
 #include "base/parameters.h"
 #include "test_pdl__TestPDL__Parameters_headers.h"
+#include "openfoam/caseelements/turbulencemodel.h"
 
 namespace insight {
 
@@ -38,6 +39,20 @@ public:
 PARAMETERSET>>> TestPDL Parameters
 
 L = dimensionedScalar Length millimeters 1.0 "One millimeter"
+
+ap = array [ double 1. "" ] *2 ""
+
+dr = doubleRange ( 1. 2. 3. ) ""
+
+matrix = matrix [ [ 1., 2. ],  [ 3., 4. ] ] ""
+
+sel = selection ( one two three ) one ""
+
+trsf = spatialTransformation (0 0 0) ( 0 0 0) 1 ""
+
+mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
+
+turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 
 run = set {
 

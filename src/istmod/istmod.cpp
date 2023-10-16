@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
                 boost::split(pair, s, boost::is_any_of(":"));
                 bool v=boost::lexical_cast<bool>(pair[1]);
                 cout << "Setting boolean '"<<pair[0]<<"' = "<<v<<endl;
-                parameters.getBool(pair[0])=v;
+                parameters.setBool(pair[0], v);
             }
         }
 
@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
                 cout << "Setting string '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
-                parameters.getString(pair[0])=pair[1];
+                parameters.setString(pair[0], pair[1]);
             }
         }
 
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
                 boost::split(pair, s, boost::is_any_of(":"));
                 double v=toNumber<double>(pair[1]);
                 cout << "Setting double '"<<pair[0]<<"' = "<<v<<endl;
-                parameters.getDouble(pair[0])=v;
+                parameters.setDouble(pair[0], v);
             }
         }
 
@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
                 arma::mat v;
                 stringToValue(pair[1], v);
                 cout << "Setting vector '"<<pair[0]<<"' = "<<v<<endl;
-                parameters.getVector(pair[0])=v;
+                parameters.setVector(pair[0], v);
             }
         }
 
@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
                 boost::split(pair, s, boost::is_any_of(":"));
                 int v=toNumber<int>(pair[1]);
                 cout << "Setting int '"<<pair[0]<<"' = "<<v<<endl;
-                parameters.getInt(pair[0])=v;
+                parameters.setInt(pair[0], v);
             }
         }
 

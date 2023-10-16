@@ -13,6 +13,9 @@ add_PDL(test_pdl "${test_pdl_SOURCES}")
 
 add_toolkit_test(dictparser)
 
+add_toolkit_test(basicparameterset)
+add_PDL(basicparameterset "basicparameterset.h")
+
 add_toolkit_test(simplelatex)
 add_toolkit_test(meminfo)
 add_toolkit_test(execution)

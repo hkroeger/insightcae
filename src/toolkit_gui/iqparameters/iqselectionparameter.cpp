@@ -54,9 +54,9 @@ QVBoxLayout* IQSelectionParameter::populateEditControls(
   QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
   connect(apply, &QPushButton::pressed, [=]()
   {
-    auto &p = dynamic_cast<insight::SelectionParameter&>(model->parameterRef(index));
-    p() = selBox_->currentIndex();
-    model->notifyParameterChange(index);
+      auto &p = dynamic_cast<insight::SelectionParameter&>(model->parameterRef(index));
+      p.set(selBox_->currentIndex());
+      model->notifyParameterChange(index);
   }
   );
   layout->addWidget(apply);

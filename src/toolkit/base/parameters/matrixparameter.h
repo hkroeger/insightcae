@@ -47,7 +47,7 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
-    arma::mat& operator() ();
+    void set(const arma::mat& nv);
     const arma::mat& operator() () const;
 
     std::string latexRepresentation() const override;

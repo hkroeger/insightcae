@@ -74,10 +74,12 @@ public:
           value_ ( value*unit_type() )
     {}
 
-    virtual value_type& operator() ()
+    virtual void set(const value_type& nv)
     {
-        return value_;
+        value_=nv;
+        valueChanged();
     }
+
     virtual const value_type& operator() () const
     {
         return value_;
@@ -85,7 +87,7 @@ public:
 
     void setInDefaultUnit(const base_value_type& newValue)
     {
-      value_ = newValue * unit_type();
+        set(newValue * unit_type());
     }
 
     base_value_type getInDefaultUnit() const
@@ -149,6 +151,7 @@ public:
           base_value_type nv;
           stringToValue ( valueattr->value(), nv );
           value_ = value_type(nv * Unit());
+          valueChanged();
         }
         else
         {
@@ -168,6 +171,7 @@ public:
       {
         Parameter::reset(p);
         value_=op->value_;
+        valueChanged();
       }
       else
         throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");

@@ -62,7 +62,7 @@ addToAnalysisFactoryTable(NumericalWindtunnel);
 
 void NumericalWindtunnel::modifyDefaults(ParameterSet& p)
 {
-  p.getBool("run/potentialinit")=true;
+    p.setBool("run/potentialinit", true);
 }
 
 

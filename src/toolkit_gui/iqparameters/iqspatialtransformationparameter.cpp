@@ -148,16 +148,18 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
 
     arma::mat m;
 
+    insight::SpatialTransformation st;
     insight::stringToValue(translateLE->text().toStdString(), m);
-    p().setTranslation(m);
+    st.setTranslation(m);
 
     insight::stringToValue(rpyLE->text().toStdString(), m);
-    p().setRollPitchYaw(m);
+    st.setRollPitchYaw(m);
 
     bool ok;
-    p().setScale(scaleLE->text().toDouble(&ok));
+    st.setScale(scaleLE->text().toDouble(&ok));
     insight::assertion(ok, "invalid input for scale factor!");
 
+    p.set(st);
     model->notifyParameterChange(index);
   };
 

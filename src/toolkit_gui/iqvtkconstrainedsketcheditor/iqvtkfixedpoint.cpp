@@ -62,8 +62,10 @@ double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
 
 void IQVTKFixedPoint::scaleSketch(double scaleFactor)
 {
-    parametersRef().get<insight::DoubleParameter>("x")() *= scaleFactor;
-    parametersRef().get<insight::DoubleParameter>("y")() *= scaleFactor;
+    auto& x = parametersRef().get<insight::DoubleParameter>("x");
+    x.set(x() * scaleFactor);
+    auto& y = parametersRef().get<insight::DoubleParameter>("y");
+    y.set(y() * scaleFactor);
 }
 
 void IQVTKFixedPoint::generateScriptCommand(

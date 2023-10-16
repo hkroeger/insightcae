@@ -159,7 +159,7 @@ void ParserDataBase::cppWriteSetStatement
     const std::string&
 ) const
 {
-    os<<varname<<"() = "<<staticname<<";"<<std::endl;
+    os<<varname<<".set("<<staticname<<");"<<std::endl;
 }
 
 /**

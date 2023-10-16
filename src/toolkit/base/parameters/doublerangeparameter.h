@@ -68,24 +68,29 @@ public:
     inline void insertValue ( double v )
     {
         values_.insert ( v );
+        valueChanged();
     }
-    inline RangeList::iterator operator() ()
-    {
-        return values_.begin();
-    }
+//    inline RangeList::iterator operator() ()
+//    {
+//        return values_.begin();
+//    }
     inline RangeList::const_iterator operator() () const
     {
         return values_.begin();
     }
 
-    inline RangeList& values()
-    {
-        return values_;
-    }
+//    inline RangeList& values()
+//    {
+//        return values_;
+//    }
+    void resetValues(const RangeList& nvs);
+
     inline const RangeList& values() const
     {
         return values_;
     }
+
+    void clear();
 
     std::string latexRepresentation() const override;
     std::string plainTextRepresentation(int indent=0) const override;

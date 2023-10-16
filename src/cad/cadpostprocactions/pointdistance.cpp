@@ -123,7 +123,8 @@ double DistanceConstraint::getConstraintError(unsigned int iConstraint) const
 
 void DistanceConstraint::scaleSketch(double scaleFactor)
 {
-    parametersRef().get<DoubleParameter>("distance")() *= scaleFactor;
+    auto& dp=parametersRef().get<DoubleParameter>("distance");
+    dp.set(dp() * scaleFactor);
 }
 
 void DistanceConstraint::generateScriptCommand(

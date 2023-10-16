@@ -35,6 +35,7 @@
 #include <sstream>
 
 #include "base/boost_include.h"
+#include "boost/signals2.hpp"
 
 #include <openssl/md5.h>
 
@@ -89,6 +90,10 @@ class Parameter
 
 public:
     declareFactoryTable ( Parameter, LIST ( const std::string& descr ), LIST ( descr ) );
+
+#ifndef SWIG
+    boost::signals2::signal<void()> valueChanged;
+#endif
 
 protected:
     SimpleLatex description_;

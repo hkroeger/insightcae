@@ -60,6 +60,20 @@ bool DoubleRangeParameter::isDifferent(const Parameter& p) const
     return true;
 }
 
+void DoubleRangeParameter::resetValues(const RangeList& nvs)
+{
+  values_=nvs;
+  valueChanged();
+}
+
+
+void DoubleRangeParameter::clear()
+{
+  values_.clear();
+  valueChanged();
+}
+
+
 std::string DoubleRangeParameter::latexRepresentation() const
 {
   return toStringList(values_, "%g", "; ");
@@ -130,6 +144,7 @@ void DoubleRangeParameter::readFromNode
       if (iss.fail()) break;
       values_.insert(v);
     }
+    valueChanged();
   }
   else
   {
@@ -157,6 +172,7 @@ void DoubleRangeParameter::reset(const Parameter& p)
   {
     Parameter::reset(p);
     values_ = op->values_;
+    valueChanged();
   }
   else
     throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");

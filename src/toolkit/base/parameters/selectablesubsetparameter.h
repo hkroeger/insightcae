@@ -59,10 +59,7 @@ public:
 
   bool isDifferent(const Parameter& p) const override;
 
-  inline key_type& selection()
-  {
-    return selection_;
-  }
+  void setSelection(const key_type& nk);
 
   inline const key_type& selection() const
   {
@@ -74,10 +71,10 @@ public:
     return value_;
   }
 
-  inline ItemList& items()
-  {
-    return value_;
-  }
+//  inline ItemList& items()
+//  {
+//    return value_;
+//  }
 
   void addItem ( key_type key, const ParameterSet& ps );
 

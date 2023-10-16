@@ -196,6 +196,7 @@ void PathParameter::readFromNode
   if (child)
   {
     FileContainer::readFromNode(*child, inputfilepath);
+    valueChanged();
   }
   else
   {
@@ -229,6 +230,7 @@ void PathParameter::reset(const Parameter& p)
   {
     Parameter::reset(p);
     file_content_=op->file_content_;
+    valueChanged();
   }
   else
     throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
@@ -247,6 +249,7 @@ void PathParameter::operator=(const PathParameter &op)
 
   originalFilePath_ = op.originalFilePath_;
   file_content_ = op.file_content_;
+  valueChanged();
 //  fileContentHash_=op.fileContentHash_;
 }
 
@@ -257,6 +260,7 @@ void PathParameter::operator=(const FileContainer& oc)
 {
   originalFilePath_ = oc.originalFilePath_;
   file_content_ = oc.file_content_;
+  valueChanged();
 //  fileContentHash_=oc.fileContentHash_;
 }
 
@@ -351,6 +355,7 @@ void DirectoryParameter::readFromNode
   if (child)
   {
     originalFilePath_=boost::filesystem::path(child->first_attribute("value")->value());
+    valueChanged();
   }
   else
   {

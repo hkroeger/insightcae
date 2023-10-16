@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Setting boolean '%s' = %d")
                                        )% pair[0] % v) <<endl;
-                parameters.getBool(pair[0])=v;
+                parameters.setBool(pair[0], v);
             }
         }
 
@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Setting string '%s' = \"%s\"")
                                        ) % pair[0] % pair[1]) <<endl;
-                parameters.getString(pair[0])=pair[1];
+                parameters.setString(pair[0], pair[1]);
             }
         }
 
@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Setting double '%s' = %g")
                                        ) % pair[0] % v) << endl;
-                parameters.getDouble(pair[0])=v;
+                parameters.setDouble(pair[0], v);
             }
         }
 
@@ -417,7 +417,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                         _("Setting vector '%s' = [%g %g %g]")
                                        ) % pair[0] % v(0) % v(1) % v(2)) <<endl;
-                parameters.getVector(pair[0])=v;
+                parameters.setVector(pair[0], v);
             }
         }
 
@@ -432,7 +432,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Setting int '%s'= %d")
                                        ) % pair[0] % v) <<endl;
-                parameters.getInt(pair[0])=v;
+                parameters.setInt(pair[0], v);
             }
         }
 

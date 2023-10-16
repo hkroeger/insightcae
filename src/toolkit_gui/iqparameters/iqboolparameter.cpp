@@ -56,7 +56,7 @@ QVBoxLayout* IQBoolParameter::populateEditControls(
   auto applyFunction = [=]()
   {
     auto &p = dynamic_cast<insight::BoolParameter&>(model->parameterRef(index));
-    p() = (checkBox->checkState() == Qt::Checked);
+    p.set(checkBox->checkState() == Qt::Checked);
     model->notifyParameterChange(index);
   };
 

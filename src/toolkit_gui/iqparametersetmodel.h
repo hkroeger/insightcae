@@ -45,10 +45,10 @@ class TOOLKIT_GUI_EXPORT IQParameterSetModel
 
   std::pair<QString, const insight::Parameter*> getParameterAndName(const QModelIndex& index) const;
 
-  QList<IQParameter*> decorateSubdictContent(QObject*, const insight::ParameterSet&/*, int*/);
-  IQParameter* decorateArrayElement(QObject* parent, int i, insight::Parameter& cp/*, int level*/);
-  QList<IQParameter*> decorateArrayContent(QObject*, insight::ArrayParameterBase&/*, int*/);
-  void decorateChildren(QObject* parent, insight::Parameter* p/*, int level*/);
+  QList<IQParameter*> decorateSubdictContent(QObject*, const insight::ParameterSet&);
+  IQParameter* decorateArrayElement(QObject* parent, int i, insight::Parameter& cp);
+  QList<IQParameter*> decorateArrayContent(QObject*, insight::ArrayParameterBase& ap);
+  void decorateChildren(QObject* parent, insight::Parameter* p);
 
 public:
   IQParameterSetModel(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps, QObject* parent=nullptr);

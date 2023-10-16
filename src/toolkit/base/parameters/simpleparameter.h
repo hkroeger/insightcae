@@ -60,9 +60,10 @@ public:
         return true;
     }
 
-    virtual T& operator() ()
+    void set(const  T& nv)
     {
-        return value_;
+        value_=nv;
+        valueChanged();
     }
     virtual const T& operator() () const
     {
@@ -120,6 +121,7 @@ public:
           auto valueattr=child->first_attribute ( "value" );
           insight::assertion(valueattr, "No value attribute present in "+name+"!");
           stringToValue ( valueattr->value(), value_ );
+          valueChanged();
         }
         else
         {
@@ -139,6 +141,7 @@ public:
       {
         Parameter::reset(p);
         value_=op->value_;
+        valueChanged();
       }
       else
         throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");

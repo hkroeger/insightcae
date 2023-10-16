@@ -61,7 +61,7 @@ addToAnalysisFactoryTable(InternalPressureLoss);
 
 void InternalPressureLoss::modifyDefaults(ParameterSet& p)
 {
-  p.getBool("run/potentialinit")=true;
+    p.setBool("run/potentialinit", true);
 }
 
 

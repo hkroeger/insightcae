@@ -49,17 +49,15 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
-    inline ItemList& items()
-    {
-        return items_;
-    }
+//    inline ItemList& items()
+//    {
+//        return items_;
+//    }
 
+    void resetItems(const ItemList& newItems);
     virtual const ItemList& items() const;
 
-    inline void setSelection ( const std::string& sel )
-    {
-        value_=selection_id ( sel );
-    }
+    void setSelection ( const std::string& sel );
 
     inline const std::string& selection() const
     {

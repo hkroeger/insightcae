@@ -80,7 +80,7 @@ QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(
     auto* param = dynamic_cast<insight::SelectableSubsetParameter*>(&(model->parameterRef(rindex)));
 
     // change data, notify model
-    param->selection() = selBox->currentText().toStdString();
+    param->setSelection(selBox->currentText().toStdString());
     model->notifyParameterChange(rindex, true);
   }
   );

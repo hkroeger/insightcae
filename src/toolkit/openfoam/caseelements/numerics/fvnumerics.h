@@ -90,7 +90,8 @@ public:
     FVNumerics ( OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    Parameters& parameters();
+    const Parameters& parameters() const;
+    Parameters& parametersRef();
 
     virtual bool isCompressible() const =0;
     virtual bool isLES() const;

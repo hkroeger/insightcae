@@ -45,9 +45,18 @@ bool SelectableSubsetParameter::isDifferent(const Parameter& p) const
     return true;
 }
 
+
+void SelectableSubsetParameter::setSelection(const key_type &nk)
+{
+  selection_=nk;
+  valueChanged();
+}
+
+
 void SelectableSubsetParameter::addItem(key_type key, const ParameterSet& ps)
 {
-    value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(ps.cloneParameterSet())) );
+  value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(ps.cloneParameterSet())) );
+  valueChanged();
 }
 
 
@@ -55,8 +64,9 @@ void SelectableSubsetParameter::addItem(key_type key, const ParameterSet& ps)
 
 void SelectableSubsetParameter::setSelection(const key_type& key, const ParameterSet& ps)
 {
-    selection()=key;
+    selection_=key;
     operator()().merge(ps);
+    valueChanged();
 }
 
 
@@ -180,6 +190,7 @@ void SelectableSubsetParameter::readFromNode
       throw insight::Exception("Invalid selection key during read of selectableSubset "+name);
 
     operator()().readFromNode(*child, inputfilepath);
+    valueChanged();
   }
   else
   {
@@ -222,6 +233,7 @@ void SelectableSubsetParameter::reset(const Parameter& p)
       std::string key(v.first);
       value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(v.second->cloneParameterSet())) );
     }
+    valueChanged();
   }
   else
     throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
@@ -266,6 +278,7 @@ void SelectableSubsetParameter::merge(
   {
     this->selection_ = other.selection_;
   }
+  valueChanged();
 }
 
 Parameter *SelectableSubsetParameter::intersection(const SubParameterSet &othersps) const

@@ -51,9 +51,9 @@ QVBoxLayout* IQDoubleParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto &p = dynamic_cast<insight::DoubleParameter&>(model->parameterRef(index));
-    p()=lineEdit->text().toDouble();
-    model->notifyParameterChange(index);
+      auto &p = dynamic_cast<insight::DoubleParameter&>(model->parameterRef(index));
+      p.set(lineEdit->text().toDouble());
+      model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);

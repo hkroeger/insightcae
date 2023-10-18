@@ -3,8 +3,10 @@
 
 #include "toolkit_gui_export.h"
 
-
+#include <QSet>
+#include <QSharedPointer>
 #include <QAbstractItemModel>
+#include <QAbstractProxyModel>
 #include <QScopedPointer>
 
 #include "base/parameterset.h"
@@ -136,6 +138,36 @@ public Q_SLOTS:
 
  Q_SIGNALS:
   void parameterSetChanged();
+};
+
+
+
+class IQFilteredParameterSetModel
+: public QAbstractProxyModel
+{
+
+
+  QList<std::string> sourceRootParameterPaths_;
+  QList<QPersistentModelIndex> rootSourceIndices;
+
+  QList<QPersistentModelIndex> mappedIndices_;
+  void searchRootSourceIndices(QAbstractItemModel *sourceModel, const QModelIndex& sourceParent);
+  void storeAllChildSourceIndices(QAbstractItemModel *sourceModel, const QModelIndex& sourceParent);
+  bool isBelowRootParameter(const QModelIndex& sourceIndex, int* topRow=nullptr) const;
+
+public:
+  IQFilteredParameterSetModel(const QList<std::string>& sourceParameterPaths, QObject* parent=nullptr);
+
+  void setSourceModel(QAbstractItemModel *sourceModel) override;
+  QModelIndex mapFromSource(const QModelIndex &sourceIndex) const override;
+  QModelIndex mapToSource(const QModelIndex &proxyIndex) const override;
+//  bool hasChildren(const QModelIndex &parent) const override;
+
+  int	columnCount(const QModelIndex &parent = QModelIndex()) const override;
+  int	rowCount(const QModelIndex &parent = QModelIndex()) const override;
+  QModelIndex	index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+  QModelIndex	parent(const QModelIndex &index) const override;
+
 };
 
 #endif // IQPARAMETERSETMODEL_H

@@ -364,6 +364,11 @@ QVariant IQParameterSetModel::data(const QModelIndex &index, int role) const
         {
           return p->valueText();
         }
+        else if (index.column()==2) // full path (hidden)
+        {
+          qDebug()<<p->path();
+          return p->path();
+        }
 
       case Qt::BackgroundRole:
         return p->backgroundColor();
@@ -855,3 +860,246 @@ IQParameterSetModel::ParameterEditor::~ParameterEditor()
 {
     model_.notifyParameterChange(index_);
 }
+
+
+
+
+void IQFilteredParameterSetModel::searchRootSourceIndices(QAbstractItemModel *sourceModel, const QModelIndex& parent)
+{
+    for (int r=0; r<sourceModel->rowCount(parent); ++r)
+    {
+        auto i=sourceModel->index(r, 2, parent);
+        auto curPath=sourceModel->data(i).toString();
+        for (const auto& sourceParam: qAsConst(sourceRootParameterPaths_))
+        {
+          if (boost::starts_with(sourceParam, curPath))
+          {
+              if (curPath.size()==sourceParam.size())
+              {
+                  qDebug()<<"added "<<curPath;
+                  rootSourceIndices.append(i.siblingAtColumn(0));
+              }
+              else if (curPath.size()<sourceParam.size())
+              {
+                  searchRootSourceIndices(sourceModel, i.siblingAtColumn(0));
+              }
+          }
+        }
+    }
+}
+
+void IQFilteredParameterSetModel::storeAllChildSourceIndices(QAbstractItemModel *sourceModel, const QModelIndex &sourceIndex)
+{
+    if (!mappedIndices_.contains(sourceIndex))
+        mappedIndices_.append(sourceIndex);
+
+    for (int r=0; r<sourceModel->rowCount(sourceIndex); ++r)
+    {
+        storeAllChildSourceIndices(
+            sourceModel,
+            sourceModel->index(r, 0, sourceIndex) );
+    }
+}
+
+bool IQFilteredParameterSetModel::isBelowRootParameter(const QModelIndex &sourceIndex, int* topRow) const
+{
+    if (!sourceIndex.isValid())
+        return false;
+
+    if (rootSourceIndices.contains(sourceIndex))
+    {
+        if (topRow)
+            *topRow=rootSourceIndices.indexOf(sourceIndex);
+        return true;
+    }
+
+    auto sourceIndexParent = sourceModel()->parent(sourceIndex);
+
+    if (!sourceIndexParent.isValid())
+    {
+        return false;
+    }
+    else
+    {
+        if (rootSourceIndices.contains(sourceIndexParent))
+        {
+            if (topRow) *topRow=-1;
+            return true;
+        }
+        else
+            return isBelowRootParameter(sourceIndexParent, topRow);
+    }
+}
+
+IQFilteredParameterSetModel::IQFilteredParameterSetModel(
+    const QList<std::string>& sourceParameterPaths,
+    QObject *parent )
+  : QAbstractProxyModel(parent),
+    sourceRootParameterPaths_(sourceParameterPaths)
+{}
+
+void IQFilteredParameterSetModel::setSourceModel(QAbstractItemModel *sourceModel)
+{
+    searchRootSourceIndices(sourceModel, QModelIndex());
+    for (const auto& pi: qAsConst(rootSourceIndices))
+    {
+        storeAllChildSourceIndices(sourceModel, pi);
+    }
+    QAbstractProxyModel::setSourceModel(sourceModel);
+}
+
+QModelIndex IQFilteredParameterSetModel::mapFromSource(const QModelIndex &sourceIndex) const
+{
+    qDebug()<<"mapFromSource"<<sourceIndex;
+
+    if (!sourceIndex.isValid())
+        return QModelIndex();
+
+    int topRow=-1;
+    if (isBelowRootParameter(sourceIndex, &topRow))
+    {
+        qDebug()<<topRow;
+        if (topRow>=0)
+        {
+            return index(topRow, sourceIndex.column());
+        }
+        else
+        {
+            return index(sourceIndex.row(), sourceIndex.column(), mapFromSource(sourceIndex.parent()));
+        }
+    }
+    return QModelIndex();
+}
+
+QModelIndex IQFilteredParameterSetModel::mapToSource(const QModelIndex &proxyIndex) const
+{
+    qDebug()<<"mapToSource"<<proxyIndex;
+
+    if (!proxyIndex.isValid())
+    {
+        return QModelIndex();
+    }
+
+    if (!proxyIndex.internalPointer())  // top level
+    {
+        if (proxyIndex.row()>=0 && proxyIndex.row()<rootSourceIndices.size())
+        {
+            return QModelIndex(rootSourceIndices[proxyIndex.row()]).siblingAtColumn(proxyIndex.column());
+        }
+    }
+    else
+    {
+        auto& sppi = *reinterpret_cast<QPersistentModelIndex*>(
+            proxyIndex.internalPointer() );
+        return sourceModel()->index(proxyIndex.row(), proxyIndex.column(), sppi);
+    }
+    return QModelIndex();
+}
+
+//bool IQFilteredParameterSetModel::hasChildren(const QModelIndex &parent) const
+//{
+//    return rowCount(parent)>0 && columnCount(parent)>0;
+//}
+
+int IQFilteredParameterSetModel::columnCount(const QModelIndex &parent) const
+{
+    qDebug()<<"colcount";
+    return sourceModel()->columnCount(mapToSource(parent));
+}
+
+int IQFilteredParameterSetModel::rowCount(const QModelIndex &parent) const
+{
+    qDebug()<<"rouwcount"<<parent;
+    if (!parent.isValid())
+    {
+        return rootSourceIndices.size();
+    }
+    else
+    {
+        auto r= sourceModel()->rowCount(mapToSource(parent));
+        qDebug()<<r;
+        return r;
+    }
+
+    return 0;
+}
+
+QModelIndex IQFilteredParameterSetModel::index(int row, int column, const QModelIndex &parent) const
+{
+    qDebug()<<"index"<<row<<column<<parent;
+    if (!parent.isValid())
+    {
+        // top rows
+        if (row>=0 && row<rootSourceIndices.size())
+        {
+            return createIndex(
+                row, column, nullptr
+            );
+        }
+    }
+    else
+    {
+        auto pp=parent.parent();
+        if (!pp.isValid())
+        {
+            // one below top rows
+            auto mi=mappedIndices_.indexOf(rootSourceIndices[parent.row()]);
+            return createIndex(
+                row, column,
+                const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))
+                );
+        }
+        else
+        {
+            auto mi=mappedIndices_.indexOf(mapToSource(parent));
+            // more than one level below top rows
+            return createIndex(
+                row, column,
+                //parent.internalPointer()
+                const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))
+                );
+        }
+    }
+
+    return QModelIndex();
+}
+
+QModelIndex IQFilteredParameterSetModel::parent(const QModelIndex &index) const
+{
+    qDebug()<<"parent"<<index;
+
+    if (!index.isValid())
+    {
+        // top node
+        return QModelIndex();
+    }
+
+    if (index.internalPointer())
+    {
+        // some index below top level
+        auto& sppi = *reinterpret_cast<QPersistentModelIndex*>(
+            index.internalPointer() );
+
+        auto mi1=rootSourceIndices.indexOf(sppi);
+        if (mi1>=0)
+        {
+            // top level row
+            return createIndex(
+                mi1, 0,
+                nullptr
+                );
+        }
+        else
+        {
+            // below top level row
+            auto mi=mappedIndices_.indexOf(sppi);
+            return createIndex(
+                sppi.row(), 0,
+                const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))
+                );
+        }
+    }
+
+    return QModelIndex();
+}
+

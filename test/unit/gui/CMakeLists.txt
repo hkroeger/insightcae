@@ -16,13 +16,21 @@ if (INSIGHT_BUILD_CAD)
     linkToolkitVtk(IQParameterSetModel Offscreen)
     add_test(NAME gui_IQParameterSetModel COMMAND IQParameterSetModel)
 
+    add_executable(IQFilteredParameterSetModel IQFilteredParameterSetModel.cpp)
+    target_link_libraries(IQFilteredParameterSetModel
+    toolkit_gui genericmodules
+    Qt5::Test
+    )
+    linkToolkitVtk(IQFilteredParameterSetModel Offscreen)
+    add_test(NAME gui_IQFilteredParameterSetModel COMMAND IQFilteredParameterSetModel nogui)
+
 
     add_executable(IQGroupingItemModel IQGroupingItemModel.cpp)
     target_link_libraries(IQGroupingItemModel
     insightcad toolkit_gui
     Qt5::Test
     )
-    linkToolkitVtk(test_IQGroupingItemModel Onscreen)
+    linkToolkitVtk(IQGroupingItemModel Offscreen)
     add_test(NAME gui_IQGroupingItemModel COMMAND IQGroupingItemModel nogui)
 
     add_executable(IQCADItemModel IQCADItemModel.cpp)

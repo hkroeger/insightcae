@@ -1110,7 +1110,8 @@ void IQVTKCADModel3DViewer::doExposeItem(CADEntity item)
             auto actor = createActor(feat);
             exposedItem_ = std::make_shared<ExposeItem>(
                         std::shared_ptr<DisplayedEntity>(
-                            new DisplayedEntity{name, item, {actor}} ),
+                            new DisplayedEntity{name, item, {actor}}
+                        ),
                         QPersistentModelIndex(),
                         *this );
         }
@@ -1292,9 +1293,9 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     widget->SetOutlineColor( 0.9300, 0.5700, 0.1300 );
     widget->SetOrientationMarker( axes );
     widget->SetInteractor( renWin()->GetInteractor() );
-    widget->SetViewport( 0.0, 0.0, 0.3, 0.3 );
+    widget->SetViewport( 0.0, 0.0, 0.15, 0.15 );
     widget->SetEnabled( 1 );
-    widget->InteractiveOn();
+    widget->InteractiveOff();
 
 //    vtkNew<IQPickInteractorStyle> style;
 //    connect(

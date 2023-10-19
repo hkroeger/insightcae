@@ -6,17 +6,17 @@
 #include <QVBoxLayout>
 
 #include "iqparametersetmodel.h"
-#include "numericalwindtunnel.h"
+#include "sampleparameterset.h"
 
 using namespace insight;
 
 int main(int argc, char*argv[])
 {
-    ParameterSet ps(NumericalWindtunnel::defaultParameters());
+    ParameterSet ps(TestPS::defaultParameters());
 
-    IQParameterSetModel baseForModelToBeTested(ps, NumericalWindtunnel::defaultParameters());
+    IQParameterSetModel baseForModelToBeTested(ps, TestPS::defaultParameters());
 
-    IQFilteredParameterSetModel modelToBeTested({"geometry"});
+    IQFilteredParameterSetModel modelToBeTested({"mesh"});
     modelToBeTested.setSourceModel(&baseForModelToBeTested);
 
     QAbstractItemModelTester tester(&modelToBeTested, QAbstractItemModelTester::FailureReportingMode::Fatal);

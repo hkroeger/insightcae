@@ -1004,7 +1004,9 @@ QModelIndex IQFilteredParameterSetModel::mapToSource(const QModelIndex &proxyInd
 int IQFilteredParameterSetModel::columnCount(const QModelIndex &parent) const
 {
     qDebug()<<"colcount";
-    return sourceModel()->columnCount(mapToSource(parent));
+    auto nc = sourceModel()->columnCount(mapToSource(parent));
+    qDebug()<<nc;
+    return nc;
 }
 
 int IQFilteredParameterSetModel::rowCount(const QModelIndex &parent) const
@@ -1051,7 +1053,8 @@ QModelIndex IQFilteredParameterSetModel::index(int row, int column, const QModel
         }
         else
         {
-            auto mi=mappedIndices_.indexOf(mapToSource(parent));
+            auto si=mapToSource(parent);
+            auto mi=mappedIndices_.indexOf(si);
             // more than one level below top rows
             return createIndex(
                 row, column,
@@ -1092,7 +1095,7 @@ QModelIndex IQFilteredParameterSetModel::parent(const QModelIndex &index) const
         else
         {
             // below top level row
-            auto mi=mappedIndices_.indexOf(sppi);
+            auto mi=mappedIndices_.indexOf(sppi.parent());
             return createIndex(
                 sppi.row(), 0,
                 const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))

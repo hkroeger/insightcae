@@ -16,12 +16,13 @@ if (INSIGHT_BUILD_CAD)
     linkToolkitVtk(IQParameterSetModel Offscreen)
     add_test(NAME gui_IQParameterSetModel COMMAND IQParameterSetModel)
 
-    add_executable(IQFilteredParameterSetModel IQFilteredParameterSetModel.cpp)
+    add_executable(IQFilteredParameterSetModel IQFilteredParameterSetModel.cpp sampleparameterset.h)
     target_link_libraries(IQFilteredParameterSetModel
     toolkit_gui genericmodules
     Qt5::Test
     )
     linkToolkitVtk(IQFilteredParameterSetModel Offscreen)
+    add_PDL(IQFilteredParameterSetModel "sampleparameterset.h")
     add_test(NAME gui_IQFilteredParameterSetModel COMMAND IQFilteredParameterSetModel nogui)
 
 

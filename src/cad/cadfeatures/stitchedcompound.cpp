@@ -54,7 +54,6 @@ void StitchedCompound::build()
   }
 
   sew.Perform();
-  sew.Dump();
 
   //TopoDS_Shell sshell = TopoDS::Shell(sew.SewedShape());
 //   BRepCheck_Shell acheck(sshell);

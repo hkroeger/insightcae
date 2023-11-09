@@ -216,7 +216,7 @@ bool isRotationMatrix(const arma::mat &R)
 arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R)
 {
   std::ostringstream os; os<<R;
-  CurrentExceptionContext ex("compution euler angles from rotation matrix ("+os.str()+")", false);
+  CurrentExceptionContext ex(2, "compution euler angles from rotation matrix ("+os.str()+")", false);
 
   insight::assertion(
               isRotationMatrix(R),

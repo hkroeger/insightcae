@@ -37,7 +37,6 @@ namespace cad {
     
     
 defineType(Extrusion);
-//addToFactoryTable(Feature, Extrusion);
 addToStaticFunctionTable(Feature, Extrusion, insertrule);
 addToStaticFunctionTable(Feature, Extrusion, ruleDocumentation);
 

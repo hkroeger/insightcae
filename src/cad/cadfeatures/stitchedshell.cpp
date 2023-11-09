@@ -72,7 +72,6 @@ void StitchedShell::build()
   }
 
   sew.Perform();
-  sew.Dump();
   
   setShape(sew.SewedShape());
 }

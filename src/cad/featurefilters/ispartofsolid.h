@@ -54,7 +54,6 @@ public:
         for (auto& i: f.data())
         {
             TopoDS_Solid s=f.model()->subsolid(i);
-            BRepTools::Dump(s, std::cout);
             s_.push_back(s);
         }
     }

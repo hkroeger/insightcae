@@ -40,7 +40,6 @@ namespace cad
     
 
 defineType(Transform);
-//addToFactoryTable(Feature, Transform);
 addToStaticFunctionTable(Feature, Transform, insertrule);
 addToStaticFunctionTable(Feature, Transform, ruleDocumentation);
 

@@ -112,7 +112,6 @@ void NOT::firstPass(FeatureID feature)
 bool NOT::checkMatch(FeatureID feature) const
 {
   bool ok=f1_->checkMatch(feature);
-  std::cout<<"NOT="<<ok<<std::endl;
   return !ok;
 }
 

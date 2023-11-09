@@ -1376,7 +1376,6 @@ FeatureSetData Feature::query_faces(const string& queryexpr, const FeatureSetPar
 
 FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, FilterPtr f) const
 {
-//   Filter::Ptr f(filter.clone());
   checkForBuildDuringAccess();
   
   f->initialize(shared_from_this());
@@ -1388,10 +1387,9 @@ FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, FilterPtr f
   for (int i: fs)
   {
     bool ok=f->checkMatch(i);
-    //if (ok) std::cout<<"match! ("<<i<<")"<<std::endl;
     if (ok) res.insert(i);
   }
-  cout<<"QUERY_FACES RESULT = "<<res<<endl;
+  insight::dbg(2)<<"QUERY_FACES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1415,7 +1413,6 @@ FeatureSetData Feature::query_solids(const string& queryexpr, const FeatureSetPa
 
 FeatureSetData Feature::query_solids_subset(const FeatureSetData& fs, FilterPtr f) const
 {
-//   Filter::Ptr f(filter.clone());
   checkForBuildDuringAccess();
   
   f->initialize(shared_from_this());
@@ -1428,7 +1425,7 @@ FeatureSetData Feature::query_solids_subset(const FeatureSetData& fs, FilterPtr 
   {
     if (f->checkMatch(i)) res.insert(i);
   }
-  cout<<"QUERY_SOLIDS RESULT = "<<res<<endl;
+  insight::dbg(2)<<"QUERY_SOLIDS RESULT = "<<res<<endl;
   return res;
 }
 

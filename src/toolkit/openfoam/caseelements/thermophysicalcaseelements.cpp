@@ -20,10 +20,8 @@
 
 #include "thermophysicalcaseelements.h"
 
-#include "base/boost_include.h"
-
+#include "base/tools.h"
 #include "openfoam/openfoamcase.h"
-#include "openfoam/openfoamtools.h"
 
 #include "openfoam/caseelements/numerics/reactingfoamnumerics.h"
 #include "openfoam/caseelements/numerics/buoyantsimplefoamnumerics.h"
@@ -217,8 +215,8 @@ const std::map<std::string, SpeciesData::ElementData> SpeciesData::elements = {
 void SpeciesData::modifyDefaults(ParameterSet &ps)
 {
   auto& p = ps.get<SelectableSubsetParameter>("properties");
-  auto& fl = p.items().at("fromLibrary");
-  auto& sl = fl->get<SelectionParameter>("specie");
+  ParameterSet fl( p.getParametersForSelection("fromLibrary") );
+  auto& sl = fl.get<SelectionParameter>("specie");
 
   if (speciesLibrary_.size()>0)
   {
@@ -232,7 +230,7 @@ void SpeciesData::modifyDefaults(ParameterSet &ps)
     );
     sl.resetItems(ni);
   }
-
+  p.setParametersForSelection("fromLibrary", fl);
 }
 
 SpeciesData::SpeciesData(const ParameterSet &ps)
@@ -1234,14 +1232,14 @@ SpeciesData::SpeciesLibrary::SpeciesLibrary()
           {
             if ( itr->path().extension() == ".species" )
             {
-              CurrentExceptionContext ex("reading species data base "+itr->path().string());
+              CurrentExceptionContext ex(2, "reading species data base "+itr->path().string());
               std::ifstream fs(itr->path().string());
               OFDictData::dict sd;
               readOpenFOAMDict(fs, sd);
 
               for (const auto& s: sd)
               {
-                CurrentExceptionContext ex2("reading species "+s.first);
+                CurrentExceptionContext ex2(3, "reading species "+s.first);
                 auto name=s.first;
                 auto ssd=sd.subDict(s.first);
 

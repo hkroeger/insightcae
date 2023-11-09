@@ -171,6 +171,8 @@ public:
 
   void clearPackedData();
 
+  void operator=(const FileContainer& oc);
+
 
   void appendToNode (
       rapidxml::xml_document<>& doc,

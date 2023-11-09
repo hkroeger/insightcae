@@ -25,21 +25,21 @@
 #include "base/parameter.h"
 #include "base/parameterset.h"
 
+#include "boost/ptr_container/ptr_map.hpp"
 
 namespace insight {
 
 
 class SelectableSubsetParameter
-  : public Parameter,
-    public SubParameterSet
+  : public Parameter
 {
 public:
   typedef std::string key_type;
-  typedef std::map<key_type, std::unique_ptr<ParameterSet> > ItemList;
+  typedef boost::ptr_map<key_type, SubsetParameter> ItemList;
   typedef ItemList value_type;
 
-  typedef boost::tuple<key_type, ParameterSet*> SingleSubset;
-  typedef std::vector< boost::tuple<key_type, ParameterSet*> > SubsetList;
+  typedef std::map< key_type, const SubsetParameter* > EntryReferences;
+  typedef std::map< key_type, std::shared_ptr<SubsetParameter> > EntryCopies;
 
 protected:
   key_type selection_;
@@ -55,7 +55,9 @@ public:
    * \param defaultValue A map of key-subset pairs. Between these can be selected
    * \param description The description of the selection parameter
    */
-  SelectableSubsetParameter ( const key_type& defaultSelection, const SubsetList& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+  SelectableSubsetParameter ( const key_type& defaultSelection, const EntryReferences& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+  SelectableSubsetParameter ( const key_type& defaultSelection, const EntryCopies& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
   bool isDifferent(const Parameter& p) const override;
 
@@ -66,29 +68,24 @@ public:
     return selection_;
   }
 
-  inline const ItemList& items() const
-  {
-    return value_;
-  }
+  EntryReferences items() const;
+  EntryCopies copyItems() const;
 
-//  inline ItemList& items()
-//  {
-//    return value_;
-//  }
+  void addItem ( key_type key, const SubsetParameter& ps );
 
-  void addItem ( key_type key, const ParameterSet& ps );
-
-  inline ParameterSet& operator() ()
+  inline SubsetParameter& operator() ()
   {
     return * ( value_.find ( selection_ )->second );
   }
 
-  inline const ParameterSet& operator() () const
+  inline const SubsetParameter& operator() () const
   {
     return * ( value_.find ( selection_ )->second );
   }
 
-  void setSelection(const key_type& key, const ParameterSet& ps);
+  void setParametersForSelection(const key_type& key, const SubsetParameter& ps);
+  void setParametersAndSelection(const key_type& key, const SubsetParameter& ps);
+  const SubsetParameter& getParametersForSelection(const key_type& key) const;
 
   std::string latexRepresentation() const override;
   std::string plainTextRepresentation(int indent=0) const override;
@@ -105,11 +102,20 @@ public:
                               boost::filesystem::path inputfilepath ) override;
 
   Parameter* clone () const override;
-  void reset(const Parameter& p) override;
+  void copyFrom(const Parameter& p) override;
+  void operator=(const SelectableSubsetParameter& p);
+  void extend ( const Parameter& op ) override;
+  void merge ( const Parameter& other ) override;
+#ifndef SWIG
+  std::unique_ptr<Parameter> intersection(const Parameter &other) const override;
+#endif
 
-  const ParameterSet& subset() const override;
-  void merge(const SubParameterSet& other, bool allowInsertion) override;
-  Parameter* intersection(const SubParameterSet& other) const override;
+
+  int nChildren() const override;
+  std::string childParameterName(int i) const override;
+  Parameter& childParameterRef ( int i ) override;
+  const Parameter& childParameter( int i ) const override;
+
 };
 
 } // namespace insight

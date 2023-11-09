@@ -176,6 +176,11 @@ bool CADGeometryParameter::isDifferent(const Parameter & op) const
       return true;
 }
 
+int CADGeometryParameter::nChildren() const
+{
+    return 0;
+}
+
 
 
 } // namespace insight

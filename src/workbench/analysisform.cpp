@@ -199,7 +199,9 @@ AnalysisForm::AnalysisForm(
 
     {
         insight::CurrentExceptionContext ex(_("create parameter set editor"));
-        peditor_=new ParameterEditorWidget(/*parameters_*/defaultParams, defaultParams, ui->inputTab, viz, vali);
+        psmodel_=new IQParameterSetModel(defaultParams, defaultParams);
+        peditor_=new ParameterEditorWidget(/*defaultParams, defaultParams, */ui->inputTab, viz, vali);
+        peditor_->setModel(psmodel_);
         connect(
               peditor_, &ParameterEditorWidget::updateSupplementedInputData,
               this, &AnalysisForm::onUpdateSupplementedInputData
@@ -207,7 +209,7 @@ AnalysisForm::AnalysisForm(
         //ui->inputTabLayout->addWidget(peditor_);
         vsplit->addWidget(peditor_);
     }
-    peditor_->model()->setAnalysisName(analysisName_);
+    psmodel_->setAnalysisName(analysisName_);
 
     sidtab_ = new QTableView;
     sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -255,7 +257,7 @@ AnalysisForm::AnalysisForm(
 
 const insight::ParameterSet& AnalysisForm::parameters() const
 {
-  return peditor_->model()->getParameterSet();
+    return psmodel_->getParameterSet();
 }
 
 
@@ -524,7 +526,7 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 
   insight::ParameterSet ps = parameters();
   ps.readFromFile(ist_file_);
-  peditor_->model()->resetParameters(
+  psmodel_->resetParameters(
         ps,
         insight::Analysis::defaultParameters(analysisName_) );
 }

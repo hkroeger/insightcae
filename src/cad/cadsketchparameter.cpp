@@ -4,10 +4,10 @@
 #include "datum.h"
 #include "base/rapidxml.h"
 
+#include "cadpostprocactions/pointdistance.h"
+#include "base/parameters/simpleparameter.h"
 
 namespace insight {
-
-
 
 
 defineType(CADSketchParameter);
@@ -15,25 +15,12 @@ addToFactoryTable(Parameter, CADSketchParameter);
 
 
 
-void CADSketchParameter::resetCADGeometry() const
-{
-    if (!script().empty())
-    {
-        std::istringstream is(script());
 
-        CADGeometry_ = cad::ConstrainedSketch::createFromStream(
-            std::make_shared<cad::DatumPlane>(
-                cad::vec3const(0,0,0),
-                cad::vec3const(0,0,1) ),
-            is,
-            makeDefaultGeometryParameters()
-            );
-    }
-    else
-    {
-        CADGeometry_.reset();
-    }
-}
+
+
+
+
+
 
 CADSketchParameter::CADSketchParameter(
     const std::string& description,
@@ -50,10 +37,9 @@ CADSketchParameter::CADSketchParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
     )
-    : Parameter(description, isHidden, isExpert, isNecessary, order),
-    script_(script)
+    : Parameter(description, isHidden, isExpert, isNecessary, order)
 {
-    resetCADGeometry();
+    setScript(script);
 }
 
 
@@ -64,10 +50,9 @@ CADSketchParameter::CADSketchParameter(
    bool isHidden, bool isExpert, bool isNecessary, int order
    )
     : Parameter(description, isHidden, isExpert, isNecessary, order),
-    makeDefaultGeometryParameters(mdpf),
-    script_(script)
+    makeDefaultGeometryParameters(mdpf)
 {
-    resetCADGeometry();
+    setScript(script);
 }
 
 
@@ -79,22 +64,79 @@ ParameterSet CADSketchParameter::defaultGeometryParameters() const
 
 
 
-const std::string& CADSketchParameter::script() const
+std::string CADSketchParameter::script() const
 {
-    return script_;
+    if (script_)
+    {
+        return *script_;
+    }
+    else if (CADGeometry_)
+    {
+        std::ostringstream so;
+        CADGeometry_->generateScript(so);
+        return so.str();;
+    }
+    else
+    {
+        return std::string();
+    }
 }
 
 
 void CADSketchParameter::setScript(const std::string& script)
 {
-    script_=script;
-    resetCADGeometry();
+    insight::dbg()<<"RESET SKETCH"<<std::endl;
+
+    if (script.empty())
+    {
+        script_.reset();
+        CADGeometry_.reset();
+    }
+    else
+    {
+        script_ =
+            std::make_unique<std::string>(script);
+    }
+
+    triggerValueChanged();
 }
 
 
-std::shared_ptr<insight::cad::ConstrainedSketch>
+const insight::cad::ConstrainedSketch&
 CADSketchParameter::featureGeometry() const
 {
+    return *const_cast<CADSketchParameter*>(this)
+                ->featureGeometryRef();
+}
+
+std::shared_ptr<insight::cad::ConstrainedSketch> CADSketchParameter::featureGeometryRef()
+{
+    if (!CADGeometry_)
+    {
+        CADGeometry_ = insight::cad::ConstrainedSketch::create(
+            std::make_shared<cad::DatumPlane>(
+                cad::vec3const(0,0,0),
+                cad::vec3const(0,0,1) ));
+    }
+
+    if (script_)
+    {
+        if (!script_->empty())
+        {
+            std::istringstream is(*script_);
+
+            CADGeometry_->readFromStream(
+                is, makeDefaultGeometryParameters()
+                );
+
+            script_.reset();
+        }
+        else
+        {
+            CADGeometry_->clear();
+        }
+    }
+
     return CADGeometry_;
 }
 
@@ -118,7 +160,8 @@ rapidxml::xml_node<>* CADSketchParameter::appendToNode
         ) const
 {
     auto n = Parameter::appendToNode(name, doc, node, inputfilepath);
-    n->value(doc.allocate_string(script_.c_str()));
+    auto s=script();
+    n->value(doc.allocate_string(s.c_str()));
     return n;
 }
 
@@ -133,16 +176,14 @@ void CADSketchParameter::readFromNode
     xml_node<>* child = findNode(node, name, type());
     if (child)
     {
-        script_ = child->value();
-
-        resetCADGeometry();
+        setScript(child->value());
     }
 }
 
 CADSketchParameter *CADSketchParameter::cloneCADSketchParameter() const
 {
     auto ncgp=new CADSketchParameter(
-        script_,
+        script(),
         makeDefaultGeometryParameters,
         description_.simpleLatex(),
         isHidden_, isExpert_, isNecessary_, order_ );
@@ -155,6 +196,11 @@ Parameter *CADSketchParameter::clone() const
     return cloneCADSketchParameter();
 }
 
+void CADSketchParameter::copyFrom(const Parameter& op)
+{
+    operator=(dynamic_cast<const CADSketchParameter&>(op));
+}
+
 void CADSketchParameter::operator=(const CADSketchParameter &op)
 {
     description_ = op.description_;
@@ -163,19 +209,84 @@ void CADSketchParameter::operator=(const CADSketchParameter &op)
     isNecessary_ = op.isNecessary_;
     order_ = op.order_;
 
-    script_ = op.script_;
     makeDefaultGeometryParameters = op.makeDefaultGeometryParameters;
-    //    cadmodel_ = op.cadmodel_;
+
+    if (op.script_)
+    {
+        script_=std::make_unique<std::string>(*op.script_);
+    }
+    else
+    {
+        script_.reset();
+    }
+
+    if (op.CADGeometry_)
+    {
+        CADGeometry_ = insight::cad::ConstrainedSketch::create(
+            std::make_shared<cad::DatumPlane>(
+                cad::vec3const(0,0,0),
+                cad::vec3const(0,0,1) ));
+
+        *CADGeometry_ = *op.CADGeometry_;
+    }
+    else
+    {
+        CADGeometry_.reset();
+    }
+
+    triggerValueChanged();
 }
 
 bool CADSketchParameter::isDifferent(const Parameter & op) const
 {
     if (const auto *sp = dynamic_cast<const CADSketchParameter*>(&op))
     {
-        return script_!=sp->script();
+        return script()!=sp->script();
     }
     else
         return true;
+}
+
+
+int CADSketchParameter::nChildren() const
+{
+    if (!script_ && !CADGeometry_)
+        return 0;
+    return featureGeometry().size();
+}
+
+
+std::string CADSketchParameter::childParameterName( int i ) const
+{
+    insight::assertion(
+        i>=0 && i<nChildren(),
+        "invalid child parameter index %d (must be in range 0...%d)", i, nChildren() );
+
+    return str(boost::format("entity_%d")%i);
+}
+
+
+Parameter& CADSketchParameter::childParameterRef ( int i )
+{
+    insight::assertion(
+        i>=0 && i<nChildren(),
+        "invalid child parameter index %d (must be in range 0...%d)", i, nChildren() );
+
+    auto g = featureGeometry().begin();
+    std::advance(g, i);
+    return g->second->parametersRef();
+}
+
+
+const Parameter& CADSketchParameter::childParameter( int i ) const
+{
+    insight::assertion(
+        i>=0 && i<nChildren(),
+        "invalid child parameter index %d (must be in range 0...%d)", i, nChildren() );
+
+    auto g = featureGeometry().begin();
+    std::advance(g, i);
+    return g->second->parameters();
 }
 
 

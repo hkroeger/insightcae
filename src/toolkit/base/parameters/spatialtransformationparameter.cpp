@@ -173,7 +173,7 @@ void SpatialTransformationParameter::readFromNode (
             insight::assertion(scaleAttr, "No attribute \"scale\" present in "+name+"!");
             stringToValue ( scaleAttr->value(), scale_ );
         }
-        valueChanged();
+        triggerValueChanged();
     }
     else
     {
@@ -200,17 +200,28 @@ Parameter* SpatialTransformationParameter::clone() const
 
 
 
-void SpatialTransformationParameter::reset(const Parameter& p)
+void SpatialTransformationParameter::copyFrom(const Parameter& p)
 {
-    if (const auto* op = dynamic_cast<const SpatialTransformationParameter*>(&p))
-    {
-      Parameter::reset(p);
-      SpatialTransformation::operator=(*op);
-      valueChanged();
-    }
-    else
-      throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+    operator=(dynamic_cast<const SpatialTransformationParameter&>(p));
 
+}
+
+
+
+
+void SpatialTransformationParameter::operator=(const SpatialTransformationParameter& op)
+{
+    SpatialTransformation::operator=(op);
+
+    Parameter::copyFrom(op);
+}
+
+
+
+
+int SpatialTransformationParameter::nChildren() const
+{
+    return 0;
 }
 
 

@@ -11,32 +11,33 @@ addToFactoryTable(IQParameter, IQSubsetParameter);
 
 IQSubsetParameter::IQSubsetParameter(
     QObject *parent,
+    IQParameterSetModel* psmodel,
     const QString &name,
     insight::Parameter &parameter,
     const insight::ParameterSet &defaultParameterSet
     )
-: IQParameter(parent, name, parameter, defaultParameterSet)
+: IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {}
 
 
 
-void IQSubsetParameter::populateContextMenu(IQParameterSetModel *model, const QModelIndex &index, QMenu *cm)
+void IQSubsetParameter::populateContextMenu(QMenu *cm)
 {
     auto *saveAction = new QAction("Save to file...");
     cm->addAction(saveAction);
     auto *loadAction = new QAction("Load from file...");
     cm->addAction(loadAction);
 
-    auto *iq = static_cast<IQParameter*>(index.internalPointer());
+//    auto *iq = static_cast<IQParameter*>(index.internalPointer());
 
     QObject::connect(saveAction, &QAction::triggered, this,
-                     [this,model,iq]()
+                     [this]()
          {
         auto fn = QFileDialog::getSaveFileName(nullptr, "Save subset contents", QString(), "(*.isp)");
             if (!fn.isEmpty())
             {
             auto &iqp = dynamic_cast<const insight::SubsetParameter&>(
-                iq->parameter() );
+                this->parameter() );
                 iqp.saveToFile(insight::ensureFileExtension(fn.toStdString(), "isp"));
             }
          }
@@ -44,16 +45,16 @@ void IQSubsetParameter::populateContextMenu(IQParameterSetModel *model, const QM
 
 
     QObject::connect(loadAction, &QAction::triggered, this,
-         [this,model,index,iq]()
+         [this]()
          {
              auto fn = QFileDialog::getOpenFileName(nullptr, "Load subset contents", QString(), "(*.isp)");
              if (!fn.isEmpty())
              {
                  auto &iqp = dynamic_cast<insight::SubsetParameter&>(
-                     iq->parameterRef() );
+                     this->parameterRef() );
                  iqp.readFromFile(insight::ensureFileExtension(fn.toStdString(), "isp"));
 
-                 model->notifyParameterChange(index, true);
+//                 model->notifyParameterChange(index, true);
              }
          }
     );

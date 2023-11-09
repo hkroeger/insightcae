@@ -20,11 +20,12 @@ addToFactoryTable(IQParameter, IQSelectableSubsetParameter);
 IQSelectableSubsetParameter::IQSelectableSubsetParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -39,12 +40,12 @@ QString IQSelectableSubsetParameter::valueText() const
 
 
 QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(
-        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
   const auto&p = dynamic_cast<const insight::SelectableSubsetParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QHBoxLayout *layout2=new QHBoxLayout;
   layout2->addWidget(new QLabel("Selection:", editControlsContainer));
@@ -69,19 +70,19 @@ QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(
 
 
 
-  auto* iqp = static_cast<IQParameter*>(index.internalPointer());
-  auto mp = model->pathFromIndex(index);
+//  auto* iqp = static_cast<IQParameter*>(index.internalPointer());
+//  auto mp = model->pathFromIndex(index);
 
-  connect(apply, &QPushButton::clicked, iqp, [iqp,model,selBox,mp]()
+  connect(apply, &QPushButton::clicked, this, [this,selBox]()
   {
-    auto rindex = model->indexFromPath(mp);
-    Q_ASSERT(rindex.isValid());
+//    auto rindex = model->indexFromPath(mp);
+//    Q_ASSERT(rindex.isValid());
 
-    auto* param = dynamic_cast<insight::SelectableSubsetParameter*>(&(model->parameterRef(rindex)));
+    auto& param = dynamic_cast<insight::SelectableSubsetParameter&>(this->parameterRef());
 
     // change data, notify model
-    param->setSelection(selBox->currentText().toStdString());
-    model->notifyParameterChange(rindex, true);
+    param.setSelection(selBox->currentText().toStdString());
+//    model->notifyParameterChange(rindex, true);
   }
   );
 
@@ -90,20 +91,15 @@ QVBoxLayout* IQSelectableSubsetParameter::populateEditControls(
 
 
 
-void IQSelectableSubsetParameter::populateContextMenu(
-    IQParameterSetModel *model,
-    const QModelIndex &index,
-    QMenu *cm)
+void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
 {
   auto *saveAction = new QAction("Save to file...");
   cm->addAction(saveAction);
   auto *loadAction = new QAction("Load from file...");
   cm->addAction(loadAction);
 
-  auto *iq = static_cast<IQParameter*>(index.internalPointer());
-
   QObject::connect(saveAction, &QAction::triggered, this,
-                   [this,model,iq]()
+                   [this]()
                    {
                        using namespace rapidxml;
 
@@ -114,7 +110,7 @@ void IQSelectableSubsetParameter::populateContextMenu(
                            auto file = insight::ensureFileExtension(fn.toStdString(), "iss");
 
                            auto &iqp = dynamic_cast<const insight::SelectableSubsetParameter&>(
-                               iq->parameter() );
+                               this->parameter() );
 
                            insight::CurrentExceptionContext ex("writing parameter set to file "+file.string());
                            std::ofstream f(file.c_str());
@@ -132,7 +128,7 @@ void IQSelectableSubsetParameter::populateContextMenu(
                            doc.append_node(rootnode);
 
                            // store parameters
-                           iqp.appendToNode(iq->name().toStdString(), doc, *rootnode, "");
+                           iqp.appendToNode(this->name().toStdString(), doc, *rootnode, "");
 
                            f << doc;
                            f << std::endl;
@@ -144,7 +140,7 @@ void IQSelectableSubsetParameter::populateContextMenu(
 
 
   QObject::connect(loadAction, &QAction::triggered, this,
-                   [this,model,index,iq]()
+                   [this]()
                    {
                        using namespace rapidxml;
 
@@ -155,7 +151,7 @@ void IQSelectableSubsetParameter::populateContextMenu(
                            auto file = insight::ensureFileExtension(fn.toStdString(), "iss");
 
                            auto &iqp = dynamic_cast<insight::SelectableSubsetParameter&>(
-                               iq->parameterRef() );
+                               this->parameterRef() );
 
                            insight::CurrentExceptionContext ex("reading parameter set from file "+file.string());
                            std::string contents;
@@ -168,9 +164,9 @@ void IQSelectableSubsetParameter::populateContextMenu(
 
 
                            // store parameters
-                           iqp.readFromNode(iq->name().toStdString(), *rootnode, "");
+                           iqp.readFromNode(this->name().toStdString(), *rootnode, "");
 
-                           model->notifyParameterChange(index, true);
+//                           model->notifyParameterChange(index, true);
                        }
                    }
                    );

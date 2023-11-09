@@ -518,6 +518,11 @@ void FileContainer::clearPackedData()
 }
 
 
+void FileContainer::operator=(const FileContainer& oc)
+{
+  originalFilePath_ = oc.originalFilePath_;
+  file_content_ = oc.file_content_;
+}
 
 
 void FileContainer::appendToNode

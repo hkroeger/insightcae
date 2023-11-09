@@ -70,7 +70,10 @@ public:
     void operator=(const CADGeometryParameter& op);
 
     bool isDifferent(const Parameter &) const override;
+
+    int nChildren() const override;
 };
+
 
 } // namespace insight
 

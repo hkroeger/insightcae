@@ -109,10 +109,11 @@ public:
 
   PathParameter* clonePathParameter() const;
   Parameter* clone() const override;
-  void reset(const Parameter& p) override;
 
-  void operator=(const PathParameter& op);
-  void operator=(const FileContainer& oc);
+  void copyFrom(const Parameter& p) override;
+  void operator=(const PathParameter& p);
+
+  int nChildren() const override;
 
 };
 
@@ -165,9 +166,10 @@ public:
     void readFromNode ( const std::string& name, rapidxml::xml_node<>& node,
                                 boost::filesystem::path inputfilepath ) override;
 
+    void operator=(const DirectoryParameter& p);
+
     Parameter* clone() const override;
     DirectoryParameter* cloneDirectoryParameter() const;
-    void reset(const Parameter& p) override;
 };
 
 

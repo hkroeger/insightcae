@@ -24,22 +24,42 @@ class TOOLKIT_GUI_EXPORT IQParameter
 {
   Q_OBJECT
 
+  friend class IQArrayElementParameterBase;
+
 public:
   declareFactoryTable
   (
       IQParameter,
-        LIST(QObject* parent, const QString& name, insight::Parameter& parameter, const insight::ParameterSet& defaultParameterSet),
-        LIST(parent, name, parameter, defaultParameterSet)
+        LIST(
+            QObject* parent,
+            IQParameterSetModel* psmodel,
+            const QString& name,
+            insight::Parameter& parameter,
+            const insight::ParameterSet& defaultParameterSet ),
+        LIST(
+            parent,
+            psmodel,
+            name,
+            parameter,
+            defaultParameterSet )
   );
 
-  static IQParameter* create(QObject* parent, const QString& name, insight::Parameter& p, const insight::ParameterSet& defaultParameterSet);
+  static IQParameter* create(
+      QObject* parent,
+      IQParameterSetModel* psmodel,
+      const QString& name,
+      insight::Parameter& p,
+      const insight::ParameterSet& defaultParameterSet );
 
 private:
   QString name_;
   insight::Parameter& parameter_;
   const insight::ParameterSet& defaultParameterSet_;
+  IQParameterSetModel *model_;
 
   mutable std::unique_ptr<bool> markedAsModified_;
+
+  boost::signals2::connection updateConnection;
 
 public:
   declareType("IQParameter");
@@ -47,13 +67,17 @@ public:
   IQParameter
   (
       QObject* parent,
+      IQParameterSetModel* psmodel,
       const QString& name,
       insight::Parameter& parameter,
       const insight::ParameterSet& defaultParameterSet
   );
 
+  virtual ~IQParameter();
+
   IQParameter* parentParameter() const;
   int nChildParameters() const;
+  IQParameterSetModel *model() const;
 
   const QString& name() const;
   void setName(const QString& newName);
@@ -68,10 +92,8 @@ public:
   QVariant textColor() const;
   QVariant textFont() const;
 
-  virtual void populateContextMenu(IQParameterSetModel* model, const QModelIndex &index, QMenu* m);
+  virtual void populateContextMenu(QMenu* m);
   virtual QVBoxLayout* populateEditControls(
-          IQParameterSetModel* model,
-          const QModelIndex &index,
           QWidget* editControlsContainer,
           IQCADModel3DViewer *viewer );
 
@@ -79,7 +101,6 @@ public:
   insight::Parameter& parameterRef();
 
   virtual void applyProposition(
-      IQParameterSetModel* model, const QModelIndex &index,
       const insight::ParameterSet& propositions,
       const std::string& selectProposition );
 };

@@ -351,10 +351,9 @@ Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::stri
   std::unique_ptr<Parameter> p(Parameters::makeDefault().get<SubsetParameter>("fielddata").clone());
   auto opts = dynamic_cast<SelectableSubsetParameter*>(p.get());
 
-  {
-    ParameterSet& us = *(opts->items().at("uniformSteady"));
-    us.get<VectorParameter>("value").set( def_val );
-  }
+  ParameterSet cp( opts->getParametersForSelection("uniformSteady") );
+  cp.get<VectorParameter>("value").set( def_val );
+  opts->setParametersForSelection("uniformSteady", cp);
 
   return p.release();
 }

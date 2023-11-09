@@ -27,11 +27,12 @@ addToFactoryTable(IQParameter, IQSpatialTransformationParameter);
 IQSpatialTransformationParameter::IQSpatialTransformationParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -76,8 +77,6 @@ QString IQSpatialTransformationParameter::valueText() const
 
 
 QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
-        IQParameterSetModel* model,
-        const QModelIndex &index,
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer )
 {
@@ -85,7 +84,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
           dynamic_cast<const insight::SpatialTransformationParameter&>(
               parameter() );
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QLineEdit *translateLE, *rpyLE, *scaleLE;
 
@@ -144,7 +143,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
   {
     auto&p =
             dynamic_cast<insight::SpatialTransformationParameter&>(
-                model->parameterRef(index) );
+                this->parameterRef() );
 
     arma::mat m;
 
@@ -160,7 +159,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
     insight::assertion(ok, "invalid input for scale factor!");
 
     p.set(st);
-    model->notifyParameterChange(index);
+//    model->notifyParameterChange(index);
   };
 
   connect(translateLE, &QLineEdit::returnPressed, applyFunction);
@@ -171,10 +170,10 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
   if (auto *v = dynamic_cast<IQVTKCADModel3DViewer*>(viewer))
   {
     connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
-          [this,translateLE,model,v,setValuesToControls,apply]()
+          [this,translateLE,v,setValuesToControls,apply]()
           {
             if (insight::cad::FeaturePtr geom =
-                    model->getGeometryToSpatialTransformationParameter(path()))
+              model()->getGeometryToSpatialTransformationParameter(path()))
             {
                 vtkNew<ivtkOCCShape> shape;
                 shape->SetShape( geom->shape() );

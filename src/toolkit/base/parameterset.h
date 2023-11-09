@@ -31,6 +31,7 @@
 #include "base/exception.h"
 #include "base/parameter.h"
 #include "base/parameters/arrayparameter.h"
+#include "base/parameters/subsetparameter.h"
 #include "base/progressdisplayer.h"
 
 
@@ -51,72 +52,61 @@ namespace insight {
 
 
 
-class SubsetParameter;
+//class SubsetParameter;
 class SelectableSubsetParameter;
 
 
 
 
-/**
- * @brief The SubParameterSet class
- * common base class for parameters that contain a set of parameters
- */
-class SubParameterSet
-{
-public:
-  virtual ~SubParameterSet();
+///**
+// * @brief The SubParameterSet class
+// * common base class for parameters that contain a set of parameters
+// */
+//class SubParameterSet
+//{
+//public:
+//  virtual ~SubParameterSet();
 
-  ParameterSet& subsetRef();
-  virtual const ParameterSet& subset() const =0;
+//  ParameterSet& subsetRef();
+//  virtual const ParameterSet& subset() const =0;
 
-  virtual void merge(const SubParameterSet& other, bool allowInsertion) =0;
-  virtual Parameter* intersection(const SubParameterSet& other) const =0;
-};
-
-
-
-std::string splitOffFirstParameter(std::string& path, int& nRemaining);
+//  virtual void merge(const SubParameterSet& other, bool allowInsertion) =0;
+//  virtual Parameter* intersection(const SubParameterSet& other) const =0;
+//};
 
 
 
-class ParameterSet
-  : public std::map<std::string, std::unique_ptr<Parameter> >
+
+
+
+class ParameterSet : public SubsetParameter
 {
 
 public:
   typedef std::shared_ptr<ParameterSet> Ptr;
-  typedef boost::tuple<std::string, Parameter*> SingleEntry;
-  typedef std::vector< boost::tuple<std::string, Parameter*> > EntryList;
 
-protected:
-  SimpleLatex parameterSetDescription_;
 
 public:
   ParameterSet();
   ParameterSet ( const ParameterSet& o );
-  ParameterSet ( const EntryList& entries );
+  ParameterSet ( const SubsetParameter& o );
+  ParameterSet( const SubsetParameter::EntryCopies &defaultValue, const std::string& description = std::string() );
+  ParameterSet( const SubsetParameter::EntryReferences &defaultValue, const std::string& description = std::string() );
+
   virtual ~ParameterSet();
 
-  bool isDifferent(const ParameterSet& p) const;
 
   void setParameterSetDescription(const std::string& desc);
   const SimpleLatex& parameterSetDescription() const;
 
+  void copyFrom(const Parameter& o) override;
   void operator=(const ParameterSet& o);
 
-  EntryList entries() const;
-
   /**
-   * insert values from entries, that are not present.
-   * Do not overwrite entries!
-   */
-  void extend ( const EntryList& entries );
-
-  /**
-   * insert values from other, overwrite where possible.
+   * insert values from other, where matching. Ignore non-matching parameters.
    * return a non-const reference to this PS to anable call chains like PS.merge().merge()...
    */
-  ParameterSet& merge ( const ParameterSet& other, bool allowInsertion=true );
+  ParameterSet& merge ( const ParameterSet& other );
 
   /**
    * @brief intersection
@@ -126,87 +116,6 @@ public:
    * @return a new ParameterSet with the common elements
    */
   ParameterSet intersection(const ParameterSet& other) const;
-
-  bool hasParameter( std::string path ) const;
-  insight::Parameter& getParameter( std::string path );
-
-  template<class T>
-  T& get ( const std::string& name );
-
-  template<class T>
-  const T& get ( const std::string& name ) const
-  {
-      return const_cast<ParameterSet&>(*this).get<T>(name);
-  }
-
-  template<class T>
-  const typename T::value_type& getOrDefault ( const std::string& name, const typename T::value_type& defaultValue ) const
-  {
-    try
-      {
-        return this->get<T> ( name ) ();
-      }
-    catch ( const std::exception& /*e*/ )
-      {
-        return defaultValue;
-      }
-  }
-
-  inline bool contains ( const std::string& name ) const
-  {
-    const_iterator i = find ( name );
-    return ( i!=end() );
-  }
-
-//  int& getInt ( const std::string& name );
-//  double& getDouble ( const std::string& name );
-//  bool& getBool ( const std::string& name );
-//  std::string& getString ( const std::string& name );
-//  arma::mat& getVector ( const std::string& name );
-//  arma::mat& getMatrix ( const std::string& name );
-  std::istream& getFileStream ( const std::string& name );
-
-  ParameterSet& setInt ( const std::string& name, int v );
-  ParameterSet& setDouble ( const std::string& name, double v );
-  ParameterSet& setBool ( const std::string& name, bool v );
-  ParameterSet& setString ( const std::string& name, const std::string& v );
-  ParameterSet& setVector ( const std::string& name, const arma::mat& v );
-  ParameterSet& setMatrix ( const std::string& name, const arma::mat& m );
-  ParameterSet& setOriginalFileName ( const std::string& name, const boost::filesystem::path& fp);
-
-  ParameterSet& getSubset ( const std::string& name );
-
-  const int& getInt ( const std::string& name ) const;
-  const double& getDouble ( const std::string& name ) const;
-  const bool& getBool ( const std::string& name ) const;
-  const std::string& getString ( const std::string& name ) const;
-  const arma::mat& getVector ( const std::string& name ) const;
-  const boost::filesystem::path getPath ( const std::string& name, const boost::filesystem::path& basePath = "" ) const;
-  const ParameterSet& getSubset ( const std::string& name ) const;
-
-  const ParameterSet& operator[] ( const std::string& name ) const;
-
-  inline void replace ( const std::string& key, Parameter* newp )
-  {
-    using namespace boost;
-    using namespace boost::algorithm;
-
-    if ( boost::contains ( key, "/" ) )
-      {
-        std::string prefix = copy_range<std::string> ( *make_split_iterator ( key, first_finder ( "/" ) ) );
-        std::string remain = key;
-        erase_head ( remain, prefix.size()+1 );
-        return this->getSubset ( prefix ).replace ( remain, newp );
-      }
-    else
-      {
-        this->find(key)->second.reset(newp);
-      }
-  }
-
-
-  virtual std::string latexRepresentation() const;
-  virtual std::string plainTextRepresentation(int indent=0) const;
 
   virtual ParameterSet* cloneParameterSet() const;
 
@@ -219,11 +128,6 @@ public:
   void packExternalFiles();
   void removePackedData();
   void unpackAllExternalFiles(const boost::filesystem::path& basePath);
-
-  virtual void saveToStream(std::ostream& os, const boost::filesystem::path& parentPath, std::string analysisName = std::string() ) const;
-  void saveToFile ( const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
-  void saveToString ( std::string& s, const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
-  virtual std::string readFromFile ( const boost::filesystem::path& file, const std::string& startAtSubnode="" );
 
 };
 
@@ -284,25 +188,25 @@ typedef std::shared_ptr<ParameterSet_Validator> ParameterSet_ValidatorPtr;
 
 
 
-template<class T>
-T& ParameterSet::get ( const std::string& name )
-{
-  typedef T PT;
+//template<class T>
+//T& ParameterSet::get ( const std::string& name )
+//{
+//  typedef T PT;
 
-  auto& p = this->getParameter(name);
+//  auto& p = this->getParameter(name);
 
-  if ( PT* const pt=dynamic_cast<PT* const>(&p) )
-  {
-    return *pt;
-  }
-  else
-  {
-    throw insight::Exception(
-          "Parameter "+name+" not of requested type!"
-          " (actual type is "+p.type()+")"
-          );
-  }
-}
+//  if ( PT* const pt=dynamic_cast<PT* const>(&p) )
+//  {
+//    return *pt;
+//  }
+//  else
+//  {
+//    throw insight::Exception(
+//          "Parameter "+name+" not of requested type!"
+//          " (actual type is "+p.type()+")"
+//          );
+//  }
+//}
 
 }
 

@@ -16,10 +16,11 @@ addToFactoryTable(IQParameter, IQVectorParameter);
 IQVectorParameter::IQVectorParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
-) : IQParameter(parent, name, parameter, defaultParameterSet)
+) : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {}
 
 
@@ -33,12 +34,12 @@ QString IQVectorParameter::valueText() const
 
 
 QVBoxLayout* IQVectorParameter::populateEditControls(
-        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
   const auto& p= dynamic_cast<const insight::VectorParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
@@ -63,11 +64,11 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-      auto& p = dynamic_cast<insight::VectorParameter&>(model->parameterRef(index));
+      auto& p = dynamic_cast<insight::VectorParameter&>(this->parameterRef());
       arma::mat v;
       insight::stringToValue(lineEdit->text().toStdString(), v);
       p.set(v);
-      model->notifyParameterChange(index);
+//      model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
@@ -77,13 +78,13 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
   if (auto *v = dynamic_cast<IQVTKCADModel3DViewer*>(viewer))
   {
     connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
-          [this,model,v,apply,applyFunction]()
+          [this,v,apply,applyFunction]()
           {
             const auto& p =
                     dynamic_cast<const insight::VectorParameter&>(
                         parameter() );
             if (auto bp =
-                    model->getVectorBasePoint(path()))
+                model()->getVectorBasePoint(path()))
             {
                 auto curMod =
                       new IQVectorDirectionCommand(
@@ -125,13 +126,12 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
 }
 
 void IQVectorParameter::applyProposition(
-    IQParameterSetModel* model, const QModelIndex &index,
     const insight::ParameterSet &propositions,
     const std::string &selectedProposition)
 {
   const auto& pp=propositions.get<insight::VectorParameter>(selectedProposition);
-  auto& p= dynamic_cast<insight::VectorParameter&>(model->parameterRef(index));
-  p.reset(pp);
+  auto& p= dynamic_cast<insight::VectorParameter&>(this->parameterRef());
+  p=pp;
   lineEdit->setText( QString::fromStdString(insight::valueToString(p())) );
-  model->notifyParameterChange(index);
+//  model->notifyParameterChange(index);
 }

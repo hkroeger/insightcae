@@ -13,11 +13,12 @@ addToFactoryTable(IQParameter, IQStringParameter);
 IQStringParameter::IQStringParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -32,10 +33,10 @@ QString IQStringParameter::valueText() const
 
 
 QVBoxLayout* IQStringParameter::populateEditControls(
-        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
@@ -52,13 +53,23 @@ QVBoxLayout* IQStringParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-      auto &p = dynamic_cast<insight::StringParameter&>(model->parameterRef(index));
+      auto &p = dynamic_cast<insight::StringParameter&>(this->parameterRef());
       p.set(lineEdit->text().toStdString());
-      model->notifyParameterChange(index);
+//      model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
+
+  // handle external value change
+  auto &p = dynamic_cast<insight::StringParameter&>(this->parameterRef());
+  auto connection = p.valueChanged.connect([=](){
+      auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
+      QSignalBlocker sb(lineEdit);
+      lineEdit->setText(valueText());
+  });
+  connect(layout, &QObject::destroyed, layout,
+          [connection](){connection.disconnect(); });
 
   return layout;
 }

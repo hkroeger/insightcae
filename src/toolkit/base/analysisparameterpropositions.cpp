@@ -253,7 +253,7 @@ ParameterSet AnalysisParameterPropositions::getCombinedPropositionsForParameter(
     {
         auto hardCodedProps = Analysis::getPropositionsForParameter(
             analysisName, parameterPath, currentParameterValues);
-        props.extend(hardCodedProps.entries());
+        props.extend(hardCodedProps);
     }
     catch (...)
     {
@@ -271,7 +271,7 @@ ParameterSet AnalysisParameterPropositions::getCombinedPropositionsForParameter(
         for (auto &f: pgf->second)
         {
             auto props2 = f(parameterPath, currentParameterValues);
-            props.extend(props2.entries());
+            props.extend(props2);
         }
     }
 

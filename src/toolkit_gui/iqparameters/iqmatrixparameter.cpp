@@ -14,11 +14,12 @@ addToFactoryTable(IQParameter, IQMatrixParameter);
 IQMatrixParameter::IQMatrixParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -33,12 +34,12 @@ QString IQMatrixParameter::valueText() const
 
 
 QVBoxLayout* IQMatrixParameter::populateEditControls(
-        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
   const auto& p = dynamic_cast<const insight::MatrixParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
@@ -57,9 +58,9 @@ QVBoxLayout* IQMatrixParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto&p = dynamic_cast<insight::MatrixParameter&>(model->parameterRef(index));
+    auto&p = dynamic_cast<insight::MatrixParameter&>(this->parameterRef());
     p.set(arma::mat(lineEdit->text().toStdString()));
-    model->notifyParameterChange(index);
+//    model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);

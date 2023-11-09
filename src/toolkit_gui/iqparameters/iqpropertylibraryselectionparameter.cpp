@@ -12,11 +12,12 @@ addToFactoryTable(IQParameter, IQPropertyLibrarySelectionParameter);
 IQPropertyLibrarySelectionParameter::IQPropertyLibrarySelectionParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -31,12 +32,12 @@ QString IQPropertyLibrarySelectionParameter::valueText() const
 
 
 QVBoxLayout* IQPropertyLibrarySelectionParameter::populateEditControls(
-        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
   const auto& p = static_cast<const insight::PropertyLibrarySelectionParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Selection:", editControlsContainer);
@@ -63,9 +64,9 @@ QVBoxLayout* IQPropertyLibrarySelectionParameter::populateEditControls(
   QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
   connect(apply, &QPushButton::pressed, [=]()
   {
-    auto &p = dynamic_cast<insight::PropertyLibrarySelectionParameter&>(model->parameterRef(index));
+    auto &p = dynamic_cast<insight::PropertyLibrarySelectionParameter&>(this->parameterRef());
     p.setSelection(selBox_->currentText().toStdString());
-    model->notifyParameterChange(index);
+//    model->notifyParameterChange(index);
   }
   );
   layout->addWidget(apply);

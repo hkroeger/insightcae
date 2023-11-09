@@ -119,15 +119,22 @@ Parameter* PropertyLibrarySelectionParameter::clone() const
     }
 }
 
-void PropertyLibrarySelectionParameter::reset(const Parameter& p)
+void PropertyLibrarySelectionParameter::copyFrom(const Parameter& p)
 {
-    if (const auto* op = dynamic_cast<const PropertyLibrarySelectionParameter*>(&p))
-    {
-      propertyLibrary_ = op->propertyLibrary_;
-      StringParameter::reset(p);
-    }
-    else
-      throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+    operator=(dynamic_cast<const PropertyLibrarySelectionParameter&>(p));
+}
+
+void PropertyLibrarySelectionParameter::operator=(const PropertyLibrarySelectionParameter& op)
+{
+    propertyLibrary_ = op.propertyLibrary_;
+
+    StringParameter::copyFrom(op);
+}
+
+
+int PropertyLibrarySelectionParameter::nChildren() const
+{
+    return 0;
 }
 
 } // namespace insight

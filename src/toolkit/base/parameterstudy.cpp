@@ -92,10 +92,10 @@ ParameterSet ParameterStudy<BaseAnalysis,var_params>::defaultParameters()
   std::string subname("run");
   if (!dfp.contains(subname))
   {
-      dfp.emplace(subname, make<SubsetParameter>("run parameters"));
+      dfp.insert(subname, make<SubsetParameter>("run parameters"));
   }
   
-  dfp.getSubset(subname).emplace
+  dfp.getSubset(subname).insert
   (
     "numthread", 
     make<IntParameter>

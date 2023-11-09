@@ -18,11 +18,12 @@ addToFactoryTable(IQParameter, IQPathParameter);
 IQPathParameter::IQPathParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -37,12 +38,12 @@ QString IQPathParameter::valueText() const
 
 
 QVBoxLayout* IQPathParameter::populateEditControls(
-        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
   const auto&p = dynamic_cast<const insight::PathParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QHBoxLayout *layout2=new QHBoxLayout;
   QHBoxLayout *layout3=new QHBoxLayout;
@@ -67,9 +68,9 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto&p = dynamic_cast<insight::PathParameter&>(model->parameterRef(index));
+    auto&p = dynamic_cast<insight::PathParameter&>(this->parameterRef());
     p.setOriginalFilePath( lineEdit->text().toStdString() );
-    model->notifyParameterChange(index);
+//    model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
@@ -118,7 +119,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
     if (!program.isEmpty())
     {
-      QProcess *sp = new QProcess(model);
+      QProcess *sp = new QProcess(model());
       sp->start(program, QStringList() << lineEdit->text() );
 
       if (!sp->waitForStarted())

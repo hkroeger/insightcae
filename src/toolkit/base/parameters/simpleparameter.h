@@ -41,14 +41,17 @@ protected:
 public:
     declareType ( N );
 
+
     SimpleParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
         : Parameter ( description, isHidden, isExpert, isNecessary, order )
     {}
+
 
     SimpleParameter ( const T& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
         : Parameter ( description, isHidden, isExpert, isNecessary, order ),
           value_ ( value )
     {}
+
 
     bool isDifferent(const Parameter& p) const override
     {
@@ -60,20 +63,31 @@ public:
         return true;
     }
 
-    void set(const  T& nv)
+
+    void set(
+        const  T& nv,
+        bool skipNotification=false // used in ConstrainedSketchEditor
+        )
     {
-        value_=nv;
-        valueChanged();
+      value_=nv;
+      if (!skipNotification)
+      {
+        triggerValueChanged();
+      }
     }
+
+
     virtual const T& operator() () const
     {
         return value_;
     }
 
+
     std::string latexRepresentation() const override
     {
         return SimpleLatex( valueToString ( value_ ) ).toLaTeX();
     }
+
 
     std::string plainTextRepresentation(int /*indent*/=0) const override
     {
@@ -86,13 +100,14 @@ public:
         return new SimpleParameter<T, N> ( value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_ );
     }
 
+
     rapidxml::xml_node<>* appendToNode (
             const std::string& name,
             rapidxml::xml_document<>& doc,
             rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath ) const override
     {
-        insight::CurrentExceptionContext ex("appending simple parameter "+name+" to node "+node.name());
+        insight::CurrentExceptionContext ex(2, "appending simple parameter "+name+" to node "+node.name());
 
         using namespace rapidxml;
         xml_node<>* child = Parameter::appendToNode ( name, doc, node, inputfilepath );
@@ -106,6 +121,7 @@ public:
         );
         return child;
     }
+
 
     void readFromNode
     (
@@ -121,7 +137,7 @@ public:
           auto valueattr=child->first_attribute ( "value" );
           insight::assertion(valueattr, "No value attribute present in "+name+"!");
           stringToValue ( valueattr->value(), value_ );
-          valueChanged();
+          triggerValueChanged();
         }
         else
         {
@@ -135,17 +151,26 @@ public:
         }
     }
 
-    void reset(const Parameter& p) override
+
+    void copyFrom(const Parameter& p) override
     {
-      if (const auto* op = dynamic_cast<const SimpleParameter<T,N>*>(&p))
-      {
-        Parameter::reset(p);
-        value_=op->value_;
-        valueChanged();
-      }
-      else
-        throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+        operator=(dynamic_cast<const SimpleParameter<T,N>&>(p));
     }
+
+
+    void operator=(const SimpleParameter& op)
+    {
+        value_=op.value_;
+
+        Parameter::copyFrom(op);
+    }
+
+
+    int nChildren() const override
+    {
+      return 0;
+    }
+
 
 };
 
@@ -158,11 +183,16 @@ extern char BoolName[];
 extern char VectorName[];
 extern char StringName[];
 
+
+
+
 typedef SimpleParameter<double, DoubleName> DoubleParameter;
 typedef SimpleParameter<int, IntName> IntParameter;
 typedef SimpleParameter<bool, BoolName> BoolParameter;
 typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
+
+
 
 
 #ifdef SWIG

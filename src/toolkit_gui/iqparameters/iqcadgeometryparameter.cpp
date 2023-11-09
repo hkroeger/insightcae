@@ -19,11 +19,12 @@ addToFactoryTable(IQParameter, IQCADGeometryParameter);
 IQCADGeometryParameter::IQCADGeometryParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -41,14 +42,12 @@ QString IQCADGeometryParameter::valueText() const
 
 
 QVBoxLayout* IQCADGeometryParameter::populateEditControls(
-        IQParameterSetModel* model,
-        const QModelIndex &index,
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
   const auto&p = dynamic_cast<const insight::CADGeometryParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
 
   QHBoxLayout *layout2=new QHBoxLayout;
@@ -74,11 +73,11 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto&p = dynamic_cast<insight::CADGeometryParameter&>(model->parameterRef(index));
+    auto&p = dynamic_cast<insight::CADGeometryParameter&>(this->parameterRef());
 //    p.setCADModel( viewer->cadmodel()->model() );
     p.setFeatureLabel( leFeatureLabel->text().toStdString() );
     p.setScript( teScript->document()->toPlainText().toStdString() );
-    model->notifyParameterChange(index);
+//    model->notifyParameterChange(index);
   };
 
   connect(leFeatureLabel, &QLineEdit::returnPressed, applyFunction);

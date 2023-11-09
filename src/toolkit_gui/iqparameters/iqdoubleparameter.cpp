@@ -14,10 +14,11 @@ addToFactoryTable(IQParameter, IQDoubleParameter);
 IQDoubleParameter::IQDoubleParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
-) : IQParameter(parent, name, parameter, defaultParameterSet)
+) : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {}
 
 QString IQDoubleParameter::valueText() const
@@ -26,12 +27,12 @@ QString IQDoubleParameter::valueText() const
 }
 
 QVBoxLayout* IQDoubleParameter::populateEditControls(
-        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
-  const auto& p = dynamic_cast<const insight::DoubleParameter&>(parameter());
+  auto& p = dynamic_cast<insight::DoubleParameter&>(parameterRef());
 
-  auto layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
@@ -51,13 +52,23 @@ QVBoxLayout* IQDoubleParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-      auto &p = dynamic_cast<insight::DoubleParameter&>(model->parameterRef(index));
+      auto &p = dynamic_cast<insight::DoubleParameter&>(this->parameterRef());
       p.set(lineEdit->text().toDouble());
-      model->notifyParameterChange(index);
+//      model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
+
+  // handle external value change
+  auto connection = p.valueChanged.connect([=](){
+      auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
+      QSignalBlocker sb(lineEdit);
+      lineEdit->setText(QString::number(p()));
+  });
+  connect(layout, &QObject::destroyed, layout,
+          [connection](){connection.disconnect(); });
+
 
   return layout;
 }

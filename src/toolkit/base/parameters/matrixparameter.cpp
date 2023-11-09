@@ -35,7 +35,7 @@ bool MatrixParameter::isDifferent(const Parameter& p) const
 void MatrixParameter::set(const arma::mat& nv)
 {
   value_=nv;
-  valueChanged();
+  triggerValueChanged();
 }
 
 const arma::mat& MatrixParameter::operator()() const
@@ -96,11 +96,6 @@ rapidxml::xml_node< char >* MatrixParameter::appendToNode
   using namespace rapidxml;
   xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 
-//   std::ostringstream voss;
-//   value_.save(voss, arma::raw_ascii);
-//
-//   // set stringified table values as node value
-//   child->value(doc.allocate_string(voss.str().c_str()));
   writeMatToXMLNode(value_, doc, *child);
 
   return child;
@@ -120,7 +115,7 @@ void MatrixParameter::readFromNode
     std::string value_str=child->value();
     std::istringstream iss(value_str);
     value_.load(iss, arma::raw_ascii);
-    valueChanged();
+    triggerValueChanged();
   }
   else
   {
@@ -141,16 +136,23 @@ Parameter* MatrixParameter::clone() const
 
 
 
-void MatrixParameter::reset(const Parameter& p)
+void MatrixParameter::copyFrom(const Parameter& p)
 {
-  if (const auto* op = dynamic_cast<const MatrixParameter*>(&p))
-  {
-    Parameter::reset(p);
-    value_ = op->value_;
-    valueChanged();
-  }
-  else
-    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+  operator=(dynamic_cast<const MatrixParameter&>(p));
+
+}
+
+void MatrixParameter::operator=(const MatrixParameter& op)
+{
+  value_ = op.value_;
+
+  Parameter::copyFrom(op);
+}
+
+
+int MatrixParameter::nChildren() const
+{
+  return 0;
 }
 
 

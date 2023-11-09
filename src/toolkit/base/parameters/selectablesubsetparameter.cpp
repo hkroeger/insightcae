@@ -1,5 +1,7 @@
 #include "selectablesubsetparameter.h"
 
+#include "base/cppextensions.h"
+
 namespace insight {
 
 
@@ -11,25 +13,46 @@ addToFactoryTable(Parameter, SelectableSubsetParameter);
 
 
 
-SelectableSubsetParameter::SelectableSubsetParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+SelectableSubsetParameter::SelectableSubsetParameter(
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
 : Parameter(description, isHidden, isExpert, isNecessary, order)
-{
-}
+{}
 
 
 
 
-SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSelection, const SubsetList& defaultValue, const std::string& description,
-                                                     bool isHidden, bool isExpert, bool isNecessary, int order)
+SelectableSubsetParameter::SelectableSubsetParameter(
+    const key_type& defaultSelection,
+    const EntryReferences& defaultValue,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
 : Parameter(description, isHidden, isExpert, isNecessary, order),
   selection_(defaultSelection)
 {
-  for ( const SelectableSubsetParameter::SingleSubset& i: defaultValue )
+  for ( auto &i: defaultValue )
   {
-    std::string key(boost::get<0>(i));
-    value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(boost::get<1>(i))) ); // take ownership of objects in given list!
+        addItem(i.first, *i.second);
   }
 }
+
+
+
+SelectableSubsetParameter::SelectableSubsetParameter(
+    const key_type& defaultSelection,
+    const EntryCopies& defaultValue,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
+    : Parameter(description, isHidden, isExpert, isNecessary, order),
+    selection_(defaultSelection)
+{
+  for ( auto &i: defaultValue )
+  {
+        addItem(i.first, *i.second);
+  }
+}
+
+
 
 
 bool SelectableSubsetParameter::isDifferent(const Parameter& p) const
@@ -39,42 +62,97 @@ bool SelectableSubsetParameter::isDifferent(const Parameter& p) const
     if (!(ssp->selection() == this->selection()))
       return true;
 
-    return (*this)().ParameterSet::isDifferent( (*ssp)() );
+    return (*this)().isDifferent( (*ssp)() );
   }
   else
     return true;
 }
 
 
+
+
 void SelectableSubsetParameter::setSelection(const key_type &nk)
 {
   selection_=nk;
-  valueChanged();
+  triggerValueChanged();
 }
 
 
-void SelectableSubsetParameter::addItem(key_type key, const ParameterSet& ps)
+
+
+SelectableSubsetParameter::EntryReferences SelectableSubsetParameter::items() const
 {
-  value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(ps.cloneParameterSet())) );
-  valueChanged();
+  EntryReferences result;
+  for (auto sp: value_)
+  {
+    result.insert({sp.first, sp.second});
+  }
+  return result;
 }
 
 
 
 
-void SelectableSubsetParameter::setSelection(const key_type& key, const ParameterSet& ps)
+SelectableSubsetParameter::EntryCopies SelectableSubsetParameter::copyItems() const
 {
-    selection_=key;
-    operator()().merge(ps);
-    valueChanged();
+  EntryCopies result;
+  for (auto sp: value_)
+  {
+    result.insert(
+        {
+         sp.first,
+         std::shared_ptr<SubsetParameter>(
+             dynamic_cast<SubsetParameter*>(
+                 sp.second->clone()) )
+        });
+  }
+  return result;
 }
 
 
+
+
+void SelectableSubsetParameter::addItem(key_type key, const SubsetParameter& ps)
+{
+  auto ins = value_.insert(
+      key,
+      std::auto_ptr<SubsetParameter>(
+          dynamic_cast<SubsetParameter*>(ps.clone()))
+      );
+
+  ins.first->second->valueChanged.connect(childValueChanged);
+  ins.first->second->childValueChanged.connect(childValueChanged);
+
+  if (ins.first->first == selection_)
+  {
+    triggerValueChanged();
+  }
+}
+
+
+
+
+void SelectableSubsetParameter::setParametersAndSelection(const key_type& key, const SubsetParameter& ps)
+{
+  selection_=key;
+  setParametersForSelection(key, ps);
+  triggerValueChanged();
+}
+
+void SelectableSubsetParameter::setParametersForSelection(const key_type& key, const SubsetParameter& ps)
+{
+  value_.at(key).merge(ps);
+}
+
+
+const SubsetParameter& SelectableSubsetParameter::getParametersForSelection(const key_type& key) const
+{
+  return value_.at(key);
+}
 
 
 std::string SelectableSubsetParameter::latexRepresentation() const
 {
-//  return "(Not implemented)";
   std::ostringstream os;
   os<<"selected as ``"<<SimpleLatex(selection_).toLaTeX()<<"''\\\\"<<std::endl;
   os<<operator()().latexRepresentation();
@@ -86,7 +164,6 @@ std::string SelectableSubsetParameter::latexRepresentation() const
 
 std::string SelectableSubsetParameter::plainTextRepresentation(int indent) const
 {
-//  return "(Not implemented)";
   std::ostringstream os;
   os<<"selected as \""<<SimpleLatex(selection_).toPlainText()<<"\"";
   if (operator()().size()>0)
@@ -102,13 +179,7 @@ std::string SelectableSubsetParameter::plainTextRepresentation(int indent) const
 
 bool SelectableSubsetParameter::isPacked() const
 {
-  bool is_packed=false;
-  auto& v = this->operator()(); // get active subset
-  for (auto& p: v)
-  {
-    is_packed |= p.second->isPacked();
-  }
-  return is_packed;
+  return operator()().isPacked();
 }
 
 
@@ -116,11 +187,7 @@ bool SelectableSubsetParameter::isPacked() const
 
 void SelectableSubsetParameter::pack()
 {
-  auto& v = this->operator()(); // get active subset
-  for (auto& p: v)
-  {
-    p.second->pack();
-  }
+  operator()().pack();
 }
 
 
@@ -128,11 +195,7 @@ void SelectableSubsetParameter::pack()
 
 void SelectableSubsetParameter::unpack(const boost::filesystem::path& basePath)
 {
-  auto& v = this->operator()(); // get active subset
-  for (auto& p: v)
-  {
-    p.second->unpack(basePath);
-  }
+  operator()().unpack(basePath);
 }
 
 
@@ -140,11 +203,7 @@ void SelectableSubsetParameter::unpack(const boost::filesystem::path& basePath)
 
 void SelectableSubsetParameter::clearPackedData()
 {
-  auto& v = this->operator()(); // get active subset
-  for (auto& p: v)
-  {
-    p.second->clearPackedData();
-  }
+  operator()().clearPackedData();
 }
 
 
@@ -153,7 +212,7 @@ void SelectableSubsetParameter::clearPackedData()
 rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath) const
 {
-  insight::CurrentExceptionContext ex("appending selectable subset "+name+" to node "+node.name());
+  insight::CurrentExceptionContext ex(2, "appending selectable subset "+name+" to node "+node.name());
 
   using namespace rapidxml;
 
@@ -164,7 +223,7 @@ rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string&
     doc.allocate_string(selection_.c_str())
   ));
 
-  operator()().appendToNode(doc, *child, inputfilepath);
+  operator()().appendToNode(std::string(), doc, *child, inputfilepath);
 
   return child;
 }
@@ -189,8 +248,9 @@ void SelectableSubsetParameter::readFromNode
     if (value_.find(selection_)==value_.end())
       throw insight::Exception("Invalid selection key during read of selectableSubset "+name);
 
-    operator()().readFromNode(*child, inputfilepath);
-    valueChanged();
+    operator()().readFromNode(std::string(), *child, inputfilepath);
+
+    triggerValueChanged();
   }
   else
   {
@@ -209,12 +269,18 @@ void SelectableSubsetParameter::readFromNode
 
 Parameter* SelectableSubsetParameter::clone () const
 {
-  SelectableSubsetParameter *np=new SelectableSubsetParameter(description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+  SelectableSubsetParameter *np=
+      new SelectableSubsetParameter(
+        description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+
   np->selection_=selection_;
-  for (ItemList::const_iterator i=value_.begin(); i!=value_.end(); i++)
+
+  for (auto i=value_.begin(); i!=value_.end(); i++)
   {
-    std::string key(i->first);
-    np->value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(i->second->cloneParameterSet())) );
+    np->value_.insert(
+        i->first,
+        std::auto_ptr<SubsetParameter>(dynamic_cast<SubsetParameter*>(i->second->clone()))
+    );
   }
   return np;
 }
@@ -222,97 +288,115 @@ Parameter* SelectableSubsetParameter::clone () const
 
 
 
-void SelectableSubsetParameter::reset(const Parameter& p)
+void SelectableSubsetParameter::copyFrom(const Parameter& p)
 {
-  if (const auto* op = dynamic_cast<const SelectableSubsetParameter*>(&p))
+  operator=(dynamic_cast<const SelectableSubsetParameter&>(p));
+}
+
+
+
+
+void SelectableSubsetParameter::operator=(const SelectableSubsetParameter& ossp)
+{
+  selection_= ossp.selection_;
+  operator()() = ossp();
+
+  Parameter::copyFrom(ossp);
+}
+
+
+
+
+void SelectableSubsetParameter::extend ( const Parameter& other )
+{
+  if (auto *ossp=dynamic_cast<const SelectableSubsetParameter*>(&other))
   {
-    Parameter::reset(p);
-    selection_= op->selection_;
-    for (const auto& v: op->value_)
-    {
-      std::string key(v.first);
-      value_.insert( ItemList::value_type(key, std::unique_ptr<ParameterSet>(v.second->cloneParameterSet())) );
-    }
-    valueChanged();
+    operator()().extend( *ossp );
   }
-  else
-    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
 }
 
 
 
 
-const ParameterSet& SelectableSubsetParameter::subset() const
+void SelectableSubsetParameter::merge ( const Parameter& other )
 {
-  return (*this)();
-}
-
-void SelectableSubsetParameter::merge(
-    const SubParameterSet &othersps,
-    bool allowInsertion)
-{
-  auto &other=
-      dynamic_cast<const SelectableSubsetParameter&>(othersps);
-  for ( auto& it: other.value_)
+  if (auto *ossp=dynamic_cast<const SelectableSubsetParameter*>(&other))
   {
-    auto myit = this->value_.find(it.first);
-    if (myit ==value_.end())
+    selection_= ossp->selection_;
+    operator()().merge( (*ossp)() );
+  }
+}
+
+
+std::unique_ptr<Parameter> SelectableSubsetParameter::intersection(const Parameter &other) const
+{
+  if (auto *ossp = dynamic_cast<const SelectableSubsetParameter*>(&other))
+  {
+    auto np = std::make_unique<SelectableSubsetParameter>(
+        description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+
+    for (auto ci: value_)
     {
-      if (allowInsertion)
+      auto key=ci.first;
+      if (ossp->value_.count(key))
       {
-          this->value_.insert(
-              {
-               it.first,
-                  std::unique_ptr<ParameterSet>(
-                    it.second->cloneParameterSet()
-                      )
-              });
+          // key in both SSPs
+          auto isd = ci.second->intersection(ossp->value_.at(key));
+          std::auto_ptr<SubsetParameter> issp(
+              dynamic_cast<SubsetParameter*>(
+                  isd.release()));
+          if (issp.get())
+          {
+              np->addItem( key, *issp );
+          }
       }
     }
-    else
+
+    if (np->value_.count(selection_))
     {
-      myit->second->merge(*it.second, allowInsertion);
+      np->selection_=selection_;
+    }
+    else if (np->value_.count(ossp->selection_))
+    {
+      np->selection_=ossp->selection_;
+    }
+    else if (np->value_.size())
+    {
+      np->selection_=np->value_.begin()->first;
+    }
+
+    if (np->value_.size())
+    {
+      return np;
     }
   }
-  if (this->value_.find(other.selection_)!=value_.end())
-  {
-    this->selection_ = other.selection_;
-  }
-  valueChanged();
+
+  return nullptr;
 }
 
-Parameter *SelectableSubsetParameter::intersection(const SubParameterSet &othersps) const
+
+
+
+int SelectableSubsetParameter::nChildren() const
 {
-  auto *np=new SelectableSubsetParameter(
-      description_.simpleLatex(),
-      isHidden_, isExpert_, isNecessary_, order_);
+  return operator()().size();
+}
 
-  auto &other=
-      dynamic_cast<const SelectableSubsetParameter&>(othersps);
-  for ( auto& it: other.value_)
-  {
-    auto myit = this->value_.find(it.first);
-    if (myit !=value_.end())
-    {
-      np->value_.insert({
-          it.first,
-          std::unique_ptr<ParameterSet>(
-              myit->second->intersection(*it.second).cloneParameterSet()
-              )
-          });
-    }
-  }
+std::string SelectableSubsetParameter::childParameterName(int i) const
+{
+  return operator()().childParameterName(i);
+}
 
-  np->selection_ = np->value_.begin()->first;
-  if (
-      other.selection_==selection_
-      &&
-      np->value_.find(other.selection_)!=np->value_.end())
-  {
-    np->selection_ = other.selection_;
-  }
 
-  return np;
+Parameter& SelectableSubsetParameter::childParameterRef ( int i )
+{
+  return operator()().childParameterRef(i);
+}
+
+
+const Parameter& SelectableSubsetParameter::childParameter( int i ) const
+{
+  return operator()().childParameter(i);
 }
 
 } // namespace insight

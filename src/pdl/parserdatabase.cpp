@@ -142,7 +142,7 @@ void ParserDataBase::cppWriteInsertStatement
     os<<"{ ";
     os<<"std::string key(\""<<name<<"\"); ";
     this->cppWriteCreateStatement(os, name, thisscope);
-    os<<psvarname<<".emplace(key, std::move("<<name<<")); ";
+    os<<psvarname<<".insert(key, std::move("<<name<<")); ";
     os<<"}"<<std::endl;
 }
 

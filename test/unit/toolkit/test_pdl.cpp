@@ -28,5 +28,7 @@ int main()
   cout << p_test.sel << endl;
   cout << p_test.L << endl;
 
+  cout << ps_test.getDouble("run/regime/endTime") << endl;
+
   return 0;
 }

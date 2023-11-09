@@ -54,7 +54,7 @@ void SelectionParameter::resetItems(const ItemList &newItems)
 {
   items_=newItems;
   value_=0;
-  valueChanged();
+  triggerValueChanged();
 }
 
 
@@ -66,7 +66,7 @@ const SelectionParameter::ItemList& SelectionParameter::items() const
 void SelectionParameter::setSelection ( const std::string& sel )
 {
   value_=selection_id ( sel );
-  valueChanged();
+  triggerValueChanged();
 }
 
 
@@ -84,7 +84,7 @@ std::string SelectionParameter::plainTextRepresentation(int) const
 rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath) const
 {
-    insight::CurrentExceptionContext ex("appending selection "+name+" to node "+node.name());
+    insight::CurrentExceptionContext ex(2, "appending selection "+name+" to node "+node.name());
 
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
@@ -127,7 +127,7 @@ void SelectionParameter::readFromNode
         throw insight::Exception("Invalid selection value ("+key+") in parameter "+name);
       }
     }
-    valueChanged();
+    triggerValueChanged();
   }
   else
   {
@@ -149,16 +149,22 @@ Parameter* SelectionParameter::clone() const
 }
 
 
-void SelectionParameter::reset(const Parameter& p)
+void SelectionParameter::copyFrom(const Parameter& p)
 {
-  if (const auto* op = dynamic_cast<const SelectionParameter*>(&p))
-  {
-    IntParameter::reset(p);
-    items_ = op->items_;
-    valueChanged();
-  }
-  else
-    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+  operator=(dynamic_cast<const SelectionParameter&>(p));
+
+}
+
+void SelectionParameter::operator=(const SelectionParameter& op)
+{
+  items_ = op.items_;
+
+  IntParameter::copyFrom(op);
+}
+
+int SelectionParameter::nChildren() const
+{
+  return 0;
 }
 
 

@@ -22,6 +22,7 @@
 #include <QLabel>
 #include <QPainter>
 #include <QVBoxLayout>
+#include <QPushButton>
 
 #include "cadparametersetvisualizer.h"
 #include "parametereditorwidget.h"
@@ -52,9 +53,10 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         parameterTreeView_, &QTreeView::customContextMenuRequested,
         [this](const QPoint& p)
         {
-            model_->contextMenu( parameterTreeView_,
-                                parameterTreeView_->indexAt(p),
-                                p );
+            IQParameterSetModel::contextMenu(
+                parameterTreeView_,
+                parameterTreeView_->indexAt(p),
+                p );
         }
     );
 
@@ -95,10 +97,55 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
     QObject::connect( parameterTreeView_, &QTreeView::clicked, parameterTreeView_,
                      [this](const QModelIndex& index)
                      {
-                         model_->IQParameterSetModel::handleClick(
-                             index, inputContents_,
-                             display_ ? display_->viewer() : nullptr,
-                             viz_.get() );
+//                         model_->IQParameterSetModel::handleClick(
+//                             index, inputContents_,
+//                             display_ ? display_->viewer() : nullptr,
+//                             viz_.get() );
+                            if (index.isValid())
+                            {
+                                if (auto* p=IQParameterSetModel::parameterFromIndex(index))
+                                {
+                                    // remove existing controls first
+                                    {
+                                        // clear contents of widget with edit controls
+                                        QList<QWidget*> widgets = inputContents_->findChildren<QWidget*>();
+                                        foreach(QWidget* widget, widgets)
+                                        {
+                                            widget->deleteLater();
+                                        }
+                                        // remove old layout
+                                        if (inputContents_->layout())
+                                        {
+                                            delete inputContents_->layout();
+                                        }
+                                    }
+
+                                    // create new controls
+                                    auto l = p->populateEditControls(
+                                        inputContents_,
+                                        display_ ? display_->viewer() : nullptr );
+
+
+                                    if (display_)
+                                    {
+                                        auto cmdl=new QHBoxLayout;
+                                        auto acts = viz_->createGUIActions(
+                                            p->path().toStdString(),
+                                            inputContents_,
+                                            display_->viewer());
+                                        for (auto& act: acts)
+                                        {
+                                            auto btn = new QPushButton(act.icon, act.label);
+                                            connect(btn, &QPushButton::clicked, btn,
+                                                    act.action);
+                                            cmdl->addWidget(btn);
+                                        }
+                                        l->addLayout(cmdl);
+                                    }
+
+                                    l->addStretch();
+                                }
+                            }
                      }
                      );
 
@@ -188,58 +235,90 @@ ParameterEditorWidget::ParameterEditorWidget
 }
 
 
-ParameterEditorWidget::ParameterEditorWidget
-(
-  insight::ParameterSet& pset,
-  const insight::ParameterSet& default_pset,
-  QWidget *parent,
-  insight::ParameterSetVisualizerPtr viz,
-  insight::ParameterSet_ValidatorPtr vali,
-  ParameterSetDisplay* display
-)
-: ParameterEditorWidget(parent, viz, vali, display)
-{
-  resetParameterSet(pset, default_pset);
-}
+//ParameterEditorWidget::ParameterEditorWidget
+//(
+//  insight::ParameterSet& pset,
+//  const insight::ParameterSet& default_pset,
+//  QWidget *parent,
+//  insight::ParameterSetVisualizerPtr viz,
+//  insight::ParameterSet_ValidatorPtr vali,
+//  ParameterSetDisplay* display
+//)
+//: ParameterEditorWidget(parent, viz, vali, display)
+//{
+//  resetParameterSet(pset, default_pset);
+//}
 
 
 bool ParameterEditorWidget::hasVisualizer() const
 {
-  return bool(viz_);
+    return bool(viz_);
 }
 
 
-void ParameterEditorWidget::clearParameterSet()
+void ParameterEditorWidget::setModel(QAbstractItemModel *model)
 {
-  if (model_)
-  {
-    parameterTreeView_->setModel(nullptr);
-    disconnect(model_, &IQParameterSetModel::parameterSetChanged, this, 0);
-    model_->deleteLater();
-    model_=nullptr;
-  }
+    if (!model && model_)
+    {
+        disconnectParameterSetChanged(model_, this);
+        parameterTreeView_->setModel(nullptr);
+        if (display_) display_->model()->setAssociatedParameterSetModel(nullptr);
+    }
+
+    model_=model;
+
+    connectParameterSetChanged(
+        model_,
+        this, &ParameterEditorWidget::onParameterSetChanged );
+
+    parameterTreeView_->setModel(model_);
+    if (viz_)
+    {
+        if (auto *psm = dynamic_cast<IQParameterSetModel*>(model_))
+            viz_->setParameterSetModel(psm);
+    }
+    if (display_) display_->model()->setAssociatedParameterSetModel(model_);
 }
 
 
-void ParameterEditorWidget::resetParameterSet(
-        insight::ParameterSet& pset,
-        const insight::ParameterSet& default_pset
-        )
-{
-  clearParameterSet();
+//void ParameterEditorWidget::clearParameterSet()
+//{
+//  if (model_)
+//  {
+//    parameterTreeView_->setModel(nullptr);
+////    disconnect(model_, &IQParameterSetModel::parameterSetChanged, this, 0);
+//    disconnectParameterSetChanged(model_, this);
+//    model_->deleteLater();
+//    model_=nullptr;
+//    display_->model()->setAssociatedParameterSetModel(nullptr);
+//  }
+//}
 
-  model_ = new IQParameterSetModel(pset, default_pset, this);
-  defaultParameters_=default_pset;
 
-  connect(model_, &IQParameterSetModel::parameterSetChanged,
-          this, &ParameterEditorWidget::onParameterSetChanged );
+//void ParameterEditorWidget::resetParameterSet(
+//        insight::ParameterSet& pset,
+//        const insight::ParameterSet& default_pset
+//        )
+//{
+//  clearParameterSet();
 
-  parameterTreeView_->setModel(model_);
-  if (viz_)
-  {
-    viz_->setParameterSetModel(model_);
-  }
-}
+//  model_ = new IQParameterSetModel(pset, default_pset, this);
+//  defaultParameters_=default_pset;
+
+////  connect(model_, &IQParameterSetModel::parameterSetChanged,
+////          this, &ParameterEditorWidget::onParameterSetChanged );
+//  connectParameterSetChanged(
+//      model_,
+//      this, &ParameterEditorWidget::onParameterSetChanged );
+
+//  parameterTreeView_->setModel(model_);
+//  if (viz_)
+//  {
+//    if (auto *psm = dynamic_cast<IQParameterSetModel*>(model_))
+//        viz_->setParameterSetModel(psm);
+//  }
+//  display_->model()->setAssociatedParameterSetModel(model_);
+//}
 
 ParameterEditorWidget::CADViewer *ParameterEditorWidget::viewer() const
 {
@@ -252,7 +331,7 @@ void ParameterEditorWidget::onParameterSetChanged()
 {
   if (viz_)
   {
-    viz_->update(model_->getParameterSet());
+    viz_->update(getParameterSet(model_));
   }
   Q_EMIT parameterSetChanged();
 }

@@ -59,7 +59,9 @@ public:
                                 boost::filesystem::path inputfilepath ) override;
 
     Parameter* clone() const override;
-    void reset(const Parameter& p) override;
+    void copyFrom(const Parameter& p) override;
+    void operator=(const MatrixParameter& p);
+    int nChildren() const override;
 };
 
 

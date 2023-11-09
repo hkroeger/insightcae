@@ -68,21 +68,15 @@ public:
     inline void insertValue ( double v )
     {
         values_.insert ( v );
-        valueChanged();
+        triggerValueChanged();
     }
-//    inline RangeList::iterator operator() ()
-//    {
-//        return values_.begin();
-//    }
+
     inline RangeList::const_iterator operator() () const
     {
         return values_.begin();
     }
 
-//    inline RangeList& values()
-//    {
-//        return values_;
-//    }
+
     void resetValues(const RangeList& nvs);
 
     inline const RangeList& values() const
@@ -106,7 +100,9 @@ public:
         boost::filesystem::path inputfilepath ) override;
 
     Parameter* clone() const override;
-    void reset(const Parameter& p) override;
+    void copyFrom(const Parameter& p) override;
+    void operator=(const DoubleRangeParameter& p);
+    int nChildren() const override;
 };
 
 

@@ -65,8 +65,8 @@ public:
     typedef IQVTKCADModel3DViewer CADViewer;
     
 protected:
-    insight::ParameterSet defaultParameters_;
-    IQParameterSetModel* model_;
+//    insight::ParameterSet defaultParameters_;
+    QAbstractItemModel* model_;
 
     QTreeView* parameterTreeView_;
     QWidget *inputContents_;
@@ -110,27 +110,29 @@ public:
      * @param viz
      * @param vali
      */
-    ParameterEditorWidget
-    (
-        insight::ParameterSet& pset,
-        const insight::ParameterSet& default_pset,
-        QWidget* parent,
-        insight::ParameterSetVisualizerPtr viz = insight::ParameterSetVisualizerPtr(),
-        insight::ParameterSet_ValidatorPtr vali = insight::ParameterSet_ValidatorPtr(),
-        ParameterSetDisplay* display = nullptr
-    );
+//    ParameterEditorWidget
+//    (
+//        insight::ParameterSet& pset,
+//        const insight::ParameterSet& default_pset,
+//        QWidget* parent,
+//        insight::ParameterSetVisualizerPtr viz = insight::ParameterSetVisualizerPtr(),
+//        insight::ParameterSet_ValidatorPtr vali = insight::ParameterSet_ValidatorPtr(),
+//        ParameterSetDisplay* display = nullptr
+//    );
 
 
 
     bool hasVisualizer() const;
 
-    void clearParameterSet();
-    void resetParameterSet(
-            insight::ParameterSet& pset,
-            const insight::ParameterSet& default_pset
-            );
+    void setModel(QAbstractItemModel* model);
 
-    inline IQParameterSetModel* model() const { return model_; }
+//    void clearParameterSet();
+//    void resetParameterSet(
+//            insight::ParameterSet& pset,
+//            const insight::ParameterSet& default_pset
+//            );
+
+    inline QAbstractItemModel* model() const { return model_; }
 
     CADViewer *viewer() const;
     

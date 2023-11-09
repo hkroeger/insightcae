@@ -250,7 +250,7 @@ int main ( int argc, char *argv[] )
           f<<"}"<<endl;
 
           //get from other ParameterSet
-          f<<name<<"(const insight::ParameterSet& p)"<<endl;
+          f<<name<<"(const insight::SubsetParameter& p)"<<endl;
           if ( !base_type_name.empty() )
           {
             f<<" : "<<base_type_name<<"(p)"<<endl;
@@ -261,7 +261,7 @@ int main ( int argc, char *argv[] )
             ;
 
           //set into other ParameterSet
-          f<<"void set(insight::ParameterSet& p) const override"<<endl
+          f<<"void set(insight::SubsetParameter& p) const override"<<endl
           <<"{"<<endl;
           if ( !base_type_name.empty() && (base_type_name!=default_base_type_name) )
           {
@@ -271,9 +271,7 @@ int main ( int argc, char *argv[] )
           {
             std::string subname=pe.first;
             f<<"{"<<endl;
-//            f<<pe.second->cppParamType ( subname ) <<"& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
             f<<"auto& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
-//            f<<"const "<<pe.second->cppTypeName ( subname ) <<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
             f<<"const auto& "<<subname<<"_static = this->"<<subname<<";"<<endl;
             pe.second->cppWriteSetStatement
                 (
@@ -283,9 +281,7 @@ int main ( int argc, char *argv[] )
           }
           f<<"}"<<endl;
 
-          //from other ParameterSet into current static data
-//          f<<"virtual void get(const insight::ParameterSet& p)"<<endl
-          f<<"void get(const insight::ParameterSet& p) override"<<endl
+          f<<"void get(const insight::SubsetParameter& p) override"<<endl
           <<"{"<<endl;
           if ( !base_type_name.empty() && (base_type_name!=default_base_type_name) )
           {
@@ -295,8 +291,6 @@ int main ( int argc, char *argv[] )
           {
             std::string subname=pe.first;
             f<<"{"<<endl;
-//            f<<"const "<<pe.second->cppParamType ( subname ) <<"& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
-//            f<<pe.second->cppTypeName ( subname ) <<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
             f<<"const auto& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
             f<<"auto& "<<subname<<"_static = this->"<<subname<<";"<<endl;
             pe.second->cppWriteGetStatement

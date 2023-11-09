@@ -1,6 +1,6 @@
 #include "arrayparameter.h"
 #include "base/translations.h"
-
+#include "base/tools.h"
 
 namespace insight
 {
@@ -18,18 +18,20 @@ addToFactoryTable(Parameter, ArrayParameter);
 ArrayParameter::ArrayParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
 : Parameter(description, isHidden, isExpert, isNecessary, order),
   defaultSize_(0)
-{
-}
+{}
 
 
 
 
 ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
 : Parameter(description, isHidden, isExpert, isNecessary, order),
-  defaultValue_(defaultValue.clone()),
   defaultSize_(size)
 {
-  for (int i=0; i<size; i++) appendEmpty();
+    setDefaultValue(defaultValue);
+    for (int i=0; i<defaultSize_; i++)
+    {
+        appendEmpty();
+    }
 }
 
 
@@ -71,32 +73,94 @@ int ArrayParameter::defaultSize() const
   return defaultSize_;
 }
 
+void ArrayParameter::resize(int newSize)
+{
+  if (newSize<size())
+  {
+    for (int k=size()-1; k>newSize; --k)
+    {
+      eraseValue(k);
+    }
+  }
+  else if (newSize>size())
+  {
+    for (int k=size(); k<newSize; ++k)
+    {
+      appendEmpty();
+    }
+  }
+
+  insight::assertion(
+        newSize==size(),
+      "internal error: wrongly resized array!");
+}
+
 
 void ArrayParameter::eraseValue ( int i )
 {
-  value_.erase ( value_.begin()+i );
-  valueChanged();
+  insight::assertion(
+    i>=0 && i<size(),
+      "%d out of range (0...%d)", i, size()-1);
+
+  auto idx=value_.begin();
+  std::advance(idx, i);
+
+  valueChangedConnections_.erase(idx->get());
+  childValueChangedConnections_.erase(idx->get());
+  value_.erase ( idx );
+
+  triggerValueChanged();
 }
 
 
 void ArrayParameter::appendValue ( const Parameter& np )
 {
   value_.push_back ( ParameterPtr( np.clone() ) );
-  valueChanged();
+
+  auto& ins=value_.back();
+  valueChangedConnections_[ins.get()]=
+      std::make_shared<boost::signals2::scoped_connection>(
+          ins->valueChanged.connect( childValueChanged ));
+  childValueChangedConnections_[ins.get()]=
+      std::make_shared<boost::signals2::scoped_connection>(
+          ins->childValueChanged.connect( childValueChanged ));
+
+  triggerValueChanged();
 }
 
 
 void ArrayParameter::insertValue ( int i, const Parameter& np )
 {
-  value_.insert( value_.begin()+i, ParameterPtr( np.clone() ) );
-  valueChanged();
+  insight::assertion(
+      i>=0 && i<size(),
+      "%d out of range (0...%d)", i, size()-1);
+
+  auto ins = value_.insert( value_.begin()+i, ParameterPtr( np.clone() ) );
+
+  valueChangedConnections_[ins->get()]=
+      std::make_shared<boost::signals2::scoped_connection>(
+       (*ins)->valueChanged.connect( childValueChanged ));
+  childValueChangedConnections_[ins->get()]=
+      std::make_shared<boost::signals2::scoped_connection>(
+       (*ins)->childValueChanged.connect( childValueChanged ));
+
+  triggerValueChanged();
 }
 
 
 void ArrayParameter::appendEmpty()
 {
   value_.push_back ( ParameterPtr( defaultValue_->clone() ) );
-  valueChanged();
+
+  auto& ins=value_.back();
+  valueChangedConnections_[ins.get()]=
+      std::make_shared<boost::signals2::scoped_connection>(
+        ins->valueChanged.connect( childValueChanged ));
+  childValueChangedConnections_[ins.get()]=
+      std::make_shared<boost::signals2::scoped_connection>(
+        ins->childValueChanged.connect( childValueChanged ));
+
+  triggerValueChanged();
 }
 
 
@@ -124,11 +188,74 @@ int ArrayParameter::size() const
     return value_.size();
 }
 
+int ArrayParameter::nChildren() const
+{
+    return value_.size();
+}
+
+std::string ArrayParameter::childParameterName(int i) const
+{
+    if (i<nChildren())
+        return str(boost::format("%d")%i);
+    else if (i==nChildren())
+        return "default";
+    else
+    {
+        throw insight::Exception(
+            "index %d out of range (0...%d)", i, nChildren() );
+        return std::string();
+    }
+}
+
+
+Parameter& ArrayParameter::childParameterRef ( int i )
+{
+    insight::assertion(i>=0 && i<=nChildren(),
+                       "index %d out of range (0...%d)", i, nChildren());
+    if (i==nChildren())
+        return *defaultValue_;
+    else
+        return *(value_[i]);
+}
+
+
+const Parameter& ArrayParameter::childParameter( int i ) const
+{
+    insight::assertion(i>=0 && i<=nChildren(),
+                       "index %d out of range (0...%d)", i, nChildren());
+    if (i==nChildren())
+        return *defaultValue_;
+    else
+        return *(value_[i]);
+}
+
+int ArrayParameter::childParameterIndex(const std::string &name) const
+{
+    try
+    {
+        int i = boost::lexical_cast<int>( boost::algorithm::trim_copy(name) );
+        if (i>=0 && i<nChildren())
+        {
+            return i;
+        }
+    }
+    catch (const boost::bad_lexical_cast& e)
+    {
+        if (name=="default") return nChildren();
+    }
+    return -1;
+}
+
+
 
 void ArrayParameter::clear()
 {
+
+    valueChangedConnections_.clear();
+    childValueChangedConnections_.clear();
     value_.clear();
-    valueChanged();
+
+    triggerValueChanged();
 }
 
 std::string ArrayParameter::latexRepresentation() const
@@ -138,7 +265,7 @@ std::string ArrayParameter::latexRepresentation() const
   {
     os<<"\\begin{enumerate}\n";
 
-    for(value_type::const_iterator i=value_.begin(); i!=value_.end(); ++i)
+    for(auto i=value_.begin(); i!=value_.end(); ++i)
     {
       os << "\\item item " << (i-value_.begin()) << " :\\\\\n" << (*i)->latexRepresentation();
     }
@@ -160,7 +287,7 @@ std::string ArrayParameter::plainTextRepresentation(int indent) const
   if (size()>0)
   {
     os << "\n";
-    for(value_type::const_iterator i=value_.begin(); i!=value_.end(); i++)
+    for(auto i=value_.begin(); i!=value_.end(); i++)
     {
       os << std::string(indent+1, ' ')  << "item " << (i-value_.begin()) << " :\n"
          << std::string(indent+1, ' ')  << (*i)->plainTextRepresentation(indent+1);
@@ -228,7 +355,7 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath) const
 {
-  insight::CurrentExceptionContext ex("appending array "+name+" to node "+node.name());
+  insight::CurrentExceptionContext ex(2, "appending array "+name+" to node "+node.name());
   using namespace rapidxml;
   xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
   defaultValue_->appendToNode("default", doc, *child, inputfilepath);
@@ -252,7 +379,9 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>&
 
   if (child)
   {
-    value_.clear();
+//    value_.clear();
+
+    int imax=-1;
     for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
     {
       std::string name(e->first_attribute("name")->value());
@@ -263,26 +392,33 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>&
       else
       {
         int i=boost::lexical_cast<int>(name);
-        ParameterPtr p(defaultValue_->clone());
-        p->readFromNode( name, *child, inputfilepath );
+        imax=std::max(imax,i);
+        if (i>size()-1) resize(i+1);
+        value_[i]->readFromNode( name, *child, inputfilepath );
 
-        readvalues.push_back( decltype(readvalues)::value_type(i, p) );
+//        ParameterPtr p(defaultValue_->clone());
+//        p->readFromNode( name, *child, inputfilepath );
+//        readvalues.push_back( decltype(readvalues)::value_type(i, p) );
       }
     }
+    if (imax<0)
+      clear();
+    else
+      resize(imax+1);
 
-    sort(readvalues.begin(), readvalues.end(),
-         [](const decltype(readvalues)::value_type& v1, const decltype(readvalues)::value_type& v2)
-            {
-                return v1.first < v2.first;
-            }
-    );
+//    sort(readvalues.begin(), readvalues.end(),
+//         [](const decltype(readvalues)::value_type& v1, const decltype(readvalues)::value_type& v2)
+//            {
+//                return v1.first < v2.first;
+//            }
+//    );
 
-    for (const auto& v: readvalues)
-    {
-        value_.push_back(v.second);
-    }
+//    for (const auto& v: readvalues)
+//    {
+//        value_.push_back(v.second);
+//    }
 
-    valueChanged();
+    triggerValueChanged();
   }
   else
   {
@@ -311,20 +447,85 @@ Parameter* ArrayParameter::clone () const
 
 
 
-void ArrayParameter::reset(const Parameter& p)
+
+void ArrayParameter::copyFrom(const Parameter& p)
 {
-  if (const auto* op = dynamic_cast<const ArrayParameter*>(&p))
+  operator=(dynamic_cast<const ArrayParameter&>(p));
+}
+
+
+
+
+void ArrayParameter::operator=(const ArrayParameter& op)
+{
+
+  (*defaultValue_).copyFrom(*op.defaultValue_);
+  defaultSize_ = op.defaultSize_;
+
+//  int osize = size();
+
+//  if (size()>op.size())
+//  {
+//    // shorten array, if required
+//    resize(osize=op.size());
+//  }
+
+//  int i=0;
+//  // copy values of existing entries
+//  for (; i<osize; ++i)
+//  {
+//    *value_[i] = *op.value_[i];
+//  }
+//  // append new entries
+//  resize(op.value_.size());
+//  for (; i<op.value_.size(); ++i)
+//  {
+////    value_[i].reset( op.value_[i]->clone() );
+//    *value_[i] = *op.value_[i];
+//  }
+
+  resize(op.size());
+  for (int i=0; i<op.size(); ++i)
   {
-    Parameter::reset(p);
-    defaultValue_.reset( op->defaultValue_->clone() );
-    defaultSize_ = op->defaultSize_;
-    value_.clear();
-    for (const auto& v: op->value_)
-      value_.push_back( ParameterPtr(v->clone()) );
-    valueChanged();
+    (*value_[i]).copyFrom( *op.value_[i] );
   }
-  else
-    throw insight::Exception(_("Tried to set a %s from a different type (%s)!"), type().c_str(), p.type().c_str());
+
+  Parameter::copyFrom(op);
+}
+
+
+
+
+void ArrayParameter::extend(const Parameter &other)
+{
+  auto &op = dynamic_cast<const ArrayParameter&>(other);
+  defaultValue_->extend(*op.defaultValue_);
+  for (auto&e : value_)
+  {
+    e->extend(*op.defaultValue_);
+  }
+  triggerValueChanged();
+}
+
+void ArrayParameter::merge(const Parameter &other)
+{
+  auto &op = dynamic_cast<const ArrayParameter&>(other);
+
+  defaultValue_->merge(*op.defaultValue_);
+
+  int i;
+  for (i=0; i<std::min(size(), op.size()); ++i)
+  {
+    value_[i]->merge(*op.value_[i]);
+  }
+  for (; i<op.size(); ++i) // if other is larger
+  {
+//    value_.push_back ( ParameterPtr( defaultValue_->clone() ) );
+    appendEmpty();
+    insight::assertion( value_.size()-1==i, "unexpected" );
+    value_.back()->merge(*op.value_[i]);
+  }
+  triggerValueChanged();
 }
 
 

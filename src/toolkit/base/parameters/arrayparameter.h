@@ -42,6 +42,10 @@ protected:
     int defaultSize_;
     std::vector<ParameterPtr> value_;
 
+    std::map<Parameter*, std::shared_ptr<boost::signals2::scoped_connection> >
+        valueChangedConnections_,
+        childValueChangedConnections_;
+
 public:
     declareType ( "array" );
 
@@ -52,7 +56,9 @@ public:
 
     void setDefaultValue ( const Parameter& defP );
     const Parameter& defaultValue() const;
+
     int defaultSize() const;
+    void resize(int newSize);
     void eraseValue ( int i );
     void appendValue ( const Parameter& np );
     void insertValue ( int i, const Parameter& np );
@@ -63,6 +69,12 @@ public:
     const Parameter& element(int i) const override;
 
     int size() const override;
+
+    int nChildren() const override;
+    std::string childParameterName(int i) const override;
+    Parameter& childParameterRef ( int i ) override;
+    const Parameter& childParameter( int i ) const override;
+    int childParameterIndex( const std::string& name ) const override;
 
     void clear();
 
@@ -86,7 +98,10 @@ public:
         boost::filesystem::path inputfilepath ) override;
 
     Parameter* clone () const override;
-    void reset(const Parameter& p) override;
+    void copyFrom(const Parameter& p) override;
+    void operator=(const ArrayParameter& p);
+    void extend ( const Parameter& op ) override;
+    void merge ( const Parameter& other ) override;
 };
 
 

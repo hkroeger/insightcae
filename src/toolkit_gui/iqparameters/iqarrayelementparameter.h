@@ -12,11 +12,21 @@ public:
   declareFactoryTable
   (
       IQArrayElementParameterBase,
-        LIST(QObject* parent, const QString& name, insight::Parameter& parameter, const insight::ParameterSet& defaultParameterSet),
-        LIST(parent, name, parameter, defaultParameterSet)
+        LIST(
+            QObject* parent,
+            IQParameterSetModel* psmodel,
+            const QString& name,
+            insight::Parameter& parameter,
+            const insight::ParameterSet& defaultParameterSet ),
+        LIST(parent, psmodel, name, parameter, defaultParameterSet)
   );
 
-  static IQParameter* create(QObject* parent, const QString& name, insight::Parameter& p, const insight::ParameterSet& defaultParameterSet);
+  static IQParameter* create(
+      QObject* parent,
+      IQParameterSetModel* psmodel,
+      const QString& name,
+      insight::Parameter& p,
+      const insight::ParameterSet& defaultParameterSet );
 
 public:
   declareType("IQArrayElementParameterBase");
@@ -24,6 +34,7 @@ public:
   IQArrayElementParameterBase
   (
       QObject *parent,
+      IQParameterSetModel* psmodel,
       const QString &name,
       insight::Parameter &parameter,
       const insight::ParameterSet &defaultParameterSet
@@ -46,12 +57,13 @@ public:
   IQArrayElementParameter
   (
       QObject *parent,
+      IQParameterSetModel* psmodel,
       const QString &name,
       insight::Parameter &parameter,
       const insight::ParameterSet &defaultParameterSet
   )
-    : IQBaseParameter(parent, name, parameter, defaultParameterSet),
-      IQArrayElementParameterBase(parent, name, parameter, defaultParameterSet)
+    : IQBaseParameter(parent, psmodel, name, parameter, defaultParameterSet),
+      IQArrayElementParameterBase(parent, psmodel, name, parameter, defaultParameterSet)
   {}
 
   const QString path(bool redirectArrayElementsToDefault=false) const override
@@ -62,7 +74,7 @@ public:
   }
 
 
-  virtual void populateContextMenu(IQParameterSetModel* model, const QModelIndex &index, QMenu* m);
+  virtual void populateContextMenu(QMenu* m);
 //  virtual QVBoxLayout* populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer);
 };
 

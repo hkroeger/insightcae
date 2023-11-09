@@ -22,11 +22,12 @@ addToFactoryTable(IQParameter, IQCADSketchParameter);
 IQCADSketchParameter::IQCADSketchParameter
     (
         QObject* parent,
+    IQParameterSetModel* psmodel,
         const QString& name,
         insight::Parameter& parameter,
         const insight::ParameterSet& defaultParameterSet
         )
-    : IQParameter(parent, name, parameter, defaultParameterSet)
+    : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -42,14 +43,12 @@ QString IQCADSketchParameter::valueText() const
 
 
 QVBoxLayout* IQCADSketchParameter::populateEditControls(
-    IQParameterSetModel* model,
-    const QModelIndex &index,
     QWidget* editControlsContainer,
     IQCADModel3DViewer *viewer)
 {
     const auto&p = dynamic_cast<const insight::CADSketchParameter&>(parameter());
 
-    auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+    auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
 
     auto *teScript = new QTextEdit(editControlsContainer);
@@ -65,36 +64,20 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
     auto applyFunction = [=]()
     {
-        auto&p = dynamic_cast<insight::CADSketchParameter&>(model->parameterRef(index));
+        auto&p = dynamic_cast<insight::CADSketchParameter&>(this->parameterRef());
+        p.setUpdateValueSignalBlockage(true);
         p.setScript( teScript->document()->toPlainText().toStdString() );
-        model->notifyParameterChange(index);
+        p.setUpdateValueSignalBlockage(false);
+        p.triggerValueChanged();
     };
     connect(apply, &QPushButton::pressed, applyFunction);
 
     auto editFunction = [=]()
     {
         auto&p = dynamic_cast<insight::CADSketchParameter&>(
-            model->parameterRef(index));
+            this->parameterRef());
 
-        std::shared_ptr<insight::cad::ConstrainedSketch> sk =
-            p.featureGeometry();
-
-        if (!(sk ))
-        {
-            auto plane = viewer->cadmodel()->datums().find("XY")->second;
-            if (p.script().empty())
-            {
-                sk =  insight::cad::ConstrainedSketch::create(plane);
-            }
-            else
-            {
-                std::istringstream is(p.script());
-                sk = insight::cad::ConstrainedSketch::createFromStream(
-                    plane, is, p.defaultGeometryParameters() );
-            }
-        }
-
-        auto pc = std::make_shared<IQParameterSetModel::ParameterEditor>(*model, path().toStdString());
+        auto sk = p.featureGeometryRef();
 
         viewer->editSketch(
             sk,
@@ -147,15 +130,19 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
                 }
             },
 
-            [pc,sk,teScript,model,index]()
+            [this,sk,teScript]()
             {
                 std::ostringstream os;
                 sk->generateScript(os);
-                auto& tp = dynamic_cast<insight::CADSketchParameter&>(pc->parameter);
+                auto& tp = dynamic_cast<insight::CADSketchParameter&>(this->parameterRef());
+
+                tp.setUpdateValueSignalBlockage(true);
                 tp.setScript(os.str());
+                tp.setUpdateValueSignalBlockage(false);
+                tp.triggerValueChanged();
+
                 teScript->document()->setPlainText(
                     QString::fromStdString(tp.script()) );
-                model->notifyParameterChange(index);
             }
 
             );

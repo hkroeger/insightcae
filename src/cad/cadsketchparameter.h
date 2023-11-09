@@ -20,13 +20,14 @@ class CADSketchParameter
 
 protected:
     //    insight::cad::ModelPtr cadmodel_;
-    std::string script_;
 
     cad::MakeDefaultGeometryParametersFunction makeDefaultGeometryParameters;
 
+    mutable std::unique_ptr<std::string> script_;
     mutable std::shared_ptr<insight::cad::ConstrainedSketch> CADGeometry_;
 
-    void resetCADGeometry() const;
+    void regenerateScript();
+    void resetCADGeometry();
 
 public:
     declareType ( "cadsketch" );
@@ -58,11 +59,12 @@ public:
 
     insight::ParameterSet defaultGeometryParameters() const;
 
-    const std::string& script() const;
+    std::string script() const;
     void setScript(const std::string& script);
 
     //    void setCADModel(insight::cad::ModelPtr cadmodel);
-    std::shared_ptr<insight::cad::ConstrainedSketch> featureGeometry() const;
+    const insight::cad::ConstrainedSketch& featureGeometry() const;
+    std::shared_ptr<insight::cad::ConstrainedSketch> featureGeometryRef();
 
     std::string latexRepresentation() const override;
     std::string plainTextRepresentation(int indent=0) const override;
@@ -85,9 +87,16 @@ public:
     CADSketchParameter* cloneCADSketchParameter() const;
     Parameter* clone() const override;
 
+    void copyFrom(const Parameter& op) override;
     void operator=(const CADSketchParameter& op);
 
     bool isDifferent(const Parameter &) const override;
+
+    int nChildren() const override;
+    std::string childParameterName( int i ) const override;
+    Parameter& childParameterRef ( int i ) override;
+    const Parameter& childParameter( int i ) const override;
+
 };
 
 } // namespace insight

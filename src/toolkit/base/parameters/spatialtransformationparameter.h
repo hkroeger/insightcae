@@ -32,7 +32,7 @@ public:
     void set(const SpatialTransformation& nv)
     {
         SpatialTransformation::operator=(nv);
-        valueChanged();
+        triggerValueChanged();
     }
 
     const SpatialTransformation& operator() () const
@@ -55,7 +55,10 @@ public:
             boost::filesystem::path inputfilepath ) override;
 
     Parameter* clone() const override;
-    void reset(const Parameter& p) override;
+    void copyFrom(const Parameter& p) override;
+    void operator=(const SpatialTransformationParameter& p);
+
+    int nChildren() const override;
 };
 
 } // namespace insight

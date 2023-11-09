@@ -115,6 +115,7 @@ protected:
   
   // ====================================================================================
   // ======== GUI widgets
+  IQParameterSetModel *psmodel_;
   ParameterEditorWidget *peditor_;
   QTableView *sidtab_;
   IQDebugStream *cout_log_, *cerr_log_;

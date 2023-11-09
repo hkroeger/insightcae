@@ -77,7 +77,7 @@ public:
     virtual void set(const value_type& nv)
     {
         value_=nv;
-        valueChanged();
+        triggerValueChanged();
     }
 
     virtual const value_type& operator() () const
@@ -151,7 +151,7 @@ public:
           base_value_type nv;
           stringToValue ( valueattr->value(), nv );
           value_ = value_type(nv * Unit());
-          valueChanged();
+          triggerValueChanged();
         }
         else
         {
@@ -165,18 +165,23 @@ public:
         }
     }
 
-    void reset(const Parameter& p) override
+    void copyFrom(const Parameter& p) override
     {
-      if (const auto* op = dynamic_cast<const SimpleDimensionedParameter<T,Unit,N>*>(&p))
-      {
-        Parameter::reset(p);
-        value_=op->value_;
-        valueChanged();
-      }
-      else
-        throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+        operator=(dynamic_cast<const SimpleDimensionedParameter<T,Unit,N>&>(p));
+
     }
 
+    void operator=(const SimpleDimensionedParameter& op)
+    {
+        value_=op.value_;
+
+        Parameter::copyFrom(op);
+    }
+
+    int nChildren() const override
+    {
+      return 0;
+    }
 };
 
 

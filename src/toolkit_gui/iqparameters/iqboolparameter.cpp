@@ -12,11 +12,12 @@ addToFactoryTable(IQParameter, IQBoolParameter);
 IQBoolParameter::IQBoolParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -30,12 +31,12 @@ QString IQBoolParameter::valueText() const
 
 
 QVBoxLayout* IQBoolParameter::populateEditControls(
-        IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer,
+        QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
-  const auto& p = dynamic_cast<const insight::BoolParameter&>(parameter());
+  auto& p = dynamic_cast<insight::BoolParameter&>(parameterRef());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer, viewer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
@@ -53,14 +54,21 @@ QVBoxLayout* IQBoolParameter::populateEditControls(
   layout->addWidget(apply);
 
 
-  auto applyFunction = [=]()
+  auto applyFunction = [this,&p,checkBox]()
   {
-    auto &p = dynamic_cast<insight::BoolParameter&>(model->parameterRef(index));
     p.set(checkBox->checkState() == Qt::Checked);
-    model->notifyParameterChange(index);
+//    model->notifyParameterChange(index);
   };
 
   connect(apply, &QPushButton::pressed, applyFunction);
+
+  // handle external value change
+  auto connection = p.valueChanged.connect([&p,checkBox](){
+      QSignalBlocker sb(checkBox);
+      checkBox->setCheckState(p()?Qt::Checked:Qt::Unchecked);
+  });
+  connect(layout, &QObject::destroyed, layout,
+          [connection](){connection.disconnect(); });
 
   return layout;
 }

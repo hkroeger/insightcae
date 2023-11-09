@@ -12,21 +12,41 @@
 #include "base/parameterset.h"
 #include "iqparameter.h"
 
+
+
+
 class IQArrayParameter;
 class IQSelectableSubsetParameter;
 class IQCADModel3DViewer;
 template<class IQBaseParameter, const char* N> class IQArrayElementParameter;
 
+
+
+
 namespace insight {
 class CADParameterSetVisualizer;
 }
+
+
+
 
 class TOOLKIT_GUI_EXPORT IQParameterSetModel
     : public QAbstractItemModel
 {
   Q_OBJECT
 
+public:
+  static const int
+      labelCol=0,
+      valueCol=1,
+      stringPathCol=2,
+      iqParamCol=3;
+
+private:
+
+  friend class IQParameter;
   friend class IQArrayParameter;
+  friend class IQArrayElementParameterBase;
   friend class IQSelectableSubsetParameter;
 
   template<class IQBaseParameter, const char* N>
@@ -47,10 +67,10 @@ class TOOLKIT_GUI_EXPORT IQParameterSetModel
 
   std::pair<QString, const insight::Parameter*> getParameterAndName(const QModelIndex& index) const;
 
-  QList<IQParameter*> decorateSubdictContent(QObject*, const insight::ParameterSet&);
+  QList<IQParameter*> decorateChildren(QObject* parent, insight::Parameter& p);
   IQParameter* decorateArrayElement(QObject* parent, int i, insight::Parameter& cp);
   QList<IQParameter*> decorateArrayContent(QObject*, insight::ArrayParameterBase& ap);
-  void decorateChildren(QObject* parent, insight::Parameter* p);
+
 
 public:
   IQParameterSetModel(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps, QObject* parent=nullptr);
@@ -69,10 +89,15 @@ public:
   bool dropMimeData(const QMimeData * data, Qt::DropAction action, int row, int column, const QModelIndex & parent) override;
 
   QVariant	data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+  bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+
+  // edit functions
+  bool removeRows(int row, int count, const QModelIndex & parent = QModelIndex()) override;
 
   void copy(const QModelIndexList & indexes) const;
   void paste(const QModelIndexList & indexes);
-  void contextMenu(QWidget* pw, const QModelIndex& index, const QPoint& p);
+
+  static void contextMenu(QWidget* pw, const QModelIndex& index, const QPoint& p);
 
   class ParameterEditor
   {
@@ -92,10 +117,20 @@ public:
 
   const insight::ParameterSet& getParameterSet() const;
 
-  // edit functions
-  bool removeRows(int row, int count, const QModelIndex & parent = QModelIndex()) override;
+//  IQParameter* iqParameter(const QModelIndex &index) const;
+
+  static IQParameter* parameterFromIndex(const QModelIndex& index);
 
   insight::Parameter& parameterRef(const QModelIndex &index);
+
+
+  /**
+   * @brief notifyParameterChange
+   * update parameter and redecorate all children, if necessary
+   * @param path
+   * path (slash separated) to changed parameter
+   */
+  void notifyParameterChange(const std::string &path, bool redecorateChildren=false);
 
   /**
    * @brief notifyParameterChange
@@ -132,13 +167,39 @@ public:
 public Q_SLOTS:
   void clearParameters();
   void resetParameters(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps);
-  void handleClick(const QModelIndex &index, QWidget* editControlsContainer,
-                   IQCADModel3DViewer *vri=nullptr,
-                   insight::CADParameterSetVisualizer *viz = nullptr);
+//  void handleClick(const QModelIndex &index, QWidget* editControlsContainer,
+//                   IQCADModel3DViewer *vri=nullptr,
+//                   insight::CADParameterSetVisualizer *viz = nullptr);
 
- Q_SIGNALS:
-  void parameterSetChanged();
+// Q_SIGNALS:
+//  void parameterSetChanged();
 };
+
+IQParameterSetModel *parameterSetModel(QAbstractItemModel* model);
+const insight::ParameterSet& getParameterSet(QAbstractItemModel* model);
+const std::string& getAnalysisName(QAbstractItemModel* model);
+
+template<class ...Args>
+void connectParameterSetChanged(
+    QAbstractItemModel* source,
+    Args&&... slotArgs )
+{
+  QObject::connect( source, &QAbstractItemModel::dataChanged,
+          std::forward<Args>(slotArgs)... );
+
+  QObject::connect( source, &QAbstractItemModel::rowsInserted,
+          std::forward<Args>(slotArgs)... );
+
+  QObject::connect( source, &QAbstractItemModel::rowsRemoved,
+          std::forward<Args>(slotArgs)... );
+}
+
+
+
+
+void disconnectParameterSetChanged(
+    QAbstractItemModel* source, QObject *target);
+
 
 
 
@@ -147,7 +208,7 @@ class IQFilteredParameterSetModel
 {
 
 
-  QList<std::string> sourceRootParameterPaths_;
+  std::vector<std::string> sourceRootParameterPaths_;
   QList<QPersistentModelIndex> rootSourceIndices;
 
   QList<QPersistentModelIndex> mappedIndices_;
@@ -156,12 +217,11 @@ class IQFilteredParameterSetModel
   bool isBelowRootParameter(const QModelIndex& sourceIndex, int* topRow=nullptr) const;
 
 public:
-  IQFilteredParameterSetModel(const QList<std::string>& sourceParameterPaths, QObject* parent=nullptr);
+  IQFilteredParameterSetModel(const std::vector<std::string>& sourceParameterPaths, QObject* parent=nullptr);
 
   void setSourceModel(QAbstractItemModel *sourceModel) override;
   QModelIndex mapFromSource(const QModelIndex &sourceIndex) const override;
   QModelIndex mapToSource(const QModelIndex &proxyIndex) const override;
-//  bool hasChildren(const QModelIndex &parent) const override;
 
   int	columnCount(const QModelIndex &parent = QModelIndex()) const override;
   int	rowCount(const QModelIndex &parent = QModelIndex()) const override;

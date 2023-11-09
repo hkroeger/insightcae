@@ -63,38 +63,24 @@ bool DoubleRangeParameter::isDifferent(const Parameter& p) const
 void DoubleRangeParameter::resetValues(const RangeList& nvs)
 {
   values_=nvs;
-  valueChanged();
+  triggerValueChanged();
 }
 
 
 void DoubleRangeParameter::clear()
 {
   values_.clear();
-  valueChanged();
+  triggerValueChanged();
 }
 
 
 std::string DoubleRangeParameter::latexRepresentation() const
 {
   return toStringList(values_, "%g", "; ");
-
-//  std::ostringstream oss;
-//  oss << *values_.begin();
-//  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
-//  {
-//    oss<<"; "<<*i;
-//  }
-//  return oss.str();
 }
 
 std::string DoubleRangeParameter::plainTextRepresentation(int indent) const
 {
-//  std::ostringstream oss;
-//  oss << *values_.begin();
-//  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
-//  {
-//    oss<<"; "<<*i;
-//  }
   return std::string(indent, ' ') + toStringList(values_, "%g", "; ") /*oss.str()*/ + '\n';
 }
 
@@ -110,12 +96,6 @@ rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 
-//    std::ostringstream oss;
-//    oss << *values_.begin();
-//    for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
-//    {
-//      oss<<" "<<*i;
-//    }
     child->append_attribute(doc.allocate_attribute
     (
       "values",
@@ -144,7 +124,7 @@ void DoubleRangeParameter::readFromNode
       if (iss.fail()) break;
       values_.insert(v);
     }
-    valueChanged();
+    triggerValueChanged();
   }
   else
   {
@@ -166,16 +146,22 @@ Parameter* DoubleRangeParameter::clone() const
 
 
 
-void DoubleRangeParameter::reset(const Parameter& p)
+void DoubleRangeParameter::copyFrom(const Parameter& p)
 {
-  if (const auto* op = dynamic_cast<const DoubleRangeParameter*>(&p))
-  {
-    Parameter::reset(p);
-    values_ = op->values_;
-    valueChanged();
-  }
-  else
-    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+  operator=(dynamic_cast<const DoubleRangeParameter&>(p));
+}
+
+void DoubleRangeParameter::operator=(const DoubleRangeParameter& op)
+{
+  values_ = op.values_;
+
+  Parameter::copyFrom(op);
+}
+
+
+int DoubleRangeParameter::nChildren() const
+{
+  return 0;
 }
 
 

@@ -463,7 +463,7 @@ ParameterSetPtr ResultSet::convertIntoParameterSet() const
         ParameterPtr p=rp.second->convertIntoParameter();
         if ( p )
         {
-            ps->insert ( ParameterSet::value_type(rp.first, std::unique_ptr<Parameter>(p->clone())) );
+            ps->insert ( rp.first, std::unique_ptr<Parameter>(p->clone()) );
         }
     }
     return ps;
@@ -473,7 +473,7 @@ ParameterSetPtr ResultSet::convertIntoParameterSet() const
 ParameterPtr ResultSet::convertIntoParameter() const
 {
     auto ps = std::make_shared<SubsetParameter>();
-    ps->subsetRef().extend ( convertIntoParameterSet()->entries() );
+    ps->extend ( *convertIntoParameterSet() );
     return ps;
 }
 

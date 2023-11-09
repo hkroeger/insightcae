@@ -14,12 +14,13 @@ public:
     IQSubsetParameter
     (
         QObject* parent,
+        IQParameterSetModel* psmodel,
         const QString& name,
         insight::Parameter& parameter,
         const insight::ParameterSet& defaultParameterSet
     );
 
-    void populateContextMenu(IQParameterSetModel* model, const QModelIndex &index, QMenu* m) override;
+    void populateContextMenu(QMenu* m) override;
 };
 
 #endif // IQSUBSETPARAMETER_H

@@ -17,13 +17,21 @@
 
 
 class IQCADModel3DViewer;
+class IQParameterSetModel;
 
 class TOOLKIT_GUI_EXPORT IQCADItemModel
     : public QAbstractItemModel
 {
   Q_OBJECT
 
+    /**
+   * @brief model_
+   * The underlying CAD model.
+   * Should be modified only through access functions of this class to ensure consistency of the views.
+   */
   insight::cad::ModelPtr model_;
+
+  QAbstractItemModel* associatedParameterSetModel_;
 
   mutable std::map<std::string, bool>
         pointVisibility_,
@@ -37,6 +45,7 @@ class TOOLKIT_GUI_EXPORT IQCADItemModel
       double opacity;
       QColor color;
       insight::DatasetRepresentation representation;
+      std::vector<std::string> assocParamPaths;
 
       FeatureVisibility();
   };
@@ -97,7 +106,9 @@ public:
       entityColorCol = 3,
       entityOpacityCol = 4,
       entityRepresentationCol = 5, // insight::DatasetRepresentation
-      entityCol=99;
+      entityCol=99,
+
+      assocParamPathsCol=98;
 
 private:
   template<class E>
@@ -213,6 +224,9 @@ public:
 
   const insight::cad::ModelPtr model() const;
 
+  void setAssociatedParameterSetModel(QAbstractItemModel* psm);
+  QAbstractItemModel *associatedParameterSetModel() const;
+
   /**
    * read access functions
    */
@@ -229,6 +243,7 @@ public:
   QModelIndex directionIndex(const std::string& name) const;
   QModelIndex datumIndex(const std::string& name) const;
   QModelIndex modelstepIndex(const std::string& name) const;
+  QModelIndex modelstepIndexFromValue(insight::cad::FeaturePtr feat) const;
   QModelIndex postprocActionIndex(const std::string& name) const;
   QModelIndex datasetIndex(const std::string& name) const;
 
@@ -244,14 +259,16 @@ public:
                     insight::cad::FeaturePtr value,
                     const std::string& featureDescription = std::string(),
                     insight::DatasetRepresentation dr = insight::Wireframe,
-                    QColor color = QColor() );
+                    QColor color = QColor(),
+                    const std::vector<std::string>& assocParamPaths = {} );
   void setStaticModelStep(const std::string& name, bool isStatic);
   bool isStaticModelStep(const std::string& name);
   void addComponent(const std::string& name,
                     insight::cad::FeaturePtr value,
                     const std::string& featureDescription = std::string(),
                     insight::DatasetRepresentation dr = insight::Surface,
-                    QColor color = QColor() );
+                    QColor color = QColor(),
+                    const std::vector<std::string>& assocParamPaths = {} );
   void addPostprocAction(const std::string& name, insight::cad::PostprocActionPtr value);
   void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value);
 

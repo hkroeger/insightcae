@@ -29,16 +29,20 @@
 #ifndef Q_MOC_RUN
 #include "boost/spirit/include/qi.hpp"
 #include "boost/variant/recursive_variant.hpp"
+
 #include "boost/spirit/repository/include/qi_confix.hpp"
 #include <boost/spirit/include/qi_eol.hpp>
 #include <boost/spirit/include/phoenix.hpp>
-#include <boost/phoenix/function.hpp>
-#include <boost/phoenix/function/adapt_callable.hpp>
 #include <boost/spirit/include/qi_no_case.hpp>
 #include <boost/spirit/home/classic/utility/distinct.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/repository/include/qi_iter_pos.hpp>
+
+#include "boost/phoenix/core.hpp"
+#include "boost/phoenix/function.hpp"
+//#include "boost/phoenix/function/lazy_prelude.hpp"
+#include "boost/phoenix/function/adapt_callable.hpp"
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/assert.hpp>

@@ -17,6 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+
+
 #include "line.h"
 #include "datum.h"
 #include "base/boost_include.h"
@@ -106,19 +108,14 @@ void Line::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryP
             typeName,
             ( '('
              > qi::int_ > ','
-             > ruleset.r_point > ','
-             > ruleset.r_point
-             > ruleset.r_parameters >
-             ')'
+             > ruleset.r_point > ',' > ruleset.r_point
+             > ruleset.r_parameters > ')'
             )
-            [ //std::cout<<"reading "<<typeName<<" "<<qi::_1<<std::endl,
-             qi::_val = phx::bind(
-                     &Line::create<VectorPtr, VectorPtr, bool>, qi::_2, qi::_3, false),
-             phx::bind(&ConstrainedSketchEntity::changeDefaultParameters, qi::_val, mdpf()),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
-                 phx::insert(
-                     phx::ref(ruleset.labeledEntities),
-                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
+            [   qi::_a = phx::bind(
+                        &Line::create<VectorPtr, VectorPtr, bool>, qi::_2, qi::_3, false),
+                phx::bind(&ConstrainedSketchEntity::changeDefaultParameters, qi::_a, phx::bind(mdpf)),
+                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, boost::filesystem::path(".")),
+                qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }
 
@@ -241,6 +238,21 @@ FeatureCmdInfoList Line::ruleDocumentation()
 }
 
 
+
+void Line::operator=(const ConstrainedSketchEntity& other)
+{
+    operator=(dynamic_cast<const Line&>(other));
+}
+
+
+void Line::operator=(const Line& other)
+{
+    p0_=other.p0_;
+    p1_=other.p1_;
+    second_is_dir_=other.second_is_dir_;
+    SingleEdgeFeature::operator=(other);
+    ConstrainedSketchEntity::operator=(other);
+}
 
 
 }

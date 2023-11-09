@@ -21,10 +21,11 @@ void CADParameterSetVisualizer::addDatum(const std::string& name, insight::cad::
 void CADParameterSetVisualizer::addFeature(const std::string& name,
                                            insight::cad::FeaturePtr feat,
                                            AIS_DisplayMode ds,
-                                           QColor color)
+                                           QColor color,
+                                           const std::vector<std::string>& assocParamPaths)
 {
   CurrentExceptionContext ec("adding visualizer feature "+name);
-  Q_EMIT createdFeature( QString::fromStdString(name), feat, true, ds, color );
+  Q_EMIT createdFeature( QString::fromStdString(name), feat, true, ds, color, assocParamPaths );
 }
 
 void CADParameterSetVisualizer::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> ds)
@@ -71,7 +72,7 @@ void CADParameterSetVisualizer::recreateVisualizationElements()
 
 
 CADParameterSetVisualizer::GUIActionList CADParameterSetVisualizer::createGUIActions(
-        const std::string&, IQParameterSetModel*, QObject *, IQCADModel3DViewer* )
+        const std::string&, QObject *, IQCADModel3DViewer* )
 {
     return {};
 }
@@ -112,6 +113,11 @@ IQCADItemModel *CADParameterSetVisualizer::model()
 void CADParameterSetVisualizer::setParameterSetModel(IQParameterSetModel *psm)
 {
     psmodel_=psm;
+}
+
+IQParameterSetModel* CADParameterSetVisualizer::parameterSetModel() const
+{
+    return psmodel_;
 }
 
 

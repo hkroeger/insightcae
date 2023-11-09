@@ -16,7 +16,11 @@ int main(int argc, char*argv[])
 
     IQParameterSetModel baseForModelToBeTested(ps, TestPS::defaultParameters());
 
-    IQFilteredParameterSetModel modelToBeTested({"mesh"});
+    IQFilteredParameterSetModel modelToBeTested(
+        {
+         "mesh/refinementZones",
+         "operation"
+        });
     modelToBeTested.setSourceModel(&baseForModelToBeTested);
 
     QAbstractItemModelTester tester(&modelToBeTested, QAbstractItemModelTester::FailureReportingMode::Fatal);
@@ -29,6 +33,7 @@ int main(int argc, char*argv[])
         auto *l=new QVBoxLayout;
         auto *tv=new QTreeView;
         l->addWidget(tv);
+//        tv->setModel(&baseForModelToBeTested);
         tv->setModel(&modelToBeTested);
         dlg.setLayout(l);
         dlg.exec();

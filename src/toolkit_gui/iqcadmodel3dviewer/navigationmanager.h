@@ -59,7 +59,7 @@ public:
   : InputReceiver<Viewer>(viewer)
   {}
 
-  void onMouseWheel
+  bool onMouseWheel
       (
         double angleDeltaX,
         double angleDeltaY
@@ -73,7 +73,7 @@ public:
     {
         scaleDown();
     }
-    InputReceiver<Viewer>::onMouseWheel(angleDeltaX, angleDeltaY);
+    return InputReceiver<Viewer>::onMouseWheel(angleDeltaX, angleDeltaY);
   }
 
   bool onLeftButtonDown( Qt::KeyboardModifiers modifiers, const QPoint point ) override

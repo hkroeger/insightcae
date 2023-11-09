@@ -195,30 +195,40 @@ public:
       return false;
   }
 
-  virtual void onMouseMove
+  virtual bool onMouseMove
     (
      Qt::MouseButtons buttons,
      const QPoint point,
      Qt::KeyboardModifiers curFlags
      )
   {
+      bool handled=false;
       for (auto&c: childReceivers_)
       {
-          c->onMouseMove(buttons, point, curFlags);
+          if (!handled)
+          {
+              handled=c->onMouseMove(buttons, point, curFlags);
+          }
       }
       lastMouseLocation_.reset(new QPoint(point));
+      return handled;
   }
 
-  virtual void onMouseWheel
+  virtual bool onMouseWheel
     (
       double angleDeltaX,
       double angleDeltaY
      )
   {
+      bool handled=false;
       for (auto&c: childReceivers_)
       {
-          c->onMouseWheel(angleDeltaX, angleDeltaY);
+          if (!handled)
+          {
+              handled=c->onMouseWheel(angleDeltaX, angleDeltaY);
+          }
       }
+      return handled;
   }
 
   virtual void onMouseLeavesViewer()
@@ -254,7 +264,7 @@ protected:
       actionIsFinished(); //finished_=true;
   }
 
-  void launchChildAction(Ptr childAction)
+  virtual void launchChildAction(Ptr childAction)
   {
       if (childAction_)
           childAction_.reset();
@@ -312,7 +322,7 @@ public:
 
   void start() override;
 
-  void onMouseMove
+  bool onMouseMove
     (
      Qt::MouseButtons buttons,
      const QPoint point,
@@ -328,7 +338,7 @@ public:
 
   void start() override;
 
-  void onMouseMove
+  bool onMouseMove
     (
      Qt::MouseButtons buttons,
      const QPoint point,
@@ -344,7 +354,7 @@ public:
 
   void start() override;
 
-  void onMouseMove
+  bool onMouseMove
     (
      Qt::MouseButtons buttons,
      const QPoint point,
@@ -363,7 +373,7 @@ public:
 
   void start() override;
 
-  void onMouseMove
+  bool onMouseMove
     (
      Qt::MouseButtons buttons,
      const QPoint point,

@@ -69,6 +69,15 @@ void Angle::build()
 void Angle::write(ostream&) const
 {}
 
+void Angle::operator=(const Angle &other)
+{
+    p1_=other.p1_;
+    p2_=other.p2_;
+    pCtr_=other.pCtr_;
+    angle_=other.angle_;
+    PostprocAction::operator=(other);
+}
+
 
 
 
@@ -92,7 +101,7 @@ AngleConstraint::AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, dou
 {
     changeDefaultParameters(
                 ParameterSet({
-                    {"angle", new DoubleParameter(targetValue/SI::deg, "[deg] target value")}
+                      {"angle", std::make_shared<DoubleParameter>(targetValue/SI::deg, "[deg] target value")}
                 })
             );
 }
@@ -102,7 +111,7 @@ AngleConstraint::AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr)
 {
     changeDefaultParameters(
         ParameterSet({
-            {"angle", new DoubleParameter(
+                      {"angle", std::make_shared<DoubleParameter>(
                 calculate(
                     p1_->value(),
                     p2_->value(),
@@ -171,12 +180,10 @@ void AngleConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefau
              > ruleset.r_parameters >
              ')'
              )
-                [ qi::_val = phx::bind(
-                     &AngleConstraint::create<VectorPtr, VectorPtr, VectorPtr, double>, qi::_2, qi::_3, qi::_4, 1.0),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_5, "."),
-                 phx::insert(
-                     phx::ref(ruleset.labeledEntities),
-                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
+           [ qi::_a = phx::bind(
+                 &AngleConstraint::create<VectorPtr, VectorPtr, VectorPtr, double>, qi::_2, qi::_3, qi::_4, 1.0),
+             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, boost::filesystem::path(".")),
+             qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }
 
@@ -215,6 +222,18 @@ void AngleConstraint::replaceDependency(
     }
 }
 
+
+void AngleConstraint::operator=(const ConstrainedSketchEntity& other)
+{
+    operator=(dynamic_cast<const AngleConstraint&>(other));
+}
+
+
+void AngleConstraint::operator=(const AngleConstraint& other)
+{
+    Angle::operator=(other);
+    ConstrainedSketchEntity::operator=(other);
+}
 
 
 

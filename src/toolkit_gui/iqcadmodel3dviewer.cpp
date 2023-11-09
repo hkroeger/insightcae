@@ -3,6 +3,7 @@
 #include "datum.h"
 
 #include <QColorDialog>
+#include <QDockWidget>
 
 uint
 IQCADModel3DViewer::QPersistentModelIndexHash::operator()
@@ -16,7 +17,12 @@ IQCADModel3DViewer::IQCADModel3DViewer(QWidget *parent)
     : /*QWidget(parent),*/
       QMainWindow(parent, Qt::Widget), // flag important
       model_(nullptr)
-{}
+{
+    dockWidget_ = new QDockWidget("Properties", this);
+    commonToolBox_=new QToolBox(dockWidget_);
+    addDockWidget(Qt::RightDockWidgetArea, dockWidget_);
+    dockWidget_->setWidget(commonToolBox_);
+}
 
 void IQCADModel3DViewer::setModel(QAbstractItemModel *model)
 {

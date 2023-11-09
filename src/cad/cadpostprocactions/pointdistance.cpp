@@ -60,6 +60,29 @@ void insight::cad::Distance::build()
 void insight::cad::Distance::write(ostream&) const
 {}
 
+void Distance::operator=(const Distance &other)
+{
+  p1_=other.p1_;
+  p2_=other.p2_;
+  distance_=other.distance_;
+  PostprocAction::operator=(other);
+}
+
+arma::mat Distance::dimLineOffset() const
+{
+  arma::mat dir = p2_->value() - p1_->value();
+  arma::mat n = arma::cross(dir, vec3(0,0,1));
+  if (arma::norm(n,2)<SMALL)
+      n=arma::cross(dir, vec3(0,1,0));
+  return n*0.025*arma::norm(dir,2);
+}
+
+double Distance::relativeArrowSize() const
+{
+  return 0.025;
+}
+
+
 
 
 
@@ -78,25 +101,31 @@ size_t DistanceConstraint::calcHash() const
 }
 
 
-DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2, double targetValue)
-    : Distance(p1, p2)
+DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal, double targetValue)
+    : Distance(p1, p2),
+    planeNormal_(planeNormal)
 {
     changeDefaultParameters(
         ParameterSet({
-                      {"distance", new DoubleParameter(targetValue, "target value")}
+            {"distance", std::make_shared<DoubleParameter>(targetValue, "target value")},
+            {"dimLineOfs", std::make_shared<DoubleParameter>(1., "dimension line offset")},
+            {"arrowSize", std::make_shared<DoubleParameter>(1., "arrow size")}
         })
-        );
+    );
 }
 
 
-DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2)
-    : Distance(p1, p2)
+DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal)
+    : Distance(p1, p2),
+    planeNormal_(planeNormal)
 {
     changeDefaultParameters(
         ParameterSet({
-                      {"distance", new DoubleParameter(arma::norm(p2->value()-p1->value(), 2), "target value")}
+            {"distance", std::make_shared<DoubleParameter>(arma::norm(p2->value()-p1->value(), 2), "target value")},
+            {"dimLineOfs", std::make_shared<DoubleParameter>(1., "dimension line offset")},
+            {"arrowSize", std::make_shared<DoubleParameter>(1., "arrow size")}
         })
-        );
+    );
 }
 
 
@@ -158,12 +187,12 @@ void DistanceConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDe
              > ruleset.r_parameters >
              ')'
              )
-                [ qi::_val = phx::bind(
-                     &DistanceConstraint::create<VectorPtr, VectorPtr, double>, qi::_2, qi::_3, 1.0),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
-                 phx::insert(
-                     phx::ref(ruleset.labeledEntities),
-                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
+               [ qi::_a = phx::bind(
+                     &DistanceConstraint::create<VectorPtr, VectorPtr, VectorPtr, double>, qi::_2, qi::_3,
+                        phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
+                        1.0),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, boost::filesystem::path(".")),
+                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
 
@@ -194,6 +223,55 @@ void DistanceConstraint::replaceDependency(
             p2_ = p;
         }
     }
+}
+
+
+void DistanceConstraint::operator=(const ConstrainedSketchEntity& other)
+{
+    operator=(dynamic_cast<const DistanceConstraint&>(other));
+}
+
+
+arma::mat DistanceConstraint::dimLineOffset() const
+{
+    arma::mat dir = p2_->value() - p1_->value();
+    arma::mat n = normalized(arma::cross(dir, planeNormal_->value()));
+    return n*parameters().getDouble("dimLineOfs");
+}
+
+
+
+void DistanceConstraint::setDimLineOffset(const arma::mat &p)
+{
+    arma::mat dir = p2_->value() - p1_->value();
+    arma::mat dir2 = p - p1_->value();
+    arma::mat n = normalized(arma::cross(dir, planeNormal_->value()));
+
+    gp_Lin lin(
+        to_Pnt(p1_->value()),
+        to_Vec(dir)
+        );
+
+    auto &op = parametersRef().get<DoubleParameter>("dimLineOfs");
+    op.set(
+        lin.Distance(to_Pnt(p))
+        * (arma::dot(n,dir2)<0.?-1.:1.),
+        true
+        );
+}
+
+double DistanceConstraint::relativeArrowSize() const
+{
+    double L = arma::norm(p2_->value() - p1_->value(), 2);
+    return parameters().getDouble("arrowSize")/L;
+}
+
+
+
+void DistanceConstraint::operator=(const DistanceConstraint& other)
+{
+    Distance::operator=(other);
+    ConstrainedSketchEntity::operator=(other);
 }
 
 }

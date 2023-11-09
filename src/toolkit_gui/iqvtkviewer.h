@@ -8,14 +8,14 @@
 #include "vtkGenericOpenGLRenderWindow.h"
 
 #if VTK_MAJOR_VERSION>=8
-#include <QVTKOpenGLWidget.h>
+#include <QVTKOpenGLNativeWidget.h>
 #else
 #include <QVTKWidget.h>
 #endif
 
 typedef
 #if VTK_MAJOR_VERSION>=8
-    QVTKOpenGLWidget
+    QVTKOpenGLNativeWidget
 #else
     QVTKWidget
 #endif

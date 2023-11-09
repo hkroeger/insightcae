@@ -3,7 +3,7 @@
 #include "iqcaditemmodel.h"
 
 #include "vtkProperty.h"
-
+#include "vtkTextProperty.h"
 
 IQVTKCADModel3DViewer::ExposeItem::ExposeItem(
         std::shared_ptr<DisplayedEntity> de,
@@ -119,8 +119,6 @@ IQVTKCADModel3DViewer::SilhouetteHighlighter::SilhouetteHighlighter(
     QColor hicol )
     : IQVTKViewerState(viewer)
 {
-    insight::dbg()<<"SilhouetteHighlighter created"<<std::endl;
-
     auto* id = mapperToHighlight->GetInput();
     if (id->GetNumberOfCells()>0)
     {
@@ -155,8 +153,6 @@ IQVTKCADModel3DViewer::SilhouetteHighlighter::~SilhouetteHighlighter()
     viewer_.renderer()->RemoveActor(silhouetteActor_);
     viewer_.actorsExcludedFromPicking_.erase(silhouetteActor_);
     viewer_.scheduleRedraw();
-
-    insight::dbg()<<"SilhouetteHighlighter removed"<<std::endl;
 }
 
 
@@ -174,8 +170,6 @@ IQVTKCADModel3DViewer::LinewidthHighlighter::LinewidthHighlighter(
     actor_->GetProperty()->SetColor(
         hicol.redF(), hicol.greenF(), hicol.blueF() );
 
-    insight::dbg()<<"LinewidthHighlighter created lw="<<(oldLineWidth_+2)<<" for actor "<<actor_<<std::endl;
-
     viewer_.scheduleRedraw();
 }
 
@@ -185,8 +179,6 @@ IQVTKCADModel3DViewer::LinewidthHighlighter::~LinewidthHighlighter()
     actor_->GetProperty()->SetColor(oldColor_);
 
     viewer_.scheduleRedraw();
-
-    insight::dbg()<<"LinewidthHighlighter removed, restore lw="<<oldLineWidth_<<" for actor "<<actor_<<std::endl;
 }
 
 
@@ -197,8 +189,6 @@ IQVTKCADModel3DViewer::PointSizeHighlighter::PointSizeHighlighter(
     QColor hicol )
     : IQVTKViewerState(viewer), actor_(actorToHighlight)
 {
-    insight::dbg()<<"PointSizeHighlighter created"<<std::endl;
-
     oldPointSize_=actor_->GetProperty()->GetPointSize();
     actor_->GetProperty()->GetColor(oldColor_);
 
@@ -214,6 +204,30 @@ IQVTKCADModel3DViewer::PointSizeHighlighter::~PointSizeHighlighter()
     actor_->GetProperty()->SetPointSize(oldPointSize_);
     actor_->GetProperty()->SetColor(oldColor_);
     viewer_.scheduleRedraw();
+}
 
-    insight::dbg()<<"PointSizeHighlighter removed"<<std::endl;
+
+
+
+IQVTKCADModel3DViewer::TextActorHighlighter::TextActorHighlighter(
+    IQVTKCADModel3DViewer& viewer,
+    vtkCaptionActor2D* actorToHighlight,
+    QColor hicol )
+    : IQVTKViewerState(viewer), actor_(actorToHighlight)
+{
+    actor_->GetCaptionTextProperty()->GetColor(oldColor_);
+
+    actor_->GetCaptionTextProperty()->SetColor(
+        hicol.redF(), hicol.greenF(), hicol.blueF());
+    actor_->GetCaptionTextProperty()->BoldOn();
+
+    viewer_.scheduleRedraw();
+}
+
+IQVTKCADModel3DViewer::TextActorHighlighter::~TextActorHighlighter()
+{
+    actor_->GetCaptionTextProperty()->SetColor(oldColor_);
+    actor_->GetCaptionTextProperty()->BoldOff();
+
+    viewer_.scheduleRedraw();
 }

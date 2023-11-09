@@ -88,6 +88,8 @@ void IQVTKCADModel3DViewerDrawLine::updatePreviewLine(const arma::mat& pip3d)
             previewLine_->GetProperty()->SetColor(1, 0, 0);
             previewLine_->GetProperty()->SetLineWidth(2);
             viewer().renderer()->AddActor(previewLine_);
+
+            viewer().scheduleRedraw();
         }
         else
         {
@@ -98,6 +100,8 @@ void IQVTKCADModel3DViewerDrawLine::updatePreviewLine(const arma::mat& pip3d)
                 line->SetPoint1(p1_->p->value().memptr());
                 line->SetPoint2(pip3d.memptr());
                 previewLine_->GetMapper()->Update();
+
+                viewer().scheduleRedraw();
             }
         }
     }
@@ -209,14 +213,14 @@ void IQVTKCADModel3DViewerDrawLine::start()
 
 
 
-void IQVTKCADModel3DViewerDrawLine::onMouseMove(
+bool IQVTKCADModel3DViewerDrawLine::onMouseMove(
         Qt::MouseButtons buttons,
         const QPoint point,
         Qt::KeyboardModifiers curFlags )
 {
     updatePreviewLine(applyWizards(point)->value());
 
-    IQVTKCADModel3DViewerPlanePointBasedAction
+    return IQVTKCADModel3DViewerPlanePointBasedAction
         ::onMouseMove(buttons, point, curFlags);
 }
 
@@ -229,7 +233,7 @@ void IQVTKCADModel3DViewerDrawLine::setP1(SketchPointPtr p, bool isExistingPoint
 
     if ( !isExistingPoint )
     {
-        sketch().geometry().insert(
+        sketch().insertGeometry(
             std::dynamic_pointer_cast
             <ConstrainedSketchEntity>( p1_->p ) );
     }
@@ -248,7 +252,7 @@ void IQVTKCADModel3DViewerDrawLine::setP2(SketchPointPtr p, bool isExistingPoint
 
     if (!isExistingPoint)
     {
-        sketch().geometry().insert(
+        sketch().insertGeometry(
             std::dynamic_pointer_cast
             <ConstrainedSketchEntity>( p2_->p ) );
     }
@@ -257,7 +261,7 @@ void IQVTKCADModel3DViewerDrawLine::setP2(SketchPointPtr p, bool isExistingPoint
     auto line = std::dynamic_pointer_cast<insight::cad::Line>(
         Line::create(p1_->p, p2_->p) );
 
-    sketch().geometry().insert(line);
+    sketch().insertGeometry(line);
     sketch().invalidate();
 
     Q_EMIT lineAdded(line.get(), prevLine_, p2_.get(), p1_.get() );

@@ -72,6 +72,7 @@ void IQVTKOrientBackgroundImage::start()
 bool IQVTKOrientBackgroundImage::onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point )
 {
     auto picker = vtkSmartPointer<vtkPropPicker>::New();
+    viewer().renWin()->MakeCurrent();
     auto p = viewer().widgetCoordsToVTK(point);
     picker->Pick(p.x(), p.y(), 0, viewer().renderer());
 

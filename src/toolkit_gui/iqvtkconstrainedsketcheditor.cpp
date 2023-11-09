@@ -1,5 +1,6 @@
 #include "iqvtkconstrainedsketcheditor.h"
 #include "base/units.h"
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkdragdimensionlineaction.h"
 #include "iqvtkcadmodel3dviewer.h"
 
 #include "vtkLineRepresentation.h"
@@ -34,6 +35,8 @@
 
 
 
+using namespace insight;
+using namespace insight::cad;
 
 
 
@@ -115,12 +118,19 @@ bool IQVTKConstrainedSketchEditor::defaultSelectionActionRunning()
     return isRunning<IQVTKSelectConstrainedSketchEntity>();
 }
 
+void IQVTKConstrainedSketchEditor::launchChildAction(Ptr childAction)
+{
+    childAction->actionIsFinished.connect(
+        std::bind(&IQVTKConstrainedSketchEditor::launchDefaultSelectionAction, this) );
+    ViewWidgetAction<IQVTKCADModel3DViewer>::launchChildAction(childAction);
+}
+
 
 
 void IQVTKConstrainedSketchEditor::launchDefaultSelectionAction()
 {
     auto sel = std::make_shared<IQVTKSelectConstrainedSketchEntity>(*this);
-    launchChildAction(sel);
+    ViewWidgetAction<IQVTKCADModel3DViewer>::launchChildAction(sel);
 }
 
 
@@ -143,7 +153,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
             {
                 if (addPoint->onFeature)
                 {
-                    (*this)->geometry().insert(
+                    (*this)->insertGeometry(
                         IQVTKPointOnCurveConstraint::create(
                             addPoint->p,
                             addPoint->onFeature ) ); // fix to curve
@@ -162,14 +172,15 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
                             auto lc = insight::cad::DistanceConstraint::create(
                                 online->start(), addPoint->p,
+                                (*this)->sketchPlaneNormal(),
                                 curLen );
-                            (*this)->geometry().insert(lc);
+                            (*this)->insertGeometry(lc);
                         }
                     }
                 }
                 else if ( !addPoint->isAnExistingPoint && !previousPoint ) // is first point?
                 {
-                    (*this)->geometry().insert(
+                    (*this)->insertGeometry(
                         IQVTKFixedPoint::create( addPoint->p ) ); // fix first point
                 }
             }
@@ -193,8 +204,9 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
                     auto lc = insight::cad::DistanceConstraint::create(
                             line->start(), line->end(),
+                            (*this)->sketchPlaneNormal(),
                                 curLen );
-                    (*this)->geometry().insert(lc);
+                    (*this)->insertGeometry(lc);
 
                     if (!p1->isAnExistingPoint && !p2->isAnExistingPoint
                         && !p1->onFeature && !p2->onFeature)
@@ -208,7 +220,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
                                                 prevLine->start()->value(),
                                                 line->end()->value(),
                                                 line->start()->value() ) );
-                            (*this)->geometry().insert(ac);
+                            (*this)->insertGeometry(ac);
                         }
                         else
                         {
@@ -221,7 +233,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
                                     p1->value(),
                                     line->end()->value(),
                                     line->start()->value() ) );
-                            (*this)->geometry().insert(ac);
+                            (*this)->insertGeometry(ac);
                         }
                     }
 
@@ -232,8 +244,6 @@ void IQVTKConstrainedSketchEditor::drawLine()
             }
     );
 
-    dl->actionIsFinished.connect(
-        std::bind(&IQVTKConstrainedSketchEditor::launchDefaultSelectionAction, this) );
     launchChildAction(dl);
 }
 
@@ -243,10 +253,10 @@ void IQVTKConstrainedSketchEditor::drawLine()
 void IQVTKConstrainedSketchEditor::solve()
 {
     (*this)->resolveConstraints(
-        [&]()
-        {
-            this->updateActors(0);
-        }
+//        [&]()
+//        {
+//            this->updateActors();
+//        }
         );
     this->updateActors();
 }
@@ -292,7 +302,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
                         {
                             auto lc = IQVTKHorizontalConstraint::create( l );
-                            (*this)->geometry().insert(lc);
+                            (*this)->insertGeometry(lc);
                             (*this)->invalidate();
                             this->updateActors();
                         }
@@ -315,7 +325,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
                         {
                             auto lc = IQVTKVerticalConstraint::create( l );
-                            (*this)->geometry().insert(lc);
+                            (*this)->insertGeometry(lc);
                             (*this)->invalidate();
                             this->updateActors();
                         }
@@ -345,7 +355,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
                         {
                             auto c = IQVTKFixedPoint::create( p );
-                            (*this)->geometry().insert(c);
+                            (*this)->insertGeometry(c);
                             (*this)->invalidate();
                             this->updateActors();
                         }
@@ -381,7 +391,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         if (pt && curve)
                         {
                             auto lc = IQVTKPointOnCurveConstraint::create( pt, curve );
-                            (*this)->geometry().insert(lc);
+                            (*this)->insertGeometry(lc);
                             (*this)->invalidate();
                             this->updateActors();
                         }
@@ -412,8 +422,10 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         bool(p1)&&bool(p2),
                         "Please select exactly two sketch points!");
 
-                    auto dc = insight::cad::DistanceConstraint::create( p1, p2 );
-                    (*this)->geometry().insert(dc);
+                    auto dc = insight::cad::DistanceConstraint::create(
+                        p1, p2,
+                        (*this)->sketchPlaneNormal() );
+                    (*this)->insertGeometry(dc);
                     (*this)->invalidate();
                     this->updateActors();
                 }
@@ -446,11 +458,11 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                     insight::assertion(
                         bool(p2), "one entity is not a point!");
 
-                    for (auto& e: (*this)->geometry())
+                    for (auto& e: **this)
                     {
-                        e->replaceDependency(p1, p2);
+                        e.second->replaceDependency(p1, p2);
                     }
-                    (*this)->geometry().erase(p1);
+                    (*this)->eraseGeometry(p1);
                     (*this)->invalidate();
                     this->updateActors();
                 }
@@ -470,9 +482,9 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 -DBL_MAX, DBL_MAX, -1, &ok);
             if (ok)
             {
-                for (auto& geom: (*this)->geometry())
+                for (auto& geom: **this)
                 {
-                    geom->scaleSketch(sf);
+                    geom.second->scaleSketch(sf);
                 }
                 (*this)->invalidate();
                 this->updateActors();
@@ -483,11 +495,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
 
     // this editor is its own property widget
-
-    toolBoxWidget_ = new QDockWidget("Properties", this);
-    this->viewer().addDockWidget(Qt::RightDockWidgetArea, toolBoxWidget_);
-    toolBox_ = new QToolBox(toolBoxWidget_);
-    toolBoxWidget_->setWidget(toolBox_);
 
     auto l = new QFormLayout;
 
@@ -571,7 +578,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     setLayout(l);
 
-    toolBox_->addItem(this, "Sketch");
+    viewer.commonToolBox()->addItem(this, "Sketch");
 }
 
 
@@ -581,8 +588,6 @@ IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
 {
     toolBar_->hide();
     toolBar_->deleteLater();
-    toolBoxWidget_->hide();
-    toolBoxWidget_->deleteLater();
 
     // copy because "remove" invalidates for-loop
     std::set<insight::cad::ConstrainedSketchEntityPtr> sgs;
@@ -637,10 +642,10 @@ void IQVTKConstrainedSketchEditor::deleteEntity(std::weak_ptr<insight::cad::Cons
 
     // check if the entity to be deleted is a dependency of any other sketchentity
     std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > tbd;
-    for (auto& e: (*this)->geometry())
+    for (auto& e: **this)
     {
-        if (e->dependsOn(td))
-            tbd.insert(e);
+        if (e.second->dependsOn(td))
+            tbd.insert(e.second);
     }
     for (auto& e: tbd)
     {
@@ -649,7 +654,7 @@ void IQVTKConstrainedSketchEditor::deleteEntity(std::weak_ptr<insight::cad::Cons
 
     auto gptr=td.lock();
     remove(gptr);
-    (*this)->geometry().erase(gptr);
+    (*this)->eraseGeometry(gptr);
 }
 
 
@@ -686,66 +691,93 @@ bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifier
 
 
 
-void IQVTKConstrainedSketchEditor::onMouseMove
+bool IQVTKConstrainedSketchEditor::onMouseMove
 (
    Qt::MouseButtons buttons,
    const QPoint point,
    Qt::KeyboardModifiers curFlags
 )
 {
-    ViewWidgetAction<IQVTKCADModel3DViewer>
+    bool ret = ViewWidgetAction<IQVTKCADModel3DViewer>
         ::onMouseMove(buttons, point, curFlags);
 
-    if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
+    if (!ret)
     {
-        if (selact->hasSelectionCandidate())
+        if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
         {
-            if (auto sp =
-                std::dynamic_pointer_cast<insight::cad::SketchPoint>(
-                    selact->currentSelectionCandidate().lock() ) )
+            if (selact->hasSelectionCandidate())
             {
-                arma::mat pip=viewer().pointInPlane3D(
-                    (*this)->plane()->plane(), point );
+                if (auto sp =
+                    std::dynamic_pointer_cast<insight::cad::SketchPoint>(
+                        selact->currentSelectionCandidate().lock() ) )
+                {
+                    arma::mat pip=viewer().pointInPlane3D(
+                        (*this)->plane()->plane(), point );
 
-                arma::mat p2=viewer().pointInPlane2D(
-                    (*this)->plane()->plane(), pip );
+                    arma::mat p2=viewer().pointInPlane2D(
+                        (*this)->plane()->plane(), pip );
 
-                sp->setCoords2D(p2(0), p2(1));
+                    sp->setCoords2D(p2(0), p2(1));
 
-                (*this)->invalidate();
-                (*this).updateActors();
+                    (*this)->invalidate();
+                    (*this).updateActors();
+
+                    ret=true;
+                }
+                else if (auto dc =
+                    std::dynamic_pointer_cast<insight::cad::DistanceConstraint>(
+                        selact->currentSelectionCandidate().lock() ) )
+                {
+                    launchChildAction(std::make_shared<IQVTKDragDimensionlineAction>(*this, dc));
+
+                    ret=true;
+                }
             }
         }
     }
 
+    return ret;
 }
 
 
 
 
 
-void IQVTKConstrainedSketchEditor::updateActors(int update_msec)
+void IQVTKConstrainedSketchEditor::updateActors()
 {
 
-  for (const auto& g: (*this)->geometry())
+  auto bb=(*this)->sketchBoundingBox();
+  double Ldiag=arma::norm(bb.col(1)-bb.col(0), 2);
+  for (const auto& g: **this)
   {
-      auto i=sketchGeometryActors_.find(g);
+        if (auto dim =
+            std::dynamic_pointer_cast<DistanceConstraint>(g.second))
+        {
+            auto &asp = dim->parametersRef().get<DoubleParameter>("arrowSize");
+            asp.set(Ldiag*0.01, true);
+        }
+  }
+
+
+  for (const auto& g: **this)
+  {
+      auto i=sketchGeometryActors_.find(g.second);
       if (i!=sketchGeometryActors_.end())
       {
-          remove(g);
+          remove(g.second);
       }
-      add(g);
+      add(g.second);
   }
 
   for (const auto& sga: sketchGeometryActors_)
   {
       auto g=sga.first;
-      auto i=this->get()->geometry().find(g);
-      if (i==this->get()->geometry().end())
+      auto i=(*this)->findGeometry(g);
+      if (i==(*this)->end())
       {
         remove(g);
       }
   }
 
-  viewer().scheduleRedraw(update_msec);
+  viewer().scheduleRedraw();
 }

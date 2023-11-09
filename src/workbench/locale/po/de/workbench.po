@@ -7,64 +7,64 @@ msgid ""
 msgstr ""
 "Project-Id-Version: workbench \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-08 15:08+0200\n"
-"PO-Revision-Date: 2023-07-02 22:36+0200\n"
+"POT-Creation-Date: 2023-10-25 10:57+0200\n"
+"PO-Revision-Date: 2023-10-25 10:57+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=ASCII\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: workbench.cpp:64
 msgid "Allowed options"
-msgstr "Zulässige Optionen"
+msgstr ""
 
 #: workbench.cpp:66
 msgid "produce help message"
-msgstr "Hilfe anzeigen"
+msgstr ""
 
 #: workbench.cpp:67
 msgid "print version and exit"
-msgstr "Version anzeigen und beenden"
+msgstr ""
 
 #: workbench.cpp:68
 msgid "put debug output to console instead of log window"
-msgstr "Debug-Ausgabe auf der Konsole anzeigen anstatt im Log-Fenster"
+msgstr ""
 
 #: workbench.cpp:69
 msgid "Additional libraries with analysis modules to load"
-msgstr "Weitere Bibliotheken mit Analysen, die geladen werden sollen"
+msgstr ""
 
 #: workbench.cpp:70
 msgid "open a new analysis of this on startup"
-msgstr "Nach dem Start eine neue Analyse des angegebenen Typs erzeugen"
+msgstr ""
 
 #: workbench.cpp:71
 msgid "Specifies input file."
-msgstr "Eingabedatei angeben"
+msgstr ""
 
 #: workbench.cpp:80
 msgid "Usage:"
-msgstr "Benutzung:"
+msgstr ""
 
 #: workbench.cpp:95
 msgid "Could not parse command line"
-msgstr "Konnte die Kommandozeile nicht auswerten"
+msgstr ""
 
 #: workbench.cpp:120
 msgid "Error: library file does not exist"
-msgstr "Fehler: die Bibliothek existiert nicht"
+msgstr ""
 
 #: workbench.cpp:138
 msgid "Wait"
-msgstr "Warten"
+msgstr ""
 
 #: workbench.cpp:151
 #, c-format
 msgid "Input file does not exist: %s"
-msgstr "Eingabedatei existiert nicht: %s"
+msgstr ""
 
 #: iqworkbenchremoteexecutionstate.cpp:19
 msgid "launch in local location"
@@ -128,113 +128,111 @@ msgstr ""
 msgid "create parameter set editor"
 msgstr ""
 
-#: analysisform.cpp:247
+#: analysisform.cpp:249
 msgid "create result viewer"
 msgstr ""
 
-#: analysisform.cpp:275
+#: analysisform.cpp:277
 msgid "create menus"
 msgstr ""
 
-#: analysisform.cpp:279
+#: analysisform.cpp:281
 msgid "&Parameters"
 msgstr ""
 
-#: analysisform.cpp:280
+#: analysisform.cpp:282
 msgid "&Actions"
 msgstr ""
 
-#: analysisform.cpp:281
+#: analysisform.cpp:283
 msgid "&Results"
 msgstr ""
 
-#: analysisform.cpp:282
+#: analysisform.cpp:284
 msgid "&Tools"
 msgstr ""
 
-#: analysisform.cpp:292
+#: analysisform.cpp:294
 msgid "&Save parameter set as..."
 msgstr ""
 
-#: analysisform.cpp:297
+#: analysisform.cpp:299
 msgid "&Pack external files into parameter file"
 msgstr ""
 
-#: analysisform.cpp:311
+#: analysisform.cpp:313
 msgid "&Merge other parameter set into current..."
 msgstr ""
 
-#: analysisform.cpp:315
+#: analysisform.cpp:317
 msgid "&Show in XML format"
 msgstr ""
 
-#: analysisform.cpp:321
-#, fuzzy
+#: analysisform.cpp:323
 msgid "&Run Analysis"
-msgstr "&Analyse"
+msgstr ""
 
-#: analysisform.cpp:324
-#, fuzzy
+#: analysisform.cpp:326
 msgid "&Stop Analysis"
-msgstr "&Analyse"
+msgstr ""
 
-#: analysisform.cpp:330
+#: analysisform.cpp:332
 msgid "&Load results..."
 msgstr ""
 
-#: analysisform.cpp:338
+#: analysisform.cpp:340
 msgid "&Save results as..."
 msgstr ""
 
-#: analysisform.cpp:343
+#: analysisform.cpp:345
 msgid "Create &report..."
 msgstr ""
 
-#: analysisform.cpp:352
+#: analysisform.cpp:354
 msgid "Load &filter..."
 msgstr ""
 
-#: analysisform.cpp:358
+#: analysisform.cpp:360
 msgid "Sa&ve filter..."
 msgstr ""
 
-#: analysisform.cpp:364
+#: analysisform.cpp:366
 msgid "Start ParaView in execution directory"
 msgstr ""
 
-#: analysisform.cpp:367
+#: analysisform.cpp:369
 msgid "Clean OpenFOAM case..."
 msgstr ""
 
-#: analysisform.cpp:385 analysisform.cpp:540
+#: analysisform.cpp:387 analysisform.cpp:542
 msgid "Parameters unsaved"
 msgstr ""
 
-#: analysisform.cpp:386
+#: analysisform.cpp:388
 msgid ""
 "The current parameters have been modified without saving.\n"
 "Do you wish to save them before closing?"
 msgstr ""
 
-#: analysisform.cpp:476
+#: analysisform.cpp:478
 msgid "Save Parameters"
 msgstr ""
 
-#: analysisform.cpp:478 analysisform.cpp:558 workbenchwindow.cpp:242
+#: analysisform.cpp:480 analysisform.cpp:560 workbenchwindow.cpp:242
 msgid "Insight parameter sets (*.ist)"
 msgstr ""
 
-#: analysisform.cpp:482
+#: analysisform.cpp:484
 msgid "Pack: embed externally referenced files into parameterset"
 msgstr ""
 
-#: analysisform.cpp:541
+#: analysisform.cpp:543
 msgid ""
 "The current parameter set is unsaved and will be overwritten.\n"
 "Do you wish to save them before continue?"
 msgstr ""
 
-#: analysisform.cpp:556 workbenchwindow.cpp:241
+#: analysisform.cpp:558 workbenchwindow.cpp:241
 msgid "Open Parameters"
 msgstr ""
 
@@ -361,15 +359,15 @@ msgstr ""
 
 #: workbenchwindow.cpp:110
 msgid "&Analysis"
-msgstr "&Analyse"
+msgstr ""
 
 #: workbenchwindow.cpp:112
 msgid "New..."
-msgstr "Neu..."
+msgstr ""
 
 #: workbenchwindow.cpp:118
 msgid "Open..."
-msgstr "Öffnen..."
+msgstr ""
 
 #: workbenchwindow.cpp:136
 msgid "&Settings"

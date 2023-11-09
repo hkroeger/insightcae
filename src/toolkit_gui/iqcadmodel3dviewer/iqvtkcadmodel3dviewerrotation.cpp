@@ -9,7 +9,6 @@ void IQVTKCADModel3DViewerRotation::rotate(int x, int y)
 
     if (hasLastMouseLocation())
     {
-        vtkRenderWindowInteractor* rwi = viewer().interactor();
 
         int dx = x - lastMouseLocation().x();
         int dy = lastMouseLocation().y() - y;
@@ -32,12 +31,13 @@ void IQVTKCADModel3DViewerRotation::rotate(int x, int y)
           viewer().renderer()->ResetCameraClippingRange();
         }
 
+        vtkRenderWindowInteractor* rwi = viewer().interactor();
         if (rwi->GetLightFollowCamera())
         {
           viewer().renderer()->UpdateLightsGeometryToFollowCamera();
         }
 
-        rwi->Render();
+        viewer().scheduleRedraw();
     }
 }
 
@@ -56,7 +56,7 @@ void IQVTKCADModel3DViewerRotation::start()
 
 
 
-void IQVTKCADModel3DViewerRotation::onMouseMove
+bool IQVTKCADModel3DViewerRotation::onMouseMove
 (
  Qt::MouseButtons buttons,
  const QPoint point,
@@ -64,5 +64,5 @@ void IQVTKCADModel3DViewerRotation::onMouseMove
  )
 {
     rotate( point.x(), point.y() );
-    ViewWidgetAction<IQVTKCADModel3DViewer>::onMouseMove(buttons, point, curFlags);
+    return ViewWidgetAction<IQVTKCADModel3DViewer>::onMouseMove(buttons, point, curFlags);
 }

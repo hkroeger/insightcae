@@ -51,6 +51,16 @@ public:
   void write(std::ostream&) const override;
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const;
 
+  void operator=(const Distance& other);
+
+  /**
+   * @brief dimLineOffset
+   * @return
+   * offset of dimension line from connection between points.
+   */
+  virtual arma::mat dimLineOffset() const;
+  virtual double relativeArrowSize() const;
+
 };
 
 
@@ -59,11 +69,13 @@ class DistanceConstraint
 : public Distance,
   public ConstrainedSketchEntity
 {
+    VectorPtr planeNormal_;
 
     size_t calcHash() const override;
 
-    DistanceConstraint(VectorPtr p1, VectorPtr p2, double targetValue);
-    DistanceConstraint(VectorPtr p1, VectorPtr p2);
+
+    DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal, double targetValue);
+    DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal);
 
 public:
     declareType("DistanceConstraint");
@@ -86,6 +98,13 @@ public:
     void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
+
+    void operator=(const ConstrainedSketchEntity& other) override;
+    void operator=(const DistanceConstraint& other);
+
+    arma::mat dimLineOffset() const override;
+    void setDimLineOffset(const arma::mat& p);
+    double relativeArrowSize() const override;
 };
 
 }

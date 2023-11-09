@@ -54,7 +54,7 @@ public:
                   cands.begin(), cands.end()),
               selectedCandidate_(0)
         {
-            insight::dbg() << "selection candidate list created." << std::endl;
+            insight::dbg(2) << "selection candidate list created." << std::endl;
             insight::assertion(
                 this->size()>0,
                 "selection candidate list must not be empty!");
@@ -64,7 +64,7 @@ public:
 
         ~SelectionCandidates()
         {
-            insight::dbg() << "selection candidate list destroyed." << std::endl;
+            insight::dbg(2) << "selection candidate list destroyed." << std::endl;
         }
 
         void cycleCandidate()
@@ -196,6 +196,10 @@ public:
                 nextSelectionCandidates_=
                     std::make_shared<SelectionCandidates>
                     (*this, selectedEntities);
+
+                this->userPrompt(QString("There are %1 entities at picked location. Hold mouse button and press <Space> to cycle selection.")
+                                     .arg(nextSelectionCandidates_->size()));
+
                 return true;
             }
         }
@@ -247,6 +251,7 @@ public:
             if (currentSelection_->count(selcand)<1)
             {
                 currentSelection_->insert(selcand);
+                this->userPrompt(QString("Added to selection. Now %1 entities selected.").arg(currentSelection_->size()));
 
                 if (highlights_.count(selcand)<1)
                     highlights_[selcand]=highlightEntity(selcand, selectionColor);
@@ -256,6 +261,7 @@ public:
             else // remove from sel
             {
                 currentSelection_->erase(selcand);
+                this->userPrompt(QString("Removed from selection. Now %1 entities selected.").arg(currentSelection_->size()));
                 highlights_.erase(selcand);
             }
 
@@ -264,6 +270,7 @@ public:
         else // nothing was under cursor
         {
             clearSelection();
+            this->userPrompt("Nothing picked. Selection cleared.");
         }
         return Base::onLeftButtonUp(nFlags, point);
     }
@@ -271,7 +278,7 @@ public:
 
 
 
-    void onMouseMove(
+    bool onMouseMove(
             Qt::MouseButtons buttons,
             const QPoint point,
             Qt::KeyboardModifiers curFlags
@@ -292,7 +299,7 @@ public:
                          !SelectedEntityCompare()(euc[0], ph->first) )
                     {
                         // already in preview highlight, nothing to do
-                        return;
+                        return false;
                     }
                 }
 
@@ -301,13 +308,13 @@ public:
 
                 newPreviewEntity(euc[0]);
 
-                return;
+                return false;
             }
         }
 
         previewHighlight_ = boost::blank();
 
-        Base::onMouseMove(buttons, point, curFlags);
+        return Base::onMouseMove(buttons, point, curFlags);
     }
 
 

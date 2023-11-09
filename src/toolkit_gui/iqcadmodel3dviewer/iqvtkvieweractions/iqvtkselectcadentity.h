@@ -7,7 +7,34 @@
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqcadmodel3dviewer/selectionlogic.h"
 
+#include "parametereditorwidget.h"
 
+#include <QDockWidget>
+#include <QToolBox>
+
+class CADEntityMultiSelection
+    : public QObject,
+      public std::set<IQCADModel3DViewer::CADEntity>
+{
+    Q_OBJECT
+
+    insight::ParameterSet commonParameters_, defaultCommonParameters_;
+    IQVTKCADModel3DViewer& viewer_;
+
+    QWidget *pew_;
+    ParameterEditorWidget* pe_;
+    //QTreeView* pe_;
+
+    void showParameterEditor();
+    void removeParameterEditor();
+
+public:
+    CADEntityMultiSelection(IQVTKCADModel3DViewer& viewer);
+    ~CADEntityMultiSelection();
+
+    void insert(IQCADModel3DViewer::CADEntity entity);
+    void erase(IQCADModel3DViewer::CADEntity entity);
+};
 
 
 
@@ -16,7 +43,8 @@ typedef
         ViewWidgetAction<IQVTKCADModel3DViewer>,
         IQVTKCADModel3DViewer,
         IQCADModel3DViewer::CADEntity,
-        IQVTKCADModel3DViewer::HighlightingHandleSet
+        IQVTKCADModel3DViewer::HighlightingHandleSet,
+        CADEntityMultiSelection
     >
 
     IQVTKCADModel3DViewerSelectionLogic;

@@ -78,7 +78,7 @@ public:
 
     void start() override;
 
-    void onMouseMove
+    bool onMouseMove
       (
        Qt::MouseButtons buttons,
        const QPoint point,

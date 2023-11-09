@@ -43,9 +43,14 @@ public:
         int maxIter_;
     };
 
+    typedef std::map<int, ConstrainedSketchEntityPtr> GeometryMap;
+
 private:
     DatumPtr pl_;
-    std::set<ConstrainedSketchEntityPtr> geometry_;
+
+    // ID is key.
+    // storage of ID is required for proper update during parameter refresh (via parse from script)
+    GeometryMap geometry_;
 
     SolverSettings solverSettings_;
 
@@ -63,10 +68,34 @@ public:
         std::istream& is,
         const ParameterSet& geomPS = insight::ParameterSet() );
 
-    const DatumPtr& plane() const;
+    void readFromStream(
+        std::istream& is,
+        const ParameterSet& geomPS = insight::ParameterSet() );
 
-    std::set<ConstrainedSketchEntityPtr>& geometry();
-    const std::set<ConstrainedSketchEntityPtr>& geometry() const;
+    const DatumPtr& plane() const;
+    VectorPtr sketchPlaneNormal() const;
+
+    GeometryMap::key_type findUnusedID() const;
+    void insertGeometry(ConstrainedSketchEntityPtr geomEntity, GeometryMap::key_type key=-1);
+
+    void eraseGeometry(GeometryMap::key_type geomEntityId);
+    void eraseGeometry(ConstrainedSketchEntityPtr geomEntity);
+
+    size_t size() const;
+    void clear();
+    GeometryMap::const_iterator findGeometry(ConstrainedSketchEntityPtr geomEntity) const;
+    GeometryMap::const_iterator begin() const;
+    GeometryMap::const_iterator cbegin() const;
+    GeometryMap::const_iterator end() const;
+    GeometryMap::const_iterator cend() const;
+
+    template<class T>
+    std::shared_ptr<T> get(GeometryMap::key_type geomEntityId) const
+    {
+        auto i=geometry_.find(geomEntityId);
+        if (i==geometry_.end()) return nullptr;
+        return std::dynamic_pointer_cast<T>(i->second);
+    }
 
     std::set<ConstrainedSketchEntityPtr> filterGeometryByParameters(
         std::function<bool(const ParameterSet& geomPS)> filterFunction
@@ -86,6 +115,8 @@ public:
     void generateScript(std::ostream& os) const;
 
     std::string generateScriptCommand() const override;
+
+    arma::mat sketchBoundingBox() const;
 
 };
 

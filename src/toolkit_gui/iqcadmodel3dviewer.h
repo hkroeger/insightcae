@@ -7,6 +7,7 @@
 #include <QAbstractItemModel>
 #include <QTextEdit>
 #include <QMainWindow>
+#include <QToolBox>
 
 #include "iqcaditemmodel.h"
 #include "constrainedsketch.h"
@@ -53,6 +54,8 @@ private:
 
 protected:
     QAbstractItemModel* model_;
+    QDockWidget *dockWidget_;
+    QToolBox *commonToolBox_;
 
 public:
     IQCADModel3DViewer(QWidget* parent=nullptr);
@@ -60,6 +63,8 @@ public:
     virtual void setModel(QAbstractItemModel* model);
     QAbstractItemModel* model() const;
     IQCADItemModel* cadmodel() const;
+
+    inline QToolBox *commonToolBox() { return commonToolBox_; }
 
     virtual void connectNotepad(QTextEdit *notepad) const;
 

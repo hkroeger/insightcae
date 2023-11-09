@@ -31,9 +31,9 @@ class SketchEntityMultiSelection
     Q_OBJECT
 
     insight::ParameterSet commonParameters_, defaultCommonParameters_;
+    QWidget *pew_;
     IQVTKConstrainedSketchEditor& editor_;
     ParameterEditorWidget* pe_;
-    int tbi_;
 
     void showParameterEditor();
     void removeParameterEditor();

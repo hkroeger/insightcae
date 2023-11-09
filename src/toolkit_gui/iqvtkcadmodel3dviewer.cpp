@@ -44,6 +44,8 @@
 #include "vtkCellPicker.h"
 #include "vtkImageReader2Factory.h"
 #include "vtkImageReader2.h"
+#include "vtkCaptionActor2D.h"
+#include "vtkInteractorStyleUser.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -146,38 +148,10 @@ BackgroundImage::BackgroundImage(
         IQImageReferencePointSelectorWindow::setupCameraForImage(
             imageData, usedRenderer_->GetActiveCamera());
 
-        //        double origin[3];
-        //        double spacing[3];
-        //        int extent[6];
-        //        imageData->GetOrigin(origin);
-        //        imageData->GetSpacing(spacing);
-        //        imageData->GetExtent(extent);
-
-        //        vtkCamera* camera = usedRenderer_->GetActiveCamera();
-        //        camera->ParallelProjectionOn();
-
-        //        double xc = origin[0] + 0.5 * (extent[0] + extent[1]) * spacing[0];
-        //        double yc = origin[1] + 0.5 * (extent[2] + extent[3]) * spacing[1];
-        //        // double xd = (extent[1] - extent[0] + 1)*spacing[0];
-        //        double yd = (extent[3] - extent[2] + 1) * spacing[1];
-        //        double d = camera->GetDistance();
-        //        camera->SetParallelScale(0.5 * yd);
-        //        camera->SetFocalPoint(xc, yc, 0.0);
-        //        camera->SetPosition(xc, yc, d);
-
         viewer().scheduleRedraw();
     }
     else if (answer==pButtonDynamic)
     {
-        //        IQImageReferencePointSelectorWindow selw(imageActor_, &viewer());
-        //        selw.setWindowModality(Qt::ApplicationModal);
-        //        selw.show();
-
-        //        double scale=selw.L_ / arma::norm(*selw.p3_ - *selw.p2_,2);
-        //        imageActor_->SetScale( scale );
-        //        arma::mat newPosition(-1.*scale* *(selw.p1_) );
-        //        imageActor_->SetPosition( newPosition.memptr() );
-
         imageActor_->SetScale( 1 );
         imageActor_->SetPosition( 0, 0, 0 );
 
@@ -280,6 +254,8 @@ void IQVTKCADModel3DViewer::recomputeSceneBounds() const
 }
 
 
+
+
 IQVTKCADModel3DViewer::HighlightingHandle
 IQVTKCADModel3DViewer::highlightActor(vtkProp *prop, QColor hicol)
 {
@@ -312,13 +288,22 @@ IQVTKCADModel3DViewer::highlightActor(vtkProp *prop, QColor hicol)
                     ));
             }
         }
-#warning need highlighting for 2D actors as well
+    }
+    else if (auto actor2d = vtkCaptionActor2D::SafeDownCast(prop))
+    {
+        actorHighlight.reset(
+            new TextActorHighlighter(
+                *this, actor2d, hicol
+                ));
     }
 
     scheduleRedraw();
 
     return actorHighlight;
 }
+
+
+
 
 IQVTKCADModel3DViewer::HighlightingHandleSet
 IQVTKCADModel3DViewer::highlightActors(std::set<vtkProp *> actor, QColor hicol)
@@ -1139,9 +1124,28 @@ IQVTKCADModel3DViewer::findDisplayedItem(
 }
 
 
-void IQVTKCADModel3DViewer::scheduleRedraw(int millisec)
+void IQVTKCADModel3DViewer::redrawNow(bool force)
 {
-    redrawTimer_.start(millisec);
+    if (redrawRequestedWithinWaitPeriod_ || force)
+    {
+        renWin()->Render();
+        redrawRequestedWithinWaitPeriod_=false;
+    }
+}
+
+
+void IQVTKCADModel3DViewer::scheduleRedraw(int freq)
+{
+    redrawRequestedWithinWaitPeriod_=false;
+    if (redrawTimer_.isActive())
+    {
+        redrawRequestedWithinWaitPeriod_=true;
+    }
+    else
+    {
+        redrawNow();
+        redrawTimer_.start(1000/freq);
+    }
 }
 
 
@@ -1297,34 +1301,11 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     widget->SetEnabled( 1 );
     widget->InteractiveOff();
 
-//    vtkNew<IQPickInteractorStyle> style;
-//    connect(
-//        style, &IQPickInteractorStyle::contextMenuRequested, this,
-//        [this](vtkActor* actor)
-//        {
 
-//            auto i = std::find_if(
-//                        displayedData_.begin(),
-//                        displayedData_.end(),
-//                        [actor](const DisplayedData::value_type& e)
-//                        { return (e.second.actor_==actor); }
-//            );
-//            if (i!=displayedData_.end())
-//            {
-//                Q_EMIT contextMenuRequested(i->first, QCursor::pos());
-//            }
-//        }
-//    );
-////    vtkNew<vtkInteractorStyleTrackballCamera> style;
-//    insight::dbg()<<"set default renderer"<<std::endl;
-//    style->SetDefaultRenderer(ren_);
-
-//    insight::dbg()<<"set interactor style"<<std::endl;
-//    renWin1->GetInteractor()->SetInteractorStyle(style);
+    renWin()->GetInteractor()->SetInteractorStyle(nullptr);
 
     ren_->GetActiveCamera()->SetParallelProjection(true);
 
-    insight::dbg()<<"reset cam"<<std::endl;
     ren_->ResetCamera();
 
     viewState_.store();
@@ -1332,10 +1313,7 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     redrawTimer_.setSingleShot(true);
     connect(
         &redrawTimer_, &QTimer::timeout,
-        [this]()
-        {
-            renWin()->Render();
-        }
+        std::bind(&IQVTKCADModel3DViewer::redrawNow, this, false)
     );
 
     setDefaultAction();
@@ -1471,24 +1449,19 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) c
 {
     auto p = widgetCoordsToVTK(clickPos);
 
-    // Pick from this location.
-//    insight::dbg()
-//            << "click pos = "
-//            << clickPos.x()<<" "<<clickPos.y()
-//            << " ("<<p.x()<<" "<<p.y()<<")"
-//            << std::endl;
 
-//    auto picker = vtkSmartPointer<vtkPointPicker>::New();
-//    auto picker = vtkSmartPointer<vtkCellPicker>::New();
-    auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
-    picker2d->Pick(p.x(), p.y(), 0, ren_);
+//    vtkActor2D *act2=nullptr;
+//    {
+//        auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
+//        picker2d->Pick(p.x(), p.y(), 0, ren_);
 
-    auto act2 = picker2d->GetActor2D();
-    if (act2)
-    {
-        return act2;
-    }
-    else
+//        act2 = picker2d->GetActor2D();
+//    }
+//    if (act2)
+//    {
+//        return act2;
+//    }
+//    else
     {
         auto picker3d = vtkSmartPointer<vtkPicker>::New();
         picker3d->SetTolerance(1e-4);
@@ -1514,43 +1487,45 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
 
     auto p = widgetCoordsToVTK(clickPos);
 
-    auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
-    picker2d->Pick(p.x(), p.y(), 0, ren_);
-    if (auto act2 = picker2d->GetActor2D())
     {
-        aa.push_back(act2);
-    }
-
-    // take a closer look with other pick engine
-    // which can detect multiple overlapping actors
-    auto picker3d = vtkSmartPointer<vtkPicker>::New();
-//    picker3d->SetTolerance(1e-4);
-    picker3d->Pick(p.x(), p.y(), 0, ren_);
-
-    auto pi = picker3d->GetActors();
-    auto pp = picker3d->GetPickedPositions();
-    int nsel = pi->GetNumberOfItems();
-
-//    if (nsel>0)
-//    {
-//        std::cout<<"# under cursors = "<<nsel<<std::endl;
-//    }
-    auto cp = insight::vec3FromComponents(ren_->GetActiveCamera()->GetPosition());
-    std::map<double, vtkProp*> aa3d;
-    for (int i=0; i<nsel; ++i)
-    {
-        auto prop = vtkProp::SafeDownCast(pi->GetItemAsObject(i));
-        if (actorsExcludedFromPicking_.count(prop)<1)
+        auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
+        picker2d->Pick(p.x(), p.y(), 0, ren_);
+        if (auto act2 = picker2d->GetActor2D())
         {
-            double dist=arma::norm(insight::vec3FromComponents(pp->GetPoint(i))-cp, 2);
-            aa3d[dist]=prop;
+            aa.push_back(act2);
         }
+
+        const_cast<IQVTKCADModel3DViewer*>(this)
+            ->redrawNow(); // flickering bug (black screen) otherwise
     }
-    std::transform(
-        aa3d.begin(), aa3d.end(),
-        std::back_inserter(aa),
-        [](decltype(aa3d)::value_type& aa3di) { return aa3di.second; }
-        );
+    {
+        // take a closer look with other pick engine
+        // which can detect multiple overlapping actors
+        auto picker3d = vtkSmartPointer<vtkPicker>::New();
+    //    picker3d->SetTolerance(1e-4);
+        picker3d->Pick(p.x(), p.y(), 0, ren_);
+
+        auto pi = picker3d->GetActors();
+        auto pp = picker3d->GetPickedPositions();
+        int nsel = pi->GetNumberOfItems();
+
+        auto cp = insight::vec3FromComponents(ren_->GetActiveCamera()->GetPosition());
+        std::map<double, vtkProp*> aa3d;
+        for (int i=0; i<nsel; ++i)
+        {
+            auto prop = vtkProp::SafeDownCast(pi->GetItemAsObject(i));
+            if (actorsExcludedFromPicking_.count(prop)<1)
+            {
+                double dist=arma::norm(insight::vec3FromComponents(pp->GetPoint(i))-cp, 2);
+                aa3d[dist]=prop;
+            }
+        }
+        std::transform(
+            aa3d.begin(), aa3d.end(),
+            std::back_inserter(aa),
+            [](decltype(aa3d)::value_type& aa3di) { return aa3di.second; }
+            );
+    }
 
     return aa;
 }
@@ -2100,9 +2075,10 @@ void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
 {
     IQCADModel3DViewer::mouseMoveEvent(e);
 
-    navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
+    bool ret=false;
     if (currentAction_)
-        currentAction_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
+        if (!ret) ret=currentAction_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
+    if (!ret) navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
 }
 
 
@@ -2112,9 +2088,10 @@ void IQVTKCADModel3DViewer::wheelEvent( QWheelEvent* e )
 {
     IQCADModel3DViewer::wheelEvent(e);
 
-    navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+    bool ret=false;
     if (currentAction_)
-        currentAction_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+        if (!ret) ret=currentAction_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+    if (!ret) navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
 }
 
 

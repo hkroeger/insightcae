@@ -21,6 +21,7 @@ IQVTKVerticalConstraint::createActor() const
 {
     auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
     caption->SetCaption("V");
+    caption->BorderOff();
     caption->SetAttachmentPoint(
         arma::mat(0.5*
                   (line_->getDatumPoint("p0")+line_->getDatumPoint("p1")))
@@ -28,8 +29,9 @@ IQVTKVerticalConstraint::createActor() const
     caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
     caption->GetCaptionTextProperty()->SetColor(0,0,0);
     caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->SetFrame(false);
-    caption->GetCaptionTextProperty()->SetShadow(false);
+    caption->GetCaptionTextProperty()->FrameOff();
+    caption->GetCaptionTextProperty()->ShadowOff();
+    caption->GetCaptionTextProperty()->BoldOff();
 
     return {caption};
 
@@ -90,15 +92,14 @@ void IQVTKVerticalConstraint::addParserRule(
              > qi::int_ > ','
              > qi::int_
              > ruleset.r_parameters >
-             ')' )
-                [ qi::_val = phx::bind(
-                     &IQVTKVerticalConstraint::create<std::shared_ptr<insight::cad::Line> >,
-                     phx::bind(&insight::cad::ConstrainedSketchGrammar::lookupEntity<insight::cad::Line>, phx::ref(ruleset), qi::_2) ),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_3, "."),
-                 phx::insert(
-                     phx::ref(ruleset.labeledEntities),
-                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
-            );
+             ')'
+         )
+          [ qi::_a = phx::bind(
+                 &IQVTKVerticalConstraint::create<std::shared_ptr<Line> >,
+                 phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2) ),
+            phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_3, "."),
+            qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
+        );
 }
 
 std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > IQVTKVerticalConstraint::dependencies() const
@@ -118,3 +119,17 @@ void IQVTKVerticalConstraint::replaceDependency(
         }
     }
 }
+
+
+
+void IQVTKVerticalConstraint::operator=(const ConstrainedSketchEntity& other)
+{
+    operator=(dynamic_cast<const IQVTKVerticalConstraint&>(other));
+}
+
+void IQVTKVerticalConstraint::operator=(const IQVTKVerticalConstraint& other)
+{
+    line_=other.line_;
+    IQVTKConstrainedSketchEntity::operator=(other);
+}
+

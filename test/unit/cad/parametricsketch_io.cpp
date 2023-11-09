@@ -24,25 +24,25 @@ int main(int argc, char* argv[])
                 ConstrainedSketch::create(pl));
 
             auto p1 = std::make_shared<SketchPoint>(pl, 0, 0);
-            sk->geometry().insert(p1);
+            sk->insertGeometry(p1);
             auto p2 = std::make_shared<SketchPoint>(pl, 1, 0);
-            sk->geometry().insert(p2);
+            sk->insertGeometry(p2);
             auto p3 = std::make_shared<SketchPoint>(pl, 1, 1);
-            sk->geometry().insert(p3);
+            sk->insertGeometry(p3);
 
             auto l1 = Line::create(p1, p2, false);
-            sk->geometry().insert(std::dynamic_pointer_cast<ConstrainedSketchEntity>(l1));
+            sk->insertGeometry(std::dynamic_pointer_cast<ConstrainedSketchEntity>(l1));
             auto l2 = Line::create(p2, p3, false);
-            sk->geometry().insert(std::dynamic_pointer_cast<ConstrainedSketchEntity>(l2));
+            sk->insertGeometry(std::dynamic_pointer_cast<ConstrainedSketchEntity>(l2));
             auto l3 = Line::create(p3, p1, false);
-            sk->geometry().insert(std::dynamic_pointer_cast<ConstrainedSketchEntity>(l3));
+            sk->insertGeometry(std::dynamic_pointer_cast<ConstrainedSketchEntity>(l3));
 
-            auto lc1 = DistanceConstraint::create( p1, p2, 1 );
-            sk->geometry().insert(lc1);
-            auto lc2 = DistanceConstraint::create( p2, p3, 1 );
-            sk->geometry().insert(lc2);
-            auto lc3 = DistanceConstraint::create( p1, p3, 1 );
-            sk->geometry().insert(lc3);
+            auto lc1 = DistanceConstraint::create( p1, p2, sk->sketchPlaneNormal(), 1 );
+            sk->insertGeometry(lc1);
+            auto lc2 = DistanceConstraint::create( p2, p3, sk->sketchPlaneNormal(), 1 );
+            sk->insertGeometry(lc2);
+            auto lc3 = DistanceConstraint::create( p1, p3, sk->sketchPlaneNormal(), 1 );
+            sk->insertGeometry(lc3);
 
 
             auto p1e=std::make_shared<insight::cad::AddedVector>(
@@ -53,25 +53,25 @@ int main(int argc, char* argv[])
                     p1e->value(),
                     l1->end()->value(),
                     l1->start()->value() ) );
-            sk->geometry().insert(ac);
+            sk->insertGeometry(ac);
 
-            auto lc0 = DistanceConstraint::create( p1, vec3const(0,0,0), 0 );
-            sk->geometry().insert(lc0);
+            auto lc0 = DistanceConstraint::create( p1, vec3const(0,0,0), sk->sketchPlaneNormal(), 0 );
+            sk->insertGeometry(lc0);
 
             sk->resolveConstraints();
-    //        sk->saveAs("sketch.brep");
+//            sk->saveAs(boost::filesystem::temp_directory_path() / "sketch.brep");
 
             std::ofstream f(scriptFile.string());
             sk->generateScript(f);
 
             sk->generateScript(std::cout);
 
-            nWritten = sk->geometry().size();
+            nWritten = sk->size();
 
             int k=0;
-            for (const auto& geo : sk->geometry())
+            for (const auto& geo : *sk)
             {
-                if (const auto sp = std::dynamic_pointer_cast<SketchPoint>(geo))
+                if (const auto sp = std::dynamic_pointer_cast<SketchPoint>(geo.second))
                 {
                     std::cout<<(k++)<<" : "<<sp->coords2D().t();
                 }
@@ -79,6 +79,15 @@ int main(int argc, char* argv[])
 
 
             std::cout<<"nWritten="<<nWritten<<std::endl;
+
+            arma::mat bb=sk->sketchBoundingBox();
+            std::cout<<"bb=\n"<<bb<<std::endl;
+            insight::assertion(
+                arma::norm(bb.col(0)-vec3Zero(),2 )<0.001,
+                "unexpected minimum bounding box coordinate!");
+            insight::assertion(
+                arma::norm(bb.col(1)-vec3(1., 0.866025, 0.), 2)<0.001,
+                "unexpected maximum bounding box coordinate!");
         }
 
 //        {
@@ -112,17 +121,17 @@ int main(int argc, char* argv[])
             std::ifstream f(scriptFile.string());
             auto sk = ConstrainedSketch::createFromStream(pl, f);
 
-            std::cout<<sk->geometry().size()<<std::endl;
-            nRetrieved = sk->geometry().size();
+            std::cout<<sk->size()<<std::endl;
+            nRetrieved = sk->size();
 
             std::cout<<"nRetrieved="<<nRetrieved<<std::endl;
 
             sk->resolveConstraints();
 
             int k=0;
-            for (const auto& geo : sk->geometry())
+            for (const auto& geo : *sk)
             {
-                if (const auto sp = std::dynamic_pointer_cast<SketchPoint>(geo))
+                if (const auto sp = std::dynamic_pointer_cast<SketchPoint>(geo.second))
                 {
                     std::cout<<(k++)<<" : "<<sp->coords2D().t();
                 }

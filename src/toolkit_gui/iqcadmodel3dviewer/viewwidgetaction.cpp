@@ -33,14 +33,15 @@ OCCViewWidgetRotation::OCCViewWidgetRotation(QoccViewWidget &viewWidget, const Q
 void OCCViewWidgetRotation::start()
 {}
 
-void OCCViewWidgetRotation::onMouseMove
+bool OCCViewWidgetRotation::onMouseMove
   (
-   Qt::MouseButtons,
+   Qt::MouseButtons btn,
    const QPoint point,
-   Qt::KeyboardModifiers
+   Qt::KeyboardModifiers mods
    )
 {
-  viewer().view().Rotation( point.x(), point.y() );
+    viewer().view().Rotation( point.x(), point.y() );
+    return ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
 }
 
 
@@ -54,7 +55,7 @@ void OCCViewWidgetPanning::start()
 {}
 
 
-void OCCViewWidgetPanning::onMouseMove
+bool OCCViewWidgetPanning::onMouseMove
   (
    Qt::MouseButtons btn,
    const QPoint point,
@@ -66,7 +67,7 @@ void OCCViewWidgetPanning::onMouseMove
     viewer().view().Pan( point.x() - lastMouseLocation().x(),
                lastMouseLocation().y() - point.y() );
   }
-  ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
+  return ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
 }
 
 
@@ -80,7 +81,7 @@ void OCCViewWidgetDynamicZooming::start()
 {}
 
 
-void OCCViewWidgetDynamicZooming::onMouseMove
+bool OCCViewWidgetDynamicZooming::onMouseMove
   (
    Qt::MouseButtons btn,
    const QPoint point,
@@ -93,7 +94,7 @@ void OCCViewWidgetDynamicZooming::onMouseMove
                               point.x(), point.y() );
     }
 
-    ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
+    return ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
 }
 
 
@@ -117,7 +118,7 @@ void OCCViewWidgetWindowZooming::start()
 {}
 
 
-void OCCViewWidgetWindowZooming::onMouseMove
+bool OCCViewWidgetWindowZooming::onMouseMove
   (
    Qt::MouseButtons btn,
    const QPoint point,
@@ -134,7 +135,7 @@ void OCCViewWidgetWindowZooming::onMouseMove
                    point.x(), point.y() );
     }
 
-    ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
+    return ViewWidgetAction<QoccViewWidget>::onMouseMove(btn, point, mods);
 }
 
 

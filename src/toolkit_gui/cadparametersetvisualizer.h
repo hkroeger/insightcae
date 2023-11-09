@@ -44,10 +44,12 @@ public:
   void setModel(IQCADItemModel *model);
   IQCADItemModel *model();
   void setParameterSetModel(IQParameterSetModel* psm);
+  IQParameterSetModel* parameterSetModel() const;
 
   virtual void addDatum(const std::string& name, insight::cad::DatumPtr dat, bool initialVisibility=false);
   virtual void addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds = AIS_Shaded,
-                          QColor color = QColor() );
+                          QColor color = QColor(),
+                          const std::vector<std::string>& assocParamPaths = {} );
   virtual void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> ds);
 
   void addGeometryToSpatialTransformationParameter(
@@ -71,7 +73,6 @@ public:
 
   virtual GUIActionList createGUIActions(
           const std::string& parameterPath,
-          IQParameterSetModel* psm,
           QObject* parent,
           IQCADModel3DViewer* viewer);
 

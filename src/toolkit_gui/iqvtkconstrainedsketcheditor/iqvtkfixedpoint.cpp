@@ -4,6 +4,7 @@
 #include "vtkCaptionActor2D.h"
 #include "vtkTextActor.h"
 #include "vtkTextProperty.h"
+#include "vtkProperty2D.h"
 
 #include "base/parameters.h"
 
@@ -16,8 +17,8 @@ IQVTKFixedPoint::IQVTKFixedPoint(
     auto c=p->coords2D();
     changeDefaultParameters(
         insight::ParameterSet({
-            {"x", new insight::DoubleParameter(c(0), "x location")},
-            {"y", new insight::DoubleParameter(c(1), "y location")}
+           {"x", std::make_shared<insight::DoubleParameter>(c(0), "x location")},
+           {"y", std::make_shared<insight::DoubleParameter>(c(1), "y location")}
         })
         );
 }
@@ -27,12 +28,14 @@ IQVTKFixedPoint::createActor() const
 {
     auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
     caption->SetCaption("X");
+    caption->BorderOff();
     caption->SetAttachmentPoint(p_->value().memptr());
     caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
     caption->GetCaptionTextProperty()->SetColor(0,0,0);
     caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->SetFrame(false);
-    caption->GetCaptionTextProperty()->SetShadow(false);
+    caption->GetCaptionTextProperty()->FrameOff();
+    caption->GetCaptionTextProperty()->ShadowOff();
+    caption->GetCaptionTextProperty()->BoldOff();
 
     return {caption};
 }
@@ -104,14 +107,13 @@ void IQVTKFixedPoint::addParserRule(
              > qi::int_
              > ruleset.r_parameters >
              ')' )
-                [
-                 qi::_val = phx::bind(
-                     &IQVTKFixedPoint::create<insight::cad::SketchPointPtr>,
-                     phx::bind(&insight::cad::ConstrainedSketchGrammar::lookupEntity<insight::cad::SketchPoint>, phx::ref(ruleset), qi::_2) ),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_3, "."),
-                 phx::insert(
-                     phx::ref(ruleset.labeledEntities),
-                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
+            [
+                qi::_a = phx::bind(
+                 &IQVTKFixedPoint::create<insight::cad::SketchPointPtr>,
+                     phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_2)
+                 ),
+                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_3, "."),
+                qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
 
@@ -131,4 +133,16 @@ void IQVTKFixedPoint::replaceDependency(
             p_ = p;
         }
     }
+}
+
+
+void IQVTKFixedPoint::operator=(const ConstrainedSketchEntity& other)
+{
+    operator=(dynamic_cast<const IQVTKFixedPoint&>(other));
+}
+
+void IQVTKFixedPoint::operator=(const IQVTKFixedPoint& other)
+{
+    p_=other.p_;
+    IQVTKConstrainedSketchEntity::operator=(other);
 }

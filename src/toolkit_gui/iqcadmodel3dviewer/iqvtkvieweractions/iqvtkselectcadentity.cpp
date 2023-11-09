@@ -3,6 +3,147 @@
 #include <QCheckBox>
 #include <QToolBar>
 
+#include <QVBoxLayout>
+#include <QTreeView>
+
+#include <QToolBox>
+#include <QDockWidget>
+
+#include <QSortFilterProxyModel>
+
+
+void CADEntityMultiSelection::showParameterEditor()
+{
+
+    pew_ = new QWidget;
+    auto tbi = viewer_.commonToolBox()->addItem(pew_, "Selection Properties");
+    viewer_.commonToolBox()->setCurrentIndex(tbi);
+
+    auto lo = new QVBoxLayout;
+    pew_->setLayout(lo);
+
+    auto tree=new QTreeView;
+    lo->addWidget(tree);
+    auto editControls = new QWidget;
+    lo->addWidget(editControls);
+    pe_ = new ParameterEditorWidget(pew_, tree, editControls);
+
+
+//    connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
+//            [this]()
+//            {
+//                for (auto& ee: *this)
+//                {
+//                    auto e = ee.lock();
+//                    e->parametersRef().merge(
+//                        pe_->model()->getParameterSet(),
+//                        false
+//                        );
+//                }
+//            }
+//            );
+}
+
+void CADEntityMultiSelection::removeParameterEditor()
+{
+    if (pew_)
+    {
+        delete pew_;
+        pew_=nullptr;
+        pe_=nullptr;
+    }
+}
+
+
+
+
+CADEntityMultiSelection::CADEntityMultiSelection
+    ( IQVTKCADModel3DViewer& viewer )
+    : viewer_(viewer),
+    pew_(nullptr),
+    pe_(nullptr)
+{
+}
+
+
+
+
+CADEntityMultiSelection::~CADEntityMultiSelection()
+{
+    removeParameterEditor();
+}
+
+
+
+
+void CADEntityMultiSelection::insert(
+    IQCADModel3DViewer::CADEntity entity)
+{
+    if (count(entity)<1) // don't add multiple times
+    {
+
+//        auto i = editor_.sketchGeometryActors_.find(
+//            entity.lock() );
+
+//        if (i!=editor_.sketchGeometryActors_.end())
+//        {
+
+            std::set<IQCADModel3DViewer::CADEntity>::insert(entity);
+
+//            auto lentity=entity.lock();
+
+//            if (size()==1)
+//            {
+//                commonParameters_=
+//                    lentity->parameters();
+//                defaultCommonParameters_=
+//                    lentity->defaultParameters();
+//            }
+//            else if (size()>1)
+//            {
+//                commonParameters_=
+//                    commonParameters_.intersection(lentity->parameters());
+//                defaultCommonParameters_=
+//                    defaultCommonParameters_.intersection(lentity->defaultParameters());
+//            }
+
+            auto featPtr = boost::get<insight::cad::FeaturePtr>(&entity);
+            if ( (size() == 1) && featPtr )
+            {
+                if (!pe_) showParameterEditor();
+
+                auto index = viewer_.cadmodel()->modelstepIndexFromValue( *featPtr );
+                std::vector<std::string> paramList;
+                std::string assocPs=
+                    index.siblingAtColumn(IQCADItemModel::assocParamPathsCol)
+                                          .data()
+                                          .toString()
+                                          .toStdString();
+                boost::split(
+                    paramList, assocPs,
+                    boost::is_any_of(":") );
+                auto *spm=new IQFilteredParameterSetModel(paramList, pe_);
+                spm->setSourceModel(viewer_.cadmodel()->associatedParameterSetModel());
+                pe_->setModel(spm);
+            }
+            else
+            {
+                removeParameterEditor();
+            }
+//        }
+    }
+}
+
+
+
+
+void CADEntityMultiSelection::erase(IQCADModel3DViewer::CADEntity entity)
+{
+    std::set<IQCADModel3DViewer::CADEntity>::erase(entity);
+}
+
+
+
 
 std::vector<IQCADModel3DViewer::CADEntity> IQVTKSelectCADEntity::findEntitiesUnderCursor(const QPoint &point) const
 {
@@ -51,7 +192,9 @@ IQVTKCADModel3DViewer::HighlightingHandleSet IQVTKSelectCADEntity::highlightEnti
 
 IQVTKSelectCADEntity::IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer)
     : IQVTKCADModel3DViewerSelectionLogic(
-        []() { return std::make_shared<MultiSelectionContainer>(); },
+        //[]() { return std::make_shared<MultiSelectionContainer>(); },
+        [&viewer]()
+        { return std::make_shared<CADEntityMultiSelection>(viewer); },
         viewer )
 {}
 

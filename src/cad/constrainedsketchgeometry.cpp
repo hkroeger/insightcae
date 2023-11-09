@@ -25,6 +25,9 @@ defineStaticFunctionTableWithArgs(
     LIST(ruleset, mdpf) );
 
 
+ConstrainedSketchEntity::~ConstrainedSketchEntity()
+{}
+
 int ConstrainedSketchEntity::nDoF() const
 {
     return 0;
@@ -98,7 +101,7 @@ void ConstrainedSketchEntity::parseParameterSet(const std::string &s, const boos
         xml_node<> *rootnode = doc.first_node("root");
 
         parameters_.readFromNode(*rootnode, inputFileParentPath );
-        std::cout<<parameters_<<std::endl;
+//        std::cout<<parameters_<<std::endl;
     }
 }
 
@@ -116,6 +119,7 @@ std::string ConstrainedSketchEntity::pointSpec(
     }
     else
     {
+#warning fragile, needs decent implementation
         auto v=p->value();
         return str(boost::format("[%g,%g,%g]")%v(0)%v(1)%v(2));
     }
@@ -137,6 +141,12 @@ bool ConstrainedSketchEntity::dependsOn(const std::weak_ptr<ConstrainedSketchEnt
 {
     auto deps = dependencies();
     return ( deps.find(entity) != deps.end() );
+}
+
+void ConstrainedSketchEntity::operator=(const ConstrainedSketchEntity &other)
+{
+    defaultParameters_ = other.defaultParameters_;
+    parameters_ = other.parameters_;
 }
 
 

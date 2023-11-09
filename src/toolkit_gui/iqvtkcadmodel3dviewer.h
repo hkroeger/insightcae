@@ -12,7 +12,8 @@
 #include "vtkVersionMacros.h"
 #include "vtkGenericOpenGLRenderWindow.h"
 #if VTK_MAJOR_VERSION>=8
-#include <QVTKOpenGLWidget.h>
+//#include <QVTKOpenGLWidget.h>
+#include <QVTKOpenGLNativeWidget.h>
 #else
 #include <QVTKWidget.h>
 #endif
@@ -26,6 +27,7 @@
 #include "vtkPolyDataMapper.h"
 #include "vtkProperty.h"
 #include "vtkImageActor.h"
+#include "vtkCaptionActor2D.h"
 
 #include <QAbstractItemModel>
 #include <QTimer>
@@ -46,7 +48,7 @@ class IQVTKCADModel3DViewer;
 
 typedef
 #if VTK_MAJOR_VERSION>=8
-QVTKOpenGLWidget
+QVTKOpenGLNativeWidget
 #else
 QVTKWidget
 #endif
@@ -268,6 +270,7 @@ private:
     friend class LinewidthHighlighter;
 
 
+
     class PointSizeHighlighter : public IQVTKViewerState
     {
         vtkSmartPointer<vtkActor> actor_;
@@ -283,6 +286,21 @@ private:
     };
     friend class LinewidthHighlighter;
 
+
+
+    class TextActorHighlighter : public IQVTKViewerState
+    {
+        vtkSmartPointer<vtkCaptionActor2D> actor_;
+        double oldColor_[3];
+
+    public:
+        TextActorHighlighter(
+            IQVTKCADModel3DViewer& viewer,
+            vtkCaptionActor2D* actorToHighlight,
+            QColor hicol = QColorConstants::Red );
+        ~TextActorHighlighter();
+    };
+    friend class TextActorHighlighter;
 
     friend class IQVTKConstrainedSketchEditor;
     friend class IQVTKCADModel3DViewerPlanePointBasedAction;
@@ -315,8 +333,10 @@ private:
             const CADEntity& item,
             DisplayedData::const_iterator* it=nullptr ) const;
 
+
     QTimer redrawTimer_;
-    void scheduleRedraw(int millisec=100);
+    bool redrawRequestedWithinWaitPeriod_;
+    void redrawNow(bool force=true);
 
     friend class BackgroundImage;
     QList<BackgroundImage*> backgroundImages_;
@@ -345,7 +365,6 @@ public:
 public:
     IQVTKCADModel3DViewer(QWidget* parent=nullptr);
     ~IQVTKCADModel3DViewer();
-
 
     HighlightingHandle highlightActor(vtkProp* actor, QColor hicol = QColorConstants::Red);
     HighlightingHandleSet highlightActors(std::set<vtkProp*> actor, QColor hicol = QColorConstants::Red);
@@ -391,6 +410,7 @@ public:
     vtkRenderWindowInteractor* interactor();
     vtkRenderer* renderer();
     vtkRenderer const* renderer() const;
+    void scheduleRedraw(int maxFreq=60/*Hz*/);
 
     void activateSelection(insight::cad::FeaturePtr feat, insight::cad::EntityType subshapeType);
     void activateSelectionAll(insight::cad::EntityType subshapeType);

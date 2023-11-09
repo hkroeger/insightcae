@@ -104,12 +104,9 @@ void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGe
              > qi::double_ > ',' > qi::double_
              > ruleset.r_parameters >
              ')' )
-                [ qi::_val = parser::make_shared_<SketchPoint>()(ruleset.sketch->plane(), qi::_2, qi::_3),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
-                 phx::insert(
-                     phx::ref(ruleset.labeledEntities),
-                     phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val) ),
-                 std::cout << qi::_1 ]
+               [ qi::_a = parser::make_shared_<SketchPoint>()(ruleset.sketch->plane(), qi::_2, qi::_3),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
+                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
 
@@ -122,6 +119,22 @@ void SketchPoint::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity> &entity,
     const std::shared_ptr<ConstrainedSketchEntity> &newEntity )
 {}
+
+
+void SketchPoint::operator=(const ConstrainedSketchEntity& other)
+{
+    operator=(dynamic_cast<const SketchPoint&>(other));
+}
+
+
+void SketchPoint::operator=(const SketchPoint& other)
+{
+    plane_=other.plane_;
+    x_=other.x_;
+    y_=other.y_;
+    Vector::operator=(other);
+    ConstrainedSketchEntity::operator=(other);
+}
 
 
 } // namespace cad

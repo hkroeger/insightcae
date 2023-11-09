@@ -40,6 +40,8 @@ public:
         LIST(ConstrainedSketchGrammar&, MakeDefaultGeometryParametersFunction),
         LIST(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf));
 
+    virtual ~ConstrainedSketchEntity();
+
     virtual int nDoF() const;
     virtual double getDoFValue(unsigned int iDoF) const;
     virtual void setDoFValue(unsigned int iDoF, double value);
@@ -73,6 +75,8 @@ public:
     virtual void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) =0;
+
+    virtual void operator=(const ConstrainedSketchEntity& other);
 
 };
 

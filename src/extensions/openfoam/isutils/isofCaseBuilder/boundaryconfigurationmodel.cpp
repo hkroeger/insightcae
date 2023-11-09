@@ -359,12 +359,14 @@ ParameterEditorWidget* BoundaryConfigurationModel::launchParameterEditor(
 
       auto ppe = new ParameterEditorWidget
              (
-               pc->parameters(),
-               pc->defaultParameters(),
+//               pc->parameters(),
+//               pc->defaultParameters(),
                parentWidget,
                pc->visualizer(), vali,
                display
              );
+      auto model = new IQParameterSetModel(pc->parameters(), pc->defaultParameters(), ppe);
+      ppe->setModel(model);
 
       // ensure that the editor is removed, when CE is deleted
       connect(pc, &QObject::destroyed,
@@ -373,7 +375,7 @@ ParameterEditorWidget* BoundaryConfigurationModel::launchParameterEditor(
       connect(ppe, &ParameterEditorWidget::parameterSetChanged,
               ppe, [&,pc,ppe]()
               {
-                pc->parameters() = ppe->model()->getParameterSet();
+          pc->parameters() = parameterSetModel(ppe->model())->getParameterSet();
               }
       );
 

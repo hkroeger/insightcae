@@ -47,8 +47,6 @@ private:
     insight::ParameterSet defaultGeometryParameters_;
 
     QToolBar *toolBar_;
-    QDockWidget *toolBoxWidget_;
-    QToolBox *toolBox_;
 
     std::unique_ptr<IQVTKCADModel3DViewer::ExposeItem> transparency_;
 
@@ -57,6 +55,9 @@ private:
     void remove(insight::cad::ConstrainedSketchEntityPtr);
 
     bool defaultSelectionActionRunning();
+
+protected:
+    void launchChildAction(Ptr childAction) override;
 
 private Q_SLOTS:
     void launchDefaultSelectionAction();
@@ -80,7 +81,7 @@ public:
     void deleteEntity(std::weak_ptr<insight::cad::ConstrainedSketchEntity> td);
 
     bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key ) override;
-    void onMouseMove
+    bool onMouseMove
       (
        Qt::MouseButtons buttons,
        const QPoint point,
@@ -89,7 +90,7 @@ public:
 
 
 public Q_SLOTS:
-    void updateActors(int update_msec=100);
+    void updateActors();
 
 };
 

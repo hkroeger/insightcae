@@ -108,17 +108,15 @@ void IQVTKPointOnCurveConstraint::addParserRule(
              > qi::int_ > ','
              > qi::int_
              > ruleset.r_parameters >
-             ')' )
-                [ qi::_val = phx::bind(
-                 &IQVTKPointOnCurveConstraint::create<insight::cad::SketchPointPtr, insight::cad::FeaturePtr>,
-                    phx::bind(&insight::cad::ConstrainedSketchGrammar::lookupEntity<insight::cad::SketchPoint>, phx::ref(ruleset), qi::_3),
-                    phx::bind(&insight::cad::ConstrainedSketchGrammar::lookupEntity<insight::cad::Line>, phx::ref(ruleset), qi::_2)
-                    ),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_val, qi::_4, "."),
-                 phx::insert(
-                    phx::ref(ruleset.labeledEntities),
-                    phx::construct<ConstrainedSketchGrammar::LabeledEntitiesMap::value_type>(qi::_1, qi::_val)) ]
-            );
+             ')'
+         )
+         [ qi::_a = phx::bind(
+                 &IQVTKPointOnCurveConstraint::create<SketchPointPtr, FeaturePtr>,
+                 phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_3),
+                 phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2) ),
+             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
+             qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
+        );
 }
 
 std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> >
@@ -151,4 +149,17 @@ void IQVTKPointOnCurveConstraint::replaceDependency(
             curve_ = c;
         }
     }
+}
+
+
+void IQVTKPointOnCurveConstraint::operator=(const ConstrainedSketchEntity& other)
+{
+    operator=(dynamic_cast<const IQVTKPointOnCurveConstraint&>(other));
+}
+
+void IQVTKPointOnCurveConstraint::operator=(const IQVTKPointOnCurveConstraint& other)
+{
+    p_=other.p_;
+    curve_=other.curve_;
+    IQVTKConstrainedSketchEntity::operator=(other);
 }

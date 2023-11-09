@@ -36,6 +36,9 @@ public:
     void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
+
+    void operator=(const ConstrainedSketchEntity& other) override;
+    void operator=(const IQVTKVerticalConstraint& other);
 };
 
 #endif // IQVTKVERTICALCONSTRAINT_H

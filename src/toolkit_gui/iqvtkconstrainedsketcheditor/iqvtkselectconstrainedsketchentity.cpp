@@ -10,18 +10,19 @@
 
 void SketchEntityMultiSelection::showParameterEditor()
 {
-    auto spe = new QWidget;
-    tbi_=editor_.toolBox_->addItem(spe, "Selection properties");
-    editor_.toolBox_->setCurrentIndex(tbi_);
+    pew_ = new QWidget;
+    auto *tb=editor_.viewer().commonToolBox();
+    auto tbi = tb->addItem(pew_, "Sketch entity properties");
+    tb->setCurrentIndex(tbi);
 
     auto lo = new QVBoxLayout;
-    spe->setLayout(lo);
+    pew_->setLayout(lo);
 
     auto tree=new QTreeView;
     lo->addWidget(tree);
     auto editControls = new QWidget;
     lo->addWidget(editControls);
-    pe_ = new ParameterEditorWidget(spe, tree, editControls);
+    pe_ = new ParameterEditorWidget(pew_, tree, editControls);
 
 
     connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
@@ -31,8 +32,7 @@ void SketchEntityMultiSelection::showParameterEditor()
                 {
                     auto e = ee.lock();
                     e->parametersRef().merge(
-                        pe_->model()->getParameterSet(),
-                        false
+                        getParameterSet(pe_->model())
                         );
                 }
             }
@@ -43,9 +43,9 @@ void SketchEntityMultiSelection::removeParameterEditor()
 {
     if (pe_)
     {
-        editor_.toolBox_->removeItem(tbi_);
+        delete pew_;
+        pew_=nullptr;
         pe_=nullptr;
-        tbi_=-1;
     }
 }
 
@@ -55,8 +55,8 @@ void SketchEntityMultiSelection::removeParameterEditor()
 SketchEntityMultiSelection::SketchEntityMultiSelection
     ( IQVTKConstrainedSketchEditor &editor )
 : editor_(editor),
-  pe_(nullptr),
-  tbi_(-1)
+  pew_(nullptr),
+  pe_(nullptr)
 {
 }
 
@@ -105,8 +105,9 @@ void SketchEntityMultiSelection::insert(
             if ( size()>0 && commonParameters_.size()>0 )
             {
                 if (!pe_) showParameterEditor();
-                pe_->clearParameterSet();
-                pe_->resetParameterSet(commonParameters_, defaultCommonParameters_);
+//                pe_->clearParameterSet();
+                auto m = new IQParameterSetModel(commonParameters_, defaultCommonParameters_, pe_);
+                pe_->setModel(m);
             }
             else
             {

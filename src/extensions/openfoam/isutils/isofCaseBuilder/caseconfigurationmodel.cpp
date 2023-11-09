@@ -279,12 +279,14 @@ ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
 
   auto cepe = new ParameterEditorWidget
          (
-           ce->parameters(),
-           ce->defaultParameters(),
+//           ce->parameters(),
+//           ce->defaultParameters(),
            parentWidget,
            ce->visualizer(), vali,
            display
          );
+  auto model = new IQParameterSetModel(ce->parameters(), ce->defaultParameters(), cepe);
+  cepe->setModel(model);
 
   // ensure that the editor is removed, when CE is deleted
   connect(ce, &QObject::destroyed,
@@ -293,7 +295,7 @@ ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
   connect(cepe, &ParameterEditorWidget::parameterSetChanged,
           cepe, [&,ce,cepe]()
           {
-            ce->parameters() = cepe->model()->getParameterSet();
+      ce->parameters() = parameterSetModel(cepe->model())->getParameterSet();
           }
   );
 

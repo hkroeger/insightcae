@@ -39,7 +39,6 @@ void IQVTKCADModel3DViewerPanning::pan(int x, int y)
 {
     if (hasLastMouseLocation())
     {
-        vtkRenderWindowInteractor* rwi = viewer().interactor();
 
         double viewFocus[4], focalDepth, viewPoint[3];
         double newPickPoint[4], oldPickPoint[4], motionVector[3];
@@ -76,12 +75,13 @@ void IQVTKCADModel3DViewerPanning::pan(int x, int y)
         camera->SetPosition(
                     motionVector[0] + viewPoint[0], motionVector[1] + viewPoint[1], motionVector[2] + viewPoint[2]);
 
+        vtkRenderWindowInteractor* rwi = viewer().interactor();
         if (rwi->GetLightFollowCamera())
         {
             viewer().renderer()->UpdateLightsGeometryToFollowCamera();
         }
 
-        rwi->Render();
+        viewer().scheduleRedraw();
     }
 }
 
@@ -99,7 +99,7 @@ void IQVTKCADModel3DViewerPanning::start()
 
 
 
-void IQVTKCADModel3DViewerPanning::onMouseMove
+bool IQVTKCADModel3DViewerPanning::onMouseMove
 (
         Qt::MouseButtons buttons,
         const QPoint point,
@@ -107,5 +107,5 @@ void IQVTKCADModel3DViewerPanning::onMouseMove
 )
 {
     pan(point.x(), point.y());
-    ViewWidgetAction<IQVTKCADModel3DViewer>::onMouseMove(buttons, point, curFlags);
+    return ViewWidgetAction<IQVTKCADModel3DViewer>::onMouseMove(buttons, point, curFlags);
 }

@@ -67,9 +67,9 @@ int main(int, char*argv[])
         csk->resolveConstraints();
 
         std::cout<<"solution=\n======================\n"<<std::endl;
-        for (const auto& g: csk->geometry())
+        for (const auto& g: *csk)
         {
-            if (auto sp = std::dynamic_pointer_cast<SketchPoint>(g))
+            if (auto sp = std::dynamic_pointer_cast<SketchPoint>(g.second))
             {
                 arma::mat p2 = sp->coords2D();
                 std::cout<<p2.t()<<std::endl;

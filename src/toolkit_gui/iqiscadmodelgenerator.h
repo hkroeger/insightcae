@@ -29,7 +29,8 @@ Q_SIGNALS:
   void createdVariable    (const QString& sn, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
   void createdFeature     (const QString& sn, insight::cad::FeaturePtr sm, bool is_component,
                            boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank(),
-                           QColor color = QColor() );
+                           QColor color = QColor(),
+                           const std::vector<std::string>& assocParamPaths = {} );
   void createdDatum       (const QString& sn, insight::cad::DatumPtr dm, bool initialVisibility=false);
   void createdEvaluation  (const QString& sn, insight::cad::PostprocActionPtr em, bool visible);
   void createdDataset     (const QString& sn, vtkSmartPointer<vtkDataObject> ds, bool visible);

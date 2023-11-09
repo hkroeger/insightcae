@@ -1,6 +1,8 @@
 
+#include "base/parameters/subsetparameter.h"
 #include "iqcaditemmodel.h"
 #include "iqcadmodel3dviewer.h"
+#include "iqparametersetmodel.h"
 
 #include "datum.h"
 #include "iqvtkcadmodel3dviewer.h"
@@ -81,6 +83,62 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                                     setStaticModelStep(name.toStdString(), true);
                                 }) );
                     cm.addAction(a);
+                }
+            }
+
+
+            if (associatedParameterSetModel_)
+            {
+                auto viz=featureVisibility_.find(name.toStdString());
+                if (viz!=featureVisibility_.end())
+                {
+                    if (viz->second.assocParamPaths.size())
+                    {
+                        QList<QAction*> editActions;
+
+                        std::function<void(IQParameter* p)> addEditActions;
+                        addEditActions = [&](IQParameter* p)
+                        {
+                            if (!dynamic_cast<const insight::SubsetParameter*>(&p->parameter()))
+                            {
+                                auto a=new QAction(p->name(), &cm);
+                                connect(
+                                    a, &QAction::triggered, a,
+                                    [p,viewer]()
+                                    {
+                                        QDialog dlg;
+                                        p->populateEditControls(&dlg, viewer);
+                                        dlg.exec();
+                                    }
+                                );
+                                editActions.append(a);
+                            }
+
+                            for (auto& cp: *p)
+                            {
+                                addEditActions(cp);
+                            }
+                        };
+
+                        for (auto& ap: viz->second.assocParamPaths)
+                        {
+                            auto psm = parameterSetModel(associatedParameterSetModel_);
+                            auto pi = psm->indexFromParameterPath(ap);
+                            auto iqp = psm->parameterFromIndex(pi);
+
+                            addEditActions(iqp);
+                        }
+
+                        if (editActions.size())
+                        {
+                            cm.addSeparator();
+                            for (auto a: qAsConst(editActions))
+                            {
+                                cm.addAction(a);
+                            }
+                            cm.addSeparator();
+                        }
+                    }
                 }
             }
         }

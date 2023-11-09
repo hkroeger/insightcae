@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
                 }
                 else if (cargs.size()==3)
                 {
-                    parameters.get<SubParameterSet>(cargs[2]).subsetRef().readFromFile(cargs[0], cargs[1]);
+                    parameters.getParameter(cargs[2]).readFromFile(cargs[0], cargs[1]);
                 }
                 else
                 {

@@ -76,6 +76,7 @@ size_t Bar::calcHash() const
   h+=miterangle1_vert_->value();
   h+=miterangle0_hor_->value();
   h+=miterangle1_hor_->value();
+  if (attractPt_) h+=attractPt_->value();
   return h.getHash();
 }
 
@@ -176,6 +177,19 @@ void Bar::build()
         );
         
         auto xsect=Transform::create(xsec_, tr.Inverted());
+
+
+        if (attractPt_)
+        {
+            auto vidx=xsect->query_vertices("maximal(dist(loc,%m0))", {attractPt_});
+            insight::assertion(
+                vidx.size()>0,
+                "no reference vertex found!");
+
+            auto pzero = vec3(BRep_Tool::Pnt(xsect->vertex(*vidx.begin())));
+            xsect=Transform::create(xsect, cad::matconst(-(pzero-p0)));
+        }
+
         providedSubshapes_["xsec"]=xsect;
         providedSubshapes_["spine"]=Line::create(matconst(p0), matconst(p1));
         TopoDS_Shape xsecs = *xsect;
@@ -244,7 +258,8 @@ Bar::Bar
   FeaturePtr xsec, VectorPtr vert, 
   ScalarPtr ext0, ScalarPtr ext1,
   ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
-  ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
+  ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor,
+    VectorPtr attractPt
 )
 : endPts_(endPts),
   xsec_(xsec),
@@ -254,7 +269,8 @@ Bar::Bar
   miterangle0_vert_(miterangle0_vert),
   miterangle1_vert_(miterangle1_vert),
   miterangle0_hor_(miterangle0_hor),
-  miterangle1_hor_(miterangle1_hor)
+  miterangle1_hor_(miterangle1_hor),
+    attractPt_(attractPt)
 {
 }
 
@@ -266,7 +282,8 @@ Bar::Bar
   EndPoints endPts,
   FeaturePtr xsec, VectorPtr vert, 
   const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0, 
-  const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
+  const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1,
+    VectorPtr attractPt
 )
 : endPts_(endPts),
   xsec_(xsec),
@@ -276,7 +293,8 @@ Bar::Bar
   miterangle0_vert_(boost::fusion::at_c<1>(ext_miterv_miterh0)),
   miterangle1_vert_(boost::fusion::at_c<1>(ext_miterv_miterh1)),
   miterangle0_hor_(boost::fusion::at_c<2>(ext_miterv_miterh0)),
-  miterangle1_hor_(boost::fusion::at_c<2>(ext_miterv_miterh1))
+  miterangle1_hor_(boost::fusion::at_c<2>(ext_miterv_miterh1)),
+    attractPt_(attractPt)
 {
 }
 
@@ -291,7 +309,8 @@ std::shared_ptr<Bar> Bar::create_condensed
     VectorPtr p0, VectorPtr p1,
     FeaturePtr xsec, VectorPtr vert,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
+    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1,
+    VectorPtr attractPt
 )
 {
     return std::shared_ptr<Bar>( new Bar
@@ -299,7 +318,8 @@ std::shared_ptr<Bar> Bar::create_condensed
                    std::make_pair(p0, p1),
                    xsec, vert,
                    ext_miterv_miterh0,
-                   ext_miterv_miterh1
+                   ext_miterv_miterh1,
+                    attractPt
                )
            );
 }
@@ -310,7 +330,8 @@ std::shared_ptr<Bar> Bar::create_derived
     FeaturePtr skel,
     FeaturePtr xsec, VectorPtr vert,
     const EndPointMod& epm0,
-    const EndPointMod& epm1
+    const EndPointMod& epm1,
+    VectorPtr attractPt
 )
 {
     return std::shared_ptr<Bar>( new Bar
@@ -322,7 +343,9 @@ std::shared_ptr<Bar> Bar::create_derived
                     {epm0.ext, epm0.miterAngleVert, epm0.miterAngleHorz},
 
                    boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>
-                    {epm1.ext, epm1.miterAngleVert, epm1.miterAngleHorz}
+                    {epm1.ext, epm1.miterAngleVert, epm1.miterAngleHorz},
+
+                    attractPt
                )
             );
 }
@@ -340,6 +363,7 @@ void Bar::operator=(const Bar& o)
   miterangle1_vert_=o.miterangle1_vert_;
   miterangle0_hor_=o.miterangle0_hor_;
   miterangle1_hor_=o.miterangle1_hor_;
+  attractPt_=o.attractPt_;
   Feature::operator=(o);
 }
 
@@ -430,24 +454,29 @@ void Bar::insertrule(parser::ISCADParser& ruleset)
                                           >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
                           >> ','
                           >> ruleset.r_solidmodel_expression >> ',' // 5
-                          >> ruleset.r_vectorExpression >> // 6
+                          >> ruleset.r_vectorExpression // 6
+                        >> ( ( ',' > ruleset.r_vectorExpression) | qi::attr(VectorPtr()) ) >> // 7
                           ')' )
                         [ qi::_val = phx::bind(&Bar::create_condensed,
                                          qi::_1, qi::_3,
                                          qi::_5, qi::_6,
-                                         qi::_2, qi::_4
+                                         qi::_2, qi::_4,
+                                              qi::_7
                                      ) ]
                     |
                     (
                             ruleset.r_solidmodel_expression > ','// 1
                          > ( ( qi::lit("start") > *r_endpt > ',' ) | qi::attr(EndPointMod()) )
                          > ( ( qi::lit("end") > *r_endpt > ',' ) | qi::attr(EndPointMod()) )
-                         > ruleset.r_solidmodel_expression > ',' // 5
-                         > ruleset.r_vectorExpression > ')' )
+                         > ruleset.r_solidmodel_expression > ',' // 4
+                         > ruleset.r_vectorExpression // 5
+                       > ( ( ',' > ruleset.r_vectorExpression) | qi::attr(VectorPtr()) ) //6
+                         > ')' )
                      [ qi::_val = phx::bind(&Bar::create_derived,
                                                              qi::_1,
                                                              qi::_4, qi::_5,
-                                                             qi::_2, qi::_3
+                                                             qi::_2, qi::_3,
+                                                             qi::_6
                                                          ) ] )
                 ) ))
     );

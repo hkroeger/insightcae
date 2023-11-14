@@ -130,13 +130,11 @@ private:
           if (ss->second==value)
           {
               // is present and the same
-              qDebug()<<"trigger entity update"<<QString::fromStdString(name)<<i;
               Q_EMIT dataChanged(ie, ie, {Qt::EditRole});
           }
           else
           {
               // replace
-              qDebug()<<"replaceEntity"<<QString::fromStdString(name)<<i;
               modeladdfunc(name, value);
               Q_EMIT dataChanged(ie, ie, {Qt::EditRole});
           }
@@ -145,7 +143,6 @@ private:
       {
           // insert new
           auto newrow = insight::predictInsertionLocation(s, name);
-          qDebug()<<"addEntity"<<QString::fromStdString(name)<<newrow;
           beginInsertRows(index(esect, 0), newrow, newrow);
           modeladdfunc(name, value);
           endInsertRows();
@@ -163,7 +160,6 @@ private:
       auto idx = eidxfunc(name);
       if (idx.isValid())
       {
-          qDebug()<<"removeEntity"<<QString::fromStdString(name)<<idx.row();
           beginRemoveRows(index(esect, 0), idx.row(), idx.row());
           modelremovefunc(name);
           endRemoveRows();

@@ -330,6 +330,19 @@ std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
   return os;
 }
 
+FeatureSetPtr makeVertexFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
+{
+  auto data=expression.empty() ? feat->allVertices()->data() : feat->query_vertices(expression, refs);
+  std::vector<FeatureID> data2;
+  std::copy(data.begin(), data.end(), std::back_inserter(data2));
+  return std::make_shared<FeatureSet>(
+      feat,
+      EntityType::Vertex,
+      data2
+      );
+}
+
+
 FeatureSetPtr makeEdgeFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
 {
   auto data=expression.empty() ? feat->allEdges()->data() : feat->query_edges(expression, refs);

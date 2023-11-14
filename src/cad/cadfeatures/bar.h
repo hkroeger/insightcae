@@ -53,6 +53,7 @@ private:
   ScalarPtr miterangle1_vert_;
   ScalarPtr miterangle0_hor_; 
   ScalarPtr miterangle1_hor_;
+  VectorPtr attractPt_;
 
   virtual size_t calcHash() const;
   virtual void build();
@@ -72,7 +73,8 @@ private:
     FeaturePtr xsec, VectorPtr vert,
     ScalarPtr ext0, ScalarPtr ext1,
     ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
-    ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
+    ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor,
+    VectorPtr attractPt
   );
 
   Bar
@@ -80,7 +82,8 @@ private:
     EndPoints endPts,
     FeaturePtr xsec, VectorPtr vert,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
+    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1,
+    VectorPtr attractPt
   );
 
 
@@ -94,7 +97,8 @@ public:
     VectorPtr p0, VectorPtr p1, 
     FeaturePtr xsec, VectorPtr vert,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
+    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1,
+    VectorPtr attractPt
   );
 
   static std::shared_ptr<Bar> create_derived
@@ -102,7 +106,8 @@ public:
     FeaturePtr skel,
     FeaturePtr xsec, VectorPtr vert,
     const EndPointMod& ext_miterv_miterh0,
-    const EndPointMod& ext_miterv_miterh1
+    const EndPointMod& ext_miterv_miterh1,
+    VectorPtr attractPt
   );
 
   void operator=(const Bar& o);

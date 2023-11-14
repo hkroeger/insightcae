@@ -4,8 +4,9 @@
 #include "parametereditorwidget.h"
 
 #include <QVBoxLayout>
-
-
+#include <QHBoxLayout>
+#include <QComboBox>
+#include <QLabel>
 
 
 void SketchEntityMultiSelection::showParameterEditor()
@@ -17,6 +18,46 @@ void SketchEntityMultiSelection::showParameterEditor()
 
     auto lo = new QVBoxLayout;
     pew_->setLayout(lo);
+
+
+    auto l=new QHBoxLayout;
+    l->addWidget(new QLabel("Layer"));
+    auto *layEd=new QComboBox;
+    layEd->setEditable(true);
+
+    auto ln = editor_->layers();
+    for (auto& l: ln)
+    {
+        layEd->addItem(QString::fromStdString(l));
+    }
+
+    l->addWidget(layEd);
+    lo->addLayout(l);
+
+    std::unique_ptr<std::string> commonLayerName;
+    for (auto& ee: *this)
+    {
+        auto e = ee.lock();
+        if (!commonLayerName)
+            commonLayerName.reset(new std::string(e->layerName()));
+        else
+        {
+            if (*commonLayerName!=e->layerName())
+                *commonLayerName="";
+        }
+    }
+    if (commonLayerName)
+        layEd->setEditText(QString::fromStdString(*commonLayerName));
+
+    connect(layEd, &QComboBox::currentTextChanged,
+            [this](const QString& newLayerName) {
+                for (auto& ee: *this)
+                {
+                    auto e = ee.lock();
+                    e->setLayerName(newLayerName.toStdString());
+                }
+                editor_.sketchChanged();
+            });
 
     auto tree=new QTreeView;
     lo->addWidget(tree);

@@ -49,6 +49,12 @@ public:
         std::string::iterator,
         std::string(),
         insight::cad::parser::skip_grammar
+        > r_label;
+
+    boost::spirit::qi::rule<
+        std::string::iterator,
+        std::string(),
+        insight::cad::parser::skip_grammar
         > r_parameters;
 
     boost::spirit::qi::rule<

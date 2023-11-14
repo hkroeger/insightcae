@@ -36,7 +36,7 @@ class Line
     VectorPtr p0_, p1_;
     bool second_is_dir_;
 
-    Line ( VectorPtr p0, VectorPtr p1, bool second_is_dir=false );
+    Line ( VectorPtr p0, VectorPtr p1, bool second_is_dir=false, const std::string& layerName=std::string() );
 
     size_t calcHash() const override;
     void build() override;

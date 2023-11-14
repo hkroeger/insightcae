@@ -54,6 +54,8 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
         | qi::attr(std::string())
         );
 
+    r_label = qi::lexeme[ qi::alpha >> *(qi::alnum | qi::char_('_')) >> !(qi::alnum | '_') ];
+
     r_point =
         qi::int_
             [ qi::_val = phx::bind(&ConstrainedSketch::get<Vector>, sk, qi::_1) ]

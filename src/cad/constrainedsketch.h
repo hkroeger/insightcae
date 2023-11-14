@@ -118,6 +118,8 @@ public:
 
     arma::mat sketchBoundingBox() const;
 
+    std::set<std::string> layers() const;
+
 };
 
 

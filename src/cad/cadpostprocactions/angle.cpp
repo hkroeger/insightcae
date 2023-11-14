@@ -96,8 +96,11 @@ size_t AngleConstraint::calcHash() const
 }
 
 
-AngleConstraint::AngleConstraint(VectorPtr p1, VectorPtr p2, VectorPtr pCtr, double targetValue)
-    : Angle(p1, p2, pCtr)
+AngleConstraint::AngleConstraint(
+    VectorPtr p1, VectorPtr p2, VectorPtr pCtr,
+    double targetValue, const std::string& layerName)
+  : ConstrainedSketchEntity(layerName),
+    Angle(p1, p2, pCtr)
 {
     changeDefaultParameters(
                 ParameterSet({
@@ -159,6 +162,7 @@ void AngleConstraint::generateScriptCommand(
             + pointSpec(p2_, script, entityLabels)
             + ", "
             + pointSpec(pCtr_, script, entityLabels)
+            + ", layer " + layerName()
             + parameterString()
             + ")"
         );
@@ -177,12 +181,14 @@ void AngleConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefau
              > ruleset.r_point > ','
              > ruleset.r_point > ','
              > ruleset.r_point
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')'
              )
            [ qi::_a = phx::bind(
-                 &AngleConstraint::create<VectorPtr, VectorPtr, VectorPtr, double>, qi::_2, qi::_3, qi::_4, 1.0),
-             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, boost::filesystem::path(".")),
+                 &AngleConstraint::create<VectorPtr, VectorPtr, VectorPtr, double, const std::string&>,
+                    qi::_2, qi::_3, qi::_4, 1.0, qi::_5),
+             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
              qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }

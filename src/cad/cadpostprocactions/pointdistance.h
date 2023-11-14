@@ -74,7 +74,8 @@ class DistanceConstraint
     size_t calcHash() const override;
 
 
-    DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal, double targetValue);
+    DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
+                       double targetValue, const std::string& layerName = std::string());
     DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal);
 
 public:

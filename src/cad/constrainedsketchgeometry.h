@@ -31,6 +31,8 @@ class ConstrainedSketchEntity
 {
     insight::ParameterSet parameters_, defaultParameters_;
 
+    std::string layerName_;
+
 public:
     declareType("ConstrainedSketchEntity");
 
@@ -40,11 +42,15 @@ public:
         LIST(ConstrainedSketchGrammar&, MakeDefaultGeometryParametersFunction),
         LIST(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf));
 
+    ConstrainedSketchEntity(const std::string& layerName = std::string());
     virtual ~ConstrainedSketchEntity();
 
     virtual int nDoF() const;
     virtual double getDoFValue(unsigned int iDoF) const;
     virtual void setDoFValue(unsigned int iDoF, double value);
+
+    const std::string& layerName() const;
+    void setLayerName(const std::string& layerName);
 
     virtual int nConstraints() const;
     virtual double getConstraintError(unsigned int iConstraint) const;

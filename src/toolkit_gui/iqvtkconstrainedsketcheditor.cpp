@@ -24,11 +24,13 @@
 #include <QFormLayout>
 #include <QDoubleValidator>
 #include <QComboBox>
+#include <QTableView>
 
 #include "iqvtkconstrainedsketcheditor/iqvtkfixedpoint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkpointoncurveconstraint.h"
+#include "iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.h"
 
 #include "base/qt5_helper.h"
 #include "datum.h"
@@ -240,6 +242,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
                     (*this)->invalidate();
                     this->updateActors();
+                    Q_EMIT sketchChanged();
                 }
             }
     );
@@ -305,6 +308,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             (*this)->insertGeometry(lc);
                             (*this)->invalidate();
                             this->updateActors();
+                            Q_EMIT sketchChanged();
                         }
                     }
                 }
@@ -328,6 +332,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             (*this)->insertGeometry(lc);
                             (*this)->invalidate();
                             this->updateActors();
+                            Q_EMIT sketchChanged();
                         }
                     }
                 }
@@ -358,6 +363,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             (*this)->insertGeometry(c);
                             (*this)->invalidate();
                             this->updateActors();
+                            Q_EMIT sketchChanged();
                         }
                     }
                 }
@@ -394,6 +400,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             (*this)->insertGeometry(lc);
                             (*this)->invalidate();
                             this->updateActors();
+                            Q_EMIT sketchChanged();
                         }
                     }
                 }
@@ -428,6 +435,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                     (*this)->insertGeometry(dc);
                     (*this)->invalidate();
                     this->updateActors();
+                    Q_EMIT sketchChanged();
                 }
             }
         }
@@ -465,6 +473,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                     (*this)->eraseGeometry(p1);
                     (*this)->invalidate();
                     this->updateActors();
+                    Q_EMIT sketchChanged();
                 }
             }
         }
@@ -488,6 +497,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 }
                 (*this)->invalidate();
                 this->updateActors();
+                Q_EMIT sketchChanged();
             }
         }
     );
@@ -513,6 +523,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         css.solver_=newsol;
                         (*this)->changeSolverSettings(css);
                         solve();
+                        Q_EMIT sketchChanged();
                     }
                 }
                 );
@@ -532,6 +543,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         css.tolerance_=newtol;
                         (*this)->changeSolverSettings(css);
                         solve();
+                        Q_EMIT sketchChanged();
                     }
                 }
         );
@@ -551,6 +563,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         css.relax_=newrelax;
                         (*this)->changeSolverSettings(css);
                         solve();
+                        Q_EMIT sketchChanged();
                     }
                 }
                 );
@@ -570,12 +583,27 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         css.maxIter_=newmaxiter;
                         (*this)->changeSolverSettings(css);
                         solve();
+                        Q_EMIT sketchChanged();
                     }
                 }
                 );
         l->addRow("max. iterations", maxiteredit);
     }
-
+    {
+        auto  layerlist = new QTableView;
+        auto *model=new IQConstrainedSketchLayerListModel(this, this);
+        model->update();
+        connect(this, &IQVTKConstrainedSketchEditor::sketchChanged,
+                model, &IQConstrainedSketchLayerListModel::update);
+        connect(model, &IQConstrainedSketchLayerListModel::hideLayer,
+                this, &IQVTKConstrainedSketchEditor::hideLayer);
+        connect(model, &IQConstrainedSketchLayerListModel::showLayer,
+                this, &IQVTKConstrainedSketchEditor::showLayer);
+        connect(model, &IQConstrainedSketchLayerListModel::renameLayer,
+                this, &IQVTKConstrainedSketchEditor::renameLayer);
+        layerlist->setModel(model);
+        l->addRow("Layers", layerlist);
+    }
     setLayout(l);
 
     viewer.commonToolBox()->addItem(this, "Sketch");
@@ -655,6 +683,11 @@ void IQVTKConstrainedSketchEditor::deleteEntity(std::weak_ptr<insight::cad::Cons
     auto gptr=td.lock();
     remove(gptr);
     (*this)->eraseGeometry(gptr);
+}
+
+bool IQVTKConstrainedSketchEditor::layerIsVisible(const std::string &layerName) const
+{
+    return hiddenLayers_.count(layerName)==0;
 }
 
 
@@ -759,14 +792,19 @@ void IQVTKConstrainedSketchEditor::updateActors()
   }
 
 
+  // through all geom elements
   for (const auto& g: **this)
   {
+      // remove, if displayed already
       auto i=sketchGeometryActors_.find(g.second);
       if (i!=sketchGeometryActors_.end())
       {
           remove(g.second);
       }
-      add(g.second);
+
+      // add, if not filtered
+      if (hiddenLayers_.count(g.second->layerName())==0)
+        add(g.second);
   }
 
   for (const auto& sga: sketchGeometryActors_)
@@ -780,4 +818,43 @@ void IQVTKConstrainedSketchEditor::updateActors()
   }
 
   viewer().scheduleRedraw();
+}
+
+
+
+
+void IQVTKConstrainedSketchEditor::hideLayer(const std::string &layerName)
+{
+  if (layerIsVisible(layerName))
+  {
+      hiddenLayers_.insert(layerName);
+      updateActors();
+  }
+}
+
+void IQVTKConstrainedSketchEditor::showLayer(const std::string &layerName)
+{
+  if (!layerIsVisible(layerName))
+  {
+      hiddenLayers_.erase(layerName);
+      updateActors();
+  }
+}
+
+void IQVTKConstrainedSketchEditor::renameLayer(
+    const std::string &currentLayerName,
+    const std::string &newLayerName )
+{
+  for (auto& g: **this)
+  {
+      auto feat=g.second;
+      if (feat->layerName()==currentLayerName)
+        feat->setLayerName(newLayerName);
+  }
+  if (hiddenLayers_.count(currentLayerName))
+  {
+      hiddenLayers_.erase(currentLayerName);
+      hiddenLayers_.insert(newLayerName);
+  }
+  Q_EMIT sketchChanged();
 }

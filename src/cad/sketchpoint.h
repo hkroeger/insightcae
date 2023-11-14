@@ -22,7 +22,7 @@ class SketchPoint
 public:
     declareType("SketchPoint");
 
-    SketchPoint(DatumPtr plane, double x, double y);
+    SketchPoint(DatumPtr plane, double x, double y, const std::string& layerName = std::string());
     void setCoords2D(double x, double y);
     arma::mat coords2D() const;
     arma::mat value() const override;

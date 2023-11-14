@@ -11,7 +11,7 @@ class IQVTKFixedPoint
     insight::cad::SketchPointPtr p_;
 
     IQVTKFixedPoint(
-        insight::cad::SketchPointPtr p  );
+        insight::cad::SketchPointPtr p, const std::string& layerName=std::string()  );
 
 public:
     declareType("FixedPoint");

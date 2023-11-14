@@ -10,7 +10,9 @@ class IQVTKVerticalConstraint
 {
     std::shared_ptr<insight::cad::Line> line_;
 
-    IQVTKVerticalConstraint(std::shared_ptr<insight::cad::Line> line);
+    IQVTKVerticalConstraint(
+        std::shared_ptr<insight::cad::Line> line,
+        const std::string& layerName = std::string() );
 
 public:
     declareType("VerticalConstraint");

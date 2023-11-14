@@ -11,7 +11,7 @@ class IQVTKHorizontalConstraint
 {
     std::shared_ptr<insight::cad::Line> line_;
 
-    IQVTKHorizontalConstraint(std::shared_ptr<insight::cad::Line> line);
+    IQVTKHorizontalConstraint(std::shared_ptr<insight::cad::Line> line, const std::string& layerName = std::string());
 
 public:
     declareType("HorizontalConstraint");

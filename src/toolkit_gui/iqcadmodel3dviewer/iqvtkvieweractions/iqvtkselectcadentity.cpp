@@ -108,25 +108,33 @@ void CADEntityMultiSelection::insert(
 //            }
 
             auto featPtr = boost::get<insight::cad::FeaturePtr>(&entity);
+            IQFilteredParameterSetModel *spm=nullptr;
+
             if ( (size() == 1) && featPtr )
             {
-                if (!pe_) showParameterEditor();
-
-                auto index = viewer_.cadmodel()->modelstepIndexFromValue( *featPtr );
-                std::vector<std::string> paramList;
-                std::string assocPs=
-                    index.siblingAtColumn(IQCADItemModel::assocParamPathsCol)
-                                          .data()
-                                          .toString()
-                                          .toStdString();
-                boost::split(
-                    paramList, assocPs,
-                    boost::is_any_of(":") );
-                auto *spm=new IQFilteredParameterSetModel(paramList, pe_);
-                spm->setSourceModel(viewer_.cadmodel()->associatedParameterSetModel());
-                pe_->setModel(spm);
+                if (auto apsm = viewer_.cadmodel()->associatedParameterSetModel())
+                {
+                    auto index = viewer_.cadmodel()->modelstepIndexFromValue( *featPtr );
+                    std::vector<std::string> paramList;
+                    std::string assocPs=
+                        index.siblingAtColumn(IQCADItemModel::assocParamPathsCol)
+                                              .data()
+                                              .toString()
+                                              .toStdString();
+                    boost::split(
+                        paramList, assocPs,
+                        boost::is_any_of(":") );
+                    if (paramList.size())
+                    {
+                        if (!pe_) showParameterEditor();
+                        spm=new IQFilteredParameterSetModel(paramList, pe_);
+                        spm->setSourceModel(apsm);
+                        pe_->setModel(spm);
+                    }
+                }
             }
-            else
+
+            if (!spm && pe_)
             {
                 removeParameterEditor();
             }

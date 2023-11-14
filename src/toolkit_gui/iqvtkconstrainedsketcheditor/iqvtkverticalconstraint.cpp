@@ -12,8 +12,10 @@ using namespace insight::cad;
 defineType(IQVTKVerticalConstraint);
 
 IQVTKVerticalConstraint::IQVTKVerticalConstraint(
-    std::shared_ptr<insight::cad::Line> line )
-    : line_(line)
+    std::shared_ptr<insight::cad::Line> line,
+    const std::string& layerName )
+  : IQVTKConstrainedSketchEntity(layerName),
+    line_(line)
 {}
 
 std::vector<vtkSmartPointer<vtkProp> >
@@ -69,6 +71,7 @@ void IQVTKVerticalConstraint::generateScriptCommand(
         type() + "( "
             + boost::lexical_cast<std::string>(myLabel) + ", "
             + boost::lexical_cast<std::string>(entityLabels.at(line_.get()))
+            + ", layer " + layerName()
             + parameterString()
             + ")"
         );
@@ -91,13 +94,14 @@ void IQVTKVerticalConstraint::addParserRule(
             ( '('
              > qi::int_ > ','
              > qi::int_
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')'
          )
           [ qi::_a = phx::bind(
-                 &IQVTKVerticalConstraint::create<std::shared_ptr<Line> >,
-                 phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2) ),
-            phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_3, "."),
+                 &IQVTKVerticalConstraint::create<std::shared_ptr<Line>, const std::string& >,
+                 phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2), qi::_3 ),
+            phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
             qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }

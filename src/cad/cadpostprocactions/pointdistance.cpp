@@ -101,8 +101,11 @@ size_t DistanceConstraint::calcHash() const
 }
 
 
-DistanceConstraint::DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal, double targetValue)
-    : Distance(p1, p2),
+DistanceConstraint::DistanceConstraint(
+    VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
+    double targetValue, const std::string& layerName)
+    : ConstrainedSketchEntity(layerName),
+    Distance(p1, p2),
     planeNormal_(planeNormal)
 {
     changeDefaultParameters(
@@ -168,6 +171,7 @@ void DistanceConstraint::generateScriptCommand(
             + pointSpec(p1_, script, entityLabels)
             + ", "
             + pointSpec(p2_, script, entityLabels)
+            + ", layer " + layerName()
             + parameterString()
             + ")"
         );
@@ -184,14 +188,16 @@ void DistanceConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDe
              > qi::int_ > ','
              > ruleset.r_point > ','
              > ruleset.r_point
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')'
              )
                [ qi::_a = phx::bind(
-                     &DistanceConstraint::create<VectorPtr, VectorPtr, VectorPtr, double>, qi::_2, qi::_3,
-                        phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
-                        1.0),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, boost::filesystem::path(".")),
+                 &DistanceConstraint::create<VectorPtr, VectorPtr, VectorPtr, double, const std::string&>,
+                   qi::_2, qi::_3,
+                   phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
+                   1.0, qi::_4 ),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }

@@ -12,6 +12,7 @@ class IQVTKConstrainedSketchEntity
     : public insight::cad::ConstrainedSketchEntity
 {
 public:
+    IQVTKConstrainedSketchEntity(const std::string& layerName=std::string());
     virtual std::vector<vtkSmartPointer<vtkProp> > createActor() const =0;
 };
 

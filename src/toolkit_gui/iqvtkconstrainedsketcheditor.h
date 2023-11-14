@@ -50,6 +50,8 @@ private:
 
     std::unique_ptr<IQVTKCADModel3DViewer::ExposeItem> transparency_;
 
+    std::set<std::string> hiddenLayers_;
+
 
     void add(insight::cad::ConstrainedSketchEntityPtr);
     void remove(insight::cad::ConstrainedSketchEntityPtr);
@@ -79,6 +81,7 @@ public:
         findSketchElementOfActor(vtkProp *actor) const;
 
     void deleteEntity(std::weak_ptr<insight::cad::ConstrainedSketchEntity> td);
+    bool layerIsVisible(const std::string &layerName) const;
 
     bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key ) override;
     bool onMouseMove
@@ -91,6 +94,12 @@ public:
 
 public Q_SLOTS:
     void updateActors();
+    void hideLayer(const std::string& layerName);
+    void showLayer(const std::string& layerName);
+    void renameLayer(const std::string& currentLayerName, const std::string& newLayerName);
+
+Q_SIGNALS:
+    void sketchChanged();
 
 };
 

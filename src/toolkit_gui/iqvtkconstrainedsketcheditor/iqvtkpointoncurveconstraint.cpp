@@ -11,8 +11,10 @@ defineType(IQVTKPointOnCurveConstraint);
 
 IQVTKPointOnCurveConstraint::IQVTKPointOnCurveConstraint(
     std::shared_ptr<insight::cad::SketchPoint> p,
-    std::shared_ptr<insight::cad::Feature> curve )
-    : p_(p),
+    std::shared_ptr<insight::cad::Feature> curve,
+    const std::string& layerName )
+    : IQVTKConstrainedSketchEntity(layerName),
+    p_(p),
     curve_(curve)
 {}
 
@@ -84,6 +86,7 @@ void IQVTKPointOnCurveConstraint::generateScriptCommand(
             + boost::lexical_cast<std::string>(myLabel) + ", "
             + boost::lexical_cast<std::string>(entityLabels.at(sc.get())) + ", "
             + pointSpec(p_, script, entityLabels)
+            + ", layer " + layerName()
             + parameterString()
             + ")"
         );
@@ -107,14 +110,15 @@ void IQVTKPointOnCurveConstraint::addParserRule(
              > qi::int_ > ','
              > qi::int_ > ','
              > qi::int_
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')'
          )
          [ qi::_a = phx::bind(
-                 &IQVTKPointOnCurveConstraint::create<SketchPointPtr, FeaturePtr>,
+                 &IQVTKPointOnCurveConstraint::create<SketchPointPtr, FeaturePtr, const std::string&>,
                  phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_3),
-                 phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2) ),
-             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
+                 phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2), qi::_4 ),
+             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
              qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }

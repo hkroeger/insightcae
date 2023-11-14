@@ -1968,7 +1968,7 @@ void IQVTKCADModel3DViewer::setScale(double s)
       ren_->UpdateLightsGeometryToFollowCamera();
     }
 
-    ren_->Render();
+    scheduleRedraw();
 }
 
 bool IQVTKCADModel3DViewer::pickAtCursor(bool extendSelection)
@@ -2099,8 +2099,6 @@ void IQVTKCADModel3DViewer::wheelEvent( QWheelEvent* e )
 
 void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
 {
-    insight::dbg()<<"key press event"<<std::endl;
-
     IQCADModel3DViewer::keyPressEvent(e);
 
     if (e->key() == Qt::Key_Escape)
@@ -2124,8 +2122,6 @@ void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
 
 void IQVTKCADModel3DViewer::keyReleaseEvent( QKeyEvent* e )
 {
-    insight::dbg()<<"key release event"<<std::endl;
-
     IQCADModel3DViewer::keyReleaseEvent(e);
 
     bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());

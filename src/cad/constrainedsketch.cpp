@@ -464,6 +464,18 @@ arma::mat ConstrainedSketch::sketchBoundingBox() const
 }
 
 
+std::set<std::string> ConstrainedSketch::layers() const
+{
+    std::set<std::string> l;
+    std::transform(
+        geometry_.begin(), geometry_.end(),
+        std::inserter(l, l.begin()),
+        [](const GeometryMap::value_type& gv) { return gv.second->layerName(); }
+        );
+    return l;
+}
+
+
 void ConstrainedSketch::build()
 {
     ExecTimer t("ConstrainedSketch::build() ["+featureSymbolName()+"]");

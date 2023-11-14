@@ -11,8 +11,9 @@
 defineType(IQVTKFixedPoint);
 
 IQVTKFixedPoint::IQVTKFixedPoint(
-    insight::cad::SketchPointPtr p  )
-    : p_(p)
+    insight::cad::SketchPointPtr p, const std::string& layerName )
+    : IQVTKConstrainedSketchEntity(layerName),
+      p_(p)
 {
     auto c=p->coords2D();
     changeDefaultParameters(
@@ -83,6 +84,7 @@ void IQVTKFixedPoint::generateScriptCommand(
         type() + "( "
             + boost::lexical_cast<std::string>(myLabel) + ", "
             + pointSpec(p_, script, entityLabels)
+            + ", layer " + layerName()
             + parameterString()
             + ")"
         );
@@ -105,14 +107,15 @@ void IQVTKFixedPoint::addParserRule(
             ( '('
              > qi::int_ > ','
              > qi::int_
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')' )
             [
                 qi::_a = phx::bind(
-                 &IQVTKFixedPoint::create<insight::cad::SketchPointPtr>,
-                     phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_2)
+                 &IQVTKFixedPoint::create<insight::cad::SketchPointPtr, const std::string&>,
+                 phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_2), qi::_3
                  ),
-                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_3, "."),
+                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }

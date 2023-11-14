@@ -11,8 +11,12 @@ defineType(SketchPoint);
 addToStaticFunctionTable(ConstrainedSketchEntity, SketchPoint, addParserRule);
 
 
-SketchPoint::SketchPoint(DatumPtr plane, double x, double y)
-    : plane_(plane),
+SketchPoint::SketchPoint(
+    DatumPtr plane,
+    double x, double y,
+    const std::string& layerName )
+  : ConstrainedSketchEntity(layerName),
+    plane_(plane),
     x_(x), y_(y)
 {}
 
@@ -87,6 +91,7 @@ void SketchPoint::generateScriptCommand(
         type() + "( "
             + boost::lexical_cast<std::string>(myLabel) + ", "
             + str(boost::format("%g, %g")%v(0)%v(1))
+            + ", layer " + layerName()
             + parameterString()
             + ")"
         );
@@ -102,10 +107,11 @@ void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGe
             ( '('
              > qi::int_ > ','
              > qi::double_ > ',' > qi::double_
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')' )
-               [ qi::_a = parser::make_shared_<SketchPoint>()(ruleset.sketch->plane(), qi::_2, qi::_3),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
+            [ qi::_a = parser::make_shared_<SketchPoint>()(ruleset.sketch->plane(), qi::_2, qi::_3, qi::_4),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }

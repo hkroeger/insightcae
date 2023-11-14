@@ -25,13 +25,29 @@ defineStaticFunctionTableWithArgs(
     LIST(ruleset, mdpf) );
 
 
+
+
+ConstrainedSketchEntity::ConstrainedSketchEntity(
+    const std::string& layerName )
+    : layerName_( layerName.empty()?"standard":layerName)
+{}
+
+
+
+
 ConstrainedSketchEntity::~ConstrainedSketchEntity()
 {}
+
+
+
 
 int ConstrainedSketchEntity::nDoF() const
 {
     return 0;
 }
+
+
+
 
 double ConstrainedSketchEntity::getDoFValue(unsigned int iDoF) const
 {
@@ -39,21 +55,49 @@ double ConstrainedSketchEntity::getDoFValue(unsigned int iDoF) const
     return NAN;
 }
 
+
+
+
 void ConstrainedSketchEntity::setDoFValue(unsigned int iDoF, double value)
 {
     throw insight::Exception("invalid DoF index: %d", iDoF);
 }
+
+
+
+
+const std::string& ConstrainedSketchEntity::layerName() const
+{
+    return layerName_;
+}
+
+
+
+
+void ConstrainedSketchEntity::setLayerName(const std::string& layerName)
+{
+    layerName_=layerName;
+}
+
+
+
 
 int ConstrainedSketchEntity::nConstraints() const
 {
     return 0;
 }
 
+
+
+
 double ConstrainedSketchEntity::getConstraintError(unsigned int iConstraint) const
 {
     throw insight::Exception("invalid constraint index: %d", iConstraint);
     return NAN;
 }
+
+
+
 
 size_t ConstrainedSketchEntity::hash() const
 {
@@ -63,10 +107,15 @@ size_t ConstrainedSketchEntity::hash() const
     return h;
 }
 
+
+
+
 const insight::ParameterSet& ConstrainedSketchEntity::parameters() const
 {
     return parameters_;
 }
+
+
 
 
 insight::ParameterSet& ConstrainedSketchEntity::parametersRef()
@@ -74,10 +123,16 @@ insight::ParameterSet& ConstrainedSketchEntity::parametersRef()
     return parameters_;
 }
 
+
+
+
 const insight::ParameterSet& ConstrainedSketchEntity::defaultParameters() const
 {
     return defaultParameters_;
 }
+
+
+
 
 void ConstrainedSketchEntity::changeDefaultParameters(const insight::ParameterSet& ps)
 {
@@ -88,6 +143,7 @@ void ConstrainedSketchEntity::changeDefaultParameters(const insight::ParameterSe
 #warning copy values from old; merge is not the right function
     //parameters_.merge(oldps);
 }
+
 
 
 
@@ -104,6 +160,7 @@ void ConstrainedSketchEntity::parseParameterSet(const std::string &s, const boos
 //        std::cout<<parameters_<<std::endl;
     }
 }
+
 
 
 
@@ -125,6 +182,9 @@ std::string ConstrainedSketchEntity::pointSpec(
     }
 }
 
+
+
+
 std::string ConstrainedSketchEntity::parameterString() const
 {
     std::string s;
@@ -137,11 +197,16 @@ std::string ConstrainedSketchEntity::parameterString() const
 }
 
 
+
+
 bool ConstrainedSketchEntity::dependsOn(const std::weak_ptr<ConstrainedSketchEntity> &entity) const
 {
     auto deps = dependencies();
     return ( deps.find(entity) != deps.end() );
 }
+
+
+
 
 void ConstrainedSketchEntity::operator=(const ConstrainedSketchEntity &other)
 {

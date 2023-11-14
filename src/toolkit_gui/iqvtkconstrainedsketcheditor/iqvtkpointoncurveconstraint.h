@@ -16,7 +16,8 @@ class IQVTKPointOnCurveConstraint
 
     IQVTKPointOnCurveConstraint(
         std::shared_ptr<insight::cad::SketchPoint> p_,
-        std::shared_ptr<insight::cad::Feature> curve_ );
+        std::shared_ptr<insight::cad::Feature> curve_,
+        const std::string& layerName = std::string() );
 
 public:
     declareType("PointOnCurveConstraint");

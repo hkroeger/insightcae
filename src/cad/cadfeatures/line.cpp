@@ -50,6 +50,8 @@ addToStaticFunctionTable(Feature, Line, ruleDocumentation);
 addToStaticFunctionTable(ConstrainedSketchEntity, Line, addParserRule);
 
 
+
+
 size_t Line::calcHash() const
 {
   ParameterListHash h;
@@ -62,10 +64,14 @@ size_t Line::calcHash() const
 
 
 
-Line::Line(VectorPtr p0, VectorPtr p1, bool second_is_dir)
-: p0_(p0), p1_(p1),
-  second_is_dir_(second_is_dir)
+
+Line::Line(VectorPtr p0, VectorPtr p1, bool second_is_dir, const std::string& layerName)
+  : ConstrainedSketchEntity(layerName),
+    p0_(p0), p1_(p1),
+    second_is_dir_(second_is_dir)
 {}
+
+
 
 
 VectorPtr Line::start() const
@@ -73,13 +79,20 @@ VectorPtr Line::start() const
     return p0_;
 }
 
+
+
+
 VectorPtr Line::end() const
 {
     return p1_;
 }
 
+
+
+
 void Line::scaleSketch(double scaleFactor)
 {}
+
 
 
 
@@ -91,14 +104,19 @@ void Line::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "("
-            + lexical_cast<std::string>(myLabel)+", "
+            + lexical_cast<std::string>(myLabel)
+            +", "
             + pointSpec(p0_, script, entityLabels)
             + ", "
             + pointSpec(p1_, script, entityLabels)
+            + ", layer " + layerName()
             + parameterString()
             + ")"
         );
 }
+
+
+
 
 void Line::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction mdpf)
 {
@@ -108,16 +126,19 @@ void Line::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryP
             typeName,
             ( '('
              > qi::int_ > ','
-             > ruleset.r_point > ',' > ruleset.r_point
+             > ruleset.r_point > ','
+             > ruleset.r_point
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters > ')'
             )
             [   qi::_a = phx::bind(
-                        &Line::create<VectorPtr, VectorPtr, bool>, qi::_2, qi::_3, false),
+                 &Line::create<VectorPtr, VectorPtr, bool, const std::string&>, qi::_2, qi::_3, false, qi::_4),
                 phx::bind(&ConstrainedSketchEntity::changeDefaultParameters, qi::_a, phx::bind(mdpf)),
-                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, boost::filesystem::path(".")),
+                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, boost::filesystem::path(".")),
                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }
+
 
 
 
@@ -132,6 +153,9 @@ std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > Line::dependencies(
 
     return ret;
 }
+
+
+
 
 void Line::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity> &entity,
@@ -239,10 +263,13 @@ FeatureCmdInfoList Line::ruleDocumentation()
 
 
 
+
 void Line::operator=(const ConstrainedSketchEntity& other)
 {
     operator=(dynamic_cast<const Line&>(other));
 }
+
+
 
 
 void Line::operator=(const Line& other)

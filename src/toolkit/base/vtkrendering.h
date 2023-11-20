@@ -172,7 +172,7 @@ vtkSmartPointer<vtkPolyData> createArrows(
     );
 
 
-extern const std::vector<double> colorMapData_SD;
+extern const std::vector<double> colorMapData_SD, colorMapData_NICEdge;
 
 
 vtkSmartPointer<vtkLookupTable> createColorMap(

@@ -27,6 +27,11 @@ public:
     PropertyLibraryBase(const std::string& libraryName);
 
     virtual std::vector<std::string> entryList() const =0;
+
+    virtual std::string icon(const std::string&) const
+    {
+        return std::string();
+    }
 };
 
 
@@ -175,12 +180,34 @@ public:
         return label;
     }
 
+
     static const PropertyLibrary& library()
     {
         static PropertyLibrary theLibrary;
         return theLibrary;
     }
 };
+
+
+
+
+template<class PropertyLibraryEntry, const boost::filesystem::path* subDir = nullptr>
+class PropertyLibraryWithIcons
+    : public PropertyLibrary<PropertyLibraryEntry, subDir>
+{
+public:
+    std::string icon(const std::string& label) const override
+    {
+        return this->lookup(label).icon();
+    }
+
+    static const PropertyLibraryWithIcons& library()
+    {
+        static PropertyLibraryWithIcons theLibrary;
+        return theLibrary;
+    }
+};
+
 
 
 

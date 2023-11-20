@@ -61,6 +61,8 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
+    const PropertyLibraryBase* propertyLibrary() const;
+
     std::vector<std::string> items() const;
     bool contains(const std::string& value) const;
 

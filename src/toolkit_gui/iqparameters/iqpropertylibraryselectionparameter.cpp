@@ -43,6 +43,7 @@ QVBoxLayout* IQPropertyLibrarySelectionParameter::populateEditControls(
   QLabel *promptLabel = new QLabel("Selection:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto* selBox_=new QComboBox(editControlsContainer);
+
 //  connect(selBox_, &QComboBox::destroyed, this, &SelectionParameterWrapper::onDestruction);
   auto items = p.items();
   int i=0, seli=-1;
@@ -52,11 +53,22 @@ QVBoxLayout* IQPropertyLibrarySelectionParameter::populateEditControls(
       {
           seli=i;
       }
-      selBox_->addItem(s.c_str());
+
+      if (auto *pl=p.propertyLibrary())
+      {
+          auto iconp=pl->icon(s);
+          selBox_->addItem(QPixmap(QString::fromStdString(iconp)), s.c_str());
+      }
+      else
+      {
+          selBox_->addItem(s.c_str());
+      }
+
       ++i;
   }
   insight::assertion(seli!=-1,
                      "selection not found in items");
+  selBox_->setIconSize(QSize(200,150));
   selBox_->setCurrentIndex( seli );
   layout2->addWidget(selBox_);
   layout->addLayout(layout2);

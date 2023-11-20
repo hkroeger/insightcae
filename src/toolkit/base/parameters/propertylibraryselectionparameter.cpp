@@ -2,7 +2,13 @@
 
 namespace insight {
 
+
+
+
 defineType ( PropertyLibrarySelectionParameter );
+
+
+
 
 PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
         const std::string& description,
@@ -12,8 +18,10 @@ PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
         int order )
     : StringParameter ( description, isHidden, isExpert, isNecessary, order ),
       propertyLibrary_(nullptr)
-{
-}
+{}
+
+
+
 
 PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
     const PropertyLibraryBase& lib,
@@ -29,6 +37,9 @@ PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
     if (el.size()>0)
         setSelection(el.front());
 }
+
+
+
 
 PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
         const std::string& value,
@@ -46,6 +57,7 @@ PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
 
 
 
+
 bool PropertyLibrarySelectionParameter::isDifferent(const Parameter& p) const
 {
     if (const auto *plsp = dynamic_cast<const PropertyLibrarySelectionParameter*>(&p))
@@ -55,6 +67,17 @@ bool PropertyLibrarySelectionParameter::isDifferent(const Parameter& p) const
     else return false;
 }
 
+
+
+
+const PropertyLibraryBase *PropertyLibrarySelectionParameter::propertyLibrary() const
+{
+    return propertyLibrary_;
+}
+
+
+
+
 std::vector<std::string> PropertyLibrarySelectionParameter::items() const
 {
     if (propertyLibrary_)
@@ -63,11 +86,16 @@ std::vector<std::string> PropertyLibrarySelectionParameter::items() const
         return {};
 }
 
+
+
+
 bool PropertyLibrarySelectionParameter::contains(const std::string &value) const
 {
     auto l = items();
     return ( std::find(l.begin(), l.end(), value) != l.end() );
 }
+
+
 
 
 void PropertyLibrarySelectionParameter::setSelection ( const std::string& sel )
@@ -80,10 +108,16 @@ void PropertyLibrarySelectionParameter::setSelection ( const std::string& sel )
     StringParameter::set(sel);
 }
 
+
+
+
 const std::string& PropertyLibrarySelectionParameter::selection() const
 {
     return value_;
 }
+
+
+
 
 void PropertyLibrarySelectionParameter::readFromNode(
     const std::string &name,
@@ -95,6 +129,8 @@ void PropertyLibrarySelectionParameter::readFromNode(
         contains(value_),
         "invalid selection %s read from input data", value_.c_str() );
 }
+
+
 
 
 Parameter* PropertyLibrarySelectionParameter::clone() const
@@ -119,10 +155,16 @@ Parameter* PropertyLibrarySelectionParameter::clone() const
     }
 }
 
+
+
+
 void PropertyLibrarySelectionParameter::copyFrom(const Parameter& p)
 {
     operator=(dynamic_cast<const PropertyLibrarySelectionParameter&>(p));
 }
+
+
+
 
 void PropertyLibrarySelectionParameter::operator=(const PropertyLibrarySelectionParameter& op)
 {
@@ -132,9 +174,14 @@ void PropertyLibrarySelectionParameter::operator=(const PropertyLibrarySelection
 }
 
 
+
+
 int PropertyLibrarySelectionParameter::nChildren() const
 {
     return 0;
 }
+
+
+
 
 } // namespace insight

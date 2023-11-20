@@ -63,13 +63,9 @@ USER ${UID}:${GID}
 COPY async_pipe.hpp.patch /
 RUN winetricks -q dotnet45
 
-COPY mxe-master.tar.gz /
-RUN sudo tar xzf mxe-master.tar.gz; sudo rm mxe-master.tar.gz
-RUN sudo chown ${USER}:${USER} -R /mxe
-COPY build_mxe.sh  /
-RUN sudo apt-get --ignore-missing install -y python3-mako libosmesa6-dev
-RUN /build_mxe.sh
-RUN patch /mxe/usr/i686-w64-mingw32.shared/include/boost/process/detail/windows/async_pipe.hpp < /async_pipe.hpp.patch
+RUN sudo apt-get --ignore-missing install -y python3-mako libosmesa6-dev mxe
+RUN sudo chown ${USER}:${USER} -R /opt/mxe
+RUN patch /opt/mxe/usr/i686-w64-mingw32.shared/include/boost/process/detail/windows/async_pipe.hpp < /async_pipe.hpp.patch
 
 RUN sudo apt update
 RUN sudo apt install -y docker docker.io

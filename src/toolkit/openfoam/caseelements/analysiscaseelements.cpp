@@ -25,6 +25,7 @@
 #include "openfoam/openfoamtools.h"
 
 #include "base/boost_include.h"
+#include "base/translations.h"
 
 using namespace std;
 using namespace boost;
@@ -49,6 +50,45 @@ bool operator==(const std::string& s, const insight::OFDictData::data& d)
 namespace insight
 {
 
+
+std::unique_ptr<std::pair<time_t,boost::filesystem::path> >
+newestOutputFile(const path &expectedFName)
+{
+    // find newest out file
+    std::map<std::time_t, boost::filesystem::path> candidates;
+
+    auto fileNameBase = expectedFName.filename().stem().string();
+    auto fileNameExt = expectedFName.filename().extension().string();
+    auto pd = expectedFName.parent_path();
+
+    boost::regex expr(fileNameBase+"(|_.*)"+fileNameExt);
+
+    for ( directory_iterator itr( pd );
+         itr != directory_iterator(); ++itr )
+    {
+        if (!is_directory(itr->status()))
+        {
+            auto cp = itr->path();
+            if (boost::regex_match(cp.filename().string(), expr))
+            {
+                candidates[last_write_time(cp)]=cp;
+            }
+        }
+    }
+
+    if (candidates.size()<1)
+    {
+        insight::Warning( _("no valid output file was found in time directory %s!"), pd.c_str());
+    }
+    else
+    {
+        // select newest (last in list)
+        auto selectedCandidate = candidates.rbegin();
+        return std::make_unique<std::pair<time_t,boost::filesystem::path> >(*selectedCandidate);
+    }
+
+    return nullptr;
+}
 
 
 
@@ -164,7 +204,6 @@ arma::mat readAndCombineTabularFiles
 
 
 
-
 std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
 (
     const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
@@ -175,13 +214,6 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
 {
   CurrentExceptionContext ex("reading output files "+fileNamePattern+" for function object "+FOName+" (filtering out any of '"+filterChars+"')");
 
-  std::string fileNameBase, fileNameExt;
-  {
-    path fnp(fileNamePattern);
-    fileNameBase = fnp.filename().stem().string();
-    fileNameExt = fnp.filename().extension().string();
-  }
-
 
   path fp;
   if ( cm.OFversion() <170 )
@@ -190,9 +222,12 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
     fp=absolute ( caseLocation ) / "postProcessing" / FOName;
 
   if (!exists(fp))
-      throw insight::Exception("data path "+fp.string()+" of function object "+FOName+" does not exist!");
+  {
+      throw insight::Exception(
+        _("data path %s of function object %s does not exist!"),
+        fp.c_str(), FOName.c_str() );
+  }
 
-//  std::map<std::string, std::map<double, std::vector<double> > > rows; // out files are read earliest first: latest added row (last attempt) will survive
   std::map<std::string, OverlappingIntervals> intervals;
 
   // find all time directories
@@ -201,41 +236,20 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
   std::time_t lastWriteTime=0;
   for ( const auto& td: tdl ) // loop over all times, start
   {
-    // find newest out file
-    std::map<std::time_t, boost::filesystem::path> candidates;
-    boost::regex expr(fileNameBase+"(|_.*)"+fileNameExt);
-    for ( directory_iterator itr( td.second );
-            itr != directory_iterator(); ++itr )
-    {
-      if (!is_directory(itr->status()))
+      auto newest = newestOutputFile(td.second/fileNamePattern);
+      if (newest)
       {
-        auto cp = itr->path();
-        if (boost::regex_match(cp.filename().string(), expr))
-        {
-          candidates[last_write_time(cp)]=cp;
-        }
-      }
-    }
-
-    if (candidates.size()<1)
-    {
-        insight::Warning("no valid output file was found in time directory "+td.second.string()+"!");
-    }
-    else
-    {
-      // select newest (last in list)
-      auto selectedCandidate = candidates.rbegin();
-      auto ffp = selectedCandidate->second;
-
-      if (lastWriteTime > selectedCandidate->first)
+            auto ffp = newest->second;
+      if (lastWriteTime > newest->first)
       {
         insight::Warning(
-              "Possible inconsistency in solver output data detected!"
-              "File "+ffp.string()+" from time directory "+td.second.string()+
-              " was created before the output file of the previous time directory."
+              _("Possible inconsistency in solver output data detected!"
+                "File %s from time directory %s"
+                " was created before the output file of the previous time directory."),
+               ffp.filename().c_str(), td.second.c_str()
               );
       }
-      lastWriteTime=selectedCandidate->first;
+      lastWriteTime=newest->first;
 
       auto fileData = readSingleTabularFile(ffp, groupByColumn, filterChars);
       for (const auto& rg: fileData)
@@ -244,56 +258,6 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
                       lastWriteTime,
                       std::make_shared<TabularInterval>(rg.second) );
       }
-
-//      std::ifstream f( ffp.string() );
-//      if (!f)
-//        throw insight::Exception("Failed to open file "+ffp.string()+"!");
-
-//      int lineNo=0;
-//      std::string line;
-//      while ( getline ( f, line ) )
-//      {
-//        lineNo++;
-//        CurrentExceptionContext ex(str(format("reading line %d of file %s")%lineNo%ffp.string()));
-
-//        trim(line);
-
-//        if ( !starts_with ( line, "#" ) )
-//        {
-//          for (auto c: filterChars)
-//            erase_all(line, std::string(1, c));
-//          replace_all(line, "\t", " ");
-
-//          // eliminate double spaces
-//          string line_org;
-//          do {
-//            line_org=line;
-//            replace_all(line, "  ", " ");
-//          } while (line_org!=line);
-
-//          std::vector<string> fields;
-//          split(fields, line,  boost::is_any_of(" "));
-
-//          std::string groupName="default";
-//          if (groupByColumn>=0)
-//          {
-//            groupName=fields[groupByColumn];
-//            fields.erase(fields.begin()+groupByColumn);
-//          }
-
-//          std::vector<double> fieldsNum;
-//          transform(
-//                fields.begin(), fields.end(), std::back_inserter(fieldsNum),
-//                [](const std::string& t) { return toNumber<double>(t); }
-//          );
-
-//          if (fieldsNum.size()<2)
-//            throw insight::Exception("invalid data: expected at least two columns (time + 1 data), got: "+line);
-
-
-//          rows[groupName][fieldsNum[0]] = fieldsNum;
-//        }
-//      }
     }
   }
 
@@ -856,52 +820,61 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
     const std::string& regionName
 )
 {
-  arma::mat result(0,2);
 
-  boost::filesystem::path dir;
-  if (cm.OFversion()<170)
-  {
-    dir = location / foName;
-  }
-  else
-  {
-    dir = location / "postProcessing";
-    if (!regionName.empty())
-      dir = dir / regionName;
-    dir = dir / foName;
-  }
-  auto tdl = listTimeDirectories(dir);
-  for(decltype(tdl)::const_reverse_iterator i = tdl.crbegin(); i!=tdl.crend(); i++)
-  {
-    auto f = i->second /
-        (cm.OFversion()<170 ? "faceSource.dat" : "surfaceFieldValue.dat");
+  return readAndCombineTabularFiles
+      (
+          cm, location,
+          foName,
+          (cm.OFversion()<170 ? "faceSource.dat" : "surfaceFieldValue.dat")
+      );
+//  arma::mat result(0,2);
 
-    std::ifstream fs(f.c_str());
-    arma::mat cr = readTextFile(fs);
+//  boost::filesystem::path dir;
+//  if (cm.OFversion()<170)
+//  {
+//    dir = location / foName;
+//  }
+//  else
+//  {
+//    dir = location / "postProcessing";
+//    if (!regionName.empty())
+//      dir = dir / regionName;
+//    dir = dir / foName;
+//  }
+//  auto tdl = listTimeDirectories(dir);
+//  for(decltype(tdl)::const_reverse_iterator i = tdl.crbegin(); i!=tdl.crend(); i++)
+//  {
+//    auto f = i->second /
+//        (cm.OFversion()<170 ? "faceSource.dat" : "surfaceFieldValue.dat");
 
-    if (result.n_rows==0)
-    {
-      result=cr;
-    }
-    else
-    {
-      double tmax=result(0,0);
-      result = arma::join_cols
-               (
-                 cr.rows( arma::find( cr.col(0) < tmax ) ),
-                 result
-               );
-    }
-  }
+//    auto newest = newestOutputFile(f);
 
-  if (cm.OFversion()<170)
-  {
-    return arma::join_rows(result.col(0), result.col(2));
-  }
-  else
-  {
-    return result;
-  }
+//    std::ifstream fs(f.c_str());
+//    arma::mat cr = readTextFile(fs);
+
+//    if (result.n_rows==0)
+//    {
+//      result=cr;
+//    }
+//    else
+//    {
+//      double tmax=result(0,0);
+//      result = arma::join_cols
+//               (
+//                 cr.rows( arma::find( cr.col(0) < tmax ) ),
+//                 result
+//               );
+//    }
+//  }
+
+//  if (cm.OFversion()<170)
+//  {
+//    return arma::join_rows(result.col(0), result.col(2));
+//  }
+//  else
+//  {
+//    return result;
+//  }
 }
 
 defineType(fieldMinMax);
@@ -1809,5 +1782,6 @@ addToStaticFunctionTable(OpenFOAMCaseElement, RadialTPCArray, defaultParameters)
 addToStaticFunctionTable(OpenFOAMCaseElement, RadialTPCArray, category);
 addToFactoryTable(outputFilterFunctionObject, RadialTPCArray);
 addToStaticFunctionTable(outputFilterFunctionObject, RadialTPCArray, defaultParameters);
+
 
 }

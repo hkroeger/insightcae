@@ -30,12 +30,12 @@
 namespace insight {
 
 
-arma::mat readAndCombineTabularFiles
-(
-    const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
-    const std::string& FOName, const std::string& fileName,
-    const std::string& filterChars="()"
+
+std::unique_ptr<std::pair<time_t,boost::filesystem::path> > newestOutputFile(
+    const boost::filesystem::path& expectedFName
 );
+
+
   
 std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
 (
@@ -45,7 +45,13 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
     const std::string& filterChars="()"
 );
 
-  
+arma::mat readAndCombineTabularFiles
+    (
+        const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
+        const std::string& FOName, const std::string& fileName,
+        const std::string& filterChars="()"
+        );
+
 /** ===========================================================================
  * Base class for function objects, that understand the output* options
  */

@@ -129,14 +129,17 @@ class PressureField(object):
       data=np.loadtxt(csvfilename, delimiter=delimiter)
       print("data size = ", len(data))
       self.pts=data[:,0:3]*lengthscale
+      print ("pts=", self.pts)
       self.p=data[:,3]*pressurescale
+      print ("p=", self.p)
       self.pinterp=spi.NearestNDInterpolator(self.pts, self.p)
 
   def __call__(self, x):
       """
       Interpolate pressure at location x in FEM model
       """
-      return self.pinterp(x[0], x[1], x[2])
+      v=self.pinterp(x[0], x[1], x[2])
+      return v
       
 
 

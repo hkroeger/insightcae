@@ -23,6 +23,7 @@ IQVTKPointOnCurveConstraint::createActor() const
 {
     auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
     caption->SetCaption("F");
+    caption->BorderOff();
     caption->SetAttachmentPoint(
         arma::mat(p_->value()).memptr()
         );
@@ -31,6 +32,9 @@ IQVTKPointOnCurveConstraint::createActor() const
     caption->GetCaptionTextProperty()->SetFontSize(10);
     caption->GetCaptionTextProperty()->SetFrame(false);
     caption->GetCaptionTextProperty()->SetShadow(false);
+    caption->GetCaptionTextProperty()->FrameOff();
+    caption->GetCaptionTextProperty()->ShadowOff();
+    caption->GetCaptionTextProperty()->BoldOff();
 
     return {caption};
 }
@@ -46,22 +50,22 @@ double IQVTKPointOnCurveConstraint::getConstraintError(unsigned int iConstraint)
         iConstraint==0,
         "invalid constraint index");
 
-    if (auto line = std::dynamic_pointer_cast<insight::cad::Line>(curve_))
-    {
-        arma::mat a = line->start()->value();
-        arma::mat b = insight::normalized(line->end()->value() - a);
-        arma::mat p = p_->value();
-        double nom=arma::norm( arma::cross(p-a, b), 2 );
-        double denom=arma::norm(b, 2);
-        if (fabs(denom)<insight::SMALL)
-            return DBL_MAX;
-        else
-            return nom/denom;
-    }
-    else
-    {
+    // if (auto line = std::dynamic_pointer_cast<insight::cad::Line>(curve_))
+    // {
+    //     arma::mat a = line->start()->value();
+    //     arma::mat b = insight::normalized(line->end()->value() - a);
+    //     arma::mat p = p_->value();
+    //     double nom=arma::norm( arma::cross(p-a, b), 2 );
+    //     double denom=arma::norm(b, 2);
+    //     if (fabs(denom)<insight::SMALL)
+    //         return 1./insight::LSMALL;
+    //     else
+    //         return nom/denom;
+    // }
+    // else
+    // {
         return curve_->minDist(p_->value());
-    }
+    // }
 }
 
 void IQVTKPointOnCurveConstraint::scaleSketch(double scaleFactor)

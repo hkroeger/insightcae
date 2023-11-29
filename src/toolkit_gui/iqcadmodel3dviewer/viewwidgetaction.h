@@ -114,6 +114,11 @@ public:
       return *lastMouseLocation_;
   }
 
+  void updateLastMouseLocation(const QPoint& p)
+  {
+      lastMouseLocation_.reset(new QPoint(p));
+  }
+
   virtual bool onLeftButtonDoubleClick  ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
       for (auto&c: childReceivers_)
@@ -210,7 +215,7 @@ public:
               handled=c->onMouseMove(buttons, point, curFlags);
           }
       }
-      lastMouseLocation_.reset(new QPoint(point));
+      updateLastMouseLocation(point);
       return handled;
   }
 
@@ -286,6 +291,8 @@ protected:
                 childAction_.reset();
               }
           });
+
+      childAction_->start();
   }
 
   template<class A>

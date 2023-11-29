@@ -19,8 +19,12 @@
 #include <vtkSmartPointer.h>
 #include <vtkDataObject.h>
 
+
+
+
 class IQCADItemModel;
 class IQISCADModelGenerator;
+
 
 
 
@@ -58,15 +62,35 @@ public:
     ~IQISCADModelRebuilder();
 
 public Q_SLOTS:
-    void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
-    void onAddVector     (const QString& name, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
-    void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component,
-                          boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank(),
-                          QColor color = QColor(),
-                          const std::vector<std::string>& assocParamPaths = {} );
-    void onAddDatum      (const QString& name, insight::cad::DatumPtr smp, bool initialVisibility=false);
-    void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp, bool visible=false);
-    void onAddDataset    (const QString& name, vtkSmartPointer<vtkDataObject> ds, bool visible=false);
+    void onAddScalar(
+        const QString& name,
+        insight::cad::ScalarPtr sv );
+
+    void onAddVector(
+        const QString& name,
+        insight::cad::VectorPtr vv,
+        insight::cad::VectorVariableType vt );
+
+    void onAddFeature(
+        const QString& name,
+        insight::cad::FeaturePtr smp,
+        bool is_component,
+        const insight::cad::FeatureVisualizationStyle& fvs );
+
+    void onAddDatum(
+        const QString& name,
+        insight::cad::DatumPtr smp,
+        bool initialVisibility=false );
+
+    void onAddEvaluation(
+        const QString& name,
+        insight::cad::PostprocActionPtr smp,
+        bool visible=false );
+
+    void onAddDataset(
+        const QString& name,
+        vtkSmartPointer<vtkDataObject> ds,
+        bool visible=false );
 };
 
 #endif // IQISCADMODELREBUILDER_H

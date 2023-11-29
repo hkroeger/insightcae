@@ -420,7 +420,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
       slpl->SetNormal(0,0,1);
       slice1->SetCutFunction(slpl);
 
-      FieldSelection sl_field("p", FieldSupport::Point, -1);
+      FieldSelection sl_field("p", FieldSupport::OnPoint, -1);
       auto sl_range=calcRange(sl_field, {}, {slice1});
       auto sl_cm=createColorMap();
       FieldColor sl_fc(sl_field, sl_cm, sl_range);

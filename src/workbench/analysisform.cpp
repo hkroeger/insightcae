@@ -31,6 +31,8 @@
 #include "base/analysis.h"
 #include "base/remoteserverlist.h"
 #include "base/translations.h"
+#include "base/rapidxml.h"
+#include "rapidxml/rapidxml_print.hpp"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
@@ -200,13 +202,12 @@ AnalysisForm::AnalysisForm(
     {
         insight::CurrentExceptionContext ex(_("create parameter set editor"));
         psmodel_=new IQParameterSetModel(defaultParams, defaultParams);
-        peditor_=new ParameterEditorWidget(/*defaultParams, defaultParams, */ui->inputTab, viz, vali);
+        peditor_=new ParameterEditorWidget(ui->inputTab, viz, vali);
         peditor_->setModel(psmodel_);
         connect(
               peditor_, &ParameterEditorWidget::updateSupplementedInputData,
               this, &AnalysisForm::onUpdateSupplementedInputData
               );
-        //ui->inputTabLayout->addWidget(peditor_);
         vsplit->addWidget(peditor_);
     }
     psmodel_->setAnalysisName(analysisName_);
@@ -452,7 +453,28 @@ void AnalysisForm::saveParameters(bool *cancelled)
       p.removePackedData();
     }
 
-    p.saveToFile(ist_file_, analysisName_);
+    // prepare XML document
+    using namespace rapidxml;
+    xml_document<> doc;
+    xml_node<>* decl = doc.allocate_node(node_declaration);
+    decl->append_attribute(doc.allocate_attribute("version", "1.0"));
+    decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
+    doc.append_node(decl);
+    xml_node<> *rootNode = doc.allocate_node(node_element, "root");
+    doc.append_node(rootNode);
+
+    p.saveToNode(doc, *rootNode, ist_file_.parent_path(), analysisName_);
+
+    auto& vs = insight::appendNode(doc, *rootNode, "viewerState");
+    peditor_->viewer()->writeViewerState(doc, vs);
+
+    std::ofstream f(ist_file_.c_str());
+    f << doc;
+    f << std::endl;
+    f << std::flush;
+    f.close();
+
+    //p.saveToFile(ist_file_, analysisName_);
 
     is_modified_=false;
     updateWindowTitle();
@@ -525,7 +547,29 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
   }
 
   insight::ParameterSet ps = parameters();
-  ps.readFromFile(ist_file_);
+
+  std::string contents;
+  insight::readFileIntoString(ist_file_, contents);
+
+  using namespace rapidxml;
+  xml_document<> doc;
+  doc.parse<0>(&contents[0]);
+
+  xml_node<> *rootnode = doc.first_node("root");
+  ps.readFromRootNode(*rootnode, ist_file_.parent_path());
+
+  if (auto *vs = rootnode->first_node("viewerState"))
+  {
+    peditor_->viewer()->restoreViewerState(*vs);
+  }
+
+
+
+  //ps.readFromFile(ist_file_);
+
+
+
+
   psmodel_->resetParameters(
         ps,
         insight::Analysis::defaultParameters(analysisName_) );

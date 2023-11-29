@@ -321,7 +321,42 @@ rapidxml::xml_node<>* Parameter::appendToNode(
 
 
 
-void Parameter::saveToStream(std::ostream& os, const boost::filesystem::path& parent_path, std::string analysisName ) const
+void Parameter::saveToNode(
+    xml_document<>& doc,
+    xml_node<>& rootNode,
+    const boost::filesystem::path& parent_path,
+    std::string analysisName ) const
+{
+    CurrentExceptionContext ex(
+        2,
+        "writing parameter %s content into XML node"
+        " (parent path %s, analysis name %s",
+        type().c_str(), parent_path.string().c_str(), analysisName.c_str());
+
+    // insert analysis name
+    if (analysisName != "")
+    {
+        xml_node<> *analysisnamenode = doc.allocate_node(node_element, "analysis");
+        rootNode.append_node(analysisnamenode);
+        analysisnamenode->append_attribute(
+            doc.allocate_attribute
+            (
+                "name",
+                doc.allocate_string(analysisName.c_str())
+                ));
+    }
+
+    // store parameters
+    appendToNode(std::string(), doc, rootNode, parent_path);
+}
+
+
+
+
+void Parameter::saveToStream(
+    std::ostream& os,
+    const boost::filesystem::path& parent_path,
+    std::string analysisName ) const
 {
   CurrentExceptionContext ex(2,
       "writing parameter %s content into output stream (parent path %s, analysis name %s",
@@ -333,24 +368,10 @@ void Parameter::saveToStream(std::ostream& os, const boost::filesystem::path& pa
   decl->append_attribute(doc.allocate_attribute("version", "1.0"));
   decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
   doc.append_node(decl);
-  xml_node<> *rootnode = doc.allocate_node(node_element, "root");
-  doc.append_node(rootnode);
+  xml_node<> *rootNode = doc.allocate_node(node_element, "root");
+  doc.append_node(rootNode);
 
-  // insert analysis name
-  if (analysisName != "")
-  {
-        xml_node<> *analysisnamenode = doc.allocate_node(node_element, "analysis");
-        rootnode->append_node(analysisnamenode);
-        analysisnamenode->append_attribute(
-            doc.allocate_attribute
-            (
-                "name",
-                doc.allocate_string(analysisName.c_str())
-                ));
-  }
-
-  // store parameters
-  appendToNode(std::string(), doc, *rootnode, parent_path);
+  saveToNode(doc, *rootNode, parent_path, analysisName);
 
   os << doc;
 }
@@ -375,9 +396,64 @@ void Parameter::saveToString(std::string &s, const boost::filesystem::path& file
 
 
 
-string Parameter::readFromFile(const boost::filesystem::path &file, const std::string &startAtSubnode)
+std::string Parameter::readFromRootNode(
+    xml_node<>& rootNode,
+    const boost::filesystem::path& parent_path,
+    const std::string& startAtSubnode )
 {
-    CurrentExceptionContext ex("reading parameter %s from file %s", type().c_str(), file.string().c_str());
+    CurrentExceptionContext ex("reading parameter %s from XML node", type().c_str());
+
+    std::string analysisName;
+    xml_node<> *analysisnamenode = rootNode.first_node("analysis");
+    if (analysisnamenode)
+    {
+        analysisName = analysisnamenode->first_attribute("name")->value();
+    }
+
+    auto* crn=&rootNode;
+    if (!startAtSubnode.empty())
+    {
+        std::vector<std::string> path;
+        boost::split(path, startAtSubnode, boost::is_any_of("/"));
+        for (const auto& p: path)
+        {
+            std::map<std::string, xml_node<>*> nodes;
+            for (auto *e = crn->first_node(); e!=nullptr; e=e->next_sibling())
+            {
+                nodes[ e->first_attribute("name")->value() ]=e;
+            }
+
+            auto e = nodes.find(p);
+            if (e==nodes.end())
+            {
+                std::ostringstream os;
+                for(auto& n: nodes) os<<" "<<n.first;
+                throw insight::Exception(
+                    "Could not find node "+p+" (full path "+startAtSubnode+")!\n"
+                                                                                   "Available:"+os.str());
+            }
+            else
+            {
+                crn=e->second;
+            }
+        }
+    }
+
+    readFromNode(std::string(), *crn, parent_path);
+
+    return analysisName;
+}
+
+
+
+
+string Parameter::readFromFile(
+    const boost::filesystem::path &file,
+    const std::string &startAtSubnode )
+{
+    CurrentExceptionContext ex(
+        "reading parameter %s from file %s",
+        type().c_str(), file.string().c_str() );
 
     std::string contents;
     readFileIntoString(file, contents);
@@ -387,45 +463,11 @@ string Parameter::readFromFile(const boost::filesystem::path &file, const std::s
 
     xml_node<> *rootnode = doc.first_node("root");
 
-    std::string analysisName;
-    xml_node<> *analysisnamenode = rootnode->first_node("analysis");
-    if (analysisnamenode)
-    {
-        analysisName = analysisnamenode->first_attribute("name")->value();
-    }
-
-    if (!startAtSubnode.empty())
-    {
-        std::vector<std::string> path;
-        boost::split(path, startAtSubnode, boost::is_any_of("/"));
-        for (const auto& p: path)
-        {
-          std::map<std::string, xml_node<>*> nodes;
-          for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
-          {
-              nodes[ e->first_attribute("name")->value() ]=e;
-          }
-
-          auto e = nodes.find(p);
-          if (e==nodes.end())
-          {
-              std::ostringstream os;
-              for(auto& n: nodes) os<<" "<<n.first;
-              throw insight::Exception(
-                  "Could not find node "+p+" (full path "+startAtSubnode+")!\n"
-                                                                                 "Available:"+os.str());
-          }
-          else
-          {
-              rootnode=e->second;
-          }
-        }
-    }
-
-    readFromNode(std::string(), *rootnode, file.parent_path());
-
-    return analysisName;
+    return readFromRootNode(*rootnode, file.parent_path(), startAtSubnode);
 }
+
+
+
 
 bool Parameter::isPacked() const
 {

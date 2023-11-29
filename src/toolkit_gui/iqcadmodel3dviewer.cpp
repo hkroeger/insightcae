@@ -19,6 +19,7 @@ IQCADModel3DViewer::IQCADModel3DViewer(QWidget *parent)
       model_(nullptr)
 {
     dockWidget_ = new QDockWidget("Properties", this);
+    dockWidget_->setMinimumWidth(150);
     commonToolBox_=new QToolBox(dockWidget_);
     addDockWidget(Qt::RightDockWidgetArea, dockWidget_);
     dockWidget_->setWidget(commonToolBox_);

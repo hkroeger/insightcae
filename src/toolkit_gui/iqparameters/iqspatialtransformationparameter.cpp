@@ -93,7 +93,6 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
       QLabel *translateLabel = new QLabel("Translation:", editControlsContainer);
       layout2->addWidget(translateLabel);
       translateLE = new QLineEdit(editControlsContainer);
-//      translateLE->setText(mat2Str(p().translate()));
       layout2->addWidget(translateLE);
       layout->addLayout(layout2);
   }
@@ -103,7 +102,6 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
       QLabel *rpyLabel = new QLabel("Roll Pitch Yaw:", editControlsContainer);
       layout2->addWidget(rpyLabel);
       rpyLE = new QLineEdit(editControlsContainer);
-//      rpyLE->setText(mat2Str(p().rollPitchYaw()));
       layout2->addWidget(rpyLE);
       layout->addLayout(layout2);
   }
@@ -113,7 +111,6 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
       QLabel *scaleLabel = new QLabel("Scale factor:", editControlsContainer);
       layout2->addWidget(scaleLabel);
       scaleLE = new QLineEdit(editControlsContainer);
-//      scaleLE->setText(QString::number(p().scale()));
       layout2->addWidget(scaleLE);
       layout->addLayout(layout2);
   }
@@ -193,7 +190,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
                   auto curMod =
                         new IQCADTransformationCommand(
                               actor, v->interactor(),
-                              tini );
+                              tini, true, true, false );
 
                   connect( translateLE, &QObject::destroyed,
                            curMod, &QObject::deleteLater );

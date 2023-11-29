@@ -13,6 +13,16 @@ addToStaticFunctionTable(ConstrainedSketchEntity, SketchPoint, addParserRule);
 
 SketchPoint::SketchPoint(
     DatumPtr plane,
+    const arma::mat& xy,
+    const std::string& layerName )
+  : ConstrainedSketchEntity(layerName),
+    plane_(plane),
+    x_(xy(0)), y_(xy(1))
+{
+}
+
+SketchPoint::SketchPoint(
+    DatumPtr plane,
     double x, double y,
     const std::string& layerName )
   : ConstrainedSketchEntity(layerName),

@@ -12,27 +12,47 @@ namespace insight
 
 
 
-void CADParameterSetVisualizer::addDatum(const std::string& name, insight::cad::DatumPtr dat, bool initialVisibility)
+arma::mat vec3(const QColor &c)
+{
+    return vec3(c.redF(), c.greenF(), c.blueF());
+}
+
+
+
+void CADParameterSetVisualizer::addDatum(
+    const std::string& name,
+    insight::cad::DatumPtr dat,
+    bool initialVisibility )
 {
   CurrentExceptionContext ec("adding visualizer datum "+name);
   Q_EMIT createdDatum(QString::fromStdString(name), dat, initialVisibility);
 }
 
-void CADParameterSetVisualizer::addFeature(const std::string& name,
-                                           insight::cad::FeaturePtr feat,
-                                           AIS_DisplayMode ds,
-                                           QColor color,
-                                           const std::vector<std::string>& assocParamPaths)
+
+
+
+void CADParameterSetVisualizer::addFeature(
+    const std::string& name,
+    insight::cad::FeaturePtr feat,
+    const insight::cad::FeatureVisualizationStyle& fvs )
 {
   CurrentExceptionContext ec("adding visualizer feature "+name);
-  Q_EMIT createdFeature( QString::fromStdString(name), feat, true, ds, color, assocParamPaths );
+  Q_EMIT createdFeature( QString::fromStdString(name), feat, true, fvs );
 }
 
-void CADParameterSetVisualizer::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> ds)
+
+
+
+void CADParameterSetVisualizer::addDataset(
+    const std::string &name,
+    vtkSmartPointer<vtkDataObject> ds )
 {
   CurrentExceptionContext ec("adding visualizer dataset "+name);
   Q_EMIT createdDataset( QString::fromStdString(name), ds, true );
 }
+
+
+
 
 void CADParameterSetVisualizer::addGeometryToSpatialTransformationParameter(
         const std::string &parameterPath,
@@ -46,6 +66,9 @@ void CADParameterSetVisualizer::addGeometryToSpatialTransformationParameter(
     }
 }
 
+
+
+
 void CADParameterSetVisualizer::addVectorBasePoint(
         const std::string &parameterPath,
         const arma::mat &pBase )
@@ -58,6 +81,9 @@ void CADParameterSetVisualizer::addVectorBasePoint(
     }
 }
 
+
+
+
 void CADParameterSetVisualizer::update(const ParameterSet& ps)
 {
   CurrentExceptionContext ex("setting parameters for parameter set visualizer");
@@ -66,16 +92,23 @@ void CADParameterSetVisualizer::update(const ParameterSet& ps)
   Q_EMIT launchVisualizationCalculation(); // executed in dedicated thread
 }
 
+
+
+
 void CADParameterSetVisualizer::recreateVisualizationElements()
 {
 }
 
 
-CADParameterSetVisualizer::GUIActionList CADParameterSetVisualizer::createGUIActions(
+
+
+CADParameterSetVisualizer::GUIActionList
+CADParameterSetVisualizer::createGUIActions(
         const std::string&, QObject *, IQCADModel3DViewer* )
 {
     return {};
 }
+
 
 
 
@@ -93,6 +126,9 @@ CADParameterSetVisualizer::CADParameterSetVisualizer()
         &CADParameterSetVisualizer::visualizeScheduledParameters );
 }
 
+
+
+
 CADParameterSetVisualizer::~CADParameterSetVisualizer()
 {
   asyncRebuildThread_.quit();
@@ -100,25 +136,39 @@ CADParameterSetVisualizer::~CADParameterSetVisualizer()
   asyncRebuildThread_.wait();
 }
 
+
+
+
 void CADParameterSetVisualizer::setModel(IQCADItemModel *model)
 {
     model_=model;
 }
+
+
+
 
 IQCADItemModel *CADParameterSetVisualizer::model()
 {
     return model_;
 }
 
+
+
+
 void CADParameterSetVisualizer::setParameterSetModel(IQParameterSetModel *psm)
 {
     psmodel_=psm;
 }
 
+
+
+
 IQParameterSetModel* CADParameterSetVisualizer::parameterSetModel() const
 {
     return psmodel_;
 }
+
+
 
 
 void CADParameterSetVisualizer::visualizeScheduledParameters()
@@ -302,5 +352,6 @@ void MultiCADParameterSetVisualizer::onSubVisualizationCalculationFinished()
     Q_EMIT visualizationCalculationFinished();
   }
 }
+
 
 }

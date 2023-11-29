@@ -48,6 +48,7 @@ class TOOLKIT_GUI_EXPORT IQCADItemModel
       std::vector<std::string> assocParamPaths;
 
       FeatureVisibility();
+      FeatureVisibility(const insight::cad::FeatureVisualizationStyle& fvs);
   };
   mutable std::map<std::string, FeatureVisibility> featureVisibility_;
 
@@ -61,7 +62,7 @@ class TOOLKIT_GUI_EXPORT IQCADItemModel
        */
       std::string fieldName = "";
 
-      insight::FieldSupport fieldSupport = insight::Point;
+      insight::FieldSupport fieldSupport = insight::OnPoint;
 
       insight::DatasetRepresentation representation = insight::Surface;
 
@@ -251,20 +252,22 @@ public:
   void addPoint(const std::string& name, insight::cad::VectorPtr value);
   void addDirection(const std::string& name, insight::cad::VectorPtr value);
   void addDatum(const std::string& name, insight::cad::DatumPtr value, bool initialVisibility=false);
-  void addModelstep(const std::string& name,
-                    insight::cad::FeaturePtr value,
-                    const std::string& featureDescription = std::string(),
-                    insight::DatasetRepresentation dr = insight::Wireframe,
-                    QColor color = QColor(),
-                    const std::vector<std::string>& assocParamPaths = {} );
+  void addModelstep(
+      const std::string& name,
+      insight::cad::FeaturePtr value,
+      const std::string& featureDescription = std::string(),
+      const insight::cad::FeatureVisualizationStyle& fvs =
+        insight::cad::FeatureVisualizationStyle::intermediateFeatureStyle() );
+
   void setStaticModelStep(const std::string& name, bool isStatic);
   bool isStaticModelStep(const std::string& name);
-  void addComponent(const std::string& name,
-                    insight::cad::FeaturePtr value,
-                    const std::string& featureDescription = std::string(),
-                    insight::DatasetRepresentation dr = insight::Surface,
-                    QColor color = QColor(),
-                    const std::vector<std::string>& assocParamPaths = {} );
+  void addComponent(
+      const std::string& name,
+      insight::cad::FeaturePtr value,
+      const std::string& featureDescription = std::string(),
+      const insight::cad::FeatureVisualizationStyle& fvs =
+        insight::cad::FeatureVisualizationStyle::componentStyle() );
+
   void addPostprocAction(const std::string& name, insight::cad::PostprocActionPtr value);
   void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value);
 

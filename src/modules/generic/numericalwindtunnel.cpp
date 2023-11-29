@@ -624,7 +624,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
     auto patches = scene.patches("object.*|floor.*");
 
-    FieldSelection sl_field("p", FieldSupport::Point, -1);
+    FieldSelection sl_field("p", FieldSupport::OnPoint, -1);
     auto sl_range=calcRange(sl_field, {patches}, {});
     auto sl_cm=createColorMap();
     FieldColor sl_fc(sl_field, sl_cm, sl_range);
@@ -890,7 +890,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
           cad::matconst(vec3( 0, 0, sp.Lup_)),
           cad::matconst(vec3( 0, sp.Laside_+0.5*sp.w_, 0))
          ),
-         AIS_WireFrame
+         { insight::Wireframe }
       );
     }
     else
@@ -904,7 +904,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
           cad::matconst(vec3( 0, 0, sp.Lup_)),
           cad::matconst(vec3( 0, 2.*sp.Laside_+sp.w_, 0))
          ),
-         AIS_WireFrame
+         { insight::Wireframe }
       );
     }
 
@@ -926,7 +926,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
             cad::matconst(bc->H*vec3(0,0,1)),
             cad::BoxCentering(true, true, true)
            ),
-           AIS_WireFrame
+           { insight::Wireframe }
         );
       }
       else if (const auto* b =
@@ -942,7 +942,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
             cad::matconst(d(1)*vec3(0,1,0)),
             cad::matconst(d(2)*vec3(0,0,1))
            ),
-           AIS_WireFrame
+           { insight::Wireframe }
         );
       }
 

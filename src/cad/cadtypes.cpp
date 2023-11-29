@@ -29,6 +29,56 @@ namespace cad
 {
 
 
+
+VisualizationStyle::VisualizationStyle()
+{}
+
+VisualizationStyle::VisualizationStyle(
+    boost::variant<boost::blank,DatasetRepresentation> s,
+    const arma::mat& c,
+    boost::variant<boost::blank,double> o )
+  : style(s), color(c), opacity(o)
+{}
+
+
+FeatureVisualizationStyle::FeatureVisualizationStyle()
+{}
+
+FeatureVisualizationStyle::FeatureVisualizationStyle(
+        boost::variant<boost::blank,DatasetRepresentation> s,
+        const arma::mat& c,
+        const std::vector<std::string> app,
+        boost::variant<boost::blank,double> o )
+  : VisualizationStyle(s, c, o),
+    associatedParameterPaths(app)
+{}
+
+
+FeatureVisualizationStyle FeatureVisualizationStyle::componentStyle()
+{
+    static std::unique_ptr<FeatureVisualizationStyle> cs;
+    if (!cs)
+    {
+        cs.reset(new FeatureVisualizationStyle());
+        cs->style=insight::DatasetRepresentation::Surface;
+        cs->opacity=1.;
+    }
+    return *cs;
+}
+
+FeatureVisualizationStyle FeatureVisualizationStyle::intermediateFeatureStyle()
+{
+    static std::unique_ptr<FeatureVisualizationStyle> ifs;
+    if (!ifs)
+    {
+        ifs.reset(new FeatureVisualizationStyle());
+        ifs->style=insight::DatasetRepresentation::Surface;
+        ifs->opacity=0.5;
+    }
+    return *ifs;
+}
+
+
 OCCException::OCCException(const std::string message)
     : insight::Exception(message)
 {

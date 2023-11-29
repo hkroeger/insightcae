@@ -63,7 +63,9 @@ protected:
 
 private Q_SLOTS:
     void launchDefaultSelectionAction();
+    void drawPoint();
     void drawLine();
+    void drawRectangle();
     void solve();
 
 public:

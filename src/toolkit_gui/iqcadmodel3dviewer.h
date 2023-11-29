@@ -78,6 +78,12 @@ public:
 
     virtual void setSelectionModel(QItemSelectionModel *selmodel);
 
+    virtual void writeViewerState(
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node) const =0;
+    virtual void restoreViewerState(
+        rapidxml::xml_node<>& node) =0;
+
 public Q_SLOT:
     virtual void exposeItem( insight::cad::FeaturePtr feat ) =0;
     virtual void undoExposeItem() =0;

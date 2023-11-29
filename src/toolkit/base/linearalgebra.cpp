@@ -827,7 +827,7 @@ arma::mat nonlinearSolveND(
           gsl_multiroot_test_residual (s->f, tol);
 
 
-      // relax
+      //relax
       for (int i=0; i<n; i++)
       {
           gsl_vector_set(

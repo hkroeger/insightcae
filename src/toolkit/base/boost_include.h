@@ -100,6 +100,8 @@
 
 #include "boost/timer/timer.hpp"
 
+#include "boost/range/adaptor/indexed.hpp"
+
 #include <functional>
 #endif
 

@@ -12,7 +12,9 @@
 #include "vtkTextProperty.h"
 #include "vtkCaptionActor2D.h"
 
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawpoint.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawrectangle.h"
 #include "cadpostprocactions/pointdistance.h"
 #include "cadpostprocactions/angle.h"
 #include "base/parameters/simpleparameter.h"
@@ -138,6 +140,47 @@ void IQVTKConstrainedSketchEditor::launchDefaultSelectionAction()
 
 
 
+void IQVTKConstrainedSketchEditor::drawPoint()
+{
+    auto dl = std::make_shared<IQVTKCADModel3DViewerDrawPoint>(*this);
+
+    connect(dl.get(), &IQVTKCADModel3DViewerDrawPoint::pointAdded, dl.get(),
+
+            [this]( IQVTKCADModel3DViewerDrawPoint::PointProperty pp )
+            {
+                if (pp.onFeature)
+                {
+                    if (auto online =
+                        std::dynamic_pointer_cast<insight::cad::Line>(
+                            pp.onFeature ) )
+                    {
+                        (*this)->insertGeometry(
+                            IQVTKPointOnCurveConstraint::create(
+                                pp.p,
+                                online ) ); // fix to curve
+
+                        (*this)->insertGeometry(
+                            insight::cad::DistanceConstraint::create(
+                                online->start(), pp.p,
+                                (*this)->sketchPlaneNormal() ) );
+                    }
+                }
+                else
+                {
+                    (*this)->insertGeometry(
+                        IQVTKFixedPoint::create( pp.p ) ); // fix first point
+                }
+
+                (*this)->invalidate();
+                this->updateActors();
+                Q_EMIT sketchChanged();
+            }
+    );
+
+
+
+    launchChildAction(dl);
+}
 
 
 
@@ -150,102 +193,207 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
     connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::endPointSelected, dl.get(),
 
-            [this]( IQVTKCADModel3DViewerDrawLine::EndPointProperty* addPoint,
-                    insight::cad::SketchPointPtr previousPoint )
+            [this]( IQVTKCADModel3DViewerDrawLine::PointProperty* addPoint,
+                   insight::cad::SketchPointPtr previousPoint )
             {
-                if (addPoint->onFeature)
+                if ( !(addPoint->isAnExistingPoint||addPoint->onFeature) && !previousPoint ) // is first point?
                 {
                     (*this)->insertGeometry(
-                        IQVTKPointOnCurveConstraint::create(
-                            addPoint->p,
-                            addPoint->onFeature ) ); // fix to curve
+                        IQVTKFixedPoint::create( addPoint->p ) ); // fix it
+                }
 
-                    if (!previousPoint)
+                else if (addPoint->onFeature)
+                {
+                    if (auto online =
+                        std::dynamic_pointer_cast<insight::cad::Line>(
+                            addPoint->onFeature ) )
                     {
-                        // for first point on line: add distance constraint to beginning of line
-                        if (auto online =
-                            std::dynamic_pointer_cast<insight::cad::Line>(
-                                addPoint->onFeature ) )
-                        {
-                            double curLen = arma::norm(
-                                online->start()->value()
-                                    - addPoint->p->value(),
-                                2 );
+                        // add point-on-curve constraint
+                        (*this)->insertGeometry(
+                            IQVTKPointOnCurveConstraint::create(
+                                addPoint->p,
+                                addPoint->onFeature ) ); // fix to curve
 
-                            auto lc = insight::cad::DistanceConstraint::create(
+                        // constrain distance to start of hit line
+                        (*this)->insertGeometry(
+                            insight::cad::DistanceConstraint::create(
                                 online->start(), addPoint->p,
-                                (*this)->sketchPlaneNormal(),
-                                curLen );
-                            (*this)->insertGeometry(lc);
-                        }
+                                (*this)->sketchPlaneNormal() ) );
                     }
                 }
-                else if ( !addPoint->isAnExistingPoint && !previousPoint ) // is first point?
-                {
-                    (*this)->insertGeometry(
-                        IQVTKFixedPoint::create( addPoint->p ) ); // fix first point
-                }
             }
-    );
+            );
 
     connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::lineAdded, dl.get(),
 
-            [this]( insight::cad::Line* line,
-                    insight::cad::Line* prevLine,
-                    IQVTKCADModel3DViewerDrawLine::EndPointProperty* p2,
-                    IQVTKCADModel3DViewerDrawLine::EndPointProperty* p1 )
+            [this]( std::shared_ptr<insight::cad::Line> line,
+                   insight::cad::Line* prevLine,
+                   IQVTKCADModel3DViewerDrawLine::PointProperty* p2,
+                   IQVTKCADModel3DViewerDrawLine::PointProperty* p1 )
             {
                 line->changeDefaultParameters(defaultGeometryParameters_);
 
-                if (!p2->isAnExistingPoint)
+                auto pointIsFixed = [](IQVTKCADModel3DViewerDrawLine::PointProperty *pp)
                 {
-                    double curLen = arma::norm(
-                        line->start()->value()
-                            - line->end()->value(),
-                        2 );
+                    return pp->isAnExistingPoint || bool(pp->onFeature);
+                };
 
-                    auto lc = insight::cad::DistanceConstraint::create(
+                bool isLastLine = p2->isAnExistingPoint; // closed
+
+                if (!(pointIsFixed(p1) && pointIsFixed(p2)) && !isLastLine)
+                {
+                    (*this)->insertGeometry(
+                        insight::cad::DistanceConstraint::create(
                             line->start(), line->end(),
-                            (*this)->sketchPlaneNormal(),
-                                curLen );
-                    (*this)->insertGeometry(lc);
+                            (*this)->sketchPlaneNormal() ) );
 
-                    if (!p1->isAnExistingPoint && !p2->isAnExistingPoint
-                        && !p1->onFeature && !p2->onFeature)
+                    // add angle constraint
+                    if (prevLine)
                     {
-                        // add angle constraint
-                        if (prevLine)
+                        (*this)->insertGeometry(
+                            insight::cad::AngleConstraint::create(
+                                prevLine->start(),
+                                line->end(), line->start() ) );
+                    }
+                    else
+                    {
+                        auto p1 = std::make_shared<insight::cad::AddedVector>(
+                            line->start(),
+                            insight::cad::vec3const(1,0,0) );
+
+                        double ang = insight::cad::AngleConstraint::calculate(
+                            p1->value(),
+                            line->end()->value(),
+                            line->start()->value() );
+
+                        if (
+                            fabs(ang)<insight::SMALL
+                            ||fabs(ang-M_PI)<insight::SMALL
+                            )
                         {
-                            auto ac = insight::cad::AngleConstraint::create(
-                                    prevLine->start(), line->end(), line->start(),
-                                        insight::cad::Angle::calculate(
-                                                prevLine->start()->value(),
-                                                line->end()->value(),
-                                                line->start()->value() ) );
-                            (*this)->insertGeometry(ac);
+                            (*this)->insertGeometry(
+                                IQVTKHorizontalConstraint::create(
+                                    line ) );
+                        }
+                        else if (
+                            (fabs(ang-0.5*M_PI)<insight::SMALL)
+                            ||(fabs(ang+0.5*M_PI)<insight::SMALL)
+                            )
+                        {
+                            (*this)->insertGeometry(
+                                IQVTKVerticalConstraint::create(
+                                    line ) );
                         }
                         else
                         {
-                            auto p1=std::make_shared<insight::cad::AddedVector>(
-                                        line->start(),
-                                        insight::cad::vec3const(1,0,0) );
-                            auto ac = insight::cad::AngleConstraint::create(
-                                p1, line->end(), line->start(),
-                                insight::cad::Angle::calculate(
-                                    p1->value(),
-                                    line->end()->value(),
-                                    line->start()->value() ) );
-                            (*this)->insertGeometry(ac);
+                            (*this)->insertGeometry(
+                                insight::cad::AngleConstraint::create(
+                                    p1,
+                                    line->end(), line->start() ) );
                         }
                     }
-
-
-                    (*this)->invalidate();
-                    this->updateActors();
-                    Q_EMIT sketchChanged();
                 }
+
+
+                (*this)->invalidate();
+                this->updateActors();
+                Q_EMIT sketchChanged();
             }
-    );
+            );
+
+    launchChildAction(dl);
+}
+
+
+
+
+void IQVTKConstrainedSketchEditor::drawRectangle()
+{
+    auto dl = std::make_shared<IQVTKCADModel3DViewerDrawRectangle>(*this);
+
+    connect(dl.get(), &IQVTKCADModel3DViewerDrawRectangle::rectangleAdded, dl.get(),
+
+            [this]( std::vector<std::shared_ptr<insight::cad::Line> > addedLines,
+                    IQVTKCADModel3DViewerDrawRectangle::PointProperty* p2,
+                    IQVTKCADModel3DViewerDrawRectangle::PointProperty* p1 )
+            {
+                if (p1->onFeature)
+                {
+                    if (auto online =
+                        std::dynamic_pointer_cast<insight::cad::Line>(
+                            p1->onFeature ) )
+                    {
+                        (*this)->insertGeometry(
+                            IQVTKPointOnCurveConstraint::create(
+                                p1->p,
+                                online ) ); // fix to curve
+
+                        (*this)->insertGeometry(
+                            insight::cad::DistanceConstraint::create(
+                                online->start(), p1->p,
+                                (*this)->sketchPlaneNormal() ) );
+                    }
+                }
+                else
+                {
+                    (*this)->insertGeometry(
+                        IQVTKFixedPoint::create( p1->p ) ); // fix first point
+                }
+
+                if (p2->onFeature)
+                {
+                    if (auto online =
+                        std::dynamic_pointer_cast<insight::cad::Line>(
+                            p2->onFeature ) )
+                    {
+                        (*this)->insertGeometry(
+                            IQVTKPointOnCurveConstraint::create(
+                                p2->p,
+                                online ) ); // fix to curve
+
+                        (*this)->insertGeometry(
+                            insight::cad::DistanceConstraint::create(
+                                online->start(), p2->p,
+                                (*this)->sketchPlaneNormal() ) );
+                    }
+                }
+                else
+                {
+                    (*this)->insertGeometry(
+                        insight::cad::DistanceConstraint::create(
+                            addedLines[0]->start(), addedLines[0]->end(),
+                            (*this)->sketchPlaneNormal() ) );
+                    (*this)->insertGeometry(
+                        insight::cad::DistanceConstraint::create(
+                            addedLines[1]->start(), addedLines[1]->end(),
+                            (*this)->sketchPlaneNormal() ) );
+                }
+
+                (*this)->insertGeometry(
+                    IQVTKHorizontalConstraint::create( addedLines[0] )
+                    );
+                (*this)->insertGeometry(
+                    IQVTKHorizontalConstraint::create( addedLines[2] )
+                    );
+                (*this)->insertGeometry(
+                    IQVTKVerticalConstraint::create( addedLines[1] )
+                    );
+                (*this)->insertGeometry(
+                    IQVTKVerticalConstraint::create( addedLines[3] )
+                    );
+
+                for (auto& line: addedLines)
+                {
+                    line->changeDefaultParameters(defaultGeometryParameters_);
+                }
+
+                (*this)->invalidate();
+                this->updateActors();
+                Q_EMIT sketchChanged();
+            }
+            );
+
+
 
     launchChildAction(dl);
 }
@@ -282,8 +430,14 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
 
+    toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawpoint.svg"), "Point",
+                        this, &IQVTKConstrainedSketchEditor::drawPoint);
+
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawline.svg"), "Line",
                         this, &IQVTKConstrainedSketchEditor::drawLine);
+
+    toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawrectangle.svg"), "Rectangle",
+                        this, &IQVTKConstrainedSketchEditor::drawRectangle);
 
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_solve.svg"), "Solve",
                         this, &IQVTKConstrainedSketchEditor::solve);

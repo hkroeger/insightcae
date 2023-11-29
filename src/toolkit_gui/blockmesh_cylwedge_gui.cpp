@@ -84,7 +84,7 @@ void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElemen
 
   addFeature( blockMeshName_,
               cad::Compound::create(cad::CompoundFeatureList({dom})),
-              AIS_WireFrame
+              { insight::Wireframe }
               );
 }
 

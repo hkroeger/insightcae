@@ -41,12 +41,17 @@ using namespace std;
 
 namespace insight
 {
-  
+
+
+
+
 std::ostream& operator<<(std::ostream& os, const Exception& ex)
 {
   os<<static_cast<std::string>(ex);
   return os;
 }
+
+
 
 
 std::string splitMessage(
@@ -139,6 +144,8 @@ std::string splitMessage(
 }
 
 
+
+
 void Exception::saveContext(bool strace)
 {
   std::vector<std::string> context_list;
@@ -164,10 +171,16 @@ void Exception::saveContext(bool strace)
     strace_="";
 }
 
+
+
+
 Exception::Exception()
 {
   saveContext(true);
 }
+
+
+
 
 Exception::Exception(std::string fmt, ...)
 {
@@ -183,6 +196,9 @@ Exception::Exception(std::string fmt, ...)
     saveContext(true);
 }
 
+
+
+
 Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> &contextGeometry, bool strace)
   : message_(msg),
     contextGeometry_(contextGeometry)
@@ -191,21 +207,32 @@ Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> 
   saveContext(strace);
 }
 
+
+
+
 Exception::Exception(const std::string& msg, const std::string& strace)
   : message_(msg), strace_(strace)
 {
   dbg(2)<<msg<<std::endl;
 }
 
+
+
+
 Exception::operator std::string() const
 {
   return message();
 }
 
+
+
+
 string Exception::message() const
 {
    return message_;
 }
+
+
 
 
 const char* Exception::what() const noexcept
@@ -214,10 +241,16 @@ const char* Exception::what() const noexcept
    return whatMessage_.c_str();
 }
 
+
+
+
 const std::map<string, cad::FeaturePtr> &Exception::contextGeometry() const
 {
   return contextGeometry_;
 }
+
+
+
 
 void assertion(bool condition, std::string fmt, ...)
 {
@@ -237,6 +270,8 @@ void assertion(bool condition, std::string fmt, ...)
 }
 
 
+
+
 CurrentExceptionContext::CurrentExceptionContext(int verbosityLevel, std::string msgFmt, ...)
   : verbosityLevel_(verbosityLevel)
 {
@@ -249,6 +284,9 @@ CurrentExceptionContext::CurrentExceptionContext(int verbosityLevel, std::string
 
   start(s);
 }
+
+
+
 
 CurrentExceptionContext::CurrentExceptionContext(std::string msgFmt, ...)
     : verbosityLevel_(1)
@@ -263,6 +301,9 @@ CurrentExceptionContext::CurrentExceptionContext(std::string msgFmt, ...)
   start(s);
 }
 
+
+
+
 void CurrentExceptionContext::start(const char* msg)
 {
   this->std::string::operator=(msg);
@@ -276,6 +317,9 @@ void CurrentExceptionContext::start(const char* msg)
   }
   ExceptionContext::getCurrent().push_back(this);
 }
+
+
+
 
 CurrentExceptionContext::~CurrentExceptionContext()
 {
@@ -296,6 +340,8 @@ CurrentExceptionContext::~CurrentExceptionContext()
 }
 
 
+
+
 std::string CurrentExceptionContext::contextDescription() const
 {
   return *this;
@@ -309,6 +355,8 @@ class NullBuffer : public std::streambuf
 public:
   int overflow(int c) { return c; }
 };
+
+
 
 
 std::ostream& dbg(int verbosityLevel)
@@ -331,6 +379,7 @@ std::ostream& dbg(int verbosityLevel)
 
 
 
+
 void ExceptionContext::snapshot(std::vector<std::string>& context)
 {
   context.clear();
@@ -340,10 +389,8 @@ void ExceptionContext::snapshot(std::vector<std::string>& context)
     }
 }
 
-////#if !(defined(WIN32)&&defined(DEBUG))
-//thread_local
-////#endif
-//ExceptionContext exceptionContext;
+
+
 
 ExceptionContext& ExceptionContext::getCurrent()
 {

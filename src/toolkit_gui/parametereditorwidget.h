@@ -82,6 +82,9 @@ protected:
         ParameterSetDisplay* display
         );
 
+    bool firstShowOccurred_;
+    void showEvent(QShowEvent *event) override;
+
 public:
 
     ParameterEditorWidget

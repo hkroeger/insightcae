@@ -511,7 +511,8 @@ void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv, in
   newf->initDisplay();
 }
 
-void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component, boost::variant<boost::blank,AIS_DisplayMode> ds)
+void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component,
+                              const insight::cad::FeatureVisualizationStyle& ds)
 {
   insight::CurrentExceptionContext ex("adding feature "+name.toStdString()+" to model tree");
 
@@ -532,8 +533,8 @@ void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp,
         ads=AIS_WireFrame;
       }
 
-    if (const auto* eds = boost::get<AIS_DisplayMode>(&ds)) //override
-      ads=*eds;
+      if (const auto* eds = boost::get<insight::DatasetRepresentation>(&ds.style)) //override
+        ads = *eds==insight::Surface?AIS_Shaded:AIS_WireFrame;
 
     old = findItem<QFeatureItem>(cat, name);
     newf = new QFeatureItem(name, smp, is_component, cat, is_component);

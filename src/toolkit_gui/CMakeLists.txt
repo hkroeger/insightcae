@@ -7,6 +7,8 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 find_package(Qt5Network CONFIG REQUIRED)
+find_package(Qt5Multimedia CONFIG REQUIRED)
+find_package(Qt5MultimediaWidgets CONFIG REQUIRED)
 #find_package(Qt5Test CONFIG REQUIRED)
 find_package(OCC REQUIRED)
 find_package(VTK
@@ -55,7 +57,10 @@ set(toolkit_gui_SRCS
  iqcadmodel3dviewer/viewstate.h iqcadmodel3dviewer/viewstate.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerplanepointbasedaction.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerplanepointbasedaction.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawpoint.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawpoint.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawrectangle.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawrectangle.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.cpp
@@ -193,22 +198,15 @@ set(toolkit_gui_SRCS
     qactionprogressdisplayerwidget.cpp qactionprogressdisplayerwidget.h
 
     iqresultsetmodel.cpp iqresultsetmodel.h
-    qresultelements/qcomment.cpp
-    qresultelements/qcomment.h
-    qresultelements/qimage.cpp
-    qresultelements/qimage.h
-    qresultelements/qchart.cpp
-    qresultelements/qchart.h
-    qresultelements/qattributeresulttable.cpp
-    qresultelements/qattributeresulttable.h
-    qresultelements/qscalarresult.cpp
-    qresultelements/qscalarresult.h
-    qresultelements/qtabularresult.cpp
-    qresultelements/qtabularresult.h
-    qresultelements/qvectorresult.cpp
-    qresultelements/qvectorresult.h
-    qresultelements/qresultsection.cpp
-    qresultelements/qresultsection.h
+    qresultelements/qcomment.cpp qresultelements/qcomment.h
+    qresultelements/qimage.cpp qresultelements/qimage.h
+    qresultelements/iqvideo.cpp qresultelements/iqvideo.h
+    qresultelements/qchart.cpp qresultelements/qchart.h
+    qresultelements/qattributeresulttable.cpp qresultelements/qattributeresulttable.h
+    qresultelements/qscalarresult.cpp qresultelements/qscalarresult.h
+    qresultelements/qtabularresult.cpp qresultelements/qtabularresult.h
+    qresultelements/qvectorresult.cpp qresultelements/qvectorresult.h
+    qresultelements/qresultsection.cpp qresultelements/qresultsection.h
 )
 
 
@@ -225,7 +223,7 @@ target_compile_definitions(toolkit_gui PRIVATE toolkit_gui_EXPORTS)
 
 target_link_libraries(toolkit_gui
  toolkit toolkit_cad insightcad toolkit_remote
- Qt5::Widgets Qt5::Charts Qt5::Network
+ Qt5::Widgets Qt5::Charts Qt5::Network Qt5::Multimedia Qt5::MultimediaWidgets
  ${Boost_LIBRARIES}
  ${OCC_GUI_LIBRARIES}
  ${DXFLIB_LIBRARIES}

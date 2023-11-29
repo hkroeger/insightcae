@@ -6,6 +6,7 @@
 
 #include "vtkCommand.h"
 #include "vtkSmartPointer.h"
+#include "vtkTransform.h"
 
 #include "base/spatialtransformation.h"
 
@@ -24,12 +25,19 @@ class IQCADTransformationCommand
     vtkSmartPointer<vtkActor> actor_;
     vtkSmartPointer<vtkBoxWidget2> boxWidget_;
     vtkRenderWindowInteractor* rwi_;
+    vtkSmartPointer<vtkTransform> tini_;
 
+    bool lockScale_, lockRotation_, lockTranslation_;
+
+    vtkSmartPointer<vtkTransform> constrainedTransform(vtkTransform *t) const;
   public:
     IQCADTransformationCommand(
         vtkSmartPointer<vtkActor> actor,
         vtkRenderWindowInteractor* rwi,
-        vtkTransform *tini );
+        vtkTransform *tini,
+          bool lockScale,
+          bool lockRotation,
+          bool lockTranslation );
 
     ~IQCADTransformationCommand();
 

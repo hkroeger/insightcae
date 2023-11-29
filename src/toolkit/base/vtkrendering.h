@@ -185,7 +185,7 @@ vtkSmartPointer<vtkLookupTable> createColorMap(
 
 typedef std::pair<double, double> MinMax;
 
-typedef enum { Cell = 0, Point = 1 } FieldSupport;
+typedef enum { OnCell = 0, OnPoint = 1 } FieldSupport;
 
 struct FieldSelection
    : public boost::fusion::tuple
@@ -337,10 +337,10 @@ public:
       mapper->ScalarVisibilityOn();
       switch (fs)
       {
-        case Point:
+        case OnPoint:
           mapper->SetScalarModeToUsePointFieldData();
           break;
-        case Cell:
+        case OnCell:
           mapper->SetScalarModeToUseCellFieldData();
           break;
       }

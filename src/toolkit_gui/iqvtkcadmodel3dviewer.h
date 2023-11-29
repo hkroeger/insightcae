@@ -32,6 +32,7 @@
 #include <QAbstractItemModel>
 #include <QTimer>
 #include <QItemSelectionModel>
+#include <QToolButton>
 
 
 #include "cadtypes.h"
@@ -74,6 +75,7 @@ class BackgroundImage
     Q_OBJECT
 
     QString label_;
+    boost::filesystem::path imageFileName_;
     vtkSmartPointer<vtkImageActor> imageActor_;
     vtkRenderer *usedRenderer_;
 
@@ -83,10 +85,16 @@ public:
     BackgroundImage(
         const boost::filesystem::path& fp,
         IQVTKCADModel3DViewer& viewer );
-
+    BackgroundImage(
+        const rapidxml::xml_node<>& node,
+        IQVTKCADModel3DViewer& viewer );
     ~BackgroundImage();
 
     QString label() const;
+
+    void write(
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node ) const;
 
 public Q_SLOTS:
     void toggleVisibility(bool show);
@@ -187,6 +195,7 @@ public:
 
     friend class ViewState;
 
+    static const char bgiNodeName[];
 
 private:
     /*VTKWidget*/MyVTKWidget vtkWidget_;
@@ -345,6 +354,9 @@ private:
 
     std::set<vtkProp*> actorsExcludedFromPicking_;
 
+    QToolButton *clBGBtn, *addBGBtn;
+    void connectBackgroundImageCommands(BackgroundImage *bgi);
+
 private Q_SLOT:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
     void onModelAboutToBeReset();
@@ -381,6 +393,10 @@ public:
     bool launchAction(ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force=true);
 
     const Bounds& sceneBounds() const;
+
+    void writeViewerState(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const override;
+    void restoreViewerState(rapidxml::xml_node<>& node) override;
+
 
 public:
     void exposeItem( insight::cad::FeaturePtr feat ) override;

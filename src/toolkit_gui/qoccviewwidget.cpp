@@ -24,6 +24,7 @@
 #include <Graphic3d_GraphicDriver.hxx>
 #include <Graphic3d_TextureEnv.hxx>
 #include <OpenGl_GraphicDriver.hxx>
+#undef AllValues
 
 #include <Aspect_DisplayConnection.hxx>
 #include <AIS_InteractiveObject.hxx>

@@ -7,6 +7,7 @@
 #include <QObject>
 #include <QThread>
 #include <QIcon>
+#include <QColor>
 
 #include "base/parametersetvisualizer.h"
 #include "base/supplementedinputdata.h"
@@ -22,6 +23,9 @@ class IQCADModel3DViewer;
 
 namespace insight
 {
+
+
+arma::mat vec3(const QColor& s);
 
 
 class TOOLKIT_GUI_EXPORT CADParameterSetVisualizer
@@ -46,18 +50,28 @@ public:
   void setParameterSetModel(IQParameterSetModel* psm);
   IQParameterSetModel* parameterSetModel() const;
 
-  virtual void addDatum(const std::string& name, insight::cad::DatumPtr dat, bool initialVisibility=false);
-  virtual void addFeature(const std::string& name, insight::cad::FeaturePtr feat, AIS_DisplayMode ds = AIS_Shaded,
-                          QColor color = QColor(),
-                          const std::vector<std::string>& assocParamPaths = {} );
-  virtual void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> ds);
+  virtual void addDatum(
+      const std::string& name,
+      insight::cad::DatumPtr dat,
+      bool initialVisibility=false);
+
+  virtual void addFeature(
+      const std::string& name,
+      insight::cad::FeaturePtr feat,
+      const insight::cad::FeatureVisualizationStyle& fvs =
+        insight::cad::FeatureVisualizationStyle::componentStyle() );
+
+  virtual void addDataset(
+      const std::string& name,
+      vtkSmartPointer<vtkDataObject> ds );
 
   void addGeometryToSpatialTransformationParameter(
-              const std::string& parameterPath,
-              insight::cad::FeaturePtr geom );
+      const std::string& parameterPath,
+      insight::cad::FeaturePtr geom );
 
   void addVectorBasePoint(
-          const std::string& parameterPath, const arma::mat& pBase );
+      const std::string& parameterPath,
+      const arma::mat& pBase );
 
   void update(const ParameterSet& ps) override;
 

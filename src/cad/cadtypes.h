@@ -29,8 +29,10 @@
 
 #include "base/exception.h"
 #include "base/boost_include.h"
+#include "base/vtkrendering.h"
 
 #include "TopoDS_Shape.hxx"
+
 
 #ifndef Q_MOC_RUN
 #include "boost/variant.hpp"
@@ -98,6 +100,44 @@ typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVa
 
 
 enum EntityType { Vertex, Edge, Face, Solid };
+
+
+
+
+struct VisualizationStyle
+{
+    /**
+     * @brief style
+     * enforce style or leave default (=boost::blank)
+     */
+    boost::variant<boost::blank,DatasetRepresentation> style;
+    boost::variant<boost::blank,double> opacity;
+    arma::mat color = arma::mat();
+
+    VisualizationStyle();
+    VisualizationStyle(
+        boost::variant<boost::blank,DatasetRepresentation> style,
+        const arma::mat& color = arma::mat(),
+        boost::variant<boost::blank,double> opacity=boost::blank() );
+};
+
+
+
+
+struct FeatureVisualizationStyle : public VisualizationStyle
+{
+    std::vector<std::string> associatedParameterPaths = {};
+
+    static FeatureVisualizationStyle componentStyle();
+    static FeatureVisualizationStyle intermediateFeatureStyle();
+
+    FeatureVisualizationStyle();
+    FeatureVisualizationStyle(
+        boost::variant<boost::blank,DatasetRepresentation> style,
+        const arma::mat& color = arma::mat(),
+        const std::vector<std::string> associatedParameterPaths = {},
+        boost::variant<boost::blank,double> opacity=boost::blank() );
+};
 
 
 

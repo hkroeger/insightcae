@@ -1,38 +1,12 @@
 #ifndef IQVTKCADMODEL3DVIEWERDRAWLINE_H
 #define IQVTKCADMODEL3DVIEWERDRAWLINE_H
 
-#include "iqcadmodel3dviewer/viewwidgetaction.h"
-#include "iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h"
 
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerplanepointbasedaction.h"
 #include "constrainedsketch.h"
 #include "cadfeatures/line.h"
 
 #include "vtkActor.h"
-
-class IQVTKCADModel3DViewer;
-
-
-
-
-class IQVTKCADModel3DViewerPlanePointBasedAction
-      : public IQVTKSelectConstrainedSketchEntity
-{
-
-protected:
-    boost::signals2::signal<void(insight::cad::SketchPointPtr)> existingPointSelected;
-    boost::signals2::signal<void(insight::cad::SketchPointPtr)> newPointCreated;
-
-public:
-    IQVTKCADModel3DViewerPlanePointBasedAction(
-            IQVTKConstrainedSketchEditor &editor );
-
-    bool onLeftButtonDown(
-        Qt::KeyboardModifiers nFlags,
-        const QPoint point ) override;
-};
-
-
-
 
 
 class IQVTKCADModel3DViewerDrawLine
@@ -41,18 +15,10 @@ class IQVTKCADModel3DViewerDrawLine
   Q_OBJECT
 
 
-public:
-  struct EndPointProperty
-  {
-      insight::cad::SketchPointPtr p;
-      bool isAnExistingPoint;
-      insight::cad::FeaturePtr onFeature;
-  };
-
 private:
-  std::shared_ptr<EndPointProperty> p1_, p2_;
-  vtkSmartPointer<vtkActor> previewLine_;
+  std::shared_ptr<PointProperty> p1_, p2_;
 
+  vtkSmartPointer<vtkActor> previewLine_;
   insight::cad::Line* prevLine_;
 
 private:
@@ -65,11 +31,8 @@ private:
 
   void updatePreviewLine(const arma::mat& point3d);
 
-  insight::cad::SketchPointPtr applyWizards(const QPoint screenPoint) const;
-  insight::cad::SketchPointPtr applyWizards(const arma::mat& pip3d) const;
-
-  void setP1(insight::cad::SketchPointPtr p1, bool isExistingPoint);
-  void setP2(insight::cad::SketchPointPtr p2, bool isExistingPoint);
+protected:
+  PointProperty applyWizards(const arma::mat& pip3d, insight::cad::FeaturePtr onFeature) const override;
 
 public:
     IQVTKCADModel3DViewerDrawLine(
@@ -90,14 +53,14 @@ public:
 Q_SIGNALS:
     void updateActors();
     void endPointSelected(
-        EndPointProperty*  addedPoint,
+        PointProperty*  addedPoint,
         insight::cad::SketchPointPtr previousPoint
         );
     void lineAdded(
-        insight::cad::Line* addedLine,
+        std::shared_ptr<insight::cad::Line> addedLine,
         insight::cad::Line* previouslyAddedLine,
-        EndPointProperty* p2,
-        EndPointProperty* p1
+        PointProperty* p2,
+        PointProperty* p1
         );
 };
 

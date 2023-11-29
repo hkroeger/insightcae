@@ -85,8 +85,6 @@ std::string CADSketchParameter::script() const
 
 void CADSketchParameter::setScript(const std::string& script)
 {
-    insight::dbg()<<"RESET SKETCH"<<std::endl;
-
     if (script.empty())
     {
         script_.reset();

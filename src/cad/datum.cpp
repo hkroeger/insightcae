@@ -368,6 +368,28 @@ gp_Ax3 DatumPlaneData::plane() const
   return cs_;
 }
 
+arma::mat DatumPlaneData::origin() const
+{
+    return vec3(plane().Location());
+}
+
+arma::mat DatumPlaneData::normal() const
+{
+    return vec3(plane().Direction());
+}
+
+arma::mat DatumPlaneData::ex() const
+{
+    return vec3(plane().XDirection());
+}
+
+arma::mat DatumPlaneData::ey() const
+{
+    return vec3(plane().YDirection());
+}
+
+
+
 //// DatumPlane::operator const Handle_AIS_InteractiveObject () const
 //Handle_AIS_InteractiveObject DatumPlaneData::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 //{

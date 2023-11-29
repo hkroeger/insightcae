@@ -250,11 +250,23 @@ public:
         boost::filesystem::path inputfilepath
     ) =0;
 
-
+    void saveToNode(
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& rootNode,
+        const boost::filesystem::path& parent_path,
+        std::string analysisName ) const;
     virtual void saveToStream(std::ostream& os, const boost::filesystem::path& parentPath, std::string analysisName = std::string() ) const;
     void saveToFile ( const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
     void saveToString ( std::string& s, const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
-    std::string readFromFile(const boost::filesystem::path& file, const std::string& startAtSubnode = std::string() );
+
+    std::string readFromRootNode(
+        rapidxml::xml_node<>& rootNode,
+        const boost::filesystem::path& parent_path,
+        const std::string& startAtSubnode = std::string() );
+
+    std::string readFromFile(
+        const boost::filesystem::path& file,
+        const std::string& startAtSubnode = std::string() );
 
 //    rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
     virtual Parameter* clone() const =0;

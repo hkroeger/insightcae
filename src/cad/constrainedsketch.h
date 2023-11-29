@@ -60,6 +60,10 @@ private:
     void build() override;
 
 public:
+    // required to make boost::adaptors::index work
+    using iterator = typename GeometryMap::iterator;
+    using const_iterator = typename GeometryMap::const_iterator;
+
     declareType("ConstrainedSketch");
 
     CREATE_FUNCTION(ConstrainedSketch);
@@ -85,8 +89,8 @@ public:
     void clear();
     GeometryMap::const_iterator findGeometry(ConstrainedSketchEntityPtr geomEntity) const;
     GeometryMap::const_iterator begin() const;
-    GeometryMap::const_iterator cbegin() const;
     GeometryMap::const_iterator end() const;
+    GeometryMap::const_iterator cbegin() const;
     GeometryMap::const_iterator cend() const;
 
     template<class T>

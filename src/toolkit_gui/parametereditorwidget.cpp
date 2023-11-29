@@ -40,9 +40,6 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
     insight::CurrentExceptionContext ex("creating parameter set editor");
 
     parameterTreeView_->setAlternatingRowColors(true);
-    parameterTreeView_->expandAll();
-    parameterTreeView_->resizeColumnToContents(0);
-    parameterTreeView_->resizeColumnToContents(1);
     parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
     parameterTreeView_->setDragDropMode(QAbstractItemView::DragDrop);
     parameterTreeView_->setDefaultDropAction(Qt::MoveAction);
@@ -153,6 +150,22 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
 
 
 
+void ParameterEditorWidget::showEvent(QShowEvent *event)
+{
+    QSplitter::showEvent(event);
+
+    if (!firstShowOccurred_)
+    {
+        firstShowOccurred_=true;
+
+        parameterTreeView_->expandAll();
+        parameterTreeView_->resizeColumnToContents(0);
+        parameterTreeView_->resizeColumnToContents(1);
+    }
+}
+
+
+
 
 ParameterEditorWidget::ParameterEditorWidget
 (
@@ -164,7 +177,8 @@ ParameterEditorWidget::ParameterEditorWidget
 : QSplitter(Qt::Horizontal, parent),
   model_(nullptr),
   vali_(vali),
-  viz_(std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz))
+  viz_(std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz)),
+  firstShowOccurred_(false)
 {
 
     QWidget *w=new QWidget(this);
@@ -229,7 +243,8 @@ ParameterEditorWidget::ParameterEditorWidget
     vali_(nullptr),
     viz_(nullptr),
     parameterTreeView_(parameterTreeView),
-    inputContents_(contentEditorFrame)
+    inputContents_(contentEditorFrame),
+    firstShowOccurred_(false)
 {
     setup(nullptr);
 }
@@ -278,6 +293,10 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
             viz_->setParameterSetModel(psm);
     }
     if (display_) display_->model()->setAssociatedParameterSetModel(model_);
+
+    parameterTreeView_->expandAll();
+    parameterTreeView_->resizeColumnToContents(0);
+    parameterTreeView_->resizeColumnToContents(1);
 }
 
 

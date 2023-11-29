@@ -22,6 +22,34 @@ IQCADItemModel::FeatureVisibility::FeatureVisibility()
 
 
 
+IQCADItemModel::FeatureVisibility::FeatureVisibility(
+    const insight::cad::FeatureVisualizationStyle& fvs)
+: FeatureVisibility()
+{
+    if (auto*s=boost::get<insight::DatasetRepresentation>(&fvs.style))
+    {
+        representation=*s;
+    }
+
+    if (auto*o=boost::get<double>(&fvs.opacity))
+    {
+        opacity=*o;
+    }
+
+    if (fvs.color.n_elem==3)
+    {
+        color=qRgb(
+            255.*fvs.color(0),
+            255.*fvs.color(1),
+            255.*fvs.color(2) );
+    }
+
+    assocParamPaths = fvs.associatedParameterPaths;
+}
+
+
+
+
 IQCADItemModel::IQCADItemModel(insight::cad::ModelPtr m, QObject* parent)
   : QAbstractItemModel(parent),
     associatedParameterSetModel_(nullptr)
@@ -1035,23 +1063,19 @@ void IQCADItemModel::addDatum(const std::string& name, insight::cad::DatumPtr va
 
 
 void IQCADItemModel::addModelstep(
-        const std::string& name,
-        insight::cad::FeaturePtr value,
-        const std::string& featureDescription,
-        insight::DatasetRepresentation dr,
-        QColor color,
-        const std::vector<std::string>& assocParamPaths )
+    const std::string& name,
+    insight::cad::FeaturePtr value,
+    const std::string& featureDescription,
+    const insight::cad::FeatureVisualizationStyle& fvs)
 {
     // set *before* addEntity
     if (featureVisibility_.find(name)==featureVisibility_.end())
     {
-        auto&dvv = featureVisibility_[name];
-        dvv.representation=dr;
+        auto&dvv = (featureVisibility_[name] = FeatureVisibility(fvs));
         dvv.visible=false;
-        if (color.isValid()) dvv.color=color;
     }
 
-    featureVisibility_[name].assocParamPaths=assocParamPaths;
+    featureVisibility_[name].assocParamPaths=fvs.associatedParameterPaths;
 
     addEntity<insight::cad::FeaturePtr>(
               name, value,
@@ -1094,20 +1118,16 @@ void IQCADItemModel::addComponent(
         const std::string& name,
         insight::cad::FeaturePtr value,
         const std::string& featureDescription,
-        insight::DatasetRepresentation dr,
-        QColor color,
-        const std::vector<std::string>& assocParamPaths )
+        const insight::cad::FeatureVisualizationStyle& fvs )
 {
     // set *before* addEntity
     if (featureVisibility_.find(name)==featureVisibility_.end())
     {
-        auto &dvv = featureVisibility_[name];
-        dvv.representation=dr;
+        auto&dvv = (featureVisibility_[name] = FeatureVisibility(fvs));
         dvv.visible=true;
-        if (color.isValid()) dvv.color=color;
     }
 
-    featureVisibility_[name].assocParamPaths=assocParamPaths;
+    featureVisibility_[name].assocParamPaths=fvs.associatedParameterPaths;
 
     addEntity<insight::cad::FeaturePtr>(
               name, value,

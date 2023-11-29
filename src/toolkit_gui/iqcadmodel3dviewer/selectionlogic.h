@@ -256,6 +256,7 @@ public:
                 if (highlights_.count(selcand)<1)
                     highlights_[selcand]=highlightEntity(selcand, selectionColor);
 
+                this->updateLastMouseLocation(point);
                 entitySelected(selcand); // last, because current obj might be deleted
             }
             else // remove from sel

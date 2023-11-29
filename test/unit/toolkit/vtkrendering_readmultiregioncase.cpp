@@ -47,7 +47,7 @@ int main(int argc, char*argv[])
         camera->SetPosition( toArray(vec3(0, 0, 10)) );
 
         {
-            FieldSelection ws("T", FieldSupport::Point, -1);
+            FieldSelection ws("T", FieldSupport::OnPoint, -1);
             auto ws_range = calcRange(ws, {}, {exb});
 
             FieldColor ws_color(ws, createColorMap(), ws_range);
@@ -63,7 +63,7 @@ int main(int argc, char*argv[])
         scene.clearScene();
 
         {
-            FieldSelection ws("U", FieldSupport::Point, -1);
+            FieldSelection ws("U", FieldSupport::OnPoint, -1);
             auto ws_range = calcRange(ws, {}, {exb});
 
             FieldColor ws_color(ws, createColorMap(colorMapData_SD, 32, true),

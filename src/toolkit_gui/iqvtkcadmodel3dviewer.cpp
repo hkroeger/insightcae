@@ -46,6 +46,7 @@
 #include "vtkImageReader2.h"
 #include "vtkCaptionActor2D.h"
 #include "vtkInteractorStyleUser.h"
+#include "vtkProp3DCollection.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -63,6 +64,7 @@
 
 
 #include "base/vtkrendering.h"
+#include "base/rapidxml.h"
 #include "iqvtkkeepfixedsizecallback.h"
 #include "base/cppextensions.h"
 #include "iqvtkviewer.h"
@@ -105,23 +107,25 @@ IQVTKCADModel3DViewer &BackgroundImage::viewer()
 BackgroundImage::BackgroundImage(
     const boost::filesystem::path& imageFile,
     IQVTKCADModel3DViewer& v )
-    : QObject(&v),
+
+  : QObject(&v),
+    imageFileName_(imageFile),
     label_(QString::fromStdString(imageFile.filename().string()))
 {
     insight::assertion(
-        boost::filesystem::exists(imageFile),
+        boost::filesystem::exists(imageFileName_),
         "image file has to exist!" );
 
     auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
     vtkSmartPointer<vtkImageReader2> imageReader;
-    auto ir=readerFactory->CreateImageReader2(imageFile.string().c_str());
+    auto ir=readerFactory->CreateImageReader2(imageFileName_.string().c_str());
 
     insight::assertion(
         ir!=nullptr,
-        "could not create reader for file "+imageFile.string() );
+        "could not create reader for file "+imageFileName_.string() );
 
     imageReader.TakeReference(ir);
-    imageReader->SetFileName(imageFile.string().c_str());
+    imageReader->SetFileName(imageFileName_.string().c_str());
     imageReader->Update();
     auto imageData = imageReader->GetOutput();
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
@@ -182,6 +186,8 @@ BackgroundImage::BackgroundImage(
                 imageActor_->SetPosition( newPosition.memptr() );
 
                 imageActor_->SetOpacity(0.8); // can't pick if opacity is lower than 1
+
+                viewer().scheduleRedraw();
             }
             );
 
@@ -191,16 +197,110 @@ BackgroundImage::BackgroundImage(
     }
 }
 
+BackgroundImage::BackgroundImage(
+    const rapidxml::xml_node<>& node,
+    IQVTKCADModel3DViewer& v )
+
+  : QObject(&v)
+{
+    label_= QString(
+        node.first_attribute("label")->value() );
+
+    imageFileName_= boost::filesystem::path(
+        node.first_attribute("imageFileName")->value() );
+
+    insight::assertion(
+        boost::filesystem::exists(imageFileName_),
+        "image file has to exist!" );
+
+    auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
+    vtkSmartPointer<vtkImageReader2> imageReader;
+    auto ir=readerFactory->CreateImageReader2(imageFileName_.string().c_str());
+
+    insight::assertion(
+        ir!=nullptr,
+        "could not create reader for file "+imageFileName_.string() );
+
+    imageReader.TakeReference(ir);
+    imageReader->SetFileName(imageFileName_.string().c_str());
+    imageReader->Update();
+    auto imageData = imageReader->GetOutput();
+    imageActor_ = vtkSmartPointer<vtkImageActor>::New();
+    imageActor_->SetInputData(imageData);
+
+    double rotationAngle = toNumber<double>(
+        node.first_attribute("rotationAngle")->value() );
+    imageActor_->SetOrientation(0, 0, rotationAngle);
+
+    double scale = toNumber<double>(
+        node.first_attribute("scale")->value() );
+    imageActor_->SetScale( scale );
+
+    arma::mat position;
+    stringToValue(
+        node.first_attribute("position")->value(),
+        position );
+    imageActor_->SetPosition( position.memptr() );
+
+    imageActor_->SetOpacity(0.8); // can't pick if opacity is lower than 1
+
+    usedRenderer_=viewer().renderer();
+    usedRenderer_->AddActor(imageActor_);
+    viewer().scheduleRedraw();
+}
+
+
+
+
 BackgroundImage::~BackgroundImage()
 {
     usedRenderer_->RemoveActor( imageActor_ );
     viewer().scheduleRedraw();
 }
 
+
+
+
 QString BackgroundImage::label() const
 {
     return label_;
 }
+
+
+
+
+void BackgroundImage::write(
+    rapidxml::xml_document<> &doc,
+    rapidxml::xml_node<> &node ) const
+{
+    insight::appendAttribute(
+        doc, node,
+        "label", label_.toStdString());
+
+    insight::appendAttribute(
+        doc, node, "imageFileName",
+        imageFileName_.string());
+
+    insight::appendAttribute(
+        doc, node,
+        "rotationAngle",
+        boost::lexical_cast<std::string>(imageActor_->GetOrientation()[2]) );
+
+    insight::appendAttribute(
+        doc, node,
+        "scale",
+        boost::lexical_cast<std::string>(imageActor_->GetScale()[0]) );
+
+
+    arma::mat position = vec3Zero();
+    imageActor_->GetPosition(position.memptr());
+    insight::appendAttribute(
+        doc, node,
+        "position", valueToString(position) );
+}
+
+
+
 
 void BackgroundImage::toggleVisibility(bool show)
 {
@@ -732,14 +832,14 @@ void IQVTKCADModel3DViewer::resetDisplayProps(const QPersistentModelIndex& pidx)
 
                     if (fieldName.empty())
                     {
-                        if (pointCell==insight::Point)
+                        if (pointCell==insight::OnPoint)
                         {
                             if (auto *arr = pds->GetPointData()->GetArray(0))
                             {
                                 fieldName = arr->GetName();
                             }
                         }
-                        else if (pointCell==insight::Cell)
+                        else if (pointCell==insight::OnCell)
                         {
                             if (auto *arr = pds->GetCellData()->GetArray(0))
                             {
@@ -751,11 +851,11 @@ void IQVTKCADModel3DViewer::resetDisplayProps(const QPersistentModelIndex& pidx)
                     if (!fieldName.empty())
                     {
                         double mima[2]={0,1};
-                        if (pointCell==insight::Point)
+                        if (pointCell==insight::OnPoint)
                         {
                             pds->GetPointData()->GetArray(fieldName.c_str())->GetRange(mima, component);
                         }
-                        else if (pointCell==insight::Cell)
+                        else if (pointCell==insight::OnCell)
                         {
                             pds->GetCellData()->GetArray(fieldName.c_str())->GetRange(mima, component);
                         }
@@ -1158,6 +1258,8 @@ void IQVTKCADModel3DViewer::undoExposeItem()
 }
 
 
+
+
 vtkRenderWindow* IQVTKCADModel3DViewer::renWin()
 {
     return vtkWidget_.
@@ -1168,6 +1270,30 @@ vtkRenderWindow* IQVTKCADModel3DViewer::renWin()
 #endif
     ();
 }
+
+
+
+
+void IQVTKCADModel3DViewer::connectBackgroundImageCommands(BackgroundImage *bgi)
+{
+    auto remAct = new QAction("Remove "+bgi->label(), bgi);
+    connect(remAct, &QAction::triggered, remAct,
+            std::bind(&QList<BackgroundImage*>::removeOne, &backgroundImages_, bgi) );
+    connect(remAct, &QAction::triggered, bgi, &QObject::deleteLater);
+    clBGBtn->addAction(remAct);
+
+    auto showHideAct = new QAction(bgi->label(), bgi);
+    showHideAct->setCheckable(true);
+    connect(
+        showHideAct, &QAction::toggled,
+        bgi, &BackgroundImage::toggleVisibility );
+    addBGBtn->addAction(showHideAct);
+
+    showHideAct->setChecked(true);
+}
+
+
+
 
 IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
         QWidget* parent )
@@ -1240,35 +1366,22 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
                 this, &IQCADModel3DViewer::viewTop );
 
     auto clBGAction = btntb->addAction("CLBG");
-    auto *clBGBtn=
+    clBGBtn=
         dynamic_cast<QToolButton*>(btntb->widgetForAction(clBGAction));
 
     auto addBGAction = btntb->addAction("BG");
-    auto *addBGBtn=
+    addBGBtn=
         dynamic_cast<QToolButton*>(btntb->widgetForAction(addBGAction));
 
     connect(addBGAction, &QAction::triggered, addBGAction,
-    [this,clBGBtn,addBGBtn]() {
+    [this]() {
         auto fn = QFileDialog::getOpenFileName(this, "Select background image file");
         if (!fn.isEmpty())
         {
             auto bgi = new BackgroundImage(fn.toStdString(), *this);
             backgroundImages_.push_back(bgi);
 
-            auto remAct = new QAction("Remove "+bgi->label(), bgi);
-            connect(remAct, &QAction::triggered, remAct,
-                    std::bind(&QList<BackgroundImage*>::removeOne, &backgroundImages_, bgi) );
-            connect(remAct, &QAction::triggered, bgi, &QObject::deleteLater);
-            clBGBtn->addAction(remAct);
-
-            auto showHideAct = new QAction(bgi->label(), bgi);
-            showHideAct->setCheckable(true);
-            connect(
-                showHideAct, &QAction::toggled,
-                bgi, &BackgroundImage::toggleVisibility );
-            addBGBtn->addAction(showHideAct);
-
-            showHideAct->setChecked(true);
+            connectBackgroundImageCommands(bgi);
         }
     }
     );
@@ -1466,7 +1579,7 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) c
         auto picker3d = vtkSmartPointer<vtkPicker>::New();
         picker3d->SetTolerance(1e-4);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
-        auto pi = picker3d->GetActors();
+        auto pi = picker3d->GetProp3Ds();
 //        std::cout<<"# under cursors = "<<pi->GetNumberOfItems()<<std::endl;
         if (pi->GetNumberOfItems()>0)
         {
@@ -1505,7 +1618,7 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
     //    picker3d->SetTolerance(1e-4);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
 
-        auto pi = picker3d->GetActors();
+        auto pi = picker3d->GetProp3Ds();
         auto pp = picker3d->GetPickedPositions();
         int nsel = pi->GetNumberOfItems();
 
@@ -1935,6 +2048,36 @@ const IQVTKCADModel3DViewer::Bounds &IQVTKCADModel3DViewer::sceneBounds() const
 {
     return sceneBounds_;
 }
+
+const char IQVTKCADModel3DViewer::bgiNodeName[] = "backgroundImage";
+
+void IQVTKCADModel3DViewer::writeViewerState(
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node ) const
+{
+    auto* camera = ren_->GetActiveCamera();
+
+
+    for (const auto& bgi: backgroundImages_)
+    {
+        auto &bgin = insight::appendNode(doc, node, bgiNodeName);
+        bgi->write(doc, bgin);
+    }
+}
+
+
+void IQVTKCADModel3DViewer::restoreViewerState(
+    rapidxml::xml_node<>& node )
+{
+    backgroundImages_.clear();
+    for (auto *n=node.first_node(bgiNodeName); n; n=n->next_sibling(bgiNodeName))
+    {
+        auto *bgi=new BackgroundImage(*n, *this);
+        backgroundImages_.append(bgi);
+        connectBackgroundImageCommands(bgi);
+    }
+}
+
 
 
 double IQVTKCADModel3DViewer::getScale() const

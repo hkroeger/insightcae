@@ -408,10 +408,10 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       // included in the actual domain
       arma::mat bb = PolyDataBndBox(internal->GetOutput());
 
-      FieldSelection p_field("p", FieldSupport::Point, -1);
+      FieldSelection p_field("p", FieldSupport::OnPoint, -1);
       FieldColor p_fc(p_field, createColorMap(), calcRange(p_field, {}, {patches}));
 
-      FieldSelection U_field("U", FieldSupport::Point, -1);
+      FieldSelection U_field("U", FieldSupport::OnPoint, -1);
       FieldColor U_fc(p_field, createColorMap(), calcRange(p_field, {}, {internal}));
 
       arma::mat L=p.geometryscale*sp().L_;
@@ -666,9 +666,9 @@ void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements
     Q_EMIT updateSupplementedInputData(std::dynamic_pointer_cast<supplementedInputDataBase>(spp));
 
 
-    addFeature("walls", spp->walls_, AIS_Shaded, QColorConstants::Gray);
-    addFeature("inlet", spp->inlet_, AIS_Shaded, QColorConstants::Blue);
-    addFeature("outlet", spp->outlet_, AIS_Shaded, QColorConstants::Green);
+    addFeature("walls", spp->walls_, {insight::Surface, vec3(QColorConstants::Gray)});
+    addFeature("inlet", spp->inlet_, {insight::Surface, vec3(QColorConstants::Blue)});
+    addFeature("outlet", spp->outlet_, {insight::Surface, vec3(QColorConstants::Green)});
 
     addDatum(
         "PiM",

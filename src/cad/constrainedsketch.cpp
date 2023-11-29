@@ -178,14 +178,15 @@ ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::begin() const
     return geometry_.begin();
 }
 
-ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::cbegin() const
-{
-    return geometry_.cbegin();
-}
-
 ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::end() const
 {
     return geometry_.end();
+}
+
+ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::cbegin() const
+{
+    return geometry_.cbegin();
+
 }
 
 ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::cend() const
@@ -282,12 +283,17 @@ void ConstrainedSketch::resolveConstraints(
         (solverType==rootND)
        )
     {
-        progress.message( str(boost::format(
-            "Number of contraints (%d) not equal to number of DoF (%d)!"
-            " Cannot use root solver, swithing to minimizer!")
-             % constrs.size() % dofs.size()) );
+        // progress.message( str(boost::format(
+        //     "Number of contraints (%d) not equal to number of DoF (%d)!"
+        //     " Cannot use root solver, swithing to minimizer!")
+        //      % constrs.size() % dofs.size()) );
 
-        solverType=minimumND;
+        // solverType=minimumND;
+        throw insight::Exception(
+        "Number of contraints (%d) not equal to number of DoF (%d)!"
+        " Cannot use root solver, swithing to minimizer!",
+         constrs.size(), dofs.size() );
+
     }
 
     arma::mat xsol;
@@ -317,6 +323,12 @@ void ConstrainedSketch::resolveConstraints(
 
         case rootND:
         {
+            for (int i=0;i<constrs.size();++i)
+            {
+                auto& constr=constrs[i];
+                insight::dbg()<<"constraint "<<i<<" : idx "<<constr.iLocal<<" of "<<constr.entity->type()<<endl;
+            }
+
             xsol = nonlinearSolveND(
                 [&](const arma::mat& x) -> arma::mat
                 {

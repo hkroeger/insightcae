@@ -4,16 +4,14 @@
 #include "toolkit_gui_export.h"
 
 #include <QObject>
-#include <QColor>
+
 
 #include "cadtypes.h"
 
 #include <vtkSmartPointer.h>
 #include <vtkDataObject.h>
 
-#include "boost/variant.hpp"
 
-#include "AIS_DisplayMode.hxx"
 
 class TOOLKIT_GUI_EXPORT IQISCADModelGenerator
     : public QObject
@@ -25,15 +23,35 @@ public:
 
 Q_SIGNALS:
 
-  void createdVariable    (const QString& sn, insight::cad::ScalarPtr sv);
-  void createdVariable    (const QString& sn, insight::cad::VectorPtr vv, insight::cad::VectorVariableType vt);
-  void createdFeature     (const QString& sn, insight::cad::FeaturePtr sm, bool is_component,
-                           boost::variant<boost::blank,AIS_DisplayMode> ds = boost::blank(),
-                           QColor color = QColor(),
-                           const std::vector<std::string>& assocParamPaths = {} );
-  void createdDatum       (const QString& sn, insight::cad::DatumPtr dm, bool initialVisibility=false);
-  void createdEvaluation  (const QString& sn, insight::cad::PostprocActionPtr em, bool visible);
-  void createdDataset     (const QString& sn, vtkSmartPointer<vtkDataObject> ds, bool visible);
+  void createdVariable(
+        const QString& sn,
+        insight::cad::ScalarPtr sv );
+
+  void createdVariable(
+      const QString& sn,
+      insight::cad::VectorPtr vv,
+      insight::cad::VectorVariableType vt );
+
+  void createdFeature(
+      const QString& sn,
+      insight::cad::FeaturePtr sm,
+      bool is_component,
+      const insight::cad::FeatureVisualizationStyle& fvs = insight::cad::FeatureVisualizationStyle() );
+
+  void createdDatum(
+      const QString& sn,
+      insight::cad::DatumPtr dm,
+      bool initialVisibility=false );
+
+  void createdEvaluation(
+      const QString& sn,
+      insight::cad::PostprocActionPtr em,
+      bool visible );
+
+  void createdDataset(
+      const QString& sn,
+      vtkSmartPointer<vtkDataObject> ds,
+      bool visible );
 
   void statusMessage(const QString& msg, double timeout=0);
   void statusProgress(int step, int totalSteps);

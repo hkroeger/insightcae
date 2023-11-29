@@ -14,6 +14,8 @@
         <file>icon_angle.svg</file>
         <file>icon_pointoncurve.svg</file>
         <file>icon_mergepoints.svg</file>
+        <file>icon_sketch_drawpoint.svg</file>
+        <file>icon_sketch_drawrectangle.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

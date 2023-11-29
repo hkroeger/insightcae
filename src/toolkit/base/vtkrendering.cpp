@@ -836,13 +836,13 @@ MinMax calcRange(
         vtkDataArray *arr;
         switch (fs)
         {
-          case Point:
+          case OnPoint:
             arr=ds->GetPointData()->GetArray(fieldname.c_str());
             insight::assertion(
                         arr!=nullptr,
                         "could not lookup point field "+fieldname );
             break;
-          case Cell:
+          case OnCell:
             arr=ds->GetCellData()->GetArray(fieldname.c_str()); //->GetRange(mima, cmpt);
             insight::assertion(
                         arr!=nullptr,

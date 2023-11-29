@@ -52,9 +52,9 @@ double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
     switch (iConstraint)
     {
     case 0:
-        return p(0)-parameters().getDouble("x");
+        return p(0) - parameters().getDouble("x");
     case 1:
-        return p(1)-parameters().getDouble("y");
+        return p(1) - parameters().getDouble("y");
     };
 
     throw insight::Exception(

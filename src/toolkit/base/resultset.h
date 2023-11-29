@@ -34,6 +34,7 @@
 #include "base/resultelements/scalarresult.h"
 #include "base/resultelements/vectorresult.h"
 #include "base/resultelements/image.h"
+#include "base/resultelements/video.h"
 #include "base/resultelements/attributeresulttable.h"
 #include "base/resultelements/tabularresult.h"
 #include "base/resultelements/chart.h"

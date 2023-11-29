@@ -100,6 +100,7 @@ set(toolkit_SOURCES
     base/progressdisplayer/convergenceanalysisdisplayer.cpp base/progressdisplayer/convergenceanalysisdisplayer.h
     base/resultelements/fileresult.cpp base/resultelements/fileresult.h
     base/resultelements/image.cpp base/resultelements/image.h
+    base/resultelements/video.cpp base/resultelements/video.h
     base/resultelements/numericalresult.cpp base/resultelements/numericalresult.h
     base/resultelements/tabularresult.cpp base/resultelements/tabularresult.h
     base/resultelements/scalarresult.cpp base/resultelements/scalarresult.h

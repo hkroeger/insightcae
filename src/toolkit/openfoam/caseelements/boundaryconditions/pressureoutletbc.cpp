@@ -128,8 +128,20 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 }
                 else if ( const auto* wt = boost::get<Parameters::behaviour_removePRGHHydrostaticPressure_type>(&p.behaviour) )
                 {
-                    BC["type"]=OFDictData::data ( "prghTotalPressure" );
-                    BC["p0"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( wt->pressure ) );
+                    if (wt->pressure==Parameters::behaviour_removePRGHHydrostaticPressure_type::totalPressure)
+                    {
+                        BC["type"]=OFDictData::data ( "prghTotalPressure" );
+                        BC["p0"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( wt->pressure ) );
+                    }
+                    else if (wt->pressureType==Parameters::behaviour_removePRGHHydrostaticPressure_type::staticPressure)
+                    {
+                        BC["type"]=OFDictData::data ( "prghPressure" );
+                        BC["p"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( wt->pressure ) );
+                    }
+                }
+                else if ( const auto* extrapol = boost::get<Parameters::behaviour_extrapolate_type>(&p.behaviour) )
+                {
+                    BC["type"]=OFDictData::data ( "zeroGradient" );
                 }
               }
 

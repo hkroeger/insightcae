@@ -891,6 +891,19 @@ public:
 };
 
 
+
+void setHydrostaticPressure(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& caseDir,
+    const arma::mat& pSurf,
+    const arma::mat& eUp,
+    double rho, double p0Amb,
+    const std::map<std::string, std::string> &targetEntriesPerPatch = {},
+    const std::string& fieldName = "p",
+    bool setInternalField = true
+    );
+
+
 }
 
 #endif // OPENFOAMTOOLS_H

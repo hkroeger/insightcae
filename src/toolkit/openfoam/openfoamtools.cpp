@@ -3786,6 +3786,83 @@ void BoundingBox::operator=(const arma::mat& bb)
     arma::mat::operator=(bb);
 }
 
+void setHydrostaticPressure(
+    const OpenFOAMCase &cm,
+    const boost::filesystem::path &location,
+    const arma::mat &pSurf,
+    const arma::mat &eUp,
+    double rho, double p0Amb,
+    const std::map<std::string, std::string> &targetEntriesPerPatch,
+    const std::string& fieldName,
+    bool setInternalField )
+{
+    std::string expr = str(
+        boost::format("%g - (pos()-vector(%g,%g,%g))&vector(%g,%g,%g)*%g*9.81")
+            % p0Amb
+            % pSurf(0) % pSurf(1) % pSurf(2)
+            % eUp(0) % eUp(1) % eUp(2)
+            % rho
+        );
+
+    if (setInternalField)
+    {
+        OFDictData::dictFile sefd;
+        sefd["defaultFieldValues"]=
+            OFDictData::list{str(boost::format("volScalarFieldValue "+fieldName+" %g")%p0Amb)};
+
+        OFDictData::dict p;
+        p["field"]=fieldName;
+        p["constants"]=OFDictData::dict();
+        p["variables"]=OFDictData::list();
+        p["expression"]="#{"+expr+"#}";
+        sefd["expressions"]=OFDictData::list{ fieldName, p };
+
+        sefd.write( location / "system" / "setExprFieldsDict" );
+
+        cm.executeCommand(location, "setExprFields", {});
+    }
+
+    if (targetEntriesPerPatch.size())
+    {
+        OFDictData::dict pat;
+        pat["field"]=fieldName;
+        pat["keepPatches"]=true;
+
+        auto addExpr = [&](const std::string& patch, const std::string& targetEntry)
+        {
+            OFDictData::dict exprDict;
+            exprDict["patch"]=patch;
+            exprDict["target"]=targetEntry;
+            exprDict["expression"]="#{ "+expr+" #}";
+            return exprDict;
+        };
+
+        OFDictData::dict boundaryDict;
+        cm.parseBoundaryDict(location, boundaryDict);
+
+        OFDictData::list exprs;
+        for (const auto& tepp: targetEntriesPerPatch)
+        {
+            boost::regex re(tepp.first);
+            for (const auto& p: boundaryDict)
+            {
+                if (boost::regex_match(p.first, re))
+                {
+                    exprs.push_back(addExpr(p.first, tepp.second));
+                }
+            }
+        }
+        pat["expressions"]=exprs;
+
+        OFDictData::dictFile sebfd;
+        sebfd["pattern"]=pat;
+
+        sebfd.write( location / "system" / "setExprBoundaryFieldsDict" );
+
+        cm.executeCommand(location, "setExprBoundaryFields", {});
+    }
+}
+
 
 
 

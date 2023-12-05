@@ -1,0 +1,18 @@
+L=15;
+sk:ConstrainedSketch(
+ XY,
+ SketchPoint(0, 0, 0),
+ SketchPoint(1, 10, 0),
+ SketchPoint(2, 10, 10),
+ Line(10, 0, 1),
+ Line(11, 1, 2),
+ Line(12, 0, 2),
+
+ Distance(100, 0, 2, L),
+ FixedPoint(101, 0),
+ VerticalConstraint(102, 11),
+ HorizontalConstraint(103, 10),
+ Distance(104, 0, 1, 0.5*L)
+);
+
+ 

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-28 15:02+0100\n"
-"PO-Revision-Date: 2023-10-25 10:57+0200\n"
+"POT-Creation-Date: 2023-08-14 23:34+0200\n"
+"PO-Revision-Date: 2023-07-02 13:33+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
@@ -17,36 +17,25 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: base/parameters/arrayparameter.cpp:428
+#: base/parameters/arrayparameter.cpp:225
 #, c-format
 msgid ""
 "No xml node found with type '%s' and name '%s', default value '%s' is used."
 msgstr ""
+"Kein xml-Node vom Typ '%s' mit Namen '%s' gefunden, Default-Wert '%s' wird "
+"benutzt."
 
-#: base/vtkrendering.cpp:1323
+#: base/parameters/arrayparameter.cpp:259
+#, c-format
+msgid "Tried to set a %s from a different type (%s)!"
+msgstr "Versuch, ein %s von einem unterschiedlichen Typ %s zu setzen!"
+
+#: base/vtkrendering.cpp:655
 #, c-format
 msgid "no lower bound found for t=%g!"
 msgstr ""
 
-#: openfoam/openfoamanalysis.cpp:337
+#: openfoam/openfoamanalysis.cpp:326
 #, c-format
 msgid "evaluating the results for case \"%s\""
-msgstr ""
-
-#: openfoam/caseelements/analysiscaseelements.cpp:81
-#, c-format
-msgid "no valid output file was found in time directory %s!"
-msgstr ""
-
-#: openfoam/caseelements/analysiscaseelements.cpp:227
-#, c-format
-msgid "data path %s of function object %s does not exist!"
-msgstr ""
-
-#: openfoam/caseelements/analysiscaseelements.cpp:246
-#, c-format
-msgid ""
-"Possible inconsistency in solver output data detected!File %s from time "
-"directory %s was created before the output file of the previous time "
-"directory."
 msgstr ""

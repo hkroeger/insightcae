@@ -127,9 +127,6 @@ int main(int argc, char** argv)
 
     InsightCAEApplication app(argc, argv, "InsightCAE Workbench");
 
-    // After creation of application object!
-    gti.resetLocale();
-
     QPixmap pixmap(":/resources/insight_workbench_splash.png");
     QSplashScreen splash(pixmap, /*Qt::WindowStaysOnTopHint|*/Qt::SplashScreen);
     splash.show();

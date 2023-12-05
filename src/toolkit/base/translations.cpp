@@ -18,9 +18,7 @@ GettextInit::GettextInit(const char* domain, const char* directory, InitType it)
     //    setlocale(LC_MESSAGES, locale.data());
     //#endif
 
-
-
-    resetLocale();
+    setlocale(LC_NUMERIC, "C");
 
     boost::filesystem::path tdir;
     if (auto sd=getenv("INSIGHT_INSTDIR"))
@@ -35,24 +33,6 @@ GettextInit::GettextInit(const char* domain, const char* directory, InitType it)
     bind_textdomain_codeset(domain, "UTF-8");
 }
 
-void GettextInit::resetLocale()
-{
-    if (!setlocale(LC_ALL, ""))
-    {
-        std::cerr<<"setlocale(LC_ALL, ...) failed!"<<std::endl;
-    }
-
-//    std::locale myloc(std::locale(), "C", std::locale::numeric); // change LC_NUMERIC only
-//    std::locale::global(myloc);
-    if (!setlocale(LC_NUMERIC, "C"))
-    {
-        std::cerr<<"setlocale(LC_NUMERIC, ...) failed!"<<std::endl;
-    }
-
-    std::cout.imbue(std::locale());
-    std::cin.imbue(std::locale());
-    std::cerr.imbue(std::locale());
-}
 
 
 GettextInit toolkit_gettextInit(GETTEXT_DOMAIN, GETTEXT_OUTPUT_DIR, GettextInit::Library);

@@ -160,7 +160,7 @@ void IQVTKConstrainedSketchEditor::drawPoint()
                                 online ) ); // fix to curve
 
                         (*this)->insertGeometry(
-                            insight::cad::DistanceConstraint::create(
+                            insight::cad::FixedDistanceConstraint::create(
                                 online->start(), pp.p,
                                 (*this)->sketchPlaneNormal() ) );
                     }
@@ -216,7 +216,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
                         // constrain distance to start of hit line
                         (*this)->insertGeometry(
-                            insight::cad::DistanceConstraint::create(
+                            insight::cad::FixedDistanceConstraint::create(
                                 online->start(), addPoint->p,
                                 (*this)->sketchPlaneNormal() ) );
                     }
@@ -243,7 +243,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
                 if (!(pointIsFixed(p1) && pointIsFixed(p2)) && !isLastLine)
                 {
                     (*this)->insertGeometry(
-                        insight::cad::DistanceConstraint::create(
+                        insight::cad::FixedDistanceConstraint::create(
                             line->start(), line->end(),
                             (*this)->sketchPlaneNormal() ) );
 
@@ -329,7 +329,7 @@ void IQVTKConstrainedSketchEditor::drawRectangle()
                                 online ) ); // fix to curve
 
                         (*this)->insertGeometry(
-                            insight::cad::DistanceConstraint::create(
+                            insight::cad::FixedDistanceConstraint::create(
                                 online->start(), p1->p,
                                 (*this)->sketchPlaneNormal() ) );
                     }
@@ -352,7 +352,7 @@ void IQVTKConstrainedSketchEditor::drawRectangle()
                                 online ) ); // fix to curve
 
                         (*this)->insertGeometry(
-                            insight::cad::DistanceConstraint::create(
+                            insight::cad::FixedDistanceConstraint::create(
                                 online->start(), p2->p,
                                 (*this)->sketchPlaneNormal() ) );
                     }
@@ -360,11 +360,11 @@ void IQVTKConstrainedSketchEditor::drawRectangle()
                 else
                 {
                     (*this)->insertGeometry(
-                        insight::cad::DistanceConstraint::create(
+                        insight::cad::FixedDistanceConstraint::create(
                             addedLines[0]->start(), addedLines[0]->end(),
                             (*this)->sketchPlaneNormal() ) );
                     (*this)->insertGeometry(
-                        insight::cad::DistanceConstraint::create(
+                        insight::cad::FixedDistanceConstraint::create(
                             addedLines[1]->start(), addedLines[1]->end(),
                             (*this)->sketchPlaneNormal() ) );
                 }
@@ -583,7 +583,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         bool(p1)&&bool(p2),
                         "Please select exactly two sketch points!");
 
-                    auto dc = insight::cad::DistanceConstraint::create(
+                    auto dc = insight::cad::FixedDistanceConstraint::create(
                         p1, p2,
                         (*this)->sketchPlaneNormal() );
                     (*this)->insertGeometry(dc);

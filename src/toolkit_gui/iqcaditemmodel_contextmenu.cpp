@@ -78,9 +78,13 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                                     actprops->SetLineWidth(2);
                                 },
                                 [this,psk,name](){
-                                  // on finish
-                                    addModelstep(name.toStdString(), psk);
-                                    setStaticModelStep(name.toStdString(), true);
+                                    // on finish
+                                    std::ostringstream so;
+                                    psk->generateScript(so);
+                                    Q_EMIT insertIntoNotebook(
+                                        QString::fromStdString(so.str()) );
+                                    // addModelstep(name.toStdString(), psk);
+                                    // setStaticModelStep(name.toStdString(), true);
                                 }) );
                     cm.addAction(a);
                 }
@@ -110,7 +114,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                                         p->populateEditControls(&dlg, viewer);
                                         dlg.exec();
                                     }
-                                );
+                                    );
                                 editActions.append(a);
                             }
 
@@ -258,7 +262,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
         if (idx.internalId()==CADModelSection::datum)
         {
             auto datum = data(idx.siblingAtColumn(IQCADItemModel::entityCol))
-                    .value<insight::cad::DatumPtr>();
+                             .value<insight::cad::DatumPtr>();
 
             if (datum->providesPlanarReference())
             {
@@ -273,20 +277,21 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                         std::bind(&IQCADItemModel::addImportedSketch, this, datum) );
             }
 
-    //        auto datums = model_->datums();
-    //        auto i=datums.begin();
-    //        std::advance(i, index.row());
-    //        datumVisibility_[i->second] =
-    //                ( value.value<Qt::CheckState>()==Qt::Checked );
-    //        Q_EMIT dataChanged(index, index, {role});
-    //        return true;
+            //        auto datums = model_->datums();
+            //        auto i=datums.begin();
+            //        std::advance(i, index.row());
+            //        datumVisibility_[i->second] =
+            //                ( value.value<Qt::CheckState>()==Qt::Checked );
+            //        Q_EMIT dataChanged(index, index, {role});
+            //        return true;
         }
         else if (idx.internalId()==CADModelSection::feature)
         {
             a=new QAction("Shaded", &cm);
             connect(a, &QAction::triggered,
                     [this,idx]() {
-                        QModelIndex featrepr=index(idx.row(), IQCADItemModel::entityRepresentationCol, idx.parent());
+                        QModelIndex featrepr=index(
+                            idx.row(), IQCADItemModel::entityRepresentationCol, idx.parent());
                         setData(featrepr, insight::DatasetRepresentation::Surface, Qt::EditRole);
                     });
             cm.addAction(a);
@@ -294,7 +299,8 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
             a=new QAction("Wireframe", &cm);
             connect(a, &QAction::triggered,
                     [this,idx]() {
-                        QModelIndex featrepr=index(idx.row(), IQCADItemModel::entityRepresentationCol, idx.parent());
+                        QModelIndex featrepr=index(
+                            idx.row(), IQCADItemModel::entityRepresentationCol, idx.parent());
                         setData(featrepr, insight::DatasetRepresentation::Wireframe, Qt::EditRole);
                     });
             cm.addAction(a);
@@ -318,9 +324,9 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                         bool ok=false;
                         QModelIndex ci=index(idx.row(), IQCADItemModel::entityColorCol, idx.parent());
                         auto val=QColorDialog::getColor(
-                                    data(ci).value<QColor>(),
-                                    nullptr,
-                                    "Set Color");
+                            data(ci).value<QColor>(),
+                            nullptr,
+                            "Set Color");
                         if (val.isValid())
                         {
                             setData(ci, val, Qt::EditRole);
@@ -329,17 +335,17 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
             cm.addAction(a);
 
             auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol))
-                    .value<insight::cad::FeaturePtr>();
+                            .value<insight::cad::FeaturePtr>();
 
             bool someSubMenu=false, someHoverDisplay=false;
             addSymbolsToSubmenu(
-                        QString::fromStdString(feat->featureSymbolName()),
-                        &cm, feat,
-                        &someSubMenu, &someHoverDisplay);
+                QString::fromStdString(feat->featureSymbolName()),
+                &cm, feat,
+                &someSubMenu, &someHoverDisplay);
             if (someHoverDisplay)
             {
-              connect(&cm, &QMenu::aboutToHide,
-                    this, &IQCADItemModel::undoHighlightInView);
+                connect(&cm, &QMenu::aboutToHide,
+                        this, &IQCADItemModel::undoHighlightInView);
             }
 
             a=new QAction("Export...", &cm);
@@ -349,11 +355,11 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                         auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol))
                                         .value<insight::cad::FeaturePtr>();
                         auto fn=QFileDialog::getSaveFileName(
-                                viewer,
-                                "Export file name",
-                                "",
-                                "BREP file (*.brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
-                                );
+                            viewer,
+                            "Export file name",
+                            "",
+                            "BREP file (*.brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
+                            );
                         if (!fn.isEmpty())
                         {
                             feat->saveAs(
@@ -370,9 +376,9 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                     [this,idx]() {
                         bool ok=false;
                         auto n=QInputDialog::getItem(nullptr,
-                                                     "repr", "representation",
-                                                     {"Points", "Wireframe", "Surface"},
-                                                     2, false, &ok);
+                                                       "repr", "representation",
+                                                       {"Points", "Wireframe", "Surface"},
+                                                       2, false, &ok);
                         if (ok)
                         {
                             int i;
@@ -383,8 +389,8 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                             else if (n=="Surface")
                                 i=VTK_SURFACE;
 
-                                 QModelIndex visi=index(idx.row(), IQCADItemModel::datasetRepresentationCol, idx.parent());
-                                 setData(visi, i, Qt::EditRole);
+                            QModelIndex visi=index(idx.row(), IQCADItemModel::datasetRepresentationCol, idx.parent());
+                            setData(visi, i, Qt::EditRole);
                         }
                     });
             cm.addAction(a);
@@ -392,10 +398,10 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
             a=new QAction("Auto scale set data range", &cm);
             connect(a, &QAction::triggered, this,
                     [this,idx]() {
-                         QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMinCol, idx.parent());
-                         setData(visi, QVariant(), Qt::EditRole);
-                         visi=index(idx.row(), IQCADItemModel::datasetMaxCol, idx.parent());
-                         setData(visi, QVariant(), Qt::EditRole);
+                        QModelIndex visi=index(idx.row(), IQCADItemModel::datasetMinCol, idx.parent());
+                        setData(visi, QVariant(), Qt::EditRole);
+                        visi=index(idx.row(), IQCADItemModel::datasetMaxCol, idx.parent());
+                        setData(visi, QVariant(), Qt::EditRole);
                     });
             cm.addAction(a);
             a=new QAction("Manual set data range minimum", &cm);

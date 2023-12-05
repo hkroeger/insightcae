@@ -21,7 +21,7 @@ class ConstrainedSketchEntity;
 class ConstrainedSketchGeometry;
 
 struct ConstrainedSketchGrammar
- :  public boost::spirit::qi::grammar<std::string::iterator, parser::skip_grammar>
+    :  public ExtendedGrammar<qi::grammar<std::string::iterator, cad::parser::skip_grammar> >
 {
 public:
     typedef std::pair<int, std::shared_ptr<ConstrainedSketchEntity> > ParserRuleResult;
@@ -37,6 +37,8 @@ public:
 
     std::shared_ptr<ConstrainedSketch> sketch;
     std::set<int> parsedEntityLabels;
+
+    cad::parser::ISCADParser *iscadScriptRules;
 
 
     boost::spirit::qi::rule<
@@ -71,7 +73,9 @@ public:
 
     ConstrainedSketchGrammar(
         std::shared_ptr<ConstrainedSketch> sk,
-        std::function<insight::ParameterSet(void)> mdpf );
+        std::function<insight::ParameterSet(void)> mdpf,
+        cad::parser::ISCADParser *iscadScriptRules = nullptr
+        );
 
 };
 

@@ -290,9 +290,9 @@ void ConstrainedSketch::resolveConstraints(
 
         // solverType=minimumND;
         throw insight::Exception(
-        "Number of contraints (%d) not equal to number of DoF (%d)!"
-        " Cannot use root solver, swithing to minimizer!",
-         constrs.size(), dofs.size() );
+            "Number of contraints (%d) not equal to number of DoF (%d)!"
+            " Cannot use root solver!",
+            constrs.size(), dofs.size() );
 
     }
 
@@ -402,13 +402,17 @@ void ConstrainedSketch::insertrule(parser::ISCADParser& ruleset)
     auto noParams = []() { return insight::ParameterSet(); };
 
     auto *rule = new ConstrainedSketchRule(
-        '(' > ruleset.r_datumExpression
+        '('
+
+        > ruleset.r_datumExpression
                   [ qi::_a = phx::bind(&ConstrainedSketch::create<DatumPtr>, qi::_1),
-                   qi::_b = parser::make_shared_<ConstrainedSketchGrammar>()(qi::_a, std::bind(noParams)),
-                   qi::_val = qi::_a ]
-        > ',' > qi::lazy(phx::bind(&ConstrainedSketchGrammar::r_sketch, qi::_b))
+               qi::_b = parser::make_shared_<ConstrainedSketchGrammar>()(qi::_a, std::bind(noParams), phx::val(&ruleset)),
+                   qi::_val = qi::_a ]  > ','
+
+        > qi::lazy(phx::bind(&ConstrainedSketchGrammar::r_sketch, qi::_b))
+
         > ')'
-        );
+    );
     ruleset.addAdditionalRule(rule);
 
     ruleset.modelstepFunctionRules.add
@@ -496,6 +500,8 @@ void ConstrainedSketch::build()
     {
         if (!pl_->providesPlanarReference())
             throw insight::Exception("Sketch: Planar reference required!");
+
+        resolveConstraints();
 
         BRep_Builder bb;
         TopoDS_Compound result;

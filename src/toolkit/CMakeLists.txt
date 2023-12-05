@@ -33,6 +33,7 @@ set(toolkit_SOURCES
     base/analysis.cpp base/analysis.h
     base/analysislibrary.cpp base/analysislibrary.h
     base/analysisparameterpropositions.h base/analysisparameterpropositions.cpp
+    base/extendedgrammar.h base/extendedgrammar.cpp
 
     base/analysisthread.cpp base/analysisthread.h
     base/cacheableentity.cpp base/cacheableentity.h

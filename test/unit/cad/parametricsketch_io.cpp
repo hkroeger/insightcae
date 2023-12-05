@@ -37,11 +37,11 @@ int main(int argc, char* argv[])
             auto l3 = Line::create(p3, p1, false);
             sk->insertGeometry(std::dynamic_pointer_cast<ConstrainedSketchEntity>(l3));
 
-            auto lc1 = DistanceConstraint::create( p1, p2, sk->sketchPlaneNormal(), 1 );
+            auto lc1 = FixedDistanceConstraint::create( p1, p2, sk->sketchPlaneNormal());
             sk->insertGeometry(lc1);
-            auto lc2 = DistanceConstraint::create( p2, p3, sk->sketchPlaneNormal(), 1 );
+            auto lc2 = FixedDistanceConstraint::create( p2, p3, sk->sketchPlaneNormal());
             sk->insertGeometry(lc2);
-            auto lc3 = DistanceConstraint::create( p1, p3, sk->sketchPlaneNormal(), 1 );
+            auto lc3 = FixedDistanceConstraint::create( p1, p3, sk->sketchPlaneNormal());
             sk->insertGeometry(lc3);
 
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
                     l1->start()->value() ) );
             sk->insertGeometry(ac);
 
-            auto lc0 = DistanceConstraint::create( p1, vec3const(0,0,0), sk->sketchPlaneNormal(), 0 );
+            auto lc0 = FixedDistanceConstraint::create( p1, vec3const(0,0,0), sk->sketchPlaneNormal() );
             sk->insertGeometry(lc0);
 
             sk->resolveConstraints();

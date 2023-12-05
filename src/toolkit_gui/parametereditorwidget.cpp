@@ -146,6 +146,14 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                      }
                      );
 
+    if (modeltree_)
+    {
+        if (display_)
+            display_->viewer()->commonToolBox()->addItem(modeltree_, "Model structure");
+        else
+            addWidget(modeltree_);
+    }
+
 }
 
 
@@ -196,10 +204,14 @@ ParameterEditorWidget::ParameterEditorWidget
         "Light gray: can usually be left on default values."
         );
     l->addWidget(hints);
-    addWidget(w);
+    // addWidget(w);
 
+    auto spv = new QSplitter(Qt::Vertical);
+    spv->addWidget(w);
     inputContents_=new QWidget(this);
-    addWidget(inputContents_);
+    //addWidget(inputContents_);
+    spv->addWidget(inputContents_);
+    addWidget(spv);
 
 
     // no existing displayer supplied; create one
@@ -214,7 +226,7 @@ ParameterEditorWidget::ParameterEditorWidget
 
     insight::dbg()<<"create model tree"<<std::endl;
     modeltree_ = new QTreeView(this);
-    addWidget(modeltree_);
+    // addWidget(modeltree_);
 
     {
         QList<int> l;
@@ -244,6 +256,7 @@ ParameterEditorWidget::ParameterEditorWidget
     viz_(nullptr),
     parameterTreeView_(parameterTreeView),
     inputContents_(contentEditorFrame),
+    modeltree_(nullptr),
     firstShowOccurred_(false)
 {
     setup(nullptr);

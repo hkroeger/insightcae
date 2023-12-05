@@ -27,8 +27,14 @@
 #include "cadpostprocaction.h"
 #include "constrainedsketchgeometry.h"
 
+
+
+
 namespace insight {
 namespace cad {
+
+
+
 
 class Distance
 : public PostprocAction
@@ -65,6 +71,7 @@ public:
 
 
 
+
 class DistanceConstraint
 : public Distance,
   public ConstrainedSketchEntity
@@ -74,19 +81,50 @@ class DistanceConstraint
     size_t calcHash() const override;
 
 
-    DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
-                       double targetValue, const std::string& layerName = std::string());
-    DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal);
+protected:
+    DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal, const std::string& layerName = std::string());
 
 public:
     declareType("DistanceConstraint");
 
-    CREATE_FUNCTION(DistanceConstraint);
-
-    double targetValue() const;
+    virtual double targetValue() const =0;
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
+
+
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
+    void replaceDependency(
+        const std::weak_ptr<ConstrainedSketchEntity>& entity,
+        const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
+
+    arma::mat dimLineOffset() const override;
+    void setDimLineOffset(const arma::mat& p);
+    double relativeArrowSize() const override;
+
+    void operator=(const ConstrainedSketchEntity& other) override;
+    void operator=(const DistanceConstraint& other);
+};
+
+
+
+
+class FixedDistanceConstraint
+    : public DistanceConstraint
+{
+    VectorPtr planeNormal_;
+
+
+    FixedDistanceConstraint(
+        VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
+        const std::string& layerName = std::string());
+
+public:
+    declareType("DistanceConstraint");
+
+    CREATE_FUNCTION(FixedDistanceConstraint);
+
+    double targetValue() const override;
     void scaleSketch(double scaleFactor) override;
 
     void generateScriptCommand(
@@ -95,18 +133,50 @@ public:
 
     static void addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf);
 
-    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
-    void replaceDependency(
-        const std::weak_ptr<ConstrainedSketchEntity>& entity,
-        const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
+    void operator=(const ConstrainedSketchEntity& other) override;
+    void operator=(const FixedDistanceConstraint& other);
+};
+
+
+
+
+class LinkedDistanceConstraint
+    : public DistanceConstraint
+{
+    VectorPtr planeNormal_;
+
+    std::string distExpr_;
+    ScalarPtr distance_;
+
+
+    LinkedDistanceConstraint(
+        VectorPtr p1, VectorPtr p2,
+        ScalarPtr dist, VectorPtr planeNormal,
+        const std::string& layerName = std::string(),
+        const std::string& distExpr = std::string() );
+
+public:
+    declareType("Distance");
+
+    CREATE_FUNCTION(LinkedDistanceConstraint);
+
+    double targetValue() const override;
+    void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(
+        ConstrainedSketchGrammar& ruleset,
+        MakeDefaultGeometryParametersFunction mdpf );
 
     void operator=(const ConstrainedSketchEntity& other) override;
-    void operator=(const DistanceConstraint& other);
-
-    arma::mat dimLineOffset() const override;
-    void setDimLineOffset(const arma::mat& p);
-    double relativeArrowSize() const override;
+    void operator=(const LinkedDistanceConstraint& other);
 };
+
+
+
 
 }
 }

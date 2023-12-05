@@ -184,8 +184,6 @@ skip_grammar::skip_grammar()
 }
 
 
-AddRuleContainerBase::~AddRuleContainerBase()
-{}
 
 
 
@@ -211,7 +209,7 @@ AddRuleContainerBase::~AddRuleContainerBase()
 
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenameinfo)
-    : ISCADParser::base_type(r_model),
+    : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >(r_model),
       filenameinfo_(filenameinfo),
       syntax_element_locations(new SyntaxElementDirectory()),
       model_(model)
@@ -333,44 +331,13 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
     r_modelstep.name("modelling step");
 
 
-    createPostProcExpressions();
     createDocExpressions();
-    createFeatureExpressions();
     createSelectionExpressions();
     createDatumExpressions();
     createScalarExpressions();
     createVectorExpressions();
-
-
-#if (INSIGHT_CAD_DEBUG>2)
-    BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
-    BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
-    BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
-    BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
-    BOOST_SPIRIT_DEBUG_NODE(r_modelstepFunction);
-    BOOST_SPIRIT_DEBUG_NODE(r_path);
-    BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-    BOOST_SPIRIT_DEBUG_NODE(r_assignment);
-    BOOST_SPIRIT_DEBUG_NODE(r_postproc);
-    BOOST_SPIRIT_DEBUG_NODE(r_viewDef);
-    BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
-    BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
-    BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
-    BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
-    BOOST_SPIRIT_DEBUG_NODE(r_model);
-    BOOST_SPIRIT_DEBUG_NODE(r_vertexFeaturesExpression);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_propertyAssignment);
-    BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
-#endif
-
-//     on_error<fail>(r_model,
-//                    phx::ref(std::cout)
-//                    << "Error! Expecting "
-//                    << qi::_4
-//                    << " here: '"
-//                    << phx::construct<std::string>(qi::_3, qi::_2)
-//                    << "'\n"
-//                   );
+    createFeatureExpressions();
+    createPostProcExpressions();
 }
 
 
@@ -468,7 +435,7 @@ bool parseISCADModel
         {
             if ( sd )
             {
-          *sd = parser.syntax_element_locations;
+                *sd = parser.syntax_element_locations;
             }
         }
     }

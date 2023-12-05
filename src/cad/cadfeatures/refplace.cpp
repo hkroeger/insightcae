@@ -387,14 +387,14 @@ void RefPlace::build()
 void RefPlace::insertrule(parser::ISCADParser& ruleset)
 {
 
-    typedef qi::rule<std::string::iterator, ConditionPtr(), insight::cad::parser::skip_grammar > ConditionRule;
-    typedef insight::cad::parser::AddRuleContainer<ConditionRule> ConditionRuleContainer;
+    typedef qi::rule<
+        std::string::iterator,
+        ConditionPtr(),
+        insight::cad::parser::skip_grammar
+        > ConditionRule;
 
-    ruleset.additionalrules_.push_back
-    (
-        new ConditionRuleContainer(new ConditionRule)
-    );
-    ConditionRule& r_condition = *(dynamic_cast<ConditionRuleContainer&>(ruleset.additionalrules_.back()));
+    ConditionRule& r_condition = ruleset.addAdditionalRule(
+        std::make_shared<ConditionRule>());
 
     r_condition =
         (ruleset.r_vectorExpression >> qi::lit("==") >> ruleset.r_vectorExpression  )

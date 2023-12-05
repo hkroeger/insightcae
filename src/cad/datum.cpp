@@ -416,7 +416,6 @@ void DatumPlane::build()
 {
     
     
-  arma::mat n=n_->value()/arma::norm(n_->value(),2);
   if (p2_)
   {
 
@@ -431,8 +430,8 @@ void DatumPlane::build()
   }
   else if (!up_)
   {
-
-    arma::mat vx=cross(vec3(0,1,0), n); 
+    arma::mat n=n_->value()/arma::norm(n_->value(),2);
+    arma::mat vx=cross(vec3(0,1,0), n);
     double m=norm(vx, 2);
     if (m<1e-6)
     {
@@ -445,7 +444,8 @@ void DatumPlane::build()
   }
   else 
   {
-    arma::mat vx=cross(up_->value(), n); 
+    arma::mat n=n_->value()/arma::norm(n_->value(),2);
+    arma::mat vx=cross(up_->value(), n);
     double m=norm(vx, 2);
     if (m<1e-6)
     {
@@ -464,8 +464,8 @@ void DatumPlane::build()
 size_t DatumPlane::calcHash() const
 {
   ParameterListHash plh;
-  plh+=n_->value();
   plh+=p0_->value();
+  if (n_) plh+=n_->value();
   if (up_) plh+=up_->value();
   if (p1_) plh+=p1_->value();
   if (p2_) plh+=p2_->value();

@@ -3,7 +3,7 @@ project(vtk2key)
 
 set(vtk2key_SOURCES
     vtk2key.cpp
-    lsdynamesh.h lsdynamesh.cpp
+    femmesh.h femmesh.cpp
 )
 
 

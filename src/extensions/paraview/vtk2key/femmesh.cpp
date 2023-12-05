@@ -1,22 +1,23 @@
 
-#include "lsdynamesh.h"
+#include "femmesh.h"
 
 
 namespace insight {
 
 
-const std::array<int, 3> LSDynaMesh::triNodeMapping = { 0, 1, 2 };
-const std::array<int, 4> LSDynaMesh::quadNodeMapping = { 0, 1, 2, 3 };
-const std::array<int, 4> LSDynaMesh::tetNodeMapping = { 0, 1, 2, 3 };
+const std::array<int, 3> FEMMesh::triNodeMapping = { 0, 1, 2 };
+const std::array<int, 4> FEMMesh::quadNodeMapping = { 0, 1, 2, 3 };
+const std::array<int, 4> FEMMesh::tetNodeMapping = { 0, 1, 2, 3 };
 
 
 
-void writeList(std::ostream& os, const std::set<int>& data, int cols)
+void writeList(std::ostream& os, const std::set<int>& data, int cols, int fixedWidth =-1)
 {
     auto i = data.begin();
     for (int c=0; ; ++c)
     {
         if (i==data.end()) break;
+        if (fixedWidth>=0) os<<std::setw(fixedWidth);
         os<<*i;
         ++i;
         if ( (c>=cols-1) || (i==data.end()) )
@@ -25,21 +26,21 @@ void writeList(std::ostream& os, const std::set<int>& data, int cols)
             os<<"\n";
         }
         else
-            os<<", ";
+            if (fixedWidth<0) os<<", ";
     }
 }
 
 
 
-void LSDynaMesh::IdSet::writeIds(std::ostream& os, int cols) const
+void FEMMesh::IdSet::writeIds(std::ostream& os, int cols, int fixedWidth) const
 {
-    writeList(os, *this, cols);
+    writeList(os, *this, cols, fixedWidth);
 }
 
 
 
 
-void LSDynaMesh::findNodesOfPart(std::set<int>& nodeSet, int part_id) const
+void FEMMesh::findNodesOfPart(std::set<int>& nodeSet, int part_id) const
 {
     for (const auto& e: tris_)
     {
@@ -58,7 +59,7 @@ void LSDynaMesh::findNodesOfPart(std::set<int>& nodeSet, int part_id) const
     }
 }
 
-void LSDynaMesh::findShellsOfPart(std::set<int> &shellSet, int part_id) const
+void FEMMesh::findShellsOfPart(std::set<int> &shellSet, int part_id) const
 {
     insight::assertion(
         elementsAreNumbered,
@@ -79,34 +80,34 @@ void LSDynaMesh::findShellsOfPart(std::set<int> &shellSet, int part_id) const
 
 
 
-LSDynaMesh::IdSet& LSDynaMesh::nodeSet(int setId)
+FEMMesh::IdSet& FEMMesh::nodeSet(int setId)
 {
     return nodeSets_[setId];
 }
 
-LSDynaMesh::IdSet &LSDynaMesh::shellSet(int setId)
+FEMMesh::IdSet &FEMMesh::shellSet(int setId)
 {
     return shellSets_[setId];
 }
 
 
 
-void LSDynaMesh::addQuadElement(vtkDataSet* ds, vtkQuad* q, int part_id, vtkIdType nodeIdOfs)
+void FEMMesh::addQuadElement(vtkDataSet* ds, vtkQuad* q, int part_id, vtkIdType nodeIdOfs)
 {
     addElement(ds, q, part_id, quads_, nodeIdOfs);
 }
 
-void LSDynaMesh::addTriElement(vtkDataSet* ds, vtkTriangle* t, int part_id, vtkIdType nodeIdOfs)
+void FEMMesh::addTriElement(vtkDataSet* ds, vtkTriangle* t, int part_id, vtkIdType nodeIdOfs)
 {
     addElement(ds, t, part_id, tris_, nodeIdOfs);
 }
 
-void LSDynaMesh::addTetElement(vtkDataSet* ds, vtkTetra* t, int part_id, vtkIdType nodeIdOfs)
+void FEMMesh::addTetElement(vtkDataSet* ds, vtkTetra* t, int part_id, vtkIdType nodeIdOfs)
 {
     addElement(ds, t, part_id, tets_, nodeIdOfs);
 }
 
-vtkIdType LSDynaMesh::maxNodeId() const
+vtkIdType FEMMesh::maxNodeId() const
 {
     if (nodes_.size()==0)
         return 0;
@@ -115,7 +116,7 @@ vtkIdType LSDynaMesh::maxNodeId() const
 }
 
 
-void LSDynaMesh::numberElements(
+void FEMMesh::numberElements(
     const std::set<int>& parts2Skip
     )
 {
@@ -126,7 +127,7 @@ void LSDynaMesh::numberElements(
     elementsAreNumbered=true;
 }
 
-int LSDynaMesh::maxElementIdx() const
+int FEMMesh::maxElementIdx() const
 {
     insight::assertion(
         elementsAreNumbered,
@@ -180,7 +181,7 @@ int LSDynaMesh::maxElementIdx() const
     }
 }
 
-void LSDynaMesh::getCellCenters(vtkPoints *ctrs) const
+void FEMMesh::getCellCenters(vtkPoints *ctrs) const
 {
     ctrs->SetNumberOfPoints(maxElementIdx());
     insertElementCenters(ctrs, tris_);
@@ -190,20 +191,25 @@ void LSDynaMesh::getCellCenters(vtkPoints *ctrs) const
 
 
 
-void LSDynaMesh::write(
-    std::ostream& of ) const
+void FEMMesh::write(
+    std::ostream& of,
+    OutputFormat fmt ) const
 {
-    of<<"*NODE\n";
+    if (fmt==LSDyna)
+        of<<"*NODE\n";
+    else
+        of<<"/NODE\n";
     for (const auto& n: nodes_)
     {
         of<<n.first<<", "<<n.second[0]<<", "<<n.second[1]<<", "<<n.second[2]<<"\n";
     }
 
     int ei=1;
+    if (fmt==LSDyna)
     {
         std::ostringstream os;
-        writeElementList(os, tris_, ", ");
-        writeElementList(os, quads_, ", ");
+        writeElementListLSDyna(os, tris_, ", ");
+        writeElementListLSDyna(os, quads_, ", ");
 
         if (!os.str().empty())
         {
@@ -211,23 +217,42 @@ void LSDynaMesh::write(
             of<<os.str();
         }
     }
+    else if (fmt==Radioss)
+    {
+        // if (tris_.size() || quads_.size())
+        //     throw insight::Exception("not implemented");
+    }
 
+    if (fmt==LSDyna)
     {
         std::ostringstream os;
-        writeElementList(os, tets_, "\n");
+        writeElementListLSDyna(os, tets_, "\n");
         if (!os.str().empty())
         {
             of<<"*ELEMENT_SOLID\n";
             of<<os.str();
         }
     }
+    else if (fmt==Radioss)
+    {
+        writeElementListRadioss(of, tets_, "TETRA4");
+    }
 
     for (const auto& ns: nodeSets_)
     {
         if (ns.second.size())
         {
-            of<<"*SET_NODE\n"<<ns.first<<"\n";
-            ns.second.writeIds(of);
+            if (fmt==LSDyna)
+            {
+                of<<"*SET_NODE\n"<<ns.first<<"\n";
+                ns.second.writeIds(of);
+            }
+            else if (fmt==Radioss)
+            {
+                of<<"/GRNOD/NODE/"<<ns.first<<"\n"
+                  <<"node group "<<ns.first<<"\n";
+                ns.second.writeIds(of, 10, 10);
+            }
         }
     }
 
@@ -235,17 +260,27 @@ void LSDynaMesh::write(
     {
         if (ss.second.size())
         {
-            of<<"*SET_SHELL\n"<<ss.first<<"\n";
-            writeList(of, ss.second, 8);
+            if (fmt==LSDyna)
+            {
+                of<<"*SET_SHELL\n"<<ss.first<<"\n";
+                writeList(of, ss.second, 8);
+            }
+            else if (fmt==Radioss)
+            {
+                of<<"/GRSHEL/SHEL/"<<ss.first<<"\n"
+                  <<"shell group "<<ss.first<<"\n";
+                writeList(of, ss.second, 10, 10);
+            }
         }
     }
 
-    of << "*COMMENT\n";
+    if (fmt==LSDyna)
+        of << "*COMMENT\n";
 }
 
 
 
-void LSDynaMesh::printStatistics(ostream &os) const
+void FEMMesh::printStatistics(ostream &os) const
 {
     std::map<int, PartStatistics> stat;
 
@@ -268,11 +303,11 @@ void LSDynaMesh::printStatistics(ostream &os) const
     }
 }
 
-LSDynaMesh::PartStatistics::PartStatistics()
+FEMMesh::PartStatistics::PartStatistics()
     : nTris(0), nQuads(0), nTets(0)
 {}
 
-void LSDynaMesh::PartStatistics::print(ostream &os, int partId) const
+void FEMMesh::PartStatistics::print(ostream &os, int partId) const
 {
     os << " * Part "<<partId<<" comprises "
        << "\t" << nTris << " triangles, "

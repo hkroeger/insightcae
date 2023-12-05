@@ -18,7 +18,7 @@
  *
  */
 
-#include "lsdynamesh.h"
+#include "femmesh.h"
 
 #include "base/boost_include.h"
 #include "base/translations.h"
@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
             ("stl2set,s", po::value< StringList >(), _("<STl file path:set id>. elements and nodes inside given STL will be added to set (both a node set and a shell/solid set will be created)."))
             ("skip", po::value< StringList >(), _("A list (comma separated) of parts to be skipped when writing output"))
             ("input-file,f", po::value< StringList >(), _("Specifies input file and the part ID for all its elements (separated yby colon)"))
+            ("format", po::value<std::string>()->default_value("lsdyna"), _("set output format (LSDyna or Radioss)"))
             ("output-file,o", po::value< std::string >(), _("Specifies output file."))
             ;
 
@@ -114,6 +115,19 @@ int main(int argc, char *argv[])
             exit(0);
         }
 
+        FEMMesh::OutputFormat fmt = FEMMesh::LSDyna;
+        if (vm.count("format"))
+        {
+            auto fmtid = boost::to_lower_copy(vm["format"].as<std::string>());
+            if (fmtid=="lsdyna")
+                fmt=FEMMesh::LSDyna;
+            else if (fmtid=="radioss")
+                fmt=FEMMesh::Radioss;
+            else
+                throw insight::Exception("Unknown mesh output format: %s", fmtid.c_str());
+        }
+
+
         if (vm.count("output-file")!=1)
         {
             cerr << _("exactly one output file name has to be given!") << endl;
@@ -121,139 +135,150 @@ int main(int argc, char *argv[])
         }
 
         std::map<int,std::pair<vtkSmartPointer<vtkPolyData>,int> > stl2Group;
-        for ( const auto& arg: vm["stl2set"].as<StringList>())
+        if (vm.count("stl2set"))
         {
-            std::vector<std::string> path_setId_maskPartId;
-            boost::split(path_setId_maskPartId, arg, boost::is_any_of(":"));
-            insight::assertion(path_setId_maskPartId.size()>=2 && path_setId_maskPartId.size()<=3,
-                               "expected 'path:setId[:maskId]', got %s", arg.c_str());
+            for ( const auto& arg: vm["stl2set"].as<StringList>())
+            {
+                std::vector<std::string> path_setId_maskPartId;
+                boost::split(path_setId_maskPartId, arg, boost::is_any_of(":"));
+                insight::assertion(path_setId_maskPartId.size()>=2 && path_setId_maskPartId.size()<=3,
+                                   "expected 'path:setId[:maskId]', got %s", arg.c_str());
 
-            boost::filesystem::path stlfn(path_setId_maskPartId[0]);
-            int setId=toNumber<int>(path_setId_maskPartId[1]);
-            int maskPartId = -1;
-            if (path_setId_maskPartId.size()>2)
-                maskPartId=toNumber<int>(path_setId_maskPartId[2]);
+                boost::filesystem::path stlfn(path_setId_maskPartId[0]);
+                int setId=toNumber<int>(path_setId_maskPartId[1]);
+                int maskPartId = -1;
+                if (path_setId_maskPartId.size()>2)
+                    maskPartId=toNumber<int>(path_setId_maskPartId[2]);
 
-            insight::assertion(
-                boost::filesystem::exists(stlfn),
-                "STL file %s does not exist!", stlfn.c_str() );
+                insight::assertion(
+                    boost::filesystem::exists(stlfn),
+                    "STL file %s does not exist!", stlfn.c_str() );
 
-            auto sr=vtkSmartPointer<vtkSTLReader>::New();
-            sr->SetFileName(stlfn.string().c_str());
-            sr->Update();
+                auto sr=vtkSmartPointer<vtkSTLReader>::New();
+                sr->SetFileName(stlfn.string().c_str());
+                sr->Update();
 
-            stl2Group[setId]=std::make_pair(sr->GetOutput(), maskPartId);
+                stl2Group[setId]=std::make_pair(sr->GetOutput(), maskPartId);
+            }
         }
 
         boost::filesystem::path outfn( vm["output-file"].as<std::string>() );
 
         IntSet tbSkipped;
-        for ( const auto& arg: vm["skip"].as<StringList>())
+        if (vm.count("skip"))
         {
-            std::vector<std::string> sl;
-            boost::split(sl, arg, boost::is_any_of(","));
+            for ( const auto& arg: vm["skip"].as<StringList>())
+            {
+                std::vector<std::string> sl;
+                boost::split(sl, arg, boost::is_any_of(","));
 
-            std::transform(sl.begin(), sl.end(),
-                std::inserter(tbSkipped, tbSkipped.begin()),
-                std::bind(&boost::lexical_cast<int,std::string>, std::placeholders::_1)
-            );
+                std::transform(sl.begin(), sl.end(),
+                    std::inserter(tbSkipped, tbSkipped.begin()),
+                    std::bind(&boost::lexical_cast<int,std::string>, std::placeholders::_1)
+                );
+            }
         }
 
-        LSDynaMesh tmesh;
+        FEMMesh tmesh;
 
         int defaultPartId = 0;
-        for ( const auto& arg: vm["input-file"].as<StringList>())
+        if (vm.count("input-file"))
         {
-            defaultPartId += 1000;
-
-            std::vector<std::string> fname_partid;
-            boost::split(fname_partid, arg, boost::is_any_of(":"));
-            insight::assertion(fname_partid.size()>0,
-                               "input-file must contain at least a file name, got: ", arg.c_str());
-            insight::assertion(fname_partid.size()<3,
-                               "input-file must contain only file name and part id, separated by colon, got: ", arg.c_str());
-
-            boost::filesystem::path fn(fname_partid[0]);
-            int partId = defaultPartId;
-            if (fname_partid.size()>1)
-                partId = insight::toNumber<int>(fname_partid[1]);
-
-            insight::assertion(boost::filesystem::exists(fn),
-                               "input file does not exist: ", fn.c_str());
-
-            std::cout<<"Processing mesh in "<<fn.string()<<", storing elements in part "<<partId<<std::endl;
-
-            auto reader = vtkSmartPointer<vtkGenericDataObjectReader>::New();
-            reader->SetFileName(fn.string().c_str());
-            reader->Update();
-
-            std::map<int, int> unhandledCells;
-            vtkIdType nodeIdsOfs=tmesh.maxNodeId();
-            if (auto *smesh = vtkDataSet::SafeDownCast(reader->GetOutput()))
+            for ( const auto& arg: vm["input-file"].as<StringList>())
             {
-                auto cei = smesh->GetCellData()->GetArray("CellEntityIds");
+                defaultPartId += 1000;
 
-                for (int i=0; i<smesh->GetNumberOfCells(); ++i)
+                std::vector<std::string> fname_partid;
+                boost::split(fname_partid, arg, boost::is_any_of(":"));
+                insight::assertion(fname_partid.size()>0,
+                                   "input-file must contain at least a file name, got: ", arg.c_str());
+                insight::assertion(fname_partid.size()<3,
+                                   "input-file must contain only file name and part id, separated by colon, got: ", arg.c_str());
+
+                boost::filesystem::path fn(fname_partid[0]);
+                int partId = defaultPartId;
+                if (fname_partid.size()>1)
+                    partId = insight::toNumber<int>(fname_partid[1]);
+
+                insight::assertion(boost::filesystem::exists(fn),
+                                   "input file does not exist: ", fn.c_str());
+
+                std::cout<<"Processing mesh in "<<fn.string()<<", storing elements in part "<<partId<<std::endl;
+
+                auto reader = vtkSmartPointer<vtkGenericDataObjectReader>::New();
+                reader->SetFileName(fn.string().c_str());
+                reader->Update();
+
+                std::map<int, int> unhandledCells;
+                vtkIdType nodeIdsOfs=tmesh.maxNodeId();
+                if (auto *smesh = vtkDataSet::SafeDownCast(reader->GetOutput()))
                 {
+                    auto cei = smesh->GetCellData()->GetArray("CellEntityIds");
 
-                    int effectivePartId=partId;
-                    if (cei)
+                    for (int i=0; i<smesh->GetNumberOfCells(); ++i)
                     {
-                        effectivePartId+=cei->GetTuple1(i);
-                    }
 
-                    auto *c=smesh->GetCell(i);
-                    if (auto *q = vtkQuad::SafeDownCast(c))
-                    {
-                        tmesh.addQuadElement(smesh, q, effectivePartId, nodeIdsOfs);
-                    }
-                    else if (auto *t = vtkTriangle::SafeDownCast(c))
-                    {
-                        tmesh.addTriElement(smesh, t, effectivePartId, nodeIdsOfs);
-                    }
-                    else if (auto *t = vtkTetra::SafeDownCast(c))
-                    {
-                        tmesh.addTetElement(smesh, t, effectivePartId, nodeIdsOfs);
-                    }
-                    else
-                    {
-                        int ct=c->GetCellType();
-                        if (unhandledCells.find(ct)==unhandledCells.end())
-                            unhandledCells[ct]=1;
+                        int effectivePartId=partId;
+                        if (cei)
+                        {
+                            effectivePartId+=cei->GetTuple1(i);
+                        }
+
+                        auto *c=smesh->GetCell(i);
+                        if (auto *q = vtkQuad::SafeDownCast(c))
+                        {
+                            tmesh.addQuadElement(smesh, q, effectivePartId, nodeIdsOfs);
+                        }
+                        else if (auto *t = vtkTriangle::SafeDownCast(c))
+                        {
+                            tmesh.addTriElement(smesh, t, effectivePartId, nodeIdsOfs);
+                        }
+                        else if (auto *t = vtkTetra::SafeDownCast(c))
+                        {
+                            tmesh.addTetElement(smesh, t, effectivePartId, nodeIdsOfs);
+                        }
                         else
-                            unhandledCells[ct]++;
+                        {
+                            int ct=c->GetCellType();
+                            if (unhandledCells.find(ct)==unhandledCells.end())
+                                unhandledCells[ct]=1;
+                            else
+                                unhandledCells[ct]++;
+                        }
+                    }
+                }
+                else
+                {
+                    throw insight::Exception("Unhandled data set type:", reader->GetOutput()->GetDataObjectType());
+                }
+
+                if (unhandledCells.size()>0)
+                {
+                    std::cerr<<"Unhandled cells:\n";
+                    for (const auto& uhc: unhandledCells)
+                    {
+                        std::cerr<<" type "<<uhc.first<<": "<<uhc.second<<"\n";
                     }
                 }
             }
-            else
-            {
-                throw insight::Exception("Unhandled data set type:", reader->GetOutput()->GetDataObjectType());
-            }
-
-            if (unhandledCells.size()>0)
-            {
-                std::cerr<<"Unhandled cells:\n";
-                for (const auto& uhc: unhandledCells)
-                {
-                    std::cerr<<" type "<<uhc.first<<": "<<uhc.second<<"\n";
-                }
-            }
-
         }
 
         tmesh.numberElements(tbSkipped);
 
-        for ( const auto& arg: vm["part2set"].as<StringList>())
+        if (vm.count("part2set"))
         {
-            std::vector<std::string> partId_setId;
-            boost::split(partId_setId, arg, boost::is_any_of(":"));
-            insight::assertion(partId_setId.size()==2,
-                               "expected 'partId:setId', got %s", arg.c_str());
-            int partId=toNumber<int>(partId_setId[0]);
-            int setId=toNumber<int>(partId_setId[1]);
+            for ( const auto& arg: vm["part2set"].as<StringList>())
+            {
+                std::vector<std::string> partId_setId;
+                boost::split(partId_setId, arg, boost::is_any_of(":"));
+                insight::assertion(partId_setId.size()==2,
+                                   "expected 'partId:setId', got %s", arg.c_str());
+                int partId=toNumber<int>(partId_setId[0]);
+                int setId=toNumber<int>(partId_setId[1]);
 
-            tmesh.findNodesOfPart( tmesh.nodeSet(setId), partId );
-            tmesh.findShellsOfPart( tmesh.shellSet(setId), partId );
+                tmesh.findNodesOfPart( tmesh.nodeSet(setId), partId );
+                tmesh.findShellsOfPart( tmesh.shellSet(setId), partId );
+            }
         }
 
         if (stl2Group.size())
@@ -268,7 +293,7 @@ int main(int argc, char *argv[])
             {
 #warning need to distinguish shells and vol elems
                 auto& set = tmesh.shellSet(setid_stl.first);
-                LSDynaMesh::IdSet *maskElementSet=nullptr;
+                FEMMesh::IdSet *maskElementSet=nullptr;
                 if (setid_stl.second.second>=0)
                     maskElementSet=&tmesh.shellSet(setid_stl.second.second);
 
@@ -299,7 +324,7 @@ int main(int argc, char *argv[])
         tmesh.printStatistics(std::cout);
 
         std::ofstream of(outfn.string());
-        tmesh.write(of);
+        tmesh.write(of, fmt);
     }
     catch (std::exception& ex)
     {

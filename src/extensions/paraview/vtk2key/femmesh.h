@@ -19,10 +19,12 @@
 
 namespace insight {
 
-class LSDynaMesh
+class FEMMesh
 {
 public:
 
+
+    enum OutputFormat { LSDyna, Radioss };
 
     template<int N, const std::array<int,N>& Mapping>
     struct Element
@@ -45,7 +47,7 @@ public:
     class IdSet : public std::set<int>
     {
     public:
-        void writeIds(std::ostream& os, int cols=8) const;
+        void writeIds(std::ostream& os, int cols=8, int fixedWidth=-1) const;
     };
 
 
@@ -68,7 +70,7 @@ private:
     std::map<int, IdSet> nodeSets_, shellSets_;
 
 public:
-    LSDynaMesh()
+    FEMMesh()
         : elementsAreNumbered(false)
     {}
 
@@ -147,7 +149,7 @@ public:
 
 
     template<class TargetElement>
-    void writeElementList(
+    void writeElementListLSDyna(
         std::ostream& os,
         const std::vector<TargetElement>& cellList,
         const std::string& nodeIdListSeperator=", " ) const
@@ -170,11 +172,41 @@ public:
         }
     }
 
+    template<class TargetElement>
+    void writeElementListRadioss(
+        std::ostream& os,
+        const std::vector<TargetElement>& cellList,
+        const std::string& keyword ) const
+    {
+        TargetElement *lastelem=nullptr;
+        for (const auto& c: cellList)
+        {
+            if (c.idx>0)
+            {
+                if (!lastelem || lastelem->part_id!=c.part_id)
+                {
+                    os<<"/"<<keyword<<"/"<<c.part_id<<endl;
+                }
+
+                std::vector<std::string> nodeIds;
+                for (auto& ni: c.n)
+                    nodeIds.push_back(boost::lexical_cast<std::string>(ni));
+                if (c.n.size()==3)
+                    nodeIds.push_back(nodeIds.back());
+                auto nodeIdList = boost::join(nodeIds, ", ");
+
+                os <<c.idx << ", " << nodeIdList << "\n";
+            }
+            lastelem=&c;
+        }
+    }
+
 
     vtkIdType maxNodeId() const;
 
     void write(
-        std::ostream& of ) const;
+        std::ostream& of,
+        OutputFormat fmt ) const;
 
     void printStatistics(std::ostream& os) const;
 };

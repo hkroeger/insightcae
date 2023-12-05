@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vtk2key \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-06 11:46+0200\n"
-"PO-Revision-Date: 2023-10-06 11:46+0200\n"
+"POT-Creation-Date: 2023-11-30 21:41+0100\n"
+"PO-Revision-Date: 2023-10-25 10:57+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
@@ -52,21 +52,25 @@ msgid ""
 msgstr ""
 
 #: vtk2key.cpp:67
+msgid "set output format (LSDyna or Radioss)"
+msgstr ""
+
+#: vtk2key.cpp:68
 msgid "Specifies output file."
 msgstr ""
 
-#: vtk2key.cpp:76
+#: vtk2key.cpp:77
 msgid "Usage:"
 msgstr ""
 
-#: vtk2key.cpp:77
+#: vtk2key.cpp:78
 msgid "options"
 msgstr ""
 
-#: vtk2key.cpp:99
+#: vtk2key.cpp:100
 msgid "Could not parse command line"
 msgstr ""
 
-#: vtk2key.cpp:119
+#: vtk2key.cpp:133
 msgid "exactly one output file name has to be given!"
 msgstr ""

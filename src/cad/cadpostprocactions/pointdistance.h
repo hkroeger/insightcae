@@ -85,7 +85,7 @@ protected:
     DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal, const std::string& layerName = std::string());
 
 public:
-    declareType("DistanceConstraint");
+    declareType("DistanceConstraintBase");
 
     virtual double targetValue() const =0;
 

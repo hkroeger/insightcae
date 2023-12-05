@@ -442,7 +442,8 @@ void LinkedDistanceConstraint::addParserRule(
         namespace qi=boost::spirit::qi;
         namespace phx=boost::phoenix;
 
-        auto *rule = new ExtParserRule(
+        auto &rule = ruleset.addAdditionalRule(
+            std::make_shared<ExtParserRule>(
             ( '('
              > qi::int_ > ','
              > ruleset.r_point > ','
@@ -465,12 +466,10 @@ void LinkedDistanceConstraint::addParserRule(
                            qi::_a, qi::_6, boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(
                      qi::_1, qi::_a ) ]
+                )
         );
 
-        ruleset.addAdditionalRule(rule);
-        ruleset.entityRules.add(
-            typeName,
-            *rule);
+        ruleset.entityRules.add( typeName, rule );
     }
 }
 

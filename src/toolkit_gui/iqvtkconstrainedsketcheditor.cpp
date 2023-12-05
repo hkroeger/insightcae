@@ -1,6 +1,7 @@
 #include "iqvtkconstrainedsketcheditor.h"
 #include "base/units.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkdragdimensionlineaction.h"
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkdragangledimensionaction.h"
 #include "iqvtkcadmodel3dviewer.h"
 
 #include "vtkLineRepresentation.h"
@@ -251,9 +252,8 @@ void IQVTKConstrainedSketchEditor::drawLine()
                     if (prevLine)
                     {
                         (*this)->insertGeometry(
-                            insight::cad::AngleConstraint::create(
-                                prevLine->start(),
-                                line->end(), line->start() ) );
+                            insight::cad::FixedAngleConstraint::create(
+                                prevLine->start(), line->end(), line->start() ) );
                     }
                     else
                     {
@@ -287,9 +287,8 @@ void IQVTKConstrainedSketchEditor::drawLine()
                         else
                         {
                             (*this)->insertGeometry(
-                                insight::cad::AngleConstraint::create(
-                                    p1,
-                                    line->end(), line->start() ) );
+                                insight::cad::FixedAngleConstraint::create(
+                                    p1, line->end(), line->start() ) );
                         }
                     }
                 }
@@ -916,6 +915,14 @@ bool IQVTKConstrainedSketchEditor::onMouseMove
                         selact->currentSelectionCandidate().lock() ) )
                 {
                     launchChildAction(std::make_shared<IQVTKDragDimensionlineAction>(*this, dc));
+
+                    ret=true;
+                }
+                else if (auto ac =
+                         std::dynamic_pointer_cast<insight::cad::AngleConstraint>(
+                             selact->currentSelectionCandidate().lock() ) )
+                {
+                    launchChildAction(std::make_shared<IQVTKDragAngleDimensionAction>(*this, ac));
 
                     ret=true;
                 }

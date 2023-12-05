@@ -47,12 +47,8 @@ int main(int argc, char* argv[])
 
             auto p1e=std::make_shared<insight::cad::AddedVector>(
                 l1->start(), vec3const(1,0,0) );
-            auto ac = AngleConstraint::create(
-                p1e, l1->end(), l1->start(),
-                insight::cad::Angle::calculate(
-                    p1e->value(),
-                    l1->end()->value(),
-                    l1->start()->value() ) );
+            auto ac = FixedAngleConstraint::create(
+                p1e, l1->end(), l1->start() );
             sk->insertGeometry(ac);
 
             auto lc0 = FixedDistanceConstraint::create( p1, vec3const(0,0,0), sk->sketchPlaneNormal() );

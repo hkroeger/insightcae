@@ -10,7 +10,9 @@
 #include "vtkPointData.h"
 #include "vtkPointSetToLabelHierarchy.h"
 #include "vtkPolyDataMapper.h"
+#include "vtkPolyLineSource.h"
 #include "vtkProperty.h"
+#include "vtkLineSource.h"
 #include "vtkStringArray.h"
 #include "vtkTextProperty.h"
 #include "vtkActor2D.h"
@@ -25,36 +27,75 @@ namespace cad {
 
 PostProcActionVisualizers::VTKActorList Angle_createVTKRepr(PostprocActionPtr ppa)
 {
-    auto h = std::dynamic_pointer_cast<Angle>(ppa);
-    insight::assertion( bool(h), "internal error: expected distance object") ;
+    auto angleDim = std::dynamic_pointer_cast<Angle>(ppa);
+    insight::assertion( bool(angleDim), "internal error: expected distance object") ;
 
-    arma::mat p1=h->p1_->value();
-    arma::mat p2=h->p2_->value();
-    arma::mat pCtr=h->pCtr_->value();
+    arma::mat p1=angleDim->p1_->value();
+    arma::mat p2=angleDim->p2_->value();
+    arma::mat pCtr=angleDim->pCtr_->value();
 
-    arma::mat d1=p1-pCtr;
-    arma::mat d2=p2-pCtr;
-    double r1=arma::norm(d1,2);
-    double r2=arma::norm(d2,2);
-    d1/=r1;
-    d2/=r2;
+    double rDimLine = std::max(
+        insight::LSMALL, angleDim->dimLineRadius() );
 
-    double ra=std::min(r1, r2)*0.1;
+    double arrSize = rDimLine *
+        angleDim->angle_ * angleDim->relativeArrowSize();
+
+    arma::mat r1=p1-pCtr;
+    arma::mat r2=p2-pCtr;
+    arma::mat er1 = normalized(r1);
+    arma::mat er2 = normalized(r2);
+
+    arma::mat n = normalized(arma::cross(r1, r2));
 
     auto arc = vtkSmartPointer<vtkArcSource>::New();
-    arc->SetCenter(pCtr.memptr());
-    arc->SetPoint1( arma::mat(pCtr+ra*d1).memptr() );
-    arc->SetPoint2( arma::mat(pCtr+ra*d2).memptr() );
-    arc->SetResolution(6);
+    arc->SetCenter( pCtr.memptr() );
+    arma::mat ap1=pCtr+rDimLine*er1;
+    arc->SetPoint1( ap1.memptr() );
+    arma::mat ap2=pCtr+rDimLine*er2;
+    arc->SetPoint2( ap2.memptr() );
+    arc->SetResolution(32);
+
+    // tangents pointing inwards
+    arma::mat et1=-normalized(arma::cross(er1, n));
+    arma::mat et2=normalized(arma::cross(er2, n));
+
+    auto addP = [&](vtkPolyLineSource& pp, int i, const arma::mat& p)
+    {
+        pp.SetPoint(i, p(0), p(1), p(2) );
+    };
+
+    auto ah1 = vtkSmartPointer<vtkPolyLineSource>::New();
+    ah1->SetNumberOfPoints(3);
+    ah1->ClosedOn();
+    addP(*ah1, 0, ap1);
+    addP(*ah1, 1, ap1+arrSize*(et1+er1/5./2.));
+    addP(*ah1, 2, ap1+arrSize*(et1-er1/5./2.));
+
+    auto ah2 = vtkSmartPointer<vtkPolyLineSource>::New();
+    ah2->SetNumberOfPoints(3);
+    ah2->ClosedOn();
+    addP(*ah2, 0, ap2);
+    addP(*ah2, 1, ap2+arrSize*(et2+er2/5./2.));
+    addP(*ah2, 2, ap2+arrSize*(et2-er2/5./2.));
+
+    auto dl1 = vtkSmartPointer<vtkLineSource>::New();
+    dl1->SetPoint1(p1.memptr());
+    dl1->SetPoint2(arma::mat(ap1+er1*arrSize*2).memptr());
+
+    auto dl2 = vtkSmartPointer<vtkLineSource>::New();
+    dl2->SetPoint1(p2.memptr());
+    dl2->SetPoint2(arma::mat(ap2+er2*arrSize*2).memptr());
+
+    auto creaM = [](vtkAlgorithm* algo) {
+        auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+        mapper->SetInputConnection(algo->GetOutputPort());
+        auto act = vtkSmartPointer<vtkActor>::New();
+        act->SetMapper( mapper );
+        act->GetProperty()->SetColor(0.5, 0.5, 0.5);
+        return act;
+    };
 
 
-    auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-    //mapper->SetInputData(arr);
-    mapper->SetInputConnection(arc->GetOutputPort());
-    mapper->Update();
-    auto arrAct = vtkSmartPointer<vtkActor>::New();
-    arrAct->SetMapper( mapper );
-    arrAct->GetProperty()->SetColor(0.5, 0.5, 0.5);
 
     auto points = vtkSmartPointer<vtkPoints>::New();
     points->SetNumberOfPoints(1);
@@ -64,24 +105,13 @@ PostProcActionVisualizers::VTKActorList Angle_createVTKRepr(PostprocActionPtr pp
     auto sizes = vtkSmartPointer<vtkIntArray>::New();
     sizes->SetName("sizes");
     sizes->SetNumberOfValues(1);
-
-    points->SetPoint(0, arma::mat(pCtr+0.5*ra*(d1+d2)).memptr() );
-    labels->SetValue(0, str(format("%gdeg") % (h->angle_/SI::deg) ).c_str());
+    points->SetPoint(0, arma::mat(pCtr+rDimLine*normalized(er1+er2)).memptr() );
+    labels->SetValue(0, str(format("%g°") % (angleDim->angle_/SI::deg) ).c_str());
     sizes->SetValue(0, 6);
-
-//    points->SetPoint(1, p1.memptr());
-//    labels->SetValue(1, str(format("[%g %g %g]") % p1(0)%p1(1)%p1(2) ).c_str());
-//    sizes->SetValue(1, 4);
-
-//    points->SetPoint(2, p2.memptr());
-//    labels->SetValue(2, str(format("[%g %g %g]") % p2(0)%p2(1)%p2(2) ).c_str());
-//    sizes->SetValue(2, 4);
-
     auto pointSource = vtkSmartPointer<vtkPolyData>::New();
     pointSource->SetPoints(points);
     pointSource->GetPointData()->AddArray(labels);
     pointSource->GetPointData()->AddArray(sizes);
-
     auto pts2Lbl = vtkSmartPointer<vtkPointSetToLabelHierarchy>::New();
     pts2Lbl->SetInputData(pointSource);
     pts2Lbl->SetLabelArrayName("labels");
@@ -97,19 +127,8 @@ PostProcActionVisualizers::VTKActorList Angle_createVTKRepr(PostprocActionPtr pp
     auto lblActor = vtkSmartPointer<vtkActor2D>::New();
     lblActor->SetMapper(lblMap);
 
-//    auto arr = createArrows(
-//                { {pmid, p1},
-//                  {pmid, p2} },
-//                false );
-//    insight::dbg()<<arr->GetNumberOfCells()<<" "<<arr->GetNumberOfPoints()<<std::endl;
-//    for (int i=0; i<arr->GetNumberOfPoints(); ++i)
-//    {
-//        double p[3];
-//        arr->GetPoint(i, p);
-//        insight::dbg()<<p[0]<<" "<<p[1]<<" "<<p[2]<<std::endl;
-//    }
 
-    return { lblActor, arrAct };
+    return { lblActor, creaM(arc), creaM(ah1), creaM(ah2), creaM(dl1), creaM(dl2) };
 }
 
 

@@ -141,6 +141,7 @@ void Cutaway::build()
       //   SolidModel(airspace).saveAs("airspace.stp");
       refpoints_["p0"]=p0;
       refvectors_["n"]=n;
+      providedSubshapes_["input"]=model_;
       providedSubshapes_["AirSpace"]=Feature::create ( airspace );
 
       try {

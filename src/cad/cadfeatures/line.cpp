@@ -84,7 +84,10 @@ VectorPtr Line::start() const
 
 VectorPtr Line::end() const
 {
-    return p1_;
+    if (second_is_dir_)
+        return std::make_shared<cad::AddedVector>(p0_, p1_);
+    else
+        return p1_;
 }
 
 

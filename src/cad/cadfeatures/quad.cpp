@@ -86,7 +86,7 @@ void Quad::operator=(const Quad& o)
 
 void Quad::build()
 {
-    if ( !cache.contains ( hash() ) ) 
+    if ( !cache.contains ( hash() ) )
     {
         double L=arma::norm(L_->value(), 2);
         double W=arma::norm(W_->value(), 2);
@@ -96,7 +96,10 @@ void Quad::build()
         
         refvectors_["L"]=L_->value();
         refvectors_["W"]=W_->value();
-        
+        refvectors_["el"]=normalized(L_->value());
+        refvectors_["ew"]=normalized(W_->value());
+        refvectors_["n"]=normalized(arma::cross(L_->value(), W_->value()));
+
         if (L<1e-10)
             throw insight::Exception(str(format(
                 _("Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"))%L));
@@ -134,7 +137,8 @@ void Quad::build()
         providedDatums_["plane"] = std::make_shared<DatumPlane>(
               p0_,
               matconst(insight::Vector(p2)),
-              matconst(insight::Vector(p4))
+              matconst(insight::Vector(p4)),
+              true
         );
         providedSubshapes_["OuterWire"]=Feature::create( w.Wire() );
 

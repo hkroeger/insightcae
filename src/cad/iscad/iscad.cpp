@@ -18,7 +18,6 @@
  *
  */
 
-#include <QApplication>
 #include <QMainWindow>
 #include <QSplashScreen>
 
@@ -153,15 +152,10 @@ int main ( int argc, char** argv )
   }
   else
   {
-    //     XInitThreads();
-
     InsightCAEApplication app ( argc, argv, "isCAD" );
 
     try
     {
-//      std::locale::global ( std::locale::classic() );
-//      QLocale::setDefault ( QLocale::C );
-
       QPixmap pixmap ( ":/resources/insight_cad_splash.png" );
       QSplashScreen splash ( pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen );
       splash.show();

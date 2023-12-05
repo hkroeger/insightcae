@@ -21,6 +21,8 @@ InsightCAEApplication::InsightCAEApplication(
 {
   setOrganizationName("silentdynamics");
   setApplicationName(appname);
+
+  setlocale(LC_NUMERIC, "C");
 }
 
 

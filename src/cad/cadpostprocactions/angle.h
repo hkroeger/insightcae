@@ -23,7 +23,7 @@ public:
   double angle_;
 
 public:
-  declareType("Angle");
+  declareType("ShowAngle");
 
   Angle(VectorPtr p1, VectorPtr p2, VectorPtr pCtr);
 
@@ -101,6 +101,7 @@ public:
 
 
     double targetValue() const override;
+    void setTargetValue(double angle);
 
     void generateScriptCommand(
         ConstrainedSketchScriptBuffer& script,

@@ -140,7 +140,13 @@ addStandaloneFunctionToStaticFunctionTable(
     );
 addStandaloneFunctionToStaticFunctionTable(
     PostProcActionVisualizers,
-    AngleConstraint,
+    FixedAngleConstraint,
+    createVTKReprByTypeName,
+    Angle_createVTKRepr
+    );
+addStandaloneFunctionToStaticFunctionTable(
+    PostProcActionVisualizers,
+    LinkedAngleConstraint,
     createVTKReprByTypeName,
     Angle_createVTKRepr
     );

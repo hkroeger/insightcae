@@ -48,7 +48,7 @@ public:
   double distance_;
 
 public:
-  declareType("Distance");
+  declareType("ShowDistance");
 
   Distance(VectorPtr p1, VectorPtr p2);
 
@@ -125,6 +125,8 @@ public:
     CREATE_FUNCTION(FixedDistanceConstraint);
 
     double targetValue() const override;
+    void setTargetValue(double dist);
+
     void scaleSketch(double scaleFactor) override;
 
     void generateScriptCommand(

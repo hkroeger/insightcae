@@ -37,7 +37,7 @@
 
 #include "base/qt5_helper.h"
 #include "datum.h"
-
+#include "cadfeatures/singleedgefeature.h"
 
 
 using namespace insight;
@@ -577,10 +577,19 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>(    si ->lock() );
                         p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>( (++si)->lock() );
                     }
+                    else if (selact->currentSelection().size()==1)
+                    {
+                        auto si=selact->currentSelection().begin();
+                        if (auto l = std::dynamic_pointer_cast<cad::SingleEdgeFeature>(si->lock()))
+                        {
+                            p1 = std::dynamic_pointer_cast<insight::cad::SketchPoint>( l->start() );
+                            p2 = std::dynamic_pointer_cast<insight::cad::SketchPoint>( l->end() );
+                        }
+                    }
 
                     insight::assertion(
                         bool(p1)&&bool(p2),
-                        "Please select exactly two sketch points!");
+                        "Please select exactly two sketch points or a single line!");
 
                     auto dc = insight::cad::FixedDistanceConstraint::create(
                         p1, p2,
@@ -838,9 +847,82 @@ void IQVTKConstrainedSketchEditor::deleteEntity(std::weak_ptr<insight::cad::Cons
     (*this)->eraseGeometry(gptr);
 }
 
+
+
+
 bool IQVTKConstrainedSketchEditor::layerIsVisible(const std::string &layerName) const
 {
     return hiddenLayers_.count(layerName)==0;
+}
+
+
+
+
+bool IQVTKConstrainedSketchEditor::onLeftButtonDoubleClick(
+    Qt::KeyboardModifiers nFlags, const QPoint point)
+{
+    auto editInPlace = [&](double initValue, std::function<void(double)> setNewValue)
+    {
+        auto *ed = new QLineEdit(&viewer());
+        ed->setGeometry(point.x(), point.y(),
+                        ed->size().width(), ed->size().height());
+
+        ed->setText(QString::number(initValue));
+        ed->selectAll();
+
+        connect(ed, &QLineEdit::returnPressed, ed,
+                [this,ed,setNewValue]()
+                {
+                    bool ok=false;
+                    auto newval=ed->text().toDouble(&ok);
+                    setNewValue(newval);
+                    solve();
+                }
+                );
+        connect(ed, &QLineEdit::editingFinished,
+                ed, &QObject::deleteLater );
+
+        ed->show();
+        ed->setFocus(Qt::OtherFocusReason);
+    };
+
+    if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
+    {
+        std::shared_ptr<ConstrainedSketchEntity> selitem;
+
+        if (selact->somethingSelected()
+            && selact->currentSelection().size()==1)
+        {
+            selitem = selact->currentSelection().begin()->lock();
+        }
+        else if (selact->hasSelectionCandidate())
+        {
+            selitem = selact->currentSelectionCandidate().lock();
+        }
+
+        if (selitem)
+        {
+            if (auto ac = std::dynamic_pointer_cast<FixedAngleConstraint>(selitem))
+            {
+                editInPlace(
+                    ac->targetValue()/SI::deg,
+                    [this,ac](double na) {
+                        ac->setTargetValue(na*SI::deg);
+                    }
+                    );
+                return true;
+            }
+            else if (auto dc = std::dynamic_pointer_cast<FixedDistanceConstraint>(selitem))
+            {
+                editInPlace(
+                    dc->targetValue(),
+                    std::bind(&FixedDistanceConstraint::setTargetValue, dc, std::placeholders::_1)
+                    );
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 

@@ -263,25 +263,32 @@ PostProcActionVisualizers::VTKActorList Distance_createVTKRepr(PostprocActionPtr
     return { lblActor, arrAct, arrAct1, arrAct2 };
 }
 
-PostProcActionVisualizers::VTKActorList Distance_createVTKRepr_post(PostprocActionPtr ppa)
+PostProcActionVisualizers::VTKActorList Distance_createVTKRepr_show(PostprocActionPtr ppa)
 { return Distance_createVTKRepr(ppa, true); }
+
+PostProcActionVisualizers::VTKActorList Distance_createVTKRepr_sketch(PostprocActionPtr ppa)
+{ return Distance_createVTKRepr(ppa, false); }
+
 
 
 addStandaloneFunctionToStaticFunctionTable(
     PostProcActionVisualizers,
     Distance,
     createVTKReprByTypeName,
-    Distance_createVTKRepr_post
+    Distance_createVTKRepr_show
     );
-
-PostProcActionVisualizers::VTKActorList Distance_createVTKRepr_constr(PostprocActionPtr ppa)
-{ return Distance_createVTKRepr(ppa, false); }
 
 addStandaloneFunctionToStaticFunctionTable(
     PostProcActionVisualizers,
-    DistanceConstraint,
+    FixedDistanceConstraint,
     createVTKReprByTypeName,
-    Distance_createVTKRepr_constr
+    Distance_createVTKRepr_sketch
+    );
+addStandaloneFunctionToStaticFunctionTable(
+    PostProcActionVisualizers,
+    LinkedDistanceConstraint,
+    createVTKReprByTypeName,
+    Distance_createVTKRepr_sketch
     );
 
 } // namespace cad

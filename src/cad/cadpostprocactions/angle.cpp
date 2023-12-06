@@ -277,6 +277,11 @@ double FixedAngleConstraint::targetValue() const
     return parameters().getDouble("angle")*SI::deg;
 }
 
+void FixedAngleConstraint::setTargetValue(double angle)
+{
+    parametersRef().setDouble("angle", angle/SI::deg);
+}
+
 
 
 
@@ -405,45 +410,48 @@ void LinkedAngleConstraint::addParserRule(
     ConstrainedSketchGrammar &ruleset,
     MakeDefaultGeometryParametersFunction )
 {
-    namespace qi = boost::spirit::qi;
-    namespace phx = boost::phoenix;
+    if (ruleset.iscadScriptRules)
+    {
+        namespace qi = boost::spirit::qi;
+        namespace phx = boost::phoenix;
 
-    typedef
-        boost::spirit::qi::rule<
-            std::string::iterator,
-            ConstrainedSketchGrammar::ParserRuleResult(),
-            insight::cad::parser::skip_grammar,
-            boost::spirit::qi::locals<
-                std::shared_ptr<ConstrainedSketchEntity>,
-                insight::cad::ScalarPtr >
-            > ExtParserRule;
+        typedef
+            boost::spirit::qi::rule<
+                std::string::iterator,
+                ConstrainedSketchGrammar::ParserRuleResult(),
+                insight::cad::parser::skip_grammar,
+                boost::spirit::qi::locals<
+                    std::shared_ptr<ConstrainedSketchEntity>,
+                    insight::cad::ScalarPtr >
+                > ExtParserRule;
 
-    auto &rule = ruleset.addAdditionalRule(
-        std::make_shared<ExtParserRule>(
-        ( '('
-         > qi::int_ > ','
-         > ruleset.r_point > ','
-         > ruleset.r_point > ','
-         > ruleset.r_point > ','
-         > qi::as_string[
-            qi::raw[ruleset.iscadScriptRules->r_scalarExpression[phx::ref(qi::_b) = qi::_1]]
-           ]
-         > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
-         > ruleset.r_parameters >
-         ')'
-         )
-            [ qi::_a = phx::bind(
-                 &LinkedAngleConstraint::create<
-                     VectorPtr, VectorPtr, VectorPtr, ScalarPtr,
-                     const std::string&, const std::string&>,
-                     qi::_2, qi::_3, qi::_4, qi::_b, qi::_6, qi::_5),
-             phx::bind(&ConstrainedSketchEntity::parseParameterSet,
-                           qi::_a, qi::_7, boost::filesystem::path(".")),
-             qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
-            )
-        );
+        auto &rule = ruleset.addAdditionalRule(
+            std::make_shared<ExtParserRule>(
+            ( '('
+             > qi::int_ > ','
+             > ruleset.r_point > ','
+             > ruleset.r_point > ','
+             > ruleset.r_point > ','
+             > qi::as_string[
+                qi::raw[ruleset.iscadScriptRules->r_scalarExpression[phx::ref(qi::_b) = qi::_1]]
+               ]
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
+             > ruleset.r_parameters >
+             ')'
+             )
+                [ qi::_a = phx::bind(
+                     &LinkedAngleConstraint::create<
+                         VectorPtr, VectorPtr, VectorPtr, ScalarPtr,
+                         const std::string&, const std::string&>,
+                         qi::_2, qi::_3, qi::_4, qi::_b, qi::_6, qi::_5),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet,
+                               qi::_a, qi::_7, boost::filesystem::path(".")),
+                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
+                )
+            );
 
-    ruleset.entityRules.add(typeName, rule);
+        ruleset.entityRules.add(typeName, rule);
+    }
 }
 
 

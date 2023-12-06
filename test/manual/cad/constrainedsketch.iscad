@@ -12,8 +12,8 @@ sk:ConstrainedSketch(
  FixedPoint(101, 0),
  #VerticalConstraint(102, 11),
  HorizontalConstraint(103, 10),
- Distance(104, 0, 1, 0.5*L),
+ Distance(104, 0, 1, 0.3*L),
  Angle(105, 2, 0, 1, 90*deg)
 );
 
- 
+ex:Extrusion(BoundedFlatFace(sk?alledges), 5*EZ);

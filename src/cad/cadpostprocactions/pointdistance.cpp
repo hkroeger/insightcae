@@ -270,7 +270,10 @@ addToStaticFunctionTable(ConstrainedSketchEntity, FixedDistanceConstraint, addPa
 
 
 
-FixedDistanceConstraint::FixedDistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal, const std::string& layerName)
+FixedDistanceConstraint::FixedDistanceConstraint(
+    VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
+    const std::string& layerName
+    )
     : DistanceConstraint(p1, p2, planeNormal, layerName)
 {
     auto ps = defaultParameters();
@@ -289,6 +292,10 @@ double FixedDistanceConstraint::targetValue() const
 }
 
 
+void FixedDistanceConstraint::setTargetValue(double dist)
+{
+    parametersRef().setDouble("distance", dist);
+}
 
 
 void FixedDistanceConstraint::scaleSketch(double scaleFactor)

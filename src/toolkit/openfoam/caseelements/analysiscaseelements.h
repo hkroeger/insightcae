@@ -30,11 +30,11 @@
 namespace insight {
 
 
-
+#ifndef SWIG
 std::unique_ptr<std::pair<time_t,boost::filesystem::path> > newestOutputFile(
     const boost::filesystem::path& expectedFName
 );
-
+#endif
 
   
 std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles

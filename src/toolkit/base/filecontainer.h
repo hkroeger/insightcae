@@ -76,6 +76,8 @@ protected:
 
   bool needsUnpack(const boost::filesystem::path& unpackPath) const;
 
+  virtual void signalContentChange();
+
 public:
   FileContainer();
 

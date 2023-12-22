@@ -288,6 +288,7 @@ void FileContainer::setOriginalFilePath(const boost::filesystem::path &value)
 {
   originalFilePath_=value.generic_path();
   clearPackedData();
+  signalContentChange();
 }
 
 
@@ -403,6 +404,11 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
 
 
 
+void FileContainer::signalContentChange()
+{}
+
+
+
 //void FileContainer::unpack(const boost::filesystem::path& basePath)
 //{
 //  if (needsUnpack(basePath))
@@ -478,6 +484,8 @@ void FileContainer::replaceContent(const boost::filesystem::path& filePath)
 
     readFileIntoString(filePath, *newContent);
     replaceContentBuffer(newContent);
+
+    signalContentChange();
   }
 }
 
@@ -496,6 +504,8 @@ void FileContainer::replaceContentBuffer(std::shared_ptr<std::string> newContent
   file_content_=newContent;
   clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
   //  fileContentHash_ = calcBufferHash(*file_content_);
+
+  signalContentChange();
 }
 
 size_t FileContainer::contentBufferSize() const
@@ -522,6 +532,7 @@ void FileContainer::operator=(const FileContainer& oc)
 {
   originalFilePath_ = oc.originalFilePath_;
   file_content_ = oc.file_content_;
+  signalContentChange();
 }
 
 

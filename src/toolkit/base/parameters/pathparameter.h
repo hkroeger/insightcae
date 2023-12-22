@@ -46,6 +46,8 @@ class PathParameter
       public FileContainer
 {
 
+protected:
+    void signalContentChange() override;
 
 public:
   declareType ( "path" );

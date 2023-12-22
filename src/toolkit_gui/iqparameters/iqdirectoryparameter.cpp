@@ -44,7 +44,6 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto *lineEdit=new QLineEdit(editControlsContainer);
-//  connect(le_, &QLineEdit::destroyed, this, &PathParameterWrapper::onDestruction);
   lineEdit->setText(QString::fromStdString(p.originalFilePath().string()));
   layout2->addWidget(lineEdit);
   layout->addLayout(layout2);

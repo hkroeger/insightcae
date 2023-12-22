@@ -20,6 +20,13 @@ addToFactoryTable(Parameter, PathParameter);
 
 
 
+void PathParameter::signalContentChange()
+{
+    valueChanged();
+}
+
+
+
 PathParameter::PathParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order

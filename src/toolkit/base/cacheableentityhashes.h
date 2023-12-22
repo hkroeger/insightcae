@@ -25,6 +25,13 @@ template<> struct hash<boost::filesystem::path>
   std::size_t operator()(const boost::filesystem::path& fn) const;
 };
 
+template<> struct hash<const vtkPolyData& >
+{
+    std::size_t operator()(const vtkPolyData& v) const;
+};
+
+void writeStats(std::ostream& os, const vtkDataSet& pd);
+
 template<> struct hash<vtkSmartPointer<vtkPolyData> >
 {
   std::size_t operator()(const vtkSmartPointer<vtkPolyData>& v) const;

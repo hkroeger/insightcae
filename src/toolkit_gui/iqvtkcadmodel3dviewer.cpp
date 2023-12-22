@@ -561,7 +561,6 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
             auto act = vtkSmartPointer<vtkImageActor>::New();
             auto mapper = act->GetMapper();
             mapper->SetInputData(ids);
-//            ren_->AddActor(act);
             actor = act;
         }
         else if (auto pds = vtkDataSet::SafeDownCast(ds) )
@@ -571,7 +570,6 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
             auto mapper=act->GetMapper();
 
             mapper->SetInputDataObject(pds);
-//            ren_->AddActor(act);
             actor = act;
         }
         else
@@ -579,7 +577,6 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
             auto act = vtkSmartPointer<vtkActor>::New();
             act->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
             act->GetMapper()->SetInputDataObject(ds);
-//            ren_->AddActor(act);
             actor = act;
         }
 

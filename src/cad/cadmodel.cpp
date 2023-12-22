@@ -307,7 +307,7 @@ void Model::removePostprocAction(const std::string &name)
 
 void Model::addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value)
 {
-    datasets_.emplace(name, value);
+    datasets_[name]=value;
 }
 
 void Model::removeDataset(const std::string &name)

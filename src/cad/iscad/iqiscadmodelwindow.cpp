@@ -19,108 +19,102 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
   model_(new IQCADItemModel(insight::cad::ModelPtr(), this))
 {
     QHBoxLayout* layout = new QHBoxLayout(this);
-    QSplitter *spl=new QSplitter(Qt::Horizontal);
-    layout->addWidget(spl);
+    QSplitter *splitterHoriz=new QSplitter(Qt::Horizontal);
+    layout->addWidget(splitterHoriz);
 
     viewer_=new Model3DViewer(this);
     viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    spl->addWidget(viewer_);
+    splitterHoriz->addWidget(viewer_);
 
-    modelEdit_=new IQISCADModelScriptEdit(spl);
+    modelEdit_=new IQISCADModelScriptEdit(splitterHoriz);
+
+    auto *widgetVertRight = new QWidget;
+    auto *layoutVertRight = new QVBoxLayout;
+    widgetVertRight->setLayout(layoutVertRight);
+    splitterHoriz->addWidget(widgetVertRight);
+
+    {
+        auto *gb=new QGroupBox(_("Controls"));
+        // Rebuild control box
+        auto *controlWidget = new QWidget;
+        auto *shbox = new QHBoxLayout;
+        auto *rebuildBtn = new QPushButton(_("Rebuild"), gb);
+        auto *rebuildBtnUTC = new QPushButton(_("Rbld to Cursor"), gb);
+        shbox->addWidget(rebuildBtn);
+        shbox->addWidget(rebuildBtnUTC);
+        controlWidget->setLayout(shbox);
+
+        auto *vbox = new QVBoxLayout;
+        vbox->addWidget(controlWidget);
+
+        auto *tglHBox = new QHBoxLayout;
+        QCheckBox *toggleBgParse=new QCheckBox(_("Do BG parsing"), gb);
+        toggleBgParse->setCheckState( Qt::Checked );
+        tglHBox->addWidget(toggleBgParse);
+
+        QCheckBox *toggleSkipPostprocActions=new QCheckBox(_("Skip Postproc Actions"), gb);
+        toggleSkipPostprocActions->setCheckState( Qt::Checked );
+        tglHBox->addWidget(toggleSkipPostprocActions);
+        vbox->addLayout(tglHBox);
+
+        gb->setLayout(vbox);
+
+        layoutVertRight->addWidget(gb);
+
+        connect(rebuildBtn, &QPushButton::clicked,
+                modelEdit_, &IQISCADModelScriptEdit::rebuildModel);
+        connect(rebuildBtnUTC, &QPushButton::clicked,
+                modelEdit_, &IQISCADModelScriptEdit::rebuildModelUpToCursor);
+        connect(toggleBgParse, &QCheckBox::stateChanged,
+                modelEdit_, &IQISCADModelScriptEdit::toggleBgParsing);
+        connect(toggleSkipPostprocActions, &QCheckBox::stateChanged,
+                modelEdit_, &IQISCADModelScriptEdit::toggleSkipPostprocActions);
+
+    }
+
+    auto splitterVertRight = new QSplitter(Qt::Vertical);
+    layoutVertRight->addWidget(splitterVertRight);
+
     modelEdit_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    spl->addWidget(modelEdit_);
-
-    QSplitter* spl2=new QSplitter(Qt::Vertical, spl);
-    spl2->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    QGroupBox *gb;
-    QVBoxLayout *vbox;
+    splitterVertRight->addWidget(modelEdit_);
 
 
-    gb=new QGroupBox(_("Controls"));
-    gb->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    {
+        modelTree_ = new QTreeView(viewer_);
+        viewer_->commonToolBox()->addItem(modelTree_, _("Model Tree"));
+    }
 
-    vbox = new QVBoxLayout;
-    QWidget*shw=new QWidget;
-    QHBoxLayout *shbox = new QHBoxLayout;
-    QPushButton *rebuildBtn=new QPushButton(_("Rebuild"), gb);
-    QPushButton *rebuildBtnUTC=new QPushButton(_("Rbld to Cursor"), gb);
-    shbox->addWidget(rebuildBtn);
-    shbox->addWidget(rebuildBtnUTC);
-    shw->setLayout(shbox);
-    vbox->addWidget(shw);
+    {
+        // notepad editor
+        auto *gb=new QGroupBox(_("Notepad"));
+        auto *vbox = new QVBoxLayout;
+        notepad_=new QTextEdit;
 
-    QCheckBox *toggleBgParse=new QCheckBox(_("Do BG parsing"), gb);
-    toggleBgParse->setCheckState( Qt::Checked );
-    vbox->addWidget(toggleBgParse);
+        vbox->addWidget(notepad_);
+        QHBoxLayout *ll=new QHBoxLayout;
+        QPushButton* copybtn=new QPushButton(_("<< Copy to cursor <<"));
+        ll->addWidget(copybtn);
+        QPushButton* clearbtn=new QPushButton(_("Clear"));
+        ll->addWidget(clearbtn);
+        vbox->addLayout(ll);
+        gb->setLayout(vbox);
+        splitterVertRight->addWidget(gb);
 
-    QCheckBox *toggleSkipPostprocActions=new QCheckBox(_("Skip Postproc Actions"), gb);
-    toggleSkipPostprocActions->setCheckState( Qt::Checked );
-    vbox->addWidget(toggleSkipPostprocActions);
+        connect(copybtn, &QPushButton::clicked,
+                this, &IQISCADModelWindow::onCopyBtnClicked);
+        connect(clearbtn, &QPushButton::clicked,
+                notepad_, &QTextEdit::clear);
+    }
 
-    gb->setLayout(vbox);
-    spl2->addWidget(gb);
+    splitterVertRight->setStretchFactor(0,4);
+    splitterVertRight->setStretchFactor(1,0);
 
-    gb=new QGroupBox(_("Model Tree"));
-    gb->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    vbox = new QVBoxLayout;
-    modelTree_=new QTreeView(gb);
-    modelTree_->setMinimumHeight(20);
-    vbox->addWidget(modelTree_);
-    gb->setLayout(vbox);
-    spl2->addWidget(gb);
+    // splitterHoriz->addWidget(spl2);
 
-    gb=new QGroupBox(_("Notepad"));
-    vbox = new QVBoxLayout;
-    notepad_=new QTextEdit;
-
-    vbox->addWidget(notepad_);
-    QHBoxLayout *ll=new QHBoxLayout;
-    QPushButton* copybtn=new QPushButton(_("<< Copy to cursor <<"));
-    ll->addWidget(copybtn);
-    QPushButton* clearbtn=new QPushButton(_("Clear"));
-    ll->addWidget(clearbtn);
-    vbox->addLayout(ll);
-    gb->setLayout(vbox);
-    spl2->addWidget(gb);
-
-    spl2->setStretchFactor(0,0);
-    spl2->setStretchFactor(1,4);
-    spl2->setStretchFactor(2,0);
-
-    spl->addWidget(spl2);
-
-    spl->setStretchFactor(0,4);
-    spl->setStretchFactor(1,3);
-    spl->setStretchFactor(2,0);
-
-//    {
-//      QList<int> sizes;
-//      sizes << 4700 << 3500 << 1700;
-//      spl->setSizes(sizes);
-//    }
-
-//    {
-//      QList<int> sizes;
-//      sizes << 2000 << 6000 << 2000;
-//      spl2->setSizes(sizes);
-//    }
+    splitterHoriz->setStretchFactor(0,4);
+    splitterHoriz->setStretchFactor(1,3);
 
 
-    connect(rebuildBtn, &QPushButton::clicked,
-            modelEdit_, &IQISCADModelScriptEdit::rebuildModel);
-    connect(rebuildBtnUTC, &QPushButton::clicked,
-            modelEdit_, &IQISCADModelScriptEdit::rebuildModelUpToCursor);
-    connect(toggleBgParse, &QCheckBox::stateChanged,
-            modelEdit_, &IQISCADModelScriptEdit::toggleBgParsing);
-    connect(toggleSkipPostprocActions, &QCheckBox::stateChanged,
-            modelEdit_, &IQISCADModelScriptEdit::toggleSkipPostprocActions);
-
-    connect(copybtn, &QPushButton::clicked,
-            this, &IQISCADModelWindow::onCopyBtnClicked);
-    connect(clearbtn, &QPushButton::clicked,
-            notepad_, &QTextEdit::clear);
-
-//    modelEdit_->connectModelTree(modelTree_);
     modelEdit_->setModel(model_);
     modelTree_->setModel(model_);
     viewer_->setModel(model_);

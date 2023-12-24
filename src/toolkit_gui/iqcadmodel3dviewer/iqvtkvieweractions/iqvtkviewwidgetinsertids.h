@@ -44,7 +44,7 @@ public:
       sel->entitySelected.connect(
           [this](IQVTKCADModel3DViewer::SubshapeData sd)
           {
-              if (sd.subshapeType_ == insight::cad::Edge)
+              if (sd.subshapeType_ == shapeType)
               {
                   if (!selection_)
                   {

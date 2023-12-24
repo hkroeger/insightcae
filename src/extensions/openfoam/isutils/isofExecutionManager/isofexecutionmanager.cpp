@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
   typedef std::vector<string> StringList;
 
   StringList cmds, icmds, skip_dirs, remoteServerFilter;
+  std::string remoteAnalysisFileName;
 
   // Declare the supported options.
   po::options_description desc("Allowed options");
@@ -114,6 +115,7 @@ int main(int argc, char *argv[])
       ("locate-remote-configs,L", "locate and list existing remote configurations")
       ("filter-remote-server,S", po::value<StringList>(&remoteServerFilter), "filter remote configuration list by server")
       ("bwlimit", po::value<int>()->default_value(-1), "transfer bandwidth limitin kB/s; -1 means no limit")
+      ("launch-analysis", po::value<std::string>(&remoteAnalysisFileName), "launch \"analyze\" on the specified file.")
 #ifndef WIN32
       ("mount-remote,M", "mount the remote directory locally using sshfs (needs to be installed)")
       ("unmount-remote,U", "unmount the remote directory")
@@ -303,6 +305,12 @@ int main(int argc, char *argv[])
           re->queueRemoteCommand(c, false);
           anything_done=true;
         }
+      }
+
+      if (vm.count("launch-analysis"))
+      {
+          re->queueRemoteCommand("analyze "+remoteAnalysisFileName);
+          anything_done=true;
       }
 
       if (vm.count("wait"))

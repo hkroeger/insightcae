@@ -1,6 +1,8 @@
 add_sources(insightcad_SOURCES 
  derivedfeature.cpp derivedfeature.h
  singleedgefeature.cpp singleedgefeature.h
+
+ singlevertex.h singlevertex.cpp
  arc.cpp arc.h
  airfoil.cpp airfoil.h
  bar.cpp bar.h

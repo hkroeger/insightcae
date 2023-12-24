@@ -238,7 +238,6 @@ void Bar::build()
 
         setShape(result);
 
-//         std::cout<<"bar"<<std::endl;
         cache.insert(shared_from_this());
     }
     else

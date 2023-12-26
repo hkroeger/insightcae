@@ -26,6 +26,7 @@ IF(OF22x_BASHRC)
 
   detectEnvVar(OF22x c++FLAGS CXX_FLAGS)
   set(OF22x_CXX_FLAGS "${OF22x_CXX_FLAGS} -DOF22x -DOF_VERSION=020200 -DOF_FORK_vanilla")
+  filterWarningFlags(OF22x_CXX_FLAGS)
 
   detectIncPaths(OF22x)
 

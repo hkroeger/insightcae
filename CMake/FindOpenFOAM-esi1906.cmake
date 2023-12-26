@@ -32,6 +32,7 @@ IF(OFesi1906_BASHRC)
   set(OFesi1906_LIBSRC_DIR "${OFesi1906_DIR}/src")
   set(OFesi1906_LIB_DIR "${OFesi1906_DIR}/platforms/${OFesi1906_WM_OPTIONS}/lib")
 
+  filterWarningFlags(OFesi1906_CXX_FLAGS)
   string(REGEX REPLACE "^[^ ]+" "" OFesi1906_LINKLIBSO ${OFesi1906_LINKLIBSO_full})
   string(REGEX REPLACE "^[^ ]+" "" OFesi1906_LINKEXE ${OFesi1906_LINKEXE_full})
 

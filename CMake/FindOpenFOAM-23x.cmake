@@ -30,6 +30,7 @@ IF(OF23x_BASHRC)
   detectEnvVar(OF23x FOAM_MPI MPI)
   detectEnvVar(OF23x c++FLAGS CXX_FLAGS)
 
+  filterWarningFlags(OF23x_CXX_FLAGS)
   set(OF23x_CXX_FLAGS "${OF23x_CXX_FLAGS} -DOF23x -DOF_VERSION=020300 -DOF_FORK_vanilla")
   set(OF23x_LIBSRC_DIR "${OF23x_DIR}/src")
   set(OF23x_LIB_DIR "${OF23x_DIR}/platforms/${OF23x_WM_OPTIONS}/lib")

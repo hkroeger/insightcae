@@ -29,6 +29,7 @@ IF(OFesi1806_BASHRC)
   detectEnvVar(OFesi1806 FOAM_MPI MPI)
   detectEnvVar(OFesi1806 c++FLAGS CXX_FLAGS)
 
+  filterWarningFlags(OFesi1806_CXX_FLAGS)
   set(OFesi1806_CXX_FLAGS "${OFesi1806_CXX_FLAGS} -DOFesi1806 -DOF_VERSION=060000 -DOF_FORK_esi")
   set(OFesi1806_LIBSRC_DIR "${OFesi1806_DIR}/src")
   set(OFesi1806_LIB_DIR "${OFesi1806_DIR}/platforms/${OFesi1806_WM_OPTIONS}/lib")

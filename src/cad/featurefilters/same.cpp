@@ -5,60 +5,110 @@ namespace insight {
 namespace cad {
 
 
+
+
 template<>
-bool same<Vertex>::checkMatch(FeatureID i) const
+const TopoDS_Vertex& same<Vertex,TopoDS_Vertex>::other(FeatureID j) const
+{
+    return f_->model()->vertex(j);
+}
+
+
+template<>
+bool same<Vertex, TopoDS_Vertex>::checkMatch(FeatureID i) const
 {
     auto e1 = model_->vertex(i);
-    for (int j: f_->data())
+    for (auto j = unmatched_.begin(); j!=unmatched_.end(); ++j)
     {
-      auto e2 = f_->model()->vertex(j);
-      if (e1.IsEqual(e2)) return true;
+        if (e1.IsEqual(*j))
+        {
+            unmatched_.erase(j);
+            return true;
+        }
     }
 
     return false;
+}
+
+
+
+
+template<>
+const TopoDS_Edge& same<Edge,TopoDS_Edge>::other(FeatureID j) const
+{
+    return f_->model()->edge(j);
 }
 
 
 template<>
-bool same<Edge>::checkMatch(FeatureID i) const
+bool same<Edge, TopoDS_Edge>::checkMatch(FeatureID i) const
 {
-    auto e1 = model_->edge(i);
-    for (int j: f_->data())
+    auto &e1 = model_->edge(i);
+    for (auto j = unmatched_.begin(); j!=unmatched_.end(); ++j)
     {
-      auto e2 = f_->model()->edge(j);
-      if (e1.IsEqual(e2)) return true;
+        if (e1.IsEqual(*j))
+        {
+            unmatched_.erase(j);
+            return true;
+        }
     }
 
     return false;
+}
+
+
+
+
+template<>
+const TopoDS_Face& same<Face,TopoDS_Face>::other(FeatureID j) const
+{
+    return f_->model()->face(j);
 }
 
 
 template<>
-bool same<Face>::checkMatch(FeatureID i) const
+bool same<Face,TopoDS_Face>::checkMatch(FeatureID i) const
 {
-    auto e1 = model_->face(i);
-    for (int j: f_->data())
+    auto &e1 = model_->face(i);
+    for (auto j = unmatched_.begin(); j!=unmatched_.end(); ++j)
     {
-      auto e2 = f_->model()->face(j);
-      if (e1.IsEqual(e2)) return true;
+      if (e1.IsEqual(*j))
+      {
+          unmatched_.erase(j);
+          return true;
+      }
     }
 
     return false;
+}
+
+
+
+
+template<>
+const TopoDS_Solid& same<Solid,TopoDS_Solid>::other(FeatureID j) const
+{
+    return f_->model()->subsolid(j);
 }
 
 
 template<>
-bool same<Solid>::checkMatch(FeatureID i) const
+bool same<Solid, TopoDS_Solid>::checkMatch(FeatureID i) const
 {
-    auto e1 = model_->subsolid(i);
-    for (int j: f_->data())
+    auto &e1 = model_->subsolid(i);
+    for (auto j = unmatched_.begin(); j!=unmatched_.end(); ++j)
     {
-      auto e2 = f_->model()->subsolid(j);
-      if (e1.IsEqual(e2)) return true;
+        if (e1.IsEqual(*j))
+        {
+            unmatched_.erase(j);
+            return true;
+        }
     }
 
     return false;
 }
+
+
 
 
 } // namespace cad

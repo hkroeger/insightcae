@@ -96,6 +96,8 @@ public:
       const char *binaryFileContent, size_t size,
       const boost::filesystem::path& originalFileName );
 
+  virtual ~FileContainer();
+
   bool hasFileContent() const;
 
   bool isValid() const;

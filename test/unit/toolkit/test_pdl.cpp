@@ -30,5 +30,27 @@ int main()
 
   cout << ps_test.getDouble("run/regime/endTime") << endl;
 
+  ps_test.setDouble("run/initialization/preRuns/resolutions/1/nax_parameter", 0.2);
+  auto &ae = ps_test.get<DoubleParameter>("run/initialization/preRuns/resolutions/1/nax_parameter");
+  cout<<"naxp1="<<ae()<<std::endl;
+
+  bool failed=false;
+  try
+  {
+      ae.parentSet().get<DoubleParameter>("../../../0/nax_parameter");
+  }
+  catch (...)
+  {
+      failed=true;
+  }
+  if (!failed)
+      throw insight::Exception("acces should have failed!");
+
+  auto &ae2 = ae.parentSet().get<DoubleParameter>("../0/nax_parameter");
+  cout<<"naxp0="<<ae2()<<std::endl;
+
+  auto &mp = ae.parentSet().get<MatrixParameter>("../../../../../matrix");
+  cout<<"matrix="<<mp()<<std::endl;
+
   return 0;
 }

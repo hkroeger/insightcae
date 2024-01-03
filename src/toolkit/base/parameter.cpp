@@ -261,22 +261,39 @@ void Parameter::triggerChildValueChanged()
   if (!valueChangeSignalBlocked_) childValueChanged();
 }
 
+void Parameter::setParent(Parameter *parent)
+{
+    parent_=parent;
+}
+
 Parameter::Parameter()
 : description_(),
   isHidden_(false), isExpert_(false), isNecessary_(false), order_(0),
-  valueChangeSignalBlocked_(false)
+  valueChangeSignalBlocked_(false),
+    parent_(nullptr)
 {
 }
 
 Parameter::Parameter(const std::string& description, bool isHidden, bool isExpert, bool isNecessary, int order)
 : description_(description),
   isHidden_(isHidden), isExpert_(isExpert), isNecessary_(isNecessary), order_(order),
-  valueChangeSignalBlocked_(false)
+  valueChangeSignalBlocked_(false),
+  parent_(nullptr)
 {
 }
 
 Parameter::~Parameter()
 {}
+
+Parameter *Parameter::parent() const
+{
+    return parent_;
+}
+
+SubsetParameter& Parameter::parentSet() const
+{
+    return dynamic_cast<SubsetParameter&>(*parent());
+}
 
 
 bool Parameter::isHidden() const { return isHidden_; }

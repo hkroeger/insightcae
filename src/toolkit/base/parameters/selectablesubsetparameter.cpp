@@ -123,6 +123,8 @@ void SelectableSubsetParameter::addItem(key_type key, const SubsetParameter& ps)
   ins.first->second->valueChanged.connect(childValueChanged);
   ins.first->second->childValueChanged.connect(childValueChanged);
 
+  ins.first->second->setParent(this);
+
   if (ins.first->first == selection_)
   {
     triggerValueChanged();
@@ -277,10 +279,9 @@ Parameter* SelectableSubsetParameter::clone () const
 
   for (auto i=value_.begin(); i!=value_.end(); i++)
   {
-    np->value_.insert(
-        i->first,
-        std::auto_ptr<SubsetParameter>(dynamic_cast<SubsetParameter*>(i->second->clone()))
-    );
+    np->addItem(
+          i->first, *i->second
+          );
   }
   return np;
 }

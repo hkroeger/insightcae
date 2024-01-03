@@ -68,6 +68,7 @@ void writeMatToXMLNode(const arma::mat& matrix, rapidxml::xml_document< char >& 
 
 class Parameter;
 class ParameterSet;
+class SubsetParameter;
 
 
 
@@ -206,12 +207,22 @@ protected:
 
     bool valueChangeSignalBlocked_;
 
+    Parameter* parent_;
+    void setParent(Parameter* parent);
+
+    friend class ArrayParameter;
+    friend class SubsetParameter;
+    friend class SelectableSubsetParameter;
+
 public:
     declareType ( "Parameter" );
 
     Parameter();
     Parameter ( const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order);
     virtual ~Parameter();
+
+    Parameter* parent() const;
+    SubsetParameter& parentSet() const;
 
     bool isHidden() const;
     bool isExpert() const;

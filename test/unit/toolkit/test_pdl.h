@@ -106,7 +106,7 @@ run = set {
     resolutions = array [ set {
       nax_parameter = double 0.33 "Resolution parameter of the coarse setup (nax value or fraction of final nax)."
       np_coarse = int -1 "Number of processors to use for coarse run. Set to -1 to use the same number as for the final run."
-    } ]*1 ""
+    } ]*2 ""
 
     resolution_parameter = selection (fixed scaled) scaled "Meaning of the parameter nax_parameter in the specified resolutions."
   }

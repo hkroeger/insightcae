@@ -240,8 +240,13 @@ FileContainer::FileContainer(
   : originalFilePath_(originalFileName.generic_path()),
     file_content_(new std::string(binaryFileContent, size))
 {
-  clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
+    clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
 }
+
+
+
+FileContainer::~FileContainer()
+{}
 
 
 

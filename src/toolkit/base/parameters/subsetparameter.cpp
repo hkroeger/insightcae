@@ -40,7 +40,10 @@ SubsetParameter::SubsetParameter(
 {
     for (auto& p: defaultValue)
     {
-        insert(p.first, std::unique_ptr<Parameter>(p.second->clone()));
+        insert(
+            p.first,
+            std::unique_ptr<Parameter>(
+                p.second->clone() ) );
     }
 }
 
@@ -55,7 +58,10 @@ SubsetParameter::SubsetParameter(
 {
     for (auto& p: defaultValue)
     {
-        insert(p.first, std::unique_ptr<Parameter>(p.second->clone()));
+        insert(
+            p.first,
+            std::unique_ptr<Parameter>(
+                p.second->clone() ) );
     }
 }
 
@@ -133,6 +139,8 @@ void SubsetParameter::insert(const std::string &name, std::unique_ptr<Parameter>
   }
 
   auto ins = value_.insert(name, std::auto_ptr<Parameter>(p.release()) );
+
+  ins.first->second->setParent(this);
 
   valueChangedConnections_[ins.first->second]=
       std::make_shared<boost::signals2::scoped_connection>(
@@ -398,10 +406,21 @@ Parameter& SubsetParameter::getParameter(std::string path)
 
   std::function<Parameter&(Parameter&, std::string)> getChild;
 
-  getChild = [&getChild](Parameter& cp, std::string path) -> Parameter&
+  getChild = [&getChild,this](Parameter& cp, std::string path) -> Parameter&
   {
       int nRemaining=-1;
       std::string parameterName = splitOffFirstParameter(path, nRemaining);
+      if (parameterName=="..")
+      {
+          if (auto p=cp.parent())
+          {
+              return getChild(*p, path);
+          }
+          else
+              throw insight::Exception(
+                  "relative path given (%s) but no parent parameter container set!",
+                  path.c_str() );
+      }
       int i = cp.childParameterIndex(parameterName);
       if (i==-1)
       {
@@ -597,7 +616,6 @@ void SubsetParameter::replace ( const std::string& key, Parameter* newp )
   }
   else
   {
-    //value_.replace( value_.find(key), std::auto_ptr<Parameter>(newp) );
     insert(key, std::unique_ptr<Parameter>(newp));
   }
 }

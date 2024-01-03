@@ -136,6 +136,15 @@ void ConstrainedSketch::insertGeometry(ConstrainedSketchEntityPtr geomEntity, Ge
     }
 }
 
+
+void ConstrainedSketch::setExternalReference(
+    std::shared_ptr<ExternalReference> extRef,
+    int idx )
+{
+
+    std::cout<<">>> EXTREF "<<idx<<std::endl;
+}
+
 void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
 {
     geometry_.erase(geomEntityId);
@@ -213,6 +222,7 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
     Feature::operator=(o);
     pl_=o.pl_;
     geometry_=o.geometry_;
+    externalReferences_=o.externalReferences_;
 }
 
 const ConstrainedSketch::SolverSettings& ConstrainedSketch::solverSettings() const

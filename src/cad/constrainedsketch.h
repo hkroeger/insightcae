@@ -4,6 +4,7 @@
 
 #include "sketch.h"
 #include "sketchpoint.h"
+#include "externalreference.h"
 
 namespace insight {
 namespace cad {
@@ -50,7 +51,7 @@ private:
 
     // ID is key.
     // storage of ID is required for proper update during parameter refresh (via parse from script)
-    GeometryMap geometry_;
+    GeometryMap geometry_, externalReferences_;
 
     SolverSettings solverSettings_;
 
@@ -81,6 +82,7 @@ public:
 
     GeometryMap::key_type findUnusedID() const;
     void insertGeometry(ConstrainedSketchEntityPtr geomEntity, GeometryMap::key_type key=-1);
+    void setExternalReference(std::shared_ptr<ExternalReference> extRef, int idx);
 
     void eraseGeometry(GeometryMap::key_type geomEntityId);
     void eraseGeometry(ConstrainedSketchEntityPtr geomEntity);

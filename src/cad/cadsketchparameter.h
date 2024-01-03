@@ -5,6 +5,7 @@
 #include "base/parameter.h"
 #include "base/parameterset.h"
 
+#include "cadgeometryparameter.h"
 #include "constrainedsketchgeometry.h"
 
 namespace insight {
@@ -14,7 +15,7 @@ class ConstrainedSketch;
 }
 
 class CADSketchParameter
-: public Parameter
+: public CADGeometryParameter
 {
 
 
@@ -22,6 +23,7 @@ protected:
     //    insight::cad::ModelPtr cadmodel_;
 
     cad::MakeDefaultGeometryParametersFunction makeDefaultGeometryParameters;
+    std::map<int, std::string> references_;
 
     mutable std::unique_ptr<std::string> script_;
     mutable std::shared_ptr<insight::cad::ConstrainedSketch> CADGeometry_;
@@ -50,6 +52,7 @@ public:
     CADSketchParameter (
         const std::string& script,
         cad::MakeDefaultGeometryParametersFunction defaultGeometryParameters,
+        const std::map<int, std::string>& references,
         const std::string& description,
         bool isHidden=false,
         bool isExpert=false,
@@ -57,14 +60,17 @@ public:
         int order=0 );
 
 
+    void setReferences(const std::map<int, std::string>& references);
+
     insight::ParameterSet defaultGeometryParameters() const;
 
     std::string script() const;
     void setScript(const std::string& script);
 
-    //    void setCADModel(insight::cad::ModelPtr cadmodel);
     const insight::cad::ConstrainedSketch& featureGeometry() const;
     std::shared_ptr<insight::cad::ConstrainedSketch> featureGeometryRef();
+
+    cad::FeaturePtr geometry() const override;
 
     std::string latexRepresentation() const override;
     std::string plainTextRepresentation(int indent=0) const override;
@@ -84,7 +90,7 @@ public:
             boost::filesystem::path inputfilepath
             ) override;
 
-    CADSketchParameter* cloneCADSketchParameter() const;
+    CADSketchParameter* cloneCADSketchParameter(bool keepParentRef=false) const;
     Parameter* clone() const override;
 
     void copyFrom(const Parameter& op) override;

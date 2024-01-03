@@ -1,5 +1,7 @@
 #include "cadsketchparameterparser.h"
 
+#include "boost/range/adaptors.hpp"
+
 defineType(CADSketchParameterParser);
 addToStaticFunctionTable(ParserDataBase, CADSketchParameterParser, insertrule);
 
@@ -7,9 +9,28 @@ addToStaticFunctionTable(ParserDataBase, CADSketchParameterParser, insertrule);
 CADSketchParameterParser::Data::Data(
     const std::string& script,
     const std::string& makeDefaultParametersFunctionName,
+    const std::vector<boost::fusion::vector2<int, std::string> >& references,
     const std::string& d)
-    : ParserDataBase(d), makeDefaultParametersFunctionName_(makeDefaultParametersFunctionName), script_(script)
+    : ParserDataBase(d),
+    makeDefaultParametersFunctionName_(
+          makeDefaultParametersFunctionName),
+    script_(script),
+    references_(references)
 {}
+
+std::string CADSketchParameterParser::Data::refParameter() const
+{
+    std::string r="{";
+    for (auto ref: boost::adaptors::index(references_))
+    {
+        if (ref.index()>0) r+=", ";
+        r+=str(boost::format("{%d, \"%s\"}")
+                 % boost::fusion::get<0>(ref.value())
+                 % boost::fusion::get<1>(ref.value()) );
+    }
+    r+="}";
+    return r;
+}
 
 void CADSketchParameterParser::Data::cppAddHeader(std::set< std::string >& headers) const
 {
@@ -32,11 +53,12 @@ std::string CADSketchParameterParser::Data::cppValueRep(const std::string& name,
     std::string mdpn(makeDefaultParametersFunctionName_);
     if (mdpn.empty()) mdpn="[]() { return insight::ParameterSet(); }";
 
-    return "\""+ script_ + "\", " + mdpn;
+    return "\""+ script_ + "\", " + mdpn + ", "+refParameter();
 }
 
-std::string CADSketchParameterParser::Data::cppConstructorParameters(const std::string &name,
-                                                                       const std::string& thisscope) const
+std::string CADSketchParameterParser::Data::cppConstructorParameters(
+    const std::string &name,
+    const std::string& thisscope ) const
 {
     std::string mdpn(makeDefaultParametersFunctionName_);
     if (mdpn.empty()) mdpn="[]() { return insight::ParameterSet(); }";
@@ -45,6 +67,7 @@ std::string CADSketchParameterParser::Data::cppConstructorParameters(const std::
            + cppParamType(name)
            +"( \"" + script_ + "\", "
            + mdpn + ", "
+           + refParameter() + ", "
            + "\"" + description + "\", "
            + (isHidden?"true":"false")+","
            + (isExpert?"true":"false")+","
@@ -85,6 +108,6 @@ void CADSketchParameterParser::Data::cppWriteGetStatement
         const std::string&
         ) const
 {
-    os<<staticname<<".reset( "<<varname<<".cloneCADSketchParameter() );"<<std::endl;
+    os<<staticname<<".reset( "<<varname<<".cloneCADSketchParameter(true) );"<<std::endl;
 }
 

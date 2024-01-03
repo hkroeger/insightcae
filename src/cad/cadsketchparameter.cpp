@@ -22,11 +22,30 @@ addToFactoryTable(Parameter, CADSketchParameter);
 
 
 
+void CADSketchParameter::resetCADGeometry()
+{
+    CADGeometry_ = insight::cad::ConstrainedSketch::create(
+        std::make_shared<cad::DatumPlane>(
+            cad::vec3const(0,0,0),
+            cad::vec3const(0,0,1) ));
+
+    for (auto& ref: references_)
+    {
+        auto &r = parentSet().get<CADGeometryParameter>(ref.second);
+        CADGeometry_->setExternalReference(
+            cad::ExternalReference::create(r.geometry()),
+            ref.first
+            );
+    }
+}
+
+
+
 CADSketchParameter::CADSketchParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
     )
-    : Parameter(description, isHidden, isExpert, isNecessary, order)
+    : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order)
 {}
 
 
@@ -37,7 +56,7 @@ CADSketchParameter::CADSketchParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
     )
-    : Parameter(description, isHidden, isExpert, isNecessary, order)
+    : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order)
 {
     setScript(script);
 }
@@ -46,13 +65,21 @@ CADSketchParameter::CADSketchParameter(
 CADSketchParameter::CADSketchParameter(
    const std::string& script,
     cad::MakeDefaultGeometryParametersFunction mdpf,
+    const std::map<int, std::string>& references,
    const std::string& description,
    bool isHidden, bool isExpert, bool isNecessary, int order
    )
-    : Parameter(description, isHidden, isExpert, isNecessary, order),
-    makeDefaultGeometryParameters(mdpf)
+    : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order),
+    makeDefaultGeometryParameters(mdpf),
+    references_(references)
 {
     setScript(script);
+}
+
+void CADSketchParameter::setReferences(
+    const std::map<int, std::string> &references )
+{
+    references_=references;
 }
 
 
@@ -107,14 +134,12 @@ CADSketchParameter::featureGeometry() const
                 ->featureGeometryRef();
 }
 
-std::shared_ptr<insight::cad::ConstrainedSketch> CADSketchParameter::featureGeometryRef()
+std::shared_ptr<insight::cad::ConstrainedSketch>
+CADSketchParameter::featureGeometryRef()
 {
     if (!CADGeometry_)
     {
-        CADGeometry_ = insight::cad::ConstrainedSketch::create(
-            std::make_shared<cad::DatumPlane>(
-                cad::vec3const(0,0,0),
-                cad::vec3const(0,0,1) ));
+        resetCADGeometry();
     }
 
     if (script_)
@@ -136,6 +161,12 @@ std::shared_ptr<insight::cad::ConstrainedSketch> CADSketchParameter::featureGeom
     }
 
     return CADGeometry_;
+}
+
+cad::FeaturePtr CADSketchParameter::geometry() const
+{
+    return const_cast<CADSketchParameter*>(this)
+        ->featureGeometryRef();
 }
 
 
@@ -178,13 +209,21 @@ void CADSketchParameter::readFromNode
     }
 }
 
-CADSketchParameter *CADSketchParameter::cloneCADSketchParameter() const
+CADSketchParameter *
+CADSketchParameter::cloneCADSketchParameter(
+    bool keepParentRef
+    ) const
 {
     auto ncgp=new CADSketchParameter(
         script(),
         makeDefaultGeometryParameters,
+        references_,
         description_.simpleLatex(),
         isHidden_, isExpert_, isNecessary_, order_ );
+
+    if (keepParentRef)
+        ncgp->setParent(parent());
+
     return ncgp;
 }
 
@@ -208,6 +247,7 @@ void CADSketchParameter::operator=(const CADSketchParameter &op)
     order_ = op.order_;
 
     makeDefaultGeometryParameters = op.makeDefaultGeometryParameters;
+    references_ = op.references_;
 
     if (op.script_)
     {
@@ -220,11 +260,7 @@ void CADSketchParameter::operator=(const CADSketchParameter &op)
 
     if (op.CADGeometry_)
     {
-        CADGeometry_ = insight::cad::ConstrainedSketch::create(
-            std::make_shared<cad::DatumPlane>(
-                cad::vec3const(0,0,0),
-                cad::vec3const(0,0,1) ));
-
+        resetCADGeometry();
         *CADGeometry_ = *op.CADGeometry_;
     }
     else

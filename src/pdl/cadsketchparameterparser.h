@@ -10,8 +10,15 @@ struct CADSketchParameterParser
         : public ParserDataBase
     {
         std::string script_, makeDefaultParametersFunctionName_;
+        std::vector<boost::fusion::vector2<int, std::string> > references_;
 
-        Data(const std::string& script, const std::string& makeDefaultParametersFunctionName, const std::string& d);
+        Data(
+            const std::string& script,
+            const std::string& makeDefaultParametersFunctionName,
+            const std::vector<boost::fusion::vector2<int, std::string> >& references,
+            const std::string& d);
+
+        std::string refParameter() const;
 
         void cppAddHeader(std::set< std::string >& headers) const override;
 
@@ -53,11 +60,17 @@ struct CADSketchParameterParser
             (
                 typeName,
                 std::make_shared<PDLParserRuleset::ParameterDataRule>(
-
-                        ( ruleset.r_string >> ruleset.r_string >> ruleset.r_description_string )
-                        [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3)) ]
-
-                        )
+                    (
+                        ruleset.r_string
+                    >> ruleset.r_string
+                    >> ( ( qi::lit("references") >> *( qi::int_ > '=' > ruleset.r_string ) )
+                        | qi::attr(std::vector<boost::fusion::vector2<int, std::string> >()) )
+                    >> ruleset.r_description_string
+                    )
+                    [ qi::_val = phx::construct<ParserDataBase::Ptr>(
+                         phx::new_<Data>(
+                             qi::_1, qi::_2, qi::_3, qi::_4)) ]
+                    )
                 );
     }
 };

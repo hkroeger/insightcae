@@ -142,7 +142,7 @@ set(toolkit_gui_SRCS
     iqparameters/iqarrayelementparameter.cpp iqparameters/iqarrayelementparameter.h
     iqparameters/iqpropertylibraryselectionparameter.cpp iqparameters/iqpropertylibraryselectionparameter.h
     iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
-    iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
+    #iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
     iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 
     iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp

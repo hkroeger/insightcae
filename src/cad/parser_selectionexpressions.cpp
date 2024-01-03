@@ -64,38 +64,39 @@ void ISCADParser::createSelectionExpressions()
         (
             model_->vertexFeatureSymbols() [ qi::_val = qi::_1 ]
             |
-            ( r_solidmodel_expression
-              >> '?'
-              >> (lit("vertices")|lit("vertex"))
-              >> '('
-              >> r_string
-              >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
-              >> ')'
+            ( r_solidmodel_expression >> '?' ) [qi::_a=qi::_1]
+            >> (
+               ( (lit("vertices")|lit("vertex"))
+                 > (
+                  ( lit("at") > r_vectorExpression
+                  ) [ _val = phx::bind(&makeVertexFeatureSet,
+                        qi::_a, std::string("dist(loc,%m0)<1e-6"),
+                        phx::construct<FeatureSetParserArgList>(1, qi::_1) ) ]
+                  |
+                  ( '('
+                   > r_string
+                   > *( ',' > (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+                   > ')'
+                  ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Vertex, qi::_1, qi::_2)) ]
+                 )
+               )
+               |
+               ( lit("allvertices")
+               ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Vertex)) ]
+               |
+               ( lit("vid") > '=' > '(' > ( qi::int_ % ',' ) > ')'
+               ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Vertex, qi::_1)) ]
             )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex, qi::_2, qi::_3)) ]
-            |
-            ( r_solidmodel_expression
-              >> '?'
-              >> lit("allvertices")
-            )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex)) ]
-            |
-            ( r_solidmodel_expression
-              >> '?'
-              >> lit("vid") >> '=' >> '(' >> ( qi::int_ % ',' ) >> ')'
-            )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex, qi::_2)) ]
         )
         >>
         *(
             '?'
-            >> (lit("vertices")|lit("vertex"))
-            >> '('
-            >> r_string
-            >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
-            >> ')'
-        )
-        [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
+            > (lit("vertices")|lit("vertex"))
+            > '('
+            > r_string
+            > *( ',' > (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+            > ')'
+        ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
         ;
     r_vertexFeaturesExpression.name("vertex selection expression");
 
@@ -103,36 +104,38 @@ void ISCADParser::createSelectionExpressions()
         (
             model_->edgeFeatureSymbols() [ _val = qi::_1 ]
             |
-            ( r_solidmodel_expression
-              >> '?'
-              >> (lit("edges")|lit("edge"))
-              >> '('
-              >> r_string
-              >> *( ',' >> ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
-              >> ')'
-            )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Edge, qi::_2, qi::_3)) ]
-            |
-            ( r_solidmodel_expression
-              >> '?'
-              >> lit("eid") >> '=' >> '(' >> ( qi::int_ % ',' ) >> ')'
-            )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Edge, qi::_2)) ]
-            |
-            ( r_solidmodel_expression
-              >> '?'
-              >> lit("alledges")
-            )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Edge)) ]
+            (r_solidmodel_expression >> '?') [qi::_a=qi::_1]
+            >> (
+                ( (lit("edges")|lit("edge"))
+                > (
+                   ( lit("from") > r_solidmodel_expression
+                   ) [ _val = phx::bind(&makeEdgeFeatureSet,
+                          qi::_a, std::string("isIdentical(%0)"),
+                          phx::construct<FeatureSetParserArgList>(1,
+                                phx::bind( &Feature::allEdges, qi::_1) ) ) ]
+                   |
+                   ( '(' > r_string
+                    > *( ',' > ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
+                    > ')'
+                    ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Edge, qi::_1, qi::_2)) ]
+                  )
+                )
+                |
+                ( lit("eid") > '=' > '(' > ( qi::int_ % ',' ) > ')'
+                ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Edge, qi::_1)) ]
+                |
+                lit("alledges")
+                 [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Edge)) ]
+              )
         )
         >>
         *(
             '?'
-            >> (lit("edges")|lit("edge"))
-            >> '('
-            >> r_string
-            >> *( ',' >> ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
-            >> ')'
+            > (lit("edges")|lit("edge"))
+            > '('
+            > r_string
+            > *( ',' > ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
+            > ')'
         )
         [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
         ;
@@ -142,39 +145,39 @@ void ISCADParser::createSelectionExpressions()
         (
             model_->faceFeatureSymbols()[ qi::_val = qi::_1 ]
             |
-//             ( lit("??") > r_identifier )
-//             [ _val = phx::bind(&Feature::providedFeatureSet, model_, qi::_1) ]
-//             |
-            ( r_solidmodel_expression
-              >> '?'
-              >> (lit("faces")|lit("face"))
-              >> '('
-              >> r_string
-              >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
-              >> ')'
+            ( r_solidmodel_expression >> '?' ) [qi::_a=qi::_1]
+             >> (
+                 ( (lit("faces")|lit("face"))
+                  > (
+                      ( lit("from") > r_solidmodel_expression
+                       ) [ _val = phx::bind(&makeFaceFeatureSet,
+                            qi::_a, std::string("isIdentical(%0)"),
+                            phx::construct<FeatureSetParserArgList>(1,
+                                phx::bind( &Feature::allFaces, qi::_1) ) ) ]
+                      |
+                      (
+                        '(' > r_string
+                       > *( ',' > (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+                       > ')' )
+                       [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Face, qi::_1, qi::_2)) ]
+                    )
+               )
+               |
+               ( lit("fid") > '=' > '(' > ( qi::int_ % ',' ) > ')'
+               ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Face, qi::_1)) ]
+               |
+               ( lit("allfaces")
+               ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Face)) ]
             )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face, qi::_2, qi::_3)) ]
-            |
-            ( r_solidmodel_expression
-              >> '?'
-              >> lit("fid") >> '=' >> '(' >> ( qi::int_ % ',' ) >> ')'
-            )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face, qi::_2)) ]
-            |
-            ( r_solidmodel_expression
-              >> '?'
-              >> lit("allfaces")
-            )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face)) ]
         )
         >>
         *(
             '?'
-            >> (lit("faces")|lit("face"))
-            >> '('
-            >> r_string
-            >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
-            >> ')'
+            > (lit("faces")|lit("face"))
+            > '('
+            > r_string
+            > *( ',' > (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+            > ')'
         )
         [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
         ;
@@ -184,36 +187,31 @@ void ISCADParser::createSelectionExpressions()
         (
             model_->solidFeatureSymbols()[ qi::_val = qi::_1 ]
             |
-            ( r_solidmodel_expression
-              >> '?'
-              >> (lit("solids")|lit("solid"))
-              >> '('
-              >> r_string
-              >> *( ',' >> (r_solidFeaturesExpression|r_vectorExpression|r_scalarExpression) )
-              >> ')'
+            ( r_solidmodel_expression >> '?' ) [ _a=qi::_1 ]
+             >> (
+              ( (lit("solids")|lit("solid"))
+               > '('
+               > r_string
+               > *( ',' > (r_solidFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+               > ')'
+              ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid, qi::_1, qi::_2)) ]
+              |
+              ( lit("allsolids")
+              ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid)) ]
+              |
+              ( lit("sid") > '=' > '(' > (qi::int_ % ',' ) > ')'
+              )
+              [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid, qi::_1)) ]
             )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Solid, qi::_2, qi::_3)) ]
-            |
-            ( r_solidmodel_expression
-              >> '?'
-              >> lit("allsolids")
-            )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Solid)) ]
-            |
-            ( r_solidmodel_expression
-              >> '?'
-              >> lit("sid") >> '=' >> '(' >> (qi::int_ % ',' ) >> ')'
-            )
-            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Solid, qi::_2)) ]
         )
         >>
         *(
             '?'
-            >> (lit("solids")|lit("solid"))
-            >> '('
-            >> r_string
-            >> *( ',' >> (r_solidFeaturesExpression|r_vectorExpression|r_scalarExpression) )
-            >> ')'
+            > (lit("solids")|lit("solid"))
+            > '('
+            > r_string
+            > *( ',' > (r_solidFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+            > ')'
         )
         [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
         ;

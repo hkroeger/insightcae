@@ -44,6 +44,8 @@ IQCADItemModel::FeatureVisibility::FeatureVisibility(
             255.*fvs.color(2) );
     }
 
+    visible = fvs.initiallyVisible;
+
     assocParamPaths = fvs.associatedParameterPaths;
 }
 
@@ -528,13 +530,14 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
                                     auto viz = featureVisibility_.find(i->first);
                                     if (viz==featureVisibility_.end())
                                     {
-                                        FeatureVisibility v;
-                                        if (model_->isComponent(i->first))
-                                            v.visible=true;
-                                        else
-                                            v.visible=false;
-
-                                        auto si=featureVisibility_.insert({i->first, v});
+                                        auto si=featureVisibility_.insert({
+                                            i->first,
+                                            FeatureVisibility(
+                                               model_->isComponent(i->first) ?
+                                                insight::cad::FeatureVisualizationStyle::componentStyle() :
+                                                insight::cad::FeatureVisualizationStyle::intermediateFeatureStyle()
+                                            )
+                                           });
                                         insight::assertion(
                                                     si.second,
                                                     "could not store visibility information");
@@ -1072,7 +1075,6 @@ void IQCADItemModel::addModelstep(
     if (featureVisibility_.find(name)==featureVisibility_.end())
     {
         auto&dvv = (featureVisibility_[name] = FeatureVisibility(fvs));
-        dvv.visible=false;
     }
 
     featureVisibility_[name].assocParamPaths=fvs.associatedParameterPaths;
@@ -1124,7 +1126,6 @@ void IQCADItemModel::addComponent(
     if (featureVisibility_.find(name)==featureVisibility_.end())
     {
         auto&dvv = (featureVisibility_[name] = FeatureVisibility(fvs));
-        dvv.visible=true;
     }
 
     featureVisibility_[name].assocParamPaths=fvs.associatedParameterPaths;

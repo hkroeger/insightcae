@@ -48,9 +48,11 @@ FeatureVisualizationStyle::FeatureVisualizationStyle(
         boost::variant<boost::blank,DatasetRepresentation> s,
         const arma::mat& c,
         const std::vector<std::string> app,
-        boost::variant<boost::blank,double> o )
+        boost::variant<boost::blank,double> o,
+        bool initiallyVisible )
   : VisualizationStyle(s, c, o),
-    associatedParameterPaths(app)
+    associatedParameterPaths(app),
+    initiallyVisible(initiallyVisible)
 {}
 
 
@@ -62,6 +64,7 @@ FeatureVisualizationStyle FeatureVisualizationStyle::componentStyle()
         cs.reset(new FeatureVisualizationStyle());
         cs->style=insight::DatasetRepresentation::Surface;
         cs->opacity=1.;
+        cs->initiallyVisible=true;
     }
     return *cs;
 }
@@ -74,6 +77,7 @@ FeatureVisualizationStyle FeatureVisualizationStyle::intermediateFeatureStyle()
         ifs.reset(new FeatureVisualizationStyle());
         ifs->style=insight::DatasetRepresentation::Surface;
         ifs->opacity=0.5;
+        ifs->initiallyVisible=false;
     }
     return *ifs;
 }

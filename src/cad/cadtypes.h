@@ -127,6 +127,7 @@ struct VisualizationStyle
 struct FeatureVisualizationStyle : public VisualizationStyle
 {
     std::vector<std::string> associatedParameterPaths = {};
+    bool initiallyVisible = true;
 
     static FeatureVisualizationStyle componentStyle();
     static FeatureVisualizationStyle intermediateFeatureStyle();
@@ -136,7 +137,8 @@ struct FeatureVisualizationStyle : public VisualizationStyle
         boost::variant<boost::blank,DatasetRepresentation> style,
         const arma::mat& color = arma::mat(),
         const std::vector<std::string> associatedParameterPaths = {},
-        boost::variant<boost::blank,double> opacity=boost::blank() );
+        boost::variant<boost::blank,double> opacity=boost::blank(),
+        bool initiallyVisible = true );
 };
 
 

@@ -327,17 +327,20 @@ void IQVTKCADModel3DViewer::recomputeSceneBounds() const
         {
             for (const auto& act: disp.second.actors_)
             {
-                if (const auto* b = act->GetBounds())
+                if (act->GetVisibility()==true)
                 {
-                    some=true;
-                    xmin=std::min(xmin, b[0]);
-                    xmax=std::max(xmax, b[1]);
+                    if (const auto* b = act->GetBounds())
+                    {
+                        some=true;
+                        xmin=std::min(xmin, b[0]);
+                        xmax=std::max(xmax, b[1]);
 
-                    ymin=std::min(ymin, b[2]);
-                    ymax=std::max(ymax, b[3]);
+                        ymin=std::min(ymin, b[2]);
+                        ymax=std::max(ymax, b[3]);
 
-                    zmin=std::min(zmin, b[4]);
-                    zmax=std::max(zmax, b[5]);
+                        zmin=std::min(zmin, b[4]);
+                        zmax=std::max(zmax, b[5]);
+                    }
                 }
             }
         }
@@ -684,58 +687,13 @@ void IQVTKCADModel3DViewer::addModelEntity(
             ren_->AddActor(a);
         }
         displayedData_[pidx]={lbl, entity, actors};
+        resetVisibility(pidx);
         recomputeSceneBounds();
         resetDisplayProps(pidx);
         viewState_.resetCameraIfAllow();
     }
     scheduleRedraw();
 }
-
-//void IQVTKCADModel3DViewer::addVertex(
-//        const QPersistentModelIndex& pidx,
-//        const QString& lbl,
-//         insight::cad::VectorPtr loc )
-//{
-//    auto actor = createActor(loc);
-//    ren_->AddActor(actor);
-//    displayedData_[pidx]={lbl, loc, actor};
-//}
-
-
-
-//void IQVTKCADModel3DViewer::addDatum(
-//        const QPersistentModelIndex& pidx,
-//        const QString& lbl,
-//        insight::cad::DatumPtr datum )
-//{
-//    auto actor = createActor(datum);
-//    ren_->AddActor(actor);
-//    displayedData_[pidx]={lbl, datum, actor};
-//}
-
-
-
-
-//void IQVTKCADModel3DViewer::addFeature(
-//        const QPersistentModelIndex& pidx,
-//        const QString& lbl,
-//        insight::cad::FeaturePtr feat )
-//{
-//    auto actor = createActor(feat);
-//    ren_->AddActor(actor);
-//    displayedData_[pidx]={lbl, feat, actor};
-//    resetFeatureDisplayProps(pidx);
-//}
-
-//void IQVTKCADModel3DViewer::addDataset(
-//        const QPersistentModelIndex& pidx,
-//        const QString& lbl,
-//        vtkSmartPointer<vtkDataObject> ds )
-//{
-//    auto act = createActor(ds);
-//    displayedData_[pidx]={lbl, ds, act};
-//    resetDatasetColor(pidx);
-//}
 
 
 
@@ -1002,7 +960,6 @@ void IQVTKCADModel3DViewer::addChild(const QModelIndex& idx)
         return; // don't addModelEntity, if no match
 
     addModelEntity( pidx, lbl, modelEntity );
-    resetVisibility(pidx);
 }
 
 

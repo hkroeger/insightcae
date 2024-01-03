@@ -47,6 +47,9 @@ typedef boost::fusion::vector<
     insight::cad::GroupsDesc //solidGroups,
   > GroupDefinitions;
 
+typedef boost::fusion::vector3<
+    VectorPtr /*location*/, ScalarPtr /*D*/, ScalarPtr /*Linside*/
+    > MeshSizeBall;
 
 class Mesh 
 : public insight::cad::PostprocAction
@@ -62,6 +65,7 @@ protected:
   GroupsDesc faceGroups_;
   GroupsDesc solidGroups_;
   NamedVertices namedVertices_;
+  std::vector<MeshSizeBall> meshSizeBalls_;
   bool keepTmpDir_;
   
   size_t calcHash() const override;
@@ -79,6 +83,7 @@ public:
     bool quad,
     const GroupDefinitions& v_e_f_s_groups,
     const NamedVertices& namedVertices,
+    const std::vector<MeshSizeBall>& meshSizeBalls,
     bool keepTmpDir=false
   );
   

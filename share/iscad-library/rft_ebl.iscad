@@ -1,0 +1,41 @@
+
+body1=
+Box(O, 18.5*EY, 18.5*EX, -25*EZ, center xy);
+
+Dpin=2;
+body2=body1
+|Cylinder(body1@p0+(3.6-0.5*Dpin)*(EX+EY), ax 1*EZ, Dpin)
+;
+
+body:body2
+|Cylinder(O, ax 3.5*EZ, 11.7);
+
+nut:
+Cylinder(O+2*EZ, ax 1.3*EZ, 16.7)
+;
+
+sl1=
+Cylinder(O,ax 14.1*EZ, 8.9);
+sl=sl1
+|Cylinder(sl1@p1+1*EZ, ax -5*EZ, 13)
+;
+
+roundcap=
+Cone(sl@m2_p1, sl@m2_p1+13*EZ, 14.2, 13.5)
+;
+
+movable:Compound(sl, roundcap);
+movable_pressed=movable<<-7*EZ;
+
+p_mount=O;
+
+tmaxpanel=2;
+backpanel_cutout=Compound(
+Cylinder(O, ax tmaxpanel*EZ, 13),
+Cylinder(body2@m2_p0, ax tmaxpanel*EZ, 1.2*Dpin)
+);
+
+p_frontpanel=p_mount + 14*EZ;
+pl_frontpanel=Plane(p_frontpanel, EZ);
+frontpanel_cutout=
+Cylinder(O, ax 2*14*EZ, 15);

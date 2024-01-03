@@ -37,6 +37,10 @@ class ArrayParameter
 public:
     typedef std::vector<ParameterPtr> value_type;
 
+#ifndef SWIG
+    boost::signals2::signal<void(ParameterPtr)> newItemAdded;
+#endif
+
 protected:
     ParameterPtr defaultValue_;
     int defaultSize_;

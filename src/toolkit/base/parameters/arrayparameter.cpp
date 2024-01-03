@@ -116,15 +116,16 @@ void ArrayParameter::eraseValue ( int i )
 void ArrayParameter::appendValue ( const Parameter& np )
 {
   value_.push_back ( ParameterPtr( np.clone() ) );
-
   auto& ins=value_.back();
+
   valueChangedConnections_[ins.get()]=
       std::make_shared<boost::signals2::scoped_connection>(
           ins->valueChanged.connect( childValueChanged ));
   childValueChangedConnections_[ins.get()]=
       std::make_shared<boost::signals2::scoped_connection>(
           ins->childValueChanged.connect( childValueChanged ));
-
+  newItemAdded(ins);
+  ins->setParent(this);
   triggerValueChanged();
 }
 
@@ -143,7 +144,8 @@ void ArrayParameter::insertValue ( int i, const Parameter& np )
   childValueChangedConnections_[ins->get()]=
       std::make_shared<boost::signals2::scoped_connection>(
        (*ins)->childValueChanged.connect( childValueChanged ));
-
+  newItemAdded(*ins);
+  (*ins)->setParent(this);
   triggerValueChanged();
 }
 
@@ -159,7 +161,8 @@ void ArrayParameter::appendEmpty()
   childValueChangedConnections_[ins.get()]=
       std::make_shared<boost::signals2::scoped_connection>(
         ins->childValueChanged.connect( childValueChanged ));
-
+  newItemAdded(ins);
+  ins->setParent(this);
   triggerValueChanged();
 }
 
@@ -361,7 +364,10 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(
   defaultValue_->appendToNode("default", doc, *child, inputfilepath);
   for (int i=0; i<size(); i++)
   {
-    value_[i]->appendToNode(boost::lexical_cast<std::string>(i), doc, *child, inputfilepath);
+    value_[i]->appendToNode(
+          boost::lexical_cast<std::string>(i),
+          doc, *child,
+          inputfilepath );
   }
   return child;
 }
@@ -379,8 +385,6 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>&
 
   if (child)
   {
-//    value_.clear();
-
     int imax=-1;
     for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
     {
@@ -395,28 +399,12 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>&
         imax=std::max(imax,i);
         if (i>size()-1) resize(i+1);
         value_[i]->readFromNode( name, *child, inputfilepath );
-
-//        ParameterPtr p(defaultValue_->clone());
-//        p->readFromNode( name, *child, inputfilepath );
-//        readvalues.push_back( decltype(readvalues)::value_type(i, p) );
       }
     }
     if (imax<0)
       clear();
     else
       resize(imax+1);
-
-//    sort(readvalues.begin(), readvalues.end(),
-//         [](const decltype(readvalues)::value_type& v1, const decltype(readvalues)::value_type& v2)
-//            {
-//                return v1.first < v2.first;
-//            }
-//    );
-
-//    for (const auto& v: readvalues)
-//    {
-//        value_.push_back(v.second);
-//    }
 
     triggerValueChanged();
   }
@@ -462,28 +450,6 @@ void ArrayParameter::operator=(const ArrayParameter& op)
   (*defaultValue_).copyFrom(*op.defaultValue_);
   defaultSize_ = op.defaultSize_;
 
-//  int osize = size();
-
-//  if (size()>op.size())
-//  {
-//    // shorten array, if required
-//    resize(osize=op.size());
-//  }
-
-//  int i=0;
-//  // copy values of existing entries
-//  for (; i<osize; ++i)
-//  {
-//    *value_[i] = *op.value_[i];
-//  }
-//  // append new entries
-//  resize(op.value_.size());
-//  for (; i<op.value_.size(); ++i)
-//  {
-////    value_[i].reset( op.value_[i]->clone() );
-//    *value_[i] = *op.value_[i];
-//  }
-
   resize(op.size());
   for (int i=0; i<op.size(); ++i)
   {
@@ -520,7 +486,6 @@ void ArrayParameter::merge(const Parameter &other)
   }
   for (; i<op.size(); ++i) // if other is larger
   {
-//    value_.push_back ( ParameterPtr( defaultValue_->clone() ) );
     appendEmpty();
     insight::assertion( value_.size()-1==i, "unexpected" );
     value_.back()->merge(*op.value_[i]);

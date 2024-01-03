@@ -171,11 +171,12 @@ void ISCADParser::createPostProcExpressions()
           >> ( lit("volumeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_solidFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
              ]
           >> ( lit("vertices") >> '(' >> *( (r_identifier|r_string) >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
+         >> ( lit("meshSizes") >> '(' >> *( r_vectorExpression >> ',' >> r_scalarExpression >> ',' >> r_scalarExpression ) >> ')' | qi::attr(std::vector<MeshSizeBall>()) )
           >> ( (lit("keepTmpDir")>attr(true)) | attr(false) )
           >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<Mesh>(
-                                qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7
+                           qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8
                             ))) ]
         |
 

@@ -29,7 +29,7 @@ public:
 class ConstrainedSketch
     : public Feature
 {
-public:
+public:    
     enum SolverType
     {
         rootND =0,
@@ -46,12 +46,17 @@ public:
 
     typedef std::map<int, ConstrainedSketchEntityPtr> GeometryMap;
 
+#ifndef SWIG
+    typedef boost::signals2::signal<void(GeometryMap::key_type)> GeometryEditSignal;
+    GeometryEditSignal geometryAdded, geometryRemoved, geometryChanged;
+#endif
+
 private:
     DatumPtr pl_;
 
     // ID is key.
     // storage of ID is required for proper update during parameter refresh (via parse from script)
-    GeometryMap geometry_, externalReferences_;
+    GeometryMap geometry_;
 
     SolverSettings solverSettings_;
 
@@ -80,15 +85,22 @@ public:
     const DatumPtr& plane() const;
     VectorPtr sketchPlaneNormal() const;
 
-    GeometryMap::key_type findUnusedID() const;
-    void insertGeometry(ConstrainedSketchEntityPtr geomEntity, GeometryMap::key_type key=-1);
-    void setExternalReference(std::shared_ptr<ExternalReference> extRef, int idx);
+    GeometryMap::key_type findUnusedID(int direction=1) const;
 
+    // addition
+    void insertGeometry(
+        ConstrainedSketchEntityPtr geomEntity,
+        boost::variant<boost::blank,GeometryMap::key_type> key = boost::blank() );
+    void setExternalReference(
+        std::shared_ptr<ExternalReference> extRef,
+        boost::variant<boost::blank,GeometryMap::key_type> key = boost::blank() );
+
+    // removal
     void eraseGeometry(GeometryMap::key_type geomEntityId);
     void eraseGeometry(ConstrainedSketchEntityPtr geomEntity);
+    void clear();
 
     size_t size() const;
-    void clear();
     GeometryMap::const_iterator findGeometry(ConstrainedSketchEntityPtr geomEntity) const;
     GeometryMap::const_iterator begin() const;
     GeometryMap::const_iterator end() const;

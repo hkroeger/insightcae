@@ -62,14 +62,20 @@ void IQVTKCADModel3DViewerDrawLine::updatePreviewLine(const arma::mat& pip3d)
 
 
 IQVTKCADModel3DViewerPlanePointBasedAction::PointProperty
-IQVTKCADModel3DViewerDrawLine::applyWizards(const arma::mat& pip3d, insight::cad::FeaturePtr onFeature) const
+IQVTKCADModel3DViewerDrawLine::applyWizards(
+    const arma::mat& pip3d,
+    insight::cad::FeaturePtr onFeature ) const
 {
     arma::mat pip=pip3d;
-    arma::mat p22=viewer().pointInPlane2D(sketch().plane()->plane(), pip);
+    arma::mat p22 =
+        viewer().pointInPlane2D(
+         sketch().plane()->plane(), pip);
 
     if (p1_)
     {
-        arma::mat p21=viewer().pointInPlane2D(sketch().plane()->plane(), p1_->p->value());
+        arma::mat p21 =
+            viewer().pointInPlane2D(
+             sketch().plane()->plane(), p1_->p->value());
 
         arma::mat l = p22 - p21;
         double angle = atan2(l(1), l(0));
@@ -175,7 +181,9 @@ void IQVTKCADModel3DViewerDrawLine::start()
     newPreviewEntity.connect(
         [this](std::weak_ptr<insight::cad::ConstrainedSketchEntity> pP)
         {
-            if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(pP.lock()))
+            if (auto p =
+                std::dynamic_pointer_cast<insight::cad::SketchPoint>(
+                    pP.lock() ) )
             {
                 updatePreviewLine(p->value());
             }

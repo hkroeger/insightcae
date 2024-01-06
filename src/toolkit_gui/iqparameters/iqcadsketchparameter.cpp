@@ -32,6 +32,24 @@ IQCADSketchParameter::IQCADSketchParameter
 }
 
 
+void IQCADSketchParameter::connectSignals()
+{
+    IQParameter::connectSignals();
+
+    auto& sp=dynamic_cast<insight::CADSketchParameter&>(parameterRef());
+    disconnectAtEOL(
+        sp.childValueChanged.connect(
+            [this]() {
+                model()->notifyParameterChange(
+                    path().toStdString(),
+                    true
+                    );
+            }
+            )
+        );
+}
+
+
 
 
 QString IQCADSketchParameter::valueText() const

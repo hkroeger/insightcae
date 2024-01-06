@@ -6,6 +6,7 @@
 
 #include "iqstringparameter.h"
 #include "iqparametersetmodel.h"
+#include "qtextensions.h"
 
 defineType(IQStringParameter);
 addToFactoryTable(IQParameter, IQStringParameter);
@@ -63,13 +64,17 @@ QVBoxLayout* IQStringParameter::populateEditControls(
 
   // handle external value change
   auto &p = dynamic_cast<insight::StringParameter&>(this->parameterRef());
-  auto connection = p.valueChanged.connect([=](){
-      auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
-      QSignalBlocker sb(lineEdit);
-      lineEdit->setText(valueText());
-  });
-  connect(layout, &QObject::destroyed, layout,
-          [connection](){connection.disconnect(); });
+  ::disconnectAtEOL(
+      layout,
+      p.valueChanged.connect(
+          [=]()
+          {
+              auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
+              QSignalBlocker sb(lineEdit);
+              lineEdit->setText(valueText());
+          }
+          )
+      );
 
   return layout;
 }

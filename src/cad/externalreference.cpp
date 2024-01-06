@@ -5,6 +5,16 @@ namespace cad {
 
 defineType ( ExternalReference );
 
+size_t ExternalReference::calcHash() const
+{
+    return extRef_->hash();
+}
+
+void ExternalReference::build()
+{
+    extRef_->checkForBuildDuringAccess();
+    Feature::operator=(*extRef_);
+}
 
 ExternalReference::ExternalReference ( FeaturePtr extRef )
     : extRef_(extRef)
@@ -28,6 +38,11 @@ void ExternalReference::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity>& entity,
     const std::shared_ptr<ConstrainedSketchEntity>& newEntity)
 {}
+
+FeaturePtr ExternalReference::referencedFeature() const
+{
+    return extRef_;
+}
 
 void ExternalReference::operator=(const ConstrainedSketchEntity& other)
 {

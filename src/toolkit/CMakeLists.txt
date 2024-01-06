@@ -22,6 +22,7 @@ project(toolkit)
 
 
 set(toolkit_SOURCES
+    base/cppextensions.h base/cppextensions.cpp
     base/translations.h base/translations.cpp
     base/global.cpp
     base/boost_include.cpp

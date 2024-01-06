@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: iscad\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-11 11:53+0200\n"
+"POT-Creation-Date: 2023-12-24 11:58+0100\n"
 "PO-Revision-Date: 2023-07-03 12:28+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -18,55 +18,55 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.0.1\n"
 
-#: iscad.cpp:55
+#: iscad.cpp:54
 msgid "Allowed options"
 msgstr "Zulässige Optionen"
 
-#: iscad.cpp:57
+#: iscad.cpp:56
 msgid "produce help message"
 msgstr "Hilfe anzeigen"
 
-#: iscad.cpp:58
+#: iscad.cpp:57
 msgid "print version and exit"
 msgstr "Version anzeigen und beenden"
 
-#: iscad.cpp:59
+#: iscad.cpp:58
 msgid "evaluate model from specified input file without starting GUI"
 msgstr "Modell aus der angegebenen Eingabedatei auswerten ohne GUI zu starten"
 
-#: iscad.cpp:60
+#: iscad.cpp:59
 msgid "put debug output to console instead of log window"
 msgstr "die Debugmeldungen auf der Konsole anzeigen statt im Logfenster"
 
-#: iscad.cpp:61
+#: iscad.cpp:60
 msgid "deactivate background parsing"
 msgstr "Hintergrundparser deaktivieren"
 
-#: iscad.cpp:62
+#: iscad.cpp:61
 msgid "Specify input file."
 msgstr "Eingabedatei angeben"
 
-#: iscad.cpp:71
+#: iscad.cpp:70
 msgid "Usage:"
 msgstr "Benutzung:"
 
-#: iscad.cpp:72
+#: iscad.cpp:71
 msgid "options"
 msgstr "Optionen"
 
-#: iscad.cpp:89
+#: iscad.cpp:88
 msgid "Could not parse command line"
 msgstr "Konnte die Kommandozeile nicht auswerten"
 
-#: iscad.cpp:136
+#: iscad.cpp:135
 msgid "Executing"
 msgstr "Führe aus"
 
-#: iscad.cpp:144
+#: iscad.cpp:143
 msgid "Failed to parse ISCAD script!"
 msgstr "Konnte ISCAD-Skript nicht auswerten!"
 
-#: iscad.cpp:169
+#: iscad.cpp:163
 msgid "Please wait"
 msgstr "Bitte warten"
 
@@ -267,43 +267,43 @@ msgstr "Neue Datei erzeugen..."
 msgid "Delete file %1"
 msgstr "Datei %1 löschen"
 
-#: iqiscadmodelwindow.cpp:39
+#: iqiscadmodelwindow.cpp:37
 msgid "Controls"
 msgstr "Steuerung"
 
-#: iqiscadmodelwindow.cpp:45
+#: iqiscadmodelwindow.cpp:41
 msgid "Rebuild"
 msgstr "Neu erzeugen"
 
-#: iqiscadmodelwindow.cpp:46
+#: iqiscadmodelwindow.cpp:42
 msgid "Rbld to Cursor"
 msgstr "Neu bis Cursor"
 
-#: iqiscadmodelwindow.cpp:52
+#: iqiscadmodelwindow.cpp:51
 msgid "Do BG parsing"
 msgstr "Hintergr.-Parser"
 
-#: iqiscadmodelwindow.cpp:56
+#: iqiscadmodelwindow.cpp:55
 msgid "Skip Postproc Actions"
 msgstr "Auswerteaktionen ausschalten"
 
-#: iqiscadmodelwindow.cpp:63
+#: iqiscadmodelwindow.cpp:84
 msgid "Model Tree"
 msgstr "Modellbaum"
 
-#: iqiscadmodelwindow.cpp:72
+#: iqiscadmodelwindow.cpp:89
 msgid "Notepad"
 msgstr "Notizen"
 
-#: iqiscadmodelwindow.cpp:78
+#: iqiscadmodelwindow.cpp:95
 msgid "<< Copy to cursor <<"
 msgstr "<< am Cursor einfügen <<"
 
-#: iqiscadmodelwindow.cpp:80
+#: iqiscadmodelwindow.cpp:97
 msgid "Clear"
 msgstr "Leeren"
 
-#: iqiscadmodelwindow.cpp:261
+#: iqiscadmodelwindow.cpp:255
 msgid ""
 "The editor content is not saved.\n"
 "Save now?\n"

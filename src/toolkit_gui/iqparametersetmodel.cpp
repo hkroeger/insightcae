@@ -4,6 +4,7 @@
 #include <QMimeData>
 #include <QApplication>
 #include <QClipboard>
+#include <iterator>
 
 #include "iqparametersetmodel.h"
 #include "iqparameter.h"
@@ -138,15 +139,9 @@ Qt::ItemFlags IQParameterSetModel::flags(const QModelIndex &index) const
 
   auto *iqp=static_cast<IQParameter*>(index.internalPointer());
   auto *p = iqp ? &iqp->parameter() : nullptr;
-//  if (dynamic_cast<IQArrayElementParameterBase*>(iqp))
-//  {
-    flags |= Qt::ItemIsDragEnabled;
-//  }
 
-//  if (dynamic_cast<IQArrayParameter*>(iqp))
-//  {
-    flags |= Qt::ItemIsDropEnabled;
-//  }
+  flags |= Qt::ItemIsDragEnabled;
+  flags |= Qt::ItemIsDropEnabled;
 
   if (index.column()==valueCol)
   {
@@ -541,7 +536,7 @@ QList<IQParameter*> IQParameterSetModel::decorateChildren(QObject* parent, insig
 
 IQParameter* IQParameterSetModel::decorateArrayElement(QObject* parent, int i, insight::Parameter& cp)
 {
-  auto name=QString("%1").arg(i);
+  auto name = QString("%1").arg(i);
   auto iqp = IQArrayElementParameterBase::create(parent, this, name, cp, defaultParameterSet_);
 
   decorateChildren(iqp, cp);
@@ -587,7 +582,9 @@ void IQParameterSetModel::clearParameters()
 
 
 
-void IQParameterSetModel::resetParameters(const insight::ParameterSet &ps, const insight::ParameterSet &defaultps)
+void IQParameterSetModel::resetParameters(
+    const insight::ParameterSet &ps,
+    const insight::ParameterSet &defaultps )
 {
   clearParameters();
 
@@ -658,7 +655,11 @@ insight::Parameter &IQParameterSetModel::parameterRef(const QModelIndex &index)
 
 void IQParameterSetModel::notifyParameterChange(const std::string &path, bool redecorateChildren)
 {
-  notifyParameterChange( indexFromParameterPath(path), redecorateChildren );
+    auto idx=indexFromParameterPath(path);
+    if (idx.isValid())
+    {
+        notifyParameterChange( idx, redecorateChildren );
+    }
 }
 
 
@@ -666,60 +667,54 @@ void IQParameterSetModel::notifyParameterChange(const QModelIndex &index, bool r
 {
   Q_ASSERT(index.isValid());
 
+  auto* iqp = static_cast<IQParameter*>(index.internalPointer());
+  auto& p = iqp->parameterRef();
+
   if (redecorateChildren)
   {
       // remove existing child params
-      auto* iqp = static_cast<IQParameter*>(index.internalPointer());
-      if (iqp->size())
+      std::function<void(const QModelIndex&,int)> removeChildDecorators;
+      removeChildDecorators =
+          [this, &removeChildDecorators]
+          (const QModelIndex& index, int indent)
       {
-          beginRemoveRows(index, 0, iqp->size()-1);
-          for (auto* c: *iqp)
+          for (int i=0;i<rowCount(index); i++)
           {
-            c->deleteLater();
+              removeChildDecorators(this->index(i, 0, index), indent+1);
           }
-          iqp->clear();
-          endRemoveRows();
-      }
+          auto* iqp = static_cast<IQParameter*>(index.internalPointer());
+          if (iqp->size())
+          {
+              beginRemoveRows(index, 0, iqp->size()-1);
+              for (auto* c: *iqp)
+              {
+                  c->deleteLater();
+              }
+              iqp->clear();
+              endRemoveRows();
+          }
+      };
+      removeChildDecorators(index,0);
 
-      int nc=parameterRef(index).nChildren();
+      int nc=p.nChildren();
       if (nc>0)
       {
         // repopulate
         beginInsertRows(index, 0, nc-1);
-        decorateChildren(iqp, parameterRef(index));
+        decorateChildren(iqp, p);
         endInsertRows();
       }
-//      if (auto* param = dynamic_cast<insight::SubParameterSet*>(&(parameterRef(index))))
-//      {
-//        auto &subset = param->subset();
-//        if (subset.size())
-//        {
-//          // repopulate
-//          beginInsertRows(index, 0, subset.size()-1);
-//          decorateParameterSetContent(iqp, subset/*, 0*/);
-//          endInsertRows();
-//        }
-//      }
-//      else
-//      if (auto* param = dynamic_cast<insight::ArrayParameter*>(&(parameterRef(index))))
-//      {
-//        if (param->size())
-//        {
-//          // repopulate
-//          beginInsertRows(index, 0, param->size()-1);
-//          decorateArrayContent(iqp, *param);
-//          endInsertRows();
-//        }
-//      }
+
   }
 
   if (auto *p=static_cast<IQParameter*>(index.internalPointer()))
   {
     p->resetModificationState();
   }
-  emit dataChanged(
+
+  Q_EMIT dataChanged(
         createIndex(index.row(), 0, index.internalPointer()),
-      createIndex(index.row(), columnCount(index)-1, index.internalPointer()) );
+        createIndex(index.row(), columnCount(index)-1, index.internalPointer()) );
 }
 
 
@@ -910,55 +905,6 @@ const std::string &IQParameterSetModel::getAnalysisName() const
 }
 
 
-
-
-//void IQParameterSetModel::handleClick(
-//        const QModelIndex &index,
-//        QWidget* editControlsContainer,
-//        IQCADModel3DViewer *vri,
-//        insight::CADParameterSetVisualizer *viz )
-//{
-//  if (index.isValid())
-//  {
-//    if (auto* p=static_cast<IQParameter*>(index.internalPointer()))
-//    {
-//      // remove existing controls first
-//      {
-//        // clear contents of widget with edit controls
-//        QList<QWidget*> widgets = editControlsContainer->findChildren<QWidget*>();
-//        foreach(QWidget* widget, widgets)
-//        {
-//          widget->deleteLater();
-//        }
-//        // remove old layout
-//        if (editControlsContainer->layout())
-//        {
-//          delete editControlsContainer->layout();
-//        }
-//      }
-
-//      // create new controls
-//      auto l = p->populateEditControls(this, index, editControlsContainer, vri);
-
-
-//      if (viz)
-//      {
-//          auto cmdl=new QHBoxLayout;
-//          auto acts = viz->createGUIActions(p->path().toStdString(), this, editControlsContainer, vri);
-//          for (auto& act: acts)
-//          {
-//              auto btn = new QPushButton(act.icon, act.label);
-//              connect(btn, &QPushButton::clicked, btn,
-//                      act.action);
-//              cmdl->addWidget(btn);
-//          }
-//          l->addLayout(cmdl);
-//      }
-
-//      l->addStretch();
-//    }
-//  }
-//}
 
 
 

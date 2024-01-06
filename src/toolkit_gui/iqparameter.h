@@ -11,6 +11,8 @@
 #include "base/factory.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
+#include "base/cppextensions.h"
+
 
 class QVBoxLayout;
 class IQParameterSetModel;
@@ -20,7 +22,8 @@ QString mat2Str(const arma::mat& m);
 
 class TOOLKIT_GUI_EXPORT IQParameter
 : public QObject,
-  public QList<IQParameter*>
+  public QList<IQParameter*>,
+  public insight::ObjectWithBoostSignalConnections
 {
   Q_OBJECT
 
@@ -59,8 +62,6 @@ private:
 
   mutable std::unique_ptr<bool> markedAsModified_;
 
-  boost::signals2::connection updateConnection;
-
 public:
   declareType("IQParameter");
 
@@ -73,7 +74,9 @@ public:
       const insight::ParameterSet& defaultParameterSet
   );
 
-  virtual ~IQParameter();
+  // in separate function for beeing able to call
+  // virtual functions
+  virtual void connectSignals();
 
   IQParameter* parentParameter() const;
   int nChildParameters() const;

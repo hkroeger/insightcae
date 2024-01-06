@@ -1,7 +1,7 @@
 #ifndef IQVTKCADMODEL3DVIEWERDRAWPOINT_H
 #define IQVTKCADMODEL3DVIEWERDRAWPOINT_H
 
-#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerplanepointbasedaction.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerplanepointbasedaction.h"
 
 
 class IQVTKCADModel3DViewerDrawPoint

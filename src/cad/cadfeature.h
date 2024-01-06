@@ -506,6 +506,14 @@ public:
    * @return
    */
   virtual std::string generateScriptCommand() const;
+
+  struct TopologicalProperties
+  {
+      int nVertices, nEdges, nFaces, nShells, nSolids;
+      bool onlyEdges() const;
+  };
+  TopologicalProperties topologicalProperties() const;
+
 };
 
 

@@ -20,6 +20,8 @@ public:
             const insight::ParameterSet& defaultParameterSet
             );
 
+    void connectSignals() override;
+
     QString valueText() const override;
 
     QVBoxLayout* populateEditControls(

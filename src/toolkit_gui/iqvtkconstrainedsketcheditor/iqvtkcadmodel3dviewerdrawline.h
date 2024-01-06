@@ -2,7 +2,7 @@
 #define IQVTKCADMODEL3DVIEWERDRAWLINE_H
 
 
-#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerplanepointbasedaction.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerplanepointbasedaction.h"
 #include "constrainedsketch.h"
 #include "cadfeatures/line.h"
 

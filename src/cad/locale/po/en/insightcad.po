@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-05 08:51+0100\n"
+"POT-Creation-Date: 2024-01-05 22:08+0100\n"
 "PO-Revision-Date: 2023-10-25 10:57+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -16,6 +16,10 @@ msgstr ""
 "Content-Type: text/plain; charset=ASCII\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: cadfeatures/singlevertex.cpp:57
+msgid "Creates a topological vertex at the specified location."
+msgstr ""
 
 #: cadfeatures/arc.cpp:162
 msgid ""
@@ -66,7 +70,7 @@ msgstr "the bar length must not be zero!"
 msgid "Bar: invalid definition of vertical direction!"
 msgstr "Bar: invalid definition of vertical direction!"
 
-#: cadfeatures/bar.cpp:496
+#: cadfeatures/bar.cpp:495
 msgid ""
 "This command creates a straight extruded volume from a planar section.\n"
 "The location of the bar is specified by its start point p0 and end point p1. "

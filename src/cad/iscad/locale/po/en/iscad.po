@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: iscad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-05 10:41+0100\n"
+"POT-Creation-Date: 2023-12-24 11:58+0100\n"
 "PO-Revision-Date: 2023-10-25 10:57+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -266,43 +266,43 @@ msgstr "Create new file..."
 msgid "Delete file %1"
 msgstr "Delete file %1"
 
-#: iqiscadmodelwindow.cpp:39
+#: iqiscadmodelwindow.cpp:37
 msgid "Controls"
 msgstr "Controls"
 
-#: iqiscadmodelwindow.cpp:45
+#: iqiscadmodelwindow.cpp:41
 msgid "Rebuild"
 msgstr "Rebuild"
 
-#: iqiscadmodelwindow.cpp:46
+#: iqiscadmodelwindow.cpp:42
 msgid "Rbld to Cursor"
 msgstr "Rbld to Cursor"
 
-#: iqiscadmodelwindow.cpp:52
+#: iqiscadmodelwindow.cpp:51
 msgid "Do BG parsing"
 msgstr "Do BG parsing"
 
-#: iqiscadmodelwindow.cpp:56
+#: iqiscadmodelwindow.cpp:55
 msgid "Skip Postproc Actions"
 msgstr "Skip Postproc Actions"
 
-#: iqiscadmodelwindow.cpp:63
+#: iqiscadmodelwindow.cpp:84
 msgid "Model Tree"
 msgstr "Model Tree"
 
-#: iqiscadmodelwindow.cpp:72
+#: iqiscadmodelwindow.cpp:89
 msgid "Notepad"
 msgstr "Notepad"
 
-#: iqiscadmodelwindow.cpp:78
+#: iqiscadmodelwindow.cpp:95
 msgid "<< Copy to cursor <<"
 msgstr "<< Copy to cursor <<"
 
-#: iqiscadmodelwindow.cpp:80
+#: iqiscadmodelwindow.cpp:97
 msgid "Clear"
 msgstr "Clear"
 
-#: iqiscadmodelwindow.cpp:261
+#: iqiscadmodelwindow.cpp:255
 msgid ""
 "The editor content is not saved.\n"
 "Save now?\n"

@@ -68,11 +68,7 @@ IQParameter* IQParameter::create(
     np=new IQParameter(parent, psmodel, name, p, defaultParameterSet);
   }
 
-  // connect outside constructor because of virtual "path" function is involved
-  np->updateConnection = p.valueChanged.connect(
-      [psmodel,np]() { psmodel->notifyParameterChange(np->path().toStdString(), true); }
-//      std::bind(&IQParameterSetModel::notifyParameterChange, psmodel, np->path().toStdString(), true)
-      );
+  np->connectSignals();
 
   return np;
 }
@@ -92,10 +88,19 @@ IQParameter::IQParameter(
     defaultParameterSet_(defaultParameterSet)
 {}
 
-
-IQParameter::~IQParameter()
+void IQParameter::connectSignals()
 {
-  updateConnection.disconnect();
+    // connect outside constructor because of virtual "path" function is involved
+    disconnectAtEOL(
+        parameterRef().valueChanged.connect(
+            [this]() {
+                model_->notifyParameterChange(
+                    path().toStdString(),
+                    true
+                    );
+            }
+            )
+        );
 }
 
 

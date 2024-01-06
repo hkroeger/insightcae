@@ -1,17 +1,22 @@
 #ifndef INSIGHT_CAD_EXTERNALREFERENCE_H
 #define INSIGHT_CAD_EXTERNALREFERENCE_H
 
+#include "cadfeature.h"
 #include "constrainedsketchgeometry.h"
 
 namespace insight {
 namespace cad {
 
 class ExternalReference
-: public ConstrainedSketchEntity
+: public Feature,
+  public ConstrainedSketchEntity
 {
     FeaturePtr extRef_;
 
     ExternalReference ( FeaturePtr extRef );
+
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "ExternalReference" );
@@ -28,6 +33,8 @@ public:
     void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
+
+    FeaturePtr referencedFeature() const;
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const ExternalReference& other);

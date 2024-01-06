@@ -15,10 +15,8 @@ IQArrayParameter::IQArrayParameter
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
-)
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
-{
-}
+) : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+{}
 
 
 QString IQArrayParameter::valueText() const
@@ -43,25 +41,8 @@ QVBoxLayout* IQArrayParameter::populateEditControls(
 
   connect(addbtn, &QPushButton::clicked, this, [this]()
   {
-
     auto &p = dynamic_cast<insight::ArrayParameter&>(this->parameterRef());
-
     p.appendEmpty();
-
-//    int i=p.size()-1;
-//    model->beginInsertRows(rindex, std::max(0,i-1), i);
-//    auto* iqap = static_cast<IQParameter*>(rindex.internalPointer());
-//    iqap->append( model->decorateArrayElement(
-//          iqap,
-//          i,
-//          p[i]/*,
-//          0*/ ) );
-//    model->endInsertRows();
-
-//    rindex = model->indexFromPath(mp);
-//    Q_ASSERT(rindex.isValid());
-
-//    model->notifyParameterChange(rindex);
   }
   );
 
@@ -71,23 +52,7 @@ QVBoxLayout* IQArrayParameter::populateEditControls(
   {
 
     auto &p = dynamic_cast<insight::ArrayParameter&>(this->parameterRef());
-
-//    int n=p.size();
-//    model->beginRemoveRows(rindex, 0, n-1);
-//    auto *iqp = static_cast<IQParameter*>(rindex.internalPointer());
-//    for(auto* c: *iqp)
-//    {
-//      c->deleteLater();
-//    }
-//    iqp->clear();
-//    model->endRemoveRows();
-
     p.clear();
-
-//    rindex = model->indexFromPath(mp);
-//    Q_ASSERT(rindex.isValid());
-
-//    model->notifyParameterChange(rindex);
   }
   );
 

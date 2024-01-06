@@ -5,6 +5,7 @@
 
 #include "iqboolparameter.h"
 #include "iqparametersetmodel.h"
+#include "qtextensions.h"
 
 defineType(IQBoolParameter);
 addToFactoryTable(IQParameter, IQBoolParameter);
@@ -57,18 +58,21 @@ QVBoxLayout* IQBoolParameter::populateEditControls(
   auto applyFunction = [this,&p,checkBox]()
   {
     p.set(checkBox->checkState() == Qt::Checked);
-//    model->notifyParameterChange(index);
   };
 
   connect(apply, &QPushButton::pressed, applyFunction);
 
   // handle external value change
-  auto connection = p.valueChanged.connect([&p,checkBox](){
-      QSignalBlocker sb(checkBox);
-      checkBox->setCheckState(p()?Qt::Checked:Qt::Unchecked);
-  });
-  connect(layout, &QObject::destroyed, layout,
-          [connection](){connection.disconnect(); });
+  ::disconnectAtEOL(
+      layout,
+      p.valueChanged.connect(
+          [&p,checkBox]()
+          {
+              QSignalBlocker sb(checkBox);
+              checkBox->setCheckState(p()?Qt::Checked:Qt::Unchecked);
+          }
+          )
+      );
 
   return layout;
 }

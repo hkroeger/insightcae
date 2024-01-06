@@ -2440,8 +2440,28 @@ FeatureCmdInfoList Feature::ruleDocumentation()
 
 string Feature::generateScriptCommand() const
 {
-  return std::string();
+    return std::string();
 }
+
+
+bool Feature::TopologicalProperties::onlyEdges() const
+{
+    return nEdges>0 && nFaces==0;
+}
+
+
+Feature::TopologicalProperties Feature::topologicalProperties() const
+{
+    ShapeAnalysis_ShapeContents sas;
+    sas.Perform(shape());
+    return {
+        sas.NbVertices(), sas.NbEdges(),
+        sas.NbFaces(), sas.NbShells(),
+        sas.NbSolids() };
+}
+
+
+
 
 Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
 {
@@ -2591,6 +2611,7 @@ bool SingleVolumeFeature::isSingleVolume() const
 {
     return true;
 }
+
 
 
 }

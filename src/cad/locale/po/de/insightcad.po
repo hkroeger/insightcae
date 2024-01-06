@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-12 10:52+0200\n"
+"POT-Creation-Date: 2024-01-05 22:08+0100\n"
 "PO-Revision-Date: 2023-07-03 13:11+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -17,6 +17,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.0.1\n"
+
+#: cadfeatures/singlevertex.cpp:57
+msgid "Creates a topological vertex at the specified location."
+msgstr ""
 
 #: cadfeatures/arc.cpp:162
 msgid ""
@@ -47,23 +51,23 @@ msgid ""
 "e. spanwise direction of the wing, is given by vector ez."
 msgstr ""
 
-#: cadfeatures/bar.cpp:115
+#: cadfeatures/bar.cpp:116
 msgid "Bar: length of vertical direction is zero!"
 msgstr ""
 
-#: cadfeatures/bar.cpp:124
+#: cadfeatures/bar.cpp:125
 msgid "Bar: invalid definition of bar end points!"
 msgstr ""
 
-#: cadfeatures/bar.cpp:130
+#: cadfeatures/bar.cpp:131
 msgid "the bar length must not be zero!"
 msgstr ""
 
-#: cadfeatures/bar.cpp:154
+#: cadfeatures/bar.cpp:155
 msgid "Bar: invalid definition of vertical direction!"
 msgstr ""
 
-#: cadfeatures/bar.cpp:467
+#: cadfeatures/bar.cpp:495
 msgid ""
 "This command creates a straight extruded volume from a planar section.\n"
 "The location of the bar is specified by its start point p0 and end point p1. "
@@ -209,15 +213,15 @@ msgstr ""
 msgid "Cutaway: origin and normal direction undefined!"
 msgstr ""
 
-#: cadfeatures/cutaway.cpp:153
+#: cadfeatures/cutaway.cpp:154
 msgid "Could not create cutting surface!"
 msgstr ""
 
-#: cadfeatures/cutaway.cpp:159
+#: cadfeatures/cutaway.cpp:160
 msgid "Could not create cut!"
 msgstr ""
 
-#: cadfeatures/cutaway.cpp:218
+#: cadfeatures/cutaway.cpp:219
 msgid ""
 "Removes a halfspace from a feature. The halfspace is either specified by a "
 "point p0 and the normal vector n or by a datum plane. In the latter case, "
@@ -257,7 +261,7 @@ msgid ""
 "diameter is d."
 msgstr ""
 
-#: cadfeatures/extrusion.cpp:163
+#: cadfeatures/extrusion.cpp:162
 msgid ""
 "Creates an extrusion of the planar feature sec. The direction and length of "
 "the extrusion is given by the vector L. If the keyword centered is given, "
@@ -328,7 +332,7 @@ msgid ""
 "feature are shifted in increments of delta_l. The number of copies is n."
 msgstr ""
 
-#: cadfeatures/line.cpp:238
+#: cadfeatures/line.cpp:262
 msgid "Creates a line between point p0 and p1."
 msgstr ""
 
@@ -395,30 +399,30 @@ msgstr ""
 msgid "Error: Wrong parameter. ProjectedOutline needs a planar reference!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:102
+#: cadfeatures/quad.cpp:105
 #, c-format
 msgid "Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:105
+#: cadfeatures/quad.cpp:108
 #, c-format
 msgid "Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:151
+#: cadfeatures/quad.cpp:155
 #, c-format
 msgid ""
 "Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:154
+#: cadfeatures/quad.cpp:158
 #, c-format
 msgid ""
 "Invalid parameter: Wall thickness of quad is larger than half width or half "
 "height (%g > %g)!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:244
+#: cadfeatures/quad.cpp:248
 #, fuzzy
 msgid ""
 "Creates a quad face. The quad is located at point p0 and direction and edge "
@@ -487,23 +491,23 @@ msgid ""
 "Creates a sine curve (single period) with wave length l and amplitude A."
 msgstr ""
 
-#: cadfeatures/stitchedcompound.cpp:91 cadfeatures/stitchedshell.cpp:105
+#: cadfeatures/stitchedcompound.cpp:90 cadfeatures/stitchedshell.cpp:104
 msgid "Create stitched shell from selected faces."
 msgstr ""
 
-#: cadfeatures/stitchedsolid.cpp:86
+#: cadfeatures/stitchedsolid.cpp:85
 msgid "Could not create a closed shell (B)!"
 msgstr ""
 
-#: cadfeatures/stitchedsolid.cpp:89
+#: cadfeatures/stitchedsolid.cpp:88
 msgid "Orientation Error!"
 msgstr ""
 
-#: cadfeatures/stitchedsolid.cpp:94 cadfeatures/pyramid.cpp:102
+#: cadfeatures/stitchedsolid.cpp:93 cadfeatures/pyramid.cpp:101
 msgid "Creation of solid failed!"
 msgstr ""
 
-#: cadfeatures/stitchedsolid.cpp:125
+#: cadfeatures/stitchedsolid.cpp:124
 msgid "Create stitched solid from all faces of the provided features."
 msgstr ""
 
@@ -563,14 +567,14 @@ msgstr ""
 msgid "Creates a solid from a shell feature by adding thickness t."
 msgstr ""
 
-#: cadfeatures/transform.cpp:331
+#: cadfeatures/transform.cpp:330
 msgid ""
 "Transforms the base feature by translating it by vector trans and rotates it "
 "around vector rot (magnitude gives angle, axis goes through global origin). "
 "Optionally scale the base feature by scale factor scale."
 msgstr ""
 
-#: cadfeatures/transform.cpp:338
+#: cadfeatures/transform.cpp:337
 msgid ""
 "Rotates the base feature around vector rot (magnitude gives angle), the axis "
 "goes through point origin."
@@ -734,7 +738,7 @@ msgid ""
 "parameter/value pairs can be passed into FreeCAD."
 msgstr ""
 
-#: cadfeatures/pyramid.cpp:137
+#: cadfeatures/pyramid.cpp:136
 msgid "Creates a pyramid from the planar base feature and the tip point ptip."
 msgstr ""
 

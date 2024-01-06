@@ -4,11 +4,11 @@
 #include "postprocactionvisualizer.h"
 #include "datum.h"
 
-#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h"
-#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h"
-#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h"
+#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h"
 #include "iqvtkconstrainedsketcheditor.h"
 

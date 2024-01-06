@@ -6,6 +6,7 @@
 #include "base/parameterset.h"
 
 #include "cadgeometryparameter.h"
+#include "constrainedsketch.h"
 #include "constrainedsketchgeometry.h"
 
 namespace insight {
@@ -20,8 +21,6 @@ class CADSketchParameter
 
 
 protected:
-    //    insight::cad::ModelPtr cadmodel_;
-
     cad::MakeDefaultGeometryParametersFunction makeDefaultGeometryParameters;
     std::map<int, std::string> references_;
 

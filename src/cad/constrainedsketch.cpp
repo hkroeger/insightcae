@@ -97,62 +97,106 @@ VectorPtr ConstrainedSketch::sketchPlaneNormal() const
 
 
 
-ConstrainedSketch::GeometryMap::key_type ConstrainedSketch::findUnusedID() const
+ConstrainedSketch::GeometryMap::key_type
+ConstrainedSketch::findUnusedID(
+    int direction ) const
 {
-    auto minid=geometry_.begin()->first;
-    if (minid>0)
-        return minid-1;
+    if (geometry_.size()==0)
+    {
+        if (direction>0)
+            return 1;
+        else
+            return -1;
+    }
     else
     {
-        for (int id=minid+1; ; ++id)
+        int minid=0;
+        for (int id=minid; ; id+=direction)
         {
             if (geometry_.count(id)<1)
                 return id;
         }
+        if (direction>0)
+            return std::max<int>(0,geometry_.rbegin()->first)+1;
+        else
+            return std::min<int>(0,geometry_.begin()->first)-1;
     }
-    return geometry_.rbegin()->first+1;
 }
 
 
 
 
-void ConstrainedSketch::insertGeometry(ConstrainedSketchEntityPtr geomEntity, GeometryMap::key_type key)
+void ConstrainedSketch::insertGeometry(
+    ConstrainedSketchEntityPtr geomEntity,
+    boost::variant<boost::blank,GeometryMap::key_type> keyOrBlank )
 {
-    if (key<0)
+    GeometryMap::key_type key;
+    if (auto *k = boost::get<GeometryMap::key_type>(&keyOrBlank))
     {
-        geometry_.insert({ findUnusedID(), geomEntity });
+        key = *k;
     }
     else
     {
-        auto i = geometry_.find(key);
-        if (i==geometry_.end())
-        {
-            geometry_.emplace( key, geomEntity );
-        }
-        else
-        {
-            *i->second = *geomEntity;
-        }
+        key = findUnusedID();
     }
+
+    auto i = geometry_.find(key);
+    if (i==geometry_.end())
+    {
+        geometry_.insert({key, geomEntity});
+        geometryAdded(key);
+    }
+    else
+    {
+        *i->second = *geomEntity;
+        geometryChanged(key);
+    }
+
 }
 
 
 void ConstrainedSketch::setExternalReference(
     std::shared_ptr<ExternalReference> extRef,
-    int idx )
+    boost::variant<boost::blank,GeometryMap::key_type> keyOrBlank )
 {
+    GeometryMap::key_type key;
+    if (auto *k = boost::get<GeometryMap::key_type>(&keyOrBlank))
+    {
+        key = -(*k);
+    }
+    else
+    {
+        key = findUnusedID(-1);
+    }
 
-    std::cout<<">>> EXTREF "<<idx<<std::endl;
+    auto i = geometry_.find(key);
+    if (i==geometry_.end())
+    {
+        geometry_.insert({ key, extRef });
+        geometryAdded(key);
+    }
+    else
+    {
+        *i->second = *extRef;
+        geometryChanged(key);
+    }
 }
+
+
 
 void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
 {
     geometry_.erase(geomEntityId);
+    geometryRemoved(geomEntityId);
 }
 
 void ConstrainedSketch::eraseGeometry(ConstrainedSketchEntityPtr geomEntity)
 {
-    geometry_.erase(findGeometry(geomEntity));
+    auto i=findGeometry(geomEntity);
+    if (i!=GeometryMap::const_iterator())
+    {
+        eraseGeometry(i->first);
+    }
 }
 
 
@@ -166,7 +210,8 @@ void ConstrainedSketch::clear()
 {
     while (size()>0)
     {
-        geometry_.erase( --geometry_.end() );
+        auto i = --geometry_.end();
+        eraseGeometry( i->first );
     }
 }
 
@@ -177,7 +222,8 @@ ConstrainedSketch::findGeometry(
 {
     return std::find_if(
         geometry_.begin(), geometry_.end(),
-        [&geomEntity](const GeometryMap::value_type& e) { return geomEntity==e.second; }
+        [&geomEntity](const GeometryMap::value_type& e)
+          { return geomEntity==e.second; }
         );
 }
 
@@ -221,8 +267,31 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
 {
     Feature::operator=(o);
     pl_=o.pl_;
-    geometry_=o.geometry_;
-    externalReferences_=o.externalReferences_;
+
+    std::set<GeometryMap::key_type> remaining;
+    std::transform(
+        geometry_.begin(), geometry_.end(),
+        std::inserter(remaining, remaining.begin()),
+        [](const GeometryMap::value_type &v) { return v.first; } );
+
+    for (const auto& g: o.geometry_)
+    {
+        auto i=geometry_.find(g.first);
+        if (i!=geometry_.end())
+        {
+            *i->second = *g.second;
+            geometryChanged(i->first);
+            remaining.erase(i->first);
+        }
+        else
+        {
+            insertGeometry(i->second, i->first);
+        }
+    }
+    for (auto i: remaining)
+    {
+        eraseGeometry(i);
+    }
 }
 
 const ConstrainedSketch::SolverSettings& ConstrainedSketch::solverSettings() const

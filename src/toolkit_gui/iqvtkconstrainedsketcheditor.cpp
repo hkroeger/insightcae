@@ -1,7 +1,7 @@
 #include "iqvtkconstrainedsketcheditor.h"
 #include "base/units.h"
-#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkdragdimensionlineaction.h"
-#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkdragangledimensionaction.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.h"
 #include "iqvtkcadmodel3dviewer.h"
 
 #include "vtkLineRepresentation.h"
@@ -13,9 +13,9 @@
 #include "vtkTextProperty.h"
 #include "vtkCaptionActor2D.h"
 
-#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawpoint.h"
-#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawline.h"
-#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerdrawrectangle.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawpoint.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h"
 #include "cadpostprocactions/pointdistance.h"
 #include "cadpostprocactions/angle.h"
 #include "base/parameters/simpleparameter.h"
@@ -95,7 +95,7 @@ void IQVTKConstrainedSketchEditor::add(
         as.insert(a);
     }
 
-    sketchGeometryActors_.emplace(sg, as);
+    sketchGeometryActors_[sg]=as;
 }
 
 
@@ -151,19 +151,22 @@ void IQVTKConstrainedSketchEditor::drawPoint()
             {
                 if (pp.onFeature)
                 {
-                    if (auto online =
-                        std::dynamic_pointer_cast<insight::cad::Line>(
-                            pp.onFeature ) )
+                    if ( pp.onFeature
+                            ->topologicalProperties().onlyEdges() )
                     {
                         (*this)->insertGeometry(
                             IQVTKPointOnCurveConstraint::create(
                                 pp.p,
-                                online ) ); // fix to curve
+                                pp.onFeature ) ); // fix to curve
 
-                        (*this)->insertGeometry(
-                            insight::cad::FixedDistanceConstraint::create(
-                                online->start(), pp.p,
-                                (*this)->sketchPlaneNormal() ) );
+                        if (auto edg = std::dynamic_pointer_cast<insight::cad::SingleEdgeFeature>(
+                                pp.onFeature))
+                        {
+                            (*this)->insertGeometry(
+                                insight::cad::FixedDistanceConstraint::create(
+                                    edg->start(), pp.p,
+                                    (*this)->sketchPlaneNormal() ) );
+                        }
                     }
                 }
                 else
@@ -205,9 +208,8 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
                 else if (addPoint->onFeature)
                 {
-                    if (auto online =
-                        std::dynamic_pointer_cast<insight::cad::Line>(
-                            addPoint->onFeature ) )
+                    if ( addPoint->onFeature
+                            ->topologicalProperties().onlyEdges() )
                     {
                         // add point-on-curve constraint
                         (*this)->insertGeometry(
@@ -215,11 +217,16 @@ void IQVTKConstrainedSketchEditor::drawLine()
                                 addPoint->p,
                                 addPoint->onFeature ) ); // fix to curve
 
-                        // constrain distance to start of hit line
-                        (*this)->insertGeometry(
-                            insight::cad::FixedDistanceConstraint::create(
-                                online->start(), addPoint->p,
-                                (*this)->sketchPlaneNormal() ) );
+                        if (auto online =
+                            std::dynamic_pointer_cast<insight::cad::SingleEdgeFeature>(
+                                addPoint->onFeature ) )
+                        {
+                            // constrain distance to start of hit line
+                            (*this)->insertGeometry(
+                                insight::cad::FixedDistanceConstraint::create(
+                                    online->start(), addPoint->p,
+                                    (*this)->sketchPlaneNormal() ) );
+                        }
                     }
                 }
             }
@@ -538,13 +545,20 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                     for (auto &sele: selact->currentSelection())
                     {
                         auto sg = sele.lock();
-                        if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(sg))
-                        {
-                            curve=l;
-                        }
-                        else if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                        if (auto p =
+                            std::dynamic_pointer_cast<
+                                insight::cad::SketchPoint>(sg))
                         {
                             pt=p;
+                        }
+                        else if (auto l =
+                                   std::dynamic_pointer_cast<
+                                       insight::cad::Feature>(sg))
+                        {
+                            if (l->topologicalProperties().onlyEdges())
+                            {
+                                curve=l;
+                            }
                         }
 
                         if (pt && curve)
@@ -1050,11 +1064,12 @@ void IQVTKConstrainedSketchEditor::updateActors()
         add(g.second);
   }
 
+  // remove vanished geometry
   for (const auto& sga: sketchGeometryActors_)
   {
       auto g=sga.first;
       auto i=(*this)->findGeometry(g);
-      if (i==(*this)->end())
+      if (i==ConstrainedSketch::GeometryMap::const_iterator())
       {
         remove(g);
       }

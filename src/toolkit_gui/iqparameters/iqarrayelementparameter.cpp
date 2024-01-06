@@ -90,11 +90,7 @@ IQParameter *IQArrayElementParameterBase::create(
         );
   }
 
-  // connect outside constructor because of virtual "path" function is involved
-  np->updateConnection = p.valueChanged.connect(
-      [psmodel,np]() { psmodel->notifyParameterChange(np->path().toStdString(), true); }
-      //std::bind(&IQParameterSetModel::notifyParameterChange, psmodel, np->path().toStdString(), true)
-      );
+  np->connectSignals();
 
   return np;
 }
@@ -108,8 +104,6 @@ void IQArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMenu *cm)
   auto *removeAction = new QAction("Remove this array element");
   cm->addAction(removeAction);
 
-//  auto row = index.row();
-
   QObject::connect(removeAction, &QAction::triggered, this,
           [this]()
           {
@@ -119,33 +113,6 @@ void IQArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMenu *cm)
 
             auto &arrayp = dynamic_cast<insight::ArrayParameter&>(array->parameterRef());
             arrayp.eraseValue(row);
-
-            //model->removeArrayElement(model->index(row, 0, parentIndex));
-
-//            auto &parentParameter = dynamic_cast<insight::ArrayParameter&>(model->parameterRef(parentIndex));
-
-//            model->beginRemoveRows(parentIndex, row, row);
-
-//            iqp->deleteLater();
-
-//            auto *aiqp = static_cast<IQParameter*>(parentIndex.internalPointer());
-//            aiqp->erase(aiqp->begin()+row);
-
-//            model->endRemoveRows();
-
-
-//            parentParameter.eraseValue(row);
-
-//            parentIndex = model->indexFromPath(mp);
-//            Q_ASSERT(parentIndex.isValid());
-//            model->notifyParameterChange(parentIndex);
-
-//            // change name for all subsequent parameters
-//            for (int i=row; i<aiqp->size(); ++i)
-//            {
-//              (*aiqp)[i]->setName(QString("%1").arg(i));
-//              model->notifyParameterChange( model->index(i, 1, parentIndex) );
-//            }
           }
   );
 }

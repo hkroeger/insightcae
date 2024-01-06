@@ -6,6 +6,7 @@
 
 #include "iqdoubleparameter.h"
 #include "iqparametersetmodel.h"
+#include "qtextensions.h"
 
 defineType(IQDoubleParameter);
 addToFactoryTable(IQParameter, IQDoubleParameter);
@@ -61,13 +62,17 @@ QVBoxLayout* IQDoubleParameter::populateEditControls(
   connect(apply, &QPushButton::pressed, applyFunction);
 
   // handle external value change
-  auto connection = p.valueChanged.connect([=](){
-      auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
-      QSignalBlocker sb(lineEdit);
-      lineEdit->setText(QString::number(p()));
-  });
-  connect(layout, &QObject::destroyed, layout,
-          [connection](){connection.disconnect(); });
+  ::disconnectAtEOL(
+      layout,
+      p.valueChanged.connect(
+          [=]()
+          {
+              auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
+              QSignalBlocker sb(lineEdit);
+              lineEdit->setText(QString::number(p()));
+          }
+          )
+      );
 
 
   return layout;

@@ -7,7 +7,12 @@
 #include "vtkTextProperty.h"
 
 
+
+
 defineType(IQVTKPointOnCurveConstraint);
+
+
+
 
 IQVTKPointOnCurveConstraint::IQVTKPointOnCurveConstraint(
     std::shared_ptr<insight::cad::SketchPoint> p,
@@ -17,6 +22,9 @@ IQVTKPointOnCurveConstraint::IQVTKPointOnCurveConstraint(
     p_(p),
     curve_(curve)
 {}
+
+
+
 
 std::vector<vtkSmartPointer<vtkProp> >
 IQVTKPointOnCurveConstraint::createActor() const
@@ -39,10 +47,16 @@ IQVTKPointOnCurveConstraint::createActor() const
     return {caption};
 }
 
+
+
+
 int IQVTKPointOnCurveConstraint::nConstraints() const
 {
     return 1;
 }
+
+
+
 
 double IQVTKPointOnCurveConstraint::getConstraintError(unsigned int iConstraint) const
 {
@@ -68,9 +82,14 @@ double IQVTKPointOnCurveConstraint::getConstraintError(unsigned int iConstraint)
     // }
 }
 
+
+
+
 void IQVTKPointOnCurveConstraint::scaleSketch(double scaleFactor)
-{
-}
+{}
+
+
+
 
 void IQVTKPointOnCurveConstraint::generateScriptCommand(
     insight::cad::ConstrainedSketchScriptBuffer &script,
@@ -96,9 +115,15 @@ void IQVTKPointOnCurveConstraint::generateScriptCommand(
         );
 }
 
+
+
+
 namespace insight { namespace cad {
 addToStaticFunctionTable(ConstrainedSketchEntity, IQVTKPointOnCurveConstraint, addParserRule);
 }}
+
+
+
 
 void IQVTKPointOnCurveConstraint::addParserRule(
     insight::cad::ConstrainedSketchGrammar &ruleset,
@@ -127,6 +152,9 @@ void IQVTKPointOnCurveConstraint::addParserRule(
         );
 }
 
+
+
+
 std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> >
 IQVTKPointOnCurveConstraint::dependencies() const
 {
@@ -138,6 +166,9 @@ IQVTKPointOnCurveConstraint::dependencies() const
 
     return ret;
 }
+
+
+
 
 void IQVTKPointOnCurveConstraint::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity> &entity,
@@ -160,10 +191,15 @@ void IQVTKPointOnCurveConstraint::replaceDependency(
 }
 
 
+
+
 void IQVTKPointOnCurveConstraint::operator=(const ConstrainedSketchEntity& other)
 {
     operator=(dynamic_cast<const IQVTKPointOnCurveConstraint&>(other));
 }
+
+
+
 
 void IQVTKPointOnCurveConstraint::operator=(const IQVTKPointOnCurveConstraint& other)
 {

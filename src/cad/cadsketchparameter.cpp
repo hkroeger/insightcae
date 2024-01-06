@@ -29,6 +29,28 @@ void CADSketchParameter::resetCADGeometry()
             cad::vec3const(0,0,0),
             cad::vec3const(0,0,1) ));
 
+    CADGeometry_->geometryAdded.connect(
+        cad::ConstrainedSketch::GeometryEditSignal::slot_type(
+            [this](int) {
+                childValueChanged();
+            }
+            ).track_foreign(CADGeometry_)
+        );
+    CADGeometry_->geometryRemoved.connect(
+        cad::ConstrainedSketch::GeometryEditSignal::slot_type(
+            [this](int) {
+                childValueChanged();
+            }
+            ).track_foreign(CADGeometry_)
+        );
+    CADGeometry_->geometryChanged.connect(
+        cad::ConstrainedSketch::GeometryEditSignal::slot_type(
+            [this](int) {
+                childValueChanged();
+            }
+            ).track_foreign(CADGeometry_)
+        );
+
     for (auto& ref: references_)
     {
         auto &r = parentSet().get<CADGeometryParameter>(ref.second);
@@ -294,7 +316,8 @@ std::string CADSketchParameter::childParameterName( int i ) const
 {
     insight::assertion(
         i>=0 && i<nChildren(),
-        "invalid child parameter index %d (must be in range 0...%d)", i, nChildren() );
+        "invalid child parameter index %d (must be in range 0...%d)",
+        i, nChildren() );
 
     return str(boost::format("entity_%d")%i);
 }
@@ -304,7 +327,8 @@ Parameter& CADSketchParameter::childParameterRef ( int i )
 {
     insight::assertion(
         i>=0 && i<nChildren(),
-        "invalid child parameter index %d (must be in range 0...%d)", i, nChildren() );
+        "invalid child parameter index %d (must be in range 0...%d)",
+        i, nChildren() );
 
     auto g = featureGeometry().begin();
     std::advance(g, i);
@@ -316,7 +340,8 @@ const Parameter& CADSketchParameter::childParameter( int i ) const
 {
     insight::assertion(
         i>=0 && i<nChildren(),
-        "invalid child parameter index %d (must be in range 0...%d)", i, nChildren() );
+        "invalid child parameter index %d (must be in range 0...%d)",
+        i, nChildren() );
 
     auto g = featureGeometry().begin();
     std::advance(g, i);

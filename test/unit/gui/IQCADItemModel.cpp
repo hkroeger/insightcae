@@ -11,25 +11,28 @@ int main(int argc, char*argv[])
     try
     {
         IQCADItemModel modelToBeTested;
-        modelToBeTested.addComponent(
+        modelToBeTested.addModelstep(
                     "test",
                     cad::Box::create(
                         cad::matconst(vec3Zero()),
                         cad::matconst(vec3(1,0,0)),
                         cad::matconst(vec3(0,1,0)),
                         cad::matconst(vec3(0,0,1))
-                    )
+                    ), true
                   );
-        modelToBeTested.addComponent(  // replace
+        modelToBeTested.addModelstep(  // replace
                     "test",
                     cad::Box::create(
                         cad::matconst(vec3Zero()),
                         cad::matconst(vec3(2,0,0)),
                         cad::matconst(vec3(0,1,0)),
                         cad::matconst(vec3(0,0,1))
-                    )
+                    ), true
                   );
-        QAbstractItemModelTester tester(&modelToBeTested, QAbstractItemModelTester::FailureReportingMode::Fatal);
+
+        QAbstractItemModelTester tester(
+            &modelToBeTested,
+            QAbstractItemModelTester::FailureReportingMode::Fatal);
 
         auto box =
                 modelToBeTested

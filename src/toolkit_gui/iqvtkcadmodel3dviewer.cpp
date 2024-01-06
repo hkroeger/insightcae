@@ -1861,7 +1861,7 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
                        actprops->SetLineWidth(2);
                    },
                    [this,name,sk]() {
-                        cadmodel()->addModelstep(name.toStdString(), sk);
+                        cadmodel()->addModelstep(name.toStdString(), sk, false);
                         cadmodel()->setStaticModelStep(name.toStdString(), true);
                     }
             );

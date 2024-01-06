@@ -75,7 +75,8 @@ public Q_SLOTS:
         const QString& name,
         insight::cad::FeaturePtr smp,
         bool is_component,
-        const insight::cad::FeatureVisualizationStyle& fvs );
+        const boost::variant<boost::blank,insight::cad::FeatureVisualizationStyle>& fvs =
+            boost::blank() );
 
     void onAddDatum(
         const QString& name,

@@ -252,7 +252,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
      */
     r_assignment =
         ( current_pos.current_pos >> r_identifier >> current_pos.current_pos >> '=' >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-        [ ( phx::bind(&Model::addModelstep, model_, qi::_2, qi::_4, qi::_5),
+        [ ( phx::bind(&Model::addModelstep, model_, qi::_2, qi::_4, false, qi::_5),
             phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                        phx::construct<SyntaxElementLocation>(
                          filenameinfo_,
@@ -263,7 +263,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
             ) ]
         |
         ( current_pos.current_pos >> r_identifier >> current_pos.current_pos >> lit("?=") >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-        [ ( phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_2, qi::_4, qi::_5),
+        [ ( phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_2, qi::_4, false, qi::_5),
             phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                        phx::construct<SyntaxElementLocation>(
                          filenameinfo_,
@@ -317,7 +317,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
 
     r_modelstep  =  ( current_pos.current_pos >> r_identifier >> current_pos.current_pos >> ':'
                       >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-                    [ ( phx::bind(&Model::addComponent, model_, qi::_2, qi::_4, qi::_5),
+                    [ ( phx::bind(&Model::addModelstep, model_, qi::_2, qi::_4, true, qi::_5),
                         phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                                    phx::construct<SyntaxElementLocation>(
                                      filenameinfo_,

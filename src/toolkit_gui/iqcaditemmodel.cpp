@@ -1068,24 +1068,30 @@ void IQCADItemModel::addDatum(const std::string& name, insight::cad::DatumPtr va
 void IQCADItemModel::addModelstep(
     const std::string& name,
     insight::cad::FeaturePtr value,
+    bool isComponent,
     const std::string& featureDescription,
-    const insight::cad::FeatureVisualizationStyle& fvs)
+    const boost::variant<boost::blank,insight::cad::FeatureVisualizationStyle>& optfvs)
 {
-    // set *before* addEntity
-    if (featureVisibility_.find(name)==featureVisibility_.end())
+    if (auto* fvs = boost::get<insight::cad::FeatureVisualizationStyle>(&optfvs))
     {
-        auto&dvv = (featureVisibility_[name] = FeatureVisibility(fvs));
+        // set *before* addEntity
+        if (featureVisibility_.find(name)==featureVisibility_.end())
+        {
+            auto&dvv = (featureVisibility_[name] = FeatureVisibility(*fvs));
+        }
+
+        featureVisibility_[name].assocParamPaths = fvs->associatedParameterPaths;
     }
 
-    featureVisibility_[name].assocParamPaths=fvs.associatedParameterPaths;
 
     addEntity<insight::cad::FeaturePtr>(
               name, value,
               std::bind(&insight::cad::Model::modelsteps, model_.get()),
               std::bind(&IQCADItemModel::modelstepIndex, this, std::placeholders::_1),
               std::bind(
-                    &insight::cad::Model::addModelstep,
-                    model_.get(), std::placeholders::_1, std::placeholders::_2, std::string() ),
+                    &insight::cad::Model::addModelstep, model_.get(),
+                    std::placeholders::_1, std::placeholders::_2,
+                    isComponent, std::string() ),
                 CADModelSection::feature );
 }
 
@@ -1111,33 +1117,6 @@ void IQCADItemModel::setStaticModelStep(const std::string &name, bool isStatic)
 bool IQCADItemModel::isStaticModelStep(const std::string &name)
 {
     return staticFeatures_.find(name)!=staticFeatures_.end();
-}
-
-
-
-
-void IQCADItemModel::addComponent(
-        const std::string& name,
-        insight::cad::FeaturePtr value,
-        const std::string& featureDescription,
-        const insight::cad::FeatureVisualizationStyle& fvs )
-{
-    // set *before* addEntity
-    if (featureVisibility_.find(name)==featureVisibility_.end())
-    {
-        auto&dvv = (featureVisibility_[name] = FeatureVisibility(fvs));
-    }
-
-    featureVisibility_[name].assocParamPaths=fvs.associatedParameterPaths;
-
-    addEntity<insight::cad::FeaturePtr>(
-              name, value,
-              std::bind(&insight::cad::Model::modelsteps, model_.get()),
-              std::bind(&IQCADItemModel::modelstepIndex, this, std::placeholders::_1),
-              std::bind(
-                    &insight::cad::Model::addComponent,
-                    model_.get(), std::placeholders::_1, std::placeholders::_2, std::string()),
-              CADModelSection::feature );
 }
 
 

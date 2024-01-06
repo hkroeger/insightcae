@@ -255,18 +255,19 @@ public:
   void addModelstep(
       const std::string& name,
       insight::cad::FeaturePtr value,
+      bool isComponent,
       const std::string& featureDescription = std::string(),
-      const insight::cad::FeatureVisualizationStyle& fvs =
-        insight::cad::FeatureVisualizationStyle::intermediateFeatureStyle() );
+      const boost::variant<boost::blank,insight::cad::FeatureVisualizationStyle>& fvs =
+        boost::blank() );
 
   void setStaticModelStep(const std::string& name, bool isStatic);
   bool isStaticModelStep(const std::string& name);
-  void addComponent(
-      const std::string& name,
-      insight::cad::FeaturePtr value,
-      const std::string& featureDescription = std::string(),
-      const insight::cad::FeatureVisualizationStyle& fvs =
-        insight::cad::FeatureVisualizationStyle::componentStyle() );
+  // void addComponent(
+  //     const std::string& name,
+  //     insight::cad::FeaturePtr value,
+  //     const std::string& featureDescription = std::string(),
+  //     const insight::cad::FeatureVisualizationStyle& fvs =
+  //       insight::cad::FeatureVisualizationStyle::componentStyle() );
 
   void addPostprocAction(const std::string& name, insight::cad::PostprocActionPtr value);
   void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value);

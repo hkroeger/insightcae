@@ -74,34 +74,15 @@ void IQISCADModelRebuilder::onAddFeature(
     const QString& name,
     insight::cad::FeaturePtr smp,
     bool is_component,
-    const insight::cad::FeatureVisualizationStyle& fvs )
+    const boost::variant<boost::blank,insight::cad::FeatureVisualizationStyle>& fvs )
 {
-    if (is_component)
-    {
-//        insight::DatasetRepresentation dr = insight::Surface;
-//        if (const auto* dm = boost::get<AIS_DisplayMode>(&ds))
-//        {
-//            if (*dm==AIS_WireFrame) dr=insight::Wireframe;
-//        }
-        QMetaObject::invokeMethod(
-              qApp,
-              std::bind(&IQCADItemModel::addComponent, model_,
-                        name.toStdString(), smp, "", fvs )
-        );
-    }
-    else
-    {
-//        insight::DatasetRepresentation dr = insight::Wireframe;
-//        if (const auto* dm = boost::get<AIS_DisplayMode>(&ds))
-//        {
-//            if (*dm==AIS_Shaded) dr=insight::Surface;
-//        }
-        QMetaObject::invokeMethod(
-              qApp,
-              std::bind(&IQCADItemModel::addModelstep, model_,
-                        name.toStdString(), smp, "", fvs )
-        );
-    }
+    QMetaObject::invokeMethod(
+          qApp,
+          std::bind(
+            &IQCADItemModel::addModelstep, model_,
+            name.toStdString(), smp,
+            is_component, "", fvs )
+    );
     symbolsSnapshot_.features_.erase(name.toStdString());
 }
 

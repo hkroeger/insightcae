@@ -1,5 +1,5 @@
 L=15;
-sk:ConstrainedSketch(
+sk=ConstrainedSketch(
  XY,
  SketchPoint(0, 0, 0),
  SketchPoint(1, 10, 0),

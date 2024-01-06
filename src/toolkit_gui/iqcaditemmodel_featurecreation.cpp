@@ -42,7 +42,7 @@ void IQCADItemModel::addImportedFeature()
         auto m = cad::Feature::create(fp);
         this->addModelstep(
                     fp.filename().stem().string(),
-                    m );
+                    m, false );
     }
 }
 
@@ -74,6 +74,6 @@ void IQCADItemModel::addImportedSketch(insight::cad::DatumPtr plane)
                     fp.filename().stem().string(),
                     cad::Sketch::create(
                         plane, fp, le->text().toStdString()
-                        ) );
+                        ), false );
     }
 }

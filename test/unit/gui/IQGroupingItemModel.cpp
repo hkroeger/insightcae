@@ -28,10 +28,10 @@ int main(int argc, char*argv[])
         cadmodel->addScalar("gr/sgr1/s6", cad::scalarconst(6.0)); // 7
         cadmodel->addScalar("gr/sgr1/sgr2/s7", cad::scalarconst(7.0)); // 8
 
-        cadmodel->addModelstep("fgr/s1", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(1.)));
-        cadmodel->addModelstep("fgr/s2", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(2.)));
-        cadmodel->addModelstep("s3", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(3.)));
-        cadmodel->addModelstep("gr2/s4", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(4.)));
+        cadmodel->addModelstep("fgr/s1", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(1.)), false);
+        cadmodel->addModelstep("fgr/s2", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(2.)), false);
+        cadmodel->addModelstep("s3", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(3.)), false);
+        cadmodel->addModelstep("gr2/s4", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(4.)), false);
 
         IQCADItemModel origModel(cadmodel);
 

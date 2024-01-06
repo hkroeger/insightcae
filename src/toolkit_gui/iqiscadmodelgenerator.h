@@ -36,7 +36,8 @@ Q_SIGNALS:
       const QString& sn,
       insight::cad::FeaturePtr sm,
       bool is_component,
-      const insight::cad::FeatureVisualizationStyle& fvs = insight::cad::FeatureVisualizationStyle() );
+      const boost::variant<boost::blank,insight::cad::FeatureVisualizationStyle>& fvs =
+        boost::blank() );
 
   void createdDatum(
       const QString& sn,

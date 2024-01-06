@@ -72,7 +72,7 @@ void Model::copyVariables(const ModelVariableTable& vars)
         }
         else if ( const FeaturePtr* ff = boost::get<FeaturePtr>( &boost::fusion::at_c<1>(s) ) )
         {
-            addModelstep(name, *ff);
+            addModelstep(name, *ff, false);
         }
     }
 }
@@ -202,27 +202,57 @@ void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
         addDatum(name, value);
 }
 
-void Model::addModelstep(const std::string& name, FeaturePtr value, const std::string& /*featureDescription*/)
+
+
+
+void Model::addModelstep(
+    const std::string& name,
+    FeaturePtr value,
+    bool isComponent,
+    const std::string& /*featureDescription*/)
 {
   value->setFeatureSymbolName(name);
-  if (modelsteps_.find(name)) modelsteps_.remove(name);
+
+  if (modelsteps_.find(name))
+  {
+      modelsteps_.remove(name);
+  }
+  if (components_.find(name)!=components_.end())
+  {
+      components_.erase(name);
+  }
+
+  if (isComponent) components_.insert(name);
   modelsteps_.add(name, value);
 }
 
-void Model::addModelstepIfNotPresent(const std::string& name, FeaturePtr value, const std::string& /*featureDescription*/)
+
+
+
+void Model::addModelstepIfNotPresent(
+    const std::string& name,
+    FeaturePtr value,
+    bool isComponent,
+    const std::string& /*featureDescription*/)
 {
     if (!modelsteps_.find(name))
     {
         value->setFeatureSymbolName(name);
-        addModelstep(name, value);
+        addModelstep(name, value, isComponent);
     }
 }
 
-void Model::addComponent(const std::string& name, FeaturePtr value, const std::string& /*featureDescription*/)
-{
-  components_.insert(name);
-  addModelstep(name, value);
-}
+
+
+
+// void Model::addComponent(const std::string& name, FeaturePtr value, const std::string& /*featureDescription*/)
+// {
+//   components_.insert(name);
+//   addModelstep(name, value);
+// }
+
+
+
 
 void Model::removeScalar(const string& name)
 {

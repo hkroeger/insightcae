@@ -10,10 +10,10 @@ boost::mt19937 boostRanGen;
 
 IQCADItemModel::FeatureVisibility::FeatureVisibility()
 {
-    boost::random::exponential_distribution<> ed(2);
-    color.setRedF(      std::max(0., std::min(1., ed(boostRanGen))) );
-    color.setGreenF(    std::max(0., std::min(1., ed(boostRanGen))) );
-    color.setBlueF(     std::max(0., std::min(1., ed(boostRanGen))) );
+    boost::random::exponential_distribution<> ed( 5. /* larger => lighter colors */ );
+    color.setRedF(      1.-std::max(0., std::min(1., ed(boostRanGen))) );
+    color.setGreenF(    1.-std::max(0., std::min(1., ed(boostRanGen))) );
+    color.setBlueF(     1.-std::max(0., std::min(1., ed(boostRanGen))) );
     opacity=1.;
     visible=true;
     representation = insight::Surface;

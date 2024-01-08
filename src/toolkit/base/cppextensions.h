@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <functional>
+#include <vector>
 #include "base/exception.h"
 
 #include "boost/signals2.hpp"
@@ -141,7 +142,10 @@ class ObjectWithBoostSignalConnections
 public:
     virtual ~ObjectWithBoostSignalConnections();
 
-    void disconnectAtEOL( const boost::signals2::connection& connection);
+    const boost::signals2::connection &disconnectAtEOL(
+        const boost::signals2::connection& connection );
+
+    std::vector<boost::signals2::shared_connection_block> block_all();
 };
 
 

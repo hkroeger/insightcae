@@ -1,5 +1,7 @@
 #include "iqcadsketchparameter.h"
 
+#include "boost/signals2/connection.hpp"
+#include "boost/signals2/shared_connection_block.hpp"
 #include "iqparametersetmodel.h"
 #include "iqcadmodel3dviewer.h"
 #include "iqcaditemmodel.h"
@@ -40,6 +42,7 @@ void IQCADSketchParameter::connectSignals()
     disconnectAtEOL(
         sp.childValueChanged.connect(
             [this]() {
+                auto blocker = block_all();
                 model()->notifyParameterChange(
                     path().toStdString(),
                     true

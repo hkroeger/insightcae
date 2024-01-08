@@ -16,6 +16,11 @@
         <file>icon_mergepoints.svg</file>
         <file>icon_sketch_drawpoint.svg</file>
         <file>icon_sketch_drawrectangle.svg</file>
+        <file>icon_fixpoint.svg</file>
+        <file>icon_distance_x.svg</file>
+        <file>icon_distance_xf.svg</file>
+        <file>icon_distance_y.svg</file>
+        <file>icon_distance_yf.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

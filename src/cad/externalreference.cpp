@@ -51,6 +51,7 @@ void ExternalReference::operator=(const ConstrainedSketchEntity& other)
 
 void ExternalReference::operator=(const ExternalReference& other)
 {
+    Feature::operator=(other);
     ConstrainedSketchEntity::operator=(other);
     extRef_=other.extRef_;
 }

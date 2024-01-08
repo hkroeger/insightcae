@@ -264,12 +264,8 @@ void IQVTKConstrainedSketchEditor::drawLine()
                     }
                     else
                     {
-                        auto p1 = std::make_shared<insight::cad::AddedVector>(
-                            line->start(),
-                            insight::cad::vec3const(1,0,0) );
-
                         double ang = insight::cad::AngleConstraint::calculate(
-                            p1->value(),
+                            line->start()->value()+insight::vec3X(1),
                             line->end()->value(),
                             line->start()->value() );
 
@@ -295,7 +291,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
                         {
                             (*this)->insertGeometry(
                                 insight::cad::FixedAngleConstraint::create(
-                                    p1, line->end(), line->start() ) );
+                                    line->end(), nullptr, line->start() ) );
                         }
                     }
                 }
@@ -501,7 +497,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     );
 
     toolBar_->addAction(
-        "X",
+        QPixmap(":/icons/icon_fixpoint.svg"), "Fix Point Coordinates",
         [&]()
         {
             if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
@@ -530,6 +526,76 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
             }
         }
     );
+
+    toolBar_->addAction(
+        QPixmap(":/icons/icon_distance_xf.svg"), "Fix Points X-Coordinate",
+        [&]()
+        {
+            if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
+            {
+                if (selact->somethingSelected())
+                {
+                    insight::cad::SketchPointPtr pt;
+
+                    for (auto &sele: selact->currentSelection())
+                    {
+                        insight::assertion(
+                            selact->currentSelection().size()==1,
+                            "exactly one entity should be selected!");
+
+                        auto sg = sele.lock();
+                        if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                        {
+                            auto c = FixedDistanceConstraint::create(
+                                vec3const(0,0,0), p,
+                                (*this)->sketchPlaneNormal(),
+                                std::string(),
+                                vec3const(1,0,0) );
+                            (*this)->insertGeometry(c);
+                            (*this)->invalidate();
+                            this->updateActors();
+                            Q_EMIT sketchChanged();
+                        }
+                    }
+                }
+            }
+        }
+        );
+
+    toolBar_->addAction(
+        QPixmap(":/icons/icon_distance_yf.svg"), "Fix Points Y-Coordinate",
+        [&]()
+        {
+            if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
+            {
+                if (selact->somethingSelected())
+                {
+                    insight::cad::SketchPointPtr pt;
+
+                    for (auto &sele: selact->currentSelection())
+                    {
+                        insight::assertion(
+                            selact->currentSelection().size()==1,
+                            "exactly one entity should be selected!");
+
+                        auto sg = sele.lock();
+                        if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                        {
+                            auto c = FixedDistanceConstraint::create(
+                                vec3const(0,0,0), p,
+                                (*this)->sketchPlaneNormal(),
+                                std::string(),
+                                vec3const(0,1,0) );
+                            (*this)->insertGeometry(c);
+                            (*this)->invalidate();
+                            this->updateActors();
+                            Q_EMIT sketchChanged();
+                        }
+                    }
+                }
+            }
+        }
+        );
 
     toolBar_->addAction(
         QPixmap(":/icons/icon_pointoncurve.svg"), "Point on curve",
@@ -568,6 +634,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             (*this)->invalidate();
                             this->updateActors();
                             Q_EMIT sketchChanged();
+                            break;
                         }
                     }
                 }

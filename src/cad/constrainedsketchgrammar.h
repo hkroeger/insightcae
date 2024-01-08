@@ -40,6 +40,11 @@ public:
 
     cad::parser::ISCADParser *iscadScriptRules;
 
+    boost::spirit::qi::rule<
+        std::string::iterator,
+        VectorPtr(),
+        insight::cad::parser::skip_grammar
+        > r_vector;
 
     boost::spirit::qi::rule<
         std::string::iterator,

@@ -83,10 +83,10 @@ PostProcActionVisualizers::VTKActorList Distance_createVTKRepr(PostprocActionPtr
   auto dist = std::dynamic_pointer_cast<Distance>(ppa);
   insight::assertion( bool(dist), "internal error: expected distance object") ;
 
+  arma::mat dir = dist->measureDirection();
+  double L=dist->distance();
   arma::mat p1 = dist->p1_->value();
-  arma::mat p2 = dist->p2_->value();
-  double L=arma::norm(p2-p1, 2);
-  arma::mat dir=normalized(p2-p1);
+  arma::mat p2 = p1 + dir*L; //dist->p2_->value();
 
   arma::mat ofs = dist->dimLineOffset();
   arma::mat pmid = 0.5*(p1+p2);
@@ -179,7 +179,7 @@ PostProcActionVisualizers::VTKActorList Distance_createVTKRepr(PostprocActionPtr
     arrAct1->GetProperty()->SetColor(0.5, 0.5, 0.5);
 
     auto hl2 = vtkSmartPointer<vtkLineSource>::New();
-    hl2->SetPoint1(p2.memptr());
+    hl2->SetPoint1(dist->p2_->value().memptr());
     hl2->SetPoint2(arma::mat(p2+ofs).memptr());
     auto mapper2 = vtkSmartPointer<vtkPolyDataMapper>::New();
     //mapper->SetInputData(arr);

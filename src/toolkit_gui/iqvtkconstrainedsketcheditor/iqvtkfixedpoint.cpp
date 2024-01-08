@@ -28,7 +28,7 @@ std::vector<vtkSmartPointer<vtkProp> >
 IQVTKFixedPoint::createActor() const
 {
     auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("X");
+    caption->SetCaption("F");
     caption->BorderOff();
     caption->SetAttachmentPoint(p_->value().memptr());
     caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size

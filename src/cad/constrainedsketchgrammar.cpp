@@ -33,12 +33,16 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
 
     r_label = qi::lexeme[ qi::alpha >> *(qi::alnum | qi::char_('_')) >> !(qi::alnum | '_') ];
 
+    r_vector =
+        ( '[' > qi::double_ > ',' > qi::double_ > ',' > qi::double_ > ']' )
+            [ qi::_val = phx::bind(&vec3const, qi::_1, qi::_2, qi::_3) ]
+        ;
+
     r_point =
         qi::int_
             [ qi::_val = phx::bind(&ConstrainedSketch::get<Vector>, sk, qi::_1) ]
         |
-        ( '[' > qi::double_ > ',' > qi::double_ > ',' > qi::double_ > ']' )
-            [ qi::_val = phx::bind(&vec3const, qi::_1, qi::_2, qi::_3) ]
+        r_vector [ qi::_val = qi::_1 ]
         ;
 
 

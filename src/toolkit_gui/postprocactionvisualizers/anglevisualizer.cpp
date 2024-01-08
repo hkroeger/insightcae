@@ -45,7 +45,11 @@ PostProcActionVisualizers::VTKActorList Angle_createVTKRepr(PostprocActionPtr pp
     arma::mat er1 = normalized(r1);
     arma::mat er2 = normalized(r2);
 
-    arma::mat n = normalized(arma::cross(r1, r2));
+    arma::mat n = arma::cross(r1, r2);
+    if (arma::norm(n, 2)<SMALL)
+        n=vec3Z(1);
+    else
+        n=normalized(n);
 
     auto arc = vtkSmartPointer<vtkArcSource>::New();
     arc->SetCenter( pCtr.memptr() );

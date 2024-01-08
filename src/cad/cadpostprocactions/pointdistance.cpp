@@ -51,11 +51,34 @@ size_t Distance::calcHash() const
   return h.getHash();
 }
 
+arma::mat Distance::measureDirection() const
+{
+    if (distanceAlong_)
+    {
+        return normalized( distanceAlong_->value() );
+    }
+    else
+    {
+        return normalized( p2_->value() - p1_->value() );
+    }
+}
 
 
+double Distance::calcDistance() const
+{
+    arma::mat p1=p1_->value();
+    arma::mat p2=p2_->value();
 
-Distance::Distance(insight::cad::VectorPtr p1, insight::cad::VectorPtr p2)
-: p1_(p1), p2_(p2)
+    arma::mat d = p2 - p1;
+
+    return arma::dot(d, measureDirection());
+}
+
+
+Distance::Distance(
+    insight::cad::VectorPtr p1, insight::cad::VectorPtr p2,
+    VectorPtr distanceAlong )
+  : p1_(p1), p2_(p2), distanceAlong_(distanceAlong)
 {}
 
 
@@ -63,10 +86,7 @@ Distance::Distance(insight::cad::VectorPtr p1, insight::cad::VectorPtr p2)
 
 void insight::cad::Distance::build()
 {
-  arma::mat p1=p1_->value();
-  arma::mat p2=p2_->value();
-
-  distance_=arma::norm(p2-p1,2);
+  distance_ = calcDistance();
 }
 
 
@@ -82,6 +102,7 @@ void Distance::operator=(const Distance &other)
 {
   p1_=other.p1_;
   p2_=other.p2_;
+  distanceAlong_=other.distanceAlong_;
   distance_=other.distance_;
   PostprocAction::operator=(other);
 }
@@ -91,7 +112,7 @@ void Distance::operator=(const Distance &other)
 
 arma::mat Distance::dimLineOffset() const
 {
-  arma::mat dir = p2_->value() - p1_->value();
+  arma::mat dir = measureDirection();
   arma::mat n = arma::cross(dir, vec3(0,0,1));
   if (arma::norm(n,2)<SMALL)
       n=arma::cross(dir, vec3(0,1,0));
@@ -103,7 +124,13 @@ arma::mat Distance::dimLineOffset() const
 
 double Distance::relativeArrowSize() const
 {
-  return 0.025;
+    return 0.025;
+}
+
+double Distance::distance() const
+{
+    checkForBuildDuringAccess();
+    return distance_;
 }
 
 
@@ -123,6 +150,7 @@ size_t DistanceConstraint::calcHash() const
     ParameterListHash h;
     h+=p1_->value();
     h+=p2_->value();
+    if (distanceAlong_) h+=distanceAlong_->value();
     h+=targetValue();
     return h.getHash();
 }
@@ -132,9 +160,10 @@ size_t DistanceConstraint::calcHash() const
 
 DistanceConstraint::DistanceConstraint(
     VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
-    const std::string& layerName)
+    const std::string& layerName,
+    VectorPtr distanceAlong)
     : ConstrainedSketchEntity(layerName),
-    Distance(p1, p2),
+    Distance(p1, p2, distanceAlong),
     planeNormal_(planeNormal)
 {
     changeDefaultParameters(
@@ -205,7 +234,7 @@ void DistanceConstraint::replaceDependency(
 
 arma::mat DistanceConstraint::dimLineOffset() const
 {
-    arma::mat dir = p2_->value() - p1_->value();
+    arma::mat dir = measureDirection();
     arma::mat n = normalized(arma::cross(dir, planeNormal_->value()));
     return n*parameters().getDouble("dimLineOfs");
 }
@@ -215,7 +244,7 @@ arma::mat DistanceConstraint::dimLineOffset() const
 
 void DistanceConstraint::setDimLineOffset(const arma::mat &p)
 {
-    arma::mat dir = p2_->value() - p1_->value();
+    arma::mat dir = measureDirection();
     arma::mat dir2 = p - p1_->value();
     arma::mat n = normalized(arma::cross(dir, planeNormal_->value()));
 
@@ -237,7 +266,7 @@ void DistanceConstraint::setDimLineOffset(const arma::mat &p)
 
 double DistanceConstraint::relativeArrowSize() const
 {
-    double L = arma::norm(p2_->value() - p1_->value(), 2);
+    double L = std::max(SMALL, std::fabs(distance()));
     return parameters().getDouble("arrowSize")/L;
 }
 
@@ -272,13 +301,14 @@ addToStaticFunctionTable(ConstrainedSketchEntity, FixedDistanceConstraint, addPa
 
 FixedDistanceConstraint::FixedDistanceConstraint(
     VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
-    const std::string& layerName
+    const std::string& layerName,
+    VectorPtr distanceAlong
     )
-    : DistanceConstraint(p1, p2, planeNormal, layerName)
+    : DistanceConstraint(p1, p2, planeNormal, layerName, distanceAlong)
 {
     auto ps = defaultParameters();
     ps.extend(ParameterSet({
-        {"distance", std::make_shared<DoubleParameter>(arma::norm(p2->value()-p1->value(), 2), "target value")}
+       {"distance", std::make_shared<DoubleParameter>(calcDistance(), "target value")}
     }));
     changeDefaultParameters(ps);
 }
@@ -319,6 +349,11 @@ void FixedDistanceConstraint::generateScriptCommand(
             + pointSpec(p1_, script, entityLabels)
             + ", "
             + pointSpec(p2_, script, entityLabels)
+            + ( bool(distanceAlong_) ?
+                   str(boost::format(", along [%g, %g, %g]")
+                       % distanceAlong_->value()(0)
+                       % distanceAlong_->value()(1)
+                       % distanceAlong_->value()(2) ) : std::string("") )
             + ", layer " + layerName()
             + parameterString()
             + ")"
@@ -328,7 +363,8 @@ void FixedDistanceConstraint::generateScriptCommand(
 
 
 
-void FixedDistanceConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction)
+void FixedDistanceConstraint::addParserRule(
+    ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction)
 {
     namespace qi=boost::spirit::qi;
     namespace phx=boost::phoenix;
@@ -339,16 +375,18 @@ void FixedDistanceConstraint::addParserRule(ConstrainedSketchGrammar &ruleset, M
              > qi::int_ > ','
              > ruleset.r_point > ','
              > ruleset.r_point
-             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
+             > (( ',' >> qi::lit("along") > ruleset.r_vector) | qi::attr(VectorPtr()))
+             > (( ',' >> qi::lit("layer") > ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')'
              )
                 [ qi::_a = phx::bind(
-                     &FixedDistanceConstraint::create<VectorPtr, VectorPtr, VectorPtr, const std::string&>,
+                     &FixedDistanceConstraint::create<
+                       VectorPtr, VectorPtr, VectorPtr, const std::string&, VectorPtr>,
                      qi::_2, qi::_3,
                      phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
-                     qi::_4 ),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, boost::filesystem::path(".")),
+                     qi::_5, qi::_4 ),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
@@ -386,9 +424,10 @@ LinkedDistanceConstraint::LinkedDistanceConstraint(
     ScalarPtr dist,
     VectorPtr planeNormal,
     const std::string& layerName,
-    const std::string& distExpr )
+    const std::string& distExpr,
+    VectorPtr distanceAlong )
 
-  : DistanceConstraint(p1, p2, planeNormal, layerName),
+  : DistanceConstraint(p1, p2, planeNormal, layerName, distanceAlong ),
     distExpr_(distExpr), distance_(dist)
 {}
 

@@ -30,7 +30,7 @@ std::vector<vtkSmartPointer<vtkProp> >
 IQVTKPointOnCurveConstraint::createActor() const
 {
     auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("F");
+    caption->SetCaption("C");
     caption->BorderOff();
     caption->SetAttachmentPoint(
         arma::mat(p_->value()).memptr()
@@ -146,7 +146,7 @@ void IQVTKPointOnCurveConstraint::addParserRule(
          [ qi::_a = phx::bind(
                  &IQVTKPointOnCurveConstraint::create<SketchPointPtr, FeaturePtr, const std::string&>,
                  phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_3),
-                 phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2), qi::_4 ),
+                 phx::bind(&ConstrainedSketch::get<Feature>, ruleset.sketch, qi::_2), qi::_4 ),
              phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
              qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );

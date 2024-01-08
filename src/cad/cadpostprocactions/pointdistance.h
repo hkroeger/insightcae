@@ -45,12 +45,19 @@ class Distance
 
 public:
   VectorPtr p1_, p2_;
+  VectorPtr distanceAlong_;
+
   double distance_;
+
+  arma::mat measureDirection() const;
+
+protected:
+  double calcDistance() const;
 
 public:
   declareType("ShowDistance");
 
-  Distance(VectorPtr p1, VectorPtr p2);
+  Distance(VectorPtr p1, VectorPtr p2, VectorPtr distanceAlong=VectorPtr());
 
   void build() override;
 
@@ -67,6 +74,8 @@ public:
   virtual arma::mat dimLineOffset() const;
   virtual double relativeArrowSize() const;
 
+  double distance() const;
+
 };
 
 
@@ -82,7 +91,11 @@ class DistanceConstraint
 
 
 protected:
-    DistanceConstraint(VectorPtr p1, VectorPtr p2, VectorPtr planeNormal, const std::string& layerName = std::string());
+    DistanceConstraint(
+        VectorPtr p1, VectorPtr p2,
+        VectorPtr planeNormal,
+        const std::string& layerName = std::string(),
+        VectorPtr distanceAlong = VectorPtr());
 
 public:
     declareType("DistanceConstraintBase");
@@ -117,7 +130,8 @@ class FixedDistanceConstraint
 
     FixedDistanceConstraint(
         VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
-        const std::string& layerName = std::string());
+        const std::string& layerName = std::string(),
+        VectorPtr distanceAlong=VectorPtr() );
 
 public:
     declareType("DistanceConstraint");
@@ -155,7 +169,8 @@ class LinkedDistanceConstraint
         VectorPtr p1, VectorPtr p2,
         ScalarPtr dist, VectorPtr planeNormal,
         const std::string& layerName = std::string(),
-        const std::string& distExpr = std::string() );
+        const std::string& distExpr = std::string(),
+        VectorPtr distanceAlong=VectorPtr() );
 
 public:
     declareType("Distance");

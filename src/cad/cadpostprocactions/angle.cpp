@@ -150,7 +150,14 @@ AngleConstraint::AngleConstraint(
     const std::string& layerName
     )
     : ConstrainedSketchEntity(layerName),
-    Angle(p1, p2, pCtr)
+    Angle(
+          p1,
+          p2 ?
+              p2 :
+              std::make_shared<insight::cad::AddedVector>(
+                    pCtr,
+                    insight::cad::vec3const(1,0,0) ),
+          pCtr )
 {
     changeDefaultParameters(
         ParameterSet({
@@ -272,6 +279,7 @@ FixedAngleConstraint::FixedAngleConstraint(
 
 
 
+
 double FixedAngleConstraint::targetValue() const
 {
     return parameters().getDouble("angle")*SI::deg;
@@ -294,10 +302,10 @@ void FixedAngleConstraint::generateScriptCommand(
         myLabel,
         type() + "( "
             + boost::lexical_cast<std::string>(myLabel) + ", "
-            + pointSpec(p1_, script, entityLabels)
-            + ", "
-            + pointSpec(p2_, script, entityLabels)
-            + ", "
+            + pointSpec(p1_, script, entityLabels) + ", "
+            + ( std::dynamic_pointer_cast<AddedVector>(p2_) ?
+                    "toHorizontal" :
+                   pointSpec(p2_, script, entityLabels) ) + ", "
             + pointSpec(pCtr_, script, entityLabels)
             + ", layer " + layerName()
             + parameterString()
@@ -317,18 +325,16 @@ void FixedAngleConstraint::addParserRule(
     ruleset.entityRules.add
         (
             typeName,
-            ( '('
-             > qi::int_ > ','
-             > ruleset.r_point > ','
-             > ruleset.r_point > ','
-             > ruleset.r_point
-             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
-             > ruleset.r_parameters >
-             ')'
-             )
+            ( '(' > qi::int_ > ','
+                > ruleset.r_point > ','
+                > ( ( qi::lit("toHorizontal") >> qi::attr(VectorPtr()) ) | (ruleset.r_point) ) > ','
+                > ruleset.r_point
+                > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
+                > ruleset.r_parameters >
+              ')' )
                 [ qi::_a = phx::bind(
                      &FixedAngleConstraint::create<
-                        VectorPtr, VectorPtr, VectorPtr, const std::string&>,
+                         VectorPtr, VectorPtr, VectorPtr, const std::string&>,
                      qi::_2, qi::_3, qi::_4, qi::_5),
                  phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]

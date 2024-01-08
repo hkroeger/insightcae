@@ -56,6 +56,14 @@ class AngleConstraint
     size_t calcHash() const override;
 
 protected:
+    /**
+     * @brief AngleConstraint
+     * @param p1
+     * @param p2
+     * if nullptr, measurement is against horizontal direction
+     * @param pCtr
+     * @param layerName
+     */
     AngleConstraint(
         VectorPtr p1, VectorPtr p2, VectorPtr pCtr,
         const std::string& layerName = std::string());

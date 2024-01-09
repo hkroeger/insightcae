@@ -166,7 +166,7 @@ void ParameterEditorWidget::showEvent(QShowEvent *event)
     {
         firstShowOccurred_=true;
 
-        parameterTreeView_->expandAll();
+        parameterTreeView_->expandToDepth(2);
         parameterTreeView_->resizeColumnToContents(0);
         parameterTreeView_->resizeColumnToContents(1);
     }
@@ -307,7 +307,7 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
     }
     if (display_) display_->model()->setAssociatedParameterSetModel(model_);
 
-    parameterTreeView_->expandAll();
+    parameterTreeView_->expandToDepth(2);
     parameterTreeView_->resizeColumnToContents(0);
     parameterTreeView_->resizeColumnToContents(1);
 }

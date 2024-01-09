@@ -1409,7 +1409,8 @@ vtkPolyData* OpenFOAMCaseScene::patch(const std::string& name) const
   return nullptr;
 }
 
-vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMCaseScene::patchesFilter(const std::string& namePattern) const
+vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMCaseScene::patchesFilter(
+    const std::string& namePattern) const
 {
   auto patches = extractBlock(
       MultiBlockDataSetExtractor(ofcase_->GetOutput()).flatIndices(

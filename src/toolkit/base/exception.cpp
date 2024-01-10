@@ -210,11 +210,11 @@ Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> 
 
 
 
-Exception::Exception(const std::string& msg, const std::string& strace)
-  : message_(msg), strace_(strace)
-{
-  dbg(2)<<msg<<std::endl;
-}
+// Exception::Exception(const std::string& msg, const std::string& strace)
+//   : message_(msg), strace_(strace)
+// {
+//   dbg(2)<<msg<<std::endl;
+// }
 
 
 

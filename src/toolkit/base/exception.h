@@ -105,7 +105,7 @@ public:
   Exception();
   Exception(std::string msgfmt, ...);
   Exception(const std::string& msg, const std::map<std::string, cad::FeaturePtr>& contextGeometry, bool strace=true);
-  Exception(const std::string& msg, const std::string& strace);
+  // Exception(const std::string& msg, const std::string& strace);
 
 
   virtual std::string message() const;

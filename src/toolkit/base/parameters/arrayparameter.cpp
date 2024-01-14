@@ -107,8 +107,9 @@ void ArrayParameter::eraseValue ( int i )
 
   valueChangedConnections_.erase(idx->get());
   childValueChangedConnections_.erase(idx->get());
-  value_.erase ( idx );
 
+  auto item=*idx; // don't delete yet, this would cause crash in IQParameterSetModel.
+  value_.erase ( idx ); // Just remove from array
   triggerValueChanged();
 }
 

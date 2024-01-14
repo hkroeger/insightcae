@@ -95,6 +95,13 @@ class AddedVector
   VectorPtr p1_, p2_;
 public:
   AddedVector(VectorPtr p1, VectorPtr p2);
+
+  inline VectorPtr& p1() __attribute__((deprecated("using this might break updating!")))
+  { return p1_; }
+
+  inline VectorPtr& p2() __attribute__((deprecated("using this might break updating!")))
+  { return p2_; }
+
   virtual arma::mat value() const;
 };
 

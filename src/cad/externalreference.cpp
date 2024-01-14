@@ -16,8 +16,10 @@ void ExternalReference::build()
     Feature::operator=(*extRef_);
 }
 
-ExternalReference::ExternalReference ( FeaturePtr extRef )
-    : extRef_(extRef)
+ExternalReference::ExternalReference (
+    FeaturePtr extRef, const std::string& layerName )
+  : ConstrainedSketchEntity(layerName),
+    extRef_(extRef)
 {}
 
 void ExternalReference::scaleSketch(double scaleFactor)
@@ -47,6 +49,15 @@ FeaturePtr ExternalReference::referencedFeature() const
 void ExternalReference::operator=(const ConstrainedSketchEntity& other)
 {
     ExternalReference::operator=(dynamic_cast<const ExternalReference&>(other));
+}
+
+ConstrainedSketchEntityPtr ExternalReference::clone() const
+{
+    auto cl=ExternalReference::create(extRef_, layerName());
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
 }
 
 void ExternalReference::operator=(const ExternalReference& other)

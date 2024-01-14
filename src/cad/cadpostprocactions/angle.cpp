@@ -215,6 +215,14 @@ void AngleConstraint::replaceDependency(
         {
             p2_ = p;
         }
+        else if (auto adder = std::dynamic_pointer_cast<AddedVector>(p2_))
+        {
+            auto po=std::dynamic_pointer_cast<SketchPoint>(entity.lock());
+            if (adder->p1()==po)
+            {
+                adder->p1()=po;
+            }
+        }
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(pCtr_) == entity)
         {
             pCtr_ = p;
@@ -349,6 +357,19 @@ void FixedAngleConstraint::operator=(const ConstrainedSketchEntity& other)
     operator=(dynamic_cast<const FixedAngleConstraint&>(other));
 }
 
+ConstrainedSketchEntityPtr FixedAngleConstraint::clone() const
+{
+    auto cl=FixedAngleConstraint::create(
+        p1_,
+        std::dynamic_pointer_cast<AddedVector>(p2_)?nullptr:p2_,
+        pCtr_,
+        layerName() );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
+}
+
 
 
 
@@ -466,6 +487,20 @@ void LinkedAngleConstraint::addParserRule(
 void LinkedAngleConstraint::operator=(const ConstrainedSketchEntity& other)
 {
     operator=(dynamic_cast<const LinkedAngleConstraint&>(other));
+}
+
+ConstrainedSketchEntityPtr LinkedAngleConstraint::clone() const
+{
+    auto cl=LinkedAngleConstraint::create(
+        p1_,
+        std::dynamic_pointer_cast<AddedVector>(p2_)?nullptr:p2_,
+        pCtr_,
+        angle_,
+        layerName(), angleExpr_ );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
 }
 
 

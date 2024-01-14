@@ -14,11 +14,15 @@ using namespace insight::cad;
 defineType(IQVTKHorizontalConstraint);
 
 
+
+
 IQVTKHorizontalConstraint::IQVTKHorizontalConstraint(
     std::shared_ptr<insight::cad::Line> line,
     const std::string& layerName )
     : IQVTKConstrainedSketchEntity(layerName), line_(line)
 {}
+
+
 
 
 std::vector<vtkSmartPointer<vtkProp> >
@@ -41,10 +45,16 @@ IQVTKHorizontalConstraint::createActor() const
     return {caption};
 }
 
+
+
+
 int IQVTKHorizontalConstraint::nConstraints() const
 {
     return 1;
 }
+
+
+
 
 double IQVTKHorizontalConstraint::getConstraintError(
     unsigned int iConstraint) const
@@ -59,8 +69,14 @@ double IQVTKHorizontalConstraint::getConstraintError(
     return d2(1);
 }
 
+
+
+
 void IQVTKHorizontalConstraint::scaleSketch(double scaleFactor)
 {}
+
+
+
 
 void IQVTKHorizontalConstraint::generateScriptCommand(
     insight::cad::ConstrainedSketchScriptBuffer &script,
@@ -83,9 +99,14 @@ void IQVTKHorizontalConstraint::generateScriptCommand(
 }
 
 
+
+
 namespace insight { namespace cad {
 addToStaticFunctionTable(ConstrainedSketchEntity, IQVTKHorizontalConstraint, addParserRule);
 }}
+
+
+
 
 void IQVTKHorizontalConstraint::addParserRule(
     insight::cad::ConstrainedSketchGrammar &ruleset,
@@ -113,10 +134,15 @@ void IQVTKHorizontalConstraint::addParserRule(
 }
 
 
+
+
 std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > IQVTKHorizontalConstraint::dependencies() const
 {
     return { line_ };
 }
+
+
+
 
 void IQVTKHorizontalConstraint::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity> &entity,
@@ -132,10 +158,27 @@ void IQVTKHorizontalConstraint::replaceDependency(
 }
 
 
+
+
 void IQVTKHorizontalConstraint::operator=(const ConstrainedSketchEntity& other)
 {
     operator=(dynamic_cast<const IQVTKHorizontalConstraint&>(other));
 }
+
+
+
+
+ConstrainedSketchEntityPtr IQVTKHorizontalConstraint::clone() const
+{
+    auto cl=IQVTKHorizontalConstraint::create( line_, layerName() );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
+}
+
+
+
 
 void IQVTKHorizontalConstraint::operator=(const IQVTKHorizontalConstraint& other)
 {

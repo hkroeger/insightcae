@@ -23,14 +23,17 @@
 
 #include <armadillo>
 #include <map>
+#include <set>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
+#include "boost/blank.hpp"
 #include "gsl/gsl_multimin.h"
 #include "gsl/gsl_integration.h"
 
 #include "boost/optional.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
+#include "boost/variant.hpp"
 
 #include "base/exception.h"
 
@@ -54,6 +57,7 @@ bool operator<(const arma::mat& v1, const arma::mat& v2);
 namespace insight 
 {
 
+extern const double VSMALL;
 extern const double SMALL;
 extern const double LSMALL;
 
@@ -259,7 +263,13 @@ public:
   virtual int numP() const =0;
 };
 
-arma::mat vec(const gsl_vector * x);
+arma::mat vec(
+    const gsl_vector * x,
+    boost::variant<boost::blank,double,arma::mat> replaceNaN
+        = boost::blank() );
+
+arma::mat mat( const gsl_matrix* m );
+
 void gsl_vector_set(const arma::mat& x, gsl_vector * xo);
 
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
@@ -275,11 +285,32 @@ arma::mat nonlinearMinimizeND(
     const std::function<double(const arma::mat&)>& model, const arma::mat& x0,
     double tol=1e-3, const arma::mat& steps = arma::mat(), int nMaxIter=10000, double relax=1.0 );
 
+
+class JacobiDeterminatException
+    : public Exception
+{
+    arma::mat J_;
+    std::set<size_t> zeroCols_;
+public:
+    JacobiDeterminatException(const arma::mat& J);
+    const std::set<size_t>& zeroCols() const;
+};
+
+
+class NonConvergenceException
+: public Exception
+{
+public:
+    NonConvergenceException(int performedIterations);
+};
+
 arma::mat nonlinearSolveND(
     std::function<arma::mat(const arma::mat& x)> obj,
     const arma::mat& x0,
     double tol=1e-3, int nMaxIter=10000, double relax=1.0,
-    std::function<void(void)> perIterationCallback = std::function<void(void)>() );
+    std::function<void(const arma::mat&)> perIterationCallback
+        = std::function<void(const arma::mat&)>()
+    );
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
 

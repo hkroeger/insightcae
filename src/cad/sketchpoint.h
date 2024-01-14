@@ -19,11 +19,14 @@ class SketchPoint
     DatumPtr plane_;
     double x_, y_;
 
+    SketchPoint(DatumPtr plane, const arma::mat& xy, const std::string& layerName = std::string());
+    SketchPoint(DatumPtr plane, double x, double y, const std::string& layerName = std::string());
+
 public:
     declareType("SketchPoint");
 
-    SketchPoint(DatumPtr plane, const arma::mat& xy, const std::string& layerName = std::string());
-    SketchPoint(DatumPtr plane, double x, double y, const std::string& layerName = std::string());
+    CREATE_FUNCTION(SketchPoint);
+
     void setCoords2D(double x, double y);
     arma::mat coords2D() const;
     arma::mat value() const override;
@@ -46,6 +49,8 @@ public:
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const SketchPoint& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
 

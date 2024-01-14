@@ -44,7 +44,7 @@ void IQVTKOrientBackgroundImage::selectedNextPoint(const arma::mat &p)
             orientationSelected(os_);
         }
 
-        actionIsFinished();
+        actionIsFinished(true);
     }
 }
 

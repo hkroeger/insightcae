@@ -144,6 +144,15 @@ void IQVTKFixedPoint::operator=(const ConstrainedSketchEntity& other)
     operator=(dynamic_cast<const IQVTKFixedPoint&>(other));
 }
 
+insight::cad::ConstrainedSketchEntityPtr IQVTKFixedPoint::clone() const
+{
+    auto cl=IQVTKFixedPoint::create( p_, layerName() );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
+}
+
 void IQVTKFixedPoint::operator=(const IQVTKFixedPoint& other)
 {
     p_=other.p_;

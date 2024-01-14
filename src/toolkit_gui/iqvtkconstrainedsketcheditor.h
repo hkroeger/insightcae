@@ -71,7 +71,7 @@ private Q_SLOTS:
 public:
     IQVTKConstrainedSketchEditor(
             IQVTKCADModel3DViewer& viewer,
-            insight::cad::ConstrainedSketchPtr sketch,
+            const insight::cad::ConstrainedSketch& sketch,
             const insight::ParameterSet& defaultGeometryParameters,
             IQCADModel3DViewer::SetSketchEntityAppearanceCallback setActorAppearance
             );

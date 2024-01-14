@@ -36,7 +36,10 @@ class Line
     VectorPtr p0_, p1_;
     bool second_is_dir_;
 
-    Line ( VectorPtr p0, VectorPtr p1, bool second_is_dir=false, const std::string& layerName=std::string() );
+    Line (
+        VectorPtr p0, VectorPtr p1,
+        bool second_is_dir=false,
+        const std::string& layerName=std::string() );
 
     size_t calcHash() const override;
     void build() override;
@@ -58,15 +61,21 @@ public:
         ConstrainedSketchScriptBuffer& script,
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
-    static void addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf);
+    static void addParserRule(
+        ConstrainedSketchGrammar& ruleset,
+        MakeDefaultGeometryParametersFunction mdpf);
 
-    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
+    dependencies() const override;
+
     void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const Line& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
 

@@ -23,11 +23,11 @@ int main(int argc, char* argv[])
             auto sk = std::dynamic_pointer_cast<ConstrainedSketch>(
                 ConstrainedSketch::create(pl));
 
-            auto p1 = std::make_shared<SketchPoint>(pl, 0, 0);
+            auto p1 = SketchPoint::create(pl, 0, 0);
             sk->insertGeometry(p1);
-            auto p2 = std::make_shared<SketchPoint>(pl, 1, 0);
+            auto p2 = SketchPoint::create(pl, 1, 0);
             sk->insertGeometry(p2);
-            auto p3 = std::make_shared<SketchPoint>(pl, 1, 1);
+            auto p3 = SketchPoint::create(pl, 1, 1);
             sk->insertGeometry(p3);
 
             auto l1 = Line::create(p1, p2, false);
@@ -140,16 +140,17 @@ int main(int argc, char* argv[])
             "incomplete restore!" );
 
     }
-    catch (const std::exception& e)
-    {
-        std::cerr<<e.what()<<std::endl;
-        return -1;
-    }
     catch ( const boost::spirit::qi::expectation_failure<std::string::iterator>& e )
     {
         std::ostringstream os;
         os << e.what_;
         return -2;
     }
+    catch (const std::exception& e)
+    {
+        std::cerr<<e.what()<<std::endl;
+        return -1;
+    }
+
     return 0;
 }

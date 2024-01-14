@@ -121,6 +121,8 @@ public:
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const FixedAngleConstraint& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
 
@@ -155,6 +157,8 @@ public:
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const LinkedAngleConstraint& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
 

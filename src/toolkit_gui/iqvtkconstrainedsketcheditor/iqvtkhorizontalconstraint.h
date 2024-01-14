@@ -11,7 +11,9 @@ class IQVTKHorizontalConstraint
 {
     std::shared_ptr<insight::cad::Line> line_;
 
-    IQVTKHorizontalConstraint(std::shared_ptr<insight::cad::Line> line, const std::string& layerName = std::string());
+    IQVTKHorizontalConstraint(
+        std::shared_ptr<insight::cad::Line> line,
+        const std::string& layerName = std::string());
 
 public:
     declareType("HorizontalConstraint");
@@ -40,6 +42,8 @@ public:
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const IQVTKHorizontalConstraint& other);
+
+    insight::cad::ConstrainedSketchEntityPtr clone() const override;
 };
 
 

@@ -456,10 +456,12 @@ public:
 
     void doSketchOnPlane(insight::cad::DatumPtr plane) override;
     void editSketch(
-            insight::cad::ConstrainedSketchPtr sk,
-            const insight::ParameterSet& defaultGeometryParameters,
-            SetSketchEntityAppearanceCallback saac,
-            SketchCompletionCallback scc ) override;
+        const insight::cad::ConstrainedSketch& sk,
+        const insight::ParameterSet& defaultGeometryParameters,
+        SetSketchEntityAppearanceCallback saac,
+        SketchCompletionCallback onAccept,
+        SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
+        ) override;
 
 protected:
     void mouseDoubleClickEvent(QMouseEvent* e) override;

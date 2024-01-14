@@ -15,8 +15,8 @@ class IQVTKPointOnCurveConstraint
     std::shared_ptr<insight::cad::Feature> curve_;
 
     IQVTKPointOnCurveConstraint(
-        std::shared_ptr<insight::cad::SketchPoint> p_,
-        std::shared_ptr<insight::cad::Feature> curve_,
+        std::shared_ptr<insight::cad::SketchPoint> p,
+        std::shared_ptr<insight::cad::Feature> curve,
         const std::string& layerName = std::string() );
 
 public:
@@ -44,6 +44,8 @@ public:
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const IQVTKPointOnCurveConstraint& other);
+
+    insight::cad::ConstrainedSketchEntityPtr clone() const override;
 };
 
 

@@ -115,6 +115,8 @@ public:
     void setDimLineOffset(const arma::mat& p);
     double relativeArrowSize() const override;
 
+    VectorPtr planeNormal() const;
+
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const DistanceConstraint& other);
 };
@@ -125,8 +127,6 @@ public:
 class FixedDistanceConstraint
     : public DistanceConstraint
 {
-    VectorPtr planeNormal_;
-
 
     FixedDistanceConstraint(
         VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
@@ -151,6 +151,8 @@ public:
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const FixedDistanceConstraint& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
 
@@ -159,7 +161,6 @@ public:
 class LinkedDistanceConstraint
     : public DistanceConstraint
 {
-    VectorPtr planeNormal_;
 
     std::string distExpr_;
     ScalarPtr distance_;
@@ -190,6 +191,8 @@ public:
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const LinkedDistanceConstraint& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
 

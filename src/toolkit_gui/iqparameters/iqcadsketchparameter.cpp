@@ -2,6 +2,7 @@
 
 #include "boost/signals2/connection.hpp"
 #include "boost/signals2/shared_connection_block.hpp"
+#include "constrainedsketch.h"
 #include "iqparametersetmodel.h"
 #include "iqcadmodel3dviewer.h"
 #include "iqcaditemmodel.h"
@@ -101,7 +102,7 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
         auto sk = p.featureGeometryRef();
 
         viewer->editSketch(
-            sk,
+            *sk,
             p.defaultGeometryParameters(),
 
 #warning replace!!
@@ -151,20 +152,27 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
                 }
             },
 
-            [this,sk,teScript]()
+            [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
             {
-                std::ostringstream os;
-                sk->generateScript(os);
                 auto& tp = dynamic_cast<insight::CADSketchParameter&>(this->parameterRef());
 
-                tp.setUpdateValueSignalBlockage(true);
-                tp.setScript(os.str());
-                tp.setUpdateValueSignalBlockage(false);
+                {
+                    auto blocker = parameterRef().blockUpdateValueSignal();
+                    *sk = *accSk;
+
+                    std::ostringstream os;
+                    sk->generateScript(os);
+
+                    tp.setScript(os.str());
+                }
+
                 tp.triggerValueChanged();
 
                 teScript->document()->setPlainText(
                     QString::fromStdString(tp.script()) );
-            }
+            },
+
+            [](insight::cad::ConstrainedSketchPtr) {} // on cancel: just nothing to do
 
             );
     };

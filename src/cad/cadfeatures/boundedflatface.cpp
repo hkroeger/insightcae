@@ -130,6 +130,9 @@ void BoundedFlatFace::build()
         }
     }
 
+    if (edgs.Size()<2)
+        throw insight::Exception("insufficient number of edges (%d)", edgs.Size());
+
     BRepBuilderAPI_MakeWire w;
     w.Add(edgs);
 

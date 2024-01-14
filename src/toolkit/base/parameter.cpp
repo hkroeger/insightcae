@@ -24,10 +24,13 @@
 #include <iostream>
 
 #include <iterator>
+#include <memory>
 #include "boost/algorithm/string/trim.hpp"
 
 #include "base/parameterset.h"
 #include "base/rapidxml.h"
+#include "base/cppextensions.h"
+
 #include "rapidxml/rapidxml_print.hpp"
 
 using namespace std;
@@ -631,7 +634,26 @@ Parameter::const_iterator Parameter::end() const
 
 Parameter::const_iterator Parameter::cend() const
 {
-  return const_iterator(*this, nChildren());
+    return const_iterator(*this, nChildren());
+}
+
+
+
+Parameter::UpdateValueSignalBlockage::UpdateValueSignalBlockage(Parameter &p)
+    : blockedParameter(p)
+{
+    blockedParameter.setUpdateValueSignalBlockage(true);
+}
+
+Parameter::UpdateValueSignalBlockage::~UpdateValueSignalBlockage()
+{
+    blockedParameter.setUpdateValueSignalBlockage(false);
+}
+
+
+std::unique_ptr<Parameter::UpdateValueSignalBlockage> Parameter::blockUpdateValueSignal()
+{
+    return std::make_unique<UpdateValueSignalBlockage>(*this);
 }
 
 
@@ -684,6 +706,8 @@ void stringToValue(const std::string& s, arma::mat& v)
 
   v=arma::mat(vals.data(), vals.size(), 1);
 }
+
+
 
 
 

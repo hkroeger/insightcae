@@ -24,6 +24,7 @@
 
 #include "toolkit_export.h"
 
+#include <exception>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -238,6 +239,7 @@ void displayFramed(const std::string& title, const std::string& msg, char titleC
 
 
 void Warning(std::string msgfmt, ...);
+void Warning(const std::exception& ex);
 
 
 class UnhandledExceptionHandling

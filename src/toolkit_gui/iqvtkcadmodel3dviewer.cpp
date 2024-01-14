@@ -1,4 +1,5 @@
 #include "iqvtkcadmodel3dviewer.h"
+#include "constrainedsketch.h"
 #include "iqcaditemmodel.h"
 #include "iscadmetatyperegistrator.h"
 #include "postprocactionvisualizer.h"
@@ -444,6 +445,8 @@ void IQVTKCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
 }
 
 
+
+
 std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEntity entity) const
 {
     if (const auto * vertex =
@@ -538,14 +541,38 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
              boost::get<insight::cad::FeaturePtr>(&entity))
     {
         auto feat = *featurePtr;
-        auto shape = vtkSmartPointer<ivtkOCCShape>::New();
-        shape->SetShape( feat->shape() );
+        if (feat->topologicalProperties().onlyEdges())
+        {
+            // if shape consists only of edges,
+            // create a set of actors for each edge
+            // to be able to pick locations inside of
+            // a possible edge loop without
+            // triggering a selection
+            std::vector<vtkSmartPointer<vtkProp> > actors;
+            for (TopExp_Explorer ex(feat->shape(),TopAbs_EDGE); ex.More(); ex.Next())
+            {
+                auto shape = vtkSmartPointer<ivtkOCCShape>::New();
+                shape->SetShape( ex.Current() );
 
-        auto actor = vtkSmartPointer<vtkActor>::New();
-        actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
-        actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
+                auto actor = vtkSmartPointer<vtkActor>::New();
+                actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+                actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
 
-        return {actor};
+                actors.push_back(actor);
+            }
+            return actors;
+        }
+        else
+        {
+            auto shape = vtkSmartPointer<ivtkOCCShape>::New();
+            shape->SetShape( feat->shape() );
+
+            auto actor = vtkSmartPointer<vtkActor>::New();
+            actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+            actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
+            return {actor};
+        }
+
     }
     else if (const auto *ppPtr =
              boost::get<insight::cad::PostprocActionPtr>(&entity))
@@ -1854,14 +1881,14 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
     {
         auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
                     insight::cad::ConstrainedSketch::create(plane));
-        editSketch(sk, insight::ParameterSet(),
+        editSketch(*sk, insight::ParameterSet(),
                    [](const insight::ParameterSet&, vtkProperty* actprops)
                    {
                        actprops->SetColor(1,0,0);
                        actprops->SetLineWidth(2);
                    },
-                   [this,name,sk]() {
-                        cadmodel()->addModelstep(name.toStdString(), sk, false);
+            [this,name](insight::cad::ConstrainedSketchPtr editedSk) {
+                        cadmodel()->addModelstep(name.toStdString(), editedSk, false);
                         cadmodel()->setStaticModelStep(name.toStdString(), true);
                     }
             );
@@ -1871,10 +1898,11 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
 
 
 void IQVTKCADModel3DViewer::editSketch(
-    insight::cad::ConstrainedSketchPtr psk,
+    const insight::cad::ConstrainedSketch& psk,
     const insight::ParameterSet& defaultGeometryParameters,
     SetSketchEntityAppearanceCallback saac,
-    SketchCompletionCallback scc )
+    SketchCompletionCallback onAccept,
+    SketchCompletionCallback onCancel )
 {
     if (isDefaultAction())
     {
@@ -1884,11 +1912,17 @@ void IQVTKCADModel3DViewer::editSketch(
             defaultGeometryParameters,
             saac );
 
+        insight::cad::ConstrainedSketchPtr skePtr=*ske;
 
-        if (scc)
-        {
-            ske->actionIsFinished.connect(scc);
-        }
+        ske->actionIsFinished.connect(
+            [onAccept,onCancel,skePtr](bool accepted)
+            {
+                if (accepted)
+                    onAccept(skePtr);
+                else
+                    onCancel(skePtr);
+            }
+        );
 
         launchAction(std::move(ske));
     }

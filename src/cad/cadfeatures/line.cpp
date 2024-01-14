@@ -275,6 +275,21 @@ void Line::operator=(const ConstrainedSketchEntity& other)
 
 
 
+ConstrainedSketchEntityPtr Line::clone() const
+{
+    auto cl=Line::create(
+        p0_, p1_,
+        second_is_dir_,
+        layerName() );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
+}
+
+
+
+
 void Line::operator=(const Line& other)
 {
     p0_=other.p0_;

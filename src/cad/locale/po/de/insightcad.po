@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-08 13:22+0100\n"
+"POT-Creation-Date: 2024-01-12 22:18+0100\n"
 "PO-Revision-Date: 2023-07-03 13:11+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -36,7 +36,7 @@ msgstr ""
 "Erzeugt einen Kreisbogen zwischen den Punkten p0 und p1 durch einen "
 "mittleren Punkt pm"
 
-#: cadfeatures/airfoil.cpp:722 cadfeatures/boundedflatface.cpp:162
+#: cadfeatures/airfoil.cpp:722 cadfeatures/boundedflatface.cpp:165
 #: cadfeatures/nacafourdigit.cpp:234 cadfeatures/gear.cpp:182
 msgid "Failed to generate planar face!"
 msgstr ""
@@ -137,7 +137,7 @@ msgstr ""
 msgid "Only %d out of %d given edges were valid!"
 msgstr ""
 
-#: cadfeatures/boundedflatface.cpp:238
+#: cadfeatures/boundedflatface.cpp:241
 msgid ""
 "Creates a flat face from a number of edges. Edges are taken from one or more "
 "features or from one or more edge selection sets."

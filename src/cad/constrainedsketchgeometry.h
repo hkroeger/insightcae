@@ -84,6 +84,9 @@ public:
 
     virtual void operator=(const ConstrainedSketchEntity& other);
 
+
+    virtual ConstrainedSketchEntityPtr clone() const =0;
+
 };
 
 

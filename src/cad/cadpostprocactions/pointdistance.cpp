@@ -159,7 +159,8 @@ size_t DistanceConstraint::calcHash() const
 
 
 DistanceConstraint::DistanceConstraint(
-    VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
+    VectorPtr p1, VectorPtr p2,
+    VectorPtr planeNormal,
     const std::string& layerName,
     VectorPtr distanceAlong)
     : ConstrainedSketchEntity(layerName),
@@ -272,6 +273,13 @@ double DistanceConstraint::relativeArrowSize() const
 
 
 
+VectorPtr DistanceConstraint::planeNormal() const
+{
+    return planeNormal_;
+}
+
+
+
 
 void DistanceConstraint::operator=(const ConstrainedSketchEntity& other)
 {
@@ -285,6 +293,7 @@ void DistanceConstraint::operator=(const DistanceConstraint& other)
 {
     Distance::operator=(other);
     ConstrainedSketchEntity::operator=(other);
+    planeNormal_=other.planeNormal_;
 }
 
 
@@ -397,6 +406,19 @@ void FixedDistanceConstraint::addParserRule(
 void FixedDistanceConstraint::operator=(const ConstrainedSketchEntity& other)
 {
     operator=(dynamic_cast<const FixedDistanceConstraint&>(other));
+}
+
+
+
+ConstrainedSketchEntityPtr FixedDistanceConstraint::clone() const
+{
+    auto cl=FixedDistanceConstraint::create(
+        p1_, p2_, planeNormal(),
+        layerName(), distanceAlong_ );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
 }
 
 
@@ -525,6 +547,20 @@ void LinkedDistanceConstraint::addParserRule(
 void LinkedDistanceConstraint::operator=(const ConstrainedSketchEntity& other)
 {
     operator=(dynamic_cast<const LinkedDistanceConstraint&>(other));
+}
+
+ConstrainedSketchEntityPtr LinkedDistanceConstraint::clone() const
+{
+    auto cl=LinkedDistanceConstraint::create(
+        p1_, p2_,
+        distance_, planeNormal(),
+        layerName(),
+        distExpr_,
+        distanceAlong_ );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
 }
 
 

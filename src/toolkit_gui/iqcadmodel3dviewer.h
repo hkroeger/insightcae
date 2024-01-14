@@ -23,7 +23,7 @@ class TOOLKIT_GUI_EXPORT IQCADModel3DViewer
 public:
     typedef std::function<void(const insight::ParameterSet& seps, vtkProperty* actprops)>
         SetSketchEntityAppearanceCallback;
-    typedef std::function<void()>
+    typedef std::function<void(insight::cad::ConstrainedSketchPtr)>
         SketchCompletionCallback;
 
 
@@ -128,10 +128,12 @@ public Q_SLOT:
 
     virtual void doSketchOnPlane(insight::cad::DatumPtr plane) =0;
     virtual void editSketch(
-            insight::cad::ConstrainedSketchPtr sketch,
+            const insight::cad::ConstrainedSketch& sketch,
             const insight::ParameterSet& defaultGeometryParameters,
             SetSketchEntityAppearanceCallback saac,
-            SketchCompletionCallback scc ) =0;
+            SketchCompletionCallback onAccept,
+            SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
+        ) =0;
 
 Q_SIGNALS:
     void appendToNotepad(const QString& text);

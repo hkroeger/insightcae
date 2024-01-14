@@ -32,21 +32,21 @@ void CADSketchParameter::resetCADGeometry()
     CADGeometry_->geometryAdded.connect(
         cad::ConstrainedSketch::GeometryEditSignal::slot_type(
             [this](int) {
-                childValueChanged();
+                if (!valueChangeSignalBlocked_) childValueChanged();
             }
             ).track_foreign(CADGeometry_)
         );
     CADGeometry_->geometryRemoved.connect(
         cad::ConstrainedSketch::GeometryEditSignal::slot_type(
             [this](int) {
-                childValueChanged();
+                if (!valueChangeSignalBlocked_) childValueChanged();
             }
             ).track_foreign(CADGeometry_)
         );
     CADGeometry_->geometryChanged.connect(
         cad::ConstrainedSketch::GeometryEditSignal::slot_type(
             [this](int) {
-                childValueChanged();
+                if (!valueChangeSignalBlocked_) childValueChanged();
             }
             ).track_foreign(CADGeometry_)
         );

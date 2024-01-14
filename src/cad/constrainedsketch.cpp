@@ -1,11 +1,15 @@
 #include "constrainedsketch.h"
 
+#include "base/exception.h"
+#include "base/linearalgebra.h"
 #include "base/tools.h"
 
 #include "constrainedsketchgrammar.h"
 
 #include "parser.h"
 #include "datum.h"
+#include <memory>
+#include <string>
 
 
 namespace insight {
@@ -35,11 +39,36 @@ size_t ConstrainedSketch::calcHash() const
 
 ConstrainedSketch::ConstrainedSketch(DatumPtr pl)
     : pl_(pl),
-    solverSettings_({rootND, 1e-20, 1., 1000})
+    solverSettings_({rootND, insight::SMALL, 1., 1000})
 {}
 
 
+ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
+    : pl_(other.pl_),
+    solverSettings_(other.solverSettings_)
+{
+    std::map<
+        std::comparable_weak_ptr<ConstrainedSketchEntity>,  // in original
+        std::shared_ptr<ConstrainedSketchEntity> // in cloned
+        > cem;
 
+    // clone entities
+    for (const auto& g: other.geometry_)
+    {
+        auto clone = g.second->clone();
+        geometry_.insert({ g.first, clone });
+        cem[g.second]=clone;
+    }
+
+    // replace (internal) references
+    for (auto& g: geometry_)
+    {
+        for (const auto& d: cem)
+        {
+            g.second->replaceDependency(d.first, d.second);
+        }
+    }
+}
 
 
 
@@ -50,6 +79,9 @@ std::shared_ptr<ConstrainedSketch> ConstrainedSketch::createFromStream(
     sk->readFromStream(in);
     return sk;
 }
+
+
+
 
 void ConstrainedSketch::readFromStream(istream &in, const ParameterSet &geomPS)
 {
@@ -87,6 +119,9 @@ const DatumPtr& ConstrainedSketch::plane() const
 {
     return pl_;
 }
+
+
+
 
 VectorPtr ConstrainedSketch::sketchPlaneNormal() const
 {
@@ -126,7 +161,8 @@ ConstrainedSketch::findUnusedID(
 
 
 
-void ConstrainedSketch::insertGeometry(
+ConstrainedSketch::GeometryMap::key_type
+ConstrainedSketch::insertGeometry(
     ConstrainedSketchEntityPtr geomEntity,
     boost::variant<boost::blank,GeometryMap::key_type> keyOrBlank )
 {
@@ -151,11 +187,14 @@ void ConstrainedSketch::insertGeometry(
         *i->second = *geomEntity;
         geometryChanged(key);
     }
-
+    return key;
 }
 
 
-void ConstrainedSketch::setExternalReference(
+
+
+ConstrainedSketch::GeometryMap::key_type
+ConstrainedSketch::setExternalReference(
     std::shared_ptr<ExternalReference> extRef,
     boost::variant<boost::blank,GeometryMap::key_type> keyOrBlank )
 {
@@ -180,7 +219,9 @@ void ConstrainedSketch::setExternalReference(
         *i->second = *extRef;
         geometryChanged(key);
     }
+    return key;
 }
+
 
 
 
@@ -189,6 +230,9 @@ void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
     geometry_.erase(geomEntityId);
     geometryRemoved(geomEntityId);
 }
+
+
+
 
 void ConstrainedSketch::eraseGeometry(ConstrainedSketchEntityPtr geomEntity)
 {
@@ -200,10 +244,14 @@ void ConstrainedSketch::eraseGeometry(ConstrainedSketchEntityPtr geomEntity)
 }
 
 
+
+
 size_t ConstrainedSketch::size() const
 {
     return geometry_.size();
 }
+
+
 
 
 void ConstrainedSketch::clear()
@@ -214,6 +262,8 @@ void ConstrainedSketch::clear()
         eraseGeometry( i->first );
     }
 }
+
+
 
 
 ConstrainedSketch::GeometryMap::const_iterator
@@ -228,15 +278,23 @@ ConstrainedSketch::findGeometry(
 }
 
 
+
+
 ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::begin() const
 {
     return geometry_.begin();
 }
 
+
+
+
 ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::end() const
 {
     return geometry_.end();
 }
+
+
+
 
 ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::cbegin() const
 {
@@ -244,10 +302,14 @@ ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::cbegin() const
 
 }
 
+
+
+
 ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::cend() const
 {
     return geometry_.cend();
 }
+
 
 
 
@@ -263,6 +325,9 @@ std::set<ConstrainedSketchEntityPtr> ConstrainedSketch::filterGeometryByParamete
     return ret;
 }
 
+
+
+
 void ConstrainedSketch::operator=(const ConstrainedSketch &o)
 {
     Feature::operator=(o);
@@ -274,30 +339,67 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
         std::inserter(remaining, remaining.begin()),
         [](const GeometryMap::value_type &v) { return v.first; } );
 
-    for (const auto& g: o.geometry_)
+    std::map<
+        std::comparable_weak_ptr<ConstrainedSketchEntity>,  // obj in other
+        std::shared_ptr<ConstrainedSketchEntity> // corresponding obj in this
+        > cem;
+
+    // assign or add geometry from other sketch
+    for (
+        auto og = o.geometry_.begin();
+        og != o.geometry_.end();
+        og++
+        )
     {
-        auto i=geometry_.find(g.first);
-        if (i!=geometry_.end())
+        auto curId = og->first;
+        auto g = geometry_.find(curId);
+        if (
+            (g!=geometry_.end())
+            &&
+            (typeid(*g->second)==typeid(*og->second))
+           )
         {
-            *i->second = *g.second;
-            geometryChanged(i->first);
-            remaining.erase(i->first);
+            *g->second = *og->second;
+            geometryChanged(curId);
+            remaining.erase(curId);
+            cem[og->second]=g->second;
         }
         else
         {
-            insertGeometry(i->second, i->first);
+            if (g!=geometry_.end()) // existing, but of different type
+            {
+                eraseGeometry(curId);
+            }
+            auto mycopy=og->second->clone();
+            insertGeometry(mycopy, curId);
+            cem[og->second]=mycopy;
         }
     }
     for (auto i: remaining)
     {
         eraseGeometry(i);
     }
+
+    // redirect any reference to other sketch entity to this
+    for (auto& g: geometry_)
+    {
+        for (const auto& d: cem)
+        {
+            g.second->replaceDependency(d.first, d.second);
+        }
+    }
 }
+
+
+
 
 const ConstrainedSketch::SolverSettings& ConstrainedSketch::solverSettings() const
 {
     return solverSettings_;
 }
+
+
+
 
 void ConstrainedSketch::changeSolverSettings(const ConstrainedSketch::SolverSettings& ss)
 {
@@ -306,25 +408,30 @@ void ConstrainedSketch::changeSolverSettings(const ConstrainedSketch::SolverSett
 
 
 
+
 void ConstrainedSketch::resolveConstraints(
     std::function<void(void)> perIterationCallback,
     ProgressDisplayer& progress
     )
 {
-    struct LocalIndexMapping { insight::cad::ConstrainedSketchEntity* entity; int iLocal; };
+    struct LocalIndexMapping {
+        insight::cad::ConstrainedSketchEntity* entity;
+        int iLocal;
+        GeometryMap::const_iterator entityIt;
+    };
     std::vector<LocalIndexMapping> dofs, constrs;
 
-    for (auto& ge: geometry_)
+    for (auto ge=geometry_.begin(); ge!=geometry_.end(); ge++)
     {
-        auto &e=ge.second;
+        auto &e=ge->second;
 
         for (int i=0; i<e->nDoF(); ++i)
         {
-            dofs.push_back({e.get(), i});
+            dofs.push_back({e.get(), i, ge});
         }
         for (int i=0; i<e->nConstraints(); ++i)
         {
-            constrs.push_back({e.get(), i});
+            constrs.push_back({e.get(), i, ge});
         }
     }
 
@@ -408,7 +515,9 @@ void ConstrainedSketch::resolveConstraints(
                 insight::dbg()<<"constraint "<<i<<" : idx "<<constr.iLocal<<" of "<<constr.entity->type()<<endl;
             }
 
-            xsol = nonlinearSolveND(
+            try
+            {
+             xsol = nonlinearSolveND(
                 [&](const arma::mat& x) -> arma::mat
                 {
 
@@ -428,16 +537,34 @@ void ConstrainedSketch::resolveConstraints(
                     return Qs;
                 },
                 x0, solverSettings_.tolerance_,
-                solverSettings_.maxIter_, solverSettings_.relax_,
-                [](){}
-                /*perIterationCallback*/
+                solverSettings_.maxIter_, solverSettings_.relax_
                 );
+            }
+            catch (insight::JacobiDeterminatException& ex)
+            {
+                std::set<std::string> ucdofs;
+                for (int i=0; i<dofs.size(); ++i)
+                {
+                    auto& dm=dofs[i];
+                    if (ex.zeroCols().count(i))
+                    {
+                        auto i=std::distance(geometry_.cbegin(), dm.entityIt);
+                        ucdofs.insert(boost::lexical_cast<std::string>(i));
+                    }
+                }
+
+                throw insight::Exception(
+                    "solve failed because of unconstrained DoFs\n"
+                    "enties with unconstrained DoFs are: %s",
+                    boost::algorithm::join(ucdofs, ", ").c_str());
+            }
         }
         break;
     }
 
     setX(xsol);
 }
+
 
 
 
@@ -451,6 +578,9 @@ void ConstrainedSketchScriptBuffer::insertCommandFor(int entityLabel, const std:
     }
 }
 
+
+
+
 void ConstrainedSketchScriptBuffer::write(ostream &os)
 {
     for (auto sl=script_.begin(); sl!=script_.end(); ++sl)
@@ -461,6 +591,8 @@ void ConstrainedSketchScriptBuffer::write(ostream &os)
         os<<std::endl;
     }
 }
+
+
 
 
 void ConstrainedSketch::insertrule(parser::ISCADParser& ruleset)
@@ -502,13 +634,16 @@ void ConstrainedSketch::insertrule(parser::ISCADParser& ruleset)
 }
 
 
+
+
 void ConstrainedSketch::generateScript(ostream &os) const
 {
     std::map<const ConstrainedSketchEntity*, int> entityLabels;
 
-    for (auto& e: *this)
+    for (const auto& se: geometry_)
     {
-        entityLabels[e.second.get()]=e.first;
+        entityLabels[se.second.get()]
+            = se.first;
     }
 //    int i=0;
 //    for (const auto& se: geometry_)
@@ -519,11 +654,13 @@ void ConstrainedSketch::generateScript(ostream &os) const
     ConstrainedSketchScriptBuffer sb;
     for (const auto& se: geometry_)
     {
-        se.second->generateScriptCommand(sb, entityLabels);
+        se.second->generateScriptCommand(
+            sb, entityLabels);
     }
 
     sb.write(os);
 }
+
 
 
 
@@ -535,6 +672,7 @@ std::string ConstrainedSketch::generateScriptCommand() const
     os << ')';
     return os.str();
 }
+
 
 
 
@@ -559,6 +697,8 @@ arma::mat ConstrainedSketch::sketchBoundingBox() const
 }
 
 
+
+
 std::set<std::string> ConstrainedSketch::layers() const
 {
     std::set<std::string> l;
@@ -571,6 +711,8 @@ std::set<std::string> ConstrainedSketch::layers() const
 }
 
 
+
+
 void ConstrainedSketch::build()
 {
     ExecTimer t("ConstrainedSketch::build() ["+featureSymbolName()+"]");
@@ -580,7 +722,14 @@ void ConstrainedSketch::build()
         if (!pl_->providesPlanarReference())
             throw insight::Exception("Sketch: Planar reference required!");
 
-        resolveConstraints();
+        try
+        {
+            resolveConstraints();
+        }
+        catch (insight::NonConvergenceException& ex)
+        {
+            insight::Warning(ex);
+        }
 
         BRep_Builder bb;
         TopoDS_Compound result;
@@ -603,6 +752,7 @@ void ConstrainedSketch::build()
         this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
     }
 }
+
 
 
 

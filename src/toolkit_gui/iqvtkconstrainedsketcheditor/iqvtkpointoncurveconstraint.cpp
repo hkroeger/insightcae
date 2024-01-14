@@ -176,7 +176,7 @@ void IQVTKPointOnCurveConstraint::replaceDependency(
 {
     if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(newEntity))
     {
-        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p_) == entity)
+        if ( std::dynamic_pointer_cast<ConstrainedSketchEntity>(p_) == entity )
         {
             p_ = p;
         }
@@ -196,6 +196,17 @@ void IQVTKPointOnCurveConstraint::replaceDependency(
 void IQVTKPointOnCurveConstraint::operator=(const ConstrainedSketchEntity& other)
 {
     operator=(dynamic_cast<const IQVTKPointOnCurveConstraint&>(other));
+}
+
+
+
+insight::cad::ConstrainedSketchEntityPtr IQVTKPointOnCurveConstraint::clone() const
+{
+    auto cl=IQVTKPointOnCurveConstraint::create( p_, curve_, layerName() );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
 }
 
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-08 13:22+0100\n"
+"POT-Creation-Date: 2024-01-12 22:18+0100\n"
 "PO-Revision-Date: 2023-10-25 10:57+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -33,7 +33,7 @@ msgstr ""
 msgid "Creates an arc between point p0 and p1 through intermediate point pm."
 msgstr "Creates an arc between point p0 and p1 through intermediate point pm."
 
-#: cadfeatures/airfoil.cpp:722 cadfeatures/boundedflatface.cpp:162
+#: cadfeatures/airfoil.cpp:722 cadfeatures/boundedflatface.cpp:165
 #: cadfeatures/nacafourdigit.cpp:234 cadfeatures/gear.cpp:182
 msgid "Failed to generate planar face!"
 msgstr "Failed to generate planar face!"
@@ -149,7 +149,7 @@ msgstr "No valid edge given!"
 msgid "Only %d out of %d given edges were valid!"
 msgstr "Only %d out of %d given edges were valid!"
 
-#: cadfeatures/boundedflatface.cpp:238
+#: cadfeatures/boundedflatface.cpp:241
 msgid ""
 "Creates a flat face from a number of edges. Edges are taken from one or more "
 "features or from one or more edge selection sets."

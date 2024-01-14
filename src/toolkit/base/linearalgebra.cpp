@@ -36,6 +36,7 @@
 #include "gsl/gsl_multiroots.h"
 
 
+
 using namespace arma;
 using namespace boost;
 
@@ -71,6 +72,7 @@ bool operator<(const arma::mat& v1, const arma::mat& v2)
 namespace insight
 {
 
+const double VSMALL=1e-300;
 const double SMALL=1e-10;
 const double LSMALL=1e-6;
   
@@ -114,28 +116,28 @@ int GSLException::gsl_errno() const
     return gsl_errno_;
 }
 
-mat vec1(double x)
+arma::mat vec1(double x)
 {
-  mat v;
+    arma::mat v;
   v << x << endr;
   return v;
 }
 
-mat vec2(double x, double y)
+arma::mat vec2(double x, double y)
 {
-  mat v;
+    arma::mat v;
   v << x <<endr << y << endr;
   return v;
 }
 
-mat vec3(double x, double y, double z)
+arma::mat vec3(double x, double y, double z)
 {
-  mat v;
+    arma::mat v;
   v << x <<endr << y << endr << z <<endr;
   return v;
 }
 
-mat vec3FromComponents(const double* c)
+arma::mat vec3FromComponents(const double* c)
 {
     return vec3(c[0], c[1], c[2]);
 }
@@ -145,7 +147,7 @@ arma::mat vec3FromComponents(const float *c)
     return vec3(c[0], c[1], c[2]);
 }
 
-mat readVec3(std::istream& is)
+arma::mat readVec3(std::istream& is)
 {
     double c[3];
     is >> c[0] >> c[1] >> c[2];
@@ -172,7 +174,7 @@ arma::mat tensor3(
   double zx, double zy, double zz
 )
 {
-  mat v;
+    arma::mat v;
   v 
     << xx << xy <<  xz <<endr
     << yx << yy <<  yz <<endr
@@ -186,14 +188,14 @@ double* toArray(const arma::mat& v)
   return const_cast<double*>(v.memptr());
 }
 
-mat rotMatrix( double theta, mat u )
+arma::mat rotMatrix( double theta, arma::mat u )
 {
     double s=sin(theta);
     double c=cos(theta);
     double ux=u[0];
     double uy=u[1];
     double uz=u[2];
-    mat m;
+    arma::mat m;
     m << ux*ux+(1-ux*ux)*c << ux*uy*(1-c)-uz*s << ux*uz*(1-c)+uy*s << endr
       << ux*uy*(1-c)+uz*s << uy*uy+(1-uy*uy)*c << uy*uz*(1-c)-ux*s << endr
       << ux*uz*(1-c)-uy*s << uy*uz*(1-c)+ux*s << uz*uz+(1-uz*uz)*c << endr;
@@ -734,16 +736,25 @@ arma::mat nonlinearMinimizeND(
 
 
 
-arma::mat vec(const gsl_vector * x)
+arma::mat vec(const gsl_vector * x, boost::variant<boost::blank,double,arma::mat> replaceNaN)
 {
     arma::mat r = arma::zeros(x->size);
     for (size_t i=0; i<x->size; ++i)
     {
-      r(i) = gsl_vector_get(x, i);
+        r(i) = gsl_vector_get(x, i);
 
-      insight::assertion(
-          !std::isnan(r(i)),
-          "NaN at element %d", i);
+        if (std::isnan(r(i)))
+        {
+            if (const auto repl = boost::get<double>(&replaceNaN))
+                r(i)=*repl;
+            else if (const auto repl = boost::get<arma::mat>(&replaceNaN))
+                r(i)=(*repl)(i);
+            else
+                throw insight::Exception(
+                    "NaN at element %d", i);
+
+            insight::Warning("replaced NaN occurrence at index %d", i);
+        }
     }
     return r;
 }
@@ -764,16 +775,20 @@ void gsl_vector_set(const arma::mat& x, gsl_vector * xo)
     }
 }
 
+struct f_adapter_params {
+    std::function<arma::mat(const arma::mat&)> func;
+    arma::mat x0;
+};
 
 int f_adapter (const gsl_vector * x, void * p, gsl_vector * y)
 {
-    auto F = *reinterpret_cast<std::function<arma::mat(const arma::mat&)>*>(p);
+    auto F = *reinterpret_cast<f_adapter_params*>(p);
 
-    arma::mat vx = vec(x);
+    arma::mat vx = vec(x/*, F.x0*/);
 
     insight::dbg()<<"x="<<vx.t()<<std::endl;
 
-    arma::mat my = F( vx );
+    arma::mat my = F.func( vx );
 
     gsl_vector_set (my, y);
 
@@ -781,11 +796,12 @@ int f_adapter (const gsl_vector * x, void * p, gsl_vector * y)
 }
 
 
+
 arma::mat nonlinearSolveND(
     std::function<arma::mat(const arma::mat& x)> obj,
     const arma::mat& x0,
     double tol, int nMaxIter, double relax,
-    std::function<void(void)> perIterationCallback
+    std::function<void(const arma::mat&)> perIterationCallback
     )
 {
     const gsl_multiroot_fsolver_type *T;
@@ -795,7 +811,8 @@ arma::mat nonlinearSolveND(
     size_t n = x0.n_elem;
     size_t i, iter = 0;
 
-    gsl_multiroot_function f = {&f_adapter, n, &obj};
+    f_adapter_params fp{obj, x0};
+    gsl_multiroot_function f = {&f_adapter, n, &fp};
 
     gsl_vector *x = gsl_vector_alloc (n);
     gsl_vector * olditer_p = gsl_vector_alloc (n);
@@ -803,12 +820,43 @@ arma::mat nonlinearSolveND(
       gsl_vector_set (x, i, x0(i));
 
     //T = gsl_multiroot_fsolver_hybrids;
-    T = gsl_multiroot_fsolver_hybrid;
+    T = gsl_multiroot_fsolver_hybrids;
     s = gsl_multiroot_fsolver_alloc (T, n);
     gsl_multiroot_fsolver_set (s, &f, x);
 
-    gsl_vector_set_all (s->dx, 0.1);
-    //    print_state (iter, s);
+
+    typedef struct
+    {
+        size_t iter;
+        size_t ncfail;
+        size_t ncsuc;
+        size_t nslow1;
+        size_t nslow2;
+        double fnorm;
+        double delta;
+        gsl_matrix *J;
+        gsl_matrix *q;
+        gsl_matrix *r;
+        gsl_vector *tau;
+        gsl_vector *diag;
+        gsl_vector *qtf;
+        gsl_vector *newton;
+        gsl_vector *gradient;
+        gsl_vector *x_trial;
+        gsl_vector *f_trial;
+        gsl_vector *df;
+        gsl_vector *qtdf;
+        gsl_vector *rdx;
+        gsl_vector *w;
+        gsl_vector *v;
+    }
+    hybrid_state_t;
+    arma::mat J=insight::mat(static_cast<hybrid_state_t*>(s->state)->J);
+    if(fabs(arma::det(J))<SMALL)
+    {
+        throw insight::JacobiDeterminatException(J);
+    }
+
 
     do
     {
@@ -820,8 +868,8 @@ arma::mat nonlinearSolveND(
 
       //      print_state (iter, s);
 
-      if (status)   /* check if solver is stuck */
-        break;
+      if (status!=0)   /* check if solver is stuck */
+          throw insight::NonConvergenceException(iter);
 
       status =
           gsl_multiroot_test_residual (s->f, tol);
@@ -839,15 +887,18 @@ arma::mat nonlinearSolveND(
       }
 
       if (perIterationCallback)
-        perIterationCallback();
+      {
+        perIterationCallback(vec(s->x));
+      }
     }
     while (status == GSL_CONTINUE && iter < nMaxIter);
 
+    if (iter>=nMaxIter)
+        throw insight::NonConvergenceException(iter);
+
     printf ("status = %s\n", gsl_strerror (status));
 
-    arma::mat result=arma::zeros(n);
-    for (int i=0;i<n;++i)
-      result(i)=gsl_vector_get(s->x,i);
+    arma::mat result = vec(s->x);
 
     gsl_multiroot_fsolver_free (s);
     gsl_vector_free (x);
@@ -1408,6 +1459,44 @@ double stabilize(double value, double nonZeroThreshold)
     }
     return sign*m;
 }
+
+
+arma::mat mat(const gsl_matrix *m)
+{
+    arma::mat mo=arma::zeros(m->size1, m->size2);
+    for (size_t i=0; i<m->size1; i++)
+        for (size_t j=0; j<m->size2; j++)
+        {
+            mo(i,j)=gsl_matrix_get(m, i, j);
+        }
+    return mo;
+}
+
+
+JacobiDeterminatException::JacobiDeterminatException(const arma::mat& J)
+    : insight::Exception("jacobi determinant is zero"),
+    J_(J)
+{
+    for (size_t j=0; j<J.n_cols; j++)
+    {
+        if (arma::norm(J.col(j),2)<SMALL)
+            zeroCols_.insert(j);
+    }
+}
+
+const std::set<size_t> &JacobiDeterminatException::zeroCols() const
+{
+    return zeroCols_;
+}
+
+
+
+NonConvergenceException::NonConvergenceException(
+    int performedIterations)
+    : insight::Exception(
+        "the solver did not converge towards a solution after %d iterations",
+        performedIterations )
+{}
 
 
 

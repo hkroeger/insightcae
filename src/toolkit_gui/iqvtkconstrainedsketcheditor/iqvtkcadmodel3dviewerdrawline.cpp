@@ -97,7 +97,7 @@ IQVTKCADModel3DViewerDrawLine::applyWizards(
     }
 
     return {
-        std::make_shared<SketchPoint>(
+        SketchPoint::create(
             sketch().plane(),
             p22(0), p22(1) ), false, nullptr};
 }

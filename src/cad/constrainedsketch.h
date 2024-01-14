@@ -61,6 +61,7 @@ private:
     SolverSettings solverSettings_;
 
     ConstrainedSketch( DatumPtr pl );
+    ConstrainedSketch( const ConstrainedSketch& other );
 
     size_t calcHash() const override;
     void build() override;
@@ -69,10 +70,12 @@ public:
     // required to make boost::adaptors::index work
     using iterator = typename GeometryMap::iterator;
     using const_iterator = typename GeometryMap::const_iterator;
+    using value_type = typename GeometryMap::value_type;
 
     declareType("ConstrainedSketch");
 
     CREATE_FUNCTION(ConstrainedSketch);
+
     static std::shared_ptr<ConstrainedSketch> createFromStream(
         DatumPtr pl,
         std::istream& is,
@@ -88,10 +91,10 @@ public:
     GeometryMap::key_type findUnusedID(int direction=1) const;
 
     // addition
-    void insertGeometry(
+    GeometryMap::key_type insertGeometry(
         ConstrainedSketchEntityPtr geomEntity,
         boost::variant<boost::blank,GeometryMap::key_type> key = boost::blank() );
-    void setExternalReference(
+    GeometryMap::key_type setExternalReference(
         std::shared_ptr<ExternalReference> extRef,
         boost::variant<boost::blank,GeometryMap::key_type> key = boost::blank() );
 

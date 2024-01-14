@@ -419,18 +419,25 @@ void IQVTKConstrainedSketchEditor::solve()
 
 IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         IQVTKCADModel3DViewer& viewer,
-        insight::cad::ConstrainedSketchPtr sketch,
+        const insight::cad::ConstrainedSketch& sketch,
         const insight::ParameterSet& defaultGeometryParameters,
         IQCADModel3DViewer::SetSketchEntityAppearanceCallback sseac
 )
     : ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),
-      insight::cad::ConstrainedSketchPtr(sketch),
+      insight::cad::ConstrainedSketchPtr(
+          insight::cad::ConstrainedSketch::create<const ConstrainedSketch&>(sketch)),
       setActorAppearance_(sseac),
       defaultGeometryParameters_(defaultGeometryParameters)
 
 {
 
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
+
+    toolBar_->addAction(QPixmap(":/icons/icon_sketch_finish_accept.svg"), "Finish & Accept",
+                        std::bind(&IQVTKConstrainedSketchEditor::finishAction, this, true) );
+
+    toolBar_->addAction(QPixmap(":/icons/icon_sketch_finish_cancel.svg"), "Cancel",
+                        std::bind(&IQVTKConstrainedSketchEditor::finishAction, this, false) );
 
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawpoint.svg"), "Point",
                         this, &IQVTKConstrainedSketchEditor::drawPoint);
@@ -443,9 +450,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_solve.svg"), "Solve",
                         this, &IQVTKConstrainedSketchEditor::solve);
-
-    toolBar_->addAction(QPixmap(":/icons/icon_sketch_finish.svg"), "Finish",
-                        std::bind(&IQVTKConstrainedSketchEditor::finishAction, this) );
 
     toolBar_->addAction(
         "H",

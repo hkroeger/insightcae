@@ -7,7 +7,6 @@
         <file>icon_minusz.svg</file>
         <file>icon_minusy.svg</file>
         <file>icon_minusx.svg</file>
-        <file>icon_sketch_finish.svg</file>
         <file>icon_sketch_drawline.svg</file>
         <file>icon_sketch_solve.svg</file>
         <file>icon_distance.svg</file>
@@ -21,6 +20,8 @@
         <file>icon_distance_xf.svg</file>
         <file>icon_distance_y.svg</file>
         <file>icon_distance_yf.svg</file>
+        <file>icon_sketch_finish_cancel.svg</file>
+        <file>icon_sketch_finish_accept.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

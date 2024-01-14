@@ -27,6 +27,7 @@
 #include "base/linearalgebra.h"
 #include "base/exception.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <string>
@@ -349,7 +350,16 @@ public:
     const_iterator end() const;
     const_iterator cend() const;
 
+#ifndef SWIG
+    struct UpdateValueSignalBlockage
+    {
+        Parameter& blockedParameter;
+        UpdateValueSignalBlockage(Parameter& p);
+        ~UpdateValueSignalBlockage();
+    };
 
+    std::unique_ptr<UpdateValueSignalBlockage> blockUpdateValueSignal();
+#endif
 
     virtual void setUpdateValueSignalBlockage(bool block=true);
     void triggerValueChanged();

@@ -257,16 +257,16 @@ class ViewWidgetAction
 public:
   typedef std::shared_ptr<ViewWidgetAction> Ptr;
 
-    boost::signals2::signal<void()> actionIsFinished;
+    boost::signals2::signal<void(bool)> actionIsFinished;
     boost::signals2::signal<void(const QString&)> userPrompt;
 
 private:
   Ptr childAction_;
 
 protected:
-  virtual void finishAction()
+  virtual void finishAction(bool accepted=true)
   {
-      actionIsFinished(); //finished_=true;
+      actionIsFinished(accepted); //finished_=true;
   }
 
   virtual void launchChildAction(Ptr childAction)
@@ -280,7 +280,7 @@ protected:
       InputReceiver<Viewer>::registerChildReceiver( cPtr );
 
       childAction_->actionIsFinished.connect(
-          [this,cPtr]()
+          [this,cPtr](bool)
           {
               InputReceiver<Viewer>::removeChildReceiver(
                   cPtr );

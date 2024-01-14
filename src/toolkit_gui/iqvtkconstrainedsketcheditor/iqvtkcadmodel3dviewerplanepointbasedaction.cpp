@@ -17,7 +17,7 @@ IQVTKCADModel3DViewerPlanePointBasedAction
         pip3d );
 
     return {
-        std::make_shared<SketchPoint>(
+          SketchPoint::create(
             sketch().plane(), p2(0), p2(1) ),
         false, onFeature
     };
@@ -76,7 +76,7 @@ IQVTKCADModel3DViewerPlanePointBasedAction
                         sketch().plane()->plane(),
                         pip3d );
                     pointSelected({
-                        std::make_shared<SketchPoint>(
+                        SketchPoint::create(
                             sketch().plane(), p2(0), p2(1) ),
                         false,
                         std::dynamic_pointer_cast<insight::cad::Feature>(e.lock())

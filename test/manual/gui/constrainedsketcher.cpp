@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QToolBar>
 
+#include "constrainedsketch.h"
 #include "insightcaeapplication.h"
 #include "qinsighterror.h"
 
@@ -44,7 +45,7 @@ int main(int argc, char *argv[])
         [&]()
         {
             v->editSketch(
-                sketch,
+                *sketch,
                 insight::ParameterSet(),
                 [](const insight::ParameterSet&, vtkProperty* actprops)
                 {
@@ -55,7 +56,7 @@ int main(int argc, char *argv[])
                         sec.blueF() );
                     actprops->SetLineWidth(2);
                 },
-                [](){
+                [](insight::cad::ConstrainedSketchPtr editedSk){
                     // do nothing, just discard
                 }
             );

@@ -510,6 +510,12 @@ void Warning(std::string msgFmt, ...)
   WarningDispatcher::getCurrent().issue( msg );
 }
 
+
+void Warning(const std::exception& ex)
+{
+    Warning(ex.what());
+}
+
 void UnhandledExceptionHandling::handler()
 {
   std::cerr<<"Unhandled exception occurred!"<<std::endl;

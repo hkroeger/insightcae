@@ -1,5 +1,6 @@
 
 #include "base/parameters/subsetparameter.h"
+#include "constrainedsketch.h"
 #include "iqcaditemmodel.h"
 #include "iqcadmodel3dviewer.h"
 #include "iqparametersetmodel.h"
@@ -64,28 +65,34 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                 {
                     a=new QAction("Edit sketch...", &cm);
                     connect(a, &QAction::triggered,
-                            std::bind(
-                                &IQCADModel3DViewer::editSketch,
-                                viewer, psk,
-                                insight::ParameterSet(),
-                                [](const insight::ParameterSet&, vtkProperty* actprops)
-                                {
-                                    auto sec = QColorConstants::DarkCyan;
-                                    actprops->SetColor(
-                                        sec.redF(),
-                                        sec.greenF(),
-                                        sec.blueF() );
-                                    actprops->SetLineWidth(2);
-                                },
-                                [this,psk,name](){
-                                    // on finish
-                                    std::ostringstream so;
-                                    psk->generateScript(so);
-                                    Q_EMIT insertIntoNotebook(
-                                        QString::fromStdString(so.str()) );
-                                    // addModelstep(name.toStdString(), psk);
-                                    // setStaticModelStep(name.toStdString(), true);
-                                }) );
+                            [this,viewer,psk,name]()
+                            {
+                                viewer->editSketch(
+                                    *psk,
+                                    insight::ParameterSet(),
+
+                                    [](const insight::ParameterSet&, vtkProperty* actprops)
+                                    {
+                                        auto sec = QColorConstants::DarkCyan;
+                                        actprops->SetColor(
+                                            sec.redF(),
+                                            sec.greenF(),
+                                            sec.blueF() );
+                                        actprops->SetLineWidth(2);
+                                    },
+
+                                    [this,name](insight::cad::ConstrainedSketchPtr editedSk) // on accept
+                                    {
+                                        std::ostringstream so;
+                                        editedSk->generateScript(so);
+                                        Q_EMIT insertIntoNotebook(
+                                            QString::fromStdString(so.str()) );
+                                        // addModelstep(name.toStdString(), psk);
+                                        // setStaticModelStep(name.toStdString(), true);
+                                    }
+                                );
+                            }
+                        );
                     cm.addAction(a);
                 }
             }

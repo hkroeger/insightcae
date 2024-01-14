@@ -13,7 +13,7 @@ class ExternalReference
 {
     FeaturePtr extRef_;
 
-    ExternalReference ( FeaturePtr extRef );
+    ExternalReference ( FeaturePtr extRef, const std::string& layerName = std::string() );
 
     size_t calcHash() const override;
     void build() override;
@@ -38,6 +38,8 @@ public:
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const ExternalReference& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
 } // namespace cad

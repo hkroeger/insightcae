@@ -41,6 +41,8 @@ public:
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const IQVTKVerticalConstraint& other);
+
+    insight::cad::ConstrainedSketchEntityPtr clone() const override;
 };
 
 #endif // IQVTKVERTICALCONSTRAINT_H

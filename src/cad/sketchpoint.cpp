@@ -120,7 +120,9 @@ void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGe
              > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')' )
-            [ qi::_a = parser::make_shared_<SketchPoint>()(ruleset.sketch->plane(), qi::_2, qi::_3, qi::_4),
+            [ qi::_a = phx::bind(
+                 &SketchPoint::create<DatumPtr, double, double, const std::string&>,
+                   ruleset.sketch->plane(), qi::_2, qi::_3, qi::_4),
                  phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
@@ -140,6 +142,18 @@ void SketchPoint::replaceDependency(
 void SketchPoint::operator=(const ConstrainedSketchEntity& other)
 {
     operator=(dynamic_cast<const SketchPoint&>(other));
+}
+
+ConstrainedSketchEntityPtr SketchPoint::clone() const
+{
+    auto cl=SketchPoint::create(
+        plane_,
+        x_, y_,
+        layerName() );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
 }
 
 

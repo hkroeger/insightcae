@@ -136,14 +136,14 @@ void IQVTKCADModel3DViewerDrawRectangle::start()
 
                 auto p2p4 = calcP2P4(p2_->p->value());
 
-                auto sp2 = std::make_shared<SketchPoint>(
+                auto sp2 = SketchPoint::create(
                     sketch().plane(),
                     viewer().pointInPlane2D(
                         sketch().plane()->plane(),
                         p2p4.first ) );
                 sketch().insertGeometry( sp2 );
 
-                auto sp4 = std::make_shared<SketchPoint>(
+                auto sp4 = SketchPoint::create(
                     sketch().plane(),
                     viewer().pointInPlane2D(
                         sketch().plane()->plane(),

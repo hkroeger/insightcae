@@ -131,6 +131,21 @@ void IQVTKVerticalConstraint::operator=(const ConstrainedSketchEntity& other)
     operator=(dynamic_cast<const IQVTKVerticalConstraint&>(other));
 }
 
+
+
+
+ConstrainedSketchEntityPtr IQVTKVerticalConstraint::clone() const
+{
+    auto cl=IQVTKVerticalConstraint::create( line_, layerName() );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
+}
+
+
+
+
 void IQVTKVerticalConstraint::operator=(const IQVTKVerticalConstraint& other)
 {
     line_=other.line_;

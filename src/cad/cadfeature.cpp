@@ -926,7 +926,9 @@ double Feature::minDist(const arma::mat& p) const
   
   if (!dss.Perform())
     throw insight::Exception("determination of minimum distance to point failed!");
-  return dss.Value();
+  auto dist= dss.Value();
+  std::cout<<"dist="<<dist<<std::endl;
+  return dist;
 }
 
 double Feature::maxVertexDist(const arma::mat& p) const

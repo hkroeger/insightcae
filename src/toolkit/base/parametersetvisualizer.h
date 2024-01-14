@@ -15,7 +15,9 @@ class ParameterSetVisualizer
   // not linked to CAD; don't use any non-forward definitions from CAD module
 private:
     TextProgressDisplayer defaultProgressDisplayer_;
-    std::unique_ptr<ParameterSet> scheduledParameters_, visualizedParameters_;
+
+    const ParameterSet *scheduledParameters_;
+    std::unique_ptr<ParameterSet> visualizedParameters_;
 
 protected:
     ProgressDisplayer* progress_;

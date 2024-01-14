@@ -30,11 +30,14 @@ bool ParameterSetVisualizer::selectScheduledParameters()
   {
     if (scheduledParameters_)
     {
-      CurrentExceptionContext ex("selecting new parameter set for next visualization");
+          CurrentExceptionContext ex("selecting new parameter set for next visualization");
 
-      visualizedParameters_ = std::move(scheduledParameters_);
-      return true;
-    }
+          visualizedParameters_.reset(
+              scheduledParameters_->cloneParameterSet() );
+          scheduledParameters_=nullptr;
+
+          return true;
+      }
   }
   dbg() << "no new parameter set selected for visualization" << std::endl;
   return false;
@@ -48,7 +51,8 @@ void ParameterSetVisualizer::clearScheduledParameters()
 
 ParameterSetVisualizer::ParameterSetVisualizer()
   : defaultProgressDisplayer_(),
-    progress_(&defaultProgressDisplayer_)
+    progress_(&defaultProgressDisplayer_),
+    scheduledParameters_(nullptr)
 {}
 
 ParameterSetVisualizer::~ParameterSetVisualizer()
@@ -57,7 +61,7 @@ ParameterSetVisualizer::~ParameterSetVisualizer()
 void ParameterSetVisualizer::update(const ParameterSet& ps)
 {
   CurrentExceptionContext ex("scheduling parameters for visualization");
-  scheduledParameters_.reset(new ParameterSet(ps));
+  scheduledParameters_=&ps;
 }
 
 

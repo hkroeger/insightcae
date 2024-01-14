@@ -86,8 +86,6 @@ void CADParameterSetVisualizer::addVectorBasePoint(
 
 void CADParameterSetVisualizer::update(const ParameterSet& ps)
 {
-  CurrentExceptionContext ex("setting parameters for parameter set visualizer");
-
   ParameterSetVisualizer::update(ps);
   Q_EMIT launchVisualizationCalculation(); // executed in dedicated thread
 }
@@ -175,7 +173,6 @@ void CADParameterSetVisualizer::visualizeScheduledParameters()
 {
   std::unique_lock<std::mutex> lck(vis_mtx_, std::defer_lock);
 
-  CurrentExceptionContext ex("computing visualization of scheduled parameter set");
 
   insight::assertion(
               model_!=nullptr,
@@ -185,6 +182,8 @@ void CADParameterSetVisualizer::visualizeScheduledParameters()
   {
     if (selectScheduledParameters())
     {
+      CurrentExceptionContext ex("computing visualization of scheduled parameter set");
+
       try
       {
         CurrentExceptionContext ex("recreate visualization elements");

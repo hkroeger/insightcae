@@ -39,7 +39,6 @@ bool ParameterSetVisualizer::selectScheduledParameters()
           return true;
       }
   }
-  dbg() << "no new parameter set selected for visualization" << std::endl;
   return false;
 }
 

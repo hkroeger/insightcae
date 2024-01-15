@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-13 18:23+0100\n"
+"POT-Creation-Date: 2024-01-15 22:19+0100\n"
 "PO-Revision-Date: 2023-10-25 10:57+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -17,12 +17,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: base/parameters/arrayparameter.cpp:416
+#: base/parameters/arrayparameter.cpp:429
 #, c-format
 msgid ""
 "No xml node found with type '%s' and name '%s', default value '%s' is used."
 msgstr ""
 "No xml node found with type '%s' and name '%s', default value '%s' is used."
+
+#: base/parameters/subsetparameter.cpp:431
+#, c-format
+msgid "relative path given (%s) but no parent parameter container set!"
+msgstr ""
 
 #: base/vtkrendering.cpp:1323
 #, c-format

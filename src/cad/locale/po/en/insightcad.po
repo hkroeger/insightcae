@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-12 22:18+0100\n"
+"POT-Creation-Date: 2024-01-15 14:04+0100\n"
 "PO-Revision-Date: 2023-10-25 10:57+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -390,7 +390,7 @@ msgstr ""
 "Copies the bease feature base into a linear pattern. The copies of the base "
 "feature are shifted in increments of delta_l. The number of copies is n."
 
-#: cadfeatures/line.cpp:262
+#: cadfeatures/line.cpp:268
 msgid "Creates a line between point p0 and p1."
 msgstr "Creates a line between point p0 and p1."
 

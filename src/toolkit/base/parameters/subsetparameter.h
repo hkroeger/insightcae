@@ -26,6 +26,19 @@
 namespace insight
 {
 
+
+
+
+class ParameterNotFoundException
+    : public Exception
+{
+public:
+    ParameterNotFoundException(const std::string& msg);
+};
+
+
+
+
 class SubsetParameter
   : public Parameter
 {
@@ -133,7 +146,7 @@ public:
       {
           return this->get<T> ( name ) ();
       }
-      catch ( const std::exception& /*e*/ )
+      catch ( const ParameterNotFoundException& /*e*/ )
       {
           return defaultValue;
       }
@@ -191,7 +204,7 @@ T& SubsetParameter::get ( const std::string& name )
   }
   else
   {
-      throw insight::Exception(
+      throw insight::ParameterNotFoundException(
           "Parameter "+name+" not of requested type!"
                                 " (actual type is "+p.type()+")"
           );

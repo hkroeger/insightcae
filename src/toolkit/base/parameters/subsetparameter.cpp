@@ -2,9 +2,18 @@
 #include "base/parameters.h"
 #include "base/tools.h"
 #include "base/cppextensions.h"
+#include "base/translations.h"
 
 namespace insight
 {
+
+
+
+ParameterNotFoundException::ParameterNotFoundException(
+    const std::string &msg)
+    : Exception(msg)
+{}
+
 
 
 
@@ -417,14 +426,15 @@ Parameter& SubsetParameter::getParameter(std::string path)
               return getChild(*p, path);
           }
           else
-              throw insight::Exception(
-                  "relative path given (%s) but no parent parameter container set!",
-                  path.c_str() );
+              throw insight::ParameterNotFoundException(
+                  str(boost::format(
+                     _("relative path given (%s) but no parent parameter container set!"))
+                   % path ) );
       }
       int i = cp.childParameterIndex(parameterName);
       if (i==-1)
       {
-          throw insight::Exception("There is no parameter with name "+parameterName);
+          throw insight::ParameterNotFoundException("There is no parameter with name "+parameterName);
       }
       else if (nRemaining == 0)
       {
@@ -719,6 +729,8 @@ std::unique_ptr<Parameter> SubsetParameter::intersection(const Parameter &other)
 
   return nullptr;
 }
+
+
 
 
 

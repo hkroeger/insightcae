@@ -53,11 +53,16 @@ void CADSketchParameter::resetCADGeometry()
 
     for (auto& ref: references_)
     {
-        auto &r = parentSet().get<CADGeometryParameter>(ref.second);
-        CADGeometry_->setExternalReference(
-            cad::ExternalReference::create(r.geometry()),
-            ref.first
-            );
+        try
+        {
+            auto &r = parentSet().get<CADGeometryParameter>(ref.second);
+            CADGeometry_->setExternalReference(
+                cad::ExternalReference::create(r.geometry()),
+                ref.first
+                );
+        }
+        catch (const ParameterNotFoundException&)
+        {}
     }
 }
 

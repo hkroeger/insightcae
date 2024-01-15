@@ -60,9 +60,9 @@ class IQGroupingItemModel
 
     void decorateSourceNode(const QModelIndex& sourceIndex, Node* parent);
 
-    void loopOverMappedChildren(
+    bool loopOverMappedChildren(
         Node *n, int column,
-        std::function<void(QModelIndex)> body ) const;
+        std::function<bool(QModelIndex)> body ) const;
 
 public:
     explicit IQGroupingItemModel(QObject *parent = nullptr);

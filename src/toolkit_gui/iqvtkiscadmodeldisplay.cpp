@@ -23,6 +23,7 @@ IQVTKISCADModelDisplay::IQVTKISCADModelDisplay
     gm->setGroupColumn(IQCADItemModel::labelCol);
     gm->setSourceModel(model_);
     modeltree_->setModel(gm);
+    // modeltree_->setModel(model_);
 
     modeltree_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(

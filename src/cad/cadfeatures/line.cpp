@@ -20,6 +20,7 @@
 
 
 #include "line.h"
+#include "base/exception.h"
 #include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -196,10 +197,15 @@ void Line::build()
     dir=std::make_shared<SubtractedVector>(p1_, p0_);
   }
 
+  double L=arma::norm(p1 - p0, 2);
+
+  insight::assertion(L>0., "attempt to create a degenerated line with zero length");
+
+  refvalues_["L"]=L;
 //  refpoints_["p0"]=p0;
 //  refpoints_["p1"]=p1;
 //   refvalues_["L"]=arma::norm(p1-p0, 2);
-  refvectors_["ex"]=(p1 - p0)/arma::norm(p1 - p0, 2);
+  refvectors_["ex"]=(p1 - p0)/L;
 
 
   providedDatums_["axis"]=

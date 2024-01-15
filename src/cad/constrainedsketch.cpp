@@ -4,6 +4,8 @@
 #include "base/linearalgebra.h"
 #include "base/tools.h"
 
+#include "cadfeature.h"
+#include "cadfeatures/wire.h"
 #include "constrainedsketchgrammar.h"
 
 #include "parser.h"
@@ -22,6 +24,7 @@ defineType(ConstrainedSketch);
 addToStaticFunctionTable(Feature, ConstrainedSketch, insertrule);
 
 
+const std::string ConstrainedSketch::defaultLayerName  = "standard";
 
 
 size_t ConstrainedSketch::calcHash() const
@@ -314,7 +317,7 @@ ConstrainedSketch::GeometryMap::const_iterator ConstrainedSketch::cend() const
 
 
 std::set<ConstrainedSketchEntityPtr> ConstrainedSketch::filterGeometryByParameters(
-    std::function<bool (const ParameterSet &)> filterFunction )
+    std::function<bool (const ParameterSet &)> filterFunction ) const
 {
     std::set<ConstrainedSketchEntityPtr> ret;
     for (auto& e: *this)
@@ -323,6 +326,30 @@ std::set<ConstrainedSketchEntityPtr> ConstrainedSketch::filterGeometryByParamete
             ret.insert(e.second);
     }
     return ret;
+}
+
+
+
+
+FeaturePtr ConstrainedSketch::layerGeometry(const std::string &layerName) const
+{
+    if (!pl_->providesPlanarReference())
+        throw insight::Exception("Sketch: Planar reference required!");
+
+    std::vector<FeaturePtr> edges;
+
+    for ( auto& sg: geometry_ )
+    {
+        if (sg.second->layerName()==layerName)
+        {
+            if ( auto f = std::dynamic_pointer_cast<Feature>(sg.second) )
+            {
+                edges.push_back(f);
+            }
+        }
+    }
+
+    return cad::Wire::create(edges);
 }
 
 

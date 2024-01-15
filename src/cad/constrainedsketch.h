@@ -2,6 +2,7 @@
 #define INSIGHT_CAD_CONSTRAINEDSKETCH_H
 
 
+#include "base/exception.h"
 #include "sketch.h"
 #include "sketchpoint.h"
 #include "externalreference.h"
@@ -45,6 +46,8 @@ public:
     };
 
     typedef std::map<int, ConstrainedSketchEntityPtr> GeometryMap;
+
+    static const std::string defaultLayerName;
 
 #ifndef SWIG
     typedef boost::signals2::signal<void(GeometryMap::key_type)> GeometryEditSignal;
@@ -120,7 +123,9 @@ public:
 
     std::set<ConstrainedSketchEntityPtr> filterGeometryByParameters(
         std::function<bool(const ParameterSet& geomPS)> filterFunction
-        );
+        ) const;
+
+    cad::FeaturePtr layerGeometry(const std::string& layerName) const;
 
     void operator=(const ConstrainedSketch& o);
 

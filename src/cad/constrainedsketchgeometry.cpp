@@ -1,4 +1,5 @@
 #include "constrainedsketchgeometry.h"
+#include "constrainedsketch.h"
 
 #include "base/exception.h"
 
@@ -29,7 +30,10 @@ defineStaticFunctionTableWithArgs(
 
 ConstrainedSketchEntity::ConstrainedSketchEntity(
     const std::string& layerName )
-    : layerName_( layerName.empty()?"standard":layerName)
+    : layerName_(
+        layerName.empty() ?
+            ConstrainedSketch::defaultLayerName
+            : layerName )
 {}
 
 

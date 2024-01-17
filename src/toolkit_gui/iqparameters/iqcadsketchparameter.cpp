@@ -140,6 +140,11 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
                             c.blueF() );
                         actprops->SetLineWidth(4);
                     }
+                    else if (selp.selection()=="floorCutout")
+                    {
+                        actprops->SetColor(41./255., 128./255., 185./255.); // blueish
+                        actprops->SetLineWidth(4);
+                    }
                 }
                 else
                 {

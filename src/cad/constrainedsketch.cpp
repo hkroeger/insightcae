@@ -749,14 +749,17 @@ void ConstrainedSketch::build()
         if (!pl_->providesPlanarReference())
             throw insight::Exception("Sketch: Planar reference required!");
 
-        try
-        {
-            resolveConstraints();
-        }
-        catch (insight::NonConvergenceException& ex)
-        {
-            insight::Warning(ex);
-        }
+        /* Should only be solved in constrainedsketcheditor under user supervision!!
+         * Otherwise, only the saved DoFs are used.
+         */
+        // try
+        // {
+        //     resolveConstraints();
+        // }
+        // catch (insight::NonConvergenceException& ex)
+        // {
+        //     insight::Warning(ex);
+        // }
 
         BRep_Builder bb;
         TopoDS_Compound result;

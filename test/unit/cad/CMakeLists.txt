@@ -15,7 +15,7 @@ if (INSIGHT_BUILD_CAD)
         add_cad_test(${SRC})
         target_link_libraries(${SRC} toolkit_gui)
       endif()
-    endmacro(add_cad_test)
+    endmacro(add_cad_gui_test)
 
     add_cad_test(OCCtransformToOF)
     add_cad_test(gmshLSDynaExport)

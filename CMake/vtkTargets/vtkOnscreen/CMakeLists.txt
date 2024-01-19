@@ -89,7 +89,7 @@ ExternalProject_Add( vtkdicom-onscreen
      -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 
-   BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvis.so
+   BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvis.so.0.8.15
 )
 
 ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )

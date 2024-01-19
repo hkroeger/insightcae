@@ -65,7 +65,7 @@ else()
          -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvisoffscreen
          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 
-       BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvisoffscreen.so
+       BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvisoffscreen.so.0.8.15
     )
 
     ExternalProject_Get_Property( vtkdicom-offscreen INSTALL_DIR )

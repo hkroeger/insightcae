@@ -529,7 +529,7 @@ struct View : public CoordinateSystem
       const arma::mat& up,
       const std::string& title );
 
-  inline arma::mat cameraLocation() const { return origin - cameraDistance*ex; }
+  inline arma::mat cameraLocation() const { return origin + cameraDistance*ex; }
   inline arma::mat focalPoint() const { return origin; }
   inline arma::mat upwardDirection() const { return ez; }
 };

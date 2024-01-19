@@ -67,8 +67,9 @@ case $SYSTEM in
   ;;
 esac
 
-cd $BUILD_PATH
 
+cd $BUILD_PATH
+source $INSIGHT_THIRDPARTY_DIR/bin/insight_setthirdpartyenv.sh
 
 
 if [ "$ACTION" == "build" ]; then

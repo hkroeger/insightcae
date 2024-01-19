@@ -352,44 +352,43 @@ install_shared_file2(base/materialLibrary.xml ".")
 
 
 
-# need to handle extensions to VTK here in two versions (onscreen and offscreen)
-get_filename_component(PY3ROOT ${PYTHON_LIBRARY} DIRECTORY) #lib
-get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
+# # need to handle extensions to VTK here in two versions (onscreen and offscreen)
+# get_filename_component(PY3ROOT ${PYTHON_LIBRARY} DIRECTORY) #lib
+# get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
 
-# 1) vtk dicom reader
-include(ExternalProject)
+# # 1) vtk dicom reader
+# include(ExternalProject)
 
 
 
-ExternalProject_Add( vtkdicom-offscreen
-   GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
-   GIT_TAG 6a81888
-   CMAKE_ARGS
-     -DBUILD_SHARED_LIBS=ON
-     -DBUILD_PYTHON_WRAPPERS=OFF
-     -DCMAKE_BUILD_TYPE=Release
-     -DVTK_DIR=${VTK_OFFSCREEN_DIR}
-     -DPython3_ROOT_DIR=${PY3ROOT}
-     -DVTK_VERSIONED_INSTALL=OFF
-     -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvisoffscreen
-     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+# ExternalProject_Add( vtkdicom-offscreen
+#    GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
+#    GIT_TAG 6a81888
+#    CMAKE_ARGS
+#      -DBUILD_SHARED_LIBS=ON
+#      -DBUILD_PYTHON_WRAPPERS=OFF
+#      -DCMAKE_BUILD_TYPE=Release
+#      -DVTK_DIR=${VTK_OFFSCREEN_DIR}
+#      -DPython3_ROOT_DIR=${PY3ROOT}
+#      -DVTK_VERSIONED_INSTALL=OFF
+#      -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvisoffscreen
+#      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 
-   BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvisoffscreen.so
-)
+#    BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvisoffscreen.so
+# )
 
-ExternalProject_Get_Property( vtkdicom-offscreen INSTALL_DIR )
-ExternalProject_Get_Property( vtkdicom-offscreen SOURCE_DIR )
+# ExternalProject_Get_Property( vtkdicom-offscreen INSTALL_DIR )
+# ExternalProject_Get_Property( vtkdicom-offscreen SOURCE_DIR )
 
-set(VTKDICOMOFFSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
-set(VTKDICOMOFFSCREEN_LIBDIR ${INSTALL_DIR}/lib)
-set(VTKDICOMOFFSCREEN_LIBRARY ${VTKDICOMOFFSCREEN_LIBDIR}/libvtkDICOM-pvisoffscreen.so.0.8.15)
+# set(VTKDICOMOFFSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
+# set(VTKDICOMOFFSCREEN_LIBDIR ${INSTALL_DIR}/lib)
+# set(VTKDICOMOFFSCREEN_LIBRARY ${VTKDICOMOFFSCREEN_LIBDIR}/libvtkDICOM-pvisoffscreen.so.0.8.15)
 
 target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${Intl_INCLUDE_DIRS}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
-  PUBLIC ${VTKDICOMOFFSCREEN_INCLUDE_DIR}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
@@ -399,33 +398,33 @@ target_include_directories(toolkitHeaders INTERFACE ${toolkit_INCLUDE_DIRS})
 
 
 
-ExternalProject_Add( vtkdicom-onscreen
-   GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
-   GIT_TAG 6a81888
-   CMAKE_ARGS
-     -DBUILD_SHARED_LIBS=ON
-     -DBUILD_PYTHON_WRAPPERS=OFF
-     -DCMAKE_BUILD_TYPE=Release
-     -DVTK_DIR=${VTK_ONSCREEN_DIR}
-     -DPython3_ROOT_DIR=${PY3ROOT}
-     -DVTK_VERSIONED_INSTALL=OFF
-     -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
-     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+# ExternalProject_Add( vtkdicom-onscreen
+#    GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
+#    GIT_TAG 6a81888
+#    CMAKE_ARGS
+#      -DBUILD_SHARED_LIBS=ON
+#      -DBUILD_PYTHON_WRAPPERS=OFF
+#      -DCMAKE_BUILD_TYPE=Release
+#      -DVTK_DIR=${VTK_ONSCREEN_DIR}
+#      -DPython3_ROOT_DIR=${PY3ROOT}
+#      -DVTK_VERSIONED_INSTALL=OFF
+#      -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
+#      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 
-   BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvis.so
-)
+#    BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvis.so
+# )
 
-ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )
-ExternalProject_Get_Property( vtkdicom-onscreen SOURCE_DIR )
+# ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )
+# ExternalProject_Get_Property( vtkdicom-onscreen SOURCE_DIR )
 
-set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
-set(VTKDICOMONSCREEN_LIBDIR ${INSTALL_DIR}/lib)
-set(VTKDICOMONSCREEN_LIBRARY ${VTKDICOMONSCREEN_LIBDIR}/libvtkDICOM-pvis.so.0.8.15)
+# set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
+# set(VTKDICOMONSCREEN_LIBDIR ${INSTALL_DIR}/lib)
+# set(VTKDICOMONSCREEN_LIBRARY ${VTKDICOMONSCREEN_LIBDIR}/libvtkDICOM-pvis.so.0.8.15)
 
 
 
-install(FILES ${VTKDICOMOFFSCREEN_LIBRARY} DESTINATION lib)
-install(FILES ${VTKDICOMONSCREEN_LIBRARY} DESTINATION lib)
+# install(FILES ${VTKDICOMOFFSCREEN_LIBRARY} DESTINATION lib)
+# install(FILES ${VTKDICOMONSCREEN_LIBRARY} DESTINATION lib)
 
 
 
@@ -452,10 +451,10 @@ endmacro()
 
 if (NOT WIN32)
 
-    buildLibraryList("${VTK_OFFSCREEN_LIBRARIES};${VTKDICOMOFFSCREEN_LIBRARY}")
+    buildLibraryList("${VTK_OFFSCREEN_LIBRARIES}")
     configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOffscreenLoader.cpp @ONLY)
     add_library(toolkitVtkOffscreenLoader SHARED toolkitVtkOffscreenLoader.cpp)
-    add_dependencies(toolkitVtkOffscreenLoader vtkdicom-offscreen)
+    add_dependencies(toolkitVtkOffscreenLoader vtkOffscreen)
     set_target_properties(toolkitVtkOffscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
     install(
         TARGETS toolkitVtkOffscreenLoader # EXPORT toolkit_targets
@@ -463,10 +462,10 @@ if (NOT WIN32)
         COMPONENT ${INSIGHT_INSTALL_COMPONENT}
         )
 
-    buildLibraryList("${VTK_ONSCREEN_LIBRARIES};${VTKDICOMONSCREEN_LIBRARY}")
+    buildLibraryList("${VTK_ONSCREEN_LIBRARIES}")
     configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOnscreenLoader.cpp @ONLY)
     add_library(toolkitVtkOnscreenLoader SHARED toolkitVtkOnscreenLoader.cpp)
-    add_dependencies(toolkitVtkOnscreenLoader vtkdicom-onscreen)
+    add_dependencies(toolkitVtkOnscreenLoader vtkOnscreen)
     set_target_properties(toolkitVtkOnscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
     install(
         TARGETS toolkitVtkOnscreenLoader # EXPORT toolkit_targets

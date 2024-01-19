@@ -37,8 +37,6 @@ Node::Node(IQGroupingItemModel* model, Node *p, const QString &l, QPersistentMod
         parentNode()->children.push_back(this);
         model_->endInsertRows();
     }
-
-    qDebug() << "added "<<groupPath()<<"/"<<label;
 }
 
 
@@ -46,8 +44,6 @@ Node::Node(IQGroupingItemModel* model, Node *p, const QString &l, QPersistentMod
 
 Node::~Node()
 {
-    qDebug() << "remove "<<groupPath()<<"/"<<label;
-
     for (auto* cn: children)
     {
         delete cn;
@@ -279,11 +275,11 @@ void IQGroupingItemModel::setSourceModel(QAbstractItemModel *sm)
             [&](const QModelIndex &sourceParent, int first, int last)
             {
                 auto psi=mapFromSource(sourceParent);
-                if (!psi.isValid())
-                {
-                    qDebug() <<sourceModel()->data(
-                        sourceParent.siblingAtColumn(IQCADItemModel::labelCol));
-                }
+                // if (!psi.isValid())
+                // {
+                //     qDebug() <<sourceModel()->data(
+                //         sourceParent.siblingAtColumn(IQCADItemModel::labelCol));
+                // }
                 for (int i=first; i<=last; ++i)
                 {
                     decorateSourceNode(
@@ -308,7 +304,6 @@ void IQGroupingItemModel::setSourceModel(QAbstractItemModel *sm)
 
                         // remove mapped item
                         auto n=static_cast<Node*>(i.internalPointer());
-                        qDebug()<<"delete"<<n->label;
                         delete n;
 
                         // remove parent groups, if required

@@ -27,6 +27,7 @@
 #include <boost/units/systems/si/force.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/area.hpp>
+#include <boost/units/systems/si/mass_density.hpp>
 #include <boost/units/systems/si/volume.hpp>
 #include <boost/units/systems/si/electric_potential.hpp>
 #include <boost/units/systems/si/current.hpp>
@@ -39,10 +40,17 @@
 #include "boost/units/physical_dimensions.hpp"
 #include "boost/units/systems/si/codata/physico-chemical_constants.hpp"
 
+
+#include <boost/units/systems/cgs/mass.hpp>
+#include <boost/units/systems/cgs/length.hpp>
+#include <boost/units/systems/cgs/volume.hpp>
+#include <boost/units/systems/cgs/mass_density.hpp>
+
 #include "base/linearalgebra.h"
 
 namespace insight {
 namespace si = boost::units::si;
+namespace cgs = boost::units::cgs;
 }
 
 
@@ -138,6 +146,8 @@ namespace boost { namespace units { namespace si {
  typedef matQuantity<length, arma::mat> LengthVector;
 
  typedef quantity<mass, double> Mass;
+
+ typedef quantity<mass_density, double> Density;
 
  typedef quantity<time, double> Time;
 

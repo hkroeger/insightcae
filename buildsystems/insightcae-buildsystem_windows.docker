@@ -62,12 +62,8 @@ RUN echo "${USER}      ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER ${UID}:${GID}
 
-COPY async_pipe.hpp.patch /
 RUN winetricks -q dotnet40
-
 RUN sudo apt-get --ignore-missing install -y python3-mako libosmesa6-dev
-RUN sudo chown ${USER}:${USER} -R /opt/mxe
-RUN patch /opt/mxe/usr/i686-w64-mingw32.shared/include/boost/process/detail/windows/async_pipe.hpp < /async_pipe.hpp.patch
 
 RUN sudo apt update
 RUN sudo apt install -y docker docker.io

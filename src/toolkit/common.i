@@ -306,11 +306,11 @@
 
 // C --> Python
 %typemap(out) boost::filesystem::path {
-    $result = PyUnicode_FromString($1.c_str());
+    $result = PyUnicode_FromString($1.string().c_str());
 }
 
 %typemap(out) const boost::filesystem::path& {
-    $result = PyString_FromString($1->c_str());
+    $result = PyString_FromString($1->string().c_str());
 }
 
 

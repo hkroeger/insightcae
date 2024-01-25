@@ -89,7 +89,7 @@ void IQVideo::createFullDisplay(QVBoxLayout *layout)
     auto playlist = new QMediaPlaylist(player);
 
     auto im = resultElementAs<insight::Video>();
-    playlist->addMedia(QUrl::fromLocalFile(im->filePath().c_str()));
+    playlist->addMedia(QUrl::fromLocalFile(im->filePath().string().c_str()));
 
     auto videoWidget = new QVideoWidget;
     player->setVideoOutput(videoWidget);

@@ -76,9 +76,22 @@ include(ExternalProject)
 get_filename_component(PY3ROOT ${PYTHON_LIBRARY} DIRECTORY) #lib
 get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
 
+if (CMAKE_WRAPPER)
+  set(CMAKE "${CMAKE_WRAPPER}") # required in MXE cross build, cmake is called through wrapper script there
+else()
+  set(CMAKE "${CMAKE_COMMAND}")
+endif()
+
+if (WIN32)
+  set(LIBNAME lib/libvtkDICOM-8.2.0.dll.a)
+else()
+  set(LIBNAME lib/libvtkDICOM-pvis.so.0.8.15)
+endif()
+
 ExternalProject_Add( vtkdicom-onscreen
    GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
    GIT_TAG 6a81888
+   CMAKE_COMMAND ${CMAKE}
    CMAKE_ARGS
      -DBUILD_SHARED_LIBS=ON
      -DBUILD_PYTHON_WRAPPERS=OFF
@@ -87,20 +100,28 @@ ExternalProject_Add( vtkdicom-onscreen
      -DPython3_ROOT_DIR=${PY3ROOT}
      -DVTK_VERSIONED_INSTALL=OFF
      -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
+     -DBUILD_PROGRAMS=OFF
      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 
-   BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvis.so.0.8.15
+   BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
 )
 
 ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )
 ExternalProject_Get_Property( vtkdicom-onscreen SOURCE_DIR )
 
-set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
-set(VTKDICOMONSCREEN_LIBDIR ${INSTALL_DIR}/lib)
-set(VTKDICOMONSCREEN_LIBRARY ${VTKDICOMONSCREEN_LIBDIR}/libvtkDICOM-pvis.so.0.8.15)
+if (WIN32)
+  set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include)
+else()
+  set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
+endif()
+set(VTKDICOMONSCREEN_LIBRARY ${INSTALL_DIR}/${LIBNAME})
 
-#install(FILES ${VTKDICOMONSCREEN_LIBRARY} DESTINATION lib)
-install(DIRECTORY ${VTKDICOMONSCREEN_LIBDIR}/ DESTINATION lib FILES_MATCHING PATTERN "libvtkDICOM*.so*")
+if (WIN32)
+  install(DIRECTORY ${INSTALL_DIR}/bin DESTINATION lib FILES_MATCHING PATTERN "libvtkDICOM*.dll*")
+  install(DIRECTORY ${INSTALL_DIR}/lib DESTINATION lib FILES_MATCHING PATTERN "libvtkDICOM*.dll*")
+else()
+  install(DIRECTORY ${INSTALL_DIR}/lib DESTINATION lib FILES_MATCHING PATTERN "libvtkDICOM*.so*")
+endif()
 
 
 IF (WIN32)

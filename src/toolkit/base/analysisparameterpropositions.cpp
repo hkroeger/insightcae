@@ -114,14 +114,33 @@ struct SharedLibraryFunction
 
     SharedLibraryFunction(const boost::filesystem::path& libFile, const std::string functionName)
     {
+#ifdef WIN32
+        libraryHandle_ = LoadLibraryA(libFile.string().c_str());
+
+        insight::assertion(
+            libraryHandle_,
+            "Failed to load library "+libFile.string()+"!");
+
+        if (auto gfp=GetProcAddress(
+                static_cast<HMODULE>(libraryHandle_), functionName.c_str()))
+        {
+            typedef ParameterSet (*FunctionPointer) (const std::string&, const ParameterSet&);
+            this->AnalysisParameterPropositions::propositionGeneratorFunction::operator=(
+                reinterpret_cast<FunctionPointer>(gfp) );
+        }
+        else
+        {
+            throw insight::Exception(
+                "Failed to bind function "+functionName+" from library "+libFile.string()+"!");
+        }
+#else
         libraryHandle_ = dlopen (
-            libFile.c_str(),
+            libFile.string().c_str(),
             RTLD_LAZY|RTLD_GLOBAL|RTLD_NODELETE );
 
         insight::assertion(
             libraryHandle_,
             "Failed to load library "+libFile.string()+"! Reason: "+dlerror() );
-
 
         if (auto gfp=dlsym(libraryHandle_, functionName.c_str()))
         {
@@ -134,6 +153,10 @@ struct SharedLibraryFunction
             throw insight::Exception(
                 "Failed to bind function "+functionName+" from library "+libFile.string()+"!");
         }
+#endif
+
+
+
     }
 };
 

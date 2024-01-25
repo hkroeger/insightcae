@@ -223,13 +223,13 @@ void Sketch::build()
 //        TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
 //        providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
         auto ws = DXFReader(filename, ".*").Wires(tol_);
-        if (ws->Size()==1)
+        if (ws->Length()==1)
         {
             providedSubshapes_["OuterWire"]=Feature::create(ws->Value(1));
         }
         else
         {
-            for (int i=0; i<ws->Size(); ++i)
+            for (int i=0; i<ws->Length(); ++i)
             {
                 providedSubshapes_[
                         str(format("OuterWire%d")%(i+1))]=
@@ -244,11 +244,12 @@ void Sketch::build()
         BRep_Builder bb;
         TopoDS_Compound result;
         bb.MakeCompound ( result );
-        for (auto w=ws->begin(); w!=ws->end(); ++w)
+        for (auto w=1; w<=ws->Length(); ++w)
         {
-            BRepBuilderAPI_Transform btr(*w, tr.Inverted(), true);
+            auto shape=ws->Value(w);
+            BRepBuilderAPI_Transform btr(shape, tr.Inverted(), true);
 
-            if (w->Closed())
+            if (shape.Closed())
                 bb.Add ( result, BRepBuilderAPI_MakeFace(
                              gp_Pln(ax),
                              TopoDS::Wire(btr.Shape())).Shape());

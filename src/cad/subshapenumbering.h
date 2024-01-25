@@ -46,6 +46,7 @@ private:
     void setMaxTag(int dim, int val);
 
 public:
+    SubshapeNumbering(const SubshapeNumbering& o);
     SubshapeNumbering(const TopoDS_Shape& shape);
 
     int getMaxTag(int dim) const;

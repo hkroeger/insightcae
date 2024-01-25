@@ -24,6 +24,7 @@
 #include "base/mountremote.h"
 #include "openfoam/openfoamtools.h"
 
+#include <chrono>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -382,7 +383,7 @@ int main(int argc, char *argv[])
             }
 
             std::cout<<"Waiting "<<secs<<" seconds before restarting transfer..."<<std::endl;
-            sleep(secs);
+            std::this_thread::sleep_for(std::chrono::seconds(secs));
         }
 
         anything_done=true;

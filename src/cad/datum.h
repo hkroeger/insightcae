@@ -261,7 +261,7 @@ public:
 //     FeatureID f
 //   );
   
-  DatumPlane(std::istream&);
+  // DatumPlane(std::istream&);
   
   
 

@@ -10,7 +10,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef WIN32
 #include <sys/mman.h>
+#endif
 #include <iostream>
 #include <unistd.h>
 #include <fcntl.h>

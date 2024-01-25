@@ -102,7 +102,7 @@ int ivtkOCCShape::RequestData(
     #else
             BRepMesh_FastDiscret m(deflection, 0.5, box, true, true, false, false);
     #endif
-            m.Perform(small);
+            m.Perform(face);
     #endif
             tri = BRep_Tool::Triangulation (face, L);
           }
@@ -135,7 +135,8 @@ int ivtkOCCShape::RequestData(
       for (TopExp_Explorer ex(Shape, TopAbs_EDGE); ex.More(); ex.Next())
       {
           auto edge = TopoDS::Edge(ex.Current());
-          GCPnts_QuasiUniformDeflection algo(BRepAdaptor_Curve(edge), MaxDeflection);
+          BRepAdaptor_Curve adapt(edge);
+          GCPnts_QuasiUniformDeflection algo(adapt, MaxDeflection);
           int np=algo.NbPoints();
           vtkIdType pts[np];
           vtkIdType i0=points->GetNumberOfPoints();

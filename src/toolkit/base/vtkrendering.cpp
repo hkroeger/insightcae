@@ -29,7 +29,7 @@
 #include "vtkDataObjectTreeIterator.h"
 #include "vtkCleanPolyData.h"
 #include "vtkLogLookupTable.h"
-#include "vtkLogger.h"
+// #include "vtkLogger.h"
 
 #include "vtkPointData.h"
 #include "vtkExtractBlock.h"
@@ -41,7 +41,6 @@
 #include "vtkAxesActor.h"
 #include "vtkRenderWindowInteractor.h"
 #include "vtkLightKit.h"
-#include "vtkDummyController.h"
 #include "vtkMultiProcessController.h"
 #include "vtkExecutive.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
@@ -482,7 +481,9 @@ int vtkCompositeDataToUnstructuredGridFilter::RequestData(vtkInformation* vtkNot
     appender->SetMergePoints(this->MergePoints ? 1 : 0);
     if (this->MergePoints)
     {
+#if (VTK_MAJOR_VERSION>8 || (VTK_MAJOR_VERSION==8 && VTK_MINOR_VERSION>=90) )
         appender->SetTolerance(this->Tolerance);
+#endif
     }
     if (ds)
     {
@@ -1244,17 +1245,13 @@ void VTKOffscreenScene::removeActor2D(vtkActor2D *act)
 OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np)
   : VTKOffscreenScene()
 {
-  auto controller =
 #if VTK_MODULE_ENABLE_VTK_ParallelMPI
-    vtkSmartPointer<vtkMPIController>
-#else
-    vtkSmartPointer<vtkDummyController>
-#endif
-      ::New();
+    auto controller =vtkSmartPointer<vtkMPIController>::New();
   controller->Initialize(nullptr, nullptr);
   int rank = controller->GetLocalProcessId();
-  vtkLogger::SetThreadName("rank=" + std::to_string(rank));
+  // vtkLogger::SetThreadName("rank=" + std::to_string(rank));
   vtkMultiProcessController::SetGlobalController(controller);
+#endif
 
   ofcase_ = vtkSmartPointer<vtkOpenFOAMReader>::New();
   ofcase_->SetFileName( casepath.string().c_str() );

@@ -298,9 +298,10 @@ Handle_TopTools_HSequenceOfShape DXFReader::Wires(double tol, const std::string&
 
   auto useEdgesFrom = [&](const TopTools_ListOfShape& ls)
   {
-      for (auto i=ls.begin(); i!=ls.end(); ++i)
+      //for (auto i=ls.begin(); i!=ls.end(); ++i)
+      for (TopTools_ListIteratorOfListOfShape i(ls); i.More(); i.Next())
       {
-          inEdges->Append(*i);
+          inEdges->Append(i.Value());
       }
   };
 
@@ -329,16 +330,18 @@ Handle_TopTools_HSequenceOfShape DXFReader::Wires(double tol, const std::string&
 //      ld=ls_.find(layername);
 //    }
 
-  if (inEdges->Size()==0)
-    throw insight::Exception("Could not retrieve data for layer \"%s\"!", layername);
+  if (inEdges->Length()==0)
+      throw insight::Exception("Could not retrieve data for layer \"%s\"!", layername.c_str());
 
   ShapeFix_ShapeTolerance sft;
-  for (
-    auto li=inEdges->begin();
-    li!=inEdges->end(); ++li
-  )
+  // for (
+  //   auto li=inEdges->begin();
+  //   li!=inEdges->end(); ++li
+  // )
+  for (int ei=1; ei<=inEdges->Length();ei++)
   {
-    sft.SetTolerance(const_cast<TopoDS_Shape&>(*li), tol, TopAbs_VERTEX );
+      auto& li=inEdges->Value(ei);
+    sft.SetTolerance(const_cast<TopoDS_Shape&>(li), tol, TopAbs_VERTEX );
   }
 
   Handle(TopTools_HSequenceOfShape) outWires(new TopTools_HSequenceOfShape);

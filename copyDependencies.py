@@ -13,7 +13,7 @@ from optparse import OptionParser
 
 parser = OptionParser()
 
-parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/mxe",
+parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/opt/mxe",
                 help="path to mxe cross compile environment")
 
 parser.add_option("-s", "--insightSourcePath", dest="insightSourcePath", metavar='InsightCAE source path', default=superbuildSourcePath,
@@ -29,7 +29,7 @@ if not (os.path.exists("./bin") and os.path.exists("./share/insight")):
     sys.exit(-1)
 
 
-fl=wix.FileList(opts.mxepath)
+fl=wix.FileList(opts.mxepath, ["python.*\\.dll", "opengl.*\\.dll"])
 
 for d in directories:
     fl.addFiles(d)
@@ -46,7 +46,10 @@ while (fl.addDependencies()>0):
 
 for fn,(fid,org,targdir) in fl.files.items():
     dst=os.path.join(targdir,fn)
-    if not os.path.exists(dst):
+    doit=not os.path.exists(dst);
+    if not doit:
+        doit=(os.path.getmtime(dst)<os.path.getmtime(org))
+    if doit:
         if not os.path.exists(targdir): os.makedirs(targdir)
         print("copy", org, "to", dst)
         shutil.copyfile(org, dst)

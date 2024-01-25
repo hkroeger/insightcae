@@ -14,7 +14,8 @@ public:
         const ParameterSet&)> propositionGeneratorFunction;
 
 private:
-    std::map<std::string, std::vector<propositionGeneratorFunction> > propositionGeneratorFunctions_;
+    std::map<std::string, std::vector<propositionGeneratorFunction> >
+        propositionGeneratorFunctions_;
 
     AnalysisParameterPropositions();
 

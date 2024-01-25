@@ -24,6 +24,7 @@
 //#undef HAVE_MED
 //#endif
 
+#if defined(HAVE_MED)
 
 extern "C" {
 #include "med.h"
@@ -226,16 +227,13 @@ bool operator<(const gp_Pnt& v1, const gp_Pnt& v2)
 }
 
 
+#endif
+
 namespace insight {
 namespace cad {
 
 
-
-
-
-
-
-
+#if defined(HAVE_MED)
 
 
 FindIntersections::FindIntersections(const TopoDS_Edge& e, const TopoDS_Edge& e2)
@@ -351,6 +349,8 @@ void applyLocation(Poly_Triangulation& pt, const TopLoc_Location& loc)
         pt.ChangeNodes().ChangeValue(i)=pt.Nodes().Value(i).Transformed(loc);
     }
 }
+#endif
+
 
 defineType(FrameMesh);
 

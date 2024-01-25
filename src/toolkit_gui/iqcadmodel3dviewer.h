@@ -40,13 +40,13 @@ public:
         vtkSmartPointer<vtkDataObject>
         > CADEntity;
 
-    typedef boost::variant<
-        std::weak_ptr<insight::cad::Vector>,
-        std::weak_ptr<insight::cad::Datum>,
-        std::weak_ptr<insight::cad::Feature>,
-        std::weak_ptr<insight::cad::PostprocAction>,
-        vtkWeakPointer<vtkDataObject>
-        > CADEntityWeakPtr;
+    // typedef boost::variant<
+    //     std::weak_ptr<insight::cad::Vector>,
+    //     std::weak_ptr<insight::cad::Datum>,
+    //     std::weak_ptr<insight::cad::Feature>,
+    //     std::weak_ptr<insight::cad::PostprocAction>,
+    //     vtkWeakPointer<vtkDataObject>
+    //     > CADEntityWeakPtr;
 
 
 private:

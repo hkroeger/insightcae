@@ -2,7 +2,8 @@
 
 #include "TopExp_Explorer.hxx"
 #include "TopoDS.hxx"
-
+#include "TopTools_DataMapIteratorOfDataMapOfIntegerShape.hxx"
+#include "TopTools_DataMapIteratorOfDataMapOfShapeInteger.hxx"
 #include "base/exception.h"
 
 #include <vector>
@@ -34,9 +35,11 @@ const TopoDS_Vertex& SubshapeNumbering::vertexByTag(int tag) const
   else
   {
       std::cout<<"vertices=";
-      for (auto i=_tagVertex.begin(); i!=_tagVertex.end(); ++i)
+      // for (auto i=_tagVertex.begin(); i!=_tagVertex.end(); ++i)
+      for (TopTools_DataMapIteratorOfDataMapOfIntegerShape i(_tagVertex);
+           i.More(); i.Next())
       {
-          std::cout<<" "<<i.Iterator().Key();
+          std::cout<<" "<<i.Key()/*i.Iterator().Key()*/;
       }
       std::cout<<std::endl;
       throw insight::Exception("no vertex with tag %d!", tag);
@@ -183,80 +186,92 @@ int SubshapeNumbering::tagOfSolid(const TopoDS_Solid &solid) const
 
 void SubshapeNumbering::insertAllVertexTags(std::set<int> &set) const
 {
-  for (auto i = _tagVertex.begin(); i!=_tagVertex.end(); ++i)
+  // for (auto i = _tagVertex.begin(); i!=_tagVertex.end(); ++i)
+  for (TopTools_DataMapIteratorOfDataMapOfIntegerShape i(_tagVertex);
+     i.More(); i.Next())
   {
-    set.insert(i.Iterator().Key());
+    set.insert(i.Key());
   }
 }
 
 void SubshapeNumbering::insertAllEdgeTags(std::set<int> &set) const
 {
-  for (auto i = _tagEdge.begin(); i!=_tagEdge.end(); ++i)
+  // for (auto i = _tagEdge.begin(); i!=_tagEdge.end(); ++i)
+  for (TopTools_DataMapIteratorOfDataMapOfIntegerShape i(_tagEdge);
+     i.More(); i.Next())
   {
-    set.insert(i.Iterator().Key());
+    set.insert(i.Key());
   }
 }
 
 void SubshapeNumbering::insertAllWireTags(std::set<int> &set) const
 {
-  for (auto i = _tagWire.begin(); i!=_tagWire.end(); ++i)
+  // for (auto i = _tagWire.begin(); i!=_tagWire.end(); ++i)
+  for (TopTools_DataMapIteratorOfDataMapOfIntegerShape i(_tagWire);
+       i.More(); i.Next())
   {
-    set.insert(i.Iterator().Key());
+    set.insert(i.Key());
   }
 }
 
 void SubshapeNumbering::insertAllFaceTags(std::set<int> &set) const
 {
-  for (auto i = _tagFace.begin(); i!=_tagFace.end(); ++i)
+  // for (auto i = _tagFace.begin(); i!=_tagFace.end(); ++i)
+  for (TopTools_DataMapIteratorOfDataMapOfIntegerShape i(_tagFace);
+     i.More(); i.Next())
   {
-    set.insert(i.Iterator().Key());
+    set.insert(i.Key());
   }
 }
 
 void SubshapeNumbering::insertAllShellTags(std::set<int> &set) const
 {
-  for (auto i = _tagShell.begin(); i!=_tagShell.end(); ++i)
+  // for (auto i = _tagShell.begin(); i!=_tagShell.end(); ++i)
+  for (TopTools_DataMapIteratorOfDataMapOfIntegerShape i(_tagShell);
+     i.More(); i.Next())
   {
-    set.insert(i.Iterator().Key());
+    set.insert(i.Key());
   }
 }
 
 void SubshapeNumbering::insertAllSolidTags(std::set<int> &set) const
 {
-  for (auto i = _tagSolid.begin(); i!=_tagSolid.end(); ++i)
+  // for (auto i = _tagSolid.begin(); i!=_tagSolid.end(); ++i)
+  for (TopTools_DataMapIteratorOfDataMapOfIntegerShape i(_tagSolid);
+     i.More(); i.Next())
   {
-    set.insert(i.Iterator().Key());
+    set.insert(i.Key());
   }
 }
 
 int SubshapeNumbering::nVertexTags() const
 {
-  return _tagVertex.Size();
+  return _tagVertex.Extent();
 }
 
 int SubshapeNumbering::nEdgeTags() const
 {
-  return _tagEdge.Size();
+  return _tagEdge.Extent();
 }
 
 int SubshapeNumbering::nWireTags() const
 {
-  return _tagWire.Size();
+  return _tagWire.Extent();
 }
 
 int SubshapeNumbering::nFaceTags() const
 {
-  return _tagFace.Size();
+  return _tagFace.Extent();
 }
 
 int SubshapeNumbering::nShellTags() const
 {
-  return _tagShell.Size();
+  return _tagShell.Extent();
 }
 
 int SubshapeNumbering::nSolidTags() const
 {
-  return _tagSolid.Size();
+  return _tagSolid.Extent();
 }
 
 void SubshapeNumbering::bind(const TopoDS_Vertex &vertex, int tag, bool recursive)
@@ -618,7 +633,35 @@ void SubshapeNumbering::_addShapeToMaps(const TopoDS_Shape &shape)
 }
 
 
-SubshapeNumbering::SubshapeNumbering(const TopoDS_Shape& shape)
+
+SubshapeNumbering::SubshapeNumbering(const SubshapeNumbering& o)
+{
+    _fmap=o._fmap;
+    _emap=o._emap;
+    _vmap=o._vmap;
+    _somap=o._somap;
+    _shmap=o._shmap;
+    _wmap=o._wmap;
+
+    _vertexTag=o._vertexTag;
+    _edgeTag=o._edgeTag;
+    _faceTag=o._faceTag;
+    _solidTag=o._solidTag;
+    _tagVertex=o._tagVertex;
+    _tagEdge=o._tagEdge;
+    _tagFace=o._tagFace;
+    _tagSolid=o._tagSolid;
+    _wireTag=o._wireTag;
+    _shellTag=o._shellTag;
+    _tagWire=o._tagWire;
+    _tagShell=o._tagShell;
+
+    _changed=o._changed;
+    for (int j=0; j<6; ++j)
+        _maxTag[j]=o._maxTag[j];
+}
+
+SubshapeNumbering::SubshapeNumbering(const TopoDS_Shape &shape)
 {
 
 //  void OCC_Internals::_multiBind(const TopoDS_Shape &shape, int tag,

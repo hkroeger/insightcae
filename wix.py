@@ -201,27 +201,38 @@ def wslDistributionLabel(customer):
 
 
 
-def getDependencies(file, mxepath):
+def getDependencies(f, mxepath):
     deps=set()
-    ext=os.path.splitext(file)[-1]
+    ext=os.path.splitext(f)[-1]
+    print("searching deps of ", f)
     if ext==".exe" or ext==".dll":
-        ret=subprocess.run([os.path.join(mxepath,"usr/x86_64-pc-linux-gnu/bin/peldd"), file], stdout=subprocess.PIPE)
+        
+        ret=subprocess.run([os.path.join(mxepath,"usr/x86_64-pc-linux-gnu/bin/peldd"), f], stdout=subprocess.PIPE)
         deps=set([l.decode('UTF-8') for l in ret.stdout.split()])
-        #print(file, " : ", deps)
+        #print(f, " : ", deps)
     return deps
 
-def findFile(f, mxepath):
-    ret=subprocess.run(["find", os.path.join(mxepath, "usr/i686-w64-mingw32.shared"), "-iname", f], stdout=subprocess.PIPE)
-    #ret=subprocess.run(["locate", "-i", "-r", "^"+os.path.join(opts.mxepath, "usr/i686-w64-mingw32.shared")+".*"+f+"$"], stdout=subprocess.PIPE)
-    found=[l.decode('UTF-8') for l in ret.stdout.split()]
-    #print("found:", found)
-    if len(found)>1:
-        raise RuntimeError("multiple candidates for "+f+" found! "+str(found))
-    if len(found)==0:
-        print("No condidate for",f, "found.")
-        return None
 
-    return found[-1]
+alreadySearched={}
+
+def findFile(f, mxepath):
+    if f in alreadySearched:
+        return alreadySearched[f]
+    else:
+        ret=subprocess.run(["find", os.path.join(mxepath, "usr/i686-w64-mingw32.shared"), "-iname", f], stdout=subprocess.PIPE)
+        #ret=subprocess.run(["locate", "-i", "-r", "^"+os.path.join(opts.mxepath, "usr/i686-w64-mingw32.shared")+".*"+f+"$"], stdout=subprocess.PIPE)
+        found=[l.decode('UTF-8') for l in ret.stdout.split()]
+        #print("found:", found)
+        ff=None
+        if len(found)>1:
+            raise RuntimeError("multiple candidates for "+f+" found! "+str(found))
+        elif len(found)==0:
+            print("No condidate for",f, "found.")
+        else:
+            ff=found[-1]
+
+        alreadySearched[f]=ff
+        return ff
 
 
 
@@ -229,13 +240,29 @@ class FileList:
 
     files={}
 
-    def __init__(self, mxepath):
+    def __init__(self, mxepath, filterDepFiles=[]):
         self.mxepath=mxepath
+        self.filterDepFiles=[re.compile(fp, flags=re.IGNORECASE) for fp in filterDepFiles]
+        
+    def isFiltered(self, filename):
+        bn=os.path.basename(filename)
+        for f in self.filterDepFiles:
+            if bool(f.match(bn)):
+                return True
+        return False
 
     def addFile(self, sourceFile, targetDir):
-        bn=os.path.basename(sourceFile)
-        #print("add file: ", sourceFile, targetDir, "as", bn)
-        self.files[bn] = ( sanitizeId(bn), sourceFile, targetDir )
+        if not self.isFiltered(sourceFile):
+            bn=os.path.basename(sourceFile)
+            print("add file: ", sourceFile, targetDir, "as", bn)
+            fdf=findFile(bn, self.mxepath) # check, if this actually a dependency from a previous copy run
+            if not fdf is None:
+                self.files[bn] = ( sanitizeId(bn), fdf, targetDir )
+            else:
+                self.files[bn] = ( sanitizeId(bn), sourceFile, targetDir )
+            return True
+        else:
+            return False
 
     def addFiles(self, subdir, pattern=".*", targetprefix="", removeprefix=""):
         files=filter(
@@ -265,11 +292,12 @@ class FileList:
         for bn,(compn,sourcef,targdir) in oldfl.items():
             deps=getDependencies(sourcef, self.mxepath)
             for df in deps:
-                if not df in self.files:
+                if not os.path.basename(df) in self.files:
                     fdf=findFile(df, self.mxepath)
                     if not fdf is None:
-                        added+=1
-                        self.files[df]=( sanitizeId(df), fdf, "bin" )
+                        if self.addFile(os.path.join(self.mxepath, fdf), "bin"):
+                            added+=1
+                        #self.files[df]=( sanitizeId(df), os.path.join(self.mxepath, fdf), "bin" )
 
         #print("added", added, "dependencies")
         return added

@@ -483,8 +483,13 @@ DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni, VectorPtr up)
 {}
 
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool)
-: p0_(p0), p1_(p1), p2_(p2)
+    : p0_(p0), p1_(p1), p2_(p2)
 {}
+
+// DatumPlane::DatumPlane(istream &)
+// {
+
+// }
 
 // DatumPlane::DatumPlane
 // (

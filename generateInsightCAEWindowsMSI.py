@@ -19,7 +19,7 @@ parser.add_option("-b", "--branch", dest="branch", metavar='branch', default="ma
 parser.add_option("-c", "--customer", dest="customer", metavar='customer', default="ce",
                   help="label of customer")
 
-parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/mxe",
+parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/opt/mxe",
                 help="path to mxe cross compile environment")
 
 parser.add_option("-i", "--productId", dest="productId", metavar='productId', default="",

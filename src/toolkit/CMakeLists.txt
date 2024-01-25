@@ -349,41 +349,6 @@ setup_gettext(toolkit toolkit ${toolkit_SOURCES})
 
 install_shared_file2(base/materialLibrary.xml ".")
 
-
-
-
-# # need to handle extensions to VTK here in two versions (onscreen and offscreen)
-# get_filename_component(PY3ROOT ${PYTHON_LIBRARY} DIRECTORY) #lib
-# get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
-
-# # 1) vtk dicom reader
-# include(ExternalProject)
-
-
-
-# ExternalProject_Add( vtkdicom-offscreen
-#    GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
-#    GIT_TAG 6a81888
-#    CMAKE_ARGS
-#      -DBUILD_SHARED_LIBS=ON
-#      -DBUILD_PYTHON_WRAPPERS=OFF
-#      -DCMAKE_BUILD_TYPE=Release
-#      -DVTK_DIR=${VTK_OFFSCREEN_DIR}
-#      -DPython3_ROOT_DIR=${PY3ROOT}
-#      -DVTK_VERSIONED_INSTALL=OFF
-#      -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvisoffscreen
-#      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-
-#    BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvisoffscreen.so
-# )
-
-# ExternalProject_Get_Property( vtkdicom-offscreen INSTALL_DIR )
-# ExternalProject_Get_Property( vtkdicom-offscreen SOURCE_DIR )
-
-# set(VTKDICOMOFFSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
-# set(VTKDICOMOFFSCREEN_LIBDIR ${INSTALL_DIR}/lib)
-# set(VTKDICOMOFFSCREEN_LIBRARY ${VTKDICOMOFFSCREEN_LIBDIR}/libvtkDICOM-pvisoffscreen.so.0.8.15)
-
 target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
@@ -396,35 +361,6 @@ add_library(toolkitHeaders INTERFACE)
 get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)
 target_include_directories(toolkitHeaders INTERFACE ${toolkit_INCLUDE_DIRS})
 
-
-
-# ExternalProject_Add( vtkdicom-onscreen
-#    GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
-#    GIT_TAG 6a81888
-#    CMAKE_ARGS
-#      -DBUILD_SHARED_LIBS=ON
-#      -DBUILD_PYTHON_WRAPPERS=OFF
-#      -DCMAKE_BUILD_TYPE=Release
-#      -DVTK_DIR=${VTK_ONSCREEN_DIR}
-#      -DPython3_ROOT_DIR=${PY3ROOT}
-#      -DVTK_VERSIONED_INSTALL=OFF
-#      -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
-#      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-
-#    BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvis.so
-# )
-
-# ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )
-# ExternalProject_Get_Property( vtkdicom-onscreen SOURCE_DIR )
-
-# set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
-# set(VTKDICOMONSCREEN_LIBDIR ${INSTALL_DIR}/lib)
-# set(VTKDICOMONSCREEN_LIBRARY ${VTKDICOMONSCREEN_LIBDIR}/libvtkDICOM-pvis.so.0.8.15)
-
-
-
-# install(FILES ${VTKDICOMOFFSCREEN_LIBRARY} DESTINATION lib)
-# install(FILES ${VTKDICOMONSCREEN_LIBRARY} DESTINATION lib)
 
 
 
@@ -560,14 +496,15 @@ ENDIF()
 
 ## pull-in modules for VTK on/offscreen in toolkit python wrapper
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
-  foreach(_variant Offscreen Onscreen)
-      set(TARGETNAME vtkPy${_variant})
-      set(PYTARGET ${TARGETNAME}_python)
-      set(IFFILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i)
-      set_property(SOURCE ${IFFILE} PROPERTY CPLUSPLUS ON)
-      set_property(SOURCE ${IFFILE} PROPERTY SWIG_MODULE_NAME ${TARGETNAME})
+  if (NOT WIN32)
+    foreach(_variant Offscreen Onscreen)
+        set(TARGETNAME vtkPy${_variant})
+        set(PYTARGET ${TARGETNAME}_python)
+        set(IFFILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i)
+        set_property(SOURCE ${IFFILE} PROPERTY CPLUSPLUS ON)
+        set_property(SOURCE ${IFFILE} PROPERTY SWIG_MODULE_NAME ${TARGETNAME})
 
-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i "
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i "
 %module ${TARGETNAME}
 %{
 #include <iostream>
@@ -578,23 +515,28 @@ sys.setdlopenflags(os.RTLD_LAZY | os.RTLD_GLOBAL)
 %}
 ")
 
-      swig_add_library(${PYTARGET}
-          LANGUAGE python
-          SOURCES ${IFFILE})
-      target_link_libraries(${PYTARGET} vtk${_variant})
-      set_target_properties(${PYTARGET}
-          PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SWIG_OUTDIR}
-          )
-    #  set_target_properties(${PYTARGET}
-    #      PROPERTIES LINK_WHAT_YOU_USE TRUE # has no effect...
-    #      )
-      SET_TARGET_PROPERTIES(${PYTARGET} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
-      INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/_${PYTARGET}.so DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
-      INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/${TARGETNAME}.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
-  endforeach()
+        swig_add_library(${PYTARGET}
+            LANGUAGE python
+            SOURCES ${IFFILE})
+        target_link_libraries(${PYTARGET} vtk${_variant})
+        set_target_properties(${PYTARGET}
+            PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SWIG_OUTDIR}
+            )
+      #  set_target_properties(${PYTARGET}
+      #      PROPERTIES LINK_WHAT_YOU_USE TRUE # has no effect...
+      #      )
+        SET_TARGET_PROPERTIES(${PYTARGET} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+        INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/_${PYTARGET}.so DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+        INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/${TARGETNAME}.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    endforeach()
+  endif()
 ENDIF()
 
-add_pybindings(toolkit "toolkit.i" toolkit)
+if (WIN32)
+  add_pybindings(toolkit "toolkit_win32.i" toolkit)
+else()
+  add_pybindings(toolkit "toolkit.i" toolkit)
+endif()
 
 
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SWIG_RUNTIME} DESTINATION include/toolkit)

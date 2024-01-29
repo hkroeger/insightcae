@@ -55,6 +55,7 @@ else()
     ExternalProject_Add( vtkdicom-offscreen
        GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
        GIT_TAG 6a81888
+       INSTALL_DIR ${CMAKE_BINARY_DIR}
        CMAKE_ARGS
          -DBUILD_SHARED_LIBS=ON
          -DBUILD_PYTHON_WRAPPERS=OFF
@@ -75,8 +76,9 @@ else()
     set(VTKDICOMOFFSCREEN_LIBDIR ${INSTALL_DIR}/lib)
     set(VTKDICOMOFFSCREEN_LIBRARY ${VTKDICOMOFFSCREEN_LIBDIR}/libvtkDICOM-pvisoffscreen.so.0.8.15)
 
-    #install(FILES ${VTKDICOMOFFSCREEN_LIBDIR}/libvtkDICOM* DESTINATION lib)
-    install(DIRECTORY ${VTKDICOMOFFSCREEN_LIBDIR}/ DESTINATION lib FILES_MATCHING PATTERN "libvtkDICOM*.so*")
+    install(DIRECTORY ${VTKDICOMOFFSCREEN_LIBDIR}/
+      DESTINATION lib
+      FILES_MATCHING PATTERN "libvtkDICOM*.so*")
 
     set(LIBS "")
 

@@ -91,6 +91,7 @@ endif()
 ExternalProject_Add( vtkdicom-onscreen
    GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
    GIT_TAG 6a81888
+   INSTALL_DIR ${CMAKE_BINARY_DIR}
    CMAKE_COMMAND ${CMAKE}
    CMAKE_ARGS
      -DBUILD_SHARED_LIBS=ON
@@ -117,10 +118,16 @@ endif()
 set(VTKDICOMONSCREEN_LIBRARY ${INSTALL_DIR}/${LIBNAME})
 
 if (WIN32)
-  install(DIRECTORY ${INSTALL_DIR}/bin DESTINATION lib FILES_MATCHING PATTERN "libvtkDICOM*.dll*")
-  install(DIRECTORY ${INSTALL_DIR}/lib DESTINATION lib FILES_MATCHING PATTERN "libvtkDICOM*.dll*")
+  install(DIRECTORY ${INSTALL_DIR}/bin/
+    DESTINATION bin
+    FILES_MATCHING PATTERN "libvtkDICOM*.dll*")
+  install(DIRECTORY ${INSTALL_DIR}/lib/
+    DESTINATION lib
+    FILES_MATCHING PATTERN "libvtkDICOM*.dll*")
 else()
-  install(DIRECTORY ${INSTALL_DIR}/lib DESTINATION lib FILES_MATCHING PATTERN "libvtkDICOM*.so*")
+  install(DIRECTORY ${INSTALL_DIR}/lib/
+    DESTINATION lib
+    FILES_MATCHING PATTERN "libvtkDICOM*.so*")
 endif()
 
 

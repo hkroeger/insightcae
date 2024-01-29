@@ -61,6 +61,29 @@ extern const double VSMALL;
 extern const double SMALL;
 extern const double LSMALL;
 
+inline double pos(double x)
+{
+    if (x>=0)
+        return 1.;
+    else
+        return 0.;
+}
+
+inline double neg(double x)
+{
+    if (x<0)
+        return 1.;
+    else
+        return 0.;
+}
+
+inline double sgn(double x)
+{
+    if (x<0)
+        return -1.;
+    else
+        return 1.;
+}
 
 class GSLExceptionHandling
 {

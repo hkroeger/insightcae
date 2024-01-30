@@ -56,10 +56,9 @@ fi
 UNAME=user
 WORKDIR=/home/$UNAME
     
+WD=$(mktemp -d)
 (
-  WD=$(mktemp -d)
   cd $WD
-  pwd
   
   if [[ ! $DEB -ef $(pwd)/$(basename $DEB) ]]; then
    cp -v $DEB .
@@ -127,7 +126,7 @@ EOF
   rm -f *.tar *.tar.gz
   docker export --output $WSLNAME-$VERSION.tar $WSLNAME
   docker rm $WSLNAME
-  xz -9 $WSLNAME-$VERSION.tar  # very slow, but need strong compression to keep file size within MSI's limits
+  xz -T0 -9 $WSLNAME-$VERSION.tar  # very slow, but need strong compression to keep file size within EXE file size limit
 )
 
 mv $WD/$WSLNAME-$VERSION.tar.xz $OUTFILE

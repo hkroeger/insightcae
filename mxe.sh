@@ -9,7 +9,7 @@ set -e
 ACTION=$1
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-source $SCRIPTPATH/setup_environment.sh
+source $SCRIPTPATH/configuration.sh
 
 CMAKE_OPTS+=(
  "-DCMAKE_BUILD_TYPE=Release"

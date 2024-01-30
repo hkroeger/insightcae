@@ -2,8 +2,8 @@
 # the superbuild branch should be identical with the InsightCAE branch
 BRANCH=next-release
 TRACK_BRANCH=next-release
-
-DOCKERFILE="insightcae-buildsystem_ubuntu-jammy.docker"
+OS=ubuntu
+VER=jammy
 DO_WINDOWS_BUILD=1
 
 INSTALL_PREFIX=/opt/insightcae

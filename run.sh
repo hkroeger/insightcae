@@ -6,7 +6,7 @@
 
 set -e
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-source $SCRIPTPATH/setup_environment.sh
+source $SCRIPTPATH/configuration.sh
 
 SRC_PATH=/insight-src
 BUILD_PATH=$SRC_PATH/insight-build
@@ -32,8 +32,8 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MED3HOME/lib
 
 
 # system-specific build initializations
-case $SYSTEM in
- ubuntu-*)
+case $OS in
+ ubuntu*)
   CPACK_PACKAGE_GENERATOR=DEB
   if [ -n "$INSTALL_QT5" ]; then
    sudo apt-get clean; sudo rm -rf /var/lib/apt/lists/*; sudo apt-get clean
@@ -41,7 +41,7 @@ case $SYSTEM in
    sudo apt install -y qt5-default qttools5-dev qttools5-dev-tools qtxmlpatterns5-dev-tools libqt5svg5-dev libqt5x11extras5-dev libqt5help5 libqt5charts5-dev
   fi
   ;;
- centos-7)
+ centos*)
   CPACK_PACKAGE_GENERATOR=RPM
   if [ ! -e /opt/rh ]; then ln -s /opt_rh/rh /opt; fi
   if [ ! -e /usr/include/python3.6 ]; then sudo ln -s /usr/include/python3.6m /usr/include/python3.6; fi # bug in boost 
@@ -50,7 +50,7 @@ case $SYSTEM in
   module load mpi/openmpi-x86_64
   CMAKE_OPTS+=("-DPTSCOTCH_INCDIR=/usr/include/openmpi-x86_64")
   ;;
- openSUSE-*)
+ openSUSE*)
   if [ ! -e /opt/insightcae/lib/libscotch.so ]; then
    sudo mkdir -p /opt/insightcae/lib
    sudo cp -a /usr/local/lib/libscotch*.so /opt/insightcae/lib
@@ -62,7 +62,7 @@ case $SYSTEM in
   CPACK_PACKAGE_GENERATOR=RPM
   ;;
  *)
-  echo "UNSUPPORTED SYSTEM: $SYSTEM"
+  echo "UNSUPPORTED SYSTEM: $OS"
   exit -1
   ;;
 esac

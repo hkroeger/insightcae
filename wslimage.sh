@@ -7,7 +7,7 @@
 set -e
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-source $SCRIPTPATH/setup_environment.sh
+source $SCRIPTPATH/configuration.sh
 
 BUILD_PATH=$SCRIPTPATH/insight-build
 

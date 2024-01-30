@@ -24,7 +24,7 @@ pipeline {
     agent any
     steps {
      script {
-        linuxDockerfile = sh(returnStdout: true, script: "bash -c \"source ${workdir}/configuration.sh; echo \\\$DOCKERFILE\"").trim()
+        linuxDockerfile = sh(returnStdout: true, script: "bash -c \"source ${workdir}/configuration.sh; echo insightcae-buildsystem_\\\$OS-\\\$VER.docker\"").trim()
         doWindowsBuild = sh(returnStdout: true, script: "bash -c \"source ${workdir}/configuration.sh; echo \\\$DO_WINDOWS_BUILD\"").trim()
      }
     }
@@ -69,13 +69,7 @@ pipeline {
        return doWindowsBuild == '1';
      }
    }
-   //agent any
-   agent { dockerfile {
-    filename "${linuxDockerfile}"
-    dir "buildsystems"
-    additionalBuildArgs  "--build-arg USER=${user_name} --build-arg UID=${user_id} --build-arg GID=${group_id}"
-    args "-v ${workdir}:/insight-src"
-   } }
+   agent any
    
    steps {
     sh './wslimage.sh'

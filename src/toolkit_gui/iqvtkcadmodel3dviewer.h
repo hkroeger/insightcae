@@ -63,6 +63,15 @@ class MyVTKWidget : public VTKWidget
 public:
     MyVTKWidget(QWidget* parent);
     void leaveEvent(QEvent *event) override;
+
+    void mouseDoubleClickEvent(QMouseEvent* e) override;
+    void mousePressEvent(QMouseEvent* e) override;
+    void mouseReleaseEvent(QMouseEvent* e) override;
+    void mouseMoveEvent(QMouseEvent* e) override;
+    void wheelEvent(QWheelEvent* e) override;
+    void keyPressEvent(QKeyEvent* e) override;
+    void keyReleaseEvent(QKeyEvent* e) override;
+
 Q_SIGNALS:
     void mouseLeavesViewer();
 };

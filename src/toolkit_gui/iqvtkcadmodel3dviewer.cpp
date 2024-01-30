@@ -80,6 +80,7 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 VTK_MODULE_INIT(vtkRenderingFreeType);
 
 
+
 using namespace insight;
 
 
@@ -92,11 +93,47 @@ MyVTKWidget::MyVTKWidget(QWidget *parent)
 
 void MyVTKWidget::leaveEvent(QEvent *event)
 {
+    dbg(3)<<"leave event"<<std::endl;
+
     VTKWidget::leaveEvent(event);
     Q_EMIT mouseLeavesViewer();
 }
 
 
+void MyVTKWidget::mouseDoubleClickEvent(QMouseEvent* e)
+{
+    e->ignore();
+}
+
+void MyVTKWidget::mousePressEvent(QMouseEvent* e)
+{
+    e->ignore();
+}
+
+void MyVTKWidget::mouseReleaseEvent(QMouseEvent* e)
+{
+    e->ignore();
+}
+
+void MyVTKWidget::mouseMoveEvent(QMouseEvent* e)
+{
+    e->ignore();
+}
+
+void MyVTKWidget::wheelEvent(QWheelEvent* e)
+{
+    e->ignore();
+}
+
+void MyVTKWidget::keyPressEvent(QKeyEvent* e)
+{
+    e->ignore();
+}
+
+void MyVTKWidget::keyReleaseEvent(QKeyEvent* e)
+{
+    e->ignore();
+}
 
 
 
@@ -1301,7 +1338,6 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     );
 
     setMouseTracking( true );
-    setFocusPolicy(Qt::StrongFocus);
 
     backgroundRen_ = vtkSmartPointer<vtkRenderer>::New();
     backgroundRen_->SetLayer(0);
@@ -2141,6 +2177,8 @@ void IQVTKCADModel3DViewer::mouseDoubleClickEvent(QMouseEvent *e)
 
 void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
 {
+    dbg(3)<<"mouse press"<<std::endl;
+
     IQCADModel3DViewer::mousePressEvent(e);
 
     if ( e->button() & Qt::LeftButton )
@@ -2170,6 +2208,8 @@ void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
 
 void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
 {
+    dbg(3)<<"mouse release"<<std::endl;
+
     IQCADModel3DViewer::mouseReleaseEvent(e);
 
     if ( e->button() & Qt::LeftButton )
@@ -2204,6 +2244,8 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
 
 void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
 {
+    dbg(3)<<"mouse move"<<std::endl;
+
     IQCADModel3DViewer::mouseMoveEvent(e);
 
     bool ret=false;
@@ -2217,6 +2259,8 @@ void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
 
 void IQVTKCADModel3DViewer::wheelEvent( QWheelEvent* e )
 {
+    dbg(3)<<"wheel"<<std::endl;
+
     IQCADModel3DViewer::wheelEvent(e);
 
     bool ret=false;
@@ -2230,6 +2274,8 @@ void IQVTKCADModel3DViewer::wheelEvent( QWheelEvent* e )
 
 void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
 {
+    dbg(3)<<"key press"<<std::endl;
+
     IQCADModel3DViewer::keyPressEvent(e);
 
     if (e->key() == Qt::Key_Escape)
@@ -2253,6 +2299,8 @@ void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
 
 void IQVTKCADModel3DViewer::keyReleaseEvent( QKeyEvent* e )
 {
+    dbg(3)<<"key release"<<std::endl;
+
     IQCADModel3DViewer::keyReleaseEvent(e);
 
     bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());

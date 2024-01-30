@@ -73,7 +73,7 @@ pipeline {
    
    steps {
     sh './wslimage.sh'
-      archiveArtifacts artifacts: 'wsl/insightcae-wsl-*.tar.*', fingerprint: true
+      archiveArtifacts artifacts: 'insightcae-wsl-*.tar.*', fingerprint: true
    }
   }
 

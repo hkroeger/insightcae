@@ -69,10 +69,17 @@ pipeline {
        return doWindowsBuild == '1';
      }
    }
-   agent any
+   //agent any
+   agent { dockerfile {
+    filename "${linuxDockerfile}"
+    dir "buildsystems"
+    additionalBuildArgs  "--build-arg USER=${user_name} --build-arg UID=${user_id} --build-arg GID=${group_id}"
+    args "-v ${workdir}:/insight-src"
+   } }
+   
    steps {
     sh './wslimage.sh'
-      archiveArtifacts artifacts: 'wsl/insightcae-ubuntu-*.tar.gz', fingerprint: true
+      archiveArtifacts artifacts: 'wsl/insightcae-wsl-*.tar.*', fingerprint: true
    }
   }
 

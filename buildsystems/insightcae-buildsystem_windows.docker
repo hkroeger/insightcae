@@ -44,8 +44,8 @@ RUN apt-get --ignore-missing install -y \
 
 RUN apt-get --ignore-missing install -y wine unzip winetricks
 RUN dpkg --add-architecture i386 ; apt-get update ; apt-get install -y wine32
-COPY wix311-binaries.zip /
-RUN mkdir /wix; cd /wix; unzip /wix311-binaries.zip
+COPY wix311-binaries.zip /tmp
+RUN mkdir -p /opt/wix; cd /opt/wix; unzip /tmp/wix311-binaries.zip; rm /tmp/wix311-binaries.zip
 
 RUN apt-get install -y software-properties-common apt-utils
 RUN apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg; add-apt-repository http://downloads.silentdynamics.de/ubuntu_dev; apt-get update; apt-get install -y mxe

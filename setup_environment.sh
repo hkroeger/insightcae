@@ -3,8 +3,8 @@
 # like ubuntu-focal or centos-7
 # https://unix.stackexchange.com/a/6348
 if type lsb_release >/dev/null 2>&1; then
-    OS=$(lsb_release -si| awk '{print tolower($0)}')
-    VER=$(lsb_release -sc)
+    OS=$(lsb_release -si| awk '{print tolower($0)}') # ubuntu
+    VER=$(lsb_release -sc) # jammy
 elif [ -f /etc/debian_version ]; then
     # Older Debian/Ubuntu/etc.
     OS=debian

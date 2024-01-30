@@ -13,8 +13,6 @@ from optparse import OptionParser
 
 parser = OptionParser()
 
-parser.add_option("-b", "--branch", dest="branch", metavar='branch', default="master",
-                  help="label of the InsightCAE branch")
 
 parser.add_option("-c", "--customer", dest="customer", metavar='customer', default="ce",
                   help="label of customer")
@@ -22,7 +20,7 @@ parser.add_option("-c", "--customer", dest="customer", metavar='customer', defau
 parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/opt/mxe",
                 help="path to mxe cross compile environment")
 
-parser.add_option("-i", "--productId", dest="productId", metavar='productId', default="",
+parser.add_option("-i", "--productId", dest="productId", metavar='productId', default="d6e296e3-61c2-44b4-8736-be4568091ff4",
                   help="product id")
 
 parser.add_option("-v", "--version", dest="version", metavar='version', default="0.0.0",
@@ -70,16 +68,14 @@ wxs=wix.WixInput(
     fullVersion,
     menuentry=("InsightCAE", '5f61d82b-1c22-4e54-b9b6-b7cad11e7aee') )
 
-fl=wix.FileList(opts.mxepath)
+fl=wix.FileList(opts.mxepath, ["python.*\\.dll", "opengl.*\\.dll"])
 
 for d in directories:
     fl.addFiles(d)
 
 fl.addFile( os.path.join(opts.mxepath, "usr/i686-w64-mingw32.shared/qt5/plugins/platforms/qwindows.dll"), "bin/plugins/platforms" )
 
-# adding doesn't work, too big(?)
-#for f in list(filter(re.compile("^insightcae.*\\.tar\\.gz").search, os.listdir("/insight-src/wsl"))):
-#    fl.addFile( "/insight-src/wsl/"+f, "share/insight/wsl" )
+
     
 sp=os.path.join(opts.mxepath, "usr/i686-w64-mingw32.shared/share/oce-0.18/src/Shaders")
 fl.addFiles( sp, ".*", "share/oce-0.18/Shaders", sp)
@@ -90,7 +86,7 @@ while (fl.addDependencies()>0):
     pass
 
 # generate remoteServers.xml
-wsldistlabel=wix.wslDistributionLabel(opts.customer)
+#wsldistlabel=wix.wslDistributionLabel(opts.customer)
 #nfn="remoteservers.list"
 #open(nfn, 'w').write("""<?xml version="1.0" encoding="utf-8"?>
 #<root>
@@ -104,9 +100,24 @@ print(fl.files)
 
 wxs.addFiles(fl.files)
 
-wxs.addShortcut('workbenchshortcut', "Workbench", "Simulation apps are run through this front end", '[INSTALLDIR]bin\\workbench.exe', os.path.join(opts.insightSourcePath, "symbole", 'logo_insight_cae.ico'))
-wxs.addShortcut('iscadshortcut', "isCAD", "A script-based CAD editor", '[INSTALLDIR]bin\\iscad.exe', os.path.join(superbuildSourcePath, "symbole", 'logo_insight_cae.ico'), False)
-wxs.addShortcut('isresulttoolshortcut', "Result Viewer", "A viewer for InsightCAE's ISR result files", '[INSTALLDIR]bin\\isResultTool.exe', os.path.join(opts.insightSourcePath, "symbole", 'logo_insight_cae.ico'), False)
+# adding doesn't work, files too big
+#j=1
+#for f in list(filter(re.compile("^insightcae.*\\.tar\\.xz$").search, os.listdir("."))):
+#    wxs.addFiles( { os.path.basename(f): ('wslimg%d'%j, f, "share/insight/wsl")})
+#    j+=1
+    
+wxs.addShortcut(
+    'workbenchshortcut', "Workbench", "Simulation apps are run through this front end", 
+    '[INSTALLDIR]bin\\workbench.exe', 
+    os.path.join(opts.insightSourcePath, "symbole", 'logo_insight_cae.ico'))
+wxs.addShortcut(
+    'iscadshortcut', "isCAD", "A script-based CAD editor", 
+    '[INSTALLDIR]bin\\iscad.exe', 
+    os.path.join(superbuildSourcePath, "symbole", 'logo_insight_cae.ico'), False)
+wxs.addShortcut(
+    'isresulttoolshortcut', "Result Viewer", "A viewer for InsightCAE's ISR result files", 
+    '[INSTALLDIR]bin\\isResultTool.exe', 
+    os.path.join(opts.insightSourcePath, "symbole", 'logo_insight_cae.ico'), False)
 #wxs.addShortcut(
 #    'shellshortcut',
 #    "WSL Shell", "OpenFOAM Command line",

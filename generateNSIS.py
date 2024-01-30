@@ -10,19 +10,14 @@ superbuildSourcePath = os.path.dirname(os.path.realpath(__file__))
 
 parser = OptionParser()
 
-parser.add_option("-b", "--branch", dest="branch", metavar='branch', default="master",
-                  help="label of the InsightCAE branch")
-
 parser.add_option("-c", "--customer", dest="customer", metavar='customer', default="ce",
                   help="label of customer")
 
-parser.add_option("-p", "--password", dest="password", metavar='password', default="",
-                  help="password for customer repository")
 
 parser.add_option("-s", "--insightSourcePath", dest="insightSourcePath", metavar='InsightCAE source path', default=superbuildSourcePath,
                   help="path to insightcae source code (not superbuild source)")
 
-parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/mxe",
+parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/opt/mxe",
                 help="path to mxe cross compile environment")
 
 (opts, args) = parser.parse_args()
@@ -57,10 +52,10 @@ installerfname+="-%d.%d.%d"%fullVersion
 
 print("Generating installation package "+installerfname)
 
+
+
 class Dependency:
-    def __init__(self, URL=None, file=None, productId="", updateType="reinstall"):
-        self.productId=productId
-        self.updateType=updateType
+    def __init__(self, URL=None, file=None):
         if file is None:
             if URL is None:
                 raise RuntimeError("URL and file must not be None at the same time.")
@@ -70,6 +65,8 @@ class Dependency:
             self.file=file
         if not os.path.exists(self.file) and not URL is None:
             req.urlretrieve(URL, self.file)
+            
+        self.command='ExecShellWait "" "$TEMP\{file}"'.format(file=self.file)
 
     def config(self, label):
         name,ext=os.path.splitext(os.path.basename(self.file))
@@ -80,10 +77,16 @@ Section "{label}"
     Delete "$TEMP\{file}"
 SectionEnd
 """.format(
-    label=label,
-    file=self.file,
-    command=
-     """\
+        label=label,
+        file=self.file,
+        command=self.command )
+
+
+
+class MSIDependency(Dependency):
+    def __init__(self, URL=None, file=None, productId="", updateType="reinstall"):
+        super(MSIDependency, self).__init__(URL=URL, file=file)
+        self.command="""
 push $R0
 StrCpy $R0 "{productId}"
 push $R1
@@ -91,21 +94,31 @@ StrCpy $R1 "{file}"
 push $R2
 StrCpy $R2 "{updateType}"
 Call InstallMSI
-""".format(productId=self.productId, file=self.file, updateType=self.updateType) \
-     if ext.lower()=='.msi' else \
-     'ExecShellWait "" "$TEMP\{file}"'.format(file=self.file)
-)
+""".format(productId=productId, file=self.file, updateType=updateType)
 
 
-putty=Dependency("http://downloads.silentdynamics.de/thirdparty/putty-64bit-0.76-installer.msi")
+
+class WSLImageDependency(Dependency):
+    def __init__(self, URL=None, file=None):
+        super(WSLImageDependency, self).__init__(URL=URL, file=file)
+        m=re.search("^(.*)-([0-9]*\\.[0-9]*\\.[0-9]*).tar.(.*)$", self.file)
+        imgname=m.group(1)
+        print(imgname)
+        self.command="""
+${{PowerShellExec}} "wsl --import {imgname} $PROFILE\\{imgname} $TEMP\\{file}"
+""".format(file=self.file, imgname=imgname)
+
+
+putty=MSIDependency("http://downloads.silentdynamics.de/thirdparty/putty-64bit-0.76-installer.msi")
 gnuplot=Dependency("http://downloads.silentdynamics.de/thirdparty/gp528-win64-mingw.exe")
 miktex=Dependency("http://downloads.silentdynamics.de/thirdparty/basic-miktex-21.6-x64.exe")
+python=Dependency("http://downloads.silentdynamics.de/thirdparty/python-3.6.8rc1.exe")
 paraview=Dependency("http://downloads.silentdynamics.de/thirdparty/ParaView-5.8.1-Windows-Python3.7-msvc2015-64bit.exe")
+insightwsl=WSLImageDependency(file="insightcae-wsl-ubuntu-jammy-4.0.646.tar.xz")
 
 if subprocess.call([
  os.path.join(superbuildSourcePath, "generateInsightCAEWindowsMSI.py"),
     "-c", opts.customer, 
-    "-b", opts.branch,
     "-s", opts.insightSourcePath,
     "-x", opts.mxepath,
     "-i", GUID_winInsightCAE,
@@ -114,19 +127,8 @@ if subprocess.call([
     print("Failed to run generateInsightCAEWindowsMSI.py!")
     sys.exit(-1)
 
-insight=Dependency(file="insightcae.msi", productId=GUID_winInsightCAE, updateType="uninstallfirst")
+insight=MSIDependency(file="insightcae.msi", productId=GUID_winInsightCAE, updateType="uninstallfirst")
 
-#if subprocess.call([
- #os.path.join(superbuildSourcePath, "generateWSLMSI.py"),
-    #"-c", opts.customer,
-    #"-p", opts.password,
-    #"-s", opts.insightSourcePath,
-    #"-i", GUID_wsl
-#])!=0:
-    #print("Failed to run generateInsightCAEWindowsMSI.py!")
-    #sys.exit(-1)
-
-#insightwsl=Dependency(file="insightcae-wsl.msi", productId=GUID_wsl)
 
 
 nsisScript=("""
@@ -203,9 +205,10 @@ Page instfiles
 +putty.config("Putty") \
 +gnuplot.config("Gnuplot") \
 +miktex.config("MiKTeX") \
++python.config("Python 3.6") \
 +paraview.config("ParaView 5.8") \
-+insight.config("InsightCAE Windows Client and isCAD") \
-#+insightwsl.config("WSL Distibution (Ubuntu) with InsightCAE backend and OpenFOAM")
++insightwsl.config("WSL Distibution (Ubuntu) with InsightCAE backend and OpenFOAM") \
++insight.config("InsightCAE Windows Client and isCAD")
 
 nsisScriptfname=installerfname+".nsis"
 open(nsisScriptfname, 'w').write(nsisScript)

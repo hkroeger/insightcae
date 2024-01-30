@@ -149,11 +149,11 @@ class WixInput:
         return self.subdirs[relpath]
 
 
-    def addFiles(self, fileList):
+    def addFiles(self, fileList, diskId='1'):
         for bn,(compn,sourcef,targdir) in fileList.items():
             node=self.getDirNode(targdir)
             Component=ET.SubElement(node, "Component", attrib={ 'Id': compn, 'Guid': '*' })
-            File=ET.SubElement(Component, "File", attrib={ 'Id': compn, 'Name': bn, 'DiskId': '1', 'Source':toWinePath(sourcef), 'KeyPath': 'yes' })
+            File=ET.SubElement(Component, "File", attrib={ 'Id': compn, 'Name': bn, 'DiskId': diskId, 'Source':toWinePath(sourcef), 'KeyPath': 'yes' })
 
             ET.SubElement(self.Feature, "ComponentRef", attrib={'Id': compn})
 
@@ -194,23 +194,27 @@ class WixInput:
 
 
 def wslDistributionLabel(customer):
-    wsldistlabel="insightcae-ubuntu-1804"
+    wsldistlabel="insightcae-wsl"
     if not (customer=="ce" or customer=="ce-dev"):
         wsldistlabel+="-"+customer
     return wsldistlabel
 
 
+alreadyScanned={}
 
 def getDependencies(f, mxepath):
-    deps=set()
-    ext=os.path.splitext(f)[-1]
-    print("searching deps of ", f)
-    if ext==".exe" or ext==".dll":
-        
-        ret=subprocess.run([os.path.join(mxepath,"usr/x86_64-pc-linux-gnu/bin/peldd"), f], stdout=subprocess.PIPE)
-        deps=set([l.decode('UTF-8') for l in ret.stdout.split()])
-        #print(f, " : ", deps)
-    return deps
+    if f in alreadyScanned:
+        return alreadyScanned[f]
+    else:
+        deps=set()
+        ext=os.path.splitext(f)[-1]
+        print("searching deps of ", f)
+        if ext==".exe" or ext==".dll":
+            ret=subprocess.run([os.path.join(mxepath,"usr/x86_64-pc-linux-gnu/bin/peldd"), f], stdout=subprocess.PIPE)
+            deps=set([l.decode('UTF-8') for l in ret.stdout.split()])
+            #print(f, " : ", deps)
+        alreadyScanned[f]=deps
+        return deps
 
 
 alreadySearched={}

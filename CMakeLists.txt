@@ -1010,7 +1010,7 @@ if(DPKG_PROGRAM)
   message(STATUS "Package version: ${PACKAGE_VERSION}")
 
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "insightcae-dependencies")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "insightcae-dependencies,libpoppler-cpp0v5")
 
 else(DPKG_PROGRAM)
 

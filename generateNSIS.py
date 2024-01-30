@@ -13,7 +13,6 @@ parser = OptionParser()
 parser.add_option("-c", "--customer", dest="customer", metavar='customer', default="ce",
                   help="label of customer")
 
-
 parser.add_option("-s", "--insightSourcePath", dest="insightSourcePath", metavar='InsightCAE source path', default=superbuildSourcePath,
                   help="path to insightcae source code (not superbuild source)")
 
@@ -52,7 +51,12 @@ installerfname+="-%d.%d.%d"%fullVersion
 
 print("Generating installation package "+installerfname)
 
-
+wslimages=list(filter(re.compile("^insightcae-wsl-.*-%d.%d.%d\\.tar\\..*"%fullVersion).match, os.listdir(".")))
+if len(wslimages)>1:
+    except "unexpected: more than one wsl image present. Please clean build directory."
+if len(wslimages)<1:
+    except "unexpected: no wsl image present. Please check build directory."
+wslimage=wslimages[0]
 
 class Dependency:
     def __init__(self, URL=None, file=None):
@@ -114,7 +118,7 @@ gnuplot=Dependency("http://downloads.silentdynamics.de/thirdparty/gp528-win64-mi
 miktex=Dependency("http://downloads.silentdynamics.de/thirdparty/basic-miktex-21.6-x64.exe")
 python=Dependency("http://downloads.silentdynamics.de/thirdparty/python-3.6.8rc1.exe")
 paraview=Dependency("http://downloads.silentdynamics.de/thirdparty/ParaView-5.8.1-Windows-Python3.7-msvc2015-64bit.exe")
-insightwsl=WSLImageDependency(file="insightcae-wsl-ubuntu-jammy-4.0.646.tar.xz")
+insightwsl=WSLImageDependency(file=wslimage)
 
 if subprocess.call([
  os.path.join(superbuildSourcePath, "generateInsightCAEWindowsMSI.py"),

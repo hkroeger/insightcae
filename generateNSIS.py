@@ -16,6 +16,10 @@ parser.add_option("-c", "--customer", dest="customer", metavar='customer', defau
 parser.add_option("-s", "--insightSourcePath", dest="insightSourcePath", metavar='InsightCAE source path', default=superbuildSourcePath,
                   help="path to insightcae source code (not superbuild source)")
 
+parser.add_option("-b", "--insightBuildPath", dest="insightBuildPath", metavar='InsightCAE build path', default="build", 
+                  help="path to insightcae build directory")
+
+
 parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/opt/mxe",
                 help="path to mxe cross compile environment")
 
@@ -26,7 +30,7 @@ out=subprocess.check_output(
         [ "git", "describe" ],
         cwd=superbuildSourcePath
         ).decode().split('\n')
-print(out)
+
 m=re.search("^([0-9]+)\\.([0-9]+)[-]*([^ ]+|)$", out[0])
 if m is None:
     raise RuntimeError("could not interpret output of git describe: "+out[0])
@@ -53,9 +57,9 @@ print("Generating installation package "+installerfname)
 
 wslimages=list(filter(re.compile("^insightcae-wsl-.*-%d.%d.%d\\.tar\\..*"%fullVersion).match, os.listdir(".")))
 if len(wslimages)>1:
-    except "unexpected: more than one wsl image present. Please clean build directory."
+    raise "unexpected: more than one wsl image present. Please clean build directory."
 if len(wslimages)<1:
-    except "unexpected: no wsl image present. Please check build directory."
+    raise "unexpected: no wsl image present. Please check build directory."
 wslimage=wslimages[0]
 
 class Dependency:
@@ -134,11 +138,12 @@ if subprocess.call([
     "-x", opts.mxepath,
     "-i", GUID_winInsightCAE,
     "-v", "%d.%d.%d"%fullVersion
-])!=0:
+], cwd=opts.insightBuildPath)!=0:
     print("Failed to run generateInsightCAEWindowsMSI.py!")
     sys.exit(-1)
 
-insight=MSIDependency(file="insightcae.msi", productId=GUID_winInsightCAE, updateType="uninstallfirst")
+insight=MSIDependency(file=os.path.join(opts.insightBuildPath, "insightcae.msi"),
+                      productId=GUID_winInsightCAE, updateType="uninstallfirst")
 
 
 

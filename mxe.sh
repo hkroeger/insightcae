@@ -12,7 +12,6 @@ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 source $SCRIPTPATH/configuration.sh
 
 # inside linux cmake-binary dir:
-SUPERBUILD_SRC_PATH=/insight-src
 SRC_PATH=/insight-src
 BUILD_PATH=/insight-windows-build
 LINUX_BUILD_PATH=$SCRIPTPATH/insight-build
@@ -32,10 +31,10 @@ CMAKE_OPTS+=(
 export PATH=$PATH:$MXEPATH/usr/bin:$LINUX_BUILD_PATH/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/insightcae/boost-1.65.1/lib
 
-cd $BUILD_PATH
 
 if [ "$ACTION" == "build" ]; then
  
+ cd $BUILD_PATH
  i686-w64-mingw32.shared-cmake ${CMAKE_OPTS[@]} $SRC_PATH
  make -j
 
@@ -43,7 +42,7 @@ elif [ "$ACTION" == "package" ]; then
 
  i686-w64-mingw32.static-makensis $SCRIPTPATH/wsl-activation-installer.nsis
  
- $SUPERBUILD_SRC_PATH/generateNSIS.py -c "$REPO_CUSTOMER" -p "$REPO_PASSWORD" -b "$BRANCH" -s "$SRC_PATH"
+ $SRC_PATH/generateNSIS.py -c "$REPO_CUSTOMER" -s "$SRC_PATH" -b "$BUILD_PATH"
 
 else
 

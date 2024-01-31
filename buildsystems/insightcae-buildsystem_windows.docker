@@ -48,7 +48,8 @@ COPY wix311-binaries.zip /tmp
 RUN mkdir -p /opt/wix; cd /opt/wix; unzip /tmp/wix311-binaries.zip; rm /tmp/wix311-binaries.zip
 
 RUN apt-get install -y software-properties-common apt-utils
-RUN apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg; add-apt-repository http://downloads.silentdynamics.de/ubuntu_dev; apt-get update; apt-get install -y mxe
+RUN apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg; add-apt-repository http://downloads.silentdynamics.de/ubuntu_dev; apt-get update; apt-get install -y insightcae-boost mxe
+RUN chmod a+rwX -R /opt/mxe/.ccache
     
 # === setup user
 ARG USER=docker

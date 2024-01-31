@@ -11,23 +11,26 @@ ACTION=$1
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 source $SCRIPTPATH/configuration.sh
 
-CMAKE_OPTS+=(
- "-DCMAKE_BUILD_TYPE=Release"
- "-DINSIGHT_BUILD_PYTHONBINDINGS=OFF"
- "-DDXFLIB_INCLUDE_DIR:PATH=/mxe/usr/i686-w64-mingw32.shared/include/dxflib"
- "-DDXFLIB_LIBRARY:PATH=/mxe/usr/i686-w64-mingw32.shared/lib/libdxflib.dll.a"
-)
-
 # inside linux cmake-binary dir:
 SUPERBUILD_SRC_PATH=/insight-src
 SRC_PATH=/insight-src
 BUILD_PATH=/insight-windows-build
-#LINUX_BUILD_PATH=/opt/insight-build/insight/build
+LINUX_BUILD_PATH=$SCRIPTPATH/insight-build
+MXEPATH=/opt/mxe
 
-export PATH=$PATH:/mxe/usr/bin:$BUILD_PATH/bin
+CMAKE_OPTS+=(
+ "-DPYTHON_INCLUDE_DIRS=$MXEPATH/usr/i686-w64-mingw32.shared/python36/include"
+ "-DPYTHON_INCLUDE_DIR=$MXEPATH/usr/i686-w64-mingw32.shared/python36/include"
+ "-DPYTHON_LIBRARIES=$MXEPATH/usr/i686-w64-mingw32.shared/python36/python36.dll"
+ "-DPYTHON_LIBRARY=$MXEPATH/usr/i686-w64-mingw32.shared/python36/python36.dll"
+ "-DVTK_ONSCREEN_DIR=$MXEPATH/usr/i686-w64-mingw32.shared/lib/cmake/vtk-8.2"
+ "-DCMAKE_WRAPPER=$MXEPATH/usr/bin/i686-w64-mingw32.shared-cmake"
+ "-DINSIGHT_BUILD_MEDREADER:BOOL=OFF"
+)
 
-source /opt/insightcae/bin/insight_setenv.sh
 
+export PATH=$PATH:$MXEPATH/usr/bin:$LINUX_BUILD_PATH/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/insightcae/boost-1.65.1/lib
 
 cd $BUILD_PATH
 

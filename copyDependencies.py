@@ -34,7 +34,14 @@ fl=wix.FileList(opts.mxepath, ["python.*\\.dll", "opengl.*\\.dll"])
 for d in directories:
     fl.addFiles(d)
 
-fl.addFile( os.path.join(opts.mxepath, "usr/i686-w64-mingw32.shared/qt5/plugins/platforms/qwindows.dll"), "bin/plugins/platforms" )
+fl.addFile( 
+    os.path.join(opts.mxepath,
+                 "usr/i686-w64-mingw32.shared/qt5/plugins/platforms/qwindows.dll"), 
+    "bin/plugins/platforms" )
+fl.addFile( 
+    os.path.join(opts.mxepath, 
+                 "usr/i686-w64-mingw32.shared/qt5/plugins/styles/qwindowsvistastyle.dll"), 
+    "bin/plugins/styles" )
 
 sp=os.path.join(opts.mxepath, "usr/i686-w64-mingw32.shared/share/oce-0.18/src/Shaders")
 fl.addFiles( sp, ".*", "share/oce-0.18/Shaders", sp)

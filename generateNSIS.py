@@ -108,8 +108,15 @@ class WSLImageDependency(Dependency):
         m=re.search("^(.*)-([0-9]*\\.[0-9]*\\.[0-9]*).tar.(.*)$", self.file)
         imgname=m.group(1)
         print(imgname)
+        open("remoteservers.list", 'w').write("""
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+ <remoteServer label="{label}" type="WSLLinux" distributionLabel="{label}" baseDirectory="/home/user"/>
+</root>
+""".format(label=imgname))
         self.command="""
 ${{PowerShellExec}} "wsl --import {imgname} $PROFILE\\{imgname} $TEMP\\{file}"
+File "/oname=$PROFILE\.insight/share/remoteservers.list" "remoteservers.list"
 """.format(file=self.file, imgname=imgname)
 
 

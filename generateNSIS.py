@@ -71,7 +71,8 @@ class Dependency:
             if URL is None:
                 raise RuntimeError("URL and file must not be None at the same time.")
             else:
-                self.file=URL.split('/')[-1]
+                self.localfile=URL.split('/')[-1]
+                self.filename=os.path.basename(self.localfile)
         else:
             self.localfile=file
             self.filename=os.path.basename(self.localfile)
@@ -124,8 +125,9 @@ class WSLImageDependency(Dependency):
 </root>
 """.format(label=imgname))
         self.command="""
-${{PowerShellExec}} "wsl --import {imgname} $PROFILE\\{imgname} $TEMP\\{file}"
-File "/oname=$PROFILE\.insight/share/remoteservers.list" "remoteservers.list"
+ExecWait 'wsl --import "{imgname}" "$PROFILE\\{imgname}" "$TEMP\\{file}"'
+CreateDirectory "$PROFILE\\.insight\\share"
+File "/oname=$PROFILE\\.insight\\share\\remoteservers.list" "remoteservers.list"
 """.format(file=self.filename, imgname=imgname)
 
 
@@ -223,11 +225,11 @@ Page instfiles
     outFile=installerfname,
     srcPath=superbuildSourcePath
 )) \
-+(putty.config("Putty") \
++((putty.config("Putty") \
 +gnuplot.config("Gnuplot") \
 +miktex.config("MiKTeX") \
 +python.config("Python 3.6") \
-+paraview.config("ParaView 5.8")) if not opts.skipOtherDeps else "\n" \
++paraview.config("ParaView 5.8")) if not opts.skipOtherDeps else "\n") \
 +insightwsl.config("WSL Distibution (Ubuntu) with InsightCAE backend and OpenFOAM") \
 +insight.config("InsightCAE Windows Client and isCAD")
 

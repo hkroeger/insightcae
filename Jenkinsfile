@@ -96,7 +96,7 @@ pipeline {
    steps {
     sh './mxe.sh build'
     sh './mxe.sh package'
-      archiveArtifacts artifacts: "/insight-windows-build/InsightCAEInstaller*.exe", fingerprint: true
+      archiveArtifacts artifacts: "InsightCAEInstaller*.exe", fingerprint: true
    }
   }
   

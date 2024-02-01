@@ -36,9 +36,9 @@ pipeline {
     sh "mkdir -p ${builddir} insight-windows-build mxe"
     sh "rm -vf ${builddir}/insightcae*.deb"
     sh "rm -vf ${builddir}/insightcae*.rpm"
-    sh "rm -vf insight-windows-build/InsightCAEInstaller*"
+    sh "rm -vf InsightCAEInstaller*"
     sh "rm -vf ${builddir}/insightcae*.tar.gz"
-    sh "rm -vf ${builddir}/insightcae*.tar.xz"
+    sh "rm -vf insightcae-wsl-*.tar.xz"
     sh "FILES=`find ${workdir} -iname *.i`; if [ -n \"\\\$FILES\" ]; then touch \\\$FILES; fi"
   } }
 

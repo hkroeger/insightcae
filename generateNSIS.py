@@ -23,6 +23,9 @@ parser.add_option("-b", "--insightBuildPath", dest="insightBuildPath", metavar='
 parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/opt/mxe",
                 help="path to mxe cross compile environment")
 
+parser.add_option("-o", "--skipotherdeps", dest="skipOtherDeps", action="store_true", default=False,
+                help="skip non-insightcae parts")
+
 (opts, args) = parser.parse_args()
 
 
@@ -70,23 +73,25 @@ class Dependency:
             else:
                 self.file=URL.split('/')[-1]
         else:
-            self.file=file
-        if not os.path.exists(self.file) and not URL is None:
-            req.urlretrieve(URL, self.file)
+            self.localfile=file
+            self.filename=os.path.basename(self.localfile)
+        if not os.path.exists(self.localfile) and not URL is None:
+            req.urlretrieve(URL, self.localfile)
             
-        self.command='ExecShellWait "" "$TEMP\{file}"'.format(file=self.file)
+        self.command='ExecShellWait "" "$TEMP\{file}"'.format(
+            file=self.filename)
 
     def config(self, label):
-        name,ext=os.path.splitext(os.path.basename(self.file))
         return """
 Section "{label}"
-    File "/oname=$TEMP\{file}" "{file}"
+    File "/oname=$TEMP\{file}" "{localfile}"
     {command}
     Delete "$TEMP\{file}"
 SectionEnd
 """.format(
         label=label,
-        file=self.file,
+        file=self.filename,
+        localfile=self.localfile,
         command=self.command )
 
 
@@ -102,14 +107,14 @@ StrCpy $R1 "{file}"
 push $R2
 StrCpy $R2 "{updateType}"
 Call InstallMSI
-""".format(productId=productId, file=self.file, updateType=updateType)
+""".format(productId=productId, file=self.filename, updateType=updateType)
 
 
 
 class WSLImageDependency(Dependency):
     def __init__(self, URL=None, file=None):
         super(WSLImageDependency, self).__init__(URL=URL, file=file)
-        m=re.search("^(.*)-([0-9]*\\.[0-9]*\\.[0-9]*).tar.(.*)$", self.file)
+        m=re.search("^(.*)-([0-9]*\\.[0-9]*\\.[0-9]*).tar.(.*)$", self.filename)
         imgname=m.group(1)
         print(imgname)
         open("remoteservers.list", 'w').write("""
@@ -121,7 +126,7 @@ class WSLImageDependency(Dependency):
         self.command="""
 ${{PowerShellExec}} "wsl --import {imgname} $PROFILE\\{imgname} $TEMP\\{file}"
 File "/oname=$PROFILE\.insight/share/remoteservers.list" "remoteservers.list"
-""".format(file=self.file, imgname=imgname)
+""".format(file=self.filename, imgname=imgname)
 
 
 putty=MSIDependency("http://downloads.silentdynamics.de/thirdparty/putty-64bit-0.76-installer.msi")
@@ -218,11 +223,11 @@ Page instfiles
     outFile=installerfname,
     srcPath=superbuildSourcePath
 )) \
-+putty.config("Putty") \
++(putty.config("Putty") \
 +gnuplot.config("Gnuplot") \
 +miktex.config("MiKTeX") \
 +python.config("Python 3.6") \
-+paraview.config("ParaView 5.8") \
++paraview.config("ParaView 5.8")) if not opts.skipOtherDeps else "\n" \
 +insightwsl.config("WSL Distibution (Ubuntu) with InsightCAE backend and OpenFOAM") \
 +insight.config("InsightCAE Windows Client and isCAD")
 

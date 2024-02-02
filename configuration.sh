@@ -1,7 +1,7 @@
 
 # the superbuild branch should be identical with the InsightCAE branch
-BRANCH=next-release
-TRACK_BRANCH=next-release
+BRANCH=master
+TRACK_BRANCH=master
 OS=ubuntu
 VER=jammy
 DO_WINDOWS_BUILD=1
@@ -21,5 +21,5 @@ CMAKE_OPTS=(
 )
 
 # customer repository info, needed for windows installer
-REPO_CUSTOMER="ce-dev"
+REPO_CUSTOMER="ce"
 REPO_PASSWORD=""

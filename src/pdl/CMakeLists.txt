@@ -12,6 +12,7 @@ set(pdl_SOURCES
     doublerangeparameterparser.cpp doublerangeparameterparser.h
     stringparameterparser.cpp stringparameterparser.h
     pathparameterparser.cpp pathparameterparser.h
+    directoryparameterparser.h directoryparameterparser.cpp
     selectionparameterparser.cpp selectionparameterparser.h
     dynamicclassselectablesubsetparameterparser.cpp dynamicclassselectablesubsetparameterparser.h
     dynamicclassparametersselectablesubsetparameterparser.cpp dynamicclassparametersselectablesubsetparameterparser.h
@@ -21,6 +22,9 @@ set(pdl_SOURCES
     arrayparameterparser.cpp arrayparameterparser.h
     selectablesubsetparameterparser.cpp selectablesubsetparameterparser.h
     propertylibraryselectionparameterparser.h propertylibraryselectionparameterparser.cpp
+    spatialtransformationparameterparser.h spatialtransformationparameterparser.cpp
+    cadgeometryparameterparser.h cadgeometryparameterparser.cpp
+    cadsketchparameterparser.h cadsketchparameterparser.cpp
 )
 
 add_executable(pdl ${pdl_SOURCES})

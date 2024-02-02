@@ -26,6 +26,7 @@
 
 #include "isofcasebuilderwindow.h"
 #include "insertedcaseelement.h"
+#include "iqvtkcadmodel3dviewer.h"
 
 #ifndef Q_MOC_RUN
 #include "openfoam/ofes.h"
@@ -70,7 +71,7 @@ void isofCaseBuilderWindow::updateTitle()
 
 bool isofCaseBuilderWindow::CADisCollapsed() const
 {
-  QList<int> sz = ui->splitter_5->sizes();
+  QList<int> sz = ui->mainSplitter->sizes();
   return sz[0]==0 && sz[1]==0;
 }
 
@@ -82,19 +83,17 @@ void isofCaseBuilderWindow::expandOrCollapseCADIfNeeded()
   if ( (multiViz_->size()>0) && CADisCollapsed())
   {
     // expand
-    QList<int> sz = ui->splitter_5->sizes();
-    sz[2]=300;
+    QList<int> sz = ui->mainSplitter->sizes();
     sz[0]=3*sz[2];
     sz[1]=sz[2];
-    ui->splitter_5->setSizes(sz);
+    ui->mainSplitter->setSizes(sz);
   }
   else if ( (multiViz_->size()==0) && !CADisCollapsed())
   {
-    QList<int> sz = ui->splitter_5->sizes();
+    QList<int> sz = ui->mainSplitter->sizes();
     sz[0]=0;
     sz[1]=0;
-    sz[2]=600;
-    ui->splitter_5->setSizes(sz);
+    ui->mainSplitter->setSizes(sz);
   }
 }
 
@@ -109,12 +108,15 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
 {
   // setup layout
   ui = new Ui::isofCaseBuilderWindow;
+
   ui->setupUi(this);
 
-  ui->occview->connectModelTree(ui->modeltree);
-  display_=new ParameterSetDisplay(this, ui->occview, ui->modeltree);
-  multiViz_ = new insight::Multi_CAD_ParameterSet_Visualizer;
-  ui->modeltree->connectModel(multiViz_);
+  auto *cadview = new IQVTKCADModel3DViewer;
+  ui->mainSplitter->insertWidget(0, cadview);
+
+  display_=new IQVTKParameterSetDisplay(this, cadview, ui->modeltree);
+  multiViz_ = new insight::MultiCADParameterSetVisualizer;
+  multiViz_->setModel(display_->model());
 
   availableBCsModel_=new AvailableBCsModel(this);
   availableCaseElementsModel_=new AvailableCaseElementsModel(this);
@@ -443,9 +445,9 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
   onOFVersionChanged(ui->OFversion->currentText());
 
   // global splitter
-  ui->splitter_5->setStretchFactor(0, 3);
-  ui->splitter_5->setStretchFactor(1, 0);
-  ui->splitter_5->setStretchFactor(2, 1);
+//  ui->splitter_5->setStretchFactor(0, 3);
+//  ui->splitter_5->setStretchFactor(1, 0);
+//  ui->splitter_5->setStretchFactor(2, 1);
 
 
   // BC tab splitter

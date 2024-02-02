@@ -28,6 +28,9 @@
 
 #include <boost/spirit/include/qi.hpp>
 
+#include <vtkSmartPointer.h>
+#include <vtkDataObject.h>
+
 #include <map>
 #include <string>
 
@@ -61,6 +64,7 @@ public:
     typedef std::map<std::string, FeatureSetPtr> 	FaceFeatureTableContents;
     typedef std::map<std::string, FeatureSetPtr> 	SolidFeatureTableContents;
     typedef std::map<std::string, PostprocActionPtr> 	PostprocActionTableContents;
+    typedef std::map<std::string, vtkSmartPointer<vtkDataObject> > 	DatasetTableContents;
 
     typedef boost::spirit::qi::symbols<char, ScalarPtr> 	ScalarTable;
     typedef boost::spirit::qi::symbols<char, VectorPtr> 	VectorTable;
@@ -74,6 +78,7 @@ public:
     typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	FaceFeatureTable;
     typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	SolidFeatureTable;
     typedef boost::spirit::qi::symbols<char, PostprocActionPtr> PostprocActionTable;
+    typedef DatasetTableContents                                DatasetTable;
 
 protected:
     std::string                 description_;
@@ -90,6 +95,7 @@ protected:
     SolidFeatureTable           solidFeatures_;
     ModelTable                  models_;
     PostprocActionTable         postprocActions_;
+    DatasetTable                datasets_;
 
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     boost::filesystem::path modelfile_;
@@ -121,9 +127,23 @@ public:
     const SolidFeatureTable& 	solidFeatureSymbols() const;
     const ModelTable& 	modelSymbols() const;
     const PostprocActionTable& 	postprocActionSymbols() const;
+    const DatasetTable& 	datasets() const;
 
 
+    /**
+     * @brief addScalar
+     * add or replace existing
+     * @param name
+     * @param value
+     */
     void addScalar(const std::string& name, ScalarPtr value);
+
+    /**
+     * @brief addScalarIfNotPresent
+     * Only adds, if symbol is not present. Else it don't does nothing (not replace).
+     * @param name
+     * @param value
+     */
     void addScalarIfNotPresent(const std::string& name, ScalarPtr value);
     void addPoint(const std::string& name, VectorPtr value);
     void addPointIfNotPresent(const std::string& name, VectorPtr value);
@@ -131,11 +151,14 @@ public:
     void addDirectionIfNotPresent(const std::string& name, VectorPtr value);
     void addDatum(const std::string& name, DatumPtr value);
     void addDatumIfNotPresent(const std::string& name, DatumPtr value);
-    void addModelstep(const std::string& name, FeaturePtr value, const std::string& featureDescription = std::string() );
-    void addModelstepIfNotPresent(const std::string& name, FeaturePtr value, const std::string& featureDescription = std::string() );
-    void addComponent(const std::string& name, FeaturePtr value, const std::string& featureDescription = std::string() );
+    void addModelstep(const std::string& name, FeaturePtr value, bool isComponent, const std::string& featureDescription = std::string() );
+    void addModelstepIfNotPresent(const std::string& name, FeaturePtr value, bool isComponent, const std::string& featureDescription = std::string() );
 
     void removeScalar(const std::string& name);
+    void removePoint(const std::string& name);
+    void removeDirection(const std::string& name);
+    void removeDatum(const std::string& name);
+    void removeModelstep(const std::string& name);
 
     void addVertexFeature(const std::string& name, FeatureSetPtr value);
     void addEdgeFeature(const std::string& name, FeatureSetPtr value);
@@ -144,6 +167,12 @@ public:
     void addModel(const std::string& name, ModelPtr value);
     void addPostprocAction(const std::string& name, PostprocActionPtr value);
     std::string addPostprocActionUnnamed(PostprocActionPtr value);
+
+    void removePostprocAction(const std::string& name);
+
+    void addDataset(const std::string& name, vtkSmartPointer<vtkDataObject> value);
+
+    void removeDataset(const std::string& name);
 
     ScalarPtr lookupScalar(const std::string& name) const;
     VectorPtr lookupPoint(const std::string& name) const;
@@ -161,6 +190,8 @@ public:
     {
         return components_;
     }
+
+    bool isComponent(const std::string& name) const;
     
     const std::string description() const;
 

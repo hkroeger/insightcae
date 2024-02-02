@@ -30,12 +30,12 @@
 namespace insight {
 
 
-arma::mat readAndCombineTabularFiles
-(
-    const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
-    const std::string& FOName, const std::string& fileName,
-    const std::string& filterChars="()"
+#ifndef SWIG
+std::unique_ptr<std::pair<time_t,boost::filesystem::path> > newestOutputFile(
+    const boost::filesystem::path& expectedFName
 );
+#endif
+
   
 std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
 (
@@ -45,7 +45,13 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
     const std::string& filterChars="()"
 );
 
-  
+arma::mat readAndCombineTabularFiles
+    (
+        const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
+        const std::string& FOName, const std::string& fileName,
+        const std::string& filterChars="()"
+        );
+
 /** ===========================================================================
  * Base class for function objects, that understand the output* options
  */
@@ -87,6 +93,7 @@ public:
 
   outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet & ps = defaultParameters() );
   virtual OFDictData::dict functionObjectDict() const =0;
+  virtual std::vector<std::string> requiredLibraries() const;
   void addIntoControlDict(OFDictData::dict& controlDict) const;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
@@ -462,7 +469,7 @@ public:
 #endif
 
 class forces
-: public OpenFOAMCaseElement
+: public outputFilterFunctionObject
 {
     
 public:
@@ -470,15 +477,13 @@ public:
 
 /*
 PARAMETERSET>>> forces Parameters
+inherits outputFilterFunctionObject::Parameters
 
-name = string "forces" "Name of this forces function object"
 patches = array [ string "patch" "Name of patch" ] *1 "Name of patches for force integration"
 pName = string "p" "Name of pressure field"
 UName = string "U" "Name of velocity field"
 rhoName = string "rhoInf" "Name of density field. rhoInf for constant rho"
 rhoInf = double 1.0 "Value of constant density"
-outputControl = string "timeStep" "Output control"
-outputInterval = double 10.0 "Output interval"
 CofR = vector (0 0 0) "Center point for torque calculation"
 
 <<<PARAMETERSET
@@ -491,7 +496,8 @@ public:
   declareType("forces");
   forces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
 
-  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  OFDictData::dict functionObjectDict() const override;
+  std::vector<std::string> requiredLibraries() const override;
   
   static arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName);
   
@@ -523,7 +529,8 @@ protected:
 public:
   declareType("extendedForces");
   extendedForces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-  void addIntoDictionaries(OFdicts& dictionaries) const override;
+  OFDictData::dict functionObjectDict() const override;
+  std::vector<std::string> requiredLibraries() const override;
 };
 
 

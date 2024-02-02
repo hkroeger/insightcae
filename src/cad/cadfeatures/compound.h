@@ -31,7 +31,8 @@ namespace cad
     
     
 typedef std::vector<FeaturePtr> CompoundFeatureList;
-typedef std::map<std::string, FeaturePtr> CompoundFeatureMap;
+typedef std::map<std::string, FeaturePtr>  CompoundFeatureMap;
+typedef std::vector<boost::fusion::vector<std::string, FeaturePtr> > CompoundFeatureMapData;
 
 
 
@@ -42,6 +43,7 @@ class Compound
 protected:
     CompoundFeatureMap components_;
 
+    Compound();
     Compound ( const CompoundFeatureList& m1 );
     Compound ( const CompoundFeatureMap& m1 );
 
@@ -50,17 +52,19 @@ protected:
 
 public:
     declareType ( "Compound" );
-    Compound ();
-    
-    static FeaturePtr create( const CompoundFeatureList& m1 );
-    static FeaturePtr create_map( const CompoundFeatureMap& m1 );
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    CREATE_FUNCTION(Compound);
+
+    static std::shared_ptr<Compound> create_named( const CompoundFeatureMapData& m1 );
+
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
     virtual double mass ( double density_ovr=-1., double aw_ovr=-1. ) const;
     virtual arma::mat modelCoG ( double density_ovr=-1. ) const;
     virtual arma::mat modelInertia ( double density_ovr=-1. ) const;
+
+    Compound& operator=(const Compound& o);
 };
 
 

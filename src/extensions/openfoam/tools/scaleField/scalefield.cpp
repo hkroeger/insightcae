@@ -42,10 +42,44 @@ using namespace Foam;
 template<class T>
 void scale(const fvMesh& mesh, const IOobject& ioo, scalar s)
 {
+    if (fabs(s-1.0)>SMALL)
+    {
+        Info << "Reading field "<<ioo.name()<<"\n" << endl;
+        GeometricField<T, fvPatchField, volMesh> f(ioo, mesh);
+
+        f*=s;
+
+        Info << "Writing field "<<ioo.name()<<"\n" << endl;
+        f.write();
+    }
+}
+
+
+template<class T>
+void add(const fvMesh& mesh, const IOobject& ioo, const string& valueSource)
+{
+    IStringStream is(valueSource);
+    T sm(is);
+
     Info << "Reading field "<<ioo.name()<<"\n" << endl;
     GeometricField<T, fvPatchField, volMesh> f(ioo, mesh);
 
-    f*=s;
+    f+=dimensioned<T>("", f.dimensions(), sm);
+
+    Info << "Writing field "<<ioo.name()<<"\n" << endl;
+    f.write();
+}
+
+template<>
+void add<scalar>(const fvMesh& mesh, const IOobject& ioo, const string& valueSource)
+{
+    IStringStream is(valueSource);
+    scalar sm=readScalar(is);
+
+    Info << "Reading field "<<ioo.name()<<"\n" << endl;
+    GeometricField<scalar, fvPatchField, volMesh> f(ioo, mesh);
+
+    f+=dimensioned<scalar>("", f.dimensions(), sm);
 
     Info << "Writing field "<<ioo.name()<<"\n" << endl;
     f.write();
@@ -58,6 +92,8 @@ int main(int argc, char *argv[])
 {
   argList::validArgs.append("field name");
   argList::validArgs.append("scale factor");
+
+  argList::validOptions.insert("add", "add specified constant");
 
 # include "setRootCase.H"
 # include "createTime.H"
@@ -80,18 +116,26 @@ int main(int argc, char *argv[])
   if (UNIOF_HEADEROK(ioo, volVectorField))
   {
       scale<vector>(mesh, ioo, s);
+      if (UNIOF_OPTIONFOUND(args, "add"))
+          add<vector>(mesh, ioo, args.options()["add"]);
   }
   else if (UNIOF_HEADEROK(ioo, volSymmTensorField))
   {
       scale<symmTensor>(mesh, ioo, s);
+      if (UNIOF_OPTIONFOUND(args, "add"))
+          add<symmTensor>(mesh, ioo, args.options()["add"]);
   }
   else if (UNIOF_HEADEROK(ioo, volTensorField))
   {
       scale<tensor>(mesh, ioo, s);
+      if (UNIOF_OPTIONFOUND(args, "add"))
+          add<tensor>(mesh, ioo, args.options()["add"]);
   }
   else if (UNIOF_HEADEROK(ioo, volScalarField))
   {
       scale<scalar>(mesh, ioo, s);
+      if (UNIOF_OPTIONFOUND(args, "add"))
+          add<scalar>(mesh, ioo, args.options()["add"]);
   }
 
 

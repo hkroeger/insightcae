@@ -23,485 +23,43 @@
 #define INSIGHT_BLOCKMESH_H
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
-#include "openfoam/openfoamdict.h"
+
 #include "base/linearalgebra.h"
 
 #include "boost/variant.hpp"
-#include "boost/assign/list_of.hpp"
-#include <boost/assign/std/vector.hpp>
 
 #include <cmath>
 #include <vector>
 #include <map>
 #include <armadillo>
 
+#include "openfoam/blockmesh/point.h"
+#include "openfoam/blockmesh/gradinganalyzer.h"
+
+#include "openfoam/blockmesh/discretecurve.h"
+#include "openfoam/blockmesh/edge.h"
+#include "openfoam/blockmesh/patch.h"
+#include "openfoam/blockmesh/patch2d.h"
+#include "openfoam/blockmesh/block.h"
+#include "openfoam/blockmesh/block2d.h"
+
+#include "openfoam/blockmesh/arcedge.h"
+#include "openfoam/blockmesh/circularedge_center.h"
+#include "openfoam/blockmesh/circularedge.h"
+#include "openfoam/blockmesh/ellipseedge.h"
+#include "openfoam/blockmesh/splineedge.h"
+
+#include "openfoam/blockmesh/transform2d.h"
+#include "openfoam/blockmesh/plane2d.h"
+#include "openfoam/blockmesh/wedge2d.h"
+
+#include "openfoam/blockmesh/geometry.h"
+#include "openfoam/blockmesh/projectededge.h"
+#include "openfoam/blockmesh/projectedface.h"
+
+
 namespace insight {
-  
-namespace bmd
-{
-
-
-
-
-class blockMesh;
-
-
-
-
-typedef arma::mat Point;
-
-
-typedef std::vector<Point> PointList;
-typedef std::map<Point, int> PointMap;
-
-
-
-
-PointList P_4(const Point& p1, const Point& p2, const Point& p3, const Point& p4);
-PointList P_4(const PointList& pts, int p1, int p2, int p3, int p4);
-PointList P_8(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
-	      const Point& p5, const Point& p6, const Point& p7, const Point& p8);
-PointList P_8_DZ(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
-              const arma::mat& dz0, const arma::mat& dz1);
-
-
-
-OFDictData::list bmdEntry(const PointList& pts, const PointMap& allPoints);
-
-
-
-
-class Patch
-{
-public:
-  typedef std::vector<PointList> FaceList;
-  
-protected:
-  std::string typ_;
-  FaceList faces_;
-  
-public:
-  Patch(std::string typ="patch");
-  virtual ~Patch();
-  
-  void addFace(Point c1, Point c2, Point c3, Point c4);
-  void addFace(const PointList& corners);
-
-  void appendPatch(const Patch& opatch);
-  
-  /**
-   * remove all faces from current patch
-   */
-  void clear();
-  
-  Patch* transformed(const arma::mat& tm, bool inv=false, const arma::mat trans=vec3(0,0,0) ) const;
-  virtual Patch* clone() const;
-
-  inline const FaceList& faces() const { return faces_; }
-
-  std::vector<OFDictData::data> 
-  bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;
-
-};
-
-
-
-
-class GradingAnalyzer
-{
-  double grad_;
-public:
-  GradingAnalyzer(double grad);
-  
-  /**
-   * compute grading from cell size at beginning and end
-   */
-  GradingAnalyzer(double delta0, double delta1);
-  
-  /**
-   * grading from condition: minimum cell length delta0 on edge of length L discretized with n cells
-   */
-  GradingAnalyzer(double delta0, double L, int n);
-  
-  inline double grad() const { return grad_; }
-  
-  int calc_n(double delta0, double L) const;
-  double calc_L(double delta0, int n) const;
-  double calc_delta1(double delta0) const;
-};
-
-
-
-
-class Block
-{
-public:
-  typedef boost::variant<
-      double, 
-      std::vector<double> 
-      > Grading;
-  typedef std::vector<Grading> GradingList;
-        
-protected:
-  PointList corners_;
-  std::vector<int> resolution_;
-  GradingList grading_;
-  std::string zone_;
-  bool inv_;
-  
-public:
-  Block(PointList corners, 
-	int resx, int resy, int resz, 
-	GradingList grading = GradingList(3, 1), 
-	std::string zone="", 
-	bool inv=false);
-  virtual ~Block();
-
-  void registerPoints(blockMesh& bmd) const;
-
-  PointList face(const std::string& id) const;
-
-  void swapGrad();
-
-  std::vector<OFDictData::data>
-  bmdEntry(const PointMap& allPoints, int OFversion) const;
-
-  Block* transformed(const arma::mat& tm, bool inv=false, const arma::mat trans=vec3(0,0,0)) const;
-  virtual Block* clone() const;
-  
-  inline int nCells() const
-  {
-    return resolution_[0]*resolution_[1]*resolution_[2];
-  }
-
-};
-
-
-
-
-class transform2D
-{
-protected:
-  int idx_;
-  std::vector<int> map_;
-  std::vector<int> dir_;
-  
-  Patch fwdPatch_, rvsPatch_;
-  
-public:
-    transform2D(int idx=2);
-    virtual ~transform2D();
-  
-    arma::mat mapped3D(const arma::mat& p) const;
-    
-    virtual arma::mat fwd(const arma::mat& p) const =0;
-    virtual arma::mat rvs(const arma::mat& p) const =0;
-
-    inline Patch& fwdPatch() { return fwdPatch_; }
-    inline Patch& rvsPatch() { return rvsPatch_; }
-
-    void addFwdRvsPatches(blockMesh *bmd);
-};
-
-
-
-
-class plane2D
-: public transform2D
-{
-protected:
-  arma::mat ofs_;
-  
-public:
-    plane2D(double thick, int idx=2); 
-    virtual ~plane2D();
-    
-    virtual arma::mat fwd(const arma::mat& p) const;
-    virtual arma::mat rvs(const arma::mat& p) const;
-};
-
-
-
-
-class wedge2D
-: public transform2D
-{
-  arma::mat fwdrot_, rvsrot_;
-  
-public:
-    wedge2D(int idx=2);
-    virtual ~wedge2D();
-    
-    virtual arma::mat fwd(const arma::mat& p) const;
-    virtual arma::mat rvs(const arma::mat& p) const;
-};
-
-
-
-
-class Block2D
-: public Block
-{
-protected:
-  transform2D& t2d_;
-  
-public:
-    Block2D
-    (
-      transform2D& t2d, 
-      PointList corners, 
-      int resx, int resy, 
-      GradingList grading = GradingList(3, 1), 
-      std::string zone="", 
-      bool inv=false
-    );
-};
-
-
-
-
-class Edge
-{
-protected:
-  Point c0_, c1_;
-  
-public:
-  Edge(const Point& c0, const Point& c1);
-  virtual ~Edge();
-
-  bool connectsPoints(const Point& c0, const Point& c1) const;
-  inline const Point& c0() const { return c0_; }
-  inline const Point& c1() const { return c1_; }
-
-  virtual std::vector<OFDictData::data>
-  bmdEntry(const PointMap& allPoints, int OFversion) const =0;
-
-  virtual void registerPoints(blockMesh& bmd) const;
-  
-  virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const =0;
-  virtual Edge* clone() const =0;
-
-};
-
-
-
-
-class ArcEdge
-: public Edge
-{
-protected:
-  Point midpoint_;
-  
-public:
-  ArcEdge(const Point& c0, const Point& c1, const Point& midpoint);
-
-  virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
-
-  virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const;
-  virtual Edge* clone() const;
-};
-
-
-
-
-class EllipseEdge
-: public Edge
-{
-protected:
-  Point center_;
-  double ex_;
-
-public:
-    EllipseEdge
-    (
-      const Point& c0, const Point& c1, 
-      const Point& center,
-      double ex
-    );
-    
-    virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
-
-    virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const;
-    virtual Edge* clone() const;
-};
-
-
-
-
-class CircularEdge
-: public ArcEdge
-{
-public:
-    CircularEdge
-    (
-      const Point& c0, const Point& c1, 
-      Point startPoint=vec3(0,0,0),
-      arma::mat axis=vec3(0,0,1)
-    );
-};
-
-class CircularEdge_Center
-: public ArcEdge
-{
-public:
-    CircularEdge_Center
-    (
-      const Point& c0, const Point& c1,
-      const Point& center
-    );
-};
-
-
-
-
-/*
-class GenArcEdge
-: public ArcEdge
-{
-    def __init__(self, corners, R, axis, startPoint=array([0,0,0])):
-        from scipy.optimize.nonlin import broyden2
-        a=axis
-        a/=sqrt(dot(a,a))
-        def F(x):
-            M=array([x[0], x[1], x[2]])
-            r1=corners[0]-M
-            r2=corners[1]-M
-            cr=cross(r1, r2)
-            cr/=sqrt(dot(cr, cr))
-            return [
-                1.0-dot(a, cr),
-                sqrt(dot(r1, r1))-R,
-                sqrt(dot(r2, r2))-R
-                 ]
-        startPoint=array(
-            broyden2(F, list(startPoint), 20, verbose=True)
-            )
-        print corners, startPoint
-        bp=startPoint+axis*dot(axis, (corners[0]-startPoint))
-        r1=corners[0]-bp
-        r=sqrt(dot(r1, r1))
-        print R, r
-        mp0=0.5*((corners[0]-bp)+(corners[1]-bp))
-        mp0/=sqrt(dot(mp0,mp0))
-        bmdArcEdge.__init__(self, corners, bp+r*mp0)
-};
-*/
-
-
-
-
-class SplineEdge
-: public Edge
-{
-protected:
-  PointList intermediatepoints_;
-  std::string splinekeyword_;
-  
-public:
-  SplineEdge(const PointList& points, 
-             std::string splinekeyword="simpleSpline");
-
-  virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
-
-  virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const;
-  virtual Edge* clone() const;
-
-  PointList allPoints() const;
-};
-
-/*
-def splineEdgeAlongCurve(curve, p0, p1, 
-                         start0=0.5, start1=0.5, 
-                         lim=False, fixed=False):
-    if not fixed:
-        t0=Curves.tNearP(curve, p0, start0, limited=lim)
-        t1=Curves.tNearP(curve, p1, start1, limited=lim)
-    else:
-        t0=start0
-        t1=start1
-    print "Generating spline on curve from param ", t0, " to ", t1
-    if (fabs(t0-t1)<1e-4):
-        raise Exception('start and end of spline are the same point')
-    allEdges.append(bmdSplineEdge([p0, p1], pointsInRange(curve, t0, t1)))
-    return t0, t1
-*/
-
-
-
-
-class Patch2D
-: public Patch
-{
-protected:
-  const transform2D& t2d_;
-  
-public:
-    Patch2D(const transform2D& t2d, std::string typ="patch");   
-    void addFace(const Point& c0, const Point& c1);
-};
-
-/*
-class ArcEdge2D
-{
-    def __init__(self, t2d, corners, midpoint):
-        self.t2d=t2d
-        self.corners=corners
-        self.midpoint=midpoint
-
-    def register(self, bmd):
-        for c in self.corners:
-            bmd.addPoint(Point(self.t2d.fwd(c)))
-            bmd.addPoint(Point(self.t2d.rvs(c)))
-
-    def bmdEntry(self, allPoints):
-        mp=self.t2d.fwd(self.midpoint)
-        s="arc %d %d (%f %f %f)\n" % (
-            allPoints[Point(self.t2d.fwd(self.corners[0]))], 
-            allPoints[Point(self.t2d.fwd(self.corners[1]))],
-            mp[0], mp[1], mp[2])
-        mp=self.t2d.rvs(self.midpoint)
-        s+="arc %d %d (%f %f %f)\n" % (
-            allPoints[Point(self.t2d.rvs(self.corners[0]))], 
-            allPoints[Point(self.t2d.rvs(self.corners[1]))],
-            mp[0], mp[1], mp[2])
-        return s
-};
-
-class SplineEdge2D
-{
-    def __init__(self, t2d, corners, intermediatepoints, 
-                 splinekeyword="GSLSpline"):
-        self.t2d=t2d
-        self.corners=corners
-        self.intermediatepoints=intermediatepoints
-        self.skey=splinekeyword
-
-    def register(self, bmd):
-        for c in self.corners:
-            bmd.addPoint(Point(self.t2d.fwd(c)))
-            bmd.addPoint(Point(self.t2d.rvs(c)))
-            
-    def bmdEntry(self, allPoints):
-        s="%s %d %d\n(\n" % (
-            self.skey,
-            allPoints[Point(self.t2d.fwd(self.corners[0]))], 
-            allPoints[Point(self.t2d.fwd(self.corners[1]))])
-        for p in self.intermediatepoints:
-            s+="(%s)\n"%(" ".join(["%g"%c for c in self.t2d.fwd(p)]))
-        s+=")\n"
-
-        s+="%s %d %d\n(\n" % (
-            self.skey,
-            allPoints[Point(self.t2d.rvs(self.corners[0]))], 
-            allPoints[Point(self.t2d.rvs(self.corners[1]))])
-        for p in self.intermediatepoints:
-            s+="(%s)\n"%(" ".join(["%g"%c for c in self.t2d.rvs(p)]))
-        s+=")\n"
-        
-        return s
-};
-*/
-
+namespace bmd {
 
 
 
@@ -519,6 +77,9 @@ protected:
   boost::ptr_vector<Block> allBlocks_;
   boost::ptr_vector<Edge> allEdges_;
   PatchMap allPatches_;
+  std::vector<Geometry> geometries_;
+  std::map<Point,std::string> projectedVertices_;
+  std::vector<ProjectedFace> projectedFaces_;
   
 public:
   blockMesh(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
@@ -527,7 +88,15 @@ public:
   
   void setScaleFactor(double sf);
   void setDefaultPatch(const std::string& name, std::string type="patch");
-  
+
+  void addGeometry(const Geometry& geo);
+  const std::vector<Geometry>& allGeometry() const;
+
+  void addProjectedVertex(const Point& pf, const std::string& geometryLabel);
+
+  void addProjectedFace(const ProjectedFace& pf);
+  const std::vector<ProjectedFace>& allProjectedFaces() const;
+
   inline const boost::ptr_vector<Block>& allBlocks() const { return allBlocks_; }
   inline const boost::ptr_vector<Edge>& allEdges() const { return allEdges_; }
   inline const PatchMap& allPatches() const { return allPatches_; }
@@ -558,6 +127,23 @@ public:
     std::string key(name);
     allPatches_.insert(key, patch); 
     return *patch; 
+  }
+
+  template<class EdgeType = Edge>
+  const EdgeType* edgeBetween(const Point& p1, const Point& p2) const
+  {
+      for (const auto& e: allEdges_)
+      {
+          if (e.connectsPoints(p1, p2))
+          {
+              auto *te = dynamic_cast<const EdgeType*>(&e);
+              insight::assertion(
+                          te!=nullptr,
+                          "edge not of assumed type!" );
+              return te;
+          }
+      }
+      return nullptr;
   }
 
   bool hasEdgeBetween(const Point& p1, const Point& p2) const;

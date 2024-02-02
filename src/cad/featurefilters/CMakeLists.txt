@@ -8,7 +8,8 @@ add_sources(insightcad_SOURCES
   
   connected.cpp
   coincident.cpp
-  identical.cpp
+  identical.cpp identical.h
+  same.cpp same.h
   ispartofsolid.cpp
   ispartofface.cpp
 
@@ -16,6 +17,7 @@ add_sources(insightcad_SOURCES
   edgetopology.cpp
   #secant.cpp
   coincidentprojectededge.cpp
+  edgeconnectingvertices.cpp edgeconnectingvertices.h
   
   facetopology.cpp
   faceadjacenttoedges.cpp

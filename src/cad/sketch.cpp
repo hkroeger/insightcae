@@ -31,6 +31,8 @@
 
 #include <chrono>
 
+
+
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::algorithm;
@@ -44,8 +46,13 @@ namespace insight {
 namespace cad {
 
 
+
+
 defineType(Sketch);
-addToFactoryTable(Feature, Sketch);
+addToStaticFunctionTable(Feature, Sketch, insertrule);
+
+
+
 
 size_t Sketch::calcHash() const
 {
@@ -72,9 +79,6 @@ size_t Sketch::calcHash() const
 }
 
 
-Sketch::Sketch()
-: Feature()
-{}
 
 
 Sketch::Sketch
@@ -96,31 +100,12 @@ Sketch::Sketch
 
 
 
-FeaturePtr Sketch::create
-(
-    DatumPtr pl,
-    const boost::filesystem::path& fn,
-    const std::string& ln,
-    const SketchVarList& vars,
-    double tol
-)
-{
-    return FeaturePtr
-           (
-               new Sketch
-               (
-                   pl, fn,
-                   ln, vars,
-                   tol
-               )
-           );
-}
-
 
 
 
 void Sketch::build()
 {
+    insight::CurrentExceptionContext ex("building sketch "+featureSymbolName());
     ExecTimer t("Sketch::build() ["+featureSymbolName()+"]");
     
     if (!cache.contains(hash()))
@@ -145,7 +130,8 @@ void Sketch::build()
                 boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
             boost::filesystem::path macrofilename =
                 boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
-            layername="0";
+#warning behaviour in freecad has changed
+            //layername="0";
 
             {
 
@@ -234,19 +220,44 @@ void Sketch::build()
             }
         }
 
-        TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
-        providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
+//        TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
+//        providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
+        auto ws = DXFReader(filename, ".*").Wires(tol_);
+        if (ws->Length()==1)
+        {
+            providedSubshapes_["OuterWire"]=Feature::create(ws->Value(1));
+        }
+        else
+        {
+            for (int i=0; i<ws->Length(); ++i)
+            {
+                providedSubshapes_[
+                        str(format("OuterWire%d")%(i+1))]=
+                        Feature::create(ws->Value(i+1));
+            }
+        }
 
         gp_Trsf tr;
         gp_Ax3 ax=*pl_;
         tr.SetTransformation(ax);
 
-        BRepBuilderAPI_Transform btr(w, tr.Inverted(), true);
+        BRep_Builder bb;
+        TopoDS_Compound result;
+        bb.MakeCompound ( result );
+        for (auto w=1; w<=ws->Length(); ++w)
+        {
+            auto shape=ws->Value(w);
+            BRepBuilderAPI_Transform btr(shape, tr.Inverted(), true);
 
-        if (w.Closed())
-            setShape(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
-        else
-            setShape(TopoDS::Wire(btr.Shape()));
+            if (shape.Closed())
+                bb.Add ( result, BRepBuilderAPI_MakeFace(
+                             gp_Pln(ax),
+                             TopoDS::Wire(btr.Shape())).Shape());
+            else
+                bb.Add ( result, TopoDS::Wire(btr.Shape()));
+        }
+
+        setShape(result);
 
         cache.insert(shared_from_this());
     }
@@ -395,7 +406,7 @@ bool Sketch::isSingleFace() const
 }
 
 
-void Sketch::insertrule(parser::ISCADParser& ruleset) const
+void Sketch::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -408,11 +419,18 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
 	  > ( ( ',' >> (ruleset.r_identifier > '=' > ruleset.r_scalarExpression )% ',' ) | qi::attr(SketchVarList()) )
 	  > ( ( ',' >> qi::double_ ) | qi::attr(1e-3) ) > 
       ')' ) 
-	[ qi::_val = phx::bind(&Sketch::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+    [ qi::_val = phx::bind(
+                       &Sketch::create<DatumPtr,const boost::filesystem::path&,
+                                       const std::string&, const SketchVarList&,
+                                       double>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       
     ))
   );
 }
+
+
+
 
 }
 }

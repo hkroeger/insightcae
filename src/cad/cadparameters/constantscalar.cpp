@@ -26,7 +26,12 @@ insight::cad::ConstantScalar::ConstantScalar(double value)
 
 double insight::cad::ConstantScalar::value() const
 {
-  return value_;
+    return value_;
+}
+
+void insight::cad::ConstantScalar::setValue(double v)
+{
+    value_=v;
 }
 
 insight::cad::ScalarPtr insight::cad::scalarconst(double v)

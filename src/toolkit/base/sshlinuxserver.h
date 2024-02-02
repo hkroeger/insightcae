@@ -36,6 +36,8 @@ public:
 
 
 protected:
+  int bwlimit_;
+
   void runRsync
   (
       const std::vector<std::string>& args,
@@ -63,7 +65,9 @@ public:
     void kill() override;
   };
 
-  BackgroundJobPtr launchBackgroundProcess(const std::string& cmd) override;
+  BackgroundJobPtr launchBackgroundProcess(
+          const std::string& cmd,
+          const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {} ) override;
 
   void putFile
   (
@@ -73,10 +77,14 @@ public:
                           std::function<void(int,const std::string&)>()
   ) override;
 
+  void setTransferBandWidthLimit(int kBPerSecond) override;
+  int transferBandWidthLimit() const override;
+
   void syncToRemote
   (
       const boost::filesystem::path& localDir,
       const boost::filesystem::path& remoteDir,
+      bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
                           std::function<void(int,const std::string&)>()
@@ -86,6 +94,7 @@ public:
   (
       const boost::filesystem::path& localDir,
       const boost::filesystem::path& remoteDir,
+      bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
                           std::function<void(int,const std::string&)>()

@@ -38,18 +38,16 @@ class Pyramid
 
     Pyramid ( FeaturePtr base, VectorPtr ptip );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Pyramid" );
-    Pyramid ();
 
-    static FeaturePtr create ( FeaturePtr base, VectorPtr ptip );
+    CREATE_FUNCTION(Pyramid);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

@@ -7,7 +7,7 @@ using namespace boost;
 using namespace rapidxml;
 
 
-Patch::Patch(const std::string& patch_name, insight::Multi_CAD_ParameterSet_Visualizer* mv, QObject* parent)
+Patch::Patch(const std::string& patch_name, insight::MultiCADParameterSetVisualizer* mv, QObject* parent)
 : CaseElementData("", mv, parent),
   patch_name_(patch_name)
 {
@@ -18,7 +18,7 @@ Patch::Patch(const std::string& patch_name, insight::Multi_CAD_ParameterSet_Visu
 Patch::Patch(rapidxml::xml_document<>& doc,
              rapidxml::xml_node<>& node,
              boost::filesystem::path inputfilepath,
-             insight::Multi_CAD_ParameterSet_Visualizer* mv,
+             insight::MultiCADParameterSetVisualizer* mv,
              QObject* parent
              )
 : CaseElementData("", mv, parent)
@@ -36,7 +36,7 @@ Patch::Patch(rapidxml::xml_document<>& doc,
   if (type_name_!="")
   {
       set_bc_type(type_name_);
-      curp_.readFromNode(doc, node, inputfilepath);
+      curp_.readFromNode(node, inputfilepath);
   }
 }
 
@@ -99,7 +99,7 @@ void Patch::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& 
 
 const QString DefaultPatch::defaultPatchName = "[Unassigned Patches]";
 
-DefaultPatch::DefaultPatch(insight::Multi_CAD_ParameterSet_Visualizer* mv, QObject* parent)
+DefaultPatch::DefaultPatch(insight::MultiCADParameterSetVisualizer* mv, QObject* parent)
   : Patch(defaultPatchName.toStdString(), mv, parent)
 {
 }
@@ -108,7 +108,7 @@ DefaultPatch::DefaultPatch(
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath,
-    insight::Multi_CAD_ParameterSet_Visualizer* mv,
+    insight::MultiCADParameterSetVisualizer* mv,
     QObject* parent )
 : Patch(doc, node, inputfilepath, mv, parent)
 {

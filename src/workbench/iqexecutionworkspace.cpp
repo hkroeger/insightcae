@@ -166,14 +166,15 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
          && localCaseDirectory_->isPersistent() )
     {
         insight::dbg()<<"checking for present remote config in "<<*localCaseDirectory_<<std::endl;
-        try
+        if (insight::RemoteExecutionConfig::remoteLocationConfigIsValid(
+                insight::RemoteExecutionConfig::defaultConfigFile(lwd)) )
         {
             presentRL = std::make_unique<insight::RemoteLocation>(
                         insight::RemoteExecutionConfig::defaultConfigFile(lwd) );
 
             insight::dbg()<<"remote location configuration read from directory "<<lwd<<std::endl;
         }
-        catch (...)
+        else
         {
             insight::dbg()<<"no remote location configuration in directory "<<lwd<<std::endl;
         }

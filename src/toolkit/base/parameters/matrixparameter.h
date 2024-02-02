@@ -47,7 +47,7 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
-    arma::mat& operator() ();
+    void set(const arma::mat& nv);
     const arma::mat& operator() () const;
 
     std::string latexRepresentation() const override;
@@ -55,11 +55,13 @@ public:
 
     rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath ) const override;
-    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+    void readFromNode ( const std::string& name, rapidxml::xml_node<>& node,
                                 boost::filesystem::path inputfilepath ) override;
 
     Parameter* clone() const override;
-    void reset(const Parameter& p) override;
+    void copyFrom(const Parameter& p) override;
+    void operator=(const MatrixParameter& p);
+    int nChildren() const override;
 };
 
 

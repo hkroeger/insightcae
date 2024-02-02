@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include "base/tools.h"
 #include "datum.h"
+#include "base/translations.h"
 
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
@@ -37,7 +38,10 @@ namespace cad {
     
 
 defineType ( Cylinder );
-addToFactoryTable ( Feature, Cylinder );
+//addToFactoryTable ( Feature, Cylinder );
+addToStaticFunctionTable(Feature, Cylinder, insertrule);
+addToStaticFunctionTable(Feature, Cylinder, ruleDocumentation);
+
 
 
 size_t Cylinder::calcHash() const
@@ -53,9 +57,6 @@ size_t Cylinder::calcHash() const
   return h.getHash();
 }
 
-
-Cylinder::Cylinder ( )
-{}
 
 
 
@@ -73,21 +74,6 @@ Cylinder::Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, boo
 {
 }
 
-
-
-
-FeaturePtr Cylinder::create ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered )
-{
-    return FeaturePtr ( new Cylinder ( p1, p2, D, p2isAxis, centered ) );
-}
-
-
-
-
-FeaturePtr Cylinder::create_hollow ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered )
-{
-    return FeaturePtr ( new Cylinder ( p1, p2, Da, Di, p2isAxis, centered ) );
-}
 
 
 
@@ -166,12 +152,12 @@ void Cylinder::build()
 
 
 
-void Cylinder::insertrule ( parser::ISCADParser& ruleset ) const
+void Cylinder::insertrule ( parser::ISCADParser& ruleset )
 {
     ruleset.modelstepFunctionRules.add
     (
         "Cylinder",
-        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                     ( '('
                       >> ruleset.r_vectorExpression >> ','
@@ -181,31 +167,32 @@ void Cylinder::insertrule ( parser::ISCADParser& ruleset ) const
                       >> ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
                       >> ( ( ',' >> qi::lit ( "centered" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
                       >> ')' )
-                    [ qi::_val = phx::bind ( &Cylinder::create_hollow, qi::_1, qi::_3, qi::_4, qi::_5, qi::_2, qi::_6 ) ]
+                    [ qi::_val = phx::bind (
+                       &Cylinder::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, bool, bool>,
+                       qi::_1, qi::_3, qi::_4, qi::_5, qi::_2, qi::_6 ) ]
 
-                ) )
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList Cylinder::ruleDocumentation() const
+FeatureCmdInfoList Cylinder::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Cylinder",
          
             "( <vector:p0>, [ax] <vector:p1_or_axis>, <scalar:Da> [, <scalar:Di] [, centered] )",
          
-            "Creates a cylinder based on point p0. The cylinder extends up to point p1_or_axis or, if the keyword ax is given, along the length vector p1_or_axis."
+            _("Creates a cylinder based on point p0. The cylinder extends up to point p1_or_axis or, if the keyword ax is given, along the length vector p1_or_axis."
             " The outer diameter of the cylinder is Da."
             " If an inner diameter Di is given, a hollow cylinder is created."
-            " The cylinder is centered with respect to p0, if the keyword centered is supplied."
+              " The cylinder is centered with respect to p0, if the keyword centered is supplied.")
         )
-    );
+    };
 }
 
 

@@ -8,6 +8,7 @@
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
 #include "vtkLookupTable.h"
@@ -22,10 +23,142 @@
 #include "vtkPointData.h"
 #include "vtkAlgorithm.h"
 #include "vtkOpenFOAMReader.h"
+//#include "vtkPOpenFOAMReader.h"
 #include "vtkUnstructuredGrid.h"
 #include "vtkMultiBlockDataSet.h"
 #include "vtkCompositeDataGeometryFilter.h"
 
+#include "boost/property_tree/ptree.hpp"
+
+
+#include "vtkUnstructuredGridAlgorithm.h"
+
+#include "vtkPassInputTypeAlgorithm.h"
+
+class vtkCompositeDataSet;
+class vtkAppendFilter;
+class vtkMultiProcessController;
+
+class vtkCleanArrays : public vtkPassInputTypeAlgorithm
+{
+public:
+    static vtkCleanArrays* New();
+    vtkTypeMacro(vtkCleanArrays, vtkPassInputTypeAlgorithm);
+    void PrintSelf(ostream& os, vtkIndent indent) override;
+
+//    //@{
+//    /**
+//   * The user can set the controller used for inter-process communication. By
+//   * default set to the global communicator.
+//   */
+//    void SetController(vtkMultiProcessController* controller);
+//    vtkGetObjectMacro(Controller, vtkMultiProcessController);
+//    //@}
+
+    //@{
+    /**
+   * When set to true (false by default), 0 filled array will be added for
+   * missing arrays on this process (instead of removing partial arrays).
+   */
+    vtkSetMacro(FillPartialArrays, bool);
+    vtkGetMacro(FillPartialArrays, bool);
+    vtkBooleanMacro(FillPartialArrays, bool);
+    //@}
+
+protected:
+    vtkCleanArrays();
+    ~vtkCleanArrays() override;
+
+    int RequestData(vtkInformation* request, vtkInformationVector** inputVector,
+                    vtkInformationVector* outputVector) override;
+
+    vtkMultiProcessController* Controller;
+
+    bool FillPartialArrays;
+
+private:
+    vtkCleanArrays(const vtkCleanArrays&) = delete;
+    void operator=(const vtkCleanArrays&) = delete;
+
+public:
+    class vtkArrayData;
+    class vtkArraySet;
+};
+
+/**
+ * @brief The vtkCompositeDataToUnstructuredGridFilter class
+ * copied here from PVVTKExtensionsMisc, because PVExtensions
+ * are not available in MXE cross compiler (only plain VTK)
+ */
+class vtkCompositeDataToUnstructuredGridFilter
+    : public vtkUnstructuredGridAlgorithm
+{
+public:
+    static vtkCompositeDataToUnstructuredGridFilter* New();
+    vtkTypeMacro(vtkCompositeDataToUnstructuredGridFilter, vtkUnstructuredGridAlgorithm);
+    void PrintSelf(ostream& os, vtkIndent indent) override;
+
+    //@{
+    /**
+   * Get/Set the composite index of the subtree to be merged. By default set to
+   * 0 i.e. root, hence entire input composite dataset is merged.
+   */
+    vtkSetMacro(SubTreeCompositeIndex, unsigned int);
+    vtkGetMacro(SubTreeCompositeIndex, unsigned int);
+    //@}
+
+    //@{
+    /**
+   * Turn on/off merging of coincidental points.  Frontend to
+   * vtkAppendFilter::MergePoints. Default is on.
+   */
+    vtkSetMacro(MergePoints, bool);
+    vtkGetMacro(MergePoints, bool);
+    vtkBooleanMacro(MergePoints, bool);
+    //@}
+
+    //@{
+    /**
+   * Get/Set the tolerance to use to find coincident points when `MergePoints`
+   * is `true`. Default is 0.0.
+   *
+   * This is simply passed on to the internal vtkAppendFilter::vtkLocator used to merge points.
+   * @sa `vtkLocator::SetTolerance`.
+   */
+    vtkSetClampMacro(Tolerance, double, 0.0, VTK_DOUBLE_MAX);
+    vtkGetMacro(Tolerance, double);
+    //@}
+
+protected:
+    vtkCompositeDataToUnstructuredGridFilter();
+    ~vtkCompositeDataToUnstructuredGridFilter() override;
+
+    /**
+   * This is called by the superclass.
+   * This is the method you should override.
+   */
+    int RequestData(vtkInformation* request, vtkInformationVector** inputVector,
+                    vtkInformationVector* outputVector) override;
+
+    int FillInputPortInformation(int port, vtkInformation* info) override;
+
+    /**
+   * Remove point/cell arrays not present on all processes.
+   */
+    void RemovePartialArrays(vtkUnstructuredGrid* data);
+
+    void AddDataSet(vtkDataSet* ds, vtkAppendFilter* appender);
+
+    void ExecuteSubTree(vtkCompositeDataSet* cd, vtkAppendFilter* output);
+    unsigned int SubTreeCompositeIndex;
+    bool MergePoints;
+    double Tolerance;
+
+private:
+    vtkCompositeDataToUnstructuredGridFilter(
+        const vtkCompositeDataToUnstructuredGridFilter&) = delete;
+    void operator=(const vtkCompositeDataToUnstructuredGridFilter&) = delete;
+};
 
 
 
@@ -34,23 +167,25 @@ namespace insight
 
 
 vtkSmartPointer<vtkPolyData> createArrows(
-    std::vector<std::pair<arma::mat, arma::mat> > from_to
+        std::vector<std::pair<arma::mat, arma::mat> > from_to,
+        bool glyph2d=true
     );
 
 
-extern const std::vector<double> colorMapData_SD;
+extern const std::vector<double> colorMapData_SD, colorMapData_NICEdge;
 
 
 vtkSmartPointer<vtkLookupTable> createColorMap(
         const std::vector<double>& cb = colorMapData_SD,
-        int nc=32
+        int nc=32,
+        bool logscale = false
         );
 
 
 
 typedef std::pair<double, double> MinMax;
 
-typedef enum { Cell, Point } FieldSupport;
+typedef enum { OnCell = 0, OnPoint = 1 } FieldSupport;
 
 struct FieldSelection
    : public boost::fusion::tuple
@@ -104,7 +239,13 @@ MinMax calcRange(
 class MultiBlockDataSetExtractor
 {
   vtkMultiBlockDataSet* mbds_;
+//  struct Node {
+//      vtkDataObject* node;
+//      int flatIndex;
+//  };
+//  boost::property_tree::basic_ptree<std::string,Node> tree_;
   std::map<vtkDataObject*,int> flatIndices_;
+
 
 
 public:
@@ -112,22 +253,22 @@ public:
 
   std::set<int> flatIndices(const std::vector<std::string>& groupNamePatterns) const;
 
-  static std::set<vtkDataObject*> findObjectsBelowGroup(const std::string& name_pattern, vtkDataObject* input);
+  void findObjectsBelowNode(
+          std::vector<std::string> name_pattern,
+          vtkDataObject* input,
+          std::set<int>& res) const;
 };
 
 
-
+enum DatasetRepresentation
+{
+  Points = VTK_POINTS,
+  Wireframe = VTK_WIREFRAME,
+  Surface = VTK_SURFACE
+};
 
 class VTKOffscreenScene
 {
-
-public:
-  enum DatasetRepresentation
-  {
-    Points = VTK_POINTS,
-    Wireframe = VTK_WIREFRAME,
-    Surface = VTK_SURFACE
-  };
 
 protected:
   vtkSmartPointer<vtkRenderer> renderer_;
@@ -138,18 +279,22 @@ public:
   ~VTKOffscreenScene();
 
   template<class Mapper, class Input>
-  void addAlgo(
+  vtkActor* addAlgo(
       Input input,
       ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0)),
       DatasetRepresentation repr = Surface
       )
   {
-    input->Update();
-    addData<Mapper>(input->GetOutput(), colorspec, repr);
+//    input->Update();
+//    return addData<Mapper>(input->GetOutput(), colorspec, repr);
+      auto mapper = vtkSmartPointer<Mapper>::New();
+      mapper->SetInputConnection(input->GetOutputPort());
+
+      return addProperties<Mapper>(mapper, colorspec, /*input,*/ repr);
   }
 
   template<class Mapper, class Input>
-  void addData(
+  vtkActor* addData(
       Input input,
       ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0)),
       DatasetRepresentation repr = Surface
@@ -158,16 +303,16 @@ public:
     auto mapper = vtkSmartPointer<Mapper>::New();
     mapper->SetInputData(input);
 
-    addProperties<Mapper>(mapper, colorspec, input, repr);
+    return addProperties<Mapper>(mapper, colorspec, /*input,*/ repr);
   }
 
   void addActor2D(vtkSmartPointer<vtkActor2D> actor);
 
   template<class Mapper>
-  void addProperties(
+  vtkActor* addProperties(
       vtkSmartPointer<Mapper>& mapper,
       ColorSpecification colorspec,
-      vtkDataSet *ds,
+//      vtkDataSet *ds,
       DatasetRepresentation repr = Surface
       )
   {
@@ -192,10 +337,10 @@ public:
       mapper->ScalarVisibilityOn();
       switch (fs)
       {
-        case Point:
+        case OnPoint:
           mapper->SetScalarModeToUsePointFieldData();
           break;
-        case Cell:
+        case OnCell:
           mapper->SetScalarModeToUseCellFieldData();
           break;
       }
@@ -217,7 +362,10 @@ public:
       }
       else
       {
-          mm=calcRange(fsel, {ds}, {});
+          insight::assertion(
+               mapper->GetInput()!=nullptr,
+              "expected dataset input!");
+          mm=calcRange(fsel, { mapper->GetInput() }, {});
       }
       mapper->SetScalarRange(mm.first, mm.second);
 
@@ -228,6 +376,8 @@ public:
     actor->GetProperty()->SetRepresentation(repr);
 
     renderer_->AddActor(actor);
+
+    return actor;
   }
 
   vtkSmartPointer<vtkScalarBarActor> addColorBar(
@@ -244,6 +394,8 @@ public:
   void exportImage(const boost::filesystem::path& pngfile);
 
   vtkCamera* activeCamera();
+  void setupActiveCamera(const insight::View& view);
+
 
   void setParallelScale(
       boost::variant<
@@ -268,31 +420,44 @@ public:
 
 
 class OpenFOAMCaseScene
-  : public VTKOffscreenScene,
-    public vtkSmartPointer<vtkOpenFOAMReader>
+  : public VTKOffscreenScene
 {
   vtkSmartPointer<vtkOpenFOAMReader> ofcase_;
   std::map<std::string,int> patches_;
-  vtkSmartPointer<vtkDoubleArray> times_;
+  std::vector<double> times_;
 
 public:
-  OpenFOAMCaseScene(const boost::filesystem::path& casepath);
+  OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np=1);
 
-  vtkDoubleArray* times() const;
-  void setTimeValue(double t);
+  vtkMultiBlockDataSet* GetOutput();
+
+  const std::vector<double>& times() const;
+
+  /**
+   * @brief setTimeValue
+   * @param t
+   * desired time value
+   * @return
+   * returns the actually set value. That shall be the closest time step available.
+   */
+  double setTimeValue(double t);
+
   void setTimeIndex(vtkIdType timeId);
 
   vtkSmartPointer<vtkOpenFOAMReader> ofcase() const;
-  vtkUnstructuredGrid* internalMesh() const;
+  vtkSmartPointer<vtkUnstructuredGridAlgorithm> internalMeshFilter() const;
+  vtkSmartPointer<vtkUnstructuredGrid> internalMesh() const;
 
   std::vector<std::string> matchingPatchNames(const std::string& patchNamePattern) const;
 
   vtkPolyData* patch(const std::string& name) const;
-  vtkSmartPointer<vtkPolyData> patches(const std::string& namePattern) const;
+  vtkSmartPointer<vtkUnstructuredGridAlgorithm> patchesFilter(const std::string& namePattern) const;
+  vtkSmartPointer<vtkUnstructuredGrid> patches(const std::string& namePattern) const;
 
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(int blockIdx) const;
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::string& name) const;
-  vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::vector<int>& blockIdxs) const;
+  vtkSmartPointer<vtkMultiBlockDataSetAlgorithm> extractBlocks(const std::set<int>& blockIdxs) const;
+  vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::set<int>& blockIdxs) const;
 };
 
 

@@ -14,8 +14,7 @@ addToOpenFOAMCaseElementFactoryTable(interPhaseChangeFoamNumerics);
 interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 : interFoamNumerics(c, ps),
   p_(ps)
-{
-}
+{}
 
 
 void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const

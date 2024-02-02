@@ -33,12 +33,12 @@ class DerivedFeature
 : public Feature
 {
   ConstFeaturePtr basefeat_;
-  
+
+protected:
+  DerivedFeature(ConstFeaturePtr basefeat);
+
 public:
   declareType("DerivedFeature");
-  
-  DerivedFeature();
-  DerivedFeature(ConstFeaturePtr basefeat);
   
   inline void setBaseFeat(ConstFeaturePtr basefeat) { basefeat_=basefeat; }
   

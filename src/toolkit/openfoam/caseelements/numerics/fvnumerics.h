@@ -49,10 +49,25 @@ deltaT = double 1.0 "Time step size. If the time step is selected to be adjustab
 
 endTime = double 1000.0 "Maximum end time of simulation"
 
-
-mapFieldsConfig = selectablesubset {{
+restartWrite = selectablesubset {{
  none set {}
- map set {
+
+ clockTime set {
+  clockTimeInterval = double 1200
+"[s] Regular wall-clock time interval after which additional restart output is created.
+The output is intended for restart only and can at a different interval than the usual output."
+  nKeep = int 2
+"Number of additional output times, which should be kept. After nKeep additional output were created,
+the next oldest is deleted, if it does not match a regular output time directory.
+It is recommended to keep more than one, because the last output might get corrupted,
+if the solver is killed during writing."
+ }
+
+}} clockTime "Whether to write additional, regular output for restart."
+
+
+mapFields = set {
+
   patchMap = array [ set {
      targetPatch = string "lid" "Name of patch in target mesh"
      sourcePatch = string "movingWall" "Name of patch in source mesh"
@@ -61,8 +76,8 @@ mapFieldsConfig = selectablesubset {{
   cuttingPatches = array [
     string "fixedWalls" "Name of patch in target mesh"
   ] *0 "Patches whose values shall be interpolated from source interior"
- }
-}} map "Mapfield configuration"
+
+} "Mapfield configuration"
 
 <<<PARAMETERSET
 */
@@ -74,6 +89,9 @@ protected:
 public:
     FVNumerics ( OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+
+    const Parameters& parameters() const;
+    Parameters& parametersRef();
 
     virtual bool isCompressible() const =0;
     virtual bool isLES() const;

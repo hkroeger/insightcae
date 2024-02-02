@@ -19,6 +19,7 @@
 
 #include "mesh.h"
 
+#include "cadfeature.h"
 #include "meshing.h"
 
 #include "base/boost_include.h"
@@ -55,6 +56,7 @@ Mesh::Mesh
   bool quad, 
   const GroupDefinitions& v_e_f_s_groups,
   const insight::cad::NamedVertices& namedVertices,
+  const std::vector<MeshSizeBall>& meshSizeBalls,
   bool keepTmpDir
 )
 : 
@@ -68,6 +70,7 @@ Mesh::Mesh
   faceGroups_(boost::fusion::at_c<2>(v_e_f_s_groups)),
   solidGroups_(boost::fusion::at_c<3>(v_e_f_s_groups)),
   namedVertices_(namedVertices),
+  meshSizeBalls_(meshSizeBalls),
   keepTmpDir_(keepTmpDir)
 {}
 
@@ -150,7 +153,43 @@ void Mesh::build()
 {
   GmshCase c(model_, outpath_, Lmax_->value(), Lmin_->value(), keepTmpDir_);
   setupGmshCase(c);
-  c.doMeshing();
+
+  std::vector<std::string> addcode;
+  std::vector<std::string> fis;
+  for (auto func: boost::adaptors::index(meshSizeBalls_))
+  {
+      auto location = boost::fusion::get<0>(func.value())->value();
+      auto D = boost::fusion::get<1>(func.value())->value();
+      auto Linside = boost::fusion::get<2>(func.value())->value();
+      fis.push_back( boost::lexical_cast<std::string>(func.index()+1) );
+      auto fi = "Field["+fis.back()+"]";
+      addcode.insert(
+          addcode.end(),
+          {
+           fi+"=Ball",
+           str(boost::format(fi+".Radius=%g")%(0.5*D)),
+           str(boost::format(fi+".VIn=%g")%Linside),
+           str(boost::format(fi+".VOut=%g")%1e22),
+           str(boost::format(fi+".XCenter=%g")%location(0)),
+           str(boost::format(fi+".YCenter=%g")%location(1)),
+           str(boost::format(fi+".ZCenter=%g")%location(2))
+          });
+  }
+  {
+      auto fii=boost::lexical_cast<std::string>(meshSizeBalls_.size()+1);
+      auto fi = "Field["+fii+"]";
+      addcode.insert(
+          addcode.end(),
+          {
+              fi+"=Min",
+              fi+".FieldsList={"+boost::join(fis, ", ")+"}",
+              "Background Field = "+fii
+          });
+  }
+  c.insertLinesBefore(
+      c.endOfMeshingOptions_, addcode);
+
+  c.doMeshing(std::thread::hardware_concurrency());
 }
 
 
@@ -184,6 +223,7 @@ ExtrudedMesh::ExtrudedMesh
       boost::fusion::at_c<4>(v_e_bf_tf_s_groups)
       ),
     namedVertices,
+    {},
     keepTmpDir
     ),
   h_(boost::fusion::at_c<2>(L_h_nLayers)),

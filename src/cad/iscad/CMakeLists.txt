@@ -4,15 +4,16 @@ project(iscad)
 
 set(iscad_SRCS 
     iscad.cpp
-    iscadmainwindow.cpp
-    iscadsyntaxhighlighter.cpp
-    iscadmodel.cpp
+    
+    iqiscadmainwindow.cpp iqiscadmainwindow.h
+    iqiscadmodelwindow.h iqiscadmodelwindow.cpp
+    iqiscadmodelscriptedit.cpp iqiscadmodelscriptedit.h
+    iqiscadsyntaxhighlighter.cpp iqiscadsyntaxhighlighter.h
+    iqiscadbackgroundthread.cpp iqiscadbackgroundthread.h
 
-    modelcomponentselectordlg.cpp
-    insertfeaturedlg.cpp
-    loadmodeldialog.cpp
-
-    bgparsingthread.cpp
+    modelcomponentselectordlg.cpp modelcomponentselectordlg.h
+    insertfeaturedlg.cpp insertfeaturedlg.h
+    loadmodeldialog.cpp loadmodeldialog.h
 )
 
 set(iscad_FORMS
@@ -38,12 +39,14 @@ add_executable(iscad ${iscad_SRCS} ${iscad_FORMS} ${iscad_RCCS})
 
 target_link_libraries(iscad
   Qt5::Widgets
-  toolkit_gui insightcad_gui
+  toolkit_gui
   #${OPENGL_LIBRARIES}
   ${Boost_LIBRARIES}
   ${DXFLIB_LIBRARIES}
   )
 linkToolkitVtk(iscad Onscreen)
+
+setup_gettext(iscad iscad ${iscad_SRCS})
 
 target_include_directories(iscad
   PUBLIC ${QT_INCLUDES}

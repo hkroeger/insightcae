@@ -24,6 +24,8 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -39,8 +41,9 @@ namespace cad {
     
 
 defineType(ClipWire);
-addToFactoryTable(Feature, ClipWire);
-
+//addToFactoryTable(Feature, ClipWire);
+addToStaticFunctionTable(Feature, ClipWire, insertrule);
+addToStaticFunctionTable(Feature, ClipWire, ruleDocumentation);
 
 size_t ClipWire::calcHash() const
 {
@@ -52,9 +55,6 @@ size_t ClipWire::calcHash() const
 }
 
 
-ClipWire::ClipWire()
-{
-}
 
 
 
@@ -68,19 +68,13 @@ ClipWire::ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le)
 
 
 
-FeaturePtr ClipWire::create(FeaturePtr wire, ScalarPtr ls, ScalarPtr le)
-{
-    return FeaturePtr(new ClipWire(wire, ls, le));
-}
-
-
 
 
 void ClipWire::build()
 {
     if (!m1_->isSingleOpenWire())
     {
-        throw insight::Exception("Given feature is not a wire! ClipWire can only operate on wires.");
+      throw insight::Exception(_("Given feature is not a wire! ClipWire can only operate on wires."));
     }
 
     TopoDS_Wire w = m1_->asSingleOpenWire();
@@ -191,35 +185,36 @@ void ClipWire::build()
 
 
 
-void ClipWire::insertrule(parser::ISCADParser& ruleset) const
+void ClipWire::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "ClipWire",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-	[ qi::_val = phx::bind(&ClipWire::create, qi::_1, qi::_2, qi::_3) ]
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+                    [ qi::_val = phx::bind(
+                         &ClipWire::create<FeaturePtr, ScalarPtr, ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
-FeatureCmdInfoList ClipWire::ruleDocumentation() const
+FeatureCmdInfoList ClipWire::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "ClipWire",
          
             "( <feature:wire>, <scalar:Ls>, <scalar:Le> )",
-         
-            "Modifies an open wire feature by clipping its ends. From the beginning, a segment of length Ls is removed and from the end a segment of length Le."
+
+          _("Modifies an open wire feature by clipping its ends. From the beginning, a segment of length Ls is removed and from the end a segment of length Le.")
         )
-    );
+  };
 }
 
 

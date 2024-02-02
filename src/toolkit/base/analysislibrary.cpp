@@ -30,7 +30,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader(LoadableItem it)
 {
   CurrentExceptionContext ex("loading analysis libraries");
 
-  SharedPathList paths;
+  auto paths = SharedPathList::global();
   for ( const path& p: paths )
   {
     CurrentExceptionContext ex("checking path "+p.string());
@@ -135,10 +135,28 @@ void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
 }
 
 
+AnalysisLibraryLoader AnalysisLibraryLoader::theAnalysisLibraries(AnalysisLibraryLoader::AnalysisLibrary);
+
+AnalysisLibraryLoader& AnalysisLibraryLoader::analysisLibraries()
+{
+    return theAnalysisLibraries;
+}
 
 
-AnalysisLibraryLoader analysisLibraries( AnalysisLibraryLoader::AnalysisLibrary );
 
+std::set<std::string> Analysis::availableAnalysisTypes()
+{
+    AnalysisLibraryLoader::analysisLibraries();
+    std::set<std::string> al;
+    std::transform(
+                insight::Analysis::factories_->begin(),
+                insight::Analysis::factories_->end(),
+                std::inserter(al, al.begin()),
+                [](const insight::Analysis::FactoryTable::value_type &f)
+                { return f.first; }
+    );
+    return al;
+}
 
 
 

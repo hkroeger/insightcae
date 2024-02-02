@@ -1,3 +1,6 @@
+#ifndef INSIGHT_FACTORY_H
+#define INSIGHT_FACTORY_H
+
 /*
  * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
@@ -19,13 +22,9 @@
  */
 
 
-#ifndef INSIGHT_FACTORY_H
-#define INSIGHT_FACTORY_H
-
-//#include "boost/ptr_container/ptr_map.hpp"
-
-#include "boost/foreach.hpp"
-
+/*
+ * MUST BE HEADER ONLY! (used in PDL without linking toolkit lib!)
+ */
 
 namespace insight {
 
@@ -69,6 +68,7 @@ namespace insight {
  };\
  typedef std::map<std::string, Factory* > FactoryTable; \
  static FactoryTable* factories_; \
+ static bool has_factory(const std::string& key); \
  static baseT* lookup(const std::string& key, argList); \
  static std::vector<std::string> factoryToC()
 
@@ -95,6 +95,7 @@ public:\
 };\
 typedef std::map<std::string, Factory* > FactoryTable; \
 static FactoryTable* factories_; \
+static bool has_factory(const std::string& key); \
 static baseT* lookup(const std::string& key); \
 static std::vector<std::string> factoryToC()
 
@@ -102,15 +103,23 @@ static std::vector<std::string> factoryToC()
 
 #define defineFactoryTable(baseT, argList, parList) \
  baseT::Factory::~Factory() {} \
+ bool baseT::has_factory(const std::string& key) \
+ {\
+  if (factories_) { \
+   auto i = baseT::factories_->find(key); \
+   return (i!=baseT::factories_->end()); \
+  }\
+  return false;\
+ }\
  baseT* baseT::lookup(const std::string& key , argList) \
  { \
   if (factories_) { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
    if (i==baseT::factories_->end()) \
-    throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
+    throw std::runtime_error("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
    return (*i->second)( parList ); \
   } \
-  else throw insight::Exception("Factory table of type \"" #baseT "\" is empty!" ); \
+  else throw std::runtime_error("Factory table of type \"" #baseT "\" is empty!" ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
  { \
@@ -128,15 +137,23 @@ static std::vector<std::string> factoryToC()
  
 #define defineFactoryTableNoArgs(baseT) \
  baseT::Factory::~Factory() {} \
+ bool baseT::has_factory(const std::string& key) \
+ {\
+   if (factories_) { \
+    auto i = baseT::factories_->find(key); \
+    return (i!=baseT::factories_->end()); \
+   }\
+   return false;\
+ }\
  baseT* baseT::lookup(const std::string& key) \
  { \
    if (factories_) { \
     baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
     if (i==baseT::factories_->end()) \
-     throw insight::Exception("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
+     throw std::runtime_error("Could not lookup type \""+key+"\" in factory table of type \"" #baseT "\"" ); \
     return (*i->second)(); \
    } \
-   else throw insight::Exception("Factory table of type \"" #baseT "\" is empty!" ); \
+   else throw std::runtime_error("Factory table of type \"" #baseT "\" is empty!" ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
  { \
@@ -189,41 +206,61 @@ static struct add##specT##To##baseT##FactoryTable \
  typedef boost::function0<ReturnT> Name##Ptr; \
  typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
  static Name##FunctionTable* Name##Functions_; \
+ static bool has_##Name(const std::string& key); \
  static ReturnT Name(const std::string& key)
  
 #define declareStaticFunctionTableWithArgs(Name, ReturnT, argTypeList, argList) \
  typedef boost::function<ReturnT(argTypeList)> Name##Ptr; \
  typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
  static Name##FunctionTable* Name##Functions_; \
+ static bool has_##Name(const std::string& key); \
  static ReturnT Name(const std::string& key, argList)
 
  
 
 #define defineStaticFunctionTable(baseT, Name, ReturnT) \
+ bool baseT::has_##Name(const std::string& key) \
+ { \
+  if (baseT::Name##Functions_) { \
+      auto i = baseT::Name##Functions_->find(key); \
+      if (i!=baseT::Name##Functions_->end()) \
+       return true; \
+  } \
+  return false; \
+ } \
  ReturnT baseT::Name(const std::string& key) \
  { \
    if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
   if (i==baseT::Name##Functions_->end()) \
-    throw insight::Exception("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
+    throw std::runtime_error("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
   return i->second(); \
   } else  {\
-    throw insight::Exception("Static function table of type \"" #baseT "\" is empty!"); \
+    throw std::runtime_error("Static function table of type \"" #baseT "\" is empty!"); \
   }\
  } \
  baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr
  
  
 #define defineStaticFunctionTableWithArgs(baseT, Name, ReturnT, argList, parList) \
+ bool baseT::has_##Name(const std::string& key) \
+ { \
+        if (baseT::Name##Functions_) { \
+            auto i = baseT::Name##Functions_->find(key); \
+            if (i!=baseT::Name##Functions_->end()) \
+            return true; \
+    } \
+        return false; \
+ } \
  ReturnT baseT::Name(const std::string& key, argList) \
  { \
    if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
   if (i==baseT::Name##Functions_->end()) \
-    throw insight::Exception("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
+    throw std::runtime_error("Could not lookup static function \"" #Name "\" for class \""+key+"\" in table of type \"" #baseT "\""); \
   return i->second(parList); \
   } else  {\
-    throw insight::Exception("Static function table of type \"" #baseT "\" is empty!"); \
+    throw std::runtime_error("Static function table of type \"" #baseT "\" is empty!"); \
   }\
  } \
  baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr
@@ -281,6 +318,15 @@ static struct add##specT##To##baseT##Name##FunctionTable \
     std::shared_ptr<baseT> baseT::create(const SelectableSubsetParameter& ssp) \
     { return std::shared_ptr<baseT>( lookup(ssp.selection(), ssp()) ); } \
     defineStaticFunctionTable(baseT, defaultParameters, ParameterSet)
+
+
+#define CREATE_FUNCTION(DerivedClass) \
+template <typename... T> \
+    static std::shared_ptr<DerivedClass> create(T /*&&*/...args) \
+{ \
+        DerivedClass *ptr = new DerivedClass(::std::forward<T>(args)...); \
+        return std::shared_ptr<DerivedClass>(ptr); \
+}
 
 }
 

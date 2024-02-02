@@ -115,6 +115,7 @@ protected:
   
   // ====================================================================================
   // ======== GUI widgets
+  IQParameterSetModel *psmodel_;
   ParameterEditorWidget *peditor_;
   QTableView *sidtab_;
   IQDebugStream *cout_log_, *cerr_log_;
@@ -154,7 +155,7 @@ protected:
    */
   bool is_modified_;
 
-  std::set<std::shared_ptr<insight::ExternalProcess> > externalProcesses_;
+  std::set<insight::JobPtr> externalProcesses_;
   void cleanFinishedExternalProcesses();
 
   void connectLocalActions();

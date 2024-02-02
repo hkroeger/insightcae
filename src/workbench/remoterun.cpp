@@ -1,6 +1,7 @@
 #include "base/tools.h"
 #include "base/remoteexecution.h"
 #include "base/sshlinuxserver.h"
+#include "base/translations.h"
 
 #include "remoterun.h"
 #include "analysisform.h"
@@ -61,7 +62,9 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
     resume_( resume ),
     remote_( af->remoteExecutionConfiguration() ),
     killRequested_(false), disconnectRequested_(false),
-    launchProgress_( af_->progressDisplayer_.forkNewAction(4, "Launching remote analysis") )
+    launchProgress_( af_->progressDisplayer_.forkNewAction(
+          4,
+          _("Launching remote analysis")) )
 {}
 
 
@@ -87,7 +90,7 @@ void RemoteRun::launch()
 
   if (!resume_)
   {
-      launchProgress_.message("Setting up the remote workspace...");
+      launchProgress_.message(_("Setting up the remote workspace..."));
       ac_->ioService().post( std::bind(&RemoteRun::setupRemoteEnvironment, this) );
   }
   else
@@ -109,13 +112,13 @@ void RemoteRun::setupRemoteEnvironment()
         remote_->exeConfig().initialize(true);
 
         if (!remote_->exeConfig().isActive())
-            throw insight::Exception("Remote directory is invalid!");
+        throw insight::Exception(_("Remote directory is invalid!"));
 
         addUndoStep( std::bind(&RemoteRun::undoSetupRemoteEnvironment, this),
-                     "setting up the execution environment" );
+                    _("setting up the execution environment") );
 
         launchProgress_.stepTo(1);
-        launchProgress_.message("Launching remote execution server...");
+        launchProgress_.message(_("Launching remote execution server..."));
 
         ac_->ioService().post( std::bind(&RemoteRun::launchRemoteExecutionServer, this) );
 
@@ -137,7 +140,7 @@ void RemoteRun::undoSetupRemoteEnvironment()
     }
     catch (std::exception& e)
     {
-        insight::Warning(std::string("Could not clean remote location! Reason: ")+e.what());
+        insight::Warning(_("Could not clean remote location! Reason: %s"), e.what());
     }
 }
 
@@ -166,10 +169,10 @@ void RemoteRun::launchRemoteExecutionServer()
                     );
 
         addUndoStep( std::bind(&RemoteRun::undoLaunchRemoteExecutionServer, this),
-                     "launching the remote execution server" );
+                    _("launching the remote execution server") );
 
         launchProgress_.stepTo(2);
-        launchProgress_.message("Establishing contact to remote execution server...");
+        launchProgress_.message(_("Establishing contact to remote execution server...") );
 
         ac_->ioService().post( std::bind(&RemoteRun::waitForContact, this, 20) );
 
@@ -188,7 +191,7 @@ void RemoteRun::undoLaunchRemoteExecutionServer()
     }
     catch (std::exception& e)
     {
-        insight::Warning(std::string("Could not clean remote location! Reason: ")+e.what());
+        insight::Warning(_("Could not clean remote location! Reason: %s"), e.what());
     }
 }
 
@@ -211,7 +214,7 @@ void RemoteRun::waitForContact( int maxAttempts )
             ac_->ioService().post(
                         std::bind(
                         &RemoteRun::onErrorString, this,
-                            std::string{"Could not contact analysis server after launching it!"} ) );
+                    std::string{_("Could not contact analysis server after launching it!")} ) );
         }
 
     };
@@ -230,7 +233,7 @@ void RemoteRun::waitForContact( int maxAttempts )
                         // execute callback on success
 
                         launchProgress_.stepTo(3);
-                        launchProgress_.message("Transmitting input data and starting analysis...");
+                        launchProgress_.message(_("Transmitting input data and starting analysis..."));
 
                         ac_->ioService().post( std::bind( &RemoteRun::launchAnalysis, this ));
                     }
@@ -272,7 +275,7 @@ void RemoteRun::launchAnalysis()
                         if (r.success)
                         {
                             launchProgress_.stepTo(4);
-                            launchProgress_.message("Monitoring remote run");
+                            launchProgress_.message(_("Monitoring remote run"));
                             launchProgress_.completed();
 
                             ac_->ioService().post(std::bind(
@@ -282,7 +285,7 @@ void RemoteRun::launchAnalysis()
                         {
                             ac_->ioService().post(std::bind(
                                                       &RemoteRun::onErrorString, this,
-                                                      "Failed to start analysis on remote server!"));
+                                _("Failed to start analysis on remote server!")));
                         }
                     },
 
@@ -291,7 +294,7 @@ void RemoteRun::launchAnalysis()
                     {
                         ac_->ioService().post(std::bind(
                                                   &RemoteRun::onErrorString, this,
-                                                  "No response after starting analysis on remote server!"));
+                    _("No response after starting analysis on remote server!")));
                     }
         );
 
@@ -336,7 +339,7 @@ void RemoteRun::monitor()
                     },
 
                     std::bind( &RemoteRun::onErrorString, this,
-                               "timeout in quering status of analysis server" )
+                      _("timeout in quering status of analysis server") )
         );
 
     } catch(...) { onError(std::current_exception()); }
@@ -363,7 +366,7 @@ void RemoteRun::fetchResults()
                                     std::bind(&RemoteRun::stopRemoteExecutionServer, this ) );
                     },
 
-                    std::bind(&RemoteRun::onErrorString, this, "timeout while fetching results")
+            std::bind(&RemoteRun::onErrorString, this, _("timeout while fetching results"))
         );
 
     } catch(...) { onError(std::current_exception()); }
@@ -382,9 +385,9 @@ void RemoteRun::stopRemoteExecutionServer()
         ac_->exit(
                     [this](insight::AnalyzeClientAction::ReportSuccessResult rs)
                     {
-                        insight::dbg() << "stop server "
-                                       << (rs.success?"was":"was not")
-                                       << " successful " <<std::endl;
+                insight::dbg() << _("stop server")<<" "
+                               << (rs.success?_("was"):_("was not"))
+                               << " "<<_("successful")<<" " <<std::endl;
 
                         ac_->ioService().post(
                                     af_->ui->cbDownloadWhenFinished->checkState()==Qt::Checked ?
@@ -394,7 +397,7 @@ void RemoteRun::stopRemoteExecutionServer()
                     },
 
                     std::bind(&RemoteRun::onErrorString, this,
-                              "timeout while stopping remote analysis server")
+                      _("timeout while stopping remote analysis server"))
                 );
 
     } catch(...) { onError(std::current_exception()); }
@@ -449,7 +452,7 @@ void RemoteRun::checkIfCancelled()
 {
     if (killRequested_)
     {
-        throw insight::Exception("remote run cancelled");
+        throw insight::Exception(_("remote run cancelled"));
     }
 }
 

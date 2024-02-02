@@ -235,7 +235,7 @@ void CaseConfigurationModel::appendConfigurationToNode(
 void CaseConfigurationModel::readFromNode(
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<> *rootnode,
-    insight::Multi_CAD_ParameterSet_Visualizer* mv,
+    insight::MultiCADParameterSetVisualizer* mv,
     const boost::filesystem::path& fileParentPath )
 {
   clear();
@@ -250,7 +250,7 @@ void CaseConfigurationModel::readFromNode(
     auto* ice = new InsertedCaseElement(
           type_name, mv
           );
-    ice->parameters().readFromNode(doc, *e, fileParentPath);
+    ice->parameters().readFromNode(*e, fileParentPath);
 
     addCaseElement( ice );
   }
@@ -260,7 +260,7 @@ void CaseConfigurationModel::readFromNode(
 ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
     const QModelIndex &index,
     QWidget *parentWidget,
-    ParameterSetDisplay *display )
+    IQVTKParameterSetDisplay *display )
 {
   auto* ce = caseElementByIndex(index);
 
@@ -279,12 +279,14 @@ ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
 
   auto cepe = new ParameterEditorWidget
          (
-           ce->parameters(),
-           ce->defaultParameters(),
+//           ce->parameters(),
+//           ce->defaultParameters(),
            parentWidget,
            ce->visualizer(), vali,
            display
          );
+  auto model = new IQParameterSetModel(ce->parameters(), ce->defaultParameters(), cepe);
+  cepe->setModel(model);
 
   // ensure that the editor is removed, when CE is deleted
   connect(ce, &QObject::destroyed,
@@ -293,7 +295,7 @@ ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
   connect(cepe, &ParameterEditorWidget::parameterSetChanged,
           cepe, [&,ce,cepe]()
           {
-            ce->parameters() = cepe->model()->getParameterSet();
+      ce->parameters() = parameterSetModel(cepe->model())->getParameterSet();
           }
   );
 

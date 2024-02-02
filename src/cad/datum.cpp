@@ -109,6 +109,11 @@ void Datum::write(std::ostream& file) const
   file<<providesPlanarReference_<<endl;
 }
 
+string Datum::generateScriptCommand() const
+{
+  throw insight::Exception("not implemented");
+}
+
 void Datum::checkForBuildDuringAccess() const
 {
   if (hash_==0)
@@ -363,6 +368,28 @@ gp_Ax3 DatumPlaneData::plane() const
   return cs_;
 }
 
+arma::mat DatumPlaneData::origin() const
+{
+    return vec3(plane().Location());
+}
+
+arma::mat DatumPlaneData::normal() const
+{
+    return vec3(plane().Direction());
+}
+
+arma::mat DatumPlaneData::ex() const
+{
+    return vec3(plane().XDirection());
+}
+
+arma::mat DatumPlaneData::ey() const
+{
+    return vec3(plane().YDirection());
+}
+
+
+
 //// DatumPlane::operator const Handle_AIS_InteractiveObject () const
 //Handle_AIS_InteractiveObject DatumPlaneData::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 //{
@@ -389,7 +416,6 @@ void DatumPlane::build()
 {
     
     
-  arma::mat n=n_->value()/arma::norm(n_->value(),2);
   if (p2_)
   {
 
@@ -404,8 +430,8 @@ void DatumPlane::build()
   }
   else if (!up_)
   {
-
-    arma::mat vx=cross(vec3(0,1,0), n); 
+    arma::mat n=n_->value()/arma::norm(n_->value(),2);
+    arma::mat vx=cross(vec3(0,1,0), n);
     double m=norm(vx, 2);
     if (m<1e-6)
     {
@@ -418,7 +444,8 @@ void DatumPlane::build()
   }
   else 
   {
-    arma::mat vx=cross(up_->value(), n); 
+    arma::mat n=n_->value()/arma::norm(n_->value(),2);
+    arma::mat vx=cross(up_->value(), n);
     double m=norm(vx, 2);
     if (m<1e-6)
     {
@@ -437,8 +464,8 @@ void DatumPlane::build()
 size_t DatumPlane::calcHash() const
 {
   ParameterListHash plh;
-  plh+=n_->value();
   plh+=p0_->value();
+  if (n_) plh+=n_->value();
   if (up_) plh+=up_->value();
   if (p1_) plh+=p1_->value();
   if (p2_) plh+=p2_->value();
@@ -456,8 +483,13 @@ DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni, VectorPtr up)
 {}
 
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool)
-: p0_(p0), p1_(p1), p2_(p2)
+    : p0_(p0), p1_(p1), p2_(p2)
 {}
+
+// DatumPlane::DatumPlane(istream &)
+// {
+
+// }
 
 // DatumPlane::DatumPlane
 // (

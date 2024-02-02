@@ -23,6 +23,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -36,7 +37,10 @@ namespace cad {
 
 
 defineType(StitchedSolid);
-addToFactoryTable(Feature, StitchedSolid);
+//addToFactoryTable(Feature, StitchedSolid);
+addToStaticFunctionTable(Feature, StitchedSolid, insertrule);
+addToStaticFunctionTable(Feature, StitchedSolid, ruleDocumentation);
+
 
 size_t StitchedSolid::calcHash() const
 {
@@ -50,9 +54,6 @@ size_t StitchedSolid::calcHash() const
   return h.getHash();
 }
 
-
-StitchedSolid::StitchedSolid()
-{}
 
 
 StitchedSolid::StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol)
@@ -76,53 +77,53 @@ void StitchedSolid::build()
   }
 
   sew.Perform();
-  sew.Dump();
   
   TopoDS_Shell sshell = TopoDS::Shell(sew.SewedShape());
   BRepCheck_Shell acheck(sshell);
   
     if (acheck.Closed(Standard_False) != BRepCheck_NoError)
-    throw insight::Exception("Could not create a closed shell (B)!");
+    throw insight::Exception(_("Could not create a closed shell (B)!"));
 
   if (acheck.Orientation(Standard_False) != BRepCheck_NoError)
-    throw insight::Exception("Orientation Error!");
+    throw insight::Exception(_("Orientation Error!"));
   
   BRepBuilderAPI_MakeSolid solidmaker(sshell);
   
   if (!solidmaker.IsDone())
-    throw insight::Exception("Creation of solid failed!");
+    throw insight::Exception(_("Creation of solid failed!"));
 
   setShape(solidmaker.Solid());
 }
 
-void StitchedSolid::insertrule(parser::ISCADParser& ruleset) const
+void StitchedSolid::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "StitchedSolid",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> (ruleset.r_solidmodel_expression % ',') 
 	  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) >> ')' )
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<StitchedSolid>(qi::_1, qi::_2)) ]
+      [ qi::_val = phx::bind(
+                       &StitchedSolid::create<const std::vector<FeaturePtr>&, ScalarPtr>,
+                       qi::_1, qi::_2) ]
       
-    ))
+    )
   );
 }
 
-FeatureCmdInfoList StitchedSolid::ruleDocumentation() const
+FeatureCmdInfoList StitchedSolid::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "StitchedSolid",
 
             "( <feature:f1> [, <feature:f2> [, ...] ] [, <scalar:tol> | 0.001 ] )",
 
-            "Create stitched solid from all faces of the provided features."
+          _("Create stitched solid from all faces of the provided features.")
         )
-    );
+    };
 }
 
 }

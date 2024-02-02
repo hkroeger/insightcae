@@ -24,9 +24,11 @@
 
 #include "toolkit_export.h"
 
+#include <exception>
 #include <string>
 #include <iostream>
 #include <vector>
+#include <map>
 #include <armadillo>
 #include <memory>
 
@@ -35,20 +37,23 @@ namespace insight {
 
 
 class CurrentExceptionContext
+        : public std::string
 {
-  std::string desc_;
+    int verbosityLevel_;
+
+    void start(const char* msg);
 
 public:
-  CurrentExceptionContext(const std::string& desc, bool verbose=true);
+  CurrentExceptionContext(int verbosityLevel, std::string msgfmt, ...);
+  CurrentExceptionContext(std::string msgfmt, ...);
   ~CurrentExceptionContext();
 
   std::string contextDescription() const;
-  operator std::string() const;
 
 };
 
 
-std::ostream& dbg();
+std::ostream& dbg(int verbosityLevel = 1);
 
 
 
@@ -94,18 +99,21 @@ class Exception
   std::map<std::string, cad::FeaturePtr> contextGeometry_;
 
   void saveContext(bool strace);
+
+  mutable std::string whatMessage_;
   
 public:
   Exception();
-  Exception(const std::string& msg, bool strace=true);
+  Exception(std::string msgfmt, ...);
   Exception(const std::string& msg, const std::map<std::string, cad::FeaturePtr>& contextGeometry, bool strace=true);
-  Exception(const std::string& msg, const std::string& strace);
+  // Exception(const std::string& msg, const std::string& strace);
+
+
+  virtual std::string message() const;
+  inline std::string& messageRef() { return message_; }
 
   inline std::string as_string() const { return static_cast<std::string>(*this); }
-
   operator std::string() const;
-
-  inline const std::string& message() const { return message_; }
   inline const std::string& strace() const { return strace_; }
 
   const char* what() const noexcept override;
@@ -115,6 +123,19 @@ public:
 };
 
 
+class ExternalProcessFailed
+    : public Exception
+{
+  int retcode_;
+  std::string exename_, errout_;
+
+public:
+  ExternalProcessFailed();
+  ExternalProcessFailed(int retcode, const std::string& exename, const std::string& errout);
+
+  std::string message() const override;
+  const std::string& exeName() const;
+};
 
 
 class UnsupportedFeature
@@ -128,10 +149,37 @@ public:
 
 
 
-void assertion(bool condition, const std::string& context_message);
+void assertion(bool condition, std::string context_message, ...);
 
 
-std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5);
+//std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5);
+
+template<class Container>
+std::string valueList_to_string(const Container& vals, size_t maxlen)
+{
+  std::ostringstream os;
+  os <<"(";
+
+  if (vals.size()>0)
+  {
+    size_t n1=std::min(vals.size(), maxlen-2);
+
+    auto ii=vals.begin();
+    for (size_t i=0; i<n1; ++i)
+    {
+      os<<" "<<(*ii);
+      ++ii;
+    }
+
+    if (n1<vals.size())
+      {
+        os << " .... "<<(*(--vals.end()));
+      }
+  }
+  os<<" )";
+  return os.str();
+}
+
 std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen=5);
 std::string vector_to_string(const arma::mat& vals, bool addMag=true);
 
@@ -190,7 +238,8 @@ public:
 void displayFramed(const std::string& title, const std::string& msg, char titleChar = '=', std::ostream &os = std::cerr);
 
 
-void Warning(const std::string& msg);
+void Warning(std::string msgfmt, ...);
+void Warning(const std::exception& ex);
 
 
 class UnhandledExceptionHandling

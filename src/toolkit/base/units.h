@@ -27,6 +27,7 @@
 #include <boost/units/systems/si/force.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/area.hpp>
+#include <boost/units/systems/si/mass_density.hpp>
 #include <boost/units/systems/si/volume.hpp>
 #include <boost/units/systems/si/electric_potential.hpp>
 #include <boost/units/systems/si/current.hpp>
@@ -39,15 +40,25 @@
 #include "boost/units/physical_dimensions.hpp"
 #include "boost/units/systems/si/codata/physico-chemical_constants.hpp"
 
+
+#include <boost/units/systems/cgs/mass.hpp>
+#include <boost/units/systems/cgs/length.hpp>
+#include <boost/units/systems/cgs/volume.hpp>
+#include <boost/units/systems/cgs/mass_density.hpp>
+
 #include "base/linearalgebra.h"
 
+namespace insight {
+namespace si = boost::units::si;
+namespace cgs = boost::units::cgs;
+}
 
 
 namespace boost { namespace units { namespace si {
 
 
- typedef unit<specific_heat_capacity_dimension,si::system> specific_heat_capacity;
- typedef unit<thermal_conductivity_dimension,si::system> thermal_conductivity;
+ typedef unit<specific_heat_capacity_dimension,system> specific_heat_capacity;
+ typedef unit<thermal_conductivity_dimension,system> thermal_conductivity;
 
  BOOST_UNITS_STATIC_CONSTANT(joule_per_kilogram_kelvin,specific_heat_capacity);
  BOOST_UNITS_STATIC_CONSTANT(watt_per_square_meter,thermal_conductivity);
@@ -55,11 +66,12 @@ namespace boost { namespace units { namespace si {
  // some commonly used units and aliases
 
  static const auto megapascal = mega*pascals;
+ static const auto MPa = megapascal;
  static const auto millimeters = milli*meters;
  static const auto millimeter = milli*meter;
  static const auto mps = meter/second;
 
- static const auto dimless = si::dimensionless();
+ static const auto dimless = dimensionless();
 
  typedef metric::knot_base_unit::unit_type knot_unit;
  typedef quantity<knot_unit> knot_quantity;
@@ -69,23 +81,23 @@ namespace boost { namespace units { namespace si {
  typedef quantity<metric_ton_unit> metric_ton_quantity;
  static const metric_ton_unit metric_ton;
 
-
  typedef degree::plane_angle::unit_type angle_deg_unit;
  typedef quantity<angle_deg_unit> angle_deg_quantity;
  static const angle_deg_unit angle_deg;
 
- typedef si::plane_angle::unit_type angle_rad_unit;
+ typedef plane_angle::unit_type angle_rad_unit;
  typedef quantity<angle_rad_unit> angle_rad_quantity;
  static const angle_rad_unit angle_rad;
 
- static const auto kelvin_per_meter = si::kelvin/si::meter;
+ static const auto kelvin_per_meter = kelvin/meter;
 
 
 
  template<class Dimension, class Type, class Unit>
  Type toValue(const quantity<Dimension,Type>& q, const Unit& u)
  {
-   return ( static_cast<quantity<Unit, Type> >(q) / u).value();
+//   return ( static_cast<quantity<Unit, Type> >(q) / u).value();
+     return static_cast<quantity<si::dimensionless, Type> >( q / u ).value();
  }
 
 
@@ -101,6 +113,11 @@ namespace boost { namespace units { namespace si {
 
    matQuantity(const dimensioned_elem_type&x, const dimensioned_elem_type&y, const dimensioned_elem_type&z)
      : quantity<Unit,Type>(insight::vec3(toValue(x, Unit()), toValue(y, Unit()), toValue(z, Unit()))*Unit())
+   {}
+
+   template<class UnitMult>
+   matQuantity(const arma::mat& v, UnitMult unit)
+     : quantity<Unit,Type>(v*unit)
    {}
 
    template<class P1>
@@ -128,6 +145,10 @@ namespace boost { namespace units { namespace si {
  typedef quantity<length, double> Length;
  typedef matQuantity<length, arma::mat> LengthVector;
 
+ typedef quantity<mass, double> Mass;
+
+ typedef quantity<mass_density, double> Density;
+
  typedef quantity<time, double> Time;
 
  typedef quantity<area, double> Area;
@@ -147,7 +168,6 @@ namespace boost { namespace units { namespace si {
 
 }}}
 
-namespace si = boost::units::si;
 
 namespace SI
 {

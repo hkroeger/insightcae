@@ -31,11 +31,6 @@ class TemporaryFile;
 class PathParameter;
 
 
-std::string base64_encode(const std::string& s);
-std::string base64_encode(const boost::filesystem::path& f);
-void base64_decode(const char *sourceBuffer, size_t size, std::shared_ptr<std::string>& targetBuffer);
-
-
 typedef std::array<unsigned char, MD5_DIGEST_LENGTH> MD5Hash;
 typedef std::shared_ptr<MD5Hash> MD5HashPtr;
 
@@ -81,6 +76,8 @@ protected:
 
   bool needsUnpack(const boost::filesystem::path& unpackPath) const;
 
+  virtual void signalContentChange();
+
 public:
   FileContainer();
 
@@ -98,6 +95,8 @@ public:
   FileContainer(
       const char *binaryFileContent, size_t size,
       const boost::filesystem::path& originalFileName );
+
+  virtual ~FileContainer();
 
   bool hasFileContent() const;
 
@@ -176,6 +175,8 @@ public:
 
   void clearPackedData();
 
+  void operator=(const FileContainer& oc);
+
 
   void appendToNode (
       rapidxml::xml_document<>& doc,
@@ -185,7 +186,6 @@ public:
       const std::string& contentAttribName = "content" ) const;
 
   void readFromNode (
-      rapidxml::xml_document<> &doc,
       rapidxml::xml_node<>& node,
       boost::filesystem::path inputfilepath,
       const std::string& fileNameAttribName = "value",

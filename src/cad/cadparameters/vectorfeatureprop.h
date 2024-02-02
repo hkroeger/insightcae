@@ -79,7 +79,8 @@ class CircleEdgeCenterCoords
   
 public:
   CircleEdgeCenterCoords(ConstFeatureSetPtr pfs);
-  virtual arma::mat value() const;
+  void compute(arma::mat& pc, double& D, arma::mat& ex) const;
+  arma::mat value() const override;
 };
 
 
@@ -108,6 +109,16 @@ public:
   virtual arma::mat value() const;
 };
 
+
+class XsecCurveCurve
+: public insight::cad::Vector
+{
+  ConstFeaturePtr c1_, c2_;
+
+public:
+  XsecCurveCurve(ConstFeaturePtr c1, ConstFeaturePtr c2);
+  virtual arma::mat value() const;
+};
 
 
 

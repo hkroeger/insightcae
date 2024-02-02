@@ -92,18 +92,24 @@ public:
   virtual double value() const;
 };
 
-#define INSIGHT_CAD_UNARY_FUNCTION(FUNCTION) \
-class Scalar_##FUNCTION\
+#define INSIGHT_CAD_UNARY_FUNCTION_WITH_NAME(FUNCTION, NAME) \
+class Scalar_##NAME\
 : public insight::cad::Scalar\
 {\
   ScalarPtr p1_;\
 public:\
-  Scalar_##FUNCTION(ScalarPtr p1)\
+  Scalar_##NAME(ScalarPtr p1)\
   : p1_(p1) {} \
   virtual double value() const\
   { return ::FUNCTION ( p1_->value() ); }\
 };
 
+#define INSIGHT_CAD_UNARY_FUNCTION(FUNCTION) \
+INSIGHT_CAD_UNARY_FUNCTION_WITH_NAME(FUNCTION, FUNCTION)
+
+INSIGHT_CAD_UNARY_FUNCTION_WITH_NAME(insight::pos, pos);
+INSIGHT_CAD_UNARY_FUNCTION_WITH_NAME(insight::neg, neg);
+INSIGHT_CAD_UNARY_FUNCTION_WITH_NAME(insight::sgn, sgn);
 INSIGHT_CAD_UNARY_FUNCTION(sqrt);
 INSIGHT_CAD_UNARY_FUNCTION(sin);
 INSIGHT_CAD_UNARY_FUNCTION(cos);

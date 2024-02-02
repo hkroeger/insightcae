@@ -105,9 +105,7 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
      LIST(GET VERSIONS 0 INSIGHT_VERSION_MAJOR)
      LIST(GET VERSIONS 1 INSIGHT_VERSION_MINOR)
      LIST(GET VERSIONS 2 INSIGHT_VERSION_PATCH)
-     IF (CPACK_PACKAGE_VERSION_PATCH STREQUAL "")
-      set(CPACK_PACKAGE_VERSION_PATCH "0")
-     ENDIF()
+     message(STATUS "InsightCAE version major=${INSIGHT_VERSION_MAJOR} / minor=${INSIGHT_VERSION_MINOR} / patch=${INSIGHT_VERSION_PATCH}")
    else()
      message(STATUS "git describe failed")
    endif()
@@ -121,40 +119,26 @@ add_definitions(
     )
 
 
+
 INCLUDE(InstallRequiredSystemLibraries)
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "InsightCAE")
 
 ### change package name according to build options
 SET(CPACK_PACKAGE_NAME "insightcae")
-if (INSIGHT_BUILD_CAD AND NOT INSIGHT_BUILD_OPENFOAM AND NOT INSIGHT_BUILD_CODEASTER)
- SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-cad")
-elseif (INSIGHT_BUILD_OPENFOAM AND NOT INSIGHT_BUILD_CODEASTER)
- SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-cfd")
-elseif (NOT INSIGHT_BUILD_OPENFOAM AND INSIGHT_BUILD_CODEASTER)
- SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-fem")
-elseif (INSIGHT_BUILD_WORKBENCH AND NOT INSIGHT_BUILD_OPENFOAM AND NOT INSIGHT_BUILD_CODEASTER)
- SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-eng")
-endif()
 
-set(CPACK_RPM_COMPONENT_INSTALL ON)
-set(CPACK_DEB_COMPONENT_INSTALL ON)
-set(CPACK_RPM_COMPONENT_INSTALL ON)
+set(CPACK_DEB_COMPONENT_INSTALL OFF)
+set(CPACK_RPM_COMPONENT_INSTALL OFF)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME base)
 set(INSIGHT_INSTALL_COMPONENT base)
 
 set(CPACK_COMPONENTS_IGNORE_GROUPS 1)
 SET(CPACK_PACKAGE_VENDOR "Hannes Kroeger")
 SET(CPACK_PACKAGE_CONTACT "hannes.kroeger@silentdynamics.de")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "a workbench for Computer-Aided Engineering")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A workbench for Computer-Aided Engineering")
+set(CPACK_PACKAGE_VERSION_MAJOR ${INSIGHT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${INSIGHT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${INSIGHT_VERSION_PATCH})
 
-
-execute_process(
-  COMMAND git rev-list --count HEAD
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  OUTPUT_VARIABLE git-rev
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-message(STATUS "git-rev base: ${git-rev}")
 
 string(TOLOWER "${CPACK_PACKAGE_NAME}" CPACK_PACKAGE_NAME_LOWERCASE)
 find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems")
@@ -260,7 +244,8 @@ if (INSIGHT_BUILD_OPENFOAM)
     find_package(OpenFOAM-dev)
     find_package(OpenFOAM-esi1806)
     find_package(OpenFOAM-esi1906)
-    
+    find_package(OpenFOAM-esi2112)
+
     create_script("insight.aliases.OpenFOAM"
 "${INSIGHT_OF_ALIASES}
 "
@@ -269,7 +254,36 @@ if (INSIGHT_BUILD_OPENFOAM)
 endif()
 
 
+find_package(Intl REQUIRED)
 
+include("CMake/Gettext_helpers.cmake")
+
+macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
+    set(GETTEXT_TARGET "${TARGET_NAME}-gettext")
+    set(GETTEXT_OUTPUT_DIR "locale")
+    set(GETTEXT_LANGUAGES "en" "de")
+
+    target_compile_definitions(${TARGET_NAME} PRIVATE "GETTEXT_DOMAIN=\"${GETTEXT_DOMAIN}\"")
+    target_compile_definitions(${TARGET_NAME} PRIVATE "GETTEXT_OUTPUT_DIR=\"${GETTEXT_OUTPUT_DIR}\"")
+
+    CONFIGURE_GETTEXT(
+     DOMAIN ${GETTEXT_DOMAIN}
+     TARGET_NAME ${GETTEXT_TARGET}
+     SOURCES ${ARGN}
+     POTFILE_DESTINATION ${GETTEXT_OUTPUT_DIR}
+     XGETTEXT_ARGS
+      "--keyword=_"
+      "--add-comments=TRANSLATORS:"
+      "--package-name=${GETTEXT_DOMAIN}"
+      "--package-version=${PROJECT_VERSION}"
+      "--copyright-holder=hkroeger"
+     LANGUAGES ${GETTEXT_LANGUAGES}
+     BUILD_DESTINATION ${CMAKE_BINARY_DIR}/share/insight/${GETTEXT_OUTPUT_DIR}
+     INSTALL_DESTINATION share/insight/${GETTEXT_OUTPUT_DIR}
+     INSTALL_COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+     ALL
+    )
+endmacro()
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   FIND_PACKAGE(SWIG REQUIRED)
@@ -336,6 +350,9 @@ macro(version_list_OF)
     endif()
     if (OFesi1906_FOUND)
       list (APPEND OF_VERSIONS OFesi1906)
+    endif()
+    if (OFesi2112_FOUND)
+      list (APPEND OF_VERSIONS OFesi2112)
     endif()
   endif()
 endmacro(version_list_OF)
@@ -503,6 +520,15 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     endif()
     if (${_ofvers} STREQUAL "OFesi1906")
       setup_exe_target_OFesi1906(
+        ${PRJ_NAME}${_ofvers}
+        "${sources}"
+        "${PRJ_NAME}"
+        "${${PRJ_NAME}_INCLUDE_DIRS}"
+        "${${PRJ_NAME}_LIBRARIES}"
+      )
+    endif()
+    if (${_ofvers} STREQUAL "OFesi2112")
+      setup_exe_target_OFesi2112(
         ${PRJ_NAME}${_ofvers}
         "${sources}"
         "${PRJ_NAME}"
@@ -685,6 +711,15 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
         "${${PRJ_NAME}_LIBRARIES}"
       )
     endif()
+    if (${_ofvers} STREQUAL "OFesi2112")
+      setup_lib_target_OFesi2112(
+        ${PRJ_NAME}${_ofvers}
+        "${sources}"
+        "${PRJ_NAME}"
+        "${${PRJ_NAME}_INCLUDE_DIRS}"
+        "${${PRJ_NAME}_LIBRARIES}"
+      )
+    endif()
    endif()
   endforeach()
 endmacro(setup_lib_target_OF)
@@ -703,6 +738,17 @@ macro(setup_test_OF PRJ_NAME cmd)
   endforeach()
 endmacro()
 
+macro(add_test_OF TESTNAME CMD)
+    version_list_OF()
+    foreach (_ofvers ${OF_VERSIONS})
+     if (${_ofvers}_FOUND)
+      add_test(
+          NAME ${TESTNAME}${_ofvers}
+          COMMAND bash -lc "source ${${_ofvers}_ISCFG_BASHRC};${CMD} ${_ofvers} ${ARGN}"
+      )
+     endif()
+    endforeach()
+endmacro()
 
 macro(casebuilder_test_OF TEST_NAME INPUT_FILE)
   version_list_OF()
@@ -726,87 +772,93 @@ endmacro()
 
 
 macro(install_script NAME SCRIPTFILE)
+
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     ${SCRIPTFILE})
-    
-  add_custom_target(${NAME} ALL
-    COMMENT "Copying file: ${SCRIPTFILE}")
-
   set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SCRIPTFILE}")
   set(DST "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SCRIPTFILE}")
 
   add_custom_command(
-    TARGET ${NAME}
+    MAIN_DEPENDENCY ${SRC}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+    OUTPUT ${DST}
     )
   install(PROGRAMS ${SCRIPTFILE} ${SRC} DESTINATION bin COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+
+  add_library(${NAME} INTERFACE ${DST})
+
 endmacro(install_script)
 
 
 
 
 macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
+
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     ${SHAREDFILE})
-    
   get_filename_component(FNAME ${SHAREDFILE} NAME)
-  add_custom_target(${NAME} ALL
-    COMMENT "Copying file: ${SHAREDFILE}")
-
   set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
   set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${FNAME}")
 
   add_custom_command(
-    TARGET ${NAME}
+    MAIN_DEPENDENCY ${SRC}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
-    )
+    OUTPUT ${DST}
+  )
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+
+  add_library(${NAME} INTERFACE ${DST})
+
 endmacro(install_shared_file)
 
 
 macro(install_shared_file2 SHAREDFILE DSTLOCATION)
-    string(REGEX REPLACE "[,\.;/\\ ]" "_" NAME ${SHAREDFILE})
-    message(STATUS "auto target name ${NAME} from ${SHAREDFILE}")
 
+  string(REGEX REPLACE "[,\.;/\\ ]" "_" NAME ${SHAREDFILE})
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     ${SHAREDFILE})
-
   get_filename_component(FNAME ${SHAREDFILE} NAME)
-  add_custom_target(${NAME} ALL
-    COMMENT "Copying file: ${SHAREDFILE}")
-
   set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
   set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${FNAME}")
 
   add_custom_command(
-    TARGET ${NAME}
+    MAIN_DEPENDENCY ${SRC}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
-    )
+    OUTPUT ${DST}
+  )
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+
+  add_library(${NAME} INTERFACE ${DST})
+
 endmacro(install_shared_file2)
 
 
 
 macro(install_shared_directory NAME SHAREDDIR DSTLOCATION)
+
   file(GLOB COPY_FILES
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDDIR}
     ${SHAREDDIR}/*)
 
-  add_custom_target(${NAME} ALL
-    COMMENT "Copying directory: ${SHAREDDIR}")
+  SET(DSTS "")
   foreach(file ${COPY_FILES})
    set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDDIR}/${file}")
    set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${file}")
 
    add_custom_command(
-     TARGET ${NAME}
+     MAIN_DEPENDENCY ${SRC}
      COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+     OUTPUT ${DST}
      )
+   LIST(APPEND DSTS ${DST})
    install(FILES ${SHAREDDIR}/${file} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   endforeach()
+
+  add_library(${NAME} INTERFACE ${DSTS})
+
 endmacro(install_shared_directory)
 
 
@@ -885,26 +937,24 @@ endmacro()
 
 
 macro(install_package_script PACKAGENAME)
+
+  set(DSTS "")
   foreach (_src ${ARGN})
 
     STRING(REPLACE "/" "_" TARGNAME ${PACKAGENAME}_${_src})
     STRING(REPLACE "." "_" TARGNAME ${TARGNAME})
-
     file(GLOB COPY_FILES
       RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
       ${_src})
-
-    add_custom_target(${TARGNAME} ALL
-      COMMENT "Copying file: ${_src}")
-
     set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
     set(DST "${INSIGHT_PYTHON_PATH}/Insight/${PACKAGENAME}/${_src}")
 
-#     message(STATUS "target name: ${TARGNAME}")
     add_custom_command(
-      TARGET ${TARGNAME}
+      MAIN_DEPENDENCY ${SRC}
       COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
-      )
+      OUTPUT ${DST}
+    )
+    LIST(APPEND DSTS ${DST})
 
     get_filename_component(DST_DIR ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight/${PACKAGENAME}/${_src} DIRECTORY)
     install(
@@ -913,6 +963,9 @@ macro(install_package_script PACKAGENAME)
       COMPONENT ${INSIGHT_INSTALL_COMPONENT}
       )
   endforeach()
+
+  add_library(${PACKAGENAME}_files INTERFACE ${DSTS})
+
 endmacro(install_package_script)
 
 
@@ -925,18 +978,17 @@ endmacro(install_package_script)
 
 add_subdirectory(src)
 add_subdirectory(share)
+add_subdirectory(test)
 
 
 
-
-SET(CPACK_PACKAGE_VERSION_PATCH ${git-rev})
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
 
 set(PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
 if(DPKG_PROGRAM)
 
   SET(CPACK_GENERATOR "DEB")
-  set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+  set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
   execute_process(
     COMMAND ${DPKG_PROGRAM} --print-architecture
     OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
@@ -958,20 +1010,7 @@ if(DPKG_PROGRAM)
   message(STATUS "Package version: ${PACKAGE_VERSION}")
 
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot,python-numpy,python-scipy,python-matplotlib,texlive-base,texlive-latex-extra,imagemagick,texlive-fonts-recommended,texlive-font-utils,xdg-utils,libssl1.0.0")
-  if (INSIGHT_BUILD_OPENFOAM)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},openfoamesi1806-insightcae,paraview5-offscreen-insightcae,openmpi-bin")
-    set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "paraview5-insightcae")
-  endif()
-#   if (INSIGHT_BUILD_CODEASTER)
-#     set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},codeaster-insightcae")
-#   endif()
-  if (INSIGHT_BUILD_CAD OR INSIGHT_BUILD_FREECAD)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},liboce-insightcae,freecad-insightcae")
-  endif()
-  if (INSIGHT_BUILD_CAD)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},libdxflib (>=3.7.5)")
-  endif()
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "insightcae-dependencies,libpoppler-cpp0v5")
 
 else(DPKG_PROGRAM)
 
@@ -983,19 +1022,7 @@ else(DPKG_PROGRAM)
      OUTPUT_STRIP_TRAILING_WHITESPACE
    )
    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CPACK_PACKAGE_VERSION_PATCH}.${CPACK_RPM_PACKAGE_ARCHITECTURE}")
-  set(CPACK_RPM_PACKAGE_REQUIRES "/usr/bin/gnuplot-wx,/usr/bin/pdflatex,/usr/bin/convert,/usr/lib64/libcrypto.so") #numpy,scipy,matplotlib
-  if (INSIGHT_BUILD_OPENFOAM)
-    set(CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES},/usr/bin/pvbatch")
-#   if (INSIGHT_BUILD_CODEASTER)
-#     set(CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES}, codeaster-insightcae")
-#   endif()
-  endif()
-  if (INSIGHT_BUILD_CAD OR INSIGHT_BUILD_FREECAD)
-    set(CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES},/usr/bin/FreeCAD")
-  endif()
-#  if (INSIGHT_BUILD_CAD)
-#    set(CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES}, libdxflib >=3.7.5")
-#  endif()
+  set(CPACK_RPM_PACKAGE_REQUIRES "/opt/insightcae/bin/insight_setthirdpartyenv.sh")
  endif()
 
 endif(DPKG_PROGRAM)

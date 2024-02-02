@@ -1,5 +1,7 @@
 #include "pathparameterparser.h"
 
+defineType(PathParameterParser);
+addToStaticFunctionTable(ParserDataBase, PathParameterParser, insertrule);
 
 PathParameterParser::Data::Data(const boost::filesystem::path& v, const std::string& d)
 : ParserDataBase(d), value(v)
@@ -13,7 +15,6 @@ void PathParameterParser::Data::cppAddHeader(std::set< std::string >& headers) c
 
 std::string PathParameterParser::Data::cppType(const std::string&) const
 {
-//  return "boost::filesystem::path";
   return "std::shared_ptr<insight::PathParameter>";
 }
 

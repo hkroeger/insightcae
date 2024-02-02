@@ -23,16 +23,21 @@
 
 #include "forces.H" 
 
+#include "forcesources.h"
+
 namespace Foam
 {
-  
+
+
+
+
 class extendedForces
 : public 
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
  functionObjects::
 #endif
- forces
-     
+   forces,
+  public forceSource
 {
 protected:
   
@@ -54,6 +59,7 @@ public:
   TypeName("extendedForces");
     // Constructors
 
+
         //- Construct for given objectRegistry and dictionary.
         //  Allow the possibility to load fields from files
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
@@ -69,6 +75,7 @@ public:
         );
 #endif
         
+
         extendedForces
         (
             const word& name,
@@ -83,6 +90,7 @@ public:
             const bool readFields = true
 #endif
         );
+
 
 #if OF_VERSION>=010700 && OF_VERSION<040000 //!(defined(OF16ext)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
         //- Construct from components
@@ -100,32 +108,33 @@ public:
         );
 #endif
 
-    //- Destructor
-    virtual ~extendedForces();  
 
-    virtual 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
-    bool
-#else
-    void 
-#endif
-    execute();
-    
-    virtual 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
-    bool
-#else
-    void 
-#endif
-    end();
 
-    virtual 
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
     bool
 #else
     void 
 #endif
-    write();
+    execute() override;
+
+
+#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+    bool
+#else
+    void 
+#endif
+    end() override;
+
+
+#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+    bool
+#else
+    void 
+#endif
+    write() override;
+
+
+    vector force() const override;
 };
 
 }

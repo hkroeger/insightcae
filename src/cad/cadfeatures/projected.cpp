@@ -20,6 +20,9 @@
 #include "projected.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -34,8 +37,9 @@ namespace cad {
     
     
 defineType(Projected);
-addToFactoryTable(Feature, Projected);
-
+//addToFactoryTable(Feature, Projected);
+addToStaticFunctionTable(Feature, Projected, insertrule);
+addToStaticFunctionTable(Feature, Projected, ruleDocumentation);
 
 size_t Projected::calcHash() const
 {
@@ -49,9 +53,6 @@ size_t Projected::calcHash() const
 
 
 
-Projected::Projected(): Feature()
-{}
-
 
 
 
@@ -62,30 +63,34 @@ Projected::Projected(FeaturePtr source, FeaturePtr target, VectorPtr dir)
 
 
 
-FeaturePtr Projected::create ( FeaturePtr source, FeaturePtr target, VectorPtr dir )
-{
-    return FeaturePtr(new Projected(source, target, dir));
-}
-
-
 
 
 
 void Projected::build()
 {
-  TopoDS_Wire ow=BRepTools::OuterWire(TopoDS::Face(source_->shape()));
+    TopoDS_Shape ow;
+    if (TopExp_Explorer(source_->shape(), TopAbs_FACE).More())
+    {
+        // face
+        ow=BRepTools::OuterWire(TopoDS::Face(source_->shape()));
+    }
+    else
+    {
+        // face
+        ow=source_->shape();
+    }
 
-  BRepProj_Projection proj(ow, target_->shape(), to_Vec(dir_->value()));
-  
-     TopTools_ListOfShape ee;
-     TopoDS_Shape projs = proj.Shape();
+    BRepProj_Projection proj(ow, target_->shape(), to_Vec(dir_->value()));
+
+    TopTools_ListOfShape ee;
+    TopoDS_Shape projs = proj.Shape();
     for (TopExp_Explorer ex(projs, TopAbs_EDGE); ex.More(); ex.Next())
     {
         ee.Append ( TopoDS::Edge(ex.Current()) );
     }
     BRepBuilderAPI_MakeWire wb;
-    wb.Add ( ee ); 
-  
+    wb.Add ( ee );
+
     ShapeFix_Wire wf;
     wf.Load(wb.Wire());
     wf.Perform();
@@ -96,34 +101,35 @@ void Projected::build()
 
 
 
-void Projected::insertrule(parser::ISCADParser& ruleset) const
+void Projected::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Projected",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-      [ qi::_val = phx::bind(&Projected::create, qi::_1, qi::_2, qi::_3) ]
+      [ qi::_val = phx::bind(
+                         &Projected::create<FeaturePtr, FeaturePtr, VectorPtr>,
+                         qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Projected::ruleDocumentation() const
+FeatureCmdInfoList Projected::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Projected",
             "( <feature:base>, <feature:target>, <vector:dir> )",
-            "Projects the feature base onto the feature target. The direction has to be prescribed by vector dir."
+          _("Projects the feature base onto the feature target. The direction has to be prescribed by vector dir.")
         )
-    );
+    };
 }
 
 

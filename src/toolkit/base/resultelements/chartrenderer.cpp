@@ -19,8 +19,12 @@ namespace insight
 {
 
 
-ChartRenderer::ChartRenderer(const ChartData *data)
-  : chartData_(data)
+double ChartRenderer::canvasSizeRatio() const
+{
+    return 3./4.;
+}
+
+ChartRenderer::ChartRenderer()
 {}
 
 
@@ -28,7 +32,7 @@ ChartRenderer::~ChartRenderer()
 {}
 
 
-std::unique_ptr<ChartRenderer> ChartRenderer::create(const ChartData *data)
+std::unique_ptr<ChartRenderer> ChartRenderer::create(const ChartData* data)
 {
   std::unique_ptr<ChartRenderer> renderer;
 

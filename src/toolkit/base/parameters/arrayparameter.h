@@ -37,10 +37,18 @@ class ArrayParameter
 public:
     typedef std::vector<ParameterPtr> value_type;
 
+#ifndef SWIG
+    boost::signals2::signal<void(ParameterPtr)> newItemAdded;
+#endif
+
 protected:
     ParameterPtr defaultValue_;
     int defaultSize_;
     std::vector<ParameterPtr> value_;
+
+    std::map<Parameter*, std::shared_ptr<boost::signals2::scoped_connection> >
+        valueChangedConnections_,
+        childValueChangedConnections_;
 
 public:
     declareType ( "array" );
@@ -50,48 +58,29 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
-    //inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
-    inline void setDefaultValue ( const Parameter& defP )
-    {
-        defaultValue_.reset ( defP.clone() );
-    }
-    inline const Parameter& defaultValue() const
-    {
-      return *defaultValue_;
-    }
-    inline int defaultSize() const
-    {
-      return defaultSize_;
-    }
-    inline void eraseValue ( int i )
-    {
-        value_.erase ( value_.begin()+i );
-    }
-    inline void appendValue ( const Parameter& np )
-    {
-        value_.push_back ( ParameterPtr( np.clone() ) );
-    }
-    inline void appendEmpty()
-    {
-        value_.push_back ( ParameterPtr( defaultValue_->clone() ) );
-    }
-    inline Parameter& operator[] ( int i )
-    {
-        return elementRef(i);
-    }
-    inline const Parameter& operator[] ( int i ) const
-    {
-        return element(i);
-    }
+    void setDefaultValue ( const Parameter& defP );
+    const Parameter& defaultValue() const;
+
+    int defaultSize() const;
+    void resize(int newSize);
+    void eraseValue ( int i );
+    void appendValue ( const Parameter& np );
+    void insertValue ( int i, const Parameter& np );
+    void appendEmpty();
+    Parameter& operator[] ( int i );
+    const Parameter& operator[] ( int i ) const;
 
     const Parameter& element(int i) const override;
 
     int size() const override;
 
-    inline void clear()
-    {
-        value_.clear();
-    }
+    int nChildren() const override;
+    std::string childParameterName(int i) const override;
+    Parameter& childParameterRef ( int i ) override;
+    const Parameter& childParameter( int i ) const override;
+    int childParameterIndex( const std::string& name ) const override;
+
+    void clear();
 
     std::string latexRepresentation() const override;
     std::string plainTextRepresentation(int indent=0) const override;
@@ -102,13 +91,21 @@ public:
     void clearPackedData() override;
 
 
-    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const override;
-    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath ) override;
+    rapidxml::xml_node<>* appendToNode (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path inputfilepath ) const override;
+    void readFromNode (
+        const std::string& name,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path inputfilepath ) override;
 
     Parameter* clone () const override;
-    void reset(const Parameter& p) override;
+    void copyFrom(const Parameter& p) override;
+    void operator=(const ArrayParameter& p);
+    void extend ( const Parameter& op ) override;
+    void merge ( const Parameter& other ) override;
 };
 
 

@@ -19,7 +19,11 @@
 
 #include "chamfer.h"
 #include "base/boost_include.h"
+#include "base/translations.h"
+
 #include <boost/spirit/include/qi.hpp>
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -34,8 +38,9 @@ namespace cad {
     
     
 defineType(Chamfer);
-addToFactoryTable(Feature, Chamfer);
-
+//addToFactoryTable(Feature, Chamfer);
+addToStaticFunctionTable(Feature, Chamfer, insertrule);
+addToStaticFunctionTable(Feature, Chamfer, ruleDocumentation);
 
 size_t Chamfer::calcHash() const
 {
@@ -48,10 +53,6 @@ size_t Chamfer::calcHash() const
 }
 
 
-Chamfer::Chamfer(): DerivedFeature()
-{}
-
-
 
 
 Chamfer::Chamfer(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle)
@@ -59,12 +60,6 @@ Chamfer::Chamfer(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle)
 {}
 
 
-
-
-FeaturePtr Chamfer::create(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle)
-{
-    return FeaturePtr(new Chamfer(edges, l, angle));
-}
 
 
 
@@ -95,38 +90,38 @@ void Chamfer::build()
 
 
 
-void Chamfer::insertrule(parser::ISCADParser& ruleset) const
+void Chamfer::insertrule(parser::ISCADParser& ruleset)
 {
     ruleset.modelstepFunctionRules.add
     (
         "Chamfer",
-        typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+            std::make_shared<parser::ISCADParser::ModelstepRule>(
             ( '(' 
                 >> ruleset.r_edgeFeaturesExpression >> ',' 
                 >> ruleset.r_scalarExpression 
                 >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(45.*M_PI/180.)) ) 
                 >> ')' )
-            [ qi::_val = phx::bind(&Chamfer::create, qi::_1, qi::_2, qi::_3) ]
-
-        ))
+            [ qi::_val = phx::bind(
+                         &Chamfer::create<FeatureSetPtr, ScalarPtr, ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3) ]
+        )
     );
 }
 
 
 
-FeatureCmdInfoList Chamfer::ruleDocumentation() const
+FeatureCmdInfoList Chamfer::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Chamfer",
          
             "( <edgeSelection:edges>, <scalar:l> )",
-         
-            "Creates chamfers at selected edges of a solid. All edges in the selection set edges are chamfered with width l."
+
+            _("Creates chamfers at selected edges of a solid. All edges in the selection set edges are chamfered with width l.")
         )
-    );
+    };
 }
 
 

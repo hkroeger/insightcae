@@ -27,7 +27,7 @@
 #include "openfoam/blockmesh_templates.h"
 
 #include "cadtypes.h"
-#include "parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 
 namespace insight
 {
@@ -37,7 +37,7 @@ namespace bmd
 
 
 class TOOLKIT_GUI_EXPORT blockMeshDict_Box_ParameterSet_Visualizer
- : public CAD_ParameterSet_Visualizer
+ : public CADParameterSetVisualizer
 {
 public:
     void recreateVisualizationElements() override;
@@ -47,7 +47,7 @@ public:
 
 
 class TOOLKIT_GUI_EXPORT blockMeshDict_Cylinder_ParameterSet_Visualizer
- : public CAD_ParameterSet_Visualizer
+ : public CADParameterSetVisualizer
 {
 public:
     void recreateVisualizationElements() override;
@@ -58,7 +58,7 @@ public:
 
 
 class TOOLKIT_GUI_EXPORT blockMeshDict_Sphere_ParameterSet_Visualizer
- : public CAD_ParameterSet_Visualizer
+ : public CADParameterSetVisualizer
 {
 public:
     void recreateVisualizationElements() override;

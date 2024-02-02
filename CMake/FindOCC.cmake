@@ -45,5 +45,24 @@ else()
 
  set(OCC_INCLUDE_DIRS ${OpenCASCADE_INCLUDE_DIR})
  set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
- 
+endif()
+
+
+
+
+if (OCE_FOUND OR OCC_FOUND)
+
+ file(READ "${OCC_INCLUDE_DIR}/Standard_Version.hxx" version_header)
+
+ string(REGEX MATCH "#define *.*_VERSION_MAJOR *([0-9]+)" matched_line "${version_header}")
+ string(REGEX REPLACE "#define *.*_VERSION_MAJOR *([0-9]+)" "\\1" OCC_VERSION_MAJOR "${matched_line}")
+
+ string(REGEX MATCH "#define *.*_VERSION_MINOR *([0-9]+)" matched_line "${version_header}")
+ string(REGEX REPLACE "#define *.*_VERSION_MINOR *([0-9]+)" "\\1" OCC_VERSION_MINOR "${matched_line}")
+
+ string(REGEX MATCH "#define *.*_VERSION_MAINTENANCE *([0-9]+)" matched_line "${version_header}")
+ string(REGEX REPLACE "#define *.*_VERSION_MAINTENANCE *([0-9]+)" "\\1" OCC_VERSION_MAINTENANCE "${matched_line}")
+
+ message(STATUS "Found OCC/OCE ${OCC_VERSION_MAJOR}.${OCC_VERSION_MINOR}.${OCC_VERSION_MAINTENANCE}")
+
 endif()

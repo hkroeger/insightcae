@@ -29,6 +29,10 @@
 
 #include "base/exception.h"
 #include "base/boost_include.h"
+#include "base/vtkrendering.h"
+
+#include "TopoDS_Shape.hxx"
+
 
 #ifndef Q_MOC_RUN
 #include "boost/variant.hpp"
@@ -41,6 +45,9 @@ namespace insight
 namespace cad 
 {
 
+
+
+
 class Scalar;
 class Vector;
 class ASTBase;
@@ -50,6 +57,9 @@ class FeatureSet;
 class Filter;
 class Model;
 class PostprocAction;
+
+
+
 
 typedef std::shared_ptr<Feature> FeaturePtr;
 typedef std::shared_ptr<Feature const> ConstFeaturePtr;
@@ -70,6 +80,9 @@ typedef std::shared_ptr<FeatureSet const> ConstFeatureSetPtr;
 typedef std::shared_ptr<Filter> FilterPtr;
 typedef std::shared_ptr<Filter const> ConstFilterPtr;
 
+
+
+
 typedef int FeatureID;
 typedef boost::variant<FeatureSetPtr,VectorPtr,ScalarPtr> FeatureSetParserArg;
 typedef std::vector<FeatureSetParserArg> FeatureSetParserArgList;
@@ -83,16 +96,90 @@ typedef boost::fusion::vector2<VectorPtr,VectorVariableType> VectorPtrAndType;
 typedef boost::variant<FeaturePtr, DatumPtr, VectorPtrAndType, ScalarPtr>  ModelVariable;
 typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVariableTable;
 
+
+
+
+enum EntityType { Vertex, Edge, Face, Solid };
+
+
+
+
+struct VisualizationStyle
+{
+    /**
+     * @brief style
+     * enforce style or leave default (=boost::blank)
+     */
+    boost::variant<boost::blank,DatasetRepresentation> style;
+    boost::variant<boost::blank,double> opacity;
+    arma::mat color = arma::mat();
+
+    VisualizationStyle();
+    VisualizationStyle(
+        boost::variant<boost::blank,DatasetRepresentation> style,
+        const arma::mat& color = arma::mat(),
+        boost::variant<boost::blank,double> opacity=boost::blank() );
+};
+
+
+
+
+struct FeatureVisualizationStyle : public VisualizationStyle
+{
+    std::vector<std::string> associatedParameterPaths = {};
+    bool initiallyVisible = true;
+
+    static FeatureVisualizationStyle componentStyle();
+    static FeatureVisualizationStyle intermediateFeatureStyle();
+
+    FeatureVisualizationStyle();
+    FeatureVisualizationStyle(
+        boost::variant<boost::blank,DatasetRepresentation> style,
+        const arma::mat& color = arma::mat(),
+        const std::vector<std::string> associatedParameterPaths = {},
+        boost::variant<boost::blank,double> opacity=boost::blank(),
+        bool initiallyVisible = true );
+};
+
+
+
+
 struct sharedModelLocations
     : public std::vector<boost::filesystem::path>
 {
   sharedModelLocations();
 };
 
+
+
+
 boost::filesystem::path sharedModelFilePath(const std::string& name);
 
+
+
+
+class OCCException
+        : public insight::Exception
+{
+    typedef std::map<std::string, TopoDS_Shape> InvolvedShapesList;
+    InvolvedShapesList involvedShapes_;
+
+public:
+    OCCException(const std::string message);
+
+    OCCException& addInvolvedShape(const std::string& label, TopoDS_Shape shape);
+    OCCException& addInvolvedShape(TopoDS_Shape shape);
+
+    const std::map<std::string, TopoDS_Shape>& involvedShapes() const;
+
+    void saveInvolvedShapes(const boost::filesystem::path& outFile) const;
+};
+
+
+
+
 class CADException
-: public insight::Exception
+: public OCCException
 {
   ConstFeaturePtr errorfeat_;
 public:
@@ -100,6 +187,9 @@ public:
 
     inline ConstFeaturePtr feature() const { return errorfeat_; }
 };
+
+
+
 
 }
 }

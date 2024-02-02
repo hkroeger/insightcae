@@ -51,7 +51,7 @@ public:
 protected:
     OFEnvironment env_;
     FieldList fields_;
-    bool fieldListCompleted_ = false;
+    bool fieldListCompleted_;
     MapMethod requiredMapMethod_;
 
     std::map<std::string, std::shared_ptr<OpenFOAMCase> > regions_;
@@ -77,7 +77,11 @@ public:
     void addField ( const std::string& name, const FieldInfo& field );
 
     boost::filesystem::path boundaryDictPath(const boost::filesystem::path& location, const std::string& regionName = std::string(), const std::string& time = "constant" ) const;
-    void parseBoundaryDict ( const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName = std::string(), const std::string& time = "constant" ) const;
+    void parseBoundaryDict (
+            const boost::filesystem::path& location,
+            OFDictData::dict& boundaryDict,
+            const std::string& regionName = std::string(),
+            const std::string& time = "constant" ) const;
 
     std::set<std::string> getUnhandledPatches ( OFDictData::dict& boundaryDict ) const;
 
@@ -200,7 +204,7 @@ public:
     virtual bool hasCyclicBC() const;
 
     OFDictData::dict diagonalSolverSetup() const;
-    OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0) const;
+    OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0, const std::string& preCon="DILU") const;
     OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0, int maxIter=1000) const;
     OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0) const;
     OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0) const;

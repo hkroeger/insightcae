@@ -1,5 +1,6 @@
 #include "availablecaseelementsmodel.h"
 
+#include "base/parametersetvisualizer.h"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
 
@@ -96,7 +97,7 @@ AvailableCaseElementsModel::AvailableCaseElementsModel(QObject *parent)
 
       try
       {
-          insight::ParameterSet_VisualizerPtr viz
+          insight::ParameterSetVisualizerPtr viz
               = insight::OpenFOAMCaseElement::visualizer(elemName);
           viz->setIcon(&icon);
       }

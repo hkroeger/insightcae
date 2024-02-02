@@ -21,6 +21,7 @@
 #include "compound.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -38,7 +39,9 @@ namespace cad
     
     
 defineType(Compound);
-addToFactoryTable(Feature, Compound);
+//addToFactoryTable(Feature, Compound);
+addToStaticFunctionTable(Feature, Compound, insertrule);
+addToStaticFunctionTable(Feature, Compound, ruleDocumentation);
 
 
 size_t Compound::calcHash() const
@@ -47,14 +50,16 @@ size_t Compound::calcHash() const
   h+=this->type();
   for (const CompoundFeatureMap::value_type& comp: components_)
   {
-    h+=comp.second;
+    h+=comp.first;
+    h+=*comp.second;
   }
   return h.getHash();
 }
 
 
+
 Compound::Compound()
-: Feature()
+    : Feature()
 {}
 
 
@@ -78,21 +83,21 @@ Compound::Compound(const CompoundFeatureMap& m1)
 
 
 
-FeaturePtr Compound::create( const CompoundFeatureList& m1 )
+
+    
+std::shared_ptr<Compound> Compound::create_named( const CompoundFeatureMapData& m1 )
 {
-    return FeaturePtr(new Compound(m1));
+    CompoundFeatureMap items;
+    for (const auto& i: m1)
+    {
+        items[boost::fusion::get<0>(i)]
+                = boost::fusion::get<1>(i);
+    }
+    return Compound::create(items);
 }
 
 
 
-
-FeaturePtr Compound::create_map( const CompoundFeatureMap& m1 )
-{
-    return FeaturePtr(new Compound(m1));
-}
-
-    
-    
     
 void Compound::build()
 {
@@ -104,10 +109,10 @@ void Compound::build()
 
       for ( const CompoundFeatureMap::value_type& c: components_ )
       {
-          std::string name=c.first;
-          FeaturePtr p=c.second;
+          std::string name = c.first;
+          FeaturePtr p = c.second;
 
-          bb.Add ( result, *p );
+          bb.Add ( result, p->shape() );
           p->unsetLeaf();
 
           providedSubshapes_[c.first]=c.second;
@@ -117,16 +122,18 @@ void Compound::build()
 
       for ( const CompoundFeatureMap::value_type& c: components_ )
       {
-        std::string name=c.first;
         FeaturePtr p=c.second;
 
-        FeatureSetParserArgList args;
-        args.push_back(FeatureSetPtr(new FeatureSet(p, Face)));
+        // delayed evaluation: will be evaluated upon first use
+        auto f = std::make_shared<FeatureSet>(
+                    shared_from_this(), Face,
+                    "isSame(%0)",
+                    FeatureSetParserArgList{
+                        std::make_shared<FeatureSet>(p, Face)
+                    } );
+//        auto f = find( p->allFaces() ); // find not usable during rebuild!
 
-        FeatureSetPtr f(new FeatureSet(shared_from_this(), Face, "isIdentical(%0)", args));
-        providedFeatureSets_[name] = f;
-
-        std::cout<<"added: "<<name<<(*f)<<std::endl;
+        providedFeatureSets_[c.first] = f;
       }
     }
     else
@@ -138,36 +145,42 @@ void Compound::build()
 
 
 
-void Compound::insertrule(parser::ISCADParser& ruleset) const
+void Compound::insertrule(parser::ISCADParser& ruleset)
 {
     ruleset.modelstepFunctionRules.add
     (
         "Compound",
-        typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
-
-                    ( '(' >> ( ruleset.r_solidmodel_expression % ',' ) >> ')' )
-                    [ qi::_val = phx::bind(&Compound::create, qi::_1) ]
-
-                ))
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
+                    '(' >
+                      (
+                          ( ruleset.r_solidmodel_expression % ',' )
+                           [ qi::_val = phx::bind(&Compound::create<const CompoundFeatureList&>, qi::_1) ]
+                        |
+                          ('{' > (
+                            ( ruleset.r_identifier > ':' > ruleset.r_solidmodel_expression )
+                              % ',' )
+                           [ qi::_val = phx::bind(&Compound::create_named, qi::_1) ] > '}')
+                      )
+                      > ')'
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList Compound::ruleDocumentation() const
+FeatureCmdInfoList Compound::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Compound",
          
             "( <feature:c0> [, <feature:c1>, ..., <feature:cn> ] )",
-         
-            "Creates a compound (assembly) of multiple features c0 to cn"
+
+            _("Creates a compound (assembly) of multiple features c0 to cn")
         )
-    );
+    };
 }
 
 
@@ -233,6 +246,13 @@ arma::mat Compound::modelInertia(double density_ovr) const
     if ( areaWeight_ /*&& (aw_ovr<0)*/ ) gaw=areaWeight_->value();
     Mass_CoG_Inertia mco=compoundProps(sfs, grho, gaw);
     return boost::fusion::at_c<2>(mco);
+}
+
+Compound &Compound::operator=(const Compound &o)
+{
+    components_ = o.components_;
+    Feature::operator=(o);
+    return *this;
 }
 
 

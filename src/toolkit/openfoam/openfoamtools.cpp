@@ -29,6 +29,7 @@
 #include "openfoam/snappyhexmesh.h"
 #include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/caseelements/numerics/meshingnumerics.h"
+#include "openfoam/createpatch.h"
 
 #include "boost/regex.hpp"
 #include "boost/iostreams/filtering_stream.hpp"
@@ -163,16 +164,19 @@ void setSet(
 
   for (const std::string& line: cmds)
   {
-    job->in << line << endl;
+        job->input() << line << endl;
   }
-  job->in << "quit" << endl;
-  job->in.pipe().close();
+  job->input() << "quit" << endl;
+  job->closeInput();
 
-  job->runAndTransferOutput();
+  std::vector<std::string> errout;
+  job->runAndTransferOutput(nullptr, &errout);
 
-  if (job->process().exit_code()!=0)
+  int retcode=job->process().exit_code();
+  if (retcode!=0)
   {
-    throw insight::Exception("setSet: command failed with nonzero return code.");
+    throw insight::ExternalProcessFailed(
+            retcode, "setSet", boost::join(errout, "\n ") );
   }
 }
 
@@ -343,282 +347,6 @@ void copyFields(const boost::filesystem::path& from, const boost::filesystem::pa
   }
 }
 
-namespace setFieldOps
-{
- 
-setFieldOperator::setFieldOperator(Parameters const& p)
-: p_(p)
-{
-}
-
-setFieldOperator::~setFieldOperator()
-{
-}
-
-
-fieldToCellOperator::fieldToCellOperator(Parameters const& p)
-: setFieldOperator(p),
-  p_(p)
-{
-}
-  
-void fieldToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
-{
-  OFDictData::dict opdict;
-  opdict["fieldName"]=p_.fieldName;
-  opdict["min"]=p_.min;
-  opdict["max"]=p_.max;
-
-  OFDictData::list fve;
-  for (const auto& fvs: p_.fieldValues)
-  {
-    //std::ostringstream line;
-    //line << fvs.get<0>() << " " << fvs.get<1>() ;
-    fve.push_back( fvs );
-  }
-  opdict["fieldValues"]=fve;
-  setFieldDict.getList("regions").push_back( "fieldToCell" );
-  setFieldDict.getList("regions").push_back( opdict );
-  
-}
-
-setFieldOperator* fieldToCellOperator::clone() const
-{
-  return new fieldToCellOperator(p_);
-}
-
-boxToCellOperator::boxToCellOperator(Parameters const& p )
-: setFieldOperator(p),
-  p_(p)
-{
-}
-
-void boxToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
-{
-  OFDictData::dict opdict;
-  opdict["box"]=OFDictData::to_OF(p_.min) + OFDictData::to_OF(p_.max);
-
-  OFDictData::list fve;
-  for (const auto& fvs: p_.fieldValues)
-  {
-    //std::ostringstream line;
-    //line << fvs.get<0>() << " " << fvs.get<1>() ;
-    fve.push_back( fvs );
-  }
-  opdict["fieldValues"]=fve;
-  setFieldDict.getList("regions").push_back( "boxToCell" );
-  setFieldDict.getList("regions").push_back( opdict );
-}
-
-setFieldOperator* boxToCellOperator::clone() const
-{
-  return new boxToCellOperator(p_);
-}
-
-
-cellToCellOperator::cellToCellOperator(Parameters const& p )
-: setFieldOperator(p),
-  p_(p)
-{
-}
-
-void cellToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
-{
-  OFDictData::dict opdict;
-  opdict["set"]=p_.cellSet;
-
-  OFDictData::list fve;
-  for (const auto& fvs: p_.fieldValues)
-  {
-    //std::ostringstream line;
-    //line << fvs.get<0>() << " " << fvs.get<1>() ;
-    fve.push_back( fvs );
-  }
-  opdict["fieldValues"]=fve;
-  setFieldDict.getList("regions").push_back( "cellToCell" );
-  setFieldDict.getList("regions").push_back( opdict );
-}
-
-setFieldOperator* cellToCellOperator::clone() const
-{
-  return new cellToCellOperator(p_);
-}
-
-}
-
-void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-               const setFieldOps::setFieldOperator::Parameters::fieldValues_type& defaultValues,
-	       const boost::ptr_vector<setFieldOps::setFieldOperator>& ops)
-{
-  using namespace setFieldOps;
-  
-  OFDictData::dictFile setFieldsDict;
-  
-  OFDictData::list& dvl = setFieldsDict.getList("defaultFieldValues");
-  for ( const auto& dv: defaultValues)
-  {
-    dvl.push_back( dv );
-  }
-  
-  setFieldsDict.getList("regions");  
-  for ( const setFieldOperator& op: ops)
-  {
-    op.addIntoDictionary(setFieldsDict);
-  }
-  
-  // then write to file
-  boost::filesystem::path dictpath = location / "system" / "setFieldsDict";
-  if (!exists(dictpath.parent_path())) 
-  {
-    boost::filesystem::create_directories(dictpath.parent_path());
-  }
-  
-  {
-    std::ofstream f(dictpath.c_str());
-    writeOpenFOAMDict(f, setFieldsDict, boost::filesystem::basename(dictpath));
-  }
-
-  ofc.executeCommand(location, "setFields");
-}
-
-namespace createPatchOps
-{
-
-createPatchOperator::createPatchOperator(Parameters const& p )
-: p_(p)
-{
-}
-
-createPatchOperator::~createPatchOperator()
-{
-}
-
-  
-void createPatchOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const
-{
-  OFDictData::dict opdict;
-  opdict["name"]=p_.name;
-  opdict["constructFrom"]=p_.constructFrom;
-  OFDictData::list pl;
-  std::copy(p_.patches.begin(), p_.patches.end(), pl.begin());
-  opdict["patches"]=pl;
-  opdict["set"]=p_.setname;
-
-  OFDictData::dict opsubdict;
-  opsubdict["type"]=p_.patchtype;
-  
-  if (ofc.OFversion()<170)
-  {
-    opdict["dictionary"]=opsubdict;
-    createPatchDict.getList("patchInfo").push_back( opdict );
-  }
-  else
-  {
-    opdict["patchInfo"]=opsubdict;
-    createPatchDict.getList("patches").push_back( opdict );
-  }
-
-}
-  
-createPatchOperator* createPatchOperator::clone() const
-{
-  return new createPatchOperator(p_);
-}
-
-createCyclicOperator::createCyclicOperator(Parameters const& p )
-: p_(p)
-{
-}
-  
-void createCyclicOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const
-{
-  std::vector<std::string> suffixes;
-  if (ofc.OFversion()>=210)
-  {
-    suffixes.push_back("_half0");
-    suffixes.push_back("_half1");
-  }
-  else
-    suffixes.push_back("");
-  
-  for (const std::string& suf: suffixes)
-  {
-    OFDictData::dict opdict;
-    opdict["name"]=p_.name+suf;
-    opdict["constructFrom"]=p_.constructFrom;
-    OFDictData::list pl;
-    if (suf=="_half0" || suf=="")
-    {
-      pl.resize(pl.size()+p_.patches.size());
-      std::copy(p_.patches.begin(), p_.patches.end(), pl.begin());
-      opdict["set"]=p_.setname;
-    }
-    if (suf=="_half1" || suf=="")
-    {
-      size_t osize=pl.size();
-      pl.resize(osize+p_.patches_half1.size());
-      std::copy(p_.patches_half1.begin(), p_.patches_half1.end(), pl.begin()+osize);
-      if (suf!="") opdict["set"]=p_.set_half1;
-    }
-    opdict["patches"]=pl;
-
-    OFDictData::dict opsubdict;
-    opsubdict["type"]="cyclic";
-    if (suf=="_half0") opsubdict["neighbourPatch"]=p_.name+"_half1";
-    if (suf=="_half1") opsubdict["neighbourPatch"]=p_.name+"_half0";
-    
-    if (ofc.OFversion()>=210)
-    {
-      opdict["patchInfo"]=opsubdict;
-      createPatchDict.getList("patches").push_back( opdict );
-    }
-    else
-    {
-      opdict["dictionary"]=opsubdict;
-      createPatchDict.getList("patchInfo").push_back( opdict );
-    }
-  }
-
-}
-  
-createPatchOperator* createCyclicOperator::clone() const
-{
-  return new createCyclicOperator(p_);
-}
-
-}
-
-void createPatch(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location, 
-                  const std::vector<createPatchOps::createPatchOperatorPtr>& ops,
-		  bool overwrite
-		)
-{
-  using namespace createPatchOps;
-  
-  OFDictData::dictFile createPatchDict;
-  
-  createPatchDict["matchTolerance"] = 1e-3;
-  createPatchDict["pointSync"] = false;
-  
-  if (ofc.OFversion()<170)
-    createPatchDict.getList("patchInfo");  
-  else
-    createPatchDict.getList("patches");  
-  
-  for ( const auto op: ops)
-  {
-    op->addIntoDictionary(ofc, createPatchDict);
-  }
-  
-  // then write to file
-  createPatchDict.write( location / "system" / "createPatchDict" );
-
-  std::vector<std::string> opts;
-  if (overwrite) opts.push_back("-overwrite");
-    
-  ofc.executeCommand(location, "createPatch", opts);
-}
 
 namespace sampleOps
 {
@@ -1377,7 +1105,7 @@ void resetMeshToLatestTimestep(const OpenFOAMCase& /*c*/, const boost::filesyste
             
             for (const TimeDirectoryList::value_type& td: times)
             {
-            remove_all(td.second);
+                remove_all(td.second);
             }
         }
     }
@@ -1453,9 +1181,9 @@ void runPotentialFoam
   controlDict["timeFormat"]="general";
   controlDict["timePrecision"]=6;
   controlDict["runTimeModifiable"]=true;
-  OFDictData::list l;
-  l.push_back("\"libextendedFixedValueBC.so\"");
-  controlDict.getList("libs")=l;
+//  OFDictData::list l;
+//  l.push_back("\"libextendedFixedValueBC.so\"");
+//  controlDict.getList("libs")=l;
   //controlDict.subDict("functions");
   
   OFDictData::dictFile fvSolution;
@@ -1602,18 +1330,19 @@ arma::mat matchValue(const std::string& vs)
 
 patchIntegrate::patchIntegrate
 (
-  const OpenFOAMCase& cm, 
-  const boost::filesystem::path& location,
-  const std::string& fieldName, 
-  const std::string& patchNamePattern,
-  const std::vector<std::string>& addopts
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location,
+    const std::string& fieldName,
+    const std::string& patchNamePattern,
+    const std::string& regionName,
+    const std::vector<std::string>& addopts
 )
 {
   boost::regex pat ( patchNamePattern );
 
   // get all patch name candidates
   OFDictData::dict boundaryDict;
-  cm.parseBoundaryDict ( location, boundaryDict );
+  cm.parseBoundaryDict ( location, boundaryDict, regionName );
 
   std::vector<std::string> patches;
   for ( const OFDictData::dict::value_type& de: boundaryDict )
@@ -1631,6 +1360,12 @@ patchIntegrate::patchIntegrate
   {
     std::vector<std::string> opts;
     copy ( addopts.begin(), addopts.end(), back_inserter ( opts ) );
+
+    if (!regionName.empty())
+    {
+        opts.push_back("-region");
+        opts.push_back ( regionName );
+    }
 
     std::vector<std::string> output;
     if (cm.OFversion()<400)
@@ -1796,7 +1531,7 @@ arma::mat readTextFile(std::istream& f)
   while (getline(f, line))
   {
     iline++;
-    CurrentExceptionContext ex(str(format("reading line %d (containing \"%s\")")%iline%line), false);
+    CurrentExceptionContext ex(3, str(format("reading line %d (containing \"%s\")")%iline%line), false);
 
     algorithm::trim_left(line);
     char fc; istringstream(line) >> fc; // get first char
@@ -2216,44 +1951,44 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
     results->insert
     (
      "Mesh quality at time "+mq.time,
-     std::unique_ptr<AttributeTableResult>
+     std::make_unique<AttributeTableResult>
      (
-       new AttributeTableResult
-       (
-	 list_of<string>
-	  ("Number of cells")
-	  ("thereof hexahedra")
-	  ("prisms")
-	  ("tetrahedra")
-	  ("polyhedra")
-	  
-	  ("Number of mesh regions")
-	  
-	  ("Domain extent (X)")
-	  ("Domain extent (Y)")
-	  ("Domain extent (Z)")
-	  
-	  ("Max. aspect ratio")
-	  ("Min. face area")
-	  ("Min. cell volume")
-	  
-	  ("Max. non-orthogonality")
-	  ("Avg. non-orthogonality")
-	  ("Max. skewness")
-	  
-	  ("No. of severely non-orthogonal faces")
-	  ("No. of negative face pyramids")
-	  ("No. of severely skew faces"),
+        AttributeTableResult::AttributeNames{
+          {"Number of cells"},
+          {"thereof hexahedra"},
+          {"prisms"},
+          {"tetrahedra"},
+          {"polyhedra"},
 
-	 list_of<AttributeTableResult::AttributeValue>
-	  (mq.ncells)(mq.nhex)(mq.nprism)(mq.ntet)(mq.npoly)
-	  (mq.nmeshregions)
-	  (mq.bb_max(0)-mq.bb_min(0))(mq.bb_max(1)-mq.bb_min(1))(mq.bb_max(2)-mq.bb_min(2))
-	  (mq.max_aspect_ratio)(mq.min_faceA)(mq.min_cellV)
-	  (mq.max_nonorth)(mq.avg_nonorth)(mq.max_skewness)
-	  (mq.n_severe_nonorth)(mq.n_neg_facepyr)(mq.n_severe_skew),
-	"Mesh Quality", "", ""
-	)
+          {"Number of mesh regions"},
+
+          {"Domain extent (X)"},
+          {"Domain extent (Y)"},
+          {"Domain extent (Z)"},
+
+          {"Max. aspect ratio"},
+          {"Min. face area"},
+          {"Min. cell volume"},
+
+          {"Max. non-orthogonality"},
+          {"Avg. non-orthogonality"},
+          {"Max. skewness"},
+
+          {"No. of severely non-orthogonal faces"},
+          {"No. of negative face pyramids"},
+          {"No. of severely skew faces"}
+        },
+
+        AttributeTableResult::AttributeValues{
+          mq.ncells, mq.nhex, mq.nprism, mq.ntet, mq.npoly,
+          mq.nmeshregions,
+          mq.bb_max(0)-mq.bb_min(0), mq.bb_max(1)-mq.bb_min(1), mq.bb_max(2)-mq.bb_min(2),
+          mq.max_aspect_ratio, mq.min_faceA, mq.min_cellV,
+          mq.max_nonorth, mq.avg_nonorth, mq.max_skewness,
+          mq.n_severe_nonorth, mq.n_neg_facepyr, mq.n_severe_skew
+        },
+
+        "Mesh Quality", "", ""
      )
     ).setOrder(0);
   }
@@ -2488,7 +2223,10 @@ void extrude2DMesh
     wc["axisPt"]=OFDictData::vector3(vec3(0,0,0));
     wc["axis"]=OFDictData::vector3(vec3(-1,0,0));
     wc["angle"]=5.0;
-    extrDict["wedgeCoeffs"]=wc;
+    if (cm.OFversion()>=600)
+        extrDict["sectorCoeffs"]=wc;
+    else
+        extrDict["wedgeCoeffs"]=wc;
   }
   else
   {
@@ -2708,6 +2446,81 @@ arma::mat interiorPressureFluctuationProfile
 }
 
 
+std::set<string>
+readPatchNameList(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path &caseLocation,
+        bool parallel,
+        const std::string& regionName,
+        const std::string& time )
+{
+    std::set<std::string> plist;
+    boost::regex procDir("^processor.*");
+    boost::regex toSkip("^procBoundary.*");
+
+    auto insertPatches = [&](const OFDictData::dict& boundaryDict)
+    {
+        for (const auto& e: boundaryDict)
+        {
+            if (!boost::regex_match(e.first, toSkip))
+                plist.insert(e.first);
+        }
+    };
+
+    if (parallel)
+    {
+        for (boost::filesystem::directory_iterator i(caseLocation);
+             i!=boost::filesystem::directory_iterator(); ++i)
+        {
+            if (boost::regex_match(i->path().filename().string(), procDir))
+            {
+                OFDictData::dict boundaryDict;
+                cm.parseBoundaryDict(i->path(), boundaryDict, regionName, time);
+                insertPatches(boundaryDict);
+            }
+        }
+    }
+    else
+    {
+        OFDictData::dict boundaryDict;
+        cm.parseBoundaryDict(caseLocation, boundaryDict, regionName, time);
+        insertPatches(boundaryDict);
+    }
+    return plist;
+}
+
+
+PatchLayers::PatchLayers()
+{}
+
+
+PatchLayers::PatchLayers(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path& caseLocation,
+        bool parallel,
+        const std::string& regionName,
+        const std::string& time )
+{
+    auto patches = readPatchNameList(cm, caseLocation, parallel);
+    for (const auto& p: patches)
+    {
+        insert({p, 0});
+        std::cout<<"dir="<<caseLocation<<", patch="<<p<<std::endl;
+    }
+}
+
+void PatchLayers::setByPattern(const std::string& regex_pattern, int nLayers)
+{
+    boost::regex pattern(regex_pattern);
+
+    for (auto& pi: *this)
+    {
+        if (boost::regex_match(pi.first, pattern))
+            (*this)[pi.first]=nLayers;
+    }
+}
+
+
 void createPrismLayers
 (
   const OpenFOAMCase& cm,
@@ -2718,7 +2531,8 @@ void createPrismLayers
   double expRatio,
   bool twodForExtrusion,
   bool isalreadydecomposed,
-  bool keepdecomposedafterfinish
+  bool keepdecomposedafterfinish,
+  ProgressDisplayer* progress
 )
 {
     
@@ -2750,6 +2564,7 @@ void createPrismLayers
   else
   {
       shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::relaxed;
+//      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::standard;
 //     setRelaxedQualityCtrls(*qualityCtrls);
 //     (*qualityCtrls)["maxConcave"]=180.0; //85.0;  
 //     (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
@@ -2780,7 +2595,8 @@ void createPrismLayers
     shm_cfg,
     true,
     isalreadydecomposed,
-    keepdecomposedafterfinish
+    keepdecomposedafterfinish,
+    progress
   ); 
 }
 
@@ -3117,136 +2933,357 @@ bool checkIfAnyFileIsNewerOrNonexistent
     return anynewerornonexistent;
 }
 
-bool checkIfReconstructLatestTimestepNeeded
-(
-  const OpenFOAMCase& /*cm*/,
-  const boost::filesystem::path& location
-)
-{
-  using namespace boost::filesystem;
-  
-  path proc0 = location/"processor0";
-  if (!exists(proc0)) 
-  {
-      std::cout<<"No processor directories in case "<<location.string()<<" => no reconstruct possible"<<std::endl;
-      return false; // no reconst, if no processor directories exist
-  }
-  
-  // find last timestep in proc*0
-  TimeDirectoryList tdl = listTimeDirectories( proc0 );  
-  boost::filesystem::path proc0latestTimeDir = tdl.rbegin()->second;
-  
-  if (tdl.size()==0) 
-  {
-      std::cout<<"No time directories in procesor0 => no reconstruct possible"<<std::endl;
-      return false; // no reconst, if not time dirs in proc dirs
-  }
 
-  path timedirname = proc0latestTimeDir.filename();
-  path latestTimeDir = location/timedirname;
-  
-  if (!exists(latestTimeDir)) 
-  {
-      std::cout<<"Latest time directory "<<timedirname.string()<<" in procesor0 not existing in case "<<location.string()<<" => reconstruct required"<<std::endl;
-      return true; // reconst needed, if latest time is only existing in proc dir
-  }
-  else
-  {
-      // time dir exists also in case; check if files in proc dir are newer
-      
-      if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir, latestTimeDir, false))
-      {
-          std::cout<<"There are newer or non-existing field files in case time dir => reconstruct required"<<std::endl;          
-          return true;
-      }
-      
-      if (exists(proc0latestTimeDir/"polyMesh"))
-      {
-          if (!exists(latestTimeDir/"polyMesh"))
-          {
-            std::cout<<"polyMesh folder in case time dir not existing => reconstruct required"<<std::endl;          
-            return true;              
-          }
-          else if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir/"polyMesh", latestTimeDir/"polyMesh", false))
-          {
-            std::cout<<"There are newer or non-existing files in polyMesh folder => reconstruct required"<<std::endl;          
-            return true;
-          }
-      }
-  }
-  return false;
+ParallelTimeDirectories::ParallelTimeDirectories(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location
+    )
+{
+    serTimes_ = listTimeDirectories(location);
+
+    directory_iterator end_itr; // default construction yields past-the-end
+    const boost::regex filter( "processor[0-9]+" );
+    for ( directory_iterator i( location ); i != end_itr; i++ )
+    {
+        if ( is_directory(i->status()) )
+        {
+            std::string fn=i->path().filename().string();
+            boost::smatch what;
+            if ( boost::regex_match( i->path().filename().string(), what, filter ) )
+            {
+                procDirs_.insert(i->path());
+            }
+        }
+    }
+
+    auto proc0 = location/"processor0";
+    if (boost::filesystem::exists(proc0)
+        && boost::filesystem::is_directory(proc0))
+    {
+        proc0Times_=listTimeDirectories(proc0);
+    }
 }
 
 
 
+
+bool ParallelTimeDirectories::proc0TimeDirNeedsReconst(
+    const boost::filesystem::path& ptdpath ) const
+{
+    // search for identical time directory *name*
+    auto iser=std::find_if(
+        serTimes_.begin(), serTimes_.end(),
+        [&](const TimeDirectoryList::value_type& td)
+        {
+            return boost::filesystem::basename(ptdpath)
+                == boost::filesystem::basename(td.second);
+        }
+    );
+
+    if (iser==serTimes_.end())
+    {
+        // no matching serial time dir present
+        return true;
+    }
+    else
+    {
+        // its there, but up-to-date?
+        return checkIfAnyFileIsNewerOrNonexistent(ptdpath, iser->second, true);
+    }
+
+    return false;
+}
+
+
+
+
+std::set<boost::filesystem::path> ParallelTimeDirectories::newParallelTimes(bool filterOutInconsistent) const
+{
+    std::set<boost::filesystem::path> result;
+
+    for (const auto& ptd: proc0Times_)
+    {
+        if (proc0TimeDirNeedsReconst(ptd.second))
+        {
+            if ( !filterOutInconsistent
+                 ||
+                 (filterOutInconsistent && !isParallelTimeDirInconsistent(ptd.second.filename())) )
+            {
+                // no matching serial time dir present
+                result.insert(ptd.second.filename());
+            }
+        }
+    }
+
+    return result;
+}
+
+
+
+
+bool ParallelTimeDirectories::latestTimeNeedsReconst() const
+{
+    if (proc0Times_.size())
+    {
+        auto lproc = (--proc0Times_.end());
+        return proc0TimeDirNeedsReconst(lproc->second);
+    }
+    else
+        return false;
+}
+
+bool ParallelTimeDirectories::isParallelTimeDirInconsistent(
+    const boost::filesystem::path &ptd ) const
+{
+    auto j0=procDirs_.begin();
+    if (!boost::filesystem::exists((*j0)/ptd))
+    {
+        return true;
+    }
+    else
+    {
+        auto tdc1 = OpenFOAMCaseDirs::timeDirContent((*j0)/ptd);
+        for (auto j=++procDirs_.begin(); j!=procDirs_.end(); ++j)
+        {
+            if (!boost::filesystem::exists((*j)/ptd))
+            {
+                return true;
+            }
+            else
+            {
+                auto tdc2=OpenFOAMCaseDirs::timeDirContent((*j)/ptd);
+                if ( tdc2 != tdc1 )
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+
+
+bool checkIfReconstructLatestTimestepNeeded
+(
+  const OpenFOAMCase& cm,
+  const boost::filesystem::path& location
+)
+{
+    return ParallelTimeDirectories(cm, location)
+        .latestTimeNeedsReconst();
+
+//  using namespace boost::filesystem;
+  
+//  path proc0 = location/"processor0";
+//  if (!exists(proc0))
+//  {
+//      std::cout<<"No processor directories in case "<<location.string()<<" => no reconstruct possible"<<std::endl;
+//      return false; // no reconst, if no processor directories exist
+//  }
+  
+//  // find last timestep in proc*0
+//  TimeDirectoryList tdl = listTimeDirectories( proc0 );
+//  boost::filesystem::path proc0latestTimeDir = tdl.rbegin()->second;
+  
+//  if (tdl.size()==0)
+//  {
+//      std::cout<<"No time directories in procesor0 => no reconstruct possible"<<std::endl;
+//      return false; // no reconst, if not time dirs in proc dirs
+//  }
+
+//  path timedirname = proc0latestTimeDir.filename();
+//  path latestTimeDir = location/timedirname;
+  
+//  if (!exists(latestTimeDir))
+//  {
+//      std::cout<<"Latest time directory "<<timedirname.string()<<" in procesor0 not existing in case "<<location.string()<<" => reconstruct required"<<std::endl;
+//      return true; // reconst needed, if latest time is only existing in proc dir
+//  }
+//  else
+//  {
+//      // time dir exists also in case; check if files in proc dir are newer
+      
+//      if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir, latestTimeDir, false))
+//      {
+//          std::cout<<"There are newer or non-existing field files in case time dir => reconstruct required"<<std::endl;
+//          return true;
+//      }
+      
+//      if (exists(proc0latestTimeDir/"polyMesh"))
+//      {
+//          if (!exists(latestTimeDir/"polyMesh"))
+//          {
+//            std::cout<<"polyMesh folder in case time dir not existing => reconstruct required"<<std::endl;
+//            return true;
+//          }
+//          else if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir/"polyMesh", latestTimeDir/"polyMesh", false))
+//          {
+//            std::cout<<"There are newer or non-existing files in polyMesh folder => reconstruct required"<<std::endl;
+//            return true;
+//          }
+//      }
+//  }
+//  return false;
+}
+
+
+
+
+eMesh::eMesh()
+{}
+
+eMesh::eMesh(const EMeshPtsList &pts)
+{
+    for (int i=0; i<pts.size(); ++i)
+    {
+        points_.push_back(pts[i]);
+        if (i>0) edges_.push_back({i-1, i});
+    }
+}
+
+eMesh::eMesh(const EMeshPtsListList &pts)
+{
+
+    for (const EMeshPtsList& points: pts)
+    {
+      for (const arma::mat& p: points)
+      {
+        points_.push_back(p);
+      }
+    }
+
+    int ofs=0;
+    for (const EMeshPtsList& points: pts)
+    {
+      for (size_t i=1; i<points.size(); i++)
+      {
+        edges_.push_back({ofs+i-1, ofs+i});
+      }
+      ofs+=points.size();
+    }
+}
+
+int eMesh::nPoints() const
+{
+    return points_.size();
+}
+
+int eMesh::nEdges() const
+{
+    return edges_.size();
+}
+
+void eMesh::write(std::ostream &f) const
+{
+    f<<"FoamFile {"<<endl
+     <<" version     2.0;"<<endl
+     <<" format      ascii;"<<endl
+     <<" class       featureEdgeMesh;"<<endl
+     <<" location    \"\";"<<endl
+     <<" object      \"export.eMesh\";"<<endl
+     <<"}"<<endl;
+
+    f<<points_.size()<<endl
+     <<"("<<endl;
+    for (const arma::mat& p: points_)
+    {
+      f<<OFDictData::to_OF(p)<<endl;
+    }
+    f<<")"<<endl;
+
+    f<<edges_.size()<<endl
+     <<"("<<endl;
+    for (const auto&e: edges_)
+    {
+      f<<"("<<e.first<<" "<<e.second<<")"<<endl;
+    }
+    f<<")"<<endl;
+}
+
+void eMesh::write(const boost::filesystem::path& filename) const
+{
+    std::ofstream f(filename.string());
+    write(f);
+}
+
+std::ostream &operator<<(std::ostream& os, const eMesh& emesh)
+{
+    emesh.write(os);
+    return os;
+}
+
+
 void exportEMesh(const EMeshPtsList &points, const boost::filesystem::path& filename)
 {
-  std::ofstream f(filename.c_str());
-  f<<"FoamFile {"<<endl
-   <<" version     2.0;"<<endl
-   <<" format      ascii;"<<endl
-   <<" class       featureEdgeMesh;"<<endl
-   <<" location    \"\";"<<endl
-   <<" object      "<<filename.filename().string()<<";"<<endl
-   <<"}"<<endl;
+    eMesh(points).write(filename);
 
-  f<<points.size()<<endl
-   <<"("<<endl;
-  for (const arma::mat& p: points)
-  {
-    f<<OFDictData::to_OF(p)<<endl;
-  }
-  f<<")"<<endl;
+//  f<<"FoamFile {"<<endl
+//   <<" version     2.0;"<<endl
+//   <<" format      ascii;"<<endl
+//   <<" class       featureEdgeMesh;"<<endl
+//   <<" location    \"\";"<<endl
+//   <<" object      "<<filename.filename().string()<<";"<<endl
+//   <<"}"<<endl;
 
-  f<<(points.size()-1)<<endl
-   <<"("<<endl;
-  for (size_t i=1; i<points.size(); i++)
-  {
-    f<<"("<<(i-1)<<" "<<i<<")"<<endl;
-  }
-  f<<")"<<endl;
+//  f<<points.size()<<endl
+//   <<"("<<endl;
+//  for (const arma::mat& p: points)
+//  {
+//    f<<OFDictData::to_OF(p)<<endl;
+//  }
+//  f<<")"<<endl;
+
+//  f<<(points.size()-1)<<endl
+//   <<"("<<endl;
+//  for (size_t i=1; i<points.size(); i++)
+//  {
+//    f<<"("<<(i-1)<<" "<<i<<")"<<endl;
+//  }
+//  f<<")"<<endl;
 }
 
 
 void exportEMesh(const std::vector<EMeshPtsList>& pts, const boost::filesystem::path& filename)
 {
-  std::ofstream f(filename.c_str());
-  f<<"FoamFile {"<<endl
-   <<" version     2.0;"<<endl
-   <<" format      ascii;"<<endl
-   <<" class       featureEdgeMesh;"<<endl
-   <<" location    \"\";"<<endl
-   <<" object      "<<filename.filename().string()<<";"<<endl
-   <<"}"<<endl;
+    eMesh(pts).write(filename);
 
-  int npts=0;
-  for (const EMeshPtsList& points: pts)
-  {
-    npts+=points.size();
-  }
-  f<<npts<<endl
-   <<"("<<endl;
-  for (const EMeshPtsList& points: pts)
-  {
-    for (const arma::mat& p: points)
-    {
-      f<<OFDictData::to_OF(p)<<endl;
-    }
-  }
-  f<<")"<<endl;
+//  f<<"FoamFile {"<<endl
+//   <<" version     2.0;"<<endl
+//   <<" format      ascii;"<<endl
+//   <<" class       featureEdgeMesh;"<<endl
+//   <<" location    \"\";"<<endl
+//   <<" object      "<<filename.filename().string()<<";"<<endl
+//   <<"}"<<endl;
 
-  f<<(npts-pts.size())<<endl
-   <<"("<<endl;
-  int ofs=0;
-  for (const EMeshPtsList& points: pts)
-  {
-    for (size_t i=1; i<points.size(); i++)
-    {
-      f<<"("<<(ofs+i-1)<<" "<<(ofs+i)<<")"<<endl;
-    }
-    ofs+=points.size();
-  }
-  f<<")"<<endl;
+//  int npts=0;
+//  for (const EMeshPtsList& points: pts)
+//  {
+//    npts+=points.size();
+//  }
+//  f<<npts<<endl
+//   <<"("<<endl;
+//  for (const EMeshPtsList& points: pts)
+//  {
+//    for (const arma::mat& p: points)
+//    {
+//      f<<OFDictData::to_OF(p)<<endl;
+//    }
+//  }
+//  f<<")"<<endl;
+
+//  f<<(npts-pts.size())<<endl
+//   <<"("<<endl;
+//  int ofs=0;
+//  for (const EMeshPtsList& points: pts)
+//  {
+//    for (size_t i=1; i<points.size(); i++)
+//    {
+//      f<<"("<<(ofs+i-1)<<" "<<(ofs+i)<<")"<<endl;
+//    }
+//    ofs+=points.size();
+//  }
+//  f<<")"<<endl;
 }
 
 
@@ -3290,17 +3327,29 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
   directory_iterator end_itr; // default construction yields past-the-end
   const boost::regex filter( "processor[0-9]+" );
   for ( directory_iterator i( location ); i != end_itr; i++ )
+  {
+      if ( is_directory(i->status()) )
       {
-          if ( is_directory(i->status()) )
-          {
-              std::string fn=i->path().filename().string();
-              boost::smatch what;
-              if ( boost::regex_match( i->path().filename().string(), what, filter ) )
-                {
-                  procDirs_.insert(i->path());
-                }
-          }
+          std::string fn=i->path().filename().string();
+          boost::smatch what;
+          if ( boost::regex_match( i->path().filename().string(), what, filter ) )
+            {
+              procDirs_.insert(i->path());
+            }
       }
+  }
+
+  // get a list of every time directory processor dirs
+  // also include potentially inconsistent dirs
+  for (const auto& proc: procDirs_)
+  {
+      auto ptds = listTimeDirectories(proc);
+      for (const auto& ptd: ptds)
+      {
+          procTimeDirs_.insert(ptd.second.filename());
+      }
+  }
+
 }
 
 std::set<boost::filesystem::path> OpenFOAMCaseDirs::timeDirs( OpenFOAMCaseDirs::TimeDirOpt td )
@@ -3338,13 +3387,36 @@ std::set<boost::filesystem::path> OpenFOAMCaseDirs::timeDirs( OpenFOAMCaseDirs::
   return tds;
 }
 
+
+std::set<boost::filesystem::path> OpenFOAMCaseDirs::timeDirContent(
+        const boost::filesystem::path& td )
+{
+    std::set<boost::filesystem::path> tdc;
+
+    for (const auto& f : recursive_directory_iterator(td))
+    {
+        tdc.insert(make_relative(td,f));
+    }
+    return tdc;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::set<boost::filesystem::path>& paths)
+{
+    for (const auto& p: paths)
+    {
+        os << " "<<p.string();
+    }
+    return os;
+}
+
 std::set<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs
 (
     OpenFOAMCaseDirs::TimeDirOpt td,
     bool cleanProc,
     bool cleanTimes,
     bool cleanPost,
-    bool cleanSys
+    bool cleanSys,
+    bool cleanInconsistentParallelTimes
 )
 {
   std::set<boost::filesystem::path> all_cands;
@@ -3360,6 +3432,53 @@ std::set<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs
   }
 
   if (cleanProc) std::copy( procDirs_.begin(), procDirs_.end(), std::inserter(all_cands, all_cands.begin()) );
+
+  if (cleanInconsistentParallelTimes)
+  {
+      std::set<boost::filesystem::path> inconsistentParTimes;
+
+      auto j0=procDirs_.begin();
+      for (const auto& ptd: procTimeDirs_)
+      {
+          if (!boost::filesystem::exists((*j0)/ptd))
+          {
+            inconsistentParTimes.insert(ptd);
+          }
+          else
+          {
+              auto tdc1 = timeDirContent((*j0)/ptd);
+              for (auto j=++procDirs_.begin(); j!=procDirs_.end(); ++j)
+              {
+                  if (!boost::filesystem::exists((*j)/ptd))
+                  {
+                    inconsistentParTimes.insert(ptd);
+                    break;
+                  }
+                  else
+                  {
+                      auto tdc2=timeDirContent((*j)/ptd);
+                      if ( tdc2 != tdc1 )
+                      {
+                        inconsistentParTimes.insert(ptd);
+                        break;
+                      }
+                  }
+              }
+          }
+      }
+
+      for (const auto& ptd: inconsistentParTimes)
+      {
+          for (const auto& pd: procDirs_)
+          {
+              auto dn = pd/ptd;
+              if (boost::filesystem::exists(dn))
+              {
+                  all_cands.insert(dn);
+              }
+          }
+      }
+  }
 
   return all_cands;
 }
@@ -3398,11 +3517,12 @@ void OpenFOAMCaseDirs::cleanCase
     bool cleanProc,
     bool cleanTimes,
     bool cleanPost,
-    bool cleanSys
+    bool cleanSys,
+    bool cleanInconsistentParallelTimes
 )
 {
 
-  auto cands = caseFilesAndDirs(td, cleanProc, cleanTimes, cleanPost, cleanSys);
+  auto cands = caseFilesAndDirs(td, cleanProc, cleanTimes, cleanPost, cleanSys, cleanInconsistentParallelTimes);
 
   for (const auto& c: cands)
   {
@@ -3663,7 +3783,88 @@ void BoundingBox::extend(const arma::mat& bb2)
 
 void BoundingBox::operator=(const arma::mat& bb)
 {
-  arma::mat::operator=(bb);
+    arma::mat::operator=(bb);
 }
+
+void setHydrostaticPressure(
+    const OpenFOAMCase &cm,
+    const boost::filesystem::path &location,
+    const arma::mat &pSurf,
+    const arma::mat &eUp,
+    double rho, double p0Amb,
+    const std::map<std::string, std::string> &targetEntriesPerPatch,
+    const std::string& fieldName,
+    bool setInternalField )
+{
+    std::string expr = str(
+        boost::format("%g - (pos()-vector(%g,%g,%g))&vector(%g,%g,%g)*%g*9.81")
+            % p0Amb
+            % pSurf(0) % pSurf(1) % pSurf(2)
+            % eUp(0) % eUp(1) % eUp(2)
+            % rho
+        );
+
+    if (setInternalField)
+    {
+        OFDictData::dictFile sefd;
+        sefd["defaultFieldValues"]=
+            OFDictData::list{str(boost::format("volScalarFieldValue "+fieldName+" %g")%p0Amb)};
+
+        OFDictData::dict p;
+        p["field"]=fieldName;
+        p["constants"]=OFDictData::dict();
+        p["variables"]=OFDictData::list();
+        p["expression"]="#{"+expr+"#}";
+        sefd["expressions"]=OFDictData::list{ fieldName, p };
+
+        sefd.write( location / "system" / "setExprFieldsDict" );
+
+        cm.executeCommand(location, "setExprFields", {});
+    }
+
+    if (targetEntriesPerPatch.size())
+    {
+        OFDictData::dict pat;
+        pat["field"]=fieldName;
+        pat["keepPatches"]=true;
+
+        auto addExpr = [&](const std::string& patch, const std::string& targetEntry)
+        {
+            OFDictData::dict exprDict;
+            exprDict["patch"]=patch;
+            exprDict["target"]=targetEntry;
+            exprDict["expression"]="#{ "+expr+" #}";
+            return exprDict;
+        };
+
+        OFDictData::dict boundaryDict;
+        cm.parseBoundaryDict(location, boundaryDict);
+
+        OFDictData::list exprs;
+        for (const auto& tepp: targetEntriesPerPatch)
+        {
+            boost::regex re(tepp.first);
+            for (const auto& p: boundaryDict)
+            {
+                if (boost::regex_match(p.first, re))
+                {
+                    exprs.push_back(addExpr(p.first, tepp.second));
+                }
+            }
+        }
+        pat["expressions"]=exprs;
+
+        OFDictData::dictFile sebfd;
+        sebfd["pattern"]=pat;
+
+        sebfd.write( location / "system" / "setExprBoundaryFieldsDict" );
+
+        cm.executeCommand(location, "setExprBoundaryFields", {});
+    }
+}
+
+
+
+
 
 }

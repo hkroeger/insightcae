@@ -22,6 +22,9 @@
 #include "BRepOffsetAPI_NormalProjection.hxx"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -35,7 +38,10 @@ namespace cad {
 
 
 defineType(ProjectedOutline);
-addToFactoryTable(Feature, ProjectedOutline);
+//addToFactoryTable(Feature, ProjectedOutline);
+addToStaticFunctionTable(Feature, ProjectedOutline, insertrule);
+//addToStaticFunctionTable(Feature, ProjectedOutline, ruleDocumentation);
+
 
 size_t ProjectedOutline::calcHash() const
 {
@@ -47,9 +53,6 @@ size_t ProjectedOutline::calcHash() const
 }
 
 
-ProjectedOutline::ProjectedOutline(): Feature()
-{}
-
 
 TopoDS_Shape makeOutlineProjection
 (
@@ -58,7 +61,7 @@ TopoDS_Shape makeOutlineProjection
 )
 {
   if (!target.providesPlanarReference())
-    throw insight::Exception("Error: Wrong parameter. ProjectedOutline needs a planar reference!");
+      throw insight::Exception(_("Error: Wrong parameter. ProjectedOutline needs a planar reference!"));
   
   gp_Ax3 pln=target;
   
@@ -96,10 +99,10 @@ TopoDS_Shape makeOutlineProjectionEdges
 )
 {
   if (!target.providesPlanarReference())
-    throw insight::Exception("Error: Wrong parameter. ProjectedOutline needs a planar reference!");
+      throw insight::Exception(_("Error: Wrong parameter. ProjectedOutline needs a planar reference!"));
   
   gp_Ax3 pln=target;
-  cout<<"pl"<<endl;
+
   TopoDS_Face face=BRepBuilderAPI_MakeFace(gp_Pln(pln));
   gp_Trsf trsf;
   trsf.SetTransformation(
@@ -143,17 +146,18 @@ void ProjectedOutline::build()
     setShape(makeOutlineProjection(*source_, *target_));
 }
 
-void ProjectedOutline::insertrule(parser::ISCADParser& ruleset) const
+void ProjectedOutline::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "ProjectedOutline",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<ProjectedOutline>(qi::_1, qi::_2)) ]
-      
-    ))
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' )
+                  [ qi::_val = phx::bind(
+                       &ProjectedOutline::create<FeaturePtr, DatumPtr>,
+                       qi::_1, qi::_2) ]
+    )
   );
 }
 

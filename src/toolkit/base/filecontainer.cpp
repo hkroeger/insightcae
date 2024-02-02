@@ -3,22 +3,16 @@
 
 
 #include "boost/archive/iterators/base64_from_binary.hpp"
-#include "boost/archive/iterators/binary_from_base64.hpp"
 #include <boost/archive/iterators/transform_width.hpp>
-#include <boost/algorithm/string.hpp>
-
-#include <boost/archive/iterators/base64_from_binary.hpp>
-#include <boost/archive/iterators/insert_linebreaks.hpp>
-#include <boost/archive/iterators/transform_width.hpp>
-#include <boost/archive/iterators/ostream_iterator.hpp>
-#include <boost/archive/iterators/remove_whitespace.hpp>
 
 
 #include "base/tools.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef WIN32
 #include <sys/mman.h>
+#endif
 #include <iostream>
 #include <unistd.h>
 #include <fcntl.h>
@@ -93,50 +87,6 @@ namespace insight {
 
 
 
-
-const std::string base64_padding[] = {"", "==","="};
-
-
-
-
-std::string base64_encode(const std::string& s)
-{
-  insight::CurrentExceptionContext ex(
-        boost::str(boost::format("performing base64 encode of buffer of size %d")
-                   % s.size() )
-        );
-
-  namespace bai = boost::archive::iterators;
-
-  std::stringstream os;
-
-  // convert binary values to base64 characters
-  typedef bai::base64_from_binary
-  // retrieve 6 bit integers from a sequence of 8 bit bytes
-  <bai::transform_width<const char *, 6, 8> > base64_enc; // compose all the above operations in to a new iterator
-
-  std::copy(base64_enc(s.c_str()), base64_enc(s.c_str() + s.size()),
-            std::ostream_iterator<char>(os));
-
-  os << base64_padding[s.size() % 3];
-  return os.str();
-}
-
-
-
-
-std::string
-base64_encode(
-    const boost::filesystem::path& f )
-{
-  std::string contents_raw;
-  readFileIntoString(f, contents_raw);
-  return base64_encode(contents_raw);
-}
-
-
-
-
 MD5HashPtr calcBufferHash(const std::string& buffer)
 {
   insight::CurrentExceptionContext ex(
@@ -190,50 +140,6 @@ MD5HashPtr calcFileHash(const boost::filesystem::path& filePath)
   return hash;
 }
 #endif
-
-
-
-void
-base64_decode(
-    const char *src,
-    size_t size,
-    std::shared_ptr<std::string>& targetBuffer  )
-{
-//  char *src = a->value();
-//  size_t size = a->value_size();
-
-  if ((size>0) && src[size - 1] == '=')
-  {
-    --size;
-    if ((size>0) && src[size - 1] == '=')
-    {
-       --size;
-    }
-  }
-
-  if (size == 0)
-  {
-    if (targetBuffer) targetBuffer->clear();
-  }
-  else
-  {
-    using namespace boost::archive::iterators;
-
-    typedef
-      transform_width<
-       binary_from_base64<
-        remove_whitespace<
-         const char*
-        >
-       >,
-       8, 6
-      >
-      base64_dec;
-
-      targetBuffer.reset(new std::string( base64_dec(src), base64_dec(src + size) ));
-  }
-}
-
 
 
 
@@ -336,8 +242,13 @@ FileContainer::FileContainer(
   : originalFilePath_(originalFileName.generic_path()),
     file_content_(new std::string(binaryFileContent, size))
 {
-  clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
+    clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
 }
+
+
+
+FileContainer::~FileContainer()
+{}
 
 
 
@@ -384,6 +295,7 @@ void FileContainer::setOriginalFilePath(const boost::filesystem::path &value)
 {
   originalFilePath_=value.generic_path();
   clearPackedData();
+  signalContentChange();
 }
 
 
@@ -499,6 +411,11 @@ bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
 
 
 
+void FileContainer::signalContentChange()
+{}
+
+
+
 //void FileContainer::unpack(const boost::filesystem::path& basePath)
 //{
 //  if (needsUnpack(basePath))
@@ -538,16 +455,17 @@ void FileContainer::copyTo(const boost::filesystem::path &filePath, bool createP
 
   if (file_content_)
   {
-    std::ofstream file( filePath.c_str(), std::ios::out | std::ios::binary);
-    if (file.good())
-    {
-        file.write(file_content_->c_str(), long(file_content_->size()) );
-        file.close();
-    }
-    else
-    {
-      throw insight::Exception("could not write to file "+filePath.string());
-    }
+      writeStringIntoFile(file_content_, filePath);
+//    std::ofstream file( filePath.c_str(), std::ios::out | std::ios::binary);
+//    if (file.good())
+//    {
+//        file.write(file_content_->c_str(), long(file_content_->size()) );
+//        file.close();
+//    }
+//    else
+//    {
+//      throw insight::Exception("could not write to file "+filePath.string());
+//    }
   }
   else
   {
@@ -573,6 +491,8 @@ void FileContainer::replaceContent(const boost::filesystem::path& filePath)
 
     readFileIntoString(filePath, *newContent);
     replaceContentBuffer(newContent);
+
+    signalContentChange();
   }
 }
 
@@ -591,6 +511,8 @@ void FileContainer::replaceContentBuffer(std::shared_ptr<std::string> newContent
   file_content_=newContent;
   clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
   //  fileContentHash_ = calcBufferHash(*file_content_);
+
+  signalContentChange();
 }
 
 size_t FileContainer::contentBufferSize() const
@@ -613,6 +535,12 @@ void FileContainer::clearPackedData()
 }
 
 
+void FileContainer::operator=(const FileContainer& oc)
+{
+  originalFilePath_ = oc.originalFilePath_;
+  file_content_ = oc.file_content_;
+  signalContentChange();
+}
 
 
 void FileContainer::appendToNode
@@ -702,7 +630,6 @@ void FileContainer::appendToNode
 
 void FileContainer::readFromNode
 (
-  rapidxml::xml_document<> &doc,
   rapidxml::xml_node<>& node,
   boost::filesystem::path inputfilepath,
   const std::string& fileNameAttribName,
@@ -710,7 +637,7 @@ void FileContainer::readFromNode
 )
 {
   using namespace rapidxml;
-  boost::filesystem::path abspath(node.first_attribute(doc.allocate_string(fileNameAttribName.c_str()))->value());
+  boost::filesystem::path abspath(node.first_attribute(fileNameAttribName.c_str())->value());
 
   if (!abspath.empty())
   {
@@ -728,7 +655,7 @@ void FileContainer::readFromNode
 
   originalFilePath_=abspath;
 
-  if (auto* a = node.first_attribute(doc.allocate_string(contentAttribName.c_str())))
+  if (auto* a = node.first_attribute(contentAttribName.c_str()))
   {
     base64_decode(a->value(), a->value_size(), file_content_);
     clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);

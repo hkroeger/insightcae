@@ -51,6 +51,7 @@
 
 #include "base/cacheableentityhashes.h"
 #include "featurecache.h"
+#include "subshapenumbering.h"
 
 namespace insight 
 {
@@ -174,6 +175,7 @@ public:
     int getMaxIndex() const;
 };
 
+
  
 /**
  * Base class of all CAD modelling features
@@ -188,7 +190,7 @@ class Feature
   static std::mutex step_read_mutex_;
   
 public:
-  declareFactoryTableNoArgs(Feature); 
+//  declareFactoryTableNoArgs(Feature);
 
   
 //   typedef std::shared_ptr<Feature> Ptr;
@@ -231,10 +233,9 @@ private:
   
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
-  TopTools_IndexedMapOfShape
-//  FreelyIndexedMapOfShape
-   fmap_, emap_, vmap_, somap_, shmap_, wmap_;
-  
+  std::unique_ptr<SubshapeNumbering> idx_;
+
+
   SubfeatureMap providedSubshapes_;
   FeatureSetPtrMap providedFeatureSets_;
   DatumPtrMap providedDatums_;
@@ -246,8 +247,6 @@ protected:
   ScalarPtr visresolution_;
   ScalarPtr density_;
   ScalarPtr areaWeight_;
-
-  size_t hash_;
   
   /**
    * symbol name of this feature in the defining model
@@ -255,7 +254,7 @@ protected:
   std::string featureSymbolName_;
   
   void updateVolProps() const;
-  void setShape(const TopoDS_Shape& shape);
+  virtual void setShape(const TopoDS_Shape& shape);
   
   /**
    * @brief calcShapeHash
@@ -275,25 +274,39 @@ protected:
   
   virtual void build();
 
-public:
-  declareType("Feature");
-  
   Feature();
   Feature(const Feature& o);
   Feature(const TopoDS_Shape& shape);
-//   Feature(const boost::filesystem::path& filepath);
+  //   Feature(const boost::filesystem::path& filepath);
   Feature(FeatureSetPtr creashapes);
+
+public:
+  declareType("Feature");
+
+  declareStaticFunctionTableWithArgs(
+      insertrule,
+      void,
+      LIST(parser::ISCADParser&),
+      LIST(parser::ISCADParser& ruleset));
+
+  declareStaticFunctionTable(
+    ruleDocumentation,
+    FeatureCmdInfoList );
 
   virtual ~Feature();
   
-  static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
-  static FeaturePtr CreateFromFeaturesSet(FeatureSetPtr shapes);
-  
+//  static FeaturePtr CreateFromShape(const TopoDS_Shape& shape);
+//  static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
+//  static FeaturePtr CreateFromFeaturesSet(FeatureSetPtr shapes);
+  static FeaturePtr create(const boost::filesystem::path& filepath);
+  CREATE_FUNCTION(Feature);
+
   inline bool isleaf() const { return isleaf_; }
   inline void unsetLeaf() const { isleaf_=false; }
     
   void setFeatureSymbolName( const std::string& name);
-  const std::string& featureSymbolName() const;
+  bool isAnonymous() const;
+  std::string featureSymbolName() const;
   
   virtual void setVisResolution( ScalarPtr r );
   virtual void setDensity(ScalarPtr rho);
@@ -322,15 +335,15 @@ public:
   void nameFeatures();
   void extractReferenceFeatures();
   
-  inline const TopoDS_Face& face(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Face(fmap_.FindKey(i)); }
-  inline const TopoDS_Edge& edge(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Edge(emap_.FindKey(i)); }
-  inline const TopoDS_Vertex& vertex(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Vertex(vmap_.FindKey(i)); }
-  inline const TopoDS_Solid& subsolid(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Solid(somap_.FindKey(i)); }
+  const TopoDS_Face& face(FeatureID i) const;
+  const TopoDS_Edge& edge(FeatureID i) const;
+  const TopoDS_Vertex& vertex(FeatureID i) const;
+  const TopoDS_Solid& subsolid(FeatureID i) const;
 
-  inline FeatureID solidID(const TopoDS_Shape& f) const { checkForBuildDuringAccess(); int i=somap_.FindIndex(f); if (i==0) throw insight::Exception("requested solid not indexed!"); return i; }
-  inline FeatureID faceID(const TopoDS_Shape& f) const { checkForBuildDuringAccess(); int i=fmap_.FindIndex(f); if (i==0) throw insight::Exception("requested face not indexed!"); return i; }
-  inline FeatureID edgeID(const TopoDS_Shape& e) const { checkForBuildDuringAccess(); int i=emap_.FindIndex(e); if (i==0) throw insight::Exception("requested edge not indexed!"); return i; }
-  inline FeatureID vertexID(const TopoDS_Shape& v) const { checkForBuildDuringAccess(); int i=vmap_.FindIndex(v); if (i==0) throw insight::Exception("requested vertex not indexed!"); return i; }
+  FeatureID solidID(const TopoDS_Shape& f) const;
+  FeatureID faceID(const TopoDS_Shape& f) const;
+  FeatureID edgeID(const TopoDS_Shape& e) const;
+  FeatureID vertexID(const TopoDS_Shape& v) const;
   
   GeomAbs_CurveType edgeType(FeatureID i) const;
   GeomAbs_SurfaceType faceType(FeatureID i) const;
@@ -373,18 +386,24 @@ public:
    * second col: max point
    */
   arma::mat modelBndBox(double deflection=-1) const;
+
+  std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(double deflection=-1) const;
   
   arma::mat faceNormal(FeatureID i) const;
+  arma::mat averageFaceNormal() const;
 
   FeatureSetData allVerticesSet() const;
   FeatureSetData allEdgesSet() const;
   FeatureSetData allFacesSet() const;
   FeatureSetData allSolidsSet() const;
 
+  FeatureSetPtr allOf(cad::EntityType et) const;
   FeatureSetPtr allVertices() const;
   FeatureSetPtr allEdges() const;
   FeatureSetPtr allFaces() const;
   FeatureSetPtr allSolids() const;
+
+  FeatureSetPtr find(FeatureSetPtr fs) const;
   
   FeatureSetData query_vertices(FilterPtr filter) const;
   FeatureSetData query_vertices(const std::string& queryexpr, const FeatureSetParserArgList& refs=FeatureSetParserArgList()) const;
@@ -437,8 +456,6 @@ public:
   
   friend std::ostream& operator<<(std::ostream& os, const Feature& m);
 
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual FeatureCmdInfoList ruleDocumentation() const;
   
   virtual bool isSingleEdge() const;
   virtual bool isSingleOpenWire() const;
@@ -475,6 +492,28 @@ public:
    */
   virtual bool isTransformationFeature() const;
   virtual gp_Trsf transformation() const;
+
+
+  static void insertrule(parser::ISCADParser& ruleset);
+  static FeatureCmdInfoList ruleDocumentation();
+
+
+  /**
+   * @brief generateScriptCommand
+   * This API needs is conceptually incomplete.
+   * currently only used to save constrained sketch scripts without external dependencies
+   * everything else is unsupported.
+   * @return
+   */
+  virtual std::string generateScriptCommand() const;
+
+  struct TopologicalProperties
+  {
+      int nVertices, nEdges, nFaces, nShells, nSolids;
+      bool onlyEdges() const;
+  };
+  TopologicalProperties topologicalProperties() const;
+
 };
 
 

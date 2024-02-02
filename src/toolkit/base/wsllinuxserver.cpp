@@ -6,6 +6,7 @@
 
 #include "base/exception.h"
 #include "base/tools.h"
+#include "base/shelltools.h"
 #include "openfoam/openfoamcase.h"
 
 #include "rapidxml/rapidxml_print.hpp"
@@ -144,14 +145,26 @@ void WSLLinuxServer::BackgroundJob::kill()
 
 
 
-RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(const std::string &cmd)
+RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(
+        const std::string &cmd,
+        const std::vector<ExpectedOutput>& pattern )
 {
-  auto process = launchCommand(cmd);
+//  boost::process::ipstream is;
+  auto process = launchCommand(
+              cmd/*,
+              boost::process::std_out > is,
+              boost::process::std_in < boost::process::null*/
+              );
 
-  if (!process->running())
-  {
-   throw insight::Exception("could not start background process");
-  }
+  insight::assertion(
+              process->running(),
+              "could not start background process");
+
+  insight::assertion(
+              pattern.size()==0,
+              "Not implemented: cannot look for pattern in WSL process");
+
+//  lookForPattern(is, pattern);
 
   return std::make_shared<BackgroundJob>(*this, std::move(process));
 }
@@ -171,24 +184,18 @@ void WSLLinuxServer::runRsync
 
   boost::process::ipstream is;
 
-  std::string joinedArgs="rsync";
+  std::string joinedArgs="rsync --info=progress2";
   for (const auto& a: args)
   {
     joinedArgs+=" "+escapeShellSymbols(a);
   }
   auto ca = commandAndArgs(joinedArgs);
 
-  insight::dbg() << ca.first << " " << boost::join(ca.second, " ") << std::endl;
+  RSyncOutputAnalyzer rpa(pf);
+  auto job = std::make_shared<Job>(ca);
+  job->ios_run_with_interruption(&rpa);
+  job->wait();
 
-  RSyncProgressAnalyzer rpa;
-  boost::process::child c
-  (
-   ca.first, boost::process::args(ca.second),
-   boost::process::std_out > rpa,
-   boost::process::std_err > stderr,
-   boost::process::std_in < boost::process::null
-  );
-  rpa.runAndParse(c, pf);
 }
 
 
@@ -231,6 +238,7 @@ void WSLLinuxServer::syncToRemote
 (
     const boost::filesystem::path& localDir,
     const boost::filesystem::path& remoteDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -242,9 +250,8 @@ void WSLLinuxServer::syncToRemote
         {
          "-az",
          "--delete",
-         "--info=progress",
 
-         "--exclude", "processor*",
+//         "--exclude", "processor*",
          "--exclude", "*.foam",
          "--exclude", "postProcessing",
          "--exclude", "*.socket",
@@ -252,6 +259,12 @@ void WSLLinuxServer::syncToRemote
          "--exclude", "archive",
          "--exclude", "mnt_remote"
         };
+
+    if (!includeProcessorDirectories)
+    {
+        args.push_back("--exclude");
+        args.push_back("processor*");
+    }
 
     for (const auto& ex: exclude_pattern)
     {
@@ -272,6 +285,7 @@ void WSLLinuxServer::syncToLocal
 (
     const boost::filesystem::path& localDir,
     const boost::filesystem::path& remoteDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -284,8 +298,7 @@ void WSLLinuxServer::syncToLocal
     args =
     {
       "-az",
-      "--info=progress",
-      "--exclude", "processor*",
+//      "--exclude", "processor*",
       "--exclude", "*.foam",
       "--exclude", "*.socket",
       "--exclude", "backup",
@@ -293,6 +306,11 @@ void WSLLinuxServer::syncToLocal
       "--exclude", "mnt_remote"
     };
 
+    if (!includeProcessorDirectories)
+    {
+        args.push_back("--exclude");
+        args.push_back("processor*");
+    }
 
     for (const auto& ex: exclude_pattern)
     {

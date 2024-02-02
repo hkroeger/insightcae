@@ -25,6 +25,7 @@
 #include "openfoam/blockmesh.h"
 #include "openfoam/snappyhexmesh.h"
 #include "base/vtkrendering.h"
+#include "base/vtktransformation.h"
 
 #include "openfoam/caseelements/numerics/meshingnumerics.h"
 #include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
@@ -43,6 +44,10 @@
 #include "vtkStreamTracer.h"
 #include "vtkDataSetMapper.h"
 #include "vtkPolyDataMapper.h"
+#include "vtkCompositePolyDataMapper.h"
+#include "vtkMaskPoints.h"
+#include "vtkCutter.h"
+#include "vtkPlane.h"
 
 using namespace std;
 using namespace boost;
@@ -56,7 +61,7 @@ addToAnalysisFactoryTable(InternalPressureLoss);
 
 void InternalPressureLoss::modifyDefaults(ParameterSet& p)
 {
-  p.getBool("run/potentialinit")=true;
+    p.setBool("run/potentialinit", true);
 }
 
 
@@ -79,7 +84,7 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
 
 
   prg.message("Analyzing geometry...");
-  if ( const Parameters::geometry_STEP_type* geom_cad =
+  if ( const auto* geom_cad =
        boost::get<Parameters::geometry_STEP_type>(&p.geometry) )
     {
       using namespace insight::cad;
@@ -87,48 +92,72 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
       if (!geom_cad->cadmodel->isValid())
         throw insight::Exception("Geometry file does not exist: "+geom_cad->cadmodel->fileName().string());
 
-      FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
-      bb_=cadmodel->modelBndBox();
+      walls_ = Feature::create(geom_cad->cadmodel->filePath());
 
-      if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
+      if ( const auto* io_extra =
            boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
         {
           if (!io_extra->inlet_model->isValid())
             throw insight::Exception("Geometry file does not exist: "+io_extra->inlet_model->fileName().string());
           {
-            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
-            bb_.extend(inletmodel->modelBndBox());
+            inlet_ = Feature::create(io_extra->inlet_model->filePath());
           }
 
           if (!io_extra->outlet_model->isValid())
             throw insight::Exception("Geometry file does not exist: "+io_extra->outlet_model->fileName().string());
           {
-            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
-            bb_.extend(outletmodel->modelBndBox());
+            outlet_ = Feature::create(io_extra->outlet_model->filePath());
           }
         }
+      else if ( const auto* io_name =
+          boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
+      {
+          auto inletss=walls_->providedSubshapes().find("face_"+io_name->inlet_name);
+          if (inletss==walls_->providedSubshapes().end())
+            throw insight::Exception("named face \""+io_name->inlet_name+"\" not found in CAD model!");
+
+          inlet_=inletss->second;
+          inlet_->checkForBuildDuringAccess();
+
+          auto outletss=walls_->providedSubshapes().find("face_"+io_name->outlet_name);
+          if (outletss==walls_->providedSubshapes().end())
+            throw insight::Exception("named face \""+io_name->outlet_name+"\" not found in CAD model!");
+
+          outlet_=outletss->second;
+          outlet_->checkForBuildDuringAccess();
+
+          FeatureSetParserArgList args;
+          args.push_back(walls_->providedFeatureSet("face_"+io_name->inlet_name));
+          args.push_back(walls_->providedFeatureSet("face_"+io_name->outlet_name));
+          FeatureSetPtr fp(new FeatureSet(walls_, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
+          walls_ = Feature::create(fp);
+      }
     }
-  else if ( const Parameters::geometry_STL_type* geom_stl =
+  else if ( const auto* geom_stl =
             boost::get<Parameters::geometry_STL_type>(&p.geometry) )
     {
       if (!geom_stl->cadmodel->isValid())
         throw insight::Exception("Geometry file does not exist: "+geom_stl->cadmodel->fileName().string());
 
-      bb_ = STLBndBox(readSTL(geom_stl->cadmodel->filePath()));
+      walls_ = cad::STL::create(geom_stl->cadmodel->filePath());
 
       {
         if (!geom_stl->inlet->isValid())
           throw insight::Exception("Geometry file does not exist: "+geom_stl->inlet->fileName().string());
 
-        bb_.extend(STLBndBox(readSTL(geom_stl->inlet->filePath())));
+        inlet_ = cad::STL::create(geom_stl->inlet->filePath());
       }
       {
         if (!geom_stl->outlet->isValid())
           throw insight::Exception("Geometry file does not exist: "+geom_stl->outlet->fileName().string());
 
-        bb_.extend(STLBndBox(readSTL(geom_stl->outlet->filePath())));
+        outlet_ = cad::STL::create(geom_stl->outlet->filePath());
       }
     }
+
+  bb_=walls_->modelBndBox();
+  if (inlet_) bb_.extend(inlet_->modelBndBox());
+  if (outlet_) bb_.extend(outlet_->modelBndBox());
 
   L_=bb_.col(1)-bb_.col(0);
 
@@ -178,7 +207,9 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
 {
   auto& p=this->p();
 
-    cm.insert(new MeshingNumerics(cm));
+  cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
+                                        .set_np(p.run.np)
+                                ));
     cm.createOnDisk(executionPath());
     
     using namespace insight::bmd;
@@ -219,58 +250,10 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
 
     create_directory(sp().wallstlfile_.parent_path());
 
-    if ( const Parameters::geometry_STEP_type* geom_cad =
-         boost::get<Parameters::geometry_STEP_type>(&p.geometry) )
-      {
-        using namespace insight::cad;
+    sp().walls_->saveAs(sp().wallstlfile_);
+    sp().inlet_->saveAs(sp().inletstlfile_);
+    sp().outlet_->saveAs(sp().outletstlfile_);
 
-        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
-
-        if ( const Parameters::geometry_STEP_type::inout_named_surfaces_type* io_name =
-             boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
-          {
-              auto inletss=cadmodel->providedSubshapes().find("face_"+io_name->inlet_name);
-              if (inletss==cadmodel->providedSubshapes().end())
-                  throw insight::Exception("named face \""+io_name->inlet_name+"\" not found in CAD model!");
-
-              FeaturePtr inlet=inletss->second;
-              inlet->checkForBuildDuringAccess();
-
-              auto outletss=cadmodel->providedSubshapes().find("face_"+io_name->outlet_name);
-              if (outletss==cadmodel->providedSubshapes().end())
-                  throw insight::Exception("named face \""+io_name->outlet_name+"\" not found in CAD model!");
-
-              FeaturePtr outlet=outletss->second;
-              outlet->checkForBuildDuringAccess();
-
-              FeatureSetParserArgList args;
-              args.push_back(cadmodel->providedFeatureSet("face_"+io_name->inlet_name));
-              args.push_back(cadmodel->providedFeatureSet("face_"+io_name->outlet_name));
-              FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
-              FeaturePtr walls(new Feature(fp));
-
-              walls->saveAs(sp().wallstlfile_);
-              inlet->saveAs(sp().inletstlfile_);
-              outlet->saveAs(sp().outletstlfile_);
-          }
-        else if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
-             boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
-          {
-
-            cadmodel->saveAs(sp().wallstlfile_);
-            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
-            inletmodel->saveAs(sp().inletstlfile_);
-            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
-            outletmodel->saveAs(sp().outletstlfile_);
-          }
-      }
-    else if ( const Parameters::geometry_STL_type* geom_stl = boost::get<Parameters::geometry_STL_type>(&p.geometry) )
-      {
-        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->cadmodel->filePath().string(), sp().wallstlfile_.string()});
-        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->inlet->filePath().string(), sp().inletstlfile_.string()});
-        cm.executeCommand(executionPath(), "surfaceConvert", {geom_stl->outlet->filePath().string(), sp().outletstlfile_.string()});
-      }
-    
     surfaceFeatureExtract(cm, executionPath(), sp().wallstlfile_.filename().string());
     
     snappyHexMeshConfiguration::Parameters shm_cfg;
@@ -351,7 +334,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 
     {
         MassflowBC::Parameters inp;
-        MassflowBC::Parameters::flowrate_massflow_type mf = { p.fluid.rho * p.operation.Q };
+        MassflowBC::Parameters::flowrate_volumetric_type mf = { p.operation.Q };
         inp.flowrate = mf;
         inp.turbulence.reset(new turbulenceBC::uniformIntensityAndLengthScale(
                               turbulenceBC::uniformIntensityAndLengthScale::Parameters()
@@ -388,6 +371,8 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
     arma::mat p_vs_t = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), "inlet_pressure");
   ++ap;
 
+    arma::mat psig = p_vs_t.rows(p_vs_t.n_rows/3, p_vs_t.n_rows-1).col(1);
+
     ap.message("Producing convergence history plot...");
     addPlot
     (
@@ -396,38 +381,65 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       {
          PlotCurve(p_vs_t.col(0), p_vs_t.col(1), "pmean_vs_iter", "w l not")
       },
-      "Plot of pressure difference between inlet and outlet vs. iterations"
+      "Plot of pressure difference between inlet and outlet vs. iterations",
+      str ( format ( "set yrange [%g:%g]" )
+            % ( min ( 0.0, 1.1*psig.min() ) )
+            % ( 1.1*psig.max() ) )
     );
   ++ap;
 
     double delta_p=p_vs_t(p_vs_t.n_rows-1,1)*p.fluid.rho;
     ptr_map_insert<ScalarResult>(*results) ("delta_p", delta_p, "Pressure difference", "", "Pa");
 
+
+
     ap.message("Rendering images...");
     {
       // A renderer and render window
       OpenFOAMCaseScene scene( executionPath()/"system"/"controlDict" );
 
-      auto patches = scene.patches("wall.*");
-      auto im = scene.internalMesh();
+      auto inlet = scene.patchesFilter("inlet.*");
+      auto patches = scene.patchesFilter("wall.*");
+      auto internal = scene.internalMeshFilter();
 
-      FieldSelection sl_field("p", FieldSupport::Point, -1);
-      auto sl_range=calcRange(sl_field, {patches}, {});
-      auto sl_cm=createColorMap();
-      FieldColor sl_fc(sl_field, sl_cm, sl_range);
 
+      // use domain center instead of input geometry center,
+      // since much of the input geometry might not have been
+      // included in the actual domain
+      arma::mat bb = PolyDataBndBox(internal->GetOutput());
+
+      FieldSelection p_field("p", FieldSupport::OnPoint, -1);
+      FieldColor p_fc(p_field, createColorMap(), calcRange(p_field, {}, {patches}));
+
+      FieldSelection U_field("U", FieldSupport::OnPoint, -1);
+      FieldColor U_fc(p_field, createColorMap(), calcRange(p_field, {}, {internal}));
+
+      arma::mat L=p.geometryscale*sp().L_;
       double Lmax=p.geometryscale*arma::as_scalar(arma::max(sp().L_));
-      arma::mat ctr=p.geometryscale*( sp().bb_.col(1) + sp().bb_.col(0) )*0.5;
 
+      CoordinateSystem objCS(
+          ( bb.col(1) + bb.col(0) )*0.5,
+          vec3X(), vec3Z() );
+
+      auto views = generateStandardViews(
+          objCS,
+          Lmax );
+
+      auto camera = scene.activeCamera();
+      camera->ParallelProjectionOn();
+
+
+
+      // display streamtracers, colored by velocity
       {
-        auto seeds = vtkSmartPointer<vtkPointSource>::New();
-        seeds->SetCenter(toArray(p.mesh.PiM *p.geometryscale));
-        seeds->SetRadius(0.5*arma::norm(sp().L_,2));
-        seeds->SetDistributionToUniform();
-        seeds->SetNumberOfPoints(500);
+        auto seeds = vtkSmartPointer<vtkMaskPoints>::New();
+        seeds->SetInputConnection(inlet->GetOutputPort());
+        seeds->SetMaximumNumberOfPoints(100);
+        seeds->SetRandomMode(true);
+        seeds->SetRandomModeType(1);
 
         auto st = vtkSmartPointer<vtkStreamTracer>::New();
-        st->SetInputData(im);
+        st->SetInputConnection(internal->GetOutputPort());
         st->SetSourceConnection(seeds->GetOutputPort());
         st->SetMaximumPropagation(10.*Lmax);
         st->SetIntegrationDirectionToBoth();
@@ -436,121 +448,205 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
               vtkDataObject::FIELD_ASSOCIATION_POINTS,
               "U");
 
-        st->Update();
-        scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
+        scene.addAlgo<vtkDataSetMapper>(st, U_fc);
       }
 
-      scene.addData<vtkPolyDataMapper>(patches, vec3(0.9, 0.9, 0.9));
+      // display walls, transparent, gray color
+      auto pa = scene.addAlgo<vtkDataSetMapper>(patches, vec3(0.7, 0.7, 0.7));
+      pa->GetProperty()->SetOpacity(0.1);
 
-      auto camera = scene.activeCamera();
-      camera->ParallelProjectionOn();
-
-      camera->SetFocalPoint( toArray(ctr) );
-
+      auto sec_sl = std::make_shared<ResultSection>("Streamlines");
+      for (const auto& lv: views)
       {
-        camera->SetViewUp( toArray(vec3(0,0,1)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(-sp().L_[0],-sp().L_[1],sp().L_[2])) );
+        scene.setupActiveCamera(lv.second);
+        scene.fitAll();
 
-        auto img = executionPath() / "streamLines_diag.png";
-  //      scene.fitAll();
-        double f=sqrt(2.);
-        scene.setParallelScale(std::pair<double,double>(
-                                 std::max(f*sp().L_[0], f*sp().L_[1]),
-                                 std::max(f*sp().L_[0], f*sp().L_[2])
-                                 ));
+        auto img = executionPath() / ("streamLines_"+lv.first+".png");
         scene.exportImage(img);
-        results->insert(img.filename().stem().string(),
+        sec_sl->insert(img.filename().stem().string(),
           std::unique_ptr<Image>(new Image
           (
           executionPath(), img.filename(),
-          "Stream lines (isometric view)", ""
+          "Stream lines ("+lv.second.title+")", ""
         )));
+
+      ++ap;
       }
-    ++ap;
+      results->insert("streamlines", sec_sl);
+
+
+
 
       scene.clearScene();
 
-      scene.addData<vtkDataSetMapper>(patches, sl_fc);
-      scene.addColorBar("Pressure\n[m^2/s^2]", sl_cm);
+      scene.addAlgo<vtkDataSetMapper>(patches, p_fc);
+      scene.addColorBar("Pressure\n[m^2/s^2]", p_fc.lookupTable());
 
+      auto sec_pres = std::make_shared<ResultSection>("Pressure on walls");
+      for (const auto& lv: views)
       {
-        camera->SetViewUp( toArray(vec3(0,0,1)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(-sp().L_[0],-sp().L_[1],sp().L_[2])) );
+        scene.setupActiveCamera(lv.second);
+        scene.fitAll();
 
-        auto img = executionPath() / "pressure_diag.png";
-  //      scene.fitAll();
-        double f=sqrt(2.);
-        scene.setParallelScale(std::pair<double,double>(
-                                 std::max(f*sp().L_[0], f*sp().L_[1]),
-                                 std::max(f*sp().L_[0], f*sp().L_[2])
-                                 ));
+        auto img = executionPath() / ("pressure_"+lv.first+".png");
         scene.exportImage(img);
-        results->insert(img.filename().stem().string(),
+        sec_pres->insert(img.filename().stem().string(),
           std::unique_ptr<Image>(new Image
           (
           executionPath(), img.filename(),
-          "Pressure (isometric view)", ""
+          "Pressure on walls ("+lv.second.title+")", ""
         )));
+
+      ++ap;
       }
-    ++ap;
+      results->insert("pressure_walls", sec_pres);
+
+
+
+      auto cutplane1 = vtkSmartPointer<vtkCutter>::New();
+      auto cutplane3 = vtkSmartPointer<vtkCutter>::New();
+      auto cutplane2 = vtkSmartPointer<vtkCutter>::New();
 
       {
-        camera->SetViewUp( toArray(vec3(0,0,1)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(sp().L_[0],0,0)) );
+        cutplane1->SetInputConnection(internal->GetOutputPort());
 
-        auto img = executionPath() / "streamLines_front.png";
-        scene.setParallelScale(std::pair<double,double>( sp().L_[1], sp().L_[2]));
-        scene.exportImage(img);
-        results->insert(img.filename().stem().string(),
-          std::unique_ptr<Image>(new Image
-          (
-          executionPath(), img.filename(),
-          "Stream lines (front view)", ""
-        )));
+        auto slpl = vtkSmartPointer<vtkPlane>::New();
+        slpl->SetOrigin(toArray(objCS.origin));
+        slpl->SetNormal(toArray(objCS.ex));
+        cutplane1->SetCutFunction(slpl);
       }
-    ++ap;
-
       {
-        camera->SetViewUp( toArray(vec3(0,0,1)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(0,sp().L_[1],0)) );
+        cutplane2->SetInputConnection(internal->GetOutputPort());
 
-        auto img = executionPath() / "streamLines_side.png";
-        scene.setParallelScale(std::pair<double,double>( sp().L_[0], sp().L_[2]));
-        scene.exportImage(img);
-        results->insert(img.filename().stem().string(),
-          std::unique_ptr<Image>(new Image
-          (
-          executionPath(), img.filename(),
-          "Stream lines (side view)", ""
-        )));
+        auto slpl = vtkSmartPointer<vtkPlane>::New();
+        slpl->SetOrigin(toArray(objCS.origin));
+        slpl->SetNormal(toArray(objCS.ey));
+        cutplane2->SetCutFunction(slpl);
       }
-    ++ap;
-
       {
-        camera->SetViewUp( toArray(vec3(0,-1,0)) );
-        camera->SetPosition( toArray(ctr+10.*vec3(0,0,sp().L_[2])) );
+        cutplane3->SetInputConnection(internal->GetOutputPort());
 
-        auto img = executionPath() / "streamLines_top.png";
-        scene.setParallelScale(std::pair<double,double>( sp().L_[0], sp().L_[1]));
-        scene.exportImage(img);
-        results->insert(img.filename().stem().string(),
-          std::unique_ptr<Image>(new Image
-          (
-          executionPath(), img.filename(),
-          "Stream lines (top view)", ""
-        )));
+        auto slpl = vtkSmartPointer<vtkPlane>::New();
+        slpl->SetOrigin(toArray(objCS.origin));
+        slpl->SetNormal(toArray(objCS.ez));
+        cutplane3->SetCutFunction(slpl);
       }
-    ++ap;
 
+      scene.clearScene();
+
+      scene.addAlgo<vtkDataSetMapper>(cutplane1, U_fc);
+      scene.addAlgo<vtkDataSetMapper>(cutplane2, U_fc);
+      scene.addAlgo<vtkDataSetMapper>(cutplane3, U_fc);
+      scene.addColorBar("Velocity\n[m/s]", U_fc.lookupTable());
+
+
+      auto sec_u = std::make_shared<ResultSection>("Velocity in cut planes");
+      for (const auto& lv: views)
+      {
+      scene.setupActiveCamera(lv.second);
+      scene.fitAll();
+
+      auto img = executionPath() / ("velocity_cut_"+lv.first+".png");
+      scene.exportImage(img);
+      sec_u->insert(
+          img.filename().stem().string(),
+          std::make_unique<Image>(
+              executionPath(), img.filename(),
+              "Velocity in cut planes ("+lv.second.title+")", ""
+              ));
+
+      ++ap;
+      }
+      results->insert("velocity_cutplanes", sec_u);
+
+
+      scene.clearScene();
+
+      scene.addAlgo<vtkDataSetMapper>(cutplane1, p_fc);
+      scene.addAlgo<vtkDataSetMapper>(cutplane2, p_fc);
+      scene.addAlgo<vtkDataSetMapper>(cutplane3, p_fc);
+      scene.addColorBar("Pressure\n[m^2/s^2]", p_fc.lookupTable());
+
+      auto sec_pc = std::make_shared<ResultSection>("Pressure in cut planes");
+      for (const auto& lv: views)
+      {
+      scene.setupActiveCamera(lv.second);
+      scene.fitAll();
+
+      auto img = executionPath() / ("pressure_cut_"+lv.first+".png");
+      scene.exportImage(img);
+      sec_pc->insert(
+          img.filename().stem().string(),
+          std::make_unique<Image>(
+              executionPath(), img.filename(),
+              "Pressure in cut planes ("+lv.second.title+")", ""
+              ));
+
+      ++ap;
+      }
+      results->insert("pressure_cutplanes", sec_pc);
     }
     
     return results;
 }
 
 
-ParameterSet_VisualizerPtr InternalPressureLoss_visualizer()
+
+
+RangeParameterList rpl_InternalPressureLossCharacteristics = { "operation/Q" };
+
+
+addToAnalysisFactoryTable(InternalPressureLossCharacteristics);
+
+
+InternalPressureLossCharacteristics::InternalPressureLossCharacteristics(
+    const ParameterSet &ps,
+    const path &exepath,
+    ProgressDisplayer &pd )
+: OpenFOAMParameterStudy<InternalPressureLoss,rpl_InternalPressureLossCharacteristics>(
+        typeName, "Internal pressure loss calculation for multiple volume fluxes", ps, exepath, pd )
+{}
+
+
+
+void InternalPressureLossCharacteristics::evaluateCombinedResults(ResultSetPtr &results)
 {
-    return ParameterSet_VisualizerPtr( new InternalPressureLoss_ParameterSet_Visualizer );
+    Ordering o(0.1);
+    std::vector<std::string> headers = { "delta_p" };
+
+    std::string key="deltaPTable";
+    const TabularResult& tab
+        = static_cast<const TabularResult&>(
+            results->insert
+            (
+                       key,
+                       this->table(
+                           "", "", "operation/Q",
+                           headers, nullptr,
+                           TableInputType::DoubleInputParameter)
+                       ).setOrder(o.next()));
+
+    arma::mat tabdat=tab.toMat();
+
+    addPlot
+        (
+            results, this->executionPath(), "chartDeltaP",
+            "$Q / (m^3 s^{-1})$", "$\\Delta_p / Pa$",
+            {
+                PlotCurve(tabdat, "deltaP", "w l not")
+            },
+            "Chart of pressure loss vs. volume flux"
+            ) .setOrder(o.next());
+
+}
+
+
+
+
+
+ParameterSetVisualizerPtr InternalPressureLoss_visualizer()
+{
+    return ParameterSetVisualizerPtr( new InternalPressureLoss_ParameterSet_Visualizer );
 }
 
 addStandaloneFunctionToStaticFunctionTable(Analysis, InternalPressureLoss, visualizer, InternalPressureLoss_visualizer);
@@ -558,87 +654,33 @@ addStandaloneFunctionToStaticFunctionTable(Analysis, InternalPressureLoss, visua
 
 void InternalPressureLoss_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
-
-  Parameters p(currentParameters());
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   try
   {
 
-    if ( const Parameters::geometry_STEP_type* geom_cad = boost::get<Parameters::geometry_STEP_type>(&p.geometry) )
-      {
-        using namespace insight::cad;
+    auto spp=std::make_shared<InternalPressureLoss::supplementedInputData>(
+        std::make_unique<InternalPressureLoss::Parameters>(currentParameters()),
+        "", *progress_ );
 
-        if (geom_cad->cadmodel->isValid())
-        {
-          FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel->filePath());
+    Q_EMIT updateSupplementedInputData(std::dynamic_pointer_cast<supplementedInputDataBase>(spp));
 
-          if ( const Parameters::geometry_STEP_type::inout_named_surfaces_type* io_name =
-               boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
-            {
-                auto inletss=cadmodel->providedSubshapes().find("face_"+io_name->inlet_name);
-                if (inletss==cadmodel->providedSubshapes().end())
-                    throw insight::Exception("named face \""+io_name->inlet_name+"\" not found in CAD model!");
 
-                FeaturePtr inlet=inletss->second;
-                inlet->checkForBuildDuringAccess();
+    addFeature("walls", spp->walls_, {insight::Surface, vec3(QColorConstants::Gray)});
+    addFeature("inlet", spp->inlet_, {insight::Surface, vec3(QColorConstants::Blue)});
+    addFeature("outlet", spp->outlet_, {insight::Surface, vec3(QColorConstants::Green)});
 
-                auto outletss=cadmodel->providedSubshapes().find("face_"+io_name->outlet_name);
-                if (outletss==cadmodel->providedSubshapes().end())
-                    throw insight::Exception("named face \""+io_name->outlet_name+"\" not found in CAD model!");
-
-                FeaturePtr outlet=outletss->second;
-                outlet->checkForBuildDuringAccess();
-
-                FeatureSetParserArgList args;
-                args.push_back(cadmodel->providedFeatureSet("face_"+io_name->inlet_name));
-                args.push_back(cadmodel->providedFeatureSet("face_"+io_name->outlet_name));
-                FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
-                FeaturePtr walls(new Feature(fp));
-
-                addFeature("walls", walls);
-                addFeature("inlet", inlet);
-                addFeature("outlet", outlet);
-            }
-          else if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
-               boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
-            {
-              addFeature("walls", cadmodel);
-              if (io_extra->inlet_model->isValid())
-              {
-                FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model->filePath());
-                addFeature("inlet", inletmodel);
-              }
-              if (io_extra->outlet_model->isValid())
-              {
-                FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model->filePath());
-                addFeature("outlet", outletmodel);
-              }
-            }
-        }
-      }
-    else if ( const Parameters::geometry_STL_type* geom_stl =
-              boost::get<Parameters::geometry_STL_type>(&p.geometry) )
-      {
-        if (geom_stl->cadmodel->isValid())
-          addFeature("walls", insight::cad::STL::create(geom_stl->cadmodel->filePath()) );
-
-        if (geom_stl->inlet->isValid())
-          addFeature("inlet", insight::cad::STL::create(geom_stl->inlet->filePath()) );
-
-        if (geom_stl->outlet->isValid())
-          addFeature("outlet", insight::cad::STL::create(geom_stl->outlet->filePath()) );
-      }
-
-    addDatum( "PiM",
-              cad::DatumPtr(
-                new cad::ExplicitDatumPoint(cad::matconst(p.mesh.PiM))
-                ) );
+    addDatum(
+        "PiM",
+        std::make_shared<cad::ExplicitDatumPoint>(
+            cad::matconst(spp->p().mesh.PiM*1e3) ), true );
   }
   catch (...)
   {
     // ignore
   }
 }
+
+
 
 }

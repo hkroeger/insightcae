@@ -33,6 +33,7 @@
 #include "openfoamanalysis.h"
 
 #include "base/boost_include.h"
+#include "base/translations.h"
 
 using namespace boost;
 using namespace boost::assign;
@@ -234,8 +235,19 @@ void OpenFOAMAnalysis::initializeSolverRun(ProgressDisplayer& parentProgress, Op
     {
       if (p_.run.potentialinit)
       {
-        parentProgress.message("Executing potentialFoam");
-        runPotentialFoam(cm, executionPath(), np);
+        if (p_.run.mapFrom->isValid())
+        {
+            parentProgress.message("case in "+executionPath().string()+": solution was mapped from other case, skipping potentialFoam.");
+            insight::Warning(
+                "A potentialFoam initialization was configured although a solution was mapped from another case.\n"
+                "The potentialFoam run was skipped in order not to destroy the mapped solution!"
+                );
+        }
+        else
+        {
+            parentProgress.message("Executing potentialFoam");
+            runPotentialFoam(cm, executionPath(), np);
+        }
       }
     }
   }
@@ -322,7 +334,7 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm, ProgressDisplayer& pa
 
 ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress)
 {
-  CurrentExceptionContext ex("evaluating the results for case \""+executionPath().string()+"\"");
+  CurrentExceptionContext ex( _("evaluating the results for case \"%s\""), executionPath().string().c_str() );
 
   auto results = std::make_shared<ResultSet>(parameters(), name_, "Result Report");
   results->introduction() = description_;

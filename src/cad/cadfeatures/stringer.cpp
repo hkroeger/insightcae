@@ -4,6 +4,9 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -14,7 +17,10 @@ namespace insight {
 namespace cad {
 
 defineType(Stringer);
-addToFactoryTable(Feature, Stringer);
+//addToFactoryTable(Feature, Stringer);
+addToStaticFunctionTable(Feature, Stringer, insertrule);
+addToStaticFunctionTable(Feature, Stringer, ruleDocumentation);
+
 
 size_t Stringer::calcHash() const
 {
@@ -130,31 +136,15 @@ Stringer::Stringer(
 {
 }
 
-Stringer::Stringer()
-{
-}
-
-FeaturePtr Stringer::create(
-    FeaturePtr spine,
-    VectorPtr normal,
-    ScalarPtr t,
-    ScalarPtr w,
-    ScalarPtr delta,
-    ScalarPtr ext0,
-    ScalarPtr ext1
-)
-{
-  return FeaturePtr(new Stringer(spine, normal, t, w, delta, ext0, ext1));
-}
 
 
-void Stringer::insertrule(parser::ISCADParser& ruleset) const
+
+void Stringer::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
       "Stringer",
-      typename parser::ISCADParser::ModelstepRulePtr(
-          new typename parser::ISCADParser::ModelstepRule(
+      std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                   ( '('
                     >> ruleset.r_solidmodel_expression >> ',' // 1
@@ -165,29 +155,30 @@ void Stringer::insertrule(parser::ISCADParser& ruleset) const
                     >> ( ( ',' >> qi::lit("ext0") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 6
                     >> ( ( ',' >> qi::lit("ext1") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 7
                     >> ')' )
-                  [ qi::_val = phx::bind(&Stringer::create,
+                  [ qi::_val = phx::bind(
+                       &Stringer::create<FeaturePtr, VectorPtr, ScalarPtr,
+                                         ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
                                    qi::_1, qi::_2,
                                    qi::_3, qi::_4, qi::_5,
                                    qi::_6, qi::_7
                                ) ]
 
-              ))
+              )
   );
 }
 
-FeatureCmdInfoList Stringer::ruleDocumentation() const
+FeatureCmdInfoList Stringer::ruleDocumentation()
 {
-  return boost::assign::list_of
-  (
+  return {
       FeatureCmdInfo
       (
           "Stringer",
 
           "( <feature:spine>, <vector:n>, <scalar:t>, scalar:w> [, ext0 <scalar:ext0> ] [, ext1 <scalar:ext1> ] )",
 
-          "Creates a stringer along a curve or a wire on a surface."
+          _("Creates a stringer along a curve or a wire on a surface.")
       )
-  );
+  };
 }
 
 

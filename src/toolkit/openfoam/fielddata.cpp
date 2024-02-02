@@ -101,7 +101,8 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 {
     std::ostringstream os;
 
-    if (const Parameters::fielddata_uniformSteady_type *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) ) //(type=="uniform")
+    if (const Parameters::fielddata_uniformSteady_type *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) ) //(type=="uniform")
     {
         os <<" uniform unsteady 0.0 " << OFDictData::to_OF(fd->value);
     }
@@ -201,6 +202,9 @@ void FieldData::setDirichletBC(OFDictData::dict& BC, OFdicts& dictionaries) cons
   {
     BC["type"]=OFDictData::data("extendedFixedValue");
     BC["source"]=sourceEntry(dictionaries);
+
+    auto& controlDict = dictionaries.lookupDict("system/controlDict");
+    controlDict.getList("libs").insertNoDuplicate("\"libextendedFixedValueBC.so\"");
   }
 }
 
@@ -347,10 +351,9 @@ Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::stri
   std::unique_ptr<Parameter> p(Parameters::makeDefault().get<SubsetParameter>("fielddata").clone());
   auto opts = dynamic_cast<SelectableSubsetParameter*>(p.get());
 
-  {
-    ParameterSet& us = *(opts->items().at("uniformSteady"));
-    us.get<VectorParameter>("value")() = def_val;
-  }
+  ParameterSet cp( opts->getParametersForSelection("uniformSteady") );
+  cp.get<VectorParameter>("value").set( def_val );
+  opts->setParametersForSelection("uniformSteady", cp);
 
   return p.release();
 }
@@ -387,6 +390,17 @@ void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::files
         }
     }
 
+}
+
+bool FieldData::isAConstantValue(arma::mat &value) const
+{
+    if (const Parameters::fielddata_uniformSteady_type *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) ) //(type=="uniform")
+    {
+        value = fd->value;
+        return true;
+    }
+    return false;
 }
 
 }

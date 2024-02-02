@@ -67,6 +67,15 @@ public:
 
   virtual void write(std::ostream& file) const;
   
+  /**
+   * @brief generateScriptCommand
+   * This API needs is conceptually incomplete.
+   * currently only used to save constrained sketch scripts without external dependencies
+   * everything else is unsupported.
+   * @return
+   */
+  virtual std::string generateScriptCommand() const;
+
   virtual void checkForBuildDuringAccess() const;
 };
 
@@ -146,6 +155,11 @@ public:
   
   virtual gp_Pnt point() const;
   virtual gp_Ax3 plane() const;
+
+  arma::mat origin() const;
+  arma::mat normal() const;
+  arma::mat ex() const;
+  arma::mat ey() const;
 
 //  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
@@ -247,11 +261,12 @@ public:
 //     FeatureID f
 //   );
   
-  DatumPlane(std::istream&);
+  // DatumPlane(std::istream&);
   
   
 
   virtual void write(std::ostream& file) const;
+
 };
 
 

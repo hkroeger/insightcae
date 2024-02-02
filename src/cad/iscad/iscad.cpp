@@ -18,15 +18,15 @@
  *
  */
 
-#include <QApplication>
 #include <QMainWindow>
 #include <QSplashScreen>
 
 #include "base/boost_include.h"
 #include "base/exception.h"
 #include "base/toolkitversion.h"
+#include "base/translations.h"
 #include "insightcaeapplication.h"
-#include "iscadmainwindow.h"
+#include "iqiscadmainwindow.h"
 #include "qinsighterror.h"
 
 #ifndef Q_MOC_RUN
@@ -46,17 +46,19 @@ using namespace std;
 
 int main ( int argc, char** argv )
 {
+  GettextInit iscad_gettextInit(GETTEXT_DOMAIN, GETTEXT_OUTPUT_DIR, GettextInit::Application);
+
   namespace po = boost::program_options;
 
   // Declare the supported options.
-  po::options_description desc ( "Allowed options" );
+  po::options_description desc ( _("Allowed options") );
   desc.add_options()
-  ( "help,h", "produce help message" )
-  ( "version,r", "print version and exit" )
-  ( "batch,b", "evaluate model from specified input file without starting GUI" )
-  ( "nolog,l", "put debug output to console instead of log window" )
-  ( "nobgparse,g", "deactivate background parsing" )
-  ( "input-file,f", po::value< std::string >(),"Specifies input file." )
+      ( "help,h", _("produce help message") )
+      ( "version,r", _("print version and exit") )
+      ( "batch,b", _("evaluate model from specified input file without starting GUI") )
+      ( "nolog,l", _("put debug output to console instead of log window") )
+      ( "nobgparse,g", _("deactivate background parsing") )
+      ( "input-file,f", po::value< std::string >(), _("Specify input file.") )
   ;
 
   po::positional_options_description p;
@@ -65,8 +67,8 @@ int main ( int argc, char** argv )
   auto displayHelp = [&]{
     std::ostream &os = std::cout;
 
-    os << "Usage:" << std::endl;
-    os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
+      os << _("Usage:") << std::endl;
+    os << "  " << boost::filesystem::path(argv[0]).filename().string() << " ["<<_("options")<<"] " << p.name_for_position(0) << std::endl;
     os << std::endl;
     os << desc << endl;
   };
@@ -83,7 +85,7 @@ int main ( int argc, char** argv )
   }
   catch (const po::error& e)
   {
-    std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+    std::cerr << std::endl << _("Could not parse command line")<<": " << e.what() << std::endl<<std::endl;
     displayHelp();
     exit(-1);
   }
@@ -130,7 +132,7 @@ int main ( int argc, char** argv )
         auto postprocActions=model->postprocActions();
         for ( decltype ( postprocActions ) ::value_type const& v: postprocActions )
         {
-          cout << "Executing " << v.first << endl;
+            cout << _("Executing")<<" " << v.first << endl;
           v.second->execute();
         }
 
@@ -138,7 +140,7 @@ int main ( int argc, char** argv )
       }
       else
       {
-        std::cerr<<"Failed to parse ISCAD script!"<<std::endl;
+        std::cerr<<_("Failed to parse ISCAD script!")<<std::endl;
         return -1;
       }
     }
@@ -150,22 +152,17 @@ int main ( int argc, char** argv )
   }
   else
   {
-    //     XInitThreads();
-
     InsightCAEApplication app ( argc, argv, "isCAD" );
 
     try
     {
-      std::locale::global ( std::locale::classic() );
-      QLocale::setDefault ( QLocale::C );
-
       QPixmap pixmap ( ":/resources/insight_cad_splash.png" );
       QSplashScreen splash ( pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen );
       splash.show();
       app.setSplashScreen(&splash);
-      splash.showMessage ( "Wait..." );
+      splash.showMessage ( QString(_("Please wait"))+"..." );
 
-      ISCADMainWindow window ( nullptr, vm.count ( "nolog" ) );
+      IQISCADMainWindow window ( nullptr, vm.count ( "nolog" ) );
       
       bool dobgparsing = (vm.count ( "nobgparse" ) == 0);
       

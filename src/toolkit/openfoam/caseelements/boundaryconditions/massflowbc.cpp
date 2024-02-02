@@ -71,22 +71,12 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]="uniform "+boost::lexical_cast<std::string> ( p.T );
-//            BC["type"]=OFDictData::data ( "inletOutletTotalTemperature" );
-//            BC["inletValue"]="uniform "+lexical_cast<string> ( p.T );
-//            BC["T0"]="uniform "+lexical_cast<string> ( p.T );
-//            BC["U"]=OFDictData::data ( p.UName );
-//            BC["phi"]=OFDictData::data ( p.phiName );
-//            BC["psi"]=OFDictData::data ( p.psiName );
-//            BC["gamma"]=OFDictData::data ( p.gamma );
-//            BC["value"]="uniform "+lexical_cast<string> ( p.T );
         } else if (isPrghPressureField(field)) {
             if ( OFversion() >=210 ) {
                 BC["type"]=OFDictData::data ( "fixedFluxPressure" );
             } else {
                 BC["type"]=OFDictData::data ( "buoyantPressure" );
             }
-//       BC["type"]=OFDictData::data("calculated");
-//       BC["value"]=OFDictData::data("uniform 0");
         } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p.rho ) );

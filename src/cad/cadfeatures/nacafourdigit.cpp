@@ -18,9 +18,11 @@
  */
 
 #include "nacafourdigit.h"
-
+#include "base/translations.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -35,7 +37,11 @@ namespace cad {
     
 
 defineType(NacaFourDigit);
-addToFactoryTable(Feature, NacaFourDigit);
+//addToFactoryTable(Feature, NacaFourDigit);
+addToStaticFunctionTable(Feature, NacaFourDigit, insertrule);
+addToStaticFunctionTable(Feature, NacaFourDigit, ruleDocumentation);
+
+
 
 
 size_t NacaFourDigit::calcHash() const
@@ -62,11 +68,6 @@ size_t NacaFourDigit::calcHash() const
 
 
 
-NacaFourDigit::NacaFourDigit()
-{}
-
-
-
 
 NacaFourDigit::NacaFourDigit
 (
@@ -87,25 +88,6 @@ NacaFourDigit::NacaFourDigit
   p0_(p0), ez_(ez), ex_(ex), tofs_(tofs), clipte_(clipte)
 {}
 
-FeaturePtr NacaFourDigit::create
-(
-    const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez, 
-    ScalarPtr tofs, ScalarPtr clipte
-)
-{
-    return FeaturePtr(new NacaFourDigit(code, p0, ex, ez, tofs, clipte));
-}
-
-FeaturePtr NacaFourDigit::create_values
-(
-    ScalarPtr tc, ScalarPtr m, ScalarPtr p,
-    VectorPtr p0, VectorPtr ex, VectorPtr ez,
-    ScalarPtr tofs,
-    ScalarPtr clipte
-)
-{
-    return FeaturePtr(new NacaFourDigit(tc, m, p, p0, ex, ez, tofs, clipte));
-}
 
 
 
@@ -150,7 +132,7 @@ void NacaFourDigit::build()
   {
       if (code_.size()!=4)
       {
-        throw insight::Exception("Invalid NACA code! (was "+code_+")");
+        throw insight::Exception(_("Invalid NACA code! (was %s)"), code_.c_str());
       }
       else
       {
@@ -249,10 +231,10 @@ void NacaFourDigit::build()
     
   BRepBuilderAPI_MakeFace fb(w.Wire(), true);
   if (!fb.IsDone())
-    throw insight::Exception("Failed to generate planar face!");
+      throw insight::Exception(_("Failed to generate planar face!"));
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-  providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w.Wire()));
+  providedSubshapes_["OuterWire"]=Feature::create(w.Wire());
   
   refvalues_["L"]=L;
   
@@ -274,18 +256,22 @@ NacaFourDigit::operator const TopoDS_Face& () const
 
 
 
-void NacaFourDigit::insertrule(parser::ISCADParser& ruleset) const
+void NacaFourDigit::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Naca4",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '('  >> ruleset.r_string >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression
            >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
            >> ( (',' >> qi::lit("clipte") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
            >> ')' ) 
-	[ qi::_val = phx::bind(&NacaFourDigit::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6) ]
+    [ qi::_val = phx::bind(
+                       &NacaFourDigit::create<const std::string&,
+                                              VectorPtr, VectorPtr, VectorPtr,
+                                              ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6) ]
       
     |
       ( '('  >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ','
@@ -293,27 +279,30 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset) const
              >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
              >> ( (',' >> qi::lit("clipte") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
              >> ')' )
-      [ qi::_val = phx::bind(&NacaFourDigit::create_values, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_7) ]
-    ))
+      [ qi::_val = phx::bind(
+                       &NacaFourDigit::create<ScalarPtr, ScalarPtr, ScalarPtr,
+                                              VectorPtr, VectorPtr, VectorPtr,
+                                              ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_7) ]
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList NacaFourDigit::ruleDocumentation() const
+FeatureCmdInfoList NacaFourDigit::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Naca4",
             "( <string:code>, <vector:p0>, <vector:L>, <vector:ez> )",
-            "Creates an airfoil section from the NACA four digit series. The four digit code is passed as a string."
+            _("Creates an airfoil section from the NACA four digit series. The four digit code is passed as a string."
             " The leading edge is positioned at point p0. Length and direction of the chord line are specified by vector L."
-            " The normal direction of the foil section, i.e. spanwise direction of the wing, is given by vector ez."
+            " The normal direction of the foil section, i.e. spanwise direction of the wing, is given by vector ez.")
         )
-    );
+    };
 }
 
 

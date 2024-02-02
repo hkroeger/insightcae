@@ -22,6 +22,7 @@
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
+#include "base/translations.h"
 
 #include <boost/spirit/include/qi.hpp>
 
@@ -38,7 +39,10 @@ namespace cad {
 
 
 defineType(Quad);
-addToFactoryTable(Feature, Quad);
+//addToFactoryTable(Feature, Quad);
+addToStaticFunctionTable(Feature, Quad, insertrule);
+addToStaticFunctionTable(Feature, Quad, ruleDocumentation);
+
 
 
 size_t Quad::calcHash() const
@@ -56,10 +60,6 @@ size_t Quad::calcHash() const
 
 
 
-Quad::Quad()
-{}
-
-
 
 
 Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering center)
@@ -67,18 +67,6 @@ Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering ce
 {}
 
 
-
-
-FeaturePtr Quad::create(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering center)
-{
-    return FeaturePtr
-           (
-               new Quad
-               (
-                   p0, L, W, t, center
-               )
-           );
-}
 
 
 
@@ -98,7 +86,7 @@ void Quad::operator=(const Quad& o)
 
 void Quad::build()
 {
-    if ( !cache.contains ( hash() ) ) 
+    if ( !cache.contains ( hash() ) )
     {
         double L=arma::norm(L_->value(), 2);
         double W=arma::norm(W_->value(), 2);
@@ -108,11 +96,16 @@ void Quad::build()
         
         refvectors_["L"]=L_->value();
         refvectors_["W"]=W_->value();
-        
+        refvectors_["el"]=normalized(L_->value());
+        refvectors_["ew"]=normalized(W_->value());
+        refvectors_["n"]=normalized(arma::cross(L_->value(), W_->value()));
+
         if (L<1e-10)
-            throw insight::Exception(str(format("Invalid parameter: Length of quad needs to be larger than 0 (is %g)!")%L));
+            throw insight::Exception(str(format(
+                _("Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"))%L));
         if (W<1e-10)
-            throw insight::Exception(str(format("Invalid parameter: Width of quad needs to be larger than 0 (is %g)!")%W));
+            throw insight::Exception(str(format(
+                _("Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"))%W));
         
         gp_Pnt
             p1 ( to_Pnt ( p0_->value() ) );
@@ -144,9 +137,10 @@ void Quad::build()
         providedDatums_["plane"] = std::make_shared<DatumPlane>(
               p0_,
               matconst(insight::Vector(p2)),
-              matconst(insight::Vector(p4))
+              matconst(insight::Vector(p4)),
+              true
         );
-        providedSubshapes_["OuterWire"]=FeaturePtr ( new Feature ( w.Wire() ) );
+        providedSubshapes_["OuterWire"]=Feature::create( w.Wire() );
 
         TopoDS_Shape s = BRepBuilderAPI_MakeFace ( w.Wire() );
         
@@ -157,9 +151,11 @@ void Quad::build()
             refvalues_["t"]=t;
             
             if (t<1e-10)
-                throw insight::Exception(str(format("Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!")%t));
+                throw insight::Exception(str(format(
+                    _("Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"))%t));
             if (t>maxt)
-                throw insight::Exception(str(format("Invalid parameter: Wall thickness of quad is larger than half width or half height (%g > %g)!")%t%maxt));
+                throw insight::Exception(str(format(
+                    _("Invalid parameter: Wall thickness of quad is larger than half width or half height (%g > %g)!"))%t%maxt));
             
             gp_Pnt
                 p1 ( to_Pnt ( p0_->value() ) );
@@ -208,12 +204,12 @@ Quad::operator const TopoDS_Face& () const
 
 
 
-void Quad::insertrule(parser::ISCADParser& ruleset) const
+void Quad::insertrule(parser::ISCADParser& ruleset)
 {
     ruleset.modelstepFunctionRules.add
     (
         "Quad",
-        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                     ( '(' >> ruleset.r_vectorExpression
                       >> ',' >> ruleset.r_vectorExpression
@@ -231,27 +227,28 @@ void Quad::insertrule(parser::ISCADParser& ruleset) const
                            ( qi::attr ( false ) >> qi::attr ( false ) )
                          )
                       >> ')' )
-                    [ qi::_val = phx::bind ( &Quad::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
+                    [ qi::_val = phx::bind (
+                       &Quad::create<VectorPtr, VectorPtr, VectorPtr, ScalarPtr, QuadCentering>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
 
-                ) )
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList Quad::ruleDocumentation() const
+FeatureCmdInfoList Quad::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Quad",
             "( <vector:p0>, <vector:Lx>, <vector:Ly> [, <thickness>] [, centered | (center [x][y]) ] )",
-            "Creates a quad face. The quad is located at point p0 and direction and edge lengths are defined by the vector Lx, Ly.\n"
-            "Optionally, the edges are centered around p0. Either all directions (option centered) or only selected directions (option center [x][y] where x,y is associated with L1, L2 respectively)."
+            _("Creates a quad face. The quad is located at point p0 and direction and edge lengths are defined by the vector Lx, Ly.\n"
+              "Optionally, the edges are centered around p0. Either all directions (option centered) or only selected directions (option center [x][y] where x,y is associated with L1, L2 respectively).")
         )
-    );
+    };
 }
 
 

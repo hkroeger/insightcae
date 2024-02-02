@@ -85,7 +85,7 @@ sharedModelLocations::sharedModelLocations()
     std::copy(paths.begin(), paths.end(), back_inserter(*this));
   }
   {
-      for (const path& p: insight::SharedPathList::searchPathList)
+      for (const path& p: insight::SharedPathList::global())
       {
         if (boost::filesystem::is_directory(p/"iscad-library"))
           push_back(p/"iscad-library");
@@ -184,8 +184,6 @@ skip_grammar::skip_grammar()
 }
 
 
-AddRuleContainerBase::~AddRuleContainerBase()
-{}
 
 
 
@@ -211,7 +209,7 @@ AddRuleContainerBase::~AddRuleContainerBase()
 
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenameinfo)
-    : ISCADParser::base_type(r_model),
+    : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >(r_model),
       filenameinfo_(filenameinfo),
       syntax_element_locations(new SyntaxElementDirectory()),
       model_(model)
@@ -254,7 +252,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
      */
     r_assignment =
         ( current_pos.current_pos >> r_identifier >> current_pos.current_pos >> '=' >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-        [ ( phx::bind(&Model::addModelstep, model_, qi::_2, qi::_4, qi::_5),
+        [ ( phx::bind(&Model::addModelstep, model_, qi::_2, qi::_4, false, qi::_5),
             phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                        phx::construct<SyntaxElementLocation>(
                          filenameinfo_,
@@ -265,7 +263,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
             ) ]
         |
         ( current_pos.current_pos >> r_identifier >> current_pos.current_pos >> lit("?=") >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-        [ ( phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_2, qi::_4, qi::_5),
+        [ ( phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_2, qi::_4, false, qi::_5),
             phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                        phx::construct<SyntaxElementLocation>(
                          filenameinfo_,
@@ -319,7 +317,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
 
     r_modelstep  =  ( current_pos.current_pos >> r_identifier >> current_pos.current_pos >> ':'
                       >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-                    [ ( phx::bind(&Model::addComponent, model_, qi::_2, qi::_4, qi::_5),
+                    [ ( phx::bind(&Model::addModelstep, model_, qi::_2, qi::_4, true, qi::_5),
                         phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                                    phx::construct<SyntaxElementLocation>(
                                      filenameinfo_,
@@ -333,44 +331,13 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
     r_modelstep.name("modelling step");
 
 
-    createPostProcExpressions();
     createDocExpressions();
-    createFeatureExpressions();
     createSelectionExpressions();
     createDatumExpressions();
     createScalarExpressions();
     createVectorExpressions();
-
-
-#if (INSIGHT_CAD_DEBUG>2)
-    BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
-    BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
-    BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
-    BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
-    BOOST_SPIRIT_DEBUG_NODE(r_modelstepFunction);
-    BOOST_SPIRIT_DEBUG_NODE(r_path);
-    BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-    BOOST_SPIRIT_DEBUG_NODE(r_assignment);
-    BOOST_SPIRIT_DEBUG_NODE(r_postproc);
-    BOOST_SPIRIT_DEBUG_NODE(r_viewDef);
-    BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
-    BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
-    BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
-    BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
-    BOOST_SPIRIT_DEBUG_NODE(r_model);
-    BOOST_SPIRIT_DEBUG_NODE(r_vertexFeaturesExpression);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_propertyAssignment);
-    BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
-#endif
-
-//     on_error<fail>(r_model,
-//                    phx::ref(std::cout)
-//                    << "Error! Expecting "
-//                    << qi::_4
-//                    << " here: '"
-//                    << phx::construct<std::string>(qi::_3, qi::_2)
-//                    << "'\n"
-//                   );
+    createFeatureExpressions();
+    createPostProcExpressions();
 }
 
 
@@ -409,7 +376,10 @@ bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* faill
         return false;
     }
     
-    std::ifstream f(fn.c_str());
+    std::ifstream f(fn.string());
+    insight::assertion(
+                f.good(),
+                "stream not good!");
     return parseISCADModelStream(f, m, failloc, sd, fn);
 }
 
@@ -421,60 +391,81 @@ iscadParserException::iscadParserException(const std::string& reason, int from_p
 {
 }
 
-bool parseISCADModelStream ( std::istream& in, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd,
-                             const boost::filesystem::path& filenameinfo )
-{
 
+bool parseISCADModel
+(
+    const std::string& script,
+    Model* m,
+    int* failloc,
+    parser::SyntaxElementDirectoryPtr* sd,
+    const boost::filesystem::path& filenameinfo
+)
+{
+    std::string raw_contents(script);
+
+    std::string::iterator orgbegin,
+        first=raw_contents.begin(),
+        last=raw_contents.end();
+
+    orgbegin=first;
+
+    bool r = false;
+    try
+    {
+
+        ISCADParser parser ( m, filenameinfo );
+        skip_grammar skip;
+
+        //   std::cout<<"Parsing started."<<std::endl;
+        parser.current_pos.setStartPos ( first );
+        r = qi::phrase_parse (
+            first,
+            last,
+            parser,
+            skip
+            );
+        //   std::cout<<"Parsing finished."<<std::endl;
+
+        if ( first != last ) // fail if we did not get a full match
+        {
+            if ( failloc ) *failloc=int ( first-orgbegin );
+            return false;
+        }
+        else
+        {
+            if ( sd )
+            {
+                *sd = parser.syntax_element_locations;
+            }
+        }
+    }
+    catch ( const qi::expectation_failure<std::string::iterator>& e )
+    {
+        std::ostringstream os;
+        os << e.what_;
+        throw iscadParserException(os.str(), int(e.first-orgbegin), int(e.last-orgbegin));
+    }
+    return r;
+}
+
+
+
+bool parseISCADModelStream (
+    std::istream& in,
+    Model* m,
+    int* failloc,
+    parser::SyntaxElementDirectoryPtr* sd,
+    const boost::filesystem::path& filenameinfo
+)
+{
   in >> std::noskipws;
 
 // use stream iterators to copy the stream to a string
   std::istream_iterator<char> it(in);
   std::istream_iterator<char> end;
   std::string contents_raw(it, end);
-  
-  std::string::iterator orgbegin,
-      first=contents_raw.begin(),
-      last=contents_raw.end();
 
-  orgbegin=first;
-
-  bool r = false;
-  try
-    {
-
-      ISCADParser parser ( m, filenameinfo );
-      skip_grammar skip;
-
-//   std::cout<<"Parsing started."<<std::endl;
-      parser.current_pos.setStartPos ( first );
-      r = qi::phrase_parse (
-                 first,
-                 last,
-                 parser,
-                 skip
-               );
-//   std::cout<<"Parsing finished."<<std::endl;
-
-      if ( first != last ) // fail if we did not get a full match
-        {
-          if ( failloc ) *failloc=int ( first-orgbegin );
-          return false;
-        }
-      else
-        {
-          if ( sd )
-            {
-              *sd = parser.syntax_element_locations;
-            }
-        }
-    }
-  catch ( const qi::expectation_failure<std::string::iterator>& e )
-    {
-        std::ostringstream os;
-        os << e.what_;
-        throw iscadParserException(os.str(), int(e.first-orgbegin), int(e.last-orgbegin));
-    }
-  return r;
+  return parseISCADModel(contents_raw, m, failloc, sd, filenameinfo);
 }
 
 

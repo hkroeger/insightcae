@@ -24,7 +24,7 @@ public:
     );
 
 
-    void writeLatexHeaderCode ( std::ostream& f ) const override;
+    void insertLatexHeaderCode ( std::set<std::string>& f ) const override;
     void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
 
 

@@ -29,25 +29,7 @@ SSHLinuxServer::Config::Config(rapidxml::xml_node<> *e)
      )
 {
   auto* ha = e->first_attribute("host");
-//  auto* lsaa = e->first_attribute("launchScript");
-//  if (ha && lsaa)
-//  {
-//    throw insight::Exception("Invalid configuration of remote server "+label+": either host name or launch script must be specified!");
-//  }
-//  else if (ha)
-  {
-    hostName_=ha->value();
-//    s.hasLaunchScript_=false;
-//    (*this)[label]=s;
-//    anything_read=true;
-  }
-//  else if (lsaa)
-//  {
-//    s.server_=lsaa->value();
-//    s.hasLaunchScript_=true;
-//    (*this)[label]=s;
-//    anything_read=true;
-//  }
+  hostName_=ha->value();
 }
 
 std::shared_ptr<RemoteServer> SSHLinuxServer::Config::getInstanceIfRunning()
@@ -94,26 +76,27 @@ void SSHLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_documen
 
 void SSHLinuxServer::runRsync
 (
-    const std::vector<std::string>& args,
+    const std::vector<std::string>& uargs,
     std::function<void(int,const std::string&)> pf
 )
 {
   assertRunning();
 
-  RSyncProgressAnalyzer rpa;
-  boost::process::child c
-      (
-       boost::process::search_path("rsync"),
-       boost::process::args( args ),
-       boost::process::std_out > rpa
-      );
-  rpa.runAndParse(c, pf);
+  std::vector<std::string> args(uargs);
+  args.insert(args.begin(), "--info=progress2");
+
+  RSyncOutputAnalyzer rpa(pf);
+  auto job = std::make_shared<Job>("rsync", args);
+  job->ios_run_with_interruption(&rpa);
+  job->wait();
+
 }
 
 
 
 
 SSHLinuxServer::SSHLinuxServer(ConfigPtr serverConfig)
+    : bwlimit_(-1)
 {
   serverConfig_=serverConfig;
 }
@@ -177,7 +160,9 @@ void SSHLinuxServer::BackgroundJob::kill()
 }
 
 
-RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(const std::string &cmd)
+RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(
+        const std::string &cmd,
+        const std::vector<ExpectedOutput>& eobd )
 {
   boost::process::ipstream is;
 
@@ -191,31 +176,24 @@ RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(const std
         , boost::process::std_in < boost::process::null
         );
 
-  if (!process->running())
-  {
-   throw insight::Exception("could not start background process");
-  }
+  insight::assertion(
+              process->running(),
+              "could not start background process");
 
-  boost::regex re("PID===([0-9]+)===PID");
-  int remotePid = -1;
-  int linesRead = 0;
-  while (remotePid<0 && linesRead<100 && process->running())
-  {
-    std::string line;
-    if (getline(is, line))
-    {
-      linesRead++;
-      boost::smatch res;
-      if (boost::regex_match(line, res, re))
-      {
-        remotePid=boost::lexical_cast<int>(res[1]);
-        std::cout<<"remote process PID = "<<remotePid<<std::endl;
-        break;
-      }
-    }
-  }
+  std::vector<std::string> pidMatch;
+
+  std::vector<ExpectedOutput> pats(eobd.begin(), eobd.end());
+  pats.push_back( { boost::regex("PID===([0-9]+)===PID"), &pidMatch } );
+  lookForPattern(is, pats);
+
+  std::cout<<pidMatch[1]<<std::endl;
+  int remotePid=boost::lexical_cast<int>(pidMatch[1]);
+
+  insight::dbg()<<"remote process PID = "<<remotePid<<std::endl;
+
   process->detach();
-  return std::make_shared<BackgroundJob>(*this, remotePid);
+
+  return std::make_shared<BackgroundJob>(*this, remotePid );
 }
 
 
@@ -242,12 +220,21 @@ void SSHLinuxServer::putFile
 }
 
 
+void SSHLinuxServer::setTransferBandWidthLimit(int kBPerSecond)
+{
+    bwlimit_=kBPerSecond;
+}
 
+int SSHLinuxServer::transferBandWidthLimit() const
+{
+    return bwlimit_;
+}
 
 void SSHLinuxServer::syncToRemote
 (
     const boost::filesystem::path& localDir,
     const boost::filesystem::path& remoteDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -259,9 +246,7 @@ void SSHLinuxServer::syncToRemote
         {
          "-az",
          "--delete",
-         "--info=progress",
 
-         "--exclude", "processor*",
          "--exclude", "*.foam",
          "--exclude", "postProcessing",
          "--exclude", "*.socket",
@@ -270,10 +255,23 @@ void SSHLinuxServer::syncToRemote
          "--exclude", "mnt_remote"
         };
 
+    if (!includeProcessorDirectories)
+    {
+        args.push_back("--exclude");
+        args.push_back("processor*");
+    }
+
     for (const auto& ex: exclude_pattern)
     {
       args.push_back("--exclude");
       args.push_back(ex);
+    }
+
+    if (bwlimit_>0)
+    {
+        args.push_back(
+                    str(format("--bwlimit=%d")
+                        % bwlimit_ ));
     }
 
     args.push_back(localDir.string()+"/");
@@ -289,6 +287,7 @@ void SSHLinuxServer::syncToLocal
 (
     const boost::filesystem::path& localDir,
     const boost::filesystem::path& remoteDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -301,8 +300,7 @@ void SSHLinuxServer::syncToLocal
     args =
     {
       "-az",
-      "--info=progress",
-      "--exclude", "processor*",
+      //"--exclude", "processor*",
       "--exclude", "*.foam",
       "--exclude", "*.socket",
       "--exclude", "backup",
@@ -310,10 +308,23 @@ void SSHLinuxServer::syncToLocal
       "--exclude", "mnt_remote"
     };
 
+    if (!includeProcessorDirectories)
+    {
+        args.push_back("--exclude");
+        args.push_back("processor*");
+    }
+
     for (const auto& ex: exclude_pattern)
     {
       args.push_back("--exclude");
       args.push_back(ex);
+    }
+
+    if (bwlimit_>0)
+    {
+        args.push_back(
+                    str(format("--bwlimit=%d")
+                        % bwlimit_ ));
     }
 
     args.push_back(hostName()+":"+toUnixPath(remoteDir)+"/");

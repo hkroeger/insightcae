@@ -196,7 +196,7 @@ void MainWindow::updateOutputAnalzer(QString line)
 
 bool isFixedPitch(const QFont &font) {
    const QFontInfo fi(font);
-   qDebug() << fi.family() << fi.fixedPitch();
+//   qDebug() << fi.family() << fi.fixedPitch();
    return fi.fixedPitch();
 }
 
@@ -212,10 +212,19 @@ QFont getMonospaceFont() {
   return font;
 }
 
+
+
+//void myMessageHandler(QtMsgType, const QMessageLogContext &, const QString &msg)
+//{
+//    qDebug()<<msg;
+//}
+
 MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent) :
   QMainWindow(parent),
   ui(new Ui::MainWindow)
 {
+//     qInstallMessageHandler(&myMessageHandler);
+
   ui->setupUi(this);
 
   ui->localDir->setText( QString::fromStdString(boost::filesystem::absolute(location).string()) );
@@ -226,79 +235,137 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
   soa_.reset(new insight::SolverOutputAnalyzer(*ui->graph));
 
-  connect(ui->actionSelect_remote_server, &QAction::triggered, this,
-          [&]()
+  connect(
+      ui->actionSelect_remote_server, &QAction::triggered, this,
+      [&]()
+      {
+        QStringList servers;
+        for (const auto& s: insight::remoteServers)
+        {
+          servers<<QString::fromStdString(*s);
+        }
+
+        int currentServerIdx = 0;
+        if (remote_)
+        {
+          currentServerIdx =
+              servers.indexOf(QString::fromStdString(remote_->location().serverLabel()));
+        }
+        bool ok = false;
+
+        auto selectedServer = QInputDialog::getItem(
+              this,
+              "Select remote server",
+              "Please select the remote server:", servers,
+              currentServerIdx, false, &ok);
+
+        if (!selectedServer.isEmpty())
+        {
+          remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+                this,
+                insight::remoteServers.findServer(
+                  selectedServer.toStdString() )
+                );
+          remote_->location().writeConfigFile(
+                insight::RemoteExecutionConfig::defaultConfigFile("."));
+
+        }
+      }
+  );
+
+  connect(
+      ui->actionSelect_Remote_Directory, &QAction::triggered, this,
+      [&]()
+      {
+          if (remote_)
           {
-            QStringList servers;
-            for (const auto& s: insight::remoteServers)
-            {
-              servers<<QString::fromStdString(*s);
-            }
+              auto server = remote_->location().serverConfig()->getInstanceIfRunning();
+              insight::assertion(bool(server), "server is not running");
 
-            int currentServerIdx = 0;
-            if (remote_)
-            {
-              currentServerIdx =
-                  servers.indexOf(QString::fromStdString(remote_->location().serverLabel()));
-            }
-            bool ok = false;
+              RemoteDirSelector dlg(this, server);
 
-            auto selectedServer = QInputDialog::getItem(
-                  this,
-                  "Select remote server",
-                  "Please select the remote server:", servers,
-                  currentServerIdx, false, &ok);
+              if (dlg.exec() == QDialog::Accepted)
+              {
 
-            if (!selectedServer.isEmpty())
-            {
-              remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
-                    this,
-                    insight::remoteServers.findServer(
-                      selectedServer.toStdString() )
-                    );
-              remote_->location().writeConfigFile(
-                    insight::RemoteExecutionConfig::defaultConfigFile("."));
+                  ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
 
-            }
+                  remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+                      this,
+                      remote_->location().serverConfig(),
+                      dlg.selectedRemoteDir()
+                      );
+                  remote_->location().writeConfigFile(
+                      insight::RemoteExecutionConfig::defaultConfigFile("."));
+              }
+          }
+      }
+  );
+
+  connect(ui->action_syncLocalToRemote, &QAction::triggered, this,
+          std::bind(&MainWindow::syncLocalToRemote, this, false) );
+  connect(ui->action_syncRemoteToLocal, &QAction::triggered, this,
+          std::bind(&MainWindow::syncRemoteToLocal, this, false, -1) );
+  connect(ui->actionRemote_Local_restart_periodically, &QAction::triggered, this,
+          [this]()
+          {
+              bool ok;
+              int seconds=QInputDialog::getInt(
+                  this, "Time interval for auto restart",
+                  "Please enter time interval from transfer end to next restart:",
+                  300, -1, INT_MAX, 1, &ok);
+              if (ok)
+              {
+                syncRemoteToLocal(false, seconds);
+              }
           }
   );
 
-  connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this,
-          [&]()
+  connect(ui->action_syncLocalToRemote_includeprocessor, &QAction::triggered, this,
+          std::bind(&MainWindow::syncLocalToRemote, this, true) );
+  connect(ui->action_syncRemoteToLocal_includeprocessor, &QAction::triggered, this,
+          std::bind(&MainWindow::syncRemoteToLocal, this, true, -1) );
+  connect(ui->actionRemote_Local_incl_proc_dirs_restart_periodically, &QAction::triggered, this,
+          [this]()
           {
-    if (remote_)
-    {
-      auto server = remote_->location().serverConfig()->getInstanceIfRunning();
-      insight::assertion(bool(server), "server is not running");
-
-        RemoteDirSelector dlg(this, server);
-
-        if (dlg.exec() == QDialog::Accepted)
-        {
-
-            ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
-
-            remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
-                  this,
-                  remote_->location().serverConfig(),
-                  dlg.selectedRemoteDir()
-                  );
-            remote_->location().writeConfigFile(
-                  insight::RemoteExecutionConfig::defaultConfigFile("."));
-        }
-      }
-    }
+              bool ok;
+              int seconds=QInputDialog::getInt(
+                  this, "Time interval for auto restart",
+                  "Please enter time interval from transfer end to next restart:",
+                  300, -1, INT_MAX, 1, &ok);
+              if (ok)
+              {
+                  syncRemoteToLocal(true, seconds);
+              }
+          }
   );
 
-  connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
-  connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
+  setBWLimit(-1);
+  connect(ui->action_setbwlimit, &QAction::triggered, this,
+          [&]()
+          {
+              if (remote_)
+              {
+                  bool ok=false;
+                  int newlimit = QInputDialog::getInt(
+                              this,
+                              "Bandwidth limit",
+                              "Enter bandwidth limit (kB/s)",
+                              11000, -1,
+                              2147483647, 1000,
+                              &ok);
+                  if (ok) setBWLimit(newlimit);
+              }
+          }
+  );
+
   connect(ui->sync_to_remote, &QPushButton::clicked, this, &MainWindow::syncLocalToRemote);
-  connect(ui->sync_to_local, &QPushButton::clicked, this, &MainWindow::syncRemoteToLocal);
-  connect(ui->actionRemote_write_and_copy_to_local, &QAction::triggered,
+  connect(ui->sync_to_local, &QPushButton::clicked, this,
+          std::bind(&MainWindow::syncRemoteToLocal, this, false, -1) );
+  connect(ui->actionRemote_write_and_copy_to_local, &QAction::triggered, this,
           [=]() {
             this->remoteWriteAndCopyBack(false);
           });
-  connect(ui->actionRemote_write_reconstruct_and_copy_to_local, &QAction::triggered,
+  connect(ui->actionRemote_write_reconstruct_and_copy_to_local, &QAction::triggered, this,
           [=]() {
             this->remoteWriteAndCopyBack(true);
           });
@@ -319,7 +386,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 #endif
 
   connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWindow::onRefreshJobList);
-  connect(ui->btn_kill, &QPushButton::clicked,
+  connect(ui->btn_kill, &QPushButton::clicked, this,
           [&]() {
             if (tsi_) {
               tsi_->kill();
@@ -329,7 +396,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
           }
   );
 
-  connect(ui->btn_clean, &QPushButton::clicked,
+  connect(ui->btn_clean, &QPushButton::clicked, this,
           [&]() {
             if (tsi_) {
               tsi_->clean();
@@ -349,10 +416,10 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   connect(refreshTimer_, &QTimer::timeout, this, &MainWindow::onRefreshJobList);
   refreshTimer_->start(5000);
 
-  readSettings(); 
-
-  progressbar_=new QProgressBar(this);
-  statusBar()->addPermanentWidget(progressbar_);
+//  auto sbw = new QWidget;
+//  sbw->setLayout( statusBarLayout_ = new QHBoxLayout );
+////  statusBar()->addPermanentWidget(sbw, 1);
+//  statusBarLayout_->addStretch();
 
   auto reccfg = insight::RemoteExecutionConfig::defaultConfigFile(location);
   if ( boost::filesystem::exists( reccfg ) )
@@ -361,6 +428,9 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
           this, reccfg );
     remote_->commit(location);
   }
+
+  readSettings(); // after remote location is set
+
 }
 
 
@@ -383,24 +453,36 @@ MainWindow::~MainWindow()
 
 
 
-void MainWindow::syncLocalToRemote()
+void MainWindow::syncLocalToRemote(bool includeProcDirs)
 {
   if (remote_)
   {
-    auto *rstr = new insight::RunSyncToRemote(remote_->exeConfig());
+    auto *rstr = new insight::RunSyncToRemote(
+                remote_->exeConfig(),
+                includeProcDirs );
 
-    connect(rstr, &insight::RunSyncToRemote::progressValueChanged, progressbar_, &QProgressBar::setValue);
+    auto pb = new QProgressBar;
+    statusBar()->addPermanentWidget(pb);
+    connect(rstr, &QObject::destroyed, pb, &QProgressBar::deleteLater);
+
+    connect(rstr, &insight::RunSyncToRemote::progressValueChanged, pb, &QProgressBar::setValue);
     connect(rstr, &insight::RunSyncToRemote::progressTextChanged,
-            this, [=](const QString& text) { statusBar()->showMessage(text); } );
-    connect(rstr, &insight::RunSyncToRemote::transferFinished,
-            this, [&]()
-    {
-      progressbar_->setHidden(true);
-      statusBar()->showMessage("Transfer to remote location finished");
-    });
+            std::bind(&QStatusBar::showMessage, statusBar(), std::placeholders::_1, 0) );
+    connect(rstr, &insight::RunSyncToRemote::transferFinished, this,
+            [&]()
+            {
+              statusBar()->showMessage("Transfer to remote location finished");
+            }
+    );
     connect(rstr, &insight::RunSyncToRemote::transferFinished, rstr, &QObject::deleteLater);
 
-    progressbar_->setHidden(false);
+    auto stopBtn = new QPushButton("STOP");
+    statusBar()->addPermanentWidget(stopBtn);
+    connect(stopBtn, &QPushButton::clicked, rstr,
+            std::bind(&insight::RunSyncToLocal::interrupt, rstr) );
+    connect(rstr, &insight::RunSyncToRemote::transferFinished,
+            stopBtn, &QObject::deleteLater);
+
     statusBar()->showMessage("Transfer to remote location started");
 
     rstr->start();
@@ -411,30 +493,97 @@ void MainWindow::syncLocalToRemote()
 
 
 
-void MainWindow::syncRemoteToLocal()
+void MainWindow::syncRemoteToLocal(bool includeProcDirs, int autoRestartSeconds)
 {
   if (remote_)
   {
-    auto* rstl = new insight::RunSyncToLocal(remote_->exeConfig());
+    auto* rstl = new insight::RunSyncToLocal(
+                remote_->exeConfig(),
+                includeProcDirs);
+
+    auto pb = new QProgressBar;
+    statusBar()->addPermanentWidget(pb);
+    connect(rstl, &QObject::destroyed, pb, &QProgressBar::deleteLater);
 
     connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
-            progressbar_, &QProgressBar::setValue);
+            pb, &QProgressBar::setValue);
     connect(rstl, &insight::RunSyncToLocal::progressTextChanged,
-            this, [=](const QString& text) { statusBar()->showMessage(text); } );
+            std::bind(&QStatusBar::showMessage, statusBar(), std::placeholders::_1, 0) );
     connect(rstl, &insight::RunSyncToLocal::transferFinished, rstl, &QObject::deleteLater);
+    connect(rstl, &insight::RunSyncToLocal::transferFinished, rstl,
+            [&]()
+            {
+              statusBar()->showMessage(
+                  QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm:ss.z : ")
+                  +"Transfer from remote location to local directory finished" );
+            }
+    );
+    auto stopBtn = new QPushButton("STOP");
+    statusBar()->addPermanentWidget(stopBtn);
+    connect(stopBtn, &QPushButton::clicked, rstl,
+            std::bind(&insight::RunSyncToLocal::interrupt, rstl) );
     connect(rstl, &insight::RunSyncToLocal::transferFinished,
-            this, [&]()
-    {
-      progressbar_->setHidden(true);
-      statusBar()->showMessage(QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm:ss.z : ")+"Transfer from remote location to local directory finished");
-    });
+            stopBtn, &QObject::deleteLater);
 
-    progressbar_->setHidden(false);
     statusBar()->showMessage("Transfer from remote location to local directory started");
 
+    if (autoRestartSeconds>0)
+    {
+
+      connect(rstl, &insight::RunSyncToLocal::transferFinished, rstl,
+          [this,includeProcDirs,autoRestartSeconds]()
+          {
+            auto timer = new QTimer(this);
+            timer->setSingleShot(true);
+            connect(timer, &QTimer::timeout, this,
+              std::bind(&MainWindow::syncRemoteToLocal, this, includeProcDirs, autoRestartSeconds)
+              );
+            connect(timer, &QTimer::timeout, timer, &QTimer::deleteLater);
+
+            auto stopBtn = new QPushButton("STOP");
+            statusBar()->addPermanentWidget(stopBtn);
+            connect(stopBtn, &QPushButton::clicked, timer, &QObject::deleteLater);
+            connect(timer, &QTimer::destroyed, stopBtn, &QObject::deleteLater);
+
+            timer->start(1000*autoRestartSeconds);
+          }
+      );
+    }
+
     rstl->start();
+
   }
 }
+
+
+
+
+void MainWindow::setBWLimit(int bwlimit)
+{
+    QString label = "Set bandwidth limit";
+
+    if (remote_)
+    {
+        auto srv = remote_->exeConfig().server();
+        srv->setTransferBandWidthLimit(bwlimit);
+
+        if (bwlimit>0)
+        {
+            label = QString("%1 (%2)")
+                .arg(label)
+                .arg(bwlimit);
+        }
+        else
+        {
+            label = label+" (unlimited)";
+        }
+    }
+
+    ui->action_setbwlimit->setText(label);
+}
+
+
+
 
 void MainWindow::onStartParaview()
 {
@@ -474,6 +623,13 @@ void MainWindow::saveSettings()
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
     settings.setValue("vsplitter", ui->v_splitter->saveState());
+    if (remote_)
+    {
+        settings.setValue(
+                    "bwlimit",
+                    remote_->exeConfig().server()
+                    ->transferBandWidthLimit() );
+    }
 }
 
 
@@ -483,6 +639,13 @@ void MainWindow::readSettings()
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
     ui->v_splitter->restoreState(settings.value("vsplitter").toByteArray());
+    if (remote_)
+    {
+        remote_->exeConfig().server()
+                ->setTransferBandWidthLimit(
+                    settings.value("bwlimit").toInt()
+                    );
+    }
 }
 
 
@@ -523,24 +686,34 @@ void MainWindow::remoteWriteAndCopyBack(bool parallel)
       << (parallel ? "-p" : "") << " )";
 
 
-  auto job=std::make_shared<insight::Job>();
 //  insight::SSHCommand sc(remote_->server(), { "bash -lc \""+insight::escapeShellSymbols(cmd.str())+"\"" });
-  insight::Job::forkExternalProcess(
-        job, remote_->exeConfig().server()->launchCommand(
-          cmd.str(),
-          boost::process::std_in < job->in,
-          boost::process::std_out > job->out,
-          boost::process::std_err > job->err
-          ));
+//  auto job=std::make_shared<insight::Job>();
+//  job->forkProcess(
+//      remote_->exeConfig().server()->launchCommand(
+//          cmd.str(),
+//          job->redirections()
+//          ));
+
+  auto job=std::make_shared<insight::Job>(
+      remote_->exeConfig().server()->commandAndArgs(cmd.str())
+      );
+
+//  insight::Job::forkExternalProcess(
+//        job, remote_->exeConfig().server()->launchCommand(
+//          cmd.str(),
+//          boost::process::std_in < in_,
+//          boost::process::std_out > out_,
+//          boost::process::std_err > err_
+//          ));
   auto *aj = new AuxiliaryJob(job);
 
   connect( aj, &AuxiliaryJob::outputLineReceived,
            ui->log, &LogViewerWidget::appendLine );
-  connect( aj, &AuxiliaryJob::completed,
+  connect( aj, &AuxiliaryJob::completed, this,
            [this,aj](int rv) {
             if (rv==0)
             {
-              this->syncRemoteToLocal();
+              this->syncRemoteToLocal(false);
             }
             aj->deleteLater();
            });

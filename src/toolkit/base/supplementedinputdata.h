@@ -18,11 +18,11 @@ namespace insight {
 struct ParametersBase
 {
   ParametersBase();
-  ParametersBase(const insight::ParameterSet& p);
+  ParametersBase(const insight::SubsetParameter& p);
   virtual ~ParametersBase();
 
-  virtual void set(insight::ParameterSet& p) const =0;
-  virtual void get(const insight::ParameterSet& p) =0;
+  virtual void set(insight::SubsetParameter& p) const =0;
+  virtual void get(const insight::SubsetParameter& p) =0;
 
   static ParameterSet makeDefault();
 

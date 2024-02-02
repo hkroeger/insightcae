@@ -1,10 +1,7 @@
 project(insightcad)
 
 find_package(OCC REQUIRED)
-#find_package(OpenGL)
 find_package(DXFlib)
-#find_package(GEOM)
-#find_package(dlib)
 
 FIND_PACKAGE(MED)
 
@@ -13,6 +10,7 @@ if (MED_FOUND)
 endif()
 
 set(insightcad_SOURCES 
+  translations.cpp
   astbase.cpp
   cadpostprocaction.cpp
   dxfwriter.cpp 
@@ -26,19 +24,47 @@ set(insightcad_SOURCES
   parser_scalarexpressions.cpp
   parser_vectorexpressions.cpp
   datum.cpp 
-  sketch.cpp 
+  constrainedsketchgeometry.h constrainedsketchgeometry.cpp
+  sketch.h sketch.cpp
+  sketchpoint.h sketchpoint.cpp
+  constrainedsketch.h constrainedsketch.cpp
+  constrainedsketchgrammar.h constrainedsketchgrammar.cpp
+  externalreference.h externalreference.cpp
   geotest.cpp 
   cadparameter.cpp
   cadfeature.cpp 
   featurecache.cpp
   cadmodel.cpp
-  meshing.cpp 
+  meshing.h
+  meshing/gmshcase.h meshing/gmshcase.cpp
+  meshing/surfacegmshcase.h meshing/surfacegmshcase.cpp
+  meshing/sheetextrusiongmshcase.h meshing/sheetextrusiongmshcase.cpp
   featurefilter.cpp 
   feature.cpp
   occtools.cpp
   caddocitem.cpp
   cadtypes.cpp
+  subshapenumbering.cpp subshapenumbering.h
+  polytriangulationelementiterator.h polytriangulationelementiterator.cpp
+  polytriangulationnodeiterator.h polytriangulationnodeiterator.cpp
+  cademesh.h cademesh.cpp
+  ivtkoccshape.h ivtkoccshape.cpp
+  cadgeometryparameter.h cadgeometryparameter.cpp
+  cadsketchparameter.h cadsketchparameter.cpp
 )
+
+if (OCC_VERSION_MAJOR LESS 7)
+ list(APPEND insightcad_SOURCES
+  compat/BRepBndLib.cxx compat/BRepBndLib_1.cxx compat/BRepBndLib.hxx
+  compat/Bnd_OBB.cxx compat/Bnd_OBB.hxx compat/Bnd_Tools.hxx
+  compat/Bnd_Range.hxx compat/Bnd_Range.cxx
+  compat/BndLib_Add2dCurve.cxx  compat/BndLib_Add2dCurve.hxx
+  compat/BndLib_Add3dCurve.cxx  compat/BndLib_Add3dCurve.hxx
+  compat/BndLib_AddSurface.cxx  compat/BndLib_AddSurface.hxx
+  compat/BVH_BoxSet.hxx
+  compat/BVH_Traverse.hxx
+ )
+endif()
 
 set(INCLUDE_DIRS "")
 set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
@@ -49,16 +75,16 @@ add_subdirectory(cadparameters)
 add_subdirectory(cadpostprocactions)
 add_subdirectory(docitems)
 
-
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad 
  toolkit 
  ${OCC_LIBRARIES} # TKXSDRAW # don't include: leads to segfault on program exit!
  ${DXFLIB_LIBRARY} 
  ${MED_LIBRARIES}
- #${GEOM_LIBRARIES}
- #${DLIB_LIBRARIES}
  )
+
+setup_gettext(insightcad insightcad ${insightcad_SOURCES})
+
 include(GenerateExportHeader)
 generate_export_header(insightcad)
 
@@ -100,5 +126,5 @@ install(TARGETS insightcad LIBRARY DESTINATION lib)
 
 add_pybindings(cad "cad.i" insightcad)
 
-add_subdirectory(insightcad_gui)
+
 add_subdirectory(iscad)

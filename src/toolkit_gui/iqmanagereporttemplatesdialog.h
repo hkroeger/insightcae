@@ -2,7 +2,15 @@
 #define IQMANAGEREPORTTEMPLATESDIALOG_H
 
 #include <QDialog>
-#include "iqreporttemplatesmodel.h"
+
+#include "base/resultreporttemplates.h"
+#include "iqglobalconfigurationmodel.h"
+
+
+typedef
+    IQGlobalConfigurationWithDefaultModel<insight::ResultReportTemplates>
+    IQReportTemplatesModel;
+
 
 namespace Ui {
 class IQManageReportTemplatesDialog;

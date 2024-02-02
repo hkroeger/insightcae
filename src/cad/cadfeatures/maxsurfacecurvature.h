@@ -16,20 +16,18 @@ class MaxSurfaceCurvature
     MaxSurfaceCurvature(FeatureSetPtr faces);
 
 protected:
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType("MaxSurfaceCurvature");
-    MaxSurfaceCurvature();
 
-    static FeaturePtr create(FeatureSetPtr faces);
+    CREATE_FUNCTION(MaxSurfaceCurvature);
 
     operator const TopoDS_Edge& () const;
 
-
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule(parser::ISCADParser& ruleset) ;
+    static FeatureCmdInfoList ruleDocumentation();
 
 };
 

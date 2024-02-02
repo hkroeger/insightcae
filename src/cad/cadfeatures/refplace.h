@@ -160,25 +160,22 @@ class RefPlace
     RefPlace ( FeaturePtr m, const gp_Ax2& cs );
     RefPlace ( FeaturePtr m, ConditionList conditions );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "RefPlace" );
-    RefPlace ();
-    
-    static FeaturePtr create_fix ( FeaturePtr m, const gp_Ax2& cs );
-    static FeaturePtr create ( FeaturePtr m, ConditionList conditions );
 
-    
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    CREATE_FUNCTION(RefPlace);
 
-    virtual bool isTransformationFeature() const
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
+
+    bool isTransformationFeature() const override
     {
         return true;
     }
-    virtual gp_Trsf transformation() const;
+    gp_Trsf transformation() const override;
 };
 
 

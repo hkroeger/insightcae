@@ -21,34 +21,181 @@
 #ifndef INSIGHT_CAD_DISTANCEPP_H
 #define INSIGHT_CAD_DISTANCEPP_H
 
+#include "base/cppextensions.h"
 #include "cadtypes.h"
 #include "cadparameters.h"
 #include "cadpostprocaction.h"
+#include "constrainedsketchgeometry.h"
+
+
+
 
 namespace insight {
 namespace cad {
+
+
+
 
 class Distance
 : public PostprocAction
 {
 
 
-  virtual size_t calcHash() const;
+  size_t calcHash() const override;
 
 public:
   VectorPtr p1_, p2_;
+  VectorPtr distanceAlong_;
+
   double distance_;
 
+  arma::mat measureDirection() const;
+
+protected:
+  double calcDistance() const;
+
 public:
-  declareType("Distance");
+  declareType("ShowDistance");
 
-  Distance(VectorPtr p1, VectorPtr p2);
+  Distance(VectorPtr p1, VectorPtr p2, VectorPtr distanceAlong=VectorPtr());
 
-  virtual void build();
+  void build() override;
 
-  virtual void write(std::ostream&) const;
+  void write(std::ostream&) const override;
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+
+  void operator=(const Distance& other);
+
+  /**
+   * @brief dimLineOffset
+   * @return
+   * offset of dimension line from connection between points.
+   */
+  virtual arma::mat dimLineOffset() const;
+  virtual double relativeArrowSize() const;
+
+  double distance() const;
+
 };
+
+
+
+
+class DistanceConstraint
+: public Distance,
+  public ConstrainedSketchEntity
+{
+    VectorPtr planeNormal_;
+
+    size_t calcHash() const override;
+
+
+protected:
+    DistanceConstraint(
+        VectorPtr p1, VectorPtr p2,
+        VectorPtr planeNormal,
+        const std::string& layerName = std::string(),
+        VectorPtr distanceAlong = VectorPtr());
+
+public:
+    declareType("DistanceConstraintBase");
+
+    virtual double targetValue() const =0;
+
+    int nConstraints() const override;
+    double getConstraintError(unsigned int iConstraint) const override;
+
+
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
+    void replaceDependency(
+        const std::weak_ptr<ConstrainedSketchEntity>& entity,
+        const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
+
+    arma::mat dimLineOffset() const override;
+    void setDimLineOffset(const arma::mat& p);
+    double relativeArrowSize() const override;
+
+    VectorPtr planeNormal() const;
+
+    void operator=(const ConstrainedSketchEntity& other) override;
+    void operator=(const DistanceConstraint& other);
+};
+
+
+
+
+class FixedDistanceConstraint
+    : public DistanceConstraint
+{
+
+    FixedDistanceConstraint(
+        VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
+        const std::string& layerName = std::string(),
+        VectorPtr distanceAlong=VectorPtr() );
+
+public:
+    declareType("DistanceConstraint");
+
+    CREATE_FUNCTION(FixedDistanceConstraint);
+
+    double targetValue() const override;
+    void setTargetValue(double dist);
+
+    void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf);
+
+    void operator=(const ConstrainedSketchEntity& other) override;
+    void operator=(const FixedDistanceConstraint& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
+};
+
+
+
+
+class LinkedDistanceConstraint
+    : public DistanceConstraint
+{
+
+    std::string distExpr_;
+    ScalarPtr distance_;
+
+
+    LinkedDistanceConstraint(
+        VectorPtr p1, VectorPtr p2,
+        ScalarPtr dist, VectorPtr planeNormal,
+        const std::string& layerName = std::string(),
+        const std::string& distExpr = std::string(),
+        VectorPtr distanceAlong=VectorPtr() );
+
+public:
+    declareType("Distance");
+
+    CREATE_FUNCTION(LinkedDistanceConstraint);
+
+    double targetValue() const override;
+    void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(
+        ConstrainedSketchGrammar& ruleset,
+        MakeDefaultGeometryParametersFunction mdpf );
+
+    void operator=(const ConstrainedSketchEntity& other) override;
+    void operator=(const LinkedDistanceConstraint& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
+};
+
+
 
 
 }

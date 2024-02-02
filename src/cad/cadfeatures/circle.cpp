@@ -21,6 +21,10 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -35,8 +39,9 @@ namespace cad {
     
     
 defineType(Circle);
-addToFactoryTable(Feature, Circle);
-
+//addToFactoryTable(Feature, Circle);
+addToStaticFunctionTable(Feature, Circle, insertrule);
+addToStaticFunctionTable(Feature, Circle, ruleDocumentation);
 
 size_t Circle::calcHash() const
 {
@@ -46,11 +51,6 @@ size_t Circle::calcHash() const
   h+=n_->value();
   h+=D_->value();
   return h.getHash();
-}
-
-
-Circle::Circle()
-{
 }
 
 
@@ -65,7 +65,7 @@ void Circle::build()
   BRepBuilderAPI_MakeEdge e(c);
   BRepBuilderAPI_MakeWire w;
   w.Add(e.Edge());
-  providedSubshapes_["OuterWire"].reset(new Feature(e.Edge()));
+  providedSubshapes_["OuterWire"]=Feature::create(e.Edge());
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 
@@ -80,11 +80,6 @@ Circle::Circle(VectorPtr p0, VectorPtr n, ScalarPtr D)
 
 
 
-FeaturePtr Circle::create(VectorPtr p0, VectorPtr n, ScalarPtr D)
-{
-    return FeaturePtr(new Circle(p0, n, D));
-}
-
 
 
 Circle::operator const TopoDS_Face& () const
@@ -95,36 +90,37 @@ Circle::operator const TopoDS_Face& () const
 
 
 
-void Circle::insertrule(parser::ISCADParser& ruleset) const
+void Circle::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Circle",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-	[ qi::_val = phx::bind(&Circle::create, qi::_1, qi::_2, qi::_3) ]
+    [ qi::_val = phx::bind(
+                       &Circle::create<VectorPtr, VectorPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Circle::ruleDocumentation() const
+FeatureCmdInfoList Circle::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Circle",
          
             "( <vector:p0>, <vector:n>, <scalar:D> )",
-            
-            "Creates a circular face. The circle is centered at p0, the axis vector is n and the diameter D."
+
+          _("Creates a circular face. The circle is centered at p0, the axis vector is n and the diameter D.")
         )
-    );
+  };
 }
 
 

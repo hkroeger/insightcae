@@ -39,7 +39,7 @@ void copyFiles::modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& /*cm*/
     if (boost::filesystem::is_directory(src))
       copyDirectoryRecursively(src, targ);
     else
-      boost::filesystem::copy_file(src, targ);
+      boost::filesystem::copy_file(src, targ, boost::filesystem::copy_option::overwrite_if_exists);
 
   }
 }

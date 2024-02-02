@@ -32,50 +32,54 @@
 
 #include "uniof.h"
 
+#include <vector>
+
 namespace Foam
 {
+
+
+
+
+
 
 
 void extendedForces::createFields()
 {
   const fvMesh& mesh = static_cast<const fvMesh&>(obr_);
   
-  pressureForce_=&mesh.objectRegistry::store
-  (
-      new volVectorField
-      (
-	IOobject
-	(
-	  "pressureForce",
-	  mesh.time().timeName(),
-	  mesh,
-	  IOobject::NO_READ,
-	  IOobject::AUTO_WRITE
-	),
-       mesh,
-       dimensionedVector("pressureForce", dimPressure, vector::zero),
-       calculatedFvPatchField<vector>::typeName
-      )
-  );
-     
-  viscousForce_=&mesh.objectRegistry::store
-  (
-      new volVectorField
-      (
-	IOobject
-	(
-	  "viscousForce",
-	  mesh.time().timeName(),
-	  mesh,
-	  IOobject::NO_READ,
-	  IOobject::AUTO_WRITE
-	),
-       mesh,
-       dimensionedVector("viscousForce", dimPressure, vector::zero),
-       calculatedFvPatchField<vector>::typeName
-      )
-  );
+  for (auto& f: std::vector<std::pair<volVectorField*&, word> >(
+        { {pressureForce_, "pressureForce"}, {viscousForce_, "viscousForce"} } ) )
+  {
+      if (mesh.foundObject<volVectorField>(f.second))
+      {
+          Info<<"    retrieving field "<<f.second<<endl;
+          f.first = const_cast<volVectorField*>(&mesh.lookupObject<volVectorField>(f.second));
+      }
+      else
+      {
+          Info<<"    creating field "<<f.second<<endl;
+          f.first = &mesh.objectRegistry::store
+          (
+              new volVectorField
+              (
+               IOobject
+               (
+                 f.second,
+                 mesh.time().timeName(),
+                 mesh,
+                 IOobject::NO_READ,
+                 IOobject::AUTO_WRITE
+               ),
+               mesh,
+               dimensionedVector(f.second, dimPressure, vector::zero),
+               calculatedFvPatchField<vector>::typeName
+              )
+          );
+      }
+  }
 }
+
+
 
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 //- Construct for given objectRegistry and dictionary.
@@ -85,7 +89,7 @@ extendedForces::extendedForces
     const word& name,
     const Time& time,
     const dictionary& dict
-#if OF_VERSION<060000 //not (defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<060000
     ,
     const bool readFields
     #endif
@@ -93,10 +97,11 @@ extendedForces::extendedForces
 : functionObjects::forces
   (
     name, time, dict
-#if OF_VERSION<060000 //not (defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<060000
     , readFields
 #endif
   ),
+  forceSource(name),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   createFields();
@@ -104,6 +109,8 @@ extendedForces::extendedForces
    Info<<name<<": Masking force integration with field "<<maskFieldName_<<endl;
 }
 #endif
+
+
 
 //- Construct for given objectRegistry and dictionary.
 //  Allow the possibility to load fields from files
@@ -116,7 +123,7 @@ extendedForces::extendedForces
     ,
     const bool loadFromFiles
     #endif
-    #if OF_VERSION>=010700 && OF_VERSION<=060000 //not (defined(OF16ext)||defined(OFdev)||defined(OFesi1806))
+    #if OF_VERSION>=010700 && OF_VERSION<=060000
     ,
     const bool readFields
     #endif
@@ -129,10 +136,11 @@ extendedForces::extendedForces
 #if OF_VERSION<040000 //not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
       , loadFromFiles
 #endif
-#if OF_VERSION>=010700 && OF_VERSION<=060000 //not (defined(OF16ext)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=010700 && OF_VERSION<=060000
 	  , readFields
 #endif
 	),
+  forceSource(name),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   if (maskFieldName_!="")
@@ -140,7 +148,9 @@ extendedForces::extendedForces
   createFields();
 }
 
-#if OF_VERSION>=010700 && OF_VERSION<040000 //!(defined(OF16ext)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+
+
+#if OF_VERSION>=010700 && OF_VERSION<040000
 //- Construct from components
 extendedForces::extendedForces
 (
@@ -155,18 +165,17 @@ extendedForces::extendedForces
     const coordinateSystem& coordSys
 )
 : forces(name, obr, patchSet, pName, UName, rhoName, rhoInf, pRef, coordSys),
+  forceSource(name),
   maskFieldName_("")
 {
   createFields();
 }
 #endif
 
-//- Destructor
-extendedForces::~extendedForces()
-{
-}
 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+
+
+#if OF_VERSION>=040000
 bool
 #else
 void 
@@ -181,7 +190,7 @@ extendedForces::execute()
   initialise();
 #endif
   
-#if OF_VERSION<040000 //not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<040000
   if (!active_)
   {
       return;
@@ -231,7 +240,7 @@ extendedForces::execute()
             = tdevRhoReff().boundaryField()[patchI];
 
         UNIOF_BOUNDARY_NONCONST(*pressureForce_)[patchI]
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
         =
 #else
         ==
@@ -241,7 +250,7 @@ extendedForces::execute()
         );
 
         UNIOF_BOUNDARY_NONCONST(*viscousForce_)[patchI]
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
         =
 #else
         ==
@@ -255,11 +264,13 @@ extendedForces::execute()
             vectorField Md
             (
                 mesh.C().boundaryField()[patchI] -
-      #if defined(OF_FORK_extend) //def OF16ext
+#if defined(OF_FORK_extend)
                   CofR_
-      #else
+#elif (OF_VERSION>=060505)
+                  coordSysPtr_().origin()
+#else
                   coordSys_.origin()
-      #endif
+#endif
             );
 
             vectorField fN
@@ -295,34 +306,36 @@ extendedForces::execute()
     Pstream::combineScatter(pr_moment_);
     Pstream::combineScatter(vi_moment_);
     Pstream::combineScatter(po_moment_);
-    
-    Info<<pr_force_<<vi_force_<<endl;
-
   }
   
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
   return true;
 #endif
 }
 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+
+
+#if OF_VERSION>=040000
 bool
 #else
 void 
 #endif 
 extendedForces::end()
 {
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
   return
 #endif    
   Foam::
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
   functionObjects::
 #endif    
   forces::end();
 }
 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+
+
+
+#if OF_VERSION>=040000
 bool
 #else
 void 
@@ -333,7 +346,7 @@ extendedForces::write()
 
   forces::write();
   
-#if OF_VERSION<040000 //not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION<040000
   if (!active_)
   {
       return;
@@ -369,7 +382,7 @@ extendedForces::write()
             mkDir(outdir);
 
             // Open new file at start up
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
             maskedForceFile_.reset(new OFstream(outdir/"force.dat"));
             maskedForceFile2_.reset(new OFstream(outdir/"moment.dat"));
 #else
@@ -379,15 +392,15 @@ extendedForces::write()
     }
     
     if (Pstream::master()) {
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
     maskedForceFile_() << obr_.time().value()
             << tab << (pr_force_+vi_force_)
             << tab << pr_force_
             << tab << vi_force_;
     if (porosity_)
-        {
-            maskedForceFile_()  << tab << po_force_;
-        }
+    {
+        maskedForceFile_()  << tab << po_force_;
+    }
     maskedForceFile_()  << endl;
 
     maskedForceFile2_() << obr_.time().value()
@@ -395,9 +408,9 @@ extendedForces::write()
             << tab << pr_moment_
             << tab << vi_moment_;
     if (porosity_)
-        {
-            maskedForceFile2_()  << tab << po_moment_;
-        }
+    {
+        maskedForceFile2_()  << tab << po_moment_;
+    }
     maskedForceFile2_()  << endl;
 #else
     maskedForceFile_() << obr_.time().value() << tab << '('
@@ -412,20 +425,35 @@ extendedForces::write()
    }
   }
   
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+#if OF_VERSION>=040000
   return true;
 #endif
 }
 
-#if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
+
+
+vector extendedForces::force() const
+{
+#if OF_VERSION>=017000
+    return forceEff();
+#else
+    auto fm=calcForcesMoment();
+    return fm.first().first()+fm.first().second();
+#endif
+}
+
+
+
+
+#if OF_VERSION>=040000
 
 defineTypeNameAndDebug(extendedForces, 0);
 addToRunTimeSelectionTable
 (
     functionObject,
     extendedForces,
-    dictionary
-);
+        dictionary
+        );
 
 #else
 

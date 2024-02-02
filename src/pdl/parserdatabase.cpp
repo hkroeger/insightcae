@@ -25,6 +25,27 @@ std::string extendtype(const std::string& pref, const std::string& app)
 }
 
 
+void writeVec3Constant(std::ostream & os, const arma::mat &m)
+{
+    os << "arma::mat({";
+    for (size_t i=0; i<m.n_elem; ++i)
+    {
+        if (i>0) os << ", ";
+        os << m(i);
+    }
+    os << "}).t()";
+}
+
+
+
+defineType(ParserDataBase);
+defineStaticFunctionTableWithArgs(
+    ParserDataBase,
+    insertrule, void,
+    LIST(PDLParserRuleset& ruleset),
+    LIST(ruleset)
+    );
+
 
 ParserDataBase::ParserDataBase(const std::string& d, bool h, bool e, bool n, int o)
 : description(d),
@@ -121,7 +142,7 @@ void ParserDataBase::cppWriteInsertStatement
     os<<"{ ";
     os<<"std::string key(\""<<name<<"\"); ";
     this->cppWriteCreateStatement(os, name, thisscope);
-    os<<psvarname<<".emplace(key, std::move("<<name<<")); ";
+    os<<psvarname<<".insert(key, std::move("<<name<<")); ";
     os<<"}"<<std::endl;
 }
 
@@ -138,7 +159,7 @@ void ParserDataBase::cppWriteSetStatement
     const std::string&
 ) const
 {
-    os<<varname<<"() = "<<staticname<<";"<<std::endl;
+    os<<varname<<".set("<<staticname<<");"<<std::endl;
 }
 
 /**
@@ -156,3 +177,5 @@ void ParserDataBase::cppWriteGetStatement
 {
     os<<staticname<<" = "<<varname<<"();"<<std::endl;
 }
+
+

@@ -194,7 +194,14 @@ void CompressiblePIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, O
   PIMPLE["transonic"]=p_.transonic;
   PIMPLE["rhoMin"]=p_.rhoMin;
   PIMPLE["rhoMax"]=p_.rhoMax;
-  PIMPLE["pMin"]=OFDictData::dimensionedData("pMin", OFDictData::dimension(1, -1, -2), p_.pMin);
+  if (oc.OFversion()>=655)
+  {
+    PIMPLE["pMin"]=p_.pMin;
+  }
+  else
+  {
+    PIMPLE["pMin"]=OFDictData::dimensionedData("pMin", OFDictData::dimension(1, -1, -2), p_.pMin);
+  }
 
 
 

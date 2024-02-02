@@ -44,7 +44,7 @@ protected:
 
     virtual void readConfiguration()
     {
-        SharedPathList paths;
+        auto paths = SharedPathList::global();
         for ( const bfs_path& p: boost::adaptors::reverse(paths) ) // reverse: start with global, then per-user to possibly overwrite global
         {
             if ( exists(p) && is_directory ( p ) )
@@ -120,7 +120,7 @@ public:
 
     boost::filesystem::path firstWritableLocation() const
     {
-        return insight::SharedPathList()
+        return insight::SharedPathList::global()
                 .findFirstWritableLocation( configFileName_ );
     }
 
@@ -186,7 +186,9 @@ protected:
         {
             defaultLabel_=dfl->value();
             if (this->find(defaultLabel_)==this->end())
+            {
                 throw insight::Exception("The default label \""+defaultLabel_+"\" does not exist!");
+            }
         }
         else
         {

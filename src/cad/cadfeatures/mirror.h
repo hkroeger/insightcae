@@ -44,26 +44,23 @@ protected:
     Mirror ( FeaturePtr m1, DatumPtr pl );
     Mirror ( FeaturePtr m1, Mirror::Shortcut s );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
 
     declareType ( "Mirror" );
-    Mirror ();
 
-    static FeaturePtr create ( FeaturePtr m1, DatumPtr pl );
-    static FeaturePtr create_short ( FeaturePtr m1, Mirror::Shortcut s );
+    CREATE_FUNCTION(Mirror);
 
-    
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
-    virtual bool isTransformationFeature() const
+    bool isTransformationFeature() const override
     {
         return true;
     }
-    virtual gp_Trsf transformation() const;
+    gp_Trsf transformation() const override;
 };
 
 

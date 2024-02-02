@@ -27,13 +27,11 @@ protected:
 
 public:
     declareType ( "CutUp" );
-    CutUp ();
 
-    static FeaturePtr create ( FeaturePtr model, VectorPtr n, ScalarPtr t, Clips clips );
+    CREATE_FUNCTION(CutUp);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 } // namespace cad

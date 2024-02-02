@@ -19,6 +19,8 @@
 
 #include "arc.h"
 #include "base/boost_include.h"
+#include "base/translations.h"
+
 #include <boost/spirit/include/qi.hpp>
 
 #ifndef Q_MOC_RUN
@@ -59,7 +61,10 @@ namespace cad
     
     
 defineType(Arc);
-addToFactoryTable(Feature, Arc);
+//addToFactoryTable(Feature, Arc);
+addToStaticFunctionTable(Feature, Arc, insertrule);
+addToStaticFunctionTable(Feature, Arc, ruleDocumentation);
+
 
 size_t Arc::calcHash() const
 {
@@ -71,31 +76,24 @@ size_t Arc::calcHash() const
   return h.getHash();
 }
 
-Arc::Arc()
-: Feature()
-{
-}
 
 
 
 
 void Arc::build()
 {
-  Handle_Geom_TrimmedCurve crv=GC_MakeArcOfCircle(to_Pnt(*p0_), to_Vec(*p0tang_), to_Pnt(*p1_));
+  Handle_Geom_TrimmedCurve crv =
+      GC_MakeArcOfCircle(
+      to_Pnt(*p0_),
+      to_Vec(*p0tang_),
+      to_Pnt(*p1_) );
+
   setShape(BRepBuilderAPI_MakeEdge(crv));
   
-  gp_Pnt p;
-  gp_Vec v;
-  crv->D1(crv->FirstParameter(), p, v);
-  refpoints_["p0"]=vec3(p);
-  refvectors_["et0"]=vec3(v);
-  crv->D1(crv->LastParameter(), p, v);
-  refpoints_["p1"]=vec3(p);
-  refvectors_["et1"]=vec3(v);
-
   auto c = Handle_Geom_Circle::DownCast(crv->BasisCurve())->Circ();
   refpoints_["center"]=vec3(c.Location());
   refvalues_["D"]=c.Radius()*2.;
+  refvectors_["normal"]=vec3(c.Axis().Direction());
 }
 
 
@@ -103,16 +101,9 @@ void Arc::build()
 
 Arc::Arc(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
 : p0_(p0), p0tang_(p0tang), p1_(p1)
-{
-}
+{}
 
 
-
-
-FeaturePtr Arc::create(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
-{
-    return FeaturePtr(new Arc(p0, p0tang, p1));
-}
 
 
 
@@ -141,52 +132,40 @@ FeaturePtr Arc::create(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
  * * "et1": tangent vector at p1
  */
 
-void Arc::insertrule(parser::ISCADParser& ruleset) const
+
+void Arc::insertrule(parser::ISCADParser& ruleset)
 {
   using boost::spirit::repository::qi::iter_pos;
-  
+
   ruleset.modelstepFunctionRules.add
   (
-    "Arc",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    "Arc",
+          std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
-	 [ qi::_val = phx::bind(&Arc::create, qi::_1, qi::_2, qi::_3) ]
-      
-    ))
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' )
+                  [ qi::_val = phx::bind(&Arc::create<VectorPtr, VectorPtr, VectorPtr>, qi::_1, qi::_2, qi::_3) ]
+
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Arc::ruleDocumentation() const
+FeatureCmdInfoList Arc::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Arc",
             "( <vector:p0>, <vector:et0>, <vector:p1> )",
-            "Creates an arc between point p0 and p1. At point p0, the arc is tangent to vector et0."
+          _("Creates an arc between point p0 and p1. At point p0, the arc is tangent to vector et0.")
         )
-    );
-}
-
-
-bool Arc::isSingleEdge() const
-{
-    return true;
+  };
 }
 
 
 
-
-
-bool Arc::isSingleCloseWire() const
-{
-  return false;
-}
 
 
 
@@ -200,7 +179,9 @@ bool Arc::isSingleOpenWire() const
 
 
 defineType(Arc3P);
-addToFactoryTable(Feature, Arc3P);
+//addToFactoryTable(Feature, Arc3P);
+addToStaticFunctionTable(Feature, Arc3P, insertrule);
+addToStaticFunctionTable(Feature, Arc3P, ruleDocumentation);
 
 
 size_t Arc3P::calcHash() const
@@ -214,11 +195,6 @@ size_t Arc3P::calcHash() const
 }
 
 
-Arc3P::Arc3P()
-: Feature()
-{
-}
-
 
 
 
@@ -227,19 +203,11 @@ void Arc3P::build()
   Handle_Geom_TrimmedCurve crv=GC_MakeArcOfCircle(to_Pnt(*p0_), to_Pnt(*p1_), to_Pnt(*pm_));
   
   setShape(BRepBuilderAPI_MakeEdge(crv));
-  
-  gp_Pnt p;
-  gp_Vec v;
-  crv->D1(crv->FirstParameter(), p, v);
-  refpoints_["p0"]=vec3(p);
-  refvectors_["et0"]=vec3(v);
-  crv->D1(crv->LastParameter(), p, v);
-  refpoints_["p1"]=vec3(p);
-  refvectors_["et1"]=vec3(v);
 
   auto c = Handle_Geom_Circle::DownCast(crv->BasisCurve())->Circ();
   refpoints_["center"]=vec3(c.Location());
   refvalues_["D"]=c.Radius()*2.;
+  refvectors_["normal"]=vec3(c.Axis().Direction());
 }
 
 
@@ -247,22 +215,14 @@ void Arc3P::build()
 
 Arc3P::Arc3P(VectorPtr p0, VectorPtr pm, VectorPtr p1)
 : p0_(p0), pm_(pm), p1_(p1)
-{
-}
-
-
-
-
-FeaturePtr Arc3P::create(VectorPtr p0, VectorPtr pm, VectorPtr p1)
-{
-    return FeaturePtr(new Arc3P(p0, pm, p1));
-}
+{}
 
 
 
 
 
-void Arc3P::insertrule(parser::ISCADParser& ruleset) const
+
+void Arc3P::insertrule(parser::ISCADParser& ruleset)
 {
   using boost::spirit::repository::qi::iter_pos;
   
@@ -271,8 +231,8 @@ void Arc3P::insertrule(parser::ISCADParser& ruleset) const
     "Arc3P",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	 [ qi::_val = phx::bind(&Arc3P::create, qi::_1, qi::_2, qi::_3) ]
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' )
+                  [ qi::_val = phx::bind(&Arc3P::create<VectorPtr, VectorPtr, VectorPtr>, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );
@@ -281,32 +241,18 @@ void Arc3P::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList Arc3P::ruleDocumentation() const
+FeatureCmdInfoList Arc3P::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Arc3P",
             "( <vector:p0>, <vector:pm>, <vector:p1> )",
-            "Creates an arc between point p0 and p1 through intermediate point pm."
+          _("Creates an arc between point p0 and p1 through intermediate point pm.")
         )
-    );
+  };
 }
 
-
-
-bool Arc3P::isSingleEdge() const
-{
-    return true;
-}
-
-
-
-bool Arc3P::isSingleCloseWire() const
-{
-  return false;
-}
 
 
 

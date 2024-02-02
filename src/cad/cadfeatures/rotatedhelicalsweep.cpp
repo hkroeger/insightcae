@@ -21,6 +21,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -35,7 +37,11 @@ namespace cad {
 
 
 defineType(RotatedHelicalSweep);
-addToFactoryTable(Feature, RotatedHelicalSweep);
+//addToFactoryTable(Feature, RotatedHelicalSweep);
+addToStaticFunctionTable(Feature, RotatedHelicalSweep, insertrule);
+//addToStaticFunctionTable(Feature, RotatedHelicalSweep, ruleDocumentation);
+
+
 
 size_t RotatedHelicalSweep::calcHash() const
 {
@@ -50,8 +56,6 @@ size_t RotatedHelicalSweep::calcHash() const
 }
 
 
-RotatedHelicalSweep::RotatedHelicalSweep(): Feature()
-{}
 
 
 TopoDS_Shape makeRotatedHelicalSweep(const Feature& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
@@ -127,22 +131,24 @@ void RotatedHelicalSweep::build()
   setShape(makeRotatedHelicalSweep(*sk_, p0_->value(), axis_->value(), P_->value(), revoffset_->value()));
 }
 
-void RotatedHelicalSweep::insertrule(parser::ISCADParser& ruleset) const
+void RotatedHelicalSweep::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "RotatedHelicalSweep",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' 
 	    >> ruleset.r_solidmodel_expression >> ',' 
 	    >> ruleset.r_vectorExpression >> ',' 
 	    >> ruleset.r_vectorExpression >> ',' 
 	    >> ruleset.r_scalarExpression >> 
-	    ((  ',' >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0))) >> ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<RotatedHelicalSweep>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+        ((  ',' >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0))) >> ')' )
+                  [ qi::_val = phx::bind(
+                       &RotatedHelicalSweep::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       
-    ))
+    )
   );
 }
 

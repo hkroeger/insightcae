@@ -37,21 +37,19 @@ class Projected
 
     Projected ( FeaturePtr source, FeaturePtr target, VectorPtr dir );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Projected" );
-    Projected ();
 
-    static FeaturePtr create ( FeaturePtr source, FeaturePtr target, VectorPtr dir );
+    CREATE_FUNCTION(Projected);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
     
-    virtual bool isSingleClosedWire() const;
-    virtual bool isSingleOpenWire() const;
+    bool isSingleClosedWire() const override;
+    bool isSingleOpenWire() const override;
 };
 
 

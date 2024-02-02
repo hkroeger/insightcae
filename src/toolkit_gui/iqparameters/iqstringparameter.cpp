@@ -6,6 +6,7 @@
 
 #include "iqstringparameter.h"
 #include "iqparametersetmodel.h"
+#include "qtextensions.h"
 
 defineType(IQStringParameter);
 addToFactoryTable(IQParameter, IQStringParameter);
@@ -13,11 +14,12 @@ addToFactoryTable(IQParameter, IQStringParameter);
 IQStringParameter::IQStringParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -31,11 +33,13 @@ QString IQStringParameter::valueText() const
 
 
 
-QVBoxLayout* IQStringParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQStringParameter::populateEditControls(
+        QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto *lineEdit=new QLineEdit(editControlsContainer);
@@ -47,17 +51,30 @@ QVBoxLayout* IQStringParameter::populateEditControls(IQParameterSetModel* model,
   QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
   layout->addWidget(apply);
 
-  layout->addStretch();
 
   auto applyFunction = [=]()
   {
-    auto &p = dynamic_cast<insight::StringParameter&>(model->parameterRef(index));
-    p()=lineEdit->text().toStdString();
-    model->notifyParameterChange(index);
+      auto &p = dynamic_cast<insight::StringParameter&>(this->parameterRef());
+      p.set(lineEdit->text().toStdString());
+//      model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
+
+  // handle external value change
+  auto &p = dynamic_cast<insight::StringParameter&>(this->parameterRef());
+  ::disconnectAtEOL(
+      layout,
+      p.valueChanged.connect(
+          [=]()
+          {
+              auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
+              QSignalBlocker sb(lineEdit);
+              lineEdit->setText(valueText());
+          }
+          )
+      );
 
   return layout;
 }

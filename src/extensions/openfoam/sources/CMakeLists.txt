@@ -1,5 +1,7 @@
 
 add_subdirectory(extendedRigidBodyMotion)
+add_subdirectory(extendedRigidBodyDynamics)
 add_subdirectory(constantPressureGradient)
+add_subdirectory(enforceFarFieldVelocity)
 add_subdirectory(limitField)
 add_subdirectory(SRFoption)

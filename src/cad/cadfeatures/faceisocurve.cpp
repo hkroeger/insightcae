@@ -3,6 +3,7 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #include "Adaptor3d_IsoCurve.hxx"
 #include "GeomAPI_Interpolate.hxx"
@@ -25,8 +26,9 @@ namespace cad
 
 
 defineType(FaceIsoCurve);
-addToFactoryTable(Feature, FaceIsoCurve);
-
+//addToFactoryTable(Feature, FaceIsoCurve);
+addToStaticFunctionTable(Feature, FaceIsoCurve, insertrule);
+addToStaticFunctionTable(Feature, FaceIsoCurve, ruleDocumentation);
 
 
 size_t FaceIsoCurve::calcHash() const
@@ -40,10 +42,6 @@ size_t FaceIsoCurve::calcHash() const
 }
 
 
-FaceIsoCurve::FaceIsoCurve()
-: Feature()
-{
-}
 
 
 
@@ -55,12 +53,6 @@ FaceIsoCurve::FaceIsoCurve(FeatureSetPtr faces, UV coord, ScalarPtr iso_value)
 
 
 
-FeaturePtr FaceIsoCurve::create ( FeatureSetPtr faces, UV coord, ScalarPtr iso_value )
-{
-    return FeaturePtr(new FaceIsoCurve(faces, coord, iso_value));
-}
-
-
 
 void FaceIsoCurve::build()
 {
@@ -70,7 +62,7 @@ void FaceIsoCurve::build()
 
   for (const auto i_f: faces_->data())
   {
-    cout<<"Generating iso curve on facce #"<<i_f<<endl;
+      insight::dbg()<<"Generating iso curve on facce #"<<i_f<<endl;
 
     TopoDS_Face aFace = faces_->model()->face(i_f);
 
@@ -106,38 +98,39 @@ void FaceIsoCurve::build()
 
 
 
-void FaceIsoCurve::insertrule(parser::ISCADParser& ruleset) const
+void FaceIsoCurve::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "FaceIsoCurve",
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_faceFeaturesExpression >> ','
           >> ( ( qi::lit("u")>>qi::attr(UV::U) ) | ( qi::lit("v")>>qi::attr(UV::V) ) )  >> ','
           >> ruleset.r_scalarExpression >> ')' )
-        [ qi::_val = phx::bind(&FaceIsoCurve::create, qi::_1, qi::_2, qi::_3) ]
+        [ qi::_val = phx::bind(
+                      &FaceIsoCurve::create<FeatureSetPtr, UV, ScalarPtr>,
+                      qi::_1, qi::_2, qi::_3) ]
 
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList FaceIsoCurve::ruleDocumentation() const
+FeatureCmdInfoList FaceIsoCurve::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "FaceIsoCurve",
 
             "( <faceSelection>, u|v, <scalar:isovalue> )",
 
-            "Creates a curve in all selected faces along a constant parameter value."
+          _("Creates a curve in all selected faces along a constant parameter value.")
         )
-    );
+    };
 }
 
 

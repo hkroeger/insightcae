@@ -22,6 +22,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "gp_Quaternion.hxx"
 #include "base/tools.h"
+#include "base/translations.h"
 
 //#include <dlib/optimization.h>
 
@@ -43,8 +44,9 @@ namespace cad {
     
 
 defineType(RefPlace);
-addToFactoryTable(Feature, RefPlace);
-
+//addToFactoryTable(Feature, RefPlace);
+addToStaticFunctionTable(Feature, RefPlace, insertrule);
+addToStaticFunctionTable(Feature, RefPlace, ruleDocumentation);
 
 
 const double dist_scale=1e-3;
@@ -244,9 +246,6 @@ size_t RefPlace::calcHash() const
 }
 
 
-RefPlace::RefPlace(): DerivedFeature()
-{}
-
 
 
 
@@ -267,19 +266,6 @@ RefPlace::RefPlace(FeaturePtr m, ConditionList conditions)
 
 
 
-
-FeaturePtr RefPlace::create_fix ( FeaturePtr m, const gp_Ax2& cs )
-{
-    return FeaturePtr(new RefPlace(m, cs));
-}
-
-
-
-
-FeaturePtr RefPlace::create ( FeaturePtr m, ConditionList conditions )
-{
-    return FeaturePtr(new RefPlace(m, conditions));
-}
 
 
 
@@ -398,17 +384,17 @@ void RefPlace::build()
 
 
 
-void RefPlace::insertrule(parser::ISCADParser& ruleset) const
+void RefPlace::insertrule(parser::ISCADParser& ruleset)
 {
 
-    typedef qi::rule<std::string::iterator, ConditionPtr(), insight::cad::parser::skip_grammar > ConditionRule;
-    typedef insight::cad::parser::AddRuleContainer<ConditionRule> ConditionRuleContainer;
+    typedef qi::rule<
+        std::string::iterator,
+        ConditionPtr(),
+        insight::cad::parser::skip_grammar
+        > ConditionRule;
 
-    ruleset.additionalrules_.push_back
-    (
-        new ConditionRuleContainer(new ConditionRule)
-    );
-    ConditionRule& r_condition = *(dynamic_cast<ConditionRuleContainer&>(ruleset.additionalrules_.back()));
+    ConditionRule& r_condition = ruleset.addAdditionalRule(
+        std::make_shared<ConditionRule>());
 
     r_condition =
         (ruleset.r_vectorExpression >> qi::lit("==") >> ruleset.r_vectorExpression  )
@@ -448,7 +434,9 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
                     ( '(' >> ruleset.r_solidmodel_expression >>
                       ',' >> r_condition % ','  >>
                       ')' )
-                    [ qi::_val = phx::bind(&RefPlace::create, qi::_1, qi::_2) ]
+                    [ qi::_val = phx::bind(
+                         &RefPlace::create<FeaturePtr, ConditionList>,
+                         qi::_1, qi::_2) ]
 
                 ))
     );
@@ -457,15 +445,14 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList RefPlace::ruleDocumentation() const
+FeatureCmdInfoList RefPlace::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "RefPlace",
             "( <feature:base>, [ <placement condition>, ...] )",
-            "Places the feature base by solving a set of placement conditions numerically (experimental).\n"
+            _("Places the feature base by solving a set of placement conditions numerically (experimental).\n"
             "Available placement conditions are:\n"
             " - <vector> == <vector> (same point coordinates or vector components)\n"
             " - <vector> parallel <vector> (same vector orientation))\n"
@@ -473,9 +460,9 @@ FeatureCmdInfoList RefPlace::ruleDocumentation() const
             " - <datum> inclined <datum> <scalar>\n"
             " - <datum> coaxial <datum> [inverted]\n"
             " - <vector> inplane <datum>\n"
-            " - <vector> onaxis <datum>\n"
+              " - <vector> onaxis <datum>\n")
         )
-    );
+    };
 }
 
 

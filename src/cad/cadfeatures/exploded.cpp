@@ -22,6 +22,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "datum.h"
+#include "base/translations.h"
+
 
 #include <limits.h>
 
@@ -39,7 +41,11 @@ namespace cad
     
     
 defineType(Exploded);
-addToFactoryTable(Feature, Exploded);
+//addToFactoryTable(Feature, Exploded);
+addToStaticFunctionTable(Feature, Exploded, insertrule);
+addToStaticFunctionTable(Feature, Exploded, ruleDocumentation);
+
+
 
 
 size_t Exploded::calcHash() const
@@ -57,10 +63,6 @@ size_t Exploded::calcHash() const
   return h.getHash();
 }
 
-
-Exploded::Exploded()
-: Feature()
-{}
 
 
 
@@ -96,19 +98,6 @@ Exploded::Exploded( DatumPtr axis, FeaturePtr assy)
 
 
 
-FeaturePtr Exploded::create( DatumPtr axis, const ExplosionComponentList& m1 )
-{
-    return FeaturePtr(new Exploded(axis, m1));
-}
-
-
-    
-FeaturePtr Exploded::create_assy( DatumPtr axis, FeaturePtr assy )
-{
-    return FeaturePtr(new Exploded(axis, assy));
-}
-    
-    
     
 void Exploded::build()
 {
@@ -119,7 +108,7 @@ void Exploded::build()
     if (components_.size()>0)
     {
       if (!axis_->providesAxisReference())
-	throw insight::Exception("Exploded: datum does not provide axis reference!");
+      throw insight::Exception(_("Exploded: datum does not provide axis reference!"));
       
       gp_Ax1 ax=axis_->axis();
       arma::mat p0=vec3(ax.Location()), dir=vec3(ax.Direction());
@@ -176,12 +165,12 @@ void Exploded::build()
 
 
 
-void Exploded::insertrule(parser::ISCADParser& ruleset) const
+void Exploded::insertrule(parser::ISCADParser& ruleset)
 {
     ruleset.modelstepFunctionRules.add
     (
         "Exploded",
-        typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
                       '(' 
                        >> ( 
                         (
@@ -193,32 +182,36 @@ void Exploded::insertrule(parser::ISCADParser& ruleset) const
                             >> (ruleset.r_scalarExpression|qi::attr(scalarconst(1.))) 
 			   ) % ',' )
 			 >> ',' >> ruleset.r_datumExpression >> ')' )
-                      [ qi::_val = phx::bind(&Exploded::create, qi::_2, qi::_1) ]
+                      [ qi::_val = phx::bind(
+                             &Exploded::create<DatumPtr, const ExplosionComponentList&>,
+                             qi::_2, qi::_1) ]
+
                         |
                         
                         (qi::lit("assembly") >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' )
-                      [ qi::_val = phx::bind(&Exploded::create_assy, qi::_2, qi::_1) ]
+                      [ qi::_val = phx::bind(
+                             &Exploded::create<DatumPtr, FeaturePtr>,
+                             qi::_2, qi::_1) ]
                      ) 
-                ))
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList Exploded::ruleDocumentation() const
+FeatureCmdInfoList Exploded::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Exploded",
          
             "( <datum:refaxis>, <feature:c0> [, ..., <feature:cn> ] )",
-         
-            "Creates an exploded state from the supplied list of features. The components are translated along the direction of refaxis."
+
+            _("Creates an exploded state from the supplied list of features. The components are translated along the direction of refaxis.")
         )
-    );
+    };
 }
 
 

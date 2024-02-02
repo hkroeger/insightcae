@@ -45,6 +45,27 @@
 namespace Foam
 {
 
+
+#if (OF_VERSION<060505)
+template
+<
+    class Face,
+    template<class> class FaceList,
+    class PointField
+>
+using UniPrimitivePatch = PrimitivePatch<face, FaceList, PointField, point>;
+#else
+template
+<
+    class Face,
+    template<class> class FaceList,
+    class PointField
+>
+using UniPrimitivePatch = PrimitivePatch<FaceList<Face>, PointField>;
+#endif
+
+
+
 label reduced(label l);
   
   
@@ -159,26 +180,27 @@ public:
 };
 
 
+
 class globalPatch
-: public PrimitivePatch<face, List, pointField>
+: public UniPrimitivePatch<face, List, pointField>
 {
   
   labelList procOfs_;
   label nfaces_;
 
+public:
   template
   <
       class Face,
       template<class> class FaceList,
-      class PointField,
-      class PointType=point
+      class PointField
   >
-  autoPtr<PrimitivePatch<face, List, pointField> > createGlobalPatch(
-          const PrimitivePatch<Face, FaceList, PointField, PointType>& patch,
+  static autoPtr<UniPrimitivePatch<face, List, pointField> > createGlobalPatch(
+          const UniPrimitivePatch<Face, FaceList, PointField>& patch,
           const polyMesh* mesh
           )
   {
-      autoPtr<PrimitivePatch<face, List, pointField> > result;
+      autoPtr<UniPrimitivePatch<face, List, pointField> > result;
 
       if (mesh)
       {
@@ -252,7 +274,8 @@ class globalPatch
 
               result.reset
                       (
-                          new PrimitivePatch<face, List, pointField>(globalFaces, globalPoints)
+                          new UniPrimitivePatch<face, List, pointField>(
+                              globalFaces, globalPoints )
                           );
 
               return result;
@@ -261,28 +284,23 @@ class globalPatch
 
       result.reset
               (
-                  new PrimitivePatch<face, List, pointField>(patch.localFaces(), patch.localPoints())
+                  new UniPrimitivePatch<face, List, pointField>(
+                      patch.localFaces(), patch.localPoints() )
                   );
       return result;
   }
 
 public:
 
-  template
-  <
-      class Face,
-      template<class> class FaceList,
-      class PointField,
-      class PointType=point
-  >
+
   globalPatch(
-          const PrimitivePatch<Face, FaceList, PointField, PointType>& patch,
-          const polyMesh* mesh )
-  : PrimitivePatch<face, List, pointField>(createGlobalPatch(patch, mesh)()),
+          const UniPrimitivePatch<face, List, pointField>& patch,
+          label localPatchSize )
+  : UniPrimitivePatch<face, List, pointField>(patch),
     procOfs_(Pstream::nProcs(), -1)
   {
     labelList nfaces(Pstream::nProcs());
-    nfaces[Pstream::myProcNo()]=patch.size();
+    nfaces[Pstream::myProcNo()]=localPatchSize;
 
     Pstream::gatherList(nfaces);
     Pstream::scatterList(nfaces);

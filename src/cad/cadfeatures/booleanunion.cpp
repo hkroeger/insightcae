@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -38,8 +39,9 @@ namespace cad
     
     
 defineType(BooleanUnion);
-addToFactoryTable(Feature, BooleanUnion);
-
+//addToFactoryTable(Feature, BooleanUnion);
+addToStaticFunctionTable(Feature, BooleanUnion, insertrule);
+addToStaticFunctionTable(Feature, BooleanUnion, ruleDocumentation);
 
 size_t BooleanUnion::calcHash() const
 {
@@ -50,10 +52,6 @@ size_t BooleanUnion::calcHash() const
   return h.getHash();
 }
 
-
-BooleanUnion::BooleanUnion()
-: DerivedFeature()
-{}
 
 
 
@@ -78,19 +76,6 @@ BooleanUnion::BooleanUnion(FeaturePtr m1, FeaturePtr m2)
 
 
 
-
-FeaturePtr BooleanUnion::create_single(FeaturePtr m1)
-{
-    return FeaturePtr(new BooleanUnion(m1));
-}
-
-
-
-
-FeaturePtr BooleanUnion::create(FeaturePtr m1, FeaturePtr m2)
-{
-    return FeaturePtr(new BooleanUnion(m1, m2));
-}
      
      
      
@@ -113,7 +98,7 @@ void BooleanUnion::build()
                 throw CADException
                 (
                     shared_from_this(),
-                    "could not perform fuse operation."
+                    _("could not perform fuse operation.")
                 );
             }
             setShape(fuser.Shape());
@@ -147,7 +132,7 @@ void BooleanUnion::build()
                     throw CADException
                     (
                         shared_from_this(),
-                        "could not perform merge operation."
+                        _("could not perform merge operation.")
                     );
                 }                
                 res=fuser.Shape();
@@ -157,7 +142,7 @@ void BooleanUnion::build()
     } 
     else
     {
-        throw CADException(shared_from_this(), "no valid base feature for fuse operation provided.");
+        throw CADException(shared_from_this(), _("no valid base feature for fuse operation provided."));
     }
 }
 
@@ -179,17 +164,15 @@ void BooleanUnion::build()
   * MergeSolids( <feature expression: feat> ) : feature
   * ~~~~
   */
-void BooleanUnion::insertrule(parser::ISCADParser& ruleset) const
+void BooleanUnion::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
-    "MergeSolids",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-
-    ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
-      [ qi::_val = phx::bind(&BooleanUnion::create_single, qi::_1) ]
-      
-    ))
+    "MergeSolids",
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
+     ( '(' > ruleset.r_solidmodel_expression > ')' )
+       [ qi::_val = phx::bind(&BooleanUnion::create<FeaturePtr>, qi::_1) ]
+    )
   );
 }
 
@@ -197,19 +180,18 @@ void BooleanUnion::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList BooleanUnion::ruleDocumentation() const
+FeatureCmdInfoList BooleanUnion::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "MergeSolids",
          
             "( <feature> )",
-         
-            "Creates a boolean union of all (possibly intersecting) volumes of the given feature."
+
+          _("Creates a boolean union of all (possibly intersecting) volumes of the given feature.")
         )
-    );
+  };
 }
 
 void BooleanUnion::operator=(const BooleanUnion& o)

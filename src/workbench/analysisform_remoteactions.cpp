@@ -1,3 +1,23 @@
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+//  *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
+
 #include "analysisform.h"
 #include "ui_analysisform.h"
 
@@ -10,6 +30,8 @@
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
 #endif
+
+#include "base/translations.h"
 
 
 #include "openfoam/solveroutputanalyzer.h"
@@ -60,9 +82,9 @@ void AnalysisForm::connectRemoteActions()
             else
             {
               QMessageBox::critical(
-                    this, "Not possible",
-                    "There is currently a remote analysis running.\n"
-                    "Please terminate it first!");
+                    this, _("Not possible"),
+                    _("There is currently a remote analysis running.\n"
+                      "Please terminate it first!") );
             }
           }
   );
@@ -78,7 +100,7 @@ void AnalysisForm::upload()
 
   remoteExecutionConfiguration()->commit( localCaseDirectory() );
 
-  auto *rstr = new insight::RunSyncToRemote( remoteExecutionConfiguration()->exeConfig() );
+  auto *rstr = new insight::RunSyncToRemote( remoteExecutionConfiguration()->exeConfig(), false );
 
   connect(rstr, &insight::RunSyncToRemote::progressValueChanged,
           progressbar_, &QProgressBar::setValue);
@@ -94,14 +116,14 @@ void AnalysisForm::upload()
           [&]()
           {
             progressbar_->setHidden(true);
-            Q_EMIT statusMessage("Transfer to remote location finished");
+      Q_EMIT statusMessage(_("Transfer to remote location finished"));
           }
   );
   connect(rstr, &insight::RunSyncToRemote::transferFinished,
           rstr, &QObject::deleteLater);
 
   progressbar_->setHidden(false);
-  Q_EMIT statusMessage("Transfer to remote location started");
+  Q_EMIT statusMessage(_("Transfer to remote location started"));
 
   rstr->start();
   rstr->wait();
@@ -127,7 +149,7 @@ void AnalysisForm::resumeRemoteRun()
 {
 #ifdef HAVE_WT
   if (currentWorkbenchAction_)
-    throw insight::Exception("Internal error: there is an action running currently!");
+      throw insight::Exception(_("Internal error: there is an action running currently!"));
 
   remoteExecutionConfiguration()->commit( localCaseDirectory() );
   currentWorkbenchAction_.reset( RemoteRun::create(this, true) );
@@ -145,7 +167,7 @@ void AnalysisForm::download()
 
 void AnalysisForm::downloadFromRemote(std::function<void()> completionCallback)
 {
-  auto* rstl = new insight::RunSyncToLocal( remoteExecutionConfiguration()->exeConfig() );
+  auto* rstl = new insight::RunSyncToLocal( remoteExecutionConfiguration()->exeConfig(), false );
 
   connect(rstl, &insight::RunSyncToLocal::progressValueChanged,
           progressbar_, &QProgressBar::setValue);
@@ -163,13 +185,13 @@ void AnalysisForm::downloadFromRemote(std::function<void()> completionCallback)
           [this,completionCallback]()
           {
             progressbar_->setHidden(true);
-            Q_EMIT statusMessage("Transfer from remote location to local directory finished");
+      Q_EMIT statusMessage(_("Transfer from remote location to local directory finished"));
             completionCallback();
           }
   );
 
   progressbar_->setHidden(false);
-  Q_EMIT statusMessage("Transfer from remote location to local directory started");
+  Q_EMIT statusMessage(_("Transfer from remote location to local directory started"));
 
   rstl->start();
   rstl->wait();

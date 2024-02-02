@@ -3,6 +3,7 @@
 
 #include "openfoam/caseelements/numerics/fvnumerics.h"
 #include "openfoam/caseelements/numerics/pimplesettings.h"
+#include "openfoam/caseelements/numerics/oversetconfiguration.h"
 #include "interfoamnumerics__interFoamNumerics__Parameters_headers.h"
 
 namespace insight {
@@ -45,6 +46,16 @@ icAlpha = double 0 "[-] Isotropic interface compression coefficient"
 
 snGradLowQualityLimiterReduction = double 0.66 "Reduction of limiter coefficient on low quality faces"
 
+overset = selectablesubset {{
+ yes
+ includedset "OversetConfiguration::Parameters" ""
+
+ no set {}
+}} no "Whether to configure an overset solver or not"
+
+phase1Name = string "phase1" "Name of the first phase (alpha=1)"
+phase2Name = string "phase2" "Name of the second phase (alpha=0)"
+
 <<<PARAMETERSET
 */
 
@@ -52,6 +63,7 @@ protected:
     Parameters p_;
     std::string alphaname_;
 
+    std::unique_ptr<OversetConfiguration> overset_;
 
 public:
     declareType ( "interFoamNumerics" );
@@ -67,6 +79,8 @@ public:
     {
         return alphaname_;
     }
+
+    std::pair<std::string,std::string> phaseNames() const;
 };
 
 } // namespace insight

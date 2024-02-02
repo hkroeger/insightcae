@@ -3,6 +3,11 @@
 
 using namespace std;
 
+defineType(DoubleParameterParser);
+addToStaticFunctionTable(ParserDataBase, DoubleParameterParser, insertrule);
+
+
+
 DoubleParameterParser::Data::Data(double v, const std::string& d)
 : ParserDataBase(d), value(v)
 {}
@@ -29,6 +34,9 @@ std::string DoubleParameterParser::Data::cppValueRep(const std::string&, const s
 }
 
 
+
+defineType(dimensionedScalarParameterParser);
+addToStaticFunctionTable(ParserDataBase, dimensionedScalarParameterParser, insertrule);
 
 
 dimensionedScalarParameterParser::Data::Data

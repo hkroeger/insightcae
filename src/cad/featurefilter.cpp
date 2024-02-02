@@ -30,6 +30,7 @@
 #include "boost/lexical_cast.hpp"
 
 #include "cadfeature.h"
+#include "featurefilters/same.h"
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 // #define BOOST_SPIRIT_DEBUG
@@ -445,9 +446,12 @@ struct EdgeFeatureFilterExprParser
                           >> ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentEdge>(*qi::_1, qi::_2)) ]
 	|
-	( lit("isIdentical") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
+    ( (lit("isIdentical")|lit("isCongruent")) > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' )
 	  [ qi::_val = phx::construct<FilterPtr>(new_<identicalEdge>(*qi::_1)) ]
-	|
+    |
+    ( lit("isSame") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' )
+      [ qi::_val = phx::construct<FilterPtr>(new_<sameEdge>(*qi::_1)) ]
+    |
 	( lit("projectionIsCoincident") > '('
 	  > FeatureFilterExprParser<Iterator>::r_featureset > ','
 	  > FeatureFilterExprParser<Iterator>::r_mat_qty_expression > ',' // p0
@@ -543,9 +547,11 @@ struct FaceFeatureFilterExprParser
             >> ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentFace>(*qi::_1, qi::_2)) ]
 	|
-	( lit("isIdentical") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
+    ( (lit("isIdentical")|lit("isCongruent")) > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' )
 	  [ qi::_val = phx::construct<FilterPtr>(new_<identicalFace>(*qi::_1)) ]
-	|
+    |
+    ( lit("isSame") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' )
+      [ qi::_val = phx::construct<FilterPtr>(new_<sameFace>(*qi::_1)) ]	|
 	( lit("adjacentToEdges") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceAdjacentToEdges>(*qi::_1)) ]
 	|
@@ -587,7 +593,11 @@ struct SolidFeatureFilterExprParser
   SolidFeatureFilterExprParser(const FeatureSetParserArgList& extsets)
   : FeatureFilterExprParser<Iterator>(extsets)
   {
-      
+      FeatureFilterExprParser<Iterator>::r_filter_functions =
+      ( lit("isSame") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' )
+        [ qi::_val = phx::construct<FilterPtr>(new_<sameFace>(*qi::_1)) ]
+      ;
+
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
         ( lit("CoG") ) 
 	  [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::solidCoG>()) ]

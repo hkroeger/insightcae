@@ -7,31 +7,144 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 find_package(Qt5Network CONFIG REQUIRED)
+find_package(Qt5Multimedia CONFIG REQUIRED)
+find_package(Qt5MultimediaWidgets CONFIG REQUIRED)
 #find_package(Qt5Test CONFIG REQUIRED)
+find_package(OCC REQUIRED)
+find_package(VTK
+   COMPONENTS
+   vtkGUISupportQt vtkRenderingLabel
+   NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH
+   HINTS ${VTK_ONSCREEN_DIR}
+)
 
-set(toolkit_gui_SRCS 
+set(toolkit_gui_SRCS
+ qtextensions.h qtextensions.cpp
+
+ iqgroupingitemmodel.h iqgroupingitemmodel.cpp
+
+ iqvtkviewer.h iqvtkviewer.cpp
+
+ iscadmetatyperegistrator.cpp
+ iscadmetatyperegistrator.h
+
+ dialogs/defineplanedialog.h dialogs/defineplanedialog.cpp dialogs/defineplanedialog.ui
+
+ iqiscadmodelgenerator.h iqiscadmodelgenerator.cpp
+ iqiscadmodelrebuilder.h iqiscadmodelrebuilder.cpp
+ iqiscadscriptmodelgenerator.h iqiscadscriptmodelgenerator.cpp
+
+ iqcaditemmodel.h
+ iqcaditemmodel.cpp
+ iqcaditemmodel_contextmenu.cpp
+ iqcaditemmodel_featurecreation.cpp
+
+ iqpickinteractorstyle.h iqpickinteractorstyle.cpp
+
+ qoccviewwidget.h qoccviewwidget.cpp
+ iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
+ iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
+
+ iqcadmodel3dviewer/iqvtkviewerstate.h iqcadmodel3dviewer/iqvtkviewerstate.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewer_highlightitem.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewer_subshapeselection.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewer_clippingplanes.cpp
+ iqcadmodel3dviewer/viewwidgetaction.h iqcadmodel3dviewer/viewwidgetaction.cpp
+ iqcadmodel3dviewer/viewwidgetinsertids.h iqcadmodel3dviewer/viewwidgetinsertids.cpp
+ iqcadmodel3dviewer/navigationmanager.h iqcadmodel3dviewer/navigationmanager.cpp
+ iqcadmodel3dviewer/selectionlogic.h
+ iqcadmodel3dviewer/viewstate.h iqcadmodel3dviewer/viewstate.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.h iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.cpp iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.ui
+
+
+ iqvtkconstrainedsketcheditor.h iqvtkconstrainedsketcheditor.cpp
+ iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.h iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.cpp
+ iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.h iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.cpp
+ iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerplanepointbasedaction.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerplanepointbasedaction.cpp
+ iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawpoint.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawpoint.cpp
+ iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.cpp
+ iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.cpp
+ iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.h iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.cpp
+ iqvtkconstrainedsketcheditor/iqvtkconstrainedsketchentity.h iqvtkconstrainedsketcheditor/iqvtkconstrainedsketchentity.cpp
+ iqvtkconstrainedsketcheditor/iqvtkfixedpoint.h iqvtkconstrainedsketcheditor/iqvtkfixedpoint.cpp
+ iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.h iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.cpp
+ iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.h iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.cpp
+ iqvtkconstrainedsketcheditor/iqvtkpointoncurveconstraint.h iqvtkconstrainedsketcheditor/iqvtkpointoncurveconstraint.cpp
+ iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.cpp
+
+
+ iqcadtransformationcommand.h iqcadtransformationcommand.cpp
+ iqvectordirectioncommand.h iqvectordirectioncommand.cpp
+ iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
+ iqvtkkeepfixedsizecallback.h iqvtkkeepfixedsizecallback.cpp
+
+ cadfeaturetransient.cpp
+ cadfeaturetransient.h
+ pointertransient.cpp
+ pointertransient.h
+# qoccviewercontext.cpp
+# qoccviewercontext.h
+ occtwindow.cpp
+ occtwindow.h
+ occguitools.h occguitools.cpp
+
+
+ qvariableitem.cpp
+ qvariableitem.h
+ qmodelstepitem.cpp
+ qmodelstepitem.h
+ qdatumitem.cpp
+ qdatumitem.h
+ qevaluationitem.cpp
+ qevaluationitem.h
+
+ qmodeltree.cpp
+ qmodeltree.h
+
+
+ postprocactionvisualizer.h postprocactionvisualizer.cpp
+ postprocactionvisualizers/hydrostaticsvisualizer.cpp
+ postprocactionvisualizers/distancevisualizer.cpp
+ postprocactionvisualizers/anglevisualizer.cpp
+ postprocactionvisualizers/solidpropertiesvisualizer.cpp
+
+ insightcae_gui.qrc
+
     parametereditorwidget.cpp
+    iqoccparametersetdisplay.h iqoccparametersetdisplay.cpp
+    iqvtkparametersetdisplay.h iqvtkparametersetdisplay.cpp
 
-    iqremoteexecutionstate.cpp
-    iqremoteexecutionstate.h
+    iqremoteexecutionstate.h iqremoteexecutionstate.cpp
 
-    iqparametersetmodel.cpp
+    iqparametersetmodel.h iqparametersetmodel.cpp
     iqresultsetfiltermodel.h iqresultsetfiltermodel.cpp
-    iqparameter.cpp
-    iqparameters/iqintparameter.cpp
-    iqparameters/iqdoubleparameter.cpp
-    iqparameters/iqvectorparameter.cpp
-    iqparameters/iqstringparameter.cpp
-    iqparameters/iqboolparameter.cpp
-    iqparameters/iqpathparameter.cpp
-    iqparameters/iqmatrixparameter.cpp
-    iqparameters/iqdirectoryparameter.cpp
-    iqparameters/iqselectionparameter.cpp
-    iqparameters/iqarrayparameter.cpp
-    iqparameters/iqselectablesubsetparameter.cpp
-    iqparameters/iqdoublerangeparameter.cpp
-    iqparameters/iqarrayelementparameter.cpp
-    iqparameters/iqpropertylibraryselectionparameter.h iqparameters/iqpropertylibraryselectionparameter.cpp
+    iqparameter.cpp iqparameter.h
+    iqparameters/iqsubsetparameter.h iqparameters/iqsubsetparameter.cpp
+    iqparameters/iqintparameter.cpp iqparameters/iqintparameter.h
+    iqparameters/iqdoubleparameter.cpp iqparameters/iqdoubleparameter.h
+    iqparameters/iqvectorparameter.cpp iqparameters/iqvectorparameter.h
+    iqparameters/iqstringparameter.cpp iqparameters/iqstringparameter.h
+    iqparameters/iqboolparameter.cpp iqparameters/iqboolparameter.h
+    iqparameters/iqpathparameter.cpp iqparameters/iqpathparameter.h
+    iqparameters/iqmatrixparameter.cpp iqparameters/iqmatrixparameter.h
+    iqparameters/iqdirectoryparameter.cpp iqparameters/iqdirectoryparameter.h
+    iqparameters/iqselectionparameter.cpp iqparameters/iqselectionparameter.h
+    iqparameters/iqarrayparameter.cpp iqparameters/iqarrayparameter.h
+    iqparameters/iqselectablesubsetparameter.cpp iqparameters/iqselectablesubsetparameter.h
+    iqparameters/iqdoublerangeparameter.cpp iqparameters/iqdoublerangeparameter.h
+    iqparameters/iqarrayelementparameter.cpp iqparameters/iqarrayelementparameter.h
+    iqparameters/iqpropertylibraryselectionparameter.cpp iqparameters/iqpropertylibraryselectionparameter.h
+    iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
+    #iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
+    iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 
     iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
 
@@ -57,7 +170,7 @@ set(toolkit_gui_SRCS
     helpwidget.cpp helpwidget.h
     of_clean_case.cpp of_clean_case.h of_clean_case.ui
     snappyhexmesh_gui.cpp snappyhexmesh_gui.h
-    parametersetvisualizer.cpp parametersetvisualizer.h
+    cadparametersetvisualizer.cpp cadparametersetvisualizer.h
     logviewerwidget.cpp logviewerwidget.h
     graphprogressdisplayer.cpp graphprogressdisplayer.h
     progressrelay.cpp progressrelay.h
@@ -80,7 +193,6 @@ set(toolkit_gui_SRCS
 
     iqconfigureexternalprogramsdialog.h iqconfigureexternalprogramsdialog.cpp iqconfigureexternalprogramsdialog.ui
     iqglobalconfigurationmodel.h
-    iqreporttemplatesmodel.h iqreporttemplatesmodel.cpp
     iqmanagereporttemplatesdialog.h iqmanagereporttemplatesdialog.cpp iqmanagereporttemplatesdialog.ui
 
     iqsetupwsldistributionwizard.h iqsetupwsldistributionwizard.cpp iqsetupwsldistributionwizard.ui
@@ -89,22 +201,15 @@ set(toolkit_gui_SRCS
     qactionprogressdisplayerwidget.cpp qactionprogressdisplayerwidget.h
 
     iqresultsetmodel.cpp iqresultsetmodel.h
-    qresultelements/qcomment.cpp
-    qresultelements/qcomment.h
-    qresultelements/qimage.cpp
-    qresultelements/qimage.h
-    qresultelements/qchart.cpp
-    qresultelements/qchart.h
-    qresultelements/qattributeresulttable.cpp
-    qresultelements/qattributeresulttable.h
-    qresultelements/qscalarresult.cpp
-    qresultelements/qscalarresult.h
-    qresultelements/qtabularresult.cpp
-    qresultelements/qtabularresult.h
-    qresultelements/qvectorresult.cpp
-    qresultelements/qvectorresult.h
-    qresultelements/qresultsection.cpp
-    qresultelements/qresultsection.h
+    qresultelements/qcomment.cpp qresultelements/qcomment.h
+    qresultelements/qimage.cpp qresultelements/qimage.h
+    qresultelements/iqvideo.cpp qresultelements/iqvideo.h
+    qresultelements/qchart.cpp qresultelements/qchart.h
+    qresultelements/qattributeresulttable.cpp qresultelements/qattributeresulttable.h
+    qresultelements/qscalarresult.cpp qresultelements/qscalarresult.h
+    qresultelements/qtabularresult.cpp qresultelements/qtabularresult.h
+    qresultelements/qvectorresult.cpp qresultelements/qvectorresult.h
+    qresultelements/qresultsection.cpp qresultelements/qresultsection.h
 )
 
 
@@ -120,10 +225,13 @@ generate_export_header(toolkit_gui)
 target_compile_definitions(toolkit_gui PRIVATE toolkit_gui_EXPORTS)
 
 target_link_libraries(toolkit_gui
- toolkit toolkit_cad insightcad_gui toolkit_remote
- Qt5::Widgets Qt5::Charts Qt5::Network
+ toolkit toolkit_cad insightcad toolkit_remote
+ Qt5::Widgets Qt5::Charts Qt5::Network Qt5::Multimedia Qt5::MultimediaWidgets
  ${Boost_LIBRARIES}
- )
+ ${OCC_GUI_LIBRARIES}
+ ${DXFLIB_LIBRARIES}
+ ${VTK_LIBRARIES}
+)
 
 target_include_directories(toolkit_gui
   PUBLIC ${QT_INCLUDES}

@@ -44,6 +44,17 @@ SourceFiles
 #include "displacementMotionSolver.H"
 #include "rigidBodyMotion.H"
 #include "OFstream.H"
+#include "cartesianCS.H"
+
+#include "directforce.h"
+#include "patchmomentumforce.h"
+
+#include "extendedForcesFunctionObject.H"
+#include "forcesourcecombination.h"
+#include "globalcoordinatesystems.h"
+
+#include <memory>
+#include <functional>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -54,25 +65,46 @@ namespace Foam
                      Class extendedRigidBodyMeshMotion Declaration
 \*---------------------------------------------------------------------------*/
 
-class extendedRigidBodyMeshMotion
-:
-    public displacementMotionSolver
+
+class PIController
 {
-    class directThrustForce {
-    public:
-        point PoA_;
-        vector direction_;
-        scalar resistance_fraction_;
-        
-        static autoPtr<directThrustForce> New(Istream& is);
-        
-        directThrustForce(const point&, const vector&, scalar);
-        autoPtr<directThrustForce> clone() const;
+    struct Update
+    {
+        scalar t, e, integral;
     };
-    
+
+    scalar Kp_, TN_;
+    scalar integral_;
+
+    std::shared_ptr<Update> lastUpdate_;
+
+public:
+    PIController(double Kp, double TN);
+
+
+    scalar u(scalar t, scalar e);
+
+    void restoreState(const dictionary& id);
+    void saveState(dictionary& od) const;
+};
+
+
+
+
+class extendedRigidBodyMeshMotion
+: public displacementMotionSolver
+{
+
+public:
+
+
     //- Class containing the patches and point motion weighting for each body
     class bodyMesh
+            : public coordinateSystemSource
     {
+        const RBD::rigidBodyMotion& model_;
+        const polyMesh& mesh_;
+
         //- Name of the body
         const word name_;
 
@@ -94,9 +126,17 @@ class extendedRigidBodyMeshMotion
         //- Current interpolation weight
         //  (1 at patches and within di_, 0 at do_ and beyond)
         pointScalarField weight_;
+
+        autoPtr<extendedForces> forcesFO_;
         
         vector globalMotionDirection_;
-        PtrList<directThrustForce> directThrustForces_;
+
+        PtrList<extRBM::additionalForceAndMoment> additionalForces_;
+
+        autoPtr<cartesianCS> currentCoordinateSystem_;
+
+        mutable PtrList<OFstream> addForcesLog_;
+
 
     public:
 
@@ -104,11 +144,33 @@ class extendedRigidBodyMeshMotion
 
         bodyMesh
         (
+            const RBD::rigidBodyMotion& model,
             const polyMesh& mesh,
             const word& name,
             const label bodyID,
-            const dictionary& dict
+            const dictionary& dict,
+            scalar rhoInf,
+            const word& rhoName
         );
+
+        inline const pointScalarField& weight() const
+        { return weight_; }
+
+        const RBD::rigidBodyMotion& model() const { return model_; }
+        inline label bodyID() const { return bodyID_; }
+
+        extendedForces& forcesFO();
+        const extendedForces& forcesFO() const;
+
+        std::pair<vector,vector> calcForcesMoments(
+                bool logForces=false );
+
+//        inline extRBM::directForce& getDirectThrustForce(label i)
+//        { return directThrustForces_[i]; };
+
+        void updateCoordinateSystem(const vector& p0, const vector& ez, const vector& ex);
+
+        autoPtr<coordinateSystem> getCoordinateSystem() const override;
     };
 
 
@@ -135,13 +197,13 @@ class extendedRigidBodyMeshMotion
         word rhoName_;
 
         //- Current time index (used for updating)
-        label curTimeIndex_;
+        label curTimeIndex_; // for RBD updating
         
         vector referenceSystemSpeed_;
 
         scalar rampDuration_;
         
-        autoPtr<OFstream> filePtr_;
+        mutable autoPtr<OFstream> rbmLogFile_;
 
     // Private Member Functions
 
@@ -154,6 +216,7 @@ class extendedRigidBodyMeshMotion
         //- Disallow default bitwise assignment
         void operator=(const extendedRigidBodyMeshMotion&);
 
+        void updateBodyMeshCoordinateSystems();
 
 public:
 
@@ -178,26 +241,45 @@ public:
     // Member Functions
 
         //- Return point location obtained from the current motion field
-        virtual tmp<pointField> curPoints() const;
+        tmp<pointField> curPoints() const override;
 
-        tmp<pointField> curMotionStatePoints() const;
+        virtual void resetPointsFromCurMotionState();
+
+        PtrList<bodyMesh>& bodyMeshes();
+        const PtrList<bodyMesh>& bodyMeshes() const;
+        const RBD::rigidBodyMotion& model() const;
+        const RBD::rigidBodyModelState& motionState() const;
+
+        bool isBodyPatch(label patchID) const;
+
 
         //- Solve for motion
-        virtual void solve();
+        void solve() override;
+
+        virtual void populateRigidBodyMotionStateDict(dictionary& dict) const;
 
         //- Write state using given format, version and compression
-        virtual bool writeObject
+        bool writeObject
         (
+#if OF_VERSION>=060505
+            IOstreamOption streamOpt
+#else
             IOstream::streamFormat fmt,
             IOstream::versionNumber ver,
             IOstream::compressionType cmp
+#endif
 #if OF_VERSION>=060000 //defined(OFesi1806)
             , const bool valid
 #endif
-        ) const;
+        ) const override;
+
+        void continueLogFile() const;
+
+        virtual void writeLogFileHeaderLine(Ostream& os) const;
+        virtual void writeLogLine(Ostream& os) const;
 
         //- Read dynamicMeshDict dictionary
-        virtual bool read();
+        bool read() override;
 };
 
 

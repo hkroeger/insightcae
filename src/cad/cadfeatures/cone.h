@@ -43,13 +43,12 @@ class Cone
 
 public:
     declareType ( "Cone" );
-    
-    Cone ();
-    static FeaturePtr create( VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2 );
 
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    CREATE_FUNCTION(Cone);
+
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
     
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
 };
 
 

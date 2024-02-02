@@ -214,10 +214,10 @@ void Chart::generatePlotImage( const path& imagepath ) const
 }
 
 
-void Chart::writeLatexHeaderCode(std::ostream& f) const
+void Chart::insertLatexHeaderCode(std::set<std::string>& h) const
 {
-  f<<"\\usepackage{graphicx}\n";
-  f<<"\\usepackage{placeins}\n";
+  h.insert("\\usepackage{graphicx}");
+  h.insert("\\usepackage{placeins}");
 }
 
 
@@ -313,9 +313,9 @@ rapidxml::xml_node<>* Chart::appendToNode
     return child;
 }
 
-void Chart::readFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
+void Chart::readFromNode(const string &name, rapidxml::xml_node<> &node)
 {
-  readBaseAttributesFromNode(name, doc, node);
+  readBaseAttributesFromNode(name, node);
   xlabel_=node.first_attribute("xlabel")->value();
   ylabel_=node.first_attribute("ylabel")->value();
   addinit_=node.first_attribute("addinit")->value();
@@ -351,7 +351,33 @@ ResultElementPtr Chart::clone() const
 insight::ResultElement& addPlot
 (
     std::shared_ptr<ResultElementCollection> results,
-    const boost::filesystem::path& ,
+    const boost::filesystem::path& workdir,
+    const std::string& resultelementname,
+    const std::string& xlabel,
+    const std::string& ylabel,
+    const PlotCurveList& plc,
+    const std::string& shortDescription,
+    const std::string& addinit,
+    const std::string& watermarktext
+)
+{
+    return addPlot
+    (
+        *results, workdir,
+        resultelementname,
+        xlabel, ylabel,
+        plc,
+        shortDescription, addinit, watermarktext
+    );
+}
+
+
+
+
+insight::ResultElement& addPlot
+(
+    ResultElementCollection& results,
+    const boost::filesystem::path& workdir,
     const std::string& resultelementname,
     const std::string& xlabel,
     const std::string& ylabel,
@@ -370,13 +396,15 @@ insight::ResultElement& addPlot
           ;
     }
 
-    return results->insert ( resultelementname,
-                             new Chart
-                             (
-                                 xlabel, ylabel, plc,
-                                 shortDescription, "",
-                                 precmd
-                               ) );
+    return results.insert (
+                resultelementname,
+                new Chart
+                (
+                    xlabel, ylabel, plc,
+                    shortDescription, "",
+                    precmd
+                    )
+                );
 }
 
 

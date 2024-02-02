@@ -65,6 +65,8 @@
 #include <boost/spirit/include/karma.hpp>
 
 
+#include "../toolkit/base/factory.h"
+
 
 arma::mat vec2mat(const std::vector<double>& vals);
 BOOST_PHOENIX_ADAPT_FUNCTION(arma::mat, vec2mat_, vec2mat, 1);
@@ -82,6 +84,7 @@ public:
 };
 
 
+void writeVec3Constant(std::ostream&, const arma::mat& m);
 
 
 namespace qi = boost::spirit::qi;
@@ -91,11 +94,11 @@ namespace phx   = boost::phoenix;
 
 
 
-template <typename Iterator>
+//template <typename Iterator>
 struct skip_grammar
-        : public qi::grammar<Iterator>
+ : public qi::grammar<std::string::iterator>
 {
-    qi::rule<Iterator> skip;
+    qi::rule<std::string::iterator> skip;
     skip_grammar();
 };
 
@@ -106,9 +109,9 @@ std::string extendtype(const std::string& pref, const std::string& app);
 
 
 
-template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+//template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct PDLParser;
-
+struct PDLParserRuleset;
 
 
 
@@ -119,6 +122,14 @@ class ParserDataBase
 {
 
 public:
+    declareType("ParserDataBase");
+    declareStaticFunctionTableWithArgs(
+        insertrule,
+        void,
+        LIST(PDLParserRuleset&),
+        LIST(PDLParserRuleset& ruleset)
+        );
+
     typedef std::shared_ptr<ParserDataBase> Ptr;
 
     std::string description;
@@ -215,12 +226,14 @@ typedef std::vector< ParameterSetEntry > ParameterSetData;
 
 
 
-typedef boost::fusion::vector4<boost::optional<std::string>, boost::optional<std::string>, bool, std::string, ParameterSetData> PDLParserResult;
+typedef boost::fusion::vector5<boost::optional<std::string>, boost::optional<std::string>, boost::optional<std::string>, bool, std::string, ParameterSetData> PDLParserResult;
 
 
-template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct PDLParserRuleset
 {
+    typedef std::string::iterator Iterator;
+    typedef skip_grammar Skipper;
+
     typedef qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> ParameterDataRule;
     typedef std::shared_ptr<ParameterDataRule> ParameterDataRulePtr;
 

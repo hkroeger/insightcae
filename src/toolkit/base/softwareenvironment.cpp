@@ -19,7 +19,7 @@
  */
 
 
-#include "base/tools.h"
+#include "base/shelltools.h"
 #include "base/softwareenvironment.h"
 
 #include <boost/asio.hpp>
@@ -84,7 +84,9 @@ void SoftwareEnvironment::executeCommand
   const std::string& cmd, 
   std::vector<std::string> argv,
   std::vector<std::string>* output,
-  std::string *ovr_machine
+  std::string *ovr_machine,
+  bool mirrorStdout,
+  bool mirrorStderr
 ) const
 {
   std::vector<std::string> cmds;
@@ -99,21 +101,18 @@ void SoftwareEnvironment::executeCommand
   JobPtr job = forkCommand(cmd, argv, ovr_machine);
 
   std::vector<std::string> errout;
-  job->runAndTransferOutput(output, &errout);
+  job->runAndTransferOutput(output, &errout,
+                            mirrorStdout,
+                            mirrorStderr);
 
   auto retcode = job->process().exit_code();
   if (retcode!=0)
   {
-    throw insight::Exception(
-          boost::str(boost::format(
-             "Execution of external application \"%s\" failed with return code %d!\n")
-              % finalcmd % retcode)
-          + ( errout.size()>0 ?
-               ("Error output was:\n " + boost::join(errout, "\n ")+"\n")
-               :
-               "There was no error output."
-             )
-          );
+    throw insight::ExternalProcessFailed(
+        retcode,
+        finalcmd,
+        boost::join(errout, "\n ")
+    );
   }
   
   //return p_in.rdbuf()->status();
@@ -126,7 +125,8 @@ JobPtr SoftwareEnvironment::forkCommand
 (
   const std::string& cmd_exe,
   std::vector<std::string> cmd_argv,
-  std::string *ovr_machine
+  std::string *ovr_machine,
+  const boost::filesystem::path& cwd
 ) const
 {
   CurrentExceptionContext ex(
@@ -176,6 +176,12 @@ JobPtr SoftwareEnvironment::forkCommand
 
   // wrap into single command string
   std::string cmd = cmd_exe;
+
+  if (!cwd.empty())
+  {
+    cmd = "cd \""+boost::filesystem::absolute(cwd).string()+"\";" + cmd;
+  }
+
   if (char* cfgpath=getenv("INSIGHT_CONFIGSCRIPT"))
   {
       cmd = "source "+std::string(cfgpath)+";" + cmd;

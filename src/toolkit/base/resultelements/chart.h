@@ -137,7 +137,7 @@ public:
     const PlotCurve& plotCurve(const std::string& plainTextLabel) const;
     virtual void generatePlotImage ( const boost::filesystem::path& imagepath ) const;
 
-    void writeLatexHeaderCode ( std::ostream& f ) const override;
+    void insertLatexHeaderCode ( std::set<std::string>& f ) const override;
     void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 
@@ -154,7 +154,6 @@ public:
     void readFromNode
         (
             const std::string& name,
-            rapidxml::xml_document<>& doc,
             rapidxml::xml_node<>& node
         ) override;
 
@@ -178,6 +177,18 @@ insight::ResultElement& addPlot
 );
 
 
+insight::ResultElement& addPlot
+(
+    ResultElementCollection& results,
+    const boost::filesystem::path& workdir,
+    const std::string& resultelementname,
+    const std::string& xlabel,
+    const std::string& ylabel,
+    const PlotCurveList& plc,
+    const std::string& shortDescription,
+    const std::string& addinit = "",
+    const std::string& watermarktext = ""
+);
 
 
 } // namespace insight

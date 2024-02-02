@@ -20,6 +20,9 @@
 #include "tri.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -35,7 +38,10 @@ namespace cad {
     
     
 defineType(Tri);
-addToFactoryTable(Feature, Tri);
+//addToFactoryTable(Feature, Tri);
+addToStaticFunctionTable(Feature, Tri, insertrule);
+addToStaticFunctionTable(Feature, Tri, ruleDocumentation);
+
 
 
 size_t Tri::calcHash() const
@@ -50,9 +56,6 @@ size_t Tri::calcHash() const
 
 
 
-Tri::Tri()
-{}
-
 
 
 
@@ -63,10 +66,6 @@ Tri::Tri(VectorPtr p0, VectorPtr e1, VectorPtr e2)
 
 
 
-FeaturePtr Tri::create ( VectorPtr p0, VectorPtr e1, VectorPtr e2 )
-{
-    return FeaturePtr(new Tri(p0, e1, e2));
-}
 
 
 
@@ -85,7 +84,7 @@ void Tri::build()
     w.Add ( BRepBuilderAPI_MakeEdge ( p3, p1 ) );
 
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-    providedSubshapes_["OuterWire"]=FeaturePtr ( new Feature ( w.Wire() ) );
+    providedSubshapes_["OuterWire"]=Feature::create ( w.Wire() );
 
     setShape ( BRepBuilderAPI_MakeFace ( w.Wire() ) );
 }
@@ -101,34 +100,35 @@ Tri::operator const TopoDS_Face& () const
 
 
 
-void Tri::insertrule(parser::ISCADParser& ruleset) const
+void Tri::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Tri",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	[ qi::_val = phx::bind(&Tri::create, qi::_1, qi::_2, qi::_3) ]
+    [ qi::_val = phx::bind(
+                       &Tri::create<VectorPtr, VectorPtr, VectorPtr>,
+                       qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Tri::ruleDocumentation() const
+FeatureCmdInfoList Tri::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Tri",
             "( <vector:p0>, <vector:L1>, <vector:L2> )",
-            "Creates a triangle face from point p0 and spanned by vectors L1 and L2."
+          _("Creates a triangle face from point p0 and spanned by vectors L1 and L2.")
         )
-    );
+    };
 }
 
 

@@ -34,9 +34,10 @@ class Extrusion
     : public Feature
 {
     FeaturePtr sk_;
-    VectorPtr L_;
+    boost::variant<VectorPtr,ScalarPtr> L_;
     bool centered_;
 
+    Extrusion ( FeaturePtr sk, ScalarPtr L, bool centered=false );
     Extrusion ( FeaturePtr sk, VectorPtr L, bool centered=false );
 
     virtual size_t calcHash() const;
@@ -44,13 +45,11 @@ class Extrusion
 
 public:
     declareType ( "Extrusion" );
-    Extrusion ();
 
-    static FeaturePtr create ( FeaturePtr sk, VectorPtr L, bool centered=false );
+    CREATE_FUNCTION(Extrusion);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

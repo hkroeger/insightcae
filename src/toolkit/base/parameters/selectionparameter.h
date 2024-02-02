@@ -49,17 +49,15 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
-    inline ItemList& items()
-    {
-        return items_;
-    }
+//    inline ItemList& items()
+//    {
+//        return items_;
+//    }
 
+    void resetItems(const ItemList& newItems);
     virtual const ItemList& items() const;
 
-    inline void setSelection ( const std::string& sel )
-    {
-        value_=selection_id ( sel );
-    }
+    void setSelection ( const std::string& sel );
 
     inline const std::string& selection() const
     {
@@ -77,11 +75,14 @@ public:
 
     rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath ) const override;
-    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+    void readFromNode ( const std::string& name, rapidxml::xml_node<>& node,
                                 boost::filesystem::path inputfilepath ) override;
 
     Parameter* clone() const override;
-    void reset(const Parameter& p) override;
+    void copyFrom(const Parameter& p) override;
+    void operator=(const SelectionParameter& p);
+
+    int nChildren() const override;
 };
 
 

@@ -24,6 +24,7 @@
 #include "base/mountremote.h"
 #include "openfoam/openfoamtools.h"
 
+#include <chrono>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -42,6 +43,35 @@ using namespace insight;
 using namespace boost;
 namespace bf = boost::filesystem;
 
+void printProgress(int progress_percent, const string & msg)
+{
+    double progress = double(progress_percent)/100.;
+    int barWidth = 20, totalWidth=80;
+
+    std::cout << "[";
+    int pos =  barWidth * progress;
+    for (int i = 0; i < barWidth; ++i)
+    {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+    std::cout << "]";
+    std::cout << str(format(" %3d%% ") % progress_percent);
+
+    std::string fixedMsg(
+                std::max(0, totalWidth-barWidth-2-5),
+                ' ' );
+    for (int i=0; i<fixedMsg.size(); ++i)
+    {
+        if (i<msg.size())  fixedMsg[i]=msg[i];
+    }
+    std::cout<<fixedMsg;
+
+    std::cout<<"\r";
+    std::cout.flush();
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -55,7 +85,8 @@ int main(int argc, char *argv[])
 
   typedef std::vector<string> StringList;
 
-  StringList cmds, icmds, skip_dirs;
+  StringList cmds, icmds, skip_dirs, remoteServerFilter;
+  std::string remoteAnalysisFileName;
 
   // Declare the supported options.
   po::options_description desc("Allowed options");
@@ -70,6 +101,8 @@ int main(int argc, char *argv[])
       ("force-create-remote-temp,f", "force creation, if config exists already.")
       ("sync-remote,r", "sync current case to remote location")
       ("sync-local,l", "sync from remote location to current case")
+      ("sync-local-repeat", po::value<int>(), "sync from remote location to current case, restart transfer periodically after given number of seconds")
+      ("reconst-new", "reconstruct time directories which are yet unreconstructed")
       ("skip-timesteps,t", "exclude time steps while syncing to local directory\nBeware: during a subsequent sync-to-remote, the skipped time steps will be deleted!")
       ("skip-dir,s", po::value<StringList>(&skip_dirs), "exclude local directory during sync to remote")
       ("include-processor-dirs,p", "if this flag is set, processor directories will be tranferred as well")
@@ -80,6 +113,10 @@ int main(int argc, char *argv[])
       ("cancel,c", "cancel remote commands (remove all from queue)")
       ("clean,x", "remove the remote case directory from server")
       ("list-remote,D", "list remote directory contents")
+      ("locate-remote-configs,L", "locate and list existing remote configurations")
+      ("filter-remote-server,S", po::value<StringList>(&remoteServerFilter), "filter remote configuration list by server")
+      ("bwlimit", po::value<int>()->default_value(-1), "transfer bandwidth limitin kB/s; -1 means no limit")
+      ("launch-analysis", po::value<std::string>(&remoteAnalysisFileName), "launch \"analyze\" on the specified file.")
 #ifndef WIN32
       ("mount-remote,M", "mount the remote directory locally using sshfs (needs to be installed)")
       ("unmount-remote,U", "unmount the remote directory")
@@ -135,6 +172,41 @@ int main(int argc, char *argv[])
     mf=vm["meta-file"].as<std::string>();
   }
 
+  if (vm.count("locate-remote-configs"))
+  {
+      auto mfn=insight::RemoteExecutionConfig::defaultConfigFileName();
+      if (!mf.empty()) mfn=mf.filename();
+      auto j = Job::forkExternalProcess(
+                  "locate",
+                  {"-e", mfn.string()});
+      std::vector<std::string> files;
+      j->runAndTransferOutput(&files, nullptr, false, true);
+      if (files.size())
+      {
+          std::cout<<"# local directory \t server label \t remote directory"<<std::endl;
+      }
+
+      for (const auto& fp: files)
+      {
+          auto localDir = boost::filesystem::path(fp).parent_path();
+          insight::RemoteLocation rl(fp, true);
+
+          auto serverLabel = rl.serverLabel();
+
+          bool filtered = false;
+
+          if ( remoteServerFilter.size()
+               &&
+               remoteServerFilter.end()==std::find(
+                   remoteServerFilter.begin(), remoteServerFilter.end(), serverLabel) )
+              filtered=true;
+
+          if (!filtered)
+            std::cout<<localDir.string()<<" \t "<<serverLabel<<" \t "<<rl.remoteDir().string()<<std::endl;
+      }
+      anything_done=true;
+  }
+
   if (vm.count("create-remote-temp"))
   {
     bf::path meta=mf;
@@ -175,6 +247,10 @@ int main(int argc, char *argv[])
     if (re && re->isActive())
     {
 
+      re->server()
+              ->setTransferBandWidthLimit(
+                  vm["bwlimit"].as<int>() );
+
       if(vm.count("list-remote"))
       {
         auto files=re->remoteLS();
@@ -205,7 +281,12 @@ int main(int argc, char *argv[])
 
       if (vm.count("sync-remote"))
       {
-        re->syncToRemote(skip_dirs);
+        re->syncToRemote(
+                    include_processor,
+                    skip_dirs,
+                    printProgress );
+        std::cout<<endl;
+
         anything_done=true;
       }
 
@@ -227,6 +308,12 @@ int main(int argc, char *argv[])
         }
       }
 
+      if (vm.count("launch-analysis"))
+      {
+          re->queueRemoteCommand("analyze "+remoteAnalysisFileName);
+          anything_done=true;
+      }
+
       if (vm.count("wait"))
       {
         re->waitRemoteQueueFinished();
@@ -241,7 +328,70 @@ int main(int argc, char *argv[])
 
       if(vm.count("sync-local"))
       {
-        re->syncToLocal( (vm.count("skip-timesteps")>0), skip_dirs );
+        re->syncToLocal(
+                    include_processor,
+                    (vm.count("skip-timesteps")>0),
+                    skip_dirs,
+                    printProgress );
+        std::cout<<endl;
+
+        anything_done=true;
+      }
+
+      auto reconstNew = [&]()
+      {
+          OpenFOAMCase cm;
+          ParallelTimeDirectories ptd(cm, location);
+          auto rtds = ptd.newParallelTimes(true);
+          rtds.erase(boost::filesystem::path("0"));
+
+          std::vector<std::string> tdbns;
+          std::transform(rtds.begin(), rtds.end(), std::back_inserter(tdbns),
+                         [&](const decltype(rtds)::value_type& path)
+                         {
+                             return path.string();
+                         }
+                         );
+
+          if (rtds.size())
+          {
+              cm.executeCommand(
+                  location,
+                  "reconstructPar",
+                  { "-time", boost::join(tdbns, ",") }
+                  );
+          }
+      };
+
+      if(vm.count("sync-local-repeat"))
+      {
+        int secs=vm["sync-local-repeat"].as<int>();
+
+        while (true)
+        {
+            re->syncToLocal(
+                include_processor,
+                (vm.count("skip-timesteps")>0),
+                skip_dirs,
+                printProgress );
+            std::cout<<endl;
+
+            if (vm.count("reconst-new"))
+            {
+                std::cout<<"Reconstructing newly appeared time directories..."<<std::endl;
+                reconstNew();
+            }
+
+            std::cout<<"Waiting "<<secs<<" seconds before restarting transfer..."<<std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(secs));
+        }
+
+        anything_done=true;
+      }
+
+      if (vm.count("reconst-new"))
+      {
+        reconstNew();
         anything_done=true;
       }
 

@@ -30,9 +30,21 @@ namespace cad {
 class Bar
 : public Feature
 {
-  
-  VectorPtr p0_;
-  VectorPtr p1_; 
+public:
+  typedef boost::variant<
+    FeaturePtr,
+    std::pair<VectorPtr,VectorPtr>
+  > EndPoints;
+
+  struct EndPointMod
+  {
+      ScalarPtr ext = cad::scalarconst(0.0);
+      ScalarPtr miterAngleVert = cad::scalarconst(0.0);
+      ScalarPtr miterAngleHorz = cad::scalarconst(0.0);
+  };
+
+private:
+  EndPoints endPts_;
   FeaturePtr xsec_;
   VectorPtr vert_;
   ScalarPtr ext0_;
@@ -41,6 +53,7 @@ class Bar
   ScalarPtr miterangle1_vert_;
   ScalarPtr miterangle0_hor_; 
   ScalarPtr miterangle1_hor_;
+  VectorPtr attractPt_;
 
   virtual size_t calcHash() const;
   virtual void build();
@@ -56,47 +69,52 @@ class Bar
    */
   Bar
   (
-    VectorPtr p0, VectorPtr p1, 
+    EndPoints endPts,
     FeaturePtr xsec, VectorPtr vert,
     ScalarPtr ext0, ScalarPtr ext1,
     ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
-    ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
+    ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor,
+    VectorPtr attractPt
   );
 
   Bar
   (
-    VectorPtr p0, VectorPtr p1, 
+    EndPoints endPts,
     FeaturePtr xsec, VectorPtr vert,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
+    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1,
+    VectorPtr attractPt
   );
 
 
 public:
   declareType("Bar");
-  Bar();
-  
-  static FeaturePtr create(
-    VectorPtr p0, VectorPtr p1, 
-    FeaturePtr xsec, VectorPtr vert,
-    ScalarPtr ext0, ScalarPtr ext1,
-    ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
-    ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
-  );
 
-  static FeaturePtr create_condensed
+  CREATE_FUNCTION(Bar);
+
+  static std::shared_ptr<Bar> create_condensed
   (
     VectorPtr p0, VectorPtr p1, 
     FeaturePtr xsec, VectorPtr vert,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
+    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1,
+    VectorPtr attractPt
+  );
+
+  static std::shared_ptr<Bar> create_derived
+  (
+    FeaturePtr skel,
+    FeaturePtr xsec, VectorPtr vert,
+    const EndPointMod& ext_miterv_miterh0,
+    const EndPointMod& ext_miterv_miterh1,
+    VectorPtr attractPt
   );
 
   void operator=(const Bar& o);
 
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual FeatureCmdInfoList ruleDocumentation() const;
-  
+  static void insertrule(parser::ISCADParser& ruleset);
+  static FeatureCmdInfoList ruleDocumentation();
+
 };
 
 

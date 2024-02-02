@@ -60,26 +60,28 @@ bool DoubleRangeParameter::isDifferent(const Parameter& p) const
     return true;
 }
 
+void DoubleRangeParameter::resetValues(const RangeList& nvs)
+{
+  values_=nvs;
+  triggerValueChanged();
+}
+
+
+void DoubleRangeParameter::clear()
+{
+  values_.clear();
+  triggerValueChanged();
+}
+
+
 std::string DoubleRangeParameter::latexRepresentation() const
 {
-  std::ostringstream oss;
-  oss << *values_.begin();
-  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
-  {
-    oss<<"; "<<*i;
-  }
-  return oss.str();
+  return toStringList(values_, "%g", "; ");
 }
 
 std::string DoubleRangeParameter::plainTextRepresentation(int indent) const
 {
-  std::ostringstream oss;
-  oss << *values_.begin();
-  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
-  {
-    oss<<"; "<<*i;
-  }
-  return std::string(indent, ' ') + oss.str() + '\n';
+  return std::string(indent, ' ') + toStringList(values_, "%g", "; ") /*oss.str()*/ + '\n';
 }
 
 DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
@@ -94,16 +96,10 @@ rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 
-    std::ostringstream oss;
-    oss << *values_.begin();
-    for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
-    {
-      oss<<" "<<*i;
-    }
     child->append_attribute(doc.allocate_attribute
     (
       "values",
-      doc.allocate_string(oss.str().c_str())
+      doc.allocate_string( /*oss.str()*/toStringList(values_, "%g", " ").c_str() )
     ));
     return child;
 }
@@ -111,7 +107,6 @@ rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name
 void DoubleRangeParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_document<>&,
     rapidxml::xml_node<>& node,
     boost::filesystem::path
 )
@@ -129,6 +124,7 @@ void DoubleRangeParameter::readFromNode
       if (iss.fail()) break;
       values_.insert(v);
     }
+    triggerValueChanged();
   }
   else
   {
@@ -150,15 +146,22 @@ Parameter* DoubleRangeParameter::clone() const
 
 
 
-void DoubleRangeParameter::reset(const Parameter& p)
+void DoubleRangeParameter::copyFrom(const Parameter& p)
 {
-  if (const auto* op = dynamic_cast<const DoubleRangeParameter*>(&p))
-  {
-    Parameter::reset(p);
-    values_ = op->values_;
-  }
-  else
-    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+  operator=(dynamic_cast<const DoubleRangeParameter&>(p));
+}
+
+void DoubleRangeParameter::operator=(const DoubleRangeParameter& op)
+{
+  values_ = op.values_;
+
+  Parameter::copyFrom(op);
+}
+
+
+int DoubleRangeParameter::nChildren() const
+{
+  return 0;
 }
 
 

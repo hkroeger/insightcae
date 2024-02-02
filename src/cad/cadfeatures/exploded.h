@@ -54,13 +54,11 @@ protected:
 
 public:
     declareType ( "Exploded" );
-    Exploded ();
-    
-    static FeaturePtr create( DatumPtr axis, const ExplosionComponentList& m1 );
-    static FeaturePtr create_assy( DatumPtr axis, FeaturePtr assy );
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    CREATE_FUNCTION(Exploded);
+
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

@@ -16,8 +16,8 @@ class Stringer
   VectorPtr normal_;
   ScalarPtr t_, w_, delta_, ext0_, ext1_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
   Stringer(
       FeaturePtr spine,
@@ -31,21 +31,10 @@ class Stringer
 
 public:
   declareType("Stringer");
-  Stringer();
+  CREATE_FUNCTION(Stringer);
 
-  static FeaturePtr create(
-      FeaturePtr spine,
-      VectorPtr normal,
-      ScalarPtr t,
-      ScalarPtr w,
-      ScalarPtr delta,
-      ScalarPtr ext0,
-      ScalarPtr ext1
-  );
-
-
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual FeatureCmdInfoList ruleDocumentation() const;
+  static void insertrule(parser::ISCADParser& ruleset);
+  static FeatureCmdInfoList ruleDocumentation();
 };
 
 } // namespace cad

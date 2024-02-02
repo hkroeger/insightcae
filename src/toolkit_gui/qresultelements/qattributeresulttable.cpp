@@ -11,41 +11,60 @@ defineType(QAttributeResultTable);
 addToFactoryTable(IQResultElement, QAttributeResultTable);
 
 
+
+
 QAttributeResultTable::QAttributeResultTable(QObject *parent, const QString &label, insight::ResultElementPtr rep)
     : IQResultElement(parent, label, rep)
 {
 
 }
 
+
+
+
 QVariant QAttributeResultTable::previewInformation(int) const
 {
   return QVariant();
 }
+
+
+
 
 void QAttributeResultTable::createFullDisplay(QVBoxLayout* layout)
 {
   auto res = resultElementAs<insight::AttributeTableResult>();
   IQResultElement::createFullDisplay(layout);
 
-  auto le_=new QTableWidget(res->names().size(), 2/*, this*/);
-  le_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  le_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  tw_ = new QTableWidget(res->names().size(), 2/*, this*/);
+  tw_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  tw_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  layout->addWidget(tw_);
+}
+
+
+
+
+void QAttributeResultTable::resetContents(int width, int height)
+{
+  auto res = resultElementAs<insight::AttributeTableResult>();
 
   QStringList headers;
-  headers << "Attribute" << "Value";
-  le_->setHorizontalHeaderLabels( headers );
+  headers
+          << QString::fromStdString(res->labelColumnTitle().toHTML(width))
+          << QString::fromStdString(res->valueColumnTitle().toHTML(width));
+  tw_->setHorizontalHeaderLabels( headers );
 
   for (size_t i=0; i<res->names().size(); i++)
   {
-      QString attr_name(res->names()[i].c_str());
+      auto attr_name = QString::fromStdString(res->names()[i].toHTML(width));
       QString attr_val(boost::lexical_cast<std::string>(res->values()[i]).c_str());
-      le_->setItem(i, 0, new QTableWidgetItem( attr_name ));
-      le_->setItem(i, 1, new QTableWidgetItem( attr_val ));
+      tw_->setItem(i, 0, new QTableWidgetItem( attr_name ));
+      tw_->setItem(i, 1, new QTableWidgetItem( attr_val ));
   }
-  le_->doItemsLayout();
-  le_->resizeColumnsToContents();
-
-  layout->addWidget(le_);
+  tw_->doItemsLayout();
+  tw_->resizeColumnsToContents();
 }
+
+
 
 } // namespace insight

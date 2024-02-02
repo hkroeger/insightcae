@@ -104,7 +104,6 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs");
   controlDict.subDict("functions");
 
-  controlDict.getList("libs").insertNoDuplicate( "\"libwriteData.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"libconsistentCurveSampleSet.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );
@@ -114,10 +113,21 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     wonow["type"]="writeData";
     wonow["fileName"]="\"wnow\"";
     wonow["fileNameAbort"]="\"wnowandstop\"";
-    wonow["outputControl"]="timeStep";
-    wonow["outputInterval"]=1;
     controlDict.subDict("functions")["writeData"]=wonow;
+    controlDict.getList("libs").insertNoDuplicate( "\"libwriteData.so\"" );
   }
+
+  if (const auto* rwp =
+          boost::get<Parameters::restartWrite_clockTime_type>(&p_.restartWrite))
+  {
+      OFDictData::dict rw;
+      rw["type"]="restartWrite";
+      rw["clockTimeInterval"]=rwp->clockTimeInterval;
+      rw["nKeep"]=rwp->nKeep;
+      controlDict.subDict("functions")["restartWrite"]=rw;
+      controlDict.getList("libs").insertNoDuplicate( "\"librestartWrite.so\"" );
+  }
+
   {
     OFDictData::dict fqmc;
     fqmc["type"]="faceQualityMarker";
@@ -152,7 +162,14 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
 
   // potentialFoam
-  laplacian["laplacian(1,Phi)"]="Gauss linear limited 0.66";
+  if (OFversion()<170)
+  {
+    laplacian["laplacian(1,p)"]="Gauss linear limited 0.66";
+  }
+  else
+  {
+    laplacian["laplacian(1,Phi)"]="Gauss linear limited 0.66";
+  }
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="linear";
@@ -172,12 +189,11 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     wd2["method"]="meshWave";
   }
 
-  if ( const auto* map = boost::get<Parameters::mapFieldsConfig_map_type>(&p_.mapFieldsConfig) )
   {
     OFDictData::dict& mfd=dictionaries.lookupDict("system/mapFieldsDict");
 
     OFDictData::list patchMapPairs;
-    for (const auto& i: map->patchMap)
+    for (const auto& i: p_.mapFields.patchMap)
     {
       patchMapPairs.push_back(i.targetPatch);
       patchMapPairs.push_back(i.sourcePatch);
@@ -185,12 +201,26 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     mfd["patchMap"]=patchMapPairs;
 
     OFDictData::list cuttingPatches;
-    std::copy(map->cuttingPatches.begin(), map->cuttingPatches.end(), std::back_inserter(cuttingPatches));
+    std::copy(p_.mapFields.cuttingPatches.begin(),
+              p_.mapFields.cuttingPatches.end(),
+              std::back_inserter(cuttingPatches));
     mfd["cuttingPatches"]=cuttingPatches;
   }
 
 
   decomposeParDict::addIntoDictionaries(dictionaries);
+}
+
+
+const FVNumerics::Parameters &FVNumerics::parameters() const
+{
+  return p_;
+}
+
+
+FVNumerics::Parameters &FVNumerics::parametersRef()
+{
+    return p_;
 }
 
 

@@ -94,6 +94,7 @@ public:
 
     virtual void syncToRemote
     (
+        bool includeProcessorDirectories,
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
         std::function<void(int progress,const std::string& status_text)> progress_callback =
                             std::function<void(int,const std::string&)>()
@@ -101,6 +102,7 @@ public:
 
     virtual void syncToLocal
     (
+        bool includeProcessorDirectories,
         bool skipTimeSteps=false,
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
         std::function<void(int progress,const std::string& status_text)> progress_callback =
@@ -108,6 +110,7 @@ public:
     );
 
 
+    static boost::filesystem::path defaultConfigFileName();
     static boost::filesystem::path defaultConfigFile(const boost::filesystem::path& location);
     void writeConfig(const boost::filesystem::path& localREConfigFile = "") const;
 

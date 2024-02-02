@@ -29,7 +29,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "stdarg.h"
+
 #include "boost/stacktrace.hpp"
+#include "boost/format.hpp"
 #include "boost/algorithm/string.hpp"
 
 #define DEBUG
@@ -38,12 +41,17 @@ using namespace std;
 
 namespace insight
 {
-  
+
+
+
+
 std::ostream& operator<<(std::ostream& os, const Exception& ex)
 {
   os<<static_cast<std::string>(ex);
   return os;
 }
+
+
 
 
 std::string splitMessage(
@@ -136,6 +144,8 @@ std::string splitMessage(
 }
 
 
+
+
 void Exception::saveContext(bool strace)
 {
   std::vector<std::string> context_list;
@@ -161,68 +171,154 @@ void Exception::saveContext(bool strace)
     strace_="";
 }
 
+
+
+
 Exception::Exception()
 {
-  dbg()<<"Unspecified exception created."<<std::endl;
   saveContext(true);
 }
 
-Exception::Exception(const std::string& msg, bool strace)
-  : message_(msg)
+
+
+
+Exception::Exception(std::string fmt, ...)
 {
-  dbg()<<msg<<std::endl;
-  saveContext(strace);
+    char str[5000];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(str, sizeof(str), fmt.c_str(), args);
+    va_end(args);
+    int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
+
+    message_=str;
+    dbg(2)<<message_<<std::endl;
+    saveContext(true);
 }
+
+
+
 
 Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> &contextGeometry, bool strace)
   : message_(msg),
     contextGeometry_(contextGeometry)
 {
-  dbg()<<msg<<std::endl;
+  dbg(2)<<msg<<std::endl;
   saveContext(strace);
 }
 
-Exception::Exception(const std::string& msg, const std::string& strace)
-  : message_(msg), strace_(strace)
-{
-  dbg()<<msg<<std::endl;
-}
+
+
+
+// Exception::Exception(const std::string& msg, const std::string& strace)
+//   : message_(msg), strace_(strace)
+// {
+//   dbg(2)<<msg<<std::endl;
+// }
+
+
+
 
 Exception::operator std::string() const
 {
-  return message_;
+  return message();
 }
+
+
+
+
+string Exception::message() const
+{
+   return message_;
+}
+
+
 
 
 const char* Exception::what() const noexcept
 {
-  return message_.c_str();
+   whatMessage_=message();
+   return whatMessage_.c_str();
 }
+
+
+
 
 const std::map<string, cad::FeaturePtr> &Exception::contextGeometry() const
 {
   return contextGeometry_;
 }
 
-void assertion(bool condition, const std::string& context_message)
+
+
+
+void assertion(bool condition, std::string fmt, ...)
 {
   if (!condition)
-    throw insight::Exception("Internal error: condition violated: "+context_message);
+  {
+      char str[5000];
+      va_list args;
+      va_start(args, fmt);
+      vsnprintf(str, sizeof(str), fmt.c_str(), args);
+      va_end(args);
+      int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
+
+      throw insight::Exception(
+                  std::string("Internal error: condition violated: ")
+                  + str );
+  }
 }
 
 
-CurrentExceptionContext::CurrentExceptionContext(const std::string& desc, bool verbose)
-: desc_(desc)
+
+
+CurrentExceptionContext::CurrentExceptionContext(int verbosityLevel, std::string msgFmt, ...)
+  : verbosityLevel_(verbosityLevel)
 {
-  if (getenv("INSIGHT_VERBOSE"))
+  char s[5000];
+  va_list args;
+  va_start(args, msgFmt);
+  vsnprintf(s, sizeof(s), msgFmt.c_str(), args);
+  va_end(args);
+  int l = strlen(s); if(s[l-1] == '\n') s[l-1] = '\0';
+
+  start(s);
+}
+
+
+
+
+CurrentExceptionContext::CurrentExceptionContext(std::string msgFmt, ...)
+    : verbosityLevel_(1)
+{
+  char s[5000];
+  va_list args;
+  va_start(args, msgFmt);
+  vsnprintf(s, sizeof(s), msgFmt.c_str(), args);
+  va_end(args);
+  int l = strlen(s); if(s[l-1] == '\n') s[l-1] = '\0';
+
+  start(s);
+}
+
+
+
+
+void CurrentExceptionContext::start(const char* msg)
+{
+  this->std::string::operator=(msg);
+
+  if (const char* iv = getenv("INSIGHT_VERBOSE"))
   {
-    if (verbose)
-    {
-      std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << desc << std::endl;
-    }
+      if (atoi(iv)>=verbosityLevel_)
+      {
+        std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << contextDescription() << std::endl;
+      }
   }
   ExceptionContext::getCurrent().push_back(this);
 }
+
+
 
 
 CurrentExceptionContext::~CurrentExceptionContext()
@@ -234,21 +330,23 @@ CurrentExceptionContext::~CurrentExceptionContext()
       std::cerr<<"Oops: CurrentExceptionContext destructor: expected to be last!"<<endl;
     }
 
-  if (getenv("INSIGHT_VERBOSE"))
+  if (const char* iv = getenv("INSIGHT_VERBOSE"))
   {
-    std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<desc_ << std::endl;
+      if (atoi(iv)>=verbosityLevel_)
+      {
+        std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<contextDescription() << std::endl;
+      }
   }
 }
 
+
+
+
 std::string CurrentExceptionContext::contextDescription() const
 {
-  return desc_;
+  return *this;
 }
 
-CurrentExceptionContext::operator std::string() const
-{
-  return desc_;
-}
 
 
 
@@ -259,21 +357,26 @@ public:
 };
 
 
-std::ostream& dbg()
+
+
+std::ostream& dbg(int verbosityLevel)
 {
   static NullBuffer nullBuffer;
   static std::ostream nullOstream(&nullBuffer);
 
   if (getenv("INSIGHT_VERBOSE"))
   {
-    std::cerr<<"[DBG, " << std::this_thread::get_id() <<"]: ";
-    return std::cerr;
+      int vl = atoi(getenv("INSIGHT_VERBOSE"));
+      if (vl>=verbosityLevel)
+      {
+        std::cerr<<"[DBG, " << std::this_thread::get_id() <<"]: ";
+        return std::cerr;
+      }
   }
-  else
-  {
-    return nullOstream;
-  }
+
+  return nullOstream;
 }
+
 
 
 
@@ -286,10 +389,8 @@ void ExceptionContext::snapshot(std::vector<std::string>& context)
     }
 }
 
-////#if !(defined(WIN32)&&defined(DEBUG))
-//thread_local
-////#endif
-//ExceptionContext exceptionContext;
+
+
 
 ExceptionContext& ExceptionContext::getCurrent()
 {
@@ -298,26 +399,6 @@ ExceptionContext& ExceptionContext::getCurrent()
 }
 
 
-std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen)
-{
-  std::ostringstream os;
-  os <<"(";
-
-  if (vals.size()>0)
-  {
-    size_t n1=std::min(vals.size(), maxlen-2);
-
-    for (size_t i=0; i<n1; i++)
-      os<<" "<<vals[i];
-
-    if (n1<vals.size())
-      {
-        os << " .... "<<vals.back();
-      }
-  }
-  os<<" )";
-  return os.str();
-}
 
 
 std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen)
@@ -417,9 +498,22 @@ WarningDispatcher& WarningDispatcher::getCurrent()
 
 
 
-void Warning(const std::string& msg)
+void Warning(std::string msgFmt, ...)
 {
+  char msg[5000];
+  va_list args;
+  va_start(args, msgFmt);
+  vsnprintf(msg, sizeof(msg), msgFmt.c_str(), args);
+  va_end(args);
+  int l = strlen(msg); if(msg[l-1] == '\n') msg[l-1] = '\0';
+
   WarningDispatcher::getCurrent().issue( msg );
+}
+
+
+void Warning(const std::exception& ex)
+{
+    Warning(ex.what());
 }
 
 void UnhandledExceptionHandling::handler()
@@ -445,11 +539,6 @@ void printException(const std::exception& e)
 
   if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
   {
-//    std::cerr << std::endl
-//              << "An error has occurred:" << std::endl
-//              << ie->message() << std::endl
-//                 ;
-
     displayFramed(title.str(), ie->message(), '=', std::cerr);
     if (getenv("INSIGHT_STACKTRACE"))
     {
@@ -459,11 +548,7 @@ void printException(const std::exception& e)
   }
   else
   {
-//    std::cerr << std::endl
-//              << "An error has occurred:" << std::endl
-//              << e.what() << std::endl
-//                 ;
-    displayFramed(title.str(), e.what(), '=', std::cerr);
+      displayFramed(title.str(), e.what(), '=', std::cerr);
   }
 }
 
@@ -483,12 +568,54 @@ string vector_to_string(const arma::mat &vals, bool addMag)
   return os.str();
 }
 
+
+
+
+ExternalProcessFailed::ExternalProcessFailed()
+    : retcode_(0)
+{}
+
+ExternalProcessFailed::ExternalProcessFailed(
+    int retcode,
+    const std::string &exename,
+    const std::string &errout )
+
+  : Exception(
+        str(boost::format(
+                "Execution of external application \"%s\" failed with return code %d!\n")
+            % exename % retcode),
+        true),
+    retcode_(retcode),
+    exename_(exename),
+    errout_(errout)
+{}
+
+
+string ExternalProcessFailed::message() const
+{
+  return Exception::message()
+         + ( errout_.size()>0 ?
+                ( "Error output was:\n " + errout_ + "\n" )
+                               :
+                ( "There was no error output." )
+            );
+}
+
+const string &ExternalProcessFailed::exeName() const
+{
+  return exename_;
+}
+
+
+
+
 UnsupportedFeature::UnsupportedFeature()
 {}
 
 UnsupportedFeature::UnsupportedFeature(const string &msg, bool strace)
-  : Exception(msg, strace)
+    : Exception(msg, strace)
 {}
+
 
 
 

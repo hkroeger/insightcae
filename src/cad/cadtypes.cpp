@@ -21,18 +21,112 @@
 #include "cadtypes.h"
 #include "cadfeature.h"
 
+#include "cadfeatures/compound.h"
+
 namespace insight 
 {
 namespace cad 
 {
-    
+
+
+
+VisualizationStyle::VisualizationStyle()
+{}
+
+VisualizationStyle::VisualizationStyle(
+    boost::variant<boost::blank,DatasetRepresentation> s,
+    const arma::mat& c,
+    boost::variant<boost::blank,double> o )
+  : style(s), color(c), opacity(o)
+{}
+
+
+FeatureVisualizationStyle::FeatureVisualizationStyle()
+{}
+
+FeatureVisualizationStyle::FeatureVisualizationStyle(
+        boost::variant<boost::blank,DatasetRepresentation> s,
+        const arma::mat& c,
+        const std::vector<std::string> app,
+        boost::variant<boost::blank,double> o,
+        bool initiallyVisible )
+  : VisualizationStyle(s, c, o),
+    associatedParameterPaths(app),
+    initiallyVisible(initiallyVisible)
+{}
+
+
+FeatureVisualizationStyle FeatureVisualizationStyle::componentStyle()
+{
+    static std::unique_ptr<FeatureVisualizationStyle> cs;
+    if (!cs)
+    {
+        cs.reset(new FeatureVisualizationStyle());
+        cs->style=insight::DatasetRepresentation::Surface;
+        cs->opacity=1.;
+        cs->initiallyVisible=true;
+    }
+    return *cs;
+}
+
+FeatureVisualizationStyle FeatureVisualizationStyle::intermediateFeatureStyle()
+{
+    static std::unique_ptr<FeatureVisualizationStyle> ifs;
+    if (!ifs)
+    {
+        ifs.reset(new FeatureVisualizationStyle());
+        ifs->style=insight::DatasetRepresentation::Surface;
+        ifs->opacity=0.5;
+        ifs->initiallyVisible=false;
+    }
+    return *ifs;
+}
+
+
+OCCException::OCCException(const std::string message)
+    : insight::Exception(message)
+{
+}
+
+OCCException& OCCException::addInvolvedShape(const std::string& label, TopoDS_Shape shape)
+{
+    involvedShapes_[label]=shape;
+    return *this;
+}
+
+OCCException& OCCException::addInvolvedShape(TopoDS_Shape shape)
+{
+    involvedShapes_[str(boost::format("involvedShape_%d")%(involvedShapes_.size()))]=shape;
+    return *this;
+}
+
+const std::map<std::string, TopoDS_Shape>& OCCException::involvedShapes() const
+{
+    return involvedShapes_;
+}
+
+void OCCException::saveInvolvedShapes(const boost::filesystem::path& outFile) const
+{
+    CompoundFeatureMap m;
+    std::transform(
+                involvedShapes_.begin(),
+                involvedShapes_.end(),
+                std::inserter(m, m.begin()),
+                [&](const InvolvedShapesList::value_type& iv)
+                {
+                    return CompoundFeatureMap::value_type(iv.first, Feature::create(iv.second));
+                }
+    );
+    auto cc=Compound::create(m);
+    cc->saveAs(outFile);
+}
+
 CADException::CADException(ConstFeaturePtr feat, const std::string message)
-: insight::Exception(
+: OCCException(
     (feat ? "In feature "+feat->featureSymbolName()+": " : "without feature context: " )
     + message),
   errorfeat_(feat)
-{
-}
+{}
 
 }
 }

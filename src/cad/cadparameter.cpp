@@ -24,7 +24,9 @@ namespace insight
 {
 namespace cad
 {
-  
+
+defineType(Scalar);
+
 Scalar::~Scalar()
 {}
 
@@ -32,6 +34,9 @@ Scalar::operator double() const
 {
   return value();
 }
+
+
+defineType(Vector);
 
 Vector::~Vector()
 {}

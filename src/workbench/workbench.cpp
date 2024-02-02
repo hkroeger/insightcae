@@ -33,9 +33,11 @@
 #include "workbenchwindow.h"
 #include "qinsighterror.h"
 
+#include "base/tools.h"
 #include "base/analysis.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
+#include "base/translations.h"
 
 #include <qthread.h>
  
@@ -49,6 +51,8 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+    GettextInit gti(GETTEXT_DOMAIN, GETTEXT_OUTPUT_DIR, GettextInit::Application);
+
     insight::UnhandledExceptionHandling ueh;
     insight::GSLExceptionHandling gsl_errtreatment;
 
@@ -57,14 +61,14 @@ int main(int argc, char** argv)
     typedef std::vector<std::string> StringList;
 
     // Declare the supported options.
-    po::options_description desc("Allowed options");
+    po::options_description desc(_("Allowed options"));
     desc.add_options()
-    ("help", "produce help message")
-    ("version,r", "print version and exit")
-    ("nolog,l", "put debug output to console instead of log window")
-    ("libs", po::value< StringList >(), "Additional libraries with analysis modules to load")
-    ("new,n", po::value< std::string >(), "open a new analysis of this on startup")
-    ("input-file,f", po::value< std::string >(), "Specifies input file.")
+        ("help", _("produce help message"))
+        ("version,r", _("print version and exit"))
+        ("nolog,l", _("put debug output to console instead of log window"))
+        ("libs", po::value< StringList >(), _("Additional libraries with analysis modules to load"))
+        ("new,n", po::value< std::string >(), _("open a new analysis of this on startup"))
+        ("input-file,f", po::value< std::string >(), _("Specifies input file."))
     ;
     
     po::positional_options_description p;
@@ -73,7 +77,7 @@ int main(int argc, char** argv)
     auto displayHelp = [&]{
       std::ostream &os = std::cout;
 
-      os << "Usage:" << std::endl;
+      os << _("Usage:") << std::endl;
       os << "  " << boost::filesystem::path(argv[0]).filename().string() << " [options] " << p.name_for_position(0) << std::endl;
       os << std::endl;
       os << desc << endl;
@@ -88,7 +92,7 @@ int main(int argc, char** argv)
     }
     catch (const po::error& e)
     {
-      std::cerr << std::endl << "Could not parse command line: " << e.what() << std::endl<<std::endl;
+      std::cerr << std::endl << _("Could not parse command line") << ": " << e.what() << std::endl<<std::endl;
       displayHelp();
       exit(-1);
     }
@@ -112,27 +116,23 @@ int main(int argc, char** argv)
         {
             if (!boost::filesystem::exists(l))
             {
-                std::cerr << std::endl 
-                    << "Error: library file does not exist: "<<l
+                std::cerr << std::endl
+                    << _("Error: library file does not exist")<<": "<<l
                     <<std::endl<<std::endl;
                 exit(-1);
             }
-           insight::analysisLibraries.addLibrary(l);
+           insight::AnalysisLibraryLoader::analysisLibraries().addLibrary(l);
         }
     }
 
     InsightCAEApplication app(argc, argv, "InsightCAE Workbench");
-
-    // After creation of application object!
-    std::locale::global(std::locale::classic());
-    QLocale::setDefault(QLocale::C);
 
     QPixmap pixmap(":/resources/insight_workbench_splash.png");
     QSplashScreen splash(pixmap, /*Qt::WindowStaysOnTopHint|*/Qt::SplashScreen);
     splash.show();
     QCoreApplication::processEvents();
 
-    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current()) + ", Wait...");
+    splash.showMessage( QString::fromStdString(insight::ToolkitVersion::current()) + ", "+_("Wait")+"...");
     QCoreApplication::processEvents();
 
     app.setSplashScreen(&splash);
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
           boost::filesystem::path fn( vm["input-file"].as<std::string>() );
           if (!boost::filesystem::exists(fn))
           {
-              throw insight::Exception("Input file does not exist: "+fn.string());
+            throw insight::Exception(_("Input file does not exist: %s"), fn.string().c_str());
           }
           window.openAnalysis( QString::fromStdString(boost::filesystem::absolute(fn).string()) );
       }

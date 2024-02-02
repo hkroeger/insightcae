@@ -1,0 +1,63 @@
+# German translations for toolkit package.
+# Copyright (C) 2023 hkroeger
+# This file is distributed under the same license as the toolkit package.
+# Hannes Kröger <EMAIL@ADDRESS>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: toolkit \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-02-02 09:27+0100\n"
+"PO-Revision-Date: 2023-07-02 13:33+0200\n"
+"Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
+"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: base/parameters/arrayparameter.cpp:429
+#, c-format
+msgid ""
+"No xml node found with type '%s' and name '%s', default value '%s' is used."
+msgstr ""
+"Kein xml-Node vom Typ '%s' mit Namen '%s' gefunden, Default-Wert '%s' wird "
+"benutzt."
+
+#: base/parameters/subsetparameter.cpp:431
+#, c-format
+msgid "relative path given (%s) but no parent parameter container set!"
+msgstr ""
+
+#: base/vtkrendering.cpp:1320
+#, c-format
+msgid "no lower bound found for t=%g!"
+msgstr ""
+
+#: openfoam/openfoamanalysis.cpp:337
+#, c-format
+msgid "evaluating the results for case \"%s\""
+msgstr ""
+
+#: openfoam/caseelements/analysiscaseelements.cpp:81
+#, c-format
+msgid "no valid output file was found in time directory %s!"
+msgstr ""
+
+#: openfoam/caseelements/analysiscaseelements.cpp:227
+#, c-format
+msgid "data path %s of function object %s does not exist!"
+msgstr ""
+
+#: openfoam/caseelements/analysiscaseelements.cpp:246
+#, c-format
+msgid ""
+"Possible inconsistency in solver output data detected!File %s from time "
+"directory %s was created before the output file of the previous time "
+"directory."
+msgstr ""
+
+#, c-format
+#~ msgid "Tried to set a %s from a different type (%s)!"
+#~ msgstr "Versuch, ein %s von einem unterschiedlichen Typ %s zu setzen!"

@@ -29,6 +29,7 @@ namespace insight {
 typedef std::map<std::string, double> VarParameterList;
 typedef std::vector<std::string> RangeParameterList;
 
+enum TableInputType { DoubleInputParameter = 0, ScalarResultElement = 1 };
 
 template<
  class BaseAnalysis,
@@ -75,7 +76,7 @@ public:
   static ParameterSet defaultParameters();
   
   /**
-   * return a table of resutls in case the study runs only over a single parameter
+   * return a table of results in case the study runs only over a single parameter
    */
   virtual ResultElementPtr table
   (
@@ -83,7 +84,8 @@ public:
     std::string longDescription,
     const std::string& varp,
     const std::vector<std::string>& res,
-    const std::vector<std::string>* headers = NULL
+    const std::vector<std::string>* headers = nullptr,
+    TableInputType tit = DoubleInputParameter
   ) const;
   
   virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;

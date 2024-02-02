@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -36,7 +37,10 @@ namespace cad {
     
     
 defineType(Import);
-addToFactoryTable(Feature, Import);
+//addToFactoryTable(Feature, Import);
+addToStaticFunctionTable(Feature, Import, insertrule);
+addToStaticFunctionTable(Feature, Import, ruleDocumentation);
+
 
 
 size_t Import::calcHash() const
@@ -49,9 +53,6 @@ size_t Import::calcHash() const
 
 
 
-Import::Import()
-: Feature()
-{}
 
 
 
@@ -63,12 +64,6 @@ Import::Import(const filesystem::path& filepath/*, ScalarPtr scale*/)
 }
 
 
-
-
-FeaturePtr Import::create ( const boost::filesystem::path& filepath/*, ScalarPtr scale=ScalarPtr()*/ )
-{
-    return FeaturePtr(new Import(filepath));
-}
 
 
 
@@ -85,14 +80,14 @@ void Import::build()
       fp=sharedModelFilePath(filepath_.string());
       if (!boost::filesystem::exists(fp))
       {
-        throw insight::Exception("File not found: "+filepath_.string());
+          throw insight::Exception(_("File not found: %s"), filepath_.string().c_str());
       }
     }
     loadShapeFromFile(fp);
 
     for (FeatureID i: allSolidsSet())
     {
-      providedSubshapes_[boost::str(boost::format("solid%d")%i)]=FeaturePtr(new Feature(subsolid(i)));
+      providedSubshapes_[boost::str(boost::format("solid%d")%i)]=Feature::create(subsolid(i));
     }
 
     cache.insert(shared_from_this());
@@ -115,36 +110,37 @@ void Import::build()
 
 
 
-void Import::insertrule(parser::ISCADParser& ruleset) const
+void Import::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "import",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
       ( '(' >> 
-	ruleset.r_path 
-// 	>> (( ',' >> ruleset.r_scalarExpression ) | ( qi::attr(ScalarPtr(new ConstantScalar(1.0))) ))
-	>> ')' ) [ qi::_val = phx::bind(&Import::create, qi::_1/*, qi::_2*/) ]
-    ))
+            ruleset.r_path
+            >> ')' )
+       [ qi::_val = phx::bind(
+                       &Import::create<const filesystem::path&>,
+                       qi::_1/*, qi::_2*/) ]
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Import::ruleDocumentation() const
+FeatureCmdInfoList Import::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "import",
          
             "( <path> )",
-         
-            "Imports a feature from a file. The format is recognized from the filename extension. Supported formats are IGS, STP, BREP."
+
+          _("Imports a feature from a file. The format is recognized from the filename extension. Supported formats are IGS, STP, BREP.")
         )
-    );
+    };
 }
 
 

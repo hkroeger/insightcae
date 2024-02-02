@@ -1,6 +1,5 @@
 #include "cacheableentityhashes.h"
-
-
+#include "base/linearalgebra.h"
 
 namespace boost {
 
@@ -8,13 +7,7 @@ namespace boost {
 std::size_t hash<arma::mat>::operator()
   (const arma::mat& v) const
 {
-  std::hash<double> dh;
-  size_t h=0;
-  for (arma::uword i=0; i<v.n_elem; i++)
-  {
-    boost::hash_combine(h, dh(v(i)));
-  }
-  return h;
+    return std::hash<arma::mat>()(v);
 }
 
 
@@ -22,32 +15,49 @@ std::size_t hash<arma::mat>::operator()
 std::size_t hash<boost::filesystem::path>::operator()
   (const boost::filesystem::path& fn) const
 {
-  size_t h=0;
-  // build from file path string and last write time (latter only if file exists)
-  boost::hash_combine(h, fn.string());
-  if (boost::filesystem::exists(fn))
-  {
-    boost::hash_combine(h, boost::filesystem::last_write_time(fn));
-  }
-  return h;
+    return std::hash<boost::filesystem::path>()(fn);
 }
 
-std::size_t hash<vtkSmartPointer<vtkPolyData> >::operator()
-  (const vtkSmartPointer<vtkPolyData>& v) const
+
+std::size_t hash<const vtkPolyData&>::operator()
+    (const vtkPolyData& cv) const
 {
+  vtkPolyData& v = const_cast<vtkPolyData&>(cv);
+
   size_t h=0;
-  boost::hash_combine(h, boost::hash<vtkIdType>()(v->GetNumberOfPoints()));
-  boost::hash_combine(h, boost::hash<vtkIdType>()(v->GetNumberOfCells()));
-  auto np=v->GetNumberOfPoints();
+  boost::hash_combine(h, boost::hash<vtkIdType>()(v.GetNumberOfPoints()));
+  boost::hash_combine(h, boost::hash<vtkIdType>()(v.GetNumberOfCells()));
+  auto np=v.GetNumberOfPoints();
   auto step=std::max<vtkIdType>(1, np/4);
   for (vtkIdType i=0; i<np; i+=step)
   {
     double x[3];
-    v->GetPoint(i, x);
+    v.GetPoint(i, x);
     for (int j=0; j<3; ++j)
       boost::hash_combine(h, boost::hash<double>()(x[j]));
   }
   return h;
+}
+
+
+void writeStats(std::ostream& os, const vtkDataSet& pd)
+{
+    vtkDataSet& v = const_cast<vtkDataSet&>(pd);
+
+    double bounds[6];
+    vtkPointSet::SafeDownCast(&v)->GetBounds(bounds);
+
+    os << v.GetNumberOfPoints() << " points, "<<v.GetNumberOfCells()<<" cells,"
+          " bound from ("<<bounds[0]<<", "<<bounds[2]<<", "<<bounds[4]<<")"
+          " to ("<<bounds[1]<<", "<<bounds[3]<<", "<<bounds[5]<<")";
+}
+
+
+
+std::size_t hash<vtkSmartPointer<vtkPolyData> >::operator()
+    (const vtkSmartPointer<vtkPolyData>& v) const
+{
+    return hash<const vtkPolyData&>()(*v);
 }
 
 std::size_t hash<std::vector<vtkSmartPointer<vtkPolyData> > >::operator()

@@ -18,9 +18,9 @@ namespace insight
 {
 
 
-ParameterSet_VisualizerPtr snappyHexMeshConfiguration_visualizer()
+ParameterSetVisualizerPtr snappyHexMeshConfiguration_visualizer()
 {
-    return ParameterSet_VisualizerPtr( new snappyHexMeshConfiguration_ParameterSet_Visualizer );
+    return ParameterSetVisualizerPtr( new snappyHexMeshConfiguration_ParameterSet_Visualizer );
 }
 
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, snappyHexMeshConfiguration, visualizer, snappyHexMeshConfiguration_visualizer);
@@ -28,7 +28,7 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, snappyHexMeshCon
 
 void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   snappyHexMeshConfiguration::Parameters p(currentParameters());
 
@@ -55,7 +55,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
 
         addFeature(
               "geometry:"+gp.name,
-              cad::STL::create_trsf(gp.fileName->filePath(),
+              cad::STL::create(gp.fileName->filePath(),
                                     scale*t2c*t2b*t2a*trans)
               );
       }
@@ -104,7 +104,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
         scale.SetScale(gp::Origin(), gp.scale[0]);
 
         addFeature( "refinement:"+rgp.name,
-                    cad::STL::create_trsf(gp.fileName->filePath(), trans*scale)
+                    cad::STL::create(gp.fileName->filePath(), trans*scale)
                     );
       }
     }

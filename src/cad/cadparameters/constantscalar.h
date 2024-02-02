@@ -32,6 +32,7 @@ class ConstantScalar
 public:
   ConstantScalar(double value);
   virtual double value() const;
+  void setValue(double v);
 };
 
 ScalarPtr scalarconst(double);

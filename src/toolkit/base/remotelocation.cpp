@@ -50,8 +50,18 @@ RemoteLocation::RemoteLocation(const RemoteLocation& orec)
 
 
 
+bool RemoteLocation::remoteLocationConfigIsValid(const boost::filesystem::path &mf)
+{
+    if ( !boost::filesystem::exists(mf) || boost::filesystem::is_directory(mf) )
+    {
+        return false;
+    }
+    else
+        return true;
+}
 
-RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
+
+RemoteLocation::RemoteLocation(const boost::filesystem::path& mf, bool skipValidation)
   : autoCreateRemoteDir_(false),
     isTemporaryStorage_(false),
     port_(-1),
@@ -59,7 +69,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
 {
   CurrentExceptionContext ce("reading configuration for remote execution in  directory "+mf.parent_path().string()+" from file "+mf.string());
 
-  if ( !boost::filesystem::exists(mf) || boost::filesystem::is_directory(mf) )
+  if ( !remoteLocationConfigIsValid(mf) )
   {
     throw insight::Exception("There is no remote execution configuration file present!");
   }
@@ -113,13 +123,16 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf)
       insight::dbg()<<"read port="<<port_<<std::endl;
     }
 
-    serverInstance_ = serverConfig_->getInstanceIfRunning();
-
-    validate();
-
-    if (!isValidated_)
+    if (!skipValidation)
     {
-      throw insight::Exception("Remote execution configuration is invalid!");
+        serverInstance_ = serverConfig_->getInstanceIfRunning();
+
+        validate();
+
+        if (!isValidated_)
+        {
+          throw insight::Exception("Remote execution configuration is invalid!");
+        }
     }
   }
 }
@@ -445,6 +458,7 @@ void RemoteLocation::putFile
 void RemoteLocation::syncToRemote
 (
     const boost::filesystem::path& localDir,
+    bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
 )
@@ -452,7 +466,9 @@ void RemoteLocation::syncToRemote
   CurrentExceptionContext ex("upload local directory "+localDir.string()+" to remote location");
   assertValid();
 
-  server()->syncToRemote(localDir, remoteDir_, exclude_pattern, pf);
+  server()->syncToRemote(localDir, remoteDir_,
+                         includeProcessorDirectories,
+                         exclude_pattern, pf);
 }
 
 
@@ -461,6 +477,7 @@ void RemoteLocation::syncToRemote
 void RemoteLocation::syncToLocal
 (
     const boost::filesystem::path& localDir,
+    bool includeProcessorDirectories,
     bool skipTimeSteps,
     const std::vector<std::string>& exclude_pattern,
     std::function<void(int,const std::string&)> pf
@@ -488,7 +505,10 @@ void RemoteLocation::syncToLocal
     }
   }
 
-  server()->syncToLocal(localDir, remoteDir_, excl, pf);
+  server()->syncToLocal(
+              localDir, remoteDir_,
+              includeProcessorDirectories,
+              excl, pf);
 }
 
 

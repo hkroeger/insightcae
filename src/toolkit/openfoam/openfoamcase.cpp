@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include "base/exception.h"
+#include "base/shelltools.h"
 #include "base/analysis.h"
 #include "base/boost_include.h"
 #include "base/outputanalyzer.h"
@@ -65,14 +66,14 @@ OFDictData::dict OpenFOAMCase::diagonalSolverSetup() const
 
 
 
-OFDictData::dict OpenFOAMCase::stdAsymmSolverSetup(double tol, double reltol, int minIter) const
+OFDictData::dict OpenFOAMCase::stdAsymmSolverSetup(double tol, double reltol, int minIter, const std::string& preCon) const
 {
   OFDictData::dict d;
   if (OFversion()<170)
     d["solver"]="BiCGStab";
   else
     d["solver"]="PBiCGStab";
-  d["preconditioner"]="DILU";
+  d["preconditioner"]=preCon;
   d["tolerance"]=tol;
   d["relTol"]=reltol;
   if (minIter) d["minIter"]=minIter;
@@ -509,7 +510,7 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
       std::string type_name = e->first_attribute ( "type" )->value();
 
       ParameterSet cp = OpenFOAMCaseElement::defaultParameters(type_name);
-      cp.readFromNode ( doc, *e, file.parent_path() );
+      cp.readFromNode ( *e, file.parent_path() );
       this->insert(OpenFOAMCaseElement::lookup(type_name, *this, cp));
     }
 
@@ -548,7 +549,7 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
                   if ( bc_type!="" )
                     {
                       ParameterSet curp = BoundaryCondition::defaultParameters ( bc_type );
-                      curp.readFromNode ( doc, *e, file.parent_path() );
+                      curp.readFromNode ( *e, file.parent_path() );
                       this->insert ( insight::BoundaryCondition::lookup ( bc_type, *this, patch_name, boundaryDict, curp ) );
                     }
                 }
@@ -644,6 +645,7 @@ void OpenFOAMCase::createFieldListIfRequired() const
 OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
 : Case(),
   env_(env),
+  fieldListCompleted_(false),
   requiredMapMethod_(directMapMethod)
 {
 }
@@ -654,6 +656,7 @@ OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
 OpenFOAMCase::OpenFOAMCase(const OpenFOAMCase& other)
 : Case(other),
   env_(other.env_),
+  fieldListCompleted_(false),
   requiredMapMethod_(other.requiredMapMethod_)
 {
 }
@@ -704,7 +707,11 @@ boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::
 
 
 
-void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict, const std::string& regionName, const std::string& time) const
+void OpenFOAMCase::parseBoundaryDict(
+        const boost::filesystem::path& location,
+        OFDictData::dict& boundaryDict,
+        const std::string& regionName,
+        const std::string& time ) const
 {
   boost::filesystem::path dictpath = boundaryDictPath(location, regionName, time);
   std::ifstream f(dictpath.c_str());
@@ -738,6 +745,17 @@ const
 }
 
 
+std::string mpirunCommand(int np)
+{
+    std::string execmd="mpirun -np "+lexical_cast<string>(np);
+
+    std::string envvarname="INSIGHT_ADDITIONAL_MPIRUN_ARGS";
+    if ( char *addargs=getenv ( envvarname.c_str() ) )
+    {
+        execmd += " "+std::string(addargs);
+    }
+    return execmd;
+}
 
 
 void OpenFOAMCase::executeCommand
@@ -753,7 +771,7 @@ void OpenFOAMCase::executeCommand
   string execmd=cmd;
   if (np>1)
   {
-    execmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    execmd = mpirunCommand(np)+" "+cmd;
     argv.push_back("-parallel");
   }
   
@@ -776,7 +794,7 @@ void OpenFOAMCase::runSolver
   std::vector<std::string> argv;
   if (np>1)
   {
-    execmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    execmd=mpirunCommand(np)+" "+cmd;
     argv.push_back("-parallel");
   }
   std::copy(addopts.begin(), addopts.end(), back_inserter(argv));
@@ -785,6 +803,7 @@ void OpenFOAMCase::runSolver
 
   auto job = env_.forkCommand( cmdString(location, execmd, argv) );
 
+  std::vector<std::string> errout;
 
   job->ios_run_with_interruption(
 
@@ -805,13 +824,16 @@ void OpenFOAMCase::runSolver
           // mirror to console
           cout<<"[E] "<<line<<endl; // mirror to console
           analyzer.update("[E] "+line);
+          errout.push_back(line);
         }
   );
 
   job->wait();
 
-  if (job->process().exit_code()!=0)
-      throw insight::Exception("OpenFOAMCase::runSolver(): external command execution failed with nonzero exit code!");
+  int retcode=job->process().exit_code();
+  if (retcode!=0)
+      throw insight::ExternalProcessFailed
+        (retcode, cmd, boost::join(errout, "\n "));
 }
 
 

@@ -17,10 +17,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+
+
 #include "line.h"
+#include "base/exception.h"
 #include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+#include "constrainedsketch.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -38,7 +44,12 @@ namespace cad
     
     
 defineType(Line);
-addToFactoryTable(Feature, Line);
+//addToFactoryTable(Feature, Line);
+addToStaticFunctionTable(Feature, Line, insertrule);
+addToStaticFunctionTable(Feature, Line, ruleDocumentation);
+
+addToStaticFunctionTable(ConstrainedSketchEntity, Line, addParserRule);
+
 
 
 
@@ -53,31 +64,120 @@ size_t Line::calcHash() const
 }
 
 
-Line::Line()
-: Feature()
+
+
+Line::Line(VectorPtr p0, VectorPtr p1, bool second_is_dir, const std::string& layerName)
+  : ConstrainedSketchEntity(layerName),
+    p0_(p0), p1_(p1),
+    second_is_dir_(second_is_dir)
+{}
+
+
+
+
+VectorPtr Line::start() const
 {
+    return p0_;
 }
 
 
 
 
-Line::Line(VectorPtr p0, VectorPtr p1, bool second_is_dir)
-: p0_(p0), p1_(p1),
-  second_is_dir_(second_is_dir)
+VectorPtr Line::end() const
 {
+    if (second_is_dir_)
+        return std::make_shared<cad::AddedVector>(p0_, p1_);
+    else
+        return p1_;
 }
 
 
 
-FeaturePtr Line::create ( VectorPtr p0, VectorPtr p1 )
+
+void Line::scaleSketch(double scaleFactor)
+{}
+
+
+
+
+void Line::generateScriptCommand(
+    ConstrainedSketchScriptBuffer &script,
+    const std::map<const ConstrainedSketchEntity*, int> &entityLabels ) const
 {
-    return FeaturePtr(new Line(p0, p1, false));
+    int myLabel=entityLabels.at(this);
+    script.insertCommandFor(
+        myLabel,
+        type() + "("
+            + lexical_cast<std::string>(myLabel)
+            +", "
+            + pointSpec(p0_, script, entityLabels)
+            + ", "
+            + pointSpec(p1_, script, entityLabels)
+            + ", layer " + layerName()
+            + parameterString()
+            + ")"
+        );
 }
 
-FeaturePtr Line::create_dir ( VectorPtr p0, VectorPtr p1 )
+
+
+
+void Line::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction mdpf)
 {
-    return FeaturePtr(new Line(p0, p1, true));
+    namespace qi=boost::spirit::qi;
+    ruleset.entityRules.add
+        (
+            typeName,
+            ( '('
+             > qi::int_ > ','
+             > ruleset.r_point > ','
+             > ruleset.r_point
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
+             > ruleset.r_parameters > ')'
+            )
+            [   qi::_a = phx::bind(
+                 &Line::create<VectorPtr, VectorPtr, bool, const std::string&>, qi::_2, qi::_3, false, qi::_4),
+                phx::bind(&ConstrainedSketchEntity::changeDefaultParameters, qi::_a, phx::bind(mdpf)),
+                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, boost::filesystem::path(".")),
+                qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
+        );
 }
+
+
+
+
+std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > Line::dependencies() const
+{
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > ret;
+
+    if (auto sp1=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p0_))
+        ret.insert(sp1);
+    if (auto sp2=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_))
+        ret.insert(sp2);
+
+    return ret;
+}
+
+
+
+
+void Line::replaceDependency(
+    const std::weak_ptr<ConstrainedSketchEntity> &entity,
+    const std::shared_ptr<ConstrainedSketchEntity> &newEntity )
+{
+    if (auto p = std::dynamic_pointer_cast<Vector>(newEntity))
+    {
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p0_) == entity )
+        {
+            p0_ = p;
+        }
+        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity )
+        {
+            p1_ = p;
+        }
+    }
+}
+
 
 
 
@@ -97,10 +197,15 @@ void Line::build()
     dir=std::make_shared<SubtractedVector>(p1_, p0_);
   }
 
-  refpoints_["p0"]=p0;
-  refpoints_["p1"]=p1;
+  double L=arma::norm(p1 - p0, 2);
+
+  insight::assertion(L>0., "attempt to create a degenerated line with zero length");
+
+  refvalues_["L"]=L;
+//  refpoints_["p0"]=p0;
+//  refpoints_["p1"]=p1;
 //   refvalues_["L"]=arma::norm(p1-p0, 2);
-  refvectors_["ex"]=(p1 - p0)/arma::norm(p1 - p0, 2);
+  refvectors_["ex"]=(p1 - p0)/L;
 
 
   providedDatums_["axis"]=
@@ -117,62 +222,88 @@ void Line::build()
 
 
 
-void Line::insertrule(parser::ISCADParser& ruleset) const
+
+void Line::insertrule(parser::ISCADParser& ruleset)
 {
+  typedef
+    qi::rule<
+            std::string::iterator,
+            FeaturePtr(),
+            parser::ISCADParser::skipper_type,
+            qi::locals<VectorPtr>
+            >
+
+            LineRule;
+
+  auto *rule = new LineRule(
+      '(' > ruleset.r_vectorExpression[qi::_a=qi::_1] > ',' > (
+      ruleset.r_vectorExpression
+              [ qi::_val = phx::bind(&Line::create<VectorPtr, VectorPtr, bool>, qi::_a, qi::_1, false) ]
+      |
+      ( (qi::lit("dir")|qi::lit("direction")) > ruleset.r_vectorExpression )
+              [ qi::_val = phx::bind(&Line::create<VectorPtr, VectorPtr, bool>, qi::_a, qi::_1, true) ]
+       ) > ')'
+  );
+  ruleset.addAdditionalRule(rule);
+
   ruleset.modelstepFunctionRules.add
   (
     "Line",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	[ qi::_val = phx::bind(&Line::create, qi::_1, qi::_2) ]
-    ||
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> (qi::lit("dir")|qi::lit("direction")) >> ruleset.r_vectorExpression >> ')' )
-         [ qi::_val = phx::bind(&Line::create_dir, qi::_1, qi::_2) ]
-    ))
+    std::make_shared<parser::ISCADParser::ModelstepRule>( *rule )
   );
 }
 
 
 
 
-FeatureCmdInfoList Line::ruleDocumentation() const
+FeatureCmdInfoList Line::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Line",
          
             "( <vector:p0>, <vector:p1> )",
-         
-            "Creates a line between point p0 and p1."
+
+          _("Creates a line between point p0 and p1.")
         )
-    );
+    };
 }
 
 
 
-bool Line::isSingleEdge() const
+
+void Line::operator=(const ConstrainedSketchEntity& other)
 {
-    return true;
+    operator=(dynamic_cast<const Line&>(other));
 }
 
 
-bool Line::isSingleCloseWire() const
+
+
+ConstrainedSketchEntityPtr Line::clone() const
 {
-  return false;
+    auto cl=Line::create(
+        p0_, p1_,
+        second_is_dir_,
+        layerName() );
+
+    cl->changeDefaultParameters(defaultParameters());
+    cl->parametersRef() = parameters();
+    return cl;
 }
 
 
 
 
-bool Line::isSingleOpenWire() const
+void Line::operator=(const Line& other)
 {
-  return true;
+    p0_=other.p0_;
+    p1_=other.p1_;
+    second_is_dir_=other.second_is_dir_;
+    SingleEdgeFeature::operator=(other);
+    ConstrainedSketchEntity::operator=(other);
 }
-
-
 
 
 }

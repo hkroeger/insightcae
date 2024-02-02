@@ -27,34 +27,31 @@ namespace cad {
 
     
     
-    
 class FillingFace
     : public SingleFaceFeature
 {
-    FeaturePtr e1_;
-    FeaturePtr e2_;
+public:
+    typedef boost::variant<FeaturePtr,FeatureSetPtr> EdgeInput;
 
-    FeatureSetPtr es1_;
-    FeatureSetPtr es2_;
+private:
+    EdgeInput e1_;
+    EdgeInput e2_;
+    bool inverted_;
 
-    FillingFace ( FeaturePtr e1, FeaturePtr e2 );
-    FillingFace ( FeatureSetPtr es1, FeatureSetPtr es2 );
+    FillingFace ( EdgeInput e1, EdgeInput e2, bool inverted=false );
 
     virtual size_t calcHash() const;
     virtual void build();
 
 public:
     declareType ( "FillingFace" );
-    FillingFace ();
 
-    static FeaturePtr create ( FeaturePtr e1, FeaturePtr e2 );
-    static FeaturePtr create_set ( FeatureSetPtr es1, FeatureSetPtr es2 );
+    CREATE_FUNCTION(FillingFace);
 
     operator const TopoDS_Face& () const;
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

@@ -21,45 +21,22 @@
 #ifndef INSIGHT_OCCTOOLS_H
 #define INSIGHT_OCCTOOLS_H
 
+#include "base/spatialtransformation.h"
 #include "occinclude.h"
-#include "vtkSmartPointer.h"
-#include "vtkTransform.h"
 
 namespace insight {
 namespace cad {
 
 
+gp_Trsf OFtransformToOCC(const insight::SpatialTransformation& trsf);
 gp_Trsf OFtransformToOCC(const arma::mat& translate, const arma::mat& rollPitchYaw, double scale);
 
 class OCCtransformToOF
+        : public insight::SpatialTransformation
 {
-  arma::mat translate_;
-  arma::mat rollPitchYaw_;
-  double scale_;
-
 public:
   OCCtransformToOF(const gp_Trsf& t);
-  inline const arma::mat& translate() const { return translate_; }
-  /**
-   * @brief rollPitchYaw
-   * @return Euler angles in degrees.
-   */
-  inline const arma::mat& rollPitchYaw() const { return rollPitchYaw_; }
-  inline double scale() const { return scale_; }
 };
-
-
-
-
-class OCCtransformToVTK
-    : public OCCtransformToOF
-{
-public:
-  OCCtransformToVTK(const gp_Trsf& t);
-
-  vtkSmartPointer<vtkTransform> operator()() const;
-};
-
 
 
 }

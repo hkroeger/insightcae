@@ -1,6 +1,8 @@
 #ifndef INSIGHT_SOLVEROUTPUTANALYZER_H
 #define INSIGHT_SOLVEROUTPUTANALYZER_H
 
+#include "boost/function.hpp"
+#include "base/factory.h"
 #include "base/outputanalyzer.h"
 #include "base/progressdisplayer.h"
 
@@ -12,6 +14,24 @@
 
 namespace insight {
 
+class OutputSectionReader;
+
+typedef std::shared_ptr<OutputSectionReader> OutputSectionReaderPtr;
+
+class OutputSectionReader
+{
+public:
+    declareStaticFunctionTableWithArgs(
+            createIfMatches,
+            OutputSectionReaderPtr,
+            LIST(const std::string&),
+            LIST(const std::string& line) );
+
+    declareType ( "OutputSectionReader" );
+
+    virtual bool parseNextLine(const std::string& line) =0;
+    virtual void addProgressVariables(std::map<std::string, double>& progVars) const =0;
+};
 
 
 class SolverOutputAnalyzer
@@ -21,6 +41,7 @@ public:
 
 #ifndef SWIG
   const static std::string
+      pre_iter,
       pre_resi,
       pre_force,
       pre_conterr,
@@ -30,7 +51,8 @@ public:
       pre_courant,
       pre_exectime,
       pre_simspeed,
-      pre_deltat;
+      pre_deltat,
+      pre_minmax;
 #endif
 
   struct CourantInfo { double mean, max; };
@@ -48,7 +70,7 @@ protected:
     std::string curforcename_;
     int curforcesection_;
     arma::mat curforcevalue_;
-    std::string currbname_;
+    std::string currbname_, curRegion_, pre_region;
 
     std::shared_ptr<CourantInfo> last_courant_, last_if_courant_;
     std::shared_ptr<double> last_dt_;
@@ -75,6 +97,10 @@ protected:
     boost::regex if_courant_pattern;
     boost::regex dt_pattern;
     boost::regex exec_time_pattern;
+
+    boost::regex pimple_iter_pattern, region_pattern, minMax_pattern;
+
+    std::shared_ptr<OutputSectionReader> currentOutputSectionReader_;
 
 
 public:

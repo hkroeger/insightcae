@@ -21,6 +21,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -38,8 +40,8 @@ namespace cad
     
 
 defineType(Transform);
-addToFactoryTable(Feature, Transform);
-
+addToStaticFunctionTable(Feature, Transform, insertrule);
+addToStaticFunctionTable(Feature, Transform, ruleDocumentation);
 
 
 size_t Transform::calcHash() const
@@ -57,10 +59,6 @@ size_t Transform::calcHash() const
 }
 
 
-
-Transform::Transform()
-: DerivedFeature()
-{}
 
 
 
@@ -109,8 +107,6 @@ Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
   m1_(m1), trsf_(new gp_Trsf)
 {
   *trsf_=trsf;
-//  std::cout<<"TRSF:"<<std::endl;
-//  trsf_->DumpJson(std::cout);
 }
 
 
@@ -124,47 +120,8 @@ Transform::Transform(FeaturePtr m1, FeaturePtr other)
 
 
 
-FeaturePtr Transform::create(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf)
-{
-    return FeaturePtr(new Transform(m1, trans, rot, sf));    
-}
 
 
-
-
-FeaturePtr Transform::create_rotate(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
-{
-    return FeaturePtr(new Transform(m1, rot, rotorg));    
-}
-
-
-
-
-FeaturePtr Transform::create_translate(FeaturePtr m1, VectorPtr trans)
-{
-    return FeaturePtr(new Transform(m1, trans));    
-}
-
-
-
-
-FeaturePtr Transform::create_scale(FeaturePtr m1, ScalarPtr scale)
-{
-    return FeaturePtr(new Transform(m1, scale));    
-}
-
-
-
-
-FeaturePtr Transform::create_copy(FeaturePtr m1, FeaturePtr other)
-{
-    return FeaturePtr(new Transform(m1, other));    
-}
-
-FeaturePtr Transform::create_trsf ( FeaturePtr m1, const gp_Trsf& trsf )
-{
-  return FeaturePtr(new Transform(m1, trsf));
-}
 
 gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
 {
@@ -194,6 +151,9 @@ gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
     return tr2.Multiplied(tr1).Multiplied(tr0);
   }
 }
+
+
+
 
 void Transform::build()
 {
@@ -263,12 +223,17 @@ void Transform::build()
         
     }
 
+
     setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());
 
     // Transform all ref points and ref vectors
-    copyDatumsTransformed(*m1_, *trsf_, "", 
-                          boost::assign::list_of("scaleFactor")("translation")("rotationOrigin")("rotation")
-                         );
+    copyDatumsTransformed(
+                *m1_, *trsf_, "",
+                { "scaleFactor", "translation", "rotationOrigin", "rotation" }
+                );
+
+    providedSubshapes_["basefeat"]=m1_; // overwrite existing basefeat, if there
+
     cache.insert(shared_from_this());
   }
   else
@@ -306,12 +271,12 @@ bool Transform::isTransformationFeature() const
 
 
 
-void Transform::insertrule(parser::ISCADParser& ruleset) const
+void Transform::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Transform",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
        ( '(' 
         >> ruleset.r_solidmodel_expression >> ',' 
@@ -319,57 +284,59 @@ void Transform::insertrule(parser::ISCADParser& ruleset) const
         >> ruleset.r_vectorExpression 
         >> ( (',' >> ruleset.r_scalarExpression ) | qi::attr(ScalarPtr( new ConstantScalar(1.0))) ) 
         >> ')' 
-       ) [ qi::_val = phx::bind(&Transform::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
+       ) [ qi::_val = phx::bind(
+                       &Transform::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4) ]
        |
        ( '(' 
         >> ruleset.r_solidmodel_expression >> ',' 
         >> ruleset.r_solidmodel_expression
         >> ')' 
-       ) [ qi::_val = phx::bind(&Transform::create_copy, qi::_1, qi::_2) ]
+       ) [ qi::_val = phx::bind(
+                       &Transform::create<FeaturePtr, FeaturePtr>,
+                       qi::_1, qi::_2) ]
       
-    ))
+    )
   );
   
   ruleset.modelstepFunctionRules.add
   (
     "Rotate",
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' 
       > ruleset.r_solidmodel_expression > ',' 
       > ruleset.r_vectorExpression > ',' 
       > ruleset.r_vectorExpression 
-      > ')' ) 
-      [ qi::_val = phx::bind(&Transform::create_rotate, qi::_1, qi::_2, qi::_3) ]
+      > ')' )
+                  [ qi::_val = phx::bind(
+                       &Transform::create<FeaturePtr, VectorPtr, VectorPtr>,
+                       qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Transform::ruleDocumentation() const
+FeatureCmdInfoList Transform::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Transform",
             "( <feature:base>, <vector:trans>, <vector:rot> [, <scalar:scale>] )",
-            "Transforms the base feature by translating it by vector trans and rotates it around vector rot (magnitude gives angle, axis goes through global origin)."
-            " Optionally scale the base feature by scale factor scale."
-        )
-    )
-    (
+            _("Transforms the base feature by translating it by vector trans and rotates it around vector rot (magnitude gives angle, axis goes through global origin)."
+            " Optionally scale the base feature by scale factor scale.")
+        ),
         FeatureCmdInfo
         (
             "Rotate",
             "( <feature:base>, <vector:rot>, <vector:origin> )",
-            "Rotates the base feature around vector rot (magnitude gives angle), the axis goes through point origin."
+          _("Rotates the base feature around vector rot (magnitude gives angle), the axis goes through point origin.")
         )
-    )
-    ;
+  };
 }
 
 

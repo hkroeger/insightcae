@@ -22,6 +22,7 @@
 #include "base/boost_include.h"
 #include "base/tools.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #include "datum.h"
 
@@ -41,8 +42,9 @@ namespace cad
     
     
 defineType(BooleanIntersection);
-addToFactoryTable(Feature, BooleanIntersection);
-
+//addToFactoryTable(Feature, BooleanIntersection);
+addToStaticFunctionTable(Feature, BooleanIntersection, insertrule);
+addToStaticFunctionTable(Feature, BooleanIntersection, ruleDocumentation);
 
 size_t BooleanIntersection::calcHash() const
 {
@@ -55,9 +57,6 @@ size_t BooleanIntersection::calcHash() const
 }
 
 
-BooleanIntersection::BooleanIntersection()
-    : DerivedFeature()
-{}
 
 
 
@@ -84,21 +83,6 @@ BooleanIntersection::BooleanIntersection(FeaturePtr m1, DatumPtr m2pl)
 
 
 
-FeaturePtr BooleanIntersection::create(FeaturePtr m1, FeaturePtr m2)
-{
-    return FeaturePtr(new BooleanIntersection(m1, m2));
-}
-
-
-
-
-FeaturePtr BooleanIntersection::create_plane(FeaturePtr m1, DatumPtr m2pl)
-{
-    return FeaturePtr(new BooleanIntersection(m1, m2pl));
-}
-
-
-
 
 void BooleanIntersection::build()
 {
@@ -115,7 +99,7 @@ void BooleanIntersection::build()
                   throw CADException
                   (
                       shared_from_this(),
-                      "Could not perform intersection operation."
+                      _("Could not perform intersection operation.")
                   );
               }
               setShape(intersector.Shape());
@@ -128,7 +112,8 @@ void BooleanIntersection::build()
           if (m2pl_)
           {
               if (!m2pl_->providesPlanarReference())
-                  throw CADException(shared_from_this(), "intersection: given reference does not provide planar reference!");
+                  throw CADException(shared_from_this(),
+                                     _("intersection: given reference does not provide planar reference!"));
 
               if (m1_->isSingleWire() || m1_->isSingleEdge())
               {
@@ -146,7 +131,8 @@ void BooleanIntersection::build()
 
                       // For debugging only
                       if (!intersection.IsDone() )
-                          throw CADException(shared_from_this(), "intersection: edge intersection not successful!");
+                          throw CADException(shared_from_this(),
+                                             _("intersection: edge intersection not successful!"));
 
                       // Get intersection curve
                       for (int j=1; j<=intersection.NbPoints(); j++)
@@ -159,18 +145,16 @@ void BooleanIntersection::build()
               }
               else
               {
-                  BRepAlgoAPI_Section intersector
-                  (
-                      *m1_,
-                      m2pl_->plane()
-                  );
+                  BRepAlgoAPI_Common intersector(
+                              *m1_,
+                              BRepBuilderAPI_MakeFace(m2pl_->plane()).Face() );
                   intersector.Build();
                   if (!intersector.IsDone())
                   {
                       throw CADException
                       (
                           shared_from_this(),
-                          "could not perform shape/plane intersection operation."
+                          _("could not perform shape/plane intersection operation.")
                       );
                   }
                   TopoDS_Shape isecsh = intersector.Shape();
@@ -180,7 +164,8 @@ void BooleanIntersection::build()
               m1_->unsetLeaf();
           }
           else
-              throw CADException(shared_from_this(), "intersection: tool object undefined!");
+              throw CADException(shared_from_this(),
+                                 _("intersection: tool object undefined!") );
       }
     }
     else
@@ -199,7 +184,7 @@ void BooleanIntersection::operator=(const BooleanIntersection& o)
 }
 
 
-FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2)
+std::shared_ptr<BooleanIntersection> operator&(FeaturePtr m1, FeaturePtr m2)
 {
     return BooleanIntersection::create(m1, m2);
 }
@@ -215,7 +200,7 @@ FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2)
   * ( <feature expression: feat1> & <feature expression: feat2> ) : feature
   * ~~~~
   */
-void BooleanIntersection::insertrule(parser::ISCADParser& ruleset) const
+void BooleanIntersection::insertrule(parser::ISCADParser& ruleset)
 {
 //   ruleset.modelstepFunctionRules.add
 //   (
@@ -231,7 +216,7 @@ void BooleanIntersection::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList BooleanIntersection::ruleDocumentation() const
+FeatureCmdInfoList BooleanIntersection::ruleDocumentation()
 {
     return FeatureCmdInfoList();
 }

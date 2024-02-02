@@ -21,6 +21,7 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 
 #include "BRepOffsetAPI_MakeFilling.hxx"
@@ -39,8 +40,9 @@ namespace cad {
     
     
 defineType(BoundedFlatFace);
-addToFactoryTable(Feature, BoundedFlatFace);
-
+//addToFactoryTable(Feature, BoundedFlatFace);
+addToStaticFunctionTable(Feature, BoundedFlatFace, insertrule);
+addToStaticFunctionTable(Feature, BoundedFlatFace, ruleDocumentation);
 
 size_t BoundedFlatFace::calcHash() const
 {
@@ -50,9 +52,6 @@ size_t BoundedFlatFace::calcHash() const
   return h.getHash();
 }
 
-
-BoundedFlatFace::BoundedFlatFace()
-{}
 
 
 
@@ -69,21 +68,6 @@ BoundedFlatFace::BoundedFlatFace(const std::vector<FeatureSetPtr>& edges)
 {}
 
 
-
-
-FeaturePtr BoundedFlatFace::create(const std::vector<FeaturePtr>& edges)
-{
-    return FeaturePtr(new BoundedFlatFace(edges));
-}
-
-
-
-FeaturePtr BoundedFlatFace::create_set(const std::vector<FeatureSetPtr>& edges)
-{
-    return FeaturePtr(new BoundedFlatFace(edges));
-}
- 
- 
  
  
 void BoundedFlatFace::build()
@@ -122,9 +106,10 @@ void BoundedFlatFace::build()
         }
 
         if (n_ok==0)
-            throw insight::Exception("No valid edge given!");
+            throw insight::Exception(_("No valid edge given!"));
         if (n_nok>0)
-            insight::Warning(str(format("Only %d out of %d given edges were valid!") % n_ok % (n_ok+n_nok)));
+            insight::Warning(str(format(_("Only %d out of %d given edges were valid!"))
+                                 % n_ok % (n_ok+n_nok)));
 
     }
     else if
@@ -144,6 +129,9 @@ void BoundedFlatFace::build()
             }
         }
     }
+
+    if (edgs.Extent()<2)
+        throw insight::Exception("insufficient number of edges (%d)", edgs.Extent());
 
     BRepBuilderAPI_MakeWire w;
     w.Add(edgs);
@@ -174,7 +162,7 @@ void BoundedFlatFace::build()
 
      BRepBuilderAPI_MakeFace fb2(BRep_Tool::Surface(f), w.Wire());
      if (!fb2.IsDone())
-        throw insight::Exception("Failed to generate planar face!");
+      throw insight::Exception(_("Failed to generate planar face!"));
      else
        res=fb2.Face();
     }
@@ -222,18 +210,18 @@ BoundedFlatFace::operator const TopoDS_Face& () const
   * BoundedFlatFace( [<edge feature expression>, ...] ) : feature
   * ~~~~
   */
-void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset) const
+void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "BoundedFlatFace",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
     ( '(' >> ( ruleset.r_solidmodel_expression % ',' ) >> ')' )
-	[ qi::_val = phx::bind(&BoundedFlatFace::create, qi::_1) ]
+                  [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeaturePtr>&>, qi::_1) ]
     |
     ( '(' >> ( ruleset.r_edgeFeaturesExpression % ',' ) >> ')' )
-	[ qi::_val = phx::bind(&BoundedFlatFace::create_set, qi::_1) ]
+                  [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeatureSetPtr>&>, qi::_1) ]
       
     ))
   );
@@ -241,19 +229,18 @@ void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList BoundedFlatFace::ruleDocumentation() const
+FeatureCmdInfoList BoundedFlatFace::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "BoundedFlatFace",
          
             " (<feature> [, ..., <feature>] ) | (<edgesSelection> [, ..., <edgesSelection>])",
-         
-            "Creates a flat face from a number of edges. Edges are taken from one or more features or from one or more edge selection sets."
+
+          _("Creates a flat face from a number of edges. Edges are taken from one or more features or from one or more edge selection sets.")
         )
-    );
+  };
 }
 
 

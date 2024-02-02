@@ -23,6 +23,7 @@
 class vtkPolyData;
 class vtkCellArray;
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyDataAlgorithm.h"
 
@@ -31,6 +32,7 @@ class vtkCellArray;
 #include "boost/process.hpp"
 #include "boost/process/args.hpp"
 #include "base/linearalgebra.h"
+#include "base/outputanalyzer.h"
 
 #include <istream>
 
@@ -42,6 +44,18 @@ class vtkCellArray;
 namespace insight
 {
 
+std::string base64_encode(const std::string& s);
+std::string base64_encode(const boost::filesystem::path& f);
+
+std::shared_ptr<std::string> base64_decode(const std::string& sourceBuffer);
+
+void base64_decode(
+        const char *sourceBuffer, size_t size,
+        std::shared_ptr<std::string>& targetBuffer );
+
+void base64_decode(
+        const std::string& sourceBuffer,
+        std::shared_ptr<std::string>& targetBuffer );
 
 /**
  * wrapper for calling virtual functions before destruction
@@ -247,17 +261,23 @@ public:
 class SharedPathList 
 : public std::vector<boost::filesystem::path>
 {
-public:
+
   SharedPathList();
-  virtual ~SharedPathList();
-  virtual boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
+
+public:
+  static SharedPathList& global();
+
+  boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file, bool* found=nullptr);
   
   void insertIfNotPresent(const boost::filesystem::path& sp);
+
   void insertFileDirectoyIfNotPresent(const boost::filesystem::path& sp);
+
+  void insertPathRelativeToCurrentExecutable(
+          const boost::filesystem::path& relPath );
+
   boost::filesystem::path findFirstWritableLocation(
           const boost::filesystem::path& subPath ) const;
-  
-  static SharedPathList searchPathList;
 };
 
 
@@ -274,7 +294,7 @@ public:
 void copyDirectoryRecursively(const boost::filesystem::path& sourceDir, const boost::filesystem::path& destinationDir);
 
 
-template<class T>
+template<class T = double>
 T toNumber(const std::string& s)
 {
   try {
@@ -328,56 +348,8 @@ arma::mat computeOffsetContour(const arma::mat& polyLine, double thickness, cons
 
 
 
-class vtk_Transformer
-{
-public:
-  virtual ~vtk_Transformer();
-  virtual vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) =0;
-};
-
-class vtk_ChangeCS
-    : public vtk_Transformer
-{
-  arma::mat m_;
-public:
-  vtk_ChangeCS
-  (
-      arma::mat from_ex,
-      arma::mat from_ez,
-      arma::mat to_ex,
-      arma::mat to_ez
-  );
-
-  /**
-    * initialize from matrix 4x4 = 16 coefficients
-    */
-  vtk_ChangeCS
-  (
-      const double *coeffs
-  );
-
-  /**
-    * initialize from callback function
-    */
-  vtk_ChangeCS
-  (
-      std::function<double(int, int)> init_func,
-      int nrows=4, int idx_ofs=0
-  );
-
-  vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) override;
-};
-
-typedef vtk_Transformer* vtk_TransformerPtr;
-typedef std::vector<const vtk_Transformer*> vtk_TransformerList;
 
 
-vtkSmartPointer<vtkPolyDataAlgorithm>
-readSTL
-(
-  const boost::filesystem::path& path,
-  const vtk_TransformerList& trsf = vtk_TransformerList()
-);
 
 /**
   * return bounding box of model
@@ -394,8 +366,10 @@ arma::mat STLBndBox(
   * second col: max point
   */
 arma::mat PolyDataBndBox(
-  vtkSmartPointer<vtkPolyData> stl_data_Set
+  vtkSmartPointer<vtkDataSet> stl_data_Set
 );
+
+arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2);
 
 void writeSTL
 (
@@ -403,9 +377,6 @@ void writeSTL
    const boost::filesystem::path& outfile
 );
 
-
-std::string collectIntoSingleCommand( const std::string& cmd, const std::vector<std::string>& args = std::vector<std::string>() );
-std::string escapeShellSymbols(const std::string& expr);
 
 
 int findFreePort();
@@ -430,6 +401,18 @@ void readFileIntoString
     std::string& fileContent
 );
 
+void writeStringIntoFile
+(
+    const std::string& fileContent,
+    const boost::filesystem::path& fileName
+);
+
+void writeStringIntoFile
+(
+    std::shared_ptr<std::string> fileContent,
+    const boost::filesystem::path& fileName
+);
+
 
 class TemplateFile
     : public std::string
@@ -440,6 +423,12 @@ public:
   TemplateFile(const boost::filesystem::path& in);
 
   void replace(const std::string& keyword, const std::string& content);
+
+  template<class T>
+  void replaceValue(const std::string& keyword, const T& content)
+  {
+      replace(keyword, boost::lexical_cast<std::string>(content));
+  }
 
   void write(std::ostream& os) const;
   void write(const boost::filesystem::path& outfile) const;
@@ -453,12 +442,15 @@ struct MemoryInfo
 };
 
 
-class RSyncProgressAnalyzer
-    : public boost::process::ipstream
+class RSyncOutputAnalyzer
+    : public OutputAnalyzer
 {
+  std::function<void(int,const std::string&)> progressFunction_;
+  boost::regex pattern;
+
 public:
-  RSyncProgressAnalyzer();
-  void runAndParse(boost::process::child& rsyncProcess, std::function<void(int,const std::string&)> progressFunction);
+  RSyncOutputAnalyzer(std::function<void(int,const std::string&)> progressFunction);
+  void update(const std::string& line) override;
 };
 
 
@@ -502,6 +494,17 @@ int predictInsertionLocation(const Container& org_data, const KeyType& newKey)
 std::string getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
 std::shared_ptr<std::string> getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
 
+/**
+ * @brief ensureDefaultFileExtension
+ * @param path
+ * @param defaultExtension
+ * add this extension, if the supplied path has none. May or may not start with a dot.
+ * @return
+ */
+boost::filesystem::path
+ensureDefaultFileExtension(
+    const boost::filesystem::path& path,
+    const std::string& defaultExtension );
 
 }
 

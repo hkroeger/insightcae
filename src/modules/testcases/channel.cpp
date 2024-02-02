@@ -19,6 +19,8 @@
 
 #include "channel.h"
 
+#include <memory>
+
 #include "base/factory.h"
 #include "base/boost_include.h"
 
@@ -683,9 +685,15 @@ void ChannelBase::evaluateAtSection(
     arma::mat wallnormal(join_rows(p().operation.Re_tau-p().operation.Re_tau*data.col(0), data.col(c+1)));
     arma::mat spanwise(join_rows(p().operation.Re_tau-p().operation.Re_tau*data.col(0), data.col(c+2)));
     
-    axial.save( (executionPath()/("umeanaxial_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
-    wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
-    spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
+    axial.save(
+        (executionPath()/("umeanaxial_vs_yp_"+title+".txt")).string().c_str(),
+        arma::raw_ascii);
+    wallnormal.save(
+        (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).string().c_str(),
+        arma::raw_ascii);
+    spanwise.save(
+        (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).string().c_str(),
+        arma::raw_ascii);
     
     PlotCurveList plotcurves({
         PlotCurve(axial, 		"U", "w l lt 1 lc -1 lw 2 t '$U^+$'"),
@@ -731,7 +739,7 @@ void ChannelBase::evaluateAtSection(
     arma::mat Lt=Lt1;
     for (arma::uword i=0; i<Lt2.n_rows; i++) Lt(i)=min(Lt(i), Lt2(i));
     arma::mat Ltp(join_rows(ydelta, Lt));
-    Ltp.save( (executionPath()/("LdeltaRANS_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
+    Ltp.save( (executionPath()/("LdeltaRANS_vs_yp_"+title+".txt")).string().c_str(), arma::raw_ascii);
     
     struct cfm : public RegressionModel
     {
@@ -777,26 +785,13 @@ void ChannelBase::evaluateAtSection(
     )
     .setOrder(so.next());
 
-    section->insert
-    (
-     "regressionCoefficientsTubulentLengthScale_"+title,
-     std::unique_ptr<AttributeTableResult>
-     (
-       new AttributeTableResult
-       (
-         {
-          "c0",
-          "c1",
-          "c2",
-          "c3"
-         },
-	 list_of<AttributeTableResult::AttributeValue>
-	  (m.c0)(m.c1)(m.c2)(m.c3),
-	"Regression coefficients", "", ""
-	)
-     )
-    )
-    .setOrder(so.next());
+    section->insert(
+                "regressionCoefficientsTubulentLengthScale_"+title,
+                std::make_unique<AttributeTableResult>(
+                    AttributeTableResult::AttributeNames{ {"c0"}, {"c1"}, {"c2"}, {"c3"} },
+                    AttributeTableResult::AttributeValues{ m.c0, m.c1, m.c2, m.c3 },
+                    "Regression coefficients", "", "" )
+                ) .setOrder(so.next());
        
   }
 
@@ -869,9 +864,15 @@ void ChannelBase::evaluateAtSection(
     arma::mat spanwise(		join_rows(yplus, Rzz)	);
     arma::mat cross(		join_rows(yplus, Rxy)	);
 
-    axial.save( 	( executionPath()/( "Raxial_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
-    wallnormal.save( 	( executionPath()/( "Rwallnormal_vs_yp_"	+title+".txt") ).c_str(), arma::raw_ascii);
-    spanwise.save( 	( executionPath()/( "Rspanwise_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
+    axial.save(
+        ( executionPath()/( "Raxial_vs_yp_"		+title+".txt") ).string().c_str(),
+        arma::raw_ascii);
+    wallnormal.save(
+        ( executionPath()/( "Rwallnormal_vs_yp_"	+title+".txt") ).string().c_str(),
+        arma::raw_ascii);
+    spanwise.save(
+        ( executionPath()/( "Rspanwise_vs_yp_"		+title+".txt") ).string().c_str(),
+        arma::raw_ascii);
     
     
     PlotCurveList plotcurves({
@@ -943,7 +944,7 @@ void ChannelBase::evaluateAtSection(
       arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*p().geometry.H)), kres));
 
       kplots.push_back(PlotCurve( Kp, 	"TKEresolved", "w l lt 1 dt 1 lc 2 t 'TKE (resolved)'" ));
-      Kp.save( (executionPath()/("Kpresolved_vs_ydelta_"+title+".txt")).c_str(), arma::raw_ascii);
+      Kp.save( (executionPath()/("Kpresolved_vs_ydelta_"+title+".txt")).string().c_str(), arma::raw_ascii);
     }
 
     if (cd.find("k")!=cd.end())
@@ -952,7 +953,7 @@ void ChannelBase::evaluateAtSection(
       arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*p().geometry.H)), K));
 
       kplots.push_back(PlotCurve( Kp, 	"TKE", "w l lt -1 lw 2 t 'TKE'" ));
-      Kp.save( (executionPath()/("Kp_vs_ydelta_"+title+".txt")).c_str(), arma::raw_ascii);
+      Kp.save( (executionPath()/("Kp_vs_ydelta_"+title+".txt")).string().c_str(), arma::raw_ascii);
     }
 	  
     
@@ -1082,7 +1083,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
       wallforce.col(0)*p().operation.Re_tau,
       wallforce.col(1)/(0.5*pow(sp().Ubulk_,2))
     ));
-    Cf_vs_xp.save( (executionPath()/"Cf_vs_xp.txt").c_str(), arma::raw_ascii);
+    Cf_vs_xp.save( (executionPath()/"Cf_vs_xp.txt").string().c_str(), arma::raw_ascii);
     
     arma::mat Cftheo_vs_xp=zeros(2,2);
     Cftheo_vs_xp(0,0)=Cf_vs_xp(0,0);

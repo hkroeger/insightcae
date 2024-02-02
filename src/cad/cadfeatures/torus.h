@@ -39,18 +39,15 @@ class Torus
 
     Torus ( VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Torus" );
-    Torus ();
+    CREATE_FUNCTION(Torus);
 
-    static FeaturePtr create ( VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d );
-
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

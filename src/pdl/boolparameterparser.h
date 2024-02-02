@@ -21,17 +21,19 @@ struct BoolParameterParser
     std::string cppValueRep(const std::string&, const std::string& thisscope) const override;
   };
 
-  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  declareType("bool");
+
+  inline static void insertrule(PDLParserRuleset& ruleset)
   {
     ruleset.parameterDataRules.add
     (
-      "bool",
-      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
-       new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+      typeName,
+      std::make_shared<PDLParserRuleset::ParameterDataRule>(
+
         ( qi::bool_ >> ruleset.r_description_string )
         [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2)) ]
-      ))
+
+      )
     );
   }
 

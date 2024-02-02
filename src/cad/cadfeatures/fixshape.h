@@ -40,15 +40,13 @@ class FixShape
 
 public:
     declareType ( "FixShape" );
-    FixShape ();
 
-    static FeaturePtr create ( FeaturePtr in );
+    CREATE_FUNCTION(FixShape);
 
     operator const TopoDS_Shape& () const;
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

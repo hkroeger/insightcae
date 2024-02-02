@@ -27,6 +27,7 @@
 #include "base/exception.h"
 #include "base/cppextensions.h"
 #include "base/externalprograms.h"
+#include "base/externalprocess.h"
 
 #include "vtkSTLReader.h"
 #include "vtkSTLWriter.h"
@@ -40,6 +41,15 @@
 #include "vtkTransformPolyDataFilter.h"
 #include "vtkDataArray.h"
 
+#include "boost/archive/iterators/base64_from_binary.hpp"
+#include "boost/archive/iterators/binary_from_base64.hpp"
+#include <boost/algorithm/string.hpp>
+
+#include <boost/archive/iterators/base64_from_binary.hpp>
+#include <boost/archive/iterators/insert_linebreaks.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
+#include <boost/archive/iterators/ostream_iterator.hpp>
+#include <boost/archive/iterators/remove_whitespace.hpp>
 
 using namespace std;
 using namespace boost;
@@ -50,6 +60,108 @@ using namespace boost::posix_time;
 
 namespace insight
 {
+
+
+const std::string base64_padding[] = {"", "==","="};
+
+
+
+
+std::string base64_encode(const std::string& s)
+{
+  insight::CurrentExceptionContext ex(
+        boost::str(boost::format("performing base64 encode of buffer of size %d")
+                   % s.size() )
+        );
+
+  namespace bai = boost::archive::iterators;
+
+  std::stringstream os;
+
+  // convert binary values to base64 characters
+  typedef bai::base64_from_binary
+  // retrieve 6 bit integers from a sequence of 8 bit bytes
+  <bai::transform_width<const char *, 6, 8> > base64_enc; // compose all the above operations in to a new iterator
+
+  std::copy(base64_enc(s.c_str()), base64_enc(s.c_str() + s.size()),
+            std::ostream_iterator<char>(os));
+
+  os << base64_padding[s.size() % 3];
+  return os.str();
+}
+
+
+
+
+std::string
+base64_encode(
+    const boost::filesystem::path& f )
+{
+  std::string contents_raw;
+  readFileIntoString(f, contents_raw);
+  return base64_encode(contents_raw);
+}
+
+
+
+
+
+std::shared_ptr<std::string> base64_decode(const std::string& sourceBuffer)
+{
+    std::shared_ptr<std::string> targetBuffer;
+    base64_decode(sourceBuffer, targetBuffer);
+    return targetBuffer;
+}
+
+
+void
+base64_decode(const char *src, size_t size,
+    std::shared_ptr<std::string>& targetBuffer  )
+{
+//  char *src = a->value();
+//  size_t size = a->value_size();
+
+  if ((size>0) && src[size - 1] == '=')
+  {
+    --size;
+    if ((size>0) && src[size - 1] == '=')
+    {
+       --size;
+    }
+  }
+
+  if (size == 0)
+  {
+    if (targetBuffer) targetBuffer->clear();
+  }
+  else
+  {
+    using namespace boost::archive::iterators;
+
+    typedef
+      transform_width<
+       binary_from_base64<
+        remove_whitespace<
+         const char*
+        >
+       >,
+       8, 6
+      >
+      base64_dec;
+
+      targetBuffer.reset(new std::string( base64_dec(src), base64_dec(src + size) ));
+  }
+}
+
+void base64_decode(const std::string& sourceBuffer, std::shared_ptr<std::string>& targetBuffer)
+{
+    base64_decode(
+                sourceBuffer.c_str(),
+                sourceBuffer.size(),
+                targetBuffer );
+}
+
+
 
 
 bool directoryIsWritable( const boost::filesystem::path& directoryToTest )
@@ -293,7 +405,10 @@ SharedPathList::SharedPathList()
 {
   CurrentExceptionContext ec("building list of shared paths");
 
-  
+
+  insertPathRelativeToCurrentExecutable(
+              boost::filesystem::path("..")/"share"/"insight" );
+
   if (char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR"))
   {
     push_back(var_usershareddir);
@@ -330,13 +445,17 @@ SharedPathList::SharedPathList()
   }
 }
 
-SharedPathList::~SharedPathList()
+SharedPathList &SharedPathList::global()
 {
+    static SharedPathList spl;
+    return spl;
 }
 
 
-path SharedPathList::getSharedFilePath(const path& file)
+
+path SharedPathList::getSharedFilePath(const path& file, bool* foundPtr)
 {
+  if (foundPtr) *foundPtr=true;
   BOOST_REVERSE_FOREACH( const path& p, *this)
   {
     if (exists(p/file)) 
@@ -344,11 +463,19 @@ path SharedPathList::getSharedFilePath(const path& file)
   }
   
   // nothing found
-  throw insight::Exception(
+  if (foundPtr)
+  {
+    *foundPtr=false;
+    return boost::filesystem::path();
+  }
+  else
+  {
+    throw insight::Exception(
         std::string("Requested shared file ")
          +file.string()
          +" not found either in global nor user shared directories"
         );
+  }
 }
 
 void SharedPathList::insertIfNotPresent(const path& spr)
@@ -356,12 +483,12 @@ void SharedPathList::insertIfNotPresent(const path& spr)
   path sp = boost::filesystem::absolute(spr);
   if (std::find(begin(), end(), sp) == end())
   {
-    std::cout<<"Extend search path: "<<sp.string()<<std::endl;
+    insight::dbg()<<"Extend search path: "<<sp.string()<<std::endl;
     push_back(sp);
   }
   else
   {
-    std::cout<<"Already included in search path: "<<sp.string()<<std::endl;
+    insight::dbg()<<"Already included in search path: "<<sp.string()<<std::endl;
   }
 }
 
@@ -375,6 +502,36 @@ void SharedPathList::insertFileDirectoyIfNotPresent(const path& sp)
   {
     insertIfNotPresent(sp.parent_path());
   }
+}
+
+void SharedPathList::insertPathRelativeToCurrentExecutable(
+        const boost::filesystem::path &relPath)
+{
+    using namespace boost::filesystem;
+#if defined(WIN32)
+    char buf[MAX_PATH];
+    GetModuleFileName(NULL, buf, MAX_PATH);
+    path exe(buf);
+    path dir=exe.parent_path() / relPath;
+    insight::dbg()<<exe<<" "<<dir<<std::endl;
+    insertIfNotPresent(dir);
+#else
+    path link("/proc/self/exe");
+    if (is_symlink(link))
+    {
+        insight::dbg()<<read_symlink(link)<<std::endl;
+        insertIfNotPresent(
+                    read_symlink(link).parent_path()
+                    / relPath );
+    }
+    else
+    {
+        insight::dbg() << "skipping addition of path <executable dir>/"+relPath.string()
+                          +" because operating system does not provide symlink in /proc/self/exe."
+                          +" Make sure, the variable INSIGHT_GLOBALSHAREDDIRS contains all the appropriate paths."
+                       <<std::endl;
+    }
+#endif
 }
 
 boost::filesystem::path SharedPathList::findFirstWritableLocation(
@@ -392,10 +549,6 @@ boost::filesystem::path SharedPathList::findFirstWritableLocation(
     return bfs_path();
 }
 
-
-
-
-SharedPathList SharedPathList::searchPathList;
 
 
 
@@ -680,132 +833,7 @@ arma::mat LineMesh_to_OrderedPointTable::txyz() const
 }
 
 
-vtk_Transformer::~vtk_Transformer()
-{}
 
-
-vtk_ChangeCS::vtk_ChangeCS
-(
-    arma::mat from_ex,
-    arma::mat from_ez,
-    arma::mat to_ex,
-    arma::mat to_ez
-)
-{
-  CurrentExceptionContext ec("Computing VTK transformation matrix to change "
-                             "from CS with ex="+valueList_to_string(from_ex)+" and ez="+valueList_to_string(from_ez)+" "
-                             "to CS with ex="+valueList_to_string(to_ex)+" and ez="+valueList_to_string(to_ez)+".");
-
-  from_ez /= arma::norm(from_ez,2);
-  from_ex = arma::cross(from_ez, arma::cross(from_ex, from_ez));
-  from_ex /= arma::norm(from_ex, 2);
-  arma::mat from_ey = arma::cross(from_ez, from_ex);
-  from_ey /= arma::norm(from_ex, 2);
-
-  to_ez /= arma::norm(to_ez,2);
-  to_ex = arma::cross(to_ez, arma::cross(to_ex, to_ez));
-  to_ex /= arma::norm(to_ex, 2);
-  arma::mat to_ey = arma::cross(to_ez, to_ex);
-  to_ey /= arma::norm(to_ey, 2);
-
-  arma::mat matrix(3,3);
-  // matrix from XOY  ToA2 :
-  matrix.col(0) = to_ex;
-  matrix.col(1) = to_ey;
-  matrix.col(2) = to_ez;
-
-  arma::mat MA1(3,3);
-  MA1.col(0)=from_ex;
-  MA1.col(1)=from_ey;
-  MA1.col(2)=from_ez;
-
-  m_=arma::zeros(4,4);
-  m_(3,3)=1.;
-  m_.submat(0,0,2,2) = matrix.t() * MA1;
-}
-
-vtk_ChangeCS::vtk_ChangeCS
-(
-    const double *coeffs
-)
-{
-  m_=arma::zeros(4,4);
-
-  int k=0;
-  for (arma::uword i=0; i<4; i++)
-  {
-    for (arma::uword j=0; j<4; j++)
-    {
-      m_(i,j)=coeffs[k++];
-    }
-  }
-}
-
-vtk_ChangeCS::vtk_ChangeCS
-(
-    std::function<double(int, int)> init_func,
-    int nrows,
-    int idx_ofs
-)
-{
-  m_=arma::zeros(4,4);
-  m_(3,3)=1.;
-
-  for (arma::uword i=0; i<nrows; i++)
-  {
-    for (arma::uword j=0; j<4; j++)
-    {
-      m_(i,j) = init_func(i+idx_ofs, j+idx_ofs);
-    }
-  }
-}
-
-vtkSmartPointer<vtkPolyDataAlgorithm> vtk_ChangeCS::apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in)
-{
-  CurrentExceptionContext ec("Applying VTK transformation.");
-
-  vtkSmartPointer<vtkTransformPolyDataFilter> tf = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-  tf->SetInputConnection(in->GetOutputPort());
-
-  vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
-  const double m[] ={
-    m_(0,0), m_(0,1), m_(0,2), m_(0,3),
-    m_(1,0), m_(1,1), m_(1,2), m_(1,3),
-    m_(2,0), m_(2,1), m_(2,2), m_(2,3),
-    m_(3,2), m_(3,2), m_(3,2), m_(3,3)
-  };
-  t->SetMatrix(m);
-
-  tf->SetTransform(t);
-
-  return tf;
-}
-
-vtkSmartPointer<vtkPolyDataAlgorithm>
-readSTL
-(
-  const boost::filesystem::path& path,
-  const vtk_TransformerList& trsf
-)
-{
-  CurrentExceptionContext ce("Reading STL file "+path.string()+" using VTK reader");
-
-  if (!boost::filesystem::exists(path))
-    throw insight::Exception("file "+path.string()+" does not exist!");
-
-  vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
-  stl->SetFileName(path.string().c_str());
-
-  std::vector<vtkSmartPointer<vtkPolyDataAlgorithm> > imr;
-  vtkSmartPointer<vtkPolyDataAlgorithm> i0=stl;
-  for (const auto& t: trsf)
-  {
-    imr.push_back(vtkSmartPointer<vtkPolyDataAlgorithm>( t->apply_VTK_Transform(i0) ));
-    i0=imr.back();
-  }
-
-  return i0;
-}
 
 
 arma::mat STLBndBox
@@ -821,7 +849,7 @@ arma::mat STLBndBox
 
 arma::mat PolyDataBndBox
 (
-  vtkSmartPointer<vtkPolyData> in
+  vtkSmartPointer<vtkDataSet> in
 )
 {
   double bb[6];
@@ -833,6 +861,19 @@ arma::mat PolyDataBndBox
     << bb[2] << bb[3] << arma::endr
     << bb[4] << bb[5] << arma::endr;
 
+  return bbm;
+}
+
+
+arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2)
+{
+  arma::mat bbm;
+  bbm
+    << std::min(bb1(0,0),bb2(0,0)) << std::max(bb1(0,1),bb2(0,1)) << arma::endr
+    << std::min(bb1(1,0),bb2(1,0)) << std::max(bb1(1,1),bb2(1,1)) << arma::endr
+    << std::min(bb1(2,0),bb2(2,0)) << std::max(bb1(2,1),bb2(2,1)) << arma::endr;
+
+  std::cout<<bb1<<bb2<<bbm<<std::endl;
   return bbm;
 }
 
@@ -863,24 +904,7 @@ void writeSTL
 }
 
 
-std::string collectIntoSingleCommand( const std::string& cmd, const std::vector<std::string>& args )
-{
-  std::string res = cmd;
-  for (const auto& arg: args)
-  {
-    res += " \""+arg+"\""; // leading space!
-  }
-  return res;
-}
 
-string escapeShellSymbols(const string &expr)
-{
-  string res(expr);
-  algorithm::replace_all(res, "\\", "\\\\");
-  algorithm::replace_all(res, "$", "\\$");
-  algorithm::replace_all(res, "\"", "\\\"");
-  return res;
-}
 
 
 int findFreePort()
@@ -958,6 +982,34 @@ void readFileIntoString(const path &fileName, string &fileContent)
 }
 
 
+void writeStringIntoFile
+(
+    const std::string& fileContent,
+    const boost::filesystem::path& filePath
+)
+{
+    std::ofstream file( filePath.c_str(), std::ios::out | std::ios::binary);
+    if (file.good())
+    {
+        file.write(fileContent.c_str(), long(fileContent.size()) );
+        file.close();
+    }
+    else
+    {
+      throw insight::Exception("could not write to file "+filePath.string());
+    }
+}
+
+
+void writeStringIntoFile
+(
+    std::shared_ptr<std::string> fileContent,
+    const boost::filesystem::path& fileName
+)
+{
+   writeStringIntoFile(*fileContent, fileName);
+}
+
 
 TemplateFile::TemplateFile(const string &hardCodedTemplate)
   : std::string(hardCodedTemplate)
@@ -980,12 +1032,12 @@ void TemplateFile::replace(const string &keyword, const string &content)
 
 void TemplateFile::write(ostream &os) const
 {
-  os << (*this);
+  os.write(this->c_str(), long(this->size()) );
 }
 
 void TemplateFile::write(const path &outfile) const
 {
-  std::ofstream f(outfile.string());
+  std::ofstream f(outfile.string(), ios::binary);
   write(f);
 }
 
@@ -1010,44 +1062,36 @@ MemoryInfo::MemoryInfo()
 
 
 
-RSyncProgressAnalyzer::RSyncProgressAnalyzer()
+
+RSyncOutputAnalyzer::RSyncOutputAnalyzer(std::function<void(int,const std::string&)> progressFunction)
+    : progressFunction_(progressFunction),
+      pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*)")
 {}
 
 
-
-
-void RSyncProgressAnalyzer::runAndParse(
-    boost::process::child& rsyncProcess,
-    std::function<void(int,const std::string&)> pf )
+void RSyncOutputAnalyzer::update(const std::string& line)
 {
-  if (!rsyncProcess.running())
-  {
-    throw insight::Exception("could not start rsync process!");
-  }
-
-  std::string line;
-  boost::regex pattern(".* ([^ ]*)% *([^ ]*) *([^ ]*) \\(xfr#([0-9]+), to-chk=([0-9]+)/([0-9]+)\\)");
-  while (rsyncProcess.running() && std::getline(*this, line) && !line.empty())
-  {
-    insight::dbg()<<line<<std::endl;
     boost::smatch match;
     if (boost::regex_search( line, match, pattern, boost::match_default ))
     {
-      std::string percent=match[1];
+      int percent=toNumber<int>(match[1]);
       std::string rate=match[2];
-      std::string eta=match[3];
-//        int i_file=to_number<int>(match[4]);
-      int i_to_chk=toNumber<int>(match[5]);
-      int total_to_chk=toNumber<int>(match[6]);
+      std::string elapsed=match[3];
+      //      int i_file=toNumber<int>(match[4]);
+      //      std::string ir_or_to(match[5]);
+      //      int i_to_chk=toNumber<int>(match[6]);
+      //      int total_to_chk=toNumber<int>(match[7]);
 
-      double progress = total_to_chk==0? 1.0 : double(total_to_chk-i_to_chk) / double(total_to_chk);
-
-      if (pf) pf(int(100.*progress), rate+", "+eta+" (current file: "+percent+")");
+      if (progressFunction_)
+      {
+                progressFunction_(
+                    percent,
+                    str(boost::format("%s, %s") % rate % elapsed)
+                    );
+      }
     }
-  }
-
-  rsyncProcess.wait();
 }
+
 
 
 
@@ -1109,6 +1153,7 @@ arma::mat computeOffsetContour(const arma::mat &pl, double thickness, const arma
 
 
 
+
 std::string getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName)
 {
     if ( auto *fn = node.first_attribute(attributeName.c_str()) )
@@ -1124,6 +1169,20 @@ std::shared_ptr<std::string> getOptionalAttribute(rapidxml::xml_node<> &node, co
       return std::make_shared<std::string>(fn->value());
     else
       return std::shared_ptr<std::string>();
+}
+
+boost::filesystem::path ensureDefaultFileExtension(
+    const boost::filesystem::path &pth,
+    const std::string &defaultExtension )
+{
+    if (!pth.has_extension())
+    {
+      boost::filesystem::path res(pth);
+      res.replace_extension(defaultExtension);
+      return res;
+    }
+    else
+      return pth;
 }
 
 }

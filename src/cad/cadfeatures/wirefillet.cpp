@@ -20,6 +20,8 @@
 #include "wirefillet.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -35,7 +37,10 @@ namespace cad {
 
 
 defineType(WireFillet);
-addToFactoryTable(Feature, WireFillet);
+//addToFactoryTable(Feature, WireFillet);
+addToStaticFunctionTable(Feature, WireFillet, insertrule);
+addToStaticFunctionTable(Feature, WireFillet, ruleDocumentation);
+
 
 
 size_t WireFillet::calcHash() const
@@ -47,10 +52,6 @@ size_t WireFillet::calcHash() const
 }
 
 
-WireFillet::WireFillet(): DerivedFeature()
-{}
-
-
 
 
 
@@ -59,12 +60,6 @@ WireFillet::WireFillet(FeatureSetPtr vertices, ScalarPtr r)
 {}
 
 
-
-
-FeaturePtr WireFillet::create(FeatureSetPtr vertices, ScalarPtr r)
-{
-    return FeaturePtr(new WireFillet(vertices, r));
-}
 
 
 
@@ -183,7 +178,7 @@ void WireFillet::build()
   * Fillet(<edge feature set: edges>, <scalar: radius>) : feature
   * ~~~~
   */
-void WireFillet::insertrule(parser::ISCADParser& ruleset) const
+void WireFillet::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -191,7 +186,9 @@ void WireFillet::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
     ( '(' >> ruleset.r_vertexFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
-      [ qi::_val = phx::bind(&WireFillet::create, qi::_1, qi::_2) ]
+      [ qi::_val = phx::bind(
+                         &WireFillet::create<FeatureSetPtr, ScalarPtr>,
+                         qi::_1, qi::_2) ]
 
     ))
   );
@@ -200,19 +197,18 @@ void WireFillet::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList WireFillet::ruleDocumentation() const
+FeatureCmdInfoList WireFillet::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "WireFillet",
 
             "( <vertexSelection:vertices>, <scalar:r> )",
 
-            "Creates fillets at selected vertices of a wire. All vertices in the selection set vertices are rounded with width r."
+          _("Creates fillets at selected vertices of a wire. All vertices in the selection set vertices are rounded with width r.")
         )
-    );
+    };
 }
 
 

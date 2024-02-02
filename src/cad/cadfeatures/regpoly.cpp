@@ -20,6 +20,9 @@
 #include "regpoly.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -37,7 +40,10 @@ namespace cad {
     
     
 defineType(RegPoly);
-addToFactoryTable(Feature, RegPoly);
+//addToFactoryTable(Feature, RegPoly);
+addToStaticFunctionTable(Feature, RegPoly, insertrule);
+addToStaticFunctionTable(Feature, RegPoly, ruleDocumentation);
+
 
 
 size_t RegPoly::calcHash() const
@@ -54,10 +60,6 @@ size_t RegPoly::calcHash() const
 
 
 
-RegPoly::RegPoly()
-{}
-
-
 
 
 RegPoly::RegPoly(VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a, 
@@ -66,13 +68,6 @@ RegPoly::RegPoly(VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a,
 {}
 
 
-
-
-FeaturePtr RegPoly::create ( VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a,
-                               VectorPtr ez  )
-{
-    return FeaturePtr(new RegPoly(p0, n, ne, a, ez));
-}
 
 
 
@@ -97,7 +92,7 @@ void RegPoly::build()
     }
 
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-    providedSubshapes_["OuterWire"]=FeaturePtr ( new Feature ( w.Wire() ) );
+    providedSubshapes_["OuterWire"]=Feature::create ( w.Wire() );
 
     setShape ( BRepBuilderAPI_MakeFace ( w.Wire() ) );
 }
@@ -105,7 +100,7 @@ void RegPoly::build()
 
 
 
-void RegPoly::insertrule(parser::ISCADParser& ruleset) const
+void RegPoly::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -115,7 +110,9 @@ void RegPoly::insertrule(parser::ISCADParser& ruleset) const
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression 
 			      >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression 
 			      >> ( (',' >> ruleset.r_vectorExpression)|qi::attr(matconst(arma::mat())) ) >> ')' ) 
-	[ qi::_val = phx::bind(&RegPoly::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+    [ qi::_val = phx::bind(
+                         &RegPoly::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, VectorPtr>,
+                         qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       
     ))
   );
@@ -124,22 +121,21 @@ void RegPoly::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList RegPoly::ruleDocumentation() const
+FeatureCmdInfoList RegPoly::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "RegPoly",
             "( <vector:p0>, <vector:n>, <scalar:ne>, <scalar:a> [, <vector:ez>] )",
-            "Creates a regular polygon."
+            _("Creates a regular polygon."
             " Center of the polygon is at point p0."
             " Normal vector is n."
             " The number of edges is ne."
             " Radius of the outer circle is a."
-            " The direction from p0 to the first edge center is ez."
+            " The direction from p0 to the first edge center is ez.")
         )
-    );
+    };
 }
 
 

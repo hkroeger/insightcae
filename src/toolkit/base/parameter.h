@@ -27,6 +27,7 @@
 #include "base/linearalgebra.h"
 #include "base/exception.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <string>
@@ -35,6 +36,7 @@
 #include <sstream>
 
 #include "base/boost_include.h"
+#include "boost/signals2.hpp"
 
 #include <openssl/md5.h>
 
@@ -67,6 +69,7 @@ void writeMatToXMLNode(const arma::mat& matrix, rapidxml::xml_document< char >& 
 
 class Parameter;
 class ParameterSet;
+class SubsetParameter;
 
 
 
@@ -82,6 +85,40 @@ public:
 
 
 
+//#ifndef SWIG
+
+//template<typename Signature>
+//class Signal
+//{
+//public:
+//  typedef
+//      std::shared_ptr<boost::signals2::scoped_connection>
+//          ScopedConnectionPtr;
+//  typedef
+//      std::weak_ptr<boost::signals2::scoped_connection>
+//          WeakScopedConnectionPtr;
+
+//  typedef boost::signals2::signal<Signature> base_signal;
+
+//private:
+//  base_signal signal_;
+//  std::vector<WeakScopedConnectionPtr> connections_;
+
+//public:
+//  ScopedConnectionPtr connect(const typename base_signal::slot_type& slot);
+
+//  template<typename ...Args>
+//  typename base_signal::result_type operator()(Args&&... addArgs)
+//  {
+//    return signal_(std::forward<Args>(addArgs)...);
+//  }
+//};
+
+
+//#endif
+
+
+
 
 class Parameter
     : public boost::noncopyable
@@ -90,11 +127,93 @@ class Parameter
 public:
     declareFactoryTable ( Parameter, LIST ( const std::string& descr ), LIST ( descr ) );
 
+#ifndef SWIG
+    boost::signals2::signal<void()> valueChanged, childValueChanged;
+#endif
+
+    typedef Parameter& reference;
+    typedef const Parameter& const_reference;
+    typedef Parameter* pointer;
+    typedef const Parameter* const_pointer;
+    typedef size_t size_type;
+    typedef int difference_type;
+
+    class const_iterator;
+
+    class iterator
+    {
+        friend class const_iterator;
+
+        Parameter* p_;
+        int iChild_;
+    public:
+        typedef Parameter::reference reference;
+        typedef Parameter::pointer pointer;
+        typedef Parameter::size_type size_type;
+        typedef Parameter::difference_type difference_type;
+        typedef std::random_access_iterator_tag iterator_category;
+
+        iterator();
+        iterator(Parameter&, int i=0);
+        iterator(const iterator&);
+        ~iterator();
+
+        iterator& operator=(const iterator&);
+        bool operator==(const iterator&) const;
+        bool operator!=(const iterator&) const;
+
+        iterator& operator++();
+
+        reference operator*() const;
+        pointer operator->() const;
+        std::string name() const;
+    };
+
+    class const_iterator
+    {
+        const Parameter* p_;
+        int iChild_;
+    public:
+        typedef Parameter::const_reference reference;
+        typedef Parameter::const_pointer pointer;
+        typedef Parameter::size_type size_type;
+        typedef Parameter::difference_type difference_type;
+        typedef std::random_access_iterator_tag iterator_category;
+
+        const_iterator();
+        const_iterator(const Parameter&, int i=0);
+        const_iterator(const iterator&);
+        const_iterator(const const_iterator&);
+        ~const_iterator();
+
+        const_iterator& operator=(const const_iterator&);
+        bool operator==(const const_iterator&) const;
+        bool operator!=(const const_iterator&) const;
+
+        const_iterator& operator++();
+
+        reference operator*() const;
+        pointer operator->() const;
+        std::string name() const;
+    };
+
+    typedef std::reverse_iterator<iterator> reverse_iterator; //optional
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator; //optional
+
 protected:
     SimpleLatex description_;
 
     bool isHidden_, isExpert_, isNecessary_;
     int order_;
+
+    bool valueChangeSignalBlocked_;
+
+    Parameter* parent_;
+    void setParent(Parameter* parent);
+
+    friend class ArrayParameter;
+    friend class SubsetParameter;
+    friend class SelectableSubsetParameter;
 
 public:
     declareType ( "Parameter" );
@@ -102,6 +221,9 @@ public:
     Parameter();
     Parameter ( const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order);
     virtual ~Parameter();
+
+    Parameter* parent() const;
+    SubsetParameter& parentSet() const;
 
     bool isHidden() const;
     bool isExpert() const;
@@ -136,10 +258,27 @@ public:
     virtual void readFromNode
     (
         const std::string& name,
-        rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath
     ) =0;
+
+    void saveToNode(
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& rootNode,
+        const boost::filesystem::path& parent_path,
+        std::string analysisName ) const;
+    virtual void saveToStream(std::ostream& os, const boost::filesystem::path& parentPath, std::string analysisName = std::string() ) const;
+    void saveToFile ( const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
+    void saveToString ( std::string& s, const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
+
+    std::string readFromRootNode(
+        rapidxml::xml_node<>& rootNode,
+        const boost::filesystem::path& parent_path,
+        const std::string& startAtSubnode = std::string() );
+
+    std::string readFromFile(
+        const boost::filesystem::path& file,
+        const std::string& startAtSubnode = std::string() );
 
 //    rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
     virtual Parameter* clone() const =0;
@@ -169,60 +308,63 @@ public:
      */
     virtual void clearPackedData();
 
-    virtual void reset(const Parameter&);
-
-
 
     /**
-     * @brief The SearchResultParentInDict struct
-     * contains the result of the parent search operation
-     * for the case that the parameter was contained in a dictionary
+     * @brief copyFrom
+     * Set values from other parameter. In subsets, set values of all parameters with the same name as in op
+     * @param op
+     * other parameter
      */
-    struct SearchResultParentInDict {
-      /**
-      * @brief myIterator
-      * iterator to the current parameter in the parent parameter set
-      */
-     std::map<std::string, std::unique_ptr<Parameter> >::const_iterator myIterator;
+    virtual void copyFrom(const Parameter& op);
 
-     /**
-      * @brief myParentSet
-      * pointer to the containing (parent) parameter set
-      */
-     const ParameterSet* myParentSet = nullptr;
+    /**
+     * insert entries into current subset, that are not yet present.
+     * Existing parameters will not be touched!
+     */
+    virtual void extend ( const Parameter& op );
 
-     /**
-      * @brief myParentSetParameter
-      * if the containing parameter set is wrapped in a parameter, pointer to the
-      * parameter. Otherwise (if contained in the top level) a nullptr
-      */
-     const Parameter* myParentSetParameter = nullptr;
+    /**
+     * Set values and child parmeters from other, overwrite where matching (type and name).
+     */
+    virtual void merge ( const Parameter& other );
+
+#ifndef SWIG
+    virtual std::unique_ptr<Parameter> intersection(const Parameter& other) const;
+#endif
+
+
+    virtual int nChildren() const =0;
+    virtual std::string childParameterName( int i ) const;
+    virtual Parameter& childParameterRef ( int i );
+    virtual const Parameter& childParameter( int i ) const;
+
+    virtual int childParameterIndex( const std::string& name ) const;
+    Parameter& childParameterByNameRef ( const std::string& name );
+    const Parameter& childParameterByName ( const std::string& name ) const;
+
+
+    iterator begin();
+    const_iterator begin() const;
+    const_iterator cbegin() const;
+    iterator end();
+    const_iterator end() const;
+    const_iterator cend() const;
+
+#ifndef SWIG
+    struct UpdateValueSignalBlockage
+    {
+        Parameter& blockedParameter;
+        UpdateValueSignalBlockage(Parameter& p);
+        ~UpdateValueSignalBlockage();
     };
 
+    std::unique_ptr<UpdateValueSignalBlockage> blockUpdateValueSignal();
+#endif
 
-    /**
-     * @brief The SearchResultParentInArray struct
-     * contains the result of the parent search operation
-     * for the case that the parameter was contained in an array
-     */
-    struct SearchResultParentInArray {
-      int i = -1;
-      const Parameter* myParentArrayParameter = nullptr;
-    };
+    virtual void setUpdateValueSignalBlockage(bool block=true);
+    void triggerValueChanged();
+    void triggerChildValueChanged();
 
-
-    typedef boost::variant<SearchResultParentInDict,SearchResultParentInArray,boost::blank> SearchParentResult;
-
-    /**
-     * @brief searchMyParentIn
-     * searches the parent section of this parameter in the given parameter set.
-     * An exception is thrown, if the parameter was not found in the set.
-     * @param ps
-     * ParameterSet to be searched.
-     * @return
-     * SearchParentResult struct
-     */
-    SearchParentResult searchMyParentIn(const ParameterSet& ps) const;
 };
 
 

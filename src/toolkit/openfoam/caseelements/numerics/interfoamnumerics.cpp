@@ -5,6 +5,7 @@
 #include "openfoam/openfoamcase.h"
 
 #include "openfoam/caseelements/dynamicmesh/dynamicmesh.h"
+#include "openfoam/caseelements/numerics/oversetconfiguration.h"
 
 namespace insight {
 
@@ -49,17 +50,32 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 {
   OFcase().setRequiredMapMethod(OpenFOAMCase::cellVolumeWeightMapMethod);
 
+  if ( const auto * os =
+          boost::get<Parameters::overset_yes_type>(&p_.overset) )
+  {
+      overset_.reset(new OversetConfiguration(c, (*os)));
+  }
+
   alphaname_="alpha1";
   if (OFversion()>=230)
-    alphaname_="alpha.phase1";
+    alphaname_="alpha."+p_.phase1Name;
 
   // create pressure field to enable mapping from single phase cases
-  OFcase().addField("p", 	FieldInfo(scalarField, dimPressure, FieldValue({0.0}), 		volField ) );
+  OFcase().addField("p", 	FieldInfo(scalarField, dimPressure, FieldValue({p_.pinternal}), 		volField ) );
 
   OFcase().addField("U", 	FieldInfo(vectorField, dimVelocity, FieldValue({p_.Uinternal(0),p_.Uinternal(1),p_.Uinternal(2)}), volField ) );
   OFcase().addField(pName_, 	FieldInfo(scalarField, dimPressure, FieldValue({p_.pinternal}), volField ) );
   OFcase().addField(alphaname_,	FieldInfo(scalarField, dimless,     FieldValue({p_.alphainternal}), volField ) );
+
+  if (overset_) overset_->addFields();
 }
+
+
+std::pair<std::string,std::string> interFoamNumerics::phaseNames() const
+{
+    return { p_.phase1Name, p_.phase2Name };
+}
+
 
 
 //const double cAlpha=0.25; // use low compression by default, since split of interface at boundaries of refinement zones otherwise
@@ -100,11 +116,19 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //    {
 //      solvers["pcorrFinal"]=stdSymmSolverSetup(1e-7, 0.01);
 //    }
+
     solvers[pName_+f.first]=
-        isGAMGOk()?
-          OFcase().GAMGPCGSolverSetup(1e-7, 0.01*f.second)
-        :
-          OFcase().stdSymmSolverSetup(1e-7, 0.01*f.second);
+            overset_ ?
+                OFcase().stdAsymmSolverSetup(1e-7, 0.01*f.second)
+              :
+                (
+                    isGAMGOk()?
+                        OFcase().GAMGPCGSolverSetup(1e-7, 0.01*f.second)
+                      :
+                        OFcase().stdSymmSolverSetup(1e-7, 0.01*f.second)
+                        );
+
+
 
     solvers["U"+f.first]=OFcase().smoothSolverSetup(1e-8, 0.1*f.second);
     solvers["k"+f.first]=OFcase().smoothSolverSetup(1e-8, 0.1*f.second);
@@ -186,6 +210,13 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //  fluxRequired["alpha"]="";
   fluxRequired["pcorr"]="";
   fluxRequired[alphaname_]="";
+
+
+  if (overset_)
+  {
+      setApplicationName(dictionaries, "overInterDyMFoam");
+      overset_->addIntoDictionaries(dictionaries, pName_, "phiHbyA");
+  }
 }
 
 

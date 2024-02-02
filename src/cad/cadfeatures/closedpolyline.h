@@ -31,22 +31,20 @@ class ClosedPolyline
 {
     std::vector<VectorPtr> pts_;
 
-    ClosedPolyline(std::vector<VectorPtr> pts);
+    ClosedPolyline(const std::vector<VectorPtr>& pts);
 
     virtual size_t calcHash() const;
     virtual void build();
 
 public:
     declareType("ClosedPolyline");
-    ClosedPolyline();
 
-    static FeaturePtr create(std::vector<VectorPtr> pts);
+    CREATE_FUNCTION(ClosedPolyline);
 
     operator const TopoDS_Face& () const;
 
-
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule(parser::ISCADParser& ruleset);
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

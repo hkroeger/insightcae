@@ -31,7 +31,8 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
-#include "openfoamtools__setFieldOperator__Parameters_headers.h"
+#include "base/parameters/simpleparameter.h"
+#include "base/supplementedinputdata.h"
 
 #ifdef SWIG
 %template(TimeDirectoryList) std::map<double, boost::filesystem::path>;
@@ -75,210 +76,8 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
  */
 void copyFields(const boost::filesystem::path& from, const boost::filesystem::path& to);
 
-#ifndef SWIG
-namespace setFieldOps
-{
-
-class setFieldOperator
-{
-public:
-#include "openfoamtools__setFieldOperator__Parameters.h"
-/*
-PARAMETERSET>>> setFieldOperator Parameters
-
-fieldValues = array [ string "" "field value specification" ]*0 "list of field value specifications"
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  setFieldOperator(Parameters const& p = Parameters() );
-  virtual ~setFieldOperator();
-  
-  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const =0;
-  
-  virtual setFieldOperator* clone() const =0;
-};
 
 
-class fieldToCellOperator
-: public setFieldOperator
-{
-public:
-#include "openfoamtools__fieldToCellOperator__Parameters.h"
-/*
-PARAMETERSET>>> fieldToCellOperator Parameters
-inherits setFieldOperator::Parameters
-
-fieldName = string "" "name of the field"
-min = double 0.0 "minimum value"
-max = double 1e10 "maximum value"
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  fieldToCellOperator(Parameters const& p = Parameters() );
-  
-  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
-  
-  setFieldOperator* clone() const;
-};
-
-class boxToCellOperator
-: public setFieldOperator
-{
-public:
-#include "openfoamtools__boxToCellOperator__Parameters.h"
-/*
-PARAMETERSET>>> boxToCellOperator Parameters
-inherits setFieldOperator::Parameters
-
-fieldName = string "" "name of the field"
-min = vector (-1e10 -1e10 -1e10) "minimum corner"
-max = vector (1e10 1e10 1e10) "maximum corner"
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  boxToCellOperator(Parameters const& p = Parameters() );
-  
-  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
-  
-  setFieldOperator* clone() const;
-};
-
-
-class cellToCellOperator
-: public setFieldOperator
-{
-public:
-#include "openfoamtools__cellToCellOperator__Parameters.h"
-/*
-PARAMETERSET>>> cellToCellOperator Parameters
-inherits setFieldOperator::Parameters
-
-cellSet = string "cellSet" "name of the cell set"
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  cellToCellOperator(Parameters const& p = Parameters() );
-
-  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
-
-  setFieldOperator* clone() const;
-};
-
-inline setFieldOperator* new_clone(const setFieldOperator& op)
-{
-  return op.clone();
-}
-
-}
-
-void setFields(const OpenFOAMCase& ofc, 
-	       const boost::filesystem::path& location, 
-               const setFieldOps::setFieldOperator::Parameters::fieldValues_type& defaultValues,
-	       const boost::ptr_vector<setFieldOps::setFieldOperator>& ops);
-
-#endif
-
-
-namespace createPatchOps
-{
-  
-
-class createPatchOperator
-{
-public:
-#include "openfoamtools__createPatchOperator__Parameters.h"
-/*
-PARAMETERSET>>> createPatchOperator Parameters
-
-name = string "newpatch" ""
-constructFrom = string "patches" ""
-patchtype = string "patch" ""
-patches = array [ string "" "Patch name" ] *0 "Name of patches"
-setname = string "set" ""
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  createPatchOperator(createPatchOperator::Parameters const& p = createPatchOperator::Parameters() );
-  virtual ~createPatchOperator();
-  
-  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
-  virtual createPatchOperator* clone() const;
-};
-
-typedef std::shared_ptr<createPatchOperator> createPatchOperatorPtr;
-
-/**
- * Creates a cyclic patch or cyclic patch pair (depending on OF version)
- * from two other patches
- */
-class createCyclicOperator
-: public createPatchOperator
-{
-public:
-#include "openfoamtools__createCyclicOperator__Parameters.h"
-/*
-PARAMETERSET>>> createCyclicOperator Parameters
-inherits createPatchOperator::Parameters
-
-patches_half1 = array [ string "" "" ]*0 ""
-set_half1 = string "set_half1" ""
-
-<<<PARAMETERSET
-*/
-
-
-protected:
-  Parameters p_;
-
-public:
-  createCyclicOperator(createCyclicOperator::Parameters const& p = createCyclicOperator::Parameters() );
-  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
-  virtual createPatchOperator* clone() const;
-};
-
-#ifndef SWIG
-inline createPatchOperator* new_clone(const createPatchOperator& op)
-{
-  return op.clone();
-}
-#endif
-
-}
-
-void createPatch(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location, 
-                  const std::vector<
-#ifndef SWIG
-                 createPatchOps::
-#endif
-                 createPatchOperatorPtr>& ops,
-		  bool overwrite=true
-		);
 
 
 
@@ -603,10 +402,14 @@ void runPvPython
 class patchIntegrate
 {
 public:
-  patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
-		    const std::string& fieldName, const std::string& patchName,
-		    const std::vector<std::string>& addopts=boost::assign::list_of<std::string>("-latestTime")
-		);
+  patchIntegrate(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path& location,
+        const std::string& fieldName,
+        const std::string& patchNamePattern,
+        const std::string& regionName = std::string(),
+        const std::vector<std::string>& addopts = {"-latestTime"}
+        );
 
   /**
    * @brief t_
@@ -804,7 +607,27 @@ arma::mat interiorPressureFluctuationProfile
 );
 
 
-typedef std::map<std::string, int> PatchLayers;
+std::set<std::string> readPatchNameList(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path& caseLocation,
+        bool parallel,
+        const std::string& regionName = std::string(),
+        const std::string& time = "constant");
+
+class PatchLayers
+        : public std::map<std::string, int>
+{
+public:
+    PatchLayers();
+    PatchLayers(
+            const OpenFOAMCase& cm,
+            const boost::filesystem::path& caseLocation,
+            bool parallel,
+            const std::string& regionName = std::string(),
+            const std::string& time = "constant" );
+
+    void setByPattern(const std::string& regex_pattern, int nLayers);
+};
 
 void createPrismLayers
 (
@@ -814,9 +637,10 @@ void createPrismLayers
   bool relativeSizes, 
   const PatchLayers& nLayers,
   double expRatio,
-  bool twodForExtrusion=false,
-  bool isalreadydecomposed=false,
-  bool keepdecomposedafterfinish=false
+  bool twodForExtrusion = false,
+  bool isalreadydecomposed = false,
+  bool keepdecomposedafterfinish = false,
+  ProgressDisplayer* progress = nullptr
 );
 
 arma::mat surfaceProjectLine
@@ -914,18 +738,80 @@ bool checkIfAnyFileIsNewerOrNonexistent
     bool recursive=true
 );
 
+
+
+class ParallelTimeDirectories
+{
+  TimeDirectoryList serTimes_;
+  TimeDirectoryList proc0Times_;
+  std::set<boost::filesystem::path> procDirs_;
+
+public:
+  ParallelTimeDirectories(
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path& location
+        );
+
+   bool proc0TimeDirNeedsReconst(const boost::filesystem::path& ptdname) const;
+
+    /**
+   * @brief newParallelTimes
+   * @return
+   * parallel time directories, which are newer
+   * or not present in serial and need reconstruction
+   */
+  std::set<boost::filesystem::path>
+  newParallelTimes(bool filterOutInconsistent=false) const;
+
+  /**
+   * @brief latestTimeNeedsReconst
+   * @return
+   * check, if latest time step needs reconstruction
+   */
+  bool latestTimeNeedsReconst() const;
+
+  bool isParallelTimeDirInconsistent(const boost::filesystem::path& timeDirName) const;
+
+};
+
 bool checkIfReconstructLatestTimestepNeeded
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location
 );
 
+
+
 typedef std::vector<arma::mat> EMeshPtsList;
 typedef std::vector<EMeshPtsList> EMeshPtsListList;
+
+
+class eMesh
+{
+protected:
+    std::vector<arma::mat> points_;
+    std::vector<std::pair<int, int> > edges_;
+
+public:
+    eMesh();
+    eMesh(const EMeshPtsList& pts);
+    eMesh(const EMeshPtsListList& pts);
+    int nPoints() const;
+    int nEdges() const;
+    void write(std::ostream& os) const;
+    void write(const boost::filesystem::path& filename) const;
+};
+
+#ifndef SWIG
+std::ostream &operator<<(std::ostream& os, const eMesh& emesh);
+#endif
 
 void exportEMesh(const EMeshPtsList& pts, const boost::filesystem::path& filename);
 void exportEMesh(const EMeshPtsListList& pts, const boost::filesystem::path& filename);
 
+#ifndef SWIG
+std::ostream& operator<<(std::ostream& os, const std::set<boost::filesystem::path>& paths);
+#endif
 
 class OpenFOAMCaseDirs
 {
@@ -933,6 +819,7 @@ class OpenFOAMCaseDirs
   boost::filesystem::path location_;
   std::set<boost::filesystem::path> sysDirs_, postDirs_, procDirs_;
   std::vector<boost::filesystem::path> timeDirs_;
+  std::set<boost::filesystem::path> procTimeDirs_;
 
 public:
   enum TimeDirOpt { All, OnlyFirst, OnlyLast, OnlyFirstAndLast, ExceptFirst };
@@ -946,13 +833,18 @@ public:
 
   std::set<boost::filesystem::path> timeDirs( TimeDirOpt td = TimeDirOpt::All );
 
+  static std::set<boost::filesystem::path> timeDirContent(
+          const boost::filesystem::path& td );
+
+
   std::set<boost::filesystem::path> caseFilesAndDirs
   (
       TimeDirOpt td = TimeDirOpt::All,
-      bool cleanProc=true,
-      bool cleanTimes=true,
-      bool cleanPost=true,
-      bool cleanSys=true
+      bool cleanProc = true,
+      bool cleanTimes = true,
+      bool cleanPost = true,
+      bool cleanSys = true,
+      bool cleanInconsistentParallelTimes = false
   );
 
   void packCase(const boost::filesystem::path& archive_file, TimeDirOpt td = TimeDirOpt::All);
@@ -968,7 +860,8 @@ public:
       bool cleanProc=true,
       bool cleanTimes=true,
       bool cleanPost=true,
-      bool cleanSys=true
+      bool cleanSys=true,
+      bool cleanInconsistentParallelTimes = false
   );
 };
 
@@ -996,6 +889,19 @@ public:
 
   void operator=(const arma::mat& bb);
 };
+
+
+
+void setHydrostaticPressure(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& caseDir,
+    const arma::mat& pSurf,
+    const arma::mat& eUp,
+    double rho, double p0Amb,
+    const std::map<std::string, std::string> &targetEntriesPerPatch = {},
+    const std::string& fieldName = "p",
+    bool setInternalField = true
+    );
 
 
 }

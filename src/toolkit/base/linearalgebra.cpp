@@ -27,15 +27,23 @@
 #include "boost/format.hpp"
 #include "base/exception.h"
 #include "base/units.h"
+#include "base/cppextensions.h"
 
 // #include "minpack.h"
 // #include <dlib/optimization.h>
+
+
+#include "gsl/gsl_multiroots.h"
+
+
 
 using namespace arma;
 using namespace boost;
 
 namespace std
 {
+
+double armaMatIdentityTolerance = insight::SMALL;
 
 bool operator<(const arma::mat& v1, const arma::mat& v2)
 {
@@ -44,11 +52,11 @@ bool operator<(const arma::mat& v1, const arma::mat& v2)
     insight::assertion(v2.n_elem==3,
                        "Internal error: comparison only defined for 3-vectors!");
 
-    if ( fabs(v1(0) - v2(0))<insight::SMALL )
+    if ( fabs(v1(0) - v2(0))<armaMatIdentityTolerance )
     {
-        if ( fabs(v1(1) - v2(1))<insight::SMALL )
+        if ( fabs(v1(1) - v2(1))<armaMatIdentityTolerance )
         {
-            if (fabs(v1(2)-v2(2))<insight::SMALL)
+            if (fabs(v1(2)-v2(2))<armaMatIdentityTolerance )
             {
                 return false;
             }
@@ -64,18 +72,22 @@ bool operator<(const arma::mat& v1, const arma::mat& v2)
 namespace insight
 {
 
+const double VSMALL=1e-300;
 const double SMALL=1e-10;
 const double LSMALL=1e-6;
   
 void insight_gsl_error_handler
 (
  const char* reason,
- const char*,
- int,
- int
+ const char* file,
+ int line,
+ int gsl_errno
 )
 {
-  throw insight::Exception("Error in GSL subroutine: "+std::string(reason));
+  throw insight::GSLException(
+                reason, file,
+                line, gsl_errno
+                );
 }
 
 GSLExceptionHandling::GSLExceptionHandling()
@@ -89,27 +101,58 @@ GSLExceptionHandling::~GSLExceptionHandling()
 }
 
 
-mat vec1(double x)
+
+GSLException::GSLException(const char *reason, const char *file, int line, int gsl_errno)
+    : insight::Exception(
+          "Error in GSL subroutine: %s (errno %d)",
+          reason, gsl_errno
+          ),
+      gsl_reason_(reason),
+      gsl_errno_(gsl_errno)
+{}
+
+int GSLException::gsl_errno() const
 {
-  mat v;
+    return gsl_errno_;
+}
+
+arma::mat vec1(double x)
+{
+    arma::mat v;
   v << x << endr;
   return v;
 }
 
-mat vec2(double x, double y)
+arma::mat vec2(double x, double y)
 {
-  mat v;
+    arma::mat v;
   v << x <<endr << y << endr;
   return v;
 }
 
-mat vec3(double x, double y, double z)
+arma::mat vec3(double x, double y, double z)
 {
-  mat v;
+    arma::mat v;
   v << x <<endr << y << endr << z <<endr;
   return v;
 }
 
+arma::mat vec3FromComponents(const double* c)
+{
+    return vec3(c[0], c[1], c[2]);
+}
+
+arma::mat vec3FromComponents(const float *c)
+{
+    return vec3(c[0], c[1], c[2]);
+}
+
+arma::mat readVec3(std::istream& is)
+{
+    double c[3];
+    is >> c[0] >> c[1] >> c[2];
+    return vec3FromComponents(c);
+}
 
 arma::mat normalized(const arma::mat &vec)
 {
@@ -131,7 +174,7 @@ arma::mat tensor3(
   double zx, double zy, double zz
 )
 {
-  mat v;
+    arma::mat v;
   v 
     << xx << xy <<  xz <<endr
     << yx << yy <<  yz <<endr
@@ -145,14 +188,14 @@ double* toArray(const arma::mat& v)
   return const_cast<double*>(v.memptr());
 }
 
-mat rotMatrix( double theta, mat u )
+arma::mat rotMatrix( double theta, arma::mat u )
 {
     double s=sin(theta);
     double c=cos(theta);
     double ux=u[0];
     double uy=u[1];
     double uz=u[2];
-    mat m;
+    arma::mat m;
     m << ux*ux+(1-ux*ux)*c << ux*uy*(1-c)-uz*s << ux*uz*(1-c)+uy*s << endr
       << ux*uy*(1-c)+uz*s << uy*uy+(1-uy*uy)*c << uy*uz*(1-c)-ux*s << endr
       << ux*uz*(1-c)-uy*s << uy*uz*(1-c)+ux*s << uz*uz+(1-uz*uz)*c << endr;
@@ -162,7 +205,7 @@ mat rotMatrix( double theta, mat u )
 
 bool isRotationMatrix(const arma::mat &R)
 {
-  return arma::norm(R.t()*R - arma::eye(3,3), 2) < 1e-10;
+  return arma::norm(R.t()*R - arma::eye(3,3), 2) < 1e-6;
 }
 
 /**
@@ -174,9 +217,14 @@ bool isRotationMatrix(const arma::mat &R)
 */
 arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R)
 {
-  CurrentExceptionContext ex("compution euler angles from rotation matrix");
+  std::ostringstream os; os<<R;
+  CurrentExceptionContext ex(2, "compution euler angles from rotation matrix ("+os.str()+")", false);
 
-  insight::assertion(isRotationMatrix(R), "the argument is not a rotation matrix");
+  insight::assertion(
+              isRotationMatrix(R),
+              str(format("the argument is not a rotation matrix, residual=%e")
+                  %(arma::norm(R.t()*R - arma::eye(3,3), 2)))
+              );
 
   double sy=sqrt(R(0,0) * R(0,0) +  R(1,0) * R(1,0) );
   bool singular = sy < 1e-10;
@@ -198,6 +246,15 @@ arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R)
   return vec3(x/SI::deg, y/SI::deg, z/SI::deg);
 }
 
+
+arma::mat rollPitchYawToRotationMatrix(const arma::mat& rollPitchYaw)
+{
+    return
+             rotMatrix(rollPitchYaw(2)*SI::deg, vec3(0,0,1))
+            *rotMatrix(rollPitchYaw(1)*SI::deg, vec3(0,1,0))
+            *rotMatrix(rollPitchYaw(0)*SI::deg, vec3(1,0,0))
+            ;
+}
 
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis, const arma::mat& p0 )
 {
@@ -357,8 +414,16 @@ double F_obj(double x, void *param)
   return model(x);
 }
 
+
+
+
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
 {
+  insight::CurrentExceptionContext ex(
+              str(format("solving for root between x_min=%g and x_max=%g")
+                  % x_min % x_max )
+              );
+
   int i, times, status;
   gsl_function f;
   gsl_root_fsolver *workspace_f;
@@ -367,32 +432,47 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
  
   workspace_f = gsl_root_fsolver_alloc(gsl_root_fsolver_bisection);
 
-  f.function = &F_obj;
-  f.params = const_cast<void *>(static_cast<const void*>(&model));
-
-  x_l = x_min;
-  x_r = x_max;
-
-  gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
-
-  for(times = 0; times < 100; times++)
+  try
   {
-      status = gsl_root_fsolver_iterate(workspace_f);
 
-      x_l = gsl_root_fsolver_x_lower(workspace_f);
-      x_r = gsl_root_fsolver_x_upper(workspace_f);
+      f.function = &F_obj;
+      f.params = const_cast<void *>(static_cast<const void*>(&model));
 
-      status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
-      if(status != GSL_CONTINUE)
+      x_l = x_min;
+      x_r = x_max;
+
+      gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
+
+
+      for(times = 0; times < 100; times++)
       {
-	  break;
-      }
-  }
+          status = gsl_root_fsolver_iterate(workspace_f);
 
-  gsl_root_fsolver_free(workspace_f);
+          x_l = gsl_root_fsolver_x_lower(workspace_f);
+          x_r = gsl_root_fsolver_x_upper(workspace_f);
+
+          status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
+          if(status != GSL_CONTINUE)
+          {
+            break;
+          }
+      }
+
+      gsl_root_fsolver_free(workspace_f);
+  }
+  catch (GSLException& ex)
+  {
+      gsl_root_fsolver_free(workspace_f);
+      ex.messageRef() +=
+              str(format("\ny(x_min)=%g, y(x_max)=%g, y(0.5*(x_min+x_max))=%g")
+                  % model(x_min) % model(x_max) % model(0.5*(x_min+x_max)) );
+      throw ex;
+  }
 
   return x_l;
 }
+
+
 
 
 double nonlinearSolve1D(const std::function<double(double)>& model, double x_min, double x_max)
@@ -412,12 +492,12 @@ double nonlinearSolve1D(const std::function<double(double)>& model, double x_min
 double F_min_obj(const gsl_vector* x, void *param)
 {
   const Objective1D& model=*static_cast<Objective1D*>(param);
-  cout<<"ITER: X="<<x->data[0]<<" F="<<model(x->data[0])<<endl;
+//  cout<<"ITER: X="<<x->data[0]<<" F="<<model(x->data[0])<<endl;
   return model(x->data[0]);
 }
 
 
-double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
+double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max, double tol)
 {
   try
   {
@@ -456,7 +536,7 @@ double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
 	  break;
 
 	size = gsl_multimin_fminimizer_size (s);
-	status = gsl_multimin_test_size (size, 1e-3);
+    status = gsl_multimin_test_size (size, tol);
 
 // 	if (status == GSL_SUCCESS)
 // 	  {
@@ -491,7 +571,7 @@ double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
 
 
 
-double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max)
+double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max, double tol)
 {
   struct Obj : public Objective1D
   {
@@ -502,7 +582,7 @@ double nonlinearMinimize1D(const std::function<double(double)>& model, double x_
       return model_(x);
     }
   } obj(model);
-  return nonlinearMinimize1D(obj, x_min, x_max);
+  return nonlinearMinimize1D(obj, x_min, x_max, tol);
 }
 
 
@@ -527,116 +607,20 @@ double f_nonlinearMinimizeND(const gsl_vector * p, void * params)
   return m(x);
 }
 
-// const ObjectiveND* minpack_params;
-// void f_nonlinearMinimizeND2(int *n, double *p, double *fvec, int *iflag)
-// {
-//   
-//   const ObjectiveND& m = *minpack_params;
-//   
-//   if (*n != m.numP())
-//     throw insight::Exception("incompatible!");
-//   
-//   arma::mat x=arma::zeros(m.numP());
-//   for (int i=0; i<x.n_elem; i++)
-//   {
-//       x(i) = p[i];
-//   }
-//   
-// 
-//     std::cerr<<"F="<<m(x)<<std::endl;
-//   if (*iflag == 0) {
-//     /*      insert print statements here when nprint is positive. */
-//     /* if the nprint parameter to lmder is positive, the function is
-//        called every nprint iterations with iflag=0, so that the
-//        function may perform special operations, such as printing
-//        residuals. */
-//     return;
-//   }
-// 
-//   fvec[0]=m(x);
-// }
 
-// typedef dlib::matrix<double,0,1> column_vector;
-// class f_nonlinearMinimizeND3
-// {
-// public:
-//   const ObjectiveND* obj_;
-//   f_nonlinearMinimizeND3(const ObjectiveND* obj): obj_(obj) {}
-//   double operator()(const column_vector& arg) const
-//   {
-//     arma::mat p = arma::zeros(obj_->numP());
-//     for (int i=0; i<obj_->numP(); i++) p(i)=arg(i);
-//     double resi=(*obj_)(p);
-//     std::cerr<<"resi="<<resi<<std::endl;
-//     return resi;
-//   }
-// };
+
     
-arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol, const arma::mat& steps)
+arma::mat nonlinearMinimizeND(
+    const ObjectiveND& model, const arma::mat& x0,
+    double tol, const arma::mat& steps, double relax )
 {
-//   int n=model.numP();
-//   column_vector starting_point(n);
-//   for (int i=0; i<n; i++) starting_point(i)=x0(i);
-//   double r = dlib::find_min_bobyqa(
-//     f_nonlinearMinimizeND3(&model), 
-//     starting_point, 
-//     10,    // number of interpolation points
-//     dlib::uniform_matrix<double>(n,1, -1e100),  // lower bound constraint
-//     dlib::uniform_matrix<double>(n,1, 1e100),   // upper bound constraint
-//     10,    // initial trust region radius
-//     1e-6,  // stopping trust region radius
-//     100000    // max number of objective function evaluations
-//   );
-//   arma::mat res=arma::zeros(n);
-//   for (int i=0; i<n; i++) res(i)=starting_point(i);
-//   
-//   return res;
-  
-//   minpack_params = &model;
-// 
-//     int j, n, info, lwa;
-//   n = model.numP();
-//   double tol2, fnorm;
-//   double x[n], fvec[1], wa[180];
-//   int one=1;
-// 
-// 
-// /*      the following starting values provide a rough solution. */
-// 
-//   for (j=0; j<n; j++) {
-//     x[j] = x0(j);
-//   }
-// 
-//   lwa = 180;
-// 
-// /*      set tol to the square root of the machine precision. */
-// /*      unless high solutions are required, */
-// /*      this is the recommended setting. */
-// 
-//   tol2 = sqrt(dpmpar_(&one));
-//   hybrd1_(&f_nonlinearMinimizeND2, &n, x, fvec, &tol2, &info, wa, &lwa);
-//   fnorm = enorm_(&n, fvec);
-// 
-//   printf("     final L2 norm of the residuals %15.7g\n", (double)fnorm);
-//   printf("     exit parameter                 %10i\n", info);
-//   printf("     final approximates solution\n");
-//   
-//         arma::mat res=arma::zeros(n);
-//         for (int i=0; i<n; i++)
-//         {
-//             res(i)=x[i];
-//         };
-// 	
-// 	return res;
-	
-
     try
     {
         const gsl_multimin_fminimizer_type *T =
             gsl_multimin_fminimizer_nmsimplex;
             
         gsl_multimin_fminimizer *s = nullptr;
-        gsl_vector *ss, *p/*, *olditer_p*/;
+        gsl_vector *ss, *p, *olditer_p;
         gsl_multimin_function minex_func;
 
         size_t iter = 0;
@@ -647,7 +631,8 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 
         /* Starting point */
         p = gsl_vector_alloc (numP);
-//         olditer_p = gsl_vector_alloc (model.numP());
+        olditer_p = gsl_vector_alloc (model.numP());
+
         //gsl_vector_set_all (p, 1.0);
         for (size_t i=0; i<numP; i++)
         {
@@ -673,26 +658,29 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
         s = gsl_multimin_fminimizer_alloc (T, numP);
         gsl_multimin_fminimizer_set (s, &minex_func, p, ss);
 
-// 	double relax=0.01;
+
         do
         {
-// 	    gsl_vector_memcpy(olditer_p, s->x);
+            gsl_vector_memcpy(olditer_p, s->x);
 	    
             iter++;
             status = gsl_multimin_fminimizer_iterate(s);
-            if (status)
-                break;
+
+            if (status) break;
 
             size = gsl_multimin_fminimizer_size (s);
             status = gsl_multimin_test_size (size, tol);
-//            std::cerr<<"i="<<iter<<": F="<<s->fval<<std::endl;
-// 	    // relax
-// 	    for (int i=0; i<model.numP(); i++)
-// 	    {
-// 	      gsl_vector_set(s->x, i, 
-// 		      relax*gsl_vector_get(s->x, i) + (1.-relax)*gsl_vector_get(olditer_p, i) 
-// 	      );
-// 	    }
+
+            // relax
+            for (int i=0; i<model.numP(); i++)
+            {
+              gsl_vector_set(s->x, i,
+                  relax * gsl_vector_get(s->x, i)
+                  +
+                  (1.-relax) * gsl_vector_get(olditer_p, i)
+              );
+            }
+
         }
         while ( status == GSL_CONTINUE && (iter < model.maxiter) );
         
@@ -704,25 +692,30 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
         
         gsl_vector_free(p);
         gsl_vector_free(ss);
-//         gsl_vector_free(olditer_p);
+        gsl_vector_free(olditer_p);
         gsl_multimin_fminimizer_free (s);
 
-        return res; //model.computeQuality(y, x);
+        return res;
     }
     catch (const std::exception& e)
     {
         std::ostringstream os;
         os<<"x0=["<<x0.t()<<"]";
-        throw insight::Exception("nonlinearMinimizeND(): Exception occurred during regression.\nSupplied data: "+os.str()+"\n"+e.what());
+        throw insight::Exception(
+            "nonlinearMinimizeND(): Exception occurred during regression.\n"
+            "Supplied data: "+os.str()+"\n"+e.what()
+            );
     }
 
     return arma::zeros(x0.n_elem)+DBL_MAX;
 }
 
 
+
+
 arma::mat nonlinearMinimizeND(
-        const std::function<double(const arma::mat&)>& model,
-        const arma::mat& x0, double tol, const arma::mat& steps)
+    const std::function<double(const arma::mat&)>& model, const arma::mat& x0,
+    double tol, const arma::mat& steps, int nMaxIter, double relax)
 {
     struct Obj : public ObjectiveND
     {
@@ -735,8 +728,184 @@ arma::mat nonlinearMinimizeND(
       }
       int numP() const override { return np_; }
     } obj(x0.n_elem, model);
-    return nonlinearMinimizeND(obj, x0, tol, steps);
+
+    obj.maxiter=nMaxIter;
+
+    return nonlinearMinimizeND(obj, x0, tol, steps, relax);
 }
+
+
+
+arma::mat vec(const gsl_vector * x, boost::variant<boost::blank,double,arma::mat> replaceNaN)
+{
+    arma::mat r = arma::zeros(x->size);
+    for (size_t i=0; i<x->size; ++i)
+    {
+        r(i) = gsl_vector_get(x, i);
+
+        if (std::isnan(r(i)))
+        {
+            if (const auto repl = boost::get<double>(&replaceNaN))
+                r(i)=*repl;
+            else if (const auto repl = boost::get<arma::mat>(&replaceNaN))
+                r(i)=(*repl)(i);
+            else
+                throw insight::Exception(
+                    "NaN at element %d", i);
+
+            insight::Warning("replaced NaN occurrence at index %d", i);
+        }
+    }
+    return r;
+}
+
+void gsl_vector_set(const arma::mat& x, gsl_vector * xo)
+{
+    insight::assertion(
+        xo->size == x.n_elem,
+        "gsl_vector must be initialized to the same size as input vector (expected %d, got %d)",
+        x.n_elem, xo->size);
+
+    for (int i=0; i<x.n_elem; ++i)
+    {
+      insight::assertion(
+          !std::isnan(x(i)),
+          "nan in input vector at %d", i);
+      gsl_vector_set (xo, i, x(i));
+    }
+}
+
+struct f_adapter_params {
+    std::function<arma::mat(const arma::mat&)> func;
+    arma::mat x0;
+};
+
+int f_adapter (const gsl_vector * x, void * p, gsl_vector * y)
+{
+    auto F = *reinterpret_cast<f_adapter_params*>(p);
+
+    arma::mat vx = vec(x/*, F.x0*/);
+
+    insight::dbg()<<"x="<<vx.t()<<std::endl;
+
+    arma::mat my = F.func( vx );
+
+    gsl_vector_set (my, y);
+
+    return GSL_SUCCESS;
+}
+
+
+
+arma::mat nonlinearSolveND(
+    std::function<arma::mat(const arma::mat& x)> obj,
+    const arma::mat& x0,
+    double tol, int nMaxIter, double relax,
+    std::function<void(const arma::mat&)> perIterationCallback
+    )
+{
+    const gsl_multiroot_fsolver_type *T;
+    gsl_multiroot_fsolver *s;
+
+    int status;
+    size_t n = x0.n_elem;
+    size_t i, iter = 0;
+
+    f_adapter_params fp{obj, x0};
+    gsl_multiroot_function f = {&f_adapter, n, &fp};
+
+    gsl_vector *x = gsl_vector_alloc (n);
+    gsl_vector * olditer_p = gsl_vector_alloc (n);
+    for (int i=0; i<n; ++i)
+      gsl_vector_set (x, i, x0(i));
+
+    //T = gsl_multiroot_fsolver_hybrids;
+    T = gsl_multiroot_fsolver_hybrids;
+    s = gsl_multiroot_fsolver_alloc (T, n);
+    gsl_multiroot_fsolver_set (s, &f, x);
+
+
+    typedef struct
+    {
+        size_t iter;
+        size_t ncfail;
+        size_t ncsuc;
+        size_t nslow1;
+        size_t nslow2;
+        double fnorm;
+        double delta;
+        gsl_matrix *J;
+        gsl_matrix *q;
+        gsl_matrix *r;
+        gsl_vector *tau;
+        gsl_vector *diag;
+        gsl_vector *qtf;
+        gsl_vector *newton;
+        gsl_vector *gradient;
+        gsl_vector *x_trial;
+        gsl_vector *f_trial;
+        gsl_vector *df;
+        gsl_vector *qtdf;
+        gsl_vector *rdx;
+        gsl_vector *w;
+        gsl_vector *v;
+    }
+    hybrid_state_t;
+    arma::mat J=insight::mat(static_cast<hybrid_state_t*>(s->state)->J);
+    if(fabs(arma::det(J))<SMALL)
+    {
+        throw insight::JacobiDeterminatException(J);
+    }
+
+
+    do
+    {
+      std::cout<<"iter="<<iter<<std::endl;
+      gsl_vector_memcpy(olditer_p, s->x);
+
+      iter++;
+      status = gsl_multiroot_fsolver_iterate (s);
+
+      //      print_state (iter, s);
+
+      if (status!=0)   /* check if solver is stuck */
+          throw insight::NonConvergenceException(iter);
+
+      status =
+          gsl_multiroot_test_residual (s->f, tol);
+
+
+      //relax
+      for (int i=0; i<n; i++)
+      {
+          gsl_vector_set(
+            s->x, i,
+          relax * gsl_vector_get(s->x, i)
+             +
+          (1.-relax) * gsl_vector_get(olditer_p, i)
+         );
+      }
+
+      if (perIterationCallback)
+      {
+        perIterationCallback(vec(s->x));
+      }
+    }
+    while (status == GSL_CONTINUE && iter < nMaxIter);
+
+    if (iter>=nMaxIter)
+        throw insight::NonConvergenceException(iter);
+
+    printf ("status = %s\n", gsl_strerror (status));
+
+    arma::mat result = vec(s->x);
+
+    gsl_multiroot_fsolver_free (s);
+    gsl_vector_free (x);
+
+    return result;
+}
+
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)
 {
@@ -827,7 +996,9 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
         arma::mat selrows=data.rows( indices );
         if (selrows.n_rows==0) // nothing selected: take the closest row
         {
-            indices = arma::sort_index(arma::mat(pow(data.col(0) - 0.5*(from+to), 2)));
+            indices = arma::sort_index(
+                        arma::mat(pow(data.col(0) - 0.5*(from+to), 2))
+                        );
             selrows=data.row( indices(0) );
         }
 
@@ -928,11 +1099,24 @@ void Interpolator::initialize(const arma::mat& xy_us, bool force_linear)
         first_=xy.row(0);
         last_=xy.row(xy.n_rows-1);
     }
+    catch (const insight::GSLException& gex)
+    {
+        std::ostringstream os;
+        os<<xy_us;
+        throw insight::Exception(
+            "Interpolator::Interpolator(): Failed to initialize interpolator.\n"
+            "Supplied data:\n"+os.str()+"\n"
+            "Reason: "+gex.gsl_reason()
+            );
+    }
     catch (...)
     {
         std::ostringstream os;
         os<<xy_us;
-        throw insight::Exception("Interpolator::Interpolator(): Failed to initialize interpolator.\nSupplied data: "+os.str());
+        throw insight::Exception(
+            "Interpolator::Interpolator(): Failed to initialize interpolator.\n"
+            "Supplied data:\n"+os.str()
+            );
     }
 }
 
@@ -981,6 +1165,26 @@ double Interpolator::integrate(double a, double b, int col) const
   
   return gsl_spline_eval_integ( &(spline[col]), a, b, &(*acc) );
 }
+
+
+
+double Interpolator::solve(
+        double yTarget, int col,
+        boost::optional<double> av,
+        boost::optional<double> bv ) const
+{
+    double a = firstX();
+    double b = lastX();
+    if (av) a=*av;
+    if (bv) b=*bv;
+
+    return nonlinearSolve1D(
+                [&](double x) -> double { return y(x, col) - yTarget; },
+                a, b
+            );
+}
+
+
 
 double Interpolator::y(double x, int col, OutOfBounds* outOfBounds) const
 {
@@ -1129,6 +1333,188 @@ bool operator!=(const arma::mat &m1, const arma::mat &m2)
     }
 
   return false;
+}
+
+arma::mat vec3Zero()
+{
+    return vec3(0,0,0);
+}
+
+arma::mat vec3One()
+{
+    return vec3(1,1,1);
+}
+
+
+arma::mat vec3X(double x)
+{
+    return vec3(x, 0, 0);
+}
+
+arma::mat vec3Y(double y)
+{
+    return vec3(0, y, 0);
+}
+
+arma::mat vec3Z(double z)
+{
+    return vec3(0, 0, z);
+}
+
+
+CoordinateSystem::CoordinateSystem()
+    : origin(vec3Zero()),
+      ex(vec3X(1)), ey(vec3Y(1)), ez(vec3Z(1))
+{}
+
+CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x)
+    : origin(p0),
+      ex(x/arma::norm(x,2))
+{
+    arma::mat tz=vec3(0,0,1);
+    if ( fabs(arma::dot(tz,ex) - 1.) < SMALL )
+    {
+        tz=vec3(0,1,0);
+    }
+
+    ey=-arma::cross(ex,tz);
+    ey/=arma::norm(ey,2);
+
+    ez=arma::cross(ex,ey);
+    ez/=arma::norm(ez,2);
+}
+
+
+
+
+CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x, const arma::mat &z)
+    : origin(p0),
+      ex(x/arma::norm(x,2))
+{
+    if ( fabs(arma::dot(z,ex) - 1.) < SMALL )
+    {
+        throw insight::Exception("X and Z axis are colinear!");
+    }
+
+    ey=-arma::cross(ex,z);
+    ey/=arma::norm(ey,2);
+
+    ez=arma::cross(ex,ey);
+    ez/=arma::norm(ez,2);
+}
+
+
+
+View::View(
+    const arma::mat &ctr,
+    const arma::mat &cameraOffset,
+    const arma::mat &up,
+    const std::string &t )
+: CoordinateSystem(ctr, cameraOffset, up),
+  cameraDistance(arma::norm(cameraOffset, 2)),
+  title(t)
+{}
+
+
+
+
+std::map<std::string, View>
+generateStandardViews(
+    const CoordinateSystem &o,
+    double camOfs )
+{
+    return
+    {
+     {"left",   View(o.origin,  o.ey*camOfs, o.ez, "View from left side") },
+     {"right",  View(o.origin, -o.ey*camOfs, o.ez, "View from right side") },
+     {"above",  View(o.origin,  o.ez*camOfs, -o.ey, "View from above") },
+     {"below",  View(o.origin, -o.ez*camOfs, o.ey, "View from below") },
+     {"front",  View(o.origin,  o.ex*camOfs, o.ez, "View from forward") },
+     {"aft",    View(o.origin, -o.ex*camOfs, o.ez, "View from aft") },
+     {"diag1",  View(o.origin, normalized(  o.ey   +o.ex   +o.ez  )*camOfs, o.ez, "Diagonal view 1: From forward, left, above") },
+     {"diag2",  View(o.origin, normalized( -o.ey   +o.ex   +o.ez  )*camOfs, o.ez, "Diagonal view 2: From forward, right, above") },
+     {"diag3",  View(o.origin, normalized(  o.ey   +o.ex   -o.ez  )*camOfs, o.ez, "Diagonal view 3: From forward, left, below") },
+     {"diag4",  View(o.origin, normalized( -o.ey   +o.ex   -o.ez  )*camOfs, o.ez, "Diagonal view 4: From forward, right, below") },
+     {"diag5",  View(o.origin, normalized(  o.ey   -o.ex   +o.ez  )*camOfs, o.ez, "Diagonal view 5: From aft, left, above") },
+     {"diag6",  View(o.origin, normalized( -o.ey   -o.ex   +o.ez  )*camOfs, o.ez, "Diagonal view 6: From aft, right, above") },
+     {"diag7",  View(o.origin, normalized(  o.ey   -o.ex   -o.ez  )*camOfs, o.ez, "Diagonal view 7: From aft, left, below") },
+     {"diag8",  View(o.origin, normalized( -o.ey   -o.ex   -o.ez  )*camOfs, o.ez, "Diagonal view 8: From aft, right, below") }
+    };
+
+}
+
+
+
+
+double stabilize(double value, double nonZeroThreshold)
+{
+    // 1 or -1, not 0
+    double sign = 1.0;
+    if (value<0.0) sign=-1.0;
+
+    double m = std::fabs(value);
+    if (m<nonZeroThreshold)
+    {
+        m=nonZeroThreshold;
+    }
+    return sign*m;
+}
+
+
+arma::mat mat(const gsl_matrix *m)
+{
+    arma::mat mo=arma::zeros(m->size1, m->size2);
+    for (size_t i=0; i<m->size1; i++)
+        for (size_t j=0; j<m->size2; j++)
+        {
+            mo(i,j)=gsl_matrix_get(m, i, j);
+        }
+    return mo;
+}
+
+
+JacobiDeterminatException::JacobiDeterminatException(const arma::mat& J)
+    : insight::Exception("jacobi determinant is zero"),
+    J_(J)
+{
+    for (size_t j=0; j<J.n_cols; j++)
+    {
+        if (arma::norm(J.col(j),2)<SMALL)
+            zeroCols_.insert(j);
+    }
+}
+
+const std::set<size_t> &JacobiDeterminatException::zeroCols() const
+{
+    return zeroCols_;
+}
+
+
+
+NonConvergenceException::NonConvergenceException(
+    int performedIterations)
+    : insight::Exception(
+        "the solver did not converge towards a solution after %d iterations",
+        performedIterations )
+{}
+
+
+
+}
+
+namespace std
+{
+
+std::size_t hash<arma::mat>::operator()
+    (const arma::mat& v) const
+{
+    std::hash<double> dh;
+    size_t h=0;
+    for (arma::uword i=0; i<v.n_elem; i++)
+    {
+        std::hash_combine(h, dh(v(i)));
+    }
+    return h;
 }
 
 

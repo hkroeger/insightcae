@@ -48,7 +48,6 @@ bool ResultSetFilter::matchesRegex(const std::string &path) const
 
 
 void ResultSetFilter::readFromNode (
-        rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node )
 {
     for (rapidxml::xml_node<> *e = node.first_node();

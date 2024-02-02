@@ -14,6 +14,7 @@ if (NOT WIN32)
         FiltersExtraction
         FiltersPoints
         FiltersFlowPaths
+        FiltersVerdict
         CommonCore
         CommonDataModel
         CommonMisc
@@ -23,7 +24,9 @@ if (NOT WIN32)
         IOExport
         IOImage
         IOXML
+        #IOParallel # not available in mxe
         ImagingCore
+        GUISupportQt
         RenderingOpenGL2
         RenderingAnnotation
          InteractionWidgets
@@ -42,6 +45,7 @@ else()
            vtkFiltersExtraction
            vtkFiltersPoints
            vtkFiltersFlowPaths
+           vtkFiltersVerdict
            vtkCommonCore
            vtkCommonDataModel
            vtkCommonMisc
@@ -51,7 +55,9 @@ else()
            vtkIOExport
            vtkIOImage
            vtkIOXML
+           #IOParallel # not available in mxe
            vtkImagingCore
+           vtkGUISupportQt
            vtkRenderingOpenGL2
            vtkRenderingAnnotation
             vtkInteractionWidgets
@@ -63,21 +69,89 @@ else()
 endif()
 
 
+# need to handle extensions to VTK here in two versions (onscreen and offscreen)
+include(ExternalProject)
+
+# 1) vtk dicom reader
+get_filename_component(PY3ROOT ${PYTHON_LIBRARY} DIRECTORY) #lib
+get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
+
+if (CMAKE_WRAPPER)
+  set(CMAKE "${CMAKE_WRAPPER}") # required in MXE cross build, cmake is called through wrapper script there
+else()
+  set(CMAKE "${CMAKE_COMMAND}")
+endif()
+
+if (WIN32)
+  set(LIBNAME lib/libvtkDICOM-8.2.0.dll.a)
+else()
+  set(LIBNAME lib/libvtkDICOM-pvis.so.0.8.15)
+endif()
+
+ExternalProject_Add( vtkdicom-onscreen
+   GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
+   GIT_TAG 6a81888
+   INSTALL_DIR ${CMAKE_BINARY_DIR}
+   CMAKE_COMMAND ${CMAKE}
+   CMAKE_ARGS
+     -DBUILD_SHARED_LIBS=ON
+     -DBUILD_PYTHON_WRAPPERS=OFF
+     -DCMAKE_BUILD_TYPE=Release
+     -DVTK_DIR=${VTK_ONSCREEN_DIR}
+     -DPython3_ROOT_DIR=${PY3ROOT}
+     -DVTK_VERSIONED_INSTALL=OFF
+     -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
+     -DBUILD_PROGRAMS=OFF
+     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+
+   BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
+)
+
+ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )
+ExternalProject_Get_Property( vtkdicom-onscreen SOURCE_DIR )
+
+if (WIN32)
+  set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include)
+else()
+  set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
+endif()
+set(VTKDICOMONSCREEN_LIBRARY ${INSTALL_DIR}/${LIBNAME})
+
+if (WIN32)
+  install(DIRECTORY ${INSTALL_DIR}/bin/
+    DESTINATION bin
+    FILES_MATCHING PATTERN "libvtkDICOM*.dll*")
+  install(DIRECTORY ${INSTALL_DIR}/lib/
+    DESTINATION lib
+    FILES_MATCHING PATTERN "libvtkDICOM*.dll*")
+else()
+  install(DIRECTORY ${INSTALL_DIR}/lib/
+    DESTINATION lib
+    FILES_MATCHING PATTERN "libvtkDICOM*.so*")
+endif()
+
+
 IF (WIN32)
 
     # everything is onscreen in windows
     add_library(vtkOnscreen INTERFACE)
-    target_link_libraries(vtkOnscreen INTERFACE ${VTK_LIBRARIES})
+    target_link_libraries(vtkOnscreen INTERFACE ${VTK_LIBRARIES} ${VTKDICOMONSCREEN_LIBRARY})
+    add_dependencies(vtkOnscreen vtkdicom-onscreen)
     add_library(vtkOffscreen INTERFACE)
-    target_link_libraries(vtkOffscreen INTERFACE ${VTK_LIBRARIES})
+    target_link_libraries(vtkOffscreen INTERFACE ${VTK_LIBRARIES} ${VTKDICOMONSCREEN_LIBRARY})
+    add_dependencies(vtkOffscreen vtkdicom-onscreen)
 
     add_library(vtkHeaders INTERFACE)
-    target_include_directories(vtkHeaders INTERFACE ${VTK_INCLUDE_DIRS})
-    target_link_libraries(vtkHeaders INTERFACE ${VTK_LIBRARIES})
+    target_include_directories(vtkHeaders INTERFACE ${VTK_INCLUDE_DIRS} ${VTKDICOMONSCREEN_INCLUDE_DIR})
+    target_link_libraries(vtkHeaders INTERFACE ${VTK_LIBRARIES} ${VTKDICOMONSCREEN_LIBRARY})
 
 else()
 
     set(LIBS "")
+
+    list(APPEND LIBS
+         ${VTKDICOMONSCREEN_LIBRARY}
+    )
 
     if (INSIGHT_BUILD_MEDREADER)
         list(APPEND LIBS
@@ -106,6 +180,7 @@ else()
     set(VTK_ONSCREEN_LIBRARIES "${LIBS}" PARENT_SCOPE)
 
     add_library(vtkOnscreen INTERFACE)
+    add_dependencies(vtkOnscreen vtkdicom-onscreen)
     target_link_libraries(vtkOnscreen INTERFACE ${LIBS})
 
 endif()

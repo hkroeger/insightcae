@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 #include <QSplashScreen>
 #include <QTimer>
+#include <QDebug>
 
 #include <iostream>
 
@@ -21,6 +22,12 @@ InsightCAEApplication::InsightCAEApplication(
 {
   setOrganizationName("silentdynamics");
   setApplicationName(appname);
+
+  setlocale(LC_NUMERIC, "C");
+
+  // auto qloc = QLocale::system(); // can't change only the decimal...
+  // qDebug()<<"DECIMAL="<<qloc.decimalPoint();
+  QLocale::setDefault(QLocale::c());
 }
 
 

@@ -28,17 +28,20 @@ namespace cad
 {
 
 class Subfeature
-: public DerivedFeature
+    : public DerivedFeature
 {
-  FeaturePtr basefeat_;
-  std::string subfeatname_;
+    FeaturePtr basefeat_;
+    std::string subfeatname_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
-  
+    size_t calcHash() const override;
+    void build() override;
+
+    Subfeature(FeaturePtr basefeat, const std::string& subfeatname);
+
 public:
-  Subfeature(FeaturePtr basefeat, const std::string& subfeatname);  
-  
+    declareType("Subfeature");
+
+    CREATE_FUNCTION(Subfeature);
 };
 
 }

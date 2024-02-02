@@ -11,7 +11,7 @@
 
 #include "rapidxml/rapidxml.hpp"
 
-class ParameterSetDisplay;
+class IQVTKParameterSetDisplay;
 class ParameterEditorWidget;
 
 class CaseConfigurationModel : public QAbstractListModel
@@ -54,7 +54,7 @@ public:
   void readFromNode(
       rapidxml::xml_document<>& doc,
       rapidxml::xml_node<> *rootnode,
-      insight::Multi_CAD_ParameterSet_Visualizer* mv,
+      insight::MultiCADParameterSetVisualizer* mv,
       const boost::filesystem::path& fileParentPath );
 
   template<class T>
@@ -77,7 +77,7 @@ public:
   ParameterEditorWidget* launchParameterEditor(
       const QModelIndex& index,
       QWidget* parentWidget,
-      ParameterSetDisplay* display );
+      IQVTKParameterSetDisplay* display );
 
 };
 

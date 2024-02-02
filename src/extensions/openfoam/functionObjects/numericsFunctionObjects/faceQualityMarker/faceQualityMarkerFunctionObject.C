@@ -222,284 +222,288 @@ void Foam::faceQualityMarkerFunctionObject::markFaceSet(label mi, const faceSet&
 
 void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 {
-  forAll(meshes_, mi)
-  {
-    Info<<"Marking faces for region "<<regionNames_[mi]<<endl;
-    const auto& mesh = *meshes_[mi];
-    auto& blendingFactors = blendingFactors_[mi];
-
-    forAll(blendingFactors, i) (*blendingFactors[i])=0.0;
-
-    if (markNonOrthFaces_)
+    forAll(meshes_, mi)
     {
-      faceSet faces(mesh, "nonOrthoFaces", mesh.nFaces()/100 + 1);
-      
-#if OF_VERSION<=020100 //(defined(OF16ext)||defined(OF21x))
-      WarningIn("faceQualityMarkerFunctionObject::updateBlendingFactor()")
-          <<"Consideration of non-orthogonality threshold unavailable in OF16ext and OF21x! Using built-in threshold."
-	<<endl;
-      
-      mesh.checkFaceOrthogonality(true, &faces);
-      label nFaces=faces.size();
-      markFaceSet(mi, faces);
-#else
-      scalar lo=::cos(degToRad(lowerNonOrthThreshold_));
-      scalar up=::cos(degToRad(upperNonOrthThreshold_));
-      
-      tmp<scalarField> tortho = primitiveMeshTools::faceOrthogonality
-          (
-            mesh,
-            mesh.faceAreas(),
-            mesh.cellCentres()
-            );
-      const scalarField& ortho = tortho();
+        Info<<"Marking faces for region "<<regionNames_[mi]<<endl;
 
-      label nFaces=0;
-      forAll(ortho, faceI)
-      {
-        scalar o=ortho[faceI];
+        const auto& mesh = *meshes_[mi];
+        auto& blendingFactors = blendingFactors_[mi];
 
-        if (o < lo )
+        forAll(blendingFactors, i)
         {
-          nFaces++;
-
-          scalar val = 1. - min(1., max(0., ( (o - up) / (lo - up))));
-
-          //Info<<o<<" "<<lo<<" "<<up<<" : "<<val<<endl;
-
-          forAll(blendingFactors, i)
-              markFace(faceI, *blendingFactors[i], val);
+            (*blendingFactors[i])=0.0;
         }
-      }
-#endif
-      
-      reduce(nFaces, sumOp<label>());
-      Info<<"Marking "
-	  <<nFaces
-         <<" non orthogonal faces."<<endl;
-    }
 
-    if (markSkewFaces_)
-    {
-      faceSet faces(mesh, "skewFaces", mesh.nFaces()/100 + 1);
-      mesh.checkFaceSkewness(true, &faces);
-      label nFaces = faces.size();
-      reduce(nFaces, sumOp<label>());
-      Info << "Marking "
-           << nFaces
-           << " skewed faces." << endl;
+        if (markNonOrthFaces_)
+        {
+            faceSet faces(mesh, "nonOrthoFaces", mesh.nFaces()/100 + 1);
 
-      markFaceSet(mi, faces);
-    }
-    
-    if (markWarpedFaces_)
-    {
-      faceSet faces(mesh, "warpedFaces", mesh.nFaces()/100 + 1);
+#if OF_VERSION<=020100 //(defined(OF16ext)||defined(OF21x))
+            WarningIn("faceQualityMarkerFunctionObject::updateBlendingFactor()")
+                    <<"Consideration of non-orthogonality threshold unavailable in OF16ext and OF21x! Using built-in threshold."
+                   <<endl;
 
-      mesh.checkFaceFlatness
-          (
-            true,
-      #if OF_VERSION>=010700 //ndef OF16ext
-            0.8,
-      #endif
-            &faces
-            );
-
-      label nFaces=faces.size();
-      reduce(nFaces, sumOp<label>());
-      Info<<"Marking "<<nFaces<<" warped faces."<<endl;
-
-      markFaceSet(mi, faces);
-    }
-    
-    if (markConcaveFaces_)
-    {
-      faceSet faces(mesh, "concaveFaces", mesh.nFaces()/100 + 1);
-
-      mesh.checkFaceAngles
-          (
-            true,
-#if OF_VERSION>=010700 //ndef OF16ext
-            10,
-#endif
-            &faces
-            );
-
-      label nFaces=faces.size();
-      reduce(nFaces, sumOp<label>());
-      Info<<"Marking "<<nFaces<<" concave faces."<<endl;
-
-      markFaceSet(mi, faces);
-    }
-
-    if (markLowQualityTetFaces_)
-    {
-#if OF_VERSION>=010700 //ndef OF16ext
-      faceSet faces(mesh, "lowTetQualityFaces", mesh.nFaces()/100 + 1);
-
-      polyMeshTetDecomposition::checkFaceTets
-          (
-            mesh,
-            polyMeshTetDecomposition::minTetQuality,
-            true,
-            &faces
-            );
-
-      label nFaces=faces.size();
-      reduce(nFaces, sumOp<label>());
-      Info<<"Marking "<<nFaces
-         <<" faces with low quality or negative volume "
-	<< "decomposition tets."<<endl;
-
-      markFaceSet(mi, faces);
+            mesh.checkFaceOrthogonality(true, &faces);
+            label nFaces=faces.size();
+            markFaceSet(mi, faces);
 #else
-      WarningIn("faceQualityMarker::updateBlendingFactor()")
-          << "Criterion markLowTetQualityFaces unavailable in OF16ext! Ignored." <<endl;
-#endif
-      
-    }
-    
-    if (markHighAspectFaces_)
-    {
+            scalar lo=::cos(degToRad(lowerNonOrthThreshold_));
+            scalar up=::cos(degToRad(upperNonOrthThreshold_));
 
-      cellSet acells(mesh, "aspectCells", mesh.nCells()/100 + 1);
+            tmp<scalarField> tortho = primitiveMeshTools::faceOrthogonality
+                    (
+                        mesh,
+                        mesh.faceAreas(),
+                        mesh.cellCentres()
+                        );
+            const scalarField& ortho = tortho();
+
+            label nFaces=0;
+            forAll(ortho, faceI)
+            {
+                scalar o=ortho[faceI];
+
+                if (o < lo )
+                {
+                    nFaces++;
+
+                    scalar val = 1. - min(1., max(0., ( (o - up) / (lo - up))));
+
+                    //Info<<o<<" "<<lo<<" "<<up<<" : "<<val<<endl;
+
+                    forAll(blendingFactors, i)
+                            markFace(faceI, *blendingFactors[i], val);
+                }
+            }
+#endif
+
+            reduce(nFaces, sumOp<label>());
+            Info<<"Marking "
+               <<nFaces
+              <<" non orthogonal faces."<<endl;
+        }
+
+        if (markSkewFaces_)
+        {
+            faceSet faces(mesh, "skewFaces", mesh.nFaces()/100 + 1);
+            mesh.checkFaceSkewness(true, &faces);
+            label nFaces = faces.size();
+            reduce(nFaces, sumOp<label>());
+            Info << "Marking "
+                 << nFaces
+                 << " skewed faces." << endl;
+
+            markFaceSet(mi, faces);
+        }
+
+        if (markWarpedFaces_)
+        {
+            faceSet faces(mesh, "warpedFaces", mesh.nFaces()/100 + 1);
+
+            mesh.checkFaceFlatness
+                    (
+                        true,
+            #if OF_VERSION>=010700 //ndef OF16ext
+                        0.8,
+            #endif
+                        &faces
+                        );
+
+            label nFaces=faces.size();
+            reduce(nFaces, sumOp<label>());
+            Info<<"Marking "<<nFaces<<" warped faces."<<endl;
+
+            markFaceSet(mi, faces);
+        }
+
+        if (markConcaveFaces_)
+        {
+            faceSet faces(mesh, "concaveFaces", mesh.nFaces()/100 + 1);
+
+            mesh.checkFaceAngles
+                    (
+                        true,
+            #if OF_VERSION>=010700 //ndef OF16ext
+                        10,
+            #endif
+                        &faces
+                        );
+
+            label nFaces=faces.size();
+            reduce(nFaces, sumOp<label>());
+            Info<<"Marking "<<nFaces<<" concave faces."<<endl;
+
+            markFaceSet(mi, faces);
+        }
+
+        if (markLowQualityTetFaces_)
+        {
+#if OF_VERSION>=010700 //ndef OF16ext
+            faceSet faces(mesh, "lowTetQualityFaces", mesh.nFaces()/100 + 1);
+
+            polyMeshTetDecomposition::checkFaceTets
+                    (
+                        mesh,
+                        polyMeshTetDecomposition::minTetQuality,
+                        true,
+                        &faces
+                        );
+
+            label nFaces=faces.size();
+            reduce(nFaces, sumOp<label>());
+            Info<<"Marking "<<nFaces
+               <<" faces with low quality or negative volume "
+              << "decomposition tets."<<endl;
+
+            markFaceSet(mi, faces);
+#else
+            WarningIn("faceQualityMarker::updateBlendingFactor()")
+                    << "Criterion markLowTetQualityFaces unavailable in OF16ext! Ignored." <<endl;
+#endif
+
+        }
+
+        if (markHighAspectFaces_)
+        {
+
+            cellSet acells(mesh, "aspectCells", mesh.nCells()/100 + 1);
 
 #if OF_VERSION<=020100 //( defined(OF16ext) || defined(OF21x)  )
 #warning aspect ratio threshold will be ignored in OF16ext and OF21x!
-      cellSet cells(mesh, "nonClosedCells", mesh.nCells()/100 + 1);
-      mesh.checkClosedCells
-          (
-            true,
-            &cells,
-            &acells
-            );
+            cellSet cells(mesh, "nonClosedCells", mesh.nCells()/100 + 1);
+            mesh.checkClosedCells
+                    (
+                        true,
+                        &cells,
+                        &acells
+                        );
 #else
-      scalarField openness;
-      scalarField aspectRatio;
-      primitiveMeshTools::cellClosedness
-          (
-            mesh,
-            mesh.geometricD(),
-            mesh.faceAreas(),
-            mesh.cellVolumes(),
-            openness,
-            aspectRatio
-            );
-      forAll(aspectRatio, cellI)
-      {
-        if (aspectRatio[cellI] > aspectThreshold_)
-        {
-          acells.insert(cellI);
-        }
-      }
+            scalarField openness;
+            scalarField aspectRatio;
+            primitiveMeshTools::cellClosedness
+                    (
+                        mesh,
+                        mesh.geometricD(),
+                        mesh.faceAreas(),
+                        mesh.cellVolumes(),
+                        openness,
+                        aspectRatio
+                        );
+            forAll(aspectRatio, cellI)
+            {
+                if (aspectRatio[cellI] > aspectThreshold_)
+                {
+                    acells.insert(cellI);
+                }
+            }
 #endif
 
-      faceSet faces(mesh, "aspectFaces", mesh.nFaces()/100 + 1);
-      const labelList& cl=acells.toc();
-      forAll(cl, i)
-      {
-        label ci=cl[i];
-        const labelList &cfs = mesh.cells()[ci];
-        forAll(cfs,j) faces.insert(cfs[j]);
-      }
+            faceSet faces(mesh, "aspectFaces", mesh.nFaces()/100 + 1);
+            const labelList& cl=acells.toc();
+            forAll(cl, i)
+            {
+                label ci=cl[i];
+                const labelList &cfs = mesh.cells()[ci];
+                forAll(cfs,j) faces.insert(cfs[j]);
+            }
 
-      label nFaces=faces.size();
-      reduce(nFaces, sumOp<label>());
+            label nFaces=faces.size();
+            reduce(nFaces, sumOp<label>());
 
-      Info<<"Marking "<<nFaces
-         <<" faces of high aspect ratio cells."<<endl;
+            Info<<"Marking "<<nFaces
+               <<" faces of high aspect ratio cells."<<endl;
 
-      markFaceSet(mi, faces);
-    }
+            markFaceSet(mi, faces);
+        }
 
-    if (markVelocityPeaks_)
-    {
-      const label procI = Pstream::myProcNo();
+        if (markVelocityPeaks_)
+        {
+            const label procI = Pstream::myProcNo();
 
-      const volVectorField& U = mesh.lookupObject<volVectorField>("U");
-      volScalarField magField(mag(U));
+            const volVectorField& U = mesh.lookupObject<volVectorField>("U");
+            volScalarField magField(mag(U));
 
-      labelList maxIs(Pstream::nProcs());
-      scalarList maxVs(Pstream::nProcs());
-      List<vector> maxCs(Pstream::nProcs());
+            labelList maxIs(Pstream::nProcs());
+            scalarList maxVs(Pstream::nProcs());
+            List<vector> maxCs(Pstream::nProcs());
 
-      label maxProcI = findMax(magField);
-      maxVs[procI] = magField[maxProcI];
-      maxCs[procI] = U.mesh().C()[maxProcI];
+            label maxProcI = findMax(magField);
+            maxVs[procI] = magField[maxProcI];
+            maxCs[procI] = U.mesh().C()[maxProcI];
 
-      Pstream::gatherList(maxVs);
-      Pstream::gatherList(maxCs);
-      Pstream::scatterList(maxVs);
-      Pstream::scatterList(maxCs);
+            Pstream::gatherList(maxVs);
+            Pstream::gatherList(maxCs);
+            Pstream::scatterList(maxVs);
+            Pstream::scatterList(maxCs);
 
-      label maxI = findMax(maxVs);
-      //     scalar maxValue = maxVs[maxI];
-      //     const vector& maxC = maxCs[maxI];
+            label maxI = findMax(maxVs);
+            //     scalar maxValue = maxVs[maxI];
+            //     const vector& maxC = maxCs[maxI];
 
-      faceSet faces(mesh, "dummy", 1);
-      if (maxI==procI)
-      {
-        const cell& c = mesh.cells()[maxProcI];
-        forAll(c, i) faces.insert(c[i]);
-      }
+            faceSet faces(mesh, "dummy", 1);
+            if (maxI==procI)
+            {
+                const cell& c = mesh.cells()[maxProcI];
+                forAll(c, i) faces.insert(c[i]);
+            }
 
-      Pout<<"Marking "<<faces.size()
-         <<" faces of velocity peak cell on proc #"<<maxI<<"."<<endl;
+            Pout<<"Marking "<<faces.size()
+               <<" faces of velocity peak cell on proc #"<<maxI<<"."<<endl;
 
-      markFaceSet(mi, faces);
-    }
+            markFaceSet(mi, faces);
+        }
 
 
-    if (sets_.size())
-    {
-      forAll(sets_, i)
-      {
-        faceSet faces(mesh, sets_[i]);
+        if (sets_.size())
+        {
+            forAll(sets_, i)
+            {
+                faceSet faces(mesh, sets_[i]);
 
-        label nFaces=faces.size();
-        reduce(nFaces, sumOp<label>());
+                label nFaces=faces.size();
+                reduce(nFaces, sumOp<label>());
 
-        Info<<"Marking "<<nFaces
-           <<" faces from faceSet "<<sets_[i]<<"."<<endl;
+                Info<<"Marking "<<nFaces
+                   <<" faces from faceSet "<<sets_[i]<<"."<<endl;
 
-        markFaceSet(mi, faces);
-      }
-    }
+                markFaceSet(mi, faces);
+            }
+        }
 
-    forAll(blendingFactors, i)
-    {
-      if (smoothMarkerField_)
-      {
+        forAll(blendingFactors, i)
+        {
+            if (smoothMarkerField_)
+            {
 #if OF_VERSION>020100 //(!( defined(OF16ext) || defined(OF21x) ))
-        // smoothing the field
-        volScalarField avgBlendingFactor( static_cast<const volScalarField&>(surfaceMax2(*blendingFactors[i])) );
-        avgBlendingFactor.rename("avg_"+blendingFactors[i]->name());
+                // smoothing the field
+                volScalarField avgBlendingFactor( static_cast<const volScalarField&>(surfaceMax2(*blendingFactors[i])) );
+                avgBlendingFactor.rename("avg_"+blendingFactors[i]->name());
 
-        fvc::smooth(avgBlendingFactor, smoothingCoeff_);
-        // 	  fvc::spread(avgBlendingFactor, avgBlendingFactor, 1);
-        // 	  fvc::smooth(avgBlendingFactor, smoothingCoeff_);
+                fvc::smooth(avgBlendingFactor, smoothingCoeff_);
+                // 	  fvc::spread(avgBlendingFactor, avgBlendingFactor, 1);
+                // 	  fvc::smooth(avgBlendingFactor, smoothingCoeff_);
 
-        *blendingFactors[i] = surfaceMax3(avgBlendingFactor);
+                *blendingFactors[i] = surfaceMax3(avgBlendingFactor);
 
-        if (debug)
-        {
-          Info<<"Writing volScalarField "<<avgBlendingFactor.name()<<endl;
-          avgBlendingFactor.write();
-        }
+                if (debug)
+                {
+                    Info<<"Writing volScalarField "<<avgBlendingFactor.name()<<endl;
+                    avgBlendingFactor.write();
+                }
 #else
-        WarningIn("QualityMarkerFunctionObject::updateBlendingFactor()")
-            <<"Smoothing unavailable in OF16ext and OF21x. Omitting."
-	<<endl;
+                WarningIn("QualityMarkerFunctionObject::updateBlendingFactor()")
+                        <<"Smoothing unavailable in OF16ext and OF21x. Omitting."
+                       <<endl;
 #endif
-      }
+            }
 
-      if (debug)
-      {
-        Info<<"Writing surfaceScalarField "<<blendingFactors[i]->name()<<endl;
-        blendingFactors[i]->write();
-      }
+            if (debug)
+            {
+                Info<<"Writing surfaceScalarField "<<blendingFactors[i]->name()<<endl;
+                blendingFactors[i]->write();
+            }
+        }
     }
-  }
 }
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -563,47 +567,47 @@ Foam::faceQualityMarkerFunctionObject::~faceQualityMarkerFunctionObject()
 
 bool Foam::faceQualityMarkerFunctionObject::start()
 {
-  forAll(meshes_, mi)
-  {
-    const auto& pmesh = *meshes_[mi];
-    auto& blendingFactors = blendingFactors_[mi];
-
-    if (!isA<fvMesh>(pmesh))
+    forAll(meshes_, mi)
     {
-	WarningIn("Foam::faceQualityMarkerFunctionObject::start()")
-	<<"mesh is not a fvMesh! Disabling."<<endl;
-	return false;
-    }
-    
-    Info << "Creating face quality markers" << endl;
-    fvMesh& mesh=const_cast<fvMesh&>(refCast<const fvMesh>(pmesh));
+        const auto& pmesh = *meshes_[mi];
+        auto& blendingFactors = blendingFactors_[mi];
 
-    blendingFactors.setSize(blendingFieldNames_.size());
-    for (label i=0; i<blendingFieldNames_.size(); i++)
-    {
-     Info<<"Creating "<<blendingFieldNames_[i]<<endl;
-     blendingFactors[i] = &mesh.objectRegistry::store
-     (
-	new surfaceScalarField
-        (
-         IOobject
-         (
-          blendingFieldNames_[i],
-          mesh.time().timeName(),
-          mesh,
-          IOobject::NO_READ,
-          IOobject::NO_WRITE
-         ),
-         mesh,
-         dimensionedScalar("", dimless, 0.0),
-	 calculatedFvPatchField<scalar>::typeName
-        )
-     );
-    }
-  }
+        if (!isA<fvMesh>(pmesh))
+        {
+            WarningIn("Foam::faceQualityMarkerFunctionObject::start()")
+                    <<"mesh is not a fvMesh! Disabling."<<endl;
+            return false;
+        }
 
-  updateBlendingFactor();
-  return true;
+        Info << "Creating face quality markers" << endl;
+        fvMesh& mesh=const_cast<fvMesh&>(refCast<const fvMesh>(pmesh));
+
+        blendingFactors.setSize(blendingFieldNames_.size());
+        for (label i=0; i<blendingFieldNames_.size(); i++)
+        {
+            Info<<"Creating "<<blendingFieldNames_[i]<<endl;
+            blendingFactors[i] = &mesh.objectRegistry::store
+                    (
+                        new surfaceScalarField
+                        (
+                            IOobject
+                            (
+                                blendingFieldNames_[i],
+                                mesh.time().timeName(),
+                                mesh,
+                                IOobject::NO_READ,
+                                IOobject::NO_WRITE
+                                ),
+                            mesh,
+                            dimensionedScalar("", dimless, 0.0),
+                            calculatedFvPatchField<scalar>::typeName
+                            )
+                        );
+        }
+    }
+
+    updateBlendingFactor();
+    return true;
 }
 
 

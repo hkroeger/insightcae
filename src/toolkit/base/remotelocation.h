@@ -49,6 +49,8 @@ protected:
   void assertValid() const;
 
 public:
+
+  static bool remoteLocationConfigIsValid( const boost::filesystem::path& mf );
     /**
      * @brief RemoteLocation
      * copies configuration from another remote location container
@@ -61,7 +63,7 @@ public:
      * read settings of existing remote location from configuration file
      * @param mf
      */
-    RemoteLocation(const boost::filesystem::path& mf);
+    RemoteLocation(const boost::filesystem::path& mf, bool skipValidation=false);
 
     /**
      * @brief RemoteLocation
@@ -162,6 +164,7 @@ public:
     virtual void syncToRemote
     (
         const boost::filesystem::path& localDir,
+        bool includeProcessorDirectories,
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
         std::function<void(int progress,const std::string& status_text)> progress_callback =
                             std::function<void(int,const std::string&)>()
@@ -169,6 +172,7 @@ public:
     virtual void syncToLocal
     (
         const boost::filesystem::path& localDir,
+        bool includeProcessorDirectories,
         bool skipTimeSteps=false,
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
         std::function<void(int progress,const std::string& status_text)> progress_callback =

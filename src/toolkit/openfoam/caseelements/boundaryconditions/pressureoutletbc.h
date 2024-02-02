@@ -60,7 +60,11 @@ behaviour = selectablesubset {{
  removePRGHHydrostaticPressure
  set {
   pressure = double 0.0 "Uniform static pressure at selected boundary patch"
+  pressureType = selection (totalPressure staticPressure) totalPressure "type of prescribed pressure"
  }
+
+ extrapolate
+ set { }
 
 }} uniform "Behaviour of the pressure BC"
 

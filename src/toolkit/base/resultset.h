@@ -34,6 +34,7 @@
 #include "base/resultelements/scalarresult.h"
 #include "base/resultelements/vectorresult.h"
 #include "base/resultelements/image.h"
+#include "base/resultelements/video.h"
 #include "base/resultelements/attributeresulttable.h"
 #include "base/resultelements/tabularresult.h"
 #include "base/resultelements/chart.h"
@@ -91,7 +92,7 @@ public:
     /**
      * restore the result elements from the given node
      */
-    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node ) override;
+    void readFromNode ( const std::string& name, rapidxml::xml_node<>& node ) override;
     /* =======================================================================================================*/
     /* =======================================================================================================*/
     /* =======================================================================================================*/
@@ -122,7 +123,7 @@ public:
         return p_;
     }
 
-    void writeLatexHeaderCode ( std::ostream& f ) const override;
+    void insertLatexHeaderCode ( std::set<std::string>& hc ) const override;
     void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
 
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;

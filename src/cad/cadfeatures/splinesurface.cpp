@@ -21,6 +21,9 @@
 #include "Geom_BSplineSurface.hxx"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -35,8 +38,9 @@ namespace cad {
     
     
 defineType(SplineSurface);
-addToFactoryTable(Feature, SplineSurface);
-
+//addToFactoryTable(Feature, SplineSurface);
+addToStaticFunctionTable(Feature, SplineSurface, insertrule);
+addToStaticFunctionTable(Feature, SplineSurface, ruleDocumentation);
 
 size_t SplineSurface::calcHash() const
 {
@@ -54,22 +58,11 @@ size_t SplineSurface::calcHash() const
 
 
 
-SplineSurface::SplineSurface()
-{}
-
-
-
 
 SplineSurface::SplineSurface(const std::vector< std::vector<VectorPtr> >& pts)
 : pts_(pts)
 {}
 
-
-
-FeaturePtr SplineSurface::create ( const std::vector<std::vector<VectorPtr> >& pts )
-{
-    return FeaturePtr(new SplineSurface(pts));
-}
 
 
 
@@ -78,17 +71,17 @@ void SplineSurface::build()
 {
     int nx=pts_.size();
     if ( nx<2 ) {
-        throw insight::Exception ( "SplineSurface: not enough rows of point specified!" );
+      throw insight::Exception ( _("SplineSurface: not enough rows of point specified!") );
     }
     int ny=pts_[0].size();
     if ( ny<2 ) {
-        throw insight::Exception ( "SplineSurface: not enough cols of point specified!" );
+        throw insight::Exception ( _("SplineSurface: not enough cols of point specified!") );
     }
 
     TColgp_Array2OfPnt pts_col ( 1, nx, 1, ny );
     for ( int j=0; j<nx; j++ ) {
         if ( pts_[j].size() !=ny ) {
-            throw insight::Exception ( "SplineSurface: all rows need to have an equal number of points!" );
+          throw insight::Exception ( _("SplineSurface: all rows need to have an equal number of points!") );
         }
         for ( int k=0; k<ny; k++ ) {
             pts_col.SetValue ( j+1, k+1, to_Pnt ( pts_[j][k]->value() ) );
@@ -110,36 +103,37 @@ SplineSurface::operator const TopoDS_Face& () const
 
 
 
-void SplineSurface::insertrule(parser::ISCADParser& ruleset) const
+void SplineSurface::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "SplineSurface",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> 
 	  ( ( '(' >> ( ruleset.r_vectorExpression % ',' ) >> ')' ) % ',' )
 	  >> ')' ) 
-	[ qi::_val = phx::bind(&SplineSurface::create, qi::_1) ]
+    [ qi::_val = phx::bind(
+                       &SplineSurface::create<const std::vector< std::vector<VectorPtr> >&>,
+                       qi::_1) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList SplineSurface::ruleDocumentation() const
+FeatureCmdInfoList SplineSurface::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "SplineSurface",
             "( (<vector:p11>, ..., <vector:p1n>), ...., (<vector:pm1>, ..., <vector:pmn>) )",
-            "Creates an spline surface through all the given points. Note that all rows need to have the same number of columns."
+          _("Creates an spline surface through all the given points. Note that all rows need to have the same number of columns.")
         )
-    );
+    };
 }
 
 

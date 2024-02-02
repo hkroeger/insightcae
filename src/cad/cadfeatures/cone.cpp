@@ -19,6 +19,7 @@
 
 #include "cone.h"
 #include "base/boost_include.h"
+#include "base/translations.h"
 
 #include "BRepPrimAPI_MakeCone.hxx"
 
@@ -37,7 +38,10 @@ namespace cad {
     
     
 defineType(Cone);
-addToFactoryTable(Feature, Cone);
+//addToFactoryTable(Feature, Cone);
+addToStaticFunctionTable(Feature, Cone, insertrule);
+addToStaticFunctionTable(Feature, Cone, ruleDocumentation);
+
 
 
 size_t Cone::calcHash() const
@@ -52,10 +56,6 @@ size_t Cone::calcHash() const
 }
 
 
-Cone::Cone()
-{}
-
-
 
 
 Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2)
@@ -63,13 +63,6 @@ Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2)
 {
 }
 
-
-
-
-FeaturePtr Cone::create(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2)
-{
-    return FeaturePtr(new Cone(p1, p2, D1, D2));
-}
 
 
 
@@ -100,41 +93,40 @@ void Cone::build()
 
 
 
-void Cone::insertrule(parser::ISCADParser& ruleset) const
+void Cone::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
-    "Cone",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-
+    "Cone",
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
     ( '(' 
       >> ruleset.r_vectorExpression >> ',' 
       >> ruleset.r_vectorExpression >> ',' 
       >> ruleset.r_scalarExpression >> ','
       >> ruleset.r_scalarExpression
-      >> ')' ) 
-     [ qi::_val = phx::bind(&Cone::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
+      >> ')' )
+      [ qi::_val = phx::bind(&Cone::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
+                                          qi::_1, qi::_2, qi::_3, qi::_4) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Cone::ruleDocumentation() const
+FeatureCmdInfoList Cone::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Cone",
          
             "( <vector:p0>, <vector:p1>, <scalar:D0>, <scalar:D1> )",
-         
-            "Creates a cone between point p0 and p1. At point p0, the diameter is D0 and at p1 it is D1."
+
+          _("Creates a cone between point p0 and p1. At point p0, the diameter is D0 and at p1 it is D1.")
         )
-    );
+    };
 }
 
 

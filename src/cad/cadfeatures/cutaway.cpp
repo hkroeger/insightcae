@@ -25,6 +25,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -40,7 +41,10 @@ namespace cad {
     
     
 defineType(Cutaway);
-addToFactoryTable(Feature, Cutaway);
+//addToFactoryTable(Feature, Cutaway);
+addToStaticFunctionTable(Feature, Cutaway, insertrule);
+addToStaticFunctionTable(Feature, Cutaway, ruleDocumentation);
+
 
 
 size_t Cutaway::calcHash() const
@@ -62,10 +66,6 @@ size_t Cutaway::calcHash() const
 }
 
 
-Cutaway::Cutaway(): DerivedFeature()
-{}
-
-
 
 
 
@@ -85,20 +85,6 @@ Cutaway::Cutaway(FeaturePtr model, ConstDatumPtr pl, bool inverted)
 
 
 
-FeaturePtr Cutaway::create ( FeaturePtr model, VectorPtr p0, VectorPtr n )
-{
-    return FeaturePtr(new Cutaway(model, p0, n));
-}
-
-
-
-
-FeaturePtr Cutaway::create_plane ( FeaturePtr model, ConstDatumPtr pl, bool inverted )
-{
-    return FeaturePtr(new Cutaway(model, pl, inverted));
-}
-
-
 
 
 void Cutaway::build()
@@ -112,7 +98,7 @@ void Cutaway::build()
 
       if ( pl_ ) {
           if ( !pl_->providesPlanarReference() ) {
-              throw insight::Exception ( "Cutaway: Given datum does not provide a planar reference!" );
+              throw insight::Exception ( _("Cutaway: Given datum does not provide a planar reference!") );
             }
           gp_Ax3 pl=pl_->plane();
 
@@ -123,7 +109,7 @@ void Cutaway::build()
             }
         } else {
           if ( ( !p0_ ) || ( !n_ ) ) {
-              throw insight::Exception ( "Cutaway: origin and normal direction undefined!" );
+              throw insight::Exception ( _("Cutaway: origin and normal direction undefined!") );
             }
           p0=p0_->value();
           n=n_->value();
@@ -155,23 +141,23 @@ void Cutaway::build()
       //   SolidModel(airspace).saveAs("airspace.stp");
       refpoints_["p0"]=p0;
       refvectors_["n"]=n;
-      providedSubshapes_["AirSpace"]=FeaturePtr ( new Feature ( airspace ) );
+      providedSubshapes_["input"]=model_;
+      providedSubshapes_["AirSpace"]=Feature::create ( airspace );
 
       try {
         providedSubshapes_["CutSurface"]=
             BooleanIntersection::create
             (
-              model_,
-              FeaturePtr ( new Feature ( TopoDS::Face ( q->shape() ) ) )
+              model_, Feature::create( TopoDS::Face ( q->shape() ) )
               );
       } catch ( ... ) {
-        insight::Warning ( "Could not create cutting surface!" );
+        insight::Warning ( _("Could not create cutting surface!") );
       }
 
       try {
         this->setShape ( BRepAlgoAPI_Cut ( model_->shape(), airspace ) );
       } catch ( ... ) {
-        throw insight::Exception ( "Could not create cut!" );
+        throw insight::Exception ( _("Could not create cut!") );
       }
 
     }
@@ -196,42 +182,44 @@ void Cutaway::build()
   * ~~~~
   * @}
   */
-void Cutaway::insertrule(parser::ISCADParser& ruleset) const
+void Cutaway::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Cutaway",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
     ( '(' >> (
      ( ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression )
-      [ qi::_val = phx::bind(&Cutaway::create, qi::_1, qi::_2, qi::_3) ]
+      [ qi::_val = phx::bind(
+                              &Cutaway::create<FeaturePtr, VectorPtr, VectorPtr>,
+                              qi::_1, qi::_2, qi::_3) ]
       |
      ( ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression 
         >> ( (',' >> qi::lit("inverted") >> qi::attr(true) ) | (qi::attr(false)) ) )
-      [ qi::_val = phx::bind(&Cutaway::create_plane, qi::_1, qi::_2, qi::_3) ]
+      [ qi::_val = phx::bind(
+                              &Cutaway::create<FeaturePtr, ConstDatumPtr, bool>,
+                              qi::_1, qi::_2, qi::_3) ]
      ) >> ')' )
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Cutaway::ruleDocumentation() const
+FeatureCmdInfoList Cutaway::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Cutaway",
          
             "( <feature:base>, ( <vector:p0>, <vector:n> ) | ( <datum:plane> [, inverted] ) )",
          
-            "Removes a halfspace from a feature. The halfspace is either specified by a point p0 and the normal vector n or by a datum plane."
-            " In the latter case, the removal side of plane can be toggled by giving the option inverted."
+            _("Removes a halfspace from a feature. The halfspace is either specified by a point p0 and the normal vector n or by a datum plane."
+            " In the latter case, the removal side of plane can be toggled by giving the option inverted.")
         )
-    );
+    };
 }
 
 

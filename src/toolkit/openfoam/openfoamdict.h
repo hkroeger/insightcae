@@ -83,6 +83,12 @@ struct list
   list(std::initializer_list<OFDictData::data> ini);
 
   template<class T>
+  list(const std::vector<T>& ol)
+  {
+      std::copy(ol.begin(), ol.end(), std::back_inserter(*this));
+  }
+
+  template<class T>
   void assign(const std::vector<T>& vec)
   {
     resize(vec.size());
@@ -160,14 +166,21 @@ struct dict
 
   inline double getDoubleOrInt(const std::string& key) const
   {
-    try
-    {
-        return this->lookup<double>(key);
-    }
-    catch (const insight::Exception& e)
-    {
-        return this->lookup<int>(key);
-    }
+     auto i = this->find(key);
+     if (i==this->end())
+     {
+      std::string keys=" ";
+      for (const value_type& it: *this) { keys+=it.first+" "; }
+      throw Exception("key "+key+" not found! Available keys:"+keys);
+     }
+     if (auto v = boost::get<double>(&i->second))
+        return *v;
+     else if (auto v = boost::get<int>(&i->second))
+      return *v;
+     else
+      throw Exception("entry "+key+" is there but not of the requested type!"
+                      " (actual type:"+boost::lexical_cast<std::string>(i->second.which())+")"
+                      );
   }
 
   inline int& getIntRef(const std::string& key)

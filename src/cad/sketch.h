@@ -32,8 +32,12 @@
 
 #include "base/boost_include.h"
 
+
+
 namespace insight {
 namespace cad {
+
+
 
 typedef std::vector<boost::fusion::vector2<std::string, ScalarPtr> > SketchVarList;
 
@@ -55,21 +59,13 @@ class Sketch
     double tol=Precision::Confusion() 
   );
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
 public:
   declareType("Sketch");
-  Sketch();
-  
-  static FeaturePtr create
-  (
-    DatumPtr pl, 
-    const boost::filesystem::path& filename, 
-    const std::string& layername="0", 
-    const SketchVarList& vars = SketchVarList(), 
-    double tol=Precision::Confusion() 
-  );
+  CREATE_FUNCTION(Sketch);
+
   
   void operator=(const Sketch& o);
   
@@ -78,12 +74,15 @@ public:
   
 //   virtual bool isSingleCloseWire() const;
 //   virtual TopoDS_Wire asSingleClosedWire() const;
-  virtual bool isSingleFace() const;
+  bool isSingleFace() const override;
   operator const TopoDS_Face& () const;
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+
+  static void insertrule(parser::ISCADParser& ruleset);
   
   const boost::filesystem::path& fn() const { return fn_; }
 };
+
+
 
 }
 }

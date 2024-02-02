@@ -22,6 +22,7 @@
 
 #include "cadtypes.h"
 #include "base/linearalgebra.h"
+#include "base/factory.h"
 
 namespace insight {
 namespace cad {
@@ -30,6 +31,7 @@ namespace cad {
 class Scalar
 {
 public:
+  declareType("Scalar");
   virtual ~Scalar();
   virtual double value() const =0;
   operator double() const;
@@ -40,6 +42,7 @@ public:
 class Vector
 {
 public:
+  declareType("Vector");
   virtual ~Vector();
   virtual arma::mat value() const =0;
   operator arma::mat() const;

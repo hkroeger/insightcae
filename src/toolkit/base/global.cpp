@@ -6,6 +6,6 @@ class GlobalSettings
 public:
  GlobalSettings()
  {
-  std::locale::global(std::locale::classic());
+     // setlocale(LC_NUMERIC, "C"); // moved to gettextinit
  }
 } insight_perform_GlobalSettings;

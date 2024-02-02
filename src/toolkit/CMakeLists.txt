@@ -20,22 +20,47 @@
 
 project(toolkit)
 
+
 set(toolkit_SOURCES
+    base/cppextensions.h base/cppextensions.cpp
+    base/translations.h base/translations.cpp
     base/global.cpp
+    base/boost_include.cpp
+    base/rapidxml.h base/rapidxml.cpp
     base/toolkitversion.cpp base/toolkitversion.h
     base/globalconfiguration.h base/globalconfiguration.cpp
     base/externalprograms.h base/externalprograms.cpp
     base/supplementedinputdata.cpp base/supplementedinputdata.h
     base/analysis.cpp base/analysis.h
     base/analysislibrary.cpp base/analysislibrary.h
+    base/analysisparameterpropositions.h base/analysisparameterpropositions.cpp
+    base/extendedgrammar.h base/extendedgrammar.cpp
+
     base/analysisthread.cpp base/analysisthread.h
     base/cacheableentity.cpp base/cacheableentity.h
     base/cacheableentityhashes.cpp base/cacheableentityhashes.h
+
     base/parameter.cpp base/parameter.h
+    base/parameters/simpleparameter.cpp base/parameters/simpleparameter.h
+    base/parameters/pathparameter.cpp base/parameters/pathparameter.h
+    base/parameters/selectionparameter.cpp base/parameters/selectionparameter.h
+    base/parameters/doublerangeparameter.cpp base/parameters/doublerangeparameter.h
+    base/parameters/arrayparameter.cpp base/parameters/arrayparameter.h
+    base/parameters/matrixparameter.cpp base/parameters/matrixparameter.h
+    base/parameters/simpledimensionedparameter.cpp base/parameters/simpledimensionedparameter.h
+    base/parameters/subsetparameter.cpp base/parameters/subsetparameter.h
+    base/parameters/selectablesubsetparameter.cpp base/parameters/selectablesubsetparameter.h
+    base/parameters/propertylibraryselectionparameter.h base/parameters/propertylibraryselectionparameter.cpp
+    base/parameters/spatialtransformationparameter.h base/parameters/spatialtransformationparameter.cpp
+
+    base/parameterset.cpp base/parameterset.h
+    base/parametersetvisualizer.h base/parametersetvisualizer.cpp
+
     base/exception.cpp base/exception.h
     base/externalprocess.cpp base/externalprocess.h
     base/filewatcher.cpp base/filewatcher.h
     base/tools.cpp base/tools.h
+    base/shelltools.h base/shelltools.cpp
     base/latextools.cpp base/latextools.h
     base/linearalgebra.cpp base/linearalgebra.h
     base/resultelement.cpp base/resultelement.h
@@ -44,7 +69,6 @@ set(toolkit_SOURCES
     base/resultreporttemplates.h base/resultreporttemplates.cpp
     base/softwareenvironment.cpp base/softwareenvironment.h
     base/stltools.cpp base/stltools.h
-    base/parameterset.cpp base/parameterset.h
     base/analysisstepcontrol.cpp base/analysisstepcontrol.h
     base/plottools.cpp base/plottools.h
     base/vtktools.cpp base/vtktools.h
@@ -68,22 +92,17 @@ set(toolkit_SOURCES
     base/progressdisplayer.cpp base/progressdisplayer.h
     base/casedirectory.h base/casedirectory.cpp
     base/table.h base/table.cpp
+    base/xmlfile.h base/xmlfile.cpp
+    base/intervals.h base/intervals.cpp
+    base/spatialtransformation.h base/spatialtransformation.cpp
+    base/vtktransformation.h base/vtktransformation.cpp
     base/progressdisplayer/textprogressdisplayer.cpp base/progressdisplayer/textprogressdisplayer.h
     base/progressdisplayer/combinedprogressdisplayer.cpp base/progressdisplayer/combinedprogressdisplayer.h
     base/progressdisplayer/prefixedprogressdisplayer.cpp base/progressdisplayer/prefixedprogressdisplayer.h
     base/progressdisplayer/convergenceanalysisdisplayer.cpp base/progressdisplayer/convergenceanalysisdisplayer.h
-    base/parameters/simpleparameter.cpp base/parameters/simpleparameter.h
-    base/parameters/pathparameter.cpp base/parameters/pathparameter.h
-    base/parameters/selectionparameter.cpp base/parameters/selectionparameter.h
-    base/parameters/doublerangeparameter.cpp base/parameters/doublerangeparameter.h
-    base/parameters/arrayparameter.cpp base/parameters/arrayparameter.h
-    base/parameters/matrixparameter.cpp base/parameters/matrixparameter.h
-    base/parameters/simpledimensionedparameter.cpp base/parameters/simpledimensionedparameter.h
-    base/parameters/subsetparameter.cpp base/parameters/subsetparameter.h
-    base/parameters/selectablesubsetparameter.cpp base/parameters/selectablesubsetparameter.h
-    base/parameters/propertylibraryselectionparameter.h base/parameters/propertylibraryselectionparameter.cpp
     base/resultelements/fileresult.cpp base/resultelements/fileresult.h
     base/resultelements/image.cpp base/resultelements/image.h
+    base/resultelements/video.cpp base/resultelements/video.h
     base/resultelements/numericalresult.cpp base/resultelements/numericalresult.h
     base/resultelements/tabularresult.cpp base/resultelements/tabularresult.h
     base/resultelements/scalarresult.cpp base/resultelements/scalarresult.h
@@ -102,6 +121,7 @@ set(toolkit_SOURCES
     base/resultsetfilter.h base/resultsetfilter.cpp
     base/propertylibrary.h base/propertylibrary.cpp
     base/materialslibrary.h base/materialslibrary.cpp
+    base/zipfile.h base/zipfile.cpp
     openfoam/ofenvironment.cpp openfoam/ofenvironment.h
     openfoam/ofes.cpp openfoam/ofes.h
     openfoam/blockmesh_templates.cpp openfoam/blockmesh_templates.h
@@ -112,6 +132,25 @@ set(toolkit_SOURCES
     openfoam/openfoamdict.cpp openfoam/openfoamdict.h
     openfoam/openfoamboundarydict.cpp openfoam/openfoamboundarydict.h
     openfoam/openfoamtools.cpp openfoam/openfoamtools.h
+    openfoam/blockmesh/arcedge.cpp openfoam/blockmesh/arcedge.h
+    openfoam/blockmesh/block2d.cpp openfoam/blockmesh/block2d.h
+    openfoam/blockmesh/block.cpp openfoam/blockmesh/block.h
+    openfoam/blockmesh/circularedge_center.cpp openfoam/blockmesh/circularedge_center.h
+    openfoam/blockmesh/circularedge.cpp openfoam/blockmesh/circularedge.h
+    openfoam/blockmesh/discretecurve.cpp openfoam/blockmesh/discretecurve.h
+    openfoam/blockmesh/edge.cpp openfoam/blockmesh/edge.h
+    openfoam/blockmesh/ellipseedge.cpp openfoam/blockmesh/ellipseedge.h
+    openfoam/blockmesh/geometry.cpp openfoam/blockmesh/geometry.h
+    openfoam/blockmesh/gradinganalyzer.cpp openfoam/blockmesh/gradinganalyzer.h
+    openfoam/blockmesh/patch2d.cpp openfoam/blockmesh/patch2d.h
+    openfoam/blockmesh/patch.cpp openfoam/blockmesh/patch.h
+    openfoam/blockmesh/plane2d.cpp openfoam/blockmesh/plane2d.h
+    openfoam/blockmesh/point.cpp openfoam/blockmesh/point.h
+    openfoam/blockmesh/projectededge.cpp openfoam/blockmesh/projectededge.h
+    openfoam/blockmesh/projectedface.cpp openfoam/blockmesh/projectedface.h
+    openfoam/blockmesh/splineedge.cpp openfoam/blockmesh/splineedge.h
+    openfoam/blockmesh/transform2d.cpp openfoam/blockmesh/transform2d.h
+    openfoam/blockmesh/wedge2d.cpp openfoam/blockmesh/wedge2d.h
     openfoam/blockmesh.cpp openfoam/blockmesh.h
     openfoam/fielddata.cpp openfoam/fielddata.h
     openfoam/paraview.cpp openfoam/paraview.h
@@ -120,8 +159,11 @@ set(toolkit_SOURCES
     openfoam/blockmeshoutputanalyzer.cpp openfoam/blockmeshoutputanalyzer.h
     openfoam/snappyhexmeshoutputanalyzer.cpp openfoam/snappyhexmeshoutputanalyzer.h
     openfoam/ofdicts.cpp openfoam/ofdicts.h
+    openfoam/setfields.h openfoam/setfields.cpp
+    openfoam/createpatch.h openfoam/createpatch.cpp
     openfoam/caseelements/openfoamcaseelement.cpp openfoam/caseelements/openfoamcaseelement.h
     openfoam/caseelements/turbulencemodel.cpp openfoam/caseelements/turbulencemodel.h
+
     openfoam/caseelements/basic/thermodynamicmodel.cpp openfoam/caseelements/basic/thermodynamicmodel.h
     openfoam/caseelements/basic/rasmodel.cpp openfoam/caseelements/basic/rasmodel.h
     openfoam/caseelements/basic/lesmodel.cpp openfoam/caseelements/basic/lesmodel.h
@@ -141,6 +183,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/basic/transportmodel.cpp openfoam/caseelements/basic/transportmodel.h
     openfoam/caseelements/basic/singlephasetransportmodel.cpp openfoam/caseelements/basic/singlephasetransportmodel.h
     openfoam/caseelements/basic/twophasetransportproperties.cpp openfoam/caseelements/basic/twophasetransportproperties.h
+    openfoam/caseelements/basic/compressibletwophasethermophysicalproperties.h openfoam/caseelements/basic/compressibletwophasethermophysicalproperties.cpp
     openfoam/caseelements/basic/cavitationtwophasetransportproperties.cpp openfoam/caseelements/basic/cavitationtwophasetransportproperties.h
     openfoam/caseelements/basic/porouszone.cpp openfoam/caseelements/basic/porouszone.h
     openfoam/caseelements/basic/limitquantities.cpp openfoam/caseelements/basic/limitquantities.h
@@ -150,6 +193,8 @@ set(toolkit_SOURCES
     openfoam/caseelements/basic/providefields.cpp openfoam/caseelements/basic/providefields.h
     openfoam/caseelements/basic/rangeweightfield.cpp openfoam/caseelements/basic/rangeweightfield.h
     openfoam/caseelements/basic/wallheatflux.cpp openfoam/caseelements/basic/wallheatflux.h
+
+    openfoam/caseelements/numerics/oversetconfiguration.cpp openfoam/caseelements/numerics/oversetconfiguration.h
     openfoam/caseelements/numerics/pimplesettings.cpp openfoam/caseelements/numerics/pimplesettings.h
     openfoam/caseelements/numerics/fvnumerics.cpp openfoam/caseelements/numerics/fvnumerics.h
     openfoam/caseelements/numerics/fanumerics.cpp openfoam/caseelements/numerics/fanumerics.h
@@ -166,6 +211,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/numerics/simpledymfoamnumerics.cpp openfoam/caseelements/numerics/simpledymfoamnumerics.h
     openfoam/caseelements/numerics/cavitatingfoamnumerics.cpp openfoam/caseelements/numerics/cavitatingfoamnumerics.h
     openfoam/caseelements/numerics/interfoamnumerics.cpp openfoam/caseelements/numerics/interfoamnumerics.h
+    openfoam/caseelements/numerics/compressibleinterfoamnumerics.h openfoam/caseelements/numerics/compressibleinterfoamnumerics.cpp
     openfoam/caseelements/numerics/ltsinterfoamnumerics.cpp openfoam/caseelements/numerics/ltsinterfoamnumerics.h
     openfoam/caseelements/numerics/interphasechangefoamnumerics.cpp openfoam/caseelements/numerics/interphasechangefoamnumerics.h
     openfoam/caseelements/numerics/reactingfoamnumerics.cpp openfoam/caseelements/numerics/reactingfoamnumerics.h
@@ -175,6 +221,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/numerics/fsidisplacementextrapolationnumerics.cpp openfoam/caseelements/numerics/fsidisplacementextrapolationnumerics.h
     openfoam/caseelements/numerics/magneticfoamnumerics.cpp openfoam/caseelements/numerics/magneticfoamnumerics.h
     openfoam/caseelements/numerics/chtmultiregionnumerics.cpp openfoam/caseelements/numerics/chtmultiregionnumerics.h
+
     openfoam/caseelements/boundarycondition.cpp openfoam/caseelements/boundarycondition.h
     openfoam/caseelements/boundaryconditions/boundarycondition_heat.cpp openfoam/caseelements/boundaryconditions/boundarycondition_heat.h
     openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.cpp openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.h
@@ -200,11 +247,15 @@ set(toolkit_SOURCES
     openfoam/caseelements/boundaryconditions/exptdatainletbc.cpp openfoam/caseelements/boundaryconditions/exptdatainletbc.h
     openfoam/caseelements/boundaryconditions/compressibleinletbc.cpp openfoam/caseelements/boundaryconditions/compressibleinletbc.h
     openfoam/caseelements/boundaryconditions/cyclicacmibc.h openfoam/caseelements/boundaryconditions/cyclicacmibc.cpp
+
+    openfoam/caseelements/dynamicmesh/sixdofrigidbodymotionsolver.h openfoam/caseelements/dynamicmesh/sixdofrigidbodymotionsolver.cpp
     openfoam/caseelements/dynamicmesh/dynamicmesh.cpp openfoam/caseelements/dynamicmesh/dynamicmesh.h
     openfoam/caseelements/dynamicmesh/velocitytetfemmotionsolver.cpp openfoam/caseelements/dynamicmesh/velocitytetfemmotionsolver.h
     openfoam/caseelements/dynamicmesh/displacementfvmotionsolver.cpp openfoam/caseelements/dynamicmesh/displacementfvmotionsolver.h
     openfoam/caseelements/dynamicmesh/solidbodymotiondynamicmesh.cpp openfoam/caseelements/dynamicmesh/solidbodymotiondynamicmesh.h
     openfoam/caseelements/dynamicmesh/rigidbodymotiondynamicmesh.cpp openfoam/caseelements/dynamicmesh/rigidbodymotiondynamicmesh.h
+    openfoam/caseelements/dynamicmesh/dynamicoversetfvmesh.h openfoam/caseelements/dynamicmesh/dynamicoversetfvmesh.cpp
+
     openfoam/caseelements/turbulencemodels/laminar_rasmodel.cpp openfoam/caseelements/turbulencemodels/laminar_rasmodel.h
     openfoam/caseelements/turbulencemodels/smagorinsky_lesmodel.cpp openfoam/caseelements/turbulencemodels/smagorinsky_lesmodel.h
     openfoam/caseelements/turbulencemodels/oneeqeddy_lesmodel.cpp openfoam/caseelements/turbulencemodels/oneeqeddy_lesmodel.h
@@ -224,10 +275,25 @@ set(toolkit_SOURCES
     openfoam/caseelements/analysiscaseelements.cpp openfoam/caseelements/analysiscaseelements.h
     openfoam/caseelements/thermophysicalcaseelements.cpp openfoam/caseelements/thermophysicalcaseelements.h
     openfoam/caseelements/electromagneticscaseelements.cpp openfoam/caseelements/electromagneticscaseelements.h
+    openfoam/caseelements/options/enforcefarfieldvelocity.h openfoam/caseelements/options/enforcefarfieldvelocity.cpp
+
+
     code_aster/caexportfile.cpp code_aster/caexportfile.h
     code_aster/codeasterrun.cpp code_aster/codeasterrun.h
     code_aster/codeastermeshfile.h code_aster/codeastermeshfile.cpp
     code_aster/casolveroutputanalyzer.cpp code_aster/casolveroutputanalyzer.h
+    code_aster/coordinatesystems.h code_aster/coordinatesystems.cpp
+
+    lsdyna/lsdynainputdeck.h lsdyna/lsdynainputdeck.cpp
+    lsdyna/lsdynainputcard.h lsdyna/lsdynainputcard.cpp
+    lsdyna/control.h lsdyna/control.cpp
+    lsdyna/mesh.h lsdyna/mesh.cpp
+    lsdyna/materials.h lsdyna/materials.cpp
+    lsdyna/solution.h lsdyna/solution.cpp
+    lsdyna/boundaryconditions.h lsdyna/boundaryconditions.cpp
+    lsdyna/contact.h lsdyna/contact.cpp
+    lsdyna/radsoftwareenvironment.h lsdyna/radsoftwareenvironment.cpp
+    lsdyna/openradiossoutputanalyzer.h lsdyna/openradiossoutputanalyzer.cpp
 )
 
 if (INSIGHT_GNUPLOT_CHARTRENDERER)
@@ -252,14 +318,17 @@ find_package(OpenSSL)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
+PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
 
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
 set(toolkit_LINK_LIBS
     ${Boost_LIBRARIES}
+    ${Intl_LIBRARY}
     ${ARMADILLO_LIBRARY}
     PkgConfig::poppler-cpp
+    PkgConfig::minizip
     GSL::gsl GSL::gslcblas
     OpenSSL::SSL
     vtkHeaders
@@ -275,20 +344,24 @@ target_link_libraries(toolkit ${toolkit_LINK_LIBS} ${Boost_LIBRARIES})
 include(GenerateExportHeader)
 generate_export_header(toolkit)
 target_compile_definitions(toolkit PRIVATE toolkit_EXPORTS)
+
+setup_gettext(toolkit toolkit ${toolkit_SOURCES})
+
+install_shared_file2(base/materialLibrary.xml ".")
+
 target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
+  PUBLIC ${Intl_INCLUDE_DIRS}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
-
-
-install_shared_file2(base/materialLibrary.xml ".")
-
 add_library(toolkitHeaders INTERFACE)
 get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)
 target_include_directories(toolkitHeaders INTERFACE ${toolkit_INCLUDE_DIRS})
+
+
 
 
 set(EXPORT_OPTS "-Wl,--no-as-needed -Wl,--copy-dt-needed-entries")
@@ -317,6 +390,7 @@ if (NOT WIN32)
     buildLibraryList("${VTK_OFFSCREEN_LIBRARIES}")
     configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOffscreenLoader.cpp @ONLY)
     add_library(toolkitVtkOffscreenLoader SHARED toolkitVtkOffscreenLoader.cpp)
+    add_dependencies(toolkitVtkOffscreenLoader vtkOffscreen)
     set_target_properties(toolkitVtkOffscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
     install(
         TARGETS toolkitVtkOffscreenLoader # EXPORT toolkit_targets
@@ -327,6 +401,7 @@ if (NOT WIN32)
     buildLibraryList("${VTK_ONSCREEN_LIBRARIES}")
     configure_file(sharedLibraryLoader.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/toolkitVtkOnscreenLoader.cpp @ONLY)
     add_library(toolkitVtkOnscreenLoader SHARED toolkitVtkOnscreenLoader.cpp)
+    add_dependencies(toolkitVtkOnscreenLoader vtkOnscreen)
     set_target_properties(toolkitVtkOnscreenLoader PROPERTIES LINK_FLAGS ${EXPORT_OPTS})
     install(
         TARGETS toolkitVtkOnscreenLoader # EXPORT toolkit_targets
@@ -368,7 +443,8 @@ macro(linkToolkit_OF_ShLib target)
  version_list_OF()
  foreach (_ofvers ${OF_VERSIONS})
   if (${_ofvers}_FOUND)
-   linkToolkitVtk2ShLib(${target}${_ofvers} Offscreen)
+   linkToolkitVtk(${target}${_ofvers} Offscreen)
+   #linkToolkitVtk2ShLib(${target}${_ofvers} Offscreen)
   endif()
  endforeach()
 endmacro()
@@ -420,14 +496,15 @@ ENDIF()
 
 ## pull-in modules for VTK on/offscreen in toolkit python wrapper
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
-  foreach(_variant Offscreen Onscreen)
-      set(TARGETNAME vtkPy${_variant})
-      set(PYTARGET ${TARGETNAME}_python)
-      set(IFFILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i)
-      set_property(SOURCE ${IFFILE} PROPERTY CPLUSPLUS ON)
-      set_property(SOURCE ${IFFILE} PROPERTY SWIG_MODULE_NAME ${TARGETNAME})
+  if (NOT WIN32)
+    foreach(_variant Offscreen Onscreen)
+        set(TARGETNAME vtkPy${_variant})
+        set(PYTARGET ${TARGETNAME}_python)
+        set(IFFILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i)
+        set_property(SOURCE ${IFFILE} PROPERTY CPLUSPLUS ON)
+        set_property(SOURCE ${IFFILE} PROPERTY SWIG_MODULE_NAME ${TARGETNAME})
 
-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i "
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i "
 %module ${TARGETNAME}
 %{
 #include <iostream>
@@ -438,25 +515,28 @@ sys.setdlopenflags(os.RTLD_LAZY | os.RTLD_GLOBAL)
 %}
 ")
 
-      swig_add_library(${PYTARGET}
-          LANGUAGE python
-          SOURCES ${IFFILE})
-      target_link_libraries(${PYTARGET} vtk${_variant})
-      set_target_properties(${PYTARGET}
-          PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SWIG_OUTDIR}
-          )
-    #  set_target_properties(${PYTARGET}
-    #      PROPERTIES LINK_WHAT_YOU_USE TRUE # has no effect...
-    #      )
-      SET_TARGET_PROPERTIES(${PYTARGET} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
-      INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/_${PYTARGET}.so DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
-      INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/${TARGETNAME}.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
-  endforeach()
+        swig_add_library(${PYTARGET}
+            LANGUAGE python
+            SOURCES ${IFFILE})
+        target_link_libraries(${PYTARGET} vtk${_variant})
+        set_target_properties(${PYTARGET}
+            PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SWIG_OUTDIR}
+            )
+      #  set_target_properties(${PYTARGET}
+      #      PROPERTIES LINK_WHAT_YOU_USE TRUE # has no effect...
+      #      )
+        SET_TARGET_PROPERTIES(${PYTARGET} PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+        INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/_${PYTARGET}.so DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+        INSTALL ( FILES ${CMAKE_SWIG_OUTDIR}/${TARGETNAME}.py DESTINATION ${INSIGHT_INSTALL_PYTHON_PATH_REL}/Insight COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+    endforeach()
+  endif()
 ENDIF()
 
-add_pybindings(toolkit "toolkit.i" toolkit)
+if (WIN32)
+  add_pybindings(toolkit "toolkit_win32.i" toolkit)
+else()
+  add_pybindings(toolkit "toolkit.i" toolkit)
+endif()
 
-
-add_subdirectory(openfoam/tests)
 
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SWIG_RUNTIME} DESTINATION include/toolkit)

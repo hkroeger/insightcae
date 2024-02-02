@@ -52,7 +52,8 @@ using namespace rapidxml;
 void isofCaseBuilderWindow::createCase
 (
     bool skipBCs,
-    const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
+    const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles,
+    bool textMode
     )
 {
   recreateOFCase ( ui->OFversion->currentText() );
@@ -72,7 +73,13 @@ void isofCaseBuilderWindow::createCase
   if (!boost::filesystem::exists(ofc_->boundaryDictPath(casepath())))
   {
     if (!skipBCs)
-      QMessageBox::warning(this, "Warning", "No boundary dictionary present: skipping BC creation!");
+    {
+        QString text("No boundary dictionary present: skipping BC creation!");
+        if (textMode)
+            insight::Warning(text.toStdString());
+        else
+            QMessageBox::warning(this, "Warning", text);
+    }
 
     skipBCs=true;
   }
@@ -80,8 +87,13 @@ void isofCaseBuilderWindow::createCase
   if ( !BCConfigModel_->isValid() )
   {
     if (!skipBCs)
-      QMessageBox::warning(this, "Warning", "No boundary patches have been configured: skipping BC creation!");
-
+    {
+        QString text("No boundary patches have been configured: skipping BC creation!");
+        if (textMode)
+            insight::Warning(text.toStdString());
+        else
+            QMessageBox::warning(this, "Warning", text);
+    }
     skipBCs=true;
   }
 

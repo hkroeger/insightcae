@@ -95,6 +95,13 @@ class AddedVector
   VectorPtr p1_, p2_;
 public:
   AddedVector(VectorPtr p1, VectorPtr p2);
+
+  inline VectorPtr& p1() __attribute__((deprecated("using this might break updating!")))
+  { return p1_; }
+
+  inline VectorPtr& p2() __attribute__((deprecated("using this might break updating!")))
+  { return p2_; }
+
   virtual arma::mat value() const;
 };
 
@@ -117,6 +124,16 @@ class RotatedVector
   VectorPtr v_, ax_;
 public:
   RotatedVector(VectorPtr v, ScalarPtr ang, VectorPtr ax);
+  virtual arma::mat value() const;
+};
+
+
+class NormalizedVector
+    : public insight::cad::Vector
+{
+  VectorPtr v_;
+public:
+  NormalizedVector(VectorPtr v);
   virtual arma::mat value() const;
 };
 

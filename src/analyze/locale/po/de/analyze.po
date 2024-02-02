@@ -1,0 +1,245 @@
+# German translations for analyze package.
+# Copyright (C) 2023 hkroeger
+# This file is distributed under the same license as the analyze package.
+# Hannes Kröger <EMAIL@ADDRESS>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: analyze\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-02-02 09:27+0100\n"
+"PO-Revision-Date: 2023-07-04 22:38+0200\n"
+"Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
+"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.0.1\n"
+
+#: analyze.cpp:76
+msgid "Allowed options"
+msgstr "Zulässige Optionen"
+
+#: analyze.cpp:78
+msgid "produce help message"
+msgstr "Hilfe anzeigen"
+
+#: analyze.cpp:79
+msgid "skip execution of pdflatex"
+msgstr "die Ausführung von pdflatex auslassen"
+
+#: analyze.cpp:80
+msgid "print version and exit"
+msgstr "Version anzeigen und beenden"
+
+#: analyze.cpp:81
+msgid "execution directory"
+msgstr "Arbeitsverzeichnis"
+
+#: analyze.cpp:82
+msgid ""
+"save final configuration (including command line overrides) to this file"
+msgstr ""
+"die finale Konfiguration in diese Datei speichern (inklusive aller in der "
+"Kommandozeile überschriebenen Parameter)"
+
+#: analyze.cpp:83
+msgid "boolean variable assignment"
+msgstr "Wahrheitswert-Variable zuweisen"
+
+#: analyze.cpp:84
+msgid "selection variable assignment"
+msgstr "Auswahlvariable zuweisen"
+
+#: analyze.cpp:85
+msgid "string variable assignment"
+msgstr "Zeichenkettenvariable zuweisen"
+
+#: analyze.cpp:86
+msgid "path variable assignment"
+msgstr "Dateipfadvariable zuweisen"
+
+#: analyze.cpp:87
+msgid "double variable assignment"
+msgstr "Gleitkommazahl zuweisen"
+
+#: analyze.cpp:88
+msgid "vector variable assignment"
+msgstr "Vektorvariable zuweisen"
+
+#: analyze.cpp:89
+msgid "int variable assignment"
+msgstr "Ganzzahlvariable zuweisen"
+
+#: analyze.cpp:90
+msgid "set size of array"
+msgstr "Größe einer Liste ändern"
+
+#: analyze.cpp:91
+msgid ""
+"additional input file to merge into analysis parameters before variable "
+"assignments"
+msgstr ""
+
+#: analyze.cpp:92
+msgid "Additional libraries with analysis modules to load"
+msgstr ""
+
+#: analyze.cpp:93
+msgid "Specifies input file."
+msgstr ""
+
+#: analyze.cpp:94
+msgid ""
+"Specifies output file. May be a PDF report or an ISR InsightCAE XML result "
+"set."
+msgstr ""
+
+#: analyze.cpp:96
+msgid ""
+"Start with REST API server. Keeps the application running after the analysis "
+"has finished. Once the result set is fetched via the REST API, the "
+"application exits."
+msgstr ""
+
+#: analyze.cpp:97
+msgid "Server address"
+msgstr ""
+
+#: analyze.cpp:98
+msgid "Server port"
+msgstr ""
+
+#: analyze.cpp:99
+msgid "Broadcast listen port"
+msgstr ""
+
+#: analyze.cpp:109
+msgid "Usage:"
+msgstr "Benutzung:"
+
+#: analyze.cpp:110
+msgid "options"
+msgstr "Optionen"
+
+#: analyze.cpp:130
+msgid "Could not parse command line"
+msgstr ""
+
+#: analyze.cpp:167
+#, c-format
+msgid "There have been %d warnings."
+msgstr ""
+
+#: analyze.cpp:169
+msgid "Please review"
+msgstr ""
+
+#: analyze.cpp:174 analyze.cpp:175
+msgid "Warning"
+msgstr "Warnung"
+
+#: analyze.cpp:199
+msgid "Could not start web server!"
+msgstr ""
+
+#: analyze.cpp:224
+msgid "Error: library file does not exist: "
+msgstr ""
+
+#: analyze.cpp:239
+msgid ""
+"Running in server mode without explicitly specified input file: waiting for "
+"input transmission"
+msgstr ""
+
+#: analyze.cpp:243
+msgid "Received interruption!"
+msgstr ""
+
+#: analyze.cpp:249
+msgid "input file has to be specified!"
+msgstr "Eingabedatei muss angegeben werden!"
+
+#: analyze.cpp:257
+msgid "only one single input file has to be specified!"
+msgstr "nur eine einzige Eingabedatei darf angegeben werden!"
+
+#: analyze.cpp:268
+msgid "Error: input file does not exist"
+msgstr "Fehler: Eingabedatei existiert nicht"
+
+#: analyze.cpp:287
+msgid "Executing analysis in directory"
+msgstr "Führe Analyse aus im Verzeichnis"
+
+#: analyze.cpp:311
+#, c-format
+msgid ""
+"merge command needs either one or three arguments!\n"
+"Got: %s"
+msgstr ""
+
+#: analyze.cpp:325
+#, c-format
+msgid "Resizing array '%s' to %d"
+msgstr ""
+
+#: analyze.cpp:344
+#, c-format
+msgid "Setting boolean '%s' = %d"
+msgstr ""
+
+#: analyze.cpp:358
+#, c-format
+msgid "Setting string '%s' = \"%s\""
+msgstr ""
+
+#: analyze.cpp:372
+#, c-format
+msgid "Setting selection '%s' = \"%s\""
+msgstr ""
+
+#: analyze.cpp:386
+#, c-format
+msgid "Setting path '%s' = \"%s\""
+msgstr ""
+
+#: analyze.cpp:402
+#, c-format
+msgid "Setting double '%s' = %g"
+msgstr ""
+
+#: analyze.cpp:418
+#, c-format
+msgid "Setting vector '%s' = [%g %g %g]"
+msgstr ""
+
+#: analyze.cpp:433
+#, c-format
+msgid "Setting int '%s'= %d"
+msgstr ""
+
+#: analyze.cpp:445
+msgid "Applied Parameters for this run"
+msgstr "Für diesen Durchlauf angewendete Parameter"
+
+#: analyze.cpp:534
+msgid "TeX input file was written but could not execute pdflatex successfully."
+msgstr ""
+"TeX-Eingabedatei wurde geschrieben, aber pdflatex wurde nicht erfolgreich "
+"ausgeführt."
+
+#: analyze.cpp:547
+msgid "ANALYSIS FINISHED SUCCESSFULLY."
+msgstr "ANALYSE ERFOLGREICH AUSGEFÜHRT."
+
+#: analyze.cpp:553
+msgid "ANALYSIS STOPPED WITHOUT RESULTS."
+msgstr "ANALYSE OHNE ERGEBNIS BEENDET."
+
+#: analyze.cpp:568
+msgid "The analysis was stopped due to this error:"
+msgstr "Die Analyse wurde wegen der folgenden Fehler beendet:"

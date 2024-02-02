@@ -23,6 +23,8 @@
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
 
 #include "Geom_TrimmedCurve.hxx"
 #include "GC_MakeSegment.hxx"
@@ -41,7 +43,9 @@ namespace cad {
 
 
 defineType(CoilPath);
-addToFactoryTable(Feature, CoilPath);
+//addToFactoryTable(Feature, CoilPath);
+addToStaticFunctionTable(Feature, CoilPath, insertrule);
+addToStaticFunctionTable(Feature, CoilPath, ruleDocumentation);
 
 
 size_t CoilPath::calcHash() const
@@ -59,11 +63,6 @@ size_t CoilPath::calcHash() const
   return h.getHash();
 }
 
-
-CoilPath::CoilPath()
-: Feature()
-{
-}
 
 
 
@@ -83,23 +82,6 @@ CoilPath::CoilPath
 {
 }
 
-
-
-
-FeaturePtr CoilPath::create
-(
-    ScalarPtr l,
-    ScalarPtr dcore,
-    ScalarPtr n,
-    ScalarPtr d,
-    ScalarPtr R,
-    ScalarPtr rmin,
-    ScalarPtr nl,
-    ScalarPtr dr
-)
-{
-    return FeaturePtr(new CoilPath(l, dcore, n, d, R, rmin, nl, dr));
-}
 
 
 
@@ -130,7 +112,7 @@ Handle_Geom_TrimmedCurve MakeArc_Projected ( gp_Pnt p1, gp_Vec n1, gp_Pnt p2, do
 
     if (!ipts.IsDone())
     {
-        throw insight::Exception("Discretization of arc failed!");
+        throw insight::Exception(_("Discretization of arc failed!"));
     }
 
     TColgp_Array1OfPnt pts ( 1, ipts.NbPoints() );
@@ -165,41 +147,41 @@ void CoilPath::build()
     // some sanity checks
     double l=l_->value();
     if ( l<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative coil length (L=%g) is invalid!" ) %l ) );
+            throw insight::Exception ( str ( format ( _("Negative coil length (L=%g) is invalid!") ) %l ) );
     }
     
     double dcore=dcore_->value();
     if ( dcore<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative coil core width (dcore=%g) is invalid!" ) %dcore ) );
+            throw insight::Exception ( str ( format ( _("Negative coil core width (dcore=%g) is invalid!") ) %dcore ) );
     }
     
     double d=d_->value();
     if ( d<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative conductor distance (d=%g) is invalid!" ) %d ) );
+            throw insight::Exception ( str ( format ( _("Negative conductor distance (d=%g) is invalid!") ) %d ) );
     }
     
     double nrd=n_->value();
     if ( fabs ( nrd-round ( nrd ) ) > 0 ) {
-        throw insight::Exception ( str ( format ( "number of turn has to be integer! (n=%g)" ) %nrd ) );
+            throw insight::Exception ( str ( format ( _("number of turn has to be integer! (n=%g)") ) %nrd ) );
     }
     int nr=int ( nrd );
     
     double R=R_->value();
     if ( R<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative yoke radius radius (R=%g) is invalid!" ) %R ) );
+            throw insight::Exception ( str ( format ( _("Negative yoke radius radius (R=%g) is invalid!") ) %R ) );
     }
     
     double rmin=rmin_->value();
     if ( rmin<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative coil bending radius (rmin=%g) is invalid!" ) %rmin ) );
+            throw insight::Exception ( str ( format ( _("Negative coil bending radius (rmin=%g) is invalid!") ) %rmin ) );
     }
     if ( (dcore - 2*rmin)<0 ) {
-        throw insight::Exception ( str ( format ( "Core width must be larger than 2x coil bending radius (dcore=%g, rmin=%g)!" ) %dcore % rmin ) );
+            throw insight::Exception ( str ( format ( _("Core width must be larger than 2x coil bending radius (dcore=%g, rmin=%g)!") ) %dcore % rmin ) );
     }
         
     double nld=nl_->value();
     if ( fabs ( nld-round ( nld ) ) > 0 ) {
-        throw insight::Exception ( str ( format ( "number of layers has to be integer! (n=%g)" ) %nld ) );
+            throw insight::Exception ( str ( format ( _("number of layers has to be integer! (n=%g)") ) %nld ) );
     }
     int nl=int ( nld );
     
@@ -207,7 +189,7 @@ void CoilPath::build()
     if (nl>1)
     {
         if ( !dr_ ) {
-            throw insight::Exception ( str ( format ( "Multiple layers were requested (nl=%d) but radial spacing is undefined!" ) %nl ) );
+                throw insight::Exception ( str ( format ( _("Multiple layers were requested (nl=%d) but radial spacing is undefined!") ) %nl ) );
         }       
         else
         {
@@ -286,12 +268,12 @@ void CoilPath::build()
 
 
 
-void CoilPath::insertrule ( parser::ISCADParser& ruleset ) const
+void CoilPath::insertrule ( parser::ISCADParser& ruleset )
 {
     ruleset.modelstepFunctionRules.add
     (
         "CoilPath",
-        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
                     ( '('
                       >> ruleset.r_scalarExpression >> ','
                       >> ruleset.r_scalarExpression >> ','
@@ -302,28 +284,30 @@ void CoilPath::insertrule ( parser::ISCADParser& ruleset ) const
                       >> ruleset.r_scalarExpression >> ',' 
                       >> ruleset.r_scalarExpression
                       >> ')' )
-                    [ qi::_val = phx::bind ( &CoilPath::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8 ) ]
-                ) )
+                    [ qi::_val = phx::bind (
+                         &CoilPath::create<ScalarPtr,ScalarPtr, ScalarPtr,ScalarPtr,
+                                           ScalarPtr,ScalarPtr,ScalarPtr,ScalarPtr>,
+                         qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8 ) ]
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList CoilPath::ruleDocumentation() const
+FeatureCmdInfoList CoilPath::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "CoilPath",
          
             "( <scalar:l>, <scalar:dcore>, <scalar:nr>, <scalar:d>, <scalar:R>, <scalar:rmin>, <scalar:nl>, <scalar:dr> )",
          
-            "Creates a wire which represents the path of a coil in an electric motor. The straight part of the windings has length l, the core width is dcore, the number of turns nr and the wire distance (approx. equal to wire diameter) is d. The coil is wound on a yoke of radius R. The smallest bending radius is rmin. Multiple radial layers are activated by giving a value for nl. Radial spacing between layers is then dr.\n\n"
-            "The motor axis is along EZ while the radial direction is EX."
+            _("Creates a wire which represents the path of a coil in an electric motor. The straight part of the windings has length l, the core width is dcore, the number of turns nr and the wire distance (approx. equal to wire diameter) is d. The coil is wound on a yoke of radius R. The smallest bending radius is rmin. Multiple radial layers are activated by giving a value for nl. Radial spacing between layers is then dr.\n\n"
+              "The motor axis is along EZ while the radial direction is EX.")
         )
-    );
+    };
 }
 
 
@@ -352,7 +336,10 @@ bool CoilPath::isSingleOpenWire() const
     
 
 defineType(Coil);
-addToFactoryTable(Feature, Coil);
+//addToFactoryTable(Feature, Coil);
+addToStaticFunctionTable(Feature, Coil, insertrule);
+//addToStaticFunctionTable(Feature, Coil, ruleDocumentation);
+
 
 size_t Coil::calcHash() const
 {
@@ -367,10 +354,6 @@ size_t Coil::calcHash() const
   return h.getHash();
 }
 
-Coil::Coil()
-: Feature()
-{
-}
 
 
 Coil::Coil
@@ -385,6 +368,7 @@ Coil::Coil
 )
 : p0_(p0), b_(b), l_(l), r_(r), d_(d), nv_(nv), nr_(nr)
 {}
+
 
 void Coil::build()
 {
@@ -473,23 +457,29 @@ void Coil::build()
   setShape(wb.Wire());
 }
 
-void Coil::insertrule(parser::ISCADParser& ruleset) const
+
+
+void Coil::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Coil",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
       ( '(' >> ruleset.r_vectorExpression >> ',' 
 	    >> ruleset.r_vectorExpression >> ',' 
 	    >> ruleset.r_vectorExpression >> ',' 
 	    >> ruleset.r_scalarExpression >> ',' 
 	    >> ruleset.r_scalarExpression >> ',' 
 	    >> ruleset.r_scalarExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Coil>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7)) ]
-    ))
+        >> ruleset.r_scalarExpression >> ')' )
+    [ qi::_val = phx::bind(
+                &Coil::create<VectorPtr, VectorPtr, VectorPtr, ScalarPtr,
+                              ScalarPtr, ScalarPtr, ScalarPtr>,
+                qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7) ]
+    )
   );
 }
+
 
 bool Coil::isSingleCloseWire() const
 {

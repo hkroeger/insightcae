@@ -17,8 +17,9 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS
-    uniof vtkHeaders
+    uniof
+    toolkitHeaders vtkHeaders vtkOffscreen # link directly because this lib uses VTK
+    toolkitVtkOffscreenLoader # load toolkit through loader lib to place VTK also in global lookup scope
 )
 
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
-linkToolkit_OF_ShLib( ${PRJ} )

@@ -44,6 +44,7 @@
 
 #include "cadfeatures.h"
 #include "openfoam/blockmeshoutputanalyzer.h"
+#include "base/vtktransformation.h"
 
 using namespace arma;
 using namespace std;
@@ -61,7 +62,7 @@ addToAnalysisFactoryTable(NumericalWindtunnel);
 
 void NumericalWindtunnel::modifyDefaults(ParameterSet& p)
 {
-  p.getBool("run/potentialinit")=true;
+    p.setBool("run/potentialinit", true);
 }
 
 
@@ -119,8 +120,8 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
   {
     boost::mutex::scoped_lock lock(mtx);
 
-    auto obj = cad::Transform::create_trsf(
-          cad::Feature::CreateFromFile(p().geometry.objectfile->filePath()), rot);
+    auto obj = cad::Transform::create(
+          cad::Feature::create(p().geometry.objectfile->filePath()), rot);
     bb = p().geometryscale * obj->modelBndBox(bbdefl);
   }
 
@@ -389,8 +390,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   {
     boost::mutex::scoped_lock lock(mtx);
 
-    auto obj = cad::Transform::create_trsf(
-          cad::Feature::CreateFromFile(p().geometry.objectfile->filePath()),
+    auto obj = cad::Transform::create(
+          cad::Feature::create(p().geometry.objectfile->filePath()),
           sp().cad_to_cfd_
           );
     obj->saveAs(objectSTLFile);
@@ -623,7 +624,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
     auto patches = scene.patches("object.*|floor.*");
 
-    FieldSelection sl_field("p", FieldSupport::Point, -1);
+    FieldSelection sl_field("p", FieldSupport::OnPoint, -1);
     auto sl_range=calcRange(sl_field, {patches}, {});
     auto sl_cm=createColorMap();
     FieldColor sl_fc(sl_field, sl_cm, sl_range);
@@ -835,9 +836,9 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
 
 
-ParameterSet_VisualizerPtr NumericalWindtunnel_visualizer()
+ParameterSetVisualizerPtr NumericalWindtunnel_visualizer()
 {
-    return ParameterSet_VisualizerPtr( new NumericalWindtunnel_ParameterSet_Visualizer );
+    return ParameterSetVisualizerPtr( new NumericalWindtunnel_ParameterSet_Visualizer );
 }
 
 addStandaloneFunctionToStaticFunctionTable(Analysis, NumericalWindtunnel, visualizer, NumericalWindtunnel_visualizer);
@@ -847,7 +848,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 {
   CurrentExceptionContext ec("Creating visualization of numerical wind tunnel parameters");
 
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   try
   {
@@ -865,12 +866,12 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
     if (geom_file_ext==".stl" || geom_file_ext==".stlb")
     {
-      org_geom = cad::STL::create_trsf(p.geometry.objectfile->filePath(), sp.cad_to_cfd_);
+      org_geom = cad::STL::create(p.geometry.objectfile->filePath(), sp.cad_to_cfd_);
     }
     else
     {
-      org_geom = cad::Transform::create_trsf(
-                   cad::Feature::CreateFromFile(p.geometry.objectfile->filePath()),
+      org_geom = cad::Transform::create(
+                   cad::Feature::create(p.geometry.objectfile->filePath()),
                    sp.cad_to_cfd_
                    );
     }
@@ -889,7 +890,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
           cad::matconst(vec3( 0, 0, sp.Lup_)),
           cad::matconst(vec3( 0, sp.Laside_+0.5*sp.w_, 0))
          ),
-         AIS_WireFrame
+         { insight::Wireframe }
       );
     }
     else
@@ -903,7 +904,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
           cad::matconst(vec3( 0, 0, sp.Lup_)),
           cad::matconst(vec3( 0, 2.*sp.Laside_+sp.w_, 0))
          ),
-         AIS_WireFrame
+         { insight::Wireframe }
       );
     }
 
@@ -925,7 +926,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
             cad::matconst(bc->H*vec3(0,0,1)),
             cad::BoxCentering(true, true, true)
            ),
-           AIS_WireFrame
+           { insight::Wireframe }
         );
       }
       else if (const auto* b =
@@ -941,7 +942,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
             cad::matconst(d(1)*vec3(0,1,0)),
             cad::matconst(d(2)*vec3(0,0,1))
            ),
-           AIS_WireFrame
+           { insight::Wireframe }
         );
       }
 

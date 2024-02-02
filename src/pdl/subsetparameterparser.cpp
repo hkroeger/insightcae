@@ -2,6 +2,12 @@
 
 using namespace std;
 
+
+
+defineType(SubsetParameterParser);
+addToStaticFunctionTable(ParserDataBase, SubsetParameterParser, insertrule);
+
+
 SubsetParameterParser::Data::Data(const ParameterSetData& v, const std::string& d)
     : ParserDataBase(d), value(v)
 {
@@ -113,10 +119,11 @@ void SubsetParameterParser::Data::cppWriteInsertStatement
     os<<"{ ";
     os<<"std::string key(\""<<name<<"\"); ";
     this->cppWriteCreateStatement(os, name, extendtype(thisscope, name+"_type"));
-    os<<"if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {"<<endl;
-    os<<psvarname<<".getSubset(key).merge(*"<<name<<"); ";
+    os<<"if ("<<psvarname<<".contains(key)) {"<<endl;
+    os<<psvarname<<".getSubset(key).extend(*"<<name<<");\n";
+    os<<psvarname<<".getSubset(key).merge(*"<<name<<");\n";
     os<<"} else {"<<endl;
-    os<<psvarname<<".emplace(key, std::move("<<name<<")); ";
+    os<<psvarname<<".insert(key, std::move("<<name<<")); ";
     os<<"}"<<endl;
     os<<"}"<<endl;
 }
@@ -159,10 +166,8 @@ void SubsetParameterParser::Data::cppWriteSetStatement
     {
         std::string subname=pe.first;
         os<<"{\n";
-        os<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
-        os<<"const "
-          <<extendtype(myscope, pe.second->cppTypeName(subname))
-          <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n";
+        os<<"auto& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
+        os<<"const auto& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n";
         pe.second->cppWriteSetStatement
         (
             os, subname, subname, subname+"_static", myscope
@@ -185,9 +190,8 @@ void SubsetParameterParser::Data::cppWriteGetStatement
     {
         std::string subname=pe.first;
         os<<"{"<<endl;
-        os<<"const "<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
-        os<<extendtype(myscope, pe.second->cppTypeName(subname))
-          <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n"<<endl;
+        os<<"const auto& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");\n";
+        os<<"auto& "<<subname<<"_static = "<<staticname<<"."<<subname<<";\n"<<endl;
         pe.second->cppWriteGetStatement
         (
             os, subname, subname, subname+"_static", myscope

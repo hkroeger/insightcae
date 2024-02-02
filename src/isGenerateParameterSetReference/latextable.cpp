@@ -92,33 +92,32 @@ void generateLatexTable(
   doc.push_back(tabPtr);
 
 
-  for (auto i=ps.begin(); i!=ps.end(); ++i)
+  for (auto p=ps.begin(); p!=ps.end(); ++p)
   {
-    const auto& label = i->first;
+    const auto& label = p.name();
 
     auto ppath=prefix+"/"+label;
 
     auto ppath_clean = ppath;
     boost::replace_all(ppath_clean, "/", "_");
 
-    const auto* pptr = i->second.get();
 
     auto lxlabel=SimpleLatex(label).toLaTeX();
-    auto lxdesc=pptr->description().toLaTeX();
+    auto lxdesc=p->description().toLaTeX();
 
-    if (const auto* subp = dynamic_cast<const SubsetParameter*>(pptr))
+    if (const auto* subp = dynamic_cast<const SubsetParameter*>(&*p))
     {
       generateLatexTable(
             doc,
             ppath_clean,
             "Parameters of sub dict "+ppath,
-            subp->subset(), ppath,
+            (*subp)(), ppath,
             firstColWidthLimit, labelprefix
             );
 
       lxdesc+="\n\nSee table \\ref{"+(labelprefix+ppath_clean)+"} for the description of this sub dict.\n";
     }
-    else if (const auto* ssubp = dynamic_cast<const SelectableSubsetParameter*>(pptr))
+    else if (const auto* ssubp = dynamic_cast<const SelectableSubsetParameter*>(&*p))
     {
 
       std::vector<std::string> refs;
@@ -149,9 +148,18 @@ void generateLatexTable(
       }
 
     }
-    else if (const auto* subarr = dynamic_cast<const ArrayParameter*>(pptr))
+    else if (const auto* subarr = dynamic_cast<const ArrayParameter*>(&*p))
     {
-
+        if (const auto* subp = dynamic_cast<const SubsetParameter*>(&subarr->defaultValue()))
+        {
+            generateLatexTable(
+                  doc,
+                  ppath_clean+"_element",
+                  "Parameters of array elements of "+ppath,
+                  (*subp)(),
+                  ppath,
+                  firstColWidthLimit, labelprefix);
+        }
     }
 
     if (lxlabel.length()>firstColWidthLimit)

@@ -123,9 +123,9 @@ ResultSet::ResultSet ( const std::string& shortdesc, const std::string& longdesc
   : ResultSet( ParameterSet(), shortdesc, longdesc )
 {}
 
-void ResultSet::readFromNode ( const std::string&, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node )
+void ResultSet::readFromNode ( const std::string&, rapidxml::xml_node<>& node )
 {
-  ResultElementCollection::readElementsFromNode(doc, node);
+  ResultElementCollection::readElementsFromNode(node);
 }
 
 
@@ -160,10 +160,11 @@ void ResultSet::transfer ( const ResultSet& other )
 }
 
 
-void ResultSet::writeLatexHeaderCode ( std::ostream& f ) const
+void ResultSet::insertLatexHeaderCode ( std::set<std::string>& hc ) const
 {
-    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
-        i->second->writeLatexHeaderCode ( f );
+    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ )
+    {
+        i->second->insertLatexHeaderCode(hc);
     }
 }
 
@@ -259,7 +260,7 @@ void ResultSet::readFromString ( const std::string& contents )
   xml_node<> *rootnode = doc.first_node ( "root" );
 
   auto *pn = rootnode->first_node("parameters");
-  p_.readFromNode( doc, *pn, "/" );
+  p_.readFromNode( *pn, "/" );
 
   auto *rn = rootnode->first_node("results");
   title_=rn->first_attribute("title")->value();
@@ -267,7 +268,7 @@ void ResultSet::readFromString ( const std::string& contents )
   date_=rn->first_attribute("date")->value();
   author_=rn->first_attribute("author")->value();
   introduction_=rn->first_attribute("introduction")->value();
-  ResultElementCollection::readElementsFromNode ( doc, *rn );
+  ResultElementCollection::readElementsFromNode ( *rn );
 }
 
 
@@ -362,10 +363,11 @@ void ResultSet::saveAs(const boost::filesystem::path &outfile) const
 
 
 
-
 void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 {
-  CurrentExceptionContext ec("writing latex representation of result set into file "+file.string());
+  CurrentExceptionContext ec(
+              "writing latex representation of result set into file "
+              + file.string() );
 
     path filepath ( absolute ( file ) );
 
@@ -382,26 +384,41 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
           "\\renewlist{enumerate}{enumerate}{10}\n"
 
           ;
-    writeLatexHeaderCode ( header );
+
+    std::set<std::string> headerCode;
+    insertLatexHeaderCode ( headerCode );
+    for (const auto& hc: headerCode)
+    {
+        header << hc << std::endl;
+    }
 
     writeLatexCode ( content, "", 0, filepath.parent_path() );
 
-    auto reportTemplate = std::make_unique<TemplateFile>(
-                ResultReportTemplates::globalInstance().defaultItem()
-                );
+    auto &reportTemplate =
+            ResultReportTemplates::globalInstance().defaultItem();
 
-    reportTemplate->replace("AUTHOR", author_ );
-    reportTemplate->replace("DATE", date_ );
-    reportTemplate->replace("TITLE", title_ );
-    reportTemplate->replace("SUBTITLE", subtitle_ );
 
-    reportTemplate->replace("HEADER", header.str() );
-    reportTemplate->replace("CONTENT", content.str() );
+    auto reportInput = std::make_unique<TemplateFile>(
+                static_cast<const std::string&>(reportTemplate) );
 
-    reportTemplate->write(filepath);
+
+    reportInput->replace("AUTHOR", author_ );
+    reportInput->replace("DATE", date_ );
+    reportInput->replace("TITLE", title_ );
+    reportInput->replace("SUBTITLE", subtitle_ );
+
+    reportInput->replace("HEADER", header.str() );
+    reportInput->replace("CONTENT", content.str() );
+
+
+    reportInput->write(filepath);
+    reportTemplate.writeAdditionalFiles(filepath.parent_path());
 
     {
-        path outdir ( filepath.parent_path() / ( "report_data_"+filepath.stem().string() ) );
+        path outdir (
+                    filepath.parent_path() /
+                    ( "report_data_"+filepath.stem().string() )
+                    );
         create_directory ( outdir );
         for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
             i->second->exportDataToFile ( i->first, outdir );
@@ -446,7 +463,7 @@ ParameterSetPtr ResultSet::convertIntoParameterSet() const
         ParameterPtr p=rp.second->convertIntoParameter();
         if ( p )
         {
-            ps->insert ( ParameterSet::value_type(rp.first, std::unique_ptr<Parameter>(p->clone())) );
+            ps->insert ( rp.first, std::unique_ptr<Parameter>(p->clone()) );
         }
     }
     return ps;
@@ -456,7 +473,7 @@ ParameterSetPtr ResultSet::convertIntoParameterSet() const
 ParameterPtr ResultSet::convertIntoParameter() const
 {
     auto ps = std::make_shared<SubsetParameter>();
-    ps->subsetRef().extend ( convertIntoParameterSet()->entries() );
+    ps->extend ( *convertIntoParameterSet() );
     return ps;
 }
 

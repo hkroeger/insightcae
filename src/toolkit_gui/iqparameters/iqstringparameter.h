@@ -16,6 +16,7 @@ public:
   IQStringParameter
   (
       QObject* parent,
+      IQParameterSetModel* psmodel,
       const QString& name,
       insight::Parameter& parameter,
       const insight::ParameterSet& defaultParameterSet
@@ -23,7 +24,9 @@ public:
 
   QString valueText() const override;
 
-  QVBoxLayout* populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer) override;
+  QVBoxLayout* populateEditControls(
+          QWidget* editControlsContainer,
+          IQCADModel3DViewer *viewer) override;
 
 };
 

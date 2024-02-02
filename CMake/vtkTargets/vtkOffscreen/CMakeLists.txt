@@ -22,6 +22,7 @@ else()
             FiltersExtraction
             FiltersPoints
             FiltersFlowPaths
+            FiltersVerdict
             CommonCore
             CommonDataModel
             CommonMisc
@@ -31,6 +32,7 @@ else()
             IOExport
             IOImage
             IOXML
+            #IOParallel # not available in mxe
             ImagingCore
             RenderingOpenGL2
             RenderingAnnotation
@@ -42,8 +44,47 @@ else()
         HINTS ${VTK_OFFSCREEN_DIR}
     )
 
+    # need to handle extensions to VTK here in two versions (onscreen and offscreen)
+    include(ExternalProject)
+
+    # 1) vtk dicom reader
+    get_filename_component(PY3ROOT ${PYTHON_LIBRARY} DIRECTORY) #lib
+    get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
+
+
+    ExternalProject_Add( vtkdicom-offscreen
+       GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
+       GIT_TAG 6a81888
+       INSTALL_DIR ${CMAKE_BINARY_DIR}
+       CMAKE_ARGS
+         -DBUILD_SHARED_LIBS=ON
+         -DBUILD_PYTHON_WRAPPERS=OFF
+         -DCMAKE_BUILD_TYPE=Release
+         -DVTK_DIR=${VTK_OFFSCREEN_DIR}
+         -DPython3_ROOT_DIR=${PY3ROOT}
+         -DVTK_VERSIONED_INSTALL=OFF
+         -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvisoffscreen
+         -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+
+       BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvisoffscreen.so.0.8.15
+    )
+
+    ExternalProject_Get_Property( vtkdicom-offscreen INSTALL_DIR )
+    ExternalProject_Get_Property( vtkdicom-offscreen SOURCE_DIR )
+
+    set(VTKDICOMOFFSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
+    set(VTKDICOMOFFSCREEN_LIBDIR ${INSTALL_DIR}/lib)
+    set(VTKDICOMOFFSCREEN_LIBRARY ${VTKDICOMOFFSCREEN_LIBDIR}/libvtkDICOM-pvisoffscreen.so.0.8.15)
+
+    install(DIRECTORY ${VTKDICOMOFFSCREEN_LIBDIR}/
+      DESTINATION lib
+      FILES_MATCHING PATTERN "libvtkDICOM*.so*")
 
     set(LIBS "")
+
+    list(APPEND LIBS
+        ${VTKDICOMOFFSCREEN_LIBRARY}
+    )
 
     if (INSIGHT_BUILD_MEDREADER)
         list(APPEND LIBS
@@ -67,6 +108,10 @@ else()
 
     get_target_property(vtkOffscreen_INCLUDES VTK::FiltersCore INTERFACE_INCLUDE_DIRECTORIES)
 
+    list(APPEND vtkOffscreen_INCLUDES
+        $<BUILD_INTERFACE:${VTKDICOMOFFSCREEN_INCLUDE_DIR}>
+    )
+
     if (INSIGHT_BUILD_MEDREADER)
         list(APPEND vtkOffscreen_INCLUDES
             $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/medreader-offscreen/include> $<INSTALL_INTERFACE:paraview-offscreen/include>
@@ -81,8 +126,13 @@ else()
 
     add_library(vtkOffscreen INTERFACE)
     target_link_libraries(vtkOffscreen INTERFACE ${LIBS})
+    add_dependencies(vtkOffscreen vtkdicom-offscreen)
 
     target_include_directories(vtkHeaders INTERFACE ${vtkOffscreen_INCLUDES})
+    add_dependencies(vtkHeaders vtkdicom-offscreen)
+    # if (INSIGHT_BUILD_MEDREADER)
+    #   add_dependencies(vtkHeaders vtkdicom-offscreen)
+    # endif()
 
 
     install(

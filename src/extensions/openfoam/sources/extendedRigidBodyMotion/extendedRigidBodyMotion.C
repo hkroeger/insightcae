@@ -34,58 +34,147 @@ License
 #include "fvMesh.H"
 #include "fvCFD.H"
 #include "wallFvPatch.H"
+#include "cartesianCS.H"
 
-#include "base/boost_include.h"
+#include "boost/format.hpp"
+
+#include "uniof.h"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
-    defineTypeNameAndDebug(extendedRigidBodyMeshMotion, 0);
 
-    addToRunTimeSelectionTable
-    (
-        motionSolver,
-        extendedRigidBodyMeshMotion,
-        dictionary
-    );
-}
 
-using namespace Foam;
-// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
-
-autoPtr<Foam::extendedRigidBodyMeshMotion::directThrustForce> Foam::extendedRigidBodyMeshMotion::directThrustForce::New(Istream& is)
+wordList filterPatchType(
+        const fvMesh& mesh,
+        const wordReList& patches,
+        word filterTypeName,
+        bool NOT=false )
 {
-    dictionary d(is);
-    return autoPtr<Foam::extendedRigidBodyMeshMotion::directThrustForce>
-    (
-        new Foam::extendedRigidBodyMeshMotion::directThrustForce
-        (
-            point(d.lookup("PoA")),
-            vector(d.lookup("direction")),
-            readScalar(d.lookup("resistance_fraction"))
-        )
-    );
+    Foam::labelHashSet patchids =
+            mesh.boundaryMesh().patchSet(patches);
+
+    Foam::labelHashSet targ_patchids;
+
+    forAllConstIter(Foam::labelHashSet, patchids, it)
+    {
+        if (mesh.boundary()[it.key()].type() == filterTypeName)
+        {
+            if (!NOT) targ_patchids.insert( it.key() );
+        }
+        else if (NOT) targ_patchids.insert( it.key() );
+    }
+
+    wordList result(targ_patchids.size());
+    Foam::label i=0;
+    forAllConstIter(Foam::labelHashSet, targ_patchids, it)
+    {
+        result[i++] = mesh.boundaryMesh()[it.key()].name();
+    }
+
+//    Info<<"filter patchlist for "<<filterTypeName<<" : "<<result<<endl;
+    return result;
 }
 
-Foam::extendedRigidBodyMeshMotion::directThrustForce::directThrustForce(const point&p, const vector&d, scalar f)
-: PoA_(p), direction_(d), resistance_fraction_(f)
+
+
+
+PIController::PIController(double Kp, double TN)
+    : Kp_(Kp), TN_(TN),
+      integral_(0.)
 {}
 
-autoPtr<Foam::extendedRigidBodyMeshMotion::directThrustForce>
-Foam::extendedRigidBodyMeshMotion::directThrustForce::clone() const
+/**
+ * @brief PIController
+ * restore from previous writeState
+ * @param is
+ */
+void PIController::restoreState(const dictionary& id)
 {
-  return autoPtr<Foam::extendedRigidBodyMeshMotion::directThrustForce>(new directThrustForce(PoA_, direction_, resistance_fraction_));
+    integral_ = id.lookupOrDefault<scalar>("integral", 0.);
+    if (integral_>0.)
+    {
+        lastUpdate_.reset(
+                  new Update{
+                    readScalar(id.lookup("lastUpdateTime")),
+                    readScalar(id.lookup("lastUpdateDeviation")),
+                    readScalar(id.lookup("lastUpdateIntegral"))
+                    } );
+    }
 }
 
-Foam::extendedRigidBodyMeshMotion::bodyMesh::bodyMesh
+scalar PIController::u(scalar t, scalar e)
+{
+    scalar I0=integral_;
+
+    if ( lastUpdate_)
+    {
+        if ((t - lastUpdate_->t)<SMALL )
+        {
+            I0=lastUpdate_->integral;
+        }
+        integral_ = I0 + (t - lastUpdate_->t) * 0.5*(e + lastUpdate_->e);
+    }
+
+
+    lastUpdate_.reset(
+                new Update{t, e, I0}
+                );
+
+    scalar u=Kp_* ( e + integral_/TN_ );
+    Info << "@t="<<t<<", e="<<e<<", integral="<<integral_<<", u="<<u<<endl;
+
+    return u;
+}
+
+void PIController::saveState(dictionary& od) const
+{
+    od.add("integral", integral_);
+    if (lastUpdate_)
+    {
+        od.add("lastUpdateTime", lastUpdate_->t);
+        od.add("lastUpdateDeviation", lastUpdate_->e);
+        od.add("lastUpdateIntegral", lastUpdate_->integral);
+    }
+}
+
+
+
+defineTypeNameAndDebug(extendedRigidBodyMeshMotion, 0);
+
+addToRunTimeSelectionTable
 (
+    motionSolver,
+    extendedRigidBodyMeshMotion,
+    dictionary
+);
+
+
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+
+
+
+
+
+
+extendedRigidBodyMeshMotion::bodyMesh::bodyMesh
+(
+    const RBD::rigidBodyMotion& model,
     const polyMesh& mesh,
     const word& name,
     const label bodyID,
-    const dictionary& dict
+    const dictionary& dict,
+    scalar rhoInf,
+    const word& rhoName
 )
 :
+    coordinateSystemSource(name),
+    model_(model),
+    mesh_(mesh),
     name_(name),
     bodyID_(bodyID),
     patches_(wordReList(dict.lookup("patches"))),
@@ -106,16 +195,151 @@ Foam::extendedRigidBodyMeshMotion::bodyMesh::bodyMesh
         pointMesh::New(mesh),
         dimensionedScalar("zero", dimless, 0.0)
     ),
-    globalMotionDirection_(dict.lookupOrDefault<vector>("globalMotionDirection", vector(1.,0,0)))
+    globalMotionDirection_(
+        dict.lookupOrDefault<vector>(
+            "globalMotionDirection", vector(1.,0,0)))
 {
+
+    const fvMesh& fvmesh = dynamic_cast<const fvMesh&>(mesh);
+
+    dictionary forcesDict;
+    forcesDict.add("type",
+                   extendedForces::typeName );
+    forcesDict.add("patches",
+                   filterPatchType(
+                       fvmesh, patches_,
+                       wallFvPatch::typeName ) );
+    forcesDict.add("rhoInf", rhoInf);
+    forcesDict.add("rho", rhoName);
+    forcesDict.add("CofR", vector::zero);
+
+    forcesFO_.reset(new extendedForces("body_"+name_, fvmesh, forcesDict));
+
     if (dict.found("directThrustForces"))
     {
-        directThrustForces_=PtrList<directThrustForce>(dict.lookup("directThrustForces"));
+        PtrList<extRBM::directForce> df(
+                    dict.lookup("directThrustForces"),
+                    extRBM::directForceFactory(fvmesh.time()) );
+        forAll(df, j)
+        {
+            additionalForces_.append(
+                        autoPtr<extRBM::additionalForceAndMoment>(
+                            df.set(j,nullptr) ) );
+        }
+    }
+
+    auto pmfs=filterPatchType(
+                fvmesh,
+                patches_,
+                wallFvPatch::typeName,
+                true );
+
+    forAll(pmfs, j)
+    {
+        additionalForces_.append(
+                    new extRBM::patchMomentumForce
+                    (
+                        fvmesh,
+                        pmfs[j],
+                        rhoInf,
+                        rhoName
+                    )
+                    );
     }
 }
 
+extendedForces &extendedRigidBodyMeshMotion::bodyMesh::forcesFO()
+{
+    return forcesFO_();
+}
 
-Foam::extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
+const extendedForces &extendedRigidBodyMeshMotion::bodyMesh::forcesFO() const
+{
+    return forcesFO_();
+}
+
+std::pair<vector,vector> extendedRigidBodyMeshMotion::bodyMesh::calcForcesMoments
+(
+        bool logForces
+)
+{
+    forcesFO().calcForcesMoment(); // compute first; may be required in additional forces
+    Info << "hull force / moment = "<<forcesFO().forceEff()
+         << " / " << forcesFO().momentEff() << endl;
+
+    vector tpF=vector::zero, tpM=vector::zero;
+
+    forAll(additionalForces_, k)
+    {
+        const auto& af = additionalForces_[k];
+
+        auto pFM=af.forceAndMoment();
+
+        tpF+=pFM.first;
+        tpM+=pFM.second;
+
+        Info << af.type() << " [" << k << "]"
+             << ": force = " << pFM.first << " (" << mag(pFM.first) << ")"
+             << ", moment = " << pFM.second << " (" << mag(pFM.second) << ")"
+             << endl;
+
+        // force influence
+        {
+            vector mfrac=1e2*cmptDivide(tpM, stabilise(forcesFO().momentEff(), SMALL));
+            vector ffrac=1e2*cmptDivide(tpF, stabilise(forcesFO().forceEff(), SMALL));
+            Info
+                << boost::str(boost::format(
+                              "[%01d]: %3d %10s%10s%10s%10s%10s%10s\n" )
+                             % bodyID_ % k
+                             % "Fx/Fxhull" % "Fy/Fyhull" % "Fz/Fzhull"
+                             % "Mx/Mxhull" % "My/Myhull" % "Mz/Mzhull" ).c_str()
+                << boost::str(boost::format(
+                              "[%01d]:      %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%%\n" )
+                             % bodyID_
+                             % ffrac.x() % ffrac.y() % ffrac.z()
+                             % mfrac.x() % mfrac.y() % mfrac.z() ).c_str()
+                ;
+        }
+
+        if (logForces && Pstream::master() )
+        {
+            auto& time = dynamic_cast<const fvMesh&>(mesh_).time();
+
+            if (addForcesLog_.size()!=additionalForces_.size())
+            {
+                addForcesLog_.resize(additionalForces_.size());
+            }
+
+            if (!addForcesLog_(k))
+            {
+                autoPtr<OFstream> f;
+                auto wh=[](Ostream& os)
+                {
+                    os<<"# t Fx Fy Fz Mx My Mz";
+                };
+                UNIOF_CREATEPOSTPROCFILE(
+                            time,
+                            "rigidBodyMotion",
+                            str(boost::format("%s_%d")%af.type()%k),
+                            f, &wh );
+                addForcesLog_.set(k, f);
+            }
+
+            addForcesLog_[k]
+                << time.value() << token::SPACE
+                << pFM.first.x() << token::SPACE << pFM.first.y() << token::SPACE<< pFM.first.z() << token::SPACE
+                << pFM.second.x() << token::SPACE << pFM.second.y() << token::SPACE<< pFM.second.z()
+                << endl;
+        }
+    }
+
+
+    return {forcesFO().forceEff() + tpF, forcesFO().momentEff() + tpM};
+}
+
+
+
+extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
 (
     const polyMesh& mesh,
     const IOdictionary& dict
@@ -154,7 +378,9 @@ Foam::extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
     rhoInf_(1.0),
     rhoName_(coeffDict().lookupOrDefault<word>("rho", "rho")),
     curTimeIndex_(-1),
-    referenceSystemSpeed_(coeffDict().lookupOrDefault<vector>("referenceSystemSpeed", vector::zero)),
+    referenceSystemSpeed_(
+        coeffDict().lookupOrDefault<vector>(
+            "referenceSystemSpeed", vector::zero ) ),
     rampDuration_(readScalar(coeffDict().lookup("rampDuration")))
 {
     if (rhoName_ == "rhoInf")
@@ -185,10 +411,10 @@ Foam::extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
             (
                 new bodyMesh
                 (
-                    mesh,
-                    iter().keyword(),
-                    bodyID,
-                    bodyDict
+                    model_,
+                    mesh, iter().keyword(),
+                    bodyID, bodyDict,
+                    rhoInf_, rhoName_
                 )
             );
         }
@@ -232,26 +458,41 @@ Foam::extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
             );
 
         pointConstraints::New(pMesh).constrain(scale);
-        //scale.write();
     }
+
+
+    updateBodyMeshCoordinateSystems();
 }
+
+
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-Foam::extendedRigidBodyMeshMotion::~extendedRigidBodyMeshMotion()
+
+
+
+extendedRigidBodyMeshMotion::~extendedRigidBodyMeshMotion()
 {}
+
+
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::tmp<Foam::pointField>
-Foam::extendedRigidBodyMeshMotion::curPoints() const
+
+
+
+tmp<pointField>
+extendedRigidBodyMeshMotion::curPoints() const
 {
     return points0() + pointDisplacement_.primitiveField();
 }
 
-tmp<pointField> Foam::extendedRigidBodyMeshMotion::curMotionStatePoints() const
+
+
+
+void extendedRigidBodyMeshMotion::resetPointsFromCurMotionState()
 {
     // Update the displacements
     if (bodyMeshes_.size() == 1)
@@ -282,91 +523,72 @@ tmp<pointField> Foam::extendedRigidBodyMeshMotion::curMotionStatePoints() const
     (
         pointDisplacement_.mesh()
     ).constrainDisplacement(pointDisplacement_);
-    
-    return points0() + pointDisplacement_.primitiveField();
-}
-       
-       
-Foam::wordList filterPatchType(const Foam::fvMesh& mesh, const Foam::wordReList& patches, Foam::word filterTypeName, bool NOT=false)
-{
-    Foam::labelHashSet patchids = mesh.boundaryMesh().patchSet(patches);
-    Foam::labelHashSet targ_patchids;
-    
-    forAllConstIter(Foam::labelHashSet, patchids, it)
-    {
-        if (mesh.boundary()[it.key()].type() == filterTypeName)
-        {
-            if (!NOT) targ_patchids.insert( it.key() );
-        }
-        else if (NOT) targ_patchids.insert( it.key() );
-    }
-    
-    wordList result(targ_patchids.size());
-    Foam::label i=0;
-    forAllConstIter(Foam::labelHashSet, targ_patchids, it)
-    {
-        result[i++] = mesh.boundaryMesh()[it.key()].name();
-    }    
-    
-    Info<<"filter patchlist for "<<filterTypeName<<" : "<<result<<endl;
-    return result;
+
 }
 
-namespace Foam
+
+
+
+PtrList<extendedRigidBodyMeshMotion::bodyMesh>&
+extendedRigidBodyMeshMotion::bodyMeshes()
 {
-    
-class patchMomentumForce
+    return bodyMeshes_;
+}
+
+
+
+
+const PtrList<extendedRigidBodyMeshMotion::bodyMesh>&
+extendedRigidBodyMeshMotion::bodyMeshes() const
 {
-    vector F_, M_;
-    
-public:
-    patchMomentumForce
-    (
-        const fvMesh& mesh, 
-        const wordList& patchNames,
-        tmp<volScalarField> rho,
-        vector CofR = vector::zero
-    )
-    : F_(vector::zero), M_(vector::zero)
+    return bodyMeshes_;
+}
+
+
+
+
+const RBD::rigidBodyMotion&
+extendedRigidBodyMeshMotion::model() const
+{
+    return model_;
+}
+
+
+
+
+const RBD::rigidBodyModelState&
+extendedRigidBodyMeshMotion::motionState() const
+{
+    return model_.state();
+}
+
+
+
+
+bool extendedRigidBodyMeshMotion::isBodyPatch(label patchID) const
+{
+    forAll(bodyMeshes(), bi)
     {
-        const volVectorField& U=mesh.lookupObject<volVectorField>("U");
-        const volScalarField& p = mesh.lookupObject<volScalarField>("p");
-        
-        forAll(patchNames, i)
+        for (const label patchi: bodyMeshes()[bi].patchSet_)
         {
-            label id=mesh.boundaryMesh().findPatchID(patchNames[i]);
-            
-            const scalarField& rhop = rho().boundaryField()[id];
-            const vectorField& Up = U.boundaryField()[id];
-            const scalarField& pp = p.boundaryField()[id];
-            const vectorField& Ap = mesh.Sf().boundaryField()[id];
-            
-            
-            vectorField f(
-              rhop * Up * (Up & Ap)
-              +
-              pp*Ap
-              );
-              
-            vector F = gSum( f );
-            vector M = gSum( mesh.Cf().boundaryField()[id] ^ f );
-            
-            Info << "[" << patchNames[i] << "] : F="<<F<<", M="<<M<<endl;
-            
-            F_ += F;
-            M_ += M;
+            if (patchID==patchi) return true;
         }
     }
-    
-    vector force() const { return F_; }
-    vector moment() const { return M_; }
-};
-
-
-
+    return false;
 }
+       
 
-void Foam::extendedRigidBodyMeshMotion::solve()
+
+
+
+
+
+
+
+
+
+
+void extendedRigidBodyMeshMotion::solve()
 {
     const Time& t = mesh().time();
 
@@ -374,9 +596,7 @@ void Foam::extendedRigidBodyMeshMotion::solve()
     if (rampDuration_>0.)
     {
         double x=min(1.0, t.value()/rampDuration_);
-//         ramp=pow(x, 2);
         ramp=pow((0.5*(::sin((x-0.5)*M_PI)+1.0)), 1);
-        Info<<"Force ramping factor = "<<ramp<<endl;
     }
 
     if (mesh().nPoints() != points0().size())
@@ -389,69 +609,28 @@ void Foam::extendedRigidBodyMeshMotion::solve()
     }
     
 
+
+
     // Store the motion state at the beginning of the time-step
     if (curTimeIndex_ != this->db().time().timeIndex())
     {
-        // Create the output file if not already created
-        if (filePtr_.empty())
-        {
-            if (debug)
-            {
-                Info<< "Creating output file." << endl;
-            }
-
-            // File update
-            if (Pstream::master())
-            {
-                fileName outdir;
-                
-                word startTimeName =
-                    mesh().time().timeName(mesh().time().startTime().value());
-
-                if (Pstream::parRun())
-                {
-                    // Put in undecomposed case (Note: gives problems for
-                    // distributed data running)
-                    outdir = mesh().time().path()/".."/"postProcessing"/"rigidBodyMotion"/startTimeName;
-                }
-                else
-                {
-                    outdir = mesh().time().path()/"postProcessing"/"rigidBodyMotion"/startTimeName;
-                }
-
-                // Create directory if does not exist.
-                mkDir(outdir);
-
-                // Open new file at start up
-                filePtr_.reset(new OFstream(outdir/"rigidBodyMotion.dat"));
-                
-                filePtr_() << "#time q qdot"<<endl;
-            }
-        }
-        
-        // write position and rotation
-        if (Pstream::master())
-        {
-            filePtr_() << mesh().time().value();
-            forAll(model_.state().q(), i)
-            {
-                filePtr_()<<token::SPACE << model_.state().q()[i];
-            }
-            forAll(model_.state().qDot(), i)
-            {
-                filePtr_()<<token::SPACE << model_.state().qDot()[i];
-            }
-            filePtr_()<<endl;
-        }
-        
         model_.newTime();
-        curTimeIndex_ = this->db().time().timeIndex();
     }
 
-    if (db().foundObject<uniformDimensionedVectorField>("g"))
+    const objectRegistry& gobr =
+#if OF_VERSION<060505
+            db()
+#else
+            t
+#endif
+            ;
+    if (gobr.foundObject<uniformDimensionedVectorField>("g"))
     {
         model_.g() =
-            ramp*db().lookupObject<uniformDimensionedVectorField>("g").value();
+            ramp*gobr.lookupObject<uniformDimensionedVectorField>("g").value();
+    } else
+    {
+        WarningIn("solve") << "no gravity defined!" << endl;
     }
 
     if (test_)
@@ -475,107 +654,20 @@ void Foam::extendedRigidBodyMeshMotion::solve()
     {
         Field<spatialVector> fx(model_.nBodies(), Zero);
 
-        const fvMesh& fvmesh = dynamic_cast<const fvMesh&>(mesh());
-        
         forAll(bodyMeshes_, bi)
         {
-            const bodyMesh& body = bodyMeshes_[bi];
+            bodyMesh& body = bodyMeshes_[bi];
             const label bodyID = body.bodyID_;
 
-            dictionary forcesDict;
-            forcesDict.add("type", functionObjects::forces::typeName);
-            forcesDict.add("patches", filterPatchType(fvmesh, bodyMeshes_[bi].patches_, wallFvPatch::typeName) );
-            forcesDict.add("rhoInf", rhoInf_);
-            forcesDict.add("rho", rhoName_);
-            forcesDict.add("CofR", vector::zero);
+            auto FM = body.calcForcesMoments(
+                        curTimeIndex_ != this->db().time().timeIndex()
+                        );
 
-            functionObjects::forces f("forces", db(), forcesDict);
-            f.calcForcesMoment();
-
-            Foam::tmp<Foam::volScalarField> rho;
-            
-            {
-                if (rhoName_ == "rhoInf")
-                {
-                    rho=tmp<volScalarField>
-                    (
-                        new volScalarField
-                        (
-                            IOobject
-                            (
-                                "rho",
-                                fvmesh.time().timeName(),
-                                fvmesh
-                            ),
-                            fvmesh,
-                            dimensionedScalar("rho", dimDensity, rhoInf_)
-                        )
-                    );
-                }
-                else
-                {
-                    rho=tmp<volScalarField>(new volScalarField(fvmesh.lookupObject<volScalarField>(rhoName_)));
-                }
-            }
-
-            patchMomentumForce pmf
+            fx[bodyID] = ramp * spatialVector
             (
-                fvmesh,
-                filterPatchType(fvmesh, bodyMeshes_[bi].patches_, wallFvPatch::typeName, true),
-                rho/*,
-                referenceSystemSpeed_*/
+                FM.second, // angular (moment)
+                FM.first  // linear (force)
             );
-
-            // calculate direct forces
-            scalar R = f.forceEff() & body.globalMotionDirection_;
-            vector dF=vector::zero, dM=vector::zero;
-            forAll(body.directThrustForces_, j)
-            {
-                const directThrustForce& df = body.directThrustForces_[j];
-                point cur_poa = model_.transformPoints(bodyID, pointField(1, df.PoA_))()[0];
-                point cur_poa_ofs = model_.transformPoints(bodyID, pointField(1, df.PoA_+df.direction_))()[0];
-                vector cur_dir = cur_poa_ofs - cur_poa; cur_dir/=mag(cur_dir);
-                point cur_ctr = model_.transformPoints(bodyID, pointField(1, model_.bodies()[bodyID].c()))()[0];
-                
-                Info<<"PoA : "<<df.PoA_<<cur_poa<<" "<<cur_poa_ofs<<endl;
-                Info<<"Dir : "<<cur_dir<<endl;
-                Info<<"Ctr : "<<model_.bodies()[bodyID].c()<<cur_ctr<<endl;
-                
-                vector ddf = - (R * df.resistance_fraction_ / (df.direction_ & body.globalMotionDirection_)) * cur_dir; // scale force
-                vector ddm = ( cur_poa - cur_ctr ) ^ ddf;
-                dF+=ddf;
-                dM+=ddm;
-            }
-            
-            fx[bodyID] = spatialVector
-            ( 
-                ramp*(f.momentEff() + pmf.moment() + dM), 
-                ramp*(f.forceEff() + pmf.force() + dF) 
-            );
-            
-            // patch momentum force influence
-            {
-                vector mfrac=1e2*cmptDivide(pmf.moment(), f.momentEff());
-                vector ffrac=1e2*cmptDivide(pmf.force(), f.forceEff());
-                Info
-                    <<boost::str(boost::format("[%01d]: PMF %10s%10s%10s%10s%10s%10s\n")
-                    %bodyID%"Fx/Fxhull"%"Fy/Fyhull"%"Fz/Fzhull"%"Mx/Mxhull"%"My/Myhull"%"Mz/Mzhull").c_str()
-                    <<boost::str(boost::format("[%01d]:      %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%%\n")
-                    %bodyID%ffrac.x()%ffrac.y()%ffrac.z()%mfrac.x()%mfrac.y()%mfrac.z()).c_str()
-                    ;
-            }
-            
-            // direct force influence
-            {
-                vector mfrac=1e2*cmptDivide(dM, f.momentEff());
-                vector ffrac=1e2*cmptDivide(dF, f.forceEff());
-                Info
-                    <<boost::str(boost::format("[%01d]:  DF %10s%10s%10s%10s%10s%10s\n")
-                    %bodyID%"Fx/Fxhull"%"Fy/Fyhull"%"Fz/Fzhull"%"Mx/Mxhull"%"My/Myhull"%"Mz/Mzhull").c_str()
-                    <<boost::str(boost::format("[%01d]:      %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%% %8.1f%%\n")
-                    %bodyID%ffrac.x()%ffrac.y()%ffrac.z()%mfrac.x()%mfrac.y()%mfrac.z()).c_str()
-                    ;
-            }
         }
 
         model_.solve
@@ -597,48 +689,85 @@ void Foam::extendedRigidBodyMeshMotion::solve()
         }
     }
 
-    // Update the displacements
-    if (bodyMeshes_.size() == 1)
-    {
-        pointDisplacement_.primitiveFieldRef() = model_.transformPoints
-        (
-            bodyMeshes_[0].bodyID_,
-            bodyMeshes_[0].weight_,
-            points0()
-        ) - points0();
-    }
-    else
-    {
-        labelList bodyIDs(bodyMeshes_.size());
-        List<const scalarField*> weights(bodyMeshes_.size());
-        forAll(bodyIDs, bi)
-        {
-            bodyIDs[bi] = bodyMeshes_[bi].bodyID_;
-            weights[bi] = &bodyMeshes_[bi].weight_;
-        }
+    updateBodyMeshCoordinateSystems();
 
-        pointDisplacement_.primitiveFieldRef() =
-            model_.transformPoints(bodyIDs, weights, points0()) - points0();
+    resetPointsFromCurMotionState();
+
+    if (curTimeIndex_ != this->db().time().timeIndex())
+    {
+        continueLogFile();
     }
 
-    // Displacement has changed. Update boundary conditions
-    pointConstraints::New
-    (
-        pointDisplacement_.mesh()
-    ).constrainDisplacement(pointDisplacement_);
+    curTimeIndex_ = this->db().time().timeIndex();
 }
+
+
+void extendedRigidBodyMeshMotion::updateBodyMeshCoordinateSystems()
+{
+    labelList bodyIDs(bodyMeshes_.size());
+    forAll(bodyIDs, bi)
+    {
+        label bodyID = bodyMeshes_[bi].bodyID_;
+        spatialTransform X(model_.X0(bodyID).inv() & model_.X00(bodyID));
+
+        bodyMeshes_[bi].updateCoordinateSystem(
+                    X.transformPoint(point(0,0,0)),
+                    (X&spatialVector(vector::zero, vector(0,0,1))).l(),
+                    (X&spatialVector(vector::zero, vector(1,0,0))).l()
+                    );
+    }
+}
+
+
+void extendedRigidBodyMeshMotion::bodyMesh::updateCoordinateSystem(
+        const vector& p0, const vector& ez, const vector& ex )
+{
+    currentCoordinateSystem_.reset(
+                new cartesianCS(
+                    name_, p0,  ez, ex
+                    )
+                );
+
+    Info<<"updated CS for body "<<name_<<": "
+      <<currentCoordinateSystem_()<<endl;
+}
+
+autoPtr<coordinateSystem> extendedRigidBodyMeshMotion::bodyMesh::getCoordinateSystem() const
+{
+    return currentCoordinateSystem_->clone();
+}
+
+void extendedRigidBodyMeshMotion::populateRigidBodyMotionStateDict(
+        dictionary& dict
+        ) const
+{
+    model_.state().write(dict);
+}
+
+
 
 
 bool Foam::extendedRigidBodyMeshMotion::writeObject
 (
-    IOstream::streamFormat fmt,
-    IOstream::versionNumber ver,
-    IOstream::compressionType cmp
+#if OF_VERSION>=060505
+        IOstreamOption streamOpt
+#else
+        IOstream::streamFormat fmt,
+        IOstream::versionNumber ver,
+        IOstream::compressionType cmp
+#endif
 #if OF_VERSION>=060000 //defined(OFesi1806)
-    , const bool valid
+      , const bool valid
 #endif
 ) const
 {
+
+
+
+#if OF_VERSION>=060505
+    streamOpt.format(IOstream::ASCII);
+#endif
+
     IOdictionary dict
     (
         IOobject
@@ -653,14 +782,78 @@ bool Foam::extendedRigidBodyMeshMotion::writeObject
         )
     );
 
-    model_.state().write(dict);
+    populateRigidBodyMotionStateDict(dict);
+
 #if OF_VERSION>=060000 //defined(OFesi1806)
     // Force ascii writing
-    return dict.regIOobject::writeObject(IOstream::ASCII, ver, cmp, valid);
+    return dict.regIOobject::writeObject(
+#if OF_VERSION>=060505
+                streamOpt,
+#else
+                IOstream::ASCII, ver, cmp,
+#endif
+                valid );
 #else
     return dict.regIOobject::write();
 #endif
 }
+
+
+
+void extendedRigidBodyMeshMotion::continueLogFile() const
+{
+
+
+    // Create the output file if not already created
+    auto headerFunc = std::bind(
+                &extendedRigidBodyMeshMotion::writeLogFileHeaderLine,
+                this, std::placeholders::_1 );
+    UNIOF_CREATEPOSTPROCFILE(
+                mesh().time(),
+                "rigidBodyMotion", "rigidBodyMotion.dat",
+                rbmLogFile_,
+                &headerFunc );
+
+    // write position and rotation
+    if (Pstream::master())
+    {
+        rbmLogFile_() << mesh().time().value();
+        writeLogLine(rbmLogFile_());
+        rbmLogFile_()<<endl;
+    }
+}
+
+void extendedRigidBodyMeshMotion::writeLogFileHeaderLine(Ostream& header) const
+{
+    header << "# t";
+    forAll(model_.state().q(), i)
+    {
+        header << " q" << i;
+    }
+    forAll(model_.state().qDot(), i)
+    {
+        header << " qDot" << i;
+    }
+}
+
+
+
+
+void extendedRigidBodyMeshMotion::writeLogLine(
+        Ostream &os
+        ) const
+{
+    forAll(model_.state().q(), i)
+    {
+        os<<token::SPACE << model_.state().q()[i];
+    }
+    forAll(model_.state().qDot(), i)
+    {
+        os<<token::SPACE << model_.state().qDot()[i];
+    }
+}
+
+
 
 
 bool Foam::extendedRigidBodyMeshMotion::read()
@@ -676,6 +869,13 @@ bool Foam::extendedRigidBodyMeshMotion::read()
         return false;
     }
 }
+
+
+
+
+}
+
+
 
 
 // ************************************************************************* //

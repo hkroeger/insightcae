@@ -83,7 +83,17 @@
 
 #include "BRepBuilderAPI_Copy.hxx"
 
+#if (OCC_VERSION_MAJOR<7)
+#include "compat/Bnd_OBB.hxx"
+#include "compat/BRepBndLib.hxx"
+#else
+#include "Bnd_OBB.hxx"
+#include "BRepBndLib.hxx"
+#endif
+
 #include "base/parameters/pathparameter.h"
+
+#include "featurefilters/same.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -98,8 +108,8 @@ namespace boost
 
 std::size_t hash<TopoDS_Shape>::operator()(const TopoDS_Shape& shape) const
 {
-  insight::cad::Feature m(shape);  
-  return m.hash();
+    auto m = insight::cad::Feature::create(shape);
+    return m->hash();
 }
 
 
@@ -265,15 +275,29 @@ int FreelyIndexedMapOfShape::getMaxIndex() const
     
 
 defineType(Feature);
-defineFactoryTableNoArgs(Feature);
-addToFactoryTable(Feature, Feature);
+//defineFactoryTableNoArgs(Feature);
+//addToFactoryTable(Feature, Feature);
 
+defineStaticFunctionTableWithArgs(
+    Feature,
+    insertrule,
+    void,
+    LIST(insight::cad::parser::ISCADParser& ruleset),
+    LIST(ruleset) );
+
+defineStaticFunctionTable(
+    Feature,
+    ruleDocumentation,
+    FeatureCmdInfoList );
 
 std::mutex Feature::step_read_mutex_;
 
 void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 {
-    cout<<"Reading "<<filename<<endl;
+    ParameterListHash h;
+    h.addParameter(this->type());
+    h.addParameter(filename);
+    hash_=h.getHash();
 
     std::string ext=filename.extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
@@ -283,6 +307,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
         BRep_Builder bb;
         TopoDS_Shape s;
         BRepTools::Read(s, filename.string().c_str(), bb);
+        BRepTools::Clean(s);
         setShape(s);
     }
     else if ( (ext==".igs") || (ext==".iges") )
@@ -313,10 +338,8 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
           STEPControl_Reader reader;
           reader.ReadFile(filename.string().c_str());
           reader.TransferRoots();
-          cout<<"STEP transferred"<<endl;
 
           res=reader.OneShape();
-          cout<<"=> one shape"<<endl;
         }
         // set shape
         setShape(res);
@@ -437,20 +460,8 @@ size_t Feature::calcShapeHash() const
   size_t hash=0;
   
   boost::hash_combine(hash, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash, boost::hash<int>()(vmap_.
-#if OCC_VERSION_MAJOR<7
-                                               Extent()
-#else
-                                               Size()
-#endif
-                                               ));
-  boost::hash_combine(hash, boost::hash<int>()(fmap_.
-#if OCC_VERSION_MAJOR<7
-                                               Extent()
-#else
-                                               Size()
-#endif
-                                               ));
+  boost::hash_combine(hash, boost::hash<int>()(idx_->nVertexTags()));
+  boost::hash_combine(hash, boost::hash<int>()(idx_->nFaceTags()));
 
   FeatureSetData vset=allVerticesSet();
   for (const insight::cad::FeatureID& j: vset)
@@ -465,12 +476,17 @@ size_t Feature::calcShapeHash() const
   return hash;
 }
 
+
+
+
 size_t Feature::calcHash() const
 {
   ParameterListHash h;
   if (creashapes_) h+=*creashapes_;
   return h.getHash();
 }
+
+
 
 
 void Feature::updateVolProps() const
@@ -482,6 +498,9 @@ void Feature::updateVolProps() const
   }
 }
 
+
+
+
 void Feature::setShape(const TopoDS_Shape& shape)
 {
   volprops_.reset();
@@ -491,13 +510,18 @@ void Feature::setShape(const TopoDS_Shape& shape)
 }
 
 
+
+
 Feature::Feature()
 : isleaf_(true),
 //   density_(1.0),
 //   areaWeight_(0.0),
-  featureSymbolName_("anonymous_"+type())
+  featureSymbolName_()
 {
 }
+
+
+
 
 Feature::Feature(const Feature& o)
 : ASTBase(o),
@@ -512,31 +536,23 @@ Feature::Feature(const Feature& o)
   setShape(o.shape_);
 }
 
+
+
+
 Feature::Feature(const TopoDS_Shape& shape)
 : isleaf_(true),
-//   density_(1.0),
-//   areaWeight_(0.0),
-  featureSymbolName_("anonymousShape")
+  featureSymbolName_()
 {
   setShape(shape);
   hash_=calcShapeHash();
   setValid();
 }
 
-// Feature::Feature(const boost::filesystem::path& filepath)
-// : isleaf_(true),
-// //   density_(1.0),
-// //   areaWeight_(0.0),
-//   hash_(0)
-// {
-//   loadShapeFromFile(filepath);
-//   setShapeHash();
-//   setValid();
-// }
+
 
 Feature::Feature(FeatureSetPtr creashapes)
 : creashapes_(creashapes),
-  featureSymbolName_("subshapesOf_"+creashapes->model()->featureSymbolName())
+  featureSymbolName_(/*"subshapesOf_"+creashapes->model()->featureSymbolName()*/)
 {}
 
 Feature::~Feature()
@@ -546,7 +562,8 @@ Feature::~Feature()
     cache.erase(h);
 }
 
-FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
+
+FeaturePtr Feature::create(const boost::filesystem::path& filepath)
 {
   FeaturePtr f(new Feature());
   f->loadShapeFromFile(filepath);
@@ -556,19 +573,22 @@ FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
   return f;
 }
 
-FeaturePtr Feature::CreateFromFeaturesSet(FeatureSetPtr shapes)
-{
-  return std::make_shared<Feature>(shapes);
-}
 
 void Feature::setFeatureSymbolName( const std::string& name)
 {
-    featureSymbolName_ = name;
+  featureSymbolName_ = name;
 }
 
-const std::string& Feature::featureSymbolName() const
+bool Feature::isAnonymous() const
 {
-    return featureSymbolName_;
+  return featureSymbolName_.empty();
+}
+
+std::string Feature::featureSymbolName() const
+{
+    return isAnonymous() ?
+            ("anonymous_"+type()) :
+             featureSymbolName_;
 }
 
 
@@ -625,13 +645,16 @@ double Feature::mass(double density_ovr, double aw_ovr) const
   return mtot;
 }
 
+
+
+
 void Feature::checkForBuildDuringAccess() const
 {
   try
   {
     if (!valid())
       {
-        dbg()<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
+        dbg(2)<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
       }
     ASTBase::checkForBuildDuringAccess();
   }
@@ -643,6 +666,9 @@ void Feature::checkForBuildDuringAccess() const
           e.GetMessageString() ? e.GetMessageString() : "(no error message)" );
   }
 }
+
+
+
 
 void Feature::build()
 {
@@ -739,15 +765,9 @@ Feature& Feature::operator=(const Feature& o)
     if (o.volprops_)
       volprops_.reset(new GProp_GProps(*o.volprops_));
 
-    shape_=o.shape_;
-    fmap_=o.fmap_;
-    emap_=o.emap_;
-    vmap_=o.vmap_;
-    somap_=o.somap_;
-    shmap_=o.shmap_;
-    wmap_=o.wmap_;
+    idx_.reset(new SubshapeNumbering(*o.idx_));
     setValid();
-//    setShape(o.shape_);
+    shape_ = o.shape_;
   }
   return *this;
 }
@@ -862,6 +882,7 @@ arma::mat Feature::surfaceInertia(int axis) const
 
 double Feature::modelVolume() const
 {
+  checkForBuildDuringAccess();
   updateVolProps();
   return volprops_->Mass();
 //   TopoDS_Shape sh=shape();
@@ -905,7 +926,9 @@ double Feature::minDist(const arma::mat& p) const
   
   if (!dss.Perform())
     throw insight::Exception("determination of minimum distance to point failed!");
-  return dss.Value();
+  auto dist= dss.Value();
+  std::cout<<"dist="<<dist<<std::endl;
+  return dist;
 }
 
 double Feature::maxVertexDist(const arma::mat& p) const
@@ -914,7 +937,7 @@ double Feature::maxVertexDist(const arma::mat& p) const
   for (TopExp_Explorer ex(shape(), TopAbs_VERTEX); ex.More(); ex.Next())
   {
     TopoDS_Vertex v=TopoDS::Vertex(ex.Current());
-    arma::mat vp=insight::Vector(BRep_Tool::Pnt(v)).t();
+    arma::mat vp=insight::Vector(BRep_Tool::Pnt(v));
     maxdist=std::max(maxdist, norm(p-vp,2));
   }
   return maxdist;
@@ -932,7 +955,6 @@ double Feature::maxDist(const arma::mat& p) const
     Extrema_ExtFlag_MAX,
     Extrema_ExtAlgo_Tree
   );
-  std::cout<<"Nb="<<epf.NbExt()<<std::endl;
   if (!epf.IsDone())
     throw insight::Exception("determination of maximum distance to point failed!");
   double maxdistsq=0.;
@@ -981,23 +1003,101 @@ arma::mat Feature::modelBndBox(double deflection) const
   {
     double g=boundingBox.GetGap();
     double x0, x1, y0, y1, z0, z1;
+
     boundingBox.Get
     (
-          x0, y0, z0,
-          x1, y1, z1
-  //    x(0,0), x(1,0), x(2,0),
-  //    x(0,1), x(1,1), x(2,1)
+      x0, y0, z0,
+      x1, y1, z1
     );
+
     x
-        << x0 << x1 << arma::endr
-        << y0 << y1 << arma::endr
-        << z0 << z1 << arma::endr
-           ;
+    << x0 << x1 << arma::endr
+    << y0 << y1 << arma::endr
+    << z0 << z1 << arma::endr;
+
     x.col(0)+=g;
     x.col(1)-=g;
   }
 
   return x;
+}
+
+std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double deflection) const
+{
+    checkForBuildDuringAccess();
+
+    if (deflection>0)
+    {
+        BRepMesh_IncrementalMesh Inc(shape(), deflection);
+    }
+
+#if (OCC_VERSION_MAJOR<7)
+    ISOCC::Bnd_OBB boundingBox;
+    ISOCC::BRepBndLib::AddOBB(shape(), boundingBox);
+#else
+    Bnd_OBB boundingBox;
+    BRepBndLib::AddOBB(shape(), boundingBox);
+#endif
+
+    arma::mat x=arma::zeros(3,2);
+    CoordinateSystem cs;
+
+    if (!boundingBox.IsVoid())
+    {
+        arma::mat sizes;
+        sizes   << boundingBox.XHSize()
+                << boundingBox.YHSize()
+                << boundingBox.ZHSize();
+
+
+//        arma::uvec si = arma::reverse( arma::sort_index(sizes) );
+        arma::uvec si=arma::sort_index(sizes);
+        std::reverse(si.begin(), si.end());
+
+        cs.origin = insight::Vector(boundingBox.Center());
+//        cs.ex = insight::Vector(boundingBox.XDirection());
+//        cs.ey = insight::Vector(boundingBox.YDirection());
+//        cs.ez = insight::Vector(boundingBox.ZDirection());
+
+        for (int i=0; i<3; ++i)
+        {
+            arma::mat dr;
+            double sz;
+
+            switch (si(i))
+            {
+            case 0:
+                dr=insight::Vector(boundingBox.XDirection());
+                sz=boundingBox.XHSize();
+                break;
+            case 1:
+                dr=insight::Vector(boundingBox.YDirection());
+                sz=boundingBox.YHSize();
+                break;
+            case 2:
+                dr=insight::Vector(boundingBox.ZDirection());
+                sz=boundingBox.ZHSize();
+                break;
+            };
+
+            switch (i)
+            {
+            case 0:
+                cs.ex=dr;
+                break;
+            case 1:
+                cs.ey=dr;
+                break;
+            case 2:
+                cs.ez=dr;
+                break;
+            };
+            x(i,0)=-sz;
+            x(i,1)=sz;
+        }
+    }
+
+    return {cs, x};
 }
 
 
@@ -1015,14 +1115,29 @@ arma::mat Feature::faceNormal(FeatureID i) const
   return insight::vec3( vec.X(), vec.Y(), vec.Z() );  
 }
 
+arma::mat Feature::averageFaceNormal() const
+{
+  auto af = allFacesSet();
+  insight::assertion(
+      af.size()>=1,
+      "there are no faces whose normals could be averaged." );
+  arma::mat n=vec3Zero();
+  for (const auto& i: af)
+  {
+        n+=faceNormal(i);
+  }
+  return n/double(af.size());
+}
+
 FeatureSetData Feature::allVerticesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-   fsd.insert(
-     boost::counting_iterator<int>( 1 ),
-     boost::counting_iterator<int>( vmap_.Extent()+1 )
-   );
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ),
+//     boost::counting_iterator<int>( idx_->_vmap.Extent()+1 )
+//   );
+  idx_->insertAllVertexTags(fsd);
 //  std::transform
 //  (
 //      vmap_.begin(),
@@ -1037,10 +1152,11 @@ FeatureSetData Feature::allEdgesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-   fsd.insert(
-     boost::counting_iterator<int>( 1 ),
-     boost::counting_iterator<int>( emap_.Extent()+1 )
-   );
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ),
+//     boost::counting_iterator<int>( idx_->_emap.Extent()+1 )
+//   );
+  idx_->insertAllEdgeTags(fsd);
 //  std::transform
 //  (
 //      emap_.begin(),
@@ -1055,10 +1171,11 @@ FeatureSetData Feature::allFacesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-   fsd.insert(
-     boost::counting_iterator<int>( 1 ),
-     boost::counting_iterator<int>( fmap_.Extent()+1 )
-   );
+  idx_->insertAllFaceTags(fsd);
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ),
+//     boost::counting_iterator<int>( idx_->_fmap.Extent()+1 )
+//   );
 //  std::transform
 //  (
 //      fmap_.begin(),
@@ -1072,11 +1189,12 @@ FeatureSetData Feature::allFacesSet() const
 FeatureSetData Feature::allSolidsSet() const
 {
   checkForBuildDuringAccess();
-  FeatureSetData fsd;  
-   fsd.insert(
-     boost::counting_iterator<int>( 1 ),
-     boost::counting_iterator<int>( somap_.Extent()+1 )
-   );
+  FeatureSetData fsd;
+  idx_->insertAllSolidTags(fsd);
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ),
+//     boost::counting_iterator<int>( idx_->_somap.Extent()+1 )
+//   );
 //  std::transform
 //  (
 //      somap_.begin(),
@@ -1084,35 +1202,89 @@ FeatureSetData Feature::allSolidsSet() const
 //      std::inserter(fsd, fsd.begin()),
 //      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
 //  );
-  return fsd;
+   return fsd;
+}
+
+FeatureSetPtr Feature::allOf(EntityType et) const
+{
+    switch(et)
+    {
+    case Vertex:
+        return allVertices();
+    case Edge:
+        return allEdges();
+    case Face:
+        return allFaces();
+    case Solid:
+        return allSolids();
+    default:
+        throw insight::Exception("internal error: unhandled selection");
+    }
 }
 
 FeatureSetPtr Feature::allVertices() const
 {
-  auto f=std::make_shared<FeatureSet>(shared_from_this(), Vertex);
-  f->setData(allVerticesSet());
-  return f;
+    checkForBuildDuringAccess();
+    auto f=std::make_shared<FeatureSet>(shared_from_this(), Vertex);
+    f->setData(allVerticesSet());
+    return f;
 }
 
 FeatureSetPtr Feature::allEdges() const
 {
-  auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
-  f->setData(allEdgesSet());
-  return f;
+    checkForBuildDuringAccess();
+    auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
+    f->setData(allEdgesSet());
+    return f;
 }
 
 FeatureSetPtr Feature::allFaces() const
 {
-  auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
-  f->setData(allFacesSet());
-  return f;
+    checkForBuildDuringAccess();
+    auto f=std::make_shared<FeatureSet>(shared_from_this(), Face);
+    f->setData(allFacesSet());
+    return f;
 }
 
 FeatureSetPtr Feature::allSolids() const
 {
-  auto f=std::make_shared<FeatureSet>(shared_from_this(), Solid);
-  f->setData(allSolidsSet());
-  return f;
+    checkForBuildDuringAccess();
+    auto f=std::make_shared<FeatureSet>(shared_from_this(), Solid);
+    f->setData(allSolidsSet());
+    return f;
+}
+
+FeatureSetPtr Feature::find(FeatureSetPtr fs) const
+{
+    checkForBuildDuringAccess();
+    if ( *fs->model() == *this )
+    {
+        return fs;
+    }
+    else
+    {
+        switch (fs->shape())
+        {
+        case cad::Vertex:
+            return std::make_shared<FeatureSet>(
+                        shared_from_this(), cad::Vertex,
+                        query_vertices(std::make_shared<sameVertex>(*fs)));
+        case cad::Edge:
+            return std::make_shared<FeatureSet>(
+                        shared_from_this(), cad::Edge,
+                        query_edges(std::make_shared<sameEdge>(*fs)));
+        case cad::Face:
+            return std::make_shared<FeatureSet>(
+                        shared_from_this(), cad::Face,
+                        query_faces(std::make_shared<sameFace>(*fs)));
+        case cad::Solid:
+            return std::make_shared<FeatureSet>(
+                        shared_from_this(), cad::Solid,
+                        query_solids(std::make_shared<sameSolid>(*fs)));
+        default:
+            throw insight::Exception("internal error");
+        }
+    }
 }
 
 FeatureSetData Feature::query_vertices(FilterPtr f) const
@@ -1206,7 +1378,6 @@ FeatureSetData Feature::query_faces(const string& queryexpr, const FeatureSetPar
 
 FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, FilterPtr f) const
 {
-//   Filter::Ptr f(filter.clone());
   checkForBuildDuringAccess();
   
   f->initialize(shared_from_this());
@@ -1218,10 +1389,9 @@ FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, FilterPtr f
   for (int i: fs)
   {
     bool ok=f->checkMatch(i);
-    //if (ok) std::cout<<"match! ("<<i<<")"<<std::endl;
     if (ok) res.insert(i);
   }
-  cout<<"QUERY_FACES RESULT = "<<res<<endl;
+  insight::dbg(2)<<"QUERY_FACES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1245,7 +1415,6 @@ FeatureSetData Feature::query_solids(const string& queryexpr, const FeatureSetPa
 
 FeatureSetData Feature::query_solids_subset(const FeatureSetData& fs, FilterPtr f) const
 {
-//   Filter::Ptr f(filter.clone());
   checkForBuildDuringAccess();
   
   f->initialize(shared_from_this());
@@ -1258,7 +1427,7 @@ FeatureSetData Feature::query_solids_subset(const FeatureSetData& fs, FilterPtr 
   {
     if (f->checkMatch(i)) res.insert(i);
   }
-  cout<<"QUERY_SOLIDS RESULT = "<<res<<endl;
+  insight::dbg(2)<<"QUERY_SOLIDS RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1272,8 +1441,8 @@ FeatureSet Feature::verticesOfEdge(const FeatureID& e) const
 {
   FeatureSet vertices(shared_from_this(), Vertex);
   FeatureSetData fsd;
-  fsd.insert(vmap_.FindIndex(TopExp::FirstVertex(edge(e))));
-  fsd.insert(vmap_.FindIndex(TopExp::LastVertex(edge(e))));
+  fsd.insert(idx_->/*_vmap.FindIndex*/tagOfVertex(TopExp::FirstVertex(edge(e))));
+  fsd.insert(idx_->/*_vmap.FindIndex*/tagOfVertex(TopExp::LastVertex(edge(e))));
   vertices.setData(fsd);
   return vertices;
 }
@@ -1297,7 +1466,7 @@ FeatureSet Feature::verticesOfFace(const FeatureID& f) const
   FeatureSetData fsd;
   for (TopExp_Explorer ex(face(f), TopAbs_VERTEX); ex.More(); ex.Next())
   {
-    fsd.insert(vmap_.FindIndex(TopoDS::Vertex(ex.Current())));
+    fsd.insert(idx_->/*_vmap.FindIndex*/tagOfVertex(TopoDS::Vertex(ex.Current())));
   }
   vertices.setData(fsd);
   return vertices;
@@ -1329,7 +1498,6 @@ void Feature::saveAs
 
   std::string ext=filename.extension().string();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-  cout<<filename<<" >> "<<ext<<endl;
 
 
   if (ext==".brep")
@@ -1534,8 +1702,6 @@ void Feature::exportEMesh
     TopoDS_Edge e=fs.model()->edge(fi);
     if (!BRep_Tool::Degenerated(e))
     {
-//       std::cout<<"feature "<<fi<<std::endl;
-//       BRepTools::Dump(e, std::cout);
       BRepAdaptor_Curve ac(e);
       GCPnts_QuasiUniformDeflection qud(ac, abstol);
 
@@ -1692,10 +1858,7 @@ Feature::View Feature::createView
             }
             xsecs->Append(cxsecs);
         }
-//         cout<<"Generated "<<j<<" cross-sections"<<endl;
         dispshape=dispshapes;
-// 	BRepTools::Write(dispshape, "dispshape.brep");
-// 	BRepTools::Write(xsecs, "xsecs.brep");
         result_view.crossSections = xsecs;
     }
 
@@ -1711,7 +1874,6 @@ Feature::View Feature::createView
         // extracting the result sets:
         Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
         HLRBRep_PolyHLRToShape shapes;
-//         std::cout<<"TolCoef="<<aHlrPolyAlgo->TolCoef()<<endl;
         if (visresolution_)
             aHlrPolyAlgo->TolCoef(visresolution_->value());
         aHlrPolyAlgo->Load(dispshape);
@@ -1786,39 +1948,7 @@ Feature::View Feature::createView
 
 }
 
-void Feature::insertrule(parser::ISCADParser& ruleset) const
-{
-  ruleset.modelstepFunctionRules.add
-  (
-    "asModel",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Feature>(qi::_1)) ]
-      
-    ))
-  );
-}
-
-FeatureCmdInfoList Feature::ruleDocumentation() const
-{
-    if (type() == Feature::typeName)
-    {
-        return boost::assign::list_of
-        (
-            FeatureCmdInfo
-            (
-                "asModel",
-                "( <verticesSelection>|<edgesSelection>|<facesSelection>|<solidSelection> )",
-                "Creates a new feature from selected entities of an existing feature."
-            )
-        );
-    }
-    else
-    {
-        return FeatureCmdInfoList();
-    }
-}
 
 bool Feature::isSingleEdge() const
 {
@@ -2003,7 +2133,7 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
         {
             if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
                 throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-            providedSubshapes_[prefix+sf.first]=Transform::create_trsf(sf.second, trsf);
+            providedSubshapes_[prefix+sf.first]=Transform::create(sf.second, trsf);
         }
     }
     for (const DatumPtrMap::value_type& df: m1.providedDatums())
@@ -2098,457 +2228,111 @@ arma::mat Feature::getDatumVector(const std::string& name) const
   }
 }
 
-#define GMSH_NUMBERING_V1
+#define GMSH_NUMBERING_V2
 #undef GMSH_DEBUG
 
 void Feature::nameFeatures()
 {
   // Don't call "shape()" here!
-  fmap_.Clear();
-  emap_.Clear();
-  vmap_.Clear();
-  somap_.Clear();
-  shmap_.Clear();
-  wmap_.Clear();
-  
-#ifdef GMSH_NUMBERING_V1
-  // Solids
-  TopExp_Explorer exp0, exp1, exp2, exp3, exp4, exp5;
-  for(exp0.Init(shape_, TopAbs_SOLID); exp0.More(); exp0.Next()) {
-      TopoDS_Solid solid = TopoDS::Solid(exp0.Current());
-      if(somap_.FindIndex(solid) < 1) {
-	  somap_.Add(solid);
-
-	  for(exp1.Init(solid, TopAbs_SHELL); exp1.More(); exp1.Next()) {
-	      TopoDS_Shell shell = TopoDS::Shell(exp1.Current());
-	      if(shmap_.FindIndex(shell) < 1) {
-		  shmap_.Add(shell);
-
-		  for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
-		      TopoDS_Face face = TopoDS::Face(exp2.Current());
-		      if(fmap_.FindIndex(face) < 1) {
-			  fmap_.Add(face);
-
-			  for(exp3.Init(exp2.Current(), TopAbs_WIRE); exp3.More(); exp3.Next()) {
-			      TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-			      if(wmap_.FindIndex(wire) < 1) {
-				  wmap_.Add(wire);
-
-				  for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
-				      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-				      if(emap_.FindIndex(edge) < 1) {
-					  emap_.Add(edge);
-
-					  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-					      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-					      if(vmap_.FindIndex(vertex) < 1)
-						  vmap_.Add(vertex);
-					  }
-				      }
-				  }
-			      }
-			  }
-		      }
-		  }
-	      }
-	  }
-      }
-  }
-
-  // Free Shells
-  for(exp1.Init(exp0.Current(), TopAbs_SHELL, TopAbs_SOLID); exp1.More(); exp1.Next()) {
-      TopoDS_Shape shell = exp1.Current();
-      if(shmap_.FindIndex(shell) < 1) {
-	  shmap_.Add(shell);
-
-	  for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
-	      TopoDS_Face face = TopoDS::Face(exp2.Current());
-	      if(fmap_.FindIndex(face) < 1) {
-		  fmap_.Add(face);
-
-		  for(exp3.Init(exp2.Current(), TopAbs_WIRE); exp3.More(); exp3.Next()) {
-		      TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-		      if(wmap_.FindIndex(wire) < 1) {
-			  wmap_.Add(wire);
-
-			  for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
-			      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-			      if(emap_.FindIndex(edge) < 1) {
-				  emap_.Add(edge);
-
-				  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-				      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-				      if(vmap_.FindIndex(vertex) < 1)
-					  vmap_.Add(vertex);
-				  }
-			      }
-			  }
-		      }
-		  }
-	      }
-	  }
-      }
-  }
-
-  // Free Faces
-  for(exp2.Init(shape_, TopAbs_FACE, TopAbs_SHELL); exp2.More(); exp2.Next()) {
-      TopoDS_Face face = TopoDS::Face(exp2.Current());
-      if(fmap_.FindIndex(face) < 1) {
-	  fmap_.Add(face);
-
-	  for(exp3.Init(exp2.Current(), TopAbs_WIRE); exp3.More(); exp3.Next()) {
-	      TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-	      if(wmap_.FindIndex(wire) < 1) {
-		  wmap_.Add(wire);
-
-		  for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
-		      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-		      if(emap_.FindIndex(edge) < 1) {
-			  emap_.Add(edge);
-
-			  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-			      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-			      if(vmap_.FindIndex(vertex) < 1)
-				  vmap_.Add(vertex);
-			  }
-		      }
-		  }
-	      }
-	  }
-      }
-  }
-
-  // Free Wires
-  for(exp3.Init(shape_, TopAbs_WIRE, TopAbs_FACE); exp3.More(); exp3.Next()) {
-      TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-      if(wmap_.FindIndex(wire) < 1) {
-	  wmap_.Add(wire);
-
-	  for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
-	      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-	      if(emap_.FindIndex(edge) < 1) {
-		  emap_.Add(edge);
-
-		  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-		      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-		      if(vmap_.FindIndex(vertex) < 1)
-			  vmap_.Add(vertex);
-		  }
-	      }
-	  }
-      }
-  }
-
-  // Free Edges
-  for(exp4.Init(shape_, TopAbs_EDGE, TopAbs_WIRE); exp4.More(); exp4.Next()) {
-      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-      if(emap_.FindIndex(edge) < 1) {
-	  emap_.Add(edge);
-
-	  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-	      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-	      if(vmap_.FindIndex(vertex) < 1)
-		  vmap_.Add(vertex);
-	  }
-      }
-  }
-
-  // Free Vertices
-  for(exp5.Init(shape_, TopAbs_VERTEX, TopAbs_EDGE); exp5.More(); exp5.Next()) {
-      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-      if(vmap_.FindIndex(vertex) < 1)
-	  vmap_.Add(vertex);
-  }
-
-#elif defined(GMSH_NUMBERING_V2)
-
-  // iterate over all shapes with tags, and import them into the (sub)shape
-   // _maps
-   somap_.clear();
-   shmap_.clear();
-   fmap_.clear();
-   wmap_.clear();
-   emap_.clear();
-   vmap_.clear();
-
-   auto _addShapeToMaps = [&](const TopoDS_Shape &shape)
-   {
-     // Solids
-     TopExp_Explorer exp0, exp1, exp2, exp3, exp4, exp5;
-     for(exp0.Init(shape, TopAbs_SOLID); exp0.More(); exp0.Next()) {
-       TopoDS_Solid solid = TopoDS::Solid(exp0.Current());
-       if(somap_.FindIndex(solid) < 1) {
-         somap_.Add(solid);
-         for(exp1.Init(solid, TopAbs_SHELL); exp1.More(); exp1.Next()) {
-           TopoDS_Shell shell = TopoDS::Shell(exp1.Current());
-           if(shmap_.FindIndex(shell) < 1) {
-             shmap_.Add(shell);
-
-             for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
-               TopoDS_Face face = TopoDS::Face(exp2.Current());
-               if(fmap_.FindIndex(face) < 1) {
-                 fmap_.Add(face);
-
-                 for(exp3.Init(face.Oriented(TopAbs_FORWARD), TopAbs_WIRE);
-                     exp3.More(); exp3.Next()) {
-                   // for(exp3.Init(face, TopAbs_WIRE); exp3.More(); exp3.Next()){
-                   TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-                   if(wmap_.FindIndex(wire) < 1) {
-                     wmap_.Add(wire);
-
-                     for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
-                       TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-                       if(emap_.FindIndex(edge) < 1) {
-                         emap_.Add(edge);
-
-                         for(exp5.Init(edge, TopAbs_VERTEX); exp5.More();
-                             exp5.Next()) {
-                           TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-                           if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
-                         }
-                       }
-                     }
-                   }
-                 }
-               }
-             }
-           }
-         }
-       }
-     }
-
-     // Free Shells
-     for(exp1.Init(shape, TopAbs_SHELL, TopAbs_SOLID); exp1.More(); exp1.Next()) {
-       const TopoDS_Shape &shell = exp1.Current();
-       if(shmap_.FindIndex(shell) < 1) {
-         shmap_.Add(shell);
-
-         for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
-           TopoDS_Face face = TopoDS::Face(exp2.Current());
-           if(fmap_.FindIndex(face) < 1) {
-             fmap_.Add(face);
-
-             for(exp3.Init(face, TopAbs_WIRE); exp3.More(); exp3.Next()) {
-               TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-               if(wmap_.FindIndex(wire) < 1) {
-                 wmap_.Add(wire);
-
-                 for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
-                   TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-                   if(emap_.FindIndex(edge) < 1) {
-                     emap_.Add(edge);
-
-                     for(exp5.Init(edge, TopAbs_VERTEX); exp5.More();
-                         exp5.Next()) {
-                       TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-                       if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
-                     }
-                   }
-                 }
-               }
-             }
-           }
-         }
-       }
-     }
-
-     // Free Faces
-     for(exp2.Init(shape, TopAbs_FACE, TopAbs_SHELL); exp2.More(); exp2.Next()) {
-       TopoDS_Face face = TopoDS::Face(exp2.Current());
-       if(fmap_.FindIndex(face) < 1) {
-         fmap_.Add(face);
-
-         for(exp3.Init(face, TopAbs_WIRE); exp3.More(); exp3.Next()) {
-           TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-           if(wmap_.FindIndex(wire) < 1) {
-             wmap_.Add(wire);
-
-             for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
-               TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-               if(emap_.FindIndex(edge) < 1) {
-                 emap_.Add(edge);
-
-                 for(exp5.Init(edge, TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-                   TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-                   if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
-                 }
-               }
-             }
-           }
-         }
-       }
-     }
-
-     // Free Wires
-     for(exp3.Init(shape, TopAbs_WIRE, TopAbs_FACE); exp3.More(); exp3.Next()) {
-       TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-       if(wmap_.FindIndex(wire) < 1) {
-         wmap_.Add(wire);
-
-         for(exp4.Init(wire, TopAbs_EDGE); exp4.More(); exp4.Next()) {
-           TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-           if(emap_.FindIndex(edge) < 1) {
-             emap_.Add(edge);
-
-             for(exp5.Init(edge, TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-               TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-               if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
-             }
-           }
-         }
-       }
-     }
-
-     // Free Edges
-     for(exp4.Init(shape, TopAbs_EDGE, TopAbs_WIRE); exp4.More(); exp4.Next()) {
-       TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-       if(emap_.FindIndex(edge) < 1) {
-         emap_.Add(edge);
-
-         for(exp5.Init(edge, TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-           TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-           if(vmap_.FindIndex(vertex) < 1) vmap_.Add(vertex);
-         }
-       }
-     }
-
-     // Free Vertices
-     for(exp5.Init(shape, TopAbs_VERTEX, TopAbs_EDGE); exp5.More(); exp5.Next()) {
-       TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-       if(vmap_.FindIndex(vertex) < 1) { vmap_.Add(vertex); }
-     }
-   };
-
-   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp0(_tagVertex);
-   for(; exp0.More(); exp0.Next()) _addShapeToMaps(exp0.Value());
-   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp1(_tagEdge);
-   for(; exp1.More(); exp1.Next()) _addShapeToMaps(exp1.Value());
-   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp2(_tagFace);
-   for(; exp2.More(); exp2.Next()) _addShapeToMaps(exp2.Value());
-   TopTools_DataMapIteratorOfDataMapOfIntegerShape exp3(_tagSolid);
-   for(; exp3.More(); exp3.Next()) _addShapeToMaps(exp3.Value());
-
-
-#else
-
-  int tag=0;
-
-  TopExp_Explorer exp0;
-  bool first = true;
-  for(exp0.Init(shape_, TopAbs_SOLID); exp0.More(); exp0.Next())
-  {
-    int t = tag;
-    if(t <= 0)
-    { 
-//         t = getMaxTag(3) + 1; 
-        t=somap_.getMaxIndex() +1;
-    }
-    else if (first)
-    { 
-        first = false; 
-    }
-    else
-    { 
-        throw insight::Exception(boost::str(boost::format("Cannot bind multiple regions to single tag %d")% t));
-    }
-//     bind(TopoDS::Solid(exp0.Current()), t);
-//     outTags[3].push_back(t);
-#ifdef GMSH_DEBUG
-    std::cout<<"solid "<<t<<std::endl;
-#endif
-    somap_.Add(exp0.Current(), t);
-  }
-//   if(highestDimOnly && outTags[3].size()) return;
-  for(exp0.Init(shape_, TopAbs_FACE); exp0.More(); exp0.Next())
-  {
-    int t = tag;
-    if(t <= 0)
-    { 
-//         t = getMaxTag(2) + 1; 
-        t=fmap_.getMaxIndex()+1;
-    }
-    else if (first)
-    { 
-        first = false;
-    }
-    else
-    { 
-        throw insight::Exception(boost::str(boost::format("Cannot bind multiple faces to single tag %d")% t));
-//         Msg::Error("Cannot bind multiple faces to single tag %d", t); return; 
-    }
-//     bind(TopoDS::Face(exp0.Current()), t);
-//     outTags[2].push_back(t);
-#ifdef GMSH_DEBUG
-    std::cout<<"face "<<t<<std::endl;
-#endif
-    fmap_.Add(exp0.Current(), t);
-  }
-//   if(highestDimOnly && outTags[2].size()) return;
-  for(exp0.Init(shape_, TopAbs_EDGE); exp0.More(); exp0.Next())
-  {
-    int t = tag;
-    if(t <= 0)
-    { 
-        t = emap_.getMaxIndex() + 1; 
-    }
-    else if(first)
-    { 
-        first = false;
-    }
-    else
-    { 
-//         Msg::Error("Cannot bind multiple edges to single tag %d", t); return; 
-        throw insight::Exception(boost::str(boost::format("Cannot bind multiple edges to single tag %d")% t));        
-    }
-//     bind(TopoDS::Edge(exp0.Current()), t);
-//     outTags[1].push_back(t);
-#ifdef GMSH_DEBUG
-    std::cout<<"edge "<<t<<std::endl;
-#endif
-    emap_.Add(exp0.Current(), t);
-  }
-//   if(highestDimOnly && outTags[1].size()) return;
-  for(exp0.Init(shape_, TopAbs_VERTEX); exp0.More(); exp0.Next())
-  {
-    int t = tag;
-    if(t <= 0)
-    { 
-        t = vmap_.getMaxIndex() + 1; 
-    }
-    else if(first)
-    { 
-        first = false; 
-    }
-    else
-    { 
-//         Msg::Error("Cannot bind multiple vertices to single tag %d", t); return; 
-        throw insight::Exception(boost::str(boost::format("Cannot bind multiple vertices to single tag %d")% t));                
-    }
-//     bind(TopoDS::Vertex(exp0.Current()), t);
-//     outTags[0].push_back(t);
-#ifdef GMSH_DEBUG
-    std::cout<<"vertex "<<t<<std::endl;
-#endif
-    vmap_.Add(exp0.Current(), t);
-  }
-
-
-#endif
-//   extractReferenceFeatures();
+    idx_.reset(new SubshapeNumbering(shape_));
 }
 
 void Feature::extractReferenceFeatures()
 {
   ///////////////////////////////////////////////////////////////////////////////
   /////////////// save reference points
-
-   for (int i=1; i<=vmap_.Extent(); i++)
-//  for (const FreelyIndexedMapOfShape::value_type& j: vmap_)
+  auto allptidx=allVerticesSet();
+  for (int i: allptidx)
   {
-//     int i=j.first;
     refpoints_[ str(format("v%d")%i) ] = vertexLocation(i);
   }
 }
+
+const TopoDS_Face& Feature::face(FeatureID i) const
+{
+    checkForBuildDuringAccess();
+//    insight::assertion(
+//                i>=1 && i<=idx_->_fmap.Extent(),
+//                str(format("face ID %d out of range (%d...%d)")
+//                    % i % 1 % idx_->_fmap.Extent()) );
+//    return TopoDS::Face(idx_->_fmap.FindKey(i));
+    return idx_->faceByTag(i);
+}
+
+const TopoDS_Edge& Feature::edge(FeatureID i) const
+{
+    checkForBuildDuringAccess();
+//    insight::assertion(
+//                i>=1 && i<=idx_->_emap.Extent(),
+//                str(format("edge ID %d out of range (%d...%d)")
+//                    % i % 1 % idx_->_emap.Extent()) );
+//    return TopoDS::Edge(idx_->_emap.FindKey(i));
+    return idx_->edgeByTag(i);
+}
+
+const TopoDS_Vertex& Feature::vertex(FeatureID i) const
+{
+    checkForBuildDuringAccess();
+//    insight::assertion(
+//                i>=1 && i<=idx_->_vmap.Extent(),
+//                str(format("vertex ID %d out of range (%d...%d)")
+//                    % i % 1 % idx_->_vmap.Extent()) );
+//    return TopoDS::Vertex(idx_->_vmap.FindKey(i));
+    return idx_->vertexByTag(i);
+}
+
+const TopoDS_Solid& Feature::subsolid(FeatureID i) const
+{
+    checkForBuildDuringAccess();
+//    insight::assertion(
+//                i>=1 && i<=idx_->_somap.Extent(),
+//                str(format("solid ID %d out of range (%d...%d)")
+//                    % i % 1 % idx_->_somap.Extent()) );
+//    return TopoDS::Solid(idx_->_somap.FindKey(i));
+    return idx_->solidByTag(i);
+}
+
+
+FeatureID Feature::solidID(const TopoDS_Shape& f) const
+{
+    checkForBuildDuringAccess();
+//    int i=idx_->_somap.FindIndex(f);
+//    if (i==0)
+//        throw insight::Exception("requested solid not indexed!");
+//    return i;
+    return idx_->tagOfSolid(TopoDS::Solid(f));
+}
+
+FeatureID Feature::faceID(const TopoDS_Shape& f) const
+{
+    checkForBuildDuringAccess();
+//    int i=idx_->_fmap.FindIndex(f);
+//    if (i==0)
+//        throw insight::Exception("requested face not indexed!");
+//    return i;
+    return idx_->tagOfFace(TopoDS::Face(f));
+}
+
+FeatureID Feature::edgeID(const TopoDS_Shape& e) const
+{
+    checkForBuildDuringAccess();
+//    int i=idx_->_emap.FindIndex(e);
+//    if (i==0)
+//        throw insight::Exception("requested edge not indexed!");
+//    return i;
+    return idx_->tagOfEdge(TopoDS::Edge(e));
+}
+
+FeatureID Feature::vertexID(const TopoDS_Shape& v) const
+{
+    checkForBuildDuringAccess();
+//    int i=idx_->_vmap.FindIndex(v);
+//    if (i==0)
+//        throw insight::Exception("requested vertex not indexed!");
+//    return i;
+    return idx_->tagOfVertex(TopoDS::Vertex(v));
+}
+
 
 void Feature::write(const filesystem::path& file) const
 {
@@ -2566,7 +2350,6 @@ void Feature::write(std::ostream& f) const
     std::ostringstream bufs;
     BRepTools::Write(shape(), bufs);
     std::string buf=bufs.str();
-//     cout<<buf<<endl;
     f<<buf.size()<<endl;
     f<<buf<<endl;
   }
@@ -2616,6 +2399,72 @@ gp_Trsf Feature::transformation() const
   return gp_Trsf();
 }
 
+/*
+CREATE_FUNCTION();
+static
+ override
+addToStaticFunctionTable(Feature, , insertrule);
+addToStaticFunctionTable(Feature, , ruleDocumentation);
+std::make_shared<parser::ISCADParser::ModelstepRule>(
+*/
+
+#warning circumvent
+//addToStaticFunctionTable(Feature, Feature, insertrule);
+
+void Feature::insertrule(parser::ISCADParser& ruleset)
+{
+  ruleset.modelstepFunctionRules.add
+      (
+          "asModel",
+          std::make_shared<parser::ISCADParser::ModelstepRule>(
+
+              ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' )
+                  [ qi::_val = phx::bind(Feature::create<FeatureSetPtr>, qi::_1) ]
+
+              )
+          );
+}
+
+#warning circumvent
+//addToStaticFunctionTable(Feature, Feature, ruleDocumentation);
+
+FeatureCmdInfoList Feature::ruleDocumentation()
+{
+  return {
+    FeatureCmdInfo
+    (
+        "asModel",
+        "( <verticesSelection>|<edgesSelection>|<facesSelection>|<solidSelection> )",
+        "Creates a new feature from selected entities of an existing feature."
+    )
+  };
+}
+
+string Feature::generateScriptCommand() const
+{
+    return std::string();
+}
+
+
+bool Feature::TopologicalProperties::onlyEdges() const
+{
+    return nEdges>0 && nFaces==0;
+}
+
+
+Feature::TopologicalProperties Feature::topologicalProperties() const
+{
+    ShapeAnalysis_ShapeContents sas;
+    sas.Perform(shape());
+    return {
+        sas.NbVertices(), sas.NbEdges(),
+        sas.NbFaces(), sas.NbShells(),
+        sas.NbSolids() };
+}
+
+
+
+
 Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
 {
   double m=0.0;
@@ -2626,13 +2475,11 @@ Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& fea
   
   int i=-1;
   for (const FeaturePtr& f: feats)
-  { i++;
-    
-//     std::cout<<density_ovr<<", "<<aw_ovr<<std::endl;
+  {
+      i++;
     mcs[i]=f->mass(density_ovr, aw_ovr);
     cogs[i]=f->modelCoG(density_ovr);
-    
-//     std::cout<<"m="<<mc<<", cog="<<f->modelCoG()<<std::endl;
+
     m += mcs[i];
     cog += cogs[i]*mcs[i];
   }
@@ -2653,8 +2500,7 @@ Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& fea
     
     inertia += f->modelInertia(density_ovr) + mcs[i]*dt.t()*dt;
   }
-  
-//   std::cout<<"compound props: m="<<m<<", cog="<<cog<<std::endl;
+
   return Mass_CoG_Inertia(m, cog, inertia);
 }
 
@@ -2767,6 +2613,7 @@ bool SingleVolumeFeature::isSingleVolume() const
 {
     return true;
 }
+
 
 
 }

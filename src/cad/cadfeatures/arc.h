@@ -21,7 +21,7 @@
 #define INSIGHT_CAD_ARC_H
 
 #include "cadparameters.h"
-#include "cadfeature.h"
+#include "cadfeatures/singleedgefeature.h"
 
 namespace insight 
 {
@@ -32,59 +32,58 @@ namespace cad
     
     
 class Arc
-    : public Feature
+    : public SingleEdgeFeature
 {
     VectorPtr p0_;
     VectorPtr p0tang_;
     VectorPtr p1_;
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
     Arc ( VectorPtr p0, VectorPtr p0tang, VectorPtr p1 );
 
 public:
     declareType ( "Arc" );
-    Arc ();
-    
-    static FeaturePtr create ( VectorPtr p0, VectorPtr p0tang, VectorPtr p1 );
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    CREATE_FUNCTION(Arc);
 
-    virtual bool isSingleEdge() const;
-    virtual bool isSingleCloseWire() const;
-    virtual bool isSingleOpenWire() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
+    VectorPtr start() const override { return p0_; }
+    VectorPtr end() const  override { return p1_; }
+
+    bool isSingleOpenWire() const override;
 };
 
     
     
     
 class Arc3P
-    : public Feature
+    : public SingleEdgeFeature
 {
     VectorPtr p0_;
     VectorPtr pm_;
     VectorPtr p1_;
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
     Arc3P ( VectorPtr p0, VectorPtr pm, VectorPtr p1 );
 
 public:
     declareType ( "Arc3P" );
-    Arc3P ();
     
-    static FeaturePtr create ( VectorPtr p0, VectorPtr pm, VectorPtr p1 );
+    CREATE_FUNCTION(Arc3P);
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
-    virtual bool isSingleEdge() const;
-    virtual bool isSingleCloseWire() const;
-    virtual bool isSingleOpenWire() const;
+    VectorPtr start() const override { return p0_; }
+    VectorPtr end() const  override { return p1_; }
+
+    bool isSingleOpenWire() const override;
 
 };
 

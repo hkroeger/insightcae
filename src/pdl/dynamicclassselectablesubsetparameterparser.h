@@ -47,18 +47,19 @@ struct DynamicClassSelectableSubsetParameterParser {
         ) const override;
     };
 
+    declareType("dynamicclassconfig");
 
-    template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-    inline static void insertrule ( PDLParserRuleset<Iterator,Skipper>& ruleset )
+    inline static void insertrule ( PDLParserRuleset& ruleset )
     {
         ruleset.parameterDataRules.add
         (
-            "dynamicclassconfig",
-            typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr (
-                      new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule (
-                        ( ruleset.r_string >> ( (qi::lit("default") >> ruleset.r_string)|(qi::attr(std::string())) ) >> ruleset.r_description_string )
-                        [ qi::_val = phx::construct<ParserDataBase::Ptr> ( phx::new_<Data> ( qi::_1, qi::_2, qi::_3) ) ]
-                    ) )
+            typeName,
+            std::make_shared<PDLParserRuleset::ParameterDataRule>(
+
+                ( ruleset.r_string >> ( (qi::lit("default") >> ruleset.r_string)|(qi::attr(std::string())) ) >> ruleset.r_description_string )
+                [ qi::_val = phx::construct<ParserDataBase::Ptr> ( phx::new_<Data> ( qi::_1, qi::_2, qi::_3) ) ]
+
+            )
         );
     }
 };

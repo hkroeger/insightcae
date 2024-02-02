@@ -31,25 +31,23 @@ namespace cad {
 class Wire
     : public Feature
 {
-    FeatureSetPtr edges_;
+    boost::variant<FeatureSetPtr, std::vector<FeaturePtr> > edges_;
 
     Wire ( FeatureSetPtr edges );
+    Wire ( const std::vector<FeaturePtr>& edges );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Wire" );
-    Wire ();
+    CREATE_FUNCTION(Wire);
 
-    static FeaturePtr create ( FeatureSetPtr edges );
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
-
-    virtual bool isSingleClosedWire() const;
-    virtual bool isSingleOpenWire() const;
+    bool isSingleClosedWire() const override;
+    bool isSingleOpenWire() const override;
 };
 
 

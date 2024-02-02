@@ -1,3 +1,23 @@
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
+
 #ifndef INSIGHT_SIMPLEDIMENSIONEDPARAMETER_H
 #define INSIGHT_SIMPLEDIMENSIONEDPARAMETER_H
 
@@ -54,10 +74,12 @@ public:
           value_ ( value*unit_type() )
     {}
 
-    virtual value_type& operator() ()
+    virtual void set(const value_type& nv)
     {
-        return value_;
+        value_=nv;
+        triggerValueChanged();
     }
+
     virtual const value_type& operator() () const
     {
         return value_;
@@ -65,7 +87,7 @@ public:
 
     void setInDefaultUnit(const base_value_type& newValue)
     {
-      value_ = newValue * unit_type();
+        set(newValue * unit_type());
     }
 
     base_value_type getInDefaultUnit() const
@@ -115,7 +137,6 @@ public:
     void readFromNode
     (
         const std::string& name,
-        rapidxml::xml_document<>&,
         rapidxml::xml_node<>& node,
         boost::filesystem::path
     ) override
@@ -130,6 +151,7 @@ public:
           base_value_type nv;
           stringToValue ( valueattr->value(), nv );
           value_ = value_type(nv * Unit());
+          triggerValueChanged();
         }
         else
         {
@@ -143,17 +165,23 @@ public:
         }
     }
 
-    void reset(const Parameter& p) override
+    void copyFrom(const Parameter& p) override
     {
-      if (const auto* op = dynamic_cast<const SimpleDimensionedParameter<T,Unit,N>*>(&p))
-      {
-        Parameter::reset(p);
-        value_=op->value_;
-      }
-      else
-        throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+        operator=(dynamic_cast<const SimpleDimensionedParameter<T,Unit,N>&>(p));
+
     }
 
+    void operator=(const SimpleDimensionedParameter& op)
+    {
+        value_=op.value_;
+
+        Parameter::copyFrom(op);
+    }
+
+    int nChildren() const override
+    {
+      return 0;
+    }
 };
 
 

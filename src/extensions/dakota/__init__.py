@@ -25,12 +25,9 @@ class Parameter:
     self.pval=pval
     
   def __call__(self):
-    import importlib
-    module = importlib.import_module('__builtin__')
     pytype=self.ptype
-    if pytype=="double": pytype="float"
-    cls = getattr(module, pytype)
-    return cls(self.pval)
+    if self.ptype=="double": return float(self.pval)
+    elif self.ptype=="int": return int(self.pval)
     
   def __str__(self):
     return "--"+self.ptype+" "+self.ppath+":"+self.pval
@@ -41,8 +38,9 @@ def readParameters(fn='params.in'):
   for l in open(fn, 'r').readlines():
     value,pv = l.strip().split()
     if ':' in pv:
-      ptype,ppath = pv.split(':')
-      params[ppath]=Parameter(ptype,ppath,value)
+      ptype,ppath = pv.split(':', 1)
+      if  not ppath in params:
+        params[ppath]=Parameter(ptype,ppath,value)
   pprint(params)
   return params
 
@@ -50,7 +48,7 @@ def writeQuality(qs, fn='results.out'):
   fo=open(fn, 'w')
   #for name,value in qs.items():
   for name in sorted(qs.keys()):
-    print '%s = %g'%(name, qs[name])
+    print('%s = %g'%(name, qs[name]))
     fo.write('%g %s\n'%(qs[name], name))
   fo.close()
 

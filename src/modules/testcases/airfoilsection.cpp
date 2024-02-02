@@ -290,10 +290,10 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
   std::string force_fo_name("foilForces");
 
   cm.insert(new forces(cm, forces::Parameters()
-    .set_name(force_fo_name)
     .set_patches( {"\""+sp().foil_+".*\""} )
     .set_rhoInf(p().fluid.rho)
     .set_CofR(vec3(0,0,0))
+    .set_name(force_fo_name)
     ));  
 
   installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
@@ -420,7 +420,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
       slpl->SetNormal(0,0,1);
       slice1->SetCutFunction(slpl);
 
-      FieldSelection sl_field("p", FieldSupport::Point, -1);
+      FieldSelection sl_field("p", FieldSupport::OnPoint, -1);
       auto sl_range=calcRange(sl_field, {}, {slice1});
       auto sl_cm=createColorMap();
       FieldColor sl_fc(sl_field, sl_cm, sl_range);

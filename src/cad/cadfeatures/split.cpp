@@ -20,6 +20,7 @@
 #include "split.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #include "GEOMAlgo_Splitter.hxx"
 
@@ -36,7 +37,10 @@ namespace cad {
 
 
 defineType(Split);
-addToFactoryTable(Feature, Split);
+//addToFactoryTable(Feature, Split);
+addToStaticFunctionTable(Feature, Split, insertrule);
+//addToStaticFunctionTable(Feature, Split, ruleDocumentation);
+
 
 size_t Split::calcHash() const
 {
@@ -48,8 +52,6 @@ size_t Split::calcHash() const
 }
 
 
-Split::Split(): DerivedFeature()
-{}
 
 
 TopoDS_Shape makeSplit(const Feature& tool, const Feature& target)
@@ -82,17 +84,19 @@ void Split::build()
   * Split(<feature expression: tool>, <feature expression: target>) : feature
   * ~~~~
   */
-void Split::insertrule(parser::ISCADParser& ruleset) const
+void Split::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Split",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Split>(qi::_1, qi::_2)) ]
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
+                  [ qi::_val = phx::bind(
+                       &Split::create<FeaturePtr, FeaturePtr>,
+                       qi::_1, qi::_2) ]
       
-    ))
+    )
   );
 }
 

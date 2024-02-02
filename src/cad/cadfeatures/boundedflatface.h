@@ -44,16 +44,13 @@ protected:
 
 public:
     declareType("BoundedFlatFace");
-    BoundedFlatFace();
 
-    static FeaturePtr create(const std::vector<FeaturePtr>& edges);
-    static FeaturePtr create_set(const std::vector<FeatureSetPtr>& edges);
+    CREATE_FUNCTION(BoundedFlatFace);
 
     operator const TopoDS_Face& () const;
 
-
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule(parser::ISCADParser& ruleset);
+    static FeatureCmdInfoList ruleDocumentation();
 
 };
 

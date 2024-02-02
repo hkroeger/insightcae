@@ -170,7 +170,7 @@ void ResultElementCollection::appendElementsToNode ( rapidxml::xml_document<>& d
     }
 }
 
-void ResultElementCollection::readElementsFromNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node )
+void ResultElementCollection::readElementsFromNode ( rapidxml::xml_node<>& node )
 {
     for ( xml_node<> *e = node.first_node(); e; e = e->next_sibling() ) {
         std::string tname ( e->name() );
@@ -186,7 +186,7 @@ void ResultElementCollection::readElementsFromNode ( rapidxml::xml_document<>& d
             )
         );
 
-        re->readFromNode ( name, doc, *e );
+        re->readFromNode ( name, *e );
         insert ( name, re );
     }
 //   for( iterator i=begin(); i!= end(); i++)

@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -38,8 +39,9 @@ namespace cad
     
     
 defineType(BooleanSubtract);
-addToFactoryTable(Feature, BooleanSubtract);
-
+//addToFactoryTable(Feature, BooleanSubtract);
+addToStaticFunctionTable(Feature, BooleanSubtract, insertrule);
+addToStaticFunctionTable(Feature, BooleanSubtract, ruleDocumentation);
 
 size_t BooleanSubtract::calcHash() const
 {
@@ -50,10 +52,6 @@ size_t BooleanSubtract::calcHash() const
   return h.getHash();
 }
 
-
-BooleanSubtract::BooleanSubtract()
-: DerivedFeature()
-{}
 
 
 
@@ -69,12 +67,6 @@ BooleanSubtract::BooleanSubtract(FeaturePtr m1, FeaturePtr m2)
 
 
 
-FeaturePtr BooleanSubtract::create(FeaturePtr m1, FeaturePtr m2)
-{
-    return FeaturePtr(new BooleanSubtract(m1, m2));
-}
-
-
 
 
 void BooleanSubtract::build()
@@ -83,8 +75,8 @@ void BooleanSubtract::build()
 
   if (!cache.contains(hash()))
   {
-    if (!m1_) throw insight::cad::CADException(shared_from_this(), "Boolean subtract: invalid base shape" );
-    if (!m2_) throw insight::cad::CADException(shared_from_this(), "Boolean subtract: invalid tool shape" );
+    if (!m1_) throw insight::cad::CADException(shared_from_this(), _("Boolean subtract: invalid base shape") );
+    if (!m2_) throw insight::cad::CADException(shared_from_this(), _("Boolean subtract: invalid tool shape") );
 
     BRepAlgoAPI_Cut cutter(*m1_, *m2_);
     cutter.Build();
@@ -94,7 +86,7 @@ void BooleanSubtract::build()
         throw insight::cad::CADException
         (
             shared_from_this(),
-            "could not perform cut operation."
+            _("could not perform cut operation.")
         );
     }
 
@@ -137,7 +129,7 @@ FeaturePtr operator-(FeaturePtr m1, FeaturePtr m2)
   * ( <feature expression: feat1> - <feature expression: feat2> ) : feature
   * ~~~~
   */
-void BooleanSubtract::insertrule(parser::ISCADParser& ruleset) const
+void BooleanSubtract::insertrule(parser::ISCADParser& ruleset)
 {
 //   ruleset.modelstepFunctionRules.add
 //   (
@@ -153,9 +145,9 @@ void BooleanSubtract::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList BooleanSubtract::ruleDocumentation() const
+FeatureCmdInfoList BooleanSubtract::ruleDocumentation()
 {
-    return FeatureCmdInfoList();
+  return {};
 }
 
 

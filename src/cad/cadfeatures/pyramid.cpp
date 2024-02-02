@@ -20,6 +20,7 @@
 #include "pyramid.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -35,7 +36,10 @@ namespace cad {
     
     
 defineType(Pyramid);
-addToFactoryTable(Feature, Pyramid);
+//addToFactoryTable(Feature, Pyramid);
+addToStaticFunctionTable(Feature, Pyramid, insertrule);
+addToStaticFunctionTable(Feature, Pyramid, ruleDocumentation);
+
 
 
 size_t Pyramid::calcHash() const
@@ -48,10 +52,6 @@ size_t Pyramid::calcHash() const
 }
 
 
-Pyramid::Pyramid()
-: Feature()
-{}
-
 
 
 
@@ -63,11 +63,6 @@ Pyramid::Pyramid(FeaturePtr base, VectorPtr ptip)
 
 
 
-
-FeaturePtr Pyramid::create ( FeaturePtr base, VectorPtr ptip )
-{
-    return FeaturePtr(new Pyramid(base, ptip));
-}
 
 
 
@@ -96,7 +91,6 @@ void Pyramid::build()
     }
 
     sew.Perform();
-    sew.Dump();
 
     TopoDS_Shell sshell = TopoDS::Shell ( sew.SewedShape() );
 //   BRepCheck_Shell acheck(sshell);
@@ -104,7 +98,7 @@ void Pyramid::build()
     BRepBuilderAPI_MakeSolid solidmaker ( sshell );
 
     if ( !solidmaker.IsDone() ) {
-        throw insight::Exception ( "Creation of solid failed!" );
+        throw insight::Exception ( _("Creation of solid failed!") );
     }
 
     setShape ( solidmaker.Solid() );
@@ -113,34 +107,35 @@ void Pyramid::build()
 
 
 
-void Pyramid::insertrule(parser::ISCADParser& ruleset) const
+void Pyramid::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Pyramid",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ')' )
-      [ qi::_val = phx::bind(&Pyramid::create, qi::_1, qi::_2) ]
+      [ qi::_val = phx::bind(
+                         &Pyramid::create<FeaturePtr, VectorPtr>,
+                         qi::_1, qi::_2) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Pyramid::ruleDocumentation() const
+FeatureCmdInfoList Pyramid::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Pyramid",
             "( <feature:base>, <vector:ptip> )",
-            "Creates a pyramid from the planar base feature and the tip point ptip."
+          _("Creates a pyramid from the planar base feature and the tip point ptip.")
         )
-    );
+    };
 }
 
 

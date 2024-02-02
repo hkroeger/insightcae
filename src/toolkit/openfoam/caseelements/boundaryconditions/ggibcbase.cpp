@@ -27,9 +27,19 @@ void GGIBCBase::addIntoDictionaries ( OFdicts& dictionaries ) const
 
   if (OFversion()<170)
   {
-    auto& decomposeParDict = dictionaries.lookupDict("system/decomposeParDict");
-    auto& gfz = decomposeParDict.getList("globalFaceZones");
-    gfz.push_back( p_.zone );
+      auto& decomposeParDict = dictionaries.lookupDict("system/decomposeParDict");
+      auto& gfz = decomposeParDict.getList("globalFaceZones");
+      gfz.push_back( p_.zone );
+  }
+  else if (OFversion()>=230)
+  {
+      auto& decomposeParDict = dictionaries.lookupDict("system/decomposeParDict");
+      auto& constraints = decomposeParDict.subDict("constraints");
+      auto& singleProcessorFaceSets = constraints.subDict("singleProcessorFaceSets");
+      if (singleProcessorFaceSets.find("type")==singleProcessorFaceSets.end())
+          singleProcessorFaceSets["type"]="singleProcessorFaceSets";
+      auto& spfs = singleProcessorFaceSets.getList("singleProcessorFaceSets");
+      spfs.push_back( OFDictData::list({p_.zone, -1}) );
   }
 }
 
@@ -38,17 +48,14 @@ void GGIBCBase::addIntoDictionaries ( OFdicts& dictionaries ) const
 
 void GGIBCBase::modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const
 {
-  if (OFversion()<170)
-  {
-    setSet
-    (
-      cm, location,
-      {
-       "faceSet "+p_.zone+" new patchToFace "+patchName_
-      }
-    );
-    cm.executeCommand(location, "setsToZones", { "-noFlipMap" } );
-  }
+    setSet(cm, location,
+           {
+               "faceSet "+p_.zone+" new patchToFace "+patchName_
+           });
+    if (OFversion()<170)
+    {
+        cm.executeCommand(location, "setsToZones", { "-noFlipMap" } );
+    }
 }
 
 

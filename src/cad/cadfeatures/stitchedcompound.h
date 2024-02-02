@@ -16,13 +16,14 @@ class StitchedCompound
   virtual size_t calcHash() const;
   virtual void build();
 
-public:
-  declareType("StitchedCompound");
-  StitchedCompound();
   StitchedCompound(FeatureSetPtr faces, ScalarPtr tol=scalarconst(1e-3) );
 
-  virtual FeatureCmdInfoList ruleDocumentation() const;
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+public:
+  declareType("StitchedCompound");
+  CREATE_FUNCTION(StitchedCompound);
+
+  static FeatureCmdInfoList ruleDocumentation();
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 }

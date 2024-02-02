@@ -23,12 +23,11 @@
 #include <QDir>
 #include <QSplashScreen>
 #include <QDialog>
-#include <QApplication>
 #include <QMessageBox>
 
 #ifndef Q_MOC_RUN
 #include "base/boost_include.h"
-#include "base/exception.h"
+#include "cadexception.h"
 #include "base/linearalgebra.h"
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -176,7 +175,7 @@ int main ( int argc, char** argv )
                   std::vector<std::string> pair;
                   insight::ParameterSet& parameters = split_and_check(window, pair, s);
                   bool v=boost::lexical_cast<bool>(pair[2]);
-                  parameters.getBool(pair[1])=v;
+                  parameters.setBool(pair[1], v);
               }
           }
 
@@ -187,7 +186,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                  parameters.getString(pair[1])=pair[2];
+                  parameters.setString(pair[1], pair[2]);
               }
           }
 
@@ -221,7 +220,7 @@ int main ( int argc, char** argv )
                   std::vector<std::string> pair;
                   insight::ParameterSet& parameters = split_and_check(window, pair, s);
                   double v=toNumber<double>(pair[2]);
-                  parameters.getDouble(pair[1])=v;
+                  parameters.setDouble(pair[1], v);
               }
           }
 
@@ -234,7 +233,7 @@ int main ( int argc, char** argv )
                   insight::ParameterSet& parameters = split_and_check(window, pair, s);
                   arma::mat v;
                   stringToValue(pair[2], v);
-                  parameters.getVector(pair[1])=v;
+                  parameters.setVector(pair[1], v);
               }
           }
 
@@ -246,7 +245,7 @@ int main ( int argc, char** argv )
                 std::vector<std::string> pair;
                 insight::ParameterSet& parameters = split_and_check(window, pair, s);
                 int v=toNumber<int>(pair[2]);
-                parameters.getInt(pair[1])=v;
+                parameters.setInt(pair[1], v);
             }
         }
 
@@ -272,7 +271,7 @@ int main ( int argc, char** argv )
           }
           else
           {
-            window.createCase( vm.count ( "skipbcs" ), restrictToFiles );
+            window.createCase( vm.count ( "skipbcs" ), restrictToFiles, true );
           }
         }
 
@@ -290,7 +289,7 @@ int main ( int argc, char** argv )
   {
     if (batch)
     {
-      insight::printException(e);
+      insight::printException_CAD(e);
     }
     else
     {

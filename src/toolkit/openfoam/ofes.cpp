@@ -74,7 +74,7 @@ std::string OFEs::currentOrPreferredOFE()
   }
   catch (const std::exception& /*e*/)
   {
-    return "OFesi1806";
+    return "OFesi2112";
   }
 }
 
@@ -100,7 +100,7 @@ OFEs::OFEs()
   using namespace std;
   using namespace boost::filesystem;
 
-  SharedPathList spaths;
+  auto spaths = SharedPathList::global();
   for ( const path& p: spaths )
   {
    if ( exists(p) && is_directory(p) )

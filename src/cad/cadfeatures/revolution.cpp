@@ -20,6 +20,8 @@
 #include "revolution.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -34,7 +36,10 @@ namespace cad {
     
   
 defineType(Revolution);
-addToFactoryTable(Feature, Revolution);
+//addToFactoryTable(Feature, Revolution);
+addToStaticFunctionTable(Feature, Revolution, insertrule);
+addToStaticFunctionTable(Feature, Revolution, ruleDocumentation);
+
 
 
 size_t Revolution::calcHash() const
@@ -51,9 +56,6 @@ size_t Revolution::calcHash() const
 
 
 
-Revolution::Revolution(): Feature()
-{}
-
 
 
 
@@ -64,20 +66,13 @@ Revolution::Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr an
 
 
 
-FeaturePtr Revolution::create(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered)
-{
-    return FeaturePtr(new Revolution(sk, p0, axis, angle, centered));
-}
-
-
-
 
 void Revolution::build()
 {
     if ( !centered_ ) {
         BRepPrimAPI_MakeRevol mkr ( *sk_, gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( to_Vec ( axis_->value() ) ) ), angle_->value(), centered_ );
-        providedSubshapes_["frontFace"]=FeaturePtr ( new Feature ( mkr.FirstShape() ) );
-        providedSubshapes_["backFace"]=FeaturePtr ( new Feature ( mkr.LastShape() ) );
+        providedSubshapes_["frontFace"]=Feature::create ( mkr.FirstShape() );
+        providedSubshapes_["backFace"]=Feature::create ( mkr.LastShape() );
         setShape ( mkr.Shape() );
     } else {
         gp_Trsf trsf;
@@ -89,8 +84,8 @@ void Revolution::build()
             BRepBuilderAPI_Transform ( *sk_, trsf ).Shape(),
             gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( ax ) ), angle_->value()
         );
-        providedSubshapes_["frontFace"]=FeaturePtr ( new Feature ( mkr.FirstShape() ) );
-        providedSubshapes_["backFace"]=FeaturePtr ( new Feature ( mkr.LastShape() ) );
+        providedSubshapes_["frontFace"]=Feature::create ( mkr.FirstShape() );
+        providedSubshapes_["backFace"]=Feature::create ( mkr.LastShape() );
         setShape ( mkr.Shape() );
     }
 
@@ -100,12 +95,12 @@ void Revolution::build()
 
 
 
-void Revolution::insertrule ( parser::ISCADParser& ruleset ) const
+void Revolution::insertrule ( parser::ISCADParser& ruleset )
 {
     ruleset.modelstepFunctionRules.add
     (
         "Revolution",
-        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                     ( '(' 
                         >> ruleset.r_solidmodel_expression >> ',' 
@@ -114,28 +109,29 @@ void Revolution::insertrule ( parser::ISCADParser& ruleset ) const
                         >> ruleset.r_scalarExpression
                         >> ( ( ',' >> qi::lit ( "centered" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
                         >> ')' )
-                    [ qi::_val = phx::bind ( &Revolution::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
+                    [ qi::_val = phx::bind (
+                         &Revolution::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr, bool>,
+                         qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
 
-                ) )
+                )
     );
 }
 
 
 
 
-FeatureCmdInfoList Revolution::ruleDocumentation() const
+FeatureCmdInfoList Revolution::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Revolution",
             "( <feature:xsec>, <vector:p0>, <vector:axis>, <scalar:angle> [, centered] )",
-            "Creates a revolution of the planar feature xsec."
+            _("Creates a revolution of the planar feature xsec."
             " The rotation axis is specified by origin point p0 and the direction vector axis."
-            " Revolution angle is specified as angle. By giving the keyword centered, the revolution is created symmetrically around the base feature."
+              " Revolution angle is specified as angle. By giving the keyword centered, the revolution is created symmetrically around the base feature.")
         )
-    );
+    };
 }
 
 

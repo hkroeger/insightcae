@@ -21,9 +21,9 @@ namespace bmd
 
 
 
-ParameterSet_VisualizerPtr blockMeshDict_Box_visualizer()
+ParameterSetVisualizerPtr blockMeshDict_Box_visualizer()
 {
-    return ParameterSet_VisualizerPtr( new blockMeshDict_Box_ParameterSet_Visualizer );
+    return ParameterSetVisualizerPtr( new blockMeshDict_Box_ParameterSet_Visualizer );
 }
 
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Box, visualizer, blockMeshDict_Box_visualizer);
@@ -34,7 +34,7 @@ void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements()
 {
   CurrentExceptionContext ex("computing visualization of blockMeshDict box template");
 
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   blockMeshDict_Box::Parameters p(currentParameters());
 
@@ -47,7 +47,7 @@ void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements()
                 cad::matconst(           ey * p.geometry.W),
                 cad::matconst(p.geometry.ez * p.geometry.H)
                 ),
-              AIS_WireFrame
+             { insight::Wireframe }
               );
 }
 
@@ -55,9 +55,9 @@ void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements()
 
 
 
-ParameterSet_VisualizerPtr blockMeshDict_Cylinder_visualizer()
+ParameterSetVisualizerPtr blockMeshDict_Cylinder_visualizer()
 {
-    return ParameterSet_VisualizerPtr( new blockMeshDict_Cylinder_ParameterSet_Visualizer );
+    return ParameterSetVisualizerPtr( new blockMeshDict_Cylinder_ParameterSet_Visualizer );
 }
 
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Cylinder, visualizer, blockMeshDict_Cylinder_visualizer);
@@ -65,7 +65,7 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Cy
 
 void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   blockMeshDict_Cylinder::Parameters p(currentParameters());
 
@@ -79,7 +79,7 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
   {
 
 
-    auto shape=cad::Cylinder::create(
+    cad::FeaturePtr shape=cad::Cylinder::create(
                cad::matconst(p.geometry.p0),
                cad::matconst(ex * p.geometry.L),
                cad::scalarconst( p.geometry.D ),
@@ -102,12 +102,12 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 
     addFeature( label,
                 shape,
-                AIS_WireFrame
+                { insight::Wireframe }
                 );
   }
   else
   {
-    auto cyl=cad::Cylinder::create_hollow(
+    auto cyl=cad::Cylinder::create(
                cad::matconst(p.geometry.p0),
                cad::matconst(ex * p.geometry.L),
                cad::scalarconst( p.geometry.D ),
@@ -118,7 +118,7 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 
     addFeature( label,
                 cyl,
-                AIS_WireFrame
+                { insight::Wireframe }
                 );
   }
 }
@@ -133,9 +133,9 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::setIcon(QIcon* i)
 
 
 
-ParameterSet_VisualizerPtr blockMeshDict_Sphere_visualizer()
+ParameterSetVisualizerPtr blockMeshDict_Sphere_visualizer()
 {
-    return ParameterSet_VisualizerPtr( new blockMeshDict_Sphere_ParameterSet_Visualizer );
+    return ParameterSetVisualizerPtr( new blockMeshDict_Sphere_ParameterSet_Visualizer );
 }
 
 addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Sphere, visualizer, blockMeshDict_Sphere_visualizer);
@@ -143,7 +143,7 @@ addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Sp
 
 void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CAD_ParameterSet_Visualizer::recreateVisualizationElements();
+  CADParameterSetVisualizer::recreateVisualizationElements();
 
   blockMeshDict_Sphere::Parameters p(currentParameters());
 
@@ -165,7 +165,7 @@ void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements
 
   addFeature( "blockMeshDict_Sphere",
               cad::Compound::create(cad::CompoundFeatureList({sph, core})),
-              AIS_WireFrame
+              { insight::Wireframe }
               );
 }
 

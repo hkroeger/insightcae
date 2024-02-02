@@ -9,10 +9,11 @@ struct PropertyLibrarySelectionParameterParser
   struct Data
   : public ParserDataBase
   {
+    bool isTemplate;
     std::string libraryName;
-    std::string selection;
+    std::string defaultSelection;
 
-    Data(const std::string& libname, const std::string& sel, const std::string& d);
+    Data(bool isTemplate, const std::string& libname, const std::string& sel, const std::string& d);
 
     void cppAddHeader(std::set<std::string>& headers) const override;
 
@@ -22,8 +23,11 @@ struct PropertyLibrarySelectionParameterParser
 
     std::string cppParamType(const std::string& ) const override;
 
-    void cppWriteCreateStatement(std::ostream& os, const std::string& name,
-                                 const std::string& thisscope) const override;
+    void cppWriteCreateStatement(
+        std::ostream& os,
+        const std::string& name,
+        const std::string& thisscope
+    ) const override;
 
     void cppWriteSetStatement(
         std::ostream& os,
@@ -33,22 +37,31 @@ struct PropertyLibrarySelectionParameterParser
         const std::string&
     ) const override;
 
-    void cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
-      const std::string& thisscope) const override;
+    void cppWriteGetStatement(
+        std::ostream& os,
+        const std::string& name,
+        const std::string& varname,
+        const std::string& staticname,
+        const std::string& thisscope
+    ) const override;
 
   };
 
-  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  declareType("librarySelection");
+
+  inline static void insertrule(PDLParserRuleset& ruleset)
   {
     ruleset.parameterDataRules.add
     (
-      "librarySelection",
-      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
-       new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-        ( ruleset.r_string >> ruleset.r_identifier >> ruleset.r_description_string )
-        [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3)) ]
-      ))
+      typeName,
+      std::make_shared<PDLParserRuleset::ParameterDataRule>(
+
+            ( ( (qi::lit("template")>>qi::attr(true)) | qi::attr(false) )
+               >> ruleset.r_string >> ruleset.r_identifier >> ruleset.r_description_string )
+                [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+
+      )
+
     );
   }
 };

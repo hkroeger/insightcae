@@ -18,11 +18,12 @@ addToFactoryTable(IQParameter, IQPathParameter);
 IQPathParameter::IQPathParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -36,14 +37,16 @@ QString IQPathParameter::valueText() const
 
 
 
-QVBoxLayout* IQPathParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQPathParameter::populateEditControls(
+        QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
   const auto&p = dynamic_cast<const insight::PathParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
-  QHBoxLayout *layout3=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
+  QHBoxLayout *layout3=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto *lineEdit = new QLineEdit(editControlsContainer);
@@ -62,13 +65,12 @@ QVBoxLayout* IQPathParameter::populateEditControls(IQParameterSetModel* model, c
   QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
   layout->addWidget(apply);
 
-  layout->addStretch();
 
   auto applyFunction = [=]()
   {
-    auto&p = dynamic_cast<insight::PathParameter&>(model->parameterRef(index));
+    auto&p = dynamic_cast<insight::PathParameter&>(this->parameterRef());
     p.setOriginalFilePath( lineEdit->text().toStdString() );
-    model->notifyParameterChange(index);
+//    model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
@@ -88,10 +90,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(IQParameterSetModel* model, c
 
   connect(dlgBtn_, &QPushButton::clicked, [=]()
   {
-    QString fn = QFileDialog::getOpenFileName(
-          editControlsContainer,
-          "Select file",
-          lineEdit->text());
+    QString fn = showSelectPathDialog(editControlsContainer, lineEdit->text());
     if (!fn.isEmpty())
     {
       lineEdit->setText(fn);
@@ -120,7 +119,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(IQParameterSetModel* model, c
 
     if (!program.isEmpty())
     {
-      QProcess *sp = new QProcess(model);
+      QProcess *sp = new QProcess(model());
       sp->start(program, QStringList() << lineEdit->text() );
 
       if (!sp->waitForStarted())
@@ -158,4 +157,12 @@ QVBoxLayout* IQPathParameter::populateEditControls(IQParameterSetModel* model, c
 
 
   return layout;
+}
+
+QString IQPathParameter::showSelectPathDialog(QWidget* parent, const QString& startPath) const
+{
+  return QFileDialog::getOpenFileName(
+      parent,
+      "Select file",
+      startPath);
 }

@@ -26,6 +26,7 @@
 #include "base/resultset.h"
 #include "base/resultelements/chart.h"
 #include "base/table.h"
+#include "insightcaeapplication.h"
 
 #include <iostream>
 #include <fstream>
@@ -39,7 +40,6 @@
 #include "boost/format.hpp"
 #include "base/cppextensions.h"
 
-#include <QApplication>
 #include <QMainWindow>
 
 #include "resultviewwindow.h"
@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
 
     auto initializeQApp = [&]()
     {
-        app.reset(new QApplication(argc, argv));
+        app.reset(new InsightCAEApplication(argc, argv, "isResultTool"));
     };
 
     insight::UnhandledExceptionHandling ueh;
@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
                               <<std::endl<<std::endl;
                     exit(-1);
                 }
-                analysisLibraries.addLibrary(l);
+                AnalysisLibraryLoader::analysisLibraries().addLibrary(l);
             }
         }
 

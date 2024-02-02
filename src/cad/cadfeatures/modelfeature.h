@@ -45,16 +45,13 @@ class ModelFeature
     ModelFeature ( const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable() );
     ModelFeature ( ModelPtr model );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "loadmodel" );
 
-    ModelFeature ();
-    static FeaturePtr create ( const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable() );
-    static FeaturePtr create_file ( const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable() );
-    static FeaturePtr create_model ( ModelPtr model );
+    CREATE_FUNCTION(ModelFeature);
 
     void executeEditor();
 
@@ -67,8 +64,8 @@ public:
         return model_;
     }
 
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 
 };
 

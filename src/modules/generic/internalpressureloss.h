@@ -21,8 +21,9 @@
 #define INSIGHT_INTERNALPRESSURELOSS_H
 
 #include "openfoam/openfoamanalysis.h"
-#include "parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 #include "openfoam/openfoamtools.h"
+#include "openfoam/openfoamparameterstudy.h"
 
 namespace insight
 {
@@ -111,6 +112,7 @@ fluid=set
 
     int nx_, ny_, nz_;
 
+    cad::FeaturePtr walls_, inlet_, outlet_;
     boost::filesystem::path wallstlfile_, inletstlfile_, outletstlfile_;
 
   };
@@ -136,9 +138,37 @@ public:
 
 
 
+extern RangeParameterList rpl_InternalPressureLossCharacteristics;
+
+
+class InternalPressureLossCharacteristics
+    : public OpenFOAMParameterStudy<InternalPressureLoss, rpl_InternalPressureLossCharacteristics>
+{
+protected:
+//    std::map<std::string, std::map<std::string, std::shared_ptr<CoefficientFit> > > fits_;
+    //  boost::ptr_vector<CoefficientFit> fits_;
+
+public:
+    declareType("Internal Pressure Loss Characteristic Map");
+
+    InternalPressureLossCharacteristics
+        (
+            const ParameterSet& ps,
+            const boost::filesystem::path& exepath,
+            ProgressDisplayer& pd = consoleProgressDisplayer
+            );
+
+    static std::string category() { return "Generic Analyses"; }
+
+//    virtual void evaluateForceFits(PlotCurveList& crv) const;
+    void evaluateCombinedResults(ResultSetPtr& results) override;
+};
+
+
+
 
 class InternalPressureLoss_ParameterSet_Visualizer
- : public CAD_ParameterSet_Visualizer
+ : public CADParameterSetVisualizer
 {
 public:
     typedef InternalPressureLoss::Parameters Parameters;

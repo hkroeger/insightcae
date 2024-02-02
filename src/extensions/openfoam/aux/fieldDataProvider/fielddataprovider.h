@@ -20,6 +20,7 @@
 #ifndef FOAM_FIELDDATAPROVIDER_H
 #define FOAM_FIELDDATAPROVIDER_H
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkUnstructuredGridReader.h"
 #include "vtkPointInterpolator.h"
@@ -172,14 +173,14 @@ public:
             auto * nc = const_cast<FixedSizeFieldDataProvider*>(this);
             nc->lastUpdateTime_ = t;
             nc->value_ =
-                    (*fdp_)( t, this->pp_.faceCentres() );
+                    fdp_()( t, this->pp_.faceCentres() );
         }
         return value_;
     }
 
     const FieldDataProvider<T>& fieldDataProvider() const
     {
-        return *fdp_;
+        return fdp_();
     }
 };
 

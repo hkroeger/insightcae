@@ -44,12 +44,10 @@ class CurvePattern
 public:
     declareType ( "CurvePattern" );
 
-    CurvePattern ();
-    static FeaturePtr create ( FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n );
+    CREATE_FUNCTION(CurvePattern);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

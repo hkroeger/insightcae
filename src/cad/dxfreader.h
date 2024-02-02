@@ -12,6 +12,7 @@
 #include "dxflib/dl_dxf.h"
 
 #include "base/boost_include.h"
+#include "boost/regex.h"
 
 namespace insight {
 namespace cad {
@@ -20,7 +21,7 @@ class DXFReader
 : public DL_CreationAdapter
 {
 protected:
-  std::string layername_;
+  boost::regex layerpattern_;
   std::map<std::string, TopTools_ListOfShape> ls_;
 
   struct Polyline
@@ -42,11 +43,19 @@ protected:
   std::vector<gp_Pnt> splp_;
   std::vector<double> splk_;
 
-  bool notFiltered();
   std::string curLayerName();
+  bool notFiltered();
 
 public:
-  DXFReader(const boost::filesystem::path& filename, const std::string& layername="0");
+  /**
+   * @brief DXFReader
+   * @param filename
+   * @param layername
+   * if empty, all layers are read
+   */
+  DXFReader(
+          const boost::filesystem::path& filename,
+          const std::string& layerpattern="^0$" );
 
   virtual ~DXFReader();
   virtual void addArc(const DL_ArcData &);
@@ -60,8 +69,12 @@ public:
   virtual void addControlPoint(const DL_ControlPointData&);
   void buildSpline();
 
-  TopoDS_Wire Wire(double tol=Precision::Confusion(), const std::string& layername="") const;
-  std::vector<std::string> layers() const;
+  Handle_TopTools_HSequenceOfShape Wires(
+          double tol=Precision::Confusion(),
+          const std::string& layername=std::string() ) const;
+
+  std::vector<std::string> layers(const std::string& pattern = ".*") const;
+  std::vector<std::string> layers(const boost::regex& pattern) const;
 };
 
 }

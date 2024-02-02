@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -39,7 +40,9 @@ namespace cad {
     
     
 defineType(Sweep);
-addToFactoryTable(Feature, Sweep);
+//addToFactoryTable(Feature, Sweep);
+addToStaticFunctionTable(Feature, Sweep, insertrule);
+addToStaticFunctionTable(Feature, Sweep, ruleDocumentation);
 
 
 size_t Sweep::calcHash() const
@@ -55,10 +58,6 @@ size_t Sweep::calcHash() const
 
 
 
-Sweep::Sweep(): Feature()
-{}
-
-
 
 
 Sweep::Sweep(const std::vector<FeaturePtr>& secs)
@@ -68,12 +67,6 @@ Sweep::Sweep(const std::vector<FeaturePtr>& secs)
 
 
 
-FeaturePtr Sweep::create ( const std::vector<FeaturePtr>& secs )
-{
-    return FeaturePtr(new Sweep(secs));
-}
-
-
 
 
 void Sweep::build()
@@ -81,7 +74,7 @@ void Sweep::build()
     ExecTimer t("Sweep::build() ["+featureSymbolName()+"]");
     
     if ( secs_.size() <2 ) {
-        throw insight::Exception ( "Insufficient number of sections given!" );
+      throw insight::Exception ( _("Insufficient number of sections given!") );
     }
 
     bool create_solid=false;
@@ -113,7 +106,7 @@ void Sweep::build()
 //      cursec=BRepTools::OuterWire(TopoDS::Shell(cs));
 //     }
         else {
-            throw insight::Exception ( "Incompatible section shape for Sweep!" );
+            throw insight::Exception ( _("Incompatible section shape for Sweep!") );
         }
         sb.AddWire ( cursec );
     }
@@ -124,34 +117,35 @@ void Sweep::build()
 
 
 
-void Sweep::insertrule(parser::ISCADParser& ruleset) const
+void Sweep::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Sweep",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> (ruleset.r_solidmodel_expression % ',' ) >> ')' ) 
-      [ qi::_val = phx::bind(&Sweep::create, qi::_1) ]
+      [ qi::_val = phx::bind(
+                         &Sweep::create<const std::vector<FeaturePtr>&>,
+                         qi::_1) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Sweep::ruleDocumentation() const
+FeatureCmdInfoList Sweep::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+  return {
         FeatureCmdInfo
         (
             "Sweep",
             "( <feature:xsec0>, ..., <feature:xsecn> )",
-            "Interpolates a solid through the planar sections xsec0 to xsecn."
+          _("Interpolates a solid through the planar sections xsec0 to xsecn.")
         )
-    );
+    };
 }
 
 

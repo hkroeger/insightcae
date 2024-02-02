@@ -66,4 +66,9 @@ macro (add_PDL TARGETNAME FILES)
   ADD_CUSTOM_TARGET( ${TARGETNAME}_PDLGenerator DEPENDS ${${TARGETNAME}_TIMESTAMPS}
                     COMMENT "Checking if PDL re-generation is required" )
   ADD_DEPENDENCIES( ${TARGETNAME} ${TARGETNAME}_PDLGenerator )
+
+  target_include_directories(${TARGETNAME}
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    )
 endmacro(add_PDL)

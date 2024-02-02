@@ -38,17 +38,19 @@ struct SelectionParameterParser
 
   };
 
-  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  declareType("selection");
+
+  inline static void insertrule(PDLParserRuleset& ruleset)
   {
     ruleset.parameterDataRules.add
     (
-      "selection",
-      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
-       new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+      typeName,
+      std::make_shared<PDLParserRuleset::ParameterDataRule>(
+
         ( "(" >> *(ruleset.r_identifier) >> ")" >> ruleset.r_identifier >> ruleset.r_description_string )
         [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3)) ]
-      ))
+
+      )
     );
   }
 };

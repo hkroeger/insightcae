@@ -41,13 +41,11 @@ class Fillet
 
 public:
     declareType ( "Fillet" );
-    Fillet ();
 
-    static FeaturePtr create ( FeatureSetPtr edges, ScalarPtr r );
+    CREATE_FUNCTION(Fillet);
 
-
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
 };
 
 

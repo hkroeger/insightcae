@@ -20,6 +20,9 @@
 #include "wire.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -35,21 +38,31 @@ namespace cad {
     
     
 defineType(Wire);
-addToFactoryTable(Feature, Wire);
+//addToFactoryTable(Feature, Wire);
+addToStaticFunctionTable(Feature, Wire, insertrule);
+addToStaticFunctionTable(Feature, Wire, ruleDocumentation);
+
+
 
 
 size_t Wire::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*edges_;
+  if (const auto* e1=boost::get<FeatureSetPtr>(&edges_))
+  {
+      h+=*(*e1);
+  }
+  else if (const auto* e2=boost::get<const std::vector<FeaturePtr> >(&edges_))
+  {
+      for (const auto& e: *e2)
+        h+=*e;
+  }
   return h.getHash();
 }
 
 
 
-Wire::Wire(): Feature()
-{}
 
 
 
@@ -59,21 +72,38 @@ Wire::Wire(FeatureSetPtr edges)
 {}
 
 
-
-FeaturePtr Wire::create(FeatureSetPtr edges)
+Wire::Wire(const std::vector<FeaturePtr>& edges)
+    : edges_(edges)
 {
-    return FeaturePtr(new Wire(edges));
 }
+
 
 
 
 
 void Wire::build()
 {
-    TopTools_ListOfShape ee;
-    for ( const FeatureID& fi: edges_->data() ) {
-        ee.Append ( edges_->model()->edge ( fi ) );
-    }
+  TopTools_ListOfShape ee;
+
+  if (const auto* e1=boost::get<FeatureSetPtr>(&edges_))
+  {
+      for ( const FeatureID& fi: (*e1)->data() )
+      {
+        ee.Append ( (*e1)->model()->edge ( fi ) );
+      }
+  }
+  else if (const auto* e2=boost::get<const std::vector<FeaturePtr> >(&edges_))
+  {
+      for ( const auto& fp: (*e2))
+      {
+        auto ae=fp->allEdges();
+        for (const auto& ei: ae->data())
+        {
+            ee.Append ( fp->edge ( ei ) );
+        }
+      }
+  }
+
     BRepBuilderAPI_MakeWire wb;
     wb.Add ( ee );
     
@@ -87,34 +117,41 @@ void Wire::build()
 
 
 
-void Wire::insertrule(parser::ISCADParser& ruleset) const
+void Wire::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Wire",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_edgeFeaturesExpression >> ')' ) 
-	  [ qi::_val = phx::bind(&Wire::create, qi::_1) ]
-      
-    ))
+    '(' > (
+        ( ruleset.r_edgeFeaturesExpression )
+          [ qi::_val = phx::bind(
+                             &Wire::create<FeatureSetPtr>,
+                             qi::_1) ]
+        |
+        ( ruleset.r_modelstep % ',' )
+            [ qi::_val = phx::bind(
+                             &Wire::create<const std::vector<FeaturePtr>&>,
+                             qi::_1) ]
+     ) > ')'
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Wire::ruleDocumentation() const
+FeatureCmdInfoList Wire::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Wire",
             "( <edgeSelection> )",
-            "Creates a wire from a number of edges."
+          _("Creates a wire from a number of edges.")
         )
-    );
+    };
 }
 
 

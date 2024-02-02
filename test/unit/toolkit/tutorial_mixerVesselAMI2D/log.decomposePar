@@ -1,0 +1,87 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1806                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : v1806-17db0a5e0ee7
+Arch   : "LSB;label=32;scalar=64"
+Exec   : decomposePar
+Date   : Jul 09 2023
+Time   : 12:09:29
+Host   : "helios"
+PID    : 18174
+I/O    : uncollated
+Case   : /home/hannes/Projekte/insight/src/test/toolkit/tutorial_mixerVesselAMI2D
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+
+
+Decomposing mesh region0
+
+Create mesh
+
+Calculating distribution of cells
+Selecting decompositionMethod scotch [4]
+
+Finished decomposition in 0 s
+
+Calculating original mesh data
+
+Distributing cells to processors
+
+Distributing faces to processors
+
+Distributing points to processors
+
+Constructing processor meshes
+
+Processor 0
+    Number of cells = 768
+    Number of faces shared with processor 1 = 8
+    Number of processor patches = 1
+    Number of processor faces = 8
+    Number of boundary faces = 1680
+
+Processor 1
+    Number of cells = 768
+    Number of faces shared with processor 0 = 8
+    Number of processor patches = 1
+    Number of processor faces = 8
+    Number of boundary faces = 1680
+
+Processor 2
+    Number of cells = 768
+    Number of faces shared with processor 3 = 8
+    Number of processor patches = 1
+    Number of processor faces = 8
+    Number of boundary faces = 1680
+
+Processor 3
+    Number of cells = 768
+    Number of faces shared with processor 2 = 8
+    Number of processor patches = 1
+    Number of processor faces = 8
+    Number of boundary faces = 1680
+
+Number of processor faces = 16
+Max number of cells = 768 (0% above average 768)
+Max number of processor patches = 1 (0% above average 1)
+Max number of faces between processors = 8 (0% above average 8)
+
+Time = 0
+
+Processor 0: field transfer
+Processor 1: field transfer
+Processor 2: field transfer
+Processor 3: field transfer
+
+End
+

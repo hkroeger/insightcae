@@ -119,7 +119,17 @@ public:
   };
   typedef std::shared_ptr<BackgroundJob> BackgroundJobPtr;
 
-  virtual BackgroundJobPtr launchBackgroundProcess(const std::string& cmd) =0;
+  typedef std::pair<boost::regex, std::vector<std::string>*> ExpectedOutput;
+
+  static void lookForPattern(
+          std::istream& is,
+          const std::vector<ExpectedOutput>& expectedOutputBeforeDetach
+          );
+
+  virtual BackgroundJobPtr launchBackgroundProcess(
+          const std::string& cmd,
+          const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {}
+          ) =0;
 
 
 
@@ -132,10 +142,26 @@ public:
                           std::function<void(int,const std::string&)>()
   ) =0;
 
+  /**
+   * @brief setTransferBandWidthLimit
+   * set a bandwidth limit for sync transfer
+   * @param kBPerSecond
+   * maximum bandwidth
+   */
+  virtual void setTransferBandWidthLimit(int kBPerSecond);
+
+  /**
+   * @brief transferBandWidthLimit
+   * return the set sync transfer bandwidth limit
+   * @return
+   */
+  virtual int transferBandWidthLimit() const;
+
   virtual void syncToRemote
   (
       const boost::filesystem::path& localDir,
       const boost::filesystem::path& remoteDir,
+      bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
                           std::function<void(int,const std::string&)>()
@@ -145,6 +171,7 @@ public:
   (
       const boost::filesystem::path& localDir,
       const boost::filesystem::path& remoteDir,
+      bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
                           std::function<void(int,const std::string&)>()

@@ -1,0 +1,6 @@
+add_subdirectory(toolkit)
+add_subdirectory(remote)
+add_subdirectory(refdata)
+add_subdirectory(cad)
+add_subdirectory(openfoam)
+add_subdirectory(gui)

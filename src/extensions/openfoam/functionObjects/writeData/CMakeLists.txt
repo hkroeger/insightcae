@@ -1,8 +1,7 @@
 set(PRJ writeData)
 
 set(SRC 
- writeData.C 
- writeDataFunctionObject.C 
+ writeData.C
 )
 
 set(OF_INCLUDE_DIRS
@@ -17,6 +16,7 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS 
+    uniof
 )
 
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")

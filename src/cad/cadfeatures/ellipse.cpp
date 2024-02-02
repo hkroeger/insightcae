@@ -20,6 +20,7 @@
 #include "ellipse.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #ifndef Q_MOC_RUN
 #include "boost/spirit/include/qi.hpp"
@@ -60,7 +61,10 @@ namespace cad
     
     
 defineType(Ellipse);
-addToFactoryTable(Feature, Ellipse);
+//addToFactoryTable(Feature, Ellipse);
+addToStaticFunctionTable(Feature, Ellipse, insertrule);
+addToStaticFunctionTable(Feature, Ellipse, ruleDocumentation);
+
 
 
 size_t Ellipse::calcHash() const
@@ -73,11 +77,6 @@ size_t Ellipse::calcHash() const
   return h.getHash();
 }
 
-
-Ellipse::Ellipse()
-// : Feature()
-{
-}
 
 
 
@@ -93,7 +92,7 @@ void Ellipse::build()
   BRepBuilderAPI_MakeEdge e(crv);
   BRepBuilderAPI_MakeWire w;
   w.Add(e.Edge());
-  providedSubshapes_["OuterWire"].reset(new Feature(e.Edge()));
+  providedSubshapes_["OuterWire"]=Feature::create(e.Edge());
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 
@@ -108,45 +107,40 @@ Ellipse::Ellipse(VectorPtr p0, VectorPtr axmaj, VectorPtr axmin)
 
 
 
-FeaturePtr Ellipse::create(VectorPtr p0, VectorPtr axmaj, VectorPtr axmin)
-{
-    return FeaturePtr(new Ellipse(p0, axmaj, axmin));
-}
 
 
-
-
-void Ellipse::insertrule(parser::ISCADParser& ruleset) const
+void Ellipse::insertrule(parser::ISCADParser& ruleset)
 {
   using boost::spirit::repository::qi::iter_pos;
   
   ruleset.modelstepFunctionRules.add
   (
     "Ellipse",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	 [ qi::_val = phx::bind(&Ellipse::create, qi::_1, qi::_2, qi::_3) ]
+     [ qi::_val = phx::bind(
+                       &Ellipse::create<VectorPtr, VectorPtr, VectorPtr>,
+                       qi::_1, qi::_2, qi::_3) ]
       
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList Ellipse::ruleDocumentation() const
+FeatureCmdInfoList Ellipse::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Ellipse",
             "( <vector:p0>, <vector:axmaj>, <vector:axmin> )",
-            "Creates an ellipse around point p0. The major axis has length and direction of axmaj. The minor axis length is that of axmin. "
-            "Its direction is corrected to be orthogonal to axmaj."
+            _("Creates an ellipse around point p0. The major axis has length and direction of axmaj. The minor axis length is that of axmin. "
+            "Its direction is corrected to be orthogonal to axmaj.")
         )
-    );
+    };
 }
 
 

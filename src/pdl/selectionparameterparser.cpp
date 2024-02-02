@@ -3,6 +3,11 @@
 
 using namespace std;
 
+
+defineType(SelectionParameterParser);
+addToStaticFunctionTable(ParserDataBase, SelectionParameterParser, insertrule);
+
+
 SelectionParameterParser::Data::Data(const std::vector<std::string>& sels, const std::string& sel, const std::string& d)
   : ParserDataBase(d), selections(sels), selection(sel)
 {}
@@ -71,7 +76,7 @@ void SelectionParameterParser::Data::cppWriteSetStatement(
     const std::string&
 ) const
 {
-  os<<varname<<"() = int("<< staticname <<");"<<endl;
+  os<<varname<<".set( int("<< staticname <<") );"<<endl;
 }
 
 void SelectionParameterParser::Data::cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,

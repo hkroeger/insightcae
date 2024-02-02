@@ -65,6 +65,7 @@ public:
   
   bool valid() const;
   bool building() const;
+  void invalidate();
 
   virtual void checkForBuildDuringAccess() const;
 

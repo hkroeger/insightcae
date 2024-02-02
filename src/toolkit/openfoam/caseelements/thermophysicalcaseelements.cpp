@@ -20,10 +20,8 @@
 
 #include "thermophysicalcaseelements.h"
 
-#include "base/boost_include.h"
-
+#include "base/tools.h"
 #include "openfoam/openfoamcase.h"
-#include "openfoam/openfoamtools.h"
 
 #include "openfoam/caseelements/numerics/reactingfoamnumerics.h"
 #include "openfoam/caseelements/numerics/buoyantsimplefoamnumerics.h"
@@ -217,22 +215,22 @@ const std::map<std::string, SpeciesData::ElementData> SpeciesData::elements = {
 void SpeciesData::modifyDefaults(ParameterSet &ps)
 {
   auto& p = ps.get<SelectableSubsetParameter>("properties");
-  auto& fl = p.items().at("fromLibrary");
-  auto& sl = fl->get<SelectionParameter>("specie");
+  ParameterSet fl( p.getParametersForSelection("fromLibrary") );
+  auto& sl = fl.get<SelectionParameter>("specie");
 
   if (speciesLibrary_.size()>0)
   {
-    sl.items().clear();
-
+    SelectionParameter::ItemList ni;
     std::transform(speciesLibrary_.begin(), speciesLibrary_.end(),
-                   std::back_inserter(sl.items()),
+                   std::back_inserter(ni),
                    [](const SpeciesLibrary::value_type& sle)
                     {
                       return sle.first;
                     }
     );
+    sl.resetItems(ni);
   }
-
+  p.setParametersForSelection("fromLibrary", fl);
 }
 
 SpeciesData::SpeciesData(const ParameterSet &ps)
@@ -412,6 +410,35 @@ std::string SpeciesData::thermoType() const
   return "";
 }
 
+string SpeciesData::equationOfStateType() const
+{
+  if (boost::get<Parameters::properties_custom_type::equationOfState_perfectGas_type>(
+          &p_.equationOfState))
+  {
+    return "perfectGas";
+  }
+  else if (boost::get<Parameters::properties_custom_type::equationOfState_perfectFluid_type>(
+          &p_.equationOfState))
+  {
+    return "perfectFluid";
+  }
+  else if (boost::get<Parameters::properties_custom_type::equationOfState_adiabaticPerfectFluid_type>(
+               &p_.equationOfState))
+  {
+    return "adiabaticPerfectFluid";
+  }
+  else if (boost::get<Parameters::properties_custom_type::equationOfState_rPolynomial_type>(
+               &p_.equationOfState))
+  {
+    return "rPolynomial";
+  }
+  else
+  {
+    throw insight::Exception("Unhandled equationOfState type!");
+  }
+  return "";
+}
+
 void SpeciesData::insertSpecieEntries(OFDictData::dict& d) const
 {
   OFDictData::dict specie;
@@ -484,6 +511,48 @@ void SpeciesData::insertTransportEntries(OFDictData::dict& d) const
 }
 
 
+void SpeciesData::insertEquationOfStateEntries(
+    OFDictData::dict &d ) const
+{
+  if (boost::get<Parameters::properties_custom_type::equationOfState_perfectGas_type>(
+          &p_.equationOfState))
+  {
+  }
+  else if (const auto * pf =
+             boost::get<Parameters::properties_custom_type::equationOfState_perfectFluid_type>(
+               &p_.equationOfState))
+  {
+    OFDictData::dict eos;
+    eos["R"]=pf->R;
+    eos["rho0"]=pf->rho0;
+    d["equationOfState"]=eos;
+  }
+  else if (const auto * apf =
+           boost::get<Parameters::properties_custom_type::equationOfState_adiabaticPerfectFluid_type>(
+               &p_.equationOfState))
+  {
+    OFDictData::dict eos;
+    eos["p0"]=apf->p0;
+    eos["rho0"]=apf->rho0;
+    eos["B"]=apf->B;
+    eos["gamma"]=apf->gamma;
+    d["equationOfState"]=eos;
+  }
+  else if (const auto * rp =
+           boost::get<Parameters::properties_custom_type::equationOfState_rPolynomial_type>(
+               &p_.equationOfState))
+  {
+    OFDictData::dict eos;
+    eos["C"]=OFDictData::list(rp->C);
+    d["equationOfState"]=eos;
+  }
+  else
+  {
+    throw insight::Exception("Unhandled equationOfState type!");
+  }
+}
+
+
 void SpeciesData::insertElementsEntries(OFDictData::dict& d) const
 {
   OFDictData::dict elements;
@@ -492,6 +561,20 @@ void SpeciesData::insertElementsEntries(OFDictData::dict& d) const
     elements[e.element]=e.number;
   }
   d["elements"]=elements;
+}
+
+
+
+SpeciesData::Parameters::properties_custom_type
+SpeciesData::specieFromLibrary(const std::string &name)
+{
+  auto i = speciesLibrary_.find(name);
+
+  insight::assertion(
+      i != speciesLibrary_.end(),
+      "specie %s not found in library!", name.c_str());
+
+  return i->second;
 }
 
 
@@ -1132,7 +1215,7 @@ SpeciesData::SpeciesLibrary::SpeciesLibrary()
 {
   using namespace boost::filesystem;
 
-  SharedPathList paths;
+  auto paths = SharedPathList::global();
   for ( const path& sharedPath: paths )
   {
     if ( exists(sharedPath) && is_directory (sharedPath) )
@@ -1149,14 +1232,14 @@ SpeciesData::SpeciesLibrary::SpeciesLibrary()
           {
             if ( itr->path().extension() == ".species" )
             {
-              CurrentExceptionContext ex("reading species data base "+itr->path().string());
+              CurrentExceptionContext ex(2, "reading species data base "+itr->path().string());
               std::ifstream fs(itr->path().string());
               OFDictData::dict sd;
               readOpenFOAMDict(fs, sd);
 
               for (const auto& s: sd)
               {
-                CurrentExceptionContext ex2("reading species "+s.first);
+                CurrentExceptionContext ex2(3, "reading species "+s.first);
                 auto name=s.first;
                 auto ssd=sd.subDict(s.first);
 
@@ -1192,11 +1275,10 @@ SpeciesData::SpeciesLibrary::SpeciesLibrary()
                     int i=0;
                     for (const auto& e: l)
                     {
-                      try {
-                        thdata.coeffs_lo(i)=boost::get<double>(e);
-                      } catch (...) {
-                        thdata.coeffs_lo(i)=boost::get<int>(e);
-                      }
+                      if (auto *v = boost::get<double>(&e))
+                            thdata.coeffs_lo(i)=*v;
+                      else
+                            thdata.coeffs_lo(i)=boost::get<int>(e);
                       i++;
                     }
                   }
@@ -1206,11 +1288,10 @@ SpeciesData::SpeciesLibrary::SpeciesLibrary()
                     int i=0;
                     for (const auto& e: h)
                     {
-                      try {
-                        thdata.coeffs_hi(i)=boost::get<double>(e);
-                      } catch (...) {
+                      if (auto *v = boost::get<double>(&e))
+                        thdata.coeffs_hi(i)=*v;
+                      else
                         thdata.coeffs_hi(i)=boost::get<int>(e);
-                      }
                       i++;
                     }
                   }

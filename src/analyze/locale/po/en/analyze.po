@@ -1,0 +1,253 @@
+# English translations for analyze package.
+# Copyright (C) 2023 hkroeger
+# This file is distributed under the same license as the analyze package.
+# Hannes Kröger <EMAIL@ADDRESS>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: analyze \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-02-02 09:27+0100\n"
+"PO-Revision-Date: 2023-10-25 10:57+0200\n"
+"Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: analyze.cpp:76
+msgid "Allowed options"
+msgstr "Allowed options"
+
+#: analyze.cpp:78
+msgid "produce help message"
+msgstr "produce help message"
+
+#: analyze.cpp:79
+msgid "skip execution of pdflatex"
+msgstr "skip execution of pdflatex"
+
+#: analyze.cpp:80
+msgid "print version and exit"
+msgstr "print version and exit"
+
+#: analyze.cpp:81
+msgid "execution directory"
+msgstr "execution directory"
+
+#: analyze.cpp:82
+msgid ""
+"save final configuration (including command line overrides) to this file"
+msgstr ""
+"save final configuration (including command line overrides) to this file"
+
+#: analyze.cpp:83
+msgid "boolean variable assignment"
+msgstr "boolean variable assignment"
+
+#: analyze.cpp:84
+msgid "selection variable assignment"
+msgstr "selection variable assignment"
+
+#: analyze.cpp:85
+msgid "string variable assignment"
+msgstr "string variable assignment"
+
+#: analyze.cpp:86
+msgid "path variable assignment"
+msgstr "path variable assignment"
+
+#: analyze.cpp:87
+msgid "double variable assignment"
+msgstr "double variable assignment"
+
+#: analyze.cpp:88
+msgid "vector variable assignment"
+msgstr "vector variable assignment"
+
+#: analyze.cpp:89
+msgid "int variable assignment"
+msgstr "int variable assignment"
+
+#: analyze.cpp:90
+msgid "set size of array"
+msgstr "set size of array"
+
+#: analyze.cpp:91
+msgid ""
+"additional input file to merge into analysis parameters before variable "
+"assignments"
+msgstr ""
+"additional input file to merge into analysis parameters before variable "
+"assignments"
+
+#: analyze.cpp:92
+msgid "Additional libraries with analysis modules to load"
+msgstr "Additional libraries with analysis modules to load"
+
+#: analyze.cpp:93
+msgid "Specifies input file."
+msgstr "Specifies input file."
+
+#: analyze.cpp:94
+msgid ""
+"Specifies output file. May be a PDF report or an ISR InsightCAE XML result "
+"set."
+msgstr ""
+"Specifies output file. May be a PDF report or an ISR InsightCAE XML result "
+"set."
+
+#: analyze.cpp:96
+msgid ""
+"Start with REST API server. Keeps the application running after the analysis "
+"has finished. Once the result set is fetched via the REST API, the "
+"application exits."
+msgstr ""
+"Start with REST API server. Keeps the application running after the analysis "
+"has finished. Once the result set is fetched via the REST API, the "
+"application exits."
+
+#: analyze.cpp:97
+msgid "Server address"
+msgstr "Server address"
+
+#: analyze.cpp:98
+msgid "Server port"
+msgstr "Server port"
+
+#: analyze.cpp:99
+msgid "Broadcast listen port"
+msgstr "Broadcast listen port"
+
+#: analyze.cpp:109
+msgid "Usage:"
+msgstr "Usage:"
+
+#: analyze.cpp:110
+msgid "options"
+msgstr "options"
+
+#: analyze.cpp:130
+msgid "Could not parse command line"
+msgstr "Could not parse command line"
+
+#: analyze.cpp:167
+#, c-format
+msgid "There have been %d warnings."
+msgstr "There have been %d warnings."
+
+#: analyze.cpp:169
+msgid "Please review"
+msgstr "Please review"
+
+#: analyze.cpp:174 analyze.cpp:175
+msgid "Warning"
+msgstr "Warning"
+
+#: analyze.cpp:199
+msgid "Could not start web server!"
+msgstr "Could not start web server!"
+
+#: analyze.cpp:224
+msgid "Error: library file does not exist: "
+msgstr "Error: library file does not exist: "
+
+#: analyze.cpp:239
+msgid ""
+"Running in server mode without explicitly specified input file: waiting for "
+"input transmission"
+msgstr ""
+"Running in server mode without explicitly specified input file: waiting for "
+"input transmission"
+
+#: analyze.cpp:243
+msgid "Received interruption!"
+msgstr "Received interruption!"
+
+#: analyze.cpp:249
+msgid "input file has to be specified!"
+msgstr "input file has to be specified!"
+
+#: analyze.cpp:257
+msgid "only one single input file has to be specified!"
+msgstr "only one single input file has to be specified!"
+
+#: analyze.cpp:268
+msgid "Error: input file does not exist"
+msgstr "Error: input file does not exist"
+
+#: analyze.cpp:287
+msgid "Executing analysis in directory"
+msgstr "Executing analysis in directory"
+
+#: analyze.cpp:311
+#, c-format
+msgid ""
+"merge command needs either one or three arguments!\n"
+"Got: %s"
+msgstr ""
+"merge command needs either one or three arguments!\n"
+"Got: %s"
+
+#: analyze.cpp:325
+#, c-format
+msgid "Resizing array '%s' to %d"
+msgstr "Resizing array '%s' to %d"
+
+#: analyze.cpp:344
+#, c-format
+msgid "Setting boolean '%s' = %d"
+msgstr "Setting boolean '%s' = %d"
+
+#: analyze.cpp:358
+#, c-format
+msgid "Setting string '%s' = \"%s\""
+msgstr "Setting string '%s' = \"%s\""
+
+#: analyze.cpp:372
+#, c-format
+msgid "Setting selection '%s' = \"%s\""
+msgstr "Setting selection '%s' = \"%s\""
+
+#: analyze.cpp:386
+#, c-format
+msgid "Setting path '%s' = \"%s\""
+msgstr "Setting path '%s' = \"%s\""
+
+#: analyze.cpp:402
+#, c-format
+msgid "Setting double '%s' = %g"
+msgstr "Setting double '%s' = %g"
+
+#: analyze.cpp:418
+#, c-format
+msgid "Setting vector '%s' = [%g %g %g]"
+msgstr "Setting vector '%s' = [%g %g %g]"
+
+#: analyze.cpp:433
+#, c-format
+msgid "Setting int '%s'= %d"
+msgstr "Setting int '%s'= %d"
+
+#: analyze.cpp:445
+msgid "Applied Parameters for this run"
+msgstr "Applied Parameters for this run"
+
+#: analyze.cpp:534
+msgid "TeX input file was written but could not execute pdflatex successfully."
+msgstr ""
+"TeX input file was written but could not execute pdflatex successfully."
+
+#: analyze.cpp:547
+msgid "ANALYSIS FINISHED SUCCESSFULLY."
+msgstr "ANALYSIS FINISHED SUCCESSFULLY."
+
+#: analyze.cpp:553
+msgid "ANALYSIS STOPPED WITHOUT RESULTS."
+msgstr "ANALYSIS STOPPED WITHOUT RESULTS."
+
+#: analyze.cpp:568
+msgid "The analysis was stopped due to this error:"
+msgstr "The analysis was stopped due to this error:"

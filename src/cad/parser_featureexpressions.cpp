@@ -64,7 +64,8 @@ void ISCADParser::createFeatureExpressions()
     r_solidmodel_expression =
         r_solidmodel_term [_val=qi::_1 ]
         >>
-        *( '-' >> r_solidmodel_term [ _val = phx::bind(&BooleanSubtract::create, qi::_val, qi::_1) ] )
+        *( '-' >> r_solidmodel_term
+              [ _val = phx::bind(&BooleanSubtract::create<FeaturePtr, FeaturePtr>, qi::_val, qi::_1) ] )
         ;
     r_solidmodel_expression.name("feature expression");
 
@@ -73,7 +74,7 @@ void ISCADParser::createFeatureExpressions()
         >>
         *( '.' >> ( current_pos.current_pos >> r_identifier >> current_pos.current_pos )
            [ (
-              _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_val, qi::_2)),
+              _val = phx::bind(&Subfeature::create<FeaturePtr, const std::string&>, qi::_val, qi::_2),
               phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                          phx::construct<SyntaxElementLocation>(
                            filenameinfo_,
@@ -84,17 +85,17 @@ void ISCADParser::createFeatureExpressions()
              )
            ] )
         >>
-        -( lit("<<") >> r_vectorExpression [ _val = phx::bind(&Transform::create_translate, qi::_val, qi::_1) ] )
+        -( lit("<<") >> r_vectorExpression [ _val = phx::bind(&Transform::create<FeaturePtr, VectorPtr>, qi::_val, qi::_1) ] )
         >>
-        -( lit("*") >> r_scalarExpression [ _val = phx::bind(&Transform::create_scale, qi::_val, qi::_1) ] )
+        -( lit("*") >> r_scalarExpression [ _val = phx::bind(&Transform::create<FeaturePtr, ScalarPtr>, qi::_val, qi::_1) ] )
         >>
         *(
-            ('|' >> r_solidmodel_primary [ _val = phx::bind(&BooleanUnion::create, qi::_val, qi::_1) ] )
+            ('|' >> r_solidmodel_primary [ _val = phx::bind(&BooleanUnion::create<FeaturePtr, FeaturePtr>, qi::_val, qi::_1) ] )
             |
             ('&' >> (
-                 r_solidmodel_primary [ _val = phx::bind(&BooleanIntersection::create, qi::_val, qi::_1) ]
+                 r_solidmodel_primary [ _val = phx::bind(&BooleanIntersection::create<FeaturePtr, FeaturePtr>, qi::_val, qi::_1) ]
                  |
-                 r_datumExpression [ _val = phx::bind(&BooleanIntersection::create_plane, qi::_val, qi::_1) ]
+                 r_datumExpression [ _val = phx::bind(&BooleanIntersection::create<FeaturePtr, DatumPtr>, qi::_val, qi::_1) ]
              )
             )
         )
@@ -110,16 +111,16 @@ void ISCADParser::createFeatureExpressions()
     r_modelstepFunction.name("feature function");
 
     r_modelstepSymbol =
-         current_pos.current_pos >>
-          model_->modelstepSymbols()
-          >> current_pos.current_pos
+        current_pos.current_pos
+        >> model_->modelstepSymbols() >>
+        current_pos.current_pos
         ;
     r_modelstepSymbol.name("feature symbol");
 
 
     r_solidmodel_primary =
-        ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) ) 
-        [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Feature>(qi::_1)) ]
+        ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) )
+            [ qi::_val = phx::bind(&Feature::create<FeatureSetPtr>, qi::_1) ]
 
         |
 
@@ -169,11 +170,9 @@ void ISCADParser::createFeatureExpressions()
         ;
     r_solidmodel_propertyAssignment.name("feature property assignment");
     
-    for (Feature::FactoryTable::const_iterator i = Feature::factories_->begin();
-            i != Feature::factories_->end(); i++)
+    for (const auto& apr : *Feature::insertruleFunctions_)
     {
-        FeaturePtr sm(i->second->operator()());
-        sm->insertrule(*this);
+        apr.second(*this);
     }
 }
 

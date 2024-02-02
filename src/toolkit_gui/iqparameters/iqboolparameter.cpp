@@ -5,6 +5,7 @@
 
 #include "iqboolparameter.h"
 #include "iqparametersetmodel.h"
+#include "qtextensions.h"
 
 defineType(IQBoolParameter);
 addToFactoryTable(IQParameter, IQBoolParameter);
@@ -12,11 +13,12 @@ addToFactoryTable(IQParameter, IQBoolParameter);
 IQBoolParameter::IQBoolParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -29,13 +31,15 @@ QString IQBoolParameter::valueText() const
 
 
 
-QVBoxLayout* IQBoolParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQBoolParameter::populateEditControls(
+        QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
-  const auto& p = dynamic_cast<const insight::BoolParameter&>(parameter());
+  auto& p = dynamic_cast<insight::BoolParameter&>(parameterRef());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto* checkBox=new QCheckBox(editControlsContainer);
@@ -50,16 +54,25 @@ QVBoxLayout* IQBoolParameter::populateEditControls(IQParameterSetModel* model, c
   QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
   layout->addWidget(apply);
 
-  layout->addStretch();
 
-  auto applyFunction = [=]()
+  auto applyFunction = [this,&p,checkBox]()
   {
-    auto &p = dynamic_cast<insight::BoolParameter&>(model->parameterRef(index));
-    p() = (checkBox->checkState() == Qt::Checked);
-    model->notifyParameterChange(index);
+    p.set(checkBox->checkState() == Qt::Checked);
   };
 
   connect(apply, &QPushButton::pressed, applyFunction);
+
+  // handle external value change
+  ::disconnectAtEOL(
+      layout,
+      p.valueChanged.connect(
+          [&p,checkBox]()
+          {
+              QSignalBlocker sb(checkBox);
+              checkBox->setCheckState(p()?Qt::Checked:Qt::Unchecked);
+          }
+          )
+      );
 
   return layout;
 }

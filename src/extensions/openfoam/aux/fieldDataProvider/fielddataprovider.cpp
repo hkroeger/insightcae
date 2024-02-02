@@ -21,8 +21,10 @@
 #include "addToRunTimeSelectionTable.H"
 #include "transform.H"
 #include "OFstream.H"
+#include "IFstream.H"
 
 #include "base/linearalgebra.h"
+#include "base/vtktools.h"
 #include "boost/foreach.hpp"
 
 #include "boost/version.hpp"
@@ -32,6 +34,10 @@
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #endif
 #include "boost/filesystem.hpp"
+
+#include "vtkXMLMultiBlockDataReader.h"
+#include "vtkUnstructuredGrid.h"
+#include "vtkCompositeDataSet.h"
 
 
 using namespace boost;
@@ -95,8 +101,7 @@ autoPtr<FieldDataProvider<T> > FieldDataProvider<T>::New
   word typekey;
   is >> typekey;
   
-  typename IstreamConstructorTable::iterator cstrIter =
-      IstreamConstructorTablePtr_->find(typekey);
+  auto cstrIter = IstreamConstructorTablePtr_->find(typekey);
   
   if (cstrIter == IstreamConstructorTablePtr_->end())
   {   
@@ -322,7 +327,18 @@ autoPtr<FieldDataProvider<T> > uniformField<T>::clone() const
 template<class T>
 void nonuniformField<T>::appendInstant(Istream& is)
 {
-  values_.push_back(new Field<T>(is));
+    token firstToken(is);
+    if (firstToken.isWord() && firstToken.wordToken()=="file")
+    {
+        fileName infname(is);
+        IFstream inf(infname);
+        values_.push_back(new Field<T>(inf));
+    }
+    else
+    {
+        is.putBack(firstToken);
+        values_.push_back(new Field<T>(is));
+    }
 }
 
 template<class T>
@@ -702,8 +718,12 @@ void vtkField<T>::appendInstant(Istream& is)
 
     is >> fn >> fld;
 
-    token order(is);
-    if (order.isWord() && order.wordToken()=="componentOrder" )
+    fn.expand();
+
+    autoPtr<token> order;
+    if (!is.eof()) order.reset(new token(is));
+
+    if (order.valid() && order->isWord() && order->wordToken()=="componentOrder" )
     {
         word orderType;
         is >> orderType;
@@ -712,7 +732,8 @@ void vtkField<T>::appendInstant(Istream& is)
     }
     else
     {
-        is.putBack(order);
+        if (order.valid())
+            is.putBack(order());
 
         setComponentMap();
     }
@@ -757,17 +778,28 @@ tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
     auto ii=data_.find(i);
     if (ii==data_.end())
     {
-        if (!exists(vtkFiles_[i]))
+        auto fn=vtkFiles_[i];
+        if (!exists(fn))
         {
             FatalErrorIn("vtkField<T>::atInstant")
                     << "file "<<vtkFiles_[i]<<" does not exist!"
                     <<abort(FatalError);
         }
 
-        auto r = vtkSmartPointer<vtkGenericDataObjectReader>::New();
-        r->SetFileName(vtkFiles_[i].c_str());
-        r->Update();
-        data_[i] = r->GetOutput();
+        if (fn.ext()=="vtm")
+        {
+            auto r = vtkSmartPointer<vtkXMLMultiBlockDataReader>::New();
+            r->SetFileName(fn.c_str());
+            r->Update();
+            data_[i] = multiBlockDataSetToUnstructuredGrid(r->GetOutput());
+        }
+        else
+        {
+            auto r = vtkSmartPointer<vtkGenericDataObjectReader>::New();
+            r->SetFileName(fn.c_str());
+            r->Update();
+            data_[i] = r->GetOutput();
+        }
         ii=data_.find(i);
     }
 
@@ -775,23 +807,12 @@ tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
     auto targ = vtkSmartPointer<vtkPolyData>::New();
     setPoints<vtkPolyData>(target, targ);
 
-
-    // Gaussian kernel
-//    auto gaussianKernel = vtkSmartPointer<vtkGaussianKernel>::New();
-//    gaussianKernel->SetSharpness(2.0);
-//    gaussianKernel->SetRadius(12.0);
-
-//    auto ip=vtkSmartPointer<vtkPointInterpolator>::New();
     auto ip=vtkSmartPointer<vtkProbeFilter>::New();
     ip->SetInputData(targ);
     ip->SetSourceData(ii->second);
-//    ip->SetSpatialMatch(true);
-//    ip->DebugOn();
-//    ip->SetKernel(gaussianKernel);
-//    ip->SetNullPointsStrategyToClosestPoint();
 
     ip->Update();
-//    ip->Print(std::cout);
+
     auto out = ip->GetOutput();
     if (!out->GetPointData()->HasArray(fieldNames_[i].c_str()))
     {

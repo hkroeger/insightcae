@@ -20,6 +20,13 @@ addToFactoryTable(Parameter, PathParameter);
 
 
 
+void PathParameter::signalContentChange()
+{
+    valueChanged();
+}
+
+
+
 PathParameter::PathParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
@@ -114,7 +121,11 @@ void PathParameter::pack()
 void PathParameter::unpack(const boost::filesystem::path &basePath)
 {
   auto up = unpackFilePath(basePath);
-  if (needsUnpack(up)) copyTo(up, true);
+  if (needsUnpack(up))
+  {
+      std::cout<<"unpacking "<<originalFilePath_<<" to "<<up<<std::endl;
+      copyTo(up, true);
+  }
 //  FileContainer::unpack(basePath);
 }
 
@@ -148,16 +159,6 @@ boost::filesystem::path PathParameter::filePath(boost::filesystem::path baseDire
 
 
 
-//template <typename char_type>
-//struct ostreambuf
-//    : public std::basic_streambuf<char_type, std::char_traits<char_type> >
-//{
-//    ostreambuf(char_type* buffer, std::streamsize bufferLength)
-//    {
-//        // set the "put" pointer the start of the buffer and record it's length.
-//        this->setp(buffer, buffer + bufferLength);
-//    }
-//};
 
 rapidxml::xml_node<>* PathParameter::appendToNode
 (
@@ -167,7 +168,7 @@ rapidxml::xml_node<>* PathParameter::appendToNode
   boost::filesystem::path inputfilepath
 ) const
 {
-    insight::CurrentExceptionContext ex("appending path "+name+" to node "+node.name());
+    insight::CurrentExceptionContext ex(2, "appending path "+name+" to node "+node.name());
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 
@@ -183,7 +184,6 @@ rapidxml::xml_node<>* PathParameter::appendToNode
 void PathParameter::readFromNode
 (
   const std::string& name,
-  rapidxml::xml_document<>& doc,
   rapidxml::xml_node<>& node,
   boost::filesystem::path inputfilepath
 )
@@ -192,7 +192,8 @@ void PathParameter::readFromNode
   xml_node<>* child = findNode(node, name, type());
   if (child)
   {
-    FileContainer::readFromNode(doc, *child, inputfilepath);
+    FileContainer::readFromNode(*child, inputfilepath);
+    triggerValueChanged();
   }
   else
   {
@@ -220,41 +221,23 @@ Parameter* PathParameter::clone() const
   return clonePathParameter();
 }
 
-void PathParameter::reset(const Parameter& p)
+void PathParameter::copyFrom(const Parameter& p)
 {
-  if (const auto* op = dynamic_cast<const PathParameter*>(&p))
-  {
-    Parameter::reset(p);
-    file_content_=op->file_content_;
-  }
-  else
-    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
+  operator=(dynamic_cast<const PathParameter&>(p));
+
 }
 
 
-
-
-void PathParameter::operator=(const PathParameter &op)
+void PathParameter::operator=(const PathParameter& op)
 {
-  description_ = op.description_;
-  isHidden_ = op.isHidden_;
-  isExpert_ = op.isExpert_;
-  isNecessary_ = op.isNecessary_;
-  order_ = op.order_;
-
-  originalFilePath_ = op.originalFilePath_;
-  file_content_ = op.file_content_;
-//  fileContentHash_=op.fileContentHash_;
+  FileContainer::operator=(op);
+  Parameter::copyFrom(op);
 }
 
 
-
-
-void PathParameter::operator=(const FileContainer& oc)
+int PathParameter::nChildren() const
 {
-  originalFilePath_ = oc.originalFilePath_;
-  file_content_ = oc.file_content_;
-//  fileContentHash_=oc.fileContentHash_;
+  return 0;
 }
 
 
@@ -339,7 +322,6 @@ rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, 
 void DirectoryParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_document<>&,
     rapidxml::xml_node<>& node,
     boost::filesystem::path
 )
@@ -349,6 +331,7 @@ void DirectoryParameter::readFromNode
   if (child)
   {
     originalFilePath_=boost::filesystem::path(child->first_attribute("value")->value());
+    triggerValueChanged();
   }
   else
   {
@@ -359,25 +342,27 @@ void DirectoryParameter::readFromNode
              ) % type() % name % originalFilePath_.string()
            )
         );
-  }}
+  }
+}
+
+
+void DirectoryParameter::operator=(const DirectoryParameter &p)
+{
+  PathParameter::copyFrom( p );
+}
 
 
 
 Parameter* DirectoryParameter::clone() const
 {
+  return cloneDirectoryParameter();
+}
+
+DirectoryParameter *DirectoryParameter::cloneDirectoryParameter() const
+{
   return new DirectoryParameter(originalFilePath_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
 }
 
-
-void DirectoryParameter::reset(const Parameter& p)
-{
-  if (const auto* op = dynamic_cast<const DirectoryParameter*>(&p))
-  {
-    PathParameter::reset(p);
-  }
-  else
-    throw insight::Exception("Tried to set a "+type()+" from a different type ("+p.type()+")!");
-}
 
 
 

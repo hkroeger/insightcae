@@ -14,8 +14,16 @@ using namespace boost;
 namespace insight {
 
 
+defineType(OutputSectionReader);
+defineStaticFunctionTableWithArgs(
+        OutputSectionReader,
+        createIfMatches,
+        std::shared_ptr<OutputSectionReader>,
+        LIST(const std::string& line),
+        LIST(line) );
 
 
+const std::string SolverOutputAnalyzer::pre_iter="iteration/";
 const std::string SolverOutputAnalyzer::pre_resi="residual/";
 const std::string SolverOutputAnalyzer::pre_force="force/";
 const std::string SolverOutputAnalyzer::pre_moment="moment/";
@@ -26,8 +34,87 @@ const std::string SolverOutputAnalyzer::pre_courant="courant_no/";
 const std::string SolverOutputAnalyzer::pre_exectime="exec_time/";
 const std::string SolverOutputAnalyzer::pre_simspeed="sim_speed/";
 const std::string SolverOutputAnalyzer::pre_deltat="delta_t/";
+const std::string SolverOutputAnalyzer::pre_minmax="minmax/";
 
 
+
+
+
+class MinMaxReader : public OutputSectionReader
+{
+    static boost::regex re_intro, re_mima;
+
+    std::string label_;
+    std::map<std::string, double> min_, max_;
+
+    MinMaxReader(const std::string& label)
+        : label_(label)
+    {}
+
+public:
+    declareType("MinMaxReader");
+
+    static std::shared_ptr<OutputSectionReader> createIfMatches(
+            const std::string& line )
+    {
+        boost::smatch match;
+        if (boost::regex_search( line, match, re_intro, boost::match_default ) )
+        {
+            return std::shared_ptr<OutputSectionReader>(new MinMaxReader(match[1]));
+        }
+        else
+            return nullptr;
+    }
+
+    bool parseNextLine(const std::string& line) override
+    {
+        if (line.empty())
+        {
+            return false;
+        }
+        else
+        {
+            boost::smatch match;
+            if (boost::regex_search( line, match, re_mima, boost::match_default ) )
+            {
+                std::string varname(match[2]);
+                if (match[1]=="min")
+                {
+                    min_[varname] = insight::toNumber<double>(match[3]);
+                }
+                else if (match[1]=="max")
+                {
+                    max_[varname] = insight::toNumber<double>(match[3]);
+                }
+                else
+                    return false;
+
+                return true;
+            }
+            else
+                return false;
+        }
+    }
+
+    void addProgressVariables(std::map<std::string, double>& progVars) const override
+    {
+        for(const auto&mi: min_)
+        {
+            progVars[label_+"_"+mi.first+"/min"]=mi.second;
+        }
+        for(const auto&ma: max_)
+        {
+            progVars[label_+"_"+ma.first+"/max"]=ma.second;
+        }
+    }
+
+};
+
+defineType(MinMaxReader);
+addToStaticFunctionTable(OutputSectionReader, MinMaxReader, createIfMatches);
+
+boost::regex MinMaxReader::re_intro("^fieldMinMax (.+) write:$");
+boost::regex MinMaxReader::re_mima("^ *(min|max)\\((.+)\\) = (.+) in cell (.+) at location \\((.+) (.+) (.+)\\)");
 
 
 SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pd, double endTime)
@@ -50,7 +137,10 @@ SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pd, double endTime
   courant_pattern("^ *Courant Number mean: (.+) max: (.+)"),
   if_courant_pattern("^ *Interface Courant Number mean: (.+) max: (.+)"),
   dt_pattern(" *deltaT = (.+)"),
-  exec_time_pattern(" *ExecutionTime = (.+) s  ClockTime = (.+) s")
+  exec_time_pattern(" *ExecutionTime = (.+) s  ClockTime = (.+) s"),
+  pimple_iter_pattern("PIMPLE: .* (.+) iterations"),
+  region_pattern("^Solving for (.+) region (.+)"),
+  minMax_pattern("^Min/max (.+):(.+) (.+)")
 {
   solverActionProgress_ = std::make_shared<ActionProgress>
       (
@@ -67,7 +157,20 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
     try
     {
-        if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) && !curforcename_.empty() )
+        if (currentOutputSectionReader_)
+        {
+            if (!currentOutputSectionReader_->parseNextLine(line))
+            {
+                currentOutputSectionReader_->addProgressVariables(curProgVars_);
+                currentOutputSectionReader_.reset();
+            }
+        }
+        else if ( boost::regex_search( line, match, region_pattern, boost::match_default ) )
+        {
+            curRegion_=match[2];
+            pre_region=curRegion_+"/";
+        }
+        else if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) && !curforcename_.empty() )
         {
             curforcesection_=2;
         }
@@ -230,13 +333,13 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
             if (last_courant_)
             {
-              curProgVars_[pre_courant+"mean"]=last_courant_->mean;
-              curProgVars_[pre_courant+"max"]=last_courant_->max;
+              curProgVars_[pre_region+pre_courant+"mean"]=last_courant_->mean;
+              curProgVars_[pre_region+pre_courant+"max"]=last_courant_->max;
             }
             if (last_if_courant_)
             {
-              curProgVars_[pre_courant+"interface_mean"]=last_if_courant_->mean;
-              curProgVars_[pre_courant+"interface_max"]=last_if_courant_->max;
+              curProgVars_[pre_region+pre_courant+"interface_mean"]=last_if_courant_->mean;
+              curProgVars_[pre_region+pre_courant+"interface_max"]=last_if_courant_->max;
             }
             if (last_dt_)
             {
@@ -254,15 +357,37 @@ void SolverOutputAnalyzer::update(const std::string& line)
             }
 
         }
+        else if ( boost::regex_search( line, match, minMax_pattern, boost::match_default ) )
+        {
+            std::string pre_qty=match[1]+"/";
+            double
+                minval=toNumber<double>(match[2]),
+                maxval=toNumber<double>(match[3]);
+            curProgVars_[pre_region+pre_minmax+pre_qty+"min"]=minval;
+            curProgVars_[pre_region+pre_minmax+pre_qty+"max"]=maxval;
+        }
         else if ( boost::regex_search( line, match, solver_pattern, boost::match_default ) )
         {
-            curProgVars_[pre_resi+match[2]] = toNumber<double>(match[3]);
+            curProgVars_[pre_region+pre_resi+match[2]] = toNumber<double>(match[3]);
         }
         else if ( boost::regex_search( line, match, cont_pattern, boost::match_default ) )
         {
-            curProgVars_[pre_conterr+"local"] = toNumber<double>(match[1]);
-            curProgVars_[pre_conterr+"global"] = toNumber<double>(match[2]);
-            curProgVars_[pre_conterr+"cumulative"] = toNumber<double>(match[3]);
+            curProgVars_[pre_region+pre_conterr+"local"] = toNumber<double>(match[1]);
+            curProgVars_[pre_region+pre_conterr+"global"] = toNumber<double>(match[2]);
+            curProgVars_[pre_region+pre_conterr+"cumulative"] = toNumber<double>(match[3]);
+        }
+        else if ( boost::regex_search( line, match, pimple_iter_pattern, boost::match_default ) )
+        {
+            curProgVars_[pre_region+pre_iter+"pimple_iter"] = toNumber<int>(match[1]);
+        }
+        else
+        {
+            for (const auto& cim: *OutputSectionReader::createIfMatchesFunctions_)
+            {
+                if ( (currentOutputSectionReader_ = cim.second(line)) )
+                    break;
+            }
+//            currentOutputSectionReader_ = MinMaxReader::createIfMatches(line);
         }
     }
     catch (...)

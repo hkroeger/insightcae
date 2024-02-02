@@ -21,22 +21,19 @@
 #ifndef INSIGHT_CAD_PARSER_H
 #define INSIGHT_CAD_PARSER_H
 
+#include "base/extendedgrammar.h"
 #include "base/boost_include.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
 #include "cadpostprocactions/drawingexport.h"
 
 #ifndef Q_MOC_RUN
-#include "boost/spirit/include/qi.hpp"
 #include "boost/variant/recursive_variant.hpp"
+
 #include "boost/spirit/repository/include/qi_confix.hpp"
 #include <boost/spirit/include/qi_eol.hpp>
-#include <boost/spirit/include/phoenix.hpp>
-#include <boost/phoenix/function.hpp>
-#include <boost/phoenix/function/adapt_callable.hpp>
 #include <boost/spirit/include/qi_no_case.hpp>
 #include <boost/spirit/home/classic/utility/distinct.hpp>
-#include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/repository/include/qi_iter_pos.hpp>
 
@@ -54,9 +51,7 @@ namespace insight {
 namespace cad {
 namespace parser {
 
-namespace qi = boost::spirit::qi;
-namespace repo = boost::spirit::repository;
-namespace phx   = boost::phoenix;
+
 
 
 typedef insight::cad::ScalarPtr scalar;
@@ -89,50 +84,29 @@ struct skip_grammar
   skip_grammar();
 };
 
-
-template<typename Iterator>
-struct CurrentPos 
+template <typename T>
+struct make_shared_f
 {
-    
-  CurrentPos() 
+  template <typename... A> struct result
+  { typedef std::shared_ptr<T> type; };
+
+  template <typename... A>
+  typename result<A...>::type operator()(A&&... a) const
   {
-    save_start_pos = qi::omit[boost::spirit::repository::qi::iter_pos[
-            phx::bind(&CurrentPos::setStartPos, this, qi::_1)]];
-    current_pos = boost::spirit::repository::qi::iter_pos[
-            qi::_val = phx::bind(&CurrentPos::getCurrentPos, this, qi::_1)];
+      return std::make_shared<T>(std::forward<A>(a)...);
   }
-
-  qi::rule<Iterator> save_start_pos;
-  qi::rule<Iterator, std::size_t()> current_pos;
-
-  void setStartPos(const Iterator &iterator) {
-    start_pos_ = iterator;
-  }
-
-private:
-  std::size_t getCurrentPos(const Iterator &iterator) {
-    return std::distance(start_pos_, iterator);
-  }
-
-  Iterator start_pos_;
 };
 
+template <typename T>
+using make_shared_ = boost::phoenix::function<make_shared_f<T> >;
 
-struct AddRuleContainerBase
-{
-    virtual ~AddRuleContainerBase();
-};
-// typedef std::shared_ptr<AddRuleContainerBase> AddRuleContainerBasePtr;
 
-template <class Rule>
-struct AddRuleContainer
-: public AddRuleContainerBase,
-  public std::shared_ptr<Rule>
-{
-    AddRuleContainer(Rule* r)
-    : std::shared_ptr<Rule>(r)
-    {}
-};
+
+
+
+
+
+
 
 class iscadParserException
 : public Exception
@@ -145,8 +119,11 @@ public:
    inline int to_pos() const { return to_pos_; }
 };
 
+
+
+
 struct ISCADParser
-  : qi::grammar<std::string::iterator, skip_grammar>
+    : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >
 {
     CurrentPos<std::string::iterator> current_pos;
     boost::filesystem::path filenameinfo_;
@@ -179,10 +156,7 @@ struct ISCADParser
     qi::rule<std::string::iterator, std::string()> r_string;
     qi::rule<std::string::iterator, boost::filesystem::path()> r_path;
     qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
-//     qi::rule<std::string::iterator, FeaturePtr(), qi::locals<FeaturePtr>, skip_grammar> r_solidmodel_subshape;
-//     qi::rule<std::string::iterator, FeaturePtr(), qi::locals<ModelPtr>, skip_grammar> r_submodel_modelstep;
-    boost::ptr_vector<AddRuleContainerBase> additionalrules_;
-    
+
 
     ISCADParser(Model* model, const boost::filesystem::path& filenameinfo="");
     
@@ -196,6 +170,17 @@ struct ISCADParser
 };
 
 }
+
+
+bool parseISCADModel
+(
+    const std::string& script,
+    Model* m,
+    int* failloc=NULL,
+    parser::SyntaxElementDirectoryPtr* sd=NULL,
+    const boost::filesystem::path& filenameinfo=""
+);
+
 
 bool parseISCADModelStream
 (

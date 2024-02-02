@@ -4,6 +4,7 @@
 #include "base/wsllinuxserver.h"
 #include "base/sshlinuxserver.h"
 #include "base/cppextensions.h"
+#include "base/translations.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -79,9 +80,11 @@ void QExecutionWorkspaceDialog::changeWorkingDirectory(const QString& newDir)
 
   if (!isValidWorkingDir(newDirPath))
   {
-      QMessageBox::critical(this, "Invalid Working Directory",
-                  "The selected working directory \""+newDir+"\" is invalid.\n"
-                  "Please enter a valid working directory!");
+        QMessageBox::critical(
+            this, _("Invalid Working Directory"),
+                  QString(_("The selected working directory \"%1\" is invalid.\n"
+                            "Please enter a valid working directory!"))
+                .arg(newDir) );
 
       ui->leLocalWorkingDirectory->setText(lastValidLocalWorkDirSetting_);
       return;
@@ -124,20 +127,21 @@ void QExecutionWorkspaceDialog::checkAndChangeRemoteConfig(
             if (!rl->isActive())
             {
                 ui->leRemoteDirectory->setStyleSheet("QLineEdit{background: red;}");
-                ui->leRemoteDirectory->setToolTip("The remote direcotry is invalid!");
+                ui->leRemoteDirectory->setToolTip(_("The remote directory is invalid!"));
                 return;
             }
             else
             {
                 ui->leRemoteDirectory->setStyleSheet("QLineEdit{background: lightgreen;}");
-                ui->leRemoteDirectory->setToolTip("Verified.");
+                ui->leRemoteDirectory->setToolTip(_("Verified."));
             }
         }
         else
         {
             ui->leRemoteDirectory->setStyleSheet("QLineEdit{background: yellow;}");
-            ui->leRemoteDirectory->setToolTip("The remote directory cannot be checked because the server is unreachable yet!\n"
-                                              "Please make sure that it is existing!");
+            ui->leRemoteDirectory->setToolTip(
+                _("The remote directory cannot be checked because the server is unreachable yet!\n"
+                  "Please make sure that it is existing!"));
         }
     }
     else
@@ -270,7 +274,7 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
          {
            QString newDir = QFileDialog::getExistingDirectory(
                  this,
-                 "Please select working directory",
+          _("Please select working directory"),
                  ui->leLocalWorkingDirectory->text()
                  );
            if (!newDir.isEmpty())

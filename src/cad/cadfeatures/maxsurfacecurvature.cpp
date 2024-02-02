@@ -2,6 +2,7 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 #include "Geom2d_BSplineCurve.hxx"
 #include "Geom2dAPI_Interpolate.hxx"
@@ -21,8 +22,9 @@ namespace cad {
 
 
 defineType(MaxSurfaceCurvature);
-addToFactoryTable(Feature, MaxSurfaceCurvature);
-
+//addToFactoryTable(Feature, MaxSurfaceCurvature);
+addToStaticFunctionTable(Feature, MaxSurfaceCurvature, insertrule);
+addToStaticFunctionTable(Feature, MaxSurfaceCurvature, ruleDocumentation);
 
 size_t MaxSurfaceCurvature::calcHash() const
 {
@@ -31,10 +33,6 @@ size_t MaxSurfaceCurvature::calcHash() const
   h+=*faces_;
   return h.getHash();
 }
-
-
-MaxSurfaceCurvature::MaxSurfaceCurvature()
-{}
 
 
 
@@ -266,7 +264,7 @@ void MaxSurfaceCurvature::build()
 
     if (pts.size()>1)
     {
-      cout<<"Performing interpolation over "<<pts.size()<<" points"<<endl;
+      insight::dbg()<<"Performing interpolation over "<<pts.size()<<" points"<<endl;
 
       Handle_TColgp_HArray1OfPnt2d pts2(new TColgp_HArray1OfPnt2d(1, pts.size()));
       for (size_t i=0; i<pts.size(); i++) pts2->SetValue(i+1, pts[i]);
@@ -274,22 +272,22 @@ void MaxSurfaceCurvature::build()
       ip.Perform();
       if (!ip.IsDone())
       {
-        throw insight::Exception("Building 2D spline failed!");
+        throw insight::Exception(_("Building 2D spline failed!"));
       }
 
-      cout<<"edge"<<endl;
+//      cout<<"edge"<<endl;
       TopoDS_Edge ec = BRepBuilderAPI_MakeEdge(ip.Curve(), obj.surf).Edge();
       BRepLib::BuildCurve3d(ec);
     //  Handle_Geom_Curve crv;
     //  setShape(BRepBuilderAPI_MakeEdge(crv));
 
-      cout<<"done"<<endl;
+//      cout<<"done"<<endl;
 
       bb.Add(res, ec);
     }
     else
     {
-      cout<<"not a sufficient number of points for interpolation (only "<<pts.size()<<")"<<endl;
+      insight::dbg()<<"not a sufficient number of points for interpolation (only "<<pts.size()<<")"<<endl;
     }
   }
 
@@ -308,12 +306,6 @@ MaxSurfaceCurvature::MaxSurfaceCurvature(FeatureSetPtr faces)
 
 
 
-FeaturePtr MaxSurfaceCurvature::create(FeatureSetPtr faces)
-{
-    return FeaturePtr(new MaxSurfaceCurvature(faces));
-}
-
-
 
 MaxSurfaceCurvature::operator const TopoDS_Edge& () const
 {
@@ -323,36 +315,37 @@ MaxSurfaceCurvature::operator const TopoDS_Edge& () const
 
 
 
-void MaxSurfaceCurvature::insertrule(parser::ISCADParser& ruleset) const
+void MaxSurfaceCurvature::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "MaxSurfaceCurvature",
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' >> ruleset.r_faceFeaturesExpression >> ')' )
-        [ qi::_val = phx::bind(&MaxSurfaceCurvature::create, qi::_1) ]
+        [ qi::_val = phx::bind(
+                       &MaxSurfaceCurvature::create<FeatureSetPtr>,
+                       qi::_1) ]
 
-    ))
+    )
   );
 }
 
 
 
 
-FeatureCmdInfoList MaxSurfaceCurvature::ruleDocumentation() const
+FeatureCmdInfoList MaxSurfaceCurvature::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "MaxSurfaceCurvature",
 
             "( <faceSelection> )",
 
-            "Computes the maximum curvature line on a surface originating from the point of maximum curvature in the selected faces. Returns a compound."
+          _("Computes the maximum curvature line on a surface originating from the point of maximum curvature in the selected faces. Returns a compound.")
         )
-    );
+    };
 }
 
 

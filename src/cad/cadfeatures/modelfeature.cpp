@@ -25,6 +25,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
+#include "base/translations.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -41,8 +43,9 @@ namespace cad
     
     
 defineType(ModelFeature);
-addToFactoryTable(Feature, ModelFeature);
-
+//addToFactoryTable(Feature, ModelFeature);
+addToStaticFunctionTable(Feature, ModelFeature, insertrule);
+addToStaticFunctionTable(Feature, ModelFeature, ruleDocumentation);
 
 
 
@@ -52,7 +55,7 @@ void ModelFeature::copyModelDatums()
   for (decltype(scalars)::value_type const& v: scalars)
   {
     if (refvalues_.find(v.first)!=refvalues_.end())
-      throw insight::Exception("datum value "+v.first+" already present!");
+          throw insight::Exception(_("datum value %s already present!"), v.first.c_str());
     refvalues_[v.first]=v.second->value();
   }
 
@@ -60,7 +63,7 @@ void ModelFeature::copyModelDatums()
   for (decltype(points)::value_type const& p: points)
   {
     if (refpoints_.find(p.first)!=refpoints_.end())
-      throw insight::Exception("datum point "+p.first+" already present!");
+          throw insight::Exception(_("datum point %s already present!"), p.first.c_str());
     refpoints_[p.first]=p.second->value();
   }
 
@@ -68,7 +71,7 @@ void ModelFeature::copyModelDatums()
   for (decltype(directions)::value_type const& p: directions)
   {
     if (refvectors_.find(p.first)!=refvectors_.end())
-      throw insight::Exception("datum direction "+p.first+" already present!");
+          throw insight::Exception(_("datum direction %s already present!"), p.first.c_str());
     refvectors_[p.first]=p.second->value();
   }
 
@@ -76,7 +79,7 @@ void ModelFeature::copyModelDatums()
   for (decltype(datums)::value_type const& d: datums)
   {
     if (providedDatums_.find(d.first)!=providedDatums_.end())
-      throw insight::Exception("datum "+d.first+" already present!");
+          throw insight::Exception(_("datum %s already present!"), d.first.c_str());
 
     providedDatums_[d.first]=d.second;
   }
@@ -135,10 +138,6 @@ size_t ModelFeature::calcHash() const
 }
 
 
-ModelFeature::ModelFeature()
-: Compound()
-{}
-
 
 
 
@@ -162,38 +161,10 @@ ModelFeature::ModelFeature(ModelPtr model)
 
 
 
-FeaturePtr ModelFeature::create(const std::string& modelname, const ModelVariableTable& vars)
-{
-    return FeaturePtr
-           (
-               new ModelFeature
-               (
-                   modelname, vars
-               )
-           );
-}
-
-
-FeaturePtr ModelFeature::create_file(const boost::filesystem::path& modelfile, const ModelVariableTable& vars)
-{
-    return FeaturePtr
-           (
-               new ModelFeature
-               (
-                   modelfile, vars
-               )
-           );
-}
-
-
-FeaturePtr ModelFeature::create_model(ModelPtr model)
-{
-  return FeaturePtr(new ModelFeature(model));
-}
-
 
 void ModelFeature::build()
 {
+    insight::CurrentExceptionContext ex(_("building model %s"), featureSymbolName().c_str());
     ExecTimer t("ModelFeature::build() ["+featureSymbolName()+"]");
 
     if (!cache.contains(hash()))
@@ -202,13 +173,15 @@ void ModelFeature::build()
         {
           if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
           {
+            ex += " from file \""+fp->string()+"\"";
             model_.reset(new Model(*fp, vars_));
           } else if (std::string* mn = boost::get<std::string>(&modelinput_))
           {
+            ex += " named "+*mn;
             model_.reset(new Model(*mn, vars_));
           } else
           {
-            throw insight::Exception("ModelFeature: Model input unspecified!");
+            throw insight::Exception(_("ModelFeature: Model input unspecified!"));
           }
         }
 
@@ -260,7 +233,7 @@ std::string ModelFeature::modelname() const
     } 
     else
     {
-      throw insight::Exception("ModelFeature: Model input unspecified!");
+      throw insight::Exception(_("ModelFeature: Model input unspecified!"));
       return std::string();
     }
 }
@@ -278,7 +251,7 @@ boost::filesystem::path ModelFeature::modelfile() const
     } 
     else
     {
-      throw insight::Exception("ModelFeature: Model input unspecified!");
+      throw insight::Exception(_("ModelFeature: Model input unspecified!"));
       return boost::filesystem::path();
     }
 }
@@ -294,7 +267,7 @@ void ModelFeature::executeEditor()
 
 
 
-void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
+void ModelFeature::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -310,7 +283,9 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
                       ('=' >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Point) )|
                       (qi::lit("!=") >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Direction) )|
                       ('=' >> ruleset.r_scalarExpression) ) ) ) >> ')' )
-	[ qi::_val = phx::bind(&ModelFeature::create, qi::_1, qi::_2) ]
+    [ qi::_val = phx::bind(
+                           &ModelFeature::create<const std::string&, const ModelVariableTable&>,
+                           qi::_1, qi::_2) ]
 	|
 	( ruleset.r_path >> 
           *(',' >> (ruleset.r_identifier >> (
@@ -318,7 +293,9 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
                       ('=' >> ruleset.r_datumExpression)|
                       (qi::lit("!=") >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Direction) )|
                       ('=' >> ruleset.r_scalarExpression) ) ) ) >> ')' )
-	[ qi::_val = phx::bind(&ModelFeature::create_file, qi::_1, qi::_2) ]
+    [ qi::_val = phx::bind(
+                           &ModelFeature::create<const boost::filesystem::path&, const ModelVariableTable&>,
+                           qi::_1, qi::_2) ]
       )
     ))
   );
@@ -327,19 +304,18 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList ModelFeature::ruleDocumentation() const
+FeatureCmdInfoList ModelFeature::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "loadmodel",
             "( <identifier:modelname> [, <identifier> = <feature>|<datum>|<vector>|<scalar> ] )",
-            "Imports a submodel. It is read from the file modelname.iscad."
+            _("Imports a submodel. It is read from the file modelname.iscad."
             " The file is searched first in the directory of the current model and then throughout the shared file search path."
-            " An arbitrary number of parameters are passed from the current model into the submodel."
+            " An arbitrary number of parameters are passed from the current model into the submodel.")
         )
-    );
+    };
 }
 
 

@@ -6,7 +6,7 @@ namespace insight {
 ParametersBase::ParametersBase()
 {}
 
-ParametersBase::ParametersBase(const insight::ParameterSet& /*p*/)
+ParametersBase::ParametersBase(const insight::SubsetParameter& /*p*/)
 {}
 
 ParametersBase::~ParametersBase()

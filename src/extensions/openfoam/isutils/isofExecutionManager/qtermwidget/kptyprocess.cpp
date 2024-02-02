@@ -37,6 +37,10 @@
 #include <csignal>
 #include <QDebug>
 
+#include <iostream>
+#include "boost/process.hpp"
+#include "boost/lexical_cast.hpp"
+
 KPtyProcess::KPtyProcess(QObject *parent) :
     KProcess(new KPtyProcessPrivate, parent)
 {
@@ -59,8 +63,69 @@ KPtyProcess::KPtyProcess(int ptyMasterFd, QObject *parent) :
             SLOT(_k_onStateChanged(QProcess::ProcessState)));
 }
 
+void KPtyProcess::killChildren()
+{
+    // linux: a child is spawned which is not killed with its parent
+    //        therefore the process id is retrieved and the process killed independently
+#if defined(Q_OS_LINUX)
+
+    std::vector<int> pids;
+    {
+
+        boost::process::ipstream is; //reading pipe-stream
+        boost::process::child c(
+                    boost::process::search_path("ps"),
+                    boost::process::args(
+                        {
+                            "--no-heading",
+                            "--forest",
+                            "-o", "pid",
+                            "-g", boost::lexical_cast<std::string>(processId())
+                        }
+                        ), boost::process::std_out > is);
+
+        std::string line;
+
+        while (c.running() && std::getline(is, line) && !line.empty())
+        {
+            try
+            {
+                int pid=
+                        boost::lexical_cast<int>(
+                            boost::trim_copy(line) );
+                if (pid!=processId())
+                    pids.push_back(pid);
+            }
+            catch (std::exception& ex)
+            {
+                std::cerr<<"unexpected output from ps command: "<<ex.what()<<std::endl;
+            }
+        }
+
+        c.wait();
+    }
+
+
+    qDebug()<<pids;
+
+    if (pids.size())
+    {
+        std::vector<std::string> args;
+        std::transform(
+                    pids.begin(), pids.end(),
+                    std::back_inserter(args),
+                    [](int pid) { return boost::lexical_cast<std::string>(pid); } );
+        boost::process::system(
+                    boost::process::search_path("kill"),
+                    boost::process::args(args) );
+    }
+
+#endif
+}
+
 KPtyProcess::~KPtyProcess()
 {
+    qDebug()<<pid();
     Q_D(KPtyProcess);
 
     if (state() != QProcess::NotRunning)
@@ -71,13 +136,22 @@ KPtyProcess::~KPtyProcess()
             disconnect(SIGNAL(stateChanged(QProcess::ProcessState)),
                     this, SLOT(_k_onStateChanged(QProcess::ProcessState)));
         }
+
     }
 
     d->pty->close();
-    //    closeReadChannel();
+
     closeWriteChannel();
     delete d->pty;
-    waitForFinished(300); // give it some time to finish
+
+    if (state() != QProcess::NotRunning)
+    {
+        killChildren();
+        terminate();
+    }
+
+    qDebug()<<waitForFinished(300); // give it some time to finish
+    qDebug()<<state();
     if (state() != QProcess::NotRunning)
     {
         qWarning() << Q_FUNC_INFO << "the terminal process is still running, trying to stop it by SIGHUP";

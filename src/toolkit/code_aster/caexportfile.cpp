@@ -51,6 +51,14 @@ namespace fs=boost::filesystem;
 namespace insight
 {
 
+
+const std::string CAExportFile::MESS("mess");
+const std::string CAExportFile::RMED("rmed");
+const std::string CAExportFile::MMED("mmed");
+const std::string CAExportFile::DAT("dat");
+
+
+
 CAExportFile::FileInfo::FileInfo()
 {}
 
@@ -139,7 +147,9 @@ CAExportFile::CAExportFile(const boost::filesystem::path& commFile, std::string 
     t_max_(t_max),
     mem_max_(mem_max),
     version_(version),
-    commFile_(commFile)
+    commFile_(commFile),
+    np_omp_(1),
+    np_mpi_(1)
 {
   setMessFile(commFile.parent_path()/(commFile.filename().stem().string()+".mess.txt"));
   setRMedFile(commFile.parent_path()/(commFile.filename().stem().string()+".rmed"));
@@ -163,6 +173,13 @@ void CAExportFile::setNP(int np_omp, int np_mpi)
 
 
 
+void CAExportFile::addInputFile(const path &fn, int unit, const std::string& fileType)
+{
+    inputFiles_[unit] = FileInfo{fileType, fn};
+}
+
+
+
 
 void CAExportFile::setMessFile(const boost::filesystem::path& fn)
 {
@@ -176,7 +193,7 @@ void CAExportFile::setMessFile(const boost::filesystem::path& fn)
 void CAExportFile::setRMedFile(const boost::filesystem::path& fn)
 {
   //rmedFile_.reset(new boost::filesystem::path(fn));
-  outputFiles_[80] = FileInfo{RMED, fn};
+    outputFiles_[80] = FileInfo{RMED, fn};
 }
 
 

@@ -99,6 +99,9 @@ void ISCADParser::createScalarExpressions()
         | ( lit("circdiameter") >> '(' >> r_edgeFeaturesExpression >> ')' )
          [ _val = phx::construct<ScalarPtr>(phx::new_<CircleDiameter>(qi::_1)) ]
         | ( lit("mag") >> '(' >> r_vectorExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<VectorMag>(qi::_1)) ]
+        | ( lit("pos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_pos>(qi::_1)) ]
+        | ( lit("neg") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_neg>(qi::_1)) ]
+        | ( lit("sgn") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sgn>(qi::_1)) ]
         | ( lit("sqrt") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sqrt>(qi::_1)) ]
         | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sin>(qi::_1)) ]
         | ( lit("cos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_cos>(qi::_1)) ]

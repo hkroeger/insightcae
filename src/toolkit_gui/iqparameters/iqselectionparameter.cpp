@@ -12,11 +12,12 @@ addToFactoryTable(IQParameter, IQSelectionParameter);
 IQSelectionParameter::IQSelectionParameter
 (
     QObject* parent,
+    IQParameterSetModel* psmodel,
     const QString& name,
     insight::Parameter& parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, name, parameter, defaultParameterSet)
+  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
 {
 }
 
@@ -30,13 +31,15 @@ QString IQSelectionParameter::valueText() const
 
 
 
-QVBoxLayout* IQSelectionParameter::populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer)
+QVBoxLayout* IQSelectionParameter::populateEditControls(
+        QWidget* editControlsContainer,
+        IQCADModel3DViewer *viewer)
 {
   const auto& p = static_cast<const insight::SelectionParameter&>(parameter());
 
-  auto* layout = IQParameter::populateEditControls(model, index, editControlsContainer);
+  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
-  QHBoxLayout *layout2=new QHBoxLayout(editControlsContainer);
+  QHBoxLayout *layout2=new QHBoxLayout;
   QLabel *promptLabel = new QLabel("Selection:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto* selBox_=new QComboBox(editControlsContainer);
@@ -52,14 +55,13 @@ QVBoxLayout* IQSelectionParameter::populateEditControls(IQParameterSetModel* mod
   QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
   connect(apply, &QPushButton::pressed, [=]()
   {
-    auto &p = dynamic_cast<insight::SelectionParameter&>(model->parameterRef(index));
-    p() = selBox_->currentIndex();
-    model->notifyParameterChange(index);
+      auto &p = dynamic_cast<insight::SelectionParameter&>(this->parameterRef());
+      p.set(selBox_->currentIndex());
+//      model->notifyParameterChange(index);
   }
   );
   layout->addWidget(apply);
 
-  layout->addStretch();
 
   return layout;
 }

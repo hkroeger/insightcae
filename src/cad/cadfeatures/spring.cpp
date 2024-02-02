@@ -32,7 +32,10 @@ namespace cad {
 
 
 defineType(Spring);
-addToFactoryTable(Feature, Spring);
+//addToFactoryTable(Feature, Spring);
+addToStaticFunctionTable(Feature, Spring, insertrule);
+//addToStaticFunctionTable(Feature, Spring, ruleDocumentation);
+
 
 size_t Spring::calcHash() const
 {
@@ -45,10 +48,6 @@ size_t Spring::calcHash() const
   return h.getHash();
 }
 
-Spring::Spring()
-: Feature()
-{
-}
 
 
 Spring::Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds)
@@ -91,18 +90,20 @@ void Spring::build()
   setShape(wb.Wire());
 }
 
-void Spring::insertrule(parser::ISCADParser& ruleset) const
+void Spring::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
     "Spring",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    std::make_shared<parser::ISCADParser::ModelstepRule>(
       ( '(' >> ruleset.r_vectorExpression >> ',' 
 	    >> ruleset.r_vectorExpression >> ',' 
 	    >> ruleset.r_scalarExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Spring>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
-    ))
+        >> ruleset.r_scalarExpression >> ')' )
+    [ qi::_val = phx::bind(
+                       &Spring::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4) ]
+    )
   );
 }
 

@@ -21,6 +21,7 @@
 #include "base/tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/translations.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -37,8 +38,9 @@ namespace cad {
     
     
 defineType(Box);
-addToFactoryTable(Feature, Box);
-
+//addToFactoryTable(Feature, Box);
+addToStaticFunctionTable(Feature, Box, insertrule);
+addToStaticFunctionTable(Feature, Box, ruleDocumentation);
 
 size_t Box::calcHash() const
 {
@@ -53,10 +55,6 @@ size_t Box::calcHash() const
   h+=boost::fusion::at_c<2>(center_);
   return h.getHash();
 }
-
-
-Box::Box()
-{}
 
 
 
@@ -74,18 +72,6 @@ Box::Box
 }
 
 
-
-FeaturePtr Box::create
-(
-    VectorPtr p0,
-    VectorPtr L1,
-    VectorPtr L2,
-    VectorPtr L3,
-    BoxCentering center
-)
-{
-    return FeaturePtr(new Box(p0, L1, L2, L3, center));
-}
 
 
 
@@ -148,7 +134,7 @@ void Box::build()
 
 
 
-void Box::insertrule(parser::ISCADParser& ruleset) const
+void Box::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
@@ -173,7 +159,9 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
             ( qi::attr(false) >> qi::attr(false) >> qi::attr(false) )
           )
         >> ')' ) 
-      [ qi::_val = phx::bind(&Box::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+      [ qi::_val = phx::bind(
+                       &Box::create<VectorPtr, VectorPtr, VectorPtr, VectorPtr, BoxCentering>,
+                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       
     ))
   );
@@ -181,7 +169,7 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList Box::ruleDocumentation() const
+FeatureCmdInfoList Box::ruleDocumentation()
 {
     return boost::assign::list_of
     (
@@ -192,8 +180,10 @@ FeatureCmdInfoList Box::ruleDocumentation() const
             "( <vector:p0>, <vector:L1>, <vector:L2>, <vector:L3>\n"
             "[, centered | ( center [x][y][z] ) ] )",
          
-            "Creates a box volume. The box is located at point p0 and direction and edge lengths are defined by the vector L1, L2, L3.\n"
-            "Optionally, the edges are centered around p0. Either all directions (option centered) or only selected directions (option center [x][y][z] where x,y,z is associated with L1, L2, and L3 respectively)."
+            _("Creates a box volume. The box is located at point p0 and edge directions and lengths are defined by the vectors L1, L2, L3.\n"
+            "By default, p0 is a corner and the other corners are found by translating p0 along combinations of L1, L2, L3."
+            " Optionally, the edges are centered around p0."
+            " Either all directions (option centered) or only selected directions (option center [x][y][z] where x,y,z is associated with L1, L2, and L3 respectively).")
         )
     );
 }

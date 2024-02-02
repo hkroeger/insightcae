@@ -2,6 +2,8 @@
 
 using namespace std;
 
+defineType(IncludedSubsetParameterParser);
+addToStaticFunctionTable(ParserDataBase, IncludedSubsetParameterParser, insertrule);
 
 IncludedSubsetParameterParser::Data::Data(const std::string& v, const std::string& d, const DefaultValueModifications& defmod)
     : ParserDataBase(d), value(v), default_value_modifications(defmod)
@@ -35,7 +37,7 @@ void IncludedSubsetParameterParser::Data::cppWriteCreateStatement
 ) const
 {
     os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name
-    <<"(new "<<cppParamType(name)<<"("<< value <<"::makeDefault(), \""<<description<<"\")); "<<endl;
+    <<"(new "<<cppParamType(name)<<"("<< value <<"::makeDefault().entries(), \""<<description<<"\")); "<<endl;
 
     for (const DefaultModification& dm: default_value_modifications)
     {
@@ -44,23 +46,23 @@ void IncludedSubsetParameterParser::Data::cppWriteCreateStatement
       std::string value = boost::fusion::at_c<2>(dm);
       if (type=="double")
       {
-        os << name << "->get<DoubleParameter>(\""<<key<<"\")() = "<<value<<";\n";
+        os << name << "->get<DoubleParameter>(\""<<key<<"\").set("<<value<<");\n";
       }
       else if (type=="int")
       {
-        os << name << "->get<IntParameter>(\""<<key<<"\")() = "<<value<<";\n";
+        os << name << "->get<IntParameter>(\""<<key<<"\").set("<<value<<");\n";
       }
       else if (type=="bool")
       {
-        os << name << "->get<BoolParameter>(\""<<key<<"\")() = "<<value<<";\n";
+        os << name << "->get<BoolParameter>(\""<<key<<"\").set("<<value<<");\n";
       }
       else if (type=="string")
       {
-        os << name << "->get<StringParameter>(\""<<key<<"\")() = \""<<value<<"\";\n";
+        os << name << "->get<StringParameter>(\""<<key<<"\").set(\""<<value<<"\");\n";
       }
       else if (type=="path")
       {
-        os << name << "->get<PathParameter>(\""<<key<<"\")() = \""<<value<<"\";\n";
+        os << name << "->get<PathParameter>(\""<<key<<"\").set(\""<<value<<"\");\n";
       }
       else if (type=="selection")
       {
@@ -76,11 +78,11 @@ void IncludedSubsetParameterParser::Data::cppWriteCreateStatement
               boost::is_any_of(" \t"),
               boost::token_compress_on
          );
-        os << name << "->get<VectorParameter>(\""<<key<<"\")()={"+boost::join(cmpts, ",")+"};\n";
+        os << name << "->get<VectorParameter>(\""<<key<<"\").set({"+boost::join(cmpts, ",")+"});\n";
       }
       else if (type=="selectablesubset")
       {
-        os << name << "->get<SelectableSubsetParameter>(\""<<key<<"\").selection() =   \""<<value<<"\";\n";
+        os << name << "->get<SelectableSubsetParameter>(\""<<key<<"\").setSelection(\""<<value<<"\");\n";
       }
       else
         throw PDLException("Modification of parameter of type "+type+" during subset inclusion is currently not supported!");
@@ -99,10 +101,10 @@ void IncludedSubsetParameterParser::Data::cppWriteInsertStatement
     os<<" std::string key(\""<<name<<"\"); ";
     this->cppWriteCreateStatement(os, name, extendtype(thisscope, name+"_type"));
 
-    os<<" if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {\n";
+    os<<" if ("<<psvarname<<".contains(key)) {\n";
     os<<  psvarname<<".getSubset(key).merge(*"<<name<<"); ";
     os<<" } else {"<<endl;
-    os<<  psvarname<<".emplace(key, std::move("<<name<<"));\n";
+    os<<  psvarname<<".insert(key, std::move("<<name<<"));\n";
     os<<" }"<<endl;
     os<<"}"<<endl;
 }

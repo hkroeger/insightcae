@@ -36,10 +36,10 @@ Image::Image
 
 
 
-void Image::writeLatexHeaderCode ( std::ostream& f ) const
+void Image::insertLatexHeaderCode ( std::set<std::string>& h ) const
 {
-    f<<"\\usepackage{graphicx}\n";
-    f<<"\\usepackage{placeins}\n";
+    h.insert("\\usepackage{graphicx}");
+    h.insert("\\usepackage{placeins}");
 }
 
 

@@ -23,20 +23,26 @@
 
 #include <armadillo>
 #include <map>
+#include <set>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
+#include "boost/blank.hpp"
 #include "gsl/gsl_multimin.h"
 #include "gsl/gsl_integration.h"
 
-#include "boost/shared_ptr.hpp"
+#include "boost/optional.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
+#include "boost/variant.hpp"
+
+#include "base/exception.h"
 
 // #define SIGN(x) ((x)<0.0?-1.0:1.0)
 
 namespace std
 {
 
+extern double armaMatIdentityTolerance;
 /**
  * @brief operator <
  * required for using amra::mat as key in STL containers
@@ -51,9 +57,33 @@ bool operator<(const arma::mat& v1, const arma::mat& v2);
 namespace insight 
 {
 
+extern const double VSMALL;
 extern const double SMALL;
 extern const double LSMALL;
 
+inline double pos(double x)
+{
+    if (x>=0)
+        return 1.;
+    else
+        return 0.;
+}
+
+inline double neg(double x)
+{
+    if (x<0)
+        return 1.;
+    else
+        return 0.;
+}
+
+inline double sgn(double x)
+{
+    if (x<0)
+        return -1.;
+    else
+        return 1.;
+}
 
 class GSLExceptionHandling
 {
@@ -63,12 +93,34 @@ public:
   ~GSLExceptionHandling();
 };
 
+class GSLException : public Exception
+{
+  std::string gsl_reason_;
+  int gsl_errno_;
+
+public:
+    GSLException(
+            const char * reason, const char * file,
+            int line, int gsl_errno );
+
+    const std::string& gsl_reason() const { return gsl_reason_; }
+    int gsl_errno() const;
+};
+
 // ====================================================================================
 // ======== generation of vectors/matrices/tensors
 
 arma::mat vec1(double x);
 arma::mat vec2(double x, double y);
 arma::mat vec3(double x, double y, double z);
+arma::mat vec3Zero();
+arma::mat vec3One();
+arma::mat vec3X(double x = 1);
+arma::mat vec3Y(double y = 1);
+arma::mat vec3Z(double z = 1);
+arma::mat vec3FromComponents(const double* c);
+arma::mat vec3FromComponents(const float* c);
+arma::mat readVec3(std::istream& is);
 arma::mat normalized(const arma::mat& vec);
 
 arma::mat tensor3(
@@ -101,7 +153,10 @@ template<class T>
 arma::mat vector(const T& t)
 {
   arma::mat rt;
-  rt << t.x() << t.y() << t.z() << arma::endr;
+  rt
+          << t.x() << arma::endr
+          << t.y() << arma::endr
+          << t.z() << arma::endr;
   return rt;
 }
 
@@ -110,7 +165,10 @@ template<class T>
 arma::mat Vector(const T& t)
 {
   arma::mat rt;
-  rt << t.X() << t.Y() << t.Z() << arma::endr;
+  rt
+          << t.X() << arma::endr
+          << t.Y() << arma::endr
+          << t.Z() << arma::endr;
   return rt;
 }
 
@@ -118,7 +176,10 @@ template<class T>
 arma::mat vec3(const T& t)
 {
   arma::mat rt;
-  rt << t.X() <<arma::endr<< t.Y() <<arma::endr<< t.Z() << arma::endr;
+  rt
+          << t.X() << arma::endr
+          << t.Y() << arma::endr
+          << t.Z() << arma::endr;
   return rt;
 }
 
@@ -149,7 +210,21 @@ std::string toStr(const arma::mat& v3);
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis=vec3(0,0,1), const arma::mat& p0 = vec3(0,0,0) );
 
+/**
+ * @brief rotationMatrixToRollPitchYaw
+ * @param R
+ * @return
+ * euler angles in degrees
+ */
 arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R);
+
+/**
+ * @brief rollPitchYawToRotationMatrix
+ * @param rollPitchYaw
+ * angles in degrees!
+ * @return
+ */
+arma::mat rollPitchYawToRotationMatrix(const arma::mat& rollPitchYaw);
 
 /**
  * Fits c_j in
@@ -211,12 +286,54 @@ public:
   virtual int numP() const =0;
 };
 
+arma::mat vec(
+    const gsl_vector * x,
+    boost::variant<boost::blank,double,arma::mat> replaceNaN
+        = boost::blank() );
+
+arma::mat mat( const gsl_matrix* m );
+
+void gsl_vector_set(const arma::mat& x, gsl_vector * xo);
+
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 double nonlinearSolve1D(const std::function<double(double)>& model, double x_min, double x_max);
-double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max);
-double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max);
-arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol=1e-3, const arma::mat& steps = arma::mat());
-arma::mat nonlinearMinimizeND(const std::function<double(const arma::mat&)>& model, const arma::mat& x0, double tol=1e-3, const arma::mat& steps = arma::mat());
+double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max, double tol=1e-3);
+double nonlinearMinimize1D(const std::function<double(double)>& model, double x_min, double x_max, double tol=1e-3);
+
+arma::mat nonlinearMinimizeND(
+    const ObjectiveND& model, const arma::mat& x0,
+    double tol=1e-3, const arma::mat& steps = arma::mat(), double relax=1.0 );
+
+arma::mat nonlinearMinimizeND(
+    const std::function<double(const arma::mat&)>& model, const arma::mat& x0,
+    double tol=1e-3, const arma::mat& steps = arma::mat(), int nMaxIter=10000, double relax=1.0 );
+
+
+class JacobiDeterminatException
+    : public Exception
+{
+    arma::mat J_;
+    std::set<size_t> zeroCols_;
+public:
+    JacobiDeterminatException(const arma::mat& J);
+    const std::set<size_t>& zeroCols() const;
+};
+
+
+class NonConvergenceException
+: public Exception
+{
+public:
+    NonConvergenceException(int performedIterations);
+};
+
+arma::mat nonlinearSolveND(
+    std::function<arma::mat(const arma::mat& x)> obj,
+    const arma::mat& x0,
+    double tol=1e-3, int nMaxIter=10000, double relax=1.0,
+    std::function<void(const arma::mat&)> perIterationCallback
+        = std::function<void(const arma::mat&)>()
+    );
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
 
@@ -253,6 +370,15 @@ public:
    * integrate column col fromx=a to x=b
    */
   double integrate(double a, double b, int col=0) const;
+
+  /**
+   * solve for x at given y-value
+   */
+  double solve(
+          double y, int col=0,
+          boost::optional<double> a=boost::optional<double>(),
+          boost::optional<double> b=boost::optional<double>() ) const;
+
   /**
    * returns a single y-value from column col
    */
@@ -389,11 +515,69 @@ double integrate_indef(F f, double a=0)
   return result;
 }
 
+
+
+
 struct CoordinateSystem
 {
   arma::mat origin, ex, ey, ez;
+
+  CoordinateSystem();
+
+  CoordinateSystem(
+          const arma::mat& p0,
+          const arma::mat& ex );
+
+  CoordinateSystem(
+          const arma::mat& p0,
+          const arma::mat& ex,
+          const arma::mat& ez );
 };
-//typedef std::map<arma::mat, int, CompMat> SortedMatMap;
+
+
+
+
+/**
+ * @brief The View class
+ * Represents the orientation of a view.
+ */
+struct View : public CoordinateSystem
+{
+  double cameraDistance;
+  std::string title;
+
+  View(
+      const arma::mat& ctr,
+      const arma::mat& cameraOffset,
+      const arma::mat& up,
+      const std::string& title );
+
+  inline arma::mat cameraLocation() const { return origin + cameraDistance*ex; }
+  inline arma::mat focalPoint() const { return origin; }
+  inline arma::mat upwardDirection() const { return ez; }
+};
+
+
+
+std::map<std::string, View>
+generateStandardViews(
+    const CoordinateSystem& objectOrientation,
+    double cameraDistance );
+
+
+double stabilize(double value, double nonZeroThreshold);
+
+
+}
+
+
+namespace std
+{
+
+template<> struct hash<arma::mat>
+{
+  std::size_t operator()(const arma::mat& v) const;
+};
 
 }
 

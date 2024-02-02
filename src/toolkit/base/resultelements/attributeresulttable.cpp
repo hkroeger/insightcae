@@ -15,37 +15,74 @@ defineType ( AttributeTableResult );
 addToFactoryTable ( ResultElement, AttributeTableResult );
 
 
-AttributeTableResult::AttributeTableResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
-    : ResultElement ( shortdesc, longdesc, unit )
+
+
+SimpleLatex AttributeTableResult::defaultLabelColumnTitle("Attribute");
+SimpleLatex AttributeTableResult::defaultValueColumnTitle("Value");
+
+
+
+
+AttributeTableResult::AttributeTableResult(
+        const std::string& shortdesc,
+        const std::string& longdesc,
+        const std::string& unit,
+        const SimpleLatex& labelColumnTitle,
+        const SimpleLatex& valueColumnTitle )
+    : ResultElement ( shortdesc, longdesc, unit ),
+      labelColumnTitle_(labelColumnTitle),
+      valueColumnTitle_(valueColumnTitle)
 {
 }
 
 
-AttributeTableResult::AttributeTableResult
-(
-    AttributeNames names,
-    AttributeValues values,
-    const std::string& shortDesc,
-    const std::string& longDesc,
-    const std::string& unit
+AttributeTableResult::AttributeTableResult(
+        AttributeNames names,
+        AttributeValues values,
+        const std::string& shortDesc,
+        const std::string& longDesc,
+        const std::string& unit,
+        const SimpleLatex& labelColumnTitle,
+        const SimpleLatex& valueColumnTitle
 )
-    : ResultElement ( shortDesc, longDesc, unit )
+    : ResultElement ( shortDesc, longDesc, unit ),
+      labelColumnTitle_(labelColumnTitle),
+      valueColumnTitle_(valueColumnTitle)
 {
     setTableData ( names, values );
 }
 
 
+
+const SimpleLatex& AttributeTableResult::labelColumnTitle() const
+{
+    return labelColumnTitle_;
+}
+
+
+
+const SimpleLatex& AttributeTableResult::valueColumnTitle() const
+{
+    return valueColumnTitle_;
+}
+
+
+
 void AttributeTableResult::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path& outputfilepath ) const
 {
-    f<<
-     "\\begin{tabular}{lc}\n"
-     "Attribute & Value \\\\\n"
+    f<< "\\begin{tabular}{lc}\n"
+     << labelColumnTitle_.toLaTeX()
+     << " & "
+     << valueColumnTitle_.toLaTeX()
+     <<" \\\\\n"
      "\\hline\\\\";
     for ( size_t i=0; i<names_.size(); i++ ) {
-        f<<names_[i]<<" & "<<values_[i]<<"\\\\"<<endl;
+        f<<names_[i].toLaTeX()<<" & "<<values_[i]<<"\\\\"<<endl;
     }
     f<<"\\end{tabular}\n";
 }
+
+
 
 
 void AttributeTableResult::exportDataToFile ( const string& name, const path& outputdirectory ) const
@@ -54,17 +91,29 @@ void AttributeTableResult::exportDataToFile ( const string& name, const path& ou
     std::ofstream f ( fname.c_str() );
 
     for ( size_t i=0; i<names_.size(); i++ ) {
-        f<<"\""<<names_[i]<<"\";"<<values_[i]<<endl;
+        f<<"\""<<names_[i].toPlainText()<<"\";"<<values_[i]<<endl;
     }
 }
 
-void AttributeTableResult::readFromNode(const string &name, rapidxml::xml_document<> &doc,
-                                        rapidxml::xml_node<> &node)
+
+
+
+void AttributeTableResult::readFromNode(
+    const string &name,
+    rapidxml::xml_node<> &node )
 {
-  readBaseAttributesFromNode(name, doc, node);
+  readBaseAttributesFromNode(name, node);
+  if (auto *vct = node.first_attribute("valueColumnTitle"))
+  {
+      valueColumnTitle_=SimpleLatex(vct->value());
+  }
+  if (auto *lct = node.first_attribute("labelColumnTitle"))
+  {
+      labelColumnTitle_=SimpleLatex(lct->value());
+  }
   for (xml_node<> *e = node.first_node(); e; e = e->next_sibling())
   {
-    names_.push_back(e->first_attribute("name")->value());
+    names_.push_back(SimpleLatex(e->first_attribute("name")->value()));
     std::string typ(e->first_attribute("type")->value());
     std::string value(e->first_attribute("value")->value());
     if (typ=="int")
@@ -82,6 +131,23 @@ xml_node< char >* AttributeTableResult::appendToNode ( const string& name, xml_d
     using namespace rapidxml;
     xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
 
+    if (labelColumnTitle()!=defaultLabelColumnTitle)
+    {
+        child->append_attribute ( doc.allocate_attribute
+                                  (
+                                      "labelColumnTitle",
+                                      doc.allocate_string ( labelColumnTitle().simpleLatex().c_str() )
+                                  ) );
+    }
+    if (valueColumnTitle()!=defaultValueColumnTitle)
+    {
+        child->append_attribute ( doc.allocate_attribute
+                                  (
+                                      "valueColumnTitle",
+                                      doc.allocate_string ( valueColumnTitle().simpleLatex().c_str() )
+                                  ) );
+    }
+
     for ( size_t i=0; i<names_.size(); i++ ) {
         xml_node<>* cattr = doc.allocate_node (
               node_element,
@@ -92,7 +158,7 @@ xml_node< char >* AttributeTableResult::appendToNode ( const string& name, xml_d
         cattr->append_attribute ( doc.allocate_attribute
                                   (
                                       "name",
-                                      doc.allocate_string ( names_[i].c_str() )
+                                      doc.allocate_string ( names_[i].simpleLatex().c_str() )
                                   ) );
 
         if ( const int* v = boost::get<int> ( &values_[i] ) ) {
@@ -127,7 +193,8 @@ xml_node< char >* AttributeTableResult::appendToNode ( const string& name, xml_d
 ResultElementPtr AttributeTableResult::clone() const
 {
     ResultElementPtr res ( new AttributeTableResult ( names_, values_,
-                           shortDescription_.simpleLatex(), longDescription_.simpleLatex(), unit_.simpleLatex() ) );
+                           shortDescription_.simpleLatex(), longDescription_.simpleLatex(), unit_.simpleLatex(),
+                           labelColumnTitle_, valueColumnTitle_ ) );
     res->setOrder ( order() );
     return res;
 }
@@ -151,7 +218,7 @@ ResultElementPtr polynomialFitResult
     for ( int i=coeffs.n_rows-1; i>=0; i-- ) {
         int order=minorder+i;
         if ( order==0 ) {
-            names.push_back ( "$1$" );
+            names.push_back ( {"$1$"} );
         } else if ( order==1 ) {
             names.push_back ( "$"+xvarName+"$" );
         } else {

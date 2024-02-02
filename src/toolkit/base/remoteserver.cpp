@@ -79,9 +79,67 @@ RemoteServer::Config *RemoteServer::genericServerConfig() const
 
 std::string RemoteServer::serverLabel() const
 {
-  return static_cast<std::string>(*serverConfig_);
+    return static_cast<std::string>(*serverConfig_);
 }
 
+
+void RemoteServer::lookForPattern(
+        std::istream &is,
+        const std::vector<ExpectedOutput> &pattern )
+{
+    std::vector<bool> found(pattern.size(), false);
+    auto allFound = [&] () -> bool
+    {
+        bool all=true;
+        for (const auto& f: found)
+        {
+            all = all && f;
+        }
+        return all;
+    };
+
+    int linesRead = 0;
+    while ( !allFound() && (linesRead<100*(1+pattern.size())) )
+    {
+      std::string line;
+      if (getline(is, line))
+      {
+        linesRead++;
+
+        for (int i=0; i<pattern.size(); ++i)
+        {
+            if (!found[i])
+            {
+                auto pat = pattern[i];
+                boost::smatch matches;
+                if (boost::regex_match(line, matches, pat.first))
+                {
+                    if (pat.second)
+                    {
+                        pat.second->clear();
+                        for (std::string match : matches)
+                        {
+                            pat.second->push_back(match);
+                        }
+                    }
+                    found[i]=true;
+                }
+            }
+        }
+      }
+    }
+}
+
+
+
+
+void RemoteServer::setTransferBandWidthLimit(int kBPerSecond)
+{}
+
+int RemoteServer::transferBandWidthLimit() const
+{
+    return -1;
+}
 
 
 

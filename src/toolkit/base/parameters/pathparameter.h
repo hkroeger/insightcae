@@ -24,6 +24,7 @@
 #include "base/filecontainer.h"
 #include "base/parameter.h"
 
+#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
 
@@ -45,6 +46,8 @@ class PathParameter
       public FileContainer
 {
 
+protected:
+    void signalContentChange() override;
 
 public:
   declareType ( "path" );
@@ -103,16 +106,16 @@ public:
 
   void readFromNode(
       const std::string& name,
-      rapidxml::xml_document<>& doc,
       rapidxml::xml_node<>& node,
       boost::filesystem::path inputfilepath) override;
 
   PathParameter* clonePathParameter() const;
   Parameter* clone() const override;
-  void reset(const Parameter& p) override;
 
-  void operator=(const PathParameter& op);
-  void operator=(const FileContainer& oc);
+  void copyFrom(const Parameter& p) override;
+  void operator=(const PathParameter& p);
+
+  int nChildren() const override;
 
 };
 
@@ -162,11 +165,13 @@ public:
 
     rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath ) const override;
-    void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+    void readFromNode ( const std::string& name, rapidxml::xml_node<>& node,
                                 boost::filesystem::path inputfilepath ) override;
 
+    void operator=(const DirectoryParameter& p);
+
     Parameter* clone() const override;
-    void reset(const Parameter& p) override;
+    DirectoryParameter* cloneDirectoryParameter() const;
 };
 
 

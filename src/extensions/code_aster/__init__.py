@@ -1,5 +1,5 @@
 
-import os, sys, re, time, math, zipfile, StringIO
+import os, sys, re, time, math, zipfile
 import numpy as np
 import scipy
 import scipy.spatial
@@ -10,7 +10,7 @@ import scipy.interpolate as spi
 
 def getCommDir():
   os.system("cat *.export")
-  fn=filter(re.compile(".*\.export").search, os.listdir("."))
+  fn=filter(re.compile(".*\\.export").search, os.listdir("."))
   lines=[l.strip() for l in open(fn[0], "r").readlines()]
   pat="^F comm (.+)/([^/]+).comm"
   d=re.search(pat, filter(re.compile(pat).search, lines)[0]).group(1)
@@ -24,23 +24,23 @@ def getCommDir():
 
 
 def readMeshes(nMeshes):
-  from Cata.cata import LIRE_MAILLAGE, ASSE_MAILLAGE, DETRUIRE
-  from Accas import _F
+  from code_aster.Cata.Commands import LIRE_MAILLAGE, ASSE_MAILLAGE, DETRUIRE, COPIER
+  from code_aster.Cata.Syntax import _F
   # read and assemble nMeshes mesh files (names are given in astk)
   m=[None]*nMeshes
-  mesh=None
-  for i in range(0,nMeshes):
+  mesh=LIRE_MAILLAGE(UNITE=20, FORMAT='MED');
+  for i in range(1,nMeshes):
     if i>0: 
       addmesh=LIRE_MAILLAGE(UNITE=20+i, FORMAT='MED');
-      m[i]=ASSE_MAILLAGE(
-	    MAILLAGE_1=m[i-1],
+      newmesh=ASSE_MAILLAGE(
+        MAILLAGE_1=mesh,
 	    MAILLAGE_2=addmesh,
 	    OPERATION='SUPERPOSE');
-      DETRUIRE(CONCEPT=( _F(NOM=(m[i-1], addmesh) ) ), INFO=1);
-    else:
-      m[i]=LIRE_MAILLAGE(UNITE=20+i, FORMAT='MED');
+      DETRUIRE(CONCEPT=( _F(NOM=(mesh, addmesh) ) ), INFO=1);
+      mesh=COPIER(CONCEPT=newmesh)
+      DETRUIRE(CONCEPT=( _F(NOM=(newmesh) ) ), INFO=1);
 
-  return m[nMeshes-1]
+  return mesh
 
 
 
@@ -49,9 +49,9 @@ def readMeshes(nMeshes):
 
 
 def area(mesh, group_ma_name):
-  from Cata.cata import CREA_MAILLAGE, AFFE_MODELE, DEFI_MATERIAU, \
+  from code_aster.Cata.Commands import CREA_MAILLAGE, AFFE_MODELE, DEFI_MATERIAU, \
       AFFE_MATERIAU, AFFE_CARA_ELEM, POST_ELEM, DETRUIRE
-  from Accas import _F
+  from code_aster.Cata.Syntax import _F
   
   tmpmesh=CREA_MAILLAGE(MAILLAGE=mesh,
 			MODI_MAILLE=_F(GROUP_MA=group_ma_name,
@@ -82,7 +82,7 @@ def area(mesh, group_ma_name):
 		    CHAM_MATER=dmatass,
 		    );
   #IMPR_TABLE(TABLE=tab_post,);
-  print tmptab.EXTR_TABLE()
+  print(tmptab.EXTR_TABLE())
   A = tmptab['MASSE',1]
   DETRUIRE(CONCEPT=(_F(NOM=(tmpmesh, dummod,dummat,dmatass,tmpcara,tmptab))), INFO=1);
   return A
@@ -90,9 +90,9 @@ def area(mesh, group_ma_name):
 
 
 def volume(mesh, group_ma_name):
-  from Cata.cata import CREA_MAILLAGE, AFFE_MODELE, DEFI_MATERIAU, \
+  from code_aster.Cata.Commands import CREA_MAILLAGE, AFFE_MODELE, DEFI_MATERIAU, \
       AFFE_MATERIAU, AFFE_CARA_ELEM, POST_ELEM, DETRUIRE
-  from Accas import _F
+  from code_aster.Cata.Syntax import _F
   
   dummod=AFFE_MODELE(MAILLAGE=mesh,
 #		    VERIF='MAILLE',
@@ -112,7 +112,7 @@ def volume(mesh, group_ma_name):
 		    CHAM_MATER=dmatass,
 		    );
   #IMPR_TABLE(TABLE=tab_post,);
-  print tmptab.EXTR_TABLE()
+  print(tmptab.EXTR_TABLE())
   V = tmptab['MASSE',1]
   DETRUIRE(CONCEPT=(_F(NOM=(dummod,dummat,dmatass,tmptab))), INFO=1);
   return V
@@ -127,15 +127,19 @@ class PressureField(object):
 	       pressurescale=1e-6 # Pa => MPa
 	       ):
       data=np.loadtxt(csvfilename, delimiter=delimiter)
+      print("data size = ", len(data))
       self.pts=data[:,0:3]*lengthscale
+      print ("pts=", self.pts)
       self.p=data[:,3]*pressurescale
+      print ("p=", self.p)
       self.pinterp=spi.NearestNDInterpolator(self.pts, self.p)
 
   def __call__(self, x):
       """
       Interpolate pressure at location x in FEM model
       """
-      return self.pinterp(x[0], x[1], x[2])
+      v=self.pinterp(x[0], x[1], x[2])
+      return v
       
 
 
@@ -154,8 +158,8 @@ class BoltedJoint(object):
   some implicit conventions on group naming:
   """
   def __init__(self, label, Ds, Fv, headface, beamhead, nutface, beamnut, steps, E=210000.0, alpha=11e-6):
-    from Cata.cata import DEFI_FONCTION
-    from Accas import _F
+    from code_aster.Cata.Commands import DEFI_FONCTION
+    from code_aster.Cata.Syntax import _F
     
     self.label=label
     self.headface=headface
@@ -175,8 +179,9 @@ class BoltedJoint(object):
 		    NOM_PARA='INST',
 		    VALE=(
 			    0,          	0,
-			    self.steps,      	-self.dt
-			),
+                self.steps,     -self.dt
+            ) if not self.steps is None else
+            (   0,              -self.dt),
 		    INTERPOL='LIN',
 		    PROL_DROITE='CONSTANT',
 		    PROL_GAUCHE='CONSTANT'
@@ -184,20 +189,20 @@ class BoltedJoint(object):
 
 
   def MODELE(self):
-    from Accas import _F
+    from code_aster.Cata.Syntax import _F
     return _F(GROUP_MA=self.label,
               PHENOMENE='MECANIQUE',
               MODELISATION='POU_D_T')
               
   def CARA_ELEM(self):
-    from Accas import _F
+    from code_aster.Cata.Syntax import _F
     return _F(GROUP_MA=self.label,
 	      SECTION='CERCLE',
-	      CARA='R',
+          CARA='R',
 	      VALE=self.Ds/2.)
 
   def LIAISON_RBE3_HEAD(self):
-    from Accas import _F
+    from code_aster.Cata.Syntax import _F
     return _F(
 	      GROUP_NO_MAIT=self.beamhead,
 	      DDL_MAIT=('DX', 'DY', 'DZ', 'DRX', 'DRY', 'DRZ',),
@@ -207,13 +212,13 @@ class BoltedJoint(object):
              )
              
   def LIAISON_SOLIDE_HEAD(self):
-    from Accas import _F
+    from code_aster.Cata.Syntax import _F
     return _F(
 	      GROUP_NO=(self.beamhead, self.headface),
              )
              
   def LIAISON_RBE3_NUT(self):
-    from Accas import _F
+    from code_aster.Cata.Syntax import _F
     if not self.nutface is None:
       return _F(
 		GROUP_NO_MAIT=self.beamnut,
@@ -226,7 +231,7 @@ class BoltedJoint(object):
       return None
 
   def DDL_IMPO_NUT(self):
-    from Accas import _F
+    from code_aster.Cata.Syntax import _F
     if self.nutface is None:
       return  _F(GROUP_NO=self.beamnut,
 		  DX=0.0,
@@ -238,15 +243,15 @@ class BoltedJoint(object):
       return None
 
   def CREA_CHAMP_Temp(self):
-    from Accas import _F
+    from code_aster.Cata.Syntax import _F
     return _F(GROUP_MA=self.label,
 	      NOM_CMP='TEMP',
 	      VALE_F=BoltedJoint.allTempRamps[self.label]
 	      )
 	      
   def correctPrestrain(self, sol, inst):
-    from Cata.cata import POST_RELEVE_T, DETRUIRE, DEFI_FONCTION
-    from Accas import _F
+    from code_aster.Cata.Commands import POST_RELEVE_T, DETRUIRE, DEFI_FONCTION
+    from code_aster.Cata.Syntax import _F
 
     tabfor=POST_RELEVE_T(ACTION=(_F(OPERATION='EXTRACTION',
                                     INTITULE='forc',
@@ -261,7 +266,7 @@ class BoltedJoint(object):
     Fax = tabfor['N',1]
     mult = self.Fv/Fax
     self.dt *= mult
-    print "Bolt ", self.label,": force Fax = ", Fax, ", resulting multiplier = ", mult
+    print("Bolt ", self.label,": force Fax = ", Fax, ", resulting multiplier = ", mult)
 
     blT=BoltedJoint.allTempRamps
     
@@ -276,17 +281,21 @@ class BoltedJoint(object):
     blT[self.label]=DEFI_FONCTION(NOM_PARA='INST',VALE=(
                         0,       		0,
                         self.steps,   	-self.dt
-                       ),
+                       )
+                       if not self.steps is None else
+                    (   0,              -self.dt),
                     INTERPOL='LIN',
                     PROL_DROITE='CONSTANT',
                     PROL_GAUCHE='CONSTANT');
 	      
-  def evaluate(self, sol, inst_prestressed, inst_fullyloaded):
-    from Cata.cata import POST_RELEVE_T, DETRUIRE, DEFI_FONCTION
-    from Accas import _F
+  def evaluate(self, sol_fullyloaded, inst_prestressed, inst_fullyloaded, sol_prestressed=None):
+    from code_aster.Cata.Commands import POST_RELEVE_T, DETRUIRE, DEFI_FONCTION
+    from code_aster.Cata.Syntax import _F
 
     data=[]
-    for inst in [inst_prestressed, inst_fullyloaded]:
+    if sol_prestressed is None:
+        sol_prestressed=sol_fullyloaded
+    for sol,inst in [(sol_prestressed,inst_prestressed), (sol_fullyloaded, inst_fullyloaded)]:
       tabfor=POST_RELEVE_T(ACTION=(_F(OPERATION='EXTRACTION',
 				      INTITULE='forc',
 				      RESULTAT=sol,
@@ -296,7 +305,7 @@ class BoltedJoint(object):
 				      NOM_CMP=('N', 'VY', 'VZ', 'MT', 'MFY', 'MFZ',)
 				  )
 			      ));
-      print tabfor.EXTR_TABLE()
+      print(tabfor.EXTR_TABLE())
       tabuh=POST_RELEVE_T(ACTION=(_F(OPERATION='EXTRACTION',
 				      INTITULE='disph',
 				      RESULTAT=sol,
@@ -306,7 +315,7 @@ class BoltedJoint(object):
 				      NOM_CMP=('DX', 'DY', 'DZ',)
 				  )
 			      ));
-      print tabuh.EXTR_TABLE()
+      print(tabuh.EXTR_TABLE())
       tabun=POST_RELEVE_T(ACTION=(_F(OPERATION='EXTRACTION',
 				      INTITULE='dispn',
 				      RESULTAT=sol,
@@ -331,9 +340,11 @@ class BoltedJoint(object):
       
       DETRUIRE(CONCEPT=( _F(NOM=(tabfor, tabuh, tabun)) ), INFO=1);
       
-    print data
+    # data[0] - prestressed state without loads
+    # data[1] - state with loads and prestress
+    print(data)
     delta_L=np.linalg.norm(uh-un)
-    print "Bolt ", self.label,": force = ", Fax, ", uh=", uh, ", un=", un, ", delta_L=", delta_L
+    print("Bolt ", self.label,": force = ", Fax, ", uh=", uh, ", un=", un, ", delta_L=", delta_L)
     f_T=np.linalg.norm(data[0][5]) # deformation in unload but prestressed state equals f_T
     F_V=data[0][0] # prestress force
     F_BS=data[1][0]-F_V # maximum screw force
@@ -349,6 +360,7 @@ class BoltedJoint(object):
 class StressAssessmentPoints:
   
   def __init__(self):
+    import StringIO
     self.zip_in_memory=StringIO.StringIO()
     self.zip_archive = zipfile.ZipFile(
       self.zip_in_memory, 
@@ -369,8 +381,8 @@ class StressAssessmentPoints:
     f.close()
 
   def extractMaxBeamStress(self, label, group, s):
-    from Cata.cata import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
-    from Accas import _F
+    from code_aster.Cata.Commands import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
+    from code_aster.Cata.Syntax import _F
     
     tabex=POST_RELEVE_T(
       ACTION=tuple( [
@@ -414,7 +426,7 @@ class StressAssessmentPoints:
       maxv=tabmax['VALE',i]
       ex=maxv
       if (abs(minv)>abs(maxv)):
-	ex=minv
+          ex=minv
       extrema[cm]=ex
     
     DETRUIRE( CONCEPT=_F ( NOM= (tabmax,tabmin,tabex) ) , ) ;
@@ -450,8 +462,8 @@ class StressAssessmentPoints:
 	solInf, solSup
       ):
     
-    from Cata.cata import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
-    from Accas import _F
+    from code_aster.Cata.Commands import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
+    from code_aster.Cata.Syntax import _F
     
     critset='SIEQ_ELNO'
     critcmp='VMIS'
@@ -514,9 +526,9 @@ class StressAssessmentPoints:
       cur_vmis=valatmax['VMIS',1]
       
       if (abs(cur_vmis)>vmis):
-	vmis     = cur_vmis
-	sigma123 = [ valatmax['PRIN_1',1], valatmax['PRIN_2',1], valatmax['PRIN_3',1] ]
-	pt       = [ valatmax['COOR_X',1], valatmax['COOR_Y',1], valatmax['COOR_Z',1] ]
+          vmis     = cur_vmis
+          sigma123 = [ valatmax['PRIN_1',1], valatmax['PRIN_2',1], valatmax['PRIN_3',1] ]
+          pt       = [ valatmax['COOR_X',1], valatmax['COOR_Y',1], valatmax['COOR_Z',1] ]
       
       DETRUIRE( CONCEPT=_F ( NOM= (tabmax,valatmax) ) , ) ;
 
@@ -552,8 +564,8 @@ for view in GetRenderViews():
 	s
       ):
     
-    from Cata.cata import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
-    from Accas import _F
+    from code_aster.Cata.Commands import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
+    from code_aster.Cata.Syntax import _F
 
     ops=[]
     ops2=[]

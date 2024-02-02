@@ -24,7 +24,6 @@
 #include <QMainWindow>
 #include <QMdiArea>
 
-#include <QApplication>
 #include <QMenuBar>
 #include <QAction>
 #include <QThread>

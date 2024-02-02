@@ -3,8 +3,19 @@
 
 using namespace std;
 
-PropertyLibrarySelectionParameterParser::Data::Data(const std::string& libname, const std::string& sel, const std::string& d)
-  : ParserDataBase(d), libraryName(libname), selection(sel)
+defineType(PropertyLibrarySelectionParameterParser);
+addToStaticFunctionTable(ParserDataBase, PropertyLibrarySelectionParameterParser, insertrule);
+
+
+PropertyLibrarySelectionParameterParser::Data::Data(
+    bool istempl,
+    const std::string& libname,
+    const std::string& deflSel,
+    const std::string& d )
+    : ParserDataBase(d),
+    isTemplate(istempl),
+    libraryName(libname),
+    defaultSelection(deflSel)
 {}
 
 void PropertyLibrarySelectionParameterParser::Data::cppAddHeader(std::set<std::string> &headers) const
@@ -14,13 +25,16 @@ void PropertyLibrarySelectionParameterParser::Data::cppAddHeader(std::set<std::s
 
 std::string PropertyLibrarySelectionParameterParser::Data::cppType(const std::string&) const
 {
-  return "const "+libraryName+"::value_type *";
+  return std::string("const")+(isTemplate?" typename ":" ")+libraryName+"::value_type *";
 }
 
 std::string PropertyLibrarySelectionParameterParser::Data::cppValueRep(const std::string& name, const std::string& thisscope) const
 {
-//  return extendtype(extendtype(thisscope, name+"_type"), selection);
-    return "&"+libraryName+"::library().lookup(\""+selection+"\")";
+  return "&"+libraryName+"::library().lookup("+
+         (defaultSelection!="NODEFAULT"?
+            "\""+defaultSelection+"\""
+            :libraryName+"::library().entryList().front()"
+          ) + ")";
 }
 
 std::string PropertyLibrarySelectionParameterParser::Data::cppParamType(const std::string& ) const
@@ -31,15 +45,20 @@ std::string PropertyLibrarySelectionParameterParser::Data::cppParamType(const st
 void PropertyLibrarySelectionParameterParser::Data::cppWriteCreateStatement(std::ostream& os, const std::string& name,
                                                              const std::string& thisscope) const
 {
-
   os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
   os<<"{"<<endl;
-  os<<name<<".reset(new "<<cppParamType(name)<<"(\""<< selection <<"\", "<<libraryName<<"::library(), \""<<description<<"\", "
-   << (isHidden?"true":"false")<<","
-   << (isExpert?"true":"false")<<","
-   << (isNecessary?"true":"false")<<","
-   <<order
-  <<")); "<<endl;
+  os<<name<<".reset(new "<<cppParamType(name)<<"(";
+  if (defaultSelection!="NODEFAULT")
+  {
+      os<< "\""<<defaultSelection <<"\", ";
+  }
+  os << libraryName<<"::library(), "
+     << "\""<<description<<"\", "
+     << (isHidden?"true":"false")<<","
+     << (isExpert?"true":"false")<<","
+     << (isNecessary?"true":"false")<<","
+     <<order
+     <<")); "<<endl;
   os<<"}"<<endl;
 }
 

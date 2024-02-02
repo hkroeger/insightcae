@@ -10,61 +10,62 @@ namespace insight {
 
 
 
-ExternalProcess::ExternalProcess()
-{}
-
-
-ExternalProcess::ExternalProcess(std::unique_ptr<boost::process::child> process)
-    : process_(std::move(process))
-{}
-
-ExternalProcess::~ExternalProcess()
+std::istream& extendedGetline(std::istream& is, std::string& t)
 {
-    if (isRunning())
-    {
-        process_->terminate();
-        wait();
+  t.clear();
+
+  std::istream::sentry se(is, true);
+  std::streambuf* sb = is.rdbuf();
+
+  for(;;) {
+    int c = sb->sbumpc();
+    switch (c) {
+    case '\n':
+      return is;
+    case '\r':
+      if(sb->sgetc() == '\n')
+                sb->sbumpc();
+      return is;
+    case std::streambuf::traits_type::eof():
+      // Also handle the case when the last line has no line ending
+      if(t.empty())
+                is.setstate(std::ios::eofbit);
+      return is;
+    default:
+      t += (char)c;
     }
+  }
 }
 
+typedef boost::asio::buffers_iterator<
+    boost::asio::streambuf::const_buffers_type> iterator;
 
-
-void ExternalProcess::wait()
+std::pair<iterator, bool>
+match_endline(iterator begin, iterator end)
 {
-    if (process_)
-    {
-        process_->wait();
-    }
+  auto i = begin;
+  while (i != end)
+  {
+    if (*i=='\n' || *i=='\r')
+      return std::make_pair(i, true);
+    i++;
+  }
+  return std::make_pair(i, false);
 }
-
-
-
-bool ExternalProcess::isRunning() const
-{
-    return process_ && process_->running();
-}
-
-const boost::process::child &ExternalProcess::process() const
-{
-    return *process_;
-}
-
-
-
 
 
 void Job::read_start_out()
 {
   boost::asio::async_read_until(
-   out, buf_out, "\n",
+      out_, buf_out_, match_endline,
    [&](const boost::system::error_code &error, std::size_t /*size*/)
    {
     if (!error)
     {
       // read a line
      std::string line;
-     std::istream is(&(buf_out));
-     getline(is, line);
+     std::istream is(&(buf_out_));
+     extendedGetline(is, line);
 
      // process line
      if (processStdOut_) processStdOut_(line);
@@ -80,15 +81,15 @@ void Job::read_start_out()
 void Job::read_start_err()
 {
   boost::asio::async_read_until(
-   err, buf_err, "\n",
+   err_, buf_err_, match_endline,
    [&](const boost::system::error_code &error, std::size_t /*size*/)
    {
     if (!error)
     {
       // read a line
      std::string line;
-     std::istream is(&buf_err);
-     getline(is, line);
+     std::istream is(&buf_err_);
+     extendedGetline(is, line);
 
      // process this line
      if (processStdErr_) processStdErr_(line);
@@ -102,33 +103,130 @@ void Job::read_start_err()
 
 
 Job::Job()
-  : out(ios), err(ios)
+  : out_(ios_), err_(ios_)
+{}
+
+
+
+Job::Job(
+    const std::string &cmd,
+    std::vector<std::string> argv
+    )
+  : out_(ios_), err_(ios_),
+    process_(
+          std::make_unique<boost::process::child>(
+            bp::search_path(cmd),
+            bp::args( argv ),
+            bp::std_in < in_,
+            bp::std_out > out_,
+            bp::std_err > err_
+          )
+    )
+
 {
+  insight::CurrentExceptionContext ex("launch external command \""+cmd+"\"");
+  if (!process_->running())
+  {
+        throw insight::Exception(
+            "launching of external application as subprocess failed!\n"
+            );
+  }
 }
 
 
+Job::Job(
+    const std::pair<boost::filesystem::path,std::vector<std::string> >& ca
+)
+    : Job(ca.first.string(), ca.second)
+{
+}
+
+Job::~Job()
+{
+  if (isRunning())
+  {
+        process_->terminate();
+        wait();
+  }
+}
+
+
+
+void Job::forkProcess(
+    std::unique_ptr<boost::process::child> child
+)
+{
+}
+
+void Job::wait()
+{
+  if (process_)
+  {
+        try
+        {
+            process_->wait();
+        }
+        catch (boost::process::process_error& err)
+        {
+            // continue and avoid unhandled "waitpid failed: no child process" exception
+            // in case of segfaulted child process
+        }
+  }
+}
+
+
+
+bool Job::isRunning() const
+{
+  return process_ && process_->running();
+}
+
+void Job::terminate()
+{
+  if (process_)
+  {
+        process_->terminate();
+  }
+}
+
+std::ostream& Job::input()
+{
+  return in_;
+}
+
+void Job::closeInput()
+{
+  in_.pipe().close();
+}
+
+const boost::process::child &Job::process() const
+{
+  return *process_;
+}
 
 
 void Job::runAndTransferOutput
 (
     std::vector<std::string>* stdoutbuffer,
-    std::vector<std::string>* stderrbuffer
+    std::vector<std::string>* stderrbuffer,
+    bool mirrorStdout,
+    bool mirrorStderr
 )
 {
 
   ios_run_with_interruption(
-        [stdoutbuffer](const std::string& line)
+        [stdoutbuffer,mirrorStdout](const std::string& line)
         {
-          std::cout<<line<<std::endl;
+          if (mirrorStdout) std::cout<<line<<std::endl;
           if (stdoutbuffer) stdoutbuffer->push_back(line);
         },
-        [stdoutbuffer,stderrbuffer](const std::string& line)
+        [stdoutbuffer,stderrbuffer,mirrorStderr](const std::string& line)
         {
           // mirror to console
-          std::cout<<"[E] "<<line<<std::endl;
+          if (mirrorStderr) std::cout<<"[E] "<<line<<std::endl;
           if (stderrbuffer)
           {
-            stderrbuffer->push_back(line);
+              stderrbuffer->push_back(line);
           }
           else if (stdoutbuffer)
           {
@@ -137,7 +235,7 @@ void Job::runAndTransferOutput
         }
   );
 
-  process_->wait(); // exit code is not set correctly, if this is skipped
+  wait(); // exit code is not set correctly, if this is skipped
 }
 
 
@@ -151,7 +249,7 @@ void Job::ios_run_with_interruption(
   read_start_out();
   read_start_err();
 
-  boost::asio::steady_timer t(ios);
+  boost::asio::steady_timer t(ios_);
 
   std::function<void(boost::system::error_code)> interruption_handler =
    [&] (boost::system::error_code) {
@@ -161,7 +259,11 @@ void Job::ios_run_with_interruption(
     }
     catch (const boost::thread_interrupted& i)
     {
+#ifdef WIN32
       process_->terminate();
+#else
+      ::kill(process_->id(), SIGTERM);
+#endif
       throw i;
     }
 
@@ -170,7 +272,39 @@ void Job::ios_run_with_interruption(
       t.async_wait(interruption_handler);
    };
   interruption_handler({});
-  ios.run();
+  ios_.run();
+}
+
+
+
+void Job::ios_run_with_interruption(OutputAnalyzer *oa)
+{
+    ios_run_with_interruption(
+
+              [&](const std::string& line)
+              {
+                std::cout<<line<<std::endl; // mirror to console
+
+                if (oa)
+                {
+                    oa->update(line);
+                    if (oa->stopRun())
+                    {
+                      terminate();
+                    }
+                }
+              },
+
+              [&](const std::string& line)
+              {
+                // mirror to console
+                std::cout<<"[E] "<<line<<std::endl; // mirror to console
+                if (oa)
+                {
+                    oa->update("[E] "+line);
+                }
+              }
+        );
 }
 
 
@@ -200,19 +334,7 @@ JobPtr Job::forkExternalProcess
     std::vector<std::string> argv
 )
 {
-  insight::CurrentExceptionContext ex("launch external command \""+cmd+"\"");
-  auto job = std::make_shared<Job>();
-  forkExternalProcess(
-        job,
-        std::make_unique<boost::process::child>(
-          bp::search_path(cmd),
-          bp::args( argv ),
-          bp::std_in < job->in,
-          bp::std_out > job->out,
-          bp::std_err > job->err
-          )
-        );
-  return job;
+  return std::make_shared<Job>(cmd, argv);
 }
 
 

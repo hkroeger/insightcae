@@ -28,6 +28,7 @@
 #include "datum.h"
 #include "sketch.h"
 #include "cadpostprocactions.h"
+#include "cadpostprocactions/angle.h"
 
 #include "base/analysis.h"
 #include "parser.h"
@@ -170,11 +171,12 @@ void ISCADParser::createPostProcExpressions()
           >> ( lit("volumeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_solidFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
              ]
           >> ( lit("vertices") >> '(' >> *( (r_identifier|r_string) >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
+         >> ( lit("meshSizes") >> '(' >> *( r_vectorExpression >> ',' >> r_scalarExpression >> ',' >> r_scalarExpression ) >> ')' | qi::attr(std::vector<MeshSizeBall>()) )
           >> ( (lit("keepTmpDir")>attr(true)) | attr(false) )
           >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<Mesh>(
-                                qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7
+                           qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8
                             ))) ]
         |
 
@@ -249,6 +251,20 @@ void ISCADParser::createPostProcExpressions()
           >> ')' >> lit("<<") >> '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ')' >> ';' ) // (1) hull and (2) ship
         [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
                     phx::construct<PostprocActionPtr>(new_<Hydrostatics>(qi::_6, qi::_7, qi::_2, qi::_3, qi::_4, qi::_5)))
+        ]
+
+        |
+        ( lit("Distance") >> '(' >> r_identifier >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' >> ';' )
+        [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
+                    phx::construct<PostprocActionPtr>(new_<Distance>(qi::_2, qi::_3)))
+        ]
+        |
+        ( lit("Angle") >> '(' >> r_identifier >> ','
+                              >> r_vectorExpression >> ','
+                              >> r_vectorExpression >> ','
+                              >> r_vectorExpression >> ')' >> ';' )
+        [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
+                    phx::construct<PostprocActionPtr>(new_<Angle>(qi::_2, qi::_3, qi::_4)))
         ]
         ;
     r_postproc.name("postprocessing statement");

@@ -19,5 +19,5 @@ set(LIBS
      uniof
 )
 
-set(OF_VERSIONS OFplus OFesi1806 OFesi1906)
+set(OF_VERSIONS OFplus OFesi1806 OFesi1906 OFesi2112)
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")

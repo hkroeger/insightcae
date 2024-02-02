@@ -42,8 +42,7 @@ FileResult::FileResult
   }
 }
 
-void FileResult::writeLatexHeaderCode ( std::ostream& ) const
-{}
+
 
 void FileResult::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path& /*outputfilepath*/ ) const
 {
@@ -73,10 +72,10 @@ path FileResult::filePath(path baseDirectory) const
 
 
 
-void FileResult::readFromNode(const string &name, rapidxml::xml_document<> &doc, rapidxml::xml_node<> &node)
+void FileResult::readFromNode(const string &name, rapidxml::xml_node<> &node)
 {
- readBaseAttributesFromNode(name, doc, node);
- FileContainer::readFromNode(doc, node, ".", "originalFileName", "data");
+ readBaseAttributesFromNode(name, node);
+ FileContainer::readFromNode( node, ".", "originalFileName", "data");
 }
 
 xml_node< char >* FileResult::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const

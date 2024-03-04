@@ -131,6 +131,8 @@ fluid = set {
     double Lup_;
     double Laside_;
     double Lref_, l_, w_, h_;
+
+    const std::string FOname;
   };
 
 #ifndef SWIG

@@ -73,7 +73,8 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
     std::unique_ptr<Parameters> pPtr,
     const boost::filesystem::path &/*workDir*/,
     ProgressDisplayer &parentProgresss )
-  : supplementedInputDataDerived<Parameters>( std::move(pPtr) )
+  : supplementedInputDataDerived<Parameters>( std::move(pPtr) ),
+    FOname("forces")
 {
   CurrentExceptionContext ex("computing further preprocessing informations");
 
@@ -271,99 +272,99 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   for (size_t i=0; i<nzs.size(); i++)
   {
     {
-      Block& bl = bmd->addBlock
-      (
-	new Block(P_8(
-	    pts[0]+y0[i], pts[1]+y0[i], pts[5]+y0[i], pts[4]+y0[i],
-	    pts[0]+y0[i+1], pts[1]+y0[i+1], pts[5]+y0[i+1], pts[4]+y0[i+1]
-	  ),
-	  n_upstream, nz, nzs[i],
-          list_of<Block::Grading> (1./p().mesh.grad_upstream) (1.) (grads[i])
-	)
-      );
-      
-      inlet.addFace(bl.face("0473"));
-      floor.addFace(bl.face("0154"));
-      if (i==0) side1.addFace(bl.face("0321"));
-      if (i==2) side2.addFace(bl.face("4567"));
+          Block& bl = bmd->addBlock
+                      (
+                          new Block(P_8(
+                                        pts[0]+y0[i], pts[1]+y0[i], pts[5]+y0[i], pts[4]+y0[i],
+                                        pts[0]+y0[i+1], pts[1]+y0[i+1], pts[5]+y0[i+1], pts[4]+y0[i+1]
+                                        ),
+                                    n_upstream, nz, nzs[i],
+                                    { 1./p().mesh.grad_upstream, 1., grads[i] }
+                                    )
+                          );
+
+          inlet.addFace(bl.face("0473"));
+          floor.addFace(bl.face("0154"));
+          if (i==0) side1.addFace(bl.face("0321"));
+          if (i==2) side2.addFace(bl.face("4567"));
     }
     {
-      Block& bl = bmd->addBlock
-      (
-	new Block(P_8(
-	    pts[1]+y0[i], pts[2]+y0[i], pts[6]+y0[i], pts[5]+y0[i],
-	    pts[1]+y0[i+1], pts[2]+y0[i+1], pts[6]+y0[i+1], pts[5]+y0[i+1]
-	  ),
-          nx, nz, nzs[i],
-	  list_of<Block::Grading> (1.) (1.) (grads[i])
-	)
-      );
-      floor.addFace(bl.face("0154"));
-      if (i==0) side1.addFace(bl.face("0321"));
-      if (i==2) side2.addFace(bl.face("4567"));
+        Block& bl = bmd->addBlock
+                    (
+                        new Block(P_8(
+                                      pts[1]+y0[i], pts[2]+y0[i], pts[6]+y0[i], pts[5]+y0[i],
+                                      pts[1]+y0[i+1], pts[2]+y0[i+1], pts[6]+y0[i+1], pts[5]+y0[i+1]
+                                      ),
+                                  nx, nz, nzs[i],
+                                  { 1., 1., grads[i] }
+                                  )
+                        );
+        floor.addFace(bl.face("0154"));
+        if (i==0) side1.addFace(bl.face("0321"));
+        if (i==2) side2.addFace(bl.face("4567"));
     }
     {
-      Block& bl = bmd->addBlock
-      (
-	new Block(P_8(
-	    pts[2]+y0[i], pts[3]+y0[i], pts[7]+y0[i], pts[6]+y0[i],
-	    pts[2]+y0[i+1], pts[3]+y0[i+1], pts[7]+y0[i+1], pts[6]+y0[i+1]
-	  ),
-	  n_downstream, nz, nzs[i],
-          list_of<Block::Grading> (p().mesh.grad_downstream) (1.) (grads[i])
-	)
-      );
-      outlet.addFace(bl.face("1265"));
-      floor.addFace(bl.face("0154"));
-      if (i==0) side1.addFace(bl.face("0321"));
-      if (i==2) side2.addFace(bl.face("4567"));
+        Block& bl = bmd->addBlock
+                    (
+                        new Block(P_8(
+                                      pts[2]+y0[i], pts[3]+y0[i], pts[7]+y0[i], pts[6]+y0[i],
+                                      pts[2]+y0[i+1], pts[3]+y0[i+1], pts[7]+y0[i+1], pts[6]+y0[i+1]
+                                      ),
+                                  n_downstream, nz, nzs[i],
+                                  { p().mesh.grad_downstream, 1., grads[i] }
+                                  )
+                        );
+        outlet.addFace(bl.face("1265"));
+        floor.addFace(bl.face("0154"));
+        if (i==0) side1.addFace(bl.face("0321"));
+        if (i==2) side2.addFace(bl.face("4567"));
     }
     {
-      Block& bl = bmd->addBlock
-      (
-	new Block(P_8(
-	    pts[4]+y0[i], pts[5]+y0[i], pts[9]+y0[i], pts[8]+y0[i],
-	    pts[4]+y0[i+1], pts[5]+y0[i+1], pts[9]+y0[i+1], pts[8]+y0[i+1]
-	  ),
-	  n_upstream, n_up, nzs[i],
-          list_of<Block::Grading> (1./p().mesh.grad_upstream) (p().mesh.grad_up) (grads[i])
-	)
-      );
-      inlet.addFace(bl.face("0473"));
-      top.addFace(bl.face("2376"));
-      if (i==0) side1.addFace(bl.face("0321"));
-      if (i==2) side2.addFace(bl.face("4567"));
+        Block& bl = bmd->addBlock
+                    (
+                        new Block(P_8(
+                                      pts[4]+y0[i], pts[5]+y0[i], pts[9]+y0[i], pts[8]+y0[i],
+                                      pts[4]+y0[i+1], pts[5]+y0[i+1], pts[9]+y0[i+1], pts[8]+y0[i+1]
+                                      ),
+                                  n_upstream, n_up, nzs[i],
+                                  { 1./p().mesh.grad_upstream, p().mesh.grad_up, grads[i] }
+                                  )
+                        );
+        inlet.addFace(bl.face("0473"));
+        top.addFace(bl.face("2376"));
+        if (i==0) side1.addFace(bl.face("0321"));
+        if (i==2) side2.addFace(bl.face("4567"));
     }
     {
-      Block& bl = bmd->addBlock
-      (
-	new Block(P_8(
-	    pts[5]+y0[i], pts[6]+y0[i], pts[10]+y0[i], pts[9]+y0[i],
-	    pts[5]+y0[i+1], pts[6]+y0[i+1], pts[10]+y0[i+1], pts[9]+y0[i+1]
-	  ),
-          nx, n_up, nzs[i],
-          list_of<Block::Grading> (1) (p().mesh.grad_up) (grads[i])
-	)
-      );
-      top.addFace(bl.face("2376"));
-      if (i==0) side1.addFace(bl.face("0321"));
-      if (i==2) side2.addFace(bl.face("4567"));
+        Block& bl = bmd->addBlock
+                    (
+                        new Block(P_8(
+                                      pts[5]+y0[i], pts[6]+y0[i], pts[10]+y0[i], pts[9]+y0[i],
+                                      pts[5]+y0[i+1], pts[6]+y0[i+1], pts[10]+y0[i+1], pts[9]+y0[i+1]
+                                      ),
+                                  nx, n_up, nzs[i],
+                                  { 1, p().mesh.grad_up, grads[i] }
+                                  )
+                        );
+        top.addFace(bl.face("2376"));
+        if (i==0) side1.addFace(bl.face("0321"));
+        if (i==2) side2.addFace(bl.face("4567"));
     }
     {
-      Block& bl = bmd->addBlock
-      (
-	new Block(P_8(
-	    pts[6]+y0[i], pts[7]+y0[i], pts[11]+y0[i], pts[10]+y0[i],
-	    pts[6]+y0[i+1], pts[7]+y0[i+1], pts[11]+y0[i+1], pts[10]+y0[i+1]
-	  ),
-	  n_downstream, n_up, nzs[i],
-          list_of<Block::Grading> (p().mesh.grad_downstream) (p().mesh.grad_up) (grads[i])
-	)
-      );
-      outlet.addFace(bl.face("1265"));
-      top.addFace(bl.face("2376"));
-      if (i==0) side1.addFace(bl.face("0321"));
-      if (i==2) side2.addFace(bl.face("4567"));
+        Block& bl = bmd->addBlock
+                    (
+                        new Block(P_8(
+                                      pts[6]+y0[i], pts[7]+y0[i], pts[11]+y0[i], pts[10]+y0[i],
+                                      pts[6]+y0[i+1], pts[7]+y0[i+1], pts[11]+y0[i+1], pts[10]+y0[i+1]
+                                      ),
+                                  n_downstream, n_up, nzs[i],
+                                  { p().mesh.grad_downstream, p().mesh.grad_up, grads[i] }
+                                  )
+                        );
+        outlet.addFace(bl.face("1265"));
+        top.addFace(bl.face("2376"));
+        if (i==0) side1.addFace(bl.face("0321"));
+        if (i==2) side2.addFace(bl.face("4567"));
     }
   }
   
@@ -500,7 +501,8 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
   ));
   cm.insert(new forces(cm, forces::Parameters()
     .set_rhoInf(p().fluid.rho)
-    .set_patches(list_of<std::string>("\"(object.*)\""))
+    .set_patches({ "\"(object.*)\"" })
+    .set_name(sp().FOname)
   ));
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters()
     .set_nu(p().fluid.nu)
@@ -565,7 +567,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
   ap.message("Computing projected area");
   arma::mat Ah=projectedArea(cm, executionPath(), 
     vec3(1,0,0),
-    list_of<std::string>("object")
+    {"object"}
   );
   double A=Ah(Ah.n_rows-1,1);
 ++ap;
@@ -576,7 +578,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
   ptr_map_insert<ScalarResult>(*results) ("Afront", A, "Projected frontal area", "", "$m^2$");
     
   ap.message("Reading forces");
-  arma::mat f=forces::readForces(cm, executionPath(), "forces");
+  arma::mat f=forces::readForces(cm, executionPath(), sp().FOname);
   arma::mat t = f.col(0);
 ++ap;
   

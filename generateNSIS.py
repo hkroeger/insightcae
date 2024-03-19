@@ -89,7 +89,7 @@ class Dependency:
 Section "{label}"
     File "/oname=$TEMP\{file}" "{localfile}"
 """
-+("" if self.note is None else "MessageBox MB_OK \""+self.note"\"")
++("" if self.note is None else "MessageBox MB_OK \""+self.note+"\"")
         +"""
     {command}
     Delete "$TEMP\{file}"

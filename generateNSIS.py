@@ -88,13 +88,15 @@ class Dependency:
         return """
 Section "{label}"
     File "/oname=$TEMP\{file}" "{localfile}"
-""" +("" if self.note is None else "MessageBox MB_OK \""+self.note+"\"")
-        +"""
+    {note}
+    SetDetailsPrint both
+    DetailPrint "Installing {label}..."
     {command}
     Delete "$TEMP\{file}"
 SectionEnd
 """.format(
         label=label,
+        note=("" if self.note is None else "MessageBox MB_OK \""+self.note+"\""),
         file=self.filename,
         localfile=self.localfile,
         command=self.command )
@@ -129,13 +131,20 @@ class WSLImageDependency(Dependency):
 </root>
 """.format(label=imgname))
         self.command="""
+SetDetailsPrint both
+DetailPrint "Installing the WSL backend..."
+
 ClearErrors
 ExecWait 'wsl --import "{imgname}" "$PROFILE\\\\{imgname}" "$TEMP\\\\{file}"'
-IfErrors 0 noError
-  MessageBox MB_OK "The installation of the WSL backend image failed!"
-noError:
+IfErrors 0 installConfig
+
+  MessageBox MB_OK "The installation of the WSL backend image failed!$\\r$\\nPlease consider performing an update of the WSL subsystem.$\\r$\\n(execute 'wsl --update' in a powershell)"
+  Quit
+
+installConfig:
 CreateDirectory "$PROFILE\\.insight\\share"
 File "/oname=$PROFILE\\.insight\\share\\remoteservers.list" "remoteservers.list"
+
 """.format(file=self.filename, imgname=imgname)
 
 
@@ -143,7 +152,7 @@ putty=MSIDependency("http://downloads.silentdynamics.de/thirdparty/putty-64bit-0
 gnuplot=Dependency("http://downloads.silentdynamics.de/thirdparty/gp528-win64-mingw.exe")
 miktex=Dependency("http://downloads.silentdynamics.de/thirdparty/basic-miktex-21.6-x64.exe")
 python=Dependency("http://downloads.silentdynamics.de/thirdparty/python-3.6.8rc1.exe", 
-                  note="Please check the option 'Add python.exe to PATH' in the Python installer!$\\r$\\nIf this is omitted, the InsightCAE executables will not run.")
+                  note="Please check the option 'Add python.exe to PATH' in the upcoming Python installer!$\\r$\\n$\\r$\\n(If this is omitted, the InsightCAE executables will not run.)")
 paraview=Dependency("http://downloads.silentdynamics.de/thirdparty/ParaView-5.8.1-Windows-Python3.7-msvc2015-64bit.exe")
 insightwsl=WSLImageDependency(file=wslimage)
 
@@ -238,8 +247,23 @@ Page instfiles
 +gnuplot.config("Gnuplot") \
 +miktex.config("MiKTeX") \
 +python.config("Python 3.6") \
-+paraview.config("ParaView 5.8")) if not opts.skipOtherDeps else "\n") \
-+insightwsl.config("WSL Distibution (Ubuntu) with InsightCAE backend and OpenFOAM") \
++paraview.config("ParaView 5.8")) if not opts.skipOtherDeps else "\n") +"""
+
+Section "Update WSL System"
+ SetDetailsPrint both
+ DetailPrint "Updating the WSL subsystem..."
+
+ ClearErrors
+ ExecWait 'wsl --update'
+ IfErrors 0 updateFinished
+
+  MessageBox MB_OK "The update of the WSL subsystem failed!"
+  Quit
+
+ updateFinished:
+SectionEnd
+
+"""+insightwsl.config("WSL Distibution (Ubuntu) with InsightCAE backend and OpenFOAM") \
 +insight.config("InsightCAE Windows Client and isCAD")
 
 nsisScriptfname=installerfname+".nsis"

@@ -30,6 +30,15 @@
 #include "wallFvPatch.H"
 #include "addToRunTimeSelectionTable.H"
 
+#if OF_VERSION>=060500
+#include "porosityModel.H"
+#include "turbulentTransportModel.H"
+#include "turbulentFluidThermoModel.H"
+#include "twoPhaseSystem.H"
+#include "phaseCompressibleTurbulenceModel.H"
+#endif
+
+
 #include "uniof.h"
 
 #include <vector>
@@ -81,6 +90,7 @@ void extendedForces::createFields()
 
 
 
+
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 //- Construct for given objectRegistry and dictionary.
 //  Allow the possibility to load fields from files
@@ -103,6 +113,9 @@ extendedForces::extendedForces
   ),
   forceSource(name),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
+#if OF_VERSION>=060500
+  , phaseName_(dict.lookupOrDefault<word>("phase", word::null))
+#endif
 {
   createFields();
   if (maskFieldName_!="")
@@ -142,11 +155,17 @@ extendedForces::extendedForces
 	),
   forceSource(name),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
+#if OF_VERSION>=060500
+    , phaseName_(dict.lookupOrDefault<word>("phase", word::null))
+#endif
+
 {
   if (maskFieldName_!="")
    Info<<name<<": Masking force integration with field "<<maskFieldName_<<endl;
   createFields();
 }
+
+
 
 
 
@@ -173,6 +192,215 @@ extendedForces::extendedForces
 #endif
 
 
+
+tmp<volSymmTensorField> extendedForces::extendedDevRhoReff() const
+{
+#if OF_VERSION>=060500
+    typedef compressible::turbulenceModel cmpTurbModel;
+    typedef incompressible::turbulenceModel icoTurbModel;
+
+    const auto& U = lookupObject<volVectorField>(UName_);
+
+    if (foundObject<cmpTurbModel>(cmpTurbModel::propertiesName))
+    {
+        const cmpTurbModel& turb =
+            lookupObject<cmpTurbModel>(cmpTurbModel::propertiesName);
+
+        return turb.devRhoReff(U);
+    }
+    else if (foundObject<icoTurbModel>(icoTurbModel::propertiesName))
+    {
+        const incompressible::turbulenceModel& turb =
+            lookupObject<icoTurbModel>(icoTurbModel::propertiesName);
+
+        return rho()*turb.devReff(U);
+    }
+    else if (foundObject<fluidThermo>(fluidThermo::dictName))
+    {
+        const fluidThermo& thermo =
+            lookupObject<fluidThermo>(fluidThermo::dictName);
+
+        return -thermo.mu()*dev(twoSymm(fvc::grad(U)));
+    }
+    else if (foundObject<transportModel>("transportProperties"))
+    {
+        const transportModel& laminarT =
+            lookupObject<transportModel>("transportProperties");
+
+        return -rho()*laminarT.nu()*dev(twoSymm(fvc::grad(U)));
+    }
+    else if (foundObject<dictionary>("transportProperties"))
+    {
+        const dictionary& transportProperties =
+            lookupObject<dictionary>("transportProperties");
+
+        dimensionedScalar nu("nu", dimViscosity, transportProperties);
+
+        return -rho()*nu*dev(twoSymm(fvc::grad(U)));
+    }
+    else if (foundObject<twoPhaseSystem>("phaseProperties"))
+    {
+        const auto& tps =
+            lookupObject<twoPhaseSystem>("phaseProperties");
+
+        const phaseModel *ps=nullptr;
+
+        if (tps.phase1().name()==phaseName_)
+        {
+            ps=&tps.phase1();
+        }
+        else if (tps.phase2().name()==phaseName_)
+        {
+            ps=&tps.phase2();
+        }
+        else
+            FatalErrorIn("extendedForces::extendedDevRhoReff")
+                << "could not find phase " << phaseName_ << endl
+                << abort(FatalError);
+
+        return ps->turbulence().devRhoReff();
+    }
+    else
+    {
+        FatalErrorInFunction
+            << "No valid model for viscous stress calculation"
+            << exit(FatalError);
+
+        return volSymmTensorField::null();
+    }
+}
+
+
+bool extendedForces::read(const dictionary& dict)
+{
+    phaseName_ = dict.lookupOrDefault<word>("phase", word::null);
+    return forces::read(dict);
+}
+
+
+void extendedForces::calcForcesMoment()
+{
+    initialise();
+
+    resetFields();
+
+    const point& origin = coordSysPtr_->origin();
+
+    if (directForceDensity_)
+    {
+        const volVectorField& fD = lookupObject<volVectorField>(fDName_);
+
+        const surfaceVectorField::Boundary& Sfb = mesh_.Sf().boundaryField();
+
+        for (const label patchi : patchSet_)
+        {
+            vectorField Md(mesh_.C().boundaryField()[patchi] - origin);
+
+            scalarField sA(mag(Sfb[patchi]));
+
+            // Normal force = surfaceUnitNormal*(surfaceNormal & forceDensity)
+            vectorField fN
+                (
+                    Sfb[patchi]/sA
+                    *(
+                        Sfb[patchi] & fD.boundaryField()[patchi]
+                        )
+                    );
+
+            // Tangential force (total force minus normal fN)
+            vectorField fT(sA*fD.boundaryField()[patchi] - fN);
+
+            // Porous force
+            vectorField fP(Md.size(), Zero);
+
+            addToFields(patchi, Md, fN, fT, fP);
+
+            applyBins(Md, fN, fT, fP, mesh_.C().boundaryField()[patchi]);
+        }
+    }
+    else
+    {
+        const volScalarField& p = lookupObject<volScalarField>(pName_);
+
+        const surfaceVectorField::Boundary& Sfb = mesh_.Sf().boundaryField();
+
+        tmp<volSymmTensorField> tdevRhoReff = extendedDevRhoReff();
+        const volSymmTensorField::Boundary& devRhoReffb
+            = tdevRhoReff().boundaryField();
+
+        // Scale pRef by density for incompressible simulations
+        scalar pRef = pRef_/rho(p);
+
+        for (const label patchi : patchSet_)
+        {
+            vectorField Md(mesh_.C().boundaryField()[patchi] - origin);
+
+            vectorField fN
+                (
+                    rho(p)*Sfb[patchi]*(p.boundaryField()[patchi] - pRef)
+                    );
+
+            vectorField fT(Sfb[patchi] & devRhoReffb[patchi]);
+
+            vectorField fP(Md.size(), Zero);
+
+            addToFields(patchi, Md, fN, fT, fP);
+
+            applyBins(Md, fN, fT, fP, mesh_.C().boundaryField()[patchi]);
+        }
+    }
+
+    if (porosity_)
+    {
+        const volVectorField& U = lookupObject<volVectorField>(UName_);
+        const volScalarField rho(this->rho());
+        const volScalarField mu(this->mu());
+
+        const HashTable<const porosityModel*> models =
+            obr_.lookupClass<porosityModel>();
+
+        if (models.empty())
+        {
+            WarningInFunction
+                << "Porosity effects requested, but no porosity models found "
+                << "in the database"
+                << endl;
+        }
+
+        forAllConstIters(models, iter)
+        {
+            // Non-const access required if mesh is changing
+            porosityModel& pm = const_cast<porosityModel&>(*iter());
+
+            vectorField fPTot(pm.force(U, rho, mu));
+
+            const labelList& cellZoneIDs = pm.cellZoneIDs();
+
+            for (const label zonei : cellZoneIDs)
+            {
+                const cellZone& cZone = mesh_.cellZones()[zonei];
+
+                const vectorField d(mesh_.C(), cZone);
+                const vectorField fP(fPTot, cZone);
+                const vectorField Md(d - origin);
+
+                const vectorField fDummy(Md.size(), Zero);
+
+                addToFields(cZone, Md, fDummy, fDummy, fP);
+
+                applyBins(Md, fDummy, fDummy, fP, d);
+            }
+        }
+    }
+
+    Pstream::listCombineGather(force_, plusEqOp<vectorField>());
+    Pstream::listCombineGather(moment_, plusEqOp<vectorField>());
+    Pstream::listCombineScatter(force_);
+    Pstream::listCombineScatter(moment_);
+#else
+    return forces::devRhoReff();
+#endif
+}
 
 
 #if OF_VERSION>=040000
@@ -209,7 +437,7 @@ extendedForces::execute()
     const fvMesh& mesh = U.mesh();
 
 
-    tmp<volSymmTensorField> tdevRhoReff = devRhoReff();
+    tmp<volSymmTensorField> tdevRhoReff = extendedDevRhoReff();
 
     // Scale pRef by density for incompressible simulations
     scalar pRef = pRef_/rho(p);

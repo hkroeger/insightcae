@@ -54,7 +54,13 @@ protected:
   vector po_moment_;
   
   void createFields();
-  
+
+#if OF_VERSION>=060500
+  word phaseName_;
+#endif
+
+  tmp<volSymmTensorField> extendedDevRhoReff() const;
+
 public:
   TypeName("extendedForces");
     // Constructors
@@ -108,7 +114,10 @@ public:
         );
 #endif
 
-
+#if OF_VERSION>=060500
+    bool read(const dictionary&) override;
+    void calcForcesMoment() override;
+#endif
 
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
     bool

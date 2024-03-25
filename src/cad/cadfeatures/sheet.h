@@ -26,23 +26,23 @@ namespace insight {
 namespace cad {
 
 
-    
-    
-class Thicken
+
+
+class Sheet
     : public Feature
 {
     FeaturePtr shell_;
     ScalarPtr thickness_;
     ScalarPtr tol_;
 
-    Thicken ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst ( Precision::Confusion() ) );
+    Sheet ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst ( Precision::Confusion() ) );
 
     size_t calcHash() const override;
     void build() override;
 
 public:
-    declareType ( "Thicken" );
-    CREATE_FUNCTION(Thicken);
+    declareType ( "Sheet" );
+    CREATE_FUNCTION(Sheet);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

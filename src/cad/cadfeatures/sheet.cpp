@@ -17,7 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "thicken.h"
+#include "sheet.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -42,13 +42,13 @@ namespace cad {
     
     
 
-defineType(Thicken);
+defineType(Sheet);
 //addToFactoryTable(Feature, Thicken);
-addToStaticFunctionTable(Feature, Thicken, insertrule);
-addToStaticFunctionTable(Feature, Thicken, ruleDocumentation);
+addToStaticFunctionTable(Feature, Sheet, insertrule);
+addToStaticFunctionTable(Feature, Sheet, ruleDocumentation);
 
 
-size_t Thicken::calcHash() const
+size_t Sheet::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
@@ -63,7 +63,7 @@ size_t Thicken::calcHash() const
 
 
 
-Thicken::Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
+Sheet::Sheet(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
 : shell_(shell), thickness_(thickness), tol_(tol)
 {}
 
@@ -72,9 +72,9 @@ Thicken::Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
 
 
 
-void Thicken::build()
+void Sheet::build()
 {
-  ExecTimer t("Thicken::build() ["+featureSymbolName()+"]");
+  ExecTimer t("Sheet::build() ["+featureSymbolName()+"]");
 
   TopTools_ListOfShape ClosingFaces;
   
@@ -82,8 +82,8 @@ void Thicken::build()
   
   double offs=thickness_->value();
 
+  providedSubshapes_["shell"]=shell_;
 
-//  BRepOffsetAPI_MakeOffsetShape maker(*shell_, offs, Precision::Confusion());
   BRepOffset_MakeOffset maker;
   maker.Initialize
   (
@@ -94,18 +94,9 @@ void Thicken::build()
   {
       maker.SetOffsetOnFace(TopoDS::Face(ex.Current()), offs);
   }
-//   BRepOffsetAPI_MakeThickSolid maker
-//   (
-//     *shell_, ClosingFaces, thickness_->value(),
-//     Precision::Confusion(),
-//     BRepOffset_Skin,
-//     Standard_True,
-//     Standard_False,
-//     GeomAbs_Arc
-//   );
+
   
   maker.MakeThickSolid();
-//   maker.MakeOffsetShape();
   
   TopoDS_Shape res=maker.Shape();
   ShapeFix_Solid FixShape;
@@ -119,11 +110,11 @@ void Thicken::build()
 
 
 
-void Thicken::insertrule(parser::ISCADParser& ruleset)
+void Sheet::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
-    "Thicken",	
+    "Sheet",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' 
@@ -132,7 +123,7 @@ void Thicken::insertrule(parser::ISCADParser& ruleset)
         >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst ( Precision::Confusion() )) )
         >> ')' ) 
       [ qi::_val = phx::bind(
-                       &Thicken::create<FeaturePtr, ScalarPtr, ScalarPtr>,
+                       &Sheet::create<FeaturePtr, ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3) ]
       
     )
@@ -142,12 +133,12 @@ void Thicken::insertrule(parser::ISCADParser& ruleset)
 
 
 
-FeatureCmdInfoList Thicken::ruleDocumentation()
+FeatureCmdInfoList Sheet::ruleDocumentation()
 {
     return {
         FeatureCmdInfo
         (
-            "Thicken",
+            "Sheet",
             "( <feature:base>, <scalar:t> )",
           _("Creates a solid from a shell feature by adding thickness t.")
         )

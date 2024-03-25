@@ -1,3 +1,4 @@
+
 %module(directors="1") toolkit
 
 %{
@@ -226,7 +227,10 @@ using namespace insight::createPatchOps;
 %include "openfoam/openfoamcase.h"
 %include "openfoam/openfoamdict.h"
 
+%include "openfoam/openfoamanalysis.h"
+
 %include "openfoam/openfoamtools.h"
+
 //namespace std {
 //%template(PatchLayers) std::map<std::string, int>;
 //}
@@ -324,8 +328,6 @@ using namespace insight::createPatchOps;
 %include "openfoam/caseelements/basic/fixedvalueconstraint.h"
 %include "openfoam/caseelements/basic/pressuregradientsource.h"
 %include "openfoam/caseelements/basic/wallheatflux.h"
-
-%include "openfoam/openfoamanalysis.h"
 
 %rename(Cylinder_Parameters) Cylinder::Parameters;
 

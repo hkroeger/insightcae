@@ -15,6 +15,7 @@ if (NOT WIN32)
         FiltersPoints
         FiltersFlowPaths
         FiltersVerdict
+        FiltersParallel
         CommonCore
         CommonDataModel
         CommonMisc
@@ -27,6 +28,7 @@ if (NOT WIN32)
         #IOParallel # not available in mxe
         ImagingCore
         GUISupportQt
+        RenderingLabel
         RenderingOpenGL2
         RenderingAnnotation
          InteractionWidgets
@@ -46,6 +48,7 @@ else()
            vtkFiltersPoints
            vtkFiltersFlowPaths
            vtkFiltersVerdict
+           vtkFiltersParallel
            vtkCommonCore
            vtkCommonDataModel
            vtkCommonMisc
@@ -58,6 +61,7 @@ else()
            #IOParallel # not available in mxe
            vtkImagingCore
            vtkGUISupportQt
+           vtkRenderingLabel
            vtkRenderingOpenGL2
            vtkRenderingAnnotation
             vtkInteractionWidgets

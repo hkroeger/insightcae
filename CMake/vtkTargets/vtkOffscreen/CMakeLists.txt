@@ -23,6 +23,7 @@ else()
             FiltersPoints
             FiltersFlowPaths
             FiltersVerdict
+            FiltersParallel
             CommonCore
             CommonDataModel
             CommonMisc
@@ -34,6 +35,7 @@ else()
             IOXML
             #IOParallel # not available in mxe
             ImagingCore
+            RenderingLabel
             RenderingOpenGL2
             RenderingAnnotation
              InteractionWidgets

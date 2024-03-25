@@ -59,7 +59,7 @@ add_sources(insightcad_SOURCES
  stl.cpp stl.h
 
  sweep.cpp sweep.h
- thicken.cpp thicken.h
+ sheet.cpp sheet.h
  transform.cpp transform.h
  tri.cpp tri.h
  tongue.cpp tongue.h

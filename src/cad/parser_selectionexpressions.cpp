@@ -86,6 +86,8 @@ void ISCADParser::createSelectionExpressions()
                |
                ( lit("vid") > '=' > '(' > ( qi::int_ % ',' ) > ')'
                ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Vertex, qi::_1)) ]
+               |
+               qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Vertex)) [ qi::_val = qi::_1 ]
             )
         )
         >>
@@ -126,6 +128,8 @@ void ISCADParser::createSelectionExpressions()
                 |
                 lit("alledges")
                  [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Edge)) ]
+                |
+                qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Edge)) [ qi::_val = qi::_1 ]
               )
         )
         >>
@@ -168,6 +172,8 @@ void ISCADParser::createSelectionExpressions()
                |
                ( lit("allfaces")
                ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Face)) ]
+               |
+                qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Face)) [ qi::_val = qi::_1 ]
             )
         )
         >>
@@ -202,6 +208,8 @@ void ISCADParser::createSelectionExpressions()
               ( lit("sid") > '=' > '(' > (qi::int_ % ',' ) > ')'
               )
               [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid, qi::_1)) ]
+              |
+               qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Solid)) [ qi::_val = qi::_1 ]
             )
         )
         >>

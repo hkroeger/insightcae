@@ -29,6 +29,7 @@
 
 #include "base/analysis.h"
 #include "base/resultset.h"
+#include "base/tools.h"
 #include "openfoam/openfoamcase.h"
 
 #include "base/parameters/simpleparameter.h"
@@ -700,9 +701,8 @@ public:
 
   inline ParameterSet parameters() const override { return p_; }
   
-  virtual ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer);
+  ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
 };
-
 
 
 std::vector<std::string> patchList

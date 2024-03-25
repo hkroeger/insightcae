@@ -94,11 +94,17 @@ void Extrusion::build()
       L = sk_->averageFaceNormal()*(*Lsc)->value();
     }
 
+    bool extrusionOfEdges =
+        sk_->topologicalProperties().onlyEdges();
+
+    std::string suffix("Face");
+    if (extrusionOfEdges) suffix="Edge";
+
     if ( !centered_ )
     {
         BRepPrimAPI_MakePrism mkp ( sk_->shape(), to_Vec(L ) );
-        providedSubshapes_["frontFace"]=Feature::create ( mkp.FirstShape() );
-        providedSubshapes_["backFace"]=Feature::create ( mkp.LastShape() );
+        providedSubshapes_["front"+suffix]=Feature::create ( mkp.FirstShape() );
+        providedSubshapes_["back"+suffix]=Feature::create ( mkp.LastShape() );
         setShape ( mkp.Shape() );
     }
     else
@@ -110,8 +116,8 @@ void Extrusion::build()
             BRepBuilderAPI_Transform ( sk_->shape(), trsf ).Shape(),
             to_Vec(L)
         );
-        providedSubshapes_["frontFace"]=Feature::create ( mkp.FirstShape() );
-        providedSubshapes_["backFace"]=Feature::create ( mkp.LastShape() );
+        providedSubshapes_["front"+suffix]=Feature::create ( mkp.FirstShape() );
+        providedSubshapes_["back"+suffix]=Feature::create ( mkp.LastShape() );
         setShape ( mkp.Shape() );
     }
 

@@ -565,6 +565,12 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
       ${${_ofvers}_LIB_DIR}/lib${_lib}.so
       )
     endforeach()
+    foreach (_lib ${${_ofvers}_OF_LIBS})
+      list (APPEND ${PRJ_NAME}_LIBRARIES
+      ${${_ofvers}_LIB_DIR}/lib${_lib}.so
+      )
+    endforeach()
+
     
     #LIST(APPEND ${PRJ_NAME}_LIBRARIES ${${_ofvers}_LIBS})
     foreach (_targ ${is_of_targets})

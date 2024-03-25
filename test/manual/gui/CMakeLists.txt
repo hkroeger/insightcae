@@ -1,6 +1,6 @@
 add_subdirectory(analysispreview3d)
 add_subdirectory(graphprogressdisplayer)
-
+add_subdirectory(views)
 
 set(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTOUIC ON)

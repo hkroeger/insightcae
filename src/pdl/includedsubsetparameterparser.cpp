@@ -16,12 +16,12 @@ void IncludedSubsetParameterParser::Data::cppAddHeader(std::set<std::string>& he
 
 std::string IncludedSubsetParameterParser::Data::cppType(const std::string&) const
 {
-    return value;
+    return "typename "+value;
 }
 
-std::string IncludedSubsetParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope) const
+std::string IncludedSubsetParameterParser::Data::cppValueRep(const std::string& s, const std::string& thisscope) const
 {
-    return value+"()";
+    return cppType(s)+"()";
 }
 
 std::string IncludedSubsetParameterParser::Data::cppParamType(const std::string& ) const

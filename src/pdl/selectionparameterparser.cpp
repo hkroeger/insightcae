@@ -1,4 +1,5 @@
 #include "selectionparameterparser.h"
+#include "boost/algorithm/string/predicate.hpp"
 
 
 using namespace std;
@@ -33,13 +34,18 @@ std::string SelectionParameterParser::Data::cppTypeDecl(const std::string& name,
     os<<comma<<s<<endl;
     comma=",";
   }
-  //os<<",invalid_"+cppTypeName(name)+"_selection";
   os<<"};";
   return os.str();
 }
 std::string SelectionParameterParser::Data::cppValueRep(const std::string& name, const std::string& thisscope) const
 {
-  return extendtype(extendtype(thisscope, name+"_type"), selection);
+    auto v = extendtype(extendtype(thisscope, name+"_type"), selection);
+
+    std::string pat("typename");
+    if (boost::starts_with(v, pat))
+        v.erase(0, pat.size());
+
+    return v;
 }
 
 std::string SelectionParameterParser::Data::cppParamType(const std::string& ) const
@@ -52,7 +58,6 @@ void SelectionParameterParser::Data::cppWriteCreateStatement(std::ostream& os, c
 {
 
   os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
-//       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
   os<<"{"<<endl;
   os<<"insight::SelectionParameter::ItemList items;"<<endl;
   for (const std::string& s: selections)
@@ -83,5 +88,5 @@ void SelectionParameterParser::Data::cppWriteGetStatement(std::ostream& os, cons
   const std::string& thisscope) const
 {
   os<<staticname<<"="<<extendtype(thisscope, cppTypeName(name))
-   <<"(" /*"std::min<int>("<<selections.size()<<","*/<<varname<<"()" /*")"*/ ");"<<endl;
+   <<"("<<varname<<"() );"<<endl;
 }

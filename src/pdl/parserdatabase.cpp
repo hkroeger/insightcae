@@ -1,4 +1,7 @@
 #include "parserdatabase.h"
+#include "boost/algorithm/string/predicate.hpp"
+#include "boost/algorithm/string/trim.hpp"
+#include <string>
 
 arma::mat vec2mat(const std::vector<double>& vals)
 {
@@ -20,8 +23,17 @@ const char* PDLException::what() const noexcept
 
 std::string extendtype(const std::string& pref, const std::string& app)
 {
-  if (pref=="") return app;
-  else return pref+"::"+app;
+  if (pref=="")
+  {
+      return app;
+  }
+  else
+  {
+      auto p=pref;
+      if (!boost::starts_with(p, "typename "))
+          p="typename "+p;
+      return p+"::"+app;
+  }
 }
 
 

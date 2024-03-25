@@ -30,7 +30,7 @@ std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppType
 
 std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppValueRep ( const std::string&, const std::string& thisscope  ) const
 {
-  return "{ \""+default_sel_+"\", "+base_type+"::defaultParameters(\""+default_sel_+"\") }";
+  return "{ \""+default_sel_+"\", "+base_type+"::defaultParametersFor(\""+default_sel_+"\") }";
 }
 
 
@@ -50,7 +50,7 @@ void DynamicClassParametersSelectableSubsetParameterParser::Data::cppWriteCreate
         "for ("<<base_type<<"::FactoryTable::const_iterator i = "<<base_type<<"::factories_->begin();"
             "i != "<<base_type<<"::factories_->end(); i++)"
         "{"
-            "ParameterSet defp = "<<base_type<<"::defaultParameters(i->first);\n"
+            "ParameterSet defp = "<<base_type<<"::defaultParametersFor(i->first);\n"
             <<name<<"->addItem( i->first, defp );\n"
         "}";
 

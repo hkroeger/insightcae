@@ -10,6 +10,8 @@
 #include "iqparameter.h"
 #include "iqparameters/iqarrayparameter.h"
 #include "iqparameters/iqarrayelementparameter.h"
+#include "iqparameters/iqlabeledarrayparameter.h"
+#include "iqparameters/iqlabeledarrayelementparameter.h"
 #include "base/parameters/simpleparameter.h"
 
 #include "cadparametersetvisualizer.h"
@@ -511,6 +513,10 @@ QList<IQParameter*> IQParameterSetModel::decorateChildren(QObject* parent, insig
   {
     return decorateArrayContent(parent, *ap);
   }
+  else if (auto* ap = dynamic_cast<insight::LabeledArrayParameter*>(&curParam))
+  {
+      return decorateLabeledArrayContent(parent, *ap);
+  }
   else
   {
     QList<IQParameter*> children;
@@ -560,6 +566,31 @@ QList<IQParameter*> IQParameterSetModel::decorateArrayContent(QObject* parent, i
   }
   return children;
 };
+
+
+
+IQParameter *IQParameterSetModel::decorateLabeledArrayElement(QObject *parent, const std::string& name, insight::Parameter &cp)
+{
+    auto iqp = IQLabeledArrayElementParameterBase::create(parent, this, QString::fromStdString(name), cp, defaultParameterSet_);
+
+    decorateChildren(iqp, cp);
+    return iqp;
+}
+
+QList<IQParameter *> IQParameterSetModel::decorateLabeledArrayContent(QObject *parent, insight::LabeledArrayParameter &ap)
+{
+    QList<IQParameter*> children;
+    for (int i=0; i<ap.size(); ++i)
+    {
+        auto iqp=decorateLabeledArrayElement(parent, ap.childParameterName(i), ap.childParameterRef(i));
+        children.append(iqp);
+    }
+    if (IQParameter* ciqp = dynamic_cast<IQParameter*>(parent))
+    {
+        ciqp->append(children);
+    }
+    return children;
+}
 
 
 

@@ -24,6 +24,7 @@ set(pdl_SOURCES
     propertylibraryselectionparameterparser.h propertylibraryselectionparameterparser.cpp
     spatialtransformationparameterparser.h spatialtransformationparameterparser.cpp
     cadgeometryparameterparser.h cadgeometryparameterparser.cpp
+    labeledarrayparameterparser.h labeledarrayparameterparser.cpp
     cadsketchparameterparser.h cadsketchparameterparser.cpp
 )
 

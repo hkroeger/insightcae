@@ -77,7 +77,7 @@ void ArrayParameter::resize(int newSize)
 {
   if (newSize<size())
   {
-    for (int k=size()-1; k>newSize; --k)
+    for (int k=size()-1; k>=newSize; --k)
     {
       eraseValue(k);
     }
@@ -459,7 +459,6 @@ void ArrayParameter::copyFrom(const Parameter& p)
 
 void ArrayParameter::operator=(const ArrayParameter& op)
 {
-
   (*defaultValue_).copyFrom(*op.defaultValue_);
   defaultSize_ = op.defaultSize_;
 

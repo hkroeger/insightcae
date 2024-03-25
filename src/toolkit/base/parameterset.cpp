@@ -54,17 +54,22 @@ ParameterSet::ParameterSet(const ParameterSet &o)
 ParameterSet::ParameterSet ( const SubsetParameter& o )
 {
     SubsetParameter::operator=(o);
+    initialize();
 }
 
 
 ParameterSet::ParameterSet(const EntryCopies &defaultValue, const std::string &description)
     : SubsetParameter(defaultValue, description)
-{}
+{
+    initialize();
+}
 
 
 ParameterSet::ParameterSet(const EntryReferences &defaultValue, const std::string &description)
     : SubsetParameter(defaultValue, description)
-{}
+{
+    initialize();
+}
 
 
 ParameterSet::~ParameterSet()
@@ -93,6 +98,7 @@ void ParameterSet::copyFrom(const Parameter& o)
 void ParameterSet::operator=(const ParameterSet &o)
 {
   SubsetParameter::operator=(o);
+  initialize();
 }
 
 
@@ -101,6 +107,7 @@ void ParameterSet::operator=(const ParameterSet &o)
 ParameterSet& ParameterSet::merge(const ParameterSet& other )
 {
   SubsetParameter::merge(other);
+  initialize();
   return *this;
 }
 
@@ -120,6 +127,7 @@ ParameterSet* ParameterSet::cloneParameterSet() const
 {
   ParameterSet *np=new ParameterSet;
   np->SubsetParameter::copyFrom( *this );
+  np->initialize();
   return np;
 }
 
@@ -134,6 +142,7 @@ void ParameterSet::readFromNode(
     boost::filesystem::path inputfilepath)
 {
   SubsetParameter::readFromNode(std::string(), node, inputfilepath);
+  initialize();
 }
 
 

@@ -28,6 +28,7 @@
 #include "boost/algorithm/string/trim.hpp"
 
 #include "base/parameterset.h"
+#include "base/parameters/selectablesubsetparameter.h"
 #include "base/rapidxml.h"
 #include "base/cppextensions.h"
 
@@ -267,13 +268,17 @@ void Parameter::triggerChildValueChanged()
 void Parameter::setParent(Parameter *parent)
 {
     parent_=parent;
+    needsInitialization_=true;
 }
+
+
 
 Parameter::Parameter()
 : description_(),
   isHidden_(false), isExpert_(false), isNecessary_(false), order_(0),
   valueChangeSignalBlocked_(false),
-    parent_(nullptr)
+    parent_(nullptr),
+    needsInitialization_(true)
 {
 }
 
@@ -281,12 +286,25 @@ Parameter::Parameter(const std::string& description, bool isHidden, bool isExper
 : description_(description),
   isHidden_(isHidden), isExpert_(isExpert), isNecessary_(isNecessary), order_(order),
   valueChangeSignalBlocked_(false),
-  parent_(nullptr)
+  parent_(nullptr),
+    needsInitialization_(true)
 {
 }
 
 Parameter::~Parameter()
 {}
+
+
+
+void Parameter::initialize()
+{
+    for (int i=0; i<nChildren(); ++i)
+    {
+        childParameterRef(i).initialize();
+    }
+}
+
+
 
 Parameter *Parameter::parent() const
 {
@@ -295,7 +313,12 @@ Parameter *Parameter::parent() const
 
 SubsetParameter& Parameter::parentSet() const
 {
-    return dynamic_cast<SubsetParameter&>(*parent());
+    // if (auto *ssp = dynamic_cast<SelectableSubsetParameter*>(parent()))
+    // {
+    //     return (*ssp)();
+    // }
+    // else
+        return dynamic_cast<SubsetParameter&>(*parent());
 }
 
 

@@ -52,6 +52,7 @@ set(toolkit_SOURCES
     base/parameters/selectablesubsetparameter.cpp base/parameters/selectablesubsetparameter.h
     base/parameters/propertylibraryselectionparameter.h base/parameters/propertylibraryselectionparameter.cpp
     base/parameters/spatialtransformationparameter.h base/parameters/spatialtransformationparameter.cpp
+    base/parameters/labeledarrayparameter.h base/parameters/labeledarrayparameter.cpp
 
     base/parameterset.cpp base/parameterset.h
     base/parametersetvisualizer.h base/parametersetvisualizer.cpp

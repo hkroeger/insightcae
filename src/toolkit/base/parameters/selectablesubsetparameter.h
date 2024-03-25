@@ -59,6 +59,8 @@ public:
 
   SelectableSubsetParameter ( const key_type& defaultSelection, const EntryCopies& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
+  void initialize() override;
+
   bool isDifferent(const Parameter& p) const override;
 
   void setSelection(const key_type& nk);
@@ -112,6 +114,7 @@ public:
 
 
   int nChildren() const override;
+  int childParameterIndex( const std::string& name ) const override;
   std::string childParameterName(int i) const override;
   Parameter& childParameterRef ( int i ) override;
   const Parameter& childParameter( int i ) const override;

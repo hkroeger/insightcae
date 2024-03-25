@@ -1,6 +1,7 @@
 #include "selectablesubsetparameter.h"
 
 #include "base/cppextensions.h"
+#include <iterator>
 
 namespace insight {
 
@@ -50,6 +51,14 @@ SelectableSubsetParameter::SelectableSubsetParameter(
   {
         addItem(i.first, *i.second);
   }
+}
+
+void SelectableSubsetParameter::initialize()
+{
+    for (auto v: value_)
+    {
+        v.second->initialize();
+    }
 }
 
 
@@ -380,23 +389,55 @@ std::unique_ptr<Parameter> SelectableSubsetParameter::intersection(const Paramet
 
 int SelectableSubsetParameter::nChildren() const
 {
-  return operator()().size();
+    return operator()().size();
 }
+
+
+int SelectableSubsetParameter::childParameterIndex(const std::string &name) const
+{
+    for (int k=0; k<nChildren()+value_.size(); ++k)
+    {
+        if (childParameterName(k)==name) return k;
+    }
+    return -1;
+}
+
 
 std::string SelectableSubsetParameter::childParameterName(int i) const
 {
+    if (i>=nChildren() && i<(nChildren()+value_.size()))
+    {
+        int j=i-nChildren();
+        auto ii=value_.begin();
+        std::advance(ii, j);
+        return "<"+ii->first+">";
+    }
   return operator()().childParameterName(i);
 }
 
 
 Parameter& SelectableSubsetParameter::childParameterRef ( int i )
 {
+    if (i>=nChildren() && i<(nChildren()+value_.size()))
+    {
+        int j=i-nChildren();
+        auto ii=value_.begin();
+        std::advance(ii, j);
+        return *ii->second;
+    }
   return operator()().childParameterRef(i);
 }
 
 
 const Parameter& SelectableSubsetParameter::childParameter( int i ) const
 {
+    if (i>=nChildren() && i<(nChildren()+value_.size()))
+    {
+        int j=i-nChildren();
+        auto ii=value_.begin();
+        std::advance(ii, j);
+        return *ii->second;
+    }
   return operator()().childParameter(i);
 }
 

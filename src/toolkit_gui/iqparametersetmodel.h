@@ -25,6 +25,7 @@ template<class IQBaseParameter, const char* N> class IQArrayElementParameter;
 
 namespace insight {
 class CADParameterSetVisualizer;
+class LabeledArrayParameter;
 }
 
 
@@ -70,6 +71,8 @@ private:
   QList<IQParameter*> decorateChildren(QObject* parent, insight::Parameter& p);
   IQParameter* decorateArrayElement(QObject* parent, int i, insight::Parameter& cp);
   QList<IQParameter*> decorateArrayContent(QObject*, insight::ArrayParameterBase& ap);
+  IQParameter* decorateLabeledArrayElement(QObject* parent, const std::string& name, insight::Parameter& cp);
+  QList<IQParameter*> decorateLabeledArrayContent(QObject*, insight::LabeledArrayParameter& ap);
 
 
 public:

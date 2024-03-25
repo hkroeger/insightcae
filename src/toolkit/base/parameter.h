@@ -209,11 +209,14 @@ protected:
     bool valueChangeSignalBlocked_;
 
     Parameter* parent_;
-    void setParent(Parameter* parent);
+    virtual void setParent(Parameter* parent);
 
     friend class ArrayParameter;
     friend class SubsetParameter;
     friend class SelectableSubsetParameter;
+    friend class LabeledArrayParameter;
+
+    bool needsInitialization_;
 
 public:
     declareType ( "Parameter" );
@@ -221,6 +224,8 @@ public:
     Parameter();
     Parameter ( const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order);
     virtual ~Parameter();
+
+    virtual void initialize();
 
     Parameter* parent() const;
     SubsetParameter& parentSet() const;

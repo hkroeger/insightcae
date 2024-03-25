@@ -143,6 +143,8 @@ set(toolkit_gui_SRCS
     iqparameters/iqarrayelementparameter.cpp iqparameters/iqarrayelementparameter.h
     iqparameters/iqpropertylibraryselectionparameter.cpp iqparameters/iqpropertylibraryselectionparameter.h
     iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
+    iqparameters/iqlabeledarrayparameter.h iqparameters/iqlabeledarrayparameter.cpp
+    iqparameters/iqlabeledarrayelementparameter.h iqparameters/iqlabeledarrayelementparameter.cpp
     #iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
     iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 
@@ -190,6 +192,8 @@ set(toolkit_gui_SRCS
     analysisguilibrary.h analysisguilibrary.cpp
     wslinstallation.h wslinstallation.cpp
     iqexternalprogramsmodel.h iqexternalprogramsmodel.cpp
+
+    iqcadexceptiondisplaydialog.h iqcadexceptiondisplaydialog.cpp iqcadexceptiondisplaydialog.ui
 
     iqconfigureexternalprogramsdialog.h iqconfigureexternalprogramsdialog.cpp iqconfigureexternalprogramsdialog.ui
     iqglobalconfigurationmodel.h
@@ -239,6 +243,8 @@ target_include_directories(toolkit_gui
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
  )
+
+setup_gettext(toolkit_gui toolkit_gui ${toolkit_gui_SRCS})
 
 if (INSIGHT_DEVELOPMENT_FILES)
  install(

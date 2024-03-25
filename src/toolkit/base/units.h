@@ -32,6 +32,8 @@
 #include <boost/units/systems/si/electric_potential.hpp>
 #include <boost/units/systems/si/current.hpp>
 #include <boost/units/systems/si/resistance.hpp>
+#include <boost/units/systems/si/temperature.hpp>
+#include <boost/units/systems/temperature/celsius.hpp>
 #include <boost/units/systems/si/io.hpp>
 #include "boost/units/systems/si/pressure.hpp"
 #include "boost/units/systems/si/prefixes.hpp"
@@ -51,6 +53,7 @@
 namespace insight {
 namespace si = boost::units::si;
 namespace cgs = boost::units::cgs;
+namespace celsius = boost::units::celsius;
 }
 
 
@@ -90,16 +93,25 @@ namespace boost { namespace units { namespace si {
  static const angle_rad_unit angle_rad;
 
  static const auto kelvin_per_meter = kelvin/meter;
+ static const auto cubic_meter_per_second = cubic_meter/second;
+ static const auto hour = 3600*second;
 
+ static const auto degC = 1.*absolute<celsius::temperature>();
+ static const auto degK = 1.*absolute<si::temperature>();
 
 
  template<class Dimension, class Type, class Unit>
  Type toValue(const quantity<Dimension,Type>& q, const Unit& u)
  {
-//   return ( static_cast<quantity<Unit, Type> >(q) / u).value();
      return static_cast<quantity<si::dimensionless, Type> >( q / u ).value();
  }
 
+
+ template<class Dimension, class Type, class Unit>
+ Type toValue(const quantity<absolute<Dimension>,Type>& q, const Unit& u)
+ {
+     return Unit(q).value();
+ }
 
 
  template<class Unit, class Type>
@@ -159,9 +171,11 @@ namespace boost { namespace units { namespace si {
 
  typedef quantity<pressure, double> Pressure;
 
- typedef quantity<temperature, double> Temperature;
+ typedef quantity<absolute<temperature>, double> Temperature;
 
  typedef quantity<power, double> Power;
+
+ typedef quantity<decltype(cubic_meter_per_second)::unit_type, double> VolumeFlux;
 
  typedef quantity<decltype(kelvin_per_meter)::unit_type, double> TemperatureGradient;
 

@@ -110,7 +110,7 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
                 const insight::ParameterSet& seps,
                 vtkProperty* actprops)
             {
-                if (seps.size()>0)
+                if ( (seps.size()>0) && seps.contains("type") )
                 {
                     auto &selp = seps.get<insight::SelectableSubsetParameter>("type");
                     if (selp.selection()=="wall")

@@ -2,13 +2,21 @@
 
 #include <QMessageBox>
 #include "Standard_Failure.hxx"
+#include "iqcadexceptiondisplaydialog.h"
 
 void displayException(const std::exception& e)
 {
   // put it to console as well...
   insight::printException(e);
 
-  if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
+  if (const auto* ie = dynamic_cast<const insight::CADException*>(&e))
+  {
+      IQCADExceptionDisplayDialog msg;
+      msg.displayException(*ie);
+      msg.exec();
+  }
+
+  else if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
   {
     QMessageBox msgBox;
     msgBox.setIcon(QMessageBox::Critical);

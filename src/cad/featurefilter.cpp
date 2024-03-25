@@ -31,6 +31,7 @@
 
 #include "cadfeature.h"
 #include "featurefilters/same.h"
+#include "featurefilters/edgeconnectingvertices.h"
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 // #define BOOST_SPIRIT_DEBUG
@@ -460,7 +461,13 @@ struct EdgeFeatureFilterExprParser
 	  > FeatureFilterExprParser<Iterator>::r_scalar_qty_expression > ')' // tol
 	) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentProjectedEdge>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
-	  ;
+    |
+     ( lit("connects") > '('
+        > FeatureFilterExprParser<Iterator>::r_featureset > ','
+        > FeatureFilterExprParser<Iterator>::r_featureset
+        > ')' )
+      [ qi::_val = phx::construct<FilterPtr>(new_<EdgeConnectingVertices>(*qi::_1, *qi::_2)) ]
+      ;
 	  
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
 	( lit("len") ) 

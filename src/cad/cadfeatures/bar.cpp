@@ -18,6 +18,8 @@
  */
 
 #include "bar.h"
+#include "base/exception.h"
+#include "feature.h"
 #include "quad.h"
 #include "line.h"
 #include "transform.h"
@@ -69,6 +71,7 @@ size_t Bar::calcHash() const
       h+=**feat;
   }
   h+=*xsec_;
+  if (thickness_) h+=thickness_->value();
   h+=vert_->value();
   h+=ext0_->value();
   h+=ext1_->value();
@@ -178,6 +181,14 @@ void Bar::build()
         
         auto xsect=Transform::create(xsec_, tr.Inverted());
 
+        bool isThinFeature = xsect->topologicalProperties().onlyEdges();
+
+        if (thickness_ && !isThinFeature)
+            throw insight::CADException(
+                {{"cross section", xsect}},
+                "Thickness was specified by the section does not comprise of edges only!"
+                " Please check modelling intention."
+                );
 
         if (attractPt_)
         {
@@ -234,6 +245,51 @@ void Bar::build()
                          );
             TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(L*baraxis) );
             result=BRepAlgoAPI_Cut(result, airspace);
+        }
+
+
+        if (thickness_)
+        {
+
+            auto sf=Feature::create(result);
+            providedSubshapes_["shell"]=sf;
+
+            auto longedgs=cad::makeEdgeFeatureSet(
+                sf, "angleMag(end-start, %m0)<0.001", {cad::matconst(p1 - p0)});
+            providedFeatureSets_["e_shell_longi"]=longedgs;
+            arma::mat midp=0.5*(p0+p1);
+            providedFeatureSets_["e_shell_start"]=
+                cad::makeEdgeFeatureSet(
+                    sf, "(!in(%0)) && (((CoG-%m1)&%m2)<0)",
+                {longedgs, cad::matconst(midp), cad::matconst(normalized(p1 - p0))} );
+            providedFeatureSets_["e_shell_end"]=
+                cad::makeEdgeFeatureSet(
+                    sf, "(!in(%0)) && (((CoG-%m1)&%m2)>0)",
+                    {longedgs, cad::matconst(midp), cad::matconst(normalized(p1 - p0))} );
+
+
+
+            BRepOffset_MakeOffset maker;
+            maker.Initialize
+                (
+                result, thickness_->value(),
+                Precision::Confusion(),
+                BRepOffset_Skin, Standard_True, Standard_True, GeomAbs_Arc, Standard_True
+                );
+            for (TopExp_Explorer ex(result, TopAbs_FACE); ex.More(); ex.Next())
+            {
+                maker.SetOffsetOnFace(TopoDS::Face(ex.Current()), thickness_->value());
+            }
+
+
+            maker.MakeThickSolid();
+
+            result=maker.Shape();
+
+            ShapeFix_Solid FixShape;
+            FixShape.Init(TopoDS::Solid(result));
+            FixShape.Perform();
+            result=FixShape.Shape();
         }
 
         setShape(result);
@@ -299,29 +355,31 @@ Bar::Bar
 
 
 
-
-
-
-
-std::shared_ptr<Bar> Bar::create_condensed
+Bar::Bar
 (
-    VectorPtr p0, VectorPtr p1,
-    FeaturePtr xsec, VectorPtr vert,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1,
+    EndPoints endPts,
+    FeaturePtr xsec, ScalarPtr thickness,
+    VectorPtr vert,
+    const boost_EndPointMod& ext_miterv_miterh0,
+    const boost_EndPointMod& ext_miterv_miterh1,
     VectorPtr attractPt
 )
-{
-    return std::shared_ptr<Bar>( new Bar
-               (
-                   std::make_pair(p0, p1),
-                   xsec, vert,
-                   ext_miterv_miterh0,
-                   ext_miterv_miterh1,
-                    attractPt
-               )
-           );
-}
+: endPts_(endPts),
+    xsec_(xsec),
+    thickness_(thickness),
+    vert_(vert),
+    ext0_(boost::fusion::at_c<0>(ext_miterv_miterh0)),
+    ext1_(boost::fusion::at_c<0>(ext_miterv_miterh1)),
+    miterangle0_vert_(boost::fusion::at_c<1>(ext_miterv_miterh0)),
+    miterangle1_vert_(boost::fusion::at_c<1>(ext_miterv_miterh1)),
+    miterangle0_hor_(boost::fusion::at_c<2>(ext_miterv_miterh0)),
+    miterangle1_hor_(boost::fusion::at_c<2>(ext_miterv_miterh1)),
+    attractPt_(attractPt)
+{}
+
+
+
+
 
 
 std::shared_ptr<Bar> Bar::create_derived
@@ -354,6 +412,7 @@ std::shared_ptr<Bar> Bar::create_derived
 void Bar::operator=(const Bar& o)
 {
   endPts_=o.endPts_;
+  thickness_=o.thickness_;
   xsec_=o.xsec_;
   vert_=o.vert_;
   ext0_=o.ext0_;
@@ -456,10 +515,17 @@ void Bar::insertrule(parser::ISCADParser& ruleset)
                           >> ruleset.r_vectorExpression // 6
                         >> ( ( ',' > ruleset.r_vectorExpression) | qi::attr(VectorPtr()) ) >> // 7
                           ')' )
-                        [ qi::_val = phx::bind(&Bar::create_condensed,
-                                         qi::_1, qi::_3,
-                                         qi::_5, qi::_6,
-                                         qi::_2, qi::_4,
+                        [ qi::_val = phx::bind(&Bar::create<
+                                                  EndPoints,
+                                                  FeaturePtr, VectorPtr,
+                                                  const boost_EndPointMod&,
+                                                  const boost_EndPointMod&,
+                                                  VectorPtr>,
+                                              phx::construct<Bar::EndPoints>(
+                                                  phx::construct<std::pair<VectorPtr,VectorPtr> >(
+                                                      qi::_1, qi::_3 ) ),
+                                              qi::_5, qi::_6,
+                                              qi::_2, qi::_4,
                                               qi::_7
                                      ) ]
                     |
@@ -479,6 +545,44 @@ void Bar::insertrule(parser::ISCADParser& ruleset)
                                                          ) ] )
                 ) ))
     );
+
+    ruleset.modelstepFunctionRules.add
+        (
+            "SheetBar",
+            typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+
+                ( '(' >
+                     (
+                         ruleset.r_vectorExpression // 1
+                         >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                         >> ','
+                         >> ruleset.r_vectorExpression // 3
+                         >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                         >> ','
+                         >> ruleset.r_solidmodel_expression >> ',' // 5
+                         >> ruleset.r_scalarExpression >> ',' // 6
+                         >> ruleset.r_vectorExpression // 7
+                         >> ( ( ',' > ruleset.r_vectorExpression) | qi::attr(VectorPtr()) ) >> // 8
+                         ')' )
+                        [ qi::_val = phx::bind(&Bar::create<
+                                                  EndPoints, FeaturePtr,
+                                                  ScalarPtr, VectorPtr,
+                                                  const boost_EndPointMod&,
+                                                  const boost_EndPointMod&,
+                                                  VectorPtr>,
+                                              phx::construct<Bar::EndPoints>(
+                                               phx::construct<std::pair<VectorPtr,VectorPtr> >(
+                                                 qi::_1, qi::_3 ) ),
+                                              qi::_5, qi::_6, qi::_7,
+                                               qi::_2, qi::_4,
+                                               qi::_8
+                                               ) ]
+                 ) ) )
+        );
 }
 
 FeatureCmdInfoList Bar::ruleDocumentation()
@@ -500,7 +604,27 @@ FeatureCmdInfoList Bar::ruleDocumentation()
             "\n"
             "The end points can optionally be shifted along the bar axis by offsets ext0 and ext1."
               " Furthermore, the bar ends can be mitered around the vertical axis (vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1).")
-        )
+        ),
+
+        FeatureCmdInfo
+        (
+            "SheetBar",
+
+            "( <vector:p0> [ext <scalar:ext0>] [vmiter <scalar:vmiter0>] [hmiter <scalar:hmiter0>],\n"
+            "<vector:p1> [ext <scalar:ext1>] [vmiter <scalar:vmiter1>] [hmiter <scalar:hmiter1>],\n"
+            "<feature:xsec>, <scalar:thickness>, <vector:up> )",
+
+            _("This command creates a straight extruded volume from a planar section."
+              "The section is expected comprise only of lines and the resulting bar will be of sheets with some added thicknes."
+              "The sheets are accessible as subshapes for possible use in e.g. FEM models."
+              "\n"
+              "The location of the bar is specified by its start point p0 and end point p1."
+              " Also needed is a face feature xsec defining the cross section."
+              " For orienting the cross section an upward direction up has to be given."
+              "\n"
+              "The end points can optionally be shifted along the bar axis by offsets ext0 and ext1."
+              " Furthermore, the bar ends can be mitered around the vertical axis (vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1).")
+            )
     };
 }
 

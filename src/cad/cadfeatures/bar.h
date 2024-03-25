@@ -36,6 +36,8 @@ public:
     std::pair<VectorPtr,VectorPtr>
   > EndPoints;
 
+  typedef boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr> boost_EndPointMod;
+
   struct EndPointMod
   {
       ScalarPtr ext = cad::scalarconst(0.0);
@@ -46,6 +48,7 @@ public:
 private:
   EndPoints endPts_;
   FeaturePtr xsec_;
+  ScalarPtr thickness_;
   VectorPtr vert_;
   ScalarPtr ext0_;
   ScalarPtr ext1_;
@@ -81,9 +84,19 @@ private:
   (
     EndPoints endPts,
     FeaturePtr xsec, VectorPtr vert,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1,
+    const boost_EndPointMod& ext_miterv_miterh0,
+    const boost_EndPointMod& ext_miterv_miterh1,
     VectorPtr attractPt
+  );
+
+  Bar
+  (
+      EndPoints endPts,
+      FeaturePtr xsec, ScalarPtr thickness,
+      VectorPtr vert,
+      const boost_EndPointMod& ext_miterv_miterh0,
+      const boost_EndPointMod& ext_miterv_miterh1,
+      VectorPtr attractPt
   );
 
 
@@ -91,15 +104,6 @@ public:
   declareType("Bar");
 
   CREATE_FUNCTION(Bar);
-
-  static std::shared_ptr<Bar> create_condensed
-  (
-    VectorPtr p0, VectorPtr p1, 
-    FeaturePtr xsec, VectorPtr vert,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
-    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1,
-    VectorPtr attractPt
-  );
 
   static std::shared_ptr<Bar> create_derived
   (

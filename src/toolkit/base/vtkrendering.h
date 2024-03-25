@@ -38,6 +38,7 @@
 class vtkCompositeDataSet;
 class vtkAppendFilter;
 class vtkMultiProcessController;
+class ResultSection;
 
 class vtkCleanArrays : public vtkPassInputTypeAlgorithm
 {
@@ -172,7 +173,12 @@ vtkSmartPointer<vtkPolyData> createArrows(
     );
 
 
-extern const std::vector<double> colorMapData_SD, colorMapData_NICEdge;
+extern const std::vector<double>
+    colorMapData_SD,
+    colorMapData_NICEdge,
+    colorMapData_BlueGreenOrange,
+    colorMapData_CoolToWarm,
+    colorMapData_BlackBodyRadiation;
 
 
 vtkSmartPointer<vtkLookupTable> createColorMap(
@@ -376,8 +382,13 @@ public:
     actor->GetProperty()->SetRepresentation(repr);
 
     renderer_->AddActor(actor);
-
     return actor;
+  }
+
+  vtkProp* addActor(vtkProp* actor)
+  {
+      renderer_->AddActor(actor);
+      return actor;
   }
 
   vtkSmartPointer<vtkScalarBarActor> addColorBar(
@@ -461,7 +472,12 @@ public:
 };
 
 
-
+void forEachUnconnectedPart(
+    OpenFOAMCaseScene& scene,
+    const boost::filesystem::path& exePath,
+    ResultSection *section,
+    vtkAlgorithm* in,
+    std::function<void(vtkAlgorithm*, ResultSection*, int )> displayRegion);
 
 }
 

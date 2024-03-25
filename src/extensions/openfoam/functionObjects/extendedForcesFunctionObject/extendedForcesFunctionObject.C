@@ -34,7 +34,7 @@
 #include "porosityModel.H"
 #include "turbulentTransportModel.H"
 #include "turbulentFluidThermoModel.H"
-#include "twoPhaseSystem.H"
+#include "phaseSystemModels/twoPhaseEuler/twoPhaseSystem/lnInclude/twoPhaseSystem.H"
 #include "phaseCompressibleTurbulenceModel.H"
 #endif
 

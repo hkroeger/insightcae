@@ -9,7 +9,7 @@
 #include <QLabel>
 
 
-void SketchEntityMultiSelection::showParameterEditor()
+void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEditor)
 {
     pew_ = new QWidget;
     auto *tb=editor_.viewer().commonToolBox();
@@ -24,8 +24,8 @@ void SketchEntityMultiSelection::showParameterEditor()
     l->addWidget(new QLabel("Layer"));
     auto *layEd=new QComboBox;
     layEd->setEditable(true);
-
-    auto ln = editor_->layers();
+    
+    auto ln = editor_->layerNames();
     for (auto& l: ln)
     {
         layEd->addItem(QString::fromStdString(l));
@@ -63,33 +63,40 @@ void SketchEntityMultiSelection::showParameterEditor()
                 editor_.sketchChanged();
             });
 
-    auto tree=new QTreeView;
-    lo->addWidget(tree);
-    auto editControls = new QWidget;
-    lo->addWidget(editControls);
+    if (includeParameterEditor)
+    {
+        auto tree=new QTreeView;
+        lo->addWidget(tree);
+        auto editControls = new QWidget;
+        lo->addWidget(editControls);
 
-    pe_ = new ParameterEditorWidget(pew_, tree, editControls);
-    connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
-            [this]()
-            {
-                for (auto& ee: *this)
+        pe_ = new ParameterEditorWidget(pew_, tree, editControls);
+        connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
+                [this]()
                 {
-                    auto e = ee.lock();
-                    e->parametersRef().merge(
-                        getParameterSet(pe_->model())
-                        );
+                    for (auto& ee: *this)
+                    {
+                        auto e = ee.lock();
+                        e->parametersRef().merge(
+                            getParameterSet(pe_->model())
+                            );
+                    }
                 }
-            }
-            );
+                );
+    }
 }
 
-void SketchEntityMultiSelection::removeParameterEditor()
+void SketchEntityMultiSelection::removePropertiesEditor()
 {
     if (pe_)
     {
+        delete pe_;
+        pe_=nullptr;
+    }
+    if (pew_)
+    {
         delete pew_;
         pew_=nullptr;
-        pe_=nullptr;
     }
 }
 
@@ -109,7 +116,7 @@ SketchEntityMultiSelection::SketchEntityMultiSelection
 
 SketchEntityMultiSelection::~SketchEntityMultiSelection()
 {
-    removeParameterEditor();
+    removePropertiesEditor();
 }
 
 
@@ -149,18 +156,23 @@ void SketchEntityMultiSelection::insert(
                     lentity->defaultParameters());
             }
 
-            if ( size()>0 && commonParameters_.size()>0 )
+            if ( size()>0 )
             {
-                if (!pe_) showParameterEditor();
-//                pe_->clearParameterSet();
-                auto m = new IQParameterSetModel(
-                    commonParameters_,
-                    defaultCommonParameters_, pe_);
-                pe_->setModel(m);
+                if (!pew_)
+                    showPropertiesEditor(
+                        commonParameters_.size()>0 );
+
+                if (commonParameters_.size()>0)
+                {
+                    auto m = new IQParameterSetModel(
+                        commonParameters_,
+                        defaultCommonParameters_, pe_);
+                    pe_->setModel(m);
+                }
             }
             else
             {
-                removeParameterEditor();
+                removePropertiesEditor();
             }
         }
     }

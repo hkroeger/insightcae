@@ -35,8 +35,8 @@ class SketchEntityMultiSelection
     IQVTKConstrainedSketchEditor& editor_;
     ParameterEditorWidget* pe_;
 
-    void showParameterEditor();
-    void removeParameterEditor();
+    void showPropertiesEditor(bool includeParameterEditor);
+    void removePropertiesEditor();
 
 public:
     SketchEntityMultiSelection(IQVTKConstrainedSketchEditor& editor);

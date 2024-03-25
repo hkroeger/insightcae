@@ -52,7 +52,10 @@ private:
 
     std::set<std::string> hiddenLayers_;
 
+    ParameterEditorWidget* layerPropertiesEditor_;
 
+    void showLayerParameterEditor();
+    void hideLayerParameterEditor();
     void add(insight::cad::ConstrainedSketchEntityPtr);
     void remove(insight::cad::ConstrainedSketchEntityPtr);
 
@@ -94,6 +97,8 @@ public:
        Qt::KeyboardModifiers curFlags
        ) override;
 
+    inline const insight::cad::ConstrainedSketch& sketch() const
+    { return **this; }
 
 public Q_SLOTS:
     void updateActors();

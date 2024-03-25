@@ -3,6 +3,8 @@
 #include "iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.h"
 #include "iqvtkcadmodel3dviewer.h"
+#include "iqparametersetmodel.h"
+#include "parametereditorwidget.h"
 
 #include "vtkLineRepresentation.h"
 #include "vtkProperty.h"
@@ -43,6 +45,41 @@
 using namespace insight;
 using namespace insight::cad;
 
+
+void IQVTKConstrainedSketchEditor::showLayerParameterEditor()
+{
+    if (!layerPropertiesEditor_)
+    {
+        auto *pew = new QWidget;
+        auto *lo = new QVBoxLayout;
+        pew->setLayout(lo);
+
+        auto tree=new QTreeView;
+        lo->addWidget(tree);
+        auto editControls = new QWidget;
+        lo->addWidget(editControls);
+
+        layerPropertiesEditor_ = new ParameterEditorWidget(pew, tree, editControls);
+
+        QWidget *w=nullptr;
+        for (int i=0; i<viewer().commonToolBox()->count(); ++i)
+            if (viewer().commonToolBox()->itemText(i)=="Sketch")
+                w=viewer().commonToolBox()->widget(i);
+
+        auto *l = static_cast<QFormLayout*>(w->layout());
+        l->addRow(pew);
+    }
+}
+
+
+void IQVTKConstrainedSketchEditor::hideLayerParameterEditor()
+{
+    if (layerPropertiesEditor_)
+    {
+        delete layerPropertiesEditor_->parent();
+        layerPropertiesEditor_=nullptr;
+    }
+}
 
 
 void IQVTKConstrainedSketchEditor::add(
@@ -174,6 +211,8 @@ void IQVTKConstrainedSketchEditor::drawPoint()
                     (*this)->insertGeometry(
                         IQVTKFixedPoint::create( pp.p ) ); // fix first point
                 }
+
+                pp.p->changeDefaultParameters(defaultGeometryParameters_);
 
                 (*this)->invalidate();
                 this->updateActors();
@@ -423,12 +462,12 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         const insight::ParameterSet& defaultGeometryParameters,
         IQCADModel3DViewer::SetSketchEntityAppearanceCallback sseac
 )
-    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),
-      insight::cad::ConstrainedSketchPtr(
-          insight::cad::ConstrainedSketch::create<const ConstrainedSketch&>(sketch)),
-      setActorAppearance_(sseac),
-      defaultGeometryParameters_(defaultGeometryParameters)
-
+: ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),
+  insight::cad::ConstrainedSketchPtr(
+      insight::cad::ConstrainedSketch::create<const ConstrainedSketch&>(sketch)),
+  setActorAppearance_(sseac),
+  defaultGeometryParameters_(defaultGeometryParameters),
+  layerPropertiesEditor_(nullptr)
 {
 
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
@@ -836,6 +875,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 );
         l->addRow("max. iterations", maxiteredit);
     }
+
     {
         auto  layerlist = new QTableView;
         auto *model=new IQConstrainedSketchLayerListModel(this, this);
@@ -849,8 +889,59 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         connect(model, &IQConstrainedSketchLayerListModel::renameLayer,
                 this, &IQVTKConstrainedSketchEditor::renameLayer);
         layerlist->setModel(model);
+
+        connect(
+            layerlist->selectionModel(),
+            &QItemSelectionModel::currentChanged,
+            layerlist,
+            [this,model](const QModelIndex &current, const QModelIndex &previous)
+            {
+                if (current.isValid())
+                {
+                    auto selectedLayerName =
+                        model->data(current.siblingAtColumn(1))
+                                             .toString().toStdString();
+                    auto curP=this->sketch().layerProperties(selectedLayerName);
+
+                    if (curP.size()>0)
+                    {
+                        showLayerParameterEditor();
+
+                        auto m = new IQParameterSetModel(
+                            curP,
+                            this->sketch().defaultLayerProperties(),
+                            layerPropertiesEditor_ );
+
+                        layerPropertiesEditor_->setModel(m);
+
+                        connect(
+                            layerPropertiesEditor_,
+                            &ParameterEditorWidget::parameterSetChanged,
+                            m,
+                            [this,m,model,selectedLayerName]()
+                            {
+                                (*this)->setLayerProperties(
+                                        selectedLayerName,
+                                        m->getParameterSet()
+                                    );
+                            }
+                            );
+                    }
+                    else
+                    {
+                        hideLayerParameterEditor();
+                    }
+                }
+                else
+                {
+                    hideLayerParameterEditor();
+                }
+            }
+            );
+
         l->addRow("Layers", layerlist);
     }
+
     setLayout(l);
 
     viewer.commonToolBox()->addItem(this, "Sketch");

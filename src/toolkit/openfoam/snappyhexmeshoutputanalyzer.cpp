@@ -1,6 +1,8 @@
 #include "snappyhexmeshoutputanalyzer.h"
 
 #include "base/progressdisplayer.h"
+#include "base/translations.h"
+#include "boost/format/format_fwd.hpp"
 
 
 using namespace std;
@@ -62,7 +64,9 @@ void snappyHexMeshOutputAnalyzer::update(const std::string& line)
         }
         else if ( bmp_ && boost::regex_search(line, match, suref2, boost::match_default) )
         {
-            bmp_->message("Surface refinement #"+match[1]+": "+match[2]+"cells");
+            bmp_->message( str(boost::format(
+                _("Surface refinement #%s: %s cells") )
+                % match[1] % match[2] ) );
         }
         else if ( bmp_ && boost::regex_search(line, match, shref1, boost::match_default) )
         {
@@ -70,7 +74,9 @@ void snappyHexMeshOutputAnalyzer::update(const std::string& line)
         }
         else if ( bmp_ && boost::regex_search(line, match, shref2, boost::match_default) )
         {
-            bmp_->message("Shell refinement #"+match[1]+": "+match[2]+"cells");
+            bmp_->message( str(boost::format(
+                _( "Shell refinement #%s: %s cells") )
+                % match[1] % match[2] ) );
         }
         else if (bmp_ &&  boost::regex_search(line, match, rmp, boost::match_default) )
         {
@@ -79,7 +85,9 @@ void snappyHexMeshOutputAnalyzer::update(const std::string& line)
         }
         else if ( bmp_ && boost::regex_search(line, match, rmpres, boost::match_default) )
         {
-            bmp_->message("Removed unreachable cells, now "+match[1]+" remain");
+            bmp_->message( str(boost::format(
+                _("Removed unreachable cells, now %s remain") )
+                              % match[1] ));
         }
         else if ( bmp_ && boost::regex_search(line, match, morph, boost::match_default) )
         {
@@ -88,7 +96,9 @@ void snappyHexMeshOutputAnalyzer::update(const std::string& line)
         }
         else if (bmp_ &&  boost::regex_search(line, match, morphiter, boost::match_default) )
         {
-            bmp_->message("Morph iteration "+match[1]);
+            bmp_->message( str(boost::format(
+                _("Morph iteration %s") )
+                              % match[1]));
         }
 
         else if ( boost::regex_search(line, match, ladd, boost::match_default) )
@@ -116,8 +126,8 @@ void snappyHexMeshOutputAnalyzer::update(const std::string& line)
             if (totalFaces_>0) extrudedFraction_=double(extrudedFaces_)/double(totalFaces_);
             if (bmp_)
                 bmp_->message(str(boost::format(
-                            "Layer iter #%d: %d illegal faces, extruded %s faces out of %d (%0.2g%%)")
-                             % layerIter % illegal % match[1] % match[2] % (100.*extrudedFraction_)
+                  _("Layer iter #%d: %d illegal faces, extruded %s faces out of %d (%0.2g%%)") )
+                  % layerIter % illegal % match[1] % match[2] % (100.*extrudedFraction_)
                         )
                         );
 

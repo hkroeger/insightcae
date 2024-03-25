@@ -23,6 +23,7 @@ size_t Polygon::calcHash() const
 {
     ParameterListHash h;
     h+=this->type();
+    h+=close_;
     for (const auto& c: corners_)
     {
         h+=c->value();
@@ -36,8 +37,12 @@ size_t Polygon::calcHash() const
 
 
 
-Polygon::Polygon( const std::vector<VectorPtr>& corners )
-    : corners_(corners)
+Polygon::Polygon(
+    const std::vector<VectorPtr>& corners,
+    bool close
+    )
+    : corners_(corners),
+    close_(close)
 {}
 
 
@@ -55,9 +60,12 @@ void Polygon::build()
             to_Pnt(corners_[i-1]->value()),
             to_Pnt(corners_[i]->value())).Edge() );
     }
-    ee.Append ( BRepBuilderAPI_MakeEdge(
+    if (close_)
+    {
+        ee.Append ( BRepBuilderAPI_MakeEdge(
                   to_Pnt(corners_.back()->value()),
                   to_Pnt(corners_.front()->value())).Edge() );
+    }
 
     BRepBuilderAPI_MakeWire wb;
     wb.Add ( ee );
@@ -82,9 +90,23 @@ void Polygon::insertrule(parser::ISCADParser& ruleset)
                 '(' >
                     ( ruleset.r_vectorExpression % ',' )
                         [ qi::_val = phx::bind(
-                             &Polygon::create<const std::vector<VectorPtr>&>,
-                             qi::_1) ]
+                             &Polygon::create<const std::vector<VectorPtr>&, bool>,
+                             qi::_1, true) ]
                      > ')'
+                )
+            );
+
+    ruleset.modelstepFunctionRules.add
+        (
+            "Polyline",
+            std::make_shared<parser::ISCADParser::ModelstepRule>(
+
+                '(' >
+                ( ruleset.r_vectorExpression % ',' )
+                    [ qi::_val = phx::bind(
+                         &Polygon::create<const std::vector<VectorPtr>&, bool>,
+                         qi::_1, false) ]
+                > ')'
                 )
             );
 }
@@ -100,6 +122,12 @@ FeatureCmdInfoList Polygon::ruleDocumentation()
             "Polygon",
             "( <vertex list> )",
             _("Creates a polygon wire from a number of corners, connected by straight edges.")
+            ),
+        FeatureCmdInfo
+        (
+            "Polyline",
+            "( <vertex list> )",
+            _("Creates a polyline wire from a number of corners, connected by straight edges.")
             )
     };
 }
@@ -108,7 +136,7 @@ FeatureCmdInfoList Polygon::ruleDocumentation()
 
 bool Polygon::isSingleClosedWire() const
 {
-    return /*TopoDS::Wire(shape()).Closed()*/true;
+    return close_;
 }
 
 

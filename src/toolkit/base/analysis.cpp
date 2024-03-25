@@ -57,6 +57,7 @@ defineFactoryTable
 
 defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet);
 defineStaticFunctionTable(Analysis, category, std::string);
+defineStaticFunctionTable(Analysis, compatibleOperatingSystems, OperatingSystemSet);
 defineStaticFunctionTable(Analysis, validator, ParameterSet_ValidatorPtr);
 defineStaticFunctionTable(Analysis, visualizer, std::shared_ptr<ParameterSetVisualizer>);
 defineStaticFunctionTableWithArgs(Analysis, getPropositionsForParameter, ParameterSet,
@@ -68,6 +69,12 @@ defineStaticFunctionTableWithArgs(Analysis, getPropositionsForParameter, Paramet
 std::string Analysis::category()
 {
     return "Uncategorized";
+}
+
+OperatingSystemSet
+Analysis::compatibleOperatingSystems()
+{
+    return { WindowsOS, LinuxOS };
 }
 
 ParameterSet_ValidatorPtr Analysis::validator()
@@ -139,6 +146,7 @@ path Analysis::createExecutionPathIfNonexistent()
   }
   return executionPath();
 }
+
 
 Analysis::Analysis (
     const std::string& name,

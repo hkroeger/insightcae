@@ -56,7 +56,10 @@ addToFactoryTable ( ResultElement, ResultSet );
 ResultSet::ResultSet(const std::string& analysisName)
   : ResultElement ( "", "", "" )
 {
-  if (analysisName!="") p_=Analysis::defaultParameters(analysisName);
+  if (analysisName!="")
+  {
+        p_ = Analysis::defaultParametersFor(analysisName);
+  }
 }
 
 ResultSetPtr ResultSet::createFromFile( const boost::filesystem::path& fileName, const std::string& analysisName )

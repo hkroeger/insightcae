@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
   }
 
   auto analysisName = vm["analysisname"].as<std::string>();
-  auto ps = insight::Analysis::defaultParameters(analysisName);
+  auto ps = insight::Analysis::defaultParametersFor(analysisName);
 
   LatexDocumentation doc(ps, labelprefix);
   doc.print(std::cout, labelprefix);

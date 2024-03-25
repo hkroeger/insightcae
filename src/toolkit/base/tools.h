@@ -506,6 +506,16 @@ ensureDefaultFileExtension(
     const boost::filesystem::path& path,
     const std::string& defaultExtension );
 
+
+
+enum OperatingSystem {
+    UnknownOS, LinuxOS, WindowsOS
+};
+typedef std::set<OperatingSystem> OperatingSystemSet;
+
+extern OperatingSystem currentOperatingSystem;
+
+
 }
 
 #endif // TOOLS_H

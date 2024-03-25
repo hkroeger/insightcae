@@ -47,7 +47,7 @@ void DynamicClassSelectableSubsetParameterParser::Data::cppWriteCreateStatement
         "for (auto i = "<<base_type<<"::factories_->begin();"
             "i != "<<base_type<<"::factories_->end(); i++)"
         "{"
-            "ParameterSet defp = "<<base_type<<"::defaultParameters(i->first);"
+            "ParameterSet defp = "<<base_type<<"::defaultParametersFor(i->first);"
             <<name<<"->addItem( i->first, defp );"
         "}";
 

@@ -32,18 +32,26 @@ ResultElement& ResultElementCollection::insert ( const string& key, ResultElemen
 // }
 
 
-ResultElement& ResultElementCollection::insert ( const string& key, ResultElementPtr elem )
+ResultElement& ResultElementCollection::insert (
+    const string& key,
+    ResultElementPtr elem )
 {
     std::pair< iterator, bool > res=
-        std::map<std::string, ResultElementPtr>::insert ( ResultElementCollection::value_type ( key, elem ) );
+        std::map<std::string, ResultElementPtr>::insert (
+        ResultElementCollection::value_type ( key, elem ) );
+
     return * ( *res.first ).second;
 }
 
 
-ResultElement& ResultElementCollection::insert ( const string& key, const ResultElement& elem )
+ResultElement& ResultElementCollection::insert (
+    const string& key,
+    const ResultElement& elem )
 {
     std::pair< iterator, bool > res=
-        std::map<std::string, ResultElementPtr>::insert ( ResultElementCollection::value_type ( key, elem.clone() ) );
+        std::map<std::string, ResultElementPtr>::insert (
+        ResultElementCollection::value_type ( key, elem.clone() ) );
+
     return * ( *res.first ).second;
 }
 

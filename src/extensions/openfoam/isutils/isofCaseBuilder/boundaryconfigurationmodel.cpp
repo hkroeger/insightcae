@@ -353,7 +353,7 @@ ParameterEditorWidget* BoundaryConfigurationModel::launchParameterEditor(
       insight::ParameterSet_ValidatorPtr vali;
 
       try {
-          vali = insight::OpenFOAMCaseElement::validator(pc->type_name());
+          vali = insight::OpenFOAMCaseElement::validatorFor(pc->type_name());
       } catch (const std::exception& e)
       { /* ignore, if non-existent */ }
 

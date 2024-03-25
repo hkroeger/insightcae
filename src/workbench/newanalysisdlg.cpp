@@ -105,7 +105,7 @@ void newAnalysisDlg::fillAnalysisList()
     {
 
       QStringList path =
-          QString::fromStdString ( insight::Analysis::category ( analysisName ) )
+          QString::fromStdString ( insight::Analysis::categoryFor ( analysisName ) )
           .split ( "/", Qt::SkipEmptyParts );
 
       HierarchyLevel* parent = &toplevel;

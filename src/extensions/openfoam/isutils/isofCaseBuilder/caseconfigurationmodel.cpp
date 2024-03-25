@@ -273,7 +273,7 @@ ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
 //        { /* ignore, if non-existent */ }
 
   try {
-      vali = insight::OpenFOAMCaseElement::validator(ce->type_name());
+      vali = insight::OpenFOAMCaseElement::validatorFor(ce->type_name());
   } catch (const std::exception& e)
   { /* ignore, if non-existent */ }
 

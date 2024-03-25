@@ -203,22 +203,25 @@ static struct add##specT##To##baseT##FactoryTable \
 
 
 #define declareStaticFunctionTable(Name, ReturnT) \
- typedef boost::function0<ReturnT> Name##Ptr; \
+ typedef ReturnT Name##ReturnType; \
+ typedef std::function<ReturnT(void)> Name##Ptr; \
  typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
  static Name##FunctionTable* Name##Functions_; \
  static bool has_##Name(const std::string& key); \
- static ReturnT Name(const std::string& key)
+static ReturnT Name##For(const std::string& key)
  
 #define declareStaticFunctionTableWithArgs(Name, ReturnT, argTypeList, argList) \
- typedef boost::function<ReturnT(argTypeList)> Name##Ptr; \
+ typedef ReturnT Name##ReturnType; \
+ typedef std::function<ReturnT(argTypeList)> Name##Ptr; \
  typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
  static Name##FunctionTable* Name##Functions_; \
  static bool has_##Name(const std::string& key); \
- static ReturnT Name(const std::string& key, argList)
+static ReturnT Name##For(const std::string& key, argList)
 
  
 
 #define defineStaticFunctionTable(baseT, Name, ReturnT) \
+ typedef ReturnT Name##ReturnType; \
  bool baseT::has_##Name(const std::string& key) \
  { \
   if (baseT::Name##Functions_) { \
@@ -228,7 +231,7 @@ static struct add##specT##To##baseT##FactoryTable \
   } \
   return false; \
  } \
- ReturnT baseT::Name(const std::string& key) \
+ReturnT baseT::Name##For(const std::string& key) \
  { \
    if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
@@ -252,7 +255,7 @@ static struct add##specT##To##baseT##FactoryTable \
     } \
         return false; \
  } \
- ReturnT baseT::Name(const std::string& key, argList) \
+ReturnT baseT::Name##For(const std::string& key, argList) \
  { \
    if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
@@ -277,7 +280,7 @@ static struct add##specT##To##baseT##Name##FunctionTable \
      baseT::Name##Functions_=new baseT::Name##FunctionTable(); \
     } \
     std::string key(specT::typeName_()); \
-    (*baseT::Name##Functions_)[key]=&(specT::Name);\
+    (*baseT::Name##Functions_)[key]=&specT::Name;\
   }\
 } v_add##specT##To##baseT##Name##FunctionTable
 
@@ -292,10 +295,23 @@ static struct add##specT##To##baseT##Name##FunctionTable \
      baseT::Name##Functions_=new baseT::Name##FunctionTable(); \
     } \
     std::string key(specT::typeName_()); \
-    (*baseT::Name##Functions_)[key]=&(FuncName);\
+    (*baseT::Name##Functions_)[key]=&FuncName;\
   }\
 } v_add##specT##To##baseT##Name##FunctionTable
 
+#define addFunctionToStaticFunctionTable(baseT, specT, Name, Function) \
+static struct add##specT##To##baseT##Name##FunctionTable \
+    {\
+        add##specT##To##baseT##Name##FunctionTable()\
+        {\
+            if (!baseT::Name##Functions_) \
+            {\
+                baseT::Name##Functions_=new baseT::Name##FunctionTable(); \
+} \
+    std::string key(specT::typeName_()); \
+    (*baseT::Name##Functions_)[key]=Function;\
+}\
+} v_add##specT##To##baseT##Name##FunctionTable
 
 
 /**

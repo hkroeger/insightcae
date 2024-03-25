@@ -239,6 +239,7 @@ public:
   void startLocalRun();
 
   bool isOpenFOAMAnalysis() const;
+  insight::OperatingSystemSet compatibleOperatingSystems() const;
 
 
 protected:

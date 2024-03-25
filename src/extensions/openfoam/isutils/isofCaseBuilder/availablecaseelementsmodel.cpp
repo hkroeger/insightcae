@@ -80,7 +80,7 @@ AvailableCaseElementsModel::AvailableCaseElementsModel(QObject *parent)
        )
   {
     std::string elemName = i->first;
-    std::string category = insight::OpenFOAMCaseElement::category (elemName);
+    std::string category = insight::OpenFOAMCaseElement::categoryFor (elemName);
     QStringList path = QString::fromStdString(category)
                         .split ( "/", QString::SkipEmptyParts );
 
@@ -98,7 +98,7 @@ AvailableCaseElementsModel::AvailableCaseElementsModel(QObject *parent)
       try
       {
           insight::ParameterSetVisualizerPtr viz
-              = insight::OpenFOAMCaseElement::visualizer(elemName);
+              = insight::OpenFOAMCaseElement::visualizerFor(elemName);
           viz->setIcon(&icon);
       }
       catch (const std::exception& e)

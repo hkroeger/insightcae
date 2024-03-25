@@ -1185,4 +1185,15 @@ boost::filesystem::path ensureDefaultFileExtension(
       return pth;
 }
 
+
+OperatingSystem currentOperatingSystem =
+#ifdef __linux__
+    LinuxOS
+#elif WIN32
+    WindowsOS
+#else
+    UnknownOS
+#endif
+;
+
 }

@@ -42,7 +42,7 @@ Patch::Patch(rapidxml::xml_document<>& doc,
 
 const ParameterSet Patch::defaultParameters() const
 {
-  return insight::BoundaryCondition::defaultParameters(type_name_);
+  return insight::BoundaryCondition::defaultParametersFor(type_name_);
 }
 
 //void Patch::updateText()
@@ -57,11 +57,11 @@ void Patch::set_bc_type(const std::string& type_name)
 {
     type_name_=type_name;
 //    updateText();
-    curp_ = BoundaryCondition::defaultParameters(type_name_);
+    curp_ = BoundaryCondition::defaultParametersFor(type_name_);
     if (type_name_!="")
     {
       try {
-        viz_ = insight::BoundaryCondition::visualizer(type_name_);
+        viz_ = insight::BoundaryCondition::visualizerFor(type_name_);
       }
       catch (...) { /* skip */ }
     }

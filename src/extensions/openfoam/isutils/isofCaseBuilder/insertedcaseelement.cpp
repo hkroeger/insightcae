@@ -30,7 +30,7 @@ CaseElementData::~CaseElementData()
 
 const insight::ParameterSet CaseElementData::defaultParameters() const
 {
-  return insight::OpenFOAMCaseElement::defaultParameters(type_name_);
+  return insight::OpenFOAMCaseElement::defaultParametersFor(type_name_);
 }
 
 
@@ -69,7 +69,7 @@ InsertedCaseElement::InsertedCaseElement(
     if (type_name_!="")
     {
       try {
-        viz_ = insight::OpenFOAMCaseElement::visualizer(type_name_);
+        viz_ = insight::OpenFOAMCaseElement::visualizerFor(type_name_);
         mv_->registerVisualizer( std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz_).get() );
       }
       catch (...)

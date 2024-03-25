@@ -73,7 +73,7 @@ template<
 ParameterSet ParameterStudy<BaseAnalysis,var_params>::defaultParameters()
 {
 
-  ParameterSet dfp = Analysis::defaultParameters(BaseAnalysis::typeName);
+  ParameterSet dfp = Analysis::defaultParametersFor(BaseAnalysis::typeName);
   
   // == Modify parameter set of base analysis:
 
@@ -84,7 +84,9 @@ ParameterSet ParameterStudy<BaseAnalysis,var_params>::defaultParameters()
     dfp.replace
             (
                 parname,
-                new DoubleRangeParameter(orgval, 0, 1, dfp.get<DoubleParameter>(parname).description().simpleLatex())
+                new DoubleRangeParameter(
+            orgval, 0, 1,
+            dfp.get<DoubleParameter>(parname).description().simpleLatex())
             );
   }
   

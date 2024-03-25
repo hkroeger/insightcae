@@ -39,6 +39,8 @@
 #include "base/boost_include.h"
 #include "boost/thread.hpp"
 
+#include "analysis__Analysis__Parameters_headers.h"
+
 namespace insight
 {
 
@@ -50,7 +52,8 @@ class ParameterSetVisualizer;
  defineType(DerivedClass); \
  addToFactoryTable(Analysis, DerivedClass); \
  addToStaticFunctionTable(Analysis, DerivedClass, defaultParameters); \
- addToStaticFunctionTable(Analysis, DerivedClass, category);
+ addToStaticFunctionTable(Analysis, DerivedClass, category); \
+ addToStaticFunctionTable(Analysis, DerivedClass, compatibleOperatingSystems);
 
 /**
  * An analysis is the basic container in InsightCAE.
@@ -74,6 +77,7 @@ public:
     
     declareStaticFunctionTable(defaultParameters, ParameterSet);
     declareStaticFunctionTable(category, std::string);
+    declareStaticFunctionTable(compatibleOperatingSystems, OperatingSystemSet);
     declareStaticFunctionTable(validator, ParameterSet_ValidatorPtr);
     declareStaticFunctionTable(visualizer, std::shared_ptr<ParameterSetVisualizer>);
     declareStaticFunctionTableWithArgs(getPropositionsForParameter, ParameterSet,
@@ -88,6 +92,15 @@ public:
      */
     static std::set<std::string> availableAnalysisTypes();
 
+
+#include "analysis__Analysis__Parameters.h"
+/*
+PARAMETERSET>>> Analysis Parameters
+
+<<<PARAMETERSET
+*/
+
+
 protected:
     std::string name_;
     std::string description_;
@@ -101,6 +114,7 @@ public:
     declareType ( "Analysis" );
     
     static std::string category();
+    static OperatingSystemSet compatibleOperatingSystems();
 
     static ParameterSet_ValidatorPtr validator();
     static std::shared_ptr<ParameterSetVisualizer> visualizer();

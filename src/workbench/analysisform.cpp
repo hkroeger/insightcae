@@ -94,8 +94,11 @@ AnalysisForm::AnalysisForm(
     setAttribute(Qt::WA_DeleteOnClose, true);
 
     // load default parameters
-    auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
-    isOpenFOAMAnalysis_ = defaultParams.hasParameter("run/OFEname");
+    auto defaultParams =
+        insight::Analysis::defaultParametersFor(analysisName_);
+
+    isOpenFOAMAnalysis_ =
+        defaultParams.hasParameter("run/OFEname");
 
 
     ui = new Ui::AnalysisForm;
@@ -186,13 +189,13 @@ AnalysisForm::AnalysisForm(
     if (insight::Analysis::has_visualizer(analysisName_))
     {
       insight::CurrentExceptionContext ex(_("create parameter set visualizer"));
-        viz = insight::Analysis::visualizer(analysisName_);
+        viz = insight::Analysis::visualizerFor(analysisName_);
         viz ->setProgressDisplayer(&progressDisplayer_);
     }
 
     if (insight::Analysis::has_validator(analysisName_))
     {
-        vali = insight::Analysis::validator(analysisName_);
+        vali = insight::Analysis::validatorFor(analysisName_);
     }
 
     auto vsplit = new QSplitter;
@@ -572,7 +575,8 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 
   psmodel_->resetParameters(
         ps,
-        insight::Analysis::defaultParameters(analysisName_) );
+        insight::Analysis::defaultParametersFor(
+          analysisName_) );
 }
 
 

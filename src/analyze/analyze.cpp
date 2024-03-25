@@ -286,7 +286,8 @@ int main(int argc, char *argv[])
 
         cout<< _("Executing analysis in directory")<<" "<<workdir<<endl;
 
-        ParameterSet parameters = insight::Analysis::defaultParameters(analysisName);
+        ParameterSet parameters =
+            insight::Analysis::defaultParametersFor(analysisName);
         
         parameters.readFromNode( *rootnode, inputFileParentPath );
 

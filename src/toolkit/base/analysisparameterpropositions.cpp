@@ -274,7 +274,7 @@ ParameterSet AnalysisParameterPropositions::getCombinedPropositionsForParameter(
 
     try
     {
-        auto hardCodedProps = Analysis::getPropositionsForParameter(
+        auto hardCodedProps = Analysis::getPropositionsForParameterFor(
             analysisName, parameterPath, currentParameterValues);
         props.extend(hardCodedProps);
     }

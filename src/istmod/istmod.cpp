@@ -150,7 +150,8 @@ int main(int argc, char *argv[])
             analysisName = analysisnamenode->first_attribute("name")->value();
         }
 
-        ParameterSet parameters = insight::Analysis::defaultParameters(analysisName);
+        ParameterSet parameters =
+            insight::Analysis::defaultParametersFor(analysisName);
 
         parameters.readFromNode(
             *rootnode,

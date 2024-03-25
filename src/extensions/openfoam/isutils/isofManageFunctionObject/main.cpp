@@ -57,7 +57,7 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
         std::string FOtype = e->first_attribute("type")->value();
 	if (outputFilterFunctionObject::factories_->find(FOtype) != outputFilterFunctionObject::factories_->end())
 	{
-	  ParameterSet ps = outputFilterFunctionObject::defaultParameters(FOtype);
+      ParameterSet ps = outputFilterFunctionObject::defaultParametersFor(FOtype);
       ps.readFromNode( *e, cfgfile.parent_path() );
 	  std::shared_ptr<outputFilterFunctionObject> fo(outputFilterFunctionObject::lookup(FOtype, cm, ps));
 	  fo->evaluate

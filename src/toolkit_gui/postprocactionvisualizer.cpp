@@ -45,7 +45,7 @@ PostProcActionVisualizers::createAISRepr(PostprocActionPtr ppa)
   try
   {
     ppa->checkForBuildDuringAccess();
-    return createAISReprByTypeName(ppa->type(), ppa);
+    return createAISReprByTypeNameFor(ppa->type(), ppa);
   }
   catch (insight::Exception& e)
   {
@@ -62,7 +62,7 @@ PostProcActionVisualizers::createVTKRepr( PostprocActionPtr ppa )
 
   if (has_createVTKReprByTypeName(ppa->type()))
   {
-    return createVTKReprByTypeName(ppa->type(), ppa);
+    return createVTKReprByTypeNameFor(ppa->type(), ppa);
   }
   else
   {

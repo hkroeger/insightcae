@@ -1,10 +1,12 @@
 
 #include "iqexecutionworkspace.h"
+#include "base/tools.h"
 #include "qexecutionworkspacedialog.h"
 
 #include <QMessageBox>
 
 #include "analysisform.h"
+#include "base/translations.h"
 
 
 IQRemoteExecutionState* IQExecutionWorkspace::defaultOpenFOAMRemoteWorkspace()
@@ -47,7 +49,9 @@ IQExecutionWorkspace::IQExecutionWorkspace(AnalysisForm *af)
 
 void IQExecutionWorkspace::initializeToDefaults()
 {
-    if (af_->isOpenFOAMAnalysis()
+    if (//af_->isOpenFOAMAnalysis()
+        (af_->compatibleOperatingSystems().count(
+             insight::currentOperatingSystem) < 1)
             && !remoteExecutionConfiguration_  )
     {
 
@@ -230,13 +234,16 @@ void IQExecutionWorkspace::showSetupExecutionEnvironmentDialog()
           localCaseDirectory_.get(),
           rl,
           af_ );
-#ifdef WIN32
-    if (af_->isOpenFOAMAnalysis())
+
+    if (af_->compatibleOperatingSystems().count(
+            insight::currentOperatingSystem) < 1)
     {
-        dlg.lockRemoteExecution("Please note: the execution of OpenFOAM-based analyses is only possible"
-                                " in a WSL distribution or on a remote host and can therefore not be disabled.");
+        dlg.lockRemoteExecution(
+            _("Please note: the local execution of the selected analysis is not possible on the current operating system."
+            "\n"
+              " Therefore the execution is locked to a WSL backend or a remote host.") );
     }
-#endif
+
 
     if (dlg.exec() == QDialog::Accepted)
     {

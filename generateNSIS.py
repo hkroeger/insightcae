@@ -66,7 +66,7 @@ if len(wslimages)<1:
 wslimage=wslimages[0]
 
 class Dependency:
-    def __init__(self, URL=None, file=None):
+    def __init__(self, URL=None, file=None, note=None):
         if file is None:
             if URL is None:
                 raise RuntimeError("URL and file must not be None at the same time.")
@@ -81,16 +81,22 @@ class Dependency:
             
         self.command='ExecShellWait "" "$TEMP\{file}"'.format(
             file=self.filename)
+        
+        self.note=note
 
     def config(self, label):
         return """
 Section "{label}"
     File "/oname=$TEMP\{file}" "{localfile}"
+    {note}
+    SetDetailsPrint both
+    DetailPrint "Installing {label}..."
     {command}
     Delete "$TEMP\{file}"
 SectionEnd
 """.format(
         label=label,
+        note=("" if self.note is None else "MessageBox MB_OK \""+self.note+"\""),
         file=self.filename,
         localfile=self.localfile,
         command=self.command )
@@ -125,16 +131,28 @@ class WSLImageDependency(Dependency):
 </root>
 """.format(label=imgname))
         self.command="""
-ExecWait 'wsl --import "{imgname}" "$PROFILE\\{imgname}" "$TEMP\\{file}"'
+SetDetailsPrint both
+DetailPrint "Installing the WSL backend..."
+
+ClearErrors
+ExecWait 'wsl --import "{imgname}" "$PROFILE\\\\{imgname}" "$TEMP\\\\{file}"'
+IfErrors 0 installConfig
+
+  MessageBox MB_OK "The installation of the WSL backend image failed!$\\r$\\nPlease consider performing an update of the WSL subsystem.$\\r$\\n(execute 'wsl --update' in a powershell)"
+  Quit
+
+installConfig:
 CreateDirectory "$PROFILE\\.insight\\share"
 File "/oname=$PROFILE\\.insight\\share\\remoteservers.list" "remoteservers.list"
+
 """.format(file=self.filename, imgname=imgname)
 
 
 putty=MSIDependency("http://downloads.silentdynamics.de/thirdparty/putty-64bit-0.76-installer.msi")
 gnuplot=Dependency("http://downloads.silentdynamics.de/thirdparty/gp528-win64-mingw.exe")
 miktex=Dependency("http://downloads.silentdynamics.de/thirdparty/basic-miktex-21.6-x64.exe")
-python=Dependency("http://downloads.silentdynamics.de/thirdparty/python-3.6.8rc1.exe")
+python=Dependency("http://downloads.silentdynamics.de/thirdparty/python-3.6.8rc1.exe", 
+                  note="Please check the option 'Add python.exe to PATH' in the upcoming Python installer!$\\r$\\n$\\r$\\n(If this is omitted, the InsightCAE executables will not run.)")
 paraview=Dependency("http://downloads.silentdynamics.de/thirdparty/ParaView-5.8.1-Windows-Python3.7-msvc2015-64bit.exe")
 insightwsl=WSLImageDependency(file=wslimage)
 
@@ -229,8 +247,23 @@ Page instfiles
 +gnuplot.config("Gnuplot") \
 +miktex.config("MiKTeX") \
 +python.config("Python 3.6") \
-+paraview.config("ParaView 5.8")) if not opts.skipOtherDeps else "\n") \
-+insightwsl.config("WSL Distibution (Ubuntu) with InsightCAE backend and OpenFOAM") \
++paraview.config("ParaView 5.8")) if not opts.skipOtherDeps else "\n") +"""
+
+Section "Update WSL System"
+ SetDetailsPrint both
+ DetailPrint "Updating the WSL subsystem..."
+
+ ClearErrors
+ ExecWait 'wsl --update'
+ IfErrors 0 updateFinished
+
+  MessageBox MB_OK "The update of the WSL subsystem failed!"
+  Quit
+
+ updateFinished:
+SectionEnd
+
+"""+insightwsl.config("WSL Distibution (Ubuntu) with InsightCAE backend and OpenFOAM") \
 +insight.config("InsightCAE Windows Client and isCAD")
 
 nsisScriptfname=installerfname+".nsis"

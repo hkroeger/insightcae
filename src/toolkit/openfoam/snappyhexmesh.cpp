@@ -594,6 +594,37 @@ double computeFinalLayerThickness(double totalLayerThickness, double expRatio, i
 }
 
 
+RefinementLevel::RefinementLevel(
+    const boost::variant<L_delta,L_level,level_delta>& input)
+{
+    if (const auto * Ld = boost::get<L_delta>(&input))
+    {
+        L=Ld->L;
+        delta=Ld->delta;
+        insight::assertion(
+            delta>SMALL,
+            "target mesh size must be larger than zero");
+        insight::assertion(
+            L>SMALL,
+            "target length must be larger than zero");
+        level=log(L/delta)/log(2.);
+    }
+    else if (const auto * Ll = boost::get<L_level>(&input))
+    {
+        L=Ll->L;
+        level=Ll->level;
+        delta=L/pow(2., level);
+    }
+    else if (const auto * ld = boost::get<level_delta>(&input))
+    {
+        level=ld->level;
+        delta=ld->delta;
+        L=delta*pow(2,level);
+    }
+    else
+        throw insight::Exception("unhandled input");
+}
+
 
 
 

@@ -433,7 +433,15 @@ public:
 }
 
 
+struct RefinementLevel
+{
+    double L, delta, level;
 
+    struct L_delta { double L; double delta; };
+    struct L_level { double L; int level; };
+    struct level_delta { double delta; int level; };
+    RefinementLevel(const boost::variant<L_delta,L_level,level_delta>& input);
+};
 
 
 class snappyHexMeshConfiguration

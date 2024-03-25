@@ -70,16 +70,18 @@ const SimpleLatex& AttributeTableResult::valueColumnTitle() const
 
 void AttributeTableResult::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path& outputfilepath ) const
 {
-    f<< "\\begin{tabular}{lc}\n"
+    f<< "\\begin{longtable}{lc}\n"
      << labelColumnTitle_.toLaTeX()
      << " & "
      << valueColumnTitle_.toLaTeX()
      <<" \\\\\n"
-     "\\hline\\\\";
+     "\\hline\\\\"
+     "\\endfirsthead\n"
+     "\\endhead\n";
     for ( size_t i=0; i<names_.size(); i++ ) {
         f<<names_[i].toLaTeX()<<" & "<<values_[i]<<"\\\\"<<endl;
     }
-    f<<"\\end{tabular}\n";
+    f<<"\\end{longtable}\n";
 }
 
 

@@ -52,14 +52,15 @@ size_t Cone::calcHash() const
   h+=p2_->value();
   h+=D1_->value();
   h+=D2_->value();
+  if (di_) h+=di_->value();
   return h.getHash();
 }
 
 
 
 
-Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2)
-: p1_(p1), p2_(p2), D1_(D1), D2_(D2)
+Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2, ScalarPtr di)
+    : p1_(p1), p2_(p2), D1_(D1), D2_(D2), di_(di)
 {
 }
 
@@ -74,18 +75,46 @@ void Cone::build()
     refvalues_["D0"]=D1_->value();
     refvalues_["D1"]=D2_->value();
 
+    arma::mat L = p2_->value() - p1_->value();
+    double l=arma::norm(L, 2);
+    arma::mat el=normalized(L);
+
+    gp_Ax2 ax
+        (
+            to_Pnt( p1_->value() ),
+            gp_Dir( to_Vec ( el ) )
+        );
+
     TopoDS_Shape cone=
         BRepPrimAPI_MakeCone
         (
-            gp_Ax2
-            (
-                gp_Pnt ( p1_->value() ( 0 ),p1_->value() ( 1 ),p1_->value() ( 2 ) ),
-                gp_Dir ( p2_->value() ( 0 )-p1_->value() ( 0 ),p2_->value() ( 1 )-p1_->value() ( 1 ),p2_->value() ( 2 )-p1_->value() ( 2 ) )
-            ),
+            ax,
             0.5*D1_->value(),
             0.5*D2_->value(),
-            norm ( p2_->value()-p1_->value(), 2 )
+            l
         ).Shape();
+
+    if (di_)
+    {
+        BRepAlgoAPI_Cut cutter(
+            cone,
+            BRepPrimAPI_MakeCylinder(
+                ax,
+                0.5*di_->value(),
+                l ).Shape() );
+        cutter.Build();
+
+        if (!cutter.IsDone())
+        {
+            throw insight::cad::CADException
+                (
+                    shared_from_this(),
+                    _("could not perform cut operation.")
+                    );
+        }
+
+        cone=cutter.Shape();
+    }
 
     setShape ( cone );
 }
@@ -100,13 +129,14 @@ void Cone::insertrule(parser::ISCADParser& ruleset)
     "Cone",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
     ( '(' 
-      >> ruleset.r_vectorExpression >> ',' 
-      >> ruleset.r_vectorExpression >> ',' 
-      >> ruleset.r_scalarExpression >> ','
-      >> ruleset.r_scalarExpression
-      >> ')' )
-      [ qi::_val = phx::bind(&Cone::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
-                                          qi::_1, qi::_2, qi::_3, qi::_4) ]
+      > ruleset.r_vectorExpression > ','
+      > ruleset.r_vectorExpression > ','
+      > ruleset.r_scalarExpression > ','
+      > ruleset.r_scalarExpression
+      > ( ( ',' > ruleset.r_scalarExpression ) | qi::attr(ScalarPtr()) )
+      > ')' )
+      [ qi::_val = phx::bind(&Cone::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
+                                      qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       
     )
   );

@@ -61,7 +61,7 @@ PDLParserRuleset::PDLParserRuleset()
 {  
   r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
   r_description_string = (r_string | attr(""));
-  r_identifier = lexeme[ alpha >> *(alnum | char_('_') | char_(':') ) >> !(alnum | '_' | ':') ];
+  r_identifier = lexeme[ alpha >> *(alnum|char_('_')|char_(':')|char_('<')|char_('>')) >> !(alnum | '_'| ':'|'<'|'>') ];
   r_path = lexeme[ alpha >> *(alnum | char_('_') | char_('/') ) >> !(alnum | '_' | '/' ) ];
   r_up_to_semicolon = qi::as_string[ qi::lexeme [ *~(qi::char_(";")) >> ";" ] ];
 

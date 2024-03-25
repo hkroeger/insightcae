@@ -83,6 +83,17 @@ void ModelFeature::copyModelDatums()
 
     providedDatums_[d.first]=d.second;
   }
+
+  auto addfs=
+      [this](const std::string& name, FeatureSetPtr fs)
+  {
+      providedFeatureSets_[name]=fs;
+  };
+  model_->vertexFeatureSymbols().for_each(addfs);
+  model_->edgeFeatureSymbols().for_each(addfs);
+  model_->faceFeatureSymbols().for_each(addfs);
+  model_->solidFeatureSymbols().for_each(addfs);
+
 }
 
 
@@ -206,6 +217,7 @@ void ModelFeature::build()
             }
         }
 
+
         copyModelDatums();
 
         Compound::build();
@@ -256,6 +268,22 @@ boost::filesystem::path ModelFeature::modelfile() const
     }
 }
 
+// boost::spirit::qi::symbols<char, FeatureSetPtr>
+// ModelFeature::featureSymbols(EntityType et) const
+// {
+//     switch (et)
+//     {
+//     case Vertex:
+//         return model_->vertexFeatureSymbols();
+//     case Edge:
+//         return model_->edgeFeatureSymbols();
+//     case Face:
+//         return model_->faceFeatureSymbols();
+//     case Solid:
+//         return model_->solidFeatureSymbols();
+//     }
+//     throw insight::Exception("internal error: unhandled selection!");
+// }
 
 void ModelFeature::executeEditor()
 {

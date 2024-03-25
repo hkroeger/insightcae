@@ -199,17 +199,6 @@ Exception::Exception(std::string fmt, ...)
 
 
 
-Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> &contextGeometry, bool strace)
-  : message_(msg),
-    contextGeometry_(contextGeometry)
-{
-  dbg(2)<<msg<<std::endl;
-  saveContext(strace);
-}
-
-
-
-
 // Exception::Exception(const std::string& msg, const std::string& strace)
 //   : message_(msg), strace_(strace)
 // {
@@ -244,7 +233,7 @@ const char* Exception::what() const noexcept
 
 
 
-const std::map<string, cad::FeaturePtr> &Exception::contextGeometry() const
+const std::map<string, cad::FeaturePtr> &CADException::contextGeometry() const
 {
   return contextGeometry_;
 }

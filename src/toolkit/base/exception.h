@@ -24,7 +24,9 @@
 
 #include "toolkit_export.h"
 
+#include <algorithm>
 #include <exception>
+#include <iterator>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -96,8 +98,6 @@ class Exception
   std::string message_;
   std::string strace_;
 
-  std::map<std::string, cad::FeaturePtr> contextGeometry_;
-
   void saveContext(bool strace);
 
   mutable std::string whatMessage_;
@@ -105,8 +105,6 @@ class Exception
 public:
   Exception();
   Exception(std::string msgfmt, ...);
-  Exception(const std::string& msg, const std::map<std::string, cad::FeaturePtr>& contextGeometry, bool strace=true);
-  // Exception(const std::string& msg, const std::string& strace);
 
 
   virtual std::string message() const;
@@ -117,10 +115,32 @@ public:
   inline const std::string& strace() const { return strace_; }
 
   const char* what() const noexcept override;
-  const std::map<std::string, cad::FeaturePtr>& contextGeometry() const;
 
   friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
 };
+
+
+
+
+class CADException
+    : public Exception
+{
+
+    std::map<std::string, cad::FeaturePtr> contextGeometry_;
+
+public:
+    template<class ...Args>
+    CADException(
+        const std::map<std::string, cad::FeaturePtr>& contextGeometry,
+        Args&&... addArgs )
+      : Exception( std::forward<Args>(addArgs)... ),
+        contextGeometry_(contextGeometry)
+    {}
+
+    const std::map<std::string, cad::FeaturePtr>& contextGeometry() const;
+};
+
+
 
 
 class ExternalProcessFailed
@@ -178,6 +198,21 @@ std::string valueList_to_string(const Container& vals, size_t maxlen)
   }
   os<<" )";
   return os.str();
+}
+
+template<class Container>
+std::string containerKeyList_to_string(const Container& vals, size_t maxlen)
+{
+    std::vector<typename Container::key_type> keys;
+    std::transform(
+        vals.begin(), vals.end(),
+        std::back_inserter(keys),
+        [](const typename Container::value_type& v)
+        {
+            return v.first;
+        }
+        );
+    return valueList_to_string(keys, maxlen);
 }
 
 std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen=5);

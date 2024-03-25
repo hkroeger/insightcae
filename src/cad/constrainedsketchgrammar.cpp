@@ -20,14 +20,17 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
     namespace qi=boost::spirit::qi;
     namespace phx=boost::phoenix;
 
-    r_parameters = (
-        (',' > qi::lit("parameters") >
+    r_parametersetstring =
          qi::as_string[ qi::lexeme[
-                            qi::string(std::string("<?xml"))
-                            >> +(!qi::lit("</root>") >> qi::char_)
-                            >> qi::string("</root>") ] ]
+             qi::string(std::string("<?xml"))
+             >> +(!qi::lit("</root>") >> qi::char_)
+             >> qi::string("</root>") ] ]
                       [ qi::_val = qi::_1 ]
-         )
+        ;
+
+    r_parameters = (
+        ( ',' > qi::lit("parameters")
+              > r_parametersetstring [ qi::_val = qi::_1 ] )
         | qi::attr(std::string())
         );
 
@@ -45,6 +48,15 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
         r_vector [ qi::_val = qi::_1 ]
         ;
 
+    r_layerProps =
+        *( ( qi::lit("layer")
+                     > r_label
+                     > r_parametersetstring )
+                        [ std::cout<<"lbl="<<qi::_1<<std::endl,
+                         phx::bind( &ConstrainedSketch::parseLayerProperties, sketch,
+                                    qi::_1, qi::_2 ) ]
+        )
+        ;
 
     r_entity =
         boost::spirit::qi::omit[ entityRules [qi::_a = qi::_1 ] ]
@@ -59,6 +71,8 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
 
 
     r_sketch =
+        r_layerProps
+        >>
         r_entity % ',';
 
 

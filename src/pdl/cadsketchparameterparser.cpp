@@ -9,11 +9,14 @@ addToStaticFunctionTable(ParserDataBase, CADSketchParameterParser, insertrule);
 CADSketchParameterParser::Data::Data(
     const std::string& script,
     const std::string& makeDefaultParametersFunctionName,
+    const std::string& makeDefaultLayerParametersFunctionName,
     const std::vector<boost::fusion::vector2<int, std::string> >& references,
     const std::string& d)
     : ParserDataBase(d),
     makeDefaultParametersFunctionName_(
           makeDefaultParametersFunctionName),
+    makeDefaultLayerParametersFunctionName_(
+        makeDefaultLayerParametersFunctionName),
     script_(script),
     references_(references)
 {}
@@ -53,7 +56,14 @@ std::string CADSketchParameterParser::Data::cppValueRep(const std::string& name,
     std::string mdpn(makeDefaultParametersFunctionName_);
     if (mdpn.empty()) mdpn="[]() { return insight::ParameterSet(); }";
 
-    return "\""+ script_ + "\", " + mdpn + ", "+refParameter();
+    std::string mdlpn(makeDefaultLayerParametersFunctionName_);
+    if (mdlpn.empty()) mdlpn="[]() { return insight::ParameterSet(); }";
+
+    return
+        "\""+ script_ + "\", " +
+           mdpn + ", " +
+           mdlpn + ", " +
+           refParameter();
 }
 
 std::string CADSketchParameterParser::Data::cppConstructorParameters(
@@ -63,10 +73,14 @@ std::string CADSketchParameterParser::Data::cppConstructorParameters(
     std::string mdpn(makeDefaultParametersFunctionName_);
     if (mdpn.empty()) mdpn="[]() { return insight::ParameterSet(); }";
 
+    std::string mdlpn(makeDefaultLayerParametersFunctionName_);
+    if (mdlpn.empty()) mdlpn="[]() { return insight::ParameterSet(); }";
+
     return cppType(name)+"(new "
            + cppParamType(name)
            +"( \"" + script_ + "\", "
            + mdpn + ", "
+           + mdlpn + ", "
            + refParameter() + ", "
            + "\"" + description + "\", "
            + (isHidden?"true":"false")+","

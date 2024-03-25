@@ -22,6 +22,7 @@ class CADSketchParameter
 
 protected:
     cad::MakeDefaultGeometryParametersFunction makeDefaultGeometryParameters;
+    cad::MakeDefaultLayerParametersFunction makeDefaultLayerParameters;
     std::map<int, std::string> references_;
 
     mutable std::unique_ptr<std::string> script_;
@@ -51,6 +52,7 @@ public:
     CADSketchParameter (
         const std::string& script,
         cad::MakeDefaultGeometryParametersFunction defaultGeometryParameters,
+        cad::MakeDefaultLayerParametersFunction defaultLayerParameters,
         const std::map<int, std::string>& references,
         const std::string& description,
         bool isHidden=false,
@@ -62,6 +64,7 @@ public:
     void setReferences(const std::map<int, std::string>& references);
 
     insight::ParameterSet defaultGeometryParameters() const;
+    insight::ParameterSet defaultLayerParameters() const;
 
     std::string script() const;
     void setScript(const std::string& script);

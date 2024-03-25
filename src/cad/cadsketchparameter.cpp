@@ -29,6 +29,10 @@ void CADSketchParameter::resetCADGeometry()
             cad::vec3const(0,0,0),
             cad::vec3const(0,0,1) ));
 
+    CADGeometry_->changeDefaultLayerProperties(
+        cad::ConstrainedSketch::LayerProperties(
+            makeDefaultLayerParameters() ) );
+
     CADGeometry_->geometryAdded.connect(
         cad::ConstrainedSketch::GeometryEditSignal::slot_type(
             [this](int) {
@@ -92,12 +96,14 @@ CADSketchParameter::CADSketchParameter(
 CADSketchParameter::CADSketchParameter(
    const std::string& script,
     cad::MakeDefaultGeometryParametersFunction mdpf,
+    cad::MakeDefaultLayerParametersFunction deflp,
     const std::map<int, std::string>& references,
    const std::string& description,
    bool isHidden, bool isExpert, bool isNecessary, int order
    )
     : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order),
     makeDefaultGeometryParameters(mdpf),
+    makeDefaultLayerParameters(deflp),
     references_(references)
 {
     setScript(script);
@@ -114,6 +120,11 @@ void CADSketchParameter::setReferences(
 ParameterSet CADSketchParameter::defaultGeometryParameters() const
 {
     return makeDefaultGeometryParameters();
+}
+
+ParameterSet CADSketchParameter::defaultLayerParameters() const
+{
+    return makeDefaultLayerParameters();
 }
 
 
@@ -244,6 +255,7 @@ CADSketchParameter::cloneCADSketchParameter(
     auto ncgp=new CADSketchParameter(
         script(),
         makeDefaultGeometryParameters,
+        makeDefaultLayerParameters,
         references_,
         description_.simpleLatex(),
         isHidden_, isExpert_, isNecessary_, order_ );
@@ -274,6 +286,7 @@ void CADSketchParameter::operator=(const CADSketchParameter &op)
     order_ = op.order_;
 
     makeDefaultGeometryParameters = op.makeDefaultGeometryParameters;
+    makeDefaultLayerParameters = op.makeDefaultLayerParameters;
     references_ = op.references_;
 
     if (op.script_)

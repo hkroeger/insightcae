@@ -4,6 +4,7 @@
 #include "base/linearalgebra.h"
 #include "base/tools.h"
 
+#include "boost/range/adaptor/indexed.hpp"
 #include "cadfeature.h"
 #include "cadfeatures/wire.h"
 #include "constrainedsketchgrammar.h"
@@ -50,6 +51,14 @@ ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     : pl_(other.pl_),
     solverSettings_(other.solverSettings_)
 {
+    defaultLayerProperties_=other.defaultLayerProperties_;
+    for (auto lp: other.layerProperties_)
+    {
+        layerProperties_.insert(
+            lp.first,
+            std::auto_ptr<ParameterSet>(lp.second->cloneParameterSet()));
+    }
+
     std::map<
         std::comparable_weak_ptr<ConstrainedSketchEntity>,  // in original
         std::shared_ptr<ConstrainedSketchEntity> // in cloned
@@ -360,6 +369,14 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
     Feature::operator=(o);
     pl_=o.pl_;
 
+    defaultLayerProperties_=o.defaultLayerProperties_;
+    for (auto lp: o.layerProperties_)
+    {
+        layerProperties_.insert(
+            lp.first,
+            std::auto_ptr<ParameterSet>(lp.second->cloneParameterSet()));
+    }
+
     std::set<GeometryMap::key_type> remaining;
     std::transform(
         geometry_.begin(), geometry_.end(),
@@ -605,11 +622,20 @@ void ConstrainedSketchScriptBuffer::insertCommandFor(int entityLabel, const std:
     }
 }
 
+void ConstrainedSketchScriptBuffer::appendLayerProp(const std::string &cmd)
+{
+    layerProps_.push_back(cmd);
+}
+
 
 
 
 void ConstrainedSketchScriptBuffer::write(ostream &os)
 {
+    for (auto sl=layerProps_.begin(); sl!=layerProps_.end(); ++sl)
+    {
+        os<<*sl<<std::endl;
+    }
     for (auto sl=script_.begin(); sl!=script_.end(); ++sl)
     {
         os<<*sl;
@@ -685,6 +711,13 @@ void ConstrainedSketch::generateScript(ostream &os) const
             sb, entityLabels);
     }
 
+    for (auto lp: layerProperties_)
+    {
+        std::string s;
+        lp.second->saveToString(s, boost::filesystem::current_path()/"outfile");
+        sb.appendLayerProp("layer "+lp.first+" "+s);
+    }
+
     sb.write(os);
 }
 
@@ -726,7 +759,7 @@ arma::mat ConstrainedSketch::sketchBoundingBox() const
 
 
 
-std::set<std::string> ConstrainedSketch::layers() const
+std::set<std::string> ConstrainedSketch::layerNames() const
 {
     std::set<std::string> l;
     std::transform(
@@ -739,6 +772,73 @@ std::set<std::string> ConstrainedSketch::layers() const
 
 
 
+const ConstrainedSketch::LayerProperties&
+ConstrainedSketch::defaultLayerProperties() const
+{
+    return defaultLayerProperties_;
+}
+
+
+
+
+void ConstrainedSketch::changeDefaultLayerProperties(const LayerProperties &ps)
+{
+    defaultLayerProperties_=ps;
+}
+
+
+const ConstrainedSketch::LayerProperties&
+ConstrainedSketch::layerProperties(
+    const std::string& layerName ) const
+{
+    auto i = layerProperties_.find(layerName);
+    if (i!=layerProperties_.end())
+    {
+        return *i->second;
+    }
+    else
+    {
+        return defaultLayerProperties();
+    }
+}
+
+void ConstrainedSketch::setLayerProperties(
+    const std::string& layerName,
+    const LayerProperties &ps )
+{
+    auto i = layerProperties_.find(layerName);
+    if (i!=layerProperties_.end())
+    {
+        *i->second = ps;
+    }
+    else
+    {
+        layerProperties_.insert(
+            layerName,
+            std::auto_ptr<LayerProperties>(
+                new LayerProperties(ps) )
+            );
+    }
+}
+
+
+void ConstrainedSketch::parseLayerProperties(
+    const std::string& layerName,
+    const std::string& s )
+{
+    if (!s.empty())
+    {
+        using namespace rapidxml;
+        xml_document<> doc;
+        doc.parse<0>(const_cast<char*>(&s[0]));
+        xml_node<> *rootnode = doc.first_node("root");
+
+        auto p=layerProperties(layerName);
+        p.readFromNode(*rootnode, "." );
+
+        setLayerProperties(layerName, p);
+    }
+}
 
 void ConstrainedSketch::build()
 {

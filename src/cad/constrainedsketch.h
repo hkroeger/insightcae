@@ -3,6 +3,7 @@
 
 
 #include "base/exception.h"
+#include "base/parameterset.h"
 #include "sketch.h"
 #include "sketchpoint.h"
 #include "externalreference.h"
@@ -16,15 +17,17 @@ namespace cad {
 class ConstrainedSketchScriptBuffer
 {
     std::set<int> entitiesPresent_;
-    std::vector<std::string> script_;
+    std::vector<std::string> script_, layerProps_;
 
 public:
     void insertCommandFor(int entityLabel, const std::string& cmd);
+    void appendLayerProp(const std::string& cmd);
     void write(std::ostream& os);
 };
 
 
 
+typedef std::function<insight::ParameterSet(void)> MakeDefaultLayerParametersFunction;
 
 
 class ConstrainedSketch
@@ -45,6 +48,15 @@ public:
         int maxIter_;
     };
 
+    struct LayerProperties
+    : public insight::ParameterSet
+    {
+        template<class ...Args>
+        LayerProperties(Args&&... addArgs)
+            : insight::ParameterSet( std::forward<Args>(addArgs)... )
+        {}
+    };
+
     typedef std::map<int, ConstrainedSketchEntityPtr> GeometryMap;
 
     static const std::string defaultLayerName;
@@ -62,6 +74,9 @@ private:
     GeometryMap geometry_;
 
     SolverSettings solverSettings_;
+
+    LayerProperties defaultLayerProperties_;
+    boost::ptr_map<std::string, LayerProperties> layerProperties_;
 
     ConstrainedSketch( DatumPtr pl );
     ConstrainedSketch( const ConstrainedSketch& other );
@@ -144,7 +159,13 @@ public:
 
     arma::mat sketchBoundingBox() const;
 
-    std::set<std::string> layers() const;
+    std::set<std::string> layerNames() const;
+
+    const LayerProperties& defaultLayerProperties() const;
+    void changeDefaultLayerProperties(const LayerProperties& ps);
+    const LayerProperties& layerProperties(const std::string& layerName) const;
+    void setLayerProperties(const std::string& layerName, const LayerProperties& ps);
+    void parseLayerProperties(const std::string& layerName, const std::string& ps);
 
 };
 

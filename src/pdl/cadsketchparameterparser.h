@@ -9,12 +9,17 @@ struct CADSketchParameterParser
     struct Data
         : public ParserDataBase
     {
-        std::string script_, makeDefaultParametersFunctionName_;
+        std::string
+            script_,
+            makeDefaultParametersFunctionName_,
+            makeDefaultLayerParametersFunctionName_;
+
         std::vector<boost::fusion::vector2<int, std::string> > references_;
 
         Data(
             const std::string& script,
             const std::string& makeDefaultParametersFunctionName,
+            const std::string& makeDefaultLayerParametersFunctionName,
             const std::vector<boost::fusion::vector2<int, std::string> >& references,
             const std::string& d);
 
@@ -61,7 +66,8 @@ struct CADSketchParameterParser
                 typeName,
                 std::make_shared<PDLParserRuleset::ParameterDataRule>(
                     (
-                        ruleset.r_string
+                       ruleset.r_string
+                    >> ruleset.r_string
                     >> ruleset.r_string
                     >> ( ( qi::lit("references") >> *( qi::int_ > '=' > ruleset.r_string ) )
                         | qi::attr(std::vector<boost::fusion::vector2<int, std::string> >()) )
@@ -69,7 +75,7 @@ struct CADSketchParameterParser
                     )
                     [ qi::_val = phx::construct<ParserDataBase::Ptr>(
                          phx::new_<Data>(
-                             qi::_1, qi::_2, qi::_3, qi::_4)) ]
+                             qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
                     )
                 );
     }

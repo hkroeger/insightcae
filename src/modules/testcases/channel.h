@@ -25,8 +25,8 @@
 
 namespace insight {
 
-class ChannelBase 
-: public OpenFOAMAnalysis
+class ChannelBase
+    : public OpenFOAMAnalysis
 {
 public:
 #include "channel__ChannelBase__Parameters.h"

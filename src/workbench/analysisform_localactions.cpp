@@ -133,3 +133,8 @@ bool AnalysisForm::isOpenFOAMAnalysis() const
     return isOpenFOAMAnalysis_;
 }
 
+insight::OperatingSystemSet AnalysisForm::compatibleOperatingSystems() const
+{
+    return insight::Analysis::compatibleOperatingSystemsFor(analysisName_);
+}
+

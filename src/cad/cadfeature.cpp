@@ -75,7 +75,7 @@
 #include "Transfer_Binder.hxx"
 #include "Transfer_TransientProcess.hxx"
 #include "TopTools_DataMapIteratorOfDataMapOfIntegerShape.hxx"
-
+#include "BRepClass3d_SolidClassifier.hxx"
 #include "openfoam/openfoamdict.h"
 
 #include "TColStd_SequenceOfTransient.hxx"
@@ -742,6 +742,18 @@ FeatureSetPtr Feature::providedFeatureSet(const std::string& name)
 }
 
 
+boost::spirit::qi::symbols<char, FeatureSetPtr> Feature::featureSymbols(EntityType et) const
+{
+    boost::spirit::qi::symbols<char, FeatureSetPtr> res;
+    checkForBuildDuringAccess();
+    for (auto& fs: providedFeatureSets_)
+    {
+        if (fs.second->shape()==et)
+            res.add(fs.first, fs.second);
+    }
+    return res;
+}
+
 
 
 Feature& Feature::operator=(const Feature& o)
@@ -1126,7 +1138,7 @@ arma::mat Feature::averageFaceNormal() const
   {
         n+=faceNormal(i);
   }
-  return n/double(af.size());
+  return normalized(n/double(af.size()));
 }
 
 FeatureSetData Feature::allVerticesSet() const
@@ -1220,6 +1232,15 @@ FeatureSetPtr Feature::allOf(EntityType et) const
     default:
         throw insight::Exception("internal error: unhandled selection");
     }
+}
+
+FeatureSetPtr Feature::vertexAt(const arma::mat& p) const
+{
+    checkForBuildDuringAccess();
+    return makeVertexFeatureSet(
+        shared_from_this(),
+        "dist(loc,%m0)<1e-6",
+        { cad::matconst(p) } );
 }
 
 FeatureSetPtr Feature::allVertices() const
@@ -2092,6 +2113,16 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix, std::set<
         }
     }
 
+    for (const auto& fs: m1.providedFeatureSets_)
+    {
+        providedFeatureSets_[prefix+fs.first]=
+            // same IDs but on this model
+            std::make_shared<FeatureSet>(
+                shared_from_this(),
+                fs.second->shape(),
+                fs.second->data());
+    };
+
 }
 
 
@@ -2145,6 +2176,16 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
             providedDatums_[prefix+df.first]=DatumPtr(new TransformedDatum(df.second, trsf));
         }
     }
+
+    for (const auto& fs: m1.providedFeatureSets_)
+    {
+        providedFeatureSets_[prefix+fs.first]=
+            // same IDs but on this model
+            std::make_shared<FeatureSet>(
+                shared_from_this(),
+                fs.second->shape(),
+                fs.second->data());
+    };
 }
 
 
@@ -2460,6 +2501,15 @@ Feature::TopologicalProperties Feature::topologicalProperties() const
         sas.NbVertices(), sas.NbEdges(),
         sas.NbFaces(), sas.NbShells(),
         sas.NbSolids() };
+}
+
+
+
+bool Feature::pointIsInsideVolume(const arma::mat& p) const
+{
+    BRepClass3d_SolidClassifier sc(
+        shape(), to_Pnt(p), Precision::Confusion() );
+    return sc.State() == TopAbs_IN;
 }
 
 

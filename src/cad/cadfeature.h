@@ -324,6 +324,8 @@ public:
     
   FeaturePtr subshape(const std::string& name);
   FeatureSetPtr providedFeatureSet(const std::string& name);
+
+  virtual boost::spirit::qi::symbols<char, FeatureSetPtr> featureSymbols(EntityType et) const;
   
   inline const SubfeatureMap& providedSubshapes() const // caused failure with phx::bind!
     { checkForBuildDuringAccess(); return providedSubshapes_; }
@@ -398,6 +400,7 @@ public:
   FeatureSetData allSolidsSet() const;
 
   FeatureSetPtr allOf(cad::EntityType et) const;
+  FeatureSetPtr vertexAt(const arma::mat& p) const;
   FeatureSetPtr allVertices() const;
   FeatureSetPtr allEdges() const;
   FeatureSetPtr allFaces() const;
@@ -513,6 +516,9 @@ public:
       bool onlyEdges() const;
   };
   TopologicalProperties topologicalProperties() const;
+
+
+  bool pointIsInsideVolume(const arma::mat& p) const;
 
 };
 

@@ -64,6 +64,7 @@ makeProviders(uniformField);
 makeProviders(nonuniformField);
 makeProviders(linearProfile);
 makeProviders(radialProfile);
+makeProviders(circumferentialProfile);
 makeProviders(fittedProfile);
 makeProviders(vtkField);
 

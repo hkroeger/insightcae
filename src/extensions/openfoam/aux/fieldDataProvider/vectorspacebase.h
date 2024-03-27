@@ -20,6 +20,7 @@
 #ifndef FOAM_VECTORSPACEBASE_H
 #define FOAM_VECTORSPACEBASE_H
 
+#include "base/linearalgebra.h"
 #include "fvCFD.H"
 #include "transform.H"
 
@@ -33,28 +34,39 @@ class VectorSpaceBase
 {
 protected:
   point p0_;
-  vector ep_/*, ex_, ez_*/;
+
 public:
-  void read(Istream&is);
-  void writeSup(Ostream& os) const;
+  virtual ~VectorSpaceBase();
+
+  virtual void read(Istream&is);
+  virtual void writeSup(Ostream& os) const;
   
   inline const point& origin() const { return p0_; }
   
-  inline scalar t(const point& p) const
-  {
-    return (p-origin())&ep_;
-  }
+  virtual scalar t(const point& p) const =0;
   
   template<class T>
   T operator()(const T& org) const
   {
-//     vector ey = - (ex_ ^ ez_);
-//     tensor tt(ex_, ey, ez_);    
-//     
-//     return transform(tt, org);
     return org;
   }
 
+};
+
+
+
+class LinearVectorSpaceBase
+: public VectorSpaceBase
+{
+protected:
+    vector ep_;
+
+public:
+
+    void read(Istream&is) override;
+    void writeSup(Ostream& os) const override;
+
+    virtual scalar t(const point& p) const override;
 };
 
 
@@ -63,39 +75,69 @@ public:
 class CylCoordVectorSpaceBase
 : public VectorSpaceBase
 {
+  vector eax_;
+
 public:
-  inline const vector& ax() const { return ep_; }
-  
-  inline scalar t(const point& p) const
-  {
-    vector r=(p-origin());
-    r-=ax()*(r&ax());
-    return mag(r);
-  }
-  
-  template<class T>
-  T operator()(const T& org, const point& p) const
-  {
-    vector er=p-origin();
-    er-=ax()*(er&ax());
-    if (mag(er)<SMALL)
-    {
-     er=vector(1,0,0);
-     if ( (1.-mag(er&ax())) < SMALL ) 
-       er=vector(0,1,0);
-    }
-    er/=mag(er);
-    
-    
-    vector et = (ax() ^ er);
-    tensor tt(ax(), et, er);    
-    
-    return transform(tt.T(), org);
-  }
+  void read(Istream&is) override;
+  void writeSup(Ostream& os) const override;
+
+  inline const vector& ax() const { return eax_; }
 };
 
 
 
+
+class RadialCylCoordVectorSpaceBase
+    : public CylCoordVectorSpaceBase
+{
+public:
+    scalar t(const point& p) const override;
+
+    template<class T>
+    T operator()(const T& org, const point& p) const
+    {
+        vector er=p-origin();
+        er-=ax()*(er&ax());
+        if (mag(er)<SMALL)
+        {
+            er=vector(1,0,0);
+            if ( (1.-mag(er&ax())) < SMALL )
+                er=vector(0,1,0);
+        }
+        er/=mag(er);
+
+
+        vector et = (ax() ^ er);
+        tensor tt(ax(), et, er);
+
+        return transform(tt.T(), org);
+    }
+};
+
+
+
+
+class CircumCylCoordVectorSpaceBase
+    : public CylCoordVectorSpaceBase
+{
+    vector ephi0_org_, ephi0_;
+
+public:
+    void read(Istream&is) override;
+    void writeSup(Ostream& os) const override;
+
+    scalar t(const point& p) const override;
+
+    template<class T>
+    T operator()(const T& org, const point& p) const
+    {
+        tensor rm = insight::toMat<tensor>(
+            insight::rotMatrix(
+                t(p), insight::vector(ax())));
+
+        return transform(rm, org);
+    }
+};
 
 }
 

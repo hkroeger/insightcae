@@ -22,14 +22,91 @@
 namespace Foam
 {
 
+
+
+
+VectorSpaceBase::~VectorSpaceBase()
+{}
+
 void VectorSpaceBase::read(Istream& is)
 {
-  is >> p0_ >> ep_ /*>> ex_ >> ez_*/ ;
+  is >> p0_;
 }
 
 void VectorSpaceBase::writeSup(Ostream& os) const
 {
-  os << p0_  << token::SPACE << ep_  /*<< token::SPACE << ex_ <<token::SPACE << ez_*/;
+  os << p0_;
+}
+
+
+
+
+void LinearVectorSpaceBase::read(Istream& is)
+{
+    VectorSpaceBase::read(is);
+    is >> ep_;
+}
+
+void LinearVectorSpaceBase::writeSup(Ostream& os) const
+{
+    VectorSpaceBase::writeSup(os);
+    os << token::SPACE << ep_;
+}
+
+scalar LinearVectorSpaceBase::t(const point& p) const
+{
+    return (p-origin())&ep_;
+}
+
+
+
+
+void CylCoordVectorSpaceBase::read(Istream &is)
+{
+    VectorSpaceBase::read(is);
+    is >> eax_; eax_/=mag(eax_);
+}
+
+void CylCoordVectorSpaceBase::writeSup(Ostream &os) const
+{
+    VectorSpaceBase::writeSup(os);
+    os << token::SPACE << eax_;
+}
+
+
+
+
+scalar RadialCylCoordVectorSpaceBase::t(const point& p) const
+{
+    vector r=(p-origin());
+    r-=ax()*(r&ax());
+    return mag(r);
+}
+
+
+
+
+void CircumCylCoordVectorSpaceBase::read(Istream&is)
+{
+    CylCoordVectorSpaceBase::read(is);
+    is >> ephi0_org_;
+    vector ey = ax()^ephi0_org_;
+    ephi0_=ey^ax(); ephi0_=ephi0_/mag(ephi0_);
+}
+
+void CircumCylCoordVectorSpaceBase::writeSup(Ostream& os) const
+{
+    CylCoordVectorSpaceBase::writeSup(os);
+    os << token::SPACE << ephi0_org_;
+}
+
+scalar CircumCylCoordVectorSpaceBase::t(const point& p) const
+{
+    vector r=(p-origin());
+    r-=ax()*(r&ax());
+    double x=r&ephi0_;
+    double y=r&(ax()^ephi0_);
+    return atan2(y, x);
 }
 
 }

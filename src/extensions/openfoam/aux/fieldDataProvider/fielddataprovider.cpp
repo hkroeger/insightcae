@@ -511,28 +511,23 @@ autoPtr<FieldDataProvider<T> > linearProfile<T>::clone() const
 
 
 
-template<class T>  
-radialProfile<T>::radialProfile(Istream& is)
-: FieldDataProvider<T>(is)
+
+template<class T, class CS>
+void CylCoordProfile<T,CS>::appendInstant(Istream& is)
 {
+    fileName fn;
+    is >> fn;
+    filenames_.push_back(fn);
 }
 
-template<class T>
-void radialProfile<T>::appendInstant(Istream& is)
+template<class T, class CS>
+void CylCoordProfile<T,CS>::writeInstant(int i, Ostream& is) const
 {
-  fileName fn;
-  is >> fn;
-  filenames_.push_back(fn);
+    is << filenames_[i];
 }
 
-template<class T>
-void radialProfile<T>::writeInstant(int i, Ostream& is) const
-{
-  is << filenames_[i];
-}
-
-template<class T>
-tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) const
+template<class T, class CS>
+tmp<Field<T> > CylCoordProfile<T,CS>::atInstant(int idx, const pointField& target) const
 {
     if (values_.find(idx)==values_.end())
     {
@@ -562,32 +557,80 @@ tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) co
     return resPtr;
 }
 
-template<class T>
-radialProfile<T>::radialProfile(const radialProfile<T>& o)
-: FieldDataProvider<T>(o),
-  base_(o.base_),
-  filenames_(o.filenames_),
-  values_(o.values_)
+template<class T, class CS>
+CylCoordProfile<T,CS>::CylCoordProfile(Istream& is)
+    : FieldDataProvider<T>(is)
+{
+}
+
+template<class T, class CS>
+CylCoordProfile<T,CS>::CylCoordProfile(const CylCoordProfile<T,CS>& o)
+    : FieldDataProvider<T>(o),
+    base_(o.base_),
+    filenames_(o.filenames_),
+    values_(o.values_)
 {}
 
-template<class T>
-void radialProfile<T>::read(Istream& is)
+template<class T, class CS>
+void CylCoordProfile<T,CS>::read(Istream& is)
 {
-  base_.read(is);
-  FieldDataProvider<T>::read(is);
+    base_.read(is);
+    FieldDataProvider<T>::read(is);
 }
-  
-template<class T>
-void radialProfile<T>::writeSup(Ostream& os) const
+
+template<class T, class CS>
+void CylCoordProfile<T,CS>::writeSup(Ostream& os) const
 {
-  base_.writeSup(os);
+    base_.writeSup(os);
 }
-  
+
+
+
+
+
+template<class T>  
+radialProfile<T>::radialProfile(Istream& is)
+: CylCoordProfile<T,RadialCylCoordVectorSpaceBase>(is)
+{}
+
+
+template<class T>
+radialProfile<T>::radialProfile(const radialProfile<T>& o)
+: CylCoordProfile<T,RadialCylCoordVectorSpaceBase>(o)
+{}
+
 template<class T>
 autoPtr<FieldDataProvider<T> > radialProfile<T>::clone() const
 {
   return autoPtr<FieldDataProvider<T> >(new radialProfile<T>(*this));
 }
+
+
+
+
+
+template<class T>
+circumferentialProfile<T>::circumferentialProfile(Istream& is)
+    : CylCoordProfile<T,CircumCylCoordVectorSpaceBase>(is)
+{}
+
+
+template<class T>
+circumferentialProfile<T>::circumferentialProfile(
+    const circumferentialProfile<T>& o
+    )
+  : CylCoordProfile<T,CircumCylCoordVectorSpaceBase>(o)
+{}
+
+template<class T>
+autoPtr<FieldDataProvider<T> > circumferentialProfile<T>::clone() const
+{
+    return autoPtr<FieldDataProvider<T> >(new circumferentialProfile<T>(*this));
+}
+
+
+
+
 
 
 

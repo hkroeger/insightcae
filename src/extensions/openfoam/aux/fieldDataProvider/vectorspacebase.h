@@ -43,7 +43,7 @@ public:
   
   inline const point& origin() const { return p0_; }
   
-  virtual scalar t(const point& p) const =0;
+  // scalar t(const point& p) const;
   
   template<class T>
   T operator()(const T& org) const
@@ -66,7 +66,7 @@ public:
     void read(Istream&is) override;
     void writeSup(Ostream& os) const override;
 
-    virtual scalar t(const point& p) const override;
+    scalar t(const point& p) const;
 };
 
 
@@ -91,7 +91,7 @@ class RadialCylCoordVectorSpaceBase
     : public CylCoordVectorSpaceBase
 {
 public:
-    scalar t(const point& p) const override;
+    scalar t(const point& p) const;
 
     template<class T>
     T operator()(const T& org, const point& p) const
@@ -126,7 +126,7 @@ public:
     void read(Istream&is) override;
     void writeSup(Ostream& os) const override;
 
-    scalar t(const point& p) const override;
+    scalar t(const point& p) const;
 
     template<class T>
     T operator()(const T& org, const point& p) const

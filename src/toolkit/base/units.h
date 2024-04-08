@@ -39,6 +39,7 @@
 #include "boost/units/systems/si/prefixes.hpp"
 #include <boost/units/base_units/metric/knot.hpp>
 #include <boost/units/base_units/metric/ton.hpp>
+#include <boost/units/base_units/metric/hour.hpp>
 #include "boost/units/physical_dimensions.hpp"
 #include "boost/units/systems/si/codata/physico-chemical_constants.hpp"
 
@@ -57,7 +58,24 @@ namespace celsius = boost::units::celsius;
 }
 
 
-namespace boost { namespace units { namespace si {
+namespace boost { namespace units {
+
+typedef derived_dimension<length_base_dimension,0,
+                          mass_base_dimension,-1,
+                          time_base_dimension,3,
+                          temperature_base_dimension,1>::type thermal_resistance_dimension;
+
+typedef derived_dimension<length_base_dimension,2,
+                          mass_base_dimension,1,
+                          time_base_dimension,-2,
+                          temperature_base_dimension,-1>::type thermal_capacitance_dimension;
+
+typedef derived_dimension<length_base_dimension,1,
+                          mass_base_dimension,1,
+                          time_base_dimension,-3,
+                          temperature_base_dimension,-1>::type thermal_conductivity_dimension;
+
+namespace si {
 
 
  typedef unit<specific_heat_capacity_dimension,system> specific_heat_capacity;
@@ -94,23 +112,27 @@ namespace boost { namespace units { namespace si {
 
  static const auto kelvin_per_meter = kelvin/meter;
  static const auto cubic_meter_per_second = cubic_meter/second;
- static const auto hour = 3600*second;
+ static const auto hour = metric::hour_base_unit::unit_type();
 
  static const auto degC = 1.*absolute<celsius::temperature>();
  static const auto degK = 1.*absolute<si::temperature>();
+
+ static const auto kilojoule_per_hour_squaremeter_kelvin
+     = kilo*joule/hour/square_meter/kelvin;
 
 
  template<class Dimension, class Type, class Unit>
  Type toValue(const quantity<Dimension,Type>& q, const Unit& u)
  {
-     return static_cast<quantity<si::dimensionless, Type> >( q / u ).value();
+     return quantity<Unit, Type>(q).value();
  }
 
-
  template<class Dimension, class Type, class Unit>
- Type toValue(const quantity<absolute<Dimension>,Type>& q, const Unit& u)
+ Type toValue(const quantity<Dimension,Type>& q, const quantity<Unit,double>& u)
  {
-     return Unit(q).value();
+     return
+         toValue<Dimension,Type,Unit>(q, typename quantity<Unit,double>::unit_type())
+            / u.value();
  }
 
 
@@ -165,6 +187,8 @@ namespace boost { namespace units { namespace si {
 
  typedef quantity<area, double> Area;
 
+ typedef quantity<volume, double> Volume;
+
  typedef quantity<velocity, double> Velocity;
 
  typedef quantity<plane_angle, double> Angle;
@@ -179,6 +203,15 @@ namespace boost { namespace units { namespace si {
 
  typedef quantity<decltype(kelvin_per_meter)::unit_type, double> TemperatureGradient;
 
+ typedef quantity<unit<heat_capacity_dimension,system>, double> HeatCapacity;
+
+ typedef quantity<decltype(kilojoule_per_hour_squaremeter_kelvin), double> HeatTransferCoefficient;
+
+ typedef quantity<unit<thermal_conductivity_dimension,system>, double> ThermalConductivity;
+
+ typedef quantity<unit<thermal_resistance_dimension,system>, double> ThermalResistance;
+
+ typedef quantity<unit<thermal_capacitance_dimension,system>, double> ThermalCapacitance;
 
 }}}
 

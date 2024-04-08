@@ -703,6 +703,14 @@ void SubsetParameter::merge ( const Parameter& other )
   }
 }
 
+void SubsetParameter::clear()
+{
+    operator=(SubsetParameter(
+      description_.simpleLatex(),
+      isHidden_, isExpert_, isNecessary_, order_
+        ));
+}
+
 
 
 

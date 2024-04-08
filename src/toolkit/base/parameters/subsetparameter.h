@@ -183,6 +183,7 @@ public:
   void operator=(const SubsetParameter& spo);
   void extend ( const Parameter& op ) override;
   void merge ( const Parameter& other ) override;
+  void clear();
 #ifndef SWIG
   std::unique_ptr<Parameter> intersection(const Parameter& other) const override;
 #endif

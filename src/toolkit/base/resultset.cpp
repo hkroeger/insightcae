@@ -162,6 +162,11 @@ void ResultSet::transfer ( const ResultSet& other )
     introduction_=other.introduction_;
 }
 
+void ResultSet::clearInputParameters()
+{
+    p_.clear();
+}
+
 
 void ResultSet::insertLatexHeaderCode ( std::set<std::string>& hc ) const
 {

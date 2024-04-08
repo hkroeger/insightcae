@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
     desc.add_options()
       ("help,h", _("produce help message"))
       ("skiplatex,x", _("skip execution of pdflatex"))
+      ("report-skip-input-parameters", _("skip inclusion of input parameters into report"))
       ("version,r", _("print version and exit"))
       ("workdir,w", po::value<std::string>(), _("execution directory"))
       ("savecfg,c", po::value<std::string>(), _("save final configuration (including command line overrides) to this file"))
@@ -520,6 +521,11 @@ int main(int argc, char *argv[])
           {
             if (!vm.count("output-file"))
             {
+                if (vm.count("report-skip-input-parameters"))
+                {
+                    results->clearInputParameters();
+                }
+
                 boost::filesystem::path resoutpath=analysis->executionPath()/ (filestem+".isr");
                 results->saveToFile( resoutpath );
 

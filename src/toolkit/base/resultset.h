@@ -122,6 +122,7 @@ public:
     {
         return p_;
     }
+    void clearInputParameters();
 
     void insertLatexHeaderCode ( std::set<std::string>& hc ) const override;
     void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;

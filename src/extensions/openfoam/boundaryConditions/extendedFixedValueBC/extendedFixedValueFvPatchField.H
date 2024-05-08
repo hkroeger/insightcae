@@ -44,6 +44,22 @@ class extendedFixedValueFvPatchField
 
     autoPtr<FieldDataProvider<Type> > vp_;
 
+    struct RescaleToMassFlow {
+        scalar massFlow;
+        word densityFieldName;
+    };
+
+    struct RescaleToVolumeFlow {
+        scalar volumeFlow;
+    };
+
+    boost::variant<
+        boost::blank,
+        RescaleToMassFlow,
+        RescaleToVolumeFlow
+        >
+        rescaleMode_;
+
 
 public:
 

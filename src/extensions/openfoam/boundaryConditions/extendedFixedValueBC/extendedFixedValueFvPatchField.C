@@ -49,7 +49,8 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 )
 :
     fixedValueFvPatchField<Type>(ptf, p, iF, mapper),
-    vp_(ptf.vp_().clone())
+    vp_(ptf.vp_().clone()),
+    rescaleMode_(ptf.rescaleMode_)
 {
     vp_->autoMap(mapper);
 }
@@ -66,6 +67,36 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
     fixedValueFvPatchField<Type>(p, iF),
     vp_(FieldDataProvider<Type>::New(dict.lookup("source")))
 {
+
+    if (dict.found("rescale"))
+    {
+        word rescaleMode(dict.lookup("rescale"));
+        if (rescaleMode=="massFlow")
+        {
+            auto mf=RescaleToMassFlow{
+                    readScalar(dict.lookup("massFlow")),
+                    dict.lookupOrDefault<word>("rhoName", "rho")
+                };
+            Info<<"["<<this->patch().name()<<"] Rescaling to mass flow "<<mf.massFlow<<"."<<endl;
+            rescaleMode_=mf;
+        }
+        else if (rescaleMode=="volumeFlow")
+        {
+            auto vf = RescaleToVolumeFlow{
+                    readScalar(dict.lookup("volumeFlow")),
+                };
+            Info<<"["<<this->patch().name()<<"] Rescaling to volume flow "<<vf.volumeFlow<<"."<<endl;
+            rescaleMode_=vf;
+        }
+        else
+        {
+            FatalErrorIn("extendedFixedValueFvPatchField")
+                <<"unrecognized rescale mode: "<<rescaleMode<<". "
+                "Expected \"massFlow\" or \"volumeFlow\""
+                <<abort(FatalError);
+        }
+    }
+
 #warning need to set sensible value here for potentialFoam to work...
   if (dict.found("value"))
   {
@@ -95,7 +126,8 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 )
 :
     fixedValueFvPatchField<Type>(ptf),
-    vp_(ptf.vp_().clone())
+    vp_(ptf.vp_().clone()),
+    rescaleMode_(ptf.rescaleMode_)
 {}
 
 
@@ -107,7 +139,8 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 )
 :
     fixedValueFvPatchField<Type>(ptf, iF),
-    vp_(ptf.vp_().clone())
+    vp_(ptf.vp_().clone()),
+    rescaleMode_(ptf.rescaleMode_)
 {
 }
 
@@ -147,9 +180,44 @@ void extendedFixedValueFvPatchField<Type>::updateCoeffs()
     {
         return;
     }
-    fvPatchField<Type>::operator==( vp_()(this->db().time().timeOutputValue(), this->patch().Cf()) );    
-    
+    fvPatchField<Type>::operator==( vp_()(this->db().time().timeOutputValue(), this->patch().Cf()) );
+
     fixedValueFvPatchField<Type>::updateCoeffs();
+}
+
+template<>
+void extendedFixedValueFvPatchField<vector>::updateCoeffs()
+{
+    if (this->updated())
+    {
+        return;
+    }
+    fvPatchField<vector>::operator==( vp_()(this->db().time().timeOutputValue(), this->patch().Cf()) );
+
+    scalar sf=1.;
+    if (const auto* rm = boost::get<RescaleToMassFlow>(&rescaleMode_))
+    {
+        auto& rho =
+            patch().lookupPatchField<volScalarField, scalar>(
+                rm->densityFieldName );
+        sf =
+            rm->massFlow
+            /
+             gSum( rho * (*this) & (-this->patch().Sf()) );
+    }
+    else if (const auto* vm = boost::get<RescaleToVolumeFlow>(&rescaleMode_))
+    {
+        sf =
+            vm->volumeFlow
+            /
+             gSum( (*this) & (-this->patch().Sf()) );
+    }
+
+    Info<<"["<<this->patch().name()<<"] Velocity rescale factor = "<<sf<<endl;
+
+    fvPatchField<vector>::operator*=(sf);
+    
+    fixedValueFvPatchField<vector>::updateCoeffs();
 }
 
 template<class Type>
@@ -189,6 +257,17 @@ void extendedFixedValueFvPatchField<Type>::write(Ostream& os) const
 {
     fvPatchField<Type>::write(os);
     vp_().writeEntry("source", os);
+    if (const auto* rm = boost::get<RescaleToMassFlow>(&rescaleMode_))
+    {
+        os << "rescale massFlow" << token::END_STATEMENT;
+        os << "massFlow" << token::SPACE << rm->massFlow << token::END_STATEMENT;
+        os << "rhoName" << token::SPACE << rm->densityFieldName << token::END_STATEMENT;
+    }
+    else if (const auto* vm = boost::get<RescaleToVolumeFlow>(&rescaleMode_))
+    {
+        os << "rescale volumeFlow" << token::END_STATEMENT;
+        os << "volumeFlow" << token::SPACE << vm->volumeFlow << token::END_STATEMENT;
+    }
     this->writeEntry("value", os);
 }
 

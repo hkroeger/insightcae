@@ -39,6 +39,9 @@ public:
 };
 
 
+std::vector<arma::mat> orderedCornerPoints(const TopoDS_Shape& f);
+TopoDS_Face asSingleFace(const TopoDS_Shape& shape);
+
 }
 }
 

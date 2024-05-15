@@ -60,10 +60,6 @@ namespace celsius = boost::units::celsius;
 
 namespace boost { namespace units {
 
-typedef derived_dimension<length_base_dimension,0,
-                          mass_base_dimension,-1,
-                          time_base_dimension,3,
-                          temperature_base_dimension,1>::type thermal_resistance_dimension;
 
 typedef derived_dimension<length_base_dimension,2,
                           mass_base_dimension,1,
@@ -117,8 +113,10 @@ namespace si {
  static const auto degC = 1.*absolute<celsius::temperature>();
  static const auto degK = 1.*absolute<si::temperature>();
 
+ static const auto kilojoule = kilo*joule;
+ static const auto megajoule = mega*joule;
  static const auto kilojoule_per_hour_squaremeter_kelvin
-     = kilo*joule/hour/square_meter/kelvin;
+     = kilojoule/hour/square_meter/kelvin;
 
 
  template<class Dimension, class Type, class Unit>
@@ -197,6 +195,8 @@ namespace si {
 
  typedef quantity<absolute<temperature>, double> Temperature;
 
+ typedef quantity<energy, double> Energy;
+
  typedef quantity<power, double> Power;
 
  typedef quantity<decltype(cubic_meter_per_second)::unit_type, double> VolumeFlux;
@@ -205,11 +205,11 @@ namespace si {
 
  typedef quantity<unit<heat_capacity_dimension,system>, double> HeatCapacity;
 
+ typedef quantity<decltype(joule/kilogram/kelvin), double> SpecificHeatCapacity;
+
  typedef quantity<decltype(kilojoule_per_hour_squaremeter_kelvin), double> HeatTransferCoefficient;
 
  typedef quantity<unit<thermal_conductivity_dimension,system>, double> ThermalConductivity;
-
- typedef quantity<unit<thermal_resistance_dimension,system>, double> ThermalResistance;
 
  typedef quantity<unit<thermal_capacitance_dimension,system>, double> ThermalCapacitance;
 

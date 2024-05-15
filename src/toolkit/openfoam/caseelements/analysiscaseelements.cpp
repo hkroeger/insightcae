@@ -195,10 +195,14 @@ arma::mat readAndCombineTabularFiles
 (
     const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
     const std::string& FOName, const std::string& fileNamePattern,
-    const std::string& filterChars
+    const std::string& filterChars,
+    const std::string& regionName
 )
 {
-  return readAndCombineGroupedTabularFiles(cm, caseLocation, FOName, fileNamePattern, -1, filterChars)
+  return readAndCombineGroupedTabularFiles(
+               cm, caseLocation,
+               FOName, fileNamePattern,
+               -1, filterChars, regionName )
           .begin()->second;
 }
 
@@ -209,7 +213,8 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
     const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
     const std::string& FOName, const std::string& fileNamePattern,
     int groupByColumn,
-    const std::string& filterChars
+    const std::string& filterChars,
+    const std::string& regionName
 )
 {
   CurrentExceptionContext ex("reading output files "+fileNamePattern+" for function object "+FOName+" (filtering out any of '"+filterChars+"')");
@@ -217,9 +222,15 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
 
   path fp;
   if ( cm.OFversion() <170 )
-    fp=absolute ( caseLocation ) / FOName;
+  {
+    fp = absolute ( caseLocation ) / FOName;
+  }
   else
-    fp=absolute ( caseLocation ) / "postProcessing" / FOName;
+  {
+    fp = absolute ( caseLocation ) / "postProcessing";
+    if (!regionName.empty()) fp = fp / regionName;
+    fp = fp/ FOName;
+  }
 
   if (!exists(fp))
   {
@@ -711,13 +722,15 @@ arma::mat volumeIntegrate::readVolumeIntegrals
 (
     const OpenFOAMCase& c,
     const boost::filesystem::path& location,
-    const std::string& FOName
+    const std::string& FOName,
+    const std::string& regionName
 )
 {
   return readAndCombineTabularFiles
       (
         c, location,
-        FOName, "volFieldValue.dat"
+        FOName, "volFieldValue.dat",
+        "()", regionName
       );
 }
 
@@ -825,7 +838,8 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
       (
           cm, location,
           foName,
-          (cm.OFversion()<170 ? "faceSource.dat" : "surfaceFieldValue.dat")
+          (cm.OFversion()<170 ? "faceSource.dat" : "surfaceFieldValue.dat"),
+          "()", regionName
       );
 //  arma::mat result(0,2);
 
@@ -910,14 +924,15 @@ std::map<std::string,arma::mat> fieldMinMax::readOutput
 (
     const OpenFOAMCase& c,
     const boost::filesystem::path& location,
-    const std::string& FOName
+    const std::string& FOName,
+    const std::string& regionName
 )
 {
   return readAndCombineGroupedTabularFiles
       (
         c, location,
         FOName, "fieldMinMax.dat",
-        1
+        1, "()", regionName
       );
 }
 

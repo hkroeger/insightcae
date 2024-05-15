@@ -42,14 +42,16 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
     const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
     const std::string& FOName, const std::string& fileName,
     int groupByColumn,
-    const std::string& filterChars="()"
+    const std::string& filterChars="()",
+    const std::string& regionName = std::string()
 );
 
 arma::mat readAndCombineTabularFiles
     (
         const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
         const std::string& FOName, const std::string& fileName,
-        const std::string& filterChars="()"
+        const std::string& filterChars="()",
+        const std::string& regionName = std::string()
         );
 
 /** ===========================================================================
@@ -243,7 +245,8 @@ public:
     (
         const OpenFOAMCase& c,
         const boost::filesystem::path& location,
-        const std::string& FOName
+        const std::string& FOName,
+        const std::string& regionName = std::string()
     );
 
     static std::string category() {
@@ -351,7 +354,8 @@ public:
     (
         const OpenFOAMCase& c,
         const boost::filesystem::path& location,
-        const std::string& foName
+        const std::string& foName,
+        const std::string& regionName = std::string()
     );
 };
 

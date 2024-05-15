@@ -26,7 +26,17 @@ namespace insight
 {
 
 
-
+int realNp(int userInputNp)
+{
+    if (userInputNp>=1)
+    {
+        return userInputNp;
+    }
+    else
+    {
+        return boost::thread::physical_concurrency();
+    }
+}
 
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps)
 {

@@ -380,7 +380,7 @@ void ChannelBase::createCase
       .set_Uinternal(vec3(sp().Ubulk_,0,0))
       .set_endTime(sp().end_)
       .set_decompWeights(vec3(2,1,0))
-      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(np())
       .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::hierarchical)
     ));
   } 
@@ -404,7 +404,7 @@ void ChannelBase::createCase
       .set_deltaT( double(p().geometry.L/sp().nax_)/sp().Ubulk_ ) // Co=1
       .set_decompWeights(vec3(2,1,0))
       .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::simple)
-      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(np())
     ));
   }
   

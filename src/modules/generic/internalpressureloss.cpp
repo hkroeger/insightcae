@@ -250,7 +250,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
   auto& p=this->p();
 
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
-                                        .set_np(p.run.np)
+                                        .set_np(np())
                                 ));
     cm.createOnDisk(executionPath());
     

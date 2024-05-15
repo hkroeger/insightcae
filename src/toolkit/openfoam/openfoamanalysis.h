@@ -24,6 +24,7 @@
 
 #include "base/analysis.h"
 
+#include "boost/thread/detail/thread.hpp"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/caseelements/turbulencemodel.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
@@ -59,6 +60,8 @@ namespace insight {
 
 class ConvergenceAnalysisDisplayer;
 
+int realNp(int userInputNp);
+
 template<class Base>
 class OpenFOAMAnalysisTemplate : public Base
 {
@@ -73,7 +76,7 @@ run = set
 {	
  machine 	= 	string 	"" 	"Machine or queue, where the external commands are executed on. Defaults to 'localhost', if left empty." *hidden
  OFEname 	= 	string 	"OFesi1806" "Identifier of the OpenFOAM installation, that shall be used"
- np 		= 	int 	1 	"Number of processors for parallel run (less or equal 1 means serial execution)" *necessary
+ np 		= 	int 	-1 	"Number of processors for parallel run (1 means serial execution, <1 means that all available processors are used)" *necessary
  mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
  potentialinit 	= 	bool 	false 	"Whether to initialize the flow field by potentialFoam when no mapping is done" *hidden
  evaluateonly	= 	bool 	false 	"Whether to skip solver run and do only the evaluation"
@@ -126,6 +129,11 @@ public:
       : Base(name, description, std::move(sp), exepath, progress),
         p_(Base::parameters())
     {}
+
+    int np() const
+    {
+        return realNp(p_.run.np);
+    }
 
     static insight::OperatingSystemSet compatibleOperatingSystems()
     {
@@ -202,17 +210,17 @@ public:
         if (dpd.find("numberOfSubdomains")!=dpd.end())
         {
             int cnp=boost::get<int>(dpd["numberOfSubdomains"]);
-            if (cnp!=p_.run.np)
+            if (cnp!=np())
             {
                 insight::Warning
                     (
                         "decomposeParDict does not contain proper number of processors!\n"
-                        +str(boost::format("(%d != %d)\n") % cnp % p_.run.np)
+                        +str(boost::format("(%d != %d)\n") % cnp % np())
                         +"It will be recreated but the directional preferences cannot be taken into account.\n"
                           "Correct this by setting the np parameter in FVNumerics during case creation properly."
                         );
                 decomposeParDict(cm, decomposeParDict::Parameters()
-                                         .set_np(p_.run.np)
+                                         .set_np(np())
                                          .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::scotch)
                                  ).addIntoDictionaries(*dicts);
             }

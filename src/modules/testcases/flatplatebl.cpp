@@ -347,7 +347,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
       .set_Uinternal(vec3(sp().uinf_,0,0))
       .set_endTime(sp().end_)
-      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(np())
       .set_decompWeights(vec3(2,1,0))
       .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
     ));
@@ -377,7 +377,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
       .set_writeControl(FVNumerics::Parameters::writeControl_type::adjustableRunTime)
       .set_writeInterval(0.25*sp().T_)
       .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
-      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(np())
       .set_decompWeights(vec3(2,1,0))
     ));
   }

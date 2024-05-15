@@ -156,7 +156,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
   path dir = executionPath();
     
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
-    .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+    .set_np(np())
   ));
   
   using namespace insight::bmd;
@@ -284,7 +284,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
     .set_checkResiduals(false)
     .set_purgeWrite(2)
     .set_endTime(5000)
-    .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+    .set_np(np())
   )); 
   
   std::string force_fo_name("foilForces");

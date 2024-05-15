@@ -196,7 +196,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
    (p().geometry.objectfile->fileName().stem().string()+".stlb");
 
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
-    .set_np(p().run.np)
+    .set_np(np())
   ));
   cm.createOnDisk(executionPath());
   

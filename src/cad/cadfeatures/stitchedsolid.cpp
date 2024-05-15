@@ -18,8 +18,10 @@
  */
 
 #include "stitchedsolid.h"
+#include "ShapeFix_Solid.hxx"
 #include "occinclude.h"
 #include "BRepCheck_Shell.hxx"
+#include "BRepClass3d_SolidClassifier.hxx"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -92,7 +94,19 @@ void StitchedSolid::build()
   if (!solidmaker.IsDone())
     throw insight::Exception(_("Creation of solid failed!"));
 
-  setShape(solidmaker.Solid());
+  auto solid = solidmaker.Solid();
+
+  ShapeFix_Solid fix(solid);
+  fix.Perform();
+  // BRepClass3d_SolidClassifier classify;
+  // classify.Load(solid);
+  // classify.PerformInfinitePoint(1.0e-4);
+  // if (classify.State()!=TopAbs_IN)
+  // {
+  //     solid.Reverse();
+  // }
+
+  setShape(fix.Shape());
 }
 
 void StitchedSolid::insertrule(parser::ISCADParser& ruleset)

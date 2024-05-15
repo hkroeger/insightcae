@@ -93,6 +93,14 @@ bool isEqual
     double etol=1e-3
 );
 
+bool isEmptyShape(const TopoDS_Shape& s);
+
+bool isGeometricallyIdentical
+(
+    const TopoDS_Shape& s1,
+    const TopoDS_Shape& s2
+);
+
 }  
 }
 

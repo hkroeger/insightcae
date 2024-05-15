@@ -22,6 +22,7 @@
 #include "base/exception.h"
 
 #include "BRepClass_FaceClassifier.hxx"
+#include "cadfeature.h"
 
 #include <algorithm>
 
@@ -629,6 +630,40 @@ bool isEqual
   }
   return foundAll;
 }
+
+
+bool isEmptyShape(const TopoDS_Shape &s)
+{
+    return !TopExp_Explorer(s, TopAbs_VERTEX).More();
+}
+
+
+bool isGeometricallyIdentical(const TopoDS_Shape &s1, const TopoDS_Shape &s2)
+{
+    bool e1=isEmptyShape(s1);
+    bool e2=isEmptyShape(s2);
+
+    if (e1&&e2) return true;
+    if (e1!=e2) return false;
+
+    BRepAlgoAPI_Cut cutter(s1, s2);
+    cutter.Build();
+
+    if (!cutter.IsDone())
+    {
+        throw insight::CADException(
+            {
+             { "shape 1", cad::Feature::create(s1) },
+             { "shape 2", cad::Feature::create(s2) }
+            },
+            "could not perform cut operation."
+            );
+    }
+
+    bool emptyResult = isEmptyShape(cutter.Shape());
+    return emptyResult;
+}
+
 
   
 }

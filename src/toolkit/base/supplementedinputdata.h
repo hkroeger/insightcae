@@ -102,7 +102,14 @@ typedef std::shared_ptr<supplementedInputDataBase> supplementedInputDataBasePtr;
 //  { return dynamic_cast<ParametersType&>(*this->baseParametersPtrRef()); }
 //};
 
+namespace cad {
+class FeatureVisualizationStyle;
+}
 
+typedef std::function<void(
+    const std::string& name,
+    insight::cad::FeaturePtr feat,
+    const insight::cad::FeatureVisualizationStyle& fvs)> FeatureDisplayCallback;
 
 
 template<class ParametersType, class SupplementedInputDataBaseType = supplementedInputDataBase>
